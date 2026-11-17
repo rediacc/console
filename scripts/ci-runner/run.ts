@@ -3009,6 +3009,17 @@ async function selftest(): Promise<number> {
       plan({ ...whole, failed: ['g:plan'] }, ['agent/reviews/x.md']).kind === 'full',
       'a failed list alone (exitCode 0) still counts as red for the gates it names'
     );
+    for (const damaged of ['g:plan', { 0: 'g:plan' }, [7], null]) {
+      require_(
+        plan({ ...whole, failed: damaged } as unknown as typeof whole, ['agent/reviews/x.md'])
+          .kind === 'full',
+        `a receipt whose failed list is ${JSON.stringify(damaged)} must run the lane, not advance as if nothing failed`
+      );
+    }
+    require_(
+      plan({ ...whole, failed: [] }, ['agent/reviews/x.md']).kind === 'advance',
+      'CONTROL: an empty failed list on a green receipt still advances'
+    );
     require_(
       advanceExit(0, red) === 1,
       'an advance over a red receipt must still exit non-zero, so the red is never read as cleared'
@@ -3060,6 +3071,30 @@ async function selftest(): Promise<number> {
       refreshCarried(carryingReader.gates, ['g:plan'], { 'g:plan': 1 }, 'T1')['g:plan']
         .carriedFrom !== null,
       'a reader that failed at the step must keep its entry: the guard refuses that step on its exit code'
+    );
+    const writtenStep: Advance = {
+      from: 'T0',
+      to: 'T1',
+      paths: ['agent/reviews/x.md'],
+      gates: { 'g:plan': 0 },
+      findings: [],
+      finishedAt: 'now',
+    };
+    const written = advancedReceipt(
+      carryingReader as unknown as Receipt,
+      ['g:plan'],
+      { 'g:plan': 0 },
+      'T1',
+      writtenStep
+    );
+    require_(
+      written.gates['g:plan']?.judgedTree === 'T1' &&
+        written.gates['g:plan'].carriedFrom === null &&
+        written.gates['g:tree']?.carriedFrom !== null &&
+        written.advances.length === 1 &&
+        written.advances[0] === writtenStep &&
+        written.headTree === carryingReader.headTree,
+      `the receipt written by an advance must carry the refreshed gates and the appended step, got ${JSON.stringify(written)}`
     );
     require_(
       planAdvance({ receipt: whole, headTree: 'T0', policy, diff: at([]), known }).kind === 'full',
@@ -4507,6 +4542,21 @@ function refreshCarried(
   return out;
 }
 
+/** The receipt `runAdvance` writes: the old one with its refreshed readers re-judged at `to` and the step appended. Pure, so the selftest reads the very object that reaches the disk. */
+function advancedReceipt(
+  receipt: Receipt,
+  refresh: readonly string[],
+  stepGates: Record<string, number>,
+  to: string,
+  step: Advance
+): Receipt & { advances: Advance[] } {
+  return {
+    ...receipt,
+    gates: refreshCarried(receipt.gates, refresh, stepGates, to),
+    advances: [...((receipt.advances as Advance[] | undefined) ?? []), step],
+  };
+}
+
 /**
  * Whether a `--quick` run may ADVANCE the receipt instead of running the lane: the receipt on disk is whole and names a tree, HEAD has moved from the end of its chain, every path that moved lies inside the record set, and no gate the receipt lists as failed reads a record that moved. A red receipt stays red across the advance (`advanceExit`); the step only spares the lane. Pure, so the selftest drives every refusal; the caller supplies the diff and the policy.
  */
@@ -4525,7 +4575,13 @@ function planAdvance(input: {
   if (typeof r.headTree !== 'string' || r.headTree === '')
     return { kind: 'full', why: 'the receipt vouches for no tree' };
   // A RED RECEIPT ADVANCES ONLY PAST RECORDS ITS REDS DO NOT READ (operator ruling 2026-11-16, judged below once the readers are known). A red with no `failed` list names nothing to compare the readers with, so it runs the lane.
-  const failed = Array.isArray(r.failed) ? r.failed.filter((g) => typeof g === 'string') : [];
+  // A `failed` that is present but not a list of ids is a damaged receipt: reading it as an empty list would advance a receipt that may be red.
+  if (
+    r.failed !== undefined &&
+    (!Array.isArray(r.failed) || r.failed.some((g) => typeof g !== 'string'))
+  )
+    return { kind: 'full', why: "the receipt's failed list is not a list of gate ids" };
+  const failed = Array.isArray(r.failed) ? r.failed : [];
   if (r.exitCode !== 0 && failed.length === 0)
     return {
       kind: 'full',
@@ -4657,11 +4713,7 @@ async function runAdvance(
   };
   try {
     const priorAdvances = receipt.advances as Advance[] | undefined;
-    const advanced = {
-      ...receipt,
-      gates: refreshCarried(receipt.gates, plan.refresh, gates, plan.to),
-      advances: [...(priorAdvances ?? []), step],
-    };
+    const advanced = advancedReceipt(receipt, plan.refresh, gates, plan.to, step);
     fs.writeFileSync(dest, `${JSON.stringify(advanced, null, 2)}\n`);
     const refreshed = plan.refresh.filter((id) => gates[id] === 0);
     if (refreshed.length > 0)
