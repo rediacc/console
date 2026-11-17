@@ -1441,6 +1441,9 @@
     "run": "npm run check:ci-guard-mutations",
     "slow": true,
     "gate": true,
+    "needs": [
+      "build:packages"
+    ],
     "heavy": true,
     "mutex": [
       "tree:repo"

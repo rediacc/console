@@ -1414,6 +1414,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-guard-mutations',
     slow: true, // 25.4s measured
     gate: true,
+    needs: ['build:packages'],
     // NO WIDTH DECLARED (PF5, 2026-10-05): `weight: 2` retired for the measured cpu/wall. Each mutant runs `vitest run` on ONE test file, so a worker knob would buy nothing.
     heavy: true,
     // check:ci-gate-tree-writes V11. The sandbox sits INSIDE packages/cli so its copies resolve the workspace's node_modules; a temp mirror with a node_modules link is the real fix.

@@ -64,6 +64,56 @@
     {
       "id": "check:ci-timeout-headroom",
       "reason": "Judges the age of its baseline against the wall clock (dt.datetime.now in check_job_timeout_headroom.py), so its verdict moves as the calendar advances at an identical tree."
+    },
+    {
+      "id": "check:deps",
+      "reason": "Asks the npm registry (npm outdated and registry.npmjs.org packuments, check-deps.ts:753) for every dependency, so its verdict moves when a package is published with no tracked input changed.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-devcontainer-pins",
+      "reason": "Asks api.github.com for the releases of each devcontainer pin source (check-devcontainer-pin-freshness.ts:61), so a new upstream release turns it red at an identical tree.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-bws-map-live",
+      "reason": "Lists the live Bitwarden store through the bws CLI (bws_map_live.py:142,164) and compares names with bws-secret-map.json, so a secret deleted upstream flips it with no tracked input changed.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-pr-epic-block",
+      "reason": "Reads the PR body through gh pr view (check-pr-epic-block.ts:288), so an edit to the PR description flips the verdict with the tree byte-identical.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-docker-image-freshness",
+      "reason": "Asks hub.docker.com for each pinned image's tags and push times (check-docker-image-freshness.ts:298,336) and judges them against Date.now() (:965), so a new upstream push or the calendar flips it at an identical tree.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-i18n-www-translation-freshness",
+      "reason": "Diffs each translation's English source against the blob at the sourceCommit named in its frontmatter (validate-translation-freshness.js:149, getFileAtCommit), so the verdict depends on which commits the checkout holds, not on tracked file bytes alone.",
+      "kind": "history"
+    },
+    {
+      "id": "check:ci-renet-types",
+      "reason": "Stamps the generated types with `git describe --tags --always` (renet_types.py:124), so tags and history reach the verdict beyond the hashed files.",
+      "kind": "history"
+    },
+    {
+      "id": "check:ci-resprofile",
+      "reason": "Fails past a sunset 30 days after seeding (check_resprofile.py:62,196, time.time) and judges the previous run's untracked captures, so its verdict moves with the calendar at an identical tree.",
+      "kind": "clock"
+    },
+    {
+      "id": "check:ci-go-deps",
+      "reason": "Ages blocklist entries and the release-age window against the wall clock (go_deps.py:257-258, agecheck.entry_age_days and verdict) on top of live go list -u and OSV answers, so the calendar flips it at an identical tree.",
+      "kind": "clock"
+    },
+    {
+      "id": "check:ci-security-audit",
+      "reason": "Refuses allowlist entries older than AGE_FAIL_DAYS and defers advisories by release age (audit.py:12-13, :23) over live npm audit answers, so the calendar flips it at an identical tree.",
+      "kind": "clock"
     }
   ]
 }
