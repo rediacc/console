@@ -212,6 +212,17 @@ pathlib.Path(FIXTURE_DIR, "label_escaped.py").write_text(
     + 'os.system("git " + sys.argv[1])\n',
     encoding="utf-8",
 )
+# Review ddb9aaf0.2: a command spelled with escaped tabs is one raw word, and counting the escapes as breaks lets it reach `_prose_literal`; it holds `git` and a verb, so it still licenses the fill.
+pathlib.Path(FIXTURE_DIR, "label_escaped_cmd.py").write_text(
+    PROSE_BUILT.replace(PROSE_LABEL, 'CASES = ["git\\tworktree\\tadd"]\n')
+    + 'os.system("git " + sys.argv[1])\n',
+    encoding="utf-8",
+)
+ESCAPED_CMD_ROW = (
+    "an escaped-tab command literal beside a built git command",
+    "python3 %s/label_escaped_cmd.py x" % FIXTURE_DIR,
+)
+REFUSED.append(ESCAPED_CMD_ROW)
 TWO_WORD_ROW = (
     "a two-word literal naming the tree beside a built git command",
     "python3 %s/label_two_words.py x" % FIXTURE_DIR,
@@ -894,6 +905,11 @@ REVERSE = [
         "an escaped line break is not a word break",
         ('text = ESCAPED_SPACE.sub(" ", tok.string)', "text = tok.string"),
         ESCAPED_ROW,
+    ),
+    (
+        "an escaped command literal reads as prose",
+        ("return len(words) >= 3 and not PROSE_BAR & set(words)", "return len(words) >= 3"),
+        ESCAPED_CMD_ROW,
     ),
     (
         "a prose string licenses the built-string fill",
