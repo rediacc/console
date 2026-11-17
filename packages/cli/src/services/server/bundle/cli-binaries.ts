@@ -2,7 +2,8 @@
  * `rdc server bundle --with-cli <platform,...>`: the SEA binaries of this CLI's own version, for the
  * machines an air-gapped install reaches that have no `rdc`. Each one is fetched from the release
  * channel (`<base>/v<version>/rdc-<platform>`, checksum beside it at `<url>.sha256`, the layout
- * install.sh reads), verified, and written to `cli/<platform>/rdc` (`rdc.exe` on Windows).
+ * install.sh reads), checked against that checksum, and written to `cli/<platform>/rdc` (`rdc.exe` on Windows).
+ * The checksum comes from the same release host as the binary, so the check catches corruption in transit, not a binary the host itself substituted.
  */
 
 import { join } from 'node:path';

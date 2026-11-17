@@ -93,7 +93,7 @@ Open a shell on a machine, or inside a repository with its Docker set up.
 - `--external`: Force launching in external terminal window
 - `--reset-home`: Reset per-repo home overlay for a fresh start
 
-> agent: fork-only
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ## Infrastructure
 
@@ -753,7 +753,7 @@ Copy repository images from a machine to a local directory or an external drive.
 - `--at <time|snapshot>`: With --store, the snapshot to fetch: a time (ISO 8601) or a snapshot id (default: the newest)
 - `--from <storeId>`: With --store, read from this backup store instead of the best-ranked one; it never falls back to another store
 
-> agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
 
 ### rdc backup upload <image-file>
 
@@ -771,7 +771,7 @@ Send a local repository image, made by 'rdc backup download', to a machine and r
 - `--skip-verify`: Skip comparing the local image with the sha256 recorded when it was downloaded
 - `--debug`: Enable debug output
 
-> agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
 
 ### rdc backup restore <artifact-ref>
 
@@ -796,7 +796,7 @@ Turn a backup artifact into a live repository. Placement is stated here.
 - `-y, --yes`: Skip confirmation prompt
 - `--debug`: Enable debug output
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc backup purge [repo-ref]
 
@@ -809,7 +809,7 @@ Delete every stored backup snapshot of a repository from the chunk store at once
 - `-y, --yes`: Skip confirmation prompt
 - `--cancel`: Cancel a delayed purge before it takes effect
 
-> agent: fork-only | MCP excluded: Deletes every stored snapshot of a repository at once; a wrong call discards all of its backups.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Deletes every stored snapshot of a repository at once; a wrong call discards all of its backups.
 
 ### rdc cluster create <cluster>
 
@@ -1154,7 +1154,7 @@ Delete a repository and its data. A fork's config entry moves to deletedReposito
 - `--skip-router-restart`: Skip restarting the route server after binary update
 - `--dry-run`: Show what would be done without making changes
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo up [ref]
 
@@ -1176,7 +1176,7 @@ Deploy or update a repository (mount, run Rediaccfile up which calls renet compo
 - `--skip-router-restart`: Skip restarting the route server after binary update
 - `--dry-run`: Show what would be done without making changes
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo down [ref]
 
@@ -1195,7 +1195,7 @@ Stop repository Docker containers (runs Rediaccfile down via renet compose). The
 - `--skip-router-restart`: Skip restarting the route server after binary update
 - `--dry-run`: Show what would be done without making changes
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo status <ref>
 
@@ -1306,7 +1306,7 @@ Freeze the current state of a mounted working fork into a new immutable commit (
 - `--author <author>`: Commit author
 - `--debug`: Enable debug output
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo branch <ref>
 
@@ -1316,7 +1316,7 @@ Create a named branch ref pointing at the working fork's current commit (its tip
 
 - `--branch <branch>`: Name of the new branch
 
-> agent: fork-only | MCP excluded: Config-only ref operation: use CLI directly
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Config-only ref operation: use CLI directly
 
 ### rdc repo checkout <commit-or-branch-ref>
 
@@ -1329,7 +1329,7 @@ Reflink-clone an immutable commit (or a branch tip) into a fresh writable workin
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo log <ref>
 
@@ -1353,7 +1353,7 @@ Merge a source commit or fork into a target working fork. The live target is nev
 - `--base <guid>`: Common-ancestor commit GUID for a three-way merge (used with --resolve). Defaults to the source commit's parent or the target's current commit.
 - `--debug`: Enable debug output
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo admin archive list
 
@@ -1395,7 +1395,7 @@ Validate repository integrity (LUKS container, filesystem consistency, configura
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | MCP excluded: Use repo status for MCP.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Use repo status for MCP.
 
 ### rdc repo admin autostart enable [ref]
 
@@ -1406,7 +1406,7 @@ Enable autostart for a repository (omit name to enable all)
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | fork-blocked
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | fork-blocked
 
 ### rdc repo admin autostart disable [ref]
 
@@ -1417,7 +1417,7 @@ Disable autostart for a repository (omit name to disable all)
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | fork-blocked
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | fork-blocked
 
 ### rdc repo admin autostart list
 
@@ -1442,7 +1442,7 @@ Change repository directory ownership UID on the mounted volume (default: 7111).
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | MCP excluded: Destructive ownership transfer.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Destructive ownership transfer.
 
 ### rdc repo admin template list
 
@@ -1462,7 +1462,7 @@ Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique 
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | MCP excluded: Requires file upload; use CLI directly.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Requires file upload; use CLI directly.
 
 ### rdc repo admin orphan list <machine>
 
@@ -1483,7 +1483,7 @@ Delete one orphan repository image by GUID. A GUID that any config names is refu
 - `--dry-run`: Show what would be done without making changes
 - `--debug`: Enable debug output
 
-> agent: fork-only
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo gc
 
@@ -1507,7 +1507,7 @@ Make a validated fork the production repository under its parent name. The paren
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | MCP excluded: Production swap; human decision.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Production swap; human decision.
 
 ### rdc repo resize <ref>
 
@@ -1519,7 +1519,7 @@ Resize a repository offline (supports both grow and shrink). Repo must be unmoun
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | fork-blocked | MCP excluded: Disk resize: destructive infrastructure operation, use CLI directly
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | fork-blocked | MCP excluded: Disk resize: destructive infrastructure operation, use CLI directly
 
 ### rdc repo expand <ref>
 
@@ -1531,7 +1531,7 @@ Expand a mounted repository online (zero downtime, grow-only). Grows the LUKS co
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | fork-blocked | MCP excluded: Storage expansion: destructive infrastructure operation, use CLI directly
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | fork-blocked | MCP excluded: Storage expansion: destructive infrastructure operation, use CLI directly
 
 ### rdc repo trim [ref]
 
@@ -1561,7 +1561,7 @@ Classify a repository's Docker storage and reclaim it: unused images, build cach
 - `-m, --machine <name>`: Target machine name
 - `--debug`: Enable debug output
 
-> agent: fork-only | MCP excluded: Reclaims Docker storage and, with --offline, stops the repository's Docker daemon. Use the CLI directly.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Reclaims Docker storage and, with --offline, stops the repository's Docker daemon. Use the CLI directly.
 
 ### rdc repo policy set [ref]
 
@@ -1612,7 +1612,7 @@ Push repository to another machine. Storage destinations are retired; use `rdc b
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo pull <ref>
 
@@ -1630,7 +1630,7 @@ Pull repository from another machine. Storage sources are retired; use `rdc back
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo migrate <ref>
 
@@ -1648,7 +1648,7 @@ Live-migrate a repository from one machine to another with minimal downtime. Two
 - `--keep-source`: Keep the source images after a successful move (by default they are deleted; leftover copies are not addressable by any config record and reconcile flags them as strays)
 - `--debug`: Enable debug output
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo replicate <ref>
 
@@ -1665,7 +1665,7 @@ Create N read replicas of a repository in seconds, regardless of database size. 
 - `--refresh <interval>`: Intended refresh interval recorded on the set (e.g. 1h); run 'repo replicate refresh' to roll it
 - `--debug`: Enable debug output
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo replicate status <ref>
 
@@ -1681,7 +1681,7 @@ Remove a replica set: delete its generated k8s objects (label-scoped), discard i
 
 - `--debug`: Enable debug output
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo replicate refresh <ref>
 
@@ -1691,7 +1691,7 @@ Roll every replica onto a fresh point-in-time snapshot, ONE at a time: bounce th
 
 - `--debug`: Enable debug output
 
-> agent: fork-only | MCP excluded: Rolling replica re-clone. The re-fork path is where a missing LUKS re-open would empty the whole replica set (bug #49), and it has never been exercised on a live cluster.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Rolling replica re-clone. The re-fork path is where a missing LUKS re-open would empty the whole replica set (bug #49), and it has never been exercised on a live cluster.
 
 ### rdc repo canary create <ref>
 
@@ -1706,7 +1706,7 @@ Run a NEW image next to the stable one and send it a percentage of live traffic.
 - `--replicas <n>`: Canary Deployment replica count (default: 1)
 - `--debug`: Enable debug output
 
-> agent: fork-only | MCP excluded: Runs a new image against the primary's SHARED LIVE DATA. The replicate probe validates a different mechanism and says nothing about this one.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Runs a new image against the primary's SHARED LIVE DATA. The replicate probe validates a different mechanism and says nothing about this one.
 
 ### rdc repo canary status <ref>
 
@@ -1723,7 +1723,7 @@ Change the percent of traffic routed to a canary. Takes a fresh release-undo gro
 - `--weight <percent>`: Percent of traffic routed to the canary (integer 0-100; 0 = dark, 100 = full flip)
 - `--debug`: Enable debug output
 
-> agent: fork-only | MCP excluded: Shifts REAL PRODUCTION TRAFFIC between versions. A release decision belongs to the operator, and the weighted split has never been observed working on a live machine (bug #42 made it inert until today).
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Shifts REAL PRODUCTION TRAFFIC between versions. A release decision belongs to the operator, and the weighted split has never been observed working on a live machine (bug #42 made it inert until today).
 
 ### rdc repo canary remove <ref>
 
@@ -1733,7 +1733,7 @@ Remove a canary's Deployment and Service (label-scoped); the stable Service serv
 
 - `--debug`: Enable debug output
 
-> agent: fork-only | MCP excluded: Tears down a canary that is taking live traffic. Excluded with the family it belongs to.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Tears down a canary that is taking live traffic. Excluded with the family it belongs to.
 
 ### rdc repo sync upload <ref>
 
@@ -1750,7 +1750,7 @@ Upload files to a repository via rsync over SSH (delta transfer). Use --mirror t
 - `--exclude <patterns...>`: Patterns to exclude from sync
 - `--dry-run`: Show what would be done without making changes
 
-> agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
 
 ### rdc repo sync download <ref>
 
@@ -1767,7 +1767,7 @@ Download files from a repository via rsync over SSH (delta transfer). Use --mirr
 - `--exclude <patterns...>`: Patterns to exclude from sync
 - `--dry-run`: Show what would be done without making changes
 
-> agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
 
 ### rdc repo sync status <ref>
 
@@ -1806,7 +1806,7 @@ Run a command inside a repository container. The command's own exit code is pass
 - `-u, --user <user>`: User to run the command as
 - `--debug`: Enable debug output
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo tunnel <ref>
 
@@ -1819,7 +1819,7 @@ Create an SSH port-forward tunnel to a container's port on a remote machine. Aut
 - `--local <port>`: Local port (defaults to same as remote port)
 - `--url-only`: Print only the local URL once the tunnel is ready (machine-readable)
 
-> agent: fork-only | MCP excluded: Interactive SSH tunnel: blocks until Ctrl+C
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Interactive SSH tunnel: blocks until Ctrl+C
 
 ### rdc repo secret get <ref>
 
@@ -2274,7 +2274,7 @@ Open VS Code on a machine or inside a repository.
 - `--server-provider <id>`: Browser VS Code server implementation (openvscode, code-server)
 - `--server-archive <file>`: Pre-staged server tarball path on the machine (airgapped installs)
 
-> agent: fork-only
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc vscode serve status <target>
 

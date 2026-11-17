@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const ORPHAN = '260f0a05-1111-4222-8333-444455556666';
 const KNOWN = 'b9521afd-0cbd-4481-92ed-f798268a69dd';
+const SECOND_ORPHAN = '7a1c2d3e-5555-4666-8777-888899990000';
 
 const mocks = vi.hoisted(() => ({
   format: 'json' as 'json' | 'table' | 'yaml',
@@ -13,6 +14,8 @@ const mocks = vi.hoisted(() => ({
   /** Per-GUID machine state the `list all` probe reports for `--orphaned-repos` (mounted, docker_running). */
   deployedState: {} as Record<string, Record<string, unknown>>,
   deleteFails: false,
+  /** GUIDs whose delete renet refuses while the others succeed. */
+  failGuids: [] as string[],
   events: [] as string[],
   sshEntries: [] as string[],
 }));
@@ -30,7 +33,8 @@ vi.mock('../../services/executor/executor-factory.js', () => ({
       if (req.functionName === 'repository_delete') {
         mocks.deletes.push(String(req.params?.repository));
         mocks.events.push(`delete:${String(req.params?.repository)}`);
-        if (mocks.deleteFails) return Promise.resolve({ success: false, error: 'renet refused' });
+        if (mocks.deleteFails || mocks.failGuids.includes(String(req.params?.repository)))
+          return Promise.resolve({ success: false, error: 'renet refused' });
       }
       return Promise.resolve({ success: true });
     },
@@ -106,6 +110,7 @@ beforeEach(() => {
   mocks.deployed = [KNOWN, ORPHAN];
   mocks.deployedState = {};
   mocks.deleteFails = false;
+  mocks.failGuids = [];
   process.exitCode = undefined;
   mocks.events = [];
   mocks.sshEntries = [];
@@ -238,6 +243,18 @@ describe('machine prune output', () => {
     mocks.deleteFails = false;
     await run('--prune-unknown');
     expect(success).toHaveBeenCalledWith(expect.stringContaining('1 unknown repo'));
+  });
+
+  it('counts one deleted orphan, not both, when renet refuses the other under --orphaned-repos', async () => {
+    mocks.format = 'json';
+    mocks.deployed = [KNOWN, ORPHAN, SECOND_ORPHAN];
+    mocks.failGuids = [SECOND_ORPHAN];
+    const success = vi.spyOn(outputService, 'success');
+    await run('--orphaned-repos');
+    expect(mocks.deletes).toEqual([ORPHAN, SECOND_ORPHAN]);
+    expect(success).toHaveBeenCalledWith(expect.stringContaining('1 orphaned repo'));
+    expect(success).not.toHaveBeenCalledWith(expect.stringContaining('2 orphaned repo'));
+    expect(process.exitCode).toBe(1);
   });
 
   it('exits zero when every orphan delete succeeds', async () => {

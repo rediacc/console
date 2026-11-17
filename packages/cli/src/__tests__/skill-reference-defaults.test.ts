@@ -33,6 +33,22 @@ describe('generate-skill-reference option defaults', () => {
     expect(headings).not.toContain('### rdc config');
   }, 120_000);
 
+  it('labels a grand-guarded command with its REDIACC_ALLOW_GRAND_REPO and ops VM exits, never the bare fork-only', () => {
+    const out = execFileSync('npx', ['tsx', GENERATOR], {
+      cwd: CLI_DIR,
+      encoding: 'utf8',
+      maxBuffer: 32 * 1024 * 1024,
+    });
+    const lines = out.split('\n');
+    const at = lines.indexOf('### rdc repo admin orphan delete <ref>');
+    expect(at).toBeGreaterThan(-1);
+    const label = lines.slice(at).find((line) => line.startsWith('> '));
+    expect(label).toContain('REDIACC_ALLOW_GRAND_REPO');
+    expect(label).toContain('ops VMs exempt');
+    // Control: no annotation line is the bare label that understated what an agent can do.
+    expect(lines).not.toContain('> agent: fork-only');
+  }, 120_000);
+
   it('the committed .claude/skills/rdc/reference.md is current', () => {
     // --check exits 3 when the committed reference differs from the render, so execFileSync throws and the test fails.
     execFileSync('npx', ['tsx', GENERATOR, '--check'], {

@@ -78,6 +78,29 @@ describe('release host', () => {
     await expect(release.fetchText(URL)).rejects.toThrow(/cliDownloadFailed.*ECONNRESET/);
   });
 
+  it('bounds every request by the 600 s timeout and names the url when it fires', async () => {
+    const timeout = vi
+      .spyOn(AbortSignal, 'timeout')
+      .mockReturnValue(
+        AbortSignal.abort(new DOMException('timed out after 600000 ms', 'TimeoutError'))
+      );
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init?: RequestInit) =>
+        init?.signal?.aborted
+          ? Promise.reject(init.signal.reason)
+          : Promise.resolve(new Response('late'))
+      )
+    );
+    await expect(release.fetchText(URL)).rejects.toThrow(
+      /cliDownloadFailed.*timed out after 600000 ms/
+    );
+    expect(timeout).toHaveBeenCalledWith(600_000);
+    timeout.mockRestore();
+    // Control: without the abort the same stub answers.
+    await expect(release.fetchText(URL)).resolves.toBe('late');
+  });
+
   it('names the url and removes the partial file when the body fails mid-stream', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(brokenBody('part'))));
     const dest = join(dir, 'rdc');

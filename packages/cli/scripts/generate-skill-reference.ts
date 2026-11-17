@@ -128,7 +128,9 @@ function collectAnnotations(meta: CommandMeta): string[] {
   const AGENT_BLOCKED_LABEL = 'agent: BLOCKED';
   if (meta.agentBlocked) annotations.push(AGENT_BLOCKED_LABEL);
   if (meta.mcp) annotations.push('MCP tool');
-  const FORK_ONLY_LABEL = 'agent: fork-only';
+  // An agent still reaches a grand with REDIACC_ALLOW_GRAND_REPO set by the operator, and an ops VM is exempt (command-policy.ts), so the label names both.
+  const FORK_ONLY_LABEL =
+    'agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)';
   if (meta.grandGuard) annotations.push(FORK_ONLY_LABEL);
   if (meta.forkBlocked) annotations.push('fork-blocked');
   if (meta.mcpExcludeReason) annotations.push(`MCP excluded: ${meta.mcpExcludeReason}`);
