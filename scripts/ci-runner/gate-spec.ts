@@ -94,6 +94,18 @@ export interface GateSpec {
   /** Repo-relative globs this gate validates; powers --changed. */
   paths?: string[];
   /**
+   * Tracked directories whose LISTING this gate reads ('' is the root), not their content: each immediate tracked child enters the input hash as `list\t<dir>\t<child>\t<kind>` (scripts/ci-runner/input-hash.ts). A new, removed or renamed child moves the hash; an edit to a child does not. A gate declaring `lists` or `names` is not whole-tree even with no `paths`. Requires `pathsOrigin`, and each directory must hold a tracked file (`check:ci-paths-origin`).
+   */
+  lists?: string[];
+  /**
+   * Globs (the `paths` grammar) whose matching tracked NAMES this gate reads, not their bytes: each match enters the input hash as `name\t<mode>\t<path>`. The shape of a `git ls-files` scan. Requires `pathsOrigin`, and each glob must match a tracked file.
+   */
+  names?: string[];
+  /**
+   * Ref names (`HEAD`, `origin/main`) whose commit this gate's verdict depends on: each enters the input hash as `ref\t<name>\t<sha>`, and a ref resolving to nothing leaves the gate uncarriable (`ref-unresolved:<name>`). Does not scope the gate: a gate with only `refs` still reads the whole tree.
+   */
+  refs?: string[];
+  /**
    * Required whenever `paths` is present; refused otherwise (cardinality
    * equality, both directions -- `check:ci-paths-origin`). `'declared'` means a
    * human enumerated the globs by hand, and each one is asserted to match at

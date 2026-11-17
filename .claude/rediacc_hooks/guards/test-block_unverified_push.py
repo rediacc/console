@@ -1868,6 +1868,127 @@ def test_v2_whole_tree_carry():
     )
 
 
+def test_v2_name_inputs():
+    """PLAN-ciquick-cpu W2.4: a carried gate recording `lists`, `names` or `refs` is recomputed with those lines at the pushed tree. A new child of a listed directory, or a new names match, voids the carry; an edit to a listed child's content does not; a new HEAD voids a refs: [HEAD] carry and nothing else; a ref that resolves to nothing is refused by name."""
+    root = pathlib.Path(RUN_TMP) / "v2-name-inputs"
+    root.mkdir()
+
+    def wgit(*a):
+        return subprocess.run(
+            ["git", "-C", str(root), *a], capture_output=True, text=True, check=True, env=GM._env()
+        ).stdout.strip()
+
+    def lk(gid, **kw):
+        return {"id": gid, "run": "npm run " + gid, "gate": True, "leaves": [], **kw}
+
+    gl = {
+        "check:lists": lk("check:lists", paths=["docs.txt"], pathsOrigin="declared", lists=["src"]),
+        "check:names": lk("check:names", names=["src/**"], pathsOrigin="traced"),
+        "check:refs": lk("check:refs", paths=["docs.txt"], pathsOrigin="declared", refs=["HEAD"]),
+        "check:noref": lk("check:noref", refs=["refs/heads/nope"]),
+    }
+    scripts = {gid: "echo " + gid for gid in gl}
+    wgit("init", "--initial-branch=main", "-q")
+    (root / "src").mkdir()
+    (root / "src" / "a.txt").write_text("a\n", encoding="utf-8")
+    (root / "docs.txt").write_text("n\n", encoding="utf-8")
+    (root / "package.json").write_text(json.dumps({"scripts": scripts}), encoding="utf-8")
+    GM._write_fixture_lock(root, [*GM.FIXTURE_LOCK, *gl.values()])
+    wgit("add", "-A")
+    wgit("commit", "-q", "-m", "A")
+    tree = wgit("rev-parse", "HEAD^{tree}")
+    entries = GM.v2_ls_tree(str(root), tree)
+    head = wgit("rev-parse", "HEAD")
+
+    def carried(gid, globs):
+        g = gl[gid]
+        named = {f: g[f] for f in ("lists", "names", "refs") if f in g}
+        inputs = {"globs": globs, "files": [], "scripts": [gid], **named}
+        extras, _ = GM.v2_extra_lines(
+            entries,
+            g.get("lists", []),
+            g.get("names", []),
+            g.get("refs", []),
+            resolve=lambda r: head if r == "HEAD" else "f" * 40,
+        )
+        return GM._gate_entry(
+            "ok",
+            inputHash="fixture-hash",
+            defHash=GM.v2_def_hash(g, {gid: scripts[gid]}),
+            filesHash=GM.v2_files_hash(GM.v2_input_lines(entries, globs, []), extras),
+            inputs=inputs,
+            judgedTree=tree,
+        )
+
+    gates = {
+        "check:fixture-ok": GM._gate_entry("ok"),
+        "check:fixture-cionly": GM._gate_entry("ciOnly"),
+        "check:lists": carried("check:lists", ["docs.txt"]),
+        "check:names": carried("check:names", []),
+        "check:refs": carried("check:refs", ["docs.txt"]),
+        "check:noref": carried("check:noref", ["**"]),
+    }
+    origin = {"headTree": tree, "whole": True, "exitCode": 0, "failed": [], "gates": gates}
+    archive = root / ".ci" / "cache" / "receipts"
+    archive.mkdir(parents=True)
+    (archive / ("%s.json" % tree)).write_text(json.dumps(origin), encoding="utf-8")
+    src = {"headTree": tree, "head": "x", "finishedAt": "now"}
+
+    def receipt(carry):
+        g = {k: (dict(v, carriedFrom=src) if k in carry else v) for k, v in gates.items()}
+        return dict(origin, schema=GM.RECEIPT_SCHEMA, gates=g, droppedTouched=[])
+
+    three = ("check:lists", "check:names", "check:refs")
+    cases.append(
+        (
+            "",
+            GM.v2_verdict(str(root), tree, receipt(three)),
+            "NAMES: lists, names and refs carry at the identical tree and HEAD",
+        )
+    )
+    why = GM.v2_verdict(str(root), tree, receipt(("check:noref",)))
+    cases.append(
+        (
+            True,
+            "check:noref" in why and "refs/heads/nope" in why and "resolves to no commit" in why,
+            "NAMES: a carried ref that resolves to nothing is refused by name: %s" % why,
+        )
+    )
+    # An edit to the content of a listed child: new tree, new HEAD. lists and names still carry.
+    (root / "src" / "a.txt").write_text("edited\n", encoding="utf-8")
+    wgit("commit", "-q", "-am", "B")
+    edited = wgit("rev-parse", "HEAD^{tree}")
+    cases.append(
+        (
+            "",
+            GM.v2_verdict(str(root), edited, receipt(("check:lists", "check:names"))),
+            "NAMES: an edit to an unread listed child keeps the lists and names carries",
+        )
+    )
+    why = GM.v2_verdict(str(root), edited, receipt(("check:refs",)))
+    cases.append(
+        (
+            True,
+            "check:refs" in why and "filesHash" in why,
+            "NAMES: a new HEAD voids a refs: [HEAD] carry: %s" % why,
+        )
+    )
+    # A new child of the listed directory.
+    (root / "src" / "new.txt").write_text("n\n", encoding="utf-8")
+    wgit("add", "-A")
+    wgit("commit", "-q", "-m", "C")
+    added = wgit("rev-parse", "HEAD^{tree}")
+    for gid in ("check:lists", "check:names"):
+        why = GM.v2_verdict(str(root), added, receipt((gid,)))
+        cases.append(
+            (
+                True,
+                gid in why and "filesHash" in why,
+                "NAMES: a new file in the listed directory voids the %s carry: %s" % (gid, why),
+            )
+        )
+
+
 def test_v2_helpers():
     cases.append((True, GM.v2_match_glob("src/**", "src/a/b.ts"), "GLOB: ** crosses /"))
     cases.append((False, GM.v2_match_glob("src/*", "src/a/b.ts"), "GLOB: * does not cross /"))
@@ -1914,6 +2035,81 @@ def test_v2_helpers():
             GM.v2_files_hash(lines),
             GM.v2_files_hash(list(reversed(lines))),
             "FILES: the hash does not depend on input order",
+        )
+    )
+    cases.append(
+        (
+            lines,
+            GM.v2_input_lines(entries, ["src/**", "private/x/**"], []),
+            "FILES: a `<gitlink>/**` glob reaches the gitlink entry, as input-hash.ts entryMatches does",
+        )
+    )
+    cases.append(
+        (
+            manual,
+            GM.v2_files_hash(lines, []),
+            "FILES: no name-shaped extras is the pre-W2.4 preimage byte for byte",
+        )
+    )
+    tree_entries = [
+        ("100644", "blob", "a" * 40, "d/f"),
+        ("100755", "blob", "a" * 40, "d/x"),
+        ("100644", "blob", "a" * 40, "d/s/deep"),
+        ("100644", "blob", "a" * 40, "d/s/deeper"),
+        ("160000", "commit", "c" * 40, "d/sub"),
+        ("100644", "blob", "a" * 40, "dd/f"),
+    ]
+    cases.append(
+        (
+            [
+                "list\td\tf\t100644",
+                "list\td\tx\t100755",
+                "list\td\ts\ttree",
+                "list\td\tsub\tcommit",
+            ],
+            GM.v2_list_lines(tree_entries, ["d"]),
+            "LISTS: one line per immediate child with its kind; dd/ is not a child of d",
+        )
+    )
+    cases.append(
+        (
+            ["list\t\td\ttree", "list\t\tdd\ttree"],
+            GM.v2_list_lines(tree_entries, [""]),
+            "LISTS: '' lists the root",
+        )
+    )
+    extras, unresolved = GM.v2_extra_lines(
+        tree_entries, ["d"], ["d/s/*"], ["HEAD"], resolve=lambda _r: "e" * 40
+    )
+    cases.append(
+        (
+            (True, None),
+            (
+                "name\t100644\td/s/deep" in extras and ("ref\tHEAD\t" + "e" * 40) in extras,
+                unresolved,
+            ),
+            "EXTRA: names and refs lines are built, nothing unresolved",
+        )
+    )
+    cases.append(
+        (
+            GM.v2_files_hash(lines, extras),
+            GM.v2_files_hash(lines, list(reversed(extras)) + extras[:1]),
+            "EXTRA: the hash does not depend on extras order or duplicates",
+        )
+    )
+    cases.append(
+        (
+            True,
+            GM.v2_files_hash(lines, extras) != GM.v2_files_hash(lines),
+            "EXTRA: extras move the hash",
+        )
+    )
+    cases.append(
+        (
+            "refs/heads/nope",
+            GM.v2_extra_lines(tree_entries, refs=["refs/heads/nope"], resolve=lambda _r: None)[1],
+            "EXTRA: an unresolved ref is reported, not folded into an empty line",
         )
     )
     cases.append(
@@ -2266,6 +2462,7 @@ test_v2_planted_input_change_refuses()
 test_v2_carried_red_never_green()
 test_v1_receipt_refused()
 test_v2_whole_tree_carry()
+test_v2_name_inputs()
 test_v2_helpers()
 
 

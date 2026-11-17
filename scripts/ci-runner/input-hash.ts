@@ -10,6 +10,12 @@
  * A GATE THAT DECLARES NO `paths` READS THE WHOLE TREE, so its input glob is `**` and its hash moves on any tracked change: it carries only across an identical tree. That is what `paths` absent has always meant to `--changed` and to quick-select's rule 4 (any change may reach it). The guard needs no second rule, because it recomputes `filesHash` from the recorded `inputs` at the pushed tree, `**` included. 343 of 392 gates declare no paths, so before this a re-run at an unchanged HEAD carried 31 gates and re-ran the rest.
  *
  * `ls-tree` is read with `-z` so a path is never quoted; for every path git does not quote the bytes are the same as the plain form.
+ *
+ * NAME-SHAPED INPUTS (PLAN-ciquick-cpu W2.4). A gate may declare three optional fields beside `paths`, each read without file content:
+ *   - `lists`: tracked directories ('' is the root). Each immediate tracked child contributes `list\t<dir>\t<child>\t<kind>`, kind being the blob mode (`100644|100755|120000`), `tree` for a subdirectory, or `commit` for a gitlink. An add, a removal, a rename or a mode flip moves the hash; an edit to a child's content does not.
+ *   - `names`: globs in the `paths` grammar. Each matching tracked entry contributes `name\t<mode>\t<path>`: the set of names, not their bytes.
+ *   - `refs`: ref names (`HEAD`, `origin/main`). Each contributes `ref\t<name>\t<sha>`, the commit it resolves to in the checkout; a ref that resolves to nothing makes the hash null (`ref-unresolved:<name>`), never a quiet empty line.
+ * These EXTRA lines are deduplicated, sorted by their whole UTF-8 bytes, and appended to the files preimage after an `extra\n` marker (`filesHash`). A gate declaring none of the three has no extra lines, so its preimage, and every hash built on it, is byte-identical to the contract before W2.4. A gate that declares `lists` or `names` and no `paths` is NOT whole-tree: it reads those names plus the GLOBAL_INPUTS. `refs` alone does not scope a gate, because a ref is not a tree read. block_unverified_push.py (`v2_extra_lines`, `v2_files_hash`) implements the same bytes.
  */
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -113,11 +119,120 @@ export function defHash(entry: unknown, scripts: Record<string, string>): string
   return sha(`def\n${canon(entry)}\n${canon(scripts)}`);
 }
 
-/** `lines` are `<mode> <oid>\t<path>`; sorted by path bytes, each terminated by `\n`. */
-export function filesHash(lines: string[]): string {
+/**
+ * `lines` are `<mode> <oid>\t<path>`; sorted by path bytes, each terminated by `\n`. `extras` are the name-shaped lines (`list`, `name`, `ref`): deduplicated, sorted by their whole bytes, and appended after `extra\n`. With no extras the preimage is exactly the pre-W2.4 one.
+ */
+export function filesHash(lines: string[], extras: readonly string[] = []): string {
   const keyed = lines.map((l) => ({ l, k: Buffer.from(l.slice(l.indexOf('\t') + 1), 'utf8') }));
   keyed.sort((a, b) => Buffer.compare(a.k, b.k));
-  return sha(`files\n${keyed.map((x) => `${x.l}\n`).join('')}`);
+  const base = `files\n${keyed.map((x) => `${x.l}\n`).join('')}`;
+  if (extras.length === 0) return sha(base);
+  const sorted = [...new Set(extras)]
+    .map((l) => ({ l, k: Buffer.from(l, 'utf8') }))
+    .sort((a, b) => Buffer.compare(a.k, b.k));
+  return sha(`${base}extra\n${sorted.map((x) => `${x.l}\n`).join('')}`);
+}
+
+/** The shape the name-shaped readers need from an entry: any lock-entry-like object. */
+export type NameInputFields = {
+  lists?: unknown;
+  names?: unknown;
+  refs?: unknown;
+  [k: string]: unknown;
+};
+
+/** The three name-shaped input fields of a lock entry, each [] when absent. */
+export function nameInputsOf(entry: NameInputFields | undefined): {
+  lists: string[];
+  names: string[];
+  refs: string[];
+} {
+  const arr = (v: unknown): string[] =>
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+  return { lists: arr(entry?.lists), names: arr(entry?.names), refs: arr(entry?.refs) };
+}
+
+/** A gate reads the whole tree when it declares no `paths`, no `lists` and no `names`. `refs` does not scope it: a ref is not a tree read. */
+export function isWholeTree(entry: LockEntry | undefined): boolean {
+  const { lists, names } = nameInputsOf(entry);
+  return (entry?.paths ?? []).length === 0 && lists.length === 0 && names.length === 0;
+}
+
+const REF_RE = /^[A-Za-z0-9_][A-Za-z0-9._/-]*$/;
+
+/**
+ * Why a lock entry's `lists`, `names` or `refs` is malformed, or null. A present field must be an array of strings. A `lists` item is '' (the root) or a relative directory: no leading or trailing `/`, no empty, `.` or `..` segment, no glob character. A `names` item is a non-empty glob with none of FORBIDDEN_GLOB_CHARS. A `refs` item is a plain ref name (`HEAD`, `origin/main`, `refs/tags/v1`), no `..`, no revision syntax. Shared by computeGateHashes (reason `bad-name-inputs`) and check-paths-origin.
+ */
+export function nameInputProblem(entry: NameInputFields): string | null {
+  for (const field of ['lists', 'names', 'refs'] as const) {
+    const v = entry[field];
+    if (v === undefined) continue;
+    if (!Array.isArray(v) || v.some((x) => typeof x !== 'string'))
+      return `\`${field}\` must be an array of strings, got ${JSON.stringify(v)}`;
+  }
+  const { lists, names, refs } = nameInputsOf(entry);
+  for (const d of lists) {
+    if (d === '') continue;
+    const segs = d.split('/');
+    if (
+      segs.some((s) => s === '' || s === '.' || s === '..') ||
+      /[*?[{]/.test(d) ||
+      d.includes('\\')
+    )
+      return `\`lists\` item ${JSON.stringify(d)} is not a plain relative directory ('' is the root; no leading or trailing /, no glob)`;
+  }
+  for (const g of names) {
+    if (g === '' || FORBIDDEN_GLOB_CHARS.some((c) => g.includes(c)))
+      return `\`names\` item ${JSON.stringify(g)} is empty or uses one of ${FORBIDDEN_GLOB_CHARS.join(' ')}`;
+  }
+  for (const r of refs) {
+    if (!REF_RE.test(r) || r.includes('..') || r.endsWith('/') || r.endsWith('.lock'))
+      return `\`refs\` item ${JSON.stringify(r)} is not a plain ref name (HEAD, origin/main, refs/tags/<t>)`;
+  }
+  return null;
+}
+
+/** The `list` lines of one tree for the listed directories: one per immediate tracked child, derived from the recursive listing (a child with a deeper path is a `tree`). */
+export function listLines(entries: readonly LsEntry[], dirs: readonly string[]): string[] {
+  const out: string[] = [];
+  for (const dir of new Set(dirs)) {
+    const prefix = dir === '' ? '' : `${dir}/`;
+    const seen = new Set<string>();
+    for (const e of entries) {
+      if (!e.path.startsWith(prefix) || e.path.length === prefix.length) continue;
+      const rest = e.path.slice(prefix.length);
+      const slash = rest.indexOf('/');
+      const child = slash < 0 ? rest : rest.slice(0, slash);
+      if (seen.has(child)) continue;
+      seen.add(child);
+      const kind = slash >= 0 ? 'tree' : e.mode === '160000' ? 'commit' : e.mode;
+      out.push(`list\t${dir}\t${child}\t${kind}`);
+    }
+  }
+  return out;
+}
+
+/** The `name` lines: `name\t<mode>\t<path>` for every tracked entry a `names` glob matches. */
+export function nameLines(entries: readonly LsEntry[], globs: readonly string[]): string[] {
+  if (globs.length === 0) return [];
+  const res = [...new Set(globs)].map(globRe);
+  return entries
+    .filter((e) => res.some((re) => re.test(e.path)))
+    .map((e) => `name\t${e.mode}\t${e.path}`);
+}
+
+/** The commit a ref resolves to in `root`, or null. */
+export function gitResolveRef(root: string, ref: string): string | null {
+  try {
+    const out = execFileSync('git', ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], {
+      cwd: root,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    return /^[0-9a-f]{40,64}$/.test(out) ? out : null;
+  } catch {
+    return null;
+  }
 }
 
 function cmdOut(cmd: string, args: string[]): string {
@@ -168,7 +283,15 @@ export interface GateHash {
   inputHash: string | null;
   defHash: string;
   filesHash: string;
-  inputs: { globs: string[]; files: string[]; scripts: string[] };
+  /** What the hash read. `lists`, `names` and `refs` appear only when the entry declares them, so a receipt for a gate without them is unchanged. */
+  inputs: {
+    globs: string[];
+    files: string[];
+    scripts: string[];
+    lists?: string[];
+    names?: string[];
+    refs?: string[];
+  };
   reason: string | null;
   /**
    * What a DEPENDENT reads when its `needs` edge only orders an artifact (the producer is a `gate: false` build step): sha(def, files, the artifact hashes of the producer's own producers). Not nullable for `env`, `exempt` or `needs-null`, because none of them changes which inputs build the artifact; null only where the inputs themselves are unknown (no lock entry, a forbidden glob, a float, a capped leaf closure, a cycle) or a producer upstream has no artifact hash.
@@ -181,6 +304,9 @@ export interface GateHash {
 export type LockEntry = {
   id: string;
   paths?: string[];
+  lists?: string[];
+  names?: string[];
+  refs?: string[];
   needs?: string[];
   env?: Record<string, unknown>;
   [k: string]: unknown;
@@ -191,6 +317,8 @@ export interface HashOpts {
   exempt: Set<string> | ReadonlyMap<string, string | null>;
   scriptsOf: (id: string) => Record<string, string>;
   leafFilesOf: (id: string) => { files: string[]; capped: boolean };
+  /** The commit a `refs` name resolves to, null when it does not; `gitResolveRef` in `root` when absent. */
+  resolveRef?: (ref: string) => string | null;
 }
 
 /** The npm scripts a gate's `run` reaches (name -> text), following `npm run <x>` references. Absent names are skipped. */
@@ -221,14 +349,35 @@ export function computeGateHashes(
   const salt = saltHash(root, tree);
   const result = new Map<string, GateHash>();
   const inProgress = new Set<string>();
+  const refMemo = new Map<string, string | null>();
+  const resolveRef = (r: string): string | null => {
+    if (!refMemo.has(r)) refMemo.set(r, (opts.resolveRef ?? ((x) => gitResolveRef(root, x)))(r));
+    return refMemo.get(r) ?? null;
+  };
 
   const compute = (id: string): GateHash => {
     const done = result.get(id);
     if (done) return done;
     const entry = lock[id];
     const paths = entry?.paths ?? [];
-    const wholeTree = paths.length === 0;
+    const named = nameInputsOf(entry);
+    const badNames = entry ? nameInputProblem(entry) : null;
+    const wholeTree = isWholeTree(entry);
     const globs = wholeTree ? [WHOLE_TREE_GLOB] : [...paths, ...GLOBAL_INPUTS];
+    // THE NAME-SHAPED LINES (W2.4). Empty for a gate declaring none of lists/names/refs, which keeps its filesHash byte-identical.
+    const extras: string[] = [];
+    let unresolvedRef: string | null = null;
+    if (badNames === null) {
+      extras.push(...listLines(entries, named.lists), ...nameLines(entries, named.names));
+      for (const r of named.refs) {
+        const at = resolveRef(r);
+        if (at === null) {
+          unresolvedRef ??= r;
+          continue;
+        }
+        extras.push(`ref\t${r}\t${at}`);
+      }
+    }
     const scripts = opts.scriptsOf(id);
     const leaf = opts.leafFilesOf(id);
     const rawGlobs = globs;
@@ -240,7 +389,7 @@ export function computeGateHashes(
       .filter((e) => fileSet.has(e.path) || entryMatches(res, rawGlobs, e))
       .map((e) => `${e.mode} ${e.oid}\t${e.path}`);
     const def = defHash(entry, scripts);
-    const fh = filesHash(lines);
+    const fh = filesHash(lines, extras);
     const gh: GateHash = {
       id,
       inputHash: null,
@@ -250,6 +399,9 @@ export function computeGateHashes(
         globs,
         files,
         scripts: Object.keys(scripts).sort((a, b) => Number(a > b) - Number(a < b)),
+        ...(named.lists.length > 0 ? { lists: named.lists } : {}),
+        ...(named.names.length > 0 ? { names: named.names } : {}),
+        ...(named.refs.length > 0 ? { refs: named.refs } : {}),
       },
       reason: null,
       artifactHash: null,
@@ -270,7 +422,9 @@ export function computeGateHashes(
     const forbidden = paths.some((p) => FORBIDDEN_GLOB_CHARS.some((c) => p.includes(c)));
     const floats = hasFloat(entry);
     const capped = !wholeTree && leaf.capped;
-    if (!forbidden && !floats && !capped) {
+    // Inputs that cannot be named (a malformed lists/names/refs, a ref resolving to nothing) are unknown inputs: no artifact hash, no input hash.
+    const namesUnknown = badNames !== null || unresolvedRef !== null;
+    if (!forbidden && !floats && !capped && !namesUnknown) {
       // The artifact hash first: it holds for an exempt or env producer too, so it is computed whatever reason is named below.
       const artifactNeeds: string[] = [];
       for (const n of needs) {
@@ -285,6 +439,10 @@ export function computeGateHashes(
       gh.reason = 'forbidden-glob';
     } else if (floats) {
       gh.reason = 'float-in-entry';
+    } else if (badNames !== null) {
+      gh.reason = 'bad-name-inputs';
+    } else if (unresolvedRef !== null) {
+      gh.reason = `ref-unresolved:${unresolvedRef}`;
     } else if (exemptKind !== undefined) {
       // Named in carry-exempt.json before the generic reasons: a gate that reads live state (and so declares no paths, or an env) is exempt BY NAME, and the report should say so.
       gh.reason = 'exempt';
@@ -761,6 +919,159 @@ export function inputHashSelftest(tmpDir: string): void {
     must(
       planCarry([mkPrior('ok', { saltHash: 'x' }), twoBack], h3, sel, salt).carry.has('g:src'),
       'a receipt under another salt is skipped, not fatal to the rest'
+    );
+
+    // W2.4: NAME-SHAPED INPUTS. lists (children, no content), names (paths, no content), refs (the sha).
+    const nlock: Record<string, LockEntry> = {
+      'g:plain': { id: 'g:plain', run: 'x', paths: ['src/**'] },
+      'g:plainwhole': { id: 'g:plainwhole', run: 'x' },
+      'g:lists': { id: 'g:lists', run: 'x', paths: ['other.txt'], lists: ['src'] },
+      'g:root': { id: 'g:root', run: 'x', lists: [''] },
+      'g:names': { id: 'g:names', run: 'x', names: ['src/**'] },
+      'g:refs': { id: 'g:refs', run: 'x', paths: ['other.txt'], refs: ['HEAD'] },
+      'g:wholerefs': { id: 'g:wholerefs', run: 'x', refs: ['HEAD'] },
+      'g:noref': { id: 'g:noref', run: 'x', paths: ['other.txt'], refs: ['refs/heads/nope'] },
+      'g:badlist': { id: 'g:badlist', run: 'x', lists: ['src/'] },
+      'g:badname': { id: 'g:badname', run: 'x', names: ['src/{a}.ts'] },
+      'g:onref': { id: 'g:onref', run: 'x', paths: ['other.txt'], needs: ['g:noref'] },
+    };
+    const at = (): Map<string, GateHash> =>
+      computeGateHashes(root, g('rev-parse', 'HEAD^{tree}'), nlock, mk(root));
+    const n0 = at();
+    // An entry declaring none of the three hashes exactly as the pre-W2.4 contract did: rebuild that preimage by hand.
+    const plainLines = lsTree(root, g('rev-parse', 'HEAD^{tree}'))
+      .filter((e) => [...['src/**'], ...GLOBAL_INPUTS].some((gl) => matchGlob(gl, e.path)))
+      .map((e) => ({ l: `${e.mode} ${e.oid}\t${e.path}`, k: Buffer.from(e.path, 'utf8') }))
+      .sort((a, b) => Buffer.compare(a.k, b.k));
+    must(
+      get(n0, 'g:plain').filesHash ===
+        sha(`files\n${plainLines.map((x) => `${x.l}\n`).join('')}`) &&
+        get(n0, 'g:plain').inputs.lists === undefined &&
+        get(n0, 'g:plain').inputs.refs === undefined,
+      'CONTROL: a gate with no lists/names/refs keeps the pre-W2.4 files preimage byte for byte, and its recorded inputs gain no key'
+    );
+    must(
+      get(n0, 'g:plain').inputHash ===
+        get(
+          computeGateHashes(
+            root,
+            g('rev-parse', 'HEAD^{tree}'),
+            { 'g:plain': nlock['g:plain'] },
+            mk(root)
+          ),
+          'g:plain'
+        ).inputHash,
+      'a gate hash does not depend on which other entries carry the new fields'
+    );
+    must(
+      get(n0, 'g:root').inputs.globs.join() === GLOBAL_INPUTS.join() &&
+        get(n0, 'g:names').inputs.globs.join() === GLOBAL_INPUTS.join() &&
+        get(n0, 'g:wholerefs').inputs.globs.join() === WHOLE_TREE_GLOB,
+      'lists or names without paths is not whole-tree (it reads the names plus GLOBAL_INPUTS); refs alone stays whole-tree'
+    );
+    must(
+      get(n0, 'g:noref').reason === 'ref-unresolved:refs/heads/nope' &&
+        get(n0, 'g:noref').inputHash === null &&
+        get(n0, 'g:noref').artifactHash === null &&
+        get(n0, 'g:onref').reason === 'needs-null:g:noref',
+      `a ref that resolves to nothing is an unknown input, never an empty line, got ${get(n0, 'g:noref').reason}`
+    );
+    must(
+      get(n0, 'g:badlist').reason === 'bad-name-inputs' &&
+        get(n0, 'g:badname').reason === 'bad-name-inputs' &&
+        get(n0, 'g:badlist').inputHash === null,
+      'a malformed lists or names item makes the gate uncarriable by name'
+    );
+    must(
+      nameInputProblem({
+        id: 'x',
+        lists: ['', 'a/b'],
+        names: ['**/*.ts'],
+        refs: ['HEAD', 'origin/main'],
+      }) === null &&
+        nameInputProblem({ id: 'x', lists: ['/a'] }) !== null &&
+        nameInputProblem({ id: 'x', lists: ['a/../b'] }) !== null &&
+        nameInputProblem({ id: 'x', lists: 'a' as unknown as string[] }) !== null &&
+        nameInputProblem({ id: 'x', refs: ['HEAD~1'] }) !== null &&
+        nameInputProblem({ id: 'x', refs: ['a..b'] }) !== null,
+      'nameInputProblem accepts the plain shapes and refuses a rooted, dotted or non-array list, and revision syntax in a ref'
+    );
+    must(
+      listLines(
+        [
+          { mode: '100644', type: 'blob', oid: 'o', path: 'd/f' },
+          { mode: '100755', type: 'blob', oid: 'o', path: 'd/x' },
+          { mode: '100644', type: 'blob', oid: 'o', path: 'd/s/deep' },
+          { mode: '100644', type: 'blob', oid: 'o', path: 'd/s/deeper' },
+          { mode: '160000', type: 'commit', oid: 'o', path: 'd/sub' },
+          { mode: '100644', type: 'blob', oid: 'o', path: 'dd/f' },
+        ],
+        ['d']
+      ).join('|') === 'list\td\tf\t100644|list\td\tx\t100755|list\td\ts\ttree|list\td\tsub\tcommit',
+      'listLines gives one line per immediate child with its kind, and dd/ is not a child of d'
+    );
+
+    // CONTROL 1: a NEW file in a listed directory moves the hash.
+    fs.writeFileSync(path.join(root, 'src', 'new.ts'), 'n1\n');
+    g('add', '-A');
+    g('commit', '-q', '-m', 'new child');
+    const n1 = at();
+    must(
+      get(n1, 'g:lists').inputHash !== get(n0, 'g:lists').inputHash,
+      'a new file in a listed directory must move the hash'
+    );
+    must(
+      get(n1, 'g:names').inputHash !== get(n0, 'g:names').inputHash,
+      'a new path matching a names glob must move the hash'
+    );
+    must(
+      get(n1, 'g:root').inputHash === get(n0, 'g:root').inputHash,
+      'CONTROL: a file added under an existing top-level directory does not change the root listing'
+    );
+    // CONTROL 2: an edit to an UNREAD file in a listed directory does not move it.
+    fs.writeFileSync(path.join(root, 'src', 'new.ts'), 'n2\n');
+    g('commit', '-q', '-am', 'edit child');
+    const n2 = at();
+    must(
+      get(n2, 'g:lists').inputHash === get(n1, 'g:lists').inputHash &&
+        get(n2, 'g:names').inputHash === get(n1, 'g:names').inputHash,
+      'an edit to the content of a listed child, or of a names match, must not move the hash'
+    );
+    must(
+      get(n2, 'g:plain').inputHash !== get(n1, 'g:plain').inputHash,
+      'CONTROL: the same edit does move a gate that reads src/** content'
+    );
+    // A mode flip is a listing change.
+    fs.chmodSync(path.join(root, 'src', 'new.ts'), 0o755);
+    g('config', 'core.fileMode', 'true');
+    g('commit', '-q', '-am', 'mode');
+    must(
+      at().get('g:lists')?.inputHash !== get(n2, 'g:lists').inputHash,
+      'a mode change of a listed child moves the hash'
+    );
+    // A new top-level directory changes the root listing.
+    fs.mkdirSync(path.join(root, 'top'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'top', 'f'), 't\n');
+    g('add', '-A');
+    g('commit', '-q', '-m', 'new top dir');
+    const n3 = at();
+    must(
+      get(n3, 'g:root').inputHash !== get(n2, 'g:root').inputHash,
+      'a new top-level directory must move a lists: [""] gate'
+    );
+    // CONTROL 3: a new HEAD sha with an identical tree moves a refs gate and nothing else.
+    g('commit', '-q', '--allow-empty', '-m', 'same tree, new head');
+    const n4 = at();
+    must(
+      get(n4, 'g:refs').inputHash !== get(n3, 'g:refs').inputHash &&
+        get(n4, 'g:wholerefs').inputHash !== get(n3, 'g:wholerefs').inputHash,
+      'a new HEAD sha must move a refs: [HEAD] gate'
+    );
+    must(
+      get(n4, 'g:plain').inputHash === get(n3, 'g:plain').inputHash &&
+        get(n4, 'g:plainwhole').inputHash === get(n3, 'g:plainwhole').inputHash &&
+        get(n4, 'g:lists').inputHash === get(n3, 'g:lists').inputHash,
+      'CONTROL: a new HEAD over the same tree moves no gate that declares no refs'
     );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });

@@ -9,7 +9,8 @@
  *   1. any declared `paths` glob matches a changed file;
  *   2. a `leaves` entry that is a repo file changed, or any file it imports, followed transitively (TS/JS relative specifiers, Python `rediacc_ci.*` and relative imports). Command leaves (`tsc`, `biome`, `knip`) name no file and add nothing;
  *   3. package.json changed AND the gate's npm script text differs from the base, following `npm run <x>` references, which is how parity resolves a `run` to its leaves;
- *   4. the gate declares NO `paths` and the change set is not empty: the `--changed` contract (select.ts), fail open on scope. Leaves name the gate's CODE, not what it reads: a corpus gate (prose style, python types, lint, the dist checks) reads files no leaf imports, so on 2026-10-01 a push that deleted files check:ci-prose-style scans passed this lane as "deferred, untouched" and CI went red on the stale baseline it left. Rules 1-3 still run first, because their reason is the more specific one to print.
+ *   1b. NAME-SHAPED INPUTS (PLAN-ciquick-cpu W2.4, input-hash.ts): a changed file lies anywhere under a `lists` directory ('' is the root), or matches a `names` glob, or the gate declares `refs` and the change set is not empty. The change set is a list of paths with no add/edit split, and a file deeper than a listed directory may sit in a NEW child directory, so any path under it counts: an edit is a false touch, a missed added child would be a deferral nobody sees;
+ *   4. the gate declares NO `paths`, `lists` or `names` (input-hash.ts `isWholeTree`; `refs` alone does not scope a gate) and the change set is not empty: the `--changed` contract (select.ts), fail open on scope. Leaves name the gate's CODE, not what it reads: a corpus gate (prose style, python types, lint, the dist checks) reads files no leaf imports, so on 2026-10-01 a push that deleted files check:ci-prose-style scans passed this lane as "deferred, untouched" and CI went red on the stale baseline it left. Rules 1-3 still run first, because their reason is the more specific one to print.
  *
  * WHAT "THE LAST PUSH" MEANS: the merge-base of HEAD with the first ref that resolves among `@{push}`, `origin/<branch>`, `@{upstream}`, then `origin/main` (a branch never pushed has everything since main unpushed). `@{push}` and `@{upstream}` count only when they name THIS branch: on 2026-10-03 a push clone's branch tracked the already merged `origin/0930-1`, and the diff against that merge-base held 244 files. A tracking ref named for another branch is skipped and the skip is printed as a WARNING. The change set is that merge-base against the WORKTREE plus untracked files, since the quick lane judges the worktree. When none resolves, no slow gate is selected and the run SAYS so with the refs it tried: the quick lane is still the whole fast lane, so refusing it outright would punish a fresh clone for a question the fast gates do not need answered.
  *
@@ -24,6 +25,12 @@ export interface SlowCandidate {
   readonly id: string;
   readonly run: string;
   readonly paths?: readonly string[];
+  /** Directories whose listing the gate reads (GateSpec.lists). */
+  readonly lists?: readonly string[];
+  /** Globs whose matching names the gate reads (GateSpec.names). */
+  readonly names?: readonly string[];
+  /** Refs whose commit the gate reads (GateSpec.refs). */
+  readonly refs?: readonly string[];
   readonly leaves: readonly string[];
   /** CI-only (GateSpec.ciOnly): never touched, so never admitted to the quick lane and never recorded as dropped. */
   readonly ciOnly?: string;
@@ -161,6 +168,31 @@ export interface TouchInputs {
   readonly scriptsBase: Readonly<Record<string, string>> | undefined;
 }
 
+/** The first changed file a candidate's `lists`, `names` or `refs` reaches, with the reason, or undefined (rule 1b). */
+function nameTouch(
+  c: SlowCandidate,
+  changed: readonly string[],
+  matches: TouchInputs['matches']
+): string | undefined {
+  for (const d of c.lists ?? []) {
+    const hit = changed.find((f) => d === '' || f.startsWith(`${d}/`));
+    if (hit !== undefined)
+      return `${hit} lies under the listed directory '${d}' (a child may have been added or removed)`;
+  }
+  if ((c.names ?? []).length > 0) {
+    const hit = changed.find((f) => matches(f, c.names ?? []));
+    if (hit !== undefined) return `${hit} matches its names`;
+  }
+  if ((c.refs ?? []).length > 0 && changed.length > 0)
+    return `it reads refs ${(c.refs ?? []).join(', ')}, and ${changed.length} change(s) since the last push may have moved them`;
+  return undefined;
+}
+
+/** No `paths`, `lists` or `names`: the gate reads the whole tree (input-hash.ts `isWholeTree`). */
+function readsWholeTree(c: SlowCandidate): boolean {
+  return c.paths === undefined && (c.lists ?? []).length === 0 && (c.names ?? []).length === 0;
+}
+
 /** Which candidates the change set touches, each with the reason. Order follows `candidates`. */
 export function touchedSlow(candidates: readonly SlowCandidate[], input: TouchInputs): Touch[] {
   const changed = new Set(input.changed);
@@ -174,6 +206,11 @@ export function touchedSlow(candidates: readonly SlowCandidate[], input: TouchIn
         touches.push({ id: c.id, why: `${hit} matches its paths` });
         continue;
       }
+    }
+    const named = nameTouch(c, input.changed, input.matches);
+    if (named !== undefined) {
+      touches.push({ id: c.id, why: named });
+      continue;
     }
     const closure = leafClosure(input.root, c.leaves);
     const leafHit = [...closure.files].find((f) => changed.has(f));
@@ -202,7 +239,7 @@ export function touchedSlow(candidates: readonly SlowCandidate[], input: TouchIn
         continue;
       }
     }
-    if (c.paths === undefined && input.changed.length > 0) {
+    if (readsWholeTree(c) && input.changed.length > 0) {
       touches.push({
         id: c.id,
         why: 'it declares no paths, so any change may reach what it reads (the --changed fail-open rule)',
@@ -413,6 +450,66 @@ export function quickSelectSelftest(
     check(
       withCorpus([]).length === 0,
       'CONTROL: an empty change set must not select a gate without paths'
+    );
+
+    // RULE 1b (W2.4): lists, names, refs. Each fixture declares no paths, so rule 4 would select it on any change if it still counted the gate as whole-tree: the unrelated-change controls prove it does not.
+    const nameCands: SlowCandidate[] = [
+      { id: 'slow:lists', run: 'npm run slow:lists', lists: ['cfg'], leaves: ['g/untouched.ts'] },
+      { id: 'slow:root', run: 'npm run slow:root', lists: [''], leaves: ['g/untouched.ts'] },
+      {
+        id: 'slow:names',
+        run: 'npm run slow:names',
+        names: ['tpl/*.md'],
+        leaves: ['g/untouched.ts'],
+      },
+      {
+        id: 'slow:refs',
+        run: 'npm run slow:refs',
+        paths: ['refdocs/**'],
+        refs: ['HEAD'],
+        leaves: ['g/untouched.ts'],
+      },
+    ];
+    const pickNamed = (changed: string[]): string[] =>
+      touchedSlow(nameCands, {
+        root,
+        changed,
+        matches,
+        scriptsNow: scripts,
+        scriptsBase: scripts,
+      }).map((t) => t.id);
+    check(
+      pickNamed(['cfg/new-child.json']).includes('slow:lists'),
+      'a child added to a listed directory must select the lists gate'
+    );
+    check(
+      pickNamed(['cfg/sub/new.json']).includes('slow:lists'),
+      'a file below a listed directory (possibly in a new child directory) must select the lists gate'
+    );
+    check(
+      !pickNamed(['cfgx/a.json']).includes('slow:lists') &&
+        !pickNamed(['other/x.ts']).includes('slow:lists'),
+      'CONTROL: a change outside the listed directory (cfgx/ is not cfg/) must not select the lists gate'
+    );
+    check(
+      pickNamed(['anything.txt']).includes('slow:root'),
+      "lists: [''] lists the root, so any change selects it"
+    );
+    check(
+      pickNamed(['tpl/new.md']).includes('slow:names') &&
+        !pickNamed(['tpl/deep/x.md']).includes('slow:names'),
+      'a names glob match selects; a path the glob does not match does not'
+    );
+    check(
+      pickNamed(['x.txt']).includes('slow:refs') &&
+        touchedSlow([nameCands[3]], {
+          root,
+          changed: [],
+          matches,
+          scriptsNow: scripts,
+          scriptsBase: scripts,
+        }).length === 0,
+      'a refs gate is selected by any change and, CONTROL, not by an empty change set'
     );
 
     // ONE PASS: every touched candidate is admitted whatever it would cost, and a refused one is dropped BY NAME with kind tree. The control admits the same set with no refusal, so the drop is about the refusal and not about the candidate.

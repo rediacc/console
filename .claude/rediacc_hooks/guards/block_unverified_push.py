@@ -1520,20 +1520,90 @@ def v2_ls_tree(root, tree):
     return out
 
 
+def _entry_matches(globs, e):
+    """A glob matches the path, or (input-hash.ts `entryMatches`) names a gitlink directory bare or as `<gitlink>/**`, which reaches the gitlink entry itself."""
+    if any(v2_match_glob(gl, e[3]) for gl in globs):
+        return True
+    return e[0] == "160000" and any(gl == e[3] or gl == e[3] + "/**" for gl in globs)
+
+
 def v2_input_lines(entries, globs, files):
     """`<mode> <oid>\\t<path>` (no newline) for every entry a glob matches or `files` names, sorted by path bytes."""
     named = set(files)
-    picked = [e for e in entries if e[3] in named or any(v2_match_glob(gl, e[3]) for gl in globs)]
+    picked = [e for e in entries if e[3] in named or _entry_matches(globs, e)]
     picked.sort(key=lambda e: e[3].encode("utf-8", "surrogateescape"))
     return ["%s %s\t%s" % (e[0], e[2], e[3]) for e in picked]
+
+
+def v2_list_lines(entries, dirs):
+    """`list\\t<dir>\\t<child>\\t<kind>` per immediate tracked child of each listed directory ('' is the root): kind is the blob mode, `tree` for a subdirectory, `commit` for a gitlink. input-hash.ts `listLines`."""
+    out = []
+    for d in dict.fromkeys(dirs):
+        prefix = "" if d == "" else d + "/"
+        seen = set()
+        for e in entries:
+            p = e[3]
+            if not p.startswith(prefix) or len(p) == len(prefix):
+                continue
+            rest = p[len(prefix) :]
+            child, slash, _ = rest.partition("/")
+            if child in seen:
+                continue
+            seen.add(child)
+            kind = "tree" if slash else ("commit" if e[0] == "160000" else e[0])
+            out.append("list\t%s\t%s\t%s" % (d, child, kind))
+    return out
+
+
+def v2_name_lines(entries, globs):
+    """`name\\t<mode>\\t<path>` for every tracked entry a `names` glob matches. input-hash.ts `nameLines`."""
+    globs = list(dict.fromkeys(globs))
+    if not globs:
+        return []
+    return [
+        "name\t%s\t%s" % (e[0], e[3]) for e in entries if any(v2_match_glob(g, e[3]) for g in globs)
+    ]
+
+
+def v2_resolve_ref(root, ref):
+    """The commit `ref` resolves to in `root`, or None. input-hash.ts `gitResolveRef`."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", root, "rev-parse", "--verify", "--quiet", ref + "^{commit}"],
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    out = proc.stdout.decode("utf-8", "replace").strip()
+    return out if proc.returncode == 0 and re.fullmatch(r"[0-9a-f]{40,64}", out) else None
+
+
+def v2_extra_lines(entries, lists=(), names=(), refs=(), root=".", resolve=None):
+    """The name-shaped lines of PLAN-ciquick-cpu W2.4 (`list`, `name`, `ref`) and the first ref that resolves to nothing, or None. input-hash.ts builds the same lines in `computeGateHashes`; a ref that does not resolve is an unknown input there (`ref-unresolved:<name>`) and a refusal here."""
+    resolve = resolve or (lambda r: v2_resolve_ref(root, r))
+    extras = v2_list_lines(entries, lists) + v2_name_lines(entries, names)
+    unresolved = None
+    for r in refs:
+        at = resolve(r)
+        if at is None:
+            unresolved = unresolved or r
+            continue
+        extras.append("ref\t%s\t%s" % (r, at))
+    return extras, unresolved
 
 
 def _line_path(line):
     return line.partition("\t")[2].encode("utf-8", "surrogateescape")
 
 
-def v2_files_hash(lines):
-    return v2_sha("files\n" + "".join(line + "\n" for line in sorted(lines, key=_line_path)))
+def v2_files_hash(lines, extras=()):
+    """sha of `files\\n` and the path lines sorted by path bytes; with name-shaped `extras`, those deduplicated, sorted by whole bytes, after `extra\\n`. No extras is the pre-W2.4 preimage exactly. input-hash.ts `filesHash`."""
+    base = "files\n" + "".join(line + "\n" for line in sorted(lines, key=_line_path))
+    if not extras:
+        return v2_sha(base)
+    tail = sorted(set(extras), key=lambda x: x.encode("utf-8", "surrogateescape"))
+    return v2_sha(base + "extra\n" + "".join(x + "\n" for x in tail))
 
 
 def _show_at(root, tree, rel):
@@ -1600,9 +1670,26 @@ def _carried_refusal(root, tree, gid, entry, lock_entry, entries, exempt, memo=N
         return "%s: defHash differs at the pushed tree (the gate or its scripts changed)" % gid
     globs = inputs.get("globs") or []
     files = inputs.get("files") or []
-    key = ("files", json.dumps([globs, files], sort_keys=True))
+    # The name-shaped inputs (W2.4) are recorded only by a gate that declares them; absent, the key and the hash are the pre-W2.4 ones.
+    named = {f: inputs.get(f) or [] for f in ("lists", "names", "refs")}
+    for f, v in named.items():
+        if not isinstance(v, list) or not all(isinstance(x, str) for x in v):
+            return "%s: inputs.%s is not a list of strings (field inputs)" % (gid, f)
+    key = ("files", json.dumps([globs, files, named], sort_keys=True))
     if key not in memo:
-        memo[key] = v2_files_hash(v2_input_lines(entries, globs, files))
+        extras, unresolved = v2_extra_lines(
+            entries, named["lists"], named["names"], named["refs"], root=root
+        )
+        memo[key] = (
+            ("unresolved", unresolved)
+            if unresolved is not None
+            else v2_files_hash(v2_input_lines(entries, globs, files), extras)
+        )
+    if isinstance(memo[key], tuple):
+        return "%s: inputs.refs names %s, which resolves to no commit here (field filesHash)" % (
+            gid,
+            memo[key][1],
+        )
     if memo[key] != entry.get("filesHash"):
         return "%s: filesHash differs at the pushed tree (an input changed after the carry)" % gid
     origin = carried.get("headTree")
