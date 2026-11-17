@@ -100,7 +100,7 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `deps-major-exceptions.json` | JSON table | - | 0 | both |
 | `fixed-widths.json` | JSON table | - | 0 | both |
 | `hook-exec-baseline.json` | JSON table | - | 1 | both |
-| `pytest-impact.json` | JSON table | - | 0 | NEITHER |
+| `pytest-impact.json` | JSON table | - | 0 | both |
 | `pytest-slow-allow.json` | JSON table | - | 0 | both |
 | `record-paths.json` | JSON table | - | 0 | both |
 | `tree-shape.json` | JSON table | - | 0 | both |

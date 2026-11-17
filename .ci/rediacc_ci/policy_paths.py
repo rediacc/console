@@ -97,6 +97,7 @@ POLICY_FILES: tuple[str, ...] = (
     "fixed-widths.json",
     # 2026-11-17. A TABLE of test nodes allowed to run past the slow threshold, one row per node with its own reason, which a name-per-line dotfile could not carry. Read only by .ci/rediacc_ci/quality/pytest_slow_ratchet.py.
     "pytest-slow-allow.json",
+    "pytest-impact.json",
 )
 
 _VALID = frozenset(POLICY_FILES)

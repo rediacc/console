@@ -112,7 +112,8 @@ function pathsOriginFindings(
     if (!hasPaths(e) || !hasOrigin(e)) continue;
     const origin = e.pathsOrigin as string;
     const globs = e.paths as string[];
-    if (origin === 'declared') {
+    // 'traced' is written by scripts/ci-runner/path-trace.ts; both origins get the no-dead-glob check here.
+    if (origin === 'declared' || origin === 'traced') {
       for (const g of globs) {
         const re = globToRegExp(g);
         if (!tracked.some((f) => re.test(f))) {
@@ -149,7 +150,7 @@ function pathsOriginFindings(
       }
     } else {
       findings.push(
-        `${e.id}: pathsOrigin "${origin}" is neither \`'declared'\` nor \`` + 'derived:<tool>`.'
+        `${e.id}: pathsOrigin "${origin}" is neither \`'declared'\`, \`'traced'\` nor \`` + 'derived:<tool>`.'
       );
     }
   }

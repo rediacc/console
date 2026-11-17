@@ -62,11 +62,12 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import gitx, paths
 from rediacc_ci.core import xml_trusted
+from rediacc_ci.policy_paths import policy_rel
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-POLICY_RELPATH = ".ci/policy/pytest-impact.json"
+POLICY_RELPATH = policy_rel("pytest-impact.json")
 CACHE_RELDIR = ".ci/cache/pytest-impact"
 MAP_SCHEMA = 2
 MAX_FRACTION = 0.40
