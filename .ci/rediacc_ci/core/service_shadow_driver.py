@@ -79,10 +79,13 @@ def row(name: str, glob: str = "*", **kw) -> dict:
     return {"name": name, "glob": glob, **kw}
 
 
+# env.sh runs `echo "$KEYS" | node -e ...` under `set -o pipefail`. The real node reads its stdin to EOF; a stub that answered and exited without reading let `echo` write into a pipe nobody read, and under host load that write lost the race and killed the subshell with SIGPIPE (rc 141, env.sh aborted). These two rows drain the pipe before answering, as node does.
+DRAIN_STDIN = "cat >/dev/null"
+
 KEYGEN = [
     row("node", "-e *generateKeyPairSync*", out='{"private":"PRIVKEY","public":"PUBKEY"}\n'),
-    row("node", "-e *.private)*", out="PRIVKEY"),
-    row("node", "-e *.public)*", out="PUBKEY"),
+    row("node", "-e *.private)*", out="PRIVKEY", sh=DRAIN_STDIN),
+    row("node", "-e *.public)*", out="PUBKEY", sh=DRAIN_STDIN),
     row("openssl", "rand -base64 48", out="ab/cd+ef=gh" * 8 + "\n"),
 ]
 PRESET_KEYS = {

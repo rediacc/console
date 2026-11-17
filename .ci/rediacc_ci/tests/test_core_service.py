@@ -383,6 +383,26 @@ def test_the_stub_farm_really_shadows_docker(tmp_path) -> None:
     )
 
 
+# A producer that writes only after the consumer has exited, under pipefail, as env.sh's `echo "$KEYS" | node ...` does when the host is loaded. The delay makes the loss of the race certain rather than likely, and it is the real /usr/bin/sleep because the farm shadows `sleep` with a stub that returns at once.
+SLOW_PRODUCER = "set -o pipefail; (/usr/bin/sleep 0.3; echo keys) | node -e 'x.private)'"
+
+
+def _run_node_stub(tmp_path, rows: list[dict]) -> int:
+    case = svc_driver.Case("pipe", "start", [], rows)
+    farm = svc_driver.build_farm(tmp_path, case)
+    env = svc_driver.side_env(tmp_path, farm, case)
+    return subprocess.run(["bash", "-c", SLOW_PRODUCER], env=env, check=False).returncode
+
+
+def test_the_keygen_node_stub_drains_stdin_like_node(tmp_path) -> None:
+    """REGRESSION (2026-11-17, ci:quick under load): `start/preferred-busy` exited 141. `env.sh` pipes the key JSON into `node` under pipefail; the stub answered without reading, so `echo` hit a closed pipe and SIGPIPE ended env.sh. The control row (no drain) must reproduce 141 every time, the KEYGEN row must not."""
+    undrained = [svc_driver.row("node", "-e *.private)*", out="PRIVKEY")]
+    assert _run_node_stub(tmp_path / "control", undrained) == 141
+    keygen = [r for r in svc_driver.KEYGEN if r["name"] == "node" and ".private)" in r["glob"]]
+    assert len(keygen) == 1
+    assert _run_node_stub(tmp_path / "fixed", keygen) == 0
+
+
 def test_a_transcript_difference_is_a_divergence() -> None:
     """CONTROL ON THE COMPARISON. One dropped call must make two otherwise-equal observation lists unequal."""
     case = svc_driver.SCENARIOS["health"][1]
