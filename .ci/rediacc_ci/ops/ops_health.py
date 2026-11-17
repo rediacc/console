@@ -151,7 +151,11 @@ def parse_iso(text: object) -> datetime.datetime | None:
 
 def _trim(text: str, limit: int = DETAIL_MAX) -> str:
     text = (text or "").strip()
-    return text if len(text) <= limit else "..." + text[-limit:]
+    if len(text) <= limit:
+        return text
+    if text.startswith("AMBER"):
+        return text[:limit] + "..."
+    return "..." + text[-limit:]
 
 
 # --------------------------------------------------------------------------- config
@@ -955,7 +959,11 @@ def subprocess_check(name: str, runner: Runner, env: dict) -> dict:
     cenv["PYTHONPATH"] = str(repo_root() / ".ci")
     res = runner(argv, cenv, SUBPROCESS_TIMEOUT_S)
     rc = 2 if res.timed_out else res.rc
-    tail = "\n".join(((res.stdout or "") + "\n" + (res.stderr or "")).strip().splitlines()[-12:])
+    lines = ((res.stdout or "") + "\n" + (res.stderr or "")).strip().splitlines()
+    # AMBER lines name an operator step; they lead the detail so a long tail of action lines cannot push them out of the 12-line, DETAIL_MAX window.
+    amber = [ln for ln in lines if "AMBER" in ln]
+    rest = [ln for ln in lines if "AMBER" not in ln]
+    tail = "\n".join((amber + rest[-max(0, 12 - len(amber)) :]) if amber else lines[-12:])
     return {
         "rc": rc if rc in (0, 1) else 2,
         "raw_rc": "timeout" if res.timed_out else res.rc,

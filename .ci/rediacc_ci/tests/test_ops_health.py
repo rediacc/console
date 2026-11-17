@@ -382,6 +382,16 @@ def test_root_grants_rc0_with_amber_stays_green_and_keeps_the_amber_text(tmp_pat
     assert "AMBER" not in clean["detail"]
 
 
+def test_root_grants_amber_survives_a_long_tail_of_action_lines(tmp_path):
+    many = "\n".join("  action org.plan_raise org-%d" % i for i in range(40))
+    _runner, check = _root_grants_check(tmp_path, 0, AMBER_LINE + "\n" + many)
+    assert "AMBER operator: config_store.missing edge-us" in check["detail"]
+    # Control: without an AMBER line the detail stays the plain last lines.
+    _runner2, plain = _root_grants_check(tmp_path / "plain", 0, many)
+    assert "org-39" in plain["detail"]
+    assert "AMBER" not in plain["detail"]
+
+
 def test_root_grants_rc2_is_unknown_not_red(tmp_path):
     _runner, check = _root_grants_check(tmp_path, 2, "wrangler d1 execute exited 1")
     assert check["state"] == "unknown"
