@@ -21,8 +21,11 @@ import { policyPath } from '../lib/policy-paths.js';
 
 export const SCHEMA = 2;
 export const FORBIDDEN_GLOB_CHARS = ['?', '[', '{'] as const;
+// `**/` needs a `/` before the name, so it never matches at the root: the root lockfiles are listed bare beside the nested form (the shared glob grammar pins `**/*.sh` not matching `run.sh`).
 export const GLOBAL_INPUTS: readonly string[] = [
+  'package-lock.json',
   '**/package-lock.json',
+  'uv.lock',
   '**/uv.lock',
   '.devcontainer/toolchain.env',
   'pyproject.toml',
@@ -434,6 +437,20 @@ export function inputHashSelftest(tmpDir: string): void {
     must(!matchGlob('src/*.ts', 'src/deep/b.ts'), '* must not cross /');
     must(!matchGlob('src/*', 'src/deep/b.ts'), 'a trailing * must not cross /');
     must(matchGlob('**/package-lock.json', 'a/b/package-lock.json'), '**/ prefix matches nested');
+    must(
+      !matchGlob('**/package-lock.json', 'package-lock.json'),
+      '**/ needs a slash, so the root lockfile is its own GLOBAL_INPUTS entry'
+    );
+    for (const f of ['package-lock.json', 'uv.lock', 'a/b/package-lock.json', 'a/uv.lock']) {
+      must(
+        GLOBAL_INPUTS.some((g) => matchGlob(g, f)),
+        `GLOBAL_INPUTS must reach ${f}`
+      );
+    }
+    must(
+      !GLOBAL_INPUTS.some((g) => matchGlob(g, 'src/unrelated.ts')),
+      'GLOBAL_INPUTS must not reach an unrelated file'
+    );
     must(!matchGlob('src/a.ts', 'src/aXts'), '. must be literal');
     must(matchGlob('a(b).ts', 'a(b).ts'), 'regex metacharacters are literal');
 
@@ -580,6 +597,43 @@ export function inputHashSelftest(tmpDir: string): void {
       get(h3, 'g:onbuild').inputHash !== get(h2, 'g:onbuild').inputHash &&
         get(h2, 'p:build').artifactHash === get(h1, 'p:build').artifactHash,
       'a change to the PRODUCER inputs (src/, not a path of the dependent) must move the dependent through the artifact hash; CONTROL: a non-input change leaves the artifact hash alone'
+    );
+
+    // a root lockfile is a global input: `**/package-lock.json` alone never matched it
+    const hashAt = (): GateHash => {
+      const t = g('rev-parse', 'HEAD^{tree}');
+      return get(computeGateHashes(root, t, lock, mk(root)), 'g:src');
+    };
+    const before = hashAt();
+    fs.writeFileSync(path.join(root, 'package-lock.json'), 'L1\n');
+    g('add', '-A');
+    g('commit', '-q', '-m', 'root lock');
+    const rootLock1 = hashAt();
+    must(
+      rootLock1.inputHash !== before.inputHash,
+      'a new root package-lock.json must move a gate hash'
+    );
+    fs.writeFileSync(path.join(root, 'package-lock.json'), 'L2\n');
+    g('commit', '-q', '-am', 'root lock edit');
+    const rootLock2 = hashAt();
+    must(
+      rootLock2.inputHash !== rootLock1.inputHash,
+      'a root package-lock.json change must move a gate hash'
+    );
+    fs.mkdirSync(path.join(root, 'pkg'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'pkg', 'package-lock.json'), 'N1\n');
+    g('add', '-A');
+    g('commit', '-q', '-m', 'nested lock');
+    const nested1 = hashAt();
+    must(
+      nested1.inputHash !== rootLock2.inputHash,
+      'a nested package-lock.json must still move a gate hash'
+    );
+    fs.writeFileSync(path.join(root, 'other.txt'), 'o3\n');
+    g('commit', '-q', '-am', 'unrelated');
+    must(
+      hashAt().inputHash === nested1.inputHash,
+      'CONTROL: an unrelated file must not move the hash'
     );
 
     // defHash reacts to the entry's run
