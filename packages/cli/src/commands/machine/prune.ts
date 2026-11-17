@@ -139,12 +139,12 @@ async function deleteOrphanedItems(
       quietSpinners: !firstCall,
     });
     firstCall = false;
-    if (!deleteResult.success) {
+    if (deleteResult.success) {
+      deleted += 1;
+    } else {
       outputService.error(`Failed to delete ${item.guid}: ${deleteResult.error}`);
       // A failed delete leaves the image on the machine, so the run must not exit 0.
       setExitCode(1);
-    } else {
-      deleted += 1;
     }
   }
   return deleted;

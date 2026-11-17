@@ -3077,7 +3077,7 @@ async function selftest(): Promise<number> {
       to: 'T1',
       paths: ['agent/reviews/x.md'],
       gates: { 'g:plan': 0 },
-      findings: [],
+      findings: {},
       finishedAt: 'now',
     };
     const written = advancedReceipt(
@@ -3087,11 +3087,12 @@ async function selftest(): Promise<number> {
       'T1',
       writtenStep
     );
+    const writtenGates: Partial<typeof written.gates> = written.gates;
     require_(
-      written.gates['g:plan']?.judgedTree === 'T1' &&
-        written.gates['g:plan'].carriedFrom === null &&
-        written.gates['g:tree'] !== undefined &&
-        written.gates['g:tree'].carriedFrom !== null &&
+      writtenGates['g:plan']?.judgedTree === 'T1' &&
+        writtenGates['g:plan'].carriedFrom === null &&
+        writtenGates['g:tree'] !== undefined &&
+        writtenGates['g:tree'].carriedFrom !== null &&
         written.advances.length === 1 &&
         written.advances[0] === writtenStep &&
         written.headTree === carryingReader.headTree,
