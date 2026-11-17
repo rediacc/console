@@ -90,11 +90,15 @@ export interface Access {
   network?: Set<string>;
   /** When the traced run started (epoch ms): an untracked file modified after it was written by the run itself. */
   startedMs?: number;
+  /** The pids that touched a path named `index` (the git index among them). Optional so an Access built without pids reads as unattributed: any name-only `git ls-files` then explains an index read, as before. */
+  indexPids?: Set<number>;
 }
 
 export interface Exec {
   argv: string[];
   cwd?: string;
+  /** The process that ran it; a process keeps its pid across the exec, so its later reads are the program's own. */
+  pid?: number;
 }
 
 export function emptyAccess(): Access {
@@ -178,6 +182,7 @@ export function parseStraceLog(
 }
 
 interface ProcState {
+  pid: number;
   cwd?: string;
   /** The cwd this process started in: its parent's at fork, or the root's for a process whose fork the trace never showed. */
   start: string;
@@ -198,10 +203,18 @@ export function straceParser(
   const proc = (pid: number): ProcState => {
     let st = procs.get(pid);
     if (st === undefined) {
-      st = { start: rootCwd, pending: [], execsWithoutCwd: [] };
+      st = { pid, start: rootCwd, pending: [], execsWithoutCwd: [] };
       procs.set(pid, st);
     }
     return st;
+  };
+  /** A path a process named, and the pid when it is an index file: `attribute` judges whether a name-only `git ls-files` is the process that read it. */
+  const addFile = (st: ProcState, p: string): void => {
+    into.files.add(p);
+    if (path.posix.basename(p) === 'index') {
+      into.indexPids ??= new Set();
+      into.indexPids.add(st.pid);
+    }
   };
   const forked = (parent: ProcState, child: number): void => {
     const st = proc(child);
@@ -241,7 +254,7 @@ export function straceParser(
     }));
     for (const d of decorations) if (d.fd === 'AT_FDCWD') st.cwd = d.path;
     if (st.cwd !== undefined && st.pending.length > 0) {
-      for (const p of st.pending.splice(0)) into.files.add(path.posix.resolve(st.cwd, p));
+      for (const p of st.pending.splice(0)) addFile(st, path.posix.resolve(st.cwd, p));
     }
     if (st.cwd !== undefined) for (const e of st.execsWithoutCwd.splice(0)) e.cwd = st.cwd;
     const retMatch = /\)\s+=\s+(-?\d+)(?:<((?:[^>\\]|\\.)*)>)?/.exec(rest);
@@ -260,7 +273,7 @@ export function straceParser(
       return;
     }
     if (retMatch?.[2] !== undefined && /^(open|openat|openat2|creat)$/.test(name)) {
-      into.files.add(path.posix.normalize(decodeCString(retMatch[2])));
+      addFile(st, path.posix.normalize(decodeCString(retMatch[2])));
     }
     const args = retMatch === null ? rest : rest.slice(0, retMatch.index);
     const strings = [...args.matchAll(QUOTED)].map((q) => ({
@@ -276,14 +289,14 @@ export function straceParser(
         const d = decorations.filter((x) => x.at < str.at).pop();
         if (d !== undefined) base = d.path;
       }
-      if (path.posix.isAbsolute(str.s)) into.files.add(path.posix.normalize(str.s));
-      else if (base !== undefined) into.files.add(path.posix.resolve(base, str.s));
+      if (path.posix.isAbsolute(str.s)) addFile(st, path.posix.normalize(str.s));
+      else if (base !== undefined) addFile(st, path.posix.resolve(base, str.s));
       else st.pending.push(str.s);
     }
     if (name === 'chdir' && ok && strings[0] !== undefined) {
       // Paths seen before this process's first chdir belong to its start cwd, not the new one.
       if (st.cwd === undefined)
-        for (const p of st.pending.splice(0)) into.files.add(path.posix.resolve(st.start, p));
+        for (const p of st.pending.splice(0)) addFile(st, path.posix.resolve(st.start, p));
       st.cwd = path.posix.resolve(st.cwd ?? st.start, strings[0].s);
     }
     if ((name === 'execve' || name === 'execveat') && ok) {
@@ -292,6 +305,7 @@ export function straceParser(
         const ex: Exec = {
           argv: [...argv[1].matchAll(QUOTED)].map((q) => decodeCString(q[1])),
           cwd: st.cwd,
+          pid,
         };
         into.execs.push(ex);
         if (st.cwd === undefined) st.execsWithoutCwd.push(ex);
@@ -300,7 +314,7 @@ export function straceParser(
   };
   const end = (): Access => {
     for (const st of procs.values()) {
-      for (const p of st.pending.splice(0)) into.files.add(path.posix.resolve(st.start, p));
+      for (const p of st.pending.splice(0)) addFile(st, path.posix.resolve(st.start, p));
       for (const e of st.execsWithoutCwd.splice(0)) e.cwd = st.start;
     }
     return into;
@@ -442,7 +456,7 @@ const LS_FILES_CONTENT = new Set([
   '-u',
   '--unmerged',
 ]);
-/** `git ls-files` flags that only choose WHICH names it prints and how they are spelled. Untracked names (`-o`, `-i`, `-k`) are outside every input hash, the whole-tree one included, so they cost `names` nothing whole-tree would have bought. */
+/** `git ls-files` flags that only choose WHICH names it prints and how they are spelled. Untracked names (`-o`, `-i`, `-k`) are outside every input hash, the whole-tree one included, so they cost `names` nothing whole-tree would have bought. `--recurse-submodules` is not here: it prints the names inside each submodule, which the root's name set does not hold (a gitlink is one entry whose commit `names` does not hash), so such a scan stays the whole-tree index (review bab2c5c8.1). */
 const LS_FILES_NAME_FLAGS = new Set([
   '-z',
   '-c',
@@ -457,7 +471,6 @@ const LS_FILES_NAME_FLAGS = new Set([
   '--directory',
   '--no-empty-directory',
   '--full-name',
-  '--recurse-submodules',
   '--error-unmatch',
   '--sparse',
   '--deduplicate',
@@ -637,7 +650,7 @@ export function attribute(access: Access, view: RepoView): Attribution {
     }
   };
   /**
-   * A lookup that found nothing (a module-resolution probe, a config searched for upward) inside a tracked directory: a file added there later would be found, so the nearest EXISTING ancestor is listed when it is a tracked directory or the root. A probe under an untracked ancestor (node_modules, build output) or a cache tree names nothing tracked. A file the run wrote and removed reads the same way, which over-declares a listing: the safe direction.
+   * A lookup that found nothing (a module-resolution probe, a config searched for upward) inside a tracked directory: a file added there later would be found, so the nearest EXISTING ancestor is listed when it is a tracked directory or the root. A probe whose path runs through node_modules, a cache tree or a toolchain prefix names nothing tracked. A probe under another untracked directory (build output) that does not exist climbs to the nearest existing ancestor, which may be the root: the listing it adds is an over-declaration, the safe direction. A file the run wrote and removed reads the same way, which over-declares a listing: the safe direction.
    */
   const probedDir = (rel: string): string | undefined => {
     if (statOf(rel) !== undefined) return undefined;
@@ -684,6 +697,7 @@ export function attribute(access: Access, view: RepoView): Attribution {
       if (indexFileReads.length < 3) indexFileReads.push(shown);
     } else res.ignored.set(GIT_DISCOVERY, (res.ignored.get(GIT_DISCOVERY) ?? 0) + 1);
   };
+  const namesPids = new Set<number>();
   for (const ex of access.execs) {
     // Only a git command aimed at THIS repository says anything about its history: a selftest's `git init /tmp/x` or `git -C /tmp/x log` reads another one.
     if (!targetsRepo(ex, view)) continue;
@@ -696,7 +710,10 @@ export function attribute(access: Access, view: RepoView): Attribution {
       .join(' ');
     if (use === 'history' && res.gitHistory.length < 3) res.gitHistory.push(shown);
     if (use === 'content' && (res.gitContent ?? []).length < 3) res.gitContent?.push(shown);
-    if (use === 'names' && (res.gitNames ?? []).length < 3) res.gitNames?.push(shown);
+    if (use === 'names') {
+      if ((res.gitNames ?? []).length < 3) res.gitNames?.push(shown);
+      if (ex.pid !== undefined) namesPids.add(ex.pid);
+    }
     if ((use === 'index' || use === 'content') && res.gitIndex.length < 3) res.gitIndex.push(shown);
   }
   const relOf = (abs: string): string | undefined =>
@@ -744,8 +761,10 @@ export function attribute(access: Access, view: RepoView): Attribution {
       else noteUntracked(rel, true);
     }
   }
-  // An index read with no name-only `git ls-files` to explain it (another git command, or a library reading .git/index itself) is whole-tree evidence.
-  if ((res.gitNames ?? []).length === 0)
+  // An index read with no name-only `git ls-files` to explain it (another git command, or a library reading .git/index itself) is whole-tree evidence. When the trace names the reading processes, a name-only `git ls-files` explains only its own reads: a process that is not one reads the index for what it holds (review bab2c5c8.2).
+  const foreignIndexReader =
+    access.indexPids !== undefined && [...access.indexPids].some((pid) => !namesPids.has(pid));
+  if ((res.gitNames ?? []).length === 0 || foreignIndexReader)
     for (const r of indexFileReads) if (res.gitIndex.length < 3) res.gitIndex.push(r);
   // The dependency trees are what the ROOT lockfile installs, and input-hash.ts matches `**/package-lock.json` as `.*/package-lock.json`, so the root one is no global input: a gate that loads a dependency names it.
   if (usesDeps && tracked.has('package-lock.json')) res.reads.add('package-lock.json');
@@ -2233,6 +2252,28 @@ async function selftest(): Promise<number> {
   check(
     vmix.kind === 'whole-tree' && vmix.reason.includes('check-attr'),
     'a name-only ls-files beside another index command is still whole-tree'
+  );
+  // bab2c5c8.2: the reader of .git/index is judged by pid. Pid 7 ran `git ls-files -z` and read the index; pid 8 is a non-git process reading it too.
+  const pidLog = (readerPid: number): string =>
+    [
+      `7 execve("/usr/bin/git", ["git", "ls-files", "-z"], 0x7ff /* 3 vars */) = 0`,
+      `7 openat(AT_FDCWD</r>, "/r/.git/index", O_RDONLY) = 3</r/.git/index>`,
+      `${readerPid} openat(AT_FDCWD</r>, "/r/.git/index", O_RDONLY) = 4</r/.git/index>`,
+      `7 openat(AT_FDCWD</r>, "a/one.txt", O_RDONLY) = 5</r/a/one.txt>`,
+    ].join('\n');
+  const ownRead = fold(attribute(parseStraceLog(pidLog(7), '/r'), view), view);
+  check(
+    ownRead.kind === 'paths' && JSON.stringify(ownRead.names) === '["**"]',
+    "CONTROL: the index read by the name-only git ls-files's own pid is explained: names ['**']"
+  );
+  const foreignRead = fold(attribute(parseStraceLog(pidLog(8), '/r'), view), view);
+  check(
+    foreignRead.kind === 'whole-tree' && foreignRead.reason.includes('.git/index'),
+    'a non-git process reading .git/index beside a name-only ls-files is the whole-tree index'
+  );
+  check(
+    classifyGitArgv(['git', 'ls-files', '-z', '--recurse-submodules']) === 'index',
+    'git ls-files --recurse-submodules prints names inside submodules the root name set does not hold, so it is not a name-only scan (bab2c5c8.1)'
   );
   check(
     classifyGitArgv(['git', 'ls-files', '-z', '--cached', '--others', '--exclude-standard']) ===
