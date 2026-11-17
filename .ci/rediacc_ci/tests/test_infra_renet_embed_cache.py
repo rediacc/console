@@ -20,6 +20,7 @@ import time
 import pytest
 
 from rediacc_ci.infra import renet_embed_cache as rec
+from rediacc_ci.tests import pathmask
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 BUILD_SH = ROOT / "private" / "renet" / "build.sh"
@@ -463,25 +464,14 @@ def test_a_second_staging_waits_while_one_holds_the_tree(tmp_path):
     assert done.returncode == 0
 
 
-def _path_without(tool: str, tmp_path: pathlib.Path) -> str:
-    """A PATH holding a symlink to every executable on the current PATH except `tool`, so build.sh sees every other tool."""
-    farm = tmp_path / ("path-without-" + tool)
-    farm.mkdir()
-    for entry in os.environ.get("PATH", "/usr/bin:/bin").split(os.pathsep):
-        if not entry or not os.path.isdir(entry):
-            continue
-        for name in os.listdir(entry):
-            target = os.path.join(entry, name)
-            if name != tool and not os.path.lexists(farm / name) and os.access(target, os.X_OK):
-                (farm / name).symlink_to(target)
-    return str(farm)
-
-
 @needs_embed_tools
 def test_a_host_without_flock_stages_unlocked_and_says_so(tmp_path):
     """Review 59c3f980.1: without a flock binary embed_assets still stages, and prints one note that it is not serialized."""
     src = _skeleton(tmp_path)
-    done = _embed(src, tmp_path, base_path=_path_without("flock", tmp_path))
+    # `pathmask` mirrors only the PATH entries that hold flock. The local mirror of EVERY entry it replaced listed the WSL `/mnt/c` directories over 9p and cost 67 s of a 68 s test.
+    masked = pathmask.path_without("flock", tmp_path)
+    pathmask.assert_absent("flock", masked)
+    done = _embed(src, tmp_path, base_path=masked)
     assert done is not None
     assert done.returncode == 0, done.stdout + done.stderr
     assert (done.stdout + done.stderr).count("flock not found") == 1

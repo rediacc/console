@@ -235,7 +235,8 @@ def without(tool, tmp_path):
     farm = tmp_path / ("path-without-" + tool)
     farm.mkdir(parents=True, exist_ok=True)
     for directory in os.environ.get("PATH", "").split(os.pathsep):
-        if not directory or not os.path.isdir(directory):
+        # `/mnt/...` is a WSL developer's Windows drive mount behind 9p: thousands of names that no member resolves and that cost a listing tens of seconds per call. Skipped before the isdir() probe, itself a 9p round trip.
+        if not directory or directory.startswith("/mnt/") or not os.path.isdir(directory):
             continue
         for name in os.listdir(directory):
             if name == tool or (farm / name).exists():

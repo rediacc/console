@@ -34,6 +34,9 @@ def docker_less_path(farm: pathlib.Path) -> str:
     Prepending a fixture bin dir that merely lacks `docker` leaves the host's real one reachable behind it, so the case ran whatever this host's docker printed and read 127 only on a host that had none. Every executable the host exposes is linked into `farm` except `docker` (and its `docker-*` plugins), so the subject still finds bash, env, grep and python3, and nothing else changes."""
     farm.mkdir(parents=True, exist_ok=True)
     for directory in os.environ.get("PATH", "").split(os.pathsep):
+        # `/mnt/...` is a WSL developer's Windows drive mount behind 9p: thousands of names the subjects never resolve, and listing them cost the docker-missing cases 49-67 s each. Skipped before the is_dir() probe, itself a 9p round trip.
+        if directory.startswith("/mnt/"):
+            continue
         base = pathlib.Path(directory or ".")
         if not base.is_dir():
             continue

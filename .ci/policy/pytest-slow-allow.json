@@ -515,18 +515,6 @@
    "reason": "baseline 2026-11-17: 11.5 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
   },
   {
-   "test": ".ci.rediacc_ci.tests.test_infra_ci_start_account::test_port_and_twin_agree[docker-missing-entirely]",
-   "reason": "baseline 2026-11-17: 44.7 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-  },
-  {
-   "test": ".ci.rediacc_ci.tests.test_infra_ci_start_account::test_the_docker_missing_case_really_has_no_docker",
-   "reason": "baseline 2026-11-17: 43.8 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-  },
-  {
-   "test": ".ci.rediacc_ci.tests.test_infra_ci_start_elite::test_port_and_twin_agree[docker-missing-entirely]",
-   "reason": "baseline 2026-11-17: 58.5 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-  },
-  {
    "test": ".ci.rediacc_ci.tests.test_ops_cf_family::test_delta_a_supplied_token_does_not_wait",
    "reason": "baseline 2026-11-17: 26.1 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
   },
@@ -729,10 +717,6 @@
   {
    "test": ".ci.rediacc_ci.tests.test_release_retention_contract::test_control_the_generator_finds_the_old_rule_and_the_unguarded_rule",
    "reason": "baseline 2026-11-17: 18.6 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-  },
-  {
-   "test": ".ci.rediacc_ci.tests.test_security_ci_workflow_invariants::test_port_matches_the_twins_recorded_output[no-python3-on-the-path]",
-   "reason": "baseline 2026-11-17: 41.1 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
   },
   {
    "test": ".ci.rediacc_ci.tests.test_security_dependency_inventory::test_the_real_repository_inventories_in_json_format",
@@ -995,28 +979,8 @@
    "reason": "baseline 2026-11-17: 27.7 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
   },
   {
-   "test": ".claude.rediacc_hooks.tests.test_settings_collapse::test_dropping_a_member_turns_the_differential_red[pre-ask]",
-   "reason": "baseline 2026-11-17: 71.7 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-  },
-  {
-   "test": ".claude.rediacc_hooks.tests.test_settings_collapse::test_dropping_a_member_turns_the_differential_red[pre-bash]",
-   "reason": "baseline 2026-11-17: 78.1 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-  },
-  {
-   "test": ".claude.rediacc_hooks.tests.test_settings_collapse::test_dropping_a_member_turns_the_differential_red[pre-edit]",
-   "reason": "baseline 2026-11-17: 67.6 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-  },
-  {
    "test": ".claude.rediacc_hooks.tests.test_settings_collapse::test_stale_index_is_pinned_out_of_the_verdict_env",
    "reason": "baseline 2026-11-17: 29.0 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-  },
-  {
-   "test": ".claude.rediacc_hooks.tests.test_settings_collapse::test_the_head_script_runs_the_declared_check[jq]",
-   "reason": "baseline 2026-11-17: 46.0 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-  },
-  {
-   "test": ".claude.rediacc_hooks.tests.test_settings_collapse::test_the_head_script_runs_the_declared_check[python3]",
-   "reason": "baseline 2026-11-17: 35.6 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
   },
   {
    "test": ".claude.rediacc_hooks.tests.test_settings_collapse::test_verdict_set_is_unchanged[pre-ask-00]",

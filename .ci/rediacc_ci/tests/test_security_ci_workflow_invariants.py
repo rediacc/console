@@ -252,7 +252,8 @@ def path_without_python(tmp_path: pathlib.Path) -> pathlib.Path:
     bindir = tmp_path / "nopython-bin"
     bindir.mkdir(parents=True, exist_ok=True)
     for entry in os.environ.get("PATH", "").split(os.pathsep):
-        if not entry or not os.path.isdir(entry):
+        # `/mnt/...` is a WSL developer's Windows drive mount behind 9p, thousands of names that cost this case 38 s to list and that the twin never resolves; skipped before the isdir() probe, which is itself a 9p round trip (the same skip `test_release_assert_artifact_version._bin_without` measured).
+        if not entry or entry.startswith("/mnt/") or not os.path.isdir(entry):
             continue
         for name in os.listdir(entry):
             if name.startswith(("python", "uv")):
