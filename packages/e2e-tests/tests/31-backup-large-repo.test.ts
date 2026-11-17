@@ -19,6 +19,7 @@ import {
   restoreLedger,
   workers,
 } from '../src/utils/backup/chunkCliHarness';
+import { storeAccessFromEnv } from '../src/utils/backup/chunkCorruption';
 import {
   GIB,
   INCR_TIME_CAP_MS,
@@ -29,6 +30,11 @@ import {
   seedFileLimitMs,
   seedFileViolation,
 } from '../src/utils/backup/largeRepoBudget';
+import {
+  LOCAL_STORE_CONTAINER,
+  parseDfAvailBytes,
+  storeSpaceVerdict,
+} from '../src/utils/backup/storeSpace';
 import { collectVmEvidence, isSshLoss } from '../src/utils/backup/vmEvidence';
 import { withMount as withMountOps } from '../src/utils/backup/withMount';
 import { type BackupUsage, chunkVerbs, type SnapshotRecord } from '../src/utils/backupStorage';
@@ -234,6 +240,26 @@ test.describe
           freeGib,
           `the worker shows ${df.stdout.trim() || 'no'} GiB free under ${DS}; the seed needs ${FREE_GIB_NEEDED}. Start the fleet with VM_DSK=100: ${bothChannels(df).slice(-300)}`
         ).toBeGreaterThanOrEqual(FREE_GIB_NEEDED);
+
+        // The backup store's own disk: a full one fails the seed's chunk PUTs only after minutes of retries.
+        const endpoint = storeAccessFromEnv()?.endpoint ?? 'http://127.0.0.1:9100';
+        const storeDf = await promisify(exec)(
+          `docker exec ${LOCAL_STORE_CONTAINER} df -B1 --output=avail /data`,
+          { timeout: 20_000 }
+        ).then(
+          (r) => parseDfAvailBytes(r.stdout),
+          () => undefined
+        );
+        const space = storeSpaceVerdict({
+          endpoint,
+          neededBytes: QUOTA_NEEDED,
+          freeBytes: storeDf,
+        });
+        if (space.kind === 'skipped') {
+          test.info().annotations.push({ type: 'store-space-skipped', description: space.reason });
+          process.stderr.write(`K10 store-space preflight skipped: ${space.reason}\n`);
+        }
+        expect(space.kind === 'full' ? space.message : '', 'backup store free space').toBe('');
       });
 
       test('2. seed: the full image uploads', async () => {
