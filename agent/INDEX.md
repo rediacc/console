@@ -549,7 +549,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
 | `agent/plans/PLAN-health-checks-local.md` | approved | 707 | 17 | 64 | 131836 |
-| `agent/plans/PLAN-hostinger-to-bench.md` | approved | 106 | 11 | 11 | 21890 |
+| `agent/plans/PLAN-hostinger-to-bench.md` | approved | 107 | 11 | 11 | 22212 |
 | `agent/plans/PLAN-idle-writer-capacity.md` | approved | 65 | 0 | 5 | 12586 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 55 | 1 | 10 | 12683 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
@@ -589,7 +589,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-renet-bridge-leftovers.md` | approved | 121 | 0 | 16 | 30497 |
 | `agent/plans/PLAN-renet-docker-running-semantics.md` | executing | 78 | 2 | 13 | 16442 |
 | `agent/plans/PLAN-renet-down-before-kill.md` | approved | 155 | 2 | 13 | 32170 |
-| `agent/plans/PLAN-renet-executor-tiered-license-check.md` | executing | 57 | 1 | 3 | 12661 |
+| `agent/plans/PLAN-renet-executor-tiered-license-check.md` | executing | 58 | 1 | 3 | 13068 |
 | `agent/plans/PLAN-renet-fetch-retries.md` | approved | 55 | 0 | 3 | 7190 |
 | `agent/plans/PLAN-renet-i18n-baseline-drain.md` | proposed | 61 | 16 | 0 | 14873 |
 | `agent/plans/PLAN-renet-restart-cycle-defects.md` | approved | 40 | 1 | 6 | 6087 |

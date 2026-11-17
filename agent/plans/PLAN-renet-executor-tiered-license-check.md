@@ -51,6 +51,7 @@ Follow-ups for the lead: the TierNone flips (setup and daemon verbs, the build-o
     (ticked) 2026-10-30T12:55:07Z by d778be9d: commit:d06c08dd5 ops test comprehensive requires a licensed GUID; go test ./cmd/renet rc 0, plant fired
 - [ ] L1: hostinger's released renet refuses a repo-less tiered call without a licence. Accept: the live call's exit 10 LICENSE_REQUIRED, recorded through the live_proof recorder.
   (corrected 2026-11-11, R2) Local-route: hostinger -- run the repo-less tiered call on the real hostinger machine with the branch renet build; the exit 10 LICENSE_REQUIRED is recorded.
+    (corrected 2026-11-17, d778be9d) Live call on hostinger 2026-11-17 (`renet functions once --test-mode --function repository_create`, /tmp/live-hostinger/201f331a.log) printed LICENSE_REQUIRED but exited 1 on the deployed renet e2223b7d, which predates this branch. The Accept stays exit 10: re-run after the branch renet reaches hostinger; an exit 1 then is a defect in the functions-once exit mapping.
 
 - [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger

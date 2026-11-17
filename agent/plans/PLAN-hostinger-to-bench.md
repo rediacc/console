@@ -75,6 +75,7 @@ Worklist: #ad4d5f4e, PR-TASK 79b7e92e
 - [ ] C1 [live] Confirm the last eu run of hostinger's backup timer committed every repo, from the journal.
   Local-route: hostinger -- `term connect hostinger -c 'journalctl -u rediacc-backup-nightly-hot.service --since -2d'`.
   Accept: the journal tail shows the unit `status=0/SUCCESS` after the last 02:00 start
+    (corrected 2026-11-17, d778be9d) hostinger moved to bench on 2026-11-16, so the last run is the bench one: the journal shows Nov 16 02:25 FAILED (eu, the D1 parameter-cap 500 fixed in account 49f8b34) and Nov 17 02:17 Finished (bench) (/tmp/live-hostinger/dab0b572-sudo.log). The Accept is read against that last run.
 - [ ] C2 [live] Re-licence: `./rdc.sh --config eu-bench subscription refresh -m hostinger --adopt-origin`. Accept: `machine status hostinger --licenses -o json` shows https://bench.rediacc.cloud for every repo, and `sudo renet license renew --force --output json` on hostinger reports renewed for every blob
 - [x] C3 [live] `./rdc.sh --config eu-bench backup strategy bind nightly-hot -m hostinger`, then `backup schedule -m hostinger`. Accept: `backup schedule -m hostinger --dry-run` reports unchanged, and the unit holds `--expect-account-server https://bench.rediacc.cloud`
     (ticked) 2026-11-17T07:30:15Z by d778be9d: run: ./rdc.sh --config eu-bench backup schedule -m hostinger --dry-run rc=0 (8 unchanged); unit --expect-account-server https://bench-eu.rediacc.cloud (bench origin after the rename) log=/tmp/m/p-sched.txt

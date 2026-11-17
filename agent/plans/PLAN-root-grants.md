@@ -66,7 +66,7 @@ Two constraints:
 ## Rulings
 
 Operator words (2026-11-17), verbatim:
-- "At https://*.rediacc.cloud/account/ when I logged in with muhammed@rediacc.com I should see the normal user panels + console + admin + partner/sales for all regions. Can you please investigate and update the database for me?"
+> "At https://*.rediacc.cloud/account/ when I logged in with muhammed@rediacc.com I should see the normal user panels + console + admin + partner/sales for all regions. Can you please investigate and update the database for me?"
 - "maybe we should bind it into a CI rule for all instances based on root email?"
 - On the per-region plan fix and the partner creation: "Need a better and consistent solution. Maybe we should use the same code with names to IDs, mapping."
 - Partner org: "Rediacc, registered (Recommended)". Durable: "Yes: ops tool + ops-health check (Recommended)".
