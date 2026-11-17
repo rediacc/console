@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2936,
-    "sourceCommit": "e242620184fe9b0c662a344e845284c0f4e1b0e9"
+    "keyCount": 2940,
+    "sourceCommit": "409d37afb5602f6145a923bbaab8df253a434819"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -400,6 +400,7 @@
     "commands.backup.verify.failed": "8921c8fd",
     "commands.backup.verify.optionDeep": "e2f6e8f9",
     "commands.backup.verify.optionRestoreTest": "f8889722",
+    "commands.backup.verify.optionRestoreTo": "132bdc07",
     "commands.backup.verify.optionStore": "597a7c72",
     "commands.backup.verify.restoreTestCleanupFailed": "af1cf701",
     "commands.backup.verify.restoreTestExclusive": "d8fd328e",
@@ -408,6 +409,9 @@
     "commands.backup.verify.restoreTestNoAnchor": "5bf53d88",
     "commands.backup.verify.restoreTestNoSpace": "69478022",
     "commands.backup.verify.restoreTestSizeUnknown": "110d0579",
+    "commands.backup.verify.restoreToNeedsRestoreTest": "b18744c5",
+    "commands.backup.verify.restoreToSameMachine": "66fc6a78",
+    "commands.backup.verify.restoreToUnknown": "30e7b4cd",
     "commands.backup.verify.starting": "10d32493",
     "commands.backup.verify.storeEmpty": "7c454163",
     "commands.backup.verify.verdictUnreadable": "6afd439c",

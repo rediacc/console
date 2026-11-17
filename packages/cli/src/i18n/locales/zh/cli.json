@@ -357,6 +357,10 @@
         "restoreTestNoSpace": "空间不足,无法对 {{snapshot}} 进行恢复测试:需要 {{need}} 字节可用空间,数据存储只有 {{free}}。",
         "restoreTestSizeUnknown": "账户索引中没有快照 {{snapshot}} 的大小,无法检查恢复测试所需的空间。请先用 rdc backup snapshot 创建快照后重试。",
         "restoreTestFreeUnknown": "无法读取 {{machine}} 数据存储的可用空间,因此无法检查恢复测试所需的空间。",
+        "optionRestoreTo": "与 --restore-test 搭配使用，把副本恢复到这台机器而不是源仓库所在的机器，适用于大于源端可用空间的仓库；副本会与快照的清单根核对，随后按 GUID 删除",
+        "restoreToUnknown": "机器 {{machine}} 不在此配置中，因此无法在那里运行恢复测试。",
+        "restoreToSameMachine": "机器 {{machine}} 上有源仓库。请不带 --restore-to 运行恢复测试，或指定另一台机器。",
+        "restoreToNeedsRestoreTest": "--restore-to 只能与 --restore-test 一起使用。",
         "verdictUnreadable": "{{name}} 的验证没有输出可读的结论,因此未能证明任何内容。"
       },
       "snapshots": {

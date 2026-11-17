@@ -404,20 +404,30 @@ function registerBackupVerify(backup: Command): void {
     .option('--deep', t('commands.backup.verify.optionDeep'))
     .option('--store', t('commands.backup.verify.optionStore'))
     .option('--restore-test', t('commands.backup.verify.optionRestoreTest'))
+    .option('--restore-to <machine>', t('commands.backup.verify.optionRestoreTo'))
     .option('--debug', t('options.debug'))
     .action(
       async (
         repoRef: string,
-        options: { deep?: boolean; store?: boolean; restoreTest?: boolean; debug?: boolean }
+        options: {
+          deep?: boolean;
+          store?: boolean;
+          restoreTest?: boolean;
+          restoreTo?: string;
+          debug?: boolean;
+        }
       ) => {
         try {
           // A restore test is its own check, with its own verdict on the snapshot; mixing it with the anchor or store checks would blur which verdict was printed.
+          if (options.restoreTo !== undefined && !options.restoreTest) {
+            throw new ValidationError(t('commands.backup.verify.restoreToNeedsRestoreTest'));
+          }
           if (options.restoreTest) {
             if (options.deep || options.store) {
               throw new ValidationError(t('commands.backup.verify.restoreTestExclusive'));
             }
             const { runRestoreTest } = await import('./backup-restore-test.js');
-            await runRestoreTest(repoRef);
+            await runRestoreTest(repoRef, { restoreTo: options.restoreTo });
             return;
           }
           // `--deep` re-hashes the machine's cells and `--store` re-hashes the server's chunks: two different checks, and one of them would be dropped silently.

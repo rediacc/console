@@ -357,6 +357,10 @@
         "restoreTestNoSpace": "Espaço insuficiente para o teste de restauro de {{snapshot}}: precisa de {{need}} bytes livres e o datastore tem {{free}}.",
         "restoreTestSizeUnknown": "O tamanho do snapshot {{snapshot}} não consta do índice da conta, por isso não é possível verificar o espaço de que o teste de restauro precisa. Criar um snapshot com rdc backup snapshot e tentar de novo.",
         "restoreTestFreeUnknown": "Não foi possível ler o espaço livre do datastore de {{machine}}, por isso não é possível verificar o espaço de que o teste de restauro precisa.",
+        "optionRestoreTo": "Com --restore-test, restaurar a cópia nesta máquina em vez da do repositório de origem, para um repositório maior que o espaço livre da origem; a cópia é conferida com a raiz do manifesto do snapshot e depois removida por GUID",
+        "restoreToUnknown": "A máquina {{machine}} não está nesta configuração, então o teste de restauração não pode rodar lá.",
+        "restoreToSameMachine": "A máquina {{machine}} guarda o repositório de origem. Execute o teste de restauração sem --restore-to ou indique outra máquina.",
+        "restoreToNeedsRestoreTest": "--restore-to só vale junto com --restore-test.",
         "verdictUnreadable": "A verificação de {{name}} não imprimiu um veredicto legível, por isso nada foi comprovado."
       },
       "snapshots": {

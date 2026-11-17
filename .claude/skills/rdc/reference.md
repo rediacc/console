@@ -565,6 +565,7 @@ Verify a repository's backup anchor against the chunk store
 - `--deep`: Re-hash every recorded cell (full verification) instead of a sampled check
 - `--store`: Have the server re-hash every stored chunk of this repository and name any missing or corrupt one
 - `--restore-test`: Restore the anchor's snapshot under a throwaway name straight from the store, compare it with the anchor, record the result and delete the copy
+- `--restore-to <machine>`: With --restore-test, restore the copy on this machine instead of the source's, for a repository larger than the source's free space; the copy is held to the snapshot's manifest root and deleted by GUID afterwards
 - `--debug`: Enable debug output
 
 > MCP tool

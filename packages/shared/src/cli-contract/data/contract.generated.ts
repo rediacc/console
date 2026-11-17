@@ -2631,6 +2631,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Restore the anchor's snapshot under a throwaway name straight from the store, compare it with the anchor, record the result and delete the copy"
         },
         {
+          "flags": "--restore-to <machine>",
+          "long": "restore-to",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.verify.optionRestoreTo",
+          "label": "With --restore-test, restore the copy on this machine instead of the source's, for a repository larger than the source's free space; the copy is held to the snapshot's manifest root and deleted by GUID afterwards"
+        },
+        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,

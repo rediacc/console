@@ -357,6 +357,10 @@
         "restoreTestNoSpace": "{{snapshot}} の復元テストに必要な空き容量がありません。{{need}} バイトの空きが必要ですが、データストアには {{free}} しかありません。",
         "restoreTestSizeUnknown": "スナップショット {{snapshot}} のサイズがアカウントのインデックスにないため、復元テストに必要な空き容量を確認できません。rdc backup snapshot でスナップショットを作成してから再試行してください。",
         "restoreTestFreeUnknown": "{{machine}} のデータストアの空き容量を読み取れなかったため、復元テストに必要な空き容量を確認できません。",
+        "optionRestoreTo": "--restore-test と併用して、ソースリポジトリのマシンではなくこのマシンにコピーを復元します。ソースの空き容量より大きいリポジトリ向けで、コピーはスナップショットのマニフェストルートと照合され、その後 GUID で削除されます",
+        "restoreToUnknown": "マシン {{machine}} はこの設定にないため、そこでリストアテストは実行できません。",
+        "restoreToSameMachine": "マシン {{machine}} にはソースリポジトリがあります。--restore-to なしでリストアテストを実行するか、別のマシンを指定してください。",
+        "restoreToNeedsRestoreTest": "--restore-to は --restore-test と一緒にのみ使えます。",
         "verdictUnreadable": "{{name}} の検証は読み取れる判定を出力しなかったため、何も証明されていません。"
       },
       "snapshots": {
