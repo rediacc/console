@@ -7,7 +7,7 @@ order: 2
 language: pt
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/pt/cli.json
-sourceHash: "bf848fc6e63e3451"
+sourceHash: "53e48d7c4077dba3"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2985,6 +2985,7 @@ rdc backup verify <repo-ref> [options]
 | `--deep` | {{t:cli.commands.backup.verify.optionDeep}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--store` | {{t:cli.commands.backup.verify.optionStore}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--restore-test` | {{t:cli.commands.backup.verify.optionRestoreTest}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--restore-to <machine>` | {{t:cli.commands.backup.verify.optionRestoreTo}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
