@@ -119,11 +119,14 @@ export function networkPeer(args: string): string | undefined {
   const v4 = /sa_family=AF_INET,.*?sin_port=htons\((\d+)\).*?sin_addr=inet_addr\("([^"]+)"\)/.exec(
     args
   );
+  const fam = /sa_family=(AF_INET6?)\b/.exec(args);
   if (v4 !== null) return isLoopback(v4[2]) ? undefined : `${v4[2]}:${v4[1]}`;
   const v6 = /sa_family=AF_INET6,.*?sin6_port=htons\((\d+)\).*?inet_pton\(AF_INET6, "([^"]+)"/.exec(
     args
   );
   if (v6 !== null) return isLoopback(v6[2]) ? undefined : `[${v6[2]}]:${v6[1]}`;
+  // An internet-family connect whose address strace printed in a shape the patterns above miss is still a connect: dropping it would keep a path-only verdict for a gate that reached the network.
+  if (fam !== null) return `${fam[1]}:unparsed`;
   return undefined;
 }
 
@@ -192,11 +195,12 @@ interface ProcState {
 
 const FORKS = /^(clone|clone3|fork|vfork)$/;
 
+/** A path that is a git index file: the file a `git ls-files` reads, shared-index split files included. */
+const INDEX_PATH = /(^|\/)\.git\/(.*\/)?(index|sharedindex\.[^/]*)$/;
+
 /**
  * The stateful line parser, so a large log streams in chunks with each process's cwd intact. The cwd is PER PID: a `chdir` or `fchdir` moves only the process that made it, and a successful clone, clone3, fork or vfork gives the new pid the cwd its parent had at that moment. `line(l, pid)` takes the pid from the argument (a `-ff` log, whose file name holds it) or from the line's own prefix (a `-f` log). For `-ff`, feed the logs in ascending pid order so a parent's fork is seen before its child's lines; a child seen first starts from the root cwd, and its start is corrected when the fork arrives, for every relative path it had not yet resolved.
  */
-const INDEX_PATH = /(^|\/)\.git\/(.*\/)?(index|sharedindex\.[^/]*)$/;
-
 export function straceParser(
   rootCwd: string,
   into: Access = emptyAccess()
@@ -370,7 +374,7 @@ export interface Attribution {
   gitHistory: string[];
   /** Evidence that the gate enumerates the tracked file list through the index (`git ls-files` and kin). */
   gitIndex: string[];
-  /** Evidence that the gate reads what tracked files hold through the index (`git ls-files -s` and kin). Each entry is in gitIndex too. Optional so an Attribution built by hand (trace-honest.ts selftest) needs no change. */
+  /** Evidence that the gate reads what tracked files hold through the index (`git ls-files -s` and kin). A content use also counts as an index use, so gitIndex is never empty when this is not; gitIndex keeps at most 3 entries, so a content use after three index uses is shown here alone. Optional so an Attribution built by hand (trace-honest.ts selftest) needs no change. */
   gitContent?: string[];
   /** Network peers the gate connected to (neither loopback nor a unix socket), sorted. Optional for the same reason. */
   network?: string[];
@@ -423,8 +427,8 @@ export function classifyUntracked(
   return 'build';
 }
 
-/** A submodule's git directory sits at `modules/<name>/` under its superproject's, and `<name>` may hold slashes; every git-file rule below applies inside one exactly as at the top. */
-const SUBMODULE_GITDIR = '(?:modules/.+/)?';
+/** A submodule's git directory sits at `modules/<name>/` under its superproject's, and `<name>` may hold slashes but never a component named like a git directory entry (objects, refs, logs), so `modules/x/refs/heads/objects` is a branch of x, not x's objects directory; every git-file rule below applies inside one exactly as at the top. */
+const SUBMODULE_GITDIR = '(?:modules/(?:(?!(?:objects|refs|logs)/)[^/]+/)+)?';
 /** Git files whose content is history: any read of one makes the verdict move with commits, not with file bytes. */
 export const GIT_HISTORY_FILE = new RegExp(
   `^${SUBMODULE_GITDIR}(?:(objects|refs|logs)(/|$)|(packed-refs|FETCH_HEAD|ORIG_HEAD|MERGE_HEAD|CHERRY_PICK_HEAD|shallow)$)`
@@ -553,11 +557,6 @@ export function classifyGitArgv(argv: readonly string[]): GitUse {
     return rest.every((a) => a === '-v' || a === '--verbose') || rest[0] === 'get-url'
       ? 'discovery'
       : 'history';
-  // The root commit names the repository and no commit on top of it moves it.
-  if (sub === 'rev-list')
-    return rest.length === 2 && rest.includes('--max-parents=0') && rest.includes('HEAD')
-      ? 'discovery'
-      : 'history';
   if (sub === 'diff') return diffUse(rest);
   if (sub === 'ls-files') return lsFilesUse(rest);
   if (GIT_INDEX_CMDS.has(sub)) return 'index';
@@ -596,15 +595,15 @@ function lsFilesUse(rest: readonly string[]): GitUse {
 }
 
 /**
- * `git diff` with no revision compares the worktree with the index, for the paths it names: the index plus those files. A positional argument before `--` may be a revision (git disambiguates against the tree at run time, this classifier cannot), so it counts as history, the conservative direction; so do the flags that compare against HEAD.
+ * `git diff` with no revision compares the worktree with the index: it reads what the tracked files hold, so it is `content`, like `ls-files -m`. A positional argument before `--` may be a revision (git disambiguates against the tree at run time, this classifier cannot), so it counts as history, the conservative direction; so do the flags that compare against HEAD.
  */
 function diffUse(rest: readonly string[]): GitUse {
   for (const a of rest) {
-    if (a === '--') return 'index';
+    if (a === '--') return 'content';
     if (DIFF_REVISION_FLAGS.has(a)) return 'history';
     if (!a.startsWith('-')) return 'history';
   }
-  return 'index';
+  return 'content';
 }
 
 function under(abs: string, dir: string): boolean {
@@ -2374,22 +2373,49 @@ async function selftest(): Promise<number> {
     "CONTROL: a submodule's bare objects existence check and its HEAD are discovery"
   );
   check(
+    GIT_DISCOVERY_FILE.test('modules/x/objects') &&
+      GIT_DISCOVERY_FILE.test('modules/a/b/refs') &&
+      !GIT_DISCOVERY_FILE.test('modules/x/refs/heads/objects') &&
+      !GIT_DISCOVERY_FILE.test('modules/a/b/logs/refs') &&
+      GIT_HISTORY_FILE.test('modules/x/refs/heads/objects'),
+    'a submodule branch file named objects is history, not discovery; CONTROL: modules/<name>/objects and nested names stay discovery'
+  );
+  check(
+    networkPeer('3<socket:[1]>, {sa_family=AF_INET, sin_addr=inet_addr("1.1.1.1")}, 16) = 0') ===
+      'AF_INET:unparsed' &&
+      networkPeer('3<socket:[1]>, {sa_family=AF_INET6, sin6_port=0}, 28) = 0') ===
+        'AF_INET6:unparsed' &&
+      networkPeer('3<socket:[4]>, {sa_family=AF_UNIX, sun_path="/r/a"}, 12) = 0') === undefined &&
+      networkPeer('3<socket:[4]>, {sa_family=AF_UNSPEC}, 16) = 0') === undefined,
+    'an AF_INET connect strace printed in an unknown shape is still a network peer; CONTROL: AF_UNIX and AF_UNSPEC are not'
+  );
+  const idx3 = mk(['a/one.txt']);
+  for (const a of ['-t', '-t', '-t']) idx3.execs.push({ argv: ['git', 'ls-files', a], cwd: '/r' });
+  idx3.execs.push({ argv: ['git', 'ls-files', '-s'], cwd: '/r' });
+  const aIdx3 = attribute(idx3, view);
+  check(
+    aIdx3.gitIndex.length === 3 &&
+      (aIdx3.gitContent ?? []).includes('git ls-files -s') &&
+      !aIdx3.gitIndex.includes('git ls-files -s'),
+    'a content use after three index uses is in gitContent alone, and gitIndex stays non-empty (the documented invariant)'
+  );
+  check(
     classifyGitArgv(['git', 'status', '--porcelain']) === 'history' &&
       classifyGitArgv(['git', 'remote', '-v']) === 'discovery' &&
       classifyGitArgv(['git', 'remote', 'get-url', 'origin']) === 'discovery' &&
       classifyGitArgv(['git', 'remote', 'show', 'origin']) === 'history' &&
-      classifyGitArgv(['git', 'rev-list', '--max-parents=0', 'HEAD']) === 'discovery' &&
+      classifyGitArgv(['git', 'rev-list', '--max-parents=0', 'HEAD']) === 'history' &&
       classifyGitArgv(['git', 'rev-list', 'HEAD']) === 'history' &&
       classifyGitArgv(['git', 'rev-list', '--max-parents=0', 'main']) === 'history',
-    'status is history; remote -v|get-url and the root commit are discovery; remote show and other rev-lists are history'
+    'status is history; remote -v|get-url and a root-commit rev-list (it walks history) is history; remote show and other rev-lists are history'
   );
   check(
-    classifyGitArgv(['git', 'diff']) === 'index' &&
-      classifyGitArgv(['git', 'diff', '--exit-code', '--', 'a/one.txt']) === 'index' &&
+    classifyGitArgv(['git', 'diff']) === 'content' &&
+      classifyGitArgv(['git', 'diff', '--exit-code', '--', 'a/one.txt']) === 'content' &&
       classifyGitArgv(['git', 'diff', '--name-only', 'HEAD']) === 'history' &&
       classifyGitArgv(['git', 'diff', 'a/one.txt']) === 'history' &&
       classifyGitArgv(['git', 'diff', '--cached', '--', 'a/one.txt']) === 'history',
-    'diff with no revision and only paths after -- is the index; a positional before -- or --cached is history'
+    'diff with no revision and only paths after -- reads content; a positional before -- or --cached is history'
   );
   check(
     classifyGitArgv(['git', 'ls-files', '-s']) === 'content' &&
