@@ -516,7 +516,11 @@ export function attribute(access: Access, view: RepoView): Attribution {
     if (!targetsRepo(ex, view)) continue;
     const argv = ex.argv;
     const use = classifyGitArgv(argv);
-    const shown = argv.slice(0, 6).join(' ');
+    // A remote URL in a git argv (git remote-https origin <url>) is shown as <url>: it can carry credentials, and the ledger is committed.
+    const shown = argv
+      .slice(0, 6)
+      .map((a) => (/^[a-z][a-z0-9+.-]*:\/\//i.test(a) ? '<url>' : a))
+      .join(' ');
     if (use === 'history' && res.gitHistory.length < 3) res.gitHistory.push(shown);
     if (use === 'index' && res.gitIndex.length < 3) res.gitIndex.push(shown);
   }
@@ -1751,6 +1755,18 @@ async function selftest(): Promise<number> {
   check(
     vr.kind === 'whole-tree' && vr.reason.includes('history'),
     'a relative -C landing inside the root is this repository'
+  );
+  const urlC = mk(['a/one.txt']);
+  urlC.execs.push({
+    argv: ['/usr/lib/git-core/git', 'remote-https', 'origin', 'https://u:t@example.test/x.git'],
+    cwd: '/r',
+  });
+  const vu = fold(attribute(urlC, view), view);
+  check(
+    vu.kind === 'whole-tree' &&
+      vu.reason.includes('origin <url>') &&
+      !vu.reason.includes('example.test'),
+    'a remote URL in a git argv is shown as <url>, never verbatim'
   );
   check(
     classifyGitArgv(['git', '-C', 'x', 'rev-parse', '--show-toplevel']) === 'discovery' &&

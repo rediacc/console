@@ -1406,7 +1406,7 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     tree: 'c113bf9a0ff43eed4a387a4c26bc1f00185d3bbe',
     verdict: 'whole-tree',
     reason:
-      'reads git history (git rev-parse --is-shallow-repository; git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main; /usr/lib/git-core/git remote-https origin https://github.com/rediacc/console.git)',
+      'reads git history (git rev-parse --is-shallow-repository; git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main; /usr/lib/git-core/git remote-https origin <url>)',
     reads: 13065,
     listed: 158,
     coveragePct: 100,

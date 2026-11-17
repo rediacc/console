@@ -5,14 +5,15 @@ import {
   quickInstallUnixCommand,
   quickInstallWinCommand,
 } from '../install-commands.js';
+import { WK_SITE_ORIGIN } from '../well-known.generated.js';
 
 describe('install-commands', () => {
   it('pins the unix one-liner', () => {
-    expect(QUICK_INSTALL_UNIX_COMMAND).toBe('curl -fsSL https://www.rediacc.com/install.sh | bash');
+    expect(QUICK_INSTALL_UNIX_COMMAND).toBe(`curl -fsSL ${WK_SITE_ORIGIN}/install.sh | bash`);
   });
 
   it('pins the windows one-liner', () => {
-    expect(QUICK_INSTALL_WIN_COMMAND).toBe('irm https://www.rediacc.com/install.ps1 | iex');
+    expect(QUICK_INSTALL_WIN_COMMAND).toBe(`irm ${WK_SITE_ORIGIN}/install.ps1 | iex`);
   });
 
   it('builds against an overridden origin', () => {
