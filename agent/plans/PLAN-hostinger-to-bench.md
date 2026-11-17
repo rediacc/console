@@ -72,10 +72,11 @@ Worklist: #ad4d5f4e, PR-TASK 79b7e92e
 - [ ] L5 [live] Fill the protected subscription id in bench-production.json (a reviewed commit) and prove the guard. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.reset_bench --yes` exits 2 with the production refusal before any Cloudflare call
 
 ### Wave 3: cutover (one window outside 01:45-03:00Z, right after a green eu run)
-- [ ] C1 [live] Confirm the last eu run of hostinger's backup timer committed every repo, from the journal.
+- [x] C1 [live] Confirm the last eu run of hostinger's backup timer committed every repo, from the journal.
   Local-route: hostinger -- `term connect hostinger -c 'journalctl -u rediacc-backup-nightly-hot.service --since -2d'`.
   Accept: the journal tail shows the unit `status=0/SUCCESS` after the last 02:00 start
     (corrected 2026-11-17, d778be9d) hostinger moved to bench on 2026-11-16, so the last run is the bench one: the journal shows Nov 16 02:25 FAILED (eu, the D1 parameter-cap 500 fixed in account 49f8b34) and Nov 17 02:17 Finished (bench) (/tmp/live-hostinger/dab0b572-sudo.log). The Accept is read against that last run.
+    (ticked) 2026-11-17T15:39:32Z by d778be9d: commit:31214d672d journal on hostinger: Nov 17 02:17:31 systemd Finished rediacc-backup-nightly-hot.service (the last run after the 02:00 start, on bench per the 2026-11-17 correction line); Nov 16 02:25 eu run FAILED on the D1 parameter cap fixed in account 49f8b34; C5 store verify 13/13 rc=0 shows every repo committed
 - [ ] C2 [live] Re-licence: `./rdc.sh --config eu-bench subscription refresh -m hostinger --adopt-origin`. Accept: `machine status hostinger --licenses -o json` shows https://bench.rediacc.cloud for every repo, and `sudo renet license renew --force --output json` on hostinger reports renewed for every blob
 - [x] C3 [live] `./rdc.sh --config eu-bench backup strategy bind nightly-hot -m hostinger`, then `backup schedule -m hostinger`. Accept: `backup schedule -m hostinger --dry-run` reports unchanged, and the unit holds `--expect-account-server https://bench.rediacc.cloud`
     (ticked) 2026-11-17T07:30:15Z by d778be9d: run: ./rdc.sh --config eu-bench backup schedule -m hostinger --dry-run rc=0 (8 unchanged); unit --expect-account-server https://bench-eu.rediacc.cloud (bench origin after the rename) log=/tmp/m/p-sched.txt

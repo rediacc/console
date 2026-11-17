@@ -2064,8 +2064,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 11,
+      "open": 10,
+      "done": 12,
       "open_sigs": [
         "12ba3ee0",
         "4f14b0fc",
@@ -2074,7 +2074,6 @@
         "850392c1",
         "a221bf15",
         "d3e497f3",
-        "dab0b572",
         "e91d5c8a",
         "f1adf697",
         "f3dd8f35"
@@ -2090,7 +2089,8 @@
         "7d493cd9",
         "89e29a2a",
         "a5224d45",
-        "b9263981"
+        "b9263981",
+        "dab0b572"
       ]
     },
     "agent/plans/PLAN-idle-writer-capacity.md": {
