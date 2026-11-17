@@ -5,14 +5,19 @@ The planner and the generated SQL run against two sqlite databases built from `p
 
 from __future__ import annotations
 
+import atexit
 import dataclasses
+import functools
 import hashlib
 import json
 import os
+import pathlib
 import shlex
+import shutil
 import sqlite3
 import stat
 import subprocess
+import tempfile
 import typing
 from urllib.parse import urlparse
 
@@ -25,9 +30,6 @@ from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN
 
 EU_HOST = urlparse(ACCOUNT_DEFAULT_ORIGIN).netloc
 BENCH_HOST = urlparse(BENCH_ORIGIN).netloc
-
-if typing.TYPE_CHECKING:
-    import pathlib
 
 ROOT = paths.repo_root()
 DRIZZLE = ROOT / "private" / "account" / "drizzle"
@@ -103,13 +105,17 @@ def _close_connections() -> typing.Iterator[None]:
 
 def connect(path: pathlib.Path) -> sqlite3.Connection:
     conn = sqlite3.connect(path)
+    # No fsync: these are throwaway files. The baseline run sat in uninterruptible disk wait (1 CPU-minute in 26), every statement of 90 migrations fsynced twice per test (PLAN-ciquick-cpu W6).
+    conn.execute("PRAGMA synchronous = OFF")
     conn.row_factory = sqlite3.Row
     OPENED.append(conn)
     return conn
 
 
-def build_db(path: pathlib.Path) -> sqlite3.Connection:
-    conn = connect(path)
+def _migrated(path: pathlib.Path) -> None:
+    """Run every drizzle migration into a new sqlite file at `path`; the cost `build_db` pays once per module, not once per test."""
+    conn = sqlite3.connect(path)
+    conn.execute("PRAGMA synchronous = OFF")
     files = sorted(DRIZZLE.glob("*.sql"))
     for f in files:
         conn.executescript(f.read_text(encoding="utf-8").replace("--> statement-breakpoint", ""))
@@ -121,6 +127,41 @@ def build_db(path: pathlib.Path) -> sqlite3.Connection:
         "INSERT INTO d1_migrations (name, applied_at) VALUES (?, ?)", [(f.name, NOW) for f in files]
     )
     conn.commit()
+    conn.close()
+
+
+@functools.cache
+def _template_dir() -> pathlib.Path:
+    directory = pathlib.Path(tempfile.mkdtemp(prefix="mirror-config-store-template-"))
+    atexit.register(shutil.rmtree, directory, ignore_errors=True)
+    return directory
+
+
+@functools.cache
+def _schema_template() -> pathlib.Path:
+    """The migrated, unseeded database, built once per module and copied per test."""
+    path = _template_dir() / "schema.sqlite"
+    _migrated(path)
+    return path
+
+
+@functools.cache
+def _seeded_template() -> pathlib.Path:
+    """The migrated database holding `seed_stable(conn)`'s default rows, built once per module."""
+    path = _template_dir() / "seeded.sqlite"
+    shutil.copyfile(_schema_template(), path)
+    conn = sqlite3.connect(path)
+    conn.execute("PRAGMA synchronous = OFF")
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    seed_stable(conn)
+    conn.close()
+    return path
+
+
+def build_db(path: pathlib.Path, template: pathlib.Path | None = None) -> sqlite3.Connection:
+    shutil.copyfile(template or _schema_template(), path)
+    conn = connect(path)
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
@@ -334,9 +375,8 @@ class NoDefault(Sqlite):
 
 @pytest.fixture
 def dbs(tmp_path: pathlib.Path) -> tuple[sqlite3.Connection, sqlite3.Connection]:
-    src = build_db(tmp_path / "account-eu.sqlite")
+    src = build_db(tmp_path / "account-eu.sqlite", _seeded_template())
     dst = build_db(tmp_path / "account-bench.sqlite")
-    seed_stable(src)
     return src, dst
 
 
@@ -1093,6 +1133,7 @@ if args[:2] == ["d1", "time-travel"]:
     sys.exit(0)
 if args[:2] == ["d1", "execute"]:
     conn = sqlite3.connect(dbdir / (args[2] + ".sqlite"))
+    conn.execute("PRAGMA synchronous = OFF")
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     if "--file" in args:
