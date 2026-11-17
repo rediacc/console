@@ -207,7 +207,7 @@ pathlib.Path(FIXTURE_DIR, "label_two_words.py").write_text(
 )
 pathlib.Path(FIXTURE_DIR, "label_escaped.py").write_text(
     PROSE_BUILT.replace(
-        PROSE_LABEL, 'CASES = ["an edit to the worktree\\ndoes not change\\nthe verdict"]\n'
+        PROSE_LABEL, 'CASES = ["edit\\nto\\nthe\\nworktree\\nverdict"]\n'
     )
     + 'os.system("git " + sys.argv[1])\n',
     encoding="utf-8",
