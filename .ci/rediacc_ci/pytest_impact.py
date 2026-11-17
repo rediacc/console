@@ -625,9 +625,16 @@ def select(
     reads = policy["reads"]
     tracked_dirs = tracked_dirs_of(existing, test_roots)
     in_scope_files = [p for p in existing if p.startswith(SCOPE_PREFIXES) or p.endswith(".py")]
-    broad = broad_globs(
-        (lit for entry in tests.values() for lit in entry["literals"]), in_scope_files, tracked_dirs
-    )
+    # Only a glob that covers some changed file can matter, so only those are measured against the tree: measuring every glob literal in the suite took 31 s on the real tree.
+    judged = [rel for rel in changed if rel.startswith(SCOPE_PREFIXES) or rel.endswith(".py")]
+    relevant = {
+        lit
+        for entry in tests.values()
+        for lit in entry["literals"]
+        if _is_glob(_normal_literal(lit))
+        and any(literal_covers(lit, rel, tracked_dirs) for rel in judged)
+    }
+    broad = broad_globs(relevant, in_scope_files, tracked_dirs)
     indexes = {test: LiteralIndex(entry["literals"], broad) for test, entry in tests.items()}
     closures = {test: frozenset(entry["closure"]) for test, entry in tests.items()}
     selected: dict[str, str] = dict.fromkeys(smoke, "smoke")
