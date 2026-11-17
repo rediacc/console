@@ -85,6 +85,8 @@ export interface Access {
   listed: Set<string>;
   /** Every successful execve: its argv and the cwd it ran in, which says which repository a git command reads. */
   execs: Exec[];
+  /** When the traced run started (epoch ms): an untracked file modified after it was written by the run itself. */
+  startedMs?: number;
 }
 
 export interface Exec {
@@ -282,6 +284,50 @@ export interface Attribution {
   /** Evidence that the gate enumerates the tracked file list through the index (`git ls-files` and kin). */
   gitIndex: string[];
   ignored: Map<string, number>;
+  /** Existing untracked files or directories read outside the dependency and toolchain trees: build output, a few examples. */
+  buildOutput: string[];
+  /** Untracked state under .ci/cache read outside the toolchain: the verdict can move with cache contents. */
+  cacheState: string[];
+}
+
+/** Untracked trees a gate may read without making its verdict depend on anything but tracked inputs and the toolchain salt. */
+const TOOLCHAIN_PREFIXES = ['.ci/cache/toolchain/', '.ci/cache/bin/', '.venv/'];
+/** Repo-local tool caches keyed by content, under .ci/cache: mypy's incremental cache. */
+const CONTENT_CACHE_PREFIXES = ['.ci/cache/mypy/'];
+/** Tool caches keyed by the content they cache: reading one changes speed, never the verdict. */
+const CONTENT_CACHE_SEGMENTS = new Set([
+  '__pycache__',
+  '.mypy_cache',
+  '.ruff_cache',
+  '.pytest_cache',
+]);
+
+/** How an untracked path under the root bears on a verdict. */
+export type Untracked = 'deps' | 'toolchain' | 'cache' | 'build' | 'irrelevant';
+
+/**
+ * Classifies an untracked path a trace touched. `stat` answers undefined for a path that does not exist (a module-resolution probe), else its mtime and whether it is a directory; a file modified after `startedMs` was written by the run itself and is irrelevant.
+ */
+export function classifyUntracked(
+  rel: string,
+  stat: { mtimeMs: number; dir: boolean } | undefined,
+  startedMs: number | undefined,
+  listing: boolean
+): Untracked {
+  const segs = rel.split('/');
+  if (segs.includes('node_modules')) return 'deps';
+  if (TOOLCHAIN_PREFIXES.some((p) => rel.startsWith(p) || `${rel}/` === p)) return 'toolchain';
+  if (
+    segs.some((x) => CONTENT_CACHE_SEGMENTS.has(x)) ||
+    rel.endsWith('.tsbuildinfo') ||
+    CONTENT_CACHE_PREFIXES.some((p) => rel.startsWith(p) || `${rel}/` === p)
+  )
+    return 'irrelevant';
+  if (stat === undefined) return 'irrelevant';
+  if (stat.dir && !listing) return 'irrelevant';
+  if (startedMs !== undefined && stat.mtimeMs >= startedMs) return 'irrelevant';
+  if (rel === '.ci/cache' || rel.startsWith('.ci/cache/')) return 'cache';
+  return 'build';
 }
 
 /** Git files whose content is history: any read of one makes the verdict move with commits, not with file bytes. */
@@ -379,7 +425,8 @@ function ancestors(p: string): string[] {
 export function attribute(access: Access, view: RepoView): Attribution {
   const tracked = new Set(view.files);
   const trackedDirs = new Set<string>();
-  for (const f of view.files) for (const a of ancestors(f)) trackedDirs.add(a);
+  for (const f of [...view.files, ...view.gitlinks])
+    for (const a of ancestors(f)) trackedDirs.add(a);
   const gitlinkOf = (rel: string): string | undefined =>
     view.gitlinks.find((g) => rel === g || rel.startsWith(`${g}/`));
   const res: Attribution = {
@@ -389,6 +436,26 @@ export function attribute(access: Access, view: RepoView): Attribution {
     gitHistory: [],
     gitIndex: [],
     ignored: new Map(),
+    buildOutput: [],
+    cacheState: [],
+  };
+  let usesDeps = false;
+  const statOf = (rel: string): { mtimeMs: number; dir: boolean } | undefined => {
+    try {
+      const st = fs.statSync(path.join(view.root, rel));
+      return { mtimeMs: st.mtimeMs, dir: st.isDirectory() };
+    } catch {
+      return undefined;
+    }
+  };
+  const noteUntracked = (rel: string, listing: boolean): void => {
+    const kind = classifyUntracked(rel, statOf(rel), access.startedMs, listing);
+    if (kind === 'deps') usesDeps = true;
+    else if (kind === 'cache') {
+      if (res.cacheState.length < 3) res.cacheState.push(rel);
+    } else if (kind === 'build') {
+      if (res.buildOutput.length < 3) res.buildOutput.push(rel);
+    }
   };
   // The most specific git directory first: a worktree's own gitdir sits inside the common one.
   const gitDirs = [...view.gitDirs].sort((a, b) => b.length - a.length);
@@ -436,6 +503,7 @@ export function attribute(access: Access, view: RepoView): Attribution {
     else {
       const g = gitlinkOf(rel);
       if (g !== undefined) res.gitlinkReads.add(g);
+      else noteUntracked(rel, false);
     }
   }
   for (const abs of access.listed) {
@@ -452,8 +520,11 @@ export function attribute(access: Access, view: RepoView): Attribution {
     else {
       const g = gitlinkOf(rel);
       if (g !== undefined) res.gitlinkReads.add(g);
+      else noteUntracked(rel, true);
     }
   }
+  // The dependency trees are what the ROOT lockfile installs, and input-hash.ts matches `**/package-lock.json` as `.*/package-lock.json`, so the root one is no global input: a gate that loads a dependency names it.
+  if (usesDeps && tracked.has('package-lock.json')) res.reads.add('package-lock.json');
   return res;
 }
 
@@ -482,7 +553,7 @@ function cleanDir(p: string): string {
 }
 
 /** Folds an attribution into `paths` globs, or a whole-tree verdict with its reason. */
-export function fold(attr: Attribution, view: RepoView): Verdict {
+export function fold(attr: Attribution, view: RepoView, needs: readonly string[] = []): Verdict {
   const counts = { reads: attr.reads.size, listed: attr.listed.size };
   const whole = (reason: string, coveragePct = 100): Verdict => ({
     kind: 'whole-tree',
@@ -496,6 +567,14 @@ export function fold(attr: Attribution, view: RepoView): Verdict {
       `enumerates the tracked file list through the git index (${attr.gitIndex.join('; ')}), so a new file anywhere can change its verdict`
     );
   if (attr.listed.has('')) return whole('lists the repository root');
+  if (attr.cacheState.length > 0)
+    return whole(
+      `reads untracked cache state (${attr.cacheState.join(', ')}), so its verdict can move with no tracked input moving; a carry-exempt.json candidate`
+    );
+  if (attr.buildOutput.length > 0 && needs.length === 0)
+    return whole(
+      `reads untracked build output (${attr.buildOutput.join(', ')}) and declares no needs edge naming its producer, so no input hash would move when that output does; add the producer to needs, then re-trace`
+    );
   const isGlobal = (f: string): boolean => GLOBAL_INPUTS.some((g) => matchGlob(g, f));
   const files = [...attr.reads].filter((f) => !isGlobal(f));
   const dirGlobs = new Set<string>();
@@ -656,6 +735,7 @@ export async function traceCommand(
   });
   fs.closeSync(outFd);
   const access = emptyAccess();
+  access.startedMs = started;
   const logs = fs.readdirSync(dir).filter((f) => /^t\.\d+$/.test(f));
   for (const f of logs) {
     // A log can exceed the largest string V8 holds: stream it in chunks and parse whole lines, carrying the partial last one.
@@ -980,6 +1060,7 @@ export interface RawAccess {
   files: string[];
   listed: string[];
   execs: Exec[];
+  startedMs?: number;
 }
 
 export function rawOf(access: Access, view: RepoView): RawAccess {
@@ -988,12 +1069,18 @@ export function rawOf(access: Access, view: RepoView): RawAccess {
     files: [...access.files].filter(ours).sort(byteOrder),
     listed: [...access.listed].filter(ours).sort(byteOrder),
     execs: access.execs.filter((e) => path.posix.basename(e.argv[0] ?? '') === 'git'),
+    startedMs: access.startedMs,
   };
 }
 
 /** The verdict a trace earns: the fold, unless the gate was red, which makes the read set untrustworthy. */
-export function verdictOf(attr: Attribution, view: RepoView, exit: number): Verdict {
-  const verdict = fold(attr, view);
+export function verdictOf(
+  attr: Attribution,
+  view: RepoView,
+  exit: number,
+  needs: readonly string[] = []
+): Verdict {
+  const verdict = fold(attr, view, needs);
   if (exit === 0) return verdict;
   return {
     kind: 'whole-tree',
@@ -1018,7 +1105,7 @@ export async function traceGate(
   const attr = attribute(run.access, view);
   return {
     id: entry.id,
-    verdict: verdictOf(attr, view, run.exit),
+    verdict: verdictOf(attr, view, run.exit, entry.needs ?? []),
     exit: run.exit,
     seconds: run.seconds,
     ignored: attr.ignored,
@@ -1097,8 +1184,10 @@ export function refold(root: string, file: string): number {
       files: new Set(r.raw.files),
       listed: new Set(r.raw.listed),
       execs: r.raw.execs,
+      startedMs: r.raw.startedMs,
     };
-    const verdict = verdictOf(attribute(access, view), view, r.exit);
+    const needs = readLock(root).find((e) => e.id === r.id)?.needs ?? [];
+    const verdict = verdictOf(attribute(access, view), view, r.exit, needs);
     if (verdict.kind === 'paths') paths++;
     n++;
     process.stdout.write(`${JSON.stringify({ ...r, verdict })}\n`);
@@ -1409,6 +1498,47 @@ async function selftest(): Promise<number> {
     v4d.kind === 'whole-tree' && v4d.reason.includes('rev-parse HEAD'),
     'HEAD read as a revision by argv is history'
   );
+  check(
+    classifyUntracked('node_modules/x/index.js', undefined, 0, false) === 'deps' &&
+      classifyUntracked('.ci/cache/toolchain/uv/bin/ruff', { mtimeMs: 1, dir: false }, 5, false) ===
+        'toolchain' &&
+      classifyUntracked('a/__pycache__/m.pyc', { mtimeMs: 1, dir: false }, 5, false) ===
+        'irrelevant' &&
+      classifyUntracked('nope/missing.js', undefined, 5, false) === 'irrelevant' &&
+      classifyUntracked('out/report.json', { mtimeMs: 9, dir: false }, 5, false) === 'irrelevant' &&
+      classifyUntracked('.ci/cache/gate-durations.json', { mtimeMs: 1, dir: false }, 5, false) ===
+        'cache' &&
+      classifyUntracked('.ci/cache/mypy/3.12/x.json', { mtimeMs: 1, dir: false }, 5, false) ===
+        'irrelevant' &&
+      classifyUntracked('packages/www/dist/index.html', { mtimeMs: 1, dir: false }, 5, false) ===
+        'build' &&
+      classifyUntracked('packages/www/dist', { mtimeMs: 1, dir: true }, 5, true) === 'build' &&
+      classifyUntracked('packages/www/dist', { mtimeMs: 1, dir: true }, 5, false) === 'irrelevant',
+    'untracked classes: deps, toolchain, content cache, probe, self-written, cache state, build output (read and listed), a bare dir stat'
+  );
+  const buildAttr = {
+    ...attribute(mk(['a/one.txt']), view),
+    buildOutput: ['packages/www/dist/index.html'],
+  };
+  const vb = fold(buildAttr, view);
+  check(
+    vb.kind === 'whole-tree' && vb.reason.includes('no needs edge'),
+    'build output read with no needs edge is whole-tree'
+  );
+  const vbn = fold(buildAttr, view, ['build:www']);
+  check(
+    vbn.kind === 'paths' && vbn.paths.join(',') === 'a/one.txt',
+    'CONTROL: the same read with a needs edge keeps its paths'
+  );
+  const vc = fold(
+    { ...attribute(mk(['a/one.txt']), view), cacheState: ['.ci/cache/x.json'] },
+    view,
+    ['build:www']
+  );
+  check(
+    vc.kind === 'whole-tree' && vc.reason.includes('cache state'),
+    'cache state is whole-tree even with a needs edge'
+  );
   const foreign = mk(['a/one.txt']);
   foreign.execs.push(
     { argv: ['git', 'init', '-q', '/tmp/x'], cwd: '/r' },
@@ -1456,6 +1586,11 @@ async function selftest(): Promise<number> {
   check(
     v9.kind === 'paths' && v9.paths.join(',') === 'd/**',
     'a path with a forbidden glob char folds to its clean parent'
+  );
+  const vp = fold(attribute(mk(['a/one.txt'], ['private']), view), view);
+  check(
+    vp.kind === 'paths' && vp.paths.includes('private/**'),
+    'a listing of a directory holding only gitlinks is a tracked listing, not build output'
   );
   const v10 = fold(attribute(mk(['private/sub/go.mod', 'a/one.txt']), view), view);
   check(
