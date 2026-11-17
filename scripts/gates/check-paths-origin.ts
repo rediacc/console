@@ -150,7 +150,8 @@ function pathsOriginFindings(
       }
     } else {
       findings.push(
-        `${e.id}: pathsOrigin "${origin}" is neither \`'declared'\`, \`'traced'\` nor \`` + 'derived:<tool>`.'
+        `${e.id}: pathsOrigin "${origin}" is neither \`'declared'\`, \`'traced'\` nor \`` +
+          'derived:<tool>`.'
       );
     }
   }
