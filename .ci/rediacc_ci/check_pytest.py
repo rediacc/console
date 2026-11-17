@@ -365,27 +365,23 @@ def emit_junit_findings(junit: pathlib.Path) -> None:
 SLOW_CONFIRM_RUNS = 2
 
 
-def slow_confirm_junit(junit: pathlib.Path, run: int) -> pathlib.Path:
-    return junit.with_name("%s-slow-confirm-%d.xml" % (junit.stem, run))
-
-
 def slow_ratchet(junit: pathlib.Path, pytest_bin: str, root: pathlib.Path) -> int:
     """Run the slow-test ratchet over the junit this run just wrote: 0 clean, 1 a test over 10 s that `pytest-slow-allow.json` does not list, 2 no verdict (no test case in the junit). Anything but 0 fails the gate, so a passing run that wrote no readable junit cannot go green past it.
 
-    An unlisted test over the threshold in the parallel run is re-timed in `SLOW_CONFIRM_RUNS` serial runs first, and judged on its median across them all. A re-run that writes no junit adds no sample, so the parallel time stands."""
-    junits = [junit]
+    An unlisted test over the threshold in the parallel run is re-timed in `SLOW_CONFIRM_RUNS` serial runs first, and judged on its median across them all. The re-runs write their junits to a temp directory, never the tree; a re-run that writes none adds no sample, so the parallel time stands."""
     nodeids = pytest_slow_ratchet.confirm_candidates(junit, root)
-    if nodeids:
-        print(
-            "info: pytest-slow: re-timing %d test(s) over %g s in %d serial run(s)"
-            % (len(nodeids), pytest_slow_ratchet.THRESHOLD_S, SLOW_CONFIRM_RUNS)
-        )
-        for run in range(1, SLOW_CONFIRM_RUNS + 1):
-            confirm = slow_confirm_junit(junit, run)
-            confirm.unlink(missing_ok=True)
+    with tempfile.TemporaryDirectory(prefix="pytest-slow-confirm-") as scratch:
+        junits = [junit]
+        if nodeids:
+            print(
+                "info: pytest-slow: re-timing %d test(s) over %g s in %d serial run(s)"
+                % (len(nodeids), pytest_slow_ratchet.THRESHOLD_S, SLOW_CONFIRM_RUNS)
+            )
+        for run in range(1, SLOW_CONFIRM_RUNS + 1 if nodeids else 1):
+            confirm = pathlib.Path(scratch) / ("slow-confirm-%d.xml" % run)
             run_pytest(pytest_bin, root, ["-n", "0", "--junitxml", str(confirm), *nodeids])
             junits.append(confirm)
-    return pytest_slow_ratchet.main([arg for j in junits for arg in ("--junit", str(j))])
+        return pytest_slow_ratchet.main([arg for j in junits for arg in ("--junit", str(j))])
 
 
 def verdict(
