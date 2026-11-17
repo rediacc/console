@@ -257,7 +257,7 @@ function formatParsedError(parsed: ReturnType<typeof parseRdcCommand>): string {
     case 'missing-mandatory-option':
       return `Missing mandatory option ${parsed.flag} for "rdc ${parsed.commandPath}"`;
     default:
-      return `Invalid command (${parsed.reason === '' ? 'unknown' : parsed.reason})`;
+      return `Invalid command (${parsed.reason})`;
   }
 }
 
