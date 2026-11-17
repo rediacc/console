@@ -72,7 +72,11 @@ import {
   type GateHash,
   inputHashSelftest,
   type LockEntry,
+  type LsEntry,
+  listLines,
+  lsTree,
   matchGlob,
+  nameLines,
   type PriorGate,
   type PriorReceipt,
   planCarry,
@@ -147,7 +151,13 @@ import {
   type Utilisation,
   utilisation,
 } from './report';
-import { type ChangeSet, ChangeSetRefusal, selectChanged } from './select';
+import {
+  type ChangeSet,
+  ChangeSetRefusal,
+  type NameEntry,
+  selectChanged,
+  selectSelftest,
+} from './select';
 import { legIds, parseShardManifest, shardManifestPath } from './shard-manifest';
 import { predictMakespan, reclaimLoopSelftest, schedulerSelftest } from './sim';
 import { unitsFrom } from './unit-enumerators';
@@ -578,6 +588,34 @@ function expandGitlinks(named: readonly string[], warn: (text: string) => void):
  * -- which was false, because `select()` then dropped every path-declaring gate for
  * want of a match. See scripts/ci-runner/select.ts for the measurement.
  */
+/**
+ * The two listings a `lists`/`names` gate is scoped by under `--changed` (select.ts): the tracked entries at the merge base, and the judged state, which is the diff's own other side, the working tree: the index entries minus the tracked files deleted on disk (`git diff <base>` lists those as changed too). Untracked files are on neither side, as in the diff. Lazy, so a run with no such gate never lists anything; undefined when git cannot answer.
+ */
+function changeSetListings(mergeBase: string): NonNullable<ChangeSet['listings']> {
+  const before = (): NameEntry[] | undefined => {
+    try {
+      return lsTree(REPO_ROOT, mergeBase).map((e) => ({ mode: e.mode, path: e.path }));
+    } catch {
+      return undefined;
+    }
+  };
+  const after = (): NameEntry[] | undefined => {
+    const staged = gitTry(['ls-files', '-s', '-z']);
+    const deleted = gitTry(['ls-files', '-d', '-z']);
+    if (staged === undefined || deleted === undefined) return undefined;
+    const gone = new Set(deleted.split('\0').filter(Boolean));
+    const out: NameEntry[] = [];
+    for (const rec of staged.split('\0')) {
+      const tab = rec.indexOf('\t');
+      if (tab < 0) continue;
+      const p = rec.slice(tab + 1);
+      if (!gone.has(p)) out.push({ mode: rec.slice(0, rec.indexOf(' ')), path: p });
+    }
+    return out;
+  };
+  return { before, after };
+}
+
 function changedFiles(): ChangeSet {
   const base = process.env.CI_RUNNER_BASE ?? 'origin/main';
   try {
@@ -598,6 +636,7 @@ function changedFiles(): ChangeSet {
       files: expandGitlinks(named, (t) => process.stderr.write(t)),
       origin: 'resolved',
       base,
+      listings: changeSetListings(mergeBase),
     };
   } catch (err) {
     return {
@@ -2426,6 +2465,10 @@ async function selftest(): Promise<number> {
   // --quick DIFF SELECTION (quick-select.ts). The pure half: touch, import closure, npm script change, the mutant matcher, the budget, the base fallback.
   const qs = quickSelectSelftest(os.tmpdir(), matchesAny);
   for (const f of qs.failures) require_(false, `quick-select: ${f}`);
+  // THE --changed NAME-SHAPED SCOPE (select.ts, W2.4), under the runner's own glob dialect.
+  const sel = selectSelftest(matchesAny);
+  for (const f of sel.failures) require_(false, `select: ${f}`);
+  require_(sel.assertions > 0, 'select: the selftest asserted nothing');
   // THE LOCAL ADVISORY GATE (local-warn.ts): warning in the quick lane, still blocking in CI, read from the real manifest and workflow.
   const lw = localWarnSelftest(REPO_ROOT, GATES);
   for (const f of lw.failures) require_(false, `local-warn: ${f}`);
@@ -3059,6 +3102,102 @@ async function selftest(): Promise<number> {
       unreadPlan.kind === 'full' && unreadPlan.why.includes('g:tree'),
       `a carried verdict over a touched input that is no reader of it must run the lane and be named, got ${JSON.stringify(unreadPlan)}`
     );
+    // NAME-SHAPED CARRIED INPUTS (W2.4): a carried entry recording `lists`/`names` is stale when the step changed the listing, which no content glob of it sees; one recording `refs` is stale on every step.
+    const lsEntry = (p: string): LsEntry => ({ mode: '100644', type: 'blob', oid: 'o', path: p });
+    const trees: Record<string, LsEntry[]> = {
+      T0: [lsEntry('agent/reviews/old.md'), lsEntry('src/a.ts')],
+      T1: [lsEntry('agent/reviews/old.md'), lsEntry('agent/reviews/new.md'), lsEntry('src/a.ts')],
+    };
+    const namedEntry = (
+      named: { lists?: string[]; names?: string[]; refs?: string[] },
+      globs: string[] = ['package-lock.json']
+    ): ReceiptGate => ({
+      ...carriedEntry(globs),
+      inputs: { globs, files: [], scripts: [], ...named },
+    });
+    const planNamed = (
+      gates: Record<string, ReceiptGate>,
+      paths: string[],
+      entriesAt: ((t: string) => LsEntry[] | undefined) | undefined = (t) => trees[t]
+    ) =>
+      planAdvance({
+        receipt: { ...whole, gates },
+        headTree: 'T1',
+        policy,
+        diff: at(paths),
+        known,
+        entriesAt,
+      });
+    const listAdd = planNamed({ 'g:plan': namedEntry({ lists: ['agent/reviews'] }) }, [
+      'agent/reviews/new.md',
+    ]);
+    require_(
+      listAdd.kind === 'advance' && listAdd.refresh.join() === 'g:plan',
+      `a child added to a listed directory must refresh the carried lists reader (no content glob of it matches the path), got ${JSON.stringify(listAdd)}`
+    );
+    const nameAdd = planNamed({ 'g:plan': namedEntry({ names: ['agent/reviews/*.md'] }) }, [
+      'agent/reviews/new.md',
+    ]);
+    require_(
+      nameAdd.kind === 'advance' && nameAdd.refresh.join() === 'g:plan',
+      `a new names match must refresh the carried names reader, got ${JSON.stringify(nameAdd)}`
+    );
+    const sameListing = (t: string): LsEntry[] | undefined =>
+      trees.T0.map((e) => ({ ...e, oid: t }));
+    const listEdit = planNamed(
+      { 'g:plan': namedEntry({ lists: ['agent/reviews'], names: ['agent/reviews/*.md'] }) },
+      ['agent/reviews/old.md'],
+      sameListing
+    );
+    require_(
+      listEdit.kind === 'advance' && listEdit.refresh.length === 0,
+      `CONTROL: a content edit that leaves the listing alone must refresh nothing, got ${JSON.stringify(listEdit)}`
+    );
+    const otherList = planNamed({ 'g:plan': namedEntry({ lists: ['src'] }) }, [
+      'agent/reviews/new.md',
+    ]);
+    require_(
+      otherList.kind === 'advance' && otherList.refresh.length === 0,
+      `CONTROL: a child added to an unlisted directory must refresh nothing, got ${JSON.stringify(otherList)}`
+    );
+    const listNonReader = planNamed({ 'g:tree': namedEntry({ lists: ['agent/reviews'] }) }, [
+      'agent/reviews/new.md',
+    ]);
+    require_(
+      listNonReader.kind === 'full' && listNonReader.why.includes('g:tree'),
+      `a carried lists entry whose listing moved and that no touched record re-runs must run the lane and be named, got ${JSON.stringify(listNonReader)}`
+    );
+    require_(
+      planNamed(
+        { 'g:plan': namedEntry({ lists: ['agent/reviews'] }) },
+        ['agent/reviews/old.md'],
+        () => undefined
+      ).kind === 'advance' &&
+        planNamed(
+          { 'g:tree': namedEntry({ lists: ['agent/reviews'] }) },
+          ['agent/reviews/old.md'],
+          () => undefined
+        ).kind === 'full',
+      'a tree git cannot list counts a lists entry as moved: the re-run direction, never a carry'
+    );
+    const refReader = planNamed({ 'g:plan': namedEntry({ refs: ['HEAD'] }) }, [
+      'agent/reviews/old.md',
+    ]);
+    const refOther = planNamed({ 'g:tree': namedEntry({ refs: ['HEAD'] }) }, [
+      'agent/reviews/old.md',
+    ]);
+    require_(
+      refReader.kind === 'advance' &&
+        refReader.refresh.join() === 'g:plan' &&
+        refOther.kind === 'full' &&
+        refOther.why.includes('g:tree'),
+      `a carried refs entry is stale on every step (a new commit moves HEAD): a reader is refreshed, any other runs the lane, got ${JSON.stringify([refReader, refOther])}`
+    );
+    require_(
+      planNamed({ 'g:tree': carriedEntry(['src/**']) }, ['agent/reviews/new.md']).kind ===
+        'advance',
+      'CONTROL: a carried entry recording no lists/names/refs is untouched by the listing check'
+    );
     const refreshed = refreshCarried(carryingReader.gates, ['g:plan'], { 'g:plan': 0 }, 'T1');
     require_(
       refreshed['g:plan'].carriedFrom === null &&
@@ -3335,7 +3474,7 @@ interface Receipt {
 interface ReceiptGate extends PriorGate {
   defHash: string;
   filesHash: string;
-  inputs: { globs: string[]; files: string[]; scripts: string[] };
+  inputs: GateHash['inputs'];
   verdict: 'ok' | 'fail' | 'blocked' | 'deferred' | 'ciOnly';
   /** Set on a gate the local quick lane downgraded from red (local-warn.ts): verdict stays `ok`, which is all the push guard admits, and this names what failed. */
   warned?: string;
@@ -4580,7 +4719,7 @@ type AdvancePlan =
 /**
  * The carried receipt entries whose recorded inputs cover a changed path. block_unverified_push recomputes every carried entry's `filesHash` at the pushed tree (`_carried_refusal`), so each of these is refused there with "filesHash differs" unless the advance replaces it. Reproduced 2026-11-16: check:ci-plan-bindings is carried in 12 of the last 40 receipts and its `paths` cover agent/plans/**, so a plan-only advance over such a receipt was written by the runner and then refused at the push. Pure.
  */
-function carriedOverPaths(gates: unknown, paths: readonly string[]): string[] {
+function carriedOverPaths(gates: unknown, paths: readonly string[], step?: StepTrees): string[] {
   if (gates === null || typeof gates !== 'object') return [];
   const out: string[] = [];
   for (const [id, raw] of Object.entries(gates as Record<string, unknown>)) {
@@ -4588,9 +4727,46 @@ function carriedOverPaths(gates: unknown, paths: readonly string[]): string[] {
     if (e === null || typeof e !== 'object' || e.carriedFrom == null) continue;
     const globs = Array.isArray(e.inputs?.globs) ? e.inputs.globs : [];
     const files = Array.isArray(e.inputs?.files) ? e.inputs.files : [];
-    if (paths.some((p) => files.includes(p) || globs.some((g) => matchGlob(g, p)))) out.push(id);
+    if (
+      paths.some((p) => files.includes(p) || globs.some((g) => matchGlob(g, p))) ||
+      namedInputsMoved(e.inputs, step)
+    )
+      out.push(id);
   }
   return out.sort((a, b) => Number(a > b) - Number(a < b));
+}
+
+/** The two trees of one advance step and a reader of their listings, so a carried entry's `lists` and `names` lines can be compared across the step. `entriesAt` answers undefined when git cannot list a tree. */
+interface StepTrees {
+  from: string;
+  to: string;
+  entriesAt: (tree: string) => readonly LsEntry[] | undefined;
+}
+
+/**
+ * Whether a carried entry's NAME-SHAPED inputs (PLAN-ciquick-cpu W2.4, input-hash.ts) moved across the step, which the push guard would see as "filesHash differs". The changed paths alone cannot say it: an add under a listed directory matches no content glob of a gate that reads only the listing. So:
+ *   - `lists` and `names`: the `list`/`name` lines of the step's `from` tree against its `to` tree, exactly as input-hash.ts builds them. A tree git cannot list counts as moved, the re-run direction.
+ *   - `refs`: always moved. The receipt does not record the commit a ref resolved to, and an advance is a new commit by construction (its `to` differs from its `from`), so `HEAD` has moved and any other ref may have. A moved ref means a re-run, never a carry the guard then refuses.
+ * An entry recording none of the three never moves here, which keeps every pre-W2.4 receipt's advance unchanged. Pure over `step`.
+ */
+function namedInputsMoved(
+  inputs: Partial<GateHash['inputs']> | undefined,
+  step?: StepTrees
+): boolean {
+  const arr = (v: unknown): string[] =>
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+  const lists = arr(inputs?.lists);
+  const names = arr(inputs?.names);
+  if (arr(inputs?.refs).length > 0) return true;
+  if (lists.length === 0 && names.length === 0) return false;
+  const before = step?.entriesAt(step.from);
+  const after = step?.entriesAt(step.to);
+  if (before === undefined || after === undefined) return true;
+  const lines = (entries: readonly LsEntry[]): string =>
+    [...new Set([...listLines(entries, lists), ...nameLines(entries, names)])]
+      .sort((a, b) => Number(a > b) - Number(a < b))
+      .join('\n');
+  return lines(before) !== lines(after);
 }
 
 /**
@@ -4643,6 +4819,8 @@ function planAdvance(input: {
   policy: RecordGlob[] | string | undefined;
   diff: (from: string, to: string) => string[] | undefined;
   known: ReadonlySet<string>;
+  /** The tracked entries of a tree, for carried entries that record `lists` or `names`; absent or undefined counts their inputs as moved. */
+  entriesAt?: (tree: string) => readonly LsEntry[] | undefined;
 }): AdvancePlan {
   const r = input.receipt as Partial<Receipt> | null | undefined;
   if (r === null || typeof r !== 'object' || r.whole !== true)
@@ -4705,7 +4883,11 @@ function planAdvance(input: {
       why: `the receipt is red on ${redReaders.join(', ')}, which read(s) the changed record path(s); the lane must judge them again`,
     };
   // A CARRIED VERDICT OVER A TOUCHED INPUT (`carriedOverPaths`). When the step re-runs that gate, its entry is refreshed; when no touched record lists it as a reader, nothing here re-judges it and the guard would refuse the push, so the lane runs.
-  const stale = carriedOverPaths(r.gates, paths);
+  const stale = carriedOverPaths(r.gates, paths, {
+    from,
+    to: input.headTree,
+    entriesAt: input.entriesAt ?? (() => undefined),
+  });
   const unread = stale.filter((id) => !readers.includes(id));
   if (unread.length > 0)
     return {
@@ -5189,6 +5371,19 @@ async function main(): Promise<number> {
       diff: (from, to) =>
         gitTry(['diff', '--name-only', '--no-renames', from, to])?.split('\n').filter(Boolean),
       known: new Set(specs.map((spec) => spec.id)),
+      entriesAt: (() => {
+        const memo = new Map<string, LsEntry[] | undefined>();
+        return (tree: string) => {
+          if (!memo.has(tree)) {
+            try {
+              memo.set(tree, lsTree(REPO_ROOT, tree));
+            } catch {
+              memo.set(tree, undefined);
+            }
+          }
+          return memo.get(tree);
+        };
+      })(),
     });
     if (plan.kind === 'advance')
       return runAdvance(specs, plan, existing as Receipt, dest, opts, humanOut);
