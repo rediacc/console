@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2935,
-    "sourceCommit": "69e9434abdca1e3faa94c8106b72e7657e8e7f2b"
+    "keyCount": 2936,
+    "sourceCommit": "e242620184fe9b0c662a344e845284c0f4e1b0e9"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2739,9 +2739,10 @@
     "errors.subscription.activationFailed": "8de746b0",
     "errors.subscription.ipRebind.attemptsExhausted": "d2ff037c",
     "errors.subscription.ipRebind.disabled": "adac7e20",
+    "errors.subscription.ipRebind.envCodeMalformed": "8d9c9a3c",
     "errors.subscription.ipRebind.locked": "356d3dc6",
     "errors.subscription.ipRebind.moved": "35d31562",
-    "errors.subscription.ipRebind.nonInteractive": "a7f41975",
+    "errors.subscription.ipRebind.nonInteractive": "a0238921",
     "errors.subscription.ipRebind.notFirstUse": "0fe9e43f",
     "errors.subscription.ipRebind.prompt": "ac1ab71b",
     "errors.subscription.ipRebind.reloginOnly": "c096a5a1",

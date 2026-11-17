@@ -5,7 +5,8 @@
  * The account server binds a first-use token to the address of its first
  * caller and refuses it from any other with 403 TOKEN_IP_MISMATCH. On an
  * interactive terminal this asks for the token creator's authenticator code and
- * POSTs it to the rebind route; everywhere else it explains both remedies.
+ * POSTs it to the rebind route. Without a terminal it POSTs the code in
+ * REDIACC_IP_REBIND_CODE once, and with that unset it explains the remedies.
  *
  * `accountServerFetch` is the only caller. It passes the rebind request in as
  * `rebind`, bound to the same token and server as the refused request, so this
@@ -31,6 +32,9 @@ import type { AccountFetchError } from './account-client.js';
 const MAX_CODE_ENTRIES = 3;
 
 const TOTP_PATTERN = /^\d{6}$/;
+
+/** The authenticator code a run without a terminal supplies; read once, never logged. */
+export const IP_REBIND_CODE_ENV = 'REDIACC_IP_REBIND_CODE';
 
 interface EnsureReboundInput {
   /** The bearer token the server refused. */
@@ -68,7 +72,8 @@ async function runRebind({ hint, rebind }: EnsureReboundInput): Promise<void> {
     throw mismatchError(t('errors.subscription.ipRebind.reloginOnly'));
   }
   if (process.stdin.isTTY !== true || process.stderr.isTTY !== true) {
-    throw mismatchError(t('errors.subscription.ipRebind.nonInteractive'));
+    await rebindFromEnvironment(rebind);
+    return;
   }
 
   await suspendSpinner(async () => {
@@ -86,6 +91,33 @@ async function runRebind({ hint, rebind }: EnsureReboundInput): Promise<void> {
     }
     throw mismatchError(t('errors.subscription.ipRebind.attemptsExhausted'));
   });
+}
+
+/**
+ * The non-interactive path: one POST with the code from REDIACC_IP_REBIND_CODE.
+ * A wrong or reused code is final here, since nobody is there to type the next
+ * one; a malformed value is refused before any request.
+ */
+async function rebindFromEnvironment(
+  rebind: (code: string) => Promise<ApiTokenIpRebindResponse>
+): Promise<void> {
+  // A literal read, so the env manifest's reader sees it; IP_REBIND_CODE_ENV names the same variable.
+  const code = process.env.REDIACC_IP_REBIND_CODE;
+  if (code === undefined || code === '') {
+    throw mismatchError(t('errors.subscription.ipRebind.nonInteractive'));
+  }
+  if (!TOTP_PATTERN.test(code)) {
+    throw mismatchError(t('errors.subscription.ipRebind.envCodeMalformed'));
+  }
+  let result: ApiTokenIpRebindResponse;
+  try {
+    result = await rebind(code);
+  } catch (error) {
+    const retryable = describeRebindFailure(error);
+    if (retryable === null) throw error;
+    throw mismatchError(retryable);
+  }
+  writeStderr(`${t('errors.subscription.ipRebind.moved', { ip: result.boundIp })}\n`);
 }
 
 /**
@@ -125,7 +157,10 @@ function describeRebindFailure(error: unknown): string | null {
 
 /** The refused request's own status and code, so call sites that check either keep working. */
 function mismatchError(message: string): AccountFetchError {
-  return Object.assign(new Error(message), { status: 403, code: TOKEN_IP_MISMATCH });
+  return Object.assign(new Error(message), {
+    status: 403,
+    code: TOKEN_IP_MISMATCH,
+  });
 }
 
 /**
@@ -135,6 +170,10 @@ function mismatchError(message: string): AccountFetchError {
  */
 function refusal(source: Partial<AccountFetchError>, message: string): AccountFetchError {
   return Object.assign(mismatchError(message), {
-    details: { ...source.details, rebindStatus: source.status, rebindCode: source.code },
+    details: {
+      ...source.details,
+      rebindStatus: source.status,
+      rebindCode: source.code,
+    },
   });
 }

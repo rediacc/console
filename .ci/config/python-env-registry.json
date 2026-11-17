@@ -866,6 +866,9 @@
     ".ci/rediacc_ci/ops/r2_bucket_copy.py": [
       "CLOUDFLARE_R2_ENDPOINT"
     ],
+    ".ci/rediacc_ci/ops/rebind_login.py": [
+      "REDIACC_BWS_PROFILES"
+    ],
     ".ci/rediacc_ci/ops/region_smoke.py": [
       "REDIACC_BWS_PROFILES"
     ],

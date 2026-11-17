@@ -12,6 +12,8 @@ Three places carry this so a session does not have to remember it:
 - The trapguard rule `bench-login-is-the-agents-step` (`.claude/hooks/trapguard/dispatch.py`) adds the remedy to the context after any `./rdc.sh --config eu-bench` call that printed the error.
 - `block_settled_questions` refuses an AskUserQuestion asking the operator for an `eu-bench` authenticator code or login.
 
+The same holds for a production config (`eu-remote`, `eu-edge`) whose token answers TOKEN_IP_MISMATCH: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.rebind_login -- <rdc argv...>` derives the root account's code from `ROOT_TOTP_SEED` (the `root-login` profile) and runs `./rdc.sh <argv>` with it in `REDIACC_IP_REBIND_CODE`, which the CLI POSTs once when no terminal is attached. The code never reaches argv or output, and a refused code is a named CLI failure with no retry.
+
 The operator's door is narrower: a value still holding `PLACEHOLDER-operator-fills`, or a dead `bws` machine token (see `.ci/config/bws-rotation-notice.txt`).
 
 ## What it does

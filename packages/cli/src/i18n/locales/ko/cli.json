@@ -3501,7 +3501,8 @@
         "disabled": "잘못된 코드를 너무 많이 입력해 이 토큰에서는 로그인을 새 IP 주소로 옮기는 기능이 꺼졌습니다. `rdc subscription login`을 실행해 다시 로그인하세요.",
         "reloginOnly": "IP 주소가 바뀌었는데 이 로그인은 이전 주소에서만 사용할 수 있습니다. 이 계정은 2단계 인증이 꺼져 있어 로그인을 옮길 수 없습니다. `rdc subscription login`을 실행해 다시 로그인하세요. 2단계 인증을 켜 두면 다음에는 인증 앱 코드만으로 충분합니다.",
         "notFirstUse": "이 토큰은 처음 사용한 IP 주소에 묶이는 방식이 아니어서 다른 주소로 옮길 수 없습니다. 웹 포털에서 토큰의 IP 바인딩 설정을 확인하세요.",
-        "nonInteractive": "IP 주소가 바뀌었는데 이 로그인은 이전 주소에서만 사용할 수 있습니다. 여기로 옮기려면 대화형 터미널에서 아무 rdc 명령(예: `rdc subscription status`)이나 실행하고 인증 앱의 코드를 입력하세요. 또는 `rdc subscription login`을 실행해 다시 로그인하세요.",
+        "nonInteractive": "IP 주소가 바뀌었는데 이 로그인은 이전 주소에서만 사용할 수 있습니다. 여기로 옮기려면 인증 앱의 코드를 제공하세요. 대화형 터미널에서 아무 rdc 명령(예: `rdc subscription status`)이나 실행하거나, `REDIACC_IP_REBIND_CODE`에 현재 6자리 코드를 설정한 뒤 명령을 다시 실행하면 됩니다. 또는 `rdc subscription login`을 실행해 다시 로그인하세요.",
+        "envCodeMalformed": "`REDIACC_IP_REBIND_CODE`에는 인증 앱의 6자리 코드를 넣어야 합니다.",
         "stillMismatched": "이동한 뒤에도 계정 서버에는 다른 IP 주소가 보입니다. 연결이 여러 주소(예: IPv4와 IPv6) 사이를 오가고 있을 수 있습니다. 명령을 다시 실행하거나 `rdc subscription login`을 실행하세요.",
         "attemptsExhausted": "잘못된 코드를 세 번 연속 입력했습니다. 다시 시도하려면 명령을 다시 실행하거나, `rdc subscription login`을 실행해 다시 로그인하세요."
       }

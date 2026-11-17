@@ -3501,7 +3501,8 @@
         "disabled": "Liiga palju valesid koode, seega on selle tokeni puhul sisselogimise tõstmine uuele IP-aadressile välja lülitatud. Uuesti sisselogimiseks käivita `rdc subscription login`.",
         "reloginOnly": "Sinu IP-aadress muutus ja see sisselogimine töötab ainult vanalt aadressilt. Selle konto kaheastmeline autentimine on välja lülitatud, seega sisselogimist tõsta ei saa: uuesti sisselogimiseks käivita `rdc subscription login`. Kui lülitad kaheastmelise autentimise sisse, piisab järgmisel korral autentimisrakenduse koodist.",
         "notFirstUse": "See token ei ole seotud IP-aadressiga, kust seda esimest korda kasutati, seega ei saa seda teisele aadressile tõsta. Kontrolli tokeni IP-sidumist veebiportaalis.",
-        "nonInteractive": "Sinu IP-aadress muutus ja see sisselogimine töötab ainult vanalt aadressilt. Selle siia tõstmiseks käivita interaktiivses terminalis mis tahes rdc käsk (näiteks `rdc subscription status`) ja sisesta autentimisrakenduse kood. Või käivita uuesti sisselogimiseks `rdc subscription login`.",
+        "nonInteractive": "Sinu IP-aadress muutus ja see sisselogimine töötab ainult vanalt aadressilt. Selle siia tõstmiseks anna autentimisrakenduse kood: käivita interaktiivses terminalis mis tahes rdc käsk (näiteks `rdc subscription status`) või määra `REDIACC_IP_REBIND_CODE` väärtuseks praegune 6-kohaline kood ja käivita käsk uuesti. Või käivita uuesti sisselogimiseks `rdc subscription login`.",
+        "envCodeMalformed": "`REDIACC_IP_REBIND_CODE` peab olema autentimisrakenduse 6-kohaline kood.",
         "stillMismatched": "Kontoserver näeb pärast tõstmist endiselt teist IP-aadressi. Sinu ühendus võib vahetada aadresse (näiteks IPv4 ja IPv6 vahel). Käivita käsk uuesti või käivita `rdc subscription login`.",
         "attemptsExhausted": "Kolm valet koodi järjest. Uuesti proovimiseks käivita käsk uuesti või logi `rdc subscription login` abil uuesti sisse."
       }
