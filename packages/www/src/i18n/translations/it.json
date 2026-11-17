@@ -2285,7 +2285,7 @@
       "plans": {
         "business": {
           "description": "Repository più grandi, gestione avanzata e una promessa di ripristino in 4 ore.",
-          "name": "Aziendale"
+          "name": "Business"
         },
         "enterprise": {
           "description": "Distribuzioni multi-macchina, vendute tramite partner. Supporto dedicato e condizioni personalizzate.",

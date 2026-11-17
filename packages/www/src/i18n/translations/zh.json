@@ -2260,15 +2260,15 @@
       "plans": {
         "business": {
           "description": "更大的仓库容量、进阶管理功能，以及 4 小时恢复承诺。",
-          "name": "商业"
+          "name": "Business"
         },
         "enterprise": {
           "description": "多机部署，通过合作伙伴销售，提供专属支持与定制条款。",
-          "name": "企业"
+          "name": "Enterprise"
         },
         "professional": {
           "description": "面向单台生产机器的自动化与调度",
-          "name": "专业的"
+          "name": "Professional"
         }
       },
       "professionalServices": {

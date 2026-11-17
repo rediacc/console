@@ -2283,15 +2283,15 @@
       "plans": {
         "business": {
           "description": "Des dépôts plus grands, une gestion avancée et une promesse de restauration en 4 heures.",
-          "name": "Entreprise"
+          "name": "Business"
         },
         "enterprise": {
           "description": "Déploiements multi-machines, vendus via nos partenaires. Support dédié et conditions sur mesure.",
-          "name": "Entreprise"
+          "name": "Enterprise"
         },
         "professional": {
           "description": "Automatisation et planification pour une machine de production",
-          "name": "Professionnelle"
+          "name": "Professional"
         }
       },
       "professionalServices": {

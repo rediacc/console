@@ -2268,15 +2268,15 @@
       "plans": {
         "business": {
           "description": "مستودعات أكبر، إدارة متقدمة، ووعد باستعادة خلال 4 ساعات.",
-          "name": "عمل"
+          "name": "Business"
         },
         "enterprise": {
           "description": "عمليات نشر متعددة الأجهزة، تُباع عبر شركائنا. دعم مخصص وشروط مصممة حسب الطلب.",
-          "name": "مَشرُوع"
+          "name": "Enterprise"
         },
         "professional": {
           "description": "أتمتة وجدولة لجهاز إنتاجي واحد",
-          "name": "احترافي"
+          "name": "Professional"
         }
       },
       "professionalServices": {

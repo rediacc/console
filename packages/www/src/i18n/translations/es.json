@@ -2281,15 +2281,15 @@
       "plans": {
         "business": {
           "description": "Repositorios más grandes, gestión avanzada y promesa de restauración en 4 horas.",
-          "name": "Negocio"
+          "name": "Business"
         },
         "enterprise": {
           "description": "Despliegues en múltiples máquinas, vendido a través de partners. Soporte dedicado y términos personalizados.",
-          "name": "Empresa"
+          "name": "Enterprise"
         },
         "professional": {
           "description": "Automatización y programación para una máquina de producción",
-          "name": "Profesional"
+          "name": "Professional"
         }
       },
       "professionalServices": {

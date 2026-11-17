@@ -2268,15 +2268,15 @@
       "plans": {
         "business": {
           "description": "Daha büyük depolar, gelişmiş yönetim ve 4 saatlik geri yükleme garantisi.",
-          "name": "İşletme"
+          "name": "Business"
         },
         "enterprise": {
           "description": "Çoklu makine dağıtımları, iş ortaklarımız aracılığıyla satılır. Özel destek ve özel koşullar.",
-          "name": "Girişim"
+          "name": "Enterprise"
         },
         "professional": {
           "description": "Tek bir üretim makinesi için otomasyon ve planlama",
-          "name": "Profesyonel"
+          "name": "Professional"
         }
       },
       "professionalServices": {

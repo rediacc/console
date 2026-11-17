@@ -2276,15 +2276,15 @@
       "plans": {
         "business": {
           "description": "より大容量のリポジトリ、高度な管理機能、4時間復元保証。",
-          "name": "仕事"
+          "name": "Business"
         },
         "enterprise": {
           "description": "複数マシンでの展開に対応。パートナー経由で提供され、専任サポートとカスタム条件が付きます。",
-          "name": "企業"
+          "name": "Enterprise"
         },
         "professional": {
           "description": "本番マシン1台向けの自動化とスケジューリング機能。",
-          "name": "プロ"
+          "name": "Professional"
         }
       },
       "professionalServices": {

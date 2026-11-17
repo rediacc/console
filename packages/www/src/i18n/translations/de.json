@@ -2281,11 +2281,11 @@
       "plans": {
         "business": {
           "description": "Größere Repositories, erweitertes Management und ein 4-Stunden-Wiederherstellungsversprechen.",
-          "name": "Geschäft"
+          "name": "Business"
         },
         "enterprise": {
           "description": "Mehrmaschinen-Bereitstellungen, vertrieben über unsere Partner. Dedizierter Support und maßgeschneiderte Bedingungen.",
-          "name": "Unternehmen"
+          "name": "Enterprise"
         },
         "professional": {
           "description": "Automatisierung und Planung für eine Produktionsmaschine",

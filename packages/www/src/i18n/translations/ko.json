@@ -2278,7 +2278,7 @@
       "plans": {
         "business": {
           "description": "더 큰 저장소, 고급 관리 기능, 4시간 복구 보장.",
-          "name": "비즈니스"
+          "name": "Business"
         },
         "enterprise": {
           "description": "여러 대의 머신에 배포되며 파트너를 통해 판매됩니다. 전담 지원과 맞춤 계약을 제공합니다.",
