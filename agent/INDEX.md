@@ -510,7 +510,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-config-mirror-reseal.md` | proposed | 24 | 0 | 2 | 3299 |
 | `agent/plans/PLAN-config-networkid-discovery.md` | approved | 190 | 0 | 8 | 26833 |
 | `agent/plans/PLAN-console-executor-multi-org.md` | approved | 377 | 1 | 17 | 67459 |
-| `agent/plans/PLAN-console-private.md` | proposed | 334 | 32 | 0 | 56950 |
+| `agent/plans/PLAN-console-private.md` | proposed | 334 | 32 | 0 | 56923 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 94 | 0 | 19 | 34124 |
 | `agent/plans/PLAN-csi-staging-redesign.md` | proposed | 71 | 12 | 0 | 13631 |
@@ -549,7 +549,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
 | `agent/plans/PLAN-health-checks-local.md` | approved | 707 | 17 | 64 | 131836 |
-| `agent/plans/PLAN-hostinger-to-bench.md` | approved | 106 | 11 | 11 | 21828 |
+| `agent/plans/PLAN-hostinger-to-bench.md` | approved | 106 | 11 | 11 | 21890 |
 | `agent/plans/PLAN-idle-writer-capacity.md` | approved | 65 | 0 | 5 | 12586 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 55 | 1 | 10 | 12683 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
