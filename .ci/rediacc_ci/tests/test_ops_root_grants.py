@@ -14,6 +14,7 @@ import pathlib
 import shutil
 import sqlite3
 import stat
+import sys
 import tempfile
 import typing
 import uuid
@@ -371,7 +372,9 @@ def env(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, ty
     monkeypatch.setattr(mod.wrangler, "local_binary", lambda _cwd: None)
     log = tmp_path / "calls.jsonl"
     log.write_text("", encoding="utf-8")
-    monkeypatch.setenv("PATH", str(bin_dir) + os.pathsep + os.environ["PATH"])
+    monkeypatch.setenv(
+        "PATH", os.pathsep.join([str(bin_dir), os.path.dirname(sys.executable), os.defpath])
+    )
     monkeypatch.setenv("FAKE_LOG", str(log))
     monkeypatch.setenv("FAKE_DB_DIR", str(tmp_path))
     monkeypatch.delenv("FAKE_NO_BOOKMARK", raising=False)
@@ -811,7 +814,11 @@ def test_a_missing_edge_token_exits_2_naming_the_mint_page() -> None:
     with pytest.raises(mod.RefusedError) as caught:
         mod.post_edge(target, {}, {"ROOT_TOTP_SEED": SEED}, mod.Deps())
     assert caught.value.rc == 2
-    assert "us.rediacc.cloud/account/admin/root-tokens" in str(caught.value)
+    us_domain = {
+        r["id"]: r["domain"]
+        for r in json.loads((ROOT / "regions.json").read_text(encoding="utf-8"))["regions"]
+    }["us"]
+    assert us_domain + "/account/admin/root-tokens" in str(caught.value)
     assert "ROOT_API_TOKEN_US" in str(caught.value)
 
 
