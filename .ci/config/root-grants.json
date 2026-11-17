@@ -1,0 +1,19 @@
+{
+  "$comment": [
+    "Desired grants for the root email, by name (agent/plans/PLAN-root-grants.md Design 2). Ids are resolved per region at run time by rediacc_ci.ops.root_grants. The email itself is ROOT_EMAIL in bws and is never committed.",
+    "Plan and tier are floors: a higher plan or tier stays as it is. `kind` is edge or bench only, so a stable target or an enterprise config is refused by the loader."
+  ],
+  "version": 1,
+  "user": {"email_secret": "ROOT_EMAIL", "role": "root"},
+  "personal_org": {"plan": "BUSINESS", "status": "active"},
+  "partner_org": {"name": "Rediacc", "tier": "registered", "partner_role": "admin", "status": "active"},
+  "console": {"config_store": "operator"},
+  "targets": [
+    {"id": "edge-eu", "kind": "edge", "region": "eu", "data_region": "eu"},
+    {"id": "edge-us", "kind": "edge", "region": "us", "data_region": "us"},
+    {"id": "edge-asia", "kind": "edge", "region": "asia", "data_region": "asia"},
+    {"id": "bench-eu", "kind": "bench", "region": "eu", "data_region": "eu"},
+    {"id": "bench-us", "kind": "bench", "region": "us", "data_region": "us"},
+    {"id": "bench-asia", "kind": "bench", "region": "asia", "data_region": "asia"}
+  ]
+}
