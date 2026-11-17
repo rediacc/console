@@ -53,8 +53,8 @@ def gate(tmp_path: pathlib.Path, monkeypatch):
     )
     asked: list[int] = []
 
-    def fake_select(_root):
-        asked.append(1)
+    def fake_select(_root, base=None):
+        asked.append(base or 1)
         return impact
 
     monkeypatch.setattr(check_pytest, "select_impact", fake_select)
@@ -110,7 +110,7 @@ def test_a_full_selection_falls_back_to_the_whole_suite(gate, monkeypatch):
     monkeypatch.setattr(
         check_pytest,
         "select_impact",
-        lambda _r: pytest_impact.full("pyproject.toml changed", total=2),
+        lambda _r, _b=None: pytest_impact.full("pyproject.toml changed", total=2),
     )
     assert check_pytest.main([]) == check_pytest.EXIT_OK
     assert not [a for a in calls[0] if a.endswith(".py")]
@@ -150,3 +150,10 @@ def test_a_shard_leg_records_full(gate):
     )
     assert asked == []
     assert scope(root)["pytestScope"] == "full"
+
+
+def test_base_reaches_the_selection_and_is_not_refused(gate):
+    _root, _calls, asked = gate
+    assert check_pytest.unknown_args(["--base", "origin/main"]) == []
+    assert check_pytest.main(["--base", "origin/main"]) == check_pytest.EXIT_OK
+    assert asked == ["origin/main"]

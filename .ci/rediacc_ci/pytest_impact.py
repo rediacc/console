@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Which pytest files a change can affect, and when that question has no safe answer.
 
 WHAT THIS IS FOR (agent/plans/PLAN-ciquick-cpu.md, Fix B). `check:ci-pytest` ran the whole suite (36k tests, about 18k core-s) on every local ci:quick, the same as CI. The operator ruled that CI stays the full-suite backstop and the local run judges only what the change can reach. This module answers that question, and its main duty is the second half of its title: every
@@ -69,7 +68,6 @@ if TYPE_CHECKING:
 
 POLICY_RELPATH = ".ci/policy/pytest-impact.json"
 CACHE_RELDIR = ".ci/cache/pytest-impact"
-BASE_ENV = "PYTEST_IMPACT_BASE"
 MAP_SCHEMA = 2
 MAX_FRACTION = 0.40
 SCOPE_PREFIXES = (".ci/", ".claude/")
@@ -90,7 +88,6 @@ def _stem_is_name(stem: str) -> bool:
 
 # Literals longer than this are prose or embedded fixtures, not names.
 MAX_LITERAL = 300
-KEEP_MAPS = 4
 
 
 # --------------------------------------------------------------------------- the map
@@ -813,9 +810,12 @@ def resolve_push_base(git, branch: str | None) -> str | None:
         name = git(["rev-parse", "--abbrev-ref", ref]) or ref
         if not (named and branch_of_ref(name) == branch):
             foreign.add(ref)
-    candidates = (
-        ["@{push}"] + (["origin/" + branch] if named else []) + ["@{upstream}", "origin/main"]
-    )
+    candidates = [
+        "@{push}",
+        *([f"origin/{branch}"] if branch else []),
+        "@{upstream}",
+        "origin/main",
+    ]
     for ref in candidates:
         if ref in foreign:
             continue
@@ -828,13 +828,12 @@ def resolve_push_base(git, branch: str | None) -> str | None:
 
 
 def change_set(root: pathlib.Path, base: str | None = None) -> list[str] | None:
-    """Files changed since the last push (or since `base`'s merge-base, else $PYTEST_IMPACT_BASE's), uncommitted edits and untracked files included. None when no base resolves. The variable is how a caller that cannot pass `--base` (check_pytest.py, a scratch clone, a detached tree) names the ref; a ref that does not resolve is None, never a silent fall back to the push base."""
+    """Files changed since the last push (or since `base`'s merge-base), uncommitted edits and untracked files included. None when no base resolves; a `base` that does not resolve is None too, never a silent fall back to the push base."""
 
     def git(args: list[str]) -> str | None:
         res = gitx.git(args, root=root)
         return res.stdout.strip() if res.returncode == 0 and res.stdout.strip() else None
 
-    base = base or os.environ.get(BASE_ENV) or None
     mb = git(["merge-base", "HEAD", base]) if base else resolve_push_base(git, gitx.branch(root))
     if not mb:
         return None
@@ -862,8 +861,9 @@ def load_or_build_map(root: pathlib.Path, present: list[str]) -> tuple[dict, str
     test_roots = testpath_roots(root)
     pyproject = (root / "pyproject.toml").read_bytes()
     digest = content_digest(root, py_files, extra=hashlib.sha256(pyproject).digest())
+    # Literal joins, so check:ci-gate-tree-writes resolves every write here to the `.ci/cache` scratch root. ONE map file, overwritten: the digest inside says which tree it describes, so nothing accumulates and nothing is pruned.
     cache_dir = root / ".ci" / "cache" / "pytest-impact"
-    cached = cache_dir / ("map-%s.json" % digest[:24])
+    cached = root / ".ci" / "cache" / "pytest-impact" / "map.json"
     try:
         data = json.loads(cached.read_text(encoding="utf-8"))
         if data.get("schema") == MAP_SCHEMA and data.get("digest") == digest:
@@ -874,7 +874,7 @@ def load_or_build_map(root: pathlib.Path, present: list[str]) -> tuple[dict, str
     fileset = hashlib.sha256(
         ("%d\n%s\n%s" % (MAP_SCHEMA, "\n".join(roots), "\n".join(py_files))).encode()
     ).hexdigest()
-    facts_path = cache_dir / "facts.json"
+    facts_path = root / ".ci" / "cache" / "pytest-impact" / "facts.json"
     try:
         stored = json.loads(facts_path.read_text(encoding="utf-8"))
         facts_cache = stored["entries"] if stored.get("fileset") == fileset else {}
@@ -896,9 +896,6 @@ def load_or_build_map(root: pathlib.Path, present: list[str]) -> tuple[dict, str
         encoding="utf-8",
     )
     tmp.replace(facts_path)
-    olds = sorted(cache_dir.glob("map-*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
-    for old in olds[KEEP_MAPS:]:
-        old.unlink(missing_ok=True)
     return data, digest
 
 

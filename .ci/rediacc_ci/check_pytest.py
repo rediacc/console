@@ -57,6 +57,7 @@ import tempfile
 import time
 import tomllib
 import xml.etree.ElementTree as ET
+from collections.abc import Mapping
 
 # THE HOP, WRITTEN BY HAND EXACTLY ONCE. This file is a script, so it cannot
 # import the module that would put its own package on sys.path until its package
@@ -1183,6 +1184,8 @@ check:ci-pytest -- run the Python test corpus and refuse a partial pass.
                                 suite when that answer is unknown; under CI=true
                                 always the whole suite
   check_pytest.py --full       judge the whole suite
+  check_pytest.py --base <ref> select by the change set since <ref>'s merge-base
+                                instead of since the last push
   check_pytest.py --shard-manifest <path> --shard i/N
                                 judge only that leg's files, from a committed
                                 shard manifest (both flags together, or neither)
@@ -1219,13 +1222,14 @@ FLAGS_ALONE = ("--help", "-h", "--selftest", "--full")
 SCOPE_RELPATH = pathlib.PurePosixPath(".ci/cache/quality-pytest/scope.json")
 
 
-def wants_full(argv: list[str], env: dict[str, str] | None = None) -> str | None:
+def wants_full(argv: list[str], env: Mapping[str, str] | None = None) -> str | None:
     """Why this run must judge the whole suite, or None when an impact selection may be used."""
-    env = os.environ if env is None else env
+    source: Mapping[str, str] = os.environ if env is None else env
     if "--full" in argv:
         return "--full"
-    if (env.get("CI") or "").lower() in ("true", "1"):
-        return "CI=%s" % env.get("CI")
+    ci = source.get("CI") or ""
+    if ci.lower() in ("true", "1"):
+        return "CI=%s" % ci
     return None
 
 
@@ -1245,17 +1249,25 @@ def write_scope(root: pathlib.Path, record: dict) -> None:
             record["pytestScope"],
             record.get("selectedFiles", "all"),
             record.get("collected"),
-            (record.get("mapDigest") or "-")[:12],
+            record.get("mapDigest") or "-",
         )
     )
 
 
-def select_impact(root: pathlib.Path):
-    """The impact selection for the real tree. A seam, so a test drives main() without a git tree."""
-    return pytest_impact.select_for_tree(root)
+def select_impact(root: pathlib.Path, base: str | None = None):
+    """The impact selection for the real tree, against the push base or `--base <ref>`. A seam, so a test drives main() without a repository."""
+    return pytest_impact.select_for_tree(root, base)
 
 
-FLAGS_WITH_VALUE = ("--shard-manifest", "--shard")
+def parse_base(argv: list[str]) -> str | None:
+    """`--base <ref>`: select by the change set since that ref's merge-base instead of the push base, for a detached tree or a scratch clone with no push ref of its own."""
+    for i, arg in enumerate(argv):
+        if arg == "--base" and i + 1 < len(argv):
+            return argv[i + 1]
+    return None
+
+
+FLAGS_WITH_VALUE = ("--shard-manifest", "--shard", "--base")
 
 
 def unknown_args(argv: list[str]) -> list[str]:
@@ -1449,7 +1461,7 @@ def main(argv: list[str]) -> int:
     full_reason = wants_full(argv)
     selection = None
     if full_reason is None:
-        selection = select_impact(root)
+        selection = select_impact(root, parse_base(argv))
         print(selection.line())
         if selection.scope != "impact":
             full_reason = "pytest-impact: %s" % selection.reason
