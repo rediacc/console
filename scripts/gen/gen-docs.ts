@@ -1020,7 +1020,7 @@ function selftest(): number {
   // #4960f2e8: a per-commit review record quoting BLOCKER: is prose, not a suppression mechanism; a real allowlist still is.
   ck(
     'suppressions census skips agent/reviews records',
-    !isMechanismCandidate('agent/reviews/1023-1/clean.jsonl')
+    !isMechanismCandidate('agent/reviews/0101-9/clean.jsonl')
   );
   ck(
     'CONTROL: suppressions census keeps a real allowlist',

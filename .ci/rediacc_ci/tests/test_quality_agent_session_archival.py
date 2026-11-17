@@ -303,3 +303,13 @@ def test_the_gate_entry_point_is_importable_and_its_floor_is_met():
     assert gate.CONTROL_FLOOR >= 20
     assert gate.selftest() == 0
     assert sys.modules["check_agent_session_archival"] is gate
+
+
+def test_a_worklist_publication_does_not_hold_a_review_directory():
+    """A generated agent/pr/<branch>.md quotes item text and is rebuilt from the store; a hand-written doc naming the directory still blocks the prune."""
+    texts = {
+        "agent/pr/0101-8.md": ASA.PUBLISH_MARKER
+        + "; edit the worklist -->\n- [ ] see agent/reviews/0101-9/clean.jsonl\n",
+        "docs/notes.md": "see agent/reviews/0101-9/clean.jsonl\n",
+    }
+    assert ASA.citers_of(texts, ["0101-9"]) == {"docs/notes.md": ["agent/reviews/0101-9/"]}
