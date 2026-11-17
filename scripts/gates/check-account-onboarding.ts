@@ -53,6 +53,7 @@ interface ManifestStep {
   docsPath: string;
   shortProse: string;
   command?: string;
+  widget?: 'install-tabs';
   optional?: boolean;
 }
 
@@ -203,7 +204,7 @@ function validateStoryboardStep(step: ManifestStep, issues: Issue[]): void {
   }
 
   const command = scene.card?.commandFull?.trim();
-  if (!command) {
+  if (!command && !step.widget) {
     issues.push({
       step: step.id,
       message: `scene for markerIndex ${step.markerIndex} in "${step.tutorial}" is missing card.commandFull`,
@@ -295,6 +296,7 @@ interface GeneratedStep {
   titleKey: string;
   docsPath: string;
   command: string;
+  widget?: string;
   optional?: boolean;
   prose: Record<string, string>;
 }
@@ -354,7 +356,21 @@ function checkFreshness(manifest: Manifest, issues: Issue[]): void {
         message: `generated English prose does not match manifest shortProse; run "npm run build:account-onboarding"`,
       });
     }
-    if (!gStep.command || gStep.command.trim().length === 0) {
+    if (mStep.widget) {
+      // A widget step is rendered by the portal: it must emit the widget and no command.
+      if (gStep.widget !== mStep.widget) {
+        issues.push({
+          step: mStep.id,
+          message: `generated widget mismatch (expected "${mStep.widget}"); run "npm run build:account-onboarding"`,
+        });
+      }
+      if (gStep.command.trim().length > 0) {
+        issues.push({
+          step: mStep.id,
+          message: `generated widget step carries a command; run "npm run build:account-onboarding"`,
+        });
+      }
+    } else if (!gStep.command || gStep.command.trim().length === 0) {
       issues.push({
         step: mStep.id,
         message: `generated step is missing command; run "npm run build:account-onboarding"`,

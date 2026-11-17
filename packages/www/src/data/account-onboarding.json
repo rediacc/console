@@ -5,6 +5,7 @@
       "id": "install-cli",
       "tutorial": "tutorial-installation",
       "markerIndex": 0,
+      "widget": "install-tabs",
       "titleKey": "stepLabels.installCli",
       "docsPath": "/en/docs/tutorial-installation",
       "shortProse": "Install the rdc CLI on your laptop with the one-liner from the install page."
