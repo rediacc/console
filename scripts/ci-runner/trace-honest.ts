@@ -752,7 +752,7 @@ async function selftest(): Promise<number> {
     ...extra,
   });
   check(
-    traceFindings(entry, attr(['a/x.ts', 'b.txt', 'packages/p/package-lock.json']), 0, new Set())
+    traceFindings(entry, attr(['a/x.ts', 'b.txt', 'a/p/package-lock.json']), 0, new Set())
       .length === 0,
     'CONTROL: declared reads, a global input and nothing else pass'
   );

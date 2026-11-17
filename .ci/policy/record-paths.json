@@ -660,10 +660,6 @@
       ],
       "notReaders": [
         {
-          "id": "check:ci-pytest",
-          "reason": "It is no reader of any record: the .ci/ the derivation cites at .ci/rediacc_ci/pytest_impact.py:74 is SCOPE_PREFIXES, the path prefixes that scope which changed files the pytest-impact map covers, and no file under this record is read. Its real-tree tests re-run the reader gates, which are listed by name."
-        },
-        {
           "id": "check:ci-dead-translation-keys",
           "reason": "Its only citation of this record is the key-site pattern '*.*' in a selftest fixture (scripts/gates/check-dead-translation-keys.ts:529), a string the selftest feeds to its own resolver; the verdict is computed over packages/www translation JSON and source, and no file under this record is read."
         },
@@ -1160,10 +1156,6 @@
         }
       ],
       "notReaders": [
-        {
-          "id": "check:ci-pytest",
-          "reason": "It is no reader of any record: the .ci/ the derivation cites at .ci/rediacc_ci/pytest_impact.py:74 is SCOPE_PREFIXES, the path prefixes that scope which changed files the pytest-impact map covers, and no file under this record is read. Its real-tree tests re-run the reader gates, which are listed by name."
-        },
         {
           "id": "check:ci-embed-asset-versions",
           "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."

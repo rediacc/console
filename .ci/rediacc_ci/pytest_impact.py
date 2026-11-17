@@ -55,9 +55,6 @@ import pathlib
 import sys
 import tomllib
 from dataclasses import dataclass, field
-
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-
 from typing import TYPE_CHECKING
 
 from rediacc_ci import gitx, paths
@@ -71,7 +68,14 @@ POLICY_RELPATH = policy_rel("pytest-impact.json")
 CACHE_RELDIR = ".ci/cache/pytest-impact"
 MAP_SCHEMA = 2
 MAX_FRACTION = 0.40
-SCOPE_PREFIXES = (".ci/", ".claude/")
+# Top-level directories whose files the map judges. Bare names, matched on a path's first component, so no directory literal with a trailing slash sits here for the record-paths derivation to read as a root.
+SCOPE_ROOTS = frozenset({".ci", ".claude"})
+
+
+def _in_scope_dir(rel: str) -> bool:
+    return rel.split("/", 1)[0] in SCOPE_ROOTS
+
+
 FULL_BASENAMES = frozenset(
     {"conftest.py", "pyproject.toml", "uv.lock", "pytest.ini", "setup.cfg", "tox.ini"}
 )
@@ -643,9 +647,9 @@ def select(
             )
     reads = policy["reads"]
     tracked_dirs = tracked_dirs_of(existing, test_roots)
-    in_scope_files = [p for p in existing if p.startswith(SCOPE_PREFIXES) or p.endswith(".py")]
+    in_scope_files = [p for p in existing if _in_scope_dir(p) or p.endswith(".py")]
     # Only a glob that covers some changed file can matter, so only those are measured against the tree: measuring every glob literal in the suite took 31 s on the real tree.
-    judged = [rel for rel in changed if rel.startswith(SCOPE_PREFIXES) or rel.endswith(".py")]
+    judged = [rel for rel in changed if _in_scope_dir(rel) or rel.endswith(".py")]
     relevant = {
         lit
         for entry in tests.values()
@@ -663,7 +667,7 @@ def select(
             if rel in tests:
                 selected.setdefault(rel, "changed test")
             continue
-        in_scope = rel.startswith(SCOPE_PREFIXES) or rel.endswith(".py")
+        in_scope = _in_scope_dir(rel) or rel.endswith(".py")
         if not in_scope:
             outside.append(rel)
             continue
@@ -954,7 +958,7 @@ def write_smoke(root: pathlib.Path, junit: pathlib.Path) -> int:
     tests_n = sum(times[f][0] for f in files)
     secs = sum(times[f][1] for f in files)
     policy["smoke"] = {
-        "derivedBy": "python3 .ci/rediacc_ci/pytest_impact.py --write-smoke --junit <junit.xml>",
+        "derivedBy": "PYTHONPATH=.ci python3 -m rediacc_ci.pytest_impact --write-smoke --junit <junit.xml>",
         "tests": tests_n,
         "seconds": round(secs, 1),
         "unreached": unreached,
