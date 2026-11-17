@@ -365,6 +365,15 @@ def test_an_empty_owner_host_list_gets_no_home_host_fallback(monkeypatch):
     assert B.sources().hosts == ("a.example.test",)
 
 
+def test_an_empty_host_string_from_the_owner_never_makes_a_command_a_bench_command():
+    """Review 890d8943.2: sources() passes the owner's hosts through unfiltered, so is_bench_command must not read '' as a host that matches every word boundary."""
+    assert not B.is_bench_command("ls -la", ("",), ())
+    assert not B.is_bench_command("echo hello", ("", ""), ())
+    # Control: a real host beside the empty one still matches, and is absent otherwise.
+    assert B.is_bench_command("curl https://a.example.test/x", ("", "a.example.test"), ())
+    assert not B.is_bench_command("curl https://b.example.test/x", ("", "a.example.test"), ())
+
+
 def test_an_unloadable_source_is_said_not_swallowed(monkeypatch):
     def broken():
         raise ImportError("planted")

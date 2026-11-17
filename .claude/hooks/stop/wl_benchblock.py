@@ -100,7 +100,8 @@ def is_bench_command(cmd, hosts, configs):
     pattern = bench_config_re(configs)
     if pattern is not None and pattern.search(cmd or ""):
         return True
-    return any(re.search(r"(?<![\w-])%s(?![\w-])" % re.escape(h), cmd or "") for h in hosts)
+    # An empty host would compile to a pattern that matches at any word boundary, turning every command into a bench command (review 890d8943.2).
+    return any(re.search(r"(?<![\w-])%s(?![\w-])" % re.escape(h), cmd or "") for h in hosts if h)
 
 
 def notes(cmd, out, src):

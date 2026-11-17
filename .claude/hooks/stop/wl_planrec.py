@@ -941,7 +941,9 @@ def _identity_index(ledger):
     index: dict[str, list] = {}
     for r, v in plans.items():
         if isinstance(v, dict):
-            index.setdefault(plan_identity(r), []).append(v.get("done_sigs") or [])
+            # The list itself, not a copy: an empty one appended to in place must still show through (review 56d48380.1). A missing or non-list value indexes as a fresh empty list, and assigning a list later changes the fingerprint.
+            sigs = v.get("done_sigs")
+            index.setdefault(plan_identity(r), []).append(sigs if isinstance(sigs, list) else [])
     if len(_IDENTITY_INDEX) >= _IDENTITY_INDEX_MAX:
         _IDENTITY_INDEX.clear()
     _IDENTITY_INDEX[id(ledger)] = (ledger, index, fp)

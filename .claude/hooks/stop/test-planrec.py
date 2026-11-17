@@ -599,6 +599,17 @@ falsy(
     "...and a dropped row is no longer attested",
     R.attested_by_identity(_mut, _done_rel, _mut_sig),
 )
+# Review 56d48380.1: an in-place append to an initially EMPTY done_sigs list shows through the index too (the index must hold the ledger's own list, not a fresh `[]` for a falsy one).
+_empty: dict = {"plans": {_live_rel: {"done_sigs": []}}}
+falsy(
+    "CONTROL: an indexed ledger whose done_sigs is empty attests nothing",
+    R.attested_by_identity(_empty, _done_rel, _mut_sig),
+)
+_empty["plans"][_live_rel]["done_sigs"].append(_mut_sig)
+truthy(
+    "...and an in-place append to that empty list is read on the next ask",
+    R.attested_by_identity(_empty, _done_rel, _mut_sig),
+)
 # Review f142ed91.1: a box ticked before the move and reopened after it, with the pre-move row still in the ledger, is not done.
 _reopened = {"plans": {_live_rel: _ticked["plans"][REL], _done_rel: _open["plans"][REL]}}
 falsy(

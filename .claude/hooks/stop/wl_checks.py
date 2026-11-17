@@ -2868,7 +2868,7 @@ def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd):
             3,
         )
     elif got["unlanded"] and release_local_running(root):
-        # A running release:local --branch-release ships HEAD only while it is the pushed tip with receipts on HEAD^{tree}: landing now makes the release refuse. The lease waits for it: reported, not blocked.
+        # Any running release:local of this checkout (`release_local_running` matches the module, not --branch-release) ships HEAD only while it is the pushed tip with receipts on HEAD^{tree}: landing now makes the release refuse. The lease waits for it: reported, not blocked.
         outq_add(
             worklist,
             session_id,
