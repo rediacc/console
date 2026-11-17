@@ -4,6 +4,7 @@ Every fallback has a test that makes it fire, and the selection has a control th
 """
 
 import pathlib
+import subprocess
 
 import pytest
 
@@ -407,3 +408,22 @@ def test_the_committed_policy_loads_and_names_real_test_files():
     for rel in data["smoke"]["files"]:
         assert (root / rel).is_file(), "smoke floor names a missing file: %s" % rel
         assert pi.is_test_file(rel, pi.testpath_roots(root)), rel
+
+
+def _git(root: pathlib.Path, *args: str) -> None:
+    subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True)
+
+
+def test_change_set_reads_the_base_from_the_environment(tmp_path, monkeypatch):
+    _git(tmp_path, "init", "-q")
+    _git(tmp_path, "config", "user.email", "t@example.invalid")
+    _git(tmp_path, "config", "user.name", "t")
+    (tmp_path / "a.py").write_text("A = 1\n", encoding="utf-8")
+    _git(tmp_path, "add", "a.py")
+    _git(tmp_path, "commit", "-qm", "a")
+    (tmp_path / "a.py").write_text("A = 2\n", encoding="utf-8")
+    (tmp_path / "new.py").write_text("", encoding="utf-8")
+    monkeypatch.setenv(pi.BASE_ENV, "HEAD")
+    assert pi.change_set(tmp_path) == ["a.py", "new.py"]
+    monkeypatch.setenv(pi.BASE_ENV, "no-such-ref")
+    assert pi.change_set(tmp_path) is None, "an unresolvable base fell back to something"

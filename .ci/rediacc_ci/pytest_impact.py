@@ -69,6 +69,7 @@ if TYPE_CHECKING:
 
 POLICY_RELPATH = ".ci/policy/pytest-impact.json"
 CACHE_RELDIR = ".ci/cache/pytest-impact"
+BASE_ENV = "PYTEST_IMPACT_BASE"
 MAP_SCHEMA = 2
 MAX_FRACTION = 0.40
 SCOPE_PREFIXES = (".ci/", ".claude/")
@@ -772,12 +773,13 @@ def resolve_push_base(git, branch: str | None) -> str | None:
 
 
 def change_set(root: pathlib.Path, base: str | None = None) -> list[str] | None:
-    """Files changed since the last push (or since `base`'s merge-base), uncommitted edits and untracked files included. None when no base resolves."""
+    """Files changed since the last push (or since `base`'s merge-base, else $PYTEST_IMPACT_BASE's), uncommitted edits and untracked files included. None when no base resolves. The variable is how a caller that cannot pass `--base` (check_pytest.py, a scratch clone, a detached tree) names the ref; a ref that does not resolve is None, never a silent fall back to the push base."""
 
     def git(args: list[str]) -> str | None:
         res = gitx.git(args, root=root)
         return res.stdout.strip() if res.returncode == 0 and res.stdout.strip() else None
 
+    base = base or os.environ.get(BASE_ENV) or None
     mb = git(["merge-base", "HEAD", base]) if base else resolve_push_base(git, gitx.branch(root))
     if not mb:
         return None
