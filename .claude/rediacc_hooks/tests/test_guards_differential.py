@@ -347,6 +347,7 @@ def host_world(stem, work):
 
 
 _FIXTURES = {}
+_BUILDER_TABLES = {}
 
 
 def all_builders():
@@ -358,18 +359,22 @@ def all_builders():
     package at once: a shared table is a shared edit, and a shared edit is a
     collision.
     """
-    table = dict(FIXTURE_BUILDERS)
-    for stem in guards.stems():
-        for name, builder in getattr(guards.load(stem), "FIXTURES", {}).items():
-            if name in table and table[name] is not builder:
-                msg = (
-                    "fixture %r is declared by %s and by another module with a different "
-                    "builder; two worlds sharing a name would silently give one guard the "
-                    "other's tree" % (name, stem)
-                )
-                raise AssertionError(msg)
-            table[name] = builder
-    return table
+    # MEMOISED (PLAN-ciquick-cpu W8). `_resolve_fixtures` and `fixture_path` call this for every env value of every case, and each call globbed the guards directory and loaded every guard: 19,604 `guards.stems()` calls, 64 s of one 86 s item, measured under cProfile. The table cannot change once the module is imported except through `FIXTURE_BUILDERS` itself, so its key names are the cache key; a raise is not cached.
+    key = tuple(FIXTURE_BUILDERS)
+    if key not in _BUILDER_TABLES:
+        table = dict(FIXTURE_BUILDERS)
+        for stem in guards.stems():
+            for name, builder in getattr(guards.load(stem), "FIXTURES", {}).items():
+                if name in table and table[name] is not builder:
+                    msg = (
+                        "fixture %r is declared by %s and by another module with a different "
+                        "builder; two worlds sharing a name would silently give one guard the "
+                        "other's tree" % (name, stem)
+                    )
+                    raise AssertionError(msg)
+                table[name] = builder
+        _BUILDER_TABLES[key] = table
+    return dict(_BUILDER_TABLES[key])
 
 
 @contextlib.contextmanager
@@ -665,6 +670,9 @@ PROCESS_TABLE_READERS = {
 SPREAD_STEMS = [stem for stem in guards.stems() if stem not in PROCESS_TABLE_READERS]
 
 
+_FIELDS: dict = {}
+
+
 def python_fields(stem, payload, extra, stubs, work, cwd=None):
     """One case's answer from the live port, exactly as the harness observes it.
 
@@ -678,6 +686,10 @@ def python_fields(stem, payload, extra, stubs, work, cwd=None):
     """
     env = case_env(stem, extra, stubs, work)
     cwd = cwd or case_cwd(stem, work)
+    # MEMOISED PER PROCESS (PLAN-ciquick-cpu W8). The golden comparison, `assert_discriminates` and `assert_defect_is_caught` each ran every case of a guard through the live port, so one case answered up to three times per worker. The key is everything a case's answer can depend on: the payload, the case env as built (which names the fixture paths), the cwd the guard is given and the process's own cwd (`test_goldens_ignore_the_ambient_checkout` varies it). The process-table readers are never memoised: their answer is the live process table, which moves between two calls.
+    key = (stem, payload, tuple(sorted(env.items())), str(cwd), os.getcwd())
+    if stem not in PROCESS_TABLE_READERS and key in _FIELDS:
+        return dict(_FIELDS[key])
     saved = dict(os.environ)
     os.environ.clear()
     os.environ.update(env)
@@ -689,7 +701,10 @@ def python_fields(stem, payload, extra, stubs, work, cwd=None):
         os.environ.clear()
         os.environ.update(saved)
         time.tzset()
-    return {"rc": str(rc), "out": out, "err": err}
+    fields = {"rc": str(rc), "out": out, "err": err}
+    if stem not in PROCESS_TABLE_READERS:
+        _FIELDS[key] = fields
+    return dict(fields)
 
 
 def diff_fields(want, got):
