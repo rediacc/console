@@ -427,3 +427,27 @@ def test_change_set_reads_the_base_from_the_environment(tmp_path, monkeypatch):
     assert pi.change_set(tmp_path) == ["a.py", "new.py"]
     monkeypatch.setenv(pi.BASE_ENV, "no-such-ref")
     assert pi.change_set(tmp_path) is None, "an unresolvable base fell back to something"
+
+
+def test_a_glob_that_matches_the_tree_covers_nothing():
+    files = [".ci/policy/f%d.json" % i for i in range(pi.MAX_DIR_FILES + 1)] + [".ci/policy/x.lock"]
+    dirs = pi.tracked_dirs_of(files)
+    broad = pi.broad_globs(["*?", "***", "x.loc*", ".ci/policy/f1*.json"], files, dirs)
+    assert "*?" in broad
+    assert "***" in broad
+    assert "x.loc*" not in broad, "CONTROL: a narrow glob was dropped"
+    assert ".ci/policy/f1*.json" not in broad, "CONTROL: a glob under the ceiling was dropped"
+    assert not pi.LiteralIndex(["*?"], broad).covers(".ci/policy/x.lock", dirs)
+    assert pi.LiteralIndex(["x.loc*"], broad).covers(".ci/policy/x.lock", dirs)
+
+
+def test_a_broad_glob_literal_does_not_hide_an_uncovered_change():
+    tree = dict(TREE, **{".ci/zz_data.txt": "x"})
+    tree[".ci/rediacc_ci/tests/test_other.py"] = (
+        "PATTERN = '*?'\n\ndef test_b():\n    assert PATTERN\n"
+    )
+    # Pad the tree so `*?` matches more files than the ceiling, as it does in the real one.
+    for i in range(pi.MAX_DIR_FILES + 1):
+        tree[".ci/pad/f%d.txt" % i] = ""
+    sel = run([".ci/zz_data.txt"], tree=tree)
+    assert sel.scope == "full", sel.line()

@@ -430,10 +430,32 @@ def literal_covers(literal: str, rel: str, tracked_dirs: frozenset[str]) -> bool
     return _stem_is_name(stem) and lit == stem
 
 
+def broad_globs(
+    literals: Iterable[str], files: Iterable[str], tracked_dirs: frozenset[str]
+) -> frozenset[str]:
+    """The glob literals that match more than MAX_DIR_FILES of `files`. Such a glob names a tree, not an input, for the same reason a broad directory does: `***`, `*?` and `*[!0-9]*` appear as literals in the suite and matched every path, so they covered every change and the uncovered FULL could never fire (a planted untracked file under .ci/ came back IMPACT)."""
+    files = list(files)
+    out = set()
+    seen = set()
+    for raw in literals:
+        lit = _normal_literal(raw)
+        if not _is_glob(lit) or lit in seen:
+            continue
+        seen.add(lit)
+        hits = 0
+        for rel in files:
+            if literal_covers(lit, rel, tracked_dirs):
+                hits += 1
+                if hits > MAX_DIR_FILES:
+                    out.add(lit)
+                    break
+    return frozenset(out)
+
+
 class LiteralIndex:
     """One test's literals, indexed so a file is checked by set lookups instead of a scan. Same verdict as `literal_covers` over every literal."""
 
-    def __init__(self, literals: Iterable[str]):
+    def __init__(self, literals: Iterable[str], broad: frozenset[str] = frozenset()):
         self.exact: set[str] = set()
         self.globs: list[str] = []
         for raw in literals:
@@ -441,7 +463,8 @@ class LiteralIndex:
             if not lit or lit in ("*", "**", "/", "."):
                 continue
             if _is_glob(lit):
-                self.globs.append(lit)
+                if lit not in broad:
+                    self.globs.append(lit)
             else:
                 self.exact.add(lit)
                 if "/" in lit and lit.endswith("/"):
@@ -601,7 +624,11 @@ def select(
             )
     reads = policy["reads"]
     tracked_dirs = tracked_dirs_of(existing, test_roots)
-    indexes = {test: LiteralIndex(entry["literals"]) for test, entry in tests.items()}
+    in_scope_files = [p for p in existing if p.startswith(SCOPE_PREFIXES) or p.endswith(".py")]
+    broad = broad_globs(
+        (lit for entry in tests.values() for lit in entry["literals"]), in_scope_files, tracked_dirs
+    )
+    indexes = {test: LiteralIndex(entry["literals"], broad) for test, entry in tests.items()}
     closures = {test: frozenset(entry["closure"]) for test, entry in tests.items()}
     selected: dict[str, str] = dict.fromkeys(smoke, "smoke")
     outside = []
