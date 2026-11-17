@@ -4,7 +4,7 @@
  *
  * WHY. A gate with no `paths` hashes the whole tree (input-hash.ts `WHOLE_TREE_GLOB`), so any commit changes its input hash and it carries only across a byte-identical tree. On 2026-11-16, 349 of 397 lock entries declared none, and a receipt carried 23 gates while it ran 290. Hand-typed globs are the other failure: a glob that misses one file the gate reads makes carry UNSOUND, a stale green carried over a changed input.
  *
- * HOW. The gate's own `run` command executes once under `strace -ff -y --seccomp-bpf -e trace=%file,getdents,getdents64,fchdir`. Every path a process opened, stat'ed, exec'ed or resolved, and every directory it listed, is mapped onto the tracked tree:
+ * HOW. The gate's own `run` command executes once under `strace -ff -y --seccomp-bpf -e trace=%file,getdents,getdents64,fchdir,clone,clone3,fork,vfork` (the fork family only so each child's starting cwd is known). Every path a process opened, stat'ed, exec'ed or resolved, and every directory it listed, is mapped onto the tracked tree:
  *   - a tracked file read is kept as itself;
  *   - a listed tracked directory becomes `dir/**` (a listing sees every name in it, so a new file there is a new input);
  *   - a directory with at least FOLD_MIN_FILES tracked files of which more than half were read becomes `dir/**`;
@@ -47,7 +47,7 @@ export const LEDGER_REL = 'scripts/ci-runner/trace-ledger.ts';
 export const TRACED_ORIGIN = 'traced';
 
 /** strace's %file class is every syscall taking a path; the getdents pair are listings, fchdir moves the cwd by fd. */
-export const TRACE_SYSCALLS = '%file,getdents,getdents64,fchdir';
+export const TRACE_SYSCALLS = '%file,getdents,getdents64,fchdir,clone,clone3,fork,vfork';
 /** A directory folds to `dir/**` when more than this share of its tracked files was read... */
 export const FOLD_DIR_FRACTION = 0.5;
 /** ...and it holds at least this many tracked files, so a lone file stays exact. */
@@ -140,33 +140,62 @@ function takesDirfd(name: string): boolean {
 }
 
 /**
- * One strace `-ff -y` per-process log into the paths it named. `fallbackCwd` resolves a relative path seen before the process revealed its cwd (every `AT_FDCWD</cwd>` decoration does) and never after it did.
+ * strace output into the paths it named: one `-ff` per-process log, or a `-f` log whose lines carry a pid prefix. `rootCwd` is the cwd of the traced command; every other process starts in the cwd its parent had when it forked (see straceParser).
  */
 export function parseStraceLog(
   text: string,
-  fallbackCwd: string,
+  rootCwd: string,
   into: Access = emptyAccess()
 ): Access {
-  const p = straceParser(fallbackCwd, into);
+  const p = straceParser(rootCwd, into);
   for (const line of text.split('\n')) p.line(line);
   return p.end();
 }
 
-/** The stateful line parser behind parseStraceLog, so a large log streams in chunks with its cwd intact. */
+interface ProcState {
+  cwd?: string;
+  /** The cwd this process started in: its parent's at fork, or the root's for a process whose fork the trace never showed. */
+  start: string;
+  pending: string[];
+  execsWithoutCwd: Exec[];
+}
+
+const FORKS = /^(clone|clone3|fork|vfork)$/;
+
+/**
+ * The stateful line parser, so a large log streams in chunks with each process's cwd intact. The cwd is PER PID: a `chdir` or `fchdir` moves only the process that made it, and a successful clone, clone3, fork or vfork gives the new pid the cwd its parent had at that moment. `line(l, pid)` takes the pid from the argument (a `-ff` log, whose file name holds it) or from the line's own prefix (a `-f` log). For `-ff`, feed the logs in ascending pid order so a parent's fork is seen before its child's lines; a child seen first starts from the root cwd, and its start is corrected when the fork arrives, for every relative path it had not yet resolved.
+ */
 export function straceParser(
-  fallbackCwd: string,
+  rootCwd: string,
   into: Access = emptyAccess()
-): { line: (l: string) => void; end: () => Access } {
-  let cwd: string | undefined;
-  const pending: string[] = [];
-  const execsWithoutCwd: Exec[] = [];
-  const add = (base: string | undefined, p: string): void => {
-    if (p === '') return;
-    if (path.posix.isAbsolute(p)) into.files.add(path.posix.normalize(p));
-    else if (base !== undefined) into.files.add(path.posix.resolve(base, p));
-    else pending.push(p);
+): { line: (l: string, pid?: number) => void; end: () => Access } {
+  const procs = new Map<number, ProcState>();
+  const proc = (pid: number): ProcState => {
+    let st = procs.get(pid);
+    if (st === undefined) {
+      st = { start: rootCwd, pending: [], execsWithoutCwd: [] };
+      procs.set(pid, st);
+    }
+    return st;
   };
-  const line = (l: string): void => {
+  const forked = (parent: ProcState, child: number): void => {
+    const st = proc(child);
+    if (st.cwd === undefined) st.start = parent.cwd ?? parent.start;
+  };
+  const line = (raw: string, pidArg?: number): void => {
+    let l = raw;
+    let pid = pidArg ?? 0;
+    const pre = /^(\d+)\s+(.*)$/.exec(l);
+    if (pidArg === undefined && pre !== null) {
+      pid = Number(pre[1]);
+      l = pre[2];
+    }
+    const st = proc(pid);
+    const resumed = /^<\.\.\. (\w+) resumed>.*\)\s+=\s+(\d+)/.exec(l);
+    if (resumed !== null) {
+      if (FORKS.test(resumed[1])) forked(st, Number(resumed[2]));
+      return;
+    }
     const m = /^(\w+)\((.*)$/.exec(l);
     if (m === null) return;
     const name = m[1];
@@ -176,20 +205,24 @@ export function straceParser(
       path: decodeCString(d[2]),
       at: d.index ?? 0,
     }));
-    for (const d of decorations) if (d.fd === 'AT_FDCWD') cwd = d.path;
-    if (cwd !== undefined && pending.length > 0) {
-      for (const p of pending.splice(0)) into.files.add(path.posix.resolve(cwd, p));
+    for (const d of decorations) if (d.fd === 'AT_FDCWD') st.cwd = d.path;
+    if (st.cwd !== undefined && st.pending.length > 0) {
+      for (const p of st.pending.splice(0)) into.files.add(path.posix.resolve(st.cwd, p));
     }
-    if (cwd !== undefined) for (const e of execsWithoutCwd.splice(0)) e.cwd = cwd;
+    if (st.cwd !== undefined) for (const e of st.execsWithoutCwd.splice(0)) e.cwd = st.cwd;
     const retMatch = /\)\s+=\s+(-?\d+)(?:<((?:[^>\\]|\\.)*)>)?/.exec(rest);
     const ok = retMatch !== null && !retMatch[1].startsWith('-');
+    if (FORKS.test(name)) {
+      if (ok && retMatch !== null) forked(st, Number(retMatch[1]));
+      return;
+    }
     if (name.startsWith('getdents')) {
       const d = decorations[0];
       if (d !== undefined && d.fd !== 'AT_FDCWD') into.listed.add(path.posix.normalize(d.path));
       return;
     }
     if (name === 'fchdir') {
-      if (ok && decorations[0] !== undefined) cwd = decorations[0].path;
+      if (ok && decorations[0] !== undefined) st.cwd = decorations[0].path;
       return;
     }
     if (retMatch?.[2] !== undefined && /^(open|openat|openat2|creat)$/.test(name)) {
@@ -201,37 +234,41 @@ export function straceParser(
       at: q.index ?? 0,
     }));
     for (const idx of pathArgIndexes(name)) {
-      const s = strings[idx];
-      if (s === undefined) continue;
-      let base = cwd;
+      const str = strings[idx];
+      if (str === undefined || str.s === '') continue;
+      let base = st.cwd;
       if (takesDirfd(name)) {
         // The dirfd is the last decoration before this string.
-        const d = decorations.filter((x) => x.at < s.at).pop();
+        const d = decorations.filter((x) => x.at < str.at).pop();
         if (d !== undefined) base = d.path;
       }
-      add(base, s.s);
+      if (path.posix.isAbsolute(str.s)) into.files.add(path.posix.normalize(str.s));
+      else if (base !== undefined) into.files.add(path.posix.resolve(base, str.s));
+      else st.pending.push(str.s);
     }
     if (name === 'chdir' && ok && strings[0] !== undefined) {
-      // Paths seen before the first chdir belong to the start cwd, not the new one.
-      if (cwd === undefined)
-        for (const p of pending.splice(0)) into.files.add(path.posix.resolve(fallbackCwd, p));
-      cwd = path.posix.resolve(cwd ?? fallbackCwd, strings[0].s);
+      // Paths seen before this process's first chdir belong to its start cwd, not the new one.
+      if (st.cwd === undefined)
+        for (const p of st.pending.splice(0)) into.files.add(path.posix.resolve(st.start, p));
+      st.cwd = path.posix.resolve(st.cwd ?? st.start, strings[0].s);
     }
     if ((name === 'execve' || name === 'execveat') && ok) {
       const argv = /\[((?:"(?:[^"\\]|\\.)*"(?:, )?)*)\]/.exec(args);
       if (argv !== null) {
         const ex: Exec = {
           argv: [...argv[1].matchAll(QUOTED)].map((q) => decodeCString(q[1])),
-          cwd,
+          cwd: st.cwd,
         };
         into.execs.push(ex);
-        if (cwd === undefined) execsWithoutCwd.push(ex);
+        if (st.cwd === undefined) st.execsWithoutCwd.push(ex);
       }
     }
   };
   const end = (): Access => {
-    for (const p of pending.splice(0)) into.files.add(path.posix.resolve(fallbackCwd, p));
-    for (const e of execsWithoutCwd.splice(0)) e.cwd = fallbackCwd;
+    for (const st of procs.values()) {
+      for (const p of st.pending.splice(0)) into.files.add(path.posix.resolve(st.start, p));
+      for (const e of st.execsWithoutCwd.splice(0)) e.cwd = st.start;
+    }
     return into;
   };
   return { line, end };
@@ -738,10 +775,15 @@ export async function traceCommand(
   fs.closeSync(outFd);
   const access = emptyAccess();
   access.startedMs = started;
-  const logs = fs.readdirSync(dir).filter((f) => /^t\.\d+$/.test(f));
+  // Ascending pid order, so a parent's fork is parsed before its child's lines (straceParser).
+  const logs = fs
+    .readdirSync(dir)
+    .filter((f) => /^t\.\d+$/.test(f))
+    .sort((a, b) => Number(a.slice(2)) - Number(b.slice(2)));
+  const parser = straceParser(cwd, access);
   for (const f of logs) {
     // A log can exceed the largest string V8 holds: stream it in chunks and parse whole lines, carrying the partial last one.
-    const parser = straceParser(cwd, access);
+    const pid = Number(f.slice(2));
     const fd = fs.openSync(path.join(dir, f), 'r');
     const buf = Buffer.alloc(1 << 22);
     let tail = '';
@@ -752,13 +794,13 @@ export async function traceCommand(
     ) {
       const chunk = tail + buf.toString('utf8', 0, n);
       const cut = chunk.lastIndexOf('\n');
-      for (const l of chunk.slice(0, cut + 1).split('\n')) parser.line(l);
+      for (const l of chunk.slice(0, cut + 1).split('\n')) parser.line(l, pid);
       tail = chunk.slice(cut + 1);
     }
-    parser.line(tail);
-    parser.end();
+    parser.line(tail, pid);
     fs.closeSync(fd);
   }
+  parser.end();
   const output = fs.readFileSync(outFile, 'utf8');
   if (!opts.keepLogs) fs.rmSync(dir, { recursive: true, force: true });
   else process.stderr.write(`path-trace: kept ${opts.label ?? cmd} logs in ${dir}\n`);
@@ -1447,6 +1489,34 @@ async function selftest(): Promise<number> {
   check(
     rel.files.has('/r/rel.txt') && rel.files.has('/r/sub/q'),
     'a cwd-relative path before any decoration falls back to the start cwd, and chdir moves it'
+  );
+  // Per-pid cwd, in a `-f` log: child 101 chdirs to /tmp/x; the parent's LATER relative stat stays in /r.
+  const forkLog = [
+    '100 clone3({flags=CLONE_VM|CLONE_VFORK, exit_signal=SIGCHLD}, 88) = 101',
+    '101 chdir("/tmp/x")                     = 0',
+    '101 stat("c.txt", {st_mode=S_IFREG|0644, ...}) = 0',
+    '100 stat("later.txt", {st_mode=S_IFREG|0644, ...}) = 0',
+  ].join('\n');
+  const fa = parseStraceLog(forkLog, '/r');
+  check(
+    fa.files.has('/r/later.txt') &&
+      fa.files.has('/tmp/x/c.txt') &&
+      !fa.files.has('/tmp/x/later.txt'),
+    "a child's chdir moves only the child: the parent's later relative path stays in its own cwd"
+  );
+  // Inheritance: the parent chdirs first, then forks; the child's first relative path resolves in the parent's cwd, including through an interleaved <... resumed> fork.
+  const inherit = parseStraceLog(
+    [
+      '200 chdir("/r/sub") = 0',
+      '200 clone(child_stack=NULL, flags=CLONE_CHILD_SETTID|SIGCHLD <unfinished ...>',
+      '200 <... clone resumed>, child_tidptr=0x7f) = 201',
+      '201 access("k.txt", R_OK) = 0',
+    ].join('\n'),
+    '/r'
+  );
+  check(
+    inherit.files.has('/r/sub/k.txt'),
+    "a child starts in its parent's cwd at fork, read through a resumed clone"
   );
   check(
     decodeCString('a\\"b\\\\c\\x41\\101') === 'a"b\\cAA',
