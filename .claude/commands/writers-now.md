@@ -96,6 +96,7 @@ Rules: no git checkout, restore, stash, clean, reset; no regenerate or sync scri
       Plan-Box: <PLAN-file>.md#<sig8> clauses=<C1,C2,...|all>
       Plan-Box: none -- <reason, at least 12 characters>
     never push, never touch `agent/**` or a gitlink, never switch or create a branch;
+  - each git command is its own simple Bash call, with no `;`, `&&`, pipe or redirect in the same command, `git -C <lease>` in place of `cd ... &&`, and the exit code read from the tool result rather than `; echo rc=$?`, because the harness refuses a compound command naming git inside an isolated worktree;
   - `npm run ci -- --narrow` or named tests only; ci:quick, vm:check and live_proof record refuse a lease;
   - Python tests run with `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest <files> -q` (neither
     the system python3 nor .venv has pytest, and `-p no:cacheprovider` fails on the repo's cache_dir); a lease is seeded with that binary, and one without it runs the main checkout's copy by absolute path with the lease as the working directory;
