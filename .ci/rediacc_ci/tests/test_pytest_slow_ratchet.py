@@ -199,7 +199,7 @@ def test_control_a_genuinely_slow_call_still_fails(tmp_path, capsys):
     )
     rc, out = _run(tmp_path, capsys, [junit], [])
     assert rc == 1
-    assert "pkg.test_mod::test_slow_call took 11.1 s" in out.err
+    assert "pkg.test_mod::test_slow_call took 11.2 s" in out.err
 
 
 def test_control_a_slow_function_scoped_setup_stays_the_tests_own(tmp_path, capsys):
@@ -258,3 +258,72 @@ def test_the_confirm_candidates_skip_a_test_whose_own_time_is_fast(tmp_path):
     _phases(junit, {"test_first": HEAVY_FIRST, "test_slow": {"setup": 0.0, "call": 11.0}})
     allow = _allow(tmp_path / "allow.json", [])
     assert ratchet.confirm_candidates(junit, root, allow) == ["pkg/test_mod.py::test_slow"]
+
+
+def test_a_slow_own_teardown_is_judged_as_the_tests_own(tmp_path, capsys):
+    """Finding 7d7ecd77.1: a function-scoped fixture's own 12 s teardown is the test's time."""
+    junit = _junit(tmp_path / "j.xml", {"test_td": 12.2})
+    _phases(
+        junit,
+        {
+            "test_td": {
+                "setup": 0.1,
+                "call": 0.1,
+                "teardown": 12.0,
+                "shared_setup": 0.0,
+                "shared_teardown": 0.0,
+            }
+        },
+    )
+    rc, out = _run(tmp_path, capsys, [junit], [])
+    assert rc == 1
+    assert "pkg.test_mod::test_td took 12.2 s" in out.err
+
+
+def test_control_a_module_fixtures_teardown_on_the_last_test_is_not_its_own(tmp_path, capsys):
+    junit = _junit(tmp_path / "j.xml", {"test_last": 12.2})
+    _phases(
+        junit,
+        {
+            "test_last": {
+                "setup": 0.1,
+                "call": 0.1,
+                "teardown": 12.0,
+                "shared_setup": 0.0,
+                "shared_teardown": 11.9,
+            }
+        },
+    )
+    rc, out = _run(tmp_path, capsys, [junit], [])
+    assert rc == 0, out.err
+
+
+def test_control_an_unmeasured_shared_teardown_is_charged_to_the_test(tmp_path, capsys):
+    junit = _junit(tmp_path / "j.xml", {"test_last": 12.2})
+    _phases(junit, {"test_last": {"setup": 0.1, "call": 0.1, "teardown": 12.0}})
+    rc, _out = _run(tmp_path, capsys, [junit], [])
+    assert rc == 1
+
+
+def test_a_malformed_phase_entry_is_named_malformed_not_missing(tmp_path, capsys):
+    """Finding 7d7ecd77.4: the entry exists but holds no usable number, so the note must not say it has no entry."""
+    junit = _junit(tmp_path / "j.xml", {"test_bad": 1.0})
+    _phases(junit, {"test_bad": {"setup": "x", "call": 1.0}})
+    rc, out = _run(tmp_path, capsys, [junit], [])
+    assert rc == 0
+    assert "malformed entry" in out.out
+    assert "have no entry" not in out.out
+
+
+def test_control_a_missing_phase_entry_is_still_named_missing(tmp_path, capsys):
+    junit = _junit(tmp_path / "j.xml", {"test_bad": 1.0, "test_other": 1.0})
+    _phases(junit, {"test_other": {"setup": 0.0, "call": 1.0}})
+    _rc, out = _run(tmp_path, capsys, [junit], [])
+    assert "have no entry" in out.out
+    assert "malformed" not in out.out
+
+
+def test_the_shared_report_groups_by_classname_including_the_class_part():
+    """Finding 7d7ecd77.3: the rows are per junit classname, which carries a test class, as the docstring says."""
+    rows = ratchet.shared_by_file({"t.test_heavy.TestSlow::a": 3.0, "t.test_heavy::b": 2.0})
+    assert rows == [("t.test_heavy.TestSlow", 3.0), ("t.test_heavy", 2.0)]

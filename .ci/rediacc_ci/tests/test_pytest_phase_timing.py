@@ -23,7 +23,8 @@ import pytest
 @pytest.fixture(scope="module")
 def world():
     time.sleep(0.6)
-    return 1
+    yield 1
+    time.sleep(0.5)
 
 
 def test_first_takes_the_module_fixture(world):
@@ -31,6 +32,16 @@ def test_first_takes_the_module_fixture(world):
 
 
 def test_second_shares_it(world):
+    pass
+
+
+@pytest.fixture
+def slow_exit():
+    yield
+    time.sleep(0.3)
+
+
+def test_own_teardown(slow_exit):
     pass
 
 
@@ -147,3 +158,17 @@ def test_without_the_option_the_plugin_writes_nothing(tmp_path):
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert not list(tmp_path.rglob("*.json"))
+
+
+@pytest.mark.parametrize("workers", ["0", "2"])
+def test_teardown_is_split_into_the_tests_own_and_the_shared_fixtures(tmp_path, workers):
+    """Finding 7d7ecd77.1: a function fixture's 0.3 s teardown stays the test's; the module fixture's 0.5 s lands on the module's last test and is shared."""
+    junit = _run_suite(tmp_path, workers)
+    tests = json.loads(ratchet.phases_path(junit).read_text(encoding="utf-8"))["tests"]
+    own = tests["t.test_heavy::test_own_teardown"]
+    assert own["teardown"] >= 0.3, own
+    shared_total = sum(t["shared_teardown"] for t in tests.values())
+    assert shared_total >= 0.45, tests
+    assert own["shared_teardown"] < 0.1 or own["teardown"] - own["shared_teardown"] >= 0.3, own
+    _own, _shared = ratchet.own_seconds(own)
+    assert _own >= 0.3

@@ -6,7 +6,7 @@ LOADED BY `-p rediacc_ci.quality.pytest_phase_timing --phase-timing <path>` (`ch
 
 SHARED MEANS ANY SCOPE BUT `function`. `pytest_fixture_setup` is timed per fixture, and pytest resolves a fixture's dependencies before that hook runs (`FixtureDef.execute`), so each timing is the fixture's own, never its dependencies'. A module, class, package or session fixture set up during a test's setup is that test's `shared_setup_s`; everything else in the setup phase (function-scoped fixtures, autouse ones, the setup machinery) stays the test's own.
 
-THE FILE: `{"version": 1, "tests": {<junit node>: {"nodeid", "setup", "call", "teardown", "shared_setup"}}}`, keyed by the `<classname>::<name>` junit node `pytest_slow_ratchet.node_of` reads, so a junit case and its phases join on one key. `shared_setup` is null when no worker measured it (the plugin was not loaded there), which the ratchet reads as zero: an unmeasured share is charged to the test, never excused.
+THE FILE: `{"version": 1, "tests": {<junit node>: {"nodeid", "setup", "call", "teardown", "shared_setup", "shared_teardown"}}}`, keyed by the `<classname>::<name>` junit node `pytest_slow_ratchet.node_of` reads, so a junit case and its phases join on one key. `shared_setup` and `shared_teardown` are null when no worker measured them (the plugin was not loaded there), which the ratchet reads as zero: an unmeasured share is charged to the test, never excused. A wider-scoped fixture's teardown lands on the last test of its scope, so it is timed the same way as setup (the gap between finalizers, `pytest_fixture_post_finalizer`).
 """
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ if typing.TYPE_CHECKING:
 VERSION = 1
 OPTION = "--phase-timing"
 SHARED_ATTR = "shared_setup_s"
+SHARED_TEARDOWN_ATTR = "shared_teardown_s"
 _PY_SUFFIX_RE = re.compile(r"\.py$")
 
 
@@ -50,6 +51,21 @@ class PhaseTiming:
         self.out = out
         self.tests: dict[str, dict[str, typing.Any]] = {}
         self._shared = 0.0
+        self._shared_teardown = 0.0
+        self._mark = 0.0
+
+    @pytest.hookimpl(wrapper=True)
+    def pytest_runtest_teardown(self) -> Generator[None, object, object]:
+        self._shared_teardown = 0.0
+        self._mark = time.perf_counter()
+        return (yield)
+
+    def pytest_fixture_post_finalizer(self, fixturedef) -> None:
+        # Finalizers run one after another, so the gap since the last one (or the start of teardown) is this fixture's own finish.
+        now = time.perf_counter()
+        if fixturedef.scope != "function":
+            self._shared_teardown += now - self._mark
+        self._mark = now
 
     @pytest.hookimpl(wrapper=True)
     def pytest_runtest_setup(self) -> Generator[None, object, object]:
@@ -70,6 +86,8 @@ class PhaseTiming:
         report = yield
         if call.when == "setup":
             setattr(report, SHARED_ATTR, self._shared)
+        elif call.when == "teardown":
+            setattr(report, SHARED_TEARDOWN_ATTR, self._shared_teardown)
         return report
 
     def pytest_runtest_logreport(self, report: pytest.TestReport) -> None:
@@ -83,12 +101,16 @@ class PhaseTiming:
                 "call": 0.0,
                 "teardown": 0.0,
                 "shared_setup": None,
+                "shared_teardown": None,
             },
         )
         entry[report.when] = float(report.duration)
         if report.when == "setup":
             shared = getattr(report, SHARED_ATTR, None)
             entry["shared_setup"] = float(shared) if shared is not None else None
+        elif report.when == "teardown":
+            shared = getattr(report, SHARED_TEARDOWN_ATTR, None)
+            entry["shared_teardown"] = float(shared) if shared is not None else None
 
     def pytest_sessionfinish(self) -> None:
         if self.out is None:

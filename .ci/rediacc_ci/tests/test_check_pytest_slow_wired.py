@@ -161,7 +161,9 @@ def test_control_a_test_slow_in_its_serial_re_times_too_still_fails(gate) -> Non
     assert len(calls) == 1 + check_pytest.SLOW_CONFIRM_RUNS
 
 
-def _run_phased(gate, shared: float) -> tuple[int, list[list[str]]]:
+def _run_phased(
+    gate, shared: float, *, shard: bool = False, impact: bool = False
+) -> tuple[int, list[list[str]]]:
     """Every run writes 11 s for ON_DISK to its junit and, where the run was handed `--phase-timing`, a phase file whose setup holds `shared` s of module-fixture setup."""
     _root, monkeypatch, _emitted, _allow = gate
     calls: list[list[str]] = []
@@ -183,11 +185,30 @@ def _run_phased(gate, shared: float) -> tuple[int, list[list[str]]]:
         return 0, "1 passed\n"
 
     monkeypatch.setattr(check_pytest, "run_pytest", writes)
+    if impact:
+        selection = types.SimpleNamespace(
+            files=["t/test_one.py"], total=1, why={}, reason="fixture", digest="d"
+        )
+        return check_pytest.run_impact("pytest", _root, selection), calls
+    if shard:
+        (_root / "shard.json").write_text(
+            json.dumps(
+                {
+                    "lane": "quality-pytest",
+                    "of": 1,
+                    "legs": [{"index": 1, "ids": ["pytest:t/test_one.py"]}],
+                }
+            ),
+            encoding="utf-8",
+        )
+        return check_pytest.main(["--shard-manifest", "shard.json", "--shard", "1/1"]), calls
     return check_pytest.main([]), calls
 
 
-def test_every_run_loads_the_phase_plugin_beside_its_own_junit(gate) -> None:
-    _rc, calls = _run_phased(gate, 0.0)
+@pytest.mark.parametrize("path", ["full", "shard", "impact"])
+def test_every_run_loads_the_phase_plugin_beside_its_own_junit(gate, path) -> None:
+    """Finding 7d7ecd77.2: the shard and impact runs load it too; dropping `phase_args` from either reds its case."""
+    _rc, calls = _run_phased(gate, 0.0, shard=path == "shard", impact=path == "impact")
     assert len(calls) == 1 + check_pytest.SLOW_CONFIRM_RUNS
     for args in calls:
         assert args[args.index("-p") + 1] == check_pytest.PHASE_PLUGIN

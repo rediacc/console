@@ -6,7 +6,7 @@ THE TIME IS THE MEDIAN OF THE RUNS GIVEN. One junit run on a loaded machine read
 
 THE ALLOWLIST ONLY SHRINKS. A listed test that no longer runs over the threshold is reported as stale (`pytest-slow-stale`) and fails only under `--strict-stale`, because a run over a subset of the suite cannot tell "faster" from "not collected". Dropping the entry is how the baseline shrinks; adding one needs a reason that names why the test cannot be made fast.
 
-A TEST IS JUDGED ON ITS OWN TIME: its call, plus the setup that is not shared-fixture setup. junit's `time` is setup + call + teardown, so a module fixture's setup lands on the first test of its module (`test_githook_generated_artifacts` charged its 13 s `world` fixture to a test whose call took 2-4 s). The `pytest_phase_timing` plugin writes each run's phases to `<junit stem>.phases.json` beside the junit, and a test found there is judged on `setup - shared_setup + call`: function-scoped and autouse fixture setup stays the test's, any wider-scoped fixture's setup does not, and teardown is left out because a module fixture's teardown lands on the module's last test the same way. The shared setup is printed per file as information, the share no test is judged on. A junit with no phase file beside it, or a case its phase file lacks, is judged on the junit time, and the ratchet says so: a missing measurement never passes a test silently.
+A TEST IS JUDGED ON ITS OWN TIME: its call, plus the setup that is not shared-fixture setup. junit's `time` is setup + call + teardown, so a module fixture's setup lands on the first test of its module (`test_githook_generated_artifacts` charged its 13 s `world` fixture to a test whose call took 2-4 s). The `pytest_phase_timing` plugin writes each run's phases to `<junit stem>.phases.json` beside the junit, and a test found there is judged on `setup - shared_setup + call`: function-scoped and autouse fixture setup stays the test's, any wider-scoped fixture's setup does not. Teardown is judged the same way (`teardown - shared_teardown`): a function-scoped fixture's own teardown is the test's, and a module fixture's teardown, which lands on the module's last test, is not. The shared time is printed per junit classname (a test file, or a test class within it) as information, the share no test is judged on. A junit with no phase file beside it, or a case its phase file lacks, is judged on the junit time, and the ratchet says so: a missing measurement never passes a test silently.
 
 EXIT CODES: 0 clean, 1 a finding, 2 no verdict (no junit readable, or none with a test case in it): a ratchet that read nothing proves nothing.
 """
@@ -67,16 +67,19 @@ def read_phases(path: pathlib.Path) -> tuple[dict[str, dict], str | None]:
 def own_seconds(phases: dict) -> tuple[float, float] | None:
     """`(the test's own seconds, its shared-fixture setup seconds)` from one phase entry, or None when the entry carries no usable numbers.
 
-    Own is `setup - shared_setup + call`. An unmeasured `shared_setup` (null) counts as zero, so the whole setup stays charged to the test.
+    Own is `setup - shared_setup + call + teardown - shared_teardown`; the second number is the shared setup plus the shared teardown. An unmeasured share (null or absent) counts as zero, so the whole phase stays charged to the test.
     """
     try:
         setup = float(phases.get("setup") or 0.0)
         call = float(phases.get("call") or 0.0)
+        teardown = float(phases.get("teardown") or 0.0)
         shared = float(phases.get("shared_setup") or 0.0)
+        shared_td = float(phases.get("shared_teardown") or 0.0)
     except (TypeError, ValueError):
         return None
     shared = min(max(shared, 0.0), setup)
-    return setup - shared + call, shared
+    shared_td = min(max(shared_td, 0.0), teardown)
+    return setup - shared + call + teardown - shared_td, shared + shared_td
 
 
 @dataclasses.dataclass
@@ -108,11 +111,14 @@ def read_timing(junits: Iterable[pathlib.Path]) -> Timing:
                 % (unreadable, junit)
             )
         unphased = 0
+        malformed = 0
         for case in root.iter("testcase"):
             if case.find("skipped") is not None:
                 continue
             node = node_of(case)
             measured = own_seconds(phases[node]) if node in phases else None
+            if node in phases and measured is None:
+                malformed += 1
             if measured is not None:
                 samples.setdefault(node, []).append(measured[0])
                 shared_samples.setdefault(node, []).append(measured[1])
@@ -121,9 +127,14 @@ def read_timing(junits: Iterable[pathlib.Path]) -> Timing:
                 seconds = float(case.get("time") or 0.0)
             except ValueError:
                 continue
-            if not unreadable:
+            if not unreadable and node not in phases:
                 unphased += 1
             samples.setdefault(node, []).append(seconds)
+        if malformed:
+            notes.append(
+                "%d test(s) in %s have a malformed entry in %s and are judged on their junit time"
+                % (malformed, junit, phases_path(junit))
+            )
         if unphased:
             notes.append(
                 "%d test(s) in %s have no entry in %s and are judged on their junit time"
@@ -144,7 +155,7 @@ def read_durations(junits: Iterable[pathlib.Path]) -> dict[str, float]:
 def shared_by_file(
     shared: dict[str, float], floor: float = SHARED_REPORT_FLOOR_S
 ) -> list[tuple[str, float]]:
-    """`(junit classname, shared-fixture setup seconds)` per test file over `floor`, costliest first: the setup no test is judged on."""
+    """`(junit classname, shared-fixture seconds)` per classname (a test file, or a test class within it) over `floor`, costliest first: the setup no test is judged on."""
     totals: dict[str, float] = {}
     for node, seconds in shared.items():
         classname = node.partition("::")[0]
@@ -279,7 +290,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             log.emit_finding(finding_key("pytest-slow-stale", node))
     for classname, seconds in shared_by_file(timing.shared)[:SHARED_REPORT_LIMIT]:
         print(
-            "pytest-slow-ratchet: info: %s spent %.1f s in shared (module, class or session) fixture setup, which is not charged to any test"
+            "pytest-slow-ratchet: info: %s spent %.1f s in shared (module, class or session) fixture setup and teardown, which is not charged to any test"
             % (classname, seconds)
         )
     failed = bool(slow or problems or (stale and args.strict_stale))
