@@ -802,13 +802,14 @@ SHORT_TS_RE = re.compile(r"^\d\d:\d\d:\d\d ")
 RETRY_NOTE_RE = re.compile(r"attempt \d+ of \d+ failed \(.*\), asking again in ")
 
 
-# A test runner's verdict line: Go `--- FAIL:` / `--- PASS:`, a package `FAIL<TAB>pkg` / `ok  <TAB>pkg` summary, a bare `PASS` / `FAIL` alone on a line, a pytest `PASSED|FAILED path::case` line or its `==== N passed ... ====` summary. A gate's own `FAIL: check:foo` line is no verdict. A `t.Logf` line is read as test output only in a log that carries a verdict: a run the runner cut off prints its `t.Fatalf` text with no verdict, and that text may be the real infra failure.
+# A test runner's verdict line: Go `--- FAIL:` / `--- PASS:`, a package `FAIL<TAB>pkg` / `ok  <TAB>pkg` summary, a bare `PASS` / `FAIL` alone on a line, a pytest `PASSED|FAILED path::case` line (the -rA form) or `path::case PASSED|FAILED` (the -v form) or its `==== N passed ... ====` summary. A gate's own `FAIL: check:foo` line is no verdict. A `t.Logf` line is read as test output only in a log that carries a verdict: a run the runner cut off prints its `t.Fatalf` text with no verdict, and that text may be the real infra failure.
 TEST_VERDICT_RE = re.compile(
     r"^(?:\s*--- (?:PASS|FAIL):"
     r"|(?:FAIL|ok)\t\S"
     r"|ok  \s*\S+\s"
     r"|(?:PASS|FAIL)\s*$"
     r"|(?:PASSED|FAILED) \S+::"
+    r"|\S+::\S+ (?:PASSED|FAILED)\b"
     r"|=+ .*\b(?:passed|failed)\b.* =+\s*$)"
 )
 

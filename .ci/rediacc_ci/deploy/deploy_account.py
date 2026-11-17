@@ -200,6 +200,9 @@ def portal_smoke(
             break
         if verdict.state == portal_captcha.BROKEN:
             broken = verdict
+    if verdict.state != portal_captcha.OK and broken is not None:
+        # The refusal path above names BROKEN; so does a later attempt that read nothing (review b3c80560.1).
+        verdict = broken
     if verdict.state == portal_captcha.OK:
         log.info("Portal smoke: %s %s" % (shown(host), shown(verdict.why)))
         return None

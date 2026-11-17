@@ -183,6 +183,18 @@ def test_the_machine_wide_nightly_still_blocks_every_repo() -> None:
     assert "rediacc-backup-nightly-hot.timer at 2026-11-17 02:00:00Z" in why
 
 
+def test_another_repos_unreadable_timer_stamp_does_not_refuse_the_target() -> None:
+    """Review 89135e69.2: a timer of another repo whose stamp is not UTC is not judged for `repo`, as the docstring says."""
+    cet = MAIL.replace("Mon 2026-11-16 07:30:43 UTC", "Mon 2026-11-16 08:30:43 CET", 1)
+    clear, why = bw.window_verdict(cet, NOON, repo="demo-heartbeat")
+    assert clear, why
+    # Controls: the repo that timer covers, and a run with no repo, still refuse on it.
+    clear, why = bw.window_verdict(cet, NOON, repo="mail")
+    assert not clear
+    assert "not a readable UTC time" in why
+    assert "not a readable UTC time" in bw.window_verdict(cet, NOON)[1]
+
+
 def test_without_a_repo_the_rolling_timer_still_blocks() -> None:
     assert not bw.window_verdict(MAIL, NOON)[0]
 

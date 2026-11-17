@@ -166,6 +166,17 @@ def test_an_earlier_broken_portal_still_fails_when_a_later_attempt_is_refused(
     assert len(sleeps) == 1
 
 
+def test_an_earlier_broken_portal_then_unreadable_attempts_still_names_broken(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review b3c80560.1: BROKEN on attempt 1, then answers that read nothing, fails naming BROKEN as the refusal path does, not the later UNKNOWN."""
+    config = lab_config(tmp_path, ("192.0.2.10",))
+    answers = [*keyed_portal(OTHER_KEY_BUNDLE), CAPTCHA_ANSWER, pc.Reply(502, "bad gateway")]
+    refusal, _calls, _sleeps = smoke_answering(config, answers)
+    assert refusal is not None
+    assert refusal.startswith("Portal smoke BROKEN")
+
+
 def test_an_earlier_unknown_answer_then_a_refusal_still_skips(tmp_path: pathlib.Path) -> None:
     """Control: an attempt that read nothing (UNKNOWN) is not a verdict on the portal, so a later refusal still skips."""
     config = lab_config(tmp_path, ("192.0.2.10",))

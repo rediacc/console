@@ -541,6 +541,8 @@ def test_real_runner_verdict_shapes_switch_the_infra_skip_off():
         "ok  \texample.com/mod/a\t0.1s",
         "PASS",
         "FAILED tests/test_x.py::test_y - assert 0",
+        "tests/test_x.py::test_y PASSED                                      [ 50%]",
+        "tests/test_x.py::test_z FAILED                                      [100%]",
         "=== 1 failed, 2 passed in 0.5s ===",
     ]
     for shape in shapes:

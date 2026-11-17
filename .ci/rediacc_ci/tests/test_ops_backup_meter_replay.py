@@ -517,6 +517,29 @@ def test_replay_refuses_inside_the_backup_window_before_any_snapshot(tmp_path):
     assert not w.snapshot_running
 
 
+def _rolling_timer(repo: str) -> str:
+    return (
+        "Fri 2026-11-06 02:00:00 UTC 2min Fri 2026-11-06 01:55:00 UTC 3min ago "
+        "rediacc-backup-nightly-hot.repo.%s.latest.timer "
+        "rediacc-backup-nightly-hot.repo.%s.latest.service\n" % (repo, repo)
+    )
+
+
+def test_replay_window_guard_ignores_another_repos_rolling_timer(tmp_path, monkeypatch):
+    """Review 89135e69.1: the guard passes the replayed repo, so a rolling timer of another repo near its trigger does not refuse; the replayed repo's own does."""
+    monkeypatch.setattr(sys.modules[__name__], "TIMER_LINE", _rolling_timer("someone-else"))
+    w = seeded()
+    w.refuse_window_on = 1
+    _rc, text = run(w, tmp_path, *REPLAY)
+    assert "backup-window: refused" not in text
+    monkeypatch.setattr(sys.modules[__name__], "TIMER_LINE", _rolling_timer("mautic"))
+    w = seeded()
+    w.refuse_window_on = 1
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 2
+    assert "backup-window: refused" in text
+
+
 def test_replay_rechecks_the_window_right_before_the_kill(tmp_path):
     w = seeded()
     w.refuse_window_on = 2

@@ -141,7 +141,7 @@ def window_verdict(
             return False, "backup-window: refused, a backup is running: %s" % "; ".join(running)
     listed = parse_timers(text)
     rows = [r for r in listed if covers_repo(r.unit, repo)]
-    if any(not r.utc for r in listed):
+    if any(not r.utc for r in rows):
         return (
             False,
             "backup-window: a backup timer stamp is not a readable UTC time, so the window is unchecked",

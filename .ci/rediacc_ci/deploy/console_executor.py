@@ -333,7 +333,7 @@ def resolve_target(repo_root: pathlib.Path, target: str, region: str | None) -> 
         if region not in bench_region_ids(repo_root, deployable_only=True):
             raise RefusedError(
                 "--target bench refuses --region %s: its bench is not deployable yet "
-                "(regions.json bench.deployable is false), so its Worker does not exist" % region
+                "(regions.json bench.deployable is not true), so its Worker does not exist" % region
             )
     else:
         known = region_ids(repo_root)

@@ -150,6 +150,18 @@ def _regions_copy(tmp_path, deployable):
     return tmp_path
 
 
+def test_a_bench_row_with_no_deployable_key_is_refused_saying_not_true(tmp_path):
+    """Review c750faee.1: an absent `deployable` is refused like a false one, and the text says `not true`, which is right for both."""
+    doc = json.loads((ROOT / "regions.json").read_text(encoding="utf-8"))
+    for row in doc["regions"]:
+        if row["id"] == "us":
+            row["bench"].pop("deployable", None)
+    (tmp_path / "regions.json").write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(ce.RefusedError, match=r"bench\.deployable is not true") as caught:
+        ce.resolve_target(tmp_path, "bench", "us")
+    assert "is false" not in str(caught.value)
+
+
 def test_bench_refuses_a_region_whose_bench_is_not_deployable_up_front(tmp_path):
     """Review b7fd0615.3: a bench row with `deployable` false has no Worker yet, so the target is refused by name before wrangler is asked for it; the deployable regions still resolve."""
     root = _regions_copy(tmp_path, {"eu": True, "us": False, "asia": True})
