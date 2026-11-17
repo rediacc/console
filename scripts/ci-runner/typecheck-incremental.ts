@@ -272,7 +272,9 @@ function stampInputs(cwd: string, config: string, programFiles: readonly string[
 }
 
 /**
- * Writes the stamp for a CLEAN run and reports whether it did. Refuses (returns false) when the output listed no program file, or fewer than the roots: a stamp that records nothing would never go stale. Refuses too when any input was modified from one second before `startedAt` onward: tsc may have read the earlier content, and stamping the later one would let the next run skip a version nothing checked.
+ * Writes the stamp for a CLEAN run: undefined when it did, else WHY NOT. Refuses when the output listed no program file, or fewer than the roots: a stamp that records nothing would never go stale. Refuses too when any input was modified from one second before `startedAt` onward: tsc may have read the earlier content, and stamping the later one would let the next run skip a version nothing checked.
+ *
+ * THE REASON IS PRINTED (PLAN-ciquick-cpu A6). A refused stamp makes the NEXT run re-check the project at an unchanged tree, and before this the refusal was silent, so a project re-running on every ci:quick looked like a volatile skip key with no way to tell which input moved. The run line now says `no stamp: <why>`, naming the file.
  */
 export function writeStamp(
   cwd: string,
@@ -280,15 +282,17 @@ export function writeStamp(
   step: TscStep,
   output: string,
   startedAt: number
-): boolean {
-  if (step.config === undefined) return false;
+): string | undefined {
+  if (step.config === undefined) return 'not a stamped step';
   const file = stampPath(step);
   const shape = projectShape(cwd, step.config);
   const program = listedFiles(output);
   if (shape === undefined || program.length === 0 || program.length < shape.roots.length) {
     // tree-write: safe the stamp sits beside its tsbuildinfo in CACHE_DIR, under the home directory (the selftest passes a temp dir)
     fs.rmSync(file, { force: true });
-    return false;
+    return shape === undefined
+      ? 'the tsconfig did not parse cleanly'
+      : `the run listed ${program.length} program file(s) for ${shape.roots.length} root(s)`;
   }
   const files: Record<string, FileStamp | null> = {};
   for (const f of stampInputs(cwd, step.config, program)) {
@@ -296,7 +300,7 @@ export function writeStamp(
     if (fp !== null && fp.mtimeMs >= startedAt - 1000) {
       // tree-write: safe the stamp sits beside its tsbuildinfo in CACHE_DIR, under the home directory (the selftest passes a temp dir)
       fs.rmSync(file, { force: true });
-      return false;
+      return `${path.relative(cwd, f)} was modified during the run`;
     }
     files[f] = fp;
   }
@@ -311,7 +315,7 @@ export function writeStamp(
   fs.mkdirSync(path.dirname(file), { recursive: true });
   // tree-write: safe the stamp sits beside its tsbuildinfo in CACHE_DIR, under the home directory (the selftest passes a temp dir)
   fs.writeFileSync(file, JSON.stringify(stamp));
-  return true;
+  return undefined;
 }
 
 /** Why the project must run, or undefined when every stamped input still matches. */
@@ -415,6 +419,10 @@ interface StepResult {
   readonly output: string;
   /** Skipped by the stamp: every input matched the last clean run. */
   readonly unchanged?: boolean;
+  /** Why a stamped step ran instead of skipping: `staleReason`'s answer, the field of the skip key that moved. */
+  readonly why?: string;
+  /** Why a clean run left no stamp (`writeStamp`), so the next run re-checks it too. */
+  readonly noStamp?: string;
 }
 
 function runTsc(tsc: string, step: TscStep, cwd: string): Promise<StepResult> {
@@ -447,7 +455,8 @@ async function runChecked(
   runner: TscRunner = runTsc
 ): Promise<StepResult> {
   const started = Date.now();
-  if (staleReason(cwd, tsc, step) === undefined) {
+  const why = staleReason(cwd, tsc, step);
+  if (why === undefined) {
     return { step, code: 0, ms: Date.now() - started, output: '', unchanged: true };
   }
   const listing = { ...step, args: [...step.args, '--listFiles'] };
@@ -468,8 +477,9 @@ async function runChecked(
           }
         : clean;
   }
+  let noStamp: string | undefined;
   if (r.code === 0) {
-    writeStamp(cwd, tsc, step, r.output, started);
+    noStamp = writeStamp(cwd, tsc, step, r.output, started);
   } else if (step.config !== undefined) {
     // tree-write: safe the stamp sits beside its tsbuildinfo in CACHE_DIR, under the home directory (the selftest passes a temp dir)
     fs.rmSync(stampPath(step), { force: true });
@@ -479,7 +489,7 @@ async function runChecked(
     .split('\n')
     .filter((l) => !(path.isAbsolute(l.trim()) && fs.existsSync(l.trim())))
     .join('\n');
-  return { ...r, step, output: shown };
+  return { ...r, step, output: shown, why, ...(noStamp === undefined ? {} : { noStamp }) };
 }
 
 /** Runs every `build` step in order, then the `check` steps `width` at a time. A failed build stops the run: the checks would read a stale dist and report against it. */
@@ -502,6 +512,15 @@ async function execute(tsc: string, plan: Plan, cwd: string, width: number): Pro
 }
 
 const secs = (ms: number): string => `${(ms / 1000).toFixed(1)}s`;
+
+/** The tail of one result line: skipped, or which input moved and whether the clean run could be stamped. */
+export function describeRun(r: StepResult): string {
+  if (r.unchanged === true) return '  (unchanged since its last clean run)';
+  const parts: string[] = [];
+  if (r.why !== undefined) parts.push(`ran: ${r.why}`);
+  if (r.noStamp !== undefined) parts.push(`no stamp: ${r.noStamp}`);
+  return parts.length === 0 ? '' : `  (${parts.join('; ')})`;
+}
 
 function tscPath(root: string): string | undefined {
   const p = path.join(root, 'node_modules', 'typescript', 'bin', 'tsc');
@@ -782,15 +801,33 @@ async function selftest(): Promise<number> {
         (await run()).unchanged === true,
         'stamp CONTROL: settled again before the next change'
       );
+      // A6: A TOUCH IS NOT A CHANGE. The same bytes rewritten (a clone refresh, a rebuild of an identical dist) move the mtime only, and the skip key falls back to the content hash, so the project still skips.
+      put('src/a.ts', "export const a: string = 'a';\n");
+      const touched = await run();
+      check(
+        touched.unchanged === true,
+        `stamp A6: a file rewritten with the SAME bytes (mtime moved) must still skip, got ${describeRun(touched)}`
+      );
+      put('src/a.ts', "export const a: string = 'b';\n");
+      const moved = await run();
+      check(
+        moved.unchanged !== true && describeRun(moved).includes('ran: src/a.ts changed'),
+        `stamp A6 CONTROL: a content change re-runs tsc and the line names the input that moved, got ${describeRun(moved)}`
+      );
+      put('src/a.ts', "export const a: string = 'a';\n");
+      check((await run()).unchanged !== true, 'stamp A6: restoring the content re-checks once');
+      check((await run()).unchanged === true, 'stamp A6 CONTROL: then settles');
       // Inside the run window: an input modified during the run must not be stamped.
       fs.writeFileSync(path.join(sdir, 'src', 'a.ts'), "export const a: string = 'b';\n");
       const racing = await run();
       check(
-        racing.code === 0 && !fs.existsSync(stampPath(step)),
-        'stamp: an input modified inside the run window must leave NO stamp'
+        racing.code === 0 &&
+          !fs.existsSync(stampPath(step)) &&
+          describeRun(racing).includes('no stamp: src/a.ts was modified during the run'),
+        `stamp: an input modified inside the run window must leave NO stamp, and the line must say which input, got ${describeRun(racing)}`
       );
       check(
-        !writeStamp(sdir, tsc, step, 'no paths here\n', 0),
+        writeStamp(sdir, tsc, step, 'no paths here\n', 0) !== undefined,
         'stamp: a clean run whose output lists no program file must NOT be stamped (it would never go stale)'
       );
     } finally {
@@ -919,7 +956,7 @@ async function main(argv: readonly string[]): Promise<number> {
   const notRun = plan.steps.length - results.length;
   for (const r of results) {
     process.stdout.write(
-      `  ${r.code === 0 ? 'ok  ' : 'FAIL'} ${secs(r.ms).padStart(6)}  ${r.step.label}${r.unchanged === true ? '  (unchanged since its last clean run)' : ''}\n`
+      `  ${r.code === 0 ? 'ok  ' : 'FAIL'} ${secs(r.ms).padStart(6)}  ${r.step.label}${describeRun(r)}\n`
     );
   }
   for (const s of plan.skipped) process.stdout.write(`  skipped: ${s}\n`);
