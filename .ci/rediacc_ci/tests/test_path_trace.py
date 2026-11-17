@@ -44,6 +44,12 @@ MANIFEST = """export const GATES = [
     pathsOrigin: 'declared',
     leaves: ['tool.sh'],
   },
+  {
+    id: 'g:flip',
+    run: 'if [ -e flip ]; then ls . >/dev/null; fi; cat in/a.txt >/dev/null',
+    gate: true,
+    leaves: ['tool.sh'],
+  },
 ];
 """
 
@@ -61,6 +67,7 @@ def _lock() -> list[dict[str, object]]:
         entry(
             "g:declared", "cat in/a.txt >/dev/null", {"paths": ["in/**"], "pathsOrigin": "declared"}
         ),
+        entry("g:flip", "if [ -e flip ]; then ls . >/dev/null; fi; cat in/a.txt >/dev/null"),
     ]
 
 
@@ -165,6 +172,30 @@ def test_a_declared_set_is_refused_not_overwritten(fixture_repo: pathlib.Path) -
     assert res.returncode != 0
     assert "declared" in res.stderr
     assert (fixture_repo / "scripts/ci-runner/manifest.ts").read_text() == before
+
+
+@pytest.mark.skipif(not HAS_STRACE, reason=NO_STRACE)
+def test_a_whole_tree_retrace_removes_the_earlier_traced_paths(fixture_repo: pathlib.Path) -> None:
+    manifest = fixture_repo / "scripts/ci-runner/manifest.ts"
+    first = _run(fixture_repo, "--gate", "g:flip", "--write")
+    assert first.returncode == 0, first.stderr
+    assert _lock_of(fixture_repo)["g:flip"]["paths"] == ["in/a.txt"]
+    declared_before = manifest.read_text().split("id: 'g:declared',")[1].split("  },")[0]
+    # The gate now lists the repository root, so its re-trace is whole-tree.
+    (fixture_repo / "flip").write_text("")
+    second = _run(fixture_repo, "--gate", "g:flip", "--write")
+    assert second.returncode == 0, second.stderr
+    assert "traced paths are removed" in second.stderr
+    flip = _lock_of(fixture_repo)["g:flip"]
+    assert "paths" not in flip
+    assert "pathsOrigin" not in flip
+    flip_text = manifest.read_text().split("id: 'g:flip',")[1].split("  },")[0]
+    assert "paths" not in flip_text
+    # Control: the declared gate's entry is untouched in both files.
+    assert manifest.read_text().split("id: 'g:declared',")[1].split("  },")[0] == declared_before
+    assert _lock_of(fixture_repo)["g:declared"]["pathsOrigin"] == "declared"
+    ledger = (fixture_repo / "scripts/ci-runner/trace-ledger.ts").read_text()
+    assert "lists the repository root" in ledger
 
 
 def test_a_host_without_strace_is_refused_with_the_fix(

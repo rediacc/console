@@ -491,7 +491,8 @@ export function attribute(access: Access, view: RepoView): Attribution {
     else if (kind === 'cache') {
       if (res.cacheState.length < 3) res.cacheState.push(rel);
     } else if (kind === 'build') {
-      if (res.buildOutput.length < 3) res.buildOutput.push(rel);
+      // Every build-output read is kept: each one must have its producer among the gate's needs.
+      if (!res.buildOutput.includes(rel)) res.buildOutput.push(rel);
     }
   };
   // The most specific git directory first: a worktree's own gitdir sits inside the common one.
@@ -590,7 +591,50 @@ function cleanDir(p: string): string {
 }
 
 /** Folds an attribution into `paths` globs, or a whole-tree verdict with its reason. */
-export function fold(attr: Attribution, view: RepoView, needs: readonly string[] = []): Verdict {
+/**
+ * Untracked build output a manifest node produces, by the prefix it writes under. A read of build output under no row here has no producer node, so no needs edge can cover it and the gate stays whole-tree: the safe direction for a row this table lacks. A row naming the wrong node would be unsound, so each one is the node whose own command writes that directory (package.json build:packages, build:cli, build:www).
+ */
+export const BUILD_PRODUCERS: ReadonlyArray<{ prefix: string; node: string }> = [
+  { prefix: 'packages/shared/dist/', node: 'build:packages' },
+  { prefix: 'packages/provisioning/dist/', node: 'build:packages' },
+  { prefix: 'packages/cli/dist/', node: 'build:cli' },
+  { prefix: 'packages/www/dist/', node: 'build:www' },
+];
+
+/** The manifest node that writes `rel` (a file under its output, or the output directory itself), or undefined when none does. */
+export function producerOf(rel: string): string | undefined {
+  return BUILD_PRODUCERS.find((x) => rel.startsWith(x.prefix) || `${rel}/` === x.prefix)?.node;
+}
+
+/** Every node `id` reaches through `needs`, transitively: a gate needing build:cli also runs after build:packages, whose hash its own then includes. */
+export function needsClosure(id: string, byId: ReadonlyMap<string, LockEntry>): Set<string> {
+  const out = new Set<string>();
+  const queue = [...(byId.get(id)?.needs ?? [])];
+  while (queue.length > 0) {
+    const n = queue.shift() as string;
+    if (out.has(n)) continue;
+    out.add(n);
+    queue.push(...(byId.get(n)?.needs ?? []));
+  }
+  return out;
+}
+
+/** The build-output reads whose producer is not among `closure`, each with that producer or the fact that none exists. */
+export function uncoveredBuildOutput(
+  buildOutput: readonly string[],
+  closure: ReadonlySet<string>
+): string[] {
+  const out: string[] = [];
+  for (const b of buildOutput) {
+    const node = producerOf(b);
+    if (node === undefined) out.push(`${b} (no manifest node builds it)`);
+    else if (!closure.has(node)) out.push(`${b} (built by ${node})`);
+  }
+  return out;
+}
+
+export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> = []): Verdict {
+  const closure = new Set(needs);
   const counts = { reads: attr.reads.size, listed: attr.listed.size };
   const whole = (reason: string, coveragePct = 100): Verdict => ({
     kind: 'whole-tree',
@@ -608,9 +652,10 @@ export function fold(attr: Attribution, view: RepoView, needs: readonly string[]
     return whole(
       `reads untracked cache state (${attr.cacheState.join(', ')}), so its verdict can move with no tracked input moving; a carry-exempt.json candidate`
     );
-  if (attr.buildOutput.length > 0 && needs.length === 0)
+  const uncovered = uncoveredBuildOutput(attr.buildOutput, closure);
+  if (uncovered.length > 0)
     return whole(
-      `reads untracked build output (${attr.buildOutput.join(', ')}) and declares no needs edge naming its producer, so no input hash would move when that output does; add the producer to needs, then re-trace`
+      `reads untracked build output with no needs edge naming its producer (${uncovered.slice(0, 3).join(', ')}${uncovered.length > 3 ? `, and ${uncovered.length - 3} more` : ''}), so no input hash would move when that output does; add the producer to needs, then re-trace`
     );
   const isGlobal = (f: string): boolean => GLOBAL_INPUTS.some((g) => matchGlob(g, f));
   const files = [...attr.reads].filter((f) => !isGlobal(f));
@@ -868,6 +913,38 @@ export function pathsLines(paths: string[]): string[] {
   return ['    paths: [', ...paths.map((p) => `      ${q(p)},`), '    ],'];
 }
 
+/** The lock text with a TRACED `paths` and `pathsOrigin` removed from one entry; a declared set, or none, leaves the text as it was. */
+export function lockWithoutTracedPaths(lockText: string, id: string): string {
+  const entries = JSON.parse(lockText) as LockEntry[];
+  const e = entries.find((x) => x.id === id);
+  if (e === undefined || e.pathsOrigin !== TRACED_ORIGIN) return lockText;
+  delete e.paths;
+  delete e.pathsOrigin;
+  return `${JSON.stringify(entries, null, 2)}\n`;
+}
+
+/** The manifest text with a TRACED `paths` block and `pathsOrigin` line removed from one entry; a declared set, or none, leaves the text as it was. */
+export function manifestWithoutTracedPaths(text: string, id: string): string {
+  const lines = text.split('\n');
+  const idLine = `    id: ${q(id)},`;
+  const span = entrySpans(lines).find(([a, b]) => lines.slice(a, b + 1).includes(idLine));
+  if (span === undefined) return text;
+  const [a, b] = span;
+  const body = lines.slice(a, b + 1);
+  if (!body.includes(`    pathsOrigin: ${q(TRACED_ORIGIN)},`)) return text;
+  const kept: string[] = [];
+  for (let i = 0; i < body.length; i++) {
+    const l = body[i];
+    if (l.startsWith('    paths:')) {
+      if (!l.trimEnd().endsWith('],')) while (i < body.length && body[i] !== '    ],') i++;
+      continue;
+    }
+    if (l.startsWith('    pathsOrigin:')) continue;
+    kept.push(l);
+  }
+  return [...lines.slice(0, a), ...kept, ...lines.slice(b + 1)].join('\n');
+}
+
 const BEGIN_RE = /^ {2}\/\/ >>> gen-manifest: region \d+$/;
 const END_RE = /^ {2}\/\/ <<< gen-manifest: region \d+$/;
 
@@ -1119,7 +1196,7 @@ export function verdictOf(
   attr: Attribution,
   view: RepoView,
   exit: number,
-  needs: readonly string[] = []
+  needs: Iterable<string> = []
 ): Verdict {
   const verdict = fold(attr, view, needs);
   if (exit === 0) return verdict;
@@ -1136,7 +1213,7 @@ export function verdictOf(
 export async function traceGate(
   entry: LockEntry,
   view: RepoView,
-  opts: { keepLogs?: boolean; timeoutS?: number } = {}
+  opts: { keepLogs?: boolean; timeoutS?: number; closure?: ReadonlySet<string> } = {}
 ): Promise<GateResult> {
   const run = await traceCommand(entry.run, view.root, {
     timeoutS: opts.timeoutS,
@@ -1146,7 +1223,7 @@ export async function traceGate(
   const attr = attribute(run.access, view);
   return {
     id: entry.id,
-    verdict: verdictOf(attr, view, run.exit, entry.needs ?? []),
+    verdict: verdictOf(attr, view, run.exit, opts.closure ?? entry.needs ?? []),
     exit: run.exit,
     seconds: run.seconds,
     ignored: attr.ignored,
@@ -1178,10 +1255,21 @@ export function writeResult(root: string, r: GateResult, tree: string, tracedMs?
     coveragePct: r.verdict.coveragePct,
     seconds: r.seconds,
   };
-  if (r.verdict.kind === 'whole-tree') row.reason = r.verdict.reason;
-  else {
-    const mPath = path.join(root, MANIFEST_REL);
-    const lPath = path.join(root, LOCK_REL);
+  const mPath = path.join(root, MANIFEST_REL);
+  const lPath = path.join(root, LOCK_REL);
+  if (r.verdict.kind === 'whole-tree') {
+    row.reason = r.verdict.reason;
+    // A whole-tree re-trace must not leave the earlier traced globs behind: the gate would keep carrying on a read set the new trace no longer vouches for. A declared set is never touched.
+    const m = fs.readFileSync(mPath, 'utf8');
+    const stripped = manifestWithoutTracedPaths(m, r.id);
+    if (stripped !== m) {
+      fs.writeFileSync(mPath, stripped);
+      fs.writeFileSync(lPath, lockWithoutTracedPaths(fs.readFileSync(lPath, 'utf8'), r.id));
+      console.error(
+        `path-trace: ${r.id} is whole-tree now; its traced paths are removed. It may be generable again: run npx tsx scripts/gen/gen-manifest.ts --write`
+      );
+    }
+  } else {
     fs.writeFileSync(
       mPath,
       manifestWithPaths(fs.readFileSync(mPath, 'utf8'), r.id, r.verdict.paths)
@@ -1194,7 +1282,8 @@ export function writeResult(root: string, r: GateResult, tree: string, tracedMs?
 
 /** Why --all-whole-tree leaves an entry untraced, or undefined when it traces it. */
 export function untracedReason(e: LockEntry, exempt: Set<string>): string | undefined {
-  if ((e.paths ?? []).length > 0) return 'declares paths already';
+  if ((e.paths ?? []).length > 0 && e.pathsOrigin !== TRACED_ORIGIN)
+    return 'declares paths already';
   if (!e.gate)
     return 'not a gate: a prerequisite or an operator command, never judged, so never carried';
   if (exempt.has(e.id))
@@ -1207,6 +1296,7 @@ export function untracedReason(e: LockEntry, exempt: Set<string>): string | unde
 /** Re-folds every raw trace in an `--out` file against the current tree, printing new result lines on stdout and the shape on stderr. */
 export function refold(root: string, file: string): number {
   const view = repoView(root);
+  const byId = new Map(readLock(root).map((e) => [e.id, e]));
   let n = 0;
   let paths = 0;
   for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
@@ -1228,8 +1318,7 @@ export function refold(root: string, file: string): number {
       execs: r.raw.execs,
       startedMs: r.raw.startedMs,
     };
-    const needs = readLock(root).find((e) => e.id === r.id)?.needs ?? [];
-    const verdict = verdictOf(attribute(access, view), view, r.exit, needs);
+    const verdict = verdictOf(attribute(access, view), view, r.exit, needsClosure(r.id, byId));
     if (verdict.kind === 'paths') paths++;
     n++;
     process.stdout.write(`${JSON.stringify({ ...r, verdict })}\n`);
@@ -1379,7 +1468,13 @@ async function main(argv: string[]): Promise<number> {
       if (isSolo(e)) soloRunning = true;
       for (const m of e.mutex ?? []) held.add(m);
       try {
-        onDone(await traceGate(e, view, { keepLogs: args.keepLogs, timeoutS: args.timeoutS }));
+        onDone(
+          await traceGate(e, view, {
+            keepLogs: args.keepLogs,
+            timeoutS: args.timeoutS,
+            closure: needsClosure(e.id, byId),
+          })
+        );
       } finally {
         running--;
         if (isSolo(e)) soloRunning = false;
@@ -1600,7 +1695,35 @@ async function selftest(): Promise<number> {
   const vbn = fold(buildAttr, view, ['build:www']);
   check(
     vbn.kind === 'paths' && vbn.paths.join(',') === 'a/one.txt',
-    'CONTROL: the same read with a needs edge keeps its paths'
+    'CONTROL: the same read with its producer among the needs keeps its paths'
+  );
+  const vbo = fold(buildAttr, view, ['build:other']);
+  check(
+    vbo.kind === 'whole-tree' && vbo.reason.includes('built by build:www'),
+    'an unrelated needs entry does not cover build output another node produces'
+  );
+  const lockById = new Map<string, LockEntry>([
+    ['g', { id: 'g', run: 'x', gate: true, needs: ['build:cli'] }],
+    ['build:cli', { id: 'build:cli', run: 'y', gate: false, needs: ['build:packages'] }],
+    ['build:packages', { id: 'build:packages', run: 'z', gate: false }],
+  ]);
+  const sharedAttr = {
+    ...attribute(mk(['a/one.txt']), view),
+    buildOutput: ['packages/shared/dist/index.js'],
+  };
+  const vt = fold(sharedAttr, view, needsClosure('g', lockById));
+  check(
+    vt.kind === 'paths',
+    'a producer reached through needs transitively (build:cli -> build:packages) covers its output'
+  );
+  const vj = fold(
+    { ...attribute(mk(['a/one.txt']), view), buildOutput: ['packages/json/dist/x.json'] },
+    view,
+    ['build:www', 'build:packages', 'build:cli']
+  );
+  check(
+    vj.kind === 'whole-tree' && vj.reason.includes('no manifest node builds it'),
+    'build output no manifest node builds is never covered'
   );
   const vc = fold(
     { ...attribute(mk(['a/one.txt']), view), cacheState: ['.ci/cache/x.json'] },
@@ -1749,6 +1872,35 @@ async function selftest(): Promise<number> {
       !m3.includes("'c/**'") &&
       m3.split("pathsOrigin: 'traced'").length === 2,
     'a re-trace replaces the earlier traced paths, never stacks them'
+  );
+  const tracedManifest = manifestWithPaths(manifest, 'g:b', ['a/one.txt']);
+  const unTraced = manifestWithoutTracedPaths(tracedManifest, 'g:b');
+  check(
+    !unTraced.split("    id: 'g:b',")[1].split('  },')[0].includes('paths') &&
+      manifestWithoutTracedPaths(unTraced, 'g:d') === unTraced &&
+      unTraced.includes("    paths: ['k'],\n    pathsOrigin: 'declared',"),
+    'a whole-tree re-trace removes the traced paths and pathsOrigin; a declared set is untouched (control)'
+  );
+  const tracedLock = lockWithPaths(
+    `${JSON.stringify(
+      [
+        { id: 'g:b', run: 'r', gate: true, leaves: [] },
+        { id: 'g:d', run: 'r', gate: true, paths: ['k'], pathsOrigin: 'declared', leaves: [] },
+      ],
+      null,
+      2
+    )}\n`,
+    'g:b',
+    ['p/**']
+  );
+  const ul = JSON.parse(
+    lockWithoutTracedPaths(lockWithoutTracedPaths(tracedLock, 'g:b'), 'g:d')
+  ) as LockEntry[];
+  check(
+    ul[0].paths === undefined &&
+      ul[0].pathsOrigin === undefined &&
+      ul[1].pathsOrigin === 'declared',
+    'the lock loses the traced paths of a whole-tree re-trace; the declared entry keeps its own (control)'
   );
   let refused = false;
   try {

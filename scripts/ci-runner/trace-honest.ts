@@ -27,11 +27,13 @@ import {
   attribute,
   type LockEntry,
   LOCK_REL,
+  needsClosure,
   REPO_ROOT,
   type RepoView,
   repoView,
   traceCommand,
   traceRefusal,
+  uncoveredBuildOutput,
 } from './path-trace.js';
 import { leafClosure, resolvePushBase } from './quick-select.js';
 
@@ -84,7 +86,9 @@ export function traceFindings(
   entry: LockEntry,
   attr: ReturnType<typeof attribute>,
   exit: number,
-  leafFiles: ReadonlySet<string>
+  leafFiles: ReadonlySet<string>,
+  /** Every node the gate reaches through needs (path-trace.ts needsClosure); defaults to its direct needs. */
+  closure: ReadonlySet<string> = new Set(entry.needs ?? [])
 ): Finding[] {
   const out: Finding[] = [];
   const fix = fixFor(entry);
@@ -112,12 +116,12 @@ export function traceFindings(
       `reads untracked cache state (${c}), so its verdict can move with no tracked input moving`,
       `drop its paths, or add it to ${CARRY_EXEMPT_REL} with the reason`
     );
-  if ((entry.needs ?? []).length === 0)
-    for (const b of attr.buildOutput)
-      add(
-        `reads untracked build output (${b}) with no needs edge naming its producer, so no input hash moves when that output does`,
-        `add the producer to the needs of ${entry.id} in scripts/ci-runner/manifest.ts`
-      );
+  // Each build-output read needs ITS producer among the gate's needs: an unrelated edge covers nothing.
+  for (const b of uncoveredBuildOutput(attr.buildOutput, closure))
+    add(
+      `reads untracked build output ${b} with no needs edge naming its producer, so no input hash moves when that output does`,
+      `add the producer to the needs of ${entry.id} in scripts/ci-runner/manifest.ts`
+    );
   const globs = declaredGlobs(entry);
   if (attr.listed.has(''))
     add(
@@ -485,6 +489,7 @@ async function main(argv: string[]): Promise<number> {
     return 1;
   }
   const byId = new Map(candidates.map((e) => [e.id, e]));
+  const lockById = new Map(lock.map((e) => [e.id, e]));
   const leafCache = new Map<string, Set<string>>();
   const leafFilesOf = (e: LockEntry): Set<string> => {
     let s = leafCache.get(e.id);
@@ -570,7 +575,13 @@ async function main(argv: string[]): Promise<number> {
     await pool(selected, args.jobs, async ({ id, why }) => {
       const e = byId.get(id) as LockEntry;
       const run = await traceCommand(e.run, view.root, { timeoutS: args.timeoutS, label: id });
-      const f = traceFindings(e, attribute(run.access, view), run.exit, leafFilesOf(e));
+      const f = traceFindings(
+        e,
+        attribute(run.access, view),
+        run.exit,
+        leafFilesOf(e),
+        needsClosure(e.id, lockById)
+      );
       traced++;
       findings.push(...f);
       console.error(
@@ -726,7 +737,16 @@ async function selftest(): Promise<number> {
       0,
       new Set()
     ).length === 0,
-    'CONTROL: the same read with a needs edge passes'
+    'CONTROL: the same read with its producer among the needs passes'
+  );
+  check(
+    traceFindings(
+      { ...entry, needs: ['build:other'] },
+      attr([], [], { buildOutput: ['packages/www/dist/x.html'] }),
+      0,
+      new Set()
+    ).length === 1,
+    'an unrelated needs entry does not cover build output another node produces'
   );
   check(
     traceFindings(entry, attr([], [], { cacheState: ['.ci/cache/x.json'] }), 0, new Set())
