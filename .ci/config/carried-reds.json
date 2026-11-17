@@ -28,5 +28,11 @@
     "so carrying cannot become a second way to launder a partial lane."
   ],
   "version": 2,
-  "carried": []
+  "carried": [
+    {
+      "gate": "check:ci-ops-health",
+      "findings": "*",
+      "reason": "Off-box state, not code: local-root-grants is red because the declared root grants are not applied yet; edge-us and edge-asia need the us/asia account Worker release (migration 0088), and release:local --branch-release ships only from this pushed branch, so the push cannot wait on them. local-machine-l1vm is the dev ops VM 192.168.111.11 rejecting SSH after the vm:check fleet rebuilt it (#51baaf1d). Lift: drop this entry once root_grants --apply runs on every target after the us/asia release and the l1vm ingest is fixed."
+    }
+  ]
 }
