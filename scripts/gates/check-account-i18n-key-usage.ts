@@ -50,8 +50,6 @@ import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 import { stripComments } from './check-translation-key-usage.js';
 
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
-/** namespace -> every path in that namespace's English catalog. */
-export type Catalogs = Map<string, Set<string>>;
 
 const DEFAULT_NS = 'common';
 const PLURAL_SUFFIXES = ['_zero', '_one', '_two', '_few', '_many', '_other'];
@@ -60,14 +58,16 @@ function collectPaths(node: Json, prefix: string, out: Set<string>): void {
   if (node && typeof node === 'object' && !Array.isArray(node)) {
     for (const [k, v] of Object.entries(node)) {
       const p = prefix ? `${prefix}.${k}` : k;
-      out.add(p);
-      collectPaths(v, p, out);
+      // Leaves only. A branch object is not a translation: i18next returns the key for
+      // `t('pages.pricing')`, so recording the branch made that call read as present.
+      if (v && typeof v === 'object' && !Array.isArray(v)) collectPaths(v, p, out);
+      else out.add(p);
     }
   }
 }
 
-export function catalogsFrom(raw: Record<string, Json>): Catalogs {
-  const out: Catalogs = new Map();
+export function catalogsFrom(raw: Record<string, Json>): Map<string, Set<string>> {
+  const out: Map<string, Set<string>> = new Map();
   for (const [ns, tree] of Object.entries(raw)) {
     const paths = new Set<string>();
     collectPaths(tree, '', paths);
@@ -113,7 +113,7 @@ function bindings(src: string): Map<string, Set<string>> {
 }
 
 function exists(
-  catalogs: Catalogs,
+  catalogs: Map<string, Set<string>>,
   namespaces: Iterable<string>,
   key: string,
   wildcard?: RegExp
@@ -137,7 +137,12 @@ function wildcardFor(body: string): RegExp {
 }
 
 /** Scan one source file. Pure, so the controls can drive it with fixtures. */
-export function scanFile(file: string, raw: string, catalogs: Catalogs, result: ScanResult): void {
+export function scanFile(
+  file: string,
+  raw: string,
+  catalogs: Map<string, Set<string>>,
+  result: ScanResult
+): void {
   const src = stripComments(raw);
   const bound = bindings(src);
   const all = [...catalogs.keys()];
@@ -205,7 +210,7 @@ export function scanFile(file: string, raw: string, catalogs: Catalogs, result: 
   }
 }
 
-function fixtureCatalogs(): Catalogs {
+function fixtureCatalogs(): Map<string, Set<string>> {
   return catalogsFrom({
     common: { save: 'Save', items_one: '{{count}} item', items_other: '{{count}} items' },
     notices: { kind: { outage: 'Outage', maintenance: 'Maintenance' }, title: 'Notices' },
@@ -220,7 +225,7 @@ function controls(): ControlCase[] {
     scanFile('probe.tsx', src, cat, r);
     return r.findings.map((f) => f.key);
   };
-  const cases: Array<[string, string, string[]]> = [
+  const cases: [string, string, string[]][] = [
     [
       'CONTROL: a key missing from the bound namespace fires',
       "const { t } = useTranslation('notices');\nt('gone');",
@@ -247,6 +252,16 @@ function controls(): ControlCase[] {
       ['save'],
     ],
     ['CONTROL: a Trans i18nKey is checked', '<Trans i18nKey="missingKey" />', ['missingKey']],
+    [
+      'CONTROL: a key naming a namespace BRANCH, not a string, fires',
+      "const { t } = useTranslation('partner');\nt('deals.status');",
+      ['deals.status'],
+    ],
+    [
+      'CONTROL: a wildcard that reaches only a branch fires',
+      "const { t } = useTranslation('partner');\nt(`deals.${x}`);",
+      ['`deals.${x}`'],
+    ],
     [
       'SILENT: a key in the bound namespace',
       "const { t } = useTranslation('notices');\nt('title');",
@@ -282,7 +297,7 @@ function controls(): ControlCase[] {
   });
 }
 
-function loadCatalogs(dir: string): Catalogs {
+function loadCatalogs(dir: string): Map<string, Set<string>> {
   const raw: Record<string, Json> = {};
   for (const f of readdirSync(dir)) {
     if (f.endsWith('.json'))

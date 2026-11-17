@@ -37,7 +37,9 @@
  * slow: true
  * ---- end gate ----
  */
-import { existsSync, readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { globSync } from 'glob';
@@ -47,7 +49,7 @@ import { type ControlCase, summarizeControls } from '../lib/controls.js';
 import { refuseFindings } from '../lib/findings-report.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
-// THE SEAM, for the control's mutation run only: RAW_KEYS_DIST points the scan at a
+// THE SEAM, driven by controls() below (distControls): RAW_KEYS_DIST points the scan at a
 // scratch dist so a planted leak never touches the real build output.
 const DIST = process.env.RAW_KEYS_DIST ?? path.join(ROOT, 'packages/www/dist');
 const EN_JSON = path.join(ROOT, 'packages/www/src/i18n/translations/en.json');
@@ -100,7 +102,7 @@ function controls(): ControlCase[] {
     common: { buttons: { getStarted: 'Get started' } },
   };
   const keys = (html: string) => rawKeysIn(html, en).join(',');
-  const cases: Array<[string, string, string]> = [
+  const cases: [string, string, string][] = [
     // [name, html, expected findings]
     [
       'CONTROL: an unresolved key under a real branch fires (the 2026-11-17 leak)',
@@ -150,10 +152,47 @@ function controls(): ControlCase[] {
   });
 }
 
+/**
+ * The mutation run: the real gate, as a process, over a scratch dist. A leak planted there
+ * must exit 1 naming the key; a clean page must exit 0. Skipped when RAW_KEYS_DIST is
+ * already set, which is the child's own run (it would otherwise spawn itself forever).
+ */
+function distControls(): ControlCase[] {
+  if (process.env.RAW_KEYS_DIST !== undefined) return [];
+  const run = (html: string) => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), 'raw-keys-dist-'));
+    try {
+      mkdirSync(path.join(dir, 'en'), { recursive: true });
+      writeFileSync(path.join(dir, 'en', 'index.html'), html);
+      return spawnSync('npx', ['tsx', import.meta.filename], {
+        encoding: 'utf8',
+        env: { ...process.env, RAW_KEYS_DIST: dir },
+      });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  };
+  const leak = 'pages.pricing.plans.zzzControl.name';
+  const bad = run(`<h3>${leak}</h3>`);
+  const good = run('<h3>Professional</h3>');
+  return [
+    {
+      name: 'CONTROL: the gate process exits 1 and names a leak planted in a scratch dist',
+      ok: bad.status === 1 && `${bad.stdout}${bad.stderr}`.includes(leak),
+      detail: `status ${bad.status}`,
+    },
+    {
+      name: 'SILENT: the gate process exits 0 on a clean scratch dist',
+      ok: good.status === 0,
+      detail: `status ${good.status}`,
+    },
+  ];
+}
+
 function main(): void {
   const selftestOnly = process.argv.includes('--selftest');
   console.log('raw-translation-keys gate controls');
-  const rc = summarizeControls(controls());
+  const rc = summarizeControls([...controls(), ...distControls()]);
   if (rc !== 0) {
     console.error('controls failed; the gate cannot be trusted');
     process.exit(1);
@@ -176,7 +215,7 @@ function main(): void {
   }
 
   const findings: string[] = [];
-  for (const page of pages.sort()) {
+  for (const page of pages.toSorted((a, b) => a.localeCompare(b))) {
     for (const key of rawKeysIn(readFileSync(page, 'utf8'), en)) {
       findings.push(`${path.relative(DIST, page)}: ${key}`);
     }

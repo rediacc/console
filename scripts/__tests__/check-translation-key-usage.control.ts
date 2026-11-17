@@ -120,6 +120,14 @@ const CASES: Case[] = [
     marker: 'pages.pricing.plans.*.name',
   },
   {
+    // A wildcard matching only a BRANCH passed the gate while the strict translator threw on the object (review 885c6c5d.2).
+    name: 'a dynamic key whose wildcard reaches only a branch object is detected',
+    source:
+      'export const C = ({ id }: { id: string }) => <p>{t(`pages.pricing.plans.${id}`)}</p>;\n',
+    shouldDetect: true,
+    marker: 'pages.pricing.plans.*',
+  },
+  {
     name: 'a plain .ts helper is scanned, not only .astro/.tsx',
     file: '__control_probe__.ts',
     source: "export const k = (t: (k: string) => string) => t('pages." + BAD + "');\n",

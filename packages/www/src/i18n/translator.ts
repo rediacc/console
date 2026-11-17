@@ -56,16 +56,16 @@ function getTranslation(
   catalog: TranslationCatalog,
   key: string,
   paramsOrFallback: InterpolationParams | string | undefined,
-  miss: MissHandler
+  miss: MissHandler,
+  strict: boolean
 ): string {
   const translation = getNestedValue(catalog, key);
 
   if (translation === undefined) {
-    // Under `strict` the fallback is refused too: it is English text shown in every
-    // locale, the same defect as the key itself.
+    // Under `strict` the fallback is refused too: it is English text shown in every locale, the same defect as the key itself. Outside strict a fallback stays silent, as it always was: the caller named the text on purpose.
+    if (typeof paramsOrFallback === 'string' && !strict) return paramsOrFallback;
     miss(`Translation key not found: ${key}`);
-    if (typeof paramsOrFallback === 'string') return paramsOrFallback;
-    return key;
+    return typeof paramsOrFallback === 'string' ? paramsOrFallback : key;
   }
 
   if (typeof translation === 'string') {
@@ -114,7 +114,7 @@ type MissHandler = (message: string) => void;
  * not strict.
  */
 function strictByDefault(): boolean {
-  const env = (import.meta as { env?: { PROD?: boolean; SSR?: boolean } }).env;
+  const env = import.meta.env as { PROD?: boolean; SSR?: boolean } | undefined;
   return Boolean(env?.PROD && env?.SSR);
 }
 
@@ -145,7 +145,7 @@ export function createTranslatorFrom(
   const miss = missHandler(lang, strict);
   return {
     t: (key: string, paramsOrFallback?: InterpolationParams | string) =>
-      getTranslation(catalog, key, paramsOrFallback, miss),
+      getTranslation(catalog, key, paramsOrFallback, miss, strict),
     ta: (key: string) => getTranslationArray(catalog, key, miss),
     to: <P extends string>(key: P): PathValue<Translations, P> =>
       getNestedValue(catalog, key) as PathValue<Translations, P>,

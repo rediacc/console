@@ -16,20 +16,20 @@ export interface PlanMetric {
 }
 
 /**
- * The self-serve plan grid, shared by the pricing page and the homepage preview.
- *
- * Community is deliberately absent. It is the post-cancellation fallback state
- * an account is reverted to when payment lapses, not something anyone can buy,
- * so it gets no card, no column and no signup path.
- *
- * Free is absent too. It is the no-account licence a machine takes from the CLI
- * (agent/plans/PLAN-free-license.md), with its own `#free-license` section on
- * the pricing page. It joined PLAN_ORDER on 2026-10-31 and this filter named only
- * Community, so a fourth card appeared with a $0 price, a "Start trial" button
- * whose checkout the portal ignores (FREE is not selfServe), dashes for every
- * metric, and the raw text `pages.pricing.plans.free.name` as its title in all
- * 13 locales. The filter now lists what the grid SELLS, so a fifth code added to
+ * The plans the grid SELLS. Community is deliberately absent: it is the post-cancellation
+ * fallback state an account is reverted to when payment lapses, not something anyone can buy.
+ * Free is absent too: it is the no-account licence a machine takes from the CLI
+ * (agent/plans/PLAN-free-license.md), with its own `#free-license` section. It joined
+ * PLAN_ORDER on 2026-10-31 and the old filter named only Community, so a fourth card
+ * appeared with a $0 price, a dead "Start trial" button and the raw text
+ * `pages.pricing.plans.free.name` as its title in all 13 locales. A fifth code added to
  * PLAN_ORDER stays off the grid until someone gives it copy on purpose.
+ */
+const GRID_PLANS: ReadonlySet<PlanCode> = new Set(['PROFESSIONAL', 'BUSINESS', 'ENTERPRISE']);
+
+/**
+ * The self-serve plan grid, built from GRID_PLANS and shared by the pricing page and the
+ * homepage preview.
  *
  * Annual prices come from the shared constants (an explicit 15%-off value, not
  * a 10x-monthly shortcut).
@@ -38,8 +38,6 @@ export interface PlanMetric {
  * about other customers, and there are none to count yet; the same reason the
  * comparison table no longer tints a column.
  */
-const GRID_PLANS: ReadonlySet<PlanCode> = new Set(['PROFESSIONAL', 'BUSINESS', 'ENTERPRISE']);
-
 export function buildPlans(): PricingPlan[] {
   return PLAN_ORDER.filter((code) => GRID_PLANS.has(code)).map((code) => {
     const id = code.toLowerCase();

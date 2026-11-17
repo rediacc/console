@@ -102,6 +102,17 @@ export function templatePattern(body: string): { display: string; pattern: RegEx
   return { display: parts.join('*'), pattern: new RegExp(`^${src}$`) };
 }
 
+/**
+ * Whether an en.json value can answer a call. `t()` needs a string (the strict translator
+ * throws on a branch, and returns the key in dev), `ta()` an array, `to()` anything.
+ */
+function answers(fn: TranslationCall['fn'], val: JsonValue | undefined): boolean {
+  if (val === undefined) return false;
+  if (fn === 't') return typeof val === 'string';
+  if (fn === 'ta') return Array.isArray(val);
+  return true;
+}
+
 /** Every path in the catalog, branches and array indices included. */
 function allPaths(node: JsonValue, prefix = '', out: string[] = []): string[] {
   if (node && typeof node === 'object') {
@@ -394,7 +405,12 @@ function main(): void {
 
       if (call.pattern) {
         const re = call.pattern;
-        if (!paths.some((p) => re.test(p))) missing.push(call);
+        // A wildcard that only reaches a BRANCH (`pages.pricing.plans.${id}`) is a miss:
+        // the strict translator throws on an object, so the match must end on a value the
+        // call can use.
+        if (!paths.some((p) => re.test(p) && answers(call.fn, getNestedValue(enJson, p)))) {
+          missing.push(call);
+        }
         continue;
       }
       // Use getNestedValue for all checks — it handles array index access (e.g., items.0)

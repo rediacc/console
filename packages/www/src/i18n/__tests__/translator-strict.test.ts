@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createTranslatorFrom, type TranslationCatalog } from '../translator';
 import type { Language } from '../types';
 
@@ -8,6 +8,35 @@ const en: TranslationCatalog = {
   list: ['a', 'b'],
 };
 const catalogs = { en } as unknown as Record<Language, TranslationCatalog>;
+
+describe('strictByDefault (the production prerender switch)', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('PROD and SSR together make the default strict, so a prerender miss throws', () => {
+    vi.stubEnv('PROD', true);
+    vi.stubEnv('SSR', true);
+    const { t } = createTranslatorFrom(catalogs, 'en');
+    expect(() => t('pages.pricing.plans.free.name')).toThrow(/Translation key not found/);
+  });
+
+  it('PROD without SSR (the hydrated client bundle) stays non-strict', () => {
+    vi.stubEnv('PROD', true);
+    vi.stubEnv('SSR', false);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { t } = createTranslatorFrom(catalogs, 'en');
+    expect(t('pages.gone')).toBe('pages.gone');
+    warn.mockRestore();
+  });
+
+  it('SSR without PROD (astro dev) stays non-strict', () => {
+    vi.stubEnv('PROD', false);
+    vi.stubEnv('SSR', true);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const { t } = createTranslatorFrom(catalogs, 'en');
+    expect(t('pages.gone')).toBe('pages.gone');
+    warn.mockRestore();
+  });
+});
 
 describe('translator misses', () => {
   it('strict: a dynamic key whose varying part has no entry fails, naming the key', () => {
@@ -44,7 +73,8 @@ describe('translator misses', () => {
     const { t } = createTranslatorFrom(catalogs, 'en', { strict: false });
     expect(t('pages.pricing.plans.free.name')).toBe('pages.pricing.plans.free.name');
     expect(t('pages.gone', 'English fallback')).toBe('English fallback');
-    expect(warn).toHaveBeenCalledTimes(2);
+    // The key miss warns; the fallback miss stays silent, as before the strict translator.
+    expect(warn).toHaveBeenCalledTimes(1);
     warn.mockRestore();
   });
 
