@@ -3,6 +3,8 @@
 PLAN-ciquick-cpu W2.1's acceptance: a fixture gate reading two files gets exactly those two plus the directory it listed, written into the manifest literal, the lock and the trace ledger. The controls run the other way: an untouched sibling stays out, a declared set is refused rather than overwritten, a red gate writes no paths, and a host without strace is refused loudly with the fix.
 
 W2.3 adds: a gate connecting to a routable peer is a whole-tree "network" verdict while a loopback connect is not, `--replace-declared` replaces a declared set the plain `--write` refuses, and `--no-seccomp` traces the same reads.
+
+W2.5 folds to names: a listed directory is written as `lists`, not `dir/**`; a name-only `git ls-files` gives `names: ['**']`; a lookup that finds nothing inside a tracked directory lists that directory.
 """
 
 from __future__ import annotations
@@ -52,13 +54,25 @@ MANIFEST = """export const GATES = [
   },
   {
     id: 'g:flip',
-    run: 'if [ -e flip ]; then ls . >/dev/null; fi; cat in/a.txt >/dev/null',
+    run: 'if [ -e flip ]; then git log -1 >/dev/null; fi; cat in/a.txt >/dev/null',
     gate: true,
     leaves: ['tool.sh'],
   },
   {
     id: 'g:net',
     run: 'cat in/a.txt >/dev/null; timeout 1 bash -c ": </dev/tcp/192.0.2.1/9" 2>/dev/null; true',
+    gate: true,
+    leaves: ['tool.sh'],
+  },
+  {
+    id: 'g:ls',
+    run: 'git ls-files -z >/dev/null; cat in/a.txt >/dev/null',
+    gate: true,
+    leaves: ['tool.sh'],
+  },
+  {
+    id: 'g:probe',
+    run: 'test -e other/missing.txt; cat in/a.txt >/dev/null',
     gate: true,
     leaves: ['tool.sh'],
   },
@@ -85,9 +99,11 @@ def _lock() -> list[dict[str, object]]:
         entry(
             "g:declared", "cat in/a.txt >/dev/null", {"paths": ["in/**"], "pathsOrigin": "declared"}
         ),
-        entry("g:flip", "if [ -e flip ]; then ls . >/dev/null; fi; cat in/a.txt >/dev/null"),
+        entry("g:flip", "if [ -e flip ]; then git log -1 >/dev/null; fi; cat in/a.txt >/dev/null"),
         entry("g:net", NET_RUN),
         entry("g:loop", LOOP_RUN),
+        entry("g:ls", "git ls-files -z >/dev/null; cat in/a.txt >/dev/null"),
+        entry("g:probe", "test -e other/missing.txt; cat in/a.txt >/dev/null"),
     ]
 
 
@@ -144,18 +160,21 @@ def _lock_of(root: pathlib.Path) -> dict[str, dict[str, object]]:
 
 
 @pytest.mark.skipif(not HAS_STRACE, reason=NO_STRACE)
-def test_two_reads_and_one_listing_become_exactly_three_globs(fixture_repo: pathlib.Path) -> None:
+def test_two_reads_and_one_listing_become_two_paths_and_one_list(
+    fixture_repo: pathlib.Path,
+) -> None:
     res = _run(fixture_repo, "--gate", "g:fix", "--write")
     assert res.returncode == 0, res.stderr
-    assert res.stdout.strip() == "g:fix\tin/a.txt in/b.txt listed/**", res.stderr
+    assert res.stdout.strip() == 'g:fix\tin/a.txt in/b.txt\tlists=["listed"]', res.stderr
     lock = _lock_of(fixture_repo)
-    assert lock["g:fix"]["paths"] == ["in/a.txt", "in/b.txt", "listed/**"]
+    assert lock["g:fix"]["paths"] == ["in/a.txt", "in/b.txt"]
+    assert lock["g:fix"]["lists"] == ["listed"]
     assert lock["g:fix"]["pathsOrigin"] == "traced"
-    assert list(lock["g:fix"]) == ["id", "run", "gate", "paths", "pathsOrigin", "leaves"]
+    assert list(lock["g:fix"]) == ["id", "run", "gate", "paths", "lists", "pathsOrigin", "leaves"]
     manifest = (fixture_repo / "scripts/ci-runner/manifest.ts").read_text()
     assert (
-        "    paths: ['in/a.txt', 'in/b.txt', 'listed/**'],\n    pathsOrigin: 'traced',\n    leaves:"
-        in manifest
+        "    paths: ['in/a.txt', 'in/b.txt'],\n    lists: ['listed'],\n    pathsOrigin: 'traced',\n"
+        "    leaves:" in manifest
     )
     ledger = (fixture_repo / "scripts/ci-runner/trace-ledger.ts").read_text()
     assert "'g:fix': {" in ledger
@@ -201,7 +220,7 @@ def test_a_whole_tree_retrace_removes_the_earlier_traced_paths(fixture_repo: pat
     assert first.returncode == 0, first.stderr
     assert _lock_of(fixture_repo)["g:flip"]["paths"] == ["in/a.txt"]
     declared_before = manifest.read_text().split("id: 'g:declared',")[1].split("  },")[0]
-    # The gate now lists the repository root, so its re-trace is whole-tree.
+    # The gate now reads git history, so its re-trace is whole-tree.
     (fixture_repo / "flip").write_text("")
     second = _run(fixture_repo, "--gate", "g:flip", "--write")
     assert second.returncode == 0, second.stderr
@@ -215,7 +234,7 @@ def test_a_whole_tree_retrace_removes_the_earlier_traced_paths(fixture_repo: pat
     assert manifest.read_text().split("id: 'g:declared',")[1].split("  },")[0] == declared_before
     assert _lock_of(fixture_repo)["g:declared"]["pathsOrigin"] == "declared"
     ledger = (fixture_repo / "scripts/ci-runner/trace-ledger.ts").read_text()
-    assert "lists the repository root" in ledger
+    assert "reads git history" in ledger
 
 
 def test_a_host_without_strace_is_refused_with_the_fix(
@@ -279,4 +298,22 @@ def test_replace_declared_writes_the_traced_set(fixture_repo: pathlib.Path) -> N
 def test_no_seccomp_traces_the_same_reads(fixture_repo: pathlib.Path) -> None:
     res = _run(fixture_repo, "--gate", "g:fix", "--no-seccomp")
     assert res.returncode == 0, res.stderr
-    assert res.stdout.strip() == "g:fix\tin/a.txt in/b.txt listed/**", res.stderr
+    assert res.stdout.strip() == 'g:fix\tin/a.txt in/b.txt\tlists=["listed"]', res.stderr
+
+
+@pytest.mark.skipif(not HAS_STRACE, reason=NO_STRACE)
+def test_a_name_only_ls_files_writes_names(fixture_repo: pathlib.Path) -> None:
+    res = _run(fixture_repo, "--gate", "g:ls", "--write")
+    assert res.returncode == 0, res.stderr
+    assert res.stdout.strip() == 'g:ls\tin/a.txt\tnames=["**"]', res.stderr
+    entry = _lock_of(fixture_repo)["g:ls"]
+    assert entry["paths"] == ["in/a.txt"]
+    assert entry["names"] == ["**"]
+    assert "lists" not in entry
+
+
+@pytest.mark.skipif(not HAS_STRACE, reason=NO_STRACE)
+def test_a_missed_lookup_lists_its_tracked_directory(fixture_repo: pathlib.Path) -> None:
+    res = _run(fixture_repo, "--gate", "g:probe")
+    assert res.returncode == 0, res.stderr
+    assert res.stdout.strip() == 'g:probe\tin/a.txt\tlists=["other"]', res.stderr

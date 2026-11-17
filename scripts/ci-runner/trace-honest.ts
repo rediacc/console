@@ -5,10 +5,10 @@
  * WHY. Carry is sound only while a gate's `paths` name everything it reads. A gate whose glob misses one input keeps a green across a change to that input, and nothing downstream notices: the receipt says carried, the push guard re-hashes the declared inputs and agrees. path-trace.ts writes paths from one trace; this gate keeps them true afterwards, for traced and hand-declared sets alike.
  *
  * TWO INDEPENDENT MODES.
- *   - `trace` re-runs the gate under strace (path-trace.ts `traceCommand`) and fails on any tracked read outside `paths ∪ GLOBAL_INPUTS ∪ leaf closure`, any listed directory no declared glob reaches, a read inside a submodule whose gitlink is undeclared, and any git history or index read (a gate with paths may locate the repository, never read its history). Each finding names the path and the fix.
- *   - `sparse` builds a directory holding ONLY the declared inputs (copied), the dependency trees (hard-link copies, as quick-clone.ts does, so workspace links resolve inside it), the ignored build output (hard-link copies) and the read-only toolchain caches (symlinks), and runs the gate there. A verdict that differs from the same gate's run in the real tree means it needed something undeclared. It shares no code path with the tracer's attribution, so a blind spot in one (a daemon read, io_uring) is not a blind spot in both.
+ *   - `trace` re-runs the gate under strace (path-trace.ts `traceCommand`) and fails on any tracked read outside `paths ∪ GLOBAL_INPUTS ∪ leaf closure`, any listed directory (a missed lookup's nearest tracked directory included) that is neither in `lists` nor reached by a declared `paths` or `names` glob, a name-only `git ls-files` scan without `names: ['**']`, a read inside a submodule whose gitlink is undeclared, any other git history or index read (a gate with paths may locate the repository, never read its history), and any connection to the network. Each finding names the path and the fix.
+ *   - `sparse` builds a directory holding ONLY the declared inputs (copied; a `lists` child or a `names` match that is not declared content enters as an EMPTY placeholder, so its name is there and its bytes are not), the dependency trees (hard-link copies, as quick-clone.ts does, so workspace links resolve inside it), the ignored build output (hard-link copies) and the read-only toolchain caches (symlinks), and runs the gate there. A verdict that differs from the same gate's run in the real tree means it needed something undeclared. It shares no code path with the tracer's attribution, so a blind spot in one (a daemon read, io_uring) is not a blind spot in both.
  *
- * WHICH GATES. Every lock entry with `paths` and `gate: true` that is not carry-exempt or ciOnly is a candidate. `--quick` judges the candidates whose lock entry changed, or one of whose leaf-closure files changed, since the last push (quick-select.ts `resolvePushBase`); an unresolvable base is a failure, never an empty pass. `--rotation <i>/<n>` judges bucket i of n, balanced by measured cost; `--rotation auto` takes i from the UTC day of the year over n = 3. Sparse mode takes the `--sparse-top` (default 10) costliest gates of the selection.
+ * WHICH GATES. Every lock entry with `paths`, `lists` or `names` and `gate: true` that is not carry-exempt or ciOnly is a candidate. `--quick` judges the candidates whose lock entry changed, or one of whose leaf-closure files changed, since the last push (quick-select.ts `resolvePushBase`); an unresolvable base is a failure, never an empty pass. `--rotation <i>/<n>` judges bucket i of n, balanced by measured cost; `--rotation auto` takes i from the UTC day of the year over n = 3. Sparse mode takes the `--sparse-top` (default 10) costliest gates of the selection.
  *
  * NEVER GREEN ON NOTHING. Zero candidates in the lock is a failure (the gate is not seeing the estate). A selection of zero is green only in `--quick`, and says how many candidates it saw and against which base. A red gate is a finding: its trace may be partial and its sparse verdict is meaningless.
  *
@@ -25,8 +25,8 @@ import { isEntryPoint } from '../lib/entry-point.js';
 import { CARRY_EXEMPT_REL, exemptIdsOf, GLOBAL_INPUTS, matchGlob } from './input-hash.js';
 import {
   attribute,
-  type LockEntry,
   LOCK_REL,
+  type LockEntry,
   needsClosure,
   REPO_ROOT,
   type RepoView,
@@ -69,10 +69,14 @@ export function isDeclared(
   return leafFiles.has(p) || globs.some((g) => matchGlob(g, p));
 }
 
-/** Whether a declared glob reaches a NEW direct child of `dir`, which is what a listing would see. */
+/**
+ * Whether one declared glob reaches every NEW direct child of `dir` ('' the root) a listing would see: a new file, and a new subdirectory, whose names hash moves only through a file inside it. `D/**` reaches both; `D/*` reaches the file and misses the subdirectory, so it does not declare the listing.
+ */
 export function listingDeclared(dir: string, globs: readonly string[]): boolean {
-  const probe = `${dir}/zz-trace-honest-probe`;
-  return globs.some((g) => matchGlob(g, probe));
+  const base = dir === '' ? '' : `${dir}/`;
+  const file = `${base}zz-trace-honest-probe`;
+  const nested = `${base}zz-trace-honest-probe/zz-trace-honest-probe`;
+  return globs.some((g) => matchGlob(g, file) && matchGlob(g, nested));
 }
 
 function fixFor(entry: LockEntry): string {
@@ -111,6 +115,19 @@ export function traceFindings(
       `enumerates the tracked file list through the git index (${e}), so a new file anywhere can change its verdict`,
       `drop its paths, so it hashes the whole tree`
     );
+  // A name-only ls-files scan is honest once the gate declares the whole name set.
+  const names = entry.names ?? [];
+  if (!names.includes('**'))
+    for (const e of attr.gitNames ?? [])
+      add(
+        `reads the tracked name set through the git index (${e}), and names: ['**'] is not declared`,
+        `declare names: ['**'] on ${entry.id} (re-trace it: npx tsx scripts/ci-runner/path-trace.ts --gate ${entry.id} --write)`
+      );
+  for (const peer of attr.network ?? [])
+    add(
+      `connects to ${peer}, so its verdict can move with nothing in the tree moving`,
+      `drop its paths, lists and names, or add it to ${CARRY_EXEMPT_REL} with the reason`
+    );
   for (const c of attr.cacheState)
     add(
       `reads untracked cache state (${c}), so its verdict can move with no tracked input moving`,
@@ -123,21 +140,21 @@ export function traceFindings(
       `add the producer to the needs of ${entry.id} in scripts/ci-runner/manifest.ts`
     );
   const globs = declaredGlobs(entry);
-  if (attr.listed.has(''))
-    add(
-      'lists the repository root, which no paths glob short of ** reaches',
-      'drop its paths, so it hashes the whole tree'
-    );
   const reads = [...attr.reads].filter((p) => !isDeclared(p, globs, leafFiles)).sort(byteOrder);
   const shown = reads.slice(0, 20);
   for (const p of shown) add(`reads ${p}, outside its paths`);
   if (reads.length > shown.length)
     add(`and ${reads.length - shown.length} more undeclared read(s)`);
+  // A listing is declared by `lists` naming the directory, or by a paths or names glob reaching a new child of it.
+  const lists = new Set(entry.lists ?? []);
   for (const d of [...attr.listed].sort(byteOrder)) {
-    if (d !== '' && !listingDeclared(d, globs))
+    if (!lists.has(d) && !listingDeclared(d, [...globs, ...names])) {
+      const shown = d === '' ? 'the repository root' : `${d}/`;
       add(
-        `lists ${d}/, so a new file there changes what it sees, and no declared glob reaches ${d}/<new>`
+        `lists ${shown} (or looks up a name there that does not exist), so a new file there changes what it sees, and neither lists nor a declared glob covers it`,
+        `${fixFor(entry)}; or add ${JSON.stringify(d)} to its lists`
       );
+    }
   }
   for (const g of [...attr.gitlinkReads].sort(byteOrder)) {
     if (!globs.some((x) => x === g || x === `${g}/**`))
@@ -343,6 +360,7 @@ export function buildSparse(
     if (globs.some((x) => x === g || x === `${g}/**`) && fs.existsSync(path.join(view.root, g)))
       copyReal(g);
   }
+  copied += placeNames(dir, view, entry, (f) => isDeclared(f, globs, leafFiles));
   for (const nm of nodeModulesDirs(view.root)) linkCopy(nm);
   for (const b of ignoredBuildOutput(view.root))
     if (fs.existsSync(path.join(view.root, b))) linkCopy(b);
@@ -382,6 +400,51 @@ export function buildSparse(
     );
   guards.set(dir, { root: view.root, rels: hardLinked, before: statLinked(view.root, hardLinked) });
   return dir;
+}
+
+/**
+ * The names a gate declares without their content: each tracked child of a `lists` directory and each tracked file a `names` glob matches, when not already copied as content, enters the sparse directory EMPTY (a subdirectory child as an empty directory). The gate sees every name it declared and none of the bytes it did not, so a verdict that needed those bytes differs. Returns the count placed.
+ */
+export function placeNames(
+  dir: string,
+  view: RepoView,
+  entry: LockEntry,
+  isContent: (f: string) => boolean
+): number {
+  const lists = entry.lists ?? [];
+  const names = entry.names ?? [];
+  if (lists.length === 0 && names.length === 0) return 0;
+  let n = 0;
+  const place = (rel: string, asDir: boolean): void => {
+    const dst = path.join(dir, rel);
+    if (fs.existsSync(dst)) return;
+    if (asDir) fs.mkdirSync(dst, { recursive: true });
+    else {
+      fs.mkdirSync(path.dirname(dst), { recursive: true });
+      fs.writeFileSync(dst, '');
+    }
+    n++;
+  };
+  for (const f of view.files) {
+    if (isContent(f)) continue;
+    if (names.some((g) => matchGlob(g, f))) place(f, false);
+  }
+  for (const d of lists) {
+    const prefix = d === '' ? '' : `${d}/`;
+    const seen = new Set<string>();
+    for (const f of [...view.files, ...view.gitlinks]) {
+      if (!f.startsWith(prefix)) continue;
+      const rest = f.slice(prefix.length);
+      const child = rest.split('/')[0];
+      if (seen.has(child)) continue;
+      seen.add(child);
+      const rel = `${prefix}${child}`;
+      const isDir = rest.includes('/') || view.gitlinks.includes(f);
+      if (!isDir && isContent(rel)) continue;
+      place(rel, isDir);
+    }
+  }
+  return n;
 }
 
 /** Whether `cp --reflink=always` has worked on this filesystem: unknown until the first link, then settled for the process. */
@@ -539,7 +602,7 @@ async function main(argv: string[]): Promise<number> {
   const candidates = lock.filter(
     (e) =>
       e.gate &&
-      (e.paths ?? []).length > 0 &&
+      ((e.paths ?? []).length > 0 || (e.lists ?? []).length > 0 || (e.names ?? []).length > 0) &&
       !exempt.has(e.id) &&
       e.ciOnly === undefined &&
       (args.origin === undefined || e.pathsOrigin === args.origin)
@@ -647,7 +710,7 @@ async function main(argv: string[]): Promise<number> {
       traced++;
       findings.push(...f);
       console.error(
-        `  trace  ${f.length === 0 ? 'PASS' : 'FAIL'}  ${id} (${why}; ${run.seconds}s, ${e.paths?.length} glob(s))`
+        `  trace  ${f.length === 0 ? 'PASS' : 'FAIL'}  ${id} (${why}; ${run.seconds}s, ${e.paths?.length ?? 0} glob(s), ${e.lists?.length ?? 0} list(s), ${e.names?.length ?? 0} names glob(s))`
       );
       if (run.exit !== 0) console.error(run.outputTail.replace(/^/gm, '      | '));
     });
@@ -842,6 +905,80 @@ async function selftest(): Promise<number> {
       .length === 1,
     'a read inside an undeclared submodule fails'
   );
+  // W2.5: lists and names declare listings and name scans; an undeclared one, and the network, fail.
+  check(
+    traceFindings({ ...entry, lists: [''] }, attr([], ['']), 0, new Set()).length === 0,
+    "CONTROL: a root listing passes once lists declares ''"
+  );
+  check(
+    traceFindings({ ...entry, lists: ['c'] }, attr([], ['c']), 0, new Set()).length === 0 &&
+      traceFindings({ ...entry, names: ['c/**'] }, attr([], ['c']), 0, new Set()).length === 0 &&
+      traceFindings({ ...entry, names: ['**'] }, attr([], ['']), 0, new Set()).length === 0,
+    'CONTROL: a listing passes when lists names it, or when a names glob reaches a new child (the root included)'
+  );
+  check(
+    traceFindings({ ...entry, names: ['c/*'] }, attr([], ['c']), 0, new Set()).length === 1 &&
+      traceFindings({ ...entry, names: ['*'] }, attr([], ['']), 0, new Set()).length === 1,
+    'a one-level glob (c/*, or * at the root) misses a new subdirectory, so it does not declare the listing'
+  );
+  check(
+    traceFindings({ ...entry, lists: ['c'] }, attr([], ['c/sub']), 0, new Set()).length === 1,
+    'lists covers the directory it names, not one beneath it'
+  );
+  check(
+    traceFindings(entry, attr([], [], { gitNames: ['git ls-files -z'] }), 0, new Set()).some((f) =>
+      f.what.includes("names: ['**'] is not declared")
+    ),
+    "a name-only ls-files scan without names: ['**'] fails"
+  );
+  check(
+    traceFindings(
+      { ...entry, names: ['**'] },
+      attr([], [], { gitNames: ['git ls-files -z'] }),
+      0,
+      new Set()
+    ).length === 0,
+    "CONTROL: the same scan with names: ['**'] passes"
+  );
+  check(
+    traceFindings(entry, attr([], [], { network: ['1.1.1.1:443'] }), 0, new Set()).some((f) =>
+      f.what.includes('connects to 1.1.1.1:443')
+    ),
+    'a network connection is a finding'
+  );
+  {
+    const pdir = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-honest-place-'));
+    try {
+      const pview: RepoView = {
+        root: '/nowhere',
+        files: ['src/a.ts', 'src/deep/b.ts', 'src/real.ts', 'n/x.md', 'other.txt'],
+        gitlinks: ['src/mod'],
+        gitDirs: [],
+      };
+      fs.mkdirSync(path.join(pdir, 'src'), { recursive: true });
+      fs.writeFileSync(path.join(pdir, 'src/real.ts'), 'REAL');
+      const placed = placeNames(
+        pdir,
+        pview,
+        { ...entry, lists: ['src'], names: ['n/**'] },
+        (f) => f === 'src/real.ts'
+      );
+      const size = (rel: string): number => fs.statSync(path.join(pdir, rel)).size;
+      check(
+        placed === 4 &&
+          size('src/a.ts') === 0 &&
+          size('n/x.md') === 0 &&
+          fs.statSync(path.join(pdir, 'src/deep')).isDirectory() &&
+          fs.statSync(path.join(pdir, 'src/mod')).isDirectory() &&
+          fs.readFileSync(path.join(pdir, 'src/real.ts'), 'utf8') === 'REAL' &&
+          !fs.existsSync(path.join(pdir, 'src/deep/b.ts')) &&
+          !fs.existsSync(path.join(pdir, 'other.txt')),
+        `sparse placeholders: a listed child or names match enters empty, a subdirectory or gitlink as an empty dir, declared content stays real (placed ${placed})`
+      );
+    } finally {
+      fs.rmSync(pdir, { recursive: true, force: true });
+    }
+  }
   const cost = (id: string): number => ({ a: 10, b: 9, c: 2, d: 1 })[id] ?? 0;
   const r1 = rotation(['a', 'b', 'c', 'd'], cost, 1, 2);
   const r2 = rotation(['a', 'b', 'c', 'd'], cost, 2, 2);
@@ -887,7 +1024,15 @@ async function selftest(): Promise<number> {
   }
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-honest-self-'));
   try {
-    const files: Record<string, string> = { 'a.txt': 'a', 'b.txt': 'b', 'tool.sh': '#!/bin/sh\n' };
+    const files: Record<string, string> = {
+      'a.txt': 'a',
+      'b.txt': 'b',
+      'tool.sh': '#!/bin/sh\n',
+      '.ci/tool.py': "open('conf/x.txt').read()\n",
+      '.ci/other.py': 'pass\n',
+      'conf/x.txt': 'x',
+      'src/keep.txt': 'keep',
+    };
     for (let i = 0; i < 20; i++) files[`filler/f${i}.txt`] = 'x';
     const lockRows: LockEntry[] = [
       {
@@ -903,6 +1048,50 @@ async function selftest(): Promise<number> {
         run: 'cat a.txt b.txt >/dev/null',
         gate: true,
         paths: ['a.txt'],
+        pathsOrigin: 'traced',
+        leaves: ['tool.sh'],
+      },
+      // The W2.5 accept fixture: `python3 -m` from the root reading two files, declared with and without its listings.
+      {
+        id: 'g:py',
+        run: 'PYTHONPATH=.ci python3 -m tool',
+        gate: true,
+        paths: ['.ci/tool.py', 'conf/x.txt'],
+        lists: ['', '.ci'],
+        pathsOrigin: 'traced',
+        leaves: ['tool.sh'],
+      },
+      {
+        id: 'g:py-nolists',
+        run: 'PYTHONPATH=.ci python3 -m tool',
+        gate: true,
+        paths: ['.ci/tool.py', 'conf/x.txt'],
+        pathsOrigin: 'traced',
+        leaves: ['tool.sh'],
+      },
+      // Need only the names they declare: sparse mode must place them, or the gate cannot find them.
+      {
+        id: 'g:names-only',
+        run: 'test -e src/keep.txt',
+        gate: true,
+        names: ['src/**'],
+        pathsOrigin: 'traced',
+        leaves: ['tool.sh'],
+      },
+      {
+        id: 'g:lists-only',
+        run: 'ls src | grep -qx keep.txt',
+        gate: true,
+        lists: ['src'],
+        pathsOrigin: 'traced',
+        leaves: ['tool.sh'],
+      },
+      // Declares only the NAMES under src, yet needs a file's bytes: the sparse placeholder is empty, so sparse mode catches it.
+      {
+        id: 'g:names-bytes',
+        run: 'grep -q keep src/keep.txt',
+        gate: true,
+        names: ['src/**'],
         pathsOrigin: 'traced',
         leaves: ['tool.sh'],
       },
@@ -944,6 +1133,35 @@ async function selftest(): Promise<number> {
         `${mode} mode fails the undeclared-read fixture (rc=${liar.status})`
       );
     }
+    const py = run('--mode', 'trace', '--gate', 'g:py');
+    check(
+      py.status === 0,
+      `python3 -m reading 2 files passes with paths of those 2 plus lists ['', '.ci'] (rc=${py.status}) ${py.status === 0 ? '' : py.err.slice(-600)}`
+    );
+    const pyNo = run('--mode', 'trace', '--gate', 'g:py-nolists');
+    check(
+      pyNo.status === 1 &&
+        pyNo.err.includes('lists the repository root') &&
+        pyNo.err.includes('lists .ci/'),
+      `the same fixture without lists fails, naming the root and .ci listings (rc=${pyNo.status})`
+    );
+    const pySparse = run('--mode', 'sparse', '--gate', 'g:py');
+    check(
+      pySparse.status === 0,
+      `CONTROL: sparse mode passes g:py, its listed names placed empty (rc=${pySparse.status}) ${pySparse.status === 0 ? '' : pySparse.err.slice(-600)}`
+    );
+    for (const g of ['g:names-only', 'g:lists-only']) {
+      const r = run('--mode', 'sparse', '--gate', g);
+      check(
+        r.status === 0,
+        `CONTROL: sparse mode places the names ${g} declares, so it passes there too (rc=${r.status}) ${r.status === 0 ? '' : r.err.slice(-400)}`
+      );
+    }
+    const nb = run('--mode', 'sparse', '--gate', 'g:names-bytes');
+    check(
+      nb.status === 1 && nb.err.includes('holding only its declared inputs'),
+      `sparse mode fails a gate that declares names but needs their bytes (rc=${nb.status})`
+    );
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }

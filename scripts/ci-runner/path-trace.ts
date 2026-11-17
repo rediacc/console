@@ -6,15 +6,16 @@
  *
  * HOW. The gate's own `run` command executes once under `strace -ff -y --seccomp-bpf -e trace=%file,getdents,getdents64,fchdir,connect,clone,clone3,fork,vfork` (the fork family only so each child's starting cwd is known; `connect` so a gate that talks to the network is seen doing it). strace's own stderr lines are kept in their own file, apart from the gate's output, which reaches strace's stdout only (the traced shell runs `exec 2>&1` first). Every path a process opened, stat'ed, exec'ed or resolved, and every directory it listed, is mapped onto the tracked tree:
  *   - a tracked file read is kept as itself;
- *   - a listed tracked directory becomes `dir/**` (a listing sees every name in it, so a new file there is a new input);
+ *   - a listed tracked directory, the root included, goes to `lists` (a listing sees every name in it and no byte of any, so input-hash.ts hashes its tracked children's names); so does the nearest tracked directory above a lookup that found nothing, since a file added there would be found;
+ *   - a `git ls-files` that prints only names (LS_FILES_NAME_FLAGS) gives `names: ['**']`, the tracked name set without its content;
  *   - a directory with at least FOLD_MIN_FILES tracked files of which more than half were read becomes `dir/**`;
- *   - a read inside a submodule becomes `<gitlink>/**`, the one glob shape that reaches a gitlink entry (input-hash.ts `entryMatches`);
+ *   - a read inside a submodule names the bare gitlink path, which reaches the gitlink entry exactly as `<gitlink>/**` does (input-hash.ts `entryMatches`);
  *   - a path holding a glob metacharacter the hasher refuses (`?`, `[`, `{`, or `*`) folds to its nearest clean ancestor directory;
  *   - reads already inside GLOBAL_INPUTS are dropped, since every gate with `paths` hashes those anyway.
  *
- * WHEN THE ANSWER IS "WHOLE TREE", and it is written down with its reason rather than guessed: a gate that connects to an address that is neither loopback nor a unix socket (reason `network`: its verdict can move with nothing in the tree moving), a gate that touches git metadata (its verdict depends on history or the index, not on file bytes), lists the repository root, reads more than WHOLE_TREE_FRACTION of the tracked entries, reads no tracked file at all, or exits non-zero under the trace (a red run may have stopped before reading everything). Carry-exempt gates and non-gate entries are not traced: their hash is null or never judged, so a trace would buy nothing.
+ * WHEN THE ANSWER IS "WHOLE TREE", and it is written down with its reason rather than guessed: a gate that connects to an address that is neither loopback nor a unix socket (reason `network`: its verdict can move with nothing in the tree moving), a gate that touches git metadata (its verdict depends on history, on what files hold through the index, or on an index command other than a name-only `git ls-files`), reaches more than WHOLE_TREE_FRACTION of the tracked entries through its content globs (`lists` and `names` hash names, so they do not count toward that line), reads, lists and names nothing tracked at all, or exits non-zero under the trace (a red run may have stopped before reading everything). Carry-exempt gates and non-gate entries are not traced: their hash is null or never judged, so a trace would buy nothing.
  *
- * WHAT IT WRITES with `--write`, and nothing else: the entry in scripts/ci-runner/manifest.ts (`paths` plus `pathsOrigin: 'traced'`, placed before `leaves`, gen-manifest region markers repaired around it), the same two keys in scripts/ci-runner/gates.lock.json, and one row per traced gate in scripts/ci-runner/trace-ledger.ts, which also records every whole-tree verdict with its reason. An entry whose `paths` a human declared (`pathsOrigin: 'declared'`) is refused, never overwritten, unless `--replace-declared` names that intent: the honesty gate (trace-honest.ts) judges a declared set, and this tool replaces one only when asked, with the traced set or, for a whole-tree verdict, with none.
+ * WHAT IT WRITES with `--write`, and nothing else: the entry in scripts/ci-runner/manifest.ts (each non-empty one of `paths`, `lists` and `names`, then `pathsOrigin: 'traced'`, placed before `leaves`, gen-manifest region markers repaired around it), the same keys in scripts/ci-runner/gates.lock.json, and one row per traced gate in scripts/ci-runner/trace-ledger.ts, which also records every whole-tree verdict with its reason. An entry whose `paths` a human declared (`pathsOrigin: 'declared'`) is refused, never overwritten, unless `--replace-declared` names that intent: the honesty gate (trace-honest.ts) judges a declared set, and this tool replaces one only when asked, with the traced set or, for a whole-tree verdict, with none.
  *
  * WHAT A TRACE CANNOT SEE, stated so a clean trace is not read as more than it is: a read by a process that is not a descendant (a daemon the gate talks to over a socket), a datagram sent with `sendto` to an address on a socket never connected, a read through io_uring (UV_USE_IO_URING=0 is set for the traced tree to keep libuv on plain syscalls), and a path the gate would read only on another branch of its logic. trace-honest.ts re-traces on every change to a gate's entry and on a rotation, and its sparse-clone mode is the independent check.
  *
@@ -347,7 +348,7 @@ export function repoView(root: string): RepoView {
 export interface Attribution {
   reads: Set<string>;
   gitlinkReads: Set<string>;
-  /** Tracked directories listed; '' is the repository root. */
+  /** Tracked directories listed, and the nearest tracked directory above a lookup that found nothing (a new file there would be found); '' is the repository root. */
   listed: Set<string>;
   /** Evidence that the verdict depends on git HISTORY (objects, refs, a history subcommand), at most a few lines. */
   gitHistory: string[];
@@ -357,6 +358,8 @@ export interface Attribution {
   gitContent?: string[];
   /** Network peers the gate connected to (neither loopback nor a unix socket), sorted. Optional for the same reason. */
   network?: string[];
+  /** Evidence that the gate reads the tracked NAME set through `git ls-files` with name-only flags: `names: ['**']`, not whole-tree. Optional for the same reason. */
+  gitNames?: string[];
   ignored: Map<string, number>;
   /** Existing untracked files or directories read outside the dependency and toolchain trees: build output, a few examples. */
   buildOutput: string[];
@@ -439,6 +442,34 @@ const LS_FILES_CONTENT = new Set([
   '-u',
   '--unmerged',
 ]);
+/** `git ls-files` flags that only choose WHICH names it prints and how they are spelled. Untracked names (`-o`, `-i`, `-k`) are outside every input hash, the whole-tree one included, so they cost `names` nothing whole-tree would have bought. */
+const LS_FILES_NAME_FLAGS = new Set([
+  '-z',
+  '-c',
+  '--cached',
+  '-o',
+  '--others',
+  '-i',
+  '--ignored',
+  '-k',
+  '--killed',
+  '--exclude-standard',
+  '--directory',
+  '--no-empty-directory',
+  '--full-name',
+  '--recurse-submodules',
+  '--error-unmatch',
+  '--sparse',
+  '--deduplicate',
+]);
+/** Name-shaping `git ls-files` flags that take the next argument as their value (a pattern or a file the trace sees read). */
+const LS_FILES_NAME_VALUE_FLAGS = new Set([
+  '-x',
+  '--exclude',
+  '-X',
+  '--exclude-from',
+  '--exclude-per-directory',
+]);
 /** `git diff` flags that bring a revision in: the comparison is against HEAD or a merge base, which is history. */
 const DIFF_REVISION_FLAGS = new Set(['--cached', '--staged', '--merge-base']);
 /** Subcommands that locate the repository or read its config and nothing else. */
@@ -456,8 +487,10 @@ const GIT_VALUE_OPTS = new Set([
   '--exec-path',
 ]);
 
-/** `content` reads what tracked files hold through the index; it also enumerates the index's name set, so every content use is an index use as well. */
-export type GitUse = 'history' | 'content' | 'index' | 'discovery';
+/**
+ * `content` reads what tracked files hold through the index; it also enumerates the index's name set, so every content use is an index use as well. `names` is a `git ls-files` that prints only names (LS_FILES_NAME_FLAGS): the tracked name set, which `names: ['**']` hashes without any file's bytes. `index` is every other index use, still whole-tree.
+ */
+export type GitUse = 'history' | 'content' | 'index' | 'names' | 'discovery';
 
 /**
  * Whether a git exec reads this repository: its working directory (the cwd, moved by every `-C`) lies inside the root or a git directory of it, and it is not `init` or `clone`, which make another repository. A cwd the trace never revealed counts as this repository: the inclusive direction.
@@ -511,17 +544,40 @@ export function classifyGitArgv(argv: readonly string[]): GitUse {
       ? 'discovery'
       : 'history';
   if (sub === 'diff') return diffUse(rest);
-  if (sub === 'ls-files')
-    return rest.some(
+  if (sub === 'ls-files') return lsFilesUse(rest);
+  if (GIT_INDEX_CMDS.has(sub)) return 'index';
+  return 'history';
+}
+
+/**
+ * What one `git ls-files` reads: `content` when any flag prints what a file holds, `history` for `--with-tree`, `names` when every flag only shapes the name list (pathspecs after them, or after `--`, narrow it and change nothing here), else `index`, whole-tree: an unknown flag is not assumed harmless.
+ */
+function lsFilesUse(rest: readonly string[]): GitUse {
+  if (
+    rest.some(
       (a) =>
         LS_FILES_CONTENT.has(a) ||
         a.startsWith('--format') ||
         (/^-[a-zA-Z]{2,}$/.test(a) && /[smdu]/.test(a.slice(1)))
     )
-      ? 'content'
-      : 'index';
-  if (GIT_INDEX_CMDS.has(sub)) return 'index';
-  return 'history';
+  )
+    return 'content';
+  let use: GitUse = 'names';
+  for (let i = 0; i < rest.length; i++) {
+    const a = rest[i];
+    if (a === '--') break;
+    if (a.startsWith('--with-tree')) return 'history';
+    if (LS_FILES_NAME_VALUE_FLAGS.has(a)) {
+      i++;
+      continue;
+    }
+    if (/^--(exclude|exclude-from|exclude-per-directory)=/.test(a)) continue;
+    if (!a.startsWith('-')) continue;
+    if (LS_FILES_NAME_FLAGS.has(a)) continue;
+    if (/^-[zcoik]{2,}$/.test(a)) continue;
+    use = 'index';
+  }
+  return use;
 }
 
 /**
@@ -565,6 +621,7 @@ export function attribute(access: Access, view: RepoView): Attribution {
     gitHistory: [],
     gitIndex: [],
     gitContent: [],
+    gitNames: [],
     network: [...(access.network ?? [])].sort(byteOrder),
     ignored: new Map(),
     buildOutput: [],
@@ -578,6 +635,24 @@ export function attribute(access: Access, view: RepoView): Attribution {
     } catch {
       return undefined;
     }
+  };
+  /**
+   * A lookup that found nothing (a module-resolution probe, a config searched for upward) inside a tracked directory: a file added there later would be found, so the nearest EXISTING ancestor is listed when it is a tracked directory or the root. A probe under an untracked ancestor (node_modules, build output) or a cache tree names nothing tracked. A file the run wrote and removed reads the same way, which over-declares a listing: the safe direction.
+   */
+  const probedDir = (rel: string): string | undefined => {
+    if (statOf(rel) !== undefined) return undefined;
+    const segs = rel.split('/');
+    if (
+      segs.includes('node_modules') ||
+      segs.some((x) => CONTENT_CACHE_SEGMENTS.has(x)) ||
+      TOOLCHAIN_PREFIXES.some((p) => rel.startsWith(p)) ||
+      CONTENT_CACHE_PREFIXES.some((p) => rel.startsWith(p))
+    )
+      return undefined;
+    let d = path.posix.dirname(rel);
+    while (d !== '.' && statOf(d) === undefined) d = path.posix.dirname(d);
+    if (d === '.') return '';
+    return trackedDirs.has(d) ? d : undefined;
   };
   const noteUntracked = (rel: string, listing: boolean): void => {
     const kind = classifyUntracked(rel, statOf(rel), access.startedMs, listing);
@@ -598,13 +673,15 @@ export function attribute(access: Access, view: RepoView): Attribution {
     if (rel?.startsWith('.git/')) return rel.slice('.git/'.length);
     return undefined;
   };
+  /** Index file reads, judged after every exec is seen: a name-only `git ls-files` explains them. */
+  const indexFileReads: string[] = [];
   const noteGit = (gitRel: string, shown: string, listing: boolean): void => {
     if (!listing && GIT_DISCOVERY_FILE.test(gitRel))
       res.ignored.set(GIT_DISCOVERY, (res.ignored.get(GIT_DISCOVERY) ?? 0) + 1);
     else if (GIT_HISTORY_FILE.test(gitRel)) {
       if (res.gitHistory.length < 3) res.gitHistory.push(shown);
     } else if (GIT_INDEX_FILE.test(gitRel)) {
-      if (res.gitIndex.length < 3) res.gitIndex.push(shown);
+      if (indexFileReads.length < 3) indexFileReads.push(shown);
     } else res.ignored.set(GIT_DISCOVERY, (res.ignored.get(GIT_DISCOVERY) ?? 0) + 1);
   };
   for (const ex of access.execs) {
@@ -619,6 +696,7 @@ export function attribute(access: Access, view: RepoView): Attribution {
       .join(' ');
     if (use === 'history' && res.gitHistory.length < 3) res.gitHistory.push(shown);
     if (use === 'content' && (res.gitContent ?? []).length < 3) res.gitContent?.push(shown);
+    if (use === 'names' && (res.gitNames ?? []).length < 3) res.gitNames?.push(shown);
     if ((use === 'index' || use === 'content') && res.gitIndex.length < 3) res.gitIndex.push(shown);
   }
   const relOf = (abs: string): string | undefined =>
@@ -642,7 +720,11 @@ export function attribute(access: Access, view: RepoView): Attribution {
     else {
       const g = gitlinkOf(rel);
       if (g !== undefined) res.gitlinkReads.add(g);
-      else noteUntracked(rel, false);
+      else {
+        const parent = probedDir(rel);
+        if (parent !== undefined) res.listed.add(parent);
+        noteUntracked(rel, false);
+      }
     }
   }
   for (const abs of access.listed) {
@@ -662,6 +744,9 @@ export function attribute(access: Access, view: RepoView): Attribution {
       else noteUntracked(rel, true);
     }
   }
+  // An index read with no name-only `git ls-files` to explain it (another git command, or a library reading .git/index itself) is whole-tree evidence.
+  if ((res.gitNames ?? []).length === 0)
+    for (const r of indexFileReads) if (res.gitIndex.length < 3) res.gitIndex.push(r);
   // The dependency trees are what the ROOT lockfile installs, and input-hash.ts matches `**/package-lock.json` as `.*/package-lock.json`, so the root one is no global input: a gate that loads a dependency names it.
   if (usesDeps && tracked.has('package-lock.json')) res.reads.add('package-lock.json');
   return res;
@@ -670,7 +755,12 @@ export function attribute(access: Access, view: RepoView): Attribution {
 export type Verdict =
   | {
       kind: 'paths';
+      /** Content globs; may be empty when lists or names carry the verdict. */
       paths: string[];
+      /** Tracked directories whose listing the gate reads ('' is the root): the lock entry's `lists`. */
+      lists?: string[];
+      /** Globs whose matching tracked names the gate reads: the lock entry's `names`. */
+      names?: string[];
       reads: number;
       listed: number;
       coveragePct: number;
@@ -758,7 +848,6 @@ export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> 
     return whole(
       `enumerates the tracked file list through the git index (${attr.gitIndex.join('; ')}), so a new file anywhere can change its verdict`
     );
-  if (attr.listed.has('')) return whole('lists the repository root');
   if (attr.cacheState.length > 0)
     return whole(
       `reads untracked cache state (${attr.cacheState.join(', ')}), so its verdict can move with no tracked input moving; a carry-exempt.json candidate`
@@ -778,9 +867,13 @@ export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> 
     dirGlobs.add(c);
     return true;
   };
+  // A listing is names, not content: it goes to `lists` (the root included), which hashes the directory's tracked children and none of their bytes. A directory whose own name holds a glob character cannot be a `lists` item (input-hash.ts refuses it), so it keeps the content glob of its nearest clean ancestor.
+  const listDirs = new Set<string>();
   for (const d of attr.listed) {
-    if (!addDir(d)) return whole(`lists ${d}, whose only glob-safe ancestor is the root`);
+    if (d === '' || !hasForbidden(d)) listDirs.add(d);
+    else if (!addDir(d)) return whole(`lists ${d}, whose only glob-safe ancestor is the root`);
   }
+  const names = (attr.gitNames ?? []).length > 0 ? ['**'] : [];
   // A submodule read names the bare gitlink path: input-hash.ts `entryMatches` reaches the gitlink entry through it exactly as through `<gitlink>/**`, and it is the path `git ls-files` lists and a submodule bump changes, so the dead-glob checks (check:ci-gate-manifest, check:ci-paths-origin) and quick-select's rule 1 all see it.
   for (const g of attr.gitlinkReads) {
     if (hasForbidden(g)) return whole(`reads inside submodule ${g}, whose path no glob can name`);
@@ -822,18 +915,28 @@ export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> 
   const reached =
     view.files.filter((f) => isUnderDir(f) || fileGlobs.has(f)).length +
     view.gitlinks.filter((g) => fileGlobs.has(g) || isUnderDir(g)).length;
+  // The 30% line weighs content globs only: `lists` and `names` hash names, which is what lets a listing or an ls-files scan stay cheap.
   const coveragePct = entries === 0 ? 0 : Math.round((1000 * reached) / entries) / 10;
-  if (globs.length === 0)
+  // A listing inside a content dir glob says nothing more: `D/**` already moves with every name under D.
+  const lists = [...listDirs].filter((d) => d === '' || !isUnderDir(d)).sort(byteOrder);
+  if (globs.length === 0 && lists.length === 0 && names.length === 0)
     return whole(
       'reads no tracked file outside the global inputs: an empty `paths` means whole-tree, and a gate that reads nothing from the tree belongs in carry-exempt.json',
       0
     );
   if (reached / Math.max(entries, 1) > WHOLE_TREE_FRACTION)
     return whole(
-      `reaches ${coveragePct}% of the tracked entries, over the ${WHOLE_TREE_FRACTION * 100}% line`,
+      `reaches ${coveragePct}% of the tracked entries through its content globs, over the ${WHOLE_TREE_FRACTION * 100}% line`,
       coveragePct
     );
-  return { kind: 'paths', paths: globs, ...counts, coveragePct };
+  return {
+    kind: 'paths',
+    paths: globs,
+    ...(lists.length > 0 ? { lists } : {}),
+    ...(names.length > 0 ? { names } : {}),
+    ...counts,
+    coveragePct,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1007,6 +1110,10 @@ export interface LockEntry {
   run: string;
   gate: boolean;
   paths?: string[];
+  /** W2.4 (gate-spec.ts): tracked directories whose listing the gate reads, '' the root. */
+  lists?: string[];
+  /** W2.4 (gate-spec.ts): globs whose matching tracked names the gate reads. */
+  names?: string[];
   pathsOrigin?: string;
   leaves?: string[];
   needs?: string[];
@@ -1020,37 +1127,75 @@ export function readLock(root: string): LockEntry[] {
   return JSON.parse(fs.readFileSync(path.join(root, LOCK_REL), 'utf8')) as LockEntry[];
 }
 
-/** The lock text with `paths` and `pathsOrigin` set on one entry, placed before `leaves` the way the manifest literal orders them. */
-export function lockWithPaths(lockText: string, id: string, paths: string[]): string {
+/** The name-scoped input fields a trace writes, in the order gate-spec.ts declares them; `pathsOrigin` follows them. */
+const TRACED_FIELDS = ['paths', 'lists', 'names'] as const;
+
+/** A trace's input sets: content globs plus the W2.4 name-shaped fields. An empty one is omitted, never written as `[]`. */
+export interface TracedInputs {
+  lists?: string[];
+  names?: string[];
+}
+
+/** The fields to write for one verdict, each non-empty, in TRACED_FIELDS order. */
+function tracedFields(paths: string[], extra: TracedInputs): [string, string[]][] {
+  const all: Record<string, string[] | undefined> = { paths, ...extra };
+  return TRACED_FIELDS.flatMap((k) => ((all[k] ?? []).length > 0 ? [[k, all[k] as string[]]] : []));
+}
+
+/** The lock text with `paths`, `lists`, `names` and `pathsOrigin` set on one entry, placed before `leaves` the way the manifest literal orders them. */
+export function lockWithPaths(
+  lockText: string,
+  id: string,
+  paths: string[],
+  extra: TracedInputs = {}
+): string {
   const entries = JSON.parse(lockText) as LockEntry[];
   const i = entries.findIndex((e) => e.id === id);
   if (i < 0) throw new Error(`${LOCK_REL}: no entry ${id}`);
   const out: Record<string, unknown> = {};
   let placed = false;
+  const place = (): void => {
+    for (const [k, v] of tracedFields(paths, extra)) out[k] = v;
+    out.pathsOrigin = TRACED_ORIGIN;
+    placed = true;
+  };
   for (const [k, v] of Object.entries(entries[i])) {
-    if (k === 'paths' || k === 'pathsOrigin') continue;
-    if (k === 'leaves' && !placed) {
-      out.paths = paths;
-      out.pathsOrigin = TRACED_ORIGIN;
-      placed = true;
-    }
+    if ((TRACED_FIELDS as readonly string[]).includes(k) || k === 'pathsOrigin') continue;
+    if (k === 'leaves' && !placed) place();
     out[k] = v;
   }
-  if (!placed) {
-    out.paths = paths;
-    out.pathsOrigin = TRACED_ORIGIN;
-  }
+  if (!placed) place();
   entries[i] = out as LockEntry;
   return `${JSON.stringify(entries, null, 2)}\n`;
 }
 
 const q = (s: string): string => `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
 
+/** One array field's lines as biome formats them at a 100-column line width. */
+export function fieldLines(field: string, values: string[]): string[] {
+  const one = `    ${field}: [${values.map(q).join(', ')}],`;
+  if (one.length <= 100) return [one];
+  return [`    ${field}: [`, ...values.map((p) => `      ${q(p)},`), '    ],'];
+}
+
 /** The `paths:` lines as biome formats them at a 100-column line width. */
 export function pathsLines(paths: string[]): string[] {
-  const one = `    paths: [${paths.map(q).join(', ')}],`;
-  if (one.length <= 100) return [one];
-  return ['    paths: [', ...paths.map((p) => `      ${q(p)},`), '    ],'];
+  return fieldLines('paths', paths);
+}
+
+/** An entry body without its traced input fields (`paths`, `lists`, `names`, single- or multi-line) and its `pathsOrigin`. */
+function withoutTracedFields(body: readonly string[]): string[] {
+  const kept: string[] = [];
+  for (let i = 0; i < body.length; i++) {
+    const l = body[i];
+    if (TRACED_FIELDS.some((f) => l.startsWith(`    ${f}:`))) {
+      if (!l.trimEnd().endsWith('],')) while (i < body.length && body[i] !== '    ],') i++;
+      continue;
+    }
+    if (l.startsWith('    pathsOrigin:')) continue;
+    kept.push(l);
+  }
+  return kept;
 }
 
 /** The lock text with a TRACED `paths` and `pathsOrigin` removed from one entry; a declared set, or none, leaves the text as it was, unless `replaceDeclared` removes a declared set too. */
@@ -1063,7 +1208,7 @@ export function lockWithoutTracedPaths(
   const e = entries.find((x) => x.id === id);
   if (e === undefined || e.pathsOrigin === undefined) return lockText;
   if (e.pathsOrigin !== TRACED_ORIGIN && !opts.replaceDeclared) return lockText;
-  delete e.paths;
+  for (const f of TRACED_FIELDS) delete e[f];
   delete e.pathsOrigin;
   return `${JSON.stringify(entries, null, 2)}\n`;
 }
@@ -1083,17 +1228,7 @@ export function manifestWithoutTracedPaths(
   const origin = body.find((l) => l.startsWith('    pathsOrigin:'));
   if (origin === undefined) return text;
   if (origin !== `    pathsOrigin: ${q(TRACED_ORIGIN)},` && !opts.replaceDeclared) return text;
-  const kept: string[] = [];
-  for (let i = 0; i < body.length; i++) {
-    const l = body[i];
-    if (l.startsWith('    paths:')) {
-      if (!l.trimEnd().endsWith('],')) while (i < body.length && body[i] !== '    ],') i++;
-      continue;
-    }
-    if (l.startsWith('    pathsOrigin:')) continue;
-    kept.push(l);
-  }
-  return [...lines.slice(0, a), ...kept, ...lines.slice(b + 1)].join('\n');
+  return [...lines.slice(0, a), ...withoutTracedFields(body), ...lines.slice(b + 1)].join('\n');
 }
 
 const BEGIN_RE = /^ {2}\/\/ >>> gen-manifest: region \d+$/;
@@ -1120,7 +1255,7 @@ export function manifestWithPaths(
   text: string,
   id: string,
   paths: string[],
-  opts: { replaceDeclared?: boolean } = {}
+  opts: { replaceDeclared?: boolean } & TracedInputs = {}
 ): string {
   const lines = text.split('\n');
   const spans = entrySpans(lines);
@@ -1134,20 +1269,18 @@ export function manifestWithPaths(
     throw new Error(
       `${id}: its paths carry ${body[originAt].trim()}; a hand-declared set is judged by trace-honest.ts, never overwritten by a trace unless --replace-declared asks for it`
     );
-  // Drop an earlier traced paths block.
-  const kept: string[] = [];
-  for (let i = 0; i < body.length; i++) {
-    const l = body[i];
-    if (l.startsWith('    paths:')) {
-      if (!l.trimEnd().endsWith('],')) while (i < body.length && body[i] !== '    ],') i++;
-      continue;
-    }
-    if (l.startsWith('    pathsOrigin:')) continue;
-    kept.push(l);
-  }
+  // Drop an earlier traced block (paths, lists, names, pathsOrigin).
+  const kept = withoutTracedFields(body);
   const leavesAt = kept.findIndex((l) => l.startsWith('    leaves:'));
   const insertAt = leavesAt >= 0 ? leavesAt : kept.length - 1;
-  kept.splice(insertAt, 0, ...pathsLines(paths), `    pathsOrigin: ${q(TRACED_ORIGIN)},`);
+  kept.splice(
+    insertAt,
+    0,
+    ...tracedFields(paths, { lists: opts.lists, names: opts.names }).flatMap(([k, v]) =>
+      fieldLines(k, v)
+    ),
+    `    pathsOrigin: ${q(TRACED_ORIGIN)},`
+  );
   const spliced = [...lines.slice(0, a), ...kept, ...lines.slice(b + 1)];
   return reemitRegions(spliced, idLine);
 }
@@ -1454,18 +1587,37 @@ export function writeResult(
   } else {
     fs.writeFileSync(
       mPath,
-      manifestWithPaths(fs.readFileSync(mPath, 'utf8'), r.id, r.verdict.paths, opts)
+      manifestWithPaths(fs.readFileSync(mPath, 'utf8'), r.id, r.verdict.paths, {
+        ...opts,
+        lists: r.verdict.lists,
+        names: r.verdict.names,
+      })
     );
-    fs.writeFileSync(lPath, lockWithPaths(fs.readFileSync(lPath, 'utf8'), r.id, r.verdict.paths));
+    fs.writeFileSync(
+      lPath,
+      lockWithPaths(fs.readFileSync(lPath, 'utf8'), r.id, r.verdict.paths, {
+        lists: r.verdict.lists,
+        names: r.verdict.names,
+      })
+    );
   }
   rows[r.id] = row;
   fs.writeFileSync(ledgerPath, renderLedger(rows));
 }
 
+/** One stdout line per gate with paths: `<id>\t<paths space-joined>`, then `\tlists=<json>` and `\tnames=<json>` when present (JSON, so the root's '' stays visible). */
+export function verdictLine(id: string, v: Extract<Verdict, { kind: 'paths' }>): string {
+  return [
+    `${id}\t${v.paths.join(' ')}`,
+    ...(v.lists !== undefined ? [`lists=${JSON.stringify(v.lists)}`] : []),
+    ...(v.names !== undefined ? [`names=${JSON.stringify(v.names)}`] : []),
+  ].join('\t');
+}
+
 /** Why --all-whole-tree leaves an entry untraced, or undefined when it traces it. */
 export function untracedReason(e: LockEntry, exempt: Set<string>): string | undefined {
-  if ((e.paths ?? []).length > 0 && e.pathsOrigin !== TRACED_ORIGIN)
-    return 'declares paths already';
+  const scoped = TRACED_FIELDS.some((f) => (e[f] ?? []).length > 0);
+  if (scoped && e.pathsOrigin !== TRACED_ORIGIN) return 'declares paths already';
   if (!e.gate)
     return 'not a gate: a prerequisite or an operator command, never judged, so never carried';
   if (exempt.has(e.id))
@@ -1707,7 +1859,7 @@ async function main(argv: string[]): Promise<number> {
     );
   } else {
     for (const r of paths)
-      if (r.verdict.kind === 'paths') console.log(`${r.id}\t${r.verdict.paths.join(' ')}`);
+      if (r.verdict.kind === 'paths') console.log(verdictLine(r.id, r.verdict));
   }
   for (const [prefix, n] of ignored) {
     const why = IGNORED_PREFIXES.find((x) => x.prefix === prefix)?.why ?? '';
@@ -1834,8 +1986,11 @@ async function selftest(): Promise<number> {
   });
   const v1 = fold(attribute(mk(['a/one.txt', 'a/two.txt'], ['c/listed']), view), view);
   check(
-    v1.kind === 'paths' && v1.paths.join(',') === 'a/one.txt,a/two.txt,c/listed/**',
-    `CONTROL: two files read plus one listed directory give exactly those (got ${v1.kind === 'paths' ? v1.paths.join(',') : v1.reason})`
+    v1.kind === 'paths' &&
+      v1.paths.join(',') === 'a/one.txt,a/two.txt' &&
+      JSON.stringify(v1.lists) === '["c/listed"]' &&
+      v1.names === undefined,
+    `CONTROL: two files read plus one listed directory give those two paths and lists: ['c/listed'], not c/listed/** (got ${v1.kind === 'paths' ? `${v1.paths.join(',')} lists=${JSON.stringify(v1.lists)}` : v1.reason})`
   );
   const v2 = fold(attribute(mk(['b/x.ts', 'b/y.ts', 'b/z.ts']), view), view);
   check(
@@ -1973,14 +2128,20 @@ async function selftest(): Promise<number> {
   );
   check(
     classifyGitArgv(['git', '-C', 'x', 'rev-parse', '--show-toplevel']) === 'discovery' &&
-      classifyGitArgv(['/usr/bin/git', 'ls-files', '-z']) === 'index' &&
+      classifyGitArgv(['/usr/bin/git', 'ls-files', '-z']) === 'names' &&
+      classifyGitArgv(['git', 'grep', 'x']) === 'index' &&
       classifyGitArgv(['git', 'log', '-1']) === 'history' &&
       classifyGitArgv(['git', 'frobnicate']) === 'history' &&
       classifyGitArgv(['node', 'x']) === 'discovery',
-    'git argv classes: locate, index, history, unknown-is-history, not-git'
+    'git argv classes: locate, names, index, history, unknown-is-history, not-git'
   );
   const v5 = fold(attribute(mk(['a/one.txt'], ['']), view), view);
-  check(v5.kind === 'whole-tree' && v5.reason.includes('root'), 'listing the root is whole-tree');
+  check(
+    v5.kind === 'paths' &&
+      v5.paths.join(',') === 'a/one.txt' &&
+      JSON.stringify(v5.lists) === '[""]',
+    "listing the root is lists: [''], no longer whole-tree"
+  );
   const v6 = fold(attribute(mk(view.files.filter((f) => f.startsWith('e/'))), view), view);
   check(
     v6.kind === 'whole-tree' && v6.reason.includes('%'),
@@ -2003,7 +2164,7 @@ async function selftest(): Promise<number> {
   );
   const vp = fold(attribute(mk(['a/one.txt'], ['private']), view), view);
   check(
-    vp.kind === 'paths' && vp.paths.includes('private/**'),
+    vp.kind === 'paths' && vp.lists?.includes('private') === true,
     'a listing of a directory holding only gitlinks is a tracked listing, not build output'
   );
   const v10 = fold(attribute(mk(['private/sub/go.mod', 'a/one.txt']), view), view);
@@ -2013,13 +2174,21 @@ async function selftest(): Promise<number> {
       !v10.paths.includes('private/sub/**'),
     'a read inside a submodule names the gitlink'
   );
+  // Absolute paths, not mk(): mk prefixes /r/, which once turned '/usr/lib/x.so' into an in-root path and left this control testing nothing out of the repository.
   const v11 = fold(
-    attribute(mk(['a/one.txt', '.claude/hooks/profile/bash_env.sh', '/usr/lib/x.so']), view),
+    attribute(
+      {
+        files: new Set(['/r/a/one.txt', '/r/.claude/hooks/profile/bash_env.sh', '/usr/lib/x.so']),
+        listed: new Set(['/usr/lib']),
+        execs: [],
+      },
+      view
+    ),
     view
   );
   check(
-    v11.kind === 'paths' && v11.paths.join(',') === 'a/one.txt',
-    'profiler hook and out-of-repo reads are not inputs'
+    v11.kind === 'paths' && v11.paths.join(',') === 'a/one.txt' && v11.lists === undefined,
+    'profiler hook and out-of-repo reads and listings are not inputs'
   );
 
   // W2.3: discovery is not history, history is still history, the network is its own verdict.
@@ -2036,11 +2205,66 @@ async function selftest(): Promise<number> {
   );
   const vls = fold(attribute(lsAcc, view), view);
   check(
-    vls.kind === 'whole-tree' &&
-      vls.reason.includes('git index') &&
-      !vls.reason.includes('history') &&
-      !vls.reason.includes('.git/objects'),
-    `CONTROL: git ls-files plus access(.git/objects), .git/refs and objects/info/alternates is the index, not history (got ${vls.kind === 'whole-tree' ? vls.reason : vls.kind})`
+    vls.kind === 'paths' &&
+      vls.paths.join(',') === 'a/one.txt' &&
+      JSON.stringify(vls.names) === '["**"]',
+    `CONTROL: git ls-files -z plus access(.git/objects), .git/refs, objects/info/alternates and the .git/index it reads is names: ['**'], not history (got ${vls.kind === 'whole-tree' ? vls.reason : `${vls.paths} names=${JSON.stringify(vls.names)}`})`
+  );
+  const tAcc = mk(['a/one.txt', '.git/objects', '.git/index']);
+  tAcc.execs.push({ argv: ['git', 'ls-files', '-t'], cwd: '/r' });
+  const vt2 = fold(attribute(tAcc, view), view);
+  check(
+    vt2.kind === 'whole-tree' &&
+      vt2.reason.includes('git index') &&
+      !vt2.reason.includes('history'),
+    'an ls-files flag outside the name-only set (-t) stays the whole-tree index, still not history'
+  );
+  const bareIdx = fold(attribute(mk(['a/one.txt', '.git/index']), view), view);
+  check(
+    bareIdx.kind === 'whole-tree' && bareIdx.reason.includes('.git/index'),
+    'a .git/index read no name-only ls-files explains is the whole-tree index'
+  );
+  const mixIdx = mk(['a/one.txt', '.git/index']);
+  mixIdx.execs.push(
+    { argv: ['git', 'ls-files', '-z'], cwd: '/r' },
+    { argv: ['git', 'check-attr', 'x', '--', 'a'], cwd: '/r' }
+  );
+  const vmix = fold(attribute(mixIdx, view), view);
+  check(
+    vmix.kind === 'whole-tree' && vmix.reason.includes('check-attr'),
+    'a name-only ls-files beside another index command is still whole-tree'
+  );
+  check(
+    classifyGitArgv(['git', 'ls-files', '-z', '--cached', '--others', '--exclude-standard']) ===
+      'names' &&
+      classifyGitArgv(['git', 'ls-files', '-co', '-x', '*.md', '--', 'a']) === 'names' &&
+      classifyGitArgv(['git', 'ls-files', '--exclude-from=.gitignore', 'a/']) === 'names' &&
+      classifyGitArgv(['git', 'ls-files', '-t']) === 'index' &&
+      classifyGitArgv(['git', 'ls-files', '--with-tree=HEAD']) === 'history',
+    'ls-files with only name-shaping flags (and pathspecs) is names; an unknown flag is index; --with-tree is history'
+  );
+  const names30 = mk(['a/one.txt'], ['e']);
+  names30.execs.push({ argv: ['git', 'ls-files', '-z'], cwd: '/r' });
+  const v30 = fold(attribute(names30, view), view);
+  check(
+    v30.kind === 'paths' &&
+      v30.paths.join(',') === 'a/one.txt' &&
+      JSON.stringify(v30.lists) === '["e"]' &&
+      JSON.stringify(v30.names) === '["**"]' &&
+      v30.coveragePct < 30,
+    `the 30% line weighs content globs only: lists of a 40-file directory and names ['**'] stay under it (got ${v30.kind === 'paths' ? v30.coveragePct : v30.reason})`
+  );
+  const vunder = fold(attribute(mk(['b/x.ts', 'b/y.ts', 'b/z.ts'], ['b']), view), view);
+  check(
+    vunder.kind === 'paths' && vunder.paths.join(',') === 'b/**' && vunder.lists === undefined,
+    'a listing inside a content dir glob is dropped: b/** already moves with every name under b'
+  );
+  const vonly = fold(attribute(mk([], ['c/listed']), view), view);
+  check(
+    vonly.kind === 'paths' &&
+      vonly.paths.length === 0 &&
+      JSON.stringify(vonly.lists) === '["c/listed"]',
+    'a gate that only lists a directory is scoped by lists alone, with no paths'
   );
   const logAcc = mk(['a/one.txt', '.git/objects', '.git/objects/pack/p.idx']);
   logAcc.execs.push({ argv: ['git', 'log', '-1'], cwd: '/r' });
@@ -2114,9 +2338,9 @@ async function selftest(): Promise<number> {
       classifyGitArgv(['git', 'ls-files', '-m']) === 'content' &&
       classifyGitArgv(['git', 'ls-files', '-d']) === 'content' &&
       classifyGitArgv(['git', 'ls-files', '-sz']) === 'content' &&
-      classifyGitArgv(['git', 'ls-files', '-z', '--cached', '--others']) === 'index' &&
-      classifyGitArgv(['git', 'ls-files', '-co']) === 'index',
-    'ls-files with -s|--stage|--eol|--format|-m|-d (bundled too) is content; name-only flags stay index'
+      classifyGitArgv(['git', 'ls-files', '-z', '--cached', '--others']) === 'names' &&
+      classifyGitArgv(['git', 'ls-files', '-co']) === 'names',
+    'ls-files with -s|--stage|--eol|--format|-m|-d (bundled too) is content; name-only flags are names'
   );
   const lsS = mk(['a/one.txt']);
   lsS.execs.push({ argv: ['git', 'ls-files', '-s'], cwd: '/r' });
@@ -2319,6 +2543,64 @@ async function selftest(): Promise<number> {
       dl[0].pathsOrigin === undefined,
     '--replace-declared with a whole-tree verdict removes the declared set from the manifest and the lock'
   );
+  // W2.5: the name-shaped fields are written beside paths, in gate-spec.ts order, and leave with them.
+  const mL = manifestWithPaths(manifest, 'g:b', ['a/one.txt'], {
+    lists: ['', '.ci'],
+    names: ['**'],
+  });
+  const bL = mL.split("    id: 'g:b',")[1].split('  },')[0].split('\n');
+  const at = (prefix: string): number => bL.findIndex((l) => l.startsWith(prefix));
+  check(
+    bL[at('    lists:')] === "    lists: ['', '.ci']," &&
+      bL[at('    names:')] === "    names: ['**']," &&
+      at('    paths:') < at('    lists:') &&
+      at('    lists:') < at('    names:') &&
+      at('    names:') < at('    pathsOrigin:') &&
+      at('    pathsOrigin:') < at('    leaves:'),
+    'the manifest gains paths, lists, names, pathsOrigin in that order, before leaves'
+  );
+  const mNoPaths = manifestWithPaths(manifest, 'g:b', [], { lists: ['c/listed'] });
+  const bN = mNoPaths.split("    id: 'g:b',")[1].split('  },')[0];
+  check(
+    !bN.includes('paths:') && bN.includes("    lists: ['c/listed'],"),
+    'an empty paths is omitted, never written as []'
+  );
+  const mRe = manifestWithPaths(mL, 'g:b', ['b/**']).split("    id: 'g:b',")[1].split('  },')[0];
+  const mStrip = manifestWithoutTracedPaths(mL, 'g:b').split("    id: 'g:b',")[1].split('  },')[0];
+  check(
+    !mRe.includes('lists:') &&
+      !mRe.includes('names:') &&
+      !mStrip.includes('lists:') &&
+      !mStrip.includes('names:') &&
+      !mStrip.includes('paths'),
+    'a re-trace or a whole-tree strip removes an earlier lists and names'
+  );
+  const lockL = lockWithPaths(
+    `${JSON.stringify([{ id: 'g:a', run: 'r', gate: true, leaves: ['x'], ci: {} }], null, 2)}\n`,
+    'g:a',
+    [],
+    { lists: [''], names: ['**'] }
+  );
+  const lockLStripped = JSON.parse(lockWithoutTracedPaths(lockL, 'g:a')) as LockEntry[];
+  check(
+    Object.keys(JSON.parse(lockL)[0]).join(',') ===
+      'id,run,gate,lists,names,pathsOrigin,leaves,ci' &&
+      lockLStripped[0].lists === undefined &&
+      lockLStripped[0].names === undefined,
+    'the lock gains lists and names in manifest order (no empty paths) and loses them on a strip'
+  );
+  check(
+    verdictLine('g', {
+      kind: 'paths',
+      paths: ['a.txt'],
+      lists: ['', '.ci'],
+      names: ['**'],
+      reads: 1,
+      listed: 2,
+      coveragePct: 1,
+    }) === 'g\ta.txt\tlists=["",".ci"]\tnames=["**"]',
+    "the stdout line carries lists and names as JSON, so the root's '' stays visible"
+  );
   const long = pathsLines(Array.from({ length: 8 }, (_, i) => `packages/www/src/thing-${i}.ts`));
   check(
     long[0] === '    paths: [' && long.at(-1) === '    ],',
@@ -2407,6 +2689,56 @@ async function selftest(): Promise<number> {
         sep.straceNotes.join('|') === 'strace: wrapper note',
       `strace's own lines are kept apart from the gate's stdout and stderr (output ${JSON.stringify(sep.outputTail)}, notes ${JSON.stringify(sep.straceNotes)})`
     );
+    // W2.5 accept fixture: `python3 -m` from the root, reading two tracked files, gives those two plus lists ['', '.ci']: the root and .ci are sys.path entries Python lists and probes, not content.
+    const py = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-py-'));
+    const pyFiles: Record<string, string> = {
+      '.ci/tool.py': "open('conf/x.txt').read()\n",
+      '.ci/other.py': 'pass\n',
+      'conf/x.txt': 'x',
+      'src/keep.txt': 'k',
+    };
+    for (let i = 0; i < 40; i++) pyFiles[`filler/f${i}.txt`] = 'f';
+    for (const [rel, text] of Object.entries(pyFiles)) {
+      fs.mkdirSync(path.dirname(path.join(py, rel)), { recursive: true });
+      fs.writeFileSync(path.join(py, rel), text);
+    }
+    const gitEnv = {
+      ...process.env,
+      GIT_AUTHOR_NAME: 't',
+      GIT_AUTHOR_EMAIL: 't@t',
+      GIT_COMMITTER_NAME: 't',
+      GIT_COMMITTER_EMAIL: 't@t',
+    };
+    for (const a of [
+      ['init', '-q'],
+      ['add', '-A'],
+      ['commit', '-qm', 'fixture'],
+    ])
+      spawnSync('git', a, { cwd: py, env: gitEnv });
+    const pyView = repoView(fs.realpathSync(py));
+    const pyRun = await traceCommand('PYTHONPATH=.ci python3 -m tool', pyView.root);
+    const pyV = verdictOf(attribute(pyRun.access, pyView), pyView, pyRun.exit);
+    check(
+      pyV.kind === 'paths' &&
+        pyV.paths.join(',') === '.ci/tool.py,conf/x.txt' &&
+        JSON.stringify(pyV.lists) === '["",".ci"]' &&
+        pyV.names === undefined,
+      `python3 -m from the root reading 2 files gives those 2 plus lists ['', '.ci'] (got ${pyV.kind === 'paths' ? `${pyV.paths.join(',')} lists=${JSON.stringify(pyV.lists)}` : pyV.reason})`
+    );
+    // Missed lookups: inside a tracked directory its nearest existing tracked ancestor is listed; under untracked node_modules nothing is.
+    fs.mkdirSync(path.join(pyView.root, 'node_modules', 'dep'), { recursive: true });
+    const probeRun = await traceCommand(
+      'test -e src/nope.txt; test -e src/a/b/c.txt; test -e node_modules/dep/zz.js; test -e conf/node_modules/q/i.js; cat conf/x.txt >/dev/null',
+      pyView.root
+    );
+    const probeV = verdictOf(attribute(probeRun.access, pyView), pyView, probeRun.exit);
+    check(
+      probeV.kind === 'paths' &&
+        probeV.paths.join(',') === 'conf/x.txt' &&
+        JSON.stringify(probeV.lists) === '["src"]',
+      `a missed lookup inside tracked src (and src/a/b beneath it) lists src; one under node_modules, existing or not, lists nothing (got ${probeV.kind === 'paths' ? `${probeV.paths.join(',')} lists=${JSON.stringify(probeV.lists)}` : probeV.reason})`
+    );
+    fs.rmSync(py, { recursive: true, force: true });
     // A real connect: loopback is refused at once, a TEST-NET-1 peer (RFC 5737, documentation only) is cut by the timeout.
     const net = await traceCommand(
       ': </dev/tcp/127.0.0.1/9 2>/dev/null; timeout 1 bash -c ": </dev/tcp/192.0.2.1/9" 2>/dev/null; true',
