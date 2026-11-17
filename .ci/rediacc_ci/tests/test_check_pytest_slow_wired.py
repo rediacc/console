@@ -2,11 +2,12 @@
 
 Wired in `check_pytest.slow_ratchet`, called after the verdict on the full, sharded and impact paths. The fixture junit is written the way pytest writes it (a recorded `time`), so no test here sleeps 11 s.
 
-THE PLANTED DEFECT: make `slow_ratchet` return 0 unconditionally (the wiring disabled) and the first test reds, because the 11 s case goes green; the 2 s control and the listed case stay green either way, so they cannot be what makes the first one pass.
+THE PLANTED DEFECT: make `slow_ratchet` return 0 unconditionally (the wiring disabled) and every 11 s case reds (the full, the shard and the impact path each have one), and so does the no-junit case, because it goes green too; the 2 s control and the listed case stay green either way, so they cannot be what makes those pass.
 """
 
 import json
 import pathlib
+import types
 
 import pytest
 
@@ -35,10 +36,10 @@ def gate(tmp_path: pathlib.Path, monkeypatch):
     return tmp_path, monkeypatch, emitted, allow
 
 
-def _run_writing(gate, node: str, seconds: float) -> int:
+def _run_writing(gate, node: str, seconds: float, *, shard: bool = False, impact: bool = False) -> int:
     root, monkeypatch, _emitted, _allow = gate
     classname, name = node.split("::")
-    junit = check_pytest.junit_xml_path(root)
+    junit = check_pytest.junit_xml_path(root, shard_index=1 if shard else None)
 
     def writes(*_a, **_k):
         junit.write_text(
@@ -50,6 +51,23 @@ def _run_writing(gate, node: str, seconds: float) -> int:
         return 0, "1 passed\n"
 
     monkeypatch.setattr(check_pytest, "run_pytest", writes)
+    if impact:
+        selection = types.SimpleNamespace(
+            files=["t/test_one.py"], total=1, why={}, reason="fixture", digest="d"
+        )
+        return check_pytest.run_impact("pytest", root, selection)
+    if shard:
+        (root / "shard.json").write_text(
+            json.dumps(
+                {
+                    "lane": "quality-pytest",
+                    "of": 1,
+                    "legs": [{"index": 1, "ids": ["pytest:t/test_one.py"]}],
+                }
+            ),
+            encoding="utf-8",
+        )
+        return check_pytest.main(["--shard-manifest", "shard.json", "--shard", "1/1"])
     return check_pytest.main([])
 
 
@@ -76,3 +94,21 @@ def test_a_run_that_wrote_no_junit_cannot_go_green_past_the_ratchet(gate) -> Non
     _root, monkeypatch, _emitted, _allow = gate
     monkeypatch.setattr(check_pytest, "run_pytest", lambda *_a, **_k: (0, "1 passed\n"))
     assert check_pytest.main([]) == check_pytest.EXIT_FAIL
+
+
+def test_a_sharded_leg_with_an_eleven_second_test_fails_the_gate(gate) -> None:
+    assert _run_writing(gate, SLOW, 11.0, shard=True) == check_pytest.EXIT_FAIL
+    assert gate[2] == ["pytest-slow:%s" % SLOW]
+
+
+def test_control_a_sharded_leg_with_a_two_second_test_passes(gate) -> None:
+    assert _run_writing(gate, SLOW, 2.0, shard=True) == check_pytest.EXIT_OK
+
+
+def test_an_impact_run_with_an_eleven_second_test_fails_the_gate(gate) -> None:
+    assert _run_writing(gate, SLOW, 11.0, impact=True) == check_pytest.EXIT_FAIL
+    assert gate[2] == ["pytest-slow:%s" % SLOW]
+
+
+def test_control_an_impact_run_with_a_two_second_test_passes(gate) -> None:
+    assert _run_writing(gate, SLOW, 2.0, impact=True) == check_pytest.EXIT_OK
