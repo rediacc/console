@@ -1211,8 +1211,18 @@ def _mentions_worktree(text):
     return "worktree" in LEASE_ROOT_TEXT.sub(" ", text)
 
 
+def _prose_mention(tok):
+    """Is `tok` a whole string literal that reads as a sentence (`_prose_literal`) with no placeholder a format could fill? Such a literal runs nothing, so it licenses no argv fill (#29754962).
+
+    An edited test-block_unverified_push.py was refused at rc 2 (measured 2026-11-17): its case labels ("an uncommitted worktree edit that DROPS an entry ...") were its only `worktree` outside a comment, and they licensed `_filled_sequences` to fill the unknown first argument of `g(work, "add", "-A")` with the verb. A literal that can be a piece of the command line still licenses it: a bare `"worktree"` argv word (one word), `"git worktree "` (git), one holding `add` or another judged verb, `=`, a shell mark, or a `%s`/`{}` hole. An f-string's text piece is not judged here: it sits beside a hole by construction.
+    """
+    if tok.type != tokenize.STRING or PLACEHOLDER.search(tok.string):
+        return False
+    return _prose_literal(tok.string)
+
+
 def _code_mentions(code):
-    """Does Python `code` name `worktree` outside a comment (a string, a name, an attribute)? A comment runs nothing, so it does not license filling an unknown argv element with the verb (#a904d9f4: `# ... worktree ...` above `g(root, "add", "-A")` filled `["git", *args]` into `git worktree add`). Code that does not tokenize reads as naming it, the over-reading direction."""
+    """Does Python `code` name `worktree` outside a comment and outside a prose string (a string that can be a command piece, a name, an attribute)? A comment runs nothing, so it does not license filling an unknown argv element with the verb (#a904d9f4: `# ... worktree ...` above `g(root, "add", "-A")` filled `["git", *args]` into `git worktree add`), and neither does a sentence in a string (`_prose_mention`, #29754962). Code that does not tokenize reads as naming it, the over-reading direction."""
     if not _mentions_worktree(code):
         return False
     # A file name is masked inside a string only: a Python NAME or attribute spelled like one (`worktree.lock(...)`, `worktree.log`) is still a mention of the module (review 599bc50b.2).
@@ -1222,7 +1232,7 @@ def _code_mentions(code):
                 tok.string if tok.type == tokenize.NAME else _mask_file_names(tok.string)
             )
             for tok in tokenize.generate_tokens(io.StringIO(code).readline)
-            if tok.type != tokenize.COMMENT
+            if tok.type != tokenize.COMMENT and not _prose_mention(tok)
         )
     except (tokenize.TokenError, SyntaxError, ValueError):
         return True

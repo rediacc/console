@@ -165,14 +165,14 @@ REFUSED += [
     ),
 ]
 
-# #29754962: a sentence in a STRING runs nothing either, so it licenses no argv fill. An edited test-block_unverified_push.py was refused at rc 2: its case labels ("an uncommitted worktree edit that DROPS an entry ...") let `["git", "-C", d, *a]` fill to the verb. The controls keep a literal that can be a piece of the command line (a bare argv word, the phrase itself), and each is still refused.
+# #29754962: a sentence in a STRING runs nothing either, so it licenses no argv fill. An edited test-block_unverified_push.py was refused at rc 2: its case labels ("an uncommitted worktree edit that DROPS an entry ...") licensed `_filled_sequences` to fill the unknown first argument of the helper call `git(work, "add", "-A")` with `worktree`, which then sat beside `add`. The controls keep a literal that can be a piece of the command line (a bare argv word, the phrase itself), and each is still refused.
 PROSE_LABEL = 'CASES = [(0, "an uncommitted worktree edit that DROPS an entry does not change the verdict")]\n'
 PROSE_GIT = (
     "import subprocess\nimport sys\n\n\n"
     "def git(d, *a):\n"
     '    return subprocess.run(["git", "-C", d, *a], check=False)\n\n\n'
     + PROSE_LABEL
-    + 'git(sys.argv[1], "status")\n'
+    + 'git(sys.argv[1], "add", "-A")\n'
 )
 STRING_LICENSE = {
     "label_verb.py": PROSE_GIT
