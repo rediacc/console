@@ -63,7 +63,7 @@ import xml.etree.ElementTree as ET
 # is on sys.path. Everything after this line goes through rediacc_ci.paths.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from rediacc_ci import core_lease, log, paths, proc
+from rediacc_ci import core_lease, log, paths, proc, pytest_impact
 from rediacc_ci.controls import Controls
 from rediacc_ci.core import xml_trusted
 
@@ -1078,6 +1078,21 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
     c.check("HANG: and it reports the timeout rather than pretending", blocked.timed_out, True)
     c.check("HANG: its stdout is a string, never None", isinstance(blocked.stdout, str), True)
 
+    # -- B5 (PLAN-ciquick-cpu): impact locally, the whole suite in CI
+    c.check("B5: --full asks for the whole suite", wants_full(["--full"], {}), "--full")
+    c.check("B5: CI=true asks for the whole suite", wants_full([], {"CI": "true"}), "CI=true")
+    c.check(
+        "CONTROL: a local run with neither may use an impact selection", wants_full([], {}), None
+    )
+    c.check("CONTROL: CI=false is not CI", wants_full([], {"CI": "false"}), None)
+    c.check("B5: --full is a known flag, never refused", unknown_args(["--full"]), [])
+    c.check("B5: the impact floor is two thirds of the smoke corpus", impact_floor(300), 200)
+    c.check(
+        "CONTROL: the impact floor is never 0, so an empty selection cannot pass 0 >= 0",
+        impact_floor(0),
+        1,
+    )
+
     return c.report()
 
 
@@ -1163,7 +1178,11 @@ def shard_file_relpaths(ids: list[str]) -> list[str]:
 USAGE = """\
 check:ci-pytest -- run the Python test corpus and refuse a partial pass.
 
-  check_pytest.py              judge the whole suite
+  check_pytest.py              judge the test files the change set since the last
+                                push can reach (pytest_impact.py), or the whole
+                                suite when that answer is unknown; under CI=true
+                                always the whole suite
+  check_pytest.py --full       judge the whole suite
   check_pytest.py --shard-manifest <path> --shard i/N
                                 judge only that leg's files, from a committed
                                 shard manifest (both flags together, or neither)
@@ -1192,7 +1211,50 @@ def wants_help(argv: list[str]) -> bool:
     return "--help" in argv or "-h" in argv
 
 
-FLAGS_ALONE = ("--help", "-h", "--selftest")
+FLAGS_ALONE = ("--help", "-h", "--selftest", "--full")
+
+# --------------------------------------------------------------------------- B5 (agent/plans/PLAN-ciquick-cpu.md): impact locally, the whole suite in CI.
+#
+# A local unsharded run judges only the test files the change set can reach (`pytest_impact.select_for_tree`); `--full`, `CI=true`, or any `--shard` leg judges the whole suite. CI passes `--shard` on every leg and sets `CI=true`, so it is the full-suite backstop by two independent routes. Whatever ran, the scope lands in SCOPE_RELPATH and in one `pytest-scope:` line, so the receipt and its reader can tell an impact green from a full one.
+SCOPE_RELPATH = pathlib.PurePosixPath(".ci/cache/quality-pytest/scope.json")
+
+
+def wants_full(argv: list[str], env: dict[str, str] | None = None) -> str | None:
+    """Why this run must judge the whole suite, or None when an impact selection may be used."""
+    env = os.environ if env is None else env
+    if "--full" in argv:
+        return "--full"
+    if (env.get("CI") or "").lower() in ("true", "1"):
+        return "CI=%s" % env.get("CI")
+    return None
+
+
+def impact_floor(smoke_corpus: int) -> int:
+    """Floor 1 for an impact run: two thirds of the smoke floor's own test functions, never below 1. The smoke files are in every impact selection, so a selection that collapsed below this has lost the floor it is built on; the same two-thirds ratio MIN_TESTS holds against the whole corpus."""
+    return max(1, smoke_corpus * 2 // 3)
+
+
+def write_scope(root: pathlib.Path, record: dict) -> None:
+    """The scope of this run, for the receipt. Written to the `.ci/cache` scratch root like the junit beside it."""
+    target = root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8")
+    print(
+        "pytest-scope: %s files=%s collected=%s map=%s"
+        % (
+            record["pytestScope"],
+            record.get("selectedFiles", "all"),
+            record.get("collected"),
+            (record.get("mapDigest") or "-")[:12],
+        )
+    )
+
+
+def select_impact(root: pathlib.Path):
+    """The impact selection for the real tree. A seam, so a test drives main() without a git tree."""
+    return pytest_impact.select_for_tree(root)
+
+
 FLAGS_WITH_VALUE = ("--shard-manifest", "--shard")
 
 
@@ -1302,6 +1364,9 @@ def main(argv: list[str]) -> int:
         )
         return EXIT_FAIL
 
+    # A scope record is this run's or nothing: a red or killed run must not leave the receipt reading the previous green's scope.
+    (root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name).unlink(missing_ok=True)
+
     if shard is not None:
         index, of, relpaths = shard
         files = [root / rp for rp in relpaths]
@@ -1341,6 +1406,16 @@ def main(argv: list[str]) -> int:
             print("\n%s✗%s %s" % (RED, NC, problem), file=sys.stderr)
             emit_junit_findings(junit_path)
             return EXIT_FAIL
+        write_scope(
+            root,
+            {
+                "pytestScope": "full",
+                "reason": "--shard %d/%d" % (index, of),
+                "selectedFiles": len(files),
+                "collected": collected,
+                "mapDigest": None,
+            },
+        )
         print(
             "%s✓%s %d test(s) collected and passed (shard %d/%d, corpus %d, floor %d)"
             % (GREEN, NC, collected or 0, index, of, corpus, leg_min_tests)
@@ -1370,6 +1445,16 @@ def main(argv: list[str]) -> int:
             )
             return EXIT_FAIL
     print("info: corpus %d across %d root(s) (floor %d)" % (corpus, len(per_root), MIN_TESTS))
+
+    full_reason = wants_full(argv)
+    selection = None
+    if full_reason is None:
+        selection = select_impact(root)
+        print(selection.line())
+        if selection.scope != "impact":
+            full_reason = "pytest-impact: %s" % selection.reason
+    if selection is not None and selection.scope == "impact":
+        return run_impact(pytest_bin, root, selection)
 
     # T1.6: the parent directory is created here rather than left to pytest's junitxml plugin -- some releases refuse to write into a missing directory, and a gate that will not `mkdir -p` its own output path is a worse failure mode than the run it is judging.
     junit_path = junit_xml_path(root)
@@ -1404,9 +1489,84 @@ def main(argv: list[str]) -> int:
         emit_junit_findings(junit_path)
         return EXIT_FAIL
 
+    write_scope(
+        root,
+        {
+            "pytestScope": "full",
+            "reason": full_reason,
+            "collected": collected,
+            "mapDigest": selection.digest if selection is not None else None,
+        },
+    )
     print(
         "%s✓%s %d test(s) collected and passed (corpus %d, floor %d)"
         % (GREEN, NC, collected or 0, corpus, MIN_TESTS)
+    )
+    return EXIT_OK
+
+
+def run_impact(pytest_bin: str, root: pathlib.Path, selection) -> int:
+    """Judge an impact selection with the same three floors as a full run, scaled to it: the corpus is the selected files' own test functions, collection must reach it, and floor 1 is `impact_floor` of the smoke files inside it."""
+    relpaths = list(selection.files)
+    files = [root / rp for rp in relpaths]
+    missing = [rp for rp, f in zip(relpaths, files, strict=True) if not f.is_file()]
+    if missing:
+        print(
+            "%s✗%s the impact selection names %s, which is not on disk" % (RED, NC, missing[0]),
+            file=sys.stderr,
+        )
+        return EXIT_FAIL
+    corpus = corpus_test_count_files(files)
+    smoke = [root / f for f in relpaths if selection.why.get(f) == "smoke"]
+    floor = impact_floor(corpus_test_count_files(smoke))
+    print(
+        "info: impact: %d of %d file(s), %d test function(s) on disk (floor %d)"
+        % (len(files), selection.total, corpus, floor)
+    )
+    junit_path = junit_xml_path(root)
+    (root / ".ci" / "cache" / "quality-pytest").mkdir(parents=True, exist_ok=True)
+    # The same stale-junit rule as the full run: a run that writes no junit emits no finding.
+    (root / ".ci" / "cache" / "quality-pytest" / junit_path.name).unlink(missing_ok=True)
+    returncode, out = run_pytest(
+        pytest_bin,
+        root,
+        ["-n", str(jobs()), "--dist", "loadgroup", "--junitxml", str(junit_path), *relpaths],
+        timeout_s=whole_corpus_timeout_s(),
+    )
+    collected, passed = parse_counts(out)
+    contract_skips = parse_contract_skips(out)
+    if contract_skips:
+        print(
+            "info: %d test(s) skipped under a proxy's declared cannot-run contract" % contract_skips
+        )
+    problem = verdict(
+        corpus=corpus,
+        collected=collected,
+        passed=passed,
+        returncode=returncode,
+        contract_skips=contract_skips,
+        min_tests=floor,
+        timeout_s=whole_corpus_timeout_s(),
+    )
+    if problem:
+        print(out, file=sys.stderr)
+        print("\n%s✗%s %s" % (RED, NC, problem), file=sys.stderr)
+        emit_junit_findings(junit_path)
+        return EXIT_FAIL
+    write_scope(
+        root,
+        {
+            "pytestScope": "impact",
+            "reason": selection.reason,
+            "selectedFiles": len(files),
+            "totalFiles": selection.total,
+            "collected": collected,
+            "mapDigest": selection.digest,
+        },
+    )
+    print(
+        "%s✓%s %d test(s) collected and passed (impact: %d of %d file(s), corpus %d, floor %d)"
+        % (GREEN, NC, collected or 0, len(files), selection.total, corpus, floor)
     )
     return EXIT_OK
 

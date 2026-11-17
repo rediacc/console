@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "readsOrigin": "empty until scripts/ci-runner/path-trace.ts (PLAN-ciquick-cpu W2.1) exists to derive it per test file; until then a read that no import and no literal reveals runs FULL only when no other test covers the changed file, and CI's full suite is the backstop for the rest",
+  "smoke": {
+    "derivedBy": "python3 .ci/rediacc_ci/pytest_impact.py --write-smoke --junit <junit.xml>",
+    "tests": 580,
+    "seconds": 29.8,
+    "unreached": [
+      ".claude/rediacc_hooks/model_invocation"
+    ],
+    "files": [
+      ".ci/rediacc_ci/tests/test_catalog_generate.py",
+      ".ci/rediacc_ci/tests/test_check_pytest_jobs.py",
+      ".ci/rediacc_ci/tests/test_ci_gh_retry.py",
+      ".ci/rediacc_ci/tests/test_core_pins.py",
+      ".ci/rediacc_ci/tests/test_core_run_verbs.py",
+      ".ci/rediacc_ci/tests/test_docker_cleanup_staging.py",
+      ".ci/rediacc_ci/tests/test_enterprise_workflow.py",
+      ".ci/rediacc_ci/tests/test_env_create_e2e_env.py",
+      ".ci/rediacc_ci/tests/test_lab_airgap.py",
+      ".ci/rediacc_ci/tests/test_legal_entity.py",
+      ".ci/rediacc_ci/tests/test_native.py",
+      ".ci/rediacc_ci/tests/test_pr_sync_epic_block.py",
+      ".ci/rediacc_ci/tests/test_private_renet_root_tests.py",
+      ".ci/rediacc_ci/tests/test_proxies_ops_host_check.py",
+      ".ci/rediacc_ci/tests/test_prsignals_pins.py",
+      ".ci/rediacc_ci/tests/test_release_renet_key_gate.py",
+      ".ci/rediacc_ci/tests/test_setup_install_tofu.py",
+      ".ci/rediacc_ci/tests/test_spikes_do_policy_spike.py",
+      ".claude/rediacc_hooks/tests/test_block_commit_meta_env_expand.py",
+      ".claude/rediacc_hooks/tests/test_hooks_wiring.py",
+      ".claude/rediacc_hooks/tests/test_runningscript_target.py"
+    ]
+  },
+  "reads": {}
+}
