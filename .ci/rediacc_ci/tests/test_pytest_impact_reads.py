@@ -423,10 +423,45 @@ def test_the_trace_file_is_json_the_derivation_reads():
         (".ci/policy/**", ".ci/policyx/one.json", False),
         ("docs/a.md", "docs/a.md", True),
         ("docs/a.md", "docs/a.mdx", False),
+        ("**", "anything/at/all.txt", True),
     ],
 )
 def test_glob_matches(glob, rel, want):
     assert pr.glob_matches(glob, rel) is want
+
+
+LANG = "packages/www/src/pages/[lang]"
+
+
+def test_a_tracked_name_holding_a_glob_character_folds_to_its_clean_ancestor():
+    """input-hash.ts hashes an entry with `[` in `lists` or `paths` to null, which never carries (the first full derivation, 2026-11-18, listed Astro's `[lang]` directories and nulled the whole check:ci-pytest entry)."""
+    assert pr._clean_dir(LANG + "/docs") == "packages/www/src/pages"
+    assert pr._clean_glob(LANG + "/index.astro") == "packages/www/src/pages/**"
+    assert pr._clean_glob(LANG + "/**") == "packages/www/src/pages/**"
+    assert pr._clean_glob("[x]/a.md") == "**", "a fold to the root is the whole tree"
+    assert pr._clean_dir("[x]") == ""
+
+
+def test_control_clean_names_pass_through_unchanged():
+    assert pr._clean_dir("packages/www/src/pages") == "packages/www/src/pages"
+    assert pr._clean_glob("docs/a.md") == "docs/a.md"
+    assert pr._clean_glob(".ci/policy/**") == ".ci/policy/**"
+
+
+def test_derive_paths_writes_no_glob_character_the_hasher_refuses():
+    tree = pr.Tree.of(
+        [("100644", p) for p in (T1, LANG + "/index.astro", LANG + "/about.astro", "docs/a.md")]
+    )
+    tr = {
+        "tests": {T1: {"reads": [LANG + "/index.astro"], "lists": [LANG, "docs"]}},
+        "unattributed": {"reads": [], "lists": []},
+    }
+    got = pr.derive_paths(tr, {"tests": {T1: {"closure": [T1]}}}, tree, [".ci/rediacc_ci/tests"])
+    for item in [*got["paths"], *got["lists"]]:
+        body = item.removesuffix("/**")
+        assert not any(c in body for c in "*?[{"), "the hasher would null this entry: %r" % item
+    assert any(pr.glob_matches(g, LANG + "/index.astro") for g in got["paths"]), got
+    assert got["lists"] == ["docs", "packages/www/src/pages"], got
 
 
 # --------------------------------------------------------------------------- a red traced run
@@ -545,6 +580,18 @@ def test_session_members_reads_the_session_field_past_a_tricky_command_name(tmp_
         [(10, 10, "strace -f"), (11, 10, "tail -f /dev/null"), (12, 99, "other session")],
     )
     assert pr.session_members(10, proc) == [(10, "strace -f"), (11, "tail -f /dev/null")]
+
+
+def test_leaked_lines_pick_out_only_the_orphan_reports():
+    out = "1 passed\n%stail -f /dev/null x\nnoise outlived pytest\n%ssleep 300" % (
+        pr.LEAKED_PREFIX,
+        pr.LEAKED_PREFIX,
+    )
+    assert pr.leaked_lines(out) == [
+        pr.LEAKED_PREFIX + "tail -f /dev/null x",
+        pr.LEAKED_PREFIX + "sleep 300",
+    ]
+    assert pr.leaked_lines("37520 passed\n") == [], "CONTROL: a clean run reports no orphan"
 
 
 def test_control_session_members_of_an_empty_session_is_empty(tmp_path):

@@ -410,10 +410,33 @@ def derive_paths(
         content |= {c for c in entry["closure"] if c in tree.files}
     roots = [r.rstrip("/") for r in test_roots]
     content |= {f for f in tree.files if any(f.startswith(r + "/") for r in roots)}
+    globs = {_clean_glob(g) for g in fold(content, tree)}
     return {
-        "paths": _minimal({*fold(content, tree), *(r + "/**" for r in roots)}),
-        "lists": sorted(listed),
+        "paths": _minimal({*globs, *(r + "/**" for r in roots)}),
+        "lists": sorted({_clean_dir(d) for d in listed}),
     }
+
+
+# input-hash.ts refuses these in a `paths` glob (FORBIDDEN_GLOB_CHARS, plus `*` outside a trailing `/**`) and in a `lists` directory; Astro's `[lang]` route directories are tracked names that hold them.
+_GLOB_CHARS = frozenset("*?[{\\")
+
+
+def _clean_dir(rel: str) -> str:
+    """`rel`, or its nearest ancestor whose name holds no glob character ('' is the root)."""
+    parts = rel.split("/") if rel else []
+    for i, part in enumerate(parts):
+        if any(c in _GLOB_CHARS for c in part):
+            return "/".join(parts[:i])
+    return rel
+
+
+def _clean_glob(glob: str) -> str:
+    """A `paths` entry the hasher accepts: an exact path or `dir/**` with no glob character in it, else `<nearest clean ancestor>/**` (path-trace.ts folds the same way). A fold that reaches the root is `**`, the whole tree."""
+    body = glob.removesuffix("/**")
+    if not any(c in _GLOB_CHARS for c in body):
+        return glob
+    clean = _clean_dir(body.rsplit("/", 1)[0] if "/" in body else "")
+    return clean + "/**" if clean else "**"
 
 
 def _minimal(globs: Iterable[str]) -> list[str]:
@@ -424,7 +447,9 @@ def _minimal(globs: Iterable[str]) -> list[str]:
 
 
 def glob_matches(glob: str, rel: str) -> bool:
-    """input-hash.ts `matchGlob` for the two shapes this module writes: an exact path, and `dir/**`."""
+    """input-hash.ts `matchGlob` for the three shapes this module writes: an exact path, `dir/**`, and `**`."""
+    if glob == "**":
+        return True
     if glob.endswith("/**"):
         return rel.startswith(glob[: -len("**")])
     return glob == rel
@@ -472,6 +497,14 @@ def strace_argv(log: str, inner: list[str]) -> list[str]:
 
 # How long a process may outlive pytest under the trace before it is killed. `strace -f` exits only when EVERY tracee has, so an orphan a test leaked (wl_git.py's selftest leaves `tail -f /dev/null` as a git editor, seen 2026-11-18) would hold the trace open forever.
 ORPHAN_GRACE_S = 10.0
+LEAKED_PREFIX = "pytest-impact-reads: outlived pytest under the trace and was killed: "
+
+
+def leaked_lines(output: str) -> list[str]:
+    """The orphan lines run_trace appended to a shard's output, in order."""
+    return [ln for ln in output.splitlines() if ln.startswith(LEAKED_PREFIX)]
+
+
 # The strace sessions this process has running; run_trace adds and removes its own.
 _LIVE: list[subprocess.Popen] = []
 
@@ -560,10 +593,7 @@ def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attribut
         except (OSError, ValueError):
             rc = child.returncode or 2
         for cmd in leaked:
-            output += (
-                "\npytest-impact-reads: outlived pytest under the trace and was killed: %s"
-                % cmd[:300]
-            )
+            output += "\n%s%s" % (LEAKED_PREFIX, cmd[:300])
     finally:
         if child is not None:
             if child.poll() is None:
@@ -749,6 +779,10 @@ def cmd_trace(root: pathlib.Path, argv: list[str]) -> int:
     record = trace_record(att, collected)
     record["failed"] = failed
     record["shards"] = len(groups)
+    # Printed on every verdict and kept in the record: a test that leaks a process is a defect in that test, and the green path is where it would otherwise go unseen.
+    record["leaked"] = leaked_lines(output)
+    for line in record["leaked"]:
+        print(line)
     print(
         "pytest-impact-reads: pytest rc %d, %d passed, %d strace line(s), %d marker(s), %d of %d test file(s) attributed, %d unclaimed pid(s)"
         % (
