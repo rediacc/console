@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-17T22:09:44.591Z",
+  "generatedAt": "2026-11-18T00:38:58.549Z",
   "legs": [
     {
       "index": 1,
@@ -503,6 +503,7 @@
         "pytest:.ci/rediacc_ci/tests/test_proxies_docker_prepull.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_ensure_nfpm.py",
         "pytest:.ci/rediacc_ci/tests/test_pytest_impact.py",
+        "pytest:.ci/rediacc_ci/tests/test_pytest_phase_timing.py",
         "pytest:.ci/rediacc_ci/tests/test_pytest_slow_ratchet.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_browser_smoke.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_bws_step_scope.py",
@@ -561,10 +562,12 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_preflight.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_priority.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plandeps_box_edges.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_planrec_prompt_stdin.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_prreview.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_queue_settings.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_queue_slots.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_report_tick.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_review_prompt_stdin.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_reviewclass.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_schedred.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_soakedpins.py",
