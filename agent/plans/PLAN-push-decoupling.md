@@ -111,21 +111,24 @@ A step that misses its count by more than 5 names the gates that stayed and why;
 Order: remedy 1 with the locks, then remedy 3, then remedy 4.
 
 ### Remedy 1: pinned receipts
-- [ ] R1 [writer] `ci:quick --commit <sha>` judges a pinned ancestor of the branch tip in the kept clone and archives its receipt per tree (D1.1)
+- [x] R1 [writer] `ci:quick --commit <sha>` judges a pinned ancestor of the branch tip in the kept clone and archives its receipt per tree (D1.1)
     Owns: scripts/ci-runner/quick-clone.ts, .ci/rediacc_ci/tests/gates/test_gate_ci_runner.py
     Depends on: none.
     Needs: none
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/gates/test_gate_ci_runner.py` exits 0 with three new cases: a pinned ancestor writes `.ci/cache/receipts/<its tree>.json` and leaves a newer `prepush-receipt.json` alone; a sha that is not an ancestor of the tip is refused before the clone is touched; a lease is still refused.
-- [ ] R2 [writer] A run whose HEAD moved, or that judged a pinned ancestor, follows its lane with the carry and advance pass by itself (D1.2)
+    (ticked) 2026-11-18T14:20:33Z by d778be9d: commit:57c55e5ba1 -- landed as 57c55e5ba1 (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
+- [x] R2 [writer] A run whose HEAD moved, or that judged a pinned ancestor, follows its lane with the carry and advance pass by itself (D1.2)
     Owns: scripts/ci-runner/run.ts, scripts/ci-runner/quick-clone.ts
     Depends on: R1.
     Needs: none
     Accept: `npx tsx scripts/ci-runner/run.ts --selftest` exits 0 with new controls: record-only movement appends one `advances` step and runs only the readers; a code movement carries the gates with an unchanged input hash and runs the rest; a rename from code to a record path does not advance. run.ts is also owned by PLAN-ciquick-cpu.md W1.1, so this lands when W1.1 has no open edit there.
-- [ ] R3 [writer] `worklist.py --review-commit` starts the records-only advance after its commit and prints the advanced tree or the refusal (D1.2)
+    (ticked) 2026-11-18T14:20:35Z by d778be9d: commit:454c95c0e7 -- landed as 454c95c0e7 (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
+- [x] R3 [writer] `worklist.py --review-commit` starts the records-only advance after its commit and prints the advanced tree or the refusal (D1.2)
     Owns: .claude/hooks/stop/wl_review.py, .claude/hooks/stop/test-review-mark.py
     Depends on: none.
     Needs: none
     Accept: `python3 .claude/hooks/stop/test-review-mark.py` exits 0 with two new cases: after a green whole receipt the verb's commit leaves a receipt the push guard admits at the new tree, with no hand re-run; with no green receipt the verb commits and starts nothing.
+    (ticked) 2026-11-18T14:20:37Z by d778be9d: commit:de7b06c272 -- landed as de7b06c272 (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
 - [ ] R4 [writer] The Stop hook compares trees through `advances`, and the receipt-in-flight hold no longer fires for ci:quick (D1.3)
     Owns: .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/wl_judge.py, .claude/hooks/stop/worklist_messages.py, .claude/hooks/stop/test-release-hold.py, .claude/hooks/stop/test-wl_worktrees.py
     Depends on: R2.
@@ -153,26 +156,30 @@ Order: remedy 1 with the locks, then remedy 3, then remedy 4.
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_release_local.py .ci/rediacc_ci/tests/test_release_local_gates.py` exits 0 with new cases: the context's head, tree and account gitlink are the pinned commit's while HEAD is later; the ci-quick and vm-check refusals read the pinned tree's receipts; a sha that is not an ancestor of the tip is refused.
 
 ### Remedy 1: locks and identities
-- [ ] L1 [writer] One named-resource lock module with a wrapper entry; the `fleet` resource keeps the vm:check lock file (D1.5)
+- [x] L1 [writer] One named-resource lock module with a wrapper entry; the `fleet` resource keeps the vm:check lock file (D1.5)
     Owns: .ci/rediacc_ci/core/resource_lock.py, .ci/rediacc_ci/tests/test_core_resource_lock.py
     Depends on: none.
     Needs: none
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_core_resource_lock.py` exits 0: a second holder of one resource waits and prints the first holder's pid, purpose and start time; two different resources do not block each other; the wrapper returns its child's exit code and frees the lock when the child is killed; `fleet` resolves to the path `vm_check.lock_path` returns.
-- [ ] L2 [writer] Every fleet user takes the `fleet` lock: the e2e-local setup before its VM reset, the drill harness before a renet upload, and `./rdc.sh ops up|down` (D1.5)
+    (ticked) 2026-11-18T14:20:38Z by d778be9d: commit:9297ee6fc7 -- landed as 9297ee6fc7,96e6f543bb (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
+- [x] L2 [writer] Every fleet user takes the `fleet` lock: the e2e-local setup before its VM reset, the drill harness before a renet upload, and `./rdc.sh ops up|down` (D1.5)
     Owns: packages/e2e-tests/src/base/bridge-global-setup.ts, .ci/rediacc_ci/drills/lib.py, rdc.sh, .ci/rediacc_ci/tests/test_fleet_lock_users.py
     Depends on: L1.
     Needs: none
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_fleet_lock_users.py` exits 0: with the lock held by a test process, `./rdc.sh ops down` under a 2 s wait exits non-zero naming the holder before any VM command, and the drill upload helper does the same; a source check finds the lock taken before `resetVMs` in the setup, and `BRIDGE_TEST_SKIP_RESET=1` still takes it for the suite.
-- [ ] L3 [writer] One lock per bench region for the bench deploy, the bench proxy deploy, the bench reset and the enterprise-proof runner (D1.6)
+    (ticked) 2026-11-18T14:20:40Z by d778be9d: commit:c0bf6e0200 -- landed as c0bf6e0200,cdc290445d,415efeadca (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
+- [x] L3 [writer] One lock per bench region for the bench deploy, the bench proxy deploy, the bench reset and the enterprise-proof runner (D1.6)
     Owns: .ci/rediacc_ci/ops/deploy_bench.py, .ci/rediacc_ci/ops/reset_bench.py, .ci/rediacc_ci/deploy/deploy_proxy.py, .ci/rediacc_ci/enterprise/proof.py, .ci/rediacc_ci/tests/test_bench_lock_users.py
     Depends on: L1.
     Needs: none
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_bench_lock_users.py .ci/rediacc_ci/tests/test_ops_deploy_bench.py .ci/rediacc_ci/tests/test_ops_reset_bench_region.py .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py .ci/rediacc_ci/tests/test_enterprise_proof.py` exits 0: each of the four waits on a held `bench-<region>` and names the holder; a reset of one region does not block a deploy to another; a proxy deploy to a target other than bench takes no bench lock; a dry run takes none.
-- [ ] L4 [writer] The license, transfer and universe drills take a per-run identity from one helper (D1.7)
+    (ticked) 2026-11-18T14:20:42Z by d778be9d: commit:941d86d65d -- landed as 941d86d65d (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
+- [x] L4 [writer] The license, transfer and universe drills take a per-run identity from one helper (D1.7)
     Owns: .ci/rediacc_ci/drills/license.py, .ci/rediacc_ci/drills/transfer.py, .ci/rediacc_ci/drills/universe.py, .ci/rediacc_ci/tests/test_drills_identity.py
     Depends on: none.
     Needs: none
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_drills_identity.py .ci/rediacc_ci/tests/test_drills_universe_transfer.py .ci/rediacc_ci/tests/test_drills_license_seed.py` exits 0: two drills built in the same second under a frozen clock get different emails for each of the three; the email keeps its `drill-<name>-` prefix and the rediacc.io domain.
+    (ticked) 2026-11-18T14:20:43Z by d778be9d: commit:27fba97b33 -- landed as 27fba97b33 (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
 - [ ] LP-bench [live] Fresh bench receipt for the enterprise-proof runner with the region lock in place, after L3 lands
   Accept: live-proof bench enterprise-proof
 - [ ] M1 [live] One real cycle on the branch: `ci:quick --commit` on a commit, two lease landings while it runs, then the push admitted on the advanced receipt; and an e2e-local start that waits while vm:check holds the fleet
@@ -181,48 +188,56 @@ Order: remedy 1 with the locks, then remedy 3, then remedy 4.
     Accept: the tick evidence holds the pinned receipt path, the `advances` step, the guard's admit line for the pushed tree with no second whole run, the two landed shas with their times inside the run's window, and the e2e-local wait line naming the vm:check holder.
 
 ### Remedy 3: the `Needs:` tag
-- [ ] N1 [writer] Parse and derive `Needs:` beside the two existing box tags, and judge it in the plan live-proof gate (D3.1, D3.2)
+- [x] N1 [writer] Parse and derive `Needs:` beside the two existing box tags, and judge it in the plan live-proof gate (D3.1, D3.2)
     Owns: .claude/hooks/stop/wl_plandeps.py, .claude/hooks/stop/test-plandeps.py, .claude/rediacc_hooks/tests/test_wl_plandeps_box_edges.py, .ci/scripts/quality/check_plan_live_proof.py, .ci/rediacc_ci/tests/test_quality_plan_live_proof_needs.py
     Depends on: none.
     Needs: none
     Accept: `python3 .claude/hooks/stop/test-plandeps.py` and `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_plandeps_box_edges.py .ci/rediacc_ci/tests/test_quality_plan_live_proof_needs.py` exit 0 with cases for: each of the four values on a sub-line; an unknown value is a finding; a `Needs:` on the box line is a finding; the value is not searched for phrases; the derivation from each wait kind and each runner class; a stated value that contradicts a valid tag; a `(corrected ...)` line that supersedes; a box signature unchanged by adding the sub-line.
-- [ ] N2 [writer] Box readiness reads `Needs:`, so a `none` box starts with no receipt and no push (D3.3)
+    (ticked) 2026-11-18T14:20:45Z by d778be9d: commit:54d1faa656 -- landed as 54d1faa656,a9cd1d2ac5,c5128b8681 (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
+- [x] N2 [writer] Box readiness reads `Needs:`, so a `none` box starts with no receipt and no push (D3.3)
     Owns: .claude/hooks/stop/wl_boxready.py, .claude/rediacc_hooks/tests/test_wl_boxready.py
     Depends on: N1.
     Needs: none
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_boxready.py` exits 0 with one case per value and state: `none` ready on an unpushed tree; `verified-vmcheck` held without an admitting receipt and ready with one; `bench-deploy` held while bench is behind the branch; `pushed-head` held until the tip is on its upstream; a box with no line uses the derived value.
-- [ ] N3 [writer] Add the four phrases of D3.4 to the wait list and tag the boxes of the D3.4 table in the same commit, each box line byte-identical
+    (ticked) 2026-11-18T14:20:47Z by d778be9d: commit:abd2a6ba2a -- landed as abd2a6ba2a,a9cd1d2ac5 (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
+- [x] N3 [writer] Add the four phrases of D3.4 to the wait list and tag the boxes of the D3.4 table in the same commit, each box line byte-identical
     Owns: .ci/config/proof-tiers.json, agent/plans/PLAN-health-checks-local.md, agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md, agent/plans/PLAN-ci-vm-image-followups.md, agent/plans/PLAN-enterprise-isolation.md, agent/plans/PLAN-enterprise-tenants.md, agent/plans/PLAN-product-domain-rename.md, agent/plans/PLAN-website-routing-and-mail.md, agent/plans/PLAN-vmcheck-incremental.md, agent/plans/PLAN-d1-eu-jurisdiction.md, agent/plans/PLAN-proxy-cd-six-targets.md
     Depends on: N1.
     Needs: none
     Accept: `npm run check:ci-plan-live-proof`, `npm run check:ci-plan-boxes` and `npm run check:ci-plan-record` exit 0; `git diff` of the ten plan files shows only added indented lines; a sweep with the four phrases added prints every open box that names one and has no tag, and that list is empty.
-- [ ] N4 [writer] The two consumers document and route by `Needs:`, and the stale advisory sentence of docs/agent-reference/plan-records.md:168 is corrected (D3.5)
+    (ticked) 2026-11-18T14:20:49Z by d778be9d: commit:0d0161d594 -- landed as 0d0161d594,df1f5f2e88 (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
+- [x] N4 [writer] The two consumers document and route by `Needs:`, and the stale advisory sentence of docs/agent-reference/plan-records.md:168 is corrected (D3.5)
     Owns: .claude/commands/writers-now.md, docs/agent-reference/plan-records.md
     Depends on: N1.
     Needs: none
     Accept: `npm run check:ci-prose-style` and `npm run check:ci-doc-region-parity` exit 0; `grep -c "LP8_ENFORCED. is False" docs/agent-reference/plan-records.md` prints 0; both files name the four values and the derivation rule, and writers-now.md starts a `none` box without waiting for a push.
+    (ticked) 2026-11-18T14:20:51Z by d778be9d: commit:26394620df -- landed as 26394620df (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
 
 ### Remedy 4: the W2.2 remainder, wave 1
-- [ ] F1 [writer] check_record_paths.py: the manifest and the trace ledger are not scan code, and a `declared` tier reads each gate's lock `paths`, `names` and `lists` (wave 1 A)
+- [x] F1 [writer] check_record_paths.py: the manifest and the trace ledger are not scan code, and a `declared` tier reads each gate's lock `paths`, `names` and `lists` (wave 1 A)
     Owns: .ci/scripts/quality/check_record_paths.py, .ci/rediacc_ci/tests/test_quality_record_paths_declared.py
     Depends on: none.
     Needs: none
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_quality_record_paths_declared.py` and `npm run check:ci-record-paths` exit 0: a fixture gate with `names: ['**']` and no literal cite is reported as an undeclared record reader; the same gate with a narrowed declaration is not; a record glob that appears only inside manifest.ts or trace-ledger.ts makes neither file a reader.
-- [ ] F2 [writer] path-trace.ts folding: a fixture's own index read, submodule recursion, pathspec and `--format`, `git diff --quiet <file>`, a history `refs` field, extensions, and kind-aware folding for carry-exempt gates (wave 1 B)
+    (ticked) 2026-11-18T14:20:52Z by d778be9d: commit:95ae535698 -- landed as 95ae535698 (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
+- [x] F2 [writer] path-trace.ts folding: a fixture's own index read, submodule recursion, pathspec and `--format`, `git diff --quiet <file>`, a history `refs` field, extensions, and kind-aware folding for carry-exempt gates (wave 1 B)
     Owns: scripts/ci-runner/path-trace.ts, .ci/rediacc_ci/tests/test_path_trace.py
     Depends on: PLAN-ciquick-cpu.md#W2.5.
     Needs: none
     Accept: `npx tsx scripts/ci-runner/path-trace.ts --selftest` exits 0 with one new control per fold, each beside a control that must stay whole-tree: a `git log` read is still history, and an index read by a process with no name-only listing is still foreign.
-- [ ] F3 [writer] Gate-side walkers read a tracked listing instead of walking untracked build directories, and `gitx.file_modes` reads modes through `--format` (wave 1 C)
+    (ticked) 2026-11-18T14:20:55Z by d778be9d: commit:99b9076ce8 -- landed as 99b9076ce8 (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
+- [x] F3 [writer] Gate-side walkers read a tracked listing instead of walking untracked build directories, and `gitx.file_modes` reads modes through `--format` (wave 1 C)
     Owns: .ci/rediacc_ci/gitx.py, .ci/rediacc_ci/tests/test_gitx.py, and each gate script under .ci/scripts/quality/ or scripts/gates/ that the trace ledger names as listing an untracked build directory, except check_record_paths.py
     Depends on: none.
     Needs: none
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_gitx.py` exits 0 with `file_modes` returning the same map as before on a fixture holding a 755 file, a 644 file and a gitlink; each changed walker's own gate exits 0 with and without a populated `node_modules/` and `dist/` beside it, and the report lists every walker changed.
-- [ ] F4 [writer] Every row of carry-exempt.json carries exactly one kind of clock, history, network or cache (wave 1 D)
+    (ticked) 2026-11-18T14:20:56Z by d778be9d: commit:b8426e589e -- landed as b8426e589e,213f36cc8a (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
+- [x] F4 [writer] Every row of carry-exempt.json carries exactly one kind of clock, history, network or cache (wave 1 D)
     Owns: .ci/policy/carry-exempt.json
     Depends on: none.
     Needs: none
     Accept: `python3 -c "import json,sys;r=json.load(open('.ci/policy/carry-exempt.json'))['exempt'];sys.exit(0 if r and all(x.get('kind') in ('clock','history','network','cache') for x in r) else 1)"` and `npx tsx scripts/ci-runner/run.ts --selftest` exit 0. PLAN-ciquick-cpu.md W2.6 names the kinds of 11 rows; this box covers every row, and W2.6 adds no second kind to one.
+    (ticked) 2026-11-18T14:20:58Z by d778be9d: commit:40340a81a2 -- landed as 40340a81a2,840236139d (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
 - [ ] M2 [live] The plan's own measure, one push cycle on the branch after the boxes above and the pointed boxes of Design 4
     Depends on: M1, N2, N3, F1-F4, PLAN-ciquick-cpu.md#W2.6, PLAN-ciquick-cpu.md#W3.3, PLAN-ciquick-cpu.md#W4.3, PLAN-vmcheck-incremental.md#V3.
     Needs: verified-vmcheck
