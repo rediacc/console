@@ -2789,6 +2789,38 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-rdc-feedback.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 21,
+      "done": 0,
+      "open_sigs": [
+        "2d76dea2",
+        "40ed3482",
+        "446e81e9",
+        "476fd25d",
+        "4b782b7a",
+        "4e779064",
+        "57489fcf",
+        "642e9ef5",
+        "64936794",
+        "6c884092",
+        "7a535105",
+        "823f1509",
+        "85c58503",
+        "8e8ce74f",
+        "c313d7e9",
+        "c8444198",
+        "d4e7536a",
+        "d86d54a7",
+        "de43bbab",
+        "f572057d",
+        "f6477c4d"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-rediaccfile-unprivileged.md": {
       "status": "executing",
       "owner": "d778be9d",
@@ -3697,6 +3729,26 @@
         "d85acb7f",
         "e1f2997f",
         "f705e6d5"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-stop-hook-store-status.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 9,
+      "done": 0,
+      "open_sigs": [
+        "043c9409",
+        "0f1de698",
+        "1041d74d",
+        "148d8826",
+        "2a514e1f",
+        "502060dc",
+        "919eedac",
+        "af5dac4c",
+        "b1053da4"
       ],
       "done_sigs": []
     },
