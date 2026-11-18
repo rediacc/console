@@ -1658,6 +1658,9 @@
     ".ci/rediacc_ci/tests/gates/test_twin_parity.py": [
       "TWIN_PARITY_ALWAYS_DRIVE"
     ],
+    ".ci/rediacc_ci/tests/ops_cf_harness.py": [
+      "XDG_RUNTIME_DIR"
+    ],
     ".ci/rediacc_ci/tests/pathmask.py": [
       "PATH"
     ],
@@ -1793,7 +1796,8 @@
       "HOME"
     ],
     ".ci/rediacc_ci/tests/test_deploy_deploy_proxy.py": [
-      "HOME"
+      "HOME",
+      "XDG_RUNTIME_DIR"
     ],
     ".ci/rediacc_ci/tests/test_deploy_deploy_record.py": [
       "CLOUDFLARE_API_TOKEN"

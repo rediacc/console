@@ -393,7 +393,7 @@ def covering(fold, session_id, open_ids=(), ladder=None, roster=None):
     """{item id: key} for every owned item another check names this stop (plan D2, no double block).
 
     `open_ids` the ids `open-items` names (open_item_ids, empty when that check does not fire); `ladder` {key: [label, ...]} for the ladder's lists, each label leading with `#<id>`; `roster` the wl_roster verdict, whose `leased_dead` rows are `(item, worker, coverer)` and whose `silent` and `status_due` lists are worker ids."""
-    cover = {}
+    cover: dict[str, str] = {}
     for rid in sorted(open_ids or ()):
         cover.setdefault(rid, "open-items")
     for key, labels in sorted((ladder or {}).items()):
