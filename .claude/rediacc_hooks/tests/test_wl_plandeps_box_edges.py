@@ -194,3 +194,35 @@ def test_writer_box_free_is_false_without_a_root():
     g = _graph({"PLAN-x.md": x, "PLAN-y.md": _plan("- [ ] Y1 [live] deploy\n", name="y")})
     sig3 = next(b.sig for b in D.plan_boxes(x) if b.id == "S3")
     assert g.writer_box_free("agent/plans/PLAN-x.md", sig3) is False
+
+
+# PLAN-push-decoupling N1: the `Needs:` sub-line rides the box block, never the box line, so it leaves the signature, the `Depends on:` reading and the block boundary as they were.
+
+
+def test_a_needs_sub_line_leaves_the_box_signature_unchanged():
+    bare = _plan("- [ ] S3 [writer] the client\n  Depends on: S2.\n- [ ] S4 next\n")
+    tagged = bare.replace("  Depends on: S2.\n", "  Depends on: S2.\n    Needs: none\n")
+    sig = {b.id: b.sig for b in D.plan_boxes(bare)}
+    assert {b.id: b.sig for b in D.plan_boxes(tagged)} == sig
+    assert {sig for _i, _raw, _body, sig in R.open_boxes(tagged)} == set(sig.values())
+    assert D.box_depends(_block(tagged, "S3")) == ("S2",)
+    assert "Needs: none" in _block(tagged, "S3")
+    assert "Needs" not in _block(tagged, "S4")
+    # CONTROL: the same value on the box line changes the signature, which is why the grammar refuses it there.
+    on_line = bare.replace("the client\n", "the client Needs: none\n")
+    assert next(b.sig for b in D.plan_boxes(on_line) if b.id == "S3") != sig["S3"]
+
+
+@pytest.mark.parametrize("value", ["none", "bench-deploy", "verified-vmcheck", "pushed-head"])
+def test_each_needs_value_is_read_from_the_block(value):
+    text = _plan("- [ ] S3 [writer] the client\n    Needs: %s\n" % value)
+    wait = D.box_needs(_block(text, "S3"))
+    assert (wait.needs, wait.effective_needs, wait.errors) == (value, value, ())
+
+
+def test_a_needs_value_outside_the_grammar_is_malformed():
+    text = _plan("- [ ] S3 [writer] the client\n    Needs: a push\n")
+    wait = D.box_needs(_block(text, "S3"))
+    assert wait.needs_malformed is True
+    assert wait.effective_needs == ""
+    assert any("not one of" in e for e in wait.errors)

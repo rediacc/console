@@ -934,19 +934,68 @@ PROOF_MAP_REL = ".ci/config/proof-tiers.json"
 _TAG_RE = re.compile(r"\b(GitHub-only|Local-route):[ \t]*([^\n]*)")
 _CORRECTED_RE = re.compile(r"^\s*(?:[-*+]\s+)?\(corrected\b")
 
+# The `Needs:` sub-line (agent/plans/PLAN-push-decoupling.md D3.1, D3.2): what a box waits for before it can start. Never on the box line, whose first 120 normalized characters are its signature (`wl_planrec.box_sig`); an indented sub-line `Needs: <value>`, or a `Needs: <value>` inside an indented `(corrected ...)` line, and the last one wins.
+NEEDS = "Needs"
+# `none`: provable from a lease or the main checkout as it stands; `bench-deploy`: the branch's code on bench; `verified-vmcheck`: a VERIFIED vm:check receipt on the tree; `pushed-head`: the branch tip on origin. Ordered from the least to the most a box waits for.
+NEEDS_VALUES = ("none", "bench-deploy", "verified-vmcheck", "pushed-head")
+# The class of each `tiers.live.local_runners` id, which a `Local-route:` correction derives its `Needs:` from. A runner missing here derives `pushed-head` (fails closed: the box keeps waiting for a push); test-plandeps.py holds this map equal to the runner ids of .ci/config/proof-tiers.json.
+RUNNER_NEEDS = {
+    "deploy-bench": "bench-deploy",
+    "bench-cli": "bench-deploy",
+    "d1-migrations": "bench-deploy",
+    "deploy-proxy-bench": "bench-deploy",
+    "enterprise-bench": "bench-deploy",
+    "vm-check": "verified-vmcheck",
+    "hostinger": "verified-vmcheck",
+    "e2e-local": "verified-vmcheck",
+    "www-local": "none",
+}
+_NEEDS_SUBLINE_RE = re.compile(r"^\s+(?:[-*+]\s+)?Needs:[ \t]*([^\n]*)$")
+_NEEDS_ANY_RE = re.compile(r"\bNeeds:[ \t]*([^\n]*)")
+# A `Needs:` on the box line is judged only when a value of the grammar follows it, so a box that names the tag in prose (`Parse and derive Needs: beside ...`) is not a finding.
+_NEEDS_ON_BOX_RE = re.compile(r"\bNeeds:[ \t]*(?:%s)(?![\w-])" % "|".join(NEEDS_VALUES))
+# The phrase scrub drops a `Needs:` value, so `pushed-head` is never searched for a `github_waits` phrase.
+_NEEDS_SCRUB_RE = re.compile(r"\bNeeds:[ \t]*[^\s,;)]*")
+
+
+def runner_needs(route: tuple[str, ...] | list[str]) -> str:
+    """The `Needs:` a `Local-route:` correction derives: the most demanding class among its runners (`RUNNER_NEEDS`), `pushed-head` for a runner with no class, "" for no runner."""
+    if not route:
+        return ""
+    return max((RUNNER_NEEDS.get(r, "pushed-head") for r in route), key=NEEDS_VALUES.index)
+
 
 @dataclasses.dataclass(frozen=True)
 class GitHubWait:
-    """LP8's reading of one box block: the `github_waits` phrases it names (outside a tag's own value), the kind of its valid `GitHub-only:` tag ("" when none), the runners of its valid `Local-route:` correction (() when none) and the grammar errors of a malformed tag or route."""
+    """LP8's reading of one box block: the `github_waits` phrases it names (outside a tag's own value), the kind of its valid `GitHub-only:` tag ("" when none), the runners of its valid `Local-route:` correction (() when none), the grammar errors of a malformed tag, route or `Needs:` line, the stated `Needs:` value ("" when none or malformed) and the raw value of the last `Needs:` written ("" when none was)."""
 
     phrases: tuple[str, ...]
     kind: str = ""
     route: tuple[str, ...] = ()
     errors: tuple[str, ...] = ()
+    needs: str = ""
+    needs_raw: str = ""
 
     @property
     def cleared(self) -> bool:
         return bool(self.kind or self.route)
+
+    @property
+    def derived_needs(self) -> str:
+        """The `Needs:` a valid tag implies (D3.2): `pushed-head` for any `GitHub-only:` kind, the class of the route's runners for `Local-route:`, "" with neither."""
+        if self.kind:
+            return "pushed-head"
+        return runner_needs(self.route)
+
+    @property
+    def effective_needs(self) -> str:
+        """The stated value, else the derived one; "" when the box states none and no tag implies one."""
+        return self.needs or self.derived_needs
+
+    @property
+    def needs_malformed(self) -> bool:
+        """A `Needs:` line was written and its value is not one of NEEDS_VALUES."""
+        return bool(self.needs_raw) and not self.needs
 
     @property
     def finding(self) -> bool:
@@ -1005,14 +1054,38 @@ def box_github_wait(
         GitHub-only: <CD|CI parity|native-runner|soak|preview> -- <why no local path, 20+ chars>
         Local-route: <runner>[, <runner>...] -- <how the branch proves it, 20+ chars>
 
-    `runners` are the `tiers.live.local_runners` ids; None skips the runner-name check, while an empty list means no runner is known, so every route is refused. Phrases are matched over the whole block with every tag's value removed, so a why that says "only CD deploys edge" is not itself a wait."""
+    `runners` are the `tiers.live.local_runners` ids; None skips the runner-name check, while an empty list means no runner is known, so every route is refused. Phrases are matched over the whole block with every tag's value and every `Needs:` value removed, so a why that says "only CD deploys edge" is not itself a wait.
+
+    `Needs: <none|bench-deploy|verified-vmcheck|pushed-head>` counts on an indented sub-line, or inside an indented `(corrected ...)` line, and the last one wins. On the box line it is an error (that line is the signature), an unknown value is an error, and so is a stated value that differs from the one a valid tag derives (`derived_needs`)."""
     lines = (block or "").replace("`", "").replace("*", "").splitlines()
     tag_lines = lines[:1] + [ln for ln in lines[1:] if _CORRECTED_RE.match(ln)]
     kind = ""
     route: tuple[str, ...] = ()
-    errors: dict[str, list[str]] = {GITHUB_ONLY: [], LOCAL_ROUTE: []}
-    for ln in tag_lines:
-        for m in _TAG_RE.finditer(ln):
+    errors: dict[str, list[str]] = {GITHUB_ONLY: [], LOCAL_ROUTE: [], NEEDS: []}
+    needs_raw = ""
+    for ln in lines[1:]:
+        m = _NEEDS_SUBLINE_RE.match(ln)
+        if m is None and _CORRECTED_RE.match(ln):
+            m = _NEEDS_ANY_RE.search(ln)
+        if m is not None:
+            needs_raw = m.group(1).strip() or "(empty)"
+    needs = ""
+    if needs_raw:
+        head = _tag_why(needs_raw)[0].rstrip(").,;").split()
+        if head and head[0] in NEEDS_VALUES:
+            needs = head[0]
+        else:
+            errors[NEEDS].append(
+                "`%s:` value %r is not one of %s" % (NEEDS, needs_raw, "|".join(NEEDS_VALUES))
+            )
+    if lines and _NEEDS_ON_BOX_RE.search(lines[0]):
+        errors[NEEDS].append(
+            "`%s:` sits on the box line, whose text is the box signature; move it to an "
+            "indented sub-line" % NEEDS
+        )
+    for n, ln in enumerate(tag_lines):
+        # A `Needs:` sharing a `(corrected ...)` line is no part of a tag's why.
+        for m in _TAG_RE.finditer(_NEEDS_ANY_RE.sub("", ln) if n else ln):
             tag, (head, why) = m.group(1), _tag_why(m.group(2))
             errs = _why_errors(why, tag)
             if tag == GITHUB_ONLY:
@@ -1038,9 +1111,27 @@ def box_github_wait(
                     )
                 errors[tag] = errs
                 route = () if errs else names
-    scrubbed = _TAG_RE.sub("", "\n".join(lines))
+    derived = "pushed-head" if kind else runner_needs(route)
+    if needs and derived and needs != derived:
+        errors[NEEDS].append(
+            "`%s: %s` contradicts the box's valid `%s:` tag, which derives `%s: %s`"
+            % (NEEDS, needs, GITHUB_ONLY if kind else LOCAL_ROUTE, NEEDS, derived)
+        )
+    scrubbed = _TAG_RE.sub("", _NEEDS_SCRUB_RE.sub("", "\n".join(lines)))
     found = tuple(p for p in phrases if _phrase_re(p).search(scrubbed))
-    return GitHubWait(found, kind, route, tuple(errors[GITHUB_ONLY] + errors[LOCAL_ROUTE]))
+    return GitHubWait(
+        found,
+        kind,
+        route,
+        tuple(errors[GITHUB_ONLY] + errors[LOCAL_ROUTE] + errors[NEEDS]),
+        needs,
+        needs_raw,
+    )
+
+
+def box_needs(block: str) -> GitHubWait:
+    """The `Needs:` reading of one box block with no phrase list and no runner-name check: `effective_needs`, `needs_malformed`, and the tag a derived value came from. `wl_boxready` judges a box's readiness through it."""
+    return box_github_wait(block, (), None)
 
 
 def github_wait_findings(
@@ -1048,7 +1139,7 @@ def github_wait_findings(
     phrases: tuple[str, ...] | list[str],
     runners: tuple[str, ...] | list[str] | None = None,
 ) -> list[tuple[str, str]]:
-    """[(LP8, message)] for every OPEN box of a plan that waits on GitHub (names a `github_waits` phrase) with no valid `GitHub-only:` tag or `Local-route:` correction, and for every malformed tag or route. A ticked box is history and is not judged. Shared by `check:ci-plan-live-proof` and the pre-edit guard (`github_wait_introduced`)."""
+    """[(LP8, message)] for every OPEN box of a plan that waits on GitHub (names a `github_waits` phrase) with no valid `GitHub-only:` tag or `Local-route:` correction, and for every malformed tag, route or `Needs:` line (an unknown value, a value on the box line, a value a valid tag contradicts). A ticked box is history and is not judged. Shared by `check:ci-plan-live-proof` and the pre-edit guard (`github_wait_introduced`)."""
     out: list[tuple[str, str]] = []
     if not phrases:
         return out

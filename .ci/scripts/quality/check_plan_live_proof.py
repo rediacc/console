@@ -59,8 +59,11 @@ THE RULES, EACH WITH A PLANTED CONTROL IN `--selftest`:
         neither `GitHub-only: <CD|CI parity|native-runner|soak|preview> -- <why, 20+
         chars>` nor `Local-route: <runner>[, ...] -- <how, 20+ chars>` (runners from
         `tiers.live.local_runners`), on its line or in an indented `(corrected ...)`
-        line under it; a malformed tag or route is LP8 too. A ticked box is not
-        judged. The rule is `wl_plandeps.github_wait_findings`, which the pre-edit
+        line under it; a malformed tag or route is LP8 too. So is a malformed
+        `Needs: none|bench-deploy|verified-vmcheck|pushed-head` sub-line
+        (agent/plans/PLAN-push-decoupling.md D3.2): an unknown value, a value on the
+        box line (that line is the signature), or a value that differs from the one
+        a valid tag derives. A ticked box is not judged. The rule is `wl_plandeps.github_wait_findings`, which the pre-edit
         guard shares (agent/plans/PLAN-local-first-delivery.md Design L, operator
         ruling R2: "The planner should really find no way to test/deploy locally to
         go with github.").
@@ -1472,6 +1475,21 @@ class _Suite:
         c.check("a ticked box is not judged", judged(wait.replace("[ ]", "[x]")), ([], 0))
         c.check("a box with no phrase passes", judged("- [ ] T9 deploy to bench\n"), ([], 0))
         c.check("`cd` in a command is not CD", judged("- [ ] T9 `cd packages/www`\n"), ([], 0))
+        c.check(
+            "a Needs: sub-line with a known value passes",
+            judged("- [ ] T9 deploy to bench\n    Needs: bench-deploy\n"),
+            ([], 0),
+        )
+        c.check(
+            "a Needs: value outside the grammar is LP8",
+            judged("- [ ] T9 deploy to bench\n    Needs: soon\n"),
+            (["LP8"], 1),
+        )
+        c.check(
+            "a Needs: value that contradicts a valid tag is LP8",
+            judged(wait + "  (corrected 2026-11-18) GitHub-only: CD" + why + "\n    Needs: none\n"),
+            (["LP8"], 1),
+        )
         notes, count = judged(wait, enforce=False)
         c.check("advisory mode: no finding, one ADVISORY LP8 note", (count, len(notes)), (1, 1))
         c.truthy(

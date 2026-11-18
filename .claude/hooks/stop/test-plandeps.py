@@ -33,7 +33,7 @@ def _by_file(name):
 controls = _by_file("controls")
 runtmp = _by_file("runtmp")
 
-CONTROL_FLOOR = 336  # 330 before the #55b1f90b controls (Plan none serves no plan, owns_line_problem both ways, a disjoint planless spawn beside a live exclusive); 320 before the review 9450761b and dfb34f9d controls (submodule overlap, one .gitmodules read, the serving-plan mutex and Owns-none exclusive); 319 before the 2026-10-28 disjoint-writer control (an exclusive plan refuses only an overlap); 271 before PLAN-tested-on-bench V3 added the 48 Live-Proof grammar and waiver controls; 253 before PLAN-plan-preflight PF1 added the eight Revalidated controls; 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls; 216 before the X_FIELDS_REQUIRED migration flag and its "not judged before the migration" control were deleted
+CONTROL_FLOOR = 376  # 336 before the PLAN-push-decoupling N1 `Needs:` controls; 330 before the #55b1f90b controls (Plan none serves no plan, owns_line_problem both ways, a disjoint planless spawn beside a live exclusive); 320 before the review 9450761b and dfb34f9d controls (submodule overlap, one .gitmodules read, the serving-plan mutex and Owns-none exclusive); 319 before the 2026-10-28 disjoint-writer control (an exclusive plan refuses only an overlap); 271 before PLAN-tested-on-bench V3 added the 48 Live-Proof grammar and waiver controls; 253 before PLAN-plan-preflight PF1 added the eight Revalidated controls; 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls; 216 before the X_FIELDS_REQUIRED migration flag and its "not judged before the migration" control were deleted
 T = controls.Controls("plandeps", floor=CONTROL_FLOOR)
 check = T.check
 
@@ -1636,6 +1636,112 @@ check(
 check(
     "LP8: a listed runner clears the route",
     D.github_wait_findings(LP8_ROUTE_BOX, ["after the merge"], ["nowhere"]),
+    [],
+)
+
+# PLAN-push-decoupling N1: the `Needs:` sub-line, read beside the two LP8 tags. Every refusal beside its passing twin.
+NEEDS_BOX = "- [ ] N9 [writer] the parser change\n"
+NEEDS_WHY = " -- only the CD pipeline deploys the edge channel"
+
+
+def needs_of(block):
+    return D.box_needs(block)
+
+
+for _value in D.NEEDS_VALUES:
+    check(
+        "Needs: %s on an indented sub-line is read" % _value,
+        (needs_of(NEEDS_BOX + "    Needs: %s\n" % _value).needs, needs_of(NEEDS_BOX + "    Needs: %s\n" % _value).errors),
+        (_value, ()),
+    )
+check(
+    "Needs: an unknown value is a finding",
+    len(D.github_wait_findings(NEEDS_BOX + "    Needs: later\n", ["after the merge"], [])),
+    1,
+)
+check(
+    "Needs: a known value is no finding (twin)",
+    D.github_wait_findings(NEEDS_BOX + "    Needs: none\n", ["after the merge"], []),
+    [],
+)
+check(
+    "Needs: on the box line is a finding",
+    len(D.github_wait_findings("- [ ] N9 [writer] x Needs: none\n", ["after the merge"], [])),
+    1,
+)
+check(
+    "Needs: the tag named in box-line prose is no finding (twin)",
+    D.github_wait_findings("- [ ] N9 [writer] parse `Needs:` beside the tags\n", ["after the merge"], []),
+    [],
+)
+check(
+    "Needs: the value is not searched for a phrase",
+    needs_of(NEEDS_BOX + "    Needs: pushed-head\n").phrases
+    + D.box_github_wait(NEEDS_BOX + "    Needs: pushed-head\n", ["pushed-head"]).phrases,
+    (),
+)
+check(
+    "Needs: the same word outside the value is searched (twin)",
+    D.box_github_wait(NEEDS_BOX + "    waits on the pushed-head\n", ["pushed-head"]).phrases,
+    ("pushed-head",),
+)
+for _kind in D.GITHUB_ONLY_KINDS:
+    check(
+        "Needs: GitHub-only: %s derives pushed-head" % _kind,
+        needs_of(NEEDS_BOX + "  (corrected) GitHub-only: %s%s\n" % (_kind, NEEDS_WHY)).effective_needs,
+        "pushed-head",
+    )
+for _runner, _class in D.RUNNER_NEEDS.items():
+    check(
+        "Needs: Local-route: %s derives %s" % (_runner, _class),
+        needs_of(NEEDS_BOX + "  (corrected) Local-route: %s%s\n" % (_runner, NEEDS_WHY)).effective_needs,
+        _class,
+    )
+check(
+    "Needs: a route takes its most demanding runner",
+    needs_of(NEEDS_BOX + "  (corrected) Local-route: www-local, vm-check%s\n" % NEEDS_WHY).effective_needs,
+    "verified-vmcheck",
+)
+check("Needs: an untagged box with no line derives nothing", needs_of(NEEDS_BOX).effective_needs, "")
+check(
+    "Needs: a stated value that contradicts a valid tag is a finding",
+    len(
+        D.github_wait_findings(
+            NEEDS_BOX + "  (corrected) GitHub-only: CD%s\n    Needs: none\n" % NEEDS_WHY,
+            ["after the merge"],
+            [],
+        )
+    ),
+    1,
+)
+check(
+    "Needs: a stated value equal to the derived one is no finding (twin)",
+    D.github_wait_findings(
+        NEEDS_BOX + "  (corrected) GitHub-only: CD%s\n    Needs: pushed-head\n" % NEEDS_WHY,
+        ["after the merge"],
+        [],
+    ),
+    [],
+)
+check(
+    "Needs: a later (corrected ...) line supersedes an earlier sub-line",
+    needs_of(NEEDS_BOX + "    Needs: none\n  (corrected 2026-11-18) Needs: verified-vmcheck)\n").needs,
+    "verified-vmcheck",
+)
+check(
+    "Needs: a Needs sharing a corrected line leaves the tag's why intact",
+    needs_of(NEEDS_BOX + "  (corrected) GitHub-only: CD%s Needs: pushed-head\n" % NEEDS_WHY).errors,
+    (),
+)
+_proof_map = json.loads((_CI.parent / "config" / "proof-tiers.json").read_text(encoding="utf-8"))
+check(
+    "Needs: RUNNER_NEEDS classes every tiers.live.local_runners id, and nothing else",
+    sorted(D.RUNNER_NEEDS),
+    sorted(_proof_map["tiers"]["live"]["local_runners"]),
+)
+check(
+    "Needs: every runner class is a Needs value",
+    sorted(set(D.RUNNER_NEEDS.values()) - set(D.NEEDS_VALUES)),
     [],
 )
 
