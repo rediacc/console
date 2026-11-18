@@ -58,11 +58,31 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
 export async function holdFleetLock(purpose: string): Promise<() => Promise<void>> {
   const waitS = process.env.E2E_FLEET_WAIT_S || '600';
   const holdChild = "import sys; print('held', flush=True); sys.stdin.read()";
-  const pythonPath = [path.join(REPO_ROOT, '.ci'), process.env.PYTHONPATH].filter(Boolean).join(path.delimiter);
+  const pythonPath = [path.join(REPO_ROOT, '.ci'), process.env.PYTHONPATH]
+    .filter(Boolean)
+    .join(path.delimiter);
   const child = spawn(
     'python3',
-    ['-m', 'rediacc_ci.core.resource_lock', 'run', '--resource', 'fleet', '--wait', waitS, '--purpose', purpose, '--', 'python3', '-c', holdChild],
-    { cwd: REPO_ROOT, env: { ...process.env, PYTHONPATH: pythonPath }, stdio: ['pipe', 'pipe', 'pipe'] }
+    [
+      '-m',
+      'rediacc_ci.core.resource_lock',
+      'run',
+      '--resource',
+      'fleet',
+      '--wait',
+      waitS,
+      '--purpose',
+      purpose,
+      '--',
+      'python3',
+      '-c',
+      holdChild,
+    ],
+    {
+      cwd: REPO_ROOT,
+      env: { ...process.env, PYTHONPATH: pythonPath },
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }
   );
   let stderr = '';
   child.stderr.on('data', (chunk: Buffer) => {
@@ -79,7 +99,9 @@ export async function holdFleetLock(purpose: string): Promise<() => Promise<void
       if (stdout.includes('held')) resolve();
     });
     void exited.then((code) =>
-      reject(new Error(`the VM fleet lock was not taken (exit ${code}): ${stderr.trim() || 'no output'}`))
+      reject(
+        new Error(`the VM fleet lock was not taken (exit ${code}): ${stderr.trim() || 'no output'}`)
+      )
     );
   });
   log(`  ✓ VM fleet lock held (${purpose})`);
