@@ -45,7 +45,7 @@ import weakref
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
-from rediacc_ci.core import https
+from rediacc_ci.core import https, resource_lock
 from rediacc_ci.drills import wire
 from rediacc_ci.ops import totp
 
@@ -259,6 +259,8 @@ class Drill:
             weakref.WeakKeyDictionary()
         )
         self.extra_env: dict[str, str] = {}
+        # The `fleet` resource lock while this drill drives the VMs (`hold_fleet`); released in teardown.
+        self.fleet_lock: resource_lock.ResourceLock | None = None
         self.green, self.red, self.yellow, self.nc = _colours(sys.stderr)
 
     # ------------------------------------------------------------------ environment
@@ -290,8 +292,29 @@ class Drill:
             "selftest : %s\n" % ("ON (one planted failure expected)" if self.selftest else "off")
         )
 
+    def hold_fleet(self, purpose: str) -> bool:
+        """Take the `fleet` resource lock before the first VM command (PLAN-push-decoupling.md D1.5), held until teardown.
+
+        The wait is `DRILL_FLEET_WAIT_S` seconds (default `resource_lock.DEFAULT_WAIT_S`). A drill vm:check itself runs finds its ancestor holding the lock and enters as nested. False, with the holder named on stderr, when the wait runs out: the caller stops before touching a machine."""
+        if self.fleet_lock is not None:
+            return True
+        wait_s = float(os.environ.get("DRILL_FLEET_WAIT_S") or resource_lock.DEFAULT_WAIT_S)
+        lock = resource_lock.ResourceLock("fleet")
+        try:
+            lock.acquire("drill %s: %s" % (self.name, purpose), wait_s)
+        except resource_lock.ResourceBusyError as exc:
+            log.error("drill %s: the VM fleet is busy, so no VM command ran: %s" % (self.name, exc))
+            return False
+        self.fleet_lock = lock
+        return True
+
+    def release_fleet(self) -> None:
+        if self.fleet_lock is not None:
+            self.fleet_lock.release()
+            self.fleet_lock = None
+
     def teardown(self) -> None:
-        """Best-effort cleanup, every step reported if it fails: shim, gateway, work directory."""
+        """Best-effort cleanup, every step reported if it fails: shim, gateway, work directory, then the fleet lock."""
         if self.gateway_preexisted:
             # A gateway was running before restart_gateway stopped it: leave the drill's replacement running (as vm_check does) rather than kill it, so one still answers after the run.
             self.detach_gateway()
@@ -305,6 +328,7 @@ class Drill:
             shutil.rmtree(work, ignore_errors=True)
         elif work:
             self._print("work dir kept: %s" % work)
+        self.release_fleet()
 
     def _print(self, text: str = "") -> None:
         print(text, file=self.out)

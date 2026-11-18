@@ -54,6 +54,12 @@ if [[ "${1:-}" == "--native" ]]; then
     PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.native "$@"
 fi
 
+# THE FLEET LOCK (PLAN-push-decoupling.md D1.5): `ops up|down` rebuild the VMs vm:check, e2e-local and the drills drive, so they run under rediacc_ci.core.resource_lock's `fleet`.
+_w=(); _p=""; for _a in "$@"; do [[ "$_p" == --config || "$_a" == -* ]] || _w+=("$_a"); _p="$_a"; done
+if [[ "${_w[0]:-} ${_w[1]:-}" =~ ^ops\ (up|down)$ && -z "${RDC_FLEET_LOCKED:-}" ]]; then
+    RDC_FLEET_LOCKED=1 PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.core.resource_lock run --resource fleet --purpose "rdc.sh ops ${_w[1]}" -- "$ROOT_DIR/rdc.sh" "$@"
+fi
+
 # Self-register as 'rdc' in ~/.local/bin so it's accessible from any terminal,
 # but ONLY when nothing is already installed there. A real SEA binary (from
 # `./rdc.sh --native`) installs to ~/.local/share/rediacc/bin/rdc and

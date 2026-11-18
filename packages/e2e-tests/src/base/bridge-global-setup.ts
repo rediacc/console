@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { FullConfig } from '@playwright/test';
@@ -44,6 +45,48 @@ export async function runSetupStepsConcurrently(steps: readonly SetupStep[]): Pr
     `${failures.length} of ${steps.length} concurrent setup step(s) failed:\n${lines.join('\n')}`,
     { cause: failures[0].reason }
   );
+}
+
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..', '..');
+
+/**
+ * Wait for the VM fleet lock, then hold it until the returned release runs (PLAN-push-decoupling.md D1.5).
+ * The fleet is shared by vm:check, the drills and `./rdc.sh ops up|down`, and the reset in Step 1 recreates every VM under whichever of them is running, so the suite holds the `fleet` resource of `rediacc_ci.core.resource_lock` from before Step 1 to its teardown, with or without a reset.
+ * Node has no flock, so the lock wrapper holds it for a child that prints `held` and waits on its stdin; the release (or this process dying) closes that stdin and frees the lock.
+ * The wait is `E2E_FLEET_WAIT_S` seconds (default 600). A wait that runs out rejects naming the holder, before any VM command.
+ */
+export async function holdFleetLock(purpose: string): Promise<() => Promise<void>> {
+  const waitS = process.env.E2E_FLEET_WAIT_S || '600';
+  const holdChild = "import sys; print('held', flush=True); sys.stdin.read()";
+  const pythonPath = [path.join(REPO_ROOT, '.ci'), process.env.PYTHONPATH].filter(Boolean).join(path.delimiter);
+  const child = spawn(
+    'python3',
+    ['-m', 'rediacc_ci.core.resource_lock', 'run', '--resource', 'fleet', '--wait', waitS, '--purpose', purpose, '--', 'python3', '-c', holdChild],
+    { cwd: REPO_ROOT, env: { ...process.env, PYTHONPATH: pythonPath }, stdio: ['pipe', 'pipe', 'pipe'] }
+  );
+  let stderr = '';
+  child.stderr.on('data', (chunk: Buffer) => {
+    stderr += chunk.toString();
+  });
+  const exited = new Promise<number | null>((resolve) => {
+    child.on('close', (code) => resolve(code));
+  });
+  await new Promise<void>((resolve, reject) => {
+    let stdout = '';
+    child.on('error', reject);
+    child.stdout.on('data', (chunk: Buffer) => {
+      stdout += chunk.toString();
+      if (stdout.includes('held')) resolve();
+    });
+    void exited.then((code) =>
+      reject(new Error(`the VM fleet lock was not taken (exit ${code}): ${stderr.trim() || 'no output'}`))
+    );
+  });
+  log(`  ✓ VM fleet lock held (${purpose})`);
+  return async () => {
+    child.stdin.end();
+    await exited;
+  };
 }
 
 /**
@@ -372,7 +415,7 @@ function writeSetupErrorLog(error: unknown) {
  * NOTE: Ceph provisioning is automatically handled by `ops up` when VM_CEPH_NODES is configured.
  * Do NOT call provisionCeph() separately as this causes duplicate provisioning conflicts.
  */
-async function bridgeGlobalSetup(_config: FullConfig) {
+async function bridgeGlobalSetup(_config: FullConfig): Promise<() => Promise<void>> {
   // KEEP_CLUSTER implies skip-reset: iteration mode exists to reuse a standing cluster, and a VM reboot both costs minutes per invocation and races the suite against boot recovery (observed live: a scoped re-run red on half-regenerated containerd config). CI sets neither flag.
   const skipReset = process.env.BRIDGE_TEST_SKIP_RESET === '1' || process.env.KEEP_CLUSTER === '1';
   // A reset that returns at all succeeded (a failed one throws below), so every VM was just recreated and provisioned by ops up in this process.
@@ -385,6 +428,8 @@ async function bridgeGlobalSetup(_config: FullConfig) {
 
   const opsManager = getOpsManager();
   const infra = new InfrastructureManager();
+  // The fleet lock before any VM command, held for the whole suite: the returned release is Playwright's teardown function, run after the tests.
+  const releaseFleet = await holdFleetLock(`e2e bridge suite${skipReset ? ' (no reset)' : ''}`);
 
   try {
     // Step 0: the account server repository licences come from. renet enforces licensing in every build, so a suite that creates a repository needs REDIACC_ACCOUNT_SERVER and E2E_ACCOUNT_API_TOKEN (src/utils/licence.ts). Resolved before any VM work, and set on process.env, which the workers inherit.
@@ -447,6 +492,7 @@ async function bridgeGlobalSetup(_config: FullConfig) {
     log('All VMs ready for SSH-based test execution');
     log('='.repeat(60));
     log('');
+    return releaseFleet;
   } catch (error) {
     console.error('');
     console.error('='.repeat(60));
@@ -454,6 +500,7 @@ async function bridgeGlobalSetup(_config: FullConfig) {
     console.error('='.repeat(60));
 
     writeSetupErrorLog(error);
+    await releaseFleet();
     throw error;
   }
 }
