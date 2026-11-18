@@ -34,7 +34,7 @@ WHAT A TRACE CANNOT SEE, stated so a clean table is not read as more than it is:
 
 LISTINGS go to `paths`' sibling `lists`, never to the reads table. Python's import system lists every sys.path directory it searches, so a listing in the table would tie whichever test imported first to every file under `.ci` and `.claude`, and pytest_impact.py's literal and FULL rules already answer "a file was added where a test globs".
 
-    pytest_impact_reads.py --trace [--jobs N] [--tests <path> ...]
+    pytest_impact_reads.py --trace [--jobs N] [--shards N] [--tests <path> ...]
                                   trace the suite (or the named test files) and
                                   write TRACE_RELPATH; a run that is red beyond a
                                   few named failures (red_run_problem), or that
@@ -48,6 +48,7 @@ LISTINGS go to `paths`' sibling `lists`, never to the reads table. Python's impo
 
 from __future__ import annotations
 
+import concurrent.futures
 import contextlib
 import json
 import os
@@ -467,6 +468,10 @@ def strace_argv(log: str, inner: list[str]) -> list[str]:
     ]
 
 
+# The strace sessions this process has running; run_trace adds and removes its own.
+_LIVE: list[subprocess.Popen] = []
+
+
 def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attributor, str]:
     """(pytest exit, the folded stream, pytest's output). strace's stderr is read line by line while pytest runs, so the log never touches disk. strace runs in its own session and the whole group is killed when this returns, normally or not: a reader that stops reading would otherwise leave every tracee stopped on a full pipe."""
     if shutil.which("strace") is None:
@@ -492,6 +497,7 @@ def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attribut
             errors="replace",
             start_new_session=True,
         )
+        _LIVE.append(child)
         stream = child.stderr if child.stderr is not None else ()
         for line in stream:
             att.feed(line)
@@ -502,8 +508,18 @@ def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attribut
             with contextlib.suppress(ProcessLookupError):
                 os.killpg(child.pid, signal.SIGKILL)
             child.wait()
+        if child is not None and child in _LIVE:
+            _LIVE.remove(child)
         shutil.rmtree(scratch, ignore_errors=True)
     return rc, att, output
+
+
+def _kill_live() -> None:
+    """Kill every strace session still registered: the main thread's exit path, for shards whose own `finally` sits on a pool thread that a SystemExit in the main thread never reaches."""
+    for child in _LIVE[:]:
+        if child.poll() is None:
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(child.pid, signal.SIGKILL)
 
 
 def trace_record(att: Attributor, collected: int) -> dict:
@@ -595,13 +611,44 @@ def _exit_on_term(signum: int, _frame) -> None:
     raise SystemExit(128 + signum)
 
 
+def merge_attributors(parts: list[Attributor]) -> Attributor:
+    """One Attributor holding every shard's reads and listings, with the counts summed. Shards partition the test FILES, so no label is split between two of them except UNATTRIBUTED, whose reads are unioned like any other."""
+    out = Attributor(root=parts[0].root if parts else "", marker_dir="")
+    for part in parts:
+        for label, rels in part.reads.items():
+            out.reads.setdefault(label, set()).update(rels)
+        for label, rels in part.lists.items():
+            out.lists.setdefault(label, set()).update(rels)
+        out.markers += part.markers
+        out.lines += part.lines
+        # Pids are per shard and may repeat across shards, so each shard's unclaimed processes are re-keyed by arrival; only their count is reported.
+        for events in part.unclaimed.values():
+            out.unclaimed[len(out.unclaimed)] = list(events)
+    return out
+
+
+def merged_rc(codes: list[int]) -> int:
+    """The worst exit across shards: any code that is not 0 or 1 wins (red_run_problem refuses it), then 1, then 0."""
+    other = [c for c in codes if c not in (0, 1)]
+    if other:
+        return other[0]
+    return 1 if 1 in codes else 0
+
+
+def shard_files(files: list[str], shards: int) -> list[list[str]]:
+    """Round-robin over the sorted files, so a directory of slow suites (the guards, the hooks) is spread over every strace instead of landing on one."""
+    ordered = sorted(files)
+    return [g for g in (ordered[i::shards] for i in range(shards)) if g]
+
+
 def cmd_trace(root: pathlib.Path, argv: list[str]) -> int:
     # A plain SIGTERM would end this process without run_trace's `finally`, leaving strace and every tracee running in their own session (seen 2026-11-18); as an exception it unwinds through the group kill.
     signal.signal(signal.SIGTERM, _exit_on_term)
     tests = _arg_values(argv, "--tests")
     jobs = (_arg_values(argv, "--jobs") or [str(max(2, (os.cpu_count() or 2) // 2))])[-1]
+    shards = int((_arg_values(argv, "--shards") or ["1"])[-1])
     pytest_bin = (_arg_values(argv, "--pytest") or [sys.executable])[-1]
-    inner = [
+    head = [
         pytest_bin,
         *(["-m", "pytest"] if pytest_bin == sys.executable else []),
         "-q",
@@ -609,14 +656,7 @@ def cmd_trace(root: pathlib.Path, argv: list[str]) -> int:
         "rediacc_ci.quality.pytest_impact_reads",
         "-n",
         jobs,
-        *tests,
     ]
-    rc, att, output = run_trace(root, inner)
-    m = re.findall(r"(\d+) passed", output)
-    collected = int(m[-1]) if m else 0
-    failed = failed_nodeids(output)
-    record = trace_record(att, collected)
-    record["failed"] = failed
     present = impact.present_files(root) or []
     test_roots = impact.testpath_roots(root)
     universe = [p for p in present if impact.is_test_file(p, test_roots)]
@@ -624,6 +664,23 @@ def cmd_trace(root: pathlib.Path, argv: list[str]) -> int:
         universe = [
             p for p in universe if any(p == t or p.startswith(t.rstrip("/") + "/") for t in tests)
         ]
+    # ONE strace serializes every ptrace stop in the suite: on 2026-11-18 it sat at 90% of one core with the machine at load 21 of 24. Shards are separate straces over disjoint test files.
+    groups = shard_files(universe, shards) if shards > 1 else [tests]
+    if shards > 1:
+        print(
+            "pytest-impact-reads: %d shard(s) of %s test file(s), -n %s each"
+            % (len(groups), "/".join(str(len(g)) for g in groups), jobs)
+        )
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(groups)) as pool:
+        results = list(pool.map(lambda g: run_trace(root, [*head, *g]), groups))
+    rc = merged_rc([r[0] for r in results])
+    att = merge_attributors([r[1] for r in results])
+    output = "\n".join(r[2] for r in results)
+    collected = sum(int(m[-1]) for m in (re.findall(r"(\d+) passed", r[2]) for r in results) if m)
+    failed = failed_nodeids(output)
+    record = trace_record(att, collected)
+    record["failed"] = failed
+    record["shards"] = len(groups)
     print(
         "pytest-impact-reads: pytest rc %d, %d passed, %d strace line(s), %d marker(s), %d of %d test file(s) attributed, %d unclaimed pid(s)"
         % (
@@ -698,7 +755,10 @@ def cmd_derive(root: pathlib.Path, argv: list[str]) -> int:
 def main(argv: list[str]) -> int:
     root = paths.repo_root()
     if "--trace" in argv:
-        return cmd_trace(root, argv)
+        try:
+            return cmd_trace(root, argv)
+        finally:
+            _kill_live()
     if "--derive" in argv:
         return cmd_derive(root, argv)
     print(__doc__)

@@ -486,3 +486,38 @@ def test_a_term_signal_unwinds_as_an_exit():
     with pytest.raises(SystemExit) as got:
         pr._exit_on_term(15, None)
     assert got.value.code == 143
+
+
+# --------------------------------------------------------------------------- shards
+
+
+def test_shards_partition_the_files_round_robin_with_nothing_lost():
+    files = ["t/test_%02d.py" % i for i in range(7)]
+    groups = pr.shard_files(list(reversed(files)), 3)
+    assert groups == [files[0::3], files[1::3], files[2::3]]
+    assert sorted(f for g in groups for f in g) == files, "a file was dropped or doubled"
+
+
+def test_control_more_shards_than_files_gives_no_empty_shard():
+    assert pr.shard_files(["t/test_a.py"], 4) == [["t/test_a.py"]]
+
+
+def test_merge_unions_reads_per_label_and_sums_the_counts():
+    a = feed(opened(100, "/r/pyproject.toml"), mark(100, T1), opened(100, "/r/.ci/policy/a.json"))
+    b = feed(opened(100, "/r/pyproject.toml"), mark(100, T2), opened(100, "/r/.ci/policy/b.json"))
+    b.unclaimed[7] = [("read", "/r/x")]
+    got = pr.merge_attributors([a, b])
+    assert got.reads[T1] == {".ci/policy/a.json"}
+    assert got.reads[T2] == {".ci/policy/b.json"}
+    assert got.reads[pr.UNATTRIBUTED] == {"pyproject.toml"}
+    assert got.markers == 2
+    assert got.lines == a.lines + b.lines
+    assert len(got.unclaimed) == 1
+
+
+@pytest.mark.parametrize(
+    ("codes", "want"),
+    [([0, 0], 0), ([0, 1], 1), ([1, 2, 0], 2), ([0, 5], 5)],
+)
+def test_the_worst_shard_exit_wins(codes, want):
+    assert pr.merged_rc(codes) == want
