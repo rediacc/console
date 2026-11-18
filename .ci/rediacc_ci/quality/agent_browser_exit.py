@@ -81,7 +81,7 @@ import shutil
 import sys
 import tempfile
 
-from rediacc_ci import paths, runtmp
+from rediacc_ci import gitx, paths, runtmp
 from rediacc_ci.controls import Controls
 
 # POSIX [[:space:]], written out. See the port notes for why `\s` is wrong here.
@@ -126,6 +126,44 @@ def _strip_leading(line: str) -> str:
     return line.lstrip(" \t\n\v\f\r")
 
 
+class TrackedListingError(RuntimeError):
+    """The index could not be listed under a root that exists. Never an empty corpus."""
+
+
+def tracked_files(root: str) -> list[str]:
+    """Repo-relative `/` paths git TRACKS under `root`, submodules included.
+
+    THE CORPUS IS THE INDEX, NOT THE DISK. A raw walk entered `private/bin`, `packages/shared/dist` and `.ci/cache/pytest`, which are untracked build output, so the verdict depended on what a previous build had left behind and the walk paid to read it (strace, PLAN-push-decoupling F3). `git ls-files --cached --recurse-submodules` is what CI's checkout holds, so the same verdict now holds on every machine.
+
+    A MISSING ROOT IS AN EMPTY CORPUS, as it was under the walk. A root that EXISTS but is not itself a git toplevel RAISES: `git -C` on such a directory would otherwise answer from an enclosing repository (or fail), and an empty listing read as "nothing to scan" is the green-without-running this gate is written against. A fixture directory is made scannable with `stage`.
+    """
+    if not os.path.isdir(root):
+        return []
+    top = gitx.toplevel(root)
+    if top is None or os.path.realpath(str(top)) != os.path.realpath(root):
+        raise TrackedListingError(
+            "%s is not a git work tree root, so there is no tracked listing to scan. "
+            "Run the gate from a checkout; a test fixture is staged with stage()." % root
+        )
+    result = gitx.git(["ls-files", "-z", "--cached", "--recurse-submodules"], root=root)
+    if not result.ok:
+        raise TrackedListingError(
+            "git ls-files failed under %s: %s" % (root, result.stderr.strip() or "no stderr")
+        )
+    return sorted({p for p in result.stdout.split("\0") if p})
+
+
+def stage(directory: pathlib.Path | str) -> None:
+    """Make a fixture directory a one-off repository whose index holds everything in it.
+
+    The tracked listing reads the index, so a fixture has to be in one. No commit is needed and no identity is read.
+    """
+    for args in (["init", "-q"], ["add", "-A", "--", "."]):
+        result = gitx.git(args, root=directory)
+        if not result.ok:
+            raise TrackedListingError("git %s failed in %s: %s" % (args[0], directory, result.stderr))
+
+
 def _corpus(root: str, suffixes: tuple[str, ...], prune: tuple[str, ...]) -> list[str]:
     """`grep -rl <needle> --include=... | grep -v ... | sort`, as a path list.
 
@@ -134,22 +172,27 @@ def _corpus(root: str, suffixes: tuple[str, ...], prune: tuple[str, ...]) -> lis
 
     A MISSING ROOT IS AN EMPTY CORPUS, not an error, matching the twin's `2>/dev/null` on the grep. That is not a vacuity hole being copied blindly: the twin's controls drive `scan` against a directory that does not exist on purpose, so the behaviour is load-bearing for its own self-test.
 
-    `prune` IS NOW A TUPLE OF DIRECTORY NAMES handed to `paths.walk_tree`, which also prunes `.git`, `node_modules` and `.claude/worktrees` for every caller. The last of those is why this changed: a peer's sibling checkout under `.claude/worktrees/` is invisible to git and was not invisible to `os.walk`, so this corpus was silently scanning a second copy of the repository.
+    `prune` IS A TUPLE OF DIRECTORY NAMES that no path may pass through. The files themselves come from `tracked_files`, so a peer's sibling checkout under `.claude/worktrees/` and untracked build output are never listed; `paths.PRUNED_DIR_NAMES` and `PRUNED_DIR_PAIRS` still apply on top, which keeps the old walk's verdict on a tracked file under one of them.
     """
     out: list[str] = []
-    for dirpath, dirnames, filenames in paths.walk_tree(root, exclude_dirs=prune):
-        dirnames.sort()
-        for name in sorted(filenames):
-            if not name.endswith(suffixes):
-                continue
-            full = os.path.join(dirpath, name)
-            try:
-                text = pathlib.Path(full).read_text(encoding="utf-8", errors="replace")
-            except OSError:
-                # grep prints an error to the stderr the twin sends to /dev/null and lists nothing. An unreadable file is not a finding.
-                continue
-            if NEEDLE in text:
-                out.append(full)
+    skip = frozenset(prune) | frozenset(paths.PRUNED_DIR_NAMES)
+    for rel in tracked_files(root):
+        parts = rel.split("/")
+        directories = parts[:-1]
+        if any(name in skip for name in directories):
+            continue
+        if any((a, b) in paths.PRUNED_DIR_PAIRS for a, b in zip(directories, directories[1:])):
+            continue
+        if not parts[-1].endswith(suffixes):
+            continue
+        full = os.path.join(root, *parts)
+        try:
+            text = pathlib.Path(full).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            # grep prints an error to the stderr the twin sends to /dev/null and lists nothing. An unreadable file is not a finding, and neither is a path the index still lists after `rm`.
+            continue
+        if NEEDLE in text:
+            out.append(full)
     return sorted(out, key=lambda p: p.encode("utf-8", "surrogateescape"))
 
 
@@ -282,6 +325,7 @@ def inline_controls() -> int:
         one = ctl / "one"
         one.mkdir(parents=True, exist_ok=True)
         shutil.copy(ctl / "bad.sh", one / "bad.sh")
+        stage(one)
         if not scan(str(one)):
             print(
                 "CONTROL FAILED: an unguarded call under set -e was NOT reported.",
@@ -292,6 +336,7 @@ def inline_controls() -> int:
         one.mkdir(parents=True, exist_ok=True)
         shutil.copy(ctl / "good.sh", one / "good.sh")
         shutil.copy(ctl / "no-set-e.sh", one / "no-set-e.sh")
+        stage(one)
         if scan(str(one)):
             print(
                 "CONTROL FAILED: a guarded call, or one outside set -e, was reported.",
@@ -309,6 +354,7 @@ def inline_controls() -> int:
             js / "bad.js",
             "const out = execFileSync('agent-browser', args, { encoding: 'utf8' });",
         )
+        stage(js)
         if not scan_js(str(js)):
             print(
                 "CONTROL FAILED: a JS exec of agent-browser that never reads .stdout "
@@ -325,6 +371,7 @@ def inline_controls() -> int:
             js / "comment.js",
             "// execFileSync('agent-browser', ...) is described here, not called.",
         )
+        stage(js)
         if scan_js(str(js)):
             print(
                 "CONTROL FAILED: a JS caller that recovers .stdout, or a comment, was reported.",
@@ -348,6 +395,16 @@ def main(argv: list[str] | None = None) -> int:
         return selftest()
 
     root = str(paths.repo_root())
+
+    # ZERO INPUTS IS A FAILURE. A tracked listing that is empty or cannot be read means the gate is not seeing the tree, and its green would mean nothing.
+    try:
+        tracked = tracked_files(root)
+    except TrackedListingError as exc:
+        print("✗ %s" % exc, file=sys.stderr)
+        return 2
+    if not tracked:
+        print("✗ git tracks no files under %s; this gate verified NOTHING." % root, file=sys.stderr)
+        return 2
 
     rc = inline_controls()
     if rc != 0:
@@ -374,6 +431,7 @@ def main(argv: list[str] | None = None) -> int:
             "✓ No shell script, and no JS/TS caller, lets `agent-browser`'s "
             "exit status decide control flow."
         )
+        print("  (%d tracked files in the corpus)" % len(tracked))
         return 0
 
     print(
@@ -407,6 +465,7 @@ def selftest() -> int:
             shutil.rmtree(box, ignore_errors=True)
             box.mkdir(parents=True)
             _write(box / name, *lines)
+            stage(box)
             return scan(str(box))
 
         def js(name: str, *lines: str) -> list[str]:
@@ -414,6 +473,7 @@ def selftest() -> int:
             shutil.rmtree(box, ignore_errors=True)
             box.mkdir(parents=True)
             _write(box / name, *lines)
+            stage(box)
             return scan_js(str(box))
 
         # -- the shell half, positive plants --------------------------------
@@ -532,6 +592,7 @@ def selftest() -> int:
             'set -e\nagent-browser open "$U" >/dev/null',
             encoding="utf-8",
         )
+        stage(box)
         ctl.check(
             "PRESERVED DEFECT: a final line with no trailing newline is not scanned",
             scan(str(box)),
@@ -541,6 +602,7 @@ def selftest() -> int:
             'set -e\nagent-browser open "$U" >/dev/null\n',
             encoding="utf-8",
         )
+        stage(box)
         ctl.check(
             "MIRROR: the same line WITH a trailing newline is scanned",
             len(scan(str(box))),
@@ -593,6 +655,7 @@ def selftest() -> int:
         # An empty corpus produces no findings, and that is CORRECT here rather than a hole: `scan` is a predicate over a directory the caller chose, and the twin drives it against a non-existent one in its own controls. The anti-vacuity property that matters lives in `inline_controls`, which refuses to let the gate proceed unless a planted defect fires.
         empty = root / "empty"
         empty.mkdir(exist_ok=True)
+        stage(empty)
         ctl.check("VACUITY: an empty directory yields nothing", scan(str(empty)), [])
         ctl.check("VACUITY: and nothing from the JS half either", scan_js(str(empty)), [])
         ctl.check(
@@ -609,6 +672,7 @@ def selftest() -> int:
         plant = root / "plant"
         plant.mkdir(exist_ok=True)
         (plant / "bad.sh").write_text(_BAD_SH, encoding="utf-8")
+        stage(plant)
         ctl.check("CONTROL: the inline controls' own fixture fires", len(scan(str(plant))), 1)
 
     return 0 if ctl.report() else 1
