@@ -494,3 +494,32 @@ def test_the_streamed_parser_classifies_server_mail_under_isolated_mode(tmp_path
     assert msg["kind"] == "server-report"
     assert msg["report"]["domains"] == ["rediacc.com"]
     assert "@rediacc.com" not in json.dumps(msg["report"])
+
+
+def test_a_bare_ses_event_body_is_classified_like_the_sns_envelope():
+    # The live Server-Reports mail (2026-11-18) carries the SES event JSON as the whole body, with no SNS envelope.
+    raw = mail(SNS, "Amazon SES Email Event Notification", json.dumps(delay("example.com")))
+    got = dp.classify_server(raw)["report"]
+    assert got["shape"] == "ses-event"
+    assert got["event"] == "DeliveryDelay"
+    assert got["domains"] == ["example.com"]
+    # Control: the same body without an eventType stays unknown, so the bare form is not a catch-all.
+    bare = {k: v for k, v in delay("example.com").items() if k != "eventType"}
+    assert (
+        dp.classify_server(mail(SNS, "Amazon SES Email Event Notification", json.dumps(bare)))[
+            "report"
+        ]["shape"]
+        == "unknown"
+    )
+
+
+def test_a_folded_ses_body_with_the_sns_footer_parses():
+    # SNS email delivery folds the JSON at 998 characters (CRLF plus one space) and appends an unsubscribe footer.
+    body = json.dumps(delay("example.com", n=40))
+    folded = "\r\n ".join(body[i : i + 998] for i in range(0, len(body), 998))
+    footer = "\r\n\r\n--\r\nIf you wish to stop receiving notifications from this topic, please click or visit the link below to unsubscribe:\r\n"
+    got = dp.server_shape("Amazon SES Email Event Notification", folded + footer)
+    assert got["shape"] == "ses-event" and got["domains"] == ["example.com"]
+    # Control: a fold with no continuation space is not undone, so a body corrupted another way stays unknown.
+    broken = "\r\n".join(body[i : i + 998] for i in range(0, len(body), 998)) + "x"
+    assert dp.server_shape("Amazon SES Email Event Notification", broken)["shape"] == "unknown"

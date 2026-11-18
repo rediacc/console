@@ -354,12 +354,18 @@ def _recipient_domains(entries: object) -> list:
 
 
 def _ses_event(doc: dict) -> dict:
-    """The SES event inside one SNS notification, or an `unknown` shape naming what is missing."""
-    inner = doc.get("Message")
-    try:
-        event = json.loads(inner) if isinstance(inner, str) else None
-    except ValueError:
-        event = None
+    """The SES event of one notification, or an `unknown` shape naming what is missing.
+
+    An SNS email subscription delivers the SES event JSON as the whole body (measured 2026-11-18 on Server-Reports: no SNS envelope); an HTTP or raw-off subscription wraps it in a Notification whose `Message` holds it. Both reach here.
+    """
+    if doc.get("eventType") or doc.get("notificationType"):
+        event = doc
+    else:
+        inner = doc.get("Message")
+        try:
+            event = json.loads(inner) if isinstance(inner, str) else None
+        except ValueError:
+            event = None
     if not isinstance(event, dict):
         return {"shape": "unknown", "why": "SNS notification without an SES event JSON"}
     kind = str(event.get("eventType") or event.get("notificationType") or "")
@@ -398,18 +404,28 @@ def _postfix_summary(text: str) -> dict:
     return {"shape": "postfix-summary", **counts}
 
 
+def _leading_json(text: str):
+    """The JSON value a notification body starts with, or None.
+
+    SNS email delivery folds the event JSON at 998 characters with a CRLF plus one space and appends an unsubscribe footer (measured 2026-11-18 on Server-Reports), so the fold is undone and only the leading value is decoded.
+    """
+    unfolded = re.sub(r"\r?\n ", "", text).lstrip()
+    try:
+        value, _end = json.JSONDecoder().raw_decode(unfolded)
+    except ValueError:
+        return None
+    return value
+
+
 def server_shape(subject: str, text: str) -> dict:
     """The classified shape of one server mail from its subject and text body."""
     if subject.startswith("Postfix summary for") or "Grand Totals" in text:
         return _postfix_summary(text)
-    try:
-        doc = json.loads(text)
-    except ValueError:
-        doc = None
+    doc = _leading_json(text)
     if isinstance(doc, dict):
         if doc.get("Type") == "SubscriptionConfirmation":
             return {"shape": "sns-confirm"}
-        if doc.get("Type") == "Notification":
+        if doc.get("Type") == "Notification" or doc.get("eventType") or doc.get("notificationType"):
             return _ses_event(doc)
     if subject.startswith("AWS Notification - Subscription Confirmation"):
         return {"shape": "sns-confirm"}
