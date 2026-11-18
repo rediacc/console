@@ -445,7 +445,16 @@ def _grep_stub(tmp_path: pathlib.Path, rc: int) -> dict[str, str]:
         encoding="utf-8",
     )
     stub.chmod(0o755)
-    return {"PATH": "%s:%s" % (bindir, os.environ["PATH"]), "PLAN_FOLDERS_ROOT": ""}
+    # The stub's own dir first, then the dirs of the real git and of this interpreter: no read of the
+    # caller's PATH, which the python env registry would count as an undeclared input.
+    dirs = [
+        str(bindir),
+        os.path.dirname(real),
+        str(pathlib.Path(sys.executable).parent),
+        "/usr/bin",
+        "/bin",
+    ]
+    return {"PATH": ":".join(dirs), "PLAN_FOLDERS_ROOT": ""}
 
 
 def _citer_fixture(tmp_path: pathlib.Path) -> tuple[pathlib.Path, str]:
