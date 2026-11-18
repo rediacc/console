@@ -1309,13 +1309,13 @@ class License:
 
         # Preflight BEFORE the sandbox exports: preflight_vms runs `rdc ops status`, a full CLI invocation, and the CLI auto-creates the config named by REDIACC_CONFIG on startup. With the export in place first, that auto-creation races the later `config init` and it dies with "already exists" (found live 2026-08-04).
         self.preflight_tools()
-        # The fleet lock before the first VM command: `machine setup` uploads renet to the worker that vm:check, the e2e-local setup and `./rdc.sh ops` also drive.
-        if o.needs_vm() and not d.hold_fleet("legs %s on %s" % (o.legs, o.vm_ip)):
-            return 1
         self.preflight_vms()
         self.preflight_ssh()
         self.preflight_ceph()
         self.preflight_agent_overrides()
+        # The fleet lock after the read-only preflights and before the first VM write: `machine setup` uploads renet to the worker that vm:check, the e2e-local setup and `./rdc.sh ops` also drive. The preflights stay outside it, so a refusal there never waits on a running vm:check.
+        if o.needs_vm() and not d.hold_fleet("legs %s on %s" % (o.legs, o.vm_ip)):
+            return 1
         self.setup_sandbox()
         self.setup_gateway_address()
         self.setup_gateway()

@@ -188,26 +188,43 @@ def _license_fake(calls: list[str]) -> Any:
     return fake
 
 
-def test_license_drill_stops_before_any_vm_command_on_a_held_fleet(
+PREFLIGHTS = ["announce_cost", "preflight_tools", "preflight_vms", "preflight_ssh", "preflight_ceph", "preflight_agent_overrides"]
+
+
+def test_license_drill_stops_before_any_vm_write_on_a_held_fleet(
     runtime: pathlib.Path, holder: subprocess.Popen, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """Only the read-only preflights run; the refusal comes before the sandbox, the gateway and `machine setup` (the renet upload)."""
     monkeypatch.setenv("DRILL_FLEET_WAIT_S", "1")
     calls: list[str] = []
     fake = _license_fake(calls)
     assert lic.License.run_all(cast("Any", fake)) == 1
-    assert calls == ["announce_cost", "preflight_tools"]
+    assert calls == PREFLIGHTS
 
 
-def test_license_drill_takes_the_fleet_then_reaches_the_vms(runtime: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Control: with the fleet free the same run takes the lock and goes on to the VM preflight."""
+def test_license_drill_takes_the_fleet_then_writes(runtime: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Control: with the fleet free the same run takes the lock and goes on to the sandbox."""
     monkeypatch.setenv("DRILL_FLEET_WAIT_S", "0")
     calls: list[str] = []
     fake = _license_fake(calls)
     with pytest.raises(SystemExit):
         lic.License.run_all(cast("Any", fake))
-    assert calls[:3] == ["announce_cost", "preflight_tools", "preflight_vms"]
+    assert calls == PREFLIGHTS
     assert fake.d.fleet_lock is not None
     fake.d.release_fleet()
+
+
+def test_license_drill_with_no_vm_leg_takes_no_lock(
+    runtime: pathlib.Path, holder: subprocess.Popen, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """`--legs f` touches no machine, so a held fleet does not stop it."""
+    monkeypatch.setenv("DRILL_FLEET_WAIT_S", "0")
+    calls: list[str] = []
+    fake = _license_fake(calls)
+    fake.o.legs = "f"
+    with pytest.raises(SystemExit):
+        lic.License.run_all(cast("Any", fake))
+    assert fake.d.fleet_lock is None
 
 
 # --------------------------------------------------------------------------- the e2e bridge setup
