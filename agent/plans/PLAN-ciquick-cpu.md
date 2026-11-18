@@ -94,7 +94,9 @@ Core-s is the sum of per-gate `cpuMs` in the receipt plus the runner's own CPU (
 ### W4 pytest impact -- .ci/rediacc_ci/pytest_impact.py, .ci/rediacc_ci/check_pytest.py, .ci/policy/pytest-smoke.json, .ci/policy/pytest-impact.json, .ci/rediacc_ci/tests/test_pytest_impact.py
 - [ ] W4.1 [writer] The map, selection, smoke floor and every B4 fallback, each with a test. Accept: one test per fallback reason, and a control where a leaf-module edit selects only its importers plus smoke.
 - [ ] W4.2 [writer] check_pytest impact/full switch, receipt fields `pytestScope`, selected count and map digest, and guard acceptance (B5). Accept: `CI=true` runs the full suite, asserted on the collected count.
-- [ ] W4.3 [writer] Derive `reads` with the tracer and declare check:ci-pytest `paths` (B2, B6). Accept: a docs-only diff carries check:ci-pytest.
+- [x] W4.3 [writer] Derive `reads` with the tracer and declare check:ci-pytest `paths` (B2, B6). Accept: a docs-only diff carries check:ci-pytest.
+    (corrected ASKED:2026-11-18T14:50Z) The traced union reads all 11,668 tracked files, so no narrower `paths` is honest: check:ci-pytest is whole-tree and pytest_impact selects the tests whose traced reads cover the change. Accept: a docs-only diff RUNS check:ci-pytest and selects only its traced readers plus smoke.
+    (ticked) 2026-11-18T15:40:35Z by d778be9d: commit:5e5d1c0f1c commit:bc22fff052 -- check:ci-pytest whole-tree (docs edit probe CARRY before, RUN after), select() judges every changed file through the reads table (738 test files, 16,928 entries); docs/playbook 30, hook guard 71 of 936; pytest_impact tests 141 passed, run.ts --selftest rc 0. DEPS-WAIVED: W4.3 code and tests stand on their own
 
 ### W5 typecheck skip -- scripts/ci-runner/typecheck-incremental.ts and its test
 - [x] W5.1 [writer] Find the volatile skip-key field and hash content instead (A6). Accept: the two-run test and its touched-file control.

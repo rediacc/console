@@ -83,25 +83,25 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1476 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1481 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
   - epic 2255f2d2, no plan, 2 commit(s) on the branch, 0 open item(s): Convert stale GitHub issues (console, renet, account) into plan files
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a1d4db6b77fe065b1.
-- Leased items: 10: #02389657 (worker:a1d4db6b77fe065b1, d778be9d), #0e9506a2 (worker:a1d4db6b77fe065b1, d778be9d), #399410f7 (worker:a1d4db6b77fe065b1, d778be9d), #4889018a (worker:a1d4db6b77fe065b1, d778be9d), #8bb65426 (worker:a1d4db6b77fe065b1, d778be9d), #ab9c68b1 (worker:a1d4db6b77fe065b1, d778be9d), #ae672ecb (worker:a1d4db6b77fe065b1, d778be9d), #eacd21f4 (worker:a1d4db6b77fe065b1, d778be9d), #fbe192ca (worker:a1d4db6b77fe065b1, d778be9d), #ff4754ce (worker:a1d4db6b77fe065b1, d778be9d).
+- Writers: 0 live of writer_cap 25 (session d778be9d).
+- Leased items: 9: #02389657 (worker:ad3c8f8c36cf8d47e, d778be9d), #0e9506a2 (worker:ad3c8f8c36cf8d47e, d778be9d), #4889018a (worker:ad3c8f8c36cf8d47e, d778be9d), #8bb65426 (worker:ad3c8f8c36cf8d47e, d778be9d), #ab9c68b1 (worker:ad3c8f8c36cf8d47e, d778be9d), #ae672ecb (worker:ad3b3745d978e4e1d, d778be9d), #eacd21f4 (worker:ad3c8f8c36cf8d47e, d778be9d), #fbe192ca (worker:ad3c8f8c36cf8d47e, d778be9d), #ff4754ce (worker:ad3c8f8c36cf8d47e, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 29 of 81 plans done, 1231 of 1504 boxes done (81%).
+Promoted: 29 of 81 plans done, 1232 of 1504 boxes done (81%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
-| 1 | PLAN-ciquick-cpu.md | 10/24 | 14 open |
+| 1 | PLAN-ciquick-cpu.md | 11/24 | 13 open |
 | 2 | PLAN-backup-program.md | 186/192 | 6 open |
 | 3 | PLAN-cloudflare-proxy.md | 28/29 | 1 open |
 | 4 | PLAN-sync-remote-file-ownership.md | 7/7 | done |
