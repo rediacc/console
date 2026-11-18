@@ -1123,10 +1123,11 @@ def test_a_red_receipt_advances_only_past_records_its_reds_do_not_read(gate):
 QUICK_CLONE_REL = "scripts/ci-runner/quick-clone.ts"
 
 
-def _clone_fixture(gate, work):
-    """A fixture whose one gate reads a file the live tree holds uncommitted, with an install the kept clone can copy: `quick-clone.ts` starts the runner through `<clone>/node_modules/.bin/tsx`, so the clone must get one the way it gets every dependency."""
+def _clone_fixture(gate, work, gates: list[dict] | None = None):
+    """A fixture whose one gate reads a file the live tree holds uncommitted, with an install the kept clone can copy: `quick-clone.ts` starts the runner through `<clone>/node_modules/.bin/tsx`, so the clone must get one the way it gets every dependency. `gates` replaces that one gate when a case needs its own."""
     tsx = require_runner(gate)
-    gates = [spec("fast:sees-head", "[ ! -e dirty.marker ]")]
+    if gates is None:
+        gates = [spec("fast:sees-head", "[ ! -e dirty.marker ]")]
     dep_version = "1.0.0"
     lock = json.dumps({"packages": {"node_modules/dep": {"version": dep_version}}}) + "\n"
     repo = _fixture_repo(
@@ -1235,6 +1236,76 @@ def test_quick_clone_judges_head_and_leaves_the_live_tree_alone(gate):
         gate.assert_contains(r.out, "running in this checkout", "and says where it ran")
         gate.assert_contains(r.out, "npm run ci -- --narrow", "and prints the repair line")
         gate.log_pass("the clone judged HEAD, the second run carried, and --here went red")
+
+
+def test_quick_clone_carries_from_a_receipt_two_runs_back(gate):
+    """PLAN-ciquick-cpu A1 through the real entry: green at y.txt=good, red at y.txt=bad, then y.txt=good again beside an unrelated edit. The newest receipt never judged that inputHash, so only the archived receipt two runs back can carry the gate, and the run must not execute it.
+
+    A pure `planCarry` case already lives in run.ts's selftest; this one proves the WIRING (loadPriorReceipts on the real destination, the archive writeReceipt keeps, the clone that makes the run disposable). CONTROL: a y.txt no receipt judged runs the gate.
+    """
+    gates = [
+        spec(
+            "fast:reads-y",
+            'echo reads-y >> "$MARK"; grep -q good y.txt',
+            paths=["y.txt"],
+            pathsOrigin="declared",
+        )
+    ]
+    with harness.temp_dir() as work:
+        repo = _clone_fixture(gate, work, gates)
+        mark = work / "ran.log"
+        receipt_path = repo / ".ci" / "cache" / "prepush-receipt.json"
+
+        def commit(files: dict, msg: str) -> str:
+            for rel, text in files.items():
+                (repo / rel).write_text(text, encoding="utf-8")
+            _git(gate, repo, "add", "--", *files)
+            _git(gate, repo, "commit", "-q", "-m", msg, "--", *files)
+            return _git(gate, repo, "rev-parse", "HEAD^{tree}")
+
+        def runs_of_gate() -> int:
+            return mark.read_text(encoding="utf-8").split().count("reads-y") if mark.exists() else 0
+
+        t1 = commit({"y.txt": "good\n"}, "y good")
+        r = _quick_clone(gate, repo, work)
+        gate.assert_exit(0, r, "run 1 is green at y.txt=good")
+        gate.assert_eq(runs_of_gate(), 1, "run 1 executed the gate")
+        gate.assert_eq(
+            (repo / ".ci" / "cache" / "receipts" / ("%s.json" % t1)).is_file(),
+            True,
+            "run 1 is archived under its tree",
+        )
+
+        commit({"y.txt": "bad\n"}, "y bad")
+        r = _quick_clone(gate, repo, work)
+        gate.assert_exit(1, r, "run 2 is red at y.txt=bad")
+        gate.assert_eq(runs_of_gate(), 2, "run 2 executed the gate")
+
+        t3 = commit(
+            {"y.txt": "good\n", "z.txt": "unrelated\n"},
+            "y good again, plus a file the gate does not read",
+        )
+        gate.assert_eq(t3 != t1, True, "run 3 judges a tree no receipt names")
+        r = _quick_clone(gate, repo, work)
+        gate.assert_exit(0, r, "run 3 is green")
+        gate.assert_eq(runs_of_gate(), 2, "run 3 did not execute the gate: it carried")
+        gate.assert_contains(r.out, "ci:quick: carried 1, ran ", "the run reports the carry")
+        carried = _receipt(gate, receipt_path).get("gates", {}).get("fast:reads-y", {})
+        gate.assert_eq(
+            (carried.get("carriedFrom") or {}).get("headTree"),
+            t1,
+            "the carry names the receipt two runs back as its origin, not the red one",
+        )
+
+        # CONTROL: an inputHash no receipt judged carries from none of them.
+        commit({"y.txt": "good, reworded\n"}, "y changed")
+        r = _quick_clone(gate, repo, work)
+        gate.assert_exit(0, r, "the control run is green")
+        gate.assert_eq(runs_of_gate(), 3, "CONTROL: a changed y.txt runs the gate")
+        gate.log_pass(
+            "a restored input carried from the archived receipt two runs back, past a red one, "
+            "and a changed input ran"
+        )
 
 
 def test_quick_clone_falls_back_loudly_and_needs_a_receipt(gate):
