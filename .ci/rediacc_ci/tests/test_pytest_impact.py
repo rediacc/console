@@ -147,10 +147,70 @@ def test_the_reads_table_covers_a_data_file():
     assert sel.why[".ci/rediacc_ci/tests/test_other.py"].endswith("(policy)")
 
 
-def test_a_file_outside_the_gate_paths_is_listed_not_judged():
-    sel = run(["docs/readme.md", ".ci/rediacc_ci/other.py"])
-    assert sel.scope == "impact"
-    assert sel.outside == ["docs/readme.md"]
+# W4.3 (operator ruling 2026-11-18): a file outside .ci/, .claude/ and *.py is judged like any other, through the traced `reads` table, instead of being skipped.
+DOC_TREE = dict(TREE, **{"docs/playbook.md": "# p\n", "docs/other.md": "# o\n"})
+DOC_READS = {
+    ".ci/rediacc_ci/tests/test_other.py": ["docs/playbook.md"],
+    ".ci/rediacc_ci/tests/test_filler1.py": ["docs/playbook.md", "docs/other.md"],
+}
+
+
+def test_a_docs_only_diff_selects_exactly_its_traced_readers_plus_smoke():
+    sel = run(["docs/playbook.md"], pol=policy(reads=DOC_READS), tree=DOC_TREE)
+    assert sel.scope == "impact", sel.line()
+    assert sel.files == sorted(
+        [
+            ".ci/rediacc_ci/tests/test_other.py",
+            ".ci/rediacc_ci/tests/test_filler1.py",
+            *SMOKE,
+        ]
+    ), sel.files
+    assert sel.why[".ci/rediacc_ci/tests/test_other.py"] == "reads docs/playbook.md (policy)"
+
+
+def test_a_docs_diff_read_by_one_test_selects_only_that_test():
+    sel = run(["docs/other.md"], pol=policy(reads=DOC_READS), tree=DOC_TREE)
+    assert sel.scope == "impact", sel.line()
+    assert sel.files == sorted([".ci/rediacc_ci/tests/test_filler1.py", *SMOKE]), sel.files
+
+
+def test_an_untraced_file_outside_ci_and_claude_runs_full():
+    """The documented fallback: a file no closure, literal or reads entry covers is FULL wherever it lives, so a new doc no trace has seen cannot narrow the run to the smoke floor."""
+    tree = dict(DOC_TREE, **{"docs/brand-new.md": "# n\n"})
+    sel = run(["docs/brand-new.md"], pol=policy(reads=DOC_READS), tree=tree)
+    assert sel.scope == "full", sel.line()
+    assert "docs/brand-new.md changed and no test imports it" in sel.reason, sel.line()
+
+
+def test_plant_the_old_scope_filter_and_the_docs_diff_reaches_no_reader(monkeypatch):
+    """PLANT CONTROL: put the pre-W4.3 filter back (a file outside .ci/, .claude/ and *.py skipped) and the docs-only diff must lose its readers. Proves the docs tests above fail on the old behaviour rather than passing for any select()."""
+    real_is_test_file = pi.is_test_file
+
+    def old_filter(rel, roots):
+        if rel.split("/", 1)[0] not in (".ci", ".claude") and not rel.endswith(".py"):
+            return True  # skipped as if it were a test file not in the map
+        return real_is_test_file(rel, roots)
+
+    monkeypatch.setattr(pi, "is_test_file", old_filter)
+    sel = run(["docs/playbook.md"], pol=policy(reads=DOC_READS), tree=DOC_TREE)
+    assert sel.files == SMOKE, "the planted scope filter still selected readers: %s" % sel.files
+
+
+@pytest.mark.parametrize(
+    "reads",
+    [
+        DOC_READS,
+        {".ci/rediacc_ci/tests/test_*.py": ["docs/*.md"]},
+        {".ci/rediacc_ci/tests/test_other.py": ["docs/**"], "*/test_mid.py": ["docs/other.md"]},
+        {},
+    ],
+)
+def test_reads_by_test_agrees_with_reads_cover(reads):
+    folded = pi.reads_by_test(reads, TESTS)
+    for test in TESTS:
+        for rel in ("docs/playbook.md", "docs/other.md", ".ci/rediacc_ci/leaf.py"):
+            got = any(pi.fnmatch.fnmatchcase(rel, g) for g in folded.get(test, ()))
+            assert got == pi.reads_cover(reads, test, rel), (reads, test, rel)
 
 
 # --------------------------------------------------------------------------- every FULL fallback

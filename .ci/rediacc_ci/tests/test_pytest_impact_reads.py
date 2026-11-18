@@ -256,7 +256,7 @@ def test_the_paths_carry_no_entry_another_already_reaches():
 
 
 def test_a_docs_only_change_meets_no_derived_path():
-    """W4.3 Accept, on the derivation: a doc no test reads is outside check:ci-pytest's paths, so a docs-only diff leaves its input hash alone and the gate carries."""
+    """The derived union is exact: a doc no test reads stays outside it. On the real trace the union reached every tracked file, which is why check:ci-pytest hashes the whole tree (W4.3, 2026-11-18); a union that swallowed unread files would make that verdict unfalsifiable."""
     tr = {
         "tests": {T1: {"reads": [".ci/policy/one.json"], "lists": []}},
         "unattributed": {"reads": [], "lists": []},

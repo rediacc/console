@@ -16,7 +16,9 @@ DATA READS (B2). Tests also read files they never import: a guard they run as a 
      caught only by CI. Literals in shared library modules are NOT scanned:
      `paths.py` names half the tree, and every test importing it would cover it;
   2. the `reads` table in `.ci/policy/pytest-impact.json`, `{test glob: [path
-     globs]}`, for reads no literal names (a directory listed by a computed glob).
+     globs]}`, for reads no literal names: what each test file was seen to read
+     under strace, written by `rediacc_ci.quality.pytest_impact_reads --derive
+     --write`.
 
 SELECTION (B3): the smoke floor, every test file whose closure, literals or `reads` meet the change set since the last push, and every changed test file.
 
@@ -27,15 +29,16 @@ FULL, AND ONLY FULL, WHEN THE ANSWER IS UNKNOWN (B4). Each prints `pytest-impact
     policy file;
   * an UNRESOLVED import in the closure of any test (a deleted module still
     imported is exactly this shape, and so is a closure this map cannot see);
-  * a changed file under `.ci/` or `.claude/`, or any changed `.py`, that no
-    closure, literal or `reads` entry covers;
+  * a changed file, anywhere in the tree, that no closure, literal or `reads`
+    entry covers (a new file no trace has seen has this shape, and so does a
+    file only pytest's unattributed start-up read);
   * the selection is above 40% of the test files (the narrowing buys little and
     the risk of a missed edge is not worth it);
   * the map cannot be built (git unreadable, a syntax error in a module), the
     policy is missing or malformed, a smoke file is missing, or no push base
     resolves.
 
-Changed files outside `.ci/`, `.claude/` and `*.py` are not this module's question: check:ci-pytest's declared `paths` already exclude them, so the gate is not selected for them at all. They are listed, not judged.
+EVERY CHANGED FILE IS JUDGED (operator ruling 2026-11-18, PLAN-ciquick-cpu W4.3). The whole-suite strace (rediacc_ci.quality.pytest_impact_reads) saw the tests read every tracked file, each `docs/*.md` by at least 9 test files, so check:ci-pytest hashes the whole tree, and a docs or packages edit selects its traced readers plus smoke instead of skipping the gate.
 
     pytest_impact.py                 print the selection for the current change set
     pytest_impact.py --json          the same as one JSON object
@@ -68,14 +71,6 @@ POLICY_RELPATH = policy_rel("pytest-impact.json")
 CACHE_RELDIR = ".ci/cache/pytest-impact"
 MAP_SCHEMA = 2
 MAX_FRACTION = 0.40
-# Top-level directories whose files the map judges. Bare names, matched on a path's first component, so no directory literal with a trailing slash sits here for the record-paths derivation to read as a root.
-SCOPE_ROOTS = frozenset({".ci", ".claude"})
-
-
-def _in_scope_dir(rel: str) -> bool:
-    return rel.split("/", 1)[0] in SCOPE_ROOTS
-
-
 FULL_BASENAMES = frozenset(
     {"conftest.py", "pyproject.toml", "uv.lock", "pytest.ini", "setup.cfg", "tox.ini"}
 )
@@ -519,6 +514,21 @@ def reads_cover(reads: dict[str, list[str]], test: str, rel: str) -> bool:
     return False
 
 
+def reads_by_test(reads: dict[str, list[str]], tests: Iterable[str]) -> dict[str, list[str]]:
+    """The `reads` table folded onto each test file once, so `select` checks one test's own globs instead of every key: the traced table has a key per test file (738 of them), and `reads_cover` per (test, changed file) pair is 690k key matches per changed file. Same verdict as `reads_cover`; a control holds them equal."""
+    exact = {k: v for k, v in reads.items() if not _is_glob(k)}
+    patterned = [(k, v) for k, v in reads.items() if _is_glob(k)]
+    out: dict[str, list[str]] = {}
+    for test in tests:
+        globs = list(exact.get(test, ()))
+        for key, path_globs in patterned:
+            if fnmatch.fnmatchcase(test, key):
+                globs.extend(path_globs)
+        if globs:
+            out[test] = globs
+    return out
+
+
 # A directory literal holding more files than this names a TREE, not an input. Such a directory, and every test root with its ancestors, is left out of `tracked_dirs`, so its literal covers nothing: `.ci/rediacc_ci/tests/__init__.py` names `.claude/rediacc_hooks/tests` and that one literal covered every file under it for all 911 test files. A file only such a literal would have covered falls through to the uncovered FULL, the safe side.
 MAX_DIR_FILES = 200
 
@@ -551,7 +561,6 @@ class Selection:
     smoke: int = 0
     digest: str = ""
     why: dict[str, str] = field(default_factory=dict)
-    outside: list[str] = field(default_factory=list)
 
     def line(self) -> str:
         if self.scope == "full":
@@ -573,7 +582,6 @@ class Selection:
             "mapDigest": self.digest,
             "files": self.files,
             "why": self.why,
-            "outside": self.outside,
         }
 
 
@@ -645,11 +653,9 @@ def select(
                 total=total,
                 digest=digest,
             )
-    reads = policy["reads"]
     tracked_dirs = tracked_dirs_of(existing, test_roots)
-    in_scope_files = [p for p in existing if _in_scope_dir(p) or p.endswith(".py")]
-    # Only a glob that covers some changed file can matter, so only those are measured against the tree: measuring every glob literal in the suite took 31 s on the real tree.
-    judged = [rel for rel in changed if _in_scope_dir(rel) or rel.endswith(".py")]
+    # Every changed file is judged, wherever it lives (module docstring, EVERY CHANGED FILE IS JUDGED). Only a glob that covers some changed file can matter, so only those are measured against the tree: measuring every glob literal in the suite took 31 s on the real tree.
+    judged = [rel for rel in changed if not is_test_file(rel, test_roots)]
     relevant = {
         lit
         for entry in tests.values()
@@ -657,26 +663,22 @@ def select(
         if _is_glob(_normal_literal(lit))
         and any(literal_covers(lit, rel, tracked_dirs) for rel in judged)
     }
-    broad = broad_globs(relevant, in_scope_files, tracked_dirs)
+    broad = broad_globs(relevant, existing, tracked_dirs)
     indexes = {test: LiteralIndex(entry["literals"], broad) for test, entry in tests.items()}
     closures = {test: frozenset(entry["closure"]) for test, entry in tests.items()}
+    reads = reads_by_test(policy["reads"], tests)
     selected: dict[str, str] = dict.fromkeys(smoke, "smoke")
-    outside = []
     for rel in changed:
         if is_test_file(rel, test_roots):
             if rel in tests:
                 selected.setdefault(rel, "changed test")
-            continue
-        in_scope = _in_scope_dir(rel) or rel.endswith(".py")
-        if not in_scope:
-            outside.append(rel)
             continue
         hit = False
         for test in tests:
             why = None
             if rel in closures[test]:
                 why = "imports %s" % rel
-            elif reads_cover(reads, test, rel):
+            elif any(fnmatch.fnmatchcase(rel, g) for g in reads.get(test, ())):
                 why = "reads %s (policy)" % rel
             elif indexes[test].covers(rel, tracked_dirs):
                 why = "names %s" % rel
@@ -705,7 +707,6 @@ def select(
         smoke=len(smoke),
         digest=digest,
         why={f: selected[f] for f in files},
-        outside=outside,
     )
 
 
@@ -1000,8 +1001,6 @@ def main(argv: list[str]) -> int:
     print(sel.line())
     for f in sel.files:
         print("  %s  (%s)" % (f, sel.why.get(f, "")))
-    if sel.outside:
-        print("  outside check:ci-pytest's paths, not judged: %s" % ", ".join(sel.outside[:10]))
     return 0
 
 

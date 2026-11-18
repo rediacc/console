@@ -2052,6 +2052,17 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     coveragePct: 0.3,
     seconds: 4.6,
   },
+  'check:ci-pytest': {
+    tracedAt: '2026-11-18T13:11Z',
+    tree: 'bc22fff05229a07f4affa681453678982543c2b5',
+    verdict: 'whole-tree',
+    reason:
+      'the whole-suite strace (rediacc_ci.quality.pytest_impact_reads, 4 shards, 926 of 927 test files attributed) read 11,668 of 11,668 tracked files, every docs/*.md by at least 9 test files; pytest_impact.py narrows inside the run from the per-file reads table instead (PLAN-ciquick-cpu W4.3, operator ruling 2026-11-18)',
+    reads: 11668,
+    listed: 800,
+    coveragePct: 100,
+    seconds: 2040,
+  },
   'check:ci-python-env-registry': {
     tracedAt: '2026-11-18T03:12Z',
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',

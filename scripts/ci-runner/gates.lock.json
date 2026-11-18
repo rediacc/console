@@ -12328,17 +12328,6 @@
     "leaves": [
       ".ci/rediacc_ci/check_pytest.py"
     ],
-    "paths": [
-      ".ci/rediacc_ci/**",
-      ".ci/config/shards/quality-pytest.json",
-      ".claude/rediacc_hooks/**",
-      ".claude/hooks/**",
-      ".claude/settings.json",
-      ".ci/scripts/test/lib/git-fixture.sh",
-      ".ci/scripts/quality/check_inline_python.py",
-      "pyproject.toml"
-    ],
-    "pathsOrigin": "declared",
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",

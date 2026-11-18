@@ -11595,7 +11595,7 @@ export const GATES: readonly GateSpec[] = [
   // RETIRED WITH ITS SUBJECT (section 12 U3, operator D8 ASKED:2026-10-08T19:13Z): gate-test:toolchain ran .ci/scripts/test/gates/test-toolchain.sh, which is deleted. The pytest port `.ci/rediacc_ci/tests/gates/test_gate_toolchain.py` is collected by check:ci-pytest, and ci.yml's bare-checkout run-sh-tests job runs it through the stdlib-only `rediacc_ci.tests.gates.run_bare`, which now supplies `tmp_path`, so the no-pytest reason this entry once gave no longer holds.
   // gate-id-record: names a gate-test id retired with its subject; the id is history, not an instruction.
   // RETIRED WITH ITS SUBJECT: gate-test:claude-hooks, the heaviest entry in this file at 537.4s, was a 40-line wrapper around `.claude/hooks/test-hooks.sh` and had no other work in it. The harness is gone, ported to pytest under `.claude/rediacc_hooks/tests/`, and its label multiset was compared run-against-run before the deletion rather than diff-against-diff. The ports are
-  // collected by check:ci-pytest, whose `paths` already carry `.claude/hooks/**` and `.claude/rediacc_hooks/**`, so nothing lost selection when this entry left.
+  // collected by check:ci-pytest, which hashes the whole tree (and so `.claude/hooks/**` and `.claude/rediacc_hooks/**`), so nothing lost selection when this entry left.
   //
   // gate-id-record: names a gate-test id retired with its subject; the id is history, not an instruction.
   // RETIRED, AND THE LAST TWO `mutex: ['tree:repo']` ENTRIES WENT WITH THEM: gate-test:gate-anti-vacuity and gate-test:generate-tag-inputs. Their pytest ports carried the exclusive claim to check:ci-pytest for a while; since 2026-10-05 no pytest module writes the tracked tree, and check:ci-pytest holds no `tree:` claim (see its entry).
@@ -11614,24 +11614,8 @@ export const GATES: readonly GateSpec[] = [
     leaves: ['.ci/rediacc_ci/check_pytest.py'],
     // NO `tree:` CLAIM SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF16). From 2026-09-21 this gate held `mutex: ['tree:repo']` because pytest ports of retired gate tests planted into the tracked tree, and the claim excluded check:ci-guard-mutations, check:ci-renet-types, check:ci-search-index, check:test:tutorial-player, check:ci-security-audit and check:ci-proxy-image-smoke for the whole pytest wall. Every plant now lives in a copy (test_gate_shrink_only_composition.py, test_gate_docs_gen.py, test_gate_paths_exist.py), no module declares the real-tree xdist group, the repo-root conftest's session tripwire fails any run in which a test changes a tracked path under the testpaths or the gate scan roots, and check:ci-pool-writer-safety reds on both a declaration and a stale exclusive claim here.
     // NO CLAIM ON THE BUILT SITE SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md). From #40adcff7 this gate held `reads: ['www-dist']` because test_gate_player_css_scope.py and test_gate_client_bundle_budget.py read packages/www/dist when one existed, and build:www (`mutex: ['www-dist']`) empties it before repopulating it (one --only run paired them and a real-dist case scanned 719 of 1842 pages). In the one-pass pre-push that claim made build:www wait out the whole pytest wall (1022.9 s) and run in the tail. Those arms now run only under REDIACC_PYTEST_REAL_DIST=1: the real dist is check:ci-player-css-scope's and check:ci-client-bundle-budget's own subject, each with `needs: ['build:www']`, and CI's quality-pytest builds no site.
-    // The old set was ['.ci/rediacc_ci/**', 'pyproject.toml'] and could not see two things this gate actually runs: `.claude/rediacc_hooks/**` is a testpaths root, and `.ci/scripts/test/gates/**` holds the twins test_twin_parity drives. Under `--changed` an edit to either did not select this gate, which is a path filter reporting a pass over code it never looked at.
-    //
-    // gate-id-record: names a gate-test id retired with its subject; the id is history, not an instruction.
-    // WIDENED AGAIN WHEN gate-test:claude-hooks WAS RETIRED, and the widening is the whole reason that retirement does not open a selection hole. The four entries below carried the SUBJECTS of the harness this gate now collects: the guards and the chain head under `.claude/hooks/**`, the wiring the settings file declares, the git fixture the trapguard cases source, and the
-    // inline-python detector whose verdicts those cases assert. The harness declared every one of them; dropping its entry without moving them would have left editing a guard select no gate that runs it, which is the same pass-over-unread-code this comment already records once.
-    paths: [
-      '.ci/rediacc_ci/**',
-      // The gate's own control reads this file's `of`, which ci:quick skipped as untouched in run 41391988380.
-      '.ci/config/shards/quality-pytest.json',
-      '.claude/rediacc_hooks/**',
-      // `.ci/scripts/test/gates/**` left this list on 2026-10-08: W11-A/B/C and section 12 U1-U3 deleted the last bash gate test and twin under it, so the glob matched nothing and could only drop out of --changed.
-      '.claude/hooks/**',
-      '.claude/settings.json',
-      '.ci/scripts/test/lib/git-fixture.sh',
-      '.ci/scripts/quality/check_inline_python.py',
-      'pyproject.toml',
-    ],
-    pathsOrigin: 'declared',
+    // WHOLE TREE, NO `paths` (operator ruling 2026-11-18, agent/plans/PLAN-ciquick-cpu.md W4.3). The whole-suite strace of 2026-11-18 (rediacc_ci.quality.pytest_impact_reads, 4 shards, 926 of 927 test files attributed) saw the suite read all 11,668 tracked files, every docs/*.md by at least 9 test files.
+    // The eight declared globs this entry carried until then were unsound: a scratch-tree hash probe editing docs/agent-session-playbook.md CARRIED this gate while whole-tree RAN it, a stale green over a file its tests read. Narrowing now happens inside the run: pytest_impact.py judges every changed file against the traced `reads` table and runs its readers plus the smoke floor.
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

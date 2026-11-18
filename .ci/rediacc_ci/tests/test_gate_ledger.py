@@ -881,12 +881,15 @@ def test_the_pytest_host_is_derived_from_the_key_emitter() -> None:
     assert tests, "the lock has no test gates; nothing to attribute"
     hosts = L.pytest_hosts(root, tests, steps)
     assert len(hosts) == 1
+    # A step with no `paths` hashes the whole tree (check:ci-pytest itself since PLAN-ciquick-cpu W4.3), so its coverage is every test path.
     by_coverage = {
         str(e["id"])
         for e in gate_model.load_lock(root)
         if e["id"] in steps
-        and e.get("paths")
-        and all(any(gate_model.match_glob(g, p) for g in e["paths"]) for p in tests.values())
+        and all(
+            any(gate_model.match_glob(g, p) for g in e.get("paths") or ["**"])
+            for p in tests.values()
+        )
     }
     assert hosts < by_coverage
 

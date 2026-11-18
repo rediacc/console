@@ -1,4 +1,6 @@
-"""What each pytest file reads that no import shows, and check:ci-pytest's `paths` from the same trace (PLAN-ciquick-cpu W4.3, B2 and B6).
+"""What each pytest file reads that no import shows, and the union of the suite's reads from the same trace (PLAN-ciquick-cpu W4.3, B2 and B6).
+
+THE UNION'S VERDICT (2026-11-18): the whole-suite trace read every tracked file, so check:ci-pytest declares no `paths` and hashes the whole tree (its trace-ledger.ts row), and the narrowing happens inside the run through the `reads` table. `derive_paths` stays as the evidence for that verdict: a later trace whose union stops reaching the whole tree is the signal to revisit it.
 
 WHY A SEPARATE TRACE. path-trace.ts never traces check:ci-pytest as one gate (`NEVER_TRACED`): one strace log of 36k tests runs to tens of gigabytes, and a gate-level answer says nothing about WHICH test read a file. This module traces the suite once and keeps only what the impact map needs: per test file, the tracked files it opened, executed or listed.
 
@@ -18,7 +20,8 @@ HOW, IN THREE PARTS.
      probing sys.path, not a read.
   3. `derive_reads` turns the per-file trace into the policy's `reads` table
      (content reads only, minus the file's own static import closure), and
-     `derive_paths` turns the union into check:ci-pytest's `paths` and `lists`.
+     `derive_paths` folds the union into the `paths` and `lists` shape input-hash.ts
+     reads, which is printed, not written.
 
 WHAT A TRACE CANNOT SEE, stated so a clean table is not read as more than it is:
 
@@ -398,7 +401,7 @@ def derive_reads(trace: dict, impact_map: dict, tree: Tree) -> dict[str, list[st
 def derive_paths(
     trace: dict, impact_map: dict, tree: Tree, test_roots: Iterable[str]
 ) -> dict[str, list[str]]:
-    """check:ci-pytest's inputs: `paths` (every tracked file any test read, every module in any test's closure, every file under a test root), folded, and `lists` (every tracked directory listed)."""
+    """The suite's traced inputs, the evidence behind check:ci-pytest's whole-tree verdict: `paths` (every tracked file any test read, every module in any test's closure, every file under a test root), folded, and `lists` (every tracked directory listed)."""
     content: set[str] = set()
     listed: set[str] = set()
     for entry in [*trace["tests"].values(), trace.get("unattributed", {})]:
