@@ -3324,6 +3324,8 @@ def related_test(test_path, anchored):
     # The repo names a private module's test without its leading `_` (`test_x_predicate.py` for a private `_x.py`) and a stop-hook module's without `wl_` (`test-x.py` for `wl_x.py`); a stripped stem shorter than 4 characters is not read, so `wl_io.py` does not claim `test_io_x.py`.
     bare = stem.lstrip("_")
     bare = bare.removeprefix("wl_")
+    # A gate `check_<stem>.py` is tested by `test_gate_<stem>.py` (or `test_<stem>.py`): the `check_` prefix is not part of the test's name.
+    bare = bare.removeprefix("check_")
     stems = {stem} | ({bare} if len(bare) >= 4 else set())
     # The stem stands as a whole token of the test's name: `io` is not in `test_radio.py`.
     return any(
@@ -3582,6 +3584,8 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
             if i + 1 >= len(args):
                 raise ValueError("--test takes the path of the test the fix touches")
             test_path = args[i + 1].strip()
+            # `path::name` names a test inside the file: the path part is what the fix touched.
+            test_path = test_path.split("::", 1)[0]
             del args[i : i + 2]
         if len(args) != 1:
             raise ValueError("fixed takes exactly one sha (and optionally --test <path>)")
