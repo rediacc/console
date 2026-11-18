@@ -143,15 +143,101 @@ def _run_retimed(gate, parallel: float, serial: float) -> tuple[int, list[list[s
 
 
 def test_a_test_slow_only_in_the_parallel_run_passes_on_its_serial_re_times(gate) -> None:
-    """THE BEHAVIOUR: 11 s under the parallel run, 2 s in both serial re-runs, median 2 s. Before the re-timing the parallel 11 s alone failed the gate."""
+    """THE BEHAVIOUR: 11 s under the parallel run, 2 s in its serial re-time. Before the re-timing the parallel 11 s alone failed the gate. One re-time, not SLOW_CONFIRM_RUNS: 2 s already decides a test judged on its fastest re-time (PLAN-ciquick-cpu W7)."""
     rc, calls = _run_retimed(gate, 11.0, 2.0)
     assert rc == check_pytest.EXIT_OK
     assert gate[2] == []
     confirms = calls[1:]
-    assert len(confirms) == check_pytest.SLOW_CONFIRM_RUNS
+    assert len(confirms) == 1, "a re-time under the threshold was re-run, which can change nothing"
     for args in confirms:
         assert args[:2] == ["-n", "0"], "a re-time must be serial, or it measures contention again"
         assert args[-1] == "t/test_one.py::test_one"
+
+
+TWO = "t.test_two::test_two"
+
+
+def _run_two(gate, serials: list[dict[str, float]]) -> tuple[int, list[list[str]]]:
+    """Two candidates, ON_DISK and TWO, both 11 s in the parallel run; the n-th serial re-time writes `serials[n]` (`{node: seconds}`, a node left out is a re-time that recorded no sample for it)."""
+    root, monkeypatch, _emitted, _allow = gate
+    (root / "t" / "test_two.py").write_text("def test_two():\n    pass\n", encoding="utf-8")
+    calls: list[list[str]] = []
+    retimes = iter(serials)
+
+    def writes(_bin, _cwd, args=None, **_k):
+        args = list(args or [])
+        calls.append(args)
+        junit = pathlib.Path(args[args.index("--junitxml") + 1])
+        times = next(retimes) if "slow-confirm" in junit.name else {ON_DISK: 11.0, TWO: 11.0}
+        cases = "".join(
+            '<testcase classname="%s" name="%s" time="%s"/>' % (*node.split("::"), s)
+            for node, s in times.items()
+        )
+        junit.write_text(
+            '<?xml version="1.0"?><testsuites><testsuite name="pytest">%s</testsuite></testsuites>'
+            % cases,
+            encoding="utf-8",
+        )
+        return 0, "2 passed\n"
+
+    monkeypatch.setattr(check_pytest, "run_pytest", writes)
+    return check_pytest.main([]), calls
+
+
+def test_the_second_re_time_takes_only_the_test_the_first_left_over_the_threshold(gate) -> None:
+    rc, calls = _run_two(gate, [{ON_DISK: 2.0, TWO: 12.0}, {TWO: 3.0}])
+    assert rc == check_pytest.EXIT_OK
+    assert len(calls) == 1 + check_pytest.SLOW_CONFIRM_RUNS
+    assert calls[1][-2:] == ["t/test_one.py::test_one", "t/test_two.py::test_two"]
+    assert calls[2][-1] == "t/test_two.py::test_two"
+    assert "t/test_one.py::test_one" not in calls[2], "a decided test was re-timed again"
+
+
+def test_control_a_test_slow_in_both_re_times_still_fails_after_the_narrowing(gate) -> None:
+    rc, calls = _run_two(gate, [{ON_DISK: 2.0, TWO: 12.0}, {TWO: 11.5}])
+    assert rc == check_pytest.EXIT_FAIL
+    assert gate[2] == ["pytest-slow:%s" % TWO]
+    assert len(calls) == 1 + check_pytest.SLOW_CONFIRM_RUNS
+
+
+def test_a_test_the_first_re_time_did_not_record_is_re_timed_again(gate) -> None:
+    """No sample is not a fast sample: a re-run that lost a test must not let the narrowing drop it, or the parallel 11 s would be its only reading by accident."""
+    rc, calls = _run_two(gate, [{ON_DISK: 2.0}, {TWO: 3.0}])
+    assert rc == check_pytest.EXIT_OK
+    assert calls[2][-1] == "t/test_two.py::test_two"
+    assert "t/test_one.py::test_one" not in calls[2]
+
+
+def test_still_open_keeps_the_slow_and_the_unrecorded(gate) -> None:
+    root, _mp, _emitted, _allow = gate
+    (root / "t" / "test_two.py").write_text("def test_two():\n    pass\n", encoding="utf-8")
+    (root / "t" / "test_three.py").write_text("def test_three():\n    pass\n", encoding="utf-8")
+    confirm = root / "confirm.xml"
+    confirm.write_text(
+        '<?xml version="1.0"?><testsuites><testsuite name="pytest">'
+        '<testcase classname="t.test_one" name="test_one" time="2.0"/>'
+        '<testcase classname="t.test_two" name="test_two" time="10.5"/>'
+        "</testsuite></testsuites>",
+        encoding="utf-8",
+    )
+    asked = ["t/test_one.py::test_one", "t/test_two.py::test_two", "t/test_three.py::test_three"]
+    assert check_pytest.still_open(confirm, asked, root) == [
+        "t/test_two.py::test_two",
+        "t/test_three.py::test_three",
+    ]
+
+
+def test_control_still_open_on_a_test_exactly_at_the_threshold_is_decided(gate) -> None:
+    """`over_threshold` is strictly greater, so a re-time AT the threshold already passes the test; still_open must agree or it re-runs a decided test."""
+    root, _mp, _emitted, _allow = gate
+    confirm = root / "confirm.xml"
+    confirm.write_text(
+        '<?xml version="1.0"?><testsuites><testsuite name="pytest">'
+        '<testcase classname="t.test_one" name="test_one" time="%s"/>'
+        "</testsuite></testsuites>" % check_pytest.pytest_slow_ratchet.THRESHOLD_S,
+        encoding="utf-8",
+    )
+    assert check_pytest.still_open(confirm, ["t/test_one.py::test_one"], root) == []
 
 
 def test_control_a_test_slow_in_its_serial_re_times_too_still_fails(gate) -> None:

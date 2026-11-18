@@ -88,6 +88,8 @@ def shard_min_tests(of: int) -> int:
 #
 # RAISING THE KILL TIMER IS NOT THE FIX, and must not be mistaken for one. It stops a spurious kill reporting as a gate failure; it does nothing about a 31-minute gate. The real options are to re-tier the claude-hooks parity case into its own lane, or to split that harness so no single subject is billed three times. Both are larger than this line and are tracked as findings.
 #
+# THAT THREE-TIMES BILLING IS GONE, re-checked 2026-11-18 (PLAN-ciquick-cpu W7). The bash harness was retired and `git ls-files` names no `test-claude-hooks.sh`; test_twin_parity.py registers no hook subject. What remains of test_hooks_delegates.py's cost (1,987 test-s in the 2026-11-17 junit) is its delegated guard suites, each run once: test-block_vm_unverified_push.py alone took 275 cpu-s run by itself, a dispatcher subprocess per case, re-run per mutant control. The one repeat this file still makes is the slow ratchet's serial re-time, and `still_open` re-runs only a test the first re-time left open.
+#
 # 3600 -> 1080 THE SAME DAY, because 3600 COULD NOT FIRE. This gate runs as the `Python package tests` step of `quality-security` in `ci-quality.yml`, and that job declares `timeout-minutes: 20` -- 1200s. An in-script kill timer above its own job's ceiling is dead code in CI: GitHub cancels the job first, and a cancelled job's only clue is `The operation was canceled.` with no
 # verdict, no KILLED line, and no named cause. That is the exact chain `check_job_timeout_headroom.py` was written for, one level down, where that gate cannot see it -- it reads workflow ceilings, never in-script timers.
 #
@@ -374,26 +376,41 @@ def phase_args(junit: pathlib.Path) -> list[str]:
 SLOW_CONFIRM_RUNS = 2
 
 
+def still_open(confirm: pathlib.Path, asked: list[str], root: pathlib.Path) -> list[str]:
+    """The node ids of `asked` a further re-time could still decide: those `confirm` read over the threshold, and those it holds no sample for. A test it read at or under the threshold is decided, because the ratchet judges a re-timed test on its FASTEST re-time and no later reading can be faster than the minimum; re-running it would cost a serial run of the test and change nothing (PLAN-ciquick-cpu W7: 38 of 40 candidates on 2026-11-17 were under 10 s alone). Read through the ratchet's own `read_durations`, so the phase file beside `confirm` is honoured exactly as the verdict honours it."""
+    timed = {
+        nodeid
+        for node in pytest_slow_ratchet.read_durations([confirm])
+        if (nodeid := pytest_slow_ratchet.nodeid_of(node, root)) is not None
+    }
+    over = set(pytest_slow_ratchet.confirm_candidates(confirm, root))
+    return [n for n in asked if n in over or n not in timed]
+
+
 def slow_ratchet(junit: pathlib.Path, pytest_bin: str, root: pathlib.Path) -> int:
     """Run the slow-test ratchet over the junit this run just wrote: 0 clean, 1 a test over 10 s that `pytest-slow-allow.json` does not list, 2 no verdict (no test case in the junit). Anything but 0 fails the gate, so a passing run that wrote no readable junit cannot go green past it.
 
-    An unlisted test over the threshold in the parallel run is re-timed in `SLOW_CONFIRM_RUNS` serial runs first, and judged on its fastest re-time. The re-runs write their junits to a temp directory, never the tree; a re-run that writes none adds no sample, so the parallel time stands."""
+    An unlisted test over the threshold in the parallel run is re-timed in up to `SLOW_CONFIRM_RUNS` serial runs first, and judged on its fastest re-time. Each re-run after the first takes only the tests `still_open` names, since a re-time at or under the threshold already decides a test whatever a later one reads. The re-runs write their junits to a temp directory, never the tree; a re-run that writes none adds no sample, so the parallel time stands."""
     nodeids = pytest_slow_ratchet.confirm_candidates(junit, root)
     with tempfile.TemporaryDirectory(prefix="pytest-slow-confirm-") as scratch:
         confirms: list[pathlib.Path] = []
         if nodeids:
             print(
-                "info: pytest-slow: re-timing %d test(s) over %g s in %d serial run(s)"
+                "info: pytest-slow: re-timing %d test(s) over %g s in up to %d serial run(s)"
                 % (len(nodeids), pytest_slow_ratchet.THRESHOLD_S, SLOW_CONFIRM_RUNS)
             )
+        pending = nodeids
         for run in range(1, SLOW_CONFIRM_RUNS + 1 if nodeids else 1):
+            if not pending:
+                break
             confirm = pathlib.Path(scratch) / ("slow-confirm-%d.xml" % run)
             run_pytest(
                 pytest_bin,
                 root,
-                ["-n", "0", "--junitxml", str(confirm), *phase_args(confirm), *nodeids],
+                ["-n", "0", "--junitxml", str(confirm), *phase_args(confirm), *pending],
             )
             confirms.append(confirm)
+            pending = still_open(confirm, pending, root)
         return pytest_slow_ratchet.main(
             ["--junit", str(junit), *(arg for j in confirms for arg in ("--confirm", str(j)))]
         )
