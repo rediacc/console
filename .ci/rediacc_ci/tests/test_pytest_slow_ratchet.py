@@ -327,3 +327,43 @@ def test_the_shared_report_groups_by_classname_including_the_class_part():
     """Finding 7d7ecd77.3: the rows are per junit classname, which carries a test class, as the docstring says."""
     rows = ratchet.shared_by_file({"t.test_heavy.TestSlow::a": 3.0, "t.test_heavy::b": 2.0})
     assert rows == [("t.test_heavy.TestSlow", 3.0), ("t.test_heavy", 2.0)]
+
+
+def _phased_run(path: pathlib.Path, own: float) -> pathlib.Path:
+    junit = _junit(path, {"test_retimed": own})
+    _phases(
+        junit,
+        {"test_retimed": {"setup": 0.0, "call": own, "teardown": 0.0, "shared_setup": 0.0}},
+    )
+    return junit
+
+
+def test_a_re_timed_test_is_judged_on_its_fastest_re_time_without_the_parallel_run(
+    tmp_path, capsys
+):
+    """THE BEHAVIOUR: the parallel run read the test over the threshold, which is why it was re-timed, so it gets no vote; of the re-times 12.3 s and 5.4 s, the fastest is judged. All three as `--junit` runs, the median is 12.3 s and fails."""
+    parallel = _phased_run(tmp_path / "p.xml", 33.5)
+    retimes = [_phased_run(tmp_path / "c1.xml", 12.3), _phased_run(tmp_path / "c2.xml", 5.4)]
+    confirm = [a for j in retimes for a in ("--confirm", str(j))]
+    rc, out = _run(tmp_path, capsys, [parallel], [], *confirm)
+    assert rc == 0, out.err
+    assert "judged over 3 run(s)" in out.out
+    rc, out = _run(tmp_path, capsys, [parallel, *retimes], [])
+    assert rc == 1
+    assert "test_retimed took 12.3 s" in out.err
+
+
+def test_control_a_test_slow_in_every_re_time_still_fails(tmp_path, capsys):
+    parallel = _phased_run(tmp_path / "p.xml", 33.5)
+    retimes = [_phased_run(tmp_path / "c1.xml", 12.3), _phased_run(tmp_path / "c2.xml", 10.6)]
+    confirm = [a for j in retimes for a in ("--confirm", str(j))]
+    rc, out = _run(tmp_path, capsys, [parallel], [], *confirm)
+    assert rc == 1
+    assert "test_retimed took 10.6 s" in out.err
+
+
+def test_control_a_re_time_that_wrote_no_junit_leaves_the_parallel_time_standing(tmp_path, capsys):
+    parallel = _phased_run(tmp_path / "p.xml", 33.5)
+    rc, out = _run(tmp_path, capsys, [parallel], [], "--confirm", str(tmp_path / "absent.xml"))
+    assert rc == 1
+    assert "test_retimed took 33.5 s" in out.err

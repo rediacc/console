@@ -251,3 +251,44 @@ def test_control_a_fast_parallel_run_re_times_nothing(gate) -> None:
     rc, calls = _run_retimed(gate, 2.0, 11.0)
     assert rc == check_pytest.EXIT_OK
     assert len(calls) == 1
+
+
+def _run_retimed_phased(gate, parallel: float, serials: list[float]) -> tuple[int, list[list[str]]]:
+    """The full-run path as `ci:quick` drives it: every run writes its junit and the phase file beside it, the parallel run `parallel` s of own call for ON_DISK and the n-th serial re-time `serials[n]`."""
+    _root, monkeypatch, _emitted, _allow = gate
+    calls: list[list[str]] = []
+    retimes = iter(serials)
+
+    def writes(_bin, _cwd, args=None, **_k):
+        args = list(args or [])
+        calls.append(args)
+        junit = pathlib.Path(args[args.index("--junitxml") + 1])
+        own = next(retimes) if "slow-confirm" in junit.name else parallel
+        junit.write_text(
+            '<?xml version="1.0"?><testsuites><testsuite name="pytest">'
+            '<testcase classname="t.test_one" name="test_one" time="%s"/></testsuite></testsuites>'
+            % own,
+            encoding="utf-8",
+        )
+        phases = {"setup": 0.0, "call": own, "teardown": 0.0, "shared_setup": 0.0}
+        pathlib.Path(args[args.index("--phase-timing") + 1]).write_text(
+            json.dumps({"version": 1, "tests": {ON_DISK: phases}}), encoding="utf-8"
+        )
+        return 0, "1 passed\n"
+
+    monkeypatch.setattr(check_pytest, "run_pytest", writes)
+    return check_pytest.main([]), calls
+
+
+def test_one_re_time_slowed_by_the_machine_does_not_fail_a_fast_test(gate) -> None:
+    """THE BEHAVIOUR (ciquick-23, 2026-11-18): own call 33.5 s in the parallel run, 12.3 s and 5.4 s in the two serial re-times. The median of all three runs was the slower re-time, 12.3 s, and failed the gate on one re-time the gates running beside it had slowed; the fastest re-time, 5.4 s, is the test's own cost."""
+    rc, calls = _run_retimed_phased(gate, 33.5, [12.3, 5.4])
+    assert len(calls) == 1 + check_pytest.SLOW_CONFIRM_RUNS
+    assert rc == check_pytest.EXIT_OK
+    assert gate[2] == []
+
+
+def test_control_a_call_slow_in_every_re_time_still_fails(gate) -> None:
+    rc, _calls = _run_retimed_phased(gate, 33.5, [12.3, 10.6])
+    assert rc == check_pytest.EXIT_FAIL
+    assert gate[2] == ["pytest-slow:%s" % ON_DISK]

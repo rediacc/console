@@ -370,17 +370,17 @@ def phase_args(junit: pathlib.Path) -> list[str]:
     return ["-p", PHASE_PLUGIN, "--phase-timing", str(pytest_slow_ratchet.phases_path(junit))]
 
 
-# Serial re-runs of the tests the parallel run judged slow; the ratchet takes the median of the parallel run and these, so a candidate needs two of three runs over the threshold to fail (`pytest_slow_ratchet.confirm_candidates` states the measurement).
+# Serial re-runs of the tests the parallel run judged slow; the ratchet judges a candidate on its fastest re-time, so it fails only when every re-time is over the threshold (`pytest_slow_ratchet.read_timing` states why the parallel run gets no vote).
 SLOW_CONFIRM_RUNS = 2
 
 
 def slow_ratchet(junit: pathlib.Path, pytest_bin: str, root: pathlib.Path) -> int:
     """Run the slow-test ratchet over the junit this run just wrote: 0 clean, 1 a test over 10 s that `pytest-slow-allow.json` does not list, 2 no verdict (no test case in the junit). Anything but 0 fails the gate, so a passing run that wrote no readable junit cannot go green past it.
 
-    An unlisted test over the threshold in the parallel run is re-timed in `SLOW_CONFIRM_RUNS` serial runs first, and judged on its median across them all. The re-runs write their junits to a temp directory, never the tree; a re-run that writes none adds no sample, so the parallel time stands."""
+    An unlisted test over the threshold in the parallel run is re-timed in `SLOW_CONFIRM_RUNS` serial runs first, and judged on its fastest re-time. The re-runs write their junits to a temp directory, never the tree; a re-run that writes none adds no sample, so the parallel time stands."""
     nodeids = pytest_slow_ratchet.confirm_candidates(junit, root)
     with tempfile.TemporaryDirectory(prefix="pytest-slow-confirm-") as scratch:
-        junits = [junit]
+        confirms: list[pathlib.Path] = []
         if nodeids:
             print(
                 "info: pytest-slow: re-timing %d test(s) over %g s in %d serial run(s)"
@@ -393,8 +393,10 @@ def slow_ratchet(junit: pathlib.Path, pytest_bin: str, root: pathlib.Path) -> in
                 root,
                 ["-n", "0", "--junitxml", str(confirm), *phase_args(confirm), *nodeids],
             )
-            junits.append(confirm)
-        return pytest_slow_ratchet.main([arg for j in junits for arg in ("--junit", str(j))])
+            confirms.append(confirm)
+        return pytest_slow_ratchet.main(
+            ["--junit", str(junit), *(arg for j in confirms for arg in ("--confirm", str(j)))]
+        )
 
 
 def verdict(

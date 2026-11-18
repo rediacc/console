@@ -2,7 +2,7 @@
 
 WHY (PLAN-ciquick-cpu.md Fix C). The 594 tests over 5 s took 68% of pytest time, and nothing stopped the next slow test from joining them. The allowlist is the baseline of the tests already that slow, each with a reason; a test not listed that runs over the threshold is a finding.
 
-THE TIME IS THE MEDIAN OF THE RUNS GIVEN. One junit run on a loaded machine reads a 4 s test as 12 s, so the caller passes up to three `--junit` files (one per run) and each test is judged on its median across the runs that contain it. One file is judged as it stands. `check_pytest.slow_ratchet` passes three: the parallel run plus two serial re-runs of the `confirm_candidates` it named.
+THE TIME IS THE MEDIAN OF THE RUNS GIVEN, OR THE FASTEST RE-TIME. One junit run on a loaded machine reads a 4 s test as 12 s, so the caller may pass several `--junit` files (one per run) and each test is judged on its median across the runs that contain it. One file is judged as it stands. `check_pytest.slow_ratchet` passes the parallel run as `--junit` and two serial re-runs of the `confirm_candidates` it named as `--confirm`; a test a re-time holds is judged on its fastest re-time alone (`read_timing` states why the parallel run gets no vote there).
 
 THE ALLOWLIST ONLY SHRINKS. A listed test that no longer runs over the threshold is reported as stale (`pytest-slow-stale`) and fails only under `--strict-stale`, because a run over a subset of the suite cannot tell "faster" from "not collected". Dropping the entry is how the baseline shrinks; adding one needs a reason that names why the test cannot be made fast.
 
@@ -84,64 +84,79 @@ def own_seconds(phases: dict) -> tuple[float, float] | None:
 
 @dataclasses.dataclass
 class Timing:
-    """What the runs say: each test's median own seconds, the median shared-fixture setup charged to it, and the notes on any run judged on junit time."""
+    """What the runs say: each test's judged own seconds, the median shared-fixture setup charged to it, and the notes on any run judged on junit time."""
 
     durations: dict[str, float]
     shared: dict[str, float]
     notes: list[str]
 
 
-def read_timing(junits: Iterable[pathlib.Path]) -> Timing:
-    """Each test's median seconds across `junits`, judged on its phases where a run's phase file holds it and on the junit time otherwise.
+def _read_run(
+    junit: pathlib.Path,
+    samples: dict[str, list[float]],
+    shared_samples: dict[str, list[float]],
+    notes: list[str],
+) -> None:
+    """Add one run's per-test seconds to `samples` (own time from its phase file where it holds the test, junit time otherwise) and its shared-fixture seconds to `shared_samples`. An unreadable junit adds nothing, and a skipped test no sample."""
+    try:
+        root = xml_trusted.parse(junit)
+    except (OSError, SyntaxError):  # ElementTree.ParseError is a SyntaxError
+        return
+    phases, unreadable = read_phases(phases_path(junit))
+    if unreadable:
+        notes.append(
+            "%s; the tests of %s are judged on their junit time, which includes shared fixture setup"
+            % (unreadable, junit)
+        )
+    unphased = 0
+    malformed = 0
+    for case in root.iter("testcase"):
+        if case.find("skipped") is not None:
+            continue
+        node = node_of(case)
+        measured = own_seconds(phases[node]) if node in phases else None
+        if node in phases and measured is None:
+            malformed += 1
+        if measured is not None:
+            samples.setdefault(node, []).append(measured[0])
+            shared_samples.setdefault(node, []).append(measured[1])
+            continue
+        try:
+            seconds = float(case.get("time") or 0.0)
+        except ValueError:
+            continue
+        if not unreadable and node not in phases:
+            unphased += 1
+        samples.setdefault(node, []).append(seconds)
+    if malformed:
+        notes.append(
+            "%d test(s) in %s have a malformed entry in %s and are judged on their junit time"
+            % (malformed, junit, phases_path(junit))
+        )
+    if unphased:
+        notes.append(
+            "%d test(s) in %s have no entry in %s and are judged on their junit time"
+            % (unphased, junit, phases_path(junit))
+        )
 
-    An unreadable junit counts as absent, and a skipped test as no run.
+
+def read_timing(junits: Iterable[pathlib.Path], confirms: Iterable[pathlib.Path] = ()) -> Timing:
+    """Each test's judged seconds: the fastest of its re-times where a `confirms` run holds it, the median across `junits` otherwise.
+
+    WHY THE RE-TIMES ARE JUDGED APART (2026-11-18). The parallel run is not an independent vote on a re-timed test: the test was re-timed because that run read it over the threshold, so the median of the parallel run and two re-times was the slower re-time whenever the parallel run was the slowest of the three, and one re-time slowed by the gates `ci:quick` runs beside this one failed the test. `test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook[enrolled_allowed-skill-reference]` read 33.5 s in the parallel run and 12.3 s as that median, while its own call took 5.4 s re-run alone. Contention only ever adds time, so the fastest re-time is the closest reading of the test's own cost, and a test whose own cost is over the threshold is over it in every re-time.
     """
     samples: dict[str, list[float]] = {}
     shared_samples: dict[str, list[float]] = {}
     notes: list[str] = []
     for junit in junits:
-        try:
-            root = xml_trusted.parse(junit)
-        except (OSError, SyntaxError):  # ElementTree.ParseError is a SyntaxError
-            continue
-        phases, unreadable = read_phases(phases_path(junit))
-        if unreadable:
-            notes.append(
-                "%s; the tests of %s are judged on their junit time, which includes shared fixture setup"
-                % (unreadable, junit)
-            )
-        unphased = 0
-        malformed = 0
-        for case in root.iter("testcase"):
-            if case.find("skipped") is not None:
-                continue
-            node = node_of(case)
-            measured = own_seconds(phases[node]) if node in phases else None
-            if node in phases and measured is None:
-                malformed += 1
-            if measured is not None:
-                samples.setdefault(node, []).append(measured[0])
-                shared_samples.setdefault(node, []).append(measured[1])
-                continue
-            try:
-                seconds = float(case.get("time") or 0.0)
-            except ValueError:
-                continue
-            if not unreadable and node not in phases:
-                unphased += 1
-            samples.setdefault(node, []).append(seconds)
-        if malformed:
-            notes.append(
-                "%d test(s) in %s have a malformed entry in %s and are judged on their junit time"
-                % (malformed, junit, phases_path(junit))
-            )
-        if unphased:
-            notes.append(
-                "%d test(s) in %s have no entry in %s and are judged on their junit time"
-                % (unphased, junit, phases_path(junit))
-            )
+        _read_run(junit, samples, shared_samples, notes)
+    retimed: dict[str, list[float]] = {}
+    for junit in confirms:
+        _read_run(junit, retimed, shared_samples, notes)
+    durations = {node: statistics.median(times) for node, times in samples.items()}
+    durations.update({node: min(times) for node, times in retimed.items()})
     return Timing(
-        durations={node: statistics.median(times) for node, times in samples.items()},
+        durations=durations,
         shared={node: statistics.median(times) for node, times in shared_samples.items()},
         notes=notes,
     )
@@ -223,7 +238,7 @@ def confirm_candidates(
 ) -> list[str]:
     """The pytest node ids of the unlisted tests over `threshold` in `junit`, for the caller to re-time in serial runs.
 
-    WHY (2026-11-17). The full run is parallel, so its times carry the suite's own contention and a shared fixture's setup lands on whichever test reaches a worker first: 38 of the 40 tests that full run judged over 10 s ran between 0.0 and 9.1 s when re-run alone (`test_d1_shard_move` cases read 28 s against 0.2 s). Re-timing only the candidates in serial runs and judging the median across all runs keeps the threshold about the test rather than the machine. A candidate whose file cannot be found is not re-timed and is judged on the full run alone.
+    WHY (2026-11-17). The full run is parallel, so its times carry the suite's own contention and a shared fixture's setup lands on whichever test reaches a worker first: 38 of the 40 tests that full run judged over 10 s ran between 0.0 and 9.1 s when re-run alone (`test_d1_shard_move` cases read 28 s against 0.2 s). Re-timing only the candidates in serial runs and judging each on its fastest re-time (`read_timing`) keeps the threshold about the test rather than the machine. A candidate whose file cannot be found is not re-timed and is judged on the full run alone.
     """
     allowed, _problems = read_allow(allow_path or policy_path(ALLOW_NAME, root))
     slow, _stale = over_threshold(read_durations([junit]), allowed, threshold)
@@ -246,6 +261,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="a junit file; repeat for each run (the median is judged). Default: the quality-pytest junit.",
     )
     parser.add_argument(
+        "--confirm",
+        action="append",
+        type=pathlib.Path,
+        default=[],
+        help="a junit of a serial re-time; repeat for each. A test a re-time holds is judged on its fastest re-time, not on the --junit runs.",
+    )
+    parser.add_argument(
         "--allow",
         type=pathlib.Path,
         default=None,
@@ -258,14 +280,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     junits = args.junit or [root / JUNIT_RELPATH]
     allow_path = args.allow or policy_path(ALLOW_NAME, root)
 
-    timing = read_timing(junits)
+    timing = read_timing(junits, args.confirm)
     durations = timing.durations
     for note in timing.notes:
         print("pytest-slow-ratchet: note: %s" % note)
     if not durations:
         print(
             "pytest-slow-ratchet: no test case in %s, so there is no verdict to render"
-            % ", ".join(str(j) for j in junits),
+            % ", ".join(str(j) for j in [*junits, *args.confirm]),
             file=sys.stderr,
         )
         return 2
@@ -296,7 +318,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     failed = bool(slow or problems or (stale and args.strict_stale))
     print(
         "pytest-slow-ratchet: %d test(s) judged over %d run(s); %d unlisted over %g s, %d stale entries"
-        % (len(durations), len(junits), len(slow), args.threshold, len(stale))
+        % (len(durations), len(junits) + len(args.confirm), len(slow), args.threshold, len(stale))
     )
     return 1 if failed else 0
 
