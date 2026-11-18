@@ -64,7 +64,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/_done/PLAN-submodule-branch-coordination-guard.md -- 5 of 8 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-proxy-cd-six-targets.md -- 27 of 31 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-repo-docker-storage-prune.md -- 14 of 14 boxes ticked, the PR body's `Plan:` line
-  - agent/plans/PLAN-ciquick-cpu.md -- 10 of 24 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
+  - agent/plans/PLAN-ciquick-cpu.md -- 11 of 24 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (23 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 30 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
@@ -83,14 +83,14 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1481 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1490 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
   - epic 2255f2d2, no plan, 2 commit(s) on the branch, 0 open item(s): Convert stale GitHub issues (console, renet, account) into plan files
-- Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 9: #02389657 (worker:ad3c8f8c36cf8d47e, d778be9d), #0e9506a2 (worker:ad3c8f8c36cf8d47e, d778be9d), #4889018a (worker:ad3c8f8c36cf8d47e, d778be9d), #8bb65426 (worker:ad3c8f8c36cf8d47e, d778be9d), #ab9c68b1 (worker:ad3c8f8c36cf8d47e, d778be9d), #ae672ecb (worker:ad3b3745d978e4e1d, d778be9d), #eacd21f4 (worker:ad3c8f8c36cf8d47e, d778be9d), #fbe192ca (worker:ad3c8f8c36cf8d47e, d778be9d), #ff4754ce (worker:ad3c8f8c36cf8d47e, d778be9d).
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a33967f56ac3f3f8e.
+- Leased items: 7: #02389657 (worker:bsbojcszr, d778be9d), #0e9506a2 (worker:bsbojcszr, d778be9d), #4889018a (worker:bsbojcszr, d778be9d), #8bb65426 (worker:bsbojcszr, d778be9d), #ab9c68b1 (worker:bsbojcszr, d778be9d), #d4083e06 (worker:a33967f56ac3f3f8e, d778be9d), #fbe192ca (worker:bsbojcszr, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 

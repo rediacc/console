@@ -582,7 +582,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-push-decoupling.md` | approved | 252 | 8 | 15 | 35253 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
 | `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3027 |
-| `agent/plans/PLAN-rdc-feedback.md` | approved | 207 | 21 | 0 | 44334 |
+| `agent/plans/PLAN-rdc-feedback.md` | approved | 207 | 21 | 0 | 44408 |
 | `agent/plans/PLAN-rediaccfile-unprivileged.md` | executing | 269 | 5 | 18 | 43413 |
 | `agent/plans/PLAN-reggate-debt-collection.md` | proposed | 80 | 11 | 0 | 17328 |
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
@@ -632,7 +632,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-retro-20261101.md` | ready | 182 | 0 | 4 | 18248 |
 | `agent/plans/PLAN-stop-hook-retro-20261110.md` | ready | 234 | 0 | 8 | 27053 |
 | `agent/plans/PLAN-stop-hook-retro-20261117.md` | ready | 218 | 9 | 0 | 26758 |
-| `agent/plans/PLAN-stop-hook-store-status.md` | approved | 202 | 8 | 1 | 24997 |
+| `agent/plans/PLAN-stop-hook-store-status.md` | approved | 202 | 8 | 1 | 24999 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
 | `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |
