@@ -468,7 +468,8 @@ def test_sweep_aborts_and_keeps_the_plan_when_git_grep_fails(gate, tmp_path):
     result = harness.run(
         [sys.executable, str(GATE), "--sweep", "--write"], cwd=paths.repo_root(), env=env
     )
-    gate.assert_eq(result.rc != 0, True, "a failing git grep fails the sweep loudly")
+    gate.assert_exit(1, result, "a failing git grep is the handled exit 1, not an uncaught crash")
+    gate.assert_contains(result.err, "nothing was deleted", "the abort says nothing was deleted")
     gate.assert_eq((root / rel).exists(), True, "the plan is kept, not read as uncited")
     gate.assert_contains(result.err, "stub: grep unavailable", "the git grep stderr is printed")
     gate.log_pass("a git grep failure keeps the plan and exits non-zero")
@@ -484,6 +485,22 @@ def test_sweep_treats_git_grep_rc1_as_no_citer(gate, tmp_path):
     gate.assert_exit(0, result, "control: rc 1 is a clean no-match")
     gate.assert_eq((root / rel).exists(), False, "control: the uncited plan is swept")
     gate.log_pass("git grep rc 1 still sweeps an uncited plan")
+
+
+def test_a_longer_plan_name_does_not_count_as_a_citer(gate, tmp_path):
+    rel = "agent/plans/_done/PLAN-cited.md"
+    root = _seed(
+        tmp_path,
+        {
+            rel: "# PLAN: cited\nStatus: done\nFirst-Seen: 2024-01-01\n",
+            "tools/helper.py": "# see PLAN-cited-2 and XPLAN-cited and PLAN-cited_x for why\n",
+        },
+    )
+    _ledger(root, {rel: {"moved_at": "2024-02-01"}})
+    result = _gate(root, "--sweep", "--write")
+    gate.assert_exit(0, result, "the sweep succeeds")
+    gate.assert_eq((root / rel).exists(), False, "names that only contain the stem do not keep it")
+    gate.log_pass("a longer plan name is not a citer of the shorter one")
 
 
 def test_sweep_says_so_when_every_aged_plan_is_kept_by_a_citer(gate, tmp_path):
