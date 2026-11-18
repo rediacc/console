@@ -59,6 +59,8 @@ import signal
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import urllib.parse
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
@@ -445,7 +447,7 @@ def read_tree(root: pathlib.Path) -> Tree | None:
 
 
 def strace_argv(log: str, inner: list[str]) -> list[str]:
-    """strace writes the trace to its own stderr; the traced command's output goes to `log`, so the pipe this module reads carries strace lines and nothing else."""
+    """strace writes the trace to its own stderr; the traced command's output goes to `log` and its exit code to `log`.rc, so the pipe this module reads carries strace lines and nothing else, and pytest's end is visible while strace is still running."""
     return [
         "strace",
         "-f",
@@ -462,18 +464,51 @@ def strace_argv(log: str, inner: list[str]) -> list[str]:
         "--",
         "sh",
         "-c",
-        'exec "$@" >"$0" 2>&1',
+        '"$@" >"$0" 2>&1; echo $? >"$0.rc"',
         log,
         *inner,
     ]
 
 
+# How long a process may outlive pytest under the trace before it is killed. `strace -f` exits only when EVERY tracee has, so an orphan a test leaked (wl_git.py's selftest leaves `tail -f /dev/null` as a git editor, seen 2026-11-18) would hold the trace open forever.
+ORPHAN_GRACE_S = 10.0
 # The strace sessions this process has running; run_trace adds and removes its own.
 _LIVE: list[subprocess.Popen] = []
 
 
+def session_members(sid: int, proc_root: str = "/proc") -> list[tuple[int, str]]:
+    """`(pid, command line)` of every process in session `sid`, read from /proc. A process that vanishes mid-read is skipped."""
+    out = []
+    for name in os.listdir(proc_root):
+        if not name.isdigit():
+            continue
+        try:
+            with open(os.path.join(proc_root, name, "stat"), encoding="utf-8") as fh:
+                fields = fh.read().rsplit(")", 1)[1].split()
+            if int(fields[3]) != sid:
+                continue
+            with open(os.path.join(proc_root, name, "cmdline"), "rb") as fh:
+                cmd = fh.read().replace(b"\0", b" ").decode("utf-8", "replace").strip()
+        except (OSError, IndexError, ValueError):
+            continue
+        out.append((int(name), cmd))
+    return sorted(out)
+
+
+def _kill_session(sid: int, spare: int | None = None) -> list[str]:
+    """SIGKILL every member of session `sid` but `spare`; the command lines killed."""
+    killed = []
+    for pid, cmd in session_members(sid):
+        if pid in (spare, os.getpid()):
+            continue
+        with contextlib.suppress(ProcessLookupError):
+            os.kill(pid, signal.SIGKILL)
+            killed.append(cmd)
+    return killed
+
+
 def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attributor, str]:
-    """(pytest exit, the folded stream, pytest's output). strace's stderr is read line by line while pytest runs, so the log never touches disk. strace runs in its own session and the whole group is killed when this returns, normally or not: a reader that stops reading would otherwise leave every tracee stopped on a full pipe."""
+    """(pytest exit, the folded stream, pytest's output). A reader thread folds strace's stderr while pytest runs, so the log never touches disk; this thread watches for pytest's exit-code file. Once it appears, any process still running in the strace session after ORPHAN_GRACE_S was leaked by a test: it is killed, named in the output, and strace then exits. strace runs in its own session and the whole session is killed when this returns, normally or not."""
     if shutil.which("strace") is None:
         raise SystemExit(
             "pytest_impact_reads: strace is not installed; install it (apt-get install strace) and re-run"
@@ -484,6 +519,7 @@ def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attribut
         markers = os.path.join(scratch, "m")
         os.mkdir(markers)
         log = os.path.join(scratch, "pytest.log")
+        rc_file = pathlib.Path(log + ".rc")
         att = Attributor(root=str(root), marker_dir=markers)
         # The environment is inherited unchanged: this module runs only as `python -m rediacc_ci...`, so whatever put `.ci` on its path puts it on pytest's, which `-p` needs before pyproject's `pythonpath` is applied.
         child = subprocess.Popen(
@@ -498,18 +534,43 @@ def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attribut
             start_new_session=True,
         )
         _LIVE.append(child)
-        stream = child.stderr if child.stderr is not None else ()
-        for line in stream:
-            att.feed(line)
-        rc = child.wait()
+        stream = child.stderr
+
+        def fold() -> None:
+            if stream is not None:
+                for line in stream:
+                    att.feed(line)
+
+        reader = threading.Thread(target=fold, daemon=True)
+        reader.start()
+        leaked: list[str] = []
+        ended_at = None
+        while child.poll() is None:
+            if ended_at is None and rc_file.exists():
+                ended_at = time.monotonic()
+            if ended_at is not None and time.monotonic() - ended_at > ORPHAN_GRACE_S:
+                leaked = _kill_session(child.pid, spare=child.pid)
+                break
+            time.sleep(0.5)
+        child.wait()
+        reader.join()
         output = pathlib.Path(log).read_text(encoding="utf-8", errors="replace")
+        try:
+            rc = int(rc_file.read_text(encoding="utf-8").strip())
+        except (OSError, ValueError):
+            rc = child.returncode or 2
+        for cmd in leaked:
+            output += (
+                "\npytest-impact-reads: outlived pytest under the trace and was killed: %s"
+                % cmd[:300]
+            )
     finally:
-        if child is not None and child.poll() is None:
-            with contextlib.suppress(ProcessLookupError):
-                os.killpg(child.pid, signal.SIGKILL)
-            child.wait()
-        if child is not None and child in _LIVE:
-            _LIVE.remove(child)
+        if child is not None:
+            if child.poll() is None:
+                _kill_session(child.pid)
+                child.wait()
+            if child in _LIVE:
+                _LIVE.remove(child)
         shutil.rmtree(scratch, ignore_errors=True)
     return rc, att, output
 
@@ -518,8 +579,7 @@ def _kill_live() -> None:
     """Kill every strace session still registered: the main thread's exit path, for shards whose own `finally` sits on a pool thread that a SystemExit in the main thread never reaches."""
     for child in _LIVE[:]:
         if child.poll() is None:
-            with contextlib.suppress(ProcessLookupError):
-                os.killpg(child.pid, signal.SIGKILL)
+            _kill_session(child.pid)
 
 
 def trace_record(att: Attributor, collected: int) -> dict:
@@ -671,8 +731,16 @@ def cmd_trace(root: pathlib.Path, argv: list[str]) -> int:
             "pytest-impact-reads: %d shard(s) of %s test file(s), -n %s each"
             % (len(groups), "/".join(str(len(g)) for g in groups), jobs)
         )
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(groups)) as pool:
-        results = list(pool.map(lambda g: run_trace(root, [*head, *g]), groups))
+    # The pool is shut down only after the live sessions are killed: a SIGTERM raises in this thread while every shard thread is blocked on its strace, and `with ThreadPoolExecutor` would wait for them first (seen 2026-11-18: the CLI outlived its TERM with four straces running).
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=len(groups))
+    try:
+        futures = [pool.submit(run_trace, root, [*head, *g]) for g in groups]
+        results = [f.result() for f in futures]
+    except BaseException:
+        _kill_live()
+        raise
+    finally:
+        pool.shutdown(wait=True)
     rc = merged_rc([r[0] for r in results])
     att = merge_attributors([r[1] for r in results])
     output = "\n".join(r[2] for r in results)

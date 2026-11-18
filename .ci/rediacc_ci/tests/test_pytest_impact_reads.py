@@ -363,11 +363,13 @@ def test_run_trace_hands_the_option_to_pytest_and_reads_markers_in_that_director
 
     class FakeChild:
         pid = 0
+        returncode = 0
 
         def __init__(self, argv, **_k):
             seen["argv"] = argv
             log = argv[argv.index("-c") + 2]
             pathlib.Path(log).write_text("1 passed\n", encoding="utf-8")
+            pathlib.Path(log + ".rc").write_text("0\n", encoding="utf-8")
             token = next(a for a in argv if a.startswith(pr.MARKER_OPTION + "="))
             markers = token.split("=", 1)[1]
             self.stderr = [
@@ -521,3 +523,54 @@ def test_merge_unions_reads_per_label_and_sums_the_counts():
 )
 def test_the_worst_shard_exit_wins(codes, want):
     assert pr.merged_rc(codes) == want
+
+
+# --------------------------------------------------------------------------- orphans a test leaked
+
+
+def _fake_proc(root: pathlib.Path, rows: list[tuple[int, int, str]]) -> str:
+    for pid, sid, cmd in rows:
+        d = root / str(pid)
+        d.mkdir(parents=True)
+        # Field 6 of /proc/<pid>/stat is the session id; a command name holding ") " must not shift it.
+        (d / "stat").write_text("%d (odd) name) S 1 %d %d 0 -1" % (pid, pid, sid), encoding="utf-8")
+        (d / "cmdline").write_bytes(cmd.replace(" ", "\0").encode() + b"\0")
+    (root / "self").mkdir()
+    return str(root)
+
+
+def test_session_members_reads_the_session_field_past_a_tricky_command_name(tmp_path):
+    proc = _fake_proc(
+        tmp_path,
+        [(10, 10, "strace -f"), (11, 10, "tail -f /dev/null"), (12, 99, "other session")],
+    )
+    assert pr.session_members(10, proc) == [(10, "strace -f"), (11, "tail -f /dev/null")]
+
+
+def test_control_session_members_of_an_empty_session_is_empty(tmp_path):
+    assert pr.session_members(42, _fake_proc(tmp_path, [(10, 10, "strace -f")])) == []
+
+
+def test_pytest_exit_comes_from_its_own_file_not_from_strace(tmp_path, monkeypatch):
+    """strace exits with the status of `sh`, whose last command writes the file; the verdict is pytest's code in the file."""
+
+    class FakeChild:
+        pid = 0
+        returncode = 0
+
+        def __init__(self, argv, **_k):
+            log = argv[argv.index("-c") + 2]
+            pathlib.Path(log).write_text("1 failed\n", encoding="utf-8")
+            pathlib.Path(log + ".rc").write_text("1\n", encoding="utf-8")
+            self.stderr = []
+
+        def wait(self):
+            return 0
+
+        def poll(self):
+            return 0
+
+    monkeypatch.setattr(pr.shutil, "which", lambda _n: "/usr/bin/strace")
+    monkeypatch.setattr(pr.subprocess, "Popen", FakeChild)
+    rc, _att, _out = pr.run_trace(tmp_path, ["pytest"])
+    assert rc == 1, "strace's own 0 hid pytest's failure"
