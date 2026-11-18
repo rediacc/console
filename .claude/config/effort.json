@@ -97,6 +97,10 @@
       "block": "smart",
       "advise": "low"
     },
+    "wl-stale": {
+      "block": "smart",
+      "advise": "low"
+    },
     "plan-unimplemented": {
       "block": "low",
       "advise": "low"

@@ -1740,7 +1740,8 @@ CLI_ITEM_USAGE = (
     "       --relay <my-prefix> <old-worker> <new-worker>   move every lease on one worker to another\n"
     "       --update <my-prefix> <id> <what moved...>\n"
     "       --reopen <my-prefix> <id> <note...>   move a [?] back to [ ] (refused from any other state)\n"
-    "       --status <my-prefix> [<agent-id>|all]   read a worker's transcript; answers the roster's 20-minute ping\n"
+    "       --status <my-prefix> [--since-last-stop]   the store-rendered status table and the changes since the last stop (read-only)\n"
+    "       --status <my-prefix> <agent-id>|all   read a worker's transcript; answers the roster's 20-minute ping\n"
     "       --list"
 )
 

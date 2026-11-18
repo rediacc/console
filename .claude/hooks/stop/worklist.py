@@ -496,6 +496,60 @@ USAGE_FALLBACK = "worklist.py: see --help (message catalogue unavailable: %s)"
 PLAN_SLUG_RE = re.compile(r"[^a-z0-9-]+")
 
 
+def _store_status_cli(argv, worklist, die):
+    """--status <me> [--since-last-stop]: the store-rendered status table and the change rows since the last stop (agent/plans/PLAN-stop-hook-store-status.md S2, D4).
+
+    READ-ONLY: the fold loads with sync=False and the snapshot is only read, so repeated calls inside one turn share the last stop's baseline and the state file stays byte-identical. There is no Stop event inside a turn, so liveness comes from wl_roster.live_estimate: an agent it estimates running reads live, a known agent it does not reads gone, and any other worker (a shell, a teammate) reads `unverified (no stop event)`, never live."""
+    import wl_roster
+    import wl_storestatus as SS
+
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+    session_id = C.resolve_session_id() or me
+    fold = S.load(worklist, sync=False)
+    prev = S.load_state(worklist, session_id).get("store_snap")
+    prev = prev if isinstance(prev, dict) else None
+    live, metas = set(), {}
+    with contextlib.suppress(Exception):
+        est, metas = wl_roster.live_estimate(str(C.project_start()), session_id)
+        live = {str(r.get("id") or "") for r in est or ()}
+    unverified = {
+        str(r.get("worker") or "")
+        for r in fold.items
+        if r.get("state") == ">"
+        and r.get("worker")
+        and r["worker"] not in live
+        and r["worker"] not in (metas or {})
+    }
+    graph = None
+    with contextlib.suppress(Exception):
+        graph = PO.context(C.project_root(C.project_start()))[0].graph
+    rows = SS.freshness(
+        fold,
+        session_id,
+        prev,
+        live,
+        {},
+        live,
+        set((prev or {}).get("queued") or ()),
+        {},
+        time.time(),
+        graph=graph,
+        unverified=unverified,
+    )
+    print(
+        SS.render_verb(
+            rows,
+            SS.changes(prev, fold, session_id),
+            prev is None,
+            me,
+            since_last_stop=argv[2:] == ["--since-last-stop"],
+        )
+    )
+
+
 def _triage_cli(argv, worklist, me, die):
     """--triage <me> [--id <id>] <finding...>: how does this finding get fixed?
 
@@ -1770,6 +1824,10 @@ def _item_cli(argv, worklist):
                     "?" if upd is None else "%dm" % upd,
                 )
             )
+        return
+    if mode == "--status" and (len(argv) == 2 or argv[2:] == ["--since-last-stop"]):
+        # THE STORE STATUS (agent/plans/PLAN-stop-hook-store-status.md S2), before the arity guard: the bare form died there, so both shapes were free. `--status <me> all|<agent-id>` falls through to the roster read below.
+        _store_status_cli(argv, worklist, die)
         return
     if len(argv) < (2 if mode == "--add-many" else 3):
         die(M.CLI_ITEM_USAGE)

@@ -60,6 +60,7 @@ import wl_schedred
 import wl_shapedup
 import wl_standdown
 import wl_store as S
+import wl_storestatus
 import wl_trapfires
 import wl_uncommitted
 import wl_wake
@@ -2363,6 +2364,8 @@ PRIORITY_LADDER = (
             {
                 # The worklist's own `- [ ]` boxes, and the two states that turn a parked box back into an order.
                 "open-items",
+                # An owned open item quiet past the resolve rung with nobody on it, which no other check names this stop (wl_storestatus, agent/plans/PLAN-stop-hook-store-status.md D2): the one-shot ladder has stopped naming it, and it is still work in hand.
+                "wl-stale",
                 # In focus mode, the open items carrying the focus PR's `pr:<n>`: the babysit loop's own fix work (wl_standdown).
                 "focus-pr-items",
                 # A plan this session ADOPTED (its Owner line says so) with boxes nothing tracks: the adoption is the statement that it is being executed.
@@ -4283,6 +4286,50 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
     else:
         _q["items"] = [e for e in _q["items"] if e.get("key") != "ladder"]
+    # ---- THE STORE STATUS (agent/plans/PLAN-stop-hook-store-status.md S3, D3), computed ONCE from the fold, classification, roster and ladder this stop already holds: no second pass over history. The snapshot is written here, before the bookkeeping save, so a blocked stop and an allowed stop both advance it. A failure leaves the stop exactly as before.
+    _ss_rows, _ss_changes, _ss_first = [], [], True
+    with contextlib.suppress(Exception):
+        _ss_prev = state_doc.get("store_snap")
+        _ss_prev = _ss_prev if isinstance(_ss_prev, dict) else None
+        _ss_first = _ss_prev is None
+        _ss_queued = {r["id"] for r in _queued_recs}
+        _ss_open = (
+            wl_storestatus.open_item_ids(
+                fold, session_id, {r["id"] for r in in_flight_recs}, _ss_queued
+            )
+            if open_items
+            else set()
+        )
+        _ss_cover = wl_storestatus.covering(
+            fold,
+            session_id,
+            _ss_open,
+            {
+                "ladder-investigate": ladder_inv,
+                "ladder-resolve": ladder_res,
+                "ladder-gone": ladder_gone,
+                "ladder-idle": ladder_idle,
+            },
+            _roster,
+        )
+        _ss_now = time.time()
+        _ss_rows = wl_storestatus.freshness(
+            fold,
+            session_id,
+            _ss_prev,
+            _live_worker_ids,
+            worker_verdicts,
+            set((_roster or {}).get("verified") or ()),
+            _ss_queued,
+            _ss_cover,
+            _ss_now,
+            graph=_dep_graph,
+        )
+        _ss_changes = wl_storestatus.changes(_ss_prev, fold, session_id)
+        state_doc["store_snap"] = wl_storestatus.snapshot(
+            fold, session_id, _ss_now, queued=_ss_queued
+        )
+    _ss_system, _ss_reason = wl_storestatus.stop_texts(_ss_rows, _ss_changes, _ss_first, me8)
     S.save_state(worklist, session_id, state_doc)
 
     # ---- v11: the store-derived guide, present on EVERY full stop (allow and block alike), so the session reports from the store, not memory. Never breaks gating, and a broken guide SAYS SO rather than vanishing.
@@ -6010,6 +6057,9 @@ def run_stop(event, event_ok, worklist, hook_file):
             True,
             M.V_LADDER_RESOLVE % ("\n".join("    " + s for s in ladder_res), facts, me8),
         )
+    # ---- THE STORE'S FRESHNESS VERDICT (agent/plans/PLAN-stop-hook-store-status.md D2): a stale or orphaned owned item that no check above names. It fires on every stop while the item stays stale, with no latch, because every exit is one the session completes alone.
+    if wl_storestatus.blocking(_ss_rows):
+        vadd("wl-stale", False, wl_storestatus.render_stale(_ss_rows, me8))
     # ---- v12 CI-WAITING FORCE. The observed failure, three times in one night: the only thing in flight is a CI watch, the run is healthy, and the stop is a Remaining table while 30+ aged [?] sit untouched. When watching CI is ALL the in-flight work, waiting is not a valid stop: the aged backlog is demanded, oldest first, bounded per stop. Every named item has a single-turn solo
     # exit (do it and tick, execute its DEFAULT early, or re-justify with --defer, which resets its age below CI_FORCE_MIN_AGE), so pressure converts into action, never a deadlock.
     ci_watching, watch_desc = wl_ci.ci_watch_only(live_bg)
@@ -6474,6 +6524,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             ("\n\n" + ci_report if ci_report else "")
             + ("\n\n" + queue_note if queue_note else "")
             + ("\n\n" + _pr_scope_line if _pr_scope_line else "")
+            # The store's count line and change summary (plan D3); the table itself rides the systemMessage only, so the model's context does not pay for it.
+            + ("\n\n" + _ss_reason if _ss_reason else "")
         )
         # THE ADVISORY QUEUE WAS STARVED BY A PRODUCTIVE SESSION: `outq_drain` runs on the allow path only, and measured 2026-09-17, ten parsed plan boxes went unseen across roughly twenty consecutive blocked stops. The digest (operator ruling 2026-09-24, "One quoted + others named") names up to OUTQ_DIGEST_MAX sections on every block and delivers the one-line ones outright; a
         # multi-line body stays queued for a clean stop, so the focused violation above is never displaced by a wall. The two CI notes are skipped because they already ride `extras` in full.
@@ -6590,7 +6642,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             {
                 # SURFACED, not len(shown): `shown` may carry the synthetic collapse block, which is one entry standing for several checks. Every invariant is surfaced (quoted or named) plus at most one rotating pick.
                 "systemMessage": "Stop hook: %d check(s) outstanding, surfacing %d.%s"
-                % (len(violations), len(_inv) + (1 if pick is not None else 0), sysmsg_tail),
+                % (len(violations), len(_inv) + (1 if pick is not None else 0), sysmsg_tail)
+                + ("\n\n" + _ss_system if _ss_system else ""),
                 "decision": "block",
                 "reason": M.R_BLOCK_FOCUS
                 % (
@@ -7142,7 +7195,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             C.emit(
                 {
                     "systemMessage": "Stop hook: judge says continue (%d in a row). %s"
-                    % (judge_streak + 1, verdict["reason"][:110]),
+                    % (judge_streak + 1, verdict["reason"][:110])
+                    + ("\n\n" + _ss_system if _ss_system else ""),
                     "decision": "block",
                     "reason": M.R_JUDGE_CONTINUE
                     % (
@@ -7151,6 +7205,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                         verdict["next_action"],
                         "\n".join("  " + r for r in remaining_lines[:12]),
                     )
+                    + ("\n\n" + _ss_reason if _ss_reason else "")
                     + guide_tail,
                 }
             )
@@ -7349,6 +7404,9 @@ def run_stop(event, event_ok, worklist, hook_file):
                 parts.append(wl_hints.render(*picked))
     # outq_drain persisted the queue already; this save carries the judge-line marker pop and any late state mutation, and one redundant atomic write is cheaper than reasoning about which came last. It happens BEFORE the exit below, because a silent allow must still bank everything a loud one does.
     S.save_state(worklist, session_id, state_doc)
+    # THE STORE STATUS TABLE, for the operator (agent/plans/PLAN-stop-hook-store-status.md D3), only while the session owns an open, in-flight or deferred item: an allow with none stays silent, as v18 ruled below.
+    if _ss_rows and _ss_system:
+        parts.append(_ss_system)
     if not parts:
         # v18: nothing actionable, nothing queued, no judge line to show. This used to be impossible (the guide was unconditional) and is now the common shape of a clean stop, so it exits with zero bytes, exit 0. Everything above still ran and still persisted -- the silence is the report, not a skipped battery.
         raise SystemExit(0)

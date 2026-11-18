@@ -9,6 +9,7 @@ THE SNAPSHOT IS NOT A BYTE OFFSET. The store is one file per writer, folded in `
 
 import datetime
 import hashlib
+import re
 
 import wl_core as C
 import wl_leasehelp as LH
@@ -33,6 +34,8 @@ CHANGE_KINDS = ("retired", "ticked", "deferred", "reopened", "new", "leased", "u
 
 # Worker states shown in the table's worker column.
 W_LIVE, W_SUSPECT, W_GONE, W_QUEUE, W_LEAD, W_NONE = "live", "suspect", "gone", "queue", "lead", "-"
+# Inside a turn (`worklist.py --status`, plan D4) there is no Stop event, so a worker the roster's estimate cannot see (a shell, a teammate) is never called live or gone.
+W_UNVERIFIED = "unverified (no stop event)"
 
 TABLE_HEADER = (
     "STORE STATUS (hook-rendered from the worklist store; the message need not repeat it)"
@@ -45,8 +48,19 @@ CHANGES_ROW = "#%s  %-8s %s"
 CHANGES_MORE_TAIL = "+%d more: worklist.py --status %s --since-last-stop"
 NO_SNAPSHOT = "CHANGES SINCE LAST STOP: no snapshot yet (first stop of this session id); every item is listed as current"
 COUNT_LINE = "STORE STATUS: %d open (%s); full table: worklist.py --status %s"
+VERB_EMPTY = "STORE STATUS: no open, in-flight or deferred item is owned by %s"
 STALE_WHY = "quiet %dm with no live verified worker and no blocker"
 ORPHANED_WHY = "quiet %dm and its worker %s is found by no oracle"
+V_STALE = (
+    "WL-STALE: %d open item(s) of this session went quiet with nobody on them, and no other check "
+    "names them this stop:\n%s\n"
+    "Each exit is one the session completes alone: advance the item and record it with "
+    "`worklist.py --update %s <id> <note>`, lease it to a live worker, add `BLOCKED_BY:#<id>` "
+    "through --update, park it with --defer and a DEFAULT, or --tick it with evidence."
+)
+STALE_ROW = "    #%s  [%s]  %s  %s"
+# The ids a ladder label or a covering line leads with (`#<id> ...`); a harness task (`task #7`) does not match.
+_LEAD_ID = re.compile(r"^#([0-9A-Za-z_-]+)")
 
 
 def _epoch(now):
@@ -125,21 +139,26 @@ def high_water(events):
     return [best[0], best[1]]
 
 
-def snapshot(fold, session_id, now):
+def snapshot(fold, session_id, now, queued=None):
     """`{"at": [stamp, ns], "stop_at": epoch, "items": {id: digest}}` over every item this session owns in states ` `, `>` and `?`.
 
-    `at` is `fold.high_water` when the caller set it (from `high_water(events)`), else the newest `upd` of any item with ns 0: the fold itself keeps no events."""
+    `at` is `fold.high_water` when the caller set it (from `high_water(events)`), else the newest `upd` of any item with ns 0: the fold itself keeps no events.
+
+    `queued` (the Stop hook passes the ids classify_items put in `queued`) is kept as a sorted `"queued"` list, so the `--status` verb, which cannot compute the live PR scope inside a turn, classes those items as the last stop did."""
     hw = getattr(fold, "high_water", None)
     if isinstance(hw, list | tuple) and len(hw) == 2:
         at = [str(hw[0]), int(hw[1] or 0)]
     else:
         newest = max((str(r.get("upd") or "") for r in _items(fold)), default="")
         at = [newest, 0]
-    return {
+    snap = {
         "at": at,
         "stop_at": _epoch(now),
         "items": {r["id"]: digest(r) for r in _owned_open(fold, session_id)},
     }
+    if queued is not None:
+        snap["queued"] = sorted(queued)
+    return snap
 
 
 def _note(rec):
@@ -188,7 +207,8 @@ def changes(prev, fold, session_id):
         rid = rec["id"]
         if rid in old_items:
             continue
-        existed = since and str(rec.get("first") or "") <= since
+        # STRICT: stamps are second-resolution, so an item first stamped in the snapshot's own second may have been added after it; it reads `new`, never `reopened` (review e8329fa3.1).
+        existed = since and str(rec.get("first") or "") < since
         kind = "reopened" if existed else "new"
         rows.append(
             {
@@ -205,7 +225,7 @@ def changes(prev, fold, session_id):
     return rows
 
 
-def worker_state(rec, live, verdicts, roster_live):
+def worker_state(rec, live, verdicts, roster_live, unverified=()):
     """One of W_LIVE, W_SUSPECT, W_GONE, W_QUEUE, W_LEAD, W_NONE for an item's worker. Live means listed live AND verified: a shell `confirmed` by verify_background, or an agent the roster calls LIVE (`roster_live`, which also carries a teammate with a fresh transcript)."""
     worker = str(rec.get("worker") or "")
     if rec.get("state") != ">" or not worker:
@@ -220,6 +240,8 @@ def worker_state(rec, live, verdicts, roster_live):
         return W_LIVE
     if worker in (live or ()):
         return W_SUSPECT
+    if worker in (unverified or ()):
+        return W_UNVERIFIED
     return W_GONE
 
 
@@ -230,11 +252,21 @@ def _covered_key(covered, rid):
 
 
 def freshness(
-    fold, session_id, prev, live, verdicts, roster_live, queued_ids, covered, now, graph=None
+    fold,
+    session_id,
+    prev,
+    live,
+    verdicts,
+    roster_live,
+    queued_ids,
+    covered,
+    now,
+    graph=None,
+    unverified=(),
 ):
     """One row per owned open, in-flight or deferred item: `{"id", "state", "worker", "wstate", "age", "cls", "why", "note", "covered", "blocks"}`.
 
-    Arguments: `live` the live worker ids (wl_liveness.live_worker_ids); `verdicts` {worker: verdict} from verify_background, where a value of "waiting" marks an agent waiting on a shell it armed; `roster_live` the agent ids the roster verifies LIVE; `queued_ids` the ids classify_items put in `queued`; `covered` the ids another check names this stop, as {id: key} or a set; `graph` the optional plan graph `waiting_on` reads.
+    Arguments: `live` the live worker ids (wl_liveness.live_worker_ids); `verdicts` {worker: verdict} from verify_background, where a value of "waiting" marks an agent waiting on a shell it armed; `roster_live` the agent ids the roster verifies LIVE; `queued_ids` the ids classify_items put in `queued`; `covered` the ids another check names this stop, as {id: key} or a set; `graph` the optional plan graph `waiting_on` reads; `unverified` the workers no oracle can judge without a Stop event (the `--status` verb's shells), shown as W_UNVERIFIED and never orphaned.
 
     First match wins in CLASSES order. With no snapshot every item is judged by age alone, so the first stop of a fresh session id can still name a stale item. A blocking row (`stale`, `orphaned`) that `covered` names keeps its class, carries the covering key, and has `blocks` False: no double block."""
     t_now = _epoch(now)
@@ -247,7 +279,7 @@ def freshness(
         rid = rec["id"]
         state = rec.get("state")
         worker = str(rec.get("worker") or "") if state == ">" else ""
-        wstate = worker_state(rec, live, verdicts, roster_live)
+        wstate = worker_state(rec, live, verdicts, roster_live, unverified)
         upd = _stamp_epoch(rec.get("upd"))
         age = max(0, int((t_now - upd) // 60)) if upd is not None else 0
         quiet = old_items is None or same(old_items.get(rid), digest(rec))
@@ -342,3 +374,69 @@ def render_changes(rows, cap=CHANGES_CAP, me="<me>", first=False):
     if len(rows) > cap:
         lines.append(CHANGES_MORE_TAIL % (len(rows) - cap, me))
     return "\n".join(lines)
+
+
+def open_item_ids(fold, session_id, in_flight_ids, queued_ids):
+    """The ids the `open-items` check names this stop: owned `[ ]` items that wait on nothing and sit in the PR scope, plus owned `[>]` items classify_items failed closed (not in flight). Read after classify_items, which stamps `waiting_on` and `waiting_plans` on each record."""
+    out = set()
+    for r in _owned_open(fold, session_id):
+        if r.get("state") == " ":
+            if r.get("waiting_on") or r.get("waiting_plans") or r["id"] in (queued_ids or ()):
+                continue
+            out.add(r["id"])
+        elif r.get("state") == ">" and r["id"] not in (in_flight_ids or ()):
+            out.add(r["id"])
+    return out
+
+
+def covering(fold, session_id, open_ids=(), ladder=None, roster=None):
+    """{item id: key} for every owned item another check names this stop (plan D2, no double block).
+
+    `open_ids` the ids `open-items` names (open_item_ids, empty when that check does not fire); `ladder` {key: [label, ...]} for the ladder's lists, each label leading with `#<id>`; `roster` the wl_roster verdict, whose `leased_dead` rows are `(item, worker, coverer)` and whose `silent` and `status_due` lists are worker ids."""
+    cover = {}
+    for rid in sorted(open_ids or ()):
+        cover.setdefault(rid, "open-items")
+    for key, labels in sorted((ladder or {}).items()):
+        for label in labels or ():
+            m = _LEAD_ID.match(str(label))
+            if m:
+                cover.setdefault(m.group(1), key)
+    if roster:
+        for row in roster.get("leased_dead") or ():
+            cover.setdefault(str(row[0]), "roster-dead")
+        quiet = set(roster.get("silent") or ()) | set(roster.get("status_due") or ())
+        if quiet:
+            for r in _owned_open(fold, session_id):
+                if r.get("state") == ">" and str(r.get("worker") or "") in quiet:
+                    cover.setdefault(r["id"], "roster-silent")
+    return cover
+
+
+def render_stale(rows, me="<me>"):
+    """The `wl-stale` block text over the blocking rows, or "" when none blocks."""
+    hit = [r for r in rows if r.get("blocks")]
+    if not hit:
+        return ""
+    body = "\n".join(
+        STALE_ROW % (r["id"], r["state"], _wcol(r), "%s: %s" % (r["cls"], r["why"])) for r in hit
+    )
+    return V_STALE % (len(hit), body, me)
+
+
+def stop_texts(rows, change_rows, first, me="<me>"):
+    """(system, reason) for one stop (plan D3): the table and the change summary for the operator's systemMessage, the count line and the change summary for a block reason. Both "" when the session owns no open, in-flight or deferred item and nothing changed."""
+    if not rows and not change_rows:
+        return "", ""
+    summary = render_changes(change_rows, CHANGES_CAP, me, first=first)
+    system = "\n\n".join(t for t in (render_table(rows, TABLE_CAP, me), summary) if t)
+    return system, count_line(rows, me) + "\n" + summary
+
+
+def render_verb(rows, change_rows, first, me="<me>", since_last_stop=False):
+    """The `worklist.py --status <me> [--since-last-stop]` output (plan D4), uncapped: the verb is where a capped table points. `--since-last-stop` prints only the change rows, and with no snapshot it says so and lists every item."""
+    whole = len(rows) + len(change_rows) + 1
+    summary = render_changes(change_rows, whole, me, first=first)
+    if since_last_stop and not first:
+        return summary
+    table = render_table(rows, whole, me) or VERB_EMPTY % me
+    return table + "\n\n" + summary

@@ -7,9 +7,12 @@ from __future__ import annotations
 
 import calendar
 import datetime
+import json
+import time
 
 import pytest
 
+from rediacc_hooks.tests import test_wl_roster as R
 from rediacc_hooks.tests import wlfix
 
 S = wlfix.import_wl("wl_store")
@@ -382,6 +385,358 @@ def test_count_line():
     assert line.endswith("worklist.py --status %s" % ME)
 
 
-def test_the_module_loads_from_the_stop_hook_directory() -> None:
-    """The suite resolves `.claude/hooks/stop/wl_storestatus.py` by name, so the module cannot be renamed or moved without this reading red."""
-    assert SS.__file__.endswith(".claude/hooks/stop/wl_storestatus.py")
+# ---- the review finding e8329fa3.1: same-second stamps ----------------------
+
+
+def test_an_item_first_stamped_in_the_snapshots_own_second_reads_new():
+    """The snapshot's high-water mark is second-resolution, so an item added after the snapshot inside that same second is `new`. Control: an item whose first stamp is older than the mark and that was not open at the snapshot reads `reopened`."""
+    events = [add("a1", 10), ev("update", "a1", 5, note="moved")]
+    prev = snap(events)
+    assert prev["at"] == [at(5), 0]
+    assert kinds(prev, [*events, add("a9", 5, "same second")]) == [("a9", "new")]
+    closed = [*events, add("a8", 30), ev("state", "a8", 20, s="x", note="done")]
+    prev = snap(closed)
+    assert kinds(prev, [*closed, ev("state", "a8", 1, s=" ", note="back")]) == [("a8", "reopened")]
+
+
+# ---- the stop wiring's pure halves (S3) -------------------------------------
+
+
+def test_open_item_ids_names_what_open_items_names():
+    events = [
+        add("a1", 30),
+        add("a2", 30, "waits"),
+        add("a3", 30),
+        add("a4", 30),
+        ev("lease", "a4", 20, until=at(-60), worker="w1"),
+        add("a5", 30),
+        ev("lease", "a5", 20, until=at(-60), worker="w2"),
+        add("p1", 30, owner=PEER),
+    ]
+    f = fold(events)
+    # classify_items stamps the wait on the record; open_item_ids reads it after.
+    next(r for r in f.items if r["id"] == "a2")["waiting_on"] = ["a1"]
+    got = SS.open_item_ids(f, SID, in_flight_ids={"a4"}, queued_ids={"a3"})
+    assert got == {"a1", "a5"}
+
+
+def test_covering_reads_the_ladder_the_roster_and_open_items():
+    events = [
+        add("a1", 30),
+        add("a2", 30),
+        ev("lease", "a2", 20, until=at(-60), worker="w-silent"),
+        add("a3", 30),
+        add("a4", 30),
+        add("a5", 30),
+    ]
+    cover = SS.covering(
+        fold(events),
+        SID,
+        open_ids={"a1"},
+        ladder={"ladder-resolve": ["#a3 - [>] text", "task #7 a harness task"], "ladder-gone": []},
+        roster={"leased_dead": [("a4", "w4", "")], "silent": ["w-silent"], "status_due": []},
+    )
+    assert cover == {
+        "a1": "open-items",
+        "a2": "roster-silent",
+        "a3": "ladder-resolve",
+        "a4": "roster-dead",
+    }
+    # Control: no covering check names nothing.
+    assert SS.covering(fold(events), SID) == {}
+
+
+def test_render_stale_names_each_blocking_row_and_every_exit():
+    events = [add("a1", 400), ev("lease", "a1", 300, until=at(-60), worker="b0dead")]
+    rows = SS.freshness(fold(events), SID, snap(events), set(), {}, set(), set(), {}, NOW)
+    text = SS.render_stale(rows, ME)
+    assert text.startswith("WL-STALE: 1 open item(s)")
+    assert "#a1  [>]  b0dead (gone)  orphaned: quiet 300m" in text
+    for verb in ("--update %s" % ME, "BLOCKED_BY", "--defer", "--tick"):
+        assert verb in text
+    # Control: the same row covered by another check renders nothing.
+    covered = SS.freshness(
+        fold(events), SID, snap(events), set(), {}, set(), set(), {"a1": "roster-dead"}, NOW
+    )
+    assert SS.render_stale(covered, ME) == ""
+
+
+def test_stop_texts_split_the_table_from_the_reason():
+    events = [add("a1", 30, "one"), add("a2", 30, "two")]
+    prev = snap(events)
+    f = fold([*events, ev("update", "a2", 1, note="progress")])
+    rows = SS.freshness(f, SID, prev, set(), {}, set(), set(), {}, NOW)
+    system, reason = SS.stop_texts(rows, SS.changes(prev, f, SID), False, ME)
+    assert system.startswith(SS.TABLE_HEADER)
+    assert "#a2  note     progress" in system
+    assert SS.TABLE_HEADER not in reason
+    assert reason.splitlines()[0].startswith("STORE STATUS: 2 open (1 moved")
+    assert "#a2  note     progress" in reason
+    # Control: nothing owned and nothing changed is silent.
+    assert SS.stop_texts([], [], False, ME) == ("", "")
+
+
+def test_render_verb_since_last_stop_and_no_snapshot():
+    events = [add("a1", 30, "one"), add("a2", 30, "two")]
+    prev = snap(events)
+    f = fold([*events, ev("update", "a2", 1, note="progress")])
+    rows = SS.freshness(f, SID, prev, set(), {}, set(), set(), {}, NOW)
+    only = SS.render_verb(rows, SS.changes(prev, f, SID), False, ME, since_last_stop=True)
+    assert only.splitlines() == [SS.CHANGES_HEADER, "#a2  note     progress"]
+    first_rows = SS.freshness(f, SID, None, set(), {}, set(), set(), {}, NOW)
+    first = SS.render_verb(first_rows, [], True, ME, since_last_stop=True)
+    assert SS.NO_SNAPSHOT in first
+    assert "#a1  [ ]" in first
+    assert "#a2  [ ]" in first
+    assert SS.render_verb([], [], False, ME).startswith(SS.VERB_EMPTY % ME)
+
+
+def test_an_unverified_worker_is_never_live_or_orphaned():
+    events = [add("a1", 400), ev("lease", "a1", 300, until=at(-60), worker="b5hell")]
+    rows = SS.freshness(
+        fold(events), SID, snap(events), set(), {}, set(), set(), {}, NOW, unverified={"b5hell"}
+    )
+    assert (rows[0]["wstate"], rows[0]["cls"]) == (SS.W_UNVERIFIED, "stale")
+    assert "b5hell (unverified (no stop event))" in SS.render_table(rows, me=ME)
+
+
+# ---- the Stop hook, end to end through wlfix (S3) ---------------------------
+
+
+def stamp(minutes_ago: float) -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - minutes_ago * 60))
+
+
+def until(minutes_ahead: float = 60) -> str:
+    return time.strftime("%Y-%m-%dT%H:%MZ", time.gmtime(time.time() + minutes_ahead * 60))
+
+
+def plant(fix, *events: dict) -> None:
+    """Raw events into the fixture's legacy log, stamps backdated: the store is append-only JSONL, so a backdated event is exactly what an old item looks like."""
+    with fix.events.open("a", encoding="utf-8") as handle:
+        for one in events:
+            handle.write(json.dumps(one) + "\n")
+
+
+def h_add(rid: str, age: float, text: str = "store status fixture") -> dict:
+    return {
+        "ev": "add",
+        "id": rid,
+        "at": stamp(age),
+        "by": wlfix.ME,
+        "s": " ",
+        "o": wlfix.ME,
+        "t": "(%s) %s %s" % (wlfix.ME, text, rid),
+    }
+
+
+def h_lease(rid: str, age: float, worker: str) -> dict:
+    return {
+        "ev": "lease",
+        "id": rid,
+        "at": stamp(age),
+        "by": wlfix.ME,
+        "until": until(),
+        "worker": worker,
+        "note": "",
+        "worker_verified": False,
+    }
+
+
+def snap_doc(fix) -> dict:
+    path = fix.stem(".state-%s.json" % wlfix.ME)
+    return (json.loads(path.read_text(encoding="utf-8")) or {}).get("store_snap") or {}
+
+
+def system_message(got) -> str:
+    doc = json.loads(got.out) if got.out.strip() else {}
+    return str(doc.get("systemMessage") or "")
+
+
+STALE_ID = "5a1e0001"
+BLOCKER_ID = "5a1e00b0"
+QUIET_AGE = L.LADDER_RESOLVE_MIN + 10
+
+
+def stale_world(fix, worker: str = "b0dead001", text: str = "store status fixture") -> None:
+    fix.brief_now()
+    fix.say("all done for now")
+    plant(fix, h_add(STALE_ID, QUIET_AGE + 1, text), h_lease(STALE_ID, QUIET_AGE, worker))
+
+
+def test_hook_blocks_a_stale_item_once_the_ladder_has_fired(wl):
+    """A `[>]` item quiet past LADDER_RESOLVE_MIN with no live worker. The first stop's ladder rungs name it, so wl-stale stays out (no double block); the next stop, where those rungs already fired at that stamp, blocks with wl-stale naming it."""
+    stale_world(wl)
+    first = wl.run()
+    assert first.decision == "block"
+    assert "WL-STALE" not in first.out, "the ladder named it this stop: %s" % first.out[:600]
+    second = wl.run()
+    assert second.decision == "block"
+    assert "WL-STALE" in second.out, second.out[:1200]
+    assert "#%s  [>]  b0dead001 (gone)" % STALE_ID in second.out
+    assert "#%s" % STALE_ID in system_message(second)
+
+
+def test_hook_control_a_blocked_by_on_an_open_blocker_passes(wl):
+    """Control: the same stale item carrying `BLOCKED_BY` on an open blocker is `waiting`, so no stop raises wl-stale for it."""
+    stale_world(wl, text="store status fixture BLOCKED_BY:#%s" % BLOCKER_ID)
+    plant(wl, h_add(BLOCKER_ID, 5, "the blocker"))
+    wl.run()
+    second = wl.run()
+    assert "WL-STALE" not in second.out, second.out[:1200]
+    assert "#%s  [>]" % STALE_ID in system_message(second)
+    assert "waiting" in system_message(second)
+
+
+def test_hook_control_a_live_verified_worker_passes(wl):
+    """Control: the same stale item leased to a subagent the roster verifies live is `live`, so no stop raises wl-stale for it."""
+    aid = "a5a1e00000000001"
+    R.mk_sub(wl, aid, "general-purpose", 1)
+    stale_world(wl, worker=aid)
+    wl.run()
+    second = wl.run()
+    assert "WL-STALE" not in second.out, second.out[:1200]
+    assert "%s (live, verified)" % aid in system_message(second)
+
+
+def test_hook_no_double_block_with_roster_dead(wl):
+    """An item `roster-dead` names this stop (a lease on a finished subagent) is listed with that key and never named again by wl-stale, on the ladder's first stop or after it."""
+    aid = "a5a1e00000000002"
+    R.mk_sub(wl, aid, "general-purpose", QUIET_AGE, last="end_turn", running=False)
+    stale_world(wl, worker=aid)
+    for _ in range(2):
+        got = wl.run()
+        assert "roster-dead" in got.out or "ROSTER" in got.out.upper(), got.out[:800]
+        assert "WL-STALE" not in got.out, got.out[:1200]
+    assert "[roster-dead]" in system_message(got)
+
+
+def test_hook_pass_names_no_id_and_shows_the_table_and_changes(wl):
+    """A stop whose message names no id, with every owned item moved, live-leased or waiting, is not blocked by wl-stale, and its systemMessage carries the table header and the change summary."""
+    aid = "a5a1e00000000003"
+    R.mk_sub(wl, aid, "general-purpose", 1)
+    wl.brief_now()
+    wl.say("all done for now")
+    plant(
+        wl,
+        h_add("5a1e0010", QUIET_AGE + 1),
+        h_lease("5a1e0010", QUIET_AGE, aid),
+        h_add("5a1e0011", QUIET_AGE, "waits BLOCKED_BY:#5a1e0012"),
+        h_add("5a1e0012", QUIET_AGE, "the blocker"),
+    )
+    wl.run()
+    wl.cli("--update", wlfix.ME, "5a1e0012", "progress on the blocker")
+    got = wl.run()
+    assert "WL-STALE" not in got.out, got.out[:1200]
+    sysmsg = system_message(got)
+    assert SS.TABLE_HEADER in sysmsg
+    assert SS.CHANGES_HEADER in sysmsg
+    assert "#5a1e0012  note" in sysmsg
+
+
+def test_hook_a_blocked_stop_advances_the_snapshot(wl):
+    """A blocked stop writes `store_snap`, and the next stop's change summary lists only what moved in between."""
+    wl.brief_now()
+    wl.say("all done for now")
+    plant(wl, h_add("5a1e0020", 30), h_add("5a1e0021", 30))
+    first = wl.run()
+    assert first.decision == "block"
+    assert SS.NO_SNAPSHOT in first.out
+    assert set(snap_doc(wl).get("items") or {}) == {"5a1e0020", "5a1e0021"}
+    wl.cli("--update", wlfix.ME, "5a1e0021", "moved between the stops")
+    second = wl.run()
+    rows = [ln for ln in system_message(second).splitlines() if ln.startswith("#5a1e")]
+    change_rows = [ln for ln in rows if "  note " in ln]
+    assert change_rows == ["#5a1e0021  note     moved between the stops"], rows
+    third = wl.run()
+    assert SS.CHANGES_NONE in third.out
+
+
+def test_hook_an_allow_with_nothing_owned_stays_silent(wl):
+    """An allow with no owned open, in-flight or deferred item stays silent. Control: the same world with one owned item shows the table."""
+    wl.brief_now()
+    wl.say("done for now")
+    wl.reg_repo()
+    got = wl.run()
+    assert got.decision == "allow"
+    assert SS.TABLE_HEADER not in got.out
+    plant(wl, h_add("5a1e0030", 1))
+    assert SS.TABLE_HEADER in wl.run().out
+
+
+# ---- `worklist.py --status <me> [--since-last-stop]` (S2, plan D4) ---------
+
+
+def item_rows(out: str) -> list[str]:
+    return [ln for ln in out.splitlines() if ln.startswith("#5a1e")]
+
+
+def test_verb_bare_form_prints_one_row_per_owned_open_item(wl):
+    plant(
+        wl,
+        h_add("5a1e0040", 30),
+        h_add("5a1e0041", 30),
+        {**h_add("5a1e0042", 30), "o": "ffff9999", "by": "ffff9999"},
+    )
+    got = wl.cli("--status", wlfix.ME)
+    assert got.rc == 0, got.err
+    assert got.out.startswith(SS.TABLE_HEADER)
+    assert sorted(r.split()[0] for r in item_rows(got.out)) == ["#5a1e0040", "#5a1e0041"]
+    # Control: a session owning nothing gets the one-line answer, not an empty table.
+    empty = wl.cli_as("cafe1234", "--status", "cafe1234")
+    assert empty.rc == 0, empty.err
+    assert empty.out.startswith(SS.VERB_EMPTY % "cafe1234")
+
+
+def test_verb_since_last_stop_is_read_only_and_lists_only_what_moved(wl):
+    wl.brief_now()
+    wl.say("all done for now")
+    plant(wl, h_add("5a1e0050", 30), h_add("5a1e0051", 30))
+    wl.run()
+    state = wl.stem(".state-%s.json" % wlfix.ME)
+    assert snap_doc(wl), "the stop planted no snapshot"
+    wl.cli("--update", wlfix.ME, "5a1e0051", "moved inside the turn")
+    before = state.read_bytes()
+    one = wl.cli("--status", wlfix.ME, "--since-last-stop")
+    two = wl.cli("--status", wlfix.ME, "--since-last-stop")
+    assert one.rc == 0, one.err
+    assert one.out == two.out
+    assert state.read_bytes() == before, "the verb wrote the state file"
+    assert item_rows(one.out) == ["#5a1e0051  note     moved inside the turn"]
+    # Control: the bare form still lists both items.
+    bare = item_rows(wl.cli("--status", wlfix.ME).out)
+    assert sorted(r.split()[0] for r in bare if "  [ ]  " in r) == ["#5a1e0050", "#5a1e0051"]
+
+
+def test_verb_with_no_snapshot_says_so_and_lists_every_item(wl):
+    plant(wl, h_add("5a1e0060", 30), h_add("5a1e0061", 30))
+    got = wl.cli("--status", wlfix.ME, "--since-last-stop")
+    assert got.rc == 0, got.err
+    assert SS.NO_SNAPSHOT in got.out
+    assert sorted(r.split()[0] for r in item_rows(got.out)) == ["#5a1e0060", "#5a1e0061"]
+
+
+def test_verb_a_shell_worker_reads_unverified(wl):
+    plant(wl, h_add("5a1e0070", 31), h_lease("5a1e0070", 30, "b5he11001"))
+    got = wl.cli("--status", wlfix.ME)
+    assert got.rc == 0, got.err
+    assert "b5he11001 (%s)" % SS.W_UNVERIFIED in got.out
+    assert "(live, verified)" not in got.out
+
+
+def test_verb_all_still_answers_the_roster_ping(wl):
+    aid = "a5a1e00000000009"
+    R.mk_sub(wl, aid, "general-purpose", 1)
+    wl.run()
+    got = wl.cli("--status", wlfix.ME, "all")
+    assert "%s (general-purpose)" % aid in got.out + got.err
+    assert SS.TABLE_HEADER not in got.out + got.err
+
+
+def test_verb_a_wrong_prefix_is_refused(wl):
+    got = wl.cli("--status", "ffff9999")
+    assert got.rc != 0
+    assert "identity mismatch" in got.err
+    assert SS.TABLE_HEADER not in got.out
+    # Control: the session's own prefix is answered.
+    assert wl.cli("--status", wlfix.ME).rc == 0

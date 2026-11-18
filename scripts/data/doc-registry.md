@@ -562,7 +562,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_soakedpins.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_standdown.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_store.py | (none) | via .claude/hooks/context/ctx_budget.py | py |
-| .claude/hooks/stop/wl_storestatus.py | (none) | via .claude/rediacc_hooks/tests/test_wl_store_status.py | py |
+| .claude/hooks/stop/wl_storestatus.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_trapfires.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
 | .claude/hooks/stop/wl_uncommitted.py | (none) | via .claude/hooks/post-tool/commit_remind.py | py |
 | .claude/hooks/stop/wl_wake.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
