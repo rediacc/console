@@ -537,7 +537,29 @@ def record_drill(drill: Any, half: str, rc: int, legs: Sequence[str] = ()) -> pa
         f"onprem {written.get('onprem')}) at {path}",
         file=sys.stderr,
     )
+    note = _other_half_note(written)
+    if note:
+        print(note, file=sys.stderr)
     return path
+
+
+def _other_half_note(written: dict[str, Any]) -> str:
+    """The closing line of a run that wrote a NOT_VERIFIED `legs-partial` receipt: the two drills write one receipt, so a half that has not run yet is the expected state, not a failure."""
+    reason = written.get("reason")
+    if written.get("status") != NOT_VERIFIED or not isinstance(reason, dict) or reason.get("class") != "legs-partial":
+        return ""
+    waits = []
+    if written.get("onprem") is not True:
+        waits.append("drill backup-onprem")
+    if any(leg not in (written.get("legs") or []) for leg in REQUIRED_LEGS):
+        waits.append("drill backup")
+    if not waits:
+        return ""
+    return (
+        "backup-check: NOT_VERIFIED until "
+        + " and ".join(f"`./run.sh {w}`" for w in waits)
+        + " runs for this tree (expected after one half; not a failure of this run)"
+    )
 
 
 def _load(path: pathlib.Path) -> dict[str, Any] | None:

@@ -432,6 +432,15 @@ def test_a_passing_legs_run_and_a_passing_onprem_run_write_one_verified_receipt(
     assert _admit(w).ok
 
 
+def test_the_first_half_says_the_receipt_waits_for_the_other(tmp_path, capsys):
+    w = World(tmp_path / "c")
+    bct.record_drill(_drill(w), bct.LEGS_HALF, 0, bct.REQUIRED_LEGS)
+    err = capsys.readouterr().err
+    assert "NOT_VERIFIED until `./run.sh drill backup-onprem` runs for this tree" in err
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    assert "NOT_VERIFIED until" not in capsys.readouterr().err
+
+
 def test_the_halves_combine_in_either_order(tmp_path):
     w = World(tmp_path / "c")
     bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)

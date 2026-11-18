@@ -53,13 +53,16 @@ outranks that stray parent `.env` -- and do not recreate the VMs. The existing t
 - The standalone bootstrap is `PROVISION_CEPH_CLUSTER=1 VM_BRIDGE='1'
 VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./bin/renet ops ceph provision`, run from `private/renet` (from the console root the parent `.env` above is on the probe path). It works against ALREADY-RUNNING bare VMs: `provision()` (`provisioner.go:78-168`) is pure SSH and creates no VMs. **It is DESTRUCTIVE and re-runnable, not idempotent** -- `Bootstrap` opens with `CleanupState`
 (`provisioner.go:413`), wiping any existing cluster and rebuilding. ~21 minutes; background it. The provisioner creates pool `rediacc_rbd_pool`, not `rbd`: pass `--pool rediacc_rbd_pool` to `datastore create --backend rbd`.
+- **The VM login user is `developer`**, with key `~/.renet/staging/.ssh/id_rsa`; `ubuntu@` is refused on every OS image.
+- **A stale Ceph cluster on nodes 21-23 fails a re-provision**: systemd `ceph-<fsid>@` units restart its containers and the stale mon keeps ports 3300/6789. Recovery that worked: `sudo cephadm rm-cluster --force --zap-osds --fsid <fsid>` on each Ceph node, then `PROVISION_CEPH_CLUSTER=1 VM_BRIDGE=1 VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./bin/renet ops ceph provision` from `private/renet`, then `./bin/renet ops ceph health`.
+- The e2e VM reset needs about 48.8 GiB free in `/var/lib/libvirt/images`; `go clean -cache` reclaims the Go build cache when the host runs short.
 - `ops ceph health` only CHECKS: against never-provisioned nodes it polls toward a
 600s timeout (the fail-fast state file exists only after a FAILED provisioning, not an absent one). **And health is the WRONG oracle for whether Ceph is usable.** HEALTH_OK is silent about client distribution: a cluster with healthy mons and every OSD up reports it whether or not a worker ever received `/etc/ceph`. Prove Ceph on the WORKERS -- `/etc/ceph/ceph.conf` plus an `rbd`
 binary on each -- never with cluster health and never with VM liveness:
 
   ```bash
   for ip in 192.168.111.11 192.168.111.12; do
-    ssh -i ~/.renet/staging/.ssh/id_rsa ubuntu@$ip 'ls /etc/ceph; command -v rbd'
+    ssh -i ~/.renet/staging/.ssh/id_rsa developer@$ip 'ls /etc/ceph; command -v rbd'
   done
   ```
 
