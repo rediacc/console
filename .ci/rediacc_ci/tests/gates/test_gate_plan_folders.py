@@ -409,6 +409,26 @@ def test_sweep_with_write_deletes_and_leaves_a_tombstone(gate, tmp_path):
     gate.log_pass("--sweep --write deletes the file and keeps its text in a resolvable blob")
 
 
+def test_sweep_keeps_a_plan_a_file_outside_agent_still_cites(gate, tmp_path):
+    cited, free = "agent/plans/_done/PLAN-cited.md", "agent/plans/_done/PLAN-free.md"
+    body = "# PLAN: %s\nStatus: done\nFirst-Seen: 2024-01-01\n"
+    root = _seed(
+        tmp_path,
+        {
+            cited: body % "cited",
+            free: body % "free",
+            "tools/helper.py": "x = 1\n# see PLAN-cited for why\n",
+        },
+    )
+    _ledger(root, {cited: {"moved_at": "2024-02-01"}, free: {"moved_at": "2024-02-01"}})
+    result = _gate(root, "--sweep", "--write")
+    gate.assert_exit(0, result, "the sweep succeeds")
+    gate.assert_eq((root / cited).exists(), True, "the cited plan is kept")
+    gate.assert_contains(result.err, "tools/helper.py:2", "the citing file:line is printed")
+    gate.assert_eq((root / free).exists(), False, "control: the uncited plan is still swept")
+    gate.log_pass("a plan cited from outside agent/ is kept with its citer printed")
+
+
 _BOXED_REL = "agent/plans/_done/PLAN-boxed.md"
 _GONE_REL = "agent/plans/_done/PLAN-gone.md"
 _BOX_LINE = "- [ ] P4 rehearsal dispatch with OBS blocked, recorded in the round log"

@@ -68,6 +68,7 @@ import datetime as dt
 import importlib
 import json
 import pathlib
+import re
 import sys
 
 import _cipath
@@ -703,10 +704,45 @@ def _differs_from_head(root: pathlib.Path, rel: str) -> bool:
     return bool(gitx.git(["status", "--porcelain", "--", rel], root=root).stdout.strip())
 
 
+def _outside_citers(root: pathlib.Path, rel: str) -> list[str]:
+    """`file:line` of every tracked file outside agent/ that cites the plan by path or by bare PLAN-name. The generated ledger names every plan by path and is not a citation."""
+    stem = re.escape(rel.rsplit("/", 1)[-1].removesuffix(".md"))
+    pattern = r"(?<![\w-])%s(?![\w-])" % stem
+    out = gitx.git(
+        [
+            "grep",
+            "-n",
+            "-I",
+            "-P",
+            "-e",
+            pattern,
+            "--",
+            ".",
+            ":(exclude)agent",
+            ":(exclude)" + PL.LEDGER_REL,
+        ],
+        root=root,
+    )
+    return [
+        line.split(":", 2)[0] + ":" + line.split(":", 2)[1]
+        for line in out.stdout.splitlines()
+        if line.count(":") >= 2
+    ]
+
+
 def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
     plans, _existing, stones = _gather(root)
     today = dt.datetime.now(dt.UTC).date()
     due = _expired(plans, config, today)
+    # A tracked file outside agent/ that still cites a plan keeps it: the tombstone would turn that citation dead (check:ci-plan-citations).
+    cited = {plan.rel: _outside_citers(root, plan.rel) for plan in due}
+    for rel, citers in cited.items():
+        if citers:
+            print(
+                "  kept %s: still cited by %s" % (rel, ", ".join(citers[:5])),
+                file=sys.stderr,
+            )
+    due = [plan for plan in due if not cited[plan.rel]]
     if not due:
         print(
             "✓ sweep: no terminal plan has aged past the %d-day terminal_days"
