@@ -208,6 +208,8 @@ class World(vm_check.Host):
         self.rdc_path = str(root / "rdc.sh")
         self.running = list(over.pop("running", (BRIDGE, WORKER)))
         self.kvm = over.pop("kvm", True)
+        # (free bytes, reclaimable VM-disk bytes) of the VM disk directory; a roomy host unless a test plants less.
+        self.disk = over.pop("disk", (10**15, 0))
         self.built = over.pop("built", PTR)
         self.modified = over.pop("modified", False)
         self.rebuild_fixes = over.pop("rebuild_fixes", True)
@@ -358,6 +360,9 @@ class World(vm_check.Host):
 
     def sleep(self, seconds: float) -> None:
         self.mono += seconds
+
+    def disk_space(self, _disk_dir: str) -> tuple[int, int]:
+        return self.disk
 
     def kill_suites(self) -> None:
         self.killed_suites += 1
@@ -1370,6 +1375,7 @@ def scenario_no_drill_or_suite_env_carries_a_credential(
 def scenario_only_writes_no_receipt_json(m: types.ModuleType, tmp_path: pathlib.Path) -> None:
     """A `--only` run judges just the named steps, so it must write a run record, never receipt.json."""
     world = make_world(tmp_path, stored_ok=True)
+    plant_failed_archive(tmp_path)
     out = io.StringIO()
     environ = {
         "HOME": str(tmp_path / "home"),
@@ -1532,7 +1538,17 @@ def test_a_clean_run_is_verified_and_its_receipt_admits_the_tree(tmp_path: pathl
         assert not [k for k in env if k.startswith("REDIACC_ALLOW_")]
 
 
+def plant_failed_archive(tmp_path: pathlib.Path) -> None:
+    """Leave the FAILED archive of TREE a `--only` run needs (a red full run, whose receipt.json is then removed so a test sees only what its own run writes)."""
+    rc, out = run_merge(tmp_path, make_world(tmp_path, ro_breach=True))
+    assert rc == vm_check.EXIT_FAILED, out
+    root = make_world(tmp_path).root
+    (root / receipt_mod.CACHE_DIR / receipt_mod.LATEST).unlink()
+    assert receipt_mod.read_archive(root, TREE) is not None
+
+
 def _run_only(tmp_path: pathlib.Path, world: World, only: str) -> tuple[int, str, dict[str, Any]]:
+    plant_failed_archive(tmp_path)
     out = io.StringIO()
     environ = {
         "HOME": str(tmp_path / "home"),
@@ -4984,17 +5000,143 @@ def test_a_verified_receipt_takes_no_merge(tmp_path: pathlib.Path) -> None:
     before = archived(world)
     rc, out = run_merge(tmp_path, world, "--only", "V1.2")
     assert rc == vm_check.EXIT_NOT_VERIFIED, out
-    assert "only a FAILED receipt takes a --only merge" in out, out
+    assert "--only refused before touching any fleet" in out, out
+    assert "only a FAILED receipt takes an --only run" in out, out
     assert archived(world) == before
 
 
 def test_the_only_run_record_names_its_steps(tmp_path: pathlib.Path) -> None:
+    plant_failed_archive(tmp_path)
     world = make_world(tmp_path)
     _rc, out = run_merge(tmp_path, world, "--only", "U1")
     runs = world.root / receipt_mod.CACHE_DIR / receipt_mod.RUNS_DIR
     records = [json.loads(p.read_text()) for p in runs.glob("vmc-*/receipt.json")]
     assert [r["only"] for r in records] == [["U1"]], out
     assert all(receipt_mod.validate(r) == [] for r in records)
+
+
+def test_only_without_a_failed_receipt_refuses_before_any_fleet_step(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Defect d4083e06.2: an `--only` run with no receipt to merge into must not take the lock, start a gateway or run a leg's `ops up --force`."""
+    world = make_world(tmp_path)
+    rc, out = run_merge(tmp_path, world, "--only", "cli-migrate-23")
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert "--only refused before touching any fleet" in out, out
+    assert "no receipt is archived for tree aaaaaaaaaaaa" in out, out
+    assert world.rdc_calls() == [], world.rdc_calls()
+    assert not any("ops" in c and "up" in c for c in world.rdc_calls())
+    assert lock_is_free(tmp_path)
+    runs = world.root / receipt_mod.CACHE_DIR / receipt_mod.RUNS_DIR
+    assert not list(runs.glob("vmc-*")), "a refused run leaves no record"
+
+
+def test_only_with_a_failed_receipt_is_not_refused(tmp_path: pathlib.Path) -> None:
+    """The control of the refusal: with the FAILED receipt of the tree in place the same kind of run starts."""
+    plant_failed_archive(tmp_path)
+    _rc, out = run_merge(tmp_path, make_world(tmp_path), "--only", "V1.2")
+    assert "refused before touching any fleet" not in out, out
+    assert "iteration run" in out, out
+
+
+# --------------------------------------------------------------------------- the disk preflight (defect d4083e06.1)
+
+
+def _ceph_legs() -> list[tuple[str, Any]]:
+    return [
+        (a, leg)
+        for a, leg in vm_check.external_legs(vm_check.trigger.AREAS)
+        if leg.fleet in ("ceph", "ceph-workers")
+    ]
+
+
+def test_the_ceph_workers_fleet_needs_the_86_gib_renet_refused_on() -> None:
+    """Run 6's refusal said 86.0 GiB for six VMs: bridge 8 + 5 x VM_DSK 48 + 3 ceph disks x 32, a quarter of it."""
+    legs = [(a, leg) for a, leg in _ceph_legs() if leg.fleet == "ceph-workers"]
+    assert legs
+    assert vm_check.leg_disk_need(legs[0][1]) == 86 * vm_check.GIB
+
+
+def test_the_disk_preflight_refuses_with_renets_numbers_and_the_cleanup_hint() -> None:
+    legs = _ceph_legs()
+    gib = vm_check.GIB
+    msg = vm_check.disk_preflight(
+        legs, "/var/lib/libvirt/images/rediacc-vms", int(45.9 * gib), int(24.4 * gib)
+    )
+    assert "45.9 GiB free" in msg, msg
+    assert "24.4 GiB more" in msg, msg
+    assert "about 86.0 GiB" in msg, msg
+    assert "short by 15.7 GiB" in msg, msg
+    assert "ops down" in msg, msg
+    assert "REDIACC_VM_DISK_DIR" in msg, msg
+
+
+def test_the_disk_preflight_admits_a_roomy_directory() -> None:
+    """The control: the same legs with enough free space (or reclaim) are not refused."""
+    legs = _ceph_legs()
+    gib = vm_check.GIB
+    assert vm_check.disk_preflight(legs, "/d", 90 * gib, 0) == ""
+    assert vm_check.disk_preflight(legs, "/d", 50 * gib, 40 * gib) == ""
+    assert vm_check.disk_preflight([], "/d", 0, 0) == ""
+
+
+def _run_disk(tmp_path: pathlib.Path, world: World, *argv: str) -> tuple[int, str]:
+    out = io.StringIO()
+    rc = vm_check.main(
+        [*argv, "--keep-work", "--wait", "0"],
+        root=world.root,
+        host=world,
+        account=FakeAccount(),
+        lock=vm_check.Lock(tmp_path / "vm-check.lock"),
+        out=out,
+        environ={
+            "HOME": str(tmp_path / "home"),
+            "PATH": os.environ.get("PATH", ""),
+            "VM_NET_BASE": NET,
+        },
+        inputs_fn=lambda _root: DIGEST,
+        account_modified_fn=lambda _root: False,
+        dirty_fn=lambda _root, _surfaces: False,
+        renet_modified_fn=lambda _root: False,
+        account_digest_fn=lambda _root: ADIGEST,
+        u1_fn=stub_u1,
+        extra_fns=STUB_EXTRA,
+    )
+    return rc, out.getvalue()
+
+
+def test_a_changed_run_refuses_a_full_disk_before_any_phase(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Through `main`: a run whose touched areas reach the ceph legs stops before the lock or any VM command when the disk cannot hold the fleet; a roomy host runs them."""
+    gib = vm_check.GIB
+    world = make_world(tmp_path, disk=(int(45.9 * gib), int(24.4 * gib)))
+    rc, out, receipt = run_areas(tmp_path, monkeypatch, world, {"ceph"})
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt == {}, "a refused run writes no receipt"
+    assert "Refusing to start: VM disk directory" in out, out
+    assert "about 86.0 GiB" in out, out
+    assert world.rdc_calls() == []
+    assert lock_is_free(tmp_path)
+    roomy = make_world(tmp_path, disk=(200 * gib, 0))
+    _rc, out, _receipt = run_areas(tmp_path, monkeypatch, roomy, {"ceph"})
+    assert "Refusing to start" not in out, out
+    assert roomy.rdc_calls(), "the roomy run reached the fleet"
+
+
+def test_an_only_leg_run_refuses_a_full_disk_and_a_roomy_one_starts(tmp_path: pathlib.Path) -> None:
+    gib = vm_check.GIB
+    plant_failed_archive(tmp_path)
+    world = make_world(tmp_path, disk=(int(45.9 * gib), int(24.4 * gib)))
+    rc, out = _run_disk(tmp_path, world, "--only", "ceph-08-09-12c")
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert "Refusing to start: VM disk directory" in out, out
+    assert world.rdc_calls() == []
+    # Control: the same run on a roomy host gets past the preflight.
+    roomy = make_world(tmp_path, disk=(200 * gib, 0))
+    _rc, out = _run_disk(tmp_path, roomy, "--only", "ceph-08-09-12c")
+    assert "Refusing to start" not in out, out
+    assert "iteration run" in out, out
 
 
 # --------------------------------------------------------------------------- V2: --changed diffs against the newest VERIFIED tree on the branch

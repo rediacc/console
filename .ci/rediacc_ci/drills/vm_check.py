@@ -13,6 +13,7 @@ Design 2 of agent/plans/PLAN-vm-check.md and Design 3 of agent/plans/PLAN-accoun
 PHASES. There are two sides, the trigger's `renet` and `account` (`rediacc_ci.proof.surfaces.SIDES`, the VM phases of `.ci/config/proof-tiers.json`). With `--changed` the sides of `Changed.sides` are required; with no `--changed`, or a push base that cannot be resolved, both are. The renet phase is P5 and V1.1-V1.7; the account phase is A1.1-A1.4, A0 and A2.1-A2.3. P0-P4 and T run on every run, P1 included, because the license drill deploys renet too and the receipt check needs `renet.built == renet.pointer` even on an account-only receipt. `phases.<side>.ran` is true only when every step of that phase recorded a row and every such row is ok. The steps, in run order:
 
   A1  account only. A worker thread starts the suites before P0 and they run beside P0-P3, which need no suite result; A2 runs beside the thread (the drills need no suite result) and the thread is joined after A2 and before P5, and the main thread then records the rows in the order below (so they follow A2's rows), so a red suite no longer stops the run before a VM is touched: it ends the run FAILED at the join, and T tears down what P0-P3 and A2 made. SIGINT and SIGTERM kill the suites' process group. A1.1 `npm run check:ci-account-server`, A1.2 `npm run check:ci-test-account-web`, A1.3 `npm --prefix private/account run typecheck`, A1.4 `npm --prefix private/account run typecheck:web`. Each is one assertion row with its rc and ms; a non-zero rc is a failed row carrying the last three output lines. All four run, and any failure ends the run FAILED at the join.
+  PREFLIGHT  before P0 and before any VM, gateway or suite work: (1) `--only` needs the FAILED receipt archived for this tree (`_only_refusal`), since its rows only ever merge into that receipt and a named leg's e2e setup runs `ops up --force`; with none the run is NOT_VERIFIED, naming why. (2) The external legs the run reaches must fit the VM disk directory (`REDIACC_VM_DISK_DIR`, default /var/lib/libvirt/images/rediacc-vms): the fleet's need is renet's own estimate (`plan_disk_need`, from private/renet/pkg/infra/vm/kvm/diskdir.go `plannedDiskBytes`), and free space plus the disks `ops up --force` replaces must cover it, else NOT_VERIFIED with renet's numbers and the cleanup hint (`disk_preflight`).
   P0  an exclusive flock on `rediacc-vm-check.lock` in the per-user runtime directory, waited for up to `--wait` seconds (`fleet-busy`). A run that gives up there judged nothing while a holder may still be running, so it writes neither `receipt.json` nor the tree archive: its record goes to `runs/<run id>/receipt.json` (`vm_tier.write_run_record`), and the summary prints where.
   P1  `go version -m private/renet/bin/renet` must carry the submodule HEAD as `vcs.revision` and `vcs.modified=false`; one `./rdc.sh --version` rebuild is tried before `renet-build-mismatch`.
   A0  account only. The dev gateway does not hot-reload, so it is reused only when it is healthy, the `started=` and `gateway_port=` of `.account-state` equal the record `.ci/cache/vm-check/gateway.json` this runner wrote when it last started one, and that record's `account` equals `rediacc_ci.proof.surfaces.account_worktree_digest`. Otherwise `lib.Drill.restart_gateway` starts it with its log at `.ci/cache/vm-check/gateway.log`, the record is rewritten (mode `started`, or `restarted` when a gateway was already answering), and `detach_gateway` leaves it running after the run for the next one to reuse. A restart rotates every dev password and may move the port, and the run says so. A start that fails, or a gateway still unhealthy after it, is `account-gateway` with the log tail.
@@ -422,6 +423,81 @@ def loose_disk_floors(fleet: trigger.Fleet) -> list[tuple[str, int, int]]:
         return []
     bridge = BRIDGE_SUFFIX.lstrip(".")
     return [(ip, min(sizes), 0) for ip in fleet.ips if ip.rsplit(".", 1)[-1] != bridge]
+
+
+# Renet's own disk preflight (private/renet/pkg/infra/vm/kvm/diskdir.go): a disk-backed directory must hold `plannedDiskBytes` (DISK_FILL_RATIO of every virtual disk) before `ops up` creates a VM, the disks it deletes first (`reclaimedDiskBytes`) counting toward it. The defaults are private/renet/pkg/infra/opsconfig/config.go: VM_DSK 16, VM_CEPH_DISK_SIZE 32, bridge VM 1 with an 8 GiB disk (driver.go applyResourceDefaults), workers 11 12, ceph nodes 21 22 23.
+DISK_FILL_RATIO = 0.25
+BRIDGE_DISK_GIB = 8
+DEFAULT_VM_DSK_GIB = 16
+DEFAULT_CEPH_DISK_GIB = 32
+DEFAULT_VM_DISK_DIR = "/var/lib/libvirt/images/rediacc-vms"
+RECLAIM_PREFIXES = ("rediacc-vm-sys.", "rediacc-vm-ceph-disk.")
+GIB = 1 << 30
+
+
+def _vm_ids(value: str | None, default: Sequence[int]) -> list[int]:
+    if value is None:
+        return list(default)
+    return [int(tok) for tok in re.split(r"[\s,]+", value.strip()) if tok.isdigit()]
+
+
+def plan_disk_need(env: Mapping[str, str], args: Sequence[str]) -> int:
+    """Bytes renet's preflight expects one `ops up` plan to allocate (`plannedDiskBytes`, without the base image, which only adds to it): DISK_FILL_RATIO of the bridge's 8 GiB, of VM_DSK for every other VM of the cluster and of VM_CEPH_DISK_SIZE more for each ceph node. `--basic` is the bridge and the first worker; a bridge other than 1 is its own group, whose workers and ceph nodes default to none."""
+    bridge = int(env["VM_BRIDGE"]) if env.get("VM_BRIDGE", "").isdigit() else 1
+    own = bridge == 1
+    workers = _vm_ids(env.get("VM_WORKERS"), [11, 12] if own else [])
+    ceph = _vm_ids(env.get("VM_CEPH_NODES"), [21, 22, 23] if own else [])
+    dsk = int(env["VM_DSK"]) if env.get("VM_DSK", "").isdigit() else DEFAULT_VM_DSK_GIB
+    ceph_dsk = (
+        int(env["VM_CEPH_DISK_SIZE"])
+        if env.get("VM_CEPH_DISK_SIZE", "").isdigit()
+        else DEFAULT_CEPH_DISK_GIB
+    )
+    if "--basic" in args:
+        nodes, ceph = workers[:1], []
+    else:
+        nodes = [*workers, *ceph]
+    virtual = BRIDGE_DISK_GIB + dsk * len(nodes) + ceph_dsk * len(ceph)
+    return int(virtual * DISK_FILL_RATIO * GIB)
+
+
+def leg_disk_need(leg: trigger.Leg) -> int:
+    """Bytes the fleet of `leg` has `ops up` allocate, every group of it (a leg's e2e setup recreates them all with `--force`); 0 when a recipe is not runnable, since no plan says what it needs."""
+    plans = fleet_up_plans(trigger.MAP.fleets[leg.fleet])
+    return sum(plan_disk_need(env, args) for env, args in plans) if plans else 0
+
+
+def disk_preflight(
+    legs: Sequence[tuple[str, trigger.Leg]],
+    disk_dir: str,
+    free: int,
+    reclaim: int,
+) -> str:
+    """ "" when the largest fleet among `legs` fits `disk_dir`, else renet's own refusal with the leg and the cleanup hint. `free` is the bytes available there and `reclaim` the allocated bytes of the VM disks the leg's `ops up --force` deletes first, as renet counts them (it credits no more than the need)."""
+    worst = max(
+        ((leg_disk_need(leg), area, leg) for area, leg in legs),
+        key=lambda t: t[0],
+        default=None,
+    )
+    if worst is None or worst[0] == 0:
+        return ""
+    need, area, leg = worst
+    credit = min(reclaim, need)
+    if free + credit >= need:
+        return ""
+    return (
+        "Refusing to start: VM disk directory %s has %.1f GiB free, and the VM disks `ops up --force` replaces free %.1f GiB more, but %s/%s needs about %.1f GiB (short by %.1f GiB)."
+        " Free space there (`./rdc.sh ops down`, delete stale rediacc VM disks and images) or set REDIACC_VM_DISK_DIR to a larger disk-backed directory; the leg's e2e setup would refuse the same way after the earlier phases had run."
+        % (
+            disk_dir,
+            free / GIB,
+            credit / GIB,
+            area,
+            leg.id,
+            need / GIB,
+            (need - free - credit) / GIB,
+        )
+    )
 
 
 def spell_recipe(env: Mapping[str, str], args: Sequence[str]) -> str:
@@ -1166,6 +1242,19 @@ class Host:
         if home:
             found.append(pathlib.Path(home) / ".ssh" / ALIAS_CONFIG)
         return found
+
+    def disk_space(self, disk_dir: str) -> tuple[int, int]:
+        """(bytes available at `disk_dir`, allocated bytes of the VM system and ceph disks under it): the free space is read at the nearest existing parent, as renet does (`inspectFilesystem`), and the disks are the ones `reclaimedDiskBytes` credits."""
+        probe = pathlib.Path(disk_dir)
+        while not probe.exists() and probe != probe.parent:
+            probe = probe.parent
+        stat = os.statvfs(probe)
+        reclaim = 0
+        with contextlib.suppress(OSError):
+            for entry in pathlib.Path(disk_dir).rglob("*"):
+                if entry.name.startswith(RECLAIM_PREFIXES) and entry.is_file():
+                    reclaim += entry.stat().st_blocks * 512
+        return stat.f_bavail * stat.f_frsize, reclaim
 
     def now(self) -> float:
         return time.time()
@@ -2004,6 +2093,15 @@ class VmCheck:
             return EXIT_VERIFIED
         if not self.opts.changed and not self.opts.only:
             self._evaluate_areas()
+        if self.opts.only:
+            reason = self._only_refusal()
+            if reason:
+                self.say("vm:check: --only refused before touching any fleet: %s" % reason)
+                return EXIT_NOT_VERIFIED
+        reason = self._disk_refusal()
+        if reason:
+            self.say("vm:check: %s" % reason)
+            return EXIT_NOT_VERIFIED
         self.inputs = self.inputs_fn(self.root)
         self._read_account()
         self._note_old_receipts()
@@ -2025,6 +2123,34 @@ class VmCheck:
             self._teardown()
             self._restore_signals(previous)
         return self._finish()
+
+    def _only_refusal(self) -> str:
+        """Why an `--only` run may not start, or "". An `--only` run writes no receipt.json, and its rows go anywhere only through the merge into the FAILED receipt of its tree (`_merge_into_failed`); with no such receipt it would recreate fleets (a named leg's e2e setup runs `ops up --force`) for a result nothing keeps, and an interrupted one leaves the VMs bare (2026-11-18, run 7). There is no iteration flag: the run must be a whole one first."""
+        base = receipt_mod.read_archive(self.root, self.tree)
+        if base is None:
+            return (
+                "no receipt is archived for tree %s, so there is nothing to merge this run into; run the whole check first"
+                % self.tree[:12]
+            )
+        if base.get("status") != receipt_mod.FAILED:
+            return (
+                "the receipt of tree %s is %s, and only a FAILED receipt takes an --only run; run the whole check"
+                % (self.tree[:12], base.get("status"))
+            )
+        return ""
+
+    def _disk_refusal(self) -> str:
+        """Why the external legs this run will reach cannot get their VM disks, or "": renet's `PreflightDiskSpace` made at the start, so a run does not spend its phases before a leg's `ops up` refuses in 0 s (run 6, 2026-11-18)."""
+        if self.opts.only:
+            named = self.opts.only & only_leg_ids()
+            legs = [(a, leg) for a, leg in external_legs(trigger.AREAS) if leg.id in named]
+        else:
+            legs = external_legs(self.areas)
+        if not legs:
+            return ""
+        disk_dir = self.environ.get("REDIACC_VM_DISK_DIR") or DEFAULT_VM_DISK_DIR
+        free, reclaim = self.host.disk_space(disk_dir)
+        return disk_preflight(legs, disk_dir, free, reclaim)
 
     def _evaluate_trigger(self) -> bool:
         """True when the trigger fires (or cannot be evaluated); False after printing the no-op line."""
