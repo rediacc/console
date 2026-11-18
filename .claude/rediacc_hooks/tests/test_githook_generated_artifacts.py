@@ -638,8 +638,8 @@ def _enrolled_allowed(w, entry: dict, tag: str) -> tuple[bool, str]:
         assert docs, "the doc-region check refused and gen-docs --write wrote nothing"
         GD._git(w.repo, "add", "--", *docs)
         proc = w.commit(rel, *outputs, *docs, label="%s allowed%s" % (entry["id"], tag))
+    # No reset here: `enrolled_allowed` resets in its `finally`, and a second `reset --hard` of the fixture cost 0.6 s per case.
     moved = w.head() != head
-    w.reset(head)
     ok = (
         proc.returncode == 0
         and moved
