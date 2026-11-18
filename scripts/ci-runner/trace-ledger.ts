@@ -753,10 +753,12 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
   'check:ci-domain-partition': {
     tracedAt: '2026-11-18T03:12Z',
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
-    verdict: 'paths',
+    verdict: 'whole-tree',
+    reason:
+      'lists directories under agent/ (reviews, ledgers, reggate), record paths a record-only commit changes, so a traced lists set would void a receipt advance; stays whole-tree',
     reads: 17,
     listed: 800,
-    coveragePct: 0.8,
+    coveragePct: 100,
     seconds: 2.6,
   },
   'check:ci-drill-verdicts': {
@@ -1558,10 +1560,12 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
   'check:ci-locale-sources': {
     tracedAt: '2026-11-18T03:25Z',
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
-    verdict: 'paths',
+    verdict: 'whole-tree',
+    reason:
+      'lists directories under agent/ (reviews, ledgers, reggate), record paths a record-only commit changes, so a traced lists set would void a receipt advance; stays whole-tree',
     reads: 2076,
     listed: 800,
-    coveragePct: 20.3,
+    coveragePct: 100,
     seconds: 2.1,
   },
   'check:ci-locale-tutorial-assets': {
@@ -2062,10 +2066,12 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
   'check:ci-python-gate-deps': {
     tracedAt: '2026-11-18T03:23Z',
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
-    verdict: 'paths',
+    verdict: 'whole-tree',
+    reason:
+      'lists directories under agent/ (reviews, ledgers, reggate), record paths a record-only commit changes, so a traced lists set would void a receipt advance; stays whole-tree',
     reads: 195,
     listed: 36,
-    coveragePct: 2.5,
+    coveragePct: 100,
     seconds: 2.2,
   },
   'check:ci-python-lint': {
@@ -2720,19 +2726,23 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
   'check:ci-trap-registry': {
     tracedAt: '2026-11-18T03:05Z',
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
-    verdict: 'paths',
+    verdict: 'whole-tree',
+    reason:
+      'lists directories under agent/ (reviews, ledgers, reggate), record paths a record-only commit changes, so a traced lists set would void a receipt advance; stays whole-tree',
     reads: 892,
     listed: 59,
-    coveragePct: 9.5,
+    coveragePct: 100,
     seconds: 3.4,
   },
   'check:ci-tree-shape': {
     tracedAt: '2026-11-18T03:05Z',
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
-    verdict: 'paths',
+    verdict: 'whole-tree',
+    reason:
+      'lists directories under agent/ (reviews, ledgers, reggate), record paths a record-only commit changes, so a traced lists set would void a receipt advance; stays whole-tree',
     reads: 1489,
     listed: 800,
-    coveragePct: 24.9,
+    coveragePct: 100,
     seconds: 13.1,
   },
   'check:ci-turnstile-drift': {
@@ -3006,10 +3016,12 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
   'check:cli-examples': {
     tracedAt: '2026-11-18T03:47Z',
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
-    verdict: 'paths',
+    verdict: 'whole-tree',
+    reason:
+      'lists directories under agent/ (reviews, ledgers, reggate), record paths a record-only commit changes, so a traced lists set would void a receipt advance; stays whole-tree',
     reads: 2421,
     listed: 524,
-    coveragePct: 25.9,
+    coveragePct: 100,
     seconds: 21.1,
   },
   'check:deps': {
@@ -3133,13 +3145,15 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     seconds: 74.9,
   },
   'check:version': {
-    tracedAt: '2026-11-18T02:58Z',
+    tracedAt: '2026-11-18T04:35Z',
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
-    verdict: 'paths',
-    reads: 24,
-    listed: 586,
-    coveragePct: 0.9,
-    seconds: 2.7,
+    verdict: 'whole-tree',
+    reason:
+      'lists directories under agent/ (reviews, ledgers, reggate), record paths a record-only commit changes, so a traced lists set would void a receipt advance; stays whole-tree',
+    reads: 0,
+    listed: 0,
+    coveragePct: 100,
+    seconds: 0,
   },
   'lint:unused': {
     tracedAt: '2026-11-18T03:00Z',
