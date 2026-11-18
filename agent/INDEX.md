@@ -632,7 +632,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-retro-20261101.md` | ready | 182 | 0 | 4 | 18248 |
 | `agent/plans/PLAN-stop-hook-retro-20261110.md` | ready | 234 | 0 | 8 | 27053 |
 | `agent/plans/PLAN-stop-hook-retro-20261117.md` | ready | 218 | 9 | 0 | 26758 |
-| `agent/plans/PLAN-stop-hook-store-status.md` | approved | 202 | 8 | 1 | 24999 |
+| `agent/plans/PLAN-stop-hook-store-status.md` | approved | 204 | 6 | 3 | 25453 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
 | `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |

@@ -125,7 +125,7 @@ Order: the module, then the verb and the hook wiring in parallel, then the judge
     Needs: none
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_store_status.py` exits 0. It has one case per change kind (new, ticked, deferred, reopened, leased, unleased, note, retired), each with a control where the same fold gives no row. It has one case per freshness class, with the boundary minute on each side of `LADDER_INVESTIGATE_MIN` and `LADDER_RESOLVE_MIN`. Two more cases: a fold rewritten by `compact_store` gives no change rows against the old snapshot, and an item in `covered` is listed and left out of the blocking set. A table and a change list over their caps end with the `+N more` tail. `npx tsx scripts/gen/gen-docs.ts` and `npm run check:ci-shard-manifest-coverage` exit 0 after `npx tsx scripts/gen/gen-docs.ts --write` and `npm run shard:place` place the two new files.
     (ticked) 2026-11-18T14:51:54Z by d778be9d: commit:e8329fa3f8 -- wl_storestatus.py landed; selftest rc 0 in the lease; retroactive investigation per operator /ask 2026-11-18
-- [ ] S2 [writer] `worklist.py --status <me> [--since-last-stop]` prints the table and the changes since the last stop, read-only, with the roster read kept for `all` and an agent id (D4)
+- [x] S2 [writer] `worklist.py --status <me> [--since-last-stop]` prints the table and the changes since the last stop, read-only, with the roster read kept for `all` and an agent id (D4)
     Owns: .claude/hooks/stop/worklist.py, .claude/hooks/stop/worklist_messages.py, .claude/rediacc_hooks/tests/test_wl_roster.py
     Depends on: S1.
     Needs: none
@@ -136,9 +136,10 @@ Order: the module, then the verb and the hook wiring in parallel, then the judge
     - a shell worker reads `unverified (no stop event)`;
     - `--status <me> all` still answers the 20-minute ping exactly as before;
     - a wrong prefix is refused by the identity check.
+    (ticked) 2026-11-18T21:00:37Z by d778be9d: commit:75924946f3 -- S2/S3 landed: test_wl_store_status.py 52 passed, dead-code test_143 passed, stop-hook test scripts rc 0, effort-table rc 0. DEPS-WAIVED: S1 landed as e8329fa3
 
     The usage line at .claude/hooks/stop/worklist_messages.py:1743 names both forms.
-- [ ] S3 [writer] The Stop hook snapshots the store on every stop, shows the table in its systemMessage, puts the count line and the change summary in the block reason, and blocks `wl-stale` on stale or orphaned items no other check names (D2, D3, D7 first half)
+- [x] S3 [writer] The Stop hook snapshots the store on every stop, shows the table in its systemMessage, puts the count line and the change summary in the block reason, and blocks `wl-stale` on stale or orphaned items no other check names (D2, D3, D7 first half)
     Owns: .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/wl_storestatus.py, .claude/config/effort.json, .claude/rediacc_hooks/tests/test_wl_store_status.py
     Depends on: S1.
     Needs: none
@@ -148,6 +149,7 @@ Order: the module, then the verb and the hook wiring in parallel, then the judge
     - **No double block:** an item that `roster-dead` names this stop is not named again by `wl-stale`.
     - **Snapshot:** a blocked stop advances `store_snap`, and the next stop lists only what moved in between.
     - **Silence:** an allow with no owned item stays silent.
+    (ticked) 2026-11-18T21:00:38Z by d778be9d: commit:75924946f3 -- S2/S3 landed: test_wl_store_status.py 52 passed, dead-code test_143 passed, stop-hook test scripts rc 0, effort-table rc 0. DEPS-WAIVED: S1 landed as e8329fa3
 
     `python3 .ci/scripts/quality/check_plan_record.py --effort-table` and `python3 .claude/hooks/stop/test-always-tier.py` exit 0.
 - [ ] J1 [writer] The judge reads STORE FRESHNESS and CHANGES SINCE LAST STOP: the MISSING IDS fact, its checklist rule and the `out-of-sync` basis are removed, and a continue that demands a status table is read as stop (D5)
