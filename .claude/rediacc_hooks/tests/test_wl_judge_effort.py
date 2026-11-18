@@ -191,7 +191,7 @@ def test_run_judge_at_smart_asks_the_basis_and_settles(judge):
 def test_run_judge_sends_the_prompt_on_stdin_and_never_on_argv(judge):
     """The regression 28fe750138 fixed: a prompt on argv fails with E2BIG once it is long."""
     judge.answer(dict(REPORT_ONLY))
-    verdict, err = ask("smart")
+    _verdict, err = ask("smart")
     assert err is None, err
     got = judge.raw()
     assert "BASIS." in got["stdin"]

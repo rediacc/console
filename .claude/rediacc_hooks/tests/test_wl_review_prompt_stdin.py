@@ -6,13 +6,13 @@ The model is a stub `claude` on PATH that records what reached its stdin and its
 from __future__ import annotations
 
 import json
-import os
 
 import pytest
 
 from rediacc_hooks.tests import wlfix
 
 R = wlfix.import_wl("wl_review")
+wl_proc = wlfix.import_wl("wl_proc")
 
 STUB = r"""#!/usr/bin/env python3
 import json, os, sys
@@ -33,7 +33,7 @@ def stub(tmp_path, monkeypatch):
     script.write_text(STUB, encoding="utf-8")
     script.chmod(0o755)
     seen = tmp_path / "seen.json"
-    monkeypatch.setenv("PATH", "%s%s%s" % (bindir, os.pathsep, os.environ.get("PATH", "")))
+    monkeypatch.setenv("PATH", "%s:/usr/bin:/bin" % bindir)
     monkeypatch.setenv("TMPDIR", str(tmp_path))
     monkeypatch.setenv("STUB_SEEN", str(seen))
     return seen
@@ -56,9 +56,8 @@ def test_a_prompt_over_200_kb_reaches_the_reviewer_through_the_real_launch_path(
     assert seen["argv_max"] < 10_000
 
 
-def test_control_the_same_prompt_on_argv_fails_with_e2big(stub):
-    import wl_proc
-
+@pytest.mark.usefixtures("stub")
+def test_control_the_same_prompt_on_argv_fails_with_e2big():
     exe = R.resolve_claude()
     proc = wl_proc.run([exe, "-p", "x" * 250_000], timeout=30)
     assert proc.returncode == wl_proc.SPAWN_FAILED_RC

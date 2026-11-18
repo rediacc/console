@@ -774,7 +774,9 @@ control(
     bool(CAPTURED["prompt"]),
     True,
 )
-control("and it is NOT on argv, where a long one fails with E2BIG", CAPTURED["prompt_on_argv"], False)
+control(
+    "and it is NOT on argv, where a long one fails with E2BIG", CAPTURED["prompt_on_argv"], False
+)
 control(
     "the fix signal puts the rubric in the prompt",
     wl_classsweep.SWEEP_MARKER in CAPTURED["prompt"],
