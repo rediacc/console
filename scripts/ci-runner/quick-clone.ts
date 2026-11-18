@@ -30,6 +30,8 @@ const PINNED_RECEIPT_REL = path.join('.ci', 'cache', 'pinned-receipt.json');
 /** The runner's per-tree archive beside both receipts (run.ts archiveReceipt), read first by the push guard. */
 const ARCHIVE_REL = path.join('.ci', 'cache', 'receipts');
 const RUNNER_REL = path.join('scripts', 'ci-runner', 'run.ts');
+/** The exit of an `--advance-only` run that found no record-only step to take: run.ts returns it, and this wrapper and wl_review.py read it as a refusal, not a red. */
+export const ADVANCE_REFUSED_EXIT = 4;
 /** Set for the runner in the clone: nested `ci:quick` stays where it is. */
 const IN_CLONE_ENV = 'CI_QUICK_IN_CLONE';
 /** Set for the runner when nothing may carry: a clone made this run holds no build output, so a carried prerequisite would leave its dependents with nothing to read, and `--no-carry` asks for every gate to be judged again. */
@@ -62,7 +64,7 @@ const PASS_THROUGH_FLAGS = new Set(['--verbose', '--merge-output']);
 const PASS_THROUGH_VALUE_FLAGS = new Set(['--jobs', '--gate-timeout']);
 
 export type Route =
-  | { kind: 'clone'; pass: string[]; noCarry: boolean; commit?: string }
+  | { kind: 'clone'; pass: string[]; noCarry: boolean; commit?: string; advanceOnly?: boolean }
   | { kind: 'here'; why: string; pass: string[] }
   | { kind: 'refused'; why: string };
 
@@ -118,6 +120,11 @@ export function routeOf(args: readonly string[], env: NodeJS.ProcessEnv, live: s
         kind: 'refused',
         why: `--commit judges a pinned commit in the kept clone only, and this run would not use the clone (${inner.why})`,
       };
+    if (inner.advanceOnly === true)
+      return {
+        kind: 'refused',
+        why: '--advance-only carries the receipt to HEAD, and --commit judges another commit; give one of them',
+      };
     return { ...inner, commit: pinned.commit };
   }
   if (env[IN_CLONE_ENV] === '1')
@@ -140,7 +147,8 @@ export function routeOf(args: readonly string[], env: NodeJS.ProcessEnv, live: s
     };
   }
   const noCarry = args.includes('--no-carry');
-  const pass = args.filter((arg) => arg !== '--no-carry');
+  const advanceOnly = args.includes('--advance-only');
+  const pass = args.filter((arg) => arg !== '--no-carry' && arg !== '--advance-only');
   for (let i = 0; i < pass.length; i++) {
     if (PASS_THROUGH_FLAGS.has(pass[i])) continue;
     if (PASS_THROUGH_VALUE_FLAGS.has(pass[i])) {
@@ -153,7 +161,9 @@ export function routeOf(args: readonly string[], env: NodeJS.ProcessEnv, live: s
       pass: [...args],
     };
   }
-  return { kind: 'clone', pass, noCarry };
+  return advanceOnly
+    ? { kind: 'clone', pass, noCarry, advanceOnly }
+    : { kind: 'clone', pass, noCarry };
 }
 
 /** `--commit <sha>` or `--commit=<sha>` taken out of `args`; undefined when the flag is absent. */
@@ -971,7 +981,8 @@ export interface QuickSeams {
   prepare: (input: PrepareInput) => Prepared;
   /** Runs `run.ts <args>` in `cwd`, returning its exit code. */
   runner: (cwd: string, args: string[], env: NodeJS.ProcessEnv) => Promise<number>;
-  acquire: (lockPath: string) => Promise<boolean>;
+  /** `waitMs` 0 asks once and does not wait (`--advance-only`). */
+  acquire: (lockPath: string, waitMs?: number) => Promise<boolean>;
   now: () => number;
 }
 
@@ -1063,13 +1074,48 @@ export async function quickMain(args: readonly string[], seams: QuickSeams): Pro
   let why = '';
   let locked = false;
   try {
-    locked = await seams.acquire(lockPath);
+    locked = await seams.acquire(lockPath, route.advanceOnly === true ? 0 : undefined);
     if (locked) prepared = seams.prepare({ live: seams.live, clone, commit });
     else why = `another session held ${lockPath} past the wait`;
   } catch (err) {
     why = (err as Error).message;
   }
   try {
+    // AN ADVANCE ONLY (`--advance-only`, agent/plans/PLAN-push-decoupling.md R3): the readers of a record-only commit in the clone at HEAD, or nothing. It never falls back, never waits for the clone (a ci:quick holding it follows HEAD itself), and never runs the lane.
+    if (route.advanceOnly === true) {
+      if (!locked) {
+        seams.log(
+          `ci:quick: ADVANCE NOT TAKEN: another ci:quick run holds ${lockPath}, and its follow pass brings the receipt to HEAD\n`
+        );
+        return ADVANCE_REFUSED_EXIT;
+      }
+      if (prepared === undefined) {
+        seams.log(
+          `ci:quick: ADVANCE NOT TAKEN: the kept clone could not be set up at HEAD: ${why}\n`
+        );
+        return 1;
+      }
+      const latestPath = path.join(seams.live, RECEIPT_REL);
+      const advanced = await selftestThenLane(
+        seams,
+        prepared.clone,
+        [...lane, '--advance-only', '--receipt-out', latestPath],
+        cloneEnv(seams.env, seams.live, prepared.clone, route.noCarry)
+      );
+      if (advanced === ADVANCE_REFUSED_EXIT) {
+        seams.log(
+          `ci:quick: ADVANCE REFUSED at tree ${prepared.tree.slice(0, 12)}: the runner's line above says why; nothing else ran\n`
+        );
+        return ADVANCE_REFUSED_EXIT;
+      }
+      return finishWhole(seams, {
+        runnerExit: advanced,
+        startedAt,
+        setupMs: 0,
+        tree: prepared.tree,
+        where: `the kept clean clone ${prepared.clone} (advance only)`,
+      });
+    }
     if (prepared === undefined && commit !== undefined) {
       // No fallback for a pinned run: the shared checkout holds HEAD, not the pinned commit.
       seams.log(
@@ -1186,10 +1232,14 @@ function realSeams(): QuickSeams {
         cwd,
         env
       ),
-    acquire: (lockPath) =>
-      acquireLock(lockPath, (line) => {
-        process.stdout.write(line);
-      }),
+    acquire: (lockPath, waitMs) =>
+      acquireLock(
+        lockPath,
+        (line) => {
+          process.stdout.write(line);
+        },
+        waitMs
+      ),
     now: () => Date.now(),
   };
 }
@@ -2171,6 +2221,105 @@ export async function quickCloneSelftest(
           latest: { whole: true, exitCode: 1, failed: ['g'], headTree: 'U' },
         }).kind === 'follow',
       'followOf: a still HEAD is done, an unreadable HEAD is skipped, and a red receipt at HEAD is no newer receipt to leave alone'
+    );
+
+    // AN ADVANCE ONLY (agent/plans/PLAN-push-decoupling.md R3): the runner is told `--advance-only` in the clone at HEAD, its refusal exits ADVANCE_REFUSED_EXIT with nothing else run, and a held clone is not waited for.
+    const driveAdvance = async (over: {
+      runnerExit: number;
+      locked?: boolean;
+      args?: string[];
+    }): Promise<{
+      exit: number;
+      calls: string[][];
+      waits: (number | undefined)[];
+      log: string;
+    }> => {
+      const dir = fs.mkdtempSync(path.join(root, 'advance-'));
+      git(root, 'init', '-q', '-b', 'main', dir);
+      write(path.join(dir, 'a.txt'), 'a\n');
+      git(dir, 'add', '-A');
+      git(dir, 'commit', '-q', '-m', 'a');
+      const tree = git(dir, 'rev-parse', 'HEAD^{tree}');
+      const calls: string[][] = [];
+      const waits: (number | undefined)[] = [];
+      let log = '';
+      const exit = await quickMain(over.args ?? ['--advance-only'], {
+        live: dir,
+        env: { HOME: root, CI_QUICK_CLONE_DIR: `${dir}-clone` },
+        log: (text) => {
+          log += text;
+        },
+        prepare: (input) => ({
+          clone: input.clone,
+          head: 'H',
+          tree,
+          branch: 'main',
+          fresh: false,
+          notes: [],
+        }),
+        runner: (_cwd, runArgs) => {
+          calls.push(runArgs);
+          if (runArgs[0] !== '--quick') return Promise.resolve(0);
+          if (over.runnerExit === 0)
+            write(
+              path.join(dir, RECEIPT_REL),
+              JSON.stringify({
+                whole: true,
+                exitCode: 0,
+                failed: [],
+                headTree: 'OLD',
+                advances: [{ to: tree }],
+              })
+            );
+          return Promise.resolve(over.runnerExit);
+        },
+        acquire: (_lock, waitMs) => {
+          waits.push(waitMs);
+          return Promise.resolve(over.locked !== true);
+        },
+        now: () => Date.now() - 1000,
+      });
+      return { exit, calls, waits, log };
+    };
+    const advanceOk = await driveAdvance({ runnerExit: 0 });
+    const advanceLane = advanceOk.calls.find((c) => c[0] === '--quick') ?? [];
+    check(
+      advanceOk.exit === 0 &&
+        advanceLane.includes('--advance-only') &&
+        advanceLane.includes('--receipt-out') &&
+        advanceOk.waits.join() === '0',
+      `--advance-only must hand the runner --advance-only in the clone without waiting for its lock, got ${JSON.stringify(advanceOk.calls)} waits ${JSON.stringify(advanceOk.waits)}: ${advanceOk.log}`
+    );
+    const advanceRefused = await driveAdvance({ runnerExit: ADVANCE_REFUSED_EXIT });
+    check(
+      advanceRefused.exit === ADVANCE_REFUSED_EXIT &&
+        advanceRefused.log.includes('ADVANCE REFUSED') &&
+        !advanceRefused.log.includes('NO JUDGED RECEIPT') &&
+        advanceRefused.calls.filter((c) => c[0] === '--quick').length === 1,
+      `a refused advance must exit ${ADVANCE_REFUSED_EXIT}, say so, and run nothing more: ${advanceRefused.log}`
+    );
+    const advanceHeld = await driveAdvance({ runnerExit: 0, locked: true });
+    check(
+      advanceHeld.exit === ADVANCE_REFUSED_EXIT &&
+        advanceHeld.calls.length === 0 &&
+        advanceHeld.log.includes('ADVANCE NOT TAKEN') &&
+        !advanceHeld.log.includes('FALLBACK'),
+      `a held clone must not be waited for, nor fall back to the shared checkout: ${advanceHeld.log}`
+    );
+    const advancePinned = await driveAdvance({
+      runnerExit: 0,
+      args: ['--advance-only', '--commit', 'HEAD'],
+    });
+    check(
+      advancePinned.exit === 1 &&
+        advancePinned.calls.length === 0 &&
+        advancePinned.log.includes('REFUSED'),
+      `--advance-only with --commit must be refused: ${advancePinned.log}`
+    );
+    check(
+      routeAt(['--advance-only'], {}).kind === 'clone' &&
+        routeAt(['--advance-only', '--here'], {}).kind === 'here',
+      'CONTROL: --advance-only alone routes to the clone, and --here keeps it in this checkout'
     );
 
     // WHAT IS A LEASE: the position and git's word, each alone is not enough.

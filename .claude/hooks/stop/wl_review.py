@@ -3724,8 +3724,89 @@ def _new_ledger_shas(root, path):
     return {r.sha for r in read_ledger(path)[0]} - before
 
 
-def commit_reviews(root, branch, run=subprocess.run):
-    """`git add -A` + `git commit -F <msg> -- <paths>` for the branch's finished, uncommitted review records: `.md` files, the ledger and deleted `.md` files (`-A` stages a deletion). Returns (rc, text)."""
+RECEIPT_REL = pathlib.Path(".ci") / "cache" / "prepush-receipt.json"
+QUICK_CLONE_REL = pathlib.Path("scripts") / "ci-runner" / "quick-clone.ts"
+#: quick-clone.ts and run.ts exit with this when `--advance-only` finds no record-only step to take.
+ADVANCE_REFUSED_EXIT = 4
+#: The advance prepares the kept clone and runs only the touched records' readers; an hour is far past any such run.
+ADVANCE_TIMEOUT_S = 3600
+
+
+def _vouched_tree(receipt):
+    """The tree a receipt vouches for: its own `headTree`, moved along its `advances` (quick-clone.ts vouchedTree)."""
+    steps = receipt.get("advances") or []
+    if steps and isinstance(steps, list) and isinstance(steps[-1], dict):
+        return str(steps[-1].get("to") or "")
+    return str(receipt.get("headTree") or "")
+
+
+def green_receipt_tree(root):
+    """The tree the checkout's latest receipt vouches for when it is a whole, green run, else None."""
+    try:
+        doc = json.loads((pathlib.Path(root) / RECEIPT_REL).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(doc, dict) or doc.get("whole") is not True:
+        return None
+    if doc.get("exitCode") != 0 or doc.get("failed") not in ([], None):
+        return None
+    return _vouched_tree(doc) or None
+
+
+def advance_after_commit(root, spawn=subprocess.run):
+    """After a `--review-commit` commit, carry a green whole receipt for the parent tree forward to HEAD with the records-only advance (agent/plans/PLAN-push-decoupling.md R3, D1.2). Returns the line to print.
+
+    Starts nothing unless the latest receipt is whole, green and vouches for `HEAD~1^{tree}`: a red, narrowed or absent receipt has nothing true to carry, and one already at HEAD needs no step. The advance is `quick-clone.ts --advance-only`, which prepares the kept clone at HEAD, runs the touched records' readers and appends one `advances` step, and exits ADVANCE_REFUSED_EXIT, running no lane, when the commit is not record-only. A clone held by a running ci:quick is not waited for: that run's follow pass brings the receipt forward itself.
+    """
+    head_tree = git_out(root, "rev-parse", "HEAD^{tree}")
+    parent_tree = git_out(root, "rev-parse", "HEAD~1^{tree}")
+    if not head_tree or not parent_tree:
+        return "receipt: HEAD or its parent has no readable tree, so nothing was advanced"
+    vouched = green_receipt_tree(root)
+    if vouched == head_tree:
+        return "receipt: the green receipt already vouches for tree %s" % head_tree[:12]
+    if vouched != parent_tree:
+        return (
+            "receipt: no green whole receipt vouches for the parent tree %s, so nothing was advanced"
+            % (parent_tree[:12])
+        )
+    tsx = pathlib.Path(root) / "node_modules" / ".bin" / "tsx"
+    cmd = [str(tsx), str(pathlib.Path(root) / QUICK_CLONE_REL), "--advance-only"]
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    try:
+        res = spawn(
+            cmd,
+            cwd=str(root),
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=ADVANCE_TIMEOUT_S,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return "receipt: ADVANCE NOT STARTED: %s (%s)" % (" ".join(cmd), exc)
+    lines = (res.stdout + res.stderr).splitlines()
+    refused = [ln for ln in lines if ln.startswith("ci-runner: --advance-only")]
+    tail = refused or [ln for ln in lines if ln.startswith("ci:quick:")]
+    if res.returncode == 0 and green_receipt_tree(root) == head_tree:
+        return "receipt: ADVANCED from tree %s to tree %s with no whole run" % (
+            parent_tree[:12],
+            head_tree[:12],
+        )
+    why = tail[0] if refused else (tail[-1] if tail else "(no ci:quick line)")
+    if res.returncode == ADVANCE_REFUSED_EXIT:
+        return "receipt: ADVANCE REFUSED, the push guard will ask for npm run ci:quick: %s" % why
+    return "receipt: ADVANCE FAILED (exit %d), the push guard will ask for npm run ci:quick: %s" % (
+        res.returncode,
+        why,
+    )
+
+
+def commit_reviews(root, branch, run=subprocess.run, advance=advance_after_commit):
+    """`git add -A` + `git commit -F <msg> -- <paths>` for the branch's finished, uncommitted review records: `.md` files, the ledger and deleted `.md` files (`-A` stages a deletion). Returns (rc, text).
+
+    After a commit lands, `advance(root)` carries a green receipt for the parent tree forward to the new tree (`advance_after_commit`), so a records-only commit after a green ci:quick needs no hand re-run before the push; its line is appended to the text and never changes the rc, which is the commit's.
+    """
     st = branch_state(root, branch, repos=())
     files = recordable(st)
     if not files:
@@ -3766,9 +3847,13 @@ def commit_reviews(root, branch, run=subprocess.run):
             text=True,
             check=False,
         )
-        return done.returncode, (
-            done.stdout + done.stderr
-        ).strip() or "committed %d review file(s): %s" % (len(rels), " ".join(rels))
+        text = (done.stdout + done.stderr).strip() or "committed %d review file(s): %s" % (
+            len(rels),
+            " ".join(rels),
+        )
+        if done.returncode == 0 and advance is not None:
+            text = "%s\n%s" % (text, advance(root))
+        return done.returncode, text
     finally:
         with contextlib.suppress(OSError):
             os.unlink(msg_path)

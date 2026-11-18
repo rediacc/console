@@ -6,9 +6,12 @@
 Auto-discovered by TAILED in .claude/rediacc_hooks/tests/test_hooks_delegates.py (glob over test-*.py under .claude/hooks/stop/).
 
 THE DEFECT. On 2026-11-12 seven `--review-mark ... fixed commit:edd459ffbc` runs were refused with "does not resolve to a commit in console" although the commit existed: `commit:<sha>` is the `--tick` evidence form and mark() handed it to rev-parse whole. The prefix is now stripped. Each control runs the real mark() against a throwaway git repository holding a reviewed commit, a fix commit touching the anchored file, and one review record, so a mark() that stops stripping the prefix, or starts admitting what it must refuse, turns a control red.
+
+THE ADVANCE (agent/plans/PLAN-push-decoupling.md R3). Sections 5 and 6 drive `commit_reviews`, the path `worklist.py --review-commit <me>` runs. After a green whole ci:quick in a fixture carrying a copy of the real runner, the verb's commit leaves a receipt the push guard (`block_unverified_push.receipt_refusal`) admits at the new tree with no second whole run; with no green receipt, a red one or a narrowed one, the verb commits and starts nothing.
 """
 
 import atexit
+import json
 import os
 import pathlib
 import shutil
@@ -48,16 +51,18 @@ def git(repo, *args):
     ).stdout.strip()
 
 
-def fixture(name):
-    """(repo, reviewed sha, fix sha): the fix touches the file the finding anchors on."""
+def fixture(name, prepared=False):
+    """(repo, reviewed sha, fix sha): the fix touches the file the finding anchors on. `prepared`: the directory already holds files (runner_fixture's), and the base commit carries them."""
     repo = _SCRATCH / name
-    repo.mkdir()
+    repo.mkdir(exist_ok=prepared)
     git(repo, "init", "-q", "-b", BRANCH)
     git(repo, "config", "user.email", "fixture@example.invalid")
     git(repo, "config", "user.name", "fixture")
+    git(repo, "config", "commit.gpgsign", "false")
     (repo / "a.txt").write_text("one\n", encoding="utf-8")
-    git(repo, "add", "a.txt")
+    git(repo, "add", "-A")
     git(repo, "commit", "-q", "-m", "base")
+    git(repo, "update-ref", "refs/remotes/origin/main", "HEAD")
     (repo / "a.txt").write_text("two\n", encoding="utf-8")
     git(repo, "commit", "-q", "-am", "reviewed")
     reviewed = git(repo, "rev-parse", "HEAD")
@@ -153,6 +158,211 @@ control(
     "CONTROL: another module's test still does not close it",
     R.related_test("fixture/stop/test-samplerec.py", "fixture/stop/wl_sampleroster.py"),
     False,
+)
+
+# ---- 5. --review-commit carries a green receipt forward with the records-only advance (PLAN-push-decoupling R3) --
+ROOT = pathlib.Path(__file__).resolve().parents[3]
+TSX = ROOT / "node_modules" / ".bin" / "tsx"
+RUNNER_DIR = ROOT / "scripts" / "ci-runner"
+sys.path.insert(0, str(ROOT / ".claude"))
+from rediacc_hooks.guards import block_unverified_push as GUARD  # noqa: E402
+
+READER_POLICY = json.dumps(
+    {
+        "version": 1,
+        "records": [
+            {"glob": "agent/reviews/**", "readers": [{"id": "fast:reader", "evidence": "fixture"}]}
+        ],
+    }
+)
+GATES = [
+    {
+        "id": gid,
+        "run": "true",
+        "gate": True,
+        "leaves": [],
+        "ci": {"kind": "local-only", "blocker": "BLOCKER: synthetic fixture"},
+    }
+    for gid in ("fast:reader", "fast:other")
+]
+DEP_LOCK = json.dumps({"packages": {"node_modules/dep": {"version": "1.0.0"}}}) + "\n"
+RUNNER_STUB = (
+    "import { spawnSync } from 'node:child_process';\n"
+    "import path from 'node:path';\n"
+    "const args = process.argv.slice(2);\n"
+    "if (args[0] === '--selftest') process.exit(0);\n"
+    "const real = path.join(import.meta.dirname, 'run-real.ts');\n"
+    "const tsx = path.join(process.cwd(), 'node_modules', '.bin', 'tsx');\n"
+    "const r = spawnSync(tsx, [real, ...args], { stdio: 'inherit' });\n"
+    "process.exit(r.status ?? 1);\n"
+)
+
+
+def runner_fixture(name):
+    """A fixture() repository that also carries a copy of the real runner and quick-clone.ts, a two-gate manifest whose `fast:reader` reads agent/reviews/**, and an install the kept clone can copy. The runner's own selftest is a stub, as in test_gate_ci_runner's clone fixture: `check:ci-runner-selftest` runs the real one."""
+    repo = _SCRATCH / name
+    runner = repo / "scripts" / "ci-runner"
+    runner.mkdir(parents=True)
+    for src in RUNNER_DIR.glob("*.ts"):
+        shutil.copy(src, runner / src.name)
+    os.rename(runner / "run.ts", runner / "run-real.ts")
+    (runner / "run.ts").write_text(RUNNER_STUB, encoding="utf-8")
+    (runner / "manifest.ts").write_text(
+        "export type { CiCoverage, GateSpec } from './gate-spec.js';\nexport const GATES = %s;\n"
+        % json.dumps(GATES, indent=2),
+        encoding="utf-8",
+    )
+    (runner / "gates.lock.json").write_text(json.dumps(GATES), encoding="utf-8")
+    (repo / "scripts" / "lib").mkdir()
+    for lib_name in ("policy-paths.ts", "entry-point.ts"):
+        shutil.copy(ROOT / "scripts" / "lib" / lib_name, repo / "scripts" / "lib" / lib_name)
+    for rel in ("__init__.py", "core/__init__.py", "core/tmp_capacity.py"):
+        dest = repo / ".ci" / "rediacc_ci" / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(ROOT / ".ci" / "rediacc_ci" / rel, dest)
+    (repo / ".ci" / "policy").mkdir(parents=True)
+    (repo / ".ci" / "policy" / "record-paths.json").write_text(READER_POLICY, encoding="utf-8")
+    (repo / "package.json").write_text('{"scripts": {}}\n', encoding="utf-8")
+    (repo / "package-lock.json").write_text(DEP_LOCK, encoding="utf-8")
+    (repo / ".gitignore").write_text("node_modules/\n.ci/cache/\n", encoding="utf-8")
+    (repo / "node_modules" / ".bin").mkdir(parents=True)
+    os.symlink(TSX, repo / "node_modules" / ".bin" / "tsx")
+    (repo / "node_modules" / ".package-lock.json").write_text(DEP_LOCK, encoding="utf-8")
+    (repo / "node_modules" / "dep").mkdir()
+    (repo / "node_modules" / "dep" / "package.json").write_text(
+        json.dumps({"name": "dep", "version": "1.0.0"}) + "\n", encoding="utf-8"
+    )
+    return fixture(name, prepared=True)
+
+
+def quick_env(name):
+    """The environment the verb hands quick-clone.ts: no CI marker (CI routes in place), a private clone and duration cache.
+
+    A SHORT TMPDIR: tsx opens its IPC socket at `$TMPDIR/tsx-<uid>/<pid>.pipe`, and under a nested suite TMPDIR that path passed the 108-byte unix socket limit (`listen EINVAL`, seen under test_hooks_delegates). The directory is private and removed at exit, so wl_review's locks written there during the verb leave nothing behind.
+    """
+    short = tempfile.mkdtemp(prefix="rvm-", dir="/tmp")
+    atexit.register(shutil.rmtree, short, True)
+    env = {k: v for k, v in os.environ.items() if k not in ("CI", "GITHUB_ACTIONS")}
+    env.update(
+        {
+            "TMPDIR": short,
+            "CI_QUICK_CLONE_DIR": str(_SCRATCH / ("%s-clone" % name)),
+            "CI_PROFILE": "off",
+            "CI_RUNNER_CACHE": str(_SCRATCH / ("%s-durations.json" % name)),
+            "CI_RUNNER_CORES": "",
+            "CI_CORE_LEASE_HELD": "",
+            "REDIACC_CORE_LEASE_DIR": str(_SCRATCH / ("%s-lease" % name)),
+        }
+    )
+    return env
+
+
+def receipt_of(repo):
+    path = repo / ".ci" / "cache" / "prepush-receipt.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
+
+
+repo, reviewed, fix = runner_fixture("advance")
+saved_env = dict(os.environ)
+advance_env = quick_env("advance")
+os.environ.clear()
+os.environ.update(advance_env)
+try:
+    whole = subprocess.run(
+        [str(TSX), str(repo / "scripts" / "ci-runner" / "quick-clone.ts")],
+        cwd=str(repo),
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=600,
+    )
+    control("a whole ci:quick at the fix commit passes", whole.returncode, 0)
+    if whole.returncode != 0:
+        print(whole.stdout[-2000:] + whole.stderr[-2000:], file=sys.stderr)
+    parent_tree = git(repo, "rev-parse", "HEAD^{tree}")
+    before = receipt_of(repo) or {}
+    control(
+        "the whole receipt vouches for the fix commit's tree", before.get("headTree"), parent_tree
+    )
+    rc, text = R.commit_reviews(str(repo), BRANCH)
+finally:
+    os.environ.clear()
+    os.environ.update(saved_env)
+control("the verb commits", rc, 0)
+control(
+    "the verb's commit is the review record",
+    git(repo, "log", "-1", "--format=%s").startswith("chore(reviews)"),
+    True,
+)
+head_tree = git(repo, "rev-parse", "HEAD^{tree}")
+control("the verb says it advanced", "ADVANCED" in text, True)
+after = receipt_of(repo) or {}
+control("no second whole run: headTree is still the parent's", after.get("headTree"), parent_tree)
+control(
+    "one advances step, ending at the new tree",
+    [s.get("to") for s in after.get("advances") or []],
+    [head_tree],
+)
+control(
+    "the step ran the record's reader",
+    (after.get("advances") or [{}])[-1].get("gates"),
+    {"fast:reader": 0},
+)
+control(
+    "the push guard admits the new tree on the advanced receipt",
+    GUARD.receipt_refusal(str(repo), head_tree, GUARD.read_receipt(str(repo), head_tree)),
+    None,
+)
+control(
+    "CONTROL: the receipt before the verb is refused at the new tree",
+    GUARD.receipt_refusal(str(repo), head_tree, before) is not None,
+    True,
+)
+
+
+# ---- 6. No green receipt: the verb commits and starts nothing -----------------------------------------
+class Spawn:
+    def __init__(self):
+        self.calls = []
+
+    def __call__(self, cmd, **kw):
+        self.calls.append((cmd, kw.get("cwd")))
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+
+def verb_with(name, receipt):
+    """commit_reviews in a fixture() repo whose latest receipt is `receipt` (None: no file), with the advance's spawn recorded."""
+    repo, _reviewed, _fix = fixture(name)
+    if receipt is not None:
+        path = repo / ".ci" / "cache" / "prepush-receipt.json"
+        path.parent.mkdir(parents=True)
+        tree = git(repo, "rev-parse", "HEAD^{tree}")
+        path.write_text(json.dumps(dict(receipt, headTree=tree)), encoding="utf-8")
+        (repo / ".git" / "info" / "exclude").write_text(".ci/\n", encoding="utf-8")
+    spawn = Spawn()
+    rc, text = R.commit_reviews(
+        str(repo), BRANCH, advance=lambda root: R.advance_after_commit(root, spawn=spawn)
+    )
+    committed = git(repo, "log", "-1", "--format=%s").startswith("chore(reviews)")
+    return rc, text, committed, spawn.calls
+
+
+GREEN = {"schema": 2, "whole": True, "exitCode": 0, "failed": [], "advances": []}
+for label, receipt in (
+    ("no receipt", None),
+    ("a red receipt", dict(GREEN, exitCode=1, failed=["fast:red"])),
+    ("a narrowed receipt", dict(GREEN, whole=False)),
+):
+    rc, text, committed, calls = verb_with("none-%s" % label.split()[-2], receipt)
+    control("%s: the verb commits" % label, (rc, committed), (0, True))
+    control("%s: nothing is started" % label, calls, [])
+    control("%s: the verb says so" % label, "nothing was advanced" in text, True)
+rc, text, committed, calls = verb_with("green-seam", GREEN)
+control("CONTROL: a green receipt for the parent tree commits", (rc, committed), (0, True))
+control(
+    "CONTROL: and starts quick-clone.ts --advance-only once",
+    [(c[-2].endswith("quick-clone.ts"), c[-1], bool(cwd)) for c, cwd in calls],
+    [(True, "--advance-only", True)],
 )
 
 print("%d control(s), %d failed" % (Tally.count, Tally.fails))

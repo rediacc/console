@@ -1554,3 +1554,60 @@ def test_quick_advances_across_a_record_only_commit(gate):
             "a record-only commit advanced the receipt through its reader alone, a second one "
             "chained, and a code commit and a rename out of code each ran the whole lane again"
         )
+
+
+def test_advance_only_refuses_instead_of_running_the_lane(gate):
+    """`run.ts --quick --advance-only` takes the record-only advance or nothing (agent/plans/PLAN-push-decoupling.md R3).
+
+    `worklist.py --review-commit` starts it after its commit, so a commit that is not record-only must cost no lane: the run exits 4 (ADVANCE_REFUSED_EXIT), prints why, runs no gate and leaves the receipt byte for byte. CONTROL: a record-only commit over the same receipt advances with the reader alone and exits 0.
+    """
+    gates = [
+        spec("fast:reader", 'echo reader >> "$MARK"'),
+        spec("fast:other", 'echo other >> "$MARK"'),
+    ]
+    with harness.temp_dir() as work:
+        repo = _fixture_repo(
+            gate,
+            work,
+            gates,
+            {".ci/policy/record-paths.json": ADVANCE_POLICY, "agent/reviews/a.md": "a\n"},
+        )
+        receipt_path = work / "receipt.json"
+        out = os.fspath(receipt_path)
+        gate.assert_exit(0, _quick(gate, repo, work, "--quick", "--receipt-out", out), "whole run")
+        ran = work / "ran.log"
+
+        (repo / "lib" / "untouched_leaf.sh").write_text("echo code\n", encoding="utf-8")
+        _git(gate, repo, "commit", "-q", "-am", "fix: code")
+        before = receipt_path.read_bytes()
+        ran.unlink()
+        r = _quick(gate, repo, work, "--quick", "--advance-only", "--receipt-out", out)
+        gate.assert_exit(4, r, "a code commit is refused with ADVANCE_REFUSED_EXIT")
+        gate.assert_contains(r.out, "--advance-only REFUSED", "the refusal is printed")
+        gate.assert_contains(r.out, "outside the record set", "with the reason")
+        gate.assertions += 1
+        if ran.exists():
+            gate.log_fail("a refused advance ran gates: %s" % ran.read_text(encoding="utf-8"))
+        gate.assert_eq(receipt_path.read_bytes(), before, "the receipt is left byte for byte")
+
+        r = _quick(gate, repo, work, "--quick", "--advance-only", "--only", "fast:reader")
+        gate.assert_exit(4, r, "--advance-only with a narrowing flag runs nothing")
+
+        # CONTROL: a whole run at the code commit, then a record-only commit, advances.
+        gate.assert_exit(0, _quick(gate, repo, work, "--quick", "--receipt-out", out), "re-run")
+        (repo / "agent" / "reviews" / "b.md").write_text("b\n", encoding="utf-8")
+        _git(gate, repo, "add", "-A")
+        _git(gate, repo, "commit", "-q", "-m", "chore(reviews): record")
+        ran.unlink()
+        r = _quick(gate, repo, work, "--quick", "--advance-only", "--receipt-out", out)
+        gate.assert_exit(0, r, "a record-only commit advances")
+        gate.assert_eq(ran.read_text(encoding="utf-8").split(), ["reader"], "the reader alone ran")
+        gate.assert_eq(
+            [s.get("to") for s in _receipt(gate, receipt_path).get("advances") or []],
+            [_git(gate, repo, "rev-parse", "HEAD^{tree}")],
+            "one step to HEAD's tree",
+        )
+        gate.log_pass(
+            "--advance-only refused a code commit with exit 4 and no gate run, and advanced a "
+            "record-only one through its reader"
+        )

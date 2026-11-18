@@ -111,7 +111,7 @@ import {
   runPool,
   type Sched,
 } from './pool';
-import { leaseMainOf, NO_CARRY_ENV, quickCloneSelftest } from './quick-clone';
+import { ADVANCE_REFUSED_EXIT, leaseMainOf, NO_CARRY_ENV, quickCloneSelftest } from './quick-clone';
 import {
   admitTouched,
   type DropKind,
@@ -222,6 +222,8 @@ interface Options {
   receiptOut?: string;
   /** `--advance-from <abs path>`: the receipt a `--quick` advance plans from, in place of the one at the destination. quick-clone.ts passes a pinned run's receipt on its follow pass, so the step starts at the tree the pinned run judged (agent/plans/PLAN-push-decoupling.md D1.2). */
   advanceFrom?: string;
+  /** `--advance-only`: take the record-only advance or nothing. When the receipt cannot be advanced the run prints why and exits ADVANCE_REFUSED_EXIT without running the lane (`worklist.py --review-commit` starts it, agent/plans/PLAN-push-decoupling.md R3). */
+  advanceOnly?: boolean;
   /** `--gate-timeout <s>`: one kill timer for every gate, in place of each gate's derived one (gate-timeout.ts). */
   gateTimeoutMs?: number;
   /** `--slow-rotation i/N`: run only bucket i of the slow set split N ways by cost (`rotationBucket`), for housekeeping's gate-cost capture. */
@@ -399,6 +401,9 @@ function parseArgs(argv: readonly string[]): Options {
         i += 1;
         break;
       }
+      case '--advance-only':
+        opts.advanceOnly = true;
+        break;
       case '--advance-from': {
         const from = value(i, arg);
         if (!path.isAbsolute(from))
@@ -5536,7 +5541,15 @@ async function main(): Promise<number> {
     : (text: string) => process.stdout.write(text);
 
   // THE ADVANCE (agent/plans/PLAN-prepush-full-cpu.md part 5): a whole `--quick` run whose receipt is only a record-only commit behind runs those records' readers and appends a step, rather than the whole lane again. Every refusal is printed, so a whole run says why it was not an advance.
-  if (opts.quick && !opts.list && narrowingFlags(opts).length === 0 && opts.lane === undefined) {
+  const advanceable =
+    opts.quick && !opts.list && narrowingFlags(opts).length === 0 && opts.lane === undefined;
+  if (opts.advanceOnly && !advanceable) {
+    process.stderr.write(
+      `ci-runner: --advance-only needs a whole --quick run (no --list, --lane or narrowing flag), so nothing ran\n`
+    );
+    return ADVANCE_REFUSED_EXIT;
+  }
+  if (advanceable) {
     const dest = receiptPathFor(opts);
     let existing: unknown;
     try {
@@ -5568,6 +5581,10 @@ async function main(): Promise<number> {
     });
     if (plan.kind === 'advance')
       return runAdvance(specs, plan, existing as Receipt, dest, opts, humanOut);
+    if (opts.advanceOnly) {
+      humanOut(`ci-runner: --advance-only REFUSED, no lane runs: ${plan.why}\n`);
+      return ADVANCE_REFUSED_EXIT;
+    }
     humanOut(`ci-runner: --quick runs the whole lane, not an advance: ${plan.why}\n`);
   }
 
