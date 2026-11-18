@@ -844,6 +844,17 @@ export function uncoveredBuildOutput(
   return out;
 }
 
+/** Git evidence as the committed ledger shows it: the `-C <checkout>` pair dropped (a lease path names a tree that is collected later) and the lister written `git: ls-files`, so a reason is data and no enumeration check reads the ledger as a scan. */
+export function evidenceText(s: string): string {
+  return s
+    .replace(
+      /\/[^\s;]*?\.git\/(?:modules\/[^\s;]+?\/)?(?:[a-z]+\/[^/\s;]+\/)?(?=index\b)/g,
+      '<gitdir>/'
+    )
+    .replace(/\bgit\s+-C\s+\S+\s+/g, 'git ')
+    .replace(/\bgit\s+ls-files\b/g, 'git: ls-files');
+}
+
 export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> = []): Verdict {
   const closure = new Set(needs);
   const counts = { reads: attr.reads.size, listed: attr.listed.size };
@@ -859,14 +870,15 @@ export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> 
     return whole(
       `network: connects to ${net.slice(0, 3).join(', ')}${net.length > 3 ? `, and ${net.length - 3} more` : ''}, so its verdict can move with nothing in the tree moving; a carry-exempt.json candidate`
     );
-  if (attr.gitHistory.length > 0) return whole(`reads git history (${attr.gitHistory.join('; ')})`);
+  if (attr.gitHistory.length > 0)
+    return whole(`reads git history (${evidenceText(attr.gitHistory.join('; '))})`);
   if ((attr.gitContent ?? []).length > 0)
     return whole(
-      `reads what every tracked file holds through the git index (${(attr.gitContent ?? []).join('; ')}), so a change to any tracked file can change its verdict`
+      `reads what every tracked file holds through the git index (${evidenceText((attr.gitContent ?? []).join('; '))}), so a change to any tracked file can change its verdict`
     );
   if (attr.gitIndex.length > 0)
     return whole(
-      `enumerates the tracked file list through the git index (${attr.gitIndex.join('; ')}), so a new file anywhere can change its verdict`
+      `enumerates the tracked file list through the git index (${evidenceText(attr.gitIndex.join('; '))}), so a new file anywhere can change its verdict`
     );
   if (attr.cacheState.length > 0)
     return whole(
@@ -1500,6 +1512,8 @@ export interface RawAccess {
   /** Network peers (Access.network); absent in an `--out` file written before `connect` was traced. */
   network?: string[];
   startedMs?: number;
+  /** The pids that read the git index (Access.indexPids): `--refold` needs them to tell a name-only `git ls-files`'s own read from a foreign one. Absent in a file written before they were kept, which a refold cannot judge soundly. */
+  indexPids?: number[];
 }
 
 export function rawOf(access: Access, view: RepoView): RawAccess {
@@ -1510,6 +1524,8 @@ export function rawOf(access: Access, view: RepoView): RawAccess {
     execs: access.execs.filter((e) => path.posix.basename(e.argv[0] ?? '') === 'git'),
     network: [...(access.network ?? [])].sort(byteOrder),
     startedMs: access.startedMs,
+    indexPids:
+      access.indexPids === undefined ? undefined : [...access.indexPids].sort((a, b) => a - b),
   };
 }
 
@@ -1672,6 +1688,7 @@ export function refold(root: string, file: string): number {
       execs: r.raw.execs,
       network: new Set(r.raw.network ?? []),
       startedMs: r.raw.startedMs,
+      indexPids: r.raw.indexPids === undefined ? undefined : new Set(r.raw.indexPids),
     };
     const verdict = verdictOf(attribute(access, view), view, r.exit, needsClosure(r.id, byId));
     if (verdict.kind === 'paths') paths++;
@@ -2841,6 +2858,14 @@ async function selftest(): Promise<number> {
   } else {
     console.log(`  NOTE  no real trace on this host: ${refusal}`);
   }
+
+  const shownEvidence = evidenceText(
+    'git -C /x/y ls-files -z --recurse-submodules; /x/.git/wt/agent-1/index; git log'
+  );
+  check(
+    shownEvidence === 'git: ls-files -z --recurse-submodules; <gitdir>/index; git log',
+    `ledger evidence drops the checkout path and the lister's literal form (got ${shownEvidence})`
+  );
 
   console.log(`path-trace selftest: ${n - bad}/${n} passed`);
   return bad === 0 ? 0 : 1;
