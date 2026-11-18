@@ -56,6 +56,7 @@ Both are the same substitution and neither changes a claim.
 
 import json
 import os
+import pathlib
 import re
 import shutil
 
@@ -1329,6 +1330,68 @@ def test_quick_clone_falls_back_loudly_and_needs_a_receipt(gate):
         )
         gate.log_pass(
             "the fallback said why, went red on the red tree, and passed on the clean one"
+        )
+
+
+def test_quick_clone_pins_an_ancestor_and_archives_its_receipt(gate):
+    """`ci:quick --commit <sha>` judges a named ancestor of HEAD in the kept clone (agent/plans/PLAN-push-decoupling.md R1, D1.1).
+
+    The pinned run archives its whole receipt as `.ci/cache/receipts/<its tree>.json`, the copy `block_unverified_push.read_receipt` reads first, and leaves a newer `prepush-receipt.json` byte for byte. A sha that is not an ancestor of HEAD, or names no commit, is refused before the clone directory exists. A lease is still refused with `--commit`. CONTROL: the plain run at HEAD before the pin writes `prepush-receipt.json`, so the untouched file is a receipt that was there to overwrite.
+    """
+    with harness.temp_dir() as work:
+        repo = _clone_fixture(gate, work)
+        (repo / "dirty.marker").unlink()
+        pinned_sha = _git(gate, repo, "rev-parse", "HEAD")
+        pinned_tree = _git(gate, repo, "rev-parse", "HEAD^{tree}")
+        (repo / "lib" / "later.sh").write_text("echo later\n", encoding="utf-8")
+        _git(gate, repo, "add", "-A", "lib")
+        _git(gate, repo, "commit", "-q", "-m", "feat: a later commit")
+        head_tree = _git(gate, repo, "rev-parse", "HEAD^{tree}")
+        cache = repo / ".ci" / "cache"
+        latest = cache / "prepush-receipt.json"
+        archive = cache / "receipts" / ("%s.json" % pinned_tree)
+
+        r = _quick_clone(gate, repo, work)
+        gate.assert_exit(0, r, "CONTROL: the plain run at HEAD passes")
+        gate.assert_eq(_receipt(gate, latest).get("headTree"), head_tree, "and names HEAD's tree")
+        before = latest.read_bytes()
+        gate.assertions += 1
+        if archive.exists():
+            gate.log_fail("no run has judged the pinned tree yet, but %s exists" % archive)
+
+        r = _quick_clone(gate, repo, work, "--commit", pinned_sha[:12])
+        gate.assert_exit(0, r, "the pinned ancestor is judged and passes")
+        gate.assert_contains(r.out, "judging the pinned commit", "the run names what it judges")
+        rc = _receipt(gate, archive)
+        gate.assert_eq(rc.get("headTree"), pinned_tree, "the archive copy names the pinned tree")
+        gate.assert_eq(rc.get("whole"), True, "and is whole, so the push guard admits it")
+        gate.assert_eq(rc.get("head"), pinned_sha, "and names the pinned commit")
+        gate.assert_eq(latest.read_bytes(), before, "the newer prepush-receipt.json is left alone")
+
+        clone = work / "kept" / "refused"
+        side = _git(gate, repo, "commit-tree", pinned_tree, "-p", "HEAD~2", "-m", "side")
+        for spec, why in ((side, "is not an ancestor of HEAD"), ("0" * 40, "names no commit")):
+            r = _quick_clone(gate, repo, work, "--commit", spec, clone=clone)
+            gate.assert_exit(1, r, "a pin that is not an ancestor of HEAD is refused")
+            gate.assert_contains(r.out, "REFUSED", "the refusal is loud")
+            gate.assert_contains(r.out, why, "and says why")
+            gate.assertions += 1
+            if clone.exists() or pathlib.Path("%s.lock" % clone).exists():
+                gate.log_fail("a refused pin touched the clone or its lock at %s" % clone)
+        gate.assert_eq(latest.read_bytes(), before, "a refused pin writes no receipt")
+
+        lease = repo / ".claude" / "worktrees" / "x"
+        _git(gate, repo, "worktree", "add", "-q", "--detach", os.fspath(lease))
+        lease_clone = work / "kept" / "lease"
+        r = _quick_entry(gate, lease, work, QUICK_CLONE_REL, ("--commit", pinned_sha), lease_clone)
+        gate.assert_exit(1, r, "a lease is refused with --commit too")
+        gate.assert_contains(r.out, "is a lease of", "and the refusal names the lease")
+        gate.assertions += 1
+        if lease_clone.exists():
+            gate.log_fail("a lease's pinned run made a clone at %s" % lease_clone)
+        gate.log_pass(
+            "the pinned ancestor archived its whole receipt and left the newer one alone; a "
+            "non-ancestor, an unknown sha and a lease were refused before any clone"
         )
 
 

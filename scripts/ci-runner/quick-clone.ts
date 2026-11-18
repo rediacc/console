@@ -9,6 +9,8 @@
  *
  * WHAT IT NEVER DOES. It reads the live tree and writes one file there, `.ci/cache/prepush-receipt.json` (plus the runner's archive and events beside it). It moves no live branch and touches no live working tree file. It judges HEAD, so an uncommitted edit changes nothing.
  *
+ * A PINNED RUN, `--commit <sha>` (agent/plans/PLAN-push-decoupling.md D1.1), judges a named ancestor of the live HEAD instead of HEAD: the clone resets to that commit, the runner writes `.ci/cache/pinned-receipt.json`, and the whole receipt it archives as `.ci/cache/receipts/<tree>.json` is the copy `block_unverified_push.read_receipt` reads first. A pinned run never writes `.ci/cache/prepush-receipt.json`, so a receipt for a newer tree stays where the push guard reads it. A sha that is not an ancestor of HEAD is refused before the lock or the clone is touched, and a lease is refused as before.
+ *
  * DEPENDENCIES ARE A HARD-LINK COPY (`cp -al`), NOT A SYMLINK TO THE LIVE `node_modules`. A symlinked root makes `@rediacc/shared` resolve through `node_modules/@rediacc/shared -> ../../packages/shared` to the LIVE working tree (Node resolves real paths), so the run would judge dirty source while the receipt names HEAD. And a gate that runs `npm ci` in a linked directory (check:ci-account-portal does, in private/account) would empty the live one through the link. In a hard-link copy the relative workspace links resolve inside the clone, an `npm ci` only unlinks the clone's names, and a live `npm install` mid-run leaves the clone's inodes alone. Only the live hidden lockfile matching the HEAD lockfile admits the copy; anything else is a real `npm ci` in the clone. A toolchain cache that is read-only in practice is the one thing linked, and that link is spelled `ln -sfn`.
  *
  * NEVER A GREEN WITHOUT A JUDGED RECEIPT. A clone that cannot be set up falls back to the shared checkout with one loud line. Whichever tree ran, exit 0 needs a whole receipt written by this run, naming the judged tree, with `exitCode` 0 and an empty `failed`.
@@ -23,6 +25,10 @@ import { fileURLToPath } from 'node:url';
 import { isEntryPoint } from '../lib/entry-point.js';
 
 const RECEIPT_REL = path.join('.ci', 'cache', 'prepush-receipt.json');
+/** Where a pinned run's runner writes its receipt. Removed before each pinned run, so the runner never advances an earlier pinned receipt and always leaves a whole one to archive. */
+const PINNED_RECEIPT_REL = path.join('.ci', 'cache', 'pinned-receipt.json');
+/** The runner's per-tree archive beside both receipts (run.ts archiveReceipt), read first by the push guard. */
+const ARCHIVE_REL = path.join('.ci', 'cache', 'receipts');
 const RUNNER_REL = path.join('scripts', 'ci-runner', 'run.ts');
 /** Set for the runner in the clone: nested `ci:quick` stays where it is. */
 const IN_CLONE_ENV = 'CI_QUICK_IN_CLONE';
@@ -56,7 +62,7 @@ const PASS_THROUGH_FLAGS = new Set(['--verbose', '--merge-output']);
 const PASS_THROUGH_VALUE_FLAGS = new Set(['--jobs', '--gate-timeout']);
 
 export type Route =
-  | { kind: 'clone'; pass: string[]; noCarry: boolean }
+  | { kind: 'clone'; pass: string[]; noCarry: boolean; commit?: string }
   | { kind: 'here'; why: string; pass: string[] }
   | { kind: 'refused'; why: string };
 
@@ -103,6 +109,17 @@ export function routeOf(args: readonly string[], env: NodeJS.ProcessEnv, live: s
       why: `${live} is a lease of ${main}, and full gates run only in the main checkout at landing, where the push guards read their receipt. Land the commits, then run npm run ci:quick in ${main}. npm run ci -- --narrow and named tests stay allowed in a lease.`,
     };
   }
+  const pinned = commitArg(args);
+  if (pinned !== undefined) {
+    if ('why' in pinned) return { kind: 'refused', why: pinned.why };
+    const inner = routeOf(pinned.rest, env, live);
+    if (inner.kind !== 'clone')
+      return {
+        kind: 'refused',
+        why: `--commit judges a pinned commit in the kept clone only, and this run would not use the clone (${inner.why})`,
+      };
+    return { ...inner, commit: pinned.commit };
+  }
   if (env[IN_CLONE_ENV] === '1')
     return {
       kind: 'here',
@@ -137,6 +154,46 @@ export function routeOf(args: readonly string[], env: NodeJS.ProcessEnv, live: s
     };
   }
   return { kind: 'clone', pass, noCarry };
+}
+
+/** `--commit <sha>` or `--commit=<sha>` taken out of `args`; undefined when the flag is absent. */
+function commitArg(
+  args: readonly string[]
+): { commit: string; rest: string[] } | { why: string } | undefined {
+  const rest: string[] = [];
+  let commit: string | undefined;
+  let seen = 0;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--commit' || arg.startsWith('--commit=')) {
+      seen++;
+      commit = arg === '--commit' ? args[++i] : arg.slice('--commit='.length);
+      continue;
+    }
+    rest.push(arg);
+  }
+  if (seen === 0) return undefined;
+  if (seen > 1) return { why: '--commit names one commit, and it was given more than once' };
+  if (commit === undefined || commit === '' || commit.startsWith('-'))
+    return { why: '--commit needs a commit: npm run ci:quick -- --commit <sha>' };
+  return { commit, rest };
+}
+
+/** The full sha `spec` names in `live` when it is HEAD or an ancestor of it, else why not. Read before the lock and the clone, so a refusal touches neither. */
+export function pinnedCommit(live: string, spec: string): { sha: string } | { why: string } {
+  const sha = shTry('git', ['rev-parse', '--verify', '--quiet', `${spec}^{commit}`], live);
+  if (sha === undefined || sha === '')
+    return { why: `--commit ${spec} names no commit in ${live}` };
+  const ancestor = spawnSync('git', ['merge-base', '--is-ancestor', sha, 'HEAD'], {
+    cwd: live,
+    env: gitEnv(),
+    stdio: 'ignore',
+  });
+  if (ancestor.status !== 0)
+    return {
+      why: `--commit ${spec} (${sha.slice(0, 12)}) is not an ancestor of HEAD in ${live}; a pinned run judges a commit the branch tip already contains`,
+    };
+  return { sha };
 }
 
 /** The kept clone of `live`. Per checkout, outside every tracked tree. */
@@ -592,12 +649,14 @@ export interface PrepareInput {
   live: string;
   clone: string;
   seams?: DepsSeams;
+  /** A pinned run's full sha, an ancestor of the live HEAD (`pinnedCommit`); absent, the clone takes the live HEAD. */
+  commit?: string;
 }
 
-/** Makes or refreshes the clone at the live HEAD: full history, the live view of origin, the same branch name, submodules at the gitlinks, dependencies, an empty `git status`. Throws with the reason on anything it cannot do. */
-export function prepareClone({ live, clone, seams }: PrepareInput): Prepared {
-  const head = sh('git', ['rev-parse', 'HEAD'], live);
-  const tree = sh('git', ['rev-parse', 'HEAD^{tree}'], live);
+/** Makes or refreshes the clone at the live HEAD, or at `commit` for a pinned run: full history, the live view of origin, the same branch name, submodules at the gitlinks, dependencies, an empty `git status`. Throws with the reason on anything it cannot do. */
+export function prepareClone({ live, clone, seams, commit }: PrepareInput): Prepared {
+  const head = commit ?? sh('git', ['rev-parse', 'HEAD'], live);
+  const tree = sh('git', ['rev-parse', `${head}^{tree}`], live);
   const branch = sh('git', ['branch', '--show-current'], live);
   const relToLive = path.relative(fs.realpathSync(live), clone);
   if (!relToLive.startsWith('..') && !path.isAbsolute(relToLive))
@@ -660,7 +719,9 @@ export function prepareClone({ live, clone, seams }: PrepareInput): Prepared {
       `the clone is not clean after setup: ${porcelain.split('\n').slice(0, 3).join(' | ')}`
     );
   if (sh('git', ['rev-parse', 'HEAD^{tree}'], clone) !== tree)
-    throw new Error('the clone did not reach the tree of the live HEAD');
+    throw new Error(
+      `the clone did not reach the tree of ${commit === undefined ? 'the live HEAD' : `the pinned commit ${commit.slice(0, 12)}`}`
+    );
   return { clone, head, tree, branch, fresh, notes };
 }
 
@@ -810,6 +871,16 @@ export function summaryLines(input: {
   return lines;
 }
 
+/** Why the per-tree archive does not hold a whole receipt for `tree`, or undefined when it does. The same admission test `block_unverified_push.read_receipt` applies to the copy. */
+export function unarchived(live: string, tree: string): string | undefined {
+  const file = path.join(live, ARCHIVE_REL, `${tree}.json`);
+  const { receipt } = readReceipt(file);
+  if (receipt === undefined) return `no archived receipt at ${file}`;
+  if (receipt.headTree !== tree) return `${file} names tree ${receipt.headTree ?? 'none'}`;
+  if (receipt.whole !== true) return `${file} is not whole`;
+  return undefined;
+}
+
 function readReceipt(file: string): {
   receipt?: ReceiptShape;
   mtimeMs: number;
@@ -884,11 +955,16 @@ function finishWhole(
     setupMs: number;
     tree: string;
     where: string;
+    /** Where the runner was told to write; the live checkout's own receipt when absent. */
+    receiptPath?: string;
+    /** A pinned run must also leave the whole receipt in the per-tree archive the push guard reads first. */
+    archived?: boolean;
   }
 ): number {
-  const receiptPath = path.join(seams.live, RECEIPT_REL);
+  const receiptPath = input.receiptPath ?? path.join(seams.live, RECEIPT_REL);
   const { receipt, mtimeMs } = readReceipt(receiptPath);
-  const why = unjudged(receipt, mtimeMs, input.startedAt, input.tree);
+  let why = unjudged(receipt, mtimeMs, input.startedAt, input.tree);
+  if (why === undefined && input.archived === true) why = unarchived(seams.live, input.tree);
   let exit = wholeExit(input.runnerExit, receipt);
   if (why !== undefined) {
     seams.log(`ci:quick: NO JUDGED RECEIPT at ${receiptPath}: ${why}\n`);
@@ -927,20 +1003,40 @@ export async function quickMain(args: readonly string[], seams: QuickSeams): Pro
     });
   }
 
+  // A PINNED RUN is resolved before the lock and the clone: a sha that is not an ancestor of HEAD touches neither.
+  let commit: string | undefined;
+  if (route.commit !== undefined) {
+    const pin = pinnedCommit(seams.live, route.commit);
+    if ('why' in pin) {
+      seams.log(`ci:quick: REFUSED: ${pin.why}\n`);
+      return 1;
+    }
+    commit = pin.sha;
+  }
   const clone = cloneDirFor(seams.live, seams.env);
-  const receiptPath = path.join(seams.live, RECEIPT_REL);
+  const receiptPath = path.join(
+    seams.live,
+    commit === undefined ? RECEIPT_REL : PINNED_RECEIPT_REL
+  );
   const lockPath = `${clone}.lock`;
   let prepared: Prepared | undefined;
   let why = '';
   let locked = false;
   try {
     locked = await seams.acquire(lockPath);
-    if (locked) prepared = seams.prepare({ live: seams.live, clone });
+    if (locked) prepared = seams.prepare({ live: seams.live, clone, commit });
     else why = `another session held ${lockPath} past the wait`;
   } catch (err) {
     why = (err as Error).message;
   }
   try {
+    if (prepared === undefined && commit !== undefined) {
+      // No fallback for a pinned run: the shared checkout holds HEAD, not the pinned commit.
+      seams.log(
+        `ci:quick: REFUSED: the kept clone could not be set up at the pinned commit ${commit.slice(0, 12)}, and the shared checkout holds HEAD, so nothing judges it: ${why}\n`
+      );
+      return 1;
+    }
     if (prepared === undefined) {
       seams.log(
         `ci:quick: !!! FALLBACK TO THE SHARED CHECKOUT, nothing will carry and tree writers are dropped: the clean clone could not be set up: ${why}\n`
@@ -956,8 +1052,10 @@ export async function quickMain(args: readonly string[], seams: QuickSeams): Pro
     }
     const setupMs = seams.now() - startedAt;
     seams.log(
-      `ci:quick: judging HEAD ${prepared.head.slice(0, 12)} tree ${prepared.tree.slice(0, 12)} on ${prepared.branch || '(detached)'} in the kept clean clone ${prepared.clone}; uncommitted edits in ${seams.live} are NOT judged; receipt: ${receiptPath}\n`
+      `ci:quick: judging ${commit === undefined ? 'HEAD' : 'the pinned commit'} ${prepared.head.slice(0, 12)} tree ${prepared.tree.slice(0, 12)} on ${prepared.branch || '(detached)'} in the kept clean clone ${prepared.clone}; uncommitted edits in ${seams.live} are NOT judged; receipt: ${commit === undefined ? receiptPath : `${path.join(seams.live, ARCHIVE_REL, `${prepared.tree}.json`)} (written through ${receiptPath}; ${RECEIPT_REL} is left alone)`}\n`
     );
+    // tree-write: safe the pinned run's own receipt under the ignored .ci/cache, removed so the runner judges the pinned tree whole
+    if (commit !== undefined) fs.rmSync(receiptPath, { force: true });
     for (const note of prepared.notes) seams.log(`ci:quick: ${note}\n`);
     const env = cloneEnv(seams.env, seams.live, prepared.clone, prepared.fresh || route.noCarry);
     const exit = await selftestThenLane(
@@ -967,7 +1065,7 @@ export async function quickMain(args: readonly string[], seams: QuickSeams): Pro
       env
     );
     const moved = shTry('git', ['rev-parse', 'HEAD^{tree}'], seams.live);
-    if (moved !== prepared.tree)
+    if (commit === undefined && moved !== prepared.tree)
       seams.log(
         `ci:quick: HEAD moved in ${seams.live} during this run: the receipt judges tree ${prepared.tree.slice(0, 12)}, HEAD is now ${(moved ?? '?').slice(0, 12)}, so the push guard will ask for another run\n`
       );
@@ -976,7 +1074,9 @@ export async function quickMain(args: readonly string[], seams: QuickSeams): Pro
       startedAt,
       setupMs,
       tree: prepared.tree,
-      where: `the kept clean clone ${prepared.clone}`,
+      where: `the kept clean clone ${prepared.clone}${commit === undefined ? '' : ` at the pinned commit ${commit.slice(0, 12)}`}`,
+      receiptPath,
+      archived: commit !== undefined,
     });
   } finally {
     if (locked) fs.rmSync(lockPath, { force: true });
