@@ -2724,6 +2724,40 @@
         "f573c2a0"
       ]
     },
+    "agent/plans/PLAN-push-decoupling.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 23,
+      "done": 0,
+      "open_sigs": [
+        "0735f5f6",
+        "0faf5dca",
+        "247916b1",
+        "266879ea",
+        "2bf4755e",
+        "3d712f84",
+        "42df7aae",
+        "43e8f5fc",
+        "46106113",
+        "4b61913d",
+        "4c077dd8",
+        "4eb71b94",
+        "6d2451be",
+        "8096acb7",
+        "8a962af3",
+        "907e373d",
+        "96885146",
+        "974ce45c",
+        "c9342fbd",
+        "d26a392f",
+        "dbd3b053",
+        "e613a81c",
+        "ff3d3a57"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-pytest-parallelism.md": {
       "status": "compacted",
       "owner": "8f55d4f0",

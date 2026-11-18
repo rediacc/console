@@ -82,21 +82,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1402 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1416 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
   - epic 2255f2d2, no plan, 2 commit(s) on the branch, 0 open item(s): Convert stale GitHub issues (console, renet, account) into plan files
-- Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 19: #02389657 (worker:bs243zelt, d778be9d), #0e6b5dc9 (worker:bs243zelt, d778be9d), #36ffb824 (worker:bs243zelt, d778be9d), #3fb4edcc (worker:bs243zelt, d778be9d), #400ae5ea (worker:bs243zelt, d778be9d), #4889018a (worker:bs243zelt, d778be9d), #6d5593e9 (worker:bs243zelt, d778be9d), #719d19c6 (worker:bs243zelt, d778be9d), #732fbea9 (worker:bs243zelt, d778be9d), #864b6bca (worker:bs243zelt, d778be9d), #8bb65426 (worker:bs243zelt, d778be9d), #966364da (worker:bs243zelt, d778be9d), and 7 more.
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:aee409f784610b6b5, worker:a8be7ccfb99d536be.
+- Leased items: 5: #02389657 (worker:3310019, d778be9d), #46d717f1 (worker:a8be7ccfb99d536be, d778be9d), #4889018a (worker:bb3emnbt4, d778be9d), #9a4fc7c5 (worker:aee409f784610b6b5, d778be9d), #f0da7369 (worker:aee409f784610b6b5, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 26 of 78 plans done, 1204 of 1451 boxes done (82%).
+Promoted: 26 of 79 plans done, 1204 of 1474 boxes done (81%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -178,6 +178,7 @@ Promoted: 26 of 78 plans done, 1204 of 1451 boxes done (82%).
 | 76 | PLAN-root-api-token.md | 7/15 | 8 open |
 | 77 | PLAN-site-entry-points.md | 7/11 | 4 open |
 | 78 | PLAN-root-grants.md | 5/19 | 14 open |
+| 79 | PLAN-push-decoupling.md | 0/23 | 23 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
@@ -258,6 +259,7 @@ Promoted: 26 of 78 plans done, 1204 of 1451 boxes done (82%).
 76. agent/plans/PLAN-root-api-token.md -- operator ruling ASKED:2026-11-15T17:07Z ("Root API token (Recommended)": agents act as root on stable/edge through a root-scoped, IP-bound, expiring token with a TOTP session; no captcha bypass; one portal mint by the operator)
 77. agent/plans/PLAN-site-entry-points.md -- operator /ask ASKED:2026-11-17T09:06Z ("Site fixes now, private later"): portal onboarding docs links on www (they 404 on the portal host), a Downloads link under the home video ("Link under the video", ASKED:2026-11-17T08:46Z), and Linux/macOS + Windows install tabs in the portal ("Tabs, no detection")
 78. agent/plans/PLAN-root-grants.md -- operator /ask 2026-11-17 ("Need a better and consistent solution. Maybe we should use the same code with names to IDs, mapping."; "Rediacc, registered"; "Yes: ops tool + ops-health check"): the root email gets user panels, console, admin and partner/sales in every region through one names-to-ids reconcile
+79. agent/plans/PLAN-push-decoupling.md -- operator /ask 2026-11-18 ("1 Pinned receipts + locks, 3 Needs: tag, 4 W2.5/W2.6 + W4 + vm per-leg"; not 2, not 5): land work while a receipt builds, lock the shared fleet and bench, route boxes by Needs:.
 
 ## Generated
 
