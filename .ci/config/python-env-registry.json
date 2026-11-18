@@ -604,6 +604,7 @@
     ".ci/rediacc_ci/drills/vm_check.py": [
       "CLAUDE_CODE_SESSION_ID",
       "HOME",
+      "REDIACC_VM_DISK_DIR",
       "VM_IMAGE"
     ],
     ".ci/rediacc_ci/enterprise/cli.py": [
