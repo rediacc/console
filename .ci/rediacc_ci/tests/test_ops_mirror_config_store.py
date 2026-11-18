@@ -1464,9 +1464,9 @@ def test_write_private_creates_the_file_with_its_mode_from_the_first_byte(
     seen = []
     real_open = os.open
 
-    def spy(path, flags, mode=0o777):
+    def spy(path, flags, mode=0o777, **kwargs):
         seen.append(mode)
-        return real_open(path, flags, mode)
+        return real_open(path, flags, mode, **kwargs)
 
     monkeypatch.setattr(mod.os, "open", spy)
     old = os.umask(0)

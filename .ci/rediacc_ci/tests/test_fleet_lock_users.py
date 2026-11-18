@@ -45,7 +45,9 @@ def runtime(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib.
 
 
 @pytest.fixture
-def holder():
+def holder(runtime: pathlib.Path):
+    # Depends on `runtime`: the holder takes the lock in the test's private directory, with PYTHONPATH set, never the operator's real fleet lock.
+    assert runtime.is_dir()
     proc = subprocess.Popen([sys.executable, "-c", HOLD_SCRIPT], stdout=subprocess.PIPE, text=True)
     assert proc.stdout is not None
     assert proc.stdout.readline().strip() == "held"

@@ -344,7 +344,7 @@ def run(resource: str, argv: Sequence[str], *, purpose: str, wait_s: float = DEF
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="python3 -m rediacc_ci.core.resource_lock")
+    parser = argparse.ArgumentParser(prog="PYTHONPATH=.ci python3 -m rediacc_ci.core.resource_lock")
     sub = parser.add_subparsers(dest="verb", required=True)
     run_p = sub.add_parser("run", help="run a command while holding a named resource")
     run_p.add_argument("--resource", required=True)

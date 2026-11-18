@@ -1702,10 +1702,10 @@ def test_a_key_copy_that_cannot_be_written_names_the_work_directory(
     """Review bf6289c7.2: a write error on the identity copy is its own row, not "the alias's identity is readable"."""
     real_open = vm_check.os.open
 
-    def failing_open(path, flags, *args):
+    def failing_open(path, flags, *args, **kwargs):
         if str(path).endswith("sftp_identity"):
             raise OSError(28, "No space left on device")
-        return real_open(path, flags, *args)
+        return real_open(path, flags, *args, **kwargs)
 
     monkeypatch.setattr(vm_check.os, "open", failing_open)
     world = make_world(tmp_path)

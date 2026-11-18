@@ -285,6 +285,8 @@ def _run(
         "PYTHONPATH": str(ROOT / ".ci"),
         "PYTHONDONTWRITEBYTECODE": "1",
         "REDIACC_CI_ROOT": str(root),
+        # The per-test lock directory (conftest `_isolated_lock_dir`), so the deploy's bench lock is never the operator's real one.
+        "XDG_RUNTIME_DIR": os.environ.get("XDG_RUNTIME_DIR", ""),
         "FAKE_CALL_LOG": str(call_log),
         "FAKE_CHILD": child,
         **BASE_ENV,

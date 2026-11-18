@@ -350,7 +350,8 @@ class World:
             [sys.executable, "-m", module, *args],
             capture_output=True,
             text=True,
-            env=env,
+            # A port takes the bench lock; the per-test lock directory (conftest `_isolated_lock_dir`) keeps it off the operator's real one. Set here, not in `env()`, because the golden keys hash the twin's env.
+            env={"XDG_RUNTIME_DIR": os.environ.get("XDG_RUNTIME_DIR", ""), **env},
             input=stdin,
             cwd=str(self.root),
             check=False,

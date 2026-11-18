@@ -12,6 +12,7 @@ THE ADVANCE (agent/plans/PLAN-push-decoupling.md R3). Sections 5 and 6 drive `co
 
 import atexit
 import importlib
+import importlib.util
 import json
 import os
 import pathlib
@@ -166,7 +167,14 @@ control(
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 TSX = ROOT / "node_modules" / ".bin" / "tsx"
 RUNNER_DIR = ROOT / "scripts" / "ci-runner"
-sys.path.insert(0, str(ROOT / ".claude"))
+_PATHS_SPEC = importlib.util.spec_from_file_location(
+    "paths", ROOT / ".ci" / "rediacc_ci" / "paths.py"
+)
+if _PATHS_SPEC is None or _PATHS_SPEC.loader is None:
+    raise SystemExit("%s: .ci/rediacc_ci/paths.py is missing" % __file__)
+_PATHS = importlib.util.module_from_spec(_PATHS_SPEC)
+_PATHS_SPEC.loader.exec_module(_PATHS)
+_PATHS.on_sys_path(ROOT / ".claude")
 GUARD = importlib.import_module("rediacc_hooks.guards.block_unverified_push")
 
 READER_POLICY = json.dumps(
