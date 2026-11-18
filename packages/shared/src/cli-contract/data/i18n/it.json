@@ -2212,6 +2212,7 @@
   "commands.subscription.login.noSubscription": "L'account non ha alcun abbonamento per cui emettere un token CLI.",
   "commands.subscription.login.openBrowser": "Visita questo URL per autorizzare:",
   "commands.subscription.login.optionPasswordStdin": "Accedere senza browser con la password dell'account letta da stdin (richiede REDIACC_LOGIN_EMAIL)",
+  "commands.subscription.login.orgChosen": "Più organizzazioni in questo account: viene usata \"{{org}}\", la prima con un abbonamento attivo.",
   "commands.subscription.login.passwordMissing": "L'accesso senza browser richiede {{field}}.",
   "commands.subscription.login.passwordRefused": "Accesso senza browser rifiutato al passaggio {{step}} (HTTP {{status}}): {{error}}",
   "commands.subscription.login.passwordSignedIn": "Accesso effettuato",

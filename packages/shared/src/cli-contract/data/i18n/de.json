@@ -2212,6 +2212,7 @@
   "commands.subscription.login.noSubscription": "Das Konto hat kein Abonnement, für das ein CLI-Token ausgestellt werden könnte.",
   "commands.subscription.login.openBrowser": "Besuchen Sie diese URL zur Autorisierung:",
   "commands.subscription.login.optionPasswordStdin": "Headless mit dem Kontopasswort anmelden, das von stdin gelesen wird (REDIACC_LOGIN_EMAIL erforderlich)",
+  "commands.subscription.login.orgChosen": "Mehrere Organisationen in diesem Konto: \"{{org}}\" wird verwendet, die erste mit aktivem Abonnement.",
   "commands.subscription.login.passwordMissing": "Für die Headless-Anmeldung wird {{field}} benötigt.",
   "commands.subscription.login.passwordRefused": "Headless-Anmeldung bei {{step}} abgelehnt (HTTP {{status}}): {{error}}",
   "commands.subscription.login.passwordSignedIn": "Angemeldet",

@@ -2212,6 +2212,7 @@
   "commands.subscription.login.noSubscription": "Hesapta CLI belirteci oluşturulabilecek bir abonelik yok.",
   "commands.subscription.login.openBrowser": "Yetkilendirmek için bu URL'yi ziyaret edin:",
   "commands.subscription.login.optionPasswordStdin": "Hesap parolasını stdin'den okuyarak tarayıcısız oturum aç (REDIACC_LOGIN_EMAIL gerekir)",
+  "commands.subscription.login.orgChosen": "Bu hesapta birden fazla kuruluş var: etkin aboneliği olan ilk kuruluş \"{{org}}\" kullanılıyor.",
   "commands.subscription.login.passwordMissing": "Tarayıcısız oturum açmak için {{field}} gerekir.",
   "commands.subscription.login.passwordRefused": "Tarayıcısız oturum açma {{step}} adımında reddedildi (HTTP {{status}}): {{error}}",
   "commands.subscription.login.passwordSignedIn": "Oturum açıldı",

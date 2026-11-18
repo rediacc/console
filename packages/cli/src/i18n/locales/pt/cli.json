@@ -2864,6 +2864,7 @@
         "machinesOverLimit": "  {{count}} vaga(s) de máquina acima do limite.",
         "noSession": "O servidor de contas não retornou nenhuma sessão para o login sem navegador.",
         "noSubscription": "A conta não tem nenhuma assinatura para a qual emitir um token da CLI.",
+        "orgChosen": "Várias organizações nesta conta: usando \"{{org}}\", a primeira com uma assinatura ativa.",
         "openBrowser": "Visite este URL para autorizar:",
         "optionPasswordStdin": "Entrar sem navegador com a senha da conta lida de stdin (exige REDIACC_LOGIN_EMAIL)",
         "passwordMissing": "O login sem navegador precisa de {{field}}.",

@@ -2212,6 +2212,7 @@
   "commands.subscription.login.noSubscription": "لا يملك الحساب اشتراكًا لإصدار رمز CLI له.",
   "commands.subscription.login.openBrowser": "قم بزيارة هذا الرابط للتفويض:",
   "commands.subscription.login.optionPasswordStdin": "تسجيل الدخول بدون متصفح بكلمة مرور الحساب المقروءة من stdin (يلزم REDIACC_LOGIN_EMAIL)",
+  "commands.subscription.login.orgChosen": "يوجد عدة مؤسسات في هذا الحساب: يتم استخدام \"{{org}}\"، أول مؤسسة لديها اشتراك نشط.",
   "commands.subscription.login.passwordMissing": "يحتاج تسجيل الدخول بدون متصفح إلى {{field}}.",
   "commands.subscription.login.passwordRefused": "رُفض تسجيل الدخول بدون متصفح عند الخطوة {{step}} (HTTP {{status}}): {{error}}",
   "commands.subscription.login.passwordSignedIn": "تم تسجيل الدخول",

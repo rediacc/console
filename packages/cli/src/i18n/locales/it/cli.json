@@ -2864,6 +2864,7 @@
         "machinesOverLimit": "  {{count}} slot macchina oltre il limite.",
         "noSession": "Il server degli account non ha restituito alcuna sessione per l'accesso senza browser.",
         "noSubscription": "L'account non ha alcun abbonamento per cui emettere un token CLI.",
+        "orgChosen": "Più organizzazioni in questo account: viene usata \"{{org}}\", la prima con un abbonamento attivo.",
         "openBrowser": "Visita questo URL per autorizzare:",
         "optionPasswordStdin": "Accedere senza browser con la password dell'account letta da stdin (richiede REDIACC_LOGIN_EMAIL)",
         "passwordMissing": "L'accesso senza browser richiede {{field}}.",

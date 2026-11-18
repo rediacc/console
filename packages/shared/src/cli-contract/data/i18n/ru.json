@@ -2212,6 +2212,7 @@
   "commands.subscription.login.noSubscription": "В учётной записи нет подписки, для которой можно выпустить токен CLI.",
   "commands.subscription.login.openBrowser": "Перейдите по этому URL для авторизации:",
   "commands.subscription.login.optionPasswordStdin": "Войти без браузера с паролем учётной записи, прочитанным из stdin (нужен REDIACC_LOGIN_EMAIL)",
+  "commands.subscription.login.orgChosen": "В учётной записи несколько организаций: используется «{{org}}», первая с активной подпиской.",
   "commands.subscription.login.passwordMissing": "Для входа без браузера нужен {{field}}.",
   "commands.subscription.login.passwordRefused": "Вход без браузера отклонён на шаге {{step}} (HTTP {{status}}): {{error}}",
   "commands.subscription.login.passwordSignedIn": "Вход выполнен",

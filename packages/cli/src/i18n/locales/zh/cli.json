@@ -2864,6 +2864,7 @@
         "machinesOverLimit": "  {{count}} 个机器名额超出限制。",
         "noSession": "账户服务器没有为免浏览器登录返回会话。",
         "noSubscription": "该账户没有可用于签发 CLI 令牌的订阅。",
+        "orgChosen": "此账户有多个组织：使用第一个拥有有效订阅的组织“{{org}}”。",
         "openBrowser": "请访问此链接进行授权：",
         "optionPasswordStdin": "使用从 stdin 读取的账户密码免浏览器登录（需要 REDIACC_LOGIN_EMAIL）",
         "passwordMissing": "免浏览器登录需要 {{field}}。",

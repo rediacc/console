@@ -40,7 +40,9 @@ export async function resolvePasswordLoginInput(
   const email = process.env[LOGIN_EMAIL_ENV]?.trim();
   if (!email) {
     throw new ValidationError(
-      t('commands.subscription.login.passwordMissing', { field: LOGIN_EMAIL_ENV })
+      t('commands.subscription.login.passwordMissing', {
+        field: LOGIN_EMAIL_ENV,
+      })
     );
   }
   const password = passwordStdin ? await readStdinValue() : process.env[LOGIN_PASSWORD_ENV];
@@ -107,7 +109,11 @@ async function readReply<T>(resp: Response): Promise<Reply<T>> {
 function refusal(step: string, reply: Reply<{ error?: string; code?: string }>): ValidationError {
   const detail = reply.body.error ?? `HTTP ${reply.status}`;
   return new ValidationError(
-    t('commands.subscription.login.passwordRefused', { step, status: reply.status, error: detail })
+    t('commands.subscription.login.passwordRefused', {
+      step,
+      status: reply.status,
+      error: detail,
+    })
   );
 }
 
@@ -117,13 +123,18 @@ export async function openSession(serverUrl: string, input: PasswordLoginInput):
     requiresTwoFactor?: boolean;
     challengeToken?: string;
     error?: string;
-  }>(serverUrl, '/auth/login', { email: input.email, password: input.password });
+  }>(serverUrl, '/auth/login', {
+    email: input.email,
+    password: input.password,
+  });
   if (login.status >= 400) throw refusal('login', login);
 
   if (login.body.requiresTwoFactor) {
     if (!input.totp) {
       throw new ValidationError(
-        t('commands.subscription.login.totpRequired', { field: LOGIN_TOTP_ENV })
+        t('commands.subscription.login.totpRequired', {
+          field: LOGIN_TOTP_ENV,
+        })
       );
     }
     const verify = await post<{ error?: string }>(serverUrl, '/auth/2fa/verify', {
@@ -172,6 +183,47 @@ async function mintWithScopeFallback(
   return minted;
 }
 
+interface MeReply {
+  subscription?: { id?: string; status?: string } | null;
+  activeTeam?: { id?: string } | null;
+  orgSelectionRequired?: boolean;
+  error?: string;
+}
+
+const orgQuery = (orgId?: string) => (orgId ? `?orgId=${encodeURIComponent(orgId)}` : '');
+
+/**
+ * An account in several orgs gets `orgSelectionRequired` from /portal/me. GET /portal/org/list names
+ * the orgs; the first whose /portal/me subscription is `active` wins, and the choice is announced.
+ */
+async function pickActiveOrg(
+  serverUrl: string,
+  cookie: string,
+  meOf: (orgId: string) => Promise<Reply<MeReply>>
+): Promise<{ orgId: string; me: Reply<MeReply> } | undefined> {
+  const list = await readReply<{
+    organizations?: { id: string; name?: string }[];
+    error?: string;
+  }>(
+    await fetch(`${serverUrl}${API}/portal/org/list`, {
+      headers: { Cookie: cookie },
+    })
+  );
+  if (list.status >= 400) throw refusal('orgs', list);
+  for (const org of list.body.organizations ?? []) {
+    const me = await meOf(org.id);
+    if (me.status < 400 && me.body.subscription?.id && me.body.subscription.status === 'active') {
+      outputService.info(
+        t('commands.subscription.login.orgChosen', {
+          org: org.name ?? org.id.slice(0, 8),
+        })
+      );
+      return { orgId: org.id, me };
+    }
+  }
+  return undefined;
+}
+
 /**
  * Mint the CLI api token the way a device-code approval does: a session cookie, the primary
  * subscription from /portal/me, then POST /api-tokens with the device flow's scopes. A plain member
@@ -183,12 +235,20 @@ export async function loginWithPassword(
 ): Promise<string> {
   const cookie = await openSession(serverUrl, input);
 
-  const meResp = await readReply<{
-    subscription?: { id?: string } | null;
-    activeTeam?: { id?: string } | null;
-    error?: string;
-  }>(await fetch(`${serverUrl}${API}/portal/me`, { headers: { Cookie: cookie } }));
+  const meOf = async (named?: string) =>
+    readReply<MeReply>(
+      await fetch(`${serverUrl}${API}/portal/me${orgQuery(named)}`, {
+        headers: { Cookie: cookie },
+      })
+    );
+  let meResp = await meOf();
   if (meResp.status >= 400) throw refusal('session', meResp);
+  let orgId: string | undefined;
+  if (meResp.body.orgSelectionRequired) {
+    const picked = await pickActiveOrg(serverUrl, cookie, meOf);
+    if (!picked) throw new ValidationError(t('commands.subscription.login.noSubscription'));
+    ({ orgId, me: meResp } = picked);
+  }
   const subscriptionId = meResp.body.subscription?.id;
   if (!subscriptionId) throw new ValidationError(t('commands.subscription.login.noSubscription'));
   const teamId = meResp.body.activeTeam?.id;
@@ -196,8 +256,13 @@ export async function loginWithPassword(
   const mint = (scopes: readonly string[]) =>
     post<MintReply>(
       serverUrl,
-      '/api-tokens',
-      { subscriptionId, name: 'CLI (headless login)', scopes, ...(teamId ? { teamId } : {}) },
+      `/api-tokens${orgQuery(orgId)}`,
+      {
+        subscriptionId,
+        name: 'CLI (headless login)',
+        scopes,
+        ...(teamId ? { teamId } : {}),
+      },
       cookie
     );
   const minted = await mintWithScopeFallback(mint, serverUrl);

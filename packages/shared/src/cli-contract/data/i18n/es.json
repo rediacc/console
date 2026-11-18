@@ -2212,6 +2212,7 @@
   "commands.subscription.login.noSubscription": "La cuenta no tiene ninguna suscripción para la que emitir un token de CLI.",
   "commands.subscription.login.openBrowser": "Visite esta URL para autorizar:",
   "commands.subscription.login.optionPasswordStdin": "Iniciar sesión sin navegador con la contraseña de la cuenta leída desde stdin (requiere REDIACC_LOGIN_EMAIL)",
+  "commands.subscription.login.orgChosen": "Varias organizaciones en esta cuenta: se usa \"{{org}}\", la primera con una suscripción activa.",
   "commands.subscription.login.passwordMissing": "El inicio de sesión sin navegador necesita {{field}}.",
   "commands.subscription.login.passwordRefused": "Inicio de sesión sin navegador rechazado en {{step}} (HTTP {{status}}): {{error}}",
   "commands.subscription.login.passwordSignedIn": "Sesión iniciada",

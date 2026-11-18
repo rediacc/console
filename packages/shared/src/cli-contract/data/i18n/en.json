@@ -2212,6 +2212,7 @@
   "commands.subscription.login.noSubscription": "The account has no subscription to mint a CLI token for.",
   "commands.subscription.login.openBrowser": "Visit this URL to authorize:",
   "commands.subscription.login.optionPasswordStdin": "Sign in headlessly with the account password read from stdin (REDIACC_LOGIN_EMAIL required)",
+  "commands.subscription.login.orgChosen": "Several organizations on this account: using \"{{org}}\", the first with an active subscription.",
   "commands.subscription.login.passwordMissing": "Headless login needs {{field}}.",
   "commands.subscription.login.passwordRefused": "Headless login refused at {{step}} (HTTP {{status}}): {{error}}",
   "commands.subscription.login.passwordSignedIn": "Signed in",

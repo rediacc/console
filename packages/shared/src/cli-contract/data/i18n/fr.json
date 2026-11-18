@@ -2212,6 +2212,7 @@
   "commands.subscription.login.noSubscription": "Le compte n'a aucun abonnement pour lequel émettre un jeton CLI.",
   "commands.subscription.login.openBrowser": "Visitez cette URL pour autoriser :",
   "commands.subscription.login.optionPasswordStdin": "Se connecter sans navigateur avec le mot de passe du compte lu sur stdin (REDIACC_LOGIN_EMAIL requis)",
+  "commands.subscription.login.orgChosen": "Plusieurs organisations sur ce compte : \"{{org}}\" est utilisée, la première avec un abonnement actif.",
   "commands.subscription.login.passwordMissing": "La connexion sans navigateur nécessite {{field}}.",
   "commands.subscription.login.passwordRefused": "Connexion sans navigateur refusée à l'étape {{step}} (HTTP {{status}}) : {{error}}",
   "commands.subscription.login.passwordSignedIn": "Connecté",

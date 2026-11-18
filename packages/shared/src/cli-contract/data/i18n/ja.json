@@ -2212,6 +2212,7 @@
   "commands.subscription.login.noSubscription": "CLI トークンを発行できるサブスクリプションがアカウントにありません。",
   "commands.subscription.login.openBrowser": "このURLにアクセスして認証してください：",
   "commands.subscription.login.optionPasswordStdin": "stdin から読み取ったアカウントのパスワードでブラウザなしでサインインします (REDIACC_LOGIN_EMAIL が必要)",
+  "commands.subscription.login.orgChosen": "このアカウントには複数の組織があります。有効なサブスクリプションを持つ最初の組織「{{org}}」を使用します。",
   "commands.subscription.login.passwordMissing": "ブラウザなしのサインインには {{field}} が必要です。",
   "commands.subscription.login.passwordRefused": "ブラウザなしのサインインが {{step}} で拒否されました (HTTP {{status}}): {{error}}",
   "commands.subscription.login.passwordSignedIn": "サインインしました",

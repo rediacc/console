@@ -2864,6 +2864,7 @@
         "machinesOverLimit": "  {{count}} emplacement(s) de machine dépassent la limite.",
         "noSession": "Le serveur de comptes n'a renvoyé aucune session pour la connexion sans navigateur.",
         "noSubscription": "Le compte n'a aucun abonnement pour lequel émettre un jeton CLI.",
+        "orgChosen": "Plusieurs organisations sur ce compte : \"{{org}}\" est utilisée, la première avec un abonnement actif.",
         "openBrowser": "Visitez cette URL pour autoriser :",
         "optionPasswordStdin": "Se connecter sans navigateur avec le mot de passe du compte lu sur stdin (REDIACC_LOGIN_EMAIL requis)",
         "passwordMissing": "La connexion sans navigateur nécessite {{field}}.",

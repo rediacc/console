@@ -2864,6 +2864,7 @@
         "machinesOverLimit": "  {{count}} Maschinen-Slot(s) sind über dem Limit.",
         "noSession": "Der Kontoserver hat für die Headless-Anmeldung keine Sitzung zurückgegeben.",
         "noSubscription": "Das Konto hat kein Abonnement, für das ein CLI-Token ausgestellt werden könnte.",
+        "orgChosen": "Mehrere Organisationen in diesem Konto: \"{{org}}\" wird verwendet, die erste mit aktivem Abonnement.",
         "openBrowser": "Besuchen Sie diese URL zur Autorisierung:",
         "optionPasswordStdin": "Headless mit dem Kontopasswort anmelden, das von stdin gelesen wird (REDIACC_LOGIN_EMAIL erforderlich)",
         "passwordMissing": "Für die Headless-Anmeldung wird {{field}} benötigt.",

@@ -2864,6 +2864,7 @@
         "machinesOverLimit": "  {{count}} puesto(s) de máquina superan el límite.",
         "noSession": "El servidor de cuentas no devolvió ninguna sesión para el inicio de sesión sin navegador.",
         "noSubscription": "La cuenta no tiene ninguna suscripción para la que emitir un token de CLI.",
+        "orgChosen": "Varias organizaciones en esta cuenta: se usa \"{{org}}\", la primera con una suscripción activa.",
         "openBrowser": "Visite esta URL para autorizar:",
         "optionPasswordStdin": "Iniciar sesión sin navegador con la contraseña de la cuenta leída desde stdin (requiere REDIACC_LOGIN_EMAIL)",
         "passwordMissing": "El inicio de sesión sin navegador necesita {{field}}.",

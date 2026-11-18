@@ -2212,6 +2212,7 @@
   "commands.subscription.login.noSubscription": "CLI 토큰을 발급할 구독이 계정에 없습니다.",
   "commands.subscription.login.openBrowser": "인증을 위해 이 URL을 방문하세요:",
   "commands.subscription.login.optionPasswordStdin": "stdin에서 읽은 계정 비밀번호로 브라우저 없이 로그인합니다 (REDIACC_LOGIN_EMAIL 필요)",
+  "commands.subscription.login.orgChosen": "이 계정에는 조직이 여러 개 있습니다. 활성 구독이 있는 첫 번째 조직 \"{{org}}\"을(를) 사용합니다.",
   "commands.subscription.login.passwordMissing": "브라우저 없는 로그인에는 {{field}}이(가) 필요합니다.",
   "commands.subscription.login.passwordRefused": "브라우저 없는 로그인이 {{step}} 단계에서 거부되었습니다 (HTTP {{status}}): {{error}}",
   "commands.subscription.login.passwordSignedIn": "로그인했습니다",

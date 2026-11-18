@@ -2864,6 +2864,7 @@
         "machinesOverLimit": "  {{count}} masinakoht(a) ületab limiiti.",
         "noSession": "Kontoserver ei tagastanud brauserita sisselogimiseks seanssi.",
         "noSubscription": "Kontol pole tellimust, mille jaoks CLI tokenit välja anda.",
+        "orgChosen": "Kontol on mitu organisatsiooni: kasutatakse \"{{org}}\", esimest aktiivse tellimusega.",
         "openBrowser": "Autoriseerimiseks külasta seda URL-i:",
         "optionPasswordStdin": "Logi sisse ilma brauserita, lugedes konto parooli stdin-ist (vajalik on REDIACC_LOGIN_EMAIL)",
         "passwordMissing": "Brauserita sisselogimiseks on vaja väärtust {{field}}.",

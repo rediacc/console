@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2941,
-    "sourceCommit": "a12e0c9bd6f51007946fb60e17f02c96b9ba7f18"
+    "keyCount": 2942,
+    "sourceCommit": "47c9251ad3e08073b0efc51094c10fa226b90e2f"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2220,6 +2220,7 @@
     "commands.subscription.login.noSubscription": "8fee29e2",
     "commands.subscription.login.openBrowser": "06885e18",
     "commands.subscription.login.optionPasswordStdin": "fb476428",
+    "commands.subscription.login.orgChosen": "f1fcadaf",
     "commands.subscription.login.passwordMissing": "9d1ea4fd",
     "commands.subscription.login.passwordRefused": "81e8c312",
     "commands.subscription.login.passwordSignedIn": "dd738cf4",

@@ -2864,6 +2864,7 @@
         "machinesOverLimit": "  {{count}} makine slotu sınırın üzerinde.",
         "noSession": "Hesap sunucusu tarayıcısız oturum açma için oturum döndürmedi.",
         "noSubscription": "Hesapta CLI belirteci oluşturulabilecek bir abonelik yok.",
+        "orgChosen": "Bu hesapta birden fazla kuruluş var: etkin aboneliği olan ilk kuruluş \"{{org}}\" kullanılıyor.",
         "openBrowser": "Yetkilendirmek için bu URL'yi ziyaret edin:",
         "optionPasswordStdin": "Hesap parolasını stdin'den okuyarak tarayıcısız oturum aç (REDIACC_LOGIN_EMAIL gerekir)",
         "passwordMissing": "Tarayıcısız oturum açmak için {{field}} gerekir.",
