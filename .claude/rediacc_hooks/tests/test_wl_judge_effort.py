@@ -143,8 +143,8 @@ def judge(tmp_path, monkeypatch):
     script = bindir / "claude"
     script.write_text(
         "#!/usr/bin/env python3\nimport json, sys\n"
-        "a = sys.argv[1:]; a.insert(a.index('-p') + 1, sys.stdin.read())  # the real CLI reads the prompt from stdin\n"
-        "open(%r, 'w').write(json.dumps(a))\n"
+        "a = sys.argv[1:]; p = sys.stdin.read()  # the real CLI reads the prompt from stdin\n"
+        "open(%r, 'w').write(json.dumps({'argv': a, 'stdin': p}))\n"
         "print(open(%r).read())\n" % (str(seen), str(reply)),
         encoding="utf-8",
     )
@@ -157,9 +157,12 @@ def judge(tmp_path, monkeypatch):
 
     def argv():
         got = json.loads(seen.read_text(encoding="utf-8"))
-        return got[got.index("-p") + 1], json.loads(got[got.index("--json-schema") + 1])
+        return got["stdin"], json.loads(got["argv"][got["argv"].index("--json-schema") + 1])
 
-    return types.SimpleNamespace(answer=answer, argv=argv)
+    def raw():
+        return json.loads(seen.read_text(encoding="utf-8"))
+
+    return types.SimpleNamespace(answer=answer, argv=argv, raw=raw)
 
 
 def ask(level):
@@ -183,6 +186,17 @@ def test_run_judge_at_smart_asks_the_basis_and_settles(judge):
     assert "basis" in schema["required"]
     assert verdict["verdict"] == "stop", verdict
     assert verdict["effort_advised"][0][0] == "out-of-sync"
+
+
+def test_run_judge_sends_the_prompt_on_stdin_and_never_on_argv(judge):
+    """The regression 28fe750138 fixed: a prompt on argv fails with E2BIG once it is long."""
+    judge.answer(dict(REPORT_ONLY))
+    verdict, err = ask("smart")
+    assert err is None, err
+    got = judge.raw()
+    assert "BASIS." in got["stdin"]
+    assert not any("BASIS." in a for a in got["argv"]), got["argv"]
+    assert max(len(a) for a in got["argv"]) < len(got["stdin"])
 
 
 def test_run_judge_at_high_asks_no_basis_and_blocks(judge):

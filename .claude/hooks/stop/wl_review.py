@@ -2291,7 +2291,6 @@ def claude_reviewer(prompt, cfg, log=print):
     argv = [
         resolve_claude(),
         "-p",
-        prompt,
         "--output-format",
         "json",
         "--json-schema",
@@ -2306,7 +2305,10 @@ def claude_reviewer(prompt, cfg, log=print):
     import wl_judge
 
     def _call():
-        return wl_proc.run(argv, timeout=int(cfg["timeout_s"]), env=env, cwd=str(workdir))
+        # The prompt goes on stdin: on argv a large one fails with E2BIG ("[Errno 7] Argument list too long").
+        return wl_proc.run(
+            argv, input_text=prompt, timeout=int(cfg["timeout_s"]), env=env, cwd=str(workdir)
+        )
 
     why = ""
     spent = {"usd": 0.0, "calls": 0, "seconds": 0.0, "known": False}

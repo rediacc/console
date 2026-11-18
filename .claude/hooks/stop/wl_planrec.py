@@ -1608,7 +1608,6 @@ def ask_why(plan_text):
             [
                 exe,
                 "-p",
-                prompt,
                 "--output-format",
                 "json",
                 "--json-schema",
@@ -1618,6 +1617,8 @@ def ask_why(plan_text):
                 "--max-budget-usd",
                 wl_judge.JUDGE_BUDGET_USD,
             ],
+            # The prompt goes on stdin: on argv a large one fails with E2BIG ("[Errno 7] Argument list too long").
+            input_text=prompt,
             timeout=wl_judge.JUDGE_TIMEOUT_S,
             env=env,
         )

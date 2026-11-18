@@ -39,7 +39,7 @@ if os.environ.get("STOPHOOK_CHILD") != "1" or os.environ.get("COMMIT_REVIEW_CHIL
     sys.exit(3)
 if os.path.realpath(os.getcwd()).startswith(repo):
     sys.exit(3)
-prompt = sys.argv[sys.argv.index("-p") + 1] if "-p" in sys.argv else ""
+prompt = sys.stdin.read()  # the real CLI reads the prompt from stdin
 if "COMMIT MESSAGE" not in prompt or "DIFF" not in prompt:
     sys.exit(4)
 time.sleep(float(os.environ.get("STUB_SLEEP", "0")))
