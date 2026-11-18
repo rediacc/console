@@ -31,7 +31,7 @@ time.sleep(60)
 """
 
 
-class Reached(Exception):
+class ReachedError(Exception):
     """The step after the lock ran."""
 
 
@@ -47,7 +47,9 @@ def runtime(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib.
 
 class Holder:
     def __init__(self, resource: str) -> None:
-        self.proc = subprocess.Popen([sys.executable, "-c", HOLD_SCRIPT, resource], stdout=subprocess.PIPE, text=True)
+        self.proc = subprocess.Popen(
+            [sys.executable, "-c", HOLD_SCRIPT, resource], stdout=subprocess.PIPE, text=True
+        )
         assert self.proc.stdout is not None
         assert self.proc.stdout.readline().strip() == "held"
 
@@ -63,7 +65,7 @@ class Holder:
 
 
 @pytest.fixture
-def hold(runtime: pathlib.Path):
+def hold():
     holders: list[Holder] = []
 
     def start(resource: str) -> Holder:
@@ -117,7 +119,9 @@ def test_deploy_bench_seed_also_waits(hold, monkeypatch, capsys) -> None:
     holder = hold("bench-eu")
     reached: list[str] = []
     _deploy_bench_world(monkeypatch, reached)
-    monkeypatch.setattr(deploy_bench, "seed_root", lambda *_a, **_k: reached.append("seed") or "exists")
+    monkeypatch.setattr(
+        deploy_bench, "seed_root", lambda *_a, **_k: reached.append("seed") or "exists"
+    )
     assert deploy_bench.main(["--seed-root"]) == 1
     _names_holder(capsys.readouterr().err, holder)
     assert reached == []
@@ -132,7 +136,7 @@ def test_reset_bench_waits_on_its_region_and_names_the_holder(hold, monkeypatch,
     _world(monkeypatch, [], asked)
 
     def resolve(_account: str) -> Any:
-        raise Reached
+        raise ReachedError
 
     monkeypatch.setattr(reset_bench.cf_auth, "resolve", resolve)
     assert reset_bench.main(["--region", "us", "--yes"]) == 1
@@ -159,7 +163,8 @@ def proxy_root(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathl
     return root
 
 
-def test_proxy_bench_deploy_waits_and_names_the_holder(hold, proxy_root, monkeypatch, capsys) -> None:
+@pytest.mark.usefixtures("proxy_root")
+def test_proxy_bench_deploy_waits_and_names_the_holder(hold, monkeypatch, capsys) -> None:
     holder = hold("bench-eu")
     monkeypatch.setenv("REDIACC_BWS_PROFILES", deploy_proxy.BENCH_PROFILE)
     assert deploy_proxy.main(["--target", "bench"]) == 1
@@ -169,7 +174,8 @@ def test_proxy_bench_deploy_waits_and_names_the_holder(hold, proxy_root, monkeyp
     assert deploy_proxy.MISSING_AUTH_MSG not in err
 
 
-def test_proxy_bench_deploy_passes_a_free_lock(runtime, proxy_root, monkeypatch, capsys) -> None:
+@pytest.mark.usefixtures("runtime", "proxy_root")
+def test_proxy_bench_deploy_passes_a_free_lock(monkeypatch, capsys) -> None:
     """Control: with the lock free the same run gets past it to the credential check."""
     monkeypatch.setenv("REDIACC_BWS_PROFILES", deploy_proxy.BENCH_PROFILE)
     assert deploy_proxy.main(["--target", "bench"]) == 1
@@ -188,7 +194,8 @@ def _record_bench_held(monkeypatch: pytest.MonkeyPatch) -> list[object]:
     return taken
 
 
-def test_proxy_stable_deploy_takes_no_bench_lock(hold, proxy_root, monkeypatch, capsys) -> None:
+@pytest.mark.usefixtures("proxy_root")
+def test_proxy_stable_deploy_takes_no_bench_lock(hold, monkeypatch, capsys) -> None:
     hold("bench-eu")
     taken = _record_bench_held(monkeypatch)
     monkeypatch.setenv("REDIACC_BWS_PROFILES", deploy_proxy.PROFILE)
@@ -200,7 +207,7 @@ def test_proxy_stable_deploy_takes_no_bench_lock(hold, proxy_root, monkeypatch, 
 def test_proxy_bench_dry_run_takes_no_bench_lock(hold, proxy_root, monkeypatch) -> None:
     hold("bench-eu")
     taken = _record_bench_held(monkeypatch)
-    monkeypatch.setattr(deploy_proxy, "_run", lambda _argv, *, env=None: 0)
+    monkeypatch.setattr(deploy_proxy, "_run", lambda _argv, **_kw: 0)
     monkeypatch.chdir(proxy_root)
     assert deploy_proxy.main(["--target", "bench", "--dry-run"]) == 0
     assert taken == []
@@ -215,24 +222,27 @@ class FakeLab:
 
     def __getattr__(self, name: str) -> Any:
         self.calls.append(name)
-        raise Reached(name)
+        raise ReachedError(name)
 
 
 @pytest.mark.parametrize("region", ["eu", "us"])
-def test_bench_proof_waits_on_either_region_it_acts_on(region: str, hold, monkeypatch, capsys) -> None:
+def test_bench_proof_waits_on_either_region_it_acts_on(
+    region: str, hold, monkeypatch, capsys
+) -> None:
     holder = hold("bench-%s" % region)
     ran: list[str] = []
-    monkeypatch.setattr(proof, "run_verb", lambda verb, _lab, *, bench: ran.append(verb) or 0)
+    monkeypatch.setattr(proof, "run_verb", lambda verb, _lab, **_kw: ran.append(verb) or 0)
     assert proof.main(["signer", "--bench"], lab=cast("proof.Lab", FakeLab())) == 1
     _names_holder(capsys.readouterr().err, holder)
     assert ran == []
 
 
-def test_bench_proof_runs_under_both_locks(runtime, monkeypatch) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_bench_proof_runs_under_both_locks(monkeypatch) -> None:
     """Control: with both free the verb runs, and holds both regions while it does."""
     seen: list[str] = []
 
-    def run_verb(verb: str, _lab: Any, *, bench: bool) -> int:
+    def run_verb(verb: str, _lab: Any, **_kw: object) -> int:
         for region in ("eu", "us"):
             probe = resource_lock.ResourceLock("bench-%s" % region, say=lambda _l: None)
             with pytest.raises(resource_lock.ResourceBusyError):
@@ -248,6 +258,6 @@ def test_bench_proof_runs_under_both_locks(runtime, monkeypatch) -> None:
 def test_production_proof_takes_no_bench_lock(hold, monkeypatch) -> None:
     hold("bench-eu")
     taken = _record_bench_held(monkeypatch)
-    monkeypatch.setattr(proof, "run_verb", lambda verb, _lab, *, bench: 0)
+    monkeypatch.setattr(proof, "run_verb", lambda *_a, **_kw: 0)
     assert proof.main(["keys"], lab=cast("proof.Lab", FakeLab())) == 0
     assert taken == []

@@ -61,7 +61,8 @@ class _Holder:
             self.proc.stdout.close()
 
 
-def test_second_holder_waits_and_names_the_first(runtime: pathlib.Path) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_second_holder_waits_and_names_the_first() -> None:
     holder = _Holder("fleet", "e2e-local reset")
     said: list[str] = []
     try:
@@ -75,12 +76,14 @@ def test_second_holder_waits_and_names_the_first(runtime: pathlib.Path) -> None:
         assert "purpose e2e-local reset" in message
         assert "session holder01" in message
         assert "since 20" in message
-        assert said and "pid %d" % holder.pid in said[0]
+        assert said
+        assert "pid %d" % holder.pid in said[0]
     finally:
         holder.stop()
 
 
-def test_waiter_takes_the_lock_once_the_holder_ends(runtime: pathlib.Path) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_waiter_takes_the_lock_once_the_holder_ends() -> None:
     holder = _Holder("bench-eu", "deploy", hold_s=0.6)
     try:
         lock = resource_lock.ResourceLock("bench-eu", say=lambda _line: None)
@@ -92,7 +95,8 @@ def test_waiter_takes_the_lock_once_the_holder_ends(runtime: pathlib.Path) -> No
         holder.stop()
 
 
-def test_two_resources_do_not_block_each_other(runtime: pathlib.Path) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_two_resources_do_not_block_each_other() -> None:
     holder = _Holder("bench-eu", "deploy")
     try:
         with resource_lock.held("bench-us", purpose="reset", wait_s=0.0) as lock:
@@ -116,12 +120,14 @@ def _wrapper(*args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_wrapper_returns_the_child_exit_code(runtime: pathlib.Path) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_wrapper_returns_the_child_exit_code() -> None:
     assert _wrapper("--resource", "fleet", "--", "sh", "-c", "exit 7").returncode == 7
     assert _wrapper("--resource", "fleet", "--", "true").returncode == 0
 
 
-def test_wrapper_holds_the_lock_for_the_child(runtime: pathlib.Path) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_wrapper_holds_the_lock_for_the_child() -> None:
     path = resource_lock.lock_path("fleet")
     probe = (
         "import fcntl,os,sys; fd=os.open(%r, os.O_RDONLY)\n"
@@ -132,14 +138,16 @@ def test_wrapper_holds_the_lock_for_the_child(runtime: pathlib.Path) -> None:
     assert done.returncode == 9, done.stderr
 
 
-def test_wrapper_frees_the_lock_when_the_child_is_killed(runtime: pathlib.Path) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_wrapper_frees_the_lock_when_the_child_is_killed() -> None:
     done = _wrapper("--resource", "fleet", "--", "sh", "-c", "kill -9 $$")
     assert done.returncode == 128 + 9
     with resource_lock.held("fleet", purpose="after", wait_s=0.0):
         pass
 
 
-def test_wrapper_busy_exits_75_naming_the_holder_before_the_child(runtime: pathlib.Path, tmp_path: pathlib.Path) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_wrapper_busy_exits_75_naming_the_holder_before_the_child(tmp_path: pathlib.Path) -> None:
     marker = tmp_path / "ran"
     holder = _Holder("fleet", "vm:check")
     try:
@@ -151,7 +159,8 @@ def test_wrapper_busy_exits_75_naming_the_holder_before_the_child(runtime: pathl
     assert not marker.exists()
 
 
-def test_fleet_is_the_vm_check_lock_file(runtime: pathlib.Path, tmp_path: pathlib.Path) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_fleet_is_the_vm_check_lock_file(tmp_path: pathlib.Path) -> None:
     assert resource_lock.lock_path("fleet") == vm_check.lock_path()
     # The /tmp fallback agrees too, when no runtime directory is this user's.
     env = {"XDG_RUNTIME_DIR": str(tmp_path / "missing")}
@@ -160,15 +169,20 @@ def test_fleet_is_the_vm_check_lock_file(runtime: pathlib.Path, tmp_path: pathli
     assert resource_lock.lock_path("bench-eu").parent == vm_check.lock_path().parent
 
 
-def test_vm_check_holder_reads_in_the_module(runtime: pathlib.Path) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_vm_check_holder_reads_in_the_module() -> None:
     """A payload vm:check's own Lock wrote (no purpose key) still names its pid."""
     path = vm_check.lock_path()
     path.write_text('{"pid": 4242, "session": "abcd1234", "since": "2026-11-18T10:00:00Z"}')
-    assert resource_lock.ResourceLock("fleet").holder() == "pid 4242, purpose -, session abcd1234, since 2026-11-18T10:00:00Z"
+    assert (
+        resource_lock.ResourceLock("fleet").holder()
+        == "pid 4242, purpose -, session abcd1234, since 2026-11-18T10:00:00Z"
+    )
 
 
-def test_bad_resource_name_is_refused(runtime: pathlib.Path) -> None:
-    with pytest.raises(ValueError):
+@pytest.mark.usefixtures("runtime")
+def test_bad_resource_name_is_refused() -> None:
+    with pytest.raises(ValueError, match="lower-case letters"):
         resource_lock.lock_path("../etc")
     assert resource_lock.bench_resource("EU") == "bench-eu"
 
@@ -194,8 +208,11 @@ lock.release()
 """
 
 
-def test_a_descendant_of_the_holder_enters_nested(runtime: pathlib.Path) -> None:
-    done = subprocess.run([sys.executable, "-c", NEST_SCRIPT], capture_output=True, text=True, timeout=30, check=False)
+@pytest.mark.usefixtures("runtime")
+def test_a_descendant_of_the_holder_enters_nested() -> None:
+    done = subprocess.run(
+        [sys.executable, "-c", NEST_SCRIPT], capture_output=True, text=True, timeout=30, check=False
+    )
     assert done.returncode == 0, done.stderr
     # The descendant enters as nested; the control with nesting off is refused like any other waiter.
     assert done.stdout.split() == ["nested", "busy"]
@@ -203,4 +220,5 @@ def test_a_descendant_of_the_holder_enters_nested(runtime: pathlib.Path) -> None
 
 def test_ancestors_names_the_parent_chain() -> None:
     chain = resource_lock.ancestors()
-    assert chain and chain[0] == os.getppid()
+    assert chain
+    assert chain[0] == os.getppid()

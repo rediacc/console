@@ -121,7 +121,11 @@ def parent_pid(pid: int) -> int:
         return int(stat.rsplit(")", 1)[1].split()[1])
     with contextlib.suppress(OSError, ValueError, subprocess.SubprocessError):
         out = subprocess.run(
-            ["ps", "-o", "ppid=", "-p", str(pid)], capture_output=True, text=True, timeout=5, check=False
+            ["ps", "-o", "ppid=", "-p", str(pid)],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
         ).stdout
         return int(out.strip() or 0)
     return 0
@@ -164,7 +168,9 @@ class ResourceLock:
         self.nested = False
         self._clock = clock
         self._sleep = sleep
-        self._say = say if say is not None else (lambda line: print(line, file=sys.stderr, flush=True))
+        self._say = (
+            say if say is not None else (lambda line: print(line, file=sys.stderr, flush=True))
+        )
 
     def holder(self) -> str:
         """The current payload, read without taking the lock."""
@@ -265,7 +271,9 @@ def env_wait(name: str, environ: Mapping[str, str] | None = None) -> float:
 @contextlib.contextmanager
 def bench_held(regions: str | Sequence[str], purpose: str) -> Iterator[list[ResourceLock]]:
     """Hold `bench-<region>` for each region (PLAN-push-decoupling.md D1.6), taken in sorted order so two multi-region holders cannot deadlock. `BENCH_LOCK_WAIT_S` bounds each wait; ResourceBusyError names the holder."""
-    names = sorted({bench_resource(r) for r in ([regions] if isinstance(regions, str) else regions)})
+    names = sorted(
+        {bench_resource(r) for r in ([regions] if isinstance(regions, str) else regions)}
+    )
     wait_s = env_wait("BENCH_LOCK_WAIT_S")
     with contextlib.ExitStack() as stack:
         yield [stack.enter_context(held(name, purpose=purpose, wait_s=wait_s)) for name in names]
@@ -305,7 +313,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="verb", required=True)
     run_p = sub.add_parser("run", help="run a command while holding a named resource")
     run_p.add_argument("--resource", required=True)
-    run_p.add_argument("--wait", type=float, default=None, help="seconds to wait (default %ds, or $RESOURCE_LOCK_WAIT_S)" % DEFAULT_WAIT_S)
+    run_p.add_argument(
+        "--wait",
+        type=float,
+        default=None,
+        help="seconds to wait (default %ds, or $RESOURCE_LOCK_WAIT_S)" % DEFAULT_WAIT_S,
+    )
     run_p.add_argument("--purpose", default="")
     run_p.add_argument("cmd", nargs=argparse.REMAINDER)
     path_p = sub.add_parser("path", help="print a resource's lock file")

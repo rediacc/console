@@ -45,7 +45,7 @@ def runtime(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib.
 
 
 @pytest.fixture
-def holder(runtime: pathlib.Path):
+def holder():
     proc = subprocess.Popen([sys.executable, "-c", HOLD_SCRIPT], stdout=subprocess.PIPE, text=True)
     assert proc.stdout is not None
     assert proc.stdout.readline().strip() == "held"
@@ -97,7 +97,8 @@ def _probe_wrapper(tmp_path: pathlib.Path) -> pathlib.Path:
     end = text.index("\nfi\n", marker) + len("\nfi\n")
     probe = (
         'echo "CLI $* locked=${RDC_FLEET_LOCKED:-}"\n'
-        'PYTHONPATH="%s" python3 -m rediacc_ci.core.resource_lock holder --resource fleet\n' % CI_ROOT
+        'PYTHONPATH="%s" python3 -m rediacc_ci.core.resource_lock holder --resource fleet\n'
+        % CI_ROOT
     )
     root = tmp_path / "root"
     root.mkdir()
@@ -108,7 +109,9 @@ def _probe_wrapper(tmp_path: pathlib.Path) -> pathlib.Path:
     return wrapper
 
 
-def test_rdc_ops_down_runs_under_the_lock_when_free(runtime: pathlib.Path, tmp_path: pathlib.Path) -> None:
+def test_rdc_ops_down_runs_under_the_lock_when_free(
+    runtime: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
     wrapper = _probe_wrapper(tmp_path)
     done = subprocess.run(
         ["bash", str(wrapper), "--dev", "ops", "down"],
@@ -124,7 +127,8 @@ def test_rdc_ops_down_runs_under_the_lock_when_free(runtime: pathlib.Path, tmp_p
     assert "purpose rdc.sh ops down" in lines[1]
 
 
-def test_rdc_other_verbs_take_no_lock(runtime: pathlib.Path, tmp_path: pathlib.Path, holder: subprocess.Popen) -> None:
+@pytest.mark.usefixtures("holder")
+def test_rdc_other_verbs_take_no_lock(runtime: pathlib.Path, tmp_path: pathlib.Path) -> None:
     """Control: `ops status` and a `--config ops` value are not `ops up|down`, so they pass a held lock untouched."""
     wrapper = _probe_wrapper(tmp_path)
     for argv in (["ops", "status"], ["--config", "ops", "up"], ["repo", "up", "ops"]):
@@ -143,11 +147,9 @@ def test_rdc_other_verbs_take_no_lock(runtime: pathlib.Path, tmp_path: pathlib.P
 # --------------------------------------------------------------------------- the drill harness
 
 
+@pytest.mark.usefixtures("runtime")
 def test_drill_hold_fleet_refuses_a_held_fleet_naming_the_holder(
-    runtime: pathlib.Path,
-    holder: subprocess.Popen,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
+    holder: subprocess.Popen, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.setenv("DRILL_FLEET_WAIT_S", "2")
     drill = lib.Drill("fleet-test")
@@ -160,7 +162,8 @@ def test_drill_hold_fleet_refuses_a_held_fleet_naming_the_holder(
     assert drill.fleet_lock is None
 
 
-def test_drill_hold_fleet_holds_until_teardown(runtime: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_drill_hold_fleet_holds_until_teardown(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("DRILL_FLEET_WAIT_S", "0")
     drill = lib.Drill("fleet-test")
     assert drill.hold_fleet("upload renet") is True
@@ -188,11 +191,19 @@ def _license_fake(calls: list[str]) -> Any:
     return fake
 
 
-PREFLIGHTS = ["announce_cost", "preflight_tools", "preflight_vms", "preflight_ssh", "preflight_ceph", "preflight_agent_overrides"]
+PREFLIGHTS = [
+    "announce_cost",
+    "preflight_tools",
+    "preflight_vms",
+    "preflight_ssh",
+    "preflight_ceph",
+    "preflight_agent_overrides",
+]
 
 
+@pytest.mark.usefixtures("runtime", "holder")
 def test_license_drill_stops_before_any_vm_write_on_a_held_fleet(
-    runtime: pathlib.Path, holder: subprocess.Popen, monkeypatch: pytest.MonkeyPatch
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Only the read-only preflights run; the refusal comes before the sandbox, the gateway and `machine setup` (the renet upload)."""
     monkeypatch.setenv("DRILL_FLEET_WAIT_S", "1")
@@ -202,7 +213,8 @@ def test_license_drill_stops_before_any_vm_write_on_a_held_fleet(
     assert calls == PREFLIGHTS
 
 
-def test_license_drill_takes_the_fleet_then_writes(runtime: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_license_drill_takes_the_fleet_then_writes(monkeypatch: pytest.MonkeyPatch) -> None:
     """Control: with the fleet free the same run takes the lock and goes on to the sandbox."""
     monkeypatch.setenv("DRILL_FLEET_WAIT_S", "0")
     calls: list[str] = []
@@ -214,9 +226,8 @@ def test_license_drill_takes_the_fleet_then_writes(runtime: pathlib.Path, monkey
     fake.d.release_fleet()
 
 
-def test_license_drill_with_no_vm_leg_takes_no_lock(
-    runtime: pathlib.Path, holder: subprocess.Popen, monkeypatch: pytest.MonkeyPatch
-) -> None:
+@pytest.mark.usefixtures("runtime", "holder")
+def test_license_drill_with_no_vm_leg_takes_no_lock(monkeypatch: pytest.MonkeyPatch) -> None:
     """`--legs f` touches no machine, so a held fleet does not stop it."""
     monkeypatch.setenv("DRILL_FLEET_WAIT_S", "0")
     calls: list[str] = []

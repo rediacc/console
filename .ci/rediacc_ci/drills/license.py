@@ -37,7 +37,6 @@ import secrets
 import shutil
 import subprocess
 import sys
-import time
 import uuid
 from typing import TYPE_CHECKING
 
@@ -212,7 +211,7 @@ class License:
         self.d = drill
         self.o = opts
         self.rdc = str(drill.root / "rdc.sh")
-        self.email = "drill-license-%d@rediacc.io" % int(time.time())
+        self.email = lib.run_email("license")
         self.server_url = ""
         self.api_token = ""
         self.subscription_id = ""

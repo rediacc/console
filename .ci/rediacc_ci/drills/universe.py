@@ -20,7 +20,6 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.drills import lib
 
-EMAIL = "drill-universe@rediacc.io"
 PASSWORD = "DrillUniverse123!"
 USAGE = "Usage: ./run.sh drill universe [--selftest] [--no-restart] [--keep-work]"
 
@@ -30,6 +29,8 @@ class Universe:
         self.d = drill
         self.restart = restart_gateway
         self.rdc = str(drill.root / "rdc.sh")
+        # One login per run: a fixed address let two concurrent universe drills share one user.
+        self.email = lib.run_email("universe")
         self.config_dir = pathlib.Path()
         self.server_url = ""
         self.api_token = ""
@@ -73,12 +74,12 @@ class Universe:
             d.gateway_port_cached = d.gateway_port()
         self.server_url = d.server_url()
         d.step("Setup: dev login, subscription and API token on %s" % self.server_url)
-        d.account_ensure_login(EMAIL, PASSWORD)
-        d.account_ensure_subscription(EMAIL, "PROFESSIONAL")
+        d.account_ensure_login(self.email, PASSWORD)
+        d.account_ensure_subscription(self.email, "PROFESSIONAL")
         if d.work is None:
             raise RuntimeError("d.work is not set")
         jar = http.cookiejar.MozillaCookieJar(str(d.work / "cookies.txt"))
-        if not d.account_session(EMAIL, PASSWORD, jar):
+        if not d.account_session(self.email, PASSWORD, jar):
             raise SystemExit(1)
         sub = d.account_subscription_id(jar)
         self.api_token = d.account_mint_token(
