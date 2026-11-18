@@ -1784,6 +1784,15 @@ const NOT_A_DISCOVERER = ['agent/', 'docs/', '.ci/config/', '.ci/policy/', 'scri
 const GENERATED_PROJECTIONS = [GATES_LOCK];
 
 /**
+ * `manifest.ts` is half generated: path-trace.ts writes each traced gate's `paths:`, `lists:` and `names:` arrays into it, the same file lists the gates lock projects. Those arrays are the read set a gate was MEASURED to touch, so a path in one is not a program writing a location down, and left in, manifest.ts wins the code tier for every baseline a traced gate reads (the seven nis2 manifests read "hardcoded in scripts/ci-runner/manifest.ts", review 434f1d3b.5). The arrays are cut before tokens are read; every other line of the file still counts.
+ */
+const GENERATED_INPUT_FILE = 'scripts/ci-runner/manifest.ts';
+const GENERATED_INPUT_ARRAY = /^ {4}(?:paths|lists|names): \[(?:[^\n]*\],|\n[\s\S]*?\n {4}\],)$/gm;
+
+const namerText = (f: string, text: string): string =>
+  f === GENERATED_INPUT_FILE ? text.replace(GENERATED_INPUT_ARRAY, '') : text;
+
+/**
  * The wiring tier's internal order, most authoritative first.
  *
  * Alphabetical order alone picked arbitrary winners: `.syncpackrc.json` resolved to
@@ -1912,12 +1921,14 @@ const bindingTokens = (text: string): RegExp[] =>
   jsonTokens([...text.matchAll(BINDING)].map((m) => m[2]).join('\n'));
 
 /** Everything a namer contributes to this table: its token patterns, then its binding patterns, in order. */
-const namerTokens = (text: string | null): string =>
-  text === null
+const namerTokens = (f: string, raw: string | null): string => {
+  const text = raw === null ? null : namerText(f, raw);
+  return text === null
     ? ''
     : [...jsonTokens(text), ...bindingTokens(text).map((re) => new RegExp(`=${re.source}`))]
         .map((re) => re.source)
         .join('\n');
+};
 
 /** The tracked, present `.json`/`.jsonc` members of one home, as `rows` lists them. */
 const homeMembers = (root: string, dir: string): string[] => {
@@ -1959,7 +1970,7 @@ export const jsonInventoryProvider: Provider = {
       const isWiring = WIRING_EXT.includes(path.extname(f)) || f.startsWith('.vscode/');
       let text = '';
       try {
-        text = fs.readFileSync(path.join(root, f), 'utf-8');
+        text = namerText(f, fs.readFileSync(path.join(root, f), 'utf-8'));
       } catch {
         continue;
       }
@@ -2044,12 +2055,12 @@ export const jsonInventoryProvider: Provider = {
     scope: () => true,
     moves: (c) =>
       (isJsonMember(c.path) && membershipChanged(c)) ||
-      (isNamerCandidate(c.path) && namerTokens(c.before()) !== namerTokens(c.after())),
+      (isNamerCandidate(c.path) && namerTokens(c.path, c.before()) !== namerTokens(c.path, c.after())),
     // A member can arrive or leave; a namer matters only when one of its tokens names a member today, since nearly every code file carries some `.json` token and an add would count them all.
     could: (rel, read, root) => {
       if (isJsonMember(rel)) return true;
       if (!isNamerCandidate(rel)) return false;
-      const tokens = jsonTokens(read(rel) ?? '');
+      const tokens = jsonTokens(namerText(rel, read(rel) ?? ''));
       return (
         tokens.length > 0 &&
         allMembers(root).some((m) => m !== rel && tokens.some((re) => re.test(m)))

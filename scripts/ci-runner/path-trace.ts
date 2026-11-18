@@ -361,7 +361,10 @@ export function recordPrefix(glob: string): string {
 
 export function readRecordGlobs(root: string): RecordGlob[] {
   const p = policyPath('record-paths.json', root);
-  if (!fs.existsSync(p)) return [];
+  if (!fs.existsSync(p))
+    throw new Error(
+      `${p} is missing: without the record set the fold's record-path rule cannot apply, and a traced set could cite a record unchecked`
+    );
   const doc = JSON.parse(fs.readFileSync(p, 'utf8')) as {
     records: Array<{ glob: string; probes?: string[]; except?: string[] }>;
   };
@@ -2884,6 +2887,12 @@ async function selftest(): Promise<number> {
       fs.mkdirSync(path.dirname(path.join(py, rel)), { recursive: true });
       fs.writeFileSync(path.join(py, rel), text);
     }
+    // repoView reads the record set from the root's own policy dir and refuses a root without one (review 502ce0ee.2).
+    fs.mkdirSync(path.join(py, '.ci', 'policy'), { recursive: true });
+    fs.writeFileSync(
+      path.join(py, '.ci', 'policy', 'record-paths.json'),
+      JSON.stringify({ records: [{ glob: 'agent/reviews/**', probes: ['agent/reviews/x.md'] }] })
+    );
     const gitEnv = {
       ...process.env,
       GIT_AUTHOR_NAME: 't',
@@ -2898,6 +2907,19 @@ async function selftest(): Promise<number> {
     ])
       spawnSync('git', a, { cwd: py, env: gitEnv });
     const pyView = repoView(fs.realpathSync(py));
+    check(
+      pyView.records?.length === 1 && pyView.records[0]?.prefix === 'agent/reviews',
+      'repoView carries the root record set (review 502ce0ee.3: a dropped records field would leave every hand-built view green)'
+    );
+    const noPol = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-nopol-'));
+    let noPolThrew = false;
+    try {
+      readRecordGlobs(noPol);
+    } catch {
+      noPolThrew = true;
+    }
+    fs.rmSync(noPol, { recursive: true, force: true });
+    check(noPolThrew, 'a root with no record-paths.json is refused, not read as an empty record set (review 502ce0ee.2)');
     const pyRun = await traceCommand('PYTHONPATH=.ci python3 -m tool', pyView.root);
     const pyV = verdictOf(attribute(pyRun.access, pyView), pyView, pyRun.exit);
     check(
@@ -3016,6 +3038,14 @@ async function selftest(): Promise<number> {
       recordPrefix('agent/worklist/*.jsonl') === 'agent/worklist' &&
       recordPrefix('.ci/config/plan-boxes.json') === '.ci/config/plan-boxes.json',
     'a glob reaching a probe cites the record, a sibling directory does not, and the prefix is check_record_paths.py literal_prefix'
+  );
+
+  // 53bbd61a.1: the real record set must not read check:ci-python-gate-deps' bare `agent` list entry as a citation, which is what lets that gate stay paths-traced.
+  const realRecords = readRecordGlobs(REPO_ROOT);
+  check(
+    recordCitations(['agent'], realRecords).length === 0 &&
+      recordCitations(['agent/reviews'], realRecords).length === 1,
+    'the real record set does not cite a bare `agent` list entry, and CONTROL: agent/reviews is cited'
   );
 
   console.log(`path-trace selftest: ${n - bad}/${n} passed`);
