@@ -5,7 +5,7 @@
  * WHY. Carry is sound only while a gate's `paths` name everything it reads. A gate whose glob misses one input keeps a green across a change to that input, and nothing downstream notices: the receipt says carried, the push guard re-hashes the declared inputs and agrees. path-trace.ts writes paths from one trace; this gate keeps them true afterwards, for traced and hand-declared sets alike.
  *
  * TWO INDEPENDENT MODES.
- *   - `trace` re-runs the gate under strace (path-trace.ts `traceCommand`) and fails on any tracked read outside `paths ∪ GLOBAL_INPUTS ∪ leaf closure`, any listed directory (a missed lookup's nearest tracked directory included) that is neither in `lists` nor reached by a declared `paths` or `names` glob, a name-only `git ls-files` scan without `names: ['**']`, a read inside a submodule whose gitlink is undeclared, any other git history or index read (a gate with paths may locate the repository, never read its history), and any connection to the network. Each finding names the path and the fix.
+ *   - `trace` re-runs the gate under strace (path-trace.ts `traceCommand`) and fails on any tracked read outside `paths ∪ GLOBAL_INPUTS ∪ leaf closure`, any listed directory (a missed lookup's nearest tracked directory included) that is neither in `lists` nor reached by a declared `paths` or `names` glob, a name-only `git ls-files` scan without the `names` it folds to (`**`, or its pathspec globs), content read through git (a narrowed `ls-files -s`, a `git diff <file>`) outside `paths`, a history read pinned to a ref that `refs` does not declare, a read inside a submodule whose gitlink is undeclared, any other git history or index read (a gate with paths may locate the repository, and read history only at the refs it declares), and any connection to the network. Each finding names the path and the fix.
  *   - `sparse` builds a directory holding ONLY the declared inputs (copied; a `lists` child or a `names` match that is not declared content enters as an EMPTY placeholder, so its name is there and its bytes are not), the dependency trees (hard-link copies, as quick-clone.ts does, so workspace links resolve inside it), the ignored build output (hard-link copies) and the read-only toolchain caches (symlinks), and runs the gate there. A verdict that differs from the same gate's run in the real tree means it needed something undeclared. It shares no code path with the tracer's attribution, so a blind spot in one (a daemon read, io_uring) is not a blind spot in both.
  *
  * WHICH GATES. Every lock entry with `paths`, `lists` or `names` and `gate: true` that is not carry-exempt or ciOnly is a candidate. `--quick` judges the candidates whose lock entry changed, or one of whose leaf-closure files changed, since the last push (quick-select.ts `resolvePushBase`); an unresolvable base is a failure, never an empty pass. `--rotation <i>/<n>` judges bucket i of n, balanced by measured cost; `--rotation auto` takes i from the UTC day of the year over n = 3. Sparse mode takes the `--sparse-top` (default 10) costliest gates of the selection.
@@ -79,6 +79,19 @@ export function listingDeclared(dir: string, globs: readonly string[]): boolean 
   return globs.some((g) => matchGlob(g, file) && matchGlob(g, nested));
 }
 
+/**
+ * Whether a declared glob reaches every path a traced glob `g` reaches: the same glob, `**`, a `D/**` above it, or, for a `g` with no `**`, a declared glob matching `g` read as a literal path (a `*` in `g` stands for any one segment piece, which only a wildcard in the declared glob can match). A `g` holding `**` is never covered by a one-level `*`, which is what the literal reading alone would get wrong.
+ */
+export function globDeclared(g: string, globs: readonly string[]): boolean {
+  return globs.some(
+    (d) =>
+      d === g ||
+      d === '**' ||
+      (d.endsWith('/**') && g.startsWith(d.slice(0, -2))) ||
+      (!g.includes('**') && matchGlob(d, g))
+  );
+}
+
 function fixFor(entry: LockEntry): string {
   return entry.pathsOrigin === 'traced'
     ? `re-trace it: npx tsx scripts/ci-runner/path-trace.ts --gate ${entry.id} --write`
@@ -105,24 +118,41 @@ export function traceFindings(
       `make it green in this tree first: ${entry.run}`
     );
   }
-  for (const e of attr.gitHistory)
+  // path-trace collects every unpinned history read (F2 B5); the first few name the class, the count says the rest exists.
+  const history = attr.gitHistory;
+  for (const e of history.slice(0, 5))
     add(
-      `reads git history (${e}); a gate whose verdict moves with history cannot declare paths`,
+      `reads git history no named ref pins (${e}); a gate whose verdict moves with history cannot declare paths`,
       `drop its paths (it hashes the whole tree then) or add it to ${CARRY_EXEMPT_REL} with the reason`
     );
+  if (history.length > 5) add(`and ${history.length - 5} more unpinned history read(s)`);
+  // F2 B5: a history read pinned to named refs is honest once `refs` declares each one, since input-hash.ts hashes the sha each resolves to.
+  const refs = new Set(entry.refs ?? []);
+  for (const r of attr.gitRefs ?? [])
+    if (!refs.has(r))
+      add(
+        `reads git history at ref ${r}, and refs does not declare it, so the ref can move with no input hash moving`,
+        `declare refs: [${JSON.stringify(r)}] on ${entry.id} (re-trace it: npx tsx scripts/ci-runner/path-trace.ts --gate ${entry.id} --write)`
+      );
   for (const e of attr.gitIndex)
     add(
       `enumerates the tracked file list through the git index (${e}), so a new file anywhere can change its verdict`,
       `drop its paths, so it hashes the whole tree`
     );
-  // A name-only ls-files scan is honest once the gate declares the whole name set.
+  // A name-only ls-files scan is honest once the gate declares the names it folds to: the whole name set, or its pathspec globs (F2 B3). A hand-built attribution with scans and no folded globs reads as the whole set.
   const names = entry.names ?? [];
-  if (!names.includes('**'))
-    for (const e of attr.gitNames ?? [])
+  const scanned = attr.gitNameGlobs ?? ((attr.gitNames ?? []).length > 0 ? ['**'] : []);
+  const missingNames = scanned.filter((g) => !globDeclared(g, names));
+  if (missingNames.length > 0)
+    for (const e of (attr.gitNames ?? []).length > 0 ? (attr.gitNames ?? []) : ['git ls-files'])
       add(
-        `reads the tracked name set through the git index (${e}), and names: ['**'] is not declared`,
-        `declare names: ['**'] on ${entry.id} (re-trace it: npx tsx scripts/ci-runner/path-trace.ts --gate ${entry.id} --write)`
+        `reads the tracked name set through the git index (${e}), and names: [${missingNames.map((g) => `'${g}'`).join(', ')}] is not declared`,
+        `declare names: [${missingNames.map((g) => `'${g}'`).join(', ')}] on ${entry.id} (re-trace it: npx tsx scripts/ci-runner/path-trace.ts --gate ${entry.id} --write)`
       );
+  // F2 B3/B4: what a narrowed `ls-files -s` or a `git diff <file>` reads through git is content, and the declared paths must reach it.
+  for (const g of attr.gitContentGlobs ?? [])
+    if (!globDeclared(g, declaredGlobs(entry)))
+      add(`reads what ${g} holds through git, outside its paths`);
   for (const peer of attr.network ?? [])
     add(
       `connects to ${peer}, so its verdict can move with nothing in the tree moving`,
@@ -940,6 +970,55 @@ async function selftest(): Promise<number> {
     ).length === 0,
     "CONTROL: the same scan with names: ['**'] passes"
   );
+  // F2 (PLAN-push-decoupling): refs, pathspec-folded names and content read through git are accepted when declared, and fail when not.
+  const pinned = attr(['a/x.ts'], [], { gitRefs: ['HEAD', 'origin/main'] });
+  check(
+    traceFindings({ ...entry, refs: ['HEAD', 'origin/main'] }, pinned, 0, new Set()).length === 0,
+    'F2 B5: a history read pinned to HEAD and origin/main passes once refs declares both'
+  );
+  const missingRef = traceFindings({ ...entry, refs: ['HEAD'] }, pinned, 0, new Set());
+  check(
+    missingRef.length === 1 && missingRef[0].what.includes('ref origin/main'),
+    'F2 B5 CONTROL: the same read with origin/main undeclared fails, naming the ref'
+  );
+  const many = attr([], [], {
+    gitHistory: Array.from({ length: 8 }, (_, i) => `git describe ${i}`),
+  });
+  const manyF = traceFindings(entry, many, 0, new Set());
+  check(
+    manyF.length === 6 && manyF[5].what.includes('and 3 more'),
+    `F2 B5: eight unpinned history reads print five and count the rest (got ${manyF.length})`
+  );
+  const tsNames = attr([], [''], { gitNames: ['git ls-files -- *.ts'], gitNameGlobs: ['**/*.ts'] });
+  check(
+    traceFindings({ ...entry, names: ['**/*.ts'], lists: [''] }, tsNames, 0, new Set()).length ===
+      0 &&
+      traceFindings({ ...entry, names: ['**'], lists: [''] }, tsNames, 0, new Set()).length === 0,
+    "F2 B3: a pathspec scan folded to names ['**/*.ts'] passes when names declares it or the whole set"
+  );
+  check(
+    traceFindings({ ...entry, names: ['src/**'], lists: [''] }, tsNames, 0, new Set()).some((f) =>
+      f.what.includes("names: ['**/*.ts'] is not declared")
+    ),
+    "F2 B3 CONTROL: names ['src/**'] does not declare a scan of **/*.ts"
+  );
+  const gitContent = attr([], [], { gitContentGlobs: ['a/y.ts', 'c/*.sh'] });
+  check(
+    traceFindings({ ...entry, paths: ['a/**', 'c/*.sh'] }, gitContent, 0, new Set()).length === 0,
+    'F2 B3/B4: content read through git (a/y.ts, c/*.sh) passes when paths reach it'
+  );
+  const contentMiss = traceFindings(entry, gitContent, 0, new Set());
+  check(
+    contentMiss.length === 1 && contentMiss[0].what.includes('c/*.sh'),
+    'F2 B3/B4 CONTROL: c/*.sh read through git and outside paths fails'
+  );
+  check(
+    globDeclared('a/**/*.ts', ['a/**']) &&
+      globDeclared('a/x*.ts', ['a/*.ts']) &&
+      !globDeclared('a/**', ['a/*']) &&
+      !globDeclared('**/*.ts', ['*.ts']),
+    'globDeclared: D/** covers anything under D and a wider one-level glob covers a narrower one; CONTROL: a one-level * never covers a ** glob'
+  );
   check(
     traceFindings(entry, attr([], [], { network: ['1.1.1.1:443'] }), 0, new Set()).some((f) =>
       f.what.includes('connects to 1.1.1.1:443')
@@ -1097,6 +1176,8 @@ async function selftest(): Promise<number> {
       },
     ];
     files[LOCK_REL] = `${JSON.stringify(lockRows, null, 2)}\n`;
+    // repoView refuses a root with no record set (path-trace.ts readRecordGlobs, review 502ce0ee.2); without one every CLI control below died on that refusal instead of judging its fixture.
+    files['.ci/policy/record-paths.json'] = `${JSON.stringify({ records: [] })}\n`;
     for (const [rel, text] of Object.entries(files)) {
       fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true });
       fs.writeFileSync(path.join(dir, rel), text);

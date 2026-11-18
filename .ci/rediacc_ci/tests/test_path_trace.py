@@ -5,6 +5,8 @@ PLAN-ciquick-cpu W2.1's acceptance: a fixture gate reading two files gets exactl
 W2.3 adds: a gate connecting to a routable peer is a whole-tree "network" verdict while a loopback connect is not, `--replace-declared` replaces a declared set the plain `--write` refuses, and `--no-seccomp` traces the same reads.
 
 W2.5 folds to names: a listed directory is written as `lists`, not `dir/**`; a name-only `git ls-files` gives `names: ['**']`; a lookup that finds nothing inside a tracked directory lists that directory.
+
+PLAN-push-decoupling F2 adds: `git rev-parse HEAD` is written as `refs: ['HEAD']` and `git diff --quiet <file>` as that file's content, while an implicit-HEAD `git log -1` stays history; a pathspec scan folds to its globs; `--recurse-submodules` names the gitlink of a real submodule; and a carry-exempt row with kind `network` waives that reason, while the same row with no kind waives nothing.
 """
 
 from __future__ import annotations
@@ -82,8 +84,30 @@ MANIFEST = """export const GATES = [
     gate: true,
     leaves: ['tool.sh'],
   },
+  {
+    id: 'g:pin',
+    run: 'git rev-parse HEAD >/dev/null && git diff --quiet in/b.txt && cat in/a.txt >/dev/null',
+    gate: true,
+    leaves: ['tool.sh'],
+  },
+  {
+    id: 'g:spec',
+    run: "git ls-files -z -- '*.txt' >/dev/null; cat in/a.txt >/dev/null",
+    gate: true,
+    leaves: ['tool.sh'],
+  },
+  {
+    id: 'g:recurse',
+    run: 'git ls-files -z --recurse-submodules >/dev/null; cat in/a.txt >/dev/null',
+    gate: true,
+    leaves: ['tool.sh'],
+  },
 ];
 """
+
+PIN_RUN = "git rev-parse HEAD >/dev/null && git diff --quiet in/b.txt && cat in/a.txt >/dev/null"
+SPEC_RUN = "git ls-files -z -- '*.txt' >/dev/null; cat in/a.txt >/dev/null"
+RECURSE_RUN = "git ls-files -z --recurse-submodules >/dev/null; cat in/a.txt >/dev/null"
 
 
 def _lock() -> list[dict[str, object]]:
@@ -104,6 +128,9 @@ def _lock() -> list[dict[str, object]]:
         entry("g:loop", LOOP_RUN),
         entry("g:ls", "git ls-files -z >/dev/null; cat in/a.txt >/dev/null"),
         entry("g:probe", "test -e other/missing.txt; cat in/a.txt >/dev/null"),
+        entry("g:pin", PIN_RUN),
+        entry("g:spec", SPEC_RUN),
+        entry("g:recurse", RECURSE_RUN),
     ]
 
 
@@ -318,3 +345,96 @@ def test_a_missed_lookup_lists_its_tracked_directory(fixture_repo: pathlib.Path)
     res = _run(fixture_repo, "--gate", "g:probe")
     assert res.returncode == 0, res.stderr
     assert res.stdout.strip() == 'g:probe\tin/a.txt\tlists=["other"]', res.stderr
+
+
+# F2 of agent/plans/PLAN-push-decoupling.md: the folds through the real CLI and a real strace.
+
+
+@pytest.mark.skipif(not HAS_STRACE, reason=NO_STRACE)
+def test_a_pinned_history_read_writes_refs_and_a_diffed_file_is_content(
+    fixture_repo: pathlib.Path,
+) -> None:
+    res = _run(fixture_repo, "--gate", "g:pin", "--write")
+    assert res.returncode == 0, res.stderr
+    # When the stat cache leaves in/b.txt racily clean, git diff reads it and looks up .gitattributes at the root and in in/: missed lookups that list both directories. When it does not, it reads neither. Either is the fold telling the truth; no third shape is.
+    fields = res.stdout.strip().split("\t")
+    assert fields[:2] == ["g:pin", "in/a.txt in/b.txt"], res.stderr
+    assert fields[2:] in (['refs=["HEAD"]'], ['lists=["","in"]', 'refs=["HEAD"]']), res.stdout
+    entry = _lock_of(fixture_repo)["g:pin"]
+    assert entry["paths"] == ["in/a.txt", "in/b.txt"]
+    assert entry["refs"] == ["HEAD"]
+    assert [k for k in entry if k != "lists"] == [
+        "id",
+        "run",
+        "gate",
+        "paths",
+        "refs",
+        "pathsOrigin",
+        "leaves",
+    ]
+    manifest = (fixture_repo / "scripts/ci-runner/manifest.ts").read_text()
+    assert "    refs: ['HEAD'],\n    pathsOrigin: 'traced',\n" in manifest
+
+
+@pytest.mark.skipif(not HAS_STRACE, reason=NO_STRACE)
+def test_an_implicit_head_log_stays_history(fixture_repo: pathlib.Path) -> None:
+    # The control beside the pin: g:flip's `git log -1` names no revision.
+    (fixture_repo / "flip").write_text("")
+    res = _run(fixture_repo, "--gate", "g:flip")
+    assert res.returncode == 0, res.stderr
+    assert "WHOLE-TREE: reads git history no named ref pins (git log -1" in res.stderr, res.stderr
+    assert res.stdout.strip() == ""
+
+
+@pytest.mark.skipif(not HAS_STRACE, reason=NO_STRACE)
+def test_a_pathspec_scan_folds_to_its_globs(fixture_repo: pathlib.Path) -> None:
+    res = _run(fixture_repo, "--gate", "g:spec")
+    assert res.returncode == 0, res.stderr
+    # No root .txt exists, so the one-level half folds to the root listing rather than a dead `*.txt`.
+    assert res.stdout.strip() == 'g:spec\tin/a.txt\tlists=[""]\tnames=["**/*.txt"]', res.stderr
+
+
+@pytest.mark.skipif(not HAS_STRACE, reason=NO_STRACE)
+def test_recurse_submodules_names_every_gitlink(
+    fixture_repo: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
+    sub = tmp_path / "subsrc"
+    sub.mkdir()
+    (sub / "s.txt").write_text("s")
+    ident = ["-c", "user.email=t@t", "-c", "user.name=t"]
+    _git(sub, "init", "-q")
+    _git(sub, "add", "-A")
+    _git(sub, *ident, "commit", "-qm", "s")
+    _git(
+        fixture_repo,
+        "-c",
+        "protocol.file.allow=always",
+        "submodule",
+        "add",
+        "-q",
+        str(sub),
+        "mods/sub",
+    )
+    _git(fixture_repo, *ident, "commit", "-qm", "sub")
+    res = _run(fixture_repo, "--gate", "g:recurse")
+    assert res.returncode == 0, res.stderr
+    fields = res.stdout.strip().split("\t")
+    assert fields[0] == "g:recurse", res.stderr
+    assert {"in/a.txt", "mods/sub"} <= set(fields[1].split(" ")), res.stdout
+    assert 'names=["**"]' in fields, res.stdout
+
+
+@pytest.mark.skipif(not HAS_STRACE, reason=NO_STRACE)
+def test_a_carry_exempt_kind_waives_its_own_reason_only(fixture_repo: pathlib.Path) -> None:
+    policy = fixture_repo / ".ci/policy/carry-exempt.json"
+    row = {"id": "g:net", "reason": "talks to a peer", "kind": "network"}
+    policy.write_text(json.dumps({"schema": 1, "exempt": [row]}) + "\n")
+    res = _run(fixture_repo, "--gate", "g:net")
+    assert res.returncode == 0, res.stderr
+    assert res.stdout.strip() == 'g:net\tin/a.txt\twaived=["network"]', res.stderr
+    # Control: the same row with no kind waives nothing.
+    del row["kind"]
+    policy.write_text(json.dumps({"schema": 1, "exempt": [row]}) + "\n")
+    res = _run(fixture_repo, "--gate", "g:net")
+    assert res.returncode == 0, res.stderr
+    assert "WHOLE-TREE: network: connects to 192.0.2.1:9" in res.stderr, res.stderr

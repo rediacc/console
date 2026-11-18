@@ -7,13 +7,15 @@
  * HOW. The gate's own `run` command executes once under `strace -ff -y --seccomp-bpf -e trace=%file,getdents,getdents64,fchdir,connect,clone,clone3,fork,vfork` (the fork family only so each child's starting cwd is known; `connect` so a gate that talks to the network is seen doing it). strace's own stderr lines are kept in their own file, apart from the gate's output, which reaches strace's stdout only (the traced shell runs `exec 2>&1` first). Every path a process opened, stat'ed, exec'ed or resolved, and every directory it listed, is mapped onto the tracked tree:
  *   - a tracked file read is kept as itself;
  *   - a listed tracked directory, the root included, goes to `lists` (a listing sees every name in it and no byte of any, so input-hash.ts hashes its tracked children's names); so does the nearest tracked directory above a lookup that found nothing, since a file added there would be found;
- *   - a `git ls-files` that prints only names (LS_FILES_NAME_FLAGS) gives `names: ['**']`, the tracked name set without its content;
- *   - a directory with at least FOLD_MIN_FILES tracked files of which more than half were read becomes `dir/**`;
+ *   - a `git ls-files` that prints only names (LS_FILES_NAME_FLAGS, a `--format` of only %(objectmode) and %(path)) gives `names: ['**']`, the tracked name set without its content, or with pathspecs the globs they reach relative to the exec's cwd (`*.sh` is `*.sh` plus `**\/*.sh`, a literal `p` is `p` or `p/**`); `--recurse-submodules` adds every gitlink to the content paths (PLAN-push-decoupling F2 B2, B3);
+ *   - content read through git and narrowed by a pathspec (`ls-files -s -- <pathspec>`, `git diff --quiet <tracked file>`) is the content of what it names, not of every file (F2 B3, B4);
+ *   - a history command whose argv names its revisions (`rev-parse HEAD`, `show origin/x:path`, `merge-base A B`, `log A..B`) is pinned to those plain ref names, written as `refs`, and its own ref and object reads are explained; an implicit HEAD, `describe`, `fetch`, `for-each-ref` or a shallow clone stays whole-tree history (F2 B5);
+ *   - a directory with at least FOLD_MIN_FILES tracked files of which more than half were read becomes `dir/**`, or, when every read under it shares one extension, `dir/*.ext` plus `dir/**\/*.ext` (F2 B6);
  *   - a read inside a submodule names the bare gitlink path, which reaches the gitlink entry exactly as `<gitlink>/**` does (input-hash.ts `entryMatches`);
  *   - a path holding a glob metacharacter the hasher refuses (`?`, `[`, `{`, or `*`) folds to its nearest clean ancestor directory;
  *   - reads already inside GLOBAL_INPUTS are dropped, since every gate with `paths` hashes those anyway.
  *
- * WHEN THE ANSWER IS "WHOLE TREE", and it is written down with its reason rather than guessed: a gate that connects to an address that is neither loopback nor a unix socket (reason `network`: its verdict can move with nothing in the tree moving), a gate that touches git metadata (its verdict depends on history, on what files hold through the index, or on an index command other than a name-only `git ls-files`), reaches more than WHOLE_TREE_FRACTION of the tracked entries through its content globs (`lists` and `names` hash names, so they do not count toward that line), reads, lists and names nothing tracked at all, or exits non-zero under the trace (a red run may have stopped before reading everything). Carry-exempt gates and non-gate entries are not traced: their hash is null or never judged, so a trace would buy nothing.
+ * WHEN THE ANSWER IS "WHOLE TREE", and it is written down with its reason rather than guessed: a gate that connects to an address that is neither loopback nor a unix socket (reason `network`: its verdict can move with nothing in the tree moving), a gate that touches git metadata (its verdict depends on history, on what files hold through the index, or on an index command other than a name-only `git ls-files`), reaches more than WHOLE_TREE_FRACTION of the tracked entries through its content globs (`lists` and `names` hash names, so they do not count toward that line), reads, lists and names nothing tracked at all, or exits non-zero under the trace (a red run may have stopped before reading everything). Non-gate entries and carry-exempt rows with no `kind` are not traced. A carry-exempt row WITH a kind (carry-exempt.json `network`, `history` or `cache`) is traced, and that kind waives its own whole-tree reason and no other (F2 B7).
  *
  * WHAT IT WRITES with `--write`, and nothing else: the entry in scripts/ci-runner/manifest.ts (each non-empty one of `paths`, `lists` and `names`, then `pathsOrigin: 'traced'`, placed before `leaves`, gen-manifest region markers repaired around it), the same keys in scripts/ci-runner/gates.lock.json, and one row per traced gate in scripts/ci-runner/trace-ledger.ts, which also records every whole-tree verdict with its reason. An entry whose `paths` a human declared (`pathsOrigin: 'declared'`) is refused, never overwritten, unless `--replace-declared` names that intent: the honesty gate (trace-honest.ts) judges a declared set, and this tool replaces one only when asked, with the traced set or, for a whole-tree verdict, with none.
  *
@@ -36,10 +38,11 @@ import { isEntryPoint } from '../lib/entry-point.js';
 import { policyPath } from '../lib/policy-paths.js';
 import {
   CARRY_EXEMPT_REL,
-  exemptIdsOf,
+  exemptRowsOf,
   FORBIDDEN_GLOB_CHARS,
   GLOBAL_INPUTS,
   matchGlob,
+  nameInputProblem,
 } from './input-hash.js';
 
 export const REPO_ROOT = path.resolve(import.meta.dirname, '..', '..');
@@ -61,7 +64,7 @@ export const GIT_DISCOVERY = 'git discovery';
 export const IGNORED_PREFIXES: ReadonlyArray<{ prefix: string; why: string }> = [
   {
     prefix: GIT_DISCOVERY,
-    why: 'the .git file, HEAD opened to find the repository, commondir, config and info/exclude: where the repository is and what it ignores, not what it holds. HEAD read as a revision (`git rev-parse HEAD`) is caught by its argv and counts as history',
+    why: 'the .git file, HEAD opened to find the repository, commondir, config and info/exclude: where the repository is and what it ignores, not what it holds. HEAD read as a revision is caught by its argv: `refs: [HEAD]` when the argv names it (`git rev-parse HEAD`), history when it is implicit (`git log -1`)',
   },
   {
     prefix: '.claude/hooks/profile/',
@@ -91,8 +94,14 @@ export interface Access {
   network?: Set<string>;
   /** When the traced run started (epoch ms): an untracked file modified after it was written by the run itself. */
   startedMs?: number;
-  /** The pids that touched a path named `index` (the git index among them). Optional so an Access built without pids reads as unattributed: any name-only `git ls-files` then explains an index read, as before. */
-  indexPids?: Set<number>;
+  /**
+   * The pids that named each git-shaped path (GIT_SHAPED: under a `.git` component, or an index, ref, object or log path anywhere), keyed by the absolute path. `attribute` keeps only the paths under the view's own git directories, so a fixture repository's index or objects, read by a selftest's own `git -C /tmp/x`, never count as this repository's (F2 B1). Optional so an Access built without pids reads as unattributed: any name-only `git ls-files` then explains an index read, as before, and no history read is explained.
+   */
+  gitReaders?: Map<string, Set<number>>;
+  /** The git-shaped paths some syscall FOUND (opened or stat'ed with success): a path in gitReaders and not here was only probed for, and found absent. Optional: absent, every git path counts as found. */
+  gitFound?: Set<string>;
+  /** The pids that LISTED each git-shaped directory, kept apart from gitReaders: every git process stats the bare `refs` directory to find the repository, and only the listing says who enumerated it. Optional: absent, no listing is a pinned exec's own. */
+  gitListers?: Map<string, Set<number>>;
 }
 
 export interface Exec {
@@ -190,14 +199,16 @@ interface ProcState {
   cwd?: string;
   /** The cwd this process started in: its parent's at fork, or the root's for a process whose fork the trace never showed. */
   start: string;
-  pending: string[];
+  /** Relative paths named before the cwd was known, each with whether its syscall found it. */
+  pending: { s: string; found: boolean }[];
   execsWithoutCwd: Exec[];
 }
 
 const FORKS = /^(clone|clone3|fork|vfork)$/;
 
-/** A path that is a git index file: the file a `git ls-files` reads, shared-index split files included. */
-const INDEX_PATH = /(^|\/)\.git\/(.*\/)?(index|sharedindex\.[^/]*)$/;
+/** A path that may be a git index, ref, object or log file: below a `.git` component, or shaped like one under a bare git directory. Over-inclusive on purpose: `attribute` keeps only the paths inside the view's own git directories. */
+const GIT_SHAPED =
+  /(^|\/)\.git(\/|$)|(^|\/)(index|sharedindex\.[^/]*|packed-refs|shallow|[A-Z_]*HEAD)$|\/(objects|refs|logs)(\/|$)/;
 
 /**
  * The stateful line parser, so a large log streams in chunks with each process's cwd intact. The cwd is PER PID: a `chdir` or `fchdir` moves only the process that made it, and a successful clone, clone3, fork or vfork gives the new pid the cwd its parent had at that moment. `line(l, pid)` takes the pid from the argument (a `-ff` log, whose file name holds it) or from the line's own prefix (a `-f` log). For `-ff`, feed the logs in ascending pid order so a parent's fork is seen before its child's lines; a child seen first starts from the root cwd, and its start is corrected when the fork arrives, for every relative path it had not yet resolved.
@@ -215,13 +226,23 @@ export function straceParser(
     }
     return st;
   };
-  /** A path a process named, and the pid when it is an index file: `attribute` judges whether a name-only `git ls-files` is the process that read it. */
-  const addFile = (st: ProcState, p: string): void => {
-    into.files.add(p);
-    if (INDEX_PATH.test(p)) {
-      into.indexPids ??= new Set();
-      into.indexPids.add(st.pid);
+  /** A git-shaped path a process named or listed: its pid, and whether the syscall found it, so `attribute` can judge whether the git command that explains it (a name-only `git ls-files`, a history command whose refs are known) is the process that made it, and whether a probe found state or its absence. */
+  const addGit = (st: ProcState, p: string, found: boolean): void => {
+    if (!GIT_SHAPED.test(p)) return;
+    into.gitReaders ??= new Map();
+    // Kept beside gitReaders from the first git path on, so a trace whose every git lookup failed says so instead of reading as "all found".
+    into.gitFound ??= new Set();
+    let pids = into.gitReaders.get(p);
+    if (pids === undefined) {
+      pids = new Set();
+      into.gitReaders.set(p, pids);
     }
+    pids.add(st.pid);
+    if (found) into.gitFound.add(p);
+  };
+  const addFile = (st: ProcState, p: string, found = true): void => {
+    into.files.add(p);
+    addGit(st, p, found);
   };
   const forked = (parent: ProcState, child: number): void => {
     const st = proc(child);
@@ -261,18 +282,32 @@ export function straceParser(
     }));
     for (const d of decorations) if (d.fd === 'AT_FDCWD') st.cwd = d.path;
     if (st.cwd !== undefined && st.pending.length > 0) {
-      for (const p of st.pending.splice(0)) addFile(st, path.posix.resolve(st.cwd, p));
+      for (const p of st.pending.splice(0)) addFile(st, path.posix.resolve(st.cwd, p.s), p.found);
     }
     if (st.cwd !== undefined) for (const e of st.execsWithoutCwd.splice(0)) e.cwd = st.cwd;
     const retMatch = /\)\s+=\s+(-?\d+)(?:<((?:[^>\\]|\\.)*)>)?/.exec(rest);
     const ok = retMatch !== null && !retMatch[1].startsWith('-');
+    // A lookup that found nothing (ENOENT, ENOTDIR) probed for the path's absence; any other result, an unfinished line included, counts as found, the direction that keeps a git read whole-tree.
+    const found = ok || !/\)\s+=\s+-1\s+(ENOENT|ENOTDIR)\b/.test(rest);
     if (FORKS.test(name)) {
       if (ok && retMatch !== null) forked(st, Number(retMatch[1]));
       return;
     }
     if (name.startsWith('getdents')) {
       const d = decorations[0];
-      if (d !== undefined && d.fd !== 'AT_FDCWD') into.listed.add(path.posix.normalize(d.path));
+      if (d !== undefined && d.fd !== 'AT_FDCWD') {
+        const dir = path.posix.normalize(d.path);
+        into.listed.add(dir);
+        if (GIT_SHAPED.test(dir)) {
+          into.gitListers ??= new Map();
+          let pids = into.gitListers.get(dir);
+          if (pids === undefined) {
+            pids = new Set();
+            into.gitListers.set(dir, pids);
+          }
+          pids.add(st.pid);
+        }
+      }
       return;
     }
     if (name === 'fchdir') {
@@ -296,14 +331,15 @@ export function straceParser(
         const d = decorations.filter((x) => x.at < str.at).pop();
         if (d !== undefined) base = d.path;
       }
-      if (path.posix.isAbsolute(str.s)) addFile(st, path.posix.normalize(str.s));
-      else if (base !== undefined) addFile(st, path.posix.resolve(base, str.s));
-      else st.pending.push(str.s);
+      if (path.posix.isAbsolute(str.s)) addFile(st, path.posix.normalize(str.s), found);
+      else if (base !== undefined) addFile(st, path.posix.resolve(base, str.s), found);
+      else st.pending.push({ s: str.s, found });
     }
     if (name === 'chdir' && ok && strings[0] !== undefined) {
       // Paths seen before this process's first chdir belong to its start cwd, not the new one.
       if (st.cwd === undefined)
-        for (const p of st.pending.splice(0)) addFile(st, path.posix.resolve(st.start, p));
+        for (const p of st.pending.splice(0))
+          addFile(st, path.posix.resolve(st.start, p.s), p.found);
       st.cwd = path.posix.resolve(st.cwd ?? st.start, strings[0].s);
     }
     if ((name === 'execve' || name === 'execveat') && ok) {
@@ -321,7 +357,7 @@ export function straceParser(
   };
   const end = (): Access => {
     for (const st of procs.values()) {
-      for (const p of st.pending.splice(0)) addFile(st, path.posix.resolve(st.start, p));
+      for (const p of st.pending.splice(0)) addFile(st, path.posix.resolve(st.start, p.s), p.found);
       for (const e of st.execsWithoutCwd.splice(0)) e.cwd = st.start;
     }
     return into;
@@ -423,7 +459,7 @@ export interface Attribution {
   gitlinkReads: Set<string>;
   /** Tracked directories listed, and the nearest tracked directory above a lookup that found nothing (a new file there would be found); '' is the repository root. */
   listed: Set<string>;
-  /** Evidence that the verdict depends on git HISTORY (objects, refs, a history subcommand), at most a few lines. */
+  /** Evidence that the verdict depends on git HISTORY no named ref pins (objects, refs, a history subcommand): every such exec and read, deduplicated, with no cap, so a pinned exec beside an unpinned one can never hide it (F2 B5). */
   gitHistory: string[];
   /** Evidence that the gate enumerates the tracked file list through the index (`git ls-files` and kin). */
   gitIndex: string[];
@@ -433,6 +469,12 @@ export interface Attribution {
   network?: string[];
   /** Evidence that the gate reads the tracked NAME set through `git ls-files` with name-only flags: `names: ['**']`, not whole-tree. Optional for the same reason. */
   gitNames?: string[];
+  /** The `names` globs those scans fold to: `**` for a scan with no pathspec, the pathspec globs otherwise (F2 B3). Optional for the same reason: a hand-built Attribution with gitNames and no globs reads as `['**']`. */
+  gitNameGlobs?: string[];
+  /** Content globs read through git (`ls-files -s -- <pathspec>`, `git diff --quiet <tracked file>`, `git diff REV -- <pathspec>`): the lock entry's `paths` must cover them (F2 B3, B4). Optional for the same reason. */
+  gitContentGlobs?: string[];
+  /** The plain ref names every history exec was pinned to (F2 B5): the lock entry's `refs`. A history exec no ref pins is in gitHistory instead. Optional for the same reason. */
+  gitRefs?: string[];
   ignored: Map<string, number>;
   /** Existing untracked files or directories read outside the dependency and toolchain trees: build output, a few examples. */
   buildOutput: string[];
@@ -515,7 +557,7 @@ const LS_FILES_CONTENT = new Set([
   '-u',
   '--unmerged',
 ]);
-/** `git ls-files` flags that only choose WHICH names it prints and how they are spelled. Untracked names (`-o`, `-i`, `-k`) are outside every input hash, the whole-tree one included, so they cost `names` nothing whole-tree would have bought. `--recurse-submodules` is not here: it prints the names inside each submodule, which the root's name set does not hold (a gitlink is one entry whose commit `names` does not hash), so such a scan stays the whole-tree index (review bab2c5c8.1). */
+/** `git ls-files` flags that only choose WHICH names it prints and how they are spelled. Untracked names (`-o`, `-i`, `-k`) are outside every input hash, the whole-tree one included, so they cost `names` nothing whole-tree would have bought. `--recurse-submodules` is read apart (lsFilesRead): it prints the names inside each submodule, which the root's name set does not hold, so `attribute` adds every gitlink to the content paths, whose commit moves with any committed change inside it (review bab2c5c8.1, F2 B2). */
 const LS_FILES_NAME_FLAGS = new Set([
   '-z',
   '-c',
@@ -611,52 +653,269 @@ export function classifyGitArgv(argv: readonly string[]): GitUse {
       ? 'discovery'
       : 'history';
   if (sub === 'diff') return diffUse(rest);
-  if (sub === 'ls-files') return lsFilesUse(rest);
+  if (sub === 'ls-files') return lsFilesRead(rest).use;
   if (GIT_INDEX_CMDS.has(sub)) return 'index';
   return 'history';
 }
 
+/** `--format` atoms that print only what `names` hashes (`name\t<mode>\t<path>`): the mode and the path. Any other atom (objectname, stage, eolinfo) prints what a file holds. `%%` and `%xNN` are literal text. */
+const LS_FILES_NAME_ATOMS = new Set(['objectmode', 'path']);
+
+/** Whether an `ls-files --format` value prints only names: every `%(atom)` is objectmode or path, and no other `%` directive appears. */
+export function formatIsNames(fmt: string): boolean {
+  const rest = fmt.replace(/%%|%x[0-9a-fA-F]{2}/g, '');
+  for (const m of rest.matchAll(/%(\(([^)]*)\))?/g))
+    if (m[2] === undefined || !LS_FILES_NAME_ATOMS.has(m[2])) return false;
+  return true;
+}
+
+/** One `git ls-files` argv, read flag by flag. */
+export interface LsFilesRead {
+  use: GitUse;
+  /** Pathspecs: the positionals, and everything after `--`. */
+  pathspecs: string[];
+  /** `--recurse-submodules`: the names inside every submodule too (F2 B2). */
+  recurse: boolean;
+  /** A flag outside every known set: the read stays whole-tree whatever its pathspecs narrow. */
+  unknown: boolean;
+}
+
 /**
- * What one `git ls-files` reads: `content` when any flag prints what a file holds, `history` for `--with-tree`, `names` when every flag only shapes the name list (pathspecs after them, or after `--`, narrow it and change nothing here), else `index`, whole-tree: an unknown flag is not assumed harmless.
+ * What one `git ls-files` reads: `content` when any flag prints what a file holds (a `--format` naming only %(objectmode) and %(path) does not, F2 B3), `history` for `--with-tree`, `names` when every flag only shapes the name list, else `index`, whole-tree: an unknown flag is not assumed harmless. `--recurse-submodules` is a name flag (F2 B2): `attribute` adds every gitlink, whose commit moves with any change inside the submodule. Pathspecs narrow a names or content read; `attribute` folds them against the tree (F2 B3).
  */
-function lsFilesUse(rest: readonly string[]): GitUse {
-  if (
-    rest.some(
-      (a) =>
-        LS_FILES_CONTENT.has(a) ||
-        a.startsWith('--format') ||
-        (/^-[a-zA-Z]{2,}$/.test(a) && /[smdu]/.test(a.slice(1)))
-    )
-  )
-    return 'content';
-  let use: GitUse = 'names';
+export function lsFilesRead(rest: readonly string[]): LsFilesRead {
+  const pathspecs: string[] = [];
+  let content = false;
+  let unknown = false;
+  let recurse = false;
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i];
-    if (a === '--') break;
-    if (a.startsWith('--with-tree')) return 'history';
+    if (a === '--') {
+      pathspecs.push(...rest.slice(i + 1));
+      break;
+    }
+    if (a.startsWith('--with-tree')) return { use: 'history', pathspecs, recurse, unknown };
+    if (a === '--format' || a.startsWith('--format=')) {
+      const fmt = a === '--format' ? (rest[++i] ?? '') : a.slice('--format='.length);
+      if (!formatIsNames(fmt)) content = true;
+      continue;
+    }
     if (LS_FILES_NAME_VALUE_FLAGS.has(a)) {
       i++;
       continue;
     }
     if (/^--(exclude|exclude-from|exclude-per-directory)=/.test(a)) continue;
-    if (!a.startsWith('-')) continue;
-    if (LS_FILES_NAME_FLAGS.has(a)) continue;
-    if (/^-[zcoik]{2,}$/.test(a)) continue;
-    use = 'index';
+    if (!a.startsWith('-') || a === '-') {
+      pathspecs.push(a);
+      continue;
+    }
+    if (a === '--recurse-submodules') {
+      recurse = true;
+      continue;
+    }
+    if (LS_FILES_CONTENT.has(a)) content = true;
+    else if (LS_FILES_NAME_FLAGS.has(a)) continue;
+    else if (/^-[a-zA-Z]{2,}$/.test(a)) {
+      for (const c of a.slice(1)) {
+        if ('smdu'.includes(c)) content = true;
+        else if (!'zcoik'.includes(c)) unknown = true;
+      }
+    } else unknown = true;
   }
-  return use;
+  return { use: content ? 'content' : unknown ? 'index' : 'names', pathspecs, recurse, unknown };
+}
+
+/** One `git diff` argv: its positionals before `--`, its pathspecs after, and whether a flag brings a revision in. */
+export interface DiffRead {
+  positionals: string[];
+  pathspecs: string[];
+  revisionFlag: boolean;
+}
+
+export function diffRead(rest: readonly string[]): DiffRead {
+  const out: DiffRead = { positionals: [], pathspecs: [], revisionFlag: false };
+  for (let i = 0; i < rest.length; i++) {
+    const a = rest[i];
+    if (a === '--') {
+      out.pathspecs.push(...rest.slice(i + 1));
+      break;
+    }
+    if (DIFF_REVISION_FLAGS.has(a) || a === '--no-index') out.revisionFlag = true;
+    else if (!a.startsWith('-')) out.positionals.push(a);
+  }
+  return out;
 }
 
 /**
- * `git diff` with no revision compares the worktree with the index: it reads what the tracked files hold, so it is `content`, like `ls-files -m`. A positional argument before `--` may be a revision (git disambiguates against the tree at run time, this classifier cannot), so it counts as history, the conservative direction; so do the flags that compare against HEAD.
+ * `git diff` with no revision compares the worktree with the index: it reads what the tracked files hold, so it is `content`, like `ls-files -m`. A positional argument before `--` may be a revision (git disambiguates against the tree at run time, and this argv-only classifier cannot), so it counts as history, the conservative direction; so do the flags that compare against HEAD. `attribute`, which holds the tree, reads a positional naming a tracked file as that file's content (F2 B4).
  */
 function diffUse(rest: readonly string[]): GitUse {
-  for (const a of rest) {
-    if (a === '--') return 'content';
-    if (DIFF_REVISION_FLAGS.has(a)) return 'history';
-    if (!a.startsWith('-')) return 'history';
+  const d = diffRead(rest);
+  return d.revisionFlag || d.positionals.length > 0 ? 'history' : 'content';
+}
+
+/** History subcommands whose answer is fixed by the commits their argv names, once no flag reaches past them (HISTORY_UNPINNED). `describe`, `fetch`, `for-each-ref`, `show-ref`, `status` and `blame` are not here: they read every ref, the network, the worktree, or an implicit HEAD, so they stay whole-tree history. */
+const REF_PINNED_CMDS = new Set([
+  'rev-parse',
+  'log',
+  'show',
+  'rev-list',
+  'merge-base',
+  'cat-file',
+  'ls-tree',
+  'diff-tree',
+  'diff',
+]);
+/** Flags that make a history answer depend on more than the named commits: every ref (`--all`, `--branches`, decorations, notes), the reflog, the clock (`--since`, a relative date), stdin, a symbolic name (`--abbrev-ref` prints the branch, which moves with no sha moving), or the index (`--cached`). */
+const HISTORY_UNPINNED =
+  /^(--all|--branches|--tags|--remotes|--glob|--exclude|--reflog|-g|--walk-reflogs|--decorate|--decorate-refs|--decorate-refs-exclude|--source|--since|--until|--after|--before|--max-age|--min-age|--since-as-filter|--bisect|--stdin|--not|--fork-point|--abbrev-ref|--symbolic|--symbolic-full-name|--simplify-by-decoration|--notes|--show-notes|--standard-notes|--batch|--batch-check|--batch-command|--batch-all-objects|--cached|--staged|--merge-base|--no-index|--alternate-refs|--indexed-objects|--relative-date)(=.*)?$/;
+/** History flags that take the NEXT argument as their value, so it is never read as a revision. */
+const HISTORY_VALUE_FLAGS = new Set([
+  '-n',
+  '--max-count',
+  '--skip',
+  '--format',
+  '--pretty',
+  '--date',
+  '-L',
+  '-S',
+  '-G',
+  '-O',
+  '--grep',
+  '--author',
+  '--committer',
+  '-U',
+  '--unified',
+  '--abbrev',
+]);
+/** Pretty-format placeholders that print ref names, the reflog, notes, or a date relative to now. */
+const UNPINNED_FORMAT = /%(d|D|S|g[dDsnNeE]|N|ar|cr|ah|ch)/;
+/** The object types a `git cat-file` first positional may name. */
+const CAT_FILE_TYPES = new Set(['blob', 'tree', 'commit', 'tag']);
+/** A full object id names one immutable commit: it pins history with no ref. */
+const FULL_OID = /^([0-9a-f]{40}|[0-9a-f]{64})$/;
+
+/**
+ * The plain ref names one revision expression depends on, or undefined when no ref pins it: `HEAD` and `@`, `origin/x`, `A..B` and `A...B` (both sides, an empty side being HEAD), `REV:path` (the REV), with `^`, `~N`, `^N` and `^{type}` suffixes dropped, since a ref's sha fixes every ancestor. A full object id pins itself and names no ref. A reflog step (`@{1}`), an index path (`:path`) or anything `nameInputProblem` refuses as a ref name is undefined.
+ */
+export function refsOfRevision(expr: string): string[] | undefined {
+  let e = expr.startsWith('^') ? expr.slice(1) : expr;
+  const colon = e.indexOf(':');
+  if (colon === 0) return undefined;
+  if (colon > 0) e = e.slice(0, colon);
+  if (e.includes('@{')) return undefined;
+  const sides = e.includes('...') ? e.split('...') : e.includes('..') ? e.split('..') : [e];
+  if (sides.length > 2) return undefined;
+  const out: string[] = [];
+  for (const side of sides) {
+    let r = side === '' ? 'HEAD' : side;
+    r = r.replace(/(\^\{[^}]*\}|\^-?\d*|~\d*|\^[@!])+$/, '');
+    if (r === '@') r = 'HEAD';
+    if (FULL_OID.test(r)) continue;
+    if (r === '' || nameInputProblem({ id: 'x', refs: [r] }) !== null) return undefined;
+    out.push(r);
   }
-  return 'content';
+  return out;
+}
+
+/**
+ * git's ref lookup rules for a name (refs.c `ref_rev_parse_rules`, measured on git 2.53 under strace for `git diff --quiet src/keep.txt`): the files a positional's "is this a revision?" probe reads under the git directory, beside packed-refs. A `git diff <tracked file>` that read only these for its positional, and then took it as a path, read no history. The stated limit: a ref created later with the exact name of a tracked file would make git refuse the argument as ambiguous, and no input hash moves for that.
+ */
+export const REF_PROBES: ReadonlyArray<(name: string) => string> = [
+  (n) => `refs/${n}`,
+  (n) => `refs/tags/${n}`,
+  (n) => `refs/heads/${n}`,
+  (n) => `refs/remotes/${n}`,
+  (n) => `refs/remotes/${n}/HEAD`,
+];
+
+/** What a ref-pinned history exec reads: the refs it names, whether it compares one of them with the worktree (`git diff REV`), and the pathspecs narrowing that comparison. */
+export interface HistoryPin {
+  refs: string[];
+  onDisk: boolean;
+  pathspecs: string[];
+}
+
+/**
+ * Pins one history exec to the refs its argv names (F2 B5), or says why it cannot be pinned: a subcommand outside REF_PINNED_CMDS, a flag in HISTORY_UNPINNED, a format printing refs or relative dates, no revision named at all (an implicit HEAD is not read off the argv, so `git log -1` stays history), or a revision no plain ref name pins. `isPath` says whether a positional is a tracked path, which git takes as a pathspec rather than a revision.
+ */
+export function pinHistory(
+  sub: string,
+  rest: readonly string[],
+  isPath: (p: string) => boolean
+): HistoryPin | { unpinned: string } {
+  if (!REF_PINNED_CMDS.has(sub)) return { unpinned: `${sub} is not pinned by named refs` };
+  const refs = new Set<string>();
+  const pathspecs: string[] = [];
+  let revs = 0;
+  let ranged = false;
+  let sawType = false;
+  for (let i = 0; i < rest.length; i++) {
+    const a = rest[i];
+    if (a === '--') {
+      pathspecs.push(...rest.slice(i + 1));
+      break;
+    }
+    if (a.startsWith('-') && a !== '-') {
+      if (HISTORY_UNPINNED.test(a)) return { unpinned: `${a} reaches past the named commits` };
+      const eq = a.indexOf('=');
+      const flag = eq < 0 ? a : a.slice(0, eq);
+      const value =
+        eq >= 0 ? a.slice(eq + 1) : HISTORY_VALUE_FLAGS.has(flag) ? (rest[++i] ?? '') : '';
+      if ((flag === '--format' || flag === '--pretty') && UNPINNED_FORMAT.test(value))
+        return { unpinned: `${flag} prints ref names, the reflog, notes or a relative date` };
+      if (flag === '--date' && /^(relative|human|auto)/.test(value))
+        return { unpinned: `--date ${value} prints a date relative to now` };
+      if (
+        sub === 'rev-parse' &&
+        !/^(--verify|-q|--quiet|--short|--sq|--end-of-options)$/.test(flag) &&
+        !REV_PARSE_LOCATE.test(a)
+      )
+        return { unpinned: `rev-parse ${a} is not a plain revision lookup` };
+      if (sub === 'cat-file' && !/^-[ptse]$/.test(a))
+        return { unpinned: `cat-file ${a} is not a single-object read` };
+      continue;
+    }
+    if (sub === 'cat-file' && !sawType && CAT_FILE_TYPES.has(a)) {
+      sawType = true;
+      continue;
+    }
+    if (isPath(a)) {
+      pathspecs.push(a);
+      continue;
+    }
+    const r = refsOfRevision(a);
+    if (r === undefined) return { unpinned: `${a} is not pinned by a plain ref name` };
+    if (a.includes('..')) ranged = true;
+    revs++;
+    for (const x of r) refs.add(x);
+  }
+  if (revs === 0) return { unpinned: 'it names no revision, so the HEAD it reads is implicit' };
+  return {
+    refs: [...refs].sort(byteOrder),
+    onDisk: sub === 'diff' && revs === 1 && !ranged,
+    pathspecs,
+  };
+}
+
+/** The leading part of a git argv: the subcommand, its arguments, the working directory every `-C` lands on, and whether a global option points git at a repository the cwd does not say (`--git-dir`, `--work-tree`). */
+export function gitCommand(
+  argv: readonly string[],
+  cwd: string | undefined
+): { sub: string | undefined; rest: string[]; dir: string | undefined; elsewhere: boolean } {
+  let dir = cwd;
+  let elsewhere = false;
+  let i = 1;
+  while (i < argv.length && argv[i].startsWith('-')) {
+    const a = argv[i];
+    const v = argv[i + 1];
+    if (a === '-C' && v !== undefined)
+      dir =
+        dir !== undefined ? path.posix.resolve(dir, v) : path.posix.isAbsolute(v) ? v : undefined;
+    if (/^--(git-dir|work-tree)(=|$)/.test(a)) elsewhere = true;
+    i += GIT_VALUE_OPTS.has(a) ? 2 : 1;
+  }
+  return { sub: argv[i], rest: argv.slice(i + 1), dir, elsewhere };
 }
 
 function under(abs: string, dir: string): boolean {
@@ -689,6 +948,9 @@ export function attribute(access: Access, view: RepoView): Attribution {
     gitIndex: [],
     gitContent: [],
     gitNames: [],
+    gitNameGlobs: [],
+    gitContentGlobs: [],
+    gitRefs: [],
     network: [...(access.network ?? [])].sort(byteOrder),
     ignored: new Map(),
     buildOutput: [],
@@ -740,36 +1002,241 @@ export function attribute(access: Access, view: RepoView): Attribution {
     if (rel?.startsWith('.git/')) return rel.slice('.git/'.length);
     return undefined;
   };
-  /** Index file reads, judged after every exec is seen: a name-only `git ls-files` explains them. */
-  const indexFileReads: string[] = [];
-  const noteGit = (gitRel: string, shown: string, listing: boolean): void => {
+  /** Every history exec and read no named ref pins, deduplicated and never capped (F2 B5). */
+  const noteHistory = (shown: string): void => {
+    if (!res.gitHistory.includes(shown)) res.gitHistory.push(shown);
+  };
+  /** The processes whose git reads an exec explains: index explainers (a names scan, a content read narrowed by pathspecs, a worktree diff) and ref-pinned history commands. */
+  const indexPids = new Set<number>();
+  let indexExplainers = 0;
+  const refPids = new Set<number>();
+  /** Per pid, the tracked paths a `git diff <file>` named before `--` (F2 B4): git first asks whether each is a ref, which reads the lookup rule set REF_PROBES spells and packed-refs. */
+  const probes = new Map<number, string[]>();
+  const nameGlobs = new Set<string>();
+  const contentGlobs = new Set<string>();
+  const refs = new Set<string>();
+  /** The readers the trace recorded for one git path inside this repository's own git directories (F2 B1); undefined for an Access built without pids. */
+  const readersOf = (abs: string): Set<number> | undefined =>
+    access.gitReaders === undefined
+      ? undefined
+      : (access.gitReaders.get(abs) ?? new Set([UNKNOWN_INDEX_READER]));
+  /**
+   * Whether a history file read or listing is a pinned exec's own (F2 B5). An object read or a pack listing by a process that ran a ref-pinned history command or an index explainer: objects are named by content, so the commit or index entry that names one already fixes it. A loose or packed ref read, or the listing of the top `refs` directory git makes to look for replace refs, by a ref-pinned command: the ref's own sha moves with what it resolves to. A notes, replace or `shallow` path a pinned command only PROBED, and found absent (`git log` and `git show` probe all three on every run, measured on git 2.53): absence is what the run saw, and the stated limit is that creating one later moves no hash; one FOUND is history, so a shallow clone stays whole-tree. Logs, FETCH_HEAD and the other state files, any other listing, and anything inside a submodule's git directory are never explained: no ref the argv names fixes them.
+   */
+  const historyExplained = (abs: string, gitRel: string, listing: boolean): boolean => {
+    if (gitRel.startsWith('modules/')) return false;
+    const readers = listing ? access.gitListers?.get(abs) : readersOf(abs);
+    if (readers === undefined || readers.size === 0) return false;
+    const found = access.gitFound === undefined || access.gitFound.has(abs);
+    let allowed: (pid: number) => boolean;
+    if (gitRel.startsWith('objects/')) allowed = (p) => refPids.has(p) || indexPids.has(p);
+    else if (listing) {
+      if (gitRel !== 'refs') return false;
+      allowed = (p) => refPids.has(p);
+    } else if (/^refs\/(notes|replace)\/|^shallow$/.test(gitRel)) {
+      if (found) return false;
+      allowed = (p) => refPids.has(p);
+    } else if (/^(refs\/|packed-refs$)/.test(gitRel))
+      allowed = (p) =>
+        refPids.has(p) ||
+        (probes.get(p) ?? []).some(
+          (n) => gitRel === 'packed-refs' || REF_PROBES.some((rule) => rule(n) === gitRel)
+        );
+    else return false;
+    return [...readers].every(allowed);
+  };
+  /** Index file reads, judged after every exec is seen: a names scan or a narrowed content read explains them. */
+  const indexFileReads: { abs: string; shown: string }[] = [];
+  const noteGit = (abs: string, gitRel: string, shown: string, listing: boolean): void => {
     if (!listing && GIT_DISCOVERY_FILE.test(gitRel))
       res.ignored.set(GIT_DISCOVERY, (res.ignored.get(GIT_DISCOVERY) ?? 0) + 1);
     else if (GIT_HISTORY_FILE.test(gitRel)) {
-      if (res.gitHistory.length < 3) res.gitHistory.push(shown);
-    } else if (GIT_INDEX_FILE.test(gitRel)) {
-      if (indexFileReads.length < 3) indexFileReads.push(shown);
-    } else res.ignored.set(GIT_DISCOVERY, (res.ignored.get(GIT_DISCOVERY) ?? 0) + 1);
+      // A listing of refs or objects enumerates history: only the two listings historyExplained names are a pinned exec's own.
+      if (!historyExplained(abs, gitRel, listing)) noteHistory(shown);
+    } else if (GIT_INDEX_FILE.test(gitRel)) indexFileReads.push({ abs, shown });
+    else res.ignored.set(GIT_DISCOVERY, (res.ignored.get(GIT_DISCOVERY) ?? 0) + 1);
   };
-  const namesPids = new Set<number>();
+  const isTrackedDir = (d: string): boolean => d === '' || trackedDirs.has(d);
+  /** The nearest tracked directory at or above `p`, '' (the root) when none is. */
+  const nearestDir = (p: string): string => {
+    let d = p;
+    while (d !== '' && !trackedDirs.has(d)) {
+      const up = path.posix.dirname(d);
+      d = up === '.' ? '' : up;
+    }
+    return d;
+  };
+  const cover = (d: string): string => (d === '' ? '**' : `${d}/**`);
+  /** check:ci-paths-origin refuses a traced glob matching no tracked entry, so a pathspec fold never emits one. */
+  const alive = (g: string): boolean =>
+    view.files.some((f) => matchGlob(g, f)) || view.gitlinks.some((f) => matchGlob(g, f));
+  /**
+   * One git pathspec, relative to the exec's directory `base` ('' the root), as the globs it reaches (F2 B3). git's `*` crosses `/`, so `*.sh` is `*.sh` plus `**\/*.sh`; a literal `p` is `p` (a tracked file or gitlink) and `p/**` (a tracked directory). A glob or literal that names nothing tracked today would be a dead glob, so it widens to a live cover instead: a one-level names glob to `lists` of its directory, anything else to the nearest tracked directory's `D/**`. A shape this fold does not model (magic `:(...)`, a `?` or `[` class, a `*` not leading its segment) widens the same way. `**` means the whole set: the caller decides what that costs.
+   */
+  const foldPathspec = (
+    spec: string,
+    base: string,
+    ctx: 'names' | 'content'
+  ): { globs: string[]; lists: string[] } => {
+    const whole = { globs: ['**'], lists: [] };
+    if (spec.startsWith(':')) return whole;
+    const j = path.posix
+      .normalize(path.posix.join(base === '' ? '.' : base, spec))
+      .replace(/\/+$/, '');
+    if (j === '.' || j === '' || j === '..' || j.startsWith('../')) return whole;
+    const gi = j.search(/[*?[]/);
+    if (gi < 0) {
+      if (hasForbidden(j)) return { globs: [cover(nearestDir(cleanDir(j)))], lists: [] };
+      const out: string[] = [];
+      if (tracked.has(j) || view.gitlinks.includes(j)) out.push(j);
+      if (trackedDirs.has(j)) out.push(`${j}/**`);
+      if (out.length > 0) return { globs: out, lists: [] };
+      const up = path.posix.dirname(j);
+      return { globs: [cover(nearestDir(up === '.' ? '' : up))], lists: [] };
+    }
+    const cut = j.lastIndexOf('/', gi);
+    const head = j.slice(0, cut + 1);
+    const hdir = head.replace(/\/$/, '');
+    const tail = j.slice(cut + 1);
+    if (hdir !== '' && hasForbidden(hdir))
+      return { globs: [cover(nearestDir(cleanDir(hdir)))], lists: [] };
+    if (!/^\*[^*?[{/]*$/.test(tail)) return { globs: [cover(nearestDir(hdir))], lists: [] };
+    const out = { globs: [] as string[], lists: [] as string[] };
+    const one = `${head}${tail}`;
+    const deep = `${head}**/${tail}`;
+    if (alive(one)) out.globs.push(one);
+    else if (ctx === 'names' && isTrackedDir(hdir)) out.lists.push(hdir);
+    else out.globs.push(cover(nearestDir(hdir)));
+    out.globs.push(alive(deep) ? deep : cover(nearestDir(hdir)));
+    return out;
+  };
+  /** The content globs of a set of pathspecs, or undefined when one reaches the whole tree. */
+  const contentOf = (specs: readonly string[], base: string): string[] | undefined => {
+    const globs = specs.flatMap((s) => foldPathspec(s, base, 'content').globs);
+    return globs.includes('**') ? undefined : globs;
+  };
+  const evidence = (list: string[] | undefined, shown: string): void => {
+    if (list !== undefined && list.length < 3) list.push(shown);
+  };
   for (const ex of access.execs) {
     // Only a git command aimed at THIS repository says anything about its history: a selftest's `git init /tmp/x` or `git -C /tmp/x log` reads another one.
     if (!targetsRepo(ex, view)) continue;
     const argv = ex.argv;
     const use = classifyGitArgv(argv);
+    if (use === 'discovery') continue;
     // A remote URL in a git argv (git remote-https origin <url>) is shown as <url>: it can carry credentials, and the ledger is committed.
     const shown = argv
       .slice(0, 6)
       .map((a) => (/^[a-z][a-z0-9+.-]*:\/\//i.test(a) ? '<url>' : a))
       .join(' ');
-    if (use === 'history' && res.gitHistory.length < 3) res.gitHistory.push(shown);
-    if (use === 'content' && (res.gitContent ?? []).length < 3) res.gitContent?.push(shown);
-    if (use === 'names') {
-      if ((res.gitNames ?? []).length < 3) res.gitNames?.push(shown);
-      if (ex.pid !== undefined) namesPids.add(ex.pid);
+    const cmd = gitCommand(argv, ex.cwd);
+    const sub = cmd.sub ?? '';
+    const dir = cmd.dir;
+    // The exec's directory relative to the root, when it is one: unknown, outside the root, inside a git directory, or set aside by --git-dir/--work-tree, a pathspec cannot be placed and no ref can be resolved against the root.
+    const base =
+      dir !== undefined &&
+      !cmd.elsewhere &&
+      under(dir, view.root) &&
+      !view.gitDirs.some((g) => under(dir, g))
+        ? path.posix.relative(view.root, dir)
+        : undefined;
+    const link = base === undefined || base === '' ? undefined : gitlinkOf(base);
+    const explainIndex = (): void => {
+      indexExplainers++;
+      if (ex.pid !== undefined) indexPids.add(ex.pid);
+    };
+    const wholeContent = (): void => {
+      evidence(res.gitContent, shown);
+      evidence(res.gitIndex, shown);
+    };
+    const trackedPath = (p: string): boolean => {
+      if (base === undefined) return false;
+      const j = path.posix.normalize(path.posix.join(base === '' ? '.' : base, p));
+      return tracked.has(j) || trackedDirs.has(j) || view.gitlinks.includes(j);
+    };
+    if (sub === 'ls-files' && (use === 'names' || use === 'content')) {
+      const lf = lsFilesRead(cmd.rest);
+      // F2 B2: the names inside every submodule are fixed by its gitlink's commit, which a content path on the bare gitlink hashes.
+      if (lf.recurse) for (const g of view.gitlinks) res.gitlinkReads.add(g);
+      if (link !== undefined) {
+        // A scan run inside a submodule (the per-submodule child of --recurse-submodules among them) reads that submodule's index: its gitlink stands for it, as for any read inside it.
+        res.gitlinkReads.add(link);
+        evidence(res.gitNames, shown);
+        explainIndex();
+        continue;
+      }
+      if (use === 'names') {
+        evidence(res.gitNames, shown);
+        if (lf.pathspecs.length === 0 || base === undefined) nameGlobs.add('**');
+        else
+          for (const spec of lf.pathspecs) {
+            const f = foldPathspec(spec, base, 'names');
+            for (const g of f.globs) nameGlobs.add(g);
+            for (const d of f.lists) res.listed.add(d);
+          }
+        explainIndex();
+        continue;
+      }
+      const globs =
+        !lf.unknown && lf.pathspecs.length > 0 && base !== undefined
+          ? contentOf(lf.pathspecs, base)
+          : undefined;
+      if (globs === undefined) wholeContent();
+      else {
+        for (const g of globs) contentGlobs.add(g);
+        explainIndex();
+      }
+      continue;
     }
-    if ((use === 'index' || use === 'content') && res.gitIndex.length < 3) res.gitIndex.push(shown);
+    if (sub === 'diff') {
+      const d = diffRead(cmd.rest);
+      // F2 B4: with no revision flag and every positional a tracked path, git reads them as pathspecs, and the comparison is the worktree against the index: the content of those paths.
+      if (!d.revisionFlag && d.positionals.every(trackedPath)) {
+        const specs = [...d.positionals, ...d.pathspecs];
+        const globs =
+          specs.length > 0 && base !== undefined && link === undefined
+            ? contentOf(specs, base)
+            : undefined;
+        if (globs === undefined) wholeContent();
+        else {
+          for (const g of globs) contentGlobs.add(g);
+          explainIndex();
+          if (ex.pid !== undefined && d.positionals.length > 0) probes.set(ex.pid, d.positionals);
+        }
+        continue;
+      }
+    }
+    if (use === 'history') {
+      const pin =
+        base !== undefined && link === undefined
+          ? pinHistory(sub, cmd.rest, trackedPath)
+          : { unpinned: 'its repository is not this checkout' };
+      if ('unpinned' in pin) {
+        noteHistory(shown);
+        continue;
+      }
+      for (const r of pin.refs) refs.add(r);
+      if (ex.pid !== undefined) refPids.add(ex.pid);
+      if (pin.onDisk) {
+        // `git diff REV [-- <pathspec>]` compares REV with the worktree: the content of what it names, besides the ref.
+        const globs =
+          base !== undefined
+            ? contentOf(pin.pathspecs.length > 0 ? pin.pathspecs : ['.'], base)
+            : undefined;
+        if (globs === undefined) wholeContent();
+        else {
+          for (const g of globs) contentGlobs.add(g);
+          explainIndex();
+        }
+      }
+      continue;
+    }
+    if (use === 'content') wholeContent();
+    else if (use === 'index') evidence(res.gitIndex, shown);
   }
+  res.gitNameGlobs = nameGlobs.has('**') ? ['**'] : [...nameGlobs].sort(byteOrder);
+  res.gitContentGlobs = [...contentGlobs].sort(byteOrder);
+  res.gitRefs = [...refs].sort(byteOrder);
   const relOf = (abs: string): string | undefined =>
     under(abs, view.root) ? path.posix.relative(view.root, abs) : undefined;
   const ignoredBy = (rel: string): string | undefined =>
@@ -778,7 +1245,7 @@ export function attribute(access: Access, view: RepoView): Attribution {
     const rel = relOf(abs);
     const gitRel = gitRelOf(abs, rel);
     if (gitRel !== undefined) {
-      noteGit(gitRel, rel ?? abs, false);
+      noteGit(abs, gitRel, rel ?? abs, false);
       continue;
     }
     if (rel === undefined || rel === '') continue;
@@ -802,7 +1269,7 @@ export function attribute(access: Access, view: RepoView): Attribution {
     const rel = relOf(abs);
     const gitRel = gitRelOf(abs, rel);
     if (gitRel !== undefined) {
-      noteGit(gitRel, `list ${rel ?? abs}`, true);
+      noteGit(abs, gitRel, `list ${rel ?? abs}`, true);
       continue;
     }
     if (rel === undefined) continue;
@@ -815,11 +1282,12 @@ export function attribute(access: Access, view: RepoView): Attribution {
       else noteUntracked(rel, true);
     }
   }
-  // An index read with no name-only `git ls-files` to explain it (another git command, or a library reading .git/index itself) is whole-tree evidence. When the trace names the reading processes, a name-only `git ls-files` explains only its own reads: a process that is not one reads the index for what it holds (review bab2c5c8.2).
-  const foreignIndexReader =
-    access.indexPids !== undefined && [...access.indexPids].some((pid) => !namesPids.has(pid));
-  if ((res.gitNames ?? []).length === 0 || foreignIndexReader)
-    for (const r of indexFileReads) if (res.gitIndex.length < 3) res.gitIndex.push(r);
+  // An index read with no names scan or narrowed content read to explain it (another git command, or a library reading .git/index itself) is whole-tree evidence. When the trace names the reading processes, an explainer explains only its own reads: a process that is not one reads the index for what it holds (review bab2c5c8.2). Only this repository's own index counts (F2 B1): a fixture repository's index, read by its own `git -C /tmp/x`, is never under view.gitDirs, so it never reaches indexFileReads at all.
+  for (const r of indexFileReads) {
+    const readers = readersOf(r.abs);
+    const foreign = readers !== undefined && [...readers].some((pid) => !indexPids.has(pid));
+    if ((indexExplainers === 0 || foreign) && res.gitIndex.length < 3) res.gitIndex.push(r.shown);
+  }
   // The dependency trees are what the ROOT lockfile installs, and input-hash.ts matches `**/package-lock.json` as `.*/package-lock.json`, so the root one is no global input: a gate that loads a dependency names it.
   if (usesDeps && tracked.has('package-lock.json')) res.reads.add('package-lock.json');
   return res;
@@ -834,6 +1302,10 @@ export type Verdict =
       lists?: string[];
       /** Globs whose matching tracked names the gate reads: the lock entry's `names`. */
       names?: string[];
+      /** Plain ref names whose commit the gate's history reads depend on (F2 B5): the lock entry's `refs`. Never scopes the gate alone. */
+      refs?: string[];
+      /** The whole-tree reasons a carry-exempt kind waived for this gate (F2 B7), so a reader sees the verdict is a scoped trace of an exempt gate, not a clean one. */
+      waived?: string[];
       reads: number;
       listed: number;
       coveragePct: number;
@@ -910,7 +1382,26 @@ export function evidenceText(s: string, dirs: readonly string[] = []): string {
     .replace(/\bgit\s+-C\s+\S+\s+/g, 'git ');
 }
 
-export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> = []): Verdict {
+/** A clean file extension (`.ts`, `.json`): the only shape an extension fold names. */
+const CLEAN_EXT = /^\.[A-Za-z0-9_+-]+$/;
+
+/** The extension of a path's last segment, '' for none or a dotfile (`.eslintrc`). */
+function extOf(p: string): string {
+  return path.posix.extname(path.posix.basename(p));
+}
+
+/** What `fold` may waive: a carry-exempt row's kind (F2 B7). */
+export interface FoldOpts {
+  /** The carry-exempt.json kind of the gate: `network`, `history` or `cache` waives that one whole-tree reason and no other; `clock`, which no trace can see, waives nothing. */
+  waive?: string | null;
+}
+
+export function fold(
+  attr: Attribution,
+  view: RepoView,
+  needs: Iterable<string> = [],
+  opts: FoldOpts = {}
+): Verdict {
   const closure = new Set(needs);
   const counts = { reads: attr.reads.size, listed: attr.listed.size };
   const viewDirs = [view.root, ...view.gitDirs];
@@ -920,14 +1411,25 @@ export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> 
     ...counts,
     coveragePct,
   });
+  // F2 B7: a carry-exempt kind names why the gate's hash is null already, so that one reason buys nothing as a whole-tree verdict; every OTHER reason still stands, and the waiver is printed with the verdict.
+  const waived: string[] = [];
+  const waives = (kind: 'network' | 'history' | 'cache'): boolean => {
+    if (opts.waive !== kind) return false;
+    waived.push(kind);
+    return true;
+  };
   // The network first: no tracked input, history included, can stand for what a remote answers.
   const net = attr.network ?? [];
-  if (net.length > 0)
+  if (net.length > 0 && !waives('network'))
     return whole(
       `network: connects to ${net.slice(0, 3).join(', ')}${net.length > 3 ? `, and ${net.length - 3} more` : ''}, so its verdict can move with nothing in the tree moving; a carry-exempt.json candidate`
     );
-  if (attr.gitHistory.length > 0)
-    return whole(`reads git history (${evidenceText(attr.gitHistory.join('; '), viewDirs)})`);
+  if (attr.gitHistory.length > 0 && !waives('history')) {
+    const more = attr.gitHistory.length - 3;
+    return whole(
+      `reads git history no named ref pins (${evidenceText(attr.gitHistory.slice(0, 3).join('; '), viewDirs)}${more > 0 ? `; and ${more} more` : ''})`
+    );
+  }
   if ((attr.gitContent ?? []).length > 0)
     return whole(
       `reads what every tracked file holds through the git index (${evidenceText((attr.gitContent ?? []).join('; '), viewDirs)}), so a change to any tracked file can change its verdict`
@@ -936,7 +1438,7 @@ export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> 
     return whole(
       `enumerates the tracked file list through the git index (${evidenceText(attr.gitIndex.join('; '), viewDirs)}), so a new file anywhere can change its verdict`
     );
-  if (attr.cacheState.length > 0)
+  if (attr.cacheState.length > 0 && !waives('cache'))
     return whole(
       `reads untracked cache state (${attr.cacheState.join(', ')}), so its verdict can move with no tracked input moving; a carry-exempt.json candidate`
     );
@@ -949,6 +1451,8 @@ export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> 
   const files = [...attr.reads].filter((f) => !isGlobal(f));
   const dirGlobs = new Set<string>();
   const fileGlobs = new Set<string>();
+  /** F2 B6: directories folded by extension, to `D/*.ext` plus `D/**\/*.ext`. */
+  const extDirs = new Map<string, string>();
   const addDir = (d: string): boolean => {
     const c = cleanDir(d);
     if (c === '') return false;
@@ -961,51 +1465,102 @@ export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> 
     if (d === '' || !hasForbidden(d)) listDirs.add(d);
     else if (!addDir(d)) return whole(`lists ${d}, whose only glob-safe ancestor is the root`);
   }
-  const names = (attr.gitNames ?? []).length > 0 ? ['**'] : [];
+  // A hand-built Attribution with name-only scans and no folded globs reads as the whole name set, as before F2.
+  const nameGlobs = attr.gitNameGlobs ?? ((attr.gitNames ?? []).length > 0 ? ['**'] : []);
+  const names = nameGlobs.includes('**') ? ['**'] : [...nameGlobs].sort(byteOrder);
   // A submodule read names the bare gitlink path: input-hash.ts `entryMatches` reaches the gitlink entry through it exactly as through `<gitlink>/**`, and it is the path `git ls-files` lists and a submodule bump changes, so the dead-glob checks (check:ci-gate-manifest, check:ci-paths-origin) and quick-select's rule 1 all see it.
   for (const g of attr.gitlinkReads) {
     if (hasForbidden(g)) return whole(`reads inside submodule ${g}, whose path no glob can name`);
     fileGlobs.add(g);
   }
-  const covered = (p: string): boolean =>
-    [...dirGlobs].some((d) => p === d || p.startsWith(`${d}/`));
+  const underExt = (p: string, file: boolean): boolean =>
+    [...extDirs].some(([d, e]) => (p === d || p.startsWith(`${d}/`)) && (!file || p.endsWith(e)));
+  // A directory under an extension fold is covered too: every read under the folded directory shares that extension, so the fold reaches each of them.
+  const covered = (p: string, file = false): boolean =>
+    [...dirGlobs].some((d) => p === d || p.startsWith(`${d}/`)) || underExt(p, file);
   const total = new Map<string, number>();
   const read = new Map<string, number>();
-  for (const f of view.files) for (const a of ancestors(f)) total.set(a, (total.get(a) ?? 0) + 1);
-  for (const f of files) for (const a of ancestors(f)) read.set(a, (read.get(a) ?? 0) + 1);
+  const totalExt = new Map<string, number>();
+  const readExts = new Map<string, Set<string>>();
+  for (const f of view.files)
+    for (const a of ancestors(f)) {
+      total.set(a, (total.get(a) ?? 0) + 1);
+      const k = `${a}\0${extOf(f)}`;
+      totalExt.set(k, (totalExt.get(k) ?? 0) + 1);
+    }
+  for (const f of files)
+    for (const a of ancestors(f)) {
+      read.set(a, (read.get(a) ?? 0) + 1);
+      let s = readExts.get(a);
+      if (s === undefined) {
+        s = new Set();
+        readExts.set(a, s);
+      }
+      s.add(extOf(f));
+    }
+  const anyTracked = (g: string): boolean => view.files.some((f) => matchGlob(g, f));
   const dirs = [...read.keys()].sort(
     (a, b) => a.split('/').length - b.split('/').length || (a < b ? -1 : a > b ? 1 : 0)
   );
   for (const d of dirs) {
     if (covered(d)) continue;
+    const r = read.get(d) ?? 0;
+    const exts = readExts.get(d) ?? new Set();
+    // F2 B6: every read under D shares one extension, and more than half of D's tracked files with it were read: fold to that extension, when both halves of the pair name a tracked file (check:ci-paths-origin refuses a dead glob; a flat directory keeps the plain D/** fold).
+    if (exts.size === 1 && !hasForbidden(d)) {
+      const e = [...exts][0];
+      const te = totalExt.get(`${d}\0${e}`) ?? 0;
+      if (
+        CLEAN_EXT.test(e) &&
+        te >= FOLD_MIN_FILES &&
+        r / te > FOLD_DIR_FRACTION &&
+        anyTracked(`${d}/*${e}`) &&
+        anyTracked(`${d}/**/*${e}`)
+      ) {
+        extDirs.set(d, e);
+        continue;
+      }
+    }
     const t = total.get(d) ?? 0;
-    if (t >= FOLD_MIN_FILES && (read.get(d) ?? 0) / t > FOLD_DIR_FRACTION) addDir(d);
+    if (t >= FOLD_MIN_FILES && r / t > FOLD_DIR_FRACTION) addDir(d);
   }
   for (const f of files) {
-    if (covered(f)) continue;
+    if (covered(f, true)) continue;
     if (hasForbidden(f)) {
       if (!addDir(path.posix.dirname(f)))
         return whole(`reads ${f}, whose only glob-safe ancestor is the root`);
     } else fileGlobs.add(f);
   }
-  // A dir glob inside another dir glob says nothing more; a file glob under a dir glob neither.
+  // A dir glob inside another dir glob says nothing more; a file glob under a dir glob neither; nor an extension fold under a dir glob.
   const dirList = [...dirGlobs].filter(
     (d) => ![...dirGlobs].some((o) => o !== d && d.startsWith(`${o}/`))
   );
   const finalDirs = new Set(dirList);
   const isUnderDir = (p: string): boolean =>
     [...finalDirs].some((d) => p === d || p.startsWith(`${d}/`));
+  const extGlobs = [...extDirs]
+    .filter(([d]) => !isUnderDir(d))
+    .flatMap(([d, e]) => [`${d}/*${e}`, `${d}/**/*${e}`]);
+  // F2 B3/B4: content read through git (a narrowed `ls-files -s`, a `git diff` of named paths) is content like any read.
+  const gitGlobs = (attr.gitContentGlobs ?? []).filter((g) => {
+    const lit = g.split(/[*]/, 1)[0].replace(/\/$/, '');
+    return !(lit !== '' && isUnderDir(lit) && (g === lit || g.startsWith(`${lit}/`)));
+  });
   const globs = [
-    ...[...finalDirs].map((d) => `${d}/**`),
-    ...[...fileGlobs].filter((f) => !isUnderDir(f)),
+    ...new Set([
+      ...[...finalDirs].map((d) => `${d}/**`),
+      ...extGlobs,
+      ...gitGlobs,
+      ...[...fileGlobs].filter((f) => !isUnderDir(f)),
+    ]),
   ].sort(byteOrder);
   const entries = view.files.length + view.gitlinks.length;
-  const reached =
-    view.files.filter((f) => isUnderDir(f) || fileGlobs.has(f)).length +
-    view.gitlinks.filter((g) => fileGlobs.has(g) || isUnderDir(g)).length;
+  const reaches = (p: string): boolean =>
+    isUnderDir(p) || fileGlobs.has(p) || [...extGlobs, ...gitGlobs].some((g) => matchGlob(g, p));
+  const reached = view.files.filter(reaches).length + view.gitlinks.filter(reaches).length;
   // The 30% line weighs content globs only: `lists` and `names` hash names, which is what lets a listing or an ls-files scan stay cheap.
   const coveragePct = entries === 0 ? 0 : Math.round((1000 * reached) / entries) / 10;
-  // A listing inside a content dir glob says nothing more: `D/**` already moves with every name under D.
+  // A listing inside a content dir glob says nothing more: `D/**` already moves with every name under D. An extension fold does not reach a new child of another extension, so a listing under one stays.
   const lists = [...listDirs].filter((d) => d === '' || !isUnderDir(d)).sort(byteOrder);
   if (globs.length === 0 && lists.length === 0 && names.length === 0)
     return whole(
@@ -1023,11 +1578,14 @@ export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> 
       `its traced set names record paths (${cited.join(', ')}), and manifest.ts citing them makes every gate that reads the manifest a reader of those records, so a record-only commit could no longer advance a receipt (record-paths.json); whole-tree until it reads no record`,
       coveragePct
     );
+  const refs = attr.gitRefs ?? [];
   return {
     kind: 'paths',
     paths: globs,
     ...(lists.length > 0 ? { lists } : {}),
     ...(names.length > 0 ? { names } : {}),
+    ...(refs.length > 0 ? { refs: [...refs] } : {}),
+    ...(waived.length > 0 ? { waived } : {}),
     ...counts,
     coveragePct,
   };
@@ -1208,6 +1766,8 @@ export interface LockEntry {
   lists?: string[];
   /** W2.4 (gate-spec.ts): globs whose matching tracked names the gate reads. */
   names?: string[];
+  /** W2.4 (gate-spec.ts): ref names whose commit the gate's verdict depends on; a trace writes them for pinned history reads (F2 B5). */
+  refs?: string[];
   pathsOrigin?: string;
   leaves?: string[];
   needs?: string[];
@@ -1221,13 +1781,16 @@ export function readLock(root: string): LockEntry[] {
   return JSON.parse(fs.readFileSync(path.join(root, LOCK_REL), 'utf8')) as LockEntry[];
 }
 
-/** The name-scoped input fields a trace writes, in the order gate-spec.ts declares them; `pathsOrigin` follows them. */
-const TRACED_FIELDS = ['paths', 'lists', 'names'] as const;
+/** The fields that scope a gate (a gate declaring none hashes the whole tree). `refs` is not one: input-hash.ts reads a ref as no tree read. */
+const SCOPE_FIELDS = ['paths', 'lists', 'names'] as const;
+/** The input fields a trace writes, in the order gate-spec.ts declares them; `pathsOrigin` follows them. */
+const TRACED_FIELDS = [...SCOPE_FIELDS, 'refs'] as const;
 
-/** A trace's input sets: content globs plus the W2.4 name-shaped fields. An empty one is omitted, never written as `[]`. */
+/** A trace's input sets: content globs plus the W2.4 name-shaped fields and the F2 B5 refs. An empty one is omitted, never written as `[]`. */
 export interface TracedInputs {
   lists?: string[];
   names?: string[];
+  refs?: string[];
 }
 
 /** The fields to write for one verdict, each non-empty, in TRACED_FIELDS order. */
@@ -1370,8 +1933,8 @@ export function manifestWithPaths(
   kept.splice(
     insertAt,
     0,
-    ...tracedFields(paths, { lists: opts.lists, names: opts.names }).flatMap(([k, v]) =>
-      fieldLines(k, v)
+    ...tracedFields(paths, { lists: opts.lists, names: opts.names, refs: opts.refs }).flatMap(
+      ([k, v]) => fieldLines(k, v)
     ),
     `    pathsOrigin: ${q(TRACED_ORIGIN)},`
   );
@@ -1574,32 +2137,66 @@ export interface RawAccess {
   /** Network peers (Access.network); absent in an `--out` file written before `connect` was traced. */
   network?: string[];
   startedMs?: number;
-  /** The pids that read the git index (Access.indexPids): `--refold` needs them to tell a name-only `git ls-files`'s own read from a foreign one. Absent in a file written before they were kept: accessOfRaw then charges an index read to an unknown reader, the whole-tree direction, and refold names the gate. */
-  indexPids?: number[];
+  /** The pids that named each git-shaped path of this repository (Access.gitReaders, F2 B1): `--refold` needs them to tell an explaining exec's own git read from a foreign one. Absent in a file written before they were kept: accessOfRaw then charges every index and history read to an unknown reader, the whole-tree direction, and refold names the gate. */
+  gitReaders?: Record<string, number[]>;
+  /** Access.gitFound, cut to this repository; absent, every git path counts as found. */
+  gitFound?: string[];
+  /** Access.gitListers, cut to this repository; absent, no git listing is a pinned exec's own. */
+  gitListers?: Record<string, number[]>;
+}
+
+/** A path -> pids map as JSON, the keys cut by `keep` and sorted. */
+function pidRecord(
+  m: Map<string, Set<number>> | undefined,
+  keep: (p: string) => boolean
+): Record<string, number[]> | undefined {
+  if (m === undefined) return undefined;
+  const out: Record<string, number[]> = {};
+  for (const p of [...m.keys()].filter(keep).sort(byteOrder))
+    out[p] = [...(m.get(p) ?? [])].sort((a, b) => a - b);
+  return out;
+}
+
+function pidMap(r: Record<string, number[]>): Map<string, Set<number>> {
+  return new Map(Object.entries(r).map(([p, pids]) => [p, new Set(pids)]));
 }
 
 export function rawOf(access: Access, view: RepoView): RawAccess {
   const ours = (p: string): boolean => under(p, view.root) || view.gitDirs.some((g) => under(p, g));
+  const gitReaders = pidRecord(access.gitReaders, ours);
+  const gitListers = pidRecord(access.gitListers, ours);
   return {
     files: [...access.files].filter(ours).sort(byteOrder),
     listed: [...access.listed].filter(ours).sort(byteOrder),
     execs: access.execs.filter((e) => path.posix.basename(e.argv[0] ?? '') === 'git'),
     network: [...(access.network ?? [])].sort(byteOrder),
     startedMs: access.startedMs,
-    indexPids:
-      access.indexPids === undefined ? undefined : [...access.indexPids].sort((a, b) => a - b),
+    ...(gitReaders !== undefined ? { gitReaders } : {}),
+    ...(access.gitFound !== undefined
+      ? { gitFound: [...access.gitFound].filter(ours).sort(byteOrder) }
+      : {}),
+    ...(gitListers !== undefined ? { gitListers } : {}),
   };
 }
 
-/** A pid no process has: the reader a raw record from before `indexPids` was kept is charged to, so the index read it holds counts as foreign. */
+/** A pid no process has: the reader charged for a git read the trace holds no pid for (a raw record from before `gitReaders` was kept), so it counts as foreign. */
 export const UNKNOWN_INDEX_READER = -1;
 
+/** A path shaped like a git index or history file, the reads whose reader decides a verdict. */
+const GIT_JUDGED = /(^|\/)(index|sharedindex\.[^/]*|packed-refs|shallow)$|\/(objects|refs|logs)\/./;
+
 /**
- * The Access a raw record stands for, the inverse of rawOf. A record written before `indexPids` was kept, whose files still name a git index, cannot say which process read it; the read is charged to UNKNOWN_INDEX_READER, a foreign reader, so the fold takes the whole-tree direction instead of letting a name-only `git ls-files` explain a read it may not have made, and `legacy` is true so the caller says so (review 434f1d3b.3). A live trace leaves `indexPids` unset only when no process read an index, so a record without the field and without an index read is judged in full.
+ * The Access a raw record stands for, the inverse of rawOf. A record written before `gitReaders` was kept cannot say which process read its git files; each one is charged to UNKNOWN_INDEX_READER, a foreign reader, so the fold takes the whole-tree direction instead of letting an explaining exec explain a read it may not have made, and `legacy` is true when such a record holds an index or history read, so the caller says so (review 434f1d3b.3). A live trace leaves `gitReaders` unset only when no process named a git-shaped path, so a record without the field and without such a read is judged in full. `gitFound` and `gitListers` are read only beside `gitReaders`: a legacy record counts every git path as found and no listing as explained.
  */
 export function accessOfRaw(raw: RawAccess): { access: Access; legacy: boolean } {
-  const legacy = raw.indexPids === undefined && raw.files.some((f) => INDEX_PATH.test(f));
-  const pids = legacy ? [UNKNOWN_INDEX_READER] : raw.indexPids;
+  const legacy = raw.gitReaders === undefined && raw.files.some((f) => GIT_JUDGED.test(f));
+  let gitReaders: Map<string, Set<number>> | undefined;
+  if (raw.gitReaders !== undefined) gitReaders = pidMap(raw.gitReaders);
+  else if (legacy)
+    gitReaders = new Map(
+      raw.files.filter((f) => GIT_SHAPED.test(f)).map((f) => [f, new Set([UNKNOWN_INDEX_READER])])
+    );
+  const current = raw.gitReaders !== undefined;
   return {
     access: {
       files: new Set(raw.files),
@@ -1607,7 +2204,9 @@ export function accessOfRaw(raw: RawAccess): { access: Access; legacy: boolean }
       execs: raw.execs,
       network: new Set(raw.network ?? []),
       startedMs: raw.startedMs,
-      indexPids: pids === undefined ? undefined : new Set(pids),
+      ...(gitReaders !== undefined ? { gitReaders } : {}),
+      ...(current && raw.gitFound !== undefined ? { gitFound: new Set(raw.gitFound) } : {}),
+      ...(current && raw.gitListers !== undefined ? { gitListers: pidMap(raw.gitListers) } : {}),
     },
     legacy,
   };
@@ -1618,9 +2217,10 @@ export function verdictOf(
   attr: Attribution,
   view: RepoView,
   exit: number,
-  needs: Iterable<string> = []
+  needs: Iterable<string> = [],
+  opts: FoldOpts = {}
 ): Verdict {
-  const verdict = fold(attr, view, needs);
+  const verdict = fold(attr, view, needs, opts);
   if (exit === 0) return verdict;
   return {
     kind: 'whole-tree',
@@ -1640,6 +2240,8 @@ export async function traceGate(
     timeoutS?: number;
     closure?: ReadonlySet<string>;
     noSeccomp?: boolean;
+    /** The gate's carry-exempt kind (F2 B7), which fold waives alone. */
+    waive?: string | null;
   } = {}
 ): Promise<GateResult> {
   const run = await traceCommand(entry.run, view.root, {
@@ -1651,7 +2253,9 @@ export async function traceGate(
   const attr = attribute(run.access, view);
   return {
     id: entry.id,
-    verdict: verdictOf(attr, view, run.exit, opts.closure ?? entry.needs ?? []),
+    verdict: verdictOf(attr, view, run.exit, opts.closure ?? entry.needs ?? [], {
+      waive: opts.waive,
+    }),
     exit: run.exit,
     seconds: run.seconds,
     ignored: attr.ignored,
@@ -1711,6 +2315,7 @@ export function writeResult(
         ...opts,
         lists: r.verdict.lists,
         names: r.verdict.names,
+        refs: r.verdict.refs,
       })
     );
     fs.writeFileSync(
@@ -1718,6 +2323,7 @@ export function writeResult(
       lockWithPaths(fs.readFileSync(lPath, 'utf8'), r.id, r.verdict.paths, {
         lists: r.verdict.lists,
         names: r.verdict.names,
+        refs: r.verdict.refs,
       })
     );
   }
@@ -1725,23 +2331,36 @@ export function writeResult(
   fs.writeFileSync(ledgerPath, renderLedger(rows));
 }
 
-/** One stdout line per gate with paths: `<id>\t<paths space-joined>`, then `\tlists=<json>` and `\tnames=<json>` when present (JSON, so the root's '' stays visible). */
+/** One stdout line per gate with paths: `<id>\t<paths space-joined>`, then `\tlists=<json>`, `\tnames=<json>`, `\trefs=<json>` and `\twaived=<json>` when present (JSON, so the root's '' stays visible). */
 export function verdictLine(id: string, v: Extract<Verdict, { kind: 'paths' }>): string {
   return [
     `${id}\t${v.paths.join(' ')}`,
     ...(v.lists !== undefined ? [`lists=${JSON.stringify(v.lists)}`] : []),
     ...(v.names !== undefined ? [`names=${JSON.stringify(v.names)}`] : []),
+    ...(v.refs !== undefined ? [`refs=${JSON.stringify(v.refs)}`] : []),
+    ...(v.waived !== undefined ? [`waived=${JSON.stringify(v.waived)}`] : []),
   ].join('\t');
 }
 
-/** Why --all-whole-tree leaves an entry untraced, or undefined when it traces it. */
-export function untracedReason(e: LockEntry, exempt: Set<string>): string | undefined {
-  const scoped = TRACED_FIELDS.some((f) => (e[f] ?? []).length > 0);
+/** The carry-exempt rows as id -> kind (null for a row naming none), read from `root`; an absent file is no row. */
+export function exemptKinds(root: string): Map<string, string | null> {
+  const p = path.join(root, CARRY_EXEMPT_REL);
+  return exemptRowsOf(fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null);
+}
+
+/**
+ * Why --all-whole-tree leaves an entry untraced, or undefined when it traces it. A carry-exempt row with no `kind` is refused: nothing says which whole-tree reason its exemption stands for. A row WITH a kind is traced, and `fold` waives that kind's reason alone (F2 B7), so the trace still names every other reason it reads.
+ */
+export function untracedReason(
+  e: LockEntry,
+  exempt: ReadonlyMap<string, string | null>
+): string | undefined {
+  const scoped = SCOPE_FIELDS.some((f) => (e[f] ?? []).length > 0);
   if (scoped && e.pathsOrigin !== TRACED_ORIGIN) return 'declares paths already';
   if (!e.gate)
     return 'not a gate: a prerequisite or an operator command, never judged, so never carried';
-  if (exempt.has(e.id))
-    return `carry-exempt (${CARRY_EXEMPT_REL}): its hash is null, so paths buy nothing`;
+  if (exempt.has(e.id) && (exempt.get(e.id) ?? null) === null)
+    return `carry-exempt (${CARRY_EXEMPT_REL}) with no kind: its hash is null, and no kind says which reason a trace may waive; add one (clock, history, network or cache)`;
   if (NEVER_TRACED[e.id] !== undefined) return NEVER_TRACED[e.id];
   if (e.ciOnly !== undefined) return 'ciOnly: never runs in the local lane';
   return undefined;
@@ -1751,6 +2370,7 @@ export function untracedReason(e: LockEntry, exempt: Set<string>): string | unde
 export function refold(root: string, file: string): number {
   const view = repoView(root);
   const byId = new Map(readLock(root).map((e) => [e.id, e]));
+  const exempt = exemptKinds(root);
   let n = 0;
   let paths = 0;
   const legacyIds: string[] = [];
@@ -1771,16 +2391,18 @@ export function refold(root: string, file: string): number {
     if (legacy) {
       legacyIds.push(r.id);
       console.error(
-        `path-trace: ${r.id}'s raw trace in ${file} predates indexPids, so no reader of its git index can be told apart; its index read counts as foreign (whole-tree). Re-trace it for a full verdict.`
+        `path-trace: ${r.id}'s raw trace in ${file} predates gitReaders, so no reader of its git index or history files can be told apart; each such read counts as foreign (whole-tree). Re-trace it for a full verdict.`
       );
     }
-    const verdict = verdictOf(attribute(access, view), view, r.exit, needsClosure(r.id, byId));
+    const verdict = verdictOf(attribute(access, view), view, r.exit, needsClosure(r.id, byId), {
+      waive: exempt.get(r.id),
+    });
     if (verdict.kind === 'paths') paths++;
     n++;
     process.stdout.write(`${JSON.stringify({ ...r, verdict })}\n`);
   }
   console.error(
-    `path-trace: re-folded ${n} trace(s): ${paths} with paths, ${n - paths} whole-tree${legacyIds.length > 0 ? `; ${legacyIds.length} judged without indexPids (${legacyIds.join(', ')})` : ''}`
+    `path-trace: re-folded ${n} trace(s): ${paths} with paths, ${n - paths} whole-tree${legacyIds.length > 0 ? `; ${legacyIds.length} judged without gitReaders (${legacyIds.join(', ')})` : ''}`
   );
   return n === 0 ? 1 : 0;
 }
@@ -1853,10 +2475,7 @@ async function main(argv: string[]): Promise<number> {
   }
   const lock = readLock(args.root);
   const byId = new Map(lock.map((e) => [e.id, e]));
-  const exemptPath = path.join(args.root, CARRY_EXEMPT_REL);
-  const exempt = exemptIdsOf(
-    fs.existsSync(exemptPath) ? fs.readFileSync(exemptPath, 'utf8') : null
-  );
+  const exempt = exemptKinds(args.root);
   const todo: LockEntry[] = [];
   const untraced = new Map<string, string>();
   for (const id of args.gates) {
@@ -1910,7 +2529,7 @@ async function main(argv: string[]): Promise<number> {
     const v = r.verdict;
     const shape =
       v.kind === 'paths'
-        ? `${v.paths.length} glob(s), ${v.coveragePct}% of the tree`
+        ? `${v.paths.length} glob(s), ${v.coveragePct}% of the tree${v.refs !== undefined ? `, refs ${v.refs.join(' ')}` : ''}${v.waived !== undefined ? `, carry-exempt kind waived ${v.waived.join(', ')}` : ''}`
         : `WHOLE-TREE: ${v.reason}`;
     console.error(
       `  [${results.length}/${todo.length}] ${r.id} (${r.seconds}s, exit ${r.exit}, ${v.reads} reads, ${v.listed} listings): ${shape}`
@@ -1953,6 +2572,7 @@ async function main(argv: string[]): Promise<number> {
             timeoutS: args.timeoutS,
             closure: needsClosure(e.id, byId),
             noSeccomp: args.noSeccomp,
+            waive: exempt.get(e.id),
           })
         );
       } finally {
@@ -2145,8 +2765,10 @@ async function selftest(): Promise<number> {
   withExec.execs.push({ argv: ['git', 'rev-parse', 'HEAD'], cwd: '/r/b' });
   const v4d = fold(attribute(withExec, view), view);
   check(
-    v4d.kind === 'whole-tree' && v4d.reason.includes('rev-parse HEAD'),
-    'HEAD read as a revision by argv is history'
+    v4d.kind === 'paths' &&
+      v4d.paths.join(',') === 'a/one.txt' &&
+      JSON.stringify(v4d.refs) === '["HEAD"]',
+    `HEAD read as a revision by argv is pinned to refs ['HEAD'] (F2 B5; got ${v4d.kind === 'paths' ? JSON.stringify(v4d.refs) : v4d.reason})`
   );
   check(
     classifyUntracked('node_modules/x/index.js', undefined, 0, false) === 'deps' &&
@@ -2392,8 +3014,9 @@ async function selftest(): Promise<number> {
     'a non-git process reading an unrelated file named index (a/index) is no foreign index reader: the name-only ls-files still explains .git/index'
   );
   check(
-    classifyGitArgv(['git', 'ls-files', '-z', '--recurse-submodules']) === 'index',
-    'git ls-files --recurse-submodules prints names inside submodules the root name set does not hold, so it is not a name-only scan (bab2c5c8.1)'
+    classifyGitArgv(['git', 'ls-files', '-z', '--recurse-submodules']) === 'names' &&
+      classifyGitArgv(['git', 'ls-files', '-s', '--recurse-submodules']) === 'content',
+    'git ls-files --recurse-submodules is a names scan (F2 B2; attribute adds the gitlinks), and with -s it is still content'
   );
   check(
     classifyGitArgv(['git', 'ls-files', '-z', '--cached', '--others', '--exclude-standard']) ===
@@ -2595,6 +3218,424 @@ async function selftest(): Promise<number> {
       !straceArgv('/x/t', 'true', true).includes('--seccomp-bpf') &&
       straceArgv('/x/t', 'true').at(-1) === 'exec 2>&1\ntrue',
     'strace traces connect; --no-seccomp drops --seccomp-bpf; the traced shell sends its stderr to its stdout'
+  );
+
+  // ---- F2 (PLAN-push-decoupling): each fold beside a twin that must stay whole-tree. ----
+  const pv = (lines: string[], v: RepoView = view): Verdict =>
+    fold(attribute(parseStraceLog(lines.join('\n'), '/r'), v), v);
+  const shape = (v: Verdict): string =>
+    v.kind === 'paths'
+      ? `${v.paths.join(',')} lists=${JSON.stringify(v.lists)} names=${JSON.stringify(v.names)} refs=${JSON.stringify(v.refs)}`
+      : v.reason;
+  const ex = (pid: number, argv: string[], cwd = '/r'): string =>
+    `${pid} chdir("${cwd}") = 0\n${pid} execve("/usr/bin/git", [${argv.map((a) => JSON.stringify(a)).join(', ')}], 0x7ff /* 3 vars */) = 0`;
+  const open = (pid: number, abs: string): string =>
+    `${pid} openat(AT_FDCWD</r>, "${abs}", O_RDONLY) = 3<${abs}>`;
+
+  // B1: a fixture repository's own index, read by its own git, is not this repository's index.
+  const b1 = pv([
+    ex(7, ['git', 'ls-files', '-z']),
+    open(7, '/r/.git/index'),
+    ex(9, ['git', '-C', '/tmp/fx', 'ls-files', '-s']),
+    open(9, '/tmp/fx/.git/index'),
+    open(7, '/r/a/one.txt'),
+  ]);
+  check(
+    b1.kind === 'paths' && JSON.stringify(b1.names) === '["**"]',
+    `B1: a selftest's own \`git -C /tmp/fx ls-files -s\` reading /tmp/fx/.git/index is no foreign reader of this index: names ['**'] (got ${shape(b1)})`
+  );
+  const b1c = pv([
+    ex(7, ['git', 'ls-files', '-z']),
+    open(7, '/r/.git/index'),
+    `8 openat(AT_FDCWD</r>, "/r/.git/index", O_RDONLY) = 4</r/.git/index>`,
+    open(9, '/tmp/fx/.git/index'),
+  ]);
+  check(
+    b1c.kind === 'whole-tree' && b1c.reason.includes('.git/index'),
+    `B1 CONTROL: a process with no name-only listing reading THIS index is still foreign, fixture beside it or not (got ${shape(b1c)})`
+  );
+  const b1n = pv([open(9, '/tmp/fx/.git/index'), open(9, '/r/a/one.txt')]);
+  check(
+    b1n.kind === 'paths' && b1n.paths.join(',') === 'a/one.txt',
+    'B1: a fixture index read alone, with no git command aimed here, adds nothing'
+  );
+
+  // B2: --recurse-submodules folds to names ['**'] plus every gitlink; the submodule index the scan reads is its own.
+  const b2 = pv([
+    ex(7, ['git', 'ls-files', '-z', '--recurse-submodules']),
+    open(7, '/r/.git/index'),
+    open(7, '/r/.git/modules/private/sub/index'),
+    ex(11, ['git', 'ls-files', '--recurse-submodules', '-z'], '/r/private/sub'),
+    open(11, '/r/.git/modules/private/sub/index'),
+  ]);
+  check(
+    b2.kind === 'paths' &&
+      b2.paths.join(',') === 'private/sub' &&
+      JSON.stringify(b2.names) === '["**"]',
+    `B2: ls-files --recurse-submodules gives names ['**'] plus the gitlink private/sub in paths, the per-submodule child's index read its own (got ${shape(b2)})`
+  );
+  // git 2.53 reads each submodule's index in-process (measured 2026-11-18 under strace): no child, so the flag alone must name the gitlinks.
+  const b2in = pv([
+    ex(7, ['git', 'ls-files', '-z', '--recurse-submodules']),
+    open(7, '/r/.git/index'),
+    open(7, '/r/.git/modules/private/sub/index'),
+  ]);
+  check(
+    b2in.kind === 'paths' &&
+      b2in.paths.join(',') === 'private/sub' &&
+      JSON.stringify(b2in.names) === '["**"]',
+    `B2: with no per-submodule child (git 2.53 reads the submodule index in-process), the flag alone puts every gitlink in paths (got ${shape(b2in)})`
+  );
+  const b2c = pv([
+    ex(7, ['git', 'ls-files', '-z', '--recurse-submodules']),
+    open(7, '/r/.git/index'),
+    `12 openat(AT_FDCWD</r>, "/r/.git/modules/private/sub/index", O_RDONLY) = 4</r/.git/modules/private/sub/index>`,
+  ]);
+  check(
+    b2c.kind === 'whole-tree' && b2c.reason.includes('modules/private/sub/index'),
+    `B2 CONTROL: a non-git process reading the submodule index beside the scan is foreign (got ${shape(b2c)})`
+  );
+
+  // B3: pathspecs fold to globs relative to the exec's cwd; -s with a pathspec is content of it; a names-only --format is names.
+  const b3 = pv([ex(7, ['git', 'ls-files', '-z', '--', '*.ts']), open(7, '/r/.git/index')]);
+  check(
+    b3.kind === 'paths' &&
+      JSON.stringify(b3.names) === '["**/*.ts"]' &&
+      JSON.stringify(b3.lists) === '[""]',
+    `B3: ls-files -- '*.ts' gives names ['**/*.ts'] and, since no root .ts exists (a dead '*.ts' would be refused), lists [''] (got ${shape(b3)})`
+  );
+  const b3cwd = pv([
+    ex(7, ['git', 'ls-files', '-z', 'one.txt', 'listed'], '/r/a'),
+    open(7, '/r/.git/index'),
+  ]);
+  const b3c = pv([ex(7, ['git', '-C', 'c', 'ls-files', 'listed'], '/r'), open(7, '/r/.git/index')]);
+  check(
+    b3cwd.kind === 'paths' &&
+      JSON.stringify(b3cwd.names) === '["a/**","a/one.txt"]' &&
+      b3c.kind === 'paths' &&
+      JSON.stringify(b3c.names) === '["c/listed/**"]',
+    `B3: literal pathspecs resolve against the exec cwd and -C: a tracked file is itself, a missing one widens to its tracked directory, a directory is D/** (got ${shape(b3cwd)} | ${shape(b3c)})`
+  );
+  const b3s = pv([ex(7, ['git', 'ls-files', '-s', '--', 'a/one.txt']), open(7, '/r/.git/index')]);
+  check(
+    b3s.kind === 'paths' && b3s.paths.join(',') === 'a/one.txt' && b3s.names === undefined,
+    `B3: ls-files -s -- a/one.txt is the content of a/one.txt, not every file (got ${shape(b3s)})`
+  );
+  const b3sc = pv([ex(7, ['git', 'ls-files', '-s']), open(7, '/r/.git/index')]);
+  check(
+    b3sc.kind === 'whole-tree' && b3sc.reason.includes('holds'),
+    'B3 CONTROL: ls-files -s with no pathspec still reads what every tracked file holds'
+  );
+  const b3f = pv([
+    ex(7, ['git', 'ls-files', '-z', '--format=%(objectmode) %(path)']),
+    open(7, '/r/.git/index'),
+  ]);
+  const b3fc = pv([
+    ex(7, ['git', 'ls-files', '--format=%(objectmode) %(objectname) %(path)']),
+    open(7, '/r/.git/index'),
+  ]);
+  check(
+    b3f.kind === 'paths' &&
+      JSON.stringify(b3f.names) === '["**"]' &&
+      b3fc.kind === 'whole-tree' &&
+      formatIsNames('%(path)%x00') &&
+      !formatIsNames('%(path) %(eolinfo:index)'),
+    `B3: --format with only %(objectmode) and %(path) is names; CONTROL: adding %(objectname) is content (got ${shape(b3f)} | ${shape(b3fc)})`
+  );
+  const b3m = pv([ex(7, ['git', 'ls-files', '-z', ':(glob)**/*.ts']), open(7, '/r/.git/index')]);
+  const b3u = pv([
+    ex(7, ['git', 'ls-files', '-s', '-t', '--', 'a/one.txt']),
+    open(7, '/r/.git/index'),
+  ]);
+  check(
+    b3m.kind === 'paths' && JSON.stringify(b3m.names) === '["**"]' && b3u.kind === 'whole-tree',
+    `B3 CONTROL: pathspec magic widens to the whole name set, and an unknown flag (-t) beside -s keeps it whole-tree content (got ${shape(b3m)} | ${shape(b3u)})`
+  );
+
+  // B4: `git diff --quiet <tracked file>` is the content of that path.
+  const b4 = pv([ex(7, ['git', 'diff', '--quiet', 'a/one.txt']), open(7, '/r/.git/index')]);
+  check(
+    b4.kind === 'paths' && b4.paths.join(',') === 'a/one.txt' && b4.refs === undefined,
+    `B4: git diff --quiet a/one.txt is the content of a/one.txt (got ${shape(b4)})`
+  );
+  const b4p = pv([
+    ex(7, ['git', 'diff', '--quiet', 'a/one.txt']),
+    open(7, '/r/.git/packed-refs'),
+    open(7, '/r/.git/refs/tags/a/one.txt'),
+    open(7, '/r/.git/refs/remotes/a/one.txt/HEAD'),
+    open(7, '/r/.git/index'),
+  ]);
+  const b4pc = pv([
+    ex(7, ['git', 'diff', '--quiet', 'a/one.txt']),
+    open(7, '/r/.git/refs/heads/main'),
+    open(7, '/r/.git/index'),
+  ]);
+  check(
+    b4p.kind === 'paths' &&
+      b4p.paths.join(',') === 'a/one.txt' &&
+      b4pc.kind === 'whole-tree' &&
+      b4pc.reason.includes('refs/heads/main'),
+    `B4: the diff's own "is a/one.txt a ref?" probes (git's lookup rules, packed-refs) are no history read; CONTROL: the same process reading another ref is (got ${shape(b4p)} | ${shape(b4pc)})`
+  );
+  const b4c = pv([ex(7, ['git', 'diff', '--quiet', 'HEAD']), open(7, '/r/.git/index')]);
+  const b4cached = pv([ex(7, ['git', 'diff', '--cached', '--quiet', 'a/one.txt'])]);
+  check(
+    b4c.kind === 'whole-tree' &&
+      b4c.reason.includes('holds') &&
+      b4cached.kind === 'whole-tree' &&
+      b4cached.reason.includes('history'),
+    `B4 CONTROL: git diff HEAD compares every tracked file with HEAD (whole-tree content), and --cached stays history (got ${shape(b4c)} | ${shape(b4cached)})`
+  );
+  const b4r = pv([
+    ex(7, ['git', 'diff', '--quiet', 'origin/main', '--', 'a/one.txt']),
+    open(7, '/r/.git/index'),
+  ]);
+  check(
+    b4r.kind === 'paths' &&
+      b4r.paths.join(',') === 'a/one.txt' &&
+      JSON.stringify(b4r.refs) === '["origin/main"]',
+    `B4/B5: git diff origin/main -- a/one.txt is that file's content plus refs ['origin/main'] (got ${shape(b4r)})`
+  );
+
+  // B5: history pinned to the refs its argv names; every unpinned exec collected.
+  check(
+    JSON.stringify(refsOfRevision('HEAD~2^{tree}')) === '["HEAD"]' &&
+      JSON.stringify(refsOfRevision('origin/main..HEAD')) === '["origin/main","HEAD"]' &&
+      JSON.stringify(refsOfRevision('main...')) === '["main","HEAD"]' &&
+      JSON.stringify(refsOfRevision('origin/x:docs/a.md')) === '["origin/x"]' &&
+      JSON.stringify(refsOfRevision('^@')) === '["HEAD"]' &&
+      JSON.stringify(refsOfRevision('0123456789abcdef0123456789abcdef01234567')) === '[]' &&
+      refsOfRevision('HEAD@{1}') === undefined &&
+      refsOfRevision(':a/one.txt') === undefined &&
+      refsOfRevision('a b') === undefined,
+    'B5: refsOfRevision reads HEAD, ranges, REV:path and suffixes; a full oid pins itself; a reflog step, an index path or a non-ref is unpinned'
+  );
+  const b5 = pv([
+    ex(7, ['git', 'rev-parse', 'HEAD']),
+    open(7, '/r/.git/refs/heads/main'),
+    ex(8, ['git', 'merge-base', 'HEAD', 'origin/main']),
+    open(8, '/r/.git/packed-refs'),
+    open(8, '/r/.git/objects/pack/p.pack'),
+    ex(9, ['git', 'show', 'origin/x:a/one.txt']),
+    ex(10, ['git', 'log', '-1', '--format=%H %cI', 'HEAD', '--', 'a/one.txt']),
+    open(10, '/r/a/one.txt'),
+  ]);
+  check(
+    b5.kind === 'paths' &&
+      b5.paths.join(',') === 'a/one.txt' &&
+      JSON.stringify(b5.refs) === '["HEAD","origin/main","origin/x"]',
+    `B5: rev-parse, merge-base, show REV:path and log REV -- path are pinned, their own ref and object reads explained (got ${shape(b5)})`
+  );
+  const b5f = pv([
+    ex(7, ['git', 'rev-parse', 'HEAD']),
+    `8 openat(AT_FDCWD</r>, "/r/.git/refs/heads/main", O_RDONLY) = 4</r/.git/refs/heads/main>`,
+  ]);
+  check(
+    b5f.kind === 'whole-tree' && b5f.reason.includes('refs/heads/main'),
+    `B5 CONTROL: a ref read by a process that ran no pinned command is history (got ${shape(b5f)})`
+  );
+  const b5c = (argv: string[]): Verdict => pv([ex(7, argv), open(7, '/r/a/one.txt')]);
+  const stays = [
+    ['git', 'log', '-1'],
+    ['git', 'describe', '--tags'],
+    ['git', 'fetch', 'origin'],
+    ['git', 'for-each-ref', 'refs/heads'],
+    ['git', 'log', '--all', 'HEAD'],
+    ['git', 'log', '--format=%d', 'HEAD'],
+    ['git', 'log', '--since=2.weeks', 'HEAD'],
+    ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+    ['git', 'rev-parse', 'HEAD@{1}'],
+    ['git', 'merge-base', '--fork-point', 'origin/main'],
+  ].filter((argv) => b5c(argv).kind !== 'whole-tree');
+  check(
+    stays.length === 0,
+    `B5 CONTROL: git log (implicit HEAD), describe, fetch, for-each-ref, --all, a %d format, --since, --abbrev-ref, a reflog step and --fork-point stay whole-tree history (pinned by mistake: ${JSON.stringify(stays)})`
+  );
+  const b5s = pv([
+    ex(7, ['git', 'rev-parse', 'HEAD']),
+    open(7, '/r/.git/shallow'),
+    open(7, '/r/a/one.txt'),
+  ]);
+  check(
+    b5s.kind === 'whole-tree' && b5s.reason.includes('.git/shallow'),
+    `B5 CONTROL: a shallow-file read is history even by a pinned command (got ${shape(b5s)})`
+  );
+  const enoent = (pid: number, abs: string): string =>
+    `${pid} openat(AT_FDCWD</r>, "${abs}", O_RDONLY) = -1 ENOENT (No such file or directory)`;
+  const lists = (pid: number, abs: string): string =>
+    `${pid} getdents64(3<${abs}>, 0x5a /* 4 entries */, 32768) = 104`;
+  const b5abs = pv([
+    ex(7, ['git', 'show', 'HEAD:a/one.txt']),
+    enoent(7, '/r/.git/shallow'),
+    enoent(7, '/r/.git/refs/notes/commits'),
+    lists(7, '/r/.git/refs'),
+    lists(7, '/r/.git/objects/pack'),
+    open(7, '/r/a/one.txt'),
+  ]);
+  check(
+    b5abs.kind === 'paths' && JSON.stringify(b5abs.refs) === '["HEAD"]',
+    `B5: a pinned show that only probed shallow and notes (ENOENT) and listed refs/ and objects/pack, as git 2.53 does, keeps its paths (got ${shape(b5abs)})`
+  );
+  const b5ctl = [
+    pv([
+      ex(7, ['git', 'show', 'HEAD:a/one.txt']),
+      open(7, '/r/.git/refs/replace/abc'),
+      open(7, '/r/a/one.txt'),
+    ]),
+    pv([
+      ex(7, ['git', 'show', 'HEAD:a/one.txt']),
+      lists(7, '/r/.git/refs/tags'),
+      open(7, '/r/a/one.txt'),
+    ]),
+    pv([
+      ex(7, ['git', 'show', 'HEAD:a/one.txt']),
+      lists(8, '/r/.git/refs'),
+      open(7, '/r/a/one.txt'),
+    ]),
+    pv([ex(7, ['git', 'ls-files', '-z']), enoent(7, '/r/.git/shallow'), open(7, '/r/a/one.txt')]),
+  ].map((v) => v.kind);
+  check(
+    b5ctl.every((k) => k === 'whole-tree'),
+    `B5 CONTROL: a replace ref FOUND, a listing of refs/tags, a refs/ listing by another process, and a shallow probe by a names scan (no pinned command) all stay history (got ${b5ctl.join(',')})`
+  );
+  const manyLog = mk(['a/one.txt']);
+  for (const n of ['1', '2', '3', '4', '5'])
+    manyLog.execs.push({ argv: ['git', 'describe', `--abbrev=${n}`], cwd: '/r', pid: 20 });
+  manyLog.execs.push({ argv: ['git', 'rev-parse', 'HEAD'], cwd: '/r', pid: 21 });
+  const aMany = attribute(manyLog, view);
+  const vMany = fold(aMany, view);
+  check(
+    aMany.gitHistory.length === 5 &&
+      vMany.kind === 'whole-tree' &&
+      vMany.reason.includes('and 2 more') &&
+      JSON.stringify(aMany.gitRefs) === '["HEAD"]',
+    `B5: every unpinned history exec is collected (no cap of 3), the reason names how many it did not print, and a pinned one beside them still names its ref (got ${aMany.gitHistory.length}: ${vMany.kind === 'whole-tree' ? vMany.reason : 'paths'})`
+  );
+  const sub = pv([ex(7, ['git', 'rev-parse', 'HEAD'], '/r/private/sub'), open(7, '/r/a/one.txt')]);
+  check(
+    sub.kind === 'whole-tree' && sub.reason.includes('history'),
+    'B5 CONTROL: a history command run inside a submodule names that submodule refs, which the root cannot resolve: history'
+  );
+
+  // B6: every read under a directory sharing one extension folds to D/*.ext plus D/**/*.ext.
+  const extView: RepoView = {
+    ...view,
+    files: [
+      ...view.files,
+      'f/a.ts',
+      'f/b.ts',
+      'f/c.ts',
+      'f/sub/e.ts',
+      'f/sub/g.ts',
+      'f/x.json',
+      'f/y.json',
+      'f/z.json',
+      'f/w.json',
+      'f/sub/v.json',
+      'f/sub/u.json',
+    ],
+  };
+  const b6 = fold(attribute(mk(['f/a.ts', 'f/b.ts', 'f/c.ts', 'f/sub/e.ts']), extView), extView);
+  check(
+    b6.kind === 'paths' && b6.paths.join(',') === 'f/**/*.ts,f/*.ts',
+    `B6: four of five .ts files under f (four of eleven files) fold to f/*.ts plus f/**/*.ts (got ${shape(b6)})`
+  );
+  const b6c = fold(attribute(mk(['f/a.ts', 'f/b.ts', 'f/c.ts', 'f/x.json']), extView), extView);
+  check(
+    b6c.kind === 'paths' && b6c.paths.join(',') === 'f/a.ts,f/b.ts,f/c.ts,f/x.json',
+    `B6 CONTROL: mixed extensions under f fold by no extension, and four of eleven stays exact (got ${shape(b6c)})`
+  );
+  const b6flat = fold(attribute(mk(['b/x.ts', 'b/y.ts', 'b/z.ts']), extView), extView);
+  check(
+    b6flat.kind === 'paths' && b6flat.paths.join(',') === 'b/**',
+    'B6 CONTROL: a flat directory, where b/**/*.ts would match nothing (a dead glob), keeps b/**'
+  );
+
+  // B7: a carry-exempt kind waives its own reason and no other.
+  const netAttr = { ...attribute(mk(['a/one.txt']), view), network: ['1.1.1.1:443'] };
+  const b7 = fold(netAttr, view, [], { waive: 'network' });
+  check(
+    b7.kind === 'paths' &&
+      b7.paths.join(',') === 'a/one.txt' &&
+      JSON.stringify(b7.waived) === '["network"]',
+    `B7: kind network waives the network reason and says so (got ${shape(b7)})`
+  );
+  const b7h = fold({ ...netAttr, gitHistory: ['git log -1'] }, view, [], { waive: 'network' });
+  const b7clock = fold(netAttr, view, [], { waive: 'clock' });
+  const b7none = fold(netAttr, view);
+  check(
+    b7h.kind === 'whole-tree' &&
+      b7h.reason.includes('history') &&
+      b7clock.kind === 'whole-tree' &&
+      b7clock.reason.startsWith('network') &&
+      b7none.kind === 'whole-tree',
+    'B7 CONTROL: kind network does not waive history, kind clock waives nothing, and no kind waives nothing'
+  );
+  const b7hist = fold(
+    { ...attribute(mk(['a/one.txt']), view), gitHistory: ['git describe'] },
+    view,
+    [],
+    { waive: 'history' }
+  );
+  const b7cache = fold(
+    { ...attribute(mk(['a/one.txt']), view), cacheState: ['.ci/cache/x.json'] },
+    view,
+    [],
+    { waive: 'cache' }
+  );
+  check(
+    b7hist.kind === 'paths' && b7cache.kind === 'paths',
+    'B7: kind history waives unpinned history, kind cache waives cache state'
+  );
+  const kinds = new Map<string, string | null>([
+    ['g:kind', 'network'],
+    ['g:nokind', null],
+  ]);
+  const ge = (id: string): LockEntry => ({ id, run: 'x', gate: true });
+  check(
+    untracedReason(ge('g:kind'), kinds) === undefined &&
+      untracedReason(ge('g:nokind'), kinds)?.includes('no kind') === true &&
+      untracedReason(ge('g:plain'), kinds) === undefined,
+    'B7: --all-whole-tree traces a carry-exempt row with a kind and refuses one with none'
+  );
+  const lockRefs = lockWithPaths(
+    `${JSON.stringify([{ id: 'g:a', run: 'r', gate: true, leaves: ['x'] }], null, 2)}\n`,
+    'g:a',
+    ['a/one.txt'],
+    { refs: ['HEAD'] }
+  );
+  const mRefs = manifestWithPaths(
+    [
+      'export const GATES = [',
+      '  {',
+      "    id: 'g:r',",
+      "    run: 'x',",
+      '    gate: true,',
+      "    leaves: ['x.ts'],",
+      '  },',
+      '];',
+    ].join('\n'),
+    'g:r',
+    ['a/one.txt'],
+    { names: ['**'], refs: ['HEAD', 'origin/main'] }
+  );
+  check(
+    Object.keys(JSON.parse(lockRefs)[0]).join(',') ===
+      'id,run,gate,paths,refs,pathsOrigin,leaves' &&
+      mRefs.includes(
+        "    names: ['**'],\n    refs: ['HEAD', 'origin/main'],\n    pathsOrigin: 'traced',"
+      ) &&
+      !manifestWithoutTracedPaths(mRefs, 'g:r').includes('refs:') &&
+      JSON.parse(lockWithoutTracedPaths(lockRefs, 'g:a'))[0].refs === undefined &&
+      verdictLine('g', {
+        kind: 'paths',
+        paths: ['a'],
+        refs: ['HEAD'],
+        reads: 1,
+        listed: 0,
+        coveragePct: 1,
+      }) === 'g\ta\trefs=["HEAD"]',
+    'B5: refs is written after names, before pathsOrigin, in the lock and the manifest, leaves with a strip, and shows on the stdout line'
   );
 
   // Text edits.
@@ -2948,6 +3989,43 @@ async function selftest(): Promise<number> {
         JSON.stringify(probeV.lists) === '["src"]',
       `a missed lookup inside tracked src (and src/a/b beneath it) lists src; one under node_modules, existing or not, lists nothing (got ${probeV.kind === 'paths' ? `${probeV.paths.join(',')} lists=${JSON.stringify(probeV.lists)}` : probeV.reason})`
     );
+    // F2 on a real trace: pinned history and narrowed git content keep paths; an implicit-HEAD log does not; a fixture repository's own index read is not this one's.
+    const pinRun = await traceCommand(
+      'git rev-parse HEAD >/dev/null && git show HEAD:conf/x.txt >/dev/null && git ls-files -s -- conf >/dev/null && git diff --quiet src/keep.txt',
+      pyView.root
+    );
+    const pinV = verdictOf(attribute(pinRun.access, pyView), pyView, pinRun.exit);
+    check(
+      pinV.kind === 'paths' &&
+        pinV.paths.join(',') === 'conf/**,src/keep.txt' &&
+        JSON.stringify(pinV.refs) === '["HEAD"]',
+      `B3/B4/B5 real: rev-parse HEAD, show HEAD:path, ls-files -s -- conf and diff --quiet <file> give conf/** and src/keep.txt plus refs ['HEAD'] (got ${shape(pinV)})`
+    );
+    const logRun = await traceCommand('git log -1 >/dev/null && cat conf/x.txt', pyView.root);
+    const logV = verdictOf(attribute(logRun.access, pyView), pyView, logRun.exit);
+    check(
+      logV.kind === 'whole-tree' && logV.reason.includes('git log -1'),
+      `B5 CONTROL real: git log -1 (implicit HEAD) stays history (got ${shape(logV)})`
+    );
+    const fx = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-fx-'));
+    const fxRun = await traceCommand(
+      `git init -q ${fx} && git -C ${fx} read-tree --empty && git -C ${fx} ls-files -s >/dev/null && git ls-files -z >/dev/null && cat conf/x.txt >/dev/null`,
+      pyView.root
+    );
+    const fxV = verdictOf(attribute(fxRun.access, pyView), pyView, fxRun.exit);
+    fs.rmSync(fx, { recursive: true, force: true });
+    check(
+      fxV.kind === 'paths' &&
+        fxV.paths.join(',') === 'conf/x.txt' &&
+        JSON.stringify(fxV.names) === '["**"]' &&
+        [...(fxRun.access.gitReaders?.keys() ?? [])].some(
+          (p) =>
+            p.startsWith(fs.realpathSync(os.tmpdir())) &&
+            p.endsWith('/index') &&
+            !p.startsWith(pyView.root)
+        ),
+      `B1 real: a fixture repository's own \`ls-files -s\` beside this tree's name-only scan leaves names ['**'], and the trace did see the fixture index (got ${shape(fxV)})`
+    );
     fs.rmSync(py, { recursive: true, force: true });
     // A real connect: loopback is refused at once, a TEST-NET-1 peer (RFC 5737, documentation only) is cut by the timeout.
     const net = await traceCommand(
@@ -2983,7 +4061,7 @@ async function selftest(): Promise<number> {
     'CONTROL: without the directories named, a spaced checkout path survives the patterns, so the directories are what drop it'
   );
 
-  // 434f1d3b.3/.4: rawOf and accessOfRaw round-trip indexPids, and a record without them is judged in the whole-tree direction.
+  // 434f1d3b.3/.4: rawOf and accessOfRaw round-trip the git readers, and a record without them is judged in the whole-tree direction.
   for (const readerPid of [7, 8]) {
     const live = parseStraceLog(pidLog(readerPid), '/r');
     const raw = JSON.parse(JSON.stringify(rawOf(live, view))) as RawAccess;
@@ -2992,25 +4070,26 @@ async function selftest(): Promise<number> {
     const backV = fold(attribute(back.access, view), view);
     check(
       !back.legacy &&
-        JSON.stringify(raw.indexPids) === JSON.stringify([...new Set([7, readerPid])]) &&
+        JSON.stringify(raw.gitReaders?.['/r/.git/index']) ===
+          JSON.stringify([...new Set([7, readerPid])]) &&
         JSON.stringify(backV) === JSON.stringify(liveV),
-      `indexPids survive rawOf, JSON and accessOfRaw, and the refolded verdict is the live one (reader pid ${readerPid}: ${liveV.kind})`
+      `gitReaders survive rawOf, JSON and accessOfRaw, and the refolded verdict is the live one (reader pid ${readerPid}: ${liveV.kind})`
     );
   }
   const ownRaw = JSON.parse(
     JSON.stringify(rawOf(parseStraceLog(pidLog(7), '/r'), view))
   ) as RawAccess;
-  delete ownRaw.indexPids;
+  delete ownRaw.gitReaders;
   const legacyBack = accessOfRaw(ownRaw);
   const legacyV = fold(attribute(legacyBack.access, view), view);
   check(
     legacyBack.legacy && legacyV.kind === 'whole-tree' && legacyV.reason.includes('.git/index'),
-    `a raw record from before indexPids that reads the index is flagged legacy and folds whole-tree, not to the names verdict its own-pid twin earns (got ${legacyV.kind})`
+    `a raw record from before gitReaders that reads the index is flagged legacy and folds whole-tree, not to the names verdict its own-pid twin earns (got ${legacyV.kind})`
   );
   const noIndexRaw = rawOf(mk(['a/one.txt']), view);
   check(
-    noIndexRaw.indexPids === undefined && !accessOfRaw(noIndexRaw).legacy,
-    'CONTROL: a record with no index read and no indexPids is no legacy record'
+    noIndexRaw.gitReaders === undefined && !accessOfRaw(noIndexRaw).legacy,
+    'CONTROL: a record with no index read and no gitReaders is no legacy record'
   );
 
   // 22efb11e: a traced set naming a record path stays whole-tree, generated by the fold rather than written into the ledger by hand.
