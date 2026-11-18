@@ -539,7 +539,9 @@ function trackedFiles() {
   });
   const files = stdout.split('\0').filter(Boolean).sort();
   if (files.length === 0) {
-    throw new Error(`VACUOUS INPUT: git tracks no files under ${ROOT}; the sweeps would verify nothing`);
+    throw new Error(
+      `VACUOUS INPUT: git tracks no files under ${ROOT}; the sweeps would verify nothing`
+    );
   }
   trackedFilesCache = files;
   return files;

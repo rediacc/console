@@ -22,6 +22,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { isEntryPoint } from '../lib/entry-point.js';
+import { policyPath } from '../lib/policy-paths.js';
 import { CARRY_EXEMPT_REL, exemptIdsOf, GLOBAL_INPUTS, matchGlob } from './input-hash.js';
 import {
   attribute,
@@ -1177,7 +1178,7 @@ async function selftest(): Promise<number> {
     ];
     files[LOCK_REL] = `${JSON.stringify(lockRows, null, 2)}\n`;
     // repoView refuses a root with no record set (path-trace.ts readRecordGlobs, review 502ce0ee.2); without one every CLI control below died on that refusal instead of judging its fixture.
-    files['.ci/policy/record-paths.json'] = `${JSON.stringify({ records: [] })}\n`;
+    files[policyPath('record-paths.json', '.')] = `${JSON.stringify({ records: [] })}\n`;
     for (const [rel, text] of Object.entries(files)) {
       fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true });
       fs.writeFileSync(path.join(dir, rel), text);
