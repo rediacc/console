@@ -678,7 +678,7 @@ class FakeProc:
 
 
 def fake_run(cmd, **_kw):
-    CAPTURED["prompt"] = cmd[cmd.index("-p") + 1]
+    CAPTURED["prompt"] = _kw.get("input_text") or ""
     CAPTURED["schema"] = json.loads(cmd[cmd.index("--json-schema") + 1])
     CAPTURED["argv"] = list(cmd)
     return FakeProc(json.dumps({"is_error": False, "structured_output": CAPTURED["answer"]}))

@@ -416,7 +416,6 @@ def run_triage(finding, context):
             [
                 exe,
                 "-p",
-                prompt,
                 "--output-format",
                 "json",
                 "--json-schema",
@@ -434,6 +433,8 @@ def run_triage(finding, context):
                 "--max-budget-usd",
                 JUDGE_BUDGET_USD,
             ],
+            # The prompt goes on stdin: on argv a large one fails with E2BIG (2026-11-18, "[Errno 7] Argument list too long").
+            input_text=prompt,
             timeout=JUDGE_TIMEOUT_S,
             env=env,
             cwd=str(workdir),
@@ -508,7 +509,6 @@ def _run_structured(label, prompt, schema, extract):
             [
                 exe,
                 "-p",
-                prompt,
                 "--output-format",
                 "json",
                 "--json-schema",
@@ -526,6 +526,8 @@ def _run_structured(label, prompt, schema, extract):
                 "--max-budget-usd",
                 JUDGE_BUDGET_USD,
             ],
+            # The prompt goes on stdin: on argv a large one fails with E2BIG (2026-11-18, "[Errno 7] Argument list too long").
+            input_text=prompt,
             timeout=JUDGE_TIMEOUT_S,
             env=env,
             cwd=str(workdir),
@@ -610,7 +612,6 @@ def run_admission(message):
             [
                 exe,
                 "-p",
-                prompt,
                 "--output-format",
                 "json",
                 "--json-schema",
@@ -628,6 +629,8 @@ def run_admission(message):
                 "--max-budget-usd",
                 JUDGE_BUDGET_USD,
             ],
+            # The prompt goes on stdin: on argv a large one fails with E2BIG (2026-11-18, "[Errno 7] Argument list too long").
+            input_text=prompt,
             timeout=JUDGE_TIMEOUT_S,
             env=env,
             cwd=str(workdir),
@@ -997,7 +1000,6 @@ def run_judge(
     argv = [
         exe,
         "-p",
-        prompt,
         "--output-format",
         "json",
         "--json-schema",
@@ -1022,6 +1024,8 @@ def run_judge(
         # only the direct child on timeout and then blocks in communicate() on pipe ends a grandchild still holds. This runs inside the STOP HOOK, so that block is not a slow gate -- it is a worktree in which no session can stop. `wl_proc.run` gives the child its own session and signals the group.
         return wl_proc.run(
             argv,
+            # The prompt goes on stdin: on argv a large one fails with E2BIG (2026-11-18, "[Errno 7] Argument list too long").
+            input_text=prompt,
             timeout=JUDGE_TIMEOUT_S,
             env=env,
             cwd=str(workdir),

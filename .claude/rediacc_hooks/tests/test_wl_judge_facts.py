@@ -221,7 +221,8 @@ def judge(tmp_path, monkeypatch):
     script = bindir / "claude"
     script.write_text(
         "#!/usr/bin/env python3\nimport json, sys\n"
-        "open(%r, 'w').write(json.dumps(sys.argv[1:]))\n"
+        "a = sys.argv[1:]; a.insert(a.index('-p') + 1, sys.stdin.read())  # the real CLI reads the prompt from stdin\n"
+        "open(%r, 'w').write(json.dumps(a))\n"
         "print(open(%r).read())\n" % (str(seen), str(reply)),
         encoding="utf-8",
     )
@@ -393,7 +394,8 @@ def hook_world(fix, out):
     script = fix.base / "binonly" / "claude"
     script.write_text(
         "#!/usr/bin/env python3\nimport json, sys\n"
-        "open(%r, 'w').write(json.dumps(sys.argv[1:]))\n"
+        "a = sys.argv[1:]; a.insert(a.index('-p') + 1, sys.stdin.read())  # the real CLI reads the prompt from stdin\n"
+        "open(%r, 'w').write(json.dumps(a))\n"
         "print(%r)\n" % (str(seen), json.dumps({"is_error": False, "structured_output": out})),
         encoding="utf-8",
     )

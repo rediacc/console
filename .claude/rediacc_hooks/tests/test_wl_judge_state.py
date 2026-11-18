@@ -45,7 +45,7 @@ def judge(tmp_path, monkeypatch):
     reply = tmp_path / "reply.json"
     script = bindir / "claude"
     script.write_text(
-        '#!/bin/bash\nprintf "%%s" "$2" > %s\ncat %s\n' % (seen, reply), encoding="utf-8"
+        '#!/bin/bash\ncat > %s\ncat %s\n' % (seen, reply), encoding="utf-8"
     )
     script.chmod(script.stat().st_mode | stat.S_IEXEC)
     monkeypatch.setenv("PATH", "%s:/usr/bin:/bin" % bindir)
