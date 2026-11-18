@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-import pathlib
 import subprocess
+from typing import TYPE_CHECKING
 
 from rediacc_ci.quality import aws_resolver as gate
+
+if TYPE_CHECKING:
+    import pathlib
 
 
 def _git(root: pathlib.Path, *args: str) -> None:
@@ -30,7 +33,9 @@ def _listed(root: pathlib.Path) -> list[str]:
 
 
 def test_work_tree_lists_tracked_files_only(tmp_path: pathlib.Path) -> None:
-    assert _listed(_tree(tmp_path, git=True)) == [".ci/scripts/tracked.sh"], "ignored file is an input"
+    assert _listed(_tree(tmp_path, git=True)) == [".ci/scripts/tracked.sh"], (
+        "ignored file is an input"
+    )
 
 
 def test_non_work_tree_still_walks(tmp_path: pathlib.Path) -> None:

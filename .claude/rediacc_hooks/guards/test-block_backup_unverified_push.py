@@ -546,10 +546,7 @@ for label, mutant in CONTROLS:
             flipped.append(n)
             break
     if must in flipped:
-        print(
-            "%s control: planted %r; refusal flipped to allowed: %r"
-            % (label, mutant[1], must)
-        )
+        print("%s control: planted %r; refusal flipped to allowed: %r" % (label, mutant[1], must))
     else:
         print(
             "*** FAIL *** %s control: with %r planted, %r did not flip (flipped: %r)"

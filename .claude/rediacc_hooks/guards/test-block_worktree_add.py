@@ -837,7 +837,10 @@ for label, pair, rows in (
         failures.append("plant: %s" % label)
         print("*** FAIL *** %s flipped %d of %d rows" % (label, len(flipped), len(rows)))
     else:
-        print("%s: %d of %d flipped (stopped at the half), e.g. %r" % (label, len(flipped), len(rows), flipped[0]))
+        print(
+            "%s: %d of %d flipped (stopped at the half), e.g. %r"
+            % (label, len(flipped), len(rows), flipped[0])
+        )
     kept = [n for n, c in ALLOWED if run_guard(c, defect=pair)[0] != 0]
     if kept:
         failures.append("plant refused an allowed row: %s" % label)

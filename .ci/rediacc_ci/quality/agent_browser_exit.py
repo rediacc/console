@@ -74,6 +74,7 @@ FILE IS LIKEWISE INVISIBLE TO BOTH HALVES, being `.py`, which is worth stating b
 ORDER MATTERS AND IS PRESERVED: the JS half runs FIRST and exits before the shell half is reached. A tree with both defects reports only the JavaScript one, which is a property of the twin's control flow and would silently change if the two scans were merged into one report.
 """
 
+import itertools
 import os
 import pathlib
 import re
@@ -161,7 +162,9 @@ def stage(directory: pathlib.Path | str) -> None:
     for args in (["init", "-q"], ["add", "-A", "--", "."]):
         result = gitx.git(args, root=directory)
         if not result.ok:
-            raise TrackedListingError("git %s failed in %s: %s" % (args[0], directory, result.stderr))
+            raise TrackedListingError(
+                "git %s failed in %s: %s" % (args[0], directory, result.stderr)
+            )
 
 
 def _corpus(root: str, suffixes: tuple[str, ...], prune: tuple[str, ...]) -> list[str]:
@@ -181,7 +184,7 @@ def _corpus(root: str, suffixes: tuple[str, ...], prune: tuple[str, ...]) -> lis
         directories = parts[:-1]
         if any(name in skip for name in directories):
             continue
-        if any((a, b) in paths.PRUNED_DIR_PAIRS for a, b in zip(directories, directories[1:])):
+        if any((a, b) in paths.PRUNED_DIR_PAIRS for a, b in itertools.pairwise(directories)):
             continue
         if not parts[-1].endswith(suffixes):
             continue

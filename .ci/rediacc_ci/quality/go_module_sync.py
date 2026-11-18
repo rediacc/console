@@ -61,6 +61,7 @@ THE `go mod tidy -diff` OUTPUT IS CAPTURED MERGED, `2>&1`, and that is the twin'
 `head -20` IS A TRUNCATION, NOT A SUMMARY, and it is preserved: a module with 40 lines of diff shows 20 of them on both sides. Dropping the truncation would make the port noisier than its twin on exactly the tree where the gate fires.
 """
 
+import itertools
 import os
 import pathlib
 import shutil
@@ -120,7 +121,9 @@ def stage(directory: pathlib.Path | str) -> None:
     for args in (["init", "-q"], ["add", "-A", "--", "."]):
         result = gitx.git(args, root=directory)
         if not result.ok:
-            raise TrackedListingError("git %s failed in %s: %s" % (args[0], directory, result.stderr))
+            raise TrackedListingError(
+                "git %s failed in %s: %s" % (args[0], directory, result.stderr)
+            )
 
 
 def find_modules(root: pathlib.Path) -> list[str]:
@@ -136,7 +139,7 @@ def find_modules(root: pathlib.Path) -> list[str]:
             continue
         directories = rel.split("/")[:-1]
         if any(name in paths.PRUNED_DIR_NAMES for name in directories) or any(
-            pair in paths.PRUNED_DIR_PAIRS for pair in zip(directories, directories[1:])
+            pair in paths.PRUNED_DIR_PAIRS for pair in itertools.pairwise(directories)
         ):
             continue
         absolute = pathlib.Path(root) / rel

@@ -322,7 +322,13 @@ def match_item(task, prepared):
     # Only items sharing a token can overlap; the index keeps fold order, so ties break exactly as the full scan did.
     index = _token_index(prepared)
     # Exact pruning by pigeonhole: a match needs inter >= 0.7*|tt| or inter >= 0.7*|it| >= 0.7*MIN, so it shares at least m tokens with tt and therefore contains one of tt's (|tt| - m + 1) rarest tokens. Candidates come only from those postings.
-    m = max(1, min(math.ceil(P.TASK_MATCH * len(tt) - 1e-9), math.ceil(P.TASK_MATCH * P.MIN_MATCH_TOKENS - 1e-9)))
+    m = max(
+        1,
+        min(
+            math.ceil(P.TASK_MATCH * len(tt) - 1e-9),
+            math.ceil(P.TASK_MATCH * P.MIN_MATCH_TOKENS - 1e-9),
+        ),
+    )
     rare = sorted(tt, key=lambda tok: len(index.get(tok, ())))[: len(tt) - m + 1]
     cand = sorted({i for tok in rare for i in index.get(tok, ())})
     for pos in cand:

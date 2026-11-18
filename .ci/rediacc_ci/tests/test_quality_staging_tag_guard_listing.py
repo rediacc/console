@@ -5,10 +5,13 @@ A gitignored directory under `.ci` (the cache is the real one) must not be an in
 
 from __future__ import annotations
 
-import pathlib
 import subprocess
+from typing import TYPE_CHECKING
 
 from rediacc_ci.quality import staging_tag_guard as gate
+
+if TYPE_CHECKING:
+    import pathlib
 
 CALL = '#!/bin/bash\n"$D/cleanup-staging.sh" --tag "$CHANNEL"\n'
 

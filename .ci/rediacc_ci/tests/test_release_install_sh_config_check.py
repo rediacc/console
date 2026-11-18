@@ -397,7 +397,9 @@ def test_no_case_calls_a_host_other_than_the_mock(tmp_path: pathlib.Path) -> Non
     )
     assert done.returncode == 0, done.stderr
     calls = [ln for ln in log.read_text(encoding="utf-8").splitlines() if "server-info" in ln]
-    assert len(calls) >= 2, "the shim saw no server-info calls, so this control proves nothing: %r" % calls
+    assert len(calls) >= 2, (
+        "the shim saw no server-info calls, so this control proves nothing: %r" % calls
+    )
     # worker_server_only names `.invalid` on purpose (RFC 6761: never resolves, so never reaches a live host).
     stray = [ln for ln in calls if "http://127.0.0.1:" not in ln and ".invalid/" not in ln]
     assert not stray, "install.sh called a non-mock host: %r" % stray

@@ -546,7 +546,11 @@ def record_drill(drill: Any, half: str, rc: int, legs: Sequence[str] = ()) -> pa
 def _other_half_note(written: dict[str, Any]) -> str:
     """The closing line of a run that wrote a NOT_VERIFIED `legs-partial` receipt: the two drills write one receipt, so a half that has not run yet is the expected state, not a failure."""
     reason = written.get("reason")
-    if written.get("status") != NOT_VERIFIED or not isinstance(reason, dict) or reason.get("class") != "legs-partial":
+    if (
+        written.get("status") != NOT_VERIFIED
+        or not isinstance(reason, dict)
+        or reason.get("class") != "legs-partial"
+    ):
         return ""
     waits = []
     if written.get("onprem") is not True:
