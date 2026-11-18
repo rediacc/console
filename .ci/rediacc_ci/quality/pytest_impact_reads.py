@@ -36,7 +36,9 @@ LISTINGS go to `paths`' sibling `lists`, never to the reads table. Python's impo
 
     pytest_impact_reads.py --trace [--jobs N] [--tests <path> ...]
                                   trace the suite (or the named test files) and
-                                  write TRACE_RELPATH; a red or empty run writes
+                                  write TRACE_RELPATH; a run that is red beyond a
+                                  few named failures (red_run_problem), or that
+                                  attributed too little (trace_problem), writes
                                   nothing and exits 1
     pytest_impact_reads.py --derive [--write]
                                   print the reads table and the paths from
@@ -472,29 +474,31 @@ def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attribut
             "pytest_impact_reads: strace is not installed; install it (apt-get install strace) and re-run"
         )
     scratch = tempfile.mkdtemp(prefix="pytest-reads-")
-    markers = os.path.join(scratch, "m")
-    os.mkdir(markers)
-    log = os.path.join(scratch, "pytest.log")
-    att = Attributor(root=str(root), marker_dir=markers)
-    # The environment is inherited unchanged: this module runs only as `python -m rediacc_ci...`, so whatever put `.ci` on its path puts it on pytest's, which `-p` needs before pyproject's `pythonpath` is applied.
-    child = subprocess.Popen(
-        strace_argv(log, [*pytest_argv, MARKER_OPTION, markers]),
-        cwd=root,
-        stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE,
-        text=True,
-        errors="replace",
-        start_new_session=True,
-    )
+    child = None
     try:
+        markers = os.path.join(scratch, "m")
+        os.mkdir(markers)
+        log = os.path.join(scratch, "pytest.log")
+        att = Attributor(root=str(root), marker_dir=markers)
+        # The environment is inherited unchanged: this module runs only as `python -m rediacc_ci...`, so whatever put `.ci` on its path puts it on pytest's, which `-p` needs before pyproject's `pythonpath` is applied.
+        child = subprocess.Popen(
+            # One token, `--opt=dir`: pytest decides whether any test path was given BEFORE this plugin registers its option, so a separate `dir` token reads as a test path, `testpaths` is skipped, and the marker directory is what gets collected (the 2026-11-18 full run: 18 of 927 files).
+            strace_argv(log, [*pytest_argv, "%s=%s" % (MARKER_OPTION, markers)]),
+            cwd=root,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            errors="replace",
+            start_new_session=True,
+        )
         stream = child.stderr if child.stderr is not None else ()
         for line in stream:
             att.feed(line)
         rc = child.wait()
         output = pathlib.Path(log).read_text(encoding="utf-8", errors="replace")
     finally:
-        if child.poll() is None:
+        if child is not None and child.poll() is None:
             with contextlib.suppress(ProcessLookupError):
                 os.killpg(child.pid, signal.SIGKILL)
             child.wait()
@@ -523,6 +527,39 @@ def trace_record(att: Attributor, collected: int) -> dict:
             "lists": sorted(att.lists.get(UNATTRIBUTED, ())),
         },
     }
+
+
+# A traced run slows every syscall, so a test with a wall-clock bound can fail under the trace and pass without it. Such a test still read what it read before it failed, so its reads are a lower bound, as every read here is. More failures than this share of the passes is not timing: the run did not see the suite.
+MAX_FAILED_FRACTION = 0.01
+_FAILED_LINE = re.compile(r"^FAILED (\S+)", re.MULTILINE)
+
+
+def failed_nodeids(output: str) -> list[str]:
+    """The node ids pytest's `-ra` summary names as FAILED, sorted, without the ` - <message>` tail."""
+    return sorted(set(_FAILED_LINE.findall(output)))
+
+
+def red_run_problem(rc: int, passed: int, failed: list[str]) -> str | None:
+    """Why a traced run's exit refuses its trace, or None. Exit 1 with a few named failures is accepted, and each failure is printed; any other non-zero exit (interrupted, internal error, usage, nothing collected) and a failure pytest did not name are refused."""
+    if rc == 0:
+        return None
+    if rc != 1:
+        return (
+            "the traced run exited %d, which is not a test failure, so it may have stopped before reading everything"
+            % rc
+        )
+    if not failed:
+        return "the traced run exited 1 and named no FAILED test, so its failure is unexplained"
+    if len(failed) > MAX_FAILED_FRACTION * max(passed, 1):
+        return (
+            "%d test(s) failed under the trace against %d passed, above %g%%; the run did not see the suite"
+            % (
+                len(failed),
+                passed,
+                MAX_FAILED_FRACTION * 100,
+            )
+        )
+    return None
 
 
 def trace_problem(record: dict, test_files: int) -> str | None:
@@ -554,7 +591,13 @@ def _arg_values(argv: list[str], flag: str) -> list[str]:
     return [argv[i + 1] for i, a in enumerate(argv[:-1]) if a == flag]
 
 
+def _exit_on_term(signum: int, _frame) -> None:
+    raise SystemExit(128 + signum)
+
+
 def cmd_trace(root: pathlib.Path, argv: list[str]) -> int:
+    # A plain SIGTERM would end this process without run_trace's `finally`, leaving strace and every tracee running in their own session (seen 2026-11-18); as an exception it unwinds through the group kill.
+    signal.signal(signal.SIGTERM, _exit_on_term)
     tests = _arg_values(argv, "--tests")
     jobs = (_arg_values(argv, "--jobs") or [str(max(2, (os.cpu_count() or 2) // 2))])[-1]
     pytest_bin = (_arg_values(argv, "--pytest") or [sys.executable])[-1]
@@ -571,7 +614,9 @@ def cmd_trace(root: pathlib.Path, argv: list[str]) -> int:
     rc, att, output = run_trace(root, inner)
     m = re.findall(r"(\d+) passed", output)
     collected = int(m[-1]) if m else 0
+    failed = failed_nodeids(output)
     record = trace_record(att, collected)
+    record["failed"] = failed
     present = impact.present_files(root) or []
     test_roots = impact.testpath_roots(root)
     universe = [p for p in present if impact.is_test_file(p, test_roots)]
@@ -591,13 +636,13 @@ def cmd_trace(root: pathlib.Path, argv: list[str]) -> int:
             len(att.unclaimed),
         )
     )
-    if rc != 0:
+    red = red_run_problem(rc, collected, failed)
+    if red:
         print(output[-3000:], file=sys.stderr)
-        print(
-            "pytest-impact-reads: the traced run was red, so it may have stopped before reading everything; nothing written",
-            file=sys.stderr,
-        )
+        print("pytest-impact-reads: %s; nothing written" % red, file=sys.stderr)
         return 1
+    for nodeid in failed:
+        print("pytest-impact-reads: failed under the trace, its reads may be partial: %s" % nodeid)
     problem = trace_problem(record, len(universe))
     if problem:
         print("pytest-impact-reads: %s; nothing written" % problem, file=sys.stderr)
@@ -635,6 +680,8 @@ def cmd_derive(root: pathlib.Path, argv: list[str]) -> int:
         "pytest-impact-reads: reads for %d of %d test file(s), %d entr(y/ies); paths %d glob(s), lists %d dir(s)"
         % (len(reads), len(impact_map["tests"]), entries, len(gate["paths"]), len(gate["lists"]))
     )
+    for nodeid in trace.get("failed", []):
+        print("pytest-impact-reads: failed under the trace, its reads may be partial: %s" % nodeid)
     print(json.dumps(gate, indent=1))
     if "--write" in argv:
         policy_path = root / impact.POLICY_RELPATH

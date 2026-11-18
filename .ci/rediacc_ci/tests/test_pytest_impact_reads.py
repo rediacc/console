@@ -309,10 +309,13 @@ def test_strace_reads_only_successful_calls_through_a_pid_prefixed_stream():
 # --------------------------------------------------------------------------- the plugin, in a real pytest run
 
 
-def _plugin_run(tmp_path, workers: list[str], with_option: bool = True) -> list[str]:
+def _plugin_run(
+    tmp_path, workers: list[str], with_option: bool = True, positional: bool = True
+) -> list[str]:
+    """`positional=False` names no test path, so pytest falls back to the ini `testpaths`: the whole-suite shape the traced run uses."""
     proj = tmp_path / "proj"
     (proj / "tests").mkdir(parents=True)
-    (proj / "pytest.ini").write_text("[pytest]\n", encoding="utf-8")
+    (proj / "pytest.ini").write_text("[pytest]\ntestpaths = tests\n", encoding="utf-8")
     for name in ("test_a.py", "test_b.py"):
         (proj / "tests" / name).write_text("def test_x():\n    assert True\n", encoding="utf-8")
     markers = tmp_path / "m"
@@ -321,7 +324,7 @@ def _plugin_run(tmp_path, workers: list[str], with_option: bool = True) -> list[
     env["PYTHONPATH"] = os.pathsep.join(
         [str(pathlib.Path(pr.__file__).resolve().parents[2]), env.get("PYTHONPATH", "")]
     )
-    option = [pr.MARKER_OPTION, str(markers)] if with_option else []
+    option = ["%s=%s" % (pr.MARKER_OPTION, markers)] if with_option else []
     done = subprocess.run(
         [
             sys.executable,
@@ -332,7 +335,7 @@ def _plugin_run(tmp_path, workers: list[str], with_option: bool = True) -> list[
             "rediacc_ci.quality.pytest_impact_reads",
             *workers,
             *option,
-            "tests",
+            *(["tests"] if positional else []),
         ],
         cwd=proj,
         env=env,
@@ -365,7 +368,8 @@ def test_run_trace_hands_the_option_to_pytest_and_reads_markers_in_that_director
             seen["argv"] = argv
             log = argv[argv.index("-c") + 2]
             pathlib.Path(log).write_text("1 passed\n", encoding="utf-8")
-            markers = argv[argv.index(pr.MARKER_OPTION) + 1]
+            token = next(a for a in argv if a.startswith(pr.MARKER_OPTION + "="))
+            markers = token.split("=", 1)[1]
             self.stderr = [
                 '100 openat(AT_FDCWD</r>, "x", O_RDONLY) = 5<%s/%s>'
                 % (markers, pr.marker_name(T1)),
@@ -383,8 +387,14 @@ def test_run_trace_hands_the_option_to_pytest_and_reads_markers_in_that_director
     rc, att, out = pr.run_trace(tmp_path, ["pytest", "-q"])
     assert rc == 0
     assert out == "1 passed\n"
-    assert pr.MARKER_OPTION in seen["argv"], seen["argv"]
+    assert pr.MARKER_OPTION not in seen["argv"], "a separate value token reads as a test path"
     assert att.reads == {T1: {".ci/policy/one.json"}}, att.reads
+
+
+@pytest.mark.parametrize("workers", [["-p", "no:xdist"], ["-n", "2"]], ids=["serial", "xdist"])
+def test_the_plugin_marks_the_ini_testpaths_when_no_test_path_is_named(tmp_path, workers):
+    got = _plugin_run(tmp_path, workers, positional=False)
+    assert got == [pr.UNATTRIBUTED, "tests/test_a.py", "tests/test_b.py"], got
 
 
 def test_control_the_plugin_is_inert_without_its_option(tmp_path):
@@ -415,3 +425,64 @@ def test_the_trace_file_is_json_the_derivation_reads():
 )
 def test_glob_matches(glob, rel, want):
     assert pr.glob_matches(glob, rel) is want
+
+
+# --------------------------------------------------------------------------- a red traced run
+
+
+def test_failed_nodeids_come_from_the_short_summary():
+    out = (
+        "....F.\n=== short test summary info ===\n"
+        "FAILED .ci/rediacc_ci/tests/test_x.py::test_a[1] - AssertionError: slow\n"
+        "FAILED .claude/rediacc_hooks/tests/test_y.py::test_b\n"
+        "ERROR .ci/rediacc_ci/tests/test_z.py - collection\n"
+    )
+    assert pr.failed_nodeids(out) == [
+        ".ci/rediacc_ci/tests/test_x.py::test_a[1]",
+        ".claude/rediacc_hooks/tests/test_y.py::test_b",
+    ]
+
+
+def test_control_a_green_run_is_accepted():
+    assert pr.red_run_problem(0, 100, []) is None
+
+
+def test_a_few_named_failures_are_accepted():
+    """Timing under ptrace: 5 of 9,571 failed in the 2026-11-18 traced run, 0.05%."""
+    assert pr.red_run_problem(1, 9571, ["a::b"] * 5) is None
+
+
+@pytest.mark.parametrize(
+    ("rc", "passed", "failed", "why"),
+    [
+        (2, 100, [], "exited 2"),
+        (4, 0, [], "exited 4"),
+        (5, 0, [], "exited 5"),
+        (1, 100, [], "named no FAILED"),
+        (1, 1000, ["t::%d" % i for i in range(11)], "above 1%"),
+    ],
+)
+def test_a_red_run_beyond_a_few_named_failures_is_refused(rc, passed, failed, why):
+    problem = pr.red_run_problem(rc, passed, failed)
+    assert problem is not None
+    assert why in problem, problem
+
+
+def test_run_trace_removes_its_scratch_when_strace_cannot_start(tmp_path, monkeypatch):
+    made = tmp_path / "scratch"
+    monkeypatch.setattr(pr.shutil, "which", lambda _n: "/usr/bin/strace")
+    monkeypatch.setattr(pr.tempfile, "mkdtemp", lambda **_k: (made.mkdir(), str(made))[1])
+
+    def refuses(*_a, **_k):
+        raise OSError("no strace here")
+
+    monkeypatch.setattr(pr.subprocess, "Popen", refuses)
+    with pytest.raises(OSError, match="no strace here"):
+        pr.run_trace(tmp_path, ["pytest"])
+    assert not made.exists(), "a Popen that raised leaked the scratch directory"
+
+
+def test_a_term_signal_unwinds_as_an_exit():
+    with pytest.raises(SystemExit) as got:
+        pr._exit_on_term(15, None)
+    assert got.value.code == 143
