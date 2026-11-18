@@ -377,7 +377,8 @@
       "local_about": [
         "agent/plans/PLAN-local-first-delivery.md Design L, operator ruling R2: \"The planner should really find no way to test/deploy locally to go with github.\"",
         "`local_runners` names each way to prove a change from this machine, with no GitHub run: `run` is the command list, `what` what it proves. Every surface's `local` names at least one of them (rediacc_ci.proof.surfaces refuses a surface with none).",
-        "`github_waits` is the one phrase list a plan box that waits on GitHub matches. An open box that matches carries `GitHub-only: <CD|CI parity|native-runner|soak|preview> -- <why no local path, 20+ chars>` on its line or in an indented `(corrected ...)` line under it (LP8, wl_plandeps.github_wait_findings; docs/agent-reference/plan-records.md)."
+        "`github_waits` is the one phrase list a plan box that waits on GitHub matches. An open box that matches carries `GitHub-only: <CD|CI parity|native-runner|soak|preview> -- <why no local path, 20+ chars>` on its line or in an indented `(corrected ...)` line under it (LP8, wl_plandeps.github_wait_findings; docs/agent-reference/plan-records.md).",
+        "A box's indented `Needs: none|bench-deploy|verified-vmcheck|pushed-head` sub-line says what it waits for before it can start (agent/plans/PLAN-push-decoupling.md Design 3). With none stated, a valid `GitHub-only:` tag derives `pushed-head` and a `Local-route:` correction the class of its runners (wl_plandeps.RUNNER_NEEDS, which holds every `local_runners` id)."
       ],
       "local_runners": {
         "vm-check": {
@@ -435,7 +436,11 @@
         "CI run",
         "ct-tests run",
         "run id",
-        "ci-trace"
+        "ci-trace",
+        "PR CI",
+        "PR head",
+        "post-merge",
+        "pushed branch"
       ],
       "targets": {
         "bench": {"origin_wk": "WK_BENCH_ORIGIN", "config": "eu-bench"},
