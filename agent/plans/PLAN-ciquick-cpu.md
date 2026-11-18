@@ -78,8 +78,10 @@ Core-s is the sum of per-gate `cpuMs` in the receipt plus the runner's own CPU (
 ## Boxes
 
 ### W1 carry lookup and null cascade -- scripts/ci-runner/input-hash.ts, scripts/ci-runner/run.ts, .claude/rediacc_hooks/**/block_unverified_push*.py and its parity test
-- [ ] W1.1 [writer] Confirm whether run.ts reads only the last receipt as prior; if so add carry by `(id, inputHash)` across `.ci/cache/receipts/` (A1), keeping 200. Accept: a test carrying from a receipt two runs back, and a control where a changed hash does not carry.
-- [ ] W1.2 [writer] Artifact `needs` hash through the producer's `filesHash`, plus the exempt-reason field (A4), TS hasher and Python twin together. Accept: hash parity test passes; the `needs-null` count in `--quick --list --json` falls.
+- [x] W1.1 [writer] Confirm whether run.ts reads only the last receipt as prior; if so add carry by `(id, inputHash)` across `.ci/cache/receipts/` (A1), keeping 200. Accept: a test carrying from a receipt two runs back, and a control where a changed hash does not carry.
+    (ticked) 2026-11-18T12:32:45Z by d778be9d: commit:182b846803 -- box Accept re-run 2026-11-18 by a lease writer, rc 0
+- [x] W1.2 [writer] Artifact `needs` hash through the producer's `filesHash`, plus the exempt-reason field (A4), TS hasher and Python twin together. Accept: hash parity test passes; the `needs-null` count in `--quick --list --json` falls.
+    (ticked) 2026-11-18T12:32:48Z by d778be9d: commit:182b846803 -- box Accept re-run 2026-11-18 by a lease writer, rc 0
 
 ### W2 path declarations -- scripts/ci-runner/path-trace.ts, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json
 - [x] W2.1 [writer] path-trace.ts with `--gate`, `--write` and directory-listing folding (A2). Accept: a fixture gate reading two files gets exactly those two plus its listed directory.
@@ -95,13 +97,17 @@ Core-s is the sum of per-gate `cpuMs` in the receipt plus the runner's own CPU (
 - [ ] W4.3 [writer] Derive `reads` with the tracer and declare check:ci-pytest `paths` (B2, B6). Accept: a docs-only diff carries check:ci-pytest.
 
 ### W5 typecheck skip -- scripts/ci-runner/typecheck-incremental.ts and its test
-- [ ] W5.1 [writer] Find the volatile skip-key field and hash content instead (A6). Accept: the two-run test and its touched-file control.
+- [x] W5.1 [writer] Find the volatile skip-key field and hash content instead (A6). Accept: the two-run test and its touched-file control.
+    (ticked) 2026-11-18T12:32:50Z by d778be9d: commit:859d10c020 -- box Accept re-run 2026-11-18 by a lease writer, rc 0
 
 ### W6-W10 slow tests, one writer per file
-- [ ] W6 [writer] test_ops_mirror_config_store: module-scoped store and injected clock. Accept: same test count, ≤ 300 s in junit.
+- [x] W6 [writer] test_ops_mirror_config_store: module-scoped store and injected clock. Accept: same test count, ≤ 300 s in junit.
+    (ticked) 2026-11-18T12:32:38Z by d778be9d: commit:7a21752ae9 -- box Accept re-run 2026-11-18 by a lease writer, rc 0
 - [ ] W7 [writer] test_hooks_delegates and the check_pytest.py triple run (coordinate the check_pytest.py hunk with W4): controls run once. Accept: same test count, ≤ 600 s.
-- [ ] W8 [writer] test_guards_differential: reference cache and batched subprocesses. Accept: same case count, ≤ 450 s; a deliberately broken guard still fails the differential.
-- [ ] W9 [writer] test_quality_plan_implementation merge fixtures: session template and local clones. Accept: same test count, ≤ 60 s.
+- [x] W8 [writer] test_guards_differential: reference cache and batched subprocesses. Accept: same case count, ≤ 450 s; a deliberately broken guard still fails the differential.
+    (ticked) 2026-11-18T12:32:41Z by d778be9d: commit:a20a16ab88 -- box Accept re-run 2026-11-18 by a lease writer, rc 0
+- [x] W9 [writer] test_quality_plan_implementation merge fixtures: session template and local clones. Accept: same test count, ≤ 60 s.
+    (ticked) 2026-11-18T12:32:43Z by d778be9d: commit:1a8401480d -- box Accept re-run 2026-11-18 by a lease writer, rc 0
 - [x] W10 [writer] Slow-test ratchet and `.ci/policy/pytest-slow-allow.json`. Accept: a fixture test sleeping 11 s fails the check.
     (ticked) 2026-11-18T01:29:22Z by d778be9d: commit:e3e12fc949 ce2d2e9e31 7d7ecd770a slow-test ratchet in check_pytest, serial re-time and own-phase judgment; ratchet tests 85 passed, check_pytest --selftest 94 rc 0
 
