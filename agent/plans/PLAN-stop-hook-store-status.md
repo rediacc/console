@@ -119,11 +119,12 @@ The block `reason` does not get the table, so the model's context does not pay f
 
 Order: the module, then the verb and the hook wiring in parallel, then the judge, then the retirement with the docs beside it.
 
-- [ ] S1 [writer] `wl_storestatus.py`: snapshot, change rows, freshness classes and the two renderers as pure functions (D1, D2)
+- [x] S1 [writer] `wl_storestatus.py`: snapshot, change rows, freshness classes and the two renderers as pure functions (D1, D2)
     Owns: .claude/hooks/stop/wl_storestatus.py, .claude/rediacc_hooks/tests/test_wl_store_status.py, scripts/data/doc-registry.md, .ci/config/shards/quality-pytest.json
     Depends on: none.
     Needs: none
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_store_status.py` exits 0. It has one case per change kind (new, ticked, deferred, reopened, leased, unleased, note, retired), each with a control where the same fold gives no row. It has one case per freshness class, with the boundary minute on each side of `LADDER_INVESTIGATE_MIN` and `LADDER_RESOLVE_MIN`. Two more cases: a fold rewritten by `compact_store` gives no change rows against the old snapshot, and an item in `covered` is listed and left out of the blocking set. A table and a change list over their caps end with the `+N more` tail. `npx tsx scripts/gen/gen-docs.ts` and `npm run check:ci-shard-manifest-coverage` exit 0 after `npx tsx scripts/gen/gen-docs.ts --write` and `npm run shard:place` place the two new files.
+    (ticked) 2026-11-18T14:51:54Z by d778be9d: commit:e8329fa3f8 -- wl_storestatus.py landed; selftest rc 0 in the lease; retroactive investigation per operator /ask 2026-11-18
 - [ ] S2 [writer] `worklist.py --status <me> [--since-last-stop]` prints the table and the changes since the last stop, read-only, with the roster read kept for `all` and an agent id (D4)
     Owns: .claude/hooks/stop/worklist.py, .claude/hooks/stop/worklist_messages.py, .claude/rediacc_hooks/tests/test_wl_roster.py
     Depends on: S1.
