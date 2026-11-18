@@ -82,7 +82,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1474 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1475 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
@@ -96,7 +96,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 28 of 81 plans done, 1229 of 1504 boxes done (81%).
+Promoted: 29 of 81 plans done, 1230 of 1504 boxes done (81%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -125,7 +125,7 @@ Promoted: 28 of 81 plans done, 1229 of 1504 boxes done (81%).
 | 23 | PLAN-org-executor-connect-timeout-relocate.md | 17/17 | done |
 | 24 | PLAN-backup-restore-path.md | 8/10 | 2 open |
 | 25 | PLAN-ssh-key-source-ranges.md | 11/11 | done |
-| 26 | PLAN-repo-docker-storage-prune.md | 13/14 | 1 open |
+| 26 | PLAN-repo-docker-storage-prune.md | 14/14 | done |
 | 27 | PLAN-production-key-only.md | 14/17 | 3 open |
 | 28 | PLAN-detached-jobs.md | 33/41 | 8 open |
 | 29 | PLAN-snapshot-read-io-cap.md | 15/16 | 1 open |

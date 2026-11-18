@@ -3142,12 +3142,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 13,
-      "open_sigs": [
-        "0f938263"
-      ],
+      "open": 0,
+      "done": 14,
+      "open_sigs": [],
       "done_sigs": [
+        "0f938263",
         "29961a0f",
         "319e401a",
         "6430ef63",

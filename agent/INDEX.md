@@ -597,7 +597,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-renet-restart-cycle-defects.md` | approved | 40 | 1 | 6 | 6087 |
 | `agent/plans/PLAN-renet-run-docker-sock-isolation.md` | draft | 101 | 0 | 4 | 11627 |
 | `agent/plans/PLAN-renet-runtime-converge.md` | approved | 63 | 0 | 5 | 10310 |
-| `agent/plans/PLAN-repo-docker-storage-prune.md` | executing | 155 | 1 | 13 | 36276 |
+| `agent/plans/PLAN-repo-docker-storage-prune.md` | executing | 156 | 0 | 14 | 36665 |
 | `agent/plans/PLAN-repo-resource-limits.md` | approved | 189 | 3 | 10 | 28058 |
 | `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |
 | `agent/plans/PLAN-resprofile-wave2.md` | compacted | 39 | 0 | 0 | 3076 |
