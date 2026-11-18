@@ -125,6 +125,7 @@ def fixture_repo(tmp_path: pathlib.Path) -> pathlib.Path:
         "listed/deep/two.txt": "2",
         "other/z.txt": "untouched",
         "tool.sh": "#!/bin/sh\n",
+        ".ci/policy/record-paths.json": json.dumps({"version": 1, "records": []}) + "\n",
         "scripts/ci-runner/manifest.ts": MANIFEST,
         "scripts/ci-runner/gates.lock.json": json.dumps(_lock(), indent=2) + "\n",
     }
