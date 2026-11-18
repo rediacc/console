@@ -46,6 +46,8 @@ OK_GLYPH = "  ✓ "
 BAD_GLYPH = "  ✗ "
 
 PORT_RE = re.compile(r"127\.0\.0\.1:\d+")
+# The frozen twin ran `worker_full` against SITE_ORIGIN (a live curl); the port runs it against the mock. The one line that differs is masked on both sides.
+WORKER_FULL_RE = re.compile(r"(worker_full: channel=edge accountServer=)\S+")
 
 # Mutation anchors, each asserted present before it is used.
 SERVER_DEFAULT = 'local account_server="${SERVER_URL:-' + SITE_ORIGIN + '}"'
@@ -60,7 +62,8 @@ MINIMAL_CONFIG = 'local account_json="{\\"accountServer\\":\\"$account_server\\"
 
 def norm(text: str) -> str:
     """Mask the kernel-assigned mock port, and the interpreter-version lines of a CPython traceback (`differential.mask_python_traceback`: the `-c` source echo and the caret ruler, which 3.14 draws and the runner's 3.12 does not). Nothing else is normalized."""
-    return diff.mask_python_traceback(PORT_RE.sub("127.0.0.1:PORT", text))
+    text = WORKER_FULL_RE.sub(r"\1<server>", PORT_RE.sub("127.0.0.1:PORT", text))
+    return diff.mask_python_traceback(text)
 
 
 def build_fixture(tmp_path: pathlib.Path) -> pathlib.Path:
@@ -363,3 +366,38 @@ def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -
 
     good_old, good_new = run_both(fixture)
     assert_same(good_old, good_new)
+
+
+def test_no_case_calls_a_host_other_than_the_mock(tmp_path: pathlib.Path) -> None:
+    """CONTROL for `worker_full` handing install.sh the live SITE_ORIGIN as SERVER_URL.
+
+    A `curl` shim first on PATH logs each URL it is asked for and delegates to the real curl. Every URL must be the loopback mock; the live origin in the log is the defect.
+    """
+    log = tmp_path / "curl.log"
+    shim_dir = tmp_path / "shim"
+    shim_dir.mkdir()
+    real = shutil.which("curl")
+    assert real, "curl is required by install.sh itself"
+    shim = shim_dir / "curl"
+    shim.write_text(
+        '#!/bin/bash\nprintf \'%%s\\n\' "$*" >> "%s"\nexec "%s" "$@"\n' % (log, real),
+        encoding="utf-8",
+    )
+    shim.chmod(0o755)
+    env = {
+        "PATH": "%s:%s" % (shim_dir, os.environ.get("PATH", "")),
+        "HOME": os.environ.get("HOME", ""),
+        "TMPDIR": diff.BASE_ENV["TMPDIR"],
+        "LC_ALL": "C",
+        "PYTHONPATH": str(ROOT / ".ci"),
+        "PYTHONDONTWRITEBYTECODE": "1",
+    }
+    done = subprocess.run(
+        ["python3", str(PORT)], env=env, capture_output=True, text=True, check=False, timeout=180
+    )
+    assert done.returncode == 0, done.stderr
+    calls = [ln for ln in log.read_text(encoding="utf-8").splitlines() if "server-info" in ln]
+    assert len(calls) >= 2, "the shim saw no server-info calls, so this control proves nothing: %r" % calls
+    # worker_server_only names `.invalid` on purpose (RFC 6761: never resolves, so never reaches a live host).
+    stray = [ln for ln in calls if "http://127.0.0.1:" not in ln and ".invalid/" not in ln]
+    assert not stray, "install.sh called a non-mock host: %r" % stray

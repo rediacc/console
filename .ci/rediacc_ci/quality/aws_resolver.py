@@ -29,7 +29,7 @@ import re
 import sys
 from dataclasses import dataclass
 
-from rediacc_ci import log, paths
+from rediacc_ci import gitx, log, paths
 from rediacc_ci.controls import Checker, controls_first, plant
 
 PACKAGE_REL = ".ci/rediacc_ci"
@@ -140,6 +140,20 @@ def shell_findings(text: str, rel: str) -> list[Finding]:
     return found
 
 
+def _files(root: pathlib.Path, base: pathlib.Path, pattern: str) -> list[pathlib.Path]:
+    """`base.rglob(pattern)`, sorted, from the git index when `root` is a work tree.
+
+    A root that is itself a work tree is listed with `git ls-files` (tracked, present on disk), so gitignored state such as `.ci/cache` is not an input of this gate. A root that is not a work tree (a test's tmp dir) has no index and falls back to the rglob. A listing that comes back empty for a directory that exists also falls back, so a broken listing cannot read as a clean tree.
+    """
+    top = gitx.toplevel(root)
+    if top is not None and top.resolve() == root.resolve():
+        rel = base.relative_to(root).as_posix()
+        listed = gitx.ls_files(rel, root=root, existing=True)
+        if listed:
+            return [root / r for r in listed if pathlib.PurePosixPath(r).match(pattern)]
+    return sorted(base.rglob(pattern))
+
+
 def gather(root: pathlib.Path) -> tuple[list[Finding], int]:
     package = root / PACKAGE_REL
     if not package.is_dir():
@@ -148,7 +162,7 @@ def gather(root: pathlib.Path) -> tuple[list[Finding], int]:
     importers = 0
     skip = {root / RESOLVER_REL}
     tests = root / TESTS_REL
-    for path in sorted(package.rglob("*.py")):
+    for path in _files(root, package, "*.py"):
         if path in skip or tests in path.parents or "__pycache__" in path.parts:
             continue
         rel = path.relative_to(root).as_posix()
@@ -162,7 +176,7 @@ def gather(root: pathlib.Path) -> tuple[list[Finding], int]:
         )
     shell_files = sorted((root / WORKFLOWS_REL).glob("*.yml")) + sorted(
         p
-        for p in (root / SHELL_ROOT_REL).rglob("*.sh")
+        for p in _files(root, root / SHELL_ROOT_REL, "*.sh")
         if "cache" not in p.relative_to(root).parts[:2]
     )
     if not shell_files:

@@ -5,7 +5,7 @@ Unit test for `install.sh`'s `write_install_config` function.
 
 Covers the six scenarios the worker rewrite can land us in when a user runs `curl -fsSL https://<preview>.rediacc.com/install.sh | bash`:
 
-  worker_full                    both rewritten, server unreachable
+  worker_full                    both rewritten, server unreachable (a 404 path on the mock)
   worker_channel_only            only CHANNEL rewritten (fail-safe path)
   worker_server_only             only SERVER_URL rewritten
   worker_none                    neither rewritten; no rediacc.json written
@@ -292,14 +292,14 @@ def main(_argv: list[str]) -> int:
     try:
         server.wait()
         cases = (
-            # worker_full: both rewrites landed -- ideal case
+            # worker_full: both rewrites landed, server-info unreachable. SERVER_URL is a path on the MOCK that holds no server-info (a 404, which `curl -f` fails on exactly as it does for an unreachable host), never SITE_ORIGIN: a non-empty SERVER_URL makes install.sh curl `<SERVER_URL>/account/api/v1/.well-known/server-info`, and the live origin there made this gate's verdict depend on the network (and call production). The mock's own server-info (`updateChannel: stable`) is kept for worker_full_with_server_info, the case that needs a reachable one.
             (
                 "worker_full",
                 "edge",
-                SITE_ORIGIN,
+                server.url + "/absent",
                 "yes",
                 "edge",
-                SITE_ORIGIN,
+                server.url + "/absent",
             ),
             # worker_channel_only: fail-safe recovery path (the gap we closed)
             ("worker_channel_only", "stable", "", "yes", "stable", SITE_ORIGIN),
