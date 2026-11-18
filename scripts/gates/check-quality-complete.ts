@@ -108,6 +108,7 @@ import {
   shardPlan,
 } from '../ci-runner/lanes.js';
 import { laneCanEmit, rewriteStrategyRegions } from '../gate-bind.js';
+import { validateBlockerQuality } from '../lib/blocker-validator.js';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { summarizeControls } from '../lib/controls.js';
 import { envRoot } from '../lib/repo-root.js';
@@ -117,6 +118,8 @@ const ROOT = envRoot('QUALITY_COMPLETE_ROOT');
 
 const LOCK = 'scripts/ci-runner/gates.lock.json';
 const WORKFLOW = '.github/workflows/ci-quality.yml';
+/** This file, as the validator's messages name it: the reasons live here, not in a list file. */
+const SELF = 'scripts/gates/check-quality-complete.ts';
 
 /** The job that aggregates the shards. Named once so a rename reds loudly. */
 export const AGGREGATOR_JOB = 'quality-complete';
@@ -671,11 +674,23 @@ export function partitionFindings(
   }
 
   // THE ALLOWLIST CLAUSE. A lane with no setup step is hand-written by construction; one WITH a setup step chose to be, and the choice has to be recorded or the allowlist quietly absorbs lanes that should have earned a region.
+  // THE REASON CLAUSE (review #eacd21f4). Neither the BLOCKER validator nor the suppressions inventory reads this map (both cover list files, not source), so until this clause a one-word reason passed on being non-empty. Every WRITTEN reason now meets the canonical rules in .ci/rediacc_ci/core/allowlist.py (banned phrases, deferral substrings, the length floor) through the same client the TypeScript BLOCKER gates use. An empty reason stays legal only on a lane with no setup step, which the clause above already treats as self-explaining.
   for (const [lane, why] of Object.entries(handWritten).sort()) {
     if (known.has(lane) && hasSetup(lane) && why.trim() === '') {
       findings.push(
         `${lane} is allowlisted as hand-written and HAS an \`- id: setup\` step, so it ` +
           'could hold a region, with no reason recorded for why it does not'
+      );
+      continue;
+    }
+    if (why.trim() === '') continue;
+    const rejected = validateBlockerQuality(lane, why, SELF);
+    if (rejected !== null) {
+      findings.push(
+        `${lane}'s DECLARED_HAND_WRITTEN_LANES reason fails the BLOCKER rules (${rejected.kind}). ` +
+          'Write why this lane holds no region (what its steps need that an emitted region ' +
+          'would not carry), not a label:\n' +
+          rejected.message
       );
     }
   }
@@ -922,7 +937,7 @@ const PART_REGIONS: ReadonlySet<string> = new Set(['quality-code']);
 const PART_HAND: Readonly<Record<string, string>> = {
   'quality-branch': 'no `- id: setup`, so invariant 11 forbids a region here',
   [HOST_LANE]: 'holds this gate, which must never be conjuncted onto a shard leg',
-  'quality-go': 'hand-written steps by design',
+  'quality-go': 'installs clang and runs against the renet checkout, an order a region drops',
 };
 const PART_UNDECIDED: readonly string[] = [];
 const PART_SETUP = (lane: string): boolean => lane !== 'quality-branch';
@@ -1250,6 +1265,65 @@ function selftestControls(scratch: string[]): number {
         PART_SETUP,
         {}
       ).some((f) => f.includes('quality-branch is allowlisted')),
+    },
+    {
+      name: 'FIRES: a one-word reason on a setup-having lane (non-empty is not enough)',
+      ok: partitionFindings(
+        PART_JOBS,
+        PART_REGIONS,
+        { ...PART_HAND, 'quality-go': 'by design' },
+        PART_UNDECIDED,
+        PART_SETUP,
+        {}
+      ).some(
+        (f) =>
+          f.includes("quality-go's DECLARED_HAND_WRITTEN_LANES reason") && f.includes('too-short')
+      ),
+    },
+    {
+      name: 'FIRES: a banned placeholder reason, even on a lane with no setup step',
+      ok: partitionFindings(
+        PART_JOBS,
+        PART_REGIONS,
+        { ...PART_HAND, 'quality-branch': 'TBD.' },
+        PART_UNDECIDED,
+        PART_SETUP,
+        {}
+      ).some(
+        (f) =>
+          f.includes("quality-branch's DECLARED_HAND_WRITTEN_LANES reason") &&
+          f.includes('low-effort')
+      ),
+    },
+    {
+      name: 'CONTROL: a specific reason on a setup-having lane is no finding',
+      ok: !partitionFindings(
+        PART_JOBS,
+        PART_REGIONS,
+        {
+          ...PART_HAND,
+          'quality-go':
+            'installs clang, prefers the archive mirror and runs against the renet checkout',
+        },
+        PART_UNDECIDED,
+        PART_SETUP,
+        {}
+      ).some((f) => f.includes('quality-go')),
+    },
+    {
+      name: 'CONTROL: every live DECLARED_HAND_WRITTEN_LANES reason passes the BLOCKER rules',
+      ok: (() => {
+        const entries = Object.entries(DECLARED_HAND_WRITTEN_LANES);
+        return (
+          entries.length >= 4 &&
+          entries.every(([lane, why]) => validateBlockerQuality(lane, why, SELF) === null)
+        );
+      })(),
+      detail: JSON.stringify(
+        Object.entries(DECLARED_HAND_WRITTEN_LANES)
+          .map(([lane, why]) => [lane, validateBlockerQuality(lane, why, SELF)?.kind ?? 'ok'])
+          .filter(([, verdict]) => verdict !== 'ok')
+      ),
     },
     {
       name: 'FIRES: a list naming a job the workflow no longer defines',
