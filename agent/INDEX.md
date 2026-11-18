@@ -258,7 +258,6 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 | `CLAUDE.md` | agent/plans/PLAN-ask-flow-preemptive-settled-check.md, agent/plans/PLAN-completion-strategy.md, agent/plans/PLAN-fix-in-session-rule.md, agent/plans/PLAN-unify-trap-corpus.md |
 | `agent/archive/plans/PLAN-branch-aware-workflows.md` | agent/plans/PLAN-completion-strategy.md |
 | `agent/archive/plans/PLAN-github-secrets-removal.md` | agent/plans/PLAN-completion-strategy.md |
-| `agent/plans/PLAN-env-to-bitwarden-v2.md` | agent/plans/PLAN-citation-fragility.md, agent/plans/PLAN-completion-strategy.md |
 | `agent/plans/PLAN-fix-ci-contention-aware-timeouts.md` | agent/plans/PLAN-citation-fragility.md |
 | `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | agent/plans/PLAN-citation-fragility.md |
 | `agent/plans/PLAN-git-history-media-rewrite.md` | agent/plans/PLAN-citation-fragility.md |
@@ -272,6 +271,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 | `agent/plans/PLAN-www-bundle-determinism.md` | agent/plans/PLAN-citation-fragility.md |
 | `agent/plans/_done/PLAN-bws-rotation-on-failure.md` | agent/plans/PLAN-completion-strategy.md |
 | `agent/plans/_done/PLAN-commit-author-identity.md` | agent/plans/PLAN-completion-strategy.md |
+| `agent/plans/_done/PLAN-env-to-bitwarden-v2.md` | agent/plans/PLAN-citation-fragility.md, agent/plans/PLAN-completion-strategy.md |
 | `agent/plans/_done/PLAN-plan-file-lifecycle.md` | agent/plans/PLAN-completion-strategy.md |
 | `agent/plans/_done/PLAN-plyr-css-on-demand-loading.md` | agent/plans/PLAN-completion-strategy.md |
 | `agent/plans/_done/PLAN-session-onboarding-marker.md` | agent/plans/PLAN-completion-strategy.md |
@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 255 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 251 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -497,7 +497,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ciquick-cpu.md` | approved | 128 | 23 | 1 | 20244 |
 | `agent/plans/PLAN-ciquick-green-then-batch.md` | approved | 33 | 1 | 6 | 7384 |
 | `agent/plans/PLAN-ciquick-reds-1023-1.md` | executing | 48 | 1 | 11 | 11076 |
-| `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
+| `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5260 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
 | `agent/plans/PLAN-cli-tofu-toolchain.md` | approved | 55 | 0 | 10 | 11354 |
 | `agent/plans/PLAN-cloudflare-proxy.md` | approved | 456 | 1 | 28 | 65583 |
@@ -506,7 +506,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cluster-live-proofs.md` | proposed | 72 | 16 | 0 | 20063 |
 | `agent/plans/PLAN-cncf-conformance.md` | approved | 58 | 5 | 0 | 10497 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
-| `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3939 |
+| `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3945 |
 | `agent/plans/PLAN-config-mirror-reseal.md` | proposed | 24 | 0 | 2 | 3299 |
 | `agent/plans/PLAN-config-networkid-discovery.md` | approved | 190 | 0 | 8 | 26833 |
 | `agent/plans/PLAN-console-executor-multi-org.md` | approved | 377 | 1 | 17 | 67459 |
@@ -629,7 +629,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-refactor-enforcement.md` | executing | 370 | 1 | 16 | 49955 |
 | `agent/plans/PLAN-stop-hook-retro-20261101.md` | ready | 182 | 0 | 4 | 18248 |
 | `agent/plans/PLAN-stop-hook-retro-20261110.md` | ready | 234 | 0 | 8 | 27053 |
-| `agent/plans/PLAN-stop-hook-retro-20261117.md` | ready | 218 | 9 | 0 | 26672 |
+| `agent/plans/PLAN-stop-hook-retro-20261117.md` | ready | 218 | 9 | 0 | 26758 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
 | `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |
@@ -677,20 +677,17 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-e2e-browse-at-ci.md` | done | 49 | 0 | 8 | 7958 |
 | `agent/plans/_done/PLAN-env-to-bitwarden-v2.md` | done | 509 | 0 | 10 | 52656 |
 | `agent/plans/_done/PLAN-fast-loop.md` | done | 112 | 0 | 19 | 17517 |
-| `agent/plans/_done/PLAN-gate-scheduling-learned.md` | done | 292 | 0 | 12 | 22988 |
 | `agent/plans/_done/PLAN-github-pr-review-restore.md` | done | 129 | 0 | 13 | 36107 |
 | `agent/plans/_done/PLAN-hostinger-upgrade-followups.md` | done | 40 | 0 | 4 | 4697 |
 | `agent/plans/_done/PLAN-inline-suppressions.md` | done | 319 | 0 | 11 | 42100 |
 | `agent/plans/_done/PLAN-k3s-137-and-pr-conditions.md` | done | 112 | 0 | 5 | 9257 |
 | `agent/plans/_done/PLAN-lessons-registry-followups.md` | done | 22 | 1 | 1 | 2105 |
 | `agent/plans/_done/PLAN-lessons-registry.md` | done | 186 | 0 | 9 | 21416 |
-| `agent/plans/_done/PLAN-locale-techdiff-resync.md` | done | 86 | 0 | 5 | 7099 |
 | `agent/plans/_done/PLAN-per-flavor-renet-binary-paths.md` | done | 158 | 0 | 8 | 27063 |
 | `agent/plans/_done/PLAN-pin-awscli-toolchain-python-compatible.md` | done | 83 | 0 | 7 | 16560 |
 | `agent/plans/_done/PLAN-pins-command.md` | done | 87 | 0 | 13 | 28197 |
 | `agent/plans/_done/PLAN-plan-dependencies.md` | done | 389 | 0 | 12 | 36921 |
 | `agent/plans/_done/PLAN-plan-per-pr-loop.md` | done | 121 | 0 | 16 | 19056 |
-| `agent/plans/_done/PLAN-plyr-to-videojs.md` | done | 93 | 0 | 5 | 10205 |
 | `agent/plans/_done/PLAN-prepush-full-cpu.md` | done | 265 | 0 | 31 | 48580 |
 | `agent/plans/_done/PLAN-program-state-in-repo.md` | done | 48 | 0 | 5 | 7159 |
 | `agent/plans/_done/PLAN-rdc-readonly-mode.md` | done | 228 | 0 | 23 | 31216 |
@@ -714,13 +711,12 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-stop-hook-turbo.md` | done | 191 | 0 | 23 | 31391 |
 | `agent/plans/_done/PLAN-submodule-branch-coordination-guard.md` | superseded | 120 | 3 | 5 | 21051 |
 | `agent/plans/_done/PLAN-tooling-transformation.md` | done | 7511 | 0 | 154 | 754149 |
-| `agent/plans/_done/PLAN-turbo-local-first.md` | done | 124 | 0 | 6 | 15349 |
 | `agent/plans/_done/PLAN-typecheck-orphan-packages.md` | done | 84 | 0 | 5 | 7157 |
 | `agent/plans/_done/PLAN-vm-check.md` | done | 159 | 0 | 8 | 37578 |
 | `agent/plans/_done/PLAN-w7p5a-real-run-dispatch.md` | done | 818 | 0 | 10 | 107465 |
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 
-255 plan(s), 193 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+251 plan(s), 189 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 

@@ -82,7 +82,7 @@ Counts for the window:
 - **Finished work ordered again (4 times):**
   - 18:22:18 (1745455368): "advance the deferred W2.3 ee3be061, W2.4 e67fef60 and W10 96e623c9". Lead at 18:23:02: "W2.3, W2.4 and W10 are already finished in their writers' copies."
   - 18:28:46 (1745664243): "write the W10 ratchet wiring and W2.4 hash contract on disk". Lead at 18:28:59: "already written and committed in their writers' copies."
-  - 19:20:31 (1747177977): "start ... W10 96e623c9". Lead at 19:20:45: "W10 ... is already finished in its writer's copy (d2e334c3f9)."
+  - 19:20:31 (1747177977): "start ... W10 96e623c9". Lead at 19:20:45: "W10 ... is already finished in its writer's copy (landed as e3e12fc949)."
   - 19:36:43 (1747365277): "Start a Plan agent for ee3be061 and e67fef60". The lead filed hint row 19:36:38Z.
 - **The blocked W2.6 ordered three times:** 17:39:09 (1744255290), 18:00:30 (1744957553) and 18:03:58 (1745086650).
   - At 17:39:15 the lead recorded `BLOCKED_BY:#bd56a02f` with the reason: W2.6 needs W2.3+W2.5 and W2.4 on one tree.
@@ -97,7 +97,7 @@ Counts for the window:
 
 **Fix.**
 - **(a) A finished-in-lease fact.** `_judge_facts` adds `finished_in_lease`: for each remaining item, each past worker `w` where `agent-<w>` has unlanded commits in the survey cache, with the commits and the active hold (vm:check, ci:quick, release, receipt-for-push, or none).
-- **(b) A blocked fact.** `_judge_facts` adds `blocked` for any owned item, `[>]` included, that carries an open BLOCKED_BY. It quotes the note that introduced the token, which the fold now keeps as `rec["blocked_note"]` at `wl_store.py:1218`.
+- **(b) A blocked fact.** `_judge_facts` adds `blocked` for any owned item, `[>]` included, that carries an open BLOCKED_BY. It quotes the note that introduced the token, which the fold now keeps as `rec["blocked_note"]` at `wl_store.py`.
 - **(c) Both render in JUDGE_FACTS,** and `brief_text` appends `BLOCKED_BY #x: <note[:120]>` so the lead sees it too.
 - **(d) No more 20-line cut.** The judge gets every remaining line, each capped at 160 characters (D4).
 - **(e) `settle_finished_reraise`,** next to `settle_closed_reraise` (`.claude/hooks/stop/wl_judge.py:1130`). A continue whose next_action names only finished-in-lease items, by `#id` or by a box token of the item's basetext (`W2.3`, `ee3be061`), is read as stop. A continue naming only blocked items is read as stop on the second identical ask while the blocker's item key is unchanged (D2).
@@ -120,7 +120,7 @@ Counts for the window:
 ## 4. Unlanded-lease: superseded-pending and the drill hold
 
 **What happened.**
-- **The superseded commit.** Lease agent-abb3779a0acb10c25 held only bddc296634, old traced-paths data that conflicts with manifest.ts and was replaced by the W2.2 re-trace, still to land.
+- **The superseded commit.** Lease agent-abb3779a0acb10c25 held only the commit "feat(ci-runner): traced paths for 171 whole-tree gates", old traced-paths data that conflicts with manifest.ts and was replaced by the W2.2 re-trace, still to land.
   - The lease blocked at 13:38:15 (1736224463, among six commits), 14:50:08 (1739133381) and 14:55:30 (1739376978).
   - From 14:50:12 to 14:56:37 the lead read `worktree gc --help`, wl_worktrees and worktree_lease, then saved a patch.
   - It got out by leasing #1abe21eb to the new writer with a note naming the old lease id. That makes `_holder` (`.claude/hooks/stop/wl_worktrees.py:213`) read the tree as held: an accident, not a verb.
@@ -205,7 +205,7 @@ Counts for the window:
   - The `wake-timer` check (`.claude/hooks/stop/wl_checks.py:4469`) counts a timer only on a live lock pid with `until > now`, and otherwise blocks with the fire time and the re-arm command.
 
   Fixtures: a held lock until 19:21Z and an arm of 60 minutes, giving a lock until 20:09Z and an extended sleeper. A waker task in the harness list with a dead lock pid gives a wake-timer block naming "fired at". Test: .claude/rediacc_hooks/tests/test_wl_wake.py.
-- [ ] **R20261117.6** Add `--superseded-by <sha>=pending:<lease-id>` (`.ci/rediacc_ci/dev/worktree_lease.py:1729`). `superseded_commits` (`.claude/hooks/stop/wl_worktrees.py:300`) waives the commit while the pending lease tree exists with a holder or unlanded commits. `V_WORKTREE_UNLANDED` names the form. Add `drill_running(root)` to the hold chain in `worktree_check` (`.claude/hooks/stop/wl_checks.py:2848-2890`). Fixtures: bddc296634 with a pending lease live, so not unlanded; the pending tree collected, so unlanded again. A drill argv of this checkout gives held. Test: .claude/hooks/stop/test-wl_worktrees.py.
+- [ ] **R20261117.6** Add `--superseded-by <sha>=pending:<lease-id>` (`.ci/rediacc_ci/dev/worktree_lease.py:1729`). `superseded_commits` (`.claude/hooks/stop/wl_worktrees.py:300`) waives the commit while the pending lease tree exists with a holder or unlanded commits. `V_WORKTREE_UNLANDED` names the form. Add `drill_running(root)` to the hold chain in `worktree_check` (`.claude/hooks/stop/wl_checks.py:2848-2890`). Fixtures: the superseded traced-paths commit with a pending lease live, so not unlanded; the pending tree collected, so unlanded again. A drill argv of this checkout gives held. Test: .claude/hooks/stop/test-wl_worktrees.py.
 - [ ] **R20261117.7** Archival lead time. `check_agent_session_archival --status` prints due-within-48h rows from `.ci/rediacc_ci/quality/agent_session_archival.py`. The Stop hook queues `archival-due-soon` (advise-only, added to `.claude/config/effort.json`). Fixture: a review directory of a branch merged 12.5 days ago gives the advisory and gate rc=0. At 14.1 days, the gate is red and there is no advisory. Test: .claude/rediacc_hooks/tests/test_wl_archival_due.py.
 - [ ] **R20261117.8** Move the blocklog, judge, admissions and tick-refusal ledgers to `<git-common-dir>/rediacc-worklist/`. `wl_retro` (`.claude/hooks/stop/wl_retro.py:237`) reads the new path and the old one. Fixture: rows in both paths are counted once each, in time order. Test: .claude/rediacc_hooks/tests/test_wl_retro.py.
 - [ ] **R20261117.9** After .1 to .8 land, re-count on the next window's blocklog and judge log and record before and after for the id-flag, W-order and wake classes against this plan's 49, 7 and 13. Test: .claude/rediacc_hooks/tests/test_wl_retro.py.

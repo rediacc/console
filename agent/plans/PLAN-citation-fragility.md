@@ -39,7 +39,7 @@ Compacted-By: d778be9d
 Compacted-At: 2026-09-20T18:10:29Z
 Boxes: 6 attested, 0 open, 0 abandoned
 Epics: e87fa3ce
-Touched: agent/plans/PLAN-stop-report-queue.md, agent/plans/PLAN-git-history-media-rewrite.md, agent/plans/PLAN-fix-ci-contention-aware-timeouts.md, agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/plans/PLAN-secret-namespace-migration.md, agent/plans/PLAN-www-bundle-determinism.md, agent/plans/PLAN-env-to-bitwarden-v2.md, agent/plans/PLAN-promote-mutation-runner.md, agent/plans/PLAN-subagent-idle-detection.md
+Touched: agent/plans/PLAN-stop-report-queue.md, agent/plans/PLAN-git-history-media-rewrite.md, agent/plans/PLAN-fix-ci-contention-aware-timeouts.md, agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md, agent/plans/PLAN-secret-namespace-migration.md, agent/plans/PLAN-www-bundle-determinism.md, agent/plans/_done/PLAN-env-to-bitwarden-v2.md, agent/plans/PLAN-promote-mutation-runner.md, agent/plans/PLAN-subagent-idle-detection.md
 Gates: check:ci-plan-citations, check:ci-shape-duplication
 Why-Source: model
 Read-History: `git show f439a5441017c0c19accc9ffebeea00394e3be5e` recovers the text; `git log --find-object=f439a5441017c0c19accc9ffebeea00394e3be5e --all` names the commit
