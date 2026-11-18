@@ -9,6 +9,7 @@ import datetime
 import json
 import pathlib
 import stat
+import sys
 import types
 
 import pytest
@@ -46,7 +47,9 @@ def judge(tmp_path, monkeypatch):
     script = bindir / "claude"
     script.write_text("#!/bin/bash\ncat > %s\ncat %s\n" % (seen, reply), encoding="utf-8")
     script.chmod(script.stat().st_mode | stat.S_IEXEC)
-    monkeypatch.setenv("PATH", "%s:/usr/bin:/bin" % bindir)
+    monkeypatch.setenv(
+        "PATH", "%s:%s:/usr/bin:/bin" % (bindir, pathlib.Path(sys.executable).parent)
+    )
     monkeypatch.setenv("TMPDIR", str(tmp_path))
 
     def answer(verdict, next_action):

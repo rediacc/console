@@ -6,6 +6,8 @@ The model is a stub `claude` on PATH that records what reached its stdin and its
 from __future__ import annotations
 
 import json
+import pathlib
+import sys
 
 import pytest
 
@@ -30,7 +32,9 @@ def stub(tmp_path, monkeypatch):
     script.write_text(STUB, encoding="utf-8")
     script.chmod(0o755)
     seen = tmp_path / "seen.json"
-    monkeypatch.setenv("PATH", "%s:/usr/bin:/bin" % bindir)
+    monkeypatch.setenv(
+        "PATH", "%s:%s:/usr/bin:/bin" % (bindir, pathlib.Path(sys.executable).parent)
+    )
     monkeypatch.setenv("STUB_SEEN", str(seen))
     return seen
 
