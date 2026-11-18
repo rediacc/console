@@ -3646,6 +3646,26 @@
         "fc4fa3b6"
       ]
     },
+    "agent/plans/PLAN-stop-hook-retro-20261117.md": {
+      "status": "ready",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 9,
+      "done": 0,
+      "open_sigs": [
+        "15d489b7",
+        "3d7ffc57",
+        "40accdd4",
+        "92ee81e6",
+        "ac1aa11f",
+        "c5f18401",
+        "d85acb7f",
+        "e1f2997f",
+        "f705e6d5"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-stop-report-queue.md": {
       "status": "compacted",
       "owner": "unowned",
