@@ -530,8 +530,14 @@ else:
 
 print("== the DEFECT control")
 defect_pair = _declared_defect()
-flipped = [n for n, c in REFUSED if run_guard(c, defect=defect_pair)[0] == 0]
-if len(flipped) < len(REFUSED) // 2:
+# The control only needs half the refusals to flip, so it stops once that many have.
+flipped = []
+for n, c in REFUSED:
+    if len(flipped) >= max(len(REFUSED) // 2, 1):
+        break
+    if run_guard(c, defect=defect_pair)[0] == 0:
+        flipped.append(n)
+if len(flipped) < len(REFUSED) // 2 or not flipped:
     failures.append("defect control")
     print(
         "*** FAIL *** with %r planted only %d of %d refusals flipped"
@@ -539,7 +545,7 @@ if len(flipped) < len(REFUSED) // 2:
     )
 else:
     print(
-        "planted %r: %d of %d refusals flipped, e.g. %r"
+        "planted %r: %d of %d refusals flipped (stopped at the half), e.g. %r"
         % (defect_pair[0], len(flipped), len(REFUSED), flipped[0])
     )
 kept = [n for n, c in ALLOWED if run_guard(c, defect=defect_pair)[0] != 0]

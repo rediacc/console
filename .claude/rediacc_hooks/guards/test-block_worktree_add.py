@@ -826,12 +826,18 @@ for label, pair, rows in (
     ("the declared DEFECT", _declared_defect(), [r for r in REFUSED if "run.sh" in r[1]]),
     ("the lease arm", ("if runs_lease_verb(cmd):", "if False:"), LEASE_ROWS),
 ):
-    flipped = [n for n, c in rows if run_guard(c, defect=pair)[0] == 0]
-    if not rows or len(flipped) < len(rows) // 2:
+    # The control only needs half the rows to flip, so it stops once that many have.
+    flipped = []
+    for n, c in rows:
+        if len(flipped) >= max(len(rows) // 2, 1):
+            break
+        if run_guard(c, defect=pair)[0] == 0:
+            flipped.append(n)
+    if not rows or len(flipped) < len(rows) // 2 or not flipped:
         failures.append("plant: %s" % label)
         print("*** FAIL *** %s flipped %d of %d rows" % (label, len(flipped), len(rows)))
     else:
-        print("%s: %d of %d flipped, e.g. %r" % (label, len(flipped), len(rows), flipped[0]))
+        print("%s: %d of %d flipped (stopped at the half), e.g. %r" % (label, len(flipped), len(rows), flipped[0]))
     kept = [n for n, c in ALLOWED if run_guard(c, defect=pair)[0] != 0]
     if kept:
         failures.append("plant refused an allowed row: %s" % label)

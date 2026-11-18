@@ -1061,14 +1061,17 @@ MUST_FLIP = {
     "chain-touched-ignored": "chain: the account side changed after the base",
 }
 for label, mutant in CONTROLS:
-    flipped = [
-        n for n, c, r, tr, cwd, w, _ in CASES if w and not run(c, r, tr, cwd, broken=mutant)[0]
-    ]
     must = MUST_FLIP.get(label)
+    # A control stops at its first flip: the named case when it has one, else the first refusal that turns allowed.
+    flipped = []
+    for n, c, r, tr, cwd, w, _ in CASES:
+        if w and (must is None or n == must) and not run(c, r, tr, cwd, broken=mutant)[0]:
+            flipped.append(n)
+            break
     if flipped and (must is None or must in flipped):
         print(
-            "%s control: planted %r; %d refusal(s) flipped to allowed, e.g. %r"
-            % (label, mutant[1], len(flipped), must or flipped[0])
+            "%s control: planted %r; refusal flipped to allowed: %r"
+            % (label, mutant[1], must or flipped[0])
         )
     else:
         print(

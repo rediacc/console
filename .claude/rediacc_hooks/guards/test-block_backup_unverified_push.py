@@ -538,16 +538,17 @@ MUST_FLIP = {
     "asked-always-true": "an ASKED matching no answer",
 }
 for label, mutant in CONTROLS:
-    flipped = [
-        n
-        for n, c, r, tr, w, _ in CASES
-        if w and not run(c, r, tr, broken=mutant, cwd=CWD.get(n))[0]
-    ]
     must = MUST_FLIP[label]
+    # A control stops at its first flip: only the named case decides it.
+    flipped = []
+    for n, c, r, tr, w, _ in CASES:
+        if w and n == must and not run(c, r, tr, broken=mutant, cwd=CWD.get(n))[0]:
+            flipped.append(n)
+            break
     if must in flipped:
         print(
-            "%s control: planted %r; %d refusal(s) flipped to allowed, including %r"
-            % (label, mutant[1], len(flipped), must)
+            "%s control: planted %r; refusal flipped to allowed: %r"
+            % (label, mutant[1], must)
         )
     else:
         print(
