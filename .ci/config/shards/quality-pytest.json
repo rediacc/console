@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-18T00:38:58.549Z",
+  "generatedAt": "2026-11-18T12:01:32.296Z",
   "legs": [
     {
       "index": 1,
@@ -571,6 +571,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_reviewclass.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_schedred.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_soakedpins.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_store_status.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_stuck_and_blockers.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_waiter_controls.py"
       ]
