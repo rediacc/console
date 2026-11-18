@@ -27,10 +27,12 @@ THE TWO ORACLES, and they are the whole design. This repo has exactly two correc
 When neither direction holds the histories genuinely diverged, and this refuses rather than guessing. Fail closed: an unreadable probe is never a pass.
 """
 
+import contextlib
 import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -1448,16 +1450,22 @@ def selftest():
 
         _clean = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
         _blocked = False
+        # Own process group: a timeout kills git's editor children (sh, tail) too, which subprocess.run's timeout alone leaves running forever.
+        _proc = subprocess.Popen(
+            ["git", "-C", _ed, "commit", "--amend"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env=_clean,
+            start_new_session=True,
+        )
         try:
-            subprocess.run(
-                ["git", "-C", _ed, "commit", "--amend"],
-                capture_output=True,
-                env=_clean,
-                timeout=5,
-                check=False,
-            )
+            _proc.wait(timeout=5)
         except subprocess.TimeoutExpired:
             _blocked = True
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(_proc.pid, signal.SIGKILL)
+            _proc.wait()
         check("CONTROL: the same call WITHOUT the env blocks, so the fix is load-bearing", _blocked)
     finally:
         shutil.rmtree(_ed, ignore_errors=True)
@@ -1719,7 +1727,6 @@ def selftest():
     # EVERY `dels is None` GUARD, BOTH WAYS. These were the two fail-OPEN sites this session closed: `staged_deletions` returns None when its probe fails, None is falsy, and a bare `if dels:` therefore read "the probe broke" as "no deletions". force-push had it right and two other paths did not.
     #
     # Controls that only exercised the happy path would not have seen the inversion, which is the whole reason this block asserts BOTH returns per site: None must refuse, and an empty list must NOT.
-    import contextlib
     import io
 
     real_sd = globals()["staged_deletions"]
