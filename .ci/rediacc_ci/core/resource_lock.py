@@ -1,0 +1,270 @@
+"""One flock per named shared resource: the VM fleet, and each bench region.
+
+THE RESOURCES (PLAN-push-decoupling.md D1.5, D1.6). The KVM fleet (`fleet`) is reset by the e2e-local setup, driven by vm:check and the drills, and rebuilt by `./rdc.sh ops up|down`; a bench region (`bench-<region>`) is deployed, reset and proved by four runners. Before this module only vm:check took a lock, so two of the others could interleave on one resource.
+
+THE PATH. Every resource's file sits in the directory `rediacc_ci.drills.vm_check.lock_path` picks: `$XDG_RUNTIME_DIR`, then `/run/user/<uid>`, each only when it is this user's directory, else a per-user name in /tmp. `fleet` keeps vm:check's own file name, `rediacc-vm-check.lock` (`rediacc-vm-check-<uid>.lock` in /tmp), so vm:check, this module and `wl_checks.vm_check_running` meet on one file.
+
+THE PAYLOAD is JSON `{pid, session, purpose, since}`: vm:check writes the same keys minus `purpose`, so a holder written by either reads in both.
+
+THE WAIT is bounded. A second holder polls until `wait_s` runs out, printing the holder once to stderr, then raises `ResourceBusyError` naming the resource, the file and the holder.
+
+THE WRAPPER, for callers that are not Python:
+
+    python3 -m rediacc_ci.core.resource_lock run --resource fleet [--wait S] [--purpose P] -- <argv>
+
+holds the lock for the child's life and exits with the child's code (128+N when signal N killed it). The lock fd is close-on-exec, so a daemon the child leaves behind never inherits it.
+"""
+
+from __future__ import annotations
+
+import argparse
+import contextlib
+import datetime
+import json
+import os
+import pathlib
+import re
+import signal
+import subprocess
+import sys
+import time
+from typing import TYPE_CHECKING
+
+if sys.platform != "win32":
+    import fcntl
+
+if TYPE_CHECKING:  # annotation-only import
+    from collections.abc import Callable, Iterator, Mapping, Sequence
+
+DEFAULT_WAIT_S = 600.0
+POLL_S = 0.2
+# Exit code of the wrapper when the wait ran out: 75 is EX_TEMPFAIL, the resource is busy, try again later.
+EXIT_BUSY = 75
+# The file stem of a resource whose name predates this module.
+LEGACY_STEMS = {"fleet": "rediacc-vm-check"}
+RESOURCE_RE = re.compile(r"^[a-z][a-z0-9-]{0,62}$")
+
+
+class ResourceBusyError(RuntimeError):
+    """The resource stayed held by another process for the whole wait."""
+
+    def __init__(self, resource: str, path: pathlib.Path, holder: str, waited: float) -> None:
+        super().__init__(
+            "resource %s is busy: %s holds %s after %ds" % (resource, holder, path, int(waited))
+        )
+        self.resource = resource
+        self.path = path
+        self.holder = holder
+        self.waited = waited
+
+
+def bench_resource(region: str) -> str:
+    """The resource of one bench region: `bench-eu`, `bench-us`, ..."""
+    return "bench-%s" % (region or "").strip().lower()
+
+
+def _check_name(resource: str) -> str:
+    if not RESOURCE_RE.match(resource or ""):
+        raise ValueError("resource name %r is not lower-case letters, digits and dashes" % resource)
+    return resource
+
+
+def lock_path(resource: str, environ: Mapping[str, str] | None = None) -> pathlib.Path:
+    """The lock file of `resource`, in the directory vm:check's `lock_path` picks; `fleet` is vm:check's own file."""
+    stem = LEGACY_STEMS.get(_check_name(resource), "rediacc-%s" % resource)
+    env = os.environ if environ is None else environ
+    uid = os.getuid()
+    for runtime in ((env.get("XDG_RUNTIME_DIR") or "").strip(), "/run/user/%d" % uid):
+        with contextlib.suppress(OSError):
+            if runtime and os.path.isdir(runtime) and os.stat(runtime).st_uid == uid:
+                return pathlib.Path(runtime) / ("%s.lock" % stem)
+    return pathlib.Path("/tmp") / ("%s-%d.lock" % (stem, uid))
+
+
+def _iso(epoch: float) -> str:
+    return datetime.datetime.fromtimestamp(epoch, datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def describe_payload(raw: bytes) -> str:
+    """`pid <p>, purpose <x>, session <s>, since <t>` from a lock payload; `holder unknown` when it does not parse."""
+    try:
+        data = json.loads(raw.decode(errors="replace"))
+    except ValueError:
+        return "holder unknown"
+    if not isinstance(data, dict):
+        return "holder unknown"
+    return "pid %s, purpose %s, session %s, since %s" % (
+        data.get("pid"),
+        data.get("purpose") or "-",
+        data.get("session") or "-",
+        data.get("since"),
+    )
+
+
+def default_session(environ: Mapping[str, str] | None = None) -> str:
+    env = os.environ if environ is None else environ
+    return (env.get("CLAUDE_CODE_SESSION_ID") or "-")[:8]
+
+
+class ResourceLock:
+    """An exclusive flock on one named resource; `acquire` waits at most `wait_s`."""
+
+    def __init__(
+        self,
+        resource: str,
+        *,
+        environ: Mapping[str, str] | None = None,
+        clock: Callable[[], float] = time.monotonic,
+        sleep: Callable[[float], None] = time.sleep,
+        say: Callable[[str], None] | None = None,
+    ) -> None:
+        self.resource = _check_name(resource)
+        self.path = lock_path(resource, environ)
+        self.environ = os.environ if environ is None else environ
+        self.fd: int | None = None
+        self._clock = clock
+        self._sleep = sleep
+        self._say = say if say is not None else (lambda line: print(line, file=sys.stderr, flush=True))
+
+    def holder(self) -> str:
+        """The current payload, read without taking the lock."""
+        try:
+            fd = os.open(self.path, os.O_RDONLY)
+        except OSError:
+            return "holder unknown"
+        try:
+            return describe_payload(os.pread(fd, 4096, 0))
+        except OSError:
+            return "holder unknown"
+        finally:
+            os.close(fd)
+
+    def acquire(self, purpose: str, wait_s: float = DEFAULT_WAIT_S, session: str | None = None) -> float:
+        """Seconds waited. Raises ResourceBusyError naming the holder when the wait runs out."""
+        if self.fd is not None:
+            raise RuntimeError("resource %s is already held by this lock object" % self.resource)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        fd = os.open(self.path, os.O_RDWR | os.O_CREAT | os.O_CLOEXEC, 0o600)
+        started = self._clock()
+        announced = False
+        while True:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                waited = self._clock() - started
+                holder = describe_payload(os.pread(fd, 4096, 0))
+                if waited >= wait_s:
+                    os.close(fd)
+                    raise ResourceBusyError(self.resource, self.path, holder, waited) from None
+                if not announced:
+                    self._say(
+                        "resource_lock: waiting up to %ds for %s (%s), held by %s"
+                        % (int(wait_s), self.resource, self.path, holder)
+                    )
+                    announced = True
+                self._sleep(min(POLL_S, max(0.0, wait_s - waited)))
+        self.fd = fd
+        os.ftruncate(fd, 0)
+        payload = {
+            "pid": os.getpid(),
+            "session": session if session is not None else default_session(self.environ),
+            "purpose": purpose,
+            "since": _iso(time.time()),
+        }
+        os.pwrite(fd, json.dumps(payload).encode(), 0)
+        return self._clock() - started
+
+    def release(self) -> None:
+        if self.fd is None:
+            return
+        with contextlib.suppress(OSError):
+            os.ftruncate(self.fd, 0)
+            fcntl.flock(self.fd, fcntl.LOCK_UN)
+        os.close(self.fd)
+        self.fd = None
+
+
+@contextlib.contextmanager
+def held(
+    resource: str,
+    *,
+    purpose: str,
+    wait_s: float = DEFAULT_WAIT_S,
+    session: str | None = None,
+    environ: Mapping[str, str] | None = None,
+) -> Iterator[ResourceLock]:
+    """Hold `resource` for the body of the `with`; ResourceBusyError when the wait runs out."""
+    lock = ResourceLock(resource, environ=environ)
+    lock.acquire(purpose, wait_s, session)
+    try:
+        yield lock
+    finally:
+        lock.release()
+
+
+def run(resource: str, argv: Sequence[str], *, purpose: str, wait_s: float = DEFAULT_WAIT_S) -> int:
+    """Run `argv` under `resource`; the child's exit code, 128+N for a child killed by signal N, EXIT_BUSY when the wait ran out."""
+    try:
+        lock = ResourceLock(resource)
+        lock.acquire(purpose, wait_s)
+    except ResourceBusyError as exc:
+        print("resource_lock: %s" % exc, file=sys.stderr, flush=True)
+        return EXIT_BUSY
+    try:
+        child = subprocess.Popen(list(argv))
+        forwarded = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
+        previous = {}
+
+        def forward(signum: int, _frame: object) -> None:
+            with contextlib.suppress(ProcessLookupError):
+                child.send_signal(signum)
+
+        for signum in forwarded:
+            previous[signum] = signal.signal(signum, forward)
+        try:
+            rc = child.wait()
+        finally:
+            for signum, handler in previous.items():
+                signal.signal(signum, handler)
+        return 128 - rc if rc < 0 else rc
+    finally:
+        lock.release()
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="python3 -m rediacc_ci.core.resource_lock")
+    sub = parser.add_subparsers(dest="verb", required=True)
+    run_p = sub.add_parser("run", help="run a command while holding a named resource")
+    run_p.add_argument("--resource", required=True)
+    run_p.add_argument("--wait", type=float, default=None, help="seconds to wait (default %ds, or $RESOURCE_LOCK_WAIT_S)" % DEFAULT_WAIT_S)
+    run_p.add_argument("--purpose", default="")
+    run_p.add_argument("cmd", nargs=argparse.REMAINDER)
+    path_p = sub.add_parser("path", help="print a resource's lock file")
+    path_p.add_argument("--resource", required=True)
+    holder_p = sub.add_parser("holder", help="print a resource's current holder")
+    holder_p.add_argument("--resource", required=True)
+    args = parser.parse_args(argv)
+    try:
+        _check_name(args.resource)
+    except ValueError as exc:
+        parser.error(str(exc))
+    if args.verb == "path":
+        print(lock_path(args.resource))
+        return 0
+    if args.verb == "holder":
+        print(ResourceLock(args.resource).holder())
+        return 0
+    cmd = list(args.cmd)
+    if cmd and cmd[0] == "--":
+        cmd = cmd[1:]
+    if not cmd:
+        parser.error("run needs a command after --")
+    wait_s = args.wait
+    if wait_s is None:
+        wait_s = float(os.environ.get("RESOURCE_LOCK_WAIT_S") or DEFAULT_WAIT_S)
+    return run(args.resource, cmd, purpose=args.purpose or " ".join(cmd)[:120], wait_s=wait_s)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
