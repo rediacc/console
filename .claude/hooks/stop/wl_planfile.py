@@ -96,6 +96,7 @@ import math
 import os
 import pathlib
 import re
+from typing import Any
 
 import wl_core as C
 import wl_planfid as P
@@ -270,8 +271,8 @@ def prepare(rows):
     return out
 
 
-_TOKEN_INDEX = {}
-_PREPARED = {}
+_TOKEN_INDEX: dict[Any, Any] = {}
+_PREPARED: dict[Any, Any] = {}
 
 
 def _token_index(prepared):

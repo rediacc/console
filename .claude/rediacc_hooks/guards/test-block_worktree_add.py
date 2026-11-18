@@ -827,7 +827,7 @@ for label, pair, rows in (
     ("the lease arm", ("if runs_lease_verb(cmd):", "if False:"), LEASE_ROWS),
 ):
     # The control only needs half the rows to flip, so it stops once that many have.
-    flipped = []
+    flipped: list[str] = []
     for n, c in rows:
         if len(flipped) >= max(len(rows) // 2, 1):
             break

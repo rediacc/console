@@ -11,6 +11,7 @@ THE ADVANCE (agent/plans/PLAN-push-decoupling.md R3). Sections 5 and 6 drive `co
 """
 
 import atexit
+import importlib
 import json
 import os
 import pathlib
@@ -18,6 +19,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import Any
 
 import wl_review as R
 
@@ -165,7 +167,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[3]
 TSX = ROOT / "node_modules" / ".bin" / "tsx"
 RUNNER_DIR = ROOT / "scripts" / "ci-runner"
 sys.path.insert(0, str(ROOT / ".claude"))
-from rediacc_hooks.guards import block_unverified_push as GUARD  # noqa: E402
+GUARD = importlib.import_module("rediacc_hooks.guards.block_unverified_push")
 
 READER_POLICY = json.dumps(
     {
@@ -175,7 +177,7 @@ READER_POLICY = json.dumps(
         ],
     }
 )
-GATES = [
+GATES: list[dict[str, Any]] = [
     {
         "id": gid,
         "run": "true",

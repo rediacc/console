@@ -126,15 +126,17 @@ class Container:
         assert env[oh.NO_PROVISION_ENV] == "1"
         command = argv[7]
         self.calls.append(command)
-        if PARSE_RE.match(command):
+        parse = PARSE_RE.match(command)
+        if parse:
             if self.fail_parse is not None:
                 return self.fail_parse
-            spec = json.loads(base64.b64decode(PARSE_RE.match(command).group(2)))
+            spec = json.loads(base64.b64decode(parse.group(2)))
             doc = dp.collect(spec["mailboxes"], self.fetch)
             return oh.Result(0, dp.MARKER + json.dumps(doc) + "\n")
         parts = [MARK_RE.match(p) for p in command.split(" && ")]
         if all(parts):
             for found in parts:
+                assert found is not None
                 assert found.group(2) == "Server-Reports"
                 assert len(found.group(3).split(",")) <= dr.MARK_CHUNK
                 self.marked += found.group(3).split(",")

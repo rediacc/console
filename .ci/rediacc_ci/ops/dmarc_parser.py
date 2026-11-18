@@ -355,11 +355,17 @@ def _recipient_domains(entries: object) -> list:
     return sorted(found)
 
 
+def _sub_dict(event: dict, key: str) -> dict:
+    value = event.get(key)
+    return value if isinstance(value, dict) else {}
+
+
 def _ses_event(doc: dict) -> dict:
     """The SES event of one notification, or an `unknown` shape naming what is missing.
 
     An SNS email subscription delivers the SES event JSON as the whole body (measured 2026-11-18 on Server-Reports: no SNS envelope); an HTTP or raw-off subscription wraps it in a Notification whose `Message` holds it. Both reach here.
     """
+    event: dict | None
     if doc.get("eventType") or doc.get("notificationType"):
         event = doc
     else:
@@ -373,16 +379,16 @@ def _ses_event(doc: dict) -> dict:
     kind = str(event.get("eventType") or event.get("notificationType") or "")
     if not kind:
         return {"shape": "unknown", "why": "SES event without an eventType"}
-    bounce = event.get("bounce") if isinstance(event.get("bounce"), dict) else {}
-    delay = event.get("deliveryDelay") if isinstance(event.get("deliveryDelay"), dict) else {}
-    complaint = event.get("complaint") if isinstance(event.get("complaint"), dict) else {}
+    bounce = _sub_dict(event, "bounce")
+    delay = _sub_dict(event, "deliveryDelay")
+    complaint = _sub_dict(event, "complaint")
     domains = (
         _recipient_domains(bounce.get("bouncedRecipients"))
         or _recipient_domains(delay.get("delayedRecipients"))
         or _recipient_domains(complaint.get("complainedRecipients"))
     )
     if not domains:
-        mail = event.get("mail") if isinstance(event.get("mail"), dict) else {}
+        mail = _sub_dict(event, "mail")
         domains = _recipient_domains(mail.get("destination"))
     return {
         "shape": "ses-event",

@@ -2052,7 +2052,7 @@ def report_citations(dead, metas, start, entries=None, store=None):
     return out
 
 
-_SIG_INDEX = {}
+_SIG_INDEX: dict[Any, Any] = {}
 
 
 def _sig_index(entries, store):

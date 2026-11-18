@@ -531,7 +531,7 @@ else:
 print("== the DEFECT control")
 defect_pair = _declared_defect()
 # The control only needs half the refusals to flip, so it stops once that many have.
-flipped = []
+flipped: list[str] = []
 for n, c in REFUSED:
     if len(flipped) >= max(len(REFUSED) // 2, 1):
         break

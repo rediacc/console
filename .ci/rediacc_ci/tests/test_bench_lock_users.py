@@ -121,9 +121,12 @@ def test_deploy_bench_seed_also_waits(hold, monkeypatch, capsys) -> None:
     holder = hold("bench-eu")
     reached: list[str] = []
     _deploy_bench_world(monkeypatch, reached)
-    monkeypatch.setattr(
-        deploy_bench, "seed_root", lambda *_a, **_k: reached.append("seed") or "exists"
-    )
+
+    def seed_root(*_a: object, **_k: object) -> str:
+        reached.append("seed")
+        return "exists"
+
+    monkeypatch.setattr(deploy_bench, "seed_root", seed_root)
     assert deploy_bench.main(["--seed-root"]) == 1
     _names_holder(capsys.readouterr().err, holder)
     assert reached == []
@@ -233,7 +236,12 @@ def test_bench_proof_waits_on_either_region_it_acts_on(
 ) -> None:
     holder = hold("bench-%s" % region)
     ran: list[str] = []
-    monkeypatch.setattr(proof, "run_verb", lambda verb, _lab, **_kw: ran.append(verb) or 0)
+
+    def run_verb(verb: str, _lab: object, **_kw: object) -> int:
+        ran.append(verb)
+        return 0
+
+    monkeypatch.setattr(proof, "run_verb", run_verb)
     assert proof.main(["signer", "--bench"], lab=cast("proof.Lab", FakeLab())) == 1
     _names_holder(capsys.readouterr().err, holder)
     assert ran == []

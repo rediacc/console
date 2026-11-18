@@ -460,7 +460,8 @@ def _sender_domain(sender: str) -> str:
 def judge_server_message(msg: dict, server: dict) -> tuple[str, str, str]:
     """(verdict, code, detail) for one server mail: verdict `benign` or `red`; a red's code names its class and detail is the line text its group is counted under."""
     sender = str(msg.get("from") or "")
-    report = msg.get("report") if isinstance(msg.get("report"), dict) else {}
+    raw_report = msg.get("report")
+    report: dict = raw_report if isinstance(raw_report, dict) else {}
     shape = str(report.get("shape") or "unknown")
     allowed = server["senders"].get(sender)
     if allowed is None:
@@ -523,7 +524,8 @@ def judge_server_message(msg: dict, server: dict) -> tuple[str, str, str]:
 
 def ses_red_keys(msg: dict, server: dict) -> list:
     """[(event, type, domain)] for a red SES event message, one per recipient domain the red names; empty for anything else."""
-    report = msg.get("report") if isinstance(msg.get("report"), dict) else {}
+    raw_report = msg.get("report")
+    report: dict = raw_report if isinstance(raw_report, dict) else {}
     if msg.get("kind") != "server-report" or report.get("shape") != "ses-event":
         return []
     verdict, code, _ = judge_server_message(msg, server)
