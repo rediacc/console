@@ -15,10 +15,12 @@ from __future__ import annotations
 
 import base64
 import binascii
+import datetime
 import email
 import email.policy
 import email.utils
 import gzip
+import hashlib
 import io
 import json
 import re
@@ -432,6 +434,26 @@ def server_shape(subject: str, text: str) -> dict:
     return {"shape": "unknown", "why": "no known server mail shape"}
 
 
+def _message_id_hash(msg: EmailMessage, data: bytes) -> str:
+    """First 16 hex of the sha256 of the SNS message id (header x-amz-sns-message-id), else of the Message-ID header, else of the raw bytes; the id itself never leaves the container."""
+    raw = (
+        str(msg.get("X-Amz-Sns-Message-Id") or "").strip()
+        or str(msg.get("Message-ID") or "").strip()
+    )
+    return hashlib.sha256(raw.encode("utf-8", "replace") if raw else data).hexdigest()[:16]
+
+
+def _received_day(msg: EmailMessage) -> str:
+    """The UTC day of the Date header as YYYY-MM-DD, or "" when it is missing or unreadable."""
+    try:
+        when = email.utils.parsedate_to_datetime(str(msg.get("Date") or ""))
+    except (TypeError, ValueError, IndexError):
+        return ""
+    if when.tzinfo is not None:
+        when = when.astimezone(datetime.UTC)
+    return when.date().isoformat()
+
+
 def classify_server(raw: str | bytes) -> dict:
     """{subject, from, kind: "server-report", report} for one message; never raises."""
     data = raw.encode("utf-8", "surrogateescape") if isinstance(raw, str) else raw
@@ -452,6 +474,8 @@ def classify_server(raw: str | bytes) -> dict:
         "subject": subject[:120],
         "from": sender,
         "kind": "server-report",
+        "id": _message_id_hash(msg, data),
+        "date": _received_day(msg),
         "report": report,
     }
 

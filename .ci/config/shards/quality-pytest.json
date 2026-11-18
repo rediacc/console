@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-18T15:23:45.304Z",
+  "generatedAt": "2026-11-18T16:03:01.098Z",
   "legs": [
     {
       "index": 1,
@@ -489,6 +489,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_deploy_bench.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_executor_orgs.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_health.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_mail_events_ledger.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_queues_audit.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_rebind_login.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_region_smoke.py",

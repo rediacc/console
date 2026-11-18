@@ -8,7 +8,6 @@ from __future__ import annotations
 import base64
 import datetime
 import json
-import os
 import pathlib
 import re
 import shutil
@@ -20,13 +19,15 @@ import pytest
 from rediacc_ci.ops import dmarc_parser as dp
 from rediacc_ci.ops import dmarc_reports as dr
 from rediacc_ci.ops import ops_health as oh
+from rediacc_ci.well_known import APEX_DOMAIN, INFRA_DOMAIN
 
 REPO = pathlib.Path(__file__).resolve().parents[3]
 TODAY = datetime.date(2026, 11, 18)
-USER = "muhammed@rediacc.io"
+MAIL_HOST = f"mail.{INFRA_DOMAIN}"
+USER = f"muhammed@{INFRA_DOMAIN}"
 BOX = (USER, "Server-Reports")
 SNS = "no-reply@sns.amazonaws.com"
-POSTFIX = "mailserver-report@mail.rediacc.io"
+POSTFIX = f"mailserver-report@{MAIL_HOST}"
 
 # --------------------------------------------------------------------------- recorded shapes
 
@@ -87,7 +88,7 @@ def postfix_mail(rejected=0, deferred=0, bounced=0, sender=POSTFIX):
         f"{deferred:7d}   deferred  ({deferred}  deferrals)\n"
         f"{bounced:7d}   bounced\n{rejected:7d}   rejected (3%)\n      0   reject warnings\n"
     )
-    return mail(sender, "Postfix summary for mail.rediacc.io sent Tue Nov 17 2026", body)
+    return mail(sender, f"Postfix summary for {MAIL_HOST} sent Tue Nov 17 2026", body)
 
 
 def rows(*texts, start=1):
@@ -204,13 +205,13 @@ def test_a_lookalike_of_a_reserved_domain_is_a_real_domain(root, domain):
 def test_a_delay_to_a_real_domain_is_red_naming_event_domain_and_count_never_the_address(root):
     out, box = verdict(
         root,
-        sns_mail(delay("rediacc.com", "RecipientServerError")),
-        sns_mail(delay("rediacc.com", "RecipientServerError")),
+        sns_mail(delay(APEX_DOMAIN, "RecipientServerError")),
+        sns_mail(delay(APEX_DOMAIN, "RecipientServerError")),
         sns_mail(delay("example.com")),
     )
     assert out["rc"] == 1
     assert (
-        "server-reports.ses: DeliveryDelay RecipientServerError to rediacc.com, 2 message(s)"
+        f"server-reports.ses: DeliveryDelay RecipientServerError to {APEX_DOMAIN}, 2 message(s)"
         in text(out)
     )
     assert "user0@" not in text(out)
@@ -299,7 +300,7 @@ def test_the_postfix_limits_come_from_the_config_file(root):
 
 
 def test_a_postfix_summary_without_counts_is_red(root):
-    out, _ = verdict(root, mail(POSTFIX, "Postfix summary for mail.rediacc.io sent today", "empty"))
+    out, _ = verdict(root, mail(POSTFIX, f"Postfix summary for {MAIL_HOST} sent today", "empty"))
     assert out["rc"] == 1
     assert "Postfix summary without a rejected count" in text(out)
 
@@ -367,11 +368,11 @@ def test_an_sns_notification_without_an_ses_event_is_red(root):
 
 
 def test_red_messages_are_listed_once_grouped_not_one_line_each(root):
-    mails = [sns_mail(delay("rediacc.com")) for _ in range(50)]
+    mails = [sns_mail(delay(APEX_DOMAIN)) for _ in range(50)]
     out, _ = verdict(root, *mails)
     lines = [ln for ln in out["lines"] if ln.startswith("server-reports.ses")]
     assert lines == [
-        "server-reports.ses: DeliveryDelay TransientCommunicationFailure to rediacc.com, 50 message(s)"
+        f"server-reports.ses: DeliveryDelay TransientCommunicationFailure to {APEX_DOMAIN}, 50 message(s)"
     ]
 
 
@@ -422,7 +423,7 @@ def test_an_unreadable_server_reports_mailbox_is_red(root):
     box = Container([], box_error=True)
     out = run(root, box)
     assert out["rc"] == 1
-    assert "dmarc.mail.unreadable: muhammed@rediacc.io Server-Reports" in text(out)
+    assert f"dmarc.mail.unreadable: {USER} Server-Reports" in text(out)
 
 
 def test_a_timed_out_read_is_red(root):
@@ -471,7 +472,7 @@ def test_a_malformed_server_reports_config_is_refused(root, mutate):
 
 
 def test_the_streamed_parser_classifies_server_mail_under_isolated_mode(tmp_path):
-    (tmp_path / "rows.json").write_text(json.dumps(rows(sns_mail(delay("rediacc.com")))))
+    (tmp_path / "rows.json").write_text(json.dumps(rows(sns_mail(delay(APEX_DOMAIN)))))
     doveadm = tmp_path / "bin" / "doveadm"
     doveadm.parent.mkdir()
     doveadm.write_text("#!/bin/sh\ncat %s\n" % (tmp_path / "rows.json"))
@@ -484,7 +485,7 @@ def test_the_streamed_parser_classifies_server_mail_under_isolated_mode(tmp_path
         capture_output=True,
         text=True,
         cwd=tmp_path,
-        env={"PATH": "%s:%s" % (doveadm.parent, os.environ.get("PATH", ""))},
+        env={"PATH": "%s:/usr/bin:/bin" % doveadm.parent},
         timeout=60,
         check=False,
     )
@@ -492,8 +493,8 @@ def test_the_streamed_parser_classifies_server_mail_under_isolated_mode(tmp_path
     line = next(ln for ln in proc.stdout.splitlines() if ln.startswith(dp.MARKER))
     msg = json.loads(line[len(dp.MARKER) :])["mailboxes"][0]["messages"][0]
     assert msg["kind"] == "server-report"
-    assert msg["report"]["domains"] == ["rediacc.com"]
-    assert "@rediacc.com" not in json.dumps(msg["report"])
+    assert msg["report"]["domains"] == [APEX_DOMAIN]
+    assert f"@{APEX_DOMAIN}" not in json.dumps(msg["report"])
 
 
 def test_a_bare_ses_event_body_is_classified_like_the_sns_envelope():
@@ -519,7 +520,8 @@ def test_a_folded_ses_body_with_the_sns_footer_parses():
     folded = "\r\n ".join(body[i : i + 998] for i in range(0, len(body), 998))
     footer = "\r\n\r\n--\r\nIf you wish to stop receiving notifications from this topic, please click or visit the link below to unsubscribe:\r\n"
     got = dp.server_shape("Amazon SES Email Event Notification", folded + footer)
-    assert got["shape"] == "ses-event" and got["domains"] == ["example.com"]
+    assert got["shape"] == "ses-event"
+    assert got["domains"] == ["example.com"]
     # Control: a fold with no continuation space is not undone, so a body corrupted another way stays unknown.
     broken = "\r\n".join(body[i : i + 998] for i in range(0, len(body), 998)) + "x"
     assert dp.server_shape("Amazon SES Email Event Notification", broken)["shape"] == "unknown"

@@ -34,6 +34,7 @@ import pathlib
 import re
 import shlex
 import socket
+import subprocess
 import sys
 from collections.abc import Callable
 
@@ -62,6 +63,7 @@ SERVER_SHAPES = ("ses-event", "postfix-summary", "sns-confirm")
 POSTFIX_LIMITS = ("max_rejected", "max_deferred", "max_bounced")
 MARK_CHUNK = 400
 SERVER_RED_LINES = 25
+LEDGER_REL = "agent/ledgers/mail-events.jsonl"
 VOLUME_DEFAULTS = {"max_per_day": 20, "ratio": 5.0, "ratio_min_count": 5, "trailing_days": 14}
 
 # ip -> its forward-confirmed reverse name, or "" when it has none. Injected by the tests.
@@ -519,8 +521,138 @@ def judge_server_message(msg: dict, server: dict) -> tuple[str, str, str]:
     )
 
 
-def judge_server_box(box: dict, server: dict, clean: dict, red: dict, tally: dict) -> None:
-    """Judge every message of a server-reports mailbox: `clean` gets its marks, `red` the grouped red lines ((code, detail) -> count), `tally` the counts."""
+def ses_red_keys(msg: dict, server: dict) -> list:
+    """[(event, type, domain)] for a red SES event message, one per recipient domain the red names; empty for anything else."""
+    report = msg.get("report") if isinstance(msg.get("report"), dict) else {}
+    if msg.get("kind") != "server-report" or report.get("shape") != "ses-event":
+        return []
+    verdict, code, _ = judge_server_message(msg, server)
+    if verdict != "red" or code != "server-reports.ses":
+        return []
+    event = str(report.get("event") or "")
+    if event == "Bounce":
+        kind = "%s/%s" % (report.get("bounce_type") or "?", report.get("bounce_sub_type") or "?")
+    elif event == "DeliveryDelay":
+        kind = str(report.get("delay_type") or "?")
+    else:
+        kind = ""
+    domains = [str(d) for d in report.get("domains") or []]
+    named = domains if event == "Complaint" else [d for d in domains if not _reserved(d, server)]
+    return [(event, kind, d) for d in (named or domains)]
+
+
+def _ledger_ids(text: str) -> set:
+    """Every message id hash that the rows of a ledger text cover; an unreadable line covers nothing."""
+    found: set = set()
+    for line in text.splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and isinstance(row.get("ids"), list):
+            found.update(str(i) for i in row["ids"])
+    return found
+
+
+def load_ledger(root: pathlib.Path) -> dict:
+    """{"committed": ids at HEAD, "working": ids in the working-tree file plus the committed ones}; a missing file is empty on both sides."""
+    committed: set = set()
+    try:
+        shown = subprocess.run(
+            ["git", "show", "HEAD:" + LEDGER_REL],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        if shown.returncode == 0:
+            committed = _ledger_ids(shown.stdout)
+    except (OSError, subprocess.SubprocessError):
+        committed = set()
+    path = root / LEDGER_REL
+    working = _ledger_ids(path.read_text(encoding="utf-8")) if path.is_file() else set()
+    return {"committed": committed, "working": working | committed}
+
+
+def ledger_rows(doc: dict, server: dict, known_ids: set, now: datetime.datetime) -> list:
+    """One row per (day, event, type, domain) over the red SES messages whose id is not in `known_ids`; ids are hashes, never an address."""
+    groups: dict[tuple, list] = {}
+    for box in doc.get("mailboxes") or []:
+        if box.get("kind") != "server-reports" or box.get("error"):
+            continue
+        for msg in box.get("messages") or []:
+            mid = str(msg.get("id") or "")
+            if not mid or mid in known_ids:
+                continue
+            for event, kind, domain in ses_red_keys(msg, server):
+                ids = groups.setdefault(
+                    (str(msg.get("date") or "unknown"), event, kind, domain), []
+                )
+                if mid not in ids:
+                    ids.append(mid)
+    stamp = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    return [
+        {
+            "date": day,
+            "event": event,
+            "type": kind,
+            "domain": domain,
+            "count": len(ids),
+            "ids": sorted(ids),
+            "logged_at": stamp,
+        }
+        for (day, event, kind, domain), ids in sorted(groups.items())
+    ]
+
+
+def log_events(
+    root: pathlib.Path,
+    *,
+    runner: Runner = run_process,
+    env: dict | None = None,
+    now: datetime.datetime | None = None,
+) -> dict:
+    """{rc, lines}: append the red Server-Reports messages not yet in the ledger file, print the commit form."""
+    env = dict(os.environ if env is None else env)
+    now = now or datetime.datetime.now(datetime.UTC)
+    try:
+        known = load_known(root / KNOWN_REL)
+    except KnownError as exc:
+        return {"rc": 2, "lines": ["dmarc: rulings unreadable: %s" % exc]}
+    doc, error = read_reports(known, runner, env)
+    if doc is None:
+        return {"rc": 1, "lines": ["dmarc.mail.unreadable: %s" % error]}
+    known_ids = load_ledger(root)["working"]
+    new = ledger_rows(doc, known["server"], known_ids, now)
+    if not new:
+        return {"rc": 0, "lines": ["mail-events: no red Server-Reports message outside the ledger"]}
+    path = root / LEDGER_REL
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        for row in new:
+            fh.write(json.dumps(row, sort_keys=True) + "\n")
+    lines = [
+        "mail-events: %d row(s), %d message(s) appended to %s"
+        % (len(new), sum(r["count"] for r in new), LEDGER_REL)
+    ]
+    lines += [
+        "  %s %s %s to %s: %d" % (r["date"], r["event"], r["type"] or "-", r["domain"], r["count"])
+        for r in new
+    ]
+    lines += [
+        "review the rows, then commit them; the next run clears these reds from HEAD:",
+        "  git add -- %s" % LEDGER_REL,
+        "  git commit -F <msg-file> -- %s" % LEDGER_REL,
+    ]
+    return {"rc": 0, "lines": lines}
+
+
+def judge_server_box(
+    box: dict, server: dict, clean: dict, red: dict, tally: dict, ledger: dict | None = None
+) -> None:
+    """Judge every message of a server-reports mailbox: `clean` gets its marks, `red` the grouped red lines ((code, detail) -> count), `tally` the counts. A red SES message whose id hash is in the HEAD-committed ledger is benign; one only in the working-tree ledger stays red as `logged, not committed`."""
+    ledger = ledger or {"committed": set(), "working": set()}
     user, mailbox = str(box.get("user") or ""), str(box.get("mailbox") or "")
     for msg in box.get("messages") or []:
         tally["messages"] += 1
@@ -532,6 +664,12 @@ def judge_server_box(box: dict, server: dict, clean: dict, red: dict, tally: dic
             )
         else:
             verdict, code, detail = judge_server_message(msg, server)
+            mid = str(msg.get("id") or "")
+            if verdict == "red" and code == "server-reports.ses" and mid:
+                if mid in ledger["committed"]:
+                    verdict = "benign"
+                elif mid in ledger["working"]:
+                    detail += " (logged, not committed)"
         ukey = (user, mailbox, str(msg.get("uid")))
         if verdict == "benign":
             tally["benign"] += 1
@@ -608,7 +746,14 @@ class _Tally:
         row["reporters"].add(org or "?")
 
 
-def judge(doc: dict, known: dict, resolve: Resolver, history: dict, today: datetime.date) -> dict:
+def judge(
+    doc: dict,
+    known: dict,
+    resolve: Resolver,
+    history: dict,
+    today: datetime.date,
+    ledger: dict | None = None,
+) -> dict:
     """{rc, findings, known, marks, counts, unreadable}. `findings` are the red lines, `known` the ruled silent failures, `marks` the uids to mark Seen. Records every ruled report's count into `history`."""
     rdns_cache: dict[str, str] = {}
 
@@ -635,7 +780,7 @@ def judge(doc: dict, known: dict, resolve: Resolver, history: dict, today: datet
             unreadable.append("%s %s: %s" % (user, mailbox, box["error"]))
             continue
         if box.get("kind") == "server-reports":
-            judge_server_box(box, known["server"], clean, server_red, server_tally)
+            judge_server_box(box, known["server"], clean, server_red, server_tally, ledger)
             continue
         for msg in box.get("messages") or []:
             kind = msg.get("kind")
@@ -841,7 +986,7 @@ def run(
         return {"rc": 1, "lines": ["dmarc.mail.unreadable: %s" % error]}
     hpath = history_path(root)
     history, history_error = load_history(hpath)
-    verdict = judge(doc, known, resolve, history, today)
+    verdict = judge(doc, known, resolve, history, today, load_ledger(root))
     save_error = save_history(hpath, history, today)
     # A history that could not be written leaves the reports unread, so the next run records their counts; a history that could not be read is unknown, not green.
     marks = {} if save_error else verdict["marks"]
@@ -882,7 +1027,18 @@ def main(argv: list | None = None) -> int:
     )
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--no-mark", action="store_true", help="read and judge, mark nothing Seen")
+    parser.add_argument(
+        "--log",
+        action="store_true",
+        help="append the red Server-Reports messages to %s (hashed ids, no address) and print the commit form"
+        % LEDGER_REL,
+    )
     args = parser.parse_args(argv)
+    if args.log:
+        logged = log_events(repo_root())
+        for line in logged["lines"]:
+            print(line)
+        return int(logged["rc"])
     out = run(repo_root(), mark=not args.no_mark)
     if args.json:
         out["marks"] = {"%s %s" % k: v for k, v in (out.get("marks") or {}).items()}
