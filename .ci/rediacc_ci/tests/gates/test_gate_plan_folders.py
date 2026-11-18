@@ -8,6 +8,7 @@ THE FIXTURE IS A REAL GIT REPOSITORY because three of the four things under test
 
 import importlib.util
 import json
+import os
 import pathlib
 import shutil
 import subprocess
@@ -427,6 +428,71 @@ def test_sweep_keeps_a_plan_a_file_outside_agent_still_cites(gate, tmp_path):
     gate.assert_contains(result.err, "tools/helper.py:2", "the citing file:line is printed")
     gate.assert_eq((root / free).exists(), False, "control: the uncited plan is still swept")
     gate.log_pass("a plan cited from outside agent/ is kept with its citer printed")
+
+
+def _grep_stub(tmp_path: pathlib.Path, rc: int) -> dict[str, str]:
+    """A PATH overlay whose `git grep` exits `rc` with a named stderr and whose every other git verb is the real one."""
+    real = shutil.which("git")
+    bindir = tmp_path / "stubbin"
+    bindir.mkdir()
+    stub = bindir / "git"
+    stub.write_text(
+        "#!/bin/sh\n"
+        'for a in "$@"; do\n'
+        '  if [ "$a" = grep ]; then echo "stub: grep unavailable" >&2; exit %d; fi\n'
+        "done\n"
+        'exec %s "$@"\n' % (rc, real),
+        encoding="utf-8",
+    )
+    stub.chmod(0o755)
+    return {"PATH": "%s:%s" % (bindir, os.environ["PATH"]), "PLAN_FOLDERS_ROOT": ""}
+
+
+def _citer_fixture(tmp_path: pathlib.Path) -> tuple[pathlib.Path, str]:
+    rel = "agent/plans/_done/PLAN-cited.md"
+    root = _seed(
+        tmp_path,
+        {
+            rel: "# PLAN: cited\nStatus: done\nFirst-Seen: 2024-01-01\n",
+            "tools/helper.py": "# see PLAN-cited for why\n",
+        },
+    )
+    _ledger(root, {rel: {"moved_at": "2024-02-01"}})
+    return root, rel
+
+
+def test_sweep_aborts_and_keeps_the_plan_when_git_grep_fails(gate, tmp_path):
+    root, rel = _citer_fixture(tmp_path)
+    env = _grep_stub(tmp_path, 2)
+    env["PLAN_FOLDERS_ROOT"] = str(root)
+    result = harness.run(
+        [sys.executable, str(GATE), "--sweep", "--write"], cwd=paths.repo_root(), env=env
+    )
+    gate.assert_eq(result.rc != 0, True, "a failing git grep fails the sweep loudly")
+    gate.assert_eq((root / rel).exists(), True, "the plan is kept, not read as uncited")
+    gate.assert_contains(result.err, "stub: grep unavailable", "the git grep stderr is printed")
+    gate.log_pass("a git grep failure keeps the plan and exits non-zero")
+
+
+def test_sweep_treats_git_grep_rc1_as_no_citer(gate, tmp_path):
+    root, rel = _citer_fixture(tmp_path)
+    env = _grep_stub(tmp_path, 1)
+    env["PLAN_FOLDERS_ROOT"] = str(root)
+    result = harness.run(
+        [sys.executable, str(GATE), "--sweep", "--write"], cwd=paths.repo_root(), env=env
+    )
+    gate.assert_exit(0, result, "control: rc 1 is a clean no-match")
+    gate.assert_eq((root / rel).exists(), False, "control: the uncited plan is swept")
+    gate.log_pass("git grep rc 1 still sweeps an uncited plan")
+
+
+def test_sweep_says_so_when_every_aged_plan_is_kept_by_a_citer(gate, tmp_path):
+    root, _rel = _citer_fixture(tmp_path)
+    result = _gate(root, "--sweep", "--write")
+    gate.assert_exit(0, result, "the sweep succeeds")
+    gate.assert_not_contains(result.out, "no terminal plan has aged", "the aged plan is not denied")
+    gate.assert_contains(result.out, "all kept by an outside citer", "the kept plans are counted")
+    gate.log_pass("a sweep that kept every aged plan does not claim none aged")
 
 
 _BOXED_REL = "agent/plans/_done/PLAN-boxed.md"

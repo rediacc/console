@@ -704,18 +704,22 @@ def _differs_from_head(root: pathlib.Path, rel: str) -> bool:
     return bool(gitx.git(["status", "--porcelain", "--", rel], root=root).stdout.strip())
 
 
+class CiterProbeError(RuntimeError):
+    """`git grep` failed for a reason other than "no match", so whether the plan is cited is unknown."""
+
+
 def _outside_citers(root: pathlib.Path, rel: str) -> list[str]:
-    """`file:line` of every tracked file outside agent/ that cites the plan by path or by bare PLAN-name. The generated ledger names every plan by path and is not a citation."""
-    stem = re.escape(rel.rsplit("/", 1)[-1].removesuffix(".md"))
-    pattern = r"(?<![\w-])%s(?![\w-])" % stem
+    """`file:line` of every tracked file outside agent/ that cites the plan by path or by bare PLAN-name. The generated ledger names every plan by path and is not a citation. Raises CiterProbeError when `git grep` fails: rc 1 is "no match", any other non-zero rc must never read as "uncited" (review b7b60832.1)."""
+    stem = rel.rsplit("/", 1)[-1].removesuffix(".md")
+    boundary = re.compile(r"(?<![\w-])%s(?![\w-])" % re.escape(stem))
     out = gitx.git(
         [
             "grep",
             "-n",
             "-I",
-            "-P",
+            "-F",
             "-e",
-            pattern,
+            stem,
             "--",
             ".",
             ":(exclude)agent",
@@ -723,11 +727,17 @@ def _outside_citers(root: pathlib.Path, rel: str) -> list[str]:
         ],
         root=root,
     )
-    return [
-        line.split(":", 2)[0] + ":" + line.split(":", 2)[1]
-        for line in out.stdout.splitlines()
-        if line.count(":") >= 2
-    ]
+    if out.returncode not in (0, 1):
+        raise CiterProbeError(
+            "git grep for citers of %s failed (rc=%s): %s"
+            % (rel, out.returncode, out.stderr.strip() or "no stderr")
+        )
+    citers = []
+    for line in out.stdout.splitlines():
+        parts = line.split(":", 2)
+        if len(parts) == 3 and boundary.search(parts[2]):
+            citers.append(parts[0] + ":" + parts[1])
+    return citers
 
 
 def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
@@ -735,7 +745,12 @@ def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
     today = dt.datetime.now(dt.UTC).date()
     due = _expired(plans, config, today)
     # A tracked file outside agent/ that still cites a plan keeps it: the tombstone would turn that citation dead (check:ci-plan-citations).
-    cited = {plan.rel: _outside_citers(root, plan.rel) for plan in due}
+    try:
+        cited = {plan.rel: _outside_citers(root, plan.rel) for plan in due}
+    except CiterProbeError as exc:
+        print("✗ sweep: nothing was deleted; %s" % exc, file=sys.stderr)
+        return 1
+    aged = len(due)
     for rel, citers in cited.items():
         if citers:
             print(
@@ -744,10 +759,16 @@ def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
             )
     due = [plan for plan in due if not cited[plan.rel]]
     if not due:
-        print(
-            "✓ sweep: no terminal plan has aged past the %d-day terminal_days"
-            % int(config["terminal_days"])
-        )
+        if aged:
+            print(
+                "✓ sweep: %d terminal plan(s) aged past the %d-day terminal_days, all kept by an outside citer"
+                % (aged, int(config["terminal_days"]))
+            )
+        else:
+            print(
+                "✓ sweep: no terminal plan has aged past the %d-day terminal_days"
+                % int(config["terminal_days"])
+            )
         _print_question(plans, config, today)
         return 0
     free, held = _split_bound(root, [plan.rel for plan in due])
