@@ -27,6 +27,7 @@ import os
 import pathlib
 import re
 import signal
+import stat
 import subprocess
 import sys
 import time
@@ -60,6 +61,19 @@ class ResourceBusyError(RuntimeError):
         self.waited = waited
 
 
+class LockFileRefusedError(ResourceBusyError):
+    """The lock file is not safe to use (a symlink, or not this user's private file); a ResourceBusyError so every caller refuses the run with a message rather than a traceback."""
+
+    def __init__(self, resource: str, path: pathlib.Path, reason: str) -> None:
+        RuntimeError.__init__(
+            self, "resource %s: refusing lock file %s: %s" % (resource, path, reason)
+        )
+        self.resource = resource
+        self.path = path
+        self.holder = "unknown"
+        self.waited = 0.0
+
+
 def bench_resource(region: str) -> str:
     """The resource of one bench region: `bench-eu`, `bench-us`, ..."""
     return "bench-%s" % (region or "").strip().lower()
@@ -81,6 +95,27 @@ def lock_path(resource: str, environ: Mapping[str, str] | None = None) -> pathli
             if runtime and os.path.isdir(runtime) and os.stat(runtime).st_uid == uid:
                 return pathlib.Path(runtime) / ("%s.lock" % stem)
     return pathlib.Path("/tmp") / ("%s-%d.lock" % (stem, uid))
+
+
+def open_lock_file(resource: str, path: pathlib.Path) -> int:
+    """Open `path` read-write, creating it 0600, without following a symlink; refuse (LockFileRefusedError) a file this user does not own or one a group or others can write. The /tmp fallback name is predictable, so another local user could plant a link there."""
+    flags = os.O_RDWR | os.O_CREAT | os.O_CLOEXEC | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        fd = os.open(path, flags, 0o600)
+    except OSError as exc:
+        raise LockFileRefusedError(
+            resource, path, "%s (a symlink is never followed)" % (exc.strerror or exc)
+        ) from exc
+    info = os.fstat(fd)
+    if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o022:
+        os.close(fd)
+        raise LockFileRefusedError(
+            resource,
+            path,
+            "it must be a regular file owned by uid %d and not group or world writable"
+            % os.getuid(),
+        )
+    return fd
 
 
 def _iso(epoch: float) -> str:
@@ -175,7 +210,7 @@ class ResourceLock:
     def holder(self) -> str:
         """The current payload, read without taking the lock."""
         try:
-            fd = os.open(self.path, os.O_RDONLY)
+            fd = os.open(self.path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
         except OSError:
             return "holder unknown"
         try:
@@ -197,7 +232,7 @@ class ResourceLock:
         if self.fd is not None or self.nested:
             raise RuntimeError("resource %s is already held by this lock object" % self.resource)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        fd = os.open(self.path, os.O_RDWR | os.O_CREAT | os.O_CLOEXEC, 0o600)
+        fd = open_lock_file(self.resource, self.path)
         started = self._clock()
         announced = False
         while True:

@@ -311,6 +311,9 @@
       "AWS_ACCESS_KEY_ID",
       "CLOUDFLARE_R2_ENDPOINT"
     ],
+    ".ci/rediacc_ci/core/resource_lock.py": [
+      "RESOURCE_LOCK_WAIT_S"
+    ],
     ".ci/rediacc_ci/core/review_budget.py": [
       "GITHUB_REPOSITORY"
     ],
@@ -576,6 +579,7 @@
       "WORK"
     ],
     ".ci/rediacc_ci/drills/lib.py": [
+      "DRILL_FLEET_WAIT_S",
       "DRILL_HOST",
       "DRILL_KEEP_WORK",
       "NO_COLOR"

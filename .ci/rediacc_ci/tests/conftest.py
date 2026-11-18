@@ -21,6 +21,14 @@ def _close_sqlite_connections() -> Iterator[None]:
         yield
 
 
+@pytest.fixture(autouse=True)
+def _isolated_lock_dir(tmp_path_factory, monkeypatch) -> None:
+    """Point `XDG_RUNTIME_DIR` at a per-test directory, so no test takes or waits on the operator's real bench or fleet lock (`rediacc_ci.core.resource_lock.lock_path`). A test that needs its own directory sets the variable again."""
+    run_dir = tmp_path_factory.mktemp("xdg-run")
+    run_dir.chmod(0o700)
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(run_dir))
+
+
 @pytest.fixture
 def regions_in_tmp(tmp_path) -> None:
     """The repository's regions.json beside a test's scratch root. `deploy_bench.target` reads every region's names from `<root>/regions.json`, the default region included, so a test that builds a scratch root writes it there; a test that already wrote its own keeps it."""

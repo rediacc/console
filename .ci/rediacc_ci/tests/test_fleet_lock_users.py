@@ -263,4 +263,5 @@ def test_e2e_hold_takes_the_fleet_resource() -> None:
     text = SETUP_TS.read_text()
     fn = text[text.index("export async function holdFleetLock(") :]
     fn = fn[: fn.index("\n}\n")]
-    assert "'rediacc_ci.core.resource_lock', 'run', '--resource', 'fleet'" in fn
+    # Biome wraps the argv one item per line, so compare the items, not the spelling.
+    assert re.search(r"'rediacc_ci\.core\.resource_lock',\s*'run',\s*'--resource',\s*'fleet'", fn)

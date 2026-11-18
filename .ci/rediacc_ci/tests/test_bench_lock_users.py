@@ -65,7 +65,9 @@ class Holder:
 
 
 @pytest.fixture
-def hold():
+def hold(runtime: pathlib.Path):
+    # Depends on `runtime`: the holder and the code under test must meet in the same private lock directory, with the short wait.
+    assert runtime.is_dir()
     holders: list[Holder] = []
 
     def start(resource: str) -> Holder:

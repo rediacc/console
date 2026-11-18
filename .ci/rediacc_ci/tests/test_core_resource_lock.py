@@ -222,3 +222,29 @@ def test_ancestors_names_the_parent_chain() -> None:
     chain = resource_lock.ancestors()
     assert chain
     assert chain[0] == os.getppid()
+
+
+def test_a_planted_symlink_is_refused_not_followed(
+    runtime: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
+    """The /tmp fallback name is predictable: a link another user plants there must not be opened, and its target must stay untouched."""
+    target = tmp_path / "victim"
+    target.write_text("keep")
+    link = resource_lock.lock_path("planted")
+    assert link.parent == runtime
+    link.symlink_to(target)
+    lock = resource_lock.ResourceLock("planted")
+    with pytest.raises(resource_lock.LockFileRefusedError, match="refusing lock file"):
+        lock.acquire("test", 0.1)
+    assert target.read_text() == "keep"
+    assert lock.fd is None
+
+
+def test_a_group_writable_lock_file_is_refused(runtime: pathlib.Path) -> None:
+    path = resource_lock.lock_path("shared")
+    assert path.parent == runtime
+    path.write_text("")
+    path.chmod(0o666)
+    with pytest.raises(resource_lock.LockFileRefusedError, match="not group or world writable"):
+        resource_lock.ResourceLock("shared").acquire("test", 0.1)
+    assert path.exists()
