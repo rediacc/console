@@ -41,6 +41,7 @@ def _gate(gid: str, run: str, gate_paths: list[str] | None) -> dict[str, object]
 def _repo(root: pathlib.Path, lock: list[dict[str, object]]) -> pathlib.Path:
     files = {"a.txt": "a", "b.txt": "b", "tool.sh": "#!/bin/sh\n"}
     files.update({f"filler/f{i}.txt": "x" for i in range(20)})
+    files[".ci/policy/record-paths.json"] = json.dumps({"version": 1, "records": []}) + "\n"
     files["scripts/ci-runner/gates.lock.json"] = json.dumps(lock, indent=2) + "\n"
     for rel, text in files.items():
         p = root / rel
