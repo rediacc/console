@@ -755,8 +755,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 23,
-      "done": 1,
+      "open": 20,
+      "done": 4,
       "open_sigs": [
         "092a3f70",
         "3cc088a8",
@@ -775,15 +775,15 @@
         "8694aa86",
         "8735fd82",
         "8b0b595e",
-        "96e623c9",
         "bcfd79af",
         "bf120930",
-        "d9ea085a",
-        "e67fef60",
-        "ee3be061"
+        "d9ea085a"
       ],
       "done_sigs": [
-        "cabc2dbe"
+        "96e623c9",
+        "cabc2dbe",
+        "e67fef60",
+        "ee3be061"
       ]
     },
     "agent/plans/PLAN-ciquick-green-then-batch.md": {
