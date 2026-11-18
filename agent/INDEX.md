@@ -509,7 +509,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3945 |
 | `agent/plans/PLAN-config-mirror-reseal.md` | proposed | 24 | 0 | 2 | 3299 |
 | `agent/plans/PLAN-config-networkid-discovery.md` | approved | 190 | 0 | 8 | 26833 |
-| `agent/plans/PLAN-console-executor-multi-org.md` | approved | 377 | 1 | 17 | 67459 |
+| `agent/plans/PLAN-console-executor-multi-org.md` | approved | 378 | 0 | 18 | 67707 |
 | `agent/plans/PLAN-console-private.md` | proposed | 334 | 32 | 0 | 56923 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 94 | 0 | 19 | 34124 |
@@ -529,7 +529,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-elite-to-onprem-rename.md` | proposed | 92 | 19 | 0 | 28670 |
 | `agent/plans/PLAN-enterprise-isolation.md` | executing | 218 | 8 | 26 | 41080 |
 | `agent/plans/PLAN-enterprise-tenants.md` | approved | 478 | 23 | 24 | 66121 |
-| `agent/plans/PLAN-executor-durable-object-policy.md` | approved | 483 | 3 | 15 | 64699 |
+| `agent/plans/PLAN-executor-durable-object-policy.md` | approved | 486 | 0 | 18 | 65647 |
 | `agent/plans/PLAN-experience-feedback.md` | approved | 87 | 4 | 12 | 18415 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
 | `agent/plans/PLAN-family-loop-migrate.md` | proposed | 75 | 10 | 0 | 13779 |
