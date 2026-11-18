@@ -1,0 +1,649 @@
+"""What each pytest file reads that no import shows, and check:ci-pytest's `paths` from the same trace (PLAN-ciquick-cpu W4.3, B2 and B6).
+
+WHY A SEPARATE TRACE. path-trace.ts never traces check:ci-pytest as one gate (`NEVER_TRACED`): one strace log of 36k tests runs to tens of gigabytes, and a gate-level answer says nothing about WHICH test read a file. This module traces the suite once and keeps only what the impact map needs: per test file, the tracked files it opened, executed or listed.
+
+HOW, IN THREE PARTS.
+
+  1. A pytest plugin (`-p rediacc_ci.quality.pytest_impact_reads`), inert unless
+     MARKER_ENV names a directory. When a module is collected and when an item
+     starts, it opens (creating) a marker file whose name is the quoted test
+     path. The marker is an ordinary `openat` in the trace, so the attribution
+     travels IN the syscall stream: no clock, no second channel to join.
+  2. `strace -f -qq -y --seccomp-bpf -e status=successful` writes to a FIFO this
+     module reads line by line (`Attributor.feed`), so nothing the size of the
+     whole-suite log is ever stored. A process takes the attribution of the
+     process that created it, at the moment it was created; a marker re-attributes
+     its own thread group. Successful calls only: a failed lookup is an import
+     probing sys.path, not a read.
+  3. `derive_reads` turns the per-file trace into the policy's `reads` table
+     (content reads only, minus the file's own static import closure), and
+     `derive_paths` turns the union into check:ci-pytest's `paths` and `lists`.
+
+WHAT A TRACE CANNOT SEE, stated so a clean table is not read as more than it is:
+
+  * a read the process MEMOIZED: an xdist worker that cached a JSON file for the
+    first test file that loaded it does not open it again for the next one, so
+    only the first is attributed. The union in `paths` is unaffected; the
+    per-file table can miss an edge, and CI's full suite is the backstop
+    (pytest_impact.py's FULL fallbacks catch every change no test is seen to
+    read at all);
+  * a read by a process that is not a descendant (a daemon over a socket);
+  * a path the test reads only on another branch, or only under an opt-in such as
+    REDIACC_PYTEST_REAL_DIST.
+
+LISTINGS go to `paths`' sibling `lists`, never to the reads table. Python's import system lists every sys.path directory it searches, so a listing in the table would tie whichever test imported first to every file under `.ci` and `.claude`, and pytest_impact.py's literal and FULL rules already answer "a file was added where a test globs".
+
+    pytest_impact_reads.py --trace [--jobs N] [--tests <path> ...]
+                                  trace the suite (or the named test files) and
+                                  write TRACE_RELPATH; a red or empty run writes
+                                  nothing and exits 1
+    pytest_impact_reads.py --derive [--write]
+                                  print the reads table and the paths from
+                                  TRACE_RELPATH; --write puts `reads` into
+                                  .ci/policy/pytest-impact.json
+"""
+
+from __future__ import annotations
+
+import contextlib
+import json
+import os
+import pathlib
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import tempfile
+import urllib.parse
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+from rediacc_ci import gitx, paths
+from rediacc_ci import pytest_impact as impact
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+MARKER_ENV = "PYTEST_IMPACT_READS_MARKERS"
+ROOT_ENV = "PYTEST_IMPACT_READS_ROOT"
+UNATTRIBUTED = ""
+# The marker name for "no test file": pytest's own start-up, conftest loading, session teardown.
+_UNATTRIBUTED_MARK = "-"
+TRACE_SCHEMA = 1
+TRACE_RELPATH = ".ci/cache/pytest-impact/reads-trace.json"
+STRACE_SYSCALLS = "openat,open,execve,getdents64,chdir,fchdir,clone,clone3,fork,vfork"
+# A directory folds to `dir/**` when at least FOLD_MIN_FILES of its tracked files exist and more than FOLD_FRACTION of them were read: path-trace.ts's own two constants, so a reads entry and a traced gate fold alike.
+FOLD_MIN_FILES = 4
+FOLD_FRACTION = 0.5
+# Files that already force a FULL run when they change (impact.FULL_BASENAMES / FULL_PATHS): listing them as a read would add nothing.
+_FULL_BASENAMES = impact.FULL_BASENAMES
+# A trace that attributed reads to fewer than this share of the collected test files did not see the suite; its table would be a selection of whichever files happened to be marked.
+MIN_ATTRIBUTED_FRACTION = 0.9
+
+
+# --------------------------------------------------------------------------- 1. the plugin
+
+
+def marker_name(rel: str) -> str:
+    return urllib.parse.quote(rel, safe="") if rel else _UNATTRIBUTED_MARK
+
+
+def label_of_marker(name: str) -> str:
+    return UNATTRIBUTED if name == _UNATTRIBUTED_MARK else urllib.parse.unquote(name)
+
+
+def _mark(rel: str) -> None:
+    directory = os.environ.get(MARKER_ENV)
+    if not directory:
+        return
+    # A marker that cannot be written leaves the previous attribution standing; trace_problem's coverage floor is what notices a plugin that marks nothing.
+    with contextlib.suppress(OSError):
+        os.close(
+            os.open(os.path.join(directory, marker_name(rel)), os.O_RDONLY | os.O_CREAT, 0o600)
+        )
+
+
+def _test_rel(nodeid: str) -> str:
+    """The test file of a node id (`a/test_x.py::test_y[1]`), or "" for a node that is not one."""
+    head = nodeid.split("::", 1)[0]
+    return head if head.endswith(".py") else UNATTRIBUTED
+
+
+def pytest_collectstart(collector) -> None:
+    rel = _test_rel(getattr(collector, "nodeid", "") or "")
+    if rel:
+        _mark(rel)
+
+
+def pytest_runtest_logstart(nodeid: str) -> None:
+    # Called by the runner before an item's setup, in the process that runs it (the xdist worker), and not a firstresult hook, so it cannot be starved by the default protocol.
+    _mark(_test_rel(nodeid))
+
+
+def pytest_sessionfinish() -> None:
+    _mark(UNATTRIBUTED)
+
+
+# --------------------------------------------------------------------------- 2. the stream
+
+
+_PID_LINE = re.compile(r"^(\d+)\s+(.*)$")
+_FD_RET = re.compile(r"=\s+\d+<(.*)>$")
+_FD_ARG = re.compile(r"^\w+\(\d+<(.*?)>")
+_STR_ARG = re.compile(r'^\w+\((?:AT_FDCWD(?:<[^>]*>)?,\s*)?"((?:[^"\\]|\\.)*)"')
+_RESUMED = re.compile(r"^<\.\.\. (\w+) resumed>(.*)$")
+_UNFINISHED = " <unfinished ...>"
+
+
+def _unescape(s: str) -> str:
+    """strace's C-style escapes in a quoted path (`\\"`, `\\\\`, `\\x41`)."""
+    if "\\" not in s:
+        return s
+    try:
+        return (
+            s.encode("latin-1", "backslashreplace")
+            .decode("unicode_escape")
+            .encode("latin-1")
+            .decode("utf-8", "replace")
+        )
+    except (UnicodeDecodeError, UnicodeEncodeError):
+        return s
+
+
+@dataclass
+class Attributor:
+    """Folds strace -f lines into `{test file: (reads, lists)}`. Pure: no I/O, so a test feeds it synthetic lines."""
+
+    root: str
+    marker_dir: str
+    owner: dict[int, str] = field(default_factory=dict)
+    tgid: dict[int, int] = field(default_factory=dict)
+    cwd: dict[int, str] = field(default_factory=dict)
+    pending: dict[int, str] = field(default_factory=dict)
+    unclaimed: dict[int, list[tuple[str, str]]] = field(default_factory=dict)
+    reads: dict[str, set[str]] = field(default_factory=dict)
+    lists: dict[str, set[str]] = field(default_factory=dict)
+    markers: int = 0
+    lines: int = 0
+
+    def __post_init__(self) -> None:
+        self.root = self.root.rstrip("/")
+        self.marker_dir = self.marker_dir.rstrip("/")
+
+    def _group(self, pid: int) -> int:
+        return self.tgid.get(pid, pid)
+
+    def _known(self, pid: int) -> bool:
+        return self._group(pid) in self.owner
+
+    def _record(self, pid: int, kind: str, path: str) -> None:
+        if not self._known(pid):
+            self.unclaimed.setdefault(pid, []).append((kind, path))
+            return
+        if not path.startswith(self.root + "/") and path != self.root:
+            return
+        rel = path[len(self.root) + 1 :] if path != self.root else ""
+        label = self.owner[self._group(pid)]
+        (self.reads if kind == "read" else self.lists).setdefault(label, set()).add(rel)
+
+    def _abs(self, pid: int, p: str) -> str:
+        if p.startswith("/"):
+            return os.path.normpath(p)
+        base = self.cwd.get(self._group(pid), self.root)
+        return os.path.normpath(os.path.join(base, p))
+
+    def feed(self, line: str) -> None:
+        line = line.rstrip("\n")
+        m = _PID_LINE.match(line)
+        if not m:
+            return
+        self.lines += 1
+        pid, rest = int(m.group(1)), m.group(2)
+        if not self.owner and not self.tgid:
+            # The first process seen is the one strace started: pytest itself, before any test.
+            self.owner[pid] = UNATTRIBUTED
+            self.cwd[pid] = self.root
+        if rest.startswith(("---", "+++")):
+            return
+        if rest.endswith(_UNFINISHED):
+            self.pending[pid] = rest[: -len(_UNFINISHED)]
+            return
+        r = _RESUMED.match(rest)
+        if r:
+            rest = self.pending.pop(pid, r.group(1) + "(") + r.group(2)
+        name = rest.split("(", 1)[0]
+        ret = rest.rsplit(" = ", 1)[-1] if " = " in rest else ""
+        if not ret or ret.startswith(("-1", "?")):
+            return
+        if name in ("clone", "clone3", "fork", "vfork"):
+            try:
+                child = int(ret.split()[0])
+            except ValueError:
+                return
+            if "CLONE_THREAD" in rest:
+                self.tgid[child] = self._group(pid)
+            else:
+                self.owner[child] = self.owner.get(self._group(pid), UNATTRIBUTED)
+                self.cwd[child] = self.cwd.get(self._group(pid), self.root)
+            for kind, path in self.unclaimed.pop(child, []):
+                self._apply(child, kind, path)
+            return
+        if not self._known(pid) and name not in (
+            "openat",
+            "open",
+            "execve",
+            "getdents64",
+            "chdir",
+            "fchdir",
+        ):
+            return
+        if name in ("openat", "open"):
+            fd = _FD_RET.search(rest)
+            if fd:
+                path = _unescape(fd.group(1))
+            else:
+                s = _STR_ARG.match(rest)
+                if not s:
+                    return
+                path = self._abs(pid, _unescape(s.group(1)))
+            if path.startswith(self.marker_dir + "/"):
+                self._apply(pid, "mark", path)
+                return
+            self._apply(pid, "read", path)
+        elif name == "execve":
+            s = _STR_ARG.match(rest)
+            if s:
+                self._apply(pid, "read", self._abs(pid, _unescape(s.group(1))))
+        elif name == "getdents64":
+            fd = _FD_ARG.match(rest)
+            if fd:
+                self._apply(pid, "list", _unescape(fd.group(1)))
+        elif name == "chdir":
+            s = _STR_ARG.match(rest)
+            if s:
+                self._apply(pid, "cwd", self._abs(pid, _unescape(s.group(1))))
+        elif name == "fchdir":
+            fd = _FD_ARG.match(rest)
+            if fd:
+                self._apply(pid, "cwd", _unescape(fd.group(1)))
+
+    def _apply(self, pid: int, kind: str, path: str) -> None:
+        if not self._known(pid):
+            self.unclaimed.setdefault(pid, []).append((kind, path))
+            return
+        group = self._group(pid)
+        if kind == "mark":
+            self.markers += 1
+            self.owner[group] = label_of_marker(path[len(self.marker_dir) + 1 :])
+        elif kind == "cwd":
+            self.cwd[group] = path
+        else:
+            self._record(pid, kind, path)
+
+
+# --------------------------------------------------------------------------- 3. the tracked tree, and the derivations
+
+
+@dataclass
+class Tree:
+    files: frozenset[str]
+    gitlinks: frozenset[str]
+    dirs: frozenset[str]
+
+    @classmethod
+    def of(cls, entries: Iterable[tuple[str, str]]) -> Tree:
+        """From `(mode, path)` pairs, as `git ls-files -s` gives them."""
+        files: set[str] = set()
+        links: set[str] = set()
+        for mode, rel in entries:
+            (links if mode == "160000" else files).add(rel)
+        dirs = {""}
+        for rel in files | links:
+            parts = rel.split("/")[:-1]
+            for i in range(1, len(parts) + 1):
+                dirs.add("/".join(parts[:i]))
+        return cls(frozenset(files), frozenset(links), frozenset(dirs))
+
+    def tracked(self, rel: str) -> str | None:
+        """The tracked entry a read reaches: the file, the gitlink above a submodule path, or None (untracked, a cache, git metadata)."""
+        if rel == ".git" or rel.startswith(".git/") or "/.git/" in rel:
+            return None
+        if rel in self.files:
+            return rel
+        for link in self.gitlinks:
+            if rel == link or rel.startswith(link + "/"):
+                return link
+        return None
+
+
+def fold(rels: Iterable[str], tree: Tree) -> list[str]:
+    """Exact paths, with a directory folded to `dir/**` when it holds at least FOLD_MIN_FILES tracked files and more than FOLD_FRACTION of them are in `rels`. Deepest directories first, so a parent can absorb folded children."""
+    chosen = set(rels)
+    under: dict[str, list[str]] = {}
+    for rel in tree.files:
+        parts = rel.split("/")[:-1]
+        for i in range(1, len(parts) + 1):
+            under.setdefault("/".join(parts[:i]), []).append(rel)
+    covered = set(chosen)
+    folded: set[str] = set()
+    for d in sorted(under, key=lambda x: -x.count("/")):
+        members = under[d]
+        if len(members) < FOLD_MIN_FILES:
+            continue
+        hit = sum(1 for f in members if f in covered)
+        if hit / len(members) > FOLD_FRACTION:
+            folded = {g for g in folded if not g.startswith(d + "/")}
+            folded.add(d + "/**")
+            covered.update(members)
+    out = set(folded)
+    for rel in chosen:
+        if not any(rel.startswith(g[: -len("**")]) for g in folded):
+            out.add(rel)
+    return sorted(out)
+
+
+def _content(reads: Iterable[str], tree: Tree) -> set[str]:
+    out = set()
+    for rel in reads:
+        hit = tree.tracked(rel)
+        if hit is not None:
+            out.add(hit)
+    return out
+
+
+def derive_reads(trace: dict, impact_map: dict, tree: Tree) -> dict[str, list[str]]:
+    """`{test file: [path globs]}`: what each test file was seen to read, minus its own static closure (pytest_impact sees those) and the files whose change already runs FULL. A test file with nothing left gets no key."""
+    out: dict[str, list[str]] = {}
+    for label, entry in trace["tests"].items():
+        if label not in impact_map["tests"]:
+            continue
+        closure = set(impact_map["tests"][label]["closure"])
+        extra = {
+            rel
+            for rel in _content(entry.get("reads", ()), tree)
+            if rel not in closure
+            and rel.rsplit("/", 1)[-1] not in _FULL_BASENAMES
+            and rel not in impact.FULL_PATHS
+        }
+        if extra:
+            out[label] = fold(extra, tree)
+    return dict(sorted(out.items()))
+
+
+def derive_paths(
+    trace: dict, impact_map: dict, tree: Tree, test_roots: Iterable[str]
+) -> dict[str, list[str]]:
+    """check:ci-pytest's inputs: `paths` (every tracked file any test read, every module in any test's closure, every file under a test root), folded, and `lists` (every tracked directory listed)."""
+    content: set[str] = set()
+    listed: set[str] = set()
+    for entry in [*trace["tests"].values(), trace.get("unattributed", {})]:
+        content |= _content(entry.get("reads", ()), tree)
+        for rel in entry.get("lists", ()):
+            if rel in tree.dirs:
+                listed.add(rel)
+    for entry in impact_map["tests"].values():
+        content |= {c for c in entry["closure"] if c in tree.files}
+    roots = [r.rstrip("/") for r in test_roots]
+    content |= {f for f in tree.files if any(f.startswith(r + "/") for r in roots)}
+    return {
+        "paths": _minimal({*fold(content, tree), *(r + "/**" for r in roots)}),
+        "lists": sorted(listed),
+    }
+
+
+def _minimal(globs: Iterable[str]) -> list[str]:
+    """`globs` without any entry another `dir/**` entry already reaches, so a test root inside a folded parent is written once."""
+    globs = set(globs)
+    trees = [g[: -len("**")] for g in globs if g.endswith("/**")]
+    return sorted(g for g in globs if not any(g != t + "**" and g.startswith(t) for t in trees))
+
+
+def glob_matches(glob: str, rel: str) -> bool:
+    """input-hash.ts `matchGlob` for the two shapes this module writes: an exact path, and `dir/**`."""
+    if glob.endswith("/**"):
+        return rel.startswith(glob[: -len("**")])
+    return glob == rel
+
+
+# --------------------------------------------------------------------------- the real run
+
+
+def read_tree(root: pathlib.Path) -> Tree | None:
+    res = gitx.git(["ls-files", "-s", "-z"], root=root)
+    if res.returncode != 0:
+        return None
+    entries = []
+    for rec in res.stdout.split("\0"):
+        if not rec:
+            continue
+        meta, rel = rec.split("\t", 1)
+        entries.append((meta.split()[0], rel))
+    return Tree.of(entries)
+
+
+def strace_argv(log: str, inner: list[str]) -> list[str]:
+    """strace writes the trace to its own stderr; the traced command's output goes to `log`, so the pipe this module reads carries strace lines and nothing else."""
+    return [
+        "strace",
+        "-f",
+        "-qq",
+        "-y",
+        "--seccomp-bpf",
+        "-e",
+        "status=successful",
+        "-e",
+        "trace=" + STRACE_SYSCALLS,
+        # Through -o, so every line carries the `<pid> ` prefix `-f` gives a file; on bare stderr the prefix is `[pid N]` and the first process has none.
+        "-o",
+        "/dev/stderr",
+        "--",
+        "sh",
+        "-c",
+        'exec "$@" >"$0" 2>&1',
+        log,
+        *inner,
+    ]
+
+
+def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attributor, str]:
+    """(pytest exit, the folded stream, pytest's output). strace's stderr is read line by line while pytest runs, so the log never touches disk. strace runs in its own session and the whole group is killed when this returns, normally or not: a reader that stops reading would otherwise leave every tracee stopped on a full pipe."""
+    if shutil.which("strace") is None:
+        raise SystemExit(
+            "pytest_impact_reads: strace is not installed; install it (apt-get install strace) and re-run"
+        )
+    scratch = tempfile.mkdtemp(prefix="pytest-reads-")
+    markers = os.path.join(scratch, "m")
+    os.mkdir(markers)
+    log = os.path.join(scratch, "pytest.log")
+    att = Attributor(root=str(root), marker_dir=markers)
+    env = dict(os.environ)
+    env[MARKER_ENV] = markers
+    env[ROOT_ENV] = str(root)
+    env["PYTHONPATH"] = os.pathsep.join(
+        p for p in (str(root / ".ci"), os.environ.get("PYTHONPATH", "")) if p
+    )
+    child = subprocess.Popen(
+        strace_argv(log, pytest_argv),
+        cwd=root,
+        env=env,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+        errors="replace",
+        start_new_session=True,
+    )
+    try:
+        stream = child.stderr if child.stderr is not None else ()
+        for line in stream:
+            att.feed(line)
+        rc = child.wait()
+        output = pathlib.Path(log).read_text(encoding="utf-8", errors="replace")
+    finally:
+        if child.poll() is None:
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(child.pid, signal.SIGKILL)
+            child.wait()
+        shutil.rmtree(scratch, ignore_errors=True)
+    return rc, att, output
+
+
+def trace_record(att: Attributor, collected: int) -> dict:
+    tests = {
+        label: {
+            "reads": sorted(att.reads.get(label, ())),
+            "lists": sorted(att.lists.get(label, ())),
+        }
+        for label in sorted(set(att.reads) | set(att.lists))
+        if label != UNATTRIBUTED
+    }
+    return {
+        "schema": TRACE_SCHEMA,
+        "collected": collected,
+        "markers": att.markers,
+        "lines": att.lines,
+        "unclaimedPids": len(att.unclaimed),
+        "tests": tests,
+        "unattributed": {
+            "reads": sorted(att.reads.get(UNATTRIBUTED, ())),
+            "lists": sorted(att.lists.get(UNATTRIBUTED, ())),
+        },
+    }
+
+
+def trace_problem(record: dict, test_files: int) -> str | None:
+    """Why a trace is not fit to derive from, or None. Zero is never a pass."""
+    if record["markers"] == 0:
+        return "the trace holds no marker, so the plugin never ran and no read is attributed"
+    seen = len(record["tests"])
+    if seen == 0:
+        return "the trace attributed reads to no test file"
+    if test_files and seen < MIN_ATTRIBUTED_FRACTION * test_files:
+        return "the trace attributed reads to %d of %d test file(s), under %d%%" % (
+            seen,
+            test_files,
+            MIN_ATTRIBUTED_FRACTION * 100,
+        )
+    return None
+
+
+def _write_trace(root: pathlib.Path, record: dict) -> pathlib.Path:
+    out = root / ".ci" / "cache" / "pytest-impact" / "reads-trace.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    tmp = out.with_suffix(".tmp%d" % os.getpid())
+    tmp.write_text(json.dumps(record, separators=(",", ":")), encoding="utf-8")
+    tmp.replace(out)
+    return out
+
+
+def _arg_values(argv: list[str], flag: str) -> list[str]:
+    return [argv[i + 1] for i, a in enumerate(argv[:-1]) if a == flag]
+
+
+def cmd_trace(root: pathlib.Path, argv: list[str]) -> int:
+    tests = _arg_values(argv, "--tests")
+    jobs = (_arg_values(argv, "--jobs") or [str(max(2, (os.cpu_count() or 2) // 2))])[-1]
+    pytest_bin = (_arg_values(argv, "--pytest") or [sys.executable])[-1]
+    inner = [
+        pytest_bin,
+        *(["-m", "pytest"] if pytest_bin == sys.executable else []),
+        "-q",
+        "-p",
+        "rediacc_ci.quality.pytest_impact_reads",
+        "-n",
+        jobs,
+        *tests,
+    ]
+    rc, att, output = run_trace(root, inner)
+    m = re.findall(r"(\d+) passed", output)
+    collected = int(m[-1]) if m else 0
+    record = trace_record(att, collected)
+    present = impact.present_files(root) or []
+    test_roots = impact.testpath_roots(root)
+    universe = [p for p in present if impact.is_test_file(p, test_roots)]
+    if tests:
+        universe = [
+            p for p in universe if any(p == t or p.startswith(t.rstrip("/") + "/") for t in tests)
+        ]
+    print(
+        "pytest-impact-reads: pytest rc %d, %d passed, %d strace line(s), %d marker(s), %d of %d test file(s) attributed, %d unclaimed pid(s)"
+        % (
+            rc,
+            collected,
+            att.lines,
+            att.markers,
+            len(record["tests"]),
+            len(universe),
+            len(att.unclaimed),
+        )
+    )
+    if rc != 0:
+        print(output[-3000:], file=sys.stderr)
+        print(
+            "pytest-impact-reads: the traced run was red, so it may have stopped before reading everything; nothing written",
+            file=sys.stderr,
+        )
+        return 1
+    problem = trace_problem(record, len(universe))
+    if problem:
+        print("pytest-impact-reads: %s; nothing written" % problem, file=sys.stderr)
+        return 1
+    print("pytest-impact-reads: wrote %s" % _write_trace(root, record).relative_to(root))
+    return 0
+
+
+def cmd_derive(root: pathlib.Path, argv: list[str]) -> int:
+    trace_path = root / ".ci" / "cache" / "pytest-impact" / "reads-trace.json"
+    try:
+        trace = json.loads(trace_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        print(
+            "pytest-impact-reads: no usable trace at %s (%s); run --trace first"
+            % (TRACE_RELPATH, exc),
+            file=sys.stderr,
+        )
+        return 1
+    tree = read_tree(root)
+    present = impact.present_files(root)
+    if tree is None or present is None:
+        print("pytest-impact-reads: git ls-files failed", file=sys.stderr)
+        return 1
+    impact_map, _ = impact.load_or_build_map(root, present)
+    test_roots = impact.testpath_roots(root)
+    problem = trace_problem(trace, len(impact_map["tests"]))
+    if problem:
+        print("pytest-impact-reads: %s" % problem, file=sys.stderr)
+        return 1
+    reads = derive_reads(trace, impact_map, tree)
+    gate = derive_paths(trace, impact_map, tree, test_roots)
+    entries = sum(len(v) for v in reads.values())
+    print(
+        "pytest-impact-reads: reads for %d of %d test file(s), %d entr(y/ies); paths %d glob(s), lists %d dir(s)"
+        % (len(reads), len(impact_map["tests"]), entries, len(gate["paths"]), len(gate["lists"]))
+    )
+    print(json.dumps(gate, indent=1))
+    if "--write" in argv:
+        policy_path = root / impact.POLICY_RELPATH
+        policy = json.loads(policy_path.read_text(encoding="utf-8"))
+        policy["readsOrigin"] = (
+            "PYTHONPATH=.ci python3 -m rediacc_ci.quality.pytest_impact_reads --trace, then --derive --write (strace per test file, PLAN-ciquick-cpu W4.3); a memoized read is attributed only to the first test file that made it"
+        )
+        policy["reads"] = reads
+        policy_path.write_text(json.dumps(policy, indent=2) + "\n", encoding="utf-8")
+        print("pytest-impact-reads: wrote reads into %s" % impact.POLICY_RELPATH)
+    return 0
+
+
+def main(argv: list[str]) -> int:
+    root = paths.repo_root()
+    if "--trace" in argv:
+        return cmd_trace(root, argv)
+    if "--derive" in argv:
+        return cmd_derive(root, argv)
+    print(__doc__)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
