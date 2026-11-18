@@ -234,6 +234,8 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Accept: `./run.sh enterprise proof renet --bench` rc 0.
 - [ ] V10 [live] GitHub path. This is the only box that waits on GitHub: it runs after cd-enterprise-release.yml reaches origin/main through the normal merge.
   - Accept: `./run.sh enterprise proof github --bench` rc 0.
+  (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CD -- the proof runs cd-enterprise-release.yml after it reaches origin/main and greps GitHub's own logs and APIs
+    Needs: pushed-head
 - [ ] F* [writer] Fix-forward boxes, opened under this plan for each broken claim a V box prints, owning only the file the claim names.
   - Accept: the failing proof verb rc 0.
 

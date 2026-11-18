@@ -181,6 +181,8 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
   Accept: `./run.sh enterprise proof renet --bench` rc 0.
 - [ ] V10 [live] GitHub path, after this workflow reaches the default branch: dispatch a release for a fake company, then grep the logs, the jobs API, the run API and the step summary for the fake name and hosts. Any hit fails the box, and the design changes before a real company rides it. This settles the visibility claim.
   Accept: `./run.sh enterprise proof github --bench` rc 0.
+  (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CD -- the proof dispatches the enterprise release workflow from the default branch and greps GitHub's own logs and APIs
+    Needs: pushed-head
 - [x] V11 [live] Both paths of delete: the local script exports, then removes one fake company with data, and a second attempt under `GITHUB_ACTIONS=1` and a scan of the workflows both refuse. The GitHub path has no delete to run.
   Accept: `./run.sh enterprise proof remove --bench` rc 0.
     (ticked) 2026-11-16T17:16:09Z by d778be9d: run: ./run.sh enterprise proof remove --bench rc=0, 8 claims 0 broken log=/tmp/live-bench/ent-remove.log
@@ -197,6 +199,8 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
   (corrected 2026-11-11, R2) Local-route: hostinger -- renew the hostinger licence through signer-eu on the real machine with the branch renet; no release is needed.
 - [ ] X2 [live] Create the internal canary company through `enterprise add`, unlisted, and run one release to it through the local path and one through GitHub.
   Accept: `./run.sh enterprise list` rc 0, naming the canary as healthy on both paths' last release.
+  (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CD -- one of the two canary releases rides the GitHub release workflow, which runs only from the default branch
+    Needs: pushed-head
 - [x] L1 [writer] Operator runbook, the X25519 line corrected in `private/account/CLAUDE.md` (it does the request tunnel, not config storage), and the signer's limits and the certificate limit written down.
   Owns: private/account/docs/enterprise.md (new), private/account/CLAUDE.md.
   Accept: `test -s private/account/docs/enterprise.md` rc 0 and `npm run -s check:ci-prose-style` rc 0.

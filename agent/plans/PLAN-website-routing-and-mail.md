@@ -124,6 +124,8 @@ The zone is on Cloudflare with null MX, `v=spf1 -all` and `_dmarc` reject with s
 - [ ] R1 [live] Deploy the www Worker to a `pr-<n>` preview first, seed one fake entry for `acme.example`, and drive the popup end to end: countdown, cancel, change, forward, signup preselect, company link. Then `www.rediacc.com`.
   Accept: `npx tsx packages/www/scripts/probe-region-picker.ts <preview-host>` rc 0 (built by W2), the same for `www.rediacc.com`, and `curl -sD- https://www.rediacc.com/api/geo -o /dev/null | grep -qi 'cache-control: no-store'` rc 0.
     (result 2026-11-09T08:55Z, d778be9d) Blocked on rename L8 and L7. `workers/www/wrangler.toml` binds service `account-eu`, and the account's Worker list (read 2026-11-09 through `deploy-workers`) has no `account-eu`, only `rediacc-account-eu` and `edge-rediacc-account-eu`. A deploy of `www` or a `pr-<n>` preview fails on that binding. `www.rediacc.com` is still a custom domain of `rediacc-www` (rollback handle: its current version 9a3b8f9e-e54f-4bc5-aadb-e0df270e3b5d), and moving that domain is rename L7's unverified step. `curl -sD- https://www.rediacc.com/api/geo` answers 404 today. Ready: `packages/www` builds rc 0 (1853 pages), and the W1 code is tested.
+  (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: preview -- the pr-<n> www preview is a per-PR Worker deploy that the local site build does not reproduce
+    Needs: pushed-head
 - [ ] R2 [live] Passkey register and login on bench under the new RP ID. A lookup hit and a miss answer the same shape.
   Accept: `curl -fsS -X POST https://www.rediacc.com/api/enterprise-lookup -d '{"domain":"unknown.example"}' | jq -e '.host==null'` rc 0, and the bench passkey login recorded here.
 - [x] LP-bench [live] Fresh bench receipt after R2.

@@ -518,6 +518,8 @@ Owns: packages/e2e-tests/tests/31-backup-large-repo.test.ts, packages/e2e-tests/
 - [ ] K5: A PR CI leg runs suite 31 at K10_SEED_GB=2 in test-e2e-workers, within the 15 min lane budget.
   - CONTROL: the anchor-deleted step must breach the budget at 2 GiB. A pass of that step fails the leg, which proves the proportional budget still discriminates.
   - Accept: `npm run check:ci-shard-manifest-coverage && npm run check:ci-lane-budget` rc 0, and the leg green on the PR head (P2).
+  (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CI parity -- the 15 min lane budget is measured on the GitHub runner's test-e2e-workers leg; a local run times another machine
+    Needs: pushed-head
 
 ### R: retirements (writer R, each after its gate)
 
@@ -641,6 +643,8 @@ The hostinger-side scripts are written on hostinger and live only in its repos. 
 - [ ] P2: PR CI green on the head, including N1, N3, the K5 leg and the new ops-health gate (L4), read with the ci-watch skill.
   (corrected 2026-11-06, operator rulings A to E4) PR CI green on the head, including N1, N3, the G and X tests, the K5 leg and the new ops-health gate (L4), read with the ci-watch skill.
   - Accept: CI Complete SUCCESS.
+  (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CI parity -- CI Complete SUCCESS on the PR head is itself the proof, and no local run reports it
+    Needs: pushed-head
 - [x] LP-bench [live]: A fresh bench receipt through worklist.py --live-proof, after the cli boxes land.
   - Accept: live-proof bench cli-bench
     (ticked) 2026-11-10T14:05:54Z by d778be9d: live-proof lp-9ca9cfb4a3d9 bench cli-bench rc=0 v=cli:f47a394037e51464b49970f977e3626925fc67b5

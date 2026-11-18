@@ -75,11 +75,17 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
   Note: the old Worker, bucket, D1 and host names in this box predate the rename in PLAN-product-domain-rename.md.
   (corrected 2026-11-11, R2) GitHub-only: soak -- stable-eu comes through promote-stable after the soak window on edge, which is calendar time on a released channel.
 - [ ] L6 [live, post-merge] stable-us, as L5. -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: as L5 for us.
+  (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CD -- stable-us is promoted only by cd-release-stable.yml from an edge release on main
+    Needs: pushed-head
 - [ ] L7 [live, post-merge] stable-asia, as L5. -- Owns: agent/plans/PLAN-proxy-cd-six-targets.md. Accept: as L5 for asia.
+  (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CD -- stable-asia is promoted only by cd-release-stable.yml from an edge release on main
+    Needs: pushed-head
 - [ ] L8 [ops, post-merge] Telemetry acceptance, which folds in PLAN-telemetry-export T15.
   - Verify U6 and extend the Alloy transform on hostinger to the regex in W1, with `deployment.environment` and `rediacc.region` resource attributes so the proxy Loki streams carry those labels.
   - Create one silent-sender rule per proxy target, `silent-proxy-<production|edge>-<r>` (six rules), keyed `service="rediacc-proxy"`, and unpause them. `silent-proxy-exec-prod-eu` stays paused (a DEFAULT).
   - T1's list holds all seven proxy hosts.
+  (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CD -- the proxy Loki streams this labels exist only once the CD-released proxy Workers emit them
+    Needs: pushed-head
   
   -- Owns: the observability repo's Alloy config and alerting provisioning, .ci/rediacc_ci/ops/telemetry_delivery.py (the list). Accept: `python3 -m rediacc_ci.ops.telemetry_delivery` exits 0 with 14 hosts and 0 silent; Tempo lists `rediacc-proxy` and `rediacc-proxy-executor`; `count by (deployment_environment, rediacc_region) (traces_spanmetrics_calls_total{service="rediacc-proxy"})` returns 7 series; `GET /api/v1/provisioning/alert-rules` shows the six proxy rules with `isPaused: false`.
 
@@ -89,7 +95,11 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
   (corrected 2026-11-11, R2) GitHub-only: CD -- the box is the first CD edge run itself, and only the release pipeline produces its three job records.
 - [ ] ML5 [live, post-merge] stable-eu, stable-us and stable-asia through promote-stable. -- Owns: agent/plans/PLAN-console-executor-multi-org.md. Accept: each stable row has smoke rc 0, and E1 against `https://eu.rediacc.com`, `https://us.rediacc.com` and `https://asia.rediacc.com` exits 0 with two org ids each.
   Note: the old Worker, bucket, D1 and host names in this box predate the rename in PLAN-product-domain-rename.md.
+  (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CD -- the three stable targets are promoted only by cd-release-stable.yml from an edge release on main
+    Needs: pushed-head
 - [ ] ML6 [ops, post-merge] Capacity watch. A Grafana query of the per-target count of `rediacc.proxy.outcome=capacity` over 14 days goes to the Live records, and the decision on raising max_instances goes to the operator with that number. -- Owns: agent/plans/PLAN-console-executor-multi-org.md. Accept: the Live records carry the 14-day count for each of the six targets and the ASKED line or the "no capacity refusals" record.
+  (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: soak -- a 14-day count of capacity refusals on the six released targets is calendar time on released channels
+    Needs: pushed-head
 
 ## Moved from PLAN-executor-durable-object-policy.md
 
@@ -98,11 +108,15 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
 - [ ] L5 [live, post-merge] stable-eu, stable-us and stable-asia.
   - Phase 1 rides the merged release through promote-stable.
   - Phase 2 is the release that flips `BACKEND_BY_TARGET` for the three stable targets.
+  (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CD -- both phases ride releases that cd-release-stable.yml promotes from main
+    Needs: pushed-head
 
   -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: each stable target has a forward-only Phase 1 row and a Phase 2 row with smoke rc 0, and E1 against `https://eu.rediacc.cloud`, `https://us.rediacc.cloud` and `https://asia.rediacc.cloud` exits 0 on `durable` with two org ids each.
 - [ ] L7 [live, post-merge] Phase 3 per target, after C1.
   - Deploy the C1 release (forward-only) to bench, the three edge targets and the three stable targets.
   - Then run `npx wrangler containers delete <old application id>` per target, with the id read from `wrangler containers list` and recorded by its first 8 characters.
+  (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CD -- phase 3 deploys the C1 release to the edge and stable targets, which only the release pipeline publishes
+    Needs: pushed-head
 
   -- Owns: agent/plans/PLAN-executor-durable-object-policy.md. Accept: seven forward-only rows with smoke rc 0, and `npx wrangler containers list` per account names no `ExecutorContainer` application.
 - [ ] DL1 [deadline] All seven targets route `durable` and run without the `Container` class by 2026-12-15, two weeks before the 2026-12-31 freeze.

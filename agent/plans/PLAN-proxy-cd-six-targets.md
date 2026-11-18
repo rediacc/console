@@ -345,6 +345,8 @@ Live-Proof: bench -- the console, proxy and api-token routes and migrations unde
 (moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) L8
 
 - [ ] L9 [account, post-merge] Retire the public 'cloudflare' path. Once all seven D1s report zero unrevoked 'cloudflare' tokens (L0, L5-L7), the public-path branch at private/account/src/middleware/api-token.ts:84-96 refuses every 'cloudflare' token, and the test asserts it. -- Owns: private/account/src/middleware/api-token.ts, private/account/tests/integration/api-token-service-binding.test.ts. Accept: `cd private/account && npx vitest run tests/integration/api-token-service-binding.test.ts` exits 0.
+  (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CD -- the seven D1s reach zero unrevoked cloudflare tokens only after the CD-released proxy Workers of L5-L7 move every caller
+    Needs: pushed-head
 - [x] X1 [plans] Relation lines.
   - PLAN-cloudflare-proxy.md: C2 is closed by L5. The "Operator: redeploy ... EXECUTOR_TOKEN" box is superseded by ASKED:2026-10-25T19:08Z. Teardown stays that plan's fallback.
   - PLAN-telemetry-export.md: T15 is closed by L8, with outputs in its "Proxy results" section. T16's proxy-host clause is met by T1 and L8, while T16's own acceptance (a scheduled run on main) stays there. T14's config half is subsumed by K1 and G2, and its source half was already landed.
