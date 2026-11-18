@@ -38,8 +38,20 @@
           "evidence": ".ci/rediacc_ci/quality/agent_session_archival.py:306 (cite) agent/reviews"
         },
         {
+          "id": "check:ci-allowlist-key-matching",
+          "evidence": "scripts/ci-runner/gates.lock.json:12440 (declared) names **"
+        },
+        {
+          "id": "check:ci-container-build-context",
+          "evidence": "scripts/ci-runner/gates.lock.json:12881 (declared) names **"
+        },
+        {
           "id": "check:ci-dead-python",
           "evidence": ".ci/rediacc_ci/quality/dead_python.py:95 (root) agent/"
+        },
+        {
+          "id": "check:ci-dead-service-methods",
+          "evidence": "scripts/ci-runner/gates.lock.json:5982 (declared) names **"
         },
         {
           "id": "check:ci-decision-ids",
@@ -50,12 +62,40 @@
           "evidence": "scripts/gates/check-doc-region-parity.ts:325 (glob) *.md"
         },
         {
+          "id": "check:ci-dockerfile-mirror-resilience",
+          "evidence": "scripts/ci-runner/gates.lock.json:5750 (declared) names **"
+        },
+        {
           "id": "check:ci-durable-paths-tracked",
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:38 (cite) agent/reviews/<branch>/"
         },
         {
+          "id": "check:ci-fetch-integrity",
+          "evidence": "scripts/ci-runner/gates.lock.json:8888 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-retry",
+          "evidence": "scripts/ci-runner/gates.lock.json:1344 (declared) names **"
+        },
+        {
+          "id": "check:ci-gate-bind",
+          "evidence": "scripts/ci-runner/gates.lock.json:12488 (declared) names **"
+        },
+        {
           "id": "check:ci-gate-reachability-coverage",
           "evidence": ".ci/rediacc_ci/quality/trap_registry.py:761 (glob) *.md"
+        },
+        {
+          "id": "check:ci-gate-test-real-file-plants",
+          "evidence": "scripts/ci-runner/gates.lock.json:4126 (declared) names **"
+        },
+        {
+          "id": "check:ci-generated-artifacts",
+          "evidence": "scripts/ci-runner/gates.lock.json:6768 (declared) names **"
+        },
+        {
+          "id": "check:ci-git-history-depth",
+          "evidence": "scripts/ci-runner/gates.lock.json:1407 (declared) names **"
         },
         {
           "id": "check:ci-hint-corpus",
@@ -66,8 +106,24 @@
           "evidence": "scripts/gates/check-cli-i18n-key-usage.ts:100 (glob) **/*.{md,mdx,astro,ts,tsx,json}"
         },
         {
+          "id": "check:ci-jq-boolean-default",
+          "evidence": "scripts/ci-runner/gates.lock.json:11284 (declared) names **"
+        },
+        {
           "id": "check:ci-literal-sources",
           "evidence": ".ci/rediacc_ci/quality/literal_sources.py:2512 (root) agent/"
+        },
+        {
+          "id": "check:ci-merge-method-prose",
+          "evidence": "scripts/ci-runner/gates.lock.json:2661 (declared) names **"
+        },
+        {
+          "id": "check:ci-no-inline-python",
+          "evidence": "scripts/ci-runner/gates.lock.json:6192 (declared) names **"
+        },
+        {
+          "id": "check:ci-parity",
+          "evidence": "scripts/ci-runner/gates.lock.json:11942 (declared) names **"
         },
         {
           "id": "check:ci-plan-bindings",
@@ -106,16 +162,40 @@
           "evidence": ".ci/rediacc_ci/quality/prose_style.py:2255 (cite) agent/reviews/**"
         },
         {
+          "id": "check:ci-python-gate-deps",
+          "evidence": "scripts/ci-runner/gates.lock.json:5827 (declared) lists agent"
+        },
+        {
           "id": "check:ci-resprofile",
           "evidence": ".ci/scripts/quality/check_resprofile.py:235 (root) agent/"
+        },
+        {
+          "id": "check:ci-retired-commands",
+          "evidence": "scripts/ci-runner/gates.lock.json:6054 (declared) names **"
         },
         {
           "id": "check:ci-review-resolutions",
           "evidence": ".ci/rediacc_ci/quality/review_resolutions.py:514 (cite) agent/reviews/feat/x.md"
         },
         {
+          "id": "check:ci-schema-call-sites",
+          "evidence": "scripts/ci-runner/gates.lock.json:12385 (declared) names **"
+        },
+        {
           "id": "check:ci-script-exec-bit",
           "evidence": ".ci/rediacc_ci/quality/script_exec_bit.py:114 (glob) *.md"
+        },
+        {
+          "id": "check:ci-shape-duplication",
+          "evidence": "scripts/ci-runner/gates.lock.json:1296 (declared) names **"
+        },
+        {
+          "id": "check:ci-source-rules",
+          "evidence": "scripts/ci-runner/gates.lock.json:11779 (declared) names **"
+        },
+        {
+          "id": "check:ci-tracked-sidecars",
+          "evidence": "scripts/ci-runner/gates.lock.json:7353 (declared) names **"
         },
         {
           "id": "check:ci-trap-registry",
@@ -124,6 +204,10 @@
         {
           "id": "check:ci-tree-shape",
           "evidence": ".ci/rediacc_ci/quality/trap_registry.py:761 (glob) *.md"
+        },
+        {
+          "id": "check:ci-typecheck-scope-coverage",
+          "evidence": "scripts/ci-runner/gates.lock.json:1439 (declared) names **"
         },
         {
           "id": "check:ci-worklist-env-registry",
@@ -150,10 +234,6 @@
         {
           "id": "check:ci-env-manifest",
           "reason": "It imports worklist_env_registry only for its registry loader; the one citation of agent/ the derivation finds there (worklist_env_registry.py:732) is a selftest fixture's exclusions key naming a directory the registry REFUSES to scan (invariant 7), so no file under agent/ is read."
-        },
-        {
-          "id": "check:ci-generated-artifacts",
-          "reason": "The **/*.md the derivation cites (in check_generated_artifacts.py's selftest) is a control proving `**/` spans zero directories; the real run reads .ci/config/generated-artifacts.json, whose only agent/ inputs are its two agent/plans/** entries, so no file under agent/reviews/ is read and none changes its verdict."
         },
         {
           "id": "check:ci-release-bump-skip",
@@ -195,8 +275,20 @@
           "evidence": ".claude/hooks/stop/wl_checks.py:2899 (glob) *.jsonl"
         },
         {
+          "id": "check:ci-allowlist-key-matching",
+          "evidence": "scripts/ci-runner/gates.lock.json:12440 (declared) names **"
+        },
+        {
+          "id": "check:ci-container-build-context",
+          "evidence": "scripts/ci-runner/gates.lock.json:12881 (declared) names **"
+        },
+        {
           "id": "check:ci-dead-python",
           "evidence": ".ci/rediacc_ci/quality/dead_python.py:95 (root) agent/"
+        },
+        {
+          "id": "check:ci-dead-service-methods",
+          "evidence": "scripts/ci-runner/gates.lock.json:5982 (declared) names **"
         },
         {
           "id": "check:ci-decision-ids",
@@ -207,20 +299,64 @@
           "evidence": "scripts/lib/doc-providers.ts:653 (cite) agent/worklist/"
         },
         {
+          "id": "check:ci-dockerfile-mirror-resilience",
+          "evidence": "scripts/ci-runner/gates.lock.json:5750 (declared) names **"
+        },
+        {
           "id": "check:ci-durable-paths-tracked",
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:42 (cite) agent/worklist/"
+        },
+        {
+          "id": "check:ci-fetch-integrity",
+          "evidence": "scripts/ci-runner/gates.lock.json:8888 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-retry",
+          "evidence": "scripts/ci-runner/gates.lock.json:1344 (declared) names **"
+        },
+        {
+          "id": "check:ci-gate-bind",
+          "evidence": "scripts/ci-runner/gates.lock.json:12488 (declared) names **"
         },
         {
           "id": "check:ci-gate-reachability-coverage",
           "evidence": ".claude/hooks/stop/wl_checks.py:2899 (glob) *.jsonl"
         },
         {
+          "id": "check:ci-gate-test-real-file-plants",
+          "evidence": "scripts/ci-runner/gates.lock.json:4126 (declared) names **"
+        },
+        {
+          "id": "check:ci-generated-artifacts",
+          "evidence": "scripts/ci-runner/gates.lock.json:6768 (declared) names **"
+        },
+        {
+          "id": "check:ci-git-history-depth",
+          "evidence": "scripts/ci-runner/gates.lock.json:1407 (declared) names **"
+        },
+        {
           "id": "check:ci-hint-corpus",
           "evidence": ".claude/hooks/stop/wl_checks.py:2899 (glob) *.jsonl"
         },
         {
+          "id": "check:ci-jq-boolean-default",
+          "evidence": "scripts/ci-runner/gates.lock.json:11284 (declared) names **"
+        },
+        {
           "id": "check:ci-literal-sources",
           "evidence": ".ci/rediacc_ci/quality/literal_sources.py:2512 (root) agent/"
+        },
+        {
+          "id": "check:ci-merge-method-prose",
+          "evidence": "scripts/ci-runner/gates.lock.json:2661 (declared) names **"
+        },
+        {
+          "id": "check:ci-no-inline-python",
+          "evidence": "scripts/ci-runner/gates.lock.json:6192 (declared) names **"
+        },
+        {
+          "id": "check:ci-parity",
+          "evidence": "scripts/ci-runner/gates.lock.json:11942 (declared) names **"
         },
         {
           "id": "check:ci-plan-bindings",
@@ -255,16 +391,44 @@
           "evidence": ".claude/hooks/stop/wl_checks.py:2899 (glob) *.jsonl"
         },
         {
+          "id": "check:ci-python-gate-deps",
+          "evidence": "scripts/ci-runner/gates.lock.json:5827 (declared) lists agent"
+        },
+        {
           "id": "check:ci-resprofile",
           "evidence": ".ci/scripts/quality/check_resprofile.py:235 (root) agent/"
+        },
+        {
+          "id": "check:ci-retired-commands",
+          "evidence": "scripts/ci-runner/gates.lock.json:6054 (declared) names **"
         },
         {
           "id": "check:ci-retired-terms",
           "evidence": ".ci/rediacc_ci/quality/retired_terms.py:78 (cite) agent/worklist"
         },
         {
+          "id": "check:ci-schema-call-sites",
+          "evidence": "scripts/ci-runner/gates.lock.json:12385 (declared) names **"
+        },
+        {
+          "id": "check:ci-shape-duplication",
+          "evidence": "scripts/ci-runner/gates.lock.json:1296 (declared) names **"
+        },
+        {
+          "id": "check:ci-source-rules",
+          "evidence": "scripts/ci-runner/gates.lock.json:11779 (declared) names **"
+        },
+        {
+          "id": "check:ci-tracked-sidecars",
+          "evidence": "scripts/ci-runner/gates.lock.json:7353 (declared) names **"
+        },
+        {
           "id": "check:ci-tree-shape",
           "evidence": ".ci/scripts/quality/check_tree_shape.py:70 (cite) agent/worklist/abcd1234.jsonl"
+        },
+        {
+          "id": "check:ci-typecheck-scope-coverage",
+          "evidence": "scripts/ci-runner/gates.lock.json:1439 (declared) names **"
         },
         {
           "id": "check:ci-worklist-env-registry",
@@ -289,44 +453,12 @@
           "reason": "It imports worklist_env_registry only for its registry loader; the one citation of agent/ the derivation finds there (worklist_env_registry.py:732) is a selftest fixture's exclusions key naming a directory the registry REFUSES to scan (invariant 7), so no file under agent/ is read."
         },
         {
-          "id": "check:ci-pin-registry",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (the runner gates also import scripts/ci-runner/run.ts, whose citations of the record globs are planAdvance selftest fixtures); the only citation of agent/worklist/** there is the `paths` of check:ci-plan-bindings, a declaration of that gate's inputs, and this gate's own verdict is computed over other files and reads nothing under agent/worklist/. Its scanners read only Dockerfile*, toolchain.env and the registered pin sites."
-        },
-        {
           "id": "check:ci-commit-citations",
           "reason": "It names the record globs only to say it never reads them: its WHERE paragraph (.ci/scripts/quality/check_commit_citations.py:18) excludes agent/reviews/**, agent/worklist/** and agent/ledgers/** because those are records of a moment, and it scans git ls-files code, tests and agent/plans/**.md."
         },
         {
           "id": "check:ci-operator-rulings",
           "reason": "Its ledger is agent/rulings/*.jsonl (.claude/hooks/stop/wl_ruling.py rulings_dir, RULINGS_DIR_NAME); the *.jsonl glob at wl_ruling.py:137 runs over that one directory, which is none of these record globs, and the only agent/ file it reads besides is agent/RULES.md."
-        },
-        {
-          "id": "check:ci-gen-manifest",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table; the only citation of agent/worklist/** there is the `paths` of check:ci-plan-bindings (manifest.ts:2324), a declaration of that gate's inputs, and this gate's own verdict is computed over other files and reads nothing under agent/worklist/."
-        },
-        {
-          "id": "check:ci-package-key-budget",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table; the only citation of agent/worklist/** there is the `paths` of check:ci-plan-bindings (manifest.ts:2324), a declaration of that gate's inputs, and this gate's own verdict is computed over other files and reads nothing under agent/worklist/."
-        },
-        {
-          "id": "check:ci-parity",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table; the only citation of agent/worklist/** there is the `paths` of check:ci-plan-bindings (manifest.ts:2324), a declaration of that gate's inputs, and this gate's own verdict is computed over other files and reads nothing under agent/worklist/."
-        },
-        {
-          "id": "check:ci-selftest-reachability",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table; the only citation of agent/worklist/** there is the `paths` of check:ci-plan-bindings (manifest.ts:2324), a declaration of that gate's inputs, and this gate's own verdict is computed over other files and reads nothing under agent/worklist/."
-        },
-        {
-          "id": "check:types:incremental",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table; the only citation of agent/worklist/** there is the `paths` of check:ci-plan-bindings (manifest.ts:2324), a declaration of that gate's inputs, and this gate's own verdict is computed over other files and reads nothing under agent/worklist/."
-        },
-        {
-          "id": "check:ci-embed-asset-versions",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table; the only citation of agent/worklist/** there is the `paths` of check:ci-plan-bindings (manifest.ts:2324), a declaration of that gate's inputs, and this gate's own verdict is computed over other files and reads nothing under agent/worklist/."
-        },
-        {
-          "id": "check:ci-gates-lock",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table; the only citation of agent/worklist/** there is the `paths` of check:ci-plan-bindings (manifest.ts:2324), a declaration of that gate's inputs, and this gate's own verdict is computed over other files and reads nothing under agent/worklist/."
         },
         {
           "id": "check:ci-dead-translation-keys",
@@ -355,8 +487,20 @@
           "evidence": ".claude/hooks/stop/wl_checks.py:2899 (glob) *.jsonl"
         },
         {
+          "id": "check:ci-allowlist-key-matching",
+          "evidence": "scripts/ci-runner/gates.lock.json:12440 (declared) names **"
+        },
+        {
+          "id": "check:ci-container-build-context",
+          "evidence": "scripts/ci-runner/gates.lock.json:12881 (declared) names **"
+        },
+        {
           "id": "check:ci-dead-python",
           "evidence": ".ci/rediacc_ci/quality/dead_python.py:95 (root) agent/"
+        },
+        {
+          "id": "check:ci-dead-service-methods",
+          "evidence": "scripts/ci-runner/gates.lock.json:5982 (declared) names **"
         },
         {
           "id": "check:ci-decision-ids",
@@ -367,16 +511,60 @@
           "evidence": "scripts/lib/doc-providers.ts:1769 (root) agent/"
         },
         {
+          "id": "check:ci-dockerfile-mirror-resilience",
+          "evidence": "scripts/ci-runner/gates.lock.json:5750 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-integrity",
+          "evidence": "scripts/ci-runner/gates.lock.json:8888 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-retry",
+          "evidence": "scripts/ci-runner/gates.lock.json:1344 (declared) names **"
+        },
+        {
+          "id": "check:ci-gate-bind",
+          "evidence": "scripts/ci-runner/gates.lock.json:12488 (declared) names **"
+        },
+        {
           "id": "check:ci-gate-reachability-coverage",
           "evidence": ".claude/hooks/stop/wl_checks.py:2899 (glob) *.jsonl"
+        },
+        {
+          "id": "check:ci-gate-test-real-file-plants",
+          "evidence": "scripts/ci-runner/gates.lock.json:4126 (declared) names **"
+        },
+        {
+          "id": "check:ci-generated-artifacts",
+          "evidence": "scripts/ci-runner/gates.lock.json:6768 (declared) names **"
+        },
+        {
+          "id": "check:ci-git-history-depth",
+          "evidence": "scripts/ci-runner/gates.lock.json:1407 (declared) names **"
         },
         {
           "id": "check:ci-hint-corpus",
           "evidence": ".claude/hooks/stop/wl_checks.py:2899 (glob) *.jsonl"
         },
         {
+          "id": "check:ci-jq-boolean-default",
+          "evidence": "scripts/ci-runner/gates.lock.json:11284 (declared) names **"
+        },
+        {
           "id": "check:ci-literal-sources",
           "evidence": ".ci/rediacc_ci/quality/literal_sources.py:2512 (root) agent/"
+        },
+        {
+          "id": "check:ci-merge-method-prose",
+          "evidence": "scripts/ci-runner/gates.lock.json:2661 (declared) names **"
+        },
+        {
+          "id": "check:ci-no-inline-python",
+          "evidence": "scripts/ci-runner/gates.lock.json:6192 (declared) names **"
+        },
+        {
+          "id": "check:ci-parity",
+          "evidence": "scripts/ci-runner/gates.lock.json:11942 (declared) names **"
         },
         {
           "id": "check:ci-plan-boxes",
@@ -407,12 +595,40 @@
           "evidence": ".claude/hooks/stop/wl_checks.py:2899 (glob) *.jsonl"
         },
         {
+          "id": "check:ci-python-gate-deps",
+          "evidence": "scripts/ci-runner/gates.lock.json:5827 (declared) lists agent"
+        },
+        {
           "id": "check:ci-resprofile",
           "evidence": ".ci/scripts/quality/check_resprofile.py:235 (root) agent/"
         },
         {
+          "id": "check:ci-retired-commands",
+          "evidence": "scripts/ci-runner/gates.lock.json:6054 (declared) names **"
+        },
+        {
+          "id": "check:ci-schema-call-sites",
+          "evidence": "scripts/ci-runner/gates.lock.json:12385 (declared) names **"
+        },
+        {
+          "id": "check:ci-shape-duplication",
+          "evidence": "scripts/ci-runner/gates.lock.json:1296 (declared) names **"
+        },
+        {
+          "id": "check:ci-source-rules",
+          "evidence": "scripts/ci-runner/gates.lock.json:11779 (declared) names **"
+        },
+        {
+          "id": "check:ci-tracked-sidecars",
+          "evidence": "scripts/ci-runner/gates.lock.json:7353 (declared) names **"
+        },
+        {
           "id": "check:ci-tree-shape",
           "evidence": ".ci/scripts/quality/check_tree_shape.py:71 (cite) agent/reggate/main.jsonl"
+        },
+        {
+          "id": "check:ci-typecheck-scope-coverage",
+          "evidence": "scripts/ci-runner/gates.lock.json:1439 (declared) names **"
         },
         {
           "id": "check:ci-worklist-env-registry",
@@ -463,8 +679,20 @@
           "evidence": ".claude/hooks/stop/wl_boxaudit.py:452 (cite) agent/ledgers/live-proof.jsonl"
         },
         {
+          "id": "check:ci-allowlist-key-matching",
+          "evidence": "scripts/ci-runner/gates.lock.json:12440 (declared) names **"
+        },
+        {
+          "id": "check:ci-container-build-context",
+          "evidence": "scripts/ci-runner/gates.lock.json:12881 (declared) names **"
+        },
+        {
           "id": "check:ci-dead-python",
           "evidence": ".ci/rediacc_ci/quality/dead_python.py:95 (root) agent/"
+        },
+        {
+          "id": "check:ci-dead-service-methods",
+          "evidence": "scripts/ci-runner/gates.lock.json:5982 (declared) names **"
         },
         {
           "id": "check:ci-decision-ids",
@@ -475,6 +703,10 @@
           "evidence": "scripts/lib/doc-providers.ts:1769 (root) agent/"
         },
         {
+          "id": "check:ci-dockerfile-mirror-resilience",
+          "evidence": "scripts/ci-runner/gates.lock.json:5750 (declared) names **"
+        },
+        {
           "id": "check:ci-durable-paths-tracked",
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:44 (cite) agent/ledgers/"
         },
@@ -483,16 +715,56 @@
           "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
         },
         {
+          "id": "check:ci-fetch-integrity",
+          "evidence": "scripts/ci-runner/gates.lock.json:8888 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-retry",
+          "evidence": "scripts/ci-runner/gates.lock.json:1344 (declared) names **"
+        },
+        {
+          "id": "check:ci-gate-bind",
+          "evidence": "scripts/ci-runner/gates.lock.json:12488 (declared) names **"
+        },
+        {
           "id": "check:ci-gate-reachability-coverage",
           "evidence": ".claude/hooks/stop/wl_boxaudit.py:452 (cite) agent/ledgers/live-proof.jsonl"
+        },
+        {
+          "id": "check:ci-gate-test-real-file-plants",
+          "evidence": "scripts/ci-runner/gates.lock.json:4126 (declared) names **"
+        },
+        {
+          "id": "check:ci-generated-artifacts",
+          "evidence": "scripts/ci-runner/gates.lock.json:6768 (declared) names **"
+        },
+        {
+          "id": "check:ci-git-history-depth",
+          "evidence": "scripts/ci-runner/gates.lock.json:1407 (declared) names **"
         },
         {
           "id": "check:ci-hint-corpus",
           "evidence": ".claude/hooks/stop/wl_boxaudit.py:452 (cite) agent/ledgers/live-proof.jsonl"
         },
         {
+          "id": "check:ci-jq-boolean-default",
+          "evidence": "scripts/ci-runner/gates.lock.json:11284 (declared) names **"
+        },
+        {
           "id": "check:ci-literal-sources",
           "evidence": ".ci/rediacc_ci/quality/literal_sources.py:2512 (root) agent/"
+        },
+        {
+          "id": "check:ci-merge-method-prose",
+          "evidence": "scripts/ci-runner/gates.lock.json:2661 (declared) names **"
+        },
+        {
+          "id": "check:ci-no-inline-python",
+          "evidence": "scripts/ci-runner/gates.lock.json:6192 (declared) names **"
+        },
+        {
+          "id": "check:ci-parity",
+          "evidence": "scripts/ci-runner/gates.lock.json:11942 (declared) names **"
         },
         {
           "id": "check:ci-plan-boxes",
@@ -523,12 +795,40 @@
           "evidence": ".ci/scripts/quality/check_plan_citations.py:458 (cite) agent/ledgers/live-proof.jsonl"
         },
         {
+          "id": "check:ci-python-gate-deps",
+          "evidence": "scripts/ci-runner/gates.lock.json:5827 (declared) lists agent"
+        },
+        {
           "id": "check:ci-resprofile",
           "evidence": ".ci/scripts/quality/check_resprofile.py:235 (root) agent/"
         },
         {
+          "id": "check:ci-retired-commands",
+          "evidence": "scripts/ci-runner/gates.lock.json:6054 (declared) names **"
+        },
+        {
+          "id": "check:ci-schema-call-sites",
+          "evidence": "scripts/ci-runner/gates.lock.json:12385 (declared) names **"
+        },
+        {
+          "id": "check:ci-shape-duplication",
+          "evidence": "scripts/ci-runner/gates.lock.json:1296 (declared) names **"
+        },
+        {
+          "id": "check:ci-source-rules",
+          "evidence": "scripts/ci-runner/gates.lock.json:11779 (declared) names **"
+        },
+        {
+          "id": "check:ci-tracked-sidecars",
+          "evidence": "scripts/ci-runner/gates.lock.json:7353 (declared) names **"
+        },
+        {
           "id": "check:ci-tree-shape",
           "evidence": ".ci/scripts/quality/check_tree_shape.py:72 (cite) agent/ledgers/census-plan-record.jsonl"
+        },
+        {
+          "id": "check:ci-typecheck-scope-coverage",
+          "evidence": "scripts/ci-runner/gates.lock.json:1439 (declared) names **"
         },
         {
           "id": "check:ci-worklist-env-registry",
@@ -570,6 +870,10 @@
       ],
       "readers": [
         {
+          "id": "check:ci-actionlint",
+          "evidence": "scripts/ci-runner/gates.lock.json:7264 (declared) lists .ci/config"
+        },
+        {
           "id": "check:ci-agent-hint-liveness",
           "evidence": ".claude/hooks/stop/wl_ci.py:780 (cite) .ci/config/carried-reds.json"
         },
@@ -586,6 +890,14 @@
           "evidence": ".ci/rediacc_ci/quality/cli_contract.py:106 (glob) *.json"
         },
         {
+          "id": "check:ci-container-build-context",
+          "evidence": "scripts/ci-runner/gates.lock.json:12881 (declared) names **"
+        },
+        {
+          "id": "check:ci-dead-service-methods",
+          "evidence": "scripts/ci-runner/gates.lock.json:5982 (declared) names **"
+        },
+        {
           "id": "check:ci-decision-ids",
           "evidence": ".claude/hooks/stop/wl_ci.py:780 (cite) .ci/config/carried-reds.json"
         },
@@ -594,8 +906,36 @@
           "evidence": "scripts/lib/doc-providers.ts:1769 (root) .ci/config/"
         },
         {
+          "id": "check:ci-dockerfile-mirror-resilience",
+          "evidence": "scripts/ci-runner/gates.lock.json:5750 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-integrity",
+          "evidence": "scripts/ci-runner/gates.lock.json:8888 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-retry",
+          "evidence": "scripts/ci-runner/gates.lock.json:1344 (declared) names **"
+        },
+        {
+          "id": "check:ci-gate-bind",
+          "evidence": "scripts/ci-runner/gates.lock.json:12488 (declared) names **"
+        },
+        {
           "id": "check:ci-gate-reachability-coverage",
           "evidence": ".claude/hooks/stop/wl_ci.py:780 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-gate-test-real-file-plants",
+          "evidence": "scripts/ci-runner/gates.lock.json:4126 (declared) names **"
+        },
+        {
+          "id": "check:ci-generated-artifacts",
+          "evidence": "scripts/ci-runner/gates.lock.json:6768 (declared) names **"
+        },
+        {
+          "id": "check:ci-git-history-depth",
+          "evidence": "scripts/ci-runner/gates.lock.json:1407 (declared) names **"
         },
         {
           "id": "check:ci-hint-corpus",
@@ -612,6 +952,22 @@
         {
           "id": "check:ci-inner-timeout-reachable",
           "evidence": ".ci/scripts/quality/check_inner_timeout_reachable.py:358 (root) .ci/"
+        },
+        {
+          "id": "check:ci-jq-boolean-default",
+          "evidence": "scripts/ci-runner/gates.lock.json:11284 (declared) names **"
+        },
+        {
+          "id": "check:ci-merge-method-prose",
+          "evidence": "scripts/ci-runner/gates.lock.json:2661 (declared) names **"
+        },
+        {
+          "id": "check:ci-no-inline-python",
+          "evidence": "scripts/ci-runner/gates.lock.json:6192 (declared) names **"
+        },
+        {
+          "id": "check:ci-parity",
+          "evidence": "scripts/ci-runner/gates.lock.json:11942 (declared) names **"
         },
         {
           "id": "check:ci-paths-origin",
@@ -646,16 +1002,52 @@
           "evidence": ".ci/rediacc_ci/drills/backup_check_trigger.py:570 (glob) *.json"
         },
         {
+          "id": "check:ci-python-gate-deps",
+          "evidence": "scripts/ci-runner/gates.lock.json:5827 (declared) lists .ci/config"
+        },
+        {
+          "id": "check:ci-retired-commands",
+          "evidence": "scripts/ci-runner/gates.lock.json:6054 (declared) names **"
+        },
+        {
           "id": "check:ci-runner-selftest",
           "evidence": "scripts/ci-runner/run.ts:4659 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-schema-call-sites",
+          "evidence": "scripts/ci-runner/gates.lock.json:12385 (declared) names **"
         },
         {
           "id": "check:ci-script-exec-bit",
           "evidence": ".ci/rediacc_ci/quality/script_exec_bit.py:114 (glob) *.json"
         },
         {
+          "id": "check:ci-shape-duplication",
+          "evidence": "scripts/ci-runner/gates.lock.json:1296 (declared) names **"
+        },
+        {
+          "id": "check:ci-shell-commands",
+          "evidence": "scripts/ci-runner/gates.lock.json:6834 (declared) lists .ci/config"
+        },
+        {
+          "id": "check:ci-shell-format",
+          "evidence": "scripts/ci-runner/gates.lock.json:3401 (declared) lists .ci/config"
+        },
+        {
+          "id": "check:ci-source-rules",
+          "evidence": "scripts/ci-runner/gates.lock.json:11779 (declared) names **"
+        },
+        {
+          "id": "check:ci-tracked-sidecars",
+          "evidence": "scripts/ci-runner/gates.lock.json:7353 (declared) names **"
+        },
+        {
           "id": "check:ci-tree-shape",
           "evidence": ".claude/hooks/stop/wl_ci.py:780 (cite) .ci/config/carried-reds.json"
+        },
+        {
+          "id": "check:ci-typecheck-scope-coverage",
+          "evidence": "scripts/ci-runner/gates.lock.json:1439 (declared) names **"
         }
       ],
       "notReaders": [
@@ -700,12 +1092,24 @@
           "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:52 (cite) agent/plans"
         },
         {
+          "id": "check:ci-allowlist-key-matching",
+          "evidence": "scripts/ci-runner/gates.lock.json:12440 (declared) names **"
+        },
+        {
           "id": "check:ci-commit-citations",
           "evidence": ".ci/scripts/quality/check_commit_citations.py:60 (cite) agent/plans/"
         },
         {
+          "id": "check:ci-container-build-context",
+          "evidence": "scripts/ci-runner/gates.lock.json:12881 (declared) names **"
+        },
+        {
           "id": "check:ci-dead-python",
           "evidence": ".ci/rediacc_ci/quality/dead_python.py:95 (root) agent/"
+        },
+        {
+          "id": "check:ci-dead-service-methods",
+          "evidence": "scripts/ci-runner/gates.lock.json:5982 (declared) names **"
         },
         {
           "id": "check:ci-decision-ids",
@@ -716,16 +1120,40 @@
           "evidence": "scripts/gates/check-doc-region-parity.ts:325 (glob) *.md"
         },
         {
+          "id": "check:ci-dockerfile-mirror-resilience",
+          "evidence": "scripts/ci-runner/gates.lock.json:5750 (declared) names **"
+        },
+        {
           "id": "check:ci-durable-paths-tracked",
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:43 (cite) agent/plans/"
+        },
+        {
+          "id": "check:ci-fetch-integrity",
+          "evidence": "scripts/ci-runner/gates.lock.json:8888 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-retry",
+          "evidence": "scripts/ci-runner/gates.lock.json:1344 (declared) names **"
+        },
+        {
+          "id": "check:ci-gate-bind",
+          "evidence": "scripts/ci-runner/gates.lock.json:12488 (declared) names **"
         },
         {
           "id": "check:ci-gate-reachability-coverage",
           "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:52 (cite) agent/plans"
         },
         {
+          "id": "check:ci-gate-test-real-file-plants",
+          "evidence": "scripts/ci-runner/gates.lock.json:4126 (declared) names **"
+        },
+        {
           "id": "check:ci-generated-artifacts",
           "evidence": ".ci/scripts/quality/check_generated_artifacts.py:467 (glob) **/*.md"
+        },
+        {
+          "id": "check:ci-git-history-depth",
+          "evidence": "scripts/ci-runner/gates.lock.json:1407 (declared) names **"
         },
         {
           "id": "check:ci-hint-corpus",
@@ -736,8 +1164,24 @@
           "evidence": "scripts/gates/check-cli-i18n-key-usage.ts:100 (glob) **/*.{md,mdx,astro,ts,tsx,json}"
         },
         {
+          "id": "check:ci-jq-boolean-default",
+          "evidence": "scripts/ci-runner/gates.lock.json:11284 (declared) names **"
+        },
+        {
           "id": "check:ci-literal-sources",
           "evidence": ".ci/rediacc_ci/quality/literal_sources.py:2512 (root) agent/"
+        },
+        {
+          "id": "check:ci-merge-method-prose",
+          "evidence": "scripts/ci-runner/gates.lock.json:2661 (declared) names **"
+        },
+        {
+          "id": "check:ci-no-inline-python",
+          "evidence": "scripts/ci-runner/gates.lock.json:6192 (declared) names **"
+        },
+        {
+          "id": "check:ci-parity",
+          "evidence": "scripts/ci-runner/gates.lock.json:11942 (declared) names **"
         },
         {
           "id": "check:ci-plan-bindings",
@@ -780,12 +1224,24 @@
           "evidence": ".ci/rediacc_ci/quality/prose_style.py:898 (cite) agent/plans/%s"
         },
         {
+          "id": "check:ci-python-gate-deps",
+          "evidence": "scripts/ci-runner/gates.lock.json:5827 (declared) lists agent"
+        },
+        {
+          "id": "check:ci-retired-commands",
+          "evidence": "scripts/ci-runner/gates.lock.json:6054 (declared) names **"
+        },
+        {
           "id": "check:ci-retired-terms",
           "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:52 (cite) agent/plans"
         },
         {
           "id": "check:ci-review-resolutions",
           "evidence": ".ci/rediacc_ci/review/pr_labels.py:96 (glob) *.md"
+        },
+        {
+          "id": "check:ci-schema-call-sites",
+          "evidence": "scripts/ci-runner/gates.lock.json:12385 (declared) names **"
         },
         {
           "id": "check:ci-scope-mirrors",
@@ -796,12 +1252,28 @@
           "evidence": ".ci/rediacc_ci/quality/script_exec_bit.py:114 (glob) *.md"
         },
         {
+          "id": "check:ci-shape-duplication",
+          "evidence": "scripts/ci-runner/gates.lock.json:1296 (declared) names **"
+        },
+        {
+          "id": "check:ci-source-rules",
+          "evidence": "scripts/ci-runner/gates.lock.json:11779 (declared) names **"
+        },
+        {
+          "id": "check:ci-tracked-sidecars",
+          "evidence": "scripts/ci-runner/gates.lock.json:7353 (declared) names **"
+        },
+        {
           "id": "check:ci-trap-registry",
           "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:52 (cite) agent/plans"
         },
         {
           "id": "check:ci-tree-shape",
           "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:52 (cite) agent/plans"
+        },
+        {
+          "id": "check:ci-typecheck-scope-coverage",
+          "evidence": "scripts/ci-runner/gates.lock.json:1439 (declared) names **"
         },
         {
           "id": "check:ci-worklist-env-registry",
@@ -814,47 +1286,7 @@
       ],
       "notReaders": [
         {
-          "id": "check:ci-embed-asset-versions",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
           "id": "check:ci-gate-manifest",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-gates-lock",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-gen-manifest",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-package-key-budget",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-parity",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-paths-origin",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-pin-registry",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-runner-selftest",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-selftest-reachability",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:types:incremental",
           "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
         },
         {
@@ -896,8 +1328,20 @@
           "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:79 (cite) agent/INDEX.md"
         },
         {
+          "id": "check:ci-allowlist-key-matching",
+          "evidence": "scripts/ci-runner/gates.lock.json:12440 (declared) names **"
+        },
+        {
+          "id": "check:ci-container-build-context",
+          "evidence": "scripts/ci-runner/gates.lock.json:12881 (declared) names **"
+        },
+        {
           "id": "check:ci-dead-python",
           "evidence": ".ci/rediacc_ci/quality/dead_python.py:95 (root) agent/"
+        },
+        {
+          "id": "check:ci-dead-service-methods",
+          "evidence": "scripts/ci-runner/gates.lock.json:5982 (declared) names **"
         },
         {
           "id": "check:ci-decision-ids",
@@ -908,12 +1352,36 @@
           "evidence": "scripts/gates/check-doc-region-parity.ts:325 (glob) *.md"
         },
         {
+          "id": "check:ci-dockerfile-mirror-resilience",
+          "evidence": "scripts/ci-runner/gates.lock.json:5750 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-integrity",
+          "evidence": "scripts/ci-runner/gates.lock.json:8888 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-retry",
+          "evidence": "scripts/ci-runner/gates.lock.json:1344 (declared) names **"
+        },
+        {
+          "id": "check:ci-gate-bind",
+          "evidence": "scripts/ci-runner/gates.lock.json:12488 (declared) names **"
+        },
+        {
           "id": "check:ci-gate-reachability-coverage",
           "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:79 (cite) agent/INDEX.md"
         },
         {
+          "id": "check:ci-gate-test-real-file-plants",
+          "evidence": "scripts/ci-runner/gates.lock.json:4126 (declared) names **"
+        },
+        {
           "id": "check:ci-generated-artifacts",
           "evidence": ".ci/scripts/quality/check_generated_artifacts.py:467 (glob) **/*.md"
+        },
+        {
+          "id": "check:ci-git-history-depth",
+          "evidence": "scripts/ci-runner/gates.lock.json:1407 (declared) names **"
         },
         {
           "id": "check:ci-hint-corpus",
@@ -924,8 +1392,24 @@
           "evidence": "scripts/gates/check-cli-i18n-key-usage.ts:100 (glob) **/*.{md,mdx,astro,ts,tsx,json}"
         },
         {
+          "id": "check:ci-jq-boolean-default",
+          "evidence": "scripts/ci-runner/gates.lock.json:11284 (declared) names **"
+        },
+        {
           "id": "check:ci-literal-sources",
           "evidence": ".ci/rediacc_ci/quality/literal_sources.py:2512 (root) agent/"
+        },
+        {
+          "id": "check:ci-merge-method-prose",
+          "evidence": "scripts/ci-runner/gates.lock.json:2661 (declared) names **"
+        },
+        {
+          "id": "check:ci-no-inline-python",
+          "evidence": "scripts/ci-runner/gates.lock.json:6192 (declared) names **"
+        },
+        {
+          "id": "check:ci-parity",
+          "evidence": "scripts/ci-runner/gates.lock.json:11942 (declared) names **"
         },
         {
           "id": "check:ci-plan-bindings",
@@ -964,6 +1448,14 @@
           "evidence": ".ci/rediacc_ci/quality/prose_style.py:2204 (glob) *.md"
         },
         {
+          "id": "check:ci-python-gate-deps",
+          "evidence": "scripts/ci-runner/gates.lock.json:5827 (declared) lists agent"
+        },
+        {
+          "id": "check:ci-retired-commands",
+          "evidence": "scripts/ci-runner/gates.lock.json:6054 (declared) names **"
+        },
+        {
           "id": "check:ci-retired-terms",
           "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:79 (cite) agent/INDEX.md"
         },
@@ -972,8 +1464,24 @@
           "evidence": ".ci/rediacc_ci/review/pr_labels.py:96 (glob) *.md"
         },
         {
+          "id": "check:ci-schema-call-sites",
+          "evidence": "scripts/ci-runner/gates.lock.json:12385 (declared) names **"
+        },
+        {
           "id": "check:ci-script-exec-bit",
           "evidence": ".ci/rediacc_ci/quality/script_exec_bit.py:114 (glob) *.md"
+        },
+        {
+          "id": "check:ci-shape-duplication",
+          "evidence": "scripts/ci-runner/gates.lock.json:1296 (declared) names **"
+        },
+        {
+          "id": "check:ci-source-rules",
+          "evidence": "scripts/ci-runner/gates.lock.json:11779 (declared) names **"
+        },
+        {
+          "id": "check:ci-tracked-sidecars",
+          "evidence": "scripts/ci-runner/gates.lock.json:7353 (declared) names **"
         },
         {
           "id": "check:ci-trap-registry",
@@ -982,6 +1490,10 @@
         {
           "id": "check:ci-tree-shape",
           "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:79 (cite) agent/INDEX.md"
+        },
+        {
+          "id": "check:ci-typecheck-scope-coverage",
+          "evidence": "scripts/ci-runner/gates.lock.json:1439 (declared) names **"
         },
         {
           "id": "check:ci-worklist-env-registry",
@@ -994,47 +1506,7 @@
       ],
       "notReaders": [
         {
-          "id": "check:ci-embed-asset-versions",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
           "id": "check:ci-gate-manifest",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-gates-lock",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-gen-manifest",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-package-key-budget",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-parity",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-paths-origin",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-pin-registry",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-runner-selftest",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-selftest-reachability",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:types:incremental",
           "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
         },
         {
@@ -1059,6 +1531,10 @@
       ],
       "readers": [
         {
+          "id": "check:ci-actionlint",
+          "evidence": "scripts/ci-runner/gates.lock.json:7264 (declared) lists .ci/config"
+        },
+        {
           "id": "check:ci-agent-hint-liveness",
           "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:78 (cite) .ci/config/plan-boxes.json"
         },
@@ -1075,6 +1551,14 @@
           "evidence": ".ci/rediacc_ci/quality/cli_contract.py:106 (glob) *.json"
         },
         {
+          "id": "check:ci-container-build-context",
+          "evidence": "scripts/ci-runner/gates.lock.json:12881 (declared) names **"
+        },
+        {
+          "id": "check:ci-dead-service-methods",
+          "evidence": "scripts/ci-runner/gates.lock.json:5982 (declared) names **"
+        },
+        {
           "id": "check:ci-decision-ids",
           "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:78 (cite) .ci/config/plan-boxes.json"
         },
@@ -1083,8 +1567,36 @@
           "evidence": "scripts/lib/doc-providers.ts:1769 (root) .ci/config/"
         },
         {
+          "id": "check:ci-dockerfile-mirror-resilience",
+          "evidence": "scripts/ci-runner/gates.lock.json:5750 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-integrity",
+          "evidence": "scripts/ci-runner/gates.lock.json:8888 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-retry",
+          "evidence": "scripts/ci-runner/gates.lock.json:1344 (declared) names **"
+        },
+        {
+          "id": "check:ci-gate-bind",
+          "evidence": "scripts/ci-runner/gates.lock.json:12488 (declared) names **"
+        },
+        {
           "id": "check:ci-gate-reachability-coverage",
           "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:78 (cite) .ci/config/plan-boxes.json"
+        },
+        {
+          "id": "check:ci-gate-test-real-file-plants",
+          "evidence": "scripts/ci-runner/gates.lock.json:4126 (declared) names **"
+        },
+        {
+          "id": "check:ci-generated-artifacts",
+          "evidence": "scripts/ci-runner/gates.lock.json:6768 (declared) names **"
+        },
+        {
+          "id": "check:ci-git-history-depth",
+          "evidence": "scripts/ci-runner/gates.lock.json:1407 (declared) names **"
         },
         {
           "id": "check:ci-hint-corpus",
@@ -1101,6 +1613,22 @@
         {
           "id": "check:ci-inner-timeout-reachable",
           "evidence": ".ci/scripts/quality/check_inner_timeout_reachable.py:358 (root) .ci/"
+        },
+        {
+          "id": "check:ci-jq-boolean-default",
+          "evidence": "scripts/ci-runner/gates.lock.json:11284 (declared) names **"
+        },
+        {
+          "id": "check:ci-merge-method-prose",
+          "evidence": "scripts/ci-runner/gates.lock.json:2661 (declared) names **"
+        },
+        {
+          "id": "check:ci-no-inline-python",
+          "evidence": "scripts/ci-runner/gates.lock.json:6192 (declared) names **"
+        },
+        {
+          "id": "check:ci-parity",
+          "evidence": "scripts/ci-runner/gates.lock.json:11942 (declared) names **"
         },
         {
           "id": "check:ci-plan-bindings",
@@ -1139,12 +1667,44 @@
           "evidence": ".ci/rediacc_ci/drills/backup_check_trigger.py:570 (glob) *.json"
         },
         {
+          "id": "check:ci-python-gate-deps",
+          "evidence": "scripts/ci-runner/gates.lock.json:5827 (declared) lists .ci/config"
+        },
+        {
+          "id": "check:ci-retired-commands",
+          "evidence": "scripts/ci-runner/gates.lock.json:6054 (declared) names **"
+        },
+        {
           "id": "check:ci-retired-terms",
           "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:78 (cite) .ci/config/plan-boxes.json"
         },
         {
+          "id": "check:ci-schema-call-sites",
+          "evidence": "scripts/ci-runner/gates.lock.json:12385 (declared) names **"
+        },
+        {
           "id": "check:ci-script-exec-bit",
           "evidence": ".ci/rediacc_ci/quality/script_exec_bit.py:114 (glob) *.json"
+        },
+        {
+          "id": "check:ci-shape-duplication",
+          "evidence": "scripts/ci-runner/gates.lock.json:1296 (declared) names **"
+        },
+        {
+          "id": "check:ci-shell-commands",
+          "evidence": "scripts/ci-runner/gates.lock.json:6834 (declared) lists .ci/config"
+        },
+        {
+          "id": "check:ci-shell-format",
+          "evidence": "scripts/ci-runner/gates.lock.json:3401 (declared) lists .ci/config"
+        },
+        {
+          "id": "check:ci-source-rules",
+          "evidence": "scripts/ci-runner/gates.lock.json:11779 (declared) names **"
+        },
+        {
+          "id": "check:ci-tracked-sidecars",
+          "evidence": "scripts/ci-runner/gates.lock.json:7353 (declared) names **"
         },
         {
           "id": "check:ci-trap-registry",
@@ -1153,53 +1713,13 @@
         {
           "id": "check:ci-tree-shape",
           "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:78 (cite) .ci/config/plan-boxes.json"
+        },
+        {
+          "id": "check:ci-typecheck-scope-coverage",
+          "evidence": "scripts/ci-runner/gates.lock.json:1439 (declared) names **"
         }
       ],
       "notReaders": [
-        {
-          "id": "check:ci-embed-asset-versions",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-gate-manifest",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-gates-lock",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-gen-manifest",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-package-key-budget",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-parity",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-paths-origin",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-pin-registry",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-runner-selftest",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-selftest-reachability",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:types:incremental",
-          "reason": "It imports scripts/ci-runner/manifest.ts for the gate table (and, for the runner gates, scripts/ci-runner/run.ts, whose citations are planAdvance selftest fixtures); the citations of this record there are `paths` and `outputs` declarations of the plan gates, which say what selects those gates, and this gate's own verdict is computed over other files and reads nothing under agent/ or .ci/config/plan-boxes.json."
-        },
         {
           "id": "check:ci-dead-translation-keys",
           "reason": "Its only citation of this record is the key-site pattern '*.*' in a selftest fixture (scripts/gates/check-dead-translation-keys.ts), a string the selftest feeds its own matcher; the real run reads the translation JSON and the www and CLI sources."
@@ -1234,8 +1754,20 @@
           "evidence": ".claude/hooks/stop/wl_boxaudit.py:449 (cite) agent/ledgers/plan-investigation.jsonl"
         },
         {
+          "id": "check:ci-allowlist-key-matching",
+          "evidence": "scripts/ci-runner/gates.lock.json:12440 (declared) names **"
+        },
+        {
+          "id": "check:ci-container-build-context",
+          "evidence": "scripts/ci-runner/gates.lock.json:12881 (declared) names **"
+        },
+        {
           "id": "check:ci-dead-python",
           "evidence": ".ci/rediacc_ci/quality/dead_python.py:95 (root) agent/"
+        },
+        {
+          "id": "check:ci-dead-service-methods",
+          "evidence": "scripts/ci-runner/gates.lock.json:5982 (declared) names **"
         },
         {
           "id": "check:ci-decision-ids",
@@ -1246,20 +1778,64 @@
           "evidence": "scripts/lib/doc-providers.ts:1769 (root) agent/"
         },
         {
+          "id": "check:ci-dockerfile-mirror-resilience",
+          "evidence": "scripts/ci-runner/gates.lock.json:5750 (declared) names **"
+        },
+        {
           "id": "check:ci-durable-paths-tracked",
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:44 (root) agent/ledgers/"
+        },
+        {
+          "id": "check:ci-fetch-integrity",
+          "evidence": "scripts/ci-runner/gates.lock.json:8888 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-retry",
+          "evidence": "scripts/ci-runner/gates.lock.json:1344 (declared) names **"
+        },
+        {
+          "id": "check:ci-gate-bind",
+          "evidence": "scripts/ci-runner/gates.lock.json:12488 (declared) names **"
         },
         {
           "id": "check:ci-gate-reachability-coverage",
           "evidence": ".claude/hooks/stop/wl_boxaudit.py:449 (cite) agent/ledgers/plan-investigation.jsonl"
         },
         {
+          "id": "check:ci-gate-test-real-file-plants",
+          "evidence": "scripts/ci-runner/gates.lock.json:4126 (declared) names **"
+        },
+        {
+          "id": "check:ci-generated-artifacts",
+          "evidence": "scripts/ci-runner/gates.lock.json:6768 (declared) names **"
+        },
+        {
+          "id": "check:ci-git-history-depth",
+          "evidence": "scripts/ci-runner/gates.lock.json:1407 (declared) names **"
+        },
+        {
           "id": "check:ci-hint-corpus",
           "evidence": ".claude/hooks/stop/wl_boxaudit.py:449 (cite) agent/ledgers/plan-investigation.jsonl"
         },
         {
+          "id": "check:ci-jq-boolean-default",
+          "evidence": "scripts/ci-runner/gates.lock.json:11284 (declared) names **"
+        },
+        {
           "id": "check:ci-literal-sources",
           "evidence": ".ci/rediacc_ci/quality/literal_sources.py:2512 (root) agent/"
+        },
+        {
+          "id": "check:ci-merge-method-prose",
+          "evidence": "scripts/ci-runner/gates.lock.json:2661 (declared) names **"
+        },
+        {
+          "id": "check:ci-no-inline-python",
+          "evidence": "scripts/ci-runner/gates.lock.json:6192 (declared) names **"
+        },
+        {
+          "id": "check:ci-parity",
+          "evidence": "scripts/ci-runner/gates.lock.json:11942 (declared) names **"
         },
         {
           "id": "check:ci-plan-bindings",
@@ -1294,8 +1870,32 @@
           "evidence": ".claude/hooks/stop/wl_boxaudit.py:449 (cite) agent/ledgers/plan-investigation.jsonl"
         },
         {
+          "id": "check:ci-retired-commands",
+          "evidence": "scripts/ci-runner/gates.lock.json:6054 (declared) names **"
+        },
+        {
+          "id": "check:ci-schema-call-sites",
+          "evidence": "scripts/ci-runner/gates.lock.json:12385 (declared) names **"
+        },
+        {
+          "id": "check:ci-shape-duplication",
+          "evidence": "scripts/ci-runner/gates.lock.json:1296 (declared) names **"
+        },
+        {
+          "id": "check:ci-source-rules",
+          "evidence": "scripts/ci-runner/gates.lock.json:11779 (declared) names **"
+        },
+        {
+          "id": "check:ci-tracked-sidecars",
+          "evidence": "scripts/ci-runner/gates.lock.json:7353 (declared) names **"
+        },
+        {
           "id": "check:ci-tree-shape",
           "evidence": ".claude/hooks/stop/wl_boxaudit.py:449 (cite) agent/ledgers/plan-investigation.jsonl"
+        },
+        {
+          "id": "check:ci-typecheck-scope-coverage",
+          "evidence": "scripts/ci-runner/gates.lock.json:1439 (declared) names **"
         },
         {
           "id": "check:ci-worklist-env-registry",
@@ -1349,8 +1949,20 @@
           "evidence": ".claude/hooks/stop/wl_checks.py:2899 (glob) *.jsonl"
         },
         {
+          "id": "check:ci-allowlist-key-matching",
+          "evidence": "scripts/ci-runner/gates.lock.json:12440 (declared) names **"
+        },
+        {
+          "id": "check:ci-container-build-context",
+          "evidence": "scripts/ci-runner/gates.lock.json:12881 (declared) names **"
+        },
+        {
           "id": "check:ci-dead-python",
           "evidence": ".ci/rediacc_ci/quality/dead_python.py:95 (root) agent/"
+        },
+        {
+          "id": "check:ci-dead-service-methods",
+          "evidence": "scripts/ci-runner/gates.lock.json:5982 (declared) names **"
         },
         {
           "id": "check:ci-decision-ids",
@@ -1361,20 +1973,64 @@
           "evidence": "scripts/lib/doc-providers.ts:1769 (root) agent/"
         },
         {
+          "id": "check:ci-dockerfile-mirror-resilience",
+          "evidence": "scripts/ci-runner/gates.lock.json:5750 (declared) names **"
+        },
+        {
           "id": "check:ci-durable-paths-tracked",
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:44 (root) agent/ledgers/"
+        },
+        {
+          "id": "check:ci-fetch-integrity",
+          "evidence": "scripts/ci-runner/gates.lock.json:8888 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-retry",
+          "evidence": "scripts/ci-runner/gates.lock.json:1344 (declared) names **"
+        },
+        {
+          "id": "check:ci-gate-bind",
+          "evidence": "scripts/ci-runner/gates.lock.json:12488 (declared) names **"
         },
         {
           "id": "check:ci-gate-reachability-coverage",
           "evidence": ".claude/hooks/stop/wl_checks.py:2899 (glob) *.jsonl"
         },
         {
+          "id": "check:ci-gate-test-real-file-plants",
+          "evidence": "scripts/ci-runner/gates.lock.json:4126 (declared) names **"
+        },
+        {
+          "id": "check:ci-generated-artifacts",
+          "evidence": "scripts/ci-runner/gates.lock.json:6768 (declared) names **"
+        },
+        {
+          "id": "check:ci-git-history-depth",
+          "evidence": "scripts/ci-runner/gates.lock.json:1407 (declared) names **"
+        },
+        {
           "id": "check:ci-hint-corpus",
           "evidence": ".claude/hooks/stop/wl_checks.py:2899 (glob) *.jsonl"
         },
         {
+          "id": "check:ci-jq-boolean-default",
+          "evidence": "scripts/ci-runner/gates.lock.json:11284 (declared) names **"
+        },
+        {
           "id": "check:ci-literal-sources",
           "evidence": ".ci/rediacc_ci/quality/literal_sources.py:2512 (root) agent/"
+        },
+        {
+          "id": "check:ci-merge-method-prose",
+          "evidence": "scripts/ci-runner/gates.lock.json:2661 (declared) names **"
+        },
+        {
+          "id": "check:ci-no-inline-python",
+          "evidence": "scripts/ci-runner/gates.lock.json:6192 (declared) names **"
+        },
+        {
+          "id": "check:ci-parity",
+          "evidence": "scripts/ci-runner/gates.lock.json:11942 (declared) names **"
         },
         {
           "id": "check:ci-plan-bindings",
@@ -1409,8 +2065,32 @@
           "evidence": ".claude/hooks/stop/wl_checks.py:2899 (glob) *.jsonl"
         },
         {
+          "id": "check:ci-retired-commands",
+          "evidence": "scripts/ci-runner/gates.lock.json:6054 (declared) names **"
+        },
+        {
+          "id": "check:ci-schema-call-sites",
+          "evidence": "scripts/ci-runner/gates.lock.json:12385 (declared) names **"
+        },
+        {
+          "id": "check:ci-shape-duplication",
+          "evidence": "scripts/ci-runner/gates.lock.json:1296 (declared) names **"
+        },
+        {
+          "id": "check:ci-source-rules",
+          "evidence": "scripts/ci-runner/gates.lock.json:11779 (declared) names **"
+        },
+        {
+          "id": "check:ci-tracked-sidecars",
+          "evidence": "scripts/ci-runner/gates.lock.json:7353 (declared) names **"
+        },
+        {
           "id": "check:ci-tree-shape",
           "evidence": ".claude/hooks/stop/wl_checks.py:2899 (glob) *.jsonl"
+        },
+        {
+          "id": "check:ci-typecheck-scope-coverage",
+          "evidence": "scripts/ci-runner/gates.lock.json:1439 (declared) names **"
         },
         {
           "id": "check:ci-worklist-env-registry",
@@ -1464,8 +2144,20 @@
           "evidence": ".claude/hooks/stop/wl_boxaudit.py:452 (cite) agent/ledgers/live-proof.jsonl"
         },
         {
+          "id": "check:ci-allowlist-key-matching",
+          "evidence": "scripts/ci-runner/gates.lock.json:12440 (declared) names **"
+        },
+        {
+          "id": "check:ci-container-build-context",
+          "evidence": "scripts/ci-runner/gates.lock.json:12881 (declared) names **"
+        },
+        {
           "id": "check:ci-dead-python",
           "evidence": ".ci/rediacc_ci/quality/dead_python.py:95 (root) agent/"
+        },
+        {
+          "id": "check:ci-dead-service-methods",
+          "evidence": "scripts/ci-runner/gates.lock.json:5982 (declared) names **"
         },
         {
           "id": "check:ci-decision-ids",
@@ -1476,20 +2168,64 @@
           "evidence": "scripts/lib/doc-providers.ts:1769 (root) agent/"
         },
         {
+          "id": "check:ci-dockerfile-mirror-resilience",
+          "evidence": "scripts/ci-runner/gates.lock.json:5750 (declared) names **"
+        },
+        {
           "id": "check:ci-durable-paths-tracked",
           "evidence": ".ci/scripts/quality/check_durable_paths_tracked.py:44 (root) agent/ledgers/"
+        },
+        {
+          "id": "check:ci-fetch-integrity",
+          "evidence": "scripts/ci-runner/gates.lock.json:8888 (declared) names **"
+        },
+        {
+          "id": "check:ci-fetch-retry",
+          "evidence": "scripts/ci-runner/gates.lock.json:1344 (declared) names **"
+        },
+        {
+          "id": "check:ci-gate-bind",
+          "evidence": "scripts/ci-runner/gates.lock.json:12488 (declared) names **"
         },
         {
           "id": "check:ci-gate-reachability-coverage",
           "evidence": ".claude/hooks/stop/wl_boxaudit.py:452 (cite) agent/ledgers/live-proof.jsonl"
         },
         {
+          "id": "check:ci-gate-test-real-file-plants",
+          "evidence": "scripts/ci-runner/gates.lock.json:4126 (declared) names **"
+        },
+        {
+          "id": "check:ci-generated-artifacts",
+          "evidence": "scripts/ci-runner/gates.lock.json:6768 (declared) names **"
+        },
+        {
+          "id": "check:ci-git-history-depth",
+          "evidence": "scripts/ci-runner/gates.lock.json:1407 (declared) names **"
+        },
+        {
           "id": "check:ci-hint-corpus",
           "evidence": ".claude/hooks/stop/wl_boxaudit.py:452 (cite) agent/ledgers/live-proof.jsonl"
         },
         {
+          "id": "check:ci-jq-boolean-default",
+          "evidence": "scripts/ci-runner/gates.lock.json:11284 (declared) names **"
+        },
+        {
           "id": "check:ci-literal-sources",
           "evidence": ".ci/rediacc_ci/quality/literal_sources.py:2512 (root) agent/"
+        },
+        {
+          "id": "check:ci-merge-method-prose",
+          "evidence": "scripts/ci-runner/gates.lock.json:2661 (declared) names **"
+        },
+        {
+          "id": "check:ci-no-inline-python",
+          "evidence": "scripts/ci-runner/gates.lock.json:6192 (declared) names **"
+        },
+        {
+          "id": "check:ci-parity",
+          "evidence": "scripts/ci-runner/gates.lock.json:11942 (declared) names **"
         },
         {
           "id": "check:ci-plan-bindings",
@@ -1524,8 +2260,32 @@
           "evidence": ".ci/scripts/quality/check_plan_citations.py:458 (cite) agent/ledgers/live-proof.jsonl"
         },
         {
+          "id": "check:ci-retired-commands",
+          "evidence": "scripts/ci-runner/gates.lock.json:6054 (declared) names **"
+        },
+        {
+          "id": "check:ci-schema-call-sites",
+          "evidence": "scripts/ci-runner/gates.lock.json:12385 (declared) names **"
+        },
+        {
+          "id": "check:ci-shape-duplication",
+          "evidence": "scripts/ci-runner/gates.lock.json:1296 (declared) names **"
+        },
+        {
+          "id": "check:ci-source-rules",
+          "evidence": "scripts/ci-runner/gates.lock.json:11779 (declared) names **"
+        },
+        {
+          "id": "check:ci-tracked-sidecars",
+          "evidence": "scripts/ci-runner/gates.lock.json:7353 (declared) names **"
+        },
+        {
           "id": "check:ci-tree-shape",
           "evidence": ".claude/hooks/stop/wl_boxaudit.py:452 (cite) agent/ledgers/live-proof.jsonl"
+        },
+        {
+          "id": "check:ci-typecheck-scope-coverage",
+          "evidence": "scripts/ci-runner/gates.lock.json:1439 (declared) names **"
         },
         {
           "id": "check:ci-worklist-env-registry",

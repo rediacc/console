@@ -8,6 +8,9 @@ HOW A READER IS DERIVED. For every `gate: true` entry of scripts/ci-runner/gates
   cite   names the record's literal prefix (`agent/reviews`) inside a string literal that holds no whitespace, or as joined segments (`"agent", "reviews"`), other than a path the record excludes;
   root   names an ancestor of it as a scan root, `"agent/"` or a glob under `agent/`;
   config cites a JSON config file whose glob strings match one of the record's probe paths (prose-style reads `*.md` through .ci/config/prose-style-rules.json, and a review record is a `.md`), other than a glob under a key that names an exclusion (`literalExclude`).
+Asked BEFORE those four, from the gate's own gates.lock.json entry (agent/plans/PLAN-push-decoupling.md F1):
+  declared a `paths` or `names` glob matches one of the record's probes, or a `lists` directory is the parent of the record's literal prefix or lies at or inside it (the root `''` reaches nothing). This is how the `names: ['**']` gates, which cite no record path and list every file name, are counted as readers. A notReader cannot overrule this tier; a declaration that over-reaches is narrowed in the lock.
+scripts/ci-runner/manifest.ts and trace-ledger.ts (NOT_SCAN_CODE) are never read by the file tiers: the globs in them are OTHER gates' declarations, which the declared tier reads at their source.
 CODE, NOT PROSE (2026-11-16, when the plan files joined the record set). The cite, root and glob tiers read each file with its comments and docstrings blanked (`code_text`), and the cite tier counts a path only as a whole literal: a docstring that says why a gate exists names plan files by the dozen, and a message such as `"see agent/plans/x.md"` is about the file, not a read of it. Read as citations, those made 168 of 380 gates readers of agent/plans/ where 46 are. A shell script keeps the old reading, since a path there is an unquoted word.
 This still OVER-counts on purpose. A false reader costs one extra gate at an advance; a missed reader lets an unjudged record change through the push. A gate the derivation flags that genuinely reads nothing goes in `notReaders` with its reason, by name, and is printed on every run.
 
@@ -53,6 +56,8 @@ CONTROL_FLOOR = 60
 
 #: Files that are config for this gate or for the runner, never a scanner's scope: their glob strings say what a gate is SELECTED by, not what it reads.
 NOT_SCAN_CONFIG = frozenset({POLICY_REL, WIDTHS_REL, LOCK_REL})
+#: Code files that hold OTHER gates' path lists as data, never a scope of their own (agent/plans/PLAN-push-decoupling.md F1). scripts/ci-runner/manifest.ts carries every gate's `paths`, and scripts/ci-runner/trace-ledger.ts the traced reads of each; read as code, one `paths: ['agent/plans/**']` there made every gate importing the gate table a reader of the plan records, and each of those needed a hand-written notReader. What a gate DECLARES is read once, from its own gates.lock.json entry, by the `declared` tier.
+NOT_SCAN_CODE = frozenset({"scripts/ci-runner/manifest.ts", "scripts/ci-runner/trace-ledger.ts"})
 #: The runner's cache: what a run measured or left behind (a receipt, a duration table), never a scanner's scope. scripts/ci-runner/lease-seed.ts names `.ci/cache/prepush-receipt.json` to seed a lease with it, and a receipt quotes every changed path of its advances.
 NOT_SCAN_CONFIG_PREFIXES = (".ci/cache/",)
 #: A config key that says what a scanner does NOT read. `.ci/config/pins.json` lists `agent/**` under `literalExclude`, and read as a scope that one glob made eleven pin gates readers of every record under agent/ (measured 2026-11-16).
@@ -567,10 +572,55 @@ def file_evidence(
     return None
 
 
+DECLARED_TAG = "(declared)"
+
+
+def _str_list(value: object) -> list[str]:
+    return [v for v in value if isinstance(v, str)] if isinstance(value, list) else []
+
+
+def lists_reach(directory: str, record: dict) -> bool:
+    """Does a gate that LISTS `directory` see a record change? It does when the directory is the parent of the record's literal prefix (a listing of `agent` sees `agent/reviews` appear, and `agent/INDEX.md` come and go) or lies at or inside that prefix. The repository root `''` is the parent of every top-level name and says nothing about a record two levels down, so it reaches none."""
+    if not directory:
+        return False
+    stem = literal_prefix(record["glob"])
+    parent = stem.rsplit("/", 1)[0] if "/" in stem else ""
+    return directory in (parent, stem) or directory.startswith(stem + "/")
+
+
+def declared_hit(gate: dict, record: dict) -> str | None:
+    """`(declared) <field> <value>` for the first input this gate's own gates.lock.json entry declares that reaches the record, or None.
+
+    A `paths` or `names` glob reaches a record when it matches one of the record's probes (`config_glob_matches`, so a bare `**` reaches everything); a `lists` directory reaches it by `lists_reach`. This is the tier that sees the `names: ['**']` gates: they read the tree's file names, so a record file that appears or goes away changes their verdict, yet no leaf of theirs cites a record path.
+    """
+    for field in ("paths", "names"):
+        for pattern in _str_list(gate.get(field)):
+            if any(config_glob_matches(pattern, probe) for probe in record["probes"]):
+                return "%s %s %s" % (DECLARED_TAG, field, pattern)
+    for directory in _str_list(gate.get("lists")):
+        if lists_reach(directory, record):
+            return "%s lists %s" % (DECLARED_TAG, directory)
+    return None
+
+
+def lock_id_lines(text: str) -> dict[str, int]:
+    """{gate id: the line of its `"id"` key} in a gates.lock.json text, so declared-tier evidence is a `file:line` like every other tier's."""
+    return {
+        m.group(1): _line_of(text, m.start()) for m in re.finditer(r'"id"\s*:\s*"([^"]+)"', text)
+    }
+
+
 def derive_readers(
-    gates: list[dict], records: list[dict], root: pathlib.Path
+    gates: list[dict],
+    records: list[dict],
+    root: pathlib.Path,
+    lock_lines: dict[str, int] | None = None,
 ) -> tuple[dict, int, int]:
-    """({glob: {gate_id: evidence}}, gates scanned, files read). Evidence is `file:line (tier) token`, the first hit found."""
+    """({glob: {gate_id: evidence}}, gates scanned, files read). Evidence is `file:line (tier) token`, the first hit found.
+
+    The `declared` tier is asked first, from the gate's own lock entry (`lock_lines` gives its line in LOCK_REL; line 1 when absent), and the file tiers only when it finds nothing. Files in NOT_SCAN_CODE are never read: their path strings are other gates' declarations, which the declared tier reads at their source.
+    """
+    lock_lines = lock_lines or {}
     derived: dict[str, dict[str, str]] = {r["glob"]: {} for r in records}
     texts: dict[pathlib.Path, str] = {}
     configs: dict = {}
@@ -590,8 +640,16 @@ def derive_readers(
         for record in records:
             if gate["id"] in derived[record["glob"]]:
                 continue
+            hit = declared_hit(gate, record)
+            if hit is not None:
+                derived[record["glob"]][gate["id"]] = "%s:%d %s" % (
+                    LOCK_REL,
+                    lock_lines.get(gate["id"], 1),
+                    hit,
+                )
+                continue
             for path in files:
-                if path.suffix not in TEXT_SUFFIXES:
+                if path.suffix not in TEXT_SUFFIXES or _rel(path, root) in NOT_SCAN_CODE:
                     continue
                 if path not in texts:
                     try:
@@ -667,6 +725,14 @@ def record_findings(
             "%s: %s is exempt as a notReader but the derivation no longer flags it; delete the exemption"
             % (glob, gate)
             for gate in sorted(set(rec["notReaders"]) - set(derived[glob]))
+        )
+        # A notReader answers a file tier, which can mistake prose or another gate's data for a read. It cannot answer the declared tier: that is the gate's own traced input set, and a reason saying the gate does not read what it declares is a claim the trace contradicts. The fix is a narrower declaration in the gate's lock entry.
+        out.extend(
+            "%s: %s is exempt as a notReader, but its own lock entry declares an input that reaches this record (%s).\n"
+            "    A notReader cannot overrule the gate's declared inputs: move it to `readers`, or narrow the declaration so it no longer reaches the record."
+            % (glob, gate, derived[glob][gate])
+            for gate in sorted(set(rec["notReaders"]) & set(derived[glob]))
+            if DECLARED_TAG in derived[glob][gate]
         )
     return out
 
@@ -1306,6 +1372,85 @@ def selftest() -> int:
             {},
         )
 
+        # THE DECLARED TIER (PLAN-push-decoupling F1): the gate's own lock entry, read with a leaf that cites nothing, so every hit below is the declaration's.
+        def declared(**entry: Any) -> dict:
+            gate = dict({"id": "check:probe", "gate": True, "leaves": ["gate_clean.py"]}, **entry)
+            records = parse_policy(SELFTEST_POLICY)
+            return derive_readers([gate], records, root, {"check:probe": 7})[0]
+
+        star = declared(names=["**"])
+        tally.check(
+            "declared: names ['**'] reads every record, with lock file:line evidence",
+            [star[g].get("check:probe") for g in ("agent/reviews/**", "agent/worklist/*.jsonl")],
+            ["%s:7 (declared) names **" % LOCK_REL] * 2,
+        )
+        tally.check(
+            "declared MIRROR: names narrowed to **/*.sh reads neither",
+            declared(names=["**/*.sh"]),
+            {g: {} for g in ("agent/reviews/**", "agent/worklist/*.jsonl")},
+        )
+        narrowed = declared(paths=["agent/reviews/**", "docs/**"])
+        tally.truthy(
+            "declared: a paths glob matching a probe reads that record",
+            "check:probe" in narrowed["agent/reviews/**"],
+        )
+        tally.check(
+            "declared MIRROR: and not a record none of whose probes it matches",
+            narrowed["agent/worklist/*.jsonl"],
+            {},
+        )
+        tally.truthy(
+            "declared: lists the parent of the prefix (agent) reads agent/reviews/**",
+            "check:probe" in declared(lists=["agent"])["agent/reviews/**"],
+        )
+        tally.truthy(
+            "declared: lists a directory inside the prefix reads it",
+            "check:probe" in declared(lists=["agent/reviews/0101-1"])["agent/reviews/**"],
+        )
+        tally.check(
+            "declared MIRROR: lists '' (the root), a sibling and a look-alike read nothing",
+            declared(lists=["", "agent/plans", "agent/reviewsx"])["agent/reviews/**"],
+            {},
+        )
+        tally.truthy(
+            "declared: lists the parent of a literal record reads it",
+            lists_reach(".ci/config", {"glob": ".ci/config/carried-reds.json"}),
+        )
+        tally.falsy(
+            "declared MIRROR: lists a grandparent of a literal record does not",
+            lists_reach(".ci", {"glob": ".ci/config/carried-reds.json"}),
+        )
+        exempt_star = json.loads(json.dumps(SELFTEST_POLICY))
+        exempt_star["records"][0]["notReaders"] = [{"id": "check:probe", "reason": "says no"}]
+        tally.truthy(
+            "declared: a notReader cannot overrule a declared hit",
+            any(
+                "cannot overrule" in f
+                for f in record_findings(parse_policy(exempt_star), star, {"check:probe"}, root)
+            ),
+        )
+        # NOT SCAN CODE: the gate table holds other gates' globs as data. The same text in any other imported file still makes a reader, so the silence is the set's.
+        table = "export const M = [{ id: 'x', paths: ['agent/reviews/**'] }];\n"
+        _write(root, "scripts/ci-runner/manifest.ts", table)
+        _write(root, "scripts/ci-runner/trace-ledger.ts", table)
+        _write(root, "scripts/ci-runner/elsewhere.ts", table)
+        _write(root, "gate_table.ts", "import { M } from './scripts/ci-runner/manifest';\n")
+        _write(root, "gate_ledger.ts", "import { M } from './scripts/ci-runner/trace-ledger';\n")
+        _write(root, "gate_elsewhere.ts", "import { M } from './scripts/ci-runner/elsewhere';\n")
+        tally.check(
+            "not scan code: a record glob only inside manifest.ts or trace-ledger.ts reads nothing",
+            [
+                _derive_one(root, [leaf], SELFTEST_POLICY)["agent/reviews/**"]
+                for leaf in ("gate_table.ts", "gate_ledger.ts")
+            ],
+            [{}, {}],
+        )
+        tally.truthy(
+            "not scan code MIRROR: the same text in another imported file reads the record",
+            "check:probe"
+            in _derive_one(root, ["gate_elsewhere.ts"], SELFTEST_POLICY)["agent/reviews/**"],
+        )
+
         # Policy-side findings.
         stale = json.loads(json.dumps(SELFTEST_POLICY))
         stale["records"][0]["notReaders"] = [
@@ -1523,7 +1668,8 @@ def _load_json(path: pathlib.Path) -> object:
 def run_records(root: pathlib.Path, policy_path: pathlib.Path, lock_path: pathlib.Path) -> int:
     try:
         records = parse_policy(_load_json(policy_path))
-        gates = _load_json(lock_path)
+        lock_text = lock_path.read_text(encoding="utf-8")
+        gates = json.loads(lock_text)
     except (OSError, ValueError) as exc:
         print("record-paths: cannot read its inputs: %s" % exc, file=sys.stderr)
         return 2
@@ -1540,7 +1686,7 @@ def run_records(root: pathlib.Path, policy_path: pathlib.Path, lock_path: pathli
         if isinstance(g, dict) and g.get("gate") is True and isinstance(g.get("id"), str)
     }
     derived, scanned, read = derive_readers(
-        [g for g in gates if isinstance(g, dict)], records, root
+        [g for g in gates if isinstance(g, dict)], records, root, lock_id_lines(lock_text)
     )
     if scanned == 0 or read == 0:
         print(
@@ -1574,13 +1720,14 @@ def run_records(root: pathlib.Path, policy_path: pathlib.Path, lock_path: pathli
         )
         return 1
     print(
-        "record-paths: OK (this gate's own leaf excluded), %d record glob(s), %d gate(s) scanned (%d files in their import closures), %d reader declaration(s) (%d derived, %d beyond the derivation), %d exempt by name"
+        "record-paths: OK (this gate's own leaf excluded), %d record glob(s), %d gate(s) scanned (%d files in their import closures), %d reader declaration(s) (%d derived, %d of them through the declared tier, %d beyond the derivation), %d exempt by name"
         % (
             len(records),
             scanned,
             read,
             declared,
             sum(len(d) for d in derived.values()) - len(exempt),
+            sum(DECLARED_TAG in ev for d in derived.values() for ev in d.values()),
             len(hand),
             len(exempt),
         )
