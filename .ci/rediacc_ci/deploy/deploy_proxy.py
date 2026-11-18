@@ -29,6 +29,7 @@ A VARS OVERRIDE (`--var KEY=VALUE`, repeatable) is bench only, refused on any ot
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import math
 import os
@@ -43,7 +44,7 @@ import urllib.parse
 from datetime import UTC, datetime
 
 from rediacc_ci import log
-from rediacc_ci.core import common, https, wrangler
+from rediacc_ci.core import common, https, resource_lock, wrangler
 from rediacc_ci.deploy import console_executor, proxy_configs
 from rediacc_ci.proof import receipt
 from rediacc_ci.version import resolve_version
@@ -1253,6 +1254,12 @@ def run_rollback(
 
 
 def main(argv: list[str]) -> int:
+    # The stack holds the bench region lock `_main` takes, until the run returns.
+    with contextlib.ExitStack() as stack:
+        return _main(argv, stack)
+
+
+def _main(argv: list[str], stack: contextlib.ExitStack) -> int:
     parser = _parser()
     try:
         args = parser.parse_args(argv)
@@ -1339,6 +1346,13 @@ def main(argv: list[str]) -> int:
 
     if bench and not profile_bound():
         return _run(reexec_argv(argv), env=package_env())
+    # A bench deploy, smoke or rollback holds its region's bench lock from here, so a reset or a proof cannot land under it; a dry run returned above and takes none (PLAN-push-decoupling.md D1.6).
+    if bench:
+        try:
+            stack.enter_context(resource_lock.bench_held(region, "deploy_proxy --target bench"))
+        except resource_lock.ResourceBusyError as exc:
+            log.error("deploy_proxy: %s" % exc)
+            return 1
 
     if not os.environ.get("CLOUDFLARE_API_TOKEN"):
         if not bench and not profile_bound(PROFILE):

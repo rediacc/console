@@ -29,7 +29,7 @@ import sys
 import time
 from typing import TYPE_CHECKING, Protocol
 
-from rediacc_ci.core import toolchain
+from rediacc_ci.core import resource_lock, toolchain
 from rediacc_ci.well_known import INFRA_DOMAIN
 
 if TYPE_CHECKING:
@@ -113,6 +113,7 @@ STALE_SKIP = (
 # The bench region every bench company sits in, and the other bench signer region the bench form cuts first.
 BENCH_COMPANY_REGION = "eu"
 BENCH_OTHER_REGION = "us"
+BENCH_REGIONS = (BENCH_COMPANY_REGION, BENCH_OTHER_REGION)
 WORKFLOW_REMOVE = re.compile(r"enterprise\s+remove\b|enterprise\.lifecycle\b[^\n]*\bremove\b")
 MASK = "***"
 FREE_MAIL_DOMAIN = "gmail.com"
@@ -1181,6 +1182,18 @@ def main(argv: Sequence[str], *, lab: Lab | None = None) -> int:
             file=sys.stderr,
         )
         return 2
+    if args.bench:
+        # Both bench regions a proof acts on (the company's, and the one region-loss cuts) are held for the run, so no deploy or reset lands under it (PLAN-push-decoupling.md D1.6).
+        try:
+            with resource_lock.bench_held(BENCH_REGIONS, f"enterprise proof {args.verb}"):
+                return _run_bound(args, lab)
+        except resource_lock.ResourceBusyError as exc:
+            print(f"{SELF}: {exc}", file=sys.stderr)
+            return 1
+    return _run_bound(args, lab)
+
+
+def _run_bound(args: argparse.Namespace, lab: Lab | None) -> int:
     try:
         bound = lab if lab is not None else load_lab(bench=args.bench)
     except START_ERRORS as exc:

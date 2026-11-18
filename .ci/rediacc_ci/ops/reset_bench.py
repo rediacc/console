@@ -22,6 +22,7 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
 
 from __future__ import annotations
 
+import contextlib
 import html
 import json
 import os
@@ -32,7 +33,7 @@ import sys
 import urllib.parse
 
 from rediacc_ci import log, paths
-from rediacc_ci.core import wrangler
+from rediacc_ci.core import resource_lock, wrangler
 from rediacc_ci.deploy import set_account_worker_secrets
 from rediacc_ci.ops import bench_preflight, bench_production, cf_auth
 
@@ -332,6 +333,12 @@ def _wipe_r2(creds: R2Credentials) -> None:
 
 
 def main(argv: list[str]) -> int:
+    # The stack holds the bench region lock `_main` takes, until the run returns.
+    with contextlib.ExitStack() as stack:
+        return _main(argv, stack)
+
+
+def _main(argv: list[str], stack: contextlib.ExitStack) -> int:
     original = list(argv)
     try:
         region, argv = bench_preflight.take_region(argv)
@@ -374,6 +381,12 @@ def main(argv: list[str]) -> int:
     rebound = _reexec_under_profile(original)
     if rebound is not None:
         return rebound
+    # The region's bench lock before any credential, so a wipe never lands under a deploy or a proof (PLAN-push-decoupling.md D1.6).
+    try:
+        stack.enter_context(resource_lock.bench_held(region, "reset_bench"))
+    except resource_lock.ResourceBusyError as exc:
+        log.error("reset_bench: %s" % exc)
+        return 1
 
     try:
         bench = _names(region)

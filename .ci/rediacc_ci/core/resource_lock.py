@@ -256,6 +256,21 @@ def held(
         lock.release()
 
 
+def env_wait(name: str, environ: Mapping[str, str] | None = None) -> float:
+    """Seconds from the environment variable `name`; DEFAULT_WAIT_S when it is unset or empty."""
+    env = os.environ if environ is None else environ
+    return float(env.get(name) or DEFAULT_WAIT_S)
+
+
+@contextlib.contextmanager
+def bench_held(regions: str | Sequence[str], purpose: str) -> Iterator[list[ResourceLock]]:
+    """Hold `bench-<region>` for each region (PLAN-push-decoupling.md D1.6), taken in sorted order so two multi-region holders cannot deadlock. `BENCH_LOCK_WAIT_S` bounds each wait; ResourceBusyError names the holder."""
+    names = sorted({bench_resource(r) for r in ([regions] if isinstance(regions, str) else regions)})
+    wait_s = env_wait("BENCH_LOCK_WAIT_S")
+    with contextlib.ExitStack() as stack:
+        yield [stack.enter_context(held(name, purpose=purpose, wait_s=wait_s)) for name in names]
+
+
 def run(resource: str, argv: Sequence[str], *, purpose: str, wait_s: float = DEFAULT_WAIT_S) -> int:
     """Run `argv` under `resource`; the child's exit code, 128+N for a child killed by signal N, EXIT_BUSY when the wait ran out."""
     try:

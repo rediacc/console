@@ -33,6 +33,7 @@ THE SECRET VALUES ARE READ BY NAME FROM THE ENVIRONMENT, as the bash read them, 
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import functools
 import json
@@ -49,7 +50,7 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
-from rediacc_ci.core import wrangler
+from rediacc_ci.core import resource_lock, wrangler
 from rediacc_ci.deploy import (
     deploy_account,
     deploy_record,
@@ -1144,6 +1145,12 @@ def _regions_to_run(region: str, root) -> list[str]:
 
 
 def main(argv: list[str]) -> int:
+    # The stack holds the bench region lock `_main` takes, until the run returns.
+    with contextlib.ExitStack() as stack:
+        return _main(argv, stack)
+
+
+def _main(argv: list[str], stack: contextlib.ExitStack) -> int:
     if argv and argv[0] in ("-h", "--help"):
         sys.stdout.write(HELP)
         return 0
@@ -1197,6 +1204,14 @@ def main(argv: list[str]) -> int:
         return 2
     if rebound is not None:
         return rebound
+    # One region per process from here (a multi-region run is one child per region): its bench lock is taken before any credential, so a reset or a proof on the region cannot interleave (PLAN-push-decoupling.md D1.6).
+    try:
+        stack.enter_context(
+            resource_lock.bench_held(regions[0], "deploy_bench%s" % (" " + argv[0] if argv else ""))
+        )
+    except resource_lock.ResourceBusyError as exc:
+        log.error("deploy_bench: %s" % exc)
+        return 1
     if seed_only or password_only:
         try:
             _set_password_and_report(region) if password_only else _seed_and_report(region)
