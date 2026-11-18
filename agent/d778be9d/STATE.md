@@ -1,20 +1,25 @@
-## SESSION d778be9d 2026-11-17T15:27:04Z
+## SESSION d778be9d 2026-11-18T02:59:45Z
 
-# STATE d778be9d (1104-1, PR #605) -- 2026-11-17T14:15Z
+# STATE d778be9d (1104-1, PR #605)
 
 ## Next action
-1. Land the console red-repair writer (a78b5eee8fe083876, 12 ci:quick reds) and the W2.2 re-trace writer (a03f736925d610ba8); after the re-trace lands: `./run.sh worktree gc --write --id agent-abb3779a0acb10c25 --superseded-by bddc296634=<landed re-trace sha> --reason '<why>'`.
-2. `npm run ci:quick` on the landed tree (check:ci-ops-health is the waived live red; embed-asset-freshness red only when download.samba.org times out).
-3. `./run.sh drill backup && ./run.sh drill backup-onprem && npm run vm:check -- --changed` (never beside ci:quick).
-4. `worklist.py --review-commit d778be9d`; push private/account, private/renet, then console with TURBO_PUSH_REASON='red-fix: ...'.
-5. us/asia release #8bb65426: dry run first; REDIACC_TRANSCRIPT_PATH=/home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888.jsonl RELEASE_ASKED=ASKED:2026-11-17T03:32Z.
-6. Live boxes after the push: root-grants LP-bench/LB-*/LE0/LA-* (then operator OP-us/OP-asia/OS-*), site-entry-points LP-bench/BP/PROD, bench and hostinger runners.
+1. When ci:quick brulq44rm ends: read `grep -E '^ci:quick: (RED|GREEN)' .ci/cache/pause/d778be9d/ciquick-23.log`. Only check:ci-ops-health may be red (carried in .ci/config/carried-reds.json). Fix any other red (writer in a lease, then land).
+2. Green: `worklist.py --review-commit d778be9d`; if the receipt tree moved, rerun ci:quick (record-only commits re-run only readers). Then `npm run vm:check -- --changed` (account phase needed for the release), then push: `TURBO_PUSH_REASON='red-fix: PR #605 reds fixed on the branch' git push origin 1104-1` (push private/account and private/renet first if the guard names them).
+3. After the push: land lease commit 3b5e8f1619 (review-mark matcher fix, agent-ab968b4b663b066e1), then `worklist.py --review-mark d778be9d 61111ad2.2 fixed <deb42fb9 landed sha 254cc18e or deb42fb9a0> --test .ci/rediacc_ci/tests/gates/test_gate_plan_folders.py`; land the W2.2 re-trace writer's commits when it reports.
+4. Release: `REDIACC_TRANSCRIPT_PATH=<this transcript> RELEASE_ASKED=ASKED:2026-11-17T03:32Z npm run release:local -- --channel edge --workers-only --branch-release --regions eu,us,asia --dry-run`, then the real run; then `bws_env exec --profile root-grants -- python3 -m rediacc_ci.ops.root_grants --apply --target edge-eu|edge-us|edge-asia` (#cd796a07).
+5. `./rdc.sh ops up` when the host is free, check `./rdc.sh --config eu-bench machine health l1vm`, then drop the ops-health carry (#0e8e0e55).
+6. Live runners after the release: bench (#400ae5ea #719d19c6 #864b6bca #edac9b6d), hostinger (#36ffb824 #6d5593e9 #3fb4edcc), A1a 695c3218 preview (#ab9c68b1).
+
+## Delegated
+- brulq44rm (shell): ci:quick-23 on head 5cd87bed; accept: only ops-health red.
+- a9b3fe3924c2f83b2 (writer, lease): #f0da7369 W2.2 782a0661 re-trace, owns scripts/ci-runner/manifest*, gates.lock.json, doc-registry.md; niced; accept: whole-tree count <=80 or committed partial with reasons, path-trace and run.ts selftests rc 0.
+- agent-ab968b4b663b066e1 (finished lease): 3b5e8f1619 ready to land after the push.
 
 ## Big pieces
-- Resumed 2026-11-17 after the /pause (effort smart). Landed since: renet lint eff6beeb (gitlink d7e7aaf218); root-grants P1 111bc06c32, H1 682128735b, D1 a2b8c9498e+43bc258fd6, S1 ticked; site-entry-points L1-L3 21433b52, D1 11e5072ec2, I1 959216f248, I2+I3 956e037614 (all 7 code boxes ticked); AMBER detail fix 1791f6d68c.
-- Landed this context: writer B path-trace 988ca9561b..7a9a97bac4; root-grants C1 b8b776f325 (box 0134b972 ticked); root lockfiles in GLOBAL_INPUTS b69e89c640; traced origin + policy fix 51b854035f; sparse hardlink guard e31c602e8c; format 5d81789717; plan ticks 8cf591d88d. Review findings cd353e9c.1, 1b2c643e.1, ffa5756e.1, 95ac738d.1 fixed; no high finding open.
-- Root-grants: S1 (account e594012) and C1 landed; then the operator mints US/ASIA tokens and creates the us/asia config stores.
-- Open hints proposed: review gate on unreachable commits; plan-tick for un-investigated lease writers.
+- PR #605 push, then edge release eu,us,asia and edge root grants.
 
 ## Owed ticks
-Live half owed after the push, run by the runners (step 7): PLAN-backup-program.md#07955f58 #0a237b2e #575e0098; PLAN-ciquick-cpu.md#51ceeb4f #824b964d; PLAN-enterprise-isolation.md#0a6e5712 #0fbd62dc #a8892e0c #cc583290 #f4b49503; PLAN-health-checks-local.md#85f55665; PLAN-production-key-only.md#6a1ca4a4; PLAN-proxy-cd-six-targets.md#abe9b4eb.
+- PLAN-ciquick-cpu 51ceeb4f, 824b964d live-owed; W2.2 782a0661 with the re-trace. PLAN-enterprise-isolation a8892e0c live-owed.
+
+## Parked
+- none (l1vm default executed; re-key tracked #0e8e0e55).
