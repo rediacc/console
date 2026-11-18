@@ -7,6 +7,8 @@
     "volume: a ruled source sending more than max_per_day messages on one report day is red; once trailing_days of history exist, so is at least ratio_min_count messages at ratio times its trailing daily average.",
     "acknowledged_through: domain -> YYYY-MM-DD. Every red but a new source and a malformed report, in a report whose date range ended on or before that day, is acknowledged (fixed or accepted).",
     "A string may name a WK_-prefixed key of .ci/config/well-known.env wrapped in dollar and braces (the operator mailbox below is one); load_known composes it at read time, and a reference to any other key is refused.",
+    "mailboxes[].kind: `dmarc` (default) holds DMARC and TLS-RPT reports; `server-reports` holds server mail judged by the `server_reports` section (operator ruling 2026-11-18).",
+    "server_reports.senders: the From addresses allowed per shape (ses-event, postfix-summary, sns-confirm); any other sender or shape is red. reserved_domains (with their subdomains) and reserved_tlds are the test domains whose SES delays and Transient bounces are benign; a Complaint, a non-Transient bounce, ContentRejected, or any real recipient domain is red. postfix: a daily summary is red when its rejected, deferred or bounced count is ABOVE the limit. Defaults picked 2026-11-18: 200 rejects (background noise on a public MX), 50 deferrals, 5 bounces; tune after the first live pass.",
     "A NEW failing source turns the check red; ask the operator, then add a ruling here (docs/agent-reference/local-env.md, DMARC reports)."
   ],
   "version": 1,
@@ -17,8 +19,18 @@
   },
   "mailboxes": [
     { "user": "${WK_OPERATOR_EMAIL}", "mailbox": "DMARC" },
-    { "user": "muhammed@rediacc.io", "mailbox": "DMARC" }
+    { "user": "muhammed@rediacc.io", "mailbox": "DMARC" },
+    { "user": "muhammed@rediacc.io", "mailbox": "Server-Reports", "kind": "server-reports" }
   ],
+  "server_reports": {
+    "senders": [
+      { "from": "no-reply@sns.amazonaws.com", "shapes": ["ses-event", "sns-confirm"] },
+      { "from": "mailserver-report@mail.rediacc.io", "shapes": ["postfix-summary"] }
+    ],
+    "reserved_domains": ["example.com", "example.org", "example.net", "localhost"],
+    "reserved_tlds": ["test", "invalid", "example", "localhost"],
+    "postfix": { "max_rejected": 200, "max_deferred": 50, "max_bounced": 5 }
+  },
   "ours": [
     {
       "name": "hostinger mail server",

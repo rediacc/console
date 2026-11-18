@@ -6,9 +6,9 @@ Self-contained on purpose: the standard library only, no import from rediacc_ci,
 
 For each mailbox it lists the UNSEEN messages with `doveadm -f json fetch -u <user> "uid text" mailbox <mailbox> unseen` (a read: fetching `text` sets no flag) and parses each one. One stdout line carries the result, prefixed with MARKER:
 
-    {"mailboxes": [{"user", "mailbox", "error", "messages": [{"uid", "subject", "kind", "reports", "error"}]}]}
+    {"mailboxes": [{"user", "mailbox", "kind", "error", "messages": [{"uid", "subject", "kind", "reports", "error"}]}]}
 
-`kind` is `report` (every report attachment parsed), `malformed` (a report attachment that could not be read; `error` names the attachment and why) or `other` (no report attachment: mail the sieve rule filed here that is not a report). A report is `{"type": "aggregate", ...}` (RFC 7489 XML, plain, zip or gzip) or `{"type": "tlsrpt", ...}` (RFC 8460 JSON, plain or gzip). The XML reader is expat with every DOCTYPE and entity declaration refused, so a report cannot expand an entity, and every decompression is capped at MAX_BYTES.
+`kind` is `report` (every report attachment parsed), `malformed` (a report attachment that could not be read; `error` names the attachment and why) or `other` (no report attachment: mail the sieve rule filed here that is not a report). A report is `{"type": "aggregate", ...}` (RFC 7489 XML, plain, zip or gzip) or `{"type": "tlsrpt", ...}` (RFC 8460 JSON, plain or gzip). A mailbox spec may carry `"kind": "server-reports"` (default `dmarc`): its messages are server mail (Amazon SES events relayed by SNS, the Postfix daily summary, SNS subscription confirmations), each classified by classify_server into `{"uid", "subject", "from", "kind": "server-report", "report": {...}}` with report `shape` one of `ses-event` (event, bounce_type, bounce_sub_type, delay_type and the recipient DOMAINS, never an address), `postfix-summary` (rejected, deferred, bounced), `sns-confirm` or `unknown` (why). The judging stays in rediacc_ci.ops.dmarc_reports. The XML reader is expat with every DOCTYPE and entity declaration refused, so a report cannot expand an entity, and every decompression is capped at MAX_BYTES.
 """
 
 from __future__ import annotations
@@ -17,9 +17,11 @@ import base64
 import binascii
 import email
 import email.policy
+import email.utils
 import gzip
 import io
 import json
+import re
 import subprocess
 import sys
 import zipfile
@@ -329,6 +331,115 @@ def parse_message(raw: str | bytes) -> dict:
     }
 
 
+# --------------------------------------------------------------------------- server reports
+
+SERVER_KIND = "server-reports"
+_POSTFIX_COUNT = {
+    key: re.compile(r"^\s*(\d+(?:\.\d+)?)([kmg]?)\s+%s\b" % key, re.MULTILINE)
+    for key in ("rejected", "deferred", "bounced")
+}
+_SUFFIX = {"": 1, "k": 1000, "m": 1000000, "g": 1000000000}
+
+
+def _domain_of(addr: object) -> str:
+    text = str(addr or "").strip().lower()
+    return text.rsplit("@", 1)[-1] if "@" in text else "?"
+
+
+def _recipient_domains(entries: object) -> list:
+    if not isinstance(entries, list):
+        return []
+    found = {_domain_of(e.get("emailAddress") if isinstance(e, dict) else e) for e in entries}
+    return sorted(found)
+
+
+def _ses_event(doc: dict) -> dict:
+    """The SES event inside one SNS notification, or an `unknown` shape naming what is missing."""
+    inner = doc.get("Message")
+    try:
+        event = json.loads(inner) if isinstance(inner, str) else None
+    except ValueError:
+        event = None
+    if not isinstance(event, dict):
+        return {"shape": "unknown", "why": "SNS notification without an SES event JSON"}
+    kind = str(event.get("eventType") or event.get("notificationType") or "")
+    if not kind:
+        return {"shape": "unknown", "why": "SES event without an eventType"}
+    bounce = event.get("bounce") if isinstance(event.get("bounce"), dict) else {}
+    delay = event.get("deliveryDelay") if isinstance(event.get("deliveryDelay"), dict) else {}
+    complaint = event.get("complaint") if isinstance(event.get("complaint"), dict) else {}
+    domains = (
+        _recipient_domains(bounce.get("bouncedRecipients"))
+        or _recipient_domains(delay.get("delayedRecipients"))
+        or _recipient_domains(complaint.get("complainedRecipients"))
+    )
+    if not domains:
+        mail = event.get("mail") if isinstance(event.get("mail"), dict) else {}
+        domains = _recipient_domains(mail.get("destination"))
+    return {
+        "shape": "ses-event",
+        "event": kind,
+        "bounce_type": str(bounce.get("bounceType") or ""),
+        "bounce_sub_type": str(bounce.get("bounceSubType") or ""),
+        "delay_type": str(delay.get("delayType") or ""),
+        "domains": domains,
+    }
+
+
+def _postfix_summary(text: str) -> dict:
+    start = text.find("Grand Totals")
+    body = text[start:] if start >= 0 else text
+    counts: dict = {}
+    for key, pattern in _POSTFIX_COUNT.items():
+        hit = pattern.search(body)
+        if hit is None:
+            return {"shape": "unknown", "why": "Postfix summary without a %s count" % key}
+        counts[key] = int(float(hit.group(1)) * _SUFFIX[hit.group(2)])
+    return {"shape": "postfix-summary", **counts}
+
+
+def server_shape(subject: str, text: str) -> dict:
+    """The classified shape of one server mail from its subject and text body."""
+    if subject.startswith("Postfix summary for") or "Grand Totals" in text:
+        return _postfix_summary(text)
+    try:
+        doc = json.loads(text)
+    except ValueError:
+        doc = None
+    if isinstance(doc, dict):
+        if doc.get("Type") == "SubscriptionConfirmation":
+            return {"shape": "sns-confirm"}
+        if doc.get("Type") == "Notification":
+            return _ses_event(doc)
+    if subject.startswith("AWS Notification - Subscription Confirmation"):
+        return {"shape": "sns-confirm"}
+    return {"shape": "unknown", "why": "no known server mail shape"}
+
+
+def classify_server(raw: str | bytes) -> dict:
+    """{subject, from, kind: "server-report", report} for one message; never raises."""
+    data = raw.encode("utf-8", "surrogateescape") if isinstance(raw, str) else raw
+    msg = email.message_from_bytes(data, policy=email.policy.default)
+    subject = str(msg.get("Subject") or "")
+    sender = email.utils.parseaddr(str(msg.get("From") or ""))[1].lower()
+    text = ""
+    try:
+        body = msg.get_body(preferencelist=("plain", "html"))
+        text = str(body.get_content()) if body is not None else ""
+    except (LookupError, ValueError, KeyError):
+        text = ""
+    try:
+        report = server_shape(subject, text)
+    except (TypeError, ValueError, AttributeError) as exc:
+        report = {"shape": "unknown", "why": "classification failed: %s" % exc}
+    return {
+        "subject": subject[:120],
+        "from": sender,
+        "kind": "server-report",
+        "report": report,
+    }
+
+
 # --------------------------------------------------------------------------- doveadm
 
 
@@ -368,7 +479,8 @@ def collect(mailboxes: list, fetch: Fetch) -> dict:
     out = []
     for box in mailboxes:
         user, mailbox = str(box["user"]), str(box["mailbox"])
-        entry: dict = {"user": user, "mailbox": mailbox, "error": "", "messages": []}
+        kind = str(box.get("kind") or "dmarc")
+        entry: dict = {"user": user, "mailbox": mailbox, "kind": kind, "error": "", "messages": []}
         try:
             rows = fetch(user, mailbox)
         except FetchError as exc:
@@ -388,7 +500,8 @@ def collect(mailboxes: list, fetch: Fetch) -> dict:
                     }
                 )
                 continue
-            parsed = parse_message(str(row.get("text") or ""))
+            text = str(row.get("text") or "")
+            parsed = classify_server(text) if kind == SERVER_KIND else parse_message(text)
             entry["messages"].append({"uid": uid, **parsed})
         out.append(entry)
     return {"mailboxes": out}

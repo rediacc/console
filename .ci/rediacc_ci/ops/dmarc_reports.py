@@ -14,6 +14,10 @@ A TLS-RPT policy with failed sessions is red `dmarc.tlsrpt.failure`, and a repor
 
 HISTORY. The ruled sources' message counts per report (by report id, so a report read twice counts once) are kept in .ci/cache/ops-health/dmarc-history.json, the trailing average's input; entries older than HISTORY_DAYS are dropped.
 
+SERVER REPORTS. A mailbox listed with `"kind": "server-reports"` (the Server-Reports folder) holds server mail, judged per message by event (operator ruling 2026-11-18): an SES DeliveryDelay or Transient bounce whose every recipient domain is a reserved test domain (`server_reports.reserved_domains` and `reserved_tlds`) is benign; any Complaint, any non-Transient bounce, any ContentRejected, any delay or bounce to a real domain is red `server-reports.ses`, named by event type and recipient DOMAIN (never the address) with a count; a Postfix daily summary is red `server-reports.postfix` above a count in `server_reports.postfix` (max_rejected, max_deferred, max_bounced) and benign otherwise; an SNS subscription confirmation is benign; a message from a sender not in `server_reports.senders`, or of a shape that sender may not send, or of unknown shape, is red `server-reports.unknown`. Benign messages are marked Seen, red ones stay unread and are listed once, grouped.
+
+UNREADABLE. A mail server that cannot be read (the read, a mailbox listing, or the Seen marking failed: login refused, the IP-rebind refusal, a timeout) is RED `dmarc.mail.unreadable` naming the cause, never unknown (2026-11-18: it sat unknown for two days unnoticed).
+
 MARK. Only report messages whose every finding is green are marked `\\Seen` (doveadm flags add, never a delete or a move). A report that holds a red finding, a malformed one, and any message that is not a report stay unread, so the red stands on the next run until a ruling or an acknowledgement covers it, and non-report mail is never touched.
 """
 
@@ -53,6 +57,11 @@ HISTORY_NAME = "dmarc-history.json"
 HISTORY_DAYS = 90
 RDNS_TIMEOUT_S = 5.0
 VERDICTS = ("old-provider", "spoof")
+MAILBOX_KINDS = ("dmarc", "server-reports")
+SERVER_SHAPES = ("ses-event", "postfix-summary", "sns-confirm")
+POSTFIX_LIMITS = ("max_rejected", "max_deferred", "max_bounced")
+MARK_CHUNK = 400
+SERVER_RED_LINES = 25
 VOLUME_DEFAULTS = {"max_per_day": 20, "ratio": 5.0, "ratio_min_count": 5, "trailing_days": 14}
 
 # ip -> its forward-confirmed reverse name, or "" when it has none. Injected by the tests.
@@ -111,6 +120,46 @@ def _compose(value: object, path: pathlib.Path) -> object:
     return value
 
 
+def _server_reports(raw: object, boxes: list, path: pathlib.Path) -> dict:
+    """The validated `server_reports` section; required once a mailbox is of kind server-reports."""
+    needed = any(str(b.get("kind") or "dmarc") == "server-reports" for b in boxes)
+    if raw is None and not needed:
+        return {}
+    if not isinstance(raw, dict):
+        raise KnownError("%s: a server-reports mailbox needs a server_reports object" % path)
+    senders: dict[str, set] = {}
+    for entry in raw.get("senders") or []:
+        shapes = entry.get("shapes") if isinstance(entry, dict) else None
+        if (
+            not isinstance(entry, dict)
+            or not str(entry.get("from") or "")
+            or not isinstance(shapes, list)
+            or not shapes
+            or any(sh not in SERVER_SHAPES for sh in shapes)
+        ):
+            raise KnownError(
+                "server_reports.senders: each entry needs `from` and `shapes` from %s"
+                % ", ".join(SERVER_SHAPES)
+            )
+        senders[str(entry["from"]).lower()] = set(shapes)
+    if not senders:
+        raise KnownError("server_reports.senders is empty")
+    limits = raw.get("postfix") or {}
+    postfix: dict[str, int] = {}
+    for key in POSTFIX_LIMITS:
+        value = limits.get(key) if isinstance(limits, dict) else None
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise KnownError("server_reports.postfix.%s: %r is not a count" % (key, value))
+        postfix[key] = value
+    reserved = {
+        key: [str(d).lower().strip(".") for d in raw.get(key) or []]
+        for key in ("reserved_domains", "reserved_tlds")
+    }
+    if not reserved["reserved_domains"] and not reserved["reserved_tlds"]:
+        raise KnownError("server_reports needs reserved_domains or reserved_tlds")
+    return {"senders": senders, "postfix": postfix, **reserved}
+
+
 def load_known(path: pathlib.Path) -> dict:
     """The parsed rulings file, its `${WK_NAME}` references composed. Raises KnownError naming what is missing."""
     try:
@@ -130,6 +179,13 @@ def load_known(path: pathlib.Path) -> dict:
         or not all(isinstance(b, dict) and b.get("user") and b.get("mailbox") for b in boxes)
     ):
         raise KnownError("%s: mailboxes needs at least one {user, mailbox}" % path)
+    for b in boxes:
+        if str(b.get("kind") or "dmarc") not in MAILBOX_KINDS:
+            raise KnownError(
+                "mailboxes %s: kind %r is not one of %s"
+                % (b["mailbox"], b.get("kind"), ", ".join(MAILBOX_KINDS))
+            )
+    server = _server_reports(doc.get("server_reports"), boxes, path)
     rulings = [_entry(r, "rulings") for r in doc.get("rulings") or []]
     for ruling in rulings:
         if not ruling["ruled"]:
@@ -158,7 +214,15 @@ def load_known(path: pathlib.Path) -> dict:
         volume[key] = value
     return {
         "target": {k: str(target[k]) for k in ("config", "repo", "container")},
-        "mailboxes": [{"user": str(b["user"]), "mailbox": str(b["mailbox"])} for b in boxes],
+        "mailboxes": [
+            {
+                "user": str(b["user"]),
+                "mailbox": str(b["mailbox"]),
+                "kind": str(b.get("kind") or "dmarc"),
+            }
+            for b in boxes
+        ],
+        "server": server,
         "ours": [_entry(o, "ours") for o in doc.get("ours") or []],
         "rulings": rulings,
         "acknowledged_through": acked,
@@ -307,6 +371,10 @@ def parse_command(known: dict, source: str) -> str:
     )
 
 
+def _chunks(items: list, size: int) -> list:
+    return [items[i : i + size] for i in range(0, len(items), size)]
+
+
 def mark_command(known: dict, marks: dict) -> str:
     """`doveadm flags add ... \\Seen` per mailbox for the uids in `marks` ((user, mailbox) -> [uid])."""
     container = shlex.quote(known["target"]["container"])
@@ -317,10 +385,10 @@ def mark_command(known: dict, marks: dict) -> str:
             shlex.quote(user),
             shlex.quote("\\Seen"),
             shlex.quote(mailbox),
-            ",".join(str(int(u)) for u in sorted(uids, key=int)),
+            ",".join(str(u) for u in chunk),
         )
         for (user, mailbox), uids in sorted(marks.items())
-        if uids
+        for chunk in _chunks(sorted(int(u) for u in uids), MARK_CHUNK)
     ]
     return " && ".join(parts)
 
@@ -368,6 +436,135 @@ def mark_seen(known: dict, marks: dict, runner: Runner, env: dict) -> str:
             failure_text(res, default="no output", config=known["target"]["config"]),
         )
     return ""
+
+
+# --------------------------------------------------------------------------- judge: server reports
+
+
+def _reserved(domain: str, server: dict) -> bool:
+    """A reserved test domain: one of reserved_domains (or a subdomain of it), or under a reserved TLD."""
+    name = domain.lower().strip(".")
+    if not name or name == "?":
+        return False
+    if any(name == d or name.endswith("." + d) for d in server["reserved_domains"]):
+        return True
+    return name.rsplit(".", 1)[-1] in server["reserved_tlds"]
+
+
+def _sender_domain(sender: str) -> str:
+    return sender.rsplit("@", 1)[-1] if "@" in sender else "?"
+
+
+def judge_server_message(msg: dict, server: dict) -> tuple[str, str, str]:
+    """(verdict, code, detail) for one server mail: verdict `benign` or `red`; a red's code names its class and detail is the line text its group is counted under."""
+    sender = str(msg.get("from") or "")
+    report = msg.get("report") if isinstance(msg.get("report"), dict) else {}
+    shape = str(report.get("shape") or "unknown")
+    allowed = server["senders"].get(sender)
+    if allowed is None:
+        return (
+            "red",
+            "server-reports.unknown",
+            "mail from the unknown sender domain %s" % _sender_domain(sender),
+        )
+    if shape not in allowed:
+        why = str(report.get("why") or "shape %s is not one this sender sends" % shape)
+        return (
+            "red",
+            "server-reports.unknown",
+            "mail from %s of unknown shape: %s" % (_sender_domain(sender), why),
+        )
+    if shape == "sns-confirm":
+        return "benign", "", ""
+    if shape == "postfix-summary":
+        over = [
+            "%s %d (limit %d)" % (k, int(report.get(k) or 0), server["postfix"]["max_" + k])
+            for k in ("rejected", "deferred", "bounced")
+            if int(report.get(k) or 0) > server["postfix"]["max_" + k]
+        ]
+        if not over:
+            return "benign", "", ""
+        sent = str(msg.get("subject") or "").rsplit(" sent ", 1)[-1][:40]
+        return (
+            "red",
+            "server-reports.postfix",
+            "Postfix summary sent %s: %s" % (sent or "?", ", ".join(over)),
+        )
+    event = str(report.get("event") or "")
+    btype, sub = str(report.get("bounce_type") or ""), str(report.get("bounce_sub_type") or "")
+    delay = str(report.get("delay_type") or "")
+    domains = [str(d) for d in report.get("domains") or []]
+    label = event
+    if event == "Bounce":
+        label = "Bounce %s/%s" % (btype or "?", sub or "?")
+    elif event == "DeliveryDelay":
+        label = "DeliveryDelay %s" % (delay or "?")
+    if not domains:
+        return "red", "server-reports.ses", "%s event with no recipient domain" % label
+    real = [d for d in domains if not _reserved(d, server)]
+    if event == "Complaint":
+        return "red", "server-reports.ses", "Complaint to %s" % ", ".join(domains)
+    if event == "Bounce":
+        if btype != "Transient" or sub == "ContentRejected" or real:
+            return "red", "server-reports.ses", "%s to %s" % (label, ", ".join(real or domains))
+        return "benign", "", ""
+    if event == "DeliveryDelay":
+        if real:
+            return "red", "server-reports.ses", "%s to %s" % (label, ", ".join(real))
+        return "benign", "", ""
+    return (
+        "red",
+        "server-reports.ses",
+        "unhandled SES event %s to %s" % (label, ", ".join(domains)),
+    )
+
+
+def judge_server_box(box: dict, server: dict, clean: dict, red: dict, tally: dict) -> None:
+    """Judge every message of a server-reports mailbox: `clean` gets its marks, `red` the grouped red lines ((code, detail) -> count), `tally` the counts."""
+    user, mailbox = str(box.get("user") or ""), str(box.get("mailbox") or "")
+    for msg in box.get("messages") or []:
+        tally["messages"] += 1
+        if msg.get("kind") != "server-report":
+            verdict, code, detail = (
+                "red",
+                "server-reports.unknown",
+                "unreadable message: %s" % msg.get("error"),
+            )
+        else:
+            verdict, code, detail = judge_server_message(msg, server)
+        ukey = (user, mailbox, str(msg.get("uid")))
+        if verdict == "benign":
+            tally["benign"] += 1
+            clean[ukey] = True
+            continue
+        tally["red"] += 1
+        clean[ukey] = False
+        red[(code, detail)] = red.get((code, detail), 0) + 1
+
+
+def server_summary(tally: dict) -> list:
+    """The one summary line of a run that read server mail (not a finding)."""
+    if not tally["messages"]:
+        return []
+    return [
+        "server-reports: %d unread message(s), %d benign (marked Seen), %d red (left unread)"
+        % (tally["messages"], tally["benign"], tally["red"])
+    ]
+
+
+def server_lines(red: dict) -> list:
+    """The red groups, largest first, capped at SERVER_RED_LINES."""
+    lines: list = []
+    ordered = sorted(red.items(), key=lambda kv: (-kv[1], kv[0]))
+    reds = ["%s: %s, %d message(s)" % (code, detail, n) for (code, detail), n in ordered]
+    lines += reds[:SERVER_RED_LINES]
+    if len(reds) > SERVER_RED_LINES:
+        rest = ordered[SERVER_RED_LINES:]
+        lines.append(
+            "server-reports: %d more red group(s), %d message(s)"
+            % (len(rest), sum(n for _, n in rest))
+        )
+    return lines
 
 
 # --------------------------------------------------------------------------- judge
@@ -427,6 +624,8 @@ def judge(doc: dict, known: dict, resolve: Resolver, history: dict, today: datet
     # (ruling name, ISO day) -> [(message key, domain, acknowledged)] for the volume pass.
     ruled_days: dict[tuple, list] = {}
     clean: dict[tuple, bool] = {}
+    server_red: dict[tuple, int] = {}
+    server_tally = {"messages": 0, "benign": 0, "red": 0}
     if not history.get("first"):
         history["first"] = today.isoformat()
 
@@ -434,6 +633,9 @@ def judge(doc: dict, known: dict, resolve: Resolver, history: dict, today: datet
         user, mailbox = str(box.get("user") or ""), str(box.get("mailbox") or "")
         if box.get("error"):
             unreadable.append("%s %s: %s" % (user, mailbox, box["error"]))
+            continue
+        if box.get("kind") == "server-reports":
+            judge_server_box(box, known["server"], clean, server_red, server_tally)
             continue
         for msg in box.get("messages") or []:
             kind = msg.get("kind")
@@ -592,6 +794,8 @@ def judge(doc: dict, known: dict, resolve: Resolver, history: dict, today: datet
                 % (code, domain, ip, rdns or "none", row["count"], row["why"], reporters, KNOWN_REL)
             )
     findings += volume_lines + malformed
+    findings += server_lines(server_red)
+    findings += ["dmarc.mail.unreadable: %s" % u for u in unreadable]
     known_lines = [
         "%s %s (ruled %s): %s from %s failed DMARC in %d message(s), expected"
         % (row["verdict"], name, row["ruled"], domain, ip, row["count"])
@@ -602,11 +806,13 @@ def judge(doc: dict, known: dict, resolve: Resolver, history: dict, today: datet
         if ok:
             marks.setdefault((user, mailbox), []).append(uid)
     return {
-        "rc": 1 if findings else (2 if unreadable else 0),
+        "rc": 1 if findings else 0,
         "findings": findings,
         "known": known_lines,
         "marks": marks,
         "counts": counts,
+        "server": server_tally,
+        "server_summary": server_summary(server_tally),
         "unreadable": unreadable,
     }
 
@@ -632,7 +838,7 @@ def run(
         return {"rc": 2, "lines": ["dmarc: rulings unreadable: %s" % exc]}
     doc, error = read_reports(known, runner, env)
     if doc is None:
-        return {"rc": 2, "lines": ["dmarc: %s" % error]}
+        return {"rc": 1, "lines": ["dmarc.mail.unreadable: %s" % error]}
     hpath = history_path(root)
     history, history_error = load_history(hpath)
     verdict = judge(doc, known, resolve, history, today)
@@ -656,14 +862,14 @@ def run(
         )
     ]
     lines += verdict["known"]
+    lines += verdict["server_summary"]
     lines += ["history: %s" % e for e in (history_error, save_error) if e]
-    lines += ["unreadable: %s" % u for u in verdict["unreadable"]]
     rc = verdict["rc"]
     if history_error or save_error:
         rc = worst_rc([rc, 2])
     if mark_error:
-        lines.append("unreadable: %s" % mark_error)
-        rc = worst_rc([rc, 2])
+        lines.append("dmarc.mail.unreadable: %s" % mark_error)
+        rc = worst_rc([rc, 1])
     lines += verdict["findings"]
     if rc == 0:
         lines.append("dmarc: green, no new failing source, ours and the ruled sources as expected")

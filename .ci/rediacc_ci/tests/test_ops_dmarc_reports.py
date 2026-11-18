@@ -704,14 +704,15 @@ def test_nothing_unread_marks_nothing_and_is_green(root):
     assert len(box.calls) == 1
 
 
-def test_an_unreadable_mailbox_is_unknown(root):
+def test_an_unreadable_mailbox_is_red(root):
     box = Container({}, box_errors={("muhammed@rediacc.io", "DMARC")})
     out = run(root, box)
-    assert out["rc"] == 2
+    assert out["rc"] == 1
+    assert "dmarc.mail.unreadable" in text(out)
     assert "Mailbox doesn't exist" in text(out)
 
 
-def test_a_failed_read_is_unknown_and_names_the_error(root):
+def test_a_failed_read_is_red_and_names_the_error(root):
     box = Container(
         {},
         fail_parse=oh.Result(
@@ -719,14 +720,15 @@ def test_a_failed_read_is_unknown_and_names_the_error(root):
         ),
     )
     out = run(root, box)
-    assert out["rc"] == 2
+    assert out["rc"] == 1
+    assert "dmarc.mail.unreadable" in text(out)
     assert "Connection refused" in text(out)
     assert len(box.calls) == 1
 
 
-def test_a_failed_mark_is_unknown_without_hiding_a_red(root):
+def test_a_failed_mark_is_red_without_hiding_a_red(root):
     out = run(root, Container(ALL_KNOWN, fail_mark=True))
-    assert out["rc"] == 2
+    assert out["rc"] == 1
     assert "marking 4 report(s) Seen failed (rc 75)" in text(out)
     boxes = {
         (OPERATOR_EMAIL, "DMARC"): [

@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-18T13:53:57.620Z",
+  "generatedAt": "2026-11-18T15:23:45.304Z",
   "legs": [
     {
       "index": 1,
@@ -495,6 +495,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_remote_load_sampler.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_root_grants.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_scrub_sentinel.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_server_reports.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_service_bindings_audit.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_units.py",
         "pytest:.ci/rediacc_ci/tests/test_path_trace.py",
@@ -507,6 +508,8 @@
         "pytest:.ci/rediacc_ci/tests/test_proxies_docker_prepull.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_ensure_nfpm.py",
         "pytest:.ci/rediacc_ci/tests/test_pytest_impact.py",
+        "pytest:.ci/rediacc_ci/tests/test_pytest_impact_reads.py",
+        "pytest:.ci/rediacc_ci/tests/test_pytest_impact_tree.py",
         "pytest:.ci/rediacc_ci/tests/test_pytest_phase_timing.py",
         "pytest:.ci/rediacc_ci/tests/test_pytest_slow_ratchet.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_aws_resolver_listing.py",
@@ -520,6 +523,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_lint_config_liveness.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_mutate_check.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_plan_implementation.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_plan_live_proof_needs.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_proxy_signal_teardown.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_record_paths_declared.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_release_state.py",
