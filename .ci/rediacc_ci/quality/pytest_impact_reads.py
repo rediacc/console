@@ -5,11 +5,12 @@ WHY A SEPARATE TRACE. path-trace.ts never traces check:ci-pytest as one gate (`N
 HOW, IN THREE PARTS.
 
   1. A pytest plugin (`-p rediacc_ci.quality.pytest_impact_reads`), inert unless
-     MARKER_ENV names a directory. When a module is collected and when an item
-     starts, it opens (creating) a marker file whose name is the quoted test
-     path. The marker is an ordinary `openat` in the trace, so the attribution
-     travels IN the syscall stream: no clock, no second channel to join.
-  2. `strace -f -qq -y --seccomp-bpf -e status=successful` writes to a FIFO this
+     MARKER_OPTION names a directory (an option, so xdist hands it to every
+     worker with the rest of the command line). When a module is collected and
+     when an item starts, it opens (creating) a marker file whose name is the
+     quoted test path. The marker is an ordinary `openat` in the trace, so the
+     attribution travels IN the syscall stream: no clock, no second channel.
+  2. `strace -f -qq -y --seccomp-bpf -e status=successful` writes to a pipe this
      module reads line by line (`Attributor.feed`), so nothing the size of the
      whole-suite log is ever stored. A process takes the attribution of the
      process that created it, at the moment it was created; a marker re-attributes
@@ -65,8 +66,7 @@ from rediacc_ci import pytest_impact as impact
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-MARKER_ENV = "PYTEST_IMPACT_READS_MARKERS"
-ROOT_ENV = "PYTEST_IMPACT_READS_ROOT"
+MARKER_OPTION = "--impact-reads-markers"
 UNATTRIBUTED = ""
 # The marker name for "no test file": pytest's own start-up, conftest loading, session teardown.
 _UNATTRIBUTED_MARK = "-"
@@ -93,10 +93,14 @@ def label_of_marker(name: str) -> str:
     return UNATTRIBUTED if name == _UNATTRIBUTED_MARK else urllib.parse.unquote(name)
 
 
+# Set by pytest_configure from MARKER_OPTION, in the controller and in every xdist worker; empty leaves the plugin inert.
+_MARKERS: list[str] = []
+
+
 def _mark(rel: str) -> None:
-    directory = os.environ.get(MARKER_ENV)
-    if not directory:
+    if not _MARKERS:
         return
+    directory = _MARKERS[0]
     # A marker that cannot be written leaves the previous attribution standing; trace_problem's coverage floor is what notices a plugin that marks nothing.
     with contextlib.suppress(OSError):
         os.close(
@@ -108,6 +112,21 @@ def _test_rel(nodeid: str) -> str:
     """The test file of a node id (`a/test_x.py::test_y[1]`), or "" for a node that is not one."""
     head = nodeid.split("::", 1)[0]
     return head if head.endswith(".py") else UNATTRIBUTED
+
+
+def pytest_addoption(parser) -> None:
+    parser.addoption(
+        MARKER_OPTION,
+        default=None,
+        help="directory the impact-reads markers are opened in (pytest_impact_reads --trace)",
+    )
+
+
+def pytest_configure(config) -> None:
+    _MARKERS.clear()
+    directory = config.getoption(MARKER_OPTION)
+    if directory:
+        _MARKERS.append(directory)
 
 
 def pytest_collectstart(collector) -> None:
@@ -457,16 +476,10 @@ def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attribut
     os.mkdir(markers)
     log = os.path.join(scratch, "pytest.log")
     att = Attributor(root=str(root), marker_dir=markers)
-    env = dict(os.environ)
-    env[MARKER_ENV] = markers
-    env[ROOT_ENV] = str(root)
-    env["PYTHONPATH"] = os.pathsep.join(
-        p for p in (str(root / ".ci"), os.environ.get("PYTHONPATH", "")) if p
-    )
+    # The environment is inherited unchanged: this module runs only as `python -m rediacc_ci...`, so whatever put `.ci` on its path puts it on pytest's, which `-p` needs before pyproject's `pythonpath` is applied.
     child = subprocess.Popen(
-        strace_argv(log, pytest_argv),
+        strace_argv(log, [*pytest_argv, MARKER_OPTION, markers]),
         cwd=root,
-        env=env,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,

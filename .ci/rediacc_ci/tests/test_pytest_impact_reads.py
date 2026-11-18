@@ -309,7 +309,7 @@ def test_strace_reads_only_successful_calls_through_a_pid_prefixed_stream():
 # --------------------------------------------------------------------------- the plugin, in a real pytest run
 
 
-def test_the_plugin_marks_each_collected_and_run_test_file(tmp_path):
+def _plugin_run(tmp_path, workers: list[str], with_option: bool = True) -> list[str]:
     proj = tmp_path / "proj"
     (proj / "tests").mkdir(parents=True)
     (proj / "pytest.ini").write_text("[pytest]\n", encoding="utf-8")
@@ -318,10 +318,10 @@ def test_the_plugin_marks_each_collected_and_run_test_file(tmp_path):
     markers = tmp_path / "m"
     markers.mkdir()
     env = dict(os.environ)
-    env[pr.MARKER_ENV] = str(markers)
     env["PYTHONPATH"] = os.pathsep.join(
         [str(pathlib.Path(pr.__file__).resolve().parents[2]), env.get("PYTHONPATH", "")]
     )
+    option = [pr.MARKER_OPTION, str(markers)] if with_option else []
     done = subprocess.run(
         [
             sys.executable,
@@ -330,10 +330,8 @@ def test_the_plugin_marks_each_collected_and_run_test_file(tmp_path):
             "-q",
             "-p",
             "rediacc_ci.quality.pytest_impact_reads",
-            "-p",
-            "no:xdist",
-            "-p",
-            "no:randomly",
+            *workers,
+            *option,
             "tests",
         ],
         cwd=proj,
@@ -344,16 +342,53 @@ def test_the_plugin_marks_each_collected_and_run_test_file(tmp_path):
         timeout=120,
     )
     assert done.returncode == 0, done.stdout + done.stderr
-    got = sorted(pr.label_of_marker(n) for n in os.listdir(markers))
+    return sorted(pr.label_of_marker(n) for n in os.listdir(markers))
+
+
+@pytest.mark.parametrize("workers", [["-p", "no:xdist"], ["-n", "2"]], ids=["serial", "xdist"])
+def test_the_plugin_marks_each_collected_and_run_test_file(tmp_path, workers):
+    """The xdist case is the traced run's own shape: the option has to reach the workers, which are the processes that collect and run."""
+    got = _plugin_run(tmp_path, workers)
     assert got == [pr.UNATTRIBUTED, "tests/test_a.py", "tests/test_b.py"], got
 
 
-def test_control_the_plugin_is_inert_without_its_environment(tmp_path, monkeypatch):
-    monkeypatch.delenv(pr.MARKER_ENV, raising=False)
-    monkeypatch.chdir(tmp_path)
-    pr.pytest_runtest_logstart(T1)
-    pr.pytest_sessionfinish()
-    assert os.listdir(tmp_path) == []
+def test_run_trace_hands_the_option_to_pytest_and_reads_markers_in_that_directory(
+    tmp_path, monkeypatch
+):
+    """The traced command and the Attributor must agree on ONE marker directory: an option pointing elsewhere, or none, leaves every read unattributed and the coverage floor refusing the trace."""
+    seen: dict = {}
+
+    class FakeChild:
+        pid = 0
+
+        def __init__(self, argv, **_k):
+            seen["argv"] = argv
+            log = argv[argv.index("-c") + 2]
+            pathlib.Path(log).write_text("1 passed\n", encoding="utf-8")
+            markers = argv[argv.index(pr.MARKER_OPTION) + 1]
+            self.stderr = [
+                '100 openat(AT_FDCWD</r>, "x", O_RDONLY) = 5<%s/%s>'
+                % (markers, pr.marker_name(T1)),
+                opened(100, "%s/.ci/policy/one.json" % tmp_path),
+            ]
+
+        def wait(self):
+            return 0
+
+        def poll(self):
+            return 0
+
+    monkeypatch.setattr(pr.shutil, "which", lambda _n: "/usr/bin/strace")
+    monkeypatch.setattr(pr.subprocess, "Popen", FakeChild)
+    rc, att, out = pr.run_trace(tmp_path, ["pytest", "-q"])
+    assert rc == 0
+    assert out == "1 passed\n"
+    assert pr.MARKER_OPTION in seen["argv"], seen["argv"]
+    assert att.reads == {T1: {".ci/policy/one.json"}}, att.reads
+
+
+def test_control_the_plugin_is_inert_without_its_option(tmp_path):
+    assert _plugin_run(tmp_path, ["-p", "no:xdist"], with_option=False) == []
 
 
 def test_the_trace_file_is_json_the_derivation_reads():
