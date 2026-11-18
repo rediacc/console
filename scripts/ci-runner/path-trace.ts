@@ -379,7 +379,10 @@ export function readRecordGlobs(root: string): RecordGlob[] {
 /**
  * The record globs a traced set's tokens would cite once manifest.ts carries them, read the way check:ci-record-paths reads a gate's code: a token naming a record's literal prefix or a path below it (the cite tier), or a glob reaching one of its probes (the glob tier), unless an excepted glob covers it. A cited record makes every gate that reads the manifest an undeclared reader of it, so a record-only commit could no longer advance a receipt (review 22efb11e).
  */
-export function recordCitations(tokens: readonly string[], records: readonly RecordGlob[]): string[] {
+export function recordCitations(
+  tokens: readonly string[],
+  records: readonly RecordGlob[]
+): string[] {
   const hit = new Set<string>();
   for (const rec of records)
     for (const t of tokens) {
@@ -2919,7 +2922,10 @@ async function selftest(): Promise<number> {
       noPolThrew = true;
     }
     fs.rmSync(noPol, { recursive: true, force: true });
-    check(noPolThrew, 'a root with no record-paths.json is refused, not read as an empty record set (review 502ce0ee.2)');
+    check(
+      noPolThrew,
+      'a root with no record-paths.json is refused, not read as an empty record set (review 502ce0ee.2)'
+    );
     const pyRun = await traceCommand('PYTHONPATH=.ci python3 -m tool', pyView.root);
     const pyV = verdictOf(attribute(pyRun.access, pyView), pyView, pyRun.exit);
     check(
@@ -2991,7 +2997,9 @@ async function selftest(): Promise<number> {
       `indexPids survive rawOf, JSON and accessOfRaw, and the refolded verdict is the live one (reader pid ${readerPid}: ${liveV.kind})`
     );
   }
-  const ownRaw = JSON.parse(JSON.stringify(rawOf(parseStraceLog(pidLog(7), '/r'), view))) as RawAccess;
+  const ownRaw = JSON.parse(
+    JSON.stringify(rawOf(parseStraceLog(pidLog(7), '/r'), view))
+  ) as RawAccess;
   delete ownRaw.indexPids;
   const legacyBack = accessOfRaw(ownRaw);
   const legacyV = fold(attribute(legacyBack.access, view), view);

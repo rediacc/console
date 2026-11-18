@@ -328,16 +328,18 @@ function selftest(): number {
   );
 
   // THE INERT-MODULE CONTROLS (review 434f1d3b.1). The ledger quotes `git ls-files` as evidence; the second control is the one that keeps the exemption from becoming a hole.
-  const ledgerRow = "export const L = {\n  a: { reason: 'enumerates (git ls-files -z; <gitdir>/index)' },\n};\n";
+  const ledgerRow =
+    "export const L = {\n  a: { reason: 'enumerates (git ls-files -z; <gitdir>/index)' },\n};\n";
   check(
     'a TypeScript data module with no import quotes git ls-files as data, not a scan',
     findings(() => ledgerRow, ['x/trace-ledger.ts']).length === 0
   );
   check(
     'CONTROL: the same text in a module that imports child_process is a finding',
-    findings(() => `import { execSync } from 'node:child_process';\n${ledgerRow}`, [
-      'x/trace-ledger.ts',
-    ]).length === 1
+    findings(
+      () => `import { execSync } from 'node:child_process';\n${ledgerRow}`,
+      ['x/trace-ledger.ts']
+    ).length === 1
   );
   check(
     'CONTROL: a dynamic import or a require makes it executable too',

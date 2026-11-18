@@ -2055,7 +2055,8 @@ export const jsonInventoryProvider: Provider = {
     scope: () => true,
     moves: (c) =>
       (isJsonMember(c.path) && membershipChanged(c)) ||
-      (isNamerCandidate(c.path) && namerTokens(c.path, c.before()) !== namerTokens(c.path, c.after())),
+      (isNamerCandidate(c.path) &&
+        namerTokens(c.path, c.before()) !== namerTokens(c.path, c.after())),
     // A member can arrive or leave; a namer matters only when one of its tokens names a member today, since nearly every code file carries some `.json` token and an add would count them all.
     could: (rel, read, root) => {
       if (isJsonMember(rel)) return true;
