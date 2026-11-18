@@ -2052,16 +2052,31 @@ def report_citations(dead, metas, start, entries=None, store=None):
     return out
 
 
+_SIG_INDEX = {}
+
+
+def _sig_index(entries, store):
+    """{box sig: (report id, state, owed halves)} of the newest report naming each sig, built once per (store, index length, last id) and reused within the process. A Stop hook run calls item_box_citations once per item it cites; without the index each call re-read and re-parsed every captured report body (measured 2026-11-18: 6 calls, 35,220 report reads, 25,992 parse_tick calls, 35 s of a 90 s stop on a weeks-old session)."""
+    key = (str(store), len(entries), str(entries[-1].get("id")) if entries else "")
+    hit = _SIG_INDEX.get(key)
+    if hit is not None:
+        return hit
+    found = {}
+    for entry in entries:
+        for sig, state, halves in _report_boxes(store, entry) or []:
+            found[sig] = (entry["id"], state, halves)
+    _SIG_INDEX.clear()
+    _SIG_INDEX[key] = found
+    return found
+
+
 def item_box_citations(text, entries, store):
     """["report <rid> names box <sig> (<state>, owed <halves>)"] for each box sig `text` names that a captured report's TICK line names (the newest report per sig)."""
     named = set(re.findall(r"(?<![0-9a-z])([0-9a-f]{8})(?![0-9a-z])", text or ""))
     if not named:
         return []
-    found = {}
-    for entry in entries:
-        for sig, state, halves in _report_boxes(store, entry) or []:
-            if sig in named:
-                found[sig] = (entry["id"], state, halves)
+    index = _sig_index(entries, store)
+    found = {sig: index[sig] for sig in named if sig in index}
     return [
         "report %s names box %s (%s, owed %s)" % (rid, sig, state, ",".join(halves) or "nothing")
         for sig, (rid, state, halves) in sorted(found.items())
