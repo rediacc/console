@@ -380,3 +380,8 @@ def test_count_line():
         "STORE STATUS: 2 open (1 moved, 0 live, 0 waiting, 0 queued, 0 quiet, 1 stale)"
     )
     assert line.endswith("worklist.py --status %s" % ME)
+
+
+def test_the_module_loads_from_the_stop_hook_directory() -> None:
+    """The suite resolves `.claude/hooks/stop/wl_storestatus.py` by name, so the module cannot be renamed or moved without this reading red."""
+    assert SS.__file__.endswith(".claude/hooks/stop/wl_storestatus.py")
