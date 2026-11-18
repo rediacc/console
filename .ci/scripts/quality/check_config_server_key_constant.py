@@ -105,14 +105,17 @@ def _ls_files(repo: str) -> list[str]:
 
 def _submodules(repo: str) -> list[str]:
     proc = subprocess.run(
-        ["git", "-C", repo, "ls-files", "-s", "-z"], capture_output=True, text=True, check=False
+        ["git", "-C", repo, "ls-files", "-z", "--format=%(objectmode) %(path)"],
+        capture_output=True,
+        text=True,
+        check=False,
     )
     if proc.returncode != 0:
-        raise CannotRunError("git ls-files -s failed in %s: %s" % (repo, proc.stderr.strip()))
+        raise CannotRunError("git ls-files failed in %s: %s" % (repo, proc.stderr.strip()))
     out = []
     for entry in proc.stdout.split("\0"):
-        meta, _, path = entry.partition("\t")
-        if meta.startswith("160000 "):
+        mode, _, path = entry.partition(" ")
+        if mode == "160000" and path:
             out.append(path)
     return out
 

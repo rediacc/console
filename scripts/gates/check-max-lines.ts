@@ -72,6 +72,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { globSync } from 'glob';
+import { minimatch } from 'minimatch';
 import { parseSync } from 'oxc-parser';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { exitWithMainIfEntryPoint } from '../lib/entry-point.js';
@@ -206,6 +207,11 @@ function toPosix(p: string): string {
   return p.split(path.sep).join('/');
 }
 
+/** Whether `relPath` (repo-relative, POSIX) matches an exempt pattern. A pure match: no disk read, so an untracked build file cannot change the answer. */
+export function isMaxLinesExempt(relPath: string): boolean {
+  return MAX_LINES_EXEMPT.some((pat) => minimatch(relPath, pat, { dot: false }));
+}
+
 /**
  * Every file this gate's scope reaches, relative to the repo root, POSIX-separated, deduplicated and sorted -- the file-discovery half of scope parity with eslint's `max-lines` (see the file banner).
  */
@@ -228,13 +234,10 @@ export function scanScope(): string[] {
       found.add(toPosix(f));
     }
   }
-  const exempt = new Set<string>();
-  for (const pat of MAX_LINES_EXEMPT) {
-    for (const f of globSync(pat, { cwd: REPO_ROOT, nodir: true, dot: false })) {
-      exempt.add(toPosix(f));
-    }
-  }
-  return [...found].filter((f) => !exempt.has(f)).sort((a, b) => Number(a > b) - Number(a < b));
+  // Exemption is a MATCH over the files already found, never a second walk: `**/*.generated.ts` globbed from REPO_ROOT descended into every node_modules, dist and private/bin on the disk, which made this gate read as a whole-tree reader of untracked build output. Every exempt pattern can only remove a file that `found` holds, so the verdict is the same.
+  return [...found]
+    .filter((f) => !isMaxLinesExempt(f))
+    .sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 /** One file's finding, or `undefined` if it is within budget. */
@@ -339,6 +342,13 @@ function selftest(): boolean {
   check(
     'root scripts/*.ts is out of scope entirely',
     !scope.has('scripts/gates/check-max-lines.ts')
+  );
+  check(
+    'exemption is a pure match: a path under an untracked build directory is judged by its name alone, with no disk read',
+    isMaxLinesExempt('node_modules/planted-f3/x.generated.ts') &&
+      isMaxLinesExempt('scripts/gates/anything.ts') &&
+      !isMaxLinesExempt('packages/cli/src/services/account/license.ts') &&
+      !isMaxLinesExempt('node_modules/planted-f3/x.ts')
   );
   check(
     'private/account sources are out of scope for max-lines',
