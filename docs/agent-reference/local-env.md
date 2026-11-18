@@ -265,6 +265,12 @@ No human reads the DMARC aggregate and TLS-RPT reports that land in the DMARC fo
 | `dmarc.ruled.volume` | a ruled source sends more than `volume.max_per_day` messages on one report day, or `volume.ratio` times its trailing daily average (history in `.ci/cache/ops-health/dmarc-history.json`) |
 | `dmarc.tlsrpt.failure` | a TLS-RPT policy reports failed sessions |
 | `dmarc.report.malformed` | a report attachment does not parse; the line names the attachment and the reason |
+| `dmarc.mail.unreadable` | the mail server could not be read (a refused eu-bench login, a mailbox error, a failed Seen marking); the line names the cause, so a stale login turns red the same day instead of `unknown` |
+| `server-reports.ses` | an SES event in Server-Reports is a Complaint, a Permanent bounce, a ContentRejected bounce, or a delay or bounce to a real domain; the line names the event, the recipient domain (never the address) and the count |
+| `server-reports.postfix` | a daily Postfix summary exceeds `server_reports.postfix` (200 rejected, 50 deferred, 5 bounced) |
+| `server-reports.unknown` | Server-Reports mail from an unknown sender or of an unknown shape |
+
+The same run judges the `Server-Reports` folder (`kind: server-reports` in `.ci/config/dmarc-known-sources.json`): SES event notifications delivered by SNS email (the bare SES event JSON, folded at 998 characters), daily Postfix summaries and SNS subscription confirmations. An SES delay or transient bounce whose every recipient is at a reserved test domain (`server_reports.reserved_domains` and `reserved_tlds`) is benign; so are confirmations and Postfix summaries under the limits. Benign mail is marked `\Seen`; red mail stays unread and is listed once, grouped by event and domain.
 
 A ruled source failing DMARC is expected and stays green. Reports whose every finding is green are marked `\Seen` with doveadm (never deleted or moved); a report holding a red, and every message that is not a report, stays unread, so the red stands until a ruling or an acknowledgement covers it. The verdict is local only: the refresh never posts `local-dmarc` to the alerter, and the check sends no mail and opens no issue (operator ruling 2026-11-16). The Stop hook's ops-health red is the signal.
 
