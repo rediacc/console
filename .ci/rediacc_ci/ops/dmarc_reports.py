@@ -541,38 +541,82 @@ def ses_red_keys(msg: dict, server: dict) -> list:
     return [(event, kind, d) for d in (named or domains)]
 
 
-def _ledger_ids(text: str) -> set:
-    """Every message id hash that the rows of a ledger text cover; an unreadable line covers nothing."""
+def _ledger_ids(text: str, where: str) -> tuple[set, list]:
+    """(every message id hash the rows of a ledger text cover, one red line per unparsable line naming `where` and the line number); an unparsable line covers nothing."""
     found: set = set()
-    for line in text.splitlines():
+    problems: list = []
+    for number, line in enumerate(text.splitlines(), 1):
+        if not line.strip():
+            continue
         try:
             row = json.loads(line)
         except ValueError:
+            problems.append(
+                "mail-events.unreadable: %s line %d is not valid JSON" % (where, number)
+            )
             continue
         if isinstance(row, dict) and isinstance(row.get("ids"), list):
             found.update(str(i) for i in row["ids"])
-    return found
+    return found, problems
 
 
-def load_ledger(root: pathlib.Path) -> dict:
-    """{"committed": ids at HEAD, "working": ids in the working-tree file plus the committed ones}; a missing file is empty on both sides."""
-    committed: set = set()
+def _decode_problem(where: str, exc: UnicodeDecodeError) -> str:
+    return "mail-events.unreadable: %s is not UTF-8 (byte offset %d)" % (where, exc.start)
+
+
+def _committed_ledger(root: pathlib.Path) -> tuple[set, list]:
+    """The ids of the ledger as committed at HEAD. A path absent from HEAD, or a root with no repository, is empty; any other git failure or an undecodable file is a red line."""
+    where = "HEAD:" + LEDGER_REL
+    if not (root / ".git").exists():
+        return set(), []
     try:
-        shown = subprocess.run(
-            ["git", "show", "HEAD:" + LEDGER_REL],
+        listed = subprocess.run(
+            ["git", "ls-tree", "HEAD", "--", LEDGER_REL],
             cwd=root,
             capture_output=True,
-            text=True,
             timeout=30,
             check=False,
         )
-        if shown.returncode == 0:
-            committed = _ledger_ids(shown.stdout)
-    except (OSError, subprocess.SubprocessError):
-        committed = set()
+        if listed.returncode != 0:
+            return set(), [
+                "mail-events.unreadable: %s: git ls-tree rc=%d: %s"
+                % (where, listed.returncode, listed.stderr.decode("utf-8", "replace").strip())
+            ]
+        if not listed.stdout.strip():
+            return set(), []
+        shown = subprocess.run(
+            ["git", "show", where],
+            cwd=root,
+            capture_output=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return set(), ["mail-events.unreadable: %s: git failed: %s" % (where, exc)]
+    if shown.returncode != 0:
+        return set(), [
+            "mail-events.unreadable: %s: git show rc=%d: %s"
+            % (where, shown.returncode, shown.stderr.decode("utf-8", "replace").strip())
+        ]
+    try:
+        text = shown.stdout.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        return set(), [_decode_problem(where, exc)]
+    return _ledger_ids(text, where)
+
+
+def load_ledger(root: pathlib.Path) -> dict:
+    """{"committed": ids at HEAD, "working": ids in the working-tree file plus the committed ones, "problems": red lines for whatever could not be read}; a missing file is empty on both sides."""
+    committed, problems = _committed_ledger(root)
     path = root / LEDGER_REL
-    working = _ledger_ids(path.read_text(encoding="utf-8")) if path.is_file() else set()
-    return {"committed": committed, "working": working | committed}
+    working: set = set()
+    if path.is_file():
+        try:
+            working, found = _ledger_ids(path.read_text(encoding="utf-8"), LEDGER_REL)
+        except UnicodeDecodeError as exc:
+            found = [_decode_problem(LEDGER_REL, exc)]
+        problems = problems + found
+    return {"committed": committed, "working": working | committed, "problems": problems}
 
 
 def ledger_rows(doc: dict, server: dict, known_ids: set, now: datetime.datetime) -> list:
@@ -623,8 +667,14 @@ def log_events(
     doc, error = read_reports(known, runner, env)
     if doc is None:
         return {"rc": 1, "lines": ["dmarc.mail.unreadable: %s" % error]}
-    known_ids = load_ledger(root)["working"]
-    new = ledger_rows(doc, known["server"], known_ids, now)
+    ledger = load_ledger(root)
+    if ledger["problems"]:
+        return {
+            "rc": 1,
+            "lines": ledger["problems"]
+            + ["mail-events: nothing appended until the ledger reads cleanly"],
+        }
+    new = ledger_rows(doc, known["server"], ledger["working"], now)
     if not new:
         return {"rc": 0, "lines": ["mail-events: no red Server-Reports message outside the ledger"]}
     path = root / LEDGER_REL
@@ -986,7 +1036,8 @@ def run(
         return {"rc": 1, "lines": ["dmarc.mail.unreadable: %s" % error]}
     hpath = history_path(root)
     history, history_error = load_history(hpath)
-    verdict = judge(doc, known, resolve, history, today, load_ledger(root))
+    ledger = load_ledger(root)
+    verdict = judge(doc, known, resolve, history, today, ledger)
     save_error = save_history(hpath, history, today)
     # A history that could not be written leaves the reports unread, so the next run records their counts; a history that could not be read is unknown, not green.
     marks = {} if save_error else verdict["marks"]
@@ -1014,6 +1065,9 @@ def run(
         rc = worst_rc([rc, 2])
     if mark_error:
         lines.append("dmarc.mail.unreadable: %s" % mark_error)
+        rc = worst_rc([rc, 1])
+    if ledger["problems"]:
+        lines += ledger["problems"]
         rc = worst_rc([rc, 1])
     lines += verdict["findings"]
     if rc == 0:

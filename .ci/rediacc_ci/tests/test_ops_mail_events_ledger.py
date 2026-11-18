@@ -132,7 +132,7 @@ def test_a_missing_ledger_is_empty_and_the_red_stays_red(root):
     assert out["rc"] == 1
     assert box.marked == []
     assert "to live.com, 2 message(s)" in "\n".join(out["lines"])
-    assert dr.load_ledger(root) == {"committed": set(), "working": set()}
+    assert dr.load_ledger(root) == {"committed": set(), "working": set(), "problems": []}
 
 
 def test_a_red_covered_by_a_head_committed_row_is_marked_seen(root):
@@ -193,3 +193,58 @@ def test_the_parser_falls_back_when_the_headers_are_missing():
     bare = dp.classify_server(sns_mail(delay("live.com")))
     assert len(bare["id"]) == 16
     assert bare["date"] == ""
+
+
+def test_a_git_failure_reading_head_is_red_not_an_empty_ledger(root):
+    """Control: a repository without the ledger path reads empty with no problem; a broken HEAD must name the git error."""
+    assert dr.load_ledger(root)["problems"] == []
+    (root / ".git" / "HEAD").write_text("garbage\n")
+    ledger = dr.load_ledger(root)
+    assert ledger["committed"] == set()
+    assert any("git ls-tree" in p and "HEAD:" + LEDGER in p for p in ledger["problems"])
+    out = run(root, Container(rows(*MAILS)))
+    assert out["rc"] == 1
+    assert any(line.startswith("mail-events.unreadable:") for line in out["lines"])
+
+
+def test_a_corrupt_ledger_line_is_red_and_the_parsable_rows_still_count(root):
+    """Control: with the garbage line removed the same ledger reads clean and clears the reds."""
+    log(root, Container(rows(*MAILS)))
+    path = root / LEDGER
+    good = path.read_text()
+    bad = good.count("\n") + 1
+    path.write_text(good + "{not json\n")
+    commit_ledger(root)
+    ledger = dr.load_ledger(root)
+    assert ledger["committed"]
+    assert ledger["problems"] == [
+        "mail-events.unreadable: HEAD:%s line %d is not valid JSON" % (LEDGER, bad),
+        "mail-events.unreadable: %s line %d is not valid JSON" % (LEDGER, bad),
+    ]
+    box = Container(rows(*MAILS))
+    out = run(root, box)
+    assert out["rc"] == 1
+    assert box.marked == ["1", "2", "3", "4"]
+    assert any("line %d is not valid JSON" % bad in x for x in out["lines"])
+    path.write_text(good)
+    commit_ledger(root)
+    assert dr.load_ledger(root)["problems"] == []
+    assert run(root, Container(rows(*MAILS)))["rc"] == 0
+
+
+def test_a_non_utf8_ledger_is_a_red_line_with_the_offset_not_a_traceback(root):
+    """Control: the same path with valid UTF-8 reads clean."""
+    path = root / LEDGER
+    path.parent.mkdir(parents=True)
+    path.write_bytes(b'{"ids": []}\n')
+    assert dr.load_ledger(root)["problems"] == []
+    path.write_bytes(b'{"ids": []}\n\xff\xfe\n')
+    assert dr.load_ledger(root)["problems"] == [
+        "mail-events.unreadable: %s is not UTF-8 (byte offset 12)" % LEDGER
+    ]
+    commit_ledger(root)
+    both = dr.load_ledger(root)["problems"]
+    assert "mail-events.unreadable: HEAD:%s is not UTF-8 (byte offset 12)" % LEDGER in both
+    out = run(root, Container(rows(*MAILS)))
+    assert out["rc"] == 1
+    assert any("not UTF-8" in line for line in out["lines"])
