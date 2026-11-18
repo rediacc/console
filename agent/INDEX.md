@@ -579,7 +579,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-production-key-only.md` | approved | 349 | 3 | 14 | 51686 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
 | `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 414 | 4 | 27 | 69712 |
-| `agent/plans/PLAN-push-decoupling.md` | approved | 237 | 23 | 0 | 30667 |
+| `agent/plans/PLAN-push-decoupling.md` | approved | 237 | 23 | 0 | 30879 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
 | `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3027 |
 | `agent/plans/PLAN-rediaccfile-unprivileged.md` | executing | 269 | 5 | 18 | 43413 |

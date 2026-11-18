@@ -30,17 +30,17 @@ The cause is one coupling stated three ways. A receipt is tied to whatever HEAD 
 
 **D1.2 Automatic advance.** When HEAD moved during a run, or `--commit` named an ancestor, the runner follows the lane with the pass `planAdvance` already plans (scripts/ci-runner/run.ts:4853, called at :5403): record-only movement runs only the record readers and appends an `advances` step, and any other movement carries every gate whose input hash is unchanged and runs the rest. `worklist.py --review-commit` (.claude/hooks/stop/worklist.py:3711) starts the records-only advance itself after its commit, and reports the advanced tree or the refusal.
 
-**D1.3 The Stop hook reads trees.** `green_receipt_on_unpushed_head` (.claude/hooks/stop/wl_checks.py:2751-2790) compares `receipt.head` with HEAD's commit sha, so a record-only commit after a green run reads as no receipt. It compares HEAD's tree with the receipt's `headTree` and with the last tree of its `advances` chain instead, reading the archive copy first like the guard. The RECEIPT IN FLIGHT hold (`JUDGE_RECEIPT_IN_FLIGHT`, .claude/hooks/stop/worklist_messages.py:3360; `RECEIPT_ORDERS` and `sanitize_next_action`, .claude/hooks/stop/wl_judge.py:1453-1519; the landing hold at wl_checks.py:2860) no longer fires for ci:quick, because the clone judges a pinned tree and D1.2 brings the receipt forward. It stays for vm:check until R5 has landed and R7 relaxes it for a pinned run.
+**D1.3 The Stop hook reads trees.** `green_receipt_on_unpushed_head` (.claude/hooks/stop/wl_checks.py:2751-2790) compares `receipt.head` with HEAD's commit sha, so a record-only commit after a green run reads as no receipt. It compares HEAD's tree with the receipt's `headTree` and with the last tree of its `advances` chain instead, reading the archive copy first like the guard. The RECEIPT IN FLIGHT hold (`JUDGE_RECEIPT_IN_FLIGHT`, .claude/hooks/stop/worklist_messages.py:3360; `RECEIPT_ORDERS` and `sanitize_next_action`, .claude/hooks/stop/wl_judge.py:1453-1519; the landing hold at .claude/hooks/stop/wl_checks.py:2860) no longer fires for ci:quick, because the clone judges a pinned tree and D1.2 brings the receipt forward. It stays for vm:check until R5 has landed and R7 relaxes it for a pinned run.
 
 **D1.4 vm:check and the backup drill from a pinned clone.** vm:check refuses a lease (`lease_refusal`, .ci/rediacc_ci/drills/vm_check.py:4487-4498) because a run restarts the shared dev gateway and rebuilds the CLI from the live tree on each rdc call. `--commit <sha>` runs it from the kept clone at that commit, with the clone's own `bin/renet` build, its own CLI build and its own gateway record (port and `.account-server` state under the clone), and files the receipt under the pinned tree. The lease refusal stays. `record_drill` (.ci/rediacc_ci/drills/backup_check_trigger.py:381-384) reads `HEAD^{tree}` of the checkout it is given, so the backup drill gains the same `--commit` entry and records the pinned tree.
 
-**D1.5 One fleet lock.** Only vm:check takes `rediacc-vm-check.lock` today (`LOCK_NAME`, vm_check.py:98; `lock_path` and `Lock`, :1300-1345). The e2e-local setup resets the VMs with no lock (`opsManager.resetVMs()`, packages/e2e-tests/src/base/bridge-global-setup.ts:377-400, VMs .1, .11 and .12), a hand-run drill uploads renet to .11 with none, and `./rdc.sh ops up|down` takes none. A new module `.ci/rediacc_ci/core/resource_lock.py` holds one flock per named resource in the directory `lock_path` already picks, with a payload of pid, session, purpose and start time, a bounded wait that prints the holder, and a `python3 -m rediacc_ci.core.resource_lock run --resource <name> -- <argv>` wrapper for callers that are not Python. The resource `fleet` keeps the file name `rediacc-vm-check.lock`, so `wl_checks.vm_check_running` (wl_checks.py:2671) keeps reading it. The `rdc.sh` wrapper takes it for `ops up|down`; the shipped CLI is not changed.
+**D1.5 One fleet lock.** Only vm:check takes `rediacc-vm-check.lock` today (`LOCK_NAME`, .ci/rediacc_ci/drills/vm_check.py:98; `lock_path` and `Lock`, :1300-1345). The e2e-local setup resets the VMs with no lock (`opsManager.resetVMs()`, packages/e2e-tests/src/base/bridge-global-setup.ts:377-400, VMs .1, .11 and .12), a hand-run drill uploads renet to .11 with none, and `./rdc.sh ops up|down` takes none. A new module `.ci/rediacc_ci/core/resource_lock.py` holds one flock per named resource in the directory `lock_path` already picks, with a payload of pid, session, purpose and start time, a bounded wait that prints the holder, and a `python3 -m rediacc_ci.core.resource_lock run --resource <name> -- <argv>` wrapper for callers that are not Python. The resource `fleet` keeps the file name `rediacc-vm-check.lock`, so `wl_checks.vm_check_running` (.claude/hooks/stop/wl_checks.py:2671) keeps reading it. The `rdc.sh` wrapper takes it for `ops up|down`; the shipped CLI is not changed.
 
 **D1.6 One bench lock per region.** `deploy_bench.py`, `deploy_proxy.py --target bench`, `reset_bench.py` and the enterprise-proof runner (`.ci/rediacc_ci/enterprise/proof.py`) take no lock today (no `flock` in any of the four). Each takes the resource `bench-<region>` for the region it acts on, so a reset cannot land under a deploy or a proof.
 
-**D1.7 Drill identities.** `drill-license-%d@rediacc.io` and `drill-transfer-%d@rediacc.io` take `int(time.time())` (.ci/rediacc_ci/drills/license.py:215, transfer.py:43), so two runs in one second share a user. `EMAIL = "drill-universe@rediacc.io"` is fixed (universe.py:23), so two concurrent universe drills share one. Each takes a per-run token (seconds plus pid plus four random hex) from one helper.
+**D1.7 Drill identities.** `drill-license-%d@rediacc.io` and `drill-transfer-%d@rediacc.io` take `int(time.time())` (.ci/rediacc_ci/drills/license.py:215, .ci/rediacc_ci/drills/transfer.py:43), so two runs in one second share a user. `EMAIL = "drill-universe@rediacc.io"` is fixed (.ci/rediacc_ci/drills/universe.py:23), so two concurrent universe drills share one. Each takes a per-run token (seconds plus pid plus four random hex) from one helper.
 
-**D1.8 `release:local --commit <sha>`.** `base_context` reads `HEAD`, `HEAD^{tree}` and `HEAD:private/account` of the checkout (.ci/rediacc_ci/release/local.py:1210-1216), and the gates judge that head (`ci_quick_refusal`, local_gates.py:118; `vm_check_refusal`, :364-385; `origin_main_refusal` and `live_ancestor`, :496-533). With `--commit <sha>` the context and every gate take the named commit, which must be an ancestor of the branch tip, and the release clone under `.ci/cache/release/<sha>` is built from it.
+**D1.8 `release:local --commit <sha>`.** `base_context` reads `HEAD`, `HEAD^{tree}` and `HEAD:private/account` of the checkout (.ci/rediacc_ci/release/local.py:1210-1216), and the gates judge that head (`ci_quick_refusal`, .ci/rediacc_ci/release/local_gates.py:118; `vm_check_refusal`, :364-385; `origin_main_refusal` and `live_ancestor`, :496-533). With `--commit <sha>` the context and every gate take the named commit, which must be an ancestor of the branch tip, and the release clone under `.ci/cache/release/<sha>` is built from it.
 
 ## Design 3: the `Needs:` box tag
 
@@ -76,7 +76,7 @@ The cause is one coupling stated three ways. A receipt is tied to whatever HEAD 
 The boxes for this remedy already exist and are not repeated here:
 
 - PLAN-ciquick-cpu.md W2.5 and W2.6 take the whole-tree count from 113 to 80 or fewer.
-- PLAN-ciquick-cpu.md W3.2 and W3.3 make the declared sets honest and wire check:ci-gate-paths-honest.
+- PLAN-ciquick-cpu.md W3.2 and W3.3 make the declared sets honest and wire the planned gate-paths-honest gate (PLAN-ciquick-cpu W3.3).
 - PLAN-ciquick-cpu.md W4.1, W4.2 and W4.3 select pytest by impact, which is what moves the 1272 s wall.
 - PLAN-vmcheck-incremental.md V3 proves the per-leg rerun of vm:check on the fleet.
 
@@ -104,7 +104,7 @@ What they lack is the design of the W2.2 remainder, in three waves.
 
 A step that misses its count by more than 5 names the gates that stayed and why; no rule is loosened to reach a number.
 
-**Wave 3.** PLAN-ciquick-cpu.md W3.3, check:ci-gate-paths-honest.
+**Wave 3.** PLAN-ciquick-cpu.md W3.3, the planned gate-paths-honest gate (PLAN-ciquick-cpu W3.3).
 
 ## Boxes
 
@@ -196,7 +196,7 @@ Order: remedy 1 with the locks, then remedy 3, then remedy 4.
     Depends on: N1.
     Needs: none
     Accept: `npm run check:ci-plan-live-proof`, `npm run check:ci-plan-boxes` and `npm run check:ci-plan-record` exit 0; `git diff` of the ten plan files shows only added indented lines; a sweep with the four phrases added prints every open box that names one and has no tag, and that list is empty.
-- [ ] N4 [writer] The two consumers document and route by `Needs:`, and the stale advisory sentence of plan-records.md:168 is corrected (D3.5)
+- [ ] N4 [writer] The two consumers document and route by `Needs:`, and the stale advisory sentence of docs/agent-reference/plan-records.md:168 is corrected (D3.5)
     Owns: .claude/commands/writers-now.md, docs/agent-reference/plan-records.md
     Depends on: N1.
     Needs: none
