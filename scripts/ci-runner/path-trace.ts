@@ -33,6 +33,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { isEntryPoint } from '../lib/entry-point.js';
+import { policyPath } from '../lib/policy-paths.js';
 import {
   CARRY_EXEMPT_REL,
   exemptIdsOf,
@@ -339,6 +340,52 @@ export interface RepoView {
   gitlinks: string[];
   /** Absolute git directories (the worktree's own and the common one); any access below them is a git read. */
   gitDirs: string[];
+  /** The record set (record-paths.json) a traced set may not name; absent in a hand-built view, which then names none. */
+  records?: RecordGlob[];
+}
+
+/** One record of record-paths.json as check:ci-record-paths cites it: the literal prefix of its glob, its probe paths, its excepted globs. */
+export interface RecordGlob {
+  glob: string;
+  prefix: string;
+  probes: string[];
+  except: string[];
+}
+
+/** check_record_paths.py literal_prefix: the directory before the first wildcard, or a wildcard-free glob whole. */
+export function recordPrefix(glob: string): string {
+  const head = glob.split(/[*?[{]/, 1)[0];
+  if (head === glob) return glob;
+  return head.includes('/') ? head.slice(0, head.lastIndexOf('/')) : head;
+}
+
+export function readRecordGlobs(root: string): RecordGlob[] {
+  const p = policyPath('record-paths.json', root);
+  if (!fs.existsSync(p)) return [];
+  const doc = JSON.parse(fs.readFileSync(p, 'utf8')) as {
+    records: Array<{ glob: string; probes?: string[]; except?: string[] }>;
+  };
+  return doc.records.map((r) => ({
+    glob: r.glob,
+    prefix: recordPrefix(r.glob),
+    probes: r.probes ?? [],
+    except: r.except ?? [],
+  }));
+}
+
+/**
+ * The record globs a traced set's tokens would cite once manifest.ts carries them, read the way check:ci-record-paths reads a gate's code: a token naming a record's literal prefix or a path below it (the cite tier), or a glob reaching one of its probes (the glob tier), unless an excepted glob covers it. A cited record makes every gate that reads the manifest an undeclared reader of it, so a record-only commit could no longer advance a receipt (review 22efb11e).
+ */
+export function recordCitations(tokens: readonly string[], records: readonly RecordGlob[]): string[] {
+  const hit = new Set<string>();
+  for (const rec of records)
+    for (const t of tokens) {
+      if (rec.except.some((x) => matchGlob(x, t))) continue;
+      const cites = t === rec.prefix || t.startsWith(`${rec.prefix}/`);
+      const reaches = t.includes('*') && rec.probes.some((p) => matchGlob(t, p));
+      if (cites || reaches) hit.add(rec.glob);
+    }
+  return [...hit].sort(byteOrder);
 }
 
 export function repoView(root: string): RepoView {
@@ -362,7 +409,7 @@ export function repoView(root: string): RepoView {
     const r = spawnSync('git', ['rev-parse', flag], { cwd: root, encoding: 'utf8' });
     if (r.status === 0 && r.stdout.trim() !== '') gitDirs.add(path.resolve(root, r.stdout.trim()));
   }
-  return { root, files, gitlinks, gitDirs: [...gitDirs] };
+  return { root, files, gitlinks, gitDirs: [...gitDirs], records: readRecordGlobs(root) };
 }
 
 export interface Attribution {
@@ -844,20 +891,23 @@ export function uncoveredBuildOutput(
   return out;
 }
 
-/** Git evidence as the committed ledger shows it: the `-C <checkout>` pair dropped (a lease path names a tree that is collected later) and the lister written `git: ls-files`, so a reason is data and no enumeration check reads the ledger as a scan. */
-export function evidenceText(s: string): string {
-  return s
+/** Git evidence as the committed ledger shows it: the `-C <checkout>` pair dropped and a git directory written `<gitdir>`, since a lease path names a tree that is collected later. The command itself stays as git ran it (`git ls-files`, review 434f1d3b.1): the ledger is evidence, and check:ci-enumeration-vacuity judges a module that cannot run a process as inert rather than this text as disguised. `dirs` are the checkout and git directories the evidence may name; one holding whitespace is written without it first, so the two patterns below, which end a path at whitespace, take it whole (review 434f1d3b.2). */
+export function evidenceText(s: string, dirs: readonly string[] = []): string {
+  let t = s;
+  for (const d of [...dirs].sort((a, b) => b.length - a.length))
+    if (/\s/.test(d)) t = t.split(d).join(d.replace(/\s/g, '_'));
+  return t
     .replace(
       /\/[^\s;]*?\.git\/(?:modules\/[^\s;]+?\/)?(?:[a-z]+\/[^/\s;]+\/)?(?=index\b)/g,
       '<gitdir>/'
     )
-    .replace(/\bgit\s+-C\s+\S+\s+/g, 'git ')
-    .replace(/\bgit\s+ls-files\b/g, 'git: ls-files');
+    .replace(/\bgit\s+-C\s+\S+\s+/g, 'git ');
 }
 
 export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> = []): Verdict {
   const closure = new Set(needs);
   const counts = { reads: attr.reads.size, listed: attr.listed.size };
+  const viewDirs = [view.root, ...view.gitDirs];
   const whole = (reason: string, coveragePct = 100): Verdict => ({
     kind: 'whole-tree',
     reason,
@@ -871,14 +921,14 @@ export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> 
       `network: connects to ${net.slice(0, 3).join(', ')}${net.length > 3 ? `, and ${net.length - 3} more` : ''}, so its verdict can move with nothing in the tree moving; a carry-exempt.json candidate`
     );
   if (attr.gitHistory.length > 0)
-    return whole(`reads git history (${evidenceText(attr.gitHistory.join('; '))})`);
+    return whole(`reads git history (${evidenceText(attr.gitHistory.join('; '), viewDirs)})`);
   if ((attr.gitContent ?? []).length > 0)
     return whole(
-      `reads what every tracked file holds through the git index (${evidenceText((attr.gitContent ?? []).join('; '))}), so a change to any tracked file can change its verdict`
+      `reads what every tracked file holds through the git index (${evidenceText((attr.gitContent ?? []).join('; '), viewDirs)}), so a change to any tracked file can change its verdict`
     );
   if (attr.gitIndex.length > 0)
     return whole(
-      `enumerates the tracked file list through the git index (${evidenceText(attr.gitIndex.join('; '))}), so a new file anywhere can change its verdict`
+      `enumerates the tracked file list through the git index (${evidenceText(attr.gitIndex.join('; '), viewDirs)}), so a new file anywhere can change its verdict`
     );
   if (attr.cacheState.length > 0)
     return whole(
@@ -959,6 +1009,12 @@ export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> 
   if (reached / Math.max(entries, 1) > WHOLE_TREE_FRACTION)
     return whole(
       `reaches ${coveragePct}% of the tracked entries through its content globs, over the ${WHOLE_TREE_FRACTION * 100}% line`,
+      coveragePct
+    );
+  const cited = recordCitations([...globs, ...lists], view.records ?? []);
+  if (cited.length > 0)
+    return whole(
+      `its traced set names record paths (${cited.join(', ')}), and manifest.ts citing them makes every gate that reads the manifest a reader of those records, so a record-only commit could no longer advance a receipt (record-paths.json); whole-tree until it reads no record`,
       coveragePct
     );
   return {
@@ -1512,7 +1568,7 @@ export interface RawAccess {
   /** Network peers (Access.network); absent in an `--out` file written before `connect` was traced. */
   network?: string[];
   startedMs?: number;
-  /** The pids that read the git index (Access.indexPids): `--refold` needs them to tell a name-only `git ls-files`'s own read from a foreign one. Absent in a file written before they were kept, which a refold cannot judge soundly. */
+  /** The pids that read the git index (Access.indexPids): `--refold` needs them to tell a name-only `git ls-files`'s own read from a foreign one. Absent in a file written before they were kept: accessOfRaw then charges an index read to an unknown reader, the whole-tree direction, and refold names the gate. */
   indexPids?: number[];
 }
 
@@ -1526,6 +1582,28 @@ export function rawOf(access: Access, view: RepoView): RawAccess {
     startedMs: access.startedMs,
     indexPids:
       access.indexPids === undefined ? undefined : [...access.indexPids].sort((a, b) => a - b),
+  };
+}
+
+/** A pid no process has: the reader a raw record from before `indexPids` was kept is charged to, so the index read it holds counts as foreign. */
+export const UNKNOWN_INDEX_READER = -1;
+
+/**
+ * The Access a raw record stands for, the inverse of rawOf. A record written before `indexPids` was kept, whose files still name a git index, cannot say which process read it; the read is charged to UNKNOWN_INDEX_READER, a foreign reader, so the fold takes the whole-tree direction instead of letting a name-only `git ls-files` explain a read it may not have made, and `legacy` is true so the caller says so (review 434f1d3b.3). A live trace leaves `indexPids` unset only when no process read an index, so a record without the field and without an index read is judged in full.
+ */
+export function accessOfRaw(raw: RawAccess): { access: Access; legacy: boolean } {
+  const legacy = raw.indexPids === undefined && raw.files.some((f) => INDEX_PATH.test(f));
+  const pids = legacy ? [UNKNOWN_INDEX_READER] : raw.indexPids;
+  return {
+    access: {
+      files: new Set(raw.files),
+      listed: new Set(raw.listed),
+      execs: raw.execs,
+      network: new Set(raw.network ?? []),
+      startedMs: raw.startedMs,
+      indexPids: pids === undefined ? undefined : new Set(pids),
+    },
+    legacy,
   };
 }
 
@@ -1669,6 +1747,7 @@ export function refold(root: string, file: string): number {
   const byId = new Map(readLock(root).map((e) => [e.id, e]));
   let n = 0;
   let paths = 0;
+  const legacyIds: string[] = [];
   for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
     if (line.trim() === '') continue;
     const r = JSON.parse(line) as {
@@ -1682,21 +1761,20 @@ export function refold(root: string, file: string): number {
       console.error(`path-trace: ${r.id} has no raw trace in ${file}; re-trace it`);
       return 1;
     }
-    const access: Access = {
-      files: new Set(r.raw.files),
-      listed: new Set(r.raw.listed),
-      execs: r.raw.execs,
-      network: new Set(r.raw.network ?? []),
-      startedMs: r.raw.startedMs,
-      indexPids: r.raw.indexPids === undefined ? undefined : new Set(r.raw.indexPids),
-    };
+    const { access, legacy } = accessOfRaw(r.raw);
+    if (legacy) {
+      legacyIds.push(r.id);
+      console.error(
+        `path-trace: ${r.id}'s raw trace in ${file} predates indexPids, so no reader of its git index can be told apart; its index read counts as foreign (whole-tree). Re-trace it for a full verdict.`
+      );
+    }
     const verdict = verdictOf(attribute(access, view), view, r.exit, needsClosure(r.id, byId));
     if (verdict.kind === 'paths') paths++;
     n++;
     process.stdout.write(`${JSON.stringify({ ...r, verdict })}\n`);
   }
   console.error(
-    `path-trace: re-folded ${n} trace(s): ${paths} with paths, ${n - paths} whole-tree`
+    `path-trace: re-folded ${n} trace(s): ${paths} with paths, ${n - paths} whole-tree${legacyIds.length > 0 ? `; ${legacyIds.length} judged without indexPids (${legacyIds.join(', ')})` : ''}`
   );
   return n === 0 ? 1 : 0;
 }
@@ -2863,8 +2941,81 @@ async function selftest(): Promise<number> {
     'git -C /x/y ls-files -z --recurse-submodules; /x/.git/wt/agent-1/index; git log'
   );
   check(
-    shownEvidence === 'git: ls-files -z --recurse-submodules; <gitdir>/index; git log',
-    `ledger evidence drops the checkout path and the lister's literal form (got ${shownEvidence})`
+    shownEvidence === 'git ls-files -z --recurse-submodules; <gitdir>/index; git log',
+    `ledger evidence drops the checkout path and keeps the command git ran, \`git ls-files\` included (review 434f1d3b.1; got ${shownEvidence})`
+  );
+  const spaced = 'git -C /x y/tree ls-files -z; /x y/.git/wt/a/index';
+  const spacedShown = evidenceText(spaced, ['/x y/tree', '/x y/.git/wt/a']);
+  check(
+    spacedShown === 'git ls-files -z; <gitdir>/index',
+    `a checkout or git directory holding a space is dropped whole (review 434f1d3b.2; got ${spacedShown})`
+  );
+  check(
+    evidenceText(spaced).includes('y/tree'),
+    'CONTROL: without the directories named, a spaced checkout path survives the patterns, so the directories are what drop it'
+  );
+
+  // 434f1d3b.3/.4: rawOf and accessOfRaw round-trip indexPids, and a record without them is judged in the whole-tree direction.
+  for (const readerPid of [7, 8]) {
+    const live = parseStraceLog(pidLog(readerPid), '/r');
+    const raw = JSON.parse(JSON.stringify(rawOf(live, view))) as RawAccess;
+    const back = accessOfRaw(raw);
+    const liveV = fold(attribute(live, view), view);
+    const backV = fold(attribute(back.access, view), view);
+    check(
+      !back.legacy &&
+        JSON.stringify(raw.indexPids) === JSON.stringify([...new Set([7, readerPid])]) &&
+        JSON.stringify(backV) === JSON.stringify(liveV),
+      `indexPids survive rawOf, JSON and accessOfRaw, and the refolded verdict is the live one (reader pid ${readerPid}: ${liveV.kind})`
+    );
+  }
+  const ownRaw = JSON.parse(JSON.stringify(rawOf(parseStraceLog(pidLog(7), '/r'), view))) as RawAccess;
+  delete ownRaw.indexPids;
+  const legacyBack = accessOfRaw(ownRaw);
+  const legacyV = fold(attribute(legacyBack.access, view), view);
+  check(
+    legacyBack.legacy && legacyV.kind === 'whole-tree' && legacyV.reason.includes('.git/index'),
+    `a raw record from before indexPids that reads the index is flagged legacy and folds whole-tree, not to the names verdict its own-pid twin earns (got ${legacyV.kind})`
+  );
+  const noIndexRaw = rawOf(mk(['a/one.txt']), view);
+  check(
+    noIndexRaw.indexPids === undefined && !accessOfRaw(noIndexRaw).legacy,
+    'CONTROL: a record with no index read and no indexPids is no legacy record'
+  );
+
+  // 22efb11e: a traced set naming a record path stays whole-tree, generated by the fold rather than written into the ledger by hand.
+  const recView: RepoView = {
+    ...view,
+    files: [...view.files, 'agent/reviews/b/c.md', 'agent/reviews/b/d.md'],
+    records: [
+      {
+        glob: 'agent/reviews/**',
+        prefix: recordPrefix('agent/reviews/**'),
+        probes: ['agent/reviews/main/clean.jsonl'],
+        except: [],
+      },
+    ],
+  };
+  const recAcc = mk(['a/one.txt'], ['agent/reviews/b']);
+  const recV = fold(attribute(recAcc, recView), recView);
+  check(
+    recV.kind === 'whole-tree' &&
+      recV.reason.includes('agent/reviews/**') &&
+      recV.coveragePct < 100 &&
+      recV.listed === 1,
+    `a listing under agent/reviews is whole-tree with the record named and the coverage it measured (got ${recV.kind === 'whole-tree' ? `${recV.coveragePct}% ${recV.reason}` : 'paths'})`
+  );
+  const plainV = fold(attribute(recAcc, { ...recView, records: [] }), { ...recView, records: [] });
+  check(
+    plainV.kind === 'paths' && JSON.stringify(plainV.lists) === '["agent/reviews/b"]',
+    'CONTROL: the same trace with no record set keeps its lists'
+  );
+  check(
+    recordCitations(['agent/**'], recView.records ?? []).length === 1 &&
+      recordCitations(['agent/archive'], recView.records ?? []).length === 0 &&
+      recordPrefix('agent/worklist/*.jsonl') === 'agent/worklist' &&
+      recordPrefix('.ci/config/plan-boxes.json') === '.ci/config/plan-boxes.json',
+    'a glob reaching a probe cites the record, a sibling directory does not, and the prefix is check_record_paths.py literal_prefix'
   );
 
   console.log(`path-trace selftest: ${n - bad}/${n} passed`);

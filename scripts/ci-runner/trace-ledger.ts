@@ -49,7 +49,7 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
     verdict: 'whole-tree',
     reason:
-      'enumerates the tracked file list through the git index (git: ls-files -z --recurse-submodules; <gitdir>/index; <gitdir>/index), so a new file anywhere can change its verdict',
+      'enumerates the tracked file list through the git index (git ls-files -z --recurse-submodules; <gitdir>/index; <gitdir>/index), so a new file anywhere can change its verdict',
     reads: 7149,
     listed: 5,
     coveragePct: 100,
@@ -223,7 +223,7 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
     verdict: 'whole-tree',
     reason:
-      'enumerates the tracked file list through the git index (git: ls-files --recurse-submodules -z *.sh; <gitdir>/index; <gitdir>/index), so a new file anywhere can change its verdict',
+      'enumerates the tracked file list through the git index (git ls-files --recurse-submodules -z *.sh; <gitdir>/index; <gitdir>/index), so a new file anywhere can change its verdict',
     reads: 103,
     listed: 3,
     coveragePct: 100,
@@ -490,7 +490,7 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
     verdict: 'whole-tree',
     reason:
-      'reads what every tracked file holds through the git index (git: ls-files -s -z), so a change to any tracked file can change its verdict',
+      'reads what every tracked file holds through the git index (git ls-files -s -z), so a change to any tracked file can change its verdict',
     reads: 5259,
     listed: 800,
     coveragePct: 100,
@@ -681,7 +681,7 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
     verdict: 'whole-tree',
     reason:
-      'enumerates the tracked file list through the git index (git: ls-files --recurse-submodules; git: ls-files --recurse-submodules; git: ls-files --recurse-submodules), so a new file anywhere can change its verdict',
+      'enumerates the tracked file list through the git index (git ls-files --recurse-submodules; git ls-files --recurse-submodules; git ls-files --recurse-submodules), so a new file anywhere can change its verdict',
     reads: 64,
     listed: 1,
     coveragePct: 100,
@@ -804,7 +804,7 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
     verdict: 'whole-tree',
     reason:
-      'enumerates the tracked file list through the git index (git: ls-files -z --recurse-submodules; <gitdir>/index; <gitdir>/index), so a new file anywhere can change its verdict',
+      'enumerates the tracked file list through the git index (git ls-files -z --recurse-submodules; <gitdir>/index; <gitdir>/index), so a new file anywhere can change its verdict',
     reads: 11633,
     listed: 4,
     coveragePct: 100,
@@ -1110,7 +1110,7 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
     verdict: 'whole-tree',
     reason:
-      'reads what every tracked file holds through the git index (git: ls-files -s --; git: ls-files -s --; git: ls-files -s --), so a change to any tracked file can change its verdict',
+      'reads what every tracked file holds through the git index (git ls-files -s --; git ls-files -s --; git ls-files -s --), so a change to any tracked file can change its verdict',
     reads: 28,
     listed: 5,
     coveragePct: 100,
@@ -2079,7 +2079,7 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
     verdict: 'whole-tree',
     reason:
-      'reads what every tracked file holds through the git index (git: ls-files -s --), so a change to any tracked file can change its verdict',
+      'reads what every tracked file holds through the git index (git ls-files -s --), so a change to any tracked file can change its verdict',
     reads: 2011,
     listed: 800,
     coveragePct: 100,
@@ -2375,7 +2375,7 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
     verdict: 'whole-tree',
     reason:
-      'reads what every tracked file holds through the git index (git: ls-files -s --; git: ls-files -s --; git: ls-files -s --), so a change to any tracked file can change its verdict',
+      'reads what every tracked file holds through the git index (git ls-files -s --; git ls-files -s --; git ls-files -s --), so a change to any tracked file can change its verdict',
     reads: 6949,
     listed: 4,
     coveragePct: 100,
@@ -2858,7 +2858,7 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
     verdict: 'whole-tree',
     reason:
-      'enumerates the tracked file list through the git index (git: ls-files --recurse-submodules; <gitdir>/index; <gitdir>/index), so a new file anywhere can change its verdict',
+      'enumerates the tracked file list through the git index (git ls-files --recurse-submodules; <gitdir>/index; <gitdir>/index), so a new file anywhere can change its verdict',
     reads: 26,
     listed: 7,
     coveragePct: 100,
