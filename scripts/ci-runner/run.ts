@@ -220,6 +220,8 @@ interface Options {
   shard?: { index: number; of: number };
   /** `--receipt-out`: where to write the push receipt instead of this checkout's own `.ci/cache/`. */
   receiptOut?: string;
+  /** `--advance-from <abs path>`: the receipt a `--quick` advance plans from, in place of the one at the destination. quick-clone.ts passes a pinned run's receipt on its follow pass, so the step starts at the tree the pinned run judged (agent/plans/PLAN-push-decoupling.md D1.2). */
+  advanceFrom?: string;
   /** `--gate-timeout <s>`: one kill timer for every gate, in place of each gate's derived one (gate-timeout.ts). */
   gateTimeoutMs?: number;
   /** `--slow-rotation i/N`: run only bucket i of the slow set split N ways by cost (`rotationBucket`), for housekeeping's gate-cost capture. */
@@ -394,6 +396,14 @@ function parseArgs(argv: readonly string[]): Options {
         if (!path.isAbsolute(out))
           throw new Error(`ci-runner: ${arg} needs an absolute path, got '${out}'`);
         opts.events = out;
+        i += 1;
+        break;
+      }
+      case '--advance-from': {
+        const from = value(i, arg);
+        if (!path.isAbsolute(from))
+          throw new Error(`ci-runner: ${arg} needs an absolute path, got '${from}'`);
+        opts.advanceFrom = from;
         i += 1;
         break;
       }
@@ -3611,6 +3621,11 @@ function parseStaleSubmodules(status: string): string[] {
     .map((line) => line.slice(1).trim().split(/\s+/)[1] ?? line);
 }
 
+/** The receipt an advance plans from: `--advance-from` when given, else the destination it writes. */
+function advanceBasePath(opts: Options): string {
+  return opts.advanceFrom ?? receiptPathFor(opts);
+}
+
 /** The receipt's destination: `--receipt-out` when given, else this checkout's own cache. */
 function receiptPathFor(opts: Options): string {
   return opts.receiptOut ?? RECEIPT_PATH;
@@ -4234,6 +4249,135 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
         kept.includes('newest.json') &&
         !kept.includes('tree0.json'),
       `the archive must keep ${RECEIPT_ARCHIVE_KEEP} receipts, newest first, got ${kept.length}`
+    );
+
+    // THE FOLLOW PASS (agent/plans/PLAN-push-decoupling.md R2, D1.2): after `ci:quick --commit <sha>` judged a pinned ancestor, quick-clone.ts runs `--quick --receipt-out <latest> --advance-from <pinned receipt>` at HEAD. The advance plans from the pinned receipt, and a lane run carries from the archive the pinned run filled.
+    // Under .git, so the scratch repository never commits the receipts it holds.
+    const fol = path.join(root, '.git', 'fol');
+    const pinnedPath = path.join(fol, 'pinned-receipt.json');
+    const latestPath = path.join(fol, 'prepush-receipt.json');
+    const followOpts = parseArgs([
+      '--quick',
+      '--receipt-out',
+      latestPath,
+      '--advance-from',
+      pinnedPath,
+    ]);
+    check(
+      advanceBasePath(followOpts) === pinnedPath && narrowingFlags(followOpts).length === 0,
+      '--advance-from must name the receipt the advance plans from, and must not narrow the lane'
+    );
+    check(
+      advanceBasePath(parseArgs(['--quick', '--receipt-out', latestPath])) === latestPath,
+      'CONTROL: with no --advance-from the advance plans from the destination'
+    );
+    const greenOf = (tree: string): Receipt =>
+      ({
+        ...receiptOf(tree, plan(tree, null), {}),
+        exitCode: 0,
+        failed: [],
+        advances: [],
+      }) as unknown as Receipt;
+    const followPolicy = parseRecordPolicy(
+      JSON.stringify({
+        records: [{ glob: 'agent/reviews/**', readers: [{ id: 'g:a', evidence: 'x' }] }],
+      })
+    );
+    const noRenames = (from: string, to: string): string[] =>
+      git('diff', '--name-only', '--no-renames', from, to).split('\n').filter(Boolean);
+    const followPlan = (base: unknown, headTree: string, diff = noRenames) =>
+      planAdvance({
+        receipt: base,
+        headTree,
+        policy: followPolicy,
+        diff,
+        known: new Set(ids),
+      });
+    write('a/x.txt', 'xPinned\n');
+    const tPin = commit('the pinned commit');
+    const pinned = greenOf(tPin);
+    fs.mkdirSync(fol, { recursive: true });
+    fs.writeFileSync(pinnedPath, JSON.stringify(pinned));
+    archiveReceipt(pinned, pinnedPath);
+    fs.writeFileSync(latestPath, JSON.stringify({ ...r1, exitCode: 0, failed: [], advances: [] }));
+    const baseOf = (opts: Options): unknown =>
+      JSON.parse(fs.readFileSync(advanceBasePath(opts), 'utf8'));
+
+    // Record-only movement: one step from the pinned tree, and only the record's reader runs.
+    write('agent/reviews/r.md', 'r\n');
+    const tRec = commit('a record after the pin');
+    const recPlan = followPlan(baseOf(followOpts), tRec);
+    check(
+      recPlan.kind === 'advance' &&
+        recPlan.from === tPin &&
+        recPlan.to === tRec &&
+        recPlan.readers.join() === 'g:a',
+      `a record-only commit after the pinned tree must advance from it with the record's reader alone, got ${JSON.stringify(recPlan)}`
+    );
+    if (recPlan.kind === 'advance') {
+      const step: Advance = {
+        from: recPlan.from,
+        to: recPlan.to,
+        paths: recPlan.paths,
+        gates: { 'g:a': 0 },
+        findings: {},
+        finishedAt: 'now',
+      };
+      const advanced = advancedReceipt(
+        baseOf(followOpts) as Receipt,
+        recPlan.refresh,
+        step.gates,
+        recPlan.to,
+        step
+      );
+      check(
+        advanced.advances.length === 1 &&
+          advanced.headTree === tPin &&
+          advanced.advances[0].to === tRec &&
+          Object.keys(advanced.advances[0].gates).join() === 'g:a',
+        `the follow pass must append exactly one step to the pinned receipt, got ${JSON.stringify(advanced.advances)}`
+      );
+    }
+    check(
+      followPlan(baseOf(parseArgs(['--quick', '--receipt-out', latestPath])), tRec).kind === 'full',
+      'CONTROL: planned from the older latest receipt, the code change between it and the pin runs the lane'
+    );
+
+    // Code movement: no advance, and the lane carries every gate whose input hash the pinned run judged.
+    write('b/y.txt', 'yFollow\n');
+    const tCode = commit('code after the pin');
+    check(
+      followPlan(baseOf(followOpts), tCode).kind === 'full',
+      'a code commit after the pinned tree must not advance'
+    );
+    const carriedPlan = plan(tCode, loadPriorReceipts(latestPath));
+    check(
+      carriedPlan.carry.get('g:a')?.carriedFrom?.headTree === tPin &&
+        carriedPlan.run.includes('g:b') &&
+        carriedPlan.run.includes('g:none'),
+      `the lane after a code commit must carry g:a from the pinned tree and run the rest, carried ${[...carriedPlan.carry.keys()].join()} ran ${carriedPlan.run.join()}`
+    );
+    check(
+      plan(
+        tCode,
+        loadPriorReceipts(path.join(root, '.git', 'fol-none', 'prepush-receipt.json'))
+      ).run.includes('g:a'),
+      'CONTROL: with no archived pinned receipt the same gate runs'
+    );
+
+    // A rename from code into the record set: the --no-renames diff lists the old code path, so it does not advance.
+    const tBefore = git('rev-parse', 'HEAD^{tree}');
+    git('mv', 'a/x.txt', 'agent/reviews/moved.md');
+    const tMoved = commit('move code into the records');
+    check(
+      followPlan(greenOf(tBefore), tMoved).kind === 'full',
+      'a rename from a code path to a record path must not advance'
+    );
+    check(
+      followPlan(greenOf(tBefore), tMoved, (from, to) =>
+        git('diff', '--name-only', '-M', from, to).split('\n').filter(Boolean)
+      ).kind === 'advance',
+      'CONTROL: a rename-following diff lists only the record path, which is why the follow pass diffs with --no-renames'
     );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
@@ -5396,7 +5540,7 @@ async function main(): Promise<number> {
     const dest = receiptPathFor(opts);
     let existing: unknown;
     try {
-      existing = JSON.parse(fs.readFileSync(dest, 'utf8'));
+      existing = JSON.parse(fs.readFileSync(advanceBasePath(opts), 'utf8'));
     } catch {
       existing = undefined;
     }

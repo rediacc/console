@@ -871,6 +871,46 @@ export function summaryLines(input: {
   return lines;
 }
 
+export type Follow =
+  | { kind: 'done' }
+  | { kind: 'skip'; why: string }
+  | { kind: 'follow'; why: string };
+
+/** Whether a clone run is followed by a pass at the live HEAD (agent/plans/PLAN-push-decoupling.md D1.2). Only a green first run is followed: a red one is repaired before anything is brought forward. A latest receipt that is whole, green and already vouches for HEAD's tree is a newer receipt, left alone. Pure, so the selftest drives every branch. */
+export function followOf(input: {
+  pinned: boolean;
+  judgedTree: string;
+  liveTree: string | undefined;
+  firstExit: number;
+  latest: ReceiptShape | undefined;
+}): Follow {
+  const { pinned, judgedTree, liveTree, firstExit, latest } = input;
+  if (!pinned && liveTree === judgedTree) return { kind: 'done' };
+  if (liveTree === undefined || liveTree === '')
+    return { kind: 'skip', why: 'HEAD^{tree} is unreadable in the checkout' };
+  if (firstExit !== 0)
+    return {
+      kind: 'skip',
+      why: `the run over tree ${judgedTree.slice(0, 12)} is not green, so nothing is carried to HEAD tree ${liveTree.slice(0, 12)}`,
+    };
+  if (
+    latest?.whole === true &&
+    latest.exitCode === 0 &&
+    (latest.failed ?? []).length === 0 &&
+    vouchedTree(latest) === liveTree
+  )
+    return {
+      kind: 'skip',
+      why: `${RECEIPT_REL} already vouches for HEAD tree ${liveTree.slice(0, 12)} and is left alone`,
+    };
+  return {
+    kind: 'follow',
+    why: pinned
+      ? `the pinned tree ${judgedTree.slice(0, 12)} is behind HEAD tree ${liveTree.slice(0, 12)}`
+      : `HEAD moved during the run, from tree ${judgedTree.slice(0, 12)} to ${liveTree.slice(0, 12)}`,
+  };
+}
+
 /** Why the per-tree archive does not hold a whole receipt for `tree`, or undefined when it does. The same admission test `block_unverified_push.read_receipt` applies to the copy. */
 export function unarchived(live: string, tree: string): string | undefined {
   const file = path.join(live, ARCHIVE_REL, `${tree}.json`);
@@ -1064,12 +1104,7 @@ export async function quickMain(args: readonly string[], seams: QuickSeams): Pro
       [...lane, '--receipt-out', receiptPath],
       env
     );
-    const moved = shTry('git', ['rev-parse', 'HEAD^{tree}'], seams.live);
-    if (commit === undefined && moved !== prepared.tree)
-      seams.log(
-        `ci:quick: HEAD moved in ${seams.live} during this run: the receipt judges tree ${prepared.tree.slice(0, 12)}, HEAD is now ${(moved ?? '?').slice(0, 12)}, so the push guard will ask for another run\n`
-      );
-    return finishWhole(seams, {
+    const first = finishWhole(seams, {
       runnerExit: exit,
       startedAt,
       setupMs,
@@ -1078,6 +1113,58 @@ export async function quickMain(args: readonly string[], seams: QuickSeams): Pro
       receiptPath,
       archived: commit !== undefined,
     });
+    // THE FOLLOW PASS (agent/plans/PLAN-push-decoupling.md D1.2): HEAD moved during the run, or the run judged a pinned ancestor, so the receipt the push guard reads does not speak for HEAD yet. One more pass in the clone at HEAD takes the runner's own advance (record-only movement: the readers alone, one `advances` step) or its carry (every gate whose input hash a held receipt judged), and runs only what is left.
+    const latestPath = path.join(seams.live, RECEIPT_REL);
+    const liveTree = shTry('git', ['rev-parse', 'HEAD^{tree}'], seams.live);
+    const follow = followOf({
+      pinned: commit !== undefined,
+      judgedTree: prepared.tree,
+      liveTree,
+      firstExit: first,
+      latest: readReceipt(latestPath).receipt,
+    });
+    if (follow.kind === 'done') return first;
+    if (follow.kind === 'skip') {
+      seams.log(`ci:quick: no follow pass: ${follow.why}\n`);
+      return first;
+    }
+    const followAt = seams.now();
+    seams.log(
+      `ci:quick: FOLLOW PASS: ${follow.why}; judging HEAD tree ${(liveTree ?? '?').slice(0, 12)} with the carry and advance pass from the receipt for tree ${prepared.tree.slice(0, 12)}\n`
+    );
+    let next: Prepared;
+    try {
+      next = seams.prepare({ live: seams.live, clone });
+    } catch (err) {
+      seams.log(
+        `ci:quick: the follow pass could not set up the clone at HEAD, so the push guard will ask for another run: ${(err as Error).message}\n`
+      );
+      return first === 0 ? 1 : first;
+    }
+    const followExit = await selftestThenLane(
+      seams,
+      next.clone,
+      [
+        ...lane,
+        '--receipt-out',
+        latestPath,
+        ...(commit === undefined ? [] : ['--advance-from', receiptPath]),
+      ],
+      cloneEnv(seams.env, seams.live, next.clone, route.noCarry)
+    );
+    const second = finishWhole(seams, {
+      runnerExit: followExit,
+      startedAt: followAt,
+      setupMs: 0,
+      tree: next.tree,
+      where: `the kept clean clone ${next.clone} (follow pass)`,
+    });
+    const after = shTry('git', ['rev-parse', 'HEAD^{tree}'], seams.live);
+    if (after !== next.tree)
+      seams.log(
+        `ci:quick: HEAD moved again in ${seams.live} during the follow pass: the receipt speaks for tree ${next.tree.slice(0, 12)}, HEAD is now ${(after ?? '?').slice(0, 12)}, so the push guard will ask for another run\n`
+      );
+    return first !== 0 ? first : second;
   } finally {
     if (locked) fs.rmSync(lockPath, { force: true });
   }
@@ -1898,6 +1985,192 @@ export async function quickCloneSelftest(
         mainRun.calls.every((c) => c.cwd.startsWith(clonesUnder('main-cache'))) &&
         fs.readdirSync(clonesUnder('main-cache')).length > 0,
       `CONTROL: the main checkout must still route to a real clone, got ${JSON.stringify(mainRun.calls)}: ${mainRun.log}`
+    );
+
+    // THE FOLLOW PASS (agent/plans/PLAN-push-decoupling.md R2): a pinned run, or a run whose HEAD moved, is followed by one pass at HEAD that hands the runner the receipt to advance from. The fake runner writes what a real one would: a whole receipt at the tree its clone holds, archived per tree, or an advanced one when told where to advance from.
+    const driveFollow = async (over: {
+      pin?: boolean;
+      moveDuringLane?: boolean;
+      latestAtHead?: boolean;
+      redFirst?: boolean;
+    }): Promise<{
+      exit: number;
+      calls: { cwd: string; args: string[] }[];
+      prepared: (string | undefined)[];
+      log: string;
+      latest: string | undefined;
+      liveTree: string;
+      pinTree: string;
+      dir: string;
+    }> => {
+      const dir = fs.mkdtempSync(path.join(root, 'follow-'));
+      git(root, 'init', '-q', '-b', 'main', dir);
+      write(path.join(dir, 'a.txt'), 'a\n');
+      git(dir, 'add', '-A');
+      git(dir, 'commit', '-q', '-m', 'a');
+      const pinSha = git(dir, 'rev-parse', 'HEAD');
+      const pinTree = git(dir, 'rev-parse', 'HEAD^{tree}');
+      write(path.join(dir, 'b.txt'), 'b\n');
+      git(dir, 'add', '-A');
+      git(dir, 'commit', '-q', '-m', 'b');
+      const latestFile = path.join(dir, RECEIPT_REL);
+      if (over.latestAtHead === true)
+        write(
+          latestFile,
+          JSON.stringify({
+            whole: true,
+            exitCode: 0,
+            failed: [],
+            headTree: git(dir, 'rev-parse', 'HEAD^{tree}'),
+          })
+        );
+      const calls: { cwd: string; args: string[] }[] = [];
+      const prepared: (string | undefined)[] = [];
+      let current = '';
+      let lanes = 0;
+      let log = '';
+      const exit = await quickMain(over.pin === true ? ['--commit', pinSha.slice(0, 10)] : [], {
+        live: dir,
+        env: {
+          HOME: root,
+          CI_QUICK_CLONE_DIR: path.join(dir, '..', `${path.basename(dir)}-clone`),
+        },
+        log: (text) => {
+          log += text;
+        },
+        prepare: (input) => {
+          prepared.push(input.commit);
+          const at = input.commit ?? git(dir, 'rev-parse', 'HEAD');
+          current = git(dir, 'rev-parse', `${at}^{tree}`);
+          return {
+            clone: input.clone,
+            head: at,
+            tree: current,
+            branch: 'main',
+            fresh: false,
+            notes: [],
+          };
+        },
+        runner: (cwd, runArgs) => {
+          calls.push({ cwd, args: runArgs });
+          if (runArgs[0] !== '--quick') return Promise.resolve(0);
+          lanes++;
+          const out = runArgs[runArgs.indexOf('--receipt-out') + 1];
+          const from = runArgs.includes('--advance-from')
+            ? runArgs[runArgs.indexOf('--advance-from') + 1]
+            : undefined;
+          const red = over.redFirst === true && lanes === 1;
+          const receipt: ReceiptShape = {
+            whole: true,
+            exitCode: red ? 1 : 0,
+            failed: red ? ['check:red'] : [],
+            headTree: current,
+            advances: [],
+          };
+          if (from !== undefined) {
+            const base = JSON.parse(fs.readFileSync(from, 'utf8')) as ReceiptShape;
+            write(out, JSON.stringify({ ...base, advances: [{ to: current }] }));
+          } else {
+            write(out, JSON.stringify(receipt));
+            write(
+              path.join(path.dirname(out), 'receipts', `${current}.json`),
+              JSON.stringify(receipt)
+            );
+          }
+          if (over.moveDuringLane === true && lanes === 1) {
+            write(path.join(dir, 'c.txt'), 'c\n');
+            git(dir, 'add', '-A');
+            git(dir, 'commit', '-q', '-m', 'c');
+          }
+          return Promise.resolve(red ? 1 : 0);
+        },
+        acquire: () => Promise.resolve(true),
+        now: () => Date.now() - 1000,
+      });
+      return {
+        exit,
+        calls,
+        prepared,
+        log,
+        latest: fs.existsSync(latestFile) ? fs.readFileSync(latestFile, 'utf8') : undefined,
+        liveTree: git(dir, 'rev-parse', 'HEAD^{tree}'),
+        pinTree,
+        dir,
+      };
+    };
+    const lanesOf = (calls: { args: string[] }[]): string[][] =>
+      calls.filter((c) => c.args[0] === '--quick').map((c) => c.args);
+    const pinnedFollow = await driveFollow({ pin: true });
+    const pinnedLanes = lanesOf(pinnedFollow.calls);
+    check(
+      pinnedFollow.exit === 0 &&
+        pinnedLanes.length === 2 &&
+        pinnedLanes[0].includes(path.join(pinnedFollow.dir, PINNED_RECEIPT_REL)) &&
+        pinnedLanes[1].includes(path.join(pinnedFollow.dir, RECEIPT_REL)) &&
+        pinnedLanes[1][pinnedLanes[1].indexOf('--advance-from') + 1] ===
+          path.join(pinnedFollow.dir, PINNED_RECEIPT_REL),
+      `a pinned run must follow with a pass at HEAD that advances from the pinned receipt, got ${JSON.stringify(pinnedLanes)}: ${pinnedFollow.log}`
+    );
+    check(
+      pinnedFollow.prepared.length === 2 &&
+        pinnedFollow.prepared[0] !== undefined &&
+        pinnedFollow.prepared[1] === undefined,
+      `the follow pass must prepare the clone at HEAD, not at the pin, got ${JSON.stringify(pinnedFollow.prepared)}`
+    );
+    const pinnedLatest = JSON.parse(pinnedFollow.latest ?? '{}') as ReceiptShape;
+    check(
+      pinnedLatest.headTree === pinnedFollow.pinTree &&
+        vouchedTree(pinnedLatest) === pinnedFollow.liveTree &&
+        pinnedFollow.log.includes('FOLLOW PASS'),
+      `the receipt the push guard reads must vouch for HEAD through the pinned receipt, got ${pinnedFollow.latest}: ${pinnedFollow.log}`
+    );
+    const pinnedNewer = await driveFollow({ pin: true, latestAtHead: true });
+    check(
+      lanesOf(pinnedNewer.calls).length === 1 &&
+        pinnedNewer.log.includes('already vouches for HEAD') &&
+        pinnedNewer.exit === 0,
+      `CONTROL: a latest receipt that already vouches for HEAD is a newer one and is left alone: ${pinnedNewer.log}`
+    );
+    const pinnedRed = await driveFollow({ pin: true, redFirst: true });
+    check(
+      lanesOf(pinnedRed.calls).length === 1 &&
+        pinnedRed.exit === 1 &&
+        pinnedRed.latest === undefined,
+      `a red pinned run must not be carried to HEAD: ${pinnedRed.log}`
+    );
+    const movedFollow = await driveFollow({ moveDuringLane: true });
+    const movedLanes = lanesOf(movedFollow.calls);
+    check(
+      movedFollow.exit === 0 &&
+        movedLanes.length === 2 &&
+        movedLanes.every((args) => !args.includes('--advance-from')) &&
+        vouchedTree(JSON.parse(movedFollow.latest ?? '{}') as ReceiptShape) ===
+          movedFollow.liveTree,
+      `a run whose HEAD moved must follow at the new HEAD, advancing from the receipt it just wrote, got ${JSON.stringify(movedLanes)}: ${movedFollow.log}`
+    );
+    const stillFollow = await driveFollow({});
+    check(
+      lanesOf(stillFollow.calls).length === 1 && !stillFollow.log.includes('FOLLOW PASS'),
+      `CONTROL: a run whose HEAD held still takes no follow pass: ${stillFollow.log}`
+    );
+    check(
+      followOf({ pinned: false, judgedTree: 'T', liveTree: 'T', firstExit: 0, latest: undefined })
+        .kind === 'done' &&
+        followOf({
+          pinned: true,
+          judgedTree: 'T',
+          liveTree: undefined,
+          firstExit: 0,
+          latest: undefined,
+        }).kind === 'skip' &&
+        followOf({
+          pinned: true,
+          judgedTree: 'T',
+          liveTree: 'U',
+          firstExit: 0,
+          latest: { whole: true, exitCode: 1, failed: ['g'], headTree: 'U' },
+        }).kind === 'follow',
+      'followOf: a still HEAD is done, an unreadable HEAD is skipped, and a red receipt at HEAD is no newer receipt to leave alone'
     );
 
     // WHAT IS A LEASE: the position and git's word, each alone is not enough.

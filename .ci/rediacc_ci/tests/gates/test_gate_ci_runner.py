@@ -1395,6 +1395,77 @@ def test_quick_clone_pins_an_ancestor_and_archives_its_receipt(gate):
         )
 
 
+def test_quick_clone_follows_a_pinned_run_to_head(gate):
+    """A pinned run behind HEAD is followed by one pass at HEAD (agent/plans/PLAN-push-decoupling.md R2, D1.2).
+
+    With only a record commit between the pin and HEAD, the follow pass advances the pinned receipt: `prepush-receipt.json` keeps the pinned `headTree` and gains one `advances` step ending at HEAD's tree. With a code commit between them, the follow pass is no advance and judges HEAD in the clone, so the receipt names HEAD's tree with an empty chain. Either way the pinned tree's archive copy stays.
+    """
+    with harness.temp_dir() as work:
+        repo = _clone_fixture(gate, work)
+        (repo / "dirty.marker").unlink()
+        policy = {
+            "records": [
+                {
+                    "glob": "agent/reviews/**",
+                    "readers": [{"id": "fast:sees-head", "evidence": "fixture"}],
+                }
+            ]
+        }
+        (repo / ".ci" / "policy").mkdir(parents=True)
+        (repo / ".ci" / "policy" / "record-paths.json").write_text(
+            json.dumps(policy), encoding="utf-8"
+        )
+        (repo / "agent" / "reviews").mkdir(parents=True)
+        (repo / "agent" / "reviews" / "a.md").write_text("a\n", encoding="utf-8")
+        _git(gate, repo, "add", "-A", ".ci/policy", "agent")
+        _git(gate, repo, "commit", "-q", "-m", "chore: the record policy")
+        pinned_sha = _git(gate, repo, "rev-parse", "HEAD")
+        pinned_tree = _git(gate, repo, "rev-parse", "HEAD^{tree}")
+        (repo / "agent" / "reviews" / "b.md").write_text("b\n", encoding="utf-8")
+        _git(gate, repo, "add", "-A", "agent")
+        _git(gate, repo, "commit", "-q", "-m", "chore(reviews): record")
+        head_tree = _git(gate, repo, "rev-parse", "HEAD^{tree}")
+        latest = repo / ".ci" / "cache" / "prepush-receipt.json"
+
+        r = _quick_clone(gate, repo, work, "--commit", pinned_sha)
+        gate.assert_exit(0, r, "the pinned run and its follow pass pass")
+        gate.assert_contains(r.out, "FOLLOW PASS", "the run says it follows HEAD")
+        gate.assert_contains(r.out, "ADVANCE", "and the follow pass is an advance")
+        rc = _receipt(gate, latest)
+        gate.assert_eq(rc.get("headTree"), pinned_tree, "the advanced receipt starts at the pin")
+        gate.assert_eq(
+            [s.get("to") for s in rc.get("advances") or []],
+            [head_tree],
+            "one step, ending at HEAD's tree",
+        )
+        gate.assert_eq(
+            _receipt(gate, repo / ".ci" / "cache" / "receipts" / ("%s.json" % pinned_tree)).get(
+                "headTree"
+            ),
+            pinned_tree,
+            "the pinned tree's archive copy stays",
+        )
+
+        # A code commit between the pin and HEAD: the follow pass judges HEAD.
+        (repo / "lib" / "later.sh").write_text("echo later\n", encoding="utf-8")
+        _git(gate, repo, "add", "-A", "lib")
+        _git(gate, repo, "commit", "-q", "-m", "feat: code after the pin")
+        code_tree = _git(gate, repo, "rev-parse", "HEAD^{tree}")
+        r = _quick_clone(gate, repo, work, "--commit", "HEAD~1")
+        gate.assert_exit(0, r, "the pinned run and its follow pass pass")
+        gate.assert_contains(r.out, "FOLLOW PASS", "the run follows HEAD again")
+        gate.assert_contains(
+            r.out, "outside the record set", "and says why the follow pass is no advance"
+        )
+        rc = _receipt(gate, latest)
+        gate.assert_eq(rc.get("headTree"), code_tree, "the follow pass judged HEAD's tree")
+        gate.assert_eq(rc.get("advances"), [], "with an empty chain")
+        gate.log_pass(
+            "a record commit after the pin advanced the pinned receipt to HEAD, and a code "
+            "commit after it made the follow pass judge HEAD"
+        )
+
+
 def test_quick_advances_across_a_record_only_commit(gate):
     """A commit touching only record paths carries the receipt forward instead of re-running the lane (agent/plans/PLAN-prepush-full-cpu.md PF24).
 
