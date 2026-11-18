@@ -21,7 +21,10 @@ import os
 import pathlib
 import re
 import subprocess
-from collections.abc import Callable
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 # The first bracketed tag after the box's id, on a raw box line or a parsed body. `- [ ] V1 [live] x`, `V1 [live] x`, `- [ ] [live] x` all read `live`; a box whose second token is not a bracket has no tag.
 TAG_RE = re.compile(r"^\s*(?:[-*+]\s+\[[ xX?>]\]\s+)?(?:\*\*)?(?:[^\s\[]+\s+)?\[([^\]\n]{1,60})\]")
@@ -151,7 +154,12 @@ def bench_at_branch(root) -> bool:
         if tree and rec.get("tree") == tree:
             return True
         sub = (rec.get("submodules") or {}).get(ACCOUNT_GITLINK)
-        if link and isinstance(sub, dict) and sub.get("pointer") == link and not sub.get("modified"):
+        if (
+            link
+            and isinstance(sub, dict)
+            and sub.get("pointer") == link
+            and not sub.get("modified")
+        ):
             return True
     return False
 
@@ -219,7 +227,11 @@ def needs_hold(block: str, probe: NeedsProbe) -> str:
         return ""
     if not need:
         return "needs: the `Needs:` value is malformed (check:ci-plan-live-proof LP8 names it)"
-    met = {"verified-vmcheck": probe.vmcheck, "bench-deploy": probe.bench, "pushed-head": probe.pushed}
+    met = {
+        "verified-vmcheck": probe.vmcheck,
+        "bench-deploy": probe.bench,
+        "pushed-head": probe.pushed,
+    }
     return "" if met[need]() else NEEDS_HELD[need]
 
 

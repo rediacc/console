@@ -1651,7 +1651,10 @@ def needs_of(block):
 for _value in D.NEEDS_VALUES:
     check(
         "Needs: %s on an indented sub-line is read" % _value,
-        (needs_of(NEEDS_BOX + "    Needs: %s\n" % _value).needs, needs_of(NEEDS_BOX + "    Needs: %s\n" % _value).errors),
+        (
+            needs_of(NEEDS_BOX + "    Needs: %s\n" % _value).needs,
+            needs_of(NEEDS_BOX + "    Needs: %s\n" % _value).errors,
+        ),
         (_value, ()),
     )
 check(
@@ -1671,7 +1674,9 @@ check(
 )
 check(
     "Needs: the tag named in box-line prose is no finding (twin)",
-    D.github_wait_findings("- [ ] N9 [writer] parse `Needs:` beside the tags\n", ["after the merge"], []),
+    D.github_wait_findings(
+        "- [ ] N9 [writer] parse `Needs:` beside the tags\n", ["after the merge"], []
+    ),
     [],
 )
 check(
@@ -1688,21 +1693,29 @@ check(
 for _kind in D.GITHUB_ONLY_KINDS:
     check(
         "Needs: GitHub-only: %s derives pushed-head" % _kind,
-        needs_of(NEEDS_BOX + "  (corrected) GitHub-only: %s%s\n" % (_kind, NEEDS_WHY)).effective_needs,
+        needs_of(
+            NEEDS_BOX + "  (corrected) GitHub-only: %s%s\n" % (_kind, NEEDS_WHY)
+        ).effective_needs,
         "pushed-head",
     )
 for _runner, _class in D.RUNNER_NEEDS.items():
     check(
         "Needs: Local-route: %s derives %s" % (_runner, _class),
-        needs_of(NEEDS_BOX + "  (corrected) Local-route: %s%s\n" % (_runner, NEEDS_WHY)).effective_needs,
+        needs_of(
+            NEEDS_BOX + "  (corrected) Local-route: %s%s\n" % (_runner, NEEDS_WHY)
+        ).effective_needs,
         _class,
     )
 check(
     "Needs: a route takes its most demanding runner",
-    needs_of(NEEDS_BOX + "  (corrected) Local-route: www-local, vm-check%s\n" % NEEDS_WHY).effective_needs,
+    needs_of(
+        NEEDS_BOX + "  (corrected) Local-route: www-local, vm-check%s\n" % NEEDS_WHY
+    ).effective_needs,
     "verified-vmcheck",
 )
-check("Needs: an untagged box with no line derives nothing", needs_of(NEEDS_BOX).effective_needs, "")
+check(
+    "Needs: an untagged box with no line derives nothing", needs_of(NEEDS_BOX).effective_needs, ""
+)
 check(
     "Needs: a stated value that contradicts a valid tag is a finding",
     len(
@@ -1725,7 +1738,9 @@ check(
 )
 check(
     "Needs: a later (corrected ...) line supersedes an earlier sub-line",
-    needs_of(NEEDS_BOX + "    Needs: none\n  (corrected 2026-11-18) Needs: verified-vmcheck)\n").needs,
+    needs_of(
+        NEEDS_BOX + "    Needs: none\n  (corrected 2026-11-18) Needs: verified-vmcheck)\n"
+    ).needs,
     "verified-vmcheck",
 )
 check(

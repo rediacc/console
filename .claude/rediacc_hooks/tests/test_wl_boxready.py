@@ -8,7 +8,9 @@ from __future__ import annotations
 import ast
 import importlib
 import json
+import os
 import pathlib
+import subprocess
 
 import pytest
 
@@ -356,9 +358,6 @@ def test_the_default_probe_runs_each_fact_once(tmp_path):
 
 
 def _git(cwd, *argv):
-    import os
-    import subprocess
-
     env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
     env.update(
         GIT_AUTHOR_NAME="f",
@@ -416,6 +415,8 @@ def test_the_real_vmcheck_probe_answers_no_with_no_receipt(tmp_path):
     # The probe swallows import failures, so the hop is proven to load on its own: a wrong path would answer no for every tree and this case would still pass.
     assert B.SYSPATH_HOP.is_file()
     surfaces, vm_tier = B.proof_modules()
-    assert callable(vm_tier.admit) and callable(vm_tier.chain_for) and callable(surfaces.inputs)
+    assert callable(vm_tier.admit)
+    assert callable(vm_tier.chain_for)
+    assert callable(surfaces.inputs)
     assert B.vmcheck_admits(_repo(tmp_path)) is False
     assert B.vmcheck_admits(tmp_path / "not-a-repo") is False

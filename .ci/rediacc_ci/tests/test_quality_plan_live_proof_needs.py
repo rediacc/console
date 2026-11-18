@@ -70,7 +70,7 @@ def test_a_value_on_the_box_line_is_lp8_and_prose_naming_the_tag_is_not(judged):
     assert judged("- [ ] N9 [writer] parse and derive `Needs:` beside the tags\n") == []
 
 
-def test_the_value_is_not_searched_for_a_phrase(gate):
+def test_the_value_is_not_searched_for_a_phrase():
     # `pushed-head` is made a phrase here, so only the scrub keeps the value from matching.
     assert D.box_github_wait(BOX + "    Needs: pushed-head\n", ["pushed-head"]).phrases == ()
     assert D.box_github_wait(BOX + "    on the pushed-head\n", ["pushed-head"]).phrases == (
