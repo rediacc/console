@@ -8,6 +8,8 @@ THE PAYLOAD is JSON `{pid, session, purpose, since}`: vm:check writes the same k
 
 THE WAIT is bounded. A second holder polls until `wait_s` runs out, printing the holder once to stderr, then raises `ResourceBusyError` naming the resource, the file and the holder.
 
+A NESTED HOLDER. A process whose ANCESTOR holds the resource (a drill vm:check runs, `./rdc.sh ops up` under the wrapper) is already inside the hold: it takes nothing, waits for nothing and releases nothing (`ResourceLock.nested`). Without that rule the child would wait on its own parent until the wait ran out.
+
 THE WRAPPER, for callers that are not Python:
 
     python3 -m rediacc_ci.core.resource_lock run --resource fleet [--wait S] [--purpose P] -- <argv>
@@ -101,6 +103,42 @@ def describe_payload(raw: bytes) -> str:
     )
 
 
+def payload_pid(raw: bytes) -> int:
+    """The `pid` of a lock payload; 0 when it does not parse."""
+    try:
+        data = json.loads(raw.decode(errors="replace"))
+        pid = int(data.get("pid") or 0) if isinstance(data, dict) else 0
+    except (ValueError, TypeError):
+        return 0
+    return max(pid, 0)
+
+
+def parent_pid(pid: int) -> int:
+    """The parent of `pid` from /proc (Linux) or `ps` (macOS); 0 when unknown."""
+    with contextlib.suppress(OSError, ValueError, IndexError):
+        stat = pathlib.Path("/proc/%d/stat" % pid).read_text()
+        # The command name in field 2 is parenthesised and may hold spaces; the ppid is the second field after it.
+        return int(stat.rsplit(")", 1)[1].split()[1])
+    with contextlib.suppress(OSError, ValueError, subprocess.SubprocessError):
+        out = subprocess.run(
+            ["ps", "-o", "ppid=", "-p", str(pid)], capture_output=True, text=True, timeout=5, check=False
+        ).stdout
+        return int(out.strip() or 0)
+    return 0
+
+
+def ancestors(pid: int | None = None) -> list[int]:
+    """The parent chain of `pid` (default this process), nearest first, ending before pid 1."""
+    chain: list[int] = []
+    current = os.getpid() if pid is None else pid
+    for _ in range(64):
+        current = parent_pid(current)
+        if current <= 1 or current in chain:
+            break
+        chain.append(current)
+    return chain
+
+
 def default_session(environ: Mapping[str, str] | None = None) -> str:
     env = os.environ if environ is None else environ
     return (env.get("CLAUDE_CODE_SESSION_ID") or "-")[:8]
@@ -122,6 +160,8 @@ class ResourceLock:
         self.path = lock_path(resource, environ)
         self.environ = os.environ if environ is None else environ
         self.fd: int | None = None
+        # True when an ancestor process holds the resource, so this object holds nothing of its own.
+        self.nested = False
         self._clock = clock
         self._sleep = sleep
         self._say = say if say is not None else (lambda line: print(line, file=sys.stderr, flush=True))
@@ -139,9 +179,16 @@ class ResourceLock:
         finally:
             os.close(fd)
 
-    def acquire(self, purpose: str, wait_s: float = DEFAULT_WAIT_S, session: str | None = None) -> float:
-        """Seconds waited. Raises ResourceBusyError naming the holder when the wait runs out."""
-        if self.fd is not None:
+    def acquire(
+        self,
+        purpose: str,
+        wait_s: float = DEFAULT_WAIT_S,
+        session: str | None = None,
+        *,
+        nest: bool = True,
+    ) -> float:
+        """Seconds waited. Raises ResourceBusyError naming the holder when the wait runs out. With `nest` (the default) a resource an ancestor process holds is entered at once, as `nested`."""
+        if self.fd is not None or self.nested:
             raise RuntimeError("resource %s is already held by this lock object" % self.resource)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         fd = os.open(self.path, os.O_RDWR | os.O_CREAT | os.O_CLOEXEC, 0o600)
@@ -153,7 +200,12 @@ class ResourceLock:
                 break
             except BlockingIOError:
                 waited = self._clock() - started
-                holder = describe_payload(os.pread(fd, 4096, 0))
+                raw = os.pread(fd, 4096, 0)
+                if nest and payload_pid(raw) in (os.getpid(), *ancestors()):
+                    os.close(fd)
+                    self.nested = True
+                    return waited
+                holder = describe_payload(raw)
                 if waited >= wait_s:
                     os.close(fd)
                     raise ResourceBusyError(self.resource, self.path, holder, waited) from None
@@ -176,6 +228,7 @@ class ResourceLock:
         return self._clock() - started
 
     def release(self) -> None:
+        self.nested = False
         if self.fd is None:
             return
         with contextlib.suppress(OSError):

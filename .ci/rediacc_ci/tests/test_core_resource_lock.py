@@ -171,3 +171,36 @@ def test_bad_resource_name_is_refused(runtime: pathlib.Path) -> None:
     with pytest.raises(ValueError):
         resource_lock.lock_path("../etc")
     assert resource_lock.bench_resource("EU") == "bench-eu"
+
+
+NEST_SCRIPT = """
+import subprocess, sys
+from rediacc_ci.core import resource_lock
+lock = resource_lock.ResourceLock("fleet")
+lock.acquire("parent", 5.0)
+child = (
+    "import sys\\n"
+    "from rediacc_ci.core import resource_lock\\n"
+    "lock = resource_lock.ResourceLock('fleet', say=lambda _l: None)\\n"
+    "try:\\n"
+    "    lock.acquire('child', 0.0, nest=sys.argv[1] == 'nest')\\n"
+    "except resource_lock.ResourceBusyError:\\n"
+    "    print('busy'); sys.exit(0)\\n"
+    "print('nested' if lock.nested else 'held')\\n"
+)
+for mode in ("nest", "flat"):
+    print(subprocess.run([sys.executable, "-c", child, mode], capture_output=True, text=True).stdout.strip())
+lock.release()
+"""
+
+
+def test_a_descendant_of_the_holder_enters_nested(runtime: pathlib.Path) -> None:
+    done = subprocess.run([sys.executable, "-c", NEST_SCRIPT], capture_output=True, text=True, timeout=30, check=False)
+    assert done.returncode == 0, done.stderr
+    # The descendant enters as nested; the control with nesting off is refused like any other waiter.
+    assert done.stdout.split() == ["nested", "busy"]
+
+
+def test_ancestors_names_the_parent_chain() -> None:
+    chain = resource_lock.ancestors()
+    assert chain and chain[0] == os.getppid()
