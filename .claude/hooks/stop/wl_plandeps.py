@@ -1071,9 +1071,9 @@ def box_github_wait(
             needs_raw = m.group(1).strip() or "(empty)"
     needs = ""
     if needs_raw:
-        head = _tag_why(needs_raw)[0].rstrip(").,;").split()
-        if head and head[0] in NEEDS_VALUES:
-            needs = head[0]
+        words = _tag_why(needs_raw)[0].rstrip(").,;").split()
+        if words and words[0] in NEEDS_VALUES:
+            needs = words[0]
         else:
             errors[NEEDS].append(
                 "`%s:` value %r is not one of %s" % (NEEDS, needs_raw, "|".join(NEEDS_VALUES))
