@@ -433,6 +433,7 @@ def test_sweep_keeps_a_plan_a_file_outside_agent_still_cites(gate, tmp_path):
 def _grep_stub(tmp_path: pathlib.Path, rc: int) -> dict[str, str]:
     """A PATH overlay whose `git grep` exits `rc` with a named stderr and whose every other git verb is the real one."""
     real = shutil.which("git")
+    assert real is not None, "git must be on PATH for the plan-folders stub"
     bindir = tmp_path / "stubbin"
     bindir.mkdir()
     stub = bindir / "git"
