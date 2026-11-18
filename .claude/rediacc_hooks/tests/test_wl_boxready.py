@@ -261,3 +261,161 @@ def test_the_pr_loop_profile_keeps_the_key():
         and any(getattr(t, "id", "") == "TURBO_KEEPS" for t in n.targets)
     )
     assert "idle-capacity" in ast.unparse(keeps)
+
+
+# PLAN-push-decoupling N2: readiness reads `Needs:` (D3.3). A fake probe answers each fact and records what was asked, so a `none` box is shown to start without any receipt, bench or push question.
+
+WHY_CD = " -- only the CD pipeline deploys the edge channel"
+NEEDS_PLAN = _plan(
+    "- [ ] W0 [writer] no line at all\n"
+    "- [ ] W1 [writer] the parser\n    Needs: none\n"
+    "- [ ] W2 [writer] the fleet code\n    Needs: verified-vmcheck\n"
+    "- [ ] W3 [writer] the worker code\n    Needs: bench-deploy\n"
+    "- [ ] W4 [writer] the tip check\n    Needs: pushed-head\n"
+    "- [ ] W5 [writer] the edge check after the merge\n"
+    "  (corrected 2026-11-18) GitHub-only: CD" + WHY_CD + "\n"
+    "- [ ] W6 [writer] the bench run\n"
+    "  (corrected 2026-11-18) Local-route: deploy-bench" + WHY_CD + "\n"
+    "- [ ] W7 [writer] the bad value\n    Needs: soon\n"
+)
+
+
+class FakeProbe:
+    def __init__(self, vmcheck=False, bench=False, pushed=False):
+        self.asked = []
+        self.facts = {"vmcheck": vmcheck, "bench": bench, "pushed": pushed}
+
+    def _ask(self, name):
+        def answer():
+            self.asked.append(name)
+            return self.facts[name]
+
+        return answer
+
+    def probe(self):
+        return B.NeedsProbe(self._ask("vmcheck"), self._ask("bench"), self._ask("pushed"))
+
+
+def _needs_ready(tmp_path, **facts):
+    # One fresh root per call: a test asks twice, once per state.
+    fresh = tmp_path / ("r%d" % len(list(tmp_path.iterdir())))
+    fresh.mkdir()
+    root = _root(fresh, {"n": NEEDS_PLAN}, ["n"])
+    fake = FakeProbe(**facts)
+    ready, skipped = B.ready_boxes(root, probe=fake.probe())
+    return [b.id for b in ready], {s.id: s.why for s in skipped}, fake.asked
+
+
+def test_a_none_box_is_ready_on_an_unpushed_tree_with_no_receipt(tmp_path):
+    ready, why, _asked = _needs_ready(tmp_path)
+    assert ready == ["W0", "W1"]
+    assert "needs verified-vmcheck" in why["W2"]
+    assert "needs bench-deploy" in why["W3"]
+    assert "needs pushed-head" in why["W4"]
+    assert "malformed" in why["W7"]
+
+
+def test_a_none_box_asks_no_probe(tmp_path):
+    root = _root(tmp_path, {"n": _plan("- [ ] W1 [writer] the parser\n    Needs: none\n")}, ["n"])
+    fake = FakeProbe()
+    assert [b.id for b in B.ready_boxes(root, probe=fake.probe())[0]] == ["W1"]
+    assert fake.asked == []
+
+
+def test_verified_vmcheck_is_held_without_an_admitting_receipt_and_ready_with_one(tmp_path):
+    assert "W2" not in _needs_ready(tmp_path)[0]
+    assert "W2" in _needs_ready(tmp_path, vmcheck=True)[0]
+
+
+def test_bench_deploy_is_held_while_bench_is_behind_the_branch(tmp_path):
+    assert "W3" not in _needs_ready(tmp_path)[0]
+    assert "W3" in _needs_ready(tmp_path, bench=True)[0]
+
+
+def test_pushed_head_is_held_until_the_tip_is_on_its_upstream(tmp_path):
+    assert "W4" not in _needs_ready(tmp_path)[0]
+    assert "W4" in _needs_ready(tmp_path, pushed=True)[0]
+
+
+def test_a_box_with_no_line_uses_the_derived_value(tmp_path):
+    _ready, why, _asked = _needs_ready(tmp_path, vmcheck=True)
+    # GitHub-only derives pushed-head, a deploy-bench route derives bench-deploy.
+    assert "needs pushed-head" in why["W5"]
+    assert "needs bench-deploy" in why["W6"]
+    ready, _why, _asked = _needs_ready(tmp_path, bench=True, pushed=True)
+    assert {"W5", "W6"} <= set(ready)
+    # A box with no line and no tag derives none, the reading every writer box had before.
+    assert "W0" in ready
+
+
+def test_the_default_probe_runs_each_fact_once(tmp_path):
+    probe = B.default_probe(tmp_path)
+    for _ in range(3):
+        assert probe.pushed() is False
+    assert probe.pushed.cache_info().misses == 1
+
+
+def _git(cwd, *argv):
+    import os
+    import subprocess
+
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    env.update(
+        GIT_AUTHOR_NAME="f",
+        GIT_AUTHOR_EMAIL="f@example.invalid",
+        GIT_COMMITTER_NAME="f",
+        GIT_COMMITTER_EMAIL="f@example.invalid",
+    )
+    done = subprocess.run(
+        ["git", *argv], cwd=str(cwd), env=env, capture_output=True, text=True, check=True
+    )
+    return done.stdout.strip()
+
+
+def _repo(tmp_path):
+    work = tmp_path / "work"
+    _git(tmp_path, "init", "-q", "-b", "main", str(work))
+    (work / "a").write_text("1\n", encoding="utf-8")
+    _git(work, "add", "a")
+    _git(work, "commit", "-q", "-m", "one")
+    return work
+
+
+def test_the_real_pushed_probe_reads_the_upstream(tmp_path):
+    work = _repo(tmp_path)
+    origin = tmp_path / "origin.git"
+    _git(tmp_path, "init", "-q", "--bare", "-b", "main", str(origin))
+    # CONTROL: no upstream at all answers no.
+    assert B.head_pushed(work) is False
+    _git(work, "remote", "add", "origin", str(origin))
+    _git(work, "push", "-q", "-u", "origin", "main")
+    assert B.head_pushed(work) is True
+    (work / "a").write_text("2\n", encoding="utf-8")
+    _git(work, "commit", "-q", "-am", "two")
+    assert B.head_pushed(work) is False
+
+
+def test_the_real_bench_probe_reads_the_deploy_record(tmp_path):
+    work = _repo(tmp_path)
+    tree = _git(work, "rev-parse", "HEAD^{tree}")
+    folder = work / ".ci" / "cache" / "live-deploys"
+    folder.mkdir(parents=True)
+    assert B.bench_at_branch(work) is False
+    # A proxy record and a dirty record carry the tree and still do not count.
+    (folder / "proxy-bench-eu.json").write_text(json.dumps({"tree": tree, "dirty": False}))
+    (folder / "bench-us.json").write_text(json.dumps({"tree": tree, "dirty": True}))
+    assert B.bench_at_branch(work) is False
+    (folder / "bench-eu.json").write_text(json.dumps({"tree": tree, "dirty": False}))
+    assert B.bench_at_branch(work) is True
+    (work / "a").write_text("2\n", encoding="utf-8")
+    _git(work, "commit", "-q", "-am", "two")
+    assert B.bench_at_branch(work) is False
+
+
+def test_the_real_vmcheck_probe_answers_no_with_no_receipt(tmp_path):
+    # The probe swallows import failures, so the hop is proven to load on its own: a wrong path would answer no for every tree and this case would still pass.
+    assert B.SYSPATH_HOP.is_file()
+    surfaces, vm_tier = B.proof_modules()
+    assert callable(vm_tier.admit) and callable(vm_tier.chain_for) and callable(surfaces.inputs)
+    assert B.vmcheck_admits(_repo(tmp_path)) is False
+    assert B.vmcheck_admits(tmp_path / "not-a-repo") is False

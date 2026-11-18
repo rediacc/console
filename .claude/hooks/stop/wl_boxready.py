@@ -6,15 +6,22 @@ THE TAG GRAMMAR LIVES HERE, ONCE. The first bracketed tag after a box's id (`S2 
 
 READY (D4). An open box is ready when it is writer-tagged and not post-merge; its plan is not held, not finished and has no `Writers: none` header; `wl_plandeps.Graph.box_blockers` finds nothing unresolved, where a LIVE plan-level edge is cleared for a writer box when the prerequisite's remaining open boxes (or the one box a task edge names) are all non-writer or post-merge, because a writer box builds on the prerequisite's code and code is writer work (an untagged open box of the prerequisite still holds it, failing closed); no open, deferred or leased worklist item names the plan and the box; and its `Owns:` line overlaps no box in flight, no other plan a live writer serves, and no box named before it.
 
+NEEDS (agent/plans/PLAN-push-decoupling.md D3.3). A box's `Needs:` sub-line, read through `wl_plandeps.box_needs` (stated, else derived from a valid `GitHub-only:` or `Local-route:` tag), decides what else the box waits for: `none` (and a box that states none and derives none) is ready with no receipt and no push; `verified-vmcheck` once `rediacc_ci.proof.vm_tier.admit` admits HEAD's tree; `bench-deploy` once a clean bench deploy record (`.ci/cache/live-deploys/bench-<region>.json`) carries HEAD's tree or HEAD's `private/account` pointer; `pushed-head` once HEAD is on its upstream. A malformed value is held (LP8 names it). The three probes are `NeedsProbe` fields, built once per `ready_boxes` call and asked only for a box that needs them; a probe that cannot answer answers no, so a box is held rather than started early.
+
 NEVER RAISES INTO A STOP from the grammar; `ready_boxes` and `idle_capacity_text` may raise, and the hook's arm reports that as a hook bug.
 """
 
 from __future__ import annotations
 
 import dataclasses
+import functools
+import importlib.util
+import json
 import os
 import pathlib
 import re
+import subprocess
+from collections.abc import Callable
 
 # The first bracketed tag after the box's id, on a raw box line or a parsed body. `- [ ] V1 [live] x`, `V1 [live] x`, `- [ ] [live] x` all read `live`; a box whose second token is not a bracket has no tag.
 TAG_RE = re.compile(r"^\s*(?:[-*+]\s+\[[ xX?>]\]\s+)?(?:\*\*)?(?:[^\s\[]+\s+)?\[([^\]\n]{1,60})\]")
@@ -65,6 +72,155 @@ def post_merge(line: str) -> bool:
 def startable(line: str) -> bool:
     """True when a writer could do the box before the merge as far as its tags say: neither non-writer nor post-merge. An untagged box is startable."""
     return not non_writer(line) and not post_merge(line)
+
+
+@dataclasses.dataclass(frozen=True)
+class NeedsProbe:
+    """The three facts a `Needs:` value waits on, each a no-argument callable answering True when it holds: a VERIFIED vm:check receipt admits HEAD's tree (`vmcheck`), bench carries the branch's code (`bench`), HEAD is on its upstream (`pushed`)."""
+
+    vmcheck: Callable[[], bool]
+    bench: Callable[[], bool]
+    pushed: Callable[[], bool]
+
+
+BENCH_RECORD_DIR = (".ci", "cache", "live-deploys")
+BENCH_RECORD_RE = re.compile(r"^bench-[a-z0-9-]+\.json$")
+ACCOUNT_GITLINK = "private/account"
+# What a held box's skip line says, per value.
+NEEDS_HELD = {
+    "verified-vmcheck": "needs verified-vmcheck: no VERIFIED vm:check receipt admits HEAD's tree",
+    "bench-deploy": "needs bench-deploy: no clean bench deploy record carries HEAD's account code",
+    "pushed-head": "needs pushed-head: HEAD is not on its upstream",
+}
+# What a vm:check probe may raise while it judges: a failed import, a missing or unreadable receipt or map (MapError is a ValueError), a git call that failed.
+_PROBE_ERRORS = (
+    ImportError,
+    OSError,
+    ValueError,
+    KeyError,
+    TypeError,
+    AttributeError,
+    RuntimeError,
+    subprocess.SubprocessError,
+)
+
+
+def _git(root, *argv: str) -> tuple[int, str]:
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    try:
+        done = subprocess.run(
+            ["git", *argv],
+            cwd=str(root),
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return 1, ""
+    return done.returncode, done.stdout.strip()
+
+
+def head_pushed(root) -> bool:
+    """HEAD is its upstream's tip or an ancestor of it. No upstream (a detached lease, a branch never pushed) answers no."""
+    rc, upstream = _git(root, "rev-parse", "--verify", "-q", "@{upstream}")
+    if rc or not upstream:
+        return False
+    return _git(root, "merge-base", "--is-ancestor", "HEAD", upstream)[0] == 0
+
+
+def bench_at_branch(root) -> bool:
+    """A clean bench deploy record (`.ci/cache/live-deploys/bench-<region>.json`, the proxy records excluded) whose `tree` is HEAD's tree or whose unmodified `private/account` pointer is HEAD's gitlink: bench serves the branch's account code."""
+    folder = pathlib.Path(root).joinpath(*BENCH_RECORD_DIR)
+    try:
+        names = sorted(p for p in folder.iterdir() if BENCH_RECORD_RE.match(p.name))
+    except OSError:
+        return False
+    rc_tree, tree = _git(root, "rev-parse", "HEAD^{tree}")
+    rc_link, link = _git(root, "rev-parse", "HEAD:%s" % ACCOUNT_GITLINK)
+    tree = tree if not rc_tree else ""
+    link = link if not rc_link else ""
+    for path in names:
+        try:
+            rec = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(rec, dict) or rec.get("dirty") is not False:
+            continue
+        if tree and rec.get("tree") == tree:
+            return True
+        sub = (rec.get("submodules") or {}).get(ACCOUNT_GITLINK)
+        if link and isinstance(sub, dict) and sub.get("pointer") == link and not sub.get("modified"):
+            return True
+    return False
+
+
+# The canonical `.claude` hop, loaded BY FILE: this module lives outside the `rediacc_hooks` package (the wl_benchblock and wl_liveproof shape).
+SYSPATH_HOP = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
+
+
+def proof_modules():
+    """(`rediacc_ci.proof.surfaces`, `rediacc_ci.proof.vm_tier`) through SYSPATH_HOP; ImportError when the hop cannot load."""
+    spec = importlib.util.spec_from_file_location("_wl_boxready_syspath", SYSPATH_HOP)
+    if spec is None or spec.loader is None:
+        raise ImportError("no loadable %s" % SYSPATH_HOP)
+    syspath = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(syspath)
+    except OSError as exc:
+        raise ImportError("cannot load %s: %s" % (SYSPATH_HOP, exc)) from exc
+    return (
+        syspath.import_from_ci("rediacc_ci.proof.surfaces"),
+        syspath.import_from_ci("rediacc_ci.proof.vm_tier"),
+    )
+
+
+def vmcheck_admits(root) -> bool:
+    """`rediacc_ci.proof.vm_tier.admit` admits HEAD's tree with no side charged, through the verified chain of HEAD, the reading `block_vm_unverified_push` takes. A failure to import or to judge answers no."""
+    rc_head, head = _git(root, "rev-parse", "HEAD")
+    rc_tree, tree = _git(root, "rev-parse", "HEAD^{tree}")
+    if rc_head or rc_tree or not head or not tree:
+        return False
+    try:
+        surfaces, vm_tier = proof_modules()
+        where = pathlib.Path(root)
+        verdict = vm_tier.admit(
+            where, tree, surfaces.inputs(where, tree), (), vm_tier.chain_for(where, head)
+        )
+    except _PROBE_ERRORS:
+        return False
+    return bool(verdict.ok)
+
+
+def default_probe(root) -> NeedsProbe:
+    """The probes against the checkout at `root`, each run at most once."""
+    return NeedsProbe(
+        vmcheck=functools.cache(lambda: vmcheck_admits(root)),
+        bench=functools.cache(lambda: bench_at_branch(root)),
+        pushed=functools.cache(lambda: head_pushed(root)),
+    )
+
+
+def box_need(block: str) -> str:
+    """The box's `Needs:` value: stated, else derived from a valid tag, else `none`; "" when a stated value is malformed."""
+    import wl_plandeps as D
+
+    wait = D.box_needs(block)
+    if wait.needs_malformed:
+        return ""
+    return wait.effective_needs or "none"
+
+
+def needs_hold(block: str, probe: NeedsProbe) -> str:
+    """Why the box's `Needs:` holds it, "" when it is met. Only the probe the value names is asked."""
+    need = box_need(block)
+    if need == "none":
+        return ""
+    if not need:
+        return "needs: the `Needs:` value is malformed (check:ci-plan-live-proof LP8 names it)"
+    met = {"verified-vmcheck": probe.vmcheck, "bench-deploy": probe.bench, "pushed-head": probe.pushed}
+    return "" if met[need]() else NEEDS_HELD[need]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -197,8 +353,8 @@ def writer_clear(root):
     return clear
 
 
-def ready_boxes(root, plans=None, live_plans=(), items=(), graph=None):
-    """([ReadyBox], [Skip]) over `plans` (default: the `## Promoted` entries of agent/plans/QUEUE.md), in queue and file order. `live_plans` are the plan basenames live writers serve (the roster's `plan_holders` keys); `items` are worklist records (`id`, `state`, `text`). A skip is listed only for a writer-tagged box."""
+def ready_boxes(root, plans=None, live_plans=(), items=(), graph=None, probe=None):
+    """([ReadyBox], [Skip]) over `plans` (default: the `## Promoted` entries of agent/plans/QUEUE.md), in queue and file order. `live_plans` are the plan basenames live writers serve (the roster's `plan_holders` keys); `items` are worklist records (`id`, `state`, `text`); `probe` answers what a `Needs:` value waits on (default: `default_probe(root)`). A skip is listed only for a writer-tagged box."""
     import wl_planconc
     import wl_plandeps as D
     import wl_planenforce
@@ -242,6 +398,8 @@ def ready_boxes(root, plans=None, live_plans=(), items=(), graph=None):
         if owns is not None and not owns.none:
             busy.append(("%s (a live writer's plan)" % base, tuple(owns.globs)))
     clear = writer_clear(root)
+    if probe is None:
+        probe = default_probe(root)
     ready: list[ReadyBox] = []
     skipped: list[Skip] = []
     for rel, boxes in per_plan:
@@ -256,6 +414,10 @@ def ready_boxes(root, plans=None, live_plans=(), items=(), graph=None):
 
             if post_merge(box.block):
                 skip("post-merge")
+                continue
+            held = needs_hold(box.block, probe)
+            if held:
+                skip(held)
                 continue
             blockers = graph.box_blockers(rel, box.block, clear=clear) if rel in graph.plans else []
             if blockers:
