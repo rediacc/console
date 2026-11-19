@@ -147,6 +147,58 @@ describe('loginWithPassword with several orgs', () => {
     expect(mintUrls(urls)[0]).toMatch(/orgId=org-a$/);
   });
 
+  describe('an org whose /portal/me fails', () => {
+    /** The per-org /portal/me answer: org-a fails with 503, org-b carries the given status. */
+    function meAnswer(url: string, orgBStatus: string) {
+      const id = new URL(url).searchParams.get('orgId');
+      if (!id) return reply(200, { subscription: null, orgSelectionRequired: true });
+      if (id === 'org-a') return reply(503, { error: 'upstream down' });
+      return reply(200, { subscription: { id: 'sub-b', status: orgBStatus } });
+    }
+
+    const orgList = {
+      organizations: [
+        { id: 'org-a', name: 'A' },
+        { id: 'org-b', name: 'B' },
+      ],
+    };
+
+    function route(url: string, orgBStatus: string) {
+      if (url.endsWith('/auth/login')) return reply(200, {}, 'sess');
+      if (url.endsWith('/portal/org/list')) return reply(200, orgList);
+      if (url.includes('/portal/me')) return meAnswer(url, orgBStatus);
+      return reply(200, { token: 'tok' });
+    }
+
+    function stubFailingOrg(orgBStatus: string): string[] {
+      const urls: string[] = [];
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((url: string) => {
+          urls.push(url);
+          return route(url, orgBStatus);
+        })
+      );
+      return urls;
+    }
+
+    it('is the refusal, not noSubscription, when no other org is active', async () => {
+      const urls = stubFailingOrg('inactive');
+      await expect(
+        loginWithPassword('https://srv', { email: 'a@b.c', password: 'p' })
+      ).rejects.toThrow('commands.subscription.login.passwordRefused');
+      expect(mintUrls(urls)).toEqual([]);
+    });
+
+    it('control: another active org still wins', async () => {
+      const urls = stubFailingOrg('active');
+      await expect(
+        loginWithPassword('https://srv', { email: 'a@b.c', password: 'p' })
+      ).resolves.toBe('tok');
+      expect(mintUrls(urls)[0]).toMatch(/orgId=org-b$/);
+    });
+  });
+
   it('two orgs, none active: noSubscription and no mint', async () => {
     const urls = stubOrgs([
       { id: 'org-a', name: 'A', status: 'inactive' },

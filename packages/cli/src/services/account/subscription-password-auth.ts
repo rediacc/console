@@ -195,6 +195,7 @@ const orgQuery = (orgId?: string) => (orgId ? `?orgId=${encodeURIComponent(orgId
 /**
  * An account in several orgs gets `orgSelectionRequired` from /portal/me. GET /portal/org/list names
  * the orgs; the first whose /portal/me subscription is `active` wins, and the choice is announced.
+ * An org whose /portal/me fails is skipped while another is active, and is the refusal when none is.
  */
 async function pickActiveOrg(
   serverUrl: string,
@@ -210,9 +211,14 @@ async function pickActiveOrg(
     })
   );
   if (list.status >= 400) throw refusal('orgs', list);
+  let unreadable: Reply<MeReply> | undefined;
   for (const org of list.body.organizations ?? []) {
     const me = await meOf(org.id);
-    if (me.status < 400 && me.body.subscription?.id && me.body.subscription.status === 'active') {
+    if (me.status >= 400) {
+      unreadable ??= me;
+      continue;
+    }
+    if (me.body.subscription?.id && me.body.subscription.status === 'active') {
       outputService.info(
         t('commands.subscription.login.orgChosen', {
           org: org.name ?? org.id.slice(0, 8),
@@ -221,6 +227,8 @@ async function pickActiveOrg(
       return { orgId: org.id, me };
     }
   }
+  // An org that could not be read may be the active one: report that, not an account with no subscription.
+  if (unreadable) throw refusal('org', unreadable);
   return undefined;
 }
 

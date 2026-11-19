@@ -61,7 +61,7 @@ import { isTelemetryDisabled, telemetryService } from './services/telemetry/tele
 import type { OutputFormat } from './types/index.js';
 import { isAgentEnvironment } from './utils/agent-guard.js';
 import { attachExamples } from './utils/attach-examples.js';
-import { handleError, setOutputFormat, ValidationError } from './utils/errors.js';
+import { getOutputFormat, handleError, setOutputFormat, ValidationError } from './utils/errors.js';
 import { applyRegistry } from './utils/mode-guard.js';
 import { isDevBuild } from './utils/platform.js';
 import { VERSION } from './version.js';
@@ -406,7 +406,9 @@ export function createCli(): Command {
 
       // The redacted ring buffer behind `rdc feedback report --last`; a failed write never reaches the command.
       recordCommand({ argv: process.argv.slice(2), exitCode });
-      printFeedbackHint({ argv: process.argv.slice(2), exitCode });
+      // JSON mode carries the hint as the envelope's `next` option, so stderr stays clean for the parser.
+      if (getOutputFormat() !== 'json')
+        printFeedbackHint({ argv: process.argv.slice(2), exitCode });
 
       const scope = currentRequestTelemetry();
       if (scope?.open && scope.open.spanKey === ctx?.spanKey) scope.open = undefined;

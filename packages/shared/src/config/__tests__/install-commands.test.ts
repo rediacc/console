@@ -21,6 +21,11 @@ describe('install-commands', () => {
     expect(QUICK_INSTALL_WIN_COMMAND).toBe(`irm ${WK_SITE_ORIGIN}/install.ps1 | iex`);
   });
 
+  it('pins the production host literally, so a host change fails here too', () => {
+    expect(QUICK_INSTALL_UNIX_COMMAND).toBe('curl -fsSL https://www.rediacc.com/install.sh | bash');
+    expect(QUICK_INSTALL_WIN_COMMAND).toBe('irm https://www.rediacc.com/install.ps1 | iex');
+  });
+
   it('builds against an overridden origin', () => {
     expect(quickInstallUnixCommand('https://x.test')).toBe(
       'curl -fsSL https://x.test/install.sh | bash'

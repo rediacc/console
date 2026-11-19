@@ -19,6 +19,11 @@ afterEach(() => {
   rmSync(home, { recursive: true, force: true });
 });
 
+function restoreEnv(key: string, saved: string | undefined): void {
+  if (saved === undefined) Reflect.deleteProperty(process.env, key);
+  else process.env[key] = saved;
+}
+
 function run(args: string[], env: Record<string, string> = {}) {
   const base: Record<string, string | undefined> = { ...process.env };
   delete base.REDIACC_FEEDBACK_HINT;
@@ -88,12 +93,13 @@ describe('hint policy', () => {
     expect(shouldHint({ argv: ['repo', 'up'], exitCode: 0 })).toBe(false);
     expect(shouldHint({ argv: ['repo', 'up'], exitCode: 2 })).toBe(false);
     expect(shouldHint({ argv: ['--config', 'a', 'feedback', 'report'], exitCode: 1 })).toBe(false);
+    const saved = process.env.REDIACC_FEEDBACK_HINT;
     process.env.REDIACC_FEEDBACK_HINT = '0';
     try {
       expect(shouldHint({ argv: ['repo', 'up'], exitCode: 1 })).toBe(false);
       expect(withFeedbackOption(undefined, { argv: ['repo'], exitCode: 1 })).toBeUndefined();
     } finally {
-      delete process.env.REDIACC_FEEDBACK_HINT;
+      restoreEnv('REDIACC_FEEDBACK_HINT', saved);
     }
   });
 });
@@ -104,7 +110,8 @@ describe('setExitCode path', () => {
     process.exitCode = undefined;
   });
 
-  it('prints the hint on stderr when a command fails through process.exitCode, and not on success', async () => {
+  /** Run `rdc <command> [-o json]` through createCli with process.exitCode set by the command; return what stderr got. */
+  async function stderrOf(command: string, extra: string[] = []): Promise<string> {
     const writes: string[] = [];
     const orig = process.stderr.write;
     process.stderr.write = ((c: unknown) => {
@@ -112,6 +119,7 @@ describe('setExitCode path', () => {
       return true;
     }) as typeof process.stderr.write;
     const savedArgv = process.argv;
+    const savedState = process.env.XDG_STATE_HOME;
     process.env.XDG_STATE_HOME = path.join(home, 'state');
     try {
       const program = createCli();
@@ -119,16 +127,22 @@ describe('setExitCode path', () => {
         process.exitCode = 3;
       });
       program.command('fine').action(() => {});
-      process.argv = ['node', 'rdc', 'fine'];
+      process.argv = ['node', 'rdc', command, ...extra];
       await program.parseAsync(process.argv);
-      expect(writes.join('')).not.toContain(HINT);
-      process.argv = ['node', 'rdc', 'boom'];
-      await program.parseAsync(process.argv);
-      expect(writes.join('')).toContain(HINT);
+      return writes.join('');
     } finally {
       process.stderr.write = orig;
       process.argv = savedArgv;
-      delete process.env.XDG_STATE_HOME;
+      restoreEnv('XDG_STATE_HOME', savedState);
     }
+  }
+
+  it('prints the hint on stderr when a command fails through process.exitCode, and not on success', async () => {
+    expect(await stderrOf('fine', ['-o', 'table'])).not.toContain(HINT);
+    expect(await stderrOf('boom', ['-o', 'table'])).toContain(HINT);
+  });
+
+  it('prints no hint on stderr in JSON mode, where the envelope carries it', async () => {
+    expect(await stderrOf('boom', ['-o', 'json'])).not.toContain(HINT);
   });
 });
