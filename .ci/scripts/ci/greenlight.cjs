@@ -350,6 +350,8 @@ const CLOSURES = {
       '.github/actions/app-token',
       // Added f39c7fbda: blanks the step-scoped signing key after its one consuming step. Found by test_gate_greenlight_closure_trace.py.
       '.github/actions/bws-scrub',
+      // Added with the apt hardening: the Account E2E legs run this composite before their apt installs, rewriting the runner's apt sources to archive.ubuntu.com on hosted runners. A local composite resolves from the WORKSPACE, so a change to it must re-run this key. Found by test_gate_greenlight_closure_trace.py.
+      '.github/actions/apt-mirror',
       // package.json defines build:packages (package.json:21); the lockfile is
       // what `npm ci` resolves and what keys the node_modules cache.
       'package.json',

@@ -5,7 +5,7 @@ WHY. PR #605 run 44442526107 failed three jobs on a stalled Ubuntu mirror, not o
 
 WHAT. `run_with_retry` runs the command up to `attempts` times, each cut at `timeout` seconds, with `backoff * attempt` seconds between. When an earlier attempt STALLED (timed out) and the next one is the final one, `fallback` runs first (on a hosted runner it re-points apt at archive.ubuntu.com through `rediacc_ci.infra.apt_mirror`). A final failure is never absorbed: the exit code is non-zero and the last error is named. Nothing here is a `continue-on-error`.
 
-CLI: `python3 -m rediacc_ci.infra.apt_retry [--attempts N] [--timeout S] [--backoff S] -- <command...>`.
+CLI: `PYTHONPATH=.ci python3 -m rediacc_ci.infra.apt_retry [--attempts N] [--timeout S] [--backoff S] -- <command...>`.
 """
 
 import argparse
