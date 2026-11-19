@@ -130,11 +130,12 @@ Order: S1; then A1 and C1 in parallel; A2-A4 after A1, C2-C4 after C1; P1-P2 aft
     Needs: none
     Accept: `cd private/account && npx vitest run tests/integration/feedback-visibility.test.ts` exits 0 with: a user sees only their own reports; an org admin sees a member's reports only after that member's share tick is on, and not after it is turned off; a non-admin member never sees another member's reports; a FREE machine sees only its `free:` reports; a fixed report lists as `fixed-in-v<x>`.
     (ticked) 2026-11-19T03:42:52Z by d778be9d: commit:f0e287bbeb account 5bfaa84 list/query/settings with R6 visibility; vitest 39 passed, typecheck rc 0
-- [ ] A4 [writer] (W-ACC) Admin routes (grouped list, detail, status PUT), the export and verdict pair for root API tokens, and the purge in the daily cron (D3)
+- [x] A4 [writer] (W-ACC) Admin routes (grouped list, detail, status PUT), the export and verdict pair for root API tokens, and the purge in the daily cron (D3)
     Owns: private/account/src/routes/root-feedback.ts, private/account/src/routes/index.ts, private/account/src/services/feedback.service.ts, private/account/src/entry/cloudflare.ts, private/account/tests/integration/feedback-admin.test.ts
     Depends on: A2.
     Needs: none
     Accept: `cd private/account && npx vitest run tests/integration/feedback-admin.test.ts` exits 0 with: the grouped list returns one row per fingerprint with report count, occurrences, distinct reporters and orgs and versions; a non-root session is 403; the status PUT without elevation is refused; the export with a root API token returns redacted fields only and no owner id; a verdict batch sets status, category, `plan_ref` and `fixed_in`; the purge deletes a report resolved 91 days ago and keeps one resolved 89 days ago, an open one, and a `planned` one. The test names whether `requireElevated` admits a root API token, per D6.
+    (ticked) 2026-11-19T04:02:33Z by d778be9d: commit:a288dee8d5 account 26e5334 admin routes, export, verdicts, purge; vitest 55 passed, typecheck rc 0
 - [ ] P1 [writer] (W-PORTAL) Admin pages `FeedbackOverview` and `FeedbackReports` (grouped by fingerprint, count, version, status; status change), routed beside contact; English strings in admin.json
     Owns: private/account/web/src/pages/admin/FeedbackOverview.tsx, private/account/web/src/pages/admin/FeedbackReports.tsx, private/account/web/src/router.tsx, private/account/web/src/api/**, private/account/web/src/i18n/locales/en/admin.json, private/account/web/src/pages/__tests__/FeedbackAdmin.test.tsx
     Depends on: A4.

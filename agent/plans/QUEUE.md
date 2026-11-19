@@ -82,21 +82,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1541 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1544 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
   - epic 2255f2d2, no plan, 2 commit(s) on the branch, 0 open item(s): Convert stale GitHub issues (console, renet, account) into plan files
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:aff726b0dbd5a37b6, worker:aec85b5c4654a370d.
-- Leased items: 8: #02389657 (worker:blxpukwu0, d778be9d), #0e9506a2 (worker:blxpukwu0, d778be9d), #10fea782 (worker:aec85b5c4654a370d, d778be9d), #4889018a (worker:blxpukwu0, d778be9d), #ab9c68b1 (worker:blxpukwu0, d778be9d), #b28ccc5c (worker:blxpukwu0, d778be9d), #e39d0205 (worker:aff726b0dbd5a37b6, d778be9d), #fbe192ca (worker:blxpukwu0, d778be9d).
+- Writers: 5 live of writer_cap 25 (session d778be9d): worker:aec85b5c4654a370d, worker:afb13d7f12d54b634, worker:ad88f746a24dec6eb, worker:a2ab4be9c76fb97f8, worker:a3cdad569ca27bf42.
+- Leased items: 10: #02389657 (worker:blxpukwu0, d778be9d), #0e9506a2 (worker:blxpukwu0, d778be9d), #10fea782 (worker:aec85b5c4654a370d, d778be9d), #2ab1ee76 (worker:afb13d7f12d54b634, d778be9d), #4889018a (worker:blxpukwu0, d778be9d), #a1ecc191 (worker:ad88f746a24dec6eb, d778be9d), #ab9c68b1 (worker:blxpukwu0, d778be9d), #b28ccc5c (worker:a2ab4be9c76fb97f8, d778be9d), #f9f61c21 (worker:afb13d7f12d54b634, d778be9d), #fbe192ca (worker:blxpukwu0, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 29 of 81 plans done, 1244 of 1504 boxes done (82%).
+Promoted: 29 of 81 plans done, 1245 of 1504 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -180,7 +180,7 @@ Promoted: 29 of 81 plans done, 1244 of 1504 boxes done (82%).
 | 78 | PLAN-root-grants.md | 5/19 | 14 open |
 | 79 | PLAN-push-decoupling.md | 17/23 | 6 open |
 | 80 | PLAN-stop-hook-store-status.md | 3/9 | 6 open |
-| 81 | PLAN-rdc-feedback.md | 6/21 | 15 open |
+| 81 | PLAN-rdc-feedback.md | 7/21 | 14 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
