@@ -140,6 +140,16 @@ describe('rdc feedback report', () => {
     expect(data.next.options[0].run).toBe('rdc feedback report --last --yes');
   });
 
+  it("an agent's next carries --message, quoted, so sending it reports the same text", async () => {
+    const { full } = deps({ agent: () => true });
+    m.format.current = 'json';
+    await runReport({ last: true, message: "it's broken now" }, full);
+    const data = m.print.mock.calls[0][0];
+    expect(data.next.options[0].run).toBe(
+      `rdc feedback report --last --message 'it'\\''s broken now' --yes`
+    );
+  });
+
   it('an agent with --yes sends (control)', async () => {
     const { full, fetchFn } = deps({ agent: () => true, yes: () => true });
     await runReport({ last: true }, full);

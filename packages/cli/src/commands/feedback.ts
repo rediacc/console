@@ -92,6 +92,7 @@ function sendNext(options: ReportOptions): NextAction {
     options.last ? ' --last' : '',
     options.command === undefined ? '' : ` --command ${options.command}`,
     options.kind ? ` --kind ${options.kind}` : '',
+    options.message === undefined ? '' : ` --message ${shellQuote(options.message)}`,
   ].join('');
   return {
     summary: t('feedback.previewOnly'),
@@ -102,6 +103,11 @@ function sendNext(options: ReportOptions): NextAction {
       },
     ],
   };
+}
+
+/** POSIX single-quoting, so a message with spaces or quotes survives being pasted back as one argument. */
+function shellQuote(value: string): string {
+  return `'${value.replaceAll("'", `'\\''`)}'`;
 }
 
 /** The preview is the exact body that would be sent, so what the user reads is what leaves the machine. */
