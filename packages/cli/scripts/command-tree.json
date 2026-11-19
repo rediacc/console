@@ -5824,6 +5824,52 @@
       "subcommands": []
     },
     {
+      "name": "feedback",
+      "descriptionKey": "commands.feedback.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "report",
+          "descriptionKey": "commands.feedback.report.description",
+          "options": [
+            {
+              "flags": "--last",
+              "descriptionKey": "commands.feedback.report.optionLast",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--command <n>",
+              "descriptionKey": "commands.feedback.report.optionCommand",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--list-recent",
+              "descriptionKey": "commands.feedback.report.optionListRecent",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--kind <kind>",
+              "descriptionKey": "commands.feedback.report.optionKind",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--message <text>",
+              "descriptionKey": "commands.feedback.report.optionMessage",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        }
+      ]
+    },
+    {
       "name": "version",
       "descriptionKey": "commands.version.description",
       "options": [
