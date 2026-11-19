@@ -1,19 +1,20 @@
-## SESSION d778be9d 2026-11-19T02:17:29Z
+## SESSION d778be9d 2026-11-19T04:59:40Z
 
-# STATE d778be9d (2026-11-19 ~02:50Z)
+# STATE d778be9d (2026-11-19 ~04:45Z)
 
 ## Next action
-1. #4889018a: fix or not-a-bug the open review findings of the landed commits (none high): 0bfa82fd x5 (S1 feedback), 1e70b16a x2 (R6 drills), 3828d77f x2 (W7 guards), b0fb4096 x2 (R8 release). `worklist.py --review-mark d778be9d <id> fixed <sha>|not-a-bug <path:line>`.
-2. #02389657: CI watch bhzbdhi10 on pushed head b2e74fdb92; on verdict tick it and fix reds; #4889018a closes on green. #ab9c68b1 A1a needs the deploy-preview run, #fbe192ca A4d red-stub proof, #0e9506a2 N1 green nightly.
-3. Unpushed: W7 3828d77f20, R8 b0fb4096f7, S1 0bfa82fdf4, R6 1e70b16a96, ticks 6c8e04ee52, fix e06a68dddc. R6 + fix touch .ci/rediacc_ci/drills/** (vm:check trigger): next push needs `npm run vm:check -- --changed` VERIFIED, then ci:quick, then `worklist.py --review-commit d778be9d` in its OWN call, then push with TURBO_PUSH_REASON. Never commit during vm:check or ci:quick.
-4. #cd796a07 root_grants DEFAULT applies edge-eu/us/asia when its window closes (~03:40Z): `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile root-grants -- python3 -m rediacc_ci.ops.root_grants --target edge-eu --apply`, then us, asia.
+1. #cd796a07: operator (ASKED 2026-11-19T04:4xZ) will mint us/asia root tokens but first wants the SAME 2FA key on us and asia. Investigator af1acd8cd0578c384 (read-only, opus) reports where TOTP is stored, its encryption key, and a supported set path. Then do the copy (D1 bookmark first, no secret printed) or tell the operator why not; after the operator mints, run root_grants --apply on edge-us and edge-asia.
+2. Land lease commits, then tick: C3 locales lease agent-a699e616b1c273669 bfa7adacd (also run `npm run export:command-tree -w @rediacc/cli` and commit command-tree.json, command-parity is red without it) -> tick PLAN-rdc-feedback 2d76dea2; P2 locales lease agent-a390cbe8c6a74f2d9 account 3010665 + gitlink -> tick 4e779064; review wave-2 hooks lease agent-a2ab4be9c76fb97f8 (732252e28..1344c3a16, 0ecd58f02, 48f844593) then --review-mark its 31 verdicts from its report; scripts/.ci writer a3cdad569ca27bf42 still running.
+3. X2b (PLAN-account-notices) passed on bench (/tmp/notices-x2b/bell-open.png) -> plan-tick it. LP-bench ec915c2d needs a VERIFIED vm:check on the head tree.
+4. CI run 44442526107 attempt 2 is NOT clean: time budget (fixed locally 77e3aa3276), ops-health (carried), PLUS Account E2E 3/4, E2E Workers opensuse 7/9, E2E probe 28-dockerd-privilege-gate -> diagnose these (read-only investigator) before the push.
+5. Push: after landings, `npm run vm:check -- --changed` (never commit during it), then ci:quick, `worklist.py --review-commit d778be9d` in its own call, push with TURBO_PUSH_REASON, sync_epic_block 605, ci-trace watch.
 
 ## Big pieces
-- PR #605 CI green and merge; edge release eu/us/asia done 2026-11-19 (#8bb65426); root grants (#cd796a07).
-- Hint filed: review-commit receipt advance refuses when the parent receipt's only red is carried (cost ci:quick run 39).
+- rdc-feedback: S1, A1, A2, A3, A4, C1, C2 ticked; C3 and P2 landed, locale strings pending landing.
+- Root grants: edge-eu applied (partner org Rediacc a558b21f).
 
 ## Owed ticks
-- 9 live-owed boxes per `worklist.py --box-audit d778be9d --live-owed` (PLAN-ciquick-cpu 51ceeb4f, PLAN-enterprise-isolation a8892e0c, ...): each needs its live run; A1a 695c3218 after a deploy preview; A4d 0a237b2e red-stub proof; N1 abe9b4eb after a green nightly.
+- C3 2d76dea2, P2 4e779064, X2b, LP-bench ec915c2d; A1a 695c3218, A4d 0a237b2e, N1 abe9b4eb after push.
 
 ## Delegated
-- none (bg: CI watch bhzbdhi10, wake timer byq90wjul).
+- af1acd8cd0578c384 2FA investigator (#cd796a07); a3cdad569ca27bf42 review wave 2 scripts/.ci (#b28ccc5c).
