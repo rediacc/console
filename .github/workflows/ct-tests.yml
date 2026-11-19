@@ -3427,6 +3427,8 @@ jobs:
         with:
           account: 'true'
       - run: npm run build:packages
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
       # T2.13 cache half (PLAN-ci-time-budget): setup-workspace's own cache-root/
       # cache-account steps already cover the three `npm ci` trees this job needs
       # (root, private/account, private/account/web, private/account/e2e) --

@@ -634,14 +634,21 @@ def test_system_deps_missing_runs_apt_bounded() -> None:
 
 def test_system_deps_timeout_fails_by_name() -> None:
     fake = _Fake(DRY, set(), apt=subprocess.TimeoutExpired("npx", 120))
-    with pytest.raises(account_e2e.RefusedError, match="install-deps chromium timed out"):
-        account_e2e.install_system_deps("chromium", ".", fake)
+    fell_back: list[int] = []
+    with pytest.raises(
+        account_e2e.RefusedError, match=r"install-deps chromium.*timed out after 120s"
+    ):
+        account_e2e.install_system_deps(
+            "chromium", ".", fake, sleep=lambda _s: None, fallback=lambda: fell_back.append(1)
+        )
+    assert fell_back == [1]
+    assert sum(1 for c in fake.calls if c[0] == "npx" and "--dry-run" not in c) == 3
 
 
 def test_system_deps_apt_failure_fails_by_name() -> None:
     fake = _Fake(DRY, set(), apt=100)
-    with pytest.raises(account_e2e.RefusedError, match="install-deps chromium failed"):
-        account_e2e.install_system_deps("chromium", ".", fake)
+    with pytest.raises(account_e2e.RefusedError, match=r"install-deps chromium.*exited 100"):
+        account_e2e.install_system_deps("chromium", ".", fake, sleep=lambda _s: None)
 
 
 def test_a_dry_run_that_prints_no_apt_line_is_refused_not_skipped() -> None:

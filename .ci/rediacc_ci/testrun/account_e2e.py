@@ -30,6 +30,7 @@ import urllib.request
 
 from rediacc_ci import log, paths, proc
 from rediacc_ci.core import common
+from rediacc_ci.infra import apt_retry
 from rediacc_ci.testrun import shard
 
 MIN_WEBAUTHN_TESTS = 20
@@ -111,6 +112,8 @@ def install_system_deps(
     browser: str,
     cwd: pathlib.Path | str,
     runner: typing.Callable[..., typing.Any] = subprocess.run,
+    sleep: typing.Callable[[float], None] = time.sleep,
+    fallback: typing.Callable[[], None] = apt_retry.system_fallback,
 ) -> bool:
     """True when apt ran, False when every system package was already installed. Raises RefusedError naming the step when the dry run is unreadable or apt fails or passes SYSTEM_DEPS_TIMEOUT_S."""
     base = ["npx", "--no-install", "playwright", "install-deps", browser]
@@ -150,13 +153,16 @@ def install_system_deps(
         return False
     log.info(f"Installing Playwright system deps for {browser}; missing: {' '.join(missing)}")
     try:
-        done = runner(base, cwd=cwd, check=False, timeout=SYSTEM_DEPS_TIMEOUT_S)
-    except subprocess.TimeoutExpired as exc:
-        raise RefusedError(
-            f"playwright install-deps {browser} timed out after {SYSTEM_DEPS_TIMEOUT_S}s (apt mirror outage?)"
-        ) from exc
-    if done.returncode != 0:
-        raise RefusedError(f"playwright install-deps {browser} failed (rc={done.returncode})")
+        apt_retry.run_with_retry(
+            base,
+            timeout=SYSTEM_DEPS_TIMEOUT_S,
+            runner=runner,
+            sleep=sleep,
+            fallback=fallback,
+            cwd=cwd,
+        )
+    except apt_retry.AptRetryError as exc:
+        raise RefusedError(f"playwright install-deps {browser}: {exc}") from exc
     return True
 
 

@@ -30,6 +30,18 @@ def _host(url: str) -> str:
 AZURE_HOST = _host(well_known.UBUNTU_AZURE_MIRROR)
 GLOBAL_HOST = _host(well_known.UBUNTU_ARCHIVE)
 
+# The regional EC2 mirrors (`us-east-2.ec2.archive.ubuntu.com`) are a second stall source: PR #605 run 44442526107 stalled `Setup KVM Host` and `playwright install-deps` on one. They are rewritten to the global archive exactly like the Azure host.
+EC2_REGIONAL = re.compile(r"\b[a-z0-9-]+\.ec2\.archive\.ubuntu\.com\b")
+
+
+def has_stale_host(text: str) -> bool:
+    return AZURE_HOST in text or EC2_REGIONAL.search(text) is not None
+
+
+def swap_host(text: str) -> str:
+    return EC2_REGIONAL.sub(GLOBAL_HOST, text.replace(AZURE_HOST, GLOBAL_HOST))
+
+
 # Files under the apt root that name a mirror.
 GLOBS = ("apt-mirrors.txt", "sources.list", "sources.list.d/*.sources", "sources.list.d/*.list")
 
@@ -39,20 +51,20 @@ def hosted_runner(env: dict[str, str]) -> bool:
 
 
 def rewrite_text(text: str) -> str:
-    """Replace the Azure host with the global archive, then drop the duplicate lines the replacement creates in a mirror list.
+    """Replace the Azure host and the regional EC2 hosts with the global archive, then drop the duplicate lines the replacement creates in a mirror list.
 
     A duplicate is only collapsed in a line that is a bare mirror URL (apt-mirrors.txt entries, `http://host/ubuntu/ priority:N`), never in a `deb` or `URIs:` line, where a repeated line would change the file's meaning.
     """
-    if AZURE_HOST not in text:
+    if not has_stale_host(text):
         return text
     lines = text.splitlines(keepends=True)
     bare = re.compile(r"\s*https?://")
     # Only a line the rewrite produced is dropped as a duplicate, of a line already there or of an earlier rewritten one, in any order; a duplicate already in the file is left as found.
-    kept = {ln.strip() for ln in lines if bare.match(ln) and AZURE_HOST not in ln}
+    kept = {ln.strip() for ln in lines if bare.match(ln) and not has_stale_host(ln)}
     out: list[str] = []
     for original in lines:
-        line = original.replace(AZURE_HOST, GLOBAL_HOST)
-        if AZURE_HOST in original and bare.match(line):
+        line = swap_host(original)
+        if has_stale_host(original) and bare.match(line):
             if line.strip() in kept:
                 continue
             kept.add(line.strip())
@@ -77,18 +89,38 @@ def apply(apt_root: pathlib.Path, env: dict[str, str]) -> list[pathlib.Path]:
     return changed
 
 
+RETRIES_FILE = "apt.conf.d/80ci-acquire-retries"
+RETRIES_TEXT = 'Acquire::Retries "3";\n'
+
+
+def ensure_retries(apt_root: pathlib.Path, env: dict[str, str]) -> bool:
+    """Write apt's own `Acquire::Retries` drop-in on a hosted runner; True when it wrote. Every later apt call (renet's, playwright's) inherits it."""
+    if not hosted_runner(env):
+        return False
+    path = apt_root / RETRIES_FILE
+    if path.is_file() and path.read_text(encoding="utf-8") == RETRIES_TEXT:
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(RETRIES_TEXT, encoding="utf-8")
+    return True
+
+
 def main() -> int:
     env = dict(os.environ)
     if not hosted_runner(env):
         print("apt-mirror: not a GitHub-hosted runner; apt sources left alone")
         return 0
     changed = apply(pathlib.Path("/etc/apt"), env)
+    if ensure_retries(pathlib.Path("/etc/apt"), env):
+        print(f"apt-mirror: wrote /etc/apt/{RETRIES_FILE} ({RETRIES_TEXT.strip()})")
     if changed:
         print(
             f"apt-mirror: {AZURE_HOST} -> {GLOBAL_HOST} in: " + ", ".join(str(p) for p in changed)
         )
     else:
-        print(f"apt-mirror: no {AZURE_HOST} entry under /etc/apt; nothing to change")
+        print(
+            f"apt-mirror: no {AZURE_HOST} or ec2 regional entry under /etc/apt; nothing to change"
+        )
     return 0
 
 
