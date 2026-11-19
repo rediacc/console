@@ -476,7 +476,12 @@ const PROBES: Probe[] = [
           'git ls-files -z --recurse-submodules -- .ci scripts .claude .devcontainer packages private',
           { cwd: root, encoding: 'utf-8', maxBuffer: 256 * 1024 * 1024 }
         );
-      } catch {
+      } catch (err) {
+        // A checkout (`.git` present) whose listing fails is a broken oracle, not an absent shell tree: null would read as a skip and the dead-bash entries would go unchecked without a word. A root with no `.git` is a fixture or an export, where null is the documented answer.
+        if (fs.existsSync(path.join(root, '.git')))
+          throw new Error(
+            `dead-bash-allowlist: git ls-files failed in ${root}, so the shell-file universe is unreadable: ${(err as Error).message}`
+          );
         return null;
       }
       for (const rel of listing.split('\0')) {
