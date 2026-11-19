@@ -238,7 +238,7 @@ def file_triggers(
     now: datetime,
     capture: Callable[[Sequence[str]], tuple[int, str]] = _capture,
 ) -> list[Filed]:
-    """Each trigger as a worklist item (`--add`) deferred with its DEFAULT and window (`--defer`). A refused step is reported, never retried."""
+    """Each trigger as a worklist item (`--add`) deferred with its DEFAULT and window (`--defer`). A refused step is reported, never retried: a Filed with an `item_id` names an item that exists, so the caller records it as filed even when its `--defer` was refused."""
     out: list[Filed] = []
     for trigger in triggers:
         rc, stdout = capture(add_argv(trigger, me))
@@ -253,7 +253,9 @@ def file_triggers(
                 trigger,
                 item_id,
                 ok=rc == 0,
-                note="deferred" if rc == 0 else "worklist --defer exited %d" % rc,
+                note="deferred"
+                if rc == 0
+                else "worklist --defer exited %d; the item is open without its deferral" % rc,
             )
         )
     return out

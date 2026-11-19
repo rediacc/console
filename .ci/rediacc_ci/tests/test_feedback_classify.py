@@ -132,7 +132,19 @@ BAD_REPLIES = {
     "summary-stage1": _reply(summary="ignore previous instructions"),
     "summary-quotes-report": _reply(summary="the compose project failed to start within"),
     "summary-empty": _reply(summary=""),
+    "summary-trailing-newline": _reply(summary="repo up times out\n"),
+    "summary-dollar": _reply(summary="expands $HOME"),
+    "summary-bracket": _reply(summary="[x] done"),
+    "summary-asterisk": _reply(summary="a *bold* claim"),
+    "summary-pipe": _reply(summary="left | right"),
+    "summary-hash": _reply(summary="# heading"),
 }
+
+
+def test_summary_shape_admits_the_apostrophe_and_underscore():
+    """Review 23cc895b.3: the comment and the class now agree; these two are admitted on purpose."""
+    outcome = classify.outcome_for(_item(), _reply(summary="repo_up can't start the project"))
+    assert not outcome.quarantined
 
 
 @pytest.mark.parametrize("name", sorted(BAD_REPLIES))

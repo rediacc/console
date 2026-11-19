@@ -419,6 +419,44 @@ def test_stage4_files_a_trigger_once_under_me(tmp_path):
     assert len(worklist.calls) == 2
 
 
+class RefusingDefer(Worklist):
+    """`--add` succeeds and `--defer` is refused."""
+
+    def __call__(self, argv):
+        rc, out = super().__call__(argv)
+        return (3, "") if argv[2] == "--defer" else (rc, out)
+
+
+class RefusingAdd(Worklist):
+    def __call__(self, argv):
+        self.calls.append(list(argv))
+        return 4, ""
+
+
+def test_stage4_a_refused_defer_is_still_filed_once(tmp_path):
+    """Review 23cc895b.4: an --add that landed with its --defer refused was left out of the state, so every later run added the item again."""
+    server = Server([_fresh(distinctReporters=6)])
+    worklist = RefusingDefer()
+    rc, results = triage.run(_opts(tmp_path, me="ab12cd34"), _deps(server, worklist))
+    assert rc == 1
+    (filed,) = results[0].filed
+    assert not filed.ok
+    assert filed.item_id
+    assert "open without its deferral" in filed.note
+    rc, results = triage.run(_opts(tmp_path, me="ab12cd34"), _deps(server, worklist))
+    assert results[0].filed == []
+    assert [c[2] for c in worklist.calls] == ["--add", "--defer"]
+
+
+def test_stage4_control_a_refused_add_is_retried(tmp_path):
+    server = Server([_fresh(distinctReporters=6)])
+    worklist = RefusingAdd()
+    rc, _results = triage.run(_opts(tmp_path, me="ab12cd34"), _deps(server, worklist))
+    assert rc == 1
+    triage.run(_opts(tmp_path, me="ab12cd34"), _deps(server, worklist))
+    assert [c[2] for c in worklist.calls] == ["--add", "--add"]
+
+
 def test_stage4_control_without_me_names_the_trigger_and_files_nothing(tmp_path):
     server = Server([_fresh(distinctReporters=6)])
     worklist = Worklist()
@@ -453,6 +491,46 @@ def test_stage5_controls_a_planned_or_unclassified_fingerprint_gets_no_plan(tmp_
     _rc, results = triage.run(_opts(tmp_path), _deps(server))
     assert results[0].plans == []
     assert not (tmp_path / "agent").exists()
+
+
+def _hold_both_plan_names(root):
+    """Two foreign plans under both names the confirmed fingerprint could take."""
+    cls = _cls()
+    for fp in ("1" * 64, "2" * 64):
+        plangen.write(root, _item(fp), cls, NOW)
+    base = plangen.slug_for(cls)
+    plans = root / "agent" / "plans"
+    first = plans / plangen.plan_name(base)
+    second = plans / plangen.plan_name("%s-%s" % (base, FP[:8]))
+    second.write_text(first.read_text())
+    return first, second
+
+
+def test_plangen_refuses_when_both_names_are_foreign(tmp_path):
+    """Review 23cc895b.8: the double collision had no committed test."""
+    _hold_both_plan_names(tmp_path)
+    with pytest.raises(plangen.PlanError, match="both plan names"):
+        plangen.write(tmp_path, _item(), _cls(), NOW)
+
+
+def test_stage5_a_plan_error_fails_the_run(tmp_path):
+    """Review 23cc895b.6: a confirmed fingerprint left with no plan logged a warning and the run exited 0."""
+    _hold_both_plan_names(tmp_path)
+    lines = []
+    server = Server([_confirmed()])
+    rc, results = triage.run(_opts(tmp_path), _deps(server, lines=lines))
+    assert rc == 1
+    assert results[0].plan_errors == [FP]
+    assert results[0].plans == []
+    assert any("1 confirmed fingerprint(s) with no plan" in line for line in lines)
+    assert server.posts == []  # nothing changed, so no verdict moves it to planned
+
+
+def test_stage5_control_a_free_name_plans_and_exits_0(tmp_path):
+    server = Server([_confirmed()])
+    rc, results = triage.run(_opts(tmp_path), _deps(server))
+    assert rc == 0
+    assert results[0].plan_errors == []
 
 
 def test_stage5_dry_run_writes_no_plan(tmp_path):
@@ -521,6 +599,65 @@ def test_repro_refuses_a_quarantined_or_unclassified_fingerprint(tmp_path):
     rc, _res, server, _w = _repro(tmp_path, [_item()], "reproduced")
     assert rc == 2
     assert server.posts == []
+
+
+def _order(fp):
+    return {
+        "fingerprint": fp,
+        "where": "local",
+        "commandPath": "backup push",
+        "category": "backup",
+        "start": "x",
+    }
+
+
+def test_write_orders_keeps_an_earlier_unreproduced_order(tmp_path):
+    """Review 23cc895b.5: each run rewrote the orders file with its own orders only, losing the earlier ones."""
+    path = tmp_path / "orders.json"
+    triage.write_orders(path, "eu", [_order(FP)], "2026-11-19T04:00:00.000Z")
+    triage.write_orders(path, "eu", [_order(FP2)], "2026-11-19T05:00:00.000Z")
+    assert [o["fingerprint"] for o in triage.read_orders(path, "eu")] == [FP, FP2]
+
+
+def test_write_orders_control_a_new_order_replaces_its_own_fingerprint(tmp_path):
+    path = tmp_path / "orders.json"
+    triage.write_orders(path, "eu", [_order(FP)], "2026-11-19T04:00:00.000Z")
+    triage.write_orders(path, "eu", [{**_order(FP), "start": "y"}], "2026-11-19T05:00:00.000Z")
+    assert [o["start"] for o in triage.read_orders(path, "eu")] == ["y"]
+    assert triage.read_orders(path, "us") == []
+
+
+def test_repro_consumes_its_order_and_keeps_the_others(tmp_path):
+    path = tmp_path / "orders.json"
+    triage.write_orders(path, "eu", [_order(FP), _order(FP2)], "2026-11-19T04:00:00.000Z")
+    server = Server([_screened()])
+    opts = triage.ReproOptions(
+        "eu",
+        FP,
+        "clean",
+        plans_root=tmp_path,
+        critical_state=tmp_path / "critical.json",
+        orders=path,
+    )
+    rc, _res = triage.repro(opts, _deps(server))
+    assert rc == 0
+    assert [o["fingerprint"] for o in triage.read_orders(path, "eu")] == [FP2]
+
+
+def test_repro_dry_run_control_keeps_the_order(tmp_path):
+    path = tmp_path / "orders.json"
+    triage.write_orders(path, "eu", [_order(FP)], "2026-11-19T04:00:00.000Z")
+    opts = triage.ReproOptions(
+        "eu",
+        FP,
+        "clean",
+        dry_run=True,
+        plans_root=tmp_path,
+        critical_state=tmp_path / "critical.json",
+        orders=path,
+    )
+    triage.repro(opts, _deps(Server([_screened()])))
+    assert [o["fingerprint"] for o in triage.read_orders(path, "eu")] == [FP]
 
 
 def test_repro_dry_run_writes_nothing(tmp_path):

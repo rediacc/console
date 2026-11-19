@@ -3,7 +3,7 @@
     PYTHONPATH=.ci python3 -m rediacc_ci.feedback.triage run [--region eu|us|asia|bench] [--dry-run] [--status <list>] [--cursor <path>]
         [--no-classify | --replies <dir>] [--me <session-prefix>] [--plans-root <dir>] [--orders <path>] [--critical-state <path>]
     PYTHONPATH=.ci python3 -m rediacc_ci.feedback.triage repro --region <r> --fingerprint <64 hex> --result reproduced|clean|inconclusive
-        [--workaround] [--dry-run] [--me <session-prefix>] [--plans-root <dir>] [--critical-state <path>]
+        [--workaround] [--dry-run] [--me <session-prefix>] [--plans-root <dir>] [--orders <path>] [--critical-state <path>]
 
 Without `--region` the three production regions run in turn; `bench` (the eu bench) runs only when named.
 
@@ -13,18 +13,18 @@ RUN, per region:
   2. Export the items seen since the region's cursor with a status in `--status` (default: every open status, so Stage 4 sees the aggregates of fingerprints already screened, confirmed or planned).
   3. Stage 1 (`quarantine.screen`): a `new` or `screening` item that matches a rule is quarantined, its triage note naming the rule and the field; a clean `new` item moves to `screening`. A confirmed or planned fingerprint is never demoted by Stage 1.
   4. Stage 2 (`classify`): each `new` or `screening` survivor with no category yet is classified ALONE inside the fixed wrapper. A reply that is not the schema, or flags the report suspicious, quarantines it; a report that is not meaningful with a low count is rejected; the rest stay `screening` with the category and the classification in the triage note. The model is the messages API with `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`, or with `--replies <dir>` the files Haiku sub-agents of `/feedback-triage` wrote (a missing reply writes its prompt file and leaves the report for the next run). `--no-classify` stops after Stage 1.
-  5. Stage 3: one near-duplicate call over the summaries of the open classified fingerprints records the suspected parent in the child's note; each `meaningful && safe_to_reproduce` report gets a reproduction order, written to `--orders` (default `.ci/cache/feedback/orders-<region>.json`).
+  5. Stage 3: one near-duplicate call over the summaries of the open classified fingerprints records the suspected parent in the child's note; each `meaningful && safe_to_reproduce` report gets a reproduction order, merged into `--orders` (default `.ci/cache/feedback/orders-<region>.json`): an order of this run replaces the one already there for its fingerprint, and the others stay until `repro` records their result.
   6. Stage 4 (`critical`): every R8 trigger the aggregates and Stage 2 show becomes a worklist item deferred with its DEFAULT and a 6 h window, filed under `--me` (without it the run names the triggers and files nothing). A filed trigger is recorded in `--critical-state` and never filed twice.
   7. Stage 5 (`plangen`): each `confirmed` fingerprint with no plan gets `agent/plans/PLAN-feedback-<slug>.md` under `--plans-root` (default the repository) and moves to `planned` with `planRef`.
-  8. Write the verdicts in batches and advance the region's cursor to the newest `lastSeenAt` exported, unless a classification is still pending, the classifier was unavailable or `--status` named only some of the open statuses, so the next run sees those reports again. `--dry-run` prints the same lines and writes no verdict, cursor, order, plan or worklist item.
+  8. Write the verdicts in batches and advance the region's cursor to the newest `lastSeenAt` exported, unless a classification is still pending, the classifier was unavailable, `--no-classify` left a `new` or `screening` report unclassified, or `--status` named only some of the open statuses, so the next run sees those reports again. `--dry-run` prints the same lines and writes no verdict, cursor, order, plan or worklist item.
 
-REPRO records the result of a reproduction the agent ran from an order: `reproduced` confirms the fingerprint, `clean` rejects it when its count is low (and is the R8 (c) disagreement when it is high), `inconclusive` leaves it in `screening`. The R8 triggers that need a reproduction ((b) and (e)) are evaluated here, and a confirmed fingerprint gets its plan at once.
+REPRO records the result of a reproduction the agent ran from an order: `reproduced` confirms the fingerprint, `clean` rejects it when its count is low (and is the R8 (c) disagreement when it is high), `inconclusive` leaves it in `screening`. The R8 triggers that need a reproduction ((b) and (e)) are evaluated here, a confirmed fingerprint gets its plan at once, and once the verdict is written the fingerprint's order leaves the orders file.
 
 One line per item names the region, the short fingerprint and the decision; no report field is ever printed.
 
 CREDENTIALS. The run re-executes itself under the Bitwarden profile its regions need (`root-login` for eu, us and asia; `bench-login-eu` for bench) through `rediacc_ci.core.bws_env exec`, unless that profile is already bound; production and bench in one process are refused, because each needs its own profile. Stage 2 over the API reads `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` from the same environment. Nothing secret reaches argv or output.
 
-EXIT. 0 every region done; 1 a failed step in some region (the others still run); 2 a refusal before any request (usage, a missing credential, an unreadable cursor) or a missing classifier token.
+EXIT. 0 every region done; 1 a failed step in some region (the others still run), a worklist step refused, or a confirmed fingerprint left with no plan (`plangen.PlanError`); 2 a refusal before any request (usage, a missing credential, an unreadable cursor) or a missing classifier token.
 """
 
 from __future__ import annotations
@@ -79,6 +79,7 @@ class ReproOptions:
     me: str | None = None
     plans_root: Path | None = None
     critical_state: Path | None = None
+    orders: Path | None = None
 
 
 @dataclass
@@ -96,7 +97,9 @@ class RegionResult:
     triggers: list[critical.Trigger] = field(default_factory=list)
     filed: list[critical.Filed] = field(default_factory=list)
     plans: list[plangen.Written] = field(default_factory=list)
+    plan_errors: list[str] = field(default_factory=list)
     pending: int = 0
+    unclassified: int = 0
     unavailable: str | None = None
     unavailable_rc: int = 0
     written: client.VerdictResult | None = None
@@ -163,8 +166,6 @@ def _parser() -> argparse.ArgumentParser:
     route = run_p.add_mutually_exclusive_group()
     route.add_argument("--no-classify", action="store_true")
     route.add_argument("--replies", type=Path)
-    for p in (run_p,):
-        p.add_argument("--orders", type=Path)
     repro_p = sub.add_parser("repro", help="record a reproduction result")
     repro_p.add_argument("--region", choices=client.REGIONS, required=True)
     repro_p.add_argument("--fingerprint", required=True)
@@ -172,6 +173,7 @@ def _parser() -> argparse.ArgumentParser:
     repro_p.add_argument("--workaround", action="store_true")
     repro_p.add_argument("--dry-run", action="store_true")
     for p in (run_p, repro_p):
+        p.add_argument("--orders", type=Path)
         p.add_argument("--me")
         p.add_argument("--plans-root", type=Path)
         p.add_argument("--critical-state", type=Path)
@@ -207,6 +209,7 @@ def parse_any(argv: Sequence[str]) -> Options | ReproOptions:
             me,
             ns.plans_root,
             ns.critical_state,
+            ns.orders,
         )
     regions = (ns.region,) if ns.region else client.PRODUCTION_REGIONS
     return Options(
@@ -395,7 +398,8 @@ def stage4(
                 " #%s" % f.item_id if f.item_id else "",
             )
         )
-        if f.ok:
+        # An item that exists is filed, deferral or not: a second --add would ask the same question twice (review 23cc895b.4). A refused --defer still fails the run.
+        if f.item_id:
             state[f.trigger.key] = stamp
     critical.write_state(state_file, state)
 
@@ -425,7 +429,8 @@ def stage5(
                 root, item, parsed[0], now, opts.me or plangen.DEFAULT_OWNER, opts.dry_run
             )
         except plangen.PlanError as exc:
-            log.warn("%s %s: %s" % (result.region, fp[:SHORT_FP], exc))
+            log.error("%s %s: %s" % (result.region, fp[:SHORT_FP], exc))
+            result.plan_errors.append(fp)
             continue
         result.plans.append(written)
         verdicts.set(fp, status="planned", planRef=written.name)
@@ -470,7 +475,27 @@ def _line(result: RegionResult, item: Mapping[str, Any], verdicts: Verdicts) -> 
     return "%s %s %s" % (result.region, short, item["status"])
 
 
-def write_orders(path: Path, region: str, orders: Sequence[Mapping[str, Any]], ran_at: str) -> None:
+def orders_path(opts: Options | ReproOptions, region: str) -> Path:
+    return opts.orders or paths.from_root(*ORDERS_PARTS, "orders-%s.json" % region)
+
+
+def read_orders(path: Path, region: str) -> list[dict[str, Any]]:
+    """The orders on file for `region`; an absent, unreadable or other region's file holds none."""
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(doc, dict) or doc.get("region") != region:
+        return []
+    orders = doc.get("orders")
+    if not isinstance(orders, list):
+        return []
+    return [o for o in orders if isinstance(o, dict) and isinstance(o.get("fingerprint"), str)]
+
+
+def _store_orders(
+    path: Path, region: str, orders: Sequence[Mapping[str, Any]], ran_at: str
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text(
@@ -483,6 +508,23 @@ def write_orders(path: Path, region: str, orders: Sequence[Mapping[str, Any]], r
     tmp.replace(path)
 
 
+def write_orders(path: Path, region: str, orders: Sequence[Mapping[str, Any]], ran_at: str) -> None:
+    """Merge this run's orders into the file: an order replaces the one on file for its fingerprint, and an order not yet reproduced stays (review 23cc895b.5)."""
+    fresh = {o["fingerprint"] for o in orders}
+    kept = [o for o in read_orders(path, region) if o["fingerprint"] not in fresh]
+    _store_orders(path, region, [*kept, *orders], ran_at)
+
+
+def consume_order(path: Path, region: str, fingerprint: str, ran_at: str) -> bool:
+    """Drop the order of a fingerprint whose reproduction is recorded; True when one was on file."""
+    on_file = read_orders(path, region)
+    left = [o for o in on_file if o["fingerprint"] != fingerprint]
+    if len(left) == len(on_file):
+        return False
+    _store_orders(path, region, left, ran_at)
+    return True
+
+
 def run_region(region: str, opts: Options, cursor: Path, deps: Deps) -> RegionResult:
     rows = client.read_cursor(cursor)
     since = client.cursor_since(rows, region)
@@ -493,6 +535,13 @@ def run_region(region: str, opts: Options, cursor: Path, deps: Deps) -> RegionRe
     result = decide(region, items)
     verdicts = Verdicts(result.verdicts)
     stage2(result, verdicts, complete)
+    if complete is None:
+        # `--no-classify`: a survivor still open with no category was never classified, and a cursor moved past it would keep it from every later run (review 23cc895b.1).
+        result.unclassified = sum(
+            1
+            for item in result.survivors
+            if _status(item, verdicts) in SCREENABLE and not item.get("category")
+        )
     stage3(result, verdicts, complete)
     triggers = []
     for item in items:
@@ -505,7 +554,7 @@ def run_region(region: str, opts: Options, cursor: Path, deps: Deps) -> RegionRe
     stamp = now.strftime("%Y-%m-%dT%H:%M:%S.000Z")
     # The cursor is shared by every status, so only an export that covered every open status may move it: a `--status` subset would carry it past reports of the other statuses that the next default run then never sees (review 53b0c35b.1).
     subset = not set(OPEN_STATUSES) <= set(opts.statuses)
-    held = result.pending or result.unavailable or subset
+    held = result.pending or result.unavailable or result.unclassified or subset
     tail = ""
     if subset:
         tail += ", --status is a subset of the open statuses"
@@ -513,6 +562,10 @@ def run_region(region: str, opts: Options, cursor: Path, deps: Deps) -> RegionRe
         tail += ", %d classification(s) pending in %s" % (result.pending, opts.replies)
     if result.unavailable:
         tail += ", classifier unavailable: %s" % result.unavailable
+    if result.unclassified:
+        tail += ", %d report(s) left unclassified by --no-classify" % result.unclassified
+    if result.plan_errors:
+        tail += ", %d confirmed fingerprint(s) with no plan" % len(result.plan_errors)
     if opts.dry_run:
         deps.out(
             "%s dry run: %d item(s), %d quarantined, %d verdict(s), %d order(s), %d plan(s) not written, cursor not advanced%s"
@@ -530,12 +583,7 @@ def run_region(region: str, opts: Options, cursor: Path, deps: Deps) -> RegionRe
     if result.verdicts:
         result.written = client.write_verdicts(transport, result.verdicts)
     if result.orders:
-        write_orders(
-            opts.orders or paths.from_root(*ORDERS_PARTS, "orders-%s.json" % region),
-            region,
-            result.orders,
-            stamp,
-        )
+        write_orders(orders_path(opts, region), region, result.orders, stamp)
     if not held:
         client.write_cursor(cursor, region, client.next_since(items, since), stamp)
     written = result.written or client.VerdictResult()
@@ -579,6 +627,8 @@ def run(opts: Options, deps: Deps | None = None) -> tuple[int, list[RegionResult
             log.error("%s: %s" % (region, result.unavailable))
             rc = max(rc, result.unavailable_rc or 1)
         rc = max(rc, *(1 for f in result.filed if not f.ok), 0)
+        if result.plan_errors:
+            rc = max(rc, 1)
     return rc, results
 
 
@@ -645,7 +695,11 @@ def repro(opts: ReproOptions, deps: Deps | None = None) -> tuple[int, RegionResu
     except client.FeedbackError as exc:
         log.error("%s: %s" % (opts.region, exc))
         return exc.rc, result
-    return (1 if any(not f.ok for f in result.filed) else 0), result
+    consume_order(
+        orders_path(opts, opts.region), opts.region, item["fingerprint"], critical.stamp(now)
+    )
+    failed = any(not f.ok for f in result.filed) or result.plan_errors
+    return (1 if failed else 0), result
 
 
 # ---- credentials and entry -----------------------------------------------------------------------

@@ -60,8 +60,8 @@ REMOTE_CATEGORIES = frozenset(("repo-lifecycle", "backup", "restore", "login", "
 REPLY_KEYS = ("meaningful", "safe_to_reproduce", "suspicious", "category", "core_path", "summary")
 BOOL_KEYS = ("meaningful", "safe_to_reproduce", "suspicious", "core_path")
 SUMMARY_MAX = 160
-# Printable ASCII without the characters that open a quote, a shell expansion, a markdown span or a checkbox.
-SUMMARY_SHAPE = re.compile(r"^[A-Za-z0-9 .,:;()/_<>'+=%%?!@&~-]{1,%d}$" % SUMMARY_MAX)
+# One line of printable ASCII without the double quote, the backtick, `$`, the backslash, `|`, `#`, `*`, brackets and braces (a quotation, a shell expansion, a code or emphasis span, a table cell, a heading or a checkbox). The apostrophe and the underscore stay: summaries say "can't" and name identifiers such as repo_up. Matched with fullmatch, so a trailing newline is refused rather than slipping past a `$` (review 23cc895b.2, 23cc895b.3).
+SUMMARY_SHAPE = re.compile(r"[A-Za-z0-9 .,:;()/_<>'+=%%?!@&~-]{1,%d}" % SUMMARY_MAX)
 # A summary may not carry this many consecutive characters of the report verbatim ("no quotes from the report").
 QUOTE_RUN = 24
 
@@ -206,7 +206,7 @@ def parse_reply(text: str, item: Mapping[str, Any] | None = None) -> Classificat
     if doc["category"] not in CATEGORIES:
         raise ReplyError("category is not one of the schema's categories")
     summary = doc["summary"]
-    if not isinstance(summary, str) or not SUMMARY_SHAPE.match(summary):
+    if not isinstance(summary, str) or not SUMMARY_SHAPE.fullmatch(summary):
         raise ReplyError("summary is not one line of at most %d plain characters" % SUMMARY_MAX)
     hit = quarantine.screen({"message": summary})
     if hit is not None:

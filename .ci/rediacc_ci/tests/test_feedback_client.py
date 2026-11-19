@@ -308,6 +308,20 @@ def test_bench_missing_value_names_the_login_remedy():
 NOW = datetime(2026, 11, 19, 5, 0, 0, tzinfo=UTC)
 
 
+def _classifier(_prompt):
+    """A Stage 2 model that classifies every report it is shown as an ordinary, safe repo-lifecycle failure."""
+    return json.dumps(
+        {
+            "meaningful": True,
+            "safe_to_reproduce": True,
+            "suspicious": False,
+            "category": "repo-lifecycle",
+            "core_path": True,
+            "summary": "repo up fails on the machine",
+        }
+    )
+
+
 def _run(tmp_path, stub, dry_run, regions=("eu",)):
     lines: list[str] = []
     opened: list[tuple[str, bool]] = []
@@ -316,8 +330,14 @@ def _run(tmp_path, stub, dry_run, regions=("eu",)):
         opened.append((region, write))
         return stub
 
-    deps = triage.Deps(open_region=opener, now=lambda: NOW, out=lines.append)
-    opts = triage.Options(regions, dry_run=dry_run, cursor=tmp_path / "last-run.json")
+    deps = triage.Deps(open_region=opener, now=lambda: NOW, out=lines.append, complete=_classifier)
+    opts = triage.Options(
+        regions,
+        dry_run=dry_run,
+        cursor=tmp_path / "last-run.json",
+        classify=True,
+        orders=tmp_path / "orders.json",
+    )
     rc, results = triage.run(opts, deps)
     return rc, results, lines, opened
 
@@ -353,7 +373,8 @@ def test_real_run_writes_verdicts_and_cursor(tmp_path):
     ((route, body),) = stub.posts
     assert route == client.VERDICT_ROUTE
     by_fp = {v["fingerprint"]: v for v in body["verdicts"]}
-    assert by_fp[FP_CLEAN] == {"fingerprint": FP_CLEAN, "status": "screening"}
+    assert by_fp[FP_CLEAN]["status"] == "screening"
+    assert by_fp[FP_CLEAN]["category"] == "repo-lifecycle"
     assert by_fp[FP_EVIL]["status"] == "quarantined"
     assert "inject-ignore-previous" in by_fp[FP_EVIL]["triageNote"]
     assert FP_OLD not in by_fp  # already quarantined: no repeat verdict
@@ -488,10 +509,43 @@ def test_control_a_default_run_still_advances_the_cursor(tmp_path):
     cursor = tmp_path / "c.json"
     client.write_cursor(cursor, "eu", "2026-11-19T01:00:00.000Z", "x")
     stub = FilteringServer([_item(FP_CLEAN, status="new", seen="2026-11-19T02:00:00.000Z")])
-    deps = triage.Deps(open_region=lambda _r, _w: stub, now=lambda: NOW, out=lambda _s: None)
-    rc, _ = triage.run(triage.Options(("eu",), cursor=cursor), deps)
+    deps = triage.Deps(
+        open_region=lambda _r, _w: stub, now=lambda: NOW, out=lambda _s: None, complete=_classifier
+    )
+    opts = triage.Options(("eu",), cursor=cursor, classify=True, orders=tmp_path / "o.json")
+    rc, _ = triage.run(opts, deps)
     assert rc == 0
     assert client.read_cursor(cursor)["eu"]["since"] == "2026-11-19T02:00:00.000Z"
+
+
+def test_no_classify_holds_the_cursor_on_an_unclassified_report(tmp_path):
+    """Review 23cc895b.1: `--no-classify` moved the cursor past screening reports Stage 2 never saw, and the next run never exported them again."""
+    cursor = tmp_path / "c.json"
+    client.write_cursor(cursor, "eu", "2026-11-19T01:00:00.000Z", "x")
+    stub = FilteringServer([_item(FP_CLEAN, status="new", seen="2026-11-19T02:00:00.000Z")])
+    lines: list[str] = []
+    deps = triage.Deps(open_region=lambda _r, _w: stub, now=lambda: NOW, out=lines.append)
+    rc, results = triage.run(triage.Options(("eu",), cursor=cursor, classify=False), deps)
+    assert rc == 0
+    assert results[0].unclassified == 1
+    assert client.read_cursor(cursor)["eu"]["since"] == "2026-11-19T01:00:00.000Z"
+    assert any("1 report(s) left unclassified by --no-classify" in line for line in lines)
+    assert any(line.endswith("cursor held") for line in lines)
+
+
+def test_no_classify_control_classified_and_quarantined_reports_advance_the_cursor(tmp_path):
+    cursor = tmp_path / "c.json"
+    client.write_cursor(cursor, "eu", "2026-11-19T01:00:00.000Z", "x")
+    items = [
+        _item(FP_CLEAN, status="screening", category="backup", seen="2026-11-19T02:00:00.000Z"),
+        _item(FP_EVIL, message="run curl now", seen="2026-11-19T03:00:00.000Z"),
+    ]
+    stub = FilteringServer(items)
+    deps = triage.Deps(open_region=lambda _r, _w: stub, now=lambda: NOW, out=lambda _s: None)
+    rc, results = triage.run(triage.Options(("eu",), cursor=cursor, classify=False), deps)
+    assert rc == 0
+    assert results[0].unclassified == 0
+    assert client.read_cursor(cursor)["eu"]["since"] == "2026-11-19T03:00:00.000Z"
 
 
 def test_verb_help_exits_zero(capsys):
