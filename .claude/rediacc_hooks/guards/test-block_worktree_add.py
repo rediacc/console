@@ -8,6 +8,7 @@ This file names the phrase the guard refuses in a script, so the guard refuses t
 
 import ast
 import atexit
+import concurrent.futures
 import importlib
 import importlib.util
 import json
@@ -731,8 +732,32 @@ def run_guard(command, defect=None, cwd=ROOT):
     return proc.returncode, proc.stderr
 
 
-def check(name, want_blocked, command):
-    rc, err = run_guard(command)
+def _par(fn, items):
+    """`fn` over `items` on a thread pool, answers in input order. Each call is a subprocess, so the threads wait on children."""
+    items = list(items)
+    if not items:
+        return []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(12, os.cpu_count() or 4)) as pool:
+        return list(pool.map(fn, items))
+
+
+def _flip_half(rows, pair, want=0):
+    """Names of rows whose verdict became `want` under `pair`, run in waves and stopped once half the rows have flipped."""
+    flipped: list[str] = []
+    stop = max(len(rows) // 2, 1)
+    wave = min(12, os.cpu_count() or 4)
+    for start in range(0, len(rows), wave):
+        if len(flipped) >= stop:
+            break
+        chunk = rows[start : start + wave]
+        for (n, _c), (rc, _e) in zip(chunk, _par(lambda r: run_guard(r[1], defect=pair), chunk)):
+            if rc == want:
+                flipped.append(n)
+    return flipped
+
+
+def check(name, want_blocked, command, got=None):
+    rc, err = got if got is not None else run_guard(command)
     blocked = rc == 2
     fine = blocked == want_blocked and (want_blocked or not err)
     print(
@@ -750,12 +775,16 @@ def check(name, want_blocked, command):
 
 
 print("== refused (%d rows)" % len(REFUSED))
-for row_name, row_command in REFUSED:
-    check(row_name, True, row_command)
+for (row_name, row_command), row_got in zip(
+    REFUSED, _par(lambda r: run_guard(r[1]), REFUSED)
+):
+    check(row_name, True, row_command, row_got)
 
 print("== allowed (%d rows)" % len(ALLOWED))
-for row_name, row_command in ALLOWED:
-    check(row_name, False, row_command)
+for (row_name, row_command), row_got in zip(
+    ALLOWED, _par(lambda r: run_guard(r[1]), ALLOWED)
+):
+    check(row_name, False, row_command, row_got)
 
 print("== the suffix git resolves, on the helper (%d rows)" % len(HELPER))
 for word, here, names, want in HELPER:
@@ -827,12 +856,7 @@ for label, pair, rows in (
     ("the lease arm", ("if runs_lease_verb(cmd):", "if False:"), LEASE_ROWS),
 ):
     # The control only needs half the rows to flip, so it stops once that many have.
-    flipped: list[str] = []
-    for n, c in rows:
-        if len(flipped) >= max(len(rows) // 2, 1):
-            break
-        if run_guard(c, defect=pair)[0] == 0:
-            flipped.append(n)
+    flipped = _flip_half(rows, pair)
     if not rows or len(flipped) < len(rows) // 2 or not flipped:
         failures.append("plant: %s" % label)
         print("*** FAIL *** %s flipped %d of %d rows" % (label, len(flipped), len(rows)))
@@ -841,7 +865,11 @@ for label, pair, rows in (
             "%s: %d of %d flipped (stopped at the half), e.g. %r"
             % (label, len(flipped), len(rows), flipped[0])
         )
-    kept = [n for n, c in ALLOWED if run_guard(c, defect=pair)[0] != 0]
+    kept = [
+        n
+        for (n, _c), (rc, _e) in zip(ALLOWED, _par(lambda r: run_guard(r[1], defect=pair), ALLOWED))
+        if rc != 0
+    ]
     if kept:
         failures.append("plant refused an allowed row: %s" % label)
         print("*** FAIL *** with %s planted, refused %r" % (label, kept[:3]))
@@ -1076,7 +1104,11 @@ for label, pair, rows in (
     planted: tuple[str, str] | list[tuple[str, str]] = pair
     if label not in {"the git run walk", "the $ arm without the written-script lookup"}:
         planted = [pair, WALK_OFF]
-    admitted = [n for n, c in rows if run_guard(c, defect=planted)[0] == 0]
+    admitted = [
+        n
+        for (n, _c), (rc, _e) in zip(rows, _par(lambda r: run_guard(r[1], defect=planted), rows))
+        if rc == 0
+    ]
     if len(admitted) != len(rows):
         failures.append("rework plant: %s" % label)
         print(
@@ -1266,7 +1298,12 @@ for scope_label, scope_pair, scope_rows, scope_want in (
     ),
 ):
     flipped = [
-        n for n, c, d in scope_rows if run_guard(c, defect=scope_pair, cwd=d)[0] == scope_want
+        r[0]
+        for r, (rc, _e) in zip(
+            scope_rows,
+            _par(lambda r: run_guard(r[1], defect=scope_pair, cwd=r[2]), scope_rows),
+        )
+        if rc == scope_want
     ]
     if not scope_rows or len(flipped) != len(scope_rows):
         failures.append("scope plant: %s" % scope_label)

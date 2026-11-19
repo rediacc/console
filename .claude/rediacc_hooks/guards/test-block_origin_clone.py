@@ -7,6 +7,7 @@ Commands sit in tables and reach `subprocess` through a variable: the guard read
 """
 
 import ast
+import concurrent.futures
 import importlib.util
 import json
 import os
@@ -468,8 +469,17 @@ def run_guard(command, cwd=ROOT, defect=None):
     return proc.returncode, proc.stderr
 
 
-def check(name, want_blocked, command, cwd=ROOT):
-    rc, err = run_guard(command, cwd)
+def _par(fn, items):
+    """`fn` over `items` on a thread pool, answers in input order. Each call is a subprocess, so the threads wait on children."""
+    items = list(items)
+    if not items:
+        return []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=min(12, os.cpu_count() or 4)) as pool:
+        return list(pool.map(fn, items))
+
+
+def check(name, want_blocked, command, cwd=ROOT, got=None):
+    rc, err = got if got is not None else run_guard(command, cwd)
     blocked = rc == 2
     fine = blocked == want_blocked
     if blocked and MESSAGE_MARK not in err:
@@ -492,16 +502,22 @@ def check(name, want_blocked, command, cwd=ROOT):
 
 
 print("== refused (%d rows)" % len(REFUSED))
-for row_name, row_command in REFUSED:
-    check(row_name, True, row_command)
+for (row_name, row_command), row_got in zip(
+    REFUSED, _par(lambda r: run_guard(r[1]), REFUSED)
+):
+    check(row_name, True, row_command, got=row_got)
 
 print("== allowed (%d rows)" % len(ALLOWED))
-for row_name, row_command in ALLOWED:
-    check(row_name, False, row_command)
+for (row_name, row_command), row_got in zip(
+    ALLOWED, _par(lambda r: run_guard(r[1]), ALLOWED)
+):
+    check(row_name, False, row_command, got=row_got)
 
 print("== a source relative to the event's cwd (%d rows)" % len(RELATIVE))
-for row_name, row_blocked, row_command, row_cwd in RELATIVE:
-    check(row_name, row_blocked, row_command, cwd=row_cwd)
+for (row_name, row_blocked, row_command, row_cwd), row_got in zip(
+    RELATIVE, _par(lambda r: run_guard(r[2], r[3]), RELATIVE)
+):
+    check(row_name, row_blocked, row_command, cwd=row_cwd, got=row_got)
 
 print("== the chain carries it")
 listing = subprocess.run(
@@ -532,11 +548,14 @@ print("== the DEFECT control")
 defect_pair = _declared_defect()
 # The control only needs half the refusals to flip, so it stops once that many have.
 flipped: list[str] = []
-for n, c in REFUSED:
+_WAVE = min(12, os.cpu_count() or 4)
+for _start in range(0, len(REFUSED), _WAVE):
     if len(flipped) >= max(len(REFUSED) // 2, 1):
         break
-    if run_guard(c, defect=defect_pair)[0] == 0:
-        flipped.append(n)
+    _chunk = REFUSED[_start : _start + _WAVE]
+    for (n, _c), (_rc, _e) in zip(_chunk, _par(lambda r: run_guard(r[1], defect=defect_pair), _chunk)):
+        if _rc == 0:
+            flipped.append(n)
 if len(flipped) < len(REFUSED) // 2 or not flipped:
     failures.append("defect control")
     print(
@@ -548,7 +567,11 @@ else:
         "planted %r: %d of %d refusals flipped (stopped at the half), e.g. %r"
         % (defect_pair[0], len(flipped), len(REFUSED), flipped[0])
     )
-kept = [n for n, c in ALLOWED if run_guard(c, defect=defect_pair)[0] != 0]
+kept = [
+    n
+    for (n, _c), (_rc, _e) in zip(ALLOWED, _par(lambda r: run_guard(r[1], defect=defect_pair), ALLOWED))
+    if _rc != 0
+]
 if kept:
     failures.append("defect refused an allowed row")
     print("*** FAIL *** the planted copy refused %r" % kept[:3])
