@@ -2481,7 +2481,7 @@ jobs:
   # 24 min, well over the plan's 12-min-per-job budget. `qualityPytestUnits`
   # (`scripts/ci-runner/unit-enumerators.ts`), the enumerator T2.7/T2.8 already
   # named for this lane, lists one unit per `test_*.py` file (520 today); the
-  # committed `.ci/config/shards/quality-pytest.json` balances them into 5 legs
+  # committed `.ci/config/shards/quality-pytest.json` balances them into 6 legs
   # by LONGEST-PROCESSING-TIME-FIRST over each file's measured duration: the
   # mean of its recorded lane-duration p90 and its median over recent runs, both
   # from the per-leg junit XML the legs upload (rebalanced 2026-09-28; the
@@ -2519,7 +2519,7 @@ jobs:
   # against today).
   # ============================================================================
   quality-pytest:
-    name: Pytest (${{ matrix.shard }}/5)
+    name: Pytest (${{ matrix.shard }}/6)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -2528,7 +2528,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # 5 legs from the committed .ci/config/shards/quality-pytest.json (520
+        # 6 legs from the committed .ci/config/shards/quality-pytest.json (520
         # test_*.py files balanced by measured per-file duration, not count --
         # see the block comment above this job for the numbers, the method and
         # which three xdist groups are kept whole). This is a hand-written
@@ -2536,7 +2536,7 @@ jobs:
         # quality-pytest is not in SHARD_COUNTS (scripts/ci-runner/lanes.ts),
         # the same "hand-written job, no emitted region" shape test-renet-go
         # and test-account-e2e already use in ct-tests.yml.
-        shard: [1, 2, 3, 4, 5]
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -2666,7 +2666,7 @@ jobs:
         # run is bounded by the four legs' budget instead.
         run: |
           bash .ci/bootstrap.sh
-          npm run check:ci-pytest -- --shard-manifest .ci/config/shards/quality-pytest.json --shard "${{ matrix.shard }}/5"
+          npm run check:ci-pytest -- --shard-manifest .ci/config/shards/quality-pytest.json --shard "${{ matrix.shard }}/6"
 
       # T1.6 (PLAN-ci-time-budget): per-test durations, for budget_report.py
       # --refresh (T3.2) to read. `always()` and `ignore`, not `failure()`: T3.2
