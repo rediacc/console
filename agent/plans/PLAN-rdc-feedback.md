@@ -149,11 +149,12 @@ Order: S1; then A1 and C1 in parallel; A2-A4 after A1, C2-C4 after C1; P1-P2 aft
     Needs: none
     Accept: `cd packages/cli && npx vitest run src/services/feedback` exits 0 with: the file keeps exactly the last 10 entries at mode 0600 under `XDG_STATE_HOME`; a sensitive option value and a token in an error message are absent from the file bytes; a failed write leaves the exit code unchanged; a `setExitCode` failure and a thrown error both produce an entry. `npx tsc --noEmit --project packages/cli/tsconfig.json` exits 0.
     (ticked) 2026-11-19T02:43:19Z by d778be9d: commit:cfaa7aff25 commit:275468b62c redacted ring buffer + argv redaction; vitest 21 passed, tsc rc 0 on the landed tree
-- [ ] C2 [writer] (W-CLI) The failure hint on all three paths, JSON `next` option, `REDIACC_FEEDBACK_HINT=0`, and the env-manifest record (D4)
+- [x] C2 [writer] (W-CLI) The failure hint on all three paths, JSON `next` option, `REDIACC_FEEDBACK_HINT=0`, and the env-manifest record (D4)
     Owns: packages/cli/src/services/feedback/hint.ts, packages/cli/src/utils/errors.ts, packages/cli/src/cli.ts, packages/cli/src/index.ts, packages/cli/src/i18n/locales/en/cli.json, packages/cli/src/utils/__tests__/feedback-hint.test.ts, .ci/config/env-manifest.json, docs/environment-variables.md
     Depends on: C1.
     Needs: none
     Accept: `cd packages/cli && npx vitest run src/utils/__tests__/feedback-hint.test.ts` exits 0, driving the built CLI as a subprocess and reading stdout and stderr separately: text mode puts the hint on stderr after the error and nothing on stdout; JSON mode carries `run: "rdc feedback report --last"` in `errors[0].next.options` and stdout stays one valid JSON document; `REDIACC_FEEDBACK_HINT=0` removes both; a usage error and a failing `rdc feedback` print none; the `setExitCode` path prints it on stderr. `npm run check:ci-env-manifest` exits 0.
+    (ticked) 2026-11-19T03:36:12Z by d778be9d: commit:c382a12506 commit:df5914c748 failure hint on three paths + JSON next option + REDIACC_FEEDBACK_HINT=0; vitest 29 passed, tsc rc 0; 12 locales, i18n hashes and completeness rc 0
 - [ ] C3 [writer] (W-CLI) `rdc feedback report` with preview, confirm, `--yes`, agent behaviour and the token-or-FREE-blob auth choice, registered in cli.ts and the command registry, planes, metadata and docs (D4)
     Owns: packages/cli/src/commands/feedback.ts, packages/cli/src/services/feedback/send.ts, packages/cli/src/cli.ts, packages/cli/src/config/command-registry.ts, packages/cli/src/config/command-planes.ts, packages/cli/src/config/command-metadata.ts, packages/cli/src/config/command-docs.ts, packages/cli/src/i18n/locales/en/cli.json, packages/cli/src/commands/__tests__/feedback-report.test.ts
     Depends on: C1, A2.
