@@ -547,15 +547,26 @@ else:
 print("== the DEFECT control")
 defect_pair = _declared_defect()
 # The control only needs half the refusals to flip. The check runs between waves, so it stops at the first wave boundary at or past the half and may run up to one wave more.
-flipped: list[str] = []
-_WAVE = min(12, os.cpu_count() or 4)
-for _start in range(0, len(REFUSED), _WAVE):
-    if len(flipped) >= max(len(REFUSED) // 2, 1):
-        break
-    _chunk = REFUSED[_start : _start + _WAVE]
-    for (n, _c), (_rc, _e) in zip(_chunk, _par(lambda r: run_guard(r[1], defect=defect_pair), _chunk)):
-        if _rc == 0:
-            flipped.append(n)
+def _flip_half(rows, pair):
+    """Names of rows the guard allows under `pair` (None runs the real guard), checked between waves: it stops at the first wave boundary at or past half."""
+    flipped: list[str] = []
+    wave = min(12, os.cpu_count() or 4)
+    for start in range(0, len(rows), wave):
+        if len(flipped) >= max(len(rows) // 2, 1):
+            break
+        chunk = rows[start : start + wave]
+        for (n, _c), (rc, _e) in zip(chunk, _par(lambda r: run_guard(r[1], defect=pair), chunk)):
+            if rc == 0:
+                flipped.append(n)
+    return flipped
+
+
+flipped = _flip_half(REFUSED, defect_pair)
+# CONTROL for the early-stop loop (review cffdf3f5.5): with no defect planted the real guard refuses every row, so nothing flips and the half check can fail.
+_unplanted = _flip_half(REFUSED, None)
+if _unplanted:
+    failures.append("defect control cannot fail")
+    print("*** FAIL *** with nothing planted %d refusals still flipped: %r" % (len(_unplanted), _unplanted[:3]))
 if len(flipped) < len(REFUSED) // 2 or not flipped:
     failures.append("defect control")
     print(

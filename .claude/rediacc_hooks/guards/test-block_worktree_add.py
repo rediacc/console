@@ -862,7 +862,7 @@ for label, pair, rows in (
         print("*** FAIL *** %s flipped %d of %d rows" % (label, len(flipped), len(rows)))
     else:
         print(
-            "%s: %d of %d flipped (stopped at the half), e.g. %r"
+            "%s: %d of %d flipped (checked between waves), e.g. %r"
             % (label, len(flipped), len(rows), flipped[0])
         )
     kept = [
