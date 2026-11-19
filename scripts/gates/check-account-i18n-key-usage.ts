@@ -23,6 +23,12 @@
  *     least one catalog path must match `kind.*`. That proves the fixed parts; it cannot
  *     prove every runtime value of `k` has an entry.
  *
+ * `ui('<literal>')` (the partner offer builder's label accessor, `makeUi`) is resolved too, for
+ * files under `web/src/pages/partner/offer`: the literal must be a top-level string in the
+ * served catalog's `uiText` (src/pricing/catalog.default.ts) or a key of en/offerUi.json.
+ * `makeUi` falls back to a humanized label for anything else, so the miss is silent at run
+ * time; this is the source-level net.
+ *
  * WHAT IT CANNOT SEE, said out loud: a key held in a variable (`t(item.labelKey)`), a key
  * chosen by a ternary, and a template with no literal prefix. Each is COUNTED and printed,
  * so the coverage line is honest.
@@ -38,9 +44,10 @@
  * lane: quality-i18n
  * ---- end gate ----
  */
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 import { globSync } from 'glob';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { isEntryPoint } from '../lib/entry-point.js';
@@ -210,6 +217,29 @@ export function scanFile(
   }
 }
 
+const UI_DIR = 'pages/partner/offer/';
+
+export interface UiResult {
+  findings: Finding[];
+  checked: number;
+}
+
+/** Resolve every `ui('<literal>')` in one offer-builder file against the known label keys. */
+export function scanUiFile(file: string, raw: string, known: Set<string>, result: UiResult): void {
+  const src = stripComments(raw);
+  for (const m of src.matchAll(/(?<![\w$.])ui\(\s*(['"])([^'"\n]+)\1\s*[,)]/g)) {
+    result.checked++;
+    if (!known.has(m[2])) {
+      result.findings.push({
+        file,
+        line: src.slice(0, m.index ?? 0).split('\n').length,
+        key: `ui('${m[2]}')`,
+        searched: ['catalog.uiText', 'offerUi'],
+      });
+    }
+  }
+}
+
 function fixtureCatalogs(): Map<string, Set<string>> {
   return catalogsFrom({
     common: { save: 'Save', items_one: '{{count}} item', items_other: '{{count}} items' },
@@ -295,6 +325,36 @@ function controls(): ControlCase[] {
       detail: `got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`,
     };
   });
+  const uiKnown = new Set(['offerNameLabel', 'navSetup']);
+  const runUi = (src: string): string[] => {
+    const r: UiResult = { findings: [], checked: 0 };
+    scanUiFile('probe.tsx', src, uiKnown, r);
+    return r.findings.map((f) => f.key);
+  };
+  const uiCases: [string, string, string[]][] = [
+    [
+      'CONTROL: a ui() literal in neither uiText nor offerUi fires',
+      "ui('zzzLabel');",
+      ["ui('zzzLabel')"],
+    ],
+    [
+      'CONTROL: a ui() literal passed as a call argument fires',
+      "foo(ui('zzzLabel'), 1);",
+      ["ui('zzzLabel')"],
+    ],
+    ['SILENT: a ui() literal present in the known keys', "ui('offerNameLabel');", []],
+    ['SILENT: a ui() key held in a variable is not a literal', 'ui(key);', []],
+    ['SILENT: a ui() in a comment is not a call', "// ui('zzzLabel')\n", []],
+    ['SILENT: a method named ui on another object is not a call', "x.ui('zzzLabel');", []],
+  ];
+  const uiScanned = uiCases.map(([name, src, want]) => {
+    const got = runUi(src);
+    return {
+      name,
+      ok: JSON.stringify(got) === JSON.stringify(want),
+      detail: `got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`,
+    };
+  });
   const floor = (name: string, files: number, checked: number, vacuous: boolean): ControlCase => ({
     name,
     ok: isVacuous(files, checked) === vacuous,
@@ -302,6 +362,7 @@ function controls(): ControlCase[] {
   });
   return [
     ...scanned,
+    ...uiScanned,
     floor('CONTROL: one file under the file floor is vacuous', MIN_FILES - 1, MIN_KEYS, true),
     floor('CONTROL: one key under the key floor is vacuous', MIN_FILES, MIN_KEYS - 1, true),
     floor('CONTROL: nothing scanned is vacuous', 0, 0, true),
@@ -322,11 +383,29 @@ function loadCatalogs(dir: string): Map<string, Set<string>> {
 const MIN_FILES = 100;
 const MIN_KEYS = 1000;
 
+// Measured 2026-11-19: 146 distinct ui() literals under the offer builder.
+const MIN_UI = 50;
+
+/** Top-level string keys of the served catalog's `uiText`, plus every key of en/offerUi.json. */
+async function loadUiKeys(enDir: string): Promise<Set<string>> {
+  const known = new Set<string>();
+  const mod = (await import(
+    pathToFileURL(submodulePath('private/account/src/pricing/catalog.default.ts')).href
+  )) as { CATALOG: { uiText: Record<string, unknown> } };
+  for (const [k, v] of Object.entries(mod.CATALOG.uiText)) if (typeof v === 'string') known.add(k);
+  const offerUiFile = path.join(enDir, 'offerUi.json');
+  if (existsSync(offerUiFile)) {
+    for (const k of Object.keys(JSON.parse(readFileSync(offerUiFile, 'utf8')) as object))
+      known.add(k);
+  }
+  return known;
+}
+
 export function isVacuous(files: number, checked: number): boolean {
   return files < MIN_FILES || checked < MIN_KEYS;
 }
 
-function main(): void {
+async function main(): Promise<void> {
   console.log('account-i18n-key-usage controls');
   if (summarizeControls(controls()) !== 0) {
     console.error('controls failed; the gate cannot be trusted');
@@ -345,8 +424,21 @@ function main(): void {
     ignore: ['**/__tests__/**', '**/*.test.ts', '**/*.test.tsx', '**/*.d.ts'],
   });
   const result: ScanResult = { findings: [], checked: 0, unresolvable: 0 };
-  for (const f of files)
-    scanFile(path.relative(webSrc, f), readFileSync(f, 'utf8'), catalogs, result);
+  const uiResult: UiResult = { findings: [], checked: 0 };
+  const uiKnown = await loadUiKeys(enDir);
+  for (const f of files) {
+    const rel = path.relative(webSrc, f);
+    const text = readFileSync(f, 'utf8');
+    scanFile(rel, text, catalogs, result);
+    if (rel.startsWith(UI_DIR)) scanUiFile(rel, text, uiKnown, uiResult);
+  }
+  if (uiResult.checked < MIN_UI) {
+    console.error(
+      `${RED}✗${NC} VACUOUS: ${uiResult.checked} ui() literal(s) checked under web/src/${UI_DIR}, floor ${MIN_UI}; the ui() layer verified nothing.`
+    );
+    process.exit(1);
+  }
+  result.findings.push(...uiResult.findings);
 
   if (isVacuous(files.length, result.checked)) {
     console.error(
@@ -354,7 +446,7 @@ function main(): void {
     );
     process.exit(1);
   }
-  const coverage = `${result.checked} key reference(s) checked, ${result.unresolvable} held in a variable or built without a literal prefix (not statically checkable), ${files.length} file(s).`;
+  const coverage = `${uiResult.checked} ui() literal(s) and ${result.checked} key reference(s) checked, ${result.unresolvable} held in a variable or built without a literal prefix (not statically checkable), ${files.length} file(s).`;
   if (result.findings.length > 0) {
     refuseFindings({
       header: `\n${RED}✗${NC} ${result.findings.length} account portal translation key(s) missing from web/src/i18n/locales/en:\n`,
@@ -371,4 +463,4 @@ function main(): void {
   console.log(`${GREEN}✓${NC} ${coverage}`);
 }
 
-if (isEntryPoint(import.meta.filename)) main();
+if (isEntryPoint(import.meta.filename)) await main();
