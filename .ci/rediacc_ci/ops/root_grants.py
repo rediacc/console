@@ -14,6 +14,8 @@ THE PHASES. The parent holds no secret: each phase is a child, `PYTHONPATH=.ci p
 
 WHY NOT `--file`. The plan named a 0600 temp `--file` for the read so the email stays off argv. wrangler 4.162.0 sends `d1 execute --remote --file` through the D1 import API (wrangler-dist/cli.js `executeRemotely`): it answers a "Total queries executed" summary instead of the SELECT rows and warns that the database is unavailable while the file is processed. So the read selects by `email_hash` on argv, never by the email, and the email is compared in memory.
 
+THE BENCH TEST PARTNER (PLAN-account-sidebar-redesign Design 10, box B1). The config's `bench_test_partner` section names a second partner org owned by root, at the deterministic id uuidv5(ROOT_GRANTS_NS, "root-grants/bench-test-partner/" + userId). Its `targets` list may name bench targets only (an edge target there is refused with rc 2 naming `bench_test_partner.targets[i]`), `Config.desired` sends it as `benchTestPartner` to those targets only, and the plan reports its steps as `bench_partner.*` actions. The account Worker answers 403 for the section unless its environment is bench or its test surface is on. The read selects its profile and membership rows with the partner org's.
+
 NEVER. No SQL write (every statement is a SELECT), no user, personal org or config store created, no plan or tier lowered, no `cus_` subscription written, no console unblocked, no stable target or enterprise config resolved, no apply before the bookmark is recorded, and no email, token, seed or full id printed. The writes are the account route's (`POST /admin/root-grants/apply`), which runs the account services.
 
 EXIT. 0 when no target has an action or a red skip (an absent user and an AMBER operator item are allowed; a missing config store prints `AMBER operator: config_store.missing <target> (...)`); 1 on drift, a red skip, or actions left after an apply; 2 on a config refusal, a missing credential, a failed bookmark or an unreadable D1.
@@ -52,6 +54,7 @@ SUPPLY_PARTS = (".ci", "config", "secret-supply.json")
 # The uuidv5 namespace of the partner org id, equal to the account side's constant (held equal by the parity test, box P1).
 ROOT_GRANTS_NS = uuid.UUID("62ddf7eb-801c-4b6f-b9a1-17b4dba38b0c")
 PARTNER_NAME_PREFIX = "root-grants/partner/"
+BENCH_PARTNER_NAME_PREFIX = "root-grants/bench-test-partner/"
 
 KINDS = ("edge", "bench")
 PLAN_CODES = ("COMMUNITY", "PROFESSIONAL", "BUSINESS", "ENTERPRISE")
@@ -103,10 +106,10 @@ GRANTS_SQL = (
         "FROM subscriptions s WHERE s.customer_id IN "
         "(SELECT o.customer_id FROM organizations o WHERE o.owner_user_id = '@USER@') ORDER BY s.id"
     ),
-    "SELECT id, org_id, status, tier FROM partner_profiles WHERE org_id = '@PARTNER@'",
+    "SELECT id, org_id, status, tier FROM partner_profiles WHERE org_id IN ('@PARTNER@', '@BENCH@')",
     (
         "SELECT id, org_id, user_id, partner_role FROM partner_members "
-        "WHERE org_id = '@PARTNER@' AND user_id = '@USER@'"
+        "WHERE org_id IN ('@PARTNER@', '@BENCH@') AND user_id = '@USER@'"
     ),
 )
 
@@ -147,10 +150,11 @@ class Config:
     tier: str
     partner_role: str
     targets: tuple[Target, ...]
+    bench_partner: Mapping[str, Any] | None = None
 
     def desired(self, target: Target) -> dict[str, Any]:
-        """The `Desired` body of the route (Design 4) for one target."""
-        return {
+        """The `Desired` body of the route (Design 4) for one target. The bench test partner rides only on a bench target."""
+        body = {
             "role": "root",
             "personalOrg": {"plan": self.plan, "status": "active"},
             "partnerOrg": {
@@ -161,6 +165,18 @@ class Config:
             },
             "dataRegion": target.data_region,
         }
+        if (
+            self.bench_partner is not None
+            and target.kind == "bench"
+            and target.id in self.bench_partner["targets"]
+        ):
+            body["benchTestPartner"] = {
+                "name": self.bench_partner["name"],
+                "tier": self.bench_partner["tier"],
+                "partnerRole": self.bench_partner["partner_role"],
+                "status": "active",
+            }
+        return body
 
 
 def _need(doc: Mapping[str, Any], key: str, where: str) -> Any:
@@ -186,6 +202,28 @@ def _choice(doc: Mapping[str, Any], key: str, where: str, allowed: Sequence[str]
     return str(value)
 
 
+def _parse_bench_partner(doc: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """The optional `bench_test_partner` section (Design 10), validated like `partner_org`. Its `targets` name the bench targets that carry it; the section is parsed before the targets, and `parse_config` checks each name against them."""
+    if "bench_test_partner" not in doc:
+        return None
+    section = _section(doc, "bench_test_partner")
+    where = "bench_test_partner"
+    name = _need(section, "name", where)
+    if not isinstance(name, str) or not 1 <= len(name.strip()) <= NAME_MAX:
+        raise RefusedError(
+            "root-grants config: bench_test_partner.name must be 1-%d characters" % NAME_MAX
+        )
+    tier = _choice(section, "tier", where, TIERS)
+    role = _choice(section, "partner_role", where, PARTNER_ROLES)
+    _choice(section, "status", where, ("active",))
+    named = _need(section, "targets", where)
+    if not isinstance(named, list) or not named or not all(isinstance(n, str) for n in named):
+        raise RefusedError(
+            "root-grants config: bench_test_partner.targets must be a non-empty list of target ids"
+        )
+    return {"name": name.strip(), "tier": tier, "partner_role": role, "targets": tuple(named)}
+
+
 def parse_config(doc: object, regions: Sequence[Mapping[str, Any]]) -> Config:
     """The config, refused with rc 2 naming the key: a kind other than edge or bench (stable and any enterprise config by name), a region regions.json lacks, a bench region whose `bench.deployable` is not true, a data_region unlike its region, a plan outside the admin enum, a tier outside the tier enum, a partner_role other than admin."""
     if not isinstance(doc, dict):
@@ -208,6 +246,7 @@ def parse_config(doc: object, regions: Sequence[Mapping[str, Any]]) -> Config:
     tier = _choice(partner, "tier", "partner_org", TIERS)
     role = _choice(partner, "partner_role", "partner_org", PARTNER_ROLES)
     _choice(partner, "status", "partner_org", ("active",))
+    bench_partner = _parse_bench_partner(doc)
     console = _section(doc, "console")
     _choice(console, "config_store", "console", ("operator",))
     raw = _need(doc, "targets", "$")
@@ -253,7 +292,20 @@ def parse_config(doc: object, regions: Sequence[Mapping[str, Any]]) -> Config:
         if any(t.id == target_id for t in targets):
             raise RefusedError("root-grants config: %s.id %r is repeated" % (where, target_id))
         targets.append(Target(target_id, kind, region, data_region))
-    return Config(plan, name.strip(), tier, role, tuple(targets))
+    if bench_partner is not None:
+        for index, named in enumerate(bench_partner["targets"]):
+            hit = next((t for t in targets if t.id == named), None)
+            if hit is None or hit.kind != "bench":
+                raise RefusedError(
+                    "root-grants config: bench_test_partner.targets[%d] %r is %s; the bench test "
+                    "partner applies to bench targets only"
+                    % (
+                        index,
+                        named,
+                        "not a configured target" if hit is None else "a %s target" % hit.kind,
+                    )
+                )
+    return Config(plan, name.strip(), tier, role, tuple(targets), bench_partner)
 
 
 def load_config(root: pathlib.Path, config_path: pathlib.Path | None = None) -> Config:
@@ -289,6 +341,11 @@ def select_targets(config: Config, wanted: str) -> tuple[Target, ...]:
 
 def prefix(value: object) -> str:
     return str(value or "")[:PREFIX_LEN]
+
+
+def bench_partner_org_id(user_id: str) -> str:
+    """The deterministic bench test partner org id: uuidv5(ROOT_GRANTS_NS, "root-grants/bench-test-partner/" + userId)."""
+    return str(uuid.uuid5(ROOT_GRANTS_NS, BENCH_PARTNER_NAME_PREFIX + user_id))
 
 
 def partner_org_id(user_id: str) -> str:
@@ -376,10 +433,11 @@ def plan(snapshot: Snapshot, desired: Mapping[str, Any], region: str, now: str) 
     actions: list[dict[str, Any]] = report["actions"]
     skipped: list[dict[str, Any]] = report["skipped"]
     partner_id = partner_org_id(user_id)
+    bench_id = bench_partner_org_id(user_id)
     personal = [
         o
         for o in snapshot.orgs
-        if o.get("id") != partner_id and int(o.get("profile_count") or 0) == 0
+        if o.get("id") not in (partner_id, bench_id) and int(o.get("profile_count") or 0) == 0
     ]
     if len(personal) > 1:
         ids = ", ".join(sorted(prefix(o.get("id")) for o in personal))
@@ -401,7 +459,11 @@ def plan(snapshot: Snapshot, desired: Mapping[str, Any], region: str, now: str) 
         )
     else:
         _plan_personal(report, personal[0], snapshot, desired, now)
-    _plan_partner(report, user_id, partner_id, snapshot, desired)
+    _plan_partner(report, user_id, partner_id, snapshot, desired["partnerOrg"], "partner")
+    if desired.get("benchTestPartner"):
+        _plan_partner(
+            report, user_id, bench_id, snapshot, desired["benchTestPartner"], "bench_partner"
+        )
     return report
 
 
@@ -470,14 +532,15 @@ def _plan_partner(
     user_id: str,
     partner_id: str,
     snapshot: Snapshot,
-    desired: Mapping[str, Any],
+    want: Mapping[str, Any],
+    family: str,
 ) -> None:
+    """The actions of one partner org under the codes of `family` (`partner` or `bench_partner`); the mirror of `planPartnerOrg`."""
     actions: list[dict[str, Any]] = report["actions"]
-    want = desired["partnerOrg"]
     exists = any(o.get("id") == partner_id for o in snapshot.orgs)
     if not exists:
         actions.append(
-            _action("partner.org_create", "partner_org", partner_id, None, str(want["name"]))
+            _action("%s.org_create" % family, "partner_org", partner_id, None, str(want["name"]))
         )
     profile = (
         next((p for p in snapshot.profiles if p.get("org_id") == partner_id), None)
@@ -487,14 +550,14 @@ def _plan_partner(
     if profile is None:
         actions.append(
             _action(
-                "partner.profile_create", "partner_profile", partner_id, None, str(want["tier"])
+                "%s.profile_create" % family, "partner_profile", partner_id, None, str(want["tier"])
             )
         )
     else:
         if profile.get("status") != want["status"]:
             actions.append(
                 _action(
-                    "partner.profile_activate",
+                    "%s.profile_activate" % family,
                     "partner_profile",
                     partner_id,
                     str(profile.get("status")),
@@ -505,7 +568,7 @@ def _plan_partner(
         if TIER_RANK.get(tier, -1) < TIER_RANK[str(want["tier"])]:
             actions.append(
                 _action(
-                    "partner.tier_raise", "partner_profile", partner_id, tier, str(want["tier"])
+                    "%s.tier_raise" % family, "partner_profile", partner_id, tier, str(want["tier"])
                 )
             )
     member = next(
@@ -520,13 +583,21 @@ def _plan_partner(
     if not role:
         actions.append(
             _action(
-                "partner.member_add", "partner_member", partner_id, None, str(want["partnerRole"])
+                "%s.member_add" % family,
+                "partner_member",
+                partner_id,
+                None,
+                str(want["partnerRole"]),
             )
         )
     elif role != want["partnerRole"]:
         actions.append(
             _action(
-                "partner.member_role", "partner_member", partner_id, role, str(want["partnerRole"])
+                "%s.member_role" % family,
+                "partner_member",
+                partner_id,
+                role,
+                str(want["partnerRole"]),
             )
         )
 
@@ -703,9 +774,13 @@ def read_snapshot(
             "%s: user id %s is not safe to put in SQL" % (target.id, prefix(user_id))
         )
     partner_id = partner_org_id(user_id)
-    statements = [s.replace("@USER@", user_id).replace("@PARTNER@", partner_id) for s in GRANTS_SQL]
+    bench_id = bench_partner_org_id(user_id)
+    statements = [
+        s.replace("@USER@", user_id).replace("@PARTNER@", partner_id).replace("@BENCH@", bench_id)
+        for s in GRANTS_SQL
+    ]
     orgs, subs, profiles, members = _execute(
-        root, target, statements, env, [digest, user_id, partner_id]
+        root, target, statements, env, [digest, user_id, partner_id, bench_id]
     )
     return Snapshot(user, orgs, subs, profiles, members)
 

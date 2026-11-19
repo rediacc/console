@@ -267,11 +267,14 @@ class FakeRoute:
             else:
                 user_id = users[0]["id"]
                 partner = mod.partner_org_id(user_id)
+                bench = mod.bench_partner_org_id(user_id)
                 rows = [
                     [
                         dict(r)
                         for r in conn.execute(
-                            s.replace("@USER@", user_id).replace("@PARTNER@", partner)
+                            s.replace("@USER@", user_id)
+                            .replace("@PARTNER@", partner)
+                            .replace("@BENCH@", bench)
                         )
                     ]
                     for s in mod.GRANTS_SQL
@@ -291,18 +294,29 @@ class FakeRoute:
         assert snap.user is not None
         user_id = str(snap.user["id"])
         partner = mod.partner_org_id(user_id)
+        bench = mod.bench_partner_org_id(user_id)
         personal = next(
-            (o["id"] for o in snap.orgs if o["id"] != partner and not o["profile_count"]), None
+            (
+                o["id"]
+                for o in snap.orgs
+                if o["id"] not in (partner, bench) and not o["profile_count"]
+            ),
+            None,
         )
-        want = body["partnerOrg"]
         for act in report["actions"]:
             code = act["code"]
+            family, _, step = code.partition(".")
+            if family == "bench_partner":
+                want, org = body["benchTestPartner"], bench
+                code = "partner." + step
+            else:
+                want, org = body["partnerOrg"], partner
+
             if code == "role.promote":
                 conn.execute("UPDATE users SET role = 'root' WHERE id = ?", (user_id,))
             elif code == "org.data_region":
-                org = partner if act["subject"]["idPrefix"] == partner[:8] else personal
                 conn.execute(
-                    "UPDATE organizations SET data_region = ? WHERE id = ?", (act["to"], org)
+                    "UPDATE organizations SET data_region = ? WHERE id = ?", (act["to"], personal)
                 )
             elif code == "subscription.raise":
                 plan, status = act["to"].split()
@@ -317,17 +331,22 @@ class FakeRoute:
                 )
             elif code == "partner.org_create":
                 add_org(
-                    conn, partner, user_id, "cust-partner-new", body["dataRegion"], want["name"]
+                    conn,
+                    org,
+                    user_id,
+                    "cust-partner-new-" + org[:8],
+                    body["dataRegion"],
+                    want["name"],
                 )
             elif code == "partner.profile_create":
                 conn.execute(
                     "INSERT INTO partner_profiles (id, org_id, status, tier, created_at, updated_at) VALUES (?, ?, 'active', ?, ?, ?)",
-                    (str(uuid.uuid4()), partner, want["tier"], NOW, NOW),
+                    (str(uuid.uuid4()), org, want["tier"], NOW, NOW),
                 )
             elif code == "partner.member_add":
                 conn.execute(
                     "INSERT INTO partner_members (id, org_id, user_id, partner_role, created_at) VALUES (?, ?, ?, ?, ?)",
-                    (str(uuid.uuid4()), partner, user_id, want["partnerRole"], NOW),
+                    (str(uuid.uuid4()), org, user_id, want["partnerRole"], NOW),
                 )
         conn.commit()
 
@@ -884,3 +903,202 @@ def test_a_phase_document_masks_a_secret_the_server_echoes(env: dict) -> None:
     assert rc == 0
     assert EMAIL not in out
     assert "for <withheld>" in out
+
+
+# ---- the bench test partner (PLAN-account-sidebar-redesign Design 10, box B1) --------------------
+
+BENCH_CODES = (
+    "bench_partner.org_create",
+    "bench_partner.profile_create",
+    "bench_partner.member_add",
+)
+
+
+def _codes(report: dict) -> list[str]:
+    return [a["code"] for a in report["actions"]]
+
+
+def _plan_region(config: mod.Config, target_id: str, seed: typing.Callable) -> dict:
+    """The planner's report for one target over a fresh in-memory sqlite built from the drizzle schema."""
+    target = mod.select_targets(config, target_id)[0]
+    path = pathlib.Path(tempfile.mkdtemp(prefix="root-grants-bench-")) / "db.sqlite"
+    shutil.copyfile(_template(), path)
+    conn = _connect(path)
+    try:
+        seed(conn)
+        conn.commit()
+        user_id = ROOT_ID
+        statements = [
+            s.replace("@USER@", user_id)
+            .replace("@PARTNER@", mod.partner_org_id(user_id))
+            .replace("@BENCH@", mod.bench_partner_org_id(user_id))
+            for s in mod.GRANTS_SQL
+        ]
+        rows = [[dict(r) for r in conn.execute(sql)] for sql in statements]
+        users = [
+            dict(r) for r in conn.execute("SELECT id, role FROM users WHERE id = ?", (user_id,))
+        ]
+        snap = mod.Snapshot(users[0], *rows)
+        return mod.plan(snap, config.desired(target), target.region, NOW)
+    finally:
+        conn.close()
+        shutil.rmtree(path.parent, ignore_errors=True)
+
+
+def test_the_bench_partner_id_is_uuid5_under_its_own_prefix() -> None:
+    expected = str(uuid.uuid5(mod.ROOT_GRANTS_NS, "root-grants/bench-test-partner/" + ROOT_ID))
+    assert mod.bench_partner_org_id(ROOT_ID) == expected
+    assert expected != mod.partner_org_id(ROOT_ID)
+
+
+def test_desired_carries_the_test_partner_on_bench_targets_only() -> None:
+    config = mod.load_config(ROOT)
+    by_id = {t.id: t for t in config.targets}
+    want = {
+        "name": "Bench sidebar test partner",
+        "tier": "silver",
+        "partnerRole": "admin",
+        "status": "active",
+    }
+    for bench in ("bench-eu", "bench-us", "bench-asia"):
+        assert config.desired(by_id[bench])["benchTestPartner"] == want
+    for edge in ("edge-eu", "edge-us", "edge-asia"):
+        assert "benchTestPartner" not in config.desired(by_id[edge])
+
+
+def test_an_absent_test_partner_plans_its_create_on_bench_and_nothing_on_edge() -> None:
+    config = mod.load_config(ROOT)
+    bench = _plan_region(config, "bench-us", seed_complete)
+    assert _codes(bench) == list(BENCH_CODES)
+    created = next(a for a in bench["actions"] if a["code"] == "bench_partner.org_create")
+    assert created["to"] == "Bench sidebar test partner"
+    assert created["subject"]["idPrefix"] == mod.bench_partner_org_id(ROOT_ID)[:8]
+    tier = next(a for a in bench["actions"] if a["code"] == "bench_partner.profile_create")
+    assert tier["to"] == "silver"
+    # Control: the same snapshot on the edge target plans none.
+    assert _codes(_plan_region(config, "edge-us", seed_complete)) == []
+
+
+def seed_complete_with_bench(conn: sqlite3.Connection) -> None:
+    seed_complete(conn)
+    bench = mod.bench_partner_org_id(ROOT_ID)
+    add_org(conn, bench, ROOT_ID, "cust-bench-partner", "us", "Bench sidebar test partner")
+    conn.execute(
+        "INSERT INTO partner_profiles (id, org_id, status, tier, created_at, updated_at) VALUES ('pp-bench', ?, 'active', 'silver', ?, ?)",
+        (bench, STAMP, STAMP),
+    )
+    conn.execute(
+        "INSERT INTO partner_members (id, org_id, user_id, partner_role, created_at) VALUES ('pm-bench', ?, ?, 'admin', ?)",
+        (bench, ROOT_ID, STAMP),
+    )
+
+
+def test_a_present_test_partner_plans_zero_and_a_lower_tier_is_raised() -> None:
+    config = mod.load_config(ROOT)
+    assert _plan_region(config, "bench-us", seed_complete_with_bench)["actions"] == []
+
+    def low(conn: sqlite3.Connection) -> None:
+        seed_complete_with_bench(conn)
+        conn.execute("UPDATE partner_profiles SET tier = 'registered' WHERE id = 'pp-bench'")
+
+    raised = _plan_region(config, "bench-us", low)["actions"]
+    assert [a["code"] for a in raised] == ["bench_partner.tier_raise"]
+    assert (raised[0]["from"], raised[0]["to"]) == ("registered", "silver")
+
+
+def test_a_half_made_test_partner_org_is_not_a_second_personal_org() -> None:
+    """A crash between org_create and profile_create leaves an org with no profile; it must not make the region ambiguous."""
+    config = mod.load_config(ROOT)
+
+    def half(conn: sqlite3.Connection) -> None:
+        seed_complete(conn)
+        add_org(conn, mod.bench_partner_org_id(ROOT_ID), ROOT_ID, "cust-bench-half", "us", "Half")
+
+    report = _plan_region(config, "bench-us", half)
+    assert report["skipped"] == []
+    assert _codes(report) == ["bench_partner.profile_create", "bench_partner.member_add"]
+
+
+def test_a_config_without_the_section_plans_no_test_partner_even_on_bench() -> None:
+    doc = copy.deepcopy(_doc())
+    del doc["bench_test_partner"]
+    config = mod.parse_config(doc, _regions())
+    assert config.bench_partner is None
+    assert _codes(_plan_region(config, "bench-us", seed_complete)) == []
+
+
+@pytest.mark.parametrize("edge", ["edge-eu", "edge-us", "edge-asia"])
+def test_the_section_on_an_edge_target_exits_2_naming_the_key(edge: str) -> None:
+    with pytest.raises(mod.RefusedError) as caught:
+        mod.parse_config(_set(_doc(), "bench_test_partner.targets", ["bench-eu", edge]), _regions())
+    assert caught.value.rc == 2
+    message = str(caught.value)
+    assert "bench_test_partner.targets[1]" in message
+    assert "edge target" in message
+    # Control: the committed bench-only list passes.
+    assert mod.parse_config(_doc(), _regions()).bench_partner is not None
+
+
+@pytest.mark.parametrize(
+    ("key", "value", "named"),
+    [
+        ("bench_test_partner.targets", ["bench-mars"], "bench_test_partner.targets[0]"),
+        ("bench_test_partner.targets", [], "targets"),
+        ("bench_test_partner.tier", "diamond", "bench_test_partner.tier"),
+        ("bench_test_partner.partner_role", "owner", "bench_test_partner.partner_role"),
+        ("bench_test_partner.name", "", "bench_test_partner.name"),
+        ("bench_test_partner.status", "inactive", "bench_test_partner.status"),
+    ],
+)
+def test_bench_partner_section_refusals_exit_2_naming_the_key(
+    key: str, value: object, named: str
+) -> None:
+    with pytest.raises(mod.RefusedError) as caught:
+        mod.parse_config(_set(_doc(), key, value), _regions())
+    assert caught.value.rc == 2
+    assert named in str(caught.value)
+
+
+def test_a_bench_apply_creates_the_test_partner_then_a_second_run_plans_zero(
+    env: dict, capsys: pytest.CaptureFixture[str]
+) -> None:
+    db = make_db(env, "account-bench-us", seed_complete)
+    route = FakeRoute(db, env["log"], "us")
+    child, _ = runner(route)
+    assert mod.run(["--target", "bench-us", "--apply"], ROOT, child) == 0
+    out = capsys.readouterr().out
+    assert "bench-us applied user=%s actions=3" % ROOT_ID[:8] in out
+    assert "bench-us verify user=%s actions=0" % ROOT_ID[:8] in out
+    assert route.bodies[0]["benchTestPartner"]["tier"] == "silver"
+    conn = _connect(db)
+    try:
+        org = conn.execute(
+            "SELECT name FROM organizations WHERE id = ?", (mod.bench_partner_org_id(ROOT_ID),)
+        ).fetchone()
+        assert org is not None
+        assert org["name"] == "Bench sidebar test partner"
+        assert conn.execute("SELECT COUNT(*) FROM partner_profiles").fetchone()[0] == 2
+    finally:
+        conn.close()
+    settled = snapshot(db)
+    assert mod.run(["--target", "bench-us"], ROOT, child) == 0
+    assert "actions=0" in capsys.readouterr().out
+    assert snapshot(db) == settled
+
+
+def test_an_edge_apply_never_posts_the_test_partner(env: dict) -> None:
+    db = make_db(env, "account-us", seed_complete)
+    route = FakeRoute(db, env["log"], "us")
+    child, _ = runner(route)
+    assert mod.run(["--target", "edge-us", "--apply"], ROOT, child) == 0
+    assert route.bodies == []
+    conn = _connect(db)
+    try:
+        assert (
+            conn.execute("SELECT COUNT(*) FROM organizations WHERE name LIKE 'Bench%'").fetchone()[
+                0
+            ]
+            == 0
+        )
+    finally:
+        conn.close()
