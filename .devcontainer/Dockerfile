@@ -369,7 +369,7 @@ ARG STATICCHECK_VERSION=0.8.2
 # `github.com/golangci/golangci-lint/cmd/golangci-lint` at a v2 version fails
 # outright, so the path below is not interchangeable with the pre-v2 one.
 ARG GOLANGCILINT_VERSION=2.15.0
-ARG GOIMPORTS_VERSION=0.52.0
+ARG GOIMPORTS_VERSION=0.53.0
 # The `: "${X_VERSION:?...}"` guards are not decoration: without them an empty
 # build arg silently resolves to `@v`, which Go treats as a floating reference,
 # and the image would quietly ship an unpinned tool again while LOOKING pinned.
@@ -484,7 +484,7 @@ USER root
 # Pinned to an exact release; the values below are whatever the last bump chose.
 # Bumping is a one-line edit per tool; there is deliberately no freshness gate on
 # these two, because a CLI whose version nothing depends on is not worth a red build.
-ARG CODEX_VERSION=0.169.0
+ARG CODEX_VERSION=0.169.1
 ARG GEMINI_CLI_VERSION=0.68.0
 #
 # NPM_BEFORE is the release-age cutoff (`PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age
