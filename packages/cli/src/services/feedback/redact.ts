@@ -100,12 +100,26 @@ function takesValue(
   return sensitive && !next.startsWith('--');
 }
 
-/** `-tVALUE` / `-t=VALUE`: a known value-taking short option with its value attached to the token. */
+/** An unknown short token whose tail is at most this long and has no `=` reads as a bundle of boolean flags (`-qy`, `-vvv`). */
+const MAX_UNKNOWN_BUNDLE = 3;
+
+/**
+ * `-tVALUE` / `-t=VALUE`: a short option with its value attached to the token. A known value-taking option answers
+ * from the contract. An UNKNOWN one (no contract entry for the command or the flag) fails closed and masks everything
+ * after the flag, unless the tail is a short run of letters that reads as a flag bundle: `-p<secret>` cannot be told
+ * from `-qy` by the contract, so length is the line, and a secret of up to three characters is not caught.
+ */
 function redactAttachedShort(cmd: ContractCommand | undefined, token: string): string | undefined {
   if (!/^-[^-]./.test(token)) return undefined;
   const flag = token.slice(0, 2);
   const opt = findOption(cmd, flag);
-  if (!opt?.valueTaking) return undefined;
+  if (!opt) {
+    const tail = token.slice(2);
+    return tail.length <= MAX_UNKNOWN_BUNDLE && /^[A-Za-z]+$/.test(tail)
+      ? undefined
+      : `${flag}${REDACTED}`;
+  }
+  if (!opt.valueTaking) return undefined;
   const mask = optionMask(opt, opt.sensitive === true);
   return mask ? `${flag}${mask}` : token;
 }

@@ -111,6 +111,25 @@ describe('rdc feedback report', () => {
     expect(printed).toContain('it hangs');
   });
 
+  it('in JSON mode a confirm prompt is preceded by the exact preview on stderr', async () => {
+    m.format.current = 'json';
+    const order: string[] = [];
+    m.info.mockImplementation(() => order.push('preview'));
+    const { full, fetchFn } = deps({
+      confirm: vi.fn().mockImplementation(() => {
+        order.push('confirm');
+        return Promise.resolve(true);
+      }),
+    });
+    await runReport({ last: true, message: 'it hangs' }, full);
+    expect(order).toEqual(['preview', 'confirm']);
+    expect(JSON.parse(m.info.mock.calls[0][0] as string)).toEqual(fetchFn.mock.calls[0][1].body);
+    // Control: with --yes there is no prompt and no preview line.
+    m.info.mockClear();
+    await runReport({ last: true }, deps({ yes: () => true }).full);
+    expect(m.info).not.toHaveBeenCalled();
+  });
+
   it('a declined confirm sends nothing; an accepted one sends (control)', async () => {
     const declined = deps({ confirm: vi.fn().mockResolvedValue(false) });
     await runReport({ last: true }, declined.full);

@@ -6,10 +6,12 @@
  * every secret below it verbatim while `--pointer /credentials/cfDnsApiToken`
  * redacted. The view here applies the same per-leaf rules at every depth:
  *
- * - a registered ancestor (or the pointer itself) decides for the whole value,
- *   exactly as `walkSensitive` treats a registered container as one leaf: a
- *   `public` one passes the value through, any other kind replaces it with its
- *   `<redacted:kind>:<digest>` stub;
+ * - a registered ancestor (or the pointer itself) decides whether the whole value
+ *   is redacted, exactly as `walkSensitive` treats a registered container as one
+ *   leaf: a `public` one passes the value through, any other kind replaces it
+ *   with a `<redacted:kind>:<digest>` stub. The digest is of the value AT THE
+ *   REQUESTED POINTER, so a sub-pointer of a registered container carries a
+ *   different digest from the container's own stub;
  * - otherwise the value is read out of `redactClone(config)`, so every
  *   registered leaf below the pointer carries its stub at its real absolute
  *   pointer.

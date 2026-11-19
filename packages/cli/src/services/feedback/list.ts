@@ -36,7 +36,8 @@ export function parseStatusFilter(raw: string | undefined): string[] {
 /** The fixed status reads `fixed-in-v<x>` from `fixedIn`; a `v` already on the value is not doubled. */
 export function displayStatus(item: Pick<FeedbackListItem, 'status' | 'fixedIn'>): string {
   if (item.status !== 'fixed' || !item.fixedIn) return item.status;
-  return `fixed-in-v${item.fixedIn.replace(/^v/, '')}`;
+  const version = item.fixedIn.replace(/^v/, '');
+  return version === '' ? item.status : `fixed-in-v${version}`;
 }
 
 /** Token route: GET with the stored credential. FREE route: POST the blob and machine id, no stored credential. */

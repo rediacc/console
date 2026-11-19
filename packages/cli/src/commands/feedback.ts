@@ -167,7 +167,9 @@ export async function runReport(
 
   if (!yes && deps.agent()) return printPreviewOnly(body, options, json);
 
+  // JSON mode keeps stdout for the final envelope, so a prompt that follows is shown the preview on stderr: the user never confirms a send unseen.
   if (!json) outputService.print(previewText(body));
+  else if (!yes) outputService.info(previewText(body));
   if (!yes && !(await deps.confirm(t('feedback.confirm')))) {
     outputService.info(t('feedback.declined'));
     return;

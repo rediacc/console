@@ -3676,7 +3676,7 @@
     "fieldStatus": "Estado",
     "hint": "¿No era lo esperado? {{run}}",
     "hintDescription": "Enviar un informe de comentarios sobre este fallo",
-    "hintSummary": "Si este fallo es inesperado, infórmelo.",
+    "hintSummary": "Si este fallo es inesperado, infórmalo.",
     "lastAndCommand": "Usa --last o --command <n>, pero no ambos.",
     "needsMessage": "Sin un comando fallido no hay nada que informar: indica --last, --command <n> o --message <text>.",
     "noCredential": "Los comentarios requieren un token de API o una licencia Free, y este equipo no tiene ninguno.",

@@ -161,17 +161,6 @@ class OutputService {
     else process.stdout.write(`${text}\n`);
   }
 
-  /** Human output: the terminal's stderr, or this request's stderr buffer. */
-  private writeErr(text: string): void {
-    const context = currentRequestContext();
-    if (context) {
-      context.stderr.push(text);
-      return;
-    }
-    notifyStderr(`${text}\n`);
-    console.error(text);
-  }
-
   /**
    * Human-facing prose, wrapped to the terminal.
    *

@@ -27,6 +27,11 @@ afterEach(() => {
   rmSync(state, { recursive: true, force: true });
   uninstallStderrTap();
   vi.restoreAllMocks();
+  // The doMock registrations are undone here as well as in the test body, so a failed assertion or import cannot leave them for a later test.
+  vi.doUnmock('../hint.js');
+  vi.doUnmock('../../../cli.js');
+  vi.doUnmock('../../telemetry/telemetry.js');
+  vi.doUnmock('../../update/background-updater.js');
   vi.resetModules();
 });
 
@@ -66,6 +71,8 @@ describe('ring buffer write sites', () => {
       return process;
     }) as never);
     vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+    const hint = vi.fn();
+    vi.doMock('../hint.js', () => ({ printFeedbackHint: hint }));
     vi.doMock('../../../cli.js', () => ({ cli: { parseAsync: () => Promise.resolve() } }));
     vi.doMock('../../telemetry/telemetry.js', () => ({
       telemetryService: {
@@ -86,6 +93,9 @@ describe('ring buffer write sites', () => {
     expect(entry.errorCode).toBe('UNCAUGHT_EXCEPTION');
     expect(entry.errorMessage).not.toContain('hunter2');
     expect(entry.argv).toBe('config init x');
+    // Review c382a125.1: the crash path also prints the feedback hint, with the same argv and exit code.
+    expect(hint).toHaveBeenCalledWith({ argv: ['config', 'init', 'x'], exitCode: 1 });
+    vi.doUnmock('../hint.js');
     vi.doUnmock('../../../cli.js');
     vi.doUnmock('../../telemetry/telemetry.js');
     vi.doUnmock('../../update/background-updater.js');

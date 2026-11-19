@@ -10,6 +10,7 @@ vi.mock('../../core/output.js', () => ({
   outputService: { warn: vi.fn(), info: vi.fn() },
 }));
 
+import { outputService } from '../../core/output.js';
 import { loginWithPassword } from '../subscription-password-auth.js';
 
 interface Call {
@@ -49,7 +50,10 @@ function stubServer(refusal?: { status: number; body: unknown }): Call[] {
 const mintScopes = (calls: Call[]) =>
   calls.filter((c) => c.url.endsWith('/api-tokens')).map((c) => c.scopes ?? []);
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.clearAllMocks();
+});
 
 describe('loginWithPassword scopes', () => {
   it('requests delegation:issue with the privileged scopes', async () => {
@@ -125,6 +129,8 @@ describe('loginWithPassword with several orgs', () => {
     await loginWithPassword('https://srv', { email: 'a@b.c', password: 'p' });
     expect(calls.filter((c) => c.url.includes('orgId'))).toEqual([]);
     expect(calls.some((c) => c.url.endsWith('/portal/org/list'))).toBe(false);
+    // Control for the multi-org notice: a single org announces no choice.
+    expect(outputService.info).not.toHaveBeenCalled();
   });
 
   it('two orgs, one active: mints for the active org with ?orgId=', async () => {
@@ -136,6 +142,9 @@ describe('loginWithPassword with several orgs', () => {
       'tok'
     );
     expect(mintUrls(urls)[0]).toMatch(/\/api-tokens\?orgId=org-b$/);
+    // The chosen org is announced, since the pick is made without asking.
+    expect(outputService.info).toHaveBeenCalledTimes(1);
+    expect(outputService.info).toHaveBeenCalledWith('commands.subscription.login.orgChosen');
   });
 
   it('two active orgs: the first listed wins', async () => {

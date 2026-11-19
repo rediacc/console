@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // `config field get` redacts every non-public value at or below the pointer it is given, not only a pointer that names a sensitive leaf: a parent pointer once printed every secret under it in plaintext. All values here are synthetic.
 
 const { state, printed } = vi.hoisted(() => ({
-  state: { format: 'json' as 'json' | 'table', config: {} as unknown },
+  state: { format: 'json' as 'json' | 'table', config: {} as unknown, agent: false },
   printed: [] as string[],
 }));
 
@@ -11,7 +11,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
   configService: { getCurrent: vi.fn(async () => state.config), getCurrentName: () => 'test' },
 }));
 vi.mock('../../services/core/audit-log.js', () => ({ auditLog: vi.fn() }));
-vi.mock('../../utils/agent-guard.js', () => ({ isAgentEnvironment: () => false }));
+vi.mock('../../utils/agent-guard.js', () => ({ isAgentEnvironment: () => state.agent }));
 vi.mock('../../utils/errors.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../utils/errors.js')>();
   return {
@@ -62,13 +62,19 @@ const CONFIG = {
   },
 };
 
-async function fieldGet(pointer: string, format: 'json' | 'table'): Promise<string> {
+async function fieldGet(
+  pointer: string,
+  format: 'json' | 'table',
+  extra: string[] = []
+): Promise<string> {
   state.format = format;
   printed.length = 0;
   const program = new Command();
   const config = program.command('config');
   registerFieldCommands(config, program);
-  await program.parseAsync(['config', 'field', 'get', '--pointer', pointer], { from: 'user' });
+  await program.parseAsync(['config', 'field', 'get', '--pointer', pointer, ...extra], {
+    from: 'user',
+  });
   return printed.join('\n');
 }
 
@@ -84,6 +90,7 @@ function expectNoSecret(output: string): void {
 describe('config field get redacts below any pointer', () => {
   beforeEach(() => {
     state.config = structuredClone(CONFIG);
+    state.agent = false;
     vi.spyOn(outputService, 'print').mockImplementation((data, format) => {
       printed.push(
         outputService.format(data as Record<string, unknown>, format as 'json' | 'table')
@@ -138,6 +145,35 @@ describe('config field get redacts below any pointer', () => {
     expect(out.value).toBe(2222);
     const lang = dataOf(await fieldGet('/defaults/language', 'json')) as { value: unknown };
     expect(lang.value).toBe('en');
+  });
+
+  describe('--reveal on a parent pointer is gated', () => {
+    const realTty = Object.getOwnPropertyDescriptor(process.stdout, 'isTTY');
+    const setTty = (value: boolean) =>
+      Object.defineProperty(process.stdout, 'isTTY', { value, configurable: true });
+    afterEach(() => {
+      if (realTty) Object.defineProperty(process.stdout, 'isTTY', realTty);
+      else delete (process.stdout as { isTTY?: boolean }).isTTY;
+    });
+
+    it.each(['/credentials', '/resources', ''])('an agent is refused at %j', async (pointer) => {
+      state.agent = true;
+      setTty(true);
+      await expect(fieldGet(pointer, 'json', ['--reveal'])).rejects.toThrow();
+      expect(printed.join('\n')).not.toContain(SECRETS.cfToken);
+    });
+
+    it('a human without a TTY is refused', async () => {
+      setTty(false);
+      await expect(fieldGet('/credentials', 'json', ['--reveal'])).rejects.toThrow();
+      expect(printed.join('\n')).not.toContain(SECRETS.cfToken);
+    });
+
+    it('control: a human at a TTY sees the values', async () => {
+      setTty(true);
+      const out = await fieldGet('/credentials', 'json', ['--reveal']);
+      expect(out).toContain(SECRETS.cfToken);
+    });
   });
 
   it('a missing pointer is refused', async () => {

@@ -71,6 +71,7 @@ describe('displayStatus', () => {
   it('keeps the plain status when not fixed or when fixedIn is empty (controls)', () => {
     expect(displayStatus({ status: 'planned', fixedIn: '1.4.0' })).toBe('planned');
     expect(displayStatus({ status: 'fixed', fixedIn: null })).toBe('fixed');
+    expect(displayStatus({ status: 'fixed', fixedIn: 'v' })).toBe('fixed');
   });
 });
 

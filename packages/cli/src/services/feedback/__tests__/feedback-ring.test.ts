@@ -2,12 +2,13 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync }
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { outputService } from '../../core/output.js';
 import {
   type CommandRequestContext,
   createOutputState,
   runInRequestContext,
+  writeStderr,
 } from '../../core/request-context.js';
-import { writeStderr } from '../../core/request-context.js';
 import { redactArgv, resolveCommandPath } from '../redact.js';
 import {
   installStderrTap,
@@ -86,6 +87,14 @@ describe('redactArgv', () => {
     expect(redactArgv(['config', 'init', '-qy'])).toBe('config init -qy');
   });
 
+  it('fails closed on an attached value of an unknown short option', () => {
+    expect(redactArgv(['nonesuch', `-p${SECRET}`])).toBe('nonesuch -p<redacted>');
+    expect(redactArgv(['nonesuch', `-p=${SECRET}`])).toBe('nonesuch -p<redacted>');
+    expect(redactArgv(['config', 'init', `-Z${SECRET}`])).not.toContain(SECRET);
+    // Control: a known non-value-taking bundle is kept as typed.
+    expect(redactArgv(['config', 'init', '-qy'])).toBe('config init -qy');
+  });
+
   it('masks the value of an unknown sensitive option even when it starts with a dash', () => {
     expect(redactArgv(['nonesuch', '--api-password', '-hunter2hunter2'])).toBe(
       'nonesuch --api-password <redacted>'
@@ -156,6 +165,27 @@ describe('recordCommand', () => {
     const [entry] = readRing();
     expect(entry.stderrTail).not.toContain('ECRETVALUE');
     expect(entry.stderrTail.length).toBeLessThanOrEqual(4096);
+  });
+
+  it('captures what outputService writes to the terminal, and keeps a long unbroken run', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    installStderrTap();
+    outputService.error(`boom ${SECRET}`);
+    recordCommand({ argv: ['config', 'init'], exitCode: 1 });
+    const [entry] = readRing();
+    expect(entry.stderrTail).toContain('boom');
+    expect(entry.stderrTail).not.toContain('SECRETVALUE');
+    // A single run larger than the bound keeps its end instead of wiping the tail.
+    resetStderrTail();
+    writeStderr(`${'A'.repeat(20000)}\n`);
+    recordCommand({ argv: ['config', 'init'], exitCode: 1 });
+    const last = readRing().at(-1);
+    expect(last?.stderrTail.length).toBeGreaterThan(0);
+    expect(last?.stderrTail.length).toBeLessThanOrEqual(4096);
+    // Control: nothing written, nothing captured.
+    resetStderrTail();
+    recordCommand({ argv: ['config', 'init'], exitCode: 1 });
+    expect(readRing().at(-1)?.stderrTail).toBe('');
   });
 
   it('skips the feedback command typed after a root option', () => {
