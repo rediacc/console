@@ -287,7 +287,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - `{{count}}` and `{{tier}}` placeholders survive in all 13;
     - no non-English value equals the English one outside the conventions' allowlist.
     (ticked) 2026-11-19T13:20:49Z by d778be9d: commit:69d8866c8 (private/account e7290ad); nav-keys vitest 5 passed; i18n completeness, placeholders, cross-locale, naturalization, hashes, account-key-usage rc 0
-- [ ] T1 [writer] P8: `makeUi(catalog, t)` (Design 7) and its call site in OfferBuilder.tsx; `ui-keys.test.ts`; the key-usage gate learns `ui('<literal>')` with a CONTROL and a SILENT self-test.
+- [x] T1 [writer] P8: `makeUi(catalog, t)` (Design 7) and its call site in OfferBuilder.tsx; `ui-keys.test.ts`; the key-usage gate learns `ui('<literal>')` with a CONTROL and a SILENT self-test.
   Owns: private/account/web/src/pages/partner/offer/types.ts, private/account/web/src/pages/partner/offer/OfferBuilder.tsx, private/account/web/src/pages/partner/offer/__tests__/ui-keys.test.ts, scripts/gates/check-account-i18n-key-usage.ts
   Depends on: I1 (offerUi.json)
   Needs: none
@@ -297,6 +297,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - an unknown key never returns itself;
     - every `ui()` literal under pages/partner/offer resolves;
     - the gate fires on a planted unresolved `ui('zzzLabel')`.
+    (ticked) 2026-11-19T13:35:57Z by d778be9d: commit:d65b720db (private/account 4646c1e) + console 1cbbb7465; on the landed tree with I1: ui-keys vitest passed, web tsc rc 0, lint rc 0, key-usage --selftest rc 0, check:ci-i18n-account-key-usage rc 0
 - [ ] G1 [writer] The raw-key gate (Design 7, operator ruling on P8): `check-account-raw-keys.ts` for dynamic config keys (layer b) with its allowlist lint, the shared scanner `raw-key-scan.ts` and the render sweep `raw-key-render.test.tsx` (layer c), and a control script that plants a raw key in each of the three layers, layer (a) included, and requires each to fire. Wired the three-point way: a `check:ci-account-raw-keys` script in package.json, an entry in scripts/ci-runner/manifest.ts regenerated into scripts/ci-runner/gates.lock.json with `npm run gen:gates-lock`, and a step in the `quality-i18n` job of .github/workflows/ci-quality.yml; the gate is named in docs/agent-reference/ci-gates.md with its quick fix.
   Owns: scripts/gates/check-account-raw-keys.ts, scripts/__tests__/check-account-raw-keys.control.ts, .ci/config/account-raw-key-allowlist.json, private/account/web/src/test/raw-key-scan.ts, private/account/web/src/test/__tests__/raw-key-render.test.tsx, package.json, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json, .github/workflows/ci-quality.yml, docs/agent-reference/ci-gates.md
   Depends on: T1 (the `ui()` layer and offerUi), I1 (nav and offerUi keys)
@@ -329,7 +330,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - "Sign out…" opens `sidebar-logout-confirm` and does not call `logout`;
     - `sidebar-search` opens the same dialog;
     - the existing palette tests still pass.
-- [ ] U1 [writer] `NavUser` and the Help and support link (Design 4); new `ui/avatar.tsx` and `ui/toggle-group.tsx`; `LANGUAGE_LABELS` moved to `i18n/language-labels.ts` (LanguageSwitcher.tsx re-imports it until N1 deletes the file).
+- [x] U1 [writer] `NavUser` and the Help and support link (Design 4); new `ui/avatar.tsx` and `ui/toggle-group.tsx`; `LANGUAGE_LABELS` moved to `i18n/language-labels.ts` (LanguageSwitcher.tsx re-imports it until N1 deletes the file).
   Owns: private/account/web/src/components/sidebar/NavUser.tsx, private/account/web/src/components/sidebar/HelpLink.tsx, private/account/web/src/components/ui/avatar.tsx, private/account/web/src/components/ui/toggle-group.tsx, private/account/web/src/i18n/language-labels.ts, private/account/web/src/components/LanguageSwitcher.tsx, private/account/web/src/components/sidebar/__tests__/nav-user.test.tsx
   Depends on: F1, I1, S1
   Needs: none
@@ -340,6 +341,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - `language-option-de` writes the language cookie and switches to de;
     - Settings goes to /account/settings and Communication preferences to /account/notifications;
     - an empty `name` shows the email and initials from the email.
+    (ticked) 2026-11-19T13:35:59Z by d778be9d: commit:d65b720db (private/account b4e6bab); nav-user vitest 6 passed, web tsc rc 0, lint rc 0
 - [ ] N1 [writer] The shell: AppSidebar.tsx rewritten to compose header (switcher or banner, the search and bell row), `NavGroups` (collapsible, persisted, `nav-<id>` and `nav-group-<id>`), and footer (Help, NavUser). `adminMenuVisible` removed; ThemeToggle.tsx and LanguageSwitcher.tsx deleted; NoticeBell gets its square trigger style; dead `common` keys removed in 13 locales and hashes regenerated.
   Owns: private/account/web/src/components/AppSidebar.tsx, private/account/web/src/components/sidebar/NavGroups.tsx, private/account/web/src/components/NoticeBell.tsx, private/account/web/src/components/__tests__/notice-bell.test.tsx, private/account/web/src/components/ThemeToggle.tsx, private/account/web/src/components/LanguageSwitcher.tsx, private/account/web/src/components/__tests__/app-sidebar.test.tsx, private/account/web/src/i18n/locales/*/common.json, private/account/web/src/i18n/locales/.translation-hashes.json
   Depends on: W1, K1, U1, T1 (the hash manifest)
