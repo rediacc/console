@@ -383,7 +383,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - the service answers 403 for the section under environment `production` and creates it under `bench` (control);
     - a second apply plans zero actions (idempotent), and the parity fixtures agree between Python `plan()` and the service.
     (ticked) 2026-11-19T14:34:26Z by d778be9d: commit:f7e5e0bba (private/account 3a4a634) + console da04d5873; pytest 48 passed, vitest 33 passed, typecheck rc 0; the bench apply is X2
-- [ ] B2 [writer] The automated bench walk-through (Design 10): `07-90-live-sidebar.test.ts`, `live-sidebar-walk.ts`, and the live config matching it.
+- [x] B2 [writer] The automated bench walk-through (Design 10): `07-90-live-sidebar.test.ts`, `live-sidebar-walk.ts`, and the live config matching it.
   Owns: private/account/e2e/tests/07-navigation/07-90-live-sidebar.test.ts, private/account/e2e/src/utils/live-sidebar-walk.ts, private/account/e2e/playwright.live.config.ts
   Depends on: N1, G1 (the scan pattern), B1 (the test partner org)
   Needs: none
@@ -391,6 +391,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - a non-bench origin is refused (control: a bench origin is admitted);
     - the scan helper flags a planted `nav:item.zzz` text node in a fixture page and passes a clean one;
     - the run's stdout carries one line per step and the JSON summary.
+    (ticked) 2026-11-19T15:24:44Z by d778be9d: commit:f2ba2c03e (private/account 34e3aef); e2e tsc rc 0, playwright --list includes 07-90, local run without origin 2 passed 1 skipped; bench run is X2
 - [ ] X1 [lead] Local proof chain: a VERIFIED `npm run vm:check -- --changed` on the head tree, then `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench`.
   Local-route: vm-check, deploy-bench -- the branch tree is proved on the fleet and deployed to bench from this checkout
   Owns: none (runs only). Accept: vm:check VERIFIED and deploy_bench rc 0 naming the deployed version.
