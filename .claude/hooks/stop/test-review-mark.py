@@ -311,7 +311,12 @@ def quick_env(name):
     """
     short = tempfile.mkdtemp(prefix="rvm-", dir="/tmp")
     atexit.register(shutil.rmtree, short, True)
-    env = {k: v for k, v in os.environ.items() if k not in ("CI", "GITHUB_ACTIONS")}
+    # CI_QUICK_IN_CLONE too: a suite run inside a whole ci:quick inherits the outer run's in-clone marker, and quick-clone.ts then refuses --advance-only ("runs only in the kept clone, and this run would use the shared checkout"), so the advance controls failed in the kept clone and passed in a plain shell.
+    env = {
+        k: v
+        for k, v in os.environ.items()
+        if k not in ("CI", "GITHUB_ACTIONS", "CI_QUICK_IN_CLONE", "CI_QUICK_NO_CARRY")
+    }
     env.update(
         {
             "TMPDIR": short,
