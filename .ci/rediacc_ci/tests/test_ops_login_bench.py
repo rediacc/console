@@ -561,6 +561,26 @@ def test_an_unrelated_failure_is_not_login_needed():
     assert not login_bench.login_needed("connection reset by peer")
 
 
+@pytest.mark.parametrize("rc", [0, 7])
+def test_relogin_once_runs_the_regional_remedy_once_and_reports_its_rc(rc):
+    class Done:
+        def __init__(self, rc):
+            self.rc = rc
+
+    ran = []
+    notes = []
+
+    def run_login(argv):
+        ran.append(argv)
+        return Done(rc)
+
+    argv = ["rdc.sh", "--config", "us-bench", "term"]
+    ok, reason = login_bench.relogin_once(argv, run_login, notes.append)
+    assert ran == [list(login_bench.remedy_for("us")[1])]
+    assert len(notes) == 1
+    assert (ok, reason) == ((True, "") if rc == 0 else (False, f"login:bench exited {rc}"))
+
+
 @pytest.mark.parametrize(
     ("argv", "want"),
     [

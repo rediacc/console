@@ -880,3 +880,81 @@ def test_a_non_wk_reference_in_the_rulings_is_refused_not_passed_through(root):
     path.write_text(json.dumps(doc))
     with pytest.raises(dr.KnownError, match="not a"):
         dr.load_known(path)
+
+
+# --------------------------------------------------------------------------- bench login without a typed code
+
+IP_MISMATCH = (
+    "This login is tied to another network address. Your IP address changed; "
+    "this login only works from the old one."
+)
+
+
+class LoginGate:
+    """Wraps the Container: the first `fail_first` rdc calls answer the CLI's IP-mismatch text until the login ran; `npm run login:bench` calls are recorded."""
+
+    def __init__(self, box, *, login_rc=0, text=IP_MISMATCH, fail_first=1):
+        self.box = box
+        self.login_rc = login_rc
+        self.text = text
+        self.fail_first = fail_first
+        self.logins: list[list] = []
+        self.rdc_calls = 0
+
+    def __call__(self, argv, env, timeout):
+        if argv[0] == "npm":
+            self.logins.append(list(argv))
+            return oh.Result(self.login_rc)
+        self.rdc_calls += 1
+        if self.rdc_calls <= self.fail_first and not self.logins:
+            return oh.Result(1, "", self.text)
+        return self.box(argv, env, timeout)
+
+
+def test_ip_mismatch_logs_in_once_reruns_and_is_green(root):
+    gate = LoginGate(Container(ALL_KNOWN))
+    out = run(root, gate)
+    assert out["rc"] == 0, text(out)
+    assert gate.logins == [["npm", "run", "--silent", "login:bench", "--", "--region", "eu"]]
+    assert "REBIND" not in text(out)
+
+
+def test_a_failed_login_is_red_unreadable_naming_the_cause(root):
+    gate = LoginGate(Container(ALL_KNOWN), login_rc=3)
+    out = run(root, gate)
+    assert out["rc"] == 1
+    assert "dmarc.mail.unreadable" in text(out)
+    assert "login:bench exited 3" in text(out)
+    assert len(gate.logins) == 1
+
+
+@pytest.mark.parametrize("failure", ["connection reset by peer", "Error: mailbox locked"])
+def test_other_failure_text_runs_no_login(root, failure):
+    gate = LoginGate(Container(ALL_KNOWN), text=failure)
+    out = run(root, gate)
+    assert out["rc"] == 1
+    assert gate.logins == []
+
+
+def test_a_non_bench_config_runs_no_login(root):
+    target = json.loads((root / dr.KNOWN_REL).read_text())["target"]
+    edit_known(root, target={**target, "config": "other"})
+    gate = LoginGate(Container(ALL_KNOWN))
+    out = run(root, gate)
+    assert out["rc"] == 1
+    assert gate.logins == []
+
+
+def test_the_seen_marking_call_does_not_log_in_a_second_time(root):
+    known = dr.load_known(root / dr.KNOWN_REL)
+    env = {"PATH": "/usr/bin"}
+    relogin = dr.Relogin()
+    gate = LoginGate(Container(ALL_KNOWN))
+    doc, error = dr.read_reports(known, gate, env, relogin)
+    assert doc is not None, error
+    assert len(gate.logins) == 1
+    # The marking call hits the mismatch again: the failure stands and no second login runs.
+    again = LoginGate(Container(ALL_KNOWN), fail_first=99)
+    why = dr.mark_seen(known, {("u", "DMARC"): ["1"]}, again, env, relogin)
+    assert "marking 1 report(s) Seen failed" in why
+    assert again.logins == []

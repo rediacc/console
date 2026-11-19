@@ -40,7 +40,7 @@ from collections.abc import Callable
 
 from rediacc_ci import well_known
 from rediacc_ci.core.common import repo_root
-from rediacc_ci.ops import dmarc_parser
+from rediacc_ci.ops import dmarc_parser, login_bench
 from rediacc_ci.ops.ops_health import (
     CACHE_DIR_REL,
     RDC_TIMEOUT_S,
@@ -398,16 +398,45 @@ def mark_command(known: dict, marks: dict) -> str:
     return " && ".join(parts)
 
 
-def _term(known: dict, runner: Runner, env: dict, command: str) -> Result:
+class Relogin:
+    """Once-per-run state: the bench login is attempted at most once, however many `_term` calls fail on it."""
+
+    def __init__(self) -> None:
+        self.tried = False
+
+
+def _term(
+    known: dict, runner: Runner, env: dict, command: str, relogin: Relogin | None = None
+) -> Result:
+    """One `rdc term connect` on the known target. A bench login tied to another address (or absent) is redone once per run with `npm run login:bench` (no typed code) and the call rerun once; a failed login keeps the first failure and names `login:bench exited N` in its stderr."""
     cenv = child_env(env)
     args = ["term", "connect", known["target"]["repo"], "-c", command]
-    return runner(rdc_argv(cenv, known["target"]["config"], args), cenv, RDC_TIMEOUT_S)
+    argv = rdc_argv(cenv, known["target"]["config"], args)
+    res = runner(argv, cenv, RDC_TIMEOUT_S)
+    state = relogin if relogin is not None else Relogin()
+    if (
+        res.rc == 0
+        or state.tried
+        or not login_bench.targets_config(argv)
+        or not login_bench.login_needed((res.stdout or "") + (res.stderr or ""))
+    ):
+        return res
+    state.tried = True
+    ok, reason = login_bench.relogin_once(
+        argv, lambda a: runner(a, cenv, login_bench.LOGIN_TIMEOUT_S)
+    )
+    if not ok:
+        err = ((res.stderr or "") + " (%s)" % reason).strip()
+        return Result(res.rc, res.stdout, err, res.timed_out)
+    return runner(argv, cenv, RDC_TIMEOUT_S)
 
 
-def read_reports(known: dict, runner: Runner, env: dict) -> tuple[dict | None, str]:
+def read_reports(
+    known: dict, runner: Runner, env: dict, relogin: Relogin | None = None
+) -> tuple[dict | None, str]:
     """(the parser's document, "") or (None, why it could not be read)."""
     source = pathlib.Path(dmarc_parser.__file__).read_text(encoding="utf-8")
-    res = _term(known, runner, env, parse_command(known, source))
+    res = _term(known, runner, env, parse_command(known, source), relogin)
     where = "%s %s" % (known["target"]["repo"], known["target"]["container"])
     if res.timed_out:
         return None, "reading the reports on %s timed out after %ds" % (where, RDC_TIMEOUT_S)
@@ -428,12 +457,14 @@ def read_reports(known: dict, runner: Runner, env: dict) -> tuple[dict | None, s
     return doc, ""
 
 
-def mark_seen(known: dict, marks: dict, runner: Runner, env: dict) -> str:
+def mark_seen(
+    known: dict, marks: dict, runner: Runner, env: dict, relogin: Relogin | None = None
+) -> str:
     """ "" when the uids were marked (or there were none), else why not."""
     command = mark_command(known, marks)
     if not command:
         return ""
-    res = _term(known, runner, env, command)
+    res = _term(known, runner, env, command, relogin)
     if res.timed_out or res.rc != 0:
         return "marking %d report(s) Seen failed (%s): %s" % (
             sum(len(v) for v in marks.values()),
@@ -1058,7 +1089,8 @@ def run(
         known = load_known(root / KNOWN_REL)
     except KnownError as exc:
         return {"rc": 2, "lines": ["dmarc: rulings unreadable: %s" % exc]}
-    doc, error = read_reports(known, runner, env)
+    relogin = Relogin()
+    doc, error = read_reports(known, runner, env, relogin)
     if doc is None:
         return {"rc": 1, "lines": ["dmarc.mail.unreadable: %s" % error]}
     hpath = history_path(root)
@@ -1069,7 +1101,7 @@ def run(
     # A history that could not be written leaves the reports unread, so the next run records their counts; a history that could not be read is unknown, not green.
     marks = {} if save_error else verdict["marks"]
     marked = sum(len(v) for v in marks.values())
-    mark_error = mark_seen(known, marks, runner, env) if mark else ""
+    mark_error = mark_seen(known, marks, runner, env, relogin) if mark else ""
     counts = verdict["counts"]
     lines = [
         "dmarc: %d unread aggregate report(s), %d TLS-RPT report(s), %d other message(s) left alone; "

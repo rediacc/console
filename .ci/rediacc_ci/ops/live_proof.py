@@ -76,7 +76,7 @@ CODE_LEAK = "secret-shape"
 TRANSCRIPT_ENV = "REDIACC_TRANSCRIPT_PATH"
 TIMEOUT_RC = 124
 # login_bench waits for a fresh TOTP window, refreshes the IP allowlist and runs up to four rdc children.
-LOGIN_TIMEOUT_S = 600
+LOGIN_TIMEOUT_S = login_bench.LOGIN_TIMEOUT_S
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 D = importlib.import_module("wl_plandeps")
@@ -500,18 +500,17 @@ def _relogin_and_retry(
     root: pathlib.Path, world: World, log_: _Log, label: str, item: LT.Run, failed: Result
 ) -> Result:
     """Run `npm run login:bench` once for the step's bench region (agent-allowed, idempotent; operator order 2026-10-30) and rerun the step; the failed answer stands when the login fails."""
-    config = ", ".join(a for a in item.argv if a in login_bench.BENCH_CONFIGS) or "eu-bench"
-    text, remedy_argv = login_bench.remedy_for(
-        login_bench.config_region(item.argv) or login_bench.DEFAULT_REGION
+
+    def run_login(argv: list[str]) -> Result:
+        login = world.run(argv, root, LOGIN_TIMEOUT_S, None)
+        log_.run("login-bench", argv, login)
+        return login
+
+    ok, reason = login_bench.relogin_once(
+        item.argv, run_login, lambda t: log_.add(f"# {t}, then retrying {label}")
     )
-    log_.add(
-        f"# the {config} login is tied to another address or absent: running `{text}` once, then retrying {label}"
-    )
-    argv = list(remedy_argv)
-    login = world.run(argv, root, LOGIN_TIMEOUT_S, None)
-    log_.run("login-bench", argv, login)
-    if login.rc != 0:
-        log_.add(f"# `{text}` exited {login.rc}; {label} is not retried")
+    if not ok:
+        log_.add(f"# {reason}; {label} is not retried")
         return failed
     retried = world.run(item.argv, root, item.step.timeout_s, None)
     log_.run(label + " (retry after login:bench)", item.argv, retried)

@@ -169,6 +169,30 @@ def targets_config(argv: Sequence[str]) -> bool:
     return config_region(argv) is not None
 
 
+# The login's own ceiling: it waits out a TOTP window and may enrol, so it outlasts an ordinary step.
+LOGIN_TIMEOUT_S = 600
+
+
+def config_name(argv: Sequence[str]) -> str:
+    """The bench config name `argv` selects, `eu-bench` when none."""
+    return ", ".join(a for a in argv if a in BENCH_CONFIGS) or "eu-bench"
+
+
+def relogin_once(
+    argv: Sequence[str],
+    run_login: Callable[[list[str]], object],
+    note: Callable[[str], None] | None = None,
+) -> tuple[bool, str]:
+    """Run the bench login for the region `argv` selects, once (agent-allowed, idempotent; operator order 2026-10-30): (True, "") when it exited 0, else (False, "login:bench exited N"). `run_login` runs the remedy argv and returns an object with `.rc`; `note` hears the line announcing the run. The login derives its own TOTP step, so a caller never types or computes a code."""
+    text, remedy_argv = remedy_for(config_region(argv) or DEFAULT_REGION)
+    if note is not None:
+        note(
+            f"the {config_name(argv)} login is tied to another address or absent: running `{text}` once"
+        )
+    rc = getattr(run_login(list(remedy_argv)), "rc", 1)
+    return (True, "") if rc == 0 else (False, f"login:bench exited {rc}")
+
+
 Runner = Callable[[Sequence[str], Mapping[str, str]], int]
 Capture = Callable[[Sequence[str], Mapping[str, str]], tuple[int, str]]
 
