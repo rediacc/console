@@ -541,9 +541,9 @@ export function classifyUntracked(
 
 /** A submodule's git directory sits at `modules/<name>/` under its superproject's, and `<name>` may hold slashes but never a component named like a git directory entry (objects, refs, logs), so `modules/x/refs/heads/objects` is a branch of x, not x's objects directory; every git-file rule below applies inside one exactly as at the top. */
 const SUBMODULE_GITDIR = '(?:modules/(?:(?!(?:objects|refs|logs)/)[^/]+/)+)?';
-/** Git files whose content is history: any read of one makes the verdict move with commits, not with file bytes. */
+/** Git files whose content is history: any read of one makes the verdict move with commits, not with file bytes. The submodule prefix is the greedy `modules/.+/` here, not SUBMODULE_GITDIR: a name that is itself `objects`, `refs` or `logs` (`modules/objects/objects/ab/cd`) is ambiguous, and the ambiguity resolves to history, the whole-tree direction. The discovery exemption below keeps the strict prefix, the narrow direction. */
 export const GIT_HISTORY_FILE = new RegExp(
-  `^${SUBMODULE_GITDIR}(?:(objects|refs|logs)(/|$)|(packed-refs|FETCH_HEAD|ORIG_HEAD|MERGE_HEAD|CHERRY_PICK_HEAD|shallow)$)`
+  '^(?:modules/.+/)?(?:(objects|refs|logs)(/|$)|(packed-refs|FETCH_HEAD|ORIG_HEAD|MERGE_HEAD|CHERRY_PICK_HEAD|shallow)$)'
 );
 /**
  * Git paths that look like history but are discovery: git's own repository check (`setup.c` is_git_directory) is an `access(X_OK)` on the bare `objects` and `refs` directories, and opening `objects/info/alternates` says where more objects live, not what any of them hold. A LISTING of `objects` or `refs` enumerates history, so the exemption is for a path read, never a listing.
@@ -3227,7 +3227,10 @@ async function selftest(): Promise<number> {
       GIT_DISCOVERY_FILE.test('modules/a/b/refs') &&
       !GIT_DISCOVERY_FILE.test('modules/x/refs/heads/objects') &&
       !GIT_DISCOVERY_FILE.test('modules/a/b/logs/refs') &&
-      GIT_HISTORY_FILE.test('modules/x/refs/heads/objects'),
+      GIT_HISTORY_FILE.test('modules/x/refs/heads/objects') &&
+      GIT_HISTORY_FILE.test('modules/objects/objects/ab/cd') &&
+      GIT_HISTORY_FILE.test('modules/logs/refs/heads/main') &&
+      !GIT_HISTORY_FILE.test('modules/x/config'),
     'a submodule branch file named objects is history, not discovery; CONTROL: modules/<name>/objects and nested names stay discovery'
   );
   check(
@@ -3238,6 +3241,19 @@ async function selftest(): Promise<number> {
       networkPeer('3<socket:[4]>, {sa_family=AF_UNIX, sun_path="/r/a"}, 12) = 0') === undefined &&
       networkPeer('3<socket:[4]>, {sa_family=AF_UNSPEC}, 16) = 0') === undefined,
     'an AF_INET connect strace printed in an unknown shape is still a network peer; CONTROL: AF_UNIX and AF_UNSPEC are not'
+  );
+  // A shared-index file in a repository directory with no `.git` component counts as a repository read (b71d19c7.2).
+  const shared = parseStraceLog(
+    [
+      '500 openat(AT_FDCWD</r>, "/g/sharedindex.abc", O_RDONLY) = 3</g/sharedindex.abc>',
+      '500 openat(AT_FDCWD</r>, "/g/notes.abc", O_RDONLY) = 4</g/notes.abc>',
+    ].join('\n'),
+    '/r'
+  );
+  check(
+    shared.gitReaders?.has('/g/sharedindex.abc') === true &&
+      shared.gitReaders?.has('/g/notes.abc') !== true,
+    'a sharedindex.* file is a repository read; CONTROL: an ordinary file beside it is not'
   );
   const idx3 = mk(['a/one.txt']);
   for (const a of ['-t', '-t', '-t']) idx3.execs.push({ argv: ['git', 'ls-files', a], cwd: '/r' });
