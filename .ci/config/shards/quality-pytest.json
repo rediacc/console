@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-18T16:03:01.098Z",
+  "generatedAt": "2026-11-19T08:28:01.193Z",
   "legs": [
     {
       "index": 1,
@@ -475,6 +475,11 @@
         "pytest:.ci/rediacc_ci/tests/test_enterprise_leak.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_no_key_on_account.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_proof.py",
+        "pytest:.ci/rediacc_ci/tests/test_feedback_classify.py",
+        "pytest:.ci/rediacc_ci/tests/test_feedback_client.py",
+        "pytest:.ci/rediacc_ci/tests/test_feedback_critical.py",
+        "pytest:.ci/rediacc_ci/tests/test_feedback_link.py",
+        "pytest:.ci/rediacc_ci/tests/test_feedback_quarantine.py",
         "pytest:.ci/rediacc_ci/tests/test_fleet_lock_users.py",
         "pytest:.ci/rediacc_ci/tests/test_gate_ledger.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_pr_environments.py",
@@ -565,6 +570,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_agent_session_archival.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_effort_tune.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_event_store.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_feedback_triage.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_focus.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_gh.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_receipt_inflight.py",
@@ -574,6 +580,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_preflight.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_priority.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plandeps_box_edges.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_planfile_match.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_planrec_prompt_stdin.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_prreview.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_queue_settings.py",

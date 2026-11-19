@@ -5089,6 +5089,20 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // FEEDBACK LINKS POINT AT REAL FINGERPRINTS (agent/plans/PLAN-rdc-feedback.md R10, D5, box T3). Every id on a live plan's `Feedback:` header line must be in agent/ledgers/feedback-snapshot.json, the public record `rediacc_ci.feedback.link` and `.ship` write from the admin export; a plan carrying the line while the snapshot is missing or empty is a failure, and zero carriers is a pass with the count printed. Lane quality-static: it reads only the working tree, and that job carries a gate-bind region, so the step is emitted from the gate header.
+    // No `paths` DELIBERATELY: the verdict reads every plan, the snapshot and the grammar in rediacc_ci.feedback.link, which imports the classify, client and triage modules; a partial table would make --changed drop the gate silently, and the gate runs in under a second.
+    id: 'check:ci-plan-feedback',
+    run: 'npm run check:ci-plan-feedback',
+    gate: true,
+    leaves: ['.ci/scripts/quality/check_plan_feedback.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Plan feedback links',
+    },
+  },
+  {
     // A PLAN THAT TOUCHES A DEPLOYABLE SURFACE CLOSES ONLY ON A LIVE RECEIPT (agent/plans/PLAN-tested-on-bench.md V6): its `Live-Proof:` header, one `LP-<target> [live]` box per declared target, and from tiers.live.baseline_at on a VERIFIED row in agent/ledgers/live-proof.jsonl for every LP box this branch ticks.
     // NO `paths:` DELIBERATELY. LP5 recomputes the surface inputs digest from the surface code itself (private/renet, private/account, packages/cli, workers/**), and the gate imports check_plan_boxes, check_plan_implementation, wl_planrec and the worklist store, so a path table would let `--changed` drop it exactly when surface code moves after a receipt. Lane quality-branch for the merge-base its LP4 to LP6 need (fetch-depth 0, the PR head ref, GITHUB_BASE_REF); hand-written for its neighbours' reason (no `- id: setup` in that job).
     id: 'check:ci-plan-live-proof',

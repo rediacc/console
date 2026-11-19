@@ -402,6 +402,9 @@ jobs:
       - name: Plan bindings
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_plan_bindings.py
+      - name: Plan feedback links
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: .ci/scripts/quality/check_plan_feedback.py
       - name: Policy inventory
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_policy_inventory.py

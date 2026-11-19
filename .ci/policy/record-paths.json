@@ -859,6 +859,10 @@
         {
           "id": "check:ci-plan-bindings",
           "reason": "It imports wl_planbind.py and the hook modules it reaches; the agent/ledgers/live-proof.jsonl the derivation cites at wl_boxaudit.py:7 is a docstring naming another ledger, and no effort-*.jsonl file is read: the verdict is computed over agent/plans and agent/worklist."
+        },
+        {
+          "id": "check:ci-plan-feedback",
+          "reason": "The agent/ledgers/ file it reads is agent/ledgers/feedback-snapshot.json (SNAPSHOT_PARTS, .ci/rediacc_ci/feedback/link.py:45), a different ledger outside this glob; no effort-*.jsonl file is read: the verdict is computed over agent/plans/PLAN-*.md and that snapshot."
         }
       ]
     },
@@ -1198,6 +1202,10 @@
         {
           "id": "check:ci-plan-deps",
           "evidence": ".ci/rediacc_ci/quality/plan_lifecycle.py:52 (cite) agent/plans"
+        },
+        {
+          "id": "check:ci-plan-feedback",
+          "evidence": ".ci/rediacc_ci/feedback/link.py:327 (cite) agent/plans/"
         },
         {
           "id": "check:ci-plan-folders",

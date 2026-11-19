@@ -721,9 +721,13 @@ def _subprocess_runner(argv: Sequence[str], env: Mapping[str, str]) -> int:
 
 
 def reexec_under_profile(
-    argv: Sequence[str], profile: str, env: Mapping[str, str], run_child: Runner
+    argv: Sequence[str],
+    profile: str,
+    env: Mapping[str, str],
+    run_child: Runner,
+    module: str = SELF,
 ) -> int | None:
-    """This entry point under `profile`; None when it is already bound. A foreign bench login profile is refused, since `bws_env exec` never overwrites a name already set."""
+    """The entry point `module` (default this one; `link` and `ship` pass their own) under `profile`; None when it is already bound. A foreign bench login profile is refused, since `bws_env exec` never overwrites a name already set."""
     bound = [p for p in (env.get(PROFILES_ENV) or "").split(",") if p]
     if profile in bound:
         return None
@@ -748,7 +752,7 @@ def reexec_under_profile(
             "--",
             sys.executable,
             "-m",
-            SELF,
+            module,
             *argv,
         ],
         child,
