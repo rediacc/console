@@ -8,7 +8,7 @@ tags:
 subcategory: ai-agents
 order: 51
 language: ko
-sourceHash: "36ba86893c3817ac"
+sourceHash: "fa5406e6f4dcdd08"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -130,6 +130,12 @@ result=$(rdc machine status prod-1)
 | `next.options[]` | `array` | 구체적인 액션. 각각은 사용자가 선택할 수 있는 대안입니다 |
 | `next.options[].description` | `string` | 이 옵션에 대한 사람이 읽을 수 있는 설명 |
 | `next.options[].run` | `string` | 정확한 CLI 명령. 사용자에게 그대로 전달하세요 |
+
+### 실패 안내와 피드백 옵션
+
+명령이 실패하면(사용법 오류를 제외한 0이 아닌 모든 종료 코드) `rdc`는 stderr에 `Unexpected? rdc feedback report --last`를 출력합니다. JSON 출력에서는 같은 안내가 `rdc feedback report --last`를 실행하는 옵션으로 `next.options[]`에 추가되며, `next`가 없는 오류에는 실패가 예상 밖이었는지 묻는 요약과 함께 `next`가 붙습니다. 이 안내는 사용법 오류, 실패한 `rdc feedback` 명령, `rdc serve`가 처리하는 요청에는 나타나지 않습니다. `REDIACC_FEEDBACK_HINT=0`으로 끌 수 있습니다.
+
+report 명령은 전송될 내용을 그대로 출력합니다. `--yes`가 없으면 에이전트는 그 미리보기와 전송 명령을 받으며, `--yes`가 전달되거나 사람이 확인하기 전까지 아무것도 전송되지 않습니다.
 
 ### 재시도 가능한 오류
 

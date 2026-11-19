@@ -3833,7 +3833,8 @@
       "serve": "Executor Service",
       "tools": "Local Tools",
       "legal": "Legal Documents and Terms",
-      "version": "Version Information"
+      "version": "Version Information",
+      "feedback": "Feedback"
     },
     "errors": {
       "heading": "Common Error Messages",

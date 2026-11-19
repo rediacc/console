@@ -3343,7 +3343,8 @@
       "vscode": "VS Code Entegrasyonu",
       "tools": "Yerel araçlar",
       "legal": "Yasal Belgeler ve Şartlar",
-      "version": "Sürüm Bilgisi"
+      "version": "Sürüm Bilgisi",
+      "feedback": "Geri Bildirim"
     },
     "supplements": {
       "config": {

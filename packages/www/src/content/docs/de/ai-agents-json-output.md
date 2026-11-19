@@ -10,7 +10,7 @@ tags:
 subcategory: ai-agents
 order: 51
 language: de
-sourceHash: "36ba86893c3817ac"
+sourceHash: "fa5406e6f4dcdd08"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -132,6 +132,12 @@ Schema:
 | `next.options[]` | `array` | Konkrete Aktionen; jede ist eine Alternative, die der Benutzer wählen kann |
 | `next.options[].description` | `string` | Menschenlesbare Erklärung dieser Option |
 | `next.options[].run` | `string` | Exakter CLI-Befehl. Wörtlich an den Benutzer weitergeben |
+
+### Fehlerhinweis und Feedback-Option
+
+Nach einem fehlgeschlagenen Befehl (jeder Exit-Code ungleich null außer einem Aufruffehler) gibt `rdc` den Hinweis `Unexpected? rdc feedback report --last` auf stderr aus. In der JSON-Ausgabe wird derselbe Verweis als Option mit `rdc feedback report --last` an `next.options[]` angehängt; ein Fehler ohne `next` erhält eines, mit einer Zusammenfassung, die fragt, ob der Fehler unerwartet ist. Der Hinweis entfällt bei Aufruffehlern, bei fehlschlagenden `rdc feedback`-Befehlen und bei Anfragen, die `rdc serve` bedient. `REDIACC_FEEDBACK_HINT=0` schaltet ihn ab.
+
+Der Report-Befehl gibt genau das aus, was gesendet würde. Ohne `--yes` erhält ein Agent diese Vorschau und den Befehl zum Senden; gesendet wird erst, wenn `--yes` übergeben wird oder ein Mensch bestätigt.
 
 ### Wiederholbare Fehler
 

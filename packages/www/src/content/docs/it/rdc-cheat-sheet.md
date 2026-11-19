@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: it
-sourceHash: "44f85425f17be08c"
+sourceHash: "c0ca05a2167060d2"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -143,6 +143,17 @@ Credenziali di deploy accessibili solo in scrittura. `get` restituisce solo il d
 | `rdc machine add <machine> --ip <host> --user <user>` | Aggiungi una macchina alla configurazione |
 | `rdc backup strategy set ...` | Definisci una strategia di backup con nome |
 | `rdc --config <name> <command>` | Usa un file di configurazione con nome |
+
+## Feedback
+
+| Comando | Descrizione |
+|---------|-------------|
+| `rdc feedback report --last` | Anteprima di una segnalazione creata dall'ultimo comando fallito; aggiungi `--yes` per inviarla |
+| `rdc feedback report --command <n>` | Segnala un comando registrato (1 è il più recente) |
+| `rdc feedback report --list-recent` | Elenca i comandi registrati ed esce |
+| `rdc feedback report --message <text> [--kind bug\|feedback\|docs]` | Segnala una nota senza un comando fallito |
+| `rdc feedback list [--status <list>]` | Elenca le segnalazioni con id, impronta, stato e date; una segnalazione risolta mostra `fixed-in-v<version>` |
+| `rdc feedback show <id>` | Mostra una segnalazione per id o prefisso univoco |
 
 ## Debug e via di uscita
 

@@ -3343,7 +3343,8 @@
       "vscode": "VS Code 集成",
       "tools": "本地工具",
       "legal": "法律文件与服务条款",
-      "version": "版本信息"
+      "version": "版本信息",
+      "feedback": "反馈"
     },
     "supplements": {
       "config": {

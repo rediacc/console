@@ -3343,7 +3343,8 @@
       "vscode": "VS Code統合",
       "tools": "ローカルツール",
       "legal": "法的文書と利用規約",
-      "version": "バージョン情報"
+      "version": "バージョン情報",
+      "feedback": "フィードバック"
     },
     "supplements": {
       "config": {

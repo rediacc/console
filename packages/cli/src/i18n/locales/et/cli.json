@@ -3343,7 +3343,8 @@
       "vscode": "VS Code'i integratsioon",
       "tools": "Kohalikud tööriistad",
       "legal": "Õigusdokumendid ja kasutustingimused",
-      "version": "Versiooniteave"
+      "version": "Versiooniteave",
+      "feedback": "Tagasiside"
     },
     "supplements": {
       "config": {

@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: ru
-sourceHash: "44f85425f17be08c"
+sourceHash: "c0ca05a2167060d2"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -143,6 +143,17 @@ sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 | `rdc machine add <machine> --ip <host> --user <user>` | Добавить машину в конфигурацию |
 | `rdc backup strategy set ...` | Определить именованную стратегию резервного копирования |
 | `rdc --config <name> <command>` | Использовать именованный файл конфигурации |
+
+## Обратная связь
+
+| Команда | Описание |
+|---------|----------|
+| `rdc feedback report --last` | Предпросмотр отчёта по последней неудачной команде; добавьте `--yes` для отправки |
+| `rdc feedback report --command <n>` | Сообщить о записанной команде (1 — самая новая) |
+| `rdc feedback report --list-recent` | Показать записанные команды и выйти |
+| `rdc feedback report --message <text> [--kind bug\|feedback\|docs]` | Отправить заметку без неудачной команды |
+| `rdc feedback list [--status <list>]` | Показать отчёты с id, отпечатком, статусом и датами; исправленный отчёт показывает `fixed-in-v<version>` |
+| `rdc feedback show <id>` | Показать один отчёт по id или уникальному префиксу |
 
 ## Отладка и прямой доступ
 

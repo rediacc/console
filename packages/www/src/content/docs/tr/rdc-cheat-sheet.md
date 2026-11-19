@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: tr
-sourceHash: "44f85425f17be08c"
+sourceHash: "c0ca05a2167060d2"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -143,6 +143,17 @@ Yalnızca dağıtım sırasında yazılabilen kimlik bilgileri. `get` komutu yal
 | `rdc machine add <machine> --ip <host> --user <user>` | Yapılandırmaya makine ekle |
 | `rdc backup strategy set ...` | Adlandırılmış yedekleme stratejisi tanımla |
 | `rdc --config <name> <command>` | Adlandırılmış yapılandırma dosyası kullan |
+
+## Geri Bildirim
+
+| Komut | Açıklama |
+|-------|----------|
+| `rdc feedback report --last` | En son başarısız komuttan oluşturulan raporun önizlemesi; göndermek için `--yes` ekleyin |
+| `rdc feedback report --command <n>` | Kaydedilmiş bir komutu bildir (1 en yenisidir) |
+| `rdc feedback report --list-recent` | Kaydedilmiş komutları listele ve çık |
+| `rdc feedback report --message <text> [--kind bug\|feedback\|docs]` | Başarısız komut olmadan bir not bildir |
+| `rdc feedback list [--status <list>]` | Raporları kimlik, parmak izi, durum ve tarihlerle listele; düzeltilmiş bir rapor `fixed-in-v<version>` olarak görünür |
+| `rdc feedback show <id>` | Tek bir raporu kimliğiyle veya benzersiz önekiyle göster |
 
 ## Hata Ayıklama ve Doğrudan Erişim
 

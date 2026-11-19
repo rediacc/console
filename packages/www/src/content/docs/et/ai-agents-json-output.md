@@ -8,7 +8,7 @@ tags:
 subcategory: ai-agents
 order: 51
 language: et
-sourceHash: "36ba86893c3817ac"
+sourceHash: "fa5406e6f4dcdd08"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -130,6 +130,12 @@ Skeem:
 | `next.options[]` | `array` | Konkreetsed toimingud; iga on alternatiiv, mille kasutaja saab valida |
 | `next.options[].description` | `string` | Selle valiku inimloetav selgitus |
 | `next.options[].run` | `string` | Täpne CLI-käsk. Edastage sõna-sõnalt kasutajale |
+
+### Tõrkevihje ja tagasisidevalik
+
+Pärast ebaõnnestunud käsku (mis tahes nullist erinev väljumiskood peale kasutusvea) trükib `rdc` stderr-i rea `Unexpected? rdc feedback report --last`. JSON-väljundis lisatakse sama viide valikuna, mis käivitab `rdc feedback report --last`, kirjele `next.options[]`; veale, millel puudub `next`, lisatakse see koos kokkuvõttega, mis küsib, kas tõrge oli ootamatu. Vihjet ei ole kasutusvigade, ebaõnnestuvate `rdc feedback` käskude ega `rdc serve` teenindatavate päringute puhul. `REDIACC_FEEDBACK_HINT=0` lülitab selle välja.
+
+Käsk report trükib täpselt selle, mis saadetaks. Ilma `--yes`-ita saab agent selle eelvaate ja saatmiskäsu; midagi ei saadeta enne, kui `--yes` on antud või inimene on kinnitanud.
 
 ### Korduskatseid väärivad vead
 

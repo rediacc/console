@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: pt
-sourceHash: "44f85425f17be08c"
+sourceHash: "c0ca05a2167060d2"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -143,6 +143,17 @@ Credenciais de implantação apenas de escrita. `get` devolve apenas o digest. O
 | `rdc machine add <machine> --ip <host> --user <user>` | Adicionar uma máquina à config |
 | `rdc backup strategy set ...` | Definir uma estratégia de backup nomeada |
 | `rdc --config <name> <command>` | Usar um ficheiro de config nomeado |
+
+## Feedback
+
+| Comando | Descrição |
+|---------|-------------|
+| `rdc feedback report --last` | Prévia de um relatório criado a partir do comando com falha mais recente; adicione `--yes` para enviar |
+| `rdc feedback report --command <n>` | Reportar um comando registrado (1 é o mais recente) |
+| `rdc feedback report --list-recent` | Listar os comandos registrados e sair |
+| `rdc feedback report --message <text> [--kind bug\|feedback\|docs]` | Reportar uma nota sem um comando com falha |
+| `rdc feedback list [--status <list>]` | Listar relatórios com id, impressão digital, status e datas; um relatório corrigido mostra `fixed-in-v<version>` |
+| `rdc feedback show <id>` | Mostrar um relatório por id ou prefixo único |
 
 ## Depuração e Saída de Emergência
 

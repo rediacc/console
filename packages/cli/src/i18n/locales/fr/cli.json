@@ -3343,7 +3343,8 @@
       "vscode": "Intégration VS Code",
       "tools": "Outils locaux",
       "legal": "Documents juridiques et Conditions",
-      "version": "Informations de version"
+      "version": "Informations de version",
+      "feedback": "Retours"
     },
     "supplements": {
       "config": {

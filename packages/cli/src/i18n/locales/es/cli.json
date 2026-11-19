@@ -3343,7 +3343,8 @@
       "vscode": "Integración con VS Code",
       "tools": "Herramientas locales",
       "legal": "Documentos legales y Términos",
-      "version": "Información de versión"
+      "version": "Información de versión",
+      "feedback": "Comentarios"
     },
     "supplements": {
       "config": {

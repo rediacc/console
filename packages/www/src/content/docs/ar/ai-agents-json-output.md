@@ -10,7 +10,7 @@ tags:
 subcategory: ai-agents
 order: 51
 language: ar
-sourceHash: "36ba86893c3817ac"
+sourceHash: "fa5406e6f4dcdd08"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -132,6 +132,12 @@ result=$(rdc machine status prod-1)
 | `next.options[]` | `array` | الإجراءات الملموسة؛ كل منها بديل يمكن للمستخدم اختياره |
 | `next.options[].description` | `string` | شرح مقروء لهذا الخيار |
 | `next.options[].run` | `string` | أمر CLI دقيق. انقله حرفيًا إلى المستخدم |
+
+### تلميح الفشل وخيار الملاحظات
+
+بعد أمر فاشل (أي رمز خروج غير صفري باستثناء خطأ الاستخدام)، يطبع `rdc` العبارة `Unexpected? rdc feedback report --last` إلى stderr. وفي مخرجات JSON تُضاف الإشارة نفسها إلى `next.options[]` كخيار يشغّل `rdc feedback report --last`؛ ويحصل الخطأ الذي لا يحمل `next` على واحد، مع ملخص يسأل عمّا إذا كان الفشل غير متوقع. يغيب التلميح عن أخطاء الاستخدام، وعن أوامر `rdc feedback` الفاشلة، وعن الطلبات التي يخدمها `rdc serve`. ويعطّله `REDIACC_FEEDBACK_HINT=0`.
+
+يطبع أمر report بالضبط ما سيُرسل. وبدون `--yes` يحصل الوكيل على هذه المعاينة وعلى الأمر المطلوب للإرسال؛ ولا يُرسل شيء حتى يُمرَّر `--yes` أو يؤكد شخص ذلك.
 
 ### الأخطاء القابلة لإعادة المحاولة
 

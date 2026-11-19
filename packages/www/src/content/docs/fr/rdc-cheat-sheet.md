@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: fr
-sourceHash: "44f85425f17be08c"
+sourceHash: "c0ca05a2167060d2"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -143,6 +143,17 @@ Identifiants de déploiement en lecture seule. `get` retourne seulement un diges
 | `rdc machine add <machine> --ip <host> --user <user>` | Ajouter une machine à la configuration |
 | `rdc backup strategy set ...` | Définir une stratégie de sauvegarde nommée |
 | `rdc --config <name> <command>` | Utiliser un fichier de configuration nommé |
+
+## Retours
+
+| Commande | Description |
+|----------|-------------|
+| `rdc feedback report --last` | Aperçu d'un rapport construit à partir de la dernière commande en échec ; ajoutez `--yes` pour l'envoyer |
+| `rdc feedback report --command <n>` | Signaler une commande enregistrée (1 est la plus récente) |
+| `rdc feedback report --list-recent` | Lister les commandes enregistrées puis quitter |
+| `rdc feedback report --message <text> [--kind bug\|feedback\|docs]` | Signaler une note sans commande en échec |
+| `rdc feedback list [--status <list>]` | Lister les rapports avec id, empreinte, statut et dates ; un rapport corrigé affiche `fixed-in-v<version>` |
+| `rdc feedback show <id>` | Afficher un rapport par id ou préfixe unique |
 
 ## Débogage et accès direct
 

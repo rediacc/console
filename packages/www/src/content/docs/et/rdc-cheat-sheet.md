@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: et
-sourceHash: "44f85425f17be08c"
+sourceHash: "c0ca05a2167060d2"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -143,6 +143,17 @@ Ainult kirjutatavad juurutamisaegsed mandaadid. `get` tagastab ainult kontrollsu
 | `rdc machine add <machine> --ip <host> --user <user>` | Lisa masin konfiguratsiooni |
 | `rdc backup strategy set ...` | Defineeri nimega varundussstrateegia |
 | `rdc --config <name> <command>` | Kasuta nimega konfiguratsioonifaili |
+
+## Tagasiside
+
+| Käsk | Kirjeldus |
+|---------|-------------|
+| `rdc feedback report --last` | Eelvaade aruandest, mis on koostatud viimasest ebaõnnestunud käsust; saatmiseks lisa `--yes` |
+| `rdc feedback report --command <n>` | Teata salvestatud käsust (1 on uusim) |
+| `rdc feedback report --list-recent` | Loetle salvestatud käsud ja välju |
+| `rdc feedback report --message <text> [--kind bug\|feedback\|docs]` | Teata märkus ilma ebaõnnestunud käsuta |
+| `rdc feedback list [--status <list>]` | Loetle aruanded koos id, sõrmejälje, oleku ja kuupäevadega; parandatud aruanne näitab `fixed-in-v<version>` |
+| `rdc feedback show <id>` | Näita ühte aruannet id või unikaalse eesliite järgi |
 
 ## Silumine ja pääsetee
 

@@ -8,7 +8,7 @@ tags:
 subcategory: ai-agents
 order: 51
 language: ja
-sourceHash: "36ba86893c3817ac"
+sourceHash: "fa5406e6f4dcdd08"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -130,6 +130,12 @@ result=$(rdc machine status prod-1)
 | `next.options[]` | `array` | 具体的なアクション。各要素はユーザーが選択できる選択肢 |
 | `next.options[].description` | `string` | この選択肢の人間向け説明 |
 | `next.options[].run` | `string` | 正確なCLIコマンド。そのままユーザーに伝えること |
+
+### 失敗時のヒントとフィードバックの選択肢
+
+コマンドが失敗した後(使い方のエラーを除く、0 以外の終了コードすべて)、`rdc` は stderr に `Unexpected? rdc feedback report --last` を表示します。JSON 出力では、同じ案内が `rdc feedback report --last` を実行する選択肢として `next.options[]` に追加されます。`next` を持たないエラーには `next` が付き、その失敗が想定外かどうかを尋ねる要約が入ります。このヒントは、使い方のエラー、失敗した `rdc feedback` コマンド、`rdc serve` が処理するリクエストには付きません。`REDIACC_FEEDBACK_HINT=0` で無効にできます。
+
+report コマンドは、送信される内容をそのまま表示します。`--yes` がない場合、エージェントにはそのプレビューと送信用のコマンドが返り、`--yes` が渡されるか人が確認するまで何も送信されません。
 
 ### リトライ可能なエラー
 

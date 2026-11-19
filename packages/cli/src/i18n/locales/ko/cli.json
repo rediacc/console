@@ -3343,7 +3343,8 @@
       "vscode": "VS Code 통합",
       "tools": "로컬 도구",
       "legal": "법적 문서와 약관",
-      "version": "버전 정보"
+      "version": "버전 정보",
+      "feedback": "피드백"
     },
     "supplements": {
       "config": {

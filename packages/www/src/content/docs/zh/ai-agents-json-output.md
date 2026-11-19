@@ -8,7 +8,7 @@ tags:
 subcategory: ai-agents
 order: 51
 language: zh
-sourceHash: "36ba86893c3817ac"
+sourceHash: "fa5406e6f4dcdd08"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -130,6 +130,12 @@ Schema：
 | `next.options[]` | `array` | 可供用户选择的具体操作列表 |
 | `next.options[].description` | `string` | 该选项的人类可读说明 |
 | `next.options[].run` | `string` | 精确的 CLI 命令，原样转达给用户 |
+
+### 失败提示与反馈选项
+
+命令失败后(除用法错误外的任何非零退出),`rdc` 会向 stderr 打印 `Unexpected? rdc feedback report --last`。在 JSON 输出中,同样的指引会作为运行 `rdc feedback report --last` 的选项追加到 `next.options[]`;没有 `next` 的错误会补上一个,并附一段询问该失败是否出乎意料的摘要。用法错误、失败的 `rdc feedback` 命令以及由 `rdc serve` 处理的请求不会出现该提示。`REDIACC_FEEDBACK_HINT=0` 可将其关闭。
+
+report 命令会原样打印将要发送的内容。不带 `--yes` 时,智能体会得到该预览和发送所用的命令;在传入 `--yes` 或有人确认之前,不会发送任何内容。
 
 ### 可重试错误
 
