@@ -1722,8 +1722,8 @@ def test_delta_79b7e92e_root_gets_a_partner_org_in_the_dev_logins(monkeypatch, c
     posts = [(argv, body) for argv, body, _env in calls if argv[0] == "curl" and "POST" in argv]
     urls = [argv[4].rsplit("/test/", 1)[1] for argv, _ in posts]
     assert urls.index("ensure-partner") == 3
-    body = posts[3][1]
-    body = body.decode() if isinstance(body, bytes) else body
+    raw = posts[3][1]
+    body = raw.decode() if isinstance(raw, bytes) else str(raw)
     assert '"orgName":"Root partner (dev)"' in body
     assert account_lifecycle.DEFAULT_ROOT_EMAIL in body
     assert "root also has a partner org" in out
