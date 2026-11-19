@@ -3338,6 +3338,9 @@ def _norm_stem(path):
     return pathlib.PurePosixPath(path).stem.lower().replace("-", "_")
 
 
+_NUMERIC_PREFIX_RE = re.compile(r"^\d+_")
+
+
 def related_test(test_path, anchored):
     """Whether `test_path` is the test of the anchored file: its basename carries the anchored file's stem as a whole token (`wl_roster.py` is tested by `test_wl_roster.py` or `test_wl_roster_plans.py`), or the stem without a leading `_` or `wl_` when that is at least 4 characters (`test_roster.py` closes `wl_roster.py`). A gate `check_<stem>.py` is also closed by a test carrying `<stem>` (`test_gate_<stem>.py`), the `check_` prefix being no part of the test's name; the 4-character minimum above applies to that `<stem>` too, so `check_io.py` is not closed by `test_gate_io.py`. A test whose name carries none of these forms never closes this finding."""
     stem = _norm_stem(anchored)
@@ -3347,6 +3350,8 @@ def related_test(test_path, anchored):
     bare = bare.removeprefix("wl_")
     # A gate `check_<stem>.py` is tested by `test_gate_<stem>.py` (or `test_<stem>.py`): the `check_` prefix is not part of the test's name.
     bare = bare.removeprefix("check_")
+    # A migration's number is no part of its test's name (`0090_partner_org.sql` is tested by `partner-org-migration.test.ts`).
+    bare = _NUMERIC_PREFIX_RE.sub("", bare)
     stems = {stem} | ({bare} if len(bare) >= 4 else set())
     # The stem stands as a whole token of the test's name: `io` is not in `test_radio.py`.
     return any(
@@ -3515,6 +3520,30 @@ _IMPORT_LINE_RE = re.compile(
 )
 
 
+def _norm_text(text):
+    """Lowercased, with `-` read as `_`, so `cli-root-yes` and `cli_root_yes` compare equal."""
+    return text.lower().replace("-", "_")
+
+
+def references_anchored_file(repo, fix, test_path, anchored):
+    """Whether the content of `test_path` at `fix` names the anchored file: its repo-relative path or its basename as a whole token, or its stem (a leading numeric prefix such as `0090_` dropped) when that is at least 4 characters. A test whose file name carries none of the stem (`cli-root-yes.test.ts` for `index.ts`, `partner-customer-optional-org-migration.test.ts` for `0090_partner_customer_optional_org.sql`) still counts when it reads the file it covers. Only an explicit `--test` the fix touches reaches this: a test that names nothing of the anchored file never closes the finding. A file git cannot read at `fix` answers False."""
+    rc, text = git(repo, "show", "%s:%s" % (fix, test_path))
+    if rc != 0:
+        return False
+    body = _norm_text(text)
+    anchored_n = _norm_text(anchored)
+    base = pathlib.PurePosixPath(anchored_n)
+    needles = {anchored_n, base.name}
+    for stem in (base.stem, _NUMERIC_PREFIX_RE.sub("", base.stem)):
+        if len(stem) >= 4:
+            needles.add(stem)
+    return any(
+        re.search(r"(?<![a-z0-9])%s(?![a-z0-9])" % re.escape(n), body) is not None
+        for n in needles
+        if n
+    )
+
+
 def imports_anchored_module(repo, fix, test_path, anchored):
     """Whether the lines the fix ADDED to `test_path` import or patch the anchored module by name (`from x.onboarding import ...`, `import {a} from './blob-storage.service'`), so a test whose file name does not carry the stem (`blob-list.test.ts` for `blob-storage.service.ts`) still counts as the anchored file's test (#d8f3ba65). Only import-like lines count: a bare mention of a common stem in an unrelated test answers nothing."""
     stem = pathlib.PurePosixPath(anchored).stem.lower()
@@ -3660,6 +3689,8 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
             or bool(test_path and related_test(test_path, finding.file))
             # A test named by --test whose added lines import the anchored module tests it whatever its file is called (#d8f3ba65).
             or bool(test_path and imports_anchored_module(repo, fix, test_path, finding.file))
+            # A test named by --test whose content names the anchored file's path, basename or stem reads the file it covers, whatever its own file is called (#7b73e110).
+            or bool(test_path and references_anchored_file(repo, fix, test_path, finding.file))
             or (
                 test_claim
                 and any(is_test_path(t) and related_test(t, finding.file) for t in touched)

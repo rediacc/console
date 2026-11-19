@@ -163,6 +163,65 @@ control(
     False,
 )
 
+# ---- 4b. --test: a test whose content names the anchored file closes the finding whatever its file is called (#7b73e110) --
+
+
+def test_fixture(name, test_body):
+    """(repo, reviewed sha, test fix sha, test path): the finding anchors on a.txt and the fix commit touches only a test whose file name carries no `a`."""
+    repo, reviewed, _fix = fixture(name)
+    rel = "tests/check_zzz_floor.py"
+    (repo / "tests").mkdir()
+    (repo / rel).write_text(test_body, encoding="utf-8")
+    git(repo, "add", "--", rel)
+    git(repo, "commit", "-q", "-m", "test only")
+    return repo, reviewed, git(repo, "rev-parse", "HEAD"), rel
+
+
+def mark_with_test(repo, reviewed, fix, rel):
+    try:
+        R.mark(str(repo), BRANCH, "%s.1" % reviewed[:8], "fixed", [fix, "--test", rel], ME)
+    except ValueError as err:
+        return str(err)
+    return None
+
+
+repo, reviewed, fix, rel = test_fixture("ref-test", "assert read('A.txt') == 'three'\n")
+control(
+    "a test naming the anchored basename: accepted",
+    mark_with_test(repo, reviewed, fix, rel),
+    None,
+)
+control(
+    "a test naming the anchored basename: resolution is fixed",
+    resolution(repo, reviewed).split()[1],
+    "fixed",
+)
+repo, reviewed, fix, rel = test_fixture("ref-none", "assert read('b.txt') == 'three'\n")
+refused = mark_with_test(repo, reviewed, fix, rel)
+control(
+    "CONTROL: a test naming nothing of the anchored file: refused",
+    refused is not None and "does not touch a.txt" in refused,
+    True,
+)
+control("CONTROL: the refusal marks nothing", resolution(repo, reviewed), "Resolution: open")
+repo, reviewed, fix, rel = test_fixture("ref-untouched", "assert read('a.txt')\n")
+untouched = mark_with_test(repo, reviewed, fix, "tests/other_floor.py") or ""
+control(
+    "CONTROL: a --test the fix does not touch is refused",
+    "does not touch the named test" in untouched,
+    True,
+)
+control(
+    "normalised stem: numeric prefix and dashes",
+    R.related_test("tests/partner-customer-org.test.ts", "db/0090_partner_customer_org.sql"),
+    True,
+)
+control(
+    "CONTROL: a numeric prefix alone names nothing",
+    R.related_test("tests/db-0090.test.ts", "db/0090_partner_customer_org.sql"),
+    False,
+)
+
 # ---- 5. --review-commit carries a green receipt forward with the records-only advance (PLAN-push-decoupling R3) --
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 TSX = ROOT / "node_modules" / ".bin" / "tsx"
