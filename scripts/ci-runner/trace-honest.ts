@@ -351,6 +351,22 @@ export function buildSparse(
   leafFiles: ReadonlySet<string>
 ): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-honest-sparse-'));
+  try {
+    return fillSparse(dir, view, entry, leafFiles);
+  } catch (err) {
+    // A build that throws after mkdtemp would otherwise leave the directory and its links behind: the caller never receives the path.
+    guards.delete(dir);
+    removeSparse(dir);
+    throw err;
+  }
+}
+
+function fillSparse(
+  dir: string,
+  view: RepoView,
+  entry: LockEntry,
+  leafFiles: ReadonlySet<string>
+): string {
   const globs = declaredGlobs(entry);
   const hardLinked: string[] = [];
   const copyReal = (rel: string): void => {
@@ -374,6 +390,9 @@ export function buildSparse(
       fs.rmSync(dst, { recursive: true, force: true });
       if (reflinkWorks === true) throw new Error(`cp --reflink ${rel} failed: ${r.stderr}`);
       reflinkWorks = false;
+      console.error(
+        `trace-honest: WARNING reflink copy of ${rel} failed (${String(r.stderr).trim()}); every sparse build in this process falls back to hard links, guarded by verifyLinked`
+      );
     }
     // No reflinks (ext4): a hard link keeps the sparse tree fast, but shares the inode, so the run is guarded (see verifyLinked).
     const r = spawnSync('cp', ['-al', src, dst]);
@@ -500,6 +519,18 @@ function statLinked(root: string, rels: readonly string[]): Map<string, string> 
       else if (e.isFile()) {
         const st = fs.lstatSync(path.join(root, child), { bigint: true });
         out.set(child, `${st.ino}:${st.size}:${st.mtimeNs}:${st.mode}`);
+      } else if (e.isSymbolicLink()) {
+        // `cp -a` copies a symlink as a symlink, so a gate writing through an absolute one reaches the real target: snapshot the target too.
+        const abs = path.join(root, child);
+        const target = fs.readlinkSync(abs);
+        let tgt = 'dangling';
+        try {
+          const t = fs.statSync(abs, { bigint: true });
+          tgt = `${t.ino}:${t.size}:${t.mtimeNs}:${t.mode}`;
+        } catch {
+          // a dangling link has no target to guard
+        }
+        out.set(child, `link:${target}:${tgt}`);
       }
     }
   };
@@ -526,6 +557,7 @@ export function verifyLinked(dir: string): string[] {
 
 /** Removes a sparse directory, retrying while a straggling child of the gate finishes writing; a directory that survives is named, never leaked silently. */
 function removeSparse(dir: string): void {
+  guards.delete(dir);
   try {
     fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
   } catch (err) {
@@ -552,6 +584,14 @@ interface Args {
   list: boolean;
   /** Judge only candidates whose pathsOrigin is this (`declared` or `traced`). */
   origin?: string;
+}
+
+/** A whole number of at least `min`: a NaN would make slice or the worker pool run nothing and print OK on nothing. */
+function count(flag: string, text: string, min: number): number {
+  const n = Number(text);
+  if (!Number.isInteger(n) || n < min)
+    throw new Error(`${flag} takes a whole number >= ${min}, got ${text}`);
+  return n;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -582,10 +622,10 @@ function parseArgs(argv: string[]): Args {
     else if (t === '--base') a.base = val();
     else if (t === '--rotation') a.rotation = val();
     else if (t === '--gate') a.gates.push(val());
-    else if (t === '--sparse-top') a.sparseTop = Number(val());
-    else if (t === '--jobs') a.jobs = Number(val());
+    else if (t === '--sparse-top') a.sparseTop = count(t, val(), 0);
+    else if (t === '--jobs') a.jobs = count(t, val(), 1);
     else if (t === '--root') a.root = path.resolve(val());
-    else if (t === '--timeout-s') a.timeoutS = Number(val());
+    else if (t === '--timeout-s') a.timeoutS = count(t, val(), 1);
     else if (t === '--selftest') a.selftest = true;
     else if (t === '--list') a.list = true;
     else if (t === '--origin') a.origin = val();
@@ -717,6 +757,12 @@ async function main(argv: string[]): Promise<number> {
     for (const { id, why } of selected) console.log(`${id}\t${why}`);
     return 0;
   }
+  if (selected.length === 0 && !args.quick) {
+    console.error(
+      `trace-honest: FAIL, 0 of ${candidates.length} candidates selected (${scope}); a zero selection is green only in --quick (a rotation bucket larger than the candidate count, or a filter that matches nothing, judged nothing)`
+    );
+    return 1;
+  }
   if (selected.length === 0) {
     console.log(
       `trace-honest: OK, 0 of ${candidates.length} candidates touched (${scope}); nothing to re-trace`
@@ -805,7 +851,7 @@ async function main(argv: string[]): Promise<number> {
     return 1;
   }
   console.log(
-    `trace-honest: OK, ${traced} traced and ${sparsed} sparse-run of ${selected.length} selected (${candidates.length} candidates, ${scope}); every read is declared`
+    `trace-honest: OK, ${traced} traced and ${sparsed} sparse-run of ${selected.length} selected (${candidates.length} candidates, ${scope}); ${args.mode === 'sparse' ? 'sparse runs agreed with the tree (reads not traced in this mode)' : 'every read is declared'}`
   );
   return 0;
 }
@@ -1244,6 +1290,68 @@ async function selftest(): Promise<number> {
       nb.status === 1 && nb.err.includes('holding only its declared inputs'),
       `sparse mode fails a gate that declares names but needs their bytes (rc=${nb.status})`
     );
+    for (const flag of ['--sparse-top', '--jobs']) {
+      const bad = run(flag, 'abc', '--mode', 'sparse', '--gate', 'g:honest');
+      check(
+        bad.status === 1 && bad.err.includes('takes a whole number'),
+        `a non-numeric ${flag} is refused, not read as NaN and a green on nothing (rc=${bad.status})`
+      );
+    }
+    const empty = run('--mode', 'trace', '--rotation', '8/8');
+    check(
+      empty.status === 1 && empty.err.includes('a zero selection is green only in --quick'),
+      `an empty rotation bucket (8/8 of 7 candidates) fails outside --quick (rc=${empty.status})`
+    );
+    const full = run('--rotation', '1/7', '--list');
+    check(
+      full.status === 0 && full.err.includes('selected (rotation 1/7)'),
+      `CONTROL: a non-empty rotation bucket still lists and exits 0 (rc=${full.status})`
+    );
+    const tmpSparse = (): number =>
+      fs.readdirSync(os.tmpdir()).filter((f) => f.startsWith('trace-honest-sparse-')).length;
+    const sparseBefore = tmpSparse();
+    let threw = false;
+    try {
+      buildSparse(
+        // A listed file that is absent on disk: its copy fails after the directory exists.
+        { ...repoView(dir), files: ['ghost.txt'] },
+        {
+          id: 'g:ghost',
+          run: 'true',
+          gate: true,
+          paths: ['ghost.txt'],
+          pathsOrigin: 'traced',
+          leaves: [],
+        },
+        new Set<string>()
+      );
+    } catch {
+      threw = true;
+    }
+    check(
+      threw && tmpSparse() === sparseBefore,
+      `a sparse build that throws after mkdtemp removes its directory (threw ${threw}, leaked ${tmpSparse() - sparseBefore})`
+    );
+    const sdir = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-honest-sym-'));
+    try {
+      const real = path.join(sdir, 'real.txt');
+      fs.writeFileSync(real, 'one');
+      fs.mkdirSync(path.join(sdir, 'd'));
+      fs.symlinkSync(real, path.join(sdir, 'd', 'link'));
+      const before = statLinked(sdir, ['d']);
+      check(
+        [...statLinked(sdir, ['d']).entries()].join() === [...before.entries()].join() &&
+          before.has('d/link'),
+        'CONTROL: an untouched directory with a symlink snapshots the same twice, the link included'
+      );
+      fs.writeFileSync(real, 'two-longer');
+      check(
+        statLinked(sdir, ['d']).get('d/link') !== before.get('d/link'),
+        'a write through a symlink in a linked directory moves that link\'s snapshot'
+      );
+    } finally {
+      fs.rmSync(sdir, { recursive: true, force: true });
+    }
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
