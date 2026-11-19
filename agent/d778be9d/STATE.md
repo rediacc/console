@@ -1,21 +1,21 @@
-## SESSION d778be9d 2026-11-19T11:36:54Z
+## SESSION d778be9d 2026-11-19T13:20:25Z
 
-# STATE d778be9d (2026-11-19 ~11:40Z)
+# STATE d778be9d (2026-11-19 ~13:30Z)
 
 ## Next action
-1. Review backlog #b28ccc5c: redo the 15 refused review marks (renet 99c94212/b0e2279c/f6bc3d5c cite renet sha 621081c0; already-fixed ones cite path:line), then wave 4 for the ~70 untouched findings.
-2. Sharding writer a3e4ab779b1add76c (#4889018a) report: `./run.sh worktree land agent-a3e4ab779b1add76c`, check:ci-lane-budget + shard-manifest-coverage + ci-parity on the landed tree, `npm run ci:quick`, vm:check only if a VM trigger path changed, `worklist.py --review-commit d778be9d` alone, push account, renet, console (TURBO_PUSH_REASON='red-fix: run-40 reds and lane budget'), sync_epic_block 605 1104-1, ci-trace watch. The [?] #02389657 default (shard) runs through this writer.
-3. Email plan writer a37634a4e202ab8b7 (#45585ba5) report: verify agent/plans/PLAN-email-sender-separation.md citations, regenerate plan records, commit, promote in QUEUE.md, start its writers.
-4. Sidebar plan #138f47b7: S1 + F1 writers in leases. eu-to-bench stale notes; operator questions (retire eu-remote, C8, C2).
+1. Finish review marks (#b28ccc5c): retry 0535e147.1 11e5072e.1 23cc895b.8 c382a125.1 (refused; read why with `worklist.py --review-mark d778be9d <id> fixed <landed-sha>`; console landed map f11ee563d->3ebcb4688 bda7b85f7->3e1584b5d 388a20f7f->1c5a3e2af a48857642->03e631d51 236f1badb->25e08a966); mark not-a-bug: 0236c9fd.1 23cc895b.7 59b79431.1 87c26e02.2 d68c31c4.2 and the 4 skipped (2e6a7a05.1/.2, 7491fdb7.1, 789bdd5e.1 commit-message claims, unamendable); 87bd58ef.1 refused because test name lacks the migration token (guard strictness; hint). 7 packages/e2e-tests findings in /tmp/m/rf-e2e.tsv still unassigned. Then gc lease agent-aeb8d0dd552b41fa8 and agent-a96f1581d55e70630.
+2. Commit the account gitlink for e7290ad (I1) + 19da9a8 (TERMS_GATE dev default); tick I1 21673bda (needs --plan-investigate first). gc agent-a473e4b0cdeff4ca1 (dirty cli hash file -> --discard-dirty; tracked as #bc88955b).
+3. Land wave-2 sidebar writers as they report: T1 a8d7231b2fcf1533c (#00aed17c), W1 a5daa1bd4b002dc64 (#2ae7b773), K1 a939d76296e604217 (#77d5cfc0), U1 a4f67aa2ceab36c17 (#475af7d5); then wave 3 N1 + G1, wave 4 E1, B1, B2.
+4. Security writer aa63c37bc713a8823 (#bbd0f487) report: land, run its tests, commit.
+5. Push: ci:quick (lane-budget keeps 2 stale p90s under old job names; refresh lane-durations after CI measures), vm:check if VM paths changed, `worklist.py --review-commit d778be9d` alone, push account, renet, console with TURBO_PUSH_REASON='red-fix: ...'.
+6. Email plan (f465322d0, QUEUE 83): S0 live secrets first, then writers T1/M1/E1/K1.
 
 ## Big pieces
-- PR #605 push: run-40 reds landed 9d40445b7..b4bb5aa5e, ef2d19aa9, account 6fa1bd1 via fbc989490; lane budget sharding in flight.
-- Email sender separation plan in flight; sidebar redesign plan promoted 561f72946.
+- PR #605 push pending; sidebar redesign S1/F1/I1 landed, wave 2 running; email plan promoted; review findings 149 -> ~11 left; security for per-commit review in flight.
 
 ## Owed ticks
-- After the push: A1a 695c3218, A4d 0a237b2e, N1 abe9b4eb.
-- Box audit live-owed (9): PLAN-ciquick-cpu.md#51ceeb4f; PLAN-enterprise-isolation.md#a8892e0c, #0a6e5712, #f4b49503 and the rest listed by `worklist.py --box-audit d778be9d --live-owed`; each runs on its live target (bench/fleet) and ticks with --live-proof.
+- I1 21673bda after its gitlink commit; A1a 695c3218, A4d 0a237b2e, N1 abe9b4eb after the push; box audit live-owed (worklist.py --box-audit d778be9d --live-owed).
 
 ## Delegated
-- a3e4ab779b1add76c: #4889018a lane-budget sharding; owns .ci/config/shards/**, .github/workflows/**, e2e test files; accept check:ci-lane-budget rc 0.
-- a37634a4e202ab8b7: #45585ba5 email plan; owns agent/plans/PLAN-email-sender-separation.md.
+- aa63c37bc713a8823: #bbd0f487 review security; owns wl_review.py, wl_reviewclass.py, new wl_reviewsec.py, .claude/config/review-security.*.
+- a8d7231b2fcf1533c T1, a5daa1bd4b002dc64 W1, a939d76296e604217 K1, a4f67aa2ceab36c17 U1: sidebar wave 2, each owns its box files.
