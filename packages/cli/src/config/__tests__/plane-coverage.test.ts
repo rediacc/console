@@ -157,8 +157,9 @@ describe('command plane coverage', () => {
     // 220 -> 221, config 57 -> 58: `config import-machine` (PLAN-hostinger-to-bench Design 5) reads one config file and writes another on the workstation, never a machine, so it keeps the config domain's default plane.
     // 221 -> 223, other 42 -> 44: `server bundle` (local docker, local files) and `server licence mint` (account server under the caller's login) reach no machine (PLAN-enterprise-tenants C11).
     // 223 -> 225, machine 121 -> 123: `repo admin orphan list|delete` (worklist #48d790e1) read the machine's images and delete one through renet.
-    expect(COMMANDS.length).toBe(225);
-    expect(counts).toEqual({ config: 58, machine: 123, other: 44 });
+    // 225 -> 226, other 44 -> 45: `feedback report` files a report with the account service and reaches no machine (PLAN-rdc-feedback C3).
+    expect(COMMANDS.length).toBe(226);
+    expect(counts).toEqual({ config: 58, machine: 123, other: 45 });
   });
 
   it('records the interactive commands', () => {

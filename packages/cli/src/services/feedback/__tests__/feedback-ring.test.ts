@@ -10,10 +10,10 @@ import {
 import { redactArgv, resolveCommandPath } from '../redact.js';
 import {
   installStderrTap,
+  RING_CAPACITY,
   readRing,
   recordCommand,
   resetStderrTail,
-  RING_CAPACITY,
   ringFilePath,
   uninstallStderrTap,
 } from '../ring.js';

@@ -8,6 +8,7 @@ import { registerCreditsCommand } from './commands/credits.js';
 import { registerDatastoreCommands } from './commands/datastore.js';
 import { registerDoctorCommand } from './commands/doctor.js';
 import { registerExecutorDaemonCommands } from './commands/executor-daemon.js';
+import { registerFeedbackCommand } from './commands/feedback.js';
 import { registerJobCommands } from './commands/job.js';
 import { registerLegalCommand } from './commands/legal.js';
 import { registerMachineCommands } from './commands/machine/index.js';
@@ -39,6 +40,8 @@ import {
   proxyUrlFor,
   runCommandThroughProxy,
 } from './services/executor/proxy-command.js';
+import { printFeedbackHint } from './services/feedback/hint.js';
+import { recordCommand } from './services/feedback/ring.js';
 import {
   finishNotice,
   shouldRunNotice,
@@ -61,8 +64,6 @@ import { attachExamples } from './utils/attach-examples.js';
 import { handleError, setOutputFormat, ValidationError } from './utils/errors.js';
 import { applyRegistry } from './utils/mode-guard.js';
 import { isDevBuild } from './utils/platform.js';
-import { printFeedbackHint } from './services/feedback/hint.js';
-import { recordCommand } from './services/feedback/ring.js';
 import { VERSION } from './version.js';
 
 // Track if i18n has been initialized
@@ -425,6 +426,7 @@ export function createCli(): Command {
   registerDoctorCommand(cli);
   registerCreditsCommand(cli);
   registerLegalCommand(cli);
+  registerFeedbackCommand(cli);
   registerVersionCommand(cli);
   registerClusterCommands(cli);
   registerTermCommands(cli);

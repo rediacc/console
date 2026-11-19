@@ -643,6 +643,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   legal: {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
+  // Files a report with the account service: a write, and never idempotent (each send can consume the daily limit).
+  'feedback report': {
+    mcp: { destructive: false, idempotent: false, timeout: 'write' },
+  },
 
   'cluster rehearse': {
     mcpExcludeReason:

@@ -6244,6 +6244,89 @@ export const CLI_CONTRACT: CliContract = {
     },
     {
       "path": [
+        "feedback",
+        "report"
+      ],
+      "pathKey": "feedback report",
+      "domain": "feedback",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.feedback.report.description",
+      "label": "Build a report from the newest failed command (--last), a recorded command (--command <n>) or a message alone, print exactly what would be sent, and send it after confirmation. An agent without --yes gets the preview and the command to send it, never a hidden send.",
+      "options": [
+        {
+          "flags": "--last",
+          "long": "last",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.feedback.report.optionLast",
+          "label": "Use the newest failed command"
+        },
+        {
+          "flags": "--command <n>",
+          "long": "command",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.feedback.report.optionCommand",
+          "label": "Use the recorded command at this index (1 is the newest; see --list-recent)"
+        },
+        {
+          "flags": "--list-recent",
+          "long": "list-recent",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.feedback.report.optionListRecent",
+          "label": "List the recorded commands and exit"
+        },
+        {
+          "flags": "--kind <kind>",
+          "long": "kind",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.feedback.report.optionKind",
+          "label": "Report kind: bug, feedback or docs"
+        },
+        {
+          "flags": "--message <text>",
+          "long": "message",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.feedback.report.optionMessage",
+          "label": "Free-text note to include (scrubbed before sending)"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": false,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
         "job",
         "cancel"
       ],

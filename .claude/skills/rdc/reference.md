@@ -2248,6 +2248,20 @@ Print the legal document links in the CLI language with the binding English link
 
 > MCP tool
 
+### rdc feedback report
+
+Build a report from the newest failed command (--last), a recorded command (--command <n>) or a message alone, print exactly what would be sent, and send it after confirmation. An agent without --yes gets the preview and the command to send it, never a hidden send.
+
+**Options:**
+
+- `--last`: Use the newest failed command
+- `--command <n>`: Use the recorded command at this index (1 is the newest; see --list-recent)
+- `--list-recent`: List the recorded commands and exit
+- `--kind <kind>`: Report kind: bug, feedback or docs
+- `--message <text>`: Free-text note to include (scrubbed before sending)
+
+> MCP tool
+
 ### rdc version
 
 Print the CLI version, platform, update channel and the active license: the plan when logged in, "anonymous (FREE per repository)" without a login, and "unknown (server unreachable)" when the account server cannot be reached. The --version flag still prints the bare version.

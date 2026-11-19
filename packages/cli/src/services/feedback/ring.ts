@@ -9,8 +9,8 @@ import { homedir } from 'node:os';
 import path from 'node:path';
 import { scrubText } from '@rediacc/shared';
 import { getRediaccDirs } from '@rediacc/shared/paths';
-import { currentRequestContext } from '../core/request-context.js';
 import { VERSION } from '../../version.js';
+import { currentRequestContext } from '../core/request-context.js';
 import { commandWords, redactArgv, resolveCommandPath } from './redact.js';
 
 export const RING_CAPACITY = 10;
