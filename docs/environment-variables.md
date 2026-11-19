@@ -62,6 +62,7 @@ Tokens obtained interactively are stored per config at `<configDir>/api-token-<c
 | `REDIACC_DEFAULT_OUTPUT` | Default output format when `--output` is unset. |
 | `REDIACC_VSCODE_PATH` | Explicit VS Code executable path. |
 | `REDIACC_LANG` | CLI language override. |
+| `REDIACC_FEEDBACK_HINT` | `0` turns off the `Unexpected? rdc feedback report --last` line a failing command prints (stderr in text mode, a `next` option in the JSON envelope). |
 | `REDIACC_TELEMETRY_DISABLED` / `REDIACC_TELEMETRY_ENDPOINT` | Telemetry opt-out / dev endpoint. |
 | `NO_COLOR` | Disables ANSI color (informal standard; any non-empty value). |
 

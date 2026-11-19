@@ -61,6 +61,7 @@ import { attachExamples } from './utils/attach-examples.js';
 import { handleError, setOutputFormat, ValidationError } from './utils/errors.js';
 import { applyRegistry } from './utils/mode-guard.js';
 import { isDevBuild } from './utils/platform.js';
+import { printFeedbackHint } from './services/feedback/hint.js';
 import { recordCommand } from './services/feedback/ring.js';
 import { VERSION } from './version.js';
 
@@ -404,6 +405,7 @@ export function createCli(): Command {
 
       // The redacted ring buffer behind `rdc feedback report --last`; a failed write never reaches the command.
       recordCommand({ argv: process.argv.slice(2), exitCode });
+      printFeedbackHint({ argv: process.argv.slice(2), exitCode });
 
       const scope = currentRequestTelemetry();
       if (scope?.open && scope.open.spanKey === ctx?.spanKey) scope.open = undefined;

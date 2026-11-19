@@ -7,6 +7,7 @@ import {
   exitProcess,
   writeStdout,
 } from '../services/core/request-context.js';
+import { printFeedbackHint, withFeedbackOption } from '../services/feedback/hint.js';
 import { recordCommand } from '../services/feedback/ring.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
 import { type CliError, ERROR_CODES, type NextAction, ValidationError } from '../types/errors.js';
@@ -172,18 +173,24 @@ export function handleError(error: unknown): never {
     hasDetails: Boolean(cliError.details?.length),
   });
 
-  if (currentOutputFormat() === 'json') {
-    outputJsonError(cliError);
+  const argv = process.argv.slice(2);
+  const hintContext = { argv, exitCode: cliError.exitCode };
+  const json = currentOutputFormat() === 'json';
+  if (json) {
+    const next = withFeedbackOption(cliError.next, hintContext);
+    outputJsonError(next ? { ...cliError, next } : cliError);
   } else {
     outputTextError(cliError);
   }
 
   recordCommand({
-    argv: process.argv.slice(2),
+    argv,
     exitCode: cliError.exitCode,
     errorCode: cliError.code,
     errorMessage: cliError.message,
   });
+  // JSON mode carries the hint in the envelope's `next`; text mode prints it after the error.
+  if (!json) printFeedbackHint(hintContext);
 
   // Fire-and-forget telemetry shutdown (don't block exit). Inside an executor dispatch the process keeps serving other callers, and a shut-down SDK cannot be restarted, so one failed request would silence telemetry for all of them.
   if (!currentRequestContext()) {

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { cli } from './cli.js';
+import { printFeedbackHint } from './services/feedback/hint.js';
 import { installStderrTap, recordCommand } from './services/feedback/ring.js';
 import { telemetryService } from './services/telemetry/telemetry.js';
 import {
@@ -48,6 +49,7 @@ if (process.argv.includes('mcp') && process.argv.includes('serve')) {
       errorCode: 'UNCAUGHT_EXCEPTION',
       errorMessage: error instanceof Error ? error.message : String(error),
     });
+    printFeedbackHint({ argv: process.argv.slice(2), exitCode: 1 });
     telemetryService.trackError(error, { source: 'uncaughtException' });
     void telemetryService.shutdown().finally(() => process.exit(1));
   });

@@ -3615,6 +3615,11 @@
     },
     "delegationCertRefused": "The server's licence cert is refused ({{code}}); ask the operator to run: rdc server licence"
   },
+  "feedback": {
+    "hint": "Unexpected? {{run}}",
+    "hintDescription": "File a feedback report for this failure",
+    "hintSummary": "If this failure is unexpected, report it."
+  },
   "options": {
     "acceptTerms": "Accept the Terms of Service for a free license without asking (or set RDC_ACCEPT_TERMS=1)",
     "apiToken": "API token (rdt_...). Pass `-` to read it from stdin (keeps it out of the process list).",
