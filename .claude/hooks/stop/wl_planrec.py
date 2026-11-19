@@ -155,6 +155,8 @@ PROSE_SECTIONS = ("Why", "Outcome", "Lessons")
 #: legitimate prose in this tree; `<FILL:` appears nowhere else and so cannot
 #: produce a false red.
 PLACEHOLDER_RE = re.compile(r"<FILL:[^>]*>")
+#: The emphasis marks a box body is stripped of before it is compared or signed, compiled once: `open_boxes` and `done_boxes` run it on every box line of every plan they are asked about.
+EMPHASIS_RE = re.compile(r"[*_`]+")
 UNRESOLVED = "[unresolved]"
 
 
@@ -805,7 +807,7 @@ def parse_boxes(body):
             {
                 "line": line,
                 "mark": mark,
-                "body": re.sub(r"[*_`]+", "", task).strip(),
+                "body": EMPHASIS_RE.sub("", task).strip(),
                 "sig": ann.group(1),
                 "done": ann.group(2),
             }
@@ -1018,7 +1020,7 @@ def derive(root, rel, text=None, history=None):
         m = BOX_LINE_RE.match(raw)
         if not m:
             continue
-        body = re.sub(r"[*_`]+", "", m.group(2)).strip()
+        body = EMPHASIS_RE.sub("", m.group(2)).strip()
         # DEDUPED ON THE PARSER'S OWN KEY, because `plan_tasks` dedupes on it too. Without this a plan that writes the same box twice yields two annotated lines here while `plan_boxes` still resolves one, so the record's `Boxes: N attested` trailer and the ledger's counts disagree -- and the ledger is what `check_plan_boxes.py`'s A0 compares against.
         key = PFID._norm(body)[:120]
         if key in seen:
@@ -2165,7 +2167,7 @@ def open_boxes(text):
         m = BOX_LINE_RE.match(raw)
         if not m or m.group(1).lower() == "x":
             continue
-        body = re.sub(r"[*_`]+", "", m.group(2)).strip()
+        body = EMPHASIS_RE.sub("", m.group(2)).strip()
         if body[:300] not in open_t:
             continue
         out.append((i, raw, body, box_sig(body)))
@@ -2183,7 +2185,7 @@ def done_boxes(text):
         m = BOX_LINE_RE.match(raw)
         if not m or m.group(1).lower() != "x":
             continue
-        body = re.sub(r"[*_`]+", "", m.group(2)).strip()
+        body = EMPHASIS_RE.sub("", m.group(2)).strip()
         if body[:300] not in done_t:
             continue
         out.append((i, raw, body, box_sig(body)))
@@ -2211,7 +2213,7 @@ def select_box(boxes, selector, kind="OPEN"):
         hits = [b for b in boxes if b[3].startswith(low)]
     if not hits:
         # The box body is stored with `*`, `_` and backticks stripped (`open_boxes`), so the selector is stripped the same way. A quoted `wl_planqueue.py` read as "wlplanqueue.py" in the box and never matched, and 14 of 22 text ticks failed on one plan (2026-10-04).
-        want = re.sub(r"[*_`]+", "", low)
+        want = EMPHASIS_RE.sub("", low)
         hits = [b for b in boxes if want and want in b[2].lower()]
     if not hits:
         raise RecordError(

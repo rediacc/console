@@ -375,6 +375,18 @@ def finished_verdict(rel, text, main=lambda: None, context=lambda: ""):
     )
 
 
+def lazy_deps_graph(root):
+    """A zero-argument callable that builds `deps_graph(root)` on its first call and hands the same graph back after. One RF pass asks `rf_context` about every fully ticked plan, and a fresh graph per plan re-read and re-parsed all ~256 plans and re-judged every task edge each time (32 graphs and about 12 s of CPU per `--rendered-only` run, measured 2026-11-19). The graph is built on first use, after any `--update` render, and a build that raises is not remembered, so the next call raises again."""
+    memo = []
+
+    def get():
+        if not memo:
+            memo.append(deps_graph(root))
+        return memo[0]
+
+    return get
+
+
 def rf_context(root, rel, graph=None):
     """What an open-on-paper plan is still holding up, as one sentence, or "".
 
@@ -3192,13 +3204,17 @@ def rendered_only(root, update=False):
     recs, problems, n_census, dep_note = rendered_problems(root, update=update)
     # RF and RP ride the fast verb too. It is the command a plan close is verified with (`--rendered-only --update`), and on 2026-10-23 it was green over three plans the full gate's RF refused, because RF was not in it.
     rf_warnings = []
+    graph = lazy_deps_graph(root)
     for rel, _status, _n in recs:
         try:
             text = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")
         except OSError:
             continue
         rf_kind, rf_msg = finished_verdict(
-            rel, text, lambda rel=rel: main_view(rel), lambda rel=rel: rf_context(root, rel)
+            rel,
+            text,
+            lambda rel=rel: main_view(rel),
+            lambda rel=rel: rf_context(root, rel, graph()),
         )
         if rf_kind == "refuse":
             problems.append(rf_msg)
@@ -3290,6 +3306,7 @@ def main(argv):
     n_xref = 0
     # RB rides the same every-plan read: a refusal is a problem, a warning is printed on both paths and never changes the exit code.
     rb_warnings, n_rb_judged = [], 0
+    graph = lazy_deps_graph(ROOT)
     for rel, _status, _n in recs:
         try:
             text = (ROOT / rel).read_text(encoding="utf-8", errors="replace")
@@ -3302,7 +3319,10 @@ def main(argv):
         elif rb_kind == "warn":
             rb_warnings.append(rb_msg)
         rf_kind, rf_msg = finished_verdict(
-            rel, text, lambda rel=rel: main_view(rel), lambda rel=rel: rf_context(ROOT, rel)
+            rel,
+            text,
+            lambda rel=rel: main_view(rel),
+            lambda rel=rel: rf_context(ROOT, rel, graph()),
         )
         if rf_kind == "refuse":
             problems.append(rf_msg)

@@ -604,19 +604,11 @@
     },
     {
       "test": ".claude.rediacc_hooks.tests.test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook[enrolled_allowed-cli-contract]",
-      "reason": "baseline 2026-11-19: 14.4 s in the ci:quick full run (it regenerates the CLI contract, which grew with the rdc feedback group); the plan-renders siblings of this parametrisation are listed at 72 s and 67 s; drop the entry once the test runs under 10 s"
+      "reason": "measured 2026-11-19: 26.3 s in a serial run of this file under load average 25, after the plan-renders siblings dropped below 10 s with the plan-record checker fix; the case regenerates the CLI contract, which grew with the rdc feedback group, then runs the hook over the commit; drop the entry once the test runs under 10 s"
     },
     {
       "test": ".claude.rediacc_hooks.tests.test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook[enrolled_allowed-skill-reference]",
-      "reason": "measured 2026-11-19: 11.1 s in the ci:quick run and 18.8 s in a loaded serial run; the case runs the real generator (npm plus tsx start-up) and then the hook, which checks out the commit's whole tree into a scratch dir and runs the tsx checker there; drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".claude.rediacc_hooks.tests.test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook[enrolled_allowed-plan-renders]",
-      "reason": "measured 2026-11-19: about 26 s on an idle machine and 52 s under load; the enrolled checker check_plan_record.py --rendered-only alone is 12 s of CPU in .claude/hooks/stop/wl_plandeps.py, wl_planfid.py and wl_planrec.py (about 910k json decodes and 16 M regex matches over 256 plans) and this case runs it twice (generator, then the hook); drop the entry once the checker itself runs under 5 s"
-    },
-    {
-      "test": ".claude.rediacc_hooks.tests.test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook[enrolled_refused-plan-renders]",
-      "reason": "measured 2026-11-19: 13.7 s on an idle machine and 43 s under load; the enrolled checker check_plan_record.py --rendered-only alone is 12 s of CPU in .claude/hooks/stop/wl_plandeps.py, wl_planfid.py and wl_planrec.py (about 910k json decodes and 16 M regex matches over 256 plans); drop the entry once the checker itself runs under 5 s"
+      "reason": "measured 2026-11-19: 20.1 s in a serial run of this file under load average 25 (11.1 s in the ci:quick run); the case runs the real generator (npm plus tsx start-up) and then the hook, which checks out the commit's whole tree into a scratch dir and runs the tsx checker there; drop the entry once the test runs under 10 s"
     },
     {
       "test": ".claude.rediacc_hooks.tests.test_guards_differential::test_every_guard_discriminates[block_backup_unverified_push]",

@@ -42,6 +42,7 @@ import contextlib
 import dataclasses
 import datetime
 import difflib
+import functools
 import importlib
 import os
 import pathlib
@@ -551,20 +552,39 @@ FIELD_SPECS: dict[str, FieldSpec] = {
 }
 
 
+@functools.cache
 def _key_re(name: str) -> re.Pattern[str]:
     return re.compile(r"^%s:[ \t]*(.*?)[ \t]*$" % re.escape(name))
 
 
+@functools.cache
 def _emph_re(name: str) -> re.Pattern[str]:
     return re.compile(r"^\*{1,2}%s\*{0,2}:|^%s\*{1,2}:" % (re.escape(name), re.escape(name)))
+
+
+#: How many distinct plan texts `parse_header` remembers under the default specs; the tree holds about 256 plans, and a `Graph.load` head and a whole-file read of one plan are two texts.
+HEADER_CACHE = 1024
 
 
 def parse_header(text: str, specs: dict[str, FieldSpec] | None = None) -> Header:
     """Every field in `specs` (default `FIELD_SPECS`) read from `text`'s header. Pure: no filesystem.
 
     A field counts when its line is anchored at column 0 in the first `spec.window` lines. The first occurrence is parsed; a second one anywhere in the header block, one past the window, or an emphasised key (`**Depends-On:**`) is a structural error in `Header.errors`. The header block ends at the first section heading, fence or checkbox.
+
+    Under the default specs the answer is memoized on the text (`_parse_default`): every `Graph` parses every plan, and one `check_plan_record.py --rendered-only` run built 68 graphs and 21,284 headers before its graph was shared (measured 2026-11-19). Each call gets its own `fields` dict, so a caller that edits it cannot change the next caller's header. Explicit `specs` are never cached.
     """
-    specs = FIELD_SPECS if specs is None else specs
+    if specs is None:
+        cached = _parse_default(text or "")
+        return dataclasses.replace(cached, fields=dict(cached.fields))
+    return _parse_header(text, specs)
+
+
+@functools.lru_cache(maxsize=HEADER_CACHE)
+def _parse_default(text: str) -> Header:
+    return _parse_header(text, FIELD_SPECS)
+
+
+def _parse_header(text: str, specs: dict[str, FieldSpec]) -> Header:
     lines = (text or "").splitlines()
     head = "\n".join(lines[:STATUS_LINES])
     sm = STATUS_RE.search(head)
@@ -1214,6 +1234,7 @@ class Graph:
         self._finished: frozenset[str] | None = None
         self._full: dict[str, str] = {}
         self._tasks: dict[tuple[str, str], TaskVerdict] = {}
+        self._investigations: list | None = None
 
     @classmethod
     def from_texts(cls, texts: dict[str, str], index_text: str = "") -> Graph:
@@ -1343,7 +1364,11 @@ class Graph:
         if self.root is None:
             return False
         try:
-            row = importlib.import_module("wl_planrec").investigation_for(self.root, rel, sig)
+            rec = importlib.import_module("wl_planrec")
+            # The ledger is read once per graph, not once per task edge: a graph lives for one judgement over files nobody writes meanwhile, and re-reading it per edge was 266 full decodes of the ledger per `check_plan_record.py --rendered-only` run (measured 2026-11-19). A read that raises is not remembered.
+            if self._investigations is None:
+                self._investigations = rec.read_investigations(self.root)
+            row = rec.investigation_for(self.root, rel, sig, rows=self._investigations)
         except (ImportError, AttributeError, OSError, ValueError):
             return False
         return bool(row) and str(row.get("verdict") or "").strip().lower() == "present"
