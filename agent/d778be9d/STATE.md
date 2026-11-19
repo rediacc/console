@@ -1,22 +1,23 @@
-## SESSION d778be9d 2026-11-19T15:39:18Z
+## SESSION d778be9d 2026-11-19T18:51:02Z
 
-# STATE d778be9d (2026-11-19 15:40Z)
-
-PAUSED 2026-11-19T15:38Z by operator /pause. Resume effort level: smart (set now: quiet). No crons were scheduled. Logs copied to .ci/cache/pause/d778be9d/ (ciq.log = the red ci:quick on 626c499d9, acct-e2e-full.log, acct-life.log, acct-e2e-rerun.log).
+# STATE d778be9d (2026-11-19 18:52Z, operator away)
 
 ## Next action
-1. Land the CI tooling red-fix writer a7795c6bbb38b95da (#201b998f, lease tree .claude/worktrees/agent-a7795c6bbb38b95da): `./run.sh worktree land agent-a7795c6bbb38b95da`, cherry-pick what it prints, rerun the gates it names (ci-pytest, python-types, python-env-registry, shard-manifest-coverage, lane-budget, literal-sources, python-lint, budget-freshness, gate-tree-writes, cli-proxy-safe-output pin 3->2, format of .ci/scripts/quality/lint-rule-liveness.mjs). If it died, resume it with SendMessage.
-2. Read the full account e2e rerun (background task bcta3o495, log /tmp/m/acct-e2e-full2.log, may be lost on restart: rerun `./run.sh account test e2e` with the gateway up). On rc 0 tick sidebar E1 7fd4bb38 (--plan-investigate then --plan-tick, commit:f4ef1bc47) and #458cdcb9.
-3. Lead reds: check:ci-plan-citations (37 unresolvable pointers), check:ci-plan-implementation (P-A3 on sidebar ad20ad3d), check:ci-ops-health (l1vm host key #95f6a242: `rdc machine scan-keys 192.168.111.11`), check:ci-embed-asset-freshness (transient 503, rerun).
-4. `npm run ci:quick`; vm:check (renet chunkstore changed); `worklist.py --review-commit d778be9d` alone; push account, renet, console with TURBO_PUSH_REASON='red-fix: ...'; sync_epic_block 605 1104-1; ci-trace watch. Then refresh lane-durations (2 stale p90s under old job names).
-5. Live boxes: email S0 (four bws secrets), E1 deploy plumbing, deploy_bench, X2 drills (email R1 drill, sidebar B1 apply + B2 walk); sidebar X1/X2/LP-bench; email H0-H4 hostinger mailboxes + ManageSieve, O1, P1.
+1. When ci:quick (task b5osqel2o, log /tmp/m/ciq3.log, head 6689023c1) ends: if green except the carried ops-health and lane-budget, run `npm run vm:check -- --changed` (renet chunkstore changed); then `worklist.py --review-commit d778be9d` alone; push private/account and private/renet (own calls), then console with TURBO_PUSH_REASON='red-fix: run-40 and round-2/3 ci:quick reds, sidebar and email plan boxes'; `PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block 605 1104-1`; ci-trace watch --ref 1104-1. If red: one fix writer per area, land, rerun.
+2. After CI measures the new legs: `PYTHONPATH=.ci python3 -m rediacc_ci.ci.freshness --refresh .ci/config/lane-durations.json` and remove the check:ci-lane-budget entry from .ci/config/carried-reds.json in the same commit.
+3. Live: sidebar X1 (vm:check + deploy_bench), X2 (root_grants --target bench-eu --apply for B1, then the 07-90 live walk), LP-bench; email S0 (four bws entries), E1, X1/X2 (email routing drill), H0-H4 hostinger mailboxes + ManageSieve, O1, P1 edge release.
+
+## Overnight
+- Landed since the pause: sidebar E1 ticked (d6a611beb, full account e2e 272 passed); CI tooling reds 48b9215e3 d36f8a016 35d06004b; plan citations 6d8872d27; env registrations 753e249a7; lane-budget carry bb4d5c11d; local root partner org (/test/ensure-partner, e3e5cbb via 710b3d81f, banner 437eb067f); round-3 reds (d828e6cea 38ffbdbfb 4700a9cb3 944247b2e, account via 6689023c1).
+- Operator rulings today: switcher stays as is; local root gets a partner org (done).
+- Decided alone: the push-gated items (#ab9c68b1 #a1ecc191 #fbe192ca #0e9506a2 #4889018a) have their code landed; each remaining half needs the pushed head.
+- No [?] parked by this session tonight.
 
 ## Big pieces
-- Sidebar redesign 11/15 (S1 F1 I1 T1 W1 K1 U1 N1 G1 B1 B2), E1 pending full e2e. Email separation 7/18 (T1 M1 K1 C1 D1 R1 + docs). Review security landed (6c68b04ba, ef2a80c02, a2374277a). Review findings 0 open.
+- PR #605 push; sidebar redesign 12/15 (live boxes left); email separation 7/18 (live boxes + E1 left).
 
 ## Owed ticks
-- Sidebar E1 7fd4bb38 after the full e2e; A1a 695c3218, A4d 0a237b2e, N1 abe9b4eb after the push (no local half).
+- A1a 695c3218, A4d 0a237b2e, N1 abe9b4eb after the push.
 
 ## Delegated
-- a7795c6bbb38b95da: #201b998f CI tooling red-fix; owns .ci/**, .claude/hooks|config|rediacc_hooks/**, scripts/ci-runner|gates|gen|lib/**.
-- bcta3o495 (shell): full account e2e rerun for E1.
+- b5osqel2o (shell): ci:quick for the push receipt.
