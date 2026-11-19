@@ -1,20 +1,20 @@
-## SESSION d778be9d 2026-11-19T05:28:56Z
+## SESSION d778be9d 2026-11-19T07:20:12Z
 
-# STATE d778be9d (2026-11-19 ~05:45Z)
+# STATE d778be9d (2026-11-19 ~08:45Z)
 
 ## Next action
-1. #b28ccc5c: --review-mark the 47 wave-2 scripts/.ci verdicts (33 fixed, 14 not-a-bug, listed in agent a3cdad56's report) with the landed shas: the 7 picks ending dd5103a3e map in order to lease c2a714673, 9beb85484, c60e807f0, c8f4271df, 996a66840, 7564bf5cb, 05e8e43ad (`git log --format='%h %s' -8`). ~100 findings remain for a wave 3.
-2. Tick PLAN-rdc-feedback T1 57489fcf (landed 53b0c35b1, 93 passed) and C4 d4e7536a (landed 62fa1d178, vitest 29, tsc rc 0, parity rc 0); regenerate plan records; commit; then tick #09883efa and the C4 item.
-3. Tick PLAN-account-notices X2b (bench evidence /tmp/notices-x2b/bell-open.png, notices_drill 12/12 rc 0).
-4. Push: `npm run vm:check -- --changed` (drill code changed; never commit during it), then ci:quick, `worklist.py --review-commit d778be9d` in its own call, push with TURBO_PUSH_REASON, sync_epic_block 605, ci-trace watch. Then LP-bench ec915c2d via --live-proof.
-5. Ready writer boxes next: rdc-feedback D1, D2 (12 locales for C4/P1 strings), D3, T2-T4.
+1. ci:quick run 40 was RED on 20 gates (first cause: check:types packages/cli/src/commands/__tests__/feedback-report.test.ts:165 TS2339). Fix writer ae7d809bab9ff232a (lease) is working them by root cause. When it reports: land its commits (+ any private/account fix it names), run `npm run ci:quick` (vm:check run 11 VERIFIED tree 5d214d1c5f22 still covers if no vm trigger path changed), `worklist.py --review-commit d778be9d` in its OWN call, push account then console with TURBO_PUSH_REASON='red-fix: ...', sync_epic_block 605, ci-trace watch (--ref 1104-1).
+2. Land T3 (writer ac4df705f6138ff4e, #568432c7) when it reports; commit the snapshot content it reports to agent/ledgers/feedback-snapshot.json; tick T3.
+3. Land wave-3 group B (.ci python, writer a2e6b0e43c460ee71, #b28ccc5c) and mark its findings with landed shas.
+4. After the push: P1 production deploy for account-notices (#a1ecc191) via the deploy skill; l1vm eu-bench key fix (#95f6a242, unblocks #3fb4edcc).
 
 ## Big pieces
-- Root grants DONE on edge eu/us/asia (#cd796a07 ticked); 2FA seed shared us/asia (bookmarks us 00000110-...f646c671, asia 00000116-...cdf02f84); AMBER: config store for org 35eb74dc on us/asia is an operator portal step.
-- rdc-feedback: S1, A1-A4, C1-C3, P1, P2 ticked; T1, C4 landed.
+- rdc-feedback: S1, A1-A4, C1-C4, P1, P2, D1-D3, T1, T2, T4 ticked; T3 running.
+- Root grants on edge eu/us/asia done; 2FA seed shared us/asia.
+- Backup sync works again (secret-scan false positive fixed ff1355d4a + 1d21636f3).
 
 ## Owed ticks
-- T1 57489fcf, C4 d4e7536a, X2b, LP-bench ec915c2d; A1a 695c3218, A4d 0a237b2e, N1 abe9b4eb after push.
+- T3; A1a 695c3218, A4d 0a237b2e, N1 abe9b4eb after the push.
 
 ## Delegated
-- none live (wake timer bwq1lwq8m).
+- ae7d809bab9ff232a run-40 reds; ac4df705f6138ff4e T3; a2e6b0e43c460ee71 review wave 3 group B.
