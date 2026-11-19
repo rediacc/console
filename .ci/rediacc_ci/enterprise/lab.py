@@ -1067,6 +1067,9 @@ def _certspotter_names(fetch_url: Fetch) -> tuple[list[str], str]:
         if len(rows) < CERTSPOTTER_PAGE or not isinstance(last, dict) or not last.get("id"):
             break
         after = str(last["id"])
+    else:
+        # The last allowed page was still full: the list is incomplete, so no absence claim may rest on it.
+        return [], "still had more pages after %d" % CERTSPOTTER_MAX_PAGES
     names_out = sorted(n for n in found if n)
     return names_out, "" if names_out else "answered an empty list"
 

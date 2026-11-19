@@ -287,7 +287,7 @@ function controls(): ControlCase[] {
       [],
     ],
   ];
-  return cases.map(([name, src, want]) => {
+  const scanned = cases.map(([name, src, want]) => {
     const got = run(src);
     return {
       name,
@@ -295,6 +295,18 @@ function controls(): ControlCase[] {
       detail: `got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`,
     };
   });
+  const floor = (name: string, files: number, checked: number, vacuous: boolean): ControlCase => ({
+    name,
+    ok: isVacuous(files, checked) === vacuous,
+    detail: `${files} file(s), ${checked} key(s), want vacuous=${vacuous}`,
+  });
+  return [
+    ...scanned,
+    floor('CONTROL: one file under the file floor is vacuous', MIN_FILES - 1, MIN_KEYS, true),
+    floor('CONTROL: one key under the key floor is vacuous', MIN_FILES, MIN_KEYS - 1, true),
+    floor('CONTROL: nothing scanned is vacuous', 0, 0, true),
+    floor('SILENT: exactly at both floors is not vacuous', MIN_FILES, MIN_KEYS, false),
+  ];
 }
 
 function loadCatalogs(dir: string): Map<string, Set<string>> {
@@ -309,6 +321,10 @@ function loadCatalogs(dir: string): Map<string, Set<string>> {
 // VACUITY FLOORS, measured 2026-11-17: 293 source files and 2819 key references. The floors sit far below that so a normal refactor never trips them, and far above trivial, so a glob or a catalog loader that goes blind cannot pass as a clean tree.
 const MIN_FILES = 100;
 const MIN_KEYS = 1000;
+
+export function isVacuous(files: number, checked: number): boolean {
+  return files < MIN_FILES || checked < MIN_KEYS;
+}
 
 function main(): void {
   console.log('account-i18n-key-usage controls');
@@ -332,7 +348,7 @@ function main(): void {
   for (const f of files)
     scanFile(path.relative(webSrc, f), readFileSync(f, 'utf8'), catalogs, result);
 
-  if (files.length < MIN_FILES || result.checked < MIN_KEYS) {
+  if (isVacuous(files.length, result.checked)) {
     console.error(
       `${RED}✗${NC} VACUOUS: ${result.checked} key(s) checked across ${files.length} file(s), floors ${MIN_KEYS} and ${MIN_FILES}; the gate verified nothing.`
     );

@@ -4717,3 +4717,42 @@ def test_cert_log_names_certspotter_follows_pages_by_last_id():
     assert "tail.%s" % D_ROUTING in names
     assert len(names) == 101
     assert spotter_calls[1].endswith("&after=99")
+
+
+def _spotter_page(start, count=100):
+    return (
+        200,
+        json.dumps(
+            [
+                {"id": str(i), "dns_names": ["h%d.%s" % (i, D_ROUTING)]}
+                for i in range(start, start + count)
+            ]
+        ),
+    )
+
+
+def test_cert_log_names_certspotter_page_cap_is_a_refusal_not_a_short_list():
+    """REGRESSION (8ebdcd5b.1): a full last allowed page means names were dropped; the names found so far must not stand as the whole list."""
+    pages = [_spotter_page(i * 100) for i in range(lab.CERTSPOTTER_MAX_PAGES)]
+    fetch, _crt, spotter_calls = _two_logs([(200, "[]")], pages)
+    with pytest.raises(proof.LabError) as err:
+        lab.cert_log_names(fetch_url=fetch, sleep=lambda _s: None, attempts=1, backoff_s=0.0)
+    assert "certspotter" in str(err.value)
+    assert "more pages" in str(err.value)
+    assert len(spotter_calls) == lab.CERTSPOTTER_MAX_PAGES
+
+
+def test_cert_log_names_certspotter_page_just_under_the_cap_is_complete():
+    """Control: the cap's last page is short, so the list ends there and its names are returned."""
+    pages = [_spotter_page(i * 100) for i in range(lab.CERTSPOTTER_MAX_PAGES - 1)]
+    pages.append(_spotter_page((lab.CERTSPOTTER_MAX_PAGES - 1) * 100, 1))
+    fetch, _crt, _spotter = _two_logs([(200, "[]")], pages)
+    names = lab.cert_log_names(fetch_url=fetch, sleep=lambda _s: None, attempts=1, backoff_s=0.0)
+    assert len(names) == (lab.CERTSPOTTER_MAX_PAGES - 1) * 100 + 1
+
+
+def test_cert_log_names_certspotter_failing_after_page_one_discards_the_partial_list():
+    fetch, _crt, _spotter = _two_logs([(200, "[]")], [_spotter_page(0), (429, "slow")])
+    with pytest.raises(proof.LabError) as err:
+        lab.cert_log_names(fetch_url=fetch, sleep=lambda _s: None, attempts=1, backoff_s=0.0)
+    assert "certspotter answered 429" in str(err.value)
