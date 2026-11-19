@@ -33,6 +33,15 @@ describe('feedbackFingerprint', () => {
     ).not.toBe(a);
   });
 
+  it('normalises clock times the same way with and without seconds', () => {
+    expect(normalizeError('failed at 12:30:45')).toBe(normalizeError('failed at 09:05'));
+    expect(normalizeError('failed at 12:30:45')).toBe('failed at <time>');
+  });
+
+  it('still treats a colon-separated hex address as an ip', () => {
+    expect(normalizeError('peer 2001:db8::1 down')).toBe('peer <ip> down');
+  });
+
   it('normalises paths and digits', () => {
     expect(normalizeError('Failed  at /a/b 42')).toBe('failed at <path> <n>');
   });

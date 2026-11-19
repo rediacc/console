@@ -742,7 +742,7 @@ def _par(fn, items):
 
 
 def _flip_half(rows, pair, want=0):
-    """Names of rows whose verdict became `want` under `pair`, run in waves and stopped once half the rows have flipped."""
+    """Names of rows whose verdict became `want` under `pair`, run in waves. The half is checked before each wave, so it stops at the first wave boundary at or past half and may flip up to one wave more."""
     flipped: list[str] = []
     stop = max(len(rows) // 2, 1)
     wave = min(12, os.cpu_count() or 4)

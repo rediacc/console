@@ -55,6 +55,7 @@ export type FeedbackSubmitResponse = z.infer<typeof feedbackSubmitResponseSchema
 
 export const feedbackListItemSchema = z.object({
   id: z.string(),
+  /** Short display form (shortFeedbackFingerprint); the submit response carries the full 64. */
   fingerprint: z.string().regex(/^[0-9a-f]{12}$/),
   kind: feedbackKindSchema,
   status: feedbackStatusSchema,

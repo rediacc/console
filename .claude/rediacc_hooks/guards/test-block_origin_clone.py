@@ -546,7 +546,7 @@ else:
 
 print("== the DEFECT control")
 defect_pair = _declared_defect()
-# The control only needs half the refusals to flip, so it stops once that many have.
+# The control only needs half the refusals to flip. The check runs between waves, so it stops at the first wave boundary at or past the half and may run up to one wave more.
 flipped: list[str] = []
 _WAVE = min(12, os.cpu_count() or 4)
 for _start in range(0, len(REFUSED), _WAVE):
@@ -564,7 +564,7 @@ if len(flipped) < len(REFUSED) // 2 or not flipped:
     )
 else:
     print(
-        "planted %r: %d of %d refusals flipped (stopped at the half), e.g. %r"
+        "planted %r: %d of %d refusals flipped (checked between waves), e.g. %r"
         % (defect_pair[0], len(flipped), len(REFUSED), flipped[0])
     )
 kept = [

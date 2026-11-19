@@ -33,6 +33,9 @@ describe('feedbackReportSchema', () => {
     'errorMessage',
     'stderrTail',
     'message',
+    'cliVersion',
+    'os',
+    'arch',
   ] as const;
   for (const field of capped) {
     it(`enforces the ${field} cap`, () => {
