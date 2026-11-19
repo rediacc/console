@@ -468,7 +468,7 @@ V_PR_FINISH = (
     "%s\n"
     "The first two boxes are read live off the PR. The third is read live off "
     "agent/reviews/<branch>/: every commit since the base has a per-commit review "
-    "record with no open finding at or above block_at, and every record is "
+    "record with no open finding at or above block_at (or of class security at any severity), and every record is "
     "committed (python3 .claude/hooks/stop/wl_review.py --check names what is "
     "unsettled). The last is ticked by closing a worklist item that carries the "
     "token, with evidence -- the hook cannot see a resolved thread and will not "

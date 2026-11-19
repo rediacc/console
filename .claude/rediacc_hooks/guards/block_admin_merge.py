@@ -9,7 +9,8 @@
   3. Review hygiene = the per-commit review precondition AND zero unresolved
      review threads. The precondition: every commit since the base has a
      per-commit review record in agent/reviews/<branch>/ with no open finding
-     at or above block_at and no deferred finding at any severity, and every
+     at or above block_at (or of class security at any severity) and no deferred
+     finding at any severity, and every
      record is committed (`python3 .claude/hooks/stop/wl_review.py --check`).
      It is judged on the PR's head branch (`headRefName`) by
      `wl_review.check_state`, locally and with no network call of its own,
@@ -73,7 +74,7 @@ NOT_GREEN_MESSAGE = (
 REVIEWS_MESSAGE = (
     "❌ BLOCKED: %s#%s (head branch %s) fails the per-commit review precondition: every "
     "commit since the base has a per-commit review record in agent/reviews/<branch>/ with no "
-    "open finding at or above block_at and no deferred finding at any severity, and every "
+    "open finding at or above block_at (or of class security at any severity) and no deferred finding at any severity, and every "
     "record is committed. Refused: %s. A deferred finding is unfinished work: triage it, fix "
     "it this session, or, for an operator-only triage, waive it with the operator's ASKED: "
     "answer. Settle each line below ('python3 .claude/hooks/stop/wl_review.py --status' lists "

@@ -66,6 +66,8 @@ class Finding:
     line: int
     claim: str = ""
     resolution: str = "open"
+    # The `Class:` line; empty for a legacy record that carries none.
+    klass: str = ""
 
     @property
     def resolution_kind(self) -> str:
@@ -143,6 +145,8 @@ def parse_record(text: str, file: str = "") -> Record:
             rec.findings.append(current)
         elif current is not None and line.startswith("Claim: "):
             current.claim = line[len("Claim: ") :]
+        elif current is not None and line.startswith("Class: "):
+            current.klass = line[len("Class: ") :].strip()
         elif current is not None and line.startswith("Resolution: "):
             current.resolution = line[len("Resolution: ") :]
     return rec
