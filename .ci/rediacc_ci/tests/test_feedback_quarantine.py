@@ -67,6 +67,14 @@ def test_every_screened_field_is_read(field):
     assert quarantine.screen({field: value}) == quarantine.Hit("shell-curl", field)
 
 
+def test_url_host_path_screens_any_tld_and_a_dotted_file_path():
+    """Review dbb5a441.1 and .2: the rule is deliberately TLD-agnostic, so `evil.com/x` hits as well as `evil.zone/x`, and a dotted file path such as `build.log/run` is a known false positive (a quarantine costs a review, a miss costs an injection). Controls: a dotted name with no slash and a bare path with no dotted host stay clean."""
+    for text in ("see evil.com/x", "see evil.zone/x", "see build.log/run"):
+        assert quarantine.screen({"message": text}) == quarantine.Hit("url-host-path", "message")
+    for text in ("see build.log", "see packages/cli/src/index.ts"):
+        assert quarantine.screen({"message": text}) is None
+
+
 def test_server_fields_are_not_screened():
     # triageNote and category are this pipeline's own output, not reporter text.
     item = {"triageNote": "curl x", "category": "<system>", "planRef": "https://x.example"}

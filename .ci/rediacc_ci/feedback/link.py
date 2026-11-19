@@ -119,10 +119,12 @@ def feedback_line(text: str) -> FeedbackLine | None:
 
 
 def with_feedback_ids(text: str, ids: Iterable[str]) -> str:
-    """`text` with `ids` joined to its `Feedback:` line, kept ids first. Without a line, one is added after the header block's last `Key: value` line."""
+    """`text` with `ids` joined to its `Feedback:` line, kept ids first and malformed tokens kept last. Without a line, one is added after the header block's last `Key: value` line."""
     held = feedback_line(text)
     merged = list(held.ids if held else ())
     merged += [i for i in ids if i not in merged]
+    # Malformed tokens stay on the line: the gate reports them (F2), and a rewrite that dropped them would erase the evidence.
+    merged += [b for b in (held.bad if held else ()) if b not in merged]
     line: str | None = "Feedback: %s" % ", ".join(merged)
     header = plan_header(text)
     if held is not None:
@@ -467,6 +469,12 @@ def run(opts: Options, deps: Deps | None = None) -> int:
     entries = [{"id": c.id, "category": c.category, "summary": c.summary} for c in cands.values()][
         :CANDIDATES_MAX
     ]
+    truncated = len(cands) - len(entries)
+    if truncated > 0:
+        log.warn(
+            "link: %d open fingerprint(s) beyond the first %d are not offered to any plan this run"
+            % (truncated, CANDIDATES_MAX)
+        )
     deps.out(
         "link: %d plan(s) to read, %d open classified fingerprint(s) over %d region(s)"
         % (len(plans), len(entries), len(exported))
@@ -541,9 +549,11 @@ def run(opts: Options, deps: Deps | None = None) -> int:
         deps.out(
             "snapshot: %d fingerprint(s) in %s" % (count, paths.relative_to_root(snapshot, root))
         )
-    if rc == 0 and not pending and not opts.plans:
+    # Plans are marked read only once they were offered every open fingerprint: with no candidate, or a list cut at CANDIDATES_MAX, a changed plan would otherwise never be offered the fingerprints it was not shown.
+    unoffered = bool(plans) and (not entries or truncated > 0)
+    if rc == 0 and not pending and not opts.plans and not unoffered:
         write_state(state, head, stamp)
-    elif pending or rc:
+    elif pending or rc or unoffered:
         deps.out("link state held at its last commit")
     return rc
 

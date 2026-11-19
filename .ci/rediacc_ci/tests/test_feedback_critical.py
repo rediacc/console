@@ -117,6 +117,16 @@ def test_a_prefers_the_24h_counts_over_a_fresh_window():
     assert _codes(critical.evaluate(_fresh(distinctReporters=9, distinctOrgs=9), NOW)) == ["a"]
 
 
+def test_a_half_24h_pair_is_ignored_and_the_window_reading_stands():
+    """Review dcb11131.1: `export` refuses half pairs, so only a caller that skips it reaches this: one 24 h key alone never stands in for the pair, the first/last-seen window decides."""
+    fresh = _fresh(distinctReporters=9, distinctOrgs=9, distinctReporters24h=1)
+    assert _codes(critical.evaluate(fresh, NOW)) == ["a"]
+    spread = _item(distinctReporters=9, distinctOrgs=9, distinctReporters24h=9)
+    assert critical.evaluate(spread, NOW) == []
+    # Control: the full pair is read as given.
+    assert _codes(critical.evaluate(_item(distinctReporters24h=9, distinctOrgs24h=0), NOW)) == ["a"]
+
+
 def test_a_reads_the_24h_counts_from_a_parsed_export():
     # First report 3 days ago: without the pair the window reading counts nothing.
     item = _item(distinctReporters=8, distinctOrgs=2, distinctReporters24h=6, distinctOrgs24h=1)
@@ -524,6 +534,9 @@ def test_stage5_a_plan_error_fails_the_run(tmp_path):
     assert results[0].plans == []
     assert any("1 confirmed fingerprint(s) with no plan" in line for line in lines)
     assert server.posts == []  # nothing changed, so no verdict moves it to planned
+    # Review 5e6d8c31.1: the cursor stays put, so the next run exports the fingerprint again and retries its plan.
+    assert not (tmp_path / "cursor.json").exists()
+    assert any("cursor held" in line for line in lines)
 
 
 def test_stage5_control_a_free_name_plans_and_exits_0(tmp_path):
@@ -531,6 +544,7 @@ def test_stage5_control_a_free_name_plans_and_exits_0(tmp_path):
     rc, results = triage.run(_opts(tmp_path), _deps(server))
     assert rc == 0
     assert results[0].plan_errors == []
+    assert (tmp_path / "cursor.json").exists(), "control: a planned run advances the cursor"
 
 
 def test_stage5_dry_run_writes_no_plan(tmp_path):

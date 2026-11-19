@@ -16,7 +16,7 @@ RUN, per region:
   5. Stage 3: one near-duplicate call over the summaries of the open classified fingerprints records the suspected parent in the child's note; each `meaningful && safe_to_reproduce` report gets a reproduction order, merged into `--orders` (default `.ci/cache/feedback/orders-<region>.json`): an order of this run replaces the one already there for its fingerprint, and the others stay until `repro` records their result.
   6. Stage 4 (`critical`): every R8 trigger the aggregates and Stage 2 show becomes a worklist item deferred with its DEFAULT and a 6 h window, filed under `--me` (without it the run names the triggers and files nothing). A filed trigger is recorded in `--critical-state` and never filed twice.
   7. Stage 5 (`plangen`): each `confirmed` fingerprint with no plan gets `agent/plans/PLAN-feedback-<slug>.md` under `--plans-root` (default the repository) and moves to `planned` with `planRef`.
-  8. Write the verdicts in batches and advance the region's cursor to the newest `lastSeenAt` exported, unless a classification is still pending, the classifier was unavailable, `--no-classify` left a `new` or `screening` report unclassified, or `--status` named only some of the open statuses, so the next run sees those reports again. `--dry-run` prints the same lines and writes no verdict, cursor, order, plan or worklist item.
+  8. Write the verdicts in batches and advance the region's cursor to the newest `lastSeenAt` exported, unless a classification is still pending, the classifier was unavailable, `--no-classify` left a `new` or `screening` report unclassified, a confirmed fingerprint got no plan (`plangen.PlanError`), or `--status` named only some of the open statuses, so the next run sees those reports again. `--dry-run` prints the same lines and writes no verdict, cursor, order, plan or worklist item.
 
 REPRO records the result of a reproduction the agent ran from an order: `reproduced` confirms the fingerprint, `clean` rejects it when its count is low (and is the R8 (c) disagreement when it is high), `inconclusive` leaves it in `screening`. The R8 triggers that need a reproduction ((b) and (e)) are evaluated here, a confirmed fingerprint gets its plan at once, and once the verdict is written the fingerprint's order leaves the orders file.
 
@@ -554,7 +554,9 @@ def run_region(region: str, opts: Options, cursor: Path, deps: Deps) -> RegionRe
     stamp = now.strftime("%Y-%m-%dT%H:%M:%S.000Z")
     # The cursor is shared by every status, so only an export that covered every open status may move it: a `--status` subset would carry it past reports of the other statuses that the next default run then never sees (review 53b0c35b.1).
     subset = not set(OPEN_STATUSES) <= set(opts.statuses)
-    held = result.pending or result.unavailable or result.unclassified or subset
+    held = (
+        result.pending or result.unavailable or result.unclassified or result.plan_errors or subset
+    )
     tail = ""
     if subset:
         tail += ", --status is a subset of the open statuses"

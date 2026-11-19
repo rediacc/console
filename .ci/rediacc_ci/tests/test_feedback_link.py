@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from rediacc_ci import controls, paths
-from rediacc_ci.feedback import classify, link, ship, triage
+from rediacc_ci.feedback import classify, link, plangen, ship, triage
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -145,8 +145,22 @@ def test_feedback_line_reads_the_header_only_and_splits_bad_tokens():
     assert link.feedback_line(_plan() + "\nFeedback: %s\n" % A) is None
 
 
-def test_plangen_line_agrees_with_the_grammar():
-    # plangen.render writes `Feedback: <fp[:12]>`; the gate's parser must read exactly that id.
+def test_plangen_line_agrees_with_the_grammar(tmp_path):
+    """Review b82c76c1.4: the plan text is written by `plangen.write`, so a change to its `Feedback:` output fails here. Control: a hand-written line reads the same."""
+    cls = classify.parse_reply(
+        json.dumps(
+            {
+                "meaningful": True,
+                "safe_to_reproduce": True,
+                "suspicious": False,
+                "category": "backup",
+                "core_path": True,
+                "summary": "backup push fails on a fresh repo",
+            }
+        )
+    )
+    written = plangen.write(tmp_path, _item(FP_A, "confirmed"), cls, NOW)
+    assert _ids((tmp_path / written.rel).read_text(encoding="utf-8")) == (A,)
     assert _ids("# PLAN\n\nOwner: x\nFeedback: %s\n\n## Context\n" % FP_A[:12]) == (A,)
 
 
@@ -164,6 +178,16 @@ def test_with_feedback_ids_merges_into_an_existing_line_once():
     text = link.with_feedback_ids(_plan(A), [B, A])
     assert text.count("Feedback:") == 1
     assert "Feedback: %s, %s\n" % (A, B) in text
+
+
+def test_with_feedback_ids_keeps_a_malformed_token_for_the_gate():
+    """Review b82c76c1.2: a rewrite that gains a match keeps the bad token the gate reports. Control: the well-formed ids merge as before."""
+    text = link.with_feedback_ids(_plan("%s, nothex" % A), [B])
+    held = link.feedback_line(text)
+    assert held is not None
+    assert held.ids == (A, B)
+    assert held.bad == ("nothex",)
+    assert text.count("Feedback:") == 1
 
 
 def test_link_reply_schema():
@@ -468,6 +492,61 @@ def test_link_writes_the_line_the_planned_verdict_the_snapshot_and_the_state(rep
     assert [r["id"] for r in doc["fingerprints"]] == [A, B, FP_C[:12]]
     assert doc["fingerprints"][0] == {"id": A, "status": "planned", "fixed_in": None}
     assert json.loads(state.read_text())["head"] == _git(root, "rev-parse", "HEAD")
+
+
+def _link_once(root, stub, base, state, replies):
+    return link.run(
+        link.Options(("eu",), since=base, snapshot=root / "s.json", state=state, root=root),
+        link.Deps(
+            open_region=lambda *_: stub,
+            out=lambda _: None,
+            complete=lambda prompt: replies.append(prompt) or '{"ids": []}',
+            now=lambda: NOW,
+        ),
+    )
+
+
+def _commit_plan(root):
+    base = _git(root, "rev-parse", "HEAD")
+    _ship_plan(root, _plan())
+    _git(root, "add", "agent")
+    _git(root, "commit", "-q", "-m", "plan")
+    return base
+
+
+def test_link_holds_the_state_when_a_changed_plan_met_no_candidate(repo):
+    """Review b82c76c1.1: a changed plan offered nothing is not marked read, or a fingerprint classified later would never be offered to it. Control: with a candidate the same run writes the state."""
+    root, _, _, _ = repo
+    base = _commit_plan(root)
+    state = root / "state.json"
+    replies: list[str] = []
+    stub = Stub([_item(FP_C, "quarantined", triageNote="stage1 url")])
+    assert _link_once(root, stub, base, state, replies) == 0
+    assert replies == []
+    assert not state.exists()
+    stub = Stub([_item(FP_A, "confirmed", triageNote=_note())])
+    assert _link_once(root, stub, base, state, replies) == 0
+    assert len(replies) == 1
+    assert state.exists()
+
+
+def test_link_warns_and_holds_the_state_when_candidates_are_cut(repo, monkeypatch, capsys):
+    """Review b82c76c1.3 and .1: fingerprints beyond CANDIDATES_MAX are named in a warning and hold the state. Control: within the bound there is no warning and the state is written."""
+    root, _, _, _ = repo
+    base = _commit_plan(root)
+    state = root / "state.json"
+    items = [
+        _item(FP_A, "confirmed", triageNote=_note()),
+        _item(FP_B, "confirmed", triageNote=_note("another")),
+    ]
+    assert _link_once(root, Stub(items), base, state, []) == 0
+    assert "beyond the first" not in capsys.readouterr().err
+    assert state.exists()
+    state.unlink()
+    monkeypatch.setattr(link, "CANDIDATES_MAX", 1)
+    assert _link_once(root, Stub(items), base, state, []) == 0
+    assert "1 open fingerprint(s) beyond the first 1" in capsys.readouterr().err
+    assert not state.exists()
 
 
 def test_link_first_run_without_since_is_refused(repo):
