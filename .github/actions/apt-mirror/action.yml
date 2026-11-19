@@ -1,9 +1,12 @@
 name: Prefer the global apt archive
 description: >
-  Rewrites a GitHub-hosted runner's apt sources from azure.archive.ubuntu.com to
-  archive.ubuntu.com, so an apt install cannot sit on the Azure node that
-  trickles (actions/runner-images#14823; PR #601 runs 39766647743 and
-  39821300649 stalled 7m30s in every `renet ops host setup` install attempt).
+  Rewrites a GitHub-hosted runner's apt sources from azure.archive.ubuntu.com
+  and from the regional *.ec2.archive.ubuntu.com mirrors to archive.ubuntu.com,
+  so an apt install cannot sit on a node that trickles or stalls
+  (actions/runner-images#14823; PR #601 runs 39766647743 and 39821300649
+  stalled 7m30s in every `renet ops host setup` install attempt; PR #605 run
+  44442526107 stalled on us-east-2.ec2.archive.ubuntu.com). It also writes
+  /etc/apt/apt.conf.d/80ci-acquire-retries (`Acquire::Retries "3"`).
   Call it before any step that runs apt on a hosted runner. A no-op off
   GitHub-hosted runners and idempotent; the logic and its tests are
   .ci/rediacc_ci/infra/apt_mirror.py.
