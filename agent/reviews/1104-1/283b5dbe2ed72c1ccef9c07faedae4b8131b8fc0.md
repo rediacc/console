@@ -22,10 +22,10 @@ Body-Sig: 941ad05395a2c3a7
 Anchor: in-diff
 Claim: The new call unpacks `extras, _ = G.v2_extra_lines(...)` and discards the second return value; if that value carries skipped or failed entries, the parity assertion on line 80 compares against a partial extras list without any signal. Not verifiable from the diff.
 Class: swallowed-error
-Resolution: open
+Resolution: fixed 95e0a4da5777067b2598332b6fa69b5972213ff2 | d778be9d 2026-11-19T03:16:53Z
 
 ### 283b5dbe.2 [low] .ci/rediacc_ci/tests/test_path_trace.py:128
 Anchor: in-diff
 Claim: The commit message calls .ci/policy/record-paths.json an 'empty' file, but the line writes {"version": 1, "records": []}, which has a version key as well as an empty records list.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | .ci/rediacc_ci/tests/test_path_trace.py:155 the file has no empty claim; the finding is about the commit message | d778be9d 2026-11-19T03:16:56Z

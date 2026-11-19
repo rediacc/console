@@ -22,28 +22,28 @@ Body-Sig: be53bdda38ac630e
 Anchor: in-diff
 Claim: A leaked process that calls setsid (a daemonising test helper) leaves the strace session, so the grace loop's _kill_session never reaches it; strace stays alive and the unbounded child.wait() blocks, so the hang this commit targets still occurs for that case.
 Class: other
-Resolution: open
+Resolution: fixed acb9d3ca2b970107bc37c994654f80b9b459da57 | d778be9d 2026-11-19T03:16:50Z
 
 ### c29ab62a.2 [medium] .ci/rediacc_ci/quality/pytest_impact_reads.py:542
 Anchor: in-diff
 Claim: An exception raised by att.feed in the fold() thread now dies silently in the thread instead of reaching run_trace's finally; strace then blocks on a full, unread stderr pipe, pytest never writes its rc file, and the polling loop at 548-554 waits forever, where the old code raised and killed the group.
 Class: swallowed-error
-Resolution: open
+Resolution: fixed acb9d3ca2b970107bc37c994654f80b9b459da57 | d778be9d 2026-11-19T03:16:50Z
 
 ### c29ab62a.3 [medium] .ci/rediacc_ci/quality/pytest_impact_reads.py:552
 Anchor: in-diff
 Claim: The orphan-kill branch (grace expiry, _kill_session with spare, break) and the 'outlived pytest under the trace and was killed' output at 562-565 have no unit test; the only check was a manual live run, so a regression there would not fail the suite.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed acb9d3ca2b970107bc37c994654f80b9b459da57 | d778be9d 2026-11-19T03:16:50Z
 
 ### c29ab62a.4 [medium] .ci/rediacc_ci/quality/pytest_impact_reads.py:735
 Anchor: in-diff
 Claim: The new SIGTERM path in cmd_trace (pool creation, except BaseException calling _kill_live, pool.shutdown in finally) is changed behaviour with no test in the diff, so a regression that waits on the shard threads again would pass the suite.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed acb9d3ca2b970107bc37c994654f80b9b459da57 | d778be9d 2026-11-19T03:16:50Z
 
 ### c29ab62a.5 [low] .ci/rediacc_ci/quality/pytest_impact_reads.py:506
 Anchor: in-diff
 Claim: A zombie member of the session has an empty cmdline, so _kill_session appends '' and the output line reads 'was killed: ' with no command name, which defeats the naming the commit describes.
 Class: other
-Resolution: open
+Resolution: fixed acb9d3ca2b970107bc37c994654f80b9b459da57 | d778be9d 2026-11-19T03:16:51Z

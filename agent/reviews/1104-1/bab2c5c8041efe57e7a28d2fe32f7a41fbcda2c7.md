@@ -22,16 +22,16 @@ Body-Sig: 0946ee50a0de3124
 Anchor: in-diff
 Claim: `--recurse-submodules` is in LS_FILES_NAME_FLAGS, so a gate running `git ls-files --recurse-submodules` gets names: ['**'], but that scan prints names inside submodules, which the root's tracked-name hash does not cover; a file added inside a submodule changes the output with no name in the hashed set moving.
 Class: other
-Resolution: open
+Resolution: not-a-bug | scripts/ci-runner/path-trace.ts:1184 gitlinks are added on --recurse-submodules | d778be9d 2026-11-19T06:54:20Z
 
 ### bab2c5c8.2 [medium] scripts/ci-runner/path-trace.ts:748
 Anchor: in-diff
 Claim: The index-read check is skipped whenever any name-only ls-files ran, so a non-git process that reads .git/index directly (its blob shas reflect content) beside `git ls-files -z` is explained away and the gate gets names: ['**'] instead of whole-tree, missing content changes.
 Class: other
-Resolution: open
+Resolution: not-a-bug | scripts/ci-runner/path-trace.ts:1309 only the explainer own reads are excused | d778be9d 2026-11-19T06:54:21Z
 
 ### bab2c5c8.3 [medium] scripts/ci-runner/path-trace.ts:640
 Anchor: in-diff
 Claim: The probedDir comment says a probe under an untracked ancestor such as build output names nothing tracked, but when that build directory does not exist the walk climbs to the nearest existing tracked ancestor and lists it (e.g. the root), so the comment's stated behaviour is wrong (safe over-declaration, but not what it says).
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | scripts/ci-runner/path-trace.ts:992 the comment says the walk may reach the root | d778be9d 2026-11-19T06:54:21Z

@@ -22,10 +22,10 @@ Body-Sig: 4dcc43a299167f7c
 Anchor: in-diff
 Claim: byRefs returns true for any spec declaring refs without checking changeSet.files, so with an empty change set (clean tree) a path-scoped gate that declares refs is selected, while the file header says it is selected 'by any non-empty change set'; no selftest case covers an empty change set.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | scripts/ci-runner/select.ts:203 fixed by 65ac06bf6 | d778be9d 2026-11-19T06:54:23Z
 
 ### bf9ab970.2 [low] scripts/ci-runner/run.ts:584
 Anchor: in-diff
 Claim: The original JSDoc 'The change set, WITH its provenance...' now sits directly above the new changeSetListings doc block and so documents the wrong function, while changedFiles (line 618) loses its description.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | scripts/ci-runner/run.ts:600 and :629 doc blocks attach correctly | d778be9d 2026-11-19T06:54:24Z

@@ -22,10 +22,10 @@ Body-Sig: 844f7bb7672fb72c
 Anchor: in-diff
 Claim: The _certspotter_names docstring says it returns every DNS name certspotter lists, but the loop stops silently after CERTSPOTTER_MAX_PAGES (5) pages even when the last page is still full, so names beyond 500 issuances are dropped without any LabError and an absent-from-logs claim can pass on an incomplete list.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed e648bfecd89d79e470713b61adaa837eaa1b99e2 | d778be9d 2026-11-19T05:40:01Z
 
 ### 8ebdcd5b.2 [low] .ci/rediacc_ci/tests/test_enterprise_lab.py:4710
 Anchor: in-diff
 Claim: test_cert_log_names_certspotter_follows_pages_by_last_id covers only the two-page happy path; no test exercises the page cap (a full page 5 that should not be trusted as complete) or a non-200/unreadable certspotter page after page 1 that discards names already found.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed e648bfecd89d79e470713b61adaa837eaa1b99e2 | d778be9d 2026-11-19T05:40:01Z
