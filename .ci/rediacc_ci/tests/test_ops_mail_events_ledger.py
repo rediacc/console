@@ -248,3 +248,81 @@ def test_a_non_utf8_ledger_is_a_red_line_with_the_offset_not_a_traceback(root):
     out = run(root, Container(rows(*MAILS)))
     assert out["rc"] == 1
     assert any("not UTF-8" in line for line in out["lines"])
+
+
+def _failing_git(monkeypatch, verb, effect):
+    """dr.subprocess.run with one git verb replaced by `effect(argv)`; every other call is the real one."""
+    real = subprocess.run
+
+    def fake(argv, *args, **kwargs):
+        if len(argv) > 1 and argv[0] == "git" and argv[1] == verb:
+            return effect(argv)
+        return real(argv, *args, **kwargs)
+
+    monkeypatch.setattr(dr.subprocess, "run", fake)
+
+
+def test_a_git_show_failure_on_a_committed_ledger_is_red(root, monkeypatch):
+    """Control: the same committed ledger reads clean through the real `git show`."""
+    log(root, Container(rows(*MAILS)))
+    commit_ledger(root)
+    assert dr.load_ledger(root)["problems"] == []
+    _failing_git(
+        monkeypatch,
+        "show",
+        lambda argv: subprocess.CompletedProcess(argv, 128, stdout=b"", stderr=b"boom"),
+    )
+    problems = dr.load_ledger(root)["problems"]
+    assert any("git show rc=128: boom" in p and "HEAD:" + LEDGER in p for p in problems)
+
+
+def test_a_git_that_cannot_run_is_red_not_an_empty_ledger(root, monkeypatch):
+    def broken(_argv):
+        raise OSError("no git here")
+
+    _failing_git(monkeypatch, "ls-tree", broken)
+    problems = dr.load_ledger(root)["problems"]
+    assert any("git failed: no git here" in p for p in problems)
+
+
+def test_a_root_without_a_repository_reads_empty_with_no_problem(tmp_path):
+    ledger = dr.load_ledger(tmp_path)
+    assert ledger["committed"] == set()
+    assert ledger["problems"] == []
+
+
+def test_a_repository_with_no_commits_reads_an_empty_ledger(tmp_path):
+    """Finding 0352d15d.4: `ls-tree HEAD` fails on an unborn HEAD, which is an empty ledger and not a red line. Control: a HEAD that is not a ref stays red (see the broken-HEAD case)."""
+    git(tmp_path, "init", "-q")
+    ledger = dr.load_ledger(tmp_path)
+    assert ledger["committed"] == set()
+    assert ledger["problems"] == []
+
+
+def test_a_valid_json_line_that_is_not_a_row_is_red_naming_its_line(root):
+    """Finding 0352d15d.3. Control: a row with an ids list reads clean."""
+    path = root / LEDGER
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text('{"ids": ["a"]}\n[1]\n{"ids": "abc"}\n')
+    problems = dr.load_ledger(root)["problems"]
+    assert problems == [
+        "mail-events.unreadable: %s line 2 is not a ledger row" % LEDGER,
+        "mail-events.unreadable: %s line 3 is not a ledger row" % LEDGER,
+    ]
+    path.write_text('{"ids": ["a"]}\n')
+    assert dr.load_ledger(root)["problems"] == []
+
+
+def test_log_appends_nothing_while_the_ledger_has_problems(root):
+    """Finding 0352d15d.2. Control: with the bad line gone the same log appends its rows."""
+    path = root / LEDGER
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("{not json\n")
+    before = path.read_bytes()
+    out = log(root, Container(rows(*MAILS)))
+    assert out["rc"] == 1
+    assert out["lines"][-1] == "mail-events: nothing appended until the ledger reads cleanly"
+    assert path.read_bytes() == before
+    path.unlink()
+    assert log(root, Container(rows(*MAILS)))["rc"] == 0
+    assert ledger_rows(root)

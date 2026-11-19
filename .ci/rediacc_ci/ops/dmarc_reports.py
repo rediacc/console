@@ -153,6 +153,9 @@ def _server_reports(raw: object, boxes: list, path: pathlib.Path) -> dict:
         if isinstance(value, bool) or not isinstance(value, int) or value < 0:
             raise KnownError("server_reports.postfix.%s: %r is not a count" % (key, value))
         postfix[key] = value
+    for key in ("reserved_domains", "reserved_tlds"):
+        if not isinstance(raw.get(key) or [], list):
+            raise KnownError("server_reports.%s must be a list of names" % key)
     reserved = {
         key: [str(d).lower().strip(".") for d in raw.get(key) or []]
         for key in ("reserved_domains", "reserved_tlds")
@@ -559,6 +562,10 @@ def _ledger_ids(text: str, where: str) -> tuple[set, list]:
             continue
         if isinstance(row, dict) and isinstance(row.get("ids"), list):
             found.update(str(i) for i in row["ids"])
+        else:
+            problems.append(
+                "mail-events.unreadable: %s line %d is not a ledger row" % (where, number)
+            )
     return found, problems
 
 
@@ -572,6 +579,24 @@ def _committed_ledger(root: pathlib.Path) -> tuple[set, list]:
     if not (root / ".git").exists():
         return set(), []
     try:
+        # An unborn HEAD (a repository with no commits) names a branch that has no commit yet; `ls-tree HEAD` fails there, and the ledger is simply empty. A HEAD that is not a ref at all still reaches `ls-tree` and its red line.
+        head_ref = subprocess.run(
+            ["git", "symbolic-ref", "-q", "HEAD"],
+            cwd=root,
+            capture_output=True,
+            timeout=30,
+            check=False,
+        )
+        if head_ref.returncode == 0:
+            born = subprocess.run(
+                ["git", "show-ref", "--verify", "-q", head_ref.stdout.decode("utf-8").strip()],
+                cwd=root,
+                capture_output=True,
+                timeout=30,
+                check=False,
+            )
+            if born.returncode != 0:
+                return set(), []
         listed = subprocess.run(
             ["git", "ls-tree", "HEAD", "--", LEDGER_REL],
             cwd=root,

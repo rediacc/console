@@ -462,6 +462,9 @@ def test_a_server_reports_mailbox_without_its_section_is_refused(root):
         lambda d: d["server_reports"]["senders"][0].update(shapes=["nope"]),
         lambda d: d["server_reports"]["postfix"].pop("max_bounced"),
         lambda d: d["server_reports"].update(reserved_domains=[], reserved_tlds=[]),
+        # A string is not a list of names: it would split into single characters and validate.
+        lambda d: d["server_reports"].update(reserved_domains="example.com"),
+        lambda d: d["server_reports"].update(reserved_tlds="test"),
     ],
 )
 def test_a_malformed_server_reports_config_is_refused(root, mutate):
