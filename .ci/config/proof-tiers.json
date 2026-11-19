@@ -363,6 +363,7 @@
           "suites": [
             "packages/e2e-tests/tests/10-backup-checkpoint.test.ts",
             "packages/e2e-tests/tests/15-storage-backup.test.ts",
+            "packages/e2e-tests/tests/15-storage-backup-bandwidth.test.ts",
             "packages/e2e-tests/tests/25-backup-chunk-store.test.ts",
             "packages/e2e-tests/tests/26-backup-storage-cli.test.ts",
             "packages/e2e-tests/tests/27-backup-browse-at.test.ts",

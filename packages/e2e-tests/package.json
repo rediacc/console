@@ -22,7 +22,7 @@
     "test:12-integration": "playwright test tests/12a-full-integration-repository.test.ts tests/12b-full-integration-checkpoint.test.ts tests/12d-full-integration-multi-machine.test.ts",
     "test:13-fork": "playwright test tests/13-postgres-fork-isolation.test.ts",
     "test:14-vault": "playwright test tests/14-vault-builder.test.ts",
-    "test:15-storage": "playwright test tests/15-storage-backup.test.ts",
+    "test:15-storage": "playwright test tests/15-storage-backup.test.ts tests/15-storage-backup-bandwidth.test.ts",
     "test:16-setup-params": "playwright test tests/16-setup-installation-params.test.ts",
     "test:18-ops": "playwright test tests/18-ops-workflow.test.ts",
     "test:19-rustfs": "playwright test tests/19-rustfs-operations.test.ts",

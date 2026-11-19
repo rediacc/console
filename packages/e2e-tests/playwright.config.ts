@@ -113,7 +113,7 @@ export default test.defineConfig({
     ...(process.env.CI ? [] : [{ name: 'test-20', testMatch: '20-*.test.ts' }]),
     { name: 'test-21', testMatch: '21-*.test.ts' },
     { name: 'test-22', testMatch: '22-*.test.ts' },
-    // CLI-migrate routing (suites 23a and 23b) — first rdc-driven e2e (CliRunner). Two workers, no ceph; distro-agnostic routing logic, so CI runs them only with CLI_SUITE=1 (ct-tests.yml test-e2e-full-integration, the two ubuntu-24.04 legs, one suite each). Always runs locally and in the vm:check cli-migrate-23 leg, where one invocation takes both files on one fleet; workers: 1 and fullyParallel: false (above) run them one at a time, 23a then 23b, never concurrently.
+    // CLI-migrate routing (suites 23a and 23b) — first rdc-driven e2e (CliRunner). Two workers, no ceph; distro-agnostic routing logic, so CI runs them only with CLI_SUITE=1 (ct-tests.yml test-e2e-full-integration, on separate ubuntu-24.04 legs). Always runs locally and in the vm:check cli-migrate-23 leg, where one invocation takes both files on one fleet; workers: 1 and fullyParallel: false (above) run them one at a time, 23a then 23b, never concurrently.
     ...(process.env.CI && process.env.CLI_SUITE !== '1'
       ? []
       : [{ name: 'test-23', testMatch: ['23a-*.test.ts', '23b-*.test.ts'] }]),
