@@ -58,7 +58,7 @@ def test_the_pruning_bound_is_the_ceiling_of_the_match_ratio():
     task = " ".join(WORDS[:10])
     need = math.ceil(P.TASK_MATCH * 10 - 1e-9)
     shared = " ".join(WORDS[:need])
-    rows = [("hit", " ", shared + " " + " ".join(["zulu%d" % k for k in range(0)]))]
+    rows = [("hit", " ", shared)]
     assert PF.match_item(task, PF.prepare(rows)) == ("hit", " ")
     below = [("miss", " ", " ".join(WORDS[: need - 1]) + " yankee xray whiskey victor uniform tango")]
     assert PF.match_item(task, PF.prepare(below)) is None

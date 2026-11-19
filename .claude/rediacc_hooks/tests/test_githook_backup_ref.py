@@ -317,6 +317,17 @@ def test_a_key_body_added_under_an_earlier_commits_header_is_refused(tmp_path, m
     assert KEY_LINE not in err
 
 
+def test_a_prose_line_added_under_a_context_header_that_already_holds_a_key_body_is_admitted(
+    tmp_path, monkeypatch, capsys
+):
+    """Review 1d21636f.1: the context line holds a header and a key-sized body on one line, an earlier commit's. A prose line this commit adds under it closes the count and is not more body, so the earlier commit's key is not charged to this one. CONTROL: a key-sized body line added under a bare header is still refused (the test above)."""
+    w = World(tmp_path / "c")
+    first = w.commit("old key line", "id.pem", "%s %s\n" % (PEM_HEAD, KEY_LINE))
+    tip = w.commit("add a note", "id.pem", "%s %s\n# a note, not a key.\n" % (PEM_HEAD, KEY_LINE))
+    rc, err = _push(monkeypatch, capsys, w.root, [(tip, LIVE, first)])
+    assert rc == 0, err
+
+
 def test_control_a_placeholder_body_added_under_an_earlier_header_is_admitted(
     tmp_path, monkeypatch, capsys
 ):

@@ -1218,24 +1218,49 @@ def assert_defect_is_caught(tmp_path, fixture_work, stem):
 
 
 def test_all_builders_sees_a_builder_replaced_under_an_existing_name(monkeypatch):
-    """a20a16ab.2: the memo keys on (name, builder), so swapping the builder behind a name is not served from the old table. CONTROL: an unchanged table answers from the memo."""
+    """a20a16ab.2: the memo keys on (name, builder), so swapping the builder behind a name is not served from the old table. CONTROL: an unchanged table is served from the memo, counted by the guard loads it skips."""
     name = "stale-branch-checkout"
-    before = all_builders()
-    assert all_builders()[name] is before[name]
+    all_builders()
+    loads = []
+    real_stems = guards.stems
+
+    def counting_stems():
+        loads.append(1)
+        return real_stems()
+
+    monkeypatch.setattr(guards, "stems", counting_stems)
+    all_builders()
+    assert loads == [], "an unchanged table was rebuilt instead of served from the memo"
 
     def replacement(path):
         return path
 
     monkeypatch.setitem(FIXTURE_BUILDERS, name, replacement)
     assert all_builders()[name] is replacement
+    assert loads, "a replaced builder was served from the memo, not rebuilt"
 
 
-def test_the_python_fields_memo_key_follows_stubs_and_work(tmp_path):
-    """a20a16ab.1 and .3: `stubs` and `work` reach the memo key through the case env (the stub directory is keyed on the stubs' content, the fixture paths on `work`), so a case with other stubs or another work tree is a different key. CONTROL: the same inputs build the same env."""
-    stem = SPREAD_STEMS[0]
+def test_the_python_fields_memo_key_follows_stubs_and_work(tmp_path, fixture_work, monkeypatch):
+    """a20a16ab.1 and .3: `stubs` and `work` reach the memo key through the case env (the stub directory is keyed on the stubs' content, the fixture paths on `work`), so a case with other stubs or another work tree is a different key. CONTROL: the same inputs are served from the memo, counted by the guard runs they skip."""
+    stem = "block_stale_pr_branch_date"
+    payload = edge_payload(guards.load(stem), "gh pr create --draft --fill")
+    runs = []
+    real_run_one = dispatch.run_one
+
+    def counting_run_one(*args, **kwargs):
+        runs.append(1)
+        return real_run_one(*args, **kwargs)
+
+    monkeypatch.setattr(dispatch, "run_one", counting_run_one)
+    python_fields(stem, payload, {}, {}, fixture_work)
+    seen = len(runs)
+    python_fields(stem, payload, {}, {}, fixture_work)
+    assert len(runs) == seen, "the same inputs were run again instead of served from the memo"
+    python_fields(stem, payload, {}, {"gh": "#!/bin/sh\nexit 0\n"}, fixture_work)
+    assert len(runs) == seen + 1, "other stubs were served from the memo"
     other_work = tmp_path / "other"
     other_work.mkdir()
-    base = case_env(stem, {}, {}, tmp_path)
-    assert case_env(stem, {}, {}, tmp_path) == base
-    assert case_env(stem, {}, {"gh": "#!/bin/sh\nexit 0\n"}, tmp_path) != base
-    assert case_env(stem, {}, {}, other_work) != base
+    python_fields(stem, payload, {}, {}, other_work)
+    assert len(runs) == seen + 2, "another work tree was served from the memo"
+    python_fields(stem, payload, {"TZ": "Pacific/Kiritimati"}, {}, fixture_work)
+    assert len(runs) == seen + 3, "another env was served from the memo"

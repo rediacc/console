@@ -855,7 +855,7 @@ for label, pair, rows in (
     ("the declared DEFECT", _declared_defect(), [r for r in REFUSED if "run.sh" in r[1]]),
     ("the lease arm", ("if runs_lease_verb(cmd):", "if False:"), LEASE_ROWS),
 ):
-    # The control only needs half the rows to flip, so it stops once that many have.
+    # The control needs half the rows to flip; the check runs between waves of rows, so it may flip more than half before it stops.
     flipped = _flip_half(rows, pair)
     if not rows or len(flipped) < len(rows) // 2 or not flipped:
         failures.append("plant: %s" % label)
