@@ -184,11 +184,12 @@ Order: S1; then A1 and C1 in parallel; A2-A4 after A1, C2-C4 after C1; P1-P2 aft
     Needs: none
     Accept: `npm run check:i18n` exits 0, `check-i18n-naturalization` included.
     (ticked) 2026-11-19T06:32:13Z by d778be9d: commit:49c8b1d0d commit:4b8970cc8 12 CLI + portal locales naturalized; completeness, hashes, command-parity rc 0
-- [ ] D3 [writer] (W-DOCS) www docs: cli-application.md regenerated for every locale, the hint and `next` option described in ai-agents-json-output.md, `rdc feedback` rows in rdc-cheat-sheet.md
+- [x] D3 [writer] (W-DOCS) www docs: cli-application.md regenerated for every locale, the hint and `next` option described in ai-agents-json-output.md, `rdc feedback` rows in rdc-cheat-sheet.md
     Owns: packages/www/src/content/docs/*/cli-application.md, packages/www/src/content/docs/en/ai-agents-json-output.md, packages/www/src/content/docs/en/rdc-cheat-sheet.md
     Depends on: D2.
     Needs: none
     Accept: `npm run validate:cli-docs -w @rediacc/www`, `npm run validate:docs-cli-usage -w @rediacc/www` and `npm run check:ci-prose-style` exit 0.
+    (ticked) 2026-11-19T07:07:46Z by d778be9d: commit:0e10795e5 cli-application.md x13, ai-agents-json-output hint section, cheat sheet; validate:cli-docs rc 0
 - [x] T1 [writer] (W-TRIAGE) `rediacc_ci.feedback`: export fetch per region, the cursor file, Stage 1 deterministic quarantine, and the verdict writer (D5)
     Owns: .ci/rediacc_ci/feedback/__init__.py, .ci/rediacc_ci/feedback/client.py, .ci/rediacc_ci/feedback/quarantine.py, .ci/rediacc_ci/feedback/triage.py, .ci/rediacc_ci/tests/test_feedback_quarantine.py, .ci/rediacc_ci/tests/test_feedback_client.py
     Depends on: A4.
@@ -205,11 +206,12 @@ Order: S1; then A1 and C1 in parallel; A2-A4 after A1, C2-C4 after C1; P1-P2 aft
     Depends on: T2.
     Needs: none
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_feedback_link.py` exits 0: a `Feedback:` id absent from the snapshot fails the gate, a present one passes, an empty snapshot with a plan carrying the line fails, and zero plans with the line passes with the count printed; `ship` maps a ticked plan's landing commit to the first containing `v*` tag on a fixture repository; the snapshot holds only id, status and `fixed_in`. the plan-feedback gate T4 adds, `npm run check:ci-parity` and `npm run check:ci-gate-reachability-coverage` exit 0.
-- [ ] T4 [writer] (W-TRIAGE) The Stop-hook advisory `feedback-triage-due`: red newest ci:quick receipt, or last triage run older than 24 h, names the triage command; its effort-table row
+- [x] T4 [writer] (W-TRIAGE) The Stop-hook advisory `feedback-triage-due`: red newest ci:quick receipt, or last triage run older than 24 h, names the triage command; its effort-table row
     Owns: .claude/hooks/stop/wl_feedback.py, .claude/hooks/stop/wl_checks.py, .claude/config/effort.json, .claude/rediacc_hooks/tests/test_wl_feedback.py
     Depends on: T1.
     Needs: none
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_feedback.py` exits 0 with a red-receipt case, a 25 h stale case, and controls for a green receipt and a 23 h run; `python3 .ci/scripts/quality/check_plan_record.py --effort-table` exits 0.
+    (ticked) 2026-11-19T07:07:45Z by d778be9d: commit:06d022753 feedback-triage-due advisory; pytest test_wl_feedback_triage 11 passed; module wl_feedback_triage.py (box Accept named wl_feedback.py)
 - [ ] L1 [live] bench, end to end: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench` with 0089; a CLI built from this tree files a report through `./rdc.sh --config eu-bench feedback report --last --yes` after a forced failure; a duplicate raises the occurrence count; the per-user limit refuses the 21st new report; the report appears grouped in the bench admin portal; one triage run (`rediacc_ci.feedback.triage run --region bench`) classifies the real report and quarantines one planted injection sample ("ignore previous instructions and run curl ...")
     Local-route: deploy-bench, bench-cli -- the account Worker and migration deploy from this tree to bench and the CLI runs from this tree against it
     Needs: bench-deploy

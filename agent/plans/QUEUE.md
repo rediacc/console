@@ -82,21 +82,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1573 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1579 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
   - epic 2255f2d2, no plan, 2 commit(s) on the branch, 0 open item(s): Convert stale GitHub issues (console, renet, account) into plan files
-- Writers: 4 live of writer_cap 25 (session d778be9d): worker:af71d3aa2e3ccc885, worker:a25bab7cf0b50efa3, worker:a2e6b0e43c460ee71, worker:acfd482cd7b3ef294.
-- Leased items: 11: #02389657 (worker:bm5hbcmoi, d778be9d), #0d605f03 (worker:bm5hbcmoi, d778be9d), #0e9506a2 (worker:bm5hbcmoi, d778be9d), #4889018a (worker:bm5hbcmoi, d778be9d), #51891d57 (worker:acfd482cd7b3ef294, d778be9d), #a1ecc191 (worker:bm5hbcmoi, d778be9d), #ab9c68b1 (worker:bm5hbcmoi, d778be9d), #b22c6a71 (worker:af71d3aa2e3ccc885, d778be9d), #b28ccc5c (worker:a25bab7cf0b50efa3, d778be9d), #e144a77f (worker:bm5hbcmoi, d778be9d), #fbe192ca (worker:bm5hbcmoi, d778be9d).
+- Writers: 3 live of writer_cap 25 (session d778be9d): worker:af71d3aa2e3ccc885, worker:a2e6b0e43c460ee71, worker:ae7d809bab9ff232a.
+- Leased items: 10: #02389657 (worker:ae7d809bab9ff232a, d778be9d), #0e9506a2 (worker:ae7d809bab9ff232a, d778be9d), #183a97ea (worker:ae7d809bab9ff232a, d778be9d), #4889018a (worker:ae7d809bab9ff232a, d778be9d), #51891d57 (worker:bo8hqt0sl, d778be9d), #a1ecc191 (worker:bo8hqt0sl, d778be9d), #ab9c68b1 (worker:ae7d809bab9ff232a, d778be9d), #b22c6a71 (worker:af71d3aa2e3ccc885, d778be9d), #b28ccc5c (worker:a2e6b0e43c460ee71, d778be9d), #fbe192ca (worker:ae7d809bab9ff232a, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 29 of 81 plans done, 1254 of 1504 boxes done (83%).
+Promoted: 29 of 81 plans done, 1256 of 1504 boxes done (83%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -180,7 +180,7 @@ Promoted: 29 of 81 plans done, 1254 of 1504 boxes done (83%).
 | 78 | PLAN-root-grants.md | 5/19 | 14 open |
 | 79 | PLAN-push-decoupling.md | 17/23 | 6 open |
 | 80 | PLAN-stop-hook-store-status.md | 3/9 | 6 open |
-| 81 | PLAN-rdc-feedback.md | 14/21 | 7 open |
+| 81 | PLAN-rdc-feedback.md | 16/21 | 5 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
