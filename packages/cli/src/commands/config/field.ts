@@ -24,8 +24,9 @@ import {
 } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
 import { t } from '../../i18n/index.js';
-import { digestForPointer, redactClone, shortFingerprint } from '../../schema/fingerprint.js';
+import { digestForPointer } from '../../schema/fingerprint.js';
 import { configService } from '../../services/config/config-resources.js';
+import { redactedViewAtPointer } from '../../services/config/pointer-view.js';
 import { updateConfigAtPointer } from '../../services/config/synced-write.js';
 import { type AuditEventDraft, auditLog } from '../../services/core/audit-log.js';
 import {
@@ -96,23 +97,29 @@ function checkFieldReveal(pointer: string): void {
   emit({ command: 'config field get', paths: [pointer], outcome: 'reveal_granted' });
 }
 
-/** Print a field value, redacting if sensitive and --reveal not set. */
-function printFieldValue(pointer: string, value: unknown, reveal: boolean | undefined): void {
-  const meta = metaForPointer(pointer);
-  const isSensitive = meta && meta.kind !== 'public';
+/**
+ * Print the value at a pointer. Every non-public value at or below the pointer is redacted unless
+ * --reveal is set, so a parent pointer (`/credentials`, `/resources`, the root) never prints a
+ * secret its leaf pointer would redact. --reveal is the one deliberate way to see them, gated to a
+ * human at a TTY by checkFieldReveal.
+ */
+function printFieldValue(config: unknown, pointer: string, reveal: boolean | undefined): void {
+  const view = redactedViewAtPointer(config, pointer);
+  if (view === undefined) {
+    throw new ValidationError(t('errors.config.pointerNotFound', { pointer }));
+  }
 
-  if (isSensitive && !reveal) {
-    const stub = `${meta.redactAs ?? `<redacted:${meta.kind}>`}:${shortFingerprint(value)}`;
-    outputService.print({ pointer, value: stub }, getOutputFormat());
+  if (view.sensitive && !reveal) {
+    outputService.print({ pointer, value: view.redacted }, getOutputFormat());
     emit({ command: 'config field get', paths: [pointer], outcome: 'ok' });
     return;
   }
 
-  if (isSensitive && reveal) {
+  if (view.sensitive && reveal) {
     checkFieldReveal(pointer);
   }
 
-  outputService.print({ pointer, value }, getOutputFormat());
+  outputService.print({ pointer, value: getByPointer(config, pointer) }, getOutputFormat());
 }
 
 export function registerFieldCommands(parent: Command, _program: Command): void {
@@ -142,11 +149,7 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
           return;
         }
 
-        const value = getByPointer(config, pointer);
-        if (value === undefined)
-          throw new ValidationError(t('errors.config.pointerNotFound', { pointer }));
-
-        printFieldValue(pointer, value, options.reveal);
+        printFieldValue(config, pointer, options.reveal);
       } catch (error) {
         handleError(error);
       }
@@ -364,6 +367,3 @@ function parseValue(raw: string): unknown {
   }
   return raw;
 }
-
-// `redactClone` import is intentional for the eventual `config show --reveal=false` rework.
-void redactClone;
