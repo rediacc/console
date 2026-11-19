@@ -303,6 +303,34 @@ def test_control_a_key_sized_pem_body_over_lines_is_refused(tmp_path, monkeypatc
     assert KEY_LINE not in err
 
 
+def test_a_key_body_added_under_an_earlier_commits_header_is_refused(tmp_path, monkeypatch, capsys):
+    """Review ff1355d4.1: the header arrives in one commit and the key body in the next, where the header is only a context line."""
+    w = World(tmp_path / "c")
+    w.commit("add key header", "id.pem", "%s\n" % PEM_HEAD)
+    tip = w.commit(
+        "add key body", "id.pem", "%s\n%s\n%s\n%s\n" % (PEM_HEAD, KEY_LINE, KEY_LINE, PEM_TAIL)
+    )
+    rc, err = _push(monkeypatch, capsys, w.root, [(tip, LIVE, ZERO)])
+    assert rc == 1
+    assert "secret shape" in err
+    assert tip[:12] in err
+    assert KEY_LINE not in err
+
+
+def test_control_a_placeholder_body_added_under_an_earlier_header_is_admitted(
+    tmp_path, monkeypatch, capsys
+):
+    w = World(tmp_path / "c")
+    w.commit("add key header", "src/__tests__/key.test.ts", "const KEY = `%s\n" % PEM_HEAD)
+    tip = w.commit(
+        "add placeholder body",
+        "src/__tests__/key.test.ts",
+        "const KEY = `%s\nABC\n%s`;\n" % (PEM_HEAD, PEM_TAIL),
+    )
+    rc, err = _push(monkeypatch, capsys, w.root, [(tip, LIVE, ZERO)])
+    assert rc == 0, err
+
+
 def test_control_a_key_sized_pem_body_on_one_escaped_line_is_refused(tmp_path, monkeypatch, capsys):
     w = World(tmp_path / "c")
     text = '{"key": "%s\\n%s\\n%s"}\n' % (PEM_HEAD, KEY_LINE, PEM_TAIL)

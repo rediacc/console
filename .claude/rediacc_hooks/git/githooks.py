@@ -696,7 +696,9 @@ def outgoing_secret_shapes(
                     pem = None
                     continue
                 if not cols or text[:cols] != "+" * cols:
-                    pem = None
+                    # A header an earlier commit added shows here only as a context line, so it opens the count for a body this commit adds under it (review ff1355d4.1); any other non-added line closes it.
+                    head = _PEM_HEAD_RE.search(text[cols:]) if cols else None
+                    pem = pem_body(text[cols:][head.end() :])[0] if head else None
                     continue
                 added = text[cols:]
                 if pem is not None:
