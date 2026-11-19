@@ -781,6 +781,11 @@ def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
     # f4fbdece81 / 0360a85606: the port binds the Stripe sandbox pair as the Worker's STRIPE_SANDBOX_* secrets (a test-prefixed key, or the push is refused); the retired bash never held them. Fake values, never real keys.
     bound["STRIPE_SANDBOX_SECRET_KEY"] = "sk_test_fake-stripe-sandbox-key-for-tests"
     bound["STRIPE_SANDBOX_WEBHOOK_SECRET"] = "whsec_fake-stripe-sandbox-hook-for-tests"
+    # PLAN-email-sender-separation E1: the contact and alerts senders and recipients the port pushes; the retired bash never held them. Reserved-domain values.
+    bound["CONTACT_FROM_EMAIL"] = "contact@example.invalid"
+    bound["ALERTS_FROM_EMAIL"] = "alerts@example.invalid"
+    bound["CONTACT_NOTIFY_EMAIL"] = "contact-inbox@example.invalid"
+    bound["ALERTS_NOTIFY_EMAIL"] = "alerts-inbox@example.invalid"
     return bound
 
 
@@ -795,6 +800,11 @@ PORT_ONLY_SECRETS = (
     "SALES_NOTIFY_EMAIL",
     "STRIPE_SANDBOX_SECRET_KEY",
     "STRIPE_SANDBOX_WEBHOOK_SECRET",
+    # PLAN-email-sender-separation E1: the contact and alerts senders and recipients.
+    "CONTACT_FROM_EMAIL",
+    "ALERTS_FROM_EMAIL",
+    "CONTACT_NOTIFY_EMAIL",
+    "ALERTS_NOTIFY_EMAIL",
 )
 
 # The bench sender the retired bash golden recorded, and the one the port defaults to since 71f25f3e8f.
