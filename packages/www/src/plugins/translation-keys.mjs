@@ -44,7 +44,8 @@ export function catalogDigest() {
     const dir = path.join(CLI_LOCALES_PATH, lang);
     if (!fs.statSync(dir).isDirectory()) continue;
     for (const file of fs.readdirSync(dir).sort()) {
-      if (file.endsWith('.json')) hash.update(`${lang}/${file}\0`).update(fs.readFileSync(path.join(dir, file)));
+      if (file.endsWith('.json'))
+        hash.update(`${lang}/${file}\0`).update(fs.readFileSync(path.join(dir, file)));
     }
   }
   return hash.digest('hex');
