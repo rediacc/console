@@ -694,6 +694,27 @@
     }
   },
   {
+    "id": "check:ci-account-raw-keys",
+    "run": "npm run check:ci-account-raw-keys",
+    "gate": true,
+    "needs": [
+      "build:packages"
+    ],
+    "mutex": [
+      "account-vitest"
+    ],
+    "leaves": [
+      "scripts/__tests__/check-account-raw-keys.control.ts",
+      "scripts/gates/check-account-raw-keys.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "Account raw i18n keys"
+    }
+  },
+  {
     "id": "check:ci-i18n-cli-help-render",
     "run": "npm run check:ci-i18n-cli-help-render",
     "gate": true,

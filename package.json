@@ -81,6 +81,7 @@
     "check:ci-i18n-command-parity": "tsx scripts/gates/check-cli-docs.ts --locales-only",
     "check:ci-i18n-cli-key-usage": "tsx scripts/gates/check-cli-i18n-key-usage.ts",
     "check:ci-i18n-account-key-usage": "tsx scripts/gates/check-account-i18n-key-usage.ts",
+    "check:ci-account-raw-keys": "tsx scripts/__tests__/check-account-raw-keys.control.ts && tsx scripts/gates/check-account-raw-keys.ts",
     "check:ci-i18n-cli-help-render": "tsx packages/cli/scripts/check-cli-i18n-help-render.ts",
     "check:ci-config-migrations": ".ci/scripts/quality/check_config_migrations.py",
     "check:ci-schema-coverage": "tsx scripts/gates/check-schema-coverage.ts",

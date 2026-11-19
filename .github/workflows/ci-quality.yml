@@ -2083,6 +2083,9 @@ jobs:
       # single-line run, checked before the region was placed -- unlike quality-security,
       # where `Audit` had to be held out for an `if:` condition and an `env:` a generated
       # step cannot express.
+      - name: Account raw i18n keys
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-account-raw-keys
       - name: Docs structure parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-docs-structure-parity

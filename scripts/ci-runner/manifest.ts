@@ -703,6 +703,24 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
+  // Layer (b) of PLAN-account-sidebar-redesign Design 7 (config keys such as `labelKey`), led by the control that plants a raw key in all three layers. The control runs the portal's raw-key render test under vitest, hence build:packages and the account-vitest mutex.
+  {
+    id: 'check:ci-account-raw-keys',
+    run: 'npm run check:ci-account-raw-keys',
+    gate: true,
+    needs: ['build:packages'],
+    mutex: ['account-vitest'],
+    leaves: [
+      'scripts/__tests__/check-account-raw-keys.control.ts',
+      'scripts/gates/check-account-raw-keys.ts',
+    ],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'Account raw i18n keys',
+    },
+  },
   {
     id: 'check:ci-i18n-cli-help-render',
     run: 'npm run check:ci-i18n-cli-help-render',
