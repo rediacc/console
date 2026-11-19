@@ -202,6 +202,10 @@ interface ProcState {
   /** Relative paths named before the cwd was known, each with whether its syscall found it. */
   pending: { s: string; found: boolean }[];
   execsWithoutCwd: Exec[];
+  /** The processes sharing this one's cwd: itself, and every clone made with CLONE_FS or CLONE_THREAD. A chdir by any moves them all. */
+  peers: Set<ProcState>;
+  /** The flags of this process's last clone line, kept for the `<... clone resumed>` line that carries only the result. */
+  cloneFlags?: string;
 }
 
 const FORKS = /^(clone|clone3|fork|vfork)$/;
@@ -221,7 +225,8 @@ export function straceParser(
   const proc = (pid: number): ProcState => {
     let st = procs.get(pid);
     if (st === undefined) {
-      st = { pid, start: rootCwd, pending: [], execsWithoutCwd: [] };
+      st = { pid, start: rootCwd, pending: [], execsWithoutCwd: [], peers: new Set() };
+      st.peers.add(st);
       procs.set(pid, st);
     }
     return st;
@@ -244,9 +249,17 @@ export function straceParser(
     into.files.add(p);
     addGit(st, p, found);
   };
-  const forked = (parent: ProcState, child: number): void => {
+  const setCwd = (st: ProcState, cwd: string): void => {
+    for (const peer of st.peers) peer.cwd = cwd;
+  };
+  const forked = (parent: ProcState, child: number, flags?: string): void => {
     const st = proc(child);
     if (st.cwd === undefined) st.start = parent.cwd ?? parent.start;
+    if (flags !== undefined && /\bCLONE_(FS|THREAD)\b/.test(flags) && st.peers.size === 1) {
+      st.cwd = parent.cwd;
+      st.peers = parent.peers;
+      st.peers.add(st);
+    }
   };
   const line = (raw: string, pidArg?: number): void => {
     let l = raw;
@@ -259,7 +272,7 @@ export function straceParser(
     const st = proc(pid);
     const resumed = /^<\.\.\. (\w+) resumed>.*\)\s+=\s+(\d+)/.exec(l);
     if (resumed !== null) {
-      if (FORKS.test(resumed[1])) forked(st, Number(resumed[2]));
+      if (FORKS.test(resumed[1])) forked(st, Number(resumed[2]), st.cloneFlags);
       return;
     }
     const m = /^(\w+)\((.*)$/.exec(l);
@@ -280,7 +293,7 @@ export function straceParser(
       path: decodeCString(d[2]),
       at: d.index ?? 0,
     }));
-    for (const d of decorations) if (d.fd === 'AT_FDCWD') st.cwd = d.path;
+    for (const d of decorations) if (d.fd === 'AT_FDCWD') setCwd(st, d.path);
     if (st.cwd !== undefined && st.pending.length > 0) {
       for (const p of st.pending.splice(0)) addFile(st, path.posix.resolve(st.cwd, p.s), p.found);
     }
@@ -290,7 +303,9 @@ export function straceParser(
     // A lookup that found nothing (ENOENT, ENOTDIR) probed for the path's absence; any other result, an unfinished line included, counts as found, the direction that keeps a git read whole-tree.
     const found = ok || !/\)\s+=\s+-1\s+(ENOENT|ENOTDIR)\b/.test(rest);
     if (FORKS.test(name)) {
-      if (ok && retMatch !== null) forked(st, Number(retMatch[1]));
+      const flags = /flags=([A-Za-z0-9_|]+)/.exec(rest)?.[1];
+      st.cloneFlags = flags;
+      if (ok && retMatch !== null) forked(st, Number(retMatch[1]), flags);
       return;
     }
     if (name.startsWith('getdents')) {
@@ -311,7 +326,7 @@ export function straceParser(
       return;
     }
     if (name === 'fchdir') {
-      if (ok && decorations[0] !== undefined) st.cwd = decorations[0].path;
+      if (ok && decorations[0] !== undefined) setCwd(st, decorations[0].path);
       return;
     }
     if (retMatch?.[2] !== undefined && /^(open|openat|openat2|creat)$/.test(name)) {
@@ -337,10 +352,12 @@ export function straceParser(
     }
     if (name === 'chdir' && ok && strings[0] !== undefined) {
       // Paths seen before this process's first chdir belong to its start cwd, not the new one.
-      if (st.cwd === undefined)
+      if (st.cwd === undefined) {
         for (const p of st.pending.splice(0))
           addFile(st, path.posix.resolve(st.start, p.s), p.found);
-      st.cwd = path.posix.resolve(st.cwd ?? st.start, strings[0].s);
+        for (const e of st.execsWithoutCwd.splice(0)) e.cwd = st.start;
+      }
+      setCwd(st, path.posix.resolve(st.cwd ?? st.start, strings[0].s));
     }
     if ((name === 'execve' || name === 'execveat') && ok) {
       const argv = /\[((?:"(?:[^"\\]|\\.)*"(?:, )?)*)\]/.exec(args);
@@ -451,7 +468,7 @@ export function repoView(root: string): RepoView {
     const r = spawnSync('git', ['rev-parse', flag], { cwd: root, encoding: 'utf8' });
     if (r.status === 0 && r.stdout.trim() !== '') gitDirs.add(path.resolve(root, r.stdout.trim()));
   }
-  return { root, files, gitlinks, gitDirs: [...gitDirs], records: readRecordGlobs(root) };
+  return { root: fs.realpathSync(root), files, gitlinks, gitDirs: [...gitDirs], records: readRecordGlobs(root) };
 }
 
 export interface Attribution {
@@ -1326,7 +1343,6 @@ function cleanDir(p: string): string {
   return d === '.' ? '' : d;
 }
 
-/** Folds an attribution into `paths` globs, or a whole-tree verdict with its reason. */
 /**
  * Untracked build output a manifest node produces, by the prefix it writes under. A read of build output under no row here has no producer node, so no needs edge can cover it and the gate stays whole-tree: the safe direction for a row this table lacks. A row naming the wrong node would be unsound, so each one is the node whose own command writes that directory (package.json build:packages, build:cli, build:www).
  */
@@ -1396,6 +1412,7 @@ export interface FoldOpts {
   waive?: string | null;
 }
 
+/** Folds an attribution into `paths` globs, or a whole-tree verdict with its reason. */
 export function fold(
   attr: Attribution,
   view: RepoView,
@@ -1656,6 +1673,36 @@ export function straceArgv(logPrefix: string, cmd: string, noSeccomp = false): s
   ];
 }
 
+/** Parses a `-ff` log directory (`t.<pid>` files) into `access`, in ascending numeric pid order so a parent's fork is parsed before its child's lines (straceParser); the pid comes from the file name. */
+export function parseStraceDir(dir: string, cwd: string, access: Access): number {
+  const logs = fs
+    .readdirSync(dir)
+    .filter((f) => /^t\.\d+$/.test(f))
+    .sort((a, b) => Number(a.slice(2)) - Number(b.slice(2)));
+  const parser = straceParser(cwd, access);
+  for (const f of logs) {
+    // A log can exceed the largest string V8 holds: stream it in chunks and parse whole lines, carrying the partial last one.
+    const pid = Number(f.slice(2));
+    const fd = fs.openSync(path.join(dir, f), 'r');
+    const buf = Buffer.alloc(1 << 22);
+    let tail = '';
+    for (
+      let n = fs.readSync(fd, buf, 0, buf.length, null);
+      n > 0;
+      n = fs.readSync(fd, buf, 0, buf.length, null)
+    ) {
+      const chunk = tail + buf.toString('utf8', 0, n);
+      const cut = chunk.lastIndexOf('\n');
+      for (const l of chunk.slice(0, cut + 1).split('\n')) parser.line(l, pid);
+      tail = chunk.slice(cut + 1);
+    }
+    parser.line(tail, pid);
+    fs.closeSync(fd);
+  }
+  parser.end();
+  return logs.length;
+}
+
 /** Runs `cmd` under bash in `cwd`, traced, and parses every per-process log. `straceBin` replaces the strace executable (a selftest wrapper). */
 export async function traceCommand(
   cmd: string,
@@ -1707,32 +1754,7 @@ export async function traceCommand(
   fs.closeSync(straceErrFd);
   const access = emptyAccess();
   access.startedMs = started;
-  // Ascending pid order, so a parent's fork is parsed before its child's lines (straceParser).
-  const logs = fs
-    .readdirSync(dir)
-    .filter((f) => /^t\.\d+$/.test(f))
-    .sort((a, b) => Number(a.slice(2)) - Number(b.slice(2)));
-  const parser = straceParser(cwd, access);
-  for (const f of logs) {
-    // A log can exceed the largest string V8 holds: stream it in chunks and parse whole lines, carrying the partial last one.
-    const pid = Number(f.slice(2));
-    const fd = fs.openSync(path.join(dir, f), 'r');
-    const buf = Buffer.alloc(1 << 22);
-    let tail = '';
-    for (
-      let n = fs.readSync(fd, buf, 0, buf.length, null);
-      n > 0;
-      n = fs.readSync(fd, buf, 0, buf.length, null)
-    ) {
-      const chunk = tail + buf.toString('utf8', 0, n);
-      const cut = chunk.lastIndexOf('\n');
-      for (const l of chunk.slice(0, cut + 1).split('\n')) parser.line(l, pid);
-      tail = chunk.slice(cut + 1);
-    }
-    parser.line(tail, pid);
-    fs.closeSync(fd);
-  }
-  parser.end();
+  const logCount = parseStraceDir(dir, cwd, access);
   // strace's stderr file holds strace's own `strace:` lines, plus anything the shell printed before its `exec 2>&1` (a BASH_ENV hook), which is the gate's side and goes back with its output.
   const errLines = fs
     .readFileSync(straceErrFile, 'utf8')
@@ -1747,7 +1769,7 @@ export async function traceCommand(
     exit,
     access,
     seconds: Math.round((Date.now() - started) / 100) / 10,
-    logFiles: logs.length,
+    logFiles: logCount,
     outputTail: output.split('\n').slice(-15).join('\n'),
     straceNotes,
   };
@@ -2030,7 +2052,7 @@ export function parseLedger(text: string): Record<string, LedgerRow> {
   // The literal is JSON-compatible once keys and single quotes are normalised; parse via Function-free conversion.
   const json = body
     .replace(/;\s*$/, '')
-    .replace(/'((?:[^'\\]|\\.)*)'/g, (_, s: string) => JSON.stringify(s.replace(/\\'/g, "'")))
+    .replace(/'((?:[^'\\]|\\.)*)'/g, (_, s: string) => JSON.stringify(s.replace(/\\(['\\])/g, '$1')))
     .replace(/([{,]\s*)([A-Za-z_]\w*)\s*:/g, '$1"$2":')
     .replace(/,(\s*[}\]])/g, '$1');
   return JSON.parse(json) as Record<string, LedgerRow>;
@@ -2250,11 +2272,12 @@ export async function traceGate(
   opts: {
     keepLogs?: boolean;
     timeoutS?: number;
-    closure?: ReadonlySet<string>;
+    /** Every node the gate reaches through `needs`, transitively (needsClosure): the direct edges alone would miss a producer behind another producer. */
+    closure: ReadonlySet<string>;
     noSeccomp?: boolean;
     /** The gate's carry-exempt kind (F2 B7), which fold waives alone. */
     waive?: string | null;
-  } = {}
+  }
 ): Promise<GateResult> {
   const run = await traceCommand(entry.run, view.root, {
     timeoutS: opts.timeoutS,
@@ -2265,7 +2288,7 @@ export async function traceGate(
   const attr = attribute(run.access, view);
   return {
     id: entry.id,
-    verdict: verdictOf(attr, view, run.exit, opts.closure ?? entry.needs ?? [], {
+    verdict: verdictOf(attr, view, run.exit, opts.closure, {
       waive: opts.waive,
     }),
     exit: run.exit,
@@ -2309,10 +2332,18 @@ export function writeResult(
   const mPath = path.join(root, MANIFEST_REL);
   const lPath = path.join(root, LOCK_REL);
   if (r.verdict.kind === 'whole-tree') {
+    const red = r.exit !== 0;
+    // A red run may have stopped before reading everything, which is no evidence against an earlier green trace: its traced globs and ledger row stay.
+    if (red && rows[r.id]?.verdict === 'paths') {
+      console.error(
+        `path-trace: ${r.id} exited ${r.exit}; its traced paths and ledger row are kept, a red run is no evidence against them`
+      );
+      return;
+    }
     row.reason = r.verdict.reason;
     // A whole-tree re-trace must not leave the earlier traced globs behind: the gate would keep carrying on a read set the new trace no longer vouches for. A declared set is never touched.
     const m = fs.readFileSync(mPath, 'utf8');
-    const stripped = manifestWithoutTracedPaths(m, r.id, opts);
+    const stripped = red ? m : manifestWithoutTracedPaths(m, r.id, opts);
     if (stripped !== m) {
       fs.writeFileSync(mPath, stripped);
       fs.writeFileSync(lPath, lockWithoutTracedPaths(fs.readFileSync(lPath, 'utf8'), r.id, opts));
@@ -2724,6 +2755,58 @@ async function selftest(): Promise<number> {
     inherit.files.has('/r/sub/k.txt'),
     "a child starts in its parent's cwd at fork, read through a resumed clone"
   );
+  // A THREAD (CLONE_FS) shares the cwd: its chdir moves the process, so the parent's later relative read lands in the new directory (4936a0f3.1). CONTROL: a plain fork does not.
+  const threadLog = (flags: string): Access =>
+    parseStraceLog(
+      [
+        `300 clone(child_stack=NULL, flags=${flags} <unfinished ...>`,
+        '300 <... clone resumed>, child_tidptr=0x7f) = 301',
+        '301 chdir("/r/sub") = 0',
+        '300 access("k.txt", R_OK) = 0',
+      ].join('\n'),
+      '/r'
+    );
+  check(
+    threadLog('CLONE_VM|CLONE_FS|CLONE_THREAD|CLONE_SIGHAND').files.has('/r/sub/k.txt'),
+    "a thread's chdir moves the process: the parent's relative read resolves in the new cwd"
+  );
+  check(
+    threadLog('CLONE_CHILD_SETTID|SIGCHLD').files.has('/r/k.txt'),
+    'CONTROL: a plain fork keeps the parent cwd when the child chdirs'
+  );
+  // An exec before the first chdir ran in the start cwd (cd353e9c.2).
+  const execFirst = parseStraceLog(
+    [
+      '400 execve("/usr/bin/git", ["git", "status"], 0x7ff /* 3 vars */) = 0',
+      '400 chdir("/r/elsewhere") = 0',
+      '400 access("z", R_OK) = 0',
+    ].join('\n'),
+    '/r/start'
+  );
+  check(
+    execFirst.execs[0]?.cwd === '/r/start' && execFirst.files.has('/r/elsewhere/z'),
+    'an exec seen before the first chdir keeps the start cwd, not the post-chdir one'
+  );
+  // The -ff log directory is read in NUMERIC pid order with the pid from the file name (4936a0f3.2): t.10 sorts before t.9 as text, and its relative read must still land in its parent's cwd.
+  const logDir = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-logs-'));
+  try {
+    fs.writeFileSync(
+      path.join(logDir, 't.9'),
+      ['chdir("/r/sub") = 0', 'clone(child_stack=NULL, flags=SIGCHLD) = 10', ''].join('\n')
+    );
+    fs.writeFileSync(
+      path.join(logDir, 't.10'),
+      ['access("pre.txt", R_OK) = 0', 'chdir("/r/z") = 0', ''].join('\n')
+    );
+    const dirAccess = emptyAccess();
+    parseStraceDir(logDir, '/r', dirAccess);
+    check(
+      dirAccess.files.has('/r/sub/pre.txt') && !dirAccess.files.has('/r/pre.txt'),
+      'a log directory is parsed in numeric pid order: the child t.10 starts in the cwd its parent t.9 had'
+    );
+  } finally {
+    fs.rmSync(logDir, { recursive: true, force: true });
+  }
   check(
     decodeCString('a\\"b\\\\c\\x41\\101') === 'a"b\\cAA',
     'C escapes decode (quote, backslash, hex, octal)'
@@ -3778,6 +3861,58 @@ async function selftest(): Promise<number> {
   } finally {
     fs.rmSync(wroot, { recursive: true, force: true });
   }
+  // A RED RUN OVER A TRACED ENTRY changes nothing; the same verdict from a green run strips it (7a9a97ba.1).
+  const rroot = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-red-'));
+  try {
+    const traced = manifestWithPaths(manifest, 'g:b', ['a/one.txt']);
+    const seed = (): void => {
+      for (const rel of [MANIFEST_REL, LOCK_REL, LEDGER_REL])
+        fs.mkdirSync(path.dirname(path.join(rroot, rel)), { recursive: true });
+      fs.writeFileSync(path.join(rroot, MANIFEST_REL), traced);
+      fs.writeFileSync(path.join(rroot, LOCK_REL), '[]\n');
+      fs.writeFileSync(
+        path.join(rroot, LEDGER_REL),
+        renderLedger({
+          'g:b': {
+            tracedAt: '2026-01-01T00:00Z',
+            tree: 't0',
+            verdict: 'paths',
+            reads: 1,
+            listed: 0,
+            coveragePct: 1,
+            seconds: 1,
+          },
+        })
+      );
+    };
+    const whole = (exit: number): GateResult =>
+      ({
+        id: 'g:b',
+        verdict: { kind: 'whole-tree', reason: 'x', reads: 0, listed: 0, coveragePct: 0 },
+        exit,
+        seconds: 1,
+        ignored: new Map(),
+        outputTail: '',
+      }) as unknown as GateResult;
+    seed();
+    writeResult(rroot, whole(1), 't1');
+    check(
+      fs.readFileSync(path.join(rroot, MANIFEST_REL), 'utf8') === traced &&
+        parseLedger(fs.readFileSync(path.join(rroot, LEDGER_REL), 'utf8'))['g:b']?.verdict ===
+          'paths',
+      'a red run over a traced entry leaves its paths and ledger row alone'
+    );
+    seed();
+    writeResult(rroot, whole(0), 't1');
+    check(
+      fs.readFileSync(path.join(rroot, MANIFEST_REL), 'utf8') !== traced &&
+        parseLedger(fs.readFileSync(path.join(rroot, LEDGER_REL), 'utf8'))['g:b']?.verdict ===
+          'whole-tree',
+      'CONTROL: the same whole-tree verdict from a green run strips the paths and records it'
+    );
+  } finally {
+    fs.rmSync(rroot, { recursive: true, force: true });
+  }
   const withProse = manifest.replace(
     "  {\n    id: 'g:c',",
     "  // prose about g:c\n  {\n    id: 'g:c',"
@@ -3955,6 +4090,17 @@ async function selftest(): Promise<number> {
       coveragePct: 100,
       seconds: 1,
     },
+    // A BACKSLASH in a reason must survive every read and write unchanged (ffa5756e.5).
+    'g:bs': {
+      tracedAt: '2026-11-17T10:00Z',
+      tree: 'abc',
+      verdict: 'whole-tree',
+      reason: "path C:\\x and a regex \\d+ and a quote \\' mixed",
+      reads: 0,
+      listed: 0,
+      coveragePct: 100,
+      seconds: 1,
+    },
   };
   const back = parseLedger(renderLedger(rows));
   check(
@@ -3962,6 +4108,23 @@ async function selftest(): Promise<number> {
       Object.keys(back).length === Object.keys(rows).length,
     'the ledger round-trips through render and parse'
   );
+  check(
+    parseLedger(renderLedger(parseLedger(renderLedger(back))))['g:bs']?.reason === rows['g:bs'].reason,
+    'a reason with backslashes is stable across repeated read and write cycles'
+  );
+
+  // A --root reached through a symlink is the realpath strace reports (ffa5756e.6).
+  const linkBase = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-link-'));
+  try {
+    const here = path.resolve(import.meta.dirname, '..', '..');
+    fs.symlinkSync(here, path.join(linkBase, 'link'));
+    check(
+      repoView(path.join(linkBase, 'link')).root === fs.realpathSync(here),
+      'repoView resolves a symlinked root to its realpath, as strace reports paths'
+    );
+  } finally {
+    fs.rmSync(linkBase, { recursive: true, force: true });
+  }
 
   // One real trace, when this host can trace.
   const refusal = traceRefusal();
