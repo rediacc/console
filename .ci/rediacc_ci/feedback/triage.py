@@ -7,7 +7,7 @@ Without `--region` the three production regions run in turn; `bench` (the eu ben
   1. Open the root session (`client.open_region`); a dry run does not elevate bench.
   2. Export the items reported since the region's cursor with a status in `--status` (default `new`).
   3. Stage 1 (`quarantine.screen`): an item that matches a rule gets a `quarantined` verdict whose triage note names the rule and the field; a clean `new` item moves to `screening`, the queue of Stage 2.
-  4. Write the verdicts in batches and advance the region's cursor to the newest `lastSeenAt` exported. `--dry-run` prints the same lines and writes neither verdicts nor the cursor.
+  4. Write the verdicts in batches and advance the region's cursor to the newest `lastSeenAt` exported, only when `--status` is the default: a filtered export never moves the shared cursor past reports outside its filter. `--dry-run` prints the same lines and writes neither verdicts nor the cursor.
 
 One line per item names the region, the short fingerprint and the decision; no report field is ever printed.
 
@@ -139,11 +139,14 @@ def run_region(region: str, opts: Options, cursor: Path, deps: Deps) -> RegionRe
         return result
     if result.verdicts:
         result.written = client.write_verdicts(transport, result.verdicts)
-    stamp = deps.now().strftime("%Y-%m-%dT%H:%M:%S.000Z")
-    client.write_cursor(cursor, region, client.next_since(items, since), stamp)
+    # The cursor is shared by every status, so only the default export may move it: a `--status` filter would carry it past the reports outside the filter, which the next default run then never exports (review 53b0c35b.1).
+    filtered = set(opts.statuses) != set(DEFAULT_STATUSES)
+    if not filtered:
+        stamp = deps.now().strftime("%Y-%m-%dT%H:%M:%S.000Z")
+        client.write_cursor(cursor, region, client.next_since(items, since), stamp)
     written = result.written or client.VerdictResult()
     deps.out(
-        "%s %d item(s), %d quarantined, %d verdict(s) written over %d report(s)%s"
+        "%s %d item(s), %d quarantined, %d verdict(s) written over %d report(s)%s%s"
         % (
             region,
             len(items),
@@ -151,6 +154,7 @@ def run_region(region: str, opts: Options, cursor: Path, deps: Deps) -> RegionRe
             written.fingerprints,
             written.reports,
             ", %d missing" % len(written.missing) if written.missing else "",
+            ", cursor held: --status filters the export" if filtered else "",
         )
     )
     return result

@@ -415,3 +415,49 @@ def test_reexec_refuses_a_foreign_bench_profile():
 
 def test_main_usage_error_is_rc_2():
     assert triage.main(["run", "--region", "mars"], run_child=lambda _a, _e: 0) == 2
+
+
+class FilteringServer(StubServer):
+    """The export the account answers: only items with a requested status, seen at or after `since`."""
+
+    def get(self, route):
+        self.gets.append(route)
+        query = parse_qs(urlsplit(route).query)
+        statuses = set(query["status"][0].split(",")) if "status" in query else None
+        since = query["since"][0] if "since" in query else ""
+        return 200, {
+            "items": [
+                i
+                for i in self.items
+                if (statuses is None or i["status"] in statuses) and i["lastSeenAt"] >= since
+            ]
+        }
+
+
+def test_a_filtered_run_never_moves_the_cursor_past_reports_outside_its_filter(tmp_path):
+    """Review 53b0c35b.1: `run --status quarantined` moved the shared cursor past a newer `new` report, and the next default run never exported it."""
+    cursor = tmp_path / "c.json"
+    client.write_cursor(cursor, "eu", "2026-11-19T01:00:00.000Z", "x")
+    fresh = _item(FP_CLEAN, status="new", seen="2026-11-19T02:00:00.000Z")
+    later = _item(FP_OLD, status="quarantined", argv="sudo x", seen="2026-11-19T04:00:00.000Z")
+    stub = FilteringServer([fresh, later])
+    deps = triage.Deps(open_region=lambda _r, _w: stub, now=lambda: NOW, out=lambda _s: None)
+
+    filtered = triage.Options(("eu",), statuses=("quarantined",), cursor=cursor)
+    rc, _ = triage.run(filtered, deps)
+    assert rc == 0
+    assert client.read_cursor(cursor)["eu"]["since"] == "2026-11-19T01:00:00.000Z"
+
+    rc, results = triage.run(triage.Options(("eu",), cursor=cursor), deps)
+    assert rc == 0
+    assert [i["fingerprint"] for i in results[0].items] == [FP_CLEAN]
+
+
+def test_control_a_default_run_still_advances_the_cursor(tmp_path):
+    cursor = tmp_path / "c.json"
+    client.write_cursor(cursor, "eu", "2026-11-19T01:00:00.000Z", "x")
+    stub = FilteringServer([_item(FP_CLEAN, status="new", seen="2026-11-19T02:00:00.000Z")])
+    deps = triage.Deps(open_region=lambda _r, _w: stub, now=lambda: NOW, out=lambda _s: None)
+    rc, _ = triage.run(triage.Options(("eu",), cursor=cursor), deps)
+    assert rc == 0
+    assert client.read_cursor(cursor)["eu"]["since"] == "2026-11-19T02:00:00.000Z"
