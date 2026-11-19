@@ -460,11 +460,12 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 254 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 255 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
 | `agent/plans/PLAN-account-notices.md` | approved | 159 | 1 | 16 | 43995 |
+| `agent/plans/PLAN-account-sidebar-redesign.md` | approved | 425 | 15 | 0 | 61541 |
 | `agent/plans/PLAN-add-chunkstore-backup-verb.md` | compacted | 64 | 0 | 0 | 5651 |
 | `agent/plans/PLAN-add-js-extensions-shared.md` | compacted | 50 | 0 | 0 | 4285 |
 | `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4623 |
@@ -719,7 +720,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-w7p5a-real-run-dispatch.md` | done | 818 | 0 | 10 | 107465 |
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 
-254 plan(s), 192 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+255 plan(s), 193 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 

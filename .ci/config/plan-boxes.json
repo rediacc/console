@@ -30,6 +30,32 @@
         "fab77f5b"
       ]
     },
+    "agent/plans/PLAN-account-sidebar-redesign.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 15,
+      "done": 0,
+      "open_sigs": [
+        "02fa08e7",
+        "21673bda",
+        "26eff288",
+        "281c9fd6",
+        "3297de55",
+        "43507a64",
+        "50432aa7",
+        "5a1d01f1",
+        "6dbfcff5",
+        "7937e2ed",
+        "7fd4bb38",
+        "ad20ad3d",
+        "c29b7f1f",
+        "dadb950f",
+        "ec915c2d"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-add-chunkstore-backup-verb.md": {
       "status": "compacted",
       "owner": "97604f47",

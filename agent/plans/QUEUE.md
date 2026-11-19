@@ -83,21 +83,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1618 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1619 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
   - epic 2255f2d2, no plan, 2 commit(s) on the branch, 0 open item(s): Convert stale GitHub issues (console, renet, account) into plan files
 - Writers: 3 live of writer_cap 25 (session d778be9d): worker:ae7d809bab9ff232a, worker:a5826add919ffad41, worker:abd432ee6c8264dab.
-- Leased items: 11: #02389657 (worker:ae7d809bab9ff232a, d778be9d), #0e9506a2 (worker:ae7d809bab9ff232a, d778be9d), #33304f91 (worker:a5826add919ffad41, d778be9d), #4889018a (worker:ae7d809bab9ff232a, d778be9d), #568432c7 (worker:ac4df705f6138ff4e, d778be9d), #67717f66 (worker:abd432ee6c8264dab, d778be9d), #a1ecc191 (worker:ae7d809bab9ff232a, d778be9d), #ab9c68b1 (worker:ae7d809bab9ff232a, d778be9d), #b28ccc5c (worker:a2e6b0e43c460ee71, d778be9d), #f0ad3c25 (worker:acd652a0a1e579c4c, d778be9d), #fbe192ca (worker:ae7d809bab9ff232a, d778be9d).
+- Leased items: 9: #02389657 (worker:ae7d809bab9ff232a, d778be9d), #0e9506a2 (worker:ae7d809bab9ff232a, d778be9d), #33304f91 (worker:a5826add919ffad41, d778be9d), #4889018a (worker:ae7d809bab9ff232a, d778be9d), #67717f66 (worker:abd432ee6c8264dab, d778be9d), #a1ecc191 (worker:ae7d809bab9ff232a, d778be9d), #ab9c68b1 (worker:ae7d809bab9ff232a, d778be9d), #b28ccc5c (worker:ae7d809bab9ff232a, d778be9d), #fbe192ca (worker:ae7d809bab9ff232a, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 29 of 81 plans done, 1258 of 1504 boxes done (83%).
+Promoted: 29 of 82 plans done, 1258 of 1519 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -182,6 +182,7 @@ Promoted: 29 of 81 plans done, 1258 of 1504 boxes done (83%).
 | 79 | PLAN-push-decoupling.md | 17/23 | 6 open |
 | 80 | PLAN-stop-hook-store-status.md | 3/9 | 6 open |
 | 81 | PLAN-rdc-feedback.md | 18/21 | 3 open |
+| 82 | PLAN-account-sidebar-redesign.md | 0/15 | 15 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
@@ -265,6 +266,7 @@ Promoted: 29 of 81 plans done, 1258 of 1504 boxes done (83%).
 79. agent/plans/PLAN-push-decoupling.md -- operator /ask 2026-11-18 ("1 Pinned receipts + locks, 3 Needs: tag, 4 W2.5/W2.6 + W4 + vm per-leg"; not 2, not 5): land work while a receipt builds, lock the shared fleet and bench, route boxes by Needs:.
 80. agent/plans/PLAN-stop-hook-store-status.md -- operator plan request 2026-11-18: the Stop hook judges the worklist store, not message prose; `worklist.py --status`, a store freshness check replaces the roster/MISSING IDS rule.
 81. agent/plans/PLAN-rdc-feedback.md -- operator /ask 2026-11-18 rulings 1-12: `rdc feedback report|list`, D1 intake with daily limits and fingerprint dedup, AI triage with Haiku screening, critical asks with a 6 h window, PLAN-feedback-<slug> generation, Feedback: plan linkage.
+82. agent/plans/PLAN-account-sidebar-redesign.md -- operator 2026-11-19 handoff and /ask answers: one mode's links behind a workspace switcher, one Ctrl+K palette for everyone, confirmed sign-out (P2 first), the seven offer labels in 13 locales plus a raw-key CI gate, both Machines pages kept, a root-grants bench test partner and an automated bench walk-through.
 
 ## Generated
 
