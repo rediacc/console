@@ -299,6 +299,20 @@ def test_a_repository_with_no_commits_reads_an_empty_ledger(tmp_path):
     assert ledger["problems"] == []
 
 
+def test_a_show_ref_failure_other_than_absent_is_red_not_an_empty_ledger(root, monkeypatch):
+    """Finding 0fc324d6.1: only `show-ref` exit 1 means the HEAD branch has no commit; a fatal exit 128 is a red line. Control: the same repository reads clean through the real show-ref."""
+    log(root, Container(rows(*MAILS)))
+    commit_ledger(root)
+    assert dr.load_ledger(root)["problems"] == []
+    _failing_git(
+        monkeypatch,
+        "show-ref",
+        lambda argv: subprocess.CompletedProcess(argv, 128, stdout=b"", stderr=b"fatal"),
+    )
+    problems = dr.load_ledger(root)["problems"]
+    assert any("git show-ref rc=128: fatal" in p for p in problems)
+
+
 def test_a_valid_json_line_that_is_not_a_row_is_red_naming_its_line(root):
     """Finding 0352d15d.3. Control: a row with an ids list reads clean."""
     path = root / LEDGER

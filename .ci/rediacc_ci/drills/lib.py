@@ -275,7 +275,7 @@ class Drill:
         self.extra_env: dict[str, str] = {}
         # The `fleet` resource lock while this drill drives the VMs (`hold_fleet`); released in teardown.
         self.fleet_lock: resource_lock.ResourceLock | None = None
-        # Seconds the last `hold_fleet` waited for the lock: a drill that waited re-checks the preflights it ran before the wait.
+        # Seconds the last `hold_fleet` waited for the lock: the license drill (`License.run_all`) re-checks the preflights it ran before the wait; other callers do not.
         self.fleet_waited = 0.0
         self.green, self.red, self.yellow, self.nc = _colours(sys.stderr)
 

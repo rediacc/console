@@ -461,6 +461,11 @@ def test_a_failing_login_bench_leaves_the_step_failed_and_names_the_remedy(bed: 
     assert "npm run login:bench" in out.message
     assert "never the operator" in out.message
     assert [bed.fake.key(c) for c in bed.fake.calls] == ["status", "login"]
+    assert out.log_path is not None
+    log_text = out.log_path.read_text(encoding="utf-8")
+    assert "exited 1" in log_text
+    assert "is not retried" in log_text
+    assert "`npm run" in log_text, "the failure line names the remedy command"
 
 
 def test_login_bench_runs_at_most_once_per_record(bed: Bed) -> None:

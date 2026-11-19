@@ -180,6 +180,22 @@ def test_drill_hold_fleet_holds_until_teardown(monkeypatch: pytest.MonkeyPatch) 
     other.release()
 
 
+@pytest.mark.usefixtures("runtime")
+def test_drill_hold_fleet_records_the_seconds_acquire_waited(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Finding 17cb38ca.2: the real `hold_fleet` assignment, not a stub, carries `acquire`'s return into `fleet_waited`, which `License.run_all` compares against FLEET_REWAIT_S. Control: an uncontended acquire leaves it below any re-check threshold."""
+    monkeypatch.setenv("DRILL_FLEET_WAIT_S", "0")
+    drill = lib.Drill("fleet-test")
+    assert drill.hold_fleet("upload renet") is True
+    assert drill.fleet_waited < 1.0
+    drill.teardown()
+    monkeypatch.setattr(resource_lock.ResourceLock, "acquire", lambda *_a, **_k: 7.5)
+    again = lib.Drill("fleet-test")
+    assert again.hold_fleet("upload renet") is True
+    assert again.fleet_waited == 7.5
+
+
 def _license_fake(calls: list[str]) -> Any:
     opts = lic.Options()
     opts.legs = "c,d,e,f"

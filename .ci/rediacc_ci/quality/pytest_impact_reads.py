@@ -561,6 +561,7 @@ def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attribut
         )
     scratch = tempfile.mkdtemp(prefix="pytest-reads-")
     child = None
+    pool: concurrent.futures.ThreadPoolExecutor | None = None
     try:
         markers = os.path.join(scratch, "m")
         os.mkdir(markers)
@@ -632,6 +633,9 @@ def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attribut
                 child.wait()
             if child in _LIVE:
                 _LIVE.remove(child)
+        if pool is not None:
+            # The worker thread is non-daemon and joined at interpreter exit; a raise above must not leave it blocked on a stream a leaked tracee holds open. Idempotent after the normal path's own shutdown.
+            pool.shutdown(wait=False, cancel_futures=True)
         shutil.rmtree(scratch, ignore_errors=True)
     return rc, att, output
 

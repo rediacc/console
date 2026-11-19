@@ -605,7 +605,7 @@ def _decode_problem(where: str, exc: UnicodeDecodeError) -> str:
 
 
 def _committed_ledger(root: pathlib.Path) -> tuple[set, list]:
-    """The ids of the ledger as committed at HEAD. A path absent from HEAD, or a root with no repository, is empty; any other git failure or an undecodable file is a red line."""
+    """The ids of the ledger as committed at HEAD. A path absent from HEAD, an unborn HEAD (show-ref exit 1), or a root with no repository is empty; any other git failure or an undecodable file is a red line."""
     where = "HEAD:" + LEDGER_REL
     if not (root / ".git").exists():
         return set(), []
@@ -626,8 +626,13 @@ def _committed_ledger(root: pathlib.Path) -> tuple[set, list]:
                 timeout=30,
                 check=False,
             )
-            if born.returncode != 0:
+            if born.returncode == 1:
                 return set(), []
+            if born.returncode != 0:
+                return set(), [
+                    "mail-events.unreadable: %s: git show-ref rc=%d: %s"
+                    % (where, born.returncode, born.stderr.decode("utf-8", "replace").strip())
+                ]
         listed = subprocess.run(
             ["git", "ls-tree", "HEAD", "--", LEDGER_REL],
             cwd=root,

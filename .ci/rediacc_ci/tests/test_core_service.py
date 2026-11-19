@@ -389,7 +389,7 @@ PAYLOAD = b"keys\n" * 262144
 
 
 def _feed_node_stub(tmp_path, rows: list[dict], *, after_exit: bool, timeout_s: float = 30) -> str:
-    """Pipe key JSON into the node stub as env.sh's `echo "$KEYS" | node ...` does. With `after_exit` the producer writes only once the stub has provably exited, so a stub that never reads loses the write with EPIPE (what SIGPIPE is under bash) with no timing involved; a stub that drains reads to EOF first, so it must be fed before the wait. Returns the stub's exit status, or "EPIPE"."""
+    """Pipe key JSON into the node stub as env.sh's `echo "$KEYS" | node ...` does. With `after_exit` the producer writes only once the stub has provably exited, so a stub that never reads loses the write with EPIPE (what SIGPIPE is under bash) with no timing involved; a stub that drains reads to EOF first, so it must be fed before the wait. Returns the stub's exit status, "EPIPE" when the write found the stub gone, or "KILLED" when the watchdog had to kill a stub that outlived `timeout_s` (a hung stub is never read as an EPIPE)."""
     case = svc_driver.Case("pipe", "start", [], rows)
     farm = svc_driver.build_farm(tmp_path, case)
     env = svc_driver.side_env(tmp_path, farm, case)
@@ -402,7 +402,13 @@ def _feed_node_stub(tmp_path, rows: list[dict], *, after_exit: bool, timeout_s: 
     ) as proc:
         assert proc.stdin is not None
         # Armed before the wait as well as the write: a stub that never exits would block `wait` for ever, and a stub that stays alive without reading would block the write; the watchdog kills it either way, so the test fails instead of hanging.
-        watchdog = threading.Timer(timeout_s, proc.kill)
+        killed = threading.Event()
+
+        def _kill() -> None:
+            killed.set()
+            proc.kill()
+
+        watchdog = threading.Timer(timeout_s, _kill)
         watchdog.start()
         try:
             if after_exit:
@@ -412,10 +418,10 @@ def _feed_node_stub(tmp_path, rows: list[dict], *, after_exit: bool, timeout_s: 
                 pending = pending[proc.stdin.write(pending) :]
             proc.stdin.close()
         except BrokenPipeError:
-            return "EPIPE"
+            return "KILLED" if killed.is_set() else "EPIPE"
         finally:
             watchdog.cancel()
-        return str(proc.wait())
+        return "KILLED" if killed.is_set() else str(proc.wait())
 
 
 def _pipefail_status(tmp_path, rows: list[dict]) -> int:
@@ -441,7 +447,7 @@ def test_the_keygen_node_stub_drains_stdin_like_node(tmp_path) -> None:
 def test_a_stub_that_never_exits_is_killed_by_the_watchdog_not_waited_on(
     tmp_path, monkeypatch
 ) -> None:
-    """Finding 3db5d182.1: with `after_exit` the wait ran before the watchdog was armed, so a stub that never exits hung the test. The node stub is replaced by a process that exits only when killed, and the feed must return."""
+    """Finding 3db5d182.1: with `after_exit` the wait ran before the watchdog was armed, so a stub that never exits hung the test. The node stub is replaced by a process that exits only when killed, and the feed must return \"KILLED\", which the \"EPIPE\" control row never accepts (finding 07304bd3.1)."""
     real_popen = subprocess.Popen
 
     class Hangs:
@@ -482,7 +488,7 @@ def test_a_stub_that_never_exits_is_killed_by_the_watchdog_not_waited_on(
     worker.start()
     worker.join(15)
     assert not worker.is_alive(), "the feed is still waiting on a stub that never exits"
-    assert done == ["EPIPE"]
+    assert done == ["KILLED"]
 
 
 def test_the_keygen_node_stub_survives_a_pipefail_pipeline(tmp_path) -> None:

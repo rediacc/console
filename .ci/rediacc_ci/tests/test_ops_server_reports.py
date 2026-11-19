@@ -531,3 +531,8 @@ def test_a_folded_ses_body_with_the_sns_footer_parses():
     assert body.index('"eventType"') < 5 < body.index('"eventType"') + len('"eventType"')
     broken = body[:5] + "\r\n" + body[5:]
     assert dp.server_shape("Amazon SES Email Event Notification", broken)["shape"] == "unknown"
+    # Control (finding 17cb38ca.3): the same body folded at every 998-character chunk with CRLF and no continuation space stays unknown, as the original control pinned.
+    chunks = [body[i : i + 998] for i in range(0, len(body), 998)]
+    assert len(chunks) > 1
+    unspaced = "\r\n".join(chunks)
+    assert dp.server_shape("Amazon SES Email Event Notification", unspaced)["shape"] == "unknown"

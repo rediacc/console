@@ -510,7 +510,10 @@ def _relogin_and_retry(
         item.argv, run_login, lambda t: log_.add(f"# {t}, then retrying {label}")
     )
     if not ok:
-        log_.add(f"# {reason}; {label} is not retried")
+        text, _ = login_bench.remedy_for(
+            login_bench.config_region(item.argv) or login_bench.DEFAULT_REGION
+        )
+        log_.add(f"# `{text}`: {reason}; {label} is not retried")
         return failed
     retried = world.run(item.argv, root, item.step.timeout_s, None)
     log_.run(label + " (retry after login:bench)", item.argv, retried)

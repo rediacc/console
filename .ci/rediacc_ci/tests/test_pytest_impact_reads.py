@@ -461,7 +461,9 @@ def test_derive_paths_writes_no_glob_character_the_hasher_refuses():
     got = pr.derive_paths(tr, {"tests": {T1: {"closure": [T1]}}}, tree, [".ci/rediacc_ci/tests"])
     for item in [*got["paths"], *got["lists"]]:
         body = item.removesuffix("/**")
-        assert not any(c in body for c in "*?[{\\"), "the hasher would null this entry: %r" % item
+        assert not any(c in body for c in pr._GLOB_CHARS), (
+            "the hasher would null this entry: %r" % item
+        )
     assert any(pr.glob_matches(g, LANG + "/index.astro") for g in got["paths"]), got
     assert got["lists"] == ["docs", "packages/www/src/pages"], got
 
