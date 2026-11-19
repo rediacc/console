@@ -78,7 +78,7 @@ def child_command(rdc_argv: Sequence[str]) -> list[str]:
 
 
 def _subprocess_runner(argv: Sequence[str], env: Mapping[str, str]) -> int:
-    # stdin is closed so the CLI never sees a terminal and prompts: the code comes from the environment.
+    # stdin is /dev/null (an open descriptor that reads EOF), so the CLI never sees a terminal and prompts: the code comes from the environment.
     return subprocess.run(
         list(argv), env=dict(env), stdin=subprocess.DEVNULL, check=False
     ).returncode

@@ -164,6 +164,30 @@ def test_sparse_run_cannot_rewrite_the_real_node_modules(tmp_path: pathlib.Path)
         assert "REAL file" in res.stderr
 
 
+def test_sparse_run_without_reflinks_catches_the_rewrite_of_the_real_node_modules(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Finding e31c602e.3: the test above takes one branch per host, so a reflink host never ran the hard-link guard. A `cp` that refuses --reflink=always stands in for ext4, so the hard-link branch and its verifyLinked guard run on every host."""
+    real_cp = shutil.which("cp")
+    assert real_cp
+    shim_dir = tmp_path / "shim"
+    shim_dir.mkdir()
+    shim = shim_dir / "cp"
+    shim.write_text(
+        '#!/bin/sh\nfor a in "$@"; do [ "$a" = "--reflink=always" ] && exit 1; done\nexec %s "$@"\n'
+        % real_cp,
+        encoding="utf-8",
+    )
+    shim.chmod(0o755)
+    monkeypatch.setenv("PATH", "%s%s%s" % (shim_dir, os.pathsep, os.environ.get("PATH", "")))
+    root = _repo(tmp_path / "repo", [_gate("g:writer", _REWRITE, ["a.txt"])])
+    _with_node_modules(root)
+    res = _run(root, "--mode", "sparse", "--gate", "g:writer")
+    assert res.returncode == 1, res.stdout + res.stderr
+    assert "node_modules/pkg/f.js" in res.stderr
+    assert "REAL file" in res.stderr
+
+
 def test_sparse_run_that_only_reads_node_modules_passes(tmp_path: pathlib.Path) -> None:
     root = _repo(
         tmp_path / "repo", [_gate("g:reader", "cat node_modules/pkg/f.js >/dev/null", ["a.txt"])]

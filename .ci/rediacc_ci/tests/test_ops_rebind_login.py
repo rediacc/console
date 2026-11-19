@@ -75,7 +75,7 @@ def _recording(calls: list[list[str]], rc: int = 0):
 @pytest.mark.usefixtures("bound")
 def test_child_sees_the_code_in_its_environment_only(tmp_path, monkeypatch, capfd):
     _freeze(monkeypatch, CLOCK)
-    seen = _stub_rdc(tmp_path, monkeypatch)
+    _stub_rdc(tmp_path, monkeypatch)
     out: list[str] = []
     rc = rebind_login.main(
         ["--", "--config", "eu-remote", "subscription", "status"], run=_capturing_runner(out)
@@ -92,7 +92,6 @@ def test_child_sees_the_code_in_its_environment_only(tmp_path, monkeypatch, capf
         assert expected not in text
         assert SEED not in text
     assert "rdc ran: --config eu-remote subscription status" in captured.out
-    assert seen.name == "seen"  # the stub path
 
 
 @pytest.mark.usefixtures("bound")
