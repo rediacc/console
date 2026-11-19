@@ -307,7 +307,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - an allowlist entry without a `BLOCKER:` reason fails, and one that matches nothing fails as stale;
     - the clean tree passes all three layers;
     - the render sweep fails on today's offer SetupSection (control: before T1 it shows the seven raw keys) and passes after T1.
-- [ ] W1 [writer] `WorkspaceSwitcher` and `AdminBanner` (Design 3), with unit tests. Not yet mounted (N1 mounts them).
+- [x] W1 [writer] `WorkspaceSwitcher` and `AdminBanner` (Design 3), with unit tests. Not yet mounted (N1 mounts them).
   Owns: private/account/web/src/components/sidebar/WorkspaceSwitcher.tsx, private/account/web/src/components/sidebar/AdminBanner.tsx, private/account/web/src/components/sidebar/__tests__/workspace-switcher.test.tsx, private/account/web/src/components/sidebar/__tests__/admin-banner.test.tsx
   Depends on: F1, I1
   Needs: none
@@ -319,6 +319,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - partner mode renders `partner-mode-tier-badge`;
     - two teams render `team-option-*`, which calls `switchTeam`;
     - Exit goes to /account/partner when `isPartner`, else /account/dashboard.
+    (ticked) 2026-11-19T13:40:26Z by d778be9d: commit:7669bc452 (private/account 843d453); sidebar vitest 20 passed, web tsc rc 0, lint rc 0
 - [ ] K1 [writer] One palette (Design 5): `palette-context.tsx`; `CommandPalette` gains Pages and Actions groups and an `allowed` prop; `Layout.tsx` mounts `PaletteProvider` and the palette for everyone, with no tree branch; `SidebarSearch.tsx`; tests.
   Owns: private/account/web/src/components/console/CommandPalette.tsx, private/account/web/src/components/console/palette-context.tsx, private/account/web/src/components/console/__tests__/command-palette.test.ts, private/account/web/src/components/console/__tests__/command-palette-mount.test.tsx, private/account/web/src/components/console/__tests__/command-palette-pages.test.tsx, private/account/web/src/components/Layout.tsx, private/account/web/src/components/sidebar/SidebarSearch.tsx
   Depends on: F1, I1, S1 (reuses `SignOutConfirmDialog`)

@@ -96,7 +96,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 29 of 83 plans done, 1263 of 1537 boxes done (82%).
+Promoted: 29 of 83 plans done, 1264 of 1537 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -181,7 +181,7 @@ Promoted: 29 of 83 plans done, 1263 of 1537 boxes done (82%).
 | 79 | PLAN-push-decoupling.md | 17/23 | 6 open |
 | 80 | PLAN-stop-hook-store-status.md | 3/9 | 6 open |
 | 81 | PLAN-rdc-feedback.md | 18/21 | 3 open |
-| 82 | PLAN-account-sidebar-redesign.md | 5/15 | 10 open |
+| 82 | PLAN-account-sidebar-redesign.md | 6/15 | 9 open |
 | 83 | PLAN-email-sender-separation.md | 0/18 | 18 open |
 <!-- queue:progress:end -->
 
