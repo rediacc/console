@@ -119,8 +119,25 @@ def test_a_directory_that_is_not_a_work_tree_root_is_refused(tmp_path: pathlib.P
 def test_an_unlistable_root_is_a_setup_error_not_a_verdict(
     tmp_path: pathlib.Path, monkeypatch
 ) -> None:
-    monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path))
+    """A stand-in `go` is put on PATH so a host without Go still reaches the listing; the error read is the listing's, never the missing-tool one."""
+    fake_bin = tmp_path / "fake-bin"
+    fake_bin.mkdir()
+    fake_go = fake_bin / "go"
+    fake_go.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    fake_go.chmod(0o755)
+    monkeypatch.setenv("PATH", "%s%s%s" % (fake_bin, os.pathsep, os.environ.get("PATH", "")))
+    monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path / "work"))
+    (tmp_path / "work").mkdir()
+    seen: list[str] = []
+    monkeypatch.setattr(gms.log, "error", seen.append)
     assert gms.main([]) == gms.EXIT_SETUP_ERROR
+    assert seen, "no error was logged"
+    assert not any("go is required" in m for m in seen), seen
+    # Control: with no `go` reachable the same run is refused by the tool check instead.
+    monkeypatch.setenv("PATH", str(tmp_path / "empty-bin"))
+    seen.clear()
+    assert gms.main([]) == gms.EXIT_SETUP_ERROR
+    assert any("go is required" in m for m in seen), seen
 
 
 def test_selftest_is_green() -> None:

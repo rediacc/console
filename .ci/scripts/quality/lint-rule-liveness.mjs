@@ -532,6 +532,14 @@ async function sourceRulesUniverse() {
 let trackedFilesCache;
 function trackedFiles() {
   if (trackedFilesCache) return trackedFilesCache;
+  // A ROOT that is not the work tree's top level lists a subtree or a parent repo's files, so the sweeps would read a different tree than CI's checkout. Loud, like the Python gates' top-level check.
+  const top = execFileSync('git', ['rev-parse', '--show-toplevel'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  }).trim();
+  if (fs.realpathSync(top) !== fs.realpathSync(ROOT)) {
+    throw new Error(`NOT A WORK TREE ROOT: ${ROOT} is inside the work tree at ${top}`);
+  }
   const stdout = execFileSync('git', ['ls-files', '-z', '--cached', '--recurse-submodules'], {
     cwd: ROOT,
     encoding: 'utf8',
@@ -564,6 +572,8 @@ function allRuleModuleFiles(dir) {
     const name = parts[parts.length - 1];
     if (parts.slice(0, -1).some((d) => RULE_FILE_SKIP_DIRS.has(d))) continue;
     if (!name.endsWith('.js') || RULE_FILE_SKIP_NAMES.has(name)) continue;
+    // A path the index still lists after an `rm` is not a rule module the disk holds.
+    if (!fs.existsSync(path.join(ROOT, rel))) continue;
     out.push(rel);
   }
   return out.sort((a, b) => Number(a > b) - Number(a < b));
