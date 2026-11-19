@@ -52,7 +52,7 @@ Let an agent act as the system root on the production account Workers without th
    - Expired api tokens are purged nightly (private/account/src/entry/cloudflare.ts:245) from `runRetentionSweeps` (private/account/src/entry/cloudflare.ts:334).
 8. **The portal.**
    - Tokens are minted on the customer page private/account/web/src/pages/ApiTokens.tsx against `POST /api-tokens`, which is session-only (private/account/src/routes/api-tokens.ts:21-22, :25-138).
-   - Admin pages are registered in private/account/web/src/router.tsx (for example :44 and :336 for version-policy) and the sidebar list at private/account/web/src/components/AppSidebar.tsx:118-140.
+   - Admin pages are registered in private/account/web/src/router.tsx (for example :44 and :336 for version-policy) and the sidebar list at private/account/web/src/components/AppSidebar.tsx, pre-redesign lines 118-140.
    - Step-up UI exists: private/account/web/src/components/ReauthStep.tsx.
 9. **Stable and edge are one origin and one D1 per region.** "There is no stable Worker set" (docs/agent-reference/release-process.md:18-19). root_login resolves both targets to `https://<regions.json domain>` (.ci/rediacc_ci/ops/root_login.py:5, :89-97). Each region has its own D1 (regions.json:7 `account-eu`). So a token minted on eu is valid on eu only, for both targets.
 10. **Ops tool and secrets.**

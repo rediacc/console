@@ -30,7 +30,7 @@ Two constraints:
    - An org that is not blocked (private/account/src/services/console-entitlement.service.ts:73).
    - A config store row that holds `server_recoverable_org_passphrase` (private/account/src/services/console-entitlement.service.ts:85-90).
    - The ops tool executor_orgs mirrors the same rule in read-only SQL (.ci/rediacc_ci/ops/executor_orgs.py:47, :49).
-3. **Partner is a separate org.** `requirePartner` needs an `active` partner_profiles row and a partner_members row for the active org (private/account/src/middleware/partner.ts:22-71). The sidebar picks partner or customer navigation per active org (private/account/web/src/components/AppSidebar.tsx:332). So the partner grant must be a second org beside the personal one.
+3. **Partner is a separate org.** `requirePartner` needs an `active` partner_profiles row and a partner_members row for the active org (private/account/src/middleware/partner.ts:22-71). The sidebar picks partner or customer navigation per active org (private/account/web/src/components/AppSidebar.tsx, pre-redesign lines 332). So the partner grant must be a second org beside the personal one.
 4. **Why `partnerApplicationService.approve` cannot be reused as is.**
    - It requires a `new` application row (private/account/src/services/partner-application.service.ts:140-144).
    - It creates a user when the email is unknown (:146-152).

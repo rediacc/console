@@ -71,21 +71,21 @@ The prefixes are code constants on mail to the team; no locale string changes, s
 
 | Kind (EmailService method) | Caller | Class | Recipient | Urgency |
 |---|---|---|---|---|
-| contact notification (`sendContactNotificationEmail`) | contact.service.ts:43 | contact, Reply-To submitter | `CONTACT_NOTIFY_EMAIL` | instant |
-| partner application notification | partner-application.service.ts:84 | contact, Reply-To applicant | `CONTACT_NOTIFY_EMAIL` | instant |
-| deal review notification | deal-registration.service.ts:172 | contact, Reply-To the submitting partner user | `CONTACT_NOTIFY_EMAIL` | instant |
-| sales digest (`sendSalesAlert`) | sales-digest.service.ts:65 | contact | `SALES_NOTIFY_EMAIL` (unchanged key; S0 sets it to `contact@rediacc.com`) | already daily |
-| dispute opened, funds withdrawn | webhook.service.ts:733 | system | `ALERTS_NOTIFY_EMAIL` | urgent |
-| dispute updated, funds reinstated | webhook.service.ts:733 | system | `ALERTS_NOTIFY_EMAIL` | digest |
-| full refund (subscriptions revoked) | webhook.service.ts:611 | system | `ALERTS_NOTIFY_EMAIL` | urgent |
-| partial refund | webhook.service.ts:618 | system | `ALERTS_NOTIFY_EMAIL` | digest |
-| subscription paused | webhook.service.ts:635 | system | `ALERTS_NOTIFY_EMAIL` | digest |
-| checkout session expired | webhook.service.ts:696 | system | `ALERTS_NOTIFY_EMAIL` | digest |
-| delegation cert apply refused (on-prem) | delegation-cert-apply.service.ts:753 | system | `ALERTS_NOTIFY_EMAIL` | urgent |
-| auto-renew failure, cert expired (on-prem) | cert-auto-renew.service.ts:403 | system | `ALERTS_NOTIFY_EMAIL` | urgent |
-| auto-renew countdown, recovery (on-prem) | cert-auto-renew.service.ts:403, :427 | system | `ALERTS_NOTIFY_EMAIL` | digest |
-| contact confirmation | contact.service.ts:42 | customer, Reply-To `CONTACT_NOTIFY_EMAIL` | submitter | instant |
-| partner application received | partner-application.service.ts:81 | customer, Reply-To `CONTACT_NOTIFY_EMAIL` | applicant | instant |
+| contact notification (`sendContactNotificationEmail`) | private/account/src/services/contact.service.ts:43 | contact, Reply-To submitter | `CONTACT_NOTIFY_EMAIL` | instant |
+| partner application notification | private/account/src/services/partner-application.service.ts:84 | contact, Reply-To applicant | `CONTACT_NOTIFY_EMAIL` | instant |
+| deal review notification | private/account/src/services/deal-registration.service.ts:172 | contact, Reply-To the submitting partner user | `CONTACT_NOTIFY_EMAIL` | instant |
+| sales digest (`sendSalesAlert`) | private/account/src/services/sales-digest.service.ts:65 | contact | `SALES_NOTIFY_EMAIL` (unchanged key; S0 sets it to `contact@rediacc.com`) | already daily |
+| dispute opened, funds withdrawn | private/account/src/services/webhook.service.ts:746 | system | `ALERTS_NOTIFY_EMAIL` | urgent |
+| dispute updated, funds reinstated | private/account/src/services/webhook.service.ts:746 | system | `ALERTS_NOTIFY_EMAIL` | digest |
+| full refund (subscriptions revoked) | private/account/src/services/webhook.service.ts:611 | system | `ALERTS_NOTIFY_EMAIL` | urgent |
+| partial refund | private/account/src/services/webhook.service.ts:620 | system | `ALERTS_NOTIFY_EMAIL` | digest |
+| subscription paused | private/account/src/services/webhook.service.ts:639 | system | `ALERTS_NOTIFY_EMAIL` | digest |
+| checkout session expired | private/account/src/services/webhook.service.ts:702 | system | `ALERTS_NOTIFY_EMAIL` | digest |
+| delegation cert apply refused (on-prem) | private/account/src/services/delegation-cert-apply.service.ts:758 | system | `ALERTS_NOTIFY_EMAIL` | urgent |
+| auto-renew failure, cert expired (on-prem) | private/account/src/services/cert-auto-renew.service.ts:403 | system | `ALERTS_NOTIFY_EMAIL` | urgent |
+| auto-renew countdown, recovery (on-prem) | private/account/src/services/cert-auto-renew.service.ts:403, :432 | system | `ALERTS_NOTIFY_EMAIL` | digest |
+| contact confirmation | private/account/src/services/contact.service.ts:42 | customer, Reply-To `CONTACT_NOTIFY_EMAIL` | submitter | instant |
+| partner application received | private/account/src/services/partner-application.service.ts:81 | customer, Reply-To `CONTACT_NOTIFY_EMAIL` | applicant | instant |
 | auth (magic link, reset, reauth, email change) | auth.service.ts, notification.service.ts | customer | the user | instant |
 | security notices (new device, password, 2FA, sessions, lockout, API token, device code, invite accepted) | notification.service.ts | customer | the user | instant |
 | billing (welcome, payment failed, downgraded, trial ending) | webhook.service.ts | customer | the customer | instant |

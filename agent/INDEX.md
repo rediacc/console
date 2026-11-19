@@ -464,8 +464,8 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
-| `agent/plans/PLAN-account-notices.md` | approved | 160 | 1 | 16 | 44137 |
-| `agent/plans/PLAN-account-sidebar-redesign.md` | approved | 437 | 3 | 12 | 64103 |
+| `agent/plans/PLAN-account-notices.md` | approved | 160 | 1 | 16 | 44157 |
+| `agent/plans/PLAN-account-sidebar-redesign.md` | approved | 438 | 3 | 12 | 64630 |
 | `agent/plans/PLAN-add-chunkstore-backup-verb.md` | compacted | 64 | 0 | 0 | 5651 |
 | `agent/plans/PLAN-add-js-extensions-shared.md` | compacted | 50 | 0 | 0 | 4285 |
 | `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4623 |
@@ -528,7 +528,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
 | `agent/plans/PLAN-elite-to-onprem-rename.md` | proposed | 92 | 19 | 0 | 28670 |
-| `agent/plans/PLAN-email-sender-separation.md` | approved | 261 | 12 | 6 | 46223 |
+| `agent/plans/PLAN-email-sender-separation.md` | approved | 261 | 12 | 6 | 46658 |
 | `agent/plans/PLAN-enterprise-isolation.md` | executing | 218 | 8 | 26 | 41080 |
 | `agent/plans/PLAN-enterprise-tenants.md` | approved | 478 | 23 | 24 | 66121 |
 | `agent/plans/PLAN-executor-durable-object-policy.md` | approved | 487 | 0 | 18 | 65968 |
@@ -607,8 +607,8 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-resumable-rebase-executor.md` | compacted | 36 | 0 | 0 | 2212 |
 | `agent/plans/PLAN-retire-nightlies-and-mentions.md` | proposed | 189 | 16 | 0 | 36372 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
-| `agent/plans/PLAN-root-api-token.md` | approved | 316 | 8 | 7 | 42806 |
-| `agent/plans/PLAN-root-grants.md` | approved | 321 | 14 | 5 | 34167 |
+| `agent/plans/PLAN-root-api-token.md` | approved | 316 | 8 | 7 | 42826 |
+| `agent/plans/PLAN-root-grants.md` | approved | 321 | 14 | 5 | 34187 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
 | `agent/plans/PLAN-sandbox-tenant-separation.md` | approved | 123 | 1 | 7 | 25158 |
 | `agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md` | executing | 131 | 2 | 8 | 11555 |
