@@ -831,7 +831,7 @@ def check(
                     % (
                         head[:12],
                         "not an ancestor of the branch tip %s" % tip[:12]
-                        if verdict is False and tip
+                        if verdict is False
                         else "an ancestor git cannot confirm against the branch tip",
                     ),
                 )

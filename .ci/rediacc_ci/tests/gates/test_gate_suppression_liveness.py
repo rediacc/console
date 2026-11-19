@@ -319,8 +319,7 @@ def test_dead_bash_git_failure_is_loud_in_a_checkout(gate):
         )
         result = run_gate(gate, root)
         gate.assert_contains(result.combined, "git ls-files failed", "names the git failure")
-        if result.rc == 0:
-            gate.log_fail("a failing git listing in a checkout must not exit 0")
+        assert result.rc != 0, "a failing git listing in a checkout must not exit 0"
         gate.log_pass("a git failure in a checkout is loud")
 
 

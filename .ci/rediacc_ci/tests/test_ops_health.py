@@ -406,6 +406,17 @@ def test_root_grants_twelve_amber_lines_keep_the_twelve_line_cap(tmp_path):
     assert "org-28" not in eleven["detail"]
 
 
+def test_root_grants_more_than_twelve_amber_lines_name_how_many_are_not_shown(tmp_path):
+    """Review 3a3f95fa.1. Control: exactly twelve AMBER lines carry no marker."""
+    ambers = ["AMBER s%d" % i for i in range(15)]
+    _runner, check = _root_grants_check(tmp_path, 0, "\n".join(ambers))
+    assert "AMBER s10" in check["detail"]
+    assert "AMBER s11" not in check["detail"]
+    assert "(4 more AMBER line(s) not shown)" in check["detail"]
+    _runner2, twelve = _root_grants_check(tmp_path / "twelve", 0, "\n".join(ambers[:12]))
+    assert "not shown" not in twelve["detail"]
+
+
 def test_trim_keeps_the_head_when_the_first_line_carries_amber_after_a_prefix():
     text = "WARN AMBER operator: x " + "y" * 600
     assert oh._trim(text).startswith("WARN AMBER operator: x")

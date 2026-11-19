@@ -1036,6 +1036,16 @@ async function main() {
   const missingKnownOffFiles = Object.entries(KNOWN_OFF_MODULES).filter(
     ([, modulePath]) => !fs.existsSync(path.join(ROOT, modulePath))
   );
+  // The sweep above reads disk-present files only, so a wired module deleted from disk would drop out of it silently: name it here.
+  const missingWiredFiles = [...wiredModules].filter((m) => !fs.existsSync(path.join(ROOT, m)));
+  if (missingWiredFiles.length > 0) {
+    err(
+      `${missingWiredFiles.length} RULE_INSTANCES module(s) name a file that no longer exists:`
+    );
+    for (const modulePath of missingWiredFiles) err(`    ${modulePath}`);
+    err("  Restore the rule file, or drop it from scripts/data/source-rules.ts's RULE_INSTANCES.");
+    return 1;
+  }
   if (undocumented.length > 0) {
     err(
       `${undocumented.length} rule module file(s) under eslint-rules/ are wired into NEITHER\n` +

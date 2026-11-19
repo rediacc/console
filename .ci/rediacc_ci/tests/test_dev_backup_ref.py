@@ -416,14 +416,15 @@ def test_status_names_the_automatic_syncs_last_failure_instead_of_a_rerun(world)
     out = io.StringIO()
     assert br.status(work, "gitlab", True, out) == 1
     assert "run `./run.sh backup-ref sync`" in out.getvalue()
-    assert "failing" not in out.getvalue()
+    assert "FAILED" not in out.getvalue()
     _git(work, "remote", "set-url", "gitlab", str(bare) + "-missing")
     assert br.sync(work) == 1
     out = io.StringIO()
     assert br.status(work, "gitlab", True, out) == 1
     text = out.getvalue()
     assert text.count("\n") == 1, text
-    assert "the automatic sync after each commit is failing" in text
+    assert "the newest automatic sync after a commit FAILED" in text
+    assert "transient" in text, "a rerun that would succeed is not ruled out"
     assert "FAILED git" in text
     assert "rediacc-backup/log" in text
     assert "run `./run.sh backup-ref sync`" not in text
@@ -433,7 +434,7 @@ def test_status_names_the_automatic_syncs_last_failure_instead_of_a_rerun(world)
     _ahead(work, 51)
     out = io.StringIO()
     assert br.status(work, "gitlab", True, out) == 1
-    assert "failing" not in out.getvalue()
+    assert "FAILED" not in out.getvalue()
 
 
 @pytest.mark.parametrize(("hours", "minutes", "code"), [(5, 59, 0), (6, 1, 1)])

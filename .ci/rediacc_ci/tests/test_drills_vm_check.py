@@ -5425,6 +5425,28 @@ def test_the_host_disk_probe_counts_reclaimable_disks_and_reads_a_missing_dir_at
     assert reclaim_missing == 0
 
 
+def test_the_host_disk_probe_skips_a_file_that_vanishes_and_counts_the_rest(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 45f61995.1: a disk that disappears between the walk and its stat is skipped alone; the count goes on. Control: without the vanishing file both disks are counted."""
+    vms = tmp_path / "vms"
+    vms.mkdir()
+    (vms / "rediacc-vm-sys.11").write_bytes(b"x" * 8192)
+    (vms / "rediacc-vm-ceph-disk.21").write_bytes(b"y" * 8192)
+    _, both = vm_check.Host.disk_space(SimpleNamespace(), str(vms))
+    assert both >= 2 * 8192
+    real_stat = pathlib.Path.stat
+
+    def stat(self: pathlib.Path, *args: Any, **kwargs: Any) -> Any:
+        if self.name == "rediacc-vm-sys.11":
+            raise FileNotFoundError(self.name)
+        return real_stat(self, *args, **kwargs)
+
+    monkeypatch.setattr(pathlib.Path, "stat", stat)
+    _, one = vm_check.Host.disk_space(SimpleNamespace(), str(vms))
+    assert 8192 <= one < both
+
+
 def test_plan_disk_need_arithmetic_for_basic_other_bridges_and_overrides() -> None:
     """fe1ccb29.3: each branch of the plan, from renet's DISK_FILL_RATIO of every virtual disk."""
     gib = vm_check.GIB

@@ -371,7 +371,7 @@ def file_modes(*pathspecs: str, root: os.PathLike[str] | str | None = None) -> d
     if not result.ok:
         # An empty map would read as "no file has a mode", and a mode gate over it passes without checking anything; `ls-files --format` needs git 2.38, so an older git lands here.
         raise RuntimeError(
-            "git ls-files --format failed (git 2.38 or newer is required): %s"
+            "git ls-files --format failed: %s (the --format option needs git 2.38 or newer; read the message for the real cause)"
             % (result.stderr.strip() or "no stderr")
         )
     out: dict[str, str] = {}

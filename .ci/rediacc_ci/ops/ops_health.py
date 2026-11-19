@@ -964,7 +964,14 @@ def subprocess_check(name: str, runner: Runner, env: dict) -> dict:
     amber = [ln for ln in lines if "AMBER" in ln]
     rest = [ln for ln in lines if "AMBER" not in ln]
     room = max(0, 12 - len(amber))
-    tail = "\n".join((amber + (rest[-room:] if room else []))[:12] if amber else lines[-12:])
+    if len(amber) > 12:
+        # More operator steps than the window holds: the last slot says how many are not shown, so none vanishes without a trace.
+        shown = [*amber[:11], "(%d more AMBER line(s) not shown)" % (len(amber) - 11)]
+    elif amber:
+        shown = (amber + (rest[-room:] if room else []))[:12]
+    else:
+        shown = lines[-12:]
+    tail = "\n".join(shown)
     return {
         "rc": rc if rc in (0, 1) else 2,
         "raw_rc": "timeout" if res.timed_out else res.rc,

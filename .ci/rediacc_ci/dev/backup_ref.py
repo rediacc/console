@@ -402,7 +402,7 @@ LOG_TAIL_BYTES = 65536
 
 
 def last_failure(repo: pathlib.Path) -> tuple[str, str]:
-    """`(first line of the newest log entry, log path)` when that entry is a FAILED sync, else `("", "")`. The post-commit, post-rewrite and post-merge hooks run the sync after every commit, so a lag past the limit with a failed last entry is a failure a rerun repeats (PR-TASK 79b7e92e: on 2026-11-19 the Stop hook advised the sync while every automatic one was refused by the pre-push secret scan). Only stamped lines are entries; the worker's own output shares the file."""
+    """`(first line of the newest log entry, log path)` when that entry is a FAILED sync, else `("", "")`. The post-commit, post-rewrite and post-merge hooks run the sync after every commit, so a lag past the limit with a failed last entry is a failure a rerun repeats unless its cause was transient (PR-TASK 79b7e92e: on 2026-11-19 the Stop hook advised the sync while every automatic one was refused by the pre-push secret scan). Only stamped lines are entries; the worker's own output shares the file."""
     try:
         path = _live_file(repo).parent / "log"
         with path.open("rb") as handle:
@@ -431,7 +431,7 @@ def status(repo: pathlib.Path, remote: str, cached: bool, out) -> int:
         failure, log_path = last_failure(repo)
         if failure:
             advice = (
-                "the automatic sync after each commit is failing, so a rerun repeats it: fix the cause (last: %s; log %s)"
+                "the newest automatic sync after a commit FAILED (last: %s; log %s): a persistent cause repeats on a rerun, so read it first; a transient one (network, remote down) clears on the next commit's sync"
                 % (failure, log_path)
             )
         else:

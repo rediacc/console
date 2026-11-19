@@ -1392,7 +1392,7 @@ def main(argv: list[str]) -> int:
 
     root = paths.repo_root()
 
-    # A scope record is this run's or nothing: a red or killed run, a bad shard manifest, a failed control and an unavailable pytest included, must not leave the receipt reading the previous green's scope. `--selftest` records no scope and judges no suite, so it leaves the last run's record alone.
+    # Once the arguments are accepted, a scope record is this run's or nothing (a usage refusal above judged no suite and leaves the previous record, which still describes that earlier run): a red or killed run, a bad shard manifest, a failed control and an unavailable pytest included, must not leave the receipt reading the previous green's scope. `--selftest` records no scope and judges no suite, so it leaves the last run's record alone.
     if "--selftest" not in argv:
         (root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name).unlink(missing_ok=True)
 

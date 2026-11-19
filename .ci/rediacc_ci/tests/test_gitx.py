@@ -432,8 +432,10 @@ def test_file_modes_fail_loudly_when_git_rejects_the_listing(repo, monkeypatch):
         "git",
         lambda _args, **kw: real(["ls-files", "--no-such-option"], **kw),
     )
-    with pytest.raises(RuntimeError, match=r"git 2\.38"):
+    with pytest.raises(RuntimeError, match=r"git 2\.38") as exc:
         gitx.file_modes(root=repo)
+    # Review 29bc388f.1: git's own message rides along, so a cause other than an old git is readable.
+    assert "no-such-option" in str(exc.value)
     # Control: the real listing still answers.
     monkeypatch.setattr(gitx, "git", real)
     assert gitx.file_modes(root=repo) == {"tracked.txt": "100644"}

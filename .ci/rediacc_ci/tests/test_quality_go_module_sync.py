@@ -133,6 +133,7 @@ def test_an_unlistable_root_is_a_setup_error_not_a_verdict(
     assert gms.main([]) == gms.EXIT_SETUP_ERROR
     assert seen, "no error was logged"
     assert not any("go is required" in m for m in seen), seen
+    assert any("is not a git work tree root" in m for m in seen), seen
     # Control: with no `go` reachable the same run is refused by the tool check instead.
     monkeypatch.setenv("PATH", str(tmp_path / "empty-bin"))
     seen.clear()

@@ -202,6 +202,7 @@ PLAN_READERS = frozenset(
         "check:ci-plan-boxes",
         "check:ci-plan-citations",
         "check:ci-plan-deps",
+        "check:ci-plan-feedback",
         "check:ci-plan-folders",
         "check:ci-plan-housekeeping",
         "check:ci-plan-implementation",
