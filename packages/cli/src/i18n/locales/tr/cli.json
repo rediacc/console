@@ -1237,6 +1237,19 @@
       "tofuInstallHint": "Çalıştırın: rdc tools install tofu",
       "rsyncInstallHint": "rsync'i sistemin paket yöneticisiyle kurun"
     },
+    "feedback": {
+      "description": "Yapılandırılmış geri bildirim veya hata raporu gönderin. Rapor yalnızca temizlenmiş verilerden oluşturulur, tam olarak gösterilir ve onaydan sonra (ya da --yes ile) kayıtlı API belirteci veya kurulu bir Free lisansla gönderilir.",
+      "descriptionShort": "Hata veya geri bildirim raporu gönder",
+      "report": {
+        "description": "Başarısız olan son komuttan (--last), kayıtlı bir komuttan (--command <n>) veya yalnızca bir mesajdan rapor oluşturur, tam olarak nelerin gönderileceğini yazdırır ve onaydan sonra gönderir. --yes olmayan bir ajan önizlemeyi ve göndermek için gereken komutu alır, gizli gönderim asla yapılmaz.",
+        "descriptionShort": "Geri bildirim raporunu önizle ve gönder",
+        "optionCommand": "Bu sıradaki kayıtlı komutu kullanır (1 en yenidir; bkz. --list-recent)",
+        "optionKind": "Rapor türü: bug, feedback veya docs",
+        "optionLast": "Başarısız olan son komutu kullanır",
+        "optionListRecent": "Kayıtlı komutları listeler ve çıkar",
+        "optionMessage": "Rapora eklenecek serbest metin notu (gönderilmeden önce temizlenir)"
+      }
+    },
     "job": {
       "cancel": {
         "alreadyFinished": "{{jobId}} görevi zaten {{state}}; iptal edilecek bir şey yok.",
@@ -3637,9 +3650,27 @@
     "delegationCertRefused": "Sunucunun lisans sertifikası reddedildi ({{code}}); operatörden şunu çalıştırmasını isteyin: rdc server licence"
   },
   "feedback": {
+    "badKind": "Bilinmeyen rapor türü \"{{kind}}\"; bug, feedback veya docs kullanın.",
+    "confirm": "Bu rapor gönderilsin mi?",
+    "dailyLimit": "Günlük geri bildirim sınırına ({{subject}}) ulaşıldı; gönderim {{resetAt}} zamanında yeniden açılacak.",
+    "dailyLimitNoReset": "Günlük geri bildirim sınırına ({{subject}}) ulaşıldı; yarın (UTC) yeniden deneyin.",
+    "declined": "Hiçbir şey gönderilmedi.",
     "hint": "Beklenmedik mi? {{run}}",
     "hintDescription": "Bu hata için geri bildirim raporu gönder",
-    "hintSummary": "Bu hata beklenmedikse bildirin."
+    "hintSummary": "Bu hata beklenmedikse bildirin.",
+    "lastAndCommand": "--last veya --command <n> kullanın, ikisini birden değil.",
+    "needsMessage": "Başarısız komut olmadan raporlanacak bir şey yok: --last, --command <n> veya --message <text> verin.",
+    "noCredential": "Geri bildirim için bir API belirteci veya Free lisans gerekir, bu makinede ikisi de yok.",
+    "noCredentialSummary": "Bir hesaba giriş yapın ya da ücretsiz bir lisans kurun, sonra yeniden bildirin.",
+    "noFailedCommand": "Henüz kaydedilmiş başarısız bir komut yok; --list-recent veya --message <text> kullanın.",
+    "noRecent": "Henüz kaydedilmiş komut yok.",
+    "noSuchCommand": "{{index}} sırasında kayıtlı komut yok; bkz. rdc feedback report --list-recent.",
+    "optionFree": "Bu makinede bir repo oluşturarak ücretsiz lisans kur",
+    "optionLogin": "Bir hesaba giriş yap",
+    "previewOnly": "Rapor gönderilmedi: göndermek için --yes gerekir.",
+    "sendDescription": "Önizlenen raporu gönder",
+    "sent": "{{id}} raporu kaydedildi (parmak izi {{fingerprint}}).",
+    "sentDuplicate": "{{id}} raporu bilinen bir hatayla eşleşti ve sayıma eklendi (parmak izi {{fingerprint}})."
   },
   "help": {
     "agentMode": "\n  Ajan Modu\n    • Yalnızca fork: herhangi bir depoda değişiklik yapmadan önce bir fork oluşturun\n    • Grand (fork olmayan) depolar ajanlar için salt okunurdur\n    • İş akışı: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Bir depo referansı (repo[:tag]) kendi makinesini kendisi belirler, bu yüzden -m gerekmez\n    • JSON çıktısı otomatiktir: tüm komutlar { success, data, errors, metrics } döndürür\n    • Her zaman JSON'ın tamamını ayrıştırın, JSON çıktısında asla tail/head/grep kullanmayın\n    • Yanıt boyutunu azaltmak için filtre bayraklarını kullanın (ör. --repositories, --containers)\n\n",

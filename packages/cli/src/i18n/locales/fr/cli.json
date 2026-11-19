@@ -1237,6 +1237,19 @@
       "tofuInstallHint": "Exécutez : rdc tools install tofu",
       "rsyncInstallHint": "Installez rsync avec le gestionnaire de paquets du système"
     },
+    "feedback": {
+      "description": "Soumettre un retour structuré ou un rapport de bug. Le rapport est construit uniquement à partir de données expurgées, affiché en entier, puis envoyé après confirmation (ou avec --yes) avec le jeton d'API enregistré ou une licence Free installée.",
+      "descriptionShort": "Signaler un bug ou envoyer un retour",
+      "report": {
+        "description": "Construit un rapport à partir de la dernière commande en échec (--last), d'une commande enregistrée (--command <n>) ou d'un simple message, affiche exactement ce qui serait envoyé, puis l'envoie après confirmation. Un agent sans --yes obtient l'aperçu et la commande d'envoi, jamais un envoi caché.",
+        "descriptionShort": "Prévisualiser et envoyer un rapport de retour",
+        "optionCommand": "Utilise la commande enregistrée à cet index (1 est la plus récente ; voir --list-recent)",
+        "optionKind": "Type de rapport : bug, feedback ou docs",
+        "optionLast": "Utilise la dernière commande en échec",
+        "optionListRecent": "Liste les commandes enregistrées puis quitte",
+        "optionMessage": "Note libre à inclure (expurgée avant l'envoi)"
+      }
+    },
     "job": {
       "cancel": {
         "alreadyFinished": "Le job {{jobId}} est déjà {{state}} ; rien à annuler.",
@@ -3637,9 +3650,27 @@
     "delegationCertRefused": "Le certificat de licence du serveur est refusé ({{code}}) ; demandez à l'opérateur d'exécuter : rdc server licence"
   },
   "feedback": {
+    "badKind": "Type de rapport inconnu « {{kind}} » ; utilisez bug, feedback ou docs.",
+    "confirm": "Envoyer ce rapport ?",
+    "dailyLimit": "La limite quotidienne de retours ({{subject}}) est atteinte ; l'envoi sera de nouveau possible à partir de {{resetAt}}.",
+    "dailyLimitNoReset": "La limite quotidienne de retours ({{subject}}) est atteinte ; réessayez demain (UTC).",
+    "declined": "Rien n'a été envoyé.",
     "hint": "Inattendu ? {{run}}",
     "hintDescription": "Envoyer un rapport de retour sur cet échec",
-    "hintSummary": "Si cet échec est inattendu, signalez-le."
+    "hintSummary": "Si cet échec est inattendu, signalez-le.",
+    "lastAndCommand": "Utilisez --last ou --command <n>, pas les deux.",
+    "needsMessage": "Sans commande en échec, il n'y a rien à signaler : indiquez --last, --command <n> ou --message <text>.",
+    "noCredential": "L'envoi d'un retour nécessite un jeton d'API ou une licence Free, et aucun des deux n'est disponible sur cette machine.",
+    "noCredentialSummary": "Connectez-vous à un compte ou installez une licence gratuite, puis signalez à nouveau.",
+    "noFailedCommand": "Aucune commande en échec n'est enregistrée pour l'instant ; utilisez --list-recent ou --message <text>.",
+    "noRecent": "Aucune commande n'est encore enregistrée.",
+    "noSuchCommand": "Aucune commande enregistrée à l'index {{index}} ; voir rdc feedback report --list-recent.",
+    "optionFree": "Installer une licence gratuite en créant un dépôt sur cette machine",
+    "optionLogin": "Se connecter à un compte",
+    "previewOnly": "Le rapport n'a pas été envoyé : l'envoi nécessite --yes.",
+    "sendDescription": "Envoyer le rapport prévisualisé",
+    "sent": "Rapport {{id}} enregistré (empreinte {{fingerprint}}).",
+    "sentDuplicate": "Le rapport {{id}} correspond à un échec connu et a été comptabilisé (empreinte {{fingerprint}})."
   },
   "help": {
     "agentMode": "\n  Mode Agent\n    • Fork uniquement : créez un fork avant de modifier un dépôt\n    • Les dépôts grand (non fork) sont en lecture seule pour les agents\n    • Flux de travail : repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Une réf de dépôt (repo[:tag]) dérive sa propre machine, -m n'est donc pas nécessaire\n    • La sortie JSON est automatique : toutes les commandes renvoient { success, data, errors, metrics }\n    • Analysez toujours le JSON complet, n'utilisez jamais tail/head/grep sur une sortie JSON\n    • Utilisez les options de filtre (ex : --repositories, --containers) pour réduire la taille de la réponse\n\n",

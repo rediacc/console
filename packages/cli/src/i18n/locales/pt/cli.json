@@ -1237,6 +1237,19 @@
       "tofuInstallHint": "Execute: rdc tools install tofu",
       "rsyncInstallHint": "Instale o rsync com o gerenciador de pacotes do sistema"
     },
+    "feedback": {
+      "description": "Envie feedback estruturado ou um relatório de bug. O conteúdo é montado apenas com dados higienizados, exibido por inteiro e enviado após a confirmação (ou com --yes), usando o token de API salvo ou uma licença Free instalada.",
+      "descriptionShort": "Reportar um bug ou enviar feedback",
+      "report": {
+        "description": "Monta um relatório a partir do último comando com falha (--last), de um comando registrado (--command <n>) ou só de uma mensagem, mostra exatamente o que seria enviado e envia após a confirmação. Um agente sem --yes recebe a prévia e o comando para enviá-la, nunca um envio oculto.",
+        "descriptionShort": "Ver a prévia e enviar um relatório de feedback",
+        "optionCommand": "Usa o comando registrado neste índice (1 é o mais recente; veja --list-recent)",
+        "optionKind": "Tipo de relatório: bug, feedback ou docs",
+        "optionLast": "Usa o último comando com falha",
+        "optionListRecent": "Lista os comandos registrados e sai",
+        "optionMessage": "Nota livre a incluir (higienizada antes do envio)"
+      }
+    },
     "job": {
       "cancel": {
         "alreadyFinished": "O job {{jobId}} já está {{state}}; nada a cancelar.",
@@ -3637,9 +3650,27 @@
     "delegationCertRefused": "O certificado de licença do servidor foi recusado ({{code}}); peça ao operador para executar: rdc server licence"
   },
   "feedback": {
+    "badKind": "Tipo de relatório desconhecido \"{{kind}}\"; use bug, feedback ou docs.",
+    "confirm": "Enviar este relatório?",
+    "dailyLimit": "O limite diário de feedback ({{subject}}) foi atingido; o envio volta a ser possível a partir de {{resetAt}}.",
+    "dailyLimitNoReset": "O limite diário de feedback ({{subject}}) foi atingido; tente novamente amanhã (UTC).",
+    "declined": "Nada foi enviado.",
     "hint": "Inesperado? {{run}}",
     "hintDescription": "Enviar um relatório de feedback sobre esta falha",
-    "hintSummary": "Se esta falha for inesperada, reporte-a."
+    "hintSummary": "Se esta falha for inesperada, reporte-a.",
+    "lastAndCommand": "Use --last ou --command <n>, não os dois.",
+    "needsMessage": "Sem um comando com falha não há nada a reportar: informe --last, --command <n> ou --message <text>.",
+    "noCredential": "O feedback exige um token de API ou uma licença Free, e esta máquina não tem nenhum dos dois.",
+    "noCredentialSummary": "Entre em uma conta ou instale uma licença gratuita e reporte de novo.",
+    "noFailedCommand": "Ainda não há nenhum comando com falha registrado; use --list-recent ou --message <text>.",
+    "noRecent": "Ainda não há comandos registrados.",
+    "noSuchCommand": "Não há comando registrado no índice {{index}}; veja rdc feedback report --list-recent.",
+    "optionFree": "Instalar uma licença gratuita criando um repositório nesta máquina",
+    "optionLogin": "Entrar em uma conta",
+    "previewOnly": "O relatório não foi enviado: para enviar é preciso --yes.",
+    "sendDescription": "Enviar o relatório visualizado",
+    "sent": "Relatório {{id}} registrado (impressão digital {{fingerprint}}).",
+    "sentDuplicate": "O relatório {{id}} corresponde a uma falha conhecida e foi contabilizado (impressão digital {{fingerprint}})."
   },
   "help": {
     "agentMode": "\n  Modo Agente\n    • Apenas forks: crie um fork antes de fazer alterações em qualquer repositório\n    • Repositórios grand (não fork) são de apenas leitura para agentes\n    • Fluxo de trabalho: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Uma ref de repositório (repo[:tag]) deriva a sua própria máquina, pelo que -m não é necessário\n    • A saída JSON é automática: todos os comandos retornam { success, data, errors, metrics }\n    • Analise sempre o JSON completo, nunca use tail/head/grep em saída JSON\n    • Use flags de filtro (ex.: --repositories, --containers) para reduzir o tamanho da resposta\n\n",

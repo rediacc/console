@@ -1237,6 +1237,19 @@
       "tofuInstallHint": "Ejecuta: rdc tools install tofu",
       "rsyncInstallHint": "Instala rsync con el gestor de paquetes del sistema"
     },
+    "feedback": {
+      "description": "Envía comentarios estructurados o un informe de error. El contenido se genera solo con datos depurados, se muestra completo y se envía tras confirmar (o con --yes) usando el token de API guardado o una licencia Free instalada.",
+      "descriptionShort": "Enviar un informe de error o comentarios",
+      "report": {
+        "description": "Crea un informe a partir del último comando fallido (--last), de un comando registrado (--command <n>) o solo de un mensaje, muestra exactamente lo que se enviaría y lo envía tras confirmar. Un agente sin --yes recibe la vista previa y el comando para enviarlo, nunca un envío oculto.",
+        "descriptionShort": "Previsualizar y enviar un informe de comentarios",
+        "optionCommand": "Usa el comando registrado en este índice (1 es el más reciente; consulta --list-recent)",
+        "optionKind": "Tipo de informe: bug, feedback o docs",
+        "optionLast": "Usa el último comando fallido",
+        "optionListRecent": "Lista los comandos registrados y termina",
+        "optionMessage": "Nota de texto libre que incluir (se depura antes de enviar)"
+      }
+    },
     "job": {
       "cancel": {
         "alreadyFinished": "El trabajo {{jobId}} ya {{state}}; no hay nada que cancelar.",
@@ -3637,9 +3650,27 @@
     "delegationCertRefused": "El certificado de licencia del servidor está rechazado ({{code}}); pida al operador que ejecute: rdc server licence"
   },
   "feedback": {
+    "badKind": "Tipo de informe desconocido \"{{kind}}\"; usa bug, feedback o docs.",
+    "confirm": "¿Enviar este informe?",
+    "dailyLimit": "Se alcanzó el límite diario de comentarios ({{subject}}); podrás enviar de nuevo a partir de {{resetAt}}.",
+    "dailyLimitNoReset": "Se alcanzó el límite diario de comentarios ({{subject}}); inténtalo de nuevo mañana (UTC).",
+    "declined": "No se envió nada.",
     "hint": "¿No era lo esperado? {{run}}",
     "hintDescription": "Enviar un informe de comentarios sobre este fallo",
-    "hintSummary": "Si este fallo es inesperado, infórmalo."
+    "hintSummary": "Si este fallo es inesperado, infórmalo.",
+    "lastAndCommand": "Usa --last o --command <n>, pero no ambos.",
+    "needsMessage": "Sin un comando fallido no hay nada que informar: indica --last, --command <n> o --message <text>.",
+    "noCredential": "Los comentarios requieren un token de API o una licencia Free, y este equipo no tiene ninguno.",
+    "noCredentialSummary": "Inicia sesión en una cuenta o instala una licencia gratuita y vuelve a informar.",
+    "noFailedCommand": "Todavía no hay ningún comando fallido registrado; usa --list-recent o --message <text>.",
+    "noRecent": "Todavía no hay comandos registrados.",
+    "noSuchCommand": "No hay ningún comando registrado en el índice {{index}}; consulta rdc feedback report --list-recent.",
+    "optionFree": "Instalar una licencia gratuita creando un repositorio en este equipo",
+    "optionLogin": "Iniciar sesión en una cuenta",
+    "previewOnly": "El informe no se envió: para enviarlo hace falta --yes.",
+    "sendDescription": "Enviar el informe previsualizado",
+    "sent": "Informe {{id}} enviado (huella {{fingerprint}}).",
+    "sentDuplicate": "El informe {{id}} coincide con un fallo conocido y se contabilizó (huella {{fingerprint}})."
   },
   "help": {
     "agentMode": "\n  Modo Agente\n    • Solo forks: cree un fork antes de realizar cambios en cualquier repositorio\n    • Los repositorios grand (no fork) son de solo lectura para los agentes\n    • Flujo de trabajo: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Una referencia de repositorio (repo[:tag]) deriva su propia máquina, por lo que -m no es necesario\n    • La salida JSON es automática: todos los comandos devuelven { success, data, errors, metrics }\n    • Analice siempre el JSON completo, nunca use tail/head/grep sobre la salida JSON\n    • Use flags de filtro (p. ej., --repositories, --containers) para reducir el tamaño de la respuesta\n\n",

@@ -1237,6 +1237,19 @@
       "tofuInstallHint": "Ausführen: rdc tools install tofu",
       "rsyncInstallHint": "rsync über den Paketmanager des Systems installieren"
     },
+    "feedback": {
+      "description": "Strukturiertes Feedback oder einen Fehlerbericht einreichen. Der Bericht wird nur aus bereinigten Daten erstellt, vollständig angezeigt und nach Bestätigung (oder mit --yes) mit dem gespeicherten API-Token oder einer installierten Free-Lizenz gesendet.",
+      "descriptionShort": "Fehler oder Feedback melden",
+      "report": {
+        "description": "Aus dem zuletzt fehlgeschlagenen Befehl (--last), einem aufgezeichneten Befehl (--command <n>) oder nur aus einer Nachricht einen Bericht erstellen, genau anzeigen, was gesendet würde, und nach Bestätigung senden. Ein Agent ohne --yes erhält die Vorschau und den Befehl zum Senden, nie einen versteckten Versand.",
+        "descriptionShort": "Bericht in der Vorschau ansehen und senden",
+        "optionCommand": "Den aufgezeichneten Befehl mit diesem Index verwenden (1 ist der neueste; siehe --list-recent)",
+        "optionKind": "Berichtsart: bug, feedback oder docs",
+        "optionLast": "Den zuletzt fehlgeschlagenen Befehl verwenden",
+        "optionListRecent": "Aufgezeichnete Befehle auflisten und beenden",
+        "optionMessage": "Freitext-Hinweis für den Bericht (wird vor dem Senden bereinigt)"
+      }
+    },
     "job": {
       "cancel": {
         "alreadyFinished": "Job {{jobId}} ist bereits {{state}}; nichts abzubrechen.",
@@ -3637,9 +3650,27 @@
     "delegationCertRefused": "Das Lizenzzertifikat des Servers wird abgelehnt ({{code}}); den Betreiber bitten, Folgendes auszuführen: rdc server licence"
   },
   "feedback": {
+    "badKind": "Unbekannte Berichtsart \"{{kind}}\"; verwende bug, feedback oder docs.",
+    "confirm": "Diesen Bericht senden?",
+    "dailyLimit": "Das Tageslimit für Feedback ({{subject}}) ist erreicht; Meldungen sind ab {{resetAt}} wieder möglich.",
+    "dailyLimitNoReset": "Das Tageslimit für Feedback ({{subject}}) ist erreicht; versuche es morgen (UTC) erneut.",
+    "declined": "Es wurde nichts gesendet.",
     "hint": "Unerwartet? {{run}}",
     "hintDescription": "Feedback-Meldung zu diesem Fehler senden",
-    "hintSummary": "Wenn dieser Fehler unerwartet ist, bitte melden."
+    "hintSummary": "Wenn dieser Fehler unerwartet ist, bitte melden.",
+    "lastAndCommand": "Verwende --last oder --command <n>, nicht beides.",
+    "needsMessage": "Ohne fehlgeschlagenen Befehl gibt es nichts zu melden: gib --last, --command <n> oder --message <text> an.",
+    "noCredential": "Für Feedback wird ein API-Token oder eine Free-Lizenz benötigt, und beides fehlt auf diesem Rechner.",
+    "noCredentialSummary": "Melde dich bei einem Konto an oder installiere eine kostenlose Lizenz und melde dann erneut.",
+    "noFailedCommand": "Es ist noch kein fehlgeschlagener Befehl aufgezeichnet; nutze --list-recent oder --message <text>.",
+    "noRecent": "Es sind noch keine Befehle aufgezeichnet.",
+    "noSuchCommand": "Kein aufgezeichneter Befehl mit Index {{index}}; siehe rdc feedback report --list-recent.",
+    "optionFree": "Eine kostenlose Lizenz installieren, indem auf diesem Rechner ein Repository angelegt wird",
+    "optionLogin": "Bei einem Konto anmelden",
+    "previewOnly": "Der Bericht wurde nicht gesendet: zum Senden ist --yes nötig.",
+    "sendDescription": "Den angezeigten Bericht senden",
+    "sent": "Bericht {{id}} eingereicht (Fingerabdruck {{fingerprint}}).",
+    "sentDuplicate": "Bericht {{id}} passt zu einem bekannten Fehler und wurde mitgezählt (Fingerabdruck {{fingerprint}})."
   },
   "help": {
     "agentMode": "\n  Agenten-Modus\n    • Nur Forks: Erstellen Sie einen Fork, bevor Sie Änderungen an einem Repository vornehmen\n    • Grand-Repositorys (keine Forks) sind für Agenten schreibgeschützt\n    • Arbeitsablauf: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Eine Repository-Referenz (repo[:tag]) leitet ihre eigene Maschine ab, -m ist daher nicht nötig\n    • JSON-Ausgabe erfolgt automatisch: Alle Befehle liefern { success, data, errors, metrics }\n    • Parsen Sie immer das vollständige JSON, verwenden Sie niemals tail/head/grep auf JSON-Ausgaben\n    • Verwenden Sie Filter-Flags (z.B. --repositories, --containers), um die Antwortgröße zu reduzieren\n\n",

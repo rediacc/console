@@ -1237,6 +1237,19 @@
       "tofuInstallHint": "実行: rdc tools install tofu",
       "rsyncInstallHint": "システムのパッケージマネージャーでrsyncをインストールしてください"
     },
+    "feedback": {
+      "description": "構造化したフィードバックまたはバグ報告を送信します。内容はマスク済みのデータだけから作られ、全文が表示され、確認後(または --yes 指定時)に、保存済みの API トークンかインストール済みの Free ライセンスで送信されます。",
+      "descriptionShort": "バグまたはフィードバックを報告",
+      "report": {
+        "description": "直近の失敗したコマンド(--last)、記録済みのコマンド(--command <n>)、またはメッセージのみからレポートを作り、送信される内容をそのまま表示して、確認後に送信します。--yes のないエージェントにはプレビューと送信用のコマンドが返り、こっそり送信されることはありません。",
+        "descriptionShort": "フィードバックのプレビューと送信",
+        "optionCommand": "この番号の記録済みコマンドを使います(1 が最新。--list-recent を参照)",
+        "optionKind": "報告の種類: bug、feedback、docs のいずれか",
+        "optionLast": "直近の失敗したコマンドを使います",
+        "optionListRecent": "記録済みのコマンドを一覧表示して終了します",
+        "optionMessage": "レポートに含める自由記述のメモ(送信前にマスクされます)"
+      }
+    },
     "job": {
       "cancel": {
         "alreadyFinished": "ジョブ {{jobId}} はすでに {{state}} のため、キャンセルする対象がありません。",
@@ -3637,9 +3650,27 @@
     "delegationCertRefused": "サーバーのライセンス証明書が拒否されています ({{code}})。運用担当者に次のコマンドの実行を依頼してください: rdc server licence"
   },
   "feedback": {
+    "badKind": "不明な報告の種類 \"{{kind}}\" です。bug、feedback、docs のいずれかを指定してください。",
+    "confirm": "このレポートを送信しますか?",
+    "dailyLimit": "フィードバックの 1 日の上限({{subject}})に達しました。{{resetAt}} から再び送信できます。",
+    "dailyLimitNoReset": "フィードバックの 1 日の上限({{subject}})に達しました。明日(UTC)にもう一度お試しください。",
+    "declined": "何も送信されませんでした。",
     "hint": "想定外の動作ですか？ {{run}}",
     "hintDescription": "この失敗についてフィードバックレポートを送信します",
-    "hintSummary": "この失敗が想定外の場合は、報告してください。"
+    "hintSummary": "この失敗が想定外の場合は、報告してください。",
+    "lastAndCommand": "--last と --command <n> は同時に指定できません。どちらか一方にしてください。",
+    "needsMessage": "失敗したコマンドがないため報告する内容がありません。--last、--command <n>、--message <text> のいずれかを指定してください。",
+    "noCredential": "フィードバックには API トークンか Free ライセンスが必要ですが、このマシンにはどちらもありません。",
+    "noCredentialSummary": "アカウントにログインするか、無料ライセンスをインストールしてから、もう一度報告してください。",
+    "noFailedCommand": "失敗したコマンドはまだ記録されていません。--list-recent か --message <text> を使ってください。",
+    "noRecent": "記録されたコマンドはまだありません。",
+    "noSuchCommand": "番号 {{index}} の記録済みコマンドはありません。rdc feedback report --list-recent を参照してください。",
+    "optionFree": "このマシンにリポジトリを作成して無料ライセンスをインストールする",
+    "optionLogin": "アカウントにログインする",
+    "previewOnly": "レポートは送信されませんでした。送信するには --yes が必要です。",
+    "sendDescription": "プレビューしたレポートを送信",
+    "sent": "レポート {{id}} を受け付けました(フィンガープリント {{fingerprint}})。",
+    "sentDuplicate": "レポート {{id}} は既知の障害と一致したため、件数に加算しました(フィンガープリント {{fingerprint}})。"
   },
   "help": {
     "agentMode": "\n  エージェントモード\n    • フォークのみ: リポジトリに変更を加える前にフォークを作成する\n    • Grand（非フォーク）リポジトリはエージェントに対して読み取り専用\n    • ワークフロー: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • リポジトリ ref（repo[:tag]）はそれ自体でマシンを決定するため、-m は不要\n    • JSON 出力は自動: すべてのコマンドが { success, data, errors, metrics } を返す\n    • 常に完全な JSON をパースし、JSON 出力に tail/head/grep を使わない\n    • フィルタフラグ（例: --repositories, --containers）でレスポンスサイズを削減する\n\n",

@@ -1237,6 +1237,19 @@
       "tofuInstallHint": "실행: rdc tools install tofu",
       "rsyncInstallHint": "시스템 패키지 관리자로 rsync를 설치하세요"
     },
+    "feedback": {
+      "description": "구조화된 피드백이나 버그 보고서를 제출합니다. 보고서는 민감 정보를 가린 데이터로만 만들어지고, 전체 내용이 표시되며, 확인 후(또는 --yes 사용 시) 저장된 API 토큰이나 설치된 Free 라이선스로 전송됩니다.",
+      "descriptionShort": "버그 또는 피드백 보고",
+      "report": {
+        "description": "가장 최근에 실패한 명령(--last), 기록된 명령(--command <n>) 또는 메시지만으로 보고서를 만들고, 전송될 내용을 그대로 출력한 뒤 확인을 거쳐 전송합니다. --yes가 없는 에이전트에는 미리보기와 전송 명령만 제공되며, 몰래 전송되는 일은 없습니다.",
+        "descriptionShort": "피드백 보고서 미리보기 및 전송",
+        "optionCommand": "이 번호에 기록된 명령을 사용합니다(1이 가장 최근, --list-recent 참고)",
+        "optionKind": "보고서 종류: bug, feedback 또는 docs",
+        "optionLast": "가장 최근에 실패한 명령을 사용합니다",
+        "optionListRecent": "기록된 명령을 나열하고 종료합니다",
+        "optionMessage": "보고서에 넣을 자유 형식 메모(전송 전에 민감 정보가 제거됩니다)"
+      }
+    },
     "job": {
       "cancel": {
         "alreadyFinished": "작업 {{jobId}}은(는) 이미 {{state}} 상태이므로 취소할 것이 없습니다.",
@@ -3637,9 +3650,27 @@
     "delegationCertRefused": "서버의 라이선스 인증서가 거부되었습니다 ({{code}}). 운영자에게 다음 명령을 실행하도록 요청하세요: rdc server licence"
   },
   "feedback": {
+    "badKind": "알 수 없는 보고서 종류 \"{{kind}}\"입니다. bug, feedback 또는 docs를 사용하세요.",
+    "confirm": "이 보고서를 전송할까요?",
+    "dailyLimit": "일일 피드백 한도({{subject}})에 도달했습니다. {{resetAt}}부터 다시 보낼 수 있습니다.",
+    "dailyLimitNoReset": "일일 피드백 한도({{subject}})에 도달했습니다. 내일(UTC) 다시 시도해 주세요.",
+    "declined": "아무것도 전송되지 않았습니다.",
     "hint": "예상치 못한 결과인가요? {{run}}",
     "hintDescription": "이 실패에 대한 피드백 보고서 보내기",
-    "hintSummary": "이 실패가 예상치 못한 것이라면 보고해 주세요."
+    "hintSummary": "이 실패가 예상치 못한 것이라면 보고해 주세요.",
+    "lastAndCommand": "--last와 --command <n>은 함께 쓸 수 없습니다. 하나만 사용하세요.",
+    "needsMessage": "실패한 명령이 없으면 보고할 내용이 없습니다. --last, --command <n> 또는 --message <text>를 지정하세요.",
+    "noCredential": "피드백에는 API 토큰이나 Free 라이선스가 필요한데, 이 머신에는 둘 다 없습니다.",
+    "noCredentialSummary": "계정에 로그인하거나 무료 라이선스를 설치한 뒤 다시 보고하세요.",
+    "noFailedCommand": "아직 기록된 실패 명령이 없습니다. --list-recent 또는 --message <text>를 사용하세요.",
+    "noRecent": "아직 기록된 명령이 없습니다.",
+    "noSuchCommand": "인덱스 {{index}}에 기록된 명령이 없습니다. rdc feedback report --list-recent 명령을 참고하세요.",
+    "optionFree": "이 머신에 리포지토리를 만들어 무료 라이선스 설치",
+    "optionLogin": "계정에 로그인",
+    "previewOnly": "보고서가 전송되지 않았습니다. 전송하려면 --yes가 필요합니다.",
+    "sendDescription": "미리 본 보고서 전송",
+    "sent": "보고서 {{id}}이(가) 접수되었습니다(지문 {{fingerprint}}).",
+    "sentDuplicate": "보고서 {{id}}이(가) 알려진 실패와 일치하여 집계되었습니다(지문 {{fingerprint}})."
   },
   "help": {
     "agentMode": "\n  에이전트 모드\n    • 포크 전용: 어떤 저장소든 변경하기 전에 포크를 생성\n    • Grand(비포크) 저장소는 에이전트에게 읽기 전용\n    • 워크플로: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • 저장소 참조(repo[:tag])는 그 자체로 머신을 결정하므로 -m이 필요 없음\n    • JSON 출력이 자동으로 활성화됨: 모든 명령이 { success, data, errors, metrics }를 반환\n    • 항상 전체 JSON을 파싱하고, JSON 출력에는 tail/head/grep을 사용하지 마세요\n    • 응답 크기를 줄이려면 필터 플래그 사용 (예: --repositories, --containers)\n\n",

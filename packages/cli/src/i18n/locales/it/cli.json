@@ -1237,6 +1237,19 @@
       "tofuInstallHint": "Esegui: rdc tools install tofu",
       "rsyncInstallHint": "Installa rsync con il gestore di pacchetti del sistema"
     },
+    "feedback": {
+      "description": "Invia un feedback strutturato o una segnalazione di bug. Il contenuto viene creato solo con dati ripuliti, mostrato per intero e inviato dopo la conferma (o con --yes) usando il token API salvato o una licenza Free installata.",
+      "descriptionShort": "Segnala un bug o invia un feedback",
+      "report": {
+        "description": "Crea una segnalazione dall'ultimo comando fallito (--last), da un comando registrato (--command <n>) o da un semplice messaggio, mostra esattamente cosa verrebbe inviato e lo invia dopo la conferma. Un agente senza --yes riceve l'anteprima e il comando per inviarla, mai un invio nascosto.",
+        "descriptionShort": "Mostra l'anteprima e invia una segnalazione",
+        "optionCommand": "Usa il comando registrato a questo indice (1 è il più recente; vedi --list-recent)",
+        "optionKind": "Tipo di segnalazione: bug, feedback o docs",
+        "optionLast": "Usa l'ultimo comando fallito",
+        "optionListRecent": "Elenca i comandi registrati ed esce",
+        "optionMessage": "Nota libera da includere (ripulita prima dell'invio)"
+      }
+    },
     "job": {
       "cancel": {
         "alreadyFinished": "Il job {{jobId}} è già {{state}}; niente da annullare.",
@@ -3637,9 +3650,27 @@
     "delegationCertRefused": "Il certificato di licenza del server è rifiutato ({{code}}); chiedi all'operatore di eseguire: rdc server licence"
   },
   "feedback": {
+    "badKind": "Tipo di segnalazione sconosciuto \"{{kind}}\"; usa bug, feedback o docs.",
+    "confirm": "Inviare questa segnalazione?",
+    "dailyLimit": "Il limite giornaliero di feedback ({{subject}}) è stato raggiunto; potrai inviare di nuovo da {{resetAt}}.",
+    "dailyLimitNoReset": "Il limite giornaliero di feedback ({{subject}}) è stato raggiunto; riprova domani (UTC).",
+    "declined": "Non è stato inviato nulla.",
     "hint": "Inatteso? {{run}}",
     "hintDescription": "Invia una segnalazione di feedback su questo errore",
-    "hintSummary": "Se questo errore è inatteso, segnalalo."
+    "hintSummary": "Se questo errore è inatteso, segnalalo.",
+    "lastAndCommand": "Usa --last oppure --command <n>, non entrambi.",
+    "needsMessage": "Senza un comando fallito non c'è nulla da segnalare: indica --last, --command <n> oppure --message <text>.",
+    "noCredential": "Per inviare un feedback serve un token API o una licenza Free, e su questa macchina non c'è né l'uno né l'altra.",
+    "noCredentialSummary": "Accedi a un account oppure installa una licenza gratuita, poi segnala di nuovo.",
+    "noFailedCommand": "Non è ancora stato registrato alcun comando fallito; usa --list-recent oppure --message <text>.",
+    "noRecent": "Non è ancora stato registrato alcun comando.",
+    "noSuchCommand": "Nessun comando registrato all'indice {{index}}; vedi rdc feedback report --list-recent.",
+    "optionFree": "Installa una licenza gratuita creando un repository su questa macchina",
+    "optionLogin": "Accedi a un account",
+    "previewOnly": "La segnalazione non è stata inviata: per inviarla serve --yes.",
+    "sendDescription": "Invia la segnalazione di cui hai visto l'anteprima",
+    "sent": "Segnalazione {{id}} inviata (impronta {{fingerprint}}).",
+    "sentDuplicate": "La segnalazione {{id}} corrisponde a un errore noto ed è stata conteggiata (impronta {{fingerprint}})."
   },
   "help": {
     "agentMode": "\n  Modalità Agente\n    • Solo fork: crea un fork prima di apportare modifiche a qualsiasi repository\n    • I repository grand (non fork) sono in sola lettura per gli agenti\n    • Flusso di lavoro: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Un riferimento di repository (repo[:tag]) determina da sé la propria macchina, quindi -m non è necessario\n    • L'output JSON è automatico: tutti i comandi restituiscono { success, data, errors, metrics }\n    • Analizza sempre il JSON completo, non usare tail/head/grep sull'output JSON\n    • Usa i flag di filtro (es. --repositories, --containers) per ridurre la dimensione della risposta\n\n",

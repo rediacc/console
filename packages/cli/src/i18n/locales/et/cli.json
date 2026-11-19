@@ -1237,6 +1237,19 @@
       "tofuInstallHint": "Käivita: rdc tools install tofu",
       "rsyncInstallHint": "Paigalda rsync süsteemi paketihalduriga"
     },
+    "feedback": {
+      "description": "Esita struktureeritud tagasiside või veaaruanne. Aruanne koostatakse ainult puhastatud andmetest, kuvatakse täielikult ja saadetakse pärast kinnitamist (või võtmega --yes) salvestatud API-tokeni või paigaldatud Free-litsentsiga.",
+      "descriptionShort": "Teata veast või saada tagasisidet",
+      "report": {
+        "description": "Koostab aruande viimasest ebaõnnestunud käsust (--last), salvestatud käsust (--command <n>) või ainult sõnumist, näitab täpselt, mis saadetaks, ja saadab selle pärast kinnitamist. Agent, kes ei kasuta võtit --yes, saab eelvaate ja saatmiskäsu, mitte kunagi varjatud saatmist.",
+        "descriptionShort": "Vaata aruande eelvaadet ja saada see",
+        "optionCommand": "Kasuta salvestatud käsku selle indeksiga (1 on kõige uuem; vt --list-recent)",
+        "optionKind": "Aruande liik: bug, feedback või docs",
+        "optionLast": "Kasuta viimast ebaõnnestunud käsku",
+        "optionListRecent": "Loetleb salvestatud käsud ja lõpetab",
+        "optionMessage": "Lisatav vabatekstiline märkus (puhastatakse enne saatmist)"
+      }
+    },
     "job": {
       "cancel": {
         "alreadyFinished": "Töö {{jobId}} on juba {{state}}; pole midagi tühistada.",
@@ -3637,9 +3650,27 @@
     "delegationCertRefused": "Serveri litsentsisertifikaat on keelatud ({{code}}); palu operaatoril käivitada: rdc server licence"
   },
   "feedback": {
+    "badKind": "Tundmatu aruande liik \"{{kind}}\"; kasuta väärtust bug, feedback või docs.",
+    "confirm": "Kas saadan selle aruande?",
+    "dailyLimit": "Päevane tagasisidelimiit ({{subject}}) on täis; saatmine avaneb uuesti {{resetAt}}.",
+    "dailyLimitNoReset": "Päevane tagasisidelimiit ({{subject}}) on täis; proovi homme (UTC) uuesti.",
+    "declined": "Midagi ei saadetud.",
     "hint": "Ootamatu? {{run}}",
     "hintDescription": "Saada selle tõrke kohta tagasisideteade",
-    "hintSummary": "Kui see tõrge on ootamatu, anna sellest teada."
+    "hintSummary": "Kui see tõrge on ootamatu, anna sellest teada.",
+    "lastAndCommand": "Kasuta kas --last või --command <n>, mitte mõlemat.",
+    "needsMessage": "Ilma ebaõnnestunud käsuta pole midagi teatada: lisa --last, --command <n> või --message <text>.",
+    "noCredential": "Tagasiside jaoks on vaja API-tokenit või Free-litsentsi ning sellel masinal pole kumbagi.",
+    "noCredentialSummary": "Logi kontole sisse või paigalda tasuta litsents ning teata siis uuesti.",
+    "noFailedCommand": "Ebaõnnestunud käsku pole veel salvestatud; kasuta --list-recent või --message <text>.",
+    "noRecent": "Ühtegi käsku pole veel salvestatud.",
+    "noSuchCommand": "Indeksil {{index}} pole salvestatud käsku; vt rdc feedback report --list-recent.",
+    "optionFree": "Paigalda tasuta litsents, luues sellel masinal hoidla",
+    "optionLogin": "Logi kontole sisse",
+    "previewOnly": "Aruannet ei saadetud: saatmiseks on vaja võtit --yes.",
+    "sendDescription": "Saada eelvaadatud aruanne",
+    "sent": "Aruanne {{id}} esitatud (sõrmejälg {{fingerprint}}).",
+    "sentDuplicate": "Aruanne {{id}} sobis teadaoleva veaga ja loeti kokku (sõrmejälg {{fingerprint}})."
   },
   "help": {
     "agentMode": "\n  Agendirežiim\n    • Ainult forkimine: loo fork enne muudatuste tegemist mis tahes repositooriumis\n    • Pearepos (mitte-forkid) on agentidele kirjutuskaitstud\n    • Töövoog: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Hoidla viide (repo[:tag]) tuletab oma masina ise, seega -m ei ole vajalik\n    • JSON-väljund on automaatne: kõik käsud tagastavad { success, data, errors, metrics }\n    • Parsi alati täielikku JSON-i, ära kasuta tail/head/grep JSON-väljundil\n    • Kasuta filtrilipukesi (nt --repositories, --containers) vastuse mahu vähendamiseks\n\n",

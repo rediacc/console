@@ -1237,6 +1237,19 @@
       "tofuInstallHint": "شغّل: rdc tools install tofu",
       "rsyncInstallHint": "ثبّت rsync باستخدام مدير حزم النظام"
     },
+    "feedback": {
+      "description": "أرسل ملاحظات منظمة أو تقرير خطأ. يُبنى التقرير من بيانات منقّحة فقط، ويُعرض كاملًا، ويُرسل بعد التأكيد (أو مع --yes) باستخدام رمز API المحفوظ أو ترخيص Free مثبّت.",
+      "descriptionShort": "الإبلاغ عن خطأ أو إرسال ملاحظات",
+      "report": {
+        "description": "ينشئ تقريرًا من أحدث أمر فاشل (--last) أو من أمر مسجّل (--command <n>) أو من رسالة فقط، ويعرض بالضبط ما سيُرسل، ثم يرسله بعد التأكيد. الوكيل الذي لا يستخدم --yes يحصل على المعاينة والأمر اللازم للإرسال، ولا يحدث أي إرسال خفي.",
+        "descriptionShort": "معاينة تقرير الملاحظات وإرساله",
+        "optionCommand": "استخدم الأمر المسجّل عند هذا الفهرس (1 هو الأحدث؛ راجع --list-recent)",
+        "optionKind": "نوع التقرير: bug أو feedback أو docs",
+        "optionLast": "استخدم أحدث أمر فاشل",
+        "optionListRecent": "اعرض الأوامر المسجّلة ثم أنهِ",
+        "optionMessage": "ملاحظة نصية حرة لتضمينها (تُنقّح قبل الإرسال)"
+      }
+    },
     "job": {
       "cancel": {
         "alreadyFinished": "المهمة {{jobId}} انتهت بالفعل بحالة {{state}}؛ لا يوجد ما يُلغى.",
@@ -3637,9 +3650,27 @@
     "delegationCertRefused": "شهادة ترخيص الخادم مرفوضة ({{code}})؛ اطلب من المشغّل تشغيل: rdc server licence"
   },
   "feedback": {
+    "badKind": "نوع التقرير غير معروف \"{{kind}}\"؛ استخدم bug أو feedback أو docs.",
+    "confirm": "هل تريد إرسال هذا التقرير؟",
+    "dailyLimit": "تم بلوغ الحد اليومي للملاحظات ({{subject}})؛ يُفتح الإرسال مجددًا في {{resetAt}}.",
+    "dailyLimitNoReset": "تم بلوغ الحد اليومي للملاحظات ({{subject}})؛ حاول مجددًا غدًا (UTC).",
+    "declined": "لم يُرسل شيء.",
     "hint": "غير متوقع؟ {{run}}",
     "hintDescription": "إرسال بلاغ ملاحظات عن هذا الفشل",
-    "hintSummary": "إذا كان هذا الفشل غير متوقع، فأبلغ عنه."
+    "hintSummary": "إذا كان هذا الفشل غير متوقع، فأبلغ عنه.",
+    "lastAndCommand": "استخدم --last أو --command <n>، وليس كليهما.",
+    "needsMessage": "لا يوجد ما يُبلَّغ عنه دون أمر فاشل: مرّر --last أو --command <n> أو --message <text>.",
+    "noCredential": "تتطلب الملاحظات رمز API أو ترخيص Free، وكلاهما غير متوفر على هذا الجهاز.",
+    "noCredentialSummary": "سجّل الدخول إلى حساب أو ثبّت ترخيصًا مجانيًا، ثم أبلغ مرة أخرى.",
+    "noFailedCommand": "لا يوجد أمر فاشل مسجّل بعد؛ استخدم --list-recent أو --message <text>.",
+    "noRecent": "لا توجد أوامر مسجّلة بعد.",
+    "noSuchCommand": "لا يوجد أمر مسجّل عند الفهرس {{index}}؛ راجع rdc feedback report --list-recent.",
+    "optionFree": "تثبيت ترخيص مجاني بإنشاء مستودع على هذا الجهاز",
+    "optionLogin": "تسجيل الدخول إلى حساب",
+    "previewOnly": "لم يُرسل التقرير: الإرسال يتطلب --yes.",
+    "sendDescription": "إرسال التقرير الذي عُرضت معاينته",
+    "sent": "تم تسجيل التقرير {{id}} (البصمة {{fingerprint}}).",
+    "sentDuplicate": "طابق التقرير {{id}} فشلًا معروفًا وتم احتسابه (البصمة {{fingerprint}})."
   },
   "help": {
     "agentMode": "\n  وضع الوكيل\n    • النسخ فقط: أنشئ نسخة متفرعة قبل إجراء أي تغييرات على أي مستودع\n    • المستودعات الرئيسية (غير المتفرعة) للقراءة فقط للوكلاء\n    • سير العمل: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • مرجع المستودع (repo[:tag]) يشتق جهازه الخاص، لذا لا حاجة إلى -m\n    • ناتج JSON تلقائي: جميع الأوامر تُعيد { success, data, errors, metrics }\n    • حلّل دائمًا JSON الكامل، ولا تستخدم tail/head/grep على ناتج JSON مطلقًا\n    • استخدم أعلام التصفية (مثل --repositories، --containers) لتقليل حجم الاستجابة\n\n",

@@ -1237,6 +1237,19 @@
       "tofuInstallHint": "运行：rdc tools install tofu",
       "rsyncInstallHint": "请用系统包管理器安装 rsync"
     },
+    "feedback": {
+      "description": "提交结构化反馈或错误报告。报告仅由已脱敏的数据生成,会完整显示,并在确认后(或使用 --yes 时)通过已保存的 API 令牌或已安装的 Free 许可证发送。",
+      "descriptionShort": "提交错误或反馈报告",
+      "report": {
+        "description": "根据最近一次失败的命令(--last)、已记录的命令(--command <n>)或仅一条消息生成报告,原样打印将要发送的内容,并在确认后发送。未加 --yes 的智能体只会得到预览和发送命令,绝不会暗中发送。",
+        "descriptionShort": "预览并发送反馈报告",
+        "optionCommand": "使用此序号对应的已记录命令(1 为最新;参见 --list-recent)",
+        "optionKind": "报告类型:bug、feedback 或 docs",
+        "optionLast": "使用最近一次失败的命令",
+        "optionListRecent": "列出已记录的命令并退出",
+        "optionMessage": "要附带的自由文本说明(发送前会脱敏)"
+      }
+    },
     "job": {
       "cancel": {
         "alreadyFinished": "任务 {{jobId}} 已经{{state}},无需取消。",
@@ -3637,9 +3650,27 @@
     "delegationCertRefused": "服务器的许可证书被拒绝 ({{code}})；请让运维人员运行：rdc server licence"
   },
   "feedback": {
+    "badKind": "未知的报告类型 \"{{kind}}\";请使用 bug、feedback 或 docs。",
+    "confirm": "发送此报告?",
+    "dailyLimit": "已达到每日反馈上限({{subject}});可从 {{resetAt}} 起再次提交。",
+    "dailyLimitNoReset": "已达到每日反馈上限({{subject}});请明天(UTC)再试。",
+    "declined": "未发送任何内容。",
     "hint": "结果不符合预期？{{run}}",
     "hintDescription": "针对此次失败提交反馈报告",
-    "hintSummary": "如果此次失败出乎意料，请提交报告。"
+    "hintSummary": "如果此次失败出乎意料，请提交报告。",
+    "lastAndCommand": "请使用 --last 或 --command <n>,不能同时使用。",
+    "needsMessage": "没有失败的命令就无可报告:请传入 --last、--command <n> 或 --message <text>。",
+    "noCredential": "提交反馈需要 API 令牌或 Free 许可证,而这台机器上两者都没有。",
+    "noCredentialSummary": "请登录账户或安装免费许可证,然后再次报告。",
+    "noFailedCommand": "尚无已记录的失败命令;请使用 --list-recent 或 --message <text>。",
+    "noRecent": "尚无已记录的命令。",
+    "noSuchCommand": "序号 {{index}} 处没有已记录的命令;参见 rdc feedback report --list-recent 命令。",
+    "optionFree": "在这台机器上创建仓库以安装免费许可证",
+    "optionLogin": "登录账户",
+    "previewOnly": "报告未发送:发送需要 --yes。",
+    "sendDescription": "发送已预览的报告",
+    "sent": "报告 {{id}} 已提交(指纹 {{fingerprint}})。",
+    "sentDuplicate": "报告 {{id}} 与已知故障匹配,已计入统计(指纹 {{fingerprint}})。"
   },
   "help": {
     "agentMode": "\n  代理模式\n    • 仅限 fork：在对任何仓库进行更改之前先创建 fork\n    • Grand（非 fork）仓库对代理为只读\n    • 工作流：repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • 仓库引用（repo[:tag]）会自行推导出所在机器，因此不需要 -m\n    • JSON 输出是自动的：所有命令都返回 { success, data, errors, metrics }\n    • 始终解析完整的 JSON，切勿对 JSON 输出使用 tail/head/grep\n    • 使用过滤标志（例如 --repositories、--containers）以减小响应体积\n\n",
