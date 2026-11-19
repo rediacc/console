@@ -254,7 +254,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
   - `private/account/e2e/src/utils/live-sidebar-walk.ts` holds the scan and the mode assertions, so 07-02 (local) and 07-90 (bench) assert the same things.
 
 ## Tasks
-- [ ] S1 [writer] P2, shipped first and alone. In the current footer the email becomes a plain, non-interactive label. `sidebar-logout` becomes a LogOut icon button that opens the new `SignOutConfirmDialog` (new `ui/alert-dialog.tsx`), and only confirm calls `logout`. The five `common` sign-out keys are added in 13 locales, naturalized, and the hash manifest is regenerated. e2e: `NavigationComponent.logout()` clicks `sidebar-logout` and then `sidebar-logout-confirm`; 01-02, 01-03, 01-05 and 16-03 use it; new `01-06-logout-confirm.test.ts` (@auth) covers cancel and confirm.
+- [x] S1 [writer] P2, shipped first and alone. In the current footer the email becomes a plain, non-interactive label. `sidebar-logout` becomes a LogOut icon button that opens the new `SignOutConfirmDialog` (new `ui/alert-dialog.tsx`), and only confirm calls `logout`. The five `common` sign-out keys are added in 13 locales, naturalized, and the hash manifest is regenerated. e2e: `NavigationComponent.logout()` clicks `sidebar-logout` and then `sidebar-logout-confirm`; 01-02, 01-03, 01-05 and 16-03 use it; new `01-06-logout-confirm.test.ts` (@auth) covers cancel and confirm.
   Owns: private/account/web/src/components/AppSidebar.tsx, private/account/web/src/components/ui/alert-dialog.tsx, private/account/web/src/components/SignOutConfirmDialog.tsx, private/account/web/src/components/__tests__/sign-out-confirm.test.tsx, private/account/web/src/i18n/locales/*/common.json, private/account/web/src/i18n/locales/.translation-hashes.json, private/account/e2e/src/pages/shared/NavigationComponent.ts, private/account/e2e/tests/01-auth/01-02-login.test.ts, private/account/e2e/tests/01-auth/01-03-logout.test.ts, private/account/e2e/tests/01-auth/01-05-session.test.ts, private/account/e2e/tests/01-auth/01-06-logout-confirm.test.ts, private/account/e2e/tests/16-team/16-03-two-org-selection.test.ts
   Depends on: none
   Needs: none
@@ -264,7 +264,8 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - Cancel and Esc close it without calling;
     - confirm calls it once;
     - e2e: cancel stays on /account/dashboard; confirm lands on /account/login and /account/dashboard then redirects to login.
-- [ ] F1 [writer] Foundations, no UI change: `lib/nav-config.ts` (Design 1-2: `NAV`, `navMode`, `visibleNav`, `activeItemId`, `paletteEntries`, `MODE_HOME`), `hooks/use-theme.ts` (light/dark/system, `data-theme`, the `theme` key, the same logic as private/account/web/src/components/ThemeToggle.tsx:19-45), and `hooks/use-persistent-state.ts`, with unit tests.
+    (ticked) 2026-11-19T12:58:44Z by d778be9d: commit:c1f61ee2d (private/account 1dd0834 S1 + b474fb0 e2e follow-up); vitest sign-out-confirm 5 passed, typecheck:web, lint, i18n completeness/placeholders/naturalization/hashes/key-usage rc 0; ./run.sh account test e2e --grep @auth 20 passed rc 0 with the gateway on TERMS_GATE=false
+- [x] F1 [writer] Foundations, no UI change: `lib/nav-config.ts` (Design 1-2: `NAV`, `navMode`, `visibleNav`, `activeItemId`, `paletteEntries`, `MODE_HOME`), `hooks/use-theme.ts` (light/dark/system, `data-theme`, the `theme` key, the same logic as private/account/web/src/components/ThemeToggle.tsx:19-45), and `hooks/use-persistent-state.ts`, with unit tests.
   Owns: private/account/web/src/lib/nav-config.ts, private/account/web/src/lib/__tests__/nav-config.test.ts, private/account/web/src/hooks/use-theme.ts, private/account/web/src/hooks/use-persistent-state.ts, private/account/web/src/hooks/__tests__/use-theme.test.ts, private/account/web/src/hooks/__tests__/use-persistent-state.test.ts
   Depends on: none
   Needs: none
@@ -276,6 +277,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - a customer non-root `paletteEntries` holds no `/account/admin` path;
     - `useTheme('system')` follows `matchMedia`;
     - `usePersistentState` survives malformed JSON.
+    (ticked) 2026-11-19T12:58:45Z by d778be9d: commit:c1f61ee2d (private/account a6a8eef F1); vitest nav-config/use-theme/use-persistent-state 34 passed, typecheck:web rc 0, lint rc 0; ThemeToggle re-import left to N1, which deletes ThemeToggle.tsx
 - [ ] I1 [writer] i18n: `nav.json` and `offerUi.json` in 13 locales (Design 6), the English source first, then naturalized; both namespaces registered in i18n/config.ts; hashes regenerated. New `i18n/__tests__/nav-keys.test.ts` resolves every `NAV` labelKey (all modes, every item), every Design 6 `nav` key and the seven `offerUi` keys in all 13 locales.
   Owns: private/account/web/src/i18n/config.ts, private/account/web/src/i18n/locales/*/nav.json, private/account/web/src/i18n/locales/*/offerUi.json, private/account/web/src/i18n/locales/.translation-hashes.json, private/account/web/src/i18n/__tests__/nav-keys.test.ts
   Depends on: F1 (the test imports `NAV`), S1 (the hash manifest is written serially)

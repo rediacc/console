@@ -97,7 +97,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 29 of 82 plans done, 1258 of 1519 boxes done (82%).
+Promoted: 29 of 82 plans done, 1260 of 1519 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -182,7 +182,7 @@ Promoted: 29 of 82 plans done, 1258 of 1519 boxes done (82%).
 | 79 | PLAN-push-decoupling.md | 17/23 | 6 open |
 | 80 | PLAN-stop-hook-store-status.md | 3/9 | 6 open |
 | 81 | PLAN-rdc-feedback.md | 18/21 | 3 open |
-| 82 | PLAN-account-sidebar-redesign.md | 0/15 | 15 open |
+| 82 | PLAN-account-sidebar-redesign.md | 2/15 | 13 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
