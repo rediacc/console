@@ -39,6 +39,22 @@ VERDICT_KEYS = ("status", "fixedIn", "planRef", "category", "triageNote")
 FINGERPRINT = re.compile(r"^[0-9a-f]{64}$")
 # The `since` the account accepts (zod `datetime()`: UTC, `Z`, optional fraction).
 ISO_INSTANT = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$")
+# The 24-hour reporter and org counts the account's export carries beside the totals (feedback.service.ts exportGroups). An account deployed before them sends neither, so the pair is optional, but never one alone.
+WINDOW_COUNT_FIELDS = ("distinctReporters24h", "distinctOrgs24h")
+
+
+def _window_counts_ok(item: Mapping[str, Any]) -> bool:
+    present = [f for f in WINDOW_COUNT_FIELDS if f in item]
+    if not present:
+        return True
+    if len(present) != len(WINDOW_COUNT_FIELDS):
+        return False
+    return all(
+        isinstance(item[f], int) and not isinstance(item[f], bool) and item[f] >= 0
+        for f in WINDOW_COUNT_FIELDS
+    )
+
+
 CURSOR_VERSION = 1
 CURSOR_PARTS = (".ci", "cache", "feedback", "last-run.json")
 
@@ -64,7 +80,7 @@ def _describe(status: int, answer: Mapping[str, Any]) -> str:
 def export(
     transport: Transport, since: str | None = None, statuses: Sequence[str] = ()
 ) -> list[dict[str, Any]]:
-    """The export items reported since `since` with a status in `statuses` (empty: every status). A non-200 answer, or an item without a 64-hex fingerprint, a known status and an ISO `lastSeenAt`, is a FeedbackError: a malformed export is contract drift, not data to guess at."""
+    """The export items reported since `since` with a status in `statuses` (empty: every status). A non-200 answer, or an item without a 64-hex fingerprint, a known status and an ISO `lastSeenAt`, or with a WINDOW_COUNT_FIELDS pair that is half present or not non-negative integers, is a FeedbackError: a malformed export is contract drift, not data to guess at."""
     unknown = [s for s in statuses if s not in STATUSES]
     if unknown:
         raise FeedbackError("unknown feedback status %s" % ", ".join(unknown), rc=2)
@@ -91,12 +107,14 @@ def export(
             and item.get("status") in STATUSES
             and isinstance(item.get("lastSeenAt"), str)
             and ISO_INSTANT.match(item["lastSeenAt"])
+            and _window_counts_ok(item)
         ):
             bad += 1
     if bad:
         raise FeedbackError(
             "GET %s answered %d malformed item(s) of %d: no fingerprint, status or lastSeenAt "
-            "of the expected shape" % (EXPORT_ROUTE, bad, len(items))
+            "of the expected shape, or a 24 h count (%s) that is not a non-negative integer "
+            "pair" % (EXPORT_ROUTE, bad, len(items), ", ".join(WINDOW_COUNT_FIELDS))
         )
     return items
 

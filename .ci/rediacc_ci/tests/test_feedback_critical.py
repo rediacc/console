@@ -52,6 +52,16 @@ def _item(fp=FP, status="screening", **extra):
     return base
 
 
+class _ExportStub:
+    """GET export answers the given items; nothing else is called."""
+
+    def __init__(self, items):
+        self.items = items
+
+    def get(self, _route):
+        return 200, {"items": self.items}
+
+
 def _cls(**over):
     doc = {
         "meaningful": True,
@@ -92,9 +102,26 @@ def test_a_fires_on_three_orgs_and_not_on_two():
 
 
 def test_a_reads_the_24h_counts_when_the_export_carries_them():
-    old = _item(distinctReporters=40, distinctReporters24h=5)
+    old = _item(distinctReporters=40, distinctReporters24h=5, distinctOrgs24h=0)
     assert _codes(critical.evaluate(old, NOW)) == ["a"]
-    assert critical.evaluate(_item(distinctReporters=40, distinctReporters24h=4), NOW) == []
+    quiet = _item(distinctReporters=40, distinctReporters24h=4, distinctOrgs24h=2)
+    assert critical.evaluate(quiet, NOW) == []
+    assert _codes(critical.evaluate(_item(distinctReporters24h=1, distinctOrgs24h=3), NOW)) == ["a"]
+
+
+def test_a_prefers_the_24h_counts_over_a_fresh_window():
+    # First and last report inside 24 h would let the totals stand in; the account's own 24 h counts say only one reporter is recent.
+    fresh = _fresh(distinctReporters=9, distinctOrgs=9, distinctReporters24h=1, distinctOrgs24h=1)
+    assert critical.evaluate(fresh, NOW) == []
+    # Control: the same item without the pair falls back to the totals and fires.
+    assert _codes(critical.evaluate(_fresh(distinctReporters=9, distinctOrgs=9), NOW)) == ["a"]
+
+
+def test_a_reads_the_24h_counts_from_a_parsed_export():
+    # First report 3 days ago: without the pair the window reading counts nothing.
+    item = _item(distinctReporters=8, distinctOrgs=2, distinctReporters24h=6, distinctOrgs24h=1)
+    parsed = client.export(_ExportStub([item]))
+    assert _codes(critical.evaluate(parsed[0], NOW)) == ["a"]
 
 
 def test_a_control_totals_spread_past_24h_do_not_count():

@@ -102,6 +102,35 @@ def test_export_malformed_item_is_an_error(bad):
         client.export(StubServer([_item(FP_CLEAN), bad]))
 
 
+def test_export_keeps_the_24h_counts():
+    item = _item(FP_CLEAN, distinctReporters=7, distinctReporters24h=5, distinctOrgs24h=2)
+    (parsed,) = client.export(StubServer([item]))
+    assert (parsed["distinctReporters24h"], parsed["distinctOrgs24h"]) == (5, 2)
+
+
+@pytest.mark.parametrize(
+    "counts",
+    [
+        {"distinctReporters24h": 3},
+        {"distinctOrgs24h": 1},
+        {"distinctReporters24h": -1, "distinctOrgs24h": 0},
+        {"distinctReporters24h": "5", "distinctOrgs24h": 0},
+        {"distinctReporters24h": True, "distinctOrgs24h": 0},
+        {"distinctReporters24h": 2, "distinctOrgs24h": None},
+    ],
+    ids=["reporters-alone", "orgs-alone", "negative", "string", "bool", "null"],
+)
+def test_export_malformed_24h_counts_are_an_error(counts):
+    with pytest.raises(client.FeedbackError, match="24 h count"):
+        client.export(StubServer([_item(FP_CLEAN, **counts)]))
+
+
+def test_export_without_the_24h_counts_is_accepted():
+    # Control: an account deployed before the pair sends neither field.
+    (parsed,) = client.export(StubServer([_item(FP_CLEAN)]))
+    assert "distinctReporters24h" not in parsed
+
+
 def test_export_refuses_bad_since_and_status_before_any_request():
     stub = StubServer()
     with pytest.raises(client.FeedbackError) as exc:

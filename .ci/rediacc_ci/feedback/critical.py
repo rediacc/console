@@ -4,7 +4,7 @@ A critical report goes to the operator as a worklist `[?]` with a DEFAULT and a 
 
 THE TRIGGERS, each computed from the export aggregates, the Stage 2 outcome and the reproduction result:
 
-  (a) 5 or more distinct reporters, or 3 or more orgs, within 24 h. The export carries totals, so the 24 h window is read from `distinctReporters24h` / `distinctOrgs24h` when the account sends them and otherwise from a fingerprint whose first and last report both fall inside the last 24 h.
+  (a) 5 or more distinct reporters, or 3 or more orgs, within 24 h. The account's export carries `distinctReporters24h` / `distinctOrgs24h` (the owners and orgs of member reports seen in the last 24 h; `rediacc_ci.feedback.client.export` refuses a half or non-integer pair), and those counts decide. An account deployed before them sends only totals, and then the window is a fingerprint whose first and last report both fall inside the last 24 h.
   (b) a core path broken (install, update, login, repo up/down, backup or restore) that the reproduction confirmed, with no workaround found.
   (c) the AI cannot decide: the Stage 2 classifier quarantined the report (it flagged it suspicious, or its reply broke the schema), or a clean reproduction disagrees with a high-count report. A Stage 1 deterministic quarantine is NOT a trigger by itself: those rules fire on any URL, `curl` or backtick span, so most of their hits are ordinary error text, and a widespread one still reaches the operator through (a).
   (d) unresolved past 14 days with occurrences still growing (a report in the last 24 h).
@@ -101,7 +101,7 @@ def _int(item: Mapping[str, Any], key: str) -> int:
 
 def window_counts(item: Mapping[str, Any], now: datetime) -> tuple[int, int]:
     """(distinct reporters, distinct orgs) inside the last 24 h, per the (a) reading in the module docstring."""
-    if "distinctReporters24h" in item or "distinctOrgs24h" in item:
+    if "distinctReporters24h" in item and "distinctOrgs24h" in item:
         return _int(item, "distinctReporters24h"), _int(item, "distinctOrgs24h")
     first, last = _instant(item.get("firstSeenAt")), _instant(item.get("lastSeenAt"))
     if first is None or last is None or first < now - DAY or last > now + DAY:
