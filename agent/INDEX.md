@@ -465,7 +465,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
 | `agent/plans/PLAN-account-notices.md` | approved | 160 | 1 | 16 | 44137 |
-| `agent/plans/PLAN-account-sidebar-redesign.md` | approved | 436 | 4 | 11 | 63873 |
+| `agent/plans/PLAN-account-sidebar-redesign.md` | approved | 437 | 3 | 12 | 64103 |
 | `agent/plans/PLAN-add-chunkstore-backup-verb.md` | compacted | 64 | 0 | 0 | 5651 |
 | `agent/plans/PLAN-add-js-extensions-shared.md` | compacted | 50 | 0 | 0 | 4285 |
 | `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4623 |

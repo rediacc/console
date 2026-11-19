@@ -359,7 +359,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - the collapsed state renders tooltips and the avatar-only user row;
     - no `adminMenuVisible` read remains (grep in test).
     (ticked) 2026-11-19T14:11:15Z by d778be9d: commit:012b26114 (private/account 1891fb4 + 30e9898); web vitest 1124 passed, web tsc rc 0, lint rc 0, i18n completeness/hashes/key-usage rc 0
-- [ ] E1 [writer] e2e migration per Design 8, plus new suites.
+- [x] E1 [writer] e2e migration per Design 8, plus new suites.
   - `AuthenticatedTest.ts` drops the `adminMenuVisible` seed. `NavigationComponent` gains `openUserMenu()`, `openWorkspaceSwitcher()`, `enterAdmin()` and `exitAdmin()`; `settingsLink` and `adminLink` are re-pointed.
   - 07-01, 08-01, 08-02, 13-02, 16-03, 19-01 and 26-01 are updated. 25-06 is replaced by `25-06-admin-mode.test.ts`.
   - New `07-02-sidebar-modes.test.ts` (@navigation): customer, partner (seeded partner), admin and Exit, the active item on a nested offer route, Ctrl+K page search filtered by permission, and the collapsed rail.
@@ -373,6 +373,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - `enter-partner-program` then `program-chooser` works as in 26-01;
     - Ctrl+K "stripe" finds nothing for a customer and Stripe for root;
     - sign-out cancel and confirm (01-06 from S1 still green).
+    (ticked) 2026-11-19T16:26:56Z by d778be9d: commit:f4ef1bc47 (private/account 5b41ea16 E1 + 03a66c9 + 48e03e8); ./run.sh account test e2e rc 0, 272 passed, 13 skipped, 0 failed (log .ci/cache/pause/d778be9d/acct-e2e-full2.log)
 - [x] B1 [writer] Bench test partner through root grants (Design 10): the `bench_test_partner` section in root-grants.json, its loader, plan and read in root_grants.py (bench targets only, rc 2 on an edge target), and the account service, DTO and types accepting it only when the environment is bench or development.
   Owns: .ci/config/root-grants.json, .ci/rediacc_ci/ops/root_grants.py, .ci/rediacc_ci/tests/test_ops_root_grants.py, private/account/src/types/root-grants.ts, private/account/src/services/root-grants.service.ts, private/account/src/dto/root-grants.dto.ts, private/account/tests/integration/root-grants.test.ts, private/account/tests/integration/root-grants-parity.test.ts
   Depends on: none
