@@ -129,6 +129,12 @@ Schema:
 | `next.options[].description` | `string` | Human-readable explanation of this option |
 | `next.options[].run` | `string` | Exact CLI command. Relay verbatim to the user |
 
+### Failure hint and feedback option
+
+After a failed command (any non-zero exit except a usage error), `rdc` prints `Unexpected? rdc feedback report --last` to stderr. In JSON output the same pointer is appended to `next.options[]` as an option running `rdc feedback report --last`; an error without a `next` gets one, with a summary asking whether the failure is unexpected. The hint is absent for usage errors, for failing `rdc feedback` commands and for requests served by `rdc serve`. `REDIACC_FEEDBACK_HINT=0` turns it off.
+
+The report command prints exactly what would be sent. Without `--yes` an agent gets that preview and the command to send it; nothing is sent until `--yes` is passed or a person confirms.
+
 ### Retryable Errors
 
 These error types are marked `retryable: true`:

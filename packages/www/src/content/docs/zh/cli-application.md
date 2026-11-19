@@ -7,7 +7,7 @@ order: 2
 language: zh
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/zh/cli.json
-sourceHash: "53e48d7c4077dba3"
+sourceHash: "c1e954732aaff197"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -3687,13 +3687,61 @@ rdc doctor
 
 ---
 
+<a id="cli-local-group-feedback"></a>
+## 19. {{t:cli.docs.sectionTitles.feedback}}
+
+{{t:cli.commands.feedback.description}}
+
+<a id="cli-local-feedback-list"></a>
+### 19.1 list
+
+{{t:cli.commands.feedback.list.description}}
+
+```bash
+rdc feedback list [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--status <list>` | {{t:cli.commands.feedback.list.optionStatus}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-feedback-report"></a>
+### 19.2 report
+
+{{t:cli.commands.feedback.report.description}}
+
+```bash
+rdc feedback report [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--last` | {{t:cli.commands.feedback.report.optionLast}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--command <n>` | {{t:cli.commands.feedback.report.optionCommand}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--list-recent` | {{t:cli.commands.feedback.report.optionListRecent}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--kind <kind>` | {{t:cli.commands.feedback.report.optionKind}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--message <text>` | {{t:cli.commands.feedback.report.optionMessage}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-feedback-show"></a>
+### 19.3 show
+
+{{t:cli.commands.feedback.show.description}}
+
+```bash
+rdc feedback show <id>
+```
+
+---
+
 <a id="cli-local-group-tools"></a>
-## 19. {{t:cli.docs.sectionTitles.tools}}
+## 20. {{t:cli.docs.sectionTitles.tools}}
 
 {{t:cli.commands.tools.description}}
 
 <a id="cli-local-tools-install"></a>
-### 19.1 install
+### 20.1 install
 
 {{t:cli.commands.tools.install.description}}
 
@@ -3707,7 +3755,7 @@ rdc tools install <tool> [options]
 
 
 <a id="cli-local-tools-list"></a>
-### 19.2 list
+### 20.2 list
 
 {{t:cli.commands.tools.list.description}}
 
@@ -3718,12 +3766,12 @@ rdc tools list
 ---
 
 <a id="cli-local-group-ops"></a>
-## 20. {{t:cli.docs.sectionTitles.ops}}
+## 21. {{t:cli.docs.sectionTitles.ops}}
 
 {{t:cli.commands.ops.description}}
 
 <a id="cli-local-ops-up"></a>
-### 20.1 up
+### 21.1 up
 
 {{t:cli.commands.ops.up.description}}
 
@@ -3744,7 +3792,7 @@ rdc ops up [options]
 
 
 <a id="cli-local-ops-down"></a>
-### 20.2 down
+### 21.2 down
 
 {{t:cli.commands.ops.down.description}}
 
@@ -3759,7 +3807,7 @@ rdc ops down [options]
 
 
 <a id="cli-local-ops-status"></a>
-### 20.3 status
+### 21.3 status
 
 {{t:cli.commands.ops.status.description}}
 
@@ -3773,7 +3821,7 @@ rdc ops status [options]
 
 
 <a id="cli-local-ops-ssh"></a>
-### 20.4 ssh
+### 21.4 ssh
 
 {{t:cli.commands.ops.ssh.description}}
 
@@ -3790,7 +3838,7 @@ rdc ops ssh [options]
 
 
 <a id="cli-local-ops-setup"></a>
-### 20.5 setup
+### 21.5 setup
 
 {{t:cli.commands.ops.setup.description}}
 
@@ -3804,7 +3852,7 @@ rdc ops setup [options]
 
 
 <a id="cli-local-ops-check"></a>
-### 20.6 check
+### 21.6 check
 
 {{t:cli.commands.ops.check.description}}
 
@@ -3815,7 +3863,7 @@ rdc ops check
 ---
 
 <a id="cli-local-group-serve"></a>
-## 21. {{t:cli.docs.sectionTitles.serve}}
+## 22. {{t:cli.docs.sectionTitles.serve}}
 
 {{t:cli.commands.serve.description}}
 

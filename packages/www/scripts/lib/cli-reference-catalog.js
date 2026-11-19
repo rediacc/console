@@ -23,6 +23,7 @@ const LOCAL_GROUPS = [
   'legal',
   'version',
   'doctor',
+  'feedback',
   'tools',
   'ops',
   'serve',
