@@ -11,7 +11,7 @@ import { scrubText } from '@rediacc/shared';
 import { getRediaccDirs } from '@rediacc/shared/paths';
 import { currentRequestContext } from '../core/request-context.js';
 import { VERSION } from '../../version.js';
-import { redactArgv, resolveCommandPath } from './redact.js';
+import { commandWords, redactArgv, resolveCommandPath } from './redact.js';
 
 export const RING_CAPACITY = 10;
 export const STDERR_TAIL_BYTES = 4096;
@@ -36,16 +36,29 @@ export interface RecordInput {
 
 let tail = '';
 let tapped = false;
+let restoreStderr: (() => void) | undefined;
+
+/** The last `max` characters, starting at a whitespace boundary so a cut secret never leaves a partial prefix. */
+function boundedTail(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(-max);
+  const boundary = cut.search(/\s/);
+  return boundary >= 0 ? cut.slice(boundary) : '';
+}
 
 /** Keep the last bytes the CLI wrote to stderr, so a failure can carry its own output. */
 export function installStderrTap(): void {
   if (tapped) return;
   tapped = true;
-  const original = process.stderr.write.bind(process.stderr) as (...args: unknown[]) => boolean;
+  const previous = process.stderr.write;
+  const original = previous.bind(process.stderr) as (...args: unknown[]) => boolean;
+  restoreStderr = () => {
+    process.stderr.write = previous;
+  };
   process.stderr.write = ((chunk: unknown, ...rest: unknown[]) => {
     try {
       const text = typeof chunk === 'string' ? chunk : Buffer.from(chunk as Uint8Array).toString();
-      tail = (tail + text).slice(-STDERR_TAIL_BYTES * 2);
+      tail = boundedTail(tail + text, STDERR_TAIL_BYTES * 2);
     } catch {
       // The tap never interferes with the write itself.
     }
@@ -53,7 +66,15 @@ export function installStderrTap(): void {
   }) as typeof process.stderr.write;
 }
 
-/** Forget the captured stderr (tests, and the start of a command). */
+/** Put the original stderr writer back and allow a later install (tests). */
+export function uninstallStderrTap(): void {
+  restoreStderr?.();
+  restoreStderr = undefined;
+  tapped = false;
+  tail = '';
+}
+
+/** Forget the captured stderr (tests; one CLI process runs one command, so production never needs it). */
 export function resetStderrTail(): void {
   tail = '';
 }
@@ -84,14 +105,14 @@ export function recordCommand(input: RecordInput): void {
   try {
     if (currentRequestContext() !== undefined) return;
     const words = resolveCommandPath(input.argv);
-    if (input.argv.find((t) => !t.startsWith('-')) === 'feedback') return;
+    if (commandWords(input.argv)[0] === 'feedback') return;
     const home = homedir();
     const entry: RingEntry = {
       at: new Date().toISOString(),
       commandPath: words.join(' '),
       argv: redactArgv(input.argv, { homeDir: home }),
       exitCode: input.exitCode,
-      stderrTail: scrubText(tail.slice(-STDERR_TAIL_BYTES), { homeDir: home }),
+      stderrTail: boundedTail(scrubText(tail, { homeDir: home }), STDERR_TAIL_BYTES),
       cliVersion: VERSION,
       ...(input.errorCode ? { errorCode: input.errorCode } : {}),
       ...(input.errorMessage

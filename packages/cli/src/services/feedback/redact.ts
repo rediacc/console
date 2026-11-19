@@ -22,9 +22,32 @@ function isOption(token: string): boolean {
   return token.startsWith('-') && token.length > 1;
 }
 
+/** Root options that take a value; their value token is never a command word. Kept equal to the `createCli` root options by a test. */
+export const GLOBAL_VALUE_OPTIONS: ReadonlySet<string> = new Set([
+  '-o',
+  '--output',
+  '--config',
+  '-l',
+  '--lang',
+  '--fields',
+  '--proxy',
+  '--license-region',
+]);
+
+/** The argv tokens that are command or positional words: options and the values of root options are dropped. */
+export function commandWords(argv: readonly string[]): string[] {
+  const words: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const token = argv[i];
+    if (GLOBAL_VALUE_OPTIONS.has(token)) i++;
+    else if (!isOption(token)) words.push(token);
+  }
+  return words;
+}
+
 /** Longest leading run of non-option tokens that names a contract command (empty when none). */
 export function resolveCommandPath(argv: readonly string[]): string[] {
-  const words = argv.filter((t) => !isOption(t));
+  const words = commandWords(argv);
   for (let n = Math.min(words.length, 4); n > 0; n--) {
     if (getCommand(words.slice(0, n).join(' '))) return words.slice(0, n);
   }
@@ -66,8 +89,25 @@ function isSensitiveOption(opt: ContractOption | undefined, name: string): boole
 }
 
 /** Whether the token after an option is that option's value. */
-function takesValue(opt: ContractOption | undefined, sensitive: boolean, next: string): boolean {
-  return opt ? opt.valueTaking : sensitive && !isOption(next);
+function takesValue(
+  opt: ContractOption | undefined,
+  sensitive: boolean,
+  name: string,
+  next: string
+): boolean {
+  if (opt) return opt.valueTaking;
+  if (GLOBAL_VALUE_OPTIONS.has(name)) return true;
+  return sensitive && !next.startsWith('--');
+}
+
+/** `-tVALUE` / `-t=VALUE`: a known value-taking short option with its value attached to the token. */
+function redactAttachedShort(cmd: ContractCommand | undefined, token: string): string | undefined {
+  if (!/^-[^-]./.test(token)) return undefined;
+  const flag = token.slice(0, 2);
+  const opt = findOption(cmd, flag);
+  if (!opt?.valueTaking) return undefined;
+  const mask = optionMask(opt, opt.sensitive === true);
+  return mask ? `${flag}${mask}` : token;
 }
 
 /**
@@ -80,6 +120,8 @@ function redactOption(
   i: number
 ): { emit: string[]; consumed: number } {
   const token = argv[i];
+  const attached = redactAttachedShort(cmd, token);
+  if (attached !== undefined) return { emit: [attached], consumed: 1 };
   const inline = token.startsWith('--') && token.includes('=');
   const name = inline ? token.slice(0, token.indexOf('=')) : token;
   const opt = findOption(cmd, name);
@@ -87,7 +129,7 @@ function redactOption(
   const mask = optionMask(opt, sensitive);
   if (inline) return { emit: [mask ? `${name}=${mask}` : token], consumed: 1 };
   const next = argv[i + 1];
-  if (next !== undefined && takesValue(opt, sensitive, next)) {
+  if (next !== undefined && takesValue(opt, sensitive, name, next)) {
     return { emit: [name, mask ?? next], consumed: 2 };
   }
   return { emit: [token], consumed: 1 };

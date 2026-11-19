@@ -5,7 +5,8 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createCli } from '../../../cli.js';
 import { handleError } from '../../../utils/errors.js';
-import { readRing } from '../ring.js';
+import { GLOBAL_VALUE_OPTIONS } from '../redact.js';
+import { readRing, uninstallStderrTap } from '../ring.js';
 
 let state: string;
 let previous: string | undefined;
@@ -24,7 +25,9 @@ afterEach(() => {
   process.argv = savedArgv;
   process.exitCode = savedExit;
   rmSync(state, { recursive: true, force: true });
+  uninstallStderrTap();
   vi.restoreAllMocks();
+  vi.resetModules();
 });
 
 describe('ring buffer write sites', () => {
@@ -54,5 +57,46 @@ describe('ring buffer write sites', () => {
     expect(entry.errorMessage).not.toContain('hunter2');
     expect(entry.errorCode).toBeDefined();
     expect(entry.exitCode).toBeGreaterThan(0);
+  });
+
+  it('the uncaughtException handler in index.ts records the crash', async () => {
+    const handlers: Record<string, (error: unknown) => void> = {};
+    vi.spyOn(process, 'on').mockImplementation(((event: string, fn: (error: unknown) => void) => {
+      handlers[event] = fn;
+      return process;
+    }) as never);
+    vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+    vi.doMock('../../../cli.js', () => ({ cli: { parseAsync: () => Promise.resolve() } }));
+    vi.doMock('../../telemetry/telemetry.js', () => ({
+      telemetryService: {
+        trackError: () => undefined,
+        shutdown: () => Promise.resolve(),
+        stopProfiling: () => Promise.resolve(),
+      },
+    }));
+    vi.doMock('../../update/background-updater.js', () => ({
+      applyPendingUpdate: () => Promise.resolve(),
+      maybeSpawnBackgroundUpdate: () => Promise.resolve(),
+      runBackgroundUpdateWorker: () => Promise.resolve(),
+    }));
+    process.argv = ['node', 'rdc', 'config', 'init', 'x'];
+    await import('../../../index.js');
+    handlers.uncaughtException(new Error('crash password=hunter2hunter2'));
+    const [entry] = readRing();
+    expect(entry.errorCode).toBe('UNCAUGHT_EXCEPTION');
+    expect(entry.errorMessage).not.toContain('hunter2');
+    expect(entry.argv).toBe('config init x');
+    vi.doUnmock('../../../cli.js');
+    vi.doUnmock('../../telemetry/telemetry.js');
+    vi.doUnmock('../../update/background-updater.js');
+  }, 30_000);
+
+  it('the root options list matches the value-taking options of createCli', () => {
+    const live = createCli()
+      .options.filter((o) => o.required || o.optional)
+      .flatMap((o) => [o.short, o.long])
+      .filter((f): f is string => f !== undefined);
+    const byName = (a: string, b: string) => a.localeCompare(b);
+    expect([...GLOBAL_VALUE_OPTIONS].sort(byName)).toEqual(live.sort(byName));
   });
 });

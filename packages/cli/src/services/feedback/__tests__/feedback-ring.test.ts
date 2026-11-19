@@ -8,7 +8,15 @@ import {
   runInRequestContext,
 } from '../../core/request-context.js';
 import { redactArgv, resolveCommandPath } from '../redact.js';
-import { readRing, recordCommand, resetStderrTail, RING_CAPACITY, ringFilePath } from '../ring.js';
+import {
+  installStderrTap,
+  readRing,
+  recordCommand,
+  resetStderrTail,
+  RING_CAPACITY,
+  ringFilePath,
+  uninstallStderrTap,
+} from '../ring.js';
 
 const SECRET = 'rdt_abcdef0123456789SECRETVALUE';
 let state: string;
@@ -19,12 +27,14 @@ beforeEach(() => {
   state = mkdtempSync(path.join(tmpdir(), 'feedback-ring-'));
   process.env.XDG_STATE_HOME = state;
   resetStderrTail();
+  vi.spyOn(process.stderr, 'write').mockReturnValue(true);
 });
 
 afterEach(() => {
   if (previous === undefined) delete process.env.XDG_STATE_HOME;
   else process.env.XDG_STATE_HOME = previous;
   rmSync(state, { recursive: true, force: true });
+  uninstallStderrTap();
   vi.restoreAllMocks();
 });
 
@@ -53,6 +63,35 @@ describe('redactArgv', () => {
 
   it('runs the free-text scrubber over what is left', () => {
     expect(redactArgv(['config', 'init', 'https://example.com/x'])).not.toContain('example.com');
+  });
+
+  it('masks a sensitive value that follows a root option placed before the command', () => {
+    expect(redactArgv(['--config', 'work', 'subscription', 'login', '--token', SECRET])).toBe(
+      '--config work subscription login --token <redacted>'
+    );
+    expect(redactArgv(['-o', 'json', 'subscription', 'login', `--token=${SECRET}`])).toBe(
+      '-o json subscription login --token=<redacted>'
+    );
+    expect(resolveCommandPath(['--config', 'work', 'config', 'init'])).toEqual(['config', 'init']);
+  });
+
+  it('masks an attached short option value and keeps an attached non-sensitive one', () => {
+    expect(redactArgv(['subscription', 'login', `-t${SECRET}`])).toBe(
+      'subscription login -t<redacted>'
+    );
+    expect(redactArgv(['subscription', 'login', `-t=${SECRET}`])).toBe(
+      'subscription login -t<redacted>'
+    );
+    expect(redactArgv(['config', 'init', '-qy'])).toBe('config init -qy');
+  });
+
+  it('masks the value of an unknown sensitive option even when it starts with a dash', () => {
+    expect(redactArgv(['nonesuch', '--api-password', '-hunter2hunter2'])).toBe(
+      'nonesuch --api-password <redacted>'
+    );
+    expect(redactArgv(['nonesuch', '--api-password', '--verbose'])).toBe(
+      'nonesuch --api-password --verbose'
+    );
   });
 
   it('resolves the longest command path', () => {
@@ -99,8 +138,7 @@ describe('recordCommand', () => {
     expect(entry.errorCode).toBe('AUTH_REQUIRED');
   });
 
-  it('scrubs the captured stderr tail and bounds it to 4 KB', async () => {
-    const { installStderrTap } = await import('../ring.js');
+  it('scrubs the captured stderr tail and bounds it to 4 KB', () => {
     installStderrTap();
     process.stderr.write(`noise ${'x '.repeat(5000)}\nleaked ${SECRET}\n`);
     recordCommand({ argv: ['config', 'init'], exitCode: 1 });
@@ -108,6 +146,30 @@ describe('recordCommand', () => {
     expect(entry.stderrTail.length).toBeLessThanOrEqual(4096);
     expect(entry.stderrTail).toContain('leaked');
     expect(entry.stderrTail).not.toContain('SECRETVALUE');
+  });
+
+  it('scrubs a secret that straddles the 4 KB cut of the stderr tail', () => {
+    installStderrTap();
+    process.stderr.write(`start ${SECRET} ${'z'.repeat(4078)}\n`);
+    recordCommand({ argv: ['config', 'init'], exitCode: 1 });
+    const [entry] = readRing();
+    expect(entry.stderrTail).not.toContain('ECRETVALUE');
+    expect(entry.stderrTail.length).toBeLessThanOrEqual(4096);
+  });
+
+  it('skips the feedback command typed after a root option', () => {
+    recordCommand({ argv: ['--config', 'work', 'feedback', 'report', '--last'], exitCode: 1 });
+    expect(readRing()).toEqual([]);
+    recordCommand({ argv: ['--config', 'work', 'config', 'init'], exitCode: 1 });
+    expect(readRing()).toHaveLength(1);
+  });
+
+  it('uninstalling the tap restores the original stderr writer', () => {
+    const original = process.stderr.write;
+    installStderrTap();
+    expect(process.stderr.write).not.toBe(original);
+    uninstallStderrTap();
+    expect(process.stderr.write).toBe(original);
   });
 
   it('swallows a failed write and returns normally', () => {
