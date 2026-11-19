@@ -347,7 +347,7 @@ def host_world(stem, work):
 
 
 _FIXTURES: dict[tuple[str, str], str] = {}
-_BUILDER_TABLES: dict[tuple[str, ...], dict[str, typing.Any]] = {}
+_BUILDER_TABLES: dict[tuple[tuple[str, typing.Any], ...], dict[str, typing.Any]] = {}
 
 
 def all_builders():
@@ -359,8 +359,8 @@ def all_builders():
     package at once: a shared table is a shared edit, and a shared edit is a
     collision.
     """
-    # MEMOISED (PLAN-ciquick-cpu W8). `_resolve_fixtures` and `fixture_path` call this for every env value of every case, and each call globbed the guards directory and loaded every guard: 19,604 `guards.stems()` calls, 64 s of one 86 s item, measured under cProfile. The table cannot change once the module is imported except through `FIXTURE_BUILDERS` itself, so its key names are the cache key; a raise is not cached.
-    key = tuple(FIXTURE_BUILDERS)
+    # MEMOISED (PLAN-ciquick-cpu W8). `_resolve_fixtures` and `fixture_path` call this for every env value of every case, and each call globbed the guards directory and loaded every guard: 19,604 `guards.stems()` calls, 64 s of one 86 s item, measured under cProfile. The table cannot change once the module is imported except through `FIXTURE_BUILDERS` itself, so its (name, builder) pairs are the cache key, which also catches a builder replaced under an existing name; a raise is not cached.
+    key = tuple(FIXTURE_BUILDERS.items())
     if key not in _BUILDER_TABLES:
         table = dict(FIXTURE_BUILDERS)
         for stem in guards.stems():
@@ -686,7 +686,7 @@ def python_fields(stem, payload, extra, stubs, work, cwd=None):
     """
     env = case_env(stem, extra, stubs, work)
     cwd = cwd or case_cwd(stem, work)
-    # MEMOISED PER PROCESS (PLAN-ciquick-cpu W8). The golden comparison, `assert_discriminates` and `assert_defect_is_caught` each ran every case of a guard through the live port, so one case answered up to three times per worker. The key is everything a case's answer can depend on: the payload, the case env as built (which names the fixture paths), the cwd the guard is given and the process's own cwd (`test_goldens_ignore_the_ambient_checkout` varies it). The process-table readers are never memoised: their answer is the live process table, which moves between two calls.
+    # MEMOISED PER PROCESS (PLAN-ciquick-cpu W8). The golden comparison, `assert_discriminates` and `assert_defect_is_caught` each ran every case of a guard through the live port, so one case answered up to three times per worker. The key is everything a case's answer can depend on: the payload, the case env as built (its PATH names the stub directory, which `_stub_dir` keys on the stubs' content, and its fixture paths hang off `work`), the cwd the guard is given and the process's own cwd (`test_goldens_ignore_the_ambient_checkout` varies it). The process-table readers are never memoised: their answer is the live process table, which moves between two calls.
     key = (stem, payload, tuple(sorted(env.items())), str(cwd), os.getcwd())
     if stem not in PROCESS_TABLE_READERS and key in _FIELDS:
         return dict(_FIELDS[key])
@@ -1215,3 +1215,27 @@ def assert_defect_is_caught(tmp_path, fixture_work, stem):
         "%s answered identically with its declared defect planted, so this "
         "file's green does not depend on that branch being right" % stem
     )
+
+
+def test_all_builders_sees_a_builder_replaced_under_an_existing_name(monkeypatch):
+    """a20a16ab.2: the memo keys on (name, builder), so swapping the builder behind a name is not served from the old table. CONTROL: an unchanged table answers from the memo."""
+    name = "stale-branch-checkout"
+    before = all_builders()
+    assert all_builders()[name] is before[name]
+
+    def replacement(path):
+        return path
+
+    monkeypatch.setitem(FIXTURE_BUILDERS, name, replacement)
+    assert all_builders()[name] is replacement
+
+
+def test_the_python_fields_memo_key_follows_stubs_and_work(tmp_path):
+    """a20a16ab.1 and .3: `stubs` and `work` reach the memo key through the case env (the stub directory is keyed on the stubs' content, the fixture paths on `work`), so a case with other stubs or another work tree is a different key. CONTROL: the same inputs build the same env."""
+    stem = SPREAD_STEMS[0]
+    other_work = tmp_path / "other"
+    other_work.mkdir()
+    base = case_env(stem, {}, {}, tmp_path)
+    assert case_env(stem, {}, {}, tmp_path) == base
+    assert case_env(stem, {}, {"gh": "#!/bin/sh\nexit 0\n"}, tmp_path) != base
+    assert case_env(stem, {}, {}, other_work) != base
