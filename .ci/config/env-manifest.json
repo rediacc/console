@@ -624,6 +624,7 @@
     "gate-seam": [
       "ABAD_KEPT",
       "ABAD_NEW",
+      "ACCOUNT_RAW_KEY_ALLOWLIST",
       "ACTIONS_ALLOWLIST_MIN",
       "ACTIONS_ALLOWLIST_ROOT",
       "ACTIONS_API_BASE",

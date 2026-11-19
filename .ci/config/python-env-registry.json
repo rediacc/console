@@ -808,6 +808,10 @@
     ".ci/rediacc_ci/ops/derive_shadow_pass_list.py": [
       "BRANCH"
     ],
+    ".ci/rediacc_ci/ops/email_routing_drill.py": [
+      "REDIACC_BWS_PROFILES",
+      "ROOT_EMAIL"
+    ],
     ".ci/rediacc_ci/ops/enterprise_lookup.py": [
       "ENTERPRISE_LOOKUP_PEPPER"
     ],
