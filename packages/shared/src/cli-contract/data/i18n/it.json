@@ -392,7 +392,7 @@
   "commands.backup.verify.failed": "Verifica del backup non riuscita per {{name}}",
   "commands.backup.verify.optionDeep": "Ricalcola l'hash di ogni cella registrata (verifica completa) invece di un controllo campionato",
   "commands.backup.verify.optionRestoreTest": "Ripristina lo snapshot dell'ancora con un nome usa e getta direttamente dallo store, lo confronta con l'ancora, registra il risultato ed elimina la copia",
-  "commands.backup.verify.optionRestoreTo": "Con --restore-test, ripristinare la copia su questa macchina invece che su quella del repository di origine, per un repository più grande dello spazio libero dell'origine; la copia viene confrontata con la radice del manifest dello snapshot e poi eliminata per GUID",
+  "commands.backup.verify.optionRestoreTo": "Con --restore-test, ripristinare la copia su questa macchina invece che su quella del repository di origine, per un repository più grande dello spazio libero dell'origine; la copia viene confrontata con la radice del manifest dello snapshot e poi eliminata",
   "commands.backup.verify.optionStore": "Fa ricalcolare al server l'hash di ogni chunk archiviato di questo repository e segnala quelli mancanti o danneggiati",
   "commands.backup.verify.restoreTestCleanupFailed": "La copia del test di ripristino {{copy}} non è stata eliminata da {{machine}}. Rimuovila con: rdc repo delete {{copy}}",
   "commands.backup.verify.restoreTestExclusive": "--restore-test non si può combinare con --deep o --store.",

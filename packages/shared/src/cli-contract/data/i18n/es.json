@@ -392,7 +392,7 @@
   "commands.backup.verify.failed": "Falló la verificación de la copia de seguridad de {{name}}",
   "commands.backup.verify.optionDeep": "Recalcular el hash de cada celda registrada (verificación completa) en lugar de una comprobación muestreada",
   "commands.backup.verify.optionRestoreTest": "Restaurar el snapshot del ancla con un nombre desechable directamente desde el almacén, compararlo con el ancla, registrar el resultado y borrar la copia",
-  "commands.backup.verify.optionRestoreTo": "Con --restore-test, restaurar la copia en esta máquina en lugar de la del repositorio de origen, para un repositorio mayor que el espacio libre del origen; la copia se contrasta con la raíz del manifiesto del snapshot y después se elimina por GUID",
+  "commands.backup.verify.optionRestoreTo": "Con --restore-test, restaurar la copia en esta máquina en lugar de la del repositorio de origen, para un repositorio mayor que el espacio libre del origen; la copia se contrasta con la raíz del manifiesto del snapshot y después se elimina",
   "commands.backup.verify.optionStore": "Hacer que el servidor recalcule el hash de cada fragmento almacenado de este repositorio y señale los que falten o estén dañados",
   "commands.backup.verify.restoreTestCleanupFailed": "No se pudo borrar la copia de la prueba de restauración {{copy}} en {{machine}}. Elimínala con: rdc repo delete {{copy}}",
   "commands.backup.verify.restoreTestExclusive": "--restore-test no se puede combinar con --deep ni --store.",

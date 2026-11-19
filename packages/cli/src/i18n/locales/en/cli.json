@@ -2326,7 +2326,7 @@
         "restoreTestNoSpace": "Not enough room for the restore test of {{snapshot}}: it needs {{need}} bytes free and the datastore has {{free}}.",
         "restoreTestSizeUnknown": "The size of snapshot {{snapshot}} is not in the account's index, so the room the restore test needs cannot be checked. Take a snapshot with rdc backup snapshot and try again.",
         "restoreTestFreeUnknown": "The free space on the datastore of {{machine}} could not be read, so the room the restore test needs cannot be checked.",
-        "optionRestoreTo": "With --restore-test, restore the copy on this machine instead of the source's, for a repository larger than the source's free space; the copy is held to the snapshot's manifest root and deleted by GUID afterwards",
+        "optionRestoreTo": "With --restore-test, restore the copy on this machine instead of the source's, for a repository larger than the source's free space; the copy is held to the snapshot's manifest root and deleted afterwards",
         "restoreToUnknown": "Machine {{machine}} is not in this config, so the restore test cannot run there.",
         "restoreToSameMachine": "Machine {{machine}} holds the source repository. Run the restore test without --restore-to, or name another machine.",
         "restoreToNeedsRestoreTest": "--restore-to only applies together with --restore-test.",

@@ -423,6 +423,32 @@ describe('backup verify --restore-test --restore-to', () => {
     expect(mocks.execute).not.toHaveBeenCalled();
   });
 
+  it('refuses an inherited object name such as constructor as an unknown machine', async () => {
+    await expect(
+      run(['verify', 'shop', '--restore-test', '--restore-to', 'constructor'])
+    ).rejects.toThrow('commands.backup.verify.restoreToUnknown');
+    expect(mocks.addRepository).not.toHaveBeenCalled();
+    expect(mocks.execute).not.toHaveBeenCalled();
+  });
+
+  it.each(['refused', 'not-available'])(
+    'is not proven when the root verified but the passphrase check is %s, and records nothing',
+    async (passphraseCheck) => {
+      script({
+        restore: {
+          success: true,
+          stdout: restoreRecord({ cellsRoot: 'verified', passphraseCheck }),
+        },
+      });
+      await run(['verify', 'shop', '--restore-test', '--restore-to', 'l1vm']);
+      expect(printed()).toMatchObject({ status: 'failed' });
+      expect(mocks.setExitCode).toHaveBeenCalledWith(1);
+      expect(mocks.fetch.mock.calls.some((c) => String(c[0]).includes('/verification'))).toBe(
+        false
+      );
+    }
+  );
+
   it("refuses the source's own machine", async () => {
     await expect(run(['verify', 'shop', '--restore-test', '--restore-to', 'm1'])).rejects.toThrow(
       'commands.backup.verify.restoreToSameMachine'

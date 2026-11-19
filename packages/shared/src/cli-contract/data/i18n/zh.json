@@ -392,7 +392,7 @@
   "commands.backup.verify.failed": "{{name}} 的备份验证失败",
   "commands.backup.verify.optionDeep": "对每个已记录的单元重新计算哈希（完整验证），而不是抽样检查",
   "commands.backup.verify.optionRestoreTest": "以一次性名称直接从存储中恢复锚点快照,与锚点比较,记录结果并删除副本",
-  "commands.backup.verify.optionRestoreTo": "与 --restore-test 搭配使用，把副本恢复到这台机器而不是源仓库所在的机器，适用于大于源端可用空间的仓库；副本会与快照的清单根核对，随后按 GUID 删除",
+  "commands.backup.verify.optionRestoreTo": "与 --restore-test 搭配使用，把副本恢复到这台机器而不是源仓库所在的机器，适用于大于源端可用空间的仓库；副本会与快照的清单根核对，随后删除",
   "commands.backup.verify.optionStore": "让服务器对此仓库已存储的每个块重新计算哈希，并指出缺失或损坏的块",
   "commands.backup.verify.restoreTestCleanupFailed": "无法从 {{machine}} 删除恢复测试副本 {{copy}}。请用以下命令移除:rdc repo delete {{copy}}",
   "commands.backup.verify.restoreTestExclusive": "--restore-test 不能与 --deep 或 --store 同时使用。",

@@ -392,7 +392,7 @@
   "commands.backup.verify.failed": "Backup-Verifizierung für {{name}} fehlgeschlagen",
   "commands.backup.verify.optionDeep": "Jede erfasste Zelle neu hashen (vollständige Verifizierung) statt einer stichprobenartigen Prüfung",
   "commands.backup.verify.optionRestoreTest": "Den Anker-Snapshot unter einem Wegwerfnamen direkt aus dem Speicher wiederherstellen, mit dem Anker vergleichen, das Ergebnis erfassen und die Kopie löschen",
-  "commands.backup.verify.optionRestoreTo": "Mit --restore-test die Kopie auf dieser Maschine statt auf der des Quell-Repositorys wiederherstellen, für ein Repository, das größer als der freie Platz der Quelle ist; die Kopie wird am Manifest-Root des Snapshots geprüft und danach per GUID gelöscht",
+  "commands.backup.verify.optionRestoreTo": "Mit --restore-test die Kopie auf dieser Maschine statt auf der des Quell-Repositorys wiederherstellen, für ein Repository, das größer als der freie Platz der Quelle ist; die Kopie wird am Manifest-Root des Snapshots geprüft und danach gelöscht",
   "commands.backup.verify.optionStore": "Jeden gespeicherten Chunk dieses Repositorys auf dem Server neu hashen lassen und fehlende oder beschädigte benennen",
   "commands.backup.verify.restoreTestCleanupFailed": "Die Restore-Test-Kopie {{copy}} konnte auf {{machine}} nicht gelöscht werden. Entfernen mit: rdc repo delete {{copy}}",
   "commands.backup.verify.restoreTestExclusive": "--restore-test lässt sich nicht mit --deep oder --store kombinieren.",

@@ -357,7 +357,7 @@
         "restoreTestNoSpace": "{{snapshot}} geri yükleme testi için yeterli yer yok: {{need}} bayt boş alan gerekiyor, veri deposunda {{free}} var.",
         "restoreTestSizeUnknown": "{{snapshot}} anlık görüntüsünün boyutu hesabın dizininde yok, bu yüzden geri yükleme testinin ihtiyaç duyduğu yer denetlenemiyor. rdc backup snapshot ile bir anlık görüntü alıp yeniden denenmeli.",
         "restoreTestFreeUnknown": "{{machine}} makinesinin veri deposundaki boş alan okunamadı, bu yüzden geri yükleme testinin ihtiyaç duyduğu yer denetlenemiyor.",
-        "optionRestoreTo": "--restore-test ile kopyayı kaynak deponun makinesi yerine bu makinede geri yükle; kaynağın boş alanından büyük depolar için. Kopya, anlık görüntünün manifest köküyle karşılaştırılır ve ardından GUID ile silinir",
+        "optionRestoreTo": "--restore-test ile kopyayı kaynak deponun makinesi yerine bu makinede geri yükle; kaynağın boş alanından büyük depolar için. Kopya, anlık görüntünün manifest köküyle karşılaştırılır ve ardından silinir",
         "restoreToUnknown": "{{machine}} makinesi bu yapılandırmada yok, bu yüzden geri yükleme testi orada çalışamaz.",
         "restoreToSameMachine": "{{machine}} makinesi kaynak depoyu barındırıyor. Geri yükleme testini --restore-to olmadan çalıştırın ya da başka bir makine belirtin.",
         "restoreToNeedsRestoreTest": "--restore-to yalnızca --restore-test ile birlikte kullanılır.",

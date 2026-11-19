@@ -392,7 +392,7 @@
   "commands.backup.verify.failed": "{{name}}의 백업 검증에 실패했습니다",
   "commands.backup.verify.optionDeep": "샘플링 검사 대신 기록된 모든 셀을 다시 해시합니다 (전체 검증)",
   "commands.backup.verify.optionRestoreTest": "앵커의 스냅샷을 임시 이름으로 저장소에서 바로 복원하고 앵커와 비교한 뒤 결과를 기록하고 사본을 삭제합니다",
-  "commands.backup.verify.optionRestoreTo": "--restore-test와 함께 사용하며, 소스 저장소의 머신이 아니라 이 머신에 사본을 복원합니다. 소스의 여유 공간보다 큰 저장소용이고, 사본은 스냅샷의 매니페스트 루트와 대조한 뒤 GUID로 삭제합니다",
+  "commands.backup.verify.optionRestoreTo": "--restore-test와 함께 사용하며, 소스 저장소의 머신이 아니라 이 머신에 사본을 복원합니다. 소스의 여유 공간보다 큰 저장소용이고, 사본은 스냅샷의 매니페스트 루트와 대조한 뒤 삭제합니다",
   "commands.backup.verify.optionStore": "서버가 이 저장소에 저장된 모든 청크를 다시 해시하고 누락되거나 손상된 청크를 알려 줍니다",
   "commands.backup.verify.restoreTestCleanupFailed": "복원 테스트 사본 {{copy}}을(를) {{machine}}에서 삭제하지 못했습니다. 다음으로 제거하세요: rdc repo delete {{copy}}",
   "commands.backup.verify.restoreTestExclusive": "--restore-test는 --deep 또는 --store와 함께 사용할 수 없습니다.",

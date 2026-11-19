@@ -392,7 +392,7 @@
   "commands.backup.verify.failed": "{{name}} のバックアップ検証に失敗しました",
   "commands.backup.verify.optionDeep": "サンプリングによるチェックの代わりに、記録済みの全セルを再ハッシュする（完全な検証）",
   "commands.backup.verify.optionRestoreTest": "アンカーのスナップショットを使い捨ての名前でストアから直接復元し、アンカーと比較し、結果を記録してコピーを削除します",
-  "commands.backup.verify.optionRestoreTo": "--restore-test と併用して、ソースリポジトリのマシンではなくこのマシンにコピーを復元します。ソースの空き容量より大きいリポジトリ向けで、コピーはスナップショットのマニフェストルートと照合され、その後 GUID で削除されます",
+  "commands.backup.verify.optionRestoreTo": "--restore-test と併用して、ソースリポジトリのマシンではなくこのマシンにコピーを復元します。ソースの空き容量より大きいリポジトリ向けで、コピーはスナップショットのマニフェストルートと照合され、その後削除されます",
   "commands.backup.verify.optionStore": "このリポジトリの保存済みチャンクをすべてサーバー側で再ハッシュし、欠落または破損したチャンクを示す",
   "commands.backup.verify.restoreTestCleanupFailed": "復元テストのコピー {{copy}} を {{machine}} から削除できませんでした。次で削除してください: rdc repo delete {{copy}}",
   "commands.backup.verify.restoreTestExclusive": "--restore-test は --deep や --store と併用できません。",

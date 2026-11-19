@@ -2631,7 +2631,7 @@
           "defaultValue": null,
           "tier": "advanced",
           "descriptionKey": "commands.backup.verify.optionRestoreTo",
-          "label": "With --restore-test, restore the copy on this machine instead of the source's, for a repository larger than the source's free space; the copy is held to the snapshot's manifest root and deleted by GUID afterwards"
+          "label": "With --restore-test, restore the copy on this machine instead of the source's, for a repository larger than the source's free space; the copy is held to the snapshot's manifest root and deleted afterwards"
         },
         {
           "flags": "--debug",

@@ -392,7 +392,7 @@
   "commands.backup.verify.failed": "فشل التحقق من النسخة الاحتياطية لـ \"{{name}}\"",
   "commands.backup.verify.optionDeep": "إعادة تجزئة كل خلية مسجَّلة (تحقق كامل) بدلاً من فحص عيّني",
   "commands.backup.verify.optionRestoreTest": "استعادة لقطة المرساة باسم مؤقت مباشرة من المخزن، ومقارنتها بالمرساة، وتسجيل النتيجة، وحذف النسخة",
-  "commands.backup.verify.optionRestoreTo": "مع --restore-test، استعد النسخة على هذا الجهاز بدل جهاز المستودع المصدر، لمستودع أكبر من المساحة الحرة للمصدر؛ تُطابَق النسخة مع جذر بيان اللقطة ثم تُحذف بواسطة GUID",
+  "commands.backup.verify.optionRestoreTo": "مع --restore-test، استعد النسخة على هذا الجهاز بدل جهاز المستودع المصدر، لمستودع أكبر من المساحة الحرة للمصدر؛ تُطابَق النسخة مع جذر بيان اللقطة ثم تُحذف",
   "commands.backup.verify.optionStore": "اطلب من الخادم إعادة تجزئة كل جزء مخزَّن لهذا المستودع وتسمية أي جزء مفقود أو تالف",
   "commands.backup.verify.restoreTestCleanupFailed": "تعذّر حذف نسخة اختبار الاستعادة {{copy}} من {{machine}}. أزلها بالأمر: rdc repo delete {{copy}}",
   "commands.backup.verify.restoreTestExclusive": "لا يمكن الجمع بين --restore-test و --deep أو --store.",

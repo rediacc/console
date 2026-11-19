@@ -258,7 +258,7 @@ interface RestoreTestPlan {
 /** `--restore-to` names a machine of this config other than the source's own. */
 async function assertRestoreToMachine(restoreTo: string, sourceMachine: string): Promise<void> {
   const machines = (await configService.getLocalConfig()).machines;
-  if (!restoreTo || !(restoreTo in machines)) {
+  if (!restoreTo || !Object.hasOwn(machines, restoreTo)) {
     throw new ValidationError(t('commands.backup.verify.restoreToUnknown', { machine: restoreTo }));
   }
   if (restoreTo === sourceMachine) {
