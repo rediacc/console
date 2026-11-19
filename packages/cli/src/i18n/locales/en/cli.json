@@ -3263,6 +3263,11 @@
     "feedback": {
       "description": "File structured feedback or a bug report. The payload is built from redacted data only, shown in full, and sent after confirmation (or with --yes) using the stored API token or an installed Free License.",
       "descriptionShort": "File a bug or feedback report",
+      "list": {
+        "description": "List the feedback reports visible to this machine: id, short fingerprint, status and dates. A fixed report reads fixed-in-v<version>. Uses the stored API token, or an installed Free License when there is none.",
+        "descriptionShort": "List feedback reports and their status",
+        "optionStatus": "Only these statuses, comma separated (new, screening, quarantined, confirmed, planned, fixed, rejected)"
+      },
       "report": {
         "description": "Build a report from the newest failed command (--last), a recorded command (--command <n>) or a message alone, print exactly what would be sent, and send it after confirmation. An agent without --yes gets the preview and the command to send it, never a hidden send.",
         "descriptionShort": "Preview and send a feedback report",
@@ -3271,6 +3276,10 @@
         "optionLast": "Use the newest failed command",
         "optionListRecent": "List the recorded commands and exit",
         "optionMessage": "Free-text note to include (scrubbed before sending)"
+      },
+      "show": {
+        "description": "Show one feedback report by its id (or a unique prefix of it), with its status, occurrence count and dates.",
+        "descriptionShort": "Show one feedback report"
       }
     },
     "legal": {
@@ -3629,11 +3638,21 @@
     "delegationCertRefused": "The server's licence cert is refused ({{code}}); ask the operator to run: rdc server licence"
   },
   "feedback": {
+    "ambiguousId": "More than one report starts with \"{{id}}\"; give more of the id.",
     "badKind": "Unknown report kind \"{{kind}}\"; use bug, feedback or docs.",
+    "badStatus": "Unknown status \"{{status}}\"; use one of: {{allowed}}.",
     "confirm": "Send this report?",
     "dailyLimit": "The daily feedback limit for this {{subject}} is reached; filing opens again at {{resetAt}}.",
     "dailyLimitNoReset": "The daily feedback limit for this {{subject}} is reached; try again tomorrow (UTC).",
     "declined": "Nothing was sent.",
+    "fieldCommand": "Command",
+    "fieldFingerprint": "Fingerprint",
+    "fieldFirstSeen": "First seen",
+    "fieldId": "Id",
+    "fieldKind": "Kind",
+    "fieldLastSeen": "Last seen",
+    "fieldOccurrences": "Occurrences",
+    "fieldStatus": "Status",
     "hint": "Unexpected? {{run}}",
     "hintDescription": "File a feedback report for this failure",
     "hintSummary": "If this failure is unexpected, report it.",
@@ -3643,7 +3662,9 @@
     "noCredentialSummary": "Log in to an account, or install a free license, then report again.",
     "noFailedCommand": "No failed command is recorded yet; use --list-recent or --message <text>.",
     "noRecent": "No commands are recorded yet.",
+    "noReports": "No feedback reports.",
     "noSuchCommand": "No recorded command at index {{index}}; see rdc feedback report --list-recent.",
+    "noSuchReport": "No feedback report with id \"{{id}}\"; see rdc feedback list.",
     "optionFree": "Install a free license by creating a repository on this machine",
     "optionLogin": "Log in to an account",
     "previewOnly": "The report was not sent: sending needs --yes.",

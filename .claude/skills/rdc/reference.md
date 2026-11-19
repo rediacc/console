@@ -2262,6 +2262,22 @@ Build a report from the newest failed command (--last), a recorded command (--co
 
 > MCP tool
 
+### rdc feedback list
+
+List the feedback reports visible to this machine: id, short fingerprint, status and dates. A fixed report reads fixed-in-v<version>. Uses the stored API token, or an installed Free License when there is none.
+
+**Options:**
+
+- `--status <list>`: Only these statuses, comma separated (new, screening, quarantined, confirmed, planned, fixed, rejected)
+
+> MCP tool
+
+### rdc feedback show <id>
+
+Show one feedback report by its id (or a unique prefix of it), with its status, occurrence count and dates.
+
+> MCP tool
+
 ### rdc version
 
 Print the CLI version, platform, update channel and the active license: the plan when logged in, "anonymous (FREE per repository)" without a login, and "unknown (server unreachable)" when the account server cannot be reached. The --version flag still prints the bare version.

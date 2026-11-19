@@ -5866,6 +5866,34 @@
           ],
           "arguments": [],
           "subcommands": []
+        },
+        {
+          "name": "list",
+          "descriptionKey": "commands.feedback.list.description",
+          "options": [
+            {
+              "flags": "--status <list>",
+              "descriptionKey": "commands.feedback.list.optionStatus",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "show",
+          "descriptionKey": "commands.feedback.show.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "id",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
         }
       ]
     },

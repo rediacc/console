@@ -647,6 +647,12 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'feedback report': {
     mcp: { destructive: false, idempotent: false, timeout: 'write' },
   },
+  'feedback list': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  'feedback show': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
 
   'cluster rehearse': {
     mcpExcludeReason:

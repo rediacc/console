@@ -6237,6 +6237,45 @@
     {
       "path": [
         "feedback",
+        "list"
+      ],
+      "pathKey": "feedback list",
+      "domain": "feedback",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.feedback.list.description",
+      "label": "List the feedback reports visible to this machine: id, short fingerprint, status and dates. A fixed report reads fixed-in-v<version>. Uses the stored API token, or an installed Free License when there is none.",
+      "options": [
+        {
+          "flags": "--status <list>",
+          "long": "status",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.feedback.list.optionStatus",
+          "label": "Only these statuses, comma separated (new, screening, quarantined, confirmed, planned, fixed, rejected)"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "feedback",
         "report"
       ],
       "pathKey": "feedback report",
@@ -6308,6 +6347,42 @@
       "idempotent": false,
       "timeout": "write",
       "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "feedback",
+        "show"
+      ],
+      "pathKey": "feedback show",
+      "domain": "feedback",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.feedback.show.description",
+      "label": "Show one feedback report by its id (or a unique prefix of it), with its status, occurrence count and dates.",
+      "options": [],
+      "positionals": [
+        {
+          "name": "id",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": null,
+          "label": ""
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",

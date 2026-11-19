@@ -6,6 +6,14 @@ import {
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
+import {
+  fetchReports,
+  findReport,
+  listLines,
+  parseStatusFilter,
+  showLines,
+  withDisplay,
+} from '../services/feedback/list.js';
 import { type RingEntry, readRing } from '../services/feedback/ring.js';
 import {
   buildReport,
@@ -167,6 +175,36 @@ export async function runReport(
   printSent(body, await sendReport(body, auth, deps.fetchFn), json);
 }
 
+export interface ReadDeps {
+  resolveAuth: () => Promise<FeedbackAuth>;
+  fetchFn?: FetchFn;
+}
+
+const defaultReadDeps: ReadDeps = { resolveAuth: () => resolveFeedbackAuth() };
+
+export async function runList(
+  options: { status?: string },
+  deps: ReadDeps = defaultReadDeps
+): Promise<void> {
+  const statuses = parseStatusFilter(options.status);
+  const reports = await fetchReports(await deps.resolveAuth(), statuses, deps.fetchFn);
+  if (getOutputFormat() === 'json') {
+    outputService.print({ reports: reports.map(withDisplay) }, 'json');
+    return;
+  }
+  outputService.print(listLines(reports));
+}
+
+export async function runShow(id: string, deps: ReadDeps = defaultReadDeps): Promise<void> {
+  const reports = await fetchReports(await deps.resolveAuth(), [], deps.fetchFn);
+  const report = findReport(reports, id);
+  if (getOutputFormat() === 'json') {
+    outputService.print(withDisplay(report), 'json');
+    return;
+  }
+  outputService.print(showLines(report));
+}
+
 export function registerFeedbackCommand(program: Command): void {
   const feedback = program
     .command('feedback')
@@ -185,6 +223,31 @@ export function registerFeedbackCommand(program: Command): void {
     .action(async (options: ReportOptions) => {
       try {
         await runReport(options);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  feedback
+    .command('list')
+    .summary(t('commands.feedback.list.descriptionShort'))
+    .description(t('commands.feedback.list.description'))
+    .option('--status <list>', t('commands.feedback.list.optionStatus'))
+    .action(async (options: { status?: string }) => {
+      try {
+        await runList(options);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  feedback
+    .command('show <id>')
+    .summary(t('commands.feedback.show.descriptionShort'))
+    .description(t('commands.feedback.show.description'))
+    .action(async (id: string) => {
+      try {
+        await runShow(id);
       } catch (error) {
         handleError(error);
       }

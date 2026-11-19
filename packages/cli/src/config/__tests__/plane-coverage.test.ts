@@ -158,8 +158,9 @@ describe('command plane coverage', () => {
     // 221 -> 223, other 42 -> 44: `server bundle` (local docker, local files) and `server licence mint` (account server under the caller's login) reach no machine (PLAN-enterprise-tenants C11).
     // 223 -> 225, machine 121 -> 123: `repo admin orphan list|delete` (worklist #48d790e1) read the machine's images and delete one through renet.
     // 225 -> 226, other 44 -> 45: `feedback report` files a report with the account service and reaches no machine (PLAN-rdc-feedback C3).
-    expect(COMMANDS.length).toBe(226);
-    expect(counts).toEqual({ config: 58, machine: 123, other: 45 });
+    // 226 -> 228, other 45 -> 47: `feedback list|show` read the account service and reach no machine (PLAN-rdc-feedback C4).
+    expect(COMMANDS.length).toBe(228);
+    expect(counts).toEqual({ config: 58, machine: 123, other: 47 });
   });
 
   it('records the interactive commands', () => {
