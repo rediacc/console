@@ -203,10 +203,7 @@ export async function writeRepoLicense(
   license: unknown,
   datastoreId?: string
 ): Promise<void> {
-  // The license is written under a per-signer name so licenses signed by
-  // different account universes (each with its own baked key in renet)
-  // coexist without clobbering each other. The name is the signing key's
-  // fingerprint, carried in the blob's publicKeyId.
+  // The license is written under a per-signer name so licenses signed by different account universes (each with its own baked key in renet) coexist without clobbering each other. The name is the signing key's fingerprint, carried in the blob's publicKeyId.
   const publicKeyId =
     typeof license === 'object' && license !== null
       ? (license as { publicKeyId?: unknown }).publicKeyId
