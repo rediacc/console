@@ -582,7 +582,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-push-decoupling.md` | approved | 254 | 6 | 17 | 35585 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
 | `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3027 |
-| `agent/plans/PLAN-rdc-feedback.md` | approved | 223 | 5 | 16 | 47086 |
+| `agent/plans/PLAN-rdc-feedback.md` | approved | 224 | 4 | 17 | 47242 |
 | `agent/plans/PLAN-rediaccfile-unprivileged.md` | executing | 269 | 5 | 18 | 43413 |
 | `agent/plans/PLAN-reggate-debt-collection.md` | proposed | 80 | 11 | 0 | 17328 |
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
