@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { cli } from './cli.js';
+import { installStderrTap, recordCommand } from './services/feedback/ring.js';
 import { telemetryService } from './services/telemetry/telemetry.js';
 import {
   applyPendingUpdate,
@@ -41,6 +42,12 @@ if (process.argv.includes('mcp') && process.argv.includes('serve')) {
 } else {
   // Catch unhandled errors that escape the main try-catch
   process.on('uncaughtException', (error) => {
+    recordCommand({
+      argv: process.argv.slice(2),
+      exitCode: 1,
+      errorCode: 'UNCAUGHT_EXCEPTION',
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
     telemetryService.trackError(error, { source: 'uncaughtException' });
     void telemetryService.shutdown().finally(() => process.exit(1));
   });
@@ -49,6 +56,8 @@ if (process.argv.includes('mcp') && process.argv.includes('serve')) {
       source: 'unhandledRejection',
     });
   });
+
+  installStderrTap();
 
   // Normal CLI flow: apply pending update + spawn background check
   const applyPromise = applyPendingUpdate().catch(() => {});

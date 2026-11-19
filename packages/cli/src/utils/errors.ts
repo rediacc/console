@@ -7,6 +7,7 @@ import {
   exitProcess,
   writeStdout,
 } from '../services/core/request-context.js';
+import { recordCommand } from '../services/feedback/ring.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
 import { type CliError, ERROR_CODES, type NextAction, ValidationError } from '../types/errors.js';
 import { EXIT_CODES, type OutputFormat } from '../types/index.js';
@@ -176,6 +177,13 @@ export function handleError(error: unknown): never {
   } else {
     outputTextError(cliError);
   }
+
+  recordCommand({
+    argv: process.argv.slice(2),
+    exitCode: cliError.exitCode,
+    errorCode: cliError.code,
+    errorMessage: cliError.message,
+  });
 
   // Fire-and-forget telemetry shutdown (don't block exit). Inside an executor dispatch the process keeps serving other callers, and a shut-down SDK cannot be restarted, so one failed request would silence telemetry for all of them.
   if (!currentRequestContext()) {
