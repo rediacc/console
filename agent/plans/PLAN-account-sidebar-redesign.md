@@ -372,7 +372,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - `enter-partner-program` then `program-chooser` works as in 26-01;
     - Ctrl+K "stripe" finds nothing for a customer and Stripe for root;
     - sign-out cancel and confirm (01-06 from S1 still green).
-- [ ] B1 [writer] Bench test partner through root grants (Design 10): the `bench_test_partner` section in root-grants.json, its loader, plan and read in root_grants.py (bench targets only, rc 2 on an edge target), and the account service, DTO and types accepting it only when the environment is bench or development.
+- [x] B1 [writer] Bench test partner through root grants (Design 10): the `bench_test_partner` section in root-grants.json, its loader, plan and read in root_grants.py (bench targets only, rc 2 on an edge target), and the account service, DTO and types accepting it only when the environment is bench or development.
   Owns: .ci/config/root-grants.json, .ci/rediacc_ci/ops/root_grants.py, .ci/rediacc_ci/tests/test_ops_root_grants.py, private/account/src/types/root-grants.ts, private/account/src/services/root-grants.service.ts, private/account/src/dto/root-grants.dto.ts, private/account/tests/integration/root-grants.test.ts, private/account/tests/integration/root-grants-parity.test.ts
   Depends on: none
   Needs: none
@@ -381,6 +381,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - a config that puts the section on an edge target exits 2 naming the key (control: the bench target passes);
     - the service answers 403 for the section under environment `production` and creates it under `bench` (control);
     - a second apply plans zero actions (idempotent), and the parity fixtures agree between Python `plan()` and the service.
+    (ticked) 2026-11-19T14:34:26Z by d778be9d: commit:f7e5e0bba (private/account 3a4a634) + console da04d5873; pytest 48 passed, vitest 33 passed, typecheck rc 0; the bench apply is X2
 - [ ] B2 [writer] The automated bench walk-through (Design 10): `07-90-live-sidebar.test.ts`, `live-sidebar-walk.ts`, and the live config matching it.
   Owns: private/account/e2e/tests/07-navigation/07-90-live-sidebar.test.ts, private/account/e2e/src/utils/live-sidebar-walk.ts, private/account/e2e/playwright.live.config.ts
   Depends on: N1, G1 (the scan pattern), B1 (the test partner org)
