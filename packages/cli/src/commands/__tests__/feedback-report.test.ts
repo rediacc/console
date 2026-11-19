@@ -161,7 +161,12 @@ describe('rdc feedback report', () => {
       tokenReady: () => false,
       freeBlob: () => undefined,
       machineId: async () => 'x',
-    }).catch((e: unknown) => e as { next: { options: { run: string }[] } });
+    }).then(
+      () => {
+        throw new Error('resolveFeedbackAuth resolved; a refusal was expected');
+      },
+      (e: unknown) => e as { next: { options: { run: string }[] } }
+    );
     expect(error.next.options.map((o) => o.run)).toEqual([
       'rdc subscription login',
       'rdc repo create --help',
