@@ -9,7 +9,7 @@ import { EXIT_CODES } from '../../types/index.js';
 import { currentRequestContext, writeStderr } from '../core/request-context.js';
 import { commandWords } from './redact.js';
 
-export const FEEDBACK_HINT_RUN = 'rdc feedback report --last';
+const FEEDBACK_HINT_RUN = 'rdc feedback report --last';
 
 export interface HintContext {
   argv: readonly string[];

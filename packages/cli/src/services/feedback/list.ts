@@ -14,7 +14,7 @@ import { CliExitError } from '../../utils/cli-exit-error.js';
 import { accountServerFetch } from '../account/account-client.js';
 import { FEEDBACK_PATH, type FeedbackAuth, type FetchFn } from './send.js';
 
-export const FEEDBACK_QUERY_PATH = `${FEEDBACK_PATH}/query`;
+const FEEDBACK_QUERY_PATH = `${FEEDBACK_PATH}/query`;
 
 /** `--status new,planned` as a validated list; an unknown name is a validation error. */
 export function parseStatusFilter(raw: string | undefined): string[] {

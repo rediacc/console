@@ -8,7 +8,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
-export const LICENSE_ROOT = '/var/lib/rediacc/license';
+const LICENSE_ROOT = '/var/lib/rediacc/license';
 
 export interface FreeBlob {
   payload: string;

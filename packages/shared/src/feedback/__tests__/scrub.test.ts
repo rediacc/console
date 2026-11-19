@@ -4,7 +4,7 @@ import { scrubText } from '../scrub.js';
 const JWT = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcDEF123_-xyz';
 
 describe('scrubText', () => {
-  const cases: Array<[string, string, string]> = [
+  const cases: [string, string, string][] = [
     ['rdt token', 'auth rdt_AbCdEf123456 failed', 'rdt_AbCdEf123456'],
     ['sk token', 'key sk-abcdef1234567890 bad', 'sk-abcdef1234567890'],
     ['jwt', `got ${JWT} back`, JWT],

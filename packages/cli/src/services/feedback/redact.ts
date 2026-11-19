@@ -15,8 +15,8 @@ import type {
 import { getCommand } from '@rediacc/shared/cli-contract';
 import { isSensitiveKey } from '@rediacc/shared/telemetry';
 
-export const REDACTED = '<redacted>';
-export const MACHINE = '<machine>';
+const REDACTED = '<redacted>';
+const MACHINE = '<machine>';
 
 function isOption(token: string): boolean {
   return token.startsWith('-') && token.length > 1;

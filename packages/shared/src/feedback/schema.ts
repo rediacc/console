@@ -43,7 +43,8 @@ export const feedbackReportSchema = z.object({
   agent: z.boolean(),
   ci: z.boolean(),
 });
-export type FeedbackReport = z.infer<typeof feedbackReportSchema>;
+type FeedbackReport = z.infer<typeof feedbackReportSchema>;
+export type { FeedbackReport };
 
 export const feedbackSubmitResponseSchema = z.object({
   id: z.string(),
@@ -51,7 +52,8 @@ export const feedbackSubmitResponseSchema = z.object({
   status: feedbackStatusSchema,
   duplicate: z.boolean(),
 });
-export type FeedbackSubmitResponse = z.infer<typeof feedbackSubmitResponseSchema>;
+type FeedbackSubmitResponse = z.infer<typeof feedbackSubmitResponseSchema>;
+export type { FeedbackSubmitResponse };
 
 export const feedbackListItemSchema = z.object({
   id: z.string(),
@@ -65,17 +67,21 @@ export const feedbackListItemSchema = z.object({
   firstSeenAt: z.string(),
   lastSeenAt: z.string(),
 });
-export type FeedbackListItem = z.infer<typeof feedbackListItemSchema>;
+type FeedbackListItem = z.infer<typeof feedbackListItemSchema>;
+export type { FeedbackListItem };
 
 export const feedbackListResponseSchema = z.object({ reports: z.array(feedbackListItemSchema) });
-export type FeedbackListResponse = z.infer<typeof feedbackListResponseSchema>;
+type FeedbackListResponse = z.infer<typeof feedbackListResponseSchema>;
+export type { FeedbackListResponse };
 
 export const feedbackSettingsSchema = z.object({ shareWithOrgAdmins: z.boolean() });
-export type FeedbackSettings = z.infer<typeof feedbackSettingsSchema>;
+type FeedbackSettings = z.infer<typeof feedbackSettingsSchema>;
+export type { FeedbackSettings };
 
 export const feedbackLimitErrorSchema = z.object({
   code: z.literal('FEEDBACK_DAILY_LIMIT'),
   subjectKind: z.enum(['user', 'org', 'machine']),
   resetAt: z.string(),
 });
-export type FeedbackLimitError = z.infer<typeof feedbackLimitErrorSchema>;
+type FeedbackLimitError = z.infer<typeof feedbackLimitErrorSchema>;
+export type { FeedbackLimitError };

@@ -24,7 +24,7 @@ import { type FreeBlob, findInstalledFreeBlob } from './free-blob.js';
 import type { RingEntry } from './ring.js';
 
 export const FEEDBACK_PATH = '/account/api/v1/feedback';
-export const FEEDBACK_LIMIT_CODE = 'FEEDBACK_DAILY_LIMIT';
+const FEEDBACK_LIMIT_CODE = 'FEEDBACK_DAILY_LIMIT';
 
 /** The body sent for a FREE-licence machine: the report plus the blob and the machine id it is bound to. */
 export interface FreeCredentialBody {
@@ -41,7 +41,7 @@ export interface BuildOptions {
 }
 
 /** The first 12 hex characters of the config name's digest: the config is never attached, only this. */
-export function configFingerprint(name: string = getEffectiveConfigName()): string {
+function configFingerprint(name: string = getEffectiveConfigName()): string {
   return createHash('sha256').update(name).digest('hex').slice(0, 12);
 }
 
@@ -85,7 +85,7 @@ const defaultAuthDeps: AuthDeps = {
 };
 
 /** The refusal when neither route is available; its `next` names the login and the free licence. */
-export function noCredentialError(): CliExitError {
+function noCredentialError(): CliExitError {
   return new CliExitError(ERROR_CODES.AUTH_REQUIRED, t('feedback.noCredential'), {
     next: {
       summary: t('feedback.noCredentialSummary'),

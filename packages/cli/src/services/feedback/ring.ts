@@ -14,7 +14,7 @@ import { currentRequestContext, setStderrListener } from '../core/request-contex
 import { commandWords, redactArgv, resolveCommandPath } from './redact.js';
 
 export const RING_CAPACITY = 10;
-export const STDERR_TAIL_BYTES = 4096;
+const STDERR_TAIL_BYTES = 4096;
 
 export interface RingEntry {
   at: string;
