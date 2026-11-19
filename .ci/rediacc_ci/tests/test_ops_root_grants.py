@@ -532,7 +532,18 @@ def test_a_near_miss_of_another_case_is_not_the_root_user(
     make_db(env, "account-us", seed)
     child, _ = runner()
     assert mod.run(["--target", "edge-us"], ROOT, child) == 0
-    assert "user absent, skipped" in capsys.readouterr().out
+    captured = capsys.readouterr()
+    assert "user absent, skipped" in captured.out
+    assert "stored email differs" in captured.err
+
+
+def test_a_truly_absent_user_prints_no_email_mismatch_note(
+    env: dict, capsys: pytest.CaptureFixture[str]
+) -> None:
+    make_db(env, "account-us", add_near_misses)
+    child, _ = runner()
+    assert mod.run(["--target", "edge-us"], ROOT, child) == 0
+    assert "stored email differs" not in capsys.readouterr().err
 
 
 def test_partial_grants_dry_run_lists_the_actions_and_writes_nothing(

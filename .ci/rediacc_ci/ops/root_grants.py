@@ -689,6 +689,12 @@ def read_snapshot(
     (users,) = _execute(root, target, [USER_SQL.replace("@HASH@", digest)], env, [digest])
     matched = [u for u in users if u.get("email") == email]
     if not matched:
+        if users:
+            print(
+                "%s: %s: a user row matches the email hash but its stored email differs from %s, so it is skipped as absent"
+                % (SELF, target.id, EMAIL_ENV),
+                file=sys.stderr,
+            )
         return Snapshot(None)
     user = {"id": matched[0].get("id"), "role": matched[0].get("role")}
     user_id = str(user["id"] or "")

@@ -153,7 +153,7 @@ def _trim(text: str, limit: int = DETAIL_MAX) -> str:
     text = (text or "").strip()
     if len(text) <= limit:
         return text
-    if text.startswith("AMBER"):
+    if "AMBER" in text.split("\n", 1)[0]:
         return text[:limit] + "..."
     return "..." + text[-limit:]
 
@@ -963,7 +963,8 @@ def subprocess_check(name: str, runner: Runner, env: dict) -> dict:
     # AMBER lines name an operator step; they lead the detail so a long tail of action lines cannot push them out of the 12-line, DETAIL_MAX window.
     amber = [ln for ln in lines if "AMBER" in ln]
     rest = [ln for ln in lines if "AMBER" not in ln]
-    tail = "\n".join((amber + rest[-max(0, 12 - len(amber)) :]) if amber else lines[-12:])
+    room = max(0, 12 - len(amber))
+    tail = "\n".join((amber + (rest[-room:] if room else []))[:12] if amber else lines[-12:])
     return {
         "rc": rc if rc in (0, 1) else 2,
         "raw_rc": "timeout" if res.timed_out else res.rc,

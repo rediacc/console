@@ -392,6 +392,27 @@ def test_root_grants_amber_survives_a_long_tail_of_action_lines(tmp_path):
     assert "AMBER" not in plain["detail"]
 
 
+def test_root_grants_twelve_amber_lines_keep_the_twelve_line_cap(tmp_path):
+    ambers = "\n".join("AMBER s%d" % i for i in range(12))
+    tail = "\n".join("act org-%d" % i for i in range(30))
+    _runner, check = _root_grants_check(tmp_path, 0, ambers + "\n" + tail)
+    assert "AMBER s11" in check["detail"]
+    assert "org-29" not in check["detail"]
+    # Control: eleven AMBER lines leave room for one trailing action line.
+    _runner2, eleven = _root_grants_check(
+        tmp_path / "eleven", 0, "\n".join(ambers.splitlines()[:11]) + "\n" + tail
+    )
+    assert "org-29" in eleven["detail"]
+    assert "org-28" not in eleven["detail"]
+
+
+def test_trim_keeps_the_head_when_the_first_line_carries_amber_after_a_prefix():
+    text = "WARN AMBER operator: x " + "y" * 600
+    assert oh._trim(text).startswith("WARN AMBER operator: x")
+    # Control: a long text with no AMBER first line keeps its tail.
+    assert oh._trim("z" * 600 + "end").endswith("end")
+
+
 def test_root_grants_rc2_is_unknown_not_red(tmp_path):
     _runner, check = _root_grants_check(tmp_path, 2, "wrangler d1 execute exited 1")
     assert check["state"] == "unknown"
