@@ -2056,7 +2056,7 @@ _SIG_INDEX: dict[Any, Any] = {}
 
 
 def _sig_index(entries, store):
-    """{box sig: (report id, state, owed halves)} of the newest report naming each sig, built once per (store, index length, last id) and reused within the process. A Stop hook run calls item_box_citations once per item it cites; without the index each call re-read and re-parsed every captured report body (measured 2026-11-18: 6 calls, 35,220 report reads, 25,992 parse_tick calls, 35 s of a 90 s stop on a weeks-old session)."""
+    """{box sig: (report id, state, owed halves)} of the newest report naming each sig, built once per (store, index length, last id) and reused within the process. The key assumes the index is append-only and a captured report body is written once, so an in-place rewrite of an earlier body in the same process is not seen (a hook run is one process and a report is never rewritten). A Stop hook run calls item_box_citations once per item it cites; without the index each call re-read and re-parsed every captured report body (measured 2026-11-18: 6 calls, 35,220 report reads, 25,992 parse_tick calls, 35 s of a 90 s stop on a weeks-old session)."""
     key = (str(store), len(entries), str(entries[-1].get("id")) if entries else "")
     hit = _SIG_INDEX.get(key)
     if hit is not None:

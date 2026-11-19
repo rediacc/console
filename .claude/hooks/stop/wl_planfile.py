@@ -279,7 +279,7 @@ def _token_index(prepared):
     """{token: (position, ...)} over PREPARED rows, built once per prepared list (measured 2026-11-18: 861 tasks x every item of a weeks-old store cost 13 s of a 90 s stop)."""
     key = id(prepared)
     hit = _TOKEN_INDEX.get(key)
-    if hit is not None and hit[0] is prepared:
+    if hit is not None and hit[0] is prepared and hit[2] == P.MIN_MATCH_TOKENS:
         return hit[1]
     index: dict[str, list[int]] = {}
     for pos, (_iid, _state, it, _ids) in enumerate(prepared):
@@ -287,18 +287,18 @@ def _token_index(prepared):
             for tok in it:
                 index.setdefault(tok, []).append(pos)
     _TOKEN_INDEX.clear()
-    _TOKEN_INDEX[key] = (prepared, index)
+    _TOKEN_INDEX[key] = (prepared, index, P.MIN_MATCH_TOKENS)
     return index
 
 
 def _prepared(rows):
     """`prepare(rows)` once per rows list: plan_rows hands the same item rows to `reconcile` for every plan (40 on 2026-11-18, 7.6 s of re-tokenising)."""
     hit = _PREPARED.get(id(rows))
-    if hit is not None and hit[0] is rows:
+    if hit is not None and hit[0] is rows and hit[2] == P.MIN_MATCH_TOKENS:
         return hit[1]
     out = prepare(rows)
     _PREPARED.clear()
-    _PREPARED[id(rows)] = (rows, out)
+    _PREPARED[id(rows)] = (rows, out, P.MIN_MATCH_TOKENS)
     return out
 
 

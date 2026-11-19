@@ -2156,6 +2156,27 @@ def test_report_item_naming_a_box_renders_the_report_beside_it(tmp_path):
     assert roster.item_box_citations("- [ ] no box here", entries, store) == []
 
 
+def test_report_item_box_citations_match_the_unindexed_newest_report_per_sig(tmp_path):
+    """0f739755.5: the index-backed lookup must equal the per-call scan it replaced (newest report naming each sig wins). CONTROL: a sig no report names yields no line, and a longer entry list is not served from the shorter list's index."""
+    roster = wlfix.import_wl("wl_roster")
+    store, _metas, entries = _report_world(tmp_path)
+    sigs = [sig for _aid, sig in CHILD_BOXES.values()]
+    text = " ".join("box %s" % sig for sig in sigs) + " box deadbeef"
+    newest = {}
+    for entry in entries:
+        for sig, state, halves in roster._report_boxes(store, entry) or []:
+            newest[sig] = (entry["id"], state, halves)
+    want = [
+        "report %s names box %s (%s, owed %s)" % (rid, sig, state, ",".join(halves) or "nothing")
+        for sig, (rid, state, halves) in sorted(newest.items())
+        if sig in text
+    ]
+    assert want, "the fixture names no box, so the comparison proves nothing"
+    assert roster.item_box_citations(text, entries, store) == want
+    assert "deadbeef" not in " ".join(roster.item_box_citations(text, entries, store))
+    assert roster.item_box_citations(text, entries[:-1], store) != want
+
+
 def test_report_an_unreadable_body_is_cited_as_unread_not_as_naming_no_box(tmp_path):
     """Review d03f8895.1: a captured report whose body cannot be read was cited `boxes no box named`, a claim about boxes never read."""
     roster = wlfix.import_wl("wl_roster")
