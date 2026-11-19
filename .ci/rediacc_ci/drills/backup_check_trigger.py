@@ -367,6 +367,16 @@ def _checkout_state(root: pathlib.Path, sub: str, pointer: str) -> dict[str, Any
     return {"pointer": pointer, "checkout": head, "modified": modified}
 
 
+def _pin(root: pathlib.Path, commit: str | None) -> str:
+    """The revision a receipt is taken at: HEAD, or `commit` when the drill was pinned. A pin that names no commit of `root` is a ValueError, never a silent fall back to HEAD."""
+    if not commit:
+        return "HEAD"
+    full = make_git(root)(["rev-parse", "--verify", "--quiet", f"{commit}^{{commit}}"])
+    if not full:
+        raise ValueError(f"--commit {commit!r} names no commit in {root}")
+    return full
+
+
 def record(
     root: pathlib.Path,
     *,
@@ -377,11 +387,13 @@ def record(
     started_at: str,
     finished_at: str,
     reason: dict[str, str] | None = None,
+    commit: str | None = None,
 ) -> pathlib.Path:
-    """The drill runner's one call: build the receipt for the checkout at `root` (HEAD's tree, the worktree digest, each submodule's pointer, checkout and modified state) and write it. `legs` are the legs that PASSED. A VERIFIED status short of `REQUIRED_LEGS` or the on-premise variant is written NOT_VERIFIED with class `legs-partial` rather than raising, so a partial run is still on record."""
+    """The drill runner's one call: build the receipt for the checkout at `root` (the tree of `commit` when pinned, else HEAD's tree, the worktree digest, each submodule's pointer, checkout and modified state) and write it. `legs` are the legs that PASSED. A VERIFIED status short of `REQUIRED_LEGS` or the on-premise variant is written NOT_VERIFIED with class `legs-partial` rather than raising, so a partial run is still on record."""
     git = make_git(root)
-    tree = git(["rev-parse", "HEAD^{tree}"]) or ""
-    head = git(["rev-parse", "HEAD"]) or ""
+    rev = _pin(root, commit)
+    tree = git(["rev-parse", f"{rev}^{{tree}}"]) or ""
+    head = git(["rev-parse", rev]) or ""
     pointers = pointers_of_tree(root, tree) if tree else dict.fromkeys(SUBMODULES, "")
     ran = sorted(set(legs))
     missing = [leg for leg in REQUIRED_LEGS if leg not in ran]
@@ -443,6 +455,7 @@ def record_half(
     started_at: str,
     finished_at: str,
     reason: dict[str, str] | None = None,
+    commit: str | None = None,
 ) -> pathlib.Path | None:
     """Record one drill's half of the receipt and carry the other half from the receipt already on file for this exact checkout (`_carried`).
 
@@ -451,7 +464,7 @@ def record_half(
     One exception, returning None with nothing written: a run of a PARTIAL leg selection (short of `REQUIRED_LEGS`) that did not fail, against a VERIFIED receipt already on file for the same TREE, whatever the worktree digest or submodule state of this run (a bench runner mid-edit still must not downgrade the tree's verdict; the receipt vouches for the committed tree, and `admit` re-checks its own digest and gitlinks). Such a run can only be NOT_VERIFIED (`legs-partial`) or an unavailable drill, and neither is evidence against what the fuller run proved on the same code. A FAILED verdict is always written, whatever the selection: a leg that really failed is never hidden."""
     if half not in HALVES:
         raise ValueError(f"half {half!r} is not one of {', '.join(HALVES)}")
-    tree = make_git(root)(["rev-parse", "HEAD^{tree}"]) or ""
+    tree = make_git(root)(["rev-parse", f"{_pin(root, commit)}^{{tree}}"]) or ""
     prior = _carried(root, tree) or {}
     on_file = (read_archive(root, tree) if tree else None) or {}
     passed = status == VERIFIED
@@ -477,6 +490,7 @@ def record_half(
         started_at=started_at,
         finished_at=finished_at,
         reason=reason,
+        commit=commit,
     )
 
 
@@ -520,6 +534,7 @@ def record_drill(drill: Any, half: str, rc: int, legs: Sequence[str] = ()) -> pa
             started_at=_iso(started),
             finished_at=_iso(time.time()),
             reason=reason,
+            commit=getattr(drill, "commit", None),
         )
     except (OSError, ValueError) as exc:
         print(f"backup-check: the receipt was NOT written ({exc})", file=sys.stderr)

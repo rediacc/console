@@ -541,11 +541,18 @@ class OnPrem:
 
 def main(argv: list[str]) -> int:
     selftest, keep_work, rest = lib.parse_common_args(argv)
+    commit: str | None = None
+    if len(rest) == 2 and rest[0] == "--commit":
+        commit, rest = rest[1], []
     if rest:
         log.error("Unknown option: %s" % rest[0])
-        print("Usage: ./run.sh drill backup-onprem [--selftest] [--keep-work]", file=sys.stderr)
+        print(
+            "Usage: ./run.sh drill backup-onprem [--selftest] [--keep-work] [--commit <sha>]",
+            file=sys.stderr,
+        )
         return 2
     drill = lib.Drill("backup-onprem", selftest=selftest, keep_work=keep_work)
+    drill.commit = commit
     drill.init()
     rc = 1
     try:

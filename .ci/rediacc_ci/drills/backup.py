@@ -312,6 +312,7 @@ LOCAL_BUCKET = "rediacc-backups-drill-probe"
 class Options:
     def __init__(self) -> None:
         self.restart_gateway = True
+        self.commit: str | None = None
         self.renet = False
         self.legs = DEFAULT_LEGS
         self.net_base = os.environ.get("VM_NET_BASE") or "192.168.111"
@@ -357,11 +358,13 @@ def parse_args(argv: list[str], opts: Options) -> int | None:
             opts.restart_gateway = False
         elif arg == "--renet":
             opts.renet = True
-        elif arg in ("--legs", "--vm", "--ssh-user", "--ssh-key"):
+        elif arg in ("--legs", "--vm", "--ssh-user", "--ssh-key", "--commit"):
             i += 1
             value = argv[i] if i < len(argv) else ""
             if arg == "--legs":
                 opts.legs = value
+            elif arg == "--commit":
+                opts.commit = value
             elif arg == "--vm":
                 opts.vm_ip = value
             elif arg == "--ssh-user":
@@ -3513,6 +3516,7 @@ def main(argv: list[str]) -> int:
             log.error(line)
         return 1
     drill = BackupDrill("backup", selftest=selftest, keep_work=keep_work)
+    drill.commit = opts.commit
     drill.init()
     backup = Backup(drill, opts)
     rc = 1

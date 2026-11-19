@@ -706,3 +706,101 @@ def test_a_leg_selection_that_runs_still_records(monkeypatch):
     monkeypatch.setattr(bct, "record_drill", lambda *args, **_kwargs: calls.append(args))
     assert backup.main(["--legs", "a,g"]) == 0
     assert len(calls) == 1
+
+
+# --------------------------------------------------------------------------- a pinned drill (D1.4)
+
+
+def _pinned_clone(world: World, tmp_path: pathlib.Path, rev: str) -> pathlib.Path:
+    """A clone of the world's console repo at `rev`, with its own submodule checkouts at that tree's pointers."""
+    clone = tmp_path / "clone"
+    _git(tmp_path, "clone", "-q", str(world.root), str(clone))
+    _git(clone, "checkout", "-q", "--detach", rev)
+    pointers = bct.pointers_of_tree(world.root, world.tree(rev))
+    for sub in bct.SUBMODULES:
+        path = clone / sub
+        path.mkdir(parents=True, exist_ok=True)
+        _git(path, "clone", "-q", str(world.subs[sub]), ".")
+        _git(path, "checkout", "-q", "--detach", pointers[sub])
+    return clone
+
+
+def test_a_receipt_from_a_clone_at_an_ancestor_names_that_tree_and_pointers(tmp_path):
+    w = World(tmp_path / "world")
+    pinned = w.commit("pinned")
+    pointers = bct.pointers_of_tree(w.root, w.tree(pinned))
+    w.sub_commit(bct.RENET_SUBMODULE, {"cmd/renet/other.go": "moved\n"})
+    later = w.commit("later")
+    assert w.tree(later) != w.tree(pinned)
+    clone = _pinned_clone(w, tmp_path, pinned)
+    drill = types.SimpleNamespace(
+        root=clone,
+        name="backup",
+        selftest=False,
+        count=30,
+        failures=0,
+        started_at=1767225600,
+        commit=pinned,
+    )
+    assert bct.record_drill(drill, bct.LEGS_HALF, 0, bct.REQUIRED_LEGS) is not None
+    assert bct.record_drill(drill, bct.ONPREM_HALF, 0) is not None
+    receipt = bct.read_latest(clone) or {}
+    assert receipt["status"] == bct.VERIFIED
+    assert receipt["tree"] == w.tree(pinned)
+    assert receipt["head"] == pinned
+    assert receipt["renet"]["pointer"] == pointers[bct.RENET_SUBMODULE]
+    assert receipt["account"]["pointer"] == pointers[bct.ACCOUNT_SUBMODULE]
+    assert bct.read_archive(clone, w.tree(pinned)) == receipt
+
+
+def test_a_pin_taken_in_the_main_checkout_records_the_pinned_tree_not_head(tmp_path):
+    w = World(tmp_path / "world")
+    pinned = w.commit("pinned")
+    _write(w.root, "docs/note.md", "later\n")
+    w.commit("later")
+    path = bct.record(
+        w.root,
+        status=bct.VERIFIED,
+        legs=bct.REQUIRED_LEGS,
+        onprem=True,
+        run_id="t",
+        started_at="2026-01-01T00:00:00Z",
+        finished_at="2026-01-01T00:05:00Z",
+        commit=pinned,
+    )
+    receipt = bct.read_archive(w.root, w.tree(pinned)) or {}
+    assert path.name == bct.LATEST
+    assert receipt["tree"] == w.tree(pinned) != w.tree("HEAD")
+    assert receipt["head"] == pinned
+
+
+def test_a_pin_that_names_no_commit_is_refused_and_records_nothing(tmp_path, capsys):
+    w = World(tmp_path / "c")
+    drill = _drill(w)
+    drill.commit = "0" * 40
+    assert bct.record_drill(drill, bct.LEGS_HALF, 0, bct.REQUIRED_LEGS) is None
+    assert "NOT written" in capsys.readouterr().err
+    assert bct.read_latest(w.root) is None
+
+
+def test_a_call_with_no_pin_records_head_as_before(tmp_path):
+    w = World(tmp_path / "c")
+    drill = _drill(w)
+    bct.record_drill(drill, bct.LEGS_HALF, 0, bct.REQUIRED_LEGS)
+    bct.record_drill(drill, bct.ONPREM_HALF, 0)
+    assert _latest(w)["tree"] == w.tree("HEAD")
+    assert _latest(w)["status"] == bct.VERIFIED
+
+
+def test_the_runners_take_a_commit_flag(monkeypatch):
+    seen = []
+    monkeypatch.setattr(backup.Backup, "run_all", _passing_run_all)
+    monkeypatch.setattr(backup.Backup, "teardown_hook", lambda _self: None)
+    monkeypatch.setattr(bct, "record_drill", lambda *args: seen.append(args[0].commit))
+    assert backup.main(["--legs", "a", "--commit", "abc123"]) == 0
+    monkeypatch.setattr(
+        backup_onprem.OnPrem, "__init__", lambda self, drill: setattr(self, "d", drill)
+    )
+    monkeypatch.setattr(backup_onprem.OnPrem, "run_all", _passing_run_all)
+    assert backup_onprem.main(["--commit", "def456"]) == 0
+    assert seen == ["abc123", "def456"]
