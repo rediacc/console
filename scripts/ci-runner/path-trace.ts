@@ -252,6 +252,16 @@ export function straceParser(
   const setCwd = (st: ProcState, cwd: string): void => {
     for (const peer of st.peers) peer.cwd = cwd;
   };
+  /** A chdir or fchdir: every peer that never learned its cwd had named its relative paths against its start cwd, so those resolve there, not against the new directory; then the whole group moves. */
+  const chdirTo = (st: ProcState, cwd: string): void => {
+    for (const peer of st.peers) {
+      if (peer.cwd !== undefined) continue;
+      for (const p of peer.pending.splice(0))
+        addFile(peer, path.posix.resolve(peer.start, p.s), p.found);
+      for (const e of peer.execsWithoutCwd.splice(0)) e.cwd = peer.start;
+    }
+    setCwd(st, cwd);
+  };
   const forked = (parent: ProcState, child: number, flags?: string): void => {
     const st = proc(child);
     if (st.cwd === undefined) st.start = parent.cwd ?? parent.start;
@@ -326,7 +336,7 @@ export function straceParser(
       return;
     }
     if (name === 'fchdir') {
-      if (ok && decorations[0] !== undefined) setCwd(st, decorations[0].path);
+      if (ok && decorations[0] !== undefined) chdirTo(st, decorations[0].path);
       return;
     }
     if (retMatch?.[2] !== undefined && /^(open|openat|openat2|creat)$/.test(name)) {
@@ -351,13 +361,8 @@ export function straceParser(
       else st.pending.push({ s: str.s, found });
     }
     if (name === 'chdir' && ok && strings[0] !== undefined) {
-      // Paths seen before this process's first chdir belong to its start cwd, not the new one.
-      if (st.cwd === undefined) {
-        for (const p of st.pending.splice(0))
-          addFile(st, path.posix.resolve(st.start, p.s), p.found);
-        for (const e of st.execsWithoutCwd.splice(0)) e.cwd = st.start;
-      }
-      setCwd(st, path.posix.resolve(st.cwd ?? st.start, strings[0].s));
+      // Paths seen before this process's first chdir belong to its start cwd, not the new one, and so do a peer's.
+      chdirTo(st, path.posix.resolve(st.cwd ?? st.start, strings[0].s));
     }
     if ((name === 'execve' || name === 'execveat') && ok) {
       const argv = /\[((?:"(?:[^"\\]|\\.)*"(?:, )?)*)\]/.exec(args);
@@ -464,11 +469,13 @@ export function repoView(root: string): RepoView {
     else files.push(p);
   }
   const gitDirs = new Set<string>();
+  // A relative --git-common-dir is relative to the cwd, and strace reports realpaths: resolve against the real root.
+  const realRoot = fs.realpathSync(root);
   for (const flag of ['--absolute-git-dir', '--git-common-dir']) {
     const r = spawnSync('git', ['rev-parse', flag], { cwd: root, encoding: 'utf8' });
-    if (r.status === 0 && r.stdout.trim() !== '') gitDirs.add(path.resolve(root, r.stdout.trim()));
+    if (r.status === 0 && r.stdout.trim() !== '') gitDirs.add(path.resolve(realRoot, r.stdout.trim()));
   }
-  return { root: fs.realpathSync(root), files, gitlinks, gitDirs: [...gitDirs], records: readRecordGlobs(root) };
+  return { root: realRoot, files, gitlinks, gitDirs: [...gitDirs], records: readRecordGlobs(root) };
 }
 
 export interface Attribution {
@@ -1141,10 +1148,10 @@ export function attribute(access: Access, view: RepoView): Attribution {
     const argv = ex.argv;
     const use = classifyGitArgv(argv);
     if (use === 'discovery') continue;
-    // A remote URL in a git argv (git remote-https origin <url>) is shown as <url>: it can carry credentials, and the ledger is committed.
+    // A remote URL in a git argv, bare (git remote-https origin <url>) or after an option prefix (-c remote.origin.url=<url>), is shown as <url>: it can carry credentials, and the ledger is committed.
     const shown = argv
       .slice(0, 6)
-      .map((a) => (/^[a-z][a-z0-9+.-]*:\/\//i.test(a) ? '<url>' : a))
+      .map((a) => a.replace(/[a-z][a-z0-9+.-]*:\/\/\S*/gi, '<url>'))
       .join(' ');
     const cmd = gitCommand(argv, ex.cwd);
     const sub = cmd.sub ?? '';
@@ -2391,8 +2398,9 @@ export function exemptKinds(root: string): Map<string, string | null> {
   return exemptRowsOf(fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null);
 }
 
-/** Whether the entry's scoped inputs are a human's: it declares `paths`, `lists` or `names` and they are not marked as traced. An entry with a set and NO `pathsOrigin` is declared too. */
+/** Whether the entry's scoped inputs are a human's: it declares `paths`, `lists` or `names` and they are not marked as traced, or it carries `pathsOrigin: 'declared'` with every set empty (a statement that nothing selects it, select.ts). An entry with a set and NO `pathsOrigin` is declared too. */
 export function declaresInputs(e: LockEntry): boolean {
+  if (e.pathsOrigin === 'declared') return true;
   return SCOPE_FIELDS.some((f) => (e[f] ?? []).length > 0) && e.pathsOrigin !== TRACED_ORIGIN;
 }
 
@@ -2534,7 +2542,7 @@ async function main(argv: string[]): Promise<number> {
     // Refused before the trace, not after it: a declared set is a human's claim, replaced only on request.
     if (args.write && !args.replaceDeclared && declaresInputs(e)) {
       console.error(
-        `path-trace: ${id} carries pathsOrigin '${e.pathsOrigin}': a declared set is judged by trace-honest.ts, never overwritten by a trace. Add --replace-declared to replace it with the traced set (or with none, on a whole-tree verdict).`
+        `path-trace: ${id} carries ${e.pathsOrigin === undefined ? 'a hand-declared set with no pathsOrigin' : `pathsOrigin '${e.pathsOrigin}'`}: a declared set is judged by trace-honest.ts, never overwritten by a trace. Add --replace-declared to replace it with the traced set (or with none, on a whole-tree verdict).`
       );
       return 2;
     }
@@ -2774,6 +2782,23 @@ async function selftest(): Promise<number> {
     threadLog('CLONE_CHILD_SETTID|SIGCHLD').files.has('/r/k.txt'),
     'CONTROL: a plain fork keeps the parent cwd when the child chdirs'
   );
+  // A peer's relative path named before any cwd was known belongs to the START cwd, not to the directory a sibling thread chdirs into (d1c98d2e.1).
+  const peerPre = parseStraceLog(
+    [
+      '500 access("pre.txt", R_OK) = 0',
+      '500 clone(child_stack=NULL, flags=CLONE_VM|CLONE_FS|CLONE_THREAD|CLONE_SIGHAND <unfinished ...>',
+      '500 <... clone resumed>, child_tidptr=0x7f) = 501',
+      '501 chdir("/r/sub") = 0',
+      '500 access("post.txt", R_OK) = 0',
+    ].join('\n'),
+    '/r'
+  );
+  check(
+    peerPre.files.has('/r/pre.txt') &&
+      !peerPre.files.has('/r/sub/pre.txt') &&
+      peerPre.files.has('/r/sub/post.txt'),
+    "a thread's chdir leaves the peer's earlier relative read in the start cwd (d1c98d2e.1); CONTROL: its later read lands in the new one"
+  );
   // An exec before the first chdir ran in the start cwd (cd353e9c.2).
   const execFirst = parseStraceLog(
     [
@@ -2963,6 +2988,43 @@ async function selftest(): Promise<number> {
       !vu.reason.includes('example.test'),
     'a remote URL in a git argv is shown as <url>, never verbatim'
   );
+  {
+    // A symlinked root: a relative --git-common-dir stays under the real root, where strace reports its reads (d1c98d2e.2).
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-link-'));
+    try {
+      const realDir = path.join(tmp, 'real');
+      fs.mkdirSync(path.join(realDir, '.ci', 'policy'), { recursive: true });
+      fs.writeFileSync(
+        path.join(realDir, policyPath('record-paths.json', '.')),
+        `${JSON.stringify({ records: [] })}\n`
+      );
+      fs.writeFileSync(path.join(realDir, 'f.txt'), 'x');
+      spawnSync('git', ['init', '-q'], { cwd: realDir });
+      spawnSync('git', ['add', '-A'], { cwd: realDir });
+      fs.symlinkSync(realDir, path.join(tmp, 'link'));
+      const lv = repoView(path.join(tmp, 'link'));
+      check(
+        lv.gitDirs.length > 0 &&
+          lv.gitDirs.every((g) => g.startsWith(`${fs.realpathSync(realDir)}/`)),
+        `a symlinked root keeps every git directory under the real root (${lv.gitDirs.join(',')})`
+      );
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+  const urlOpt = mk(['a/one.txt']);
+  urlOpt.execs.push({
+    argv: ['git', '-c', 'remote.origin.url=https://user:tok@host.test/x.git', 'log', '-1'],
+    cwd: '/r',
+  });
+  const vo = fold(attribute(urlOpt, view), view);
+  check(
+    vo.kind === 'whole-tree' &&
+      vo.reason.includes('remote.origin.url=<url>') &&
+      !vo.reason.includes('tok') &&
+      !vo.reason.includes('host.test'),
+    'a credentialed URL after an option prefix (-c remote.origin.url=...) is shown as <url> too (012ebca8.1)'
+  );
   check(
     classifyGitArgv(['git', '-C', 'x', 'rev-parse', '--show-toplevel']) === 'discovery' &&
       classifyGitArgv(['/usr/bin/git', 'ls-files', '-z']) === 'names' &&
@@ -3056,8 +3118,10 @@ async function selftest(): Promise<number> {
     declaresInputs({ ...base, paths: ['a/**'] } as LockEntry) &&
       declaresInputs({ ...base, paths: ['a/**'], pathsOrigin: 'declared' } as LockEntry) &&
       !declaresInputs({ ...base, paths: ['a/**'], pathsOrigin: TRACED_ORIGIN } as LockEntry) &&
-      !declaresInputs(base),
-    'declaresInputs: a set with no origin or a declared one is a human\'s; a traced set and no set are not'
+      !declaresInputs(base) &&
+      declaresInputs({ ...base, pathsOrigin: 'declared' } as LockEntry) &&
+      !declaresInputs({ ...base, pathsOrigin: TRACED_ORIGIN } as LockEntry),
+    'declaresInputs: a set with no origin or a declared one is a human\'s, and so is origin declared with every set empty (83f9183b.1); a traced set and no set are not'
   );
 
   // W2.3: discovery is not history, history is still history, the network is its own verdict.
@@ -3230,8 +3294,10 @@ async function selftest(): Promise<number> {
       GIT_HISTORY_FILE.test('modules/x/refs/heads/objects') &&
       GIT_HISTORY_FILE.test('modules/objects/objects/ab/cd') &&
       GIT_HISTORY_FILE.test('modules/logs/refs/heads/main') &&
+      GIT_HISTORY_FILE.test('modules/objects/refs') &&
+      !GIT_DISCOVERY_FILE.test('modules/objects/refs') &&
       !GIT_HISTORY_FILE.test('modules/x/config'),
-    'a submodule branch file named objects is history, not discovery; CONTROL: modules/<name>/objects and nested names stay discovery'
+    'a submodule branch file named objects is history, not discovery, and so are an ambiguous modules/objects/objects/ab/cd, modules/logs/refs/heads/main and the bare modules/objects/refs (the greedy history prefix, dd5103a3.3); CONTROL: modules/<name>/objects and nested names stay discovery, modules/x/config is neither'
   );
   check(
     networkPeer('3<socket:[1]>, {sa_family=AF_INET, sin_addr=inet_addr("1.1.1.1")}, 16) = 0') ===
@@ -3242,7 +3308,7 @@ async function selftest(): Promise<number> {
       networkPeer('3<socket:[4]>, {sa_family=AF_UNSPEC}, 16) = 0') === undefined,
     'an AF_INET connect strace printed in an unknown shape is still a network peer; CONTROL: AF_UNIX and AF_UNSPEC are not'
   );
-  // A shared-index file in a repository directory with no `.git` component counts as a repository read (b71d19c7.2).
+  // A shared-index file whose path has no `.git` component (here /g, a git directory named elsewhere than the cwd /r) counts as a repository read (b71d19c7.2).
   const shared = parseStraceLog(
     [
       '500 openat(AT_FDCWD</r>, "/g/sharedindex.abc", O_RDONLY) = 3</g/sharedindex.abc>',
