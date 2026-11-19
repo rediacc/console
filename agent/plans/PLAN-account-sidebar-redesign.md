@@ -320,7 +320,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - two teams render `team-option-*`, which calls `switchTeam`;
     - Exit goes to /account/partner when `isPartner`, else /account/dashboard.
     (ticked) 2026-11-19T13:40:26Z by d778be9d: commit:7669bc452 (private/account 843d453); sidebar vitest 20 passed, web tsc rc 0, lint rc 0
-- [ ] K1 [writer] One palette (Design 5): `palette-context.tsx`; `CommandPalette` gains Pages and Actions groups and an `allowed` prop; `Layout.tsx` mounts `PaletteProvider` and the palette for everyone, with no tree branch; `SidebarSearch.tsx`; tests.
+- [x] K1 [writer] One palette (Design 5): `palette-context.tsx`; `CommandPalette` gains Pages and Actions groups and an `allowed` prop; `Layout.tsx` mounts `PaletteProvider` and the palette for everyone, with no tree branch; `SidebarSearch.tsx`; tests.
   Owns: private/account/web/src/components/console/CommandPalette.tsx, private/account/web/src/components/console/palette-context.tsx, private/account/web/src/components/console/__tests__/command-palette.test.ts, private/account/web/src/components/console/__tests__/command-palette-mount.test.tsx, private/account/web/src/components/console/__tests__/command-palette-pages.test.tsx, private/account/web/src/components/Layout.tsx, private/account/web/src/components/sidebar/SidebarSearch.tsx
   Depends on: F1, I1, S1 (reuses `SignOutConfirmDialog`)
   Needs: none
@@ -331,6 +331,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - "Sign out…" opens `sidebar-logout-confirm` and does not call `logout`;
     - `sidebar-search` opens the same dialog;
     - the existing palette tests still pass.
+    (ticked) 2026-11-19T14:11:16Z by d778be9d: commit:012b26114 (SidebarSearch 1891fb4) + d65b720db (palette 643e096); console palette tests 536 passed, sidebar-search vitest passed, web tsc rc 0
 - [x] U1 [writer] `NavUser` and the Help and support link (Design 4); new `ui/avatar.tsx` and `ui/toggle-group.tsx`; `LANGUAGE_LABELS` moved to `i18n/language-labels.ts` (LanguageSwitcher.tsx re-imports it until N1 deletes the file).
   Owns: private/account/web/src/components/sidebar/NavUser.tsx, private/account/web/src/components/sidebar/HelpLink.tsx, private/account/web/src/components/ui/avatar.tsx, private/account/web/src/components/ui/toggle-group.tsx, private/account/web/src/i18n/language-labels.ts, private/account/web/src/components/LanguageSwitcher.tsx, private/account/web/src/components/sidebar/__tests__/nav-user.test.tsx
   Depends on: F1, I1, S1
@@ -343,7 +344,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - Settings goes to /account/settings and Communication preferences to /account/notifications;
     - an empty `name` shows the email and initials from the email.
     (ticked) 2026-11-19T13:35:59Z by d778be9d: commit:d65b720db (private/account b4e6bab); nav-user vitest 6 passed, web tsc rc 0, lint rc 0
-- [ ] N1 [writer] The shell: AppSidebar.tsx rewritten to compose header (switcher or banner, the search and bell row), `NavGroups` (collapsible, persisted, `nav-<id>` and `nav-group-<id>`), and footer (Help, NavUser). `adminMenuVisible` removed; ThemeToggle.tsx and LanguageSwitcher.tsx deleted; NoticeBell gets its square trigger style; dead `common` keys removed in 13 locales and hashes regenerated.
+- [x] N1 [writer] The shell: AppSidebar.tsx rewritten to compose header (switcher or banner, the search and bell row), `NavGroups` (collapsible, persisted, `nav-<id>` and `nav-group-<id>`), and footer (Help, NavUser). `adminMenuVisible` removed; ThemeToggle.tsx and LanguageSwitcher.tsx deleted; NoticeBell gets its square trigger style; dead `common` keys removed in 13 locales and hashes regenerated.
   Owns: private/account/web/src/components/AppSidebar.tsx, private/account/web/src/components/sidebar/NavGroups.tsx, private/account/web/src/components/NoticeBell.tsx, private/account/web/src/components/__tests__/notice-bell.test.tsx, private/account/web/src/components/ThemeToggle.tsx, private/account/web/src/components/LanguageSwitcher.tsx, private/account/web/src/components/__tests__/app-sidebar.test.tsx, private/account/web/src/i18n/locales/*/common.json, private/account/web/src/i18n/locales/.translation-hashes.json
   Depends on: W1, K1, U1, T1 (the hash manifest)
   Needs: none
@@ -356,6 +357,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - no element whose text is the email has a click handler reaching `logout`;
     - the collapsed state renders tooltips and the avatar-only user row;
     - no `adminMenuVisible` read remains (grep in test).
+    (ticked) 2026-11-19T14:11:15Z by d778be9d: commit:012b26114 (private/account 1891fb4 + 30e9898); web vitest 1124 passed, web tsc rc 0, lint rc 0, i18n completeness/hashes/key-usage rc 0
 - [ ] E1 [writer] e2e migration per Design 8, plus new suites.
   - `AuthenticatedTest.ts` drops the `adminMenuVisible` seed. `NavigationComponent` gains `openUserMenu()`, `openWorkspaceSwitcher()`, `enterAdmin()` and `exitAdmin()`; `settingsLink` and `adminLink` are re-pointed.
   - 07-01, 08-01, 08-02, 13-02, 16-03, 19-01 and 26-01 are updated. 25-06 is replaced by `25-06-admin-mode.test.ts`.
