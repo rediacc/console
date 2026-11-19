@@ -274,7 +274,7 @@ function stampInputs(cwd: string, config: string, programFiles: readonly string[
 /**
  * Writes the stamp for a CLEAN run: undefined when it did, else WHY NOT. Refuses when the output listed no program file, or fewer than the roots: a stamp that records nothing would never go stale. Refuses too when any input was modified from one second before `startedAt` onward: tsc may have read the earlier content, and stamping the later one would let the next run skip a version nothing checked.
  *
- * THE REASON IS PRINTED (PLAN-ciquick-cpu A6). A refused stamp makes the NEXT run re-check the project at an unchanged tree, and before this the refusal was silent, so a project re-running on every ci:quick looked like a volatile skip key with no way to tell which input moved. The run line now says `no stamp: <why>`, naming the file.
+ * THE REASON IS PRINTED (PLAN-ciquick-cpu A6). A refused stamp makes the NEXT run re-check the project at an unchanged tree, and before this the refusal was silent, so a project re-running on every ci:quick looked like a volatile skip key with no way to tell which input moved. The run line now says `no stamp: <why>`, naming the input file when one input is the cause (a modified-during-run input); the parse and program-count refusals name the count instead.
  */
 export function writeStamp(
   cwd: string,
@@ -479,7 +479,8 @@ async function runChecked(
   }
   let noStamp: string | undefined;
   if (r.code === 0) {
-    noStamp = writeStamp(cwd, tsc, step, r.output, started);
+    // A step with no config has no stamp to refuse, so it has no reason to print either.
+    if (step.config !== undefined) noStamp = writeStamp(cwd, tsc, step, r.output, started);
   } else if (step.config !== undefined) {
     // tree-write: safe the stamp sits beside its tsbuildinfo in CACHE_DIR, under the home directory (the selftest passes a temp dir)
     fs.rmSync(stampPath(step), { force: true });
@@ -825,6 +826,16 @@ async function selftest(): Promise<number> {
           !fs.existsSync(stampPath(step)) &&
           describeRun(racing).includes('no stamp: src/a.ts was modified during the run'),
         `stamp: an input modified inside the run window must leave NO stamp, and the line must say which input, got ${describeRun(racing)}`
+      );
+      const bare = await runChecked(
+        tsc,
+        { ...step, config: undefined } as TscStep,
+        sdir,
+        async (_t, s) => ({ code: 0, output: '', step: s, ms: 0 })
+      );
+      check(
+        bare.noStamp === undefined && !describeRun(bare).includes('no stamp'),
+        `stamp: a step with no config prints no stamp refusal, got ${describeRun(bare)}`
       );
       check(
         writeStamp(sdir, tsc, step, 'no paths here\n', 0) !== undefined,
