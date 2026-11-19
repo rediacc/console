@@ -2068,6 +2068,11 @@ export function parseLedger(text: string): Record<string, LedgerRow> {
   return JSON.parse(json) as Record<string, LedgerRow>;
 }
 
+/** One ledger row, or undefined when the ledger has none for `id` (a parsed ledger may lack any id). */
+function ledgerRow(text: string, id: string): LedgerRow | undefined {
+  return parseLedger(text)[id];
+}
+
 export function renderLedger(rows: Record<string, LedgerRow>): string {
   const ids = Object.keys(rows).sort(byteOrder);
   const out: string[] = [LEDGER_HEAD.replace(/\n$/, '')];
@@ -3941,7 +3946,7 @@ async function selftest(): Promise<number> {
       } as unknown as GateResult,
       'tree1'
     );
-    const row = parseLedger(fs.readFileSync(path.join(wroot, LEDGER_REL), 'utf8'))['g:z'];
+    const row = ledgerRow(fs.readFileSync(path.join(wroot, LEDGER_REL), 'utf8'), 'g:z');
     check(
       row?.tracedAt === '2020-01-02T03:04Z',
       `the ledger stamps the trace start, got ${row?.tracedAt}`
@@ -3986,7 +3991,7 @@ async function selftest(): Promise<number> {
     writeResult(rroot, whole(1), 't1');
     check(
       fs.readFileSync(path.join(rroot, MANIFEST_REL), 'utf8') === traced &&
-        parseLedger(fs.readFileSync(path.join(rroot, LEDGER_REL), 'utf8'))['g:b']?.verdict ===
+        ledgerRow(fs.readFileSync(path.join(rroot, LEDGER_REL), 'utf8'), 'g:b')?.verdict ===
           'paths',
       'a red run over a traced entry leaves its paths and ledger row alone'
     );
@@ -3994,7 +3999,7 @@ async function selftest(): Promise<number> {
     writeResult(rroot, whole(0), 't1');
     check(
       fs.readFileSync(path.join(rroot, MANIFEST_REL), 'utf8') !== traced &&
-        parseLedger(fs.readFileSync(path.join(rroot, LEDGER_REL), 'utf8'))['g:b']?.verdict ===
+        ledgerRow(fs.readFileSync(path.join(rroot, LEDGER_REL), 'utf8'), 'g:b')?.verdict ===
           'whole-tree',
       'CONTROL: the same whole-tree verdict from a green run strips the paths and records it'
     );
@@ -4197,7 +4202,7 @@ async function selftest(): Promise<number> {
     'the ledger round-trips through render and parse'
   );
   check(
-    parseLedger(renderLedger(parseLedger(renderLedger(back))))['g:bs']?.reason ===
+    ledgerRow(renderLedger(parseLedger(renderLedger(back))), 'g:bs')?.reason ===
       rows['g:bs'].reason,
     'a reason with backslashes is stable across repeated read and write cycles'
   );
