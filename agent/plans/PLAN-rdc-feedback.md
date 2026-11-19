@@ -112,11 +112,12 @@ Order: S1; then A1 and C1 in parallel; A2-A4 after A1, C2-C4 after C1; P1-P2 aft
     Needs: none
     Accept: `cd packages/shared && npx vitest run src/feedback` exits 0 with a case per scrub class (token shapes, SENSITIVE_KEYS pairs, PEM, URL, email, IPv4, IPv6, hostname, each home-path form) and a control per class that leaves clean text unchanged; two errors differing only in a path, a hex id or a number share a fingerprint, and a different exit code does not. `cd packages/shared && npm run build` exits 0.
     (ticked) 2026-11-19T02:13:16Z by d778be9d: commit:0bfa82fdf4 shared feedback fingerprint, scrubText, zod schema; vitest 41 passed rc 0 on the landed tree
-- [ ] A1 [writer] (W-ACC) Migration `0089_feedback.sql`, the four tables in schema.ts, their scope-registry and shard-router classification (D2)
+- [x] A1 [writer] (W-ACC) Migration `0089_feedback.sql`, the four tables in schema.ts, their scope-registry and shard-router classification (D2)
     Owns: private/account/drizzle/0089_feedback.sql, private/account/drizzle/meta/_journal.json, private/account/src/db/schema.ts, private/account/src/db/scope-registry.ts, private/account/src/db/shard-router.ts
     Depends on: S1.
     Needs: none
     Accept: `cd private/account && npx vitest run tests/unit` exits 0, including the existing scope-registry and shard-router coverage tests with the four new tables; `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.test_d1_migrations` exits 0 (0089 applied to clones of every regional database).
+    (ticked) 2026-11-19T03:07:43Z by d778be9d: commit:8b2b22ec40 account 43f8aa8: 0089_feedback.sql + schema + scope registry; vitest 153 passed, typecheck rc 0, test_d1_migrations rc 0 (eu/us/asia clones)
 - [ ] A2 [writer] (W-ACC) `POST /feedback`: token and FREE-blob auth, re-scrub and fingerprint recompute, duplicate upsert, D1 daily counters (D3 intake)
     Owns: private/account/src/services/feedback.service.ts, private/account/src/services/feedback-limits.service.ts, private/account/src/routes/feedback.ts, private/account/src/routes/index.ts, private/account/src/container.ts, private/account/tests/integration/feedback-intake.test.ts
     Depends on: A1.
