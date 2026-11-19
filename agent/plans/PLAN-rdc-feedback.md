@@ -142,11 +142,12 @@ Order: S1; then A1 and C1 in parallel; A2-A4 after A1, C2-C4 after C1; P1-P2 aft
     Depends on: A3.
     Needs: none
     Accept: `cd private/account/web && npx vitest run src/pages/__tests__/FeedbackSettings.test.tsx` exits 0: the tick reads its state from `GET /feedback/settings` and a click sends `{shareWithOrgAdmins: true}`, with a control that an untouched page sends nothing.
-- [ ] C1 [writer] (W-CLI) The redacted ring buffer (`services/feedback/ring.ts`) and argv redaction (`services/feedback/redact.ts`) over `resolveOptionSensitive`, `redactClone` and the shared `scrubText`, written from the post-action hook, `handleError` and the uncaught-exception path (D4)
+- [x] C1 [writer] (W-CLI) The redacted ring buffer (`services/feedback/ring.ts`) and argv redaction (`services/feedback/redact.ts`) over `resolveOptionSensitive`, `redactClone` and the shared `scrubText`, written from the post-action hook, `handleError` and the uncaught-exception path (D4)
     Owns: packages/cli/src/services/feedback/**, packages/cli/src/cli.ts, packages/cli/src/index.ts, packages/cli/src/utils/errors.ts, packages/cli/scripts/lib/option-classification.ts, packages/cli/src/services/feedback/__tests__/feedback-ring.test.ts
     Depends on: S1.
     Needs: none
     Accept: `cd packages/cli && npx vitest run src/services/feedback` exits 0 with: the file keeps exactly the last 10 entries at mode 0600 under `XDG_STATE_HOME`; a sensitive option value and a token in an error message are absent from the file bytes; a failed write leaves the exit code unchanged; a `setExitCode` failure and a thrown error both produce an entry. `npx tsc --noEmit --project packages/cli/tsconfig.json` exits 0.
+    (ticked) 2026-11-19T02:43:19Z by d778be9d: commit:cfaa7aff25 commit:275468b62c redacted ring buffer + argv redaction; vitest 21 passed, tsc rc 0 on the landed tree
 - [ ] C2 [writer] (W-CLI) The failure hint on all three paths, JSON `next` option, `REDIACC_FEEDBACK_HINT=0`, and the env-manifest record (D4)
     Owns: packages/cli/src/services/feedback/hint.ts, packages/cli/src/utils/errors.ts, packages/cli/src/cli.ts, packages/cli/src/index.ts, packages/cli/src/i18n/locales/en/cli.json, packages/cli/src/utils/__tests__/feedback-hint.test.ts, .ci/config/env-manifest.json, docs/environment-variables.md
     Depends on: C1.
