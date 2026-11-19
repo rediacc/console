@@ -3526,7 +3526,7 @@ def _norm_text(text):
 
 
 def references_anchored_file(repo, fix, test_path, anchored):
-    """Whether the content of `test_path` at `fix` names the anchored file: its repo-relative path or its basename as a whole token, or its stem (a leading numeric prefix such as `0090_` dropped) when that is at least 4 characters. A test whose file name carries none of the stem (`cli-root-yes.test.ts` for `index.ts`, `partner-customer-optional-org-migration.test.ts` for `0090_partner_customer_optional_org.sql`) still counts when it reads the file it covers. Only an explicit `--test` the fix touches reaches this: a test that names nothing of the anchored file never closes the finding. A file git cannot read at `fix` answers False."""
+    """Whether the content of `test_path` at `fix` names the anchored file: its repo-relative path or its basename as a whole token, or its stem (a leading numeric prefix such as `0090_` dropped) when that is at least 4 characters and compound (carries an underscore once `-` is read as `_`). A test whose file name carries none of the stem (`cli-root-yes.test.ts` for `index.ts`, `partner-customer-optional-org-migration.test.ts` for `0090_partner_customer_optional_org.sql`) still counts when it reads the file it covers. Only an explicit `--test` the fix touches reaches this: a test that names nothing of the anchored file never closes the finding. A file git cannot read at `fix` answers False."""
     rc, text = git(repo, "show", "%s:%s" % (fix, test_path))
     if rc != 0:
         return False
@@ -3535,7 +3535,8 @@ def references_anchored_file(repo, fix, test_path, anchored):
     base = pathlib.PurePosixPath(anchored_n)
     needles = {anchored_n, base.name}
     for stem in (base.stem, _NUMERIC_PREFIX_RE.sub("", base.stem)):
-        if len(stem) >= 4:
+        # A single-token stem (`index`, `onboarding`) turns up in unrelated tests as an identifier or a comment, so only a compound stem names the file on its own.
+        if len(stem) >= 4 and "_" in stem:
             needles.add(stem)
     return any(
         re.search(r"(?<![a-z0-9])%s(?![a-z0-9])" % re.escape(n), body) is not None
