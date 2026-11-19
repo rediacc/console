@@ -55,6 +55,8 @@ USAGE = (
 DRILL_PASSWORD = "DrillLicense123!"
 # The activation cap this drill starts from, seeded explicitly rather than inherited from the dev server's default, so leg e asserts against a number this file owns and teardown restores that same number.
 START_MAX_ACTIVATIONS = 3
+# A fleet-lock wait of at least this many seconds makes the drill read the VM preflights again (`run_all`).
+FLEET_REWAIT_S = 1.0
 CONFIG_NAME = "drill-license"
 MACHINE_NAME = "drill-lic-1"
 MACHINE2_NAME = "drill-lic-2"
@@ -1315,6 +1317,12 @@ class License:
         # The fleet lock after the read-only preflights and before the first VM write: `machine setup` uploads renet to the worker that vm:check, the e2e-local setup and `./rdc.sh ops` also drive. The preflights stay outside it, so a refusal there never waits on a running vm:check.
         if o.needs_vm() and not d.hold_fleet("legs %s on %s" % (o.legs, o.vm_ip)):
             return 1
+        # A wait for a running vm:check can span minutes in which it rebuilt or stopped VMs, so the preflights above would describe a fleet that is gone. After a real wait the VM, ssh and ceph facts are read again, still before the first VM write.
+        if o.needs_vm() and d.fleet_waited >= FLEET_REWAIT_S:
+            d.note("waited %ds for the fleet; re-checking the VM preflights" % int(d.fleet_waited))
+            self.preflight_vms()
+            self.preflight_ssh()
+            self.preflight_ceph()
         self.setup_sandbox()
         self.setup_gateway_address()
         self.setup_gateway()

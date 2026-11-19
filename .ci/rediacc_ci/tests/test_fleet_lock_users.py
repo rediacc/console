@@ -228,6 +228,28 @@ def test_license_drill_takes_the_fleet_then_writes(monkeypatch: pytest.MonkeyPat
     fake.d.release_fleet()
 
 
+@pytest.mark.usefixtures("runtime")
+def test_license_drill_rechecks_the_vm_preflights_after_a_real_wait(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Finding cdc29044.1: the preflights ran before the wait, so a wait of minutes leaves them describing a fleet that may be gone. The control above (no wait) runs each exactly once."""
+    monkeypatch.setenv("DRILL_FLEET_WAIT_S", "0")
+    calls: list[str] = []
+    fake = _license_fake(calls)
+    real_hold = fake.d.hold_fleet
+
+    def waited(purpose: str) -> bool:
+        taken = real_hold(purpose)
+        fake.d.fleet_waited = lic.FLEET_REWAIT_S + 4
+        return taken
+
+    monkeypatch.setattr(fake.d, "hold_fleet", waited)
+    with pytest.raises(SystemExit):
+        lic.License.run_all(cast("Any", fake))
+    assert calls == [*PREFLIGHTS, "preflight_vms", "preflight_ssh", "preflight_ceph"]
+    fake.d.release_fleet()
+
+
 @pytest.mark.usefixtures("runtime", "holder")
 def test_license_drill_with_no_vm_leg_takes_no_lock(monkeypatch: pytest.MonkeyPatch) -> None:
     """`--legs f` touches no machine, so a held fleet does not stop it."""

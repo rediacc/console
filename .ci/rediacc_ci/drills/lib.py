@@ -273,6 +273,8 @@ class Drill:
         self.extra_env: dict[str, str] = {}
         # The `fleet` resource lock while this drill drives the VMs (`hold_fleet`); released in teardown.
         self.fleet_lock: resource_lock.ResourceLock | None = None
+        # Seconds the last `hold_fleet` waited for the lock: a drill that waited re-checks the preflights it ran before the wait.
+        self.fleet_waited = 0.0
         self.green, self.red, self.yellow, self.nc = _colours(sys.stderr)
 
     # ------------------------------------------------------------------ environment
@@ -313,7 +315,7 @@ class Drill:
         wait_s = float(os.environ.get("DRILL_FLEET_WAIT_S") or resource_lock.DEFAULT_WAIT_S)
         lock = resource_lock.ResourceLock("fleet")
         try:
-            lock.acquire("drill %s: %s" % (self.name, purpose), wait_s)
+            self.fleet_waited = lock.acquire("drill %s: %s" % (self.name, purpose), wait_s)
         except resource_lock.ResourceBusyError as exc:
             log.error("drill %s: the VM fleet is busy, so no VM command ran: %s" % (self.name, exc))
             return False

@@ -527,6 +527,7 @@ def test_a_folded_ses_body_with_the_sns_footer_parses():
     got = dp.server_shape("Amazon SES Email Event Notification", folded + footer)
     assert got["shape"] == "ses-event"
     assert got["domains"] == ["example.com"]
-    # Control: a fold with no continuation space is not undone, so a body corrupted another way stays unknown.
-    broken = "\r\n".join(body[i : i + 998] for i in range(0, len(body), 998)) + "x"
+    # Control: a bare CRLF with no continuation space inside a JSON string is not undone, so the body stays unknown. The break is placed inside the first key, so the outcome does not depend on where a 998-character chunk happens to end.
+    assert body.index('"eventType"') < 5 < body.index('"eventType"') + len('"eventType"')
+    broken = body[:5] + "\r\n" + body[5:]
     assert dp.server_shape("Amazon SES Email Event Notification", broken)["shape"] == "unknown"
