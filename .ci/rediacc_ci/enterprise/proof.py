@@ -20,6 +20,7 @@ EXIT CODES. 0 at least one claim held and none is broken (a skipped claim is rep
 from __future__ import annotations
 
 import argparse
+import contextlib
 import dataclasses
 import functools
 import importlib
@@ -1184,12 +1185,16 @@ def main(argv: Sequence[str], *, lab: Lab | None = None) -> int:
         return 2
     if args.bench:
         # Both bench regions a proof acts on (the company's, and the one region-loss cuts) are held for the run, so no deploy or reset lands under it (PLAN-push-decoupling.md D1.6).
-        try:
-            with resource_lock.bench_held(BENCH_REGIONS, f"enterprise proof {args.verb}"):
-                return _run_bound(args, lab)
-        except resource_lock.ResourceBusyError as exc:
-            print(f"{SELF}: {exc}", file=sys.stderr)
-            return 1
+        # Only taking the locks is a bench-lock refusal; a ResourceBusyError the run itself raises is the run's own failure and propagates.
+        with contextlib.ExitStack() as stack:
+            try:
+                stack.enter_context(
+                    resource_lock.bench_held(BENCH_REGIONS, f"enterprise proof {args.verb}")
+                )
+            except resource_lock.ResourceBusyError as exc:
+                print(f"{SELF}: {exc}", file=sys.stderr)
+                return 1
+            return _run_bound(args, lab)
     return _run_bound(args, lab)
 
 

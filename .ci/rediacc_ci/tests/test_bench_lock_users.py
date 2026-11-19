@@ -132,6 +132,42 @@ def test_deploy_bench_seed_also_waits(hold, monkeypatch, capsys) -> None:
     assert reached == []
 
 
+def test_deploy_bench_set_root_password_also_waits(hold, monkeypatch, capsys) -> None:
+    """Finding 941d86d6.4: the third bench-lock path of `deploy_bench`, beside the region deploy and `--seed-root`."""
+    holder = hold("bench-eu")
+    reached: list[str] = []
+    _deploy_bench_world(monkeypatch, reached)
+
+    def set_root_password(*_a: object, **_k: object) -> None:
+        reached.append("set-root-password")
+
+    monkeypatch.setattr(deploy_bench, "set_root_password", set_root_password)
+    assert deploy_bench.main(["--set-root-password"]) == 1
+    _names_holder(capsys.readouterr().err, holder)
+    assert reached == []
+
+
+def test_control_set_root_password_runs_when_the_region_is_free(runtime, monkeypatch) -> None:
+    reached: list[str] = []
+    _deploy_bench_world(monkeypatch, reached)
+    monkeypatch.setattr(deploy_bench, "set_root_password", lambda **_k: reached.append("set"))
+    assert deploy_bench.main(["--set-root-password"]) == 0
+    assert reached == ["set"]
+
+
+def test_a_busy_error_raised_by_the_proof_run_is_not_reported_as_a_lock_refusal(
+    runtime, monkeypatch, capsys
+) -> None:
+    """Finding 941d86d6.3: only taking the bench locks is a refusal; the run's own ResourceBusyError propagates."""
+
+    def boom(*_a: object, **_k: object) -> int:
+        raise resource_lock.ResourceBusyError("fleet", pathlib.Path("p"), "pid 1", 0.0)
+
+    monkeypatch.setattr(proof, "_run_bound", boom)
+    with pytest.raises(resource_lock.ResourceBusyError):
+        proof.main(["add", "--bench"])
+
+
 # --------------------------------------------------------------------------- reset_bench
 
 

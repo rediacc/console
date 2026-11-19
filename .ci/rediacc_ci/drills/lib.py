@@ -154,7 +154,7 @@ def md5(path: str | os.PathLike) -> str:
 def run_email(name: str) -> str:
     """A per-run drill identity, `drill-<name>-<seconds>-<pid>-<4 hex>@rediacc.io` (PLAN-push-decoupling.md D1.7).
 
-    Seconds alone let two runs started in one second share a user, and a fixed address let two concurrent runs share one outright; the pid separates two processes in one second, and the random hex two runs in one process (a frozen clock in a test, or a reused pid)."""
+    Seconds alone let two runs started in one second share a user, and a fixed address let two concurrent runs share one outright; the pid separates two processes in one second, and the random hex makes a collision between two runs in one process (a frozen clock in a test, or a reused pid) improbable: one in 65536 for the same second and pid, not impossible."""
     return "drill-%s-%d-%d-%s@rediacc.io" % (
         name,
         int(time.time()),

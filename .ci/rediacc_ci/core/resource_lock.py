@@ -8,7 +8,7 @@ THE PAYLOAD is JSON `{pid, session, purpose, since}`: vm:check writes the same k
 
 THE WAIT is bounded. A second holder polls until `wait_s` runs out, printing the holder once to stderr, then raises `ResourceBusyError` naming the resource, the file and the holder.
 
-A NESTED HOLDER. A process whose ANCESTOR holds the resource (a drill vm:check runs, `./rdc.sh ops up` under the wrapper) is already inside the hold: it takes nothing, waits for nothing and releases nothing (`ResourceLock.nested`). Without that rule the child would wait on its own parent until the wait ran out.
+A NESTED HOLDER. A process whose ANCESTOR holds the resource (a drill vm:check runs, `./rdc.sh ops up` under the wrapper), or a second lock object in the process that holds it, is already inside the hold: it takes nothing, waits for nothing and releases nothing (`ResourceLock.nested`). Without that rule the child would wait on its own parent until the wait ran out. A nested object protects nothing of its own, so the object that holds the resource must outlive it (release the nested one first).
 
 THE WRAPPER, for callers that are not Python:
 
@@ -23,6 +23,7 @@ import argparse
 import contextlib
 import datetime
 import json
+import math
 import os
 import pathlib
 import re
@@ -74,9 +75,25 @@ class LockFileRefusedError(ResourceBusyError):
         self.waited = 0.0
 
 
+class WaitSettingError(ResourceBusyError):
+    """A wait setting (`BENCH_LOCK_WAIT_S`, `RESOURCE_LOCK_WAIT_S`) that is not a finite, non-negative number of seconds; a ResourceBusyError so every caller refuses the run with a message rather than a traceback."""
+
+    def __init__(self, name: str, raw: str) -> None:
+        RuntimeError.__init__(
+            self, "%s=%r is not a finite, non-negative number of seconds" % (name, raw)
+        )
+        self.resource = name
+        self.path = pathlib.Path("-")
+        self.holder = "unknown"
+        self.waited = 0.0
+
+
 def bench_resource(region: str) -> str:
-    """The resource of one bench region: `bench-eu`, `bench-us`, ..."""
-    return "bench-%s" % (region or "").strip().lower()
+    """The resource of one bench region: `bench-eu`, `bench-us`, ... A blank region is a ValueError, never the one shared `bench-` lock."""
+    name = (region or "").strip().lower()
+    if not name:
+        raise ValueError("a bench region is required; a blank one would take one shared lock")
+    return "bench-%s" % name
 
 
 def _check_name(resource: str) -> str:
@@ -209,11 +226,16 @@ class ResourceLock:
 
     def holder(self) -> str:
         """The current payload, read without taking the lock."""
+        # O_NONBLOCK: a FIFO planted at the predictable /tmp name would otherwise block this open until a writer appears.
         try:
-            fd = os.open(self.path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+            fd = os.open(
+                self.path, os.O_RDONLY | os.O_NONBLOCK | getattr(os, "O_NOFOLLOW", 0)
+            )
         except OSError:
             return "holder unknown"
         try:
+            if not stat.S_ISREG(os.fstat(fd).st_mode):
+                return "holder unknown"
             return describe_payload(os.pread(fd, 4096, 0))
         except OSError:
             return "holder unknown"
@@ -228,7 +250,7 @@ class ResourceLock:
         *,
         nest: bool = True,
     ) -> float:
-        """Seconds waited. Raises ResourceBusyError naming the holder when the wait runs out. With `nest` (the default) a resource an ancestor process holds is entered at once, as `nested`."""
+        """Seconds waited. Raises ResourceBusyError naming the holder when the wait runs out. With `nest` (the default) a resource this process or an ancestor process holds is entered at once, as `nested`; the holding object must outlive a nested one."""
         if self.fd is not None or self.nested:
             raise RuntimeError("resource %s is already held by this lock object" % self.resource)
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -298,9 +320,18 @@ def held(
 
 
 def env_wait(name: str, environ: Mapping[str, str] | None = None) -> float:
-    """Seconds from the environment variable `name`; DEFAULT_WAIT_S when it is unset or empty."""
+    """Seconds from the environment variable `name`; DEFAULT_WAIT_S when it is unset or blank, WaitSettingError when it is not a finite, non-negative number."""
     env = os.environ if environ is None else environ
-    return float(env.get(name) or DEFAULT_WAIT_S)
+    raw = (env.get(name) or "").strip()
+    if not raw:
+        return DEFAULT_WAIT_S
+    try:
+        value = float(raw)
+    except ValueError:
+        raise WaitSettingError(name, raw) from None
+    if not math.isfinite(value) or value < 0:
+        raise WaitSettingError(name, raw)
+    return value
 
 
 @contextlib.contextmanager
@@ -378,7 +409,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error("run needs a command after --")
     wait_s = args.wait
     if wait_s is None:
-        wait_s = float(os.environ.get("RESOURCE_LOCK_WAIT_S") or DEFAULT_WAIT_S)
+        try:
+            wait_s = env_wait("RESOURCE_LOCK_WAIT_S")
+        except WaitSettingError as exc:
+            parser.error(str(exc))
     return run(args.resource, cmd, purpose=args.purpose or " ".join(cmd)[:120], wait_s=wait_s)
 
 

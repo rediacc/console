@@ -171,7 +171,7 @@ def test_fleet_is_the_vm_check_lock_file(tmp_path: pathlib.Path) -> None:
 
 @pytest.mark.usefixtures("runtime")
 def test_vm_check_holder_reads_in_the_module() -> None:
-    """A payload vm:check's own Lock wrote (no purpose key) still names its pid."""
+    """A payload in the shape vm:check's own Lock writes (the same keys, no purpose) still names its pid."""
     path = vm_check.lock_path()
     path.write_text('{"pid": 4242, "session": "abcd1234", "since": "2026-11-18T10:00:00Z"}')
     assert (
@@ -220,8 +220,12 @@ def test_a_descendant_of_the_holder_enters_nested() -> None:
 
 def test_ancestors_names_the_parent_chain() -> None:
     chain = resource_lock.ancestors()
-    assert chain
-    assert chain[0] == os.getppid()
+    if os.getppid() > 1:
+        assert chain
+        assert chain[0] == os.getppid()
+    else:
+        # The chain stops before pid 1, so a parent of 1 (a container entrypoint) is an empty chain.
+        assert chain == []
 
 
 def test_a_planted_symlink_is_refused_not_followed(
@@ -248,3 +252,120 @@ def test_a_group_writable_lock_file_is_refused(runtime: pathlib.Path) -> None:
     with pytest.raises(resource_lock.LockFileRefusedError, match="not group or world writable"):
         resource_lock.ResourceLock("shared").acquire("test", 0.1)
     assert path.exists()
+
+
+def test_a_blank_bench_region_is_refused_not_one_shared_lock() -> None:
+    """Finding 9297ee6f.2: `bench-` passed the name check, so an unset region took one lock for every caller."""
+    for blank in ("", "  "):
+        with pytest.raises(ValueError, match="bench region is required"):
+            resource_lock.bench_resource(blank)
+    with pytest.raises(ValueError, match="bench region is required"):
+        with resource_lock.bench_held("", "test"):
+            pass
+
+
+@pytest.mark.parametrize("raw", ["abc", "1.5x", "nan", "inf", "-3"])
+def test_a_bad_wait_setting_is_a_named_refusal_not_a_traceback(raw: str) -> None:
+    """Finding 941d86d6.1: a ValueError out of `float()` reached no caller's handler."""
+    with pytest.raises(resource_lock.WaitSettingError, match="BENCH_LOCK_WAIT_S"):
+        resource_lock.env_wait("BENCH_LOCK_WAIT_S", {"BENCH_LOCK_WAIT_S": raw})
+    assert issubclass(resource_lock.WaitSettingError, resource_lock.ResourceBusyError)
+
+
+def test_a_blank_or_unset_wait_setting_is_the_default_and_a_number_is_read() -> None:
+    assert resource_lock.env_wait("X", {}) == resource_lock.DEFAULT_WAIT_S
+    assert resource_lock.env_wait("X", {"X": "  "}) == resource_lock.DEFAULT_WAIT_S
+    assert resource_lock.env_wait("X", {"X": " 2.5 "}) == 2.5
+    assert resource_lock.env_wait("X", {"X": "0"}) == 0.0
+
+
+@pytest.mark.usefixtures("runtime")
+def test_the_wrapper_refuses_a_bad_wait_setting_with_a_message(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RESOURCE_LOCK_WAIT_S", "abc")
+    done = _wrapper("--resource", "fleet", "--", "true")
+    assert done.returncode == 2
+    assert "RESOURCE_LOCK_WAIT_S" in done.stderr
+    assert "Traceback" not in done.stderr
+
+
+def test_bench_regions_are_taken_in_sorted_order_and_released_when_a_later_one_is_refused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Finding 941d86d6.2: the deadlock-avoidance claim, driven through a recording `held`."""
+    import contextlib
+
+    events: list[str] = []
+
+    @contextlib.contextmanager
+    def held(name, *, purpose, wait_s):
+        if name == "bench-us":
+            raise resource_lock.ResourceBusyError(name, pathlib.Path("p"), "pid 1", wait_s)
+        events.append("take " + name)
+        try:
+            yield name
+        finally:
+            events.append("release " + name)
+
+    monkeypatch.setattr(resource_lock, "held", held)
+    with pytest.raises(resource_lock.ResourceBusyError):
+        with resource_lock.bench_held(["us", "eu", "asia", "eu"], "test"):
+            raise AssertionError("the body must not run when a region is refused")
+    assert events == ["take bench-asia", "take bench-eu", "release bench-eu", "release bench-asia"]
+
+
+def test_parent_pid_falls_back_to_ps_when_proc_is_absent(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Finding 96e6f543.3: the macOS path, with /proc unreadable and `ps` answering."""
+    seen: list[list[str]] = []
+
+    def no_proc(_self: pathlib.Path, *_a: object, **_k: object) -> str:
+        raise FileNotFoundError
+
+    def ps(argv: list[str], **_k: object) -> subprocess.CompletedProcess[str]:
+        seen.append(argv)
+        return subprocess.CompletedProcess(argv, 0, stdout="  4321\n", stderr="")
+
+    monkeypatch.setattr(pathlib.Path, "read_text", no_proc)
+    monkeypatch.setattr(resource_lock.subprocess, "run", ps)
+    assert resource_lock.parent_pid(99) == 4321
+    assert seen == [["ps", "-o", "ppid=", "-p", "99"]]
+
+
+def test_a_second_lock_object_in_the_holding_process_is_nested(runtime: pathlib.Path) -> None:
+    """Finding 96e6f543.1/.2: the documented own-pid rule, and the release order it needs."""
+    first = resource_lock.ResourceLock("fleet")
+    second = resource_lock.ResourceLock("fleet", say=lambda _l: None)
+    first.acquire("outer", 1.0)
+    try:
+        second.acquire("inner", 0.0)
+        assert second.nested
+        assert second.fd is None
+    finally:
+        second.release()
+        first.release()
+    with resource_lock.held("fleet", purpose="after", wait_s=0.0):
+        pass
+
+
+def test_a_fifo_at_the_lock_path_is_refused_by_open_and_unknown_to_holder(
+    runtime: pathlib.Path,
+) -> None:
+    """Findings 546cdc58.1/.2: the type check of `open_lock_file`, and a `holder` that does not block on a planted FIFO."""
+    path = resource_lock.lock_path("planted-fifo")
+    os.mkfifo(path, 0o600)
+    with pytest.raises(resource_lock.LockFileRefusedError, match="regular file"):
+        resource_lock.open_lock_file("planted-fifo", path)
+    assert resource_lock.ResourceLock("planted-fifo").holder() == "holder unknown"
+
+
+def test_a_lock_file_owned_by_another_user_is_refused(
+    runtime: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Finding 546cdc58.2: the owner check, with the uid this process reports moved off the file's owner."""
+    path = resource_lock.lock_path("foreign")
+    path.write_text("")
+    path.chmod(0o600)
+    monkeypatch.setattr(resource_lock.os, "getuid", lambda: os.stat(path).st_uid + 1)
+    with pytest.raises(resource_lock.LockFileRefusedError, match="owned by uid"):
+        resource_lock.open_lock_file("foreign", path)
