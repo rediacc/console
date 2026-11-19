@@ -151,7 +151,9 @@ def test_summary_shape_admits_the_apostrophe_and_underscore():
 def test_a_reply_that_is_not_the_schema_quarantines(name):
     outcome = classify.outcome_for(_item(), BAD_REPLIES[name])
     assert outcome.quarantined
-    assert outcome.quarantine_note.startswith(classify.NOTE_QUARANTINE + ": reply not the schema")
+    assert (outcome.quarantine_note or "").startswith(
+        classify.NOTE_QUARANTINE + ": reply not the schema"
+    )
     assert not outcome.suspicious
 
 
@@ -296,17 +298,23 @@ def test_near_duplicates_control_one_entry_asks_nothing():
     ],
 )
 def test_a_dedup_reply_off_its_schema_is_refused(reply):
+    def ask(_prompt: str) -> str:
+        return json.dumps(reply)
+
     with pytest.raises(classify.ReplyError):
-        classify.near_duplicates(_entries(), lambda _p, r=reply: json.dumps(r))
+        classify.near_duplicates(_entries(), ask)
 
 
 def test_reproduction_orders():
     remote = classify.parse_reply(_reply())
     order = classify.reproduction_order(_item(), remote)
+    assert order is not None
     assert order["where"] == "bench"
     assert order["start"] == "./rdc.sh --config eu-bench repo up"
     local = classify.parse_reply(_reply(category="config", core_path=False))
-    assert classify.reproduction_order(_item(commandPath="config show"), local)["where"] == "local"
+    local_order = classify.reproduction_order(_item(commandPath="config show"), local)
+    assert local_order is not None
+    assert local_order["where"] == "local"
 
 
 def test_reproduction_order_controls():
@@ -321,7 +329,9 @@ def test_reproduction_order_controls():
 def test_the_note_round_trips_and_a_tampered_note_is_none():
     cls = classify.parse_reply(_reply())
     note = classify.note_for(cls, "near-duplicate of %s" % FP_B[:12])
-    back, extra = classify.classification_from_note(note)
+    decoded = classify.classification_from_note(note)
+    assert decoded is not None
+    back, extra = decoded
     assert back == cls
     assert extra == ["near-duplicate of %s" % FP_B[:12]]
     assert (
@@ -353,7 +363,7 @@ class Server:
 
 def _run(tmp_path, items, complete=None, dry_run=False, replies=None, classify_on=True):
     server = Server(items)
-    lines = []
+    lines: list[str] = []
     deps = triage.Deps(
         open_region=lambda _r, _w: server,
         now=lambda: NOW,

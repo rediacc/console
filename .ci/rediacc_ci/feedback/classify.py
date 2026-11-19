@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING, Any
 
 from rediacc_ci.core import https
 from rediacc_ci.feedback import quarantine
+from rediacc_ci.well_known import CLAUDE_HAIKU_MODEL
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -36,7 +37,7 @@ CLAUDE_OAUTH_REMEDY = (
 MESSAGES_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_VERSION = "2023-06-01"
 OAUTH_BETA = "oauth-2025-04-20"
-MODEL = "claude-haiku-5-5"
+MODEL = CLAUDE_HAIKU_MODEL
 MAX_TOKENS = 1024
 EFFORT = "low"
 TIMEOUT_S = 60.0

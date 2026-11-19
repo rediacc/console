@@ -1136,7 +1136,7 @@ export async function quickMain(args: readonly string[], seams: QuickSeams): Pro
     seams.log(
       `ci:quick: judging ${commit === undefined ? 'HEAD' : 'the pinned commit'} ${prepared.head.slice(0, 12)} tree ${prepared.tree.slice(0, 12)} on ${prepared.branch || '(detached)'} in the kept clean clone ${prepared.clone}; uncommitted edits in ${seams.live} are NOT judged; receipt: ${commit === undefined ? receiptPath : `${path.join(seams.live, ARCHIVE_REL, `${prepared.tree}.json`)} (written through ${receiptPath}; ${RECEIPT_REL} is left alone)`}\n`
     );
-    // tree-write: the pinned run's own receipt under the ignored .ci/cache is deleted, so a stale one cannot stand in and the runner judges the pinned tree whole
+    // tree-write: safe the pinned run deletes only its own receipt under the ignored .ci/cache, so a stale one cannot stand in and the runner judges the pinned tree whole
     if (commit !== undefined) fs.rmSync(receiptPath, { force: true });
     for (const note of prepared.notes) seams.log(`ci:quick: ${note}\n`);
     const env = cloneEnv(seams.env, seams.live, prepared.clone, prepared.fresh || route.noCarry);

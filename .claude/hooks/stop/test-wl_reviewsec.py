@@ -242,7 +242,7 @@ control("CONTROL: a retired key is never re-learned", S.plan(capped, many[:1], s
 R.write_atomic(R.review_path(repo, "0101-1", missed), R.render(review(missed)))
 nab_review = review("f" * 40, [finding(1, "security", NAB, sha="f" * 40)])
 R.write_atomic(R.review_path(repo, "0101-1", "f" * 40), R.render(nab_review))
-logs = []
+logs: list = []
 first = S.learn(repo, write=True, log=logs.append)
 types = sorted({r["type"] for r in first["new"]})
 control("the first pass learns both types", types, ["candidate", "fp-note"])

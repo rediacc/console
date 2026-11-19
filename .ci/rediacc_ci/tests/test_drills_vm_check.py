@@ -5409,17 +5409,17 @@ def test_the_host_disk_probe_counts_reclaimable_disks_and_reads_a_missing_dir_at
     (disks / "rediacc-vm-sys.11").write_bytes(b"x" * 8192)
     (tmp_path / "vms" / "rediacc-vm-ceph-disk.21").write_bytes(b"y" * 8192)
     (disks / "unrelated.img").write_bytes(b"z" * 8192)
-    free, reclaim = vm_check.Host.disk_space(SimpleNamespace(), str(tmp_path / "vms"))
+    free, reclaim = vm_check.Host.disk_space(cast("Any", SimpleNamespace()), str(tmp_path / "vms"))
     assert free > 0
     assert reclaim >= 2 * 8192
     # Control: the unrelated file is not credited, so a directory holding only it reclaims nothing.
     other = tmp_path / "other"
     other.mkdir()
     (other / "unrelated.img").write_bytes(b"z" * 8192)
-    assert vm_check.Host.disk_space(SimpleNamespace(), str(other))[1] == 0
+    assert vm_check.Host.disk_space(cast("Any", SimpleNamespace()), str(other))[1] == 0
     # A directory that does not exist is read at its nearest existing parent and reclaims nothing.
     free_missing, reclaim_missing = vm_check.Host.disk_space(
-        SimpleNamespace(), str(tmp_path / "absent" / "deeper")
+        cast("Any", SimpleNamespace()), str(tmp_path / "absent" / "deeper")
     )
     assert free_missing > 0
     assert reclaim_missing == 0
@@ -5433,7 +5433,7 @@ def test_the_host_disk_probe_skips_a_file_that_vanishes_and_counts_the_rest(
     vms.mkdir()
     (vms / "rediacc-vm-sys.11").write_bytes(b"x" * 8192)
     (vms / "rediacc-vm-ceph-disk.21").write_bytes(b"y" * 8192)
-    _, both = vm_check.Host.disk_space(SimpleNamespace(), str(vms))
+    _, both = vm_check.Host.disk_space(cast("Any", SimpleNamespace()), str(vms))
     assert both >= 2 * 8192
     real_stat = pathlib.Path.stat
 
@@ -5443,7 +5443,7 @@ def test_the_host_disk_probe_skips_a_file_that_vanishes_and_counts_the_rest(
         return real_stat(self, *args, **kwargs)
 
     monkeypatch.setattr(pathlib.Path, "stat", stat)
-    _, one = vm_check.Host.disk_space(SimpleNamespace(), str(vms))
+    _, one = vm_check.Host.disk_space(cast("Any", SimpleNamespace()), str(vms))
     assert 8192 <= one < both
 
 

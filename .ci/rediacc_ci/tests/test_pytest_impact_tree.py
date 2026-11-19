@@ -72,9 +72,15 @@ def test_control_an_untouched_tree_selects_only_smoke(repo):
     assert sel.files == [SMOKE], "the map cache under .ci/cache leaked into the change set"
 
 
+def _present(repo: pathlib.Path) -> list[str]:
+    present = pi.present_files(repo)
+    assert present is not None
+    return present
+
+
 def _poisoned_facts(repo):
     """Run the map once, then make the cached facts of `mid.py` claim it imports nothing (its content hash still matches, so the entry is reusable)."""
-    present = pi.present_files(repo)
+    present = _present(repo)
     pi.load_or_build_map(repo, present)
     facts = repo / pi.CACHE_RELDIR / "facts.json"
     doc = json.loads(facts.read_text(encoding="utf-8"))
@@ -86,7 +92,7 @@ def _poisoned_facts(repo):
 
 
 def _mid_closure(repo):
-    data, _digest = pi.load_or_build_map(repo, pi.present_files(repo))
+    data, _digest = pi.load_or_build_map(repo, _present(repo))
     return data["tests"][".ci/rediacc_ci/tests/test_mid.py"]["closure"]
 
 
@@ -108,7 +114,7 @@ def test_adding_a_python_file_discards_every_cached_fact(repo):
 @pytest.mark.parametrize("text", ["[]", "null", '{"fileset": "x", "entries": []}'])
 def test_a_facts_file_of_the_wrong_shape_is_a_cold_cache(repo, text):
     """Finding 4b2720aa.2: valid JSON that is not the facts object rebuilds instead of raising. A fileset of "x" never matches, so these take the cold branch before `entries` is read; the next test reaches it."""
-    pi.load_or_build_map(repo, pi.present_files(repo))
+    pi.load_or_build_map(repo, _present(repo))
     (repo / pi.CACHE_RELDIR / "facts.json").write_text(text, encoding="utf-8")
     (repo / ".ci/rediacc_ci/other.py").write_text("Y = 4\n", encoding="utf-8")
     assert ".ci/rediacc_ci/leaf.py" in _mid_closure(repo)

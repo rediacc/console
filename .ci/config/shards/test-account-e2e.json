@@ -1,7 +1,7 @@
 {
   "lane": "test-account-e2e",
   "of": 4,
-  "generatedAt": "2026-10-28T09:20:42.275Z",
+  "generatedAt": "2026-11-19T14:42:10.207Z",
   "legs": [
     {
       "index": 1,
@@ -27,7 +27,8 @@
         "account-e2e:20-config-storage/20-05-api.test.ts",
         "account-e2e:21-partner-portal/21-02-dashboard.test.ts",
         "account-e2e:21-partner-portal/21-06-study-landing.test.ts",
-        "account-e2e:25-partner-admin/25-03-eval-oversight.test.ts"
+        "account-e2e:25-partner-admin/25-03-eval-oversight.test.ts",
+        "account-e2e:01-auth/01-06-logout-confirm.test.ts"
       ]
     },
     {

@@ -124,7 +124,7 @@ def load_checklist(root=None) -> dict:
         if item["id"] in ids:
             raise ChecklistError("%s items[%d].id %r is a duplicate" % (CONFIG_REL, n, item["id"]))
         ids.add(item["id"])
-    learn = dict(LEARN_DEFAULTS)
+    learn: dict[str, int | float] = dict(LEARN_DEFAULTS)
     raw = doc.get("learn", {})
     if not isinstance(raw, dict):
         raise ChecklistError("%s learn is not an object" % CONFIG_REL)
@@ -293,7 +293,7 @@ def all_records(root) -> list:
     """[(dir name, review)] for every parsable record under agent/reviews/, and the malformed count is dropped here on purpose: branch_state and check:ci-review-resolutions name malformed records; the learner only reads what parses."""
     rv = _review_module()
     base = pathlib.Path(root) / REVIEWS_REL
-    out = []
+    out: list = []
     try:
         dirs = sorted(p for p in base.iterdir() if p.is_dir())
     except OSError:
@@ -351,7 +351,8 @@ def candidate_proposals(root, records, now_s, scan, repo=None) -> list:
     """One candidate per (non-test code file, security-fix subject) whose previous commit a model review called clean of security findings on that file."""
     rv = _review_module()
     repo = pathlib.Path(repo or root)
-    by_sha, by_patch = {}, {}
+    by_sha: dict = {}
+    by_patch: dict = {}
     for branch, review in records:
         by_sha.setdefault(review.sha, (branch, review))
         if rv.SHA40.match(review.patch_id or ""):

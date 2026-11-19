@@ -568,7 +568,7 @@ def test_relogin_once_runs_the_regional_remedy_once_and_reports_its_rc(rc):
             self.rc = rc
 
     ran = []
-    notes = []
+    notes: list = []
 
     def run_login(argv):
         ran.append(argv)

@@ -61,6 +61,9 @@ class _ExportStub:
     def get(self, _route):
         return 200, {"items": self.items}
 
+    def post(self, route, body):
+        raise AssertionError("the export reads only: POST %s %r" % (route, body))
+
 
 def _cls(**over):
     doc = {
@@ -291,9 +294,12 @@ def test_file_triggers_adds_then_defers_and_stops_on_a_refused_add():
     assert calls[1][4] == "1a2b3c4d"
 
     calls.clear()
-    (refused,) = critical.file_triggers(
-        triggers, "ab12cd34", NOW, lambda a: (calls.append(a), (2, ""))[1]
-    )
+
+    def refuse(argv):
+        calls.append(list(argv))
+        return 2, ""
+
+    (refused,) = critical.file_triggers(triggers, "ab12cd34", NOW, refuse)
     assert not refused.ok
     assert len(calls) == 1
 
@@ -305,6 +311,8 @@ def _plan_record():
     gate = paths.from_root(".ci", "scripts", "quality", "check_plan_record.py")
     paths.on_sys_path(gate.parent)
     spec = importlib.util.spec_from_file_location("check_plan_record_for_feedback", gate)
+    assert spec is not None
+    assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
@@ -470,7 +478,7 @@ def test_stage4_control_a_refused_add_is_retried(tmp_path):
 def test_stage4_control_without_me_names_the_trigger_and_files_nothing(tmp_path):
     server = Server([_fresh(distinctReporters=6)])
     worklist = Worklist()
-    lines = []
+    lines: list[str] = []
     triage.run(_opts(tmp_path), _deps(server, worklist, lines))
     assert worklist.calls == []
     assert any("critical R8 (a) not filed (no --me)" in line for line in lines)
@@ -526,7 +534,7 @@ def test_plangen_refuses_when_both_names_are_foreign(tmp_path):
 def test_stage5_a_plan_error_fails_the_run(tmp_path):
     """Review 23cc895b.6: a confirmed fingerprint left with no plan logged a warning and the run exited 0."""
     _hold_both_plan_names(tmp_path)
-    lines = []
+    lines: list[str] = []
     server = Server([_confirmed()])
     rc, results = triage.run(_opts(tmp_path), _deps(server, lines=lines))
     assert rc == 1

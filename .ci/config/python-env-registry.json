@@ -1965,6 +1965,9 @@
     ".ci/rediacc_ci/tests/test_ops_rebind_login.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/test_path_trace_honest.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/test_private_renet_build_vcs_stamp.py": [
       "GOCACHE"
     ],
@@ -2005,6 +2008,9 @@
     ],
     ".ci/rediacc_ci/tests/test_quality_browser_smoke.py": [
       "HOME"
+    ],
+    ".ci/rediacc_ci/tests/test_quality_go_module_sync.py": [
+      "PATH"
     ],
     ".ci/rediacc_ci/tests/test_quality_lockfile.py": [
       "PATH",

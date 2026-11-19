@@ -830,7 +830,7 @@ def check(
                     "--commit %s is %s"
                     % (
                         head[:12],
-                        "not an ancestor of the branch tip %s" % tip[:12]
+                        "not an ancestor of the branch tip %s" % (tip or "")[:12]
                         if verdict is False
                         else "an ancestor git cannot confirm against the branch tip",
                     ),

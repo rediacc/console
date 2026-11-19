@@ -71,7 +71,8 @@ def test_the_account_gates_wait_for_build_packages() -> None:
 
 def test_the_needs_check_refuses_a_gate_without_the_edge() -> None:
     """Control: the same gate without the edge, or with an empty or missing needs, is refused."""
-    for needs in ({}, {"needs": []}, {"needs": ["build:cli"]}):
+    variants: list[dict] = [{}, {"needs": []}, {"needs": ["build:cli"]}]
+    for needs in variants:
         entries = [{"id": "check:ci-account-server", **needs}]
         assert "does not need build:packages" in (
             _needs_problem(entries, "check:ci-account-server") or ""

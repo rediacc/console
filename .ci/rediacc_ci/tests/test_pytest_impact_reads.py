@@ -9,7 +9,7 @@ import pathlib
 import signal
 import subprocess
 import sys
-from typing import ClassVar
+from typing import Any, ClassVar
 
 import pytest
 
@@ -714,7 +714,7 @@ class _Held:
         self.alive = True
         self.killed = False
         self.stubborn = False
-        self.stderr = _Stream()
+        self.stderr: Any = _Stream()
         _Held.last = self
 
     def poll(self):

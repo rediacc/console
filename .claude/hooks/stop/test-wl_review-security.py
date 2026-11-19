@@ -19,6 +19,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import Any
 
 import wl_review as R
 import wl_reviewclass as C
@@ -133,7 +134,8 @@ control(
 
 # --------------------------------------------------------------------------- 2. schema
 
-enum = R.SCHEMA["properties"]["findings"]["items"]["properties"]["class"]["enum"]
+schema: Any = R.SCHEMA
+enum = schema["properties"]["findings"]["items"]["properties"]["class"]["enum"]
 control("security is in the schema enum", "security" in enum, True)
 control("the enum equals the class table", set(enum), set(C.CLASS_NAMES))
 diff = "diff --git a/src/app.py b/src/app.py\n--- a/src/app.py\n+++ b/src/app.py\n@@ -1,2 +1,4 @@\n a\n+b\n+c\n d\n"
@@ -259,7 +261,7 @@ git(repo, "commit", "-q", "-m", "base")
 (repo / "src" / "app.py").write_text("a = 1\nb = 2\n", encoding="utf-8")
 git(repo, "commit", "-q", "-am", "feat: add b")
 head = git(repo, "rev-parse", "HEAD")
-seen = []
+seen: list = []
 
 
 def reviewer(prompt, _cfg, _log):
@@ -271,7 +273,7 @@ def reviewer(prompt, _cfg, _log):
     }, ""
 
 
-logs = []
+logs: list = []
 R.run_review(
     repo,
     "console",
