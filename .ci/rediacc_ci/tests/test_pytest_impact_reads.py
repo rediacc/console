@@ -6,6 +6,7 @@ Every rule has a test that makes it fire and a control that keeps it from firing
 import json
 import os
 import pathlib
+import signal
 import subprocess
 import sys
 
@@ -459,7 +460,9 @@ def test_derive_paths_writes_no_glob_character_the_hasher_refuses():
     got = pr.derive_paths(tr, {"tests": {T1: {"closure": [T1]}}}, tree, [".ci/rediacc_ci/tests"])
     for item in [*got["paths"], *got["lists"]]:
         body = item.removesuffix("/**")
-        assert not any(c in body for c in "*?[{"), "the hasher would null this entry: %r" % item
+        assert not any(c in body for c in pr._GLOB_CHARS), (
+            "the hasher would null this entry: %r" % item
+        )
     assert any(pr.glob_matches(g, LANG + "/index.astro") for g in got["paths"]), got
     assert got["lists"] == ["docs", "packages/www/src/pages"], got
 
@@ -621,3 +624,321 @@ def test_pytest_exit_comes_from_its_own_file_not_from_strace(tmp_path, monkeypat
     monkeypatch.setattr(pr.subprocess, "Popen", FakeChild)
     rc, _att, _out = pr.run_trace(tmp_path, ["pytest"])
     assert rc == 1, "strace's own 0 hid pytest's failure"
+
+
+# --------------------------------------------------------------------------- review findings: the trace run, the markers, the derive guard
+
+
+def test_a_marker_that_cannot_be_written_falls_back_to_no_test_file(tmp_path, monkeypatch):
+    """Finding f4eb37c7.5: the previous file's attribution must not stand when a marker fails."""
+    real_open = os.open
+
+    def flaky(path, *a, **k):
+        if os.path.basename(path) == pr.marker_name(T1):
+            raise OSError("disk full")
+        return real_open(path, *a, **k)
+
+    monkeypatch.setattr(pr.os, "open", flaky)
+    monkeypatch.setattr(pr, "_MARKERS", [str(tmp_path)])
+    pr._mark(T1)
+    assert os.listdir(tmp_path) == [pr._UNATTRIBUTED_MARK]
+    pr._mark(T2)
+    assert sorted(os.listdir(tmp_path)) == sorted([pr._UNATTRIBUTED_MARK, pr.marker_name(T2)])
+
+
+def test_unconfigure_stops_the_plugin_marking(tmp_path, monkeypatch):
+    """Finding 53d58328.2."""
+    monkeypatch.setattr(pr, "_MARKERS", [str(tmp_path)])
+    pr.pytest_unconfigure(None)
+    pr._mark(T1)
+    assert os.listdir(tmp_path) == []
+
+
+def test_a_new_process_on_a_reused_tid_is_not_a_member_of_the_old_thread_group():
+    """Finding f4eb37c7.2: tid 30 was a thread of 100, then a process 100 forked: its reads keep the attribution it was created under."""
+    att = feed(
+        mark(100, T1),
+        "100 clone3({flags=CLONE_VM|CLONE_THREAD, exit_signal=0}, 88) = 30",
+        "100 clone(child_stack=NULL, flags=SIGCHLD, child_tidptr=0x7) = 30",
+        mark(100, T2),
+        opened(30, "/r/.ci/policy/c.json"),
+    )
+    assert att.reads[T1] == {".ci/policy/c.json"}
+    assert T2 not in att.reads
+
+
+def test_a_zombie_in_the_session_is_named_by_its_comm(tmp_path):
+    """Finding c29ab62a.5: an empty command line must not leave the leak report nameless."""
+    proc = _fake_proc(tmp_path, [(10, 10, "strace -f"), (11, 10, "")])
+    assert pr.session_members(10, proc) == [(10, "strace -f"), (11, "[odd) name]")]
+
+
+def test_glob_characters_include_the_backslash():
+    """Finding bc22fff0.2: a backslash in a tracked name folds to its clean ancestor like any glob character."""
+    assert pr._clean_dir("docs/we\\ird/x") == "docs"
+    assert pr._clean_glob("docs/we\\ird/x.md") == "docs/**"
+
+
+class _Stream(list):
+    """A stderr stream: a list of strace lines."""
+
+
+class _Held:
+    """A traced child whose rc file exists but which does not end by itself: `strace -f` waits for every tracee."""
+
+    def __init__(self, argv, **_k):
+        log = argv[argv.index("-c") + 2]
+        pathlib.Path(log).write_text("1 passed\n", encoding="utf-8")
+        pathlib.Path(log + ".rc").write_text("0\n", encoding="utf-8")
+        self.pid = 4242
+        self.returncode = None
+        self.alive = True
+        self.killed = False
+        self.stubborn = False
+        self.stderr = _Stream()
+        _Held.last = self
+
+    def poll(self):
+        return None if self.alive else 0
+
+    def wait(self, timeout=None):
+        if self.alive and timeout is not None:
+            raise subprocess.TimeoutExpired("strace", timeout)
+        self.alive = False
+        return 0
+
+    def kill(self):
+        self.killed = True
+        self.alive = False
+
+
+@pytest.fixture
+def held_trace(monkeypatch):
+    monkeypatch.setattr(pr.shutil, "which", lambda _n: "/usr/bin/strace")
+    monkeypatch.setattr(pr.subprocess, "Popen", _Held)
+    monkeypatch.setattr(pr.time, "sleep", lambda _s: None)
+    monkeypatch.setattr(pr, "ORPHAN_GRACE_S", -1.0)
+
+
+def test_an_orphan_outliving_pytest_is_killed_and_named(tmp_path, monkeypatch, held_trace):
+    """Finding c29ab62a.3: the grace expiry kills the session, names its command, and strace then ends."""
+
+    def kill_session(sid, spare=None):
+        assert sid == 4242 and spare == 4242
+        _Held.last.alive = False
+        return ["tail -f\n/dev/null"]
+
+    monkeypatch.setattr(pr, "_kill_session", kill_session)
+    rc, _att, out = pr.run_trace(tmp_path, ["pytest"])
+    assert rc == 0
+    assert pr.leaked_lines(out) == [pr.LEAKED_PREFIX + "tail -f /dev/null"], "a newline split the name"
+    assert not _Held.last.killed
+
+
+def test_an_orphan_that_left_the_session_does_not_hang_the_trace(tmp_path, monkeypatch, held_trace):
+    """Finding c29ab62a.1: a setsid leak is outside `_kill_session`; strace itself is ended and the run says so."""
+    monkeypatch.setattr(pr, "_kill_session", lambda _sid, spare=None: [])
+    rc, _att, out = pr.run_trace(tmp_path, ["pytest"])
+    assert rc == 0
+    assert _Held.last.killed
+    assert "outside the strace session" in "".join(pr.leaked_lines(out))
+
+
+def test_a_failure_folding_the_stream_is_raised_not_swallowed_in_the_thread(
+    tmp_path, monkeypatch, held_trace
+):
+    """Finding c29ab62a.2: the reader keeps draining, and the run fails loudly with the cause."""
+
+    def broken(self, _line):
+        raise ValueError("bad line")
+
+    monkeypatch.setattr(pr.Attributor, "feed", broken)
+    monkeypatch.setattr(pr, "_kill_session", lambda _sid, spare=None: _Held.last.kill() or [])
+    original = _Held.__init__
+
+    def with_lines(self, argv, **k):
+        original(self, argv, **k)
+        self.stderr.extend(["1 a", "1 b", "1 c"])
+
+    monkeypatch.setattr(_Held, "__init__", with_lines)
+    with pytest.raises(RuntimeError, match="folding the strace stream failed") as got:
+        pr.run_trace(tmp_path, ["pytest"])
+    assert isinstance(got.value.__cause__, ValueError)
+
+
+@pytest.fixture
+def trace_world(tmp_path, monkeypatch):
+    """cmd_trace over a one-test-file universe with `run_trace` replaced; the SIGTERM handler it installs is put back."""
+    previous = signal.getsignal(signal.SIGTERM)
+    monkeypatch.setattr(pr.impact, "present_files", lambda _r: [T1])
+    monkeypatch.setattr(pr.impact, "testpath_roots", lambda _r: [".ci/rediacc_ci/tests"])
+    calls: list[list[str]] = []
+    result = {"value": None}
+
+    def fake_run(_root, argv):
+        calls.append(list(argv))
+        value = result["value"]
+        if isinstance(value, BaseException):
+            raise value
+        return value
+
+    monkeypatch.setattr(pr, "run_trace", fake_run)
+    yield tmp_path, calls, result
+    signal.signal(signal.SIGTERM, previous)
+
+
+def _green(output="3 passed\n"):
+    return 0, feed(mark(100, T1), opened(100, "/r/.ci/policy/a.json")), output
+
+
+def _trace_file(root):
+    return root / pr.TRACE_RELPATH
+
+
+def test_cmd_trace_installs_the_term_handler(trace_world):
+    """Finding 45f702cd.2: removing the `signal.signal` line reds this."""
+    root, _calls, result = trace_world
+    result["value"] = _green()
+    assert pr.cmd_trace(root, ["--trace"]) == 0
+    assert signal.getsignal(signal.SIGTERM) is pr._exit_on_term
+
+
+def test_a_leaked_process_is_printed_and_recorded_on_a_green_run(trace_world, capsys):
+    """Finding bc22fff0.1: the green path is where a leak would otherwise go unseen."""
+    root, _calls, result = trace_world
+    line = pr.LEAKED_PREFIX + "tail -f /dev/null"
+    result["value"] = _green("3 passed\n" + line)
+    assert pr.cmd_trace(root, ["--trace"]) == 0
+    assert line in capsys.readouterr().out
+    assert json.loads(_trace_file(root).read_text(encoding="utf-8"))["leaked"] == [line]
+
+
+def test_control_a_clean_green_run_records_no_leak(trace_world):
+    root, _calls, result = trace_world
+    result["value"] = _green()
+    assert pr.cmd_trace(root, ["--trace"]) == 0
+    assert json.loads(_trace_file(root).read_text(encoding="utf-8"))["leaked"] == []
+
+
+def test_a_red_traced_run_writes_nothing(trace_world, capsys):
+    """Finding f4eb37c7.4: the refusal itself, not only `red_run_problem`."""
+    root, _calls, result = trace_world
+    result["value"] = (2, feed(mark(100, T1)), "interrupted")
+    assert pr.cmd_trace(root, ["--trace"]) == 1
+    assert "nothing written" in capsys.readouterr().err
+    assert not _trace_file(root).exists()
+
+
+@pytest.mark.parametrize("value", ["0", "-2", "many"])
+def test_a_shards_value_below_one_is_refused(trace_world, capsys, value):
+    """Finding d616eb96.4."""
+    root, calls, _result = trace_world
+    assert pr.cmd_trace(root, ["--trace", "--shards", value]) == 2
+    assert "--shards needs a whole number" in capsys.readouterr().err
+    assert calls == []
+
+
+def test_shards_over_a_selection_that_matches_no_file_is_refused_not_a_crash(trace_world, capsys):
+    """Finding d616eb96.2: an empty shard set used to reach `ThreadPoolExecutor(max_workers=0)`."""
+    root, calls, _result = trace_world
+    assert pr.cmd_trace(root, ["--trace", "--shards", "2", "--tests", "nowhere/"]) == 1
+    assert "no test file to shard" in capsys.readouterr().err
+    assert calls == []
+
+
+def test_a_shard_run_dispatches_one_trace_per_group(trace_world, monkeypatch):
+    """Finding d616eb96.3: the shard dispatch, with a second file so two groups exist."""
+    root, calls, result = trace_world
+    result["value"] = _green()
+    monkeypatch.setattr(pr.impact, "present_files", lambda _r: [T1, T2])
+    pr.cmd_trace(root, ["--trace", "--shards", "2"])
+    assert sorted(c[-1] for c in calls) == [T1, T2]
+
+
+def test_an_interrupted_shard_run_kills_the_live_sessions_and_still_shuts_the_pool(
+    trace_world, monkeypatch
+):
+    """Findings c29ab62a.4 and d616eb96.3: the BaseException path of cmd_trace."""
+    root, _calls, result = trace_world
+    result["value"] = KeyboardInterrupt()
+    killed: list[bool] = []
+    monkeypatch.setattr(pr, "_kill_live", lambda: killed.append(True))
+    with pytest.raises(KeyboardInterrupt):
+        pr.cmd_trace(root, ["--trace"])
+    assert killed == [True]
+
+
+def test_kill_live_kills_only_sessions_still_running(monkeypatch):
+    """Finding d616eb96.3: `_kill_live` over one running and one finished child."""
+    killed: list[int] = []
+
+    class Child:
+        def __init__(self, pid, running):
+            self.pid, self.running = pid, running
+
+        def poll(self):
+            return None if self.running else 0
+
+    monkeypatch.setattr(pr, "_kill_session", lambda sid, spare=None: killed.append(sid) or [])
+    monkeypatch.setattr(pr, "_LIVE", [Child(1, True), Child(2, False)])
+    pr._kill_live()
+    assert killed == [1]
+
+
+def test_a_trace_names_the_subset_it_covers(trace_world):
+    """Finding f4eb37c7.3: the record carries `subset` so `--derive --write` can refuse it."""
+    root, _calls, result = trace_world
+    result["value"] = _green()
+    assert pr.cmd_trace(root, ["--trace", "--tests", ".ci/rediacc_ci/tests"]) == 0
+    assert json.loads(_trace_file(root).read_text(encoding="utf-8"))["subset"] == [
+        ".ci/rediacc_ci/tests"
+    ]
+
+
+@pytest.fixture
+def derive_world(tmp_path, monkeypatch):
+    policy = tmp_path / pr.impact.POLICY_RELPATH
+    policy.parent.mkdir(parents=True)
+    policy.write_text(json.dumps({"smoke": {"files": [T1]}, "reads": {}}), encoding="utf-8")
+    monkeypatch.setattr(pr, "read_tree", lambda _r: pr.Tree.of([("100644", T1)]))
+    monkeypatch.setattr(pr.impact, "present_files", lambda _r: [T1])
+    monkeypatch.setattr(pr.impact, "testpath_roots", lambda _r: [".ci/rediacc_ci/tests"])
+    monkeypatch.setattr(
+        pr.impact, "load_or_build_map", lambda _r, _p: ({"tests": {T1: {"closure": [T1]}}}, "")
+    )
+
+    def write(extra):
+        record = pr.trace_record(feed(mark(100, T1), opened(100, "/r/.ci/policy/a.json")), 1)
+        record.update(extra)
+        out = _trace_file(tmp_path)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(record), encoding="utf-8")
+
+    return tmp_path, policy, write
+
+
+def test_derive_write_refuses_a_trace_of_a_subset(derive_world, capsys):
+    """Finding f4eb37c7.3: a subset trace would replace every other test file's reads."""
+    root, policy, write = derive_world
+    write({"subset": [".ci/rediacc_ci/tests/test_one.py"]})
+    before = policy.read_text(encoding="utf-8")
+    assert pr.cmd_derive(root, ["--derive", "--write"]) == 1
+    assert "re-run --trace over the whole suite" in capsys.readouterr().err
+    assert policy.read_text(encoding="utf-8") == before
+
+
+def test_derive_write_records_the_tests_that_failed_under_the_trace(derive_world):
+    """Finding 45f702cd.1: their entries are lower bounds, and the policy says so."""
+    root, policy, write = derive_world
+    write({"subset": [], "failed": ["t/test_x.py::test_slow"]})
+    assert pr.cmd_derive(root, ["--derive", "--write"]) == 0
+    origin = json.loads(policy.read_text(encoding="utf-8"))["readsOrigin"]
+    assert "1 test(s) failed under the trace" in origin
+    assert "t/test_x.py::test_slow" in origin
+
+
+def test_control_derive_write_of_a_clean_whole_suite_trace_adds_no_partial_note(derive_world):
+    root, policy, write = derive_world
+    write({"subset": [], "failed": []})
+    assert pr.cmd_derive(root, ["--derive", "--write"]) == 0
+    assert "partial" not in json.loads(policy.read_text(encoding="utf-8"))["readsOrigin"]

@@ -109,11 +109,11 @@ def _mark(rel: str) -> None:
     if not _MARKERS:
         return
     directory = _MARKERS[0]
-    # A marker that cannot be written leaves the previous attribution standing; trace_problem's coverage floor is what notices a plugin that marks nothing.
-    with contextlib.suppress(OSError):
-        os.close(
-            os.open(os.path.join(directory, marker_name(rel)), os.O_RDONLY | os.O_CREAT, 0o600)
-        )
+    # A marker that cannot be written must not leave the previous test file's attribution standing, so its reads would land in the wrong table: the fallback marks "no test file" instead, and reads taken until the next marker are unattributed. trace_problem's coverage floor is what notices a plugin that marks nothing.
+    for name in dict.fromkeys((marker_name(rel), _UNATTRIBUTED_MARK)):
+        with contextlib.suppress(OSError):
+            os.close(os.open(os.path.join(directory, name), os.O_RDONLY | os.O_CREAT, 0o600))
+            return
 
 
 def _test_rel(nodeid: str) -> str:
@@ -135,6 +135,11 @@ def pytest_configure(config) -> None:
     directory = config.getoption(MARKER_OPTION)
     if directory:
         _MARKERS.append(directory)
+
+
+def pytest_unconfigure(config) -> None:
+    # A later session in this process, or a later `_mark`, must not write markers into a finished trace's directory.
+    _MARKERS.clear()
 
 
 def pytest_collectstart(collector) -> None:
@@ -251,6 +256,8 @@ class Attributor:
             if "CLONE_THREAD" in rest:
                 self.tgid[child] = self._group(pid)
             else:
+                # A reused tid may still map to an earlier thread's group: a new process is its own group.
+                self.tgid.pop(child, None)
                 self.owner[child] = self.owner.get(self._group(pid), UNATTRIBUTED)
                 self.cwd[child] = self.cwd.get(self._group(pid), self.root)
             for kind, path in self.unclaimed.pop(child, []):
@@ -520,11 +527,15 @@ def session_members(sid: int, proc_root: str = "/proc") -> list[tuple[int, str]]
             continue
         try:
             with open(os.path.join(proc_root, name, "stat"), encoding="utf-8") as fh:
-                fields = fh.read().rsplit(")", 1)[1].split()
+                text = fh.read()
+            fields = text.rsplit(")", 1)[1].split()
             if int(fields[3]) != sid:
                 continue
             with open(os.path.join(proc_root, name, "cmdline"), "rb") as fh:
                 cmd = fh.read().replace(b"\0", b" ").decode("utf-8", "replace").strip()
+            if not cmd:
+                # A zombie or kernel thread has no command line: its name is the comm in the stat line.
+                cmd = "[%s]" % text.split("(", 1)[1].rsplit(")", 1)[0]
         except (OSError, IndexError, ValueError):
             continue
         out.append((int(name), cmd))
@@ -557,7 +568,7 @@ def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attribut
         log = os.path.join(scratch, "pytest.log")
         rc_file = pathlib.Path(log + ".rc")
         att = Attributor(root=str(root), marker_dir=markers)
-        # The environment is inherited unchanged: this module runs only as `python -m rediacc_ci...`, so whatever put `.ci` on its path puts it on pytest's, which `-p` needs before pyproject's `pythonpath` is applied.
+        # The environment is inherited unchanged and the child runs in `root`: this module runs as `PYTHONPATH=.ci python3 -m rediacc_ci...` from the repo root, so a relative `.ci` entry resolves to the same directory for pytest, which `-p` needs before pyproject's `pythonpath` is applied.
         child = subprocess.Popen(
             # One token, `--opt=dir`: pytest decides whether any test path was given BEFORE this plugin registers its option, so a separate `dir` token reads as a test path, `testpaths` is skipped, and the marker directory is what gets collected (the 2026-11-18 full run: 18 of 927 files).
             strace_argv(log, [*pytest_argv, "%s=%s" % (MARKER_OPTION, markers)]),
@@ -572,10 +583,19 @@ def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attribut
         _LIVE.append(child)
         stream = child.stderr
 
+        fold_errors: list[BaseException] = []
+
         def fold() -> None:
-            if stream is not None:
+            if stream is None:
+                return
+            try:
                 for line in stream:
                     att.feed(line)
+            except Exception as exc:
+                fold_errors.append(exc)
+                # Keep draining: strace blocks on a full stderr pipe, pytest then never writes its rc file, and the loop below would wait forever.
+                for _line in stream:
+                    pass
 
         reader = threading.Thread(target=fold, daemon=True)
         reader.start()
@@ -586,17 +606,27 @@ def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attribut
                 ended_at = time.monotonic()
             if ended_at is not None and time.monotonic() - ended_at > ORPHAN_GRACE_S:
                 leaked = _kill_session(child.pid, spare=child.pid)
+                try:
+                    child.wait(timeout=ORPHAN_GRACE_S)
+                except subprocess.TimeoutExpired:
+                    # A leaked process that left the session (setsid) is out of `_kill_session`'s reach and keeps strace alive: end strace itself, which detaches every tracee.
+                    child.kill()
+                    leaked.append("(a process outside the strace session; strace was killed)")
                 break
             time.sleep(0.5)
         child.wait()
         reader.join()
+        if fold_errors:
+            raise RuntimeError(
+                "pytest_impact_reads: folding the strace stream failed: %r" % fold_errors[0]
+            ) from fold_errors[0]
         output = pathlib.Path(log).read_text(encoding="utf-8", errors="replace")
         try:
             rc = int(rc_file.read_text(encoding="utf-8").strip())
         except (OSError, ValueError):
             rc = child.returncode or 2
         for cmd in leaked:
-            output += "\n%s%s" % (LEAKED_PREFIX, cmd[:300])
+            output += "\n%s%s" % (LEAKED_PREFIX, " ".join(cmd.split())[:300])
     finally:
         if child is not None:
             if child.poll() is None:
@@ -739,7 +769,13 @@ def cmd_trace(root: pathlib.Path, argv: list[str]) -> int:
     signal.signal(signal.SIGTERM, _exit_on_term)
     tests = _arg_values(argv, "--tests")
     jobs = (_arg_values(argv, "--jobs") or [str(max(2, (os.cpu_count() or 2) // 2))])[-1]
-    shards = int((_arg_values(argv, "--shards") or ["1"])[-1])
+    try:
+        shards = int((_arg_values(argv, "--shards") or ["1"])[-1])
+    except ValueError:
+        shards = 0
+    if shards < 1:
+        print("pytest-impact-reads: --shards needs a whole number of 1 or more", file=sys.stderr)
+        return 2
     pytest_bin = (_arg_values(argv, "--pytest") or [sys.executable])[-1]
     head = [
         pytest_bin,
@@ -759,6 +795,12 @@ def cmd_trace(root: pathlib.Path, argv: list[str]) -> int:
         ]
     # ONE strace serializes every ptrace stop in the suite: on 2026-11-18 it sat at 90% of one core with the machine at load 21 of 24. Shards are separate straces over disjoint test files.
     groups = shard_files(universe, shards) if shards > 1 else [tests]
+    if not groups:
+        print(
+            "pytest-impact-reads: no test file to shard (--tests matched none); nothing written",
+            file=sys.stderr,
+        )
+        return 1
     if shards > 1:
         print(
             "pytest-impact-reads: %d shard(s) of %s test file(s), -n %s each"
@@ -782,6 +824,8 @@ def cmd_trace(root: pathlib.Path, argv: list[str]) -> int:
     record = trace_record(att, collected)
     record["failed"] = failed
     record["shards"] = len(groups)
+    # A trace of `--tests <paths>` covers only those; `--derive --write` replaces the whole reads table, so it must be able to tell.
+    record["subset"] = sorted(tests)
     # Printed on every verdict and kept in the record: a test that leaks a process is a defect in that test, and the green path is where it would otherwise go unseen.
     record["leaked"] = leaked_lines(output)
     for line in record["leaked"]:
@@ -846,11 +890,24 @@ def cmd_derive(root: pathlib.Path, argv: list[str]) -> int:
         print("pytest-impact-reads: failed under the trace, its reads may be partial: %s" % nodeid)
     print(json.dumps(gate, indent=1))
     if "--write" in argv:
+        if trace.get("subset"):
+            print(
+                "pytest-impact-reads: the trace covers only --tests %s, and --write replaces the whole reads table; re-run --trace over the whole suite; nothing written"
+                % " ".join(trace["subset"]),
+                file=sys.stderr,
+            )
+            return 1
         policy_path = root / impact.POLICY_RELPATH
         policy = json.loads(policy_path.read_text(encoding="utf-8"))
         policy["readsOrigin"] = (
             "PYTHONPATH=.ci python3 -m rediacc_ci.quality.pytest_impact_reads --trace, then --derive --write (strace per test file, PLAN-ciquick-cpu W4.3); a memoized read is attributed only to the first test file that made it"
         )
+        if trace.get("failed"):
+            # A test that failed under the trace stopped reading at its failure, so its entry is a lower bound and may under-select it.
+            policy["readsOrigin"] += "; %d test(s) failed under the trace, so their entries may be partial: %s" % (
+                len(trace["failed"]),
+                ", ".join(trace["failed"]),
+            )
         policy["reads"] = reads
         policy_path.write_text(json.dumps(policy, indent=2) + "\n", encoding="utf-8")
         print("pytest-impact-reads: wrote reads into %s" % impact.POLICY_RELPATH)

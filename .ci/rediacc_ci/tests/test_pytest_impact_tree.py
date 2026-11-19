@@ -68,12 +68,15 @@ def test_control_a_leaf_edit_through_git_selects_its_importer_plus_smoke(repo):
 def test_control_an_untouched_tree_selects_only_smoke(repo):
     sel = pi.select_for_tree(repo)
     assert sel.scope == "impact", sel.line()
+    assert (repo / pi.CACHE_RELDIR / "map.json").is_file(), "the run wrote no map cache to leak"
     assert sel.files == [SMOKE], "the map cache under .ci/cache leaked into the change set"
 
 
-def test_full_when_the_root_is_not_a_repository(tmp_path):
+def test_full_when_the_root_is_not_a_repository(tmp_path, monkeypatch):
     bare = tmp_path / "not-a-repo"
     bare.mkdir()
+    # A temp directory under a checkout would let git find that repository above it.
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
     sel = pi.select_for_tree(bare)
     assert sel.scope == "full", sel.line()
     assert "git ls-files failed" in sel.reason
