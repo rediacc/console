@@ -136,11 +136,12 @@ Order: S1; then A1 and C1 in parallel; A2-A4 after A1, C2-C4 after C1; P1-P2 aft
     Needs: none
     Accept: `cd private/account && npx vitest run tests/integration/feedback-admin.test.ts` exits 0 with: the grouped list returns one row per fingerprint with report count, occurrences, distinct reporters and orgs and versions; a non-root session is 403; the status PUT without elevation is refused; the export with a root API token returns redacted fields only and no owner id; a verdict batch sets status, category, `plan_ref` and `fixed_in`; the purge deletes a report resolved 91 days ago and keeps one resolved 89 days ago, an open one, and a `planned` one. The test names whether `requireElevated` admits a root API token, per D6.
     (ticked) 2026-11-19T04:02:33Z by d778be9d: commit:a288dee8d5 account 26e5334 admin routes, export, verdicts, purge; vitest 55 passed, typecheck rc 0
-- [ ] P1 [writer] (W-PORTAL) Admin pages `FeedbackOverview` and `FeedbackReports` (grouped by fingerprint, count, version, status; status change), routed beside contact; English strings in admin.json
+- [x] P1 [writer] (W-PORTAL) Admin pages `FeedbackOverview` and `FeedbackReports` (grouped by fingerprint, count, version, status; status change), routed beside contact; English strings in admin.json
     Owns: private/account/web/src/pages/admin/FeedbackOverview.tsx, private/account/web/src/pages/admin/FeedbackReports.tsx, private/account/web/src/router.tsx, private/account/web/src/api/**, private/account/web/src/i18n/locales/en/admin.json, private/account/web/src/pages/__tests__/FeedbackAdmin.test.tsx
     Depends on: A4.
     Needs: none
     Accept: `cd private/account/web && npx vitest run src/pages/__tests__/FeedbackAdmin.test.tsx` and `npx tsc --noEmit -p private/account/web` exit 0; the test renders a grouped list from a mocked `/admin/feedback` response and drives a status change through the PUT.
+    (ticked) 2026-11-19T05:13:44Z by d778be9d: commit:aac80550f account f7a9dad FeedbackOverview + FeedbackReports; vitest 9 passed, tsc rc 0
 - [x] P2 [writer] (W-PORTAL) The owner share tick on Settings.tsx (`PUT /feedback/settings`), English strings in settings.json
     Owns: private/account/web/src/pages/Settings.tsx, private/account/web/src/i18n/locales/en/settings.json, private/account/web/src/pages/__tests__/FeedbackSettings.test.tsx
     Depends on: A3.
