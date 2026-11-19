@@ -105,7 +105,7 @@ def _close_connections() -> typing.Iterator[None]:
 
 def connect(path: pathlib.Path) -> sqlite3.Connection:
     conn = sqlite3.connect(path)
-    # No fsync: these are throwaway files. The baseline run sat in uninterruptible disk wait (1 CPU-minute in 26), every statement of 90 migrations fsynced twice per test (PLAN-ciquick-cpu W6).
+    # No fsync: these are throwaway files. The baseline run sat in uninterruptible disk wait (45 CPU-seconds in 26 minutes), every statement of 90 migrations fsynced twice per test (PLAN-ciquick-cpu W6).
     conn.execute("PRAGMA synchronous = OFF")
     conn.row_factory = sqlite3.Row
     OPENED.append(conn)
@@ -113,7 +113,7 @@ def connect(path: pathlib.Path) -> sqlite3.Connection:
 
 
 def _migrated(path: pathlib.Path) -> None:
-    """Run every drizzle migration into a new sqlite file at `path`; the cost `build_db` pays once per module, not once per test."""
+    """Run every drizzle migration into a new sqlite file at `path`; the migration cost, paid once per module by `_schema_template`; `build_db` only copies the result."""
     conn = sqlite3.connect(path)
     conn.execute("PRAGMA synchronous = OFF")
     files = sorted(DRIZZLE.glob("*.sql"))

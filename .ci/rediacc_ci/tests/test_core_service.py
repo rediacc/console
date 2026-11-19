@@ -16,6 +16,7 @@ import re
 import shutil
 import subprocess
 import textwrap
+import threading
 import time
 
 import pytest
@@ -383,7 +384,7 @@ def test_the_stub_farm_really_shadows_docker(tmp_path) -> None:
     )
 
 
-# Larger than any pipe buffer (64 KiB by default), so a write into an unread pipe cannot complete into the buffer and the stub's exit cannot be missed.
+# Larger than the default pipe buffer (64 KiB) and the default pipe-max-size (1 MiB), so a write into an unread pipe cannot complete into the buffer and the stub's exit cannot be missed.
 PAYLOAD = b"keys\n" * 262144
 
 
@@ -402,6 +403,9 @@ def _feed_node_stub(tmp_path, rows: list[dict], *, after_exit: bool) -> str:
         assert proc.stdin is not None
         if after_exit:
             proc.wait()
+        # A stub that stays alive without reading would block the write for ever: the watchdog kills it, so the test fails instead of hanging.
+        watchdog = threading.Timer(30, proc.kill)
+        watchdog.start()
         try:
             pending = memoryview(PAYLOAD)
             while pending:  # an unbuffered write may take only what fits the pipe
@@ -409,7 +413,20 @@ def _feed_node_stub(tmp_path, rows: list[dict], *, after_exit: bool) -> str:
             proc.stdin.close()
         except BrokenPipeError:
             return "EPIPE"
+        finally:
+            watchdog.cancel()
         return str(proc.wait())
+
+
+def _pipefail_status(tmp_path, rows: list[dict]) -> int:
+    """env.sh's shape under bash: `set -o pipefail; <producer> | node ...`; the pipeline's exit status."""
+    case = svc_driver.Case("pipe", "start", [], rows)
+    farm = svc_driver.build_farm(tmp_path, case)
+    env = svc_driver.side_env(tmp_path, farm, case)
+    script = 'set -o pipefail; head -c %d /dev/zero | node -e "x.private)" > /dev/null' % len(
+        PAYLOAD
+    )
+    return subprocess.run(["bash", "-c", script], env=env, timeout=30, check=False).returncode
 
 
 def test_the_keygen_node_stub_drains_stdin_like_node(tmp_path) -> None:
@@ -419,6 +436,14 @@ def test_the_keygen_node_stub_drains_stdin_like_node(tmp_path) -> None:
     keygen = [r for r in svc_driver.KEYGEN if r["name"] == "node" and ".private)" in r["glob"]]
     assert len(keygen) == 1
     assert _feed_node_stub(tmp_path / "fixed", keygen, after_exit=False) == "0"
+
+
+def test_the_keygen_node_stub_survives_a_pipefail_pipeline(tmp_path) -> None:
+    """The same regression through bash: the undrained control ends the pipeline with 141 (SIGPIPE), the KEYGEN row with 0."""
+    undrained = [svc_driver.row("node", "-e *.private)*", out="PRIVKEY")]
+    assert _pipefail_status(tmp_path / "control", undrained) == 141
+    keygen = [r for r in svc_driver.KEYGEN if r["name"] == "node" and ".private)" in r["glob"]]
+    assert _pipefail_status(tmp_path / "fixed", keygen) == 0
 
 
 def test_a_transcript_difference_is_a_divergence() -> None:

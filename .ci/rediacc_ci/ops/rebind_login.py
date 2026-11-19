@@ -78,7 +78,10 @@ def child_command(rdc_argv: Sequence[str]) -> list[str]:
 
 
 def _subprocess_runner(argv: Sequence[str], env: Mapping[str, str]) -> int:
-    return subprocess.run(list(argv), env=dict(env), check=False).returncode
+    # stdin is closed so the CLI never sees a terminal and prompts: the code comes from the environment.
+    return subprocess.run(
+        list(argv), env=dict(env), stdin=subprocess.DEVNULL, check=False
+    ).returncode
 
 
 def _reexec_under_profile(argv: Sequence[str], run: Runner) -> int | None:

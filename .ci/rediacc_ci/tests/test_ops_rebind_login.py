@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import stat
 import subprocess
 
@@ -91,7 +92,7 @@ def test_child_sees_the_code_in_its_environment_only(tmp_path, monkeypatch, capf
         assert expected not in text
         assert SEED not in text
     assert "rdc ran: --config eu-remote subscription status" in captured.out
-    assert seen  # the stub path
+    assert seen.name == "seen"  # the stub path
 
 
 @pytest.mark.usefixtures("bound")
@@ -149,3 +150,23 @@ def test_reexecutes_under_the_root_login_profile(monkeypatch):
     cmd = calls[0]
     assert cmd[1:6] == ["-m", "rediacc_ci.core.bws_env", "exec", "--profile", "root-login"]
     assert cmd[-5:] == ["-m", "rediacc_ci.ops.rebind_login", "--", "subscription", "status"]
+
+
+def test_default_runner_gives_the_child_no_stdin(tmp_path):
+    """REGRESSION (409d37af.1): a child that inherits a terminal's stdin makes the CLI prompt instead of reading REDIACC_IP_REBIND_CODE. Fd 0 is pointed at a file holding bytes; the child must read none."""
+    fed = tmp_path / "fed"
+    fed.write_bytes(b"leak")
+    got = tmp_path / "got"
+    saved = os.dup(0)
+    fd = os.open(fed, os.O_RDONLY)
+    try:
+        os.dup2(fd, 0)
+        rc = rebind_login._subprocess_runner(
+            ["sh", "-c", 'cat > "$1"', "sh", str(got)], {"PATH": os.environ["PATH"]}
+        )
+    finally:
+        os.dup2(saved, 0)
+        os.close(saved)
+        os.close(fd)
+    assert rc == 0
+    assert got.read_bytes() == b""

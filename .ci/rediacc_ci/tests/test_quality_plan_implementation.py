@@ -307,7 +307,7 @@ def _drive_main(gate, monkeypatch, capsys, argv):
 
     def load_modules_without_a_base():
         loaded = real_load_modules()
-        loaded[3].base_ref = lambda: ""
+        monkeypatch.setattr(loaded[3], "base_ref", lambda: "")
         return loaded
 
     monkeypatch.setattr(gate, "load_modules", load_modules_without_a_base)
