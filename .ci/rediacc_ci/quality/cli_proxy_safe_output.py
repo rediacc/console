@@ -66,7 +66,7 @@ ALLOWED: dict[str, Allowed] = {
         " through to the process streams only when no request context is bound",
     ),
     "services/core/output.ts": Allowed(
-        3,
+        2,
         "BLOCKER: outputService's writeOut, writeErr and writeProse push into the request buffers"
         " inside a dispatch and reach console only when no request context is bound",
     ),

@@ -1039,9 +1039,7 @@ async function main() {
   // The sweep above reads disk-present files only, so a wired module deleted from disk would drop out of it silently: name it here.
   const missingWiredFiles = [...wiredModules].filter((m) => !fs.existsSync(path.join(ROOT, m)));
   if (missingWiredFiles.length > 0) {
-    err(
-      `${missingWiredFiles.length} RULE_INSTANCES module(s) name a file that no longer exists:`
-    );
+    err(`${missingWiredFiles.length} RULE_INSTANCES module(s) name a file that no longer exists:`);
     for (const modulePath of missingWiredFiles) err(`    ${modulePath}`);
     err("  Restore the rule file, or drop it from scripts/data/source-rules.ts's RULE_INSTANCES.");
     return 1;
