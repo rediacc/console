@@ -18,6 +18,7 @@ import jsonGeneratorIntegration from './src/integrations/json-generator.ts';
 import routeManifestIntegration from './src/integrations/route-manifest-generator.ts';
 import { rehypeStableHeadingIds } from './src/plugins/rehype-stable-heading-ids.mjs';
 import { remarkDocsCliLinks } from './src/plugins/remark-docs-cli-links.ts';
+import { catalogDigest } from './src/plugins/translation-keys.mjs';
 import { remarkResolveTranslations } from './src/plugins/remark-resolve-translations.ts';
 import { remarkTutorialEmbed } from './src/plugins/remark-tutorial-embed.ts';
 import { remarkVideoEmbed } from './src/plugins/remark-video-embed.ts';
@@ -201,7 +202,7 @@ export default defineConfig({
         remarkVideoEmbed,
         remarkTutorialEmbed,
         remarkDocsCliLinks,
-        remarkResolveTranslations,
+        [remarkResolveTranslations, { catalogDigest: catalogDigest() }],
       ],
       // Runs BEFORE Astro's default rehypeHeadingIds, which respects an existing id, so these ids win and also land in file.data.astro.headings.
       rehypePlugins: [rehypeStableHeadingIds],

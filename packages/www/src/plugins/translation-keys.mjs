@@ -16,6 +16,7 @@
  * already established that a plain-ESM plugin module imports cleanly from both the `.js`
  * generator and a `.ts` test.
  */
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -27,6 +28,27 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  * longer exists, so this is the only source.
  */
 const CLI_LOCALES_PATH = path.resolve(__dirname, '../../../cli/src/i18n/locales');
+
+/**
+ * Digest of every CLI locale catalog. Astro's content store caches a doc's rendered body by the
+ * markdown file's own digest, so a catalog key added AFTER the page was first built never reached
+ * a kept build cache: the page stayed rendered with its raw `{{t:...}}` placeholder (13 locales of
+ * cli-application, 2026-11-19, in the kept ci:quick clone). `astro.config.mjs` passes this digest
+ * to the remark plugin as an option, Astro hashes the config, and a changed catalog clears the store.
+ *
+ * @returns {string}
+ */
+export function catalogDigest() {
+  const hash = crypto.createHash('sha256');
+  for (const lang of fs.readdirSync(CLI_LOCALES_PATH).sort()) {
+    const dir = path.join(CLI_LOCALES_PATH, lang);
+    if (!fs.statSync(dir).isDirectory()) continue;
+    for (const file of fs.readdirSync(dir).sort()) {
+      if (file.endsWith('.json')) hash.update(`${lang}/${file}\0`).update(fs.readFileSync(path.join(dir, file)));
+    }
+  }
+  return hash.digest('hex');
+}
 
 /** Language assumed when a document declares none. */
 export const DEFAULT_LANGUAGE = 'en';
