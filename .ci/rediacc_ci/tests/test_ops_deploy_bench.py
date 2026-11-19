@@ -15,7 +15,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.ops import deploy_bench
-from rediacc_ci.well_known import BENCH_ORIGIN, NOTIFY_NOREPLY_EMAIL
+from rediacc_ci.well_known import BENCH_ORIGIN, CONTACT_EMAIL, NOTIFY_NOREPLY_EMAIL
 
 pytestmark = pytest.mark.usefixtures("regions_in_tmp")
 
@@ -502,7 +502,7 @@ def test_the_payload_sender_defaults_to_the_product_zone_notify_host(monkeypatch
 SENDER_KEYS = {
     "CONTACT_FROM_EMAIL": "contact@notify.rediacc.cloud",
     "ALERTS_FROM_EMAIL": "alerts@notify.rediacc.cloud",
-    "CONTACT_NOTIFY_EMAIL": "contact@rediacc.com",
+    "CONTACT_NOTIFY_EMAIL": CONTACT_EMAIL,
     "ALERTS_NOTIFY_EMAIL": "alerts@rediacc.io",
 }
 

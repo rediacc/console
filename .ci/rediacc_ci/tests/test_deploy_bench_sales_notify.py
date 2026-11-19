@@ -68,6 +68,11 @@ def test_every_bench_and_production_profile_binds_the_four_sender_addresses(regi
     supply = json.loads(
         paths.repo_root().joinpath(".ci/config/secret-supply.json").read_text("utf-8")
     )["consumers"]
-    names = {"CONTACT_FROM_EMAIL", "ALERTS_FROM_EMAIL", "CONTACT_NOTIFY_EMAIL", "ALERTS_NOTIFY_EMAIL"}
+    names = {
+        "CONTACT_FROM_EMAIL",
+        "ALERTS_FROM_EMAIL",
+        "CONTACT_NOTIFY_EMAIL",
+        "ALERTS_NOTIFY_EMAIL",
+    }
     assert names <= set(supply["deploy-bench-" + region]["optional"])
     assert names <= set(supply["account-secrets-" + region]["required"])

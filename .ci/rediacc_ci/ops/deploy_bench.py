@@ -60,7 +60,7 @@ from rediacc_ci.deploy import (
 from rediacc_ci.enterprise import control_db
 from rediacc_ci.ops import bench_access, bench_preflight, cf_auth, push_backup_credentials
 from rediacc_ci.proof import receipt
-from rediacc_ci.well_known import APEX_DOMAIN, BENCH_ORIGIN, INFRA_DOMAIN, PRODUCT_DOMAIN
+from rediacc_ci.well_known import BENCH_ORIGIN, CONTACT_EMAIL, INFRA_DOMAIN, PRODUCT_DOMAIN
 
 if TYPE_CHECKING:
     import pathlib
@@ -176,7 +176,7 @@ DEFAULT_SES_FROM = "noreply@notify.%s" % PRODUCT_DOMAIN
 # The contact and alerts senders and recipients the bench Worker uses when the deploy-bench profile binds none: the same values production holds in the store (PLAN-email-sender-separation Design 2). An explicit environment value wins.
 DEFAULT_CONTACT_FROM = "contact@notify.%s" % PRODUCT_DOMAIN
 DEFAULT_ALERTS_FROM = "alerts@notify.%s" % PRODUCT_DOMAIN
-DEFAULT_CONTACT_NOTIFY = "contact@%s" % APEX_DOMAIN
+DEFAULT_CONTACT_NOTIFY = CONTACT_EMAIL
 DEFAULT_ALERTS_NOTIFY = "alerts@%s" % INFRA_DOMAIN
 
 
