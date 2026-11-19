@@ -10,7 +10,10 @@ const en: TranslationCatalog = {
 const catalogs = { en } as unknown as Record<Language, TranslationCatalog>;
 
 describe('strictByDefault (the production prerender switch)', () => {
-  afterEach(() => vi.unstubAllEnvs());
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
 
   it('PROD and SSR together make the default strict, so a prerender miss throws', () => {
     vi.stubEnv('PROD', true);
@@ -22,19 +25,17 @@ describe('strictByDefault (the production prerender switch)', () => {
   it('PROD without SSR (the hydrated client bundle) stays non-strict', () => {
     vi.stubEnv('PROD', true);
     vi.stubEnv('SSR', false);
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const { t } = createTranslatorFrom(catalogs, 'en');
     expect(t('pages.gone')).toBe('pages.gone');
-    warn.mockRestore();
   });
 
   it('SSR without PROD (astro dev) stays non-strict', () => {
     vi.stubEnv('PROD', false);
     vi.stubEnv('SSR', true);
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const { t } = createTranslatorFrom(catalogs, 'en');
     expect(t('pages.gone')).toBe('pages.gone');
-    warn.mockRestore();
   });
 });
 

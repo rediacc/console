@@ -108,9 +108,9 @@ type MissHandler = (message: string) => void;
  * such key, however it was built, into a failed build that names it.
  *
  * Dev (`astro dev`) and the browser keep the warning: a dev server should render a page
- * mid-edit, and a hydrated island must never crash for a reader. Vite replaces
- * `import.meta.env.SSR` with `false` in the client bundle, so the throw is not shipped.
- * `import.meta.env` is absent when tsx runs this module outside Vite, which reads as
+ * mid-edit, and a hydrated island must never crash for a reader. In the client bundle
+ * Vite's `import.meta.env` object carries `SSR: false`, so the read below is not strict
+ * there. `import.meta.env` is absent when tsx runs this module outside Vite, which reads as
  * not strict.
  */
 function strictByDefault(): boolean {
