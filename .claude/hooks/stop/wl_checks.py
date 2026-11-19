@@ -4288,7 +4288,8 @@ def run_stop(event, event_ok, worklist, hook_file):
         _q["items"] = [e for e in _q["items"] if e.get("key") != "ladder"]
     # ---- THE STORE STATUS (agent/plans/PLAN-stop-hook-store-status.md S3, D3), computed ONCE from the fold, classification, roster and ladder this stop already holds: no second pass over history. The snapshot is written here, before the bookkeeping save, so a blocked stop and an allowed stop both advance it. A failure leaves the stop exactly as before.
     _ss_rows, _ss_changes, _ss_first = [], [], True
-    with contextlib.suppress(Exception):
+    _ss_failure = ""
+    try:
         _ss_prev = state_doc.get("store_snap")
         _ss_prev = _ss_prev if isinstance(_ss_prev, dict) else None
         _ss_first = _ss_prev is None
@@ -4329,7 +4330,15 @@ def run_stop(event, event_ok, worklist, hook_file):
         state_doc["store_snap"] = wl_storestatus.snapshot(
             fold, session_id, _ss_now, queued=_ss_queued
         )
+    except Exception as exc:
+        # A broken status block SAYS SO, as the guide below does: the wl-stale check and the snapshot silently never running was the swallowed failure.
+        _ss_failure = (
+            "STORE STATUS unavailable (hook bug, fix the store status block in wl_checks): %s: %s"
+            % (type(exc).__name__, str(exc)[:160])
+        )
     _ss_system, _ss_reason = wl_storestatus.stop_texts(_ss_rows, _ss_changes, _ss_first, me8)
+    if _ss_failure:
+        _ss_system = "%s\n\n%s" % (_ss_system, _ss_failure) if _ss_system else _ss_failure
     S.save_state(worklist, session_id, state_doc)
 
     # ---- v11: the store-derived guide, present on EVERY full stop (allow and block alike), so the session reports from the store, not memory. Never breaks gating, and a broken guide SAYS SO rather than vanishing.
@@ -7405,7 +7414,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # outq_drain persisted the queue already; this save carries the judge-line marker pop and any late state mutation, and one redundant atomic write is cheaper than reasoning about which came last. It happens BEFORE the exit below, because a silent allow must still bank everything a loud one does.
     S.save_state(worklist, session_id, state_doc)
     # THE STORE STATUS TABLE, for the operator (agent/plans/PLAN-stop-hook-store-status.md D3), only while the session owns an open, in-flight or deferred item: an allow with none stays silent, as v18 ruled below.
-    if _ss_rows and _ss_system:
+    if _ss_system and (_ss_rows or _ss_failure):
         parts.append(_ss_system)
     if not parts:
         # v18: nothing actionable, nothing queued, no judge line to show. This used to be impossible (the guide was unconditional) and is now the common shape of a clean stop, so it exits with zero bytes, exit 0. Everything above still ran and still persisted -- the silence is the report, not a skipped battery.

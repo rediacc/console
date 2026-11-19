@@ -606,9 +606,37 @@ def test_hook_no_double_block_with_roster_dead(wl):
     stale_world(wl, worker=aid)
     for _ in range(2):
         got = wl.run()
-        assert "[roster-dead]" in system_message(got) or "roster-dead" in got.out, got.out[:800]
+        assert "[roster-dead]" in system_message(got), got.out[:800]
         assert "WL-STALE" not in got.out, got.out[:1200]
     assert "[roster-dead]" in system_message(got)
+
+
+def corrupt_snapshot(fix) -> None:
+    path = fix.stem(".state-%s.json" % wlfix.ME)
+    doc = json.loads(path.read_text(encoding="utf-8")) or {}
+    doc["store_snap"] = {"at": ["x", 0], "items": {"5a1e0030": 5}}
+    path.write_text(json.dumps(doc), encoding="utf-8")
+
+
+def test_hook_a_broken_store_status_block_says_so(wl):
+    """A snapshot the status block cannot read must surface a named line, not vanish: the wl-stale check and the snapshot silently never running was the swallowed failure."""
+    wl.brief_now()
+    wl.say("all done for now")
+    plant(wl, h_add("5a1e0030", 30))
+    wl.run()
+    corrupt_snapshot(wl)
+    got = wl.run()
+    assert "STORE STATUS unavailable" in got.out, got.out[:1200]
+
+
+def test_hook_control_a_readable_snapshot_raises_no_status_failure(wl):
+    """Control: the same world with the snapshot left alone prints no unavailable line."""
+    wl.brief_now()
+    wl.say("all done for now")
+    plant(wl, h_add("5a1e0031", 30))
+    wl.run()
+    got = wl.run()
+    assert "STORE STATUS unavailable" not in got.out, got.out[:1200]
 
 
 def test_hook_pass_names_no_id_and_shows_the_table_and_changes(wl):
