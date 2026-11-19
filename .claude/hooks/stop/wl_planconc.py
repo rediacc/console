@@ -812,7 +812,7 @@ def spawn_verdict(
             union.extend(_owns_of(xs[s]))
         # A declared Owns line is the spawn's claim and is judged as written, also where it reaches outside the plan's Owns
         # (operator ruling 2026-10-28, "Judge declared Owns"); a spawn that declares nothing is judged on the plan's whole Owns.
-        mine = tuple(declared) if declared else tuple(union)
+        mine = tuple(declared) if declared is not None else tuple(union)
         if mine != tuple(union):
             narrow_notes.append("this spawn on its declared Owns `%s`" % ", ".join(mine))
     else:
@@ -880,7 +880,7 @@ def claim_row(session_id, serving, declared, desc, isolated, entered) -> dict:
     return {
         "session": str(session_id or ""),
         "plans": sorted(serving or ()),
-        "owns": list(declared) if declared else None,
+        "owns": list(declared) if declared is not None else None,
         "desc": str(desc or ""),
         "isolated": bool(isolated),
         "entered": entered,

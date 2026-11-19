@@ -190,3 +190,29 @@ def test_the_gitlink_set_is_read_from_the_judged_root_once_per_verdict(tmp_path,
     empty = tmp_path / "empty"
     empty.mkdir()
     assert X.spawn_verdict({"PLAN-a.md"}, live, xi.__getitem__, root=empty).kind == "overlap"
+
+
+def _same_owns_world():
+    xi = {
+        "PLAN-p.md": X.PlanX("PLAN-p.md", owns=("src/proxy/**",)),
+        "PLAN-t.md": X.PlanX("PLAN-t.md", owns=("src/proxy/**",)),
+    }
+    return xi, {"PLAN-t.md": ["writer w1"]}
+
+
+def test_an_empty_declared_owns_is_judged_as_written_not_as_the_plan_owns():
+    """`Owns: none -- <reason>` reads as an empty tuple, a claim of no files and not an absent line: it overlaps nothing."""
+    xi, live_map = _same_owns_world()
+    assert X.spawn_verdict({"PLAN-p.md"}, live_map, xi.__getitem__, declared=()).allow
+
+
+def test_an_absent_declared_owns_is_still_judged_on_the_plan_owns():
+    """CONTROL: declared=None keeps the whole-plan comparison, so the same world overlaps."""
+    xi, live_map = _same_owns_world()
+    got = X.spawn_verdict({"PLAN-p.md"}, live_map, xi.__getitem__, declared=None)
+    assert got.kind == "overlap"
+
+
+def test_claim_row_keeps_an_empty_owns_distinct_from_none():
+    assert X.claim_row("s", set(), (), "d", False, 0.0)["owns"] == []
+    assert X.claim_row("s", set(), None, "d", False, 0.0)["owns"] is None
