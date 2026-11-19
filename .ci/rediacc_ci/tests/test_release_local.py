@@ -1987,3 +1987,25 @@ def test_a_pinned_dry_run_does_not_admit_a_pin_whose_ancestry_is_unknown(
     assert seen["origin"] is True
     assert result.unjudged == 2
     assert sum("origin-main" in n for n in result.notes) == 1
+
+
+def test_a_pin_equal_to_origin_main_still_notes_the_unjudged_origin_check(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    """71610e80.2: the pin's check asks (pin, tip) and the origin-main check asks (origin/main, pin); with both bases the same commit, the origin check keeps its note. Control: the pin check is still left unjudged."""
+    monkeypatch.setattr(local.local_gates, "live_ancestor", lambda _r, _a, _h: None)
+    seen: dict[str, object] = {}
+
+    def check(root, channel, **kw):
+        del root, channel
+        seen["pin"] = kw["ancestor"](tmp_path, HEAD_SHA, "t" * 40)
+        seen["origin"] = kw["ancestor"](tmp_path, HEAD_SHA, HEAD_SHA)
+        return []
+
+    monkeypatch.setattr(local.local_gates, "check", check)
+    ctx = local.Context(clone=str(tmp_path / "c"), releases_origin="https://x.invalid")
+    ctx["pinned_commit"] = HEAD_SHA
+    result = local.dry_gates(tmp_path, "9.9.9", ctx)
+    assert seen["pin"] is None
+    assert seen["origin"] is True
+    assert sum("origin-main" in n for n in result.notes) == 1

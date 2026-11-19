@@ -740,6 +740,28 @@ def test_check_judges_the_pinned_ancestor_while_head_is_later(tmp_path: pathlib.
     assert [r.code for r in run()] == ["ci-quick", "origin-main"]
 
 
+def test_check_refuses_a_pin_whose_ancestry_the_tool_cannot_tell(tmp_path: pathlib.Path) -> None:
+    """71610e80.3: the dry run passes git's None for the pin through, and the real `check` must refuse it. Control: a True verdict admits the same pin."""
+    root = green_world(tmp_path)
+    pinned = head_of(root)
+
+    def run(verdict: bool | None) -> list[lg.Refusal]:
+        return lg.check(
+            root,
+            "edge",
+            commit=pinned,
+            fetch=lambda _r: (pinned, ""),
+            sentinel=lambda _v: False,
+            existing=free,
+            next_version=lambda _r: "1.0.1",
+            clone=lambda _root, _tree, _head: None,
+            ancestor=lambda _r, _a, _h: verdict,
+        )
+
+    assert "commit" in [r.code for r in run(None)]
+    assert run(True) == []
+
+
 def test_check_refuses_a_commit_that_is_not_an_ancestor_of_the_tip(
     tmp_path: pathlib.Path,
 ) -> None:

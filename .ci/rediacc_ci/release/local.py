@@ -1391,8 +1391,8 @@ def dry_gates(root: pathlib.Path, version: str | None, ctx: Context) -> GateResu
     pinned = str(ctx.get("pinned_commit") or "")
 
     def ancestor(r: pathlib.Path, base: str, head: str) -> bool | None:
-        if pinned and base == pinned:
-            # The pin's own check keeps git's "cannot tell", so check() refuses it as the real run does.
+        if pinned and base == pinned and head != pinned:
+            # The pin's own check asks (pin, HEAD tip) and keeps git's "cannot tell", so check() refuses it as the real run does. The origin-main check asks (origin/main, pin), so a pin that equals origin/main still reaches the unjudged note below.
             return local_gates.live_ancestor(r, base, head)
         # The real run fetches origin's objects first; a dry run writes nothing, so a base commit this checkout lacks cannot be judged.
         verdict = local_gates.live_ancestor(r, base, head)

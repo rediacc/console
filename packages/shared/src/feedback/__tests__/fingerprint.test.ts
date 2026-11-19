@@ -42,6 +42,16 @@ describe('feedbackFingerprint', () => {
     expect(normalizeError('peer 2001:db8::1 down')).toBe('peer <ip> down');
   });
 
+  it('collapses numbered hostnames but keeps hostnames without digits apart', () => {
+    expect(normalizeError('connect to web01 refused')).toBe(
+      normalizeError('connect to web02 refused')
+    );
+    expect(normalizeError('connect to web01 refused')).toBe('connect to web<n> refused');
+    expect(normalizeError('connect to alpha refused')).not.toBe(
+      normalizeError('connect to beta refused')
+    );
+  });
+
   it('normalises paths and digits', () => {
     expect(normalizeError('Failed  at /a/b 42')).toBe('failed at <path> <n>');
   });

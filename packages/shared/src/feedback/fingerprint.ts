@@ -1,9 +1,10 @@
 /**
  * Report fingerprint: SHA-256 over command path, exit code and the normalised
  * error, so the same failure on different machines collapses to one id.
- * Paths, ids, IP addresses, clock times and numbers are normalised; hostnames
- * and other machine names are not, so an error that differs only by host
- * yields a different fingerprint.
+ * Paths, ids, IP addresses, clock times and numbers are normalised. Digits go
+ * with them, so numbered hosts (web01, web02) collapse to one fingerprint;
+ * hostnames and machine names without digits are not normalised, so an error
+ * that differs only by such a name yields a different fingerprint.
  */
 
 const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/g;

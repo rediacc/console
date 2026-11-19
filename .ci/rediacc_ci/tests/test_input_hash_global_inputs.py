@@ -55,7 +55,8 @@ def test_ts_source_lists_the_bare_root_lockfiles_without_node():
     ]
     assert "package-lock.json" in entries
     assert "uv.lock" in entries
-    assert "nonexistent.lock" not in entries
+    # Control: the block parse also reads the `**/` form beside the bare ones, so the two bare entries above came from real lines and not from a parse that returns everything.
+    assert "**/package-lock.json" in entries
 
 
 @needs_node

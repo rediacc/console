@@ -327,6 +327,7 @@ def test_an_exclusion_key_in_a_config_is_not_a_scope(monkeypatch, tmp_path):
 @pytest.fixture(scope="module")
 def real_derivation():
     """The real-tree derivation, run once for the module: a full scan of the tracked tree is the test's whole cost, and fixture setup is shared time the slow-test ratchet does not charge to a test."""
+    # The patch is import-time only: the gate imports `_cipath` once at module top, so undoing the stub when the context exits does not touch `derive_readers`.
     with pytest.MonkeyPatch.context() as mp:
         gate = _load_gate(mp)
     records = gate.parse_policy(json.loads(POLICY.read_text(encoding="utf-8")))
