@@ -460,9 +460,7 @@ def test_derive_paths_writes_no_glob_character_the_hasher_refuses():
     got = pr.derive_paths(tr, {"tests": {T1: {"closure": [T1]}}}, tree, [".ci/rediacc_ci/tests"])
     for item in [*got["paths"], *got["lists"]]:
         body = item.removesuffix("/**")
-        assert not any(c in body for c in pr._GLOB_CHARS), (
-            "the hasher would null this entry: %r" % item
-        )
+        assert not any(c in body for c in "*?[{\\"), "the hasher would null this entry: %r" % item
     assert any(pr.glob_matches(g, LANG + "/index.astro") for g in got["paths"]), got
     assert got["lists"] == ["docs", "packages/www/src/pages"], got
 
@@ -683,6 +681,22 @@ class _Stream(list):
     """A stderr stream: a list of strace lines."""
 
 
+class _OneShot:
+    """A stderr stream that is a single pass over its lines, counting those taken: a second `for` over it continues where the first stopped."""
+
+    def __init__(self, lines):
+        self._lines = iter(lines)
+        self.taken = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        line = next(self._lines)
+        self.taken += 1
+        return line
+
+
 class _Held:
     """A traced child whose rc file exists but which does not end by itself: `strace -f` waits for every tracee."""
 
@@ -731,7 +745,9 @@ def test_an_orphan_outliving_pytest_is_killed_and_named(tmp_path, monkeypatch, h
     monkeypatch.setattr(pr, "_kill_session", kill_session)
     rc, _att, out = pr.run_trace(tmp_path, ["pytest"])
     assert rc == 0
-    assert pr.leaked_lines(out) == [pr.LEAKED_PREFIX + "tail -f /dev/null"], "a newline split the name"
+    assert pr.leaked_lines(out) == [pr.LEAKED_PREFIX + "tail -f /dev/null"], (
+        "a newline split the name"
+    )
     assert not _Held.last.killed
 
 
@@ -758,12 +774,14 @@ def test_a_failure_folding_the_stream_is_raised_not_swallowed_in_the_thread(
 
     def with_lines(self, argv, **k):
         original(self, argv, **k)
-        self.stderr.extend(["1 a", "1 b", "1 c"])
+        self.stderr = _OneShot(["1 a", "1 b", "1 c"])
 
     monkeypatch.setattr(_Held, "__init__", with_lines)
     with pytest.raises(RuntimeError, match="folding the strace stream failed") as got:
         pr.run_trace(tmp_path, ["pytest"])
     assert isinstance(got.value.__cause__, ValueError)
+    # The failure is raised on the first line; a drain that stopped there would leave the other two unread, which is a pipe strace blocks on.
+    assert _Held.last.stderr.taken == 3
 
 
 @pytest.fixture

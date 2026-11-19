@@ -93,7 +93,9 @@ def _mid_closure(repo):
 def test_the_facts_cache_is_reused_while_the_file_set_is_unchanged(repo):
     _poisoned_facts(repo)
     (repo / ".ci/rediacc_ci/other.py").write_text("Y = 3\n", encoding="utf-8")
-    assert ".ci/rediacc_ci/leaf.py" not in _mid_closure(repo), "CONTROL: the cached entry was not used"
+    assert ".ci/rediacc_ci/leaf.py" not in _mid_closure(repo), (
+        "CONTROL: the cached entry was not used"
+    )
 
 
 def test_adding_a_python_file_discards_every_cached_fact(repo):
@@ -103,24 +105,42 @@ def test_adding_a_python_file_discards_every_cached_fact(repo):
     assert ".ci/rediacc_ci/leaf.py" in _mid_closure(repo)
 
 
-@pytest.mark.parametrize(
-    "text", ["[]", "null", '{"fileset": "x", "entries": []}', '{"fileset": "x", "entries": 3}']
-)
+@pytest.mark.parametrize("text", ["[]", "null", '{"fileset": "x", "entries": []}'])
 def test_a_facts_file_of_the_wrong_shape_is_a_cold_cache(repo, text):
-    """Finding 4b2720aa.2: valid JSON that is not the facts object rebuilds instead of raising."""
+    """Finding 4b2720aa.2: valid JSON that is not the facts object rebuilds instead of raising. A fileset of "x" never matches, so these take the cold branch before `entries` is read; the next test reaches it."""
     pi.load_or_build_map(repo, pi.present_files(repo))
     (repo / pi.CACHE_RELDIR / "facts.json").write_text(text, encoding="utf-8")
     (repo / ".ci/rediacc_ci/other.py").write_text("Y = 4\n", encoding="utf-8")
     assert ".ci/rediacc_ci/leaf.py" in _mid_closure(repo)
 
 
+@pytest.mark.parametrize("entries", [[], 3, "oops", None])
+def test_a_facts_file_with_the_real_fileset_and_non_object_entries_is_a_cold_cache(repo, entries):
+    """Finding 95e0a4da.1: the REAL fileset key is kept, so the code reaches `entries.items()` and must rebuild instead of raising. Control: the same file with its entries intact is reused (the poisoned entry stays)."""
+    facts = _poisoned_facts(repo)
+    (repo / ".ci/rediacc_ci/other.py").write_text("Y = 4\n", encoding="utf-8")
+    assert ".ci/rediacc_ci/leaf.py" not in _mid_closure(repo), (
+        "CONTROL: the cached entry was not used"
+    )
+    doc = json.loads(facts.read_text(encoding="utf-8"))
+    assert doc["fileset"]
+    doc["entries"] = entries
+    facts.write_text(json.dumps(doc), encoding="utf-8")
+    (repo / ".ci/rediacc_ci/other.py").write_text("Y = 5\n", encoding="utf-8")
+    assert ".ci/rediacc_ci/leaf.py" in _mid_closure(repo)
+
+
 def test_non_object_fact_entries_are_dropped_not_raised(repo):
+    """Finding 95e0a4da.3: the bad entry is dropped, so its module is re-read and written back as an object, while the good poisoned entry beside it is still reused."""
     facts = _poisoned_facts(repo)
     doc = json.loads(facts.read_text(encoding="utf-8"))
     doc["entries"][".ci/rediacc_ci/other.py"] = "oops"
     facts.write_text(json.dumps(doc), encoding="utf-8")
     (repo / ".ci/rediacc_ci/leaf.py").write_text("X = 9\n", encoding="utf-8")
-    assert _mid_closure(repo)
+    assert ".ci/rediacc_ci/leaf.py" not in _mid_closure(repo), "the good entry was not reused"
+    rewritten = json.loads(facts.read_text(encoding="utf-8"))["entries"]
+    assert isinstance(rewritten[".ci/rediacc_ci/other.py"], dict)
+    assert all(isinstance(v, dict) for v in rewritten.values())
 
 
 def test_full_when_the_root_is_not_a_repository(tmp_path, monkeypatch):

@@ -109,7 +109,7 @@ def _mark(rel: str) -> None:
     if not _MARKERS:
         return
     directory = _MARKERS[0]
-    # A marker that cannot be written must not leave the previous test file's attribution standing, so its reads would land in the wrong table: the fallback marks "no test file" instead, and reads taken until the next marker are unattributed. trace_problem's coverage floor is what notices a plugin that marks nothing.
+    # A marker that cannot be written should not leave the previous test file's attribution standing, so its reads would land in the wrong table: the fallback marks "no test file" instead, and reads taken until the next marker are unattributed. When the fallback cannot be written either (the marker directory itself is unwritable) the previous attribution does stand; trace_problem's coverage floor is what notices a plugin that marks nothing.
     for name in dict.fromkeys((marker_name(rel), _UNATTRIBUTED_MARK)):
         with contextlib.suppress(OSError):
             os.close(os.open(os.path.join(directory, name), os.O_RDONLY | os.O_CREAT, 0o600))
@@ -904,9 +904,12 @@ def cmd_derive(root: pathlib.Path, argv: list[str]) -> int:
         )
         if trace.get("failed"):
             # A test that failed under the trace stopped reading at its failure, so its entry is a lower bound and may under-select it.
-            policy["readsOrigin"] += "; %d test(s) failed under the trace, so their entries may be partial: %s" % (
-                len(trace["failed"]),
-                ", ".join(trace["failed"]),
+            policy["readsOrigin"] += (
+                "; %d test(s) failed under the trace, so their entries may be partial: %s"
+                % (
+                    len(trace["failed"]),
+                    ", ".join(trace["failed"]),
+                )
             )
         policy["reads"] = reads
         policy_path.write_text(json.dumps(policy, indent=2) + "\n", encoding="utf-8")

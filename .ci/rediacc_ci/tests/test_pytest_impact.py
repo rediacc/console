@@ -504,6 +504,28 @@ def test_a_base_that_reads_as_an_option_is_not_a_ref(tmp_path):
     assert pi.change_set(tmp_path, "-x") is None
 
 
+def test_an_option_shaped_base_runs_no_command_at_all(tmp_path, monkeypatch):
+    """Finding 95e0a4da.2: `merge-base HEAD -x` fails on its own, so the None above cannot show the guard. What only the guard does is spawn nothing. Control: a real ref does spawn commands."""
+    _git(tmp_path, "init", "-q")
+    _git(tmp_path, "config", "user.email", "t@example.invalid")
+    _git(tmp_path, "config", "user.name", "t")
+    (tmp_path / "a.py").write_text("A = 1\n", encoding="utf-8")
+    _git(tmp_path, "add", "a.py")
+    _git(tmp_path, "commit", "-qm", "a")
+    calls: list[list[str]] = []
+    real = pi.gitx.git
+
+    def spy(args, **kwargs):
+        calls.append(list(args))
+        return real(args, **kwargs)
+
+    monkeypatch.setattr(pi.gitx, "git", spy)
+    assert pi.change_set(tmp_path, "-x") is None
+    assert calls == []
+    assert pi.change_set(tmp_path, "HEAD") is not None
+    assert calls, "CONTROL: a real base spawned no command, so the spy sees nothing"
+
+
 def test_narrow_and_non_glob_literals_do_not_change_the_verdict():
     """Finding b857eede.1: only glob-shaped literals that cover a changed file reach `broad_globs`; the others must leave the selection as it was."""
     base = run([".ci/rediacc_ci/leaf.py"])
