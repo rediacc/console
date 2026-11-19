@@ -136,7 +136,7 @@ All steps run through `./rdc.sh --config eu-bench term connect mail@hostinger -c
 - [ ] S0 [live] Secret-store entries: create `CONTACT_FROM_EMAIL`, `ALERTS_FROM_EMAIL`, `CONTACT_NOTIFY_EMAIL` and `ALERTS_NOTIFY_EMAIL` in bws with the Design 2 cloud values, bound to the production account deploy profile and the deploy-bench profiles; set `SALES_NOTIFY_EMAIL` to `contact@rediacc.com`; confirm `STRIPE_SANDBOX_WEBHOOK_SECRET` is bound for bench (R1's webhook legs need it). The new ids go to E1.
   Owns: none (store writes only). Accept: `bws_env exec --profile deploy-bench-eu -- python3 -c` printing the four names as set (values never printed), and the four ids recorded in the tick.
   Needs: none
-- [ ] T1 [writer] Transport (Design 1): `replyTo` and `headers` in ses.ts and smtp.ts, absent fields leaving the payload unchanged; the AWS SendEmail reference for `ReplyToAddresses` and `Content.Simple.Headers` quoted in the report.
+- [x] T1 [writer] Transport (Design 1): `replyTo` and `headers` in ses.ts and smtp.ts, absent fields leaving the payload unchanged; the AWS SendEmail reference for `ReplyToAddresses` and `Content.Simple.Headers` quoted in the report.
   Owns: private/account/src/services/email-transports/ses.ts, private/account/src/services/email-transports/smtp.ts, private/account/tests/integration/email-transport.test.ts
   Depends on: none
   Needs: none
@@ -144,7 +144,8 @@ All steps run through `./rdc.sh --config eu-bench term connect mail@hostinger -c
     - SES payload with `replyTo` carries `ReplyToAddresses: [addr]` and with `headers` carries `Content.Simple.Headers`;
     - SES payload with neither is byte-identical to today's (control: the existing payload assertion);
     - SMTP passes `replyTo` and `headers` to `sendMail`, and omits both when absent.
-- [ ] M1 [writer] Routing core (Design 2): the four env keys in env.ts; `replyTo`/`headers` in types.ts; `MailRouting`, the trailing constructor argument, `createEmailService` building it with the on-prem fallbacks and the bench tag; `sendEmail` options `{ from, replyTo, headers }` passed to the transport and to `EmailCaptureSink.record` (which gains optional `from` and `replyTo`); new `sendContactMail` and `sendSystemAlert` with the `AlertQueue` interface and `setAlertQueue`; the old methods stay until C1 moves the callers.
+    (ticked) 2026-11-19T13:48:54Z by d778be9d: commit:bf300dcbf (private/account 11eadec); email-transport vitest 14 passed, tsc rc 0, lint rc 0; SES headers quoted from the AWS SendEmail and Message references
+- [x] M1 [writer] Routing core (Design 2): the four env keys in env.ts; `replyTo`/`headers` in types.ts; `MailRouting`, the trailing constructor argument, `createEmailService` building it with the on-prem fallbacks and the bench tag; `sendEmail` options `{ from, replyTo, headers }` passed to the transport and to `EmailCaptureSink.record` (which gains optional `from` and `replyTo`); new `sendContactMail` and `sendSystemAlert` with the `AlertQueue` interface and `setAlertQueue`; the old methods stay until C1 moves the callers.
   Owns: private/account/src/types/env.ts, private/account/src/services/email-transports/types.ts, private/account/src/services/email.service.ts, private/account/tests/integration/email-routing.test.ts
   Depends on: none
   Needs: none
@@ -157,6 +158,7 @@ All steps run through `./rdc.sh --config eu-bench term connect mail@hostinger -c
     - absent keys: senders fall back to `fromAddress`, recipients to `ROOT_EMAIL` (the on-prem case);
     - a transactional send (`sendMagicLinkEmail`) still goes From `AWS_SES_FROM` with no Reply-To and no header (control: today's behaviour);
     - the allowlist and reserved-domain drops still apply to the new recipients.
+    (ticked) 2026-11-19T13:48:56Z by d778be9d: commit:bf300dcbf (private/account 37b1676); email-routing/capture/reserved-domain vitest passed (53 with transport), tsc rc 0, lint rc 0
 - [ ] E1 [writer] Deploy plumbing (Design 4): the four keys through set_account_worker_secrets.py (KEYS and REQUIRED_NONEMPTY), deploy_bench.py (defaults beside `DEFAULT_SES_FROM`), cd-deploy-account.yml (the bws mapping and the step env), bws-secret-map.json (S0's ids), secret-supply.json, env-manifest.json, python-env-registry.json and the secrets comment in private/account/wrangler.toml.
   Owns: .ci/rediacc_ci/deploy/set_account_worker_secrets.py, .ci/rediacc_ci/tests/test_deploy_set_account_worker_secrets.py, .ci/rediacc_ci/ops/deploy_bench.py, .ci/rediacc_ci/tests/test_ops_deploy_bench.py, .github/workflows/cd-deploy-account.yml, .ci/config/bws-secret-map.json, .ci/config/secret-supply.json, .ci/config/env-manifest.json, .ci/config/python-env-registry.json, private/account/wrangler.toml
   Depends on: S0 (the store ids)

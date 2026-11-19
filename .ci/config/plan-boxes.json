@@ -1546,17 +1546,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 18,
-      "done": 0,
+      "open": 16,
+      "done": 2,
       "open_sigs": [
-        "125f446a",
         "1ad331de",
         "1aef6eac",
         "1b2ea7aa",
         "1f145274",
         "2621217e",
         "2e8f74ba",
-        "3d8743e5",
         "403358f7",
         "43b1acc3",
         "475f1a65",
@@ -1568,7 +1566,10 @@
         "ea0af500",
         "ec915c2d"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "125f446a",
+        "3d8743e5"
+      ]
     },
     "agent/plans/PLAN-enterprise-isolation.md": {
       "status": "executing",
