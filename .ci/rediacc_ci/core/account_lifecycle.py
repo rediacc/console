@@ -546,6 +546,13 @@ def dev_credentials(gateway_port: str) -> int:
         ok = _post(base + "/test/ensure-login", payload) and ok
     ok = (
         _post(
+            base + "/test/ensure-partner",
+            '{"email":"%s","tier":"silver","orgName":"Root partner (dev)"}' % root_email,
+        )
+        and ok
+    )
+    ok = (
+        _post(
             base + "/test/ensure-subscription",
             '{"email":"%s","planCode":"PROFESSIONAL"}' % DEV_USER_EMAIL,
         )
@@ -590,6 +597,7 @@ def dev_credentials(gateway_port: str) -> int:
         account.banner_row("Dev logins (fresh passwords each start)"),
         "  ├%s┤" % rule,
         account.banner_row("root     %s %s" % (_pad_bytes(root_email, 32), root_pw)),
+        account.banner_row("         (root also has a partner org: customer, partner, admin)"),
         account.banner_row("user     %s %s" % (_pad_bytes(DEV_USER_EMAIL, 32), user_pw)),
         account.banner_row("partner  %s %s" % (_pad_bytes(DEV_PARTNER_EMAIL, 32), partner_pw)),
         "  ├%s┤" % rule,

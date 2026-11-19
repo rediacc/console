@@ -1152,6 +1152,10 @@ def _build_delta_89015bba(lines: list[str]) -> list[str]:
     return out
 
 
+# RULE T, PR-TASK 79b7e92e: the port gives the root login a partner org, a POST to `/test/ensure-partner` and one banner row the twin never had. Both are dropped on both sides (the call counters are renumbered after), and `test_delta_79b7e92e_root_gets_a_partner_org_in_the_dev_logins` pins the port's side.
+_ROOT_PARTNER_LINE = re.compile(r"/test/ensure-partner|root also has a partner org")
+
+
 def _lifecycle_comparable(lines: list[str], scenario: str) -> list[str]:
     skip = LIFECYCLE_DELTA_CASES.get(scenario, set())
     kept = []
@@ -1159,7 +1163,7 @@ def _lifecycle_comparable(lines: list[str], scenario: str) -> list[str]:
         parts = line.split(" ", 2)
         if len(parts) > 1 and parts[0] == "obs" and parts[1] in skip:
             continue
-        if _LOCK_SHA_LINE.search(line):
+        if _LOCK_SHA_LINE.search(line) or _ROOT_PARTNER_LINE.search(line):
             continue
         delta = _argv_delta_3a8d1f46(line)
         kept.append(_PIDS_LINE.sub(lambda m: m.group(1) + m.group(2).replace(",", " "), delta))
@@ -1695,7 +1699,8 @@ def test_delta_3a8d1f46_dev_credentials_send_every_body_on_stdin(monkeypatch, ca
     assert account_lifecycle.dev_credentials("4800") == 0
     capsys.readouterr()
     posts = [(argv, body) for argv, body, _env in calls if argv[0] == "curl" and "POST" in argv]
-    assert len(posts) == 6, [argv for argv, _ in posts]
+    assert len(posts) == 7, [argv for argv, _ in posts]
+    assert any(argv[4].endswith("/test/ensure-partner") for argv, _ in posts)
     bodies: list[str] = []
     for argv, body in posts:
         assert argv[-2:] == ["--data", "@-"], argv
@@ -1706,6 +1711,22 @@ def test_delta_3a8d1f46_dev_credentials_send_every_body_on_stdin(monkeypatch, ca
         assert bodies[-1], argv
     assert sum('"password":"%s"' % ("a" * 16) in b for b in bodies) == 3
     assert any('"password":"%s"' % account_lifecycle.STORE_PASSWORD in b for b in bodies)
+
+
+def test_delta_79b7e92e_root_gets_a_partner_org_in_the_dev_logins(monkeypatch, capsys) -> None:
+    """PR-TASK 79b7e92e. The root email is promoted through `/test/ensure-partner` right after its login, and the banner says so."""
+    calls: list[tuple[list[str], object, dict | None]] = []
+    monkeypatch.setattr(account_lifecycle.subprocess, "run", _recording_run(calls))
+    assert account_lifecycle.dev_credentials("4800") == 0
+    out = capsys.readouterr().out
+    posts = [(argv, body) for argv, body, _env in calls if argv[0] == "curl" and "POST" in argv]
+    urls = [argv[4].rsplit("/test/", 1)[1] for argv, _ in posts]
+    assert urls.index("ensure-partner") == 3
+    body = posts[3][1]
+    body = body.decode() if isinstance(body, bytes) else body
+    assert '"orgName":"Root partner (dev)"' in body
+    assert account_lifecycle.DEFAULT_ROOT_EMAIL in body
+    assert "root also has a partner org" in out
 
 
 def test_delta_3a8d1f46_the_rustfs_keys_reach_docker_through_its_environment(
