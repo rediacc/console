@@ -141,11 +141,12 @@ Order: S1; then A1 and C1 in parallel; A2-A4 after A1, C2-C4 after C1; P1-P2 aft
     Depends on: A4.
     Needs: none
     Accept: `cd private/account/web && npx vitest run src/pages/__tests__/FeedbackAdmin.test.tsx` and `npx tsc --noEmit -p private/account/web` exit 0; the test renders a grouped list from a mocked `/admin/feedback` response and drives a status change through the PUT.
-- [ ] P2 [writer] (W-PORTAL) The owner share tick on Settings.tsx (`PUT /feedback/settings`), English strings in settings.json
+- [x] P2 [writer] (W-PORTAL) The owner share tick on Settings.tsx (`PUT /feedback/settings`), English strings in settings.json
     Owns: private/account/web/src/pages/Settings.tsx, private/account/web/src/i18n/locales/en/settings.json, private/account/web/src/pages/__tests__/FeedbackSettings.test.tsx
     Depends on: A3.
     Needs: none
     Accept: `cd private/account/web && npx vitest run src/pages/__tests__/FeedbackSettings.test.tsx` exits 0: the tick reads its state from `GET /feedback/settings` and a click sends `{shareWithOrgAdmins: true}`, with a control that an untouched page sends nothing.
+    (ticked) 2026-11-19T05:12:23Z by d778be9d: commit:398c1838b4 commit:f1a5323c2 portal share setting + 12 locales; vitest 3 passed, tsc rc 0, i18n rc 0
 - [x] C1 [writer] (W-CLI) The redacted ring buffer (`services/feedback/ring.ts`) and argv redaction (`services/feedback/redact.ts`) over `resolveOptionSensitive`, `redactClone` and the shared `scrubText`, written from the post-action hook, `handleError` and the uncaught-exception path (D4)
     Owns: packages/cli/src/services/feedback/**, packages/cli/src/cli.ts, packages/cli/src/index.ts, packages/cli/src/utils/errors.ts, packages/cli/scripts/lib/option-classification.ts, packages/cli/src/services/feedback/__tests__/feedback-ring.test.ts
     Depends on: S1.
@@ -158,11 +159,12 @@ Order: S1; then A1 and C1 in parallel; A2-A4 after A1, C2-C4 after C1; P1-P2 aft
     Needs: none
     Accept: `cd packages/cli && npx vitest run src/utils/__tests__/feedback-hint.test.ts` exits 0, driving the built CLI as a subprocess and reading stdout and stderr separately: text mode puts the hint on stderr after the error and nothing on stdout; JSON mode carries `run: "rdc feedback report --last"` in `errors[0].next.options` and stdout stays one valid JSON document; `REDIACC_FEEDBACK_HINT=0` removes both; a usage error and a failing `rdc feedback` print none; the `setExitCode` path prints it on stderr. `npm run check:ci-env-manifest` exits 0.
     (ticked) 2026-11-19T03:36:12Z by d778be9d: commit:c382a12506 commit:df5914c748 failure hint on three paths + JSON next option + REDIACC_FEEDBACK_HINT=0; vitest 29 passed, tsc rc 0; 12 locales, i18n hashes and completeness rc 0
-- [ ] C3 [writer] (W-CLI) `rdc feedback report` with preview, confirm, `--yes`, agent behaviour and the token-or-FREE-blob auth choice, registered in cli.ts and the command registry, planes, metadata and docs (D4)
+- [x] C3 [writer] (W-CLI) `rdc feedback report` with preview, confirm, `--yes`, agent behaviour and the token-or-FREE-blob auth choice, registered in cli.ts and the command registry, planes, metadata and docs (D4)
     Owns: packages/cli/src/commands/feedback.ts, packages/cli/src/services/feedback/send.ts, packages/cli/src/cli.ts, packages/cli/src/config/command-registry.ts, packages/cli/src/config/command-planes.ts, packages/cli/src/config/command-metadata.ts, packages/cli/src/config/command-docs.ts, packages/cli/src/i18n/locales/en/cli.json, packages/cli/src/commands/__tests__/feedback-report.test.ts
     Depends on: C1, A2.
     Needs: none
     Accept: `cd packages/cli && npx vitest run src/commands/__tests__/feedback-report.test.ts` exits 0 against a stubbed account server: `--last` fills from the newest failed ring entry; the preview shows every byte that is sent; a declined confirm sends nothing; `--yes` sends; an agent without `--yes` gets the preview and a `next` and sends nothing; no token and no FREE blob is a refusal naming both routes; a 429 maps to a clear error with the reset time. `npx tsc --noEmit --project packages/cli/tsconfig.json` exits 0.
+    (ticked) 2026-11-19T05:12:22Z by d778be9d: commit:ad7fb4b4b commit:738e4c280 commit:f1a5323c2 rdc feedback report; vitest 36+16 passed, tsc rc 0, i18n parity/completeness/hashes rc 0
 - [ ] C4 [writer] (W-CLI) `rdc feedback list` and `rdc feedback show <id>`, rendering `fixed-in-v<x>`
     Owns: packages/cli/src/commands/feedback.ts, packages/cli/src/services/feedback/list.ts, packages/cli/src/i18n/locales/en/cli.json, packages/cli/src/commands/__tests__/feedback-list.test.ts
     Depends on: C3, A3.
