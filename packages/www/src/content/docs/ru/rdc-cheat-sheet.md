@@ -149,7 +149,7 @@ sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 | Команда | Описание |
 |---------|----------|
 | `rdc feedback report --last` | Предпросмотр отчёта по последней неудачной команде; добавьте `--yes` для отправки |
-| `rdc feedback report --command <n>` | Сообщить о записанной команде (1 — самая новая) |
+| `rdc feedback report --command <n>` | Сообщить о записанной команде (самая новая: 1) |
 | `rdc feedback report --list-recent` | Показать записанные команды и выйти |
 | `rdc feedback report --message <text> [--kind bug\|feedback\|docs]` | Отправить заметку без неудачной команды |
 | `rdc feedback list [--status <list>]` | Показать отчёты с id, отпечатком, статусом и датами; исправленный отчёт показывает `fixed-in-v<version>` |
