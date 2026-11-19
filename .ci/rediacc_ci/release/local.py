@@ -1136,11 +1136,12 @@ def plan(
     *,
     workers_only: bool = False,
     branch_release: bool = False,
+    pinned: bool = False,
     steps: Sequence[Step] = STEPS,
 ) -> list[Step]:
     """The rows one run executes, in table order, per-region rows expanded over `regions`.
 
-    A release takes every row except the workers-only version row; `--workers-only` takes the `workers` rows only, so it reads the live edge version instead of cutting one, and builds, seals, tags and publishes nothing. `branch_release` hands `--branch-release` to the gates row.
+    A release takes every row except the workers-only version row; `--workers-only` takes the `workers` rows only, so it reads the live edge version instead of cutting one, and builds, seals, tags and publishes nothing. `branch_release` hands `--branch-release` to the gates row, and `pinned` hands it `--commit {sha}`.
     """
     out: list[Step] = []
     for row in steps:
@@ -1151,6 +1152,8 @@ def plan(
         step = row
         if branch_release and row.kind == "gates":
             step = dataclasses.replace(row, argv=(*row.argv, "--branch-release"))
+        if pinned and row.kind == "gates":
+            step = dataclasses.replace(step, argv=(*step.argv, "--commit", "{sha}"))
         if step.per_region:
             out.extend(step.for_region(r) for r in regions)
         else:
@@ -1207,13 +1210,17 @@ def render(template: str, ctx: Context) -> str:
     return re.sub(r"\{([a-z_]+)\}", lambda m: str(ctx[m.group(1)]), text)
 
 
-def base_context(root: pathlib.Path, regions: Sequence[str], workers_only: bool) -> Context:
+def base_context(
+    root: pathlib.Path, regions: Sequence[str], workers_only: bool, commit: str | None = None
+) -> Context:
+    """The template values of a run. `commit` (`--commit <sha>`, D1.8 of PLAN-push-decoupling) pins head, tree and account pointer to that commit in place of HEAD; the gates refuse a commit that is not an ancestor of the branch tip."""
     wk = well_known(root)
-    _rc, head = _git(root, "rev-parse", "HEAD")
-    _rc, tree = _git(root, "rev-parse", "HEAD^{tree}")
+    at = "%s^{commit}" % commit if commit else "HEAD"
+    _rc, head = _git(root, "rev-parse", at)
+    _rc, tree = _git(root, "rev-parse", "%s^{tree}" % head)
     _rc, origin = _git(root, "remote", "get-url", "origin")
-    # The account commit HEAD's tree points at: the clone is HEAD, so its private/account is this gitlink.
-    _rc, account = _git(root, "rev-parse", "HEAD:private/account")
+    # The account commit the commit's tree points at: the clone is that commit, so its private/account is this gitlink.
+    _rc, account = _git(root, "rev-parse", "%s:private/account" % head)
     m = re.search(r"github\.com[:/]([^/]+/[^/]+?)(?:\.git)?$", origin)
     return Context(
         channel=CHANNEL,
@@ -1391,6 +1398,7 @@ def dry_gates(root: pathlib.Path, version: str | None, ctx: Context) -> GateResu
     refusals = local_gates.check(
         root,
         "edge",
+        commit=ctx.get("pinned_commit") or None,
         fetch=_ls_remote_main,
         ancestor=ancestor,
         sentinel=public_sentinel(ctx["releases_origin"]),
@@ -2445,6 +2453,11 @@ def parse(argv: list[str]) -> argparse.Namespace:
         help="with --channel edge --workers-only: deploy the pushed branch head (descended from origin/main) instead of origin/main; needs RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z",
     )
     parser.add_argument(
+        "--commit",
+        default="",
+        help="release this ancestor of the branch tip instead of HEAD: the context and every gate judge it, and the release clone is built from it",
+    )
+    parser.add_argument(
         "--regions",
         default="",
         help="comma-separated region ids (default: every region in regions.json)",
@@ -2494,14 +2507,21 @@ def main(
         return 2
     root = root or paths.repo_root()
     regions = resolve_regions(root, args.regions)
-    ctx = base_context(root, regions, args.workers_only)
+    ctx = base_context(root, regions, args.workers_only, args.commit)
+    if args.commit:
+        ctx["pinned_commit"] = ctx["sha"]
     if args.branch_release:
         ctx.update(branch_context(root, ctx["sha"], asked, heads))
     # The webhook check reads each region's production domain, as cd-release-edge.yml's per-region loop does.
     domains = {r: d.get("domain") or "" for r, d in read_regions(root).items()}
     steps = [
         _with_domain(s, domains)
-        for s in plan(regions, workers_only=args.workers_only, branch_release=args.branch_release)
+        for s in plan(
+            regions,
+            workers_only=args.workers_only,
+            branch_release=args.branch_release,
+            pinned=bool(args.commit),
+        )
     ]
 
     if args.dry_run:
@@ -2633,6 +2653,8 @@ def _flags(args: argparse.Namespace) -> str:
             flags += " --regions %s" % args.regions
     if args.branch_release:
         flags += " --branch-release"
+    if args.commit:
+        flags += " --commit %s" % args.commit
     return flags
 
 

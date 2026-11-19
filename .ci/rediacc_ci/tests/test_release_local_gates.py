@@ -671,3 +671,88 @@ def test_check_stable_runs_the_stable_gate(tmp_path: pathlib.Path) -> None:
         record=lambda _k: (None, "absent"),
     )
     assert [r.code for r in got] == ["stable"]
+
+
+# --------------------------------------------------------------------------- --commit (D1.8)
+
+
+def test_the_previous_tag_of_a_pinned_commit_is_read_from_that_commit(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = tagged_repo(tmp_path)
+    pinned = head_of(root)
+    (root / "more.txt").write_text("later\n", encoding="utf-8")
+    commit_all(root, "later")
+    git(root, "tag", "v2.0.0")
+    assert lg.previous_tag(root) == "v2.0.0"
+    assert lg.previous_tag(root, pinned) == "v1.0.0"
+
+
+def test_vm_check_of_a_pinned_commit_reads_the_pinned_trees_receipt(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = tagged_repo(tmp_path, {TRIGGER: "x = 1\n"})
+    pinned, pinned_tree = head_of(root), tree_of(root)
+    write_vm_receipt(
+        root,
+        vm_receipt(
+            tree=pinned_tree,
+            phases={
+                "renet": {"required": True, "ran": True},
+                "account": {"required": True, "ran": True},
+            },
+        ),
+    )
+    (root / "more.txt").write_text("later\n", encoding="utf-8")
+    commit_all(root, "later")
+    assert lg.vm_check_refusal(root, pinned_tree, "v1.0.0", pinned) is None
+    # Control: the same range judged at the later HEAD is refused: the receipt belongs to the pinned tree.
+    later = lg.vm_check_refusal(root, tree_of(root), "v1.0.0")
+    assert later is not None
+    assert later.code == "vm-check"
+
+
+def test_check_judges_the_pinned_ancestor_while_head_is_later(tmp_path: pathlib.Path) -> None:
+    root = green_world(tmp_path)
+    pinned, pinned_tree = head_of(root), tree_of(root)
+    (root / "more.txt").write_text("later\n", encoding="utf-8")
+    commit_all(root, "later")
+    seen: list[tuple[str, str]] = []
+
+    def clone(_root: pathlib.Path, tree: str, head: str) -> None:
+        seen.append((tree, head))
+
+    def run(**kw: Any) -> list[lg.Refusal]:
+        return lg.check(
+            root,
+            "edge",
+            fetch=lambda _r: (pinned, ""),
+            sentinel=lambda _v: False,
+            existing=free,
+            next_version=lambda _r: "1.0.1",
+            clone=clone,
+            **kw,
+        )
+
+    assert run(commit=pinned) == []
+    assert seen == [(pinned_tree, pinned)]
+    # Control: unpinned, the later HEAD has no green receipt and is not origin/main.
+    assert [r.code for r in run()] == ["ci-quick", "origin-main"]
+
+
+def test_check_refuses_a_commit_that_is_not_an_ancestor_of_the_tip(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = green_world(tmp_path)
+    git(root, "checkout", "-q", "-b", "side")
+    (root / "side.txt").write_text("side\n", encoding="utf-8")
+    commit_all(root, "side")
+    side = head_of(root)
+    git(root, "checkout", "-q", "main")
+    got = lg.check(
+        root, "edge", commit=side, fetch=lambda _r: (side, ""), sentinel=lambda _v: False
+    )
+    assert [r.code for r in got] == ["commit"]
+    assert "not an ancestor" in got[0].message
+    missing = lg.check(root, "edge", commit="f" * 40)
+    assert [r.code for r in missing] == ["git"]

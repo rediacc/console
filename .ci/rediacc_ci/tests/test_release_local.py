@@ -852,8 +852,8 @@ def test_a_branch_release_dry_run_prints_why_origin_branches_were_unreadable(
 def _base_context_at(sha: str):
     real = local.base_context
 
-    def base_context(root, regions, workers_only):
-        ctx = real(root, regions, workers_only)
+    def base_context(root, regions, workers_only, commit=None):
+        ctx = real(root, regions, workers_only, commit)
         ctx["sha"] = sha
         return ctx
 
@@ -1899,3 +1899,68 @@ def test_a_normal_release_does_not_inherit_the_operators_record_branch(
     ctx.update(version="9.9.9")
     (step,) = [s for s in local.plan(["eu"], workers_only=True) if s.id == "www-deploy"]
     assert local.deploy_record.BRANCH_KEY_ENV not in local.child_env(step, ctx, root)
+
+
+def _git_out(root: pathlib.Path, *argv: str) -> str:
+    env = dict(
+        os.environ,
+        GIT_AUTHOR_NAME="F",
+        GIT_AUTHOR_EMAIL="f@x.invalid",
+        GIT_COMMITTER_NAME="F",
+        GIT_COMMITTER_EMAIL="f@x.invalid",
+    )
+    proc = subprocess.run(
+        ["git", "-C", str(root), *argv], check=True, env=env, capture_output=True, text=True
+    )
+    return proc.stdout.strip()
+
+
+def _gitlink_commit(root: pathlib.Path, pointer: str, message: str) -> str:
+    _git_out(root, "update-index", "--add", "--cacheinfo", "160000,%s,private/account" % pointer)
+    _git_out(root, "commit", "-qm", message)
+    return _git_out(root, "rev-parse", "HEAD")
+
+
+def test_the_context_of_a_pinned_commit_is_that_commits_not_heads(tmp_path: pathlib.Path) -> None:
+    root = _tmp_root(tmp_path)
+    pinned = _gitlink_commit(root, "a" * 40, "account at a")
+    pinned_tree = _git_out(root, "rev-parse", "HEAD^{tree}")
+    later = _gitlink_commit(root, "b" * 40, "account at b")
+    assert later != pinned
+    ctx = local.base_context(root, ["eu"], True, pinned)
+    assert ctx["sha"] == pinned
+    assert ctx["tree"] == pinned_tree
+    assert ctx["account_pointer"] == "a" * 40
+    assert ctx["build_tag"] == "local-%s" % pinned[:12]
+    assert ctx["clone"].endswith(pinned_tree)
+    # Control: with no pin the context is HEAD's.
+    head = local.base_context(root, ["eu"], True)
+    assert (head["sha"], head["account_pointer"]) == (later, "b" * 40)
+
+
+def test_the_pinned_run_hands_its_commit_to_the_gates_row_only() -> None:
+    pinned = local.plan(REGIONS, workers_only=True, pinned=True)
+    plain = local.plan(REGIONS, workers_only=True)
+    (row,) = [s for s in pinned if s.kind == "gates"]
+    assert row.argv[-2:] == ("--commit", "{sha}")
+    assert all("--commit" not in s.argv for s in plain)
+    assert [s.id for s in pinned] == [s.id for s in plain]
+
+
+def test_a_pinned_dry_run_judges_the_gates_at_the_commit(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    seen: dict[str, object] = {}
+
+    def check(root, channel, **kw):
+        del root, channel
+        seen["commit"] = kw["commit"]
+        return []
+
+    monkeypatch.setattr(local.local_gates, "check", check)
+    ctx = local.Context(clone=str(tmp_path / "c"), releases_origin="https://x.invalid")
+    local.dry_gates(tmp_path, "9.9.9", ctx)
+    assert seen["commit"] is None
+    ctx["pinned_commit"] = HEAD_SHA
+    local.dry_gates(tmp_path, "9.9.9", ctx)
+    assert seen["commit"] == HEAD_SHA

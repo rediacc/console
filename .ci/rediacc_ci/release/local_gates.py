@@ -1,8 +1,10 @@
 """The gates a local release must pass before it builds or publishes anything (box W2-A of agent/plans/PLAN-local-release.md).
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.release.local_gates --channel edge|stable [--version V] [--branch-release] [--force-asked ASKED:<YYYY-MM-DDTHH:MM>Z]
+    PYTHONPATH=.ci python3 -m rediacc_ci.release.local_gates --channel edge|stable [--version V] [--branch-release] [--commit <sha>] [--force-asked ASKED:<YYYY-MM-DDTHH:MM>Z]
 
 Exit 0 when every gate admits, 1 with one `local-gates: <code>: <why>` line per refusal otherwise, 2 on a usage error. Every gate runs, so one run names every refusal rather than the first.
+
+`--commit <sha>` (D1.8 of PLAN-push-decoupling) names an ancestor of the branch tip (HEAD): every gate below then judges that commit, its tree, its tag range and its release clone, in place of HEAD. A sha that is not an ancestor refuses with code `commit`.
 
 THE GATES, each a refusal unless it holds:
   ci-quick     a whole, green ci:quick receipt judged `HEAD^{tree}`: the push guard's own `read_receipt` (the per-tree copy `.ci/cache/receipts/<tree>.json` first, then the latest file) and `receipt_refusal`, imported the way `rediacc_ci.ci.gate_model` imports that guard, never copied. A red receipt has one escape, `RELEASE_RED_WAIVER='<gate>[,<gate>] ASKED:<YYYY-MM-DDTHH:MM>Z <reason>'` (operator ruling 2026-11-16, `ci_quick_verdict`): a whole receipt whose `headTree` is HEAD's tree exactly is admitted when every red gate not in carried-reds.json is named and each is `check:ci-ops-health` or prints `UPSTREAM REACHABILITY FAILURE` when re-run now with `npm run --silent <gate>`, and the ASKED minute is proven against the transcript as `--force-asked` is. The admitted waiver is printed as one `local-gates: red-waiver admitted: <json>` line.
@@ -95,12 +97,12 @@ def _rev(root: pathlib.Path, spec: str) -> str | None:
     return out if rc == 0 and out else None
 
 
-def previous_tag(root: pathlib.Path) -> str | None:
-    """The highest-versioned `v*` tag reachable from HEAD, or None when there is none.
+def previous_tag(root: pathlib.Path, tip: str = "HEAD") -> str | None:
+    """The highest-versioned `v*` tag reachable from `tip` (HEAD, or the pinned commit of `--commit`), or None when there is none.
 
     `git tag --merged HEAD --sort=-v:refname`, the version order `resolve_version` reads, and not `git describe`: describe answers the tag nearest by commit distance, so a lower tag on a merged side branch would start the range after the real previous release.
     """
-    rc, out, _err = _git(root, "tag", "--merged", "HEAD", "--list", "v*", "--sort=-v:refname")
+    rc, out, _err = _git(root, "tag", "--merged", tip, "--list", "v*", "--sort=-v:refname")
     first = out.splitlines()[0].strip() if rc == 0 and out else ""
     return first or None
 
@@ -361,8 +363,8 @@ def ci_quick_verdict(
 # --------------------------------------------------------------------------- (b) vm:check
 
 
-def vm_check_refusal(root: pathlib.Path, tree: str, base: str) -> Refusal | None:
-    changed = surfaces.changed_paths(root, base, "push", "HEAD")
+def vm_check_refusal(root: pathlib.Path, tree: str, base: str, tip: str = "HEAD") -> Refusal | None:
+    changed = surfaces.changed_paths(root, base, "push", tip)
     if not changed.touched:
         return None
     verdict = vm_tier.admit(root, tree, surfaces.inputs(root, tree), changed.sides)
@@ -388,8 +390,8 @@ def vm_check_refusal(root: pathlib.Path, tree: str, base: str) -> Refusal | None
 # --------------------------------------------------------------------------- (c) backup
 
 
-def backup_refusal(root: pathlib.Path, base: str) -> Refusal | None:
-    code, message = backup_check_trigger.check(root, "HEAD", base)
+def backup_refusal(root: pathlib.Path, base: str, tip: str = "HEAD") -> Refusal | None:
+    code, message = backup_check_trigger.check(root, tip, base)
     if code == 0:
         return None
     return Refusal("backup", message if code == 1 else "UNCHECKED: %s" % message)
@@ -799,17 +801,41 @@ def check(
     waiver_text: str | None = None,
     rerun: GateRerun = live_rerun,
     admitted: list[WaiverAdmission] | None = None,
+    commit: str | None = None,
 ) -> list[Refusal]:
-    """Every refusal of releasing `root`'s HEAD to `channel`; empty admits. `branch_release` swaps the origin-main equality for the pushed-descendant rule (edge only). `waiver_text` defaults to $RELEASE_RED_WAIVER; a waiver that admits a red receipt is appended to `admitted`, or printed to stderr when no collector is given, so it is never applied unseen."""
+    """Every refusal of releasing `root`'s HEAD to `channel`, or of the ancestor `commit` names (D1.8: its tree, receipts, tag range, clone and origin gates; it must be an ancestor of HEAD); empty admits. `branch_release` swaps the origin-main equality for the pushed-descendant rule (edge only). `waiver_text` defaults to $RELEASE_RED_WAIVER; a waiver that admits a red receipt is appended to `admitted`, or printed to stderr when no collector is given, so it is never applied unseen."""
     if channel not in CHANNELS:
         return [Refusal("usage", "--channel %r is not one of %s" % (channel, ", ".join(CHANNELS)))]
     if branch_release and channel != "edge":
         return [Refusal("usage", "--branch-release applies to --channel edge only")]
-    head = _rev(root, "HEAD")
-    tree = _rev(root, "HEAD^{tree}")
+    pinned = commit is not None
+    head = _rev(root, "%s^{commit}" % commit) if pinned else _rev(root, "HEAD")
+    tree = _rev(root, "%s^{tree}" % head) if head else None
     if head is None or tree is None:
-        return [Refusal("git", "git cannot name HEAD or its tree in %s" % root)]
+        return [
+            Refusal(
+                "git",
+                "git cannot name %s or its tree in %s"
+                % ("--commit %s" % commit if pinned else "HEAD", root),
+            )
+        ]
     found: list[Refusal] = []
+    if pinned:
+        tip = _rev(root, "HEAD")
+        verdict = ancestor(root, head, tip) if tip else None
+        if verdict is not True:
+            return [
+                Refusal(
+                    "commit",
+                    "--commit %s is %s"
+                    % (
+                        head[:12],
+                        "not an ancestor of the branch tip %s" % tip[:12]
+                        if verdict is False
+                        else "an ancestor git cannot confirm against the branch tip",
+                    ),
+                )
+            ]
     proof = asked_proof or transcript_proof(os.environ.get(TRANSCRIPT_ENV))
     quick, waived = ci_quick_verdict(
         root,
@@ -827,17 +853,20 @@ def check(
             admitted.append(waived)
         for warning in waived.warnings:
             print("local-gates: ci-quick: warning: %s" % warning, file=sys.stderr)
-    base = previous_tag(root)
+    base = previous_tag(root, head)
     if base is None:
         found.append(
             Refusal(
                 "vm-check",
-                "no v* tag is reachable from HEAD, so the range since the previous release is unknown",
+                "no v* tag is reachable from %s, so the range since the previous release is unknown"
+                % (head[:12] if pinned else "HEAD"),
             )
         )
     else:
         found.extend(
-            r for r in (vm_check_refusal(root, tree, base), backup_refusal(root, base)) if r
+            r
+            for r in (vm_check_refusal(root, tree, base, head), backup_refusal(root, base, head))
+            if r
         )
     cloned = clone(root, tree, head)
     if cloned:
@@ -888,6 +917,10 @@ def main(argv: list[str]) -> int:
         help="edge: HEAD is a pushed branch tip descended from origin/main, not origin/main itself",
     )
     parser.add_argument(
+        "--commit",
+        help="judge this ancestor of the branch tip instead of HEAD: its tree, receipts, tag range and release clone",
+    )
+    parser.add_argument(
         "--force-asked", help="stable: skip the soak age, with a proven ASKED:<YYYY-MM-DDTHH:MM>Z"
     )
     parser.add_argument(
@@ -910,6 +943,7 @@ def main(argv: list[str]) -> int:
         asked_proof=transcript_proof(transcript),
         branch_release=args.branch_release,
         admitted=admitted,
+        commit=args.commit,
     )
     # Printed even beside refusals: a waiver that admitted the receipt is a fact of this run whatever else refuses.
     for waived in admitted:
