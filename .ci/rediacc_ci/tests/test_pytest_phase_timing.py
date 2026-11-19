@@ -169,7 +169,7 @@ def test_teardown_is_split_into_the_tests_own_and_the_shared_fixtures(tmp_path, 
     assert own["teardown"] >= 0.3, own
     shared_total = sum(t["shared_teardown"] for t in tests.values())
     assert shared_total >= 0.45, tests
-    assert own["shared_teardown"] < 0.1 or own["teardown"] - own["shared_teardown"] >= 0.3, own
+    assert own["teardown"] - own["shared_teardown"] >= 0.25, own
     split = ratchet.own_seconds(own)
     assert split is not None, own
     _own, _shared = split

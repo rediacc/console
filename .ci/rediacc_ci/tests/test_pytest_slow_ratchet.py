@@ -367,3 +367,79 @@ def test_control_a_re_time_that_wrote_no_junit_leaves_the_parallel_time_standing
     rc, out = _run(tmp_path, capsys, [parallel], [], "--confirm", str(tmp_path / "absent.xml"))
     assert rc == 1
     assert "test_retimed took 33.5 s" in out.err
+
+
+def test_a_group_suffix_is_dropped_but_an_at_sign_inside_a_parameter_id_is_kept():
+    """Finding d07fb269.1: `test_x[a@1]` and `test_x[a@2]` are two tests, `test_x[a]@grp` is one test in an xdist group."""
+    assert ratchet.strip_group("test_x[a@1]") == "test_x[a@1]"
+    assert ratchet.strip_group("test_x[a@2]") == "test_x[a@2]"
+    assert ratchet.strip_group("test_x[a]@grp") == "test_x[a]"
+    assert ratchet.strip_group("test_x@grp") == "test_x"
+    assert ratchet.strip_group("test_x") == "test_x"
+
+
+def test_the_plugin_and_the_ratchet_strip_the_same_group_suffix():
+    from rediacc_ci.quality import pytest_phase_timing as plugin
+
+    assert plugin.GROUP_SUFFIX_RE.pattern == ratchet.GROUP_SUFFIX_RE.pattern
+    assert plugin.junit_node("t/test_x.py::test_y[a@1]") == "t.test_x::test_y[a@1]"
+
+
+@pytest.mark.parametrize(
+    "content", ["[]", '{"entries": 3}', '{"entries": [{"test": "a::b", "reason": 7}]}', "null"]
+)
+def test_an_allowlist_of_the_wrong_shape_is_a_problem_not_a_traceback(tmp_path, content):
+    """Finding d07fb269.2: the documented `problems` path, not an AttributeError out of main."""
+    path = tmp_path / "allow.json"
+    path.write_text(content, encoding="utf-8")
+    allowed, problems = ratchet.read_allow(path)
+    assert not allowed
+    assert problems
+
+
+def test_a_hidden_directory_below_the_root_maps_to_its_file(tmp_path):
+    """Finding ce2d2e9e.2: `tests..data.test_x` is `tests/.data/test_x.py`."""
+    target = tmp_path / "tests" / ".data"
+    target.mkdir(parents=True)
+    (target / "test_x.py").write_text("", encoding="utf-8")
+    assert (
+        ratchet.nodeid_of("tests..data.test_x::test_y", tmp_path) == "tests/.data/test_x.py::test_y"
+    )
+
+
+def test_a_phase_entry_with_no_numbers_is_judged_on_junit_time_and_named_malformed(
+    tmp_path, capsys
+):
+    """Finding 262b959d.2: `{}` used to read as 0 s, so a slow test could never be flagged."""
+    junit = _junit(tmp_path / "j.xml", {"test_bad": 12.0})
+    _phases(junit, {"test_bad": {}})
+    rc, out = _run(tmp_path, capsys, [junit], [])
+    assert rc == 1
+    assert "test_bad took 12.0 s" in out.err
+    assert "malformed entry" in out.out
+
+
+@pytest.mark.parametrize("entry", ["text", None, 3])
+def test_a_non_object_phase_entry_is_named_malformed_not_missing(tmp_path, capsys, entry):
+    """Findings 262b959d.3 and 7d7ecd77.4: the entry exists, so the note must not say it is absent."""
+    junit = _junit(tmp_path / "j.xml", {"test_bad": 1.0})
+    doc = {"version": 1, "tests": {"pkg.test_mod::test_bad": entry}}
+    ratchet.phases_path(junit).write_text(json.dumps(doc), encoding="utf-8")
+    _rc, out = _run(tmp_path, capsys, [junit], [])
+    assert "malformed entry" in out.out
+    assert "have no entry" not in out.out
+
+
+def test_a_failed_re_time_adds_no_sample_so_the_parallel_time_stands(tmp_path, capsys):
+    """Finding 7d84946c.1: a re-time that errored at 0.1 s must not become the judged time of a slow test."""
+    parallel = _phased_run(tmp_path / "p.xml", 33.5)
+    failed = tmp_path / "c1.xml"
+    failed.write_text(
+        '<?xml version="1.0"?><testsuites><testsuite name="pytest">'
+        '<testcase classname="pkg.test_mod" name="test_retimed" time="0.1"><error/></testcase>'
+        "</testsuite></testsuites>",
+        encoding="utf-8",
+    )
+    rc, out = _run(tmp_path, capsys, [parallel], [], "--confirm", str(failed))
+    assert rc == 1
+    assert "test_retimed took 33.5 s" in out.err

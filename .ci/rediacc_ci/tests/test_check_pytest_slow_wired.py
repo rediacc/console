@@ -55,7 +55,7 @@ def _run_writing(
     monkeypatch.setattr(check_pytest, "run_pytest", writes)
     if impact:
         selection = types.SimpleNamespace(
-            files=["t/test_one.py"], total=1, why={}, reason="fixture", digest="d"
+            files=["t/test_one.py"], total=1, why={}, smoke_files=[], reason="fixture", digest="d"
         )
         return check_pytest.run_impact("pytest", root, selection)
     if shard:
@@ -273,7 +273,7 @@ def _run_phased(
     monkeypatch.setattr(check_pytest, "run_pytest", writes)
     if impact:
         selection = types.SimpleNamespace(
-            files=["t/test_one.py"], total=1, why={}, reason="fixture", digest="d"
+            files=["t/test_one.py"], total=1, why={}, smoke_files=[], reason="fixture", digest="d"
         )
         return check_pytest.run_impact("pytest", _root, selection), calls
     if shard:

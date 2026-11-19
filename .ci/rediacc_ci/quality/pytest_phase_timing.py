@@ -29,6 +29,8 @@ OPTION = "--phase-timing"
 SHARED_ATTR = "shared_setup_s"
 SHARED_TEARDOWN_ATTR = "shared_teardown_s"
 _PY_SUFFIX_RE = re.compile(r"\.py$")
+# Kept equal to `pytest_slow_ratchet.GROUP_SUFFIX_RE` (a test pins the parity): the trailing xdist `@group`, never an `@` inside a `[...]` parameter id.
+GROUP_SUFFIX_RE = re.compile(r"@[^@\]]*$")
 
 
 def junit_node(nodeid: str) -> str:
@@ -40,7 +42,7 @@ def junit_node(nodeid: str) -> str:
     names = path.split("::")
     names[0] = _PY_SUFFIX_RE.sub("", names[0].replace("/", "."))
     names[-1] += bracket + params
-    name = names[-1].split("@", 1)[0]
+    name = GROUP_SUFFIX_RE.sub("", names[-1])
     return "%s::%s" % (".".join(names[:-1]), name)
 
 

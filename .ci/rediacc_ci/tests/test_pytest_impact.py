@@ -551,3 +551,11 @@ def test_the_facts_cache_reparses_only_an_edited_module(monkeypatch):
         ".ci/rediacc_ci/other.py"
         not in first["tests"][".ci/rediacc_ci/tests/test_mid.py"]["closure"]
     )
+
+
+def test_the_selection_names_its_smoke_files_even_when_a_change_reached_one():
+    """Finding 755fd65e.1: `why` carries the import reason of a smoke file a change reaches, so the smoke set is its own field."""
+    sel = run([".ci/rediacc_ci/leaf.py"], pol=policy(smoke=[".ci/rediacc_ci/tests/test_mid.py"]))
+    assert sel.scope == "impact"
+    assert sel.smoke_files == [".ci/rediacc_ci/tests/test_mid.py"]
+    assert sel.why[".ci/rediacc_ci/tests/test_mid.py"] != "smoke"

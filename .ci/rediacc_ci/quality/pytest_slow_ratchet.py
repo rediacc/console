@@ -8,7 +8,7 @@ THE ALLOWLIST ONLY SHRINKS. A listed test that no longer runs over the threshold
 
 A TEST IS JUDGED ON ITS OWN TIME: its call, plus the setup that is not shared-fixture setup. junit's `time` is setup + call + teardown, so a module fixture's setup lands on the first test of its module (`test_githook_generated_artifacts` charged its 13 s `world` fixture to a test whose call took 2-4 s). The `pytest_phase_timing` plugin writes each run's phases to `<junit stem>.phases.json` beside the junit, and a test found there is judged on `setup - shared_setup + call`: function-scoped and autouse fixture setup stays the test's, any wider-scoped fixture's setup does not. Teardown is judged the same way (`teardown - shared_teardown`): a function-scoped fixture's own teardown is the test's, and a module fixture's teardown, which lands on the module's last test, is not. The shared time is printed per junit classname (a test file, or a test class within it) as information, the share no test is judged on. A junit with no phase file beside it, or a case its phase file lacks, is judged on the junit time, and the ratchet says so: a missing measurement never passes a test silently.
 
-EXIT CODES: 0 clean, 1 a finding, 2 no verdict (no junit readable, or none with a test case in it): a ratchet that read nothing proves nothing.
+EXIT CODES: 0 clean, 1 a finding, 2 no verdict (no junit readable, or none with a test case that ran: a junit whose only cases are skipped has no verdict either): a ratchet that read nothing proves nothing.
 """
 
 from __future__ import annotations
@@ -37,12 +37,18 @@ JUNIT_RELPATH = ".ci/cache/quality-pytest/junit.xml"
 SHARED_REPORT_FLOOR_S = 1.0
 SHARED_REPORT_LIMIT = 10
 _KEY_UNSAFE_RE = re.compile(r"[^A-Za-z0-9._:/@#-]")
+# The xdist `@group` suffix is the trailing `@<word>` after the last parameter bracket; an `@` inside a parametrize id (`test_x[a@1]`) is part of the name. `pytest_phase_timing.GROUP_SUFFIX_RE` is the same pattern.
+GROUP_SUFFIX_RE = re.compile(r"@[^@\]]*$")
+
+
+def strip_group(name: str) -> str:
+    """`name` without its trailing xdist `@group` suffix, an `@` inside a `[...]` parameter id kept."""
+    return GROUP_SUFFIX_RE.sub("", name)
 
 
 def node_of(case: ElementTree.Element) -> str:
     """`<classname>::<name>` with the xdist `@group` suffix dropped, the node `check_pytest.junit_finding_keys` names."""
-    name = (case.get("name") or "").split("@", 1)[0]
-    return "%s::%s" % (case.get("classname") or "", name)
+    return "%s::%s" % (case.get("classname") or "", strip_group(case.get("name") or ""))
 
 
 def phases_path(junit: pathlib.Path) -> pathlib.Path:
@@ -50,7 +56,7 @@ def phases_path(junit: pathlib.Path) -> pathlib.Path:
     return junit.with_suffix(".phases.json")
 
 
-def read_phases(path: pathlib.Path) -> tuple[dict[str, dict], str | None]:
+def read_phases(path: pathlib.Path) -> tuple[dict[str, object], str | None]:
     """`(junit node -> phases, why it could not be read)`; the reason is None when the file was read."""
     try:
         doc = json.loads(path.read_text(encoding="utf-8"))
@@ -61,14 +67,16 @@ def read_phases(path: pathlib.Path) -> tuple[dict[str, dict], str | None]:
     tests = doc.get("tests") if isinstance(doc, dict) else None
     if not isinstance(tests, dict):
         return {}, "the phase file %s holds no `tests` table" % path
-    return {k: v for k, v in tests.items() if isinstance(v, dict)}, None
+    return dict(tests), None
 
 
-def own_seconds(phases: dict) -> tuple[float, float] | None:
-    """`(the test's own seconds, its shared-fixture setup seconds)` from one phase entry, or None when the entry carries no usable numbers.
+def own_seconds(phases: object) -> tuple[float, float] | None:
+    """`(the test's own seconds, its shared-fixture setup seconds)` from one phase entry, or None when the entry is not an object or carries no usable numbers (none of setup, call and teardown).
 
     Own is `setup - shared_setup + call + teardown - shared_teardown`; the second number is the shared setup plus the shared teardown. An unmeasured share (null or absent) counts as zero, so the whole phase stays charged to the test.
     """
+    if not isinstance(phases, dict) or all(phases.get(k) is None for k in ("setup", "call", "teardown")):
+        return None
     try:
         setup = float(phases.get("setup") or 0.0)
         call = float(phases.get("call") or 0.0)
@@ -96,8 +104,9 @@ def _read_run(
     samples: dict[str, list[float]],
     shared_samples: dict[str, list[float]],
     notes: list[str],
+    skip_failed: bool = False,
 ) -> None:
-    """Add one run's per-test seconds to `samples` (own time from its phase file where it holds the test, junit time otherwise) and its shared-fixture seconds to `shared_samples`. An unreadable junit adds nothing, and a skipped test no sample."""
+    """Add one run's per-test seconds to `samples` (own time from its phase file where it holds the test, junit time otherwise) and its shared-fixture seconds to `shared_samples`. An unreadable junit adds nothing, and a skipped test no sample. With `skip_failed` a test that failed or errored adds none either: a re-time that died early at 0.1 s says nothing about the test's own cost."""
     try:
         root = xml_trusted.parse(junit)
     except (OSError, SyntaxError):  # ElementTree.ParseError is a SyntaxError
@@ -112,6 +121,8 @@ def _read_run(
     malformed = 0
     for case in root.iter("testcase"):
         if case.find("skipped") is not None:
+            continue
+        if skip_failed and (case.find("failure") is not None or case.find("error") is not None):
             continue
         node = node_of(case)
         measured = own_seconds(phases[node]) if node in phases else None
@@ -152,7 +163,7 @@ def read_timing(junits: Iterable[pathlib.Path], confirms: Iterable[pathlib.Path]
         _read_run(junit, samples, shared_samples, notes)
     retimed: dict[str, list[float]] = {}
     for junit in confirms:
-        _read_run(junit, retimed, shared_samples, notes)
+        _read_run(junit, retimed, shared_samples, notes, skip_failed=True)
     durations = {node: statistics.median(times) for node, times in samples.items()}
     durations.update({node: min(times) for node, times in retimed.items()})
     return Timing(
@@ -188,9 +199,15 @@ def read_allow(path: pathlib.Path) -> tuple[dict[str, str], list[str]]:
         return {}, ["cannot be read: %s" % exc]
     allowed: dict[str, str] = {}
     problems: list[str] = []
-    for i, entry in enumerate(doc.get("entries") or []):
+    if not isinstance(doc, dict):
+        return {}, ["holds no top-level object"]
+    entries = doc.get("entries") or []
+    if not isinstance(entries, list):
+        return {}, ["`entries` is not a list"]
+    for i, entry in enumerate(entries):
         test = entry.get("test") if isinstance(entry, dict) else None
-        reason = (entry.get("reason") or "").strip() if isinstance(entry, dict) else ""
+        raw_reason = entry.get("reason") if isinstance(entry, dict) else None
+        reason = raw_reason.strip() if isinstance(raw_reason, str) else ""
         if not isinstance(test, str) or not test:
             problems.append("entry %d names no test" % i)
         elif not reason:
@@ -217,12 +234,17 @@ def over_threshold(
 def nodeid_of(node: str, root: pathlib.Path) -> str | None:
     """The pytest node id of a junit `<classname>::<name>` under `root`, or None when no file under `root` holds the classname's dotted path.
 
-    A leading dot is a hidden directory (`.ci.rediacc_ci.tests.test_x` is `.ci/rediacc_ci/tests/test_x.py`), and the dotted parts past the file are test classes.
+    An empty dotted part is a hidden directory at any depth (`.ci.rediacc_ci.tests.test_x` is `.ci/rediacc_ci/tests/test_x.py`, `tests..data.test_x` is `tests/.data/test_x.py`), and the dotted parts past the file are test classes.
     """
     classname, _, name = node.partition("::")
-    parts = classname.split(".")
-    if len(parts) > 1 and parts[0] == "":
-        parts = ["." + parts[1], *parts[2:]]
+    parts: list[str] = []
+    hidden = False
+    for part in classname.split("."):
+        if part == "":
+            hidden = True
+            continue
+        parts.append("." + part if hidden else part)
+        hidden = False
     for k in range(len(parts), 0, -1):
         rel = "/".join(parts[:k]) + ".py"
         if (root / rel).is_file():

@@ -62,6 +62,7 @@ def gate(tmp_path: pathlib.Path, monkeypatch):
         smoke=1,
         digest="ab" * 32,
         why={SELECTED: "smoke"},
+        smoke_files=[SELECTED],
     )
     asked: list[int] = []
 
@@ -169,3 +170,52 @@ def test_base_reaches_the_selection_and_is_not_refused(gate):
     assert check_pytest.unknown_args(["--base", "origin/main"]) == []
     assert check_pytest.main(["--base", "origin/main"]) == check_pytest.EXIT_OK
     assert asked == ["origin/main"]
+
+
+def test_a_bare_trailing_base_is_refused_not_read_as_no_base():
+    """Finding a3548fda.1: `--base` with no ref used to select by the push base without a word."""
+    assert check_pytest.unknown_args(["--base"]) == ["--base (needs a value)"]
+    assert check_pytest.unknown_args(["--shard", "1/2", "--base"]) == ["--base (needs a value)"]
+    assert check_pytest.unknown_args(["--base", "origin/main"]) == []
+
+
+def test_a_bare_trailing_base_fails_the_run(gate, capsys):
+    _root, calls, asked = gate
+    assert check_pytest.main(["--base"]) == check_pytest.EXIT_FAIL
+    assert asked == [] and not calls
+    assert "needs a value" in capsys.readouterr().err
+
+
+def test_a_failed_control_removes_a_previous_scope_record(gate, monkeypatch):
+    """Finding 755fd65e.2: the selftest fails before any run, and a scope record from the last green must not outlive it."""
+    root, _calls, _asked = gate
+    assert check_pytest.main([]) == check_pytest.EXIT_OK
+    assert (root / str(check_pytest.SCOPE_RELPATH)).exists()
+    monkeypatch.setattr(check_pytest, "selftest", lambda *_a, **_k: False)
+    assert check_pytest.main([]) == check_pytest.EXIT_FAIL
+    assert not (root / str(check_pytest.SCOPE_RELPATH)).exists()
+
+
+def test_the_impact_floor_counts_a_smoke_file_a_change_also_reached(gate, monkeypatch):
+    """Finding 755fd65e.1: a change reaching a smoke file replaces its `why` label, but the file is still smoke."""
+    seen: list[int] = []
+    real = check_pytest.impact_floor
+
+    def spy(n):
+        seen.append(n)
+        return real(n)
+
+    monkeypatch.setattr(check_pytest, "impact_floor", spy)
+    impact = pytest_impact.Selection(
+        "impact",
+        "1 changed file(s)",
+        files=[SELECTED],
+        total=2,
+        smoke=1,
+        digest="ab" * 32,
+        why={SELECTED: "imports pkg/mod.py"},
+        smoke_files=[SELECTED],
+    )
+    monkeypatch.setattr(check_pytest, "select_impact", lambda _r, _b=None: impact)
+    assert check_pytest.main([]) == check_pytest.EXIT_OK
+    assert seen == [2], "the smoke file's two tests were not counted toward floor 1"

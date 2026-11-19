@@ -561,6 +561,8 @@ class Selection:
     smoke: int = 0
     digest: str = ""
     why: dict[str, str] = field(default_factory=dict)
+    # The smoke floor's files inside `files`. `why` cannot carry this: a change that reaches a smoke file replaces its "smoke" label with the import reason.
+    smoke_files: list[str] = field(default_factory=list)
 
     def line(self) -> str:
         if self.scope == "full":
@@ -707,6 +709,7 @@ def select(
         smoke=len(smoke),
         digest=digest,
         why={f: selected[f] for f in files},
+        smoke_files=sorted(smoke),
     )
 
 

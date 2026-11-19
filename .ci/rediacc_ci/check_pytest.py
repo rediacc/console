@@ -340,8 +340,7 @@ def junit_finding_keys(junit: pathlib.Path) -> list[str]:
         return []
     keys: set[str] = set()
     for case in root.iter("testcase"):
-        name = (case.get("name") or "").split("@", 1)[0]
-        node = "%s::%s" % (case.get("classname") or "", name)
+        node = pytest_slow_ratchet.node_of(case)
         kind = None
         if case.find("failure") is not None or case.find("error") is not None:
             kind = "pytest-fail"
@@ -1336,6 +1335,8 @@ def unknown_args(argv: list[str]) -> list[str]:
             skip = True
         elif arg not in FLAGS_ALONE:
             out.append(arg)
+    if skip:
+        out.append("%s (needs a value)" % argv[-1])
     return out
 
 
@@ -1410,6 +1411,9 @@ def main(argv: list[str]) -> int:
             return EXIT_FAIL
         shard = (index, of, relpaths)
 
+    # A scope record is this run's or nothing: a red or killed run, a failed control and an unavailable pytest included, must not leave the receipt reading the previous green's scope.
+    (root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name).unlink(missing_ok=True)
+
     test_dirs = testpath_dirs(root)
     pytest_bin = resolve_pytest(root)
 
@@ -1431,9 +1435,6 @@ def main(argv: list[str]) -> int:
             file=sys.stderr,
         )
         return EXIT_FAIL
-
-    # A scope record is this run's or nothing: a red or killed run must not leave the receipt reading the previous green's scope.
-    (root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name).unlink(missing_ok=True)
 
     if shard is not None:
         index, of, relpaths = shard
@@ -1616,7 +1617,7 @@ def run_impact(pytest_bin: str, root: pathlib.Path, selection) -> int:
         )
         return EXIT_FAIL
     corpus = corpus_test_count_files(files)
-    smoke = [root / f for f in relpaths if selection.why.get(f) == "smoke"]
+    smoke = [root / f for f in relpaths if f in set(selection.smoke_files)]
     floor = impact_floor(corpus_test_count_files(smoke))
     print(
         "info: impact: %d of %d file(s), %d test function(s) on disk (floor %d)"
