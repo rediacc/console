@@ -46,6 +46,18 @@ def test_root_glob_alone_misses_root_lockfile_python():
     assert G.v2_match_glob("**/package-lock.json", "package-lock.json") is False
 
 
+def test_ts_source_lists_the_bare_root_lockfiles_without_node():
+    """Runs on a machine without node: the TS source still names both bare root entries, so the root-lockfile fix is pinned where the driven tests skip."""
+    source = (ROOT / "scripts" / "ci-runner" / "input-hash.ts").read_text(encoding="utf-8")
+    block = source.split("export const GLOBAL_INPUTS", 1)[1].split("];", 1)[0]
+    entries = [
+        line.strip().strip(",").strip("'") for line in block.splitlines()[1:] if line.strip()
+    ]
+    assert "package-lock.json" in entries
+    assert "uv.lock" in entries
+    assert "nonexistent.lock" not in entries
+
+
 @needs_node
 @pytest.mark.parametrize(("path", "expected"), CASES)
 def test_global_inputs_reach_python(path, expected):

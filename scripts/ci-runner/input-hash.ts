@@ -294,10 +294,10 @@ export interface GateHash {
   };
   reason: string | null;
   /**
-   * What a DEPENDENT reads when its `needs` edge only orders an artifact (the producer is a `gate: false` build step): sha(def, files, the artifact hashes of the producer's own producers). Not nullable for `env`, `exempt` or `needs-null`, because none of them changes which inputs build the artifact; null only where the inputs themselves are unknown (no lock entry, a forbidden glob, a float, a capped leaf closure, a cycle) or a producer upstream has no artifact hash.
+   * What a DEPENDENT reads when its `needs` edge only orders an artifact (the producer is a `gate: false` build step): sha(def, files, the artifact hashes of the producer's own producers). Not nullable for `env`, `exempt` or `needs-null`: an `env` value written in the lock entry is part of `def`, so changing it moves this hash, and what the entry leaves outside the hash is a live value (a secret or token read at run time) that is not a build input; null only where the inputs themselves are unknown (no lock entry, a forbidden glob, a float, a capped leaf closure, a cycle) or a producer upstream has no artifact hash.
    */
   artifactHash: string | null;
-  /** The carry-exempt.json `kind` for an exempt gate (`clock|history|network|cache`), null when the gate is not exempt or the row names none. */
+  /** The carry-exempt.json `kind` (`clock|history|network|cache`), set only when `reason` is 'exempt' (a forbidden glob or a float is reported first and leaves it null); null when the gate is not exempt or the row names none. */
   exemptKind: string | null;
 }
 
@@ -755,6 +755,19 @@ export function inputHashSelftest(tmpDir: string): void {
       get(h3, 'g:onbuild').inputHash !== get(h2, 'g:onbuild').inputHash &&
         get(h2, 'p:build').artifactHash === get(h1, 'p:build').artifactHash,
       'a change to the PRODUCER inputs (src/, not a path of the dependent) must move the dependent through the artifact hash; CONTROL: a non-input change leaves the artifact hash alone'
+    );
+    // A changed env VALUE in the producer's lock entry, tree unchanged: def moves, so the artifact hash and the dependent move (the artifact edge never carries `ok` across it).
+    const envLock = { ...lock, 'p:build': { ...lock['p:build'], env: { T: 'changed' } } };
+    const hEnv = computeGateHashes(root, t1, envLock, mk(root));
+    must(
+      get(hEnv, 'p:build').artifactHash !== get(h1, 'p:build').artifactHash &&
+        get(hEnv, 'g:onbuild').inputHash !== get(h1, 'g:onbuild').inputHash,
+      'a changed producer env value must move the artifact hash and its dependent'
+    );
+    must(
+      get(computeGateHashes(root, t1, lock, mk(root)), 'g:onbuild').inputHash ===
+        get(h1, 'g:onbuild').inputHash,
+      'CONTROL: the same env leaves the dependent hash alone'
     );
 
     // a root lockfile is a global input: `**/package-lock.json` alone never matched it
