@@ -6152,7 +6152,7 @@
   },
   {
     "id": "search-3304",
-    "content": "19. Feedback",
+    "content": "19. Rückmeldungen",
     "body": "Strukturiertes Feedback oder einen Fehlerbericht einreichen. Der Bericht wird nur aus bereinigten Daten erstellt, vollständig angezeigt und nach Bestätigung (oder mit --yes) mit dem gespeicherten API-Token oder einer installierten Free-Lizenz gesendet. <a id=\"cli-local-feedback-list\"></a>",
     "excerpt": "Strukturiertes Feedback oder einen Fehlerbericht einreichen. Der Bericht wird nur aus bereinigten Daten erstellt, vollständig angezeigt und nach Bestä...",
     "category": "Documentation",

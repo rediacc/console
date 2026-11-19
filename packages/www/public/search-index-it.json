@@ -6152,7 +6152,7 @@
   },
   {
     "id": "search-11047",
-    "content": "19. Feedback",
+    "content": "19. Segnalazioni",
     "body": "Invia un feedback strutturato o una segnalazione di bug. Il contenuto viene creato solo con dati ripuliti, mostrato per intero e inviato dopo la conferma (o con --yes) usando il token API salvato o una licenza Free installata. <a id=\"cli-local-feedback-list\"></a>",
     "excerpt": "Invia un feedback strutturato o una segnalazione di bug. Il contenuto viene creato solo con dati ripuliti, mostrato per intero e inviato dopo la confe...",
     "category": "Documentation",
