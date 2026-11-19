@@ -1250,10 +1250,13 @@ class Host:
             probe = probe.parent
         stat = os.statvfs(probe)
         reclaim = 0
-        with contextlib.suppress(OSError):
-            for entry in pathlib.Path(disk_dir).rglob("*"):
-                if entry.name.startswith(RECLAIM_PREFIXES) and entry.is_file():
-                    reclaim += entry.stat().st_blocks * 512
+        # `os.walk` skips a directory it cannot read and goes on, and a file that vanishes or cannot be stat'ed is skipped alone, so one OSError never ends the count (a short count refuses a fleet that fits).
+        for dirpath, _dirs, names in os.walk(disk_dir):
+            for name in names:
+                if not name.startswith(RECLAIM_PREFIXES):
+                    continue
+                with contextlib.suppress(OSError):
+                    reclaim += (pathlib.Path(dirpath) / name).stat().st_blocks * 512
         return stat.f_bavail * stat.f_frsize, reclaim
 
     def now(self) -> float:

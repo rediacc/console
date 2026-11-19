@@ -5395,3 +5395,43 @@ def test_only_a1_runs_just_the_named_suite_on_the_serial_path(tmp_path: pathlib.
     wanted = [script for step, script, _p in vm_check.ACCOUNT_SUITES if step == "A1.2"]
     assert [c[4] for c in world.npm_calls()] == wanted
     assert len(world.npm_calls()) == 1
+
+
+# ---- the disk preflight's production probe and its plan arithmetic (fe1ccb29) ----
+
+
+def test_the_host_disk_probe_counts_reclaimable_disks_and_reads_a_missing_dir_at_its_parent(
+    tmp_path: pathlib.Path,
+) -> None:
+    """fe1ccb29.2: `World` overrides `disk_space`, so the real probe runs here against a real directory."""
+    disks = tmp_path / "vms" / "nested"
+    disks.mkdir(parents=True)
+    (disks / "rediacc-vm-sys.11").write_bytes(b"x" * 8192)
+    (tmp_path / "vms" / "rediacc-vm-ceph-disk.21").write_bytes(b"y" * 8192)
+    (disks / "unrelated.img").write_bytes(b"z" * 8192)
+    free, reclaim = vm_check.Host.disk_space(SimpleNamespace(), str(tmp_path / "vms"))
+    assert free > 0
+    assert reclaim >= 2 * 8192
+    # Control: the unrelated file is not credited, so a directory holding only it reclaims nothing.
+    other = tmp_path / "other"
+    other.mkdir()
+    (other / "unrelated.img").write_bytes(b"z" * 8192)
+    assert vm_check.Host.disk_space(SimpleNamespace(), str(other))[1] == 0
+    # A directory that does not exist is read at its nearest existing parent and reclaims nothing.
+    free_missing, reclaim_missing = vm_check.Host.disk_space(
+        SimpleNamespace(), str(tmp_path / "absent" / "deeper")
+    )
+    assert free_missing > 0
+    assert reclaim_missing == 0
+
+
+def test_plan_disk_need_arithmetic_for_basic_other_bridges_and_overrides() -> None:
+    """fe1ccb29.3: each branch of the plan, from renet's DISK_FILL_RATIO of every virtual disk."""
+    gib = vm_check.GIB
+    assert vm_check.plan_disk_need({}, []) == int((8 + 16 * 5 + 32 * 3) * 0.25 * gib)
+    assert vm_check.plan_disk_need({}, ["--basic"]) == int((8 + 16) * 0.25 * gib)
+    assert vm_check.plan_disk_need({"VM_BRIDGE": "2"}, []) == int(8 * 0.25 * gib)
+    other_bridge = {"VM_BRIDGE": "2", "VM_WORKERS": "21"}
+    assert vm_check.plan_disk_need(other_bridge, []) == int((8 + 16) * 0.25 * gib)
+    env = {"VM_DSK": "10", "VM_CEPH_DISK_SIZE": "20", "VM_WORKERS": "11", "VM_CEPH_NODES": "21 22"}
+    assert vm_check.plan_disk_need(env, []) == int((8 + 10 * 3 + 20 * 2) * 0.25 * gib)
