@@ -137,8 +137,9 @@ Facts checked 2026-11-12 by the planning agent (file:line as read on 1104-1; a w
   Accept: a browser-probe run against the bench portal records the bell count and the listed notice title, with a screenshot path.
     (ticked) 2026-11-19T05:41:15Z by d778be9d: commit:8b2b22ec40 bench notices_drill 12/12 rc 0 held at step 8; bench portal header bell showed Notices, 1 unread and listed Repository licences need attention (806dccc6, 7953851f); screenshot /tmp/notices-x2b/bell-open.png
 
-- [ ] LP-bench [live] A fresh bench receipt after X2, recorded and ticked through `worklist.py --live-proof`.
+- [x] LP-bench [live] A fresh bench receipt after X2, recorded and ticked through `worklist.py --live-proof`.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-19T06:25:42Z by d778be9d: live-proof lp-e9baedd6ca9f bench account-smoke rc=0 v=f6127629-e29d-47c3-b5e7-9995fb34c3c3
 - [ ] P1 [lead] Production deploy of the account Workers in eu, us and asia through the deploy skill, only after LP-bench is VERIFIED (operator ASKED:2026-11-12T05:57Z).
   Owns: none. Accept: the deploy skill's verification passes for each region, and `curl -s -o /dev/null -w '%{http_code}' <region origin>/account/api/v1/notices/unread-count` prints 401 (mounted and auth-gated, not 404) for eu, us and asia.
 

@@ -57,14 +57,13 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
 - Branch: 1104-1, PR #605 open.
-- Plans on the PR (7):
+- Plans on the PR (6):
   - agent/plans/PLAN-backup-program.md -- 186 of 192 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-backup-restore-path.md -- 8 of 10 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-stop-hook-retro-20261110.md -- 8 of 8 boxes ticked, the PR body's `Plan:` line
   - agent/plans/_done/PLAN-submodule-branch-coordination-guard.md -- 5 of 8 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-proxy-cd-six-targets.md -- 27 of 31 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-repo-docker-storage-prune.md -- 14 of 14 boxes ticked, the PR body's `Plan:` line
-  - agent/plans/PLAN-ciquick-cpu.md -- 13 of 24 boxes ticked, a turbo pick named by the Stop hook, joining the `Plan:` line on the next push
 - Work outside the PR's plans (23 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 30 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
@@ -83,21 +82,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1571 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1573 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
   - epic 2255f2d2, no plan, 2 commit(s) on the branch, 0 open item(s): Convert stale GitHub issues (console, renet, account) into plan files
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a931036328e0c7f74.
-- Leased items: 9: #02389657 (worker:bufehm7sr, d778be9d), #09883efa (worker:bwq1lwq8m, d778be9d), #0d605f03 (worker:a931036328e0c7f74, d778be9d), #0e9506a2 (worker:bufehm7sr, d778be9d), #4889018a (worker:bufehm7sr, d778be9d), #a1ecc191 (worker:b0vgfi0vj, d778be9d), #ab9c68b1 (worker:bufehm7sr, d778be9d), #b28ccc5c (worker:bwq1lwq8m, d778be9d), #fbe192ca (worker:bufehm7sr, d778be9d).
+- Writers: 4 live of writer_cap 25 (session d778be9d): worker:af71d3aa2e3ccc885, worker:a25bab7cf0b50efa3, worker:a2e6b0e43c460ee71, worker:acfd482cd7b3ef294.
+- Leased items: 11: #02389657 (worker:bm5hbcmoi, d778be9d), #0d605f03 (worker:bm5hbcmoi, d778be9d), #0e9506a2 (worker:bm5hbcmoi, d778be9d), #4889018a (worker:bm5hbcmoi, d778be9d), #51891d57 (worker:acfd482cd7b3ef294, d778be9d), #a1ecc191 (worker:bm5hbcmoi, d778be9d), #ab9c68b1 (worker:bm5hbcmoi, d778be9d), #b22c6a71 (worker:af71d3aa2e3ccc885, d778be9d), #b28ccc5c (worker:a25bab7cf0b50efa3, d778be9d), #e144a77f (worker:bm5hbcmoi, d778be9d), #fbe192ca (worker:bm5hbcmoi, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 29 of 81 plans done, 1251 of 1504 boxes done (83%).
+Promoted: 29 of 81 plans done, 1252 of 1504 boxes done (83%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -168,7 +167,7 @@ Promoted: 29 of 81 plans done, 1251 of 1504 boxes done (83%).
 | 65 | PLAN-experience-feedback.md | 12/16 | 4 open |
 | 66 | PLAN-local-first-delivery.md | 14/15 | 1 open |
 | 67 | PLAN-terms-acceptance.md | 25/25 | done |
-| 68 | PLAN-account-notices.md | 15/17 | 2 open |
+| 68 | PLAN-account-notices.md | 16/17 | 1 open |
 | 69 | PLAN-enterprise-tenants.md | 24/47 | 23 open |
 | 70 | PLAN-licence-expiry-notices.md | 6/7 | 1 open |
 | 71 | PLAN-onprem-relicence-inbox.md | 10/13 | 3 open |
