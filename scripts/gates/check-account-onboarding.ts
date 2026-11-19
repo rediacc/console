@@ -165,6 +165,13 @@ function validateManualStep(step: ManifestStep, issues: Issue[]): void {
   if (!step.command || step.command.trim().length === 0) {
     issues.push({ step: step.id, message: 'manual step is missing command' });
   }
+  // The generator emits a widget only for a storyboard step, so a manual step carrying one could never match its generated form, and regenerating cannot clear it.
+  if (step.widget) {
+    issues.push({
+      step: step.id,
+      message: `manual step sets widget "${step.widget}"; only a storyboard step can be a widget step`,
+    });
+  }
 }
 
 function validateStoryboardStep(step: ManifestStep, issues: Issue[]): void {
@@ -306,6 +313,22 @@ interface GeneratedContent {
   steps: GeneratedStep[];
 }
 
+/** A widget step is rendered by the portal: the generated step must emit the widget and no command. A generated step missing its `command` key is the same as an empty one, never a crash. */
+function checkWidgetStep(mStep: ManifestStep, gStep: GeneratedStep, issues: Issue[]): void {
+  if (gStep.widget !== mStep.widget) {
+    issues.push({
+      step: mStep.id,
+      message: `generated widget mismatch (expected "${mStep.widget}"); run "npm run build:account-onboarding"`,
+    });
+  }
+  if ((gStep.command ?? '').trim().length > 0) {
+    issues.push({
+      step: mStep.id,
+      message: `generated widget step carries a command; run "npm run build:account-onboarding"`,
+    });
+  }
+}
+
 function checkFreshness(manifest: Manifest, issues: Issue[]): void {
   if (!existsSync(GENERATED_PATH)) {
     issues.push({ step: '(file)', message: `generated file missing: ${GENERATED_PATH}` });
@@ -357,19 +380,7 @@ function checkFreshness(manifest: Manifest, issues: Issue[]): void {
       });
     }
     if (mStep.widget) {
-      // A widget step is rendered by the portal: it must emit the widget and no command.
-      if (gStep.widget !== mStep.widget) {
-        issues.push({
-          step: mStep.id,
-          message: `generated widget mismatch (expected "${mStep.widget}"); run "npm run build:account-onboarding"`,
-        });
-      }
-      if (gStep.command.trim().length > 0) {
-        issues.push({
-          step: mStep.id,
-          message: `generated widget step carries a command; run "npm run build:account-onboarding"`,
-        });
-      }
+      checkWidgetStep(mStep, gStep, issues);
     } else if (!gStep.command || gStep.command.trim().length === 0) {
       issues.push({
         step: mStep.id,
@@ -402,7 +413,66 @@ function checkFreshness(manifest: Manifest, issues: Issue[]): void {
   }
 }
 
+/** The gate's own controls, both directions, run on every invocation so they cannot sit behind a flag nothing passes. Returns the failures. */
+function controls(): string[] {
+  const bad: string[] = [];
+  const step = (over: Partial<ManifestStep>): ManifestStep =>
+    ({
+      id: 's',
+      titleKey: 't',
+      docsPath: 'd',
+      shortProse: 'prose',
+      command: 'rdc x',
+      ...over,
+    }) as ManifestStep;
+  const messages = (run: (issues: Issue[]) => void): string => {
+    const issues: Issue[] = [];
+    run(issues);
+    return issues.map((i) => i.message).join('|');
+  };
+  const gen = (over: Partial<GeneratedStep>): GeneratedStep => ({
+    id: 's',
+    titleKey: 't',
+    docsPath: 'd',
+    command: '',
+    prose: {},
+    ...over,
+  });
+  const w = step({ widget: 'install-tabs' });
+  if (messages((i) => checkWidgetStep(w, gen({ widget: 'install-tabs' }), i)) !== '')
+    bad.push('CONTROL: a widget step emitting its widget and no command passed');
+  if (!messages((i) => checkWidgetStep(w, gen({}), i)).includes('widget mismatch'))
+    bad.push('a generated widget step missing its widget is not reported (42a85d5a.2)');
+  if (
+    !messages((i) =>
+      checkWidgetStep(w, gen({ widget: 'install-tabs', command: 'rdc x' }), i)
+    ).includes('carries a command')
+  )
+    bad.push('a generated widget step carrying a command is not reported (42a85d5a.2)');
+  let crashed = false;
+  try {
+    checkWidgetStep(w, { ...gen({ widget: 'install-tabs' }), command: undefined } as never, []);
+  } catch {
+    crashed = true;
+  }
+  if (crashed) bad.push('a generated widget step missing its command key crashed the gate (42a85d5a.3)');
+  if (
+    !messages((i) => validateManualStep(step({ source: 'manual', widget: 'install-tabs' }), i)).includes(
+      'manual step sets widget'
+    )
+  )
+    bad.push('a manual step setting widget is not refused (42a85d5a.1)');
+  if (messages((i) => validateManualStep(step({ source: 'manual' }), i)) !== '')
+    bad.push('CONTROL: a plain manual step was refused');
+  return bad;
+}
+
 function main(): number {
+  const failed = controls();
+  if (failed.length > 0) {
+    for (const f of failed) console.error(`  [controls] ${f}`);
+    return 1;
+  }
   const issues: Issue[] = [];
 
   if (!existsSync(MANIFEST_PATH)) {
