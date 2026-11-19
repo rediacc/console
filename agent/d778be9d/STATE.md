@@ -1,18 +1,19 @@
-## SESSION d778be9d 2026-11-19T01:17:46Z
+## SESSION d778be9d 2026-11-19T02:17:29Z
 
-# STATE d778be9d (2026-11-19 ~01:40Z)
+# STATE d778be9d (2026-11-19 ~02:50Z)
 
 ## Next action
-1. Reviews for d68c31c4 a78841ab 598d8069 403438da ba83a833 running (bg byp37ic6c) + review-commit. Then: `npm run ci:quick` (records-only advance, ~4 min; only check:ci-ops-health may stay red, carried), then push console: `TURBO_PUSH_REASON='red-fix: PR #605 CI run 44426658758 red (pin/action freshness, deps, slow ratchet)' git push origin 1104-1`. vm:check run 9 VERIFIED covers the tree (b93c73f4); account already pushed f66e63a.
-2. `PYTHONPATH=.ci python3 -m rediacc_ci.pr.sync_epic_block 605 1104-1`; watch `python3 .ci/scripts/ci/ci-trace.py --ref 1104-1 --wait --until-final --timeout 120m --worklist-item 02389657` (flag is --ref).
-3. #cd796a07 root_grants edge: DEFERRED to operator; DEFAULT applies edge-eu/us/asia when the window closes (second org breaks password `rdc subscription login` until CLI fix 1e1b8fe080 ships).
-4. Queued writers next: #1fef1245 (W4.1 tick only, landed c1a3d736), #52d5e208 W7, #77d5dd39 R6, #af5cf979 R8, #ef2273f3 rdc-feedback S1.
-
-## Delegated
-- none live besides bg shells (reviews byp37ic6c, CI watch b1lmlvq5e, wake timer).
+1. #4889018a: fix or not-a-bug the open review findings of the landed commits (none high): 0bfa82fd x5 (S1 feedback), 1e70b16a x2 (R6 drills), 3828d77f x2 (W7 guards), b0fb4096 x2 (R8 release). `worklist.py --review-mark d778be9d <id> fixed <sha>|not-a-bug <path:line>`.
+2. #02389657: CI watch bhzbdhi10 on pushed head b2e74fdb92; on verdict tick it and fix reds; #4889018a closes on green. #ab9c68b1 A1a needs the deploy-preview run, #fbe192ca A4d red-stub proof, #0e9506a2 N1 green nightly.
+3. Unpushed: W7 3828d77f20, R8 b0fb4096f7, S1 0bfa82fdf4, R6 1e70b16a96, ticks 6c8e04ee52, fix e06a68dddc. R6 + fix touch .ci/rediacc_ci/drills/** (vm:check trigger): next push needs `npm run vm:check -- --changed` VERIFIED, then ci:quick, then `worklist.py --review-commit d778be9d` in its OWN call, then push with TURBO_PUSH_REASON. Never commit during vm:check or ci:quick.
+4. #cd796a07 root_grants DEFAULT applies edge-eu/us/asia when its window closes (~03:40Z): `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile root-grants -- python3 -m rediacc_ci.ops.root_grants --target edge-eu --apply`, then us, asia.
 
 ## Big pieces
-- Edge release eu,us,asia DONE 2026-11-19 (#8bb65426). Pushed earlier 6d67a0318c; CI run 44426658758 reds fixed in 403438da, 598d8069, a78841ab, d68c31c4 + account f66e63a/ba83a833.
+- PR #605 CI green and merge; edge release eu/us/asia done 2026-11-19 (#8bb65426); root grants (#cd796a07).
+- Hint filed: review-commit receipt advance refuses when the parent receipt's only red is carried (cost ci:quick run 39).
 
 ## Owed ticks
-- A1a 695c3218 after a deploy preview; A4d 0a237b2e red-stub proof; N1 abe9b4eb after a green nightly.
+- 9 live-owed boxes per `worklist.py --box-audit d778be9d --live-owed` (PLAN-ciquick-cpu 51ceeb4f, PLAN-enterprise-isolation a8892e0c, ...): each needs its live run; A1a 695c3218 after a deploy preview; A4d 0a237b2e red-stub proof; N1 abe9b4eb after a green nightly.
+
+## Delegated
+- none (bg: CI watch bhzbdhi10, wake timer byq90wjul).
