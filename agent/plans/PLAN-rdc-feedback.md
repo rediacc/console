@@ -106,11 +106,12 @@ Owns: agent/plans/PLAN-rdc-feedback.md, packages/shared/src/feedback/**, package
 
 Order: S1; then A1 and C1 in parallel; A2-A4 after A1, C2-C4 after C1; P1-P2 after A3/A4; D1-D3 after the C and P boxes; T1-T3 after A4; T4 after T1; L1 after every writer box; L2 and LP-bench last.
 
-- [ ] S1 [writer] (W-SHARED) `packages/shared/src/feedback/`: the fingerprint normaliser, `scrubText`, and the zod wire schemas with their size caps (D1)
+- [x] S1 [writer] (W-SHARED) `packages/shared/src/feedback/`: the fingerprint normaliser, `scrubText`, and the zod wire schemas with their size caps (D1)
     Owns: packages/shared/src/feedback/**, packages/shared/src/index.ts
     Depends on: none.
     Needs: none
     Accept: `cd packages/shared && npx vitest run src/feedback` exits 0 with a case per scrub class (token shapes, SENSITIVE_KEYS pairs, PEM, URL, email, IPv4, IPv6, hostname, each home-path form) and a control per class that leaves clean text unchanged; two errors differing only in a path, a hex id or a number share a fingerprint, and a different exit code does not. `cd packages/shared && npm run build` exits 0.
+    (ticked) 2026-11-19T02:13:16Z by d778be9d: commit:0bfa82fdf4 shared feedback fingerprint, scrubText, zod schema; vitest 41 passed rc 0 on the landed tree
 - [ ] A1 [writer] (W-ACC) Migration `0089_feedback.sql`, the four tables in schema.ts, their scope-registry and shard-router classification (D2)
     Owns: private/account/drizzle/0089_feedback.sql, private/account/drizzle/meta/_journal.json, private/account/src/db/schema.ts, private/account/src/db/scope-registry.ts, private/account/src/db/shard-router.ts
     Depends on: S1.

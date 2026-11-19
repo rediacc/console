@@ -92,7 +92,8 @@ Core-s is the sum of per-gate `cpuMs` in the receipt plus the runner's own CPU (
 - [ ] W3.1 [writer] Trace mode and sparse-clone mode, diff-scoped in quick, with the rotation flag (A3). Accept: the undeclared-read fixture fails both modes; the declared fixture passes.
 
 ### W4 pytest impact -- .ci/rediacc_ci/pytest_impact.py, .ci/rediacc_ci/check_pytest.py, .ci/policy/pytest-smoke.json, .ci/policy/pytest-impact.json, .ci/rediacc_ci/tests/test_pytest_impact.py
-- [ ] W4.1 [writer] The map, selection, smoke floor and every B4 fallback, each with a test. Accept: one test per fallback reason, and a control where a leaf-module edit selects only its importers plus smoke.
+- [x] W4.1 [writer] The map, selection, smoke floor and every B4 fallback, each with a test. Accept: one test per fallback reason, and a control where a leaf-module edit selects only its importers plus smoke.
+    (ticked) 2026-11-19T02:13:32Z by d778be9d: commit:c1a3d736 map, selection, smoke floor and every B4 fallback, 12 tests rc 0
 - [ ] W4.2 [writer] check_pytest impact/full switch, receipt fields `pytestScope`, selected count and map digest, and guard acceptance (B5). Accept: `CI=true` runs the full suite, asserted on the collected count.
 - [x] W4.3 [writer] Derive `reads` with the tracer and declare check:ci-pytest `paths` (B2, B6). Accept: a docs-only diff carries check:ci-pytest.
     (corrected ASKED:2026-11-18T14:50Z) The traced union reads all 11,668 tracked files, so no narrower `paths` is honest: check:ci-pytest is whole-tree and pytest_impact selects the tests whose traced reads cover the change. Accept: a docs-only diff RUNS check:ci-pytest and selects only its traced readers plus smoke.
@@ -105,7 +106,8 @@ Core-s is the sum of per-gate `cpuMs` in the receipt plus the runner's own CPU (
 ### W6-W10 slow tests, one writer per file
 - [x] W6 [writer] test_ops_mirror_config_store: module-scoped store and injected clock. Accept: same test count, ≤ 300 s in junit.
     (ticked) 2026-11-18T12:32:38Z by d778be9d: commit:7a21752ae9 -- box Accept re-run 2026-11-18 by a lease writer, rc 0
-- [ ] W7 [writer] test_hooks_delegates and the check_pytest.py triple run (coordinate the check_pytest.py hunk with W4): controls run once. Accept: same test count, ≤ 600 s.
+- [x] W7 [writer] test_hooks_delegates and the check_pytest.py triple run (coordinate the check_pytest.py hunk with W4): controls run once. Accept: same test count, ≤ 600 s.
+    (ticked) 2026-11-19T02:13:12Z by d778be9d: commit:3828d77f20 test_hooks_delegates 962 s -> 477 s wall, 95 passed rc 0; guard harnesses rc 0 on the landed tree
 - [x] W8 [writer] test_guards_differential: reference cache and batched subprocesses. Accept: same case count, ≤ 450 s; a deliberately broken guard still fails the differential.
     (ticked) 2026-11-18T12:32:41Z by d778be9d: commit:a20a16ab88 -- box Accept re-run 2026-11-18 by a lease writer, rc 0
 - [x] W9 [writer] test_quality_plan_implementation merge fixtures: session template and local clones. Accept: same test count, ≤ 60 s.

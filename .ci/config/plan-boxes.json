@@ -755,8 +755,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 13,
-      "done": 11,
+      "open": 11,
+      "done": 13,
       "open_sigs": [
         "092a3f70",
         "3cc088a8",
@@ -766,9 +766,7 @@
         "782a0661",
         "786d5fb9",
         "81e84eee",
-        "8735fd82",
         "8b0b595e",
-        "bcfd79af",
         "bf120930",
         "d9ea085a"
       ],
@@ -780,7 +778,9 @@
         "812f66ef",
         "824b964d",
         "8694aa86",
+        "8735fd82",
         "96e623c9",
+        "bcfd79af",
         "cabc2dbe",
         "e67fef60",
         "ee3be061"
@@ -2727,11 +2727,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 15,
+      "open": 6,
+      "done": 17,
       "open_sigs": [
-        "0735f5f6",
-        "3d712f84",
         "42df7aae",
         "8a962af3",
         "96885146",
@@ -2740,10 +2738,12 @@
         "e613a81c"
       ],
       "done_sigs": [
+        "0735f5f6",
         "0faf5dca",
         "247916b1",
         "266879ea",
         "2bf4755e",
+        "3d712f84",
         "43e8f5fc",
         "4b61913d",
         "4c077dd8",
@@ -2793,14 +2793,13 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 21,
-      "done": 0,
+      "open": 20,
+      "done": 1,
       "open_sigs": [
         "2d76dea2",
         "40ed3482",
         "446e81e9",
         "476fd25d",
-        "4b782b7a",
         "4e779064",
         "57489fcf",
         "642e9ef5",
@@ -2818,7 +2817,9 @@
         "f572057d",
         "f6477c4d"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "4b782b7a"
+      ]
     },
     "agent/plans/PLAN-rediaccfile-unprivileged.md": {
       "status": "executing",
