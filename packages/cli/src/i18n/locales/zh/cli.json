@@ -1240,6 +1240,11 @@
     "feedback": {
       "description": "提交结构化反馈或错误报告。报告仅由已脱敏的数据生成,会完整显示,并在确认后(或使用 --yes 时)通过已保存的 API 令牌或已安装的 Free 许可证发送。",
       "descriptionShort": "提交错误或反馈报告",
+      "list": {
+        "description": "列出此机器可见的反馈报告:ID、简短指纹、状态和日期。已修复的报告显示为 fixed-in-v<version>。使用已保存的 API 令牌,没有时使用已安装的 Free 许可证。",
+        "descriptionShort": "列出反馈报告及其状态",
+        "optionStatus": "仅显示这些状态,用逗号分隔(new, screening, quarantined, confirmed, planned, fixed, rejected)"
+      },
       "report": {
         "description": "根据最近一次失败的命令(--last)、已记录的命令(--command <n>)或仅一条消息生成报告,原样打印将要发送的内容,并在确认后发送。未加 --yes 的智能体只会得到预览和发送命令,绝不会暗中发送。",
         "descriptionShort": "预览并发送反馈报告",
@@ -1248,6 +1253,10 @@
         "optionLast": "使用最近一次失败的命令",
         "optionListRecent": "列出已记录的命令并退出",
         "optionMessage": "要附带的自由文本说明(发送前会脱敏)"
+      },
+      "show": {
+        "description": "按 ID(或其唯一前缀)显示一份反馈报告,包括状态、出现次数和日期。",
+        "descriptionShort": "显示一份反馈报告"
       }
     },
     "job": {
@@ -3650,11 +3659,21 @@
     "delegationCertRefused": "服务器的许可证书被拒绝 ({{code}})；请让运维人员运行：rdc server licence"
   },
   "feedback": {
+    "ambiguousId": "有多份报告以 \"{{id}}\" 开头;请提供更长的 ID。",
     "badKind": "未知的报告类型 \"{{kind}}\";请使用 bug、feedback 或 docs。",
+    "badStatus": "未知的状态 \"{{status}}\";请使用以下之一:{{allowed}}。",
     "confirm": "发送此报告?",
     "dailyLimit": "已达到每日反馈上限({{subject}});可从 {{resetAt}} 起再次提交。",
     "dailyLimitNoReset": "已达到每日反馈上限({{subject}});请明天(UTC)再试。",
     "declined": "未发送任何内容。",
+    "fieldCommand": "命令",
+    "fieldFingerprint": "指纹",
+    "fieldFirstSeen": "首次出现",
+    "fieldId": "ID",
+    "fieldKind": "类型",
+    "fieldLastSeen": "最近出现",
+    "fieldOccurrences": "出现次数",
+    "fieldStatus": "状态",
     "hint": "结果不符合预期？{{run}}",
     "hintDescription": "针对此次失败提交反馈报告",
     "hintSummary": "如果此次失败出乎意料，请提交报告。",
@@ -3664,7 +3683,9 @@
     "noCredentialSummary": "请登录账户或安装免费许可证,然后再次报告。",
     "noFailedCommand": "尚无已记录的失败命令;请使用 --list-recent 或 --message <text>。",
     "noRecent": "尚无已记录的命令。",
+    "noReports": "没有反馈报告。",
     "noSuchCommand": "序号 {{index}} 处没有已记录的命令;参见 rdc feedback report --list-recent 命令。",
+    "noSuchReport": "没有 ID 为 \"{{id}}\" 的反馈报告;请查看 rdc feedback list。",
     "optionFree": "在这台机器上创建仓库以安装免费许可证",
     "optionLogin": "登录账户",
     "previewOnly": "报告未发送:发送需要 --yes。",

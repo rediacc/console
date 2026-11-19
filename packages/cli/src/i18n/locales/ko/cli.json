@@ -1240,6 +1240,11 @@
     "feedback": {
       "description": "구조화된 피드백이나 버그 보고서를 제출합니다. 보고서는 민감 정보를 가린 데이터로만 만들어지고, 전체 내용이 표시되며, 확인 후(또는 --yes 사용 시) 저장된 API 토큰이나 설치된 Free 라이선스로 전송됩니다.",
       "descriptionShort": "버그 또는 피드백 보고",
+      "list": {
+        "description": "이 머신에서 볼 수 있는 피드백 보고서를 나열합니다. ID, 짧은 지문, 상태, 날짜가 표시됩니다. 수정된 보고서는 fixed-in-v<version>으로 표시됩니다. 저장된 API 토큰을 사용하며, 없으면 설치된 Free 라이선스를 사용합니다.",
+        "descriptionShort": "피드백 보고서와 상태 나열",
+        "optionStatus": "지정한 상태만 표시합니다(쉼표로 구분: new, screening, quarantined, confirmed, planned, fixed, rejected)"
+      },
       "report": {
         "description": "가장 최근에 실패한 명령(--last), 기록된 명령(--command <n>) 또는 메시지만으로 보고서를 만들고, 전송될 내용을 그대로 출력한 뒤 확인을 거쳐 전송합니다. --yes가 없는 에이전트에는 미리보기와 전송 명령만 제공되며, 몰래 전송되는 일은 없습니다.",
         "descriptionShort": "피드백 보고서 미리보기 및 전송",
@@ -1248,6 +1253,10 @@
         "optionLast": "가장 최근에 실패한 명령을 사용합니다",
         "optionListRecent": "기록된 명령을 나열하고 종료합니다",
         "optionMessage": "보고서에 넣을 자유 형식 메모(전송 전에 민감 정보가 제거됩니다)"
+      },
+      "show": {
+        "description": "ID(또는 고유한 앞부분)로 피드백 보고서 하나를 표시합니다. 상태, 발생 횟수, 날짜도 함께 표시됩니다.",
+        "descriptionShort": "피드백 보고서 하나 표시"
       }
     },
     "job": {
@@ -3650,11 +3659,21 @@
     "delegationCertRefused": "서버의 라이선스 인증서가 거부되었습니다 ({{code}}). 운영자에게 다음 명령을 실행하도록 요청하세요: rdc server licence"
   },
   "feedback": {
+    "ambiguousId": "\"{{id}}\"(으)로 시작하는 보고서가 둘 이상입니다. ID를 더 길게 입력하세요.",
     "badKind": "알 수 없는 보고서 종류 \"{{kind}}\"입니다. bug, feedback 또는 docs를 사용하세요.",
+    "badStatus": "알 수 없는 상태 \"{{status}}\"입니다. 다음 중 하나를 사용하세요: {{allowed}}",
     "confirm": "이 보고서를 전송할까요?",
     "dailyLimit": "일일 피드백 한도({{subject}})에 도달했습니다. {{resetAt}}부터 다시 보낼 수 있습니다.",
     "dailyLimitNoReset": "일일 피드백 한도({{subject}})에 도달했습니다. 내일(UTC) 다시 시도해 주세요.",
     "declined": "아무것도 전송되지 않았습니다.",
+    "fieldCommand": "명령",
+    "fieldFingerprint": "지문",
+    "fieldFirstSeen": "처음 확인",
+    "fieldId": "ID",
+    "fieldKind": "종류",
+    "fieldLastSeen": "마지막 확인",
+    "fieldOccurrences": "발생 횟수",
+    "fieldStatus": "상태",
     "hint": "예상치 못한 결과인가요? {{run}}",
     "hintDescription": "이 실패에 대한 피드백 보고서 보내기",
     "hintSummary": "이 실패가 예상치 못한 것이라면 보고해 주세요.",
@@ -3664,7 +3683,9 @@
     "noCredentialSummary": "계정에 로그인하거나 무료 라이선스를 설치한 뒤 다시 보고하세요.",
     "noFailedCommand": "아직 기록된 실패 명령이 없습니다. --list-recent 또는 --message <text>를 사용하세요.",
     "noRecent": "아직 기록된 명령이 없습니다.",
+    "noReports": "피드백 보고서가 없습니다.",
     "noSuchCommand": "인덱스 {{index}}에 기록된 명령이 없습니다. rdc feedback report --list-recent 명령을 참고하세요.",
+    "noSuchReport": "ID가 \"{{id}}\"인 피드백 보고서가 없습니다. rdc feedback list를 확인하세요.",
     "optionFree": "이 머신에 리포지토리를 만들어 무료 라이선스 설치",
     "optionLogin": "계정에 로그인",
     "previewOnly": "보고서가 전송되지 않았습니다. 전송하려면 --yes가 필요합니다.",

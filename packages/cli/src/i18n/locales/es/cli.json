@@ -1240,6 +1240,11 @@
     "feedback": {
       "description": "Envía comentarios estructurados o un informe de error. El contenido se genera solo con datos depurados, se muestra completo y se envía tras confirmar (o con --yes) usando el token de API guardado o una licencia Free instalada.",
       "descriptionShort": "Enviar un informe de error o comentarios",
+      "list": {
+        "description": "Muestra los informes de comentarios visibles para este equipo: ID, huella corta, estado y fechas. Un informe corregido aparece como fixed-in-v<version>. Usa el token de API guardado o, si no hay ninguno, una licencia Free instalada.",
+        "descriptionShort": "Listar los informes de comentarios y su estado",
+        "optionStatus": "Solo estos estados, separados por comas (new, screening, quarantined, confirmed, planned, fixed, rejected)"
+      },
       "report": {
         "description": "Crea un informe a partir del último comando fallido (--last), de un comando registrado (--command <n>) o solo de un mensaje, muestra exactamente lo que se enviaría y lo envía tras confirmar. Un agente sin --yes recibe la vista previa y el comando para enviarlo, nunca un envío oculto.",
         "descriptionShort": "Previsualizar y enviar un informe de comentarios",
@@ -1248,6 +1253,10 @@
         "optionLast": "Usa el último comando fallido",
         "optionListRecent": "Lista los comandos registrados y termina",
         "optionMessage": "Nota de texto libre que incluir (se depura antes de enviar)"
+      },
+      "show": {
+        "description": "Muestra un informe de comentarios por su ID (o un prefijo único de este), con su estado, número de apariciones y fechas.",
+        "descriptionShort": "Mostrar un informe de comentarios"
       }
     },
     "job": {
@@ -3650,11 +3659,21 @@
     "delegationCertRefused": "El certificado de licencia del servidor está rechazado ({{code}}); pida al operador que ejecute: rdc server licence"
   },
   "feedback": {
+    "ambiguousId": "Más de un informe empieza por \"{{id}}\"; indica más caracteres del ID.",
     "badKind": "Tipo de informe desconocido \"{{kind}}\"; usa bug, feedback o docs.",
+    "badStatus": "Estado desconocido \"{{status}}\"; usa uno de estos: {{allowed}}.",
     "confirm": "¿Enviar este informe?",
     "dailyLimit": "Se alcanzó el límite diario de comentarios ({{subject}}); podrás enviar de nuevo a partir de {{resetAt}}.",
     "dailyLimitNoReset": "Se alcanzó el límite diario de comentarios ({{subject}}); inténtalo de nuevo mañana (UTC).",
     "declined": "No se envió nada.",
+    "fieldCommand": "Comando",
+    "fieldFingerprint": "Huella",
+    "fieldFirstSeen": "Visto por primera vez",
+    "fieldId": "ID",
+    "fieldKind": "Tipo",
+    "fieldLastSeen": "Visto por última vez",
+    "fieldOccurrences": "Apariciones",
+    "fieldStatus": "Estado",
     "hint": "¿No era lo esperado? {{run}}",
     "hintDescription": "Enviar un informe de comentarios sobre este fallo",
     "hintSummary": "Si este fallo es inesperado, infórmalo.",
@@ -3664,7 +3683,9 @@
     "noCredentialSummary": "Inicia sesión en una cuenta o instala una licencia gratuita y vuelve a informar.",
     "noFailedCommand": "Todavía no hay ningún comando fallido registrado; usa --list-recent o --message <text>.",
     "noRecent": "Todavía no hay comandos registrados.",
+    "noReports": "No hay informes de comentarios.",
     "noSuchCommand": "No hay ningún comando registrado en el índice {{index}}; consulta rdc feedback report --list-recent.",
+    "noSuchReport": "No hay ningún informe de comentarios con el ID \"{{id}}\"; consulta rdc feedback list.",
     "optionFree": "Instalar una licencia gratuita creando un repositorio en este equipo",
     "optionLogin": "Iniciar sesión en una cuenta",
     "previewOnly": "El informe no se envió: para enviarlo hace falta --yes.",

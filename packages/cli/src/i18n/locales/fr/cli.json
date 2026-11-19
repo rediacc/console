@@ -1240,6 +1240,11 @@
     "feedback": {
       "description": "Soumettre un retour structuré ou un rapport de bug. Le rapport est construit uniquement à partir de données expurgées, affiché en entier, puis envoyé après confirmation (ou avec --yes) avec le jeton d'API enregistré ou une licence Free installée.",
       "descriptionShort": "Signaler un bug ou envoyer un retour",
+      "list": {
+        "description": "Lister les rapports de retour visibles depuis cette machine : identifiant, empreinte courte, statut et dates. Un rapport corrigé s'affiche sous la forme fixed-in-v<version>. Utilise le jeton d'API enregistré ou, à défaut, une licence Free installée.",
+        "descriptionShort": "Lister les rapports de retour et leur statut",
+        "optionStatus": "Uniquement ces statuts, séparés par des virgules (new, screening, quarantined, confirmed, planned, fixed, rejected)"
+      },
       "report": {
         "description": "Construit un rapport à partir de la dernière commande en échec (--last), d'une commande enregistrée (--command <n>) ou d'un simple message, affiche exactement ce qui serait envoyé, puis l'envoie après confirmation. Un agent sans --yes obtient l'aperçu et la commande d'envoi, jamais un envoi caché.",
         "descriptionShort": "Prévisualiser et envoyer un rapport de retour",
@@ -1248,6 +1253,10 @@
         "optionLast": "Utilise la dernière commande en échec",
         "optionListRecent": "Liste les commandes enregistrées puis quitte",
         "optionMessage": "Note libre à inclure (expurgée avant l'envoi)"
+      },
+      "show": {
+        "description": "Afficher un rapport de retour à partir de son identifiant (ou d'un préfixe unique), avec son statut, son nombre d'occurrences et ses dates.",
+        "descriptionShort": "Afficher un rapport de retour"
       }
     },
     "job": {
@@ -3650,11 +3659,21 @@
     "delegationCertRefused": "Le certificat de licence du serveur est refusé ({{code}}) ; demandez à l'opérateur d'exécuter : rdc server licence"
   },
   "feedback": {
+    "ambiguousId": "Plusieurs rapports commencent par « {{id}} » ; indiquez davantage de caractères de l'identifiant.",
     "badKind": "Type de rapport inconnu « {{kind}} » ; utilisez bug, feedback ou docs.",
+    "badStatus": "Statut inconnu « {{status}} » ; utilisez l'un de ceux-ci : {{allowed}}.",
     "confirm": "Envoyer ce rapport ?",
     "dailyLimit": "La limite quotidienne de retours ({{subject}}) est atteinte ; l'envoi sera de nouveau possible à partir de {{resetAt}}.",
     "dailyLimitNoReset": "La limite quotidienne de retours ({{subject}}) est atteinte ; réessayez demain (UTC).",
     "declined": "Rien n'a été envoyé.",
+    "fieldCommand": "Commande",
+    "fieldFingerprint": "Empreinte",
+    "fieldFirstSeen": "Première apparition",
+    "fieldId": "Identifiant",
+    "fieldKind": "Nature",
+    "fieldLastSeen": "Dernière apparition",
+    "fieldOccurrences": "Nombre d'occurrences",
+    "fieldStatus": "Statut",
     "hint": "Inattendu ? {{run}}",
     "hintDescription": "Envoyer un rapport de retour sur cet échec",
     "hintSummary": "Si cet échec est inattendu, signalez-le.",
@@ -3664,7 +3683,9 @@
     "noCredentialSummary": "Connectez-vous à un compte ou installez une licence gratuite, puis signalez à nouveau.",
     "noFailedCommand": "Aucune commande en échec n'est enregistrée pour l'instant ; utilisez --list-recent ou --message <text>.",
     "noRecent": "Aucune commande n'est encore enregistrée.",
+    "noReports": "Aucun rapport de retour.",
     "noSuchCommand": "Aucune commande enregistrée à l'index {{index}} ; voir rdc feedback report --list-recent.",
+    "noSuchReport": "Aucun rapport de retour avec l'identifiant « {{id}} » ; voir rdc feedback list.",
     "optionFree": "Installer une licence gratuite en créant un dépôt sur cette machine",
     "optionLogin": "Se connecter à un compte",
     "previewOnly": "Le rapport n'a pas été envoyé : l'envoi nécessite --yes.",

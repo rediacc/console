@@ -1240,6 +1240,11 @@
     "feedback": {
       "description": "Envie feedback estruturado ou um relatório de bug. O conteúdo é montado apenas com dados higienizados, exibido por inteiro e enviado após a confirmação (ou com --yes), usando o token de API salvo ou uma licença Free instalada.",
       "descriptionShort": "Reportar um bug ou enviar feedback",
+      "list": {
+        "description": "Liste os relatórios de feedback visíveis para esta máquina: ID, impressão digital curta, status e datas. Um relatório corrigido aparece como fixed-in-v<version>. Usa o token de API salvo ou, na falta dele, uma licença Free instalada.",
+        "descriptionShort": "Listar os relatórios de feedback e seu status",
+        "optionStatus": "Somente estes status, separados por vírgula (new, screening, quarantined, confirmed, planned, fixed, rejected)"
+      },
       "report": {
         "description": "Monta um relatório a partir do último comando com falha (--last), de um comando registrado (--command <n>) ou só de uma mensagem, mostra exatamente o que seria enviado e envia após a confirmação. Um agente sem --yes recebe a prévia e o comando para enviá-la, nunca um envio oculto.",
         "descriptionShort": "Ver a prévia e enviar um relatório de feedback",
@@ -1248,6 +1253,10 @@
         "optionLast": "Usa o último comando com falha",
         "optionListRecent": "Lista os comandos registrados e sai",
         "optionMessage": "Nota livre a incluir (higienizada antes do envio)"
+      },
+      "show": {
+        "description": "Mostra um relatório de feedback pelo ID (ou por um prefixo único dele), com status, número de ocorrências e datas.",
+        "descriptionShort": "Mostrar um relatório de feedback"
       }
     },
     "job": {
@@ -3650,11 +3659,21 @@
     "delegationCertRefused": "O certificado de licença do servidor foi recusado ({{code}}); peça ao operador para executar: rdc server licence"
   },
   "feedback": {
+    "ambiguousId": "Mais de um relatório começa com \"{{id}}\"; informe mais caracteres do ID.",
     "badKind": "Tipo de relatório desconhecido \"{{kind}}\"; use bug, feedback ou docs.",
+    "badStatus": "Status desconhecido \"{{status}}\"; use um destes: {{allowed}}.",
     "confirm": "Enviar este relatório?",
     "dailyLimit": "O limite diário de feedback ({{subject}}) foi atingido; o envio volta a ser possível a partir de {{resetAt}}.",
     "dailyLimitNoReset": "O limite diário de feedback ({{subject}}) foi atingido; tente novamente amanhã (UTC).",
     "declined": "Nada foi enviado.",
+    "fieldCommand": "Comando",
+    "fieldFingerprint": "Impressão digital",
+    "fieldFirstSeen": "Visto pela primeira vez",
+    "fieldId": "ID",
+    "fieldKind": "Tipo",
+    "fieldLastSeen": "Visto pela última vez",
+    "fieldOccurrences": "Ocorrências",
+    "fieldStatus": "Situação",
     "hint": "Inesperado? {{run}}",
     "hintDescription": "Enviar um relatório de feedback sobre esta falha",
     "hintSummary": "Se esta falha for inesperada, reporte-a.",
@@ -3664,7 +3683,9 @@
     "noCredentialSummary": "Entre em uma conta ou instale uma licença gratuita e reporte de novo.",
     "noFailedCommand": "Ainda não há nenhum comando com falha registrado; use --list-recent ou --message <text>.",
     "noRecent": "Ainda não há comandos registrados.",
+    "noReports": "Nenhum relatório de feedback.",
     "noSuchCommand": "Não há comando registrado no índice {{index}}; veja rdc feedback report --list-recent.",
+    "noSuchReport": "Nenhum relatório de feedback com o ID \"{{id}}\"; veja rdc feedback list.",
     "optionFree": "Instalar uma licença gratuita criando um repositório nesta máquina",
     "optionLogin": "Entrar em uma conta",
     "previewOnly": "O relatório não foi enviado: para enviar é preciso --yes.",

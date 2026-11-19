@@ -1240,6 +1240,11 @@
     "feedback": {
       "description": "構造化したフィードバックまたはバグ報告を送信します。内容はマスク済みのデータだけから作られ、全文が表示され、確認後(または --yes 指定時)に、保存済みの API トークンかインストール済みの Free ライセンスで送信されます。",
       "descriptionShort": "バグまたはフィードバックを報告",
+      "list": {
+        "description": "このマシンから見えるフィードバックレポートを一覧表示します。ID、短いフィンガープリント、ステータス、日付が表示されます。修正済みのレポートは fixed-in-v<version> と表示されます。保存済みの API トークンを使い、なければインストール済みの Free ライセンスを使います。",
+        "descriptionShort": "フィードバックレポートとそのステータスを一覧表示",
+        "optionStatus": "指定したステータスだけを対象にします(カンマ区切り: new, screening, quarantined, confirmed, planned, fixed, rejected)"
+      },
       "report": {
         "description": "直近の失敗したコマンド(--last)、記録済みのコマンド(--command <n>)、またはメッセージのみからレポートを作り、送信される内容をそのまま表示して、確認後に送信します。--yes のないエージェントにはプレビューと送信用のコマンドが返り、こっそり送信されることはありません。",
         "descriptionShort": "フィードバックのプレビューと送信",
@@ -1248,6 +1253,10 @@
         "optionLast": "直近の失敗したコマンドを使います",
         "optionListRecent": "記録済みのコマンドを一覧表示して終了します",
         "optionMessage": "レポートに含める自由記述のメモ(送信前にマスクされます)"
+      },
+      "show": {
+        "description": "ID(または一意に決まる先頭部分)を指定して、フィードバックレポートを 1 件表示します。ステータス、発生回数、日付も表示されます。",
+        "descriptionShort": "フィードバックレポートを 1 件表示"
       }
     },
     "job": {
@@ -3650,11 +3659,21 @@
     "delegationCertRefused": "サーバーのライセンス証明書が拒否されています ({{code}})。運用担当者に次のコマンドの実行を依頼してください: rdc server licence"
   },
   "feedback": {
+    "ambiguousId": "\"{{id}}\" で始まるレポートが複数あります。ID をもう少し長く指定してください。",
     "badKind": "不明な報告の種類 \"{{kind}}\" です。bug、feedback、docs のいずれかを指定してください。",
+    "badStatus": "不明なステータス \"{{status}}\" です。次のいずれかを指定してください: {{allowed}}",
     "confirm": "このレポートを送信しますか?",
     "dailyLimit": "フィードバックの 1 日の上限({{subject}})に達しました。{{resetAt}} から再び送信できます。",
     "dailyLimitNoReset": "フィードバックの 1 日の上限({{subject}})に達しました。明日(UTC)にもう一度お試しください。",
     "declined": "何も送信されませんでした。",
+    "fieldCommand": "コマンド",
+    "fieldFingerprint": "フィンガープリント",
+    "fieldFirstSeen": "初回検出",
+    "fieldId": "ID",
+    "fieldKind": "種類",
+    "fieldLastSeen": "最終検出",
+    "fieldOccurrences": "発生回数",
+    "fieldStatus": "ステータス",
     "hint": "想定外の動作ですか？ {{run}}",
     "hintDescription": "この失敗についてフィードバックレポートを送信します",
     "hintSummary": "この失敗が想定外の場合は、報告してください。",
@@ -3664,7 +3683,9 @@
     "noCredentialSummary": "アカウントにログインするか、無料ライセンスをインストールしてから、もう一度報告してください。",
     "noFailedCommand": "失敗したコマンドはまだ記録されていません。--list-recent か --message <text> を使ってください。",
     "noRecent": "記録されたコマンドはまだありません。",
+    "noReports": "フィードバックレポートはありません。",
     "noSuchCommand": "番号 {{index}} の記録済みコマンドはありません。rdc feedback report --list-recent を参照してください。",
+    "noSuchReport": "ID \"{{id}}\" のフィードバックレポートはありません。rdc feedback list を確認してください。",
     "optionFree": "このマシンにリポジトリを作成して無料ライセンスをインストールする",
     "optionLogin": "アカウントにログインする",
     "previewOnly": "レポートは送信されませんでした。送信するには --yes が必要です。",

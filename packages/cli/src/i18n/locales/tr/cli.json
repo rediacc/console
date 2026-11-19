@@ -1240,6 +1240,11 @@
     "feedback": {
       "description": "Yapılandırılmış geri bildirim veya hata raporu gönderin. Rapor yalnızca temizlenmiş verilerden oluşturulur, tam olarak gösterilir ve onaydan sonra (ya da --yes ile) kayıtlı API belirteci veya kurulu bir Free lisansla gönderilir.",
       "descriptionShort": "Hata veya geri bildirim raporu gönder",
+      "list": {
+        "description": "Bu makinede görünen geri bildirim raporlarını listeleyin: kimlik, kısa parmak izi, durum ve tarihler. Düzeltilmiş bir rapor fixed-in-v<version> olarak görünür. Kayıtlı API belirtecini, yoksa kurulu Free lisansı kullanır.",
+        "descriptionShort": "Geri bildirim raporlarını ve durumlarını listele",
+        "optionStatus": "Yalnızca bu durumlar, virgülle ayrılmış (new, screening, quarantined, confirmed, planned, fixed, rejected)"
+      },
       "report": {
         "description": "Başarısız olan son komuttan (--last), kayıtlı bir komuttan (--command <n>) veya yalnızca bir mesajdan rapor oluşturur, tam olarak nelerin gönderileceğini yazdırır ve onaydan sonra gönderir. --yes olmayan bir ajan önizlemeyi ve göndermek için gereken komutu alır, gizli gönderim asla yapılmaz.",
         "descriptionShort": "Geri bildirim raporunu önizle ve gönder",
@@ -1248,6 +1253,10 @@
         "optionLast": "Başarısız olan son komutu kullanır",
         "optionListRecent": "Kayıtlı komutları listeler ve çıkar",
         "optionMessage": "Rapora eklenecek serbest metin notu (gönderilmeden önce temizlenir)"
+      },
+      "show": {
+        "description": "Tek bir geri bildirim raporunu kimliğiyle (veya benzersiz bir önekiyle) durumu, tekrar sayısı ve tarihleriyle birlikte gösterin.",
+        "descriptionShort": "Tek bir geri bildirim raporunu göster"
       }
     },
     "job": {
@@ -3650,11 +3659,21 @@
     "delegationCertRefused": "Sunucunun lisans sertifikası reddedildi ({{code}}); operatörden şunu çalıştırmasını isteyin: rdc server licence"
   },
   "feedback": {
+    "ambiguousId": "Birden fazla rapor \"{{id}}\" ile başlıyor; kimliğin daha fazlasını girin.",
     "badKind": "Bilinmeyen rapor türü \"{{kind}}\"; bug, feedback veya docs kullanın.",
+    "badStatus": "Bilinmeyen durum \"{{status}}\"; şunlardan birini kullanın: {{allowed}}.",
     "confirm": "Bu rapor gönderilsin mi?",
     "dailyLimit": "Günlük geri bildirim sınırına ({{subject}}) ulaşıldı; gönderim {{resetAt}} zamanında yeniden açılacak.",
     "dailyLimitNoReset": "Günlük geri bildirim sınırına ({{subject}}) ulaşıldı; yarın (UTC) yeniden deneyin.",
     "declined": "Hiçbir şey gönderilmedi.",
+    "fieldCommand": "Komut",
+    "fieldFingerprint": "Parmak izi",
+    "fieldFirstSeen": "İlk görülme",
+    "fieldId": "Kimlik",
+    "fieldKind": "Tür",
+    "fieldLastSeen": "Son görülme",
+    "fieldOccurrences": "Tekrar sayısı",
+    "fieldStatus": "Durum",
     "hint": "Beklenmedik mi? {{run}}",
     "hintDescription": "Bu hata için geri bildirim raporu gönder",
     "hintSummary": "Bu hata beklenmedikse bildirin.",
@@ -3664,7 +3683,9 @@
     "noCredentialSummary": "Bir hesaba giriş yapın ya da ücretsiz bir lisans kurun, sonra yeniden bildirin.",
     "noFailedCommand": "Henüz kaydedilmiş başarısız bir komut yok; --list-recent veya --message <text> kullanın.",
     "noRecent": "Henüz kaydedilmiş komut yok.",
+    "noReports": "Geri bildirim raporu yok.",
     "noSuchCommand": "{{index}} sırasında kayıtlı komut yok; bkz. rdc feedback report --list-recent.",
+    "noSuchReport": "\"{{id}}\" kimlikli bir geri bildirim raporu yok; rdc feedback list komutuna bakın.",
     "optionFree": "Bu makinede bir repo oluşturarak ücretsiz lisans kur",
     "optionLogin": "Bir hesaba giriş yap",
     "previewOnly": "Rapor gönderilmedi: göndermek için --yes gerekir.",

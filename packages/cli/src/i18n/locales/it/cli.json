@@ -1240,6 +1240,11 @@
     "feedback": {
       "description": "Invia un feedback strutturato o una segnalazione di bug. Il contenuto viene creato solo con dati ripuliti, mostrato per intero e inviato dopo la conferma (o con --yes) usando il token API salvato o una licenza Free installata.",
       "descriptionShort": "Segnala un bug o invia un feedback",
+      "list": {
+        "description": "Elenca le segnalazioni di feedback visibili a questa macchina: ID, impronta breve, stato e date. Una segnalazione risolta appare come fixed-in-v<version>. Usa il token API salvato oppure, se manca, una licenza Free installata.",
+        "descriptionShort": "Elenca le segnalazioni di feedback e il loro stato",
+        "optionStatus": "Solo questi stati, separati da virgole (new, screening, quarantined, confirmed, planned, fixed, rejected)"
+      },
       "report": {
         "description": "Crea una segnalazione dall'ultimo comando fallito (--last), da un comando registrato (--command <n>) o da un semplice messaggio, mostra esattamente cosa verrebbe inviato e lo invia dopo la conferma. Un agente senza --yes riceve l'anteprima e il comando per inviarla, mai un invio nascosto.",
         "descriptionShort": "Mostra l'anteprima e invia una segnalazione",
@@ -1248,6 +1253,10 @@
         "optionLast": "Usa l'ultimo comando fallito",
         "optionListRecent": "Elenca i comandi registrati ed esce",
         "optionMessage": "Nota libera da includere (ripulita prima dell'invio)"
+      },
+      "show": {
+        "description": "Mostra una segnalazione di feedback dal suo ID (o da un prefisso univoco), con stato, numero di occorrenze e date.",
+        "descriptionShort": "Mostra una segnalazione di feedback"
       }
     },
     "job": {
@@ -3650,11 +3659,21 @@
     "delegationCertRefused": "Il certificato di licenza del server è rifiutato ({{code}}); chiedi all'operatore di eseguire: rdc server licence"
   },
   "feedback": {
+    "ambiguousId": "Più di una segnalazione inizia con \"{{id}}\"; indica una parte più lunga dell'ID.",
     "badKind": "Tipo di segnalazione sconosciuto \"{{kind}}\"; usa bug, feedback o docs.",
+    "badStatus": "Stato sconosciuto \"{{status}}\"; usa uno tra: {{allowed}}.",
     "confirm": "Inviare questa segnalazione?",
     "dailyLimit": "Il limite giornaliero di feedback ({{subject}}) è stato raggiunto; potrai inviare di nuovo da {{resetAt}}.",
     "dailyLimitNoReset": "Il limite giornaliero di feedback ({{subject}}) è stato raggiunto; riprova domani (UTC).",
     "declined": "Non è stato inviato nulla.",
+    "fieldCommand": "Comando",
+    "fieldFingerprint": "Impronta",
+    "fieldFirstSeen": "Prima occorrenza",
+    "fieldId": "ID",
+    "fieldKind": "Tipo",
+    "fieldLastSeen": "Ultima occorrenza",
+    "fieldOccurrences": "Occorrenze",
+    "fieldStatus": "Stato",
     "hint": "Inatteso? {{run}}",
     "hintDescription": "Invia una segnalazione di feedback su questo errore",
     "hintSummary": "Se questo errore è inatteso, segnalalo.",
@@ -3664,7 +3683,9 @@
     "noCredentialSummary": "Accedi a un account oppure installa una licenza gratuita, poi segnala di nuovo.",
     "noFailedCommand": "Non è ancora stato registrato alcun comando fallito; usa --list-recent oppure --message <text>.",
     "noRecent": "Non è ancora stato registrato alcun comando.",
+    "noReports": "Nessuna segnalazione di feedback.",
     "noSuchCommand": "Nessun comando registrato all'indice {{index}}; vedi rdc feedback report --list-recent.",
+    "noSuchReport": "Nessuna segnalazione di feedback con ID \"{{id}}\"; vedi rdc feedback list.",
     "optionFree": "Installa una licenza gratuita creando un repository su questa macchina",
     "optionLogin": "Accedi a un account",
     "previewOnly": "La segnalazione non è stata inviata: per inviarla serve --yes.",

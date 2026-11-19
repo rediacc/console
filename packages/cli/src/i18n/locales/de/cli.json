@@ -1240,6 +1240,11 @@
     "feedback": {
       "description": "Strukturiertes Feedback oder einen Fehlerbericht einreichen. Der Bericht wird nur aus bereinigten Daten erstellt, vollständig angezeigt und nach Bestätigung (oder mit --yes) mit dem gespeicherten API-Token oder einer installierten Free-Lizenz gesendet.",
       "descriptionShort": "Fehler oder Feedback melden",
+      "list": {
+        "description": "Die Feedback-Berichte auflisten, die für diesen Rechner sichtbar sind: ID, kurzer Fingerabdruck, Status und Datumsangaben. Ein behobener Bericht erscheint als fixed-in-v<version>. Verwendet den gespeicherten API-Token oder, falls keiner vorhanden ist, eine installierte Free-Lizenz.",
+        "descriptionShort": "Feedback-Berichte und ihren Status auflisten",
+        "optionStatus": "Nur diese Status, durch Kommas getrennt (new, screening, quarantined, confirmed, planned, fixed, rejected)"
+      },
       "report": {
         "description": "Aus dem zuletzt fehlgeschlagenen Befehl (--last), einem aufgezeichneten Befehl (--command <n>) oder nur aus einer Nachricht einen Bericht erstellen, genau anzeigen, was gesendet würde, und nach Bestätigung senden. Ein Agent ohne --yes erhält die Vorschau und den Befehl zum Senden, nie einen versteckten Versand.",
         "descriptionShort": "Bericht in der Vorschau ansehen und senden",
@@ -1248,6 +1253,10 @@
         "optionLast": "Den zuletzt fehlgeschlagenen Befehl verwenden",
         "optionListRecent": "Aufgezeichnete Befehle auflisten und beenden",
         "optionMessage": "Freitext-Hinweis für den Bericht (wird vor dem Senden bereinigt)"
+      },
+      "show": {
+        "description": "Einen Feedback-Bericht anhand seiner ID (oder eines eindeutigen Präfixes davon) anzeigen, mit Status, Anzahl der Vorkommen und Datumsangaben.",
+        "descriptionShort": "Einen Feedback-Bericht anzeigen"
       }
     },
     "job": {
@@ -3650,11 +3659,21 @@
     "delegationCertRefused": "Das Lizenzzertifikat des Servers wird abgelehnt ({{code}}); den Betreiber bitten, Folgendes auszuführen: rdc server licence"
   },
   "feedback": {
+    "ambiguousId": "Mehr als ein Bericht beginnt mit \"{{id}}\"; gib mehr von der ID an.",
     "badKind": "Unbekannte Berichtsart \"{{kind}}\"; verwende bug, feedback oder docs.",
+    "badStatus": "Unbekannter Status \"{{status}}\"; verwende einen von: {{allowed}}.",
     "confirm": "Diesen Bericht senden?",
     "dailyLimit": "Das Tageslimit für Feedback ({{subject}}) ist erreicht; Meldungen sind ab {{resetAt}} wieder möglich.",
     "dailyLimitNoReset": "Das Tageslimit für Feedback ({{subject}}) ist erreicht; versuche es morgen (UTC) erneut.",
     "declined": "Es wurde nichts gesendet.",
+    "fieldCommand": "Befehl",
+    "fieldFingerprint": "Fingerabdruck",
+    "fieldFirstSeen": "Zuerst gesehen",
+    "fieldId": "ID",
+    "fieldKind": "Art",
+    "fieldLastSeen": "Zuletzt gesehen",
+    "fieldOccurrences": "Vorkommen",
+    "fieldStatus": "Status",
     "hint": "Unerwartet? {{run}}",
     "hintDescription": "Feedback-Meldung zu diesem Fehler senden",
     "hintSummary": "Wenn dieser Fehler unerwartet ist, bitte melden.",
@@ -3664,7 +3683,9 @@
     "noCredentialSummary": "Melde dich bei einem Konto an oder installiere eine kostenlose Lizenz und melde dann erneut.",
     "noFailedCommand": "Es ist noch kein fehlgeschlagener Befehl aufgezeichnet; nutze --list-recent oder --message <text>.",
     "noRecent": "Es sind noch keine Befehle aufgezeichnet.",
+    "noReports": "Keine Feedback-Berichte.",
     "noSuchCommand": "Kein aufgezeichneter Befehl mit Index {{index}}; siehe rdc feedback report --list-recent.",
+    "noSuchReport": "Kein Feedback-Bericht mit der ID \"{{id}}\"; siehe rdc feedback list.",
     "optionFree": "Eine kostenlose Lizenz installieren, indem auf diesem Rechner ein Repository angelegt wird",
     "optionLogin": "Bei einem Konto anmelden",
     "previewOnly": "Der Bericht wurde nicht gesendet: zum Senden ist --yes nötig.",

@@ -1240,6 +1240,11 @@
     "feedback": {
       "description": "Esita struktureeritud tagasiside või veaaruanne. Aruanne koostatakse ainult puhastatud andmetest, kuvatakse täielikult ja saadetakse pärast kinnitamist (või võtmega --yes) salvestatud API-tokeni või paigaldatud Free-litsentsiga.",
       "descriptionShort": "Teata veast või saada tagasisidet",
+      "list": {
+        "description": "Kuva sellel masinal nähtavad tagasisidearuanded: ID, lühike sõrmejälg, olek ja kuupäevad. Parandatud aruanne kuvatakse kujul fixed-in-v<version>. Kasutab salvestatud API-tokenit või selle puudumisel paigaldatud Free-litsentsi.",
+        "descriptionShort": "Loetle tagasisidearuanded ja nende olek",
+        "optionStatus": "Ainult need olekud, komadega eraldatud (new, screening, quarantined, confirmed, planned, fixed, rejected)"
+      },
       "report": {
         "description": "Koostab aruande viimasest ebaõnnestunud käsust (--last), salvestatud käsust (--command <n>) või ainult sõnumist, näitab täpselt, mis saadetaks, ja saadab selle pärast kinnitamist. Agent, kes ei kasuta võtit --yes, saab eelvaate ja saatmiskäsu, mitte kunagi varjatud saatmist.",
         "descriptionShort": "Vaata aruande eelvaadet ja saada see",
@@ -1248,6 +1253,10 @@
         "optionLast": "Kasuta viimast ebaõnnestunud käsku",
         "optionListRecent": "Loetleb salvestatud käsud ja lõpetab",
         "optionMessage": "Lisatav vabatekstiline märkus (puhastatakse enne saatmist)"
+      },
+      "show": {
+        "description": "Kuva üks tagasisidearuanne selle ID või ainulaadse eesliite järgi koos oleku, esinemiste arvu ja kuupäevadega.",
+        "descriptionShort": "Kuva üks tagasisidearuanne"
       }
     },
     "job": {
@@ -3650,11 +3659,21 @@
     "delegationCertRefused": "Serveri litsentsisertifikaat on keelatud ({{code}}); palu operaatoril käivitada: rdc server licence"
   },
   "feedback": {
+    "ambiguousId": "Rohkem kui üks aruanne algab tekstiga \"{{id}}\"; anna ID-st rohkem.",
     "badKind": "Tundmatu aruande liik \"{{kind}}\"; kasuta väärtust bug, feedback või docs.",
+    "badStatus": "Tundmatu olek \"{{status}}\"; kasuta üht neist: {{allowed}}.",
     "confirm": "Kas saadan selle aruande?",
     "dailyLimit": "Päevane tagasisidelimiit ({{subject}}) on täis; saatmine avaneb uuesti {{resetAt}}.",
     "dailyLimitNoReset": "Päevane tagasisidelimiit ({{subject}}) on täis; proovi homme (UTC) uuesti.",
     "declined": "Midagi ei saadetud.",
+    "fieldCommand": "Käsk",
+    "fieldFingerprint": "Sõrmejälg",
+    "fieldFirstSeen": "Esimest korda nähtud",
+    "fieldId": "ID",
+    "fieldKind": "Liik",
+    "fieldLastSeen": "Viimati nähtud",
+    "fieldOccurrences": "Esinemisi",
+    "fieldStatus": "Olek",
     "hint": "Ootamatu? {{run}}",
     "hintDescription": "Saada selle tõrke kohta tagasisideteade",
     "hintSummary": "Kui see tõrge on ootamatu, anna sellest teada.",
@@ -3664,7 +3683,9 @@
     "noCredentialSummary": "Logi kontole sisse või paigalda tasuta litsents ning teata siis uuesti.",
     "noFailedCommand": "Ebaõnnestunud käsku pole veel salvestatud; kasuta --list-recent või --message <text>.",
     "noRecent": "Ühtegi käsku pole veel salvestatud.",
+    "noReports": "Tagasisidearuandeid pole.",
     "noSuchCommand": "Indeksil {{index}} pole salvestatud käsku; vt rdc feedback report --list-recent.",
+    "noSuchReport": "Tagasisidearuannet ID-ga \"{{id}}\" ei ole; vaata rdc feedback list.",
     "optionFree": "Paigalda tasuta litsents, luues sellel masinal hoidla",
     "optionLogin": "Logi kontole sisse",
     "previewOnly": "Aruannet ei saadetud: saatmiseks on vaja võtit --yes.",
