@@ -43,3 +43,12 @@ def test_non_work_tree_still_walks(tmp_path: pathlib.Path) -> None:
         ".ci/scratch/ignored.sh",
         ".ci/scripts/tracked.sh",
     ]
+
+
+def test_an_untracked_file_is_not_listed_until_it_is_added(tmp_path: pathlib.Path) -> None:
+    """Finding 84023613.4: CI lints a fresh checkout, so a new untracked file is not an input until it is added to the index."""
+    root = _tree(tmp_path, git=True)
+    (root / ".ci/scripts/new.sh").write_text("x\n", encoding="utf-8")
+    assert _listed(root) == [".ci/scripts/tracked.sh"]
+    _git(root, "add", ".ci/scripts/new.sh")
+    assert _listed(root) == [".ci/scripts/new.sh", ".ci/scripts/tracked.sh"]

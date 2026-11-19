@@ -47,3 +47,13 @@ def test_non_work_tree_still_walks(tmp_path: pathlib.Path) -> None:
     hits, files_read = gate.grep_hits(root)
     assert files_read == 2
     assert len({h.split(":", 1)[0] for h in hits}) == 2
+
+
+def test_a_work_tree_with_nothing_tracked_under_a_scan_dir_walks_it(tmp_path: pathlib.Path) -> None:
+    """Finding 84023613.3: the documented fallback. A listing that comes back empty for a directory that exists is read by walking it, so a broken listing cannot read as a clean tree; the populated-index control above shows an index is not walked."""
+    root = _tree(tmp_path, git=True)
+    _git(root, "rm", "-r", "-q", "--cached", ".ci/scripts")
+    hits, files_read = gate.grep_hits(root)
+    # The walk reads the whole directory, ignored file included: that is the price of not trusting an empty listing, and it applies only to a scan dir with nothing tracked.
+    assert files_read == 2
+    assert len({h.split(":", 1)[0] for h in hits}) == 2

@@ -61,7 +61,7 @@ MINIMAL_CONFIG = 'local account_json="{\\"accountServer\\":\\"$account_server\\"
 
 
 def norm(text: str) -> str:
-    """Mask the kernel-assigned mock port, and the interpreter-version lines of a CPython traceback (`differential.mask_python_traceback`: the `-c` source echo and the caret ruler, which 3.14 draws and the runner's 3.12 does not). Nothing else is normalized."""
+    """Mask the kernel-assigned mock port, the `worker_full` accountServer value (the twin names the live origin, the port the mock; `test_worker_full_hands_the_mock_as_its_account_server` pins the port side), and the interpreter-version lines of a CPython traceback (`differential.mask_python_traceback`: the `-c` source echo and the caret ruler, which 3.14 draws and the runner's 3.12 does not). Nothing else is normalized."""
     text = WORKER_FULL_RE.sub(r"\1<server>", PORT_RE.sub("127.0.0.1:PORT", text))
     return diff.mask_python_traceback(text)
 
@@ -198,6 +198,15 @@ def test_real_tree_agrees() -> None:
     assert old.stdout.endswith("\nPassed: 6\nFailed: 0\n")
     assert old.stderr == ""
     assert_same(old, new)
+
+
+def test_worker_full_hands_the_mock_as_its_account_server() -> None:
+    """Finding 84023613.2: the differential masks this value on both sides, so the port's own value is pinned here, the loopback mock and nothing else."""
+    new = _run(PORT, ROOT)
+    assert new.returncode == 0, new.stderr
+    assert re.search(
+        r"worker_full: channel=edge accountServer=http://127\.0\.0\.1:\d+/absent\n", new.stdout
+    ), new.stdout
 
 
 def test_unmutated_fixture_is_the_same_run(tmp_path: pathlib.Path) -> None:
