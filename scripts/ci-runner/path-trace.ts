@@ -15,7 +15,7 @@
  *   - a path holding a glob metacharacter the hasher refuses (`?`, `[`, `{`, or `*`) folds to its nearest clean ancestor directory;
  *   - reads already inside GLOBAL_INPUTS are dropped, since every gate with `paths` hashes those anyway.
  *
- * WHEN THE ANSWER IS "WHOLE TREE", and it is written down with its reason rather than guessed: a gate that connects to an address that is neither loopback nor a unix socket (reason `network`: its verdict can move with nothing in the tree moving), a gate that touches git metadata (its verdict depends on history, on what files hold through the index, or on an index command other than a name-only `git ls-files`), reaches more than WHOLE_TREE_FRACTION of the tracked entries through its content globs (`lists` and `names` hash names, so they do not count toward that line), reads, lists and names nothing tracked at all, or exits non-zero under the trace (a red run may have stopped before reading everything). Non-gate entries and carry-exempt rows with no `kind` are not traced. A carry-exempt row WITH a kind (carry-exempt.json `network`, `history` or `cache`) is traced, and that kind waives its own whole-tree reason and no other (F2 B7).
+ * WHEN THE ANSWER IS "WHOLE TREE", and it is written down with its reason rather than guessed: a gate that connects to an address that is neither loopback nor a unix socket (reason `network`: its verdict can move with nothing in the tree moving), a gate that touches git metadata (its verdict depends on history, on what files hold through the index, or on an index command other than a name-only `git ls-files`), reaches more than WHOLE_TREE_FRACTION of the tracked entries through its content globs (`lists` and `names` hash names, so they do not count toward that line), reads, lists and names nothing tracked at all, or exits non-zero under the trace (a red run may have stopped before reading everything). Under `--all-whole-tree`, non-gate entries and carry-exempt rows with no `kind` are not traced; an explicit `--gate <id>` traces the entry it names. A carry-exempt row WITH a kind (carry-exempt.json `network`, `history` or `cache`) is traced, and that kind waives its own whole-tree reason and no other (F2 B7).
  *
  * WHAT IT WRITES with `--write`, and nothing else: the entry in scripts/ci-runner/manifest.ts (each non-empty one of `paths`, `lists` and `names`, then `pathsOrigin: 'traced'`, placed before `leaves`, gen-manifest region markers repaired around it), the same keys in scripts/ci-runner/gates.lock.json, and one row per traced gate in scripts/ci-runner/trace-ledger.ts, which also records every whole-tree verdict with its reason. An entry whose `paths` a human declared (`pathsOrigin: 'declared'`) is refused, never overwritten, unless `--replace-declared` names that intent: the honesty gate (trace-honest.ts) judges a declared set, and this tool replaces one only when asked, with the traced set or, for a whole-tree verdict, with none.
  *
@@ -1949,16 +1949,28 @@ export function reemitRegions(withMarkers: readonly string[], liftedIdLine: stri
   const generated: boolean[] = [];
   let inRegion = false;
   let open: { gen: boolean; lifted: boolean } | undefined;
-  for (const l of withMarkers) {
-    if (BEGIN_RE.test(l)) inRegion = true;
-    else if (END_RE.test(l)) inRegion = false;
-    else if (l === '  {') open = { gen: inRegion, lifted: false };
+  for (const [at, l] of withMarkers.entries()) {
+    if (BEGIN_RE.test(l)) {
+      if (inRegion)
+        throw new Error(
+          `${MANIFEST_REL}: region opened at line ${at + 1} inside an open region; refusing to re-emit regions`
+        );
+      inRegion = true;
+    } else if (END_RE.test(l)) {
+      if (!inRegion)
+        throw new Error(
+          `${MANIFEST_REL}: region end at line ${at + 1} with no open region; refusing to re-emit regions`
+        );
+      inRegion = false;
+    } else if (l === '  {') open = { gen: inRegion, lifted: false };
     else if (open !== undefined && l === liftedIdLine) open.lifted = true;
     else if (open !== undefined && l === '  },') {
       generated.push(open.gen && !open.lifted);
       open = undefined;
     }
   }
+  if (inRegion)
+    throw new Error(`${MANIFEST_REL}: a region never closes; refusing to re-emit regions`);
   const lines = withMarkers.filter((l) => !BEGIN_RE.test(l) && !END_RE.test(l));
   const spans = entrySpans(lines);
   if (spans.length !== generated.length)
@@ -2348,6 +2360,11 @@ export function exemptKinds(root: string): Map<string, string | null> {
   return exemptRowsOf(fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null);
 }
 
+/** Whether the entry's scoped inputs are a human's: it declares `paths`, `lists` or `names` and they are not marked as traced. An entry with a set and NO `pathsOrigin` is declared too. */
+export function declaresInputs(e: LockEntry): boolean {
+  return SCOPE_FIELDS.some((f) => (e[f] ?? []).length > 0) && e.pathsOrigin !== TRACED_ORIGIN;
+}
+
 /**
  * Why --all-whole-tree leaves an entry untraced, or undefined when it traces it. A carry-exempt row with no `kind` is refused: nothing says which whole-tree reason its exemption stands for. A row WITH a kind is traced, and `fold` waives that kind's reason alone (F2 B7), so the trace still names every other reason it reads.
  */
@@ -2355,8 +2372,7 @@ export function untracedReason(
   e: LockEntry,
   exempt: ReadonlyMap<string, string | null>
 ): string | undefined {
-  const scoped = SCOPE_FIELDS.some((f) => (e[f] ?? []).length > 0);
-  if (scoped && e.pathsOrigin !== TRACED_ORIGIN) return 'declares paths already';
+  if (declaresInputs(e)) return 'declares paths already';
   if (!e.gate)
     return 'not a gate: a prerequisite or an operator command, never judged, so never carried';
   if (exempt.has(e.id) && (exempt.get(e.id) ?? null) === null)
@@ -2485,12 +2501,7 @@ async function main(argv: string[]): Promise<number> {
       return 2;
     }
     // Refused before the trace, not after it: a declared set is a human's claim, replaced only on request.
-    if (
-      args.write &&
-      !args.replaceDeclared &&
-      e.pathsOrigin !== undefined &&
-      e.pathsOrigin !== TRACED_ORIGIN
-    ) {
+    if (args.write && !args.replaceDeclared && declaresInputs(e)) {
       console.error(
         `path-trace: ${id} carries pathsOrigin '${e.pathsOrigin}': a declared set is judged by trace-honest.ts, never overwritten by a trace. Add --replace-declared to replace it with the traced set (or with none, on a whole-tree verdict).`
       );
@@ -2932,6 +2943,38 @@ async function selftest(): Promise<number> {
   check(
     v11.kind === 'paths' && v11.paths.join(',') === 'a/one.txt' && v11.lists === undefined,
     'profiler hook and out-of-repo reads and listings are not inputs'
+  );
+
+  // The profiler rule, with the file TRACKED: without the rule a tracked profile file a gate never meant to read would be a path (ffa5756e.4).
+  const profileView: RepoView = { ...view, files: [...view.files, '.claude/hooks/profile/bash_env.sh'] };
+  const vProfile = attribute(
+    {
+      files: new Set(['/r/a/one.txt', '/r/.claude/hooks/profile/bash_env.sh']),
+      listed: new Set(),
+      execs: [],
+    },
+    profileView
+  );
+  check(
+    !vProfile.reads.has('.claude/hooks/profile/bash_env.sh') && vProfile.reads.has('a/one.txt'),
+    'a TRACKED profiler hook is ignored by its prefix; CONTROL: an ordinary tracked read stays'
+  );
+  // A dependency read names the root lockfile when it is tracked (1b2c643e.3).
+  const lockView: RepoView = { ...view, files: [...view.files, 'package-lock.json'] };
+  check(
+    attribute(mk(['node_modules/x/index.js']), lockView).reads.has('package-lock.json') &&
+      !attribute(mk(['node_modules/x/index.js']), view).reads.has('package-lock.json') &&
+      !attribute(mk(['a/one.txt']), lockView).reads.has('package-lock.json'),
+    'a node_modules read names the tracked root lockfile; CONTROL: no lockfile tracked, or no dependency read, names none'
+  );
+  // A set with no pathsOrigin is declared, not overwritable (ffa5756e.2).
+  const base = { id: 'g:x', run: 'x', gate: true } as unknown as LockEntry;
+  check(
+    declaresInputs({ ...base, paths: ['a/**'] } as LockEntry) &&
+      declaresInputs({ ...base, paths: ['a/**'], pathsOrigin: 'declared' } as LockEntry) &&
+      !declaresInputs({ ...base, paths: ['a/**'], pathsOrigin: TRACED_ORIGIN } as LockEntry) &&
+      !declaresInputs(base),
+    'declaresInputs: a set with no origin or a declared one is a human\'s; a traced set and no set are not'
   );
 
   // W2.3: discovery is not history, history is still history, the network is its own verdict.
@@ -3685,6 +3728,56 @@ async function selftest(): Promise<number> {
       m1.includes('  // >>> gen-manifest: region 2'),
     'a middle entry splits its generated region in two, renumbered'
   );
+  // A BROKEN MARKER STRUCTURE IS REFUSED, never repaired by stripping (35e89088.1).
+  const refuses = (lines: string[]): boolean => {
+    try {
+      reemitRegions(lines, "    id: 'none',");
+      return false;
+    } catch {
+      return true;
+    }
+  };
+  const balanced = manifest.split('\n');
+  const firstBegin = balanced.findIndex((l) => BEGIN_RE.test(l));
+  const firstEnd = balanced.findIndex((l) => END_RE.test(l));
+  check(!refuses(balanced), 'CONTROL: the balanced manifest re-emits without refusing');
+  check(
+    refuses(balanced.filter((_l, i) => i !== firstEnd)),
+    'a BEGIN marker that never closes is refused'
+  );
+  check(
+    refuses(balanced.filter((_l, i) => i !== firstBegin)),
+    'an END marker with no BEGIN is refused'
+  );
+  // THE LEDGER STAMP IS THE TRACE'S START, not the apply time (35e89088.2).
+  const wroot = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-stamp-'));
+  try {
+    for (const rel of [MANIFEST_REL, LOCK_REL]) {
+      fs.mkdirSync(path.dirname(path.join(wroot, rel)), { recursive: true });
+      fs.writeFileSync(path.join(wroot, rel), rel === MANIFEST_REL ? manifest : '[]\n');
+    }
+    const started = Date.UTC(2020, 0, 2, 3, 4, 59);
+    writeResult(
+      wroot,
+      {
+        id: 'g:z',
+        verdict: { kind: 'whole-tree', reason: 'x', reads: 0, listed: 0, coveragePct: 0 },
+        exit: 0,
+        seconds: 1,
+        ignored: new Map(),
+        outputTail: '',
+        raw: { files: [], listed: [], execs: [], startedMs: started },
+      } as unknown as GateResult,
+      'tree1'
+    );
+    const row = parseLedger(fs.readFileSync(path.join(wroot, LEDGER_REL), 'utf8'))['g:z'];
+    check(
+      row?.tracedAt === '2020-01-02T03:04Z',
+      `the ledger stamps the trace start, got ${row?.tracedAt}`
+    );
+  } finally {
+    fs.rmSync(wroot, { recursive: true, force: true });
+  }
   const withProse = manifest.replace(
     "  {\n    id: 'g:c',",
     "  // prose about g:c\n  {\n    id: 'g:c',"
