@@ -3685,7 +3685,7 @@
     "noRecent": "Henüz kaydedilmiş komut yok.",
     "noReports": "Geri bildirim raporu yok.",
     "noSuchCommand": "{{index}} sırasında kayıtlı komut yok; bkz. rdc feedback report --list-recent.",
-    "noSuchReport": "\"{{id}}\" kimlikli bir geri bildirim raporu yok; rdc feedback list komutuna bakın.",
+    "noSuchReport": "\"{{id}}\" kimlikli bir geri bildirim raporu yok; raporların listesi için: rdc feedback list.",
     "optionFree": "Bu makinede bir repo oluşturarak ücretsiz lisans kur",
     "optionLogin": "Bir hesaba giriş yap",
     "previewOnly": "Rapor gönderilmedi: göndermek için --yes gerekir.",
