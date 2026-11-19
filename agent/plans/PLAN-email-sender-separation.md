@@ -133,9 +133,10 @@ All steps run through `./rdc.sh --config eu-bench term connect mail@hostinger -c
 5. **ManageSieve (H4), within the renet rules (Context 16).** `ENABLE_MANAGESIEVE=1` goes into the `mail-server` service's `environment` in `mail/docker-compose.yml`, applied with `renet compose -- up -d mail-server` from the repo directory, never `docker compose` and never `sudo`. No `ports:` entry, no `rediacc.tcp_ports` label and no machine infra TCP port is added, so port 4190 listens only on the service's renet loopback IP inside the repo's /26 and is unreachable from the internet and from other repos. If H0 shows Dovecot's `listen` set from the Rediaccfile the way `postfix-main.cf` is, the change follows that generator and uses `${MAIL_SERVER_IP}` at `up` time, never a hard-coded 127.x address in a stored file. Roundcube's `managesieve` plugin, if enabled, points at the service name `mail-server` port 4190, never an IP. The recreate costs a short IMAP reconnect; hostinger has no maintenance window.
 
 ## Tasks
-- [ ] S0 [live] Secret-store entries: create `CONTACT_FROM_EMAIL`, `ALERTS_FROM_EMAIL`, `CONTACT_NOTIFY_EMAIL` and `ALERTS_NOTIFY_EMAIL` in bws with the Design 2 cloud values, bound to the production account deploy profile and the deploy-bench profiles; set `SALES_NOTIFY_EMAIL` to `contact@rediacc.com`; confirm `STRIPE_SANDBOX_WEBHOOK_SECRET` is bound for bench (R1's webhook legs need it). The new ids go to E1.
+- [x] S0 [live] Secret-store entries: create `CONTACT_FROM_EMAIL`, `ALERTS_FROM_EMAIL`, `CONTACT_NOTIFY_EMAIL` and `ALERTS_NOTIFY_EMAIL` in bws with the Design 2 cloud values, bound to the production account deploy profile and the deploy-bench profiles; set `SALES_NOTIFY_EMAIL` to `contact@rediacc.com`; confirm `STRIPE_SANDBOX_WEBHOOK_SECRET` is bound for bench (R1's webhook legs need it). The new ids go to E1.
   Owns: none (store writes only). Accept: `bws_env exec --profile deploy-bench-eu -- python3 -c` printing the four names as set (values never printed), and the four ids recorded in the tick.
   Needs: none
+    (ticked) 2026-11-19T22:12:54Z by d778be9d: commit:0ce5f73fe; bws store-from-env --create for the four entries all MATCH, SALES_NOTIFY_EMAIL MATCH; bws_env exec --profile deploy-bench-eu prints all four names set (E1 writer run)
 - [x] T1 [writer] Transport (Design 1): `replyTo` and `headers` in ses.ts and smtp.ts, absent fields leaving the payload unchanged; the AWS SendEmail reference for `ReplyToAddresses` and `Content.Simple.Headers` quoted in the report.
   Owns: private/account/src/services/email-transports/ses.ts, private/account/src/services/email-transports/smtp.ts, private/account/tests/integration/email-transport.test.ts
   Depends on: none
@@ -159,7 +160,7 @@ All steps run through `./rdc.sh --config eu-bench term connect mail@hostinger -c
     - a transactional send (`sendMagicLinkEmail`) still goes From `AWS_SES_FROM` with no Reply-To and no header (control: today's behaviour);
     - the allowlist and reserved-domain drops still apply to the new recipients.
     (ticked) 2026-11-19T13:48:56Z by d778be9d: commit:bf300dcbf (private/account 37b1676); email-routing/capture/reserved-domain vitest passed (53 with transport), tsc rc 0, lint rc 0
-- [ ] E1 [writer] Deploy plumbing (Design 4): the four keys through set_account_worker_secrets.py (KEYS and REQUIRED_NONEMPTY), deploy_bench.py (defaults beside `DEFAULT_SES_FROM`), cd-deploy-account.yml (the bws mapping and the step env), bws-secret-map.json (S0's ids), secret-supply.json, env-manifest.json, python-env-registry.json and the secrets comment in private/account/wrangler.toml.
+- [x] E1 [writer] Deploy plumbing (Design 4): the four keys through set_account_worker_secrets.py (KEYS and REQUIRED_NONEMPTY), deploy_bench.py (defaults beside `DEFAULT_SES_FROM`), cd-deploy-account.yml (the bws mapping and the step env), bws-secret-map.json (S0's ids), secret-supply.json, env-manifest.json, python-env-registry.json and the secrets comment in private/account/wrangler.toml.
   Owns: .ci/rediacc_ci/deploy/set_account_worker_secrets.py, .ci/rediacc_ci/tests/test_deploy_set_account_worker_secrets.py, .ci/rediacc_ci/ops/deploy_bench.py, .ci/rediacc_ci/tests/test_ops_deploy_bench.py, .github/workflows/cd-deploy-account.yml, .ci/config/bws-secret-map.json, .ci/config/secret-supply.json, .ci/config/env-manifest.json, .ci/config/python-env-registry.json, private/account/wrangler.toml
   Depends on: S0 (the store ids)
   Needs: none
@@ -167,6 +168,7 @@ All steps run through `./rdc.sh --config eu-bench term connect mail@hostinger -c
     - the production push refuses an empty `ALERTS_NOTIFY_EMAIL` (and each of the other three) with the guard message;
     - the bench payload carries the four defaults, and an explicit environment value wins;
     - no value reaches a child argv (the existing `test_no_secret_value_reaches_any_child_argv` still passes with the new keys).
+    (ticked) 2026-11-19T22:12:52Z by d778be9d: commit:0ce5f73fe (console 417bd7311 + a171630fa, account 587b6ed); pytest 131 passed; secret-supply, env-manifest, python-env-registry, literal-sources, types:incremental rc 0
 - [x] K1 [writer] Docs: private/account/docs/email/architecture.md gains the sender table (Design 2), the digest (Design 3) and the receiver flow for the two lists; private/account/docs/infra/mail-server.md gains the two mailboxes, the ManageSieve setting and its loopback-only reasoning, the recipient-list edit recipe, and the new Sieve table rows. Written from the design; H0-H4 correct any line the live survey contradicts.
   Owns: private/account/docs/email/architecture.md, private/account/docs/infra/mail-server.md
   Depends on: none
