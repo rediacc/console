@@ -10,7 +10,9 @@ from rediacc_ci.feedback import quarantine
 CASES = {
     "url": ("see https://evil.example/x for details", "see the docs page for details"),
     "url-www": ("open www.evil-site.com now", "open the www folder now"),
-    "url-scrubbed": ("fetch <url:host-redacted> failed", "fetch <host> failed"),
+    "url-host-path": ("download evil.zone/payload now", "download <host>/payload now"),
+    "url-protocol-relative": ("load //evil.zone now", "load a/b//c now"),
+    "url-defanged": ("visit hxxps evil[.]zone", "visit the evil zone"),
     "shell-curl": ("then curl the installer", "then cure the installer"),
     "shell-wget": ("wget the file", "get the file"),
     "shell-pipe-sh": ("cat x | bash", "cat x | less"),
@@ -94,3 +96,31 @@ def test_first_rule_in_table_order_wins():
 
 def test_non_string_values_are_ignored():
     assert quarantine.screen({"message": None, "versions": [1, None], "argv": 3}) is None
+
+
+def test_scrubber_marker_alone_passes_stage1():
+    # The account's own scrubber (packages/shared/src/feedback/scrub.ts) writes this marker in place of every URL, so it is server text, not a trigger.
+    item = {
+        "kind": "bug",
+        "commandPath": "subscription login",
+        "errorMessage": "request to <url:host-redacted> failed: ECONNREFUSED",
+        "stderrTail": "Error: fetch <url:host-redacted> returned 502\n",
+        "message": "login fails since the update",
+    }
+    assert quarantine.screen(item) is None
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "request to <url:host-redacted> failed, then https://evil.example/x",
+        "<url:host-redacted> and www.evil-site.com",
+        "<url:host-redacted>evil.zone/payload",
+    ],
+    ids=["raw-scheme", "raw-www", "missed-host-path"],
+)
+def test_url_text_beside_the_marker_is_still_quarantined(text):
+    hit = quarantine.screen({"errorMessage": text})
+    assert hit is not None
+    assert hit.field == "errorMessage"
+    assert hit.rule.startswith("url")

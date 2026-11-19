@@ -2,7 +2,9 @@
 
 A report is attacker-controlled text. Every reporter-written field of an export item is matched against RULES, one table, in order (the instruction-to-the-model rules first, so the note names the most telling shape); the first hit moves the report to `quarantined` with the rule and the field as its `triage_note`. A quarantined report is never classified by a model and never reproduced.
 
-The rule families are the plan's: a URL (the raw form, and the `<url:host-redacted>` marker the shared scrubber leaves in its place, since the account re-scrubs every field before it stores it), a shell-command shape (`curl`, `wget`, a pipe into a shell, `$(`, a backtick span, `sudo`, `rm -rf`), an instruction to the model ("ignore previous", "system prompt", "act as", "assistant:", role tags, `<|`), a base64 run over 200 characters, and a non-printing character (a control character other than tab, newline and carriage return, or a Unicode format character such as a zero-width space or a bidi override).
+The rule families are the plan's: a URL that survived the scrubber (the raw `scheme://` form, a `www.` host, a host with a path whose TLD is outside the scrubber's list, a protocol-relative `//host`, and a defanged `hxxp`, `[.]` or `[:]` spelling), a shell-command shape (`curl`, `wget`, a pipe into a shell, `$(`, a backtick span, `sudo`, `rm -rf`), an instruction to the model ("ignore previous", "system prompt", "act as", "assistant:", role tags, `<|`), a base64 run over 200 characters, and a non-printing character (a control character other than tab, newline and carriage return, or a Unicode format character such as a zero-width space or a bidi override).
+
+The `<url:host-redacted>` marker is NOT a trigger. packages/shared/src/feedback/scrub.ts writes it in place of every URL, and the account re-scrubs every field before it stores it, so the marker is the server's own text: a rule on it quarantined every real error that once held a URL and kept it from ever being classified. What the marker replaced is gone; only URL text the scrubber missed is reporter-controlled, and the url family above screens that.
 """
 
 from __future__ import annotations
@@ -77,7 +79,13 @@ RULES: tuple[Rule, ...] = (
     Rule("inject-special-token", "inject", _pattern(r"<\|")),
     Rule("url", "url", _pattern(r"\b[a-z][a-z0-9+.-]*://\S")),
     Rule("url-www", "url", _pattern(r"\bwww\.[a-z0-9-]+\.[a-z]{2,}")),
-    Rule("url-scrubbed", "url", _pattern(r"<url:host-redacted>")),
+    Rule(
+        "url-host-path",
+        "url",
+        _pattern(r"\b(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24}/[^\s/]"),
+    ),
+    Rule("url-protocol-relative", "url", _pattern(r"(?<![:\w/])//[a-z0-9-]+\.[a-z0-9-]")),
+    Rule("url-defanged", "url", _pattern(r"\bhxxps?\b|\[\.\]|\[:\]")),
     Rule("shell-curl", "shell", _pattern(r"\bcurl\b")),
     Rule("shell-wget", "shell", _pattern(r"\bwget\b")),
     Rule("shell-pipe-sh", "shell", _pattern(r"\|\s*(?:sudo\s+)?(?:ba|z|da|k)?sh\b")),
