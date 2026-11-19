@@ -72,6 +72,57 @@ def test_control_an_untouched_tree_selects_only_smoke(repo):
     assert sel.files == [SMOKE], "the map cache under .ci/cache leaked into the change set"
 
 
+def _poisoned_facts(repo):
+    """Run the map once, then make the cached facts of `mid.py` claim it imports nothing (its content hash still matches, so the entry is reusable)."""
+    present = pi.present_files(repo)
+    pi.load_or_build_map(repo, present)
+    facts = repo / pi.CACHE_RELDIR / "facts.json"
+    doc = json.loads(facts.read_text(encoding="utf-8"))
+    entry = doc["entries"][".ci/rediacc_ci/mid.py"]
+    assert entry["imports"], "CONTROL: the fixture's mid.py imports leaf"
+    entry["imports"] = []
+    facts.write_text(json.dumps(doc), encoding="utf-8")
+    return facts
+
+
+def _mid_closure(repo):
+    data, _digest = pi.load_or_build_map(repo, pi.present_files(repo))
+    return data["tests"][".ci/rediacc_ci/tests/test_mid.py"]["closure"]
+
+
+def test_the_facts_cache_is_reused_while_the_file_set_is_unchanged(repo):
+    _poisoned_facts(repo)
+    (repo / ".ci/rediacc_ci/other.py").write_text("Y = 3\n", encoding="utf-8")
+    assert ".ci/rediacc_ci/leaf.py" not in _mid_closure(repo), "CONTROL: the cached entry was not used"
+
+
+def test_adding_a_python_file_discards_every_cached_fact(repo):
+    """Finding 4b2720aa.1: the fileset key in `load_or_build_map`, not only `build_map`."""
+    _poisoned_facts(repo)
+    (repo / ".ci/rediacc_ci/added.py").write_text("W = 1\n", encoding="utf-8")
+    assert ".ci/rediacc_ci/leaf.py" in _mid_closure(repo)
+
+
+@pytest.mark.parametrize(
+    "text", ["[]", "null", '{"fileset": "x", "entries": []}', '{"fileset": "x", "entries": 3}']
+)
+def test_a_facts_file_of_the_wrong_shape_is_a_cold_cache(repo, text):
+    """Finding 4b2720aa.2: valid JSON that is not the facts object rebuilds instead of raising."""
+    pi.load_or_build_map(repo, pi.present_files(repo))
+    (repo / pi.CACHE_RELDIR / "facts.json").write_text(text, encoding="utf-8")
+    (repo / ".ci/rediacc_ci/other.py").write_text("Y = 4\n", encoding="utf-8")
+    assert ".ci/rediacc_ci/leaf.py" in _mid_closure(repo)
+
+
+def test_non_object_fact_entries_are_dropped_not_raised(repo):
+    facts = _poisoned_facts(repo)
+    doc = json.loads(facts.read_text(encoding="utf-8"))
+    doc["entries"][".ci/rediacc_ci/other.py"] = "oops"
+    facts.write_text(json.dumps(doc), encoding="utf-8")
+    (repo / ".ci/rediacc_ci/leaf.py").write_text("X = 9\n", encoding="utf-8")
+    assert _mid_closure(repo)
+
+
 def test_full_when_the_root_is_not_a_repository(tmp_path, monkeypatch):
     bare = tmp_path / "not-a-repo"
     bare.mkdir()

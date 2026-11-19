@@ -486,7 +486,34 @@ def test_change_set_diffs_against_a_named_base(tmp_path):
     (tmp_path / "a.py").write_text("A = 2\n", encoding="utf-8")
     (tmp_path / "new.py").write_text("", encoding="utf-8")
     assert pi.change_set(tmp_path, "HEAD") == ["a.py", "new.py"]
+    # A push base that DOES resolve, so a fallback to it would answer with a list rather than None.
+    _git(tmp_path, "update-ref", "refs/remotes/origin/main", "HEAD")
+    assert pi.change_set(tmp_path) == ["a.py", "new.py"], "CONTROL: the push base did not resolve"
     assert pi.change_set(tmp_path, "no-such-ref") is None, "an unresolvable base fell back"
+
+
+def test_a_base_that_reads_as_an_option_is_not_a_ref(tmp_path):
+    _git(tmp_path, "init", "-q")
+    _git(tmp_path, "config", "user.email", "t@example.invalid")
+    _git(tmp_path, "config", "user.name", "t")
+    (tmp_path / "a.py").write_text("A = 1\n", encoding="utf-8")
+    _git(tmp_path, "add", "a.py")
+    _git(tmp_path, "commit", "-qm", "a")
+    _git(tmp_path, "update-ref", "refs/remotes/origin/main", "HEAD")
+    assert pi.change_set(tmp_path, "--all") is None
+    assert pi.change_set(tmp_path, "-x") is None
+
+
+def test_narrow_and_non_glob_literals_do_not_change_the_verdict():
+    """Finding b857eede.1: only glob-shaped literals that cover a changed file reach `broad_globs`; the others must leave the selection as it was."""
+    base = run([".ci/rediacc_ci/leaf.py"])
+    tree = dict(TREE)
+    tree[".ci/rediacc_ci/tests/test_other.py"] = (
+        "LITS = ['*.nomatch', 'plain_word_here', 'zz/y*']\n\n"
+        "from rediacc_ci import other\n\ndef test_b():\n    assert other and LITS\n"
+    )
+    got = run([".ci/rediacc_ci/leaf.py"], tree=tree)
+    assert (got.scope, got.files) == (base.scope, base.files), got.line()
 
 
 def test_a_glob_that_matches_the_tree_covers_nothing():

@@ -70,13 +70,14 @@ def test_defhash_and_fileshash_equal_ts(corpus):
         scripts = {n: _scripts_at_head()[n] for n in inputs["scripts"]}
         assert G.v2_def_hash(lock[gid], scripts) == row["defHash"], f"defHash differs for {gid}"
         lines = G.v2_input_lines(entries, inputs["globs"], inputs["files"])
-        extras, _ = G.v2_extra_lines(
+        extras, unresolved = G.v2_extra_lines(
             entries,
             inputs.get("lists", ()),
             inputs.get("names", ()),
             inputs.get("refs", ()),
             root=str(ROOT),
         )
+        assert not unresolved, f"{gid} names a ref that does not resolve: {unresolved}"
         assert G.v2_files_hash(lines, extras) == row["filesHash"], f"filesHash differs for {gid}"
         compared += 1
     assert compared >= MIN_COMPARED, f"only {compared} entries compared; the parity is vacuous"

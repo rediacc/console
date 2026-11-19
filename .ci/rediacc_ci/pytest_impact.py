@@ -40,6 +40,8 @@ FULL, AND ONLY FULL, WHEN THE ANSWER IS UNKNOWN (B4). Each prints `pytest-impact
 
 EVERY CHANGED FILE IS JUDGED (operator ruling 2026-11-18, PLAN-ciquick-cpu W4.3). The whole-suite strace (rediacc_ci.quality.pytest_impact_reads) saw the tests read every tracked file, each `docs/*.md` by at least 9 test files, so check:ci-pytest hashes the whole tree, and a docs or packages edit selects its traced readers plus smoke instead of skipping the gate.
 
+Run as a module from the repo root, `PYTHONPATH=.ci python3 -m rediacc_ci.pytest_impact` (the file has no path bootstrap, so running it by path fails on its imports); below it is written `pytest_impact.py`:
+
     pytest_impact.py                 print the selection for the current change set
     pytest_impact.py --json          the same as one JSON object
     pytest_impact.py --base <ref>    diff against <ref>'s merge-base instead of the push base
@@ -843,6 +845,9 @@ def change_set(root: pathlib.Path, base: str | None = None) -> list[str] | None:
         res = gitx.git(args, root=root)
         return res.stdout.strip() if res.returncode == 0 and res.stdout.strip() else None
 
+    if base and base.startswith("-"):
+        # `git merge-base HEAD -x` would read the value as an option, not a ref.
+        return None
     mb = git(["merge-base", "HEAD", base]) if base else resolve_push_base(git, gitx.branch(root))
     if not mb:
         return None
@@ -886,8 +891,10 @@ def load_or_build_map(root: pathlib.Path, present: list[str]) -> tuple[dict, str
     facts_path = root / ".ci" / "cache" / "pytest-impact" / "facts.json"
     try:
         stored = json.loads(facts_path.read_text(encoding="utf-8"))
-        facts_cache = stored["entries"] if stored.get("fileset") == fileset else {}
-    except (OSError, ValueError, KeyError, TypeError):
+        entries = stored["entries"] if stored.get("fileset") == fileset else {}
+        # A valid-JSON file of the wrong shape is a cold cache, never an error out of the selection.
+        facts_cache = {k: v for k, v in entries.items() if isinstance(v, dict)}
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
         facts_cache = {}
     data = build_map(root, py_files, roots, test_roots, facts_cache=facts_cache)
     data["digest"] = digest
