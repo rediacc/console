@@ -286,6 +286,18 @@ function selftest(): number {
       'names glob `nope/**` matches ZERO'
     ) === true
   );
+  for (const origin of ['traced', 'declared']) {
+    check(
+      `a ${origin} paths glob matching nothing tracked is a dead-glob finding (51b85403.1)`,
+      run([{ id: 'a', paths: ['nope/**'], pathsOrigin: origin }], ['x.ts'])[0]?.includes(
+        'matches ZERO tracked files'
+      ) === true
+    );
+  }
+  check(
+    'CONTROL: a traced paths glob matching a tracked file is no finding',
+    run([{ id: 'a', paths: ['x.ts'], pathsOrigin: 'traced' }], ['x.ts']).length === 0
+  );
   check(
     'a malformed lists item (trailing /) is a finding',
     run([{ id: 'a', lists: ['d/'], pathsOrigin: 'traced' }], ['d/y.ts'])[0]?.includes(
