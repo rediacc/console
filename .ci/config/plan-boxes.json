@@ -2793,13 +2793,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 17,
+      "open": 3,
+      "done": 18,
       "open_sigs": [
         "476fd25d",
         "6c884092",
-        "c8444198",
-        "f6477c4d"
+        "c8444198"
       ],
       "done_sigs": [
         "2d76dea2",
@@ -2818,7 +2817,8 @@
         "d4e7536a",
         "d86d54a7",
         "de43bbab",
-        "f572057d"
+        "f572057d",
+        "f6477c4d"
       ]
     },
     "agent/plans/PLAN-rediaccfile-unprivileged.md": {
