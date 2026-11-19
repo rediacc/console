@@ -370,7 +370,9 @@ def test_a_failed_region_does_not_stop_the_next(tmp_path):
 def test_parse_args_defaults_and_refusals():
     opts = triage.parse_args(["run"])
     assert opts.regions == client.PRODUCTION_REGIONS
-    assert opts.statuses == ("new",)
+    assert opts.statuses == triage.OPEN_STATUSES
+    assert opts.classify is True
+    assert triage.parse_args(["run", "--no-classify"]).classify is False
     assert triage.parse_args(["run", "--region", "bench", "--dry-run"]).regions == ("bench",)
     for bad in (["run", "--region", "mars"], ["run", "--status", "bogus"], ["nope"]):
         with pytest.raises(client.FeedbackError) as exc:
@@ -450,7 +452,7 @@ def test_a_filtered_run_never_moves_the_cursor_past_reports_outside_its_filter(t
 
     rc, results = triage.run(triage.Options(("eu",), cursor=cursor), deps)
     assert rc == 0
-    assert [i["fingerprint"] for i in results[0].items] == [FP_CLEAN]
+    assert FP_CLEAN in [i["fingerprint"] for i in results[0].items]
 
 
 def test_control_a_default_run_still_advances_the_cursor(tmp_path):
@@ -461,3 +463,10 @@ def test_control_a_default_run_still_advances_the_cursor(tmp_path):
     rc, _ = triage.run(triage.Options(("eu",), cursor=cursor), deps)
     assert rc == 0
     assert client.read_cursor(cursor)["eu"]["since"] == "2026-11-19T02:00:00.000Z"
+
+
+def test_verb_help_exits_zero(capsys):
+    """Review 53b0c35b.3: `run --help` printed the help and exited 2."""
+    assert triage.main(["run", "--help"], run_child=lambda _a, _e: 0) == 0
+    assert "--status" in capsys.readouterr().out
+    assert triage.main(["run", "--bogus"], run_child=lambda _a, _e: 0) == 2
