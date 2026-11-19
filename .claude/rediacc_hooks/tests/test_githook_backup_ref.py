@@ -271,6 +271,88 @@ def test_a_removed_secret_line_is_not_an_added_one(tmp_path, monkeypatch, capsys
     assert rc == 0, err
 
 
+# A PEM HEADER IS NOT A KEY (PR-TASK 79b7e92e, measured 2026-11-19): `0bfa82fdf4dc` added a scrubber test fixture whose PEM block carries the six-character body `MIIabc`, and every backup sync of 1104-1 was refused on it while the Stop hook kept telling agents to run the sync. The shape now counts only with a key body of `PEM_MIN_BODY`+ base64 characters, the smallest real private key (PKCS#8 Ed25519); the controls below keep every key-sized body refused.
+PEM_HEAD = "-----BEGIN " + "PRIVATE KEY-----"
+PEM_TAIL = "-----END " + "PRIVATE KEY-----"
+KEY_LINE = "MIIE" + "vQ7k" * 16
+
+
+def test_a_placeholder_pem_fixture_on_one_line_is_admitted(tmp_path, monkeypatch, capsys):
+    w = World(tmp_path / "c")
+    fixture = "    ['pem', '%s\\nMIIabc\\n%s', 'MIIabc'],\n" % (PEM_HEAD, PEM_TAIL)
+    tip = w.commit("add scrub fixtures", "src/__tests__/scrub.test.ts", fixture)
+    rc, err = _push(monkeypatch, capsys, w.root, [(tip, LIVE, ZERO)])
+    assert rc == 0, err
+
+
+def test_a_placeholder_pem_fixture_over_lines_is_admitted(tmp_path, monkeypatch, capsys):
+    w = World(tmp_path / "c")
+    fixture = "const KEY = `%s\nABC\n%s`;\nexpect(KEY).toBeTruthy();\n" % (PEM_HEAD, PEM_TAIL)
+    tip = w.commit("add key fixture", "src/__tests__/key.test.ts", fixture)
+    rc, err = _push(monkeypatch, capsys, w.root, [(tip, LIVE, ZERO)])
+    assert rc == 0, err
+
+
+def test_control_a_key_sized_pem_body_over_lines_is_refused(tmp_path, monkeypatch, capsys):
+    w = World(tmp_path / "c")
+    text = "%s\n%s\n%s\n%s\n" % (PEM_HEAD, KEY_LINE, KEY_LINE, PEM_TAIL)
+    tip = w.commit("add key", "id.pem", text)
+    rc, err = _push(monkeypatch, capsys, w.root, [(tip, LIVE, ZERO)])
+    assert rc == 1
+    assert "secret shape" in err
+    assert KEY_LINE not in err
+
+
+def test_control_a_key_sized_pem_body_on_one_escaped_line_is_refused(tmp_path, monkeypatch, capsys):
+    w = World(tmp_path / "c")
+    text = '{"key": "%s\\n%s\\n%s"}\n' % (PEM_HEAD, KEY_LINE, PEM_TAIL)
+    tip = w.commit("add key", "cfg.json", text)
+    rc, err = _push(monkeypatch, capsys, w.root, [(tip, LIVE, ZERO)])
+    assert rc == 1
+    assert "secret shape" in err
+
+
+def test_control_an_armored_key_with_headers_and_a_blank_line_is_refused(
+    tmp_path, monkeypatch, capsys
+):
+    w = World(tmp_path / "c")
+    head = "-----BEGIN PGP " + "PRIVATE KEY BLOCK-----"
+    text = "%s\nVersion: GnuPG v2\n\n%s\n%s\n" % (head, KEY_LINE, KEY_LINE)
+    tip = w.commit("add armor", "key.asc", text)
+    rc, err = _push(monkeypatch, capsys, w.root, [(tip, LIVE, ZERO)])
+    assert rc == 1
+    assert "secret shape" in err
+
+
+def test_control_the_fixture_does_not_open_any_other_push(tmp_path, monkeypatch, capsys):
+    """With the placeholder fixture in the range, every push outside the backup shape is refused as before: `main`, a second branch, a tag beside the backup ref, a tag-like leaf in the backup space, and a forced (non-fast-forward) move of live."""
+    w = World(tmp_path / "c")
+    fixture = "['pem', '%s\\nMIIabc\\n%s'],\n" % (PEM_HEAD, PEM_TAIL)
+    one = w.commit("fixture", "src/__tests__/scrub.test.ts", fixture)
+    origin = {"url": ORIGIN_URL, "remote": "origin"}
+    rc, err = _push(monkeypatch, capsys, w.root, [(one, "refs/heads/main", w.seed)], **origin)
+    assert rc == 1, err
+    assert "pushes to `main`" in err, err
+    rc, err = _push(monkeypatch, capsys, w.root, [(one, "refs/heads/9999-9", ZERO)], **origin)
+    assert rc == 1, err
+    assert "creates the remote branch" in err, err
+    tag_beside = [(one, LIVE, ZERO), (one, "refs/tags/v9.9.9", ZERO)]
+    rc, err = _push(monkeypatch, capsys, w.root, tag_beside)
+    assert rc == 1, err
+    assert "carries no other ref" in err, err
+    rc, err = _push(monkeypatch, capsys, w.root, [(one, "refs/backup/1104-1/v9.9.9", ZERO)])
+    assert rc == 1, err
+    assert "is not `live`" in err, err
+    _git(w.root, "reset", "-q", "--hard", w.seed)
+    beside = w.commit("beside")
+    rc, err = _push(monkeypatch, capsys, w.root, [(beside, LIVE, one)])
+    assert rc == 1, err
+    assert "no fast-forward" in err, err
+    # And the admitted shape itself goes through.
+    rc, err = _push(monkeypatch, capsys, w.root, [(one, LIVE, ZERO)])
+    assert rc == 0, err
+
+
 def test_a_second_sync_scans_only_commits_after_the_remote_old_tip(tmp_path, monkeypatch, capsys):
     w = World(tmp_path / "c")
     leaky = w.commit("work\n\n" + SESSION_LINE, "cfg.txt", "token=%s\n" % SECRET)

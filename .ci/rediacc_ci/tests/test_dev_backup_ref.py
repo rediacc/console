@@ -407,6 +407,35 @@ def test_status_exits_1_at_51_commits_behind_and_0_at_50(world):
     assert br.status(work, "gitlab", False, io.StringIO()) == 0
 
 
+def test_status_names_the_automatic_syncs_last_failure_instead_of_a_rerun(world):
+    """PR-TASK 79b7e92e: the sync already runs after every commit, so a lag past the limit means it is failing; advising a rerun repeats the failure (measured 2026-11-19, a pre-push refusal logged on every commit of 1104-1). The verdict names the failure and the log; the rerun advice stays for a lag with no logged failure."""
+    work, bare = world
+    _commit(work, "one")
+    assert br.sync(work) == 0
+    _ahead(work, 51)
+    out = io.StringIO()
+    assert br.status(work, "gitlab", True, out) == 1
+    assert "run `./run.sh backup-ref sync`" in out.getvalue()
+    assert "failing" not in out.getvalue()
+    _git(work, "remote", "set-url", "gitlab", str(bare) + "-missing")
+    assert br.sync(work) == 1
+    out = io.StringIO()
+    assert br.status(work, "gitlab", True, out) == 1
+    text = out.getvalue()
+    assert text.count("\n") == 1, text
+    assert "the automatic sync after each commit is failing" in text
+    assert "FAILED git" in text
+    assert "rediacc-backup/log" in text
+    assert "run `./run.sh backup-ref sync`" not in text
+    # A later success clears it.
+    _git(work, "remote", "set-url", "gitlab", str(bare))
+    assert br.sync(work) == 0
+    _ahead(work, 51)
+    out = io.StringIO()
+    assert br.status(work, "gitlab", True, out) == 1
+    assert "failing" not in out.getvalue()
+
+
 @pytest.mark.parametrize(("hours", "minutes", "code"), [(5, 59, 0), (6, 1, 1)])
 def test_status_judges_the_oldest_unbacked_commit_against_six_hours(world, hours, minutes, code):
     work, _bare = world

@@ -581,6 +581,33 @@ def _secret_scanner():
             sys.path.remove(stop)
 
 
+# A PEM HEADER IS NOT A KEY (PR-TASK 79b7e92e, measured 2026-11-19). The scanner's PEM shape matches the header alone, and this tree carries dozens of test fixtures with a placeholder body (`ABC`, `MIIabc`, `test`). One of them, in `0bfa82fdf4dc`, refused every backup sync of 1104-1 while the Stop hook kept advising the sync. So in a backup push the PEM shape counts only when a key body
+# follows it: `PEM_MIN_BODY` base64 characters, the size of the smallest real private key (PKCS#8 Ed25519), on the header's own line (an escaped `\n` string) or on the added lines right after it (armor headers such as `Version: ...` and blank lines are skipped). A body that stops short, at `-----END`, at a line that is not base64, or at a line that is not added, is a placeholder. Every other shape is judged as before.
+PEM_SHAPE = r"-----BEGIN [A-Z ]*PRIVATE KEY"
+PEM_MIN_BODY = 64
+_PEM_HEAD_RE = re.compile(PEM_SHAPE + r"[A-Z ]*-*")
+_PEM_ESCAPED_EOL = re.compile(r"(?:\\r)?\\n")
+_PEM_BODY_RE = re.compile(r"[A-Za-z0-9+/=]+")
+_PEM_ARMOR_HEADER_RE = re.compile(r"[A-Za-z][A-Za-z0-9-]*: .*")
+
+
+def pem_body(text: str) -> tuple[int, bool]:
+    """`(base64 characters, stopped)` of a PEM body fragment: one added line, or the rest of the header's line. `stopped` is True once the body has ended (an `-----END`, or a segment that is neither base64, an armor header nor blank)."""
+    end = text.find("-----END")
+    stopped = end >= 0
+    if stopped:
+        text = text[:end]
+    count = 0
+    for raw_segment in _PEM_ESCAPED_EOL.split(text):
+        segment = raw_segment.strip()
+        if not segment or _PEM_ARMOR_HEADER_RE.fullmatch(segment):
+            continue
+        if not _PEM_BODY_RE.fullmatch(segment):
+            return count, True
+        count += len(segment)
+    return count, stopped
+
+
 def backup_exclusions(repo: str, lines: list[list[str]]) -> list[str]:
     """Each line's remote old oid that is a commit here: the history the remote already holds under these refs. An old oid missing here is left out, which only widens the scan."""
     out: list[str] = []
@@ -642,6 +669,15 @@ def outgoing_secret_shapes(
     timer.start()
     # Hunk lines carry one prefix column per parent (`--cc` on a merge shows only what no parent had). A line is ADDED when every column is `+`. Header lines (`+++ b/path`) are told apart from content by position: only a line outside a hunk is a header, so an added line `++ x` is scanned.
     cols = 0
+    # The base64 characters of a PEM body still being read (`PEM_SHAPE` above), None when no header is open. Any line that is not an added line closes it.
+    pem: int | None = None
+
+    def _flag(shape: str) -> None:
+        if (sha, shape) in seen:
+            return
+        seen.add((sha, shape))
+        offenders.append("%s %s: %s" % (sha[:12], subject[:60], shape))
+
     try:
         with stream:
             for raw in stream:
@@ -649,20 +685,38 @@ def outgoing_secret_shapes(
                 if text.startswith("\x1e"):
                     sha, _sep, subject = text[1:].partition("\x1f")
                     cols = 0
+                    pem = None
                     continue
                 if text.startswith("@@"):
                     cols = len(text) - len(text.lstrip("@")) - 1
+                    pem = None
                     continue
                 if text.startswith("diff "):
                     cols = 0
+                    pem = None
                     continue
                 if not cols or text[:cols] != "+" * cols:
+                    pem = None
                     continue
-                for shape in shapes_in(text[cols:]):
-                    if (sha, shape) in seen:
+                added = text[cols:]
+                if pem is not None:
+                    more, stopped = pem_body(added)
+                    pem += more
+                    if pem >= PEM_MIN_BODY:
+                        _flag(PEM_SHAPE)
+                        pem = None
+                    elif stopped:
+                        pem = None
+                for shape in shapes_in(added):
+                    if shape != PEM_SHAPE:
+                        _flag(shape)
                         continue
-                    seen.add((sha, shape))
-                    offenders.append("%s %s: %s" % (sha[:12], subject[:60], shape))
+                    head = _PEM_HEAD_RE.search(added)
+                    count, stopped = pem_body(added[head.end() :] if head else "")
+                    if count >= PEM_MIN_BODY:
+                        _flag(PEM_SHAPE)
+                    elif not stopped:
+                        pem = count
     finally:
         timer.cancel()
     if expired.is_set():

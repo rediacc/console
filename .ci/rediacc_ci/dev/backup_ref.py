@@ -397,6 +397,29 @@ def lag(
     return count, branch, oldest
 
 
+_LOG_ENTRY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z (.*)$")
+LOG_TAIL_BYTES = 65536
+
+
+def last_failure(repo: pathlib.Path) -> tuple[str, str]:
+    """`(first line of the newest log entry, log path)` when that entry is a FAILED sync, else `("", "")`. The post-commit, post-rewrite and post-merge hooks run the sync after every commit, so a lag past the limit with a failed last entry is a failure a rerun repeats (PR-TASK 79b7e92e: on 2026-11-19 the Stop hook advised the sync while every automatic one was refused by the pre-push secret scan). Only stamped lines are entries; the worker's own output shares the file."""
+    try:
+        path = _live_file(repo).parent / "log"
+        with path.open("rb") as handle:
+            handle.seek(max(0, path.stat().st_size - LOG_TAIL_BYTES))
+            tail = handle.read().decode("utf-8", "replace")
+    except (OSError, StepError):
+        return "", ""
+    newest = ""
+    for line in tail.splitlines():
+        m = _LOG_ENTRY_RE.match(line)
+        if m:
+            newest = m.group(1)
+    if not newest.startswith("FAILED"):
+        return "", ""
+    return newest[:240], str(path)
+
+
 def status(repo: pathlib.Path, remote: str, cached: bool, out) -> int:
     """Exit 1 when live trails HEAD by more than MAX_LAG_COMMITS commits, or when the oldest commit it lacks is more than MAX_LAG_AGE old (the plan's "50 commits or 6 h": the time a commit has gone unbacked, since the newest-commit reading would let a long-lived gap hide behind one fresh commit)."""
     behind, branch, oldest = lag(repo, remote, cached)
@@ -405,8 +428,16 @@ def status(repo: pathlib.Path, remote: str, cached: bool, out) -> int:
         return 0
     age = _utcnow() - oldest if oldest else datetime.timedelta(0)
     if behind > MAX_LAG_COMMITS or age > MAX_LAG_AGE:
+        failure, log_path = last_failure(repo)
+        if failure:
+            advice = (
+                "the automatic sync after each commit is failing, so a rerun repeats it: fix the cause (last: %s; log %s)"
+                % (failure, log_path)
+            )
+        else:
+            advice = "run `./run.sh backup-ref sync`"
         out.write(
-            "backup-ref: %s is %d commits ahead of its live backup, the oldest unbacked %dh%02dm old (limits %d commits, %d h); run `./run.sh backup-ref sync`\n"
+            "backup-ref: %s is %d commits ahead of its live backup, the oldest unbacked %dh%02dm old (limits %d commits, %d h); %s\n"
             % (
                 branch,
                 behind,
@@ -414,6 +445,7 @@ def status(repo: pathlib.Path, remote: str, cached: bool, out) -> int:
                 age.seconds // 60 % 60,
                 MAX_LAG_COMMITS,
                 MAX_LAG_AGE.total_seconds() // 3600,
+                advice,
             )
         )
         return 1
