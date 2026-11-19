@@ -97,7 +97,12 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
     payload = deploy_bench.secrets_payload()
     # 37 plus the four PLAN-email-sender-separation E1 keys, each defaulted for bench.
     assert len(payload) == 41
-    for name in ("CONTACT_FROM_EMAIL", "ALERTS_FROM_EMAIL", "CONTACT_NOTIFY_EMAIL", "ALERTS_NOTIFY_EMAIL"):
+    for name in (
+        "CONTACT_FROM_EMAIL",
+        "ALERTS_FROM_EMAIL",
+        "CONTACT_NOTIFY_EMAIL",
+        "ALERTS_NOTIFY_EMAIL",
+    ):
         assert payload[name], name
     assert payload["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.invalid"
     assert payload["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"] == "bench-id"
