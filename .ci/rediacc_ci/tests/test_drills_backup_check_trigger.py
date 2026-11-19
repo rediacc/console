@@ -783,6 +783,16 @@ def test_a_pin_that_names_no_commit_is_refused_and_records_nothing(tmp_path, cap
     assert bct.read_latest(w.root) is None
 
 
+def test_an_empty_pin_is_refused_rather_than_recorded_as_head(tmp_path, capsys):
+    """`--commit ""`, or `--commit` as the last argument, parses to "": refused, never HEAD."""
+    w = World(tmp_path / "c")
+    drill = _drill(w)
+    drill.commit = ""
+    assert bct.record_drill(drill, bct.LEGS_HALF, 0, bct.REQUIRED_LEGS) is None
+    assert "NOT written" in capsys.readouterr().err
+    assert bct.read_latest(w.root) is None
+
+
 def test_a_call_with_no_pin_records_head_as_before(tmp_path):
     w = World(tmp_path / "c")
     drill = _drill(w)

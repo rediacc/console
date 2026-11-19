@@ -369,8 +369,10 @@ def _checkout_state(root: pathlib.Path, sub: str, pointer: str) -> dict[str, Any
 
 def _pin(root: pathlib.Path, commit: str | None) -> str:
     """The revision a receipt is taken at: HEAD, or `commit` when the drill was pinned. A pin that names no commit of `root` is a ValueError, never a silent fall back to HEAD."""
-    if not commit:
+    if commit is None:
         return "HEAD"
+    if not commit.strip():
+        raise ValueError("--commit names no commit: the value is empty")
     full = make_git(root)(["rev-parse", "--verify", "--quiet", f"{commit}^{{commit}}"])
     if not full:
         raise ValueError(f"--commit {commit!r} names no commit in {root}")
