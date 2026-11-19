@@ -97,7 +97,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 29 of 82 plans done, 1260 of 1519 boxes done (82%).
+Promoted: 29 of 83 plans done, 1260 of 1537 boxes done (81%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -183,6 +183,7 @@ Promoted: 29 of 82 plans done, 1260 of 1519 boxes done (82%).
 | 80 | PLAN-stop-hook-store-status.md | 3/9 | 6 open |
 | 81 | PLAN-rdc-feedback.md | 18/21 | 3 open |
 | 82 | PLAN-account-sidebar-redesign.md | 2/15 | 13 open |
+| 83 | PLAN-email-sender-separation.md | 0/18 | 18 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
@@ -267,6 +268,7 @@ Promoted: 29 of 82 plans done, 1260 of 1519 boxes done (82%).
 80. agent/plans/PLAN-stop-hook-store-status.md -- operator plan request 2026-11-18: the Stop hook judges the worklist store, not message prose; `worklist.py --status`, a store freshness check replaces the roster/MISSING IDS rule.
 81. agent/plans/PLAN-rdc-feedback.md -- operator /ask 2026-11-18 rulings 1-12: `rdc feedback report|list`, D1 intake with daily limits and fingerprint dedup, AI triage with Haiku screening, critical asks with a 6 h window, PLAN-feedback-<slug> generation, Feedback: plan linkage.
 82. agent/plans/PLAN-account-sidebar-redesign.md -- operator 2026-11-19 handoff and /ask answers: one mode's links behind a workspace switcher, one Ctrl+K palette for everyone, confirmed sign-out (P2 first), the seven offer labels in 13 locales plus a raw-key CI gate, both Machines pages kept, a root-grants bench test partner and an automated bench walk-through.
+83. agent/plans/PLAN-email-sender-separation.md -- operator 2026-11-19 /ask answers: customer and contact mail from contact@ with Reply-To and [Contact], system mail from alerts@ with [System], urgent alerts instant and the rest in a daily digest, shared mailboxes contact@rediacc.com and alerts@rediacc.io on the hostinger docker-mailserver with Sieve copy lists and loopback-only ManageSieve.
 
 ## Generated
 
