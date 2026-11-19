@@ -2,6 +2,7 @@ export * from './audit/index.js';
 export * from './config/index.js';
 export * from './encryption/index.js';
 export * from './error-parser/index.js';
+export * from './feedback/index.js';
 export * from './formatters/index.js';
 export * from './renet-contract/index.js';
 export * from './services/index.js';
