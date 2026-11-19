@@ -166,11 +166,12 @@ Order: S1; then A1 and C1 in parallel; A2-A4 after A1, C2-C4 after C1; P1-P2 aft
     Needs: none
     Accept: `cd packages/cli && npx vitest run src/commands/__tests__/feedback-report.test.ts` exits 0 against a stubbed account server: `--last` fills from the newest failed ring entry; the preview shows every byte that is sent; a declined confirm sends nothing; `--yes` sends; an agent without `--yes` gets the preview and a `next` and sends nothing; no token and no FREE blob is a refusal naming both routes; a 429 maps to a clear error with the reset time. `npx tsc --noEmit --project packages/cli/tsconfig.json` exits 0.
     (ticked) 2026-11-19T05:12:22Z by d778be9d: commit:ad7fb4b4b commit:738e4c280 commit:f1a5323c2 rdc feedback report; vitest 36+16 passed, tsc rc 0, i18n parity/completeness/hashes rc 0
-- [ ] C4 [writer] (W-CLI) `rdc feedback list` and `rdc feedback show <id>`, rendering `fixed-in-v<x>`
+- [x] C4 [writer] (W-CLI) `rdc feedback list` and `rdc feedback show <id>`, rendering `fixed-in-v<x>`
     Owns: packages/cli/src/commands/feedback.ts, packages/cli/src/services/feedback/list.ts, packages/cli/src/i18n/locales/en/cli.json, packages/cli/src/commands/__tests__/feedback-list.test.ts
     Depends on: C3, A3.
     Needs: none
     Accept: `cd packages/cli && npx vitest run src/commands/__tests__/feedback-list.test.ts` exits 0: text and `-o json` both list id, short fingerprint, status and dates, a fixed report reads `fixed-in-v<x>`, and the FREE route uses `POST /feedback/query`.
+    (ticked) 2026-11-19T05:40:45Z by d778be9d: commit:62fa1d178 rdc feedback list/show with fixed-in-v; vitest 29 passed, tsc rc 0, i18n command-parity rc 0
 - [ ] D1 [writer] (W-DOCS) Regenerated CLI contract, command tree and skill reference for the `feedback` group and the new `next` option
     Owns: packages/shared/src/cli-contract/data/**, packages/cli/scripts/command-tree.json, .claude/skills/rdc/reference.md
     Depends on: C2, C4.
@@ -186,11 +187,12 @@ Order: S1; then A1 and C1 in parallel; A2-A4 after A1, C2-C4 after C1; P1-P2 aft
     Depends on: D2.
     Needs: none
     Accept: `npm run validate:cli-docs -w @rediacc/www`, `npm run validate:docs-cli-usage -w @rediacc/www` and `npm run check:ci-prose-style` exit 0.
-- [ ] T1 [writer] (W-TRIAGE) `rediacc_ci.feedback`: export fetch per region, the cursor file, Stage 1 deterministic quarantine, and the verdict writer (D5)
+- [x] T1 [writer] (W-TRIAGE) `rediacc_ci.feedback`: export fetch per region, the cursor file, Stage 1 deterministic quarantine, and the verdict writer (D5)
     Owns: .ci/rediacc_ci/feedback/__init__.py, .ci/rediacc_ci/feedback/client.py, .ci/rediacc_ci/feedback/quarantine.py, .ci/rediacc_ci/feedback/triage.py, .ci/rediacc_ci/tests/test_feedback_quarantine.py, .ci/rediacc_ci/tests/test_feedback_client.py
     Depends on: A4.
     Needs: none
     Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_feedback_quarantine.py .ci/rediacc_ci/tests/test_feedback_client.py` exits 0 with one case per quarantine rule and a clean control per rule, and a client test against a stub server proving `--dry-run` writes no verdict.
+    (ticked) 2026-11-19T05:40:43Z by d778be9d: commit:53b0c35b1 rediacc_ci.feedback export, cursor, Stage 1 quarantine, verdict writer; pytest test_feedback* 93 passed, ruff rc 0
 - [ ] T2 [writer] (W-TRIAGE) Stage 2 to 5: the Haiku wrapper constant and strict reply schema, the messages-API route with `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`, near-duplicate pass, reproduction orders, R8 critical triggers to `worklist.py --defer` with a 6 h window, `PLAN-feedback-<slug>.md` generation, and the `/feedback-triage` slash command that spawns Haiku sub-agents over the same wrapper (D5)
     Owns: .ci/rediacc_ci/feedback/classify.py, .ci/rediacc_ci/feedback/critical.py, .ci/rediacc_ci/feedback/plangen.py, .ci/rediacc_ci/feedback/triage.py, .claude/commands/feedback-triage.md, .ci/rediacc_ci/tests/test_feedback_classify.py, .ci/rediacc_ci/tests/test_feedback_critical.py
     Depends on: T1.

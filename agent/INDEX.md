@@ -464,7 +464,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
-| `agent/plans/PLAN-account-notices.md` | approved | 157 | 3 | 14 | 43585 |
+| `agent/plans/PLAN-account-notices.md` | approved | 158 | 2 | 15 | 43857 |
 | `agent/plans/PLAN-add-chunkstore-backup-verb.md` | compacted | 64 | 0 | 0 | 5651 |
 | `agent/plans/PLAN-add-js-extensions-shared.md` | compacted | 50 | 0 | 0 | 4285 |
 | `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4623 |
@@ -582,7 +582,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-push-decoupling.md` | approved | 254 | 6 | 17 | 35585 |
 | `agent/plans/PLAN-pytest-parallelism.md` | compacted | 57 | 0 | 10 | 4644 |
 | `agent/plans/PLAN-rclone-decommission.md` | compacted | 39 | 0 | 0 | 3027 |
-| `agent/plans/PLAN-rdc-feedback.md` | approved | 217 | 11 | 10 | 46091 |
+| `agent/plans/PLAN-rdc-feedback.md` | approved | 219 | 9 | 12 | 46427 |
 | `agent/plans/PLAN-rediaccfile-unprivileged.md` | executing | 269 | 5 | 18 | 43413 |
 | `agent/plans/PLAN-reggate-debt-collection.md` | proposed | 80 | 11 | 0 | 17328 |
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
