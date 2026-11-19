@@ -191,6 +191,7 @@ NO_OWNS = "Concurrency: parallel\n"
 NONE = "Concurrency: parallel\nOwns: none -- an operator-action fixture plan\n"
 BASIC = {"e": EXCL, "f": PAR_F, "o": PAR_EO}
 READER_E = "Plan: PLAN-e.md\nOwns: none -- live E10 run, edits nothing"
+RUNNER_OWNS = "Owns: none -- live runner, records evidence, edits and commits nothing"
 E_ITEM = ("e0e0e0e0", SID[:8], "regenerate PLAN-e.md [e1e1e1e1]")
 P_ITEM = ("a0a0a0a0", PEER, "edit a PLAN-p.md [a1a1a1a1]")
 
@@ -493,6 +494,48 @@ CASES: list[tuple[str, dict[str, typing.Any], typing.Any, int, typing.Any]] = [
         [],
     ),
     (
+        "r6 a runner briefed Owns none serving a plan whose Owns overlap a live writer (#79b7e92e)",
+        {"plans": {"p": PAR_A, "q": PAR_AB}, "writers": ["Plan: PLAN-p.md"]},
+        payload("Plan: PLAN-q.md\n" + RUNNER_OWNS),
+        0,
+        ["holds no plan"],
+    ),
+    (
+        "r6b control: the same spawn with real Owns overlapping the live writer",
+        {"plans": {"p": PAR_A, "q": PAR_AB}, "writers": ["Plan: PLAN-p.md"]},
+        payload("Plan: PLAN-q.md\nOwns: a/b.py"),
+        2,
+        ["both claim `a/b.py`"],
+    ),
+    (
+        "r6c a bare Owns none with no reason is not read, and the plan's Owns judge it",
+        {"plans": {"p": PAR_A, "q": PAR_AB}, "writers": ["Plan: PLAN-p.md"]},
+        payload("Plan: PLAN-q.md\nOwns: none"),
+        2,
+        ["both claim `a/b.py`", "Owns: line was not read"],
+    ),
+    (
+        "r6d a runner briefed Owns none beside a live exclusive plan",
+        {"plans": BASIC, "writers": ["Plan: PLAN-e.md"]},
+        payload("Plan: PLAN-o.md\n" + RUNNER_OWNS),
+        0,
+        ["holds no plan"],
+    ),
+    (
+        "r6e control: a writer for that plan beside the live exclusive one is still refused",
+        {"plans": BASIC, "writers": ["Plan: PLAN-e.md"]},
+        payload("Plan: PLAN-o.md\nOwns: docs/e/one.md"),
+        2,
+        ["PLAN-e.md is exclusive"],
+    ),
+    (
+        "r6f a runner briefed Owns none for a plan that declares Owns none",
+        {"plans": {"n": NONE}},
+        payload("Plan: PLAN-n.md\n" + RUNNER_OWNS),
+        0,
+        ["holds no plan"],
+    ),
+    (
         "i6 isolation does not excuse a prose Owns line under a live exclusive",
         {"plans": BASIC, "writers": ["Plan: PLAN-e.md"]},
         payload("fix it\nOwns: whatever the timeout touches", isolation=ISOLATED),
@@ -611,6 +654,15 @@ SEQUENCES: list[tuple[str, dict[str, typing.Any], list[str], list[tuple[dict, in
         {"plans": TWO},
         GUARD_ARGV,
         [(payload("Plan: PLAN-p.md", kind="Explore"), 0, []), (payload("Plan: PLAN-q.md"), 0, [])],
+    ),
+    (
+        "w7b a runner briefed Owns none claims nothing",
+        {"plans": TWO},
+        GUARD_ARGV,
+        [
+            (payload("Plan: PLAN-p.md\n" + RUNNER_OWNS), 0, ["holds no plan"]),
+            (payload("Plan: PLAN-q.md"), 0, []),
+        ],
     ),
     (
         "w8 a refused spawn claims nothing",

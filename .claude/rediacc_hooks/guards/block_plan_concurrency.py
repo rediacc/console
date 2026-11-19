@@ -9,6 +9,7 @@ THE DECISION, for an Agent or Task call (the rules are `wl_planconc.spawn_verdic
      session's live writers through their first prompts, every session's fresh leases on plan-linked items), minus S;
   2b. a live agent of a writer type whose brief says `Owns: none` and whose transcript shows no edit is a reader, not a holder:
      it serves no plan in L, a same-session lease to it holds nothing, and an allowed spawn's stderr names it (#55b1f90b);
+  2c. the spawn itself briefed `Owns: none -- <reason>` is such a runner: S is empty whatever plan it names, it claims nothing, and its stderr says so (#79b7e92e); a bare `Owns: none` does not parse and is judged as declaring nothing;
   3. DENY when a plan in L is `Concurrency: exclusive` (the mutex);
   4. DENY when a plan in S is exclusive and L is not empty (decision D5: a mutex taken while others hold files is no mutex);
   5. DENY when S's Owns and L's Owns share a path, naming both globs and one witness path; a spawn the harness isolates in its own tree is ALLOWED with a stderr note naming the witness instead (the lease plan's W12, a lead decision awaiting the operator's look), since a clash then surfaces at landing. Steps 3, 4 and the header refusals still apply to it;
@@ -222,6 +223,8 @@ def run(event):
             return hookio.ALLOW
         declared = X.declared_owns(text)
         owns_problem = X.owns_line_problem(text) if declared is None else None
+        # A brief `Owns: none -- <reason>` (the grammar refuses a bare `none`, which reads as None above) is a runner: it holds no plan, as `live_plans` already treats such an agent once it is live, so it serves none here and claims nothing (#79b7e92e).
+        runner = declared == ()
         names_work = bool(X.spawn_plans(text) or LH.item_refs(text))
         # THE CHEAP PATH: a spawn that names no plan, no item and no Owns can only be refused by a live mutex, and there is none anywhere unless some plan declares one. Reading ~40 plan heads costs milliseconds; a full fold costs ~0.5 s.
         cheap = not names_work and declared is None and not X.exclusive_plans(root)
@@ -232,7 +235,7 @@ def run(event):
 
             fold = S.load(C.worklist_for(C.project_start({"cwd": cwd})), sync=False)
             by_id = {r["id"]: r for r in fold.items if isinstance(r, dict) and r.get("id")}
-            serving = X.spawn_plans(text, by_id)
+            serving = set() if runner else X.spawn_plans(text, by_id)
             live = X.live_plans(cwd, session_id, fold)
         rows, metas = wl_roster.live_estimate(cwd, session_id)
         writers = sum(1 for r in rows or () if r.get("writer"))
@@ -298,6 +301,11 @@ def run(event):
         )
     if owns_problem:
         event.warn_raw("plan-concurrency: %s.\n" % (OWNS_UNREAD % owns_problem))
+    if runner:
+        event.warn_raw(
+            "plan-concurrency: this %r spawn is briefed `Owns: none`, so it holds no plan and overlaps no file; one edit makes it a holder at the next spawn's check.\n"
+            % kind
+        )
     readers = getattr(live, "readers", None) or []
     if readers:
         event.warn_raw(
