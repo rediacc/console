@@ -3318,7 +3318,7 @@ def _norm_stem(path):
 
 
 def related_test(test_path, anchored):
-    """Whether `test_path` is the test of the anchored file: its basename carries the anchored file's stem as a whole token (`wl_roster.py` is tested by `test_wl_roster.py` or `test_wl_roster_plans.py`), or the stem without a leading `_` or `wl_` when that is at least 4 characters (`test_roster.py` closes `wl_roster.py`). A gate `check_<stem>.py` is also closed by a test carrying `<stem>` (`test_gate_<stem>.py`), the `check_` prefix being no part of the test's name. A test whose name carries none of these forms never closes this finding."""
+    """Whether `test_path` is the test of the anchored file: its basename carries the anchored file's stem as a whole token (`wl_roster.py` is tested by `test_wl_roster.py` or `test_wl_roster_plans.py`), or the stem without a leading `_` or `wl_` when that is at least 4 characters (`test_roster.py` closes `wl_roster.py`). A gate `check_<stem>.py` is also closed by a test carrying `<stem>` (`test_gate_<stem>.py`), the `check_` prefix being no part of the test's name; the 4-character minimum above applies to that `<stem>` too, so `check_io.py` is not closed by `test_gate_io.py`. A test whose name carries none of these forms never closes this finding."""
     stem = _norm_stem(anchored)
     name = pathlib.PurePosixPath(test_path).name.lower().replace("-", "_")
     # The repo names a private module's test without its leading `_` (`test_x_predicate.py` for a private `_x.py`) and a stop-hook module's without `wl_` (`test-x.py` for `wl_x.py`); a stripped stem shorter than 4 characters is not read, so `wl_io.py` does not claim `test_io_x.py`.

@@ -1802,6 +1802,51 @@ def test_mark_fixed_admits_a_gate_test_without_the_check_prefix(world):
     assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
 
 
+def test_mark_fixed_admits_the_unspaced_path_name_test_form(world):
+    """bc8c2dab.3: `--test path::name` with no padding names the same file as the spaced form. CONTROL: an unrelated test file in the same unspaced form is still refused."""
+    world.answer(
+        [
+            {
+                "severity": "high",
+                "file": "check_plan_folders.py",
+                "line": 2,
+                "claim": "the sweep abort is unhandled",
+                "class": "other",
+            }
+        ]
+    )
+    sha = world.commit("check_plan_folders.py")
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    other = world.commit("tests/test_gate_other.py", body="def test_o():\n    assert True\n")
+    with pytest.raises(ValueError, match="does not touch"):
+        R.mark(
+            world.repo,
+            BRANCH,
+            fid,
+            "fixed",
+            [other, "--test", "tests/test_gate_other.py::test_o"],
+            "deadbeef",
+        )
+    fix = world.commit("tests/test_gate_plan_folders.py", body="def test_p():\n    assert True\n")
+    R.mark(
+        world.repo,
+        BRANCH,
+        fid,
+        "fixed",
+        [fix, "--test", "tests/test_gate_plan_folders.py::test_p"],
+        "deadbeef",
+    )
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
+
+
+def test_related_test_applies_the_four_character_minimum_to_a_gate_stem():
+    """bc8c2dab.2: the documented rule. CONTROL: a longer gate stem is closed."""
+    assert not R.related_test("tests/test_gate_io.py", ".ci/scripts/quality/check_io.py")
+    assert R.related_test("tests/test_gate_iolib.py", ".ci/scripts/quality/check_iolib.py")
+
+
 def test_a_claim_that_merely_mentions_a_test_is_not_a_missing_test_claim():
     assert R.TEST_CLAIM_RE.search("no test covers this bump")
     assert R.TEST_CLAIM_RE.search("the new path is untested")

@@ -421,6 +421,26 @@ def test_a_broken_proof_module_answers_no_instead_of_raising(tmp_path, monkeypat
     assert B.vmcheck_admits(_repo(tmp_path)) is False
 
 
+def test_a_syntax_error_in_a_proof_module_is_named_on_stderr(tmp_path, monkeypatch, capsys):
+    """bc8c2dab.4: the no for a broken proof module is not silent, so the operator can see why vm:check never admits."""
+
+    def broken():
+        raise SyntaxError("invalid syntax")
+
+    monkeypatch.setattr(B, "proof_modules", broken)
+    assert B.vmcheck_admits(_repo(tmp_path)) is False
+    assert "proof module" in capsys.readouterr().err
+
+
+def test_control_an_ordinary_probe_failure_stays_quiet(tmp_path, monkeypatch, capsys):
+    def broken():
+        raise ImportError("no module")
+
+    monkeypatch.setattr(B, "proof_modules", broken)
+    assert B.vmcheck_admits(_repo(tmp_path)) is False
+    assert capsys.readouterr().err == ""
+
+
 def test_the_real_vmcheck_probe_answers_no_with_no_receipt(tmp_path):
     # The probe swallows import failures, so the hop is proven to load on its own: a wrong path would answer no for every tree and this case would still pass.
     assert B.SYSPATH_HOP.is_file()

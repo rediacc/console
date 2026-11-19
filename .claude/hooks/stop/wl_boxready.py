@@ -21,6 +21,7 @@ import os
 import pathlib
 import re
 import subprocess
+import sys
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -197,7 +198,10 @@ def vmcheck_admits(root) -> bool:
         verdict = vm_tier.admit(
             where, tree, surfaces.inputs(where, tree), (), vm_tier.chain_for(where, head)
         )
-    except _PROBE_ERRORS:
+    except _PROBE_ERRORS as exc:
+        if isinstance(exc, SyntaxError):
+            # A broken proof module answers no for every tree, so it is named rather than left as a silent no.
+            sys.stderr.write("wl_boxready: a proof module does not parse (%s); vm:check answers no\n" % exc)
         return False
     return bool(verdict.ok)
 
