@@ -8,8 +8,10 @@ Three layers: `settle_by_effort` alone, `run_judge` through a canned `claude` th
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import stat
+import sys
 import types
 
 import pytest
@@ -149,7 +151,7 @@ def judge(tmp_path, monkeypatch):
         encoding="utf-8",
     )
     script.chmod(script.stat().st_mode | stat.S_IEXEC)
-    monkeypatch.setenv("PATH", "%s:/usr/bin:/bin" % bindir)
+    monkeypatch.setenv("PATH", "%s:%s:/usr/bin:/bin" % (bindir, os.path.dirname(sys.executable)))
     monkeypatch.setenv("TMPDIR", str(tmp_path))
 
     def answer(out):

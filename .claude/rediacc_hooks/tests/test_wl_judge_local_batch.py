@@ -11,8 +11,10 @@ Every case has its inverse, differing by one planted fact.
 from __future__ import annotations
 
 import json
+import os
 import stat
 import subprocess
+import sys
 import types
 
 import pytest
@@ -270,7 +272,7 @@ def judge(tmp_path, monkeypatch):
         encoding="utf-8",
     )
     script.chmod(script.stat().st_mode | stat.S_IEXEC)
-    monkeypatch.setenv("PATH", "%s:/usr/bin:/bin" % bindir)
+    monkeypatch.setenv("PATH", "%s:%s:/usr/bin:/bin" % (bindir, os.path.dirname(sys.executable)))
     monkeypatch.setenv("TMPDIR", str(tmp_path))
 
     def answer(out):
