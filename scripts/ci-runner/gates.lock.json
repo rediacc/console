@@ -46,7 +46,6 @@
   {
     "id": "lint:unused",
     "run": "npm run lint:unused",
-    "slow": true,
     "gate": true,
     "heavy": true,
     "leaves": [

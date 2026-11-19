@@ -416,7 +416,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | env:register | local-only | no | no |
 | gen:docs | local-only | no | no |
 | gen:gates-lock | local-only | no | no |
-| lint:unused | quality-code / Unused exports (knip) | yes | yes |
+| lint:unused | quality-code / Unused exports (knip) | yes | no |
 | login:bench | local-only | no | no |
 | pins | local-only | no | no |
 | release:local | local-only | no | no |

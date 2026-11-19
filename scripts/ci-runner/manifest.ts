@@ -90,7 +90,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'lint:unused',
     run: 'npm run lint:unused',
-    slow: true, // 13.4s measured
+    // 4.8s measured as its CI step (the 13.4s was a cold local run): cheap enough for the pre-push lane
     gate: true,
     heavy: true,
     // NO `www-src-probe` MUTEX ANY MORE: it kept knip away from the __control_probe__.tsx that check:i18n:key-usage's control planted in packages/www/src. The control plants into a temp mirror since 2026-09-24 (check:ci-gate-tree-writes V4), so there is nothing left to keep apart.
