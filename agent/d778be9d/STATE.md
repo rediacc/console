@@ -1,21 +1,21 @@
-## SESSION d778be9d 2026-11-19T11:23:30Z
+## SESSION d778be9d 2026-11-19T11:36:54Z
 
-# STATE d778be9d (2026-11-19 ~11:00Z)
+# STATE d778be9d (2026-11-19 ~11:40Z)
 
 ## Next action
-1. Run-40 fixes LANDED (9d40445b7..b4bb5aa5e; d47f4fb97 skipped as empty; conflicts resolved keeping landed path-trace.ts (re-formatted with biome, selftest rc 0), quality-pytest.json (shard:place re-run, coverage rc 0), test_check_pytest_impact.py + test_pytest_impact_tree.py (36 passed)). Re-check check:lint on scripts/ci-runner/path-trace.ts (run-40's typed ledgerRow fix may be lost). Apply the 3 account fixes the writer named: biome format private/account/tests/integration/feedback-schema.test.ts; es admin.json feedback.errorLabel "Error" -> "Mensaje de error"; drop export from FEEDBACK_DAILY_LIMITS/nextUtcMidnight/FeedbackSubjectKind (feedback-limits.service.ts) and FEEDBACK_RESOLVED_RETENTION_DAYS/FEEDBACK_COUNT_RETENTION_DAYS (feedback.service.ts); commit in account + gitlink.
-2. check:ci-lane-budget stays red on 4 measured overages (e2e-workers leg 7/9 13.7m, 8/9 14.3m, probe 15-storage-backup 12.8m, e2e-full-integration 2/2 12.5m) brought in by lane-durations refresh 77e3aa327: ask the operator (shard those jobs vs JOB_BUDGET_CAPS ruling) or shard them.
-3. Then `npm run ci:quick` (vm:check run 11 VERIFIED tree 5d214d1c5f22; rerun vm:check if a trigger path changed), `worklist.py --review-commit d778be9d` in its OWN call, push account, renet (own calls), console with TURBO_PUSH_REASON='red-fix: ...', sync_epic_block 605, ci-trace watch --ref 1104-1 --worklist-item 02389657.
-4. Email separation #45585ba5: operator answers recorded on the item (contact@rediacc.com for humans, alerts@rediacc.io for system; catch-all already reaches muhammed; add people later via redirect :copy lists; enable ManageSieve respecting the mail repo's IP env vars; sieve stays on the volume). Write a plan (PLAN-email-sender-separation) and promote it; implementation touches private/account email transport + the hostinger mail repo (DMS live change -> careful, read compose/env first).
-5. Sidebar plan #138f47b7: start S1 + F1 writers in leases.
-6. Review backlog #b28ccc5c: redo 15 refused marks; wave 4 for ~70 untouched.
-7. eu-to-bench: fix stale memory notes + hostinger-runbook (schedule/bind via eu-bench now); ask operator: retire eu-remote or keep read-only, C8, C2.
+1. Review backlog #b28ccc5c: redo the 15 refused review marks (renet 99c94212/b0e2279c/f6bc3d5c cite renet sha 621081c0; already-fixed ones cite path:line), then wave 4 for the ~70 untouched findings.
+2. Sharding writer a3e4ab779b1add76c (#4889018a) report: `./run.sh worktree land agent-a3e4ab779b1add76c`, check:ci-lane-budget + shard-manifest-coverage + ci-parity on the landed tree, `npm run ci:quick`, vm:check only if a VM trigger path changed, `worklist.py --review-commit d778be9d` alone, push account, renet, console (TURBO_PUSH_REASON='red-fix: run-40 reds and lane budget'), sync_epic_block 605 1104-1, ci-trace watch. The [?] #02389657 default (shard) runs through this writer.
+3. Email plan writer a37634a4e202ab8b7 (#45585ba5) report: verify agent/plans/PLAN-email-sender-separation.md citations, regenerate plan records, commit, promote in QUEUE.md, start its writers.
+4. Sidebar plan #138f47b7: S1 + F1 writers in leases. eu-to-bench stale notes; operator questions (retire eu-remote, C8, C2).
 
 ## Big pieces
-- rdc-feedback fully ticked; sidebar plan promoted (561f72946); security redaction b940b84b3; partner customer no-email c4e9859f7; DMARC auto-relogin; root grants edge eu/us/asia done.
+- PR #605 push: run-40 reds landed 9d40445b7..b4bb5aa5e, ef2d19aa9, account 6fa1bd1 via fbc989490; lane budget sharding in flight.
+- Email sender separation plan in flight; sidebar redesign plan promoted 561f72946.
 
 ## Owed ticks
-- A1a 695c3218, A4d 0a237b2e, N1 abe9b4eb after the push.
+- After the push: A1a 695c3218, A4d 0a237b2e, N1 abe9b4eb.
+- Box audit live-owed (9): PLAN-ciquick-cpu.md#51ceeb4f; PLAN-enterprise-isolation.md#a8892e0c, #0a6e5712, #f4b49503 and the rest listed by `worklist.py --box-audit d778be9d --live-owed`; each runs on its live target (bench/fleet) and ticks with --live-proof.
 
 ## Delegated
-- none live (all writers reported and landed).
+- a3e4ab779b1add76c: #4889018a lane-budget sharding; owns .ci/config/shards/**, .github/workflows/**, e2e test files; accept check:ci-lane-budget rc 0.
+- a37634a4e202ab8b7: #45585ba5 email plan; owns agent/plans/PLAN-email-sender-separation.md.
