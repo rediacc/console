@@ -8699,6 +8699,8 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-account-portal',
     slow: true, // 53.7s measured
     gate: true,
+    // Phases 2 and 3 typecheck the portal and the backend against packages/shared/dist, so a stale dist reds them for the reason check:ci-account-server needs the same edge.
+    needs: ['build:packages'],
     // The non-obvious half is the packages/www/src/data/** block. Phase 5 runs build:account-onboarding, which reads account-onboarding.json, the storyboards and the transcripts, and a missing transcript is a hard failure. A TRANSCRIPT EDIT IN WWW CAN RED THIS GATE with no change anywhere near .ci/ or private/. Phase 4's biome pass only log_warns, so biome.json is deliberately NOT
     // here.
     paths: [
@@ -8727,6 +8729,8 @@ export const GATES: readonly GateSpec[] = [
     run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:ci-account-server',
     slow: true, // 41.5s contended (submodule vitest suite)
     gate: true,
+    // The account server imports @rediacc/shared through packages/shared/dist. Without this edge ci:quick run 40 started the suite before build:packages and 172 suites failed on a dist that predated FEEDBACK_STATUSES.
+    needs: ['build:packages'],
     mutex: ['account-vitest'],
     // ELASTIC (PF5, 2026-10-05): `weight: 2` retired. vitest takes every core by default, so the old budget of 2 understated it. VITEST_MAX_WORKERS is the knob (vitest 5.0.3 reads it after config resolution and it overrides `maxWorkers`), set from the pool's grant; it travels through npm and the Python proxies, which pass the environment on. Unset (a CI step, where no runner grants) it is empty, and vitest keeps its own default.
     cores: { min: 1, max: 'all' },

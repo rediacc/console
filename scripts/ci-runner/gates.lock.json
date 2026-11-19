@@ -9193,6 +9193,9 @@
     "run": "npm run check:ci-account-portal",
     "slow": true,
     "gate": true,
+    "needs": [
+      "build:packages"
+    ],
     "paths": [
       "private/account",
       ".ci/scripts/quality/check_account_portal.py",
@@ -9221,6 +9224,9 @@
     "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:ci-account-server",
     "slow": true,
     "gate": true,
+    "needs": [
+      "build:packages"
+    ],
     "mutex": [
       "account-vitest"
     ],
