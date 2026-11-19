@@ -118,11 +118,12 @@ Order: S1; then A1 and C1 in parallel; A2-A4 after A1, C2-C4 after C1; P1-P2 aft
     Needs: none
     Accept: `cd private/account && npx vitest run tests/unit` exits 0, including the existing scope-registry and shard-router coverage tests with the four new tables; `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.test_d1_migrations` exits 0 (0089 applied to clones of every regional database).
     (ticked) 2026-11-19T03:07:43Z by d778be9d: commit:8b2b22ec40 account 43f8aa8: 0089_feedback.sql + schema + scope registry; vitest 153 passed, typecheck rc 0, test_d1_migrations rc 0 (eu/us/asia clones)
-- [ ] A2 [writer] (W-ACC) `POST /feedback`: token and FREE-blob auth, re-scrub and fingerprint recompute, duplicate upsert, D1 daily counters (D3 intake)
+- [x] A2 [writer] (W-ACC) `POST /feedback`: token and FREE-blob auth, re-scrub and fingerprint recompute, duplicate upsert, D1 daily counters (D3 intake)
     Owns: private/account/src/services/feedback.service.ts, private/account/src/services/feedback-limits.service.ts, private/account/src/routes/feedback.ts, private/account/src/routes/index.ts, private/account/src/container.ts, private/account/tests/integration/feedback-intake.test.ts
     Depends on: A1.
     Needs: none
     Accept: `cd private/account && npx vitest run tests/integration/feedback-intake.test.ts` exits 0 with: a token-filed report is stored with the token's user and org; a FREE-blob report is stored under the `free:` id; no auth is 401; the 21st new report of a user, the 101st of an org and the 11th of a machine in one UTC day are 429 `FEEDBACK_DAILY_LIMIT`, each with a control one below the limit; a duplicate fingerprint at the limit is accepted, raises `occurrence_count` and leaves the counter unchanged; two concurrent submissions at limit-1 admit exactly one; a client-sent fingerprint is ignored; a field carrying a token shape is stored scrubbed.
+    (ticked) 2026-11-19T03:37:09Z by d778be9d: commit:3a5518bddd account 6f0b233 POST /feedback; vitest 16 passed, typecheck rc 0
 - [ ] A3 [writer] (W-ACC) `GET /feedback`, `POST /feedback/query`, `GET|PUT /feedback/settings` with the R6 visibility rules (D3)
     Owns: private/account/src/routes/feedback.ts, private/account/src/services/feedback.service.ts, private/account/tests/integration/feedback-visibility.test.ts
     Depends on: A2.
