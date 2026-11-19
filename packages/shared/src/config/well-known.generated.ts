@@ -42,6 +42,7 @@ export const WK_PKG_SIGNING_KEY_NAME = 'releases@rediacc.com';
 export const WK_ADMIN_EMAIL_DEFAULT = 'admin@rediacc.io';
 export const WK_DEV_USER_EMAIL = 'dev-user@rediacc.io';
 export const WK_OPERATOR_EMAIL = 'muhammed@rediacc.com';
+export const WK_NOTIFY_NOREPLY_EMAIL = 'noreply@notify.rediacc.cloud';
 export const WK_ACCOUNT_DEV_PORT = 4800;
 export const WK_CF_API_BASE = 'https://api.cloudflare.com/client/v4';
 export const WK_GH_ORIGIN = 'https://github.com';

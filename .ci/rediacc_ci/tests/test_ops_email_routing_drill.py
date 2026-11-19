@@ -7,6 +7,7 @@ import pytest
 
 from rediacc_ci.ops import email_routing_drill as erd
 from rediacc_ci.ops.free_to_registered import DrillError
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN
 
 HOOK_KEY = "whsec_test_fixture"
 NOW = datetime(2026, 11, 19, 10, 30, 0, tzinfo=UTC)
@@ -194,7 +195,7 @@ def test_a_missing_secret_is_a_named_error_before_any_request(capsys):
 
 def test_a_non_bench_target_is_refused():
     with pytest.raises(DrillError, match="non-bench"):
-        erd.bench_target("https://eu.rediacc.cloud")
+        erd.bench_target(ACCOUNT_DEFAULT_ORIGIN)
     assert erd.bench_target() == erd.BENCH_ORIGIN
 
 

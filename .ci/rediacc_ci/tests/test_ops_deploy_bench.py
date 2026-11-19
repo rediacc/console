@@ -15,7 +15,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.ops import deploy_bench
-from rediacc_ci.well_known import BENCH_ORIGIN
+from rediacc_ci.well_known import BENCH_ORIGIN, NOTIFY_NOREPLY_EMAIL
 
 pytestmark = pytest.mark.usefixtures("regions_in_tmp")
 
@@ -494,7 +494,7 @@ def test_the_payload_sender_defaults_to_the_product_zone_notify_host(monkeypatch
     """Without AWS_SES_FROM the bench Worker sends from noreply@notify.rediacc.cloud, and an explicit value wins."""
     _bench_env(monkeypatch)
     monkeypatch.delenv("AWS_SES_FROM", raising=False)
-    assert deploy_bench.secrets_payload()["AWS_SES_FROM"] == "noreply@notify.rediacc.cloud"
+    assert deploy_bench.secrets_payload()["AWS_SES_FROM"] == NOTIFY_NOREPLY_EMAIL
     monkeypatch.setenv("AWS_SES_FROM", "x@example.test")
     assert deploy_bench.secrets_payload()["AWS_SES_FROM"] == "x@example.test"
 

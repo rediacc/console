@@ -39,7 +39,7 @@ from rediacc_ci import paths
 from rediacc_ci.ops import deploy_bench
 from rediacc_ci.ops import free_to_registered as ftr
 from rediacc_ci.ops.free_to_registered import API, DrillError, Evidence, Rows, q, sql_literal
-from rediacc_ci.well_known import BENCH_ORIGIN, INFRA_DOMAIN
+from rediacc_ci.well_known import BENCH_ORIGIN, CONTACT_EMAIL, INFRA_DOMAIN, NOTIFY_NOREPLY_EMAIL
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -52,8 +52,8 @@ ALERT_POLL_S = 3.0
 HOOK_KEY_ENV = "STRIPE_SANDBOX_WEBHOOK_SECRET"
 CONTACT_FROM = "contact@notify.rediacc.cloud"
 ALERTS_FROM = "alerts@notify.rediacc.cloud"
-NOREPLY_FROM = "noreply@notify.rediacc.cloud"
-CONTACT_TO = "contact@rediacc.com"
+NOREPLY_FROM = NOTIFY_NOREPLY_EMAIL
+CONTACT_TO = CONTACT_EMAIL
 ALERTS_TO = "alerts@rediacc.io"
 CONTACT_PREFIX = "[Contact bench] "
 SYSTEM_PREFIX = "[System bench] "
