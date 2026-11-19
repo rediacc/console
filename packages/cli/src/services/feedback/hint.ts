@@ -6,7 +6,7 @@
 import { t } from '../../i18n/index.js';
 import type { NextAction } from '../../types/errors.js';
 import { EXIT_CODES } from '../../types/index.js';
-import { currentRequestContext } from '../core/request-context.js';
+import { currentRequestContext, writeStderr } from '../core/request-context.js';
 import { commandWords } from './redact.js';
 
 export const FEEDBACK_HINT_RUN = 'rdc feedback report --last';
@@ -45,5 +45,5 @@ export function withFeedbackOption(
 /** Write the hint line to stderr when it applies. */
 export function printFeedbackHint(ctx: HintContext): void {
   const line = feedbackHint(ctx);
-  if (line) process.stderr.write(`${line}\n`);
+  if (line) writeStderr(`${line}\n`);
 }

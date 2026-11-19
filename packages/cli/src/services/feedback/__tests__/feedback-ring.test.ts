@@ -7,6 +7,7 @@ import {
   createOutputState,
   runInRequestContext,
 } from '../../core/request-context.js';
+import { writeStderr } from '../../core/request-context.js';
 import { redactArgv, resolveCommandPath } from '../redact.js';
 import {
   installStderrTap,
@@ -140,7 +141,7 @@ describe('recordCommand', () => {
 
   it('scrubs the captured stderr tail and bounds it to 4 KB', () => {
     installStderrTap();
-    process.stderr.write(`noise ${'x '.repeat(5000)}\nleaked ${SECRET}\n`);
+    writeStderr(`noise ${'x '.repeat(5000)}\nleaked ${SECRET}\n`);
     recordCommand({ argv: ['config', 'init'], exitCode: 1 });
     const [entry] = readRing();
     expect(entry.stderrTail.length).toBeLessThanOrEqual(4096);
@@ -150,7 +151,7 @@ describe('recordCommand', () => {
 
   it('scrubs a secret that straddles the 4 KB cut of the stderr tail', () => {
     installStderrTap();
-    process.stderr.write(`start ${SECRET} ${'z'.repeat(4078)}\n`);
+    writeStderr(`start ${SECRET} ${'z'.repeat(4078)}\n`);
     recordCommand({ argv: ['config', 'init'], exitCode: 1 });
     const [entry] = readRing();
     expect(entry.stderrTail).not.toContain('ECRETVALUE');
@@ -164,12 +165,14 @@ describe('recordCommand', () => {
     expect(readRing()).toHaveLength(1);
   });
 
-  it('uninstalling the tap restores the original stderr writer', () => {
+  it('the tap leaves process.stderr.write unpatched, and uninstalling stops the capture', () => {
     const original = process.stderr.write;
     installStderrTap();
-    expect(process.stderr.write).not.toBe(original);
-    uninstallStderrTap();
     expect(process.stderr.write).toBe(original);
+    uninstallStderrTap();
+    writeStderr('after uninstall\n');
+    recordCommand({ argv: ['config', 'init'], exitCode: 1 });
+    expect(readRing()[0].stderrTail).not.toContain('after uninstall');
   });
 
   it('swallows a failed write and returns normally', () => {

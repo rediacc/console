@@ -10,7 +10,7 @@ import path from 'node:path';
 import { scrubText } from '@rediacc/shared';
 import { getRediaccDirs } from '@rediacc/shared/paths';
 import { VERSION } from '../../version.js';
-import { currentRequestContext } from '../core/request-context.js';
+import { currentRequestContext, setStderrListener } from '../core/request-context.js';
 import { commandWords, redactArgv, resolveCommandPath } from './redact.js';
 
 export const RING_CAPACITY = 10;
@@ -36,7 +36,6 @@ export interface RecordInput {
 
 let tail = '';
 let tapped = false;
-let restoreStderr: (() => void) | undefined;
 
 /** The last `max` characters, starting at a whitespace boundary so a cut secret never leaves a partial prefix. */
 function boundedTail(text: string, max: number): string {
@@ -46,30 +45,21 @@ function boundedTail(text: string, max: number): string {
   return boundary >= 0 ? cut.slice(boundary) : '';
 }
 
-/** Keep the last bytes the CLI wrote to stderr, so a failure can carry its own output. */
+/**
+ * Keep the last bytes the CLI wrote to stderr, so a failure can carry its own output. The tail comes from the
+ * request-context stderr listener (writeStderr and outputService), not from a patched process stream.
+ */
 export function installStderrTap(): void {
   if (tapped) return;
   tapped = true;
-  const previous = process.stderr.write;
-  const original = previous.bind(process.stderr) as (...args: unknown[]) => boolean;
-  restoreStderr = () => {
-    process.stderr.write = previous;
-  };
-  process.stderr.write = ((chunk: unknown, ...rest: unknown[]) => {
-    try {
-      const text = typeof chunk === 'string' ? chunk : Buffer.from(chunk as Uint8Array).toString();
-      tail = boundedTail(tail + text, STDERR_TAIL_BYTES * 2);
-    } catch {
-      // The tap never interferes with the write itself.
-    }
-    return original(chunk, ...rest);
-  }) as typeof process.stderr.write;
+  setStderrListener((text) => {
+    tail = boundedTail(tail + text, STDERR_TAIL_BYTES * 2);
+  });
 }
 
-/** Put the original stderr writer back and allow a later install (tests). */
+/** Stop capturing and allow a later install (tests). */
 export function uninstallStderrTap(): void {
-  restoreStderr?.();
-  restoreStderr = undefined;
+  setStderrListener(undefined);
   tapped = false;
   tail = '';
 }

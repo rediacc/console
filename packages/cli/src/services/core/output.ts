@@ -6,7 +6,12 @@ import type CliTable3 from 'cli-table3';
 import { stringify as yamlStringify } from 'yaml';
 import type { OutputFormat } from '../../types/index.js';
 import { isMachineReadable } from './output-format.js';
-import { createOutputState, currentRequestContext, type OutputState } from './request-context.js';
+import {
+  createOutputState,
+  currentRequestContext,
+  notifyStderr,
+  type OutputState,
+} from './request-context.js';
 
 // esbuild statically bundles this literal `require` and wraps cli-table3 (→ string-width → chardet, ~16 ms of module init) in a lazy CJS initializer that only runs the first time a table is actually rendered. A top-level `import` would run it eagerly on every startup, including --version/--help/JSON-output runs that never draw a table.
 declare const require: NodeJS.Require;
@@ -159,8 +164,12 @@ class OutputService {
   /** Human output: the terminal's stderr, or this request's stderr buffer. */
   private writeErr(text: string): void {
     const context = currentRequestContext();
-    if (context) context.stderr.push(text);
-    else console.error(text);
+    if (context) {
+      context.stderr.push(text);
+      return;
+    }
+    notifyStderr(`${text}\n`);
+    console.error(text);
   }
 
   /**
@@ -176,7 +185,10 @@ class OutputService {
       context.stderr.push(message);
       return;
     }
-    for (const line of wrapProse(message, terminalWidth())) console.error(paint(line));
+    for (const line of wrapProse(message, terminalWidth())) {
+      notifyStderr(`${line}\n`);
+      console.error(paint(line));
+    }
   }
 
   setQuiet(quiet: boolean): void {
