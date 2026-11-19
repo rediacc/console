@@ -278,7 +278,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - `useTheme('system')` follows `matchMedia`;
     - `usePersistentState` survives malformed JSON.
     (ticked) 2026-11-19T12:58:45Z by d778be9d: commit:c1f61ee2d (private/account a6a8eef F1); vitest nav-config/use-theme/use-persistent-state 34 passed, typecheck:web rc 0, lint rc 0; ThemeToggle re-import left to N1, which deletes ThemeToggle.tsx
-- [ ] I1 [writer] i18n: `nav.json` and `offerUi.json` in 13 locales (Design 6), the English source first, then naturalized; both namespaces registered in i18n/config.ts; hashes regenerated. New `i18n/__tests__/nav-keys.test.ts` resolves every `NAV` labelKey (all modes, every item), every Design 6 `nav` key and the seven `offerUi` keys in all 13 locales.
+- [x] I1 [writer] i18n: `nav.json` and `offerUi.json` in 13 locales (Design 6), the English source first, then naturalized; both namespaces registered in i18n/config.ts; hashes regenerated. New `i18n/__tests__/nav-keys.test.ts` resolves every `NAV` labelKey (all modes, every item), every Design 6 `nav` key and the seven `offerUi` keys in all 13 locales.
   Owns: private/account/web/src/i18n/config.ts, private/account/web/src/i18n/locales/*/nav.json, private/account/web/src/i18n/locales/*/offerUi.json, private/account/web/src/i18n/locales/.translation-hashes.json, private/account/web/src/i18n/__tests__/nav-keys.test.ts
   Depends on: F1 (the test imports `NAV`), S1 (the hash manifest is written serially)
   Needs: none
@@ -286,6 +286,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - a labelKey missing from one locale fails the test, naming the locale and key (control: delete one key in a scratch copy);
     - `{{count}}` and `{{tier}}` placeholders survive in all 13;
     - no non-English value equals the English one outside the conventions' allowlist.
+    (ticked) 2026-11-19T13:20:49Z by d778be9d: commit:69d8866c8 (private/account e7290ad); nav-keys vitest 5 passed; i18n completeness, placeholders, cross-locale, naturalization, hashes, account-key-usage rc 0
 - [ ] T1 [writer] P8: `makeUi(catalog, t)` (Design 7) and its call site in OfferBuilder.tsx; `ui-keys.test.ts`; the key-usage gate learns `ui('<literal>')` with a CONTROL and a SILENT self-test.
   Owns: private/account/web/src/pages/partner/offer/types.ts, private/account/web/src/pages/partner/offer/OfferBuilder.tsx, private/account/web/src/pages/partner/offer/__tests__/ui-keys.test.ts, scripts/gates/check-account-i18n-key-usage.ts
   Depends on: I1 (offerUi.json)
