@@ -473,7 +473,8 @@ export function repoView(root: string): RepoView {
   const realRoot = fs.realpathSync(root);
   for (const flag of ['--absolute-git-dir', '--git-common-dir']) {
     const r = spawnSync('git', ['rev-parse', flag], { cwd: root, encoding: 'utf8' });
-    if (r.status === 0 && r.stdout.trim() !== '') gitDirs.add(path.resolve(realRoot, r.stdout.trim()));
+    if (r.status === 0 && r.stdout.trim() !== '')
+      gitDirs.add(path.resolve(realRoot, r.stdout.trim()));
   }
   return { root: realRoot, files, gitlinks, gitDirs: [...gitDirs], records: readRecordGlobs(root) };
 }
@@ -2059,7 +2060,9 @@ export function parseLedger(text: string): Record<string, LedgerRow> {
   // The literal is JSON-compatible once keys and single quotes are normalised; parse via Function-free conversion.
   const json = body
     .replace(/;\s*$/, '')
-    .replace(/'((?:[^'\\]|\\.)*)'/g, (_, s: string) => JSON.stringify(s.replace(/\\(['\\])/g, '$1')))
+    .replace(/'((?:[^'\\]|\\.)*)'/g, (_, s: string) =>
+      JSON.stringify(s.replace(/\\(['\\])/g, '$1'))
+    )
     .replace(/([{,]\s*)([A-Za-z_]\w*)\s*:/g, '$1"$2":')
     .replace(/,(\s*[}\]])/g, '$1');
   return JSON.parse(json) as Record<string, LedgerRow>;
@@ -3091,7 +3094,10 @@ async function selftest(): Promise<number> {
   );
 
   // The profiler rule, with the file TRACKED: without the rule a tracked profile file a gate never meant to read would be a path (ffa5756e.4).
-  const profileView: RepoView = { ...view, files: [...view.files, '.claude/hooks/profile/bash_env.sh'] };
+  const profileView: RepoView = {
+    ...view,
+    files: [...view.files, '.claude/hooks/profile/bash_env.sh'],
+  };
   const vProfile = attribute(
     {
       files: new Set(['/r/a/one.txt', '/r/.claude/hooks/profile/bash_env.sh']),
@@ -3121,7 +3127,7 @@ async function selftest(): Promise<number> {
       !declaresInputs(base) &&
       declaresInputs({ ...base, pathsOrigin: 'declared' } as LockEntry) &&
       !declaresInputs({ ...base, pathsOrigin: TRACED_ORIGIN } as LockEntry),
-    'declaresInputs: a set with no origin or a declared one is a human\'s, and so is origin declared with every set empty (83f9183b.1); a traced set and no set are not'
+    "declaresInputs: a set with no origin or a declared one is a human's, and so is origin declared with every set empty (83f9183b.1); a traced set and no set are not"
   );
 
   // W2.3: discovery is not history, history is still history, the network is its own verdict.
@@ -4191,7 +4197,8 @@ async function selftest(): Promise<number> {
     'the ledger round-trips through render and parse'
   );
   check(
-    parseLedger(renderLedger(parseLedger(renderLedger(back))))['g:bs']?.reason === rows['g:bs'].reason,
+    parseLedger(renderLedger(parseLedger(renderLedger(back))))['g:bs']?.reason ===
+      rows['g:bs'].reason,
     'a reason with backslashes is stable across repeated read and write cycles'
   );
 
