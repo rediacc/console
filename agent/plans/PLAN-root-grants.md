@@ -257,6 +257,7 @@ Order:
   - `orgService.createOwnedOrg(..., ids?: {orgId})` and `orgService.setDataRegion`;
   - the `root_grants.applied` humanizer in root.ts.
     (ticked) 2026-11-17T15:07:37Z by d778be9d: commit:4499e26ca7 account e594012; vitest tests/integration/root-grants.test.ts rc=0 (15 passed); parity test 111bc06c32 rc=0 (6 passed)
+    Note (2026-11-19): the S1 Accept (line 290) was not cited at the tick. Re-run 2026-11-19: test_ops_root_grants.py 31 passed, check:ci-secret-supply rc 0, check:ci-env-manifest rc 0; check:ci-python-types exits 1 on 17 new findings in other files (test_drills_vm_check.py, test_feedback_classify.py), none in root-grants files.
 
   Integration tests in `root-grants.test.ts` cover:
   - absent root email: apply writes nothing (full table snapshot equal);

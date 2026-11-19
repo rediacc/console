@@ -82,6 +82,7 @@ Core-s is the sum of per-gate `cpuMs` in the receipt plus the runner's own CPU (
     (ticked) 2026-11-18T12:32:45Z by d778be9d: commit:182b846803 -- box Accept re-run 2026-11-18 by a lease writer, rc 0
 - [x] W1.2 [writer] Artifact `needs` hash through the producer's `filesHash`, plus the exempt-reason field (A4), TS hasher and Python twin together. Accept: hash parity test passes; the `needs-null` count in `--quick --list --json` falls.
     (ticked) 2026-11-18T12:32:48Z by d778be9d: commit:182b846803 -- box Accept re-run 2026-11-18 by a lease writer, rc 0
+    Note (2026-11-19): W1.2 landed the `needs` edge through the producer's `artifactHash`, which folds the producer's `filesHash` with its `defHash` and `needs` (scripts/ci-runner/input-hash.ts:266), so the producer's `filesHash` is what the edge hashes. The tick did not record the before and after `needs-null` count of `--quick --list --json`; the Accept's count clause rests on the hash parity test and the rc 0 re-run alone.
 
 ### W2 path declarations -- scripts/ci-runner/path-trace.ts, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json
 - [x] W2.1 [writer] path-trace.ts with `--gate`, `--write` and directory-listing folding (A2). Accept: a fixture gate reading two files gets exactly those two plus its listed directory.
@@ -97,6 +98,7 @@ Core-s is the sum of per-gate `cpuMs` in the receipt plus the runner's own CPU (
 - [ ] W4.2 [writer] check_pytest impact/full switch, receipt fields `pytestScope`, selected count and map digest, and guard acceptance (B5). Accept: `CI=true` runs the full suite, asserted on the collected count.
 - [x] W4.3 [writer] Derive `reads` with the tracer and declare check:ci-pytest `paths` (B2, B6). Accept: a docs-only diff carries check:ci-pytest.
     (corrected ASKED:2026-11-18T14:50Z) The traced union reads all 11,668 tracked files, so no narrower `paths` is honest: check:ci-pytest is whole-tree and pytest_impact selects the tests whose traced reads cover the change. Accept: a docs-only diff RUNS check:ci-pytest and selects only its traced readers plus smoke.
+    Note (2026-11-19): the W4.3 box line keeps the superseded Accept so its signature holds; the tick below certifies the corrected Accept on the line above, not the box line's.
     (ticked) 2026-11-18T15:40:35Z by d778be9d: commit:5e5d1c0f1c commit:bc22fff052 -- check:ci-pytest whole-tree (docs edit probe CARRY before, RUN after), select() judges every changed file through the reads table (738 test files, 16,928 entries); docs/playbook 30, hook guard 71 of 936; pytest_impact tests 141 passed, run.ts --selftest rc 0. DEPS-WAIVED: W4.3 code and tests stand on their own
 
 ### W5 typecheck skip -- scripts/ci-runner/typecheck-incremental.ts and its test

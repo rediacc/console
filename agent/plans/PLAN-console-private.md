@@ -85,7 +85,7 @@ The workflows-page and GITHUB_TOKEN-page wording is as the 2026-11-17 investigat
 - ASKED:2026-11-17T07:02Z:
   - goal: "Hide code, logs can leak";
   - CI hosting: "Public wrapper repo".
-- 2026-11-17T07:07Z: the operator renamed the wrapper from rediacc/rdc to **rediacc/rediacc**, because console already contains rdc (verbatim in worklist item #12e2fd33).
+- 2026-11-17T07:07Z: the operator renamed the wrapper from rediacc/rdc to **rediacc/rediacc**, because console already contains rdc (paraphrase; the verbatim words are in worklist item #12e2fd33).
 - ASKED:2026-11-17T08:46Z:
   - merge gate: "Local guard + merge verb (Recommended)";
   - CI trigger: "Git hook + 5-min sweep (Recommended)";

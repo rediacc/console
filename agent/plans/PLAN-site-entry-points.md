@@ -119,6 +119,7 @@ Portal strings in `onboarding.json` for all 13 locales: tab labels (`installTabU
   - Owns: private/account/web/src/data/study-content/ms6-compliance.ts, private/account/web/src/data/study-content/mt3-cli.ts.
   - Accept: `cd /home/developer/console && grep -rnE "(^|[^/a-z.])/(en|[a-z]{2})/docs/" private/account/web/src/data/study-content | grep -v "rediacc.com/" | wc -l` prints 0.
     (ticked) 2026-11-17T15:07:18Z by d778be9d: commit:21433b52d8 account 859bbc1; ms6:127 and mt3:71 absolute; no-relative-site-links rc=0 (the box's own grep is vacuous, the test is the check)
+    Note (2026-11-19): re-run 2026-11-19: the box's own grep prints 0, so it is not vacuous on the current tree; it prints 0 on the pre-fix tree only if the hits were all absolute, which the no-relative-site-links test, red before and green after, is the stronger witness of.
 - [x] L3 [writer] Relative-link refusal: a test that fails on any relative `/en/docs`, `/<lang>/docs` or `/docs/` href in private/account/web/src, with `onboarding-content.json` `docsPath` allowlisted and TutorialSplash pinned as its only consumer. Run it once against the pre-fix tree (or a stash of L1) to show it fails there.
   - Owns: private/account/web/src/__tests__/no-relative-site-links.test.ts.
   - Accept: `cd /home/developer/console/private/account/web && npx vitest run src/__tests__/no-relative-site-links.test.ts` rc 0.
@@ -131,6 +132,7 @@ Portal strings in `onboarding.json` for all 13 locales: tab labels (`installTabU
   - Owns: packages/shared/src/config/install-commands.ts, packages/shared/src/config/__tests__/install-commands.test.ts, packages/www/src/config/install.ts.
   - Accept: `cd /home/developer/console && npx vitest run packages/shared/src/config/__tests__/install-commands.test.ts` rc 0, and `grep -c 'install-commands' packages/www/src/config/install.ts` prints at least 1.
     (ticked) 2026-11-17T15:07:23Z by d778be9d: commit:959216f248 shared vitest install-commands rc=0 (3 passed, rerun on landed tree), shared build rc=0, www strings byte-identical
+    Note (2026-11-19): re-run 2026-11-19: `grep -c 'install-commands' packages/www/src/config/install.ts` prints 1.
 
 ### Wave 2, after I1 lands
 
@@ -142,6 +144,7 @@ Portal strings in `onboarding.json` for all 13 locales: tab labels (`installTabU
   - Owns: private/account/web/src/data/onboarding-content.json, private/account/web/src/pages/TutorialSplash.tsx.
   - Accept: `cd /home/developer/console && grep -c 'install.sh' private/account/web/src/data/onboarding-content.json` prints 0, and `cd private/account/web && npx vitest run src/pages/__tests__/tutorial-splash-links.test.tsx src/pages/__tests__/tutorial-splash-install-tabs.test.tsx` rc 0.
     (ticked) 2026-11-17T15:21:36Z by d778be9d: commit:956e037614 account 04fd467; install step uses the install-tabs widget, grep -c install.sh = 0; substitution test red before, rc=0 after
+    Note (2026-11-19): re-run 2026-11-19: vitest tutorial-splash-links.test.tsx and tutorial-splash-install-tabs.test.tsx, 2 files and 8 tests passed, rc 0.
 
 ### Live queue: bench first (Ruling 4), then production after the PR merges
 

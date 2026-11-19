@@ -129,6 +129,7 @@ Order: remedy 1 with the locks, then remedy 3, then remedy 4.
     Needs: none
     Accept: `python3 .claude/hooks/stop/test-review-mark.py` exits 0 with two new cases: after a green whole receipt the verb's commit leaves a receipt the push guard admits at the new tree, with no hand re-run; with no green receipt the verb commits and starts nothing.
     (ticked) 2026-11-18T14:20:37Z by d778be9d: commit:de7b06c272 -- landed as de7b06c272 (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
+    Note (2026-11-19): R3 declares `Depends on: none.`, so the DEPS-WAIVED text on R1 to R3 is boilerplate and names no real prerequisite for R3. The ticks of this wave cite one shared pytest run over 33 files; each box's own Accept command was not recorded separately.
 - [ ] R4 [writer] The Stop hook compares trees through `advances`, and the receipt-in-flight hold no longer fires for ci:quick (D1.3)
     Owns: .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/wl_judge.py, .claude/hooks/stop/worklist_messages.py, .claude/hooks/stop/test-release-hold.py, .claude/hooks/stop/test-wl_worktrees.py
     Depends on: R2.

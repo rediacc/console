@@ -82,7 +82,7 @@ Counts for the window:
 - **Finished work ordered again (4 times):**
   - 18:22:18 (1745455368): "advance the deferred W2.3 ee3be061, W2.4 e67fef60 and W10 96e623c9". Lead at 18:23:02: "W2.3, W2.4 and W10 are already finished in their writers' copies."
   - 18:28:46 (1745664243): "write the W10 ratchet wiring and W2.4 hash contract on disk". Lead at 18:28:59: "already written and committed in their writers' copies."
-  - 19:20:31 (1747177977): "start ... W10 96e623c9". Lead at 19:20:45: "W10 ... is already finished in its writer's copy (landed as e3e12fc949)."
+  - 19:20:31 (1747177977): "start ... W10 96e623c9". Lead at 19:20:45: "W10 ... is already finished in its writer's copy (<dead commit pointer>)." The pointer is dead; the work landed as e3e12fc949.
   - 19:36:43 (1747365277): "Start a Plan agent for ee3be061 and e67fef60". The lead filed hint row 19:36:38Z.
 - **The blocked W2.6 ordered three times:** 17:39:09 (1744255290), 18:00:30 (1744957553) and 18:03:58 (1745086650).
   - At 17:39:15 the lead recorded `BLOCKED_BY:#bd56a02f` with the reason: W2.6 needs W2.3+W2.5 and W2.4 on one tree.

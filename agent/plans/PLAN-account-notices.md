@@ -136,6 +136,7 @@ Facts checked 2026-11-12 by the planning agent (file:line as read on 1104-1; a w
 - [x] X2b [live] The bell in the bench portal on the deployed tree: logged in to the bench portal as the drill's account, the header bell shows the unread count the drill left, and opening it lists the notice. Split from X2 (2026-11-14T17:30Z, review 4d1486b6.1).
   Accept: a browser-probe run against the bench portal records the bell count and the listed notice title, with a screenshot path.
     (ticked) 2026-11-19T05:41:15Z by d778be9d: commit:8b2b22ec40 bench notices_drill 12/12 rc 0 held at step 8; bench portal header bell showed Notices, 1 unread and listed Repository licences need attention (806dccc6, 7953851f); screenshot /tmp/notices-x2b/bell-open.png
+    Note (2026-11-19): commit:8b2b22ec40 is the landed tree the live run used; c4fde426 in the commit message is the worklist item id of X2b.
 
 - [x] LP-bench [live] A fresh bench receipt after X2, recorded and ticked through `worklist.py --live-proof`.
   Accept: live-proof bench account-smoke
