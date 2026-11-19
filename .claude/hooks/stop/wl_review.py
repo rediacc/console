@@ -6,7 +6,7 @@ WHY. The operator ruled on 2026-10-02 that a per-commit haiku review through a C
 THE FLOW. A `git commit` (or rebase, cherry-pick, merge, revert, pull) in any Bash call fires the post-bash member `.claude/hooks/post-bash/review_commit.py`. It asks `uncovered()` which commits of the branch have no review, takes the per-sha lock for up to `max_spawn_per_trigger` of them and starts this file as a DETACHED child for each (`--run`). The child reads the
 commit from the object store, calls haiku with a JSON schema and no tools, validates every finding's anchor against the diff and writes the review file atomically, or appends the ledger line for a verdict `ledger_eligible` accepts. It never runs `git add`: the index is shared, and the file rides the session's next commit or `worklist.py --review-commit`.
 
-NOTHING HERE DEPENDS ON THE STOP HOOK, which the operator disabled on 2026-10-02. Three readers enforce and surface the record without it: the pre-bash guard `block_push_with_unrecorded_reviews` refuses a push while a commit is unreviewed, a review is unrecorded or a `block_at` finding is open; the post-bash member reports each finished review on the session's next Bash call; and SessionStart prints `session_start_line()`. The Stop hook's `commit-review` keys
+NOTHING HERE DEPENDS ON THE STOP HOOK, which the operator disabled on 2026-10-02. Three readers enforce and surface the record without it: the pre-bash guard `block_push_with_unrecorded_reviews` refuses a push while a commit is unreviewed, a review is unrecorded or a blocking finding is open (at or above `block_at`, or of class `security` at any severity, `finding_blocks`); the post-bash member reports each finished review on the session's next Bash call; and SessionStart prints `session_start_line()`. The Stop hook's `commit-review` keys
 read the same `branch_state()` when it is switched back on.
 
 SEALED. Every knob is in `.ci/config/commit-review.json`; the only environment reads are the temp directory and the two recursion guards, so a stray export cannot retune a review.
@@ -159,7 +159,7 @@ Severity:
 high = on the changed path it will produce wrong behaviour, data loss, a security hole, a broken build or a CI gate that can no longer fail;
 medium = a real bug only on an edge path, changed behaviour with no test, or a comment that states the wrong behaviour;
 low = anything else worth a line.
-Style and naming are never above low, and neither is anything in prose (plans, notes, generated ledgers, Markdown). Do not speculate about code you cannot see. The diff shows changed lines with a few lines of context, so imports, definitions and declarations usually sit OUTSIDE it: never claim a name is undefined, not imported, missing or a typo because you cannot see its definition here, only when the diff itself removes or renames it. Quote code only as it appears in the diff, character for character. Every finding names a file from this diff and a line number in the NEW version of that file. The claim must say what goes wrong and when, in one sentence a reviewer can check. If the commit only moves or renames text, answer clean. Give every finding a class: doc-contradicts-code (a comment, docstring or message says what the code does not do), missing-control-test (a change with no test, or a test that cannot fail), swallowed-error (a failure is dropped or turned into a pass), seam-not-restored (a patched seam, env var or global leaks into later code), or other. A "Prior on this file" line is a base rate of what earlier reviews fixed or refuted there: it never replaces a defect you can see in the diff, and it is no reason to report one. Also classify the commit for release labels: bump none (no user-facing change), patch, minor (new capability), major (only recommend); kind from bug, feature, docs, ci.
+Style and naming are never above low, and neither is anything in prose (plans, notes, generated ledgers, Markdown). Do not speculate about code you cannot see. The diff shows changed lines with a few lines of context, so imports, definitions and declarations usually sit OUTSIDE it: never claim a name is undefined, not imported, missing or a typo because you cannot see its definition here, only when the diff itself removes or renames it. Quote code only as it appears in the diff, character for character. Every finding names a file from this diff and a line number in the NEW version of that file. The claim must say what goes wrong and when, in one sentence a reviewer can check. If the commit only moves or renames text, answer clean. Give every finding a class: doc-contradicts-code (a comment, docstring or message says what the code does not do), missing-control-test (a change with no test, or a test that cannot fail), swallowed-error (a failure is dropped or turned into a pass), seam-not-restored (a patched seam, env var or global leaks into later code), security (a defect from the SECURITY CHECKLIST below), or other. A "Prior on this file" line is a base rate of what earlier reviews fixed or refuted there: it never replaces a defect you can see in the diff, and it is no reason to report one. Also classify the commit for release labels: bump none (no user-facing change), patch, minor (new capability), major (only recommend); kind from bug, feature, docs, ci.
 
 %(prior)sCOMMIT MESSAGE:
 %(message)s
@@ -177,8 +177,18 @@ FINDING_CLASSES = (
     "missing-control-test",
     "swallowed-error",
     "seam-not-restored",
+    "security",
     "other",
 )
+
+# The class whose every open finding blocks, whatever its severity (operator ruling 2026-11-19, worklist #bbd0f487): finding_blocks is the one test, read by branch_state (and through it --check, the push guard and the Stop hook) and by surface_new.
+SECURITY_CLASS = "security"
+
+
+def finding_blocks(finding, block_rank):
+    """True when an OPEN finding refuses the push: its severity is at or above `block_at`, or its class is `security` at any severity."""
+    return finding.klass == SECURITY_CLASS or SEV_RANK[finding.severity] >= block_rank
+
 
 SCHEMA = {
     "type": "object",
@@ -2394,6 +2404,13 @@ def prior_text(root, paths, log=print):
     return "\n".join(lines) + "\n\n" if lines else ""
 
 
+def security_text(root, paths, log=print):
+    """The prompt's security checklist block (wl_reviewsec.render): the base items of .claude/config/review-security.json plus the learned lines about these paths, under the checklist's character cap; "" with a logged reason when the checklist cannot be read."""
+    import wl_reviewsec
+
+    return wl_reviewsec.security_text(root, paths, log)
+
+
 def _load_commit_policy(root):
     """`.claude/rediacc_hooks/commit_policy.py` loaded BY FILE, as the git-level hooks load it: it is stdlib-only, and no sys.path entry is added."""
     path = pathlib.Path(root) / ".claude" / "rediacc_hooks" / "commit_policy.py"
@@ -2509,7 +2526,8 @@ def run_review(
             else:
                 stat = render_stat(rows, kept)
             prompt = PROMPT % {
-                "prior": prior_text(root, kept, log),
+                # The security checklist rides the `prior` slot ahead of the prior lines, so the template keeps the placeholders every caller fills.
+                "prior": security_text(root, kept, log) + prior_text(root, kept, log),
                 "message": message or "(empty)",
                 "stat": stat or "(empty)",
                 "truncated": ", ".join(cut) or "(none)",
@@ -2620,10 +2638,9 @@ def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=(),
                 continue
             if kind != "open":
                 continue
-            (st["blocking"] if SEV_RANK[f.severity] >= block_rank else st["advisory"]).append(
-                (path, f)
-            )
-            if SEV_RANK[f.severity] >= block_rank and any(f.id in text for text in leased.values()):
+            blocks = finding_blocks(f, block_rank)
+            (st["blocking"] if blocks else st["advisory"]).append((path, f))
+            if blocks and any(f.id in text for text in leased.values()):
                 st["blocking_in_flight"].append((path, f))
     for label in sorted(set(repos if repos is not None else seen_repos) | set(extra_repos)):
         repo = repo_from_label(root, label)
@@ -2819,7 +2836,7 @@ def _ref_age(root, ref, now=None):
 
 
 def check_state(root, branch, label="console", cfg=None, expected_tip=""):
-    """(reasons, lines) for the merge-and-ready precondition: every commit since the base has a review record in `agent/reviews/<branch>/` with no open finding at or above `block_at` and no deferred finding, and every record is committed. Empty `reasons` means the branch is clean. Local only: no network call.
+    """(reasons, lines) for the merge-and-ready precondition: every commit since the base has a review record in `agent/reviews/<branch>/` with no open blocking finding (at or above `block_at`, or of class `security` at any severity) and no deferred finding, and every record is committed. Empty `reasons` means the branch is clean. Local only: no network call.
 
     THE TIP IS NAMED, AND CAN BE PINNED (finding 71afd29f.3). A branch judged at `origin/<branch>` is judged at this clone's remote-tracking ref, which no fetch refreshes here, so the output names that ref, its sha and when it last moved. `expected_tip` (the PR's `headRefOid`, which block_admin_merge already reads with its `gh pr view`; `--expect-tip <sha>` on the CLI) pins it: a walked tip that does not contain that commit refuses as `stale-tip`, so commits the PR would merge are never judged by their absence.
 
@@ -3034,9 +3051,10 @@ def surface_new(root, branch, session_id, cfg=None):
             lines.append("review %s is MALFORMED: %s" % (path.name, err))
             continue
         opened = [f for f in review.findings if f.resolution_kind() == "open"]
-        blocking = [f for f in opened if SEV_RANK[f.severity] >= block_rank]
+        blocking = [f for f in opened if finding_blocks(f, block_rank)]
+        security = sum(1 for f in opened if f.klass == SECURITY_CLASS)
         lines.append(
-            "review %s (%s): %s, %d open finding(s), %d at or above %s"
+            "review %s (%s): %s, %d open finding(s), %d at or above %s%s"
             % (
                 review.sha8,
                 review.repo,
@@ -3044,6 +3062,9 @@ def surface_new(root, branch, session_id, cfg=None):
                 len(opened),
                 len(blocking),
                 cfg["block_at"],
+                (" or of class security (%d, blocking at any severity)" % security)
+                if security
+                else "",
             )
         )
         for f in blocking[:5]:
@@ -4216,6 +4237,13 @@ def main(argv):
             log=log,
         )
         print(path or "nothing written")
+        # The security checklist learns from the record at its own cadence (wl_reviewsec.maybe_learn); a failure is logged and never changes the review's exit.
+        try:
+            import wl_reviewsec
+
+            wl_reviewsec.maybe_learn(root, log=log)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            log("security learner failed: %s: %s" % (type(exc).__name__, exc))
         return 0
     if argv[0] == "--check":
         branch = _opt(argv, "--branch") or current_branch(root)

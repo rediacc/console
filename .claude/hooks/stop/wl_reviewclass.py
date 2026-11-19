@@ -38,9 +38,15 @@ MAX_LINES = 3
 CLASS_ATTR = "klass"
 OTHER = "other"
 
-# ONE ROW PER CLASS, first match wins, so the order is part of the table. Seam and swallowed-error come before the test class because a claim like "the monkeypatch is never restored, so no test ..." is about the seam, and "a failure is silently dropped and no test covers it" is about the swallow; doc-contradicts-code is last of the four because "the comment says" also
-# appears inside the other three as a quotation.
+# ONE ROW PER CLASS, first match wins, so the order is part of the table. Security comes first: a claim like "the token is printed in the error message and no test covers it" is about the secret, and the security class is the one whose every finding blocks (wl_review.finding_blocks). Its rule names only concrete defects (a secret, an injection, a traversal, a widened workflow permission), never a bare "token" or "auth", which this codebase uses for lease tokens and auth flows alike.
+# Seam and swallowed-error come before the test class because a claim like "the monkeypatch is never restored, so no test ..." is about the seam, and "a failure is silently dropped and no test covers it" is about the swallow; doc-contradicts-code is last because "the comment says" also appears inside the other rows as a quotation.
 CLASSES: tuple[dict[str, str], ...] = (
+    {
+        "class": "security",
+        "what": "a secret exposed, input reaching a shell, SQL or path unchecked, or an auth, CI or guard check weakened",
+        "rx": r"(?i)(?:\bsecrets?\b|\bcredentials?\b|\bpasswords?\b|\bprivate keys?\b|\bapi[- ]?keys?\b|\bplaintext\b|\bunredacted\b|\bredact\w*|\b(?:shell|command|sql) injection\b|\binjection\b|\bpath traversal\b|\bescapes? the (?:target|root|base) dir\w*|\bpull_request_target\b|\bprivilege escalation\b|\btenant (?:check|isolation)\b|\bauth(?:entication|orization)? (?:check|bypass)\b|\bbypass(?:es|ed)? (?:the )?(?:auth\w*|guard|gate)\b)",
+        "line": "keep secrets off argv, logs and output, quote or bind every input that reaches a shell, SQL or a path, and keep every auth, workflow-permission and guard refusal reachable",
+    },
     {
         "class": "seam-not-restored",
         "what": "a patched seam, env var or global is not restored",
