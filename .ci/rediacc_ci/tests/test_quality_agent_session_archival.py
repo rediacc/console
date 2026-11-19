@@ -313,3 +313,11 @@ def test_a_worklist_publication_does_not_hold_a_review_directory():
         "docs/notes.md": "see agent/reviews/0101-9/clean.jsonl\n",
     }
     assert ASA.citers_of(texts, ["0101-9"]) == {"docs/notes.md": ["agent/reviews/0101-9/"]}
+
+
+def test_a_hand_written_doc_opening_with_the_publish_marker_still_holds_a_review_directory():
+    """The exemption is for agent/pr/ only; the marker text at the top of a document elsewhere does not buy it."""
+    texts = {
+        "docs/forged.md": ASA.PUBLISH_MARKER + " -->\nsee agent/reviews/0101-9/clean.jsonl\n",
+    }
+    assert ASA.citers_of(texts, ["0101-9"]) == {"docs/forged.md": ["agent/reviews/0101-9/"]}

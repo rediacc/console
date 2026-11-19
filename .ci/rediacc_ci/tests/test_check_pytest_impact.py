@@ -182,7 +182,8 @@ def test_a_bare_trailing_base_is_refused_not_read_as_no_base():
 def test_a_bare_trailing_base_fails_the_run(gate, capsys):
     _root, calls, asked = gate
     assert check_pytest.main(["--base"]) == check_pytest.EXIT_FAIL
-    assert asked == [] and not calls
+    assert asked == []
+    assert not calls
     assert "needs a value" in capsys.readouterr().err
 
 
@@ -196,7 +197,29 @@ def test_a_failed_control_removes_a_previous_scope_record(gate, monkeypatch):
     assert not (root / str(check_pytest.SCOPE_RELPATH)).exists()
 
 
-def test_the_impact_floor_counts_a_smoke_file_a_change_also_reached(gate, monkeypatch):
+def test_a_bad_shard_manifest_removes_a_previous_scope_record(gate):
+    """Finding 4851c274.1: the manifest failure returns before any run, and the last green's scope must not outlive it."""
+    root, _calls, _asked = gate
+    assert check_pytest.main([]) == check_pytest.EXIT_OK
+    assert (root / str(check_pytest.SCOPE_RELPATH)).exists()
+    assert (
+        check_pytest.main(["--shard-manifest", "missing.json", "--shard", "1/1"])
+        == check_pytest.EXIT_FAIL
+    )
+    assert not (root / str(check_pytest.SCOPE_RELPATH)).exists()
+
+
+def test_selftest_leaves_the_previous_scope_record_alone(gate, monkeypatch):
+    """Finding 4851c274.2: `--selftest` records no scope, so deleting the last run's receipt was a side effect."""
+    root, _calls, _asked = gate
+    assert check_pytest.main([]) == check_pytest.EXIT_OK
+    monkeypatch.setattr(check_pytest, "selftest", lambda *_a, **_k: True)
+    assert check_pytest.main(["--selftest"]) == check_pytest.EXIT_OK
+    assert (root / str(check_pytest.SCOPE_RELPATH)).exists()
+
+
+@pytest.mark.usefixtures("gate")
+def test_the_impact_floor_counts_a_smoke_file_a_change_also_reached(monkeypatch):
     """Finding 755fd65e.1: a change reaching a smoke file replaces its `why` label, but the file is still smoke."""
     seen: list[int] = []
     real = check_pytest.impact_floor

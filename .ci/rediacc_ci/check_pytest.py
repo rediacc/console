@@ -1392,6 +1392,10 @@ def main(argv: list[str]) -> int:
 
     root = paths.repo_root()
 
+    # A scope record is this run's or nothing: a red or killed run, a bad shard manifest, a failed control and an unavailable pytest included, must not leave the receipt reading the previous green's scope. `--selftest` records no scope and judges no suite, so it leaves the last run's record alone.
+    if "--selftest" not in argv:
+        (root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name).unlink(missing_ok=True)
+
     manifest_arg, shard_spec_arg = parse_shard_args(argv)
     if (manifest_arg is None) != (shard_spec_arg is None):
         print(
@@ -1410,9 +1414,6 @@ def main(argv: list[str]) -> int:
             print("%s✗%s %s" % (RED, NC, exc), file=sys.stderr)
             return EXIT_FAIL
         shard = (index, of, relpaths)
-
-    # A scope record is this run's or nothing: a red or killed run, a failed control and an unavailable pytest included, must not leave the receipt reading the previous green's scope.
-    (root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name).unlink(missing_ok=True)
 
     test_dirs = testpath_dirs(root)
     pytest_bin = resolve_pytest(root)
@@ -1617,7 +1618,8 @@ def run_impact(pytest_bin: str, root: pathlib.Path, selection) -> int:
         )
         return EXIT_FAIL
     corpus = corpus_test_count_files(files)
-    smoke = [root / f for f in relpaths if f in set(selection.smoke_files)]
+    smoke_set = set(selection.smoke_files)
+    smoke = [root / f for f in relpaths if f in smoke_set]
     floor = impact_floor(corpus_test_count_files(smoke))
     print(
         "info: impact: %d of %d file(s), %d test function(s) on disk (floor %d)"
