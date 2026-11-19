@@ -14,6 +14,8 @@ import re
 import subprocess
 import sys
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
@@ -322,15 +324,22 @@ def test_an_exclusion_key_in_a_config_is_not_a_scope(monkeypatch, tmp_path):
     assert "agent/**" in gate._json_globs({"scope": pins["literalExclude"]})
 
 
-def test_the_plan_records_have_exactly_the_measured_readers(monkeypatch):
-    """The real tree: the derived reader set of the six plan records, less the exemptions the policy names, is PLAN_READERS exactly. Red before the fix, when the derivation flagged 168 gates for the plan glob alone."""
-    gate = _load_gate(monkeypatch)
-    doc = json.loads(POLICY.read_text(encoding="utf-8"))
-    records = gate.parse_policy(doc)
-    by_glob = {r["glob"]: r for r in records}
-    assert set(PLAN_RECORDS) <= set(by_glob), sorted(set(PLAN_RECORDS) - set(by_glob))
+@pytest.fixture(scope="module")
+def real_derivation():
+    """The real-tree derivation, run once for the module: a full scan of the tracked tree is the test's whole cost, and fixture setup is shared time the slow-test ratchet does not charge to a test."""
+    with pytest.MonkeyPatch.context() as mp:
+        gate = _load_gate(mp)
+    records = gate.parse_policy(json.loads(POLICY.read_text(encoding="utf-8")))
     lock = json.loads(LOCK.read_text(encoding="utf-8"))
     derived, scanned, _read = gate.derive_readers(lock, records, ROOT)
+    return records, derived, scanned
+
+
+def test_the_plan_records_have_exactly_the_measured_readers(real_derivation):
+    """The real tree: the derived reader set of the six plan records, less the exemptions the policy names, is PLAN_READERS exactly. Red before the fix, when the derivation flagged 168 gates for the plan glob alone."""
+    records, derived, scanned = real_derivation
+    by_glob = {r["glob"]: r for r in records}
+    assert set(PLAN_RECORDS) <= set(by_glob), sorted(set(PLAN_RECORDS) - set(by_glob))
     assert scanned >= 200, scanned
     readers = set()
     declared = set()
