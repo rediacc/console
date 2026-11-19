@@ -503,19 +503,19 @@ def check(name, want_blocked, command, cwd=ROOT, got=None):
 
 print("== refused (%d rows)" % len(REFUSED))
 for (row_name, row_command), row_got in zip(
-    REFUSED, _par(lambda r: run_guard(r[1]), REFUSED)
+    REFUSED, _par(lambda r: run_guard(r[1]), REFUSED), strict=True
 ):
     check(row_name, True, row_command, got=row_got)
 
 print("== allowed (%d rows)" % len(ALLOWED))
 for (row_name, row_command), row_got in zip(
-    ALLOWED, _par(lambda r: run_guard(r[1]), ALLOWED)
+    ALLOWED, _par(lambda r: run_guard(r[1]), ALLOWED), strict=True
 ):
     check(row_name, False, row_command, got=row_got)
 
 print("== a source relative to the event's cwd (%d rows)" % len(RELATIVE))
 for (row_name, row_blocked, row_command, row_cwd), row_got in zip(
-    RELATIVE, _par(lambda r: run_guard(r[2], r[3]), RELATIVE)
+    RELATIVE, _par(lambda r: run_guard(r[2], r[3]), RELATIVE), strict=True
 ):
     check(row_name, row_blocked, row_command, cwd=row_cwd, got=row_got)
 
@@ -546,6 +546,8 @@ else:
 
 print("== the DEFECT control")
 defect_pair = _declared_defect()
+
+
 # The control only needs half the refusals to flip. The check runs between waves, so it stops at the first wave boundary at or past the half and may run up to one wave more.
 def _flip_half(rows, pair):
     """Names of rows the guard allows under `pair` (None runs the real guard), checked between waves: it stops at the first wave boundary at or past half."""
@@ -555,7 +557,9 @@ def _flip_half(rows, pair):
         if len(flipped) >= max(len(rows) // 2, 1):
             break
         chunk = rows[start : start + wave]
-        for (n, _c), (rc, _e) in zip(chunk, _par(lambda r: run_guard(r[1], defect=pair), chunk)):
+        for (n, _c), (rc, _e) in zip(
+            chunk, _par(lambda r, pair=pair: run_guard(r[1], defect=pair), chunk), strict=True
+        ):
             if rc == 0:
                 flipped.append(n)
     return flipped
@@ -566,7 +570,10 @@ flipped = _flip_half(REFUSED, defect_pair)
 _unplanted = _flip_half(REFUSED, None)
 if _unplanted:
     failures.append("defect control cannot fail")
-    print("*** FAIL *** with nothing planted %d refusals still flipped: %r" % (len(_unplanted), _unplanted[:3]))
+    print(
+        "*** FAIL *** with nothing planted %d refusals still flipped: %r"
+        % (len(_unplanted), _unplanted[:3])
+    )
 if len(flipped) < len(REFUSED) // 2 or not flipped:
     failures.append("defect control")
     print(
@@ -580,7 +587,9 @@ else:
     )
 kept = [
     n
-    for (n, _c), (_rc, _e) in zip(ALLOWED, _par(lambda r: run_guard(r[1], defect=defect_pair), ALLOWED))
+    for (n, _c), (_rc, _e) in zip(
+        ALLOWED, _par(lambda r: run_guard(r[1], defect=defect_pair), ALLOWED), strict=True
+    )
     if _rc != 0
 ]
 if kept:

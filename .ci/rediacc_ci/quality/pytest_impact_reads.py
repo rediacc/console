@@ -62,7 +62,6 @@ import signal
 import subprocess
 import sys
 import tempfile
-import threading
 import time
 import urllib.parse
 from dataclasses import dataclass, field
@@ -137,7 +136,7 @@ def pytest_configure(config) -> None:
         _MARKERS.append(directory)
 
 
-def pytest_unconfigure(config) -> None:
+def pytest_unconfigure() -> None:
     # A later session in this process, or a later `_mark`, must not write markers into a finished trace's directory.
     _MARKERS.clear()
 
@@ -583,22 +582,20 @@ def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attribut
         _LIVE.append(child)
         stream = child.stderr
 
-        fold_errors: list[BaseException] = []
-
         def fold() -> None:
             if stream is None:
                 return
             try:
                 for line in stream:
                     att.feed(line)
-            except Exception as exc:
-                fold_errors.append(exc)
-                # Keep draining: strace blocks on a full stderr pipe, pytest then never writes its rc file, and the loop below would wait forever.
+            finally:
+                # Keep draining after a failed feed: strace blocks on a full stderr pipe, pytest then never writes its rc file, and the loop below would wait forever.
                 for _line in stream:
                     pass
 
-        reader = threading.Thread(target=fold, daemon=True)
-        reader.start()
+        # A pool rather than a bare thread: the future carries a failed fold back to this thread, where it is raised.
+        pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        reader = pool.submit(fold)
         leaked: list[str] = []
         ended_at = None
         while child.poll() is None:
@@ -615,11 +612,12 @@ def run_trace(root: pathlib.Path, pytest_argv: list[str]) -> tuple[int, Attribut
                 break
             time.sleep(0.5)
         child.wait()
-        reader.join()
-        if fold_errors:
+        pool.shutdown(wait=True)
+        fold_error = reader.exception()
+        if fold_error is not None:
             raise RuntimeError(
-                "pytest_impact_reads: folding the strace stream failed: %r" % fold_errors[0]
-            ) from fold_errors[0]
+                "pytest_impact_reads: folding the strace stream failed: %r" % fold_error
+            ) from fold_error
         output = pathlib.Path(log).read_text(encoding="utf-8", errors="replace")
         try:
             rc = int(rc_file.read_text(encoding="utf-8").strip())

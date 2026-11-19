@@ -1079,9 +1079,7 @@ for label, mutant in CONTROLS:
             % (
                 label,
                 mutant,
-                "the named case %r did not flip" % must
-                if must
-                else "no refusal turned allowed",
+                "the named case %r did not flip" % must if must else "no refusal turned allowed",
             )
         )
         fails += 1

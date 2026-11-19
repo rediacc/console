@@ -9,6 +9,7 @@ import pathlib
 import signal
 import subprocess
 import sys
+from typing import ClassVar
 
 import pytest
 
@@ -647,7 +648,7 @@ def test_a_marker_that_cannot_be_written_falls_back_to_no_test_file(tmp_path, mo
 def test_unconfigure_stops_the_plugin_marking(tmp_path, monkeypatch):
     """Finding 53d58328.2."""
     monkeypatch.setattr(pr, "_MARKERS", [str(tmp_path)])
-    pr.pytest_unconfigure(None)
+    pr.pytest_unconfigure()
     pr._mark(T1)
     assert os.listdir(tmp_path) == []
 
@@ -700,6 +701,8 @@ class _OneShot:
 class _Held:
     """A traced child whose rc file exists but which does not end by itself: `strace -f` waits for every tracee."""
 
+    last: ClassVar["_Held"]
+
     def __init__(self, argv, **_k):
         log = argv[argv.index("-c") + 2]
         pathlib.Path(log).write_text("1 passed\n", encoding="utf-8")
@@ -734,11 +737,13 @@ def held_trace(monkeypatch):
     monkeypatch.setattr(pr, "ORPHAN_GRACE_S", -1.0)
 
 
-def test_an_orphan_outliving_pytest_is_killed_and_named(tmp_path, monkeypatch, held_trace):
+@pytest.mark.usefixtures("held_trace")
+def test_an_orphan_outliving_pytest_is_killed_and_named(tmp_path, monkeypatch):
     """Finding c29ab62a.3: the grace expiry kills the session, names its command, and strace then ends."""
 
     def kill_session(sid, spare=None):
-        assert sid == 4242 and spare == 4242
+        assert sid == 4242
+        assert spare == 4242
         _Held.last.alive = False
         return ["tail -f\n/dev/null"]
 
@@ -751,25 +756,30 @@ def test_an_orphan_outliving_pytest_is_killed_and_named(tmp_path, monkeypatch, h
     assert not _Held.last.killed
 
 
-def test_an_orphan_that_left_the_session_does_not_hang_the_trace(tmp_path, monkeypatch, held_trace):
+@pytest.mark.usefixtures("held_trace")
+def test_an_orphan_that_left_the_session_does_not_hang_the_trace(tmp_path, monkeypatch):
     """Finding c29ab62a.1: a setsid leak is outside `_kill_session`; strace itself is ended and the run says so."""
-    monkeypatch.setattr(pr, "_kill_session", lambda _sid, spare=None: [])
+    monkeypatch.setattr(pr, "_kill_session", lambda _sid, **_k: [])
     rc, _att, out = pr.run_trace(tmp_path, ["pytest"])
     assert rc == 0
     assert _Held.last.killed
     assert "outside the strace session" in "".join(pr.leaked_lines(out))
 
 
-def test_a_failure_folding_the_stream_is_raised_not_swallowed_in_the_thread(
-    tmp_path, monkeypatch, held_trace
-):
+@pytest.mark.usefixtures("held_trace")
+def test_a_failure_folding_the_stream_is_raised_not_swallowed_in_the_thread(tmp_path, monkeypatch):
     """Finding c29ab62a.2: the reader keeps draining, and the run fails loudly with the cause."""
 
-    def broken(self, _line):
+    def broken(_self, _line):
         raise ValueError("bad line")
 
     monkeypatch.setattr(pr.Attributor, "feed", broken)
-    monkeypatch.setattr(pr, "_kill_session", lambda _sid, spare=None: _Held.last.kill() or [])
+
+    def kill_session(_sid, **_k):
+        _Held.last.kill()
+        return []
+
+    monkeypatch.setattr(pr, "_kill_session", kill_session)
     original = _Held.__init__
 
     def with_lines(self, argv, **k):
@@ -897,7 +907,11 @@ def test_kill_live_kills_only_sessions_still_running(monkeypatch):
         def poll(self):
             return None if self.running else 0
 
-    monkeypatch.setattr(pr, "_kill_session", lambda sid, spare=None: killed.append(sid) or [])
+    def kill_session(sid, **_k):
+        killed.append(sid)
+        return []
+
+    monkeypatch.setattr(pr, "_kill_session", kill_session)
     monkeypatch.setattr(pr, "_LIVE", [Child(1, True), Child(2, False)])
     pr._kill_live()
     assert killed == [1]

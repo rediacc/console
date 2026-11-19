@@ -750,7 +750,9 @@ def _flip_half(rows, pair, want=0):
         if len(flipped) >= stop:
             break
         chunk = rows[start : start + wave]
-        for (n, _c), (rc, _e) in zip(chunk, _par(lambda r: run_guard(r[1], defect=pair), chunk)):
+        for (n, _c), (rc, _e) in zip(
+            chunk, _par(lambda r, pair=pair: run_guard(r[1], defect=pair), chunk), strict=True
+        ):
             if rc == want:
                 flipped.append(n)
     return flipped
@@ -776,13 +778,13 @@ def check(name, want_blocked, command, got=None):
 
 print("== refused (%d rows)" % len(REFUSED))
 for (row_name, row_command), row_got in zip(
-    REFUSED, _par(lambda r: run_guard(r[1]), REFUSED)
+    REFUSED, _par(lambda r: run_guard(r[1]), REFUSED), strict=True
 ):
     check(row_name, True, row_command, row_got)
 
 print("== allowed (%d rows)" % len(ALLOWED))
 for (row_name, row_command), row_got in zip(
-    ALLOWED, _par(lambda r: run_guard(r[1]), ALLOWED)
+    ALLOWED, _par(lambda r: run_guard(r[1]), ALLOWED), strict=True
 ):
     check(row_name, False, row_command, row_got)
 
@@ -867,7 +869,9 @@ for label, pair, rows in (
         )
     kept = [
         n
-        for (n, _c), (rc, _e) in zip(ALLOWED, _par(lambda r: run_guard(r[1], defect=pair), ALLOWED))
+        for (n, _c), (rc, _e) in zip(
+            ALLOWED, _par(lambda r, pair=pair: run_guard(r[1], defect=pair), ALLOWED), strict=True
+        )
         if rc != 0
     ]
     if kept:
@@ -1106,7 +1110,11 @@ for label, pair, rows in (
         planted = [pair, WALK_OFF]
     admitted = [
         n
-        for (n, _c), (rc, _e) in zip(rows, _par(lambda r: run_guard(r[1], defect=planted), rows))
+        for (n, _c), (rc, _e) in zip(
+            rows,
+            _par(lambda r, planted=planted: run_guard(r[1], defect=planted), rows),
+            strict=True,
+        )
         if rc == 0
     ]
     if len(admitted) != len(rows):
@@ -1301,7 +1309,11 @@ for scope_label, scope_pair, scope_rows, scope_want in (
         r[0]
         for r, (rc, _e) in zip(
             scope_rows,
-            _par(lambda r: run_guard(r[1], defect=scope_pair, cwd=r[2]), scope_rows),
+            _par(
+                lambda r, scope_pair=scope_pair: run_guard(r[1], defect=scope_pair, cwd=r[2]),
+                scope_rows,
+            ),
+            strict=True,
         )
         if rc == scope_want
     ]

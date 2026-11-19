@@ -75,7 +75,9 @@ def own_seconds(phases: object) -> tuple[float, float] | None:
 
     Own is `setup - shared_setup + call + teardown - shared_teardown`; the second number is the shared setup plus the shared teardown. An unmeasured share (null or absent) counts as zero, so the whole phase stays charged to the test.
     """
-    if not isinstance(phases, dict) or all(phases.get(k) is None for k in ("setup", "call", "teardown")):
+    if not isinstance(phases, dict) or all(
+        phases.get(k) is None for k in ("setup", "call", "teardown")
+    ):
         return None
     try:
         setup = float(phases.get("setup") or 0.0)

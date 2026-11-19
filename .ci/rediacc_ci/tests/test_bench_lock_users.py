@@ -147,7 +147,8 @@ def test_deploy_bench_set_root_password_also_waits(hold, monkeypatch, capsys) ->
     assert reached == []
 
 
-def test_control_set_root_password_runs_when_the_region_is_free(runtime, monkeypatch) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_control_set_root_password_runs_when_the_region_is_free(monkeypatch) -> None:
     reached: list[str] = []
     _deploy_bench_world(monkeypatch, reached)
     monkeypatch.setattr(deploy_bench, "set_root_password", lambda **_k: reached.append("set"))
@@ -155,8 +156,9 @@ def test_control_set_root_password_runs_when_the_region_is_free(runtime, monkeyp
     assert reached == ["set"]
 
 
+@pytest.mark.usefixtures("runtime")
 def test_a_busy_error_raised_by_the_proof_run_is_not_reported_as_a_lock_refusal(
-    runtime, monkeypatch, capsys
+    monkeypatch,
 ) -> None:
     """Finding 941d86d6.3: only taking the bench locks is a refusal; the run's own ResourceBusyError propagates."""
 

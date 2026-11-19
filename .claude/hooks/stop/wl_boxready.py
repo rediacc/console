@@ -201,7 +201,9 @@ def vmcheck_admits(root) -> bool:
     except _PROBE_ERRORS as exc:
         if isinstance(exc, SyntaxError):
             # A broken proof module answers no for every tree, so it is named rather than left as a silent no.
-            sys.stderr.write("wl_boxready: a proof module does not parse (%s); vm:check answers no\n" % exc)
+            sys.stderr.write(
+                "wl_boxready: a proof module does not parse (%s); vm:check answers no\n" % exc
+            )
         return False
     return bool(verdict.ok)
 

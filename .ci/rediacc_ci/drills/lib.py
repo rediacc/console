@@ -241,6 +241,8 @@ class Drill:
         self.name = name
         self._original_env: dict[str, str] = dict(os.environ)
         self.selftest = selftest
+        # The commit a receipt is pinned to (`--commit <sha>`); None records HEAD (backup_check_trigger.record_drill).
+        self.commit: str | None = None
         self.keep_work = (
             bool(os.environ.get("DRILL_KEEP_WORK") == "1") if keep_work is None else keep_work
         )

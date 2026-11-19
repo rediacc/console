@@ -13,7 +13,20 @@ from rediacc_hooks.tests import wlfix
 PF = wlfix.import_wl("wl_planfile")
 P = wlfix.import_wl("wl_planfid")
 
-WORDS = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel", "india", "juliet", "kilo", "lima"]
+WORDS = [
+    "alpha",
+    "bravo",
+    "charlie",
+    "delta",
+    "echo",
+    "foxtrot",
+    "golf",
+    "hotel",
+    "india",
+    "juliet",
+    "kilo",
+    "lima",
+]
 
 
 def brute(task, prepared):
@@ -60,7 +73,9 @@ def test_the_pruning_bound_is_the_ceiling_of_the_match_ratio():
     shared = " ".join(WORDS[:need])
     rows = [("hit", " ", shared)]
     assert PF.match_item(task, PF.prepare(rows)) == ("hit", " ")
-    below = [("miss", " ", " ".join(WORDS[: need - 1]) + " yankee xray whiskey victor uniform tango")]
+    below = [
+        ("miss", " ", " ".join(WORDS[: need - 1]) + " yankee xray whiskey victor uniform tango")
+    ]
     assert PF.match_item(task, PF.prepare(below)) is None
 
 

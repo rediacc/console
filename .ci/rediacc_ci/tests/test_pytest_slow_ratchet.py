@@ -9,6 +9,7 @@ import pathlib
 import pytest
 
 from rediacc_ci.policy_paths import policy_path
+from rediacc_ci.quality import pytest_phase_timing as plugin
 from rediacc_ci.quality import pytest_slow_ratchet as ratchet
 
 
@@ -379,8 +380,6 @@ def test_a_group_suffix_is_dropped_but_an_at_sign_inside_a_parameter_id_is_kept(
 
 
 def test_the_plugin_and_the_ratchet_strip_the_same_group_suffix():
-    from rediacc_ci.quality import pytest_phase_timing as plugin
-
     assert plugin.GROUP_SUFFIX_RE.pattern == ratchet.GROUP_SUFFIX_RE.pattern
     assert plugin.junit_node("t/test_x.py::test_y[a@1]") == "t.test_x::test_y[a@1]"
 
