@@ -465,7 +465,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
 | `agent/plans/PLAN-account-notices.md` | approved | 160 | 1 | 16 | 44137 |
-| `agent/plans/PLAN-account-sidebar-redesign.md` | approved | 434 | 6 | 9 | 63438 |
+| `agent/plans/PLAN-account-sidebar-redesign.md` | approved | 435 | 5 | 10 | 63673 |
 | `agent/plans/PLAN-add-chunkstore-backup-verb.md` | compacted | 64 | 0 | 0 | 5651 |
 | `agent/plans/PLAN-add-js-extensions-shared.md` | compacted | 50 | 0 | 0 | 4285 |
 | `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4623 |
@@ -528,7 +528,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
 | `agent/plans/PLAN-elite-to-onprem-rename.md` | proposed | 92 | 19 | 0 | 28670 |
-| `agent/plans/PLAN-email-sender-separation.md` | approved | 258 | 15 | 3 | 45717 |
+| `agent/plans/PLAN-email-sender-separation.md` | approved | 261 | 12 | 6 | 46223 |
 | `agent/plans/PLAN-enterprise-isolation.md` | executing | 218 | 8 | 26 | 41080 |
 | `agent/plans/PLAN-enterprise-tenants.md` | approved | 478 | 23 | 24 | 66121 |
 | `agent/plans/PLAN-executor-durable-object-policy.md` | approved | 487 | 0 | 18 | 65968 |
