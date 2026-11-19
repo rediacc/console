@@ -34,6 +34,7 @@ import wl_defersettle
 import wl_deflect
 import wl_effort
 import wl_effort_tune
+import wl_feedback_triage
 import wl_git
 import wl_hints
 import wl_histfirst
@@ -5347,6 +5348,22 @@ def run_stop(event, event_ok, worklist, hook_file):
                 _bl,
                 1,
                 refresh_min=60,
+                on_change=False,
+            )
+    except Exception:
+        pass
+    #   feedback-triage-due  the newest ci:quick receipt is red with no triage run since, or the last triage run is over 24 h old (agent/plans/PLAN-rdc-feedback.md T4, advise level only).
+    try:
+        _ft = wl_feedback_triage.due(root)
+        if _ft:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "feedback-triage-due",
+                _ft,
+                1,
+                refresh_min=360,
                 on_change=False,
             )
     except Exception:

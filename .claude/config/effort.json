@@ -405,6 +405,9 @@
     "backup-lag": {
       "advise": "low"
     },
+    "feedback-triage-due": {
+      "advise": "low"
+    },
     "ciquick-on-red": {
       "advise": "low"
     },
