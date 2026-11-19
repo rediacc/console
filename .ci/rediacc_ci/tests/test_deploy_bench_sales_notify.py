@@ -1,4 +1,4 @@
-"""The bench secret document carries SALES_NOTIFY_EMAIL, the optional sales digest recipient the deploy-bench-eu profile binds: dropping the key from either side fails here. Only this one key is checked; other deploy-bench-eu keys are not compared."""
+"""The bench secret document carries SALES_NOTIFY_EMAIL, the optional sales digest recipient the deploy-bench-eu profile binds: dropping the key from either side fails here. The document checks cover this one key; the last test covers the profile entries of the four contact and alerts addresses. Other deploy-bench-eu keys are not compared."""
 
 import json
 
@@ -60,3 +60,14 @@ def test_an_unset_sales_notify_email_is_pushed_empty_which_the_worker_reads_as_a
     _seed(monkeypatch)
     monkeypatch.delenv("SALES_NOTIFY_EMAIL", raising=False)
     assert deploy_bench.secrets_payload()["SALES_NOTIFY_EMAIL"] == ""
+
+
+@pytest.mark.parametrize("region", ["eu", "us", "asia"])
+def test_every_bench_and_production_profile_binds_the_four_sender_addresses(region: str) -> None:
+    """The deploy-bench and account-secrets profiles of each region bind the four contact and alerts addresses (PLAN-email-sender-separation E1): the bench ones optionally, since deploy_bench defaults them, and the production ones as required, since the push refuses an empty value."""
+    supply = json.loads(
+        paths.repo_root().joinpath(".ci/config/secret-supply.json").read_text("utf-8")
+    )["consumers"]
+    names = {"CONTACT_FROM_EMAIL", "ALERTS_FROM_EMAIL", "CONTACT_NOTIFY_EMAIL", "ALERTS_NOTIFY_EMAIL"}
+    assert names <= set(supply["deploy-bench-" + region]["optional"])
+    assert names <= set(supply["account-secrets-" + region]["required"])

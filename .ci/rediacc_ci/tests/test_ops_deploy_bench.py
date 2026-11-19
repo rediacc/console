@@ -499,6 +499,29 @@ def test_the_payload_sender_defaults_to_the_product_zone_notify_host(monkeypatch
     assert deploy_bench.secrets_payload()["AWS_SES_FROM"] == "x@example.test"
 
 
+SENDER_KEYS = {
+    "CONTACT_FROM_EMAIL": "contact@notify.rediacc.cloud",
+    "ALERTS_FROM_EMAIL": "alerts@notify.rediacc.cloud",
+    "CONTACT_NOTIFY_EMAIL": "contact@rediacc.com",
+    "ALERTS_NOTIFY_EMAIL": "alerts@rediacc.io",
+}
+
+
+def test_the_payload_carries_the_four_sender_defaults_and_an_explicit_value_wins(monkeypatch):
+    """The bench Worker gets the contact and alerts senders and recipients of Design 2 when the profile binds none; one explicit value overrides only its own key (PLAN-email-sender-separation E1)."""
+    _bench_env(monkeypatch)
+    for name in SENDER_KEYS:
+        monkeypatch.delenv(name, raising=False)
+    payload = deploy_bench.secrets_payload()
+    assert {name: payload[name] for name in SENDER_KEYS} == SENDER_KEYS
+    monkeypatch.setenv("ALERTS_NOTIFY_EMAIL", "ops@example.test")
+    payload = deploy_bench.secrets_payload()
+    assert payload["ALERTS_NOTIFY_EMAIL"] == "ops@example.test"
+    assert {n: payload[n] for n in SENDER_KEYS if n != "ALERTS_NOTIFY_EMAIL"} == {
+        n: v for n, v in SENDER_KEYS.items() if n != "ALERTS_NOTIFY_EMAIL"
+    }
+
+
 def test_the_payload_carries_the_backup_store_kek(monkeypatch):
     """The bench KEK reaches the Worker under its Worker name, and an empty one refuses the push."""
     _bench_env(monkeypatch)

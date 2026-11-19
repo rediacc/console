@@ -68,6 +68,11 @@ FIXTURE_ENV = {
     "R2_JURISDICTION": "eu",
     "STRIPE_SECRET_KEY": "sk_live_fixture",
     "STRIPE_WEBHOOK_SECRET_EU": "whsec_eu",
+    # Port-only: the twin ignores them, `_without_config_key` takes their lines out of the port's document.
+    "CONTACT_FROM_EMAIL": "cf@example.invalid",
+    "ALERTS_FROM_EMAIL": "af@example.invalid",
+    "CONTACT_NOTIFY_EMAIL": "cn@example.invalid",
+    "ALERTS_NOTIFY_EMAIL": "an@example.invalid",
 }
 
 # The variable to BLANK in order to make a given guard fire, under SUFFIX=EU.
@@ -195,15 +200,24 @@ def _as_port_env(env: dict[str, str]) -> dict[str, str]:
     return out
 
 
+PORT_ONLY_ADDRESSES = (
+    "CONTACT_FROM_EMAIL",
+    "ALERTS_FROM_EMAIL",
+    "CONTACT_NOTIFY_EMAIL",
+    "ALERTS_NOTIFY_EMAIL",
+)
+
+
 def _without_config_key(calls: str) -> str:
-    """The recorded call with the document lines the twin never had removed: the free-licence HMAC key, the AE read token, the Cloudflare account id, the backup store KEK, the config server key, the commercial register's name and the sales-digest recipient (the document's last key, so its line and the comma before it go)."""
+    """The recorded call with the document lines the twin never had removed: the free-licence HMAC key, the AE read token, the Cloudflare account id, the backup store KEK, the config server key, the commercial register's name and the sales-digest recipient and the four contact and alerts addresses (the document's last five keys, so their lines and the comma before them go)."""
     calls = calls.replace('  "SELLER_REGISTER_NAME": "",\n', "")
     calls = calls.replace('  "FREE_LICENSE_HMAC_KEY": "hm",\n', "")
     calls = calls.replace('  "ACCOUNT_AE_READ_TOKEN": "ae",\n', "")
     calls = calls.replace('  "CLOUDFLARE_ACCOUNT_ID": "acct",\n', "")
     calls = calls.replace('  "ACCOUNT_BACKUP_STORE_KEK": "%s",\n' % KEK_VALUE, "")
     calls = calls.replace('  "ACCOUNT_CONFIG_SERVER_KEY": "%s",\n' % CONFIG_KEY, "")
-    return re.sub(r',\n  "SALES_NOTIFY_EMAIL": "[^\n]*"\n\}', "\n}", calls)
+    tail = "|".join(("SALES_NOTIFY_EMAIL", *PORT_ONLY_ADDRESSES))
+    return re.sub(r'(,\n  "(?:%s)": "[^\n]*")+\n\}' % tail, "\n}", calls)
 
 
 def _run_live(
@@ -456,6 +470,7 @@ PORT_ONLY_GUARDS = (
     "FREE_LICENSE_HMAC_KEY",
     "ACCOUNT_AE_READ_TOKEN",
     "CLOUDFLARE_ACCOUNT_ID",
+    *PORT_ONLY_ADDRESSES,
 )
 
 
@@ -651,10 +666,10 @@ def test_a_non_ascii_secret_is_byte_identical_through_both(tmp_path: pathlib.Pat
 
 def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This is the only member of the family that decides anything, and every difference below is driven by a test above."""
-    assert len(port.KEYS) == 35
+    assert len(port.KEYS) == 39
     assert len(www.KEYS) == 24
     assert len(preview.KEYS) == 14
-    assert len(port.REQUIRED_NONEMPTY) == 19
+    assert len(port.REQUIRED_NONEMPTY) == 23
     assert len(port.REQUIRED_NONEMPTY_STABLE) == 2
     # 8c715164.2: the ten SELLER_* entries (the register name included) are optional here by design: the legal-entity profile and check_bws_map own their completeness, so none is in a non-empty guard list.
     assert not [
@@ -712,7 +727,7 @@ def test_pure_helpers() -> None:
     assert argv[0] == "jq"
     assert len(argv) == 2, "the program only; the values travel on stdin"
     assert argv[-1].startswith("{ACCOUNT_ED25519_PUBLIC_KEY: .ed25519_pub")
-    assert argv[-1].endswith("SALES_NOTIFY_EMAIL: .sales_notify}")
+    assert argv[-1].endswith("ALERTS_NOTIFY_EMAIL: .alerts_notify}")
     document = json.loads(port.jq_input({"seller_city": "Delft"}))
     assert list(document) == [var for _key, var, _source in port.KEYS]
     assert document["seller_city"] == "Delft"
@@ -1078,7 +1093,7 @@ def test_an_empty_backup_store_kek_is_refused_by_its_worker_key(
     assert calls == ""
     assert "ACCOUNT_BACKUP_STORE_KEK is EMPTY for" in proc.stderr
     assert "Its store entry is %s." % name in proc.stderr
-    assert port.REQUIRED_NONEMPTY[-1] == "ACCOUNT_BACKUP_STORE_KEK"
+    assert port.REQUIRED_NONEMPTY.count("ACCOUNT_BACKUP_STORE_KEK") == 1
 
 
 def test_the_free_license_hmac_key_is_pushed_and_demanded(tmp_path: pathlib.Path) -> None:
@@ -1216,3 +1231,21 @@ def test_the_seller_map_is_the_whole_legal_entity() -> None:
             region,
             sorted(entity - required),
         )
+
+
+@pytest.mark.parametrize("name", PORT_ONLY_ADDRESSES)
+def test_the_contact_and_alerts_addresses_are_pushed_and_demanded(
+    tmp_path: pathlib.Path, name: str
+) -> None:
+    """Port-only (PLAN-email-sender-separation E1): each address reaches the Worker under its own name, and an empty one is refused with no wrangler call, the name on stderr and nothing on stdout. The cloud deploy never lets the on-prem fallback hide a missing address."""
+    ok, calls = _port_raw(tmp_path, **_pair_for("stable"))
+    assert ok.returncode == 0, ok.stderr
+    assert json.loads(document(calls))[name] == FIXTURE_ENV[name]
+    refused = tmp_path / "refused"
+    refused.mkdir()
+    proc, calls = _port_raw(refused, **_pair_for("stable"), **{name: ""})
+    assert proc.returncode == 1
+    assert calls == ""
+    assert "%s is EMPTY for" % name in proc.stderr
+    assert proc.stdout == ""
+    assert port.REQUIRED_NONEMPTY.count(name) == 1

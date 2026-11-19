@@ -60,7 +60,7 @@ from rediacc_ci.deploy import (
 from rediacc_ci.enterprise import control_db
 from rediacc_ci.ops import bench_access, bench_preflight, cf_auth, push_backup_credentials
 from rediacc_ci.proof import receipt
-from rediacc_ci.well_known import BENCH_ORIGIN, PRODUCT_DOMAIN
+from rediacc_ci.well_known import APEX_DOMAIN, BENCH_ORIGIN, INFRA_DOMAIN, PRODUCT_DOMAIN
 
 if TYPE_CHECKING:
     import pathlib
@@ -172,6 +172,12 @@ BACKUP_NAMES: tuple[str, ...] = (
 
 # The sender the bench Worker mails from when AWS_SES_FROM is unset: the notify host of the product zone.
 DEFAULT_SES_FROM = "noreply@notify.%s" % PRODUCT_DOMAIN
+
+# The contact and alerts senders and recipients the bench Worker uses when the deploy-bench profile binds none: the same values production holds in the store (PLAN-email-sender-separation Design 2). An explicit environment value wins.
+DEFAULT_CONTACT_FROM = "contact@notify.%s" % PRODUCT_DOMAIN
+DEFAULT_ALERTS_FROM = "alerts@notify.%s" % PRODUCT_DOMAIN
+DEFAULT_CONTACT_NOTIFY = "contact@%s" % APEX_DOMAIN
+DEFAULT_ALERTS_NOTIFY = "alerts@%s" % INFRA_DOMAIN
 
 
 def db_name(region: str = DEFAULT_REGION) -> str:
@@ -361,6 +367,10 @@ def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
         "SELLER_COUNTRY": os.environ.get("SELLER_COUNTRY") or "",
         "SELLER_EMAIL": os.environ.get("SELLER_EMAIL") or "",
         "SALES_NOTIFY_EMAIL": os.environ.get("SALES_NOTIFY_EMAIL") or "",
+        "CONTACT_FROM_EMAIL": os.environ.get("CONTACT_FROM_EMAIL") or DEFAULT_CONTACT_FROM,
+        "ALERTS_FROM_EMAIL": os.environ.get("ALERTS_FROM_EMAIL") or DEFAULT_ALERTS_FROM,
+        "CONTACT_NOTIFY_EMAIL": os.environ.get("CONTACT_NOTIFY_EMAIL") or DEFAULT_CONTACT_NOTIFY,
+        "ALERTS_NOTIFY_EMAIL": os.environ.get("ALERTS_NOTIFY_EMAIL") or DEFAULT_ALERTS_NOTIFY,
     }
 
 
