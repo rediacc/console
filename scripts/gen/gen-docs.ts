@@ -78,6 +78,7 @@ import {
   GATES_LOCK,
   type InputChange,
   isMechanismCandidate,
+  namerText,
   PROVIDERS,
   type Provider,
   type ProviderRow,
@@ -1025,6 +1026,37 @@ function selftest(): number {
   ck(
     'CONTROL: suppressions census keeps a real allowlist',
     isMechanismCandidate('.ci/config/carried-reds.json')
+  );
+
+  // 1684f2ec.3: the generated input arrays of manifest.ts are cut before namer tokens are read, in both shapes; every other line stays.
+  const cut = namerText(
+    'scripts/ci-runner/manifest.ts',
+    [
+      '    run: "a",',
+      '    paths: [],',
+      "    lists: ['x'],",
+      '    names: [',
+      "      'y/**',",
+      '    ],',
+      '    paths: [',
+      "      'z',",
+      '    ],',
+      '    leaves: [],',
+    ].join('\n')
+  );
+  ck(
+    'namerText cuts single-line and multi-line paths/lists/names arrays and keeps the other lines',
+    cut === ['    run: "a",', '', '', '', '', '    leaves: [],'].join('\n'),
+    cut
+  );
+  ck(
+    'CONTROL: namerText leaves any other file untouched',
+    namerText('scripts/ci-runner/other.ts', '    paths: [],') === '    paths: [],'
+  );
+  // 170a1479.1: only review PROSE records are skipped; a config under agent/reviews still counts.
+  ck(
+    'CONTROL: suppressions census keeps a non-record file under agent/reviews',
+    isMechanismCandidate('agent/reviews/0101-9/allow.json')
   );
 
   const P: Provider = {

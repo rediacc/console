@@ -652,7 +652,7 @@ export const isMechanismCandidate = (f: string): boolean => {
   // THE WORKLIST EVENT LOGS ARE PROSE THAT GROWS ON EVERY VERB. `agent/worklist/*.jsonl` carries session notes, and a note that quotes `BLOCKER:` made this census list the log and then change its row on the next unrelated `--tick`, so the region could not be committed in a state a clean checkout reproduces.
   if (f.startsWith('agent/worklist/')) return false;
   // PER-COMMIT REVIEW RECORDS ARE PROSE TOO. `agent/reviews/<branch>/clean.jsonl` quotes findings, and one that quoted `BLOCKER:` listed the record here (#4960f2e8); that row then made the archival check refuse to archive the branch's review directory once it aged out.
-  if (f.startsWith('agent/reviews/')) return false;
+  if (/^agent\/reviews\/.*\.(md|jsonl)$/.test(f)) return false;
   return !NOT_A_MECHANISM.has(path.extname(f));
 };
 
@@ -1789,7 +1789,7 @@ const GENERATED_PROJECTIONS = [GATES_LOCK];
 const GENERATED_INPUT_FILE = 'scripts/ci-runner/manifest.ts';
 const GENERATED_INPUT_ARRAY = /^ {4}(?:paths|lists|names): \[(?:[^\n]*\],|\n[\s\S]*?\n {4}\],)$/gm;
 
-const namerText = (f: string, text: string): string =>
+export const namerText = (f: string, text: string): string =>
   f === GENERATED_INPUT_FILE ? text.replace(GENERATED_INPUT_ARRAY, '') : text;
 
 /**
