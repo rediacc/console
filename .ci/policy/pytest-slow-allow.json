@@ -59,10 +59,6 @@
       "reason": "baseline 2026-11-17: 29.8 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".ci.rediacc_ci.tests.gates.test_gate_embed_asset_freshness::test_pins_driver_selftest_holds_the_refusals_the_retired_upgrade_cases_proved",
-      "reason": "baseline 2026-11-17: 12.9 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".ci.rediacc_ci.tests.gates.test_gate_embed_asset_freshness::test_the_rsync_date_request_failing_cannot_change_a_verdict_to_green",
       "reason": "baseline 2026-11-17: 16.2 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
@@ -605,6 +601,10 @@
     {
       "test": ".claude.rediacc_hooks.tests.test_githook_gen_docs::test_case_fails_against_an_always_allow_hook[case_partial]",
       "reason": "baseline 2026-11-17: 13.4 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
+    },
+    {
+      "test": ".claude.rediacc_hooks.tests.test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook[enrolled_allowed-cli-contract]",
+      "reason": "baseline 2026-11-19: 14.4 s in the ci:quick full run (it regenerates the CLI contract, which grew with the rdc feedback group); the plan-renders siblings of this parametrisation are listed at 72 s and 67 s; drop the entry once the test runs under 10 s"
     },
     {
       "test": ".claude.rediacc_hooks.tests.test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook[enrolled_allowed-plan-renders]",
