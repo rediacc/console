@@ -3636,6 +3636,11 @@
     },
     "delegationCertRefused": "Serveri litsentsisertifikaat on keelatud ({{code}}); palu operaatoril käivitada: rdc server licence"
   },
+  "feedback": {
+    "hint": "Ootamatu? {{run}}",
+    "hintDescription": "Saada selle tõrke kohta tagasisideteade",
+    "hintSummary": "Kui see tõrge on ootamatu, anna sellest teada."
+  },
   "help": {
     "agentMode": "\n  Agendirežiim\n    • Ainult forkimine: loo fork enne muudatuste tegemist mis tahes repositooriumis\n    • Pearepos (mitte-forkid) on agentidele kirjutuskaitstud\n    • Töövoog: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Hoidla viide (repo[:tag]) tuletab oma masina ise, seega -m ei ole vajalik\n    • JSON-väljund on automaatne: kõik käsud tagastavad { success, data, errors, metrics }\n    • Parsi alati täielikku JSON-i, ära kasuta tail/head/grep JSON-väljundil\n    • Kasuta filtrilipukesi (nt --repositories, --containers) vastuse mahu vähendamiseks\n\n",
     "cli": {

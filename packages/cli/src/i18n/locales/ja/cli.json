@@ -3636,6 +3636,11 @@
     },
     "delegationCertRefused": "サーバーのライセンス証明書が拒否されています ({{code}})。運用担当者に次のコマンドの実行を依頼してください: rdc server licence"
   },
+  "feedback": {
+    "hint": "想定外の動作ですか？ {{run}}",
+    "hintDescription": "この失敗についてフィードバックレポートを送信します",
+    "hintSummary": "この失敗が想定外の場合は、報告してください。"
+  },
   "help": {
     "agentMode": "\n  エージェントモード\n    • フォークのみ: リポジトリに変更を加える前にフォークを作成する\n    • Grand（非フォーク）リポジトリはエージェントに対して読み取り専用\n    • ワークフロー: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • リポジトリ ref（repo[:tag]）はそれ自体でマシンを決定するため、-m は不要\n    • JSON 出力は自動: すべてのコマンドが { success, data, errors, metrics } を返す\n    • 常に完全な JSON をパースし、JSON 出力に tail/head/grep を使わない\n    • フィルタフラグ（例: --repositories, --containers）でレスポンスサイズを削減する\n\n",
     "cli": {

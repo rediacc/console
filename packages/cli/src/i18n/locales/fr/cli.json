@@ -3636,6 +3636,11 @@
     },
     "delegationCertRefused": "Le certificat de licence du serveur est refusé ({{code}}) ; demandez à l'opérateur d'exécuter : rdc server licence"
   },
+  "feedback": {
+    "hint": "Inattendu ? {{run}}",
+    "hintDescription": "Envoyer un rapport de retour sur cet échec",
+    "hintSummary": "Si cet échec est inattendu, signalez-le."
+  },
   "help": {
     "agentMode": "\n  Mode Agent\n    • Fork uniquement : créez un fork avant de modifier un dépôt\n    • Les dépôts grand (non fork) sont en lecture seule pour les agents\n    • Flux de travail : repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Une réf de dépôt (repo[:tag]) dérive sa propre machine, -m n'est donc pas nécessaire\n    • La sortie JSON est automatique : toutes les commandes renvoient { success, data, errors, metrics }\n    • Analysez toujours le JSON complet, n'utilisez jamais tail/head/grep sur une sortie JSON\n    • Utilisez les options de filtre (ex : --repositories, --containers) pour réduire la taille de la réponse\n\n",
     "cli": {

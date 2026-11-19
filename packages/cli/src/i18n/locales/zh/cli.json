@@ -3636,6 +3636,11 @@
     },
     "delegationCertRefused": "服务器的许可证书被拒绝 ({{code}})；请让运维人员运行：rdc server licence"
   },
+  "feedback": {
+    "hint": "结果不符合预期？{{run}}",
+    "hintDescription": "针对此次失败提交反馈报告",
+    "hintSummary": "如果此次失败出乎意料，请提交报告。"
+  },
   "help": {
     "agentMode": "\n  代理模式\n    • 仅限 fork：在对任何仓库进行更改之前先创建 fork\n    • Grand（非 fork）仓库对代理为只读\n    • 工作流：repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • 仓库引用（repo[:tag]）会自行推导出所在机器，因此不需要 -m\n    • JSON 输出是自动的：所有命令都返回 { success, data, errors, metrics }\n    • 始终解析完整的 JSON，切勿对 JSON 输出使用 tail/head/grep\n    • 使用过滤标志（例如 --repositories、--containers）以减小响应体积\n\n",
     "cli": {

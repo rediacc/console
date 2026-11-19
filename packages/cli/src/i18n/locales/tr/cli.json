@@ -3636,6 +3636,11 @@
     },
     "delegationCertRefused": "Sunucunun lisans sertifikası reddedildi ({{code}}); operatörden şunu çalıştırmasını isteyin: rdc server licence"
   },
+  "feedback": {
+    "hint": "Beklenmedik mi? {{run}}",
+    "hintDescription": "Bu hata için geri bildirim raporu gönder",
+    "hintSummary": "Bu hata beklenmedikse bildirin."
+  },
   "help": {
     "agentMode": "\n  Ajan Modu\n    • Yalnızca fork: herhangi bir depoda değişiklik yapmadan önce bir fork oluşturun\n    • Grand (fork olmayan) depolar ajanlar için salt okunurdur\n    • İş akışı: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Bir depo referansı (repo[:tag]) kendi makinesini kendisi belirler, bu yüzden -m gerekmez\n    • JSON çıktısı otomatiktir: tüm komutlar { success, data, errors, metrics } döndürür\n    • Her zaman JSON'ın tamamını ayrıştırın, JSON çıktısında asla tail/head/grep kullanmayın\n    • Yanıt boyutunu azaltmak için filtre bayraklarını kullanın (ör. --repositories, --containers)\n\n",
     "cli": {

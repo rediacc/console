@@ -3636,6 +3636,11 @@
     },
     "delegationCertRefused": "서버의 라이선스 인증서가 거부되었습니다 ({{code}}). 운영자에게 다음 명령을 실행하도록 요청하세요: rdc server licence"
   },
+  "feedback": {
+    "hint": "예상치 못한 결과인가요? {{run}}",
+    "hintDescription": "이 실패에 대한 피드백 보고서 보내기",
+    "hintSummary": "이 실패가 예상치 못한 것이라면 보고해 주세요."
+  },
   "help": {
     "agentMode": "\n  에이전트 모드\n    • 포크 전용: 어떤 저장소든 변경하기 전에 포크를 생성\n    • Grand(비포크) 저장소는 에이전트에게 읽기 전용\n    • 워크플로: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • 저장소 참조(repo[:tag])는 그 자체로 머신을 결정하므로 -m이 필요 없음\n    • JSON 출력이 자동으로 활성화됨: 모든 명령이 { success, data, errors, metrics }를 반환\n    • 항상 전체 JSON을 파싱하고, JSON 출력에는 tail/head/grep을 사용하지 마세요\n    • 응답 크기를 줄이려면 필터 플래그 사용 (예: --repositories, --containers)\n\n",
     "cli": {

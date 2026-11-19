@@ -3636,6 +3636,11 @@
     },
     "delegationCertRefused": "O certificado de licença do servidor foi recusado ({{code}}); peça ao operador para executar: rdc server licence"
   },
+  "feedback": {
+    "hint": "Inesperado? {{run}}",
+    "hintDescription": "Enviar um relatório de feedback sobre esta falha",
+    "hintSummary": "Se esta falha for inesperada, reporte-a."
+  },
   "help": {
     "agentMode": "\n  Modo Agente\n    • Apenas forks: crie um fork antes de fazer alterações em qualquer repositório\n    • Repositórios grand (não fork) são de apenas leitura para agentes\n    • Fluxo de trabalho: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Uma ref de repositório (repo[:tag]) deriva a sua própria máquina, pelo que -m não é necessário\n    • A saída JSON é automática: todos os comandos retornam { success, data, errors, metrics }\n    • Analise sempre o JSON completo, nunca use tail/head/grep em saída JSON\n    • Use flags de filtro (ex.: --repositories, --containers) para reduzir o tamanho da resposta\n\n",
     "cli": {

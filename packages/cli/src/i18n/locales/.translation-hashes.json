@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2942,
-    "sourceCommit": "47c9251ad3e08073b0efc51094c10fa226b90e2f"
+    "keyCount": 2945,
+    "sourceCommit": "c382a12506c00c4ece06ba4dc2459f82b7c8dd95"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2801,6 +2801,9 @@
     "errors.vscode.serverInstallFailed": "c88097dd",
     "errors.vscode.serverStartFailed": "052f4a21",
     "errors.vscode.unsupportedArch": "7a4f346c",
+    "feedback.hint": "a2236cee",
+    "feedback.hintDescription": "fba2834b",
+    "feedback.hintSummary": "4ec5bd00",
     "help.agentMode": "626f1b35",
     "help.cli.machineQuery": "b10dfccd",
     "help.cli.repoUp": "53e83338",

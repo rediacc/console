@@ -3636,6 +3636,11 @@
     },
     "delegationCertRefused": "Das Lizenzzertifikat des Servers wird abgelehnt ({{code}}); den Betreiber bitten, Folgendes auszuführen: rdc server licence"
   },
+  "feedback": {
+    "hint": "Unerwartet? {{run}}",
+    "hintDescription": "Feedback-Meldung zu diesem Fehler senden",
+    "hintSummary": "Wenn dieser Fehler unerwartet ist, bitte melden."
+  },
   "help": {
     "agentMode": "\n  Agenten-Modus\n    • Nur Forks: Erstellen Sie einen Fork, bevor Sie Änderungen an einem Repository vornehmen\n    • Grand-Repositorys (keine Forks) sind für Agenten schreibgeschützt\n    • Arbeitsablauf: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Eine Repository-Referenz (repo[:tag]) leitet ihre eigene Maschine ab, -m ist daher nicht nötig\n    • JSON-Ausgabe erfolgt automatisch: Alle Befehle liefern { success, data, errors, metrics }\n    • Parsen Sie immer das vollständige JSON, verwenden Sie niemals tail/head/grep auf JSON-Ausgaben\n    • Verwenden Sie Filter-Flags (z.B. --repositories, --containers), um die Antwortgröße zu reduzieren\n\n",
     "cli": {

@@ -3636,6 +3636,11 @@
     },
     "delegationCertRefused": "شهادة ترخيص الخادم مرفوضة ({{code}})؛ اطلب من المشغّل تشغيل: rdc server licence"
   },
+  "feedback": {
+    "hint": "غير متوقع؟ {{run}}",
+    "hintDescription": "إرسال بلاغ ملاحظات عن هذا الفشل",
+    "hintSummary": "إذا كان هذا الفشل غير متوقع، فأبلغ عنه."
+  },
   "help": {
     "agentMode": "\n  وضع الوكيل\n    • النسخ فقط: أنشئ نسخة متفرعة قبل إجراء أي تغييرات على أي مستودع\n    • المستودعات الرئيسية (غير المتفرعة) للقراءة فقط للوكلاء\n    • سير العمل: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • مرجع المستودع (repo[:tag]) يشتق جهازه الخاص، لذا لا حاجة إلى -m\n    • ناتج JSON تلقائي: جميع الأوامر تُعيد { success, data, errors, metrics }\n    • حلّل دائمًا JSON الكامل، ولا تستخدم tail/head/grep على ناتج JSON مطلقًا\n    • استخدم أعلام التصفية (مثل --repositories، --containers) لتقليل حجم الاستجابة\n\n",
     "cli": {
