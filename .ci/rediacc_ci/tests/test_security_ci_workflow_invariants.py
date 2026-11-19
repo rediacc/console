@@ -245,7 +245,7 @@ def env_for(**extra: str) -> dict[str, str]:
 
 
 def path_without_python(tmp_path: pathlib.Path) -> pathlib.Path:
-    """A scratch bin holding every tool on PATH EXCEPT any python interpreter.
+    """A scratch bin holding every tool on PATH, outside `/mnt/`, EXCEPT any python interpreter.
 
     Built by mirroring rather than by naming the handful of tools the twin needed, because that list was not stable: the first version of this case symlinked only `dirname` and the twin then died on `uname`, which `common.sh:64` calls at SOURCE time. A mirror cannot go stale that way, and the thing under test, that python3 is not resolvable, is stated once.
     """

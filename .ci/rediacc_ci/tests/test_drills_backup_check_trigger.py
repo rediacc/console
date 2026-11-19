@@ -441,6 +441,15 @@ def test_the_first_half_says_the_receipt_waits_for_the_other(tmp_path, capsys):
     assert "NOT_VERIFIED until" not in capsys.readouterr().err
 
 
+def test_the_onprem_half_first_names_the_legs_drill_as_the_wait(tmp_path, capsys):
+    """Finding 2514d37e.1: a legs-partial receipt missing a required leg points at `drill backup`, and only at it."""
+    w = World(tmp_path / "c")
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    err = capsys.readouterr().err
+    assert "NOT_VERIFIED until `./run.sh drill backup` runs for this tree" in err
+    assert "drill backup-onprem" not in err
+
+
 def test_the_halves_combine_in_either_order(tmp_path):
     w = World(tmp_path / "c")
     bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
