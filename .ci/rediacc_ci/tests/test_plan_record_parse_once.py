@@ -50,7 +50,7 @@ class _Counts:
 
     def __init__(self, monkeypatch, cpr):
         deps, _fid, rec = _modules()
-        self.headers = collections.Counter()
+        self.headers: collections.Counter[str] = collections.Counter()
         self.graphs = 0
         self.ledger_reads = 0
         self.graph_objects = 0
@@ -85,7 +85,7 @@ class _Counts:
 
 def _depended_on(cpr, graph):
     """Plans some required plan names as a prerequisite, most-named first: `rf_context` has something to say about each."""
-    named = collections.Counter()
+    named: collections.Counter[str] = collections.Counter()
     for r in graph.required():
         for target, _via in cpr.plan_prereqs(graph, r, {})[0]:
             named[target] += 1

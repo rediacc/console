@@ -95,7 +95,10 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
     monkeypatch.setenv("STRIPE_SANDBOX_SECRET_KEY", "")
     monkeypatch.setenv("STRIPE_SANDBOX_WEBHOOK_SECRET", "")
     payload = deploy_bench.secrets_payload()
-    assert len(payload) == 37
+    # 37 plus the four PLAN-email-sender-separation E1 keys, each defaulted for bench.
+    assert len(payload) == 41
+    for name in ("CONTACT_FROM_EMAIL", "ALERTS_FROM_EMAIL", "CONTACT_NOTIFY_EMAIL", "ALERTS_NOTIFY_EMAIL"):
+        assert payload[name], name
     assert payload["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.invalid"
     assert payload["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"] == "bench-id"
     assert payload["ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"] == "bench-secret"

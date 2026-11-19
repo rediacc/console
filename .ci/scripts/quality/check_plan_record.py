@@ -377,7 +377,7 @@ def finished_verdict(rel, text, main=lambda: None, context=lambda: ""):
 
 def lazy_deps_graph(root):
     """A zero-argument callable that builds `deps_graph(root)` on its first call and hands the same graph back after. One RF pass asks `rf_context` about every fully ticked plan, and a fresh graph per plan re-read and re-parsed all ~256 plans and re-judged every task edge each time (32 graphs and about 12 s of CPU per `--rendered-only` run, measured 2026-11-19). The graph is built on first use, after any `--update` render, and a build that raises is not remembered, so the next call raises again."""
-    memo = []
+    memo: list[object] = []
 
     def get():
         if not memo:
