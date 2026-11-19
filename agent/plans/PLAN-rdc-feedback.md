@@ -172,16 +172,18 @@ Order: S1; then A1 and C1 in parallel; A2-A4 after A1, C2-C4 after C1; P1-P2 aft
     Needs: none
     Accept: `cd packages/cli && npx vitest run src/commands/__tests__/feedback-list.test.ts` exits 0: text and `-o json` both list id, short fingerprint, status and dates, a fixed report reads `fixed-in-v<x>`, and the FREE route uses `POST /feedback/query`.
     (ticked) 2026-11-19T05:40:45Z by d778be9d: commit:62fa1d178 rdc feedback list/show with fixed-in-v; vitest 29 passed, tsc rc 0, i18n command-parity rc 0
-- [ ] D1 [writer] (W-DOCS) Regenerated CLI contract, command tree and skill reference for the `feedback` group and the new `next` option
+- [x] D1 [writer] (W-DOCS) Regenerated CLI contract, command tree and skill reference for the `feedback` group and the new `next` option
     Owns: packages/shared/src/cli-contract/data/**, packages/cli/scripts/command-tree.json, .claude/skills/rdc/reference.md
     Depends on: C2, C4.
     Needs: none
     Accept: after `npm run generate:cli-contract -w @rediacc/cli` and `npm run generate:skill-reference -w @rediacc/cli`, `npm run check:ci-cli-contract` exits 0 and `git diff --stat` touches only the three owned paths.
-- [ ] D2 [writer] (W-DOCS) The 12 non-English CLI locales and the portal locales naturalized for every new key, `cli.docs.sectionTitles.feedback` included, then `npm run i18n:generate-hashes`
+    (ticked) 2026-11-19T06:31:51Z by d778be9d: commit:49c8b1d0d contract, command tree, skill reference current; check:ci-cli-contract rc 0
+- [x] D2 [writer] (W-DOCS) The 12 non-English CLI locales and the portal locales naturalized for every new key, `cli.docs.sectionTitles.feedback` included, then `npm run i18n:generate-hashes`
     Owns: packages/cli/src/i18n/locales/{ar,de,es,et,fr,it,ja,ko,pt,ru,tr,zh}/cli.json, private/account/web/src/i18n/locales/*/admin.json, private/account/web/src/i18n/locales/*/settings.json, the hash files `i18n:generate-hashes` writes
     Depends on: C4, P1, P2.
     Needs: none
     Accept: `npm run check:i18n` exits 0, `check-i18n-naturalization` included.
+    (ticked) 2026-11-19T06:32:13Z by d778be9d: commit:49c8b1d0d commit:4b8970cc8 12 CLI + portal locales naturalized; completeness, hashes, command-parity rc 0
 - [ ] D3 [writer] (W-DOCS) www docs: cli-application.md regenerated for every locale, the hint and `next` option described in ai-agents-json-output.md, `rdc feedback` rows in rdc-cheat-sheet.md
     Owns: packages/www/src/content/docs/*/cli-application.md, packages/www/src/content/docs/en/ai-agents-json-output.md, packages/www/src/content/docs/en/rdc-cheat-sheet.md
     Depends on: D2.
