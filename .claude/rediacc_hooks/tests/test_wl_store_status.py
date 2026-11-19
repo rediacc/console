@@ -606,7 +606,7 @@ def test_hook_no_double_block_with_roster_dead(wl):
     stale_world(wl, worker=aid)
     for _ in range(2):
         got = wl.run()
-        assert "roster-dead" in got.out or "ROSTER" in got.out.upper(), got.out[:800]
+        assert "[roster-dead]" in system_message(got) or "roster-dead" in got.out, got.out[:800]
         assert "WL-STALE" not in got.out, got.out[:1200]
     assert "[roster-dead]" in system_message(got)
 

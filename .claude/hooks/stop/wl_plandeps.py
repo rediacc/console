@@ -1056,7 +1056,7 @@ def box_github_wait(
 
     `runners` are the `tiers.live.local_runners` ids; None skips the runner-name check, while an empty list means no runner is known, so every route is refused. Phrases are matched over the whole block with every tag's value and every `Needs:` value removed, so a why that says "only CD deploys edge" is not itself a wait.
 
-    `Needs: <none|bench-deploy|verified-vmcheck|pushed-head>` counts on an indented sub-line, or inside an indented `(corrected ...)` line, and the last one wins. On the box line it is an error (that line is the signature), an unknown value is an error, and so is a stated value that differs from the one a valid tag derives (`derived_needs`)."""
+    `Needs: <none|bench-deploy|verified-vmcheck|pushed-head>` counts on an indented sub-line, or inside an indented `(corrected ...)` line, and the last one wins. On the box line it is an error when a value of the grammar follows it (that line is the signature; `Needs:` in prose there is no finding), an unknown value is an error, and so is a stated value that differs from the one a valid tag derives (`derived_needs`)."""
     lines = (block or "").replace("`", "").replace("*", "").splitlines()
     tag_lines = lines[:1] + [ln for ln in lines[1:] if _CORRECTED_RE.match(ln)]
     kind = ""
@@ -1084,8 +1084,8 @@ def box_github_wait(
             "indented sub-line" % NEEDS
         )
     for n, ln in enumerate(tag_lines):
-        # A `Needs:` sharing a `(corrected ...)` line is no part of a tag's why.
-        for m in _TAG_RE.finditer(_NEEDS_ANY_RE.sub("", ln) if n else ln):
+        # A `Needs:` sharing a `(corrected ...)` line is no part of a tag's why: its value token goes, and a tag written after it stays.
+        for m in _TAG_RE.finditer(_NEEDS_SCRUB_RE.sub("", ln) if n else ln):
             tag, (head, why) = m.group(1), _tag_why(m.group(2))
             errs = _why_errors(why, tag)
             if tag == GITHUB_ONLY:

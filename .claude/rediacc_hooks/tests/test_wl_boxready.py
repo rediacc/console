@@ -411,6 +411,16 @@ def test_the_real_bench_probe_reads_the_deploy_record(tmp_path):
     assert B.bench_at_branch(work) is False
 
 
+def test_a_broken_proof_module_answers_no_instead_of_raising(tmp_path, monkeypatch):
+    """Finding abd2a6ba.1: a syntax error in syspath.py or a proof module is an answer of no, as the docstring promises."""
+
+    def broken():
+        raise SyntaxError("invalid syntax")
+
+    monkeypatch.setattr(B, "proof_modules", broken)
+    assert B.vmcheck_admits(_repo(tmp_path)) is False
+
+
 def test_the_real_vmcheck_probe_answers_no_with_no_receipt(tmp_path):
     # The probe swallows import failures, so the hop is proven to load on its own: a wrong path would answer no for every tree and this case would still pass.
     assert B.SYSPATH_HOP.is_file()

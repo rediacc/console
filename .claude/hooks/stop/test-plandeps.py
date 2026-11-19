@@ -1748,6 +1748,18 @@ check(
     needs_of(NEEDS_BOX + "  (corrected) GitHub-only: CD%s Needs: pushed-head\n" % NEEDS_WHY).errors,
     (),
 )
+check(
+    "Needs: a tag written AFTER a Needs on the same corrected line is still read",
+    D.box_github_wait(
+        NEEDS_BOX + "  (corrected) Needs: pushed-head GitHub-only: CD%s\n" % NEEDS_WHY, ()
+    ).kind,
+    "CD",
+)
+check(
+    "Needs: a Needs value on the corrected line is still read beside the tag after it",
+    needs_of(NEEDS_BOX + "  (corrected) Needs: pushed-head GitHub-only: CD%s\n" % NEEDS_WHY).needs,
+    "pushed-head",
+)
 _proof_map = json.loads((_CI.parent / "config" / "proof-tiers.json").read_text(encoding="utf-8"))
 check(
     "Needs: RUNNER_NEEDS classes every tiers.live.local_runners id, and nothing else",

@@ -104,6 +104,7 @@ _PROBE_ERRORS = (
     TypeError,
     AttributeError,
     RuntimeError,
+    SyntaxError,
     subprocess.SubprocessError,
 )
 

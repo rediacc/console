@@ -1795,9 +1795,11 @@ def test_mark_fixed_admits_a_gate_test_without_the_check_prefix(world):
         BRANCH,
         fid,
         "fixed",
-        [fix, "--test", "tests/test_gate_plan_folders.py::test_p"],
+        [fix, "--test", "tests/test_gate_plan_folders.py :: test_p"],
         "deadbeef",
     )
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
 
 
 def test_a_claim_that_merely_mentions_a_test_is_not_a_missing_test_claim():
