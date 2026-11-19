@@ -345,7 +345,7 @@ jobs:
         with:
           username: ${{ env.BWS_DOCKERHUB_USERNAME }}
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         if: steps.embed-cache.outputs.cache-hit != 'true'
         with:
           go-version: 'stable'
@@ -468,7 +468,7 @@ jobs:
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true
@@ -745,7 +745,7 @@ jobs:
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true
@@ -987,7 +987,7 @@ jobs:
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true
@@ -1167,7 +1167,7 @@ jobs:
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true
@@ -1404,7 +1404,7 @@ jobs:
         with:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true
@@ -1538,7 +1538,7 @@ jobs:
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true
@@ -1716,7 +1716,7 @@ jobs:
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true
@@ -1898,7 +1898,7 @@ jobs:
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true
@@ -2084,7 +2084,7 @@ jobs:
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true
@@ -2325,7 +2325,7 @@ jobs:
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true
@@ -2581,7 +2581,7 @@ jobs:
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true
@@ -2778,7 +2778,7 @@ jobs:
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
       - name: Propagate Docker Hub credentials to root
         run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true
@@ -2998,7 +2998,7 @@ jobs:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true
@@ -3183,7 +3183,7 @@ jobs:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true
@@ -3341,7 +3341,7 @@ jobs:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true
@@ -3601,7 +3601,7 @@ jobs:
           natives: 'true'
           build-packages: 'true'
 
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: true

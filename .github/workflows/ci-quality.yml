@@ -2629,7 +2629,7 @@ jobs:
 
       - name: Go toolchain for the real-binary build-info test
         # test_the_build_info_reader_finds_a_real_go_binary builds a tiny Go program and reads its build info; it fails (never skips) without `go`.
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: 'stable'
           cache: false
@@ -2744,7 +2744,7 @@ jobs:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           # Pinned to renet's own declared toolchain rather than 'stable'. This job runs
           # golangci-lint, whose typecheck must DECODE the toolchain's export data; a
