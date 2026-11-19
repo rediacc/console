@@ -19,11 +19,13 @@ vi.mock('../account-client.js', () => ({ accountServerFetch: fetchMock }));
 vi.mock('../license-machine.js', () => ({
   DEFAULT_DATASTORE: 'default',
   clusterIdFor: () => undefined,
-  readLocalMachineId: () => Promise.resolve('client'),
   readRemoteMachineId: () => Promise.resolve('machine'),
   scanRemoteLicenseStatuses: statusMock,
   scanRemoteRepoLicenses: scanMock,
   writeRepoLicense: writeMock,
+}));
+vi.mock('../client-machine-id.js', () => ({
+  readLocalMachineId: () => Promise.resolve('client'),
 }));
 vi.mock('../../core/output.js', () => ({ outputService: { warn: warnMock } }));
 vi.mock('../../../i18n/index.js', () => ({

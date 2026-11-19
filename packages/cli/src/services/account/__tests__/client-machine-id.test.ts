@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { CliExitError } from '../../../utils/cli-exit-error.js';
-import { readLinuxClientMachineId } from '../license-machine.js';
+import { readLinuxClientMachineId } from '../client-machine-id.js';
 
 const dirs: string[] = [];
 function tmp(): string {

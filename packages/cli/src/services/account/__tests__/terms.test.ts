@@ -68,8 +68,10 @@ vi.mock('../../../utils/prompt.js', () => ({ askChoice: m.askChoice, askConfirm:
 vi.mock('../../core/output.js', () => ({ outputService: { warn: m.warn, info: m.info } }));
 vi.mock('../license-machine.js', () => ({
   readRemoteMachineId: vi.fn().mockResolvedValue('a'.repeat(64)),
-  readLocalMachineId: vi.fn().mockResolvedValue('b'.repeat(64)),
   writeRepoLicense: vi.fn(),
+}));
+vi.mock('../client-machine-id.js', () => ({
+  readLocalMachineId: vi.fn().mockResolvedValue('b'.repeat(64)),
 }));
 vi.mock('../../machine/machine-connection.js', () => ({
   sftpConfigForMachine: () => ({}),

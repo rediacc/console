@@ -15,10 +15,10 @@ import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { telemetryService } from '../telemetry/telemetry.js';
 import { accountServerFetch } from './account-client.js';
+import { readLocalMachineId } from './client-machine-id.js';
 import {
   clusterIdFor,
   DEFAULT_DATASTORE,
-  readLocalMachineId,
   readRemoteMachineId,
   scanRemoteLicenseStatuses,
   scanRemoteRepoLicenses,

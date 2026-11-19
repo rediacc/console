@@ -59,8 +59,7 @@ vi.mock('../../services/account/account-client.js', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   accountServerFetch: m.accountFetch,
 }));
-vi.mock('../../services/account/license-machine.js', async (orig) => ({
-  ...(await orig<Record<string, unknown>>()),
+vi.mock('../../services/account/client-machine-id.js', () => ({
   readLocalMachineId: () => Promise.resolve('b'.repeat(64)),
 }));
 vi.mock('../../utils/repo-target.js', () => ({ resolveRepoRef: m.resolveRepoRef }));

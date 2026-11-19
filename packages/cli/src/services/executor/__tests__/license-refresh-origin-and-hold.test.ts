@@ -31,11 +31,13 @@ vi.mock('../../account/account-client.js', () => ({ accountServerFetch: m.fetch 
 vi.mock('../../account/license-machine.js', () => ({
   DEFAULT_DATASTORE: 'default',
   clusterIdFor: () => undefined,
-  readLocalMachineId: () => Promise.resolve('client'),
   readRemoteMachineId: () => Promise.resolve('machine'),
   scanRemoteLicenseStatuses: () => Promise.resolve([]),
   scanRemoteRepoLicenses: m.scan,
   writeRepoLicense: m.write,
+}));
+vi.mock('../../account/client-machine-id.js', () => ({
+  readLocalMachineId: () => Promise.resolve('client'),
 }));
 vi.mock('../../account/free-license.js', () => ({
   resolveLicenseAuthority: vi.fn(),

@@ -35,7 +35,8 @@ import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { accountServerFetch } from './account-client.js';
 import { assertActiveConfigExists } from './active-config-guard.js';
-import { readLocalMachineId, readRemoteMachineId, writeRepoLicense } from './license-machine.js';
+import { readLocalMachineId } from './client-machine-id.js';
+import { readRemoteMachineId, writeRepoLicense } from './license-machine.js';
 import {
   getConfiguredServerUrl,
   getSubscriptionServerUrl,

@@ -93,6 +93,7 @@ const DOMAIN_MODULES = new Map<string, string>([
   ['credits', 'commands/credits.ts'],
   ['datastore', 'commands/datastore.ts'],
   ['doctor', 'commands/doctor.ts'],
+  ['feedback', 'commands/feedback.ts'],
   ['legal', 'commands/legal.ts'],
   ['version', 'commands/version.ts'],
   ['tools', 'commands/tools.ts'],

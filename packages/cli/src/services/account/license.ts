@@ -9,11 +9,11 @@ import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine
 import { telemetryService } from '../telemetry/telemetry.js';
 import { accountServerFetch } from './account-client.js';
 import { freeLicensesToAdopt, reposWithForeignLicenseOrigin } from './license-batch.js';
+import { readLocalMachineId } from './client-machine-id.js';
 import {
   clusterIdFor,
   DEFAULT_DATASTORE,
   measureRepoSizeGb,
-  readLocalMachineId,
   readRemoteMachineId,
   scanRemoteLicenseStatuses,
   scanRemoteRepoLicenses,

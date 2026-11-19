@@ -74,7 +74,7 @@ export interface AuthDeps {
 }
 
 async function defaultMachineId(): Promise<string> {
-  const { readLocalMachineId } = await import('../account/license-machine.js');
+  const { readLocalMachineId } = await import('../account/client-machine-id.js');
   return readLocalMachineId();
 }
 
