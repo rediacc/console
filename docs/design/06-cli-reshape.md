@@ -19,7 +19,7 @@ behind `REDIACC_ALLOW_CLUSTER_OPS`; hidden `run` unchanged, absolutely agent-blo
 
 ## 1. The tree — AS BUILT (verified against the live CLI, 2026-07-13)
 
-This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **225 contract commands** (123 machine-plane, 58 config-plane, 44 other; the counts `plane-coverage.test.ts` pins). `run` is hidden and held out of the contract.
+This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **228 contract commands** (123 machine-plane, 58 config-plane, 47 other; the counts `plane-coverage.test.ts` pins). `run` is hidden and held out of the contract.
 
 ```
 rdc config:     init list show current delete set clear recover prune edit reconcile rotate-cek import-machine
@@ -53,12 +53,13 @@ rdc ops:        up down status ssh setup check
 rdc subscription: login register logout status notices retire refresh proxy-token
 rdc job:        list status logs cancel gc wait dismiss   (see §9)
 rdc tools:      install list
+rdc feedback:   report list show
 rdc doctor | credits | update | version | legal | serve | mcp serve | run (hidden)
 ```
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Thirty-three differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
+Thirty-four differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
@@ -95,6 +96,7 @@ Thirty-three differences. The first six are deliberate and each is traceable to 
 | no `subscription notices` or `subscription retire` | `subscription notices` + `subscription retire <guid>` | PLAN-account-notices: `notices` lists the account's notices (licence expiry, backup health and the like) without opening the portal, and `retire` retires a repository's licence by GUID on the account server. Both are leaves under the existing `subscription` noun. |
 | no `config import-machine` | `config import-machine <machine> --from <config> [--dry-run] [--strategy-from-source]` | PLAN-hostinger-to-bench Design 5: moving a machine between named configs by hand-editing JSON dropped its datastores, repositories and backup bindings, and a name clash silently overwrote the target's entry. The verb plans the whole import first (machine, datastores, strategies, bindings, repositories, tags), refuses a clash on a different identity, and writes nothing under `--dry-run`. |
 | `repo admin` with no orphan verbs | `repo admin orphan {list delete}` | Worklist #48d790e1: a repository image whose GUID left every config could not be removed, because `repo delete` resolves only config refs and `machine prune --orphaned-repos` deletes every orphan on the machine at once. `list <machine>` judges each image with the verdict `machine prune --orphaned-repos` reaches, and `delete <guid>@<machine>` removes exactly one orphan through renet `repository_delete`, refusing a GUID any readable config names. Both judge against the caller's configs, so neither is proxy-capable, and `machine prune` joins them because its `--orphaned-repos` and `--prune-unknown` flags decide at runtime. |
+| no `feedback` noun | `feedback {report list show}` | PLAN-rdc-feedback C3/C4: `report` files a redacted report of a failed command (the last one with `--last`) with the account service, and `list` and `show` read the reports the caller filed. All three talk to the account service only and reach no machine, so they are other-plane. A report is neither a machine, a repository nor a job, so the verbs get a noun of their own. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 
