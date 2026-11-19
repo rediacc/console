@@ -312,6 +312,7 @@
       "CLOUDFLARE_R2_ENDPOINT"
     ],
     ".ci/rediacc_ci/core/resource_lock.py": [
+      "BENCH_LOCK_WAIT_S",
       "RESOURCE_LOCK_WAIT_S"
     ],
     ".ci/rediacc_ci/core/review_budget.py": [
@@ -1959,6 +1960,9 @@
     ".ci/rediacc_ci/tests/test_ops_mirror_config_store.py": [
       "*names[0]",
       "*names[1]",
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_ops_rebind_login.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_private_renet_build_vcs_stamp.py": [

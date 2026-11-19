@@ -5,6 +5,7 @@ Every test points `XDG_RUNTIME_DIR` at its own temporary directory, so no test m
 
 from __future__ import annotations
 
+import contextlib
 import os
 import pathlib
 import subprocess
@@ -259,24 +260,26 @@ def test_a_blank_bench_region_is_refused_not_one_shared_lock() -> None:
     for blank in ("", "  "):
         with pytest.raises(ValueError, match="bench region is required"):
             resource_lock.bench_resource(blank)
-    with pytest.raises(ValueError, match="bench region is required"):
-        with resource_lock.bench_held("", "test"):
-            pass
+    with (
+        pytest.raises(ValueError, match="bench region is required"),
+        resource_lock.bench_held("", "test"),
+    ):
+        pass
 
 
 @pytest.mark.parametrize("raw", ["abc", "1.5x", "nan", "inf", "-3"])
 def test_a_bad_wait_setting_is_a_named_refusal_not_a_traceback(raw: str) -> None:
     """Finding 941d86d6.1: a ValueError out of `float()` reached no caller's handler."""
     with pytest.raises(resource_lock.WaitSettingError, match="BENCH_LOCK_WAIT_S"):
-        resource_lock.env_wait("BENCH_LOCK_WAIT_S", {"BENCH_LOCK_WAIT_S": raw})
+        resource_lock.wait_setting("BENCH_LOCK_WAIT_S", raw)
     assert issubclass(resource_lock.WaitSettingError, resource_lock.ResourceBusyError)
 
 
 def test_a_blank_or_unset_wait_setting_is_the_default_and_a_number_is_read() -> None:
-    assert resource_lock.env_wait("X", {}) == resource_lock.DEFAULT_WAIT_S
-    assert resource_lock.env_wait("X", {"X": "  "}) == resource_lock.DEFAULT_WAIT_S
-    assert resource_lock.env_wait("X", {"X": " 2.5 "}) == 2.5
-    assert resource_lock.env_wait("X", {"X": "0"}) == 0.0
+    assert resource_lock.wait_setting("X", None) == resource_lock.DEFAULT_WAIT_S
+    assert resource_lock.wait_setting("X", "  ") == resource_lock.DEFAULT_WAIT_S
+    assert resource_lock.wait_setting("X", " 2.5 ") == 2.5
+    assert resource_lock.wait_setting("X", "0") == 0.0
 
 
 @pytest.mark.usefixtures("runtime")
@@ -294,12 +297,10 @@ def test_bench_regions_are_taken_in_sorted_order_and_released_when_a_later_one_i
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Finding 941d86d6.2: the deadlock-avoidance claim, driven through a recording `held`."""
-    import contextlib
-
     events: list[str] = []
 
     @contextlib.contextmanager
-    def held(name, *, purpose, wait_s):
+    def held(name, *, wait_s, **_k):
         if name == "bench-us":
             raise resource_lock.ResourceBusyError(name, pathlib.Path("p"), "pid 1", wait_s)
         events.append("take " + name)
@@ -309,9 +310,11 @@ def test_bench_regions_are_taken_in_sorted_order_and_released_when_a_later_one_i
             events.append("release " + name)
 
     monkeypatch.setattr(resource_lock, "held", held)
-    with pytest.raises(resource_lock.ResourceBusyError):
-        with resource_lock.bench_held(["us", "eu", "asia", "eu"], "test"):
-            raise AssertionError("the body must not run when a region is refused")
+    with (
+        pytest.raises(resource_lock.ResourceBusyError),
+        resource_lock.bench_held(["us", "eu", "asia", "eu"], "test"),
+    ):
+        raise AssertionError("the body must not run when a region is refused")
     assert events == ["take bench-asia", "take bench-eu", "release bench-eu", "release bench-asia"]
 
 
@@ -332,7 +335,8 @@ def test_parent_pid_falls_back_to_ps_when_proc_is_absent(monkeypatch: pytest.Mon
     assert seen == [["ps", "-o", "ppid=", "-p", "99"]]
 
 
-def test_a_second_lock_object_in_the_holding_process_is_nested(runtime: pathlib.Path) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_a_second_lock_object_in_the_holding_process_is_nested() -> None:
     """Finding 96e6f543.1/.2: the documented own-pid rule, and the release order it needs."""
     first = resource_lock.ResourceLock("fleet")
     second = resource_lock.ResourceLock("fleet", say=lambda _l: None)
@@ -348,9 +352,8 @@ def test_a_second_lock_object_in_the_holding_process_is_nested(runtime: pathlib.
         pass
 
 
-def test_a_fifo_at_the_lock_path_is_refused_by_open_and_unknown_to_holder(
-    runtime: pathlib.Path,
-) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_a_fifo_at_the_lock_path_is_refused_by_open_and_unknown_to_holder() -> None:
     """Findings 546cdc58.1/.2: the type check of `open_lock_file`, and a `holder` that does not block on a planted FIFO."""
     path = resource_lock.lock_path("planted-fifo")
     os.mkfifo(path, 0o600)
@@ -359,9 +362,8 @@ def test_a_fifo_at_the_lock_path_is_refused_by_open_and_unknown_to_holder(
     assert resource_lock.ResourceLock("planted-fifo").holder() == "holder unknown"
 
 
-def test_a_lock_file_owned_by_another_user_is_refused(
-    runtime: pathlib.Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+@pytest.mark.usefixtures("runtime")
+def test_a_lock_file_owned_by_another_user_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
     """Finding 546cdc58.2: the owner check, with the uid this process reports moved off the file's owner."""
     path = resource_lock.lock_path("foreign")
     path.write_text("")

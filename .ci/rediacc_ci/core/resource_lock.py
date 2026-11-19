@@ -228,9 +228,7 @@ class ResourceLock:
         """The current payload, read without taking the lock."""
         # O_NONBLOCK: a FIFO planted at the predictable /tmp name would otherwise block this open until a writer appears.
         try:
-            fd = os.open(
-                self.path, os.O_RDONLY | os.O_NONBLOCK | getattr(os, "O_NOFOLLOW", 0)
-            )
+            fd = os.open(self.path, os.O_RDONLY | os.O_NONBLOCK | getattr(os, "O_NOFOLLOW", 0))
         except OSError:
             return "holder unknown"
         try:
@@ -319,10 +317,9 @@ def held(
         lock.release()
 
 
-def env_wait(name: str, environ: Mapping[str, str] | None = None) -> float:
-    """Seconds from the environment variable `name`; DEFAULT_WAIT_S when it is unset or blank, WaitSettingError when it is not a finite, non-negative number."""
-    env = os.environ if environ is None else environ
-    raw = (env.get(name) or "").strip()
+def wait_setting(name: str, raw: str | None) -> float:
+    """Seconds from the value `raw` of the environment variable `name`; DEFAULT_WAIT_S when it is unset or blank, WaitSettingError when it is not a finite, non-negative number. Each caller reads its own variable with a literal key, so the python env registry sees the read."""
+    raw = (raw or "").strip()
     if not raw:
         return DEFAULT_WAIT_S
     try:
@@ -340,7 +337,7 @@ def bench_held(regions: str | Sequence[str], purpose: str) -> Iterator[list[Reso
     names = sorted(
         {bench_resource(r) for r in ([regions] if isinstance(regions, str) else regions)}
     )
-    wait_s = env_wait("BENCH_LOCK_WAIT_S")
+    wait_s = wait_setting("BENCH_LOCK_WAIT_S", os.environ.get("BENCH_LOCK_WAIT_S"))
     with contextlib.ExitStack() as stack:
         yield [stack.enter_context(held(name, purpose=purpose, wait_s=wait_s)) for name in names]
 
@@ -410,7 +407,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     wait_s = args.wait
     if wait_s is None:
         try:
-            wait_s = env_wait("RESOURCE_LOCK_WAIT_S")
+            wait_s = wait_setting("RESOURCE_LOCK_WAIT_S", os.environ.get("RESOURCE_LOCK_WAIT_S"))
         except WaitSettingError as exc:
             parser.error(str(exc))
     return run(args.resource, cmd, purpose=args.purpose or " ".join(cmd)[:120], wait_s=wait_s)
