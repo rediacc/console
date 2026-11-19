@@ -302,7 +302,7 @@ interface GeneratedStep {
   id: string;
   titleKey: string;
   docsPath: string;
-  command: string;
+  command?: string;
   widget?: string;
   optional?: boolean;
   prose: Record<string, string>;
@@ -440,9 +440,15 @@ function controls(): string[] {
   });
   const w = step({ widget: 'install-tabs' });
   if (messages((i) => checkWidgetStep(w, gen({ widget: 'install-tabs' }), i)) !== '')
-    bad.push('CONTROL: a widget step emitting its widget and no command passed');
+    bad.push('CONTROL: a widget step emitting its widget and no command was refused');
   if (!messages((i) => checkWidgetStep(w, gen({}), i)).includes('widget mismatch'))
     bad.push('a generated widget step missing its widget is not reported (42a85d5a.2)');
+  if (
+    !messages((i) => checkWidgetStep(w, gen({ widget: 'other-tabs' }), i)).includes(
+      'widget mismatch'
+    )
+  )
+    bad.push('a generated widget step naming a different widget is not reported (6b5d1960.2)');
   if (
     !messages((i) =>
       checkWidgetStep(w, gen({ widget: 'install-tabs', command: 'rdc x' }), i)
@@ -455,11 +461,12 @@ function controls(): string[] {
   } catch {
     crashed = true;
   }
-  if (crashed) bad.push('a generated widget step missing its command key crashed the gate (42a85d5a.3)');
+  if (crashed)
+    bad.push('a generated widget step missing its command key crashed the gate (42a85d5a.3)');
   if (
-    !messages((i) => validateManualStep(step({ source: 'manual', widget: 'install-tabs' }), i)).includes(
-      'manual step sets widget'
-    )
+    !messages((i) =>
+      validateManualStep(step({ source: 'manual', widget: 'install-tabs' }), i)
+    ).includes('manual step sets widget')
   )
     bad.push('a manual step setting widget is not refused (42a85d5a.1)');
   if (messages((i) => validateManualStep(step({ source: 'manual' }), i)) !== '')

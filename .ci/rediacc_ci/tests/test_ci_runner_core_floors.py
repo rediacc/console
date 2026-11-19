@@ -44,3 +44,35 @@ def test_the_check_refuses_the_floor_that_starved_the_gate() -> None:
     assert "may be granted 1 core(s)" in (_floor_problem(starved, "check:test-cli") or "")
     bare = [{"id": "check:test-cli"}]
     assert "no integer cores.min" in (_floor_problem(bare, "check:test-cli") or "")
+
+
+ACCOUNT_GATES = ("check:ci-account-server", "check:ci-account-portal")
+
+
+def _needs_problem(entries: list[dict], gate_id: str) -> str | None:
+    """None when `gate_id` is ordered after build:packages, else what is wrong."""
+    matches = [e for e in entries if e.get("id") == gate_id]
+    if len(matches) != 1:
+        return "%s has %d entries" % (gate_id, len(matches))
+    if "build:packages" not in (matches[0].get("needs") or []):
+        return (
+            "%s does not need build:packages, so it can start before packages/shared/dist is built "
+            "(ci:quick run 40: 172 suites failed on a dist that predated FEEDBACK_STATUSES)"
+            % gate_id
+        )
+    return None
+
+
+def test_the_account_gates_wait_for_build_packages() -> None:
+    entries = json.loads(LOCK.read_text(encoding="utf-8"))
+    for gate_id in ACCOUNT_GATES:
+        assert _needs_problem(entries, gate_id) is None, _needs_problem(entries, gate_id)
+
+
+def test_the_needs_check_refuses_a_gate_without_the_edge() -> None:
+    """Control: the same gate without the edge, or with an empty or missing needs, is refused."""
+    for needs in ({}, {"needs": []}, {"needs": ["build:cli"]}):
+        entries = [{"id": "check:ci-account-server", **needs}]
+        assert "does not need build:packages" in (
+            _needs_problem(entries, "check:ci-account-server") or ""
+        )

@@ -127,7 +127,7 @@ export function routeOf(args: readonly string[], env: NodeJS.ProcessEnv, live: s
       };
     return { ...inner, commit: pinned.commit };
   }
-  // --advance-only reads the record-only readers in the kept clone at HEAD and never runs in the shared checkout, so every route that would land here is a refusal instead.
+  // --advance-only reads the record-only readers in the kept clone at HEAD and never runs in the shared checkout, so every route that would land here is a refusal instead. That includes the in-clone marker below: CI_QUICK_IN_CLONE is an inherited environment variable, not proof that this cwd is the kept clone, and the wrapper's own advance-only call hands `--advance-only` straight to the runner inside the clone, never through this route.
   const here = (why: string, pass: string[]): Route =>
     args.includes('--advance-only')
       ? {
@@ -1010,7 +1010,8 @@ function finishWhole(
   const receiptPath = input.receiptPath ?? path.join(seams.live, RECEIPT_REL);
   const { receipt, mtimeMs } = readReceipt(receiptPath);
   let why = unjudged(receipt, mtimeMs, input.startedAt, input.tree);
-  if (why === undefined && input.archived === true) why = unarchived(seams.live, input.tree, input.startedAt);
+  if (why === undefined && input.archived === true)
+    why = unarchived(seams.live, input.tree, input.startedAt);
   let exit = wholeExit(input.runnerExit, receipt);
   if (why !== undefined) {
     seams.log(`ci:quick: NO JUDGED RECEIPT at ${receiptPath}: ${why}\n`);
@@ -2347,7 +2348,9 @@ export async function quickCloneSelftest(
         routeAt(['--here'], {}).kind === 'here' &&
         routeAt(['--advance-only', '--here'], {}).kind === 'refused' &&
         routeAt(['--advance-only', '--only', 'x'], {}).kind === 'refused' &&
-        routeAt(['--advance-only'], { CI: 'true' }).kind === 'refused',
+        routeAt(['--advance-only'], { CI: 'true' }).kind === 'refused' &&
+        routeAt(['--advance-only'], { [IN_CLONE_ENV]: '1' }).kind === 'refused' &&
+        routeAt([], { [IN_CLONE_ENV]: '1' }).kind === 'here',
       'CONTROL: --advance-only alone routes to the clone, --here alone stays here, and --advance-only never routes to the shared checkout'
     );
 

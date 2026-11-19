@@ -3307,7 +3307,8 @@ async function selftest(): Promise<number> {
       GIT_HISTORY_FILE.test('modules/logs/refs/heads/main') &&
       GIT_HISTORY_FILE.test('modules/objects/refs') &&
       !GIT_DISCOVERY_FILE.test('modules/objects/refs') &&
-      !GIT_HISTORY_FILE.test('modules/x/config'),
+      !GIT_HISTORY_FILE.test('modules/x/config') &&
+      !GIT_DISCOVERY_FILE.test('modules/x/config'),
     'a submodule branch file named objects is history, not discovery, and so are an ambiguous modules/objects/objects/ab/cd, modules/logs/refs/heads/main and the bare modules/objects/refs (the greedy history prefix, dd5103a3.3); CONTROL: modules/<name>/objects and nested names stay discovery, modules/x/config is neither'
   );
   check(

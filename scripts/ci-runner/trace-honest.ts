@@ -503,6 +503,29 @@ let reflinkWorks: boolean | undefined;
 /** The real files a sparse directory shares by hard link, as they stood when it was built. */
 const guards = new Map<string, { root: string; rels: string[]; before: Map<string, string> }>();
 
+/** `inode:size:mtime:mode` of every regular file under an absolute directory, keyed by its path below it. Symlinks inside are not followed, so a cycle cannot loop. */
+function snapshotTree(absDir: string): Map<string, string> {
+  const out = new Map<string, string>();
+  const walk = (dir: string, rel: string): void => {
+    let ents: fs.Dirent[];
+    try {
+      ents = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of ents) {
+      const childRel = rel === '' ? e.name : `${rel}/${e.name}`;
+      if (e.isDirectory()) walk(path.join(dir, e.name), childRel);
+      else if (e.isFile()) {
+        const st = fs.lstatSync(path.join(dir, e.name), { bigint: true });
+        out.set(childRel, `${st.ino}:${st.size}:${st.mtimeNs}:${st.mode}`);
+      }
+    }
+  };
+  walk(absDir, '');
+  return out;
+}
+
 /** `inode:size:mtime:mode` of every file under the given real directories. A rewrite in place keeps the inode but moves size or mtime; an unlink-and-recreate in the sparse tree leaves the real file untouched. */
 function statLinked(root: string, rels: readonly string[]): Map<string, string> {
   const out = new Map<string, string>();
@@ -526,7 +549,10 @@ function statLinked(root: string, rels: readonly string[]): Map<string, string> 
         let tgt = 'dangling';
         try {
           const t = fs.statSync(abs, { bigint: true });
-          tgt = `${t.ino}:${t.size}:${t.mtimeNs}:${t.mode}`;
+          // A directory's own ino/size/mtime does not move when a file inside it is written, so a link to a directory snapshots every file under the target instead.
+          tgt = t.isDirectory()
+            ? `dir:${[...snapshotTree(fs.realpathSync(abs)).entries()].join(',')}`
+            : `${t.ino}:${t.size}:${t.mtimeNs}:${t.mode}`;
         } catch {
           // a dangling link has no target to guard
         }
@@ -594,6 +620,14 @@ function count(flag: string, text: string, min: number): number {
   return n;
 }
 
+/** A finite number of at least `min`, fractions allowed: a NaN or an infinity would arm no timer or one that never fires. */
+function seconds(flag: string, text: string, min: number): number {
+  const n = Number(text);
+  if (text.trim() === '' || !Number.isFinite(n) || n < min)
+    throw new Error(`${flag} takes a number of seconds >= ${min}, got ${text}`);
+  return n;
+}
+
 function parseArgs(argv: string[]): Args {
   const a: Args = {
     mode: 'trace',
@@ -625,7 +659,7 @@ function parseArgs(argv: string[]): Args {
     else if (t === '--sparse-top') a.sparseTop = count(t, val(), 0);
     else if (t === '--jobs') a.jobs = count(t, val(), 1);
     else if (t === '--root') a.root = path.resolve(val());
-    else if (t === '--timeout-s') a.timeoutS = count(t, val(), 1);
+    else if (t === '--timeout-s') a.timeoutS = seconds(t, val(), 1);
     else if (t === '--selftest') a.selftest = true;
     else if (t === '--list') a.list = true;
     else if (t === '--origin') a.origin = val();
@@ -1347,10 +1381,36 @@ async function selftest(): Promise<number> {
       fs.writeFileSync(real, 'two-longer');
       check(
         statLinked(sdir, ['d']).get('d/link') !== before.get('d/link'),
-        'a write through a symlink in a linked directory moves that link\'s snapshot'
+        "a write through a symlink in a linked directory moves that link's snapshot"
+      );
+      // A link to a DIRECTORY: a write to a file inside it moves the link's snapshot (a8593634.1).
+      fs.mkdirSync(path.join(sdir, 'target'));
+      fs.writeFileSync(path.join(sdir, 'target', 'inner.txt'), 'one');
+      fs.symlinkSync(path.join(sdir, 'target'), path.join(sdir, 'd', 'dirlink'));
+      const dirBefore = statLinked(sdir, ['d']);
+      check(
+        [...statLinked(sdir, ['d']).entries()].join() === [...dirBefore.entries()].join(),
+        'CONTROL: an untouched link to a directory snapshots the same twice'
+      );
+      fs.writeFileSync(path.join(sdir, 'target', 'inner.txt'), 'two-longer');
+      check(
+        statLinked(sdir, ['d']).get('d/dirlink') !== dirBefore.get('d/dirlink'),
+        "a write to a file inside a symlinked directory moves that link's snapshot"
       );
     } finally {
       fs.rmSync(sdir, { recursive: true, force: true });
+    }
+    const frac = run('--timeout-s', '2.5', '--mode', 'trace', '--list');
+    check(
+      frac.status === 0,
+      `a fractional --timeout-s is accepted (a8593634.2; rc=${frac.status}) ${frac.err.slice(-200)}`
+    );
+    for (const text of ['abc', '0.5', '']) {
+      const bad = run('--timeout-s', text, '--mode', 'trace', '--list');
+      check(
+        bad.status === 1 && bad.err.includes('takes a number of seconds'),
+        `CONTROL: --timeout-s ${JSON.stringify(text)} is refused (rc=${bad.status})`
+      );
     }
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });

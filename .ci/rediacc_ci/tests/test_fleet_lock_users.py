@@ -125,7 +125,43 @@ def test_rdc_ops_down_runs_under_the_lock_when_free(
     )
     assert done.returncode == 0, done.stderr
     lines = done.stdout.splitlines()
-    assert lines[0] == "CLI --dev ops down locked=1"
+    assert re.fullmatch(r"CLI --dev ops down locked=\d+", lines[0]), lines[0]
+    assert "purpose rdc.sh ops down" in lines[1]
+
+
+@pytest.mark.usefixtures("holder")
+def test_an_inherited_fleet_marker_does_not_skip_the_lock(
+    runtime: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
+    """Review c0bf6e02.2: RDC_FLEET_LOCKED=1 in the caller's environment names no live lock holder, so `ops down` still waits on the held fleet and is refused. Control: with the fleet free the same environment runs under the lock."""
+    wrapper = _probe_wrapper(tmp_path)
+    done = subprocess.run(
+        ["bash", str(wrapper), "--dev", "ops", "down"],
+        env=_env(runtime, tmp_path, RESOURCE_LOCK_WAIT_S="0", RDC_FLEET_LOCKED="1"),
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert done.returncode == resource_lock.EXIT_BUSY, (done.stdout, done.stderr)
+    assert "CLI" not in done.stdout
+
+
+def test_an_inherited_fleet_marker_still_runs_under_the_lock_when_free(
+    runtime: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
+    wrapper = _probe_wrapper(tmp_path)
+    done = subprocess.run(
+        ["bash", str(wrapper), "--dev", "ops", "down"],
+        env=_env(runtime, tmp_path, RDC_FLEET_LOCKED="1"),
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr
+    lines = done.stdout.splitlines()
+    assert lines[0] != "CLI --dev ops down locked=1"
     assert "purpose rdc.sh ops down" in lines[1]
 
 

@@ -56,8 +56,9 @@ fi
 
 # THE FLEET LOCK (PLAN-push-decoupling.md D1.5): `ops up|down` rebuild the VMs vm:check, e2e-local and the drills drive, so they run under rediacc_ci.core.resource_lock's `fleet`.
 _w=(); _p=""; for _a in "$@"; do [[ "$_p" == --config || "$_a" == -* ]] || _w+=("$_a"); _p="$_a"; done
-if [[ "${_w[0]:-} ${_w[1]:-}" =~ ^ops\ (up|down)$ && -z "${RDC_FLEET_LOCKED:-}" ]]; then
-    RDC_FLEET_LOCKED=1 PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.core.resource_lock run --resource fleet --purpose "rdc.sh ops ${_w[1]}" -- "$ROOT_DIR/rdc.sh" "$@"
+# The marker is the PID of the lock holder (the exec'd python keeps this shell's PID) and only counts in its direct child: an RDC_FLEET_LOCKED inherited from a shell or CI environment names no live parent and never skips the lock.
+if [[ "${_w[0]:-} ${_w[1]:-}" =~ ^ops\ (up|down)$ && "${RDC_FLEET_LOCKED:-}" != "$PPID" ]]; then
+    RDC_FLEET_LOCKED=$$ PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.core.resource_lock run --resource fleet --purpose "rdc.sh ops ${_w[1]}" -- "$ROOT_DIR/rdc.sh" "$@"
 fi
 
 # Self-register as 'rdc' in ~/.local/bin so it's accessible from any terminal,
