@@ -33,6 +33,11 @@
       "gate": "check:ci-ops-health",
       "findings": "*",
       "reason": "Off-box state, not code: local-root-grants is red because the declared root grants are not applied yet; edge-us and edge-asia need the us/asia account Worker release (migration 0088), and release:local --branch-release ships only from this pushed branch, so the push cannot wait on them. local-machine-l1vm is the dev ops VM 192.168.111.11 rejecting SSH after the vm:check fleet rebuilt it (#51baaf1d). Lift: drop this entry once root_grants --apply runs on every target after the us/asia release and the l1vm ingest is fixed."
+    },
+    {
+      "gate": "check:ci-lane-budget",
+      "findings": "*",
+      "reason": "Two stale measured p90s under job names that 5f40baff7 retired: the probe file 15-storage-backup.test.ts (now split in two) at 12.8m and E2E Full Integration ubuntu-24.04 2/2 (now three legs) at 12.5m. The gate keeps an ordinary job sample while its old label still matches the job name, so only a lane-durations refresh from CI runs that measured the new shapes clears them; the push is what produces those runs. Remove this entry in the refresh commit (rediacc_ci.ci.freshness --refresh). Every other lane-budget rule passes."
     }
   ]
 }
