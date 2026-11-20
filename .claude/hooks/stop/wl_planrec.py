@@ -297,9 +297,21 @@ def _git_raw(root, *args) -> str:
 
 
 def _on_origin_main(root, sha: str) -> bool:
-    """True when `sha` is an ancestor of origin/main, or when this clone has no origin/main to judge against (a fixture, a fresh repo): only a known-unmerged commit is refused."""
-    if not _git_out(root, "rev-parse", "--verify", "--quiet", "refs/remotes/origin/main"):
+    """True when `sha` is an ancestor of origin/main, or when this clone has no origin/main to judge against (a fixture, a fresh repo). Fails closed (review 334616cb.1): the ref counts as absent only on git's clean "no such ref" answer (`show-ref --verify --quiet` exit 1); a timeout, an OSError or any other exit refuses."""
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(root), "show-ref", "--verify", "--quiet", "refs/remotes/origin/main"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if r.returncode == 1:
         return True
+    if r.returncode != 0:
+        return False
     return _git_ok(root, "merge-base", "--is-ancestor", sha, "refs/remotes/origin/main")
 
 

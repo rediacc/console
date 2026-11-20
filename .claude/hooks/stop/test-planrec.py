@@ -159,6 +159,12 @@ def git_out(cwd, *args):
     return r.stdout.strip() if r.returncode == 0 else ""
 
 
+def compact_on_main(root, *args, **kwargs):
+    """R.compact with origin/main moved to HEAD first: every fixture commit stands for merged work, and RB7 refuses a done= that is not on origin/main. The RB7 control calls R.compact itself, with origin/main held back."""
+    sh(root, "git", "update-ref", "refs/remotes/origin/main", "HEAD")
+    return R.compact(root, *args, **kwargs)
+
+
 def build(td):
     """(root, before_sha, after_sha). Two ledger commits: open, then ticked."""
     root = pathlib.Path(td) / "repo"
@@ -231,8 +237,14 @@ raises(
     lambda: R.compact(ROOT, REL, "deadbeef", why="auto", park=True),
     "not on origin/main",
 )
+sh(ROOT, "git", "update-ref", "-d", "refs/remotes/origin/main")
+truthy("RB7: a clone with no origin/main judges nothing", R._on_origin_main(ROOT, AFTER))
+falsy(
+    "RB7: a git failure (not a repository) refuses",
+    R._on_origin_main(pathlib.Path(tempfile.mkdtemp()), AFTER),
+)
 sh(ROOT, "git", "update-ref", "refs/remotes/origin/main", AFTER)
-RECORD, NOTES = R.compact(ROOT, REL, "deadbeef", why="auto", park=True)
+RECORD, NOTES = compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True)
 REC = R.parse(RECORD)
 
 # --------------------------------------------------------------------------- 1. THE GRAMMAR. Parsed back out of the exact bytes that would go on disk. ---------------------------------------------------------------------------
@@ -674,24 +686,24 @@ control(
 # --------------------------------------------------------------------------- 7. compact(): every refusal, and the pair that proves it is not refusing everything. ---------------------------------------------------------------------------
 raises(
     "compacting a plan with open boxes and no --park is refused",
-    lambda: R.compact(ROOT, REL, "deadbeef", why="auto"),
+    lambda: compact_on_main(ROOT, REL, "deadbeef", why="auto"),
     "A `compacted` status is in the FINISHED set",
 )
 truthy(
     "CONTROL: the same plan compacts under --park",
-    bool(R.compact(ROOT, REL, "deadbeef", why="auto", park=True)[0]),
+    bool(compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True)[0]),
 )
 
 (ROOT / REL).write_text(PLAN + "\nan uncommitted line\n", encoding="utf-8")
 raises(
     "compacting a DIRTY path is refused",
-    lambda: R.compact(ROOT, REL, "deadbeef", why="auto", park=True),
+    lambda: compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True),
     "uncommitted changes",
 )
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 truthy(
     "CONTROL: once clean again it compacts",
-    bool(R.compact(ROOT, REL, "deadbeef", why="auto", park=True)[0]),
+    bool(compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True)[0]),
 )
 
 (ROOT / REL).write_text(RECORD, encoding="utf-8")
@@ -699,25 +711,25 @@ sh(ROOT, "git", "add", "-A")
 sh(ROOT, "git", "commit", "-qm", "the record lands")
 raises(
     "compacting something that is already a record is refused",
-    lambda: R.compact(ROOT, REL, "deadbeef", why="auto", park=True),
+    lambda: compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True),
     "already a record",
 )
 # ORDER MATTERS HERE. A record just written by `--write` is BOTH a record and a dirty path; if the dirty branch won, the message would say "commit the path first", and doing that then compacts the RECORD -- pointing the new blob at the record instead of the plan. Pinned so the ordering cannot be shuffled back.
 (ROOT / REL).write_text(RECORD + "\nan uncommitted trailing line\n", encoding="utf-8")
 raises(
     "a record that is ALSO dirty still reports being a record, not being dirty",
-    lambda: R.compact(ROOT, REL, "deadbeef", why="auto", park=True),
+    lambda: compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True),
     "already a record",
 )
 (ROOT / REL).write_text(RECORD, encoding="utf-8")
 raises(
     "an unknown --why source is refused",
-    lambda: R.compact(ROOT, REL, "deadbeef", why="wishful", park=True),
+    lambda: compact_on_main(ROOT, REL, "deadbeef", why="wishful", park=True),
     "--why must be one of",
 )
 raises(
     "compacting a path that does not exist is refused",
-    lambda: R.compact(ROOT, "agent/PLAN-nope.md", "deadbeef"),
+    lambda: compact_on_main(ROOT, "agent/PLAN-nope.md", "deadbeef"),
     "does not exist",
 )
 
@@ -866,7 +878,7 @@ control(
 )
 truthy("the record fits its own budget", len(RECORD.encode()) <= R.size_budget(len(REC["boxes"])))
 
-authored, _n = R.compact(ROOT, REL, "deadbeef", why="author", park=True)
+authored, _n = compact_on_main(ROOT, REL, "deadbeef", why="author", park=True)
 truthy("--why author leaves placeholders to fill", R.PLACEHOLDER_RE.search(authored) is not None)
 falsy("--why auto fills them from the plan's own sections", R.PLACEHOLDER_RE.search(RECORD) is None)
 
@@ -921,7 +933,7 @@ sh(ROOT, "git", "add", "-A")
 sh(ROOT, "git", "commit", "-qm", "a plan that ends with a blank line")
 sh(ROOT, "git", "update-ref", "refs/remotes/origin/main", "HEAD")
 truthy("the edge fixture really does end with a blank line", EDGE_TEXT.endswith("\n\n"))
-edge_rec, _n = R.compact(ROOT, EDGE, "deadbeef", why="auto")
+edge_rec, _n = compact_on_main(ROOT, EDGE, "deadbeef", why="auto")
 R.write_atomic(ROOT / EDGE, edge_rec)
 edge_body, _note = R.revive(ROOT, EDGE)
 control("revive returns the trailing blank line too", edge_body, EDGE_TEXT)
@@ -948,7 +960,7 @@ own_ledger["plans"][OWN] = {
 (ROOT / R.LEDGER_REL).write_text(json.dumps(own_ledger, indent=2) + "\n", encoding="utf-8")
 sh(ROOT, "git", "add", "-A")
 sh(ROOT, "git", "commit", "-qm", "an unowned plan")
-own_rec, _n = R.compact(ROOT, OWN, "deadbeef", why="auto", park=True)
+own_rec, _n = compact_on_main(ROOT, OWN, "deadbeef", why="auto", park=True)
 control(
     "the record keeps the whole Owner sentence",
     R.parse(own_rec)["owner"],
@@ -994,12 +1006,12 @@ sh(ROOT, "git", "add", "-A")
 sh(ROOT, "git", "commit", "-qm", "a plan too small to be worth compacting")
 raises(
     "a plan smaller than the blob-ratio floor is refused at WRITE time",
-    lambda: R.compact(ROOT, TINY, "deadbeef", why="auto"),
+    lambda: compact_on_main(ROOT, TINY, "deadbeef", why="auto"),
     "nothing would be compacted",
 )
 truthy(
     "CONTROL: the big fixture is comfortably over the same floor",
-    bool(R.compact(ROOT, REL, "deadbeef", why="auto", park=True)[0]),
+    bool(compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True)[0]),
 )
 
 # --------------------------------------------------------------------------- 10f. A DROPPED BOX IS NAMED. plan_tasks discards a box whose normalised key is empty (a checkbox is kept at any other length), so the line exists in the plan and in NEITHER list -- and _assert_boxes_preserved cannot see it, because it runs the same parser on both sides.
@@ -1018,7 +1030,7 @@ short_ledger["plans"][SHORT] = {
 (ROOT / R.LEDGER_REL).write_text(json.dumps(short_ledger, indent=2) + "\n", encoding="utf-8")
 sh(ROOT, "git", "add", "-A")
 sh(ROOT, "git", "commit", "-qm", "a plan with an unparseable box")
-_short_rec, short_notes = R.compact(ROOT, SHORT, "deadbeef", why="auto", park=True)
+_short_rec, short_notes = compact_on_main(ROOT, SHORT, "deadbeef", why="auto", park=True)
 truthy(
     "a checkbox the parser drops is REPORTED, not silently left out",
     any("NOT in the record" in n for n in short_notes),
@@ -1026,7 +1038,8 @@ truthy(
 truthy(
     "CONTROL: the plan with no unparseable box says nothing of the kind",
     not any(
-        "NOT in the record" in n for n in R.compact(ROOT, REL, "deadbeef", why="auto", park=True)[1]
+        "NOT in the record" in n
+        for n in compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True)[1]
     ),
 )
 
@@ -1056,7 +1069,7 @@ _gitbin.symlink_to(shutil.which("git"))
 _saved = (os.environ.get("PATH", ""), os.environ.get("HOME", ""))
 os.environ["PATH"], os.environ["HOME"] = str(_gitdir), str(_gitdir)
 try:
-    model_rec, model_notes = R.compact(ROOT, REL, "deadbeef", why="model", park=True)
+    model_rec, model_notes = compact_on_main(ROOT, REL, "deadbeef", why="model", park=True)
 finally:
     os.environ["PATH"], os.environ["HOME"] = _saved
 truthy(
