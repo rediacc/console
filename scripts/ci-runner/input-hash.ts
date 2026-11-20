@@ -242,10 +242,16 @@ function cmdOut(cmd: string, args: string[]): string {
 /** The env var the devbox and the CI container lanes set to the pinned devcontainer digest (PLAN-two-track-merge-dev D6/R1). */
 export const RUNNER_IMAGE_ENV = 'CI_RUNNER_IMAGE';
 
-/** D6's image term: the pinned digest when the run is inside the image, `host` otherwise, so a host receipt and an image receipt never stand in for each other. */
+/** D6's image term: `pinned:<image>@sha256:<digest>` when the run is inside the pinned image, `host` otherwise, so a host receipt and an image receipt never stand in for each other. A set value that is not a digest reference refuses loudly (review d49b2342): a tag, or the literal `host`, would let two environments share a salt. */
 export function imageTerm(env: NodeJS.ProcessEnv = process.env): string {
   const image = (env[RUNNER_IMAGE_ENV] ?? '').trim();
-  return image === '' ? 'host' : image;
+  if (image === '') return 'host';
+  if (!/^[^\s@]+@sha256:[0-9a-f]{64}$/.test(image)) {
+    throw new Error(
+      `${RUNNER_IMAGE_ENV} must be <image>@sha256:<64 hex digits>, got ${JSON.stringify(image)}`
+    );
+  }
+  return `pinned:${image}`;
 }
 
 export function saltHash(root: string, tree: string, env: NodeJS.ProcessEnv = process.env): string {
@@ -829,7 +835,7 @@ export function inputHashSelftest(tmpDir: string): void {
     // D6/R1: the image term. Two environments differing only in the pinned image yield different salts, and an absent pin reads as host.
     const hostSalt = saltHash(root, t3, {});
     const imageSalt = saltHash(root, t3, {
-      [RUNNER_IMAGE_ENV]: 'ghcr.io/rediacc/devcontainer@sha256:aaaa',
+      [RUNNER_IMAGE_ENV]: `ghcr.io/rediacc/devcontainer@sha256:${'a'.repeat(64)}`,
     });
     must(
       hostSalt !== imageSalt,
@@ -839,6 +845,15 @@ export function inputHashSelftest(tmpDir: string): void {
       saltHash(root, t3, { [RUNNER_IMAGE_ENV]: '' }) === hostSalt && imageTerm({}) === 'host',
       'CONTROL: an empty or absent pin is the host term'
     );
+    for (const bad of ['host', 'ghcr.io/rediacc/devcontainer:latest', 'ghcr.io/x@sha256:abc']) {
+      let threw = false;
+      try {
+        imageTerm({ [RUNNER_IMAGE_ENV]: bad });
+      } catch {
+        threw = true;
+      }
+      must(threw, `a pin that is not a digest reference must refuse: ${bad}`);
+    }
 
     // planCarry
     const salt = saltHash(root, t3);
