@@ -3194,7 +3194,7 @@
         "cancelled": "Job {{jobId}} ({{what}}) was cancelled {{age}} ago. Details: rdc job logs {{jobId}}"
       },
       "steps": {
-        "pending": "steps pending: rdc job wait {{jobId}}",
+        "pending": "steps pending: rdc job wait {{jobId}} (drop them: rdc job dismiss {{jobId}})",
         "pendingForConfig": "{{count}} steps pending for config {{config}}",
         "abandoned": "job {{jobId}}: steps abandoned ({{reason}})",
         "reason": {

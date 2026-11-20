@@ -1014,7 +1014,7 @@
   "commands.job.status.description": "显示分离任务的状态",
   "commands.job.status.examples.basic": "显示单个任务的状态。",
   "commands.job.steps.abandoned": "作业 {{jobId}}：已放弃其步骤（{{reason}}）",
-  "commands.job.steps.pending": "有待执行的步骤：rdc job wait {{jobId}}",
+  "commands.job.steps.pending": "有待执行的步骤：rdc job wait {{jobId}}（放弃这些步骤：rdc job dismiss {{jobId}}）",
   "commands.job.steps.pendingForConfig": "配置 {{config}} 有 {{count}} 个待执行的步骤",
   "commands.job.steps.reason.age": "已超过 7 天",
   "commands.job.steps.reason.dismissed": "已忽略",

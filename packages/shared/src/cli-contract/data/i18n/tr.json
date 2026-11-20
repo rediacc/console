@@ -1014,7 +1014,7 @@
   "commands.job.status.description": "Bağımsız bir görevin durumunu gösterir",
   "commands.job.status.examples.basic": "Tek bir görevin durumunu göster.",
   "commands.job.steps.abandoned": "iş {{jobId}}: adımlar bırakıldı ({{reason}})",
-  "commands.job.steps.pending": "bekleyen adımlar var: rdc job wait {{jobId}}",
+  "commands.job.steps.pending": "bekleyen adımlar var: rdc job wait {{jobId}} (vazgeçmek için: rdc job dismiss {{jobId}})",
   "commands.job.steps.pendingForConfig": "{{config}} yapılandırması için {{count}} adım bekliyor",
   "commands.job.steps.reason.age": "7 günden eski",
   "commands.job.steps.reason.dismissed": "reddedildi",

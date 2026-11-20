@@ -1014,7 +1014,7 @@
   "commands.job.status.description": "عرض حالة مهمة منفصلة",
   "commands.job.status.examples.basic": "عرض حالة مهمة واحدة.",
   "commands.job.steps.abandoned": "المهمة {{jobId}}: تم التخلي عن الخطوات ({{reason}})",
-  "commands.job.steps.pending": "خطوات معلّقة: rdc job wait {{jobId}}",
+  "commands.job.steps.pending": "خطوات معلّقة: rdc job wait {{jobId}} (لتجاهلها: rdc job dismiss {{jobId}})",
   "commands.job.steps.pendingForConfig": "{{count}} خطوات معلّقة للإعدادات {{config}}",
   "commands.job.steps.reason.age": "أقدم من 7 أيام",
   "commands.job.steps.reason.dismissed": "تم تجاهلها",

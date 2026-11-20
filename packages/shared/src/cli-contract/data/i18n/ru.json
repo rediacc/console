@@ -1014,7 +1014,7 @@
   "commands.job.status.description": "Показать статус отсоединённой задачи",
   "commands.job.status.examples.basic": "Показать статус одной задачи.",
   "commands.job.steps.abandoned": "задание {{jobId}}: шаги отменены ({{reason}})",
-  "commands.job.steps.pending": "есть невыполненные шаги: rdc job wait {{jobId}}",
+  "commands.job.steps.pending": "есть невыполненные шаги: rdc job wait {{jobId}} (отказаться от них: rdc job dismiss {{jobId}})",
   "commands.job.steps.pendingForConfig": "Невыполненных шагов для конфигурации {{config}}: {{count}}",
   "commands.job.steps.reason.age": "старше 7 дней",
   "commands.job.steps.reason.dismissed": "отклонён",

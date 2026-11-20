@@ -1332,7 +1332,7 @@
         "cancelled": "작업 {{jobId}}({{what}})이(가) {{age}} 전에 취소되었습니다. 자세히: rdc job logs {{jobId}}"
       },
       "steps": {
-        "pending": "대기 중인 단계가 있습니다: rdc job wait {{jobId}}",
+        "pending": "대기 중인 단계가 있습니다: rdc job wait {{jobId}} (포기하려면: rdc job dismiss {{jobId}})",
         "pendingForConfig": "설정 {{config}}에 대기 중인 단계 {{count}}개",
         "abandoned": "작업 {{jobId}}: 단계를 포기했습니다 ({{reason}})",
         "reason": {

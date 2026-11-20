@@ -1332,7 +1332,7 @@
         "cancelled": "Töö {{jobId}} ({{what}}) tühistati {{age}} tagasi. Üksikasjad: rdc job logs {{jobId}}"
       },
       "steps": {
-        "pending": "ootel sammud: rdc job wait {{jobId}}",
+        "pending": "ootel sammud: rdc job wait {{jobId}} (loobumiseks: rdc job dismiss {{jobId}})",
         "pendingForConfig": "Konfiguratsioonil {{config}} on {{count}} sammu ootel",
         "abandoned": "töö {{jobId}}: sammudest loobuti ({{reason}})",
         "reason": {

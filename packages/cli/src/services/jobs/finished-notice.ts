@@ -5,16 +5,18 @@
  * NOTICE_MAX_TICKETS, in parallel, inside NOTICE_BUDGET_MS, one status read
  * each, and only tickets not checked in the last NOTICE_THROTTLE_MS. postAction
  * prints one stderr line per ticket that finished and acknowledges it, so each
- * ticket is announced once (a ticket still owing a step is marked announced and
- * gets only the pending line afterwards). With no tickets the check makes no machine call.
+ * ticket is announced once (a ticket still owing a step gets the pending line
+ * with it, is marked announced, and prints nothing afterwards). With no tickets
+ * the check makes no machine call.
  *
  * Steps (section 18): in an interactive text run the notice runs the steps a
  * finished ticket owes, for up to NOTICE_STEPS_BUDGET_MS after the command's
  * own output. Under `-o json`, `-q` or MCP (which runs `rdc` with both) it
  * runs nothing and makes no machine call: it prints `steps pending: rdc job
- * wait <id>` on stderr for each finished ticket that still owes a step. A
- * ticket that owes a step stays unacknowledged, so `rdc job list` keeps
- * showing it until the steps ran.
+ * wait <id> (drop them: rdc job dismiss <id>)` on stderr once for each
+ * finished ticket that still owes a step. A ticket that owes a step stays
+ * unacknowledged, so `rdc job list` keeps showing it until the steps ran, it
+ * is dismissed, or it expires by age.
  */
 
 import { t } from '../../i18n/index.js';
@@ -218,18 +220,34 @@ function pendingLine(ticket: Ticket): string {
 }
 
 /**
+ * The finished tickets that still have something to print or to acknowledge: a ticket already
+ * shown that still owes a step has neither, so it never takes the place of a newer one.
+ */
+function unannouncedOrSettled(store: TicketStore): Ticket[] {
+  return store
+    .pending()
+    .filter((ticket) => ticket.jobId && isTerminalTicketState(ticket.state))
+    .filter((ticket) => !ticket.announced || pendingStepNames(ticket).length === 0)
+    .slice(0, NOTICE_MAX_TICKETS);
+}
+
+/**
  * The postAction half: print once per newly finished ticket, then acknowledge
  * it. A ticket that still owes a step is not acknowledged: it gets the pending
- * line, and the next run (or `rdc job wait`) picks it up.
+ * line once, naming `rdc job wait` and `rdc job dismiss`, and is marked
+ * announced. Later runs print nothing for it (the same three lines on every
+ * command of a session, 2026-11-20); an interactive run, `rdc job wait` or
+ * `rdc job dismiss` settles it, `rdc job list` keeps showing it, and it
+ * expires by age after a week.
  */
 export function printFinishedNotices(deps: Pick<NoticeDeps, 'store' | 'write' | 'now'>): void {
   try {
     const now = (deps.now ?? Date.now)();
-    for (const ticket of finishedTickets(deps.store)) {
+    for (const ticket of unannouncedOrSettled(deps.store)) {
       if (!ticket.announced) deps.write(formatNotice(ticket, now));
       if (pendingStepNames(ticket).length > 0) {
         deps.write(pendingLine(ticket));
-        if (!ticket.announced) deps.store.append('announced', ticket.requestId);
+        deps.store.append('announced', ticket.requestId);
         continue;
       }
       deps.store.append('acknowledged', ticket.requestId);
@@ -272,11 +290,13 @@ export async function liveRepoExists(repo: string): Promise<boolean | undefined>
   }
 }
 
-/** The `pending-only` half: no machine call and no step, only the pending line on stderr. */
+/** The `pending-only` half: no machine call and no step, only the pending line on stderr, once per ticket. */
 function printPendingSteps(deps: Pick<NoticeDeps, 'store' | 'write'>): void {
   try {
-    for (const ticket of finishedTickets(deps.store)) {
-      if (pendingStepNames(ticket).length > 0) deps.write(pendingLine(ticket));
+    for (const ticket of unannouncedOrSettled(deps.store)) {
+      if (ticket.announced || pendingStepNames(ticket).length === 0) continue;
+      deps.write(pendingLine(ticket));
+      deps.store.append('announced', ticket.requestId);
     }
   } catch {
     // swallowed on purpose

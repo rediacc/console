@@ -1014,7 +1014,7 @@
   "commands.job.status.description": "Kuva eraldiseisva töö olek",
   "commands.job.status.examples.basic": "Kuva ühe töö olek.",
   "commands.job.steps.abandoned": "töö {{jobId}}: sammudest loobuti ({{reason}})",
-  "commands.job.steps.pending": "ootel sammud: rdc job wait {{jobId}}",
+  "commands.job.steps.pending": "ootel sammud: rdc job wait {{jobId}} (loobumiseks: rdc job dismiss {{jobId}})",
   "commands.job.steps.pendingForConfig": "Konfiguratsioonil {{config}} on {{count}} sammu ootel",
   "commands.job.steps.reason.age": "vanem kui 7 päeva",
   "commands.job.steps.reason.dismissed": "hüljatud",

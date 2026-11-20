@@ -1014,7 +1014,7 @@
   "commands.job.status.description": "Mostra o status de um job desanexado",
   "commands.job.status.examples.basic": "Mostra o estado de um job.",
   "commands.job.steps.abandoned": "job {{jobId}}: etapas abandonadas ({{reason}})",
-  "commands.job.steps.pending": "etapas pendentes: rdc job wait {{jobId}}",
+  "commands.job.steps.pending": "etapas pendentes: rdc job wait {{jobId}} (para descartá-las: rdc job dismiss {{jobId}})",
   "commands.job.steps.pendingForConfig": "{{count}} etapas pendentes para a configuração {{config}}",
   "commands.job.steps.reason.age": "com mais de 7 dias",
   "commands.job.steps.reason.dismissed": "descartado",

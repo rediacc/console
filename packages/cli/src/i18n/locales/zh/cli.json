@@ -1332,7 +1332,7 @@
         "cancelled": "任务 {{jobId}}({{what}})已于 {{age}} 前取消。详情:rdc job logs {{jobId}}"
       },
       "steps": {
-        "pending": "有待执行的步骤：rdc job wait {{jobId}}",
+        "pending": "有待执行的步骤：rdc job wait {{jobId}}（放弃这些步骤：rdc job dismiss {{jobId}}）",
         "pendingForConfig": "配置 {{config}} 有 {{count}} 个待执行的步骤",
         "abandoned": "作业 {{jobId}}：已放弃其步骤（{{reason}}）",
         "reason": {

@@ -20,6 +20,8 @@ import { planStep, toTicketSteps } from '../steps.js';
 import { TicketStore } from '../ticket-store.js';
 
 const JOB_ID = 'j1a2b-0123abcd';
+/** The pending line names both ways out: run the steps, or drop them. */
+const PENDING = `steps pending: rdc job wait ${JOB_ID} (drop them: rdc job dismiss ${JOB_ID})`;
 let base: string;
 let store: TicketStore;
 
@@ -96,13 +98,56 @@ describe('the notice under -o json', () => {
     await finishNotice(() => ({ store, write }));
 
     expect(write).toHaveBeenCalledTimes(1);
-    expect(write).toHaveBeenCalledWith(`steps pending: rdc job wait ${JOB_ID}`);
+    expect(write).toHaveBeenCalledWith(PENDING);
     expect(runner.claim).not.toHaveBeenCalled();
     expect(runner.ran).toEqual([]);
     expect(stdout).not.toHaveBeenCalled();
     stdout.mockRestore();
     // Still owed, so `rdc job list` keeps showing it.
     expect(store.pending()).toHaveLength(1);
+  });
+
+  it('prints the pending line once, not on every later command (three stale lines all session, 2026-11-20)', async () => {
+    addFinished();
+    const write = vi.fn();
+    for (let run = 0; run < 3; run++) {
+      shouldRunNotice({
+        commandPath: 'repo list',
+        quiet: true,
+        format: 'json',
+        inExecutorRequest: false,
+      });
+      await finishNotice(() => ({ store, write }));
+    }
+    expect(write.mock.calls.map((c) => c[0])).toEqual([PENDING]);
+    // Shown once, still owed: `rdc job list` shows it and `rdc job wait` or dismiss settles it.
+    expect(store.pending()).toHaveLength(1);
+  });
+
+  it('a newer ticket is not hidden behind tickets already shown', async () => {
+    for (let i = 0; i < 6; i++) {
+      store.append('starting', `r${i}`, {
+        machine: 'm1',
+        verb: 'repo up',
+        repo: 'web',
+        startedAt: new Date(Date.now() - 3_600_000).toISOString(),
+        steps: toTicketSteps([planStep('postRepoUpTasks', { repo: 'web', machine: 'm1' })]),
+      });
+      store.append('started', `r${i}`, { jobId: `j${i}-0123abcd`, via: { kind: 'ssh' } });
+      store.append('finished', `r${i}`, { state: 'succeeded', exitCode: 0 });
+      if (i < 5) store.append('announced', `r${i}`);
+    }
+    const write = vi.fn();
+    shouldRunNotice({
+      commandPath: 'repo list',
+      quiet: true,
+      format: 'json',
+      inExecutorRequest: false,
+    });
+    await finishNotice(() => ({ store, write }));
+    expect(write.mock.calls.map((c) => c[0])).toEqual([
+      'steps pending: rdc job wait j5-0123abcd (drop them: rdc job dismiss j5-0123abcd)',
+    ]);
   });
 
   it('prints nothing for a ticket that owes no step', async () => {
@@ -136,8 +181,10 @@ describe('the notice under -o json', () => {
   });
 
   it('keeps a ticket whose repository is still there, or could not be checked', async () => {
-    addFinished();
     for (const answer of [true, undefined]) {
+      rmSync(base, { recursive: true, force: true });
+      store = new TicketStore('rediacc', base);
+      addFinished();
       const write = vi.fn();
       shouldRunNotice({
         commandPath: 'repo list',
@@ -146,7 +193,7 @@ describe('the notice under -o json', () => {
         inExecutorRequest: false,
       });
       await finishNotice(() => ({ store, write, repoExists: async () => answer }));
-      expect(write).toHaveBeenCalledWith(`steps pending: rdc job wait ${JOB_ID}`);
+      expect(write).toHaveBeenCalledWith(PENDING);
       expect(store.pending()).toHaveLength(1);
     }
   });
@@ -206,7 +253,7 @@ describe('the notice in a text run', () => {
     expect(runner.claim).not.toHaveBeenCalled();
     expect(write.mock.calls.map((c) => c[0])).toEqual([
       expect.stringContaining('succeeded'),
-      `steps pending: rdc job wait ${JOB_ID}`,
+      PENDING,
     ]);
     expect(store.pending()).toHaveLength(1);
   });
@@ -229,16 +276,36 @@ describe('the notice in a text run', () => {
     expect(store.pending()).toEqual([]);
   });
 
-  it('announces a ticket that still owes a step once, then only the pending line', () => {
+  it('announces a ticket that still owes a step once, pending line included, then stays quiet', () => {
     addFinished();
     const write = vi.fn();
     printFinishedNotices({ store, write });
     printFinishedNotices({ store, write });
 
     const lines = write.mock.calls.map((c) => c[0] as string);
-    expect(lines.filter((l) => l.includes('succeeded'))).toHaveLength(1);
-    expect(lines.filter((l) => l === `steps pending: rdc job wait ${JOB_ID}`)).toHaveLength(2);
+    expect(lines).toEqual([expect.stringContaining('succeeded'), PENDING]);
     expect(store.pending()).toHaveLength(1);
+  });
+
+  it('an interactive run still runs the steps of a ticket already shown, and clears it', async () => {
+    addFinished();
+    printFinishedNotices({ store, write: vi.fn() });
+    expect(store.find(JOB_ID)?.announced).toBe(true);
+
+    const runner = spyRunner();
+    const write = vi.fn();
+    shouldRunNotice({
+      commandPath: 'repo up',
+      quiet: false,
+      format: 'table',
+      inExecutorRequest: false,
+    });
+    startNoticeCheck(noticeDeps(runner.deps, true, write));
+    await finishNotice();
+
+    expect(runner.ran).toEqual(['postRepoUpTasks']);
+    expect(write).not.toHaveBeenCalled();
+    expect(store.pending()).toEqual([]);
   });
 
   it('starts no step once the budget is spent', async () => {

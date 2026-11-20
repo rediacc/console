@@ -1014,7 +1014,7 @@
   "commands.job.status.description": "Mostra lo stato di un job in background",
   "commands.job.status.examples.basic": "Mostra lo stato di un job.",
   "commands.job.steps.abandoned": "job {{jobId}}: passaggi abbandonati ({{reason}})",
-  "commands.job.steps.pending": "passaggi in sospeso: rdc job wait {{jobId}}",
+  "commands.job.steps.pending": "passaggi in sospeso: rdc job wait {{jobId}} (per scartarli: rdc job dismiss {{jobId}})",
   "commands.job.steps.pendingForConfig": "{{count}} passaggi in sospeso per la configurazione {{config}}",
   "commands.job.steps.reason.age": "più vecchio di 7 giorni",
   "commands.job.steps.reason.dismissed": "scartato",

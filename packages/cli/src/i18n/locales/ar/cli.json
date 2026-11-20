@@ -1332,7 +1332,7 @@
         "cancelled": "أُلغيت المهمة {{jobId}} ({{what}}) قبل {{age}}. التفاصيل: rdc job logs {{jobId}}"
       },
       "steps": {
-        "pending": "خطوات معلّقة: rdc job wait {{jobId}}",
+        "pending": "خطوات معلّقة: rdc job wait {{jobId}} (لتجاهلها: rdc job dismiss {{jobId}})",
         "pendingForConfig": "{{count}} خطوات معلّقة للإعدادات {{config}}",
         "abandoned": "المهمة {{jobId}}: تم التخلي عن الخطوات ({{reason}})",
         "reason": {

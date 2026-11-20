@@ -1332,7 +1332,7 @@
         "cancelled": "O job {{jobId}} ({{what}}) foi cancelado há {{age}}. Detalhes: rdc job logs {{jobId}}"
       },
       "steps": {
-        "pending": "etapas pendentes: rdc job wait {{jobId}}",
+        "pending": "etapas pendentes: rdc job wait {{jobId}} (para descartá-las: rdc job dismiss {{jobId}})",
         "pendingForConfig": "{{count}} etapas pendentes para a configuração {{config}}",
         "abandoned": "job {{jobId}}: etapas abandonadas ({{reason}})",
         "reason": {

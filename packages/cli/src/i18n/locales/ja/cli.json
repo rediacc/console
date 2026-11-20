@@ -1332,7 +1332,7 @@
         "cancelled": "ジョブ {{jobId}}({{what}})は {{age}} 前にキャンセルされました。詳細: rdc job logs {{jobId}}"
       },
       "steps": {
-        "pending": "未実行のステップがあります: rdc job wait {{jobId}}",
+        "pending": "未実行のステップがあります: rdc job wait {{jobId}}（破棄するには: rdc job dismiss {{jobId}}）",
         "pendingForConfig": "設定 {{config}} の未実行ステップ: {{count}} 件",
         "abandoned": "ジョブ {{jobId}}: ステップを破棄しました ({{reason}})",
         "reason": {

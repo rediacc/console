@@ -1014,7 +1014,7 @@
   "commands.job.status.description": "Muestra el estado de un trabajo independiente",
   "commands.job.status.examples.basic": "Muestra el estado de un trabajo.",
   "commands.job.steps.abandoned": "trabajo {{jobId}}: pasos abandonados ({{reason}})",
-  "commands.job.steps.pending": "pasos pendientes: rdc job wait {{jobId}}",
+  "commands.job.steps.pending": "pasos pendientes: rdc job wait {{jobId}} (para descartarlos: rdc job dismiss {{jobId}})",
   "commands.job.steps.pendingForConfig": "{{count}} pasos pendientes para la configuración {{config}}",
   "commands.job.steps.reason.age": "más de 7 días de antigüedad",
   "commands.job.steps.reason.dismissed": "descartado",

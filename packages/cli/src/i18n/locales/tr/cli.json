@@ -1332,7 +1332,7 @@
         "cancelled": "{{jobId}} görevi ({{what}}) {{age}} önce iptal edildi. Ayrıntılar: rdc job logs {{jobId}}"
       },
       "steps": {
-        "pending": "bekleyen adımlar var: rdc job wait {{jobId}}",
+        "pending": "bekleyen adımlar var: rdc job wait {{jobId}} (vazgeçmek için: rdc job dismiss {{jobId}})",
         "pendingForConfig": "{{config}} yapılandırması için {{count}} adım bekliyor",
         "abandoned": "iş {{jobId}}: adımlar bırakıldı ({{reason}})",
         "reason": {

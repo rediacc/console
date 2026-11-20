@@ -1014,7 +1014,7 @@
   "commands.job.status.description": "Show a detached job's status",
   "commands.job.status.examples.basic": "Show the status of one job.",
   "commands.job.steps.abandoned": "job {{jobId}}: steps abandoned ({{reason}})",
-  "commands.job.steps.pending": "steps pending: rdc job wait {{jobId}}",
+  "commands.job.steps.pending": "steps pending: rdc job wait {{jobId}} (drop them: rdc job dismiss {{jobId}})",
   "commands.job.steps.pendingForConfig": "{{count}} steps pending for config {{config}}",
   "commands.job.steps.reason.age": "older than 7 days",
   "commands.job.steps.reason.dismissed": "dismissed",

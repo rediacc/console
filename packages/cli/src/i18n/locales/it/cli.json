@@ -1332,7 +1332,7 @@
         "cancelled": "Il job {{jobId}} ({{what}}) è stato annullato {{age}} fa. Dettagli: rdc job logs {{jobId}}"
       },
       "steps": {
-        "pending": "passaggi in sospeso: rdc job wait {{jobId}}",
+        "pending": "passaggi in sospeso: rdc job wait {{jobId}} (per scartarli: rdc job dismiss {{jobId}})",
         "pendingForConfig": "{{count}} passaggi in sospeso per la configurazione {{config}}",
         "abandoned": "job {{jobId}}: passaggi abbandonati ({{reason}})",
         "reason": {

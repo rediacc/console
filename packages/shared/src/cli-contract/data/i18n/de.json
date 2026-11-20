@@ -1014,7 +1014,7 @@
   "commands.job.status.description": "Zeigt den Status eines entkoppelten Jobs an",
   "commands.job.status.examples.basic": "Den Status eines Jobs anzeigen.",
   "commands.job.steps.abandoned": "Job {{jobId}}: Schritte aufgegeben ({{reason}})",
-  "commands.job.steps.pending": "Schritte ausstehend: rdc job wait {{jobId}}",
+  "commands.job.steps.pending": "Schritte ausstehend: rdc job wait {{jobId}} (verwerfen: rdc job dismiss {{jobId}})",
   "commands.job.steps.pendingForConfig": "{{count}} Schritte ausstehend für die Konfiguration {{config}}",
   "commands.job.steps.reason.age": "älter als 7 Tage",
   "commands.job.steps.reason.dismissed": "verworfen",

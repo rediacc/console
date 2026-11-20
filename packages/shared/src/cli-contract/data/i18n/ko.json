@@ -1014,7 +1014,7 @@
   "commands.job.status.description": "분리된 작업의 상태를 표시합니다",
   "commands.job.status.examples.basic": "단일 작업의 상태를 표시합니다.",
   "commands.job.steps.abandoned": "작업 {{jobId}}: 단계를 포기했습니다 ({{reason}})",
-  "commands.job.steps.pending": "대기 중인 단계가 있습니다: rdc job wait {{jobId}}",
+  "commands.job.steps.pending": "대기 중인 단계가 있습니다: rdc job wait {{jobId}} (포기하려면: rdc job dismiss {{jobId}})",
   "commands.job.steps.pendingForConfig": "설정 {{config}}에 대기 중인 단계 {{count}}개",
   "commands.job.steps.reason.age": "7일 넘게 경과",
   "commands.job.steps.reason.dismissed": "해제됨",

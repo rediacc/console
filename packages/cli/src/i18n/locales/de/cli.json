@@ -1332,7 +1332,7 @@
         "cancelled": "Job {{jobId}} ({{what}}) wurde vor {{age}} abgebrochen. Details: rdc job logs {{jobId}}"
       },
       "steps": {
-        "pending": "Schritte ausstehend: rdc job wait {{jobId}}",
+        "pending": "Schritte ausstehend: rdc job wait {{jobId}} (verwerfen: rdc job dismiss {{jobId}})",
         "pendingForConfig": "{{count}} Schritte ausstehend für die Konfiguration {{config}}",
         "abandoned": "Job {{jobId}}: Schritte aufgegeben ({{reason}})",
         "reason": {

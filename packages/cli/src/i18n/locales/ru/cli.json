@@ -1332,7 +1332,7 @@
         "cancelled": "Задача {{jobId}} ({{what}}) была отменена {{age}} назад. Подробности: rdc job logs {{jobId}}"
       },
       "steps": {
-        "pending": "есть невыполненные шаги: rdc job wait {{jobId}}",
+        "pending": "есть невыполненные шаги: rdc job wait {{jobId}} (отказаться от них: rdc job dismiss {{jobId}})",
         "pendingForConfig": "Невыполненных шагов для конфигурации {{config}}: {{count}}",
         "abandoned": "задание {{jobId}}: шаги отменены ({{reason}})",
         "reason": {

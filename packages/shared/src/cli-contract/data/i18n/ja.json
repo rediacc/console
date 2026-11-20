@@ -1014,7 +1014,7 @@
   "commands.job.status.description": "デタッチジョブのステータスを表示",
   "commands.job.status.examples.basic": "1つのジョブのステータスを表示する",
   "commands.job.steps.abandoned": "ジョブ {{jobId}}: ステップを破棄しました ({{reason}})",
-  "commands.job.steps.pending": "未実行のステップがあります: rdc job wait {{jobId}}",
+  "commands.job.steps.pending": "未実行のステップがあります: rdc job wait {{jobId}}（破棄するには: rdc job dismiss {{jobId}}）",
   "commands.job.steps.pendingForConfig": "設定 {{config}} の未実行ステップ: {{count}} 件",
   "commands.job.steps.reason.age": "7日より前",
   "commands.job.steps.reason.dismissed": "却下済み",

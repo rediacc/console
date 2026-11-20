@@ -1014,7 +1014,7 @@
   "commands.job.status.description": "Afficher le statut d'un job détaché",
   "commands.job.status.examples.basic": "Afficher le statut d'un job.",
   "commands.job.steps.abandoned": "tâche {{jobId}} : étapes abandonnées ({{reason}})",
-  "commands.job.steps.pending": "étapes en attente : rdc job wait {{jobId}}",
+  "commands.job.steps.pending": "étapes en attente : rdc job wait {{jobId}} (pour les abandonner : rdc job dismiss {{jobId}})",
   "commands.job.steps.pendingForConfig": "{{count}} étapes en attente pour la configuration {{config}}",
   "commands.job.steps.reason.age": "plus de 7 jours",
   "commands.job.steps.reason.dismissed": "écartée",
