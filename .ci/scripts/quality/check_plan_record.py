@@ -376,7 +376,7 @@ def finished_verdict(rel, text, main=lambda: None, context=lambda: ""):
 
 
 def lazy_deps_graph(root):
-    """A zero-argument callable that builds `deps_graph(root)` on its first call and hands the same graph back after. One RF pass asks `rf_context` about every fully ticked plan, and a fresh graph per plan re-read and re-parsed all ~256 plans and re-judged every task edge each time (32 graphs and about 12 s of CPU per `--rendered-only` run, measured 2026-11-19). The graph is built on first use, after any `--update` render, and a build that raises is not remembered, so the next call raises again."""
+    """A zero-argument callable that builds `deps_graph(root)` on its first call and hands the same graph back after. One RF pass asks `rf_context` about every fully ticked plan, and a fresh graph per plan re-read and re-parsed all ~256 plans and re-judged every task edge each time (one graph per fully ticked plan, about 12 s of CPU per `--rendered-only` run, measured 2026-11-19; `wl_plandeps.parse_header` carries the graph and header counts of that run). The graph is built on first use, after any `--update` render, and a build that raises is not remembered, so the next call raises again."""
     memo: list[object] = []
 
     def get():
@@ -3202,8 +3202,87 @@ def selftest_committed():
     return bad
 
 
+def _index_entries(root):
+    """[(path, blob sha)] of every tracked file under agent/ as the INDEX holds it, or None when `root` is not a git checkout or git cannot list it."""
+    try:
+        done = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "-s", "-z", "--", AGENT_DIR],
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if done.returncode != 0:
+        return None
+    out = []
+    for raw in done.stdout.split(b"\0"):
+        meta, _tab, name = raw.partition(b"\t")
+        fields = meta.split()
+        if len(fields) == 3 and fields[0] != b"160000" and fields[2] == b"0":
+            out.append((name.decode("utf-8", "surrogateescape"), fields[1].decode()))
+    return out
+
+
+@contextlib.contextmanager
+def index_view(root):
+    """A scratch root that reads every plan as the INDEX holds it, and every other tracked file under agent/ as the working tree holds it (a symlink, so a write lands in place). Yields (view root, True), or (root, False) when `root` is not a git checkout.
+
+    WHY: the render reads plan bytes (the census row carries each plan's byte size), so an uncommitted edit of another session's plan leaked into `agent/INDEX.md` and the commit-policy `plan-renders` check, which reads the commit's own tree, refused an unrelated commit (worklist #d28a11d7). A plan is every `PLAN-*.md`. A file git does not track under agent/ is left out, as `tracked_only` already left it out of the render.
+    """
+    entries = _index_entries(root)
+    if entries is None:
+        yield pathlib.Path(root), False
+        return
+    root = pathlib.Path(root)
+    with tempfile.TemporaryDirectory(prefix="plan-record-index-") as td:
+        view = pathlib.Path(td)
+        plans = [(n, sha) for n, sha in entries if pathlib.PurePosixPath(n).match("PLAN-*.md")]
+        blobs = {}
+        if plans:
+            feed = "".join("%s\n" % sha for _n, sha in plans).encode()
+            batch = subprocess.run(
+                ["git", "-C", str(root), "cat-file", "--batch"],
+                input=feed,
+                capture_output=True,
+                check=False,
+            )
+            data, at = batch.stdout, 0
+            for name, sha in plans:
+                head_end = data.index(b"\n", at)
+                parts = data[at:head_end].split()
+                if len(parts) != 3 or parts[1] != b"blob":
+                    raise RuntimeError("git cat-file --batch could not read %s (%s)" % (name, sha))
+                size = int(parts[2])
+                blobs[name] = data[head_end + 1 : head_end + 1 + size]
+                at = head_end + 1 + size + 1
+        # Everything the renders read outside agent/ (the RP baseline under .ci/config, the policy files) is the working tree's.
+        for top in root.iterdir():
+            if top.name not in (AGENT_DIR, ".git"):
+                (view / top.name).symlink_to(top.resolve())
+        for name, _sha in entries:
+            dest = view / name
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            if name in blobs:
+                dest.write_bytes(blobs[name])
+            elif (root / name).is_file():
+                dest.symlink_to((root / name).resolve())
+        yield view, True
+        # A renderer that replaced the symlink with a fresh file wrote its output into the view only: carry the two generated files back.
+        for rel in (R.INDEX_REL, PQ.QUEUE_REL):
+            made = view / rel
+            if made.is_file() and not made.is_symlink():
+                (root / rel).write_bytes(made.read_bytes())
+
+
 def rendered_only(root, update=False):
-    """`--rendered-only`: R8, RQ, RQ-SETTINGS, RQ-MOVED, RQ-DEPS, RF and RP for `root`, no selftest, no history. With `update` the two renders are written first, which is the fast regeneration (about 3 s against the full gate's 77 s). Exit 0 or 1."""
+    """`--rendered-only`: R8, RQ, RQ-SETTINGS, RQ-MOVED, RQ-DEPS, RF and RP for `root`, no selftest, no history. With `update` the two renders are written first, which is the fast regeneration (about 3 s against the full gate's 77 s). Exit 0 or 1.
+
+    The plans are read as the git index holds them (`index_view`), so a plan another session is editing, and has not staged, does not change the render."""
+    with index_view(root) as (view, _indexed):
+        return _rendered_only(view, update=update)
+
+
+def _rendered_only(root, update=False):
     recs, problems, n_census, dep_note = rendered_problems(root, update=update)
     # RF and RP ride the fast verb too. It is the command a plan close is verified with (`--rendered-only --update`), and on 2026-10-23 it was green over three plans the full gate's RF refused, because RF was not in it.
     rf_warnings = []
