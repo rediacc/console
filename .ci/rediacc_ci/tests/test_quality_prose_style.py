@@ -1729,3 +1729,28 @@ def test_a_full_sweep_drops_a_deleted_file_from_the_cache(tmp_path):
     cached = json.loads((root / str(ps.CACHE_RELPATH)).read_text())["files"]
     assert "b.md" not in cached, cached
     assert "a.md" in cached, cached
+
+
+def test_move_a_stub_planted_with_the_cache_warm_rekeys_the_findings(tmp_path):
+    """MOVE (PLAN-two-track-merge-dev S1): ident is recomputed every run, never read from the cache, so a stub planted after the cache warmed still keys the moved plan's frozen debt on its old path."""
+    root = tmp_path
+    (root / ".ci" / "config").mkdir(parents=True)
+    old_rel = "agent/plans/PLAN-warm-move.md"
+    new_rel = "agent/plans/_done/PLAN-warm-move.md"
+    text = "# PLAN: warm move\nStatus: done\n\nDid you run it? Then your change is ready.\n"
+    (root / old_rel).parent.mkdir(parents=True)
+    (root / old_rel).write_text(text, encoding="utf-8")
+    assert ps.run_check(root, GLOBALS, RULES, [old_rel], write_baseline=True, accept_new=True) == 0
+    (root / new_rel).parent.mkdir(parents=True)
+    (root / old_rel).rename(root / new_rel)
+    with contextlib.redirect_stdout(io.StringIO()):
+        assert ps.run_check(root, GLOBALS, RULES, [new_rel], as_json=True) == 1, (
+            "no stub yet: the moved text is new debt"
+        )
+    cached = json.loads((root / str(ps.CACHE_RELPATH)).read_text())["files"]
+    assert new_rel in cached, "the cache must be warm for the moved path before the stub lands"
+    (root / old_rel).write_text(pl.stub_text(old_rel, new_rel, "warm move"), encoding="utf-8")
+    with contextlib.redirect_stdout(io.StringIO()):
+        assert ps.run_check(root, GLOBALS, RULES, [new_rel, old_rel], as_json=True) == 0, (
+            "with the cache warm, the planted stub must still re-key the findings to the old path"
+        )

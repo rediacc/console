@@ -433,6 +433,26 @@ def test_the_memo_is_dropped_when_main_returns(gate):
         gate.drop_git_memo()
 
 
+def test_the_memo_is_dropped_when_main_raises(gate):
+    def fake_git(*_args):
+        return "answer"
+
+    mod = types.SimpleNamespace(_git=fake_git)
+
+    @gate.drops_git_memo
+    def run():
+        gate._MEMO_UNDO.append(gate.memo_git_reads(mod, names=("_git",)))
+        raise RuntimeError("boom")
+
+    try:
+        with pytest.raises(RuntimeError, match="boom"):
+            run()
+        assert mod._git is fake_git, "a raise must drop the memo too"
+        assert gate._MEMO_UNDO == []
+    finally:
+        gate.drop_git_memo()
+
+
 def test_main_is_wrapped_so_its_memo_never_outlives_it(gate):
     assert getattr(gate.main, "__wrapped__", None) is not None, "main must carry drops_git_memo"
 

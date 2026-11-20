@@ -2068,7 +2068,7 @@ def memo_git_reads(module, names=("_git_out", "_git_raw", "_git_ok")):
     return restore
 
 
-# The undo of every memo main installed, run when main returns (drops_git_memo) and again when it starts.
+# The undo of every memo main installed, run by drops_git_memo when main returns or raises.
 _MEMO_UNDO: list = []
 
 
@@ -2092,7 +2092,6 @@ def drops_git_memo(fn):
 
 @drops_git_memo
 def main(argv=None) -> int:
-    drop_git_memo()
     argv = list(sys.argv[1:] if argv is None else argv)
     selftest_only = "--selftest" in argv or "--selftest-only" in argv
 
