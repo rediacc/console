@@ -98,3 +98,15 @@ def test_an_entry_replaced_in_place_is_walked_again():
     assert wl_planrec.done_commit(history, rel, "s1") == "", (
         "the replaced newest ledger no longer attests s1"
     )
+
+
+def test_a_row_added_to_a_history_document_reaches_the_next_plans_walk():
+    """Review eb55be31.1: the per-history identity indexes are shared across plans; a row added in place to a document must reach a later walk for another plan."""
+    a, b = "agent/plans/PLAN-a.md", "agent/plans/_done/PLAN-b.md"
+    doc = {"plans": {a: {"done_sigs": ["s1"]}}}
+    history = [("c0", doc)]
+    assert wl_planrec.done_commit(history, a, "s1") == "c0"
+    doc["plans"][b] = {"done_sigs": ["s9"]}
+    assert wl_planrec.done_commit(history, "agent/plans/PLAN-b.md", "s9") == "c0", (
+        "the added row must be indexed"
+    )

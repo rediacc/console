@@ -1078,22 +1078,30 @@ def _walk_identity(doc) -> dict[str, list]:
 
 
 #: Per history object, each document's identity index, shared by every plan's walk over that history (keyed and checked like _DONE_INDEX).
-_HISTORY_IDENT: dict[int, tuple[list, tuple, list]] = {}
+_HISTORY_IDENT: dict[int, tuple[list, tuple, list, tuple]] = {}
+
+
+def _plans_shape(doc) -> tuple[int, int]:
+    """O(1) per document: the identity and length of its `plans` map. A replaced map, or a row added or removed, changes it (review eb55be31.1); the indexed `done_sigs` lists are the document's own, so an in-place append shows through. Replacing a row object under the same key is not caught, and history documents are parsed from git and never edited, so none does."""
+    plans = doc.get("plans") if isinstance(doc, dict) else None
+    return (id(plans), len(plans) if isinstance(plans, dict) else -1)
 
 
 def _history_identities(history, entries) -> list:
+    shapes = tuple(_plans_shape(doc) for _commit, doc in entries)
     cached = _HISTORY_IDENT.get(id(history))
     if (
         cached is not None
         and cached[0] is history
         and len(cached[1]) == len(entries)
         and all(a is b for a, b in zip(cached[1], entries, strict=True))
+        and cached[3] == shapes
     ):
         return cached[2]
     if len(_HISTORY_IDENT) >= 64:
         _HISTORY_IDENT.clear()
     idents = [_walk_identity(doc) for _commit, doc in entries]
-    _HISTORY_IDENT[id(history)] = (history, entries, idents)
+    _HISTORY_IDENT[id(history)] = (history, entries, idents, shapes)
     return idents
 
 
