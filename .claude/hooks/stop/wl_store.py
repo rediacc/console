@@ -1431,11 +1431,11 @@ def load(worklist, sync=True):
 # ---- item verbs (CLI-origin events) ----------------------------------------
 
 
-def add_item(worklist, by, text, state=" ", owner=None):
-    return add_items(worklist, by, [text], state, owner)[0]
+def add_item(worklist, by, text, state=" ", owner=None, root=None):
+    return add_items(worklist, by, [text], state, owner, root=root)[0]
 
 
-def add_items(worklist, by, texts, state=" ", owner=None):
+def add_items(worklist, by, texts, state=" ", owner=None, root=None):
     """One add event per text, all written by a single append under one lock. -> their ids, in order."""
     events = [
         {
@@ -1449,7 +1449,7 @@ def add_items(worklist, by, texts, state=" ", owner=None):
         }
         for text in texts
     ]
-    append_events(worklist, events)
+    append_events(worklist, events, root=root)
     return [ev["id"] for ev in events]
 
 

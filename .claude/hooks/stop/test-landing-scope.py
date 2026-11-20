@@ -227,19 +227,22 @@ def control_item_branches(tmp, wl_prscope, wl_ci):
     main, landing = two_trees(tmp, "items")
     store = tmp / "items" / "store"
     store.mkdir()
-    lines = [
-        '{"ev": "add", "id": "aaaa0001", "at": "2026-11-20T10:00:00Z", "o": "%s", "t": "a", "br": "%s"}'
-        % (ME, PR_BRANCH),
-        '{"ev": "add", "id": "bbbb0002", "at": "2026-11-20T10:00:01Z", "o": "%s", "t": "b", "br": "%s"}'
-        % (ME, DEV_BRANCH),
-        '{"ev": "add", "id": "cccc0003", "at": "2026-11-20T10:00:02Z", "o": "%s", "t": "c"}' % ME,
-        '{"ev": "update", "id": "aaaa0001", "at": "2026-11-20T10:00:03Z", "br": "%s"}' % DEV_BRANCH,
-    ]
-    (store / "w.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    import wl_store
+
+    bare = tmp / "items" / "bare"
+    bare.mkdir()
+    worklist = tmp / "items" / "wl.md"
     prior = os.environ.get("WORKLIST_STORE_DIR")
     os.environ["WORKLIST_STORE_DIR"] = str(store)
     try:
-        got = wl_prscope.item_branches(tmp / "items" / "wl.md", main)
+        ids = {
+            "a": wl_store.add_item(worklist, ME, "a", root=landing),
+            "b": wl_store.add_item(worklist, ME, "b", root=main),
+            "c": wl_store.add_item(worklist, ME, "c", root=bare),
+        }
+        later = '{"ev": "update", "id": "%s", "at": "2999-01-01T00:00:00Z", "br": "%s"}\n'
+        (store / "later.jsonl").write_text(later % (ids["a"], DEV_BRANCH), encoding="utf-8")
+        got = wl_prscope.item_branches(worklist, main)
         record = {"path": str(landing), "branch": PR_BRANCH}
         land = loop(wl_prscope, wl_ci, landing, record, {})
         dev = loop(wl_prscope, wl_ci, main, record, {})
@@ -256,13 +259,17 @@ def control_item_branches(tmp, wl_prscope, wl_ci):
     check(
         "the add event's branch, never a later event's",
         got,
-        {"aaaa0001": PR_BRANCH, "bbbb0002": DEV_BRANCH, "cccc0003": ""},
+        {ids["a"]: PR_BRANCH, ids["b"]: DEV_BRANCH, ids["c"]: ""},
     )
     check(
-        "landing reads the store: the development item is foreign", land.foreign_items, {"bbbb0002"}
+        "landing reads the store: the development item is foreign",
+        land.foreign_items,
+        {ids["b"]},
     )
     check(
-        "development reads the store: the landing item is foreign", dev.foreign_items, {"aaaa0001"}
+        "development reads the store: the landing item is foreign",
+        dev.foreign_items,
+        {ids["a"]},
     )
 
 
@@ -528,22 +535,18 @@ def control_real_hook(tmp):
         CI_RED.replace('"FAILURE"', '"SUCCESS"'), encoding="utf-8"
     )
     probe = "LT5 scope probe on the landing branch (deadbeef)"
-    with fix.events.open("a", encoding="utf-8") as fh:
-        fh.write(
-            json.dumps(
-                {
-                    "ev": "add",
-                    "id": "a5c0be01",
-                    "at": "2026-11-20T10:00:00Z",
-                    "by": "deadbeef",
-                    "s": " ",
-                    "o": "deadbeef",
-                    "t": probe,
-                    "br": PR_BRANCH,
-                }
-            )
-            + "\n"
-        )
+    import wl_store
+
+    fix.store_dir.mkdir(parents=True, exist_ok=True)
+    prior_store = os.environ.get("WORKLIST_STORE_DIR")
+    os.environ["WORKLIST_STORE_DIR"] = str(fix.store_dir)
+    try:
+        wl_store.add_item(fix.wl, "deadbeef", probe, root=landing)
+    finally:
+        if prior_store is None:
+            del os.environ["WORKLIST_STORE_DIR"]
+        else:
+            os.environ["WORKLIST_STORE_DIR"] = prior_store
     got = stop(None)
     check("CONTROL no record: the item blocks", (probe in got.out, got.decision), (True, "block"))
     got = stop(landing)
