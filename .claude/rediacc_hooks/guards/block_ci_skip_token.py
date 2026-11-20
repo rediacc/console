@@ -15,6 +15,8 @@ ORDER = 47
 
 # The token finder. With it emptied every skip token reaches the PR head.
 DEFECT = ("found = commit_policy.skip_tokens(msg, cfg)", "found = []")
+# Planted, the bound trees are the session root alone, so a commit typed in the sibling bound tree goes unjudged again (box LT11).
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 EDGE_CASES = [
     ("[skip ci]", 'git commit -m "chore: x [skip ci]" -- a'),
@@ -43,10 +45,11 @@ def run(ev):
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
     base = ev.field("cwd") or root
     cfg = commit_policy.load_config(root)
+    trees = commit_policy.bound_trees(root)
     for commit in commits:
         repo = commit_policy.run_repo(commit, base, commit_policy.created_dirs(cmd, base), root)
-        # A directory that resolves to no repository is one git itself will refuse; one outside this checkout is not this policy's business.
-        if not repo or not commit_policy.is_inside(repo, root):
+        # A directory that resolves to no repository is one git itself will refuse; one outside this checkout is not this policy's business. Either bound tree is this checkout (box LT11).
+        if not repo or not commit_policy.is_ours(repo, root, trees):
             continue
         # A `-F <file>` this same command writes first holds an earlier command's bytes (#9888de00).
         written = commit_policy.written_message_refusal(cmd, commit, base, "`block_ci_skip_token`")

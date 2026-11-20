@@ -25,6 +25,9 @@ _GITHOOKS_FILE = os.path.join(
     os.path.dirname(os.path.abspath(hookio.__file__)), "git", "githooks.py"
 )
 
+# Planted, the bound trees are the session root alone, so a backup push typed in the sibling bound tree is judged as an ordinary push again (box LT11).
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
+
 ALLOWED_FLAGS = frozenset(("quiet", "verbose", "porcelain", "atomic"))
 REMOTE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
 # `refs/backup/<branch>/<leaf>`, the branch at least one component: `githooks._split_backup_ref` reads the last component as the leaf.
@@ -88,7 +91,7 @@ def _deletes_paired(pairs, atomic):
     return True
 
 
-def _push_admitted(run, base, root, hooks):
+def _push_admitted(run, base, root, hooks, trees=None):
     if any(name.startswith("GIT_") for name in (run.env or {})):
         return False
     globals_, sub, args = commit_policy.git_split(run.argv)
@@ -115,7 +118,8 @@ def _push_admitted(run, base, root, hooks):
     if pairs is None or not _deletes_paired(pairs, atomic):
         return False
     repo = commit_policy.run_repo(run, base)
-    if not repo or not commit_policy.is_inside(repo, root):
+    # Either bound tree is this checkout (box LT11): the landing tree shares the repository's config, so its pin is the same one.
+    if not repo or not commit_policy.is_ours(repo, root, trees):
         return False
     urls = commit_policy.git(["remote", "get-url", "--push", "--all", operands[0]], cwd=repo)
     lines = [u for u in (urls or "").split("\n") if u.strip()]
@@ -147,7 +151,8 @@ def admitted(ev, cmd):
     if hooks is None:
         return False
     base = ev.field("cwd") or root
-    return all(_push_admitted(run, base, root, hooks) for run in pushes)
+    trees = commit_policy.bound_trees(root)
+    return all(_push_admitted(run, base, root, hooks, trees) for run in pushes)
 
 
 # --------------------------------------------------------------------------- the harness fixture ---------------------------------------------------------------------------

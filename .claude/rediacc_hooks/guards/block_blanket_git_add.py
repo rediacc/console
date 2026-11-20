@@ -27,7 +27,7 @@ NO CROSS-TALK with block-worktree-add.sh: `git worktree add x` has `worktree` be
 
 import pathlib
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
 from rediacc_hooks.guards import _repo_scope
 
 CHAIN = "pre-bash"
@@ -35,6 +35,8 @@ ORDER = 29
 
 # The PR #566 finding, undone: with `>` and a redirection out of the terminator set, `git add -A > /dev/null` and `git add -A 2>&1` stage the whole tree and walk straight past this guard, which is what they did before review caught it.
 DEFECT = (r"($|[;&|<>]|[0-9]*>)", r"($|[;&|])")
+# Planted, the bound trees are the session root alone, so a sweep typed in the sibling bound tree is let through as another repository's again (box LT11).
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 # Command position: line start, or after ; & | ( $( or a backtick. Flags
 # between `git` and `add` (-C <path>, -c k=v) stay matched, since they change
@@ -128,8 +130,10 @@ def run(ev):
         cmd, ev.field("cwd") or None, root, _repo_scope.verb_is("add"), expected
     ):
         return hookio.ALLOW
-    _target = shellscan.target_root(scan, shellscan.repo_root_env(ev), verb="add", cmd=cmd)
-    if _target != "" and not _is_inside(_target, shellscan.repo_root_env(ev)):
+    _target = shellscan.target_root(scan, root, verb="add", cmd=cmd)
+    # Either bound tree is this checkout (box LT11): the landing tree is shared with the landing session, so a sweep there is the one this guard refuses.
+    trees = commit_policy.bound_trees(root)
+    if _target != "" and not any(_is_inside(_target, tree) for tree in trees):
         return hookio.ALLOW
 
     for pat in (BLANKET_ALL, BLANKET_DOT, BLANKET_ROOT):

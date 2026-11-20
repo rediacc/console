@@ -39,6 +39,8 @@ DEFECT = (
     "if writer == spec or (",
     "if False and (",
 )
+# Planted, the bound trees are the session root alone, so a commit typed in the sibling bound tree goes unjudged again (box LT11).
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 # What a roster read can raise, including TypeError and AttributeError for a transcript or meta file of an unexpected shape. Each one fails open, and the stderr note carries the exception text, so a bug in this guard's own code inside the same read is visible there rather than silent; any other exception type is reported as a crash by the dispatcher.
 ROSTER_ERRORS = (
@@ -296,10 +298,12 @@ def run(ev):
         return hookio.ALLOW
     created = commit_policy.created_dirs(cmd, cwd)
     found: dict[str, tuple] = {}
+    # Either bound tree is this checkout (box LT11): a writer of the landing session edits the landing tree, so a commit typed there takes its files.
+    trees = commit_policy.bound_trees(root)
     for commit in commits:
         repo = commit_policy.run_repo(commit, cwd, created, root)
         # A commit resolving to no repository is one git refuses; one outside this checkout takes no file a writer of it edited.
-        if not repo or not commit_policy.is_inside(repo, root):
+        if not repo or not commit_policy.is_ours(repo, root, trees):
             continue
         committed = committed_paths(commit, cmd, repo, cwd)
         for aid, meta, paths in writers:

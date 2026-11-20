@@ -62,6 +62,8 @@ DEFECT = (
     'not shellscan.git_args("clean", commit_policy.git_split(r.argv)[2]).on("dry-run")',
     "True",
 )
+# Planted, the bound trees are the session root alone, so a discard typed in the sibling bound tree is let through as another repository's again (box LT11).
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 # Command position: line start, or after ; & | ( $( or a backtick. Flags between
 # `git` and the verb (-C <path>, -c k=v) stay matched: they change where the
@@ -895,6 +897,7 @@ def _walked_refusal(cmd, root, base, depth=0):
     Each command is judged in the repository it runs in (`commit_policy.scoped_repo`); one outside this checkout is not this guard's business, and one inside it that names no repository is judged as this checkout. A `git config --global`/`--system` write is judged wherever it runs, since it reaches this checkout from anywhere.
     """
     created = commit_policy.created_dirs(cmd, base)
+    trees = commit_policy.bound_trees(root)
     found = None
     for run in commit_policy.git_runs(cmd):
         argv = run.xargv if run.xargv is not None else run.argv
@@ -904,8 +907,9 @@ def _walked_refusal(cmd, root, base, depth=0):
             wide = parsed.on("global") or parsed.on("system")
         else:
             wide = False
-        repo = commit_policy.scoped_repo(run, base, root, created)
-        foreign = bool(repo) and not commit_policy.is_inside(repo, root)
+        repo = commit_policy.scoped_repo(run, base, root, created, trees=trees)
+        # Either bound tree is this checkout (box LT11): the landing tree is shared with the landing session the same way.
+        foreign = bool(repo) and not commit_policy.is_ours(repo, root, trees)
         # A foreign `foreach` is still read, for a payload whose write is wide; nothing else of a foreign repository is this guard's business.
         if foreign and not wide and sub not in ("submodule", "submodule--helper"):
             continue
@@ -914,6 +918,8 @@ def _walked_refusal(cmd, root, base, depth=0):
             "this checkout"
             if os.path.realpath(repo) == os.path.realpath(root)
             else os.path.relpath(repo, root)
+            if commit_policy.is_inside(repo, root)
+            else repo
         )
         hit = None
         if _autostash(sub, globs, args, run.env):
@@ -954,9 +960,10 @@ def _all_foreign(cmd, root, base):
     runs = [r for r in runs if r.git_sub not in ("init", "clone")] or runs
     if not runs:
         return False
+    trees = commit_policy.bound_trees(root)
     for run in runs:
-        repo = commit_policy.scoped_repo(run, base, root, created)
-        if not repo or commit_policy.is_inside(repo, root):
+        repo = commit_policy.scoped_repo(run, base, root, created, trees=trees)
+        if not repo or commit_policy.is_ours(repo, root, trees):
             return False
     return True
 
@@ -985,10 +992,17 @@ def _judge(cmd, root, base, depth=0):
     #
     # A STAND-DOWN YIELDS TO THE WALK (review fae7c16a.1). `_walked_refusal` resolves every invocation, a `foreach` payload's included, from its own directory, so a refusal it found is about this checkout whatever the top level's target is: `git submodule foreach 'git -C <this checkout> reset --hard'` from a foreign repository was allowed when both stand-downs below answered None.
     _target = shellscan.target_root(scan, base or root, cmd=cmd)
-    if _target != "" and not _is_inside(_target, root):
+    # EITHER BOUND TREE IS THIS CHECKOUT (box LT11): with a landing record a target or a cwd in the sibling tree keeps guarding, where `_is_inside(_, root)` stood down for it as a scratch repository.
+    trees = commit_policy.bound_trees(root)
+    if _target != "" and not any(_is_inside(_target, tree) for tree in trees):
         return walked
     # FROM A CWD OUTSIDE THE PROJECT, "" IS AMBIGUOUS (review 30573c81.2): `target_root` answers "" both for the cwd's own repository and for a directory it cannot resolve. Resolving from the cwd is right, since bash runs a relative `-C` there; so the guard stands down only when EVERY git invocation resolves outside this checkout through `scoped_repo`, the rule `commit_policy.foreign_only` applies elsewhere. An outside path that neither exists nor is created by the command (an unexpanded `cd "$X"`) resolves to "" there and keeps guarding.
-    if _target == "" and base and not _is_inside(base, root) and _all_foreign(cmd, root, base):
+    if (
+        _target == ""
+        and base
+        and not any(_is_inside(base, tree) for tree in trees)
+        and _all_foreign(cmd, root, base)
+    ):
         return walked
 
     blocked = ""

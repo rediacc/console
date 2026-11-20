@@ -25,6 +25,8 @@ ORDER = 16
 
 # The shape check itself. With it gone every name passes, which is the whole convention this guard exists for.
 DEFECT = ('if name == "main" or SHAPE.match(name):', "if True:")
+# Planted, the bound trees are the session root alone, so a branch created in the sibling bound tree is exempt as another project's again (box LT11).
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 # `feature/x`, `0826-1-prerebase`: anything that is neither `main` nor this.
 SHAPE = re.compile(r"^[0-9]{4}-[0-9]+$")
@@ -69,10 +71,12 @@ def run(ev):
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
     base = ev.field("cwd") or root
     candidate = ""
+    # Either bound tree is this checkout (box LT11): the landing tree's branches keep the convention.
+    trees = commit_policy.bound_trees(root)
     for creation in commit_policy.branch_creations(cmd, root, base):
         if creation.kind not in JUDGED:
             continue
-        if creation.repo_root and not commit_policy.is_inside(creation.repo_root, root):
+        if creation.repo_root and not commit_policy.is_ours(creation.repo_root, root, trees):
             continue
         # Strip quotes a wrapper payload happened to leave on the word.
         name = creation.name.strip("'\"")

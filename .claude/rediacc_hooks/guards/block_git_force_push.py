@@ -88,6 +88,8 @@ DEFECT = (
     "if hookio.grep_q(FORCE_PUSH, scan) or any(any(_push_forces(r)) for r in pushes):",
     "if False:",
 )
+# Planted, the bound trees are the session root alone, so a deletion or a lease push typed in the sibling bound tree is judged as the root's own again (box LT11).
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 # ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE means a doc line, a worklist note or an `echo` explaining the rule is refused as if it were the rule being broken. This NARROWS PROSE ONLY: every control below still blocks the real command, at line start and after a
 # separator. NOT AN ALLOW-LIST, which this guard's own text forbids: the set of refused FLAGS is untouched. Only the position of `git push` is constrained, so a sentence about force-pushing stops being treated as one.
@@ -267,12 +269,14 @@ def deletion_refusal(ev, cmd):
     created = commit_policy.created_dirs(cmd, base)
     top = commit_policy.toplevel(root)
     console = commit_policy.current_branch(top, foreign=True) if top else ""
+    # Either bound tree is this checkout (box LT11): a push typed in the sibling answers its own toplevel, whose branch is in use there.
+    trees = commit_policy.bound_trees(root)
     for run in commit_policy.git_runs(cmd, "push"):
         names, prunes = _deleted_refs(run)
         if not names and not prunes:
             continue
-        repo = commit_policy.scoped_repo(run, base, root, created, cmd)
-        if repo and not commit_policy.is_inside(repo, root):
+        repo = commit_policy.scoped_repo(run, base, root, created, cmd, trees=trees)
+        if repo and not commit_policy.is_ours(repo, root, trees):
             continue
         if prunes:
             return "`--prune` deletes every remote branch its refspecs do not match locally"
@@ -317,14 +321,16 @@ def _lease_run_refusal(run, root, base):
     parsed = shellscan.git_push_args(args)
     positionals = parsed.operands
     repo = commit_policy.run_repo(run, base)
-    if not repo or not commit_policy.is_inside(repo, root):
+    # Either bound tree is this checkout (box LT11), and the console whose name a submodule's branch carries is the bound tree holding it.
+    trees = commit_policy.bound_trees(root)
+    if not repo or not commit_policy.is_ours(repo, root, trees):
         return "the repository it pushes is not inside this checkout"
     live = commit_policy.current_branch(repo)
     if not commit_policy.BRANCH_SHAPE.match(live):
         return "the checkout is on `%s`, not an MMDD-N branch" % (live or "(detached)")
     if commit_policy.live_branches(repo, gh=False) != [live]:
         return "`%s` is not the ONE live branch here" % live
-    top = commit_policy.toplevel(root)
+    top = commit_policy.toplevel(commit_policy.owning_tree(repo, trees) or root)
     if os.path.realpath(repo) != os.path.realpath(top):
         console = commit_policy.current_branch(top, foreign=True) if top else ""
         if live != console:

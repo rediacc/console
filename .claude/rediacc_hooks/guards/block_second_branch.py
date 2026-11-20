@@ -36,6 +36,8 @@ ORDER = 46
 
 # The live-count test. With it gone a second branch is cut beside a live one whenever the name happens to be today's next, which is exactly the parallel-branch drift the ruling forbids.
 DEFECT = ("if live:", "if False:")
+# Planted, the bound trees are the session root alone, so a creation typed in the sibling bound tree is skipped as a scratch repository's again (box LT11).
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 LOCAL_KINDS = frozenset(("checkout-b", "switch-c", "branch", "copy", "worktree"))
 REMOTE_KINDS = frozenset(("push", "gh-pr-create", "gh-api-ref"))
@@ -197,15 +199,16 @@ def run(ev):
     ]
     if not creations:
         return hookio.ALLOW
-    console_top = commit_policy.toplevel(root)
-    console_branch = commit_policy.current_branch(console_top) if console_top else ""
+    trees = commit_policy.bound_trees(root)
     # LOCAL time, deliberately, like block_stale_pr_branch_date: a branch is named for the operator's day.
     today = datetime.datetime.now().astimezone().strftime("%m%d")
     for creation in creations:
         repo = creation.repo_root
-        # A directory that resolves to no repository is one git itself will refuse; one outside this checkout is not this policy's business.
-        if not repo or not commit_policy.is_inside(repo, root):
+        # A directory that resolves to no repository is one git itself will refuse; one outside this checkout is not this policy's business. Either bound tree is this checkout (box LT11), and a creation in the sibling is judged against that tree's console branch.
+        if not repo or not commit_policy.is_ours(repo, root, trees):
             continue
+        console_top = commit_policy.toplevel(commit_policy.owning_tree(repo, trees) or root)
+        console_branch = commit_policy.current_branch(console_top) if console_top else ""
         name = creation.name.strip("'\"")
         if creation.kind in REMOTE_KINDS:
             current = commit_policy.current_branch(repo)

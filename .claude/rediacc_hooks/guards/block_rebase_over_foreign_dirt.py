@@ -32,6 +32,8 @@ DEFECT = (
     "    return _wl_git().is_session_state(path)\n",
     "    return True\n",
 )
+# Planted, the bound trees are the session root alone, so a rebase, pull or merge typed in the sibling bound tree goes unjudged again (box LT11).
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 # The subcommand flags that continue or undo an integration already in progress, and so start nothing. `skip` is among them, and is refused on its own (SKIP) because what it finishes it finishes by dropping a commit.
 REBASE_CONTROL = ("continue", "abort", "skip", "quit", "edit-todo", "show-current-patch")
@@ -284,6 +286,7 @@ def _blind(run, globs):
 def refusal(cmd, root, base):
     """`(template, fields)` for the first walked rebase, pull or merge that would start over foreign dirt, else None."""
     created = None
+    trees = None
     for run in commit_policy.git_runs(cmd):
         argv = run.xargv if run.xargv is not None else run.argv
         globs, sub, args = commit_policy.git_split(argv)
@@ -298,12 +301,21 @@ def refusal(cmd, root, base):
             return BLIND, {"verb": verb, "why": why}
         if created is None:
             created = commit_policy.created_dirs(cmd, base)
-        repo = commit_policy.scoped_repo(run, base, root, created)
-        if repo and not commit_policy.is_inside(repo, root) and not why:
+        if trees is None:
+            trees = commit_policy.bound_trees(root)
+        repo = commit_policy.scoped_repo(run, base, root, created, trees=trees)
+        # Either bound tree is this checkout (box LT11): the landing tree is shared with the landing session the same way.
+        if repo and not commit_policy.is_ours(repo, root, trees) and not why:
             continue
         repo = repo or root
         same = os.path.realpath(repo) == os.path.realpath(root)
-        where = "this checkout" if same else os.path.relpath(repo, root)
+        where = (
+            "this checkout"
+            if same
+            else os.path.relpath(repo, root)
+            if commit_policy.is_inside(repo, root)
+            else repo
+        )
         if skip:
             return SKIP, {"verb": verb, "where": where}
         paths = dirty_paths(repo)
