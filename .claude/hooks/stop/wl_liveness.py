@@ -263,18 +263,24 @@ def live_teammate_transcripts(cwd, fresh_min=None, session_id=""):
     import wl_report as RPT
 
     fresh_min = TEAMMATE_FRESH_MIN if fresh_min is None else fresh_min
-    proj = RPT._projects_dir() / RPT._munged(C.project_root(C.project_start({"cwd": cwd})))
-    if not proj.is_dir():
+    root = C.project_root(C.project_start({"cwd": cwd}))
+    projs = [p for p in C.projects_dirs(root, base=RPT._projects_dir()) if p.is_dir()]
+    if not projs:
         return None  # cannot tell: NOT the same as zero, and callers must differ
     # SCOPED TO THE CALLING SESSION. It previously globbed `*/subagents/*` -- every session directory under the project -- so ANY unrelated session with a teammate transcript touched in the last fresh_min made `fresh > 0` here,
     # for a session whose own roster might be 100% phantom. That silently
     # defeated the certainty branch in prune_background (fresh == 0 is what
     # licenses the auto-reap) in exactly the situation it was built for: a session resumed after compaction, which is when OTHER sessions are most likely to be active in the same tree. It also deflated the `unknown` overclaim count reported to the operator. This tree runs concurrent sessions as a matter of course, so the collision was routine, not exotic.
-    scope = proj / session_id / "subagents" if session_id else None
-    if scope is not None and not scope.is_dir():
+    # One session writes under ONE of the transcript directories (the main checkout's, or the landing tree's for a landing session), so the scope is whichever holds its directory.
+    scopes = [p / session_id / "subagents" for p in projs] if session_id else []
+    scopes = [sc for sc in scopes if sc.is_dir()]
+    if session_id and not scopes:
         # FAIL TO "CANNOT TELL", NEVER TO ZERO. Zero is the value that licenses reaping the whole teammate roster, so a session id that does not resolve to a directory (a prefix instead of a full uuid, a store not yet created) must not be read as "no teammates are alive".
         return None
-    metas = scope.glob("*.meta.json") if scope is not None else proj.glob("*/subagents/*.meta.json")
+    if session_id:
+        metas = [m for sc in scopes for m in sc.glob("*.meta.json")]
+    else:
+        metas = [m for p in projs for m in p.glob("*/subagents/*.meta.json")]
     now, fresh = time.time(), 0
     for meta in metas:
         try:
@@ -370,12 +376,17 @@ def _teammate_meta(cwd, session_id, name):
 
     if not name:
         return None, None
-    proj = RPT._projects_dir() / RPT._munged(C.project_root(C.project_start({"cwd": cwd})))
-    scope = proj / session_id / "subagents" if session_id else None
-    if scope is None or not scope.is_dir():
+    if not session_id:
+        return None, None
+    root = C.project_root(C.project_start({"cwd": cwd}))
+    projs = C.projects_dirs(root, base=RPT._projects_dir())
+    scopes = [
+        p / session_id / "subagents" for p in projs if (p / session_id / "subagents").is_dir()
+    ]
+    if not scopes:
         return None, None
     best, best_mtime, best_id = None, -1.0, None
-    for meta in scope.glob("*.meta.json"):
+    for meta in (m for sc in scopes for m in sc.glob("*.meta.json")):
         try:
             info = json.loads(meta.read_text(encoding="utf-8", errors="replace"))
         except (OSError, ValueError):

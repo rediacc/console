@@ -599,7 +599,8 @@ def audit_main(argv):
         return 1
 
     root = core.project_root(core.project_start())
-    projects = core.projects_dir(root)
+    dirs = core.projects_dirs(root)
+    projects = os.pathsep.join(dirs)
     if not projects:
         sys.stderr.write(
             "onboard --audit: no transcript directory for %s. The convention is "
@@ -607,7 +608,8 @@ def audit_main(argv):
             "overrides it.\n" % root
         )
         return 1
-    paths = sorted(Path(projects).glob("*.jsonl"))
+    # Every transcript directory: the main checkout's, and the landing tree's when a landing record binds one.
+    paths = sorted(p for d in dirs for p in Path(d).glob("*.jsonl"))
     if only:
         paths = [p for p in paths if p.stem.startswith(only)]
     if not paths:

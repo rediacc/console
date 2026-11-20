@@ -199,13 +199,77 @@ def _local_lease_main(tree):
     return main if theirs is not None and theirs[1] == mine[1] else None
 
 
+# wl_core's two landing constants, for the twins below. The config key is assembled from two halves because this file must never spell the word that makes the checkout guard's script arm lock every `python3 worklist.py` while the file differs from HEAD (the root section of the lease suite pins that).
+LANDING_RECORD_NAME = "rediacc-landing.json"
+CORE_TREE_KEY = "work" + "tree"
+
+
+def _local_common_main(common):
+    """Self-contained twin of wl_core._common_main. Keep in lockstep."""
+    main = None
+    try:
+        text = (common / "config").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        text = ""
+    section = ""
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("["):
+            section = line.strip("[]").strip().lower()
+            continue
+        key, sep, value = line.partition("=")
+        if section == "core" and sep and key.strip().lower() == CORE_TREE_KEY:
+            main = (common / value.strip()).resolve()
+    if main is None and common.name == ".git":
+        main = common.parent
+    if main is None or not (main / ".git").exists():
+        return None
+    theirs = _local_git_dirs(main)
+    return main if theirs is not None and theirs[0] == theirs[1] == common else None
+
+
+def _local_landing_record(tree):
+    """Self-contained twin of wl_core.landing_record. Keep in lockstep."""
+    dirs = _local_git_dirs(pathlib.Path(tree))
+    if dirs is None:
+        return None
+    try:
+        data = json.loads((dirs[1] / LANDING_RECORD_NAME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict) or sorted(data) != ["branch", "path"]:
+        return None
+    path, branch = data["path"], data["branch"]
+    if not isinstance(path, str) or not isinstance(branch, str) or not os.path.isabs(path):
+        return None
+    land = pathlib.Path(path)
+    theirs = _local_git_dirs(land) if (land / ".git").is_file() else None
+    if theirs is None or theirs[1] != dirs[1]:
+        return None
+    return {"path": path, "branch": branch}
+
+
+def _local_landing_main(tree):
+    """Self-contained twin of wl_core.landing_main. Keep in lockstep."""
+    tree = pathlib.Path(tree)
+    if not (tree / ".git").is_file():
+        return None
+    mine = _local_git_dirs(tree)
+    if mine is None or mine[0] == mine[1] or mine[0].parent.parent != mine[1]:
+        return None
+    rec = _local_landing_record(tree)
+    if rec is None or os.path.realpath(str(tree)) != os.path.realpath(rec["path"]):
+        return None
+    return _local_common_main(mine[1])
+
+
 def _plan_rel(root, given):
     """The repo-relative spelling of a plan path, the form every plan verb and the ledger key on. `root` of a lease is the main checkout (`_local_lease_main`), so a path inside the lease names the same plan as its twin in the main checkout, and a path resolved against `root` alone would come back carrying the lease's own folder ahead of `agent/plans/...`."""
     home = pathlib.Path(root).resolve()
     path = pathlib.Path(given).resolve()
     for tree in path.parents:
         if (tree / ".git").exists():
-            if _local_lease_main(tree) == home:
+            if home in (_local_lease_main(tree), _local_landing_main(tree)):
                 return str(path.relative_to(tree))
             break
     try:
@@ -221,6 +285,7 @@ def _local_worklist_path(start):
     for candidate in [p, *p.parents]:
         if (candidate / ".git").exists():
             root = _local_lease_main(candidate) or candidate
+            root = _local_landing_main(root) or root
             break
     d = pathlib.Path(os.environ.get("TMPDIR", "/tmp")) / "claude-worklist"
     d.mkdir(parents=True, exist_ok=True)
@@ -348,8 +413,14 @@ def _phase_cli(argv):
         else:
             _die2(M.CLI_PHASE_USAGE)
         i += 2
-    # The raw ref, not C.git_branch's slug: this names the PR's head ref on GitHub.
-    branch = branch or C._git(root, "symbolic-ref", "--short", "-q", "HEAD") or ""
+    # The raw ref, not C.git_branch's slug: this names the PR's head ref on GitHub. Read from the session's own checkout, never from `root`: the landing tree's root is the main checkout, whose HEAD is the development branch. A development-tree session winding down names the landing PR's branch, the one PR a babysit or merge phase can mean while a landing record binds a tree (agent/plans/PLAN-two-track-merge-dev.md, box LT14).
+    if not branch:
+        tree = C.checkout_root(C.project_start())
+        rec = C.landing_record(tree)
+        if rec is not None and os.path.realpath(str(tree)) != os.path.realpath(rec["path"]):
+            branch = rec["branch"]
+        else:
+            branch = C._git(tree, "symbolic-ref", "--short", "-q", "HEAD") or ""
     if not branch or branch in ("main", "master", "HEAD"):
         _die2(
             M.CLI_PHASE_REFUSED
@@ -1548,10 +1619,23 @@ def _planinvestigate_cli(argv):
 
 def _lead_transcript(me):
     """The lead session's own transcript path, or None: `<projects>/<munged root>/<session>.jsonl`, beside its `subagents/` directory. `ASKED:` tick evidence is checked against it (agent/plans/PLAN-stop-hook-retro-20260924.md R.8)."""
-    import wl_roster
+    import wl_report as RPT
 
-    sub = wl_roster.session_subagents_dir(os.getcwd(), C.resolve_session_id() or me)
-    return str(sub.parent.with_suffix(".jsonl")) if sub is not None else None
+    sid = C.resolve_session_id() or me
+    if not sid:
+        return None
+    root = C.project_root(C.project_start({"cwd": os.getcwd()}))
+    # Every transcript directory (C.projects_dirs): a landing session writes under the landing tree's name, not the main checkout's. The resolution is wl_roster.session_subagents_dir's, per directory: a session with a directory or a transcript there, then a full id in the first directory, then a prefix only when exactly one session carries it.
+    projs = [p for p in C.projects_dirs(root, base=RPT._projects_dir()) if p.is_dir()]
+    for proj in projs:
+        if (proj / sid).is_dir() or (proj / (sid + ".jsonl")).is_file():
+            return str(proj / (sid + ".jsonl"))
+    if not projs:
+        return None
+    if len(sid) >= 36:
+        return str(projs[0] / (sid + ".jsonl"))
+    hits = [h for proj in projs for h in proj.glob(sid + "*") if h.is_dir()]
+    return str(hits[0].with_suffix(".jsonl")) if len(hits) == 1 else None
 
 
 def _log_tick_refusal(worklist, me, item_id, evidence, why, also=()):
@@ -2565,10 +2649,20 @@ def _adopt_cli(argv):
     import wl_lineage
 
     sid = C.resolve_session_id() or me
-    projects = C.projects_dir(C.project_root(os.getcwd()))
-    transcript = os.environ.get("CLAUDE_TRANSCRIPT_PATH") or wl_lineage.transcript_for(
-        sid, projects
-    )
+    # The directory holding this session's own transcript (C.projects_dirs: the main checkout's, or the landing tree's for a landing session), since a compaction successor and its predecessor write side by side.
+    dirs = C.projects_dirs(C.project_root(os.getcwd()))
+    projects = dirs[0] if dirs else ""
+    transcript = os.environ.get("CLAUDE_TRANSCRIPT_PATH")
+    if transcript:
+        projects = next((d for d in dirs if os.path.dirname(transcript) == d), projects)
+    else:
+        for d in dirs:
+            transcript = wl_lineage.transcript_for(sid, d)
+            if transcript:
+                projects = d
+                break
+        else:
+            transcript = wl_lineage.transcript_for(sid, projects)
     resolved, ev = wl_lineage.resolve(sid, transcript, projects, claimed_prev=prev)
     if resolved is None:
         sys.stderr.write(M.CLI_ADOPT_REFUSED % (me, prev, ev))

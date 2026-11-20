@@ -1351,14 +1351,14 @@ def scan(store, start, idle_min=None):
     """
     idle_min = SCAN_IDLE_MIN if idle_min is None else idle_min
     root = C.project_root(start)
-    proj = _projects_dir() / _munged(root)
+    projs = [p for p in C.projects_dirs(root, base=_projects_dir()) if p.is_dir()]
     known = {str(e["id"]) for e in read_index(store)}
     now = C.utcnow()
     added = []
     # ONCE PER SCAN, not once per agent: one glob and a few small reads, against a loop that already reads whole transcripts up to TRANSCRIPT_MAX_BYTES.
     live_ids, _live_evidence = running_agent_ids(start)
-    if proj.is_dir():
-        for meta in sorted(proj.glob("*/subagents/*.meta.json")):
+    if projs:
+        for meta in sorted(m for proj in projs for m in proj.glob("*/subagents/*.meta.json")):
             jsonl = meta.with_name(meta.name[: -len(".meta.json")] + ".jsonl")
             if not jsonl.exists():
                 continue
