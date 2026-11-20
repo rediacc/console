@@ -220,20 +220,22 @@ def _skipped(args):
 def _acts(cmd, root, base):
     """[(act, repo, reason-or-None, spelling)] for every judged push and create in `cmd`, in order."""
     created = commit_policy.created_dirs(cmd, base)
+    # EITHER BOUND TREE IS THIS CHECKOUT (box LT11): with a landing record a push or PR typed in the sibling tree (or a submodule of it) is judged here, where `is_inside(repo, root)` skipped it as a scratch repository's.
+    trees = commit_policy.bound_trees(root)
     out = []
     for run in commit_policy.git_runs(cmd, "push"):
         _, _, args = commit_policy.git_split(run.argv)
         if _skipped(args):
             continue
-        repo = commit_policy.scoped_repo(run, base, root, created, cmd)
-        if repo and not commit_policy.is_inside(repo, root):
+        repo = commit_policy.scoped_repo(run, base, root, created, cmd, trees=trees)
+        if repo and not commit_policy.is_ours(repo, root, trees):
             continue
         out.append(
             ("push", repo or root, run.env.get(REASON_ENV), " ".join(["git push", *args]), args)
         )
     for run in shellscan.gh_pr_runs(cmd, "create"):
         repo = commit_policy.toplevel(commit_policy.run_dir(run, base)) or root
-        if not commit_policy.is_inside(repo, root):
+        if not commit_policy.is_ours(repo, root, trees):
             continue
         out.append(
             (
@@ -359,9 +361,10 @@ TWO_TREE_DEFECT = ("record = commit_policy.landing_record(root)", "record = None
 def _development_draft(root, act, repo, argv):
     """`argv` is the push's arguments after `push`, or the words after `gh`. The admission line for a push or draft PR of the development branch while a landing record binds the open PR's branch to the landing tree, "" when this act is not one."""
     record = commit_policy.landing_record(root)
-    if record is None or commit_policy.tree_role(root) != commit_policy.ROLE_DEVELOPMENT:
+    if record is None:
         return ""
     landing = record["branch"]
+    # The act's own tree decides, not the session's: a push typed in the development tree from the landing root is the development draft's too. `is_inside` and not `is_ours`: the question is the landing tree's directory (a submodule of it included), never the pair of bound trees.
     if commit_policy.is_inside(repo, record["path"]):
         return ""
     head = commit_policy.current_branch(repo, foreign=True)
@@ -410,8 +413,9 @@ def _judge(ev, act, repo, reason, open_plans, backup_h, root=""):
         try:
             prs = _open_prs(repo, branch)
             # A submodule's first PR is what a red console PR on the same branch needs, so the console's open PR stands for the live PR there.
-            if not prs and branch and _is_submodule(root, repo):
-                prs = _open_prs(root, branch)
+            tree = _tree_of(root, repo)
+            if not prs and branch and _is_submodule(tree, repo):
+                prs = _open_prs(tree, branch)
         except commit_policy.GhUnavailableError as exc:
             ev.warn(
                 "block-turbo-early-push: `gh` could not say whether `%s` has an open PR (%s); "
@@ -686,12 +690,19 @@ def _batch_lines(batch):
     )
 
 
+def _tree_of(root, repo):
+    """The bound tree holding `repo` (the longest match), else `root`: with no landing record always `root`, the reading before the record existed."""
+    owners = [t for t in commit_policy.bound_trees(root) if commit_policy.is_inside(repo, t)]
+    return max(owners, key=len) if owners else root
+
+
 def _row(root, act, repo, kind, why, open_plans):
-    """One ledger line for one admitted act."""
+    """One ledger line for one admitted act. `repo` is named relative to the bound tree holding it: an act typed in the sibling tree is not below `root`."""
+    tree = _tree_of(root, repo)
     return {
         "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "branch": commit_policy.current_branch(repo),
-        "repo": "." if repo == root else str(pathlib.Path(repo).relative_to(root)),
+        "repo": "." if repo == tree else str(pathlib.Path(repo).relative_to(tree)),
         "act": act,
         "kind": kind,
         "why": why,

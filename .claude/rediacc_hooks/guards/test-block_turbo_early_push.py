@@ -777,6 +777,56 @@ TWO_TREE_CASES = [
         True,
         False,
     ),
+    (
+        "landing root: the development branch pushed from the main checkout",
+        "git -C %s push -u origin %s" % (TT_M, DEV_BRANCH),
+        TT_L,
+        GH_NONE,
+        False,
+        True,
+    ),
+    # A push to this checkout's own origin publishes from any clone, so with no record the sibling's push is judged as this checkout's (`commit_policy.scoped_repo`), and with one it is judged as the landing tree's.
+    (
+        "no record: the sibling tree's push from the development root",
+        "git -C %s push origin %s" % (NR_L, LANDING_BRANCH),
+        NR_M,
+        GH_NONE,
+        True,
+        False,
+    ),
+    (
+        "development root: the landing branch pushed from the landing tree",
+        "git -C %s push origin %s" % (TT_L, LANDING_BRANCH),
+        TT_M,
+        GH_NONE,
+        True,
+        False,
+    ),
+]
+# THE SCOPE CASES (box LT11): a command typed in the sibling tree is judged in that tree, where `is_inside(repo, root)` skipped a PR as a scratch repository's and judged a push as the session root's own. Each flips under SCOPE_DEFECT, the bound trees cut to the session root.
+SCOPE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
+SCOPE_CASES = [
+    (
+        "landing root: the development branch pushed from the main checkout",
+        "git -C %s push -u origin %s" % (TT_M, DEV_BRANCH),
+        TT_L,
+        GH_NONE,
+        False,
+    ),
+    (
+        "development root: a draft PR typed in the landing tree",
+        "cd %s && gh pr create --draft -t x -b y" % TT_L,
+        TT_M,
+        GH_NONE,
+        True,
+    ),
+    (
+        "landing root: a ready PR typed in the main checkout",
+        "cd %s && gh pr create -t x -b y" % TT_M,
+        TT_L,
+        GH_NONE,
+        True,
+    ),
 ]
 for name, command, root, gh, want, _flips in TWO_TREE_CASES:
     got, err = run(command, root, gh)
@@ -793,6 +843,23 @@ for name, command, root, gh, want, _flips in TWO_TREE_CASES:
         )
     )
     if not ok:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+for name, command, root, gh, want in SCOPE_CASES:
+    got, err = run(command, root, gh)
+    planted, _ = run(command, root, gh, broken=SCOPE_DEFECT)
+    ok = got == want and planted != want
+    fails += not ok
+    print(
+        "%-60s want=%-8s got=%-8s planted=%-8s %s"
+        % (
+            "two trees: " + name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "BLOCKED" if planted else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if got != want:
         print("    stderr: %s" % err.strip().splitlines()[:3])
 _dev_rows = [json.loads(line) for line in ledger_lines(TT_M)]
 _admitted = sum(1 for c in TWO_TREE_CASES if c[2] is TT_M and not c[4])
