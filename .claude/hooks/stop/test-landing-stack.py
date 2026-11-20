@@ -160,7 +160,8 @@ def controls(ws: types.ModuleType, cp) -> list[str]:
         merger = td / "merger"
         sh(td, "clone", "-q", str(remote), str(merger))
         sh(merger, "fetch", "-q", "origin", LANDING)
-        sh(merger, *IDENT, "cherry-pick", "main..origin/%s" % LANDING)
+        # A committer of its own, as GitHub signs the copies: a pick by the same identity in the same second would reproduce the very shas.
+        sh(merger, "-c", "user.name=merger", "-c", "user.email=merger@example.invalid", "cherry-pick", "main..origin/%s" % LANDING)
         sh(merger, "push", "-q", "origin", "main")
         control("FIXTURE: main holds copies", sh(merger, "rev-parse", "HEAD~1") != fix)
         got = state()
