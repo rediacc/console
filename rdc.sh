@@ -56,9 +56,9 @@ fi
 
 # THE FLEET LOCK (PLAN-push-decoupling.md D1.5): `ops up|down` rebuild the VMs vm:check, e2e-local and the drills drive, so they run under rediacc_ci.core.resource_lock's `fleet`.
 _w=(); _p=""; for _a in "$@"; do [[ "$_p" == --config || "$_a" == -* ]] || _w+=("$_a"); _p="$_a"; done
-# The marker is the PID of the lock holder (the exec'd python keeps this shell's PID) and counts only when that PID is an ancestor within eight levels (a coverage shim such as bashcov-sup sits between holder and child, so a direct-parent test re-wrapped forever on 2026-11-20): an inherited RDC_FLEET_LOCKED that names no live ancestor never skips the lock.
-if [[ "${_w[0]:-} ${_w[1]:-}" =~ ^ops\ (up|down)$ ]] && ! (_q=$PPID; for _i in 1 2 3 4 5 6 7 8; do [[ "$_q" == "${RDC_FLEET_LOCKED:-x}" ]] && exit 0; _q=$(ps -o ppid= -p "$_q" 2>/dev/null); _q=${_q// /}; [[ -z "$_q" || "$_q" -le 1 ]] && break; done; exit 1); then
-    RDC_FLEET_LOCKED=$$ PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.core.resource_lock run --resource fleet --purpose "rdc.sh ops ${_w[1]}" -- "$ROOT_DIR/rdc.sh" "$@"
+# Not re-wrapped when the fleet lock is already held by an ancestor (resource_lock held-by-ancestor reads the lock itself, so no environment variable can claim a hold, and a coverage shim between holder and child no longer re-wraps forever as it did on 2026-11-20).
+if [[ "${_w[0]:-} ${_w[1]:-}" =~ ^ops\ (up|down)$ ]] && ! PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.core.resource_lock held-by-ancestor --resource fleet; then
+    PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.core.resource_lock run --resource fleet --purpose "rdc.sh ops ${_w[1]}" -- "$ROOT_DIR/rdc.sh" "$@"
 fi
 
 # Self-register as 'rdc' in ~/.local/bin so it's accessible from any terminal,

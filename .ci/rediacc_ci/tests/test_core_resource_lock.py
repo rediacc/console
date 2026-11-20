@@ -371,3 +371,37 @@ def test_a_lock_file_owned_by_another_user_is_refused(monkeypatch: pytest.Monkey
     monkeypatch.setattr(resource_lock.os, "getuid", lambda: os.stat(path).st_uid + 1)
     with pytest.raises(resource_lock.LockFileRefusedError, match="owned by uid"):
         resource_lock.open_lock_file("foreign", path)
+
+
+@pytest.mark.usefixtures("runtime")
+def test_held_by_ancestor_reads_the_lock_not_the_environment() -> None:
+    """Free, held by an unrelated process, and held by an ancestor: only the last is True. rdc.sh asks this before wrapping ops up|down."""
+    assert resource_lock.held_by_ancestor("fleet") is False, "no lock file: nothing is held"
+    holder = _Holder("fleet", "unrelated")
+    try:
+        assert resource_lock.held_by_ancestor("fleet") is False, (
+            "a sibling's hold is not an ancestor's"
+        )
+    finally:
+        holder.stop()
+    assert resource_lock.held_by_ancestor("fleet") is False, "a released lock is free"
+    done = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "rediacc_ci.core.resource_lock",
+            "run",
+            "--resource",
+            "fleet",
+            "--",
+            "bash",
+            "-c",
+            '"$0" -m rediacc_ci.core.resource_lock held-by-ancestor --resource fleet',
+            sys.executable,
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert done.returncode == 0, ("a grandchild of the holder must read it as held", done.stderr)

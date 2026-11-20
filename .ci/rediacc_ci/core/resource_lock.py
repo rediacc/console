@@ -195,6 +195,26 @@ def ancestors(pid: int | None = None) -> list[int]:
     return chain
 
 
+def held_by_ancestor(resource: str, environ: Mapping[str, str] | None = None) -> bool:
+    """True when `resource` is held right now by this process or one of its ancestors: the lock file cannot be taken and its payload names a PID in the parent chain. A free lock, an unreadable one, or one held by an unrelated process is False. rdc.sh asks this before wrapping `ops up|down` in the fleet lock, so a re-run under the holder (with any shim between them) enters the hold instead of wrapping again, and no environment variable can claim a hold that does not exist."""
+    path = lock_path(resource, environ)
+    if not path.exists():
+        return False
+    try:
+        fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | getattr(os, "O_NOFOLLOW", 0))
+    except OSError:
+        return False
+    try:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return payload_pid(os.pread(fd, 4096, 0)) in (os.getpid(), *ancestors())
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        return False
+    finally:
+        os.close(fd)
+
+
 def default_session(environ: Mapping[str, str] | None = None) -> str:
     env = os.environ if environ is None else environ
     return (env.get("CLAUDE_CODE_SESSION_ID") or "-")[:8]
@@ -388,6 +408,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     path_p.add_argument("--resource", required=True)
     holder_p = sub.add_parser("holder", help="print a resource's current holder")
     holder_p.add_argument("--resource", required=True)
+    anc_p = sub.add_parser(
+        "held-by-ancestor",
+        help="exit 0 when this process or an ancestor holds the resource, 1 otherwise",
+    )
+    anc_p.add_argument("--resource", required=True)
     args = parser.parse_args(argv)
     try:
         _check_name(args.resource)
@@ -399,6 +424,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.verb == "holder":
         print(ResourceLock(args.resource).holder())
         return 0
+    if args.verb == "held-by-ancestor":
+        return 0 if held_by_ancestor(args.resource) else 1
     cmd = list(args.cmd)
     if cmd and cmd[0] == "--":
         cmd = cmd[1:]

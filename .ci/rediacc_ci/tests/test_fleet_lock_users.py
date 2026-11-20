@@ -98,9 +98,10 @@ def _probe_wrapper(tmp_path: pathlib.Path) -> pathlib.Path:
     marker = text.index("# THE FLEET LOCK")
     end = text.index("\nfi\n", marker) + len("\nfi\n")
     probe = (
-        'echo "CLI $* locked=${RDC_FLEET_LOCKED:-}"\n'
+        'held=no; PYTHONPATH="%s" python3 -m rediacc_ci.core.resource_lock held-by-ancestor --resource fleet && held=yes\n'
+        'echo "CLI $* held=$held"\n'
         'PYTHONPATH="%s" python3 -m rediacc_ci.core.resource_lock holder --resource fleet\n'
-        % CI_ROOT
+        % (CI_ROOT, CI_ROOT)
     )
     root = tmp_path / "root"
     root.mkdir()
@@ -125,7 +126,7 @@ def test_rdc_ops_down_runs_under_the_lock_when_free(
     )
     assert done.returncode == 0, done.stderr
     lines = done.stdout.splitlines()
-    assert re.fullmatch(r"CLI --dev ops down locked=\d+", lines[0]), lines[0]
+    assert lines[0] == "CLI --dev ops down held=yes", lines[0]
     assert "purpose rdc.sh ops down" in lines[1]
 
 
@@ -161,7 +162,9 @@ def test_an_inherited_fleet_marker_still_runs_under_the_lock_when_free(
     )
     assert done.returncode == 0, done.stderr
     lines = done.stdout.splitlines()
-    assert lines[0] != "CLI --dev ops down locked=1"
+    assert lines[0] == "CLI --dev ops down held=yes", (
+        "an inherited RDC_FLEET_LOCKED claims nothing: " + lines[0]
+    )
     assert "purpose rdc.sh ops down" in lines[1]
 
 
@@ -179,7 +182,7 @@ def test_rdc_other_verbs_take_no_lock(runtime: pathlib.Path, tmp_path: pathlib.P
             check=False,
         )
         assert done.returncode == 0, (argv, done.stderr)
-        assert done.stdout.splitlines()[0] == "CLI %s locked=" % " ".join(argv)
+        assert done.stdout.splitlines()[0] == "CLI %s held=no" % " ".join(argv)
 
 
 # --------------------------------------------------------------------------- the drill harness
@@ -341,3 +344,38 @@ def test_e2e_hold_takes_the_fleet_resource() -> None:
     fn = fn[: fn.index("\n}\n")]
     # Biome wraps the argv one item per line, so compare the items, not the spelling.
     assert re.search(r"'rediacc_ci\.core\.resource_lock',\s*'run',\s*'--resource',\s*'fleet'", fn)
+
+
+def test_a_rerun_under_the_holder_with_a_shell_between_enters_the_hold_once(
+    runtime: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
+    """rdc.sh re-run below the fleet holder, with another process between them (bashcov-sup in the real tree), must enter the hold and run, not wrap again: the old direct-parent marker re-wrapped without end (34 nested wrappers, 2026-11-20). RESOURCE_LOCK_WAIT_S=0 makes any real wait fail at once."""
+    wrapper = _probe_wrapper(tmp_path)
+    done = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "rediacc_ci.core.resource_lock",
+            "run",
+            "--resource",
+            "fleet",
+            "--purpose",
+            "outer holder",
+            "--",
+            "bash",
+            "-c",
+            'bash "$0" --dev ops down',
+            str(wrapper),
+        ],
+        env=_env(runtime, tmp_path, RESOURCE_LOCK_WAIT_S="0", PYTHONPATH=str(CI_ROOT)),
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert done.returncode == 0, (done.stdout, done.stderr)
+    lines = done.stdout.splitlines()
+    assert lines[0] == "CLI --dev ops down held=yes", lines
+    assert "outer holder" in lines[1], (
+        "the probe must run inside the OUTER hold, not a new one: %s" % lines
+    )
