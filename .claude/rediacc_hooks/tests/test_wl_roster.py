@@ -2299,3 +2299,32 @@ def test_a_generator_run_in_a_lease_writes_the_lease_trees_outputs(tmp_path, sub
     )
     assert proc.returncode == 0, proc.stderr[-600:]
     assert json.loads(proc.stdout) == [want, kept], sub
+
+
+def test_a_generator_run_from_outside_the_repository_writes_the_main_checkouts_outputs(tmp_path):
+    """`cd /tmp && npx tsx <root>/scripts/gen/gen-docs.ts --write` writes the main checkout's output, so it is recorded as one."""
+    root = tmp_path / "repo"
+    (root / ".ci" / "config").mkdir(parents=True)
+    outside = tmp_path / "elsewhere"
+    outside.mkdir()
+    run = "npx tsx scripts/gen/gen-docs.ts --write"
+    (root / ".ci" / "config" / "generated-artifacts.json").write_text(
+        json.dumps(
+            {
+                "schema": 1,
+                "artifacts": [
+                    {"id": "docs", "outputs": ["scripts/data/doc-registry.md"], "generator": run}
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    cmd = "cd %s && npx tsx %s/scripts/gen/gen-docs.ts --write" % (outside, root)
+    proc = subprocess.run(
+        [sys.executable, "-c", REGEN_TREE_SNIPPET, str(wlfix.STOP_DIR), cmd, str(root), str(root)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    assert json.loads(proc.stdout)[0] == ["scripts/data/doc-registry.md"]

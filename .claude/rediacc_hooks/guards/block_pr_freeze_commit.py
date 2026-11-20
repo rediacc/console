@@ -23,7 +23,7 @@ DEFECT = (
 )
 
 # ---- the differential's world: a repository on branch 1120-1 and a store whose babysit phase names it ----
-# The guard reads the branch of CLAUDE_PROJECT_DIR and the phase from the worklist store (wl_store, through pr_freeze.check), so under the harness's default CLAUDE_PROJECT_DIR (the live checkout) its answer was whatever phase the real branch was in. Every variable below is read by pr_freeze or wl_store / wl_core, never by this guard; the token builds the world.
+# The guard reads the branch of CLAUDE_PROJECT_DIR and the phase from the worklist store (wl_store, through pr_freeze.check), so under the harness's default CLAUDE_PROJECT_DIR (the live checkout) its answer was whatever phase the real branch was in. CLAUDE_PROJECT_DIR is the one variable this guard reads itself (the repository whose branch it judges); WORKLIST_STORE_DIR and TMPDIR are read by pr_freeze or wl_store / wl_core, never by this guard; the token builds the world.
 _FREEZE_BRANCH = "1120-1"
 _FREEZE_OWNER = "d778be9d"
 

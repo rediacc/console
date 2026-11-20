@@ -1160,13 +1160,13 @@ def _generators(root):
 
 
 def _tree_of(base, root):
-    """The root of the tree a run in the absolute directory `base` belongs to: the lease tree (`<root>/.claude/worktrees/<name>`) holding it, `root` for any other directory of the main checkout, and `base` itself outside the repository."""
+    """The root of the tree a run in the absolute directory `base` belongs to: the lease tree (`<root>/.claude/worktrees/<name>`) holding it, and `root` for any other directory, the main checkout's and one outside the repository alike: a registered generator matched from outside the repository was named by an absolute path under `root`, so its outputs are the main checkout's."""
     import posixpath
 
     root = str(root).rstrip("/")
     full = posixpath.normpath(str(base))
     if full != root and not full.startswith(root + "/"):
-        return full
+        return root
     m = re.match(r"^(\.claude/worktrees/[^/]+)(?:/|$)", full[len(root) + 1 :])
     return posixpath.join(root, m.group(1)) if m else root
 

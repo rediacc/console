@@ -306,5 +306,26 @@ control(
 )
 control("CONTROL: and says so on the log", any("checklist unavailable" in ln for ln in logs), True)
 
+# --------------------------------------------------------------------------- 5. the --run path wires the learner
+
+# `main --run` hands the committed record to wl_reviewsec.maybe_learn once the review is written: a record can only teach the checklist when the call is wired, and a learner that raises never changes the review's exit.
+_calls: list = []
+_real_run_review, _real_maybe_learn = R.run_review, S.maybe_learn
+R.run_review = lambda *_a, **_k: None
+S.maybe_learn = lambda root, **_k: _calls.append(str(root))
+try:
+    rc_ok = R.main(["--run", SHA, "--root", str(_SCRATCH), "--branch", "0101-1"])
+
+    def _boom(*_a, **_k):
+        raise OSError("disk gone")
+
+    S.maybe_learn = _boom
+    rc_boom = R.main(["--run", SHA, "--root", str(_SCRATCH), "--branch", "0101-1"])
+finally:
+    R.run_review, S.maybe_learn = _real_run_review, _real_maybe_learn
+control("main --run calls the security learner once with the root", _calls, [str(_SCRATCH)])
+control("main --run exits 0 after a learning pass", rc_ok, 0)
+control("CONTROL: a learner that raises is logged and the exit stays 0", rc_boom, 0)
+
 print("%d control(s), %d failed" % (Tally.count, Tally.fails))
 sys.exit(1 if Tally.fails else 0)

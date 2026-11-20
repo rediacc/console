@@ -192,7 +192,7 @@ def render(checklist: dict, active: list, paths) -> str:
         extra.append("Do not report (a person refuted these security claims on these files):")
         extra.extend(_fp_line(r) for r in notes)
     out: list[str] = []
-    size = 0
+    size = 1  # the block ends in two newlines and the join drops one separator, so the returned text is exactly `size` characters
     for line in lines + extra:
         if size + len(line) + 1 > cap:
             break
@@ -347,8 +347,8 @@ def area_of(message) -> str:
     return SECURITY
 
 
-def candidate_proposals(root, records, now_s, scan, repo=None) -> list:
-    """One candidate per (non-test code file, security-fix subject) whose previous commit a model review called clean of security findings on that file."""
+def candidate_proposals(root, records, now_s, scan, repo=None, skipped=None) -> list:
+    """One candidate per (non-test code file, security-fix subject) whose previous commit a model review called clean of security findings on that file. A fix commit whose file list git cannot read is not learned from, and its short sha is appended to `skipped` when the caller passes a list."""
     rv = _review_module()
     repo = pathlib.Path(repo or root)
     by_sha: dict = {}
@@ -373,6 +373,8 @@ def candidate_proposals(root, records, now_s, scan, repo=None) -> list:
         subject = message.strip().split("\n", 1)[0]
         rc, names = rv.git(repo, "show", "--name-only", "--format=", sha)
         if rc != 0:
+            if skipped is not None:
+                skipped.append(sha[:12])
             continue
         for path in sorted({n.strip() for n in names.splitlines() if n.strip()}):
             if NOT_CODE.search(path) or rv.is_test_path(path):
@@ -459,12 +461,18 @@ def learn(root, write=False, now=None, repo=None, log=print) -> dict:
     now_s = _now_iso(now)
     records = all_records(root)
     proposals = fp_proposals(records, now_s)
+    skipped: list = []
     try:
         proposals += candidate_proposals(
-            root, records, now_s, checklist["learn"]["scan_commits"], repo
+            root, records, now_s, checklist["learn"]["scan_commits"], repo, skipped
         )
     except OSError as exc:
         problems.append("candidate scan skipped: %s" % exc)
+    if skipped:
+        problems.append(
+            "candidate scan: git could not list the files of %d security fix(es), not learned from: %s"
+            % (len(skipped), ", ".join(skipped[:5]))
+        )
     new = plan(rows, proposals, checklist, now_s)
     if write:
         _append(root, new)

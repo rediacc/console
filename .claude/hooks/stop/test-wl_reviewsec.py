@@ -288,5 +288,41 @@ control(
     True,
 )
 
+# --------------------------------------------------------------------------- 6. the cap bounds the returned block; an unreadable fix is named
+
+_first_lines = [S.HEADER] + [S._item_line(i) for i in checklist["items"][:2]]
+_tight = sum(len(line) + 1 for line in _first_lines)
+for cap in (_tight, _tight + 1, 400, 777, 2500):
+    capped_checklist = dict(checklist, render_cap_chars=cap)
+    block = S.render(capped_checklist, [], ["src/app.py"])
+    control("render stays within render_cap_chars=%d" % cap, len(block) <= cap, True)
+control(
+    "CONTROL: a roomy cap still renders the whole checklist",
+    block.startswith(S.HEADER) and block.endswith("\n\n"),
+    True,
+)
+
+_rv = S._review_module()
+_real_git = _rv.git
+
+
+def _git_without_show(repo_arg, *args):
+    if args and args[0] == "show":
+        return 1, ""
+    return _real_git(repo_arg, *args)
+
+
+skipped: list = []
+_rv.git = _git_without_show
+try:
+    lost = S.candidate_proposals(repo, [("0101-1", review(missed))], NOW, 50, None, skipped)
+finally:
+    _rv.git = _real_git
+control("a fix whose file list git cannot read yields no candidate", lost, [])
+control("its sha is named in `skipped`", skipped, [fix[:12]])
+skipped_ok: list = []
+S.candidate_proposals(repo, [("0101-1", review(missed))], NOW, 50, None, skipped_ok)
+control("CONTROL: readable fixes skip nothing", skipped_ok, [])
+
 print("%d control(s), %d failed" % (Tally.count, Tally.fails))
 sys.exit(1 if Tally.fails else 0)

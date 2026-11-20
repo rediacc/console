@@ -146,6 +146,21 @@ check(
 )
 check("header: status is read", h.status, "in-progress")
 check("header: no structural errors", h.errors, ())
+# The memoized header shares `errors` and every `Field` with the cache; that is safe only while they are immutable, so the control pins it (9983a85c.1).
+_shared = D.parse_header(plan(dep="PLAN-a.md", extra="Depends-On: PLAN-b.md\n"))
+check("header: errors is an immutable tuple", isinstance(_shared.errors, tuple), True)
+try:
+    _shared.fields[D.FIELD].errors = ("x",)
+    _frozen = False
+except AttributeError:
+    _frozen = True
+check("header: a Field cannot be edited in place", _frozen, True)
+_shared.fields.clear()
+check(
+    "header: clearing one caller's fields leaves the next caller's header whole",
+    D.FIELD in D.parse_header(plan(dep="PLAN-a.md", extra="Depends-On: PLAN-b.md\n")).fields,
+    True,
+)
 h = D.parse_header(plan(dep="PLAN-a.md", extra="Depends-On: PLAN-b.md\n"))
 check("header: a second line is a structural error", len(h.field_errors(D.FIELD)), 1)
 check("header: the first line still parses", str(hdep(h).edges[0]), "PLAN-a.md")

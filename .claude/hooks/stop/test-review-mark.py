@@ -204,6 +204,39 @@ control(
     True,
 )
 control("CONTROL: the refusal marks nothing", resolution(repo, reviewed), "Resolution: open")
+
+
+# What a test's CONTENT must carry to name the anchored file: its path, its basename, or a COMPOUND stem. A single-token stem (`config`, `index`) turns up in unrelated tests as a word or an identifier, so it never closes a finding alone.
+def names_file(body, anchored):
+    repo, _reviewed, fix, rel = test_fixture("ref-stem-%d" % abs(hash((body, anchored))), body)
+    return R.references_anchored_file(str(repo), fix, rel, anchored)
+
+
+control(
+    "a compound stem in the content names the file",
+    names_file("load('wl-roster-plans')\n", "src/wl_roster.ts"),
+    True,
+)
+control(
+    "a compound stem with a leading migration number dropped names the file",
+    names_file("describe('partner-org migration')\n", "db/0090_partner_org.sql"),
+    True,
+)
+control(
+    "the anchored basename in the content names the file",
+    names_file("import x from './index.ts'\n", "src/index.ts"),
+    True,
+)
+control(
+    "CONTROL: a common single-token stem in unrelated content does not (`config`)",
+    names_file("const config = build(); // the config of the run\n", "src/config.ts"),
+    False,
+)
+control(
+    "CONTROL: a lone-token stem `index` in unrelated content does not",
+    names_file("expect(index).toBe(3)\n", "src/index.ts"),
+    False,
+)
 repo, reviewed, fix, rel = test_fixture("ref-untouched", "assert read('a.txt')\n")
 untouched = mark_with_test(repo, reviewed, fix, "tests/other_floor.py") or ""
 control(
@@ -576,7 +609,7 @@ class SpawnAdvancing(Spawn):
 
     def __call__(self, cmd, **kw):
         self.calls.append((cmd, kw.get("cwd")))
-        root = pathlib.Path(kw.get("cwd") or ".")
+        root = pathlib.Path(kw["cwd"])
         if self.advance:
             path = root / ".ci" / "cache" / "prepush-receipt.json"
             doc = json.loads(path.read_text(encoding="utf-8"))

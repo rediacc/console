@@ -8,6 +8,8 @@ import json
 import pathlib
 import subprocess
 import sys
+import tempfile
+import types
 
 import pytest
 
@@ -318,3 +320,43 @@ def test_a_failed_git_log_reads_as_unreadable(world, tmp_path):
     sha = _git(sub, "rev-parse", "HEAD").stdout.strip()
     _git(repo, "update-index", "--add", "--cacheinfo", "160000,%s,private/ghost" % sha)
     assert PF.gitlink_ranges(repo, ["private/ghost"]) == {"private/ghost": None}
+
+
+def test_a_gitlink_with_an_unreadable_range_is_refused_not_failed_open(world, monkeypatch):
+    """3a21f6bd.2: the focus-fix scan skips a None range, so the verdict (which refuses an unreadable range) is reached. A TypeError there would fail the whole check open with a `could not judge` note."""
+    repo, store = world
+    _phase(store)
+    monkeypatch.setattr(PF, "gitlink_ranges", lambda *_a: {"private/sub": None})
+    ok, reason = PF.check(repo, repo, BRANCH, "chore(sub): bump", ["private/sub"])
+    assert ok is False
+    assert "could not judge" not in reason
+    # Control: a readable range of fixes is admitted by the same path.
+    monkeypatch.setattr(PF, "gitlink_ranges", lambda *_a: {"private/sub": ["fix(x): ok"]})
+    assert PF.check(repo, repo, BRANCH, "chore(sub): bump", ["private/sub"])[0] is True
+
+
+def test_a_checked_commit_leaves_no_claude_worklist_directory(world, monkeypatch):
+    """3a21f6bd.1: neither the commit-msg hook run nor an in-process check creates `<tmp>/claude-worklist` in a scratch TMPDIR."""
+    repo, store = world
+    tmp = store.parent / "tmp"
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp))
+    _phase(store)
+    refused = _commit(repo, "feat(ci): frozen")
+    assert refused.returncode != 0
+    assert PF.check(repo, repo, BRANCH, "feat(ci): frozen", ["f.txt"])[0] is False
+    assert isinstance(PF.open_items(repo), dict)
+    assert not (tmp / "claude-worklist").exists()
+    # Control: the directory is read when it exists, so the guard of that read is not a blanket skip.
+    (tmp / "claude-worklist").mkdir()
+    assert PF._worklist(types.SimpleNamespace(worklist_for=lambda _r: "real"), repo) == "real"
+
+
+def test_stop_modules_import_from_the_stop_directory_and_leave_sys_path_as_found(monkeypatch):
+    """3a21f6bd.3: with the Stop-hook directory off sys.path and its modules unloaded, `_stop_modules` still imports them (on_sys_path inserted the directory) and removes the entry again."""
+    stop = str(PF.STOP_DIR)
+    monkeypatch.setattr(sys, "path", [p for p in sys.path if p != stop])
+    for name in ("wl_core", "wl_standdown", "wl_store", "wl_review"):
+        monkeypatch.delitem(sys.modules, name, raising=False)
+    mods = PF._stop_modules()
+    assert [m.__name__ for m in mods] == ["wl_core", "wl_standdown", "wl_store"]
+    assert stop not in sys.path
