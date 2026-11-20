@@ -318,9 +318,33 @@ def make_landing(root, *, gh=run_gh, seed=None):
     return str(path)
 
 
+def cmd_status(root):
+    """Print the landing tree in one line, `<path> on <branch>`, `(no landing record)`, or `(landing record unreadable: <defect>)`; always rc 0. The commands' Branch lines call this instead of reading the record with grep, so their allowed-tools name one exact command."""
+    policy = _policy()
+    record, defect = policy.read_landing_record(str(root))
+    if record is None:
+        sys.stdout.write(
+            "(landing record unreadable: %s)\n" % defect if defect else "(no landing record)\n"
+        )
+        return 0
+    branch = (
+        subprocess.run(
+            ["git", "-C", record["path"], "branch", "--show-current"],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout.strip()
+        or "(detached)"
+    )
+    sys.stdout.write("%s on %s\n" % (record["path"], branch))
+    return 0
+
+
 def cmd_landing(args):
     if args[:1] == ["--promote"]:
         return landing_promote.cmd_promote(args[1:])
+    if args == ["--status"]:
+        return cmd_status(paths.repo_root())
     if args:
         log.error("Unknown option: %s" % args[0])
         return 1

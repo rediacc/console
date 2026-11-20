@@ -272,3 +272,27 @@ def test_promote_is_dispatched_and_listed(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "[--promote]" in out
     assert "worktree landing --promote" in out
+
+
+def test_status_names_the_landing_tree_and_its_branch(repo, capsys):
+    path = landing.make_landing(repo, gh=gh_for(PR), seed=Seeded())
+    assert landing.cmd_status(repo) == 0
+    assert capsys.readouterr().out == "%s on %s\n" % (os.path.realpath(path), PR)
+
+
+def test_status_without_a_record(repo, capsys):
+    assert landing.cmd_status(repo) == 0
+    assert capsys.readouterr().out == "(no landing record)\n"
+
+
+def test_status_names_a_defective_record(repo, capsys):
+    (repo / ".git" / "rediacc-landing.json").write_text("{not json", encoding="utf-8")
+    assert landing.cmd_status(repo) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("(landing record unreadable: ")
+
+
+def test_status_is_dispatched_by_the_verb(repo, monkeypatch, capsys):
+    monkeypatch.setattr(landing.paths, "repo_root", lambda: str(repo))
+    assert landing.cmd_landing(["--status"]) == 0
+    assert capsys.readouterr().out == "(no landing record)\n"

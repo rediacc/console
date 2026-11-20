@@ -3,14 +3,14 @@ description: Hibernate the Windows host this WSL session runs on, after every ru
 argument-hint: "[now] (the word now, in any case, skips waiting for sub-agents; default waits for them)"
 # User-only by operator ruling 2026-10-18 ("Be sure that it's invokable only from user, so AI agents should not be able to invoke it."): an entry in the model-invocation exception list.
 disable-model-invocation: true
-allowed-tools: Bash(date:*), Bash(git status:*), Bash(git log:*), Bash(git branch --show-current), Bash(git rev-parse --git-common-dir), Bash(git -C * branch --show-current), Bash(grep:*), Bash(head:*)
+allowed-tools: Bash(date:*), Bash(git status:*), Bash(git log:*), Bash(git branch --show-current), Bash(grep:*), Bash(head:*), Bash(./run.sh worktree landing --status)
 ---
 
 ## Current state
 
 - UTC now: !`date -u +%FT%H:%MZ`
 - Branch (this tree): !`git branch --show-current`
-- Branch (landing tree, from the `rediacc-landing.json` record under the git common dir): !`rec="$(git rev-parse --git-common-dir)/rediacc-landing.json"; if [ -f "$rec" ]; then l=$(grep -m1 '"path"' "$rec"); p=${l#*: \"}; p=${p%\"*}; if [ -n "$p" ]; then echo "$p on $(git -C "$p" branch --show-current)"; else echo '(landing record unreadable)'; fi; else echo '(no landing record)'; fi`
+- Branch (landing tree, from the `rediacc-landing.json` record under the git common dir): !`./run.sh worktree landing --status`
 - Uncommitted paths (outside agent/): !`git status --short | grep -v ' agent/' | head -20`
 
 ## Task: hibernate the host

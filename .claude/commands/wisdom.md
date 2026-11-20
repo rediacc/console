@@ -1,14 +1,14 @@
 ---
 description: Near compaction, hand the session's important in-flight work to sub-agents with self-contained briefs, record each brief on its worklist item and in STATE.md, commit verified work and arm the wake timer, so the next context continues the work instead of rediscovering it. The Stop hook orders it (`wisdom-due`) once the context passes 92% of auto-compact; running it earlier is safe.
 argument-hint: "[focus: the threads to hand over first; omit to judge from the open worklist]"
-allowed-tools: Bash(.claude/hooks/stop/worklist.py:*), Bash(python3 .claude/hooks/stop/worklist.py:*), Bash(python3 .claude/hooks/stop/wl_wake.py:*), Bash(git add:*), Bash(git commit:*), Bash(git status:*), Bash(git log:*), Bash(git branch:*), Bash(date:*), Agent, SendMessage, Bash(git rev-parse --git-common-dir), Bash(git -C * branch --show-current), Bash(grep:*)
+allowed-tools: Bash(.claude/hooks/stop/worklist.py:*), Bash(python3 .claude/hooks/stop/worklist.py:*), Bash(python3 .claude/hooks/stop/wl_wake.py:*), Bash(git add:*), Bash(git commit:*), Bash(git status:*), Bash(git log:*), Bash(git branch:*), Bash(date:*), Agent, SendMessage, Bash(./run.sh worktree landing --status)
 ---
 
 ## In flight, gathered
 
 - UTC now: !`date -u +%FT%H:%MZ`
 - Branch (this tree): !`git branch --show-current`
-- Branch (landing tree, from the `rediacc-landing.json` record under the git common dir): !`rec="$(git rev-parse --git-common-dir)/rediacc-landing.json"; if [ -f "$rec" ]; then l=$(grep -m1 '"path"' "$rec"); p=${l#*: \"}; p=${p%\"*}; if [ -n "$p" ]; then echo "$p on $(git -C "$p" branch --show-current)"; else echo '(landing record unreadable)'; fi; else echo '(no landing record)'; fi`
+- Branch (landing tree, from the `rediacc-landing.json` record under the git common dir): !`./run.sh worktree landing --status`
 - Open worklist slice (`[>]` lines name their `worker:`): !`.claude/hooks/stop/worklist.py --list --open 2>&1 | head -60`
 - Uncommitted paths: !`git status --short | head -40`
 - Unpushed commits: !`git log --oneline @{u}..HEAD 2>&1 | head -20`

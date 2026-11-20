@@ -5,7 +5,7 @@ argument-hint: "[bg] [short summary of the change to seed intent/PR titles]"
 # user-only; a hook and check:ci-model-invocable-commands refuse the flag), and the per-PR
 # loop's own entry point since the operator ruling of 2026-10-02 (PLAN-plan-per-pr-loop M1):
 # the AI starts it for the next queued plan without being asked.
-allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(gh pr list:*), Bash(date:*), Bash(git rev-parse --git-common-dir), Bash(git -C * branch --show-current), Bash(grep:*)
+allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(gh pr list:*), Bash(date:*), Bash(./run.sh worktree landing --status)
 ---
 
 ## Current state
@@ -14,7 +14,7 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 
 **Take MAX+1 over the CONSUMED list, not over the remote branch list.** A merged PR's branch is DELETED, so `git branch -r` cannot see the name it used. That is how `0826-1` was picked twice on 2026-08-26: the remote showed only `0826-2`, while PR #576 had merged `0826-1` at 11:01 that morning. Both lines are printed below so the difference is visible rather than assumed.
 - Development tree branch (this checkout): !`git branch --show-current`
-- Landing tree branch (path in the `rediacc-landing.json` record under `git rev-parse --git-common-dir`; loop steps 1-9 run there, step 0 and the building in the development tree): !`rec="$(git rev-parse --git-common-dir)/rediacc-landing.json"; if [ -f "$rec" ]; then l=$(grep -m1 '"path"' "$rec"); p=${l#*: \"}; p=${p%\"*}; if [ -n "$p" ]; then echo "$p on $(git -C "$p" branch --show-current)"; else echo '(landing record unreadable)'; fi; else echo '(no landing record)'; fi`
+- Landing tree branch (path in the `rediacc-landing.json` record under `git rev-parse --git-common-dir`; loop steps 1-9 run there, step 0 and the building in the development tree): !`./run.sh worktree landing --status`
 - Live local branches besides `main` (at most ONE per tree is allowed, `block_second_branch`): !`git branch --format='%(refname:short)' | grep -vx main | tr '\n' ' '; echo`
 - Console tree (excl. settings.local.json): !`git status --short | grep -v '.claude/settings.local.json' | wc -l | tr -d ' '` changed path(s)
 - Submodules with changes: !`git status --short private/renet private/account private/elite private/homebrew-tap 2>/dev/null || echo '(none)'`
