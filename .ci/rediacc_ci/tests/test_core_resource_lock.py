@@ -452,3 +452,27 @@ def test_a_symlinked_lock_refuses_even_without_o_nofollow(monkeypatch) -> None:
     path.symlink_to(path.parent / "nowhere")
     monkeypatch.delattr(resource_lock.os, "O_NOFOLLOW", raising=False)
     assert resource_lock.main(["held-by-ancestor", "--resource", "fleet"]) == 2
+
+
+@pytest.mark.usefixtures("runtime")
+def test_a_lock_swapped_for_a_symlink_after_the_check_refuses(monkeypatch) -> None:
+    """The race the pre-check alone leaves open without O_NOFOLLOW: the path becomes a symlink between the lstat check and the open."""
+    path = resource_lock.lock_path("fleet")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    target = path.parent / "elsewhere"
+    target.write_text("")
+    path.write_text("")
+    monkeypatch.delattr(resource_lock.os, "O_NOFOLLOW", raising=False)
+    real_open = resource_lock.os.open
+
+    def swapping_open(p, flags, *a, **k):
+        if p == path:
+            os.unlink(path)
+            os.symlink(target, path)
+        return real_open(p, flags, *a, **k)
+
+    monkeypatch.setattr(resource_lock.os, "open", swapping_open)
+    try:
+        assert resource_lock.main(["held-by-ancestor", "--resource", "fleet"]) == 2
+    finally:
+        monkeypatch.undo()

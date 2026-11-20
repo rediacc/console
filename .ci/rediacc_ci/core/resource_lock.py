@@ -202,15 +202,20 @@ def held_by_ancestor(resource: str, environ: Mapping[str, str] | None = None) ->
     """True when `resource` is held right now by this process or one of its ancestors: the lock file cannot be taken and its payload names a PID in the parent chain. A free lock or one held by an unrelated process is False; a lock file that cannot be opened (a symlink, wrong permissions) raises OSError, which the CLI turns into exit 2 so rdc.sh refuses. rdc.sh asks this before wrapping `ops up|down` in the fleet lock, so a re-run under the holder (with any shim between them) enters the hold instead of wrapping again, and no environment variable can claim a hold that does not exist."""
     path = lock_path(resource, environ)
     # No exists() test: it follows symlinks, so a dangling symlink read as "no lock". The O_NOFOLLOW open decides: absent is not held, any symlink raises.
-    if (
-        path.is_symlink()
-    ):  # refused even where os.O_NOFOLLOW is missing and the open below would follow it
+    # Where os.O_NOFOLLOW is missing the open follows a symlink, so the path is lstat-checked before the open and the opened file is compared with a second lstat after it: a symlink present at either instant, or swapped in between, refuses.
+    if path.is_symlink():
         raise OSError("refusing symlinked lock file %s" % path)
     try:
         fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | getattr(os, "O_NOFOLLOW", 0))
     except FileNotFoundError:
         return False  # no lock file: nothing is held
     try:
+        try:
+            same = os.path.samestat(os.fstat(fd), os.lstat(path))
+        except FileNotFoundError:
+            same = False
+        if not same:
+            raise OSError("lock file %s changed or is a symlink after open; refusing" % path)
         try:
             fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
         except BlockingIOError:
