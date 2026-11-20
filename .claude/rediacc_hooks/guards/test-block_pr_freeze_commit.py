@@ -66,12 +66,13 @@ def _world(tmp, phase=True):
     return repo, store
 
 
-def run(repo, store, cmd, cwd=None):
+def run(repo, store, cmd, cwd=None, extra_env=None):
     env = dict(
         os.environ,
         CLAUDE_PROJECT_DIR=str(repo),
         WORKLIST_STORE_DIR=str(store),
         TMPDIR=str(store.parent),
+        **(extra_env or {}),
     )
     p = subprocess.run(
         GUARD_ARGV,
@@ -152,13 +153,57 @@ def main():
         if not got:
             fails.append("no pathspec, staged code file: not refused\n%s" % out[-400:])
     with tempfile.TemporaryDirectory() as tmp:
+        # -a: unstaged tracked changes join the judged paths (review b5f9d11c.2).
+        repo, store = _world(tmp)
+        ident = ["-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+        (repo / "tracked.py").write_text("x = 1\n")
+        subprocess.run(["git", "-C", str(repo), "add", "tracked.py"], check=True)
+        subprocess.run(
+            ["git", "-C", str(repo), *ident, "commit", "-q", "-m", "fix: tracked"], check=True
+        )
+        (repo / "tracked.py").write_text("x = 2\n")
+        rec = repo / "agent" / "reviews" / "1120-1" / "clean.jsonl"
+        rec.parent.mkdir(parents=True)
+        rec.write_text("{}\n")
+        subprocess.run(["git", "-C", str(repo), "add", str(rec)], check=True)
+        got, out = run(repo, store, "git commit -m 'feat(ci): records only'")
+        if got:
+            fails.append(
+                "-a absent: the staged record file alone must be admitted\n%s" % out[-400:]
+            )
+        got, out = run(repo, store, "git commit -a -m 'feat(ci): records and tracked.py'")
+        if not got:
+            fails.append(
+                "-a: the unstaged tracked.py must join the paths and refuse the feat\n%s"
+                % out[-400:]
+            )
+        # Git cannot list the paths (a corrupt index): judged with none, so a feat is refused and a fix admitted (review b5f9d11c.1/.3).
+        bad = pathlib.Path(tmp) / "corrupt-index"
+        bad.write_bytes(b"not an index")
+        got, out = run(
+            repo,
+            store,
+            "git commit -m 'feat(ci): unlistable'",
+            extra_env={"GIT_INDEX_FILE": str(bad)},
+        )
+        if not got:
+            fails.append("unlistable paths: a feat must be refused\n%s" % out[-400:])
+        got, out = run(
+            repo,
+            store,
+            "git commit -m 'fix(ci): unlistable'",
+            extra_env={"GIT_INDEX_FILE": str(bad)},
+        )
+        if got:
+            fails.append("unlistable paths: a fix must be admitted\n%s" % out[-400:])
+    with tempfile.TemporaryDirectory() as tmp:
         repo, store = _world(tmp, phase=False)
         got, out = run(repo, store, "git commit -m 'feat(ci): no phase' -- f.txt")
         if got:
             fails.append("CONTROL: with no phase a feat commit must be admitted\n%s" % out[-400:])
     for f in fails:
         print("FAIL", f)
-    total = len(CASES) + 5
+    total = len(CASES) + 9
     if fails:
         print("%d of %d case(s) failed" % (len(fails), total))
         return 1
