@@ -216,6 +216,14 @@
         {
           "id": "check:cli-examples",
           "evidence": "scripts/gen/validate-cli-examples.ts:170 (cite) agent/reviews/"
+        },
+        {
+          "id": "check:ci-gh-retry-reads",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
+        },
+        {
+          "id": "check:ci-inner-timeout-reachable",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
         }
       ],
       "notReaders": [
@@ -250,14 +258,6 @@
         {
           "id": "check:ci-dead-translation-keys",
           "reason": "Its only citation of this record is the key-site pattern '*.*' in a selftest fixture (scripts/gates/check-dead-translation-keys.ts:529), a string the selftest feeds to its own resolver; the verdict is computed over packages/www translation JSON and source, and no file under this record is read."
-        },
-        {
-          "id": "check:ci-gh-retry-reads",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
-        },
-        {
-          "id": "check:ci-inner-timeout-reachable",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
         }
       ]
     },
@@ -441,6 +441,14 @@
         {
           "id": "check:ci-worklist-env-registry",
           "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
+        },
+        {
+          "id": "check:ci-gh-retry-reads",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
+        },
+        {
+          "id": "check:ci-inner-timeout-reachable",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
         }
       ],
       "notReaders": [
@@ -471,14 +479,6 @@
         {
           "id": "check:ci-dead-translation-keys",
           "reason": "Its only citation of this record is the key-site pattern '*.*' in a selftest fixture (scripts/gates/check-dead-translation-keys.ts:529), a string the selftest feeds to its own resolver; the verdict is computed over packages/www translation JSON and source, and no file under this record is read."
-        },
-        {
-          "id": "check:ci-gh-retry-reads",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
-        },
-        {
-          "id": "check:ci-inner-timeout-reachable",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
         }
       ]
     },
@@ -649,6 +649,14 @@
         {
           "id": "check:ci-worklist-env-registry",
           "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
+        },
+        {
+          "id": "check:ci-gh-retry-reads",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
+        },
+        {
+          "id": "check:ci-inner-timeout-reachable",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
         }
       ],
       "notReaders": [
@@ -671,14 +679,6 @@
         {
           "id": "check:ci-dead-translation-keys",
           "reason": "Its only citation of this record is the key-site pattern '*.*' in a selftest fixture (scripts/gates/check-dead-translation-keys.ts:529), a string the selftest feeds to its own resolver; the verdict is computed over packages/www translation JSON and source, and no file under this record is read."
-        },
-        {
-          "id": "check:ci-gh-retry-reads",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
-        },
-        {
-          "id": "check:ci-inner-timeout-reachable",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
         }
       ]
     },
@@ -857,6 +857,14 @@
         {
           "id": "check:ci-worklist-env-registry",
           "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
+        },
+        {
+          "id": "check:ci-gh-retry-reads",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
+        },
+        {
+          "id": "check:ci-inner-timeout-reachable",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
         }
       ],
       "notReaders": [
@@ -887,14 +895,6 @@
         {
           "id": "check:ci-plan-feedback",
           "reason": "The agent/ledgers/ file it reads is agent/ledgers/feedback-snapshot.json (SNAPSHOT_PARTS, .ci/rediacc_ci/feedback/link.py:45), a different ledger outside this glob; no effort-*.jsonl file is read: the verdict is computed over agent/plans/PLAN-*.md and that snapshot."
-        },
-        {
-          "id": "check:ci-gh-retry-reads",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
-        },
-        {
-          "id": "check:ci-inner-timeout-reachable",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
         }
       ]
     },
@@ -1322,6 +1322,14 @@
         {
           "id": "check:cli-examples",
           "evidence": "scripts/gen/validate-cli-examples.ts:156 (cite) agent/plans/PLAN-lint-rule-matrix-probe.md"
+        },
+        {
+          "id": "check:ci-gh-retry-reads",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
+        },
+        {
+          "id": "check:ci-inner-timeout-reachable",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
         }
       ],
       "notReaders": [
@@ -1344,14 +1352,6 @@
         {
           "id": "check:ci-env-manifest",
           "reason": "It imports worklist_env_registry only for its registry loader; the agent/ the derivation finds there is a selftest fixture's `exclusions` key, and the '*n' it finds in .ci/config/python-env-registry.json is an opaque env-read key (the shellscan.py entry for a computed variable name), not a file glob. It reads no plan file, ledger or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-gh-retry-reads",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
-        },
-        {
-          "id": "check:ci-inner-timeout-reachable",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
         }
       ]
     },
@@ -1550,6 +1550,14 @@
         {
           "id": "check:cli-examples",
           "evidence": "scripts/gen/validate-cli-examples.ts:51 (glob) agent/**/*.{md,mdx}"
+        },
+        {
+          "id": "check:ci-gh-retry-reads",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
+        },
+        {
+          "id": "check:ci-inner-timeout-reachable",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
         }
       ],
       "notReaders": [
@@ -1568,14 +1576,6 @@
         {
           "id": "check:ci-env-manifest",
           "reason": "It imports worklist_env_registry only for its registry loader; the agent/ the derivation finds there is a selftest fixture's `exclusions` key, and the '*n' it finds in .ci/config/python-env-registry.json is an opaque env-read key (the shellscan.py entry for a computed variable name), not a file glob. It reads no plan file, ledger or .ci/config/plan-boxes.json."
-        },
-        {
-          "id": "check:ci-gh-retry-reads",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
-        },
-        {
-          "id": "check:ci-inner-timeout-reachable",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
         }
       ]
     },
@@ -1956,6 +1956,14 @@
         {
           "id": "check:ci-worklist-env-registry",
           "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
+        },
+        {
+          "id": "check:ci-gh-retry-reads",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
+        },
+        {
+          "id": "check:ci-inner-timeout-reachable",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
         }
       ],
       "notReaders": [
@@ -1982,14 +1990,6 @@
         {
           "id": "check:ci-commit-citations",
           "reason": "It names agent/ledgers/ only to say it never reads it: EXCLUDED (.ci/scripts/quality/check_commit_citations.py) drops agent/reviews/, agent/worklist/ and agent/ledgers/ from the files whose commit citations it judges. It is a declared reader of the plan files themselves."
-        },
-        {
-          "id": "check:ci-gh-retry-reads",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
-        },
-        {
-          "id": "check:ci-inner-timeout-reachable",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
         }
       ]
     },
@@ -2159,6 +2159,14 @@
         {
           "id": "check:ci-worklist-env-registry",
           "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
+        },
+        {
+          "id": "check:ci-gh-retry-reads",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
+        },
+        {
+          "id": "check:ci-inner-timeout-reachable",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
         }
       ],
       "notReaders": [
@@ -2185,14 +2193,6 @@
         {
           "id": "check:ci-commit-citations",
           "reason": "It names agent/ledgers/ only to say it never reads it: EXCLUDED (.ci/scripts/quality/check_commit_citations.py) drops agent/reviews/, agent/worklist/ and agent/ledgers/ from the files whose commit citations it judges. It is a declared reader of the plan files themselves."
-        },
-        {
-          "id": "check:ci-gh-retry-reads",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
-        },
-        {
-          "id": "check:ci-inner-timeout-reachable",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
         }
       ]
     },
@@ -2362,6 +2362,14 @@
         {
           "id": "check:ci-worklist-env-registry",
           "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
+        },
+        {
+          "id": "check:ci-gh-retry-reads",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
+        },
+        {
+          "id": "check:ci-inner-timeout-reachable",
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
         }
       ],
       "notReaders": [
@@ -2388,14 +2396,6 @@
         {
           "id": "check:ci-commit-citations",
           "reason": "It names agent/ledgers/ only to say it never reads it: EXCLUDED (.ci/scripts/quality/check_commit_citations.py) drops agent/reviews/, agent/worklist/ and agent/ledgers/ from the files whose commit citations it judges. It is a declared reader of the plan files themselves."
-        },
-        {
-          "id": "check:ci-gh-retry-reads",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
-        },
-        {
-          "id": "check:ci-inner-timeout-reachable",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
         }
       ]
     },
@@ -2589,18 +2589,17 @@
         {
           "id": "check:ci-worklist-env-registry",
           "evidence": ".ci/rediacc_ci/quality/worklist_env_registry.py:733 (root) agent/"
-        }
-      ],
-      "notReaders": [
+        },
         {
           "id": "check:ci-gh-retry-reads",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
         },
         {
           "id": "check:ci-inner-timeout-reachable",
-          "reason": "It reaches .claude/rediacc_hooks/commit_policy.py only by import; the agent/ the derivation cites at :236 is lease_commit_offenders labelling a path a lease may not commit, a prefix comparison that opens no file, so no file under this record is read."
+          "evidence": ".claude/rediacc_hooks/commit_policy.py:34 (glob) agent/** and :236 (root) agent/, reached by import; declared as a reader on the gate's over-count rule (a false reader costs one re-run at an advance) rather than exempted"
         }
-      ]
+      ],
+      "notReaders": []
     }
   ]
 }
