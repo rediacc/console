@@ -88,6 +88,7 @@ import {
   type StatusWorld,
   viewOf,
 } from '../lib/pins/status.js';
+import { readTemplateFiles, scanTemplates } from '../lib/pins/templates.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs } from '../lib/release-age.js';
 import { REPO_ROOT } from '../lib/repo-root.js';
@@ -810,6 +811,11 @@ async function main(): Promise<number> {
   registerDrivers(realDrivers());
   const r = await check(REPO_ROOT);
   for (const l of r.out) console.log(l);
+  // The app templates' references that name no version are no leaf (scripts/lib/pins/templates.ts), so nothing above judges them; they are named on every run instead of passing in silence.
+  const { unpinned } = scanTemplates(readTemplateFiles(REPO_ROOT));
+  console.log(
+    `  unpinned app template image(s), no version to compare (${unpinned.length}): ${unpinned.map(({ img, why }) => `${img.file}:${img.line} ${img.ref} (${why})`).join('; ') || 'none'}`
+  );
   for (const l of r.err) console.error(l);
   return r.rc;
 }

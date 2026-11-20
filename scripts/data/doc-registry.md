@@ -953,7 +953,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/config/bws-step-scoped.json | 5 | JSON value |
 | .ci/config/directive-quotes-allowlist.txt | 2 | prose only (no live entry) |
 | .ci/config/docker-npm-pin-exclusions.json | 1 | JSON value |
-| .ci/config/pins.json | 16 | JSON value |
+| .ci/config/pins.json | 20 | JSON value |
 | .ci/config/prose-style-rules.json | 9 | JSON value |
 | .ci/config/retired-terms.json | 11 | JSON value |
 | .ci/config/secret-supply.json | 2 | JSON value |
@@ -970,7 +970,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/policy/.go-deps-upgrade-blocklist | 3 | # comment |
 | .ci/policy/.host-toolchain-exceptions | 1 | prose only (no live entry) |
 | .ci/policy/.language-policy-allowlist | 41 | # comment |
-| .ci/policy/.pins-upgrade-blocklist | 2 | inline |
+| .ci/policy/.pins-upgrade-blocklist | 14 | inline |
 | .ci/policy/.plan-housekeeping-allowlist | 3 | # comment |
 | .ci/policy/.profiler-coverage-allowlist | 4 | # comment |
 | .ci/policy/.runner-advice-allowlist | 1 | prose only (no live entry) |

@@ -24,6 +24,10 @@
  *   verify [--restore <stamp> [--inflight <file>]...] [--json]
  *                                          every leaf site matches its count and agrees;
  *                                          no run was killed mid-write
+ *   sync-templates [--write] [--json]      the `template:*` docker leaves the app templates'
+ *                                          compose image pins imply (scripts/lib/pins/templates.ts):
+ *                                          prints the drift and the unpinned references, exits 1
+ *                                          on drift; --write rewrites those leaves in pins.json
  *   --selftest                             the fixture controls and their mutants
  *
  * WHAT IT NEVER DOES: commit, push, or pick a release inside the release-age window. A bump
@@ -88,7 +92,13 @@ import { followers, followWrites, planFollow } from '../lib/pins/drivers/pin-sit
 import { realDrivers } from '../lib/pins/drivers/table.js';
 import { familyGateOf } from '../lib/pins/family-gates.js';
 import { ranLine } from '../lib/pins/ran-line.js';
-import { loadRegistry, type PinEntry, type RepoPath, siteMatches } from '../lib/pins/registry.js';
+import {
+  loadRegistry,
+  type PinEntry,
+  parseRegistry,
+  type RepoPath,
+  siteMatches,
+} from '../lib/pins/registry.js';
 import { iso, soakClearsAt } from '../lib/pins/soak.js';
 import {
   contextOf,
@@ -99,6 +109,13 @@ import {
   type StatusWorld,
   viewOf,
 } from '../lib/pins/status.js';
+import {
+  readTemplateFiles,
+  scanTemplates,
+  spliceEntries,
+  templateDrift,
+  withTemplates,
+} from '../lib/pins/templates.js';
 import {
   type CommandRecord,
   fixtureRunner,
@@ -517,6 +534,8 @@ function branchTask(root: string): { task: string | null; ids: string[] } {
 interface Flags {
   json: boolean;
   all: boolean;
+  /** `sync-templates --write`: rewrite the template leaves instead of reporting them. */
+  write: boolean;
   /** Every `--to` given, a comma list counting as several; more than one is taken in one transaction. */
   to: string[];
   major: boolean;
@@ -536,6 +555,7 @@ function parseFlags(argv: string[]): Flags {
   const f: Flags = {
     json: false,
     all: false,
+    write: false,
     to: [],
     major: false,
     task: null,
@@ -552,6 +572,7 @@ function parseFlags(argv: string[]): Flags {
     const a = argv[i];
     if (a === '--json') f.json = true;
     else if (a === '--all') f.all = true;
+    else if (a === '--write') f.write = true;
     else if (a === '--major') f.major = true;
     else if (a === '--to') {
       const named = val(i++, a)
@@ -1080,6 +1101,55 @@ function cmdVerify(w: World, f: Flags): number {
   return findings.length ? 1 : 0;
 }
 
+/**
+ * `sync-templates [--write]`: the app templates' compose image pins as `template:*` docker
+ * leaves (scripts/lib/pins/templates.ts). Without --write it prints the drift between the
+ * registry and the generated set, and every unpinned reference, and exits 1 on drift; with
+ * --write it splices the generated leaves into pins.json (every other entry keeps its bytes)
+ * and re-reads the result through the registry validator. Never commits.
+ */
+function cmdSyncTemplates(w: World, f: Flags): number {
+  if (f.write && f.json) throw new Usage('sync-templates takes --write or --json, not both');
+  const scan = scanTemplates(readTemplateFiles(w.root));
+  const drift = templateDrift(w.reg, scan.entries);
+  const moved = drift.added.length + drift.removed.length + drift.changed.length;
+  const unpinned = scan.unpinned.map(
+    ({ img, why }) => `${img.file}:${img.line}  ${img.ref}: ${why}`
+  );
+  if (f.json) {
+    w.out.push(
+      JSON.stringify({ pins: scan.entries.map((e) => e.id), ...drift, unpinned }, null, 2)
+    );
+    return moved > 0 ? 1 : 0;
+  }
+  for (const id of drift.added) w.out.push(`add     ${id}`);
+  for (const id of drift.removed) w.out.push(`remove  ${id}`);
+  for (const id of drift.changed) w.out.push(`change  ${id}`);
+  for (const u of unpinned) w.out.push(`unpinned  ${u}`);
+  const file = path.join(w.root, '.ci/config/pins.json');
+  if (moved > 0 && f.write) {
+    const text = fs.readFileSync(file, 'utf8');
+    const next = withTemplates(w.reg, scan.entries);
+    const after = spliceEntries(text, w.reg, next);
+    parseRegistry(after, file);
+    fs.writeFileSync(file, after);
+    w.out.push(
+      `.ci/config/pins.json: ${scan.entries.length} template leaf(s) written (${drift.added.length} added, ${drift.removed.length} removed, ${drift.changed.length} changed); ${scan.unpinned.length} unpinned reference(s) carry no version to register`
+    );
+    return 0;
+  }
+  if (moved > 0) {
+    w.err.push(
+      `${moved} template leaf(s) of .ci/config/pins.json differ from the app templates' compose pins; \`npm run pins -- sync-templates --write\` rewrites them`
+    );
+    return 1;
+  }
+  w.out.push(
+    `${scan.entries.length} template image pin(s) in sync with .ci/config/pins.json; ${scan.unpinned.length} unpinned reference(s) carry no version to register`
+  );
+  return 0;
+}
+
 /** The CLI, with its environment and output passed in so the selftest drives it in-process. */
 export async function runCli(
   argv: string[],
@@ -1092,6 +1162,8 @@ export async function runCli(
     const verb = argv[0];
     if (f.inflight.length > 0 && !(verb === 'verify' && f.restore))
       throw new Usage('--inflight only goes with `verify --restore <stamp>`');
+    if (f.write && verb !== 'sync-templates')
+      throw new Usage('--write only goes with `sync-templates`');
     let rc: number;
     if (verb === 'status') rc = await cmdStatus(w, f);
     else if (verb === 'when') rc = await cmdWhen(w, f);
@@ -1102,9 +1174,10 @@ export async function runCli(
     else if (verb === 'verify') rc = cmdVerify(w, f);
     else if (verb === 'remove') rc = cmdNpmPlan(w, f, 'remove');
     else if (verb === 'lockfiles') rc = cmdNpmPlan(w, f, 'lockfiles');
+    else if (verb === 'sync-templates') rc = cmdSyncTemplates(w, f);
     else
       throw new Usage(
-        `unknown verb ${verb ?? '(none)'}; verbs: status, when, plan, bump, apply-soaked, hold, remove, lockfiles, verify`
+        `unknown verb ${verb ?? '(none)'}; verbs: status, when, plan, bump, apply-soaked, hold, remove, lockfiles, verify, sync-templates`
       );
     return { rc, out: w.out.join('\n'), err: w.err.join('\n') };
   } catch (err) {
@@ -3349,6 +3422,63 @@ const CASES: Record<string, Case> = {
           after[1] === 'npx -y npm@11.20.0 run install:natives' &&
           rep.resynced.includes('.'),
         detail: `rc=${r.rc} after-gate=${after.join(' | ')} resynced=${rep.resynced}`,
+      },
+    ];
+  },
+  // `sync-templates` on a temp root: drift is reported and exits 1, --write splices the leaves in and keeps every other entry's bytes, a second dry run is in sync.
+  async syncTemplates(m) {
+    if (m !== undefined) return [];
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pins-templates-'));
+    FIXTURE_ROOTS.push(root);
+    const real = fs.readFileSync(path.join(REPO_ROOT, '.ci/config/pins.json'), 'utf8');
+    const realReg = parseRegistry(real, 'pins.json');
+    const bare = withTemplates(realReg, []);
+    const before = spliceEntries(real, realReg, bare);
+    fs.mkdirSync(path.join(root, '.ci/config'), { recursive: true });
+    fs.writeFileSync(path.join(root, '.ci/config/pins.json'), before);
+    const app = path.join(root, 'packages/json/templates/search/es');
+    fs.mkdirSync(app, { recursive: true });
+    fs.writeFileSync(
+      path.join(app, 'docker-compose.yaml'),
+      'services:\n  es:\n    image: elasticsearch:8.11.0\n  ui:\n    image: nginx:latest\n'
+    );
+    const env = { PINS_ROOT: root };
+    const dry = await runCli(['sync-templates'], env);
+    const wrote = await runCli(['sync-templates', '--write'], env);
+    const after = fs.readFileSync(path.join(root, '.ci/config/pins.json'), 'utf8');
+    // loadRegistry memoises by path, so the re-read runs from a copy at a fresh path, as a new process would.
+    const copy = fs.mkdtempSync(path.join(os.tmpdir(), 'pins-templates-'));
+    FIXTURE_ROOTS.push(copy);
+    fs.cpSync(root, copy, { recursive: true });
+    const again = await runCli(['sync-templates'], { PINS_ROOT: copy });
+    const stray = await runCli(['verify', '--write'], env);
+    const keptOthers = bare.entries.every((e) => after.includes(JSON.stringify(e.id)));
+    return [
+      {
+        name: 'sync-templates: CONTROL: a template pin the registry lacks is drift, exit 1, and latest is reported unpinned',
+        ok:
+          dry.rc === 1 &&
+          dry.out.includes('add     template:es.elasticsearch') &&
+          dry.out.includes(
+            'unpinned  packages/json/templates/search/es/docker-compose.yaml:5  nginx:latest'
+          ),
+        detail: `${dry.rc} ${dry.out} ${dry.err}`,
+      },
+      {
+        name: 'sync-templates --write adds the leaf, keeps every other entry, and the next dry run is in sync',
+        ok:
+          wrote.rc === 0 &&
+          after.includes('"id": "template:es.elasticsearch"') &&
+          keptOthers &&
+          after.split('\n').length > before.split('\n').length &&
+          again.rc === 0 &&
+          again.out.includes('1 template image pin(s) in sync'),
+        detail: `${wrote.rc} ${wrote.out} ${wrote.err} | ${again.rc} ${again.out}`,
+      },
+      {
+        name: 'sync-templates: --write on any other verb is a usage error',
+        ok: stray.rc === 2 && stray.err.includes('--write only goes with'),
+        detail: stray.err,
       },
     ];
   },

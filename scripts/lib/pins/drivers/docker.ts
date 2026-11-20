@@ -76,7 +76,12 @@ const BASELINE = { repo: '.', file: 'scripts/data/docker-image-freshness-baselin
 /** Hex characters of the served digest a re-digest label carries. */
 const REDIGEST_HEX = 12;
 const REDIGEST_LABEL = /^(.*)@([0-9a-f]{12})$/;
-const SHAPE = /^(\d+(?:\.\d+){0,2})(.*)$/;
+/**
+ * A tag's leading version and its suffix. Any number of components: a cap of three read
+ * `clickhouse-server:24.3.3.102-alpine` as version `24.3.3` with the suffix `.102-alpine`,
+ * which no other tag carries, so the pin could never have a candidate and read as current.
+ */
+const SHAPE = /^(\d+(?:\.\d+)*)(.*)$/;
 const PAGES = 5;
 
 interface HubPage {

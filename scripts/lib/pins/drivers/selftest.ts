@@ -823,6 +823,46 @@ async function dockerCases(
     name: 'docker: a pin that is not in the baseline plans no drain',
     ok: p2.steps.length === 0,
   });
+  // A four-component tag (an app template's clickhouse pin) is one version, not three plus a suffix.
+  const ch = {
+    ...e,
+    id: 'template:plausible.clickhouse-server',
+    source: { type: 'dockerhub' as const, image: 'clickhouse/clickhouse-server' },
+    sites: [
+      {
+        repo: '.',
+        file: 'compose.yaml',
+        role: 'version',
+        match: '^[ \\t]*image:[ \\t]*["\']?(?<value>clickhouse/clickhouse-server:[^\\s"\'@#]+)',
+        expect: 1,
+      },
+    ],
+  };
+  const chRoot = tree({
+    'compose.yaml': 'services:\n  db:\n    image: clickhouse/clickhouse-server:24.3.3.102-alpine\n',
+  });
+  const chHub = () => ({
+    results: [
+      { name: '25.8.1.5-alpine', last_updated: iso(OLD) },
+      { name: '24.8.2.1-alpine', last_updated: iso(OLD) },
+      { name: '24.3.3.102-alpine', last_updated: iso(OLD) },
+      { name: '25.8-alpine', last_updated: iso(OLD) },
+      { name: '25.8.1.5', last_updated: iso(OLD) },
+    ],
+    next: null,
+  });
+  const chInsp = await dockerDriver(() => deps({ json: chHub }).deps, mutant).inspect(
+    ch,
+    ctxOf(chRoot)
+  );
+  out.push({
+    name: 'docker: CONTROL: a four-component tag reads as one version, so its newer four-component tags of the same suffix are candidates',
+    ok:
+      chInsp.current === 'clickhouse/clickhouse-server:24.3.3.102-alpine' &&
+      chInsp.releases.map((r) => r.version).join(',') ===
+        'clickhouse/clickhouse-server:25.8.1.5-alpine,clickhouse/clickhouse-server:24.8.2.1-alpine',
+    detail: JSON.stringify(chInsp.releases.map((r) => r.version)),
+  });
   const fam = await dockerDriver(() => deps({}).deps, mutant).inspect(entry('docker'), ctx);
   out.push({
     name: 'docker: the family entry has nothing to bump itself',
