@@ -1578,7 +1578,7 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
     Number(niced.stdout.trim()) - baseNice === Math.min(NONCRITICAL_NICE, 19 - baseNice) &&
       niced.niceness === NONCRITICAL_NICE &&
       base.niceness === 0,
-    `a non-critical gate must run ${NONCRITICAL_NICE} nice levels below a critical one, got ${base.stdout.trim()} and ${niced.stdout.trim()}`
+    `a non-critical gate must run min(${NONCRITICAL_NICE}, 19 - the critical gate's level) nice levels below a critical one, got ${base.stdout.trim()} and ${niced.stdout.trim()}`
   );
   require_(
     psFailureState({ status: 1, stdout: '', stderr: '' }) === 'Z',

@@ -1,14 +1,14 @@
 ---
 description: Away from keyboard. Marks the operator away until their next message, so no question is put to them and the session keeps draining work alone. AskUserQuestion is refused by the pre-ask guard while the mode stands; a decision that is genuinely the operator's is parked as a `[?]` with a DEFAULT, which executes when its window closes unanswered. Reusable; the mode ends by itself at the operator's next message. Free text after the command is kept as the away note.
 argument-hint: "[note: why or until when, e.g. 'until morning']"
-allowed-tools: Bash(python3 .claude/hooks/stop/wl_away.py:*), Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git branch:*), Bash(date:*)
+allowed-tools: Bash(python3 .claude/hooks/stop/wl_away.py:*), Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git branch:*), Bash(date:*), Bash(git rev-parse --git-common-dir), Bash(git -C * branch --show-current), Bash(grep:*)
 ---
 
 ## Away mode, set
 
 - UTC now: !`date -u +%Y-%m-%dT%H:%MZ`
 - Branch (this tree): !`git branch --show-current`
-- Branch (landing tree, from the `rediacc-landing.json` record under the git common dir): !`rec="$(git rev-parse --git-common-dir)/rediacc-landing.json"; if [ -f "$rec" ]; then p=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["path"])' "$rec"); echo "$p on $(git -C "$p" branch --show-current)"; else echo '(no landing record)'; fi`
+- Branch (landing tree, from the `rediacc-landing.json` record under the git common dir): !`rec="$(git rev-parse --git-common-dir)/rediacc-landing.json"; if [ -f "$rec" ]; then l=$(grep -m1 '"path"' "$rec"); p=${l#*: \"}; p=${p%\"*}; if [ -n "$p" ]; then echo "$p on $(git -C "$p" branch --show-current)"; else echo '(landing record unreadable)'; fi; else echo '(no landing record)'; fi`
 - Flag: !`python3 .claude/hooks/stop/wl_away.py set`
 - Note: $ARGUMENTS
 - Open worklist slice: !`.claude/hooks/stop/worklist.py --list --open 2>&1 | head -30`

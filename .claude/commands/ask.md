@@ -1,13 +1,13 @@
 ---
 description: Surface every decision currently waiting on the operator and put them as structured multiple-choice questions, so the operator never has to write a long prompt to be asked. Collects the four places a pending decision hides - `[?]` worklist deferrals with their DEFAULT/WHY/HOW, DECISIONS logged in the active round log for post-hoc veto, gate/finding choices this session parked, and the operator-owned "Yours" lines of the last Remaining section - then asks in batches with a recommended option first. Free text after the command narrows the scope to matching items.
 argument-hint: "[filter: a substring, an item id, or a topic; omit to ask about everything pending]"
-allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git branch:*), Bash(ls:*), Bash(grep:*), Bash(date:*)
+allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git branch:*), Bash(ls:*), Bash(grep:*), Bash(date:*), Bash(git rev-parse --git-common-dir), Bash(git -C * branch --show-current)
 ---
 
 ## Pending decisions, gathered
 
 - Branch (this tree): !`git branch --show-current`
-- Branch (landing tree, from the `rediacc-landing.json` record under the git common dir): !`rec="$(git rev-parse --git-common-dir)/rediacc-landing.json"; if [ -f "$rec" ]; then p=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["path"])' "$rec"); echo "$p on $(git -C "$p" branch --show-current)"; else echo '(no landing record)'; fi`
+- Branch (landing tree, from the `rediacc-landing.json` record under the git common dir): !`rec="$(git rev-parse --git-common-dir)/rediacc-landing.json"; if [ -f "$rec" ]; then l=$(grep -m1 '"path"' "$rec"); p=${l#*: \"}; p=${p%\"*}; if [ -n "$p" ]; then echo "$p on $(git -C "$p" branch --show-current)"; else echo '(landing record unreadable)'; fi; else echo '(no landing record)'; fi`
 - UTC now: !`date -u +%Y-%m-%dT%H:%MZ`
 - Open worklist items (`[?]` = already parked for you, `[ ]` = open work): !`.claude/hooks/stop/worklist.py --list --open 2>&1 | head -40`
 - Round log with DECISIONS awaiting veto: !`ls -t ~/.claude/projects/$(pwd | sed 's/[^A-Za-z0-9]/-/g')/reports/pr-babysit-*.md 2>&1 | head -1`

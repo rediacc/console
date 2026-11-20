@@ -68,6 +68,10 @@ GIT_ENV.update(
     GIT_COMMITTER_EMAIL="t@example.invalid",
     GIT_CONFIG_GLOBAL="/dev/null",
     GIT_CONFIG_SYSTEM="/dev/null",
+    # GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM are honoured from 2.32 on; the three below keep an older release off the host files too.
+    GIT_CONFIG_NOSYSTEM="1",
+    HOME="/dev/null",
+    XDG_CONFIG_HOME="/dev/null",
 )
 # The rebase-merge's copies carry a committer of their own, as GitHub's do: a pick by the same identity in the same second would reproduce the very shas.
 MERGER_ENV = dict(

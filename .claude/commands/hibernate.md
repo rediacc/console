@@ -10,7 +10,7 @@ allowed-tools: Bash(date:*), Bash(git status:*), Bash(git log:*), Bash(git branc
 
 - UTC now: !`date -u +%FT%H:%MZ`
 - Branch (this tree): !`git branch --show-current`
-- Branch (landing tree, from the `rediacc-landing.json` record under the git common dir): !`rec="$(git rev-parse --git-common-dir)/rediacc-landing.json"; if [ -f "$rec" ]; then p=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["path"])' "$rec"); echo "$p on $(git -C "$p" branch --show-current)"; else echo '(no landing record)'; fi`
+- Branch (landing tree, from the `rediacc-landing.json` record under the git common dir): !`rec="$(git rev-parse --git-common-dir)/rediacc-landing.json"; if [ -f "$rec" ]; then l=$(grep -m1 '"path"' "$rec"); p=${l#*: \"}; p=${p%\"*}; if [ -n "$p" ]; then echo "$p on $(git -C "$p" branch --show-current)"; else echo '(landing record unreadable)'; fi; else echo '(no landing record)'; fi`
 - Uncommitted paths (outside agent/): !`git status --short | grep -v ' agent/' | head -20`
 
 ## Task: hibernate the host

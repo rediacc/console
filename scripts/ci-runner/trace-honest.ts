@@ -448,7 +448,13 @@ function fillSparse(
     throw new Error(
       `${entry.id}: the sparse directory holds ZERO declared files; its paths match nothing tracked`
     );
-  guards.set(dir, { root: view.root, rels: hardLinked, before: statLinked(view.root, hardLinked) });
+  const bounded = new Set<string>();
+  guards.set(dir, {
+    root: view.root,
+    rels: hardLinked,
+    before: statLinked(view.root, hardLinked, bounded),
+    bounded,
+  });
   return dir;
 }
 
@@ -501,24 +507,33 @@ export function placeNames(
 let reflinkWorks: boolean | undefined;
 
 /** The real files a sparse directory shares by hard link, as they stood when it was built. */
-const guards = new Map<string, { root: string; rels: string[]; before: Map<string, string> }>();
+const guards = new Map<
+  string,
+  { root: string; rels: string[]; before: Map<string, string>; bounded: Set<string> }
+>();
 
 /** The most entries one `snapshotTree` call records and the deepest directory it descends: a symlink in the sparse tree pointing at a cache, a home directory or `/` must cost a bounded walk, twice per guarded run. */
 export const SNAPSHOT_MAX_ENTRIES = 100_000;
 export const SNAPSHOT_MAX_DEPTH = 32;
 
-/** `inode:size:mtime:mode` of every regular file under an absolute directory, keyed by its path below it. A symlink inside is followed once per real directory (a visited set of real paths, so a cycle cannot loop and a write through a nested link still moves the snapshot); the walk stops at `SNAPSHOT_MAX_ENTRIES` entries or `SNAPSHOT_MAX_DEPTH` levels and says so on stderr. */
+/** `inode:size:mtime:mode` of every regular file under an absolute directory, keyed by its path below it. A symlink inside is followed once per real directory (a visited set of real paths, so a cycle cannot loop and a write through a nested link still moves the snapshot); the walk stops at `SNAPSHOT_MAX_ENTRIES` entries or `SNAPSHOT_MAX_DEPTH` levels, says so on stderr and names the directory to `onBound`, which is how a guarded run reports that part of its tree went unwatched. */
 export function snapshotTree(
   absDir: string,
   maxEntries: number = SNAPSHOT_MAX_ENTRIES,
-  maxDepth: number = SNAPSHOT_MAX_DEPTH
+  maxDepth: number = SNAPSHOT_MAX_DEPTH,
+  onBound?: (dir: string) => void
 ): Map<string, string> {
   const out = new Map<string, string>();
   const seen = new Set<string>();
   let bounded = false;
   const walk = (dir: string, rel: string, depth: number): void => {
     if (out.size >= maxEntries || depth > maxDepth) {
-      bounded = true;
+      // Only a directory that holds something skips an entry: an empty one at the bound is not a gap.
+      try {
+        if (fs.readdirSync(dir).length > 0) bounded = true;
+      } catch {
+        // an unreadable directory records nothing either way
+      }
       return;
     }
     let real: string;
@@ -561,15 +576,21 @@ export function snapshotTree(
     }
   };
   walk(absDir, '', 0);
-  if (bounded)
+  if (bounded) {
+    onBound?.(absDir);
     console.error(
       `trace-honest: WARNING snapshot of ${absDir} stopped at ${maxEntries} entries or depth ${maxDepth}; a write beyond the bound is not guarded`
     );
+  }
   return out;
 }
 
 /** `inode:size:mtime:mode` of every file under the given real directories. A rewrite in place keeps the inode but moves size or mtime; an unlink-and-recreate in the sparse tree leaves the real file untouched. */
-function statLinked(root: string, rels: readonly string[]): Map<string, string> {
+function statLinked(
+  root: string,
+  rels: readonly string[],
+  bounded?: Set<string>
+): Map<string, string> {
   const out = new Map<string, string>();
   const walk = (rel: string): void => {
     let ents: fs.Dirent[];
@@ -593,7 +614,7 @@ function statLinked(root: string, rels: readonly string[]): Map<string, string> 
           const t = fs.statSync(abs, { bigint: true });
           // A directory's own ino/size/mtime does not move when a file inside it is written, so a link to a directory snapshots every file under the target instead.
           tgt = t.isDirectory()
-            ? `dir:${[...snapshotTree(fs.realpathSync(abs)).entries()].join(',')}`
+            ? `dir:${[...snapshotTree(fs.realpathSync(abs), SNAPSHOT_MAX_ENTRIES, SNAPSHOT_MAX_DEPTH, (d) => bounded?.add(d)).entries()].join(',')}`
             : `${t.ino}:${t.size}:${t.mtimeNs}:${t.mode}`;
         } catch {
           // a dangling link has no target to guard
@@ -613,11 +634,16 @@ function statLinked(root: string, rels: readonly string[]): Map<string, string> 
   return out;
 }
 
+/** The directories under a sparse tree's links whose snapshot hit a bound, so a write beyond it went unwatched; empty when the guard saw every file. Read after `verifyLinked`. */
+export function unguardedLinked(dir: string): string[] {
+  return [...(guards.get(dir)?.bounded ?? [])];
+}
+
 /** The real files a gate changed through the hard links of its sparse directory; empty when none did (or none were linked). The tree cannot be restored, so a hit fails the trace loudly with the file named. */
 export function verifyLinked(dir: string): string[] {
   const g = guards.get(dir);
   if (g === undefined) return [];
-  const now = statLinked(g.root, g.rels);
+  const now = statLinked(g.root, g.rels, g.bounded);
   const changed: string[] = [];
   for (const [rel, was] of g.before) if (now.get(rel) !== was) changed.push(rel);
   return changed;
@@ -886,6 +912,15 @@ async function main(argv: string[]): Promise<number> {
             mode: 'sparse',
             what: `rewrote ${mutated.length} REAL file(s) in place through its hard-linked sparse tree (first: ${mutated.slice(0, 5).join(', ')}); the real checkout is now changed`,
             fix: 'make the gate write build output to a fresh file (write then rename), not over an installed or built one; restore the named files (npm ci, or rebuild)',
+          });
+        }
+        const unguarded = unguardedLinked(dir);
+        if (unguarded.length > 0) {
+          findings.push({
+            id,
+            mode: 'sparse',
+            what: `links to ${unguarded.length} tree(s) too large for the write guard (first: ${unguarded.slice(0, 3).join(', ')}); a write beyond the bound would pass unseen`,
+            fix: 'declare fewer inputs for the gate, or stop linking the large tree into its sparse directory',
           });
         }
         const same = (real.exit === 0) === (sparse.exit === 0);
@@ -1477,6 +1512,19 @@ async function selftest(): Promise<number> {
       check(
         snapshotTree(path.join(sdir, 'deep'), SNAPSHOT_MAX_ENTRIES, 2).size === 2,
         'a snapshot stops at the depth bound'
+      );
+      // A bound that skips something is reported to the caller (b229b8fc.1); one that skips nothing is not (b229b8fc.2).
+      const hit: string[] = [];
+      snapshotTree(path.join(sdir, 'target'), 3, SNAPSHOT_MAX_DEPTH, (d) => hit.push(d));
+      check(hit.length === 1, 'a bound that skips files names its directory to the caller');
+      fs.mkdirSync(path.join(sdir, 'exact'));
+      for (let i = 0; i < 2; i += 1) fs.writeFileSync(path.join(sdir, 'exact', `f${i}`), 'x');
+      fs.mkdirSync(path.join(sdir, 'exact', 'zempty'));
+      const quiet: string[] = [];
+      snapshotTree(path.join(sdir, 'exact'), 2, SNAPSHOT_MAX_DEPTH, (d) => quiet.push(d));
+      check(
+        quiet.length === 0,
+        'CONTROL: exactly the bound in files plus an empty subdirectory skips nothing'
       );
     } finally {
       fs.rmSync(sdir, { recursive: true, force: true });

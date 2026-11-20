@@ -323,6 +323,16 @@ def test_the_leftover_proof_reads_every_clause_the_delete_removes_by():
     assert "%" + DISPUTE + "%" in proof
 
 
+def test_cleanup_and_proof_cover_a_digest_row_that_names_nothing_of_the_run():
+    """Review 8107144f.2: `_mails` also selects a `Daily digest` subject, so the delete and the proof read it too. Control: the digest mark is absent from the delete of any other table."""
+    st = _state()
+    mark = "%" + erd.DIGEST_MARK + "%"
+    sqls = erd.cleanup_sql(st)
+    assert mark in next(s for s in sqls if "captured_emails" in s)
+    assert mark in next(s for s in erd.leftover_sql(st) if "captured_emails" in s)
+    assert not any(mark in s for s in sqls if "captured_emails" not in s)
+
+
 class Late(Fake):
     """The expected rows appear only on the Nth read of `captured_emails`."""
 

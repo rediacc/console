@@ -488,7 +488,7 @@ def _step_rerun(d: Deps, ev: Evidence, st: State, jar: str) -> None:
 # The rows this run captured, one clause for the delete and for the proof that none is left, so the proof reads exactly what the delete removes.
 CAPTURED_WHERE = (
     "created_at >= $since AND (recipient = $a OR text_body LIKE $s OR text_body LIKE $d "
-    "OR subject LIKE $d OR text_body LIKE $c)"
+    "OR subject LIKE $d OR text_body LIKE $c OR subject LIKE $dg)"
 )
 
 
@@ -500,6 +500,7 @@ def _captured_clause(st: State) -> str:
         s=sql_literal("%" + st.address + "%"),
         d=sql_literal("%" + st.dispute_id + "%"),
         c=sql_literal("%" + st.session_id + "%"),
+        dg=sql_literal("%" + DIGEST_MARK + "%"),
     )
 
 
