@@ -44,7 +44,9 @@ class Facts:
     """One run's view of the cache: load once, answer and record, save once if anything new was learned."""
 
     def __init__(self, root, closure: str, path: str | None = None):
-        self.path = pathlib.Path(path) if path else pathlib.Path(root) / CACHE_REL
+        self.root = root
+        self.rel = path or CACHE_REL  # an absolute path replaces the root-relative default (pathlib join), which is how a test or `--no-fact-cache` redirects the file
+        self.path = pathlib.Path(root) / self.rel
         self.closure = closure
         self.data: dict[str, dict] = {k: {} for k in KINDS}
         self.dirty = False
@@ -89,13 +91,17 @@ class Facts:
         if not self.dirty:
             return
         try:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = self.path.with_suffix(".tmp")
+            target = pathlib.Path(self.root) / self.rel
+            # tree-write: safe the fact cache lives under .ci/cache/plan-implementation (CACHE_REL, gitignored); an absolute path replaces it only in tests and for /dev/null under --no-fact-cache
+            target.parent.mkdir(parents=True, exist_ok=True)
+            tmp = target.with_suffix(".tmp")
+            # tree-write: safe the fact cache lives under .ci/cache/plan-implementation (CACHE_REL, gitignored); an absolute path replaces it only in tests and for /dev/null under --no-fact-cache
             tmp.write_text(
                 json.dumps({"schema": SCHEMA, "closure": self.closure, **self.data}),
                 encoding="utf-8",
             )
-            tmp.replace(self.path)
+            # tree-write: safe the fact cache lives under .ci/cache/plan-implementation (CACHE_REL, gitignored); an absolute path replaces it only in tests and for /dev/null under --no-fact-cache
+            tmp.replace(target)
             self.dirty = False
         except OSError:
             pass  # an unwritable cache only makes the next run cold

@@ -246,21 +246,24 @@ def test_the_impact_floor_counts_a_smoke_file_a_change_also_reached(monkeypatch)
     assert seen == [2], "the smoke file's two tests were not counted toward floor 1"
 
 
+FAKE_GREEN_BASE = "greenbase-fixture-not-a-sha"
+
+
 def test_a_local_run_diffs_against_the_last_green_commit(gate, monkeypatch, capsys):
     _root, _calls, asked = gate
-    monkeypatch.setattr(check_pytest, "last_green_base", lambda _root: "c0ffee" * 6 + "c0ff")
+    monkeypatch.setattr(check_pytest, "last_green_base", lambda _root: FAKE_GREEN_BASE)
     assert check_pytest.main([]) == check_pytest.EXIT_OK
-    assert asked == ["c0ffee" * 6 + "c0ff"], (
+    assert asked == [FAKE_GREEN_BASE], (
         "the impact selection did not use the last green commit"
     )
-    assert "base = the last green commit c0ffeec0ffee" in capsys.readouterr().out
+    assert f"base = the last green commit {FAKE_GREEN_BASE[:12]}" in capsys.readouterr().out
 
 
 def test_an_explicit_base_wins_over_the_last_green_commit(gate, monkeypatch):
     _root, _calls, asked = gate
     consulted: list[bool] = []
     monkeypatch.setattr(
-        check_pytest, "last_green_base", lambda _root: consulted.append(True) or "abc"
+        check_pytest, "last_green_base", lambda _root: (consulted.append(True), "abc")[1]
     )
     assert check_pytest.main(["--base", "origin/main"]) == check_pytest.EXIT_OK
     assert asked == ["origin/main"]
