@@ -140,6 +140,11 @@ def controls(ws: types.ModuleType, cp) -> list[str]:
         # The landing tree itself is never judged.
         got = state(root=landing)
         control("NONE: the landing tree", got.state == ws.NONE, got)
+        # Even with a branch misplaced into it, the landing tree is not a development tree.
+        sh(landing, "checkout", "-q", "-b", "1123-1")
+        got = state(root=landing)
+        control("NONE: the landing tree holding another branch", got.state == ws.NONE, got)
+        sh(landing, "checkout", "-q", LANDING)
 
         # Landing moves ahead: the rebase is reported, nothing blocks.
         fix = commit(landing, "fix-1.txt")
