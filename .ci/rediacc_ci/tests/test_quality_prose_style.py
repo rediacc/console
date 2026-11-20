@@ -1663,15 +1663,40 @@ def test_a_targeted_run_keeps_the_other_cache_entries(tmp_path):
     assert set(cached) == {"a.md", "b.md"}, "a targeted run must merge, not evict"
 
 
-def test_a_damaged_cache_entry_is_a_miss(tmp_path):
+@pytest.mark.parametrize(
+    ("field", "damage"),
+    [
+        ("findings", "not a list of findings"),
+        ("findings", [[1, 2, 3, 4, 5]]),
+        ("findings", [["1", "R2", "I", "I think so.", "error"]]),
+        ("lines", "one"),
+        ("lines", -1),
+        ("note", ["a", "list"]),
+    ],
+)
+def test_a_damaged_cache_entry_is_a_miss(tmp_path, field, damage):
     g, r = _cache_rules("\\bI\\b")
     (tmp_path / "a.md").write_text("I think so.\n")
     assert _cache_run(tmp_path, g, r) == 1
     path = tmp_path / str(ps.CACHE_RELPATH)
     doc = json.loads(path.read_text())
-    doc["files"]["a.md"]["findings"] = "not a list of findings"
+    doc["files"]["a.md"][field] = damage
     path.write_text(json.dumps(doc))
     assert _cache_run(tmp_path, g, r) == 1, "the damaged entry is re-linted, not trusted or fatal"
+    assert json.loads(path.read_text())["files"]["a.md"][field] != damage, (
+        "the re-lint rewrites the entry"
+    )
+
+
+def test_a_non_dict_cache_entry_is_a_miss(tmp_path):
+    g, r = _cache_rules("\\bI\\b")
+    (tmp_path / "a.md").write_text("I think so.\n")
+    assert _cache_run(tmp_path, g, r) == 1
+    path = tmp_path / str(ps.CACHE_RELPATH)
+    doc = json.loads(path.read_text())
+    doc["files"]["a.md"] = ["not", "a", "dict"]
+    path.write_text(json.dumps(doc))
+    assert _cache_run(tmp_path, g, r) == 1
 
 
 def test_a_full_sweep_drops_a_deleted_file_from_the_cache(tmp_path):

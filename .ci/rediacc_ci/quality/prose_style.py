@@ -1449,6 +1449,22 @@ def save_cache(root, context, files):
         log.info("prose-style cache not written (%s); the next run is cold" % exc)
 
 
+def _cache_entry_ok(entry):
+    """A stored entry is reused only when every field has the shape run_check wrote; anything else is a miss and the file is linted again."""
+    lines, note, found = entry.get("lines"), entry.get("note", None), entry.get("findings")
+    if type(lines) is not int or lines < 0 or not (note is None or isinstance(note, str)):
+        return False
+    if not isinstance(found, list):
+        return False
+    return all(
+        isinstance(f, list)
+        and len(f) == 5
+        and type(f[0]) is int
+        and all(isinstance(v, str) for v in f[1:])
+        for f in found
+    )
+
+
 def run_check(
     root,
     globals_,
@@ -1515,12 +1531,9 @@ def run_check(
         digest = hashlib.sha256(text.encode("utf-8", "surrogatepass")).hexdigest()
         hit = cache.get(rel)
         got = None
-        if isinstance(hit, dict) and hit.get("sha") == digest:
-            try:
-                n_lines, note = int(hit["lines"]), hit.get("note")
-                got = [Finding(rel, f[0], f[1], f[2], f[3], f[4]) for f in hit["findings"]]
-            except (KeyError, TypeError, ValueError, IndexError):
-                got = None  # a damaged entry is a miss, like a damaged cache file
+        if isinstance(hit, dict) and hit.get("sha") == digest and _cache_entry_ok(hit):
+            n_lines, note = hit["lines"], hit["note"]
+            got = [Finding(rel, *f) for f in hit["findings"]]
         if got is None:
             markers = tuple(globals_.get("ignore_markers") or DEFAULT_MARKERS)
             lines, note = extract(rel, text, markers)
