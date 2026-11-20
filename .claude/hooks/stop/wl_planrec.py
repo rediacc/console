@@ -296,6 +296,22 @@ def _git_raw(root, *args) -> str:
         return ""
 
 
+def _live_ref(root) -> str:
+    """The ref a commit pointer must be reachable from besides origin/main: HEAD in a checkout on a branch, and the main worktree's branch in a linked worktree on a detached HEAD (a lease, PLAN-two-track-merge-dev RB5). A lease's own commits are ancestors of its HEAD but get new shas when the lead cherry-picks them, so citing one would cite a commit no fresh checkout has."""
+    if _git_ok(root, "symbolic-ref", "-q", "HEAD"):
+        return "HEAD"
+    git_dir = _git_out(root, "rev-parse", "--absolute-git-dir")
+    common = _git_out(root, "rev-parse", "--path-format=absolute", "--git-common-dir")
+    if not git_dir or not common or git_dir == common:
+        return "HEAD"
+    for line in _git_out(root, "worktree", "list", "--porcelain").splitlines():
+        if line.startswith("branch "):
+            return line.split(" ", 1)[1]
+        if line == "detached" or line.startswith("detached"):
+            break
+    return "HEAD"
+
+
 def _git_ok(root, *args) -> bool:
     try:
         r = subprocess.run(
@@ -518,17 +534,19 @@ def resolve(root, kind, token):
             return False, "no such commit"
         # PRESENCE IS THE WRONG QUESTION FOR A COMMIT (finding #27a05a50). A rebase leaves the rewritten commit in the local object store as an orphan, so `rev-parse` alone records a pointer a fresh checkout cannot resolve. Twin of check_plan_citations.commit_is_reachable (same rule, the read side, commit cd8b0cdc8); restated here, not imported, because this directory must not import from `.ci/`.
         # origin/main counts as well: main is never rewritten, so a commit CD pushed there survives every rebase-merge (same rule as check_plan_citations.commit_is_reachable, 2026-10-08).
+        live = _live_ref(root)
         if not any(
             _git_ok(root, "merge-base", "--is-ancestor", got, ref)
-            for ref in ("HEAD", "refs/remotes/origin/main")
+            for ref in (live, "refs/remotes/origin/main")
         ):
             has_main = bool(
                 _git_out(root, "rev-parse", "--verify", "--quiet", "refs/remotes/origin/main")
             )
+            where = live if live != "HEAD" else "HEAD"
             return False, (
-                "%s exists in this clone but is not an ancestor of %s (a rebase rewrote it), "
+                "%s exists in this clone but is not an ancestor of %s (a rebase rewrote it, or it is a lease commit not yet landed), "
                 "so a fresh checkout will not have it"
-                % (got[:40], "HEAD or origin/main" if has_main else "HEAD")
+                % (got[:40], "%s or origin/main" % where if has_main else where)
             )
         return True, got[:40]
     if kind == "ancestor":
