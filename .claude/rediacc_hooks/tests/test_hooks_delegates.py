@@ -101,6 +101,7 @@ COUNTED = [
 # are genuine per-module metadata a filename cannot supply -- but TAILED's contract is uniform (no argv, exit 0, non-empty output), which is exactly what a glob can enforce without a human remembering to.
 _TAILED_ROOTS = (
     HOOKS / "context",
+    HOOKS / "post-bash",
     HOOKS / "stop",
     HOOKS.parent / "rediacc_hooks" / "guards",
 )
