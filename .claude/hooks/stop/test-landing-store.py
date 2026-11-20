@@ -467,11 +467,25 @@ def run():
         f0.get("subagents"),
         str(land_proj / SID / "subagents"),
     )
-    check("record: a transcript under the sibling with no agents spawned nothing", f0.get("spawned_nothing"), True)
-    check("record: owner_age_hours reads the sibling's directory from a list", f0.get("age_list"), True)
-    check("record: owner_age_hours on the main directory alone finds nothing", f0.get("age_str_main"), None)
+    check(
+        "record: a transcript under the sibling with no agents spawned nothing",
+        f0.get("spawned_nothing"),
+        True,
+    )
+    check(
+        "record: owner_age_hours reads the sibling's directory from a list",
+        f0.get("age_list"),
+        True,
+    )
+    check(
+        "record: owner_age_hours on the main directory alone finds nothing",
+        f0.get("age_str_main"),
+        None,
+    )
     check("record: own_tree of the store root is the sibling", f0.get("own_tree"), str(landing))
-    check("record: appended events carry the sibling's branch", f0.get("store_branch"), LANDING_BRANCH)
+    check(
+        "record: appended events carry the sibling's branch", f0.get("store_branch"), LANDING_BRANCH
+    )
     check("record: the report branch is the sibling's", f0.get("report_branch"), LANDING_BRANCH)
     check("record: a census row carries the sibling's branch", f0.get("census_br"), LANDING_BRANCH)
     f1 = followups(tmp, stop, main)

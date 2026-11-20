@@ -372,8 +372,8 @@ function selftest(): number {
   );
   check(
     "the optional-chained forms process?.binding(...) and process?.['getBuiltinModule'](...) are executable too (25e08a96.3)",
-    findings(() => `const b = process?.binding('spawn_sync');\n${ledgerRow}`, ['x/a.ts'])
-      .length === 1 &&
+    findings(() => `const b = process?.binding('spawn_sync');\n${ledgerRow}`, ['x/a.ts']).length ===
+      1 &&
       findings(
         () => `const cp = process?.['getBuiltinModule']('node:child_process');\n${ledgerRow}`,
         ['x/a.ts']

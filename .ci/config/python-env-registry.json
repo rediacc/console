@@ -2273,6 +2273,9 @@
       "COMMIT_REVIEW_CHILD",
       "STOPHOOK_CHILD"
     ],
+    ".claude/hooks/post-bash/test-two-tree.py": [
+      "TMPDIR"
+    ],
     ".claude/hooks/post-tool/commit_remind.py": [
       "COMMIT_REVIEW_CHILD",
       "STOPHOOK_CHILD"
@@ -2285,6 +2288,11 @@
     ".claude/hooks/stop/test-judge-schema.py": [
       "REDIACC_CI_ROOT",
       "SHAPE_PROBE_CACHE",
+      "WORKLIST_STORE_DIR"
+    ],
+    ".claude/hooks/stop/test-landing-scope.py": [
+      "HOME",
+      "PATH",
       "WORKLIST_STORE_DIR"
     ],
     ".claude/hooks/stop/test-opshealth.py": [
@@ -2553,7 +2561,8 @@
       "BACKUP_CHECK_PUSH_REASON",
       "COMMIT_POLICY_OK",
       "GEN_DOCS_PRECOMMIT_VERBOSE",
-      "PYTHONPATH"
+      "PYTHONPATH",
+      "RUFF_BIN"
     ],
     ".claude/rediacc_hooks/git/release_run.py": [
       "PYTHONNOUSERSITE",
@@ -2586,6 +2595,9 @@
     ".claude/rediacc_hooks/guards/test-block_host_toolchain_run.py": [
       "PATH"
     ],
+    ".claude/rediacc_hooks/guards/test-block_merge_with_unpushed.py": [
+      "PATH"
+    ],
     ".claude/rediacc_hooks/guards/test-block_push_to_protected_branch.py": [
       "PATH"
     ],
@@ -2599,6 +2611,9 @@
       "PATH"
     ],
     ".claude/rediacc_hooks/guards/test-block_turbo_early_push.py": [
+      "PATH"
+    ],
+    ".claude/rediacc_hooks/guards/test-two-tree-scope.py": [
       "PATH"
     ],
     ".claude/rediacc_hooks/guards/test-warn_staged_shape_duplication.py": [
@@ -2636,6 +2651,9 @@
     ],
     ".claude/rediacc_hooks/tests/test_githook_backup_ref.py": [
       "PATH"
+    ],
+    ".claude/rediacc_hooks/tests/test_githook_python_lint.py": [
+      "RUFF_BIN"
     ],
     ".claude/rediacc_hooks/tests/test_guards_differential.py": [
       "GIT_DIR",

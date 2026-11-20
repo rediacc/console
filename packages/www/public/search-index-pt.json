@@ -6152,7 +6152,7 @@
   },
   {
     "id": "search-15685",
-    "content": "19. Comentários",
+    "content": "19. Feedback e relatórios",
     "body": "Envie feedback estruturado ou um relatório de bug. O conteúdo é montado apenas com dados higienizados, exibido por inteiro e enviado após a confirmação (ou com --yes), usando o token de API salvo ou uma licença Free instalada. <a id=\"cli-local-feedback-list\"></a>",
     "excerpt": "Envie feedback estruturado ou um relatório de bug. O conteúdo é montado apenas com dados higienizados, exibido por inteiro e enviado após a confirmaçã...",
     "category": "Documentation",

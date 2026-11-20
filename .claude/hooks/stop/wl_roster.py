@@ -216,7 +216,9 @@ def session_subagents_dir(cwd, session_id):
     try:
         projs = [
             p
-            for p in C.projects_dirs(C.project_root(C.project_start({"cwd": cwd})), base=RPT._projects_dir())
+            for p in C.projects_dirs(
+                C.project_root(C.project_start({"cwd": cwd})), base=RPT._projects_dir()
+            )
             if p.is_dir()
         ]
     except (OSError, ValueError, TypeError, RuntimeError):

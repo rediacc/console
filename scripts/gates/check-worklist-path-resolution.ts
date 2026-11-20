@@ -133,7 +133,9 @@ function pyBody(src: string, name: string): string {
 function landingPins(core: string, cli: string): string[] {
   const out: string[] = [];
   if (!/\blanding_main\(/.test(pyBody(core, 'project_root'))) {
-    out.push('wl_core.project_root does not call landing_main: the landing tree would keep its own store');
+    out.push(
+      'wl_core.project_root does not call landing_main: the landing tree would keep its own store'
+    );
   }
   if (!pyBody(core, 'landing_main') || !core.includes(`"${LANDING_RECORD}"`)) {
     out.push(`wl_core has no landing_main reading ${LANDING_RECORD}`);
@@ -212,16 +214,23 @@ function selftest(): void {
   }
   console.log('  PASS  CONTROL: a resolver pair carrying the landing redirect is accepted');
   // PLANT 3: the twin loses its redirect while the hook keeps it.
-  const lost = landingPins(core, cli.replace('root = _local_landing_main(start) or start', 'root = start'));
+  const lost = landingPins(
+    core,
+    cli.replace('root = _local_landing_main(start) or start', 'root = start')
+  );
   if (lost.length !== 1 || !lost[0]?.includes('_local_worklist_path')) {
-    console.error(`  FAIL  a twin without the landing redirect was not caught: ${JSON.stringify(lost)}`);
+    console.error(
+      `  FAIL  a twin without the landing redirect was not caught: ${JSON.stringify(lost)}`
+    );
     process.exit(1);
   }
   console.log('  PASS  a twin without the landing redirect is caught, and named');
   // PLANT 4: project_root loses its redirect.
   const bare = landingPins(core.replace('return landing_main(tree) or tree', 'return tree'), cli);
   if (bare.length !== 1 || !bare[0]?.includes('project_root')) {
-    console.error(`  FAIL  a project_root without the landing redirect was not caught: ${JSON.stringify(bare)}`);
+    console.error(
+      `  FAIL  a project_root without the landing redirect was not caught: ${JSON.stringify(bare)}`
+    );
     process.exit(1);
   }
   console.log('  PASS  a project_root without the landing redirect is caught, and named');
@@ -263,7 +272,9 @@ function main(): void {
     fs.readFileSync(path.join(HOOKS, 'stop', 'worklist.py'), 'utf-8')
   );
   if (pins.length > 0) {
-    console.error(`✗ the landing tree's store mapping is incomplete (PLAN-two-track-merge-dev LT14):\n`);
+    console.error(
+      `✗ the landing tree's store mapping is incomplete (PLAN-two-track-merge-dev LT14):\n`
+    );
     for (const why of pins) console.error(`  ${why}`);
     process.exit(1);
   }
