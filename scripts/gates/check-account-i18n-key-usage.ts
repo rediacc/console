@@ -367,6 +367,16 @@ function controls(): ControlCase[] {
     floor('CONTROL: one key under the key floor is vacuous', MIN_FILES, MIN_KEYS - 1, true),
     floor('CONTROL: nothing scanned is vacuous', 0, 0, true),
     floor('SILENT: exactly at both floors is not vacuous', MIN_FILES, MIN_KEYS, false),
+    {
+      name: 'CONTROL: one ui() literal under the ui floor is vacuous',
+      ok: isUiVacuous(MIN_UI - 1) && isUiVacuous(0),
+      detail: `MIN_UI ${MIN_UI}`,
+    },
+    {
+      name: 'SILENT: exactly at the ui floor is not vacuous',
+      ok: !isUiVacuous(MIN_UI),
+      detail: `MIN_UI ${MIN_UI}`,
+    },
   ];
 }
 
@@ -405,6 +415,11 @@ export function isVacuous(files: number, checked: number): boolean {
   return files < MIN_FILES || checked < MIN_KEYS;
 }
 
+/** True when the ui() layer checked too few literals to have verified anything. */
+export function isUiVacuous(checked: number): boolean {
+  return checked < MIN_UI;
+}
+
 async function main(): Promise<void> {
   console.log('account-i18n-key-usage controls');
   if (summarizeControls(controls()) !== 0) {
@@ -432,7 +447,7 @@ async function main(): Promise<void> {
     scanFile(rel, text, catalogs, result);
     if (rel.startsWith(UI_DIR)) scanUiFile(rel, text, uiKnown, uiResult);
   }
-  if (uiResult.checked < MIN_UI) {
+  if (isUiVacuous(uiResult.checked)) {
     console.error(
       `${RED}✗${NC} VACUOUS: ${uiResult.checked} ui() literal(s) checked under web/src/${UI_DIR}, floor ${MIN_UI}; the ui() layer verified nothing.`
     );
@@ -449,14 +464,14 @@ async function main(): Promise<void> {
   const coverage = `${uiResult.checked} ui() literal(s) and ${result.checked} key reference(s) checked, ${result.unresolvable} held in a variable or built without a literal prefix (not statically checkable), ${files.length} file(s).`;
   if (result.findings.length > 0) {
     refuseFindings({
-      header: `\n${RED}✗${NC} ${result.findings.length} account portal translation key(s) missing from web/src/i18n/locales/en:\n`,
+      header: `\n${RED}✗${NC} ${result.findings.length} account portal translation key(s) missing from the catalog each is looked up in (t() keys in web/src/i18n/locales/en, ui() keys in catalog.uiText or en/offerUi.json):\n`,
       items: result.findings.map(
         (f) => `web/src/${f.file}:${f.line}: ${f.key}  (looked in: ${f.searched.join(', ')})`
       ),
       limit: 60,
       remedy: [
         `\n${coverage}`,
-        'Add each key to the English namespace file and the 12 locales, or fix the call.',
+        'A t() key: add it to the English namespace file and the 12 locales. A ui() key: add it to catalog.uiText (src/pricing/catalog.default.ts), or to en/offerUi.json and the 12 locales. Or fix the call.',
       ],
     });
   }

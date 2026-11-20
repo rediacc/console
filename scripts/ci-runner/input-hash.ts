@@ -845,6 +845,12 @@ export function inputHashSelftest(tmpDir: string): void {
       saltHash(root, t3, { [RUNNER_IMAGE_ENV]: '' }) === hostSalt && imageTerm({}) === 'host',
       'CONTROL: an empty or absent pin is the host term'
     );
+    const pinnedRef = `registry.example.invalid/img@sha256:${'a'.repeat(64)}`;
+    must(
+      imageTerm({ [RUNNER_IMAGE_ENV]: pinnedRef }) === `pinned:${pinnedRef}` &&
+        imageTerm({ [RUNNER_IMAGE_ENV]: `  ${pinnedRef}\n` }) === `pinned:${pinnedRef}`,
+      'CONTROL: an accepted digest reference reads as pinned:<image>@sha256:<digest>, whitespace trimmed'
+    );
     for (const bad of [
       'host',
       'registry.example.invalid/img:latest',

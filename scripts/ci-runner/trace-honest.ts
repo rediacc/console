@@ -503,10 +503,32 @@ let reflinkWorks: boolean | undefined;
 /** The real files a sparse directory shares by hard link, as they stood when it was built. */
 const guards = new Map<string, { root: string; rels: string[]; before: Map<string, string> }>();
 
-/** `inode:size:mtime:mode` of every regular file under an absolute directory, keyed by its path below it. Symlinks inside are not followed, so a cycle cannot loop. */
-function snapshotTree(absDir: string): Map<string, string> {
+/** The most entries one `snapshotTree` call records and the deepest directory it descends: a symlink in the sparse tree pointing at a cache, a home directory or `/` must cost a bounded walk, twice per guarded run. */
+export const SNAPSHOT_MAX_ENTRIES = 100_000;
+export const SNAPSHOT_MAX_DEPTH = 32;
+
+/** `inode:size:mtime:mode` of every regular file under an absolute directory, keyed by its path below it. A symlink inside is followed once per real directory (a visited set of real paths, so a cycle cannot loop and a write through a nested link still moves the snapshot); the walk stops at `SNAPSHOT_MAX_ENTRIES` entries or `SNAPSHOT_MAX_DEPTH` levels and says so on stderr. */
+export function snapshotTree(
+  absDir: string,
+  maxEntries: number = SNAPSHOT_MAX_ENTRIES,
+  maxDepth: number = SNAPSHOT_MAX_DEPTH
+): Map<string, string> {
   const out = new Map<string, string>();
-  const walk = (dir: string, rel: string): void => {
+  const seen = new Set<string>();
+  let bounded = false;
+  const walk = (dir: string, rel: string, depth: number): void => {
+    if (out.size >= maxEntries || depth > maxDepth) {
+      bounded = true;
+      return;
+    }
+    let real: string;
+    try {
+      real = fs.realpathSync(dir);
+    } catch {
+      return;
+    }
+    if (seen.has(real)) return;
+    seen.add(real);
     let ents: fs.Dirent[];
     try {
       ents = fs.readdirSync(dir, { withFileTypes: true });
@@ -514,15 +536,35 @@ function snapshotTree(absDir: string): Map<string, string> {
       return;
     }
     for (const e of ents) {
+      const abs = path.join(dir, e.name);
       const childRel = rel === '' ? e.name : `${rel}/${e.name}`;
-      if (e.isDirectory()) walk(path.join(dir, e.name), childRel);
-      else if (e.isFile()) {
-        const st = fs.lstatSync(path.join(dir, e.name), { bigint: true });
+      let isDir = e.isDirectory();
+      let isFile = e.isFile();
+      if (e.isSymbolicLink()) {
+        try {
+          const t = fs.statSync(abs);
+          isDir = t.isDirectory();
+          isFile = t.isFile();
+        } catch {
+          continue;
+        }
+      }
+      if (isDir) walk(abs, childRel, depth + 1);
+      else if (isFile) {
+        if (out.size >= maxEntries) {
+          bounded = true;
+          break;
+        }
+        const st = fs.statSync(abs, { bigint: true });
         out.set(childRel, `${st.ino}:${st.size}:${st.mtimeNs}:${st.mode}`);
       }
     }
   };
-  walk(absDir, '');
+  walk(absDir, '', 0);
+  if (bounded)
+    console.error(
+      `trace-honest: WARNING snapshot of ${absDir} stopped at ${maxEntries} entries or depth ${maxDepth}; a write beyond the bound is not guarded`
+    );
   return out;
 }
 
@@ -1396,6 +1438,45 @@ async function selftest(): Promise<number> {
       check(
         statLinked(sdir, ['d']).get('d/dirlink') !== dirBefore.get('d/dirlink'),
         "a write to a file inside a symlinked directory moves that link's snapshot"
+      );
+      // A symlink NESTED inside the linked directory: the write lands outside it, through the inner link (25e08a96.1).
+      fs.mkdirSync(path.join(sdir, 'outer'));
+      fs.mkdirSync(path.join(sdir, 'outer', 'sub'));
+      fs.writeFileSync(path.join(sdir, 'outer', 'sub', 'file.txt'), 'one');
+      fs.symlinkSync(path.join(sdir, 'outer', 'sub'), path.join(sdir, 'outer', 'sub', 'cycle'));
+      fs.symlinkSync(path.join(sdir, 'outside.txt'), path.join(sdir, 'outer', 'nested'));
+      fs.writeFileSync(path.join(sdir, 'outside.txt'), 'one');
+      const treeBefore = [...snapshotTree(path.join(sdir, 'outer')).entries()].join();
+      check(
+        treeBefore === [...snapshotTree(path.join(sdir, 'outer')).entries()].join() &&
+          snapshotTree(path.join(sdir, 'outer')).has('nested'),
+        'CONTROL: a tree with a nested file link and a directory cycle snapshots the same twice, the nested link included'
+      );
+      fs.writeFileSync(path.join(sdir, 'outside.txt'), 'two-longer');
+      check(
+        [...snapshotTree(path.join(sdir, 'outer')).entries()].join() !== treeBefore,
+        'a write through a symlink nested inside a snapshotted tree moves the snapshot'
+      );
+      // The walk is bounded by entries and by depth (25e08a96.2).
+      for (let i = 0; i < 5; i += 1) fs.writeFileSync(path.join(sdir, 'target', `f${i}.txt`), 'x');
+      check(
+        snapshotTree(path.join(sdir, 'target'), 3).size === 3,
+        'a snapshot stops at the entry bound'
+      );
+      check(
+        snapshotTree(path.join(sdir, 'target')).size === 6,
+        'CONTROL: the same directory under the default bound is recorded whole'
+      );
+      let deep = path.join(sdir, 'deep');
+      fs.mkdirSync(deep);
+      for (let i = 0; i < 4; i += 1) {
+        deep = path.join(deep, `l${i}`);
+        fs.mkdirSync(deep);
+        fs.writeFileSync(path.join(deep, 'x.txt'), 'x');
+      }
+      check(
+        snapshotTree(path.join(sdir, 'deep'), SNAPSHOT_MAX_ENTRIES, 2).size === 2,
+        'a snapshot stops at the depth bound'
       );
     } finally {
       fs.rmSync(sdir, { recursive: true, force: true });

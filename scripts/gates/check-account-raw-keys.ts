@@ -102,19 +102,19 @@ export interface PropScan {
   dynamic: number;
 }
 
-/** Every I18N_PROPS property with a string-literal value; a type annotation is not a value. */
+/** Every I18N_PROPS property with a string-literal value, its name bare or quoted; a type annotation is not a value. */
 export function keyProps(raw: string): PropScan {
   const src = stripComments(raw);
   const lineOf = (idx: number) => src.slice(0, idx).split('\n').length;
   const literals: KeyProp[] = [];
   let dynamic = 0;
-  const re = new RegExp(`(?<![\\w$.])(${I18N_PROPS.join('|')})\\s*:\\s*`, 'g');
+  const re = new RegExp(`(?<![\\w$.])(['"]?)(${I18N_PROPS.join('|')})\\1\\s*:\\s*`, 'g');
   for (const m of src.matchAll(re)) {
     const at = (m.index ?? 0) + m[0].length;
     const rest = src.slice(at);
     const lit = /^(['"])([^'"\n]*)\1/.exec(rest);
     if (lit) {
-      literals.push({ line: lineOf(m.index ?? 0), prop: m[1], key: lit[2] });
+      literals.push({ line: lineOf(m.index ?? 0), prop: m[2], key: lit[2] });
       continue;
     }
     // `labelKey: string;` and `labelKey?: string` in a type are declarations, not values.
@@ -419,6 +419,16 @@ function controls(): ControlCase[] {
     name: 'CONTROL: non-literal values are counted as dynamic, never resolved',
     ok: dyn.literals.length === 0 && dyn.dynamic === 2,
     detail: JSON.stringify(dyn),
+  });
+  const quoted = keyProps(
+    "const a = { 'labelKey': 'nav:x', \"titleKey\": 'nav:y', 'descKey': item.d };"
+  );
+  out.push({
+    name: 'CONTROL: a quoted property name is read like a bare one, literal or dynamic',
+    ok:
+      quoted.literals.map((l) => `${l.prop}=${l.key}`).join() === 'labelKey=nav:x,titleKey=nav:y' &&
+      quoted.dynamic === 1,
+    detail: JSON.stringify(quoted),
   });
   const lined = keyProps("\n\nconst a = [\n  { labelKey: 'k' },\n];");
   out.push({
