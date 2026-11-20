@@ -103,9 +103,8 @@ from typing import Any
 
 from rediacc_ci import log
 from rediacc_ci.core.common import is_ci
-from rediacc_ci.well_known import ACCOUNT_DEV_PORT
+from rediacc_ci.well_known import ACCOUNT_DEV_PORT, IMAGE_REGISTRY
 from rediacc_ci.well_known import DEVBOX_UID_IMAGE_REPO as WK_DEVBOX_UID_IMAGE_REPO
-from rediacc_ci.well_known import IMAGE_REGISTRY
 
 # The DNS-label cap `${s:0:40}` applies. `.ci/lib/devbox.sh:195`. Well under the 63 a label allows, because the slug also gets a `-code` / `-account` / `-db` / `-term` suffix before it becomes a hostname.
 SLUG_MAX = 40

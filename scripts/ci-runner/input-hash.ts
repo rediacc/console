@@ -845,7 +845,11 @@ export function inputHashSelftest(tmpDir: string): void {
       saltHash(root, t3, { [RUNNER_IMAGE_ENV]: '' }) === hostSalt && imageTerm({}) === 'host',
       'CONTROL: an empty or absent pin is the host term'
     );
-    for (const bad of ['host', 'registry.example.invalid/img:latest', 'registry.example.invalid/x@sha256:abc']) {
+    for (const bad of [
+      'host',
+      'registry.example.invalid/img:latest',
+      'registry.example.invalid/x@sha256:abc',
+    ]) {
       let threw = false;
       try {
         imageTerm({ [RUNNER_IMAGE_ENV]: bad });

@@ -1572,8 +1572,10 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
     execGate(niceSpec, { cwd: REPO_ROOT, mergeOutput: false, critical: true }),
     execGate(niceSpec, { cwd: REPO_ROOT, mergeOutput: false, critical: false }),
   ]);
+  // The kernel clamps nice at 19, so under an already-niced runner (ci:quick runs its gates, this selftest among them, below the critical path) the step is what is left above the runner's own level.
+  const baseNice = Number(base.stdout.trim());
   require_(
-    Number(niced.stdout.trim()) - Number(base.stdout.trim()) === NONCRITICAL_NICE &&
+    Number(niced.stdout.trim()) - baseNice === Math.min(NONCRITICAL_NICE, 19 - baseNice) &&
       niced.niceness === NONCRITICAL_NICE &&
       base.niceness === 0,
     `a non-critical gate must run ${NONCRITICAL_NICE} nice levels below a critical one, got ${base.stdout.trim()} and ${niced.stdout.trim()}`
