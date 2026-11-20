@@ -237,6 +237,58 @@ raises(
     lambda: R.compact(ROOT, REL, "deadbeef", why="auto", park=True),
     "not on origin/main",
 )
+# RB7 second half: R4's done= survives a rebase-merge through the successor map. A branch commit with its review record (Commit/Parent/Patch-Id, as wl_review writes it), main moved, the commit cherry-picked (a new sha), the branch deleted and the orphan pruned, as a fresh checkout of main would have it.
+_rm = pathlib.Path(tempfile.mkdtemp())
+sh(_rm, "git", "init", "-q", "-b", "main")
+sh(_rm, "git", "config", "user.email", "t@example.com")
+sh(_rm, "git", "config", "user.name", "t")
+sh(_rm, "git", "commit", "-q", "--allow-empty", "-m", "base")
+sh(_rm, "git", "checkout", "-q", "-b", "dev")
+(_rm / "x.txt").write_text("x\n", encoding="utf-8")
+sh(_rm, "git", "add", "x.txt")
+sh(_rm, "git", "commit", "-q", "-m", "tick the box")
+_rm_old = git_out(_rm, "rev-parse", "HEAD")
+_rm_parent = git_out(_rm, "rev-parse", "HEAD^")
+_rm_show = subprocess.run(
+    ["git", "-C", str(_rm), "show", _rm_old], capture_output=True, text=True, check=True
+).stdout
+_rm_pid = subprocess.run(
+    ["git", "-C", str(_rm), "patch-id", "--stable"],
+    input=_rm_show,
+    capture_output=True,
+    text=True,
+    check=True,
+).stdout.split()[0]
+(_rm / "agent" / "reviews" / "dev").mkdir(parents=True)
+(_rm / "agent" / "reviews" / "dev" / ("%s.md" % _rm_old)).write_text(
+    "# review\nCommit: %s\nParent: %s\nPatch-Id: %s\n" % (_rm_old, _rm_parent, _rm_pid),
+    encoding="utf-8",
+)
+sh(_rm, "git", "checkout", "-q", "main")
+sh(_rm, "git", "commit", "-q", "--allow-empty", "-m", "main moved")
+sh(_rm, "git", "cherry-pick", _rm_old)
+_rm_landed = git_out(_rm, "rev-parse", "HEAD")
+sh(_rm, "git", "branch", "-q", "-D", "dev")
+sh(_rm, "git", "reflog", "expire", "--expire=now", "--all")
+sh(_rm, "git", "gc", "-q", "--prune=now")
+falsy(
+    "RB7 (precondition): the pre-merge sha no longer resolves",
+    R.resolve(_rm, "commit", _rm_old[:9])[0],
+)
+_rm_ok, _rm_sha, _rm_why = R.resolve_done(_rm, _rm_old[:9])
+truthy(
+    "RB7: R4's done= is carried to the landed copy through the successor map",
+    _rm_ok and _rm_sha == _rm_landed and "successor" in _rm_why,
+)
+_rm_real = R._done_successor
+R._done_successor = lambda *_a: ""
+try:
+    falsy(
+        "RB7 (mutant): without the successor lookup the done= is refused",
+        R.resolve_done(_rm, _rm_old[:9])[0],
+    )
+finally:
+    R._done_successor = _rm_real
 sh(ROOT, "git", "update-ref", "-d", "refs/remotes/origin/main")
 truthy("RB7: a clone with no origin/main judges nothing", R._on_origin_main(ROOT, AFTER))
 falsy(

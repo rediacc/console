@@ -1104,14 +1104,15 @@ def problems_for(root, rel, text, current_ledger):
                     % (rel, b["body"][:60], R.LEDGER_REL, sig)
                 )
             continue
-        ok, why = R.resolve(root, "commit", done)
+        # RB7: a done= sha a rebase-merge rewrote is carried to its landed copy through the successor map before R4 refuses it (RB6 measured the refusal on main).
+        ok, landed, why = R.resolve_done(root, done)
         if not ok:
             out.append(
                 "%s: box %r records `done=%s`, which is not a commit here (%s)"
                 % (rel, b["body"][:60], done, why)
             )
             continue
-        ledger = ledger_at(root, done)
+        ledger = ledger_at(root, landed)
         if ledger is None:
             out.append(
                 "%s: box %r records `done=%s`, but %s does not exist at that commit, so "

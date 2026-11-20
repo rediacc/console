@@ -296,6 +296,44 @@ def _git_raw(root, *args) -> str:
         return ""
 
 
+_DONE_SUCCESSOR: dict[str, Any] = {}
+#: How far back the successor map looks for a landed copy (its `<base>..HEAD` window).
+DONE_SUCCESSOR_WINDOW = 3000
+
+
+def _done_successor(root, token: str) -> str:
+    """The landed copy of a commit a rebase-merge rewrote, through the review records' Patch-Id (rediacc_ci.review.successor), or "". Built once per root and only when a `done=` sha is gone, so a tree whose ticks all resolve pays nothing."""
+    key = str(root)
+    if key not in _DONE_SUCCESSOR:
+        import wl_gh
+
+        su = wl_gh.import_ci("rediacc_ci.review.successor")
+        base = (
+            _git_out(root, "rev-parse", "--verify", "--quiet", "HEAD~%d" % DONE_SUCCESSOR_WINDOW)
+            or (_git_out(root, "rev-list", "--max-parents=0", "HEAD").splitlines() or [""])[-1]
+        )
+        _DONE_SUCCESSOR[key] = su.lazy_successor_of(root, base, sys.modules[__name__])
+    return _DONE_SUCCESSOR[key](token) or ""
+
+
+def resolve_done(root, token: str) -> tuple[bool, str, str]:
+    """(ok, full sha, why) for a compacted record's `done=` (RB7, PLAN-two-track-merge-dev). A sha that resolves is itself; one a rebase-merge rewrote (RB6: `no such commit` on main) is carried to its landed copy by the successor map; otherwise (False, "", the resolve refusal)."""
+    ok, why = resolve(root, "commit", token)
+    if ok:
+        return True, why, ""
+    try:
+        landed = _done_successor(root, token)
+    except Exception as exc:
+        return (
+            False,
+            "",
+            "%s; the successor map could not be built (%s)" % (why, type(exc).__name__),
+        )
+    if landed:
+        return True, landed, "carried from %s by the successor map" % token
+    return False, "", why
+
+
 def _on_origin_main(root, sha: str) -> bool:
     """True when `sha` is an ancestor of origin/main, or when this clone has no origin/main to judge against (a fixture, a fresh repo). Fails closed (review 334616cb.1): the ref counts as absent only on git's clean "no such ref" answer (`show-ref --verify --quiet` exit 1); a timeout, an OSError or any other exit refuses."""
     try:
