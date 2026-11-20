@@ -1650,3 +1650,45 @@ def test_an_unchanged_file_is_answered_from_the_cache(tmp_path, monkeypatch):
 
     monkeypatch.setattr(ps, "lint_text", must_not_lint)
     assert _cache_run(tmp_path, g, r) == 1, "HIT: the stored finding is reused"
+
+
+def test_a_targeted_run_keeps_the_other_cache_entries(tmp_path):
+    g, r = _cache_rules("\\bI\\b")
+    for name in ("a.md", "b.md"):
+        (tmp_path / name).write_text("A clean line.\n")
+    with contextlib.redirect_stdout(io.StringIO()):
+        assert ps.run_check(str(tmp_path), g, r, ["a.md"], as_json=True) == 0
+        assert ps.run_check(str(tmp_path), g, r, ["b.md"], as_json=True) == 0
+    cached = json.loads((tmp_path / str(ps.CACHE_RELPATH)).read_text())["files"]
+    assert set(cached) == {"a.md", "b.md"}, "a targeted run must merge, not evict"
+
+
+def test_a_damaged_cache_entry_is_a_miss(tmp_path):
+    g, r = _cache_rules("\\bI\\b")
+    (tmp_path / "a.md").write_text("I think so.\n")
+    assert _cache_run(tmp_path, g, r) == 1
+    path = tmp_path / str(ps.CACHE_RELPATH)
+    doc = json.loads(path.read_text())
+    doc["files"]["a.md"]["findings"] = "not a list of findings"
+    path.write_text(json.dumps(doc))
+    assert _cache_run(tmp_path, g, r) == 1, "the damaged entry is re-linted, not trusted or fatal"
+
+
+def test_a_full_sweep_drops_a_deleted_file_from_the_cache(tmp_path):
+    root = tmp_path / "repo"
+    root.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "main", str(root)], check=True)
+    for name in ("a.md", "b.md"):
+        (root / name).write_text("A clean line.\n")
+    subprocess.run(["git", "-C", str(root), "add", "-A"], check=True)
+    g, r = _cache_rules("\\bI\\b")
+    with contextlib.redirect_stdout(io.StringIO()):
+        ps.run_check(str(root), g, r, [], as_json=True)
+    cached = json.loads((root / str(ps.CACHE_RELPATH)).read_text())["files"]
+    assert {"a.md", "b.md"} <= set(cached), cached
+    subprocess.run(["git", "-C", str(root), "rm", "-q", "-f", "b.md"], check=True)
+    with contextlib.redirect_stdout(io.StringIO()):
+        ps.run_check(str(root), g, r, [], as_json=True)
+    cached = json.loads((root / str(ps.CACHE_RELPATH)).read_text())["files"]
+    assert "b.md" not in cached, cached
+    assert "a.md" in cached, cached

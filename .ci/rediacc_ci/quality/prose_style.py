@@ -1395,7 +1395,7 @@ def _shape(globals_, rules, files, prose_lines):
     )
 
 
-# THE PER-FILE CACHE (PLAN-two-track-merge-dev S1). A file's findings depend only on its path, its text, the rules and globals, and this linter's own source, so a file whose text hash and context hash match its entry reuses the stored line count, note and findings. identity_path, exemptions, the per-suffix floors and the baseline comparison are recomputed every run; --write-baseline and --drain read nothing from it.
+# THE PER-FILE CACHE (PLAN-two-track-merge-dev S1). A file's findings depend only on its path, its text, the rules and globals, and this linter's own source, so a file whose text hash and context hash match its entry reuses the stored line count, note and findings. identity_path, exemptions, the per-suffix floors and the baseline comparison are recomputed every run; --write-baseline and --drain reuse no cached finding (every file is linted fresh), though a targeted run still reads the cache to merge its fresh entries into the rest.
 CACHE_RELPATH = pathlib.PurePosixPath(".ci/cache/prose-style/files-v1.json")
 
 
@@ -1514,10 +1514,14 @@ def run_check(
             continue
         digest = hashlib.sha256(text.encode("utf-8", "surrogatepass")).hexdigest()
         hit = cache.get(rel)
+        got = None
         if isinstance(hit, dict) and hit.get("sha") == digest:
-            n_lines, note = int(hit["lines"]), hit.get("note")
-            got = [Finding(rel, f[0], f[1], f[2], f[3], f[4]) for f in hit["findings"]]
-        else:
+            try:
+                n_lines, note = int(hit["lines"]), hit.get("note")
+                got = [Finding(rel, f[0], f[1], f[2], f[3], f[4]) for f in hit["findings"]]
+            except (KeyError, TypeError, ValueError, IndexError):
+                got = None  # a damaged entry is a miss, like a damaged cache file
+        if got is None:
             markers = tuple(globals_.get("ignore_markers") or DEFAULT_MARKERS)
             lines, note = extract(rel, text, markers)
             n_lines = len(lines)
