@@ -1772,6 +1772,7 @@
   "commands.repo.policy.set.forceOption": "Luba mälupiir, mis on hoidla praegusest mälukasutusest madalam",
   "commands.repo.policy.set.growStepOption": "Kasv sammu kohta: absoluutne (10G) või protsent kvoodist (20%)",
   "commands.repo.policy.set.growThresholdOption": "Failisüsteemi täituvus %, mis käivitab kasvu (vaikimisi 85)",
+  "commands.repo.policy.set.growWhenFreeBytesOption": "Kasvata, kui vaba ruum langeb alla selle suuruse (nt 1G); 0 tähendab ühte kasvusammu",
   "commands.repo.policy.set.ioMaxOption": "Hoidla seadme I/O piir: rbps=,wbps=,riops=,wiops= (mis tahes valik, nt rbps=200M,wbps=100M; KEY=max eemaldab ühe) või max",
   "commands.repo.policy.set.maxQuotaOption": "Automaatkasvu lagi (nt 200G); automaatkasvuks kohustuslik",
   "commands.repo.policy.set.memoryHighOption": "Hoidla mälu pidurduspunkt (nt 8G, eemaldamiseks max)",

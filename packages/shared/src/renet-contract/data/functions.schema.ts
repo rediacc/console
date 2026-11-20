@@ -677,6 +677,7 @@ export const RepositoryPolicySetParamsSchema = z.object({
   maxQuota: z.string().optional().describe('Auto-grow ceiling (e.g. 200G); required for auto-grow'),
   growThreshold: z.string().optional().describe('Filesystem used % that triggers a grow (1-99)'),
   growStep: z.string().optional().describe('Growth per step: absolute (10G) or percent of quota (20%)'),
+  growWhenFreeBytes: z.string().optional().describe('Grow when free bytes fall below this size (e.g. 1G); 0 means one grow step'),
   autoTrim: z.string().optional().describe('Enable scheduled fstrim (true/false)'),
   trimInterval: z.string().optional().describe('Minimum hours between automatic trims'),
 });

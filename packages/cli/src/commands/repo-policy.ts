@@ -23,6 +23,7 @@ interface PolicySetOptions {
   maxQuota?: string;
   growThreshold?: string;
   growStep?: string;
+  growWhenFreeBytes?: string;
   autoTrim?: string;
   trimInterval?: string;
   memoryMax?: string;
@@ -167,6 +168,7 @@ interface PolicyFields {
   max_quota_bytes?: number | null;
   grow_when_used_percent?: number | null;
   grow_step?: string | null;
+  grow_when_free_bytes?: number | null;
   auto_trim?: boolean | null;
   trim_interval_hours?: number | null;
 }
@@ -189,6 +191,11 @@ async function renderPolicyResult(parsed: Record<string, unknown>): Promise<void
     { key: 'max_quota_bytes', label: 'Max quota', fmt: (v) => formatSizeBytes(v as number) },
     { key: 'grow_when_used_percent', label: 'Grow threshold', fmt: (v) => `${v}%` },
     { key: 'grow_step', label: 'Grow step' },
+    {
+      key: 'grow_when_free_bytes',
+      label: 'Grow when free below',
+      fmt: (v) => formatSizeBytes(v as number),
+    },
     { key: 'auto_trim', label: 'Auto-trim' },
     { key: 'trim_interval_hours', label: 'Trim interval', fmt: (v) => `${v}h` },
   ];
@@ -237,6 +244,7 @@ function hasSizeFlags(options: PolicySetOptions): boolean {
     options.maxQuota,
     options.growThreshold,
     options.growStep,
+    options.growWhenFreeBytes,
     options.autoTrim,
     options.trimInterval,
   ].some((v) => v !== undefined);
@@ -360,6 +368,7 @@ function addSizeParams(params: Record<string, unknown>, options: PolicySetOption
   if (options.maxQuota) params.max_quota = options.maxQuota;
   if (options.growThreshold) params.grow_threshold = options.growThreshold;
   if (options.growStep) params.grow_step = options.growStep;
+  if (options.growWhenFreeBytes) params.grow_when_free_bytes = options.growWhenFreeBytes;
   if (options.trimInterval) params.trim_interval = options.trimInterval;
 }
 
@@ -413,6 +422,10 @@ export function registerRepoPolicyCommand(repo: Command): void {
     .option('--max-quota <size>', t('commands.repo.policy.set.maxQuotaOption'))
     .option('--grow-threshold <percent>', t('commands.repo.policy.set.growThresholdOption'))
     .option('--grow-step <step>', t('commands.repo.policy.set.growStepOption'))
+    .option(
+      '--grow-when-free-bytes <size>',
+      t('commands.repo.policy.set.growWhenFreeBytesOption')
+    )
     .addOption(
       new Option('--auto-trim <bool>', t('commands.repo.policy.set.autoTrimOption')).choices([
         'true',

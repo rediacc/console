@@ -1772,6 +1772,7 @@
   "commands.repo.policy.set.forceOption": "Разрешить предел памяти ниже текущего потребления памяти репозиторием",
   "commands.repo.policy.set.growStepOption": "Шаг роста: абсолютный (10G) или процент от квоты (20%)",
   "commands.repo.policy.set.growThresholdOption": "% заполнения файловой системы, запускающий рост (по умолчанию 85)",
+  "commands.repo.policy.set.growWhenFreeBytesOption": "Расти, когда свободное место опускается ниже этого размера (например, 1G); 0 означает один шаг роста",
   "commands.repo.policy.set.ioMaxOption": "Предел ввода-вывода устройства репозитория: rbps=,wbps=,riops=,wiops= (любой набор, например rbps=200M,wbps=100M; KEY=max снимает одно значение) или max",
   "commands.repo.policy.set.maxQuotaOption": "Потолок авторостa (например 200G); обязателен для авторостa",
   "commands.repo.policy.set.memoryHighOption": "Порог замедления по памяти для репозитория (например, 8G, или max, чтобы снять)",

@@ -1772,6 +1772,7 @@
   "commands.repo.policy.set.forceOption": "Eine Speicherobergrenze unter dem aktuellen Speicherverbrauch des Repositorys zulassen",
   "commands.repo.policy.set.growStepOption": "Wachstum pro Schritt: absolut (10G) oder Prozent des Kontingents (20%)",
   "commands.repo.policy.set.growThresholdOption": "Belegungs-% des Dateisystems, das ein Wachstum auslöst (Standard 85)",
+  "commands.repo.policy.set.growWhenFreeBytesOption": "Wachsen, wenn der freie Platz unter diese Größe fällt (z. B. 1G); 0 bedeutet ein Wachstumsschritt",
   "commands.repo.policy.set.ioMaxOption": "I/O-Obergrenze des Repository-Geräts: rbps=,wbps=,riops=,wiops= (beliebige Auswahl, z. B. rbps=200M,wbps=100M; KEY=max entfernt einen Wert) oder max",
   "commands.repo.policy.set.maxQuotaOption": "Obergrenze für Auto-Grow (z. B. 200G); für Auto-Grow erforderlich",
   "commands.repo.policy.set.memoryHighOption": "Drosselpunkt für den Speicher des Repositorys (z. B. 8G, oder max zum Entfernen)",

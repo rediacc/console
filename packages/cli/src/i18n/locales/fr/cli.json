@@ -2231,6 +2231,7 @@
           "description": "Définit des champs de la politique de taille. Seuls les drapeaux passés sont modifiés ; les autres champs conservent leurs valeurs. Activer l'auto-agrandissement exige --max-quota : le plafond est votre consentement explicite au surprovisionnement du pool",
           "descriptionShort": "Définir des champs de politique de taille (défaut machine, ou un dépôt par réf)",
           "growStepOption": "Croissance par étape : absolue (10G) ou pourcentage du quota (20%)",
+          "growWhenFreeBytesOption": "Agrandir quand l'espace libre passe sous cette taille (p. ex. 1G) ; 0 signifie un pas de croissance",
           "growThresholdOption": "% d'occupation du système de fichiers déclenchant un agrandissement (défaut 85)",
           "maxQuotaOption": "Plafond de l'auto-agrandissement (ex. 200G) ; requis pour l'auto-agrandissement",
           "trimIntervalOption": "Heures minimales entre trims automatiques (défaut 24)",

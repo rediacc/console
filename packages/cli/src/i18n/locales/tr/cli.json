@@ -2231,6 +2231,7 @@
           "description": "Boyut politikası alanlarını ayarlar. Yalnızca geçirdiğiniz bayraklar değişir; diğer kayıtlı alanlar değerlerini korur. Otomatik büyütmeyi etkinleştirmek --max-quota gerektirir: tavan, havuzun aşırı tahsisine verdiğiniz açık onaydır",
           "descriptionShort": "Boyut politikası alanlarını ayarla (makine varsayılanı veya referansla tek bir depo)",
           "growStepOption": "Adım başına büyüme: mutlak (10G) veya kota yüzdesi (20%)",
+          "growWhenFreeBytesOption": "Boş alan bu boyutun altına düşünce büyüt (ör. 1G); 0 bir büyüme adımı demektir",
           "growThresholdOption": "Büyümeyi tetikleyen dosya sistemi doluluk yüzdesi (varsayılan 85)",
           "maxQuotaOption": "Otomatik büyütme tavanı (örn. 200G); otomatik büyütme için zorunlu",
           "trimIntervalOption": "Otomatik trimler arasındaki en az saat (varsayılan 24)",

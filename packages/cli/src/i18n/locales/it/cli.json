@@ -2231,6 +2231,7 @@
           "description": "Imposta i campi della politica di dimensione. Cambiano solo i flag passati; gli altri campi salvati mantengono i valori. Abilitare l'auto-crescita richiede --max-quota: il tetto è il consenso esplicito al sovra-provisioning del pool",
           "descriptionShort": "Imposta i campi della politica di dimensione (predefinito macchina, oppure un repo tramite riferimento)",
           "growStepOption": "Crescita per passo: assoluta (10G) o percentuale della quota (20%)",
+          "growWhenFreeBytesOption": "Espandi quando lo spazio libero scende sotto questa dimensione (es. 1G); 0 indica un passo di crescita",
           "growThresholdOption": "% di uso del filesystem che attiva una crescita (predefinito 85)",
           "maxQuotaOption": "Tetto dell'auto-crescita (es. 200G); obbligatorio per l'auto-crescita",
           "trimIntervalOption": "Ore minime tra trim automatici (predefinito 24)",

@@ -1772,6 +1772,7 @@
   "commands.repo.policy.set.forceOption": "저장소의 현재 메모리 사용량보다 낮은 메모리 상한을 허용합니다",
   "commands.repo.policy.set.growStepOption": "단계당 확장량: 절대값(10G) 또는 쿼터의 백분율(20%)",
   "commands.repo.policy.set.growThresholdOption": "확장을 트리거하는 파일 시스템 사용률 %(기본 85)",
+  "commands.repo.policy.set.growWhenFreeBytesOption": "여유 공간이 이 크기 아래로 내려가면 확장(예: 1G); 0은 확장 1단계를 의미",
   "commands.repo.policy.set.ioMaxOption": "저장소 장치의 I/O 상한: rbps=, wbps=, riops=, wiops= 중 일부(예: rbps=200M,wbps=100M. KEY=max는 하나를 해제) 또는 max",
   "commands.repo.policy.set.maxQuotaOption": "자동 확장 상한(예: 200G); 자동 확장에 필수",
   "commands.repo.policy.set.memoryHighOption": "저장소의 메모리 스로틀 지점(예: 8G, 해제하려면 max)",

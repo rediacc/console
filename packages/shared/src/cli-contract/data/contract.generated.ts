@@ -12987,6 +12987,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Growth per step: absolute (10G) or percent of quota (20%)"
         },
         {
+          "flags": "--grow-when-free-bytes <size>",
+          "long": "grow-when-free-bytes",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.growWhenFreeBytesOption",
+          "label": "Grow when free space falls below this size (e.g. 1G); 0 means one grow step"
+        },
+        {
           "flags": "--auto-trim <bool>",
           "long": "auto-trim",
           "valueTaking": true,

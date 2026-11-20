@@ -2231,6 +2231,7 @@
           "description": "设置大小策略字段。只更改你传入的标志；其他已保存字段保持原值。启用自动扩容必须提供 --max-quota：该上限是你对存储池超额配置的明确同意",
           "descriptionShort": "设置大小策略字段（机器默认值，或通过引用指定单个仓库）",
           "growStepOption": "每次扩容量：绝对值（10G）或配额百分比（20%）",
+          "growWhenFreeBytesOption": "可用空间低于此大小时扩容（如 1G）；0 表示一个扩容步长",
           "growThresholdOption": "触发扩容的文件系统使用率百分比（默认 85）",
           "maxQuotaOption": "自动扩容上限（例如 200G）；启用自动扩容时必填",
           "trimIntervalOption": "自动修剪之间的最少小时数（默认 24）",

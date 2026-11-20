@@ -1772,6 +1772,7 @@
   "commands.repo.policy.set.forceOption": "リポジトリの現在のメモリ使用量を下回るメモリ上限を許可します",
   "commands.repo.policy.set.growStepOption": "1 ステップの拡大量: 絶対値（10G）またはクォータの割合（20%）",
   "commands.repo.policy.set.growThresholdOption": "拡大を引き起こすファイルシステム使用率 %（デフォルト 85）",
+  "commands.repo.policy.set.growWhenFreeBytesOption": "空き容量がこのサイズを下回ったら拡大（例: 1G）。0 は 1 ステップ分",
   "commands.repo.policy.set.ioMaxOption": "リポジトリのデバイスの I/O 上限: rbps=、wbps=、riops=、wiops= の任意の組み合わせ（例: rbps=200M,wbps=100M。KEY=max で個別に解除）、または max",
   "commands.repo.policy.set.maxQuotaOption": "自動拡大の上限（例: 200G）。自動拡大には必須",
   "commands.repo.policy.set.memoryHighOption": "リポジトリのメモリ抑制ポイント（例: 8G、解除は max）",

@@ -2231,6 +2231,7 @@
           "description": "Setzt Felder der Größenrichtlinie. Nur übergebene Flags werden geändert; andere gespeicherte Felder behalten ihre Werte. Auto-Grow erfordert --max-quota: die Obergrenze ist die ausdrückliche Zustimmung zur Überprovisionierung des Pools",
           "descriptionShort": "Felder der Größenrichtlinie setzen (Maschinenstandard oder ein Repository per Referenz)",
           "growStepOption": "Wachstum pro Schritt: absolut (10G) oder Prozent des Kontingents (20%)",
+          "growWhenFreeBytesOption": "Wachsen, wenn der freie Platz unter diese Größe fällt (z. B. 1G); 0 bedeutet ein Wachstumsschritt",
           "growThresholdOption": "Belegungs-% des Dateisystems, das ein Wachstum auslöst (Standard 85)",
           "maxQuotaOption": "Obergrenze für Auto-Grow (z. B. 200G); für Auto-Grow erforderlich",
           "trimIntervalOption": "Mindestabstand in Stunden zwischen automatischen Trims (Standard 24)",

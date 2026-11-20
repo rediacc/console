@@ -935,6 +935,8 @@ export interface RepositoryPolicySetParams {
   growThreshold?: string;
   /** Growth per step: absolute (10G) or percent of quota (20%) */
   growStep?: string;
+  /** Grow when free bytes fall below this size (e.g. 1G); 0 means one grow step */
+  growWhenFreeBytes?: string;
   /** Enable scheduled fstrim (true/false) */
   autoTrim?: string;
   /** Minimum hours between automatic trims */
@@ -3996,6 +3998,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       growStep: {
         type: 'string',
         help: 'Growth per step: absolute (10G) or percent of quota (20%)',
+      },
+      growWhenFreeBytes: {
+        type: 'string',
+        help: 'Grow when free bytes fall below this size (e.g. 1G); 0 means one grow step',
       },
       autoTrim: {
         type: 'string',

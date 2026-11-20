@@ -1574,6 +1574,7 @@ Set size policy fields. Only the flags you pass are changed; other stored fields
 - `--max-quota <size>`: Auto-grow ceiling (e.g. 200G); required for auto-grow
 - `--grow-threshold <percent>`: Filesystem used % that triggers a grow (default 85)
 - `--grow-step <step>`: Growth per step: absolute (10G) or percent of quota (20%)
+- `--grow-when-free-bytes <size>`: Grow when free space falls below this size (e.g. 1G); 0 means one grow step
 - `--auto-trim <bool>`: Enable scheduled trim (true/false)
 - `--trim-interval <hours>`: Minimum hours between automatic trims (default 24)
 - `--memory-max <size>`: Memory cap of the repository (e.g. 10G, or max to remove); at the cap one of its containers is OOM-killed, nothing outside it

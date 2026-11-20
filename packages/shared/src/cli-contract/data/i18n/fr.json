@@ -1772,6 +1772,7 @@
   "commands.repo.policy.set.forceOption": "Autoriser un plafond mémoire inférieur à l'utilisation actuelle du dépôt",
   "commands.repo.policy.set.growStepOption": "Croissance par étape : absolue (10G) ou pourcentage du quota (20%)",
   "commands.repo.policy.set.growThresholdOption": "% d'occupation du système de fichiers déclenchant un agrandissement (défaut 85)",
+  "commands.repo.policy.set.growWhenFreeBytesOption": "Agrandir quand l'espace libre passe sous cette taille (p. ex. 1G) ; 0 signifie un pas de croissance",
   "commands.repo.policy.set.ioMaxOption": "Plafond d'E/S du périphérique du dépôt : rbps=,wbps=,riops=,wiops= (n'importe quel sous-ensemble, par ex. rbps=200M,wbps=100M ; KEY=max en retire un) ou max",
   "commands.repo.policy.set.maxQuotaOption": "Plafond de l'auto-agrandissement (ex. 200G) ; requis pour l'auto-agrandissement",
   "commands.repo.policy.set.memoryHighOption": "Seuil de ralentissement mémoire du dépôt (par ex. 8G, ou max pour le retirer)",

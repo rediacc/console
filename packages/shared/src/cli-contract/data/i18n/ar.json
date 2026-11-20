@@ -1772,6 +1772,7 @@
   "commands.repo.policy.set.forceOption": "السماح بسقف ذاكرة أقل من استخدام المستودع الحالي للذاكرة",
   "commands.repo.policy.set.growStepOption": "مقدار التوسيع لكل خطوة: مطلق (10G) أو نسبة من الحصة (20%)",
   "commands.repo.policy.set.growThresholdOption": "نسبة استخدام نظام الملفات التي تطلق التوسيع (الافتراضي 85)",
+  "commands.repo.policy.set.growWhenFreeBytesOption": "التوسيع عندما تنخفض المساحة الحرة عن هذا الحجم (مثل 1G)؛ القيمة 0 تعني خطوة توسيع واحدة",
   "commands.repo.policy.set.ioMaxOption": "سقف الإدخال/الإخراج لجهاز المستودع: rbps=،wbps=،riops=،wiops= (أي مجموعة منها، مثل rbps=200M,wbps=100M؛ KEY=max يزيل قيمة) أو max",
   "commands.repo.policy.set.maxQuotaOption": "سقف التوسيع التلقائي (مثل 200G)؛ مطلوب للتوسيع التلقائي",
   "commands.repo.policy.set.memoryHighOption": "نقطة تقييد الذاكرة للمستودع (مثل 8G، أو max لإزالتها)",

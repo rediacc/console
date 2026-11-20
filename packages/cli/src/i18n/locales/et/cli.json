@@ -2231,6 +2231,7 @@
           "description": "Määrab suurusepoliitika välju. Muudetakse ainult edastatud lippe; teised salvestatud väljad säilitavad väärtused. Automaatkasvu lubamine nõuab --max-quota: lagi on sinu selgesõnaline nõusolek puuli ülejaotuseks",
           "descriptionShort": "Määra poliitika väljad (masina vaikimisi, või üks hoidla viite järgi)",
           "growStepOption": "Kasv sammu kohta: absoluutne (10G) või protsent kvoodist (20%)",
+          "growWhenFreeBytesOption": "Kasvata, kui vaba ruum langeb alla selle suuruse (nt 1G); 0 tähendab ühte kasvusammu",
           "growThresholdOption": "Failisüsteemi täituvus %, mis käivitab kasvu (vaikimisi 85)",
           "maxQuotaOption": "Automaatkasvu lagi (nt 200G); automaatkasvuks kohustuslik",
           "trimIntervalOption": "Vähim tundide arv automaatsete trimmide vahel (vaikimisi 24)",

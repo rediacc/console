@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2990,
-    "sourceCommit": "d75fcf1864b83a7794cc7c59c1cc59ac719b2492"
+    "keyCount": 2991,
+    "sourceCommit": "5728c1f5e43afea1329a59b7951de2ec5196edf1"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1780,6 +1780,7 @@
     "commands.repo.policy.set.forceOption": "952728a3",
     "commands.repo.policy.set.growStepOption": "102deafa",
     "commands.repo.policy.set.growThresholdOption": "1e088b56",
+    "commands.repo.policy.set.growWhenFreeBytesOption": "f7547bb1",
     "commands.repo.policy.set.ioMaxOption": "92e37463",
     "commands.repo.policy.set.maxQuotaOption": "7ab89715",
     "commands.repo.policy.set.memoryHighOption": "3a17e343",

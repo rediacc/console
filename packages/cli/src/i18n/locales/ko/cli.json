@@ -2231,6 +2231,7 @@
           "description": "크기 정책 필드를 설정합니다. 전달한 플래그만 변경되며 다른 저장된 필드는 값을 유지합니다. 자동 확장을 켜려면 --max-quota가 필요합니다. 상한은 풀 초과 할당에 대한 명시적 동의입니다",
           "descriptionShort": "크기 정책 필드를 설정합니다 (머신 기본값, 또는 참조로 지정한 단일 저장소)",
           "growStepOption": "단계당 확장량: 절대값(10G) 또는 쿼터의 백분율(20%)",
+          "growWhenFreeBytesOption": "여유 공간이 이 크기 아래로 내려가면 확장(예: 1G); 0은 확장 1단계를 의미",
           "growThresholdOption": "확장을 트리거하는 파일 시스템 사용률 %(기본 85)",
           "maxQuotaOption": "자동 확장 상한(예: 200G); 자동 확장에 필수",
           "trimIntervalOption": "자동 트림 사이의 최소 시간(기본 24)",

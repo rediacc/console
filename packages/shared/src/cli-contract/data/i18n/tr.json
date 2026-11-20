@@ -1772,6 +1772,7 @@
   "commands.repo.policy.set.forceOption": "Deponun mevcut bellek kullanımının altında bir bellek üst sınırına izin ver",
   "commands.repo.policy.set.growStepOption": "Adım başına büyüme: mutlak (10G) veya kota yüzdesi (20%)",
   "commands.repo.policy.set.growThresholdOption": "Büyümeyi tetikleyen dosya sistemi doluluk yüzdesi (varsayılan 85)",
+  "commands.repo.policy.set.growWhenFreeBytesOption": "Boş alan bu boyutun altına düşünce büyüt (ör. 1G); 0 bir büyüme adımı demektir",
   "commands.repo.policy.set.ioMaxOption": "Depo aygıtının G/Ç üst sınırı: rbps=,wbps=,riops=,wiops= (herhangi bir alt küme, örn. rbps=200M,wbps=100M; KEY=max birini kaldırır) veya max",
   "commands.repo.policy.set.maxQuotaOption": "Otomatik büyütme tavanı (örn. 200G); otomatik büyütme için zorunlu",
   "commands.repo.policy.set.memoryHighOption": "Deponun bellek kısma noktası (örn. 8G, kaldırmak için max)",

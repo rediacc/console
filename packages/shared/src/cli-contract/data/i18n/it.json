@@ -1772,6 +1772,7 @@
   "commands.repo.policy.set.forceOption": "Consentire un tetto di memoria inferiore all'uso attuale del repository",
   "commands.repo.policy.set.growStepOption": "Crescita per passo: assoluta (10G) o percentuale della quota (20%)",
   "commands.repo.policy.set.growThresholdOption": "% di uso del filesystem che attiva una crescita (predefinito 85)",
+  "commands.repo.policy.set.growWhenFreeBytesOption": "Espandi quando lo spazio libero scende sotto questa dimensione (es. 1G); 0 indica un passo di crescita",
   "commands.repo.policy.set.ioMaxOption": "Tetto di I/O del dispositivo del repository: rbps=,wbps=,riops=,wiops= (qualsiasi sottoinsieme, es. rbps=200M,wbps=100M; KEY=max ne rimuove uno) oppure max",
   "commands.repo.policy.set.maxQuotaOption": "Tetto dell'auto-crescita (es. 200G); obbligatorio per l'auto-crescita",
   "commands.repo.policy.set.memoryHighOption": "Soglia di rallentamento della memoria del repository (es. 8G, oppure max per rimuoverla)",
