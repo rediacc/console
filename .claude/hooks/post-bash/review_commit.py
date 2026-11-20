@@ -41,32 +41,9 @@ shellscan = importlib.import_module("rediacc_hooks.shellscan")
 commit_policy = importlib.import_module("rediacc_hooks.commit_policy")
 
 
-def bound_trees(root):
-    """The trees a commit can belong to: `root`, plus the other tree the landing record binds (the landing tree, or the main checkout when `root` is the landing tree). With no valid record, `[root]` alone, exactly the single-tree behaviour (box LT13 of agent/plans/PLAN-two-track-merge-dev.md)."""
-    trees = [pathlib.Path(root)]
-    record = commit_policy.landing_record(str(root))
-    if record is None:
-        return trees
-    common = commit_policy.common_dir(str(root))
-    others = [record["path"]]
-    if common and os.path.basename(common) == ".git":
-        others.append(os.path.dirname(common))
-    for other in others:
-        real = os.path.realpath(other)
-        if all(os.path.realpath(t) != real for t in trees) and os.path.isdir(real):
-            trees.append(pathlib.Path(real))
-    return trees
-
-
-def tree_of(repo, trees):
-    """The bound tree a repository belongs to (itself, or the tree whose `.gitmodules` registers it); None when it is in none."""
-    real = os.path.realpath(repo)
-    for tree in trees:
-        if real == os.path.realpath(tree) or real in {
-            os.path.realpath(p) for p in _submodule_paths(tree)
-        }:
-            return tree
-    return None
+def _bound_paths(root):
+    """`commit_policy.bound_trees` as paths: `root`, plus the other tree the landing record binds (box LT11; with no valid record, `[root]` alone)."""
+    return [pathlib.Path(t) for t in commit_policy.bound_trees(str(root))]
 
 
 def commit_repos(cmd, cwd, root):
@@ -76,43 +53,33 @@ def commit_repos(cmd, cwd, root):
     """
     base = pathlib.Path(cwd or root)
     repos = []
-    trees = bound_trees(root)
+    trees = _bound_paths(root)
     for run in shellscan._analyse(cmd).runs:
         if run.git_sub not in R.TRIGGER_SUBS:
             continue
         where = base if run.git_dir in (None, "", ".") else base / run.git_dir
         top = R.git_out(where, "rev-parse", "--show-toplevel")
         # AN UNRESOLVABLE `-C` IS NOT "NO REPOSITORY" (#51e1c0cf). `git -C <dir>/$r commit` in a loop names a directory the lexer cannot expand, so rev-parse fails; skipping it left account 654d186 unreviewed until the push guard refused the push. Every project repository is checked instead: uncovered() is cheap, and a covered repository starts nothing.
-        candidates = [top] if top else ([r for t in trees for r in _project_repos(t)] if run.git_dir else [])
+        candidates = (
+            [top] if top else ([r for t in trees for r in _project_repos(t)] if run.git_dir else [])
+        )
         for cand in candidates:
             # MEMBERSHIP IS `.gitmodules`, NOT LOCATION (operator 2026-10-08). private/growth is a separate, gitignored repository inside the tree; reviewing its commits filed the operator's private documents into this project's agent/reviews/.
-            inside = bool(cand) and tree_of(cand, trees) is not None
+            inside = bool(cand) and commit_policy.owning_tree(cand, trees) is not None
             if inside and cand not in repos:
                 repos.append(cand)
     return repos
 
 
-def _submodule_paths(root):
-    """The checkouts `.gitmodules` registers, as absolute paths; a repository that merely sits inside the tree (gitignored, cloned beside the submodules) is not one."""
-    root = pathlib.Path(root)
-    out = R.git_out(root, "config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$")
-    paths = []
-    for line in (out or "").splitlines():
-        parts = line.split(None, 1)
-        if len(parts) == 2 and (root / parts[1].strip() / ".git").exists():
-            paths.append(str(root / parts[1].strip()))
-    return paths
-
-
 def _project_repos(root):
     """The project and its registered submodules, as top-level paths."""
-    return [str(pathlib.Path(root)), *_submodule_paths(root)]
+    return [str(pathlib.Path(root)), *commit_policy.submodule_paths(str(root))]
 
 
 def trigger_lines(cmd, cwd, root, trigger=R.trigger):
     lines = []
     for repo in commit_repos(cmd, cwd, root):
-        tree = tree_of(repo, bound_trees(root)) or root
+        tree = commit_policy.owning_tree(repo, _bound_paths(root)) or root
         try:
             started = trigger(tree, pathlib.Path(repo))
         except Exception as exc:
@@ -155,7 +122,7 @@ def main():
     if cmd and "git" in cmd and any(sub in cmd for sub in R.TRIGGER_SUBS):
         lines += trigger_lines(cmd, ev.field("cwd") or None, root)
     try:
-        for tree in bound_trees(root):
+        for tree in _bound_paths(root):
             lines += R.surface_new(tree, R.current_branch(tree), ev.field("session_id"))
     except Exception as exc:
         lines.append(

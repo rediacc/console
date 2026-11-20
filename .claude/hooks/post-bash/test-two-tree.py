@@ -37,7 +37,7 @@ os.environ.update(ENV)
 for key in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "COMMIT_REVIEW_CHILD", "STOPHOOK_CHILD"):
     os.environ.pop(key, None)
 
-FAILURES = []
+FAILURES: list[tuple[str, list[str]]] = []
 
 
 def git(repo, *args):
@@ -90,6 +90,8 @@ def load(name, source=None, patch=None):
     holder.write_text(text, encoding="utf-8")
     try:
         spec = importlib.util.spec_from_file_location("lt13_" + holder.stem, holder)
+        if spec is None or spec.loader is None:
+            raise SystemExit("cannot load %s" % holder)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
     finally:
@@ -116,6 +118,12 @@ def run_main(mod, project, cwd, command):
         sys.stdin, sys.stdout = old_in, old_out
 
 
+def _record(into, value, answer):
+    """Append `value` to `into` and answer `answer`: a stub that records its call and returns the stubbed result."""
+    into.append(value)
+    return answer
+
+
 def real(path):
     return os.path.realpath(str(path))
 
@@ -127,18 +135,20 @@ def check_review(mod, main, land, record=True):
     problems = []
     calls = []
 
-    def stub(root, repo, *a, **k):
+    def stub(root, repo, *_a, **_k):
         calls.append((real(root), real(repo)))
         return [("c" * 40, 1234)]
 
     lines = mod.trigger_lines("git commit -q -m x", str(land), main, trigger=stub)
-    started = [c for c in calls]
+    started = list(calls)
     if record:
         if started != [(real(land), real(land))]:
-            problems.append("landing commit: reviewer asked for %s, expected the landing tree" % started)
+            problems.append(
+                "landing commit: reviewer asked for %s, expected the landing tree" % started
+            )
     elif started:
         problems.append("no record: a commit in the landing tree started a review %s" % started)
-    if not record and not lines == [] and any("started" in ln for ln in lines):
+    if not record and lines != [] and any("started" in ln for ln in lines):
         problems.append("no record: a review was reported started")
     calls.clear()
     mod.trigger_lines("git commit -q -m x", str(main), main, trigger=stub)
@@ -152,7 +162,7 @@ def check_surface(mod, main, land):
     problems = []
     seen = []
 
-    def surface(root, branch, sid):
+    def surface(root, branch, _sid):
         seen.append((real(root), branch))
         return []
 
@@ -170,7 +180,7 @@ def check_arm(mod, main, land):
     problems = []
     roots = []
 
-    def arm(root, sid, **kw):
+    def arm(root, _sid, **_kw):
         roots.append(real(root))
         return ""
 
@@ -182,20 +192,27 @@ def check_arm(mod, main, land):
     run_main(mod, main, main, "git push")
     if roots != [real(main)]:
         problems.append("arm read %s for a push typed in the main checkout" % roots)
+    # The other direction: the landing session's push typed in the main checkout reads the main checkout.
+    roots.clear()
+    run_main(mod, land, main, "git push")
+    if roots != [real(main)]:
+        problems.append(
+            "arm read %s for a push typed in the main checkout from the landing tree" % roots
+        )
     return problems
 
 
-def check_arm_branch(mod, main, land):
+def check_arm_branch(mod, _main, land):
     """The real arm(): the watch is armed for the landing branch, not the development branch."""
     problems = []
-    spawned = []
+    spawned: list[str] = []
     out = mod.arm(
         land,
         SID,
-        cli=lambda root, sid, *a: (0, "added #abcd1234"),
-        spawn=lambda root, sid, branch, item, log: spawned.append(branch) or 4321,
-        alive=lambda pid: False,
-        has_pr=lambda root, branch: True,
+        cli=lambda _root, _sid, *_a: (0, "added #abcd1234"),
+        spawn=lambda _root, _sid, branch, _item, _log: _record(spawned, branch, 4321),
+        alive=lambda _pid: False,
+        has_pr=lambda _root, _branch: True,
     )
     if spawned != [LAND] or LAND not in out:
         problems.append("arm in the landing tree watched %s (%s)" % (spawned, out))
@@ -215,12 +232,15 @@ def check_gh_branch(mod, main, land, call_name, flag):
 
     mod._gh_read = fake
     if hasattr(mod, "shutil"):
-        mod.shutil = type("S", (), {"which": staticmethod(lambda n: "/bin/gh")})
+        mod.shutil = type("S", (), {"which": staticmethod(lambda _n: "/bin/gh")})
     for where, want in ((land, LAND), (main, DEV)):
         seen.clear()
         run_main(mod, main, where, "git push")
         if want not in seen or (where == land and DEV in seen):
-            problems.append("%s read %s for a bare push in %s, expected %s" % (call_name, seen, where.name, want))
+            problems.append(
+                "%s read %s for a bare push in %s, expected %s"
+                % (call_name, seen, where.name, want)
+            )
     return problems
 
 
@@ -248,37 +268,76 @@ def main_():
         os.environ["TMPDIR"] = str(pathlib.Path(tmp) / "tmpdir")
         os.makedirs(os.environ["TMPDIR"])
 
+        # The mutants replace the one shared helper at each hook's call site with a reading of the project directory alone (box LT11 moved the helpers into commit_policy).
         def mutate_tree(text):
-            marker = "    if not cwd or os.path.realpath(cwd) == os.path.realpath(project_dir):\n        return project_dir\n"
-            assert marker in text
-            return text.replace(marker, "    return project_dir\n" + marker)
+            marker = "commit_policy.command_tree("
+            if marker not in text:
+                raise SystemExit("mutant marker %r missing" % marker)
+            return text.replace(marker, "(lambda project_dir, _cwd: project_dir)(")
 
         def mutate_bound(text):
-            marker = "    trees = [pathlib.Path(root)]\n"
-            assert marker in text
-            return text.replace(marker, marker + "    return trees\n")
+            marker = "commit_policy.bound_trees(str(root))"
+            if marker not in text:
+                raise SystemExit("mutant marker %r missing" % marker)
+            return text.replace(marker, "[str(root)]")
 
         # review_commit
-        expect("review_commit: commit in landing tree reviewed there", check_review(load("review_commit"), main, land))
-        expect("review_commit: surface reads both trees", check_surface(load("review_commit"), main, land))
-        expect_red("review_commit mutant (project dir only)", check_review(load("review_commit", patch=mutate_bound), main, land))
+        expect(
+            "review_commit: commit in landing tree reviewed there",
+            check_review(load("review_commit"), main, land),
+        )
+        expect(
+            "review_commit: surface reads both trees",
+            check_surface(load("review_commit"), main, land),
+        )
+        expect_red(
+            "review_commit mutant (project dir only)",
+            check_review(load("review_commit", patch=mutate_bound), main, land),
+        )
         # arm_ci_watch
-        expect("arm_ci_watch: push in landing tree reads landing", check_arm(load("arm_ci_watch"), main, land))
-        expect("arm_ci_watch: armed branch is the landing branch", check_arm_branch(load("arm_ci_watch"), main, land))
-        expect_red("arm_ci_watch mutant", check_arm(load("arm_ci_watch", patch=mutate_tree), main, land))
+        expect(
+            "arm_ci_watch: push in landing tree reads landing",
+            check_arm(load("arm_ci_watch"), main, land),
+        )
+        expect(
+            "arm_ci_watch: armed branch is the landing branch",
+            check_arm_branch(load("arm_ci_watch"), main, land),
+        )
+        expect_red(
+            "arm_ci_watch mutant", check_arm(load("arm_ci_watch", patch=mutate_tree), main, land)
+        )
         # refresh_pr_body and cancel_old_ci
-        expect("refresh_pr_body: bare push branch", check_gh_branch(load("refresh_pr_body"), main, land, "refresh_pr_body", "--head"))
-        expect_red("refresh_pr_body mutant", check_gh_branch(load("refresh_pr_body", patch=mutate_tree), main, land, "refresh_pr_body", "--head"))
-        expect("cancel_old_ci: bare push branch", check_gh_branch(load("cancel_old_ci"), main, land, "cancel_old_ci", "--branch"))
-        expect_red("cancel_old_ci mutant", check_gh_branch(load("cancel_old_ci", patch=mutate_tree), main, land, "cancel_old_ci", "--branch"))
+        expect(
+            "refresh_pr_body: bare push branch",
+            check_gh_branch(load("refresh_pr_body"), main, land, "refresh_pr_body", "--head"),
+        )
+        expect_red(
+            "refresh_pr_body mutant",
+            check_gh_branch(
+                load("refresh_pr_body", patch=mutate_tree), main, land, "refresh_pr_body", "--head"
+            ),
+        )
+        expect(
+            "cancel_old_ci: bare push branch",
+            check_gh_branch(load("cancel_old_ci"), main, land, "cancel_old_ci", "--branch"),
+        )
+        expect_red(
+            "cancel_old_ci mutant",
+            check_gh_branch(
+                load("cancel_old_ci", patch=mutate_tree), main, land, "cancel_old_ci", "--branch"
+            ),
+        )
 
         # controls: no record, behaviour as today
         record = pathlib.Path(commit_policy.landing_record_path(str(main)))
         record.unlink()
-        expect("review_commit control: no record", check_review(load("review_commit"), main, land, record=False))
+        expect(
+            "review_commit control: no record",
+            check_review(load("review_commit"), main, land, record=False),
+        )
         for name, flag in (("refresh_pr_body", "--head"), ("cancel_old_ci", "--branch")):
             mod = load(name)
-            seen = []
+            seen: list[str] = []
 
             def fake(*args, seen=seen, flag=flag):
                 if args[:2] == ("repo", "view"):
@@ -289,14 +348,20 @@ def main_():
 
             mod._gh_read = fake
             if hasattr(mod, "shutil"):
-                mod.shutil = type("S", (), {"which": staticmethod(lambda n: "/bin/gh")})
+                mod.shutil = type("S", (), {"which": staticmethod(lambda _n: "/bin/gh")})
             run_main(mod, main, land, "git push")
-            expect("%s control: no record reads the project dir" % name, [] if seen and set(seen) == {DEV} else ["read %s, expected only %s" % (seen, DEV)])
+            expect(
+                "%s control: no record reads the project dir" % name,
+                [] if seen and set(seen) == {DEV} else ["read %s, expected only %s" % (seen, DEV)],
+            )
         mod = load("arm_ci_watch")
-        roots = []
-        mod.arm = lambda root, sid, **kw: roots.append(real(root)) or ""
+        roots: list[str] = []
+        mod.arm = lambda root, _sid, **_kw: _record(roots, real(root), "")
         run_main(mod, main, land, "git push")
-        expect("arm_ci_watch control: no record reads the project dir", [] if roots == [real(main)] else ["read %s" % roots])
+        expect(
+            "arm_ci_watch control: no record reads the project dir",
+            [] if roots == [real(main)] else ["read %s" % roots],
+        )
     return 0
 
 
