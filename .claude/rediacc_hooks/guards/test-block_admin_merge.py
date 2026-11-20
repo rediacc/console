@@ -215,6 +215,8 @@ def run(command, body, root=CHECKOUT, head=BRANCH, oid="", argv=None):
         PATH="%s:%s" % (STUB_DIR, os.environ["PATH"]),
         CLAUDE_PROJECT_DIR=str(root),
         FX_HEAD_REF=head,
+        # The reviewer's sidecars (TMPDIR/claude-worklist) land in the suite's own run directory, which runtmp removes.
+        TMPDIR=tempfile.mkdtemp(prefix="tmp-", dir=RUN_TMP),
     )
     env.pop("FX_HEAD_OID", None)
     if oid:
