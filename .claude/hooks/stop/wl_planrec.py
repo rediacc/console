@@ -2862,7 +2862,7 @@ def plan_investigate(
         "box": body[:200],
         "verdict": v,
         "head": head[:40],
-        "br": C.git_branch(root) or "",
+        "br": C.git_branch(S.own_tree(root)) or "",
         "pointers": [[k, t] for k, t in pointers],
         "resolved": [[k, ok, d] for k, ok, d in resolved],
         "note": n[:600],

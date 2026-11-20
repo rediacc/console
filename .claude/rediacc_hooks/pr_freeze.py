@@ -169,7 +169,7 @@ def active_phase(root, branch: str) -> dict | None:
     if not branch:
         return None
     core, standdown, store = _stop_modules()
-    fold = store.phase_fold(_worklist(core, root), root)
+    fold = store.phase_fold(_worklist(core, root), core.project_root(root))
     best = None
     for ev in (fold.phase or {}).values():
         if not isinstance(ev, dict) or (ev.get("branch") or ev.get("br")) != branch:

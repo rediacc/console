@@ -19,6 +19,7 @@ import time
 import wl_ci
 import wl_core as C
 import wl_gh
+import wl_store as S
 
 CHECK_NAME = "CI Verdict"
 SCHEMA = "ci-verdict/v1"
@@ -176,7 +177,7 @@ def format_note(entry):
 def note(root, worklist, session_id, ref=None, branch=None, now=None):
     """The one-time note for this session, or "". Marks it seen. Never raises."""
     try:
-        branch = branch or ref or C.git_branch(root)
+        branch = branch or ref or C.git_branch(S.own_tree(root))
         if not branch:
             return ""
         entry = (

@@ -230,6 +230,41 @@ def plant_transcripts(tmp, main, landing):
     return base / munged(main), proj
 
 
+FOLLOWUPS = """
+import json, os, sys
+sys.path.insert(0, sys.argv[1])
+sys.path.insert(0, sys.argv[2])
+import wl_core as C
+import wl_store as S
+import wl_report as RPT
+import wl_roster as R
+import wl_claimcheck as CC
+from rediacc_ci.dev import worktree_lease as WL
+start = C.project_start()
+root = C.project_root(start)
+dirs = C.projects_dirs(root)
+CC.census(str(root), {"k": 1})
+rows = [json.loads(x) for x in open(CC.census_path(str(root)))]
+print(json.dumps({
+    "subagents": str(R.session_subagents_dir(str(root), sys.argv[3])),
+    "spawned_nothing": WL._spawned_nothing(root, "beef0000"),
+    "age_list": S.owner_age_hours("beef0000", dirs) is not None,
+    "age_str_main": S.owner_age_hours("beef0000", dirs[0]),
+    "own_tree": str(S.own_tree(root)),
+    "store_branch": S._branch_of(root),
+    "report_branch": RPT._branch_of(start),
+    "census_br": rows[-1].get("br"),
+}))
+"""
+
+
+def followups(tmp, stop, project_dir):
+    rc, out, err = pyrun(
+        tmp, FOLLOWUPS, stop, project_dir / ".ci", SID, CLAUDE_PROJECT_DIR=project_dir
+    )
+    return json.loads(out) if rc == 0 else {"error": err[-600:]}
+
+
 def mutant(tmp, main, name, old, new):
     """A copy of the fixture's stop directory with one file planted."""
     dest = tmp / ("mutant-" + name.replace(".", "-"))
@@ -422,6 +457,45 @@ def run():
         True,
     )
     worklist(tmp, main, main, "--phase", ME, "build", CLAUDE_PROJECT_DIR=main)
+
+    # ---- follow-ups: each store-root read of a landing session
+    beef = land_proj / "beef0000-0000-4000-8000-000000000000.jsonl"
+    beef.write_text("{}\n", encoding="utf-8")
+    f0 = followups(tmp, stop, landing)
+    check(
+        "record: the subagents directory is the sibling's",
+        f0.get("subagents"),
+        str(land_proj / SID / "subagents"),
+    )
+    check("record: a transcript under the sibling with no agents spawned nothing", f0.get("spawned_nothing"), True)
+    check("record: owner_age_hours reads the sibling's directory from a list", f0.get("age_list"), True)
+    check("record: owner_age_hours on the main directory alone finds nothing", f0.get("age_str_main"), None)
+    check("record: own_tree of the store root is the sibling", f0.get("own_tree"), str(landing))
+    check("record: appended events carry the sibling's branch", f0.get("store_branch"), LANDING_BRANCH)
+    check("record: the report branch is the sibling's", f0.get("report_branch"), LANDING_BRANCH)
+    check("record: a census row carries the sibling's branch", f0.get("census_br"), LANDING_BRANCH)
+    f1 = followups(tmp, stop, main)
+    check("record: main reads its own branch", f1.get("store_branch"), DEV_BRANCH)
+    check("record: main's own_tree is main", f1.get("own_tree"), str(main))
+    worklist(
+        tmp, landing, landing, "--phase", ME, "babysit", "--pr", "7", CLAUDE_PROJECT_DIR=landing
+    )
+    check(
+        "record: pr_freeze judged from the sibling sees the phase",
+        freeze_phase(tmp, main, landing, LANDING_BRANCH),
+        {"mode": "babysit", "branch": LANDING_BRANCH},
+    )
+    worklist(tmp, landing, landing, "--phase", ME, "build", CLAUDE_PROJECT_DIR=landing)
+    unbind(main)
+    f2 = followups(tmp, stop, landing)
+    check("no record: the sibling's own_tree is its root", f2.get("own_tree"), str(landing))
+    check("no record: the sibling reads its own branch", f2.get("store_branch"), LANDING_BRANCH)
+    check(
+        "no record: the sibling's subagents directory is its own",
+        f2.get("subagents"),
+        str(land_proj / SID / "subagents"),
+    )
+    bind(main, landing)
 
     # A defective record binds nothing.
     record_path(main).write_text('{"path": "%s"}\n' % os.path.realpath(landing), encoding="utf-8")

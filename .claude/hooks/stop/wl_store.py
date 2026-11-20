@@ -902,11 +902,25 @@ def _writer_for(payloads, explicit=None):
     return agent_session_slug(me[:8]) if me else "_shared"
 
 
+def own_tree(root):
+    """The checkout this session runs in, when `root` is the store root it maps to; else `root`.
+
+    The landing tree answers C.project_root with the main checkout (shared store, STATE.md, sidecars), whose HEAD is the development branch. A read of "the branch this session is on" starts here instead, so a landing session reads its own tree's branch. With no landing record the two roots agree and the answer is `root`.
+    """
+    try:
+        own = C.checkout_root(C.project_start())
+        same = os.path.realpath(str(C.project_root(own))) == os.path.realpath(str(root))
+    except (OSError, ValueError, RuntimeError):
+        return root
+    return own if same else root
+
+
 _BRANCH_CACHE = {}
 
 
 def _branch_of(root):
     """Cached: git_branch shells out, and this runs on every append."""
+    root = own_tree(root)
     key = str(root)
     if key not in _BRANCH_CACHE:
         try:
@@ -1657,10 +1671,11 @@ def classify_items(
 
 
 def owner_age_hours(owner, projects_dir):
-    """Hours since the owner's newest transcript write, or None if no transcript matches (unknown owner: word label, foreign machine). The newest match wins so a short prefix matching several sessions reads as the LIVELIEST of them -- the conservative direction."""
+    """`projects_dir` is one directory or a list of them (C.projects_dirs). Hours since the owner's newest transcript write, or None if no transcript matches (unknown owner: word label, foreign machine). The newest match wins so a short prefix matching several sessions reads as the LIVELIEST of them -- the conservative direction."""
     if not owner or not projects_dir:
         return None
-    matches = _glob.glob(os.path.join(projects_dir, owner + "*.jsonl"))
+    dirs = [projects_dir] if isinstance(projects_dir, (str, os.PathLike)) else list(projects_dir)
+    matches = [m for d in dirs for m in _glob.glob(os.path.join(str(d), owner + "*.jsonl"))]
     if not matches:
         return None
     newest = max(os.path.getmtime(m) for m in matches)

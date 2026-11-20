@@ -1361,10 +1361,11 @@ def _place_problem(world, lease_id, path, record):
 def _spawned_nothing(root, owner):
     """Whether `owner` is a session with a transcript and no agent directory: an honest zero, which an unknown or ambiguous prefix is not."""
     report = _hook_module("wl_report")
-    project = report._projects_dir() / report._munged(root)
-    if any(p.is_dir() for p in project.glob(owner + "*")):
+    core = _hook_module("wl_core")
+    projects = [pathlib.Path(d) for d in core.projects_dirs(root, base=report._projects_dir())]
+    if any(p.is_dir() for project in projects for p in project.glob(owner + "*")):
         return False
-    return any(project.glob(owner + "*.jsonl"))
+    return any(next(project.glob(owner + "*.jsonl"), None) for project in projects)
 
 
 def _roster_of(root, owner):

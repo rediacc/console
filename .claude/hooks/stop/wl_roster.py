@@ -214,15 +214,21 @@ def session_subagents_dir(cwd, session_id):
     if not session_id:
         return None
     try:
-        proj = RPT._projects_dir() / RPT._munged(C.project_root(C.project_start({"cwd": cwd})))
+        projs = [
+            p
+            for p in C.projects_dirs(C.project_root(C.project_start({"cwd": cwd})), base=RPT._projects_dir())
+            if p.is_dir()
+        ]
     except (OSError, ValueError, TypeError, RuntimeError):
         return None
-    if not proj.is_dir():
+    if not projs:
         return None
-    direct = proj / session_id
-    if direct.is_dir() or len(session_id) >= 36:
-        return direct / "subagents"
-    hits = [p for p in proj.glob(session_id + "*") if p.is_dir()]
+    for proj in projs:
+        if (proj / session_id).is_dir():
+            return proj / session_id / "subagents"
+    if len(session_id) >= 36:
+        return projs[0] / session_id / "subagents"
+    hits = [p for proj in projs for p in proj.glob(session_id + "*") if p.is_dir()]
     if len(hits) != 1:
         return None
     return hits[0] / "subagents"

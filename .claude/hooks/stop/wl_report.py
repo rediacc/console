@@ -1025,7 +1025,7 @@ def _stdin_event():
 
 
 def _branch_of(start):
-    return C.git_branch(C.project_root(start)) or NO_BRANCH
+    return C.git_branch(C.checkout_root(start)) or NO_BRANCH
 
 
 def handle_subagent_stop(event):

@@ -482,6 +482,6 @@ def census(root, row):
     # STAMPED HERE, not at the call site. The graduation criterion is a question about a WINDOW of verdicts, so a row whose author forgot the time is a row that cannot be counted; the same argument `wl_reggate.append_ledger` makes by defaulting its own.
     rec = dict(row)
     rec.setdefault("at", C.stamp_now())
-    rec.setdefault("br", C.git_branch(root) or "")
+    rec.setdefault("br", C.git_branch(S.own_tree(root)) or "")
     S._append_lines(path, _census_lock(path), [rec])
     return rec
