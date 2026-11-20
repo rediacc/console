@@ -15,16 +15,16 @@ import subprocess
 import sys
 
 from rediacc_ci import log, paths
+from rediacc_ci.dev import landing_promote
 from rediacc_ci.dev import worktree_lease as lease
 from rediacc_ci.dev import worktree_spike as spike
 
-RECORD_NAME = "rediacc-landing.json"
 SUFFIX = "-landing"
 REASON = "landing"
 GH_TIMEOUT = 60
 
 LANDING_HELP = """\
-Usage: ./run.sh worktree landing
+Usage: ./run.sh worktree landing [--promote]
 
 Make, or reuse, the landing tree: a sibling of the main checkout named
 <checkout>-landing, on the open PR's MMDD-N branch, with each submodule tree on
@@ -62,47 +62,35 @@ def landing_path(root):
     return root.parent / (root.name + SUFFIX)
 
 
-def record_file(root):
-    return pathlib.Path(root) / ".git" / RECORD_NAME
+def _policy():
+    return spike.load_commit_policy()
 
 
 def write_record(root, path, branch):
-    """The binding record, schema `{"path": <realpath>, "branch": <MMDD-N>}`. `commit_policy.write_landing_record` supersedes this helper once it lands, and the call switches to it then."""
-    target = record_file(root)
-    partial = target.with_name("." + target.name + ".partial")
-    body = {"path": os.path.realpath(path), "branch": branch}
-    partial.write_text(json.dumps(body, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    partial.replace(target)
-
-
-def read_record(root):
-    try:
-        data = json.loads(record_file(root).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    if (
-        isinstance(data, dict)
-        and isinstance(data.get("path"), str)
-        and isinstance(data.get("branch"), str)
-    ):
-        return data
-    return None
+    """Bind `path` to `branch` through `commit_policy.write_landing_record`, the one writer of the record (`rediacc-landing.json` in the common git dir)."""
+    return _policy().write_landing_record(str(root), str(path), branch)
 
 
 def _shape():
-    return spike.load_commit_policy().BRANCH_SHAPE
+    return _policy().BRANCH_SHAPE
 
 
 def _open_pr_branches(root, gh):
     rc, text = gh(
         ["pr", "list", "--state", "open", "--author", "@me", "--json", "headRefName"], root
     )
+    # A gh that cannot answer is named as such, never read as "no open PR" (review finding 2623001e.3): the refusal that followed blamed the checkout.
     if rc != 0:
-        return []
+        message = "gh pr list failed (rc %d), so the open PR's branch is unknown" % rc
+        raise LandingRefusedError(message)
     try:
         rows = json.loads(text or "[]")
-    except ValueError:
-        return []
+    except ValueError as exc:
+        message = "gh pr list printed no JSON (%s), so the open PR's branch is unknown" % exc
+        raise LandingRefusedError(message) from exc
+    if not isinstance(rows, list):
+        message = "gh pr list printed %s, not a list" % type(rows).__name__
+        raise LandingRefusedError(message)
     shape = _shape()
     return sorted(
         {
@@ -132,6 +120,14 @@ def choose_branch(root, gh):
         message = (
             "the main checkout is on the development branch %s while the open PR is on %s: "
             "switch the main checkout to %s, or land %s first" % (current, branch, branch, branch)
+        )
+        raise LandingRefusedError(message)
+    if current == branch and not prs:
+        # No open PR, so the landing branch is the main checkout's own (review finding 2623001e.4): the advice names what to cut, not the branch already held.
+        message = (
+            "no open PR, so the landing branch is the main checkout's own %s, and git keeps one "
+            "branch in one tree: cut or switch to another MMDD-N branch (the development "
+            "branch) in the main checkout first" % branch
         )
         raise LandingRefusedError(message)
     if current == branch:
@@ -177,7 +173,10 @@ def _fast_forward(tree, branch, label):
 
 def _guard_path(root, path):
     """Refuse a second path and a foreign directory; True when the tree already exists and is this repository's."""
-    record = read_record(root)
+    record, problem = _policy().read_landing_record(str(root))
+    if problem:
+        message = "the landing record binds nothing (%s): remove it to bind %s" % (problem, path)
+        raise LandingRefusedError(message)
     if record and os.path.realpath(record["path"]) != os.path.realpath(path):
         message = "the landing tree is bound to %s, so no second path %s" % (record["path"], path)
         raise LandingRefusedError(message)
@@ -205,7 +204,14 @@ def _reuse(path, branch):
     _fast_forward(path, branch, str(path))
     for sub, sha in lease.gitlinks_at(path, "HEAD"):
         tree = path / sub
-        if not tree.is_dir() or spike.out(tree, "rev-parse", "HEAD") == sha:
+        # A missing submodule tree refuses (review finding 2623001e.2): a reuse that skipped it reported success with the dependency absent.
+        if not tree.is_dir() or not (tree / ".git").exists():
+            message = "the landing tree %s lacks its submodule tree %s, so it is incomplete" % (
+                path,
+                sub,
+            )
+            raise LandingRefusedError(message)
+        if spike.out(tree, "rev-parse", "HEAD") == sha:
             continue
         if _dirty(tree):
             message = "the submodule tree %s is dirty" % tree
@@ -224,7 +230,11 @@ def _reuse(path, branch):
 def _tip_of(root, branch):
     if _has_ref(root, "refs/heads/%s" % branch):
         return spike.must(root, "rev-parse", "refs/heads/%s" % branch), True
-    spike.git(root, "fetch", "origin", branch)
+    # A failed fetch refuses, as `_fast_forward` does: a stale `refs/remotes/origin/<branch>` is no tip to build on (review finding 2623001e.1).
+    fetched = spike.git(root, "fetch", "origin", branch)
+    if fetched.returncode != 0:
+        message = "git fetch origin %s failed: %s" % (branch, fetched.stderr.strip())
+        raise LandingRefusedError(message)
     return spike.out(root, "rev-parse", "refs/remotes/origin/%s" % branch), False
 
 
@@ -276,7 +286,13 @@ def _create(root, path, branch, seed):
             _add_sub(repo.store(sub), path / sub, branch, sha)
         seed(path, root, tip)
         write_record(root, path, branch)
-    except (OSError, RuntimeError, subprocess.SubprocessError, spike.InterruptedRunError) as exc:
+    except (
+        OSError,
+        RuntimeError,
+        ValueError,
+        subprocess.SubprocessError,
+        spike.InterruptedRunError,
+    ) as exc:
         _rollback(root, repo, path)
         message = "landing tree not made: %s" % exc
         raise LandingRefusedError(message) from exc
@@ -299,6 +315,8 @@ def make_landing(root, *, gh=run_gh, seed=None):
 
 
 def cmd_landing(args):
+    if args[:1] == ["--promote"]:
+        return landing_promote.cmd_promote(args[1:])
     if args:
         log.error("Unknown option: %s" % args[0])
         return 1

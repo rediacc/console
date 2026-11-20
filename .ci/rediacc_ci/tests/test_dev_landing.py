@@ -8,8 +8,8 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import shutil
 import subprocess
-import sys
 
 import pytest
 
@@ -130,6 +130,7 @@ def test_refuses_the_branch_the_main_checkout_holds(repo):
 
 def test_refuses_a_second_path(repo):
     other = repo.parent / "elsewhere"
+    git(repo, "worktree", "add", "-q", "--detach", str(other))
     landing.write_record(repo, other, PR)
     with pytest.raises(landing.LandingRefusedError, match="second path"):
         landing.make_landing(repo, gh=gh_for(PR), seed=Seeded())
@@ -163,4 +164,111 @@ def test_help_lists_the_verb(capsys):
     assert worktree.main(["--help"]) == 0
     assert "landing" in capsys.readouterr().out
     assert worktree.main(["landing", "--help"]) == 0
-    assert sys.stdout is not None
+    assert capsys.readouterr().out.startswith("Usage: ./run.sh worktree landing")
+
+
+def test_a_failing_gh_is_named(repo):
+    with pytest.raises(landing.LandingRefusedError, match="gh pr list failed"):
+        landing.make_landing(repo, gh=lambda _a, _c: (1, ""), seed=Seeded())
+    with pytest.raises(landing.LandingRefusedError, match="no JSON"):
+        landing.make_landing(repo, gh=lambda _a, _c: (0, "not json"), seed=Seeded())
+    assert not (repo.parent / "console-landing").exists()
+
+
+def test_no_pr_and_the_main_checkout_on_its_branch_names_the_cut(repo):
+    git(repo, "switch", "-q", PR)
+    with pytest.raises(landing.LandingRefusedError, match="cut or switch to another MMDD-N"):
+        landing.make_landing(repo, gh=gh_for(), seed=Seeded())
+
+
+def test_a_failed_fetch_refuses_a_stale_remote_ref(repo):
+    git(repo, "branch", "-D", PR)
+    assert spike.out(repo, "rev-parse", "--verify", "-q", "refs/remotes/origin/" + PR)
+    git(repo, "remote", "set-url", "origin", str(repo.parent / "no-such-origin.git"))
+    with pytest.raises(landing.LandingRefusedError, match="git fetch origin %s failed" % PR):
+        landing.make_landing(repo, gh=gh_for(PR), seed=Seeded())
+    assert not (repo.parent / "console-landing").exists()
+
+
+def test_reuse_refuses_a_missing_submodule_tree(repo):
+    path = pathlib.Path(landing.make_landing(repo, gh=gh_for(PR), seed=Seeded()))
+    shutil.rmtree(path / SUB)
+    # A removed directory reads dirty; an emptied one does not, and the old skip then ran rev-parse and a merge in the superproject's tree.
+    (path / SUB).mkdir()
+    assert not spike.out(path, "status", "--porcelain", "--ignore-submodules=none")
+    with pytest.raises(landing.LandingRefusedError, match="lacks its submodule tree"):
+        landing.make_landing(repo, gh=gh_for(PR), seed=Seeded())
+
+
+def test_refuses_a_defective_record(repo):
+    (repo / ".git" / "rediacc-landing.json").write_text('{"path": "relative"}\n', encoding="utf-8")
+    with pytest.raises(landing.LandingRefusedError, match="binds nothing"):
+        landing.make_landing(repo, gh=gh_for(PR), seed=Seeded())
+    assert not (repo.parent / "console-landing").exists()
+
+
+def test_record_is_the_commit_policy_record(repo):
+    path = landing.make_landing(repo, gh=gh_for(PR), seed=Seeded())
+    policy = spike.load_commit_policy()
+    assert policy.landing_record(str(repo)) == {"path": os.path.realpath(path), "branch": PR}
+    assert policy.tree_role(path) == policy.ROLE_LANDING
+    assert policy.tree_role(str(repo)) == policy.ROLE_DEVELOPMENT
+
+
+DEV = "0101-2"
+
+
+def _two_tree_submodules(repo):
+    """The landing tree made, then the development branch cut in the main checkout and its submodule: one module store holding both names."""
+    path = pathlib.Path(landing.make_landing(repo, gh=gh_for(PR), seed=Seeded()))
+    git(repo, "switch", "-q", "-c", DEV)
+    git(repo / SUB, "switch", "-q", "-c", DEV)
+    heads = spike.out(repo / SUB, "for-each-ref", "--format=%(refname:short)", "refs/heads/")
+    assert sorted(heads.split()) == sorted(["main", PR, DEV])
+    return path
+
+
+def test_each_submodule_tree_reads_one_live_branch(repo):
+    path = _two_tree_submodules(repo)
+    policy = spike.load_commit_policy()
+    assert policy.live_branches(str(path / SUB), gh=False) == [PR]
+    assert policy.live_branches(str(repo / SUB), gh=False) == [DEV]
+    assert policy.tree_role(str(path / SUB)) == policy.ROLE_LANDING
+    assert policy.misplaced_branch(str(path / SUB)) == ""
+
+
+def test_submodule_split_mutant_without_the_superproject_turns_red(repo, monkeypatch):
+    path = _two_tree_submodules(repo)
+    policy = spike.load_commit_policy()
+
+    def own_only(repo_root):
+        record = policy.landing_record(repo_root)
+        return record, policy._role(repo_root, record)
+
+    monkeypatch.setattr(policy, "tree_binding", own_only)
+    assert policy.live_branches(str(path / SUB), gh=False) != [PR]
+    assert policy.live_branches(str(repo / SUB), gh=False) != [DEV]
+
+
+def test_submodule_with_no_record_reads_every_branch(repo):
+    path = _two_tree_submodules(repo)
+    (repo / ".git" / "rediacc-landing.json").unlink()
+    policy = spike.load_commit_policy()
+    assert sorted(policy.live_branches(str(path / SUB), gh=False)) == sorted([PR, DEV])
+    assert sorted(policy.live_branches(str(repo / SUB), gh=False)) == sorted([PR, DEV])
+
+
+def test_promote_is_dispatched_and_listed(monkeypatch, capsys):
+    seen: list[list[str]] = []
+
+    def promote(args):
+        seen.append(args)
+        return 7
+
+    monkeypatch.setattr(landing.landing_promote, "cmd_promote", promote)
+    assert landing.cmd_landing(["--promote", "x"]) == 7
+    assert seen == [["x"]]
+    assert worktree.main(["landing", "--help"]) == 0
+    out = capsys.readouterr().out
+    assert "[--promote]" in out
+    assert "worktree landing --promote" in out
