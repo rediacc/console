@@ -1,18 +1,24 @@
-## SESSION d778be9d 2026-11-20T10:49:36Z
+## SESSION d778be9d 2026-11-20T12:05:13Z
 
-# STATE d778be9d (2026-11-20 ~11:15Z)
+# STATE d778be9d (2026-11-20 ~12:00Z, operator away since 10:51Z)
 
 ## Next action
-1. Fix review findings 77300bd7.1 (wl_planrec _done_index memo keys on id() of entries without keeping them alive: store the entries tuple itself, compare with `is`) and 77300bd7.2 (resource_lock.held_by_ancestor without O_NOFOLLOW: lstat-check for a symlink and raise), each with a test; mark them; read the 4525b520 review.
-2. Continue PLAN-two-track-merge-dev inline (operator: start now, in the babysit phase): done P0 (profile: done_commit 409 s of 511), P1 re-scoped (e72055c33, 77300bd74: plan-implementation 8m33s -> 1m24s), S1 (4525b5203: prose 40.6 s cold -> 0.56 s warm). Next in order: A1 (path-trace loopback DNS port 53 = network), C1 (nice -n 10 for non-critical gates; C0 cheapPrereqFirst already landed 62c5e6733), RB1-RB5 (rebase consistency, operator "Add and build now"), F1/F2 (freeze guard, LAST: it will freeze later non-fix commits), A0/A2/A3, R0-R4, M1. Tick boxes P0/P1/S1/C0 with --plan-investigate then --plan-tick.
-3. Then vm:check at HEAD (`npm run vm:check -- --changed --base v3.0.1`; rdc.sh fleet-lock re-wrap loop fixed 978940c41..d62569578, second-group fleet comes up now), release us/asia (RELEASE_ASKED=ASKED:2026-11-20T07:05Z, dry run first), `root_grants --apply`, l1vm host key (#3fb4edcc), ci:quick, push, watch PR #605 CI, /pr-merge.
+1. #527aa5b2 PLAN-two-track-merge-dev inline, next boxes: RB1-RB5 (rebase consistency), A0/A2/A3 (account-server trace), R0-R4, F1/F2 LAST, M1. P1 stays open: its written shape (plan_impl_facts.py + fact cache) was superseded by measured fixes; settle at the end whether it needs a recorded correction.
+2. #02389657 #4889018a when vm:check (bg bom1jxelp, log /tmp/m/vmcheck-0fdb501a2.log) reports: rerun the backup-large-2g leg (store-space preflight only: account-config-rustfs /data had 6.44 GiB of the 7.00 needed; docker builder prune freed it to 10 GiB), recheck k8s-ceph-16; then ci:quick, push (TURBO_PUSH_REASON red-fix), release us/asia (RELEASE_ASKED=ASKED:2026-11-20T07:05Z, dry run first), root_grants --apply, l1vm host key #3fb4edcc, watch PR #605 CI, /pr-merge.
 
 ## Big pieces
-- PR #605 (1104-1): CI red on ops-health (needs release + root grants) and oracle-10 6/11 (fixed 5ad916229 + 944fb0428, needs push).
-- Committed tonight: speed-ups 6f1b427ec e652db911 b8518fdd5 62c5e6733; report scoping 1349d0875; Landlock 5ad916229; plans cd7667010 (two-track + ten rmcp, not promoted per D51); rdc.sh lock fix 978940c41 33af01173 ec0e9222b d62569578; done_commit index e72055c33 77300bd74; prose cache 4525b5203.
+- PR #605 (1104-1): CI red on ops-health (release + root grants) and oracle-10 (fixed 5ad916229 + 944fb0428, needs the push).
+- PLAN-two-track-merge-dev #527aa5b2: 5 of 24 boxes done.
 
 ## Owed ticks
-- PLAN-two-track-merge-dev P0, P1, S1, C0; #116b1a79 #68452957 (commits above); #28b00eb3 after a green oracle-10 leg.
+- Live-owed boxes (code landed, live run owed; worklist.py --box-audit d778be9d --live-owed): PLAN-ciquick-cpu.md#51ceeb4f (M2), PLAN-enterprise-isolation.md#a8892e0c #0a6e5712 #f4b49503 #0fbd62dc #cc583290, PLAN-proxy-cd-six-targets.md#abe9b4eb (C7), PLAN-health-checks-local.md#85f55665 (C2), PLAN-production-key-only.md#6a1ca4a4, PLAN-backup-program.md#0a237b2e. They run after the push and release, as the live runs of their plans.
+
+## Overnight
+- Landed: done_commit index e72055c33 77300bd74 67bf7d410; prose cache 4525b5203 9cb0191b6 e648197c3 0fdb501a2 79a4446e6; plan-implementation memo and parallel follow walks c2f32c02e 98a058e02 36423f932 (8m33s -> 49 s); fleet-lock review fixes acdfc7c02 6420e667d b91dd1666 4c7de1b08; A1 5b4d28538 25d0277db; C1 7faaba292 0333803d4.
+- Ticked P0, S1, C0 (775f8a0eb), A1, C1 (257de5626).
+- Decided (rule 2): a lock path removed after the open refuses (exit 2), since the fd's inode may still be flock-held (b91dd1666); C1's simulator case lives in sim.ts because simulate() is module-private, recorded in the tick.
+- Found: strace execve counts include failed PATH lookups; the real git count was 7,514, not 45,075.
+- Parked [?]: none new.
 
 ## Delegated
-- none running; wake timer to arm.
+- none; vm:check bg bom1jxelp.
