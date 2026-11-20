@@ -1,0 +1,48 @@
+<svg width="800" height="380" viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="t d">
+  <title id="t">What the mitigation flag changes</title>
+  <desc id="d">A call to Base64 decode in Java can run two ways. By default, once the code is hot, the JIT compiler swaps in an intrinsic: a hand-written AVX-512 routine. On CPUs with AVX-512 VBMI that routine has the bug, a heap out-of-bounds write in its handling of the final characters. With the flag -XX:-UseBASE64Intrinsics the JIT keeps the plain Java decoder, which is slower but has no such bug. We confirmed on the Elasticsearch 8.11.0 image that the flag changes UseBASE64Intrinsics from true to false, and that a node started with the flag reports it in its JVM arguments.</desc>
+  <defs>
+    <marker id="arrowGray" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#3d3d3d"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#556b2f"/>
+    </marker>
+    <marker id="arrowRed" markerWidth="9" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="#a02828"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <rect width="800" height="380" fill="#f5f5f5"/>
+  <text x="400" y="36" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="#1a1a1a">One JVM flag, two code paths</text>
+
+  <rect x="30" y="150" width="180" height="70" rx="10" fill="#3d3d3d" filter="url(#shadow)"/>
+  <text x="120" y="181" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#fff">Base64 decode</text>
+  <text x="120" y="201" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#ddd">hot code, JIT compiles it</text>
+
+  <!-- default path -->
+  <line x1="212" y1="170" x2="300" y2="110" stroke="#a02828" stroke-width="2.5" marker-end="url(#arrowRed)"/>
+  <text x="236" y="122" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#a02828">default</text>
+  <rect x="304" y="70" width="300" height="80" rx="10" fill="rgba(160,40,40,0.08)" stroke="#a02828" stroke-width="2" filter="url(#shadow)"/>
+  <text x="454" y="98" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#a02828">AVX-512 intrinsic</text>
+  <text x="454" y="118" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#a02828">fast, hand-written routine</text>
+  <text x="454" y="134" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#a02828">heap write past the buffer on bad input</text>
+  <rect x="624" y="88" width="146" height="44" rx="8" fill="#fff" stroke="#a02828" stroke-width="1"/>
+  <text x="697" y="106" font-family="Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#a02828">UseBASE64Intrinsics</text>
+  <text x="697" y="122" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#a02828">= true</text>
+
+  <!-- flagged path -->
+  <line x1="212" y1="200" x2="300" y2="260" stroke="#556b2f" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
+  <text x="150" y="250" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#556b2f">with the flag</text>
+  <rect x="304" y="220" width="300" height="80" rx="10" fill="rgba(85,107,47,0.12)" stroke="#556b2f" stroke-width="2" filter="url(#shadow)"/>
+  <text x="454" y="248" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#556b2f">Plain Java decoder</text>
+  <text x="454" y="268" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#556b2f">a bit slower, bounds-checked</text>
+  <text x="454" y="284" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#556b2f">the buggy routine never runs</text>
+  <rect x="624" y="238" width="146" height="44" rx="8" fill="#fff" stroke="#556b2f" stroke-width="1"/>
+  <text x="697" y="256" font-family="Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle" fill="#556b2f">UseBASE64Intrinsics</text>
+  <text x="697" y="272" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#556b2f">= false</text>
+
+  <text x="400" y="344" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#3d3d3d">ES_JAVA_OPTS="... -XX:-UseBASE64Intrinsics"  (verified with -XX:+PrintFlagsFinal and /_nodes/jvm)</text>
+</svg>
