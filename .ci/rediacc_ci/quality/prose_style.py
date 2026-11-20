@@ -1451,7 +1451,9 @@ def save_cache(root, context, files):
 
 def _cache_entry_ok(entry):
     """A stored entry is reused only when every field has the shape run_check wrote; anything else is a miss and the file is linted again."""
-    lines, note, found = entry.get("lines"), entry.get("note", None), entry.get("findings")
+    if not {"lines", "note", "findings"} <= entry.keys():
+        return False
+    lines, note, found = entry["lines"], entry["note"], entry["findings"]
     if type(lines) is not int or lines < 0 or not (note is None or isinstance(note, str)):
         return False
     if not isinstance(found, list):

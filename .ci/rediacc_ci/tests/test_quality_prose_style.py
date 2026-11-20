@@ -1688,6 +1688,18 @@ def test_a_damaged_cache_entry_is_a_miss(tmp_path, field, damage):
     )
 
 
+@pytest.mark.parametrize("field", ["lines", "note", "findings"])
+def test_a_cache_entry_missing_a_field_is_a_miss(tmp_path, field):
+    g, r = _cache_rules("\\bI\\b")
+    (tmp_path / "a.md").write_text("I think so.\n")
+    assert _cache_run(tmp_path, g, r) == 1
+    path = tmp_path / str(ps.CACHE_RELPATH)
+    doc = json.loads(path.read_text())
+    del doc["files"]["a.md"][field]
+    path.write_text(json.dumps(doc))
+    assert _cache_run(tmp_path, g, r) == 1
+
+
 def test_a_non_dict_cache_entry_is_a_miss(tmp_path):
     g, r = _cache_rules("\\bI\\b")
     (tmp_path / "a.md").write_text("I think so.\n")
