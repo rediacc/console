@@ -1,10 +1,11 @@
 import { t } from '../i18n/index.js';
-import { writeStderr } from '../services/core/request-context.js';
 import {
   isRenetFlagUnsupported,
   renetOlderThanCliMessage,
 } from '../services/executor/job-client.js';
 import { renetFailureReason } from '../services/executor/renet-output.js';
+import { ERROR_CODES } from '../types/errors.js';
+import { CliExitError } from '../utils/cli-exit-error.js';
 
 const sshExitCodeMessages: Record<number, string> = {
   1: 'sshCode1',
@@ -51,13 +52,28 @@ export function buildSSHExitErrorMessage(
   return message;
 }
 
-/** Tee a child's stderr to the terminal as it arrives and keep its tail; the returned getter reads the tail. */
-export function teeStderrTail(stream: NodeJS.ReadableStream | null): () => string {
+/** The last STDERR_TAIL_CHARS of the stderr text added to it. */
+export function createStderrTail(): { add(text: string): void; read(): string } {
   let tail = '';
-  stream?.setEncoding('utf8');
-  stream?.on('data', (chunk: string) => {
-    writeStderr(chunk);
-    tail = (tail + chunk).slice(-STDERR_TAIL_CHARS);
-  });
-  return () => tail;
+  return {
+    add(text) {
+      tail = (tail + text).slice(-STDERR_TAIL_CHARS);
+    },
+    read: () => tail,
+  };
+}
+
+/**
+ * The error for a non-zero ssh exit. A `-c` command's own exit code becomes the CLI's exit code (255 stays
+ * ssh's connection failure); an interactive shell keeps the generic failure code.
+ */
+export function sshExitError(
+  code: number,
+  stderrTail: string,
+  machineName: string,
+  oneShot: boolean
+): Error {
+  const message = buildSSHExitErrorMessage(code, stderrTail, machineName);
+  if (!oneShot || code === 255) return new Error(message);
+  return new CliExitError(ERROR_CODES.GENERAL_ERROR, message, { exitCode: code });
 }

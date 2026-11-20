@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { generateSetupCommand, generateSourceCommand } from '../remote/repository/index.js';
 import { SSHConnection, spawnSSH, testSSHConnectivity } from '../remote/ssh/index.js';
+import { exitTrapShell, newExitMarker, waitForSessionEnd } from '../remote/ssh/session-exit.js';
 import { getDefaultTerminalType, launchTerminal } from '../remote/terminal/index.js';
 import { getPlatform } from '../remote/utils/platform.js';
 import { applyClusterConnectionContext } from '../services/cluster/cluster-target.js';
@@ -42,7 +43,7 @@ import {
 } from '../utils/secret-env.js';
 import { shellQuote } from '../utils/shell-quote.js';
 import { withSpinner } from '../utils/spinner.js';
-import { buildSSHExitErrorMessage, teeStderrTail } from './term-ssh-exit.js';
+import { createStderrTail, sshExitError } from './term-ssh-exit.js';
 
 /**
  * `term connect <target>` (spec/03 §5.8). The target is a place (machine shell)
@@ -170,7 +171,8 @@ function sshStagingRunner(sshConnection: SSHConnection, destination: string): St
 export function buildRemoteCommand(
   options: TermConnectOptions,
   connectionDetails: ConnectionDetails,
-  secretsPrefix = ''
+  secretsPrefix = '',
+  exitMarker?: string
 ): string {
   const envPrefix = `${secretsPrefix}${buildEnvPrefix(connectionDetails)}`;
   const ensureBashSetup = generateSetupCommand();
@@ -182,7 +184,9 @@ export function buildRemoteCommand(
 
   if (userCmd) {
     // `;`, not `&&`: sourceCmd already ends in `|| true`, and `&&` made the user's first command part of one AND-list with it, so `X & Y` backgrounded `source … || true && X` as a SUBSHELL that kept the channel's stdout and stderr and waited on X, and the ssh channel never closed (vm:check I1.8, 2026-10-24).
-    return `${envPrefix}${ensureBashSetup}; ${sourceCmd}; ${userCmd}`;
+    // The EXIT trap reports the command's own exit on stderr, so the session ends with it even while a child it started still holds the channel (remote/ssh/session-exit.ts).
+    const exitTrap = exitMarker ? `${exitTrapShell(exitMarker)}; ` : '';
+    return `${envPrefix}${ensureBashSetup}; ${sourceCmd}; ${exitTrap}${userCmd}`;
   }
   return `${envPrefix}${ensureBashSetup}; exec bash ${rcfile}`;
 }
@@ -300,17 +304,20 @@ async function executeSSH(
   connectionDetails: ConnectionDetails,
   useExternal: boolean,
   quiet: boolean,
-  machineName: string
+  machineName: string,
+  /** The inline form of a `-c` command: the same command carrying the exit trap, and its marker. */
+  inline?: { remoteCommand: string; exitMarker: string }
 ): Promise<void> {
   if (!useExternal) {
     await runInlineSSH(
       sshConnection,
       destination,
-      remoteCommand,
+      inline?.remoteCommand ?? remoteCommand,
       title,
       connectionDetails,
       quiet,
-      machineName
+      machineName,
+      inline?.exitMarker
     );
     return;
   }
@@ -330,11 +337,12 @@ async function executeSSH(
     await runInlineSSH(
       sshConnection,
       destination,
-      remoteCommand,
+      inline?.remoteCommand ?? remoteCommand,
       title,
       connectionDetails,
       quiet,
-      machineName
+      machineName,
+      inline?.exitMarker
     );
   }
 }
@@ -433,6 +441,14 @@ async function connectTerminal(targetRef: string, options: TermConnectOptions): 
       (message) => writeStderr(`\x1b[33mWarning:\x1b[0m ${message}\n`)
     );
     const remoteCommand = buildRemoteCommand(options, connectionDetails, secretsPrefix);
+    // Only the inline session reads the exit marker; an external terminal would show it.
+    const exitMarker = options.command ? newExitMarker() : undefined;
+    const inline = exitMarker
+      ? {
+          remoteCommand: buildRemoteCommand(options, connectionDetails, secretsPrefix, exitMarker),
+          exitMarker,
+        }
+      : undefined;
 
     await executeSSH(
       sshConnection,
@@ -442,7 +458,8 @@ async function connectTerminal(targetRef: string, options: TermConnectOptions): 
       connectionDetails,
       shouldUseExternalTerminal(options),
       quietOutput,
-      machineName
+      machineName,
+      inline
     );
   } catch (err) {
     success = false;
@@ -546,32 +563,32 @@ async function runInlineSSH(
   title: string,
   connectionDetails: ConnectionDetails,
   quiet: boolean,
-  machineName: string
+  machineName: string,
+  exitMarker?: string
 ): Promise<void> {
   if (!quiet) {
     // Progress message on stderr, keeps stdout reserved for command output when -c piping is in play, matching the Unix convention used by ssh's own progress / banner messages.
     writeStderr(`${t('commands.term.connectingTo', { title })}\n`);
   }
 
-  // stderr is piped rather than inherited so its tail can explain a failure; every chunk is still teed to the terminal as it arrives.
+  // stderr is piped rather than inherited so its tail can explain a failure and the exit marker can be read off it; every other chunk is still teed to the terminal as it arrives.
   const child = spawnSSH(destination, sshConnection.sshOptions, remoteCommand, {
     env: { ...process.env, ...splitSecretEnv(connectionDetails.environment).plain },
     stdio: ['inherit', 'inherit', 'pipe'],
     agentSocketPath: sshConnection.agentSocketPath,
   });
 
-  const stderrTail = teeStderrTail(child.stderr);
-
-  await new Promise<void>((resolve, reject) => {
-    child.on('close', (code: number | null) => {
-      if (code === 0 || code === null) {
-        resolve();
-      } else {
-        reject(new Error(buildSSHExitErrorMessage(code, stderrTail(), machineName)));
-      }
-    });
-    child.on('error', reject);
+  const stderrTail = createStderrTail();
+  const { code, forced } = await waitForSessionEnd(child, {
+    marker: exitMarker,
+    onStderr: (text) => {
+      writeStderr(text);
+      stderrTail.add(text);
+    },
   });
+  if (forced) debugLog('term: the command exited while a child kept the channel open; ssh ended');
+  if (code === 0 || code === null) return;
+  throw sshExitError(code, stderrTail.read(), machineName, exitMarker !== undefined);
 }
 
 /**

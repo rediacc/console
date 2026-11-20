@@ -14,6 +14,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { afterAll, describe, expect, it } from 'vitest';
+import { newExitMarker, waitForSessionEnd } from '../../remote/ssh/session-exit.js';
 import type { ConnectionDetails } from '../../services/machine/ssh-connection.js';
 import { buildRemoteCommand } from '../term.js';
 
@@ -117,6 +118,47 @@ describe('buildRemoteCommand with a backgrounded job', () => {
     expect(out).toContain('STARTED');
     expect(ms, 'stdout stayed open: the background job held the channel').not.toBeNull();
     expect(ms as number).toBeLessThan(10_000);
+  });
+
+  it('with an exit marker, the session ends with the command even while an unredirected child holds the channel', async () => {
+    const marker = `term-jobs-hold-${process.pid}`;
+    const exitMarker = newExitMarker();
+    // No redirect: the job inherits stdout and stderr, which kept the channel open forever (hostinger, 2026-11-20).
+    const user = `bash -c 'exec -a ${marker} sleep 120' & echo PULLED; exit 4`;
+    const child = spawn(
+      'bash',
+      ['-c', buildRemoteCommand({ command: user }, details, '', exitMarker)],
+      {
+        env: { ...process.env, HOME: home },
+        stdio: ['ignore', 'pipe', 'pipe'],
+        detached: true,
+      }
+    );
+    let out = '';
+    child.stdout.on('data', (b) => {
+      out += String(b);
+    });
+    let raw = '';
+    child.stderr.on('data', (b) => {
+      raw += String(b);
+    });
+    let shown = '';
+    const started = Date.now();
+    const end = await waitForSessionEnd(child, {
+      marker: exitMarker,
+      onStderr: (text) => {
+        shown += text;
+      },
+      graceMs: 300,
+    });
+    const left = await killGroupAndWait(child.pid, marker);
+    expect(left, 'the background job outlived its process group').toEqual([]);
+    expect(Date.now() - started).toBeLessThan(10_000);
+    expect(end.code).toBe(4);
+    expect(out).toContain('PULLED');
+    // The remote shell reported its own exit, which is what ends a session sshd would keep open.
+    expect(raw).toContain(`${exitMarker}4\n`);
+    expect(shown).not.toContain(exitMarker);
   });
 
   it('still runs the user command after the preamble', async () => {

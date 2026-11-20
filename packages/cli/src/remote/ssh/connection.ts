@@ -52,12 +52,29 @@ function convertPathForSSH(path: string, sshExecutable?: string): string {
 }
 
 /**
+ * Keepalives on every session, the values the backup-image rsync path already
+ * uses. Without them a command that prints nothing for minutes (`docker pull
+ * -q`, `sleep 900`) left the TCP connection idle until a NAT on the way
+ * forgot it: the remote command finished, its exit never arrived, and ssh,
+ * holding an ESTABLISHED socket with only the kernel's 2-hour keepalive,
+ * waited forever (term connect -c to hostinger, 2026-11-20). Traffic every
+ * 15 s keeps the mapping alive, and a peer that stops answering ends ssh
+ * with 255 after a minute.
+ */
+export const SSH_KEEPALIVE_OPTIONS = [
+  '-o',
+  'ServerAliveInterval=15',
+  '-o',
+  'ServerAliveCountMax=4',
+] as const;
+
+/**
  * Builds SSH options array for a connection
  *
  * @param options - Connection setup options
  * @returns Array of SSH options (without -o prefix where applicable)
  */
-function buildSSHOptions(options: {
+export function buildSSHOptions(options: {
   knownHostsPath: string;
   keyFilePath?: string;
   port?: number;
@@ -101,7 +118,8 @@ function buildSSHOptions(options: {
     '-o',
     'PubkeyAuthentication=yes',
     '-o',
-    'PreferredAuthentications=publickey'
+    'PreferredAuthentications=publickey',
+    ...SSH_KEEPALIVE_OPTIONS
   );
 
   if (convertedKeyFilePath) {
