@@ -56,6 +56,7 @@ import { validateBlockerQuality } from '../lib/blocker-validator.js';
 import { type ControlCase, summarizeControls } from '../lib/controls.js';
 import { isEntryPoint } from '../lib/entry-point.js';
 import {
+  type DriverContext,
   driverFor,
   type FileWrite,
   type Fixture,
@@ -76,6 +77,7 @@ import {
   predictManifests,
   sourceManifests,
 } from '../lib/pins/drivers/pin-manifests.js';
+import { followers, followWrites, planFollow } from '../lib/pins/drivers/pin-site-follow.js';
 import { realDrivers } from '../lib/pins/drivers/table.js';
 import { familyGateOf } from '../lib/pins/family-gates.js';
 import { ranLine } from '../lib/pins/ran-line.js';
@@ -3685,7 +3687,7 @@ const CASES: Record<string, Case> = {
         { repo: '.', file: '.syncpackrc.json' },
         ...predicted.map((file) => ({ repo: '.', file })),
       ]),
-      m === 'no-version-gate' ? m : null
+      m === 'no-version-gate' || m === 'no-registry-gate' ? m : null
     );
     const dockerOnly = withManifestGates(planOf([{ repo: '.', file: 'Dockerfile' }]), null);
     // The bad-range control: a covered manifest whose range is not plain is refused by name and nothing is written.
@@ -3718,7 +3720,8 @@ const CASES: Record<string, Case> = {
       {
         name: 'pin manifests: a plan whose step writes a manifest or .syncpackrc.json runs check:version beside its entry gates',
         ok:
-          synced.entry.gates.join(',') === 'check:deps,check:ci-lockfile,check:version' &&
+          synced.entry.gates.join(',') ===
+            'check:deps,check:ci-lockfile,check:version,check:ci-pin-registry' &&
           npmEntry.gates.length === 2,
         detail: synced.entry.gates.join(','),
       },
@@ -3727,6 +3730,7 @@ const CASES: Record<string, Case> = {
         ok: dockerOnly.entry.gates.join(',') === 'check:deps,check:ci-lockfile',
         detail: dockerOnly.entry.gates.join(','),
       },
+      ...followControls(),
       {
         name: 'pin manifests: a covered range that is not plain is refused by name and nothing is written',
         ok:
@@ -3739,6 +3743,69 @@ const CASES: Record<string, Case> = {
     ];
   },
 };
+
+/**
+ * Worklist #43aebb3a: a bump that moves a package listed under a multi-site registry pin moves every site of that pin. The registry is the real one; the tree is two in-memory files (constants.sh one release behind workers/account/package.json, the state `bump npm` left on 2026-11-20).
+ */
+function followControls(): ControlCase[] {
+  const reg = loadRegistry(path.join(REPO_ROOT, '.ci/config/pins.json'));
+  const texts: Record<string, string> = {
+    '.ci/config/constants.sh': 'readonly WRANGLER_VERSION="4.164.0"\n',
+    'workers/account/package.json': `${JSON.stringify({ name: 'a', devDependencies: { wrangler: '4.165.0' } }, null, 2)}\n`,
+  };
+  const ctx: DriverContext = {
+    root: REPO_ROOT,
+    reg,
+    read: (p) => texts[p.repo === '.' ? p.file : `${p.repo}/${p.file}`] ?? null,
+    fixture: null,
+    mutant: null,
+  };
+  const dragged = followers(reg, new Set(['wrangler']));
+  const wrangler = dragged.find((e) => e.id === 'toolchain:wrangler');
+  const plan = planFollow(dragged, ctx);
+  for (const w of plan.writes) texts[w.file] = w.after;
+  const values = wrangler
+    ? wrangler.sites.flatMap((s) => siteMatches(s, texts[s.file] ?? '').map((x) => x.value))
+    : [];
+  const stale = (): boolean => {
+    try {
+      return planFollow(followers(reg, new Set(['wrangler'])), ctx).writes.length > 0;
+    } catch {
+      return true;
+    }
+  };
+  return [
+    {
+      name: 'pin follow: a moved package listed under a multi-site pin moves every site of it to the same version',
+      ok:
+        wrangler !== undefined &&
+        plan.writes.length === 1 &&
+        plan.writes[0].file === '.ci/config/constants.sh' &&
+        values.length === 2 &&
+        values.every((v) => v === '4.165.0'),
+      detail: `${plan.changes.join('; ')} values=${values}`,
+    },
+    {
+      name: 'pin follow: CONTROL: a second pass over agreeing sites writes nothing',
+      ok: !stale(),
+      detail: JSON.stringify(plan),
+    },
+    {
+      name: 'pin follow: CONTROL: a package no registry pin lists drags nothing',
+      ok: followers(reg, new Set(['left-pad'])).length === 0,
+      detail: dragged.map((e) => e.id).join(','),
+    },
+    {
+      name: 'pin follow: the declared writes of a follower are the sites other than the package.json',
+      ok:
+        wrangler !== undefined &&
+        followWrites([wrangler])
+          .map((p) => p.file)
+          .join(',') === '.ci/config/constants.sh',
+      detail: JSON.stringify(wrangler ? followWrites([wrangler]) : null),
+    },
+  ];
+}
 
 /** Which case each mutant must turn red: the safety property it disables. */
 const MUTANT_CASES: Record<Mutant, string> = {
@@ -3759,6 +3826,7 @@ const MUTANT_CASES: Record<Mutant, string> = {
   'shared-message': 'drafts',
   'no-manifest-pin': 'pinmanifests',
   'no-version-gate': 'pinmanifests',
+  'no-registry-gate': 'pinmanifests',
   'breaking-is-minor': 'breaking',
   'breaking-unlisted': 'breaking',
 };

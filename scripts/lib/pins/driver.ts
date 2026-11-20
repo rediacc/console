@@ -143,6 +143,8 @@ export interface PinDriver {
  *                  (the sync before 2026-10-19, 4ba8aab48)
  *   no-version-gate a plan that writes a manifest or .syncpackrc.json runs only its entry's own
  *                  gates, without check:version (the gate list before 2026-10-19)
+ *   no-registry-gate a plan that writes a manifest runs without check:ci-pin-registry, so a registry
+ *                  pin whose sites disagree after the bump passes (the gate list before 2026-11-20)
  *   breaking-is-minor a release a driver marks breaking (a Go minor line) is judged by its
  *                  leading number alone, so a plain bump and apply-soaked take it
  *   breaking-unlisted the newer-majors report leaves out a line a driver marks breaking, so
@@ -166,6 +168,7 @@ export const MUTANTS = [
   'shared-message',
   'no-manifest-pin',
   'no-version-gate',
+  'no-registry-gate',
   'breaking-is-minor',
   'breaking-unlisted',
 ] as const;
@@ -184,10 +187,15 @@ const syncpackJudged = (p: RepoPath): boolean =>
  * leaves the gate list alone.
  */
 export function withManifestGates(plan: PinPlan, mutant: Mutant | null = null): PinPlan {
-  if (mutant === 'no-version-gate' || plan.entry.gates.includes('check:version')) return plan;
   const touched = [...plan.writes, ...plan.steps.flatMap((s) => s.writes)];
   if (!touched.some(syncpackJudged)) return plan;
-  return { ...plan, entry: { ...plan.entry, gates: [...plan.entry.gates, 'check:version'] } };
+  const add = [
+    ...(mutant === 'no-version-gate' ? [] : ['check:version']),
+    // A moved manifest version can be one site of a registry pin whose other sites disagree afterwards (worklist #43aebb3a: wrangler in workers/account/package.json against constants.sh); check:ci-pin-registry judges that.
+    ...(mutant === 'no-registry-gate' ? [] : ['check:ci-pin-registry']),
+  ].filter((g) => !plan.entry.gates.includes(g));
+  if (add.length === 0) return plan;
+  return { ...plan, entry: { ...plan.entry, gates: [...plan.entry.gates, ...add] } };
 }
 
 // ---- the shared leaf planner ----------------------------------------------------------------
