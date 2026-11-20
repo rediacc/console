@@ -289,7 +289,7 @@ def read_marks(store, reader):
     return marks
 
 
-def unread(store, branch=None, reader=None):
+def unread(store, branch=None, reader=None, peer_live=None):
     """Reports this READER has not marked read, oldest first, on `branch`.
 
     Branch filtering is on the REPORT, not on the read mark: a report captured
@@ -305,7 +305,7 @@ def unread(store, branch=None, reader=None):
             continue
         if branch is not None and str(row.get("branch", "")) != branch:
             continue
-        if _foreign_and_stale(row, reader):
+        if _foreign_and_stale(row, reader) or _foreign_and_live(row, reader, peer_live):
             continue
         # A relay holds nothing addressed to the lead (rejudge), so it is not a report to read.
         ev = rejudge(store, row)
@@ -346,6 +346,20 @@ def _foreign_and_stale(entry, reader):
     if age is None:
         return False
     return age >= float(os.environ.get("WORKLIST_DEAD_HOURS", "24")) * 60
+
+
+def _foreign_and_live(entry, reader, peer_live):
+    """True for a report another session spawned while that session is still running: it is that session's to read, and its own stop shows it there. A dead or unknown owner stays visible, so a restarted session still sees its predecessor's reports (the 24 h `_foreign_and_stale` window keeps that). `peer_live(prefix) -> bool` is the Stop hook's session-liveness reading; None keeps today's behaviour. Seen 2026-11-20: seven fork and research reports of live session 6c87d631 blocked d778be9d's stops on the shared branch. An unreadable reading keeps the report visible."""
+    if peer_live is None:
+        return False
+    owner = str(entry.get("session") or "")[:8]
+    me = str(reader or "")[:8]
+    if not owner or not me or owner == me:
+        return False
+    try:
+        return bool(peer_live(owner))
+    except (OSError, ValueError):
+        return False
 
 
 def _still_waiting(entry, now=None):

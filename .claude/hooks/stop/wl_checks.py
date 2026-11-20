@@ -5877,7 +5877,10 @@ def run_stop(event, event_ok, worklist, hook_file):
     agent_branch = C.git_branch(root)
     try:
         _unread = wl_report.unread(
-            wl_report.store_root(root), agent_branch or wl_report.NO_BRANCH, session_id
+            wl_report.store_root(root),
+            agent_branch or wl_report.NO_BRANCH,
+            session_id,
+            peer_live=lambda owner: S.session_liveness(worklist, owner)[0] == "live",
         )
         # AUTO-READ WHAT THE LEAD ALREADY RECEIVED (agent/plans/PLAN-stop-hook-continuity.md P1.5): a completed task notification with a non-empty result in this session's own transcript is the report delivered, so demanding `--read` for it was restating a fact the hook holds. [SILENT] reports are never auto-read.
         if _unread:

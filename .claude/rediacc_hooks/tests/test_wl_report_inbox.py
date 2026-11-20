@@ -1610,3 +1610,30 @@ def test_r4_an_unknown_mode_prints_the_usage_line(sc):
     # CONTROL: a real mode does not print the unknown-mode line.
     ok = sc.py("wl_report.py", "--list", "--unread")
     assert "unknown mode" not in ok.out + ok.err
+
+
+def _ids(rows):
+    return [r["id"] for r in rows]
+
+
+def test_10c_a_live_peers_report_is_its_own_to_read(sc):
+    """A report another session spawned is skipped while that session is running (its own stop shows it); a dead or unknown owner's report stays visible, and the owner always sees it. Seen 2026-11-20: a live peer's fork reports blocked another session's stops on the shared branch."""
+    sc.stop_event("apeer-one-3434343434343434", "peer-one", "PEER TITLE\n" + BIG)
+    report = wlfix.import_wl("wl_report")
+    row = json.loads(sc.index_lines()[0])
+    owner = str(row.get("session") or "")[:8]
+    assert owner, "the fixture's capture names no session: %s" % row
+    reader = "cccccccc" if owner != "cccccccc" else "dddddddd"
+    store, branch = sc.store, row["branch"]
+    assert row["id"] in _ids(report.unread(store, branch, reader)), (
+        "CONTROL: with no liveness reading the report shows"
+    )
+    assert row["id"] in _ids(report.unread(store, branch, reader, peer_live=lambda _o: False)), (
+        "a dead owner's report stays visible"
+    )
+    assert row["id"] not in _ids(report.unread(store, branch, reader, peer_live=lambda _o: True)), (
+        "a live peer's report must be its own"
+    )
+    assert row["id"] in _ids(report.unread(store, branch, owner, peer_live=lambda _o: True)), (
+        "the owner always sees its own report"
+    )
