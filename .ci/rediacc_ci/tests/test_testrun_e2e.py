@@ -267,3 +267,10 @@ def test_delta_a_run_with_tests_is_not_an_empty_selection() -> None:
     scan = e2e.Scan()
     scan.feed("Running 4 tests using 1 worker")
     assert e2e.judge_empty_selection(scan, "6/11", "oracle-10") is None
+
+
+def test_delta_an_empty_selection_fails_even_when_playwright_exits_zero() -> None:
+    assert e2e.final_verdict(0, "shard leg 6/11 selected ZERO tests on VM_IMAGE=oracle-10") == 1
+    assert e2e.final_verdict(1, "shard leg 6/11 selected ZERO tests on VM_IMAGE=oracle-10") == 1
+    assert e2e.final_verdict(0, None) == 0, "CONTROL: a run with tests that passed is green"
+    assert e2e.final_verdict(1, None) == 1

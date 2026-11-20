@@ -496,20 +496,25 @@ class Spawn:
         return subprocess.CompletedProcess(cmd, 0, "", "")
 
 
-def verb_with(name, receipt, carried=None):
-    """commit_reviews in a fixture() repo whose latest receipt is `receipt` (None: no file) and whose carried-reds.json is `carried` (None: no file), with the advance's spawn recorded."""
+def verb_with(name, receipt, carried=None, dirty_carried=None, spawn=None):
+    """commit_reviews in a fixture() repo whose latest receipt is `receipt` (None: no file), whose COMMITTED carried-reds.json is `carried` and whose uncommitted working-tree copy is `dirty_carried` (None: none), with the advance's spawn recorded."""
     repo, _reviewed, _fix = fixture(name)
+    cpath = repo / ".ci" / "config" / "carried-reds.json"
     if carried is not None:
-        cpath = repo / ".ci" / "config" / "carried-reds.json"
         cpath.parent.mkdir(parents=True, exist_ok=True)
         cpath.write_text(json.dumps(carried), encoding="utf-8")
+        git(repo, "add", "-f", "--", ".ci/config/carried-reds.json")
+        git(repo, "commit", "-q", "-m", "carried reds")
+    if dirty_carried is not None:
+        cpath.parent.mkdir(parents=True, exist_ok=True)
+        cpath.write_text(json.dumps(dirty_carried), encoding="utf-8")
     if receipt is not None:
         path = repo / ".ci" / "cache" / "prepush-receipt.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         tree = git(repo, "rev-parse", "HEAD^{tree}")
         path.write_text(json.dumps(dict(receipt, headTree=tree)), encoding="utf-8")
         (repo / ".git" / "info" / "exclude").write_text(".ci/\n", encoding="utf-8")
-    spawn = Spawn()
+    spawn = Spawn() if spawn is None else spawn
     rc, text = R.commit_reviews(
         str(repo), BRANCH, advance=lambda root: R.advance_after_commit(root, spawn=spawn)
     )
@@ -552,6 +557,49 @@ rc, text, committed, calls = verb_with(
     {"version": 2, "carried": [{"gate": "fast:other", "findings": "*", "reason": LONG}]},
 )
 control("CONTROL: a red the carried-reds file does not cover starts nothing", calls, [])
+
+rc, text, committed, calls = verb_with("carried-dirty", RED_CARRIED, None, dirty_carried=CARRY_STAR)
+control(
+    "CONTROL: an UNCOMMITTED carried-reds.json covering the red starts nothing (HEAD's copy decides)",
+    calls,
+    [],
+)
+
+
+class SpawnAdvancing(Spawn):
+    """--advance-only as the runner does it for a carried-only receipt: the receipt gains an advance to HEAD's tree and the exit is 1 (the run is red, honestly)."""
+
+    def __init__(self, advance=True):
+        super().__init__()
+        self.advance = advance
+
+    def __call__(self, cmd, **kw):
+        self.calls.append((cmd, kw.get("cwd")))
+        root = pathlib.Path(kw.get("cwd"))
+        if self.advance:
+            path = root / ".ci" / "cache" / "prepush-receipt.json"
+            doc = json.loads(path.read_text(encoding="utf-8"))
+            doc["advances"] = [{"to": git(root, "rev-parse", "HEAD^{tree}"), "gates": {}}]
+            path.write_text(json.dumps(doc), encoding="utf-8")
+        return subprocess.CompletedProcess(cmd, 1, "", "")
+
+
+rc, text, committed, calls = verb_with(
+    "carried-exit1", RED_CARRIED, CARRY_STAR, spawn=SpawnAdvancing()
+)
+control(
+    "a carried-only advance that exits 1 and moves the receipt to HEAD reports ADVANCED",
+    "ADVANCED" in text,
+    True,
+)
+rc, text, committed, calls = verb_with(
+    "carried-exit1-stuck", RED_CARRIED, CARRY_STAR, spawn=SpawnAdvancing(advance=False)
+)
+control(
+    "CONTROL: exit 1 with the receipt left behind is a FAILED advance",
+    "ADVANCE FAILED" in text,
+    True,
+)
 
 # carried_only agrees with the push guard's carried_verdict (no stale entries in these fixtures).
 KEYED = {"version": 2, "carried": [{"gate": "g", "findings": ["k1", "k2"], "reason": LONG}]}

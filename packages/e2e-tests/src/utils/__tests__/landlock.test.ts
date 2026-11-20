@@ -24,7 +24,6 @@ const ORACLE_10 =
 const UBUNTU_24 =
   'PRETTY_NAME="Ubuntu 24.04.1 LTS"\nNAME="Ubuntu"\nVERSION_ID="24.04"\nID=ubuntu\nID_LIKE=debian\n';
 
-const INACTIVE_OS = new Set(['ol-10']);
 
 describe('workerOsId', () => {
   it('reads Oracle Linux 10 as ol-10, which is no longer Landlock-inactive', async () => {
@@ -63,7 +62,9 @@ describe('landlock selection machinery', () => {
   });
 
   it('assertLandlockSelected still refuses a worker whose OS a set names', async () => {
-    expect(INACTIVE_OS.has('ol-10')).toBe(true);
+    await expect(
+      assertLandlockSelected(runnerReading(ORACLE_10), new Set(['ol-10']))
+    ).rejects.toThrow(/boots without Landlock/);
     await expect(assertLandlockSelected(runnerReading(ORACLE_10))).resolves.toBeUndefined();
   });
 });

@@ -826,15 +826,6 @@ export function unjudged(
   return undefined;
 }
 
-/** A file's text, or undefined when it cannot be read (absent in the clone means nothing is carried). */
-function readTextOrUndefined(file: string): string | undefined {
-  try {
-    return fs.readFileSync(file, 'utf8');
-  } catch {
-    return undefined;
-  }
-}
-
 /** carried-reds.json text without the entries whose reason is under the push guard's bar (block_unverified_push REASON_MIN 80, STAR_REASON_MIN 160 for `*`): the guard reads such an entry as carrying nothing. Unparseable text passes through for parseCarried to reject. */
 function withReasonBar(text: string | undefined): string | undefined {
   if (text === undefined) return undefined;
@@ -930,7 +921,7 @@ export type Follow =
   | { kind: 'skip'; why: string }
   | { kind: 'follow'; why: string };
 
-/** Whether a clone run is followed by a pass at the live HEAD (agent/plans/PLAN-push-decoupling.md D1.2). Only a green first run is followed: a red one is repaired before anything is brought forward. A pinned run is followed even when its tree equals HEAD's, because it never writes the latest receipt the push guard reads (the follow pass carries it there). A latest receipt that is whole, green and already vouches for HEAD's tree is a newer receipt, left alone. Pure, so the selftest drives every branch. */
+/** Whether a clone run is followed by a pass at the live HEAD (agent/plans/PLAN-push-decoupling.md D1.2). Only a green first run is followed, or one red only on gates carried-reds.json carries (`firstCarriedOnly`, judged as the push guard judges it): any other red one is repaired before anything is brought forward. A pinned run is followed even when its tree equals HEAD's, because it never writes the latest receipt the push guard reads (the follow pass carries it there). A latest receipt that is whole, green and already vouches for HEAD's tree is a newer receipt, left alone. Pure, so the selftest drives every branch. */
 export function followOf(input: {
   pinned: boolean;
   judgedTree: string;
@@ -1220,7 +1211,8 @@ export async function quickMain(args: readonly string[], seams: QuickSeams): Pro
         first !== 0 &&
         carriedOnly(
           readReceipt(receiptPath).receipt,
-          readTextOrUndefined(path.join(prepared.clone, '.ci', 'config', 'carried-reds.json'))
+          // HEAD's carried-reds.json in the live checkout, the copy the push guard reads, not the judged clone's.
+          shTry('git', ['show', 'HEAD:.ci/config/carried-reds.json'], seams.live)
         ),
       latest: readReceipt(latestPath).receipt,
     });

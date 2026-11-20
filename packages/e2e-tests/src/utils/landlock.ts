@@ -36,9 +36,12 @@ export async function workerOsId(runner: RenetFunctionsTestRunner): Promise<stri
  * backstop for that gap: it reads the worker's real OS and fails loudly instead of skipping. Call it right after the
  * runner exists and before any provisioning.
  */
-export async function assertLandlockSelected(runner: RenetFunctionsTestRunner): Promise<void> {
+export async function assertLandlockSelected(
+  runner: RenetFunctionsTestRunner,
+  inactive: ReadonlySet<string> = LANDLOCK_INACTIVE_BY_DEFAULT
+): Promise<void> {
   const os = await workerOsId(runner);
-  if (LANDLOCK_INACTIVE_BY_DEFAULT.has(os)) {
+  if (inactive.has(os)) {
     throw new Error(
       `${os} boots without Landlock in lsm=, so renet refuses to run Rediaccfile up()/down() there by design, and a @landlock suite must not be selected on it (playwright.config.ts grepInvert); see ${REQUIREMENTS_DOCS} (Landlock) for the grubby fix`
     );

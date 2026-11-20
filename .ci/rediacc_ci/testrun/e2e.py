@@ -330,8 +330,14 @@ def main(argv: list[str]) -> int:
         verdict = judge_skips(scan)
         if verdict is not None:
             return verdict
-    empty = judge_empty_selection(scan, opts.shard, os.environ.get("VM_IMAGE", ""))
-    if empty is not None and rc != 0:
+    return final_verdict(
+        rc, judge_empty_selection(scan, opts.shard, os.environ.get("VM_IMAGE", ""))
+    )
+
+
+def final_verdict(rc: int, empty: str | None) -> int:
+    """The run's exit: an empty selection fails whatever Playwright exited with (a pass-with-no-tests flag exits 0), otherwise Playwright's own verdict."""
+    if empty is not None:
         log.error(empty)
         return 1
     if rc == 0:

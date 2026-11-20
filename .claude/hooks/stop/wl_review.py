@@ -3865,11 +3865,11 @@ def green_receipt_tree(root):
     if not isinstance(doc, dict) or doc.get("whole") is not True:
         return None
     if doc.get("exitCode") != 0 or doc.get("failed") not in ([], None):
+        # HEAD's carried-reds.json, as the push guard reads it, never the working tree's.
+        shown = git_out(root, "show", "HEAD:%s" % CARRIED_REDS_REL.as_posix())
         try:
-            carried_doc = json.loads(
-                (pathlib.Path(root) / CARRIED_REDS_REL).read_text(encoding="utf-8")
-            )
-        except (OSError, ValueError):
+            carried_doc = json.loads(shown) if shown else None
+        except ValueError:
             return None
         if not carried_only(doc, carried_doc):
             return None

@@ -316,3 +316,12 @@ def test_a_green_scope_records_the_head_it_was_green_at(tmp_path):
     check_pytest.write_scope(repo, {"pytestScope": "impact", "collected": 1})
     head = _git(repo, "rev-parse", "HEAD")
     assert check_pytest.last_green_base(repo) == head
+
+
+def test_a_green_run_over_uncommitted_edits_names_no_green_commit(tmp_path):
+    repo, _green = _green_repo(tmp_path)
+    (repo / "a.txt").write_text("edited, not committed\n", encoding="utf-8")
+    check_pytest.write_scope(repo, {"pytestScope": "impact", "collected": 1})
+    assert check_pytest.last_green_base(repo) is None, (
+        "a run over a dirty tree proved the working tree, not HEAD, so it must not become the base"
+    )

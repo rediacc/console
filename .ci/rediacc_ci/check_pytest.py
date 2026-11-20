@@ -1294,12 +1294,17 @@ def impact_floor(smoke_corpus: int) -> int:
 
 
 def write_scope(root: pathlib.Path, record: dict) -> None:
-    """The scope of this run, for the receipt. Written to the `.ci/cache` scratch root like the junit beside it. Only a GREEN run reaches here (every failure returns first), so `head` and `python` name the last commit this suite was green at, which `last_green_base` reads as the next round's impact base."""
+    """The scope of this run, for the receipt. Written to the `.ci/cache` scratch root like the junit beside it. Only a GREEN run reaches here (every failure returns first), so `head` and `python` name the last commit this suite was green at (only when the tree held no uncommitted edits), which `last_green_base` reads as the next round's impact base."""
     target = root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name
     target.parent.mkdir(parents=True, exist_ok=True)
     head = gitx.git(["rev-parse", "HEAD"], root=root)
+    # A run over uncommitted edits proved the working tree, not HEAD, so it names no green commit (the base stays the previous one).
+    dirty = gitx.git(["status", "--porcelain", "--untracked-files=normal"], root=root)
+    clean = dirty.returncode == 0 and not dirty.stdout.strip()
     record = dict(
-        record, python=sys.version, head=head.stdout.strip() if head.returncode == 0 else None
+        record,
+        python=sys.version,
+        head=head.stdout.strip() if head.returncode == 0 and clean else None,
     )
     target.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8")
     print(
