@@ -274,6 +274,12 @@ def test_a_missing_freeze_module_refuses(monkeypatch, capsys, tmp_path):
         )
         == 0
     ), "the commit restoring the module must land (review 7d2c8fca.1)"
+    mixed = gh.pr_freeze_refusal(
+        "fix(hooks): restore", str(tmp_path), BRANCH, [gh.PR_FREEZE_REL, "src/feature.py"]
+    )
+    assert mixed != 0, (
+        "other files beside the module must not ride the repair path (review 8d45a5c5.1)"
+    )
 
 
 def test_commit_msg_reaches_the_freeze(world, monkeypatch, capsys):

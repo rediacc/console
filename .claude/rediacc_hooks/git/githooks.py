@@ -162,6 +162,10 @@ def commit_msg(argv: list[str]) -> int:
 
 
 PR_FREEZE_REL = ".claude/rediacc_hooks/pr_freeze.py"
+#: The paths a repair commit may stage while the module cannot load: the module and its own test, nothing else.
+PR_FREEZE_REPAIR = frozenset(
+    {PR_FREEZE_REL, ".claude/rediacc_hooks/tests/test_githook_pr_freeze.py"}
+)
 
 
 def pr_freeze_refusal(msg: str, repo: str, branch: str, paths: list[str]) -> int:
@@ -172,10 +176,10 @@ def pr_freeze_refusal(msg: str, repo: str, branch: str, paths: list[str]) -> int
     try:
         freeze = _load("pr_freeze", HERE.parent / "pr_freeze.py")
     except (OSError, ImportError, SyntaxError) as exc:
-        if PR_FREEZE_REL in paths:
-            return 0  # the repair path (review 7d2c8fca.1): the commit that restores the module itself lands
+        if paths and set(paths) <= PR_FREEZE_REPAIR:
+            return 0  # the repair path (review 7d2c8fca.1): a commit of the module (and its test) alone lands; anything else beside it does not (8d45a5c5.1)
         return _refuse(
-            "the PR freeze module cannot be loaded (%s), so no commit can be judged; restore .claude/rediacc_hooks/pr_freeze.py (a commit staging it is admitted)."
+            "the PR freeze module cannot be loaded (%s), so no commit can be judged; restore .claude/rediacc_hooks/pr_freeze.py (a commit staging only it, and its test, is admitted)."
             % exc
         )
     ok, reason = freeze.check(repo, CONSOLE_ROOT, branch, msg, paths)
