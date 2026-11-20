@@ -296,21 +296,25 @@ def _git_raw(root, *args) -> str:
         return ""
 
 
-_DONE_SUCCESSOR: dict[str, Any] = {}
+_DONE_SUCCESSOR: dict[tuple[str, str], Any] = {}
 #: How far back the successor map looks for a landed copy (its `<base>..HEAD` window).
 DONE_SUCCESSOR_WINDOW = 3000
 
 
 def _done_successor(root, token: str) -> str:
-    """The landed copy of a commit a rebase-merge rewrote, through the review records' Patch-Id (rediacc_ci.review.successor), or "". Built once per root and only when a `done=` sha is gone, so a tree whose ticks all resolve pays nothing."""
-    key = str(root)
+    """The landed copy of a commit a rebase-merge rewrote, through the review records' Patch-Id (rediacc_ci.review.successor), or "". Built once per (root, HEAD) and only when a `done=` sha is gone, so a tree whose ticks all resolve pays nothing and a process that moves HEAD gets a fresh map (review 94f2e23a.2). The window is the first-parent chain, HEAD~N..HEAD with N at most DONE_SUCCESSOR_WINDOW: deterministic in a multi-root history, and the root it excludes is never a branch's rebased tick (review 94f2e23a.3)."""
+    head = _git_out(root, "rev-parse", "--verify", "--quiet", "HEAD")
+    key = (str(root), head)
     if key not in _DONE_SUCCESSOR:
         import wl_gh
 
         su = wl_gh.import_ci("rediacc_ci.review.successor")
+        count = int(_git_out(root, "rev-list", "--count", "--first-parent", "HEAD") or 0)
+        depth = min(DONE_SUCCESSOR_WINDOW, count - 1)
         base = (
-            _git_out(root, "rev-parse", "--verify", "--quiet", "HEAD~%d" % DONE_SUCCESSOR_WINDOW)
-            or (_git_out(root, "rev-list", "--max-parents=0", "HEAD").splitlines() or [""])[-1]
+            _git_out(root, "rev-parse", "--verify", "--quiet", "HEAD~%d" % depth)
+            if depth > 0
+            else ""
         )
         _DONE_SUCCESSOR[key] = su.lazy_successor_of(root, base, sys.modules[__name__])
     return _DONE_SUCCESSOR[key](token) or ""

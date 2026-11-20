@@ -1112,17 +1112,19 @@ def problems_for(root, rel, text, current_ledger):
                 % (rel, b["body"][:60], done, why)
             )
             continue
+        # After a carry the messages name the commit actually checked (review 94f2e23a.4).
+        checked = done if landed.startswith(done) else "%s (landed as %s)" % (done, landed[:12])
         ledger = ledger_at(root, landed)
         if ledger is None:
             out.append(
                 "%s: box %r records `done=%s`, but %s does not exist at that commit, so "
-                "nothing there attests the tick" % (rel, b["body"][:60], done, R.LEDGER_REL)
+                "nothing there attests the tick" % (rel, b["body"][:60], checked, R.LEDGER_REL)
             )
         elif not attested_under_any_path(root, ledger, rel, sig):
             out.append(
                 "%s: box %r records `done=%s`, and the ledger AT THAT COMMIT does not carry "
                 "signature %s under done_sigs for %s. The proof is asserted, not present"
-                % (rel, b["body"][:60], done, sig, rel)
+                % (rel, b["body"][:60], checked, sig, rel)
             )
 
     # ---- R5 `(record)` inside a box line ---------------------------------- rec["problems"] already carries this one -- parse() finds it while it has the raw line in hand, which is the only place the distinction between "in the box" and "on the annotation line" still exists. Folded in at the top.

@@ -280,6 +280,11 @@ truthy(
     "RB7: R4's done= is carried to the landed copy through the successor map",
     _rm_ok and _rm_sha == _rm_landed and "successor" in _rm_why,
 )
+_rm_direct = R.resolve_done(_rm, _rm_landed[:9])
+truthy(
+    "RB7: a done= that resolves directly answers its own full sha",
+    _rm_direct == (True, _rm_landed, ""),
+)
 _rm_real = R._done_successor
 R._done_successor = lambda *_a: ""
 try:
