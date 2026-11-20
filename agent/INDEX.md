@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 257 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 268 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -608,6 +608,16 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-resumable-rebase-executor.md` | compacted | 36 | 0 | 0 | 2212 |
 | `agent/plans/PLAN-retire-nightlies-and-mentions.md` | proposed | 189 | 16 | 0 | 36372 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
+| `agent/plans/PLAN-rmcp-agent-grants.md` | approved | 118 | 15 | 0 | 26418 |
+| `agent/plans/PLAN-rmcp-config-edit-removal.md` | approved | 65 | 9 | 0 | 12133 |
+| `agent/plans/PLAN-rmcp-decide.md` | approved | 88 | 9 | 0 | 14810 |
+| `agent/plans/PLAN-rmcp-docs.md` | approved | 98 | 20 | 0 | 23549 |
+| `agent/plans/PLAN-rmcp-executor-hardening.md` | approved | 94 | 21 | 0 | 24683 |
+| `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 71 | 13 | 0 | 17445 |
+| `agent/plans/PLAN-rmcp-orphan-recovery.md` | approved | 52 | 8 | 0 | 9231 |
+| `agent/plans/PLAN-rmcp-policy-record.md` | approved | 146 | 26 | 0 | 36546 |
+| `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 135 | 27 | 0 | 32669 |
+| `agent/plans/PLAN-rmcp-writeback.md` | approved | 73 | 16 | 0 | 17437 |
 | `agent/plans/PLAN-root-api-token.md` | approved | 316 | 8 | 7 | 42826 |
 | `agent/plans/PLAN-root-grants.md` | approved | 321 | 14 | 5 | 34187 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
@@ -650,6 +660,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-token-ip-rebind.md` | draft | 426 | 0 | 11 | 41950 |
 | `agent/plans/PLAN-tutorial-recorder-licence.md` | proposed | 64 | 10 | 0 | 12703 |
 | `agent/plans/PLAN-tutorial-rerecord.md` | proposed | 62 | 7 | 0 | 11254 |
+| `agent/plans/PLAN-two-track-merge-dev.md` | approved | 231 | 24 | 0 | 39817 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
 | `agent/plans/PLAN-vmcheck-incremental.md` | approved | 24 | 1 | 2 | 3682 |
 | `agent/plans/PLAN-vscode-browser-exposure.md` | proposed | 61 | 9 | 0 | 10932 |
@@ -722,7 +733,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-w7p5a-real-run-dispatch.md` | done | 818 | 0 | 10 | 107465 |
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 
-257 plan(s), 195 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+268 plan(s), 206 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 
