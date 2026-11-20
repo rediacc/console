@@ -195,15 +195,18 @@ def ancestors(pid: int | None = None) -> list[int]:
     return chain
 
 
+EXIT_NOT_HELD = 3
+
+
 def held_by_ancestor(resource: str, environ: Mapping[str, str] | None = None) -> bool:
-    """True when `resource` is held right now by this process or one of its ancestors: the lock file cannot be taken and its payload names a PID in the parent chain. A free lock, an unreadable one, or one held by an unrelated process is False. rdc.sh asks this before wrapping `ops up|down` in the fleet lock, so a re-run under the holder (with any shim between them) enters the hold instead of wrapping again, and no environment variable can claim a hold that does not exist."""
+    """True when `resource` is held right now by this process or one of its ancestors: the lock file cannot be taken and its payload names a PID in the parent chain. A free lock or one held by an unrelated process is False; a lock file that cannot be opened (a symlink, wrong permissions) raises OSError, which the CLI turns into exit 2 so rdc.sh refuses. rdc.sh asks this before wrapping `ops up|down` in the fleet lock, so a re-run under the holder (with any shim between them) enters the hold instead of wrapping again, and no environment variable can claim a hold that does not exist."""
     path = lock_path(resource, environ)
     if not path.exists():
         return False
     try:
         fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | getattr(os, "O_NOFOLLOW", 0))
-    except OSError:
-        return False
+    except FileNotFoundError:
+        return False  # removed between the exists() test and the open: nothing is held
     try:
         try:
             fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
@@ -410,7 +413,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     holder_p.add_argument("--resource", required=True)
     anc_p = sub.add_parser(
         "held-by-ancestor",
-        help="exit 0 when this process or an ancestor holds the resource, 1 when not, 2 when the lock cannot be read",
+        help="exit 0 when this process or an ancestor holds the resource, 3 when not, 2 when the lock cannot be read (a crash exits 1)",
     )
     anc_p.add_argument("--resource", required=True)
     args = parser.parse_args(argv)
@@ -425,9 +428,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(ResourceLock(args.resource).holder())
         return 0
     if args.verb == "held-by-ancestor":
-        # 2, never 1, on an error: rdc.sh wraps only on exactly 1, so a crash cannot send it round the re-wrap loop again.
+        # "Not held" is 3, a code no crash (1) or usage error (2) produces: rdc.sh wraps only on 3 and refuses on anything but 0 or 3, so a failure can neither run ops unlocked nor send it round the re-wrap loop.
         try:
-            return 0 if held_by_ancestor(args.resource) else 1
+            return 0 if held_by_ancestor(args.resource) else EXIT_NOT_HELD
         except OSError as exc:
             print("resource_lock: held-by-ancestor cannot read the lock: %s" % exc, file=sys.stderr)
             return 2

@@ -379,3 +379,25 @@ def test_a_rerun_under_the_holder_with_a_shell_between_enters_the_hold_once(
     assert "outer holder" in lines[1], (
         "the probe must run inside the OUTER hold, not a new one: %s" % lines
     )
+
+
+def test_an_unreadable_fleet_lock_refuses_ops_instead_of_running_unlocked(
+    runtime: pathlib.Path, tmp_path: pathlib.Path
+) -> None:
+    """The lock path is a symlink, which the reader refuses (O_NOFOLLOW): rdc.sh must exit 2 and never reach the CLI, neither running ops without the lock nor re-wrapping."""
+    lock = resource_lock.lock_path("fleet", {"XDG_RUNTIME_DIR": str(runtime)})
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    target = tmp_path / "elsewhere"
+    target.write_text("{}")
+    lock.symlink_to(target)
+    wrapper = _probe_wrapper(tmp_path)
+    done = subprocess.run(
+        ["bash", str(wrapper), "--dev", "ops", "down"],
+        env=_env(runtime, tmp_path),
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert done.returncode == 2, (done.stdout, done.stderr)
+    assert "CLI" not in done.stdout, "ops must not run when the lock cannot be read"

@@ -56,8 +56,8 @@ fi
 
 # THE FLEET LOCK (PLAN-push-decoupling.md D1.5): `ops up|down` rebuild the VMs vm:check, e2e-local and the drills drive, so they run under rediacc_ci.core.resource_lock's `fleet`.
 _w=(); _p=""; for _a in "$@"; do [[ "$_p" == --config || "$_a" == -* ]] || _w+=("$_a"); _p="$_a"; done
-# Wrapped only when resource_lock held-by-ancestor answers 1 (not held; 0 held by an ancestor, 2 unreadable), reading the lock itself, so no environment variable can claim a hold, and a coverage shim between holder and child no longer re-wraps forever as it did on 2026-11-20).
-if [[ "${_w[0]:-} ${_w[1]:-}" =~ ^ops\ (up|down)$ ]] && { PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.core.resource_lock held-by-ancestor --resource fleet; [[ $? -eq 1 ]]; }; then
+# resource_lock held-by-ancestor reads the lock itself: 3 (not held) wraps, 0 (an ancestor holds it) runs inside that hold, and anything else (unreadable, a crash) refuses, never running unlocked nor re-wrapping; so no environment variable can claim a hold, and a coverage shim between holder and child no longer re-wraps forever as it did on 2026-11-20).
+if [[ "${_w[0]:-} ${_w[1]:-}" =~ ^ops\ (up|down)$ ]] && { PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" python3 -m rediacc_ci.core.resource_lock held-by-ancestor --resource fleet; _h=$?; [[ $_h -eq 0 || $_h -eq 3 ]] || exit 2; [[ $_h -eq 3 ]]; }; then
     PYTHONPATH="$ROOT_DIR/.ci${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m rediacc_ci.core.resource_lock run --resource fleet --purpose "rdc.sh ops ${_w[1]}" -- "$ROOT_DIR/rdc.sh" "$@"
 fi
 

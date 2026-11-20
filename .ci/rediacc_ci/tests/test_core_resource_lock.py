@@ -425,3 +425,12 @@ def test_held_by_ancestor_exits_two_when_the_lock_cannot_be_read(monkeypatch) ->
 
     monkeypatch.setattr(resource_lock, "held_by_ancestor", broken)
     assert resource_lock.main(["held-by-ancestor", "--resource", "fleet"]) == 2
+
+
+@pytest.mark.usefixtures("runtime")
+def test_held_by_ancestor_says_not_held_with_its_own_exit_code() -> None:
+    assert (
+        resource_lock.main(["held-by-ancestor", "--resource", "fleet"])
+        == resource_lock.EXIT_NOT_HELD
+        == 3
+    )
