@@ -79,6 +79,7 @@ def load(text: str | None = None) -> types.ModuleType:
         if spec is None or spec.loader is None:
             raise SystemExit("%s is missing" % SOURCE)
         mod = importlib.util.module_from_spec(spec)
+        sys.modules[name] = mod
         spec.loader.exec_module(mod)
         return mod
     mod = types.ModuleType(name)
