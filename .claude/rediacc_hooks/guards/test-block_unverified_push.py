@@ -2527,7 +2527,7 @@ def drive_tree(project, tree, cmd, mutant=None):
         argv = [
             sys.executable,
             "-c",
-            MUTANT_RUNNER % (str(GUARD.parents[1]), str(GUARD), GM.MUTANTS[mutant], str(GUARD)),
+            MUTANT_RUNNER % (str(GUARD.parents[2]), str(GUARD), GM.MUTANTS[mutant], str(GUARD)),
         ]
     proc = subprocess.run(
         argv,
