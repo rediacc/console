@@ -137,3 +137,4 @@
 {"at":"2026-11-16T07:52:47Z","by":"e0f36861","id":"2255f2d2","title":"Convert stale GitHub issues (console, renet, account) into plan files","covers":[],"order":null}
 {"at":"2026-11-20T10:03:13Z","by":"6c87d631","id":"5c2856d0","title":"remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)","covers":[],"order":null,"plan":"agent/plans/PLAN-rmcp-writeback.md"}
 {"at":"2026-11-20T20:18:41Z","by":"98cec5a6","id":"fe958571","title":"nginx2root and PHP 2026-11-19 security patching (hostinger + templates)","covers":[],"order":null}
+{"at":"2026-11-20T21:38:24Z","by":"98cec5a6","id":"422370f4","title":"Java4Shell CVE-2026-114938 triage (hostinger + templates)","covers":[],"order":null}
