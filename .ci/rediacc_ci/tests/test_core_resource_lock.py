@@ -434,3 +434,12 @@ def test_held_by_ancestor_says_not_held_with_its_own_exit_code() -> None:
         == resource_lock.EXIT_NOT_HELD
         == 3
     )
+
+
+@pytest.mark.usefixtures("runtime")
+def test_a_dangling_symlink_lock_cannot_be_read() -> None:
+    """exists() follows symlinks, so a dangling one used to read as no lock (exit 3, wrap); the O_NOFOLLOW open refuses it (exit 2)."""
+    path = resource_lock.lock_path("fleet")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.symlink_to(path.parent / "nowhere")
+    assert resource_lock.main(["held-by-ancestor", "--resource", "fleet"]) == 2

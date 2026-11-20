@@ -961,7 +961,7 @@ def done_commit(history, rel, sig):
 
 
 # One index per (history, plan): sig -> the first commit of its latest unbroken attesting run. check:ci-plan-implementation asks done_commit about ~2,700 boxes against a ~950-version history, and one history walk per box was 409 s of its 511 s on 2026-11-20 (profile); one walk per plan answers every box of it.
-_DONE_INDEX: dict[tuple[int, str], tuple[list, int, dict[str, str]]] = {}
+_DONE_INDEX: dict[tuple[int, str], tuple[list, tuple[int, ...], dict[str, str]]] = {}
 _DONE_INDEX_MAX = 1024
 
 
@@ -980,10 +980,11 @@ def _attested_sigs(doc, rel):
 
 
 def _done_index(history, rel):
-    """sig -> done commit for every box of `rel`, from one walk over `history` (oldest first), memoized per history object and length, so a history extended or replaced is walked again."""
+    """sig -> done commit for every box of `rel`, from one walk over `history` (oldest first), memoized per history object and the identity of each of its entries, so a history extended, shortened or with an entry replaced in place is walked again."""
     key = (id(history), rel)
+    entries = tuple(id(e) for e in history)
     cached = _DONE_INDEX.get(key)
-    if cached is not None and cached[0] is history and cached[1] == len(history):
+    if cached is not None and cached[0] is history and cached[1] == entries:
         return cached[2]
     running: dict[str, str] = {}
     for commit, doc in history:
@@ -994,7 +995,7 @@ def _done_index(history, rel):
             running.setdefault(sig, commit)
     if len(_DONE_INDEX) >= _DONE_INDEX_MAX:
         _DONE_INDEX.clear()
-    _DONE_INDEX[key] = (history, len(history), dict(running))
+    _DONE_INDEX[key] = (history, entries, dict(running))
     return _DONE_INDEX[key][2]
 
 

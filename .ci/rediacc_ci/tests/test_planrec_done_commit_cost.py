@@ -85,3 +85,16 @@ def test_the_per_plan_index_matches_the_per_box_walk_on_random_histories():
                     rel,
                     sig,
                 )
+
+
+def test_an_entry_replaced_in_place_is_walked_again():
+    rel = "agent/plans/PLAN-x.md"
+    history = [
+        ("c0", {"plans": {rel: {"done_sigs": ["s1"]}}}),
+        ("c1", {"plans": {rel: {"done_sigs": ["s1"]}}}),
+    ]
+    assert wl_planrec.done_commit(history, rel, "s1") == "c0"
+    history[1] = ("c1", {"plans": {rel: {"done_sigs": []}}})
+    assert wl_planrec.done_commit(history, rel, "s1") == "", (
+        "the replaced newest ledger no longer attests s1"
+    )

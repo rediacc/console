@@ -201,12 +201,11 @@ EXIT_NOT_HELD = 3
 def held_by_ancestor(resource: str, environ: Mapping[str, str] | None = None) -> bool:
     """True when `resource` is held right now by this process or one of its ancestors: the lock file cannot be taken and its payload names a PID in the parent chain. A free lock or one held by an unrelated process is False; a lock file that cannot be opened (a symlink, wrong permissions) raises OSError, which the CLI turns into exit 2 so rdc.sh refuses. rdc.sh asks this before wrapping `ops up|down` in the fleet lock, so a re-run under the holder (with any shim between them) enters the hold instead of wrapping again, and no environment variable can claim a hold that does not exist."""
     path = lock_path(resource, environ)
-    if not path.exists():
-        return False
+    # No exists() test: it follows symlinks, so a dangling symlink read as "no lock". The O_NOFOLLOW open decides: absent is not held, any symlink raises.
     try:
         fd = os.open(path, os.O_RDONLY | os.O_CLOEXEC | getattr(os, "O_NOFOLLOW", 0))
     except FileNotFoundError:
-        return False  # removed between the exists() test and the open: nothing is held
+        return False  # no lock file: nothing is held
     try:
         try:
             fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
