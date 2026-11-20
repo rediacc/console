@@ -38,13 +38,14 @@ def _repo(tmp_path):
 
 def test_differential_cached_answers_equal_the_per_call_answers(tmp_path):
     repo, shas = _repo(tmp_path)
-    cache = tmp_path / "facts.json"
+    cache = pathlib.Path(repo) / PIF.CACHE_REL
+    cache.parent.mkdir(parents=True, exist_ok=True)
     fresh = {s: wl_review.patch_id(repo, s) for s in shas}
     dates = {s: _git(repo, "log", "-1", "--format=%cI", s) for s in shas}
     follow = tuple(_git(repo, "log", "--follow", "--name-only", "--format=", "--", "d.txt").split())
     last = _git(repo, "rev-list", "-1", "HEAD", "--", "d.txt")
     for _pass in ("cold", "warm"):
-        facts = PIF.Facts(repo, "closure-x", str(cache))
+        facts = PIF.Facts(repo, "closure-x")
         got = facts.patch_ids(
             shas,
             lambda: wl_review.patch_ids(repo, "HEAD~4..HEAD"),
@@ -59,14 +60,15 @@ def test_differential_cached_answers_equal_the_per_call_answers(tmp_path):
             )
         assert facts.follow("d.txt", last, lambda _rel: follow) == follow
         facts.save()
-    warm = PIF.Facts(repo, "closure-x", str(cache))
+    warm = PIF.Facts(repo, "closure-x")
     assert warm.get("patch", shas[0]) == fresh[shas[0]], "the second pass must read the saved cache"
 
 
 def test_a_warm_cache_answers_without_computing(tmp_path):
     repo, shas = _repo(tmp_path)
-    cache = tmp_path / "facts.json"
-    facts = PIF.Facts(repo, "closure-x", str(cache))
+    cache = pathlib.Path(repo) / PIF.CACHE_REL
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    facts = PIF.Facts(repo, "closure-x")
     facts.patch_ids(
         shas,
         lambda: wl_review.patch_ids(repo, "HEAD~4..HEAD"),
@@ -78,13 +80,14 @@ def test_a_warm_cache_answers_without_computing(tmp_path):
     def boom(*_a):
         raise AssertionError("a cached fact was computed again")
 
-    warm = PIF.Facts(repo, "closure-x", str(cache))
+    warm = PIF.Facts(repo, "closure-x")
     assert set(warm.patch_ids(shas, boom, boom)) == set(shas)
 
 
 def test_stale_an_entry_under_another_closure_is_ignored(tmp_path):
     repo, shas = _repo(tmp_path)
-    cache = tmp_path / "facts.json"
+    cache = pathlib.Path(repo) / PIF.CACHE_REL
+    cache.parent.mkdir(parents=True, exist_ok=True)
     cache.write_text(
         json.dumps(
             {
@@ -97,7 +100,7 @@ def test_stale_an_entry_under_another_closure_is_ignored(tmp_path):
             }
         )
     )
-    facts = PIF.Facts(repo, "new-code", str(cache))
+    facts = PIF.Facts(repo, "new-code")
     assert facts.get("patch", shas[0]) is None, (
         "a planted entry under a changed closure hash must be ignored"
     )
@@ -108,8 +111,9 @@ def test_stale_an_entry_under_another_closure_is_ignored(tmp_path):
 
 def test_rebase_reachability_is_never_cached(tmp_path):
     repo, shas = _repo(tmp_path)
-    cache = tmp_path / "facts.json"
-    facts = PIF.Facts(repo, "closure-x", str(cache))
+    cache = pathlib.Path(repo) / PIF.CACHE_REL
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    facts = PIF.Facts(repo, "closure-x")
     facts.commit_date("date_c", shas[-1], lambda c: _git(repo, "log", "-1", "--format=%cI", c))
     facts.save()
     with pytest.raises(KeyError, match="reachability"):
@@ -124,9 +128,10 @@ def test_rebase_reachability_is_never_cached(tmp_path):
 
 def test_a_damaged_cache_is_an_empty_cache(tmp_path):
     repo, _shas = _repo(tmp_path)
-    cache = tmp_path / "facts.json"
+    cache = pathlib.Path(repo) / PIF.CACHE_REL
+    cache.parent.mkdir(parents=True, exist_ok=True)
     cache.write_text("{not json")
-    assert PIF.Facts(repo, "closure-x", str(cache)).data == {k: {} for k in PIF.KINDS}
+    assert PIF.Facts(repo, "closure-x").data == {k: {} for k in PIF.KINDS}
 
 
 def test_a_commit_only_on_origin_main_resolves_and_dropping_origin_main_refuses_it(
@@ -153,7 +158,8 @@ def test_a_commit_only_on_origin_main_resolves_and_dropping_origin_main_refuses_
 
 def test_a_damaged_follow_value_is_a_miss(tmp_path):
     repo, _shas = _repo(tmp_path)
-    cache = tmp_path / "facts.json"
+    cache = pathlib.Path(repo) / PIF.CACHE_REL
+    cache.parent.mkdir(parents=True, exist_ok=True)
     last = _git(repo, "rev-list", "-1", "HEAD", "--", "d.txt")
     cache.write_text(
         json.dumps(
@@ -167,7 +173,7 @@ def test_a_damaged_follow_value_is_a_miss(tmp_path):
             }
         )
     )
-    facts = PIF.Facts(repo, "c", str(cache))
+    facts = PIF.Facts(repo, "c")
     assert facts.follow("d.txt", last, lambda _rel: ("c.txt",)) == ("c.txt",), (
         "a string value must not read as one name per character"
     )
@@ -175,7 +181,7 @@ def test_a_damaged_follow_value_is_a_miss(tmp_path):
 
 def test_a_ref_that_is_not_a_full_sha_is_memoized_for_the_run(tmp_path):
     repo, _shas = _repo(tmp_path)
-    facts = PIF.Facts(repo, "c", str(tmp_path / "f.json"))
+    facts = PIF.Facts(repo, "c")
     calls = []
 
     def compute(ref):
@@ -203,3 +209,20 @@ def test_an_unreadable_source_hashes_instead_of_raising(tmp_path, monkeypatch):
     h = hashlib.sha256(b"plan-impl-facts\0%d\0" % PIF.SCHEMA)
     h.update(str(target).encode() + b"\0unreadable\0")
     assert PIF.closure_hash([target]) == h.hexdigest()
+
+
+def test_no_persist_neither_reads_nor_writes_and_the_file_is_fixed_under_the_root(tmp_path):
+    """Review ed9f0841.1: the write target is always <root>/CACHE_REL, and `--no-fact-cache` (persist False) touches no file."""
+    repo, shas = _repo(tmp_path)
+    cache = pathlib.Path(repo) / PIF.CACHE_REL
+    warm = PIF.Facts(repo, "c")
+    warm.put("patch", shas[0], "x")
+    warm.save()
+    assert warm.path == cache
+    assert cache.is_file(), "a persisting cache saves under the root"
+    cold = PIF.Facts(repo, "c", persist=False)
+    assert cold.data == {k: {} for k in PIF.KINDS}, "persist False must not read the saved file"
+    before = cache.read_bytes()
+    cold.put("patch", shas[1], "y")
+    cold.save()
+    assert cache.read_bytes() == before, "persist False must not write"

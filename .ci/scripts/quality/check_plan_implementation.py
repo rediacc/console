@@ -2181,7 +2181,7 @@ def main(argv=None) -> int:
     _RUN.facts = PIF.Facts(
         REPO_ROOT,
         PIF.closure_hash(fact_closure_files(planrec, preflight)),
-        path=None if "--no-fact-cache" not in argv else os.devnull,
+        persist="--no-fact-cache" not in argv,
     )
     if "--no-fact-cache" not in argv:
         _MEMO_UNDO.append(_RUN.facts.save)
