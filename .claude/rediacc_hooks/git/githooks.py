@@ -154,7 +154,31 @@ def commit_msg(argv: list[str]) -> int:
                 "[no-review] is for writing only; these paths are not: %s."
                 % (", ".join(offenders[:8]) or "(no staged path)")
             )
-    return lease_pr_task_refusal(msg, repo) or lease_plan_box_refusal(msg, repo)
+    return (
+        lease_pr_task_refusal(msg, repo)
+        or lease_plan_box_refusal(msg, repo)
+        or pr_freeze_refusal(msg, repo, branch, paths)
+    )
+
+
+def pr_freeze_refusal(msg: str, repo: str, branch: str, paths: list[str]) -> int:
+    """PLAN-two-track-merge-dev F1: while this branch is in its babysit or merge phase, only fix work lands (.claude/rediacc_hooks/pr_freeze.py). A lease is not judged here: it is detached, and its commits reach the branch through the lead's cherry-picks, which this hook judges then."""
+    if not repo or not branch or cp.lease_root(repo):
+        return 0
+    try:
+        freeze = _load("pr_freeze", HERE.parent / "pr_freeze.py")
+    except (OSError, ImportError, SyntaxError) as exc:
+        sys.stderr.write(
+            "commit-policy: note: the PR freeze is not loaded (%s); the commit is not frozen\n"
+            % exc
+        )
+        return 0
+    ok, reason = freeze.check(repo, CONSOLE_ROOT, branch, msg, paths)
+    if not ok:
+        return _refuse(reason)
+    if reason:
+        sys.stderr.write("commit-policy: note: %s\n" % reason)
+    return 0
 
 
 # A LEASE COMMIT NAMES A DECLARED EPIC (#c9ca8d23). In the main checkout `block_untagged_commit` refuses a `PR-TASK:` trailer that is missing or names no epic of the branch; a lease writer's commit reached the tree with `PR-TASK: tracked finding #d31b4054` (f07996f4f, lease 9010a7b9) because nothing here asked. The epic set is the MAIN checkout's (its live branch's `agent/pr/<branch>.md` united with

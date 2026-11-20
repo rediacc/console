@@ -72,7 +72,7 @@ def _focus_fix_ok(msg: str, phase: dict, open_items: dict, owned) -> tuple[bool,
 def verdict(
     msg: str,
     staged_paths: list[str],
-    gitlink_ranges: dict[str, list[str]] | None,
+    gitlink_ranges: dict[str, list[str] | None] | None,
     phase: dict | None,
     open_items: dict | None,
     record_res: list | None = None,
@@ -92,10 +92,16 @@ def verdict(
         return True, ""
     ranges = gitlink_ranges or {}
     if paths and ranges and set(paths) <= set(ranges):
+        unreadable = sorted(path for path, subjects in ranges.items() if subjects is None)
+        if unreadable:
+            return False, (
+                "the gitlink bump of %s cannot be judged: its submodule range is unreadable (check the submodule out, or end the phase with `%s`)"
+                % (", ".join(unreadable), ESCAPE)
+            )
         bad = [
             "%s: %s" % (path, s)
             for path, subjects in sorted(ranges.items())
-            for s in subjects
+            for s in subjects or []
             if not subject_admitted(s) and not _focus_fix_ok(s, phase, open_items or {}, owned)[0]
         ]
         if not bad:
@@ -123,9 +129,19 @@ def verdict(
 
 def _stop_modules():
     """wl_core, wl_standdown and wl_store from the Stop-hook directory, imported on first use (a commit with no phase pays nothing for them)."""
-    if str(STOP_DIR) not in sys.path:
+    added = str(STOP_DIR) not in sys.path
+    if added:
         sys.path.insert(0, str(STOP_DIR))
-    return tuple(importlib.import_module(name) for name in ("wl_core", "wl_standdown", "wl_store"))
+    try:
+        return tuple(
+            importlib.import_module(name)
+            for name in ("wl_core", "wl_standdown", "wl_store", "wl_review")
+        )[:3]
+    finally:
+        if added:
+            sys.path.remove(
+                str(STOP_DIR)
+            )  # imported once; the path is not left behind for the caller (review a29977aa.3)
 
 
 def active_phase(root, branch: str) -> dict | None:
@@ -158,7 +174,7 @@ def open_items(root) -> dict:
 def record_res(root) -> list:
     """The record-path globs of .ci/policy/record-paths.json, compiled in wl_review's dialect, minus each row's `except` globs."""
     _stop_modules()
-    wl_review = importlib.import_module("wl_review")
+    wl_review = sys.modules["wl_review"]
 
     doc = json.loads(
         (pathlib.Path(root) / ".ci" / "policy" / "record-paths.json").read_text(encoding="utf-8")
@@ -182,9 +198,9 @@ class _RecordRe:
         return bool(self.inc.match(path)) and not any(e.match(path) for e in self.exc)
 
 
-def gitlink_ranges(repo, paths: list[str]) -> dict[str, list[str]]:
-    """{path: [subject...]} for each staged path that is a gitlink: the commits between HEAD's pointer and the staged one."""
-    out: dict[str, list[str]] = {}
+def gitlink_ranges(repo, paths: list[str]) -> dict[str, list[str] | None]:
+    """{path: [subject...]} for each staged path that is a gitlink: the commits between HEAD's pointer and the staged one. None when the range cannot be read (the submodule is not checked out, a pointer is missing): unreadable is never read as empty (review a29977aa.1)."""
+    out: dict[str, list[str] | None] = {}
     for path in paths:
         staged = _git(repo, "ls-files", "-s", "--", path).split()
         if len(staged) < 2 or staged[0] != "160000":
@@ -192,10 +208,19 @@ def gitlink_ranges(repo, paths: list[str]) -> dict[str, list[str]]:
         new = staged[1]
         old = _git(repo, "rev-parse", "--verify", "--quiet", "HEAD:%s" % path)
         rng = "%s..%s" % (old, new) if old else new
-        out[path] = [
-            s for s in _git(pathlib.Path(repo) / path, "log", "--format=%s", rng).splitlines() if s
-        ]
+        rc, text = _git_rc(pathlib.Path(repo) / path, "log", "--format=%s", rng)
+        out[path] = [s for s in text.splitlines() if s] if rc == 0 else None
     return out
+
+
+def _git_rc(cwd, *args) -> tuple[int, str]:
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(cwd), *args], capture_output=True, text=True, timeout=30, check=False
+        )
+    except (OSError, subprocess.SubprocessError):
+        return 1, ""
+    return r.returncode, r.stdout.strip()
 
 
 def _git(cwd, *args) -> str:

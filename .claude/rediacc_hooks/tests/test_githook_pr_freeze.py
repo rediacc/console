@@ -220,3 +220,50 @@ def test_a_loader_error_fails_open_with_a_note(world, monkeypatch):
     ok, reason = PF.check(repo, repo, BRANCH, "feat(x): y", ["a.py"])
     assert ok
     assert "could not judge" in reason
+
+
+def _githooks():
+    spec = importlib.util.spec_from_file_location(
+        "githooks_pr_freeze_under_test", HOOKS / "git" / "githooks.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_commit_msg_is_wired_to_the_freeze(world, monkeypatch, capsys):
+    """githooks.pr_freeze_refusal refuses what pr_freeze refuses, and skips a lease."""
+    repo, _store = world
+    gh = _githooks()
+    fake = type("F", (), {"check": staticmethod(lambda *_a: (False, "FROZEN-BY-FAKE"))})
+    monkeypatch.setattr(gh, "_load", lambda name, _path: fake if name == "pr_freeze" else None)
+    assert gh.pr_freeze_refusal("feat(x): y", str(repo), BRANCH, ["f.txt"]) != 0
+    assert "FROZEN-BY-FAKE" in capsys.readouterr().err
+    monkeypatch.setattr(gh.cp, "lease_root", lambda _repo: "/lease")
+    assert gh.pr_freeze_refusal("feat(x): y", str(repo), BRANCH, ["f.txt"]) == 0, (
+        "a lease is judged when its commits land, not here"
+    )
+
+
+def test_an_unreadable_submodule_range_refuses_the_bump():
+    """Review a29977aa.1: a range that cannot be read is not an empty range."""
+    phase = {"mode": "babysit", "branch": BRANCH, "pr": 605, "o": OWNER}
+    ok, reason = PF.verdict("chore(sub): bump", ["private/sub"], {"private/sub": None}, phase, {})
+    assert not ok
+    assert "unreadable" in reason
+    assert PF.verdict("chore(sub): bump", ["private/sub"], {"private/sub": []}, phase, {})[0], (
+        "CONTROL: a readable empty range admits"
+    )
+
+
+def test_a_missing_freeze_module_fails_open(monkeypatch, capsys, tmp_path):
+    gh = _githooks()
+
+    def missing(_name, path):
+        raise FileNotFoundError(path)
+
+    monkeypatch.setattr(gh, "_load", missing)
+    monkeypatch.setattr(gh.cp, "lease_root", lambda _repo: "")
+    assert gh.pr_freeze_refusal("feat(x): y", str(tmp_path), BRANCH, ["f.txt"]) == 0
+    assert "not loaded" in capsys.readouterr().err

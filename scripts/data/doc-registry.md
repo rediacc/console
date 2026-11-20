@@ -738,7 +738,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/lifecycle.py | PostCompact, PostToolUse, SessionStart | settings.json | py |
 | .claude/rediacc_hooks/model_invocation.py | (none) | via .claude/rediacc_hooks/guards/block_user_only_command.py | py |
 | .claude/rediacc_hooks/plan_gate.py | (none) | via .claude/hooks/post-bash/refresh_pr_body.py | py |
-| .claude/rediacc_hooks/pr_freeze.py | (none) | via .claude/rediacc_hooks/tests/test_githook_pr_freeze.py | py |
+| .claude/rediacc_hooks/pr_freeze.py | (none) | via .claude/rediacc_hooks/git/githooks.py | py |
 | .claude/rediacc_hooks/proc.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
 | .claude/rediacc_hooks/run_tests.py | (none) | via .claude/rediacc_hooks/hookio.py | py |
 | .claude/rediacc_hooks/runningscript.py | (none) | via .claude/rediacc_hooks/guards/block_bash_write_to_running_script.py | py |
