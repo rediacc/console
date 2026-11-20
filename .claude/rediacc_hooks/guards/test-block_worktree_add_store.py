@@ -27,8 +27,7 @@ def load():
     if spec is None or spec.loader is None:
         raise SystemExit("%s: cannot load %s" % (__file__, GUARD))
     module = importlib.util.module_from_spec(spec)
-    sys.path.insert(0, str(HERE))
-    sys.path.insert(0, str(HERE.parent))
+    sys.path.insert(0, str(HERE.parents[1]))
     exec(compile(text, str(GUARD), "exec"), module.__dict__)
     return module
 
