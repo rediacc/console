@@ -6,7 +6,9 @@ THE RECORD, read here and written by the `lease` verb: `id`, `path`, `owner` (th
 
 LIVENESS COMES FROM THE ROSTER. A subagent's shell does not live between tool calls, so an empty cwd list proves nothing. A lease is held by a live roster row (by `agent`, or by the meta's recorded tree), by a worklist `[>]` item naming it, or by a process inside it. A blind roster says nothing, and a lease is never accused on a blind reading.
 
-LANDED IS NOT `wl_scratch.git_doubt`, whose `--not --remotes` reads every commit landed on the unpushed live branch as undelivered. A commit counts as landed by `git cherry` against the live tip, or by its `(cherry picked from commit <sha>)` line on a local branch or the live tip.
+LANDED IS NOT `wl_scratch.git_doubt`, whose `--not --remotes` reads every commit landed on the unpushed live branch as undelivered. A commit counts as landed by `git cherry` against the live tip, or by its `(cherry picked from commit <sha>)` line on a local branch or the live tip. The live tip is the HEAD of the tree the survey stands in (`_tip_row`).
+
+THE LANDING TREE IS NO LEASE (agent/plans/PLAN-two-track-merge-dev.md LT5). A lease is a linked tree under `<root>/.claude/worktrees/`, so the sibling landing tree, a linked tree outside it, is never surveyed, listed or accused from the development checkout. A stop in the landing tree surveys the leases under its own `.claude/worktrees/` against its own HEAD.
 
 A STOP WITH NOTHING MOVED RUNS NO STATUS. Full figures are this session's leases only, cached in the state doc under a signature of each repo's lease HEAD, live tip, pin and index stat. A held lease drops its entry, so the stop after its writer ends reads the tree again. The limit: an unstaged edit made after the last reading moves none of these. The GC predicate runs its own status, so that limit costs a report and never a deletion.
 """
@@ -111,7 +113,16 @@ def _lease_id(path, base):
     return path[len(prefix) :].split(os.sep, 1)[0] if path.startswith(prefix) else ""
 
 
-def _read_store(world, repo, store, base):
+def _tip_row(rows, here):
+    """The listed tree the survey stands in (`here`, resolved), else git's first row, the main checkout. A landing tree (agent/plans/PLAN-two-track-merge-dev.md LT5) lands its leases on its own branch, so its HEAD is the live tip there, never the main checkout's."""
+    for row in rows:
+        path = row.get("worktree", "")
+        if here and path and os.path.realpath(path) == here:
+            return row
+    return rows[0]
+
+
+def _read_store(world, repo, store, base, here=""):
     refs = _git(store, "for-each-ref", "--format=%(objectname) %(refname)", PIN_ROOT)
     if refs is None:
         world["doubts"].append("%s: its pins could not be read" % repo)
@@ -128,7 +139,7 @@ def _read_store(world, repo, store, base):
         return
     rows = parse_list(listed)
     if rows:
-        world["tips"][repo] = rows[0].get("HEAD", "")
+        world["tips"][repo] = _tip_row(rows, here).get("HEAD", "")
     for row in rows[1:]:
         path = row.get("worktree", "")
         lease_id = _lease_id(path, base)
@@ -180,8 +191,10 @@ def read_world(root):
         return world
     common = dirs[1]
     base = pathlib.Path(os.path.realpath(root / ".claude" / "worktrees"))
+    # Only the console's store lists `root` itself; a submodule store keeps git's first row.
+    here = os.path.realpath(root)
     for repo, store in stores(common):
-        _read_store(world, repo, store, base)
+        _read_store(world, repo, store, base, here if repo == CONSOLE else "")
     world["records"] = read_records(common, base)
     world["dirs"] = _stray_dirs(base)
     return world

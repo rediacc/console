@@ -3391,7 +3391,7 @@ def _remaining_recs(fold, session_id, open_items, deferred_recs, in_flight_recs)
 
 
 def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
-    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked / unreadable. Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count.
+    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked (outside the development tree, whose PR is a draft) / unreadable. Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count.
 
     A no-PR local batch (agent/plans/PLAN-turbo-local-first.md D2, `local_batch`) never gets "Open it": while the batch fills it is the N_TURBO_LOCAL advisory, and once it is ready the V_LOOP_NEXT_BATCH_OPEN block names the verify-push-open sequence, `me` filling its `--batch-body` line."""
     kind, branch = state.kind, state.branch
@@ -3440,7 +3440,8 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
             return "", False
         return M.V_LOOP_NEXT_NO_PR_WORK % fields, True
     if kind == wl_prscope.LIVE:
-        if pr_finish_fired or not state.plans:
+        # The development tree's PR is its draft: the merge is the landing tree's loop (agent/plans/PLAN-two-track-merge-dev.md LT5).
+        if pr_finish_fired or not state.plans or state.role == wl_prscope.DEVELOPMENT:
             return "", False
         if any(wl_planenforce.first_box(root, rel) for rel in state.plans):
             return "", False
@@ -3500,6 +3501,19 @@ def turbo_build_parks(state, root, on_loop, focus):
     if live_batch_ready(state, _set_finished(state, root)) or _set_unreadable(state, root):
         return frozenset()
     return TURBO_BUILD_PARKS
+
+
+def park_tree_keys(violations, parks, role, advise):
+    """`violations` without the tree's parked findings (agent/plans/PLAN-two-track-merge-dev.md LT5). Each finding whose base key is in `parks` and is not `always` goes to `advise(key, text)` with wl_prscope.TREE_PARK_NOTE ahead of its text; the rest come back in order. Empty `parks` returns `violations` itself."""
+    if not parks:
+        return violations
+    kept = []
+    for key, always, text in violations:
+        if not always and str(key).split(":", 1)[0] in parks:
+            advise(key, "%s\n%s" % (wl_prscope.TREE_PARK_NOTE % (role, key), text))
+            continue
+        kept.append((key, always, text))
+    return kept
 
 
 def turbo_next_text(state, root, writers):
@@ -3807,6 +3821,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     # THE PR'S ITEM SCOPE (Design 2). On the loop an open item blocks only while it is on an epic of the PR's plan set; off the loop None puts every item in scope. The same predicate scopes the guide below.
     # Bound once with functools.partial so both classify calls below carry it and each call keeps the exact shape the order-key mutation control (test_wl_plan_priority m4) edits.
     _in_scope = (lambda rec: rec["id"] in _scope_ids) if _on_loop else None
+    # TWO TREES (agent/plans/PLAN-two-track-merge-dev.md LT5): on or off the loop, the items another tree's branch owns are queued here, never blocked on (wl_prscope.with_tree_scope). Without a landing record the predicate is unchanged.
+    _in_scope = wl_prscope.with_tree_scope(_in_scope, _loop)
     _classify = functools.partial(S.classify_items, in_scope=_in_scope, dep_graph=_dep_graph)
     open_items, _others, deferred_recs, in_flight_recs, _queued_recs = _classify(
         fold, session_id, live_worker_ids=_live_worker_ids, order_key=_order_key
@@ -5208,6 +5224,10 @@ def run_stop(event, event_ok, worklist, hook_file):
     with contextlib.suppress(Exception):
         _turbo_parks = turbo_build_parks(_loop, root, _on_loop, _focus)
     _turbo_stood: set[str] = set()
+    # THE TREE'S OWN PARKS (agent/plans/PLAN-two-track-merge-dev.md LT5): the development tree reports its draft PR's red and the landing tree its queue arms; the rest of the parked keys are moved to the advisory queue just ahead of the stand-down.
+    _tree_parks: frozenset = frozenset()
+    with contextlib.suppress(Exception):
+        _tree_parks = wl_prscope.tree_parks(_loop, _focus)
     try:
         cistate, cidetail = wl_ci.ci_trouble(
             root,
@@ -5217,7 +5237,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             (last_msg or "") + "\n" + "\n".join(deferred),
             ref=_ci_ref,
             owned=_ci_owned,
-            hold="ci-red" in _turbo_parks,
+            hold="ci-red" in _turbo_parks or "ci-red" in _tree_parks,
         )
     except Exception as exc:
         cistate, cidetail = "unreadable", "%s: %s" % (type(exc).__name__, str(exc)[:120])
@@ -5266,6 +5286,13 @@ def run_stop(event, event_ok, worklist, hook_file):
                 len(cidetail["hard"]),
                 wl_ci.ci_rows_line(cidetail["hard"]),
                 _open_in_set(_loop, root),
+            )
+        elif cistate == "trouble" and "ci-red" in _tree_parks:
+            # The development tree's draft PR: one report line on every stop while the red stands, never a block (wl_prscope.DRAFT_CI_NOTE).
+            ci_report = wl_prscope.DRAFT_CI_NOTE % (
+                _pr,
+                len(cidetail["hard"]),
+                wl_ci.ci_rows_line(cidetail["hard"]),
             )
         elif cistate == "trouble":
             vadd(
@@ -6323,6 +6350,13 @@ def run_stop(event, event_ok, worklist, hook_file):
     violations = _effort_kept
     if bgwait_due and not any(k == "bg-report" for k, _a, _t in violations):
         bgwait_due = False  # turned down by the level, not delivered
+    # ---- THE TREE'S PARKS (agent/plans/PLAN-two-track-merge-dev.md LT5, wl_prscope.tree_parks): a parked key's finding rides the advisory queue under its own key, the way the effort level moves one. An `always` finding (a check that raised) is never parked.
+    violations = park_tree_keys(
+        violations,
+        _tree_parks,
+        getattr(_loop, "role", ""),
+        lambda key, text: outq_add(worklist, session_id, state_doc, key, text, 1, refresh_min=0),
+    )
 
     # Saved EAGERLY. The state doc is bookkeeping that must survive every exit below, several of which emit without saving -- exactly the shape that made the output queue lose latched sections before it was moved to compute-time persistence.
     S.save_state(worklist, session_id, state_doc)
