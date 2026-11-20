@@ -33,9 +33,7 @@ ENV = {
     "GIT_CONFIG_GLOBAL": "/dev/null",
     "GIT_CONFIG_SYSTEM": "/dev/null",
 }
-os.environ.update(ENV)
-for key in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "COMMIT_REVIEW_CHILD", "STOPHOOK_CHILD"):
-    os.environ.pop(key, None)
+SCRUBBED = ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "COMMIT_REVIEW_CHILD", "STOPHOOK_CHILD")
 
 FAILURES: list[tuple[str, list[str]]] = []
 
@@ -365,8 +363,21 @@ def main_():
     return 0
 
 
+def isolated_main():
+    """`main_` with the fixture environment (ENV set, SCRUBBED removed, and the TMPDIR and CLAUDE_PROJECT_DIR the checks set) confined to the run: the caller's environment is restored afterwards (review finding 4a4bd934.3)."""
+    saved = dict(os.environ)
+    os.environ.update(ENV)
+    for key in SCRUBBED:
+        os.environ.pop(key, None)
+    try:
+        return main_()
+    finally:
+        os.environ.clear()
+        os.environ.update(saved)
+
+
 if __name__ == "__main__":
-    main_()
+    isolated_main()
     if FAILURES:
         print("%d check(s) failed" % len(FAILURES))
         sys.exit(1)
