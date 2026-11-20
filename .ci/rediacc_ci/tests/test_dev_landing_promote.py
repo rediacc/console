@@ -1,6 +1,6 @@
 """Leases and promotion across the two trees (PLAN-two-track-merge-dev LT16), in throwaway repositories.
 
-The promotion fixture is a bare origin, a main clone holding the development branch stacked on the landing branch, a linked landing tree on the landing branch bound by the landing record, and a rebase-merge simulated by a second clone that cherry-picks the landing commits onto origin/main after one unrelated commit. The lease fixture is `test_dev_worktree_lease`'s, with a landing tree beside it.
+The promotion fixture is a bare origin, a main clone holding the development branch stacked on the landing branch, one submodule with a bare origin of its own, a linked landing tree on the landing branch bound by the landing record with that submodule checked out, and a rebase-merge simulated by a second clone that cherry-picks the landing commits onto origin/main after one unrelated commit. The development branch's submodule commit sits on the development name in the main checkout's submodule tree only, so the landing tree has to fetch it from there. The lease fixture is `test_dev_worktree_lease`'s, with a landing tree beside it.
 """
 
 from __future__ import annotations
@@ -19,6 +19,7 @@ LANDING = "1120-1"
 DEV = "1120-2"
 NEXT = "1120-3"
 TODAY = "1120"
+SUB = "sub"
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -55,21 +56,36 @@ def tip(tree, ref="HEAD"):
     return spike.must(tree, "rev-parse", ref)
 
 
+def branch_of(tree):
+    return spike.out(tree, "symbolic-ref", "-q", "--short", "HEAD")
+
+
 # ---- promotion ---------------------------------------------------------------
 
 
 class Two:
-    def __init__(self, root, main, landing, merger, landing_shas, dev_tip):
+    def __init__(self, root, main, landing, merger, landing_shas, dev_tip, sub_link):
         self.root, self.main, self.landing, self.merger = root, main, landing, merger
-        self.landing_shas, self.dev_tip = landing_shas, dev_tip
+        self.landing_shas, self.dev_tip, self.sub_link = landing_shas, dev_tip, sub_link
+        self.landing_sub = landing / SUB
+        self.landing_sub_head = tip(self.landing_sub)
 
 
 def build_two(base_dir, *, picks=2, dev_conflict=False, absorb_dev=False):
     """The two-tree promotion fixture. `picks` landing commits reach origin/main; `dev_conflict` makes the first development commit collide with main's unrelated commit; `absorb_dev` puts the first development commit's change on main inside a larger commit, so the rebase drops it as empty."""
+    sub_origin = base_dir / "sub.git"
+    spike.must(base_dir, "init", "-q", "--bare", "-b", "main", str(sub_origin))
+    seed = base_dir / "sub-seed"
+    spike.must(base_dir, "clone", "-q", str(sub_origin), str(seed))
+    commit(seed, "s0.txt")
+    spike.must(seed, "push", "-q", "origin", "HEAD:main")
     origin = base_dir / "origin.git"
     spike.must(base_dir, "init", "-q", "--bare", "-b", "main", str(origin))
     main = base_dir / "console"
     spike.must(base_dir, "clone", "-q", str(origin), str(main))
+    spike.must(
+        main, "-c", "protocol.file.allow=always", "submodule", "add", "-q", str(sub_origin), SUB
+    )
     commit(main, "base.txt")
     spike.must(main, "push", "-q", "-u", "origin", "main")
     spike.must(main, "switch", "-q", "-c", LANDING)
@@ -77,9 +93,14 @@ def build_two(base_dir, *, picks=2, dev_conflict=False, absorb_dev=False):
     spike.must(main, "push", "-q", "origin", LANDING)
     spike.must(main, "switch", "-q", "-c", DEV)
     commit(main, "other.txt" if dev_conflict else "d1.txt", "dev side\n", "D1")
+    # The development branch's submodule commit sits on the development name in the main checkout's submodule tree, pushed nowhere.
+    spike.must(main / SUB, "switch", "-q", "-c", DEV)
+    sub_link = commit(main / SUB, "s1.txt")
+    spike.must(main, "add", "--", SUB)
     commit(main, "d2.txt", None, "D2")
     landing = base_dir / "console-landing"
     spike.must(main, "worktree", "add", "-q", str(landing), LANDING)
+    spike.must(landing, "-c", "protocol.file.allow=always", "submodule", "update", "-q", "--init")
     policy().write_landing_record(str(main), str(landing), LANDING)
 
     merger = base_dir / "merger"
@@ -93,7 +114,7 @@ def build_two(base_dir, *, picks=2, dev_conflict=False, absorb_dev=False):
     for sha in landing_shas[:picks]:
         spike.must(merger, "cherry-pick", sha)
     spike.must(merger, "push", "-q", "origin", "main")
-    return Two(base_dir, main, landing, merger, landing_shas, tip(main))
+    return Two(base_dir, main, landing, merger, landing_shas, tip(main), sub_link)
 
 
 @pytest.fixture
@@ -136,6 +157,8 @@ def untouched(two):
     assert spike.out(two.main, "symbolic-ref", "--short", "HEAD") == DEV
     assert spike.out(two.landing, "symbolic-ref", "--short", "HEAD") == LANDING
     assert not (two.main / ".git" / "rebase-merge").exists()
+    assert tip(two.landing_sub) == two.landing_sub_head
+    assert branch_of(two.landing_sub) == ""
 
 
 def subjects(tree, rng):
@@ -147,11 +170,81 @@ def test_promote_happy_path_moves_the_branch_and_cuts_the_next(two, capfd):
     assert line == "gh pr ready 42"
     assert spike.out(two.landing, "symbolic-ref", "--short", "HEAD") == DEV
     assert spike.out(two.main, "symbolic-ref", "--short", "HEAD") == NEXT
-    assert tip(two.main) == tip(two.main, "refs/remotes/origin/main")
     assert record_of(two.main) == {"path": str(two.landing), "branch": DEV}
     # The landing copies dropped as absorbed: only the development commits sit above origin/main.
     assert subjects(two.main, "origin/main..%s" % DEV) == ["D2", "D1"]
     assert "2 carried, 2 absorbed" in capfd.readouterr().err
+
+
+def test_promote_cuts_the_next_branch_stacked_on_the_new_landing_tip(two):
+    run_promote(two.main)
+    assert tip(two.main) == tip(two.main, "refs/heads/%s" % DEV)
+    assert tip(two.main) != tip(two.main, "refs/remotes/origin/main")
+    # wl_stack is the reader: right after promotion the development tree is current against the new landing branch.
+    st = lease._hook_module("wl_stack").stack_state(
+        two.main, fetch=False, pr_merged=lambda _root, _branch: False
+    )
+    assert (st.state, st.landing, st.development) == ("current", DEV, NEXT), st
+
+
+def test_promote_moves_the_landing_submodule_tree_to_the_promoted_name(two):
+    run_promote(two.main)
+    assert branch_of(two.landing_sub) == DEV
+    assert tip(two.landing_sub) == two.sub_link
+    assert tip(two.landing, "HEAD:%s" % SUB) == two.sub_link
+    assert spike.out(two.landing, "status", "--porcelain") == ""
+
+
+def test_promote_control_a_landing_submodule_branch_behind_the_gitlink_moves_forward(two):
+    spike.must(two.landing_sub, "branch", "-q", DEV, two.landing_sub_head)
+    assert run_promote(two.main) == "gh pr ready 42"
+    assert branch_of(two.landing_sub) == DEV
+    assert tip(two.landing_sub) == two.sub_link
+
+
+def test_promote_refuses_a_landing_submodule_branch_the_gitlink_lacks(two):
+    spike.must(two.landing_sub, "switch", "-q", "-c", DEV)
+    stray = commit(two.landing_sub, "stray.txt")
+    spike.must(two.landing_sub, "switch", "-q", "--detach", two.landing_sub_head)
+    with pytest.raises(promote_mod.PromoteRefusedError, match="does not contain"):
+        run_promote(two.main)
+    untouched(two)
+    assert tip(two.landing_sub, "refs/heads/%s" % DEV) == stray
+
+
+def test_promote_refuses_a_dirty_landing_submodule_tree(two):
+    spike.write(two.landing_sub / "scratch.txt", "work\n")
+    with pytest.raises(promote_mod.PromoteRefusedError, match="submodule tree sub of the landing"):
+        run_promote(two.main)
+    untouched(two)
+
+
+def dev_sha(two, subject):
+    return spike.must(two.main, "log", "-1", "--format=%H", "--grep=^%s$" % subject, DEV)
+
+
+def test_promote_names_the_commits_the_rebase_left_unreviewed(two, capfd):
+    run_promote(two.main)
+    err = capfd.readouterr().err
+    for subject in ("D1", "D2"):
+        assert "%s: UNREVIEWED %s" % (DEV, dev_sha(two, subject)[:12]) in err, err
+    assert "2 unreviewed" in err
+
+
+def test_promote_control_a_review_record_carried_by_patch_id_is_not_named(two, capfd):
+    d1 = tip(two.main, "%s~1" % DEV)
+    pid = lease._hook_module("wl_review").patch_id(str(two.main), d1)
+    assert pid
+    rel = "agent/reviews/%s/%s.md" % (DEV, d1)
+    spike.write(two.main / rel, "# review\nPatch-Id: %s\n" % pid)
+    spike.must(two.main, "add", "--", rel)
+    spike.must(two.main, "commit", "--no-gpg-sign", "-q", "-m", "review of D1")
+    two.dev_tip = tip(two.main)
+    run_promote(two.main)
+    err = capfd.readouterr().err
+    assert "UNREVIEWED %s" % dev_sha(two, "D2")[:12] in err, err
+    assert "UNREVIEWED %s" % dev_sha(two, "D1")[:12] not in err, err
+    assert "1 unreviewed" in err
 
 
 def test_promote_from_the_landing_root_resolves_the_main_checkout(two):
