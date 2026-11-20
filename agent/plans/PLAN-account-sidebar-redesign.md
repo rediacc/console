@@ -394,6 +394,7 @@ Selectors that are not test IDs: `settingsLink` and `clickLink('Settings')` open
     - the scan helper flags a planted `nav:item.zzz` text node in a fixture page and passes a clean one;
     - the run's stdout carries one line per step and the JSON summary.
     (ticked) 2026-11-19T15:24:44Z by d778be9d: commit:f2ba2c03e (private/account 34e3aef); e2e tsc rc 0, playwright --list includes 07-90, local run without origin 2 passed 1 skipped; bench run is X2
+    Note (2026-11-20): the tick did not record the Accept's refusal check or the Covered stdout and JSON-summary lines. Re-run 2026-11-20: `LIVE_SIDEBAR_ORIGIN=https://www.rediacc.com npx playwright test --config playwright.live.config.ts tests/07-navigation/07-90-live-sidebar.test.ts` exits 1 with the `assertBenchOrigin` refusal (private/account/e2e/src/utils/live-sidebar-walk.ts:40) before any browser starts. The bench-origin run, with its per-step stdout and JSON summary, stays with X2.
 - [ ] X1 [lead] Local proof chain: a VERIFIED `npm run vm:check -- --changed` on the head tree, then `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench`.
   Local-route: vm-check, deploy-bench -- the branch tree is proved on the fleet and deployed to bench from this checkout
   Owns: none (runs only). Accept: vm:check VERIFIED and deploy_bench rc 0 naming the deployed version.
