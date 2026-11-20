@@ -24,9 +24,9 @@ THE ESCAPE is an environment assignment on the push itself, read from the shared
 
   Every kind needs the `ASKED:` minute, matched against an AskUserQuestion answer in the payload's `transcript_path` within 300 s by `wl_checks._asked_in_transcript`, the evidence rule of the review waiver. That proves an operator answer exists at that minute, not that it answered this question: it narrows the escape to the operator's own turn. A transcript that cannot be read proves nothing, so the escape is refused then.
 
-THE LEDGER. Each admitted escape appends one JSON line per judged push to agent/ledgers/vm-check-push-reasons.jsonl in the console checkout (ts, branch, head (the pushed commit, not the checkout's HEAD), tree, renet, account (the two gitlinks of that tree), sides, kind, why, asked, hits[:10], receipt), written only once every push of the command is admitted. ORDER 63 puts it behind every refusing guard but `block_backup_unverified_push` at 64, `block_unasked_release` at 62 included, so those have already admitted the command when the line is written. A push a VERIFIED receipt admits writes nothing: the receipt is its record.
+THE LEDGER. Each admitted escape appends one JSON line per judged push to agent/ledgers/vm-check-push-reasons.jsonl in the tree the push was typed in (ts, branch, head (the pushed commit, not the checkout's HEAD), tree, renet, account (the two gitlinks of that tree), sides, kind, why, asked, hits[:10], receipt), written only once every push of the command is admitted. ORDER 63 puts it behind every refusing guard but `block_backup_unverified_push` at 64, `block_unasked_release` at 62 included, so those have already admitted the command when the line is written. A push a VERIFIED receipt admits writes nothing: the receipt is its record.
 
-SCOPE, as `block_unverified_push` draws it: a command-position `git push` in this checkout. NOT judged: a `--dry-run` push (a `--mirror` or `--all` one too, since it publishes nothing); a delete push (`--delete`, `:<ref>`); a push whose source is exactly `origin/main` (the GitLab mirror push of /pr-merge step 6b, `block_unverified_push.pushes_only_origin_main`), which a `--mirror` push never is; a submodule push (the console pointer push carries the range); another repository, by `-C`, `cd` or the payload's `cwd`.
+SCOPE, as `block_unverified_push` draws it: a command-position `git push` in this checkout or in another linked tree of its repository, such as the landing tree beside it that holds the PR branch; each push is judged in its own tree, against that tree's HEAD, range and receipts (`_push_tree`, PLAN-two-track-merge-dev LT6). NOT judged: a `--dry-run` push (a `--mirror` or `--all` one too, since it publishes nothing); a delete push (`--delete`, `:<ref>`); a push whose source is exactly `origin/main` (the GitLab mirror push of /pr-merge step 6b, `block_unverified_push.pushes_only_origin_main`), which a `--mirror` push never is; a submodule push (the console pointer push carries the range); another repository, by `-C`, `cd` or the payload's `cwd`.
 
 THE OPERATOR. There is no override beyond the ASKED escape: the operator's own `!` command never reaches PreToolUse.
 
@@ -51,6 +51,11 @@ ORDER = 63
 DEFECT = ("if not hits:", "if True:")
 # The further mutants the own suite plants; each must flip at least one refusal to allowed.
 MUTANTS = {
+    # LT6: a push typed in a linked tree is judged in this checkout again, against its HEAD and receipts.
+    "sibling-tree-unjudged": (
+        "if top and store and commit_policy.common_dir(top) == store:",
+        "if False:",
+    ),
     # The judge stops passing the touched sides, so a receipt that skipped a phase admits.
     "phases-ignored": (
         "verdict = receipt_mod.admit(root_path, tree, digest, sides, chain)",
@@ -512,23 +517,39 @@ def _skipped(args):
 
 
 def _pushes(cmd, root, base):
-    """[(canonical push line, reason-or-None, args)] for every judged push of this checkout in `cmd`, in order."""
+    """{tree: [(canonical push line, reason-or-None, args)]} for every judged push in `cmd`, in order, keyed by the tree each is judged in: this checkout, or another linked tree of its repository (`_push_tree`)."""
     created = commit_policy.created_dirs(cmd, base)
-    out = []
+    out: dict[str, list[tuple[str, str | None, list[str]]]] = {}
     for run in commit_policy.git_runs(cmd, "push"):
         _, _, args = commit_policy.git_split(run.argv)
         if _skipped(args):
             continue
-        repo = commit_policy.scoped_repo(run, base, root, created, cmd) or root
-        if pathlib.Path(repo).resolve() != pathlib.Path(root).resolve():
-            # A submodule (its pointer push carries the range) or another repository.
+        tree = _push_tree(run, base, root, created, cmd)
+        if not tree:
             continue
         line = " ".join(["git", "push", *args])
         # Before the origin/main exemption: a mirror push is never the GitLab copy of main.
-        if not _mirrors(args) and PUSH.pushes_only_origin_main(root, [line]):
+        if not _mirrors(args) and PUSH.pushes_only_origin_main(tree, [line]):
             continue
-        out.append((line, run.env.get(REASON_ENV), args))
+        out.setdefault(tree, []).append((line, run.env.get(REASON_ENV), args))
     return out
+
+
+def _push_tree(run, base, root, created, cmd):
+    """The tree the walked push `run` is judged in, "" when it is a submodule's or another repository's.
+
+    EACH TREE IS JUDGED BY ITS OWN RECEIPT (PLAN-two-track-merge-dev LT6). A push whose directory sits in a linked tree of this repository (one git common directory: the landing tree beside this checkout, which holds the PR branch) is judged there, against that tree's HEAD, range and `.ci/cache` receipts. `scoped_repo` alone answered this checkout for it, since the landing tree lies outside `root` and pushes to this repository's origin, so the landing tree's push was judged by the development checkout's receipt and HEAD. A git variable or global option that moves git (`git_run_scope_doubt`) keeps the `scoped_repo` answer, which judges this checkout.
+    """
+    if not shellscan.git_run_scope_doubt(run):
+        top = commit_policy.toplevel(commit_policy.run_dir(run, base))
+        store = commit_policy.common_dir(root)
+        if top and store and commit_policy.common_dir(top) == store:
+            return root if pathlib.Path(top).resolve() == pathlib.Path(root).resolve() else top
+    repo = commit_policy.scoped_repo(run, base, root, created, cmd) or root
+    if pathlib.Path(repo).resolve() != pathlib.Path(root).resolve():
+        # A submodule (its pointer push carries the range) or another repository.
+        return ""
+    return root
 
 
 def _mirrors(args):
@@ -874,8 +895,8 @@ def run(ev):
     if not root:
         return hookio.ALLOW
     base = ev.field("cwd") or root
-    pushes = _pushes(cmd, root, base)
-    if not pushes:
+    groups = _pushes(cmd, root, base)
+    if not groups:
         return hookio.ALLOW
     try:
         trigger = syspath.import_from_ci(TRIGGER_MOD)
@@ -883,13 +904,28 @@ def run(ev):
     except ImportError as exc:
         ev.warn(UNEXAMINED % ("the vm-check trigger or receipt module could not import (%s)" % exc))
         return hookio.ALLOW
+    blocks = []
+    admitted = []
+    for tree_root, pushes in groups.items():
+        rows = _judge_tree(ev, tree_root, pushes, trigger, receipt_mod, blocks)
+        if rows:
+            admitted.append((tree_root, rows))
+    if blocks:
+        ev.warn_raw("\n".join(blocks))
+        return hookio.DENY
+    for tree_root, rows in admitted:
+        _record(ev, tree_root, rows)
+    return hookio.ALLOW
+
+
+def _judge_tree(ev, root, pushes, trigger, receipt_mod, blocks):
+    """The ledger rows of the escapes admitted for `pushes`, all typed in the tree `root`; each refusal is appended to `blocks`."""
     root_path = pathlib.Path(root)
     tips, unresolved, blind = _tips(root, pushes)
     for src in unresolved:
         ev.warn(UNEXAMINED % ("git could not name the pushed commit of `%s`" % src))
 
     rows = []
-    blocks = []
     for label, hits, sending in blind:
         refusals = []
         for index in sending:
@@ -959,9 +995,4 @@ def run(ev):
                 "ledger": LEDGER_REL,
             }
         )
-    if blocks:
-        ev.warn_raw("\n".join(blocks))
-        return hookio.DENY
-    if rows:
-        _record(ev, root, rows)
-    return hookio.ALLOW
+    return rows

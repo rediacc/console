@@ -11,13 +11,16 @@ THE LEDGER. An admitted escape appends one line per push to agent/ledgers/vm-che
 
 THE VERIFIED CHAIN (agent/plans/PLAN-vmcheck-incremental.md V2). A renet-only receipt whose run diffed against a both-phase VERIFIED account commit admits a push touching both sides; the same receipt is refused when the account side moved after that commit (`chain-touched`), when the base commit has no receipt, and when its receipt is NOT_VERIFIED (`chain-broken`).
 
-THE MUTANTS ARE PROVEN HERE TOO. The guard's `DEFECT` and every one of its `MUTANTS` (`inputs-always-equal`, `asked-always-true`, `phases-ignored`, `account-side-dropped`, `chain-touched-ignored`) are each planted in a copy run through the same payloads, and each must flip at least one refusal to allowed; a suite whose green did not depend on that line would pass the copy too.
+TWO TREES OF ONE REPOSITORY (PLAN-two-track-merge-dev LT6). A linked tree beside a VERIFIED console world, on its own branch with its own CLI change: its push, typed there or named by `git -C`, is refused with no receipt of its own and admitted with one, and the console world's own push stays admitted.
+
+THE MUTANTS ARE PROVEN HERE TOO. The guard's `DEFECT` and every one of its `MUTANTS` (`inputs-always-equal`, `asked-always-true`, `phases-ignored`, `account-side-dropped`, `chain-touched-ignored`, `sibling-tree-unjudged`) are each planted in a copy run through the same payloads, and each must flip at least one refusal to allowed; a suite whose green did not depend on that line would pass the copy too.
 """
 
 import importlib.util
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -200,6 +203,27 @@ R = "VM_CHECK_PUSH_REASON='%s' "
 PUSH = "git push origin 1008-1"
 NR = (R % ("not-runtime: " + FILES + ASK)) + PUSH
 
+
+# ---- two trees of one repository (PLAN-two-track-merge-dev LT6): a linked tree beside the console world, on its own branch with its own CLI change and its own .ci/cache. The submodule checkouts are copied in, since a linked tree checks out none. CLAUDE_PROJECT_DIR stays on the console world and VERIFIED there, so only the linked tree's own receipt can admit its push.
+def linked_world(root, name, receipt):
+    tree = pathlib.Path(root).parent / name
+    G._git(root, "worktree", "add", "-q", "-b", "1008-2", str(tree), "HEAD")
+    for sub in (G.RENET, G.ACCOUNT):
+        shutil.rmtree(tree / sub, ignore_errors=True)
+        shutil.copytree(pathlib.Path(root) / sub, tree / sub, symlinks=True)
+    G._put(tree, G.CLI_FILE, "export const sftp = 3;\n")
+    G._git(tree, "add", G.CLI_FILE)
+    G._git(tree, "commit", "-q", "-m", "landing work")
+    if receipt:
+        G.plant_receipt(tree)
+    return tree
+
+
+SIB_MAIN = built("vmc-cli-verified")
+SIB_TREE = linked_world(SIB_MAIN, "landing-none", receipt=False)
+SIB_OK_MAIN = built("vmc-cli-verified")
+SIB_OK_TREE = linked_world(SIB_OK_MAIN, "landing-verified", receipt=True)
+
 CASES = [
     # (name, command, root, transcript, cwd, expect_blocked, stderr needle) ---- the trigger
     ("docs only: a bare push", PUSH, DOCS, None, None, False, ""),
@@ -223,6 +247,61 @@ CASES = [
         "npm run vm:check -- --changed",
     ),
     ("CLI touched: an implicit push", "git push", CLI_NONE, None, None, True, ""),
+    # LT6: a push typed in the linked tree is judged there. `HEAD` there is the linked tree's commit; read in the console world it would be the VERIFIED one.
+    (
+        "linked tree: HEAD pushed, no receipt of its own",
+        "git push origin HEAD",
+        SIB_MAIN,
+        None,
+        str(SIB_TREE),
+        True,
+        "packages/cli/src/remote/sftp.ts",
+    ),
+    (
+        "linked tree: its branch pushed, no receipt of its own",
+        "git push origin 1008-2",
+        SIB_MAIN,
+        None,
+        str(SIB_TREE),
+        True,
+        "",
+    ),
+    (
+        "linked tree: a -C push from the console world",
+        "git -C %s push origin HEAD" % SIB_TREE,
+        SIB_MAIN,
+        None,
+        None,
+        True,
+        "",
+    ),
+    (
+        "linked tree: its own VERIFIED receipt admits HEAD",
+        "git push origin HEAD",
+        SIB_OK_MAIN,
+        None,
+        str(SIB_OK_TREE),
+        False,
+        "",
+    ),
+    (
+        "linked tree: and its branch",
+        "git push origin 1008-2",
+        SIB_OK_MAIN,
+        None,
+        str(SIB_OK_TREE),
+        False,
+        "",
+    ),
+    (
+        "linked tree CONTROL: the console world's own push stays VERIFIED",
+        "git push origin 1008-1",
+        SIB_MAIN,
+        None,
+        None,
+        False,
+        "",
+    ),
     ("CLI touched: a -C push", "git -C . push origin 1008-1", CLI_NONE, None, None, True, ""),
     (
         "CLI touched: an sh -c payload",
@@ -1059,6 +1138,7 @@ MUST_FLIP = {
     "phases-ignored": "both sides, an account-only VERIFIED receipt",
     "account-side-dropped": "account range, a renet-only VERIFIED receipt",
     "chain-touched-ignored": "chain: the account side changed after the base",
+    "sibling-tree-unjudged": "linked tree: HEAD pushed, no receipt of its own",
 }
 for label, mutant in CONTROLS:
     must = MUST_FLIP.get(label)

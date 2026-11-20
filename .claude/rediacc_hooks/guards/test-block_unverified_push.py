@@ -2496,6 +2496,344 @@ def test_backup_refs():
 
 test_backup_refs()
 
+
+# --- two trees of one repository: each push judged in its own tree (PLAN-two-track-merge-dev LT6) ----------
+# The landing tree holds the PR branch beside the main checkout, which holds the development branch: two linked trees of one repository, one git common directory, each with its own .ci/cache. Before LT6 a push typed in the landing tree returned ALLOW because its toplevel was not CLAUDE_PROJECT_DIR. Every case here keeps CLAUDE_PROJECT_DIR on the main checkout and moves only the payload's cwd or a `-C`, the way the harness sends a command typed in the other tree.
+MUTANT_RUNNER = (
+    "import sys; sys.path.insert(0, %r)\n"
+    "from rediacc_hooks import hookio\n"
+    "src = open(%r, encoding='utf-8').read()\n"
+    "old, new = %r\n"
+    "import ast\n"
+    "cut = [n for n in ast.parse(src).body if isinstance(n, ast.Assign)"
+    " and any(isinstance(t, ast.Name) and t.id in ('DEFECT', 'MUTANTS') for t in n.targets)]\n"
+    "outside = '\\n'.join(l for i, l in enumerate(src.split('\\n'), 1)"
+    " if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut))\n"
+    "assert outside.count(old) == 1, 'the mutant must name exactly one line outside its declaration'\n"
+    "ns = {'__name__': 'broken', '__file__': %r}\n"
+    "exec(compile(src.replace(old, new), 'broken', 'exec'), ns)\n"
+    "ev = hookio.Event(sys.stdin.read())\n"
+    "rc = ns['run'](ev)\n"
+    "sys.stderr.write(ev.result(rc)[2])\n"
+    "sys.exit(rc)\n"
+)
+
+
+def drive_tree(project, tree, cmd, mutant=None):
+    """`(rc, stderr)` of `cmd` typed in `tree` while the session's project is `project`; `mutant` names one of the guard's MUTANTS to plant in a copy."""
+    if mutant is None:
+        argv = GUARD_ARGV
+    else:
+        argv = [
+            sys.executable,
+            "-c",
+            MUTANT_RUNNER % (str(GUARD.parents[1]), str(GUARD), GM.MUTANTS[mutant], str(GUARD)),
+        ]
+    proc = subprocess.run(
+        argv,
+        input=json.dumps({"tool_input": {"command": cmd}, "cwd": str(tree)}),
+        capture_output=True,
+        text=True,
+        cwd=str(project),
+        env=dict(os.environ, CLAUDE_PROJECT_DIR=str(project)),
+        check=False,
+    )
+    if proc.returncode not in (0, 2):
+        raise SystemExit("guard runner crashed (rc %d): %s" % (proc.returncode, proc.stderr[-800:]))
+    return proc.returncode, proc.stderr
+
+
+def linked_tree(main, path, branch, start="HEAD"):
+    """A linked tree of `main` at `path` on a new `branch`: one common git directory, its own HEAD and its own .ci/cache."""
+    g(main, "worktree", "add", "-q", "-b", branch, str(path), start)
+    return path
+
+
+def two_tree_cases():
+    """LT6: a push typed in the landing tree is refused without that tree's receipt and admitted with it."""
+    tw = pathlib.Path(tempfile.mkdtemp(dir=RUN_TMP))
+    dev = tw / "console"
+    subprocess.run(["git", "init", "-q", "-b", "1120-2", str(dev)], check=True, capture_output=True)
+    g(dev, "config", "user.email", "p@example.invalid")
+    g(dev, "config", "user.name", "p")
+    (dev / "base.txt").write_text("base\n", encoding="utf-8")
+    GM._write_fixture_lock(dev)
+    g(dev, "add", "-A")
+    g(dev, "commit", "-qm", "base")
+    landing = linked_tree(dev, tw / "console-landing", "1120-1")
+    (landing / "pr.txt").write_text("pr\n", encoding="utf-8")
+    g(landing, "add", "--", "pr.txt")
+    g(landing, "commit", "-qm", "pr work")
+    push = "git push origin 1120-1"
+    via_c = "git -C %s push origin 1120-1" % landing
+    # The main checkout holds a whole, green receipt for ITS tree; the landing tree holds none yet. No `origin` remote, so the base check stands aside and the receipt is the only thing judged.
+    plant_green(dev)
+    rc, err = drive_tree(dev, landing, push)
+    cases.append(
+        (2, rc, "TWO TREES: a push typed in the landing tree with no receipt of its own is refused")
+    )
+    cases.append(
+        (
+            True,
+            "no local gate run has judged this tree" in err,
+            "TWO TREES: and the refusal names the missing receipt",
+        )
+    )
+    cases.append(
+        (
+            2,
+            drive_tree(dev, dev, via_c)[0],
+            "TWO TREES: `git -C <landing>` from the main checkout is judged in the landing tree",
+        )
+    )
+    cases.extend(
+        (
+            0,
+            drive_tree(dev, landing, push, mutant=name)[0],
+            "TWO TREES MUTANT %s: the refusal flips to allowed" % name,
+        )
+        for name in ("sibling-tree-waved", "sibling-judged-as-project")
+    )
+    # The main checkout's receipt copied into the landing tree names the main checkout's tree, not the landing tree's HEAD, so it vouches for nothing there.
+    (landing / ".ci" / "cache").mkdir(parents=True, exist_ok=True)
+    shutil.copy(
+        dev / ".ci" / "cache" / "prepush-receipt.json",
+        landing / ".ci" / "cache" / "prepush-receipt.json",
+    )
+    cases.append(
+        (
+            2,
+            drive_tree(dev, landing, push)[0],
+            "TWO TREES: the other tree's receipt does not vouch for the landing tree's HEAD",
+        )
+    )
+    plant_green(landing)
+    cases.append(
+        (
+            0,
+            drive_tree(dev, landing, push)[0],
+            "TWO TREES: the landing tree's own receipt admits its push",
+        )
+    )
+    cases.append(
+        (
+            0,
+            drive_tree(dev, dev, via_c)[0],
+            "TWO TREES: and admits the same push through `git -C <landing>`",
+        )
+    )
+    # CONTROL: the main checkout is still judged by its own receipt, whatever the landing tree holds.
+    (dev / ".ci" / "cache" / "prepush-receipt.json").unlink()
+    cases.append(
+        (
+            2,
+            drive_tree(dev, dev, "git push origin 1120-2")[0],
+            "TWO TREES CONTROL: the main checkout without its receipt is refused",
+        )
+    )
+    plant_green(dev)
+    cases.append(
+        (
+            0,
+            drive_tree(dev, dev, "git push origin 1120-2")[0],
+            "TWO TREES CONTROL: and admitted with it",
+        )
+    )
+    # CONTROL: a repository with another common git directory is still another repository's push, even beside the two trees.
+    other = tw / "other"
+    subprocess.run(
+        ["git", "init", "-q", "-b", "1120-1", str(other)], check=True, capture_output=True
+    )
+    cases.append(
+        (
+            0,
+            drive_tree(dev, other, push)[0],
+            "TWO TREES CONTROL: an independent repository beside them stays its own",
+        )
+    )
+    cases.append(
+        (
+            0,
+            drive_tree(dev, dev, "git -C %s push origin 1120-1" % other)[0],
+            "TWO TREES CONTROL: and so does `git -C` into it",
+        )
+    )
+    shutil.rmtree(tw, ignore_errors=True)
+
+
+two_tree_cases()
+
+# --- behind-base for both trees (PLAN-two-track-merge-dev LT7, serving RB3) -------------------------------
+# A bare origin, the main checkout on the development branch, the landing tree on the PR branch, and a mover clone that rebase-merges the PR branch into main the way GitHub's `--rebase` does: new shas, the same patches.
+_WL_REBASE = importlib.util.spec_from_file_location(
+    "wl_rebase", REPO / ".claude" / "hooks" / "stop" / "wl_rebase.py"
+)
+if _WL_REBASE is None or _WL_REBASE.loader is None:
+    raise SystemExit("%s: .claude/hooks/stop/wl_rebase.py is missing" % __file__)
+wl_rebase = importlib.util.module_from_spec(_WL_REBASE)
+_WL_REBASE.loader.exec_module(wl_rebase)
+
+
+def both_tree_behind_cases():
+    """LT7: the PR branch and the development branch are each judged against origin/main from their own tree; a rebase-merged parent reads absorbed."""
+    bb = pathlib.Path(tempfile.mkdtemp(dir=RUN_TMP))
+    origin_git = bb / "origin.git"
+    dev = bb / "console"
+    mover_tree = bb / "mover"
+    subprocess.run(
+        ["git", "init", "-q", "--bare", "-b", "main", str(origin_git)],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(["git", "init", "-q", "-b", "main", str(dev)], check=True, capture_output=True)
+    g(dev, "config", "user.email", "p@example.invalid")
+    g(dev, "config", "user.name", "p")
+    g(dev, "remote", "add", "origin", str(origin_git))
+    (dev / "base.txt").write_text("base\n", encoding="utf-8")
+    GM._write_fixture_lock(dev)
+    g(dev, "add", "-A")
+    g(dev, "commit", "-qm", "base")
+    g(dev, "push", "-q", "origin", "main")
+    g(dev, "fetch", "-q", "origin")
+    cut = g(dev, "rev-parse", "HEAD")
+    # The PR branch: two commits, pushed. The development branch is cut from its tip and adds one of its own; the PR branch then lives only in the landing tree.
+    g(dev, "checkout", "-qb", "1120-1")
+    for i in range(2):
+        (dev / ("pr-%d.txt" % i)).write_text("pr %d\n" % i, encoding="utf-8")
+        g(dev, "add", "-A")
+        g(dev, "commit", "-qm", "pr %d" % i)
+    g(dev, "push", "-q", "origin", "1120-1")
+    g(dev, "checkout", "-qb", "1120-2")
+    (dev / "dev.txt").write_text("dev\n", encoding="utf-8")
+    g(dev, "add", "--", "dev.txt")
+    g(dev, "commit", "-qm", "dev work")
+    landing = bb / "console-landing"
+    g(dev, "worktree", "add", "-q", str(landing), "1120-1")
+    # main moves on origin before the merge, so the PR branch in the landing tree is behind.
+    subprocess.run(
+        ["git", "clone", "-q", str(origin_git), str(mover_tree)], check=True, capture_output=True
+    )
+    g(mover_tree, "config", "user.email", "q@example.invalid")
+    g(mover_tree, "config", "user.name", "q")
+    (mover_tree / "main-0.txt").write_text("m\n", encoding="utf-8")
+    g(mover_tree, "add", "-A")
+    g(mover_tree, "commit", "-qm", "main moves")
+    g(mover_tree, "push", "-q", "origin", "main")
+    plant_green(landing)
+    rc, err = drive_tree(dev, landing, "git push --force-with-lease origin 1120-1")
+    cases.append(
+        (2, rc, "BOTH TREES: the PR branch in the landing tree, behind origin/main, is refused")
+    )
+    cases.append(
+        (
+            True,
+            "1120-1" in err and "1 commit(s) behind" in err,
+            "BOTH TREES: the refusal names the PR branch and counts it behind",
+        )
+    )
+    # The PR branch is rebased and rebase-merged: main now carries copies of its two commits under new shas.
+    g(mover_tree, "fetch", "-q", "origin", "1120-1")
+    g(mover_tree, "checkout", "-q", "-b", "pr", "FETCH_HEAD")
+    g(mover_tree, "rebase", "-q", "main")
+    g(mover_tree, "checkout", "-q", "main")
+    g(mover_tree, "merge", "-q", "--ff-only", "pr")
+    g(mover_tree, "push", "-q", "origin", "main")
+    plant_green(dev)
+    push = "git push origin 1120-2"
+    rc, err = drive_tree(dev, dev, push)
+    cases.append(
+        (
+            2,
+            rc,
+            "BOTH TREES: the development branch after the PR's rebase-merge is refused (CI judges ancestry)",
+        )
+    )
+    cases.append(
+        (True, "absorbed" in err, "BOTH TREES: the rebase-merged parent's copies are read absorbed")
+    )
+    cases.append(
+        (
+            True,
+            "1 commit(s) behind" in err and "2 more absorbed" in err,
+            "BOTH TREES: the main commit before the merge reads behind, the two copies absorbed",
+        )
+    )
+    cases.append(
+        (
+            True,
+            ci_recipe("1120-2") in err,
+            "BOTH TREES: the refusal prints CI's REBASE LOCALLY recipe verbatim",
+        )
+    )
+    cases.append(
+        (
+            True,
+            all(line in err for line in GM.REBASE_PROOF if line.strip()),
+            "BOTH TREES: and RB4's post-rebase proof",
+        )
+    )
+    # The guard's split and RB1's lease reader agree on the same repository.
+    head = g(dev, "rev-parse", "HEAD")
+    rb1 = wl_rebase.behind_base(dev, head, cut, "main")
+    cases.append(
+        (
+            True,
+            (rb1.state, rb1.behind, rb1.absorbed) == ("behind", 1, 2)
+            and GM.base_split(str(dev), head, "origin/main") == (1, 2),
+            "BOTH TREES: base_split equals RB1's reader, behind 1 and absorbed 2",
+        )
+    )
+    cases.append(
+        (
+            True,
+            "absorbed" not in drive_tree(dev, dev, push, mutant="absorbed-read-behind")[1],
+            "BOTH TREES MUTANT absorbed-read-behind: the absorbed reading is gone",
+        )
+    )
+    # Absorbed only: the development branch rebased onto the main commit before the merge, so every base commit it lacks is a copy of one of its own.
+    g(dev, "rebase", "-q", g(dev, "rev-parse", "origin/main~2"))
+    plant_green(dev)
+    head = g(dev, "rev-parse", "HEAD")
+    rc, err = drive_tree(dev, dev, push)
+    cases.append((2, rc, "BOTH TREES: an absorbed-only development branch is still refused"))
+    cases.append(
+        (
+            True,
+            "ABSORBED" in err
+            and "every one of the 2 commit(s)" in err
+            and "behind origin/main" not in err,
+            "BOTH TREES: and reads ABSORBED with nothing behind",
+        )
+    )
+    cases.append(
+        (
+            False,
+            "ABSORBED" in drive_tree(dev, dev, push, mutant="absorbed-read-behind")[1],
+            "BOTH TREES MUTANT absorbed-read-behind: the absorbed-only branch reads behind",
+        )
+    )
+    rb1 = wl_rebase.behind_base(dev, head, cut, "main")
+    cases.append(
+        (
+            True,
+            (rb1.state, rb1.absorbed) == ("absorbed", 2)
+            and GM.base_split(str(dev), head, "origin/main") == (0, 2),
+            "BOTH TREES: RB1's reader reads it absorbed too",
+        )
+    )
+    # CONTROL: at the base, the development branch is admitted.
+    g(dev, "rebase", "-q", "origin/main")
+    plant_green(dev)
+    rc, err = drive_tree(dev, dev, push)
+    cases.append(
+        (0, rc, "BOTH TREES CONTROL: the development branch on top of origin/main is admitted")
+    )
+    cases.append((False, "REBASE LOCALLY" in err, "BOTH TREES CONTROL: and prints no recipe"))
+    shutil.rmtree(bb, ignore_errors=True)
+
+
+both_tree_behind_cases()
+
 shutil.rmtree(d, ignore_errors=True)
 
 bad = 0

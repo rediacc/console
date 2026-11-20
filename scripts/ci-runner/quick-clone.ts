@@ -200,7 +200,7 @@ export function pinnedCommit(live: string, spec: string): { sha: string } | { wh
   return { sha };
 }
 
-/** The kept clone of `live`. Per checkout, outside every tracked tree. */
+/** The kept clone of `live`, outside every tracked tree. One per tree path, keyed by the sha256 of its real path, so the main checkout and the landing tree beside it never share a clean clone, and each writes its receipt into its own `.ci/cache` for the push guards to read there (PLAN-two-track-merge-dev LT6). */
 export function cloneDirFor(live: string, env: NodeJS.ProcessEnv): string {
   if (env.CI_QUICK_CLONE_DIR) return path.resolve(env.CI_QUICK_CLONE_DIR);
   const base = env.XDG_CACHE_HOME || path.join(env.HOME || os.homedir(), '.cache');
@@ -1399,6 +1399,31 @@ export async function quickCloneSelftest(
     fs.writeFileSync(file, text);
   };
   try {
+    // cloneDirFor, one kept clone per tree path (PLAN-two-track-merge-dev LT6): the main checkout and the landing tree beside it never share a clean clone, even under one basename, and one tree reached through a symlink keeps its clone.
+    {
+      const trees = path.join(root, 'clone-dir-for');
+      const env = { HOME: trees } as NodeJS.ProcessEnv;
+      const one = path.join(trees, 'a', 'console');
+      const two = path.join(trees, 'b', 'console');
+      const landing = path.join(trees, 'a', 'console-landing');
+      for (const dir of [one, two, landing]) fs.mkdirSync(dir, { recursive: true });
+      const alias = path.join(trees, 'alias');
+      fs.symlinkSync(one, alias);
+      const dirs = [one, two, landing].map((tree) => cloneDirFor(tree, env));
+      check(
+        new Set(dirs).size === 3,
+        `three tree paths must get three clone dirs, got ${JSON.stringify(dirs)}`
+      );
+      check(
+        cloneDirFor(alias, env) === dirs[0],
+        `CONTROL: one tree through a symlink must keep its clone dir, got ${cloneDirFor(alias, env)} and ${dirs[0]}`
+      );
+      const under = path.join(trees, '.cache', 'rediacc', 'ci-quick-clones') + path.sep;
+      check(
+        dirs.every((dir) => dir.startsWith(under)),
+        `every clone dir must sit under the cache's ci-quick-clones, got ${JSON.stringify(dirs)}`
+      );
+    }
     // ROUTING: a plain run goes to the clone, and only a plain run does.
     const routeAt = (args: readonly string[], env: NodeJS.ProcessEnv): Route =>
       routeOf(args, env, root);
