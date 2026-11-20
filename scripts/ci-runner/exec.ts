@@ -29,7 +29,7 @@ export interface ExecOutcome {
   cpuMs?: number;
   /** Set when the runner killed the gate at its limit (gate-timeout.ts): the limit in ms. `code` is null and stderr carries a TIMED OUT line. */
   timedOutMs?: number;
-  /** The nice value the gate launched at: 0 for a critical gate or an unwrapped spawn, NONCRITICAL_NICE otherwise (PLAN-two-track-merge-dev D3). */
+  /** The nice value the gate launched at: NONCRITICAL_NICE when it was marked non-critical (`critical === false`) on a wrapped spawn, 0 otherwise (a critical gate, a run with ranking off, an unwrapped spawn). PLAN-two-track-merge-dev D3. */
   niceness?: number;
 }
 

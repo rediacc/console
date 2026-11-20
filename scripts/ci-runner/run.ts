@@ -4514,7 +4514,6 @@ async function listUnits(lane: string | undefined): Promise<number> {
   }
 }
 
-/** `{gate id: cores granted}` for every gate that launched; the receipt's `grantedCores`. */
 /** D3: a gate is critical when ranking is on and the rank pinned it (the long-chain gates); with ranking off every gate keeps base priority (undefined). */
 export function criticalOf(
   ranking: { on: true; order: { pinned: ReadonlySet<string> } } | { on: false } | undefined,
@@ -4523,12 +4522,14 @@ export function criticalOf(
   return ranking?.on ? ranking.order.pinned.has(id) : undefined;
 }
 
+/** `{gate id: nice value}` for every gate whose executor reported one; the receipt's `niceness`. */
 function nicenessOf(results: readonly GateResult[]): Record<string, number> {
   const out: Record<string, number> = {};
   for (const r of results) if (r.niceness !== undefined) out[r.id] = r.niceness;
   return out;
 }
 
+/** `{gate id: cores granted}` for every gate that launched; the receipt's `grantedCores`. */
 function grantsOf(results: readonly GateResult[]): Record<string, number> {
   const out: Record<string, number> = {};
   for (const r of results) if (r.grantedCores !== undefined) out[r.id] = r.grantedCores;
