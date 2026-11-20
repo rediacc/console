@@ -40,17 +40,25 @@ def _message(cmd: str, root: str, cwd: str = "") -> str:
     return msg
 
 
-def _paths(cmd: str, root: str) -> list[str]:
-    """The pathspecs the commit names, or, with none, the staged paths: what commit-msg will see (review f6971390.2)."""
-    named = [
-        p
-        for run in commit_policy.git_runs(cmd, "commit")
-        for p in commit_policy.parse_commit_args(commit_policy.git_split(run.argv)[2]).paths
-    ]
+def _paths(cmd: str, root: str) -> list[str] | None:
+    """The pathspecs the commit names, or, with none, the paths git will commit: the staged ones, plus the unstaged tracked changes under `-a`/`--all` (review 84a5679f.1). None when git cannot list them, so the commit is left to commit-msg rather than judged with no paths (84a5679f.2)."""
+    named, all_flag = [], False
+    for run_ in commit_policy.git_runs(cmd, "commit"):
+        args = commit_policy.parse_commit_args(commit_policy.git_split(run_.argv)[2])
+        named.extend(args.paths)
+        all_flag = all_flag or any(f in ("-a", "--all") for f in args.flags)
     if named:
         return named
-    staged = hookio.git_out(["-C", root, "diff", "--cached", "--name-only"]) or ""
-    return [line for line in staged.splitlines() if line]
+    staged = hookio.git_out(["-C", root, "diff", "--cached", "--name-only"], want_rc=True)
+    if staged is None:
+        return None
+    paths = [line for line in staged.splitlines() if line]
+    if all_flag:
+        unstaged = hookio.git_out(["-C", root, "diff", "--name-only"], want_rc=True)
+        if unstaged is None:
+            return None
+        paths += [line for line in unstaged.splitlines() if line and line not in paths]
+    return paths
 
 
 def run(ev):
@@ -72,7 +80,10 @@ def run(ev):
     if not re.sub(r"\s", "", msg):
         return hookio.ALLOW
     branch = hookio.git_out(["-C", root, "branch", "--show-current"]) or ""
-    ok, reason = pr_freeze.check(root, root, branch.strip(), msg, _paths(cmd, root))
+    paths = _paths(cmd, root)
+    if paths is None:
+        return hookio.ALLOW  # git could not list the paths; commit-msg judges the commit with the index git really writes
+    ok, reason = pr_freeze.check(root, root, branch.strip(), msg, paths)
     if not ok:
         ev.warn_raw(BLOCKED % reason)
         return hookio.DENY

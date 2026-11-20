@@ -66,7 +66,7 @@ def _world(tmp, phase=True):
     return repo, store
 
 
-def run(repo, store, cmd):
+def run(repo, store, cmd, cwd=None):
     env = dict(
         os.environ,
         CLAUDE_PROJECT_DIR=str(repo),
@@ -75,7 +75,9 @@ def run(repo, store, cmd):
     )
     p = subprocess.run(
         GUARD_ARGV,
-        input=json.dumps({"tool_name": "Bash", "tool_input": {"command": cmd}, "cwd": str(repo)}),
+        input=json.dumps(
+            {"tool_name": "Bash", "tool_input": {"command": cmd}, "cwd": str(cwd or repo)}
+        ),
         capture_output=True,
         text=True,
         env=env,
@@ -129,6 +131,26 @@ def main():
         got, out = run(repo, store, "git commit -F %s -- f.txt" % msgfile)
         if not got:
             fails.append("-F file feat: not refused\n%s" % out[-400:])
+        # A relative -F file beside the tool call's cwd (review 84a5679f.4).
+        sub = repo / "sub"
+        sub.mkdir()
+        (sub / "rel-msg.txt").write_text("feat(ci): relative to the cwd\n")
+        got, out = run(repo, store, "git commit -F rel-msg.txt -- f.txt", cwd=sub)
+        if not got:
+            fails.append("-F file relative to the cwd: not refused\n%s" % out[-400:])
+        # No pathspec: the staged paths are judged (review 84a5679f.3): a staged record file alone is admitted, a staged code file is refused.
+        rec = repo / "agent" / "reviews" / "1120-1" / "clean.jsonl"
+        rec.parent.mkdir(parents=True)
+        rec.write_text("{}\n")
+        subprocess.run(["git", "-C", str(repo), "add", str(rec)], check=True)
+        got, out = run(repo, store, "git commit -m 'feat(ci): records only, no pathspec'")
+        if got:
+            fails.append("no pathspec, staged record file: refused\n%s" % out[-400:])
+        (repo / "code.py").write_text("x = 1\n")
+        subprocess.run(["git", "-C", str(repo), "add", "code.py"], check=True)
+        got, out = run(repo, store, "git commit -m 'feat(ci): code, no pathspec'")
+        if not got:
+            fails.append("no pathspec, staged code file: not refused\n%s" % out[-400:])
     with tempfile.TemporaryDirectory() as tmp:
         repo, store = _world(tmp, phase=False)
         got, out = run(repo, store, "git commit -m 'feat(ci): no phase' -- f.txt")
@@ -136,7 +158,7 @@ def main():
             fails.append("CONTROL: with no phase a feat commit must be admitted\n%s" % out[-400:])
     for f in fails:
         print("FAIL", f)
-    total = len(CASES) + 2
+    total = len(CASES) + 5
     if fails:
         print("%d of %d case(s) failed" % (len(fails), total))
         return 1
