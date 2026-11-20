@@ -184,7 +184,7 @@ def run(command, gh):
 # --------------------------------------------------------------------------- two trees (agent/plans/PLAN-two-track-merge-dev.md, box LT4) ---------------------------------------------------------------------------
 #
 # A REAL TWO-TREE REPOSITORY: the development checkout on `1121-1` and a linked landing tree on `1104-1`, both with the console origin. The landing record and the tree role are read through the guard's two seams, `_landing_record` and `_tree_role`, which the in-process pass replaces with what LT1's `commit_policy.landing_record` and `tree_role` answer for this world ({path: the landing tree's realpath, branch: 1104-1}; the role "landing" exactly in that tree).
-# Once commit_policy carries `write_landing_record` (LT1), the same table runs a second time through dispatch.py against a REAL record in the common git directory, with no seam replaced.
+# The same table runs a second time through dispatch.py against a REAL record that `commit_policy.write_landing_record` (LT1) writes in the common git directory, with no seam replaced; a commit_policy without the writer fails the harness rather than skipping that pass.
 #
 # BOTH DIRECTIONS. Admitted: the development draft beside the landing PR (`--draft`, `-d`, `--head <its branch>`), a submodule create, `gh pr ready` on the landing PR, `gh pr ready --undo`, and a ready once the landing PR is closed. Refused: a non-draft, `--draft=false`, a second draft, a draft beside any other open PR, a draft from the landing tree, from another head or naming the landing branch, two drafts in one command, `gh pr ready` on the draft by number, URL, branch or current branch, and an unreadable list.
 # With no record the draft is refused and the ready admitted, which is the guard's answer before LT4.
@@ -350,7 +350,15 @@ TWO_TREE_CASES = [
         True,
         "this submodule repository",
     ),
-    ("submodule: beside an open PR of another branch", IN_SUB, DEV, G_SUB_OTHER, True, ALREADY_SUB),
+    # 46d92124.3: the count and the list agree; the landing PR's row, uncounted, is not listed.
+    (
+        "submodule: beside an open PR of another branch",
+        IN_SUB,
+        DEV,
+        G_SUB_OTHER,
+        True,
+        ALREADY_SUB + ". One at a time.\n\n     #92 other",
+    ),
     (
         "submodule: a head that is another branch",
         IN_SUB + " --head 0901-3",
@@ -411,6 +419,9 @@ TWO_TREE_CASES = [
         READY,
     ),
     ("ready while gh is down", "gh pr ready 606", DEV, GH_DOWN, True, UNVERIFIED),
+    # 46d92124.1: an unevaluable repository or directory is unverifiable, never a ready waved through.
+    ("ready -R $R", "gh pr ready 606 -R $R", DEV, G_LANDING_DRAFT, True, UNVERIFIED),
+    ("ready after cd -", "cd -; gh pr ready 606", DEV, G_LANDING_DRAFT, True, UNVERIFIED),
     (
         "ready on the landing PR from the landing tree",
         "gh pr ready",
@@ -429,6 +440,14 @@ NO_RECORD_CASES = [
     ("no record: the draft is a second PR", DRAFT, DEV, G_LANDING, True, ALREADY1),
     ("no record: ready is not judged", "gh pr ready 606", DEV, G_LANDING_DRAFT, False, ""),
     ("no record: the submodule PR is a second PR", IN_SUB, DEV, G_SUB, True, ALREADY_SUB),
+    (
+        "no record: ready -R $R is not judged",
+        "gh pr ready 606 -R $R",
+        DEV,
+        G_LANDING_DRAFT,
+        False,
+        "",
+    ),
 ]
 
 # Loaded by name after the path hop, as dispatch.py loads them.
@@ -563,7 +582,9 @@ if hasattr(_cp, "write_landing_record"):
     fails += sum(f for _, f in REAL)
     RESULTS += REAL
 else:
-    print("real-record pass: NOT RUN, commit_policy has no write_landing_record yet (box LT1)")
+    # 46d92124.2: the seam tables alone never prove the admission against commit_policy's own reader.
+    print("*** FAIL *** real-record pass NOT RUN: commit_policy has no write_landing_record")
+    fails += 1
 
 answers = [a for got, _ in RESULTS for a in got]
 blocked, total = sum(answers), len(answers)
