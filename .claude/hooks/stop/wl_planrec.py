@@ -1082,7 +1082,7 @@ _HISTORY_IDENT: dict[int, tuple[list, tuple, list, tuple]] = {}
 
 
 def _plans_shape(doc) -> tuple[int, int]:
-    """O(1) per document: the identity and length of its `plans` map. A replaced map, or a row added or removed, changes it (review eb55be31.1); the indexed `done_sigs` lists are the document's own, so an in-place append shows through. Replacing a row object under the same key is not caught, and history documents are parsed from git and never edited, so none does."""
+    """O(1) per document: the identity and length of its `plans` map, so a replaced map, or rows added or removed in unequal numbers, rebuild the shared indexes (review eb55be31.1); the indexed `done_sigs` lists are the document's own, so an in-place append shows through. NOT caught: a row replaced under the same key, or a delete plus an add that keeps the length (review 60010896.1). The premise that makes this enough: history documents come from `ledger_history`, parsed from git, and no caller edits them; a check that is complete per key costs O(plans) per document again, the 12 s this memo removed."""
     plans = doc.get("plans") if isinstance(doc, dict) else None
     return (id(plans), len(plans) if isinstance(plans, dict) else -1)
 
