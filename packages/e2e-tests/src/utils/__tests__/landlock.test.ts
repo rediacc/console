@@ -24,7 +24,6 @@ const ORACLE_10 =
 const UBUNTU_24 =
   'PRETTY_NAME="Ubuntu 24.04.1 LTS"\nNAME="Ubuntu"\nVERSION_ID="24.04"\nID=ubuntu\nID_LIKE=debian\n';
 
-
 describe('workerOsId', () => {
   it('reads Oracle Linux 10 as ol-10, which is no longer Landlock-inactive', async () => {
     const os = await workerOsId(runnerReading(ORACLE_10));

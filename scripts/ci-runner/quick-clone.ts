@@ -826,6 +826,11 @@ export function unjudged(
   return undefined;
 }
 
+/** HEAD's committed carried-reds.json in `live`, the copy the push guard reads (never the working tree's, never the judged clone's); undefined when HEAD holds none or git cannot answer, which `carriedOnly` reads as nothing carried. */
+export function headCarriedText(live: string): string | undefined {
+  return shTry('git', ['show', 'HEAD:.ci/config/carried-reds.json'], live);
+}
+
 /** carried-reds.json text without the entries whose reason is under the push guard's bar (block_unverified_push REASON_MIN 80, STAR_REASON_MIN 160 for `*`): the guard reads such an entry as carrying nothing. Unparseable text passes through for parseCarried to reject. */
 function withReasonBar(text: string | undefined): string | undefined {
   if (text === undefined) return undefined;
@@ -1208,12 +1213,7 @@ export async function quickMain(args: readonly string[], seams: QuickSeams): Pro
       liveTree,
       firstExit: first,
       firstCarriedOnly:
-        first !== 0 &&
-        carriedOnly(
-          readReceipt(receiptPath).receipt,
-          // HEAD's carried-reds.json in the live checkout, the copy the push guard reads, not the judged clone's.
-          shTry('git', ['show', 'HEAD:.ci/config/carried-reds.json'], seams.live)
-        ),
+        first !== 0 && carriedOnly(readReceipt(receiptPath).receipt, headCarriedText(seams.live)),
       latest: readReceipt(latestPath).receipt,
     });
     if (follow.kind === 'done') return first;
@@ -2316,6 +2316,29 @@ export async function quickCloneSelftest(
         !carriedOnly(redOn(['a']), doc({ ...star, reason: 'r'.repeat(159) })),
       'carriedOnly mirrors the push guard: red only on gates carried whole or on exactly their recorded keys; a gate that could not run does not count against it; an uncarried gate, a new or stale key, a keyless red, a stale carried gate, a green receipt, a missing file or an entry under the reason bar is not'
     );
+    {
+      const repo = fs.mkdtempSync(path.join(root, 'head-carried-'));
+      const g = (...args: string[]): string => sh('git', args, repo);
+      g('init', '-q', '-b', 'main');
+      g('config', 'user.email', 'fixture@example.invalid');
+      g('config', 'user.name', 'fixture');
+      g('config', 'commit.gpgsign', 'false');
+      write(path.join(repo, 'a.txt'), 'a\n');
+      g('add', '-A');
+      g('commit', '-q', '-m', 'base');
+      const none = headCarriedText(repo);
+      write(path.join(repo, '.ci', 'config', 'carried-reds.json'), '{"uncommitted":true}');
+      const dirtyOnly = headCarriedText(repo);
+      g('add', '-f', '--', '.ci/config/carried-reds.json');
+      g('commit', '-q', '-m', 'carried');
+      write(path.join(repo, '.ci', 'config', 'carried-reds.json'), '{"edited":true}');
+      check(
+        none === undefined &&
+          dirtyOnly === undefined &&
+          headCarriedText(repo) === '{"uncommitted":true}',
+        "headCarriedText reads HEAD's committed carried-reds.json only: none at HEAD and a working-tree-only copy read as undefined, and a later working-tree edit is ignored"
+      );
+    }
     check(
       followOf({
         pinned: false,
