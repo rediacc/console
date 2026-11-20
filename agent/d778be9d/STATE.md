@@ -1,24 +1,23 @@
-## SESSION d778be9d 2026-11-20T12:05:13Z
+## SESSION d778be9d 2026-11-20T13:06:23Z
 
-# STATE d778be9d (2026-11-20 ~12:00Z, operator away since 10:51Z)
+# STATE d778be9d (2026-11-20 ~14:30Z, operator away since 10:51Z)
 
 ## Next action
-1. #527aa5b2 PLAN-two-track-merge-dev inline, next boxes: RB1-RB5 (rebase consistency), A0/A2/A3 (account-server trace), R0-R4, F1/F2 LAST, M1. P1 stays open: its written shape (plan_impl_facts.py + fact cache) was superseded by measured fixes; settle at the end whether it needs a recorded correction.
-2. #02389657 #4889018a when vm:check (bg bom1jxelp, log /tmp/m/vmcheck-0fdb501a2.log) reports: rerun the backup-large-2g leg (store-space preflight only: account-config-rustfs /data had 6.44 GiB of the 7.00 needed; docker builder prune freed it to 10 GiB), recheck k8s-ceph-16; then ci:quick, push (TURBO_PUSH_REASON red-fix), release us/asia (RELEASE_ASKED=ASKED:2026-11-20T07:05Z, dry run first), root_grants --apply, l1vm host key #3fb4edcc, watch PR #605 CI, /pr-merge.
+1. #527aa5b2 when the account-server run lands (bg bj0xpzy9k, /tmp/m/acct4.out + acct4.strace): if rc 0 with 4908 tests and 0 port-53 connects, tick A2 (sig fca0e5d0) citing 70a89a3/26e46869d; then the remaining plan boxes: P1 (persistent fact cache, D2), R1-R4 (devcontainer pin from the branch toolchain, not :latest; signed receipts), F1-F3 last, M1 on the next PR.
+2. #02389657 #4889018a when vm:check (bg bom1jxelp, /tmp/m/vmcheck-0fdb501a2.log; k8s-ceph-16 passed this time) reports: rerun the backup-large-2g leg (store-space preflight only; Docker VM disk now 10 GiB free), then ci:quick, push (TURBO_PUSH_REASON red-fix), release us/asia (RELEASE_ASKED=ASKED:2026-11-20T07:05Z, dry run first), root_grants --apply, l1vm host key #3fb4edcc, watch PR #605 CI, /pr-merge.
 
 ## Big pieces
 - PR #605 (1104-1): CI red on ops-health (release + root grants) and oracle-10 (fixed 5ad916229 + 944fb0428, needs the push).
-- PLAN-two-track-merge-dev #527aa5b2: 5 of 24 boxes done.
+- PLAN-two-track-merge-dev #527aa5b2: 13 of 25 boxes done (P0 S1 C0 A1 C1 RB1 RB2 RB4 RB5 RB6 RB7 A0 + R0 local half recorded); RB3 parked #9053d5d2.
 
 ## Owed ticks
-- Live-owed boxes (code landed, live run owed; worklist.py --box-audit d778be9d --live-owed): PLAN-ciquick-cpu.md#51ceeb4f (M2), PLAN-enterprise-isolation.md#a8892e0c #0a6e5712 #f4b49503 #0fbd62dc #cc583290, PLAN-proxy-cd-six-targets.md#abe9b4eb (C7), PLAN-health-checks-local.md#85f55665 (C2), PLAN-production-key-only.md#6a1ca4a4, PLAN-backup-program.md#0a237b2e. They run after the push and release, as the live runs of their plans.
+- A2 (pending the run above). Live-owed boxes from the box audit (PLAN-ciquick-cpu M2, PLAN-enterprise-isolation x5, PLAN-proxy-cd-six-targets C7, PLAN-health-checks-local C2, PLAN-production-key-only, PLAN-backup-program 0a237b2e) run after the push and release.
 
 ## Overnight
-- Landed: done_commit index e72055c33 77300bd74 67bf7d410; prose cache 4525b5203 9cb0191b6 e648197c3 0fdb501a2 79a4446e6; plan-implementation memo and parallel follow walks c2f32c02e 98a058e02 36423f932 (8m33s -> 49 s); fleet-lock review fixes acdfc7c02 6420e667d b91dd1666 4c7de1b08; A1 5b4d28538 25d0277db; C1 7faaba292 0333803d4.
-- Ticked P0, S1, C0 (775f8a0eb), A1, C1 (257de5626).
-- Decided (rule 2): a lock path removed after the open refuses (exit 2), since the fd's inode may still be flock-held (b91dd1666); C1's simulator case lives in sim.ts because simulate() is module-private, recorded in the tick.
-- Found: strace execve counts include failed PATH lookups; the real git count was 7,514, not 45,075.
-- Parked [?]: none new.
+- Landed since 12:00Z: RB5 239426cba 69594a412; RB1 3af8eeddc 9ada3f731; RB4 cac6cc8be 915556493; RB2 a54889467 ffc8e30d7 6079bceed; RB7 334616cbe 147ba8f60 94f2e23ab f9d4291d6 3a13377da dbe796e22; done_commit identity index eb55be31f 600108966 7df9e05bb (12.3 s -> 1.45 s); account a62fea8 (A2 loopback literal 70a89a3; TOTP step-boundary flake fixed 7be4a78, found by the A2 run) bumped 26e46869d 801e0dfcd.
+- Decided (rule 2): RB3 parked (no lease pushes; dev-track branch shape undefined), DEFAULT hold until M1's dev-track question; RB6 result: R4 failed under a rebase-merge for a branch-only done=, fixed by RB7.
+- Found: :latest devcontainer npm 11.21.0 matches main's pin (the 12.2.3 bump is branch-only), so R1 must pin a branch-built image.
+- Parked [?]: #9053d5d2 (RB3), DEFAULT hold.
 
 ## Delegated
-- none; vm:check bg bom1jxelp.
+- none; background: vm:check bom1jxelp, account-server trace bj0xpzy9k.
