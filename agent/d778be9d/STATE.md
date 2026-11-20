@@ -1,17 +1,17 @@
-## SESSION d778be9d 2026-11-20T15:27:58Z
+## SESSION d778be9d 2026-11-20T18:07:57Z
 
-# STATE d778be9d (2026-11-20 ~15:30Z)
+# STATE d778be9d (2026-11-20 ~19:15Z, operator at keyboard)
 
 ## Next action
-1. #30bc7354 R1 parts independent of R0: .ci/config/devcontainer-image.json pin, devbox.py reads it, salt image term in scripts/ci-runner/input-hash.ts (env var, `host` absent) with a salt control and mutant in run.ts --selftest. R0's temporary CI step is committed (8a845fc47); read its `R0 pull_seconds=` line from the next PR run, record on #527aa5b2, choose full vs toolchain stage (>90 s = stage), then revert the step.
-2. #02389657 #4889018a vm:check rerun at 20dfef93a (bg btgn5aw04, /tmp/m/vmcheck-20dfef93a.log; the previous run failed backup-large-2g on store space after my devcontainer pull ate the Docker disk; image removed, 10 GiB free). When VERIFIED and the last R commit is in: ci:quick, push (TURBO_PUSH_REASON red-fix), release us/asia (RELEASE_ASKED=ASKED:2026-11-20T07:05Z, dry run first), root_grants --apply, l1vm host key #3fb4edcc, PR #605 CI, /pr-merge.
+1. #02389657 #4889018a PR #605 push path: vm:check VERIFIED (tree d71ec94a2f29). ci:quick at 0379bb969 RED on 19 gates (/tmp/m/ciquick-0379bb969.log). FX3 landed (ed9f08417 f1a09b3a0; review ed9f0841 has 3 findings incl. 1 security: plan_impl_facts save path may escape root, fix). Waiting: FX1 (a4b344372b2dd730b, item #1e2e6047: freeze guard reds, hook-integrity, git-op-conditionals, differential goldens, orphan suites leaving claude-worklist in TMPDIR via worklist_for mkdir, sys-path hop, test-block_pr_freeze_commit.py +x, pr_freeze/test types), FX2 (af4bf021287083f8e, #6fd792e9: env-manifest GH_ACTOR, python-env-registry VM_IMAGE, bws-map, policy-inventory, literal-sources pin uses WK_IMAGE_REGISTRY, R0 job profiler/prereq/quality-complete/lane-durations p90). Mine: NEW python-types errors in check_plan_implementation.py (attr-defined x3, assignment), test-review-mark.py (arg-type x2, operator, assignment), wl_review.py (arg-type), prose_style.py (var-annotated): run `npm run -s check:ci-python-types` for lines and fix. pr-task-trailers now green. Land FX1/FX2 via ./run.sh worktree land <id>, rerun ci:quick, push (TURBO_PUSH_REASON red-fix, console then each submodule), release us/asia immediately: RELEASE_ASKED=ASKED:2026-11-20T17:17Z npm run release:local -- --channel edge --workers-only --regions us,asia --branch-release (operator: no real customer, breaks fixed forward), root_grants --apply, l1vm host key #3fb4edcc, CI, /pr-merge.
+2. #99460057 landing tree (operator approved LT1-LT10, writers unlimited, 2 parallel branches): done and HELD in leases until after the #605 push: LT1 agent-af33184710f1d21fc 4f49262af, LT2 agent-a7e8e3fa33c67a609 6e70906aa (swap landing.write_record for commit_policy.write_landing_record), LT4 agent-a6c8cb133c513d755 a96d117b9 (drain prose baseline row ff135f9e35b99942 with check_prose_style.py check --drain; re-run its real-record pass after LT1), LT8 agent-aff6577e8cf0b962c 161dd8bd8 (scope sha d79a6d841ac2). Running: LT3 ac58f7ace10771b4e #77455c8d, LT5 adb62552774fa9ba6 #974efeb5, LT6+LT7 af7525f48f5ad6849 #f334a461. Then LT9 switch-over (./run.sh worktree landing on 1104-1, babysit moves to /home/developer/console-landing, cut next MMDD-N here, draft PR) and LT10 live proof.
 
 ## Big pieces
-- PR #605 (1104-1): 92 unpushed commits; CI red on the old head only.
-- PLAN-two-track-merge-dev #527aa5b2: 21 of 26 done; operator /ask 14:57Z: R1-R4 land on PR #605 (#30bc7354 open), RB3 hold (#9053d5d2), freeze off for this PR (babysit phase ended).
+- PR #605 (1104-1): 102 unpushed commits; CI red on the old head only.
+- PLAN-two-track-merge-dev: landing-tree boxes LT1-LT10 added (uncommitted plan edit: commit with the plan-boxes regen after ci:quick), R1-R4 on #605 (R0 job 4346964f4, salt d49b2342d befc4ce2a, devbox ebaa897c4 2f0f54914 69c2e1ea3 0379bb969).
 
 ## Owed ticks
-- Live-owed boxes (PLAN-ciquick-cpu M2, PLAN-enterprise-isolation x5, PLAN-proxy-cd-six-targets C7, PLAN-health-checks-local C2, PLAN-production-key-only, PLAN-backup-program 0a237b2e) after the push and release.
+- LT1/LT2/LT4/LT8 after landing; R0 figure from the next CI run.
 
 ## Delegated
-- none; background: vm:check btgn5aw04.
+- FX1 a4b344372b2dd730b, FX2 af4bf021287083f8e, LT3 ac58f7ace10771b4e, LT5 adb62552774fa9ba6, LT6+7 af7525f48f5ad6849.
