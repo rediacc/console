@@ -71,7 +71,7 @@ if TYPE_CHECKING:
 
 POLICY_RELPATH = policy_rel("pytest-impact.json")
 CACHE_RELDIR = ".ci/cache/pytest-impact"
-MAP_SCHEMA = 2
+MAP_SCHEMA = 3
 MAX_FRACTION = 0.40
 FULL_BASENAMES = frozenset(
     {"conftest.py", "pyproject.toml", "uv.lock", "pytest.ini", "setup.cfg", "tox.ini"}
@@ -411,7 +411,35 @@ def build_map(
             "unresolved": sorted(unresolved),
             "literals": sorted(literals),
         }
-    return {"schema": MAP_SCHEMA, "tests": tests, "errors": sorted(set(errors))}
+    shared = shared_literal_modules(tests)
+    for test, entry in tests.items():
+        entry["literals"] = sorted(
+            {
+                lit
+                for rel in entry["closure"]
+                if rel == test or rel not in shared
+                for lit in facts_of(rel).literals
+            }
+        )
+    return {
+        "schema": MAP_SCHEMA,
+        "tests": tests,
+        "sharedLiteralModules": sorted(shared),
+        "errors": sorted(set(errors)),
+    }
+
+
+def shared_literal_modules(tests: dict[str, dict]) -> set[str]:
+    """The closure members (other than a test file itself) found in at least MAX_FRACTION of all test closures. Their literals are dropped, by the rule the module docstring states for shared library modules: a helper every test imports (the root conftest pulls `tests/differential.py` into all of them) would make every test cover each file it names, and one `constants.sh` edit selected all 949 files on 2026-11-20. The tests that really read such a file are listed in the strace `reads` table."""
+    if not tests:
+        return set()
+    counts: dict[str, int] = {}
+    for test, entry in tests.items():
+        for rel in entry["closure"]:
+            if rel != test:
+                counts[rel] = counts.get(rel, 0) + 1
+    floor = MAX_FRACTION * len(tests)
+    return {rel for rel, n in counts.items() if n >= floor and rel not in tests}
 
 
 # --------------------------------------------------------------------------- reads and coverage

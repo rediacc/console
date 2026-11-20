@@ -608,3 +608,36 @@ def test_the_selection_names_its_smoke_files_even_when_a_change_reached_one():
     assert sel.scope == "impact"
     assert sel.smoke_files == [".ci/rediacc_ci/tests/test_mid.py"]
     assert sel.why[".ci/rediacc_ci/tests/test_mid.py"] != "smoke"
+
+
+def test_a_helper_every_test_imports_names_no_file():
+    """The root conftest pulls a test-root helper into every closure; its literal `constants.sh` used to make every test cover that file (one pin bump selected all 949 files, 2026-11-20). Only the real reader from the `reads` table is selected now."""
+    tree = dict(TREE)
+    tree["conftest.py"] = "from rediacc_ci.tests import differ\n"
+    tree[".ci/rediacc_ci/tests/differ.py"] = "CONSTANTS = '.ci/config/constants.sh'\n"
+    tree[".ci/config/constants.sh"] = "X=1\n"
+    built = build(tree)
+    assert ".ci/rediacc_ci/tests/differ.py" in built["sharedLiteralModules"]
+    reader = ".ci/rediacc_ci/tests/test_mid.py"
+    sel = run(
+        [".ci/config/constants.sh"],
+        impact_map=built,
+        pol=policy(reads={reader: [".ci/config/constants.sh"]}),
+        tree=tree,
+    )
+    assert sel.scope == "impact", sel.reason
+    assert sorted(sel.files) == sorted([*SMOKE, reader])
+
+
+def test_a_helper_few_tests_import_still_covers_by_literal():
+    tree = dict(TREE)
+    tree[".ci/rediacc_ci/tests/differ.py"] = "CONSTANTS = '.ci/config/constants.sh'\n"
+    tree[".ci/rediacc_ci/tests/test_mid.py"] = (
+        "from rediacc_ci.tests import differ\n\ndef test_a():\n    assert differ\n"
+    )
+    tree[".ci/config/constants.sh"] = "X=1\n"
+    built = build(tree)
+    assert ".ci/rediacc_ci/tests/differ.py" not in built["sharedLiteralModules"]
+    sel = run([".ci/config/constants.sh"], impact_map=built, tree=tree)
+    assert sel.scope == "impact", sel.reason
+    assert ".ci/rediacc_ci/tests/test_mid.py" in sel.files
