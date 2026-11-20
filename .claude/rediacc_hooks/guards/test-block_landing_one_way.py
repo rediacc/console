@@ -115,6 +115,11 @@ REFUSED = [
     ("a wrapper", "sh -c 'git merge %s'" % DEV),
     ("global options", "git -c a=b --no-pager merge %s" % DEV),
     ("a chain", "git status && git rebase %s" % DEV),
+    (
+        "push the development branch onto the landing branch",
+        "git push origin %s:%s" % (DEV, LANDING_BRANCH),
+    ),
+    ("push the development branch onto main", "git push origin %s:main" % DEV),
 ]
 
 # Admitted in the landing tree.
@@ -130,6 +135,7 @@ ALLOWED = [
     ("push the landing branch", "git push origin %s" % LANDING_BRANCH),
     ("push bare", "git push"),
     ("push the development branch", "git push origin %s" % DEV),
+    ("push the development branch to a backup name", "git push origin %s:%s-backup" % (DEV, DEV)),
     ("status", "git status"),
     ("prose", "echo git merge %s" % DEV),
     ("a log of development", "git log %s" % DEV),

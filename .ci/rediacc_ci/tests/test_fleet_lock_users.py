@@ -209,11 +209,13 @@ def test_drill_hold_fleet_holds_until_teardown(monkeypatch: pytest.MonkeyPatch) 
     drill = lib.Drill("fleet-test")
     assert drill.hold_fleet("upload renet") is True
     other = resource_lock.ResourceLock("fleet", say=lambda _line: None)
-    # Held: another process-level holder (nesting off, since this is the same pid) is refused.
-    with pytest.raises(resource_lock.ResourceBusyError) as exc:
-        other.acquire("x", 0.0, nest=False)
-    assert "purpose drill fleet-test: upload renet" in str(exc.value)
-    drill.teardown()
+    try:
+        # Held: another process-level holder (nesting off, since this is the same pid) is refused.
+        with pytest.raises(resource_lock.ResourceBusyError) as exc:
+            other.acquire("x", 0.0, nest=False)
+        assert "purpose drill fleet-test: upload renet" in str(exc.value)
+    finally:
+        drill.teardown()
     assert drill.fleet_lock is None
     other.acquire("after", 0.0, nest=False)
     other.release()
@@ -226,15 +228,19 @@ def test_drill_hold_fleet_records_the_seconds_acquire_waited(
     """Finding 17cb38ca.2: the real `hold_fleet` assignment, not a stub, carries `acquire`'s return into `fleet_waited`, which `License.run_all` compares against FLEET_REWAIT_S. Control: an uncontended acquire leaves it below the re-check threshold, and a long wait is at or above it."""
     monkeypatch.setenv("DRILL_FLEET_WAIT_S", "0")
     drill = lib.Drill("fleet-test")
-    assert drill.hold_fleet("upload renet") is True
-    assert drill.fleet_waited < lic.FLEET_REWAIT_S
-    drill.teardown()
+    try:
+        assert drill.hold_fleet("upload renet") is True
+        assert drill.fleet_waited < lic.FLEET_REWAIT_S
+    finally:
+        drill.teardown()
     monkeypatch.setattr(resource_lock.ResourceLock, "acquire", lambda *_a, **_k: 7.5)
     again = lib.Drill("fleet-test")
-    assert again.hold_fleet("upload renet") is True
-    assert again.fleet_waited == 7.5
-    assert again.fleet_waited >= lic.FLEET_REWAIT_S
-    again.teardown()
+    try:
+        assert again.hold_fleet("upload renet") is True
+        assert again.fleet_waited == 7.5
+        assert again.fleet_waited >= lic.FLEET_REWAIT_S
+    finally:
+        again.teardown()
 
 
 def _license_fake(calls: list[str]) -> Any:

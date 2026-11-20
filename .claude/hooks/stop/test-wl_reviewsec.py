@@ -292,13 +292,20 @@ control(
 
 _first_lines = [S.HEADER] + [S._item_line(i) for i in checklist["items"][:2]]
 _tight = sum(len(line) + 1 for line in _first_lines)
-for cap in (_tight, _tight + 1, 400, 777, 2500):
+# 200 is the smallest cap load_checklist accepts, and HEADER plus its two newlines is exactly that long, so the header alone fits and the block is never empty.
+for cap in (200, _tight, _tight + 1, 400, 777, 2500):
     capped_checklist = dict(checklist, render_cap_chars=cap)
     block = S.render(capped_checklist, [], ["src/app.py"])
     control("render stays within render_cap_chars=%d" % cap, len(block) <= cap, True)
 control(
-    "CONTROL: a roomy cap still renders the whole checklist",
-    block.startswith(S.HEADER) and block.endswith("\n\n"),
+    "the smallest valid cap keeps the header",
+    S.render(dict(checklist, render_cap_chars=200), [], ["src/app.py"]).startswith(S.HEADER),
+    True,
+)
+_roomy_block = S.render(dict(checklist, render_cap_chars=100000), [], ["src/app.py"])
+control(
+    "CONTROL: a roomy cap still renders the whole checklist, every item and nothing else",
+    _roomy_block == "\n".join([S.HEADER] + [S._item_line(i) for i in checklist["items"]]) + "\n\n",
     True,
 )
 
