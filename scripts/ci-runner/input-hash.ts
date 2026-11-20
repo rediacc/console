@@ -239,7 +239,16 @@ function cmdOut(cmd: string, args: string[]): string {
   return execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
 }
 
-export function saltHash(root: string, tree: string): string {
+/** The env var the devbox and the CI container lanes set to the pinned devcontainer digest (PLAN-two-track-merge-dev D6/R1). */
+export const RUNNER_IMAGE_ENV = 'CI_RUNNER_IMAGE';
+
+/** D6's image term: the pinned digest when the run is inside the image, `host` otherwise, so a host receipt and an image receipt never stand in for each other. */
+export function imageTerm(env: NodeJS.ProcessEnv = process.env): string {
+  const image = (env[RUNNER_IMAGE_ENV] ?? '').trim();
+  return image === '' ? 'host' : image;
+}
+
+export function saltHash(root: string, tree: string, env: NodeJS.ProcessEnv = process.env): string {
   let toolchain = '';
   try {
     toolchain = execFileSync('git', ['show', `${tree}:.devcontainer/toolchain.env`], {
@@ -252,7 +261,7 @@ export function saltHash(root: string, tree: string): string {
     toolchain = '';
   }
   return sha(
-    `salt\n${cmdOut('node', ['--version'])}\n${cmdOut('python3', ['--version'])}\n${process.platform}\n${process.arch}\n${toolchain}`
+    `salt\n${cmdOut('node', ['--version'])}\n${cmdOut('python3', ['--version'])}\n${process.platform}\n${process.arch}\n${toolchain}\nimage:${imageTerm(env)}`
   );
 }
 
@@ -815,6 +824,20 @@ export function inputHashSelftest(tmpDir: string): void {
     must(
       canon({ b: 1, a: { d: 1, c: 2 } }) === '{"a":{"c":2,"d":1},"b":1}',
       'canon sorts keys at every depth'
+    );
+
+    // D6/R1: the image term. Two environments differing only in the pinned image yield different salts, and an absent pin reads as host.
+    const hostSalt = saltHash(root, t3, {});
+    const imageSalt = saltHash(root, t3, {
+      [RUNNER_IMAGE_ENV]: 'ghcr.io/rediacc/devcontainer@sha256:aaaa',
+    });
+    must(
+      hostSalt !== imageSalt,
+      'the image term must move the salt: a host receipt must not stand in for an image receipt'
+    );
+    must(
+      saltHash(root, t3, { [RUNNER_IMAGE_ENV]: '' }) === hostSalt && imageTerm({}) === 'host',
+      'CONTROL: an empty or absent pin is the host term'
     );
 
     // planCarry
