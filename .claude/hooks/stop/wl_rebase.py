@@ -49,9 +49,11 @@ def _fetch(tree, remote: str, branch: str, ref: str) -> tuple[int, str]:
     return rc, err
 
 
-def base_branch(pr_open: bool, live_branch: str) -> str:
-    """The branch a lease is judged against: the live branch while its PR is open, main after the merge."""
-    return live_branch if pr_open else "main"
+def base_branch(pr_open: bool, live_branch: str, record: dict | None = None) -> str:
+    """The branch a lease is judged against: the live branch while its PR is open; after the merge the branch the lease was cut from when its record carries `cut_from`, else main."""
+    if pr_open:
+        return live_branch
+    return str((record or {}).get("cut_from") or "") or "main"
 
 
 def behind_base(tree, head: str, cut_at: str, branch: str, remote: str = REMOTE) -> Verdict:
@@ -101,12 +103,13 @@ def lease_verdicts(
         if not str(record.get("owner") or "").startswith(owner):
             continue
         cut = record.get("base") or {}
+        judged = base_branch(branch != "main", branch, record)
         for repo, tree in sorted(repos.items()):
             cut_at = cut.get(repo, "")
             if not cut_at or not tree.get("head"):
                 continue
             out.setdefault(lease_id, {})[repo] = behind_base(
-                tree["path"], tree["head"], cut_at, branch, remote
+                tree["path"], tree["head"], cut_at, judged, remote
             )
     return out
 

@@ -3229,6 +3229,48 @@ V_LOOP_NEXT_MERGE = (
     "the merge: run /pr-merge (CI Complete SUCCESS on the head, wl_review.py --check rc 0, the PR "
     "review answered)."
 )
+# THE TWO-TREE LOOP (agent/plans/PLAN-two-track-merge-dev.md, box LT15). With a landing record the landing tree merges and the development tree builds; `wl_checks.loop_next_text` picks the arm through `loop_next_variant`.
+# The landing tree after its PR merged: promotion replaces the branch cut.
+V_LOOP_NEXT_PROMOTE = (
+    "LOOP NEXT: PR #%(pr)s on %(branch)s is merged and this is the landing tree. Promote the "
+    "development branch instead of cutting one here (box LT16):\n"
+    "    ./run.sh worktree landing --promote\n"
+    "It rebases the development branch onto origin/main with `--git rebase-proof`, flips its draft "
+    "ready and moves it into this tree. Then work %(next)s's first box on the next development "
+    "branch: %(box)s"
+)
+# The development tree while the landing PR is open: the merge belongs to the landing tree.
+V_LOOP_NEXT_MERGE_WAIT = (
+    "LOOP NEXT: every box of PR #%(pr)s's plan set is ticked (%(plans)s), and the landing PR is "
+    "still open. The merge belongs to the landing tree: wait for the landing merge, keep this "
+    "branch rebased on the landing branch (`git rebase <landing branch>`), and never run /pr-merge "
+    "here."
+)
+# The development tree with commits and no PR: the draft rides beside the landing PR.
+V_LOOP_NEXT_NO_PR_DRAFT = (
+    "LOOP NEXT: branch %(branch)s carries %(ahead)d commit(s) ahead of origin/main and has no PR. "
+    "Open its draft (turbo does not count it while the landing PR is open):\n"
+    "    npm run ci:quick   (the receipt block_unverified_push reads)\n"
+    "    git push -u origin %(branch)s\n"
+    "    gh pr create --draft --base main --head %(branch)s\n"
+    "refresh_pr_body writes the Plan: line from the queue head on the first push."
+)
+ARM_MERGED = "merged"
+ARM_FINISH = "finish"
+ARM_OPEN = "open"
+
+
+def loop_next_variant(role, merged, landing_open, arm=ARM_FINISH):
+    """The loop-next template for a tree. `role` is commit_policy.tree_role's answer ("landing" or "development") when a valid landing record exists, None or "" otherwise; `merged` is True when this tree's PR merged (the MERGED arm); `landing_open` is True while the landing PR is open; `arm` names the not-merged arm, ARM_FINISH (every box ticked) or ARM_OPEN (commits and no PR). No record answers today's template."""
+    if merged:
+        return V_LOOP_NEXT_PROMOTE if role == "landing" else V_LOOP_NEXT_MERGED
+    if arm == ARM_OPEN:
+        return V_LOOP_NEXT_NO_PR_DRAFT if role == "development" else V_LOOP_NEXT_NO_PR_OPEN
+    if role == "development" and landing_open:
+        return V_LOOP_NEXT_MERGE_WAIT
+    return V_LOOP_NEXT_MERGE
+
+
 # The bounded unreadable arm: the failing read, the branch twice, and the block budget (wl_ci.CI_MAX_BLOCKS).
 V_LOOP_NEXT_UNREADABLE = (
     "LOOP NEXT: the loop state could not be read (%s), so the hook cannot tell whether the PR of "

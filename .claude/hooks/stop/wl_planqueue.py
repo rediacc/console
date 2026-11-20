@@ -22,6 +22,7 @@ from __future__ import annotations
 import dataclasses
 import importlib
 import importlib.util
+import os
 import pathlib
 import re
 
@@ -1070,6 +1071,16 @@ class FocusLine:
 
 
 @dataclasses.dataclass(frozen=True)
+class TreeLine:
+    """One tree of a landing record: its role, the branch checked out there, and its PR (`pr` 0 when it has none, `state` the PR's state when it has one)."""
+
+    role: str
+    branch: str
+    pr: int = 0
+    state: str = ""
+
+
+@dataclasses.dataclass(frozen=True)
 class InFlight:
     """Everything the block shows. `writers` is None when the live writers could not be counted."""
 
@@ -1088,6 +1099,7 @@ class InFlight:
     next_plan: str = ""
     next_why: str = ""
     next_when: str = ""
+    trees: tuple[TreeLine, ...] = ()
 
 
 def inflight_text(text: str) -> str | None:
@@ -1128,6 +1140,59 @@ def _more(items: list[str], limit: int = _LIST_MAX) -> str:
     return shown + (", and %d more" % (len(items) - limit) if len(items) > limit else "")
 
 
+def render_trees(trees) -> list[str]:
+    """The two-tree lines, landing first, the same text from either tree; [] with no landing record."""
+    out = []
+    for t in sorted(trees, key=lambda t: t.role != "landing"):
+        label = "Landing tree" if t.role == "landing" else "Development tree"
+        kind = "PR" if t.role == "landing" else "draft PR"
+        if not t.branch:
+            out.append("- %s: no branch checked out." % label)
+        elif not t.pr:
+            out.append("- %s: branch %s, no PR yet." % (label, t.branch))
+        else:
+            out.append(
+                "- %s: branch %s, %s #%d %s."
+                % (label, t.branch, kind, t.pr, (t.state or "open").lower())
+            )
+    return out
+
+
+def landing_trees(root, worklist, session_id, pr_read=None) -> tuple[TreeLine, ...]:
+    """The landing and development trees of the repository's landing record, read the same from either tree; () with no valid record. `pr_read(branch)` answers (number, state) or (0, ""), `wl_ci.pr_link` by default."""
+    import wl_prscope as P
+
+    _pg, cp = P._hooks_pkg()
+    rec = cp.landing_record(str(root))
+    if rec is None:
+        return ()
+    common = cp.git(["rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=str(root))
+    common = (common or "").strip()
+    main_tree = os.path.dirname(common) if os.path.basename(common) == ".git" else str(root)
+    dev_path = str(root) if cp.tree_role(str(root)) == cp.ROLE_DEVELOPMENT else main_tree
+    dev_branch = (cp.git(["rev-parse", "--abbrev-ref", "HEAD"], cwd=dev_path) or "").strip()
+    dev_branch = "" if dev_branch in ("HEAD", "main") else dev_branch
+
+    def read(branch):
+        if not branch:
+            return 0, ""
+        if pr_read is not None:
+            return pr_read(branch)
+        import wl_ci
+
+        nodes, err = wl_ci.pr_link(str(root), worklist, session_id, branch)
+        if err or not nodes:
+            return 0, ""
+        node = next((n for n in nodes if str(n.get("state") or "").upper() == "OPEN"), nodes[0])
+        return int(node.get("number") or 0), str(node.get("state") or "")
+
+    out = []
+    for role, branch in (("landing", rec["branch"]), ("development", dev_branch)):
+        number, state = read(branch)
+        out.append(TreeLine(role, branch, number, state))
+    return tuple(out)
+
+
 def render_inflight(inf: InFlight) -> str:
     """The lines between the in-flight markers."""
     out = [mode_line(inf.settings)]
@@ -1166,6 +1231,7 @@ def render_inflight(inf: InFlight) -> str:
         out.append("- Branch: %s, PR state unreadable." % (inf.branch or "?"))
     else:
         out.append("- Branch: %s, off the loop." % (inf.branch or "none"))
+    out.extend(render_trees(inf.trees))
     if inf.reason:
         out.append("- Loop note: %s." % inf.reason.rstrip("."))
     if inf.plans:
@@ -1405,6 +1471,7 @@ def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=No
         next_plan=nxt,
         next_why=why,
         next_when=when,
+        trees=landing_trees(root, worklist, session_id),
     )
 
 
