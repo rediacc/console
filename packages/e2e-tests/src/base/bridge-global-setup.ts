@@ -10,6 +10,7 @@ import {
 } from '../constants';
 import { InfrastructureManager } from '../utils/infrastructure/InfrastructureManager';
 import { ensureAccountToken } from '../utils/licence';
+import { ensureLandlockActiveOnAll } from '../utils/landlockBoot';
 import { log } from '../utils/log';
 import { getOpsManager } from '../utils/renet-functions/OpsManager';
 
@@ -500,6 +501,14 @@ async function bridgeGlobalSetup(_config: FullConfig): Promise<() => Promise<voi
 
     // Step 4 needs Step 3: `renet setup` restarts sshd, so verification waits for SSH first.
     await timed('Step 4 verify', () => verifyVMsWithRetry(opsManager, infra));
+
+    // Step 4b: Landlock in the active LSM list. Oracle Linux 10 boots without it; a VM that does gets `lsm=...,landlock` and one reboot, then SSH is waited for and the VMs verified again.
+    await timed('Step 4b landlock', async () => {
+      await ensureLandlockActiveOnAll(opsManager, opsManager.getAllVMIps(), {
+        vmImage: process.env.VM_IMAGE,
+      });
+      await verifyVMsWithRetry(opsManager, infra);
+    });
 
     // Steps 5-8 need Step 4 and nothing from each other beyond what prepareWorkerServices orders. A run without workers is the Ceph-only topology, whose suites under tests/ceph never touch RustFS, datastores on workers or CRIU.
     if (opsManager.getWorkerVMIps().length > 0) {

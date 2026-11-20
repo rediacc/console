@@ -2,10 +2,10 @@ import { LANDLOCK_INACTIVE_OS_IDS } from './landlockSelection';
 import type { RenetFunctionsTestRunner } from './renet-functions/RenetFunctionsTestRunner';
 
 /**
- * OS images whose default boot leaves Landlock out of the active LSM list, so `renet sandbox-exec --detect` reports
- * NOT AVAILABLE and repo-key shells refuse there by design. Measured on the CI matrix (run 39640583259, 2026-10-21):
- * Oracle Linux 10 UEK 6.12 boots with `lsm=lockdown,capability,yama,selinux,bpf,ima,evm` and logs
- * "landlock: Disabled but requested by user space"; Ubuntu 24.04, Debian 13, Fedora 43 and openSUSE 16.0 report ABI 4-7.
+ * OS images that cannot boot with Landlock in the active LSM list, so `renet sandbox-exec --detect` reports NOT AVAILABLE
+ * and repo-key shells refuse there by design. Empty today: Oracle Linux 10 UEK 6.12 booted with
+ * `lsm=lockdown,capability,yama,selinux,bpf,ima,evm` ("landlock: Disabled but requested by user space", run 39640583259),
+ * and `landlockBoot.ts` now adds Landlock to `lsm=` and reboots such a VM during global setup.
  *
  * The one source of truth: 01-system-checks pins `--detect` against it, and every suite that needs a Rediaccfile `up()` or
  * `down()` to run (or a repository started by one) is tagged `@landlock` and left out of the run on those images by the

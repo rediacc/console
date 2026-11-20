@@ -158,8 +158,7 @@ test.describe('System Functions @bridge @smoke', () => {
       /status:\s*available/.test(output)
     );
     if (LANDLOCK_INACTIVE_BY_DEFAULT.has(os)) {
-      // Repo-key shells refuse on this OS until Landlock is added to lsm= (PLAN-shell-sandbox-readonly-view E1). A pass here
-      // after an image or kernel change means Landlock became active: move the OS out of the set.
+      // An OS named here cannot boot with Landlock in lsm=, so repo-key shells refuse on it by design.
       expect(
         output,
         `${os} now reports Landlock; remove it from LANDLOCK_INACTIVE_BY_DEFAULT`
