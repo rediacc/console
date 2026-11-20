@@ -247,3 +247,39 @@ def test_target_root_control_no_record_reads_a_made_directory_as_foreign(world):
     made = os.path.join(landing, "newdir")
     cmd = "mkdir %s && cd %s && %s" % (made, made, COMMIT)
     assert SS.target_root(cmd, dev, verb="commit") == made
+
+
+# --- the record itself (review findings fab1b63d.1 and fab1b63d.2) ---
+
+
+def test_a_record_naming_the_main_checkout_binds_nothing(world):
+    dev, _landing = world
+    with open(CP.landing_record_path(dev), "w", encoding="utf-8") as handle:
+        json.dump({"path": dev, "branch": PR}, handle)
+    assert CP.landing_record(dev) is None
+    assert "linked tree" in CP.landing_record_problem(dev)
+    assert CP.tree_role(dev) == CP.ROLE_DEVELOPMENT
+    assert DEV in CP.live_branches(dev, gh=False)
+    with pytest.raises(ValueError, match="linked tree"):
+        CP.write_landing_record(dev, dev, PR)
+
+
+def test_a_record_naming_a_subdirectory_binds_nothing(world):
+    dev, landing = world
+    sub = os.path.join(landing, "deep")
+    os.mkdir(sub)
+    with pytest.raises(ValueError, match="linked tree"):
+        CP.write_landing_record(dev, sub, PR)
+
+
+def test_a_failed_write_leaves_no_temporary_file(world, monkeypatch):
+    dev, landing = world
+
+    def broken(*_args, **_kwargs):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(CP.json, "dump", broken)
+    with pytest.raises(OSError, match="disk full"):
+        CP.write_landing_record(dev, landing, PR)
+    common = CP.common_dir(dev)
+    assert [n for n in os.listdir(common) if n.endswith(".tmp")] == []

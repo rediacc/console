@@ -320,7 +320,26 @@ def read_landing_record(repo_root: str) -> tuple[dict[str, str] | None, str]:
         return None, "%s: path `%s` does not exist" % (where, path)
     if common_dir(path) != common_dir(repo_root):
         return None, "%s: path `%s` is not a tree of this repository" % (where, path)
+    if not _is_linked_tree(path):
+        return None, "%s: path `%s` is not the toplevel of a linked tree" % (where, path)
     return {"path": path, "branch": branch}, ""
+
+
+def _is_linked_tree(path: str) -> bool:
+    """Whether `path` is the toplevel of a LINKED tree (its own git dir differs from the common one).
+
+    The landing tree is always a linked tree. A record naming the main checkout would make the development tree read as the landing tree, so its live set would shrink to the record's branch and the one-branch rule would admit a second branch there (review finding fab1b63d.1); a record naming a subdirectory would bind nothing a toplevel matches.
+    """
+    answer = git(
+        ["rev-parse", "--path-format=absolute", "--show-toplevel", "--absolute-git-dir"],
+        cwd=path,
+        foreign=True,
+    )
+    lines = (answer or "").split("\n")
+    if len(lines) != 2:
+        return False
+    top, own = (os.path.realpath(line) for line in lines)
+    return top == os.path.realpath(path) and own != common_dir(path)
 
 
 def landing_record(repo_root: str) -> dict[str, str] | None:
@@ -336,7 +355,7 @@ def landing_record_problem(repo_root: str) -> str:
 def write_landing_record(repo_root: str, path: str, branch: str) -> str:
     """Bind the landing tree `path` to `branch` for `repo_root`'s repository and answer the record's path.
 
-    Raises ValueError on a branch off the shape, a path that is not a tree of this repository, or a repository git cannot place. The write is atomic (a sibling temporary file, then a rename), so a reader never sees half a record.
+    Raises ValueError on a branch off the shape, a path that is not a tree of this repository or not the toplevel of a linked tree (the main checkout is never the landing tree), or a repository git cannot place. The write is atomic (a sibling temporary file, then a rename), so a reader never sees half a record.
     """
     if not BRANCH_SHAPE.match(branch):
         raise ValueError("branch `%s` is not an MMDD-N name" % branch)
@@ -346,11 +365,19 @@ def write_landing_record(repo_root: str, path: str, branch: str) -> str:
         raise ValueError("no git repository at %s" % repo_root)
     if not os.path.isdir(real) or common_dir(real) != common_dir(repo_root):
         raise ValueError("`%s` is not a tree of this repository" % real)
+    if not _is_linked_tree(real):
+        raise ValueError("`%s` is not the toplevel of a linked tree" % real)
     temp = "%s.%d.tmp" % (where, os.getpid())
-    with open(temp, "w", encoding="utf-8") as handle:
-        json.dump({"path": real, "branch": branch}, handle, indent=2, sort_keys=True)
-        handle.write("\n")
-    os.replace(temp, where)
+    try:
+        with open(temp, "w", encoding="utf-8") as handle:
+            json.dump({"path": real, "branch": branch}, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+        os.replace(temp, where)
+    except BaseException:
+        # A failed write leaves no stray temporary file in the common git dir (review finding fab1b63d.2).
+        if os.path.lexists(temp):
+            os.unlink(temp)
+        raise
     return where
 
 
