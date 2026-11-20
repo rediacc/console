@@ -237,34 +237,53 @@ control(
 )
 
 
-# A file whose own --selftest mode is its suite, run by a tracked test, counts as a --test path (scripts/pins/pins.ts and test_gate_pin_cli.py).
-def selftest_host_fixture(name, with_runner):
-    repo, reviewed, _fix = fixture(name)
-    (repo / "tool").mkdir()
-    (repo / "tool" / "host.ts").write_text(
+# A file whose own --selftest mode is its suite, run by a tracked test, counts as a --test path (scripts/pins/pins.ts and test_gate_pin_cli.py); both are judged at the reviewed commit, so a fix cannot make its own file a host.
+def selftest_host_fixture(name, host_before, runner_line):
+    """(repo, reviewed, fix): the host and its runner are in the base when `host_before` (else the host has no --selftest yet), and the fix commit edits the host to read the anchored a.txt."""
+    repo = _SCRATCH / name
+    (repo / "tool").mkdir(parents=True)
+    (repo / "tests").mkdir()
+    host = repo / "tool" / "host.ts"
+    host.write_text(
+        ("if (argv.includes('--selftest')) {}\n" if host_before else "main()\n"), encoding="utf-8"
+    )
+    (repo / "tests" / "test_host_runs.py").write_text(runner_line + "\n", encoding="utf-8")
+    repo, reviewed, _fix = fixture(name, prepared=True)
+    host.write_text(
         "if (argv.includes('--selftest')) { control(read('a.txt')); }\n", encoding="utf-8"
     )
-    paths_ = ["tool/host.ts"]
-    if with_runner:
-        (repo / "tests").mkdir()
-        (repo / "tests" / "test_host_runs.py").write_text(
-            "SUBJECT = 'host.ts'  # run with --selftest\n", encoding="utf-8"
-        )
-        paths_.append("tests/test_host_runs.py")
-    git(repo, "add", "--", *paths_)
-    git(repo, "commit", "-q", "-m", "selftest host")
+    git(repo, "commit", "-q", "-am", "fix in the host's selftest")
     return repo, reviewed, git(repo, "rev-parse", "HEAD")
 
 
-repo, reviewed, fix = selftest_host_fixture("ref-host", True)
-control(
-    "a selftest host a tracked test runs: not refused as a non-test path",
-    "is not a test path" in (mark_with_test(repo, reviewed, fix, "tool/host.ts") or ""),
-    False,
+repo, reviewed, fix = selftest_host_fixture(
+    "ref-host", True, "SUBJECT = from_root('tool', 'host.ts')  # its --selftest"
 )
-repo, reviewed, fix = selftest_host_fixture("ref-host-none", False)
 control(
-    "CONTROL: the same host with no test running it: refused as a non-test path",
+    "a selftest host a tracked test runs: --test accepted",
+    mark_with_test(repo, reviewed, fix, "tool/host.ts"),
+    None,
+)
+control("the selftest host marks it fixed", resolution(repo, reviewed).split()[1], "fixed")
+repo, reviewed, fix = selftest_host_fixture("ref-host-none", True, "SUBJECT = 'other'  # selftest")
+control(
+    "CONTROL: the same host with no test naming it: refused as a non-test path",
+    "is not a test path" in (mark_with_test(repo, reviewed, fix, "tool/host.ts") or ""),
+    True,
+)
+repo, reviewed, fix = selftest_host_fixture(
+    "ref-host-added", False, "SUBJECT = 'host.ts'  # selftest"
+)
+control(
+    "CONTROL: a host whose --selftest the fix itself adds: refused",
+    "is not a test path" in (mark_with_test(repo, reviewed, fix, "tool/host.ts") or ""),
+    True,
+)
+repo, reviewed, fix = selftest_host_fixture(
+    "ref-host-substr", True, "SUBJECT = 'myhost.ts'  # selftest"
+)
+control(
+    "CONTROL: a test naming only a longer name containing the basename: refused",
     "is not a test path" in (mark_with_test(repo, reviewed, fix, "tool/host.ts") or ""),
     True,
 )

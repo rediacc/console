@@ -3334,11 +3334,12 @@ def is_test_path(path):
 
 
 def is_selftest_host(repo, rev, path):
-    """True for a file whose own `--selftest` mode is its test suite and that a tracked test runs: the file at `rev` handles `--selftest`, and some tracked test file names its basename and the word selftest (scripts/pins/pins.ts, run by tests/gates/test_gate_pin_cli.py through paths.from_root)."""
+    """True for a file whose own `--selftest` mode is its test suite and that a tracked test already runs, both judged at `rev`, the reviewed commit, so a fix cannot make its own file a test host by adding the text (scripts/pins/pins.ts, run by tests/gates/test_gate_pin_cli.py through paths.from_root). The test must name the file as a whole token: its basename quoted or after a path separator, or its full path."""
     rc, text = git(repo, "show", "%s:%s" % (rev, path))
     if rc != 0 or "--selftest" not in text:
         return False
     base = pathlib.PurePosixPath(path).name
+    token = re.compile(r"(?:^|[\"'/\s])%s(?:[\"'\s,)]|$)" % re.escape(base), re.MULTILINE)
     rc, hits = git(repo, "grep", "-l", "-F", base, rev, "--")
     if rc != 0:
         return False
@@ -3347,7 +3348,7 @@ def is_selftest_host(repo, rev, path):
         if name == path or not is_test_path(name):
             continue
         rc, body = git(repo, "show", "%s:%s" % (rev, name))
-        if rc == 0 and "selftest" in body:
+        if rc == 0 and "selftest" in body and (path in body or token.search(body)):
             return True
     return False
 
@@ -3706,7 +3707,9 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
                 test_path = test_path.removeprefix(prefix)
         if test_path and test_path not in touched:
             raise ValueError("%s does not touch the named test %s" % (fix[:12], test_path))
-        if test_path and not (is_test_path(test_path) or is_selftest_host(repo, fix, test_path)):
+        if test_path and not (
+            is_test_path(test_path) or is_selftest_host(repo, review.sha, test_path)
+        ):
             raise ValueError("%s is not a test path" % test_path)
         test_claim = bool(TEST_CLAIM_RE.search(finding.claim))
         followed = (
