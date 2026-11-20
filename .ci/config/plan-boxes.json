@@ -4383,8 +4383,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 19,
-      "done": 5,
+      "open": 18,
+      "done": 6,
       "open_sigs": [
         "1889ccd8",
         "3385a609",
@@ -4393,7 +4393,6 @@
         "75dc0733",
         "8bb8cb57",
         "a2ae6f1c",
-        "afe59ee1",
         "b498a006",
         "b60fd388",
         "ce04f9fc",
@@ -4411,7 +4410,8 @@
         "7314ba07",
         "769b389b",
         "7aa63794",
-        "acc8f504"
+        "acc8f504",
+        "afe59ee1"
       ]
     },
     "agent/plans/PLAN-unify-trap-corpus.md": {

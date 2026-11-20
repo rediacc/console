@@ -203,10 +203,11 @@ Inventory (sonnet Explore, 2026-11-20): review records, finding fixes, investiga
   Owns: .claude/hooks/stop/wl_rebase.py, .claude/hooks/stop/test-rebase-consistency.py
   Depends on: RB1.
   Accept: the test file gains a REBASE control where an unreviewed dev commit is flagged and a reviewed one is not, and a conflict-resolved commit (patch-id changed) is flagged.
-- [ ] RB5 [writer] Dev-lease plan citations: a plan edited from a lease cites blob ids, never a lease commit sha; check:ci-plan-citations already reads orphaned shas red after a rebase-merge (.ci/scripts/quality/check_plan_citations.py:573-626), so this box adds a write-time refusal in .claude/hooks/stop/wl_planrec.py for a commit pointer that is not reachable from the live branch or origin/main.
+- [x] RB5 [writer] Dev-lease plan citations: a plan edited from a lease cites blob ids, never a lease commit sha; check:ci-plan-citations already reads orphaned shas red after a rebase-merge (.ci/scripts/quality/check_plan_citations.py:573-626), so this box adds a write-time refusal in .claude/hooks/stop/wl_planrec.py for a commit pointer that is not reachable from the live branch or origin/main.
   Owns: .claude/hooks/stop/wl_planrec.py, .claude/hooks/stop/test-planrec.py
   Depends on: none.
   Accept: `python3 .claude/hooks/stop/test-planrec.py` rc 0 with a control where a lease-only commit pointer is refused at write time and a reachable one is accepted.
+    (ticked) 2026-11-20T12:09:43Z by d778be9d: commit:239426cba commit:69594a412 wl_planrec.resolve judges a commit pointer from a lease against the main worktree branch (or origin/main only), never the lease HEAD; python3 .claude/hooks/stop/test-planrec.py rc 0, 336 controls, including RB5 (lease-only pointer refused, live-branch pointer accepted); PYTHONPATH=.ci:.claude/hooks/stop pytest .ci/rediacc_ci/tests/test_planrec_live_ref.py 3 passed (detached-main fallback included); mutant answering HEAD in a lease: 1 failed
 - [ ] RB6 [lead] Live test of `done=` under a rebase-merge: on a scratch branch whose plan record carries a compacted `done=<sha9>`, rebase-merge it onto main in a throwaway clone and run `npm run -s check:ci-plan-record` there; record whether R4 (.ci/scripts/quality/check_plan_record.py:1108-1125) survives, and file a fix box here if it does not.
   Owns: none -- live test in a throwaway clone.
   Depends on: none.
