@@ -209,7 +209,7 @@ def runs_lease_verb(cmd):
     return False
 
 
-# THE LANDING TREE LEAVES ONLY BY ITS VERB (box LT3 of agent/plans/PLAN-two-track-merge-dev.md, operator ruling ASKED:2026-11-20T17:47Z). `./run.sh worktree landing` makes it at the fixed sibling of the main checkout, `<main>-landing`, outside `.claude/worktrees`, so the lease arm above never names it, and a typed `git worktree remove|move|prune|lock|unlock` on it would drop the PR branch's tree and whatever it holds uncommitted. So those verbs are refused when an operand names the sibling path or the path the landing record (`commit_policy.landing_record`) binds: a path that resolves into it from the run's directory, or a relative word it ends with, the unique suffix git resolves to a tree (`git worktree remove console-landing`). Unlike a lease, the landing tree is where a session works, so a run executing INSIDE it is judged by its operands alone: `git worktree prune` or a removal of another path typed there stays allowed, and `git worktree remove .` there names the tree and is refused.
+# THE LANDING TREE LEAVES ONLY BY ITS VERB (box LT3 of agent/plans/PLAN-two-track-merge-dev.md, operator ruling ASKED:2026-11-20T17:47Z). `./run.sh worktree landing` makes it at the fixed sibling of the main checkout, `<main>-landing`, outside `.claude/worktrees`, so the lease arm above never names it, and a typed `git worktree remove|move|prune|lock|unlock` on it would drop the PR branch's tree and whatever it holds uncommitted. So those verbs are refused when an operand names the sibling path or the path the landing record (`commit_policy.landing_record`) binds: a path that resolves into it from the run's directory, or a relative word that any of those paths ends with (`git worktree remove console-landing`), read only for a run aimed at this checkout's own repository, since another repository resolves a bare word against its own trees. Unlike a lease, the landing tree is where a session works, so a run executing INSIDE it is judged by its operands alone: `git worktree prune` or a removal of another path typed there stays allowed, and `git worktree remove .` there names the tree and is refused.
 #
 # OUT OF REACH, as for the lease arm: a path held in a variable, a glob, a program that builds the path at run time, a git alias.
 LANDING_SUFFIX = "-landing"
@@ -229,19 +229,19 @@ def landing_paths(project):
     return tuple(sorted(paths))
 
 
-def names_landing(word, here, landings):
-    """Does the operand `word`, in a run executing in the absolute directory `here`, name one of the landing trees `landings`? Passed in, so the arm can be driven without a tree on disk."""
+def names_landing(word, here, landings, bare=True):
+    """Does the operand `word`, in a run executing in the absolute directory `here`, name one of the landing trees `landings`? Passed in, so the arm can be driven without a tree on disk. The bare-suffix reading (a relative word that a landing path ends with) applies only when `bare` is true, that is when the run is aimed at the repository `landings` belongs to."""
     target = os.path.realpath(os.path.join(here, word))
     if any(target == p or target.startswith(p + os.sep) for p in landings):
         return True
-    if word.startswith("/"):
+    if word.startswith("/") or not bare:
         return False
     tail = os.path.normpath(word)
     return tail not in (".", "..") and any(p.endswith("/" + tail) for p in landings)
 
 
-def runs_landing_verb(cmd, base, landings):
-    """Does `cmd` run a `git worktree` verb in LEASE_VERBS with an operand naming a landing tree? `base` is the absolute directory the command starts in. Judged by run, like `runs_lease_verb`."""
+def runs_landing_verb(cmd, base, landings, same_store=None):
+    """Does `cmd` run a `git worktree` verb in LEASE_VERBS with an operand naming a landing tree? `base` is the absolute directory the command starts in. `same_store(here)` says whether a run's directory belongs to the repository `landings` was computed for (default: every run does); a run aimed elsewhere is judged by path operands alone. Judged by run, like `runs_lease_verb`."""
     if not landings:
         return False
     for run_ in shellscan.every_run(cmd):
@@ -255,7 +255,8 @@ def runs_landing_verb(cmd, base, landings):
         if not args or args[0] not in LEASE_VERBS:
             continue
         here = os.path.join(base, run_.cwd or "", where)
-        if any(names_landing(w, here, landings) for w in args[1:] if not w.startswith("-")):
+        bare = same_store is None or same_store(here)
+        if any(names_landing(w, here, landings, bare) for w in args[1:] if not w.startswith("-")):
             return True
     return False
 
@@ -2100,7 +2101,13 @@ def run(ev):
         ev.warn(messages[verdict])
         return hookio.DENY
     project = ev.project_dir
-    landing = runs_landing_verb(cmd, ev.field("cwd") or project, landing_paths(project))
+    store = commit_policy.common_dir(project)
+    landing = runs_landing_verb(
+        cmd,
+        ev.field("cwd") or project,
+        landing_paths(project),
+        lambda here: bool(store) and commit_policy.common_dir(here) == store,
+    )
     if landing:
         ev.warn(LANDING_MESSAGE)
         return hookio.DENY
