@@ -2038,7 +2038,7 @@ MEMO_GIT_VERBS = frozenset({"rev-parse", "show", "merge-base", "log", "cat-file"
 
 
 def memo_git_reads(module, names=("_git_out", "_git_raw", "_git_ok")):
-    """Wrap `module`'s git helpers so a read-only verb is asked once per (root, args) until the returned undo runs. main installs it after the controls (which run uncached) and drops it when it next starts, so a second in-process run asks git afresh."""
+    """Wrap `module`'s git helpers so a read-only verb is asked once per (root, args) until the returned undo runs. main installs it after the controls (which run uncached) and drops_git_memo drops it when main returns or raises."""
     undo = []
     for name in names:
         real = getattr(module, name, None)
@@ -2068,7 +2068,7 @@ def memo_git_reads(module, names=("_git_out", "_git_raw", "_git_ok")):
     return restore
 
 
-# The undo of every memo main installed; main runs it first, so each run asks git afresh even when an earlier in-process run left its memo in place.
+# The undo of every memo main installed, run when main returns (drops_git_memo) and again when it starts.
 _MEMO_UNDO: list = []
 
 
@@ -2077,6 +2077,20 @@ def drop_git_memo() -> None:
         _MEMO_UNDO.pop()()
 
 
+def drops_git_memo(fn):
+    """Run `fn` and drop every git memo it installed when it returns or raises. A decorator rather than a try/finally inside main, because the RETRO-f and A9e controls require main's verdict prints to sit outside every try."""
+
+    @functools.wraps(fn)
+    def run(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        finally:
+            drop_git_memo()
+
+    return run
+
+
+@drops_git_memo
 def main(argv=None) -> int:
     drop_git_memo()
     argv = list(sys.argv[1:] if argv is None else argv)

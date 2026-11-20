@@ -408,7 +408,7 @@ def test_memo_git_reads_caches_read_verbs_only(gate):
     )
 
 
-def test_the_memo_is_dropped_when_main_starts_again(gate):
+def test_the_memo_is_dropped_when_main_returns(gate):
     calls = []
 
     def fake_git(root, *args):
@@ -416,13 +416,25 @@ def test_the_memo_is_dropped_when_main_starts_again(gate):
         return "answer %d" % len(calls)
 
     mod = types.SimpleNamespace(_git=fake_git)
-    gate._MEMO_UNDO.append(gate.memo_git_reads(mod, names=("_git",)))
-    assert mod._git("/r", "show", "x") == mod._git("/r", "show", "x")
-    gate.drop_git_memo()
-    assert mod._git is fake_git, (
-        "a later run must ask git afresh, not reuse an earlier run's answers"
-    )
-    assert gate._MEMO_UNDO == []
+
+    @gate.drops_git_memo
+    def run():
+        gate._MEMO_UNDO.append(gate.memo_git_reads(mod, names=("_git",)))
+        assert mod._git("/r", "show", "x") == mod._git("/r", "show", "x")
+        return 7
+
+    try:
+        assert run() == 7
+        assert mod._git is fake_git, (
+            "a caller after main must ask git afresh, not get main's answers"
+        )
+        assert gate._MEMO_UNDO == []
+    finally:
+        gate.drop_git_memo()
+
+
+def test_main_is_wrapped_so_its_memo_never_outlives_it(gate):
+    assert getattr(gate.main, "__wrapped__", None) is not None, "main must carry drops_git_memo"
 
 
 def test_prefetch_follow_matches_the_serial_walk(gate):
