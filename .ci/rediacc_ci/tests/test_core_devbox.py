@@ -1601,7 +1601,7 @@ PIN_IMAGE = "devcontainer"
         json.dumps({"image": PIN_IMAGE, "digest": GOOD_DIGEST}),
         json.dumps({"image": "", "digest": GOOD_DIGEST, "stage": "full"}),
         json.dumps(
-            {"image": "ghcr.io/rediacc/devcontainer", "digest": GOOD_DIGEST, "stage": "full"}
+            {"image": IMAGE_REGISTRY + "/devcontainer", "digest": GOOD_DIGEST, "stage": "full"}
         ),
     ],
 )
