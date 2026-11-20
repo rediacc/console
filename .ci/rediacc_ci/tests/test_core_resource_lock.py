@@ -497,3 +497,24 @@ def test_a_lock_removed_after_the_open_refuses(monkeypatch) -> None:
         assert resource_lock.main(["held-by-ancestor", "--resource", "fleet"]) == 2
     finally:
         monkeypatch.undo()
+
+
+@pytest.mark.usefixtures("runtime")
+def test_the_refusal_names_removal(monkeypatch) -> None:
+    path = resource_lock.lock_path("fleet")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("")
+    real_open = resource_lock.os.open
+
+    def removing_open(p, flags, *a, **k):
+        fd = real_open(p, flags, *a, **k)
+        if p == path:
+            os.unlink(path)
+        return fd
+
+    monkeypatch.setattr(resource_lock.os, "open", removing_open)
+    try:
+        with pytest.raises(OSError, match="removed"):
+            resource_lock.held_by_ancestor("fleet")
+    finally:
+        monkeypatch.undo()

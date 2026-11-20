@@ -216,7 +216,9 @@ def held_by_ancestor(resource: str, environ: Mapping[str, str] | None = None) ->
             # Removed after the open: the fd's inode may still be flock-held by a live holder, and a fresh file at the path would let a second holder in, so this cannot be judged and refuses.
             same = False
         if not same:
-            raise OSError("lock file %s changed or is a symlink after open; refusing" % path)
+            raise OSError(
+                "lock file %s was removed, replaced or symlinked after open; refusing" % path
+            )
         try:
             fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
         except BlockingIOError:
