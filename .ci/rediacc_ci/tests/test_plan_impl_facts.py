@@ -3,6 +3,7 @@
 import json
 import subprocess
 
+import pytest
 import wl_planrec
 import wl_review
 
@@ -109,8 +110,8 @@ def test_rebase_reachability_is_never_cached(tmp_path):
     facts = PIF.Facts(repo, "closure-x", str(cache))
     facts.commit_date("date_c", shas[-1], lambda c: _git(repo, "log", "-1", "--format=%cI", c))
     facts.save()
-    assert "ancestor" not in json.dumps(json.loads(cache.read_text()))
-    assert set(PIF.KINDS) == {"patch", "date_c", "date_a", "follow"}
+    with pytest.raises(KeyError, match="reachability"):
+        facts.put("ancestor", shas[-1], "yes")
     _git(repo, "reset", "-q", "--hard", "HEAD~2")
     ok, why = wl_planrec.resolve(repo, "commit", shas[-1])
     assert not ok, (
@@ -124,3 +125,72 @@ def test_a_damaged_cache_is_an_empty_cache(tmp_path):
     cache = tmp_path / "facts.json"
     cache.write_text("{not json")
     assert PIF.Facts(repo, "closure-x", str(cache)).data == {k: {} for k in PIF.KINDS}
+
+
+def test_a_commit_only_on_origin_main_resolves_and_dropping_origin_main_refuses_it(
+    tmp_path, monkeypatch
+):
+    """The reachability half of D2: answered fresh from HEAD and origin/main every run. A commit reachable only from origin/main resolves; the mutant that drops origin/main from the refs asked goes red."""
+    repo, _shas = _repo(tmp_path)
+    _git(repo, "checkout", "-q", "-b", "side", "HEAD~1")
+    _git(repo, *IDENT, "commit", "-q", "--allow-empty", "-m", "only on main")
+    only_main = _git(repo, "rev-parse", "HEAD")
+    _git(repo, "update-ref", "refs/remotes/origin/main", only_main)
+    _git(repo, "checkout", "-q", "main")
+    assert wl_planrec.resolve(repo, "commit", only_main)[0]
+    real = wl_planrec._git_ok
+    monkeypatch.setattr(
+        wl_planrec,
+        "_git_ok",
+        lambda root, *a: False if "refs/remotes/origin/main" in a else real(root, *a),
+    )
+    assert not wl_planrec.resolve(repo, "commit", only_main)[0], (
+        "MUTANT: without origin/main the commit must read unreachable"
+    )
+
+
+def test_a_damaged_follow_value_is_a_miss(tmp_path):
+    repo, _shas = _repo(tmp_path)
+    cache = tmp_path / "facts.json"
+    last = _git(repo, "rev-list", "-1", "HEAD", "--", "d.txt")
+    cache.write_text(
+        json.dumps(
+            {
+                "schema": PIF.SCHEMA,
+                "closure": "c",
+                "patch": {},
+                "date_c": {},
+                "date_a": {},
+                "follow": {"d.txt@" + last: "c.txt"},
+            }
+        )
+    )
+    facts = PIF.Facts(repo, "c", str(cache))
+    assert facts.follow("d.txt", last, lambda _rel: ("c.txt",)) == ("c.txt",), (
+        "a string value must not read as one name per character"
+    )
+
+
+def test_a_ref_that_is_not_a_full_sha_is_memoized_for_the_run(tmp_path):
+    repo, _shas = _repo(tmp_path)
+    facts = PIF.Facts(repo, "c", str(tmp_path / "f.json"))
+    calls = []
+
+    def compute(ref):
+        calls.append(ref)
+        return "2026-11-20T00:00:00Z"
+
+    facts.commit_date("date_c", "HEAD", compute)
+    facts.commit_date("date_c", "HEAD", compute)
+    assert calls == ["HEAD"]
+    assert facts.data["date_c"] == {}, "a ref is never written to the run-to-run cache"
+
+
+def test_an_unreadable_source_hashes_instead_of_raising(tmp_path):
+    unreadable = tmp_path / "secret.py"
+    unreadable.write_text("x")
+    unreadable.chmod(0)
+    try:
+        assert PIF.closure_hash([unreadable]) != PIF.closure_hash([tmp_path / "missing.py"])
+    finally:
+        unreadable.chmod(0o600)

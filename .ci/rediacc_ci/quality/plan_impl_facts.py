@@ -32,8 +32,11 @@ def closure_hash(files: Iterable[str | os.PathLike]) -> str:
     """sha256 over SCHEMA and the bytes of each file (sorted by path); a missing file hashes as missing."""
     h = hashlib.sha256(b"plan-impl-facts\0%d\0" % SCHEMA)
     for path in sorted(str(f) for f in files):
-        p = pathlib.Path(path)
-        h.update(path.encode() + b"\0" + (p.read_bytes() if p.is_file() else b"missing") + b"\0")
+        try:
+            body = pathlib.Path(path).read_bytes()
+        except OSError:
+            body = b"unreadable"  # a missing or unreadable source hashes as such, so the run starts cold rather than aborting (review fdd241b3.4)
+        h.update(path.encode() + b"\0" + body + b"\0")
     return h.hexdigest()
 
 
@@ -47,6 +50,7 @@ class Facts:
         self.dirty = False
         self.hits = 0
         self.misses = 0
+        self._run_memo: dict[tuple[str, str], str] = {}
         try:
             doc = json.loads(self.path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
@@ -71,6 +75,11 @@ class Facts:
         return got
 
     def put(self, kind: str, key: str, value) -> None:
+        if kind not in KINDS:
+            raise KeyError(
+                "plan_impl_facts stores only %s, never %r: reachability is asked fresh every run"
+                % (", ".join(KINDS), kind)
+            )
         if value in (None, "", []) or self.data[kind].get(key) == value:
             return
         self.data[kind][key] = value
@@ -94,7 +103,11 @@ class Facts:
     def commit_date(self, kind: str, sha: str, compute: Callable[[str], str]) -> str:
         """A commit date (kind date_c or date_a); only a full sha is a stable key, anything else is asked fresh."""
         if not SHA40.match(sha or ""):
-            return compute(sha)
+            # Not a stable key across runs (an abbreviation, a ref), but stable within one: memoized for this run only (review fdd241b3.3).
+            memo_key = (kind, sha)
+            if memo_key not in self._run_memo:
+                self._run_memo[memo_key] = compute(sha)
+            return self._run_memo[memo_key]
         got = self.get(kind, sha)
         if got is None:
             got = compute(sha)
@@ -109,7 +122,8 @@ class Facts:
             return compute(rel)
         key = "%s@%s" % (rel, last_touch)
         got = self.get("follow", key)
-        if got is None:
+        if not (isinstance(got, list) and all(isinstance(n, str) for n in got)):
+            got = None  # absent, or a damaged value (a string would read as one name per character, review fdd241b3.2): a miss
             got = list(compute(rel))
             self.data["follow"][key] = got
             self.dirty = True

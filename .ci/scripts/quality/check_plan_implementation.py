@@ -2178,8 +2178,14 @@ def main(argv=None) -> int:
     if selftest_only:
         return 0
     # The run-to-run fact cache (PLAN-two-track-merge-dev P1): installed after the controls, saved when main returns (drops_git_memo runs every _MEMO_UNDO entry).
-    _RUN.facts = PIF.Facts(REPO_ROOT, PIF.closure_hash(fact_closure_files(planrec, preflight)))
-    _MEMO_UNDO.append(_RUN.facts.save)
+    # `--no-fact-cache` runs the same code against an in-memory cache that starts empty and is never saved: the per-call answers, for the byte-identical comparison P1's acceptance asks for.
+    _RUN.facts = PIF.Facts(
+        REPO_ROOT,
+        PIF.closure_hash(fact_closure_files(planrec, preflight)),
+        path=None if "--no-fact-cache" not in argv else os.devnull,
+    )
+    if "--no-fact-cache" not in argv:
+        _MEMO_UNDO.append(_RUN.facts.save)
     _MEMO_UNDO.append(_RUN.clear)
     _MEMO_UNDO.extend(
         [
