@@ -312,7 +312,11 @@ def claims_proxy(obs: dict[str, list[str]]) -> None:
 
 def claims_image(obs: dict[str, list[str]]) -> None:
     # The derive is SKIPPED when the base's vscode already carries the host's ids: the base is the run image and nothing is built.
-    assert stdout_of(obs["run-image-match"]) == (devbox.DEVBOX_IMAGE + "\n").encode()
+    # Pinned to the pin FILE, read here on its own, not to the port constant: a port that drifted from the pin would otherwise pass (review 69c2e1ea.1).
+    pin = json.loads(
+        paths.from_root(".ci", "config", "devcontainer-image.json").read_text(encoding="utf-8")
+    )
+    assert stdout_of(obs["run-image-match"]) == ("%s@%s\n" % (pin["image"], pin["digest"])).encode()
     assert not any(call[1] == "build" for call in calls_of(obs["ensure-uid-match"]))
     # A present derived tag is REUSED: inspected, never rebuilt.
     assert not any(call[1] == "build" for call in calls_of(obs["ensure-uid-present"]))
