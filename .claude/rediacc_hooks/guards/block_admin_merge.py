@@ -36,7 +36,6 @@ arm needs a live `gh` answer and stays uncovered here.
 """
 
 import json
-import os
 import pathlib
 import re
 
@@ -167,26 +166,9 @@ EDGE_CASES = [
 TWO_TREE_DEFECT = ("tree = _pr_tree(root, head)", "tree = root")
 
 
-# THE TWO BOUND TREES (agent/plans/PLAN-two-track-merge-dev.md, box LT12). A landing record (`commit_policy.landing_record`) binds the open PR's branch to a sibling tree beside the main checkout, so a command typed in either tree is this policy's business from either root. Box LT11 moves this pair into commit_policy as `bound_trees` and `is_ours`; the names match so the swap is mechanical.
-def _bound_trees(root):
-    """The realpaths judged as this checkout: the main checkout and the landing tree when `root` sits in either, else `root`'s toplevel alone. With no valid record the answer is `[toplevel(root)]`, the reading before the record existed."""
-    top = commit_policy.toplevel(root) if root else ""
-    if not top:
-        return []
-    top = os.path.realpath(top)
-    record = commit_policy.landing_record(top)
-    if record is None:
-        return [top]
-    common = commit_policy.common_dir(top)
-    main = os.path.dirname(common) if os.path.basename(common) == ".git" else ""
-    if top not in (main, record["path"]):
-        return [top]
-    return list(dict.fromkeys(t for t in (main, record["path"]) if t))
-
-
 def _pr_tree(root, head):
     """The tree holding the PR head branch `head`: the landing tree for the record's branch, else the bound tree that has it checked out, else `root` (also with no record, the reading before it existed)."""
-    trees = _bound_trees(root)
+    trees = commit_policy.bound_trees(root)
     if len(trees) < 2 or not head:
         return root
     record = commit_policy.landing_record(root)

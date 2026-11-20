@@ -389,33 +389,8 @@ def _has_no_commit_flag(args, verb=""):
     return False
 
 
-# A LANDING COMMIT IS THIS CHECKOUT'S (agent/plans/PLAN-two-track-merge-dev.md, box LT12): a commit or a writer's git typed in the landing tree from the development root, or in the main checkout from the landing root, is judged like one in the root (`_is_ours`), where it used to be skipped as a scratch repository's. Planted, only the root's own tree is judged again.
-TWO_TREE_DEFECT = (
-    "return any(commit_policy.is_inside(path, tree) for tree in _bound_trees(root))",
-    "return commit_policy.is_inside(path, root)",
-)
-
-
-# THE TWO BOUND TREES (agent/plans/PLAN-two-track-merge-dev.md, box LT12). A landing record (`commit_policy.landing_record`) binds the open PR's branch to a sibling tree beside the main checkout, so a command typed in either tree is this policy's business from either root. Box LT11 moves this pair into commit_policy as `bound_trees` and `is_ours`; the names match so the swap is mechanical.
-def _bound_trees(root):
-    """The realpaths judged as this checkout: the main checkout and the landing tree when `root` sits in either, else `root`'s toplevel alone. With no valid record the answer is `[toplevel(root)]`, the reading before the record existed."""
-    top = commit_policy.toplevel(root) if root else ""
-    if not top:
-        return []
-    top = os.path.realpath(top)
-    record = commit_policy.landing_record(top)
-    if record is None:
-        return [top]
-    common = commit_policy.common_dir(top)
-    main = os.path.dirname(common) if os.path.basename(common) == ".git" else ""
-    if top not in (main, record["path"]):
-        return [top]
-    return list(dict.fromkeys(t for t in (main, record["path"]) if t))
-
-
-def _is_ours(path, root):
-    """Whether `path` is one of `_bound_trees(root)` or below one."""
-    return any(commit_policy.is_inside(path, tree) for tree in _bound_trees(root))
+# A LANDING COMMIT IS THIS CHECKOUT'S (agent/plans/PLAN-two-track-merge-dev.md, box LT12): a commit or a writer's git typed in the landing tree from the development root, or in the main checkout from the landing root, is judged like one in the root (`commit_policy.is_ours` over `commit_policy.bound_trees`), where it used to be skipped as a scratch repository's. Planted, the bound trees are the root alone again.
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 
 def writer_runs(cmd, base, created=frozenset()):
@@ -550,11 +525,12 @@ def run(ev):
     base = ev.field("cwd") or root
     created = commit_policy.created_dirs(cmd, base)
     writes = writer_runs(cmd, base, created) if agent else []
+    trees = commit_policy.bound_trees(root)
     agent_type = ev.field("agent_type") or "unknown"
     for write in writes:
         # A directory that resolves to no repository is one git itself will refuse; one outside this checkout is not this policy's business.
         write_repo = commit_policy.toplevel(write.directory)
-        if not write_repo or not _is_ours(write_repo, root):
+        if not write_repo or not commit_policy.is_ours(write_repo, root, trees):
             continue
         # A lease is the one place a writer commits: its HEAD is detached, its pin keeps the commit, and the lead lands it with `git cherry-pick -x` (agent/plans/PLAN-worktree-lease.md Design 3).
         if not commit_policy.lease_root(write_repo):
@@ -567,7 +543,7 @@ def run(ev):
     hints: dict[str, str] = {}
     for commit in commits:
         repo = commit_policy.run_repo(commit, base, created, root)
-        if not repo or not _is_ours(repo, root):
+        if not repo or not commit_policy.is_ours(repo, root, trees):
             continue
         # A `-F <file>` this same command writes first holds an earlier command's bytes: judging it admitted a stale `[hotfix]` onto `main` (#9888de00).
         written = commit_policy.written_message_refusal(cmd, commit, base, "`block_commit_on_main`")

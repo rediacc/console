@@ -14,8 +14,6 @@ prose above. In Python the same chain is `run_out(..., want_rc=True)` returning
 None, which is why `git_out` is called with `want_rc` set rather than with the default: the default turns a git FAILURE into an empty string, and an empty string here would fall through to the next test instead of allowing the merge. Confusing those two is how a fail-open guard becomes a fail-closed one.
 """
 
-import os
-
 from rediacc_hooks import commit_policy, hookio, shellscan
 from rediacc_hooks.wellknown import GH_REPO, RENET_REPO
 
@@ -49,23 +47,6 @@ TWO_TREE_DEFECT = ("head = _pr_head(root, runs)", 'head = ""')
 GH_TIMEOUT = "20"
 
 
-# THE TWO BOUND TREES (agent/plans/PLAN-two-track-merge-dev.md, box LT12). A landing record (`commit_policy.landing_record`) binds the open PR's branch to a sibling tree beside the main checkout, so a command typed in either tree is this policy's business from either root. Box LT11 moves this pair into commit_policy as `bound_trees` and `is_ours`; the names match so the swap is mechanical.
-def _bound_trees(root):
-    """The realpaths judged as this checkout: the main checkout and the landing tree when `root` sits in either, else `root`'s toplevel alone. With no valid record the answer is `[toplevel(root)]`, the reading before the record existed."""
-    top = commit_policy.toplevel(root) if root else ""
-    if not top:
-        return []
-    top = os.path.realpath(top)
-    record = commit_policy.landing_record(top)
-    if record is None:
-        return [top]
-    common = commit_policy.common_dir(top)
-    main = os.path.dirname(common) if os.path.basename(common) == ".git" else ""
-    if top not in (main, record["path"]):
-        return [top]
-    return list(dict.fromkeys(t for t in (main, record["path"]) if t))
-
-
 def _pr_head(root, runs):
     """The merged PR's `headRefName` from `gh pr view`, "" when gh cannot answer."""
     sel, repo = "", None
@@ -87,7 +68,7 @@ def _judged_branch(root, runs):
     No landing record: the session root and its checked-out branch, as before the record existed. With one: the PR's head branch, in the tree the record binds it to (the landing tree for the record's branch, else whichever bound tree has it checked out, else the root). gh failing keeps the root's own reading.
     """
     branch = hookio.git_out(["symbolic-ref", "--short", "-q", "HEAD"], cwd=root, want_rc=True)
-    trees = _bound_trees(root)
+    trees = commit_policy.bound_trees(root)
     if len(trees) < 2:
         return root, branch
     head = _pr_head(root, runs)

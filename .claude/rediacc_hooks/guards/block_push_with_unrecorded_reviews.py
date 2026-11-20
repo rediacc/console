@@ -138,32 +138,15 @@ EDGE_CASES = [
 ]
 
 
-# A LANDING PUSH IS JUDGED IN ITS OWN TREE (agent/plans/PLAN-two-track-merge-dev.md, box LT12). With a landing record the session root and the landing tree are both this checkout (`_bound_trees`), and review records stay with the branch's tree, so a push in either tree, or in a submodule of either, is judged against the tree that holds it (`_owning_tree`). Before this a push typed in the landing tree from the development root was skipped as a scratch repository's. Planted, the owning tree is the session root's alone again.
-TWO_TREE_DEFECT = ("    trees = _bound_trees(root)\n", "    trees = _bound_trees(root)[:1]\n")
-
-
-# THE TWO BOUND TREES (agent/plans/PLAN-two-track-merge-dev.md, box LT12). A landing record (`commit_policy.landing_record`) binds the open PR's branch to a sibling tree beside the main checkout, so a command typed in either tree is this policy's business from either root. Box LT11 moves this pair into commit_policy as `bound_trees` and `is_ours`; the names match so the swap is mechanical.
-def _bound_trees(root):
-    """The realpaths judged as this checkout: the main checkout and the landing tree when `root` sits in either, else `root`'s toplevel alone. With no valid record the answer is `[toplevel(root)]`, the reading before the record existed."""
-    top = commit_policy.toplevel(root) if root else ""
-    if not top:
-        return []
-    top = os.path.realpath(top)
-    record = commit_policy.landing_record(top)
-    if record is None:
-        return [top]
-    common = commit_policy.common_dir(top)
-    main = os.path.dirname(common) if os.path.basename(common) == ".git" else ""
-    if top not in (main, record["path"]):
-        return [top]
-    return list(dict.fromkeys(t for t in (main, record["path"]) if t))
+# A LANDING PUSH IS JUDGED IN ITS OWN TREE (agent/plans/PLAN-two-track-merge-dev.md, box LT12). With a landing record the session root and the landing tree are both this checkout (`commit_policy.bound_trees`), and review records stay with the branch's tree, so a push in either tree, or in a submodule of either, is judged against the tree that holds it (`_owning_tree`). Before this a push typed in the landing tree from the development root was skipped as a scratch repository's. Planted, the bound trees are the session root's alone again.
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 
 def _owning_tree(top, root):
     """The bound tree `top` is or sits below (the longest match), "" when none: a scratch repository's push carries none of this branch's commits."""
-    trees = _bound_trees(root)
+    trees = commit_policy.bound_trees(root)
     owners = [tree for tree in trees if commit_policy.is_inside(top, tree)]
-    return max(owners, key=len) if owners else ""
+    return os.path.realpath(max(owners, key=len)) if owners else ""
 
 
 def _push_runs(cmd):

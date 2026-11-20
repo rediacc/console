@@ -158,31 +158,15 @@ EDGE_CASES = [
 ]
 
 
-# A LANDING COMMIT IS JUDGED IN ITS OWN TREE (agent/plans/PLAN-two-track-merge-dev.md, box LT12). The commit's toplevel used to be foreign whenever it was not the session root, so a commit typed in the landing tree from the development root (or in the main checkout from the landing root) went unjudged. With a landing record both trees are bound (`_bound_trees`), and a commit in the other one is judged against that tree's own branch and epic snapshot (`_judged_root`). Planted, the other tree is foreign again.
-TWO_TREE_DEFECT = ("if real in _bound_trees(root):", "if False:")
-
-
-# THE TWO BOUND TREES (agent/plans/PLAN-two-track-merge-dev.md, box LT12). A landing record (`commit_policy.landing_record`) binds the open PR's branch to a sibling tree beside the main checkout, so a command typed in either tree is this policy's business from either root. Box LT11 moves this pair into commit_policy as `bound_trees` and `is_ours`; the names match so the swap is mechanical.
-def _bound_trees(root):
-    """The realpaths judged as this checkout: the main checkout and the landing tree when `root` sits in either, else `root`'s toplevel alone. With no valid record the answer is `[toplevel(root)]`, the reading before the record existed."""
-    top = commit_policy.toplevel(root) if root else ""
-    if not top:
-        return []
-    top = os.path.realpath(top)
-    record = commit_policy.landing_record(top)
-    if record is None:
-        return [top]
-    common = commit_policy.common_dir(top)
-    main = os.path.dirname(common) if os.path.basename(common) == ".git" else ""
-    if top not in (main, record["path"]):
-        return [top]
-    return list(dict.fromkeys(t for t in (main, record["path"]) if t))
+# A LANDING COMMIT IS JUDGED IN ITS OWN TREE (agent/plans/PLAN-two-track-merge-dev.md, box LT12). The commit's toplevel used to be foreign whenever it was not the session root, so a commit typed in the landing tree from the development root (or in the main checkout from the landing root) went unjudged. With a landing record both trees are bound (`commit_policy.bound_trees`), and a commit in the other one is judged against that tree's own branch and epic snapshot (`_judged_root`). Planted, the bound trees are the root alone and the other tree is foreign again.
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 
 def _judged_root(top, root):
     """The tree to judge a commit whose toplevel `top` is not the session root: that tree itself when it is the other bound tree, "" when it is foreign (a sibling checkout, a scratch repository, a submodule)."""
     real = os.path.realpath(top)
-    if real in _bound_trees(root):
+    trees = commit_policy.bound_trees(root)
+    if real in {os.path.realpath(tree) for tree in trees}:
         return real
     return ""
 

@@ -1081,14 +1081,14 @@ _FF = "push origin origin/%s:%s" % (BRANCH, MAIN)
 _MIRROR_6B = "push gitlab refs/heads/%s:refs/heads/%s --follow-tags" % (MAIN, MAIN)
 
 TWO_TREE_CASES = [
-    # (name, command, root, extra env, expect_blocked, flips under TWO_TREE_DEFECT)
+    # (name, command, root, extra env, expect_blocked, the mutant it flips under: "defect" (TWO_TREE_DEFECT), "helper" (HELPER_ARGV), or None)
     (
         "main root: HEAD:main typed in the landing tree",
         "git -C %s push origin HEAD:%s" % (TT_L, MAIN),
         TT_M,
         None,
         True,
-        True,
+        "helper",
     ),
     (
         "landing root: HEAD:main typed in the main checkout",
@@ -1096,7 +1096,7 @@ TWO_TREE_CASES = [
         TT_L,
         None,
         True,
-        True,
+        "helper",
     ),
     (
         "main root: the fallback typed in the landing tree",
@@ -1104,7 +1104,7 @@ TWO_TREE_CASES = [
         TT_M,
         fx(head=TT_SHA),
         False,
-        False,
+        "defect",
     ),
     (
         "main root: the fallback on a red PR, landing tree",
@@ -1112,7 +1112,7 @@ TWO_TREE_CASES = [
         TT_M,
         fx(head=TT_SHA, ci="FAILURE"),
         True,
-        True,
+        "helper",
     ),
     (
         "landing root: the fallback typed in the main checkout",
@@ -1120,7 +1120,7 @@ TWO_TREE_CASES = [
         TT_L,
         fx(head=TT_SHA),
         False,
-        False,
+        "defect",
     ),
     (
         "landing root: the fallback typed in its own tree",
@@ -1128,7 +1128,7 @@ TWO_TREE_CASES = [
         TT_L,
         fx(head=TT_SHA),
         False,
-        False,
+        None,
     ),
     (
         "main root: the mirror push typed in the landing tree",
@@ -1136,7 +1136,7 @@ TWO_TREE_CASES = [
         TM_M,
         None,
         False,
-        False,
+        "defect",
     ),
     (
         "landing root: the mirror push typed in the main checkout",
@@ -1144,7 +1144,7 @@ TWO_TREE_CASES = [
         TM_L,
         None,
         False,
-        False,
+        "defect",
     ),
     (
         "no record: HEAD:main typed in the sibling tree",
@@ -1152,7 +1152,7 @@ TWO_TREE_CASES = [
         NR_M,
         None,
         False,
-        False,
+        None,
     ),
     (
         "no record: the mirror push typed in the sibling tree",
@@ -1160,7 +1160,7 @@ TWO_TREE_CASES = [
         NRM_M,
         None,
         True,
-        False,
+        None,
     ),
 ]
 
@@ -1209,13 +1209,40 @@ for name, command, root, extra, want, _flips in TWO_TREE_CASES:
     )
     if not ok and err:
         print("    stderr: %s" % err.strip().splitlines()[:3])
-_flipping = [c for c in TWO_TREE_CASES if c[5]]
-_moved = [c[0] for c in _flipping if run(c[1], c[2], c[3], argv=BROKEN_ARGV)[0] != c[4]]
-if _flipping and len(_moved) == len(_flipping):
-    print("TWO_TREE_DEFECT control: %d refusal(s) flipped to allowed" % len(_moved))
-else:
-    print("*** FAIL *** TWO_TREE_DEFECT control: %d of %d moved" % (len(_moved), len(_flipping)))
-    fails += 1
+# THE SCOPE HALF LIVES IN commit_policy (box LT11): `foreign_only` reads either bound tree as this checkout, so its mutant is `bound_trees` answering the session root alone, planted before the guard loads.
+HELPER_ARGV = [
+    sys.executable,
+    "-c",
+    (
+        "import sys; sys.path.insert(0, %r)\n"
+        "from rediacc_hooks import commit_policy, hookio\n"
+        "commit_policy.bound_trees = lambda root: [root] if root else []\n"
+        "src = open(%r, encoding='utf-8').read()\n"
+        "ns = {'__name__': 'broken', '__file__': %r}\n"
+        "exec(compile(src, 'broken', 'exec'), ns)\n"
+        "ev = hookio.Event(sys.stdin.read())\n"
+        "rc = ns['run'](ev)\n"
+        "sys.stderr.write(ev.result(rc)[2])\n"
+        "sys.exit(rc)\n"
+    )
+    % (str(pathlib.Path(__file__).resolve().parents[2]), _GUARD_FILE, _GUARD_FILE),
+]
+for _label, _argv in (("defect", BROKEN_ARGV), ("helper", HELPER_ARGV)):
+    _flipping = [c for c in TWO_TREE_CASES if c[5] == _label]
+    _moved = [c[0] for c in _flipping if run(c[1], c[2], c[3], argv=_argv)[0] != c[4]]
+    _still = [
+        c[0]
+        for c in TWO_TREE_CASES
+        if c[5] is None and run(c[1], c[2], c[3], argv=_argv)[0] != c[4]
+    ]
+    if _flipping and len(_moved) == len(_flipping) and not _still:
+        print("%s control: %d two-tree case(s) flipped, none other" % (_label, len(_moved)))
+    else:
+        print(
+            "*** FAIL *** %s control: %d of %d moved, %d unflagged moved (%r)"
+            % (_label, len(_moved), len(_flipping), len(_still), _still)
+        )
+        fails += 1
 
 # A count, not a concatenation: the case lists carry different tuple shapes.
 TOTAL = (

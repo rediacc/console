@@ -180,45 +180,14 @@ EDGE_CASES = [
 ]
 
 
-# THE LANDING TREE IS THIS CHECKOUT TOO (agent/plans/PLAN-two-track-merge-dev.md, box LT12). With a landing record the main checkout and the landing tree are both bound (`_bound_trees`): a push typed in either is judged from either root (`_foreign_only`), and the mirror push and the fast-forward fallback are admitted from either tree's own toplevel. Before this a push in the landing tree from the development root was skipped as a scratch repository's, every spelling of `main` included, and the admitted fallback typed there from the landing root's sibling was refused. Planted, the scope test reads the session root alone again.
-TWO_TREE_DEFECT = ("others = [t for t in _bound_trees(root) if t != top]", "others = []")
+# THE LANDING TREE IS THIS CHECKOUT TOO (agent/plans/PLAN-two-track-merge-dev.md, box LT12). With a landing record the main checkout and the landing tree are both bound (`commit_policy.bound_trees`): a push typed in either is judged from either root (`commit_policy.foreign_only` reads both as this checkout, box LT11), and the mirror push and the fast-forward fallback are admitted from either tree's own toplevel (`_console_tree`). Before this a push in the landing tree from the development root was skipped as a scratch repository's, every spelling of `main` included, and the admitted fallback typed there from the landing root's sibling was refused. Planted, the admission reads the session root alone again; the scope half is planted in the suite as a `bound_trees` mutant, since it lives in commit_policy.
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 
-# THE TWO BOUND TREES (agent/plans/PLAN-two-track-merge-dev.md, box LT12). A landing record (`commit_policy.landing_record`) binds the open PR's branch to a sibling tree beside the main checkout, so a command typed in either tree is this policy's business from either root. Box LT11 moves this pair into commit_policy as `bound_trees` and `is_ours`; the names match so the swap is mechanical.
-def _bound_trees(root):
-    """The realpaths judged as this checkout: the main checkout and the landing tree when `root` sits in either, else `root`'s toplevel alone. With no valid record the answer is `[toplevel(root)]`, the reading before the record existed."""
-    top = commit_policy.toplevel(root) if root else ""
-    if not top:
-        return []
-    top = os.path.realpath(top)
-    record = commit_policy.landing_record(top)
-    if record is None:
-        return [top]
-    common = commit_policy.common_dir(top)
-    main = os.path.dirname(common) if os.path.basename(common) == ".git" else ""
-    if top not in (main, record["path"]):
-        return [top]
-    return list(dict.fromkeys(t for t in (main, record["path"]) if t))
-
-
-def _foreign_only(ev, cmd, subs):
-    """`commit_policy.foreign_only`, with a push in the OTHER bound tree (or a submodule of it) read as this checkout's: every run the shared reading calls foreign is placed again against the bound trees, and one landing in either is judged."""
-    if not commit_policy.foreign_only(ev, cmd, subs):
-        return False
-    root = ev.env("CLAUDE_PROJECT_DIR") or commit_policy.git(["rev-parse", "--show-toplevel"]) or ""
-    top = os.path.realpath(commit_policy.toplevel(root) or root) if root else ""
-    others = [t for t in _bound_trees(root) if t != top]
-    if not others:
-        return True
-    base = ev.field("cwd") or root
-    created = commit_policy.created_dirs(cmd, base)
-    for run in commit_policy.git_runs(cmd):
-        if subs is not None and run.git_sub not in subs:
-            continue
-        repo = commit_policy.scoped_repo(run, base, root, created, cmd)
-        if repo and any(commit_policy.is_inside(repo, tree) for tree in others):
-            return False
-    return True
+def _console_tree(repo, root):
+    """Whether `repo` is the toplevel of one of the bound trees itself (a submodule of one is not: it has no mirror and no fallback)."""
+    trees = commit_policy.bound_trees(root)
+    return bool(repo) and os.path.realpath(repo) in {os.path.realpath(t) for t in trees}
 
 
 def _count(pattern, text, distinct=False):
@@ -346,7 +315,7 @@ def mirror_refusal(ev, run, flags, positionals):
         return "the refspec `%s` is not `refs/heads/main:refs/heads/main`" % positionals[1]
     root = ev.project_dir
     repo = commit_policy.run_repo(run, ev.field("cwd") or root)
-    if not repo or os.path.realpath(repo) not in _bound_trees(root):
+    if not _console_tree(repo, root):
         return "only the console checkout's own main has the mirror"
     urls: list[str] = []
     for extra in ([], ["--push"]):
@@ -395,7 +364,7 @@ def ff_fallback_refusal(ev, cmd, scan, text_scan):
         return "the refspec `%s` is not `<live branch or sha>:main`" % refspec
     root = ev.project_dir
     repo = commit_policy.run_repo(run, ev.field("cwd") or root)
-    if not repo or os.path.realpath(repo) not in _bound_trees(root):
+    if not _console_tree(repo, root):
         return "only the console checkout's own main has the fallback"
     # THE BRANCH COMES FROM THE PUSHED SOURCE, NEVER FROM THE CHECKOUT (worklist #c1474aae). On 2026-10-08 the operator parked 1007-1's local commits onto a new branch 1008-1, and `git push origin origin/1007-1:main` was refused as "not the live branch 1008-1" although every condition held for PR #599's head 6779389a9. What moves `main` is the commit the refspec names, so that commit, and the PR whose head it is, are the whole question.
     named = _source_branch(src)
@@ -478,7 +447,9 @@ def run(ev):
 
     # SCOPE: this policy is about THIS checkout and its submodules. A push in a repository outside it (a `/tmp` fixture, even one the same command `git init`s) is not its business (finding #5810a9f3).
     # The GitLab mirror push (`git push gitlab main:main`) is the operator's own ruling about console clones, so a repository outside this checkout is judged for it (test-block_push_to_protected_branch.py, "mirror: -C into another repository").
-    if "gitlab" not in commit_policy.push_texts(cmd).split() and _foreign_only(ev, cmd, ("push",)):
+    if "gitlab" not in commit_policy.push_texts(cmd).split() and commit_policy.foreign_only(
+        ev, cmd, ("push",)
+    ):
         return hookio.ALLOW
     text_scan = scan = shellscan._command_substitution(shellscan.scan_target(cmd))
     if not hookio.grep_q(GIT_PUSH_AT_CMD, scan):
