@@ -493,6 +493,33 @@ def control_real_hook(tmp):
     got = stop(fix.proj)
     check("landing: the PR's red blocks", (red in got.out, got.decision), (True, "block"))
 
+    # An open item added on the landing branch, CI green: it blocks only where it is in scope.
+    (fix.base / "ci-rollup.json").write_text(
+        CI_RED.replace('"FAILURE"', '"SUCCESS"'), encoding="utf-8"
+    )
+    probe = "LT5 scope probe on the landing branch (deadbeef)"
+    with fix.events.open("a", encoding="utf-8") as fh:
+        fh.write(
+            json.dumps(
+                {
+                    "ev": "add",
+                    "id": "a5c0be01",
+                    "at": "2026-11-20T10:00:00Z",
+                    "by": "deadbeef",
+                    "s": " ",
+                    "o": "deadbeef",
+                    "t": probe,
+                    "br": PR_BRANCH,
+                }
+            )
+            + "\n"
+        )
+    got = stop(None)
+    check("CONTROL no record: the item blocks", (probe in got.out, got.decision), (True, "block"))
+    got = stop(fix.base / "console-landing")
+    check("development: the landing branch's item is not shown", probe in got.out, False)
+    check("development: the landing branch's item does not block", got.decision, "allow")
+
 
 def main():
     tmp = pathlib.Path(runtmp.run_dir("landing-scope-")).resolve()
