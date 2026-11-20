@@ -122,19 +122,23 @@ export function isLoopback(ip: string): boolean {
   return /^(0*:){2,7}0*1$|^::1$|^::$/.test(ip.toLowerCase());
 }
 
+/** A connect to port 53 is a name lookup even on loopback: systemd-resolved (127.0.0.53), Docker's embedded resolver (127.0.0.11) and a local dnsmasq all forward upstream, so the verdict depends on the network (PLAN-two-track-merge-dev A1). */
+const DNS_PORT = '53';
+
 /**
- * The network peer of one `connect` line's arguments, or undefined for a peer on this host: loopback, a unix socket, netlink, AF_UNSPEC (a UDP disconnect). Any attempt counts, whatever the result: a refused or unreachable peer still made the verdict depend on the network.
+ * The network peer of one `connect` line's arguments, or undefined for a peer on this host: loopback (except port 53, see DNS_PORT), a unix socket, netlink, AF_UNSPEC (a UDP disconnect). Any attempt counts, whatever the result: a refused or unreachable peer still made the verdict depend on the network.
  */
 export function networkPeer(args: string): string | undefined {
   const v4 = /sa_family=AF_INET,.*?sin_port=htons\((\d+)\).*?sin_addr=inet_addr\("([^"]+)"\)/.exec(
     args
   );
   const fam = /sa_family=(AF_INET6?)\b/.exec(args);
-  if (v4 !== null) return isLoopback(v4[2]) ? undefined : `${v4[2]}:${v4[1]}`;
+  if (v4 !== null) return isLoopback(v4[2]) && v4[1] !== DNS_PORT ? undefined : `${v4[2]}:${v4[1]}`;
   const v6 = /sa_family=AF_INET6,.*?sin6_port=htons\((\d+)\).*?inet_pton\(AF_INET6, "([^"]+)"/.exec(
     args
   );
-  if (v6 !== null) return isLoopback(v6[2]) ? undefined : `[${v6[2]}]:${v6[1]}`;
+  if (v6 !== null)
+    return isLoopback(v6[2]) && v6[1] !== DNS_PORT ? undefined : `[${v6[2]}]:${v6[1]}`;
   // An internet-family connect whose address strace printed in a shape the patterns above miss is still a connect: dropping it would keep a path-only verdict for a gate that reached the network.
   if (fam !== null) return `${fam[1]}:unparsed`;
   return undefined;
@@ -3419,6 +3423,19 @@ async function selftest(): Promise<number> {
       '3<socket:[1]>, {sa_family=AF_INET6, sin6_port=htons(443), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::1111", &sin6_addr), sin6_scope_id=0}, 28) = 0'
     ) === '[2606:4700::1111]:443',
     'a non-loopback IPv6 peer is network'
+  );
+  const dnsLine = (addr: string): string =>
+    `3<socket:[1]>, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("${addr}")}, 16) = 0`;
+  check(
+    networkPeer(dnsLine('127.0.0.53')) === '127.0.0.53:53' &&
+      networkPeer(dnsLine('127.0.0.11')) === '127.0.0.11:53' &&
+      networkPeer(
+        '3<socket:[1]>, {sa_family=AF_INET6, sin6_port=htons(53), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "::1", &sin6_addr), sin6_scope_id=0}, 28) = 0'
+      ) === '[::1]:53' &&
+      networkPeer(
+        '3<socket:[1]>, {sa_family=AF_INET, sin_port=htons(8787), sin_addr=inet_addr("127.0.0.1")}, 16) = 0'
+      ) === undefined,
+    'a loopback resolver (127.0.0.53:53, 127.0.0.11:53, [::1]:53) is network, since it forwards upstream; CONTROL: 127.0.0.1:8787 is not'
   );
   const fromRaw: Access = {
     files: new Set(['/r/a/one.txt']),
