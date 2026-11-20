@@ -11,6 +11,7 @@ import importlib.util
 import io
 import json
 import pathlib
+import types
 
 import pytest
 import wl_planrec
@@ -377,3 +378,43 @@ def test_a_ticked_box_whose_evidence_does_not_resolve_still_refuses_at_push(gate
         gate.box_key("P-A2:no-row", SIDE, "s1")
     }
     assert _tick_keys(gate, "", TICK_ROW, True) == {gate.box_key("P-A2:no-evidence", SIDE, "s1")}
+
+
+def test_memo_git_reads_caches_read_verbs_only(gate):
+    """A read verb is asked once per (root, args); any other verb always reaches git, so a write or a working-tree read is never answered from the memo."""
+    calls = []
+
+    def fake_git(root, *args):
+        calls.append((root, args))
+        return "answer %d" % len(calls)
+
+    mod = types.SimpleNamespace(_git=fake_git)
+    gate.memo_git_reads(mod, names=("_git",))
+    assert mod._git("/r", "log", "-1", "--format=%cI", "abc") == mod._git(
+        "/r", "log", "-1", "--format=%cI", "abc"
+    )
+    assert mod._git("/r", "merge-base", "--is-ancestor", "a", "b") == mod._git(
+        "/r", "merge-base", "--is-ancestor", "a", "b"
+    )
+    assert len(calls) == 2, calls
+    assert mod._git("/other", "log", "-1", "--format=%cI", "abc") != mod._git(
+        "/r", "log", "-1", "--format=%cI", "abc"
+    )
+    first, second = mod._git("/r", "status", "--porcelain"), mod._git("/r", "status", "--porcelain")
+    assert first != second, "a verb outside the allowlist must reach git every time"
+    gate.memo_git_reads(mod, names=("_git",))
+    before = len(calls)
+    mod._git("/r", "show", "x")
+    mod._git("/r", "show", "x")
+    assert len(calls) == before + 1, (
+        "a second install must not stack a second memo with its own empty cache"
+    )
+
+
+def test_prefetch_follow_matches_the_serial_walk(gate):
+    rels = ["agent/plans/PLAN-two-track-merge-dev.md", "agent/plans/QUEUE.md", "agent/INDEX.md"]
+    gate._FOLLOW.clear()
+    serial = {r: gate.follow_names(r) for r in rels}
+    gate._FOLLOW.clear()
+    gate.prefetch_follow(rels)
+    assert {r: gate._FOLLOW[r] for r in rels} == serial

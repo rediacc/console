@@ -39,7 +39,9 @@ lane: quality-branch
 from __future__ import annotations
 
 import ast
+import concurrent.futures
 import datetime as dt
+import functools
 import hashlib
 import importlib.util
 import io
@@ -2031,6 +2033,32 @@ def prefetch_partial_clone(root):
     )
 
 
+# Read-only git verbs whose answer cannot change within one run over a fixed tree. strace on 2026-11-20 counted about 25,700 calls through the planrec helpers carrying only about 2,850 distinct argument lists.
+MEMO_GIT_VERBS = frozenset({"rev-parse", "show", "merge-base", "log", "cat-file", "ls-tree"})
+
+
+def memo_git_reads(module, names=("_git_out", "_git_raw", "_git_ok")) -> None:
+    """Wrap `module`'s `_git_out`, `_git_raw` and `_git_ok` so a read-only verb is asked once per (root, args) for the rest of the process. Installed after the controls, which run uncached."""
+    for name in names:
+        real = getattr(module, name, None)
+        if real is None or getattr(real, "_memo_git", False):
+            continue
+
+        memo: dict = {}
+
+        def wrapped(root, *args, _real=real, _memo=memo):
+            verb = next((a for a in args if not a.startswith("-")), "")
+            if verb not in MEMO_GIT_VERBS:
+                return _real(root, *args)
+            key = (str(root), args)
+            if key not in _memo:
+                _memo[key] = _real(root, *args)
+            return _memo[key]
+
+        wrapped._memo_git = True
+        setattr(module, name, wrapped)
+
+
 def main(argv=None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     selftest_only = "--selftest" in argv or "--selftest-only" in argv
@@ -2090,6 +2118,9 @@ def main(argv=None) -> int:
     # `--selftest` STOPS HERE. The controls are the claim that this instrument can fail; the verdict below is a claim about the tree, and a caller that wants only the first must not be made to pay for the second. test-planenforce.py's C10e drives exactly this mode.
     if selftest_only:
         return 0
+    memo_git_reads(planrec)
+    memo_git_reads(planrec.C, names=("_git",))
+    memo_git_reads(preflight, names=("_git",))
 
     clock, problem = enforce.load_clock(REPO_ROOT)
     if problem:
@@ -2179,12 +2210,21 @@ def main(argv=None) -> int:
         judged = moved_to_done(base_plans, head_plans)
         history = planrec.ledger_history(REPO_ROOT)
         rows = planrec.read_investigations(REPO_ROOT)
+        # One run reads a fixed tree and immutable commits: the submodule listing is taken once and each commit's dates once (strace on 2026-11-20 counted 8,268 identical `git config --get-regexp` calls and hundreds of `git log -1 --format=%cI` per sha).
+        absent_here = absent_submodules(REPO_ROOT)
+        commit_date = functools.lru_cache(maxsize=None)(
+            lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%cI", commit)
+        )
+        author_date = functools.lru_cache(maxsize=None)(
+            lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%aI", commit)
+        )
         bound = bound_by_the_rule(
             judged,
             lambda rel, sig: planrec.done_commit(history, rel, sig),
-            lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%cI", commit),
+            commit_date,
             clock.get("baseline_at"),
         )
+        prefetch_follow(rel for rel, *_ in judged)
         successor_of = lazy_successor_of(REPO_ROOT, base, planrec)
         canon_memo: dict[str, str] = {}
 
@@ -2205,15 +2245,13 @@ def main(argv=None) -> int:
                     _box_text(REPO_ROOT, planrec, rel, sig),
                     canon,
                 ),
-                lambda kind, token: resolve_here(
-                    planrec, kind, token, absent_submodules(REPO_ROOT)
-                ),
+                lambda kind, token: resolve_here(planrec, kind, token, absent_here),
                 lambda rel, sig: planrec.done_commit(history, rel, sig),
-                lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%cI", commit),
+                commit_date,
                 lambda a, b: planrec._git_ok(REPO_ROOT, "merge-base", "--is-ancestor", a, b),
                 clock.get("baseline_at"),
                 successor_of,
-                lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%aI", commit),
+                author_date,
                 lambda commit, token: fileline_at_commit(REPO_ROOT, commit, token),
                 late_rows,
             )
@@ -2223,7 +2261,7 @@ def main(argv=None) -> int:
         revalidation = revalidation_advisories(
             judged,
             lambda rel, sig: planrec.done_commit(history, rel, sig),
-            lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%cI", commit),
+            commit_date,
             revalidation_at,
             lambda rel: preflight.revalidation_state(REPO_ROOT, rel, base=base),
             preflight.FRESH,
@@ -2345,6 +2383,15 @@ def row_under_any_path(rows, rel, sig, follow_names=(), box_text="", canon=None)
 
 
 _FOLLOW: dict[str, tuple[str, ...]] = {}
+
+
+def prefetch_follow(rels, workers=8):
+    """Fill `_FOLLOW` for every path in `rels` at once: each `git log --follow` is an independent read of ~0.45 s, and 88 of them run serially were 39 s of this gate on 2026-11-20. follow_names keeps its exact semantics (same command, same retries, same exit on a git failure); only the order of the walks changes."""
+    todo = sorted({r for r in rels if r not in _FOLLOW})
+    if len(todo) < 2:
+        return
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+        list(pool.map(follow_names, todo))
 
 
 def follow_names(rel):
