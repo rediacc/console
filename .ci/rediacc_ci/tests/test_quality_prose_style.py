@@ -20,6 +20,7 @@ THE REST OF THIS FILE IS THE EXTRACTOR, which is where a prose linter actually l
 
 import ast
 import contextlib
+import io
 import json
 import os
 import pathlib
@@ -1591,3 +1592,61 @@ def test_a_quote_key_is_skipped_only_in_the_exception_list():
         assert why is None, path
         assert [ln.lineno for ln in lines] == [1], path
     assert "quote" not in ps.JSON_SKIP_KEYS
+
+
+def _cache_rules(pattern):
+    return ps.load_rules(
+        json.dumps(
+            {
+                "globals": {"scopes": ["markdown"], "max_line_length": 384, "include": ["*.md"]},
+                "rules": [
+                    {
+                        "id": "R2",
+                        "title": "no I",
+                        "description": "d",
+                        "severity": "error",
+                        "scopes": ["all"],
+                        "patterns": [pattern],
+                    }
+                ],
+            }
+        )
+    )
+
+
+def _cache_run(root, globals_, rules):
+    with contextlib.redirect_stdout(io.StringIO()):
+        return ps.run_check(str(root), globals_, rules, ["a.md"], as_json=True)
+
+
+def test_the_cache_never_hides_an_edit_that_adds_a_finding(tmp_path):
+    g, r = _cache_rules("\\bI\\b")
+    (tmp_path / "a.md").write_text("A clean line.\n")
+    assert _cache_run(tmp_path, g, r) == 0
+    assert (tmp_path / str(ps.CACHE_RELPATH)).is_file(), "the run must leave a cache to be warm"
+    (tmp_path / "a.md").write_text("I think so.\n")
+    assert _cache_run(tmp_path, g, r) == 1, (
+        "CONTENT: a warm cache must not keep the old clean verdict"
+    )
+
+
+def test_the_cache_is_keyed_on_the_rules_it_was_handed(tmp_path):
+    (tmp_path / "a.md").write_text("I think so.\n")
+    g, r = _cache_rules("\\bI\\b")
+    assert _cache_run(tmp_path, g, r) == 1
+    g2, r2 = _cache_rules("\\bzzz\\b")
+    assert _cache_run(tmp_path, g2, r2) == 0, (
+        "RULES: changed rules must re-lint, not reuse the old finding"
+    )
+
+
+def test_an_unchanged_file_is_answered_from_the_cache(tmp_path, monkeypatch):
+    g, r = _cache_rules("\\bI\\b")
+    (tmp_path / "a.md").write_text("I think so.\n")
+    assert _cache_run(tmp_path, g, r) == 1
+
+    def must_not_lint(*_a, **_k):
+        raise AssertionError("a cache hit linted the file again")
+
+    monkeypatch.setattr(ps, "lint_text", must_not_lint)
+    assert _cache_run(tmp_path, g, r) == 1, "HIT: the stored finding is reused"
