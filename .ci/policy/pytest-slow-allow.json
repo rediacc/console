@@ -627,10 +627,6 @@
       "reason": "baseline 2026-11-17: 152.4 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".claude.rediacc_hooks.tests.test_guards_differential::test_the_differential_can_fail[block_plan_without_depends]",
-      "reason": "baseline 2026-11-17: 14.8 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_a_counted_selftest_is_folded_with_a_floor[stop/test-judge-schema.py]",
       "reason": "baseline 2026-11-17: 19.0 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
@@ -877,6 +873,14 @@
     {
       "test": ".claude.rediacc_hooks.tests.test_wl_waiter_controls::test_163y_unread_sub_agent_reports_are_surfaced_on_an_ordinary_stop",
       "reason": "baseline 2026-11-17: 11.4 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
+    },
+    {
+      "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[stop/test-landing-wiring.py]",
+      "reason": "2026-11-21: 29.5 s in the ci:quick full run; the suite drives the real Stop hook copy against two real git trees, a gh stub and a local bare origin, once per effort level (quiet to ultra) plus seven mutants; drop the entry once it runs under 10 s"
+    },
+    {
+      "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[../rediacc_hooks/guards/test-block_landing_one_way.py]",
+      "reason": "2026-11-21: 10.6 s in the ci:quick full run; the suite builds a bare origin, a main checkout and a linked landing tree in real git and judges each row through the dispatcher, plus its planted-DEFECT run; drop the entry once it runs under 10 s"
     }
   ]
 }
