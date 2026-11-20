@@ -1474,6 +1474,29 @@ jobs:
           GATE_SKIP_MODE: ${{ inputs.external_quality == 'skip' && 'skip' || 'hard' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.announce_gate_skips no-external-quality check:actions check:ci-pin-freshness
 
+  r0-devcontainer-pull:
+    # TEMPORARY, PLAN-two-track-merge-dev R0: one hosted-runner measurement of the pinned devcontainer pull (R1 picks a toolchain stage over the full image above 90 s per job). Its own job so `packages: read` widens no other job's token; reverted in this PR once the figures are on the plan item.
+    name: R0 devcontainer pull (temporary)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      packages: read
+    if: inputs.is_bot != 'true'
+    steps:
+      - name: Measure the devcontainer pull
+        env:
+          IMAGE: ghcr.io/rediacc/devcontainer@sha256:b7a40a70140e2d37afc03c5645c199031a635bbe1d16b785e5b4a0e605cdc165
+          GH_TOKEN: ${{ github.token }}
+          GH_ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          trap 'docker rmi -f "$IMAGE" > /dev/null 2>&1 || true; docker logout ghcr.io > /dev/null 2>&1 || true' EXIT
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin
+          start=$(date +%s)
+          docker pull -q "$IMAGE"
+          echo "R0 pull_seconds=$(( $(date +%s) - start ))"
+          docker run --rm --entrypoint sh "$IMAGE" -c 'echo "R0 node=$(node --version) python=$(python3 --version) npm=$(npm --version)"'
+
   quality-content:
     name: Content
     runs-on: ubuntu-latest
@@ -1484,23 +1507,8 @@ jobs:
     # links) held only to avoid the anonymous rate limit.
     permissions:
       contents: read
-      packages: read # TEMPORARY, PLAN-two-track-merge-dev R0: the devcontainer pull measurement below; reverted in this PR once recorded
     if: inputs.is_bot != 'true'
     steps:
-      - name: Measure the devcontainer pull (TEMPORARY, PLAN-two-track-merge-dev R0)
-        # One measurement for R0's decision (full image or a toolchain stage, 90 s threshold): pull time on a hosted runner, and the image's node and python. Reverted in this PR once the figures are on the plan item.
-        env:
-          IMAGE: ghcr.io/rediacc/devcontainer@sha256:b7a40a70140e2d37afc03c5645c199031a635bbe1d16b785e5b4a0e605cdc165
-          GH_TOKEN: ${{ github.token }}
-          GH_ACTOR: ${{ github.actor }}
-        run: |
-          set -euo pipefail
-          echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin
-          start=$(date +%s)
-          docker pull -q "$IMAGE"
-          echo "R0 pull_seconds=$(( $(date +%s) - start ))"
-          docker run --rm --entrypoint sh "$IMAGE" -c 'echo "R0 node=$(node --version) python=$(python3 --version) npm=$(npm --version)"'
-          docker rmi -f "$IMAGE" > /dev/null
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Fetch secrets from Bitwarden
