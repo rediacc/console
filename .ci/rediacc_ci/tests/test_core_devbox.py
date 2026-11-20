@@ -374,7 +374,7 @@ DELTA_LABELS = {
     "lifecycle": {"stop-ps-fails"},  # D7
     "state": {"get-dot", "get-star", "get-bracket"},  # D11
     "status": {"conflict"},  # D4
-    "up-create": {"no-group", "octal"},  # D1, D6
+    "up-create": {"no-group", "octal", "image-fails"},  # D1, D6, D13
     "up-existing": {"start-fails"},  # D9
 }
 
@@ -386,8 +386,12 @@ def _label_of(line: str) -> str:
     return line[4:].partition(" ")[0]
 
 
+# D13 (the ruling that a failed pull of the pin builds nothing): the `image` scenario's two fallback steps, proved by `test_delta_d13_*` against the port alone. Kept out of `DELTA_LABELS` because that table's parametrized test needs a twin transcript recorded under its own test id.
+D13_LABELS = {"image": {"ensure-pull-fails", "ensure-build-fails"}}
+
+
 def _without_delta_labels(out: str, scenario: str) -> list[str]:
-    skip = DELTA_LABELS.get(scenario, set())
+    skip = DELTA_LABELS.get(scenario, set()) | D13_LABELS.get(scenario, set())
     return [line for line in out.splitlines() if _label_of(line) not in skip]
 
 
@@ -459,8 +463,22 @@ PORT_ADDED_WORDS = re.compile(
 )
 
 
+# The one extra `docker inspect` the port makes of an existing container (`Devbox.image_drift`), a line of its own in the transcript.
+PORT_ADDED_CALL = re.compile(
+    r'^obs \S+ call\| \["docker", "inspect", "-f", "\{\{range \.Config\.Env\}\}[^\n]*\n',
+    re.MULTILINE,
+)
+
+
+# The clone-root bind joins the list of missing bind destinations once the directory exists: one more log row in `up`'s bind-drift report.
+PORT_ADDED_DRIFT_ROW = re.compile(
+    r"^obs \S+ err\| \S+ {3}\S*/rediacc/ci-quick-clones\n", re.MULTILINE
+)
+
+
 def _fold_port_additions(new_out: str) -> str:
-    return PORT_ADDED_WORDS.sub("", new_out)
+    folded = PORT_ADDED_WORDS.sub("", new_out)
+    return PORT_ADDED_DRIFT_ROW.sub("", PORT_ADDED_CALL.sub("", folded))
 
 
 def equivalent(scenario: str, old_out: str, new_out: str) -> bool:
@@ -1399,6 +1417,20 @@ def test_delta_d9_a_failed_docker_start_says_what_failed() -> None:
     assert any("Could not start the existing devbox container" in line for line in errs)
 
 
+def test_delta_d13_a_failed_pull_of_the_pin_is_an_error_with_no_local_build() -> None:
+    """Defect D13, fixed by ruling: a local build can never equal the pinned digest, so a failed pull names the digest and the fix and builds nothing. The twin fell back to a build."""
+    for scenario, label in (("image", "ensure-pull-fails"), ("image", "ensure-build-fails")):
+        obs = port_obs(scenario)[label]
+        assert status_of(obs) == 1
+        errs = " ".join(errs_of(obs))
+        assert "Could not pull the pinned devbox image " + devbox.DEVBOX_IMAGE in errs
+        assert "docker login ghcr.io" in errs
+        assert not any(call[1] == "build" for call in calls_of(obs))
+    up = port_obs("up-create")["image-fails"]
+    assert status_of(up) == 1
+    assert not any(call[1] == "build" for call in calls_of(up))
+
+
 def test_delta_d10_the_basename_fallback_ignores_the_locale() -> None:
     """Defect D10, fixed: one checkout has one hostname, whatever the caller's locale. The twin answered `my-box----9` under the C locale and `my-box---9` under UTF-8; both are the C answer now."""
     c_locale = port_obs("identity-detached")
@@ -1476,6 +1508,81 @@ def test_the_quick_clone_dir_follows_the_runner_rule(tmp_path: pathlib.Path) -> 
     assert box.quick_clones_dir() == "/x/rediacc/ci-quick-clones"
     box = devbox.Devbox(env={"HOME": "/h", "CI_QUICK_CLONE_DIR": str(tmp_path)})
     assert box.quick_clones_dir() == str(tmp_path)
+
+
+class InspectedContainer(devbox.Devbox):
+    """`Devbox` over one existing container whose `docker inspect` answers are given: its mount destinations and its environment."""
+
+    def __init__(self, *args, mounts: str = "x\n", environment: str = "", **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.mounts = mounts
+        self.environment = environment
+
+    def run(self, argv, out=devbox.INHERIT, err=devbox.INHERIT, extra_env=None):
+        del err, extra_env
+        if argv[1:2] == ["ps"]:
+            answer = "cid\n"
+        elif argv[1:3] == ["inspect", "-f"] and ".Mounts" in argv[3]:
+            answer = self.mounts
+        elif argv[1:3] == ["inspect", "-f"] and ".Config.Env" in argv[3]:
+            answer = self.environment
+        else:
+            answer = ""
+        if out == devbox.CAPTURE:
+            return 0, answer
+        self.write(answer)
+        return 0, ""
+
+
+def _drift_words(box: InspectedContainer, fn) -> list[str]:
+    status, text = box.sub(fn, "cid") if fn == box.image_drift else box.sub(fn)
+    assert status == 0
+    return [line for line in text.split("\n") if line]
+
+
+def test_missing_binds_reports_the_clone_root_when_the_container_lacks_it(
+    tmp_path: pathlib.Path,
+) -> None:
+    env = {"HOME": str(tmp_path), "XDG_CACHE_HOME": str(tmp_path / "cache"), "PATH": "/usr/bin"}
+    clones = tmp_path / "cache" / "rediacc" / "ci-quick-clones"
+    box = InspectedContainer(env, mounts="/some/mount\n")
+    # CONTROL: the directory does not exist yet (`up` makes it), so there is nothing to bind and nothing to report.
+    assert str(clones) not in _drift_words(box, box.missing_binds)
+    clones.mkdir(parents=True)
+    assert str(clones) in _drift_words(box, box.missing_binds)
+    bound = InspectedContainer(env, mounts="/some/mount\n%s\n" % clones)
+    assert str(clones) not in _drift_words(bound, bound.missing_binds)
+
+
+def test_image_drift_reads_the_runner_variable_in_both_directions() -> None:
+    pin = "CI_RUNNER_IMAGE=%s" % devbox.DEVBOX_IMAGE
+    current = InspectedContainer({"PATH": "/usr/bin"}, environment="PATH=/x\n%s\n" % pin)
+    assert _drift_words(current, current.image_drift) == []
+    old_tag = InspectedContainer({"PATH": "/usr/bin"}, environment="PATH=/x\n")
+    assert _drift_words(old_tag, old_tag.image_drift) == ["CI_RUNNER_IMAGE unset"]
+    other = "CI_RUNNER_IMAGE=ghcr.io/rediacc/devcontainer:latest"
+    stale = InspectedContainer({"PATH": "/usr/bin"}, environment="%s\n" % other)
+    assert _drift_words(stale, stale.image_drift) == [other]
+    # An unanswerable probe is never a reason to destroy a container.
+    silent = InspectedContainer({"PATH": "/usr/bin"}, environment="")
+    assert _drift_words(silent, silent.image_drift) == []
+
+
+def test_up_recreates_a_container_on_the_old_image_and_keeps_a_current_one(monkeypatch) -> None:
+    monkeypatch.setitem(
+        driver.STUB_SCENARIOS, "image-drift", ("main", "C", driver.image_drift_steps)
+    )
+    stale = observations(new_transcript("image-drift"))
+    assert "image-drift-rehost" in stale
+    assert "image-current" in stale
+    drifted = " ".join(errs_of(stale["image-drift-rehost"]))
+    assert "Image drift: the container carries CI_RUNNER_IMAGE unset" in drifted
+    assert any(call[1] == "rm" for call in calls_of(stale["image-drift-rehost"]))
+    assert "Image drift" not in " ".join(errs_of(stale["image-current"]))
+    assert not any(call[1] == "rm" for call in calls_of(stale["image-current"]))
+    kept = " ".join(errs_of(stale["image-drift-no-rehost"]))
+    assert "keeps running the older image" in kept
+    assert not any(call[1] == "rm" for call in calls_of(stale["image-drift-no-rehost"]))
 
 
 GOOD_DIGEST = "sha256:" + "a" * 64

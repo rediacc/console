@@ -148,7 +148,6 @@ readonly ACCOUNT_LOG_DIR="$CONSOLE_ROOT_DIR/.account-logs"
 #
 # The URL is a different matter: its hostname follows the BRANCH, so it changes
 # when the branch does. A bookmark survives a reboot, not a checkout.
-readonly DEVBOX_IMAGE="$WK_IMAGE_REGISTRY/devcontainer:latest"
 # The LOCAL repository of the per-operator derived image: the base with `vscode`
 # renumbered to the host's ids (.devcontainer/Dockerfile.uid). Deliberately not
 # a ghcr.io/ name, so a derived tag can never be mistaken for something to push.

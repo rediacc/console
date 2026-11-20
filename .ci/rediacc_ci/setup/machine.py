@@ -36,7 +36,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths, proc
-from rediacc_ci.core import bws_env
+from rediacc_ci.core import bws_env, devbox
 from rediacc_ci.core import env as envfile
 from rediacc_ci.setup import bridge, githooks, host, phases
 from rediacc_ci.setup.ctx import Ctx
@@ -276,7 +276,7 @@ def check(ctx: Ctx, constants: dict[str, str], started: float | None = None) -> 
         "  tofu        setup runs ./rdc.sh tools install tofu (no-op once the pin is installed)"
     )
 
-    image = constants.get("DEVBOX_IMAGE", "")
+    image = devbox.DEVBOX_IMAGE
     if facts.get("image") == "1":
         ctx.say("  image       present (%s)" % image)
     else:
@@ -314,7 +314,7 @@ def _elapsed_suffix(started: float | None) -> str:
 # --------------------------------------------------------------------------- the verb ---------------------------------------------------------------------------
 
 
-def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
+def run_setup(ctx: Ctx, options: Options, _constants: dict[str, str]) -> int:
     """`setup()`'s body after argument parsing. `.ci/legacy/run-legacy.sh:591`.
 
     THE PHASE ORDER IS `phases.PHASES` AND NOTHING ELSE. This function is written as a straight line rather than a loop over the table on purpose: each phase's failure message is different, three of them are conditional, and a loop with a per-phase callback table would be the same code with an indirection that makes the order harder to read, not easier. `phases.plan()` is the
@@ -394,7 +394,7 @@ def run_setup(ctx: Ctx, options: Options, constants: dict[str, str]) -> int:
         return 1
 
     if bridge.call('devbox_ensure_image "%s"' % _bool_word(options.pull), ctx.root, ctx.env) != 0:
-        ctx.error("Could not obtain %s" % constants.get("DEVBOX_IMAGE", ""))
+        ctx.error("Could not obtain %s" % devbox.DEVBOX_IMAGE)
         return 1
 
     if "devbox_up" not in selected:

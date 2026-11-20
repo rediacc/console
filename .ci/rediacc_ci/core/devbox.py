@@ -1263,9 +1263,9 @@ class Devbox:
         return 0
 
     def ensure_image(self, *argv: str) -> int:
-        """`devbox_ensure_image`, `.ci/lib/devbox.sh:382-409`: present (and not forced), else pull, else build; then `ensure_uid_image` in every arm that obtained the base.
+        """`devbox_ensure_image`, `.ci/lib/devbox.sh:382-409`: present (and not forced), else pull the pinned digest; then `ensure_uid_image` in every arm that obtained the base.
 
-        ghcr.io/rediacc/* is private. A GitHub token needs the read:packages scope to pull it -- repo+workflow is NOT enough, and the registry's only signal is the word "denied", which reads like the image does not exist. So a failed pull explains that and falls back to building from .devcontainer/Dockerfile, and the build's status is the function's.
+        ghcr.io/rediacc/* is private. A GitHub token needs the read:packages scope to pull it -- repo+workflow is NOT enough, and the registry's only signal is the word "denied", which reads like the image does not exist. A failed pull is an error naming the digest and the fix; the twin's fallback to a local build is gone (Rule T delta).
         """
         force_pull = self._opt(argv, 0, "false")
         d = self.docker_words()
@@ -1279,18 +1279,13 @@ class Devbox:
         )
         if self.run([*d, "pull", DEVBOX_IMAGE])[0] == 0:
             return self.checked(self.ensure_uid_image())
-        self.log("warn", "Could not pull %s" % DEVBOX_IMAGE)
+        # A pinned digest has no local-build fallback: a local build can never equal the digest, so it would run an image whose receipt-salt term (CI_RUNNER_IMAGE) names something else.
+        self.log("error", "Could not pull the pinned devbox image %s" % DEVBOX_IMAGE)
         self.log(
             "info",
-            "That registry is private. To pull it, a GitHub token needs the read:packages scope:",
+            "Log in to ghcr.io (a GitHub token with read:packages: echo $PAT | docker login ghcr.io -u <user> --password-stdin) and check the network, then re-run.",
         )
-        self.log("info", "    echo $PAT | docker login ghcr.io -u <user> --password-stdin")
-        self.log(
-            "info", "Falling back to building the image locally from .devcontainer/Dockerfile."
-        )
-        if self.cond(self.build_image) != 0:
-            return 1
-        return self.checked(self.ensure_uid_image())
+        return 1
 
     def build_image(self, *_argv: str) -> int:
         """`devbox_build_image`, `.ci/lib/devbox.sh:413-429`: build the devcontainer image from source.
@@ -1580,6 +1575,32 @@ class Devbox:
         self.checked(status)
         if lease_src and DEVBOX_CORE_LEASE_DEST not in present:
             self.write(DEVBOX_CORE_LEASE_DEST + "\n")
+        # The ci:quick clone root, once it exists on the host (`up` creates it): a container made before the bind was added lacks it, and the devbox is recreated to gain it.
+        clones = self.quick_clones_dir()
+        if os.path.isdir(clones) and clones not in present:
+            self.write(clones + "\n")
+        return 0
+
+    def image_drift(self, *argv: str) -> int:
+        """The existing container's `CI_RUNNER_IMAGE` against the pin: one line saying what it carries when it differs, nothing when it matches.
+
+        A container created on the old floating tag has no such variable, or another value, and its receipt salt would name an image it is not running. The run image can be a DERIVED uid image, so the container's image reference is no signal; the variable is, because `up` sets it from the pin on every container it creates. Empty when there is no container or docker cannot inspect it: an unanswerable probe is never the reason a container is destroyed. Status 0 on every path.
+        """
+        d = self.docker_words()
+        cid = self._req(argv, 0)
+        if not cid:
+            return 0
+        status, env = self.value(
+            [*d, "inspect", "-f", '{{range .Config.Env}}{{.}}{{"\\n"}}{{end}}', cid], err=NULL
+        )
+        if status != 0 or not env:
+            return 0
+        wanted = "%s=%s" % (RUNNER_IMAGE_ENV, DEVBOX_IMAGE)
+        lines = env.split("\n")
+        if wanted in lines:
+            return 0
+        carried = [x for x in lines if x.startswith(RUNNER_IMAGE_ENV + "=")]
+        self.write((carried[0] if carried else RUNNER_IMAGE_ENV + " unset") + "\n")
         return 0
 
     def service_process_alive(self, *argv: str) -> int:
@@ -1858,6 +1879,30 @@ class Devbox:
                     )
                 else:
                     self.log("warn", "About to DESTROY and recreate this container to add them:")
+                    self._destroy_banner(
+                        "  keep the container as it is instead: DEVBOX_NO_REHOST=1 ./run.sh devbox up"
+                    )
+                    if self.cond(self.remove) != 0:
+                        return 1
+                    cid = ""
+
+        if cid:
+            status, stale = self.sub(self.image_drift, cid)
+            self.checked(status)
+            if stale:
+                self.log(
+                    "warn",
+                    "Image drift: the container carries %s, the pin is %s" % (stale, DEVBOX_IMAGE),
+                )
+                if not rehost:
+                    self.log(
+                        "info",
+                        "--no-rehost given: leaving it alone. It keeps running the older image.",
+                    )
+                else:
+                    self.log(
+                        "warn", "About to DESTROY and recreate this container on the pinned image:"
+                    )
                     self._destroy_banner(
                         "  keep the container as it is instead: DEVBOX_NO_REHOST=1 ./run.sh devbox up"
                     )

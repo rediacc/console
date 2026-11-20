@@ -847,6 +847,13 @@ class Rules:
     def mounts(self, out, cid=CID, **kw):
         return rule(*self.d, "inspect", "-f", "{{range .Mounts}}*", cid, out=out, **kw)
 
+    def runner_env(self, out=None, cid=CID, **kw):
+        """The container's environment as `Devbox.image_drift` asks for it: carrying the pin by default, so an existing container reads as current."""
+        carried = (
+            "PATH=/usr/bin\nCI_RUNNER_IMAGE=%s\n" % devbox.DEVBOX_IMAGE if out is None else out
+        )
+        return rule(*self.d, "inspect", "-f", "{{range .Config.Env}}*", cid, out=carried, **kw)
+
     def proxy(self, value, **kw):
         return self.running(value, cid=PROXY, **kw)
 
@@ -931,6 +938,7 @@ ALL_MOUNTS = "".join(
         "/home/vscode/.config/gh",
         "/home/vscode/.claude.json",
         devbox.DEVBOX_CORE_LEASE_DEST,
+        "{HOME}/.cache/rediacc/ci-quick-clones",
     )
 )
 
@@ -946,6 +954,7 @@ def create_rules(
         d.running(running_after, after=after),
         d.labels(route_labels(SLUG)),
         d.mounts(ALL_MOUNTS),
+        d.runner_env(),
         rule(
             *d.d,
             "image",
@@ -1712,6 +1721,7 @@ def up_existing_steps() -> list[Step]:
         d.ps_self(CID + "\n"),
         d.labels(route_labels("old-name")),
         d.mounts(ALL_MOUNTS),
+        d.runner_env(),
         *settled,
     ]
     record = b"base_port=17010\nslug=old-name\n"
@@ -1721,6 +1731,7 @@ def up_existing_steps() -> list[Step]:
         d.ps_self(CID + "\n", after=after_run),
         d.labels(route_labels("old-name"), before=removed),
         d.mounts(ALL_MOUNTS),
+        d.runner_env(),
         *settled,
         *d.base_answers(),
         rule("getent", "group", "docker", out="docker:x:999:vscode\n"),
@@ -1734,6 +1745,7 @@ def up_existing_steps() -> list[Step]:
             rules=[
                 d.ps_self(CID + "\n"),
                 d.mounts(ALL_MOUNTS),
+                d.runner_env(),
                 *settled,
             ],
         ),
@@ -1762,6 +1774,7 @@ def up_existing_steps() -> list[Step]:
                 d.ps_self(CID + "\n", after=after_run),
                 d.mounts("/usr/local/bin/devbox-entrypoint.sh\n", before=removed),
                 d.mounts(ALL_MOUNTS),
+                d.runner_env(),
                 *settled,
                 *d.base_answers(),
                 rule("getent", "group", "docker", out="docker:x:999:vscode\n"),
@@ -1775,6 +1788,7 @@ def up_existing_steps() -> list[Step]:
             rules=[
                 d.ps_self(CID + "\n"),
                 d.mounts(ALL_MOUNTS),
+                d.runner_env(),
                 d.running("false\n", before=started),
                 *settled,
             ],
@@ -1786,6 +1800,7 @@ def up_existing_steps() -> list[Step]:
                 d.ps_self(CID + "\n"),
                 d.labels(route_labels(SLUG)),
                 d.mounts(ALL_MOUNTS),
+                d.runner_env(),
                 d.running("false\n"),
             ],
         ),
@@ -1796,12 +1811,55 @@ def up_existing_steps() -> list[Step]:
                 d.ps_self(CID + "\n"),
                 d.labels(route_labels(SLUG)),
                 d.mounts(ALL_MOUNTS),
+                d.runner_env(),
                 d.running("false\n"),
                 rule("docker", "start", CID, rc=1, err="Error: cannot start\n"),
             ],
         ),
         Step(
             "remove-fails", "devbox_up", rules=[*drifted, rule("docker", "rm", rc=1, err="busy\n")]
+        ),
+    ]
+
+
+def image_drift_steps() -> list[Step]:
+    """PORT-ONLY arms of `devbox_up` over an existing, fully bound container: one on the old floating tag (no `CI_RUNNER_IMAGE`) and one carrying the pin.
+
+    Not a registered scenario: the retired twin has no image check, so there is no transcript to compare. `test_core_devbox.py` registers it for the length of one test.
+    """
+    d = DOCKER
+    removed = ("docker", "rm")
+    settled = [d.running("true\n"), d.labels(route_labels(SLUG)), d.proxy("true\n")]
+    record = b"base_port=17010\nslug=%s\n" % SLUG.encode()
+    old_image = d.runner_env("PATH=/usr/bin\n")
+    return [
+        Step(
+            "image-drift-rehost",
+            "devbox_up",
+            state=record,
+            rules=[
+                d.ps_self(CID + "\n", before=removed),
+                d.ps_self(CID + "\n", after=d.run_pattern()),
+                d.mounts(ALL_MOUNTS),
+                old_image,
+                *settled,
+                *d.base_answers(),
+                rule("getent", "group", "docker", out="docker:x:999:vscode\n"),
+                rule("stat", out="993\n"),
+            ],
+        ),
+        Step(
+            "image-drift-no-rehost",
+            "devbox_up",
+            ("false", "--no-rehost"),
+            state=record,
+            rules=[d.ps_self(CID + "\n"), d.mounts(ALL_MOUNTS), old_image, *settled],
+        ),
+        Step(
+            "image-current",
+            "devbox_up",
+            state=record,
+            rules=[d.ps_self(CID + "\n"), d.mounts(ALL_MOUNTS), d.runner_env(), *settled],
         ),
     ]
 

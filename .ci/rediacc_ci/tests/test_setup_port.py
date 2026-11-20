@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.core import devbox
 from rediacc_ci.quality import setup_idempotency
 from rediacc_ci.setup import host, machine, phases, port_parity
 from rediacc_ci.setup.ctx import Result
@@ -246,7 +247,7 @@ def test_check_reports_deps_through_the_live_rule(
 
     ctx = _RecordingCtx(tmp_path)
     started = machine.time.monotonic()
-    machine.check(ctx, {"DEVBOX_IMAGE": "img", "NODE_VERSION_MIN": "22"}, started)
+    machine.check(ctx, {"NODE_VERSION_MIN": "22"}, started)
 
     assert "deps_are_current" in asked, (
         "the row must ask the same rule ensure_deps uses, through the bridge"
@@ -305,7 +306,7 @@ def test_check_judges_a_present_node_against_the_floor(
     monkeypatch.setattr(machine.githooks, "check_row", lambda _root: ("  git hooks   ok", 0))
     monkeypatch.setattr(machine.host, "_git_global", lambda *_a: "dev@example.com")
     ctx = _OldNodeCtx(tmp_path, version)
-    machine.check(ctx, {"DEVBOX_IMAGE": "img", "NODE_VERSION_MIN": "24.11.0"})
+    machine.check(ctx, {"NODE_VERSION_MIN": "24.11.0"})
     assert row in ctx.lines, ctx.lines
     # gh, the compiler and docker are MISSING under this Ctx (3); an old node adds one.
     assert ctx.lines[-1].startswith("WARN %d item(s)" % (3 + int(counted))), ctx.lines[-1]
@@ -324,7 +325,7 @@ def test_check_without_a_start_time_prints_no_suffix(
     monkeypatch.setattr(machine.githooks, "check_row", lambda _root: ("  git hooks   ok", 0))
     monkeypatch.setattr(machine.host, "_git_global", lambda *_a: "dev@example.com")
     ctx = _RecordingCtx(tmp_path)
-    machine.check(ctx, {"DEVBOX_IMAGE": "img"})
+    machine.check(ctx, {})
     assert "checked in" not in ctx.lines[-1]
 
 
@@ -385,7 +386,7 @@ def test_check_reports_npm_drift_from_the_pin_as_pending(
     monkeypatch.setattr(machine.githooks, "check_row", lambda _root: ("  git hooks   ok", 0))
     monkeypatch.setattr(machine.host, "_git_global", lambda *_a: "dev@example.com")
     ctx = _NpmCtx(tmp_path, "11.19.0")
-    machine.check(ctx, {"DEVBOX_IMAGE": "img", "NODE_VERSION_MIN": "24.11.0"})
+    machine.check(ctx, {"NODE_VERSION_MIN": "24.11.0"})
     assert "  npm         11.19.0 (pinned 11.20.0) STALE" in ctx.lines, ctx.lines
     # gh and the compiler are MISSING (2); the stale npm is one more.
     assert ctx.lines[-1].startswith("WARN 3 item(s)"), ctx.lines[-1]
@@ -421,3 +422,20 @@ def test_setup_fails_loudly_when_npm_is_still_off_the_pin_after_installing(
     ctx = _NpmCtx(tmp_path, "11.19.0", installed="11.19.0")
     assert host.node_toolchain(ctx) == 1
     assert any("after installing" in e for e in ctx.errors), ctx.errors
+
+
+def test_check_names_the_pinned_image_in_its_image_row(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    monkeypatch.setattr(machine.bridge, "call", lambda *_a: 0)
+    monkeypatch.setattr(
+        machine,
+        "_devbox_facts",
+        lambda *_a: {"worktree": str(tmp_path), "image": "1", "running": "1"},
+    )
+    monkeypatch.setattr(machine, "_port_block_row", lambda *_a: "  port block  1-10")
+    monkeypatch.setattr(machine.githooks, "check_row", lambda _root: ("  git hooks   ok", 0))
+    monkeypatch.setattr(machine.host, "_git_global", lambda *_a: "dev@example.com")
+    ctx = _RecordingCtx(tmp_path)
+    machine.check(ctx, {})
+    assert "  image       present (%s)" % devbox.DEVBOX_IMAGE in ctx.lines
