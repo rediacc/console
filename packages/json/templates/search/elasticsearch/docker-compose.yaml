@@ -6,7 +6,9 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=${ES_SECURITY_ENABLED}
-      - "ES_JAVA_OPTS=-Xms${ES_HEAP_SIZE} -Xmx${ES_HEAP_SIZE}"
+      # -XX:-UseBASE64Intrinsics: Elastic's mitigation for Java4Shell (CVE-2026-114938)
+      # until a release bundles JDK 27.0.1.1 (8.19.26 / 9.4.10 / 9.5.7 / 9.6.0).
+      - "ES_JAVA_OPTS=-Xms${ES_HEAP_SIZE} -Xmx${ES_HEAP_SIZE} -XX:-UseBASE64Intrinsics"
       - cluster.name=${ES_CLUSTER_NAME}
       - network.host=${SERVICE_IP:-0.0.0.0}
       - bootstrap.memory_lock=true
