@@ -240,6 +240,9 @@ def names_landing(word, here, landings, bare=True):
     return tail not in (".", "..") and any(p.endswith("/" + tail) for p in landings)
 
 
+_GIT_REPO_REDIRECT = re.compile(r"\bGIT_(?:DIR|COMMON_DIR|WORK_TREE)\b|--git-dir\b|--work-tree\b")
+
+
 def runs_landing_verb(cmd, base, landings, same_store=None):
     """Does `cmd` run a `git worktree` verb in LEASE_VERBS with an operand naming a landing tree? `base` is the absolute directory the command starts in. `same_store(here)` says whether a run's directory belongs to the repository `landings` was computed for (default: every run does); a run aimed elsewhere is judged by path operands alone. Judged by run, like `runs_lease_verb`."""
     if not landings:
@@ -255,7 +258,9 @@ def runs_landing_verb(cmd, base, landings, same_store=None):
         if not args or args[0] not in LEASE_VERBS:
             continue
         here = os.path.join(base, run_.cwd or "", where)
-        bare = same_store is None or same_store(here)
+        # git also takes its repository from GIT_DIR / GIT_COMMON_DIR / GIT_WORK_TREE and --git-dir / --work-tree (an assignment, an export earlier in the command, or an option), which `here` cannot see; a command naming any of them is not placed elsewhere, so the bare-name refusal applies (review c6f3f605.1).
+        redirected = bool(_GIT_REPO_REDIRECT.search(cmd))
+        bare = same_store is None or redirected or same_store(here)
         if any(names_landing(w, here, landings, bare) for w in args[1:] if not w.startswith("-")):
             return True
     return False

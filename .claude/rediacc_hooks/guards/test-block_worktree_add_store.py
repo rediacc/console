@@ -13,7 +13,10 @@ import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
 GUARD = HERE / "block_worktree_add.py"
-DEFECT = ("bare = same_store is None or same_store(here)", "bare = True")
+DEFECT = ("bare = same_store is None or redirected or same_store(here)", "bare = True")
+# The redirect arm (review c6f3f605.1): with it removed, a GIT_DIR or --git-dir naming this repository beside a -C elsewhere is admitted.
+REDIRECT_DEFECT = ("redirected = bool(_GIT_REPO_REDIRECT.search(cmd))", "redirected = False")
+PLANT_REDIRECT = "--plant-redirect-defect" in sys.argv[1:]
 PLANT = "--plant-defect" in sys.argv[1:]
 
 
@@ -23,6 +26,10 @@ def load():
         if DEFECT[0] not in text:
             raise SystemExit("%s: the planted line is gone from the guard" % __file__)
         text = text.replace(*DEFECT)
+    if PLANT_REDIRECT:
+        if REDIRECT_DEFECT[0] not in text:
+            raise SystemExit("%s: the planted redirect line is gone from the guard" % __file__)
+        text = text.replace(*REDIRECT_DEFECT)
     spec = importlib.util.spec_from_file_location("guard_under_test", str(GUARD))
     if spec is None or spec.loader is None:
         raise SystemExit("%s: cannot load %s" % (__file__, GUARD))
@@ -47,6 +54,24 @@ ROWS = [
     (
         "path operand into the landing tree, run aimed at another repository",
         "git -C %s worktree remove %s" % (OTHER, LANDING),
+        False,
+        True,
+    ),
+    (
+        "GIT_DIR names this repository beside -C elsewhere: refused (review c6f3f605.1)",
+        "GIT_DIR=/srv/work/console/.git git -C %s worktree remove console-landing" % OTHER,
+        False,
+        True,
+    ),
+    (
+        "--git-dir names this repository beside -C elsewhere: refused",
+        "git -C %s --git-dir=/srv/work/console/.git worktree remove console-landing" % OTHER,
+        False,
+        True,
+    ),
+    (
+        "an exported GIT_DIR earlier in the command: refused",
+        "export GIT_DIR=/srv/work/console/.git; git -C %s worktree remove console-landing" % OTHER,
         False,
         True,
     ),
