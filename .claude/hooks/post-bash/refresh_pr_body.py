@@ -20,6 +20,7 @@ THE 10-SECOND STDIN DEADLINE HAS NO COUNTERPART HERE, for the reason its sibling
 `|| continue` ON A COMMAND SUBSTITUTION tests the EXIT STATUS of the command inside it, not whether it printed anything, and the twin uses both idioms within four lines of each other. Each one is carried across as written: a `gh` that exits non-zero skips the branch, and a `gh` that exits 0 printing nothing falls to the emptiness test on the next line.
 """
 
+import os
 import pathlib
 import shutil
 import subprocess
@@ -121,6 +122,24 @@ def strip_block(body):
     return "\n".join(out).rstrip("\n")
 
 
+def command_tree(project_dir, cwd):
+    """The tree a command ran in: the event cwd's toplevel when it is one of the bound trees (the project's own tree, the main checkout, or the landing record's path), else `project_dir`. With no landing record, or a cwd outside the bound trees, `project_dir` itself, the behaviour before the landing tree existed (box LT13 of agent/plans/PLAN-two-track-merge-dev.md; the record is commit_policy's)."""
+    if not cwd or os.path.realpath(cwd) == os.path.realpath(project_dir):
+        return project_dir
+    top = commit_policy.toplevel(cwd)
+    if not top:
+        return project_dir
+    record = commit_policy.landing_record(project_dir)
+    if record is None:
+        return project_dir
+    top = os.path.realpath(top)
+    common = commit_policy.common_dir(project_dir)
+    bound = {os.path.realpath(commit_policy.toplevel(project_dir) or project_dir), record["path"]}
+    if common and os.path.basename(common) == ".git":
+        bound.add(os.path.dirname(common))
+    return top if top in bound else project_dir
+
+
 def main():
     payload = sys.stdin.read()
     event = hookio.Event(payload)
@@ -132,7 +151,7 @@ def main():
     if hookio.grep_q_line(r"(^| )--dry-run( |$)", cmd):
         return 0
 
-    root = event.project_dir
+    root = command_tree(event.project_dir, event.field("cwd"))
     # `command -v gh >/dev/null 2>&1 || exit 0` -- a PATH lookup, not a subprocess.
     if shutil.which("gh") is None:
         return 0

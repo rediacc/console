@@ -38,6 +38,35 @@ _SYSPATH.on_sys_path(_SYSPATH.STOP_DIR)
 R = importlib.import_module("wl_review")
 hookio = importlib.import_module("rediacc_hooks.hookio")
 shellscan = importlib.import_module("rediacc_hooks.shellscan")
+commit_policy = importlib.import_module("rediacc_hooks.commit_policy")
+
+
+def bound_trees(root):
+    """The trees a commit can belong to: `root`, plus the other tree the landing record binds (the landing tree, or the main checkout when `root` is the landing tree). With no valid record, `[root]` alone, exactly the single-tree behaviour (box LT13 of agent/plans/PLAN-two-track-merge-dev.md)."""
+    trees = [pathlib.Path(root)]
+    record = commit_policy.landing_record(str(root))
+    if record is None:
+        return trees
+    common = commit_policy.common_dir(str(root))
+    others = [record["path"]]
+    if common and os.path.basename(common) == ".git":
+        others.append(os.path.dirname(common))
+    for other in others:
+        real = os.path.realpath(other)
+        if all(os.path.realpath(t) != real for t in trees) and os.path.isdir(real):
+            trees.append(pathlib.Path(real))
+    return trees
+
+
+def tree_of(repo, trees):
+    """The bound tree a repository belongs to (itself, or the tree whose `.gitmodules` registers it); None when it is in none."""
+    real = os.path.realpath(repo)
+    for tree in trees:
+        if real == os.path.realpath(tree) or real in {
+            os.path.realpath(p) for p in _submodule_paths(tree)
+        }:
+            return tree
+    return None
 
 
 def commit_repos(cmd, cwd, root):
@@ -46,19 +75,18 @@ def commit_repos(cmd, cwd, root):
     A commit in a scratch repository under /tmp is not this branch's work, and reviewing it would file a record into this project's `agent/reviews/` about a commit no push of it ever carries.
     """
     base = pathlib.Path(cwd or root)
-    real_root = os.path.realpath(root)
     repos = []
+    trees = bound_trees(root)
     for run in shellscan._analyse(cmd).runs:
         if run.git_sub not in R.TRIGGER_SUBS:
             continue
         where = base if run.git_dir in (None, "", ".") else base / run.git_dir
         top = R.git_out(where, "rev-parse", "--show-toplevel")
         # AN UNRESOLVABLE `-C` IS NOT "NO REPOSITORY" (#51e1c0cf). `git -C <dir>/$r commit` in a loop names a directory the lexer cannot expand, so rev-parse fails; skipping it left account 654d186 unreviewed until the push guard refused the push. Every project repository is checked instead: uncovered() is cheap, and a covered repository starts nothing.
-        candidates = [top] if top else (_project_repos(root) if run.git_dir else [])
-        members = {real_root, *(os.path.realpath(p) for p in _submodule_paths(root))}
+        candidates = [top] if top else ([r for t in trees for r in _project_repos(t)] if run.git_dir else [])
         for cand in candidates:
             # MEMBERSHIP IS `.gitmodules`, NOT LOCATION (operator 2026-10-08). private/growth is a separate, gitignored repository inside the tree; reviewing its commits filed the operator's private documents into this project's agent/reviews/.
-            inside = bool(cand) and os.path.realpath(cand) in members
+            inside = bool(cand) and tree_of(cand, trees) is not None
             if inside and cand not in repos:
                 repos.append(cand)
     return repos
@@ -84,8 +112,9 @@ def _project_repos(root):
 def trigger_lines(cmd, cwd, root, trigger=R.trigger):
     lines = []
     for repo in commit_repos(cmd, cwd, root):
+        tree = tree_of(repo, bound_trees(root)) or root
         try:
-            started = trigger(root, pathlib.Path(repo))
+            started = trigger(tree, pathlib.Path(repo))
         except Exception as exc:
             lines.append(
                 "per-commit review NOT started in %s (%s: %s)"
@@ -97,13 +126,13 @@ def trigger_lines(cmd, cwd, root, trigger=R.trigger):
             head = R.git_out(pathlib.Path(repo), "rev-parse", "--short", "HEAD") or "?"
             lines.append(
                 "per-commit review: none due for %s, HEAD %s (covered, no new commit, or a miss: run wl_review.py --check)"
-                % (R.repo_label(root, repo), head)
+                % (R.repo_label(tree, repo), head)
             )
         for sha, pid in started:
             lines.append(
                 "per-commit review started for %s %s (pid %s): its record lands in about a minute, in agent/reviews/%s/clean.jsonl or as %s.md"
                 % (
-                    R.repo_label(root, repo),
+                    R.repo_label(tree, repo),
                     sha[:8],
                     pid,
                     R.branch_slug(R.current_branch(repo)),
@@ -126,7 +155,8 @@ def main():
     if cmd and "git" in cmd and any(sub in cmd for sub in R.TRIGGER_SUBS):
         lines += trigger_lines(cmd, ev.field("cwd") or None, root)
     try:
-        lines += R.surface_new(root, R.current_branch(root), ev.field("session_id"))
+        for tree in bound_trees(root):
+            lines += R.surface_new(tree, R.current_branch(tree), ev.field("session_id"))
     except Exception as exc:
         lines.append(
             "per-commit review surfacing failed (%s: %s)" % (type(exc).__name__, str(exc)[:160])

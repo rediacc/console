@@ -17,6 +17,7 @@ THE TRAILING SPACE IN `BRANCHES` IS REAL AND IS PRINTED. The twin ends the pipel
 `gh api ... -X POST 2>/dev/null` REDIRECTS ONLY STDERR, so the REST response body lands on this hook's stdout, ahead of both advisories. That is the twin's behaviour and the ordering is preserved here by writing each response as it arrives.
 """
 
+import os
 import pathlib
 import subprocess
 import sys
@@ -126,13 +127,32 @@ def destinations(cmd):
     return found
 
 
+def command_tree(project_dir, cwd):
+    """The tree a command ran in: the event cwd's toplevel when it is one of the bound trees (the project's own tree, the main checkout, or the landing record's path), else `project_dir`. With no landing record, or a cwd outside the bound trees, `project_dir` itself, the behaviour before the landing tree existed (box LT13 of agent/plans/PLAN-two-track-merge-dev.md; the record is commit_policy's)."""
+    if not cwd or os.path.realpath(cwd) == os.path.realpath(project_dir):
+        return project_dir
+    top = commit_policy.toplevel(cwd)
+    if not top:
+        return project_dir
+    record = commit_policy.landing_record(project_dir)
+    if record is None:
+        return project_dir
+    top = os.path.realpath(top)
+    common = commit_policy.common_dir(project_dir)
+    bound = {os.path.realpath(commit_policy.toplevel(project_dir) or project_dir), record["path"]}
+    if common and os.path.basename(common) == ".git":
+        bound.add(os.path.dirname(common))
+    return top if top in bound else project_dir
+
+
 def main():
     payload = sys.stdin.read()
     cmd = hookio.normalize_git_push(hookio.Event(payload).raw("tool_input", "command"))
     if not hookio.grep_q_line("git push", cmd):
         return 0
 
-    root = hookio.Event(payload).project_dir
+    event = hookio.Event(payload)
+    root = command_tree(event.project_dir, event.field("cwd"))
     branch = _capture(["git", "-C", root, "rev-parse", "--abbrev-ref", "HEAD"])
     # `rev-parse --abbrev-ref HEAD` returns the LITERAL STRING "HEAD" on a detached checkout, unlike `symbolic-ref` which fails outright (see wl_core.py's git_branch, which chose symbolic-ref for exactly this reason). Guarded explicitly rather than relying on "no branch is ever named HEAD" as an implicit safety net: `gh pr list --head HEAD` would just find nothing today, but
     # that is luck holding the door shut, not a check.

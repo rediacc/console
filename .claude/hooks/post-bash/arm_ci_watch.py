@@ -46,6 +46,7 @@ _SYSPATH.on_sys_path(_SYSPATH.STOP_DIR)
 
 C = importlib.import_module("wl_core")
 hookio = importlib.import_module("rediacc_hooks.hookio")
+commit_policy = importlib.import_module("rediacc_hooks.commit_policy")
 shellscan = importlib.import_module("rediacc_hooks.shellscan")
 
 TRACE = pathlib.Path(".ci") / "scripts" / "ci" / "ci-trace.py"
@@ -225,6 +226,24 @@ def _kill(pid):
         os.killpg(int(pid), 15)
 
 
+def command_tree(project_dir, cwd):
+    """The tree a command ran in: the event cwd's toplevel when it is one of the bound trees (the project's own tree, the main checkout, or the landing record's path), else `project_dir`. With no landing record, or a cwd outside the bound trees, `project_dir` itself, the behaviour before the landing tree existed (box LT13 of agent/plans/PLAN-two-track-merge-dev.md; the record is commit_policy's)."""
+    if not cwd or os.path.realpath(cwd) == os.path.realpath(project_dir):
+        return project_dir
+    top = commit_policy.toplevel(cwd)
+    if not top:
+        return project_dir
+    record = commit_policy.landing_record(project_dir)
+    if record is None:
+        return project_dir
+    top = os.path.realpath(top)
+    common = commit_policy.common_dir(project_dir)
+    bound = {os.path.realpath(commit_policy.toplevel(project_dir) or project_dir), record["path"]}
+    if common and os.path.basename(common) == ".git":
+        bound.add(os.path.dirname(common))
+    return top if top in bound else project_dir
+
+
 def starts_ci(cmd):
     """True for a command after which CI may have just started: a `git push`, or the `gh pr create` that opens the PR (a branch pushed before its PR existed armed nothing at the push, and `pull_request` CI starts at the create)."""
     text = hookio.normalize_git_push(cmd)
@@ -239,7 +258,7 @@ def main():
     if not starts_ci(ev.raw("tool_input", "command")):
         return 0
     try:
-        line = arm(ev.project_dir, ev.field("session_id"))
+        line = arm(command_tree(ev.project_dir, ev.field("cwd")), ev.field("session_id"))
     except Exception as exc:
         line = "CI watch NOT armed (hook error %s: %s)" % (type(exc).__name__, str(exc)[:160])
     if line:
