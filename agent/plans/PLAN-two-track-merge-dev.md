@@ -115,18 +115,20 @@ First close the loopback-DNS hole: a `connect` to port 53 counts as network what
 
 ### plan-implementation and core priority
 
-- [ ] P0 [lead] Profile before writing anything: run `python3 -m cProfile -o <mktemp path> .ci/scripts/quality/check_plan_implementation.py` once, alone, with `GITHUB_BASE_REF=main`, plus `strace -f -c -e trace=execve` on the same run; record the subprocess count by git verb, the share of wall in subprocess waits, the follow_names total, and the judged box and plan counts.
+- [x] P0 [lead] Profile before writing anything: run `python3 -m cProfile -o <mktemp path> .ci/scripts/quality/check_plan_implementation.py` once, alone, with `GITHUB_BASE_REF=main`, plus `strace -f -c -e trace=execve` on the same run; record the subprocess count by git verb, the share of wall in subprocess waits, the follow_names total, and the judged box and plan counts.
   Owns: none -- measurement only.
   Depends on: none.
   Accept: the numbers are recorded on the plan item; if git subprocesses are below 50% of unloaded wall, P1 is re-scoped to what the profile names before a writer starts.
+    (ticked) 2026-11-20T11:39:48Z by d778be9d: cProfile 2026-11-20 on the clean clone: wl_planrec.done_commit 409 s of 511 s (2,732 calls), git subprocess waits 94 s; strace -f -e execve: 7,514 git processes (config --get-regexp 1,378, log -1 --format=%cI ~2,049, merge-base --is-ancestor 1,836, show 945, log --follow 88 = 39 s wall); judged 683 boxes, 28 plans. Acted on in e72055c33 67bf7d410 c2f32c02e: 8m33s -> 49 s, same verdict
 - [ ] P1 [writer] Implement D2 in a new module .ci/rediacc_ci/quality/plan_impl_facts.py (batched reachability sets, the cat-file batch, the fact cache with its closure-hash key) and route the gate's oracles through it at .ci/scripts/quality/check_plan_implementation.py:2178-2230; add `--no-fact-cache`.
   Owns: .ci/rediacc_ci/quality/plan_impl_facts.py, .ci/scripts/quality/check_plan_implementation.py, .ci/rediacc_ci/tests/test_plan_impl_facts.py
   Depends on: P0.
   Accept: `.ci/scripts/quality/check_plan_implementation.py --selftest` rc 0 with new controls DIFFERENTIAL (on the live tree every oracle answer from the batch and the cache equals the per-call answer for every judged box), STALE (a planted entry under a changed closure hash is ignored) and REBASE (a commit dropped from HEAD's ancestry reads unreachable despite a cached fact); `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_plan_impl_facts.py` rc 0, including a mutant that drops `origin/main` from the reachability sets and must go red; two consecutive unloaded runs (cold, warm) print byte-identical findings to a `--no-fact-cache` run, warm wall recorded beside P0's figure.
-- [ ] C0 [lead] Land the uncommitted cheapPrereqFirst change already in scripts/ci-runner/pool.ts after confirming its control: a selftest case where a cheap prerequisite ranks ahead of a long gate, and a mutant returning 0 from `cheap` that goes red; commit it in the runner batch.
+- [x] C0 [lead] Land the uncommitted cheapPrereqFirst change already in scripts/ci-runner/pool.ts after confirming its control: a selftest case where a cheap prerequisite ranks ahead of a long gate, and a mutant returning 0 from `cheap` that goes red; commit it in the runner batch.
   Owns: scripts/ci-runner/pool.ts
   Depends on: none.
   Accept: `npx tsx scripts/ci-runner/run.ts --selftest` rc 0 with the cheap-prerequisite control listed; the mutant run is red.
+    (ticked) 2026-11-20T11:41:05Z by d778be9d: commit:62c5e6733 cheapPrereqFirst in scripts/ci-runner/pool.ts:1101 with scripts/ci-runner/learned-selftest.ts:345 cases; mutant (comparator multiplied by 0): npx tsx scripts/ci-runner/run.ts --selftest rc 1, "a cheap prerequisite is admitted first" failing in slots/today and slots/learned; restored rc 0, 697 assertions
 - [ ] C1 [writer] Implement D3: pass a `critical` flag from the rank's pinned set and the runner's critical-path computation into the grant; scripts/ci-runner/exec.ts prefixes `nice -n 10` for non-critical gates where `wrapped` is true, and the receipt records the priority each gate ran at.
   Owns: scripts/ci-runner/exec.ts, scripts/ci-runner/rank.ts, scripts/ci-runner/run.ts, scripts/ci-runner/learned-selftest.ts
   Depends on: C0.
@@ -134,10 +136,11 @@ First close the loopback-DNS hole: a `connect` to port 53 counts as network what
 
 ### prose-style and account-server
 
-- [ ] S1 [writer] Implement D4 in .ci/rediacc_ci/quality/prose_style.py run_check (:1397-1470); the one-extract refactor passes the extracted lines into the lint path, so `lint_text` keeps its public signature and gains an optional `lines` argument.
+- [x] S1 [writer] Implement D4 in .ci/rediacc_ci/quality/prose_style.py run_check (:1397-1470); the one-extract refactor passes the extracted lines into the lint path, so `lint_text` keeps its public signature and gains an optional `lines` argument.
   Owns: .ci/rediacc_ci/quality/prose_style.py, .ci/rediacc_ci/tests/test_quality_prose_style.py
   Depends on: none.
   Accept: `.ci/scripts/quality/check_prose_style.py --selftest` rc 0 with new controls CONTENT (warm cache, a file edited to add an R-rule hit, the new finding fires), RULES (warm cache, a rule's pattern changed in a temporary rules file, the finding set changes) and MOVE (a planted stub chain re-keys ident with the cache warm), each with a mutant that drops its key part and goes red in the pytest file; `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_quality_prose_style.py` rc 0; on the live tree, cold and warm `npm run -s check:ci-prose-style` print the same verdict line and baselined count, warm wall recorded.
+    (ticked) 2026-11-20T11:01:51Z by d778be9d: commit:4525b5203 (+ review fixes 9cb0191b6 e648197c3 0fdb501a2): run_check per-file content cache, lint_text optional lines/note; npm run -s check:ci-prose-style 40.6 s cold -> 0.56 s warm, same verdict rc 0; PYTHONPATH=.ci pytest test_quality_prose_style.py 281 passed rc 0
 - [ ] A1 [writer] Close the loopback-DNS hole: `networkPeer` returns `ip:53` for any connect to port 53, loopback included (scripts/ci-runner/path-trace.ts:128-140); trace-honest inherits it.
   Owns: scripts/ci-runner/path-trace.ts, scripts/ci-runner/trace-honest.ts
   Depends on: none (it lands in the runner batch with C0 and C1).
