@@ -203,6 +203,14 @@ DEV = checkout(pathlib.Path(tempfile.mkdtemp(prefix="two-", dir=RUN_TMP)) / "con
 _git(DEV, "checkout", "-q", "-b", DEV_BRANCH)
 _git(DEV, "commit", "-q", "--allow-empty", "-m", "base")
 DEV = pathlib.Path(os.path.realpath(DEV))
+# A REAL SUBMODULE (box LT18): private/renet, origin rediacc/renet, checked out on the development branch, so `--show-superproject-working-tree` finds the console from inside it.
+_SUB_SRC = checkout(DEV.parent / "renet-src", RENET_REPO)
+_git(_SUB_SRC, "commit", "-q", "--allow-empty", "-m", "renet base")
+_git(DEV, "-c", "protocol.file.allow=always", "submodule", "add", "-q", str(_SUB_SRC), "private/renet")
+SUB = DEV / "private" / "renet"
+_git(SUB, "remote", "set-url", "origin", "%s/%s.git" % (GH_ORIGIN, RENET_REPO))
+_git(SUB, "checkout", "-q", "-b", DEV_BRANCH)
+_git(DEV, "commit", "-q", "-m", "renet submodule")
 LANDING = DEV.parent / "console-landing"
 _git(DEV, "worktree", "add", "-q", "-b", LANDING_BRANCH, str(LANDING))
 RECORD = {"path": str(LANDING), "branch": LANDING_BRANCH}
@@ -216,7 +224,21 @@ G_LANDING_DRAFT = stub(_STUB % (GH_REPO, "[%s,%s]" % (_PR_LANDING, _PR_DRAFT), R
 G_LANDING_OTHER = stub(_STUB % (GH_REPO, "[%s,%s]" % (_PR_LANDING, _PR_OTHER), RENET_REPO, "[]"))
 G_DRAFT_ONLY = stub(_STUB % (GH_REPO, "[%s]" % _PR_DRAFT, RENET_REPO, "[]"))
 
+_SUB_LANDING = '{"number":90,"title":"landing","headRefName":"%s","isDraft":false}' % LANDING_BRANCH
+_SUB_DEV = '{"number":91,"title":"dev","headRefName":"%s","isDraft":false}' % DEV_BRANCH
+_SUB_OTHER = '{"number":92,"title":"other","headRefName":"0901-3","isDraft":false}'
+G_SUB = stub(_STUB % (GH_REPO, "[%s]" % _PR_LANDING, RENET_REPO, "[%s]" % _SUB_LANDING))
+G_SUB_DEV = stub(
+    _STUB % (GH_REPO, "[%s]" % _PR_LANDING, RENET_REPO, "[%s,%s]" % (_SUB_LANDING, _SUB_DEV))
+)
+G_SUB_OTHER = stub(
+    _STUB % (GH_REPO, "[%s]" % _PR_LANDING, RENET_REPO, "[%s,%s]" % (_SUB_LANDING, _SUB_OTHER))
+)
+
 DRAFT = "gh pr create --draft --base main -t x -b y"
+PLAIN = "gh pr create --base main -t x -b y"
+IN_SUB = "cd private/renet && " + PLAIN
+ALREADY_SUB = ALREADY % RENET_REPO
 ALREADY1 = ALREADY % GH_REPO
 READY = "`gh pr ready` on"
 
@@ -286,6 +308,73 @@ TWO_TREE_CASES = [
         ALREADY1,
     ),
     ("a development draft while gh is down", DRAFT, DEV, GH_DOWN, True, UNVERIFIED),
+    # ---- one plain submodule PR beside the landing PR's (box LT18)
+    (
+        "submodule: the development branch's plain PR beside the landing PR's",
+        IN_SUB,
+        DEV,
+        G_SUB,
+        False,
+        "",
+    ),
+    (
+        "submodule: --repo from the console, the development head implied",
+        PLAIN + " --repo " + RENET_REPO,
+        DEV,
+        G_SUB,
+        False,
+        "",
+    ),
+    (
+        "submodule: --head naming the development branch",
+        "cd %s && %s --head %s" % (SUB, PLAIN, DEV_BRANCH),
+        DEV,
+        G_SUB,
+        False,
+        "",
+    ),
+    (
+        "submodule: a second development PR",
+        IN_SUB,
+        DEV,
+        G_SUB_DEV,
+        True,
+        "this submodule repository",
+    ),
+    ("submodule: beside an open PR of another branch", IN_SUB, DEV, G_SUB_OTHER, True, "2 open PR(s)"),
+    (
+        "submodule: a head that is another branch",
+        IN_SUB + " --head 0901-3",
+        DEV,
+        G_SUB,
+        True,
+        ALREADY_SUB,
+    ),
+    (
+        "submodule: a head that is the landing branch",
+        IN_SUB + " --head " + LANDING_BRANCH,
+        DEV,
+        G_SUB,
+        True,
+        ALREADY_SUB,
+    ),
+    (
+        "submodule: from the landing tree",
+        "%s --repo %s --head %s" % (PLAIN, RENET_REPO, DEV_BRANCH),
+        LANDING,
+        G_SUB,
+        True,
+        ALREADY_SUB,
+    ),
+    (
+        "submodule: two creates in one command",
+        "%s; %s" % (IN_SUB, IN_SUB),
+        DEV,
+        G_SUB,
+        True,
+        ALREADY_SUB,
+    ),
+    ("submodule: gh down", IN_SUB, DEV, GH_DOWN, True, UNVERIFIED),
     # ---- gh pr ready
     (
         "ready on the current (development) branch",
@@ -330,6 +419,7 @@ TWO_TREE_CASES = [
 NO_RECORD_CASES = [
     ("no record: the draft is a second PR", DRAFT, DEV, G_LANDING, True, ALREADY1),
     ("no record: ready is not judged", "gh pr ready 606", DEV, G_LANDING_DRAFT, False, ""),
+    ("no record: the submodule PR is a second PR", IN_SUB, DEV, G_SUB, True, ALREADY_SUB),
 ]
 
 # Loaded by name after the path hop, as dispatch.py loads them.
@@ -342,18 +432,25 @@ GUARD = _guards.load(STEM)
 def _seams(module, record):
     """Replace the module's landing seams with what LT1 answers for this world (`record` None: no record)."""
 
-    def landing_record(_root):
-        return dict(record) if record else None
+    def toplevel(root):
+        return os.path.realpath(
+            subprocess.run(
+                ["git", "rev-parse", "--show-toplevel"],
+                cwd=root,
+                capture_output=True,
+                text=True,
+                check=False,
+            ).stdout.strip()
+        )
+
+    # The record lives in the console's common git directory, so a submodule checkout reads none, as `commit_policy.landing_record` answers.
+    def landing_record(root):
+        if not record or toplevel(root) not in (str(DEV), record["path"]):
+            return None
+        return dict(record)
 
     def tree_role(root):
-        top = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            cwd=root,
-            capture_output=True,
-            text=True,
-            check=False,
-        ).stdout.strip()
-        return "landing" if record and os.path.realpath(top) == record["path"] else "development"
+        return "landing" if record and toplevel(root) == record["path"] else "development"
 
     module._landing_record = landing_record
     module._tree_role = tree_role

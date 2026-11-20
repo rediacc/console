@@ -17,6 +17,8 @@ zero, by a different route.
 
 TWO TREES, ONE DRAFT BESIDE THE PR (agent/plans/PLAN-two-track-merge-dev.md, box LT4; operator ruling ASKED:2026-11-20T17:47Z "Draft PR"). When the repository carries a landing record (`commit_policy.landing_record`: the open PR's branch bound to the landing tree), the DEVELOPMENT tree's branch may hold exactly one DRAFT PR beside the landing branch's open PR, because the draft PR's run is the only CI that branch gets. The admission is narrow: the create is a draft, it runs in the development tree, its head is that tree's checked-out branch and not the landing branch, and every open PR other than the landing branch's blocks it as before.
 So a second draft, a non-draft and a draft from any other head are refused. `gh pr ready` on any PR but the landing branch's is refused while the landing branch's PR is open: the draft turns ready after the PR branch merges. With no landing record every answer is exactly what it was before the binding existed.
+
+ONE PLAIN SUBMODULE PR BESIDE THE LANDING PR'S (box LT18; operator ruling ASKED:2026-11-20T18:46Z). A submodule the development branch touches gets one PR headed by the development branch's name, beside the landing branch's PR in that repository. The submodule repositories (`PAIRED_SUBMODULE_REPOS`) are private free-plan repositories, which have no draft PRs, so this admission takes a plain create. It is as narrow as the draft's: the target is one of those repositories, the console checkout the call runs in (the superproject of the submodule checkout, or the checkout itself) carries a landing record and is the development tree, and the head (`--head`, else the branch checked out where gh runs) is the console's current branch there, never the landing record's branch. Every open PR in the submodule repository other than the landing branch's still blocks it, so a second development PR and a PR from any other head are refused. With no record the answer is exactly today's.
 """
 
 import json
@@ -25,7 +27,7 @@ import re
 import subprocess
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.wellknown import RENET_REPO
+from rediacc_hooks.wellknown import ACCOUNT_REPO, ELITE_REPO, GH_REPO, RENET_REPO
 
 CHAIN = "pre-bash"
 ORDER = 24
@@ -99,6 +101,18 @@ LANDING_NOTE = (
     "   ONE draft PR (`gh pr create --draft` run in the development tree, its head\n"
     "   that tree's own branch); any other PR beside it is refused.\n"
 )
+
+SUBMODULE_NOTE = (
+    "\n"
+    "   TWO TREES: the console binds the landing branch %s to its landing tree.\n"
+    "   Beside that branch's open PR in this submodule repository, the development\n"
+    "   branch may hold ONE plain PR, created from the console's development tree\n"
+    "   with the development branch's name as its head; any other PR beside it is\n"
+    "   refused.\n"
+)
+
+# The submodule repositories where the development branch's plain PR may stand beside the landing branch's (box LT18): private free-plan repositories, which have no draft PRs.
+PAIRED_SUBMODULE_REPOS = frozenset(name.lower() for name in (RENET_REPO, ACCOUNT_REPO, ELITE_REPO))
 
 READY_REFUSED = (
     "❌ BLOCKED: `gh pr ready` on %s while the landing branch's PR is open in %s.\n"
@@ -252,10 +266,12 @@ def _effective_dir(run_, cwd):
 def _bound(run_, cwd, repo):
     """(repository root, landing record) for one walked call that a landing record governs, (None, None) otherwise.
 
-    Governed means: the call runs in a git checkout whose repository carries a valid record, and it targets that checkout's own origin, so a create or ready aimed at another repository (a submodule's `--repo`) is judged as before.
+    Governed means: the call runs in a git checkout whose repository carries a valid record, and it targets that checkout's own origin, so a create or ready aimed at another repository (a submodule's `--repo`) is judged as before. A paired submodule repository is never governed here, even by a record read through its superproject: its one admission is `_submodule_beside`'s.
     """
     directory = _effective_dir(run_, cwd)
     if directory is None or repo == shellscan.UNRESOLVED_REPO:
+        return None, None
+    if repo.lower() in PAIRED_SUBMODULE_REPOS:
         return None, None
     root = commit_policy.toplevel(directory)
     if not root:
@@ -277,12 +293,43 @@ def _draft_beside(run_, root, record):
     if not args.on("draft") or _tree_role(root) != "development":
         return None
     current = commit_policy.current_branch(root)
-    head = args.last("head")
-    head = head.split(":", 1)[-1] if head else current
+    head = _head(run_, root)
     landing = record.get("branch", "")
     if not head or not landing or head != current or head == landing:
         return None
     return landing
+
+
+def _head(run_, directory):
+    """The head branch of one walked `gh pr create`: `--head`/`-H` with an `owner:` prefix dropped, else the branch checked out at `directory`."""
+    head = shellscan.gh_args(run_.argv).last("head")
+    return head.split(":", 1)[-1] if head else commit_policy.current_branch(directory)
+
+
+def _submodule_beside(run_, cwd, repo):
+    """(landing branch, landing record) when this create is the development branch's plain PR in a paired submodule repository, (None, None) otherwise.
+
+    The console checkout is the superproject of the checkout the call runs in, or that checkout itself (`gh pr create --repo <submodule>` typed in the console); its origin is the console's, it carries a landing record and it is the development tree. The head is the console's current branch there and not the landing branch.
+    """
+    if repo.lower() not in PAIRED_SUBMODULE_REPOS:
+        return None, None
+    directory = _effective_dir(run_, cwd)
+    top = commit_policy.toplevel(directory) if directory else ""
+    if not top:
+        return None, None
+    console = commit_policy.superproject(top) or top
+    if shellscan.gh_repo_name(shellscan._origin_repo(console)) != GH_REPO.lower():
+        return None, None
+    record = _landing_record(console)
+    if not record or _tree_role(console) != "development":
+        return None, None
+    development = commit_policy.current_branch(console)
+    landing = record.get("branch", "")
+    if not development or not landing or development == landing:
+        return None, None
+    if _head(run_, top) != development:
+        return None, record
+    return landing, record
 
 
 def _stands_beside(row, beside):
@@ -386,8 +433,11 @@ def run(ev):
                 why = UNRESOLVED_REASON if named else UNRESOLVED_DIR_REASON % run_.cwd
                 ev.warn_raw(UNVERIFIABLE % ("the repository this command names", why))
                 return hookio.DENY
-            root, record = _bound(run_, cwd, repo)
-            beside = _draft_beside(run_, root, record)
+            if repo.lower() in PAIRED_SUBMODULE_REPOS:
+                beside, record = _submodule_beside(run_, cwd, repo)
+            else:
+                root, record = _bound(run_, cwd, repo)
+                beside = _draft_beside(run_, root, record)
             # A second create of the same repository in one command is a second PR: the admission is for exactly one draft.
             if repo in repos:
                 beside = None
@@ -423,6 +473,9 @@ def _refusal(ev, repo, beside=None, record=None):
     if not (count != "" and int(count) > 0):
         return None
 
-    note = LANDING_NOTE % record.get("branch", "") if record else ""
+    note = ""
+    if record:
+        template = SUBMODULE_NOTE if repo.lower() in PAIRED_SUBMODULE_REPOS else LANDING_NOTE
+        note = template % record.get("branch", "")
     ev.warn_raw(ALREADY_OPEN % (count, repo, _rows(listing)) + note)
     return hookio.DENY
