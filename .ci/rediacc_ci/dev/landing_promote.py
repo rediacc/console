@@ -2,13 +2,14 @@
 
 Order, each step refusing before anything moves where it can:
 
-1. The landing record binds a tree and a branch, the main checkout holds another `MMDD-N` branch (the development branch), and both trees are clean.
+1. The landing record binds a tree and a branch, the main checkout holds another `MMDD-N` branch (the development branch), and both trees are clean, each submodule tree checked out in the landing tree included.
 2. The landing PR is MERGED (gh answers; anything else is a refusal), and every landing commit has a patch-equivalent on origin/main.
-3. The development branch rebases onto origin/main. The landing copies drop as absorbed, and the RB4 proof (`wl_rebase.rebase_proof`) must name no commit missing; a conflict aborts the rebase and a missing commit puts the branch back at its old tip.
-4. The main checkout detaches, the landing tree switches to the development branch, and the record is rewritten to bind it.
-5. The next `MMDD-N` is cut from origin/main in the main checkout, and `gh pr ready <draft>` is printed.
+3. The development branch rebases onto origin/main. The landing copies drop as absorbed, and the RB4 proof (`wl_rebase.rebase_proof`, with `wl_review.uncovered` as the commits no review record covers) must name no commit missing; a conflict aborts the rebase and a missing commit puts the branch back at its old tip. Every CHANGED and UNREVIEWED commit the proof names is printed, since the rebase gave them new shas.
+4. Each submodule tree of the landing tree is checked against the rebased branch's gitlink: the commit is fetched when absent (from the main checkout's submodule tree, then from its origin), and a branch of the development name there must sit at or behind the gitlink. A refusal puts the development branch back at its old tip.
+5. The main checkout detaches, the landing tree switches to the development branch, the record is rewritten to bind it, and each of those submodule trees switches to the development name at its gitlink (created when absent).
+6. The next `MMDD-N` is cut at the promoted branch's head in the main checkout, so it starts stacked on the new landing branch (operator ruling ASKED:2026-11-20T18:46Z), and `gh pr ready <draft>` is printed.
 
-Only the printed `gh pr ready` line is data on stdout; everything else goes to stderr. Submodule trees are not moved.
+Only the printed `gh pr ready` line is data on stdout; everything else goes to stderr.
 """
 
 from __future__ import annotations
@@ -34,11 +35,14 @@ PROMOTE_HELP = """\
 Usage: ./run.sh worktree landing --promote
 
 After the landing PR merged: rebase the development branch onto origin/main
-(the landing commits drop as absorbed), move it into the landing tree, rewrite
-the landing record, cut the next MMDD-N from origin/main in the main checkout,
-and print `gh pr ready <draft>`. Refused: a dirty tree in either checkout, a
-landing PR that is not MERGED, a landing commit missing from origin/main, a
-rebase conflict, and a rebase that loses a development commit.
+(the landing commits drop as absorbed), move it into the landing tree with its
+submodule trees, rewrite the landing record, cut the next MMDD-N at the promoted
+branch's head in the main checkout (stacked on the new landing branch), and
+print `gh pr ready <draft>`. The commits the rebase left without a review record
+are named. Refused: a dirty tree in either checkout or in a landing submodule
+tree, a landing PR that is not MERGED, a landing commit missing from origin/main,
+a rebase conflict, a rebase that loses a development commit, and a landing
+submodule tree that cannot take the gitlink.
 """
 
 
@@ -98,6 +102,21 @@ def _must(tree, *args):
         raise PromoteRefusedError(str(exc)) from exc
 
 
+def _submodule_trees(tree):
+    """`{path: tree}` for each submodule checked out in `tree` (its own top level, not the superproject's)."""
+    text = spike.out(tree, "ls-files", "--stage", "-z")
+    found = {}
+    for entry in text.split("\0"):
+        meta, _tab, path = entry.partition("\t")
+        if not meta.startswith("160000 "):
+            continue
+        sub = tree / path
+        top = spike.out(sub, "rev-parse", "--show-toplevel") if sub.is_dir() else ""
+        if top and pathlib.Path(top).resolve() == sub.resolve():
+            found[path] = sub
+    return found
+
+
 def _premises(main, gh):
     """`(landing path, landing branch, development branch)`, refusing before anything moves."""
     policy = spike.load_commit_policy()
@@ -115,6 +134,14 @@ def _premises(main, gh):
             dev or "detached",
         )
         raise PromoteRefusedError(message)
+    for path, sub in sorted(_submodule_trees(landing).items()):
+        rows = _dirty(sub)
+        if rows:
+            message = "the submodule tree %s of the landing tree is dirty: %s" % (
+                path,
+                " | ".join(rows[:SHOWN]),
+            )
+            raise PromoteRefusedError(message)
     for tree in (main, landing):
         rows = _dirty(tree)
         if rows:
@@ -161,7 +188,10 @@ def _rebase(main, dev):
         message = "rebasing %s onto %s stopped, so it was aborted: %s" % (dev, UPSTREAM, first)
         raise PromoteRefusedError(message)
     new = _must(main, "rev-parse", "HEAD")
-    proof = lease._hook_module("wl_rebase").rebase_proof(str(main), UPSTREAM, old, new, set())
+    review = lease._hook_module("wl_review")
+    # The review records ride the development branch in the main checkout, so the commits they no longer cover after the rebase are read there.
+    owed = set(review.uncovered(str(main), main, dev, review.load_config(str(main)), "HEAD"))
+    proof = lease._hook_module("wl_rebase").rebase_proof(str(main), UPSTREAM, old, new, owed)
     if proof is None or proof["missing"]:
         spike.git(main, "reset", "--quiet", "--keep", old)
         lost = (
@@ -175,6 +205,68 @@ def _rebase(main, dev):
         )
         raise PromoteRefusedError(message)
     return old, proof
+
+
+def _gitlinks(tree, rev):
+    """`{path: sha}` for every gitlink of `rev`."""
+    text = _must(tree, "ls-tree", "-r", "-z", rev)
+    links = {}
+    for entry in text.split("\0"):
+        meta, _tab, path = entry.partition("\t")
+        parts = meta.split()
+        if len(parts) == 3 and parts[0] == "160000":
+            links[path] = parts[2]
+    return links
+
+
+def _has_commit(sub, sha):
+    return spike.git(sub, "cat-file", "-e", "%s^{commit}" % sha).returncode == 0
+
+
+def _submodule_moves(main, landing, dev):
+    """`[(path, tree, sha)]` the landing tree's submodule trees take after the switch, refusing before anything else moves.
+
+    The gitlink commit is fetched when the landing submodule tree lacks it: from the main checkout's tree of the same path (where the development branch's submodule commits are made), then from its origin. A branch of the development name already there must be an ancestor of the gitlink, or moving it would drop its commits.
+    """
+    links = _gitlinks(main, "refs/heads/%s" % dev)
+    moves = []
+    for path, sub in sorted(_submodule_trees(landing).items()):
+        sha = links.get(path)
+        if sha is None:
+            log.info(
+                "submodule tree %s: %s has no gitlink there, so it stays as it is" % (path, dev)
+            )
+            continue
+        for source in (str(main / path), REMOTE):
+            if _has_commit(sub, sha):
+                break
+            spike.git(sub, "fetch", "--quiet", "--no-tags", source, sha)
+        if not _has_commit(sub, sha):
+            message = "the submodule tree %s cannot reach %s's gitlink %s from %s or %s" % (
+                sub,
+                dev,
+                sha[:12],
+                main / path,
+                REMOTE,
+            )
+            raise PromoteRefusedError(message)
+        held = spike.out(sub, "rev-parse", "-q", "--verify", "refs/heads/%s^{commit}" % dev)
+        if held and spike.git(sub, "merge-base", "--is-ancestor", held, sha).returncode != 0:
+            message = (
+                "the submodule tree %s holds a branch %s at %s that %s's gitlink %s does not contain"
+                % (sub, dev, held[:12], dev, sha[:12])
+            )
+            raise PromoteRefusedError(message)
+        moves.append((path, sub, sha))
+    return moves
+
+
+def _moved_already(landing, dev, rest):
+    """The tail of a refusal raised after the landing tree took `dev`: what moved, and what is left to run by hand."""
+    return (
+        "; the landing tree %s already holds %s and the landing record binds it, so finish by hand: %s"
+        % (landing, dev, " && ".join(rest))
+    )
 
 
 def promote(root, *, gh=run_gh, today=None, next_name=None):
@@ -191,11 +283,27 @@ def promote(root, *, gh=run_gh, today=None, next_name=None):
         message = "the next branch name could not be read: %s" % exc
         raise PromoteRefusedError(message) from exc
     _fetch_and_check(main, landing_branch)
-    _old, proof = _rebase(main, dev)
+    old, proof = _rebase(main, dev)
     log.info(
-        "%s onto %s: %d carried, %d absorbed (the landing copies), %d changed"
-        % (dev, UPSTREAM, len(proof["carried"]), len(proof["absorbed"]), len(proof["changed"]))
+        "%s onto %s: %d carried, %d absorbed (the landing copies), %d changed, %d unreviewed"
+        % (
+            dev,
+            UPSTREAM,
+            len(proof["carried"]),
+            len(proof["absorbed"]),
+            len(proof["changed"]),
+            len(proof["unreviewed"]),
+        )
     )
+    notes, _ok, _detail = lease._hook_module("wl_rebase").proof_rows(dev, proof)
+    for line in notes:
+        log.info(line)
+    try:
+        moves = _submodule_moves(main, landing, dev)
+    except (PromoteRefusedError, RuntimeError) as exc:
+        spike.git(main, "reset", "--quiet", "--keep", old)
+        message = "%s, so %s is back at %s" % (exc, dev, old[:12])
+        raise PromoteRefusedError(message) from exc
     _must(main, "switch", "--quiet", "--detach")
     moved = spike.git(landing, "switch", "--quiet", dev)
     if moved.returncode != 0:
@@ -210,8 +318,32 @@ def promote(root, *, gh=run_gh, today=None, next_name=None):
         )
         raise PromoteRefusedError(message)
     spike.load_commit_policy().write_landing_record(str(main), str(landing), dev)
-    _must(main, "switch", "--quiet", "--no-track", "-c", cut, UPSTREAM)
-    log.info("landing tree %s holds %s; the main checkout holds %s" % (landing, dev, cut))
+    rest = ["git -C %s switch --no-track -C %s %s" % (sub, dev, sha) for _p, sub, sha in moves]
+    rest.append("git -C %s switch --no-track -c %s %s" % (main, cut, dev))
+    for index, (path, sub, sha) in enumerate(moves):
+        done = spike.git(sub, "switch", "--quiet", "--no-track", "-C", dev, sha)
+        if done.returncode != 0:
+            message = "the submodule tree %s could not take %s at %s: %s%s" % (
+                path,
+                dev,
+                sha[:12],
+                done.stderr.strip(),
+                _moved_already(landing, dev, rest[index:]),
+            )
+            raise PromoteRefusedError(message)
+        log.info("submodule tree %s holds %s at %s" % (path, dev, sha[:12]))
+    done = spike.git(main, "switch", "--quiet", "--no-track", "-c", cut, "refs/heads/%s" % dev)
+    if done.returncode != 0:
+        message = "the next branch %s could not be cut at %s: %s%s" % (
+            cut,
+            dev,
+            done.stderr.strip(),
+            _moved_already(landing, dev, rest[-1:]),
+        )
+        raise PromoteRefusedError(message)
+    log.info(
+        "landing tree %s holds %s; the main checkout holds %s, stacked on it" % (landing, dev, cut)
+    )
     log.info(
         "%s was rebased: republish it through the guarded lease push before the PR flips ready"
         % dev

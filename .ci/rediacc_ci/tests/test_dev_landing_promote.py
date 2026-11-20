@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import subprocess
 
 import pytest
 
@@ -307,6 +308,50 @@ def test_promote_refuses_a_rebase_that_loses_a_development_commit(tmp_path):
     with pytest.raises(promote_mod.PromoteRefusedError, match="lost development commits"):
         run_promote(two.main)
     untouched(two)
+
+
+def test_promote_refuses_a_gitlink_no_source_holds(two):
+    # The main checkout's submodule tree loses the gitlink commit (its status told to ignore the submodule, so the tree reads clean) and the submodule origin never had it.
+    sub = two.main / SUB
+    spike.must(two.main, "config", "submodule.%s.ignore" % SUB, "all")
+    spike.must(sub, "switch", "-q", "--detach", two.landing_sub_head)
+    spike.must(sub, "branch", "-q", "-D", DEV)
+    spike.must(sub, "reflog", "expire", "--expire=now", "--all")
+    spike.must(sub, "gc", "-q", "--prune=now")
+    with pytest.raises(promote_mod.PromoteRefusedError, match="cannot reach %s's gitlink" % DEV):
+        run_promote(two.main)
+    untouched(two)
+
+
+def test_promote_a_failed_cut_names_what_moved_and_the_command_left(two):
+    # The next name is taken (the old landing branch still exists), so the cut fails after the landing tree took the development branch (review 37d8950c.1).
+    with pytest.raises(promote_mod.PromoteRefusedError) as raised:
+        run_promote(two.main, next_name=lambda _root, _today: LANDING)
+    text = str(raised.value)
+    assert "already holds %s and the landing record binds it" % DEV in text, text
+    assert "git -C %s switch --no-track -c %s %s" % (two.main, LANDING, DEV) in text, text
+    assert record_of(two.main) == {"path": str(two.landing), "branch": DEV}
+    assert branch_of(two.landing) == DEV
+    assert branch_of(two.landing_sub) == DEV
+
+
+def test_promote_a_failed_submodule_switch_names_what_is_left(two, monkeypatch):
+    real_git = promote_mod.spike.git
+
+    def git(cwd, *args, **kwargs):
+        if pathlib.Path(cwd) == two.landing_sub and args[:1] == ("switch",):
+            return subprocess.CompletedProcess(["git", *args], 1, "", "fatal: refused here")
+        return real_git(cwd, *args, **kwargs)
+
+    monkeypatch.setattr(promote_mod.spike, "git", git)
+    with pytest.raises(promote_mod.PromoteRefusedError) as raised:
+        run_promote(two.main)
+    text = str(raised.value)
+    assert "the submodule tree sub could not take %s" % DEV in text, text
+    assert "fatal: refused here" in text, text
+    assert "git -C %s switch --no-track -C %s %s" % (two.landing_sub, DEV, two.sub_link) in text
+    assert "git -C %s switch --no-track -c %s %s" % (two.main, NEXT, DEV) in text, text
+    assert record_of(two.main) == {"path": str(two.landing), "branch": DEV}
 
 
 def test_promote_cmd_rejects_an_argument(capfd):
