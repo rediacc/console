@@ -15,6 +15,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import gh_retry
 from rediacc_ci.dev import landing_promote
 from rediacc_ci.dev import worktree_lease as lease
 from rediacc_ci.dev import worktree_spike as spike
@@ -42,15 +43,18 @@ class LandingRefusedError(RuntimeError):
 
 
 def run_gh(args, cwd):
-    """`(rc, stdout)` of `gh <args>`; 127 when gh is absent."""
+    """`(rc, stdout)` of `gh <args>`; 127 when gh is absent. A transient 5xx or connection fault is retried (gh_retry); a 4xx fails at once."""
     try:
-        done = subprocess.run(
-            ["gh", *args],
-            cwd=str(cwd),
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=GH_TIMEOUT,
+        done = gh_retry.retry_transient(
+            lambda: subprocess.run(
+                ["gh", *args],
+                cwd=str(cwd),
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=GH_TIMEOUT,
+            ),
+            lambda r: None if r.returncode == 0 else r.stderr or "failed",
         )
     except (OSError, subprocess.SubprocessError):
         return 127, ""

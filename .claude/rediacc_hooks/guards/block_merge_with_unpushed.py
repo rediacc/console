@@ -14,7 +14,10 @@ prose above. In Python the same chain is `run_out(..., want_rc=True)` returning
 None, which is why `git_out` is called with `want_rc` set rather than with the default: the default turns a git FAILURE into an empty string, and an empty string here would fall through to the next test instead of allowing the merge. Confusing those two is how a fail-open guard becomes a fail-closed one.
 """
 
-from rediacc_hooks import commit_policy, hookio, shellscan
+import subprocess
+import time
+
+from rediacc_hooks import commit_policy, hookio, shellscan, syspath
 from rediacc_hooks.wellknown import GH_REPO, RENET_REPO
 
 CHAIN = "pre-bash"
@@ -45,6 +48,8 @@ EDGE_CASES = [
 # THE PR'S OWN TREE (agent/plans/PLAN-two-track-merge-dev.md, box LT12). With a landing record the merged PR's head is read from `gh pr view` (its `headRefName`), not from the session root's HEAD: a merge typed in the development tree merges the landing tree's branch, and judging the development branch there refused on the wrong commits and let the landing tree's unpushed ones be orphaned. Planted, the head is the root's branch again.
 TWO_TREE_DEFECT = ("head = _pr_head(root, runs)", 'head = ""')
 GH_TIMEOUT = "20"
+GH_READ_ATTEMPTS = 2
+GH_READ_PAUSE_S = 2
 
 
 def _pr_head(root, runs):
@@ -59,7 +64,26 @@ def _pr_head(root, runs):
         break
     view = ["timeout", GH_TIMEOUT, "gh", "pr", "view", *([sel] if sel else [])]
     view += [*(["--repo", repo] if repo else []), "--json", "headRefName", "--jq", ".headRefName"]
-    return (hookio.run_out(view, cwd=root, want_rc=True) or "").strip()
+    try:
+        retry = syspath.import_from_ci("rediacc_ci.core.gh_retry")
+    except ImportError:
+        return ""
+
+    def once():
+        try:
+            done = subprocess.run(view, cwd=root, capture_output=True, text=True, check=False)
+        except (OSError, ValueError):
+            return 127, "", "gh could not run"
+        return done.returncode, done.stdout, done.stderr
+
+    # A transient 5xx is retried within the hook's budget (two attempts, one 2 s pause); a 4xx or a timeout answers at once.
+    rc, out, _err = retry.retry_transient(
+        once,
+        lambda r: None if r[0] == 0 else (r[2] or "failed"),
+        attempts=GH_READ_ATTEMPTS,
+        sleep=lambda _scheduled: time.sleep(GH_READ_PAUSE_S),
+    )
+    return out.strip() if rc == 0 else ""
 
 
 def _judged_branch(root, runs):

@@ -25,12 +25,15 @@ import json
 import os
 import re
 import subprocess
+import time
 
-from rediacc_hooks import commit_policy, hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan, syspath
 from rediacc_hooks.wellknown import ACCOUNT_REPO, ELITE_REPO, GH_REPO, RENET_REPO
 
 CHAIN = "pre-bash"
 ORDER = 24
+GH_READ_ATTEMPTS = 2
+GH_READ_PAUSE_S = 2
 
 # THE DRAFT ADMISSION'S FILTER is the line planted. Inverted, only the open PRs that stand beside an admitted draft count: with no landing record the second PR this guard exists for is waved through, and with one the landing branch's PR alone blocks the development draft while every other open PR is ignored. The fail-closed arm keeps its own witness (`gh down fails closed` in test-block_second_open_pr.py).
 DEFECT = ("if not _stands_beside(row, beside)", "if _stands_beside(row, beside)")
@@ -349,21 +352,29 @@ def _listed(listing):
 
 
 def _list_open(repo):
-    """`gh pr list` of this author's open PRs in `repo`: (merged output, status)."""
-    return _run_capture(
-        [
-            "gh",
-            "pr",
-            "list",
-            "--repo",
-            repo,
-            "--author",
-            "@me",
-            "--state",
-            "open",
-            "--json",
-            "number,title,headRefName,isDraft",
-        ]
+    """`gh pr list` of this author's open PRs in `repo`: (merged output, status). A transient 5xx is retried within the hook's budget (two attempts, one 2 s pause); a 4xx answers at once."""
+    argv = [
+        "gh",
+        "pr",
+        "list",
+        "--repo",
+        repo,
+        "--author",
+        "@me",
+        "--state",
+        "open",
+        "--json",
+        "number,title,headRefName,isDraft",
+    ]
+    try:
+        retry = syspath.import_from_ci("rediacc_ci.core.gh_retry")
+    except ImportError as exc:
+        return "gh_retry could not be imported (%s)" % exc, 127
+    return retry.retry_transient(
+        lambda: _run_capture(argv),
+        lambda r: None if r[1] == 0 else (r[0] or "failed"),
+        attempts=GH_READ_ATTEMPTS,
+        sleep=lambda _scheduled: time.sleep(GH_READ_PAUSE_S),
     )
 
 

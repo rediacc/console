@@ -3271,6 +3271,7 @@ def index_view(root):
         for rel in (R.INDEX_REL, PQ.QUEUE_REL):
             made = view / rel
             if made.is_file() and not made.is_symlink():
+                # tree-write: mode --update the carry-back exists only for the renders `--rendered-only --update` writes; the registered gate passes neither
                 (root / rel).write_bytes(made.read_bytes())
 
 

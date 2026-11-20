@@ -121,6 +121,9 @@ interface RunResult extends SimResult {
 
 const EPS_MS = 1e-6;
 
+const byText = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+const byKey = (a: [string, number], b: [string, number]): number => byText(a[0], b[0]);
+
 function specOf(g: SimGate): GateSpec {
   return {
     id: g.id,
@@ -679,8 +682,9 @@ export function schedulerSelftest(): { failures: string[]; assertions: number; t
     `a pinned single-core gate must end sooner under saturation when the rest are niced, got ${prio.ends.get('pin')} vs ${prioFlat.ends.get('pin')}`
   );
   check(
-    [...prio.ends.keys()].sort().join() === [...prioFlat.ends.keys()].sort().join() &&
-      [...prio.grants.entries()].sort().join() === [...prioFlat.grants.entries()].sort().join(),
+    [...prio.ends.keys()].sort(byText).join() === [...prioFlat.ends.keys()].sort(byText).join() &&
+      [...prio.grants.entries()].sort(byKey).join() ===
+        [...prioFlat.grants.entries()].sort(byKey).join(),
     'priority must not change which gates run or what they are granted'
   );
 

@@ -205,6 +205,7 @@ def collected_roots():
 # `test_hooks_delegates.py`'s own `test_tailed_discovery_meets_its_floor` is the anti-vacuity check on THAT side of the same claim -- this gate checks that a discovered file is REACHED, that one checks that discovery still finds ENOUGH; neither substitutes for the other.
 DELEGATE_GLOBBED_DIRS = (
     ".claude/hooks/context/",
+    ".claude/hooks/post-bash/",
     ".claude/hooks/stop/",
     ".claude/rediacc_hooks/guards/",
 )
