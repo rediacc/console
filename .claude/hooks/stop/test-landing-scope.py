@@ -164,6 +164,17 @@ def control_loop_state(tmp, wl_prscope, wl_ci, wl_checks):
         land.foreign_items,
         {"bbbb0002", "dddd0004"},
     )
+    # A detached landing tree (mid-rebase, a bisect): its own branch is the record's, so the PR's items stay in scope.
+    git(landing, "switch", "-q", "--detach")
+    try:
+        detached = loop(wl_prscope, wl_ci, landing, record, nodes, branches=ITEMS, settings=on)
+    finally:
+        git(landing, "switch", "-q", PR_BRANCH)
+    check(
+        "landing, detached: the PR branch's items stay in scope",
+        detached.foreign_items,
+        {"bbbb0002", "dddd0004"},
+    )
     lbare = loop(wl_prscope, wl_ci, landing, None, nodes, branches=ITEMS, settings=on)
     check("CONTROL landing, no record: the queue head", lbare.queue_head, rel("q"))
     check("CONTROL landing, no record: the next plan", lbare.next_plan, rel("q"))
@@ -221,6 +232,7 @@ def control_item_branches(tmp, wl_prscope, wl_ci):
         '{"ev": "update", "id": "aaaa0001", "at": "2026-11-20T10:00:03Z", "br": "%s"}' % DEV_BRANCH,
     ]
     (store / "w.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    prior = os.environ.get("WORKLIST_STORE_DIR")
     os.environ["WORKLIST_STORE_DIR"] = str(store)
     try:
         got = wl_prscope.item_branches(tmp / "items" / "wl.md", main)
@@ -228,7 +240,15 @@ def control_item_branches(tmp, wl_prscope, wl_ci):
         land = loop(wl_prscope, wl_ci, landing, record, {})
         dev = loop(wl_prscope, wl_ci, main, record, {})
     finally:
-        del os.environ["WORKLIST_STORE_DIR"]
+        if prior is None:
+            del os.environ["WORKLIST_STORE_DIR"]
+        else:
+            os.environ["WORKLIST_STORE_DIR"] = prior
+    check(
+        "the caller's store directory comes back as it was",
+        os.environ.get("WORKLIST_STORE_DIR"),
+        prior,
+    )
     check(
         "the add event's branch, never a later event's",
         got,

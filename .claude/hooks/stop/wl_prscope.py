@@ -205,9 +205,11 @@ def item_branches(worklist, root):
 
 
 def foreign_items(role, branch, landing_branch, branches):
-    """The item ids outside this tree's scope. Landing: every item added on a branch other than `branch`, its own. Development: every item added on `landing_branch`. No role: none. An item with no branch stays in scope in both trees. The stored branch is wl_core.git_branch's slug, which equals the name for an MMDD-N branch."""
+    """The item ids outside this tree's scope. Landing: every item added on a branch other than its own, the record's `landing_branch` (HEAD's `branch` only when the record names none). Development: every item added on `landing_branch`. No role: none. An item with no branch stays in scope in both trees. The stored branch is wl_core.git_branch's slug, which equals the name for an MMDD-N branch."""
     if role == LANDING:
-        return frozenset(i for i, b in branches.items() if b and b != branch)
+        # The record names the landing tree's branch; HEAD's name is "" on a detached HEAD, which would make the PR's own items foreign.
+        own = landing_branch or branch
+        return frozenset(i for i, b in branches.items() if b and b != own)
     if role == DEVELOPMENT and landing_branch:
         return frozenset(i for i, b in branches.items() if b == landing_branch)
     return frozenset()
