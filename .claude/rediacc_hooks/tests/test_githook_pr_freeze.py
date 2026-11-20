@@ -280,6 +280,13 @@ def test_a_missing_freeze_module_refuses(monkeypatch, capsys, tmp_path):
     assert mixed != 0, (
         "other files beside the module must not ride the repair path (review 8d45a5c5.1)"
     )
+    test_only = gh.pr_freeze_refusal(
+        "fix(hooks): test only",
+        str(tmp_path),
+        BRANCH,
+        [".claude/rediacc_hooks/tests/test_githook_pr_freeze.py"],
+    )
+    assert test_only != 0, "the repair path needs the module itself staged (review 46649b07.1)"
 
 
 def test_commit_msg_reaches_the_freeze(world, monkeypatch, capsys):

@@ -176,7 +176,7 @@ def pr_freeze_refusal(msg: str, repo: str, branch: str, paths: list[str]) -> int
     try:
         freeze = _load("pr_freeze", HERE.parent / "pr_freeze.py")
     except (OSError, ImportError, SyntaxError) as exc:
-        if paths and set(paths) <= PR_FREEZE_REPAIR:
+        if PR_FREEZE_REL in paths and set(paths) <= PR_FREEZE_REPAIR:
             return 0  # the repair path (review 7d2c8fca.1): a commit of the module (and its test) alone lands; anything else beside it does not (8d45a5c5.1)
         return _refuse(
             "the PR freeze module cannot be loaded (%s), so no commit can be judged; restore .claude/rediacc_hooks/pr_freeze.py (a commit staging only it, and its test, is admitted)."
