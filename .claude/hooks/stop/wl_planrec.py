@@ -296,20 +296,22 @@ def _git_raw(root, *args) -> str:
         return ""
 
 
-def _live_ref(root) -> str:
-    """The ref a commit pointer must be reachable from besides origin/main: HEAD in a checkout on a branch, and the main worktree's branch in a linked worktree on a detached HEAD (a lease, PLAN-two-track-merge-dev RB5). A lease's own commits are ancestors of its HEAD but get new shas when the lead cherry-picks them, so citing one would cite a commit no fresh checkout has."""
+def _live_ref(root) -> str | None:
+    """The ref a commit pointer must be reachable from besides origin/main (PLAN-two-track-merge-dev RB5). HEAD in a checkout on a branch, or in the main checkout on a detached HEAD (a rebase in progress). In a linked worktree on a detached HEAD (a lease) the lease's own commits are ancestors of its HEAD but get new shas when the lead cherry-picks them, so HEAD never counts there: the main worktree's branch does, and when that cannot be named (the main worktree is detached too, or git cannot say) the answer is None and only origin/main counts. Fails closed: a linked worktree is never judged by its own HEAD."""
     if _git_ok(root, "symbolic-ref", "-q", "HEAD"):
         return "HEAD"
-    git_dir = _git_out(root, "rev-parse", "--absolute-git-dir")
-    common = _git_out(root, "rev-parse", "--path-format=absolute", "--git-common-dir")
-    if not git_dir or not common or git_dir == common:
+    dirs = _git_out(root, "rev-parse", "--git-dir", "--git-common-dir").splitlines()
+    if len(dirs) != 2:
+        return None
+    base = pathlib.Path(str(root))
+    git_dir, common = ((base / d).resolve() for d in dirs)
+    if git_dir == common:
         return "HEAD"
-    for line in _git_out(root, "worktree", "list", "--porcelain").splitlines():
+    first_block = _git_out(root, "worktree", "list", "--porcelain").split("\n\n", 1)[0]
+    for line in first_block.splitlines():
         if line.startswith("branch "):
             return line.split(" ", 1)[1]
-        if line == "detached" or line.startswith("detached"):
-            break
-    return "HEAD"
+    return None
 
 
 def _git_ok(root, *args) -> bool:
@@ -533,16 +535,14 @@ def resolve(root, kind, token):
         if not got:
             return False, "no such commit"
         # PRESENCE IS THE WRONG QUESTION FOR A COMMIT (finding #27a05a50). A rebase leaves the rewritten commit in the local object store as an orphan, so `rev-parse` alone records a pointer a fresh checkout cannot resolve. Twin of check_plan_citations.commit_is_reachable (same rule, the read side, commit cd8b0cdc8); restated here, not imported, because this directory must not import from `.ci/`.
-        # origin/main counts as well: main is never rewritten, so a commit CD pushed there survives every rebase-merge (same rule as check_plan_citations.commit_is_reachable, 2026-10-08).
+        # origin/main counts as well: main is never rewritten, so a commit CD pushed there survives every rebase-merge (the rule check_plan_citations.commit_is_reachable reads, 2026-10-08). Inside a lease the write side is stricter than that gate: HEAD is replaced by the main worktree's branch (_live_ref, RB5).
         live = _live_ref(root)
-        if not any(
-            _git_ok(root, "merge-base", "--is-ancestor", got, ref)
-            for ref in (live, "refs/remotes/origin/main")
-        ):
+        refs = [r for r in (live, "refs/remotes/origin/main") if r is not None]
+        if not any(_git_ok(root, "merge-base", "--is-ancestor", got, ref) for ref in refs):
             has_main = bool(
                 _git_out(root, "rev-parse", "--verify", "--quiet", "refs/remotes/origin/main")
             )
-            where = live if live != "HEAD" else "HEAD"
+            where = live or "the live branch (this lease's main worktree names none)"
             return False, (
                 "%s exists in this clone but is not an ancestor of %s (a rebase rewrote it, or it is a lease commit not yet landed), "
                 "so a fresh checkout will not have it"

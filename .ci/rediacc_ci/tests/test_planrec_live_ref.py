@@ -44,3 +44,15 @@ def test_the_main_checkout_keeps_head(tmp_path):
     assert wl_planrec._live_ref(main) == "HEAD"
     assert wl_planrec.resolve(main, "commit", on_branch)[0]
     assert not wl_planrec.resolve(main, "commit", in_lease)[0]
+
+
+def test_a_lease_beside_a_detached_main_falls_back_to_origin_main_only(tmp_path):
+    main, lease, on_branch, in_lease = _repo_with_lease(tmp_path)
+    _git(main, "checkout", "-q", "--detach")
+    assert wl_planrec._live_ref(lease) is None, "the lease's own HEAD must never count"
+    assert not wl_planrec.resolve(lease, "commit", in_lease)[0]
+    assert not wl_planrec.resolve(lease, "commit", on_branch)[0], (
+        "no origin/main here, so nothing is reachable"
+    )
+    _git(main, "update-ref", "refs/remotes/origin/main", on_branch)
+    assert wl_planrec.resolve(lease, "commit", on_branch)[0], "CONTROL: origin/main still counts"

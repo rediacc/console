@@ -398,6 +398,26 @@ truthy(
 )
 # The refusal names only refs that exist: this clone has no origin/main yet, so the message must not point at it; once the ref exists (carrying the base), it is named.
 falsy("resolve commit: no origin/main ref, so the refusal does not name it", "origin/main" in _why)
+
+# RB5 (PLAN-two-track-merge-dev): from a lease (a linked worktree on a detached HEAD) a lease-only commit is refused at write time, and a commit on the live branch is accepted.
+_lv = pathlib.Path(tempfile.mkdtemp())
+sh(_lv, "git", "init", "-q", "-b", "1120-1")
+sh(_lv, "git", "config", "user.email", "t@example.com")
+sh(_lv, "git", "config", "user.name", "t")
+sh(_lv, "git", "commit", "-q", "--allow-empty", "-m", "on the live branch")
+_lv_branch = git_out(_lv, "rev-parse", "HEAD")
+_lv_lease = _lv.parent / (_lv.name + "-lease")
+sh(_lv, "git", "worktree", "add", "-q", "--detach", str(_lv_lease), "HEAD")
+sh(_lv_lease, "git", "commit", "-q", "--allow-empty", "-m", "lease only")
+_lv_only = git_out(_lv_lease, "rev-parse", "HEAD")
+falsy(
+    "RB5: a lease-only commit pointer is refused from inside the lease",
+    R.resolve(_lv_lease, "commit", _lv_only)[0],
+)
+truthy(
+    "RB5 (control): a live-branch commit resolves from inside the lease",
+    R.resolve(_lv_lease, "commit", _lv_branch)[0],
+)
 sh(_orph, "git", "update-ref", "refs/remotes/origin/main", _base)
 _ok2, _why2 = R.resolve(_orph, "commit", _orphan)
 truthy(
