@@ -1,6 +1,8 @@
 """PLAN-two-track-merge-dev P1: the run-to-run fact cache of check:ci-plan-implementation (rediacc_ci.quality.plan_impl_facts)."""
 
+import hashlib
 import json
+import pathlib
 import subprocess
 
 import pytest
@@ -186,11 +188,18 @@ def test_a_ref_that_is_not_a_full_sha_is_memoized_for_the_run(tmp_path):
     assert facts.data["date_c"] == {}, "a ref is never written to the run-to-run cache"
 
 
-def test_an_unreadable_source_hashes_instead_of_raising(tmp_path):
-    unreadable = tmp_path / "secret.py"
-    unreadable.write_text("x")
-    unreadable.chmod(0)
-    try:
-        assert PIF.closure_hash([unreadable]) != PIF.closure_hash([tmp_path / "missing.py"])
-    finally:
-        unreadable.chmod(0o600)
+def test_an_unreadable_source_hashes_instead_of_raising(tmp_path, monkeypatch):
+    """Simulated, not chmod: a root run reads a mode-0 file anyway (review 2f176850.2)."""
+    target = tmp_path / "secret.py"
+    target.write_text("x")
+    real = pathlib.Path.read_bytes
+
+    def refuse(self):
+        if self == target:
+            raise PermissionError("denied")
+        return real(self)
+
+    monkeypatch.setattr(pathlib.Path, "read_bytes", refuse)
+    h = hashlib.sha256(b"plan-impl-facts\0%d\0" % PIF.SCHEMA)
+    h.update(str(target).encode() + b"\0unreadable\0")
+    assert PIF.closure_hash([target]) == h.hexdigest()

@@ -29,7 +29,7 @@ SHA40 = re.compile(r"^[0-9a-f]{40}$")
 
 
 def closure_hash(files: Iterable[str | os.PathLike]) -> str:
-    """sha256 over SCHEMA and the bytes of each file (sorted by path); a missing file hashes as missing."""
+    """sha256 over SCHEMA and the bytes of each file (sorted by path); a file that cannot be read, missing or not, hashes as the body `unreadable`."""
     h = hashlib.sha256(b"plan-impl-facts\0%d\0" % SCHEMA)
     for path in sorted(str(f) for f in files):
         try:
