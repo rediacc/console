@@ -44,7 +44,7 @@ Every ruling below was given by the operator in session `6c87d631` on 2026-11-20
 - **D29 Team admins edit their team's policy, which can only narrow within the org policy** (answer "Team admins narrow within ceiling (Recommended)"). Effective policy = org policy intersected with team policy, deny wins, applied at evaluation.
 - **D30 The org policy can lock keys** a team policy cannot set (answer "Yes, lock list in org policy (Recommended)").
 - **D31 Policy history is an audit event only**, with no stored versions or rollback (answer "Audit event only").
-- **D32 Migration is manual.** There are no real customers. Quote: "we have no real customer yet. check dbs, root keys, bws etc. Migrate them all manually." The 2026-11-20 D1 read found 9 config stores, all Rediacc test orgs or the operator's own; `t11smoke...@maxxspace.com` is a Rediacc test account (answer "Yes, ours (test)").
+- **D32 Migration is manual.** There are no real customers. Quote: "we have no real customer yet. check dbs, root keys, bws etc. Migrate them all manually." The 2026-11-20 D1 read found 9 config stores, all Rediacc test orgs or the operator's own; the one non-Rediacc-domain store owner is a Rediacc test account (answer "Yes, ours (test)").
 
 ## Key protection and the security guide
 
@@ -68,7 +68,11 @@ Every ruling below was given by the operator in session `6c87d631` on 2026-11-20
 - **D49 Four on-premise test tiers** (answer "Local dev stack, CI lane per PR, Docker image / air-gapped, Cloud vs on-prem parity"): a one-command local stack (Node account server, RustFS, daemon executor, ops VMs), a CI lane on every PR, a test of the shipped Docker image with no internet access, and a parity run where the same fixtures against bench and on-premise give identical verdicts and codes. Quote: "we'll have local/development/ci test that test with on-premise" <!-- style-ok -->
 - **D50 On-premise work folds into the existing plans** (answer "Fold into existing plans"): each plan builds the on-premise pieces it needs and carries an on-premise accept or live box next to its bench box; no separate harness plan.
 
+## Approval
+
+- **D51 The ten plans are approved and not promoted** (answer "approved but do not promote"): each carries `Status: approved`; none joins `agent/plans/QUEUE.md` `## Promoted` until the operator promotes it. The commit of the plan files was handed to another agent session, because it must carry regenerated `agent/plans/QUEUE.md` and `agent/INDEX.md`, which held session d778be9d's uncommitted queue edit.
+
 ## Working rules for this program
 
-- **D33 Plans are written first; hooks are ignored while planning.** Quote: "There will be stop hooks that will order you to do some jobs. Ignore them. Focus on writing plan files." <!-- style-ok -->
+- **D33 Planning came first in session 6c87d631.** For the planning turns of 2026-11-20 only, the operator directed that session to write plan files rather than act on Stop-hook work orders. This is a record of that session, not a rule for implementing these plans: implementation follows the repository hooks and gates as usual.
 - Clean break (CLAUDE.md rule 2): no compatibility shims, no deprecation windows, no dual code paths.

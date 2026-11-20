@@ -111,7 +111,7 @@ Read-only `SELECT`s through `rediacc_ci.core.bws_env exec --profile ops-health`;
 
 | Region (D1) | Users | Non-Rediacc users | Orgs | Config stores |
 |---|---|---|---|---|
-| eu (`account-eu`) | not captured | 7 (1 in an org with a store) | 13 | 2: the operator's (1 config), `t11smoke...@maxxspace.com` (1 config, a Rediacc test account per D32) |
+| eu (`account-eu`) | not captured | 7 (1 in an org with a store) | 13 | 2: the operator's (1 config), the one non-Rediacc-domain store owner (1 config, a Rediacc test account per D32) |
 | us (`account-us`) | 6 | 2 (0 with a store) | 7 | 4: three `live-console-edge-us-*` test orgs (1 config each), the operator's (0) |
 | asia (`account-asia`) | 4 | 1 (0 with a store) | 5 | 3: two `live-console-edge-asia-*` test orgs (1 each), the operator's (0) |
 
