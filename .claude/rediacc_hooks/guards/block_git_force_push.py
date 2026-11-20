@@ -78,7 +78,7 @@ FIXTURES = {
 ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
     ("default", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-main}"}, {}),
     ("live-branch", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-ahead}"}, {}),
-    # LT3: two trees, one live branch each. Each tree's lease admits its own branch only because `commit_policy.live_branches` leaves out the branch the landing record binds to the other tree; without the binding both worlds hold two live branches and every lease is refused.
+    # LT3: two trees, one live branch each. Each tree's lease admits its own branch only because `commit_policy.live_branches` leaves out the branch the landing record binds to the other tree; without the binding both worlds hold two live branches and every lease is refused. The M3 cases below are the matrix: `M3 lease to the live branch` (`0831-1`) is admitted in `landing-tree` and `live-branch` only, and `M3 lease to another branch` (`0831-2`) in `development-tree` only.
     ("landing-tree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:landing-tree}"}, {}),
     ("development-tree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:development-tree}"}, {}),
 ]
@@ -206,8 +206,6 @@ EDGE_CASES = [
     ("M3 lease in a repository outside", "git -C /tmp push --force-with-lease origin 0831-1"),
     ("M3 lease with --all", "git push --force-with-lease --all origin"),
     ("M3 lease through -C to the live branch", "git -C . push --force-with-lease origin 0831-1"),
-    # LT3: `0831-2` is the development tree's branch, admitted there and refused in every other world; `0831-1` above is the landing tree's.
-    ("LT3 lease to the development branch", "git push --force-with-lease origin 0831-2"),
     # #18c7e53c A-1: deleting the checked-out branch. Refused in the `live-branch` world, where `0831-1` is checked out; in the `default` world (on main) the same line is pr-merge step 7's post-merge cleanup and stays allowed. The two worlds are the two directions.
     ("A1 --delete of the checked-out branch", "git push origin --delete 0831-1"),
     ("A1 --delete before the remote", "git push --delete origin 0831-1"),
