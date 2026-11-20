@@ -33,13 +33,6 @@
       "gate": "check:ci-ops-health",
       "findings": "*",
       "reason": "Off-box state, not code: local-root-grants is red because the declared root grants are not applied yet; edge-us and edge-asia need the us/asia account Worker release (migration 0088), and release:local --branch-release ships only from this pushed branch, so the push cannot wait on them. local-machine-l1vm is the dev ops VM 192.168.111.11 rejecting SSH after the vm:check fleet rebuilt it (#51baaf1d). Lift: drop this entry once root_grants --apply runs on every target after the us/asia release and the l1vm ingest is fixed."
-    },
-    {
-      "gate": "check:ci-budget-freshness",
-      "findings": [
-        "lane-durations:drift:job:test-e2e-workers"
-      ],
-      "reason": "The committed test-e2e-workers job p90 was measured on the 9-leg shape; 5f40baff7 split it to 11 legs, so the drift check compares a stale sample with the new plan. Only a lane-durations refresh from CI runs that measured the 11-leg job clears it, and the push produces those runs."
     }
   ]
 }
