@@ -122,7 +122,7 @@ export function isLoopback(ip: string): boolean {
   return /^(0*:){2,7}0*1$|^::1$|^::$/.test(ip.toLowerCase());
 }
 
-/** A connect to port 53 is a name lookup even on loopback: systemd-resolved (127.0.0.53), Docker's embedded resolver (127.0.0.11) and a local dnsmasq all forward upstream, so the verdict depends on the network (PLAN-two-track-merge-dev A1). */
+/** A connect to port 53 is a name lookup even on loopback: systemd-resolved (127.0.0.53), Docker's embedded resolver (127.0.0.11) and a local dnsmasq may each forward upstream (a dnsmasq can also answer from its hosts file or cache), and from the trace alone the two cannot be told apart, so the verdict is taken to depend on the network (PLAN-two-track-merge-dev A1). */
 const DNS_PORT = '53';
 
 /**
@@ -3429,13 +3429,17 @@ async function selftest(): Promise<number> {
   check(
     networkPeer(dnsLine('127.0.0.53')) === '127.0.0.53:53' &&
       networkPeer(dnsLine('127.0.0.11')) === '127.0.0.11:53' &&
+      networkPeer(dnsLine('0.0.0.0')) === '0.0.0.0:53' &&
+      networkPeer(
+        '3<socket:[1]>, {sa_family=AF_INET6, sin6_port=htons(53), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "::ffff:127.0.0.1", &sin6_addr), sin6_scope_id=0}, 28) = 0'
+      ) === '[::ffff:127.0.0.1]:53' &&
       networkPeer(
         '3<socket:[1]>, {sa_family=AF_INET6, sin6_port=htons(53), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "::1", &sin6_addr), sin6_scope_id=0}, 28) = 0'
       ) === '[::1]:53' &&
       networkPeer(
         '3<socket:[1]>, {sa_family=AF_INET, sin_port=htons(8787), sin_addr=inet_addr("127.0.0.1")}, 16) = 0'
       ) === undefined,
-    'a loopback resolver (127.0.0.53:53, 127.0.0.11:53, [::1]:53) is network, since it forwards upstream; CONTROL: 127.0.0.1:8787 is not'
+    'a loopback resolver (127.0.0.53:53, 127.0.0.11:53, 0.0.0.0:53, [::ffff:127.0.0.1]:53, [::1]:53) is network, since it forwards upstream; CONTROL: 127.0.0.1:8787 is not'
   );
   const fromRaw: Access = {
     files: new Set(['/r/a/one.txt']),
