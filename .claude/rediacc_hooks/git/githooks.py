@@ -165,14 +165,14 @@ def pr_freeze_refusal(msg: str, repo: str, branch: str, paths: list[str]) -> int
     """PLAN-two-track-merge-dev F1: while this branch is in its babysit or merge phase, only fix work lands (.claude/rediacc_hooks/pr_freeze.py). A lease is not judged here: it is detached, and its commits reach the branch through the lead's cherry-picks, which this hook judges then."""
     if not repo or not branch or cp.lease_root(repo):
         return 0
+    # FAILS CLOSED when the module itself is missing or broken (review 9188027d.1), as a broken commit_policy.py does through _load: a deleted freeze must not silently admit every commit. A loader error INSIDE pr_freeze.check (an unreadable store) still fails open there, with a note.
     try:
         freeze = _load("pr_freeze", HERE.parent / "pr_freeze.py")
     except (OSError, ImportError, SyntaxError) as exc:
-        sys.stderr.write(
-            "commit-policy: note: the PR freeze is not loaded (%s); the commit is not frozen\n"
+        return _refuse(
+            "the PR freeze module cannot be loaded (%s), so no commit can be judged; restore .claude/rediacc_hooks/pr_freeze.py."
             % exc
         )
-        return 0
     ok, reason = freeze.check(repo, CONSOLE_ROOT, branch, msg, paths)
     if not ok:
         return _refuse(reason)

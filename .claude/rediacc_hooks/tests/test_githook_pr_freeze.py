@@ -257,7 +257,8 @@ def test_an_unreadable_submodule_range_refuses_the_bump():
     )
 
 
-def test_a_missing_freeze_module_fails_open(monkeypatch, capsys, tmp_path):
+def test_a_missing_freeze_module_refuses(monkeypatch, capsys, tmp_path):
+    """Review 9188027d.1: a deleted or broken pr_freeze.py must not silently admit every commit."""
     gh = _githooks()
 
     def missing(_name, path):
@@ -265,5 +266,34 @@ def test_a_missing_freeze_module_fails_open(monkeypatch, capsys, tmp_path):
 
     monkeypatch.setattr(gh, "_load", missing)
     monkeypatch.setattr(gh.cp, "lease_root", lambda _repo: "")
-    assert gh.pr_freeze_refusal("feat(x): y", str(tmp_path), BRANCH, ["f.txt"]) == 0
-    assert "not loaded" in capsys.readouterr().err
+    assert gh.pr_freeze_refusal("fix(x): y", str(tmp_path), BRANCH, ["f.txt"]) != 0
+    assert "cannot be loaded" in capsys.readouterr().err
+
+
+def test_commit_msg_reaches_the_freeze(world, monkeypatch, capsys):
+    """Review 9188027d.2: commit_msg itself, not only pr_freeze_refusal, must refuse a frozen commit."""
+    repo, store = world
+    _phase(store)
+    gh = _githooks()
+    monkeypatch.chdir(repo)
+    monkeypatch.setattr(gh, "_repo", lambda: str(repo))
+    monkeypatch.setattr(gh, "CONSOLE_ROOT", repo)
+    msg = repo / "MSG"
+    msg.write_text("feat(ci): through commit_msg\n")
+    (repo / "f.txt").write_text("x\n")
+    _git(repo, "add", "f.txt")
+    assert gh.commit_msg([str(msg)]) != 0
+    assert "frozen" in capsys.readouterr().err
+    msg.write_text("fix(ci): through commit_msg\n")
+    assert gh.commit_msg([str(msg)]) == 0, "CONTROL: a fix passes the same path"
+
+
+def test_a_failed_git_log_reads_as_unreadable(world, tmp_path):
+    """Review 9188027d.4: a gitlink whose submodule is not checked out yields None, not an empty list."""
+    repo, _store = world
+    sub = tmp_path / "sub2"
+    subprocess.run(["git", "init", "-q", "-b", BRANCH, str(sub)], check=True)
+    _git(sub, *IDENT, "commit", "-q", "--allow-empty", "-m", "fix(x): base")
+    sha = _git(sub, "rev-parse", "HEAD").stdout.strip()
+    _git(repo, "update-index", "--add", "--cacheinfo", "160000,%s,private/ghost" % sha)
+    assert PF.gitlink_ranges(repo, ["private/ghost"]) == {"private/ghost": None}

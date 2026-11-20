@@ -199,7 +199,7 @@ class _RecordRe:
 
 
 def gitlink_ranges(repo, paths: list[str]) -> dict[str, list[str] | None]:
-    """{path: [subject...]} for each staged path that is a gitlink: the commits between HEAD's pointer and the staged one. None when the range cannot be read (the submodule is not checked out, a pointer is missing): unreadable is never read as empty (review a29977aa.1)."""
+    """{path: [subject...]} for each staged path that is a gitlink: the commits between HEAD's pointer and the staged one; a gitlink new at this commit (no pointer in HEAD) is judged by the whole history of the staged commit. None when `git log` cannot read the range (the submodule is not checked out, the staged commit is absent): unreadable is never read as empty (review a29977aa.1)."""
     out: dict[str, list[str] | None] = {}
     for path in paths:
         staged = _git(repo, "ls-files", "-s", "--", path).split()

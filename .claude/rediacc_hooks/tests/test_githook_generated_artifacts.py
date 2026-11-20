@@ -70,6 +70,7 @@ def _planted_hooks(dest: pathlib.Path) -> pathlib.Path:
     shutil.copytree(HOOKS, hooks, ignore=shutil.ignore_patterns("__pycache__"))
     shutil.copy2(HOOKS.parent / "commit_policy.py", hooks.parent / "commit_policy.py")
     shutil.copy2(HOOKS.parent / "syspath.py", hooks.parent / "syspath.py")
+    shutil.copy2(HOOKS.parent / "pr_freeze.py", hooks.parent / "pr_freeze.py")
     planted = hooks / "githooks.py"
     text = planted.read_text(encoding="utf-8")
     assert text.count(GD.PLANT_OLD) == 1, "the always-allow plant no longer applies"
