@@ -14,14 +14,29 @@ The freeze binds to the BRANCH, not the session, because a git hook has no sessi
 from __future__ import annotations
 
 import importlib
+import importlib.util
 import json
 import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
-STOP_DIR = HERE.parent / "hooks" / "stop"
+
+
+def _load_syspath():
+    """rediacc_hooks/syspath.py, the canonical `.claude` hop, loaded BY PATH: git/githooks.py loads this module by path too, as `pr_freeze`, so `from rediacc_hooks import syspath` would not resolve there."""
+    spec = importlib.util.spec_from_file_location("pr_freeze_syspath", HERE / "syspath.py")
+    if spec is None or spec.loader is None:
+        raise ImportError("%s is missing" % (HERE / "syspath.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+syspath = _load_syspath()
+STOP_DIR = syspath.STOP_DIR
 
 CC_RE = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]*)\))?!?:\s")
 ADMIT_TYPES = frozenset({"fix", "style", "test"})
@@ -129,19 +144,24 @@ def verdict(
 
 def _stop_modules():
     """wl_core, wl_standdown and wl_store from the Stop-hook directory, imported on first use (a commit with no phase pays nothing for them)."""
-    added = str(STOP_DIR) not in sys.path
-    if added:
-        sys.path.insert(0, str(STOP_DIR))
+    added = syspath.on_sys_path(str(STOP_DIR))
     try:
         return tuple(
             importlib.import_module(name)
             for name in ("wl_core", "wl_standdown", "wl_store", "wl_review")
         )[:3]
     finally:
-        if added:
+        if added and str(STOP_DIR) in sys.path:
             sys.path.remove(
                 str(STOP_DIR)
             )  # imported once; the path is not left behind for the caller (review a29977aa.3)
+
+
+def _worklist(core, root):
+    """`core.worklist_for(root)` without its side effect: worklist_for creates `<tmp>/claude-worklist`, and a commit in a scratch repository (the hook suites run under a private TMPDIR) must not leave that directory behind. With no directory there is no legacy event log to read, so a path inside it that does not exist reads as empty. The temp dir is tempfile's, which is TMPDIR first, as worklist_for's is."""
+    if (pathlib.Path(tempfile.gettempdir()) / "claude-worklist").is_dir():
+        return core.worklist_for(str(root))
+    return pathlib.Path(tempfile.gettempdir()) / "claude-worklist" / "absent.md"
 
 
 def active_phase(root, branch: str) -> dict | None:
@@ -149,8 +169,7 @@ def active_phase(root, branch: str) -> dict | None:
     if not branch:
         return None
     core, standdown, store = _stop_modules()
-    worklist = core.worklist_for(str(root))
-    fold = store.phase_fold(worklist, root)
+    fold = store.phase_fold(_worklist(core, root), root)
     best = None
     for ev in (fold.phase or {}).values():
         if not isinstance(ev, dict) or (ev.get("branch") or ev.get("br")) != branch:
@@ -168,17 +187,16 @@ def active_phase(root, branch: str) -> dict | None:
 def open_items(root) -> dict:
     """{id: record} for every item of the store (the full fold, paid only when a commit names focus-fix)."""
     core, _standdown, store = _stop_modules()
-    return dict(store.load(core.worklist_for(str(root)), sync=False).by_id)
+    return dict(store.load(_worklist(core, root), sync=False).by_id)
 
 
 def record_res(root) -> list:
     """The record-path globs of .ci/policy/record-paths.json, compiled in wl_review's dialect, minus each row's `except` globs."""
     _stop_modules()
     wl_review = sys.modules["wl_review"]
+    policy_path = syspath.import_from_ci("rediacc_ci.policy_paths").policy_path
 
-    doc = json.loads(
-        (pathlib.Path(root) / ".ci" / "policy" / "record-paths.json").read_text(encoding="utf-8")
-    )
+    doc = json.loads(policy_path("record-paths.json", root).read_text(encoding="utf-8"))
     out = []
     for row in doc.get("records") or []:
         glob = row.get("glob")
@@ -240,20 +258,18 @@ def check(repo, root, branch: str, msg: str, paths: list[str]) -> tuple[bool, st
         if phase is None:
             return True, ""
         core, _standdown, _store = _stop_modules()
+        ranges = gitlink_ranges(repo, paths)
+        # An unreadable range is None: verdict refuses it, so the focus-fix scan must not raise on it (a TypeError here failed the whole check open).
         items = (
             open_items(root)
             if FOCUS_FIX_RE.search(msg or "")
-            or any(
-                FOCUS_FIX_RE.search(s)
-                for subjects in gitlink_ranges(repo, paths).values()
-                for s in subjects
-            )
+            or any(FOCUS_FIX_RE.search(s) for subjects in ranges.values() for s in subjects or [])
             else {}
         )
         return verdict(
             msg,
             paths,
-            gitlink_ranges(repo, paths),
+            ranges,
             phase,
             items,
             record_res(root),

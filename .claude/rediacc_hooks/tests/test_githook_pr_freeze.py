@@ -36,8 +36,9 @@ if not ok:
 
 def _load():
     spec = importlib.util.spec_from_file_location("pr_freeze_under_test", PR_FREEZE)
-    mod = importlib.util.module_from_spec(spec)
+    assert spec is not None
     assert spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
 
@@ -226,8 +227,9 @@ def _githooks():
     spec = importlib.util.spec_from_file_location(
         "githooks_pr_freeze_under_test", HOOKS / "git" / "githooks.py"
     )
-    mod = importlib.util.module_from_spec(spec)
+    assert spec is not None
     assert spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
 
