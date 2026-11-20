@@ -2,7 +2,7 @@
 
 WHAT IT DECIDES. Four rules, each stated once here and enforced twice:
 
-  * ONE BRANCH. Each repository (the console and every submodule under `private/`) holds at most one live non-`main` local branch, named `MMDD-N`, and a submodule's branch carries the console's name. `branch_creations` finds every spelling of creating a branch in a Bash command; `live_branches` and `next_branch_name` answer whether that creation is allowed.
+  * ONE BRANCH. Each repository (the console and every submodule under `private/`) holds at most one live non-`main` local branch, named `MMDD-N`, and a submodule's branch carries the console's name. `branch_creations` finds every spelling of creating a branch in a Bash command; `live_branches` and `next_branch_name` answer whether that creation is allowed. A landing record (`landing_record`) binds the open PR's branch to a second, landing tree, and each tree then holds one live branch of its own (`tree_role`, `misplaced_branch`).
   * `[hotfix]` ON `main` ONLY. A commit on `main` must carry the tag at the end of its subject, a `Hotfix-Evidence:` trailer and at most `hotfix_max_files` paths (`hotfix_ok`). Off `main` the tag is refused, so the audit stays clean.
   * `[no-review]` ONLY ON WRITING. Every path must match `no_review_eligible` and none `no_review_denied` (`no_review_eligible`). The tag never rides a `[hotfix]` (operator ruling 1, 2026-09-25: hotfixes are always reviewed).
   * NO CI SKIP TOKENS in a commit an agent writes (`skip_tokens`). A skipped workflow leaves the required `CI Complete` check at "Expected" forever.
@@ -276,14 +276,127 @@ def remote_branch_present(repo_root: str, branch: str) -> bool:
     return branch in (out or "").split("\n")
 
 
+# --------------------------------------------------------------------------- the landing tree ---------------------------------------------------------------------------
+#
+# TWO TREES, ONE LIVE BRANCH EACH (agent/plans/PLAN-two-track-merge-dev.md, box LT1). A static linked worktree, the LANDING tree, holds the open PR's `MMDD-N` branch, and the main checkout, the DEVELOPMENT tree, holds the next one. The binding is one record in the COMMON git directory, so every tree of the repository reads the same file: `LANDING_RECORD_NAME` with exactly the keys of `LANDING_RECORD_KEYS`, `path` the landing tree's absolute realpath and `branch` its `MMDD-N` name. The landing verb writes it with `write_landing_record`.
+#
+# STRICT READING. A record that fails any check (unreadable, not a JSON object, a missing or extra key, a relative path, a branch off the shape, a path that is not a tree of this repository) binds nothing: `landing_record` answers None and `landing_record_problem` names the defect, so a guard can report it. A half-trusted record would hide a live branch from the one-branch rule. With no record the rule reads exactly as before the binding existed.
+
+LANDING_RECORD_NAME = "rediacc-landing.json"
+LANDING_RECORD_KEYS = ("path", "branch")
+ROLE_LANDING = "landing"
+ROLE_DEVELOPMENT = "development"
+
+
+def landing_record_path(repo_root: str) -> str:
+    """Where the record of `repo_root`'s repository lives (its common git dir), "" when git cannot say."""
+    common = common_dir(repo_root)
+    return os.path.join(common, LANDING_RECORD_NAME) if common else ""
+
+
+def read_landing_record(repo_root: str) -> tuple[dict[str, str] | None, str]:
+    """`(record, problem)`: the validated record and "", `(None, "")` when there is none, or `(None, <defect>)` when one exists and fails a check."""
+    where = landing_record_path(repo_root)
+    if not where or not os.path.lexists(where):
+        return None, ""
+    try:
+        with open(where, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, UnicodeDecodeError, ValueError) as exc:
+        return None, "%s is unreadable: %s" % (where, exc)
+    if not isinstance(data, dict) or sorted(data) != sorted(LANDING_RECORD_KEYS):
+        return None, "%s is not an object with exactly the keys %s" % (
+            where,
+            ", ".join(LANDING_RECORD_KEYS),
+        )
+    path, branch = data["path"], data["branch"]
+    if not isinstance(path, str) or not isinstance(branch, str):
+        return None, "%s holds a non-string path or branch" % where
+    if not os.path.isabs(path) or os.path.realpath(path) != path:
+        return None, "%s: path `%s` is not an absolute realpath" % (where, path)
+    if not BRANCH_SHAPE.match(branch):
+        return None, "%s: branch `%s` is not an MMDD-N name" % (where, branch)
+    if not os.path.isdir(path):
+        return None, "%s: path `%s` does not exist" % (where, path)
+    if common_dir(path) != common_dir(repo_root):
+        return None, "%s: path `%s` is not a tree of this repository" % (where, path)
+    return {"path": path, "branch": branch}, ""
+
+
+def landing_record(repo_root: str) -> dict[str, str] | None:
+    """The validated landing record of `repo_root`'s repository, None when there is none or it fails a check."""
+    return read_landing_record(repo_root)[0]
+
+
+def landing_record_problem(repo_root: str) -> str:
+    """Why an existing landing record binds nothing, "" when it is valid or absent."""
+    return read_landing_record(repo_root)[1]
+
+
+def write_landing_record(repo_root: str, path: str, branch: str) -> str:
+    """Bind the landing tree `path` to `branch` for `repo_root`'s repository and answer the record's path.
+
+    Raises ValueError on a branch off the shape, a path that is not a tree of this repository, or a repository git cannot place. The write is atomic (a sibling temporary file, then a rename), so a reader never sees half a record.
+    """
+    if not BRANCH_SHAPE.match(branch):
+        raise ValueError("branch `%s` is not an MMDD-N name" % branch)
+    real = os.path.realpath(path)
+    where = landing_record_path(repo_root)
+    if not where:
+        raise ValueError("no git repository at %s" % repo_root)
+    if not os.path.isdir(real) or common_dir(real) != common_dir(repo_root):
+        raise ValueError("`%s` is not a tree of this repository" % real)
+    temp = "%s.%d.tmp" % (where, os.getpid())
+    with open(temp, "w", encoding="utf-8") as handle:
+        json.dump({"path": real, "branch": branch}, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+    os.replace(temp, where)
+    return where
+
+
+def _tree_top(repo_root: str) -> str:
+    top = git(["rev-parse", "--show-toplevel"], cwd=repo_root, foreign=True) if repo_root else None
+    return os.path.realpath(top) if top else ""
+
+
+def _role(repo_root: str, record: dict[str, str] | None) -> str:
+    if record and _tree_top(repo_root) == record["path"]:
+        return ROLE_LANDING
+    return ROLE_DEVELOPMENT
+
+
+def tree_role(repo_root: str) -> str:
+    """`ROLE_LANDING` when `repo_root` sits in the tree the landing record binds, else `ROLE_DEVELOPMENT` (also with no valid record)."""
+    return _role(repo_root, landing_record(repo_root))
+
+
+def misplaced_branch(repo_root: str) -> str:
+    """The branch checked out in the wrong tree, "" when none: the record's branch in a development tree, or any other branch in the landing tree. A detached HEAD is never misplaced, and with no valid record nothing is."""
+    record = landing_record(repo_root)
+    if record is None:
+        return ""
+    current = current_branch(repo_root, foreign=True)
+    if not current:
+        return ""
+    if _role(repo_root, record) == ROLE_LANDING:
+        return current if current != record["branch"] else ""
+    return current if current == record["branch"] else ""
+
+
 def live_branches(repo_root: str, gh: bool = True) -> list[str]:
     """The live non-`main` local branches.
 
     A branch stops being live once its PR is MERGED or CLOSED, none is OPEN, AND its remote branch is gone (`gh=True`, raising `GhUnavailableError` when gh cannot answer). The last condition is box M6 of PLAN-plan-per-pr-loop (operator ruling 2026-10-02): the next `MMDD-N` is cut only after the previous PR merged and its branch was deleted, and "deleted" is read locally as no remote-tracking ref left for it (GitHub's delete-on-merge, then `git fetch --prune`). With `gh=False`, the git-level reading, the only local signal is an upstream that is configured and gone (`[gone]` after a prune), which is what a merged-and-deleted PR head leaves behind.
+
+    A VALID LANDING RECORD SPLITS THE SET BY TREE: in the landing tree only the record's branch can be live, and in a development tree every branch but the record's can, so each tree sees its own branch and a third one still counts where branches are cut. No record, or a defective one, leaves the set exactly as it was.
     """
+    record = landing_record(repo_root)
+    role = _role(repo_root, record)
     out = []
     for branch in local_branches(repo_root):
         if branch == "main":
+            continue
+        if record is not None and (branch == record["branch"]) != (role == ROLE_LANDING):
             continue
         if gh:
             states = _gh_lines(repo_root, [*GH_PR_STATES[:3], branch, *GH_PR_STATES[3:]])
