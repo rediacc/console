@@ -298,3 +298,75 @@ def test_usage_error_and_help(capsys):
     assert erd.main(["--bogus"]) == 2
     assert "usage:" in capsys.readouterr().err
     assert erd.main(["--help"]) == 0
+
+
+def _state() -> erd.State:
+    return erd.State(
+        stamp=STAMP,
+        address=ADDRESS,
+        since="2026-11-19T10:29:00",
+        dispute_id=DISPUTE,
+        session_id=SESSION,
+        event_ids=["evt_drill_1"],
+    )
+
+
+def test_the_leftover_proof_reads_every_clause_the_delete_removes_by():
+    """A contact notification row (To the contact list, body naming the drill address) that the delete missed must be found by the proof."""
+    st = _state()
+    delete = next(s for s in erd.cleanup_sql(st) if "captured_emails" in s)
+    proof = next(s for s in erd.leftover_sql(st) if "captured_emails" in s)
+    assert delete.removeprefix("DELETE FROM captured_emails WHERE ") == proof.removeprefix(
+        "SELECT recipient FROM captured_emails WHERE "
+    )
+    assert "%" + ADDRESS + "%" in proof
+    assert "%" + DISPUTE + "%" in proof
+
+
+class Late(Fake):
+    """The expected rows appear only on the Nth read of `captured_emails`."""
+
+    def __init__(self, appears_on: int) -> None:
+        super().__init__()
+        self.appears_on = appears_on
+        self.reads = 0
+        self.sleeps = 0
+
+    def rows(self, sql):
+        if sql.startswith("SELECT") and "FROM captured_emails" in sql and "created_at >= '" in sql:
+            self.reads += 1
+            if self.reads < self.appears_on:
+                return []
+        return super().rows(sql)
+
+
+def _late_deps(fake: Late) -> erd.Deps:
+    deps = fake.deps()
+    deps.sleep = lambda _s: setattr(fake, "sleeps", fake.sleeps + 1)
+    return deps
+
+
+def test_the_contact_poll_reads_again_after_its_last_sleep():
+    polls = int(erd.ALERT_WAIT_S / erd.ALERT_POLL_S)
+    fake = Late(appears_on=polls + 1)
+    ev = erd.Evidence()
+    st = _state()
+    erd._step_contact(_late_deps(fake), ev, st)
+    assert fake.sleeps == polls
+    assert fake.reads == polls + 1
+
+
+def test_the_contact_poll_still_fails_when_the_rows_never_come():
+    polls = int(erd.ALERT_WAIT_S / erd.ALERT_POLL_S)
+    fake = Late(appears_on=10**6)
+    with pytest.raises(erd.DrillError):
+        erd._step_contact(_late_deps(fake), erd.Evidence(), _state())
+    assert fake.reads == polls + 1
+
+
+def test_the_dispute_poll_reads_again_after_its_last_sleep():
+    last = int(erd.ALERT_WAIT_S / erd.ALERT_POLL_S) + 1
+    fake = Late(appears_on=last)
+    erd._step_dispute(_late_deps(fake), erd.Evidence(), HOOK_KEY, _state())
+    assert fake.reads == last
+    assert fake.sleeps == last - 1

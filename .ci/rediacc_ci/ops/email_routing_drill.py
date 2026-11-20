@@ -10,7 +10,7 @@ THE STEPS, each printing one evidence line `STEP <n> <name> rc=<rc> <detail>`:
   2  contact    `POST /contact/submit` from `drill+<stamp>@rediacc.io`; the notification row is From the contact sender, Reply-To the drill address, `[Contact bench] ...`, To the contact list; the confirmation row is From the transactional sender with Reply-To the contact list.
   3  dispute    A signed `charge.dispute.created`; a row From the alerts sender, `[System bench] ...`, To the alerts list, appears within 60 s.
   4  checkout   A signed `checkout.session.expired`; no row names the session before the digest run (it was queued, not sent).
-  5  digest     The root session calls `POST /admin/alert-digest/run`; the answer counts at least one item and exactly one `Daily digest` row names the session.
+  5  digest     The root session calls `POST /admin/alert-digest/run`; the answer counts at least one item and exactly one `Daily digest` row names the session. A 403 `TERMS_REQUIRED` answer makes the drill accept the current terms for the bench root account (`POST /portal/terms/accept`, web-checkbox) and run the digest again: the bench root is the drill's own account, and the consent is recorded in the bench D1 only.
   6  rerun      The digest again: the answer counts 0 and no second digest row exists.
   7  cleanup    Always runs. Deletes the contact submission, the webhook markers, the digest items and every captured row this run made, and proves none is left.
 
@@ -50,11 +50,11 @@ CLOCK_SKEW_S = 60
 ALERT_WAIT_S = 60.0
 ALERT_POLL_S = 3.0
 HOOK_KEY_ENV = "STRIPE_SANDBOX_WEBHOOK_SECRET"
-CONTACT_FROM = "contact@notify.rediacc.cloud"
-ALERTS_FROM = "alerts@notify.rediacc.cloud"
+CONTACT_FROM = deploy_bench.DEFAULT_CONTACT_FROM
+ALERTS_FROM = deploy_bench.DEFAULT_ALERTS_FROM
 NOREPLY_FROM = NOTIFY_NOREPLY_EMAIL
 CONTACT_TO = CONTACT_EMAIL
-ALERTS_TO = "alerts@rediacc.io"
+ALERTS_TO = deploy_bench.DEFAULT_ALERTS_NOTIFY
 CONTACT_PREFIX = "[Contact bench] "
 SYSTEM_PREFIX = "[System bench] "
 DIGEST_MARK = "Daily digest"
@@ -314,7 +314,7 @@ class Deps:
 
 
 def _mails(d: Deps, st: State) -> list[dict]:
-    """Every captured row of this run: to the drill address, to either list, or naming the stamp, the dispute or the session."""
+    """Every captured row of this run: to the drill address, or whose body or subject names the drill address, the dispute, the session or the digest mark. A row to the contact or alerts list that names none of them is not captured here."""
     return d.rows(
         q(
             "SELECT recipient, kind, subject, text_body, from_address, reply_to, created_at "
@@ -358,10 +358,11 @@ def _step_contact(d: Deps, ev: Evidence, st: State) -> None:
         raise DrillError("the contact submission was refused")
     bad: list[str] = []
     mails: list[dict] = []
-    for _ in range(int(ALERT_WAIT_S / ALERT_POLL_S)):
+    polls = int(ALERT_WAIT_S / ALERT_POLL_S)
+    for attempt in range(polls + 1):
         mails = _mails(d, st)
         bad = contact_checks(mails, st.address)
-        if not bad:
+        if not bad or attempt == polls:
             break
         d.sleep(ALERT_POLL_S)
     ev.add(
@@ -378,9 +379,9 @@ def _step_dispute(d: Deps, ev: Evidence, secret: str, st: State) -> None:
         raise DrillError("the dispute webhook was refused")
     waited = 0.0
     bad: list[str] = ["no row yet"]
-    while waited <= ALERT_WAIT_S:
+    while True:
         bad = dispute_checks(_mails(d, st), st.dispute_id)
-        if not bad:
+        if not bad or waited >= ALERT_WAIT_S:
             break
         d.sleep(ALERT_POLL_S)
         waited += ALERT_POLL_S
@@ -484,6 +485,24 @@ def _step_rerun(d: Deps, ev: Evidence, st: State, jar: str) -> None:
         raise DrillError("the second digest run mailed again")
 
 
+# The rows this run captured, one clause for the delete and for the proof that none is left, so the proof reads exactly what the delete removes.
+CAPTURED_WHERE = (
+    "created_at >= $since AND (recipient = $a OR text_body LIKE $s OR text_body LIKE $d "
+    "OR subject LIKE $d OR text_body LIKE $c)"
+)
+
+
+def _captured_clause(st: State) -> str:
+    return q(
+        CAPTURED_WHERE,
+        since=sql_literal(st.since),
+        a=sql_literal(st.address),
+        s=sql_literal("%" + st.address + "%"),
+        d=sql_literal("%" + st.dispute_id + "%"),
+        c=sql_literal("%" + st.session_id + "%"),
+    )
+
+
 def cleanup_sql(st: State) -> list[str]:
     """Deletes of everything this run adds, each bounded by the run's own identifiers and `created_at >= since`."""
     events = ", ".join(sql_literal(e) for e in st.event_ids) or "''"
@@ -495,15 +514,7 @@ def cleanup_sql(st: State) -> list[str]:
             c=sql_literal("%" + st.session_id + "%"),
             d=sql_literal("%" + st.dispute_id + "%"),
         ),
-        q(
-            "DELETE FROM captured_emails WHERE created_at >= $since AND (recipient = $a "
-            "OR text_body LIKE $s OR text_body LIKE $d OR subject LIKE $d OR text_body LIKE $c)",
-            since=sql_literal(st.since),
-            a=sql_literal(st.address),
-            s=sql_literal("%" + st.address + "%"),
-            d=sql_literal("%" + st.dispute_id + "%"),
-            c=sql_literal("%" + st.session_id + "%"),
-        ),
+        q("DELETE FROM captured_emails WHERE $clause", clause=_captured_clause(st)),
     ]
 
 
@@ -517,14 +528,7 @@ def leftover_sql(st: State) -> list[str]:
             "SELECT id FROM alert_digest_items WHERE body LIKE $c",
             c=sql_literal("%" + st.session_id + "%"),
         ),
-        q(
-            "SELECT recipient FROM captured_emails WHERE created_at >= $since AND (recipient = $a "
-            "OR text_body LIKE $c OR subject LIKE $d)",
-            since=sql_literal(st.since),
-            a=sql_literal(st.address),
-            c=sql_literal("%" + st.session_id + "%"),
-            d=sql_literal("%" + st.dispute_id + "%"),
-        ),
+        q("SELECT recipient FROM captured_emails WHERE $clause", clause=_captured_clause(st)),
     ]
 
 

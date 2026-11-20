@@ -35,10 +35,22 @@ def go(script: Script, fb: list[int], **kw: typing.Any) -> apt_retry.Outcome:
     )
 
 
-def test_first_try_success_is_silent_control() -> None:
+def test_first_try_success_is_silent_control(capsys: pytest.CaptureFixture[str]) -> None:
     fb: list[int] = []
     out = go(Script(0), fb)
     assert (out.attempts, out.fell_back, fb) == (1, False, [])
+    assert capsys.readouterr().out == ""
+
+
+def test_a_failed_fallback_is_not_reported_as_used() -> None:
+    t = subprocess.TimeoutExpired("apt-get", 1)
+    out = apt_retry.run_with_retry(
+        ["apt-get", "install", "x"],
+        runner=Script(t, t, 0),
+        sleep=lambda _s: None,
+        fallback=lambda: False,
+    )
+    assert (out.attempts, out.fell_back) == (3, False)
 
 
 def test_retry_then_success() -> None:

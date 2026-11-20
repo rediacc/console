@@ -405,8 +405,10 @@ def _feed_node_stub(tmp_path, rows: list[dict], *, after_exit: bool, timeout_s: 
         killed = threading.Event()
 
         def _kill() -> None:
-            killed.set()
-            proc.kill()
+            # A stub that already exited is not a hung one: a Timer firing between its clean exit and `cancel` must not turn that exit into "KILLED".
+            if proc.poll() is None:
+                killed.set()
+                proc.kill()
 
         watchdog = threading.Timer(timeout_s, _kill)
         watchdog.start()
@@ -464,6 +466,9 @@ def test_a_stub_that_never_exits_is_killed_by_the_watchdog_not_waited_on(
         def wait(self) -> int:
             self.killed.wait()
             return -9
+
+        def poll(self) -> int | None:
+            return -9 if self.killed.is_set() else None
 
         def kill(self) -> None:
             self.killed.set()

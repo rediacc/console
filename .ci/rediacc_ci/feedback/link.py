@@ -470,7 +470,7 @@ def run(opts: Options, deps: Deps | None = None) -> int:
         :CANDIDATES_MAX
     ]
     truncated = len(cands) - len(entries)
-    if truncated > 0:
+    if truncated > 0 and plans:
         log.warn(
             "link: %d open fingerprint(s) beyond the first %d are not offered to any plan this run"
             % (truncated, CANDIDATES_MAX)

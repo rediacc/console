@@ -1726,7 +1726,10 @@ def test_delta_79b7e92e_root_gets_a_partner_org_in_the_dev_logins(monkeypatch, c
     body = raw.decode() if isinstance(raw, bytes) else str(raw)
     assert '"orgName":"Root partner (dev)"' in body
     assert account_lifecycle.DEFAULT_ROOT_EMAIL in body
-    assert "root also has a partner org" in out
+    root_line = next(ln for ln in out.splitlines() if "root also has a partner org" in ln)
+    assert "customer/partner/admin" in root_line, "the banner names the areas root can open"
+    assert len(root_line) == 69, "the closing bar stays in its column"
+    assert root_line.endswith("│")
 
 
 def test_delta_3a8d1f46_the_rustfs_keys_reach_docker_through_its_environment(

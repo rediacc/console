@@ -1600,6 +1600,9 @@ PIN_IMAGE = "devcontainer"
         json.dumps({"image": PIN_IMAGE + ":latest", "digest": GOOD_DIGEST, "stage": "full"}),
         json.dumps({"image": PIN_IMAGE, "digest": GOOD_DIGEST}),
         json.dumps({"image": "", "digest": GOOD_DIGEST, "stage": "full"}),
+        json.dumps(
+            {"image": "ghcr.io/rediacc/devcontainer", "digest": GOOD_DIGEST, "stage": "full"}
+        ),
     ],
 )
 def test_a_malformed_pin_refuses_loudly(body: str, tmp_path: pathlib.Path) -> None:

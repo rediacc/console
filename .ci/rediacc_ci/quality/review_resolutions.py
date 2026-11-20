@@ -164,7 +164,8 @@ def judge(records: Iterable[review_table.Record], block_at: str) -> Verdict:
             elif kind == "waived":
                 v.waived.append(row)
             elif kind == "open" and (
-                f.klass == SECURITY_CLASS or SEV_RANK.get(f.severity, SEV_RANK["high"]) >= rank
+                f.klass.strip().lower() == SECURITY_CLASS
+                or SEV_RANK.get(f.severity, SEV_RANK["high"]) >= rank
             ):
                 v.blocking.append(row)
             elif not kind:
@@ -570,6 +571,12 @@ def selftest() -> int:
         len(verdict(_finding("low", "open", klass="security")).blocking),
         1,
     )
+    for spelled in ("Security", "SECURITY"):
+        ctl.check(
+            "rule ii: an open low finding whose Class line reads %r still refuses" % spelled,
+            len(verdict(_finding("low", "open", klass=spelled)).blocking),
+            1,
+        )
     ctl.check(
         "rule ii control: an open low other finding is advisory",
         verdict(_finding("low", "open", klass="other")).refusals,

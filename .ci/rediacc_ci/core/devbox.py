@@ -161,6 +161,7 @@ def image_pin(path: str) -> str:
         not isinstance(image, str)
         or not _PIN_IMAGE.fullmatch(image)
         or ":" in image
+        or "." in image.split("/", 1)[0]
         or not isinstance(digest, str)
         or not _PIN_DIGEST.fullmatch(digest)
         or not isinstance(stage, str)

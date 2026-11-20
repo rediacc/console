@@ -30,9 +30,9 @@ class Outcome:
     fell_back: bool
 
 
-def system_fallback() -> None:
-    """Re-point apt at the global archive as root; a no-op off GitHub-hosted runners (apt_mirror decides)."""
-    subprocess.run(
+def system_fallback() -> bool:
+    """Re-point apt at the global archive as root; a no-op off GitHub-hosted runners (apt_mirror decides). False when the re-point command failed, so the caller does not report a fallback that never happened."""
+    done = subprocess.run(
         [
             "sudo",
             "--preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT",
@@ -44,6 +44,13 @@ def system_fallback() -> None:
         ],
         check=False,
     )
+    if done.returncode != 0:
+        print(
+            f"apt-retry: the mirror fallback exited {done.returncode}; apt was not re-pointed",
+            flush=True,
+        )
+        return False
+    return True
 
 
 def run_with_retry(
@@ -54,7 +61,7 @@ def run_with_retry(
     backoff: float = DEFAULT_BACKOFF_S,
     runner: typing.Callable[..., typing.Any] = subprocess.run,
     sleep: typing.Callable[[float], None] = time.sleep,
-    fallback: typing.Callable[[], None] = system_fallback,
+    fallback: typing.Callable[[], bool | None] = system_fallback,
     **run_kw: typing.Any,
 ) -> Outcome:
     """Run `cmd` until it exits 0; raise AptRetryError naming the last error after `attempts` failures."""
@@ -69,8 +76,7 @@ def run_with_retry(
                 f"apt-retry: a mirror stalled; falling back before attempt {n}/{attempts}",
                 flush=True,
             )
-            fallback()
-            fell_back = True
+            fell_back = fallback() is not False
         try:
             done = runner(cmd, check=False, timeout=timeout, **run_kw)
         except subprocess.TimeoutExpired:

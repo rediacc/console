@@ -225,7 +225,7 @@ def _parse_bench_partner(doc: Mapping[str, Any]) -> Mapping[str, Any] | None:
 
 
 def parse_config(doc: object, regions: Sequence[Mapping[str, Any]]) -> Config:
-    """The config, refused with rc 2 naming the key: a kind other than edge or bench (stable and any enterprise config by name), a region regions.json lacks, a bench region whose `bench.deployable` is not true, a data_region unlike its region, a plan outside the admin enum, a tier outside the tier enum, a partner_role other than admin."""
+    """The config, refused with rc 2 naming the key: a kind other than edge or bench (stable and any enterprise config by name), a region regions.json lacks, a bench region whose `bench.deployable` is not true, a data_region unlike its region, a plan outside the admin enum, a tier outside the tier enum, a partner_role other than admin, and a bench_test_partner target that is an edge or unknown target."""
     if not isinstance(doc, dict):
         raise RefusedError("root-grants config: the document is not an object")
     if doc.get("version") != 1:

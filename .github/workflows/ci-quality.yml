@@ -2079,7 +2079,7 @@ jobs:
       # LABEL-HELD gate say so out loud. A region above them would reorder the restore
       # behind gates that follow it.
       #
-      # NO EXCEPTIONS IN THIS LANE. All eight emitted gates carry the standard guard and a
+      # NO EXCEPTIONS IN THIS LANE. Every emitted gate carries the standard guard and a
       # single-line run, checked before the region was placed -- unlike quality-security,
       # where `Audit` had to be held out for an `if:` condition and an `env:` a generated
       # step cannot express.
