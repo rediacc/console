@@ -129,10 +129,11 @@ First close the loopback-DNS hole: a `connect` to port 53 counts as network what
   Depends on: none.
   Accept: `npx tsx scripts/ci-runner/run.ts --selftest` rc 0 with the cheap-prerequisite control listed; the mutant run is red.
     (ticked) 2026-11-20T11:41:05Z by d778be9d: commit:62c5e6733 cheapPrereqFirst in scripts/ci-runner/pool.ts:1101 with scripts/ci-runner/learned-selftest.ts:345 cases; mutant (comparator multiplied by 0): npx tsx scripts/ci-runner/run.ts --selftest rc 1, "a cheap prerequisite is admitted first" failing in slots/today and slots/learned; restored rc 0, 697 assertions
-- [ ] C1 [writer] Implement D3: pass a `critical` flag from the rank's pinned set and the runner's critical-path computation into the grant; scripts/ci-runner/exec.ts prefixes `nice -n 10` for non-critical gates where `wrapped` is true, and the receipt records the priority each gate ran at.
+- [x] C1 [writer] Implement D3: pass a `critical` flag from the rank's pinned set and the runner's critical-path computation into the grant; scripts/ci-runner/exec.ts prefixes `nice -n 10` for non-critical gates where `wrapped` is true, and the receipt records the priority each gate ran at.
   Owns: scripts/ci-runner/exec.ts, scripts/ci-runner/rank.ts, scripts/ci-runner/run.ts, scripts/ci-runner/learned-selftest.ts
   Depends on: C0.
   Accept: `npx tsx scripts/ci-runner/run.ts --selftest` rc 0 with two new controls (the argv for a non-pinned gate carries the nice prefix and a pinned one does not; a mutant dropping the flag is red), a simulator case in scripts/ci-runner/learned-selftest.ts showing a pinned single-core gate's simulated end improving under saturation, and the selected-set equality check (same ids with and without priority) green.
+    (ticked) 2026-11-20T12:00:22Z by d778be9d: commit:7faaba292 gateSpawnArgv (scripts/ci-runner/exec.ts:40) nices non-pinned gates, receipt records niceness; npx tsx scripts/ci-runner/run.ts --selftest rc 0 (704 assertions) with the argv controls and a live +10 nice check, mutant dropping the flag rc 1; simulator case at scripts/ci-runner/sim.ts:654 (pinned one-core gate 100 s vs 200 s under 2x saturation; same gates and grants), mutant ignoring niceness rc 1. The simulator case sits in sim.ts beside the engine, whose simulate() is module-private, not in learned-selftest.ts
 
 ### prose-style and account-server
 
@@ -141,10 +142,11 @@ First close the loopback-DNS hole: a `connect` to port 53 counts as network what
   Depends on: none.
   Accept: `.ci/scripts/quality/check_prose_style.py --selftest` rc 0 with new controls CONTENT (warm cache, a file edited to add an R-rule hit, the new finding fires), RULES (warm cache, a rule's pattern changed in a temporary rules file, the finding set changes) and MOVE (a planted stub chain re-keys ident with the cache warm), each with a mutant that drops its key part and goes red in the pytest file; `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_quality_prose_style.py` rc 0; on the live tree, cold and warm `npm run -s check:ci-prose-style` print the same verdict line and baselined count, warm wall recorded.
     (ticked) 2026-11-20T11:01:51Z by d778be9d: commit:4525b5203 (+ review fixes 9cb0191b6 e648197c3 0fdb501a2): run_check per-file content cache, lint_text optional lines/note; npm run -s check:ci-prose-style 40.6 s cold -> 0.56 s warm, same verdict rc 0; PYTHONPATH=.ci pytest test_quality_prose_style.py 281 passed rc 0
-- [ ] A1 [writer] Close the loopback-DNS hole: `networkPeer` returns `ip:53` for any connect to port 53, loopback included (scripts/ci-runner/path-trace.ts:128-140); trace-honest inherits it.
+- [x] A1 [writer] Close the loopback-DNS hole: `networkPeer` returns `ip:53` for any connect to port 53, loopback included (scripts/ci-runner/path-trace.ts:128-140); trace-honest inherits it.
   Owns: scripts/ci-runner/path-trace.ts, scripts/ci-runner/trace-honest.ts
   Depends on: none (it lands in the runner batch with C0 and C1).
   Accept: `npx tsx scripts/ci-runner/path-trace.ts --selftest` rc 0 with new cases `127.0.0.53:53`, `127.0.0.11:53` and `[::1]:53` classed as network and `127.0.0.1:8787` still not; a mutant restoring the old loopback rule turns the 127.0.0.53 case red; `npx tsx scripts/ci-runner/trace-honest.ts --selftest` rc 0.
+    (ticked) 2026-11-20T11:52:40Z by d778be9d: commit:5b4d28538 networkPeer classes any port-53 connect as network (scripts/ci-runner/path-trace.ts:126); npx tsx scripts/ci-runner/path-trace.ts --selftest 159/159 rc 0 with 127.0.0.53:53, 127.0.0.11:53, [::1]:53 network and 127.0.0.1:8787 not; mutant restoring the old loopback rule 158/159 rc 1; npx tsx scripts/ci-runner/trace-honest.ts --selftest 59/59 rc 0
 - [ ] A0 [lead] Find who resolves a name during check:ci-account-server: run `strace -f -e trace=connect -s 256` on `npm run check:ci-account-server` with `/proc/<pid>/cmdline` mapping, and name the process, the hostname and the call site.
   Owns: none -- investigation.
   Depends on: A1.
