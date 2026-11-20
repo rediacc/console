@@ -967,7 +967,11 @@ export function planAdmission(
     }
     return {
       byId,
-      rank: withOrder((a, b) => expected(b) - expected(a) || byPosition(a, b), opts.order),
+      rank: cheapPrereqFirst(
+        specs,
+        byId,
+        withOrder((a, b) => expected(b) - expected(a) || byPosition(a, b), opts.order)
+      ),
     };
   }
 
@@ -1080,12 +1084,35 @@ export function planAdmission(
   );
   return {
     byId,
-    rank: withOrder(
-      (a, b) => (priority.get(b.id) ?? 0) - (priority.get(a.id) ?? 0) || byPosition(a, b),
-      opts.order
+    rank: cheapPrereqFirst(
+      specs,
+      byId,
+      withOrder(
+        (a, b) => (priority.get(b.id) ?? 0) - (priority.get(a.id) ?? 0) || byPosition(a, b),
+        opts.order
+      )
     ),
   };
 }
+
+/**
+ * A CHEAP PREREQUISITE GOES FIRST, over any order and under either rule: a gate other gates in this run need, costing at most CHEAP_PREREQ_CPU_MS of cpu. build:packages (1.7 s wall at 2.4 cores, needed by 20 gates) waited 1,113-1,514 s for cores behind check:ci-pytest's grant in four ci:quick runs on 2026-11-20 and added 50-250 s of tail; admitting it first costs the big gate about two cores for two seconds. A costly prerequisite (build:www, ~75 core-s) keeps its place, since it would take cores from the critical path for longer than it saves.
+ */
+function cheapPrereqFirst(
+  specs: readonly GateSpec[],
+  byId: Map<string, Candidate>,
+  inner: (a: GateSpec, b: GateSpec) => number
+): (a: GateSpec, b: GateSpec) => number {
+  const needed = new Set(specs.flatMap((spec) => spec.needs ?? []));
+  const cheap = (id: string): number =>
+    needed.has(id) && (byId.get(id)?.cpuMs ?? Number.POSITIVE_INFINITY) <= CHEAP_PREREQ_CPU_MS
+      ? 1
+      : 0;
+  return (a, b) => cheap(b.id) - cheap(a.id) || inner(a, b);
+}
+
+/** The cpu bound under which a prerequisite is admitted ahead of everything (see the rank above): 30 core-s, well above build:packages' measured 4 core-s and well below build:www's 75. */
+export const CHEAP_PREREQ_CPU_MS = 30_000;
 
 function mustGet(byId: Map<string, GateSpec>, id: string): GateSpec {
   const spec = byId.get(id);
