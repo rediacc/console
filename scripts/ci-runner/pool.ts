@@ -127,6 +127,8 @@ export interface GateResult {
   timedOutMs?: number;
   /** The gate launched into measured idle cores rather than the budget (`reclaimableCores`); the cores it was told. The footer names every one. */
   borrowed?: number;
+  /** The nice value the gate launched at (exec.ts gateSpawnArgv); absent when the executor did not report one. */
+  niceness?: number;
 }
 
 /**
@@ -1447,6 +1449,7 @@ export async function runPool(
       overLease: overLease.get(id),
       timedOutMs: outcome.timedOutMs,
       borrowed: settled?.gate.borrowed,
+      niceness: outcome.niceness,
     });
     if (failed && opts.failFast) stopped = true;
   }

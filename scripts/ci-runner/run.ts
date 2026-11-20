@@ -48,6 +48,8 @@ import {
   execGate,
   type Grant,
   gateEnv,
+  gateSpawnArgv,
+  NONCRITICAL_NICE,
   killLiveGates,
   LEASE_HELD_ENV,
   liveGates,
@@ -1537,6 +1539,45 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
   require_(!processAlive(zPid), 'processAlive must call an exited, unreaped child (a zombie) dead');
   require_(processAlive(process.pid), 'processAlive must call a running process alive');
   require_(!processAlive(Number.NaN), 'processAlive must refuse a pid that is not a number');
+  // D3 (PLAN-two-track-merge-dev C1): a gate off the critical path launches niced, a pinned one at base priority.
+  const offPath = gateSpawnArgv('true', true, false);
+  const onPath = gateSpawnArgv('true', true, true);
+  require_(
+    offPath.cmd === 'nice' &&
+      offPath.args.slice(0, 3).join(' ') === `-n ${NONCRITICAL_NICE} bash` &&
+      offPath.niceness === NONCRITICAL_NICE,
+    `a non-pinned gate's argv must carry the nice prefix, got ${offPath.cmd} ${offPath.args.slice(0, 3).join(' ')}`
+  );
+  require_(
+    onPath.cmd === 'bash' &&
+      onPath.niceness === 0 &&
+      gateSpawnArgv('true', true, undefined).cmd === 'bash' &&
+      gateSpawnArgv('true', false, false).cmd === 'bash',
+    'CONTROL: a pinned gate, a run with ranking off and an unwrapped spawn keep base priority'
+  );
+  require_(
+    criticalOf({ on: true, order: { pinned: new Set(['a']) } }, 'a') === true &&
+      criticalOf({ on: true, order: { pinned: new Set(['a']) } }, 'b') === false &&
+      criticalOf({ on: false }, 'a') === undefined &&
+      criticalOf(undefined, 'a') === undefined,
+    'criticalOf: pinned is critical, unpinned is not, ranking off decides nothing'
+  );
+  const niceSpec = {
+    id: 'selftest:nice',
+    run: 'nice',
+    heavy: false,
+    needs: [],
+  } as unknown as GateSpec;
+  const [base, niced] = await Promise.all([
+    execGate(niceSpec, { cwd: REPO_ROOT, mergeOutput: false, critical: true }),
+    execGate(niceSpec, { cwd: REPO_ROOT, mergeOutput: false, critical: false }),
+  ]);
+  require_(
+    Number(niced.stdout.trim()) - Number(base.stdout.trim()) === NONCRITICAL_NICE &&
+      niced.niceness === NONCRITICAL_NICE &&
+      base.niceness === 0,
+    `a non-critical gate must run ${NONCRITICAL_NICE} nice levels below a critical one, got ${base.stdout.trim()} and ${niced.stdout.trim()}`
+  );
   require_(
     psFailureState({ status: 1, stdout: '', stderr: '' }) === 'Z',
     "psFailureState: ps's quiet exit 1 means no such process, so the pid is gone"
@@ -3514,6 +3555,8 @@ interface Receipt {
   slowAdmitted: string[];
   /** `{gate id: cores}` the pool granted each gate it launched, the CI_RUNNER_CORES its process saw. Diagnostic. Always written. */
   grantedCores: Record<string, number>;
+  /** `{gate id: nice value}` each launched gate ran at (PLAN-two-track-merge-dev D3: 0 on the critical path, NONCRITICAL_NICE off it). Diagnostic; the guard does not read it. Absent on a receipt written before 2026-11-20. */
+  niceness?: Record<string, number>;
   /** `{gate id: {ready, start, end, cores}}` in ms from the run's start, every launched gate (report.ts timelineOf). Diagnostic; the guard does not read it. Always written on a fresh run; absent on a receipt written before 2026-10-06. */
   timeline?: Record<string, GateTiming>;
   /**
@@ -4472,6 +4515,20 @@ async function listUnits(lane: string | undefined): Promise<number> {
 }
 
 /** `{gate id: cores granted}` for every gate that launched; the receipt's `grantedCores`. */
+/** D3: a gate is critical when ranking is on and the rank pinned it (the long-chain gates); with ranking off every gate keeps base priority (undefined). */
+export function criticalOf(
+  ranking: { on: true; order: { pinned: ReadonlySet<string> } } | { on: false } | undefined,
+  id: string
+): boolean | undefined {
+  return ranking?.on ? ranking.order.pinned.has(id) : undefined;
+}
+
+function nicenessOf(results: readonly GateResult[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const r of results) if (r.niceness !== undefined) out[r.id] = r.niceness;
+  return out;
+}
+
 function grantsOf(results: readonly GateResult[]): Record<string, number> {
   const out: Record<string, number> = {};
   for (const r of results) if (r.grantedCores !== undefined) out[r.id] = r.grantedCores;
@@ -4746,6 +4803,7 @@ async function runGraph(
             ...PROFILE_OPTS,
             grant,
             timeoutMs: limits.get(spec.id),
+            critical: criticalOf(ranking, spec.id),
           })
         ),
       // Start lines under --json too, where they go to stderr: a serial capture otherwise shows nothing between the plan and the end, and a hang cannot be told from a slow gate.
@@ -5909,6 +5967,7 @@ async function main(): Promise<number> {
         pushBase: selection.pushBase ?? null,
         slowAdmitted: selection.slowAdmitted ?? [],
         grantedCores: grantsOf(results),
+        niceness: nicenessOf(results),
         timeline: timelineOf(results, startedAt),
         advances: [],
       },
