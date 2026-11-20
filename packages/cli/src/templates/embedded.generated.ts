@@ -635,7 +635,7 @@ down() {
 `,
       'docker-compose.yml': `services:
   app:
-    image: nginx:1.31.1-alpine
+    image: nginx:1.31.9-alpine
     container_name: app
     env_file:
       - path: secrets.env

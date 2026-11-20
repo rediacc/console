@@ -119,7 +119,9 @@ RUN set -e; \
 # =============================================================================
 FROM ${NODE_IMAGE} AS runtime-base
 
-RUN apk add --no-cache nginx coreutils
+# nginx>=1.30.7 carries the nginx2root fixes (CVE-2026-123007 and siblings);
+# the floor refuses a stale Alpine base instead of shipping the vulnerable build.
+RUN apk add --no-cache 'nginx>=1.30.7' coreutils
 
 # Marketing site (root)
 COPY ./www-assets/         /usr/share/nginx/html/
