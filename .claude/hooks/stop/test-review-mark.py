@@ -287,6 +287,22 @@ control(
     "is not a test path" in (mark_with_test(repo, reviewed, fix, "tool/host.ts") or ""),
     True,
 )
+repo, reviewed, fix = selftest_host_fixture(
+    "ref-host-bak", True, "SUBJECT = 'tool/host.ts.bak'  # selftest"
+)
+control(
+    "CONTROL: a test naming the full path with a suffix (tool/host.ts.bak): refused",
+    "is not a test path" in (mark_with_test(repo, reviewed, fix, "tool/host.ts") or ""),
+    True,
+)
+repo, reviewed, fix = selftest_host_fixture(
+    "ref-host-full", True, "SUBJECT = 'tool/host.ts'  # selftest"
+)
+control(
+    "a test naming the full path: --test accepted",
+    mark_with_test(repo, reviewed, fix, "tool/host.ts"),
+    None,
+)
 control(
     "normalised stem: numeric prefix and dashes",
     R.related_test("tests/partner-customer-org.test.ts", "db/0090_partner_customer_org.sql"),

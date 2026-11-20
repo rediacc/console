@@ -3334,7 +3334,7 @@ def is_test_path(path):
 
 
 def is_selftest_host(repo, rev, path):
-    """True for a file whose own `--selftest` mode is its test suite and that a tracked test already runs, both judged at `rev`, the reviewed commit, so a fix cannot make its own file a test host by adding the text (scripts/pins/pins.ts, run by tests/gates/test_gate_pin_cli.py through paths.from_root). The test must name the file as a whole token: its basename quoted or after a path separator, or its full path."""
+    """True for a file whose own `--selftest` mode is its test suite and that a tracked test already runs, both judged at `rev`, the reviewed commit, so a fix cannot make its own file a test host by adding the text (scripts/pins/pins.ts, run by tests/gates/test_gate_pin_cli.py through paths.from_root). The test must name the file as a whole token: its basename quoted, after whitespace or after a path separator (so a full path matches too), and never as the prefix of a longer name such as host.ts.bak."""
     rc, text = git(repo, "show", "%s:%s" % (rev, path))
     if rc != 0 or "--selftest" not in text:
         return False
@@ -3348,7 +3348,7 @@ def is_selftest_host(repo, rev, path):
         if name == path or not is_test_path(name):
             continue
         rc, body = git(repo, "show", "%s:%s" % (rev, name))
-        if rc == 0 and "selftest" in body and (path in body or token.search(body)):
+        if rc == 0 and "selftest" in body and token.search(body):
             return True
     return False
 
