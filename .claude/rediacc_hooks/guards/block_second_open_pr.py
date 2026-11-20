@@ -380,14 +380,29 @@ def _ready_target(selector, root, rows):
     return commit_policy.current_branch(root)
 
 
+def _session_record(cwd):
+    """The landing record of the console checkout the session `cwd` sits in (its superproject when `cwd` is a submodule checkout), None when it binds none."""
+    top = commit_policy.toplevel(cwd or os.getcwd())
+    if not top:
+        return None
+    return _landing_record(commit_policy.superproject(top) or top)
+
+
 def _ready_refusal(ev, run_, cwd):
-    """DENY when this `gh pr ready` names a PR other than the landing branch's while that PR is open; None otherwise, and always None with no landing record."""
+    """DENY when this `gh pr ready` names a PR other than the landing branch's while that PR is open, when the open-PR list cannot be read, or when the repository or directory it runs against cannot be evaluated (`-R $R`, `cd -`) while the session's console carries a landing record; None otherwise, and always None with no landing record."""
     args = shellscan.gh_args(run_.argv)
     if args.on("help") or args.on("undo"):
         return None
     repo = _create_repo(run_, cwd, ev.env("GH_REPO"))
     root, record = _bound(run_, cwd, repo)
     if record is None:
+        # 46d92124.1: a repository or directory the walk cannot evaluate is unverifiable under a record, as the create path refuses it, never a ready waved through unlisted.
+        unresolved = repo == shellscan.UNRESOLVED_REPO
+        if (unresolved or _effective_dir(run_, cwd) is None) and _session_record(cwd):
+            named = unresolved and shellscan.gh_named_repo(run_, ev.env("GH_REPO"))
+            why = UNRESOLVED_REASON if named else UNRESOLVED_DIR_REASON % run_.cwd
+            ev.warn_raw(UNVERIFIABLE % ("the repository this command names", why))
+            return hookio.DENY
         return None
     listing, rc = _list_open(repo)
     rows = _listed(listing) if rc == 0 else None
@@ -468,8 +483,12 @@ def _refusal(ev, repo, beside=None, record=None):
 
     count = _jq_length(listing)
     rows = _listed(listing)
+    shown = listing
     if rows is not None:
-        count = str(len([row for row in rows if not _stands_beside(row, beside)]))
+        counted = [row for row in rows if not _stands_beside(row, beside)]
+        count = str(len(counted))
+        # 46d92124.3: the list names exactly the PRs the count counts.
+        shown = json.dumps(counted)
     if not (count != "" and int(count) > 0):
         return None
 
@@ -477,5 +496,5 @@ def _refusal(ev, repo, beside=None, record=None):
     if record:
         template = SUBMODULE_NOTE if repo.lower() in PAIRED_SUBMODULE_REPOS else LANDING_NOTE
         note = template % record.get("branch", "")
-    ev.warn_raw(ALREADY_OPEN % (count, repo, _rows(listing)) + note)
+    ev.warn_raw(ALREADY_OPEN % (count, repo, _rows(shown)) + note)
     return hookio.DENY
