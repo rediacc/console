@@ -188,6 +188,7 @@ PLAN_READERS = frozenset(
         "check:ci-gate-reachability-coverage",
         "check:ci-gate-test-real-file-plants",
         "check:ci-generated-artifacts",
+        "check:ci-gh-retry-reads",
         "check:ci-git-history-depth",
         "check:ci-hint-corpus",
         "check:ci-i18n-cli-key-usage",

@@ -19,8 +19,16 @@ import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
 CLAUDE = HERE.parents[1]
-sys.path.insert(0, str(CLAUDE))
-sys.path.insert(0, str(CLAUDE / "hooks" / "stop"))
+# The canonical hop: rediacc_hooks/syspath.py, loaded by file (test_canonical_sys_path_hop).
+_SYSPATH = importlib.util.spec_from_file_location(
+    "syspath", CLAUDE / "rediacc_hooks" / "syspath.py"
+)
+if _SYSPATH is None or _SYSPATH.loader is None:
+    raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
+syspath = importlib.util.module_from_spec(_SYSPATH)
+_SYSPATH.loader.exec_module(syspath)
+syspath.on_sys_path(syspath.CLAUDE_DIR)
+syspath.on_sys_path(syspath.STOP_DIR)
 
 DEV, LAND = "0930-2", "0930-1"
 SID = "deadbeef-1111-2222-3333-444444444444"

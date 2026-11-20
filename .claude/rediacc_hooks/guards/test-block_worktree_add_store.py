@@ -34,7 +34,12 @@ def load():
     if spec is None or spec.loader is None:
         raise SystemExit("%s: cannot load %s" % (__file__, GUARD))
     module = importlib.util.module_from_spec(spec)
-    sys.path.insert(0, str(HERE.parents[1]))
+    syspath_spec = importlib.util.spec_from_file_location("syspath", HERE.parent / "syspath.py")
+    if syspath_spec is None or syspath_spec.loader is None:
+        raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
+    syspath = importlib.util.module_from_spec(syspath_spec)
+    syspath_spec.loader.exec_module(syspath)
+    syspath.on_sys_path(syspath.CLAUDE_DIR)
     exec(compile(text, str(GUARD), "exec"), module.__dict__)
     return module
 

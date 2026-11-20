@@ -2182,10 +2182,10 @@ async function selftest(): Promise<number> {
         calls.push([...args]);
         const a = args.join(' ');
         if (a === 'diff --cached --name-only')
-          return 'Dockerfile\npackages/cli/templates/single-service/docker-compose.yml\npackages/cli/src/embedded.generated.ts';
+          return 'Dockerfile\npackages/cli/templates/single-service/docker-compose.yml\npackages/cli/src/templates/embedded.generated.ts';
         if (a === 'diff --name-only HEAD0 HEAD') return '';
         if (a === 'diff --name-only HEAD0')
-          return 'Dockerfile\npackages/cli/templates/single-service/docker-compose.yml\npackages/cli/src/embedded.generated.ts\n.claude/other-session.py';
+          return 'Dockerfile\npackages/cli/templates/single-service/docker-compose.yml\npackages/cli/src/templates/embedded.generated.ts\n.claude/other-session.py';
         if (a === 'ls-files --others --exclude-standard') return '.claude/untracked-peer.py';
         return undefined;
       };

@@ -3440,7 +3440,17 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
             return "", False
         if C._git(root, "rev-parse", "--verify", "-q", "refs/remotes/origin/%s" % branch):
             fields["delete"] = M.LOOP_NEXT_DELETE % branch
-        return M.loop_next_variant(role, True, landing_open, M.ARM_MERGED) % fields, True
+        text = M.loop_next_variant(role, True, landing_open, M.ARM_MERGED) % fields
+        # The landing tree's merge is the development session's cue to promote (operator ruling ASKED:2026-11-20T18:46Z): the stop names the cross-session message to send, beside the development stop's own block.
+        notice = (
+            wl_stack.notify_line(own_tree(), "merged", pr=state.pr) if role == "landing" else ""
+        )
+        if notice:
+            text += (
+                "\nSend the development session this message (SendMessage to its session):\n"
+                + notice
+            )
+        return text, True
     if kind == wl_prscope.ON_MAIN:
         return (M.V_LOOP_NEXT_ON_MAIN % fields, True) if nxt else ("", False)
     if kind == wl_prscope.NO_PR:

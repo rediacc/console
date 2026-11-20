@@ -451,7 +451,12 @@ NO_RECORD_CASES = [
 ]
 
 # Loaded by name after the path hop, as dispatch.py loads them.
-sys.path.insert(0, str(HERE.parents[1]))
+_SYSPATH = importlib.util.spec_from_file_location("syspath", HERE.parent / "syspath.py")
+if _SYSPATH is None or _SYSPATH.loader is None:
+    raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
+_syspath = importlib.util.module_from_spec(_SYSPATH)
+_SYSPATH.loader.exec_module(_syspath)
+_syspath.on_sys_path(_syspath.CLAUDE_DIR)
 _guards = importlib.import_module("rediacc_hooks.guards")
 _hookio = importlib.import_module("rediacc_hooks.hookio")
 GUARD = _guards.load(STEM)

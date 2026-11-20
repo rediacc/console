@@ -17,7 +17,15 @@ import sys
 
 _REAL = pathlib.Path(__file__).resolve()
 _CI = _REAL.parents[3] / ".ci" / "rediacc_ci"
-sys.path.insert(0, str(_REAL.parent))
+# The canonical hop: rediacc_hooks/syspath.py, loaded by file (test_canonical_sys_path_hop).
+_SYSPATH = importlib.util.spec_from_file_location(
+    "syspath", _REAL.parents[2] / "rediacc_hooks" / "syspath.py"
+)
+if _SYSPATH is None or _SYSPATH.loader is None:
+    raise SystemExit("%s: rediacc_hooks/syspath.py is missing" % __file__)
+syspath = importlib.util.module_from_spec(_SYSPATH)
+_SYSPATH.loader.exec_module(syspath)
+syspath.on_sys_path(_REAL.parent)
 
 
 def _by_file(name):

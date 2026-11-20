@@ -259,12 +259,26 @@ def loopnext_cases(tmp, tag, mutate=None):
     got = w.stop(w.landing)
     out.append(("landing merged: the promotion blocks", w.blocked(got, PROMOTE), True))
     out.append(("landing merged: no branch cut", TODAY_MERGED in got.out, False))
+    out.append(
+        (
+            "landing merged: the stop names the LANDING MERGED message for the development session",
+            "LANDING MERGED:" in got.out,
+            True,
+        )
+    )
     w.bind(False)
     got = w.stop(w.landing)
     out.append(
         ("CONTROL landing merged, no record: today's cut", w.blocked(got, TODAY_MERGED), True)
     )
     out.append(("CONTROL landing merged, no record: no promotion", PROMOTE in got.out, False))
+    out.append(
+        (
+            "CONTROL landing merged, no record: no cross-session message",
+            "LANDING MERGED:" in got.out,
+            False,
+        )
+    )
 
     # The development tree with a commit and no PR while the landing PR is open: its draft.
     w.commit(w.fix.proj, "d.txt")
