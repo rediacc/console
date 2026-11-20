@@ -333,6 +333,15 @@ def test_land_of_a_landing_lease_picks_into_the_landing_tree(pair, tmp_path):
     assert rows["ll"]["unlanded"] == {}
 
 
+def test_leases_judge_a_landing_lease_against_the_landing_tip(pair):
+    # The landing branch moves past what the development branch holds, so the development tip would read the landing commit as the lease's own.
+    commit(pair.landing, "landing-only.txt", None, "landing: ahead of development")
+    made = base.run_lease(pair.root, "--name", "la", "--tree", "landing")
+    assert made.returncode == 0, made.stderr
+    rows = {row["id"]: row for row in lease.lease_rows(pair.root)}
+    assert rows["la"]["unlanded"] == {}
+
+
 def test_land_control_a_development_lease_prints_the_plain_pick(pair):
     made = base.run_lease(pair.root, "--name", "ld2")
     assert made.returncode == 0, made.stderr
