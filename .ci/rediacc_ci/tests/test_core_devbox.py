@@ -1,4 +1,4 @@
-"""`rediacc_ci.core.devbox` against the transcripts frozen from the retired `.ci/lib/devbox.sh` (`goldens/twins/lib.devbox.jsonl`): all fifty-five functions.
+"""`rediacc_ci.core.devbox` against the transcripts frozen from the retired `.ci/lib/devbox.sh` (`goldens/twins/lib.devbox.jsonl`): all fifty-four functions (`devbox_build_image` is retired).
 
 THE TWIN IS DELETED. The bash side of every scenario was driven by `rediacc_ci.core.devbox_shadow_driver` while `devbox.sh` existed and its full transcripts are the golden; this file compares the port's live transcript against them. A Rule-T change to the port is recorded with `regolden --source port`.
 
@@ -312,7 +312,7 @@ def claims_proxy(obs: dict[str, list[str]]) -> None:
 
 def claims_image(obs: dict[str, list[str]]) -> None:
     # The derive is SKIPPED when the base's vscode already carries the host's ids: the base is the run image and nothing is built.
-    assert stdout_of(obs["run-image-match"]) == (TWIN_DEVBOX_IMAGE + "\n").encode()
+    assert stdout_of(obs["run-image-match"]) == (devbox.DEVBOX_IMAGE + "\n").encode()
     assert not any(call[1] == "build" for call in calls_of(obs["ensure-uid-match"]))
     # A present derived tag is REUSED: inspected, never rebuilt.
     assert not any(call[1] == "build" for call in calls_of(obs["ensure-uid-present"]))
@@ -586,7 +586,7 @@ def stub_functions() -> set[str]:
 
 
 def test_every_function_is_driven_by_some_scenario() -> None:
-    """Every one of the fifty-five is the subject of a step, so none of them is licensed by a ledger that never called it."""
+    """Every one of the fifty-four is the subject of a step, so none of them is licensed by a ledger that never called it."""
     driven = stub_functions() | {"devbox_slugify", "devbox_slug_drift", "devbox_route_label"}
     assert driven == set(devbox.BASH_NAMES), sorted(set(devbox.BASH_NAMES) ^ driven)
 
@@ -610,11 +610,6 @@ PLANTS = (
         "a gone worktree no longer falls back to its literal path",
         "Devbox.worktree_path",
         "identity-gone",
-    ),
-    (
-        "build_image looks under the worktree instead of the mount root",
-        "Devbox.build_image",
-        "identity-worktree",
     ),
     ("the run image is always the base, so nothing is ever derived", "Devbox.run_image", "image"),
     ("the derived tag drops the recipe hash", "Devbox.uid_image", "image"),
@@ -653,14 +648,6 @@ def planted_value(attribute: str):
             return original(self) if os.path.isdir(self.console_root) else ""
 
         return worktree_path
-    if attribute == "Devbox.build_image":
-
-        def build_image(self, *_argv):
-            self.docker_words()
-            self.log("error", "No Dockerfile at %s/.devcontainer" % self.worktree_path())
-            return 1
-
-        return build_image
     if attribute == "Devbox.run_image":
 
         def run_image(self, *_argv):
@@ -786,10 +773,15 @@ def test_the_stub_answers_by_pattern_ordinal_and_history() -> None:
 # -- the twin is retired, and the port carries all of it ------------------------
 
 
-def test_the_port_defines_these_fifty_five_and_nothing_else() -> None:
-    """The twin's function list was measured against `devbox.BASH_NAMES` while the bash existed (fifty-five names); the count is what is kept."""
-    assert len(devbox.BASH_NAMES) == 55
-    assert len(set(devbox.BASH_NAMES.values())) == 55
+def test_the_port_defines_these_fifty_four_and_nothing_else() -> None:
+    """The twin's function list was measured against `devbox.BASH_NAMES` while the bash existed (fifty-five names, `devbox_build_image` since retired); the count is what is kept."""
+    assert len(devbox.BASH_NAMES) == 54
+    assert len(set(devbox.BASH_NAMES.values())) == 54
+
+
+def test_the_retired_build_is_gone_and_nothing_reaches_it() -> None:
+    assert "devbox_build_image" not in devbox.BASH_NAMES
+    assert not hasattr(devbox.Devbox, "build_image")
 
 
 def test_every_twin_function_has_a_counterpart_and_none_is_unported() -> None:

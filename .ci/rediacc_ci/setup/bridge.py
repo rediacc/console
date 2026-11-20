@@ -73,7 +73,7 @@ def _quote(value: str) -> str:
 def _devbox_words(body: str) -> list[str] | None:
     """`body` as an argv when it is ONE call of a `devbox.sh` function, else None.
 
-    The library is Python now (`core.devbox`), so a body naming one of its fifty-five functions runs there and never reaches bash. Anything else, including a multi-line program, goes to the shell.
+    The library is Python now (`core.devbox`), so a body naming one of its fifty-four functions runs there and never reaches bash. Anything else, including a multi-line program, goes to the shell.
     """
     if "\n" in body:
         return None

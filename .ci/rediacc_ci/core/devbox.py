@@ -1,4 +1,4 @@
-"""`.ci/lib/devbox.sh`, ported function for function: all fifty-five of them.
+"""`.ci/lib/devbox.sh`, ported function for function: all fifty-four of them (`devbox_build_image` was retired: a pinned digest cannot be built locally).
 
 PORTED FROM `.ci/lib/devbox.sh` (1606 lines, 54 functions).
 The twin, `.ci/lib/devbox.sh`, is DELETED (PLAN-retire-bash-oracles B3): its transcripts are frozen in `.ci/rediacc_ci/tests/goldens/twins/lib.devbox.jsonl`, and `.ci/rediacc_ci/setup/bridge.py` runs `devbox_*` bodies through this module in process.
@@ -12,7 +12,7 @@ EVERY FUNCTION THE TWIN DEFINES HAS A COUNTERPART, in two shapes.
   THE THREE PURE ONES are module-level functions, exactly as the first slice (2026-09-23) shipped them: `slugify` (`devbox_slugify:186`), `slug_drift` (`devbox_slug_drift:242`) and `route_label` (`devbox_route_label:902`). Their whole answer is computation over their own arguments, and they stay importable without constructing anything.
 
   THE OTHER FIFTY-ONE are methods of `Devbox`, one per function, named by the function's name minus its `devbox_` / `_devbox_` prefix: `Devbox.worktree` is `devbox_worktree`, `Devbox.bind_if_present` is `_devbox_bind_if_present`, `Devbox.exec` is `devbox_exec`.
-  `Devbox` also carries the three pure functions as printing methods, so a caller (and the differential driver) can reach all fifty-five through one surface, `Devbox.invoke("<bash name>", argv)`, which binds positional arguments the way bash does.
+  `Devbox` also carries the three pure functions as printing methods, so a caller (and the differential driver) can reach all fifty-four through one surface, `Devbox.invoke("<bash name>", argv)`, which binds positional arguments the way bash does.
 
 EACH METHOD TAKES ITS ARGUMENTS AS BASH DOES, as strings in `*argv`, and RETURNS AN EXIT STATUS. What the function prints goes to the instance's `stdout` and `stderr` streams, never to a return value, because every caller of the twin reads a function's answer by capturing what it PRINTED (`d="$(devbox_docker)"`) and its verdict by its STATUS (`devbox_container_running || ...`).
 A port that returned values instead would have to restate, at every call site, which of the two channels the twin's caller really read.
@@ -102,7 +102,6 @@ import time
 from typing import Any
 
 from rediacc_ci import log
-from rediacc_ci.core import release_age
 from rediacc_ci.core.common import is_ci
 from rediacc_ci.well_known import ACCOUNT_DEV_PORT
 from rediacc_ci.well_known import DEVBOX_UID_IMAGE_REPO as WK_DEVBOX_UID_IMAGE_REPO
@@ -581,7 +580,7 @@ def repo_root_default() -> str:
 
 
 class Devbox:
-    """The fifty-one side-effecting functions, over one environment and one pair of streams.
+    """The fifty side-effecting functions, over one environment and one pair of streams.
 
     CONSTRUCT ONE PER TOP-LEVEL CALL. The instance carries the shell state bash would carry across one invocation (errexit, the current streams) and the configuration bash resolves at SOURCE time (`CONSOLE_ROOT_DIR`, the state file, `DEVBOX_LIB_DIR`, `DEVBOX_CI_DIR`, whether stderr gets colour). A long-lived instance would freeze the source-time answers across calls, which is also what a long-lived shell does, and is fine; it is the per-call mutable part that must not leak.
 
@@ -1286,38 +1285,6 @@ class Devbox:
             "Log in to ghcr.io (a GitHub token with read:packages: echo $PAT | docker login ghcr.io -u <user> --password-stdin) and check the network, then re-run.",
         )
         return 1
-
-    def build_image(self, *_argv: str) -> int:
-        """`devbox_build_image`, `.ci/lib/devbox.sh:413-429`: build the devcontainer image from source.
-
-        The fallback for a machine with no registry access. Slower than a pull (this Dockerfile installs a Go toolchain, Node, a desktop and Playwright deps), but it needs no credentials, which is the whole point. The Dockerfile is looked for under the MOUNT ROOT, so a linked worktree builds from its main checkout's `.devcontainer`.
-        """
-        d = self.docker_words()
-        status, root = self.sub(self.mount_root)
-        self.checked(status)
-        dockerfile_dir = root + "/.devcontainer"
-        if not os.path.isfile(dockerfile_dir + "/Dockerfile"):
-            self.log("error", "No Dockerfile at %s" % dockerfile_dir)
-            return 1
-        # NPM_BEFORE: the release-age cutoff the Dockerfile's `npm install -g` lines require (an empty one fails the build). `.ci/lib/devbox.sh` asks the same module through its `npm-before` verb.
-        npm_before = release_age.npm_before()
-        self.log("step", "Building %s locally (this takes a while)" % DEVBOX_IMAGE)
-        build = [
-            *d,
-            "build",
-            "-t",
-            DEVBOX_IMAGE,
-            "--build-arg",
-            "NPM_BEFORE=%s" % npm_before,
-            "-f",
-            dockerfile_dir + "/Dockerfile",
-            dockerfile_dir,
-        ]
-        if self.run(build)[0] != 0:
-            self.log("error", "Local image build failed")
-            return 1
-        self.log("info", "Built %s" % DEVBOX_IMAGE)
-        return 0
 
     # ------------------------------------------------------------------ THE RUN IMAGE
 
@@ -2435,7 +2402,7 @@ class Devbox:
             self.log("info", "devbox is usable: mount, identity and writability all verified")
         return status
 
-    # ------------------------------------------------------------------ one entry point for all fifty-five
+    # ------------------------------------------------------------------ one entry point for all fifty-four
 
     def invoke(self, name: str, argv: list[str] | tuple[str, ...] = ()) -> int:
         """`( set -e; <name> "$@" )`: call a twin function by its BASH name, and return the subshell's status.
@@ -2466,7 +2433,7 @@ def _pad(text: str, width: int) -> bytes:
     return data + b" " * max(0, width - len(data))
 
 
-# The fifty-five, bash name -> `Devbox` attribute. `test_core_devbox.py` asserts this is exactly the set the twin defines.
+# The fifty-four, bash name -> `Devbox` attribute. `test_core_devbox.py` asserts this is exactly the set the twin defines.
 BASH_NAMES = {
     "devbox_worktree": "worktree",
     "devbox_mount_root": "mount_root",
@@ -2499,7 +2466,6 @@ BASH_NAMES = {
     "devbox_image_present": "image_present",
     "devbox_image_digest": "image_digest",
     "devbox_ensure_image": "ensure_image",
-    "devbox_build_image": "build_image",
     "devbox_base_user_ids": "base_user_ids",
     "devbox_uid_image": "uid_image",
     "devbox_run_image": "run_image",
