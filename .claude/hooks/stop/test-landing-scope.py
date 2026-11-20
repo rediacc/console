@@ -32,7 +32,7 @@ def _by_file(name):
 
 controls = _by_file("controls")
 runtmp = _by_file("runtmp")
-T = controls.Controls("landing-scope", floor=60)
+T = controls.Controls("landing-scope", floor=64)
 check = T.check
 
 ME = "cafe0000"
@@ -519,6 +519,17 @@ def control_real_hook(tmp):
     got = stop(fix.base / "console-landing")
     check("development: the landing branch's item is not shown", probe in got.out, False)
     check("development: the landing branch's item does not block", got.decision, "allow")
+
+    # A live pr-babysit round log on a green PR whose threads box is unticked: the finish line.
+    projects = fix.base / "projects"
+    (projects / "reports").mkdir(parents=True)
+    (projects / "reports" / "pr-babysit-agenttest.md").write_text("# round\n", encoding="utf-8")
+    fix.env["WORKLIST_PROJECTS_DIR"] = str(projects)
+    finish = "THE WAVE IS NOT FINISHED"
+    got = stop(fix.proj)
+    check("landing: the finish line blocks", (finish in got.out, got.decision), (True, "block"))
+    got = stop(fix.base / "console-landing")
+    check("development: the finish line does not block", got.decision, "allow")
 
 
 def main():
