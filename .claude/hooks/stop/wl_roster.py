@@ -1159,6 +1159,18 @@ def _generators(root):
     return tuple(out)
 
 
+def _tree_of(base, root):
+    """The root of the tree a run in the absolute directory `base` belongs to: the lease tree (`<root>/.claude/worktrees/<name>`) holding it, `root` for any other directory of the main checkout, and `base` itself outside the repository."""
+    import posixpath
+
+    root = str(root).rstrip("/")
+    full = posixpath.normpath(str(base))
+    if full != root and not full.startswith(root + "/"):
+        return full
+    m = re.match(r"^(\.claude/worktrees/[^/]+)(?:/|$)", full[len(root) + 1 :])
+    return posixpath.join(root, m.group(1)) if m else root
+
+
 def _regen_outputs(run, base, root):
     """The output paths (absolute or relative to `base`) of every registered generator `run` is a run of: its program words start with the generator's, and it carries the generator's write options."""
     import glob
@@ -1237,9 +1249,10 @@ def bash_write_paths(cmd, cwd, root, strict=False, _depth=0):
             for value in _loop_values(operand, run):
                 add(value, run.cwd)
         run_base = base_cwd if run.cwd is None else posixpath.join(base_cwd, str(run.cwd))
+        tree = _tree_of(run_base, root)
         for output in _regen_outputs(run, run_base, root):
-            # A registered output is repo-root-relative whatever directory the run `cd`ed to (an `npm run` finds the root package.json from a subdirectory), so it is joined to the root, never to the run's directory.
-            rel = _norm_under(str(output), str(root), root)
+            # A registered output is relative to the root of the tree the run is in, whatever directory it `cd`ed to (an `npm run` finds the root package.json from a subdirectory): the main checkout's root, or a lease tree's, whose paths in_lease_tree then drops (2026-11-20: a lease writer's `gen-docs.ts --write` was recorded as an edit of the main checkout's scripts/data/doc-registry.md and refused the lead's commit of it).
+            rel = _norm_under(str(output), tree, root)
             if rel:
                 out.add(rel)
         if posixpath.basename(str(run.name or "")).startswith("python"):

@@ -2249,3 +2249,53 @@ def test_a_registered_generator_run_writes_its_outputs_from_the_root(tmp_path, c
     )
     assert proc.returncode == 0, proc.stderr[-600:]
     assert json.loads(proc.stdout) == want, cmd
+
+
+# 2026-11-20: a registered generator run inside a lease tree was joined to the MAIN checkout's root, so a lease writer's `gen-docs.ts --write` read as an edit of the main checkout's outputs and block_commit_of_live_writer_file refused the lead's own commit of them. The outputs belong to the tree the run is in.
+REGEN_TREE_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_roster as R
+got = R.bash_write_paths(sys.argv[2], sys.argv[4], sys.argv[3], strict=True)
+print(json.dumps([sorted(got), sorted(p for p in got if not R.in_lease_tree(p))]))
+"""
+LEASE = ".claude/worktrees/agent-x"
+REGEN_TREE_CASES = [
+    ("", [BOXES], [BOXES]),
+    ("tools", [BOXES], [BOXES]),
+    (LEASE, [LEASE + "/" + BOXES], []),
+    (LEASE + "/tools", [LEASE + "/" + BOXES], []),
+]
+
+
+@pytest.mark.parametrize(("sub", "want", "kept"), REGEN_TREE_CASES)
+def test_a_generator_run_in_a_lease_writes_the_lease_trees_outputs(tmp_path, sub, want, kept):
+    (tmp_path / ".ci" / "config").mkdir(parents=True)
+    (tmp_path / LEASE / "tools").mkdir(parents=True)
+    (tmp_path / "tools").mkdir()
+    (tmp_path / ".ci" / "config" / "generated-artifacts.json").write_text(
+        json.dumps(
+            {
+                "schema": 1,
+                "artifacts": [{"id": "plan-boxes", "outputs": [BOXES], "generator": BOXES_RUN}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    cwd = str(tmp_path / sub) if sub else str(tmp_path)
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            REGEN_TREE_SNIPPET,
+            str(wlfix.STOP_DIR),
+            BOXES_RUN,
+            str(tmp_path),
+            cwd,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    assert json.loads(proc.stdout) == [want, kept], sub
