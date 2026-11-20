@@ -239,6 +239,91 @@ def run() -> int:
             proof.get("unreviewed") == [c2_new] and c1_new not in proof.get("unreviewed", []),
             repr(proof),
         )
+        # A dropped commit that shares a common subject with a replayed, conflict-resolved one stays MISSING (review cac6cc8b.1).
+        main_w, _lease_w, _b = world(td / "w")
+        (main_w / "f.txt").write_text("a\n", encoding="utf-8")
+        sh(main_w, "add", "f.txt")
+        sh(main_w, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", "f")
+        base_w = sh(main_w, "rev-parse", "HEAD")
+        sh(main_w, "checkout", "-q", "-b", "dev")
+        (main_w / "f.txt").write_text("b\n", encoding="utf-8")
+        sh(
+            main_w,
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.invalid",
+            "commit",
+            "-qam",
+            "wip",
+        )
+        w1 = sh(main_w, "rev-parse", "HEAD")
+        (main_w / "h.txt").write_text("h\n", encoding="utf-8")
+        sh(main_w, "add", "h.txt")
+        sh(
+            main_w,
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.invalid",
+            "commit",
+            "-qm",
+            "wip",
+        )
+        w2 = sh(main_w, "rev-parse", "HEAD")
+        sh(main_w, "checkout", "-q", "main")
+        (main_w / "f.txt").write_text("x\n", encoding="utf-8")
+        sh(
+            main_w,
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.invalid",
+            "commit",
+            "-qam",
+            "main moves f",
+        )
+        moved_w = sh(main_w, "rev-parse", "HEAD")
+        sh(main_w, "checkout", "-q", "--detach", moved_w)
+        subprocess.run(
+            ["git", "-C", str(main_w), "cherry-pick", w1],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        (main_w / "f.txt").write_text("b and x\n", encoding="utf-8")
+        sh(main_w, "add", "f.txt")
+        sh(
+            main_w,
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.invalid",
+            "-c",
+            "core.editor=true",
+            "cherry-pick",
+            "--continue",
+        )
+        w1_new = sh(main_w, "rev-parse", "HEAD")
+        wip = RB.rebase_proof(main_w, moved_w, w2, w1_new, set()) or {}
+        control(
+            "REBASE: a dropped 'wip' beside a replayed 'wip' is MISSING, not paired",
+            [(o, n) for o, n, _s in wip.get("changed", [])] == [(w1, w1_new)]
+            and wip.get("missing") == [w2],
+            repr(wip),
+        )
+        notes, ok, detail = RB.proof_rows("console", wip)
+        control(
+            "REBASE: proof_rows refuses on MISSING and names the CHANGED commit",
+            not ok and w2[:12] in detail and any("CHANGED" in n and w1[:12] in n for n in notes),
+            repr((notes, ok, detail)),
+        )
+        control(
+            "REBASE: an unreadable range answers None, never an empty pass",
+            RB.rebase_proof(main_w, "no-such-ref", w2, w1_new, set()) is None,
+        )
+        del base_w
+
         same = RB.rebase_proof(main_p, base_p, old_tip, old_tip, set())
         control(
             "REBASE (identity): with no rebase every commit is carried, none changed or missing",

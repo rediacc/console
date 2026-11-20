@@ -1230,16 +1230,9 @@ def main(argv):
                     raise RefusalError(
                         "%s: could not compare %s..%s" % (name, old_tip[:12], new_tip[:12])
                     )
-                for old, new, subject in proof["changed"]:
-                    plan.note(
-                        "%s: CHANGED %s -> %s %s (conflict-resolved: its patch-id moved, so its review record and investigation rows do not carry)"
-                        % (name, old[:12], new[:12], subject)
-                    )
-                for sha in proof["unreviewed"]:
-                    plan.note(
-                        "%s: UNREVIEWED %s: worklist.py --review-run <me> %s"
-                        % (name, sha[:12], sha[:12])
-                    )
+                notes, ok, detail = wl_rebase.proof_rows(name, proof)
+                for line in notes:
+                    plan.note(line)
                 plan.check(
                     "%s: %d carried, %d absorbed, %d changed, %d unreviewed"
                     % (
@@ -1249,13 +1242,8 @@ def main(argv):
                         len(proof["changed"]),
                         len(proof["unreviewed"]),
                     ),
-                    not proof["missing"],
-                    (
-                        "%d MISSING: %s"
-                        % (len(proof["missing"]), ", ".join(m[:12] for m in proof["missing"]))
-                    )
-                    if proof["missing"]
-                    else "",
+                    ok,
+                    detail,
                 )
             reasons, lines = wl_review.check_state(root, branch)
             for line in lines:

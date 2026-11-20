@@ -111,10 +111,10 @@ def lease_verdicts(
     return out
 
 
-def _subjects(repo, rng: str) -> list[tuple[str, str]]:
+def _subjects(repo, rng: str) -> list[tuple[str, str]] | None:
     rc, out, _err = _git(repo, "log", "--reverse", "--format=%H%x09%s", rng)
     if rc != 0:
-        return []
+        return None
     rows: list[tuple[str, str]] = []
     for line in out.splitlines():
         sha, sep, subject = line.partition("\t")
@@ -123,10 +123,33 @@ def _subjects(repo, rng: str) -> list[tuple[str, str]]:
     return rows
 
 
+def _files(repo, sha: str) -> frozenset[str] | None:
+    rc, out, _err = _git(repo, "diff-tree", "--no-commit-id", "--name-only", "-r", sha)
+    return frozenset(out.splitlines()) if rc == 0 else None
+
+
+def proof_rows(name: str, proof: dict) -> tuple[list[str], bool, str]:
+    """(notes, ok, detail) for one repo's rebase_proof, the lines `--git rebase-proof` prints and the check it makes: MISSING refuses; CHANGED and UNREVIEWED are named, and UNREVIEWED also refuses through wl_review's own check."""
+    notes = [
+        "%s: CHANGED %s -> %s %s (its patch moved during the rebase, a resolved conflict or an edit: its review record and investigation rows do not carry)"
+        % (name, old[:12], new[:12], subject)
+        for old, new, subject in proof["changed"]
+    ]
+    notes += [
+        "%s: UNREVIEWED %s: worklist.py --review-run <me> %s" % (name, sha[:12], sha[:12])
+        for sha in proof["unreviewed"]
+    ]
+    missing = proof["missing"]
+    detail = (
+        ("%d MISSING: %s" % (len(missing), ", ".join(m[:12] for m in missing))) if missing else ""
+    )
+    return notes, not missing, detail
+
+
 def rebase_proof(repo, base: str, old_tip: str, new_tip: str, uncovered: set[str]) -> dict | None:
     """What a rebase of base..old_tip into new_tip did, and what it left owed (PLAN-two-track-merge-dev RB4).
 
-    carried / absorbed / missing come from `git cherry` exactly as wl_git.equivalent reads them. A missing commit whose subject matches a new commit that has no patch-equivalent of its own is CHANGED: the rebase resolved a conflict in it, so its patch-id moved and the successor map cannot carry its review record or its investigation rows. UNREVIEWED names every commit of base..new_tip in `uncovered` (wl_review.uncovered), the commits with no review record after the rebase. None when git cannot answer.
+    carried / absorbed / missing come from `git cherry` exactly as wl_git.equivalent reads them. A lost commit paired one-to-one with a new commit of the same subject and file set that has no patch-equivalent of its own is CHANGED: its patch moved during the rebase (a resolved conflict, or an edit) and the successor map cannot carry its review record or its investigation rows. UNREVIEWED names every commit of base..new_tip in `uncovered` (wl_review.uncovered), the commits with no review record after the rebase. None when git cannot answer.
     """
 
     def marks(upstream, head):
@@ -142,14 +165,33 @@ def rebase_proof(repo, base: str, old_tip: str, new_tip: str, uncovered: set[str
         return None
     old = _subjects(repo, "%s..%s" % (base, old_tip))
     new = _subjects(repo, "%s..%s" % (base, new_tip))
+    if old is None or new is None:
+        return None
     # `git cherry <new_tip> <old_tip>` lists only old commits NOT reachable from the new tip; one it does not list (an unchanged sha) is accounted, exactly as wl_git.equivalent reads it. Only `+` is lost.
     lost = [(s, subj) for s, subj in old if accounted.get(s) == "+" and split.get(s) == "+"]
     lost_shas = {s for s, _ in lost}
     carried = [s for s, _ in old if split.get(s) == "+" and s not in lost_shas]
     absorbed = [s for s, _ in old if split.get(s) == "-"]
-    fresh = {subj: s for s, subj in new if new_side.get(s) == "+"}
-    changed = [(s, fresh[subj], subj) for s, subj in lost if subj in fresh]
-    missing = [s for s, subj in lost if subj not in fresh]
+    # ONE-TO-ONE, BY SUBJECT AND FILE SET (review cac6cc8b.1): a lost commit is CHANGED only when a new commit with no patch-equivalent of its own carries the same subject and touches the same files, and each new commit pairs at most once. A dropped commit that merely shares a common subject ("wip") with a replayed one finds its partner already taken, or a different file set, and stays MISSING.
+    fresh = [(s, subj, _files(repo, s)) for s, subj in new if new_side.get(s) == "+"]
+    taken: set[str] = set()
+    changed: list[tuple[str, str, str]] = []
+    missing: list[str] = []
+    for s, subj in lost:
+        files = _files(repo, s)
+        partner = next(
+            (
+                n
+                for n, nsubj, nfiles in fresh
+                if n not in taken and nsubj == subj and nfiles == files and files is not None
+            ),
+            None,
+        )
+        if partner is None:
+            missing.append(s)
+        else:
+            taken.add(partner)
+            changed.append((s, partner, subj))
     unreviewed = [s for s, _ in new if s in uncovered]
     return {
         "carried": carried,
