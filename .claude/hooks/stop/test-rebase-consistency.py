@@ -136,6 +136,34 @@ def run() -> int:
             repr(got),
         )
 
+        # lease_verdicts: only this owner's leases, every repo with a cut point and a head, the rest skipped.
+        world_doc = {
+            "leases": {
+                "mine": {
+                    ".": {"path": str(lease), "head": head},
+                    "private/x": {"path": str(lease), "head": ""},
+                },
+                "theirs": {".": {"path": str(lease), "head": head}},
+                "nocut": {".": {"path": str(lease), "head": head}},
+            },
+            "records": {
+                "mine": {"owner": "d778be9d-session", "base": {".": base, "private/x": base}},
+                "theirs": {"owner": "6c87d631", "base": {".": base}},
+                "nocut": {"owner": "d778be9d", "base": {}},
+            },
+        }
+        verdicts = RB.lease_verdicts(world_doc, "d778be9d", "main")
+        control(
+            "LEASES: only the owner's leases with a cut point and a head are judged",
+            sorted(verdicts) == ["mine"] and sorted(verdicts["mine"]) == ["."],
+            repr(verdicts),
+        )
+        control(
+            "LEASES: the judged lease reads behind",
+            verdicts.get("mine", {}).get(".", RB.Verdict("x")).state == "behind",
+            repr(verdicts),
+        )
+
         control(
             "BASE: the PR branch while open, main after the merge",
             RB.base_branch(True, "1120-1") == "1120-1"
