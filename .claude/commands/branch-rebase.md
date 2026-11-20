@@ -29,6 +29,8 @@ submodule's work lands on its own main; `<base>` is a console ref and means noth
 **Stacking has a second act, and skipping it is how a branch rots.** All five repos are rebase-merge only, so merging the parent PR REWRITES its SHAs. Your branch then carries the pre-merge ones and must be rebased AGAIN, onto `origin/main`, where git drops the patch-identical duplicates. A commit count that falls across that second rebase is CORRECT, which is why step 4 asks by
 patch identity rather than by count.
 
+**Two trees stack the same way.** With a landing tree (`rediacc-landing.json` under the git common dir), the development branch is stacked on the landing branch: in the development tree this command runs with `<base>` = the landing branch (`git rebase <landing branch>`), and landing's fixes flow one way, into development, never back. After the landing PR rebase-merges, the second act above runs for the development branch before promotion (`./run.sh worktree landing --promote` performs that rebase onto `origin/main` itself, then moves the branch into the landing tree).
+
 **This command lands nothing.** It does not merge, does not touch a PR, does not tag, does not deploy. It ends with a rebased local branch and an explicit verification report. Contrast `/pr-merge`, which is the release path; this is the *maintenance* path that keeps a branch current while it is still open.
 
 Submodule map (path → GitHub repo): `private/renet` → `rediacc/renet`, `private/account` → `rediacc/account`, `private/elite` → `rediacc/elite`, `private/homebrew-tap` → `rediacc/homebrew-tap`.

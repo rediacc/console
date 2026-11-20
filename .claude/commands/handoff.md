@@ -9,7 +9,8 @@ allowed-tools: Bash(ls:*), Bash(git branch:*), Bash(git status:*), Bash(date:*)
 ## Current state
 
 - Existing program suites (empty = none yet): !`ls agent/programs/ 2>/dev/null || echo '(none yet)'`
-- Branch: !`git branch --show-current`
+- Branch (this tree): !`git branch --show-current`
+- Branch (landing tree, from the `rediacc-landing.json` record under the git common dir): !`rec="$(git rev-parse --git-common-dir)/rediacc-landing.json"; if [ -f "$rec" ]; then p=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["path"])' "$rec"); echo "$p on $(git -C "$p" branch --show-current)"; else echo '(no landing record)'; fi`
 - UTC now: !`date -u +%Y-%m-%dT%H:%MZ`
 
 ## Mode

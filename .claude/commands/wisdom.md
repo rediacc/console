@@ -7,7 +7,8 @@ allowed-tools: Bash(.claude/hooks/stop/worklist.py:*), Bash(python3 .claude/hook
 ## In flight, gathered
 
 - UTC now: !`date -u +%FT%H:%MZ`
-- Branch: !`git branch --show-current`
+- Branch (this tree): !`git branch --show-current`
+- Branch (landing tree, from the `rediacc-landing.json` record under the git common dir): !`rec="$(git rev-parse --git-common-dir)/rediacc-landing.json"; if [ -f "$rec" ]; then p=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["path"])' "$rec"); echo "$p on $(git -C "$p" branch --show-current)"; else echo '(no landing record)'; fi`
 - Open worklist slice (`[>]` lines name their `worker:`): !`.claude/hooks/stop/worklist.py --list --open 2>&1 | head -60`
 - Uncommitted paths: !`git status --short | head -40`
 - Unpushed commits: !`git log --oneline @{u}..HEAD 2>&1 | head -20`

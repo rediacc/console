@@ -6,7 +6,8 @@ allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git br
 
 ## Pending decisions, gathered
 
-- Branch: !`git branch --show-current`
+- Branch (this tree): !`git branch --show-current`
+- Branch (landing tree, from the `rediacc-landing.json` record under the git common dir): !`rec="$(git rev-parse --git-common-dir)/rediacc-landing.json"; if [ -f "$rec" ]; then p=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["path"])' "$rec"); echo "$p on $(git -C "$p" branch --show-current)"; else echo '(no landing record)'; fi`
 - UTC now: !`date -u +%Y-%m-%dT%H:%MZ`
 - Open worklist items (`[?]` = already parked for you, `[ ]` = open work): !`.claude/hooks/stop/worklist.py --list --open 2>&1 | head -40`
 - Round log with DECISIONS awaiting veto: !`ls -t ~/.claude/projects/$(pwd | sed 's/[^A-Za-z0-9]/-/g')/reports/pr-babysit-*.md 2>&1 | head -1`
