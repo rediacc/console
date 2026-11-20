@@ -2671,6 +2671,8 @@ _WL_REBASE = importlib.util.spec_from_file_location(
 if _WL_REBASE is None or _WL_REBASE.loader is None:
     raise SystemExit("%s: .claude/hooks/stop/wl_rebase.py is missing" % __file__)
 wl_rebase = importlib.util.module_from_spec(_WL_REBASE)
+# Registered before it runs: its frozen dataclass looks its own module up in sys.modules.
+sys.modules["wl_rebase"] = wl_rebase
 _WL_REBASE.loader.exec_module(wl_rebase)
 
 
