@@ -36,16 +36,40 @@ def sh(cwd, *args) -> str:
 def variant_checks(tag: str, pick) -> None:
     """The selector contract; `pick(role, merged, landing_open, arm)` is the function under test."""
     land, dev = "landing", "development"
-    control(tag + " landing merged promotes", pick(land, True, False, M.ARM_FINISH) is M.V_LOOP_NEXT_PROMOTE)
-    control(tag + " landing merged ignores open", pick(land, True, True, M.ARM_OPEN) is M.V_LOOP_NEXT_PROMOTE)
-    control(tag + " dev finish waits", pick(dev, False, True, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE_WAIT)
-    control(tag + " dev finish, landing closed", pick(dev, False, False, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE)
-    control(tag + " dev no PR names the draft", pick(dev, False, True, M.ARM_OPEN) is M.V_LOOP_NEXT_NO_PR_DRAFT)
-    control(tag + " landing finish merges", pick(land, False, False, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE)
+    control(
+        tag + " landing merged promotes",
+        pick(land, True, False, M.ARM_FINISH) is M.V_LOOP_NEXT_PROMOTE,
+    )
+    control(
+        tag + " landing merged ignores open",
+        pick(land, True, True, M.ARM_OPEN) is M.V_LOOP_NEXT_PROMOTE,
+    )
+    control(
+        tag + " dev finish waits", pick(dev, False, True, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE_WAIT
+    )
+    control(
+        tag + " dev finish, landing closed",
+        pick(dev, False, False, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE,
+    )
+    control(
+        tag + " dev no PR names the draft",
+        pick(dev, False, True, M.ARM_OPEN) is M.V_LOOP_NEXT_NO_PR_DRAFT,
+    )
+    control(
+        tag + " landing finish merges",
+        pick(land, False, False, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE,
+    )
     for role in (None, ""):
-        control(tag + " no record merged", pick(role, True, False, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGED)
-        control(tag + " no record finish", pick(role, False, True, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE)
-        control(tag + " no record open", pick(role, False, False, M.ARM_OPEN) is M.V_LOOP_NEXT_NO_PR_OPEN)
+        control(
+            tag + " no record merged", pick(role, True, False, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGED
+        )
+        control(
+            tag + " no record finish", pick(role, False, True, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE
+        )
+        control(
+            tag + " no record open",
+            pick(role, False, False, M.ARM_OPEN) is M.V_LOOP_NEXT_NO_PR_OPEN,
+        )
 
 
 def mutant_pick(_role, merged, _landing_open, arm=M.ARM_FINISH):
@@ -56,14 +80,29 @@ def mutant_pick(_role, merged, _landing_open, arm=M.ARM_FINISH):
 
 
 def text_checks() -> None:
-    fields = {"pr": 7, "branch": "1120-1", "next": "agent/plans/PLAN-x.md", "box": "B1", "plans": "x"}
+    fields = {
+        "pr": 7,
+        "branch": "1120-1",
+        "next": "agent/plans/PLAN-x.md",
+        "box": "B1",
+        "plans": "x",
+    }
     promote = M.V_LOOP_NEXT_PROMOTE % fields
-    control("promote names the verb", "worktree landing --promote" in promote and "git switch" not in promote)
+    control(
+        "promote names the verb",
+        "worktree landing --promote" in promote and "git switch" not in promote,
+    )
     wait = M.V_LOOP_NEXT_MERGE_WAIT % fields
-    control("wait names the rebase", "git rebase <landing branch>" in wait and "never run /pr-merge" in wait)
+    control(
+        "wait names the rebase",
+        "git rebase <landing branch>" in wait and "never run /pr-merge" in wait,
+    )
     control("today's merge text offers /pr-merge", "run /pr-merge" in M.V_LOOP_NEXT_MERGE % fields)
     draft = M.V_LOOP_NEXT_NO_PR_DRAFT % {"branch": "1120-2", "ahead": 2}
-    control("draft names gh pr create --draft", "gh pr create --draft --base main --head 1120-2" in draft)
+    control(
+        "draft names gh pr create --draft",
+        "gh pr create --draft --base main --head 1120-2" in draft,
+    )
 
 
 def trees_world(td: pathlib.Path):
@@ -92,7 +131,11 @@ def tree_rendering() -> None:
         cp.write_landing_record(str(main), str(land), "1120-1")
         from_main = Q.landing_trees(main, td, "s", lambda b: prs.get(b, (0, "")))
         from_land = Q.landing_trees(land, td, "s", lambda b: prs.get(b, (0, "")))
-        control("both trees read identically", from_main == from_land and len(from_main) == 2, repr((from_main, from_land)))
+        control(
+            "both trees read identically",
+            from_main == from_land and len(from_main) == 2,
+            repr((from_main, from_land)),
+        )
         lines = Q.render_trees(from_main)
         control(
             "render names both",
@@ -106,11 +149,16 @@ def tree_rendering() -> None:
         control("render identical from either", lines == Q.render_trees(from_land))
         body = Q.render_inflight(Q.InFlight(kind=P.NO_PR, branch="1120-2", trees=from_land))
         control("block carries the tree lines", all(line in body for line in lines))
-        nopr = Q.landing_trees(land, td, "s", lambda b: (11, "MERGED") if b == "1120-1" else (0, ""))
+        nopr = Q.landing_trees(
+            land, td, "s", lambda b: (11, "MERGED") if b == "1120-1" else (0, "")
+        )
         control(
             "merged landing and unopened draft render",
             Q.render_trees(nopr)
-            == ["- Landing tree: branch 1120-1, PR #11 merged.", "- Development tree: branch 1120-2, no PR yet."],
+            == [
+                "- Landing tree: branch 1120-1, PR #11 merged.",
+                "- Development tree: branch 1120-2, no PR yet.",
+            ],
         )
 
 
@@ -122,9 +170,18 @@ def mutant_render(trees) -> list[str]:
 def rebase_checks() -> None:
     control("open PR: live branch", RB.base_branch(True, "1120-1") == "1120-1")
     control("merged, no record: main", RB.base_branch(False, "1120-1") == "main")
-    control("merged, record without cut_from: main", RB.base_branch(False, "1120-1", {"owner": "s"}) == "main")
-    control("merged, cut_from: that branch", RB.base_branch(False, "1120-1", {"cut_from": "1120-2"}) == "1120-2")
-    control("open PR ignores cut_from", RB.base_branch(True, "1120-1", {"cut_from": "1120-2"}) == "1120-1")
+    control(
+        "merged, record without cut_from: main",
+        RB.base_branch(False, "1120-1", {"owner": "s"}) == "main",
+    )
+    control(
+        "merged, cut_from: that branch",
+        RB.base_branch(False, "1120-1", {"cut_from": "1120-2"}) == "1120-2",
+    )
+    control(
+        "open PR ignores cut_from",
+        RB.base_branch(True, "1120-1", {"cut_from": "1120-2"}) == "1120-1",
+    )
 
 
 def main() -> int:
@@ -136,8 +193,13 @@ def main() -> int:
     control("mutant turns the variant checks red", mutant_red)
     text_checks()
     tree_rendering()
-    sample = [Q.TreeLine("landing", "1120-1", 11, "OPEN"), Q.TreeLine("development", "1120-2", 12, "OPEN")]
-    control("mutant order differs from the real render", mutant_render(sample) != Q.render_trees(sample))
+    sample = [
+        Q.TreeLine("landing", "1120-1", 11, "OPEN"),
+        Q.TreeLine("development", "1120-2", 12, "OPEN"),
+    ]
+    control(
+        "mutant order differs from the real render", mutant_render(sample) != Q.render_trees(sample)
+    )
     rebase_checks()
     for fail in FAILS:
         print("FAIL", fail)

@@ -774,6 +774,7 @@ def test_a_raise_in_the_wait_loop_still_shuts_the_reader_pool_down_without_waiti
 ):
     """3ebcb468.1: the worker thread is non-daemon, so a raise out of the wait loop must release it with `shutdown(wait=False, cancel_futures=True)` rather than leave it blocked on a stream a leaked tracee holds open. Control: the normal path's own shutdown waits."""
     shutdowns: list[dict] = []
+
     class Spy(pr.concurrent.futures.ThreadPoolExecutor):
         def shutdown(self, wait=True, *, cancel_futures=False):
             shutdowns.append({"wait": wait, "cancel_futures": cancel_futures})
