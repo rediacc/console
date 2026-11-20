@@ -15,6 +15,7 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+import types
 
 HERE = pathlib.Path(__file__).resolve().parent
 DISPATCH = str(HERE.parent / "dispatch.py")
@@ -180,28 +181,289 @@ def run(command, gh):
     return proc.returncode == 2, proc.stderr
 
 
-fails = 0
-blocked = 0
-for name, command, gh, want, needle in CASES:
-    got, err = run(command, gh)
-    blocked += got
-    ok = got == want and (not needle or needle in err)
-    fails += not ok
-    print(
-        "%-64s want=%-8s got=%-8s %s"
-        % (
-            name,
-            "BLOCKED" if want else "allowed",
-            "BLOCKED" if got else "allowed",
-            "ok" if ok else "*** FAIL ***",
-        )
-    )
-    if not ok:
-        print("    needle %r; stderr: %s" % (needle, err.strip().splitlines()[:4]))
+# --------------------------------------------------------------------------- two trees (agent/plans/PLAN-two-track-merge-dev.md, box LT4) ---------------------------------------------------------------------------
+#
+# A REAL TWO-TREE REPOSITORY: the development checkout on `1121-1` and a linked landing tree on `1104-1`, both with the console origin. The landing record and the tree role are read through the guard's two seams, `_landing_record` and `_tree_role`, which the in-process pass replaces with what LT1's `commit_policy.landing_record` and `tree_role` answer for this world ({path: the landing tree's realpath, branch: 1104-1}; the role "landing" exactly in that tree).
+# Once commit_policy carries `write_landing_record` (LT1), the same table runs a second time through dispatch.py against a REAL record in the common git directory, with no seam replaced.
+#
+# BOTH DIRECTIONS. Admitted: the development draft beside the landing PR (`--draft`, `-d`, `--head <its branch>`), a submodule create, `gh pr ready` on the landing PR, `gh pr ready --undo`, and a ready once the landing PR is closed. Refused: a non-draft, `--draft=false`, a second draft, a draft beside any other open PR, a draft from the landing tree, from another head or naming the landing branch, two drafts in one command, `gh pr ready` on the draft by number, URL, branch or current branch, and an unreadable list.
+# With no record the draft is refused and the ready admitted, which is the guard's answer before LT4.
+#
+# THE DEFECT CONTROL. The module's declared DEFECT is planted in a copy and the in-process table must change at least one answer; a table the defect leaves green proves nothing about the admission.
 
-if blocked in (0, len(CASES)):
+LANDING_BRANCH, DEV_BRANCH = "1104-1", "1121-1"
+_GITC = ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid"]
+
+
+def _git(path, *argv):
+    subprocess.run(["git", *_GITC, *argv], cwd=path, check=True, capture_output=True, env=_GIT_ENV)
+
+
+DEV = checkout(pathlib.Path(tempfile.mkdtemp(prefix="two-", dir=RUN_TMP)) / "console", GH_REPO)
+_git(DEV, "checkout", "-q", "-b", DEV_BRANCH)
+_git(DEV, "commit", "-q", "--allow-empty", "-m", "base")
+DEV = pathlib.Path(os.path.realpath(DEV))
+LANDING = DEV.parent / "console-landing"
+_git(DEV, "worktree", "add", "-q", "-b", LANDING_BRANCH, str(LANDING))
+RECORD = {"path": str(LANDING), "branch": LANDING_BRANCH}
+
+_PR_LANDING = '{"number":605,"title":"landing","headRefName":"%s","isDraft":false}' % LANDING_BRANCH
+_PR_DRAFT = '{"number":606,"title":"dev","headRefName":"%s","isDraft":true}' % DEV_BRANCH
+_PR_OTHER = '{"number":607,"title":"other","headRefName":"0901-3","isDraft":true}'
+G_NONE = stub(_STUB % (GH_REPO, "[]", RENET_REPO, "[]"))
+G_LANDING = stub(_STUB % (GH_REPO, "[%s]" % _PR_LANDING, RENET_REPO, "[]"))
+G_LANDING_DRAFT = stub(_STUB % (GH_REPO, "[%s,%s]" % (_PR_LANDING, _PR_DRAFT), RENET_REPO, "[]"))
+G_LANDING_OTHER = stub(_STUB % (GH_REPO, "[%s,%s]" % (_PR_LANDING, _PR_OTHER), RENET_REPO, "[]"))
+G_DRAFT_ONLY = stub(_STUB % (GH_REPO, "[%s]" % _PR_DRAFT, RENET_REPO, "[]"))
+
+DRAFT = "gh pr create --draft --base main -t x -b y"
+ALREADY1 = ALREADY % GH_REPO
+READY = "`gh pr ready` on"
+
+TWO_TREE_CASES = [
+    # (name, command, tree, gh, expect_blocked, stderr needle)
+    ("the development draft beside the landing PR", DRAFT, DEV, G_LANDING, False, ""),
+    ("-d is --draft", "gh pr create -d -t x -b y", DEV, G_LANDING, False, ""),
+    (
+        "--head naming the development branch",
+        DRAFT + " --head " + DEV_BRANCH,
+        DEV,
+        G_LANDING,
+        False,
+        "",
+    ),
+    ("--head owner:branch", DRAFT + " -H rediacc:" + DEV_BRANCH, DEV, G_LANDING, False, ""),
+    ("the first PR with nothing open, as before", DRAFT, DEV, G_NONE, False, ""),
+    (
+        "a submodule create is not judged by the console record",
+        DRAFT + " --repo " + RENET_REPO,
+        DEV,
+        G_LANDING,
+        False,
+        "",
+    ),
+    (
+        "a non-draft beside the landing PR",
+        "gh pr create -t x -b y",
+        DEV,
+        G_LANDING,
+        True,
+        "TWO TREES",
+    ),
+    (
+        "--draft=false is not a draft",
+        "gh pr create --draft=false -t x",
+        DEV,
+        G_LANDING,
+        True,
+        ALREADY1,
+    ),
+    ("a second draft from the development branch", DRAFT, DEV, G_LANDING_DRAFT, True, ALREADY1),
+    ("a draft beside an open PR of another branch", DRAFT, DEV, G_LANDING_OTHER, True, ALREADY1),
+    ("a draft from the landing tree", DRAFT, LANDING, G_LANDING, True, ALREADY1),
+    (
+        "a draft whose head is another branch",
+        DRAFT + " --head 0901-3",
+        DEV,
+        G_LANDING,
+        True,
+        ALREADY1,
+    ),
+    (
+        "a draft whose head is the landing branch",
+        DRAFT + " --head " + LANDING_BRANCH,
+        DEV,
+        G_LANDING,
+        True,
+        ALREADY1,
+    ),
+    (
+        "two drafts in one command",
+        "gh pr create -d -t a; gh pr create -d -t b",
+        DEV,
+        G_LANDING,
+        True,
+        ALREADY1,
+    ),
+    ("a development draft while gh is down", DRAFT, DEV, GH_DOWN, True, UNVERIFIED),
+    # ---- gh pr ready
+    (
+        "ready on the current (development) branch",
+        "gh pr ready",
+        DEV,
+        G_LANDING_DRAFT,
+        True,
+        READY + " " + DEV_BRANCH,
+    ),
+    ("ready on the draft by number", "gh pr ready 606", DEV, G_LANDING_DRAFT, True, READY),
+    (
+        "ready on the draft by URL",
+        "gh pr ready https://github.com/x/y/pull/606",
+        DEV,
+        G_LANDING_DRAFT,
+        True,
+        READY,
+    ),
+    (
+        "ready on the draft by branch",
+        "gh pr ready " + DEV_BRANCH,
+        LANDING,
+        G_LANDING_DRAFT,
+        True,
+        READY,
+    ),
+    ("ready while gh is down", "gh pr ready 606", DEV, GH_DOWN, True, UNVERIFIED),
+    (
+        "ready on the landing PR from the landing tree",
+        "gh pr ready",
+        LANDING,
+        G_LANDING_DRAFT,
+        False,
+        "",
+    ),
+    ("ready on the landing PR by number", "gh pr ready 605", DEV, G_LANDING_DRAFT, False, ""),
+    ("ready --undo", "gh pr ready --undo 606", DEV, G_LANDING_DRAFT, False, ""),
+    ("ready once the landing PR is closed", "gh pr ready 606", DEV, G_DRAFT_ONLY, False, ""),
+]
+
+# With no landing record: the guard's answer before LT4.
+NO_RECORD_CASES = [
+    ("no record: the draft is a second PR", DRAFT, DEV, G_LANDING, True, ALREADY1),
+    ("no record: ready is not judged", "gh pr ready 606", DEV, G_LANDING_DRAFT, False, ""),
+]
+
+# Loaded by name after the path hop, as dispatch.py loads them.
+sys.path.insert(0, str(HERE.parents[1]))
+_guards = importlib.import_module("rediacc_hooks.guards")
+_hookio = importlib.import_module("rediacc_hooks.hookio")
+GUARD = _guards.load(STEM)
+
+
+def _seams(module, record):
+    """Replace the module's landing seams with what LT1 answers for this world (`record` None: no record)."""
+
+    def landing_record(_root):
+        return dict(record) if record else None
+
+    def tree_role(root):
+        top = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout.strip()
+        return "landing" if record and os.path.realpath(top) == record["path"] else "development"
+
+    module._landing_record = landing_record
+    module._tree_role = tree_role
+
+
+def run_inproc(module, command, tree, gh):
+    saved = dict(os.environ)
+    os.environ["PATH"] = "%s:%s" % (gh, saved["PATH"])
+    os.environ.pop("GH_REPO", None)
+    try:
+        payload = json.dumps(
+            {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(tree)}
+        )
+        event = _hookio.Event(payload, cwd=str(tree), env=dict(os.environ))
+        rc, _, err = event.result(module.run(event))
+    finally:
+        os.environ.clear()
+        os.environ.update(saved)
+    return rc == 2, err
+
+
+def run_tree(command, tree, gh):
+    env = dict(os.environ, CLAUDE_PROJECT_DIR=str(tree), PATH="%s:%s" % (gh, os.environ["PATH"]))
+    env.pop("GH_REPO", None)
+    payload = json.dumps(
+        {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(tree)}
+    )
+    proc = subprocess.run(
+        [sys.executable, DISPATCH, STEM],
+        input=payload,
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+    )
+    if proc.returncode not in (0, 2):
+        raise SystemExit("guard crashed (rc %d): %s" % (proc.returncode, proc.stderr[-800:]))
+    return proc.returncode == 2, proc.stderr
+
+
+def _defective():
+    """The guard with its declared DEFECT planted, as a fresh module."""
+    source = pathlib.Path(GUARD.__file__).read_text(encoding="utf-8")
+    old, new = GUARD.DEFECT
+    # Twice: once in the declaration, once in the line it plants.
+    if source.count(old) != 2:
+        raise SystemExit("DEFECT %r does not apply once outside its declaration" % old)
+    broken = types.ModuleType("broken_" + STEM)
+    broken.__file__ = GUARD.__file__
+    exec(compile(source.replace(old, new), GUARD.__file__, "exec"), broken.__dict__)
+    return broken
+
+
+def judge(label, table, runner):
+    """Run `table` through `runner`; (answers, failures)."""
+    answers, failures = [], 0
+    for name, command, tree, gh, want, needle in table:
+        got, err = runner(command, tree, gh)
+        answers.append(got)
+        ok = got == want and (not needle or needle in err)
+        failures += not ok
+        print(
+            "%-64s want=%-8s got=%-8s %s"
+            % (
+                "[%s] %s" % (label, name) if label else name,
+                "BLOCKED" if want else "allowed",
+                "BLOCKED" if got else "allowed",
+                "ok" if ok else "*** FAIL ***",
+            )
+        )
+        if not ok:
+            print("    needle %r; stderr: %s" % (needle, err.strip().splitlines()[:4]))
+    return answers, failures
+
+
+RESULTS = [
+    judge("", [(n, c, ROOT, g, w, s) for n, c, g, w, s in CASES], lambda c, _t, g: run(c, g))
+]
+
+_seams(GUARD, RECORD)
+RESULTS.append(judge("seam", TWO_TREE_CASES, lambda c, t, g: run_inproc(GUARD, c, t, g)))
+_seams(GUARD, None)
+RESULTS.append(judge("seam", NO_RECORD_CASES, lambda c, t, g: run_inproc(GUARD, c, t, g)))
+
+BROKEN = _defective()
+_seams(BROKEN, RECORD)
+bad = [run_inproc(BROKEN, c, t, g)[0] for _, c, t, g, _, _ in TWO_TREE_CASES]
+flipped = [case[0] for case, x, y in zip(TWO_TREE_CASES, RESULTS[1][0], bad, strict=True) if x != y]
+print("DEFECT control: %d two-tree answer(s) change with the defect planted" % len(flipped))
+fails = sum(f for _, f in RESULTS)
+if not flipped:
+    print("*** FAIL *** the declared DEFECT changes no answer of the two-tree table")
+    fails += 1
+
+_cp = GUARD.commit_policy
+if hasattr(_cp, "write_landing_record"):
+    _cp.write_landing_record(str(DEV), str(LANDING), LANDING_BRANCH)
+    REAL = [judge("record", TWO_TREE_CASES, run_tree)]
+    os.unlink(_cp.landing_record_path(str(DEV)))
+    REAL.append(judge("record", NO_RECORD_CASES, run_tree))
+    fails += sum(f for _, f in REAL)
+    RESULTS += REAL
+else:
+    print("real-record pass: NOT RUN, commit_policy has no write_landing_record yet (box LT1)")
+
+answers = [a for got, _ in RESULTS for a in got]
+blocked, total = sum(answers), len(answers)
+if blocked in (0, total):
     print("*** FAIL *** the guard answered the same way on every case")
     fails += 1
-print("%d case(s), %d blocked, %d allowed" % (len(CASES), blocked, len(CASES) - blocked))
+print("%d case(s), %d blocked, %d allowed" % (total, blocked, total - blocked))
 print("FAILURES: %d" % fails)
 sys.exit(1 if fails else 0)

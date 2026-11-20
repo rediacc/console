@@ -14,6 +14,9 @@ followed by `RC=$?` keeps BOTH streams and the status, which no helper in
 a JSON array gives its length, a jq FAILURE gives the literal `0`, and an EMPTY input gives the EMPTY STRING, because jq with no input prints nothing and exits
 0. `[[ "" -gt 0 ]]` is false, so the empty case allows -- the same answer as
 zero, by a different route.
+
+TWO TREES, ONE DRAFT BESIDE THE PR (agent/plans/PLAN-two-track-merge-dev.md, box LT4; operator ruling ASKED:2026-11-20T17:47Z "Draft PR"). When the repository carries a landing record (`commit_policy.landing_record`: the open PR's branch bound to the landing tree), the DEVELOPMENT tree's branch may hold exactly one DRAFT PR beside the landing branch's open PR, because the draft PR's run is the only CI that branch gets. The admission is narrow: the create is a draft, it runs in the development tree, its head is that tree's checked-out branch and not the landing branch, and every open PR other than the landing branch's blocks it as before.
+So a second draft, a non-draft and a draft from any other head are refused. `gh pr ready` on any PR but the landing branch's is refused while the landing branch's PR is open: the draft turns ready after the PR branch merges. With no landing record every answer is exactly what it was before the binding existed.
 """
 
 import json
@@ -21,14 +24,14 @@ import os
 import re
 import subprocess
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
 from rediacc_hooks.wellknown import RENET_REPO
 
 CHAIN = "pre-bash"
 ORDER = 24
 
-# FAILS CLOSED is the property, and this is the line that holds it: without the status test an unreadable list becomes an empty list, and "gh is down" reads as "you have no open PRs".
-DEFECT = ("if rc != 0:", "if False:")
+# THE DRAFT ADMISSION'S FILTER is the line planted. Inverted, only the open PRs that stand beside an admitted draft count: with no landing record the second PR this guard exists for is waved through, and with one the landing branch's PR alone blocks the development draft while every other open PR is ignored. The fail-closed arm keeps its own witness (`gh down fails closed` in test-block_second_open_pr.py).
+DEFECT = ("if not _stands_beside(row, beside)", "if _stands_beside(row, beside)")
 
 # `gh` answering is what makes the block direction reachable at all: under the harness default it exits 1 with nothing, which is only the fail-closed arm.
 _GH_LIST = (
@@ -87,6 +90,28 @@ ALREADY_OPEN = (
     "   There is no agent path to a second PR, and nothing to ask for: a second\n"
     "   open PR is the operator's own `!` command (CLAUDE.md Session Defaults\n"
     "   rule 1, one branch and one PR).\n"
+)
+
+LANDING_NOTE = (
+    "\n"
+    "   TWO TREES: this repository binds the landing branch %s to its landing\n"
+    "   tree. Beside that branch's open PR, the development tree's branch may hold\n"
+    "   ONE draft PR (`gh pr create --draft` run in the development tree, its head\n"
+    "   that tree's own branch); any other PR beside it is refused.\n"
+)
+
+READY_REFUSED = (
+    "❌ BLOCKED: `gh pr ready` on %s while the landing branch's PR is open in %s.\n"
+    "\n"
+    "%s\n"
+    "\n"
+    "   WHY: the development branch's PR rides as a draft beside the landing\n"
+    "   branch's PR (agent/plans/PLAN-two-track-merge-dev.md, box LT4). Two ready\n"
+    "   PRs are two merges waiting on one person, the pile the one-PR rule exists\n"
+    "   to prevent.\n"
+    "\n"
+    "   DO THIS INSTEAD: merge the landing branch's PR first; the draft turns\n"
+    "   ready after it merges.\n"
 )
 
 EDGE_CASES = [
@@ -197,46 +222,88 @@ def _create_repo(run_, cwd, inherited):
     return shellscan.gh_run_repo(run_, cwd, inherited)
 
 
-def run(ev):
-    cmd = ev.field("tool_input", "command")
-    cwd = ev.field("cwd")
-    if cmd == "":
-        return hookio.ALLOW
+def _landing_record(root):
+    """`commit_policy.landing_record` for the repository at `root`, None when it binds no landing tree.
 
-    scan = shellscan._command_substitution(shellscan.scan_target(cmd))
-    # Each create's repo is read from its own walked call (`_create_repo`, over `shellscan.gh_run_repo`), so `-R=x`, `-Rx` and `--repo 'x'` count the open PRs of the repo they name: measured 2026-10-07, `gh pr create -R=rediacc/renet` listed console's. Only a command the walk finds no create in keeps the text reader.
-    runs = shellscan.gh_pr_runs(cmd, "create")
-    if runs:
-        repos = []
-        for run_ in runs:
-            # `--help` prints the usage and creates nothing.
-            if shellscan.gh_args(run_.argv).on("help"):
-                continue
-            repo = _create_repo(run_, cwd, ev.env("GH_REPO"))
-            # A repo the walk cannot evaluate (`-R $R`, `GH_REPO=$(...)`, `cd private/$s`) has no open-PR list to read: refused as unverifiable, never listed under a made-up name (#9de9a8e9).
-            if repo == shellscan.UNRESOLVED_REPO:
-                named = shellscan.gh_named_repo(run_, ev.env("GH_REPO"))
-                why = UNRESOLVED_REASON if named else UNRESOLVED_DIR_REASON % run_.cwd
-                ev.warn_raw(UNVERIFIABLE % ("the repository this command names", why))
-                return hookio.DENY
-            if repo not in repos:
-                repos.append(repo)
-    elif shellscan.gh_pr_at_command_pos(scan, "create"):
-        seg = shellscan.gh_pr_segment(scan, "create")
-        repos = [shellscan.target_repo(seg, scan, cwd)]
-    else:
-        return hookio.ALLOW
-
-    for repo in repos:
-        refusal = _refusal(ev, repo)
-        if refusal:
-            return refusal
-    return hookio.ALLOW
+    THE SEAM. Read through `getattr` because the record reader lands in commit_policy as its own box (LT1); with no reader there is no binding, which is the no-record answer. test-block_second_open_pr.py replaces this function and `_tree_role` to stage a binding in-process.
+    """
+    reader = getattr(commit_policy, "landing_record", None)
+    return reader(root) if reader is not None else None
 
 
-def _refusal(ev, repo):
-    """DENY, with the message written, when `repo` already has an open PR of ours or its open PRs cannot be listed; None otherwise."""
-    listing, rc = _run_capture(
+def _tree_role(root):
+    """`commit_policy.tree_role` for the repository at `root`: "landing" or "development" ("" with no reader). The same seam as `_landing_record`."""
+    reader = getattr(commit_policy, "tree_role", None)
+    return reader(root) if reader is not None else ""
+
+
+def _effective_dir(run_, cwd):
+    """The directory one walked `gh` call runs in after its `cd`s, None when a `cd` target cannot be evaluated (`cd -`, a variable). A `cd` into a missing directory leaves the shell where it was."""
+    base = cwd or os.getcwd()
+    rel = run_.cwd or ""
+    if rel in ("", "."):
+        return base
+    if rel == "-" or _UNEXPANDED.search(rel):
+        return None
+    target = os.path.normpath(os.path.join(base, os.path.expanduser(rel)))
+    return target if os.path.isdir(target) else base
+
+
+def _bound(run_, cwd, repo):
+    """(repository root, landing record) for one walked call that a landing record governs, (None, None) otherwise.
+
+    Governed means: the call runs in a git checkout whose repository carries a valid record, and it targets that checkout's own origin, so a create or ready aimed at another repository (a submodule's `--repo`) is judged as before.
+    """
+    directory = _effective_dir(run_, cwd)
+    if directory is None or repo == shellscan.UNRESOLVED_REPO:
+        return None, None
+    root = commit_policy.toplevel(directory)
+    if not root:
+        return None, None
+    record = _landing_record(root)
+    if not record or repo.lower() != shellscan.gh_repo_name(shellscan._origin_repo(root)):
+        return None, None
+    return root, record
+
+
+def _draft_beside(run_, root, record):
+    """The landing branch an admitted draft may stand beside, None when this create is not the development tree's draft.
+
+    The create is a draft (`--draft`/`-d`, not `--draft=false`), it runs in the development tree, and its head (`--head`/`-H`, an `owner:` prefix dropped, else the branch checked out) is that tree's own branch and not the landing branch.
+    """
+    if record is None:
+        return None
+    args = shellscan.gh_args(run_.argv)
+    if not args.on("draft") or _tree_role(root) != "development":
+        return None
+    current = commit_policy.current_branch(root)
+    head = args.last("head")
+    head = head.split(":", 1)[-1] if head else current
+    landing = record.get("branch", "")
+    if not head or not landing or head != current or head == landing:
+        return None
+    return landing
+
+
+def _stands_beside(row, beside):
+    """Does the open PR `row` stand beside an admitted draft? Only the landing branch's PR does, and only when the create was admitted (`beside`, the landing branch)."""
+    return beside is not None and row.get("headRefName") == beside
+
+
+def _listed(listing):
+    """The open-PR listing as a list of objects, None when it is anything else (the count then stays `_jq_length`'s)."""
+    try:
+        doc = json.loads(listing)
+    except ValueError:
+        return None
+    if isinstance(doc, list) and all(isinstance(item, dict) for item in doc):
+        return doc
+    return None
+
+
+def _list_open(repo):
+    """`gh pr list` of this author's open PRs in `repo`: (merged output, status)."""
+    return _run_capture(
         [
             "gh",
             "pr",
@@ -252,6 +319,97 @@ def _refusal(ev, repo):
         ]
     )
 
+
+def _ready_target(selector, root, rows):
+    """The head branch a `gh pr ready` selector names: a number (`5`, `#5`, a `/pull/5` URL) read from the open listing, a branch name as given, or the branch checked out at `root`. "" when unknown."""
+    m = re.fullmatch(r"#?(\d+)", selector) or re.search(r"/pull/(\d+)", selector)
+    if m:
+        for row in rows:
+            if str(row.get("number")) == m.group(1):
+                return row.get("headRefName") or ""
+        return ""
+    if selector:
+        return selector
+    return commit_policy.current_branch(root)
+
+
+def _ready_refusal(ev, run_, cwd):
+    """DENY when this `gh pr ready` names a PR other than the landing branch's while that PR is open; None otherwise, and always None with no landing record."""
+    args = shellscan.gh_args(run_.argv)
+    if args.on("help") or args.on("undo"):
+        return None
+    repo = _create_repo(run_, cwd, ev.env("GH_REPO"))
+    root, record = _bound(run_, cwd, repo)
+    if record is None:
+        return None
+    listing, rc = _list_open(repo)
+    rows = _listed(listing) if rc == 0 else None
+    if rows is None:
+        records, _ = shellscan._records(listing)
+        ev.warn_raw(UNVERIFIABLE % (repo, shellscan._command_substitution("\n".join(records[:2]))))
+        return hookio.DENY
+    landing = record.get("branch", "")
+    if not any(row.get("headRefName") == landing for row in rows):
+        return None
+    target = _ready_target(args.operands[0] if args.operands else "", root, rows)
+    if target == landing:
+        return None
+    ev.warn_raw(READY_REFUSED % (target or "a PR this hook cannot name", repo, _rows(listing)))
+    return hookio.DENY
+
+
+def run(ev):
+    cmd = ev.field("tool_input", "command")
+    cwd = ev.field("cwd")
+    if cmd == "":
+        return hookio.ALLOW
+
+    for run_ in shellscan.gh_pr_runs(cmd, "ready"):
+        refusal = _ready_refusal(ev, run_, cwd)
+        if refusal:
+            return refusal
+
+    scan = shellscan._command_substitution(shellscan.scan_target(cmd))
+    # Each create's repo is read from its own walked call (`_create_repo`, over `shellscan.gh_run_repo`), so `-R=x`, `-Rx` and `--repo 'x'` count the open PRs of the repo they name: measured 2026-10-07, `gh pr create -R=rediacc/renet` listed console's. Only a command the walk finds no create in keeps the text reader.
+    runs = shellscan.gh_pr_runs(cmd, "create")
+    # repo -> (the landing branch an admitted draft stands beside or None, the landing record or None).
+    repos = {}
+    if runs:
+        for run_ in runs:
+            # `--help` prints the usage and creates nothing.
+            if shellscan.gh_args(run_.argv).on("help"):
+                continue
+            repo = _create_repo(run_, cwd, ev.env("GH_REPO"))
+            # A repo the walk cannot evaluate (`-R $R`, `GH_REPO=$(...)`, `cd private/$s`) has no open-PR list to read: refused as unverifiable, never listed under a made-up name (#9de9a8e9).
+            if repo == shellscan.UNRESOLVED_REPO:
+                named = shellscan.gh_named_repo(run_, ev.env("GH_REPO"))
+                why = UNRESOLVED_REASON if named else UNRESOLVED_DIR_REASON % run_.cwd
+                ev.warn_raw(UNVERIFIABLE % ("the repository this command names", why))
+                return hookio.DENY
+            root, record = _bound(run_, cwd, repo)
+            beside = _draft_beside(run_, root, record)
+            # A second create of the same repository in one command is a second PR: the admission is for exactly one draft.
+            if repo in repos:
+                beside = None
+                record = record or repos[repo][1]
+            repos[repo] = (beside, record)
+    elif shellscan.gh_pr_at_command_pos(scan, "create"):
+        seg = shellscan.gh_pr_segment(scan, "create")
+        repos[shellscan.target_repo(seg, scan, cwd)] = (None, None)
+    else:
+        return hookio.ALLOW
+
+    for repo, (beside, record) in repos.items():
+        refusal = _refusal(ev, repo, beside, record)
+        if refusal:
+            return refusal
+    return hookio.ALLOW
+
+
+def _refusal(ev, repo, beside=None, record=None):
+    """DENY, with the message written, when `repo` already has an open PR of ours that does not stand beside an admitted draft (`beside`, the landing branch), or its open PRs cannot be listed; None otherwise. `record`, the landing record, adds the two-tree rule to the message."""
+    listing, rc = _list_open(repo)
+
     if rc != 0:
         records, _ = shellscan._records(listing)
         head = shellscan._command_substitution("\n".join(records[:2]))
@@ -259,8 +417,12 @@ def _refusal(ev, repo):
         return hookio.DENY
 
     count = _jq_length(listing)
+    rows = _listed(listing)
+    if rows is not None:
+        count = str(len([row for row in rows if not _stands_beside(row, beside)]))
     if not (count != "" and int(count) > 0):
         return None
 
-    ev.warn_raw(ALREADY_OPEN % (count, repo, _rows(listing)))
+    note = LANDING_NOTE % record.get("branch", "") if record else ""
+    ev.warn_raw(ALREADY_OPEN % (count, repo, _rows(listing)) + note)
     return hookio.DENY
