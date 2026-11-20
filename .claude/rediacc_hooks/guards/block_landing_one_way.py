@@ -226,7 +226,11 @@ def _push_reason(args, repo, landing, dev):
     for spec_src, spec_dst in pairs:
         src = (current or "HEAD") if spec_src == "HEAD" else spec_src
         dst = current if spec_dst == "HEAD" else spec_dst
-        if (dst or "").removeprefix("refs/heads/") == dev:
+        dst_name = (dst or "").removeprefix("refs/heads/")
+        # The development branch going to its own name, or to a name that is neither the landing branch nor main (a backup ref), publishes nothing onto the landing line; only a destination of landing or main can carry development work there.
+        if dst_name == dev or (
+            (src or "").removeprefix("refs/heads/") == dev and dst_name not in (landing, "main")
+        ):
             continue
         sha = _sha(repo, src)
         if not sha:
