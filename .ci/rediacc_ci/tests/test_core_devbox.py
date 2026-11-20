@@ -32,10 +32,10 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.core import devbox
-from rediacc_ci.well_known import IMAGE_REGISTRY
 from rediacc_ci.core import devbox_shadow_driver as driver
 from rediacc_ci.setup import bridge
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 TWIN = ".ci/lib/devbox.sh"
 PORT = ".ci/rediacc_ci/core/devbox.py"
@@ -317,7 +317,10 @@ def claims_image(obs: dict[str, list[str]]) -> None:
     pin = json.loads(
         paths.from_root(".ci", "config", "devcontainer-image.json").read_text(encoding="utf-8")
     )
-    assert stdout_of(obs["run-image-match"]) == ("%s/%s@%s\n" % (IMAGE_REGISTRY, pin["image"], pin["digest"])).encode()
+    assert (
+        stdout_of(obs["run-image-match"])
+        == ("%s/%s@%s\n" % (IMAGE_REGISTRY, pin["image"], pin["digest"])).encode()
+    )
     assert not any(call[1] == "build" for call in calls_of(obs["ensure-uid-match"]))
     # A present derived tag is REUSED: inspected, never rebuilt.
     assert not any(call[1] == "build" for call in calls_of(obs["ensure-uid-present"]))
