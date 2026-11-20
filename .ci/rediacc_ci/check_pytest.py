@@ -64,7 +64,7 @@ from collections.abc import Mapping
 # is on sys.path. Everything after this line goes through rediacc_ci.paths.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from rediacc_ci import core_lease, log, paths, proc, pytest_impact
+from rediacc_ci import core_lease, gitx, log, paths, proc, pytest_impact
 from rediacc_ci.controls import Controls
 from rediacc_ci.core import xml_trusted
 from rediacc_ci.quality import pytest_slow_ratchet
@@ -1294,9 +1294,13 @@ def impact_floor(smoke_corpus: int) -> int:
 
 
 def write_scope(root: pathlib.Path, record: dict) -> None:
-    """The scope of this run, for the receipt. Written to the `.ci/cache` scratch root like the junit beside it."""
+    """The scope of this run, for the receipt. Written to the `.ci/cache` scratch root like the junit beside it. Only a GREEN run reaches here (every failure returns first), so `head` and `python` name the last commit this suite was green at, which `last_green_base` reads as the next round's impact base."""
     target = root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name
     target.parent.mkdir(parents=True, exist_ok=True)
+    head = gitx.git(["rev-parse", "HEAD"], root=root)
+    record = dict(
+        record, python=sys.version, head=head.stdout.strip() if head.returncode == 0 else None
+    )
     target.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8")
     print(
         "pytest-scope: %s files=%s collected=%s map=%s"
@@ -1307,6 +1311,24 @@ def write_scope(root: pathlib.Path, record: dict) -> None:
             record.get("mapDigest") or "-",
         )
     )
+
+
+def last_green_base(root: pathlib.Path) -> str | None:
+    """The commit of the last GREEN run (`write_scope`'s `head`), as the impact base, so a round re-judges only what changed since the suite last passed rather than the whole unpushed batch. Sound by induction: a green full run proves every test at its head, and a green impact run over base B proves every test the B..head diff reaches while the rest were proven at B. None, so the push base stands, when there is no record, the Python that ran it differs (a new interpreter is a new suite), or its head is not an ancestor of HEAD (a rebase or another branch)."""
+    try:
+        record = json.loads(
+            (root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name).read_text(
+                encoding="utf-8"
+            )
+        )
+    except (OSError, ValueError):
+        return None
+    head = record.get("head") if isinstance(record, dict) else None
+    if not isinstance(head, str) or not head or record.get("python") != sys.version:
+        return None
+    if gitx.git(["merge-base", "--is-ancestor", head, "HEAD"], root=root).returncode != 0:
+        return None
+    return head
 
 
 def select_impact(root: pathlib.Path, base: str | None = None):
@@ -1537,7 +1559,15 @@ def main(argv: list[str]) -> int:
     full_reason = wants_full(argv)
     selection = None
     if full_reason is None:
-        selection = select_impact(root, parse_base(argv))
+        base = parse_base(argv)
+        if base is None:
+            base = last_green_base(root)
+            if base is not None:
+                print(
+                    "pytest-impact: base = the last green commit %s (scope.json), not the push base"
+                    % base[:12]
+                )
+        selection = select_impact(root, base)
         print(selection.line())
         if selection.scope != "impact":
             full_reason = "pytest-impact: %s" % selection.reason

@@ -7,6 +7,8 @@ THE PLANTED DEFECT: make `wants_full` return None unconditionally and the two fu
 
 import json
 import pathlib
+import subprocess
+import sys
 
 import pytest
 
@@ -242,3 +244,75 @@ def test_the_impact_floor_counts_a_smoke_file_a_change_also_reached(monkeypatch)
     monkeypatch.setattr(check_pytest, "select_impact", lambda _r, _b=None: impact)
     assert check_pytest.main([]) == check_pytest.EXIT_OK
     assert seen == [2], "the smoke file's two tests were not counted toward floor 1"
+
+
+def test_a_local_run_diffs_against_the_last_green_commit(gate, monkeypatch, capsys):
+    _root, _calls, asked = gate
+    monkeypatch.setattr(check_pytest, "last_green_base", lambda _root: "c0ffee" * 6 + "c0ff")
+    assert check_pytest.main([]) == check_pytest.EXIT_OK
+    assert asked == ["c0ffee" * 6 + "c0ff"], (
+        "the impact selection did not use the last green commit"
+    )
+    assert "base = the last green commit c0ffeec0ffee" in capsys.readouterr().out
+
+
+def test_an_explicit_base_wins_over_the_last_green_commit(gate, monkeypatch):
+    _root, _calls, asked = gate
+    consulted: list[bool] = []
+    monkeypatch.setattr(
+        check_pytest, "last_green_base", lambda _root: consulted.append(True) or "abc"
+    )
+    assert check_pytest.main(["--base", "origin/main"]) == check_pytest.EXIT_OK
+    assert asked == ["origin/main"]
+    assert consulted == [], "--base must decide alone"
+
+
+def _git(repo: pathlib.Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", "-C", str(repo), *args], check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+
+def _green_repo(tmp_path: pathlib.Path) -> tuple[pathlib.Path, str]:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _git(repo, "config", "user.email", "fixture@example.invalid")
+    _git(repo, "config", "user.name", "fixture")
+    _git(repo, "config", "commit.gpgsign", "false")
+    (repo / "a.txt").write_text("1\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "green")
+    green = _git(repo, "rev-parse", "HEAD")
+    (repo / "a.txt").write_text("2\n", encoding="utf-8")
+    _git(repo, "commit", "-q", "-am", "next")
+    return repo, green
+
+
+def _record(repo: pathlib.Path, head: str, python: str) -> None:
+    target = repo / str(check_pytest.SCOPE_RELPATH)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        json.dumps({"pytestScope": "full", "head": head, "python": python}), encoding="utf-8"
+    )
+
+
+def test_last_green_base_is_the_recorded_ancestor(tmp_path):
+    repo, green = _green_repo(tmp_path)
+    assert check_pytest.last_green_base(repo) is None, "no record must leave the push base"
+    _record(repo, green, sys.version)
+    assert check_pytest.last_green_base(repo) == green
+    _record(repo, green, "2.7.0 (an older interpreter)")
+    assert check_pytest.last_green_base(repo) is None, "another Python is another suite"
+    orphan = _git(repo, "commit-tree", _git(repo, "rev-parse", "HEAD^{tree}"), "-m", "elsewhere")
+    _record(repo, orphan, sys.version)
+    assert check_pytest.last_green_base(repo) is None, (
+        "a head HEAD does not descend from is no base"
+    )
+
+
+def test_a_green_scope_records_the_head_it_was_green_at(tmp_path):
+    repo, _green = _green_repo(tmp_path)
+    check_pytest.write_scope(repo, {"pytestScope": "impact", "collected": 1})
+    head = _git(repo, "rev-parse", "HEAD")
+    assert check_pytest.last_green_base(repo) == head
