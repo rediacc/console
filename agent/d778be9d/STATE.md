@@ -1,19 +1,18 @@
-## SESSION d778be9d 2026-11-20T09:04:10Z
+## SESSION d778be9d 2026-11-20T10:49:36Z
 
-# STATE d778be9d (2026-11-20 ~09:05Z)
+# STATE d778be9d (2026-11-20 ~11:15Z)
 
 ## Next action
-1. vm:check --changed --base v3.0.1 is task bb16p240t (log /tmp/m/vmcheck17.log) at pushed head 073e174f7 (tree 6dde8ea6). On VERIFIED: `RELEASE_ASKED=ASKED:2026-11-20T07:05Z npm run release:local -- --channel edge --workers-only --regions us,asia --branch-release --dry-run`, then the real run (operator /ask 07:05Z "Release us/asia now"); then `root_grants --apply` on every target; then the l1vm host key (#3fb4edcc). That clears CI's "Off-box ops health" red.
-2. Then commit, each by path with a PR-TASK 79b7e92e trailer (uncommitted, verified): (a) carried-only advance: scripts/ci-runner/quick-clone.ts + .claude/hooks/stop/wl_review.py + .claude/hooks/stop/test-review-mark.py (62 controls; run `npx tsx scripts/ci-runner/quick-clone.ts --selftest` right after commit, the guard refuses it uncommitted); pytest last-green base: .ci/rediacc_ci/check_pytest.py + .ci/rediacc_ci/tests/test_check_pytest_impact.py (18 pass); shared-literal rule: .ci/rediacc_ci/pytest_impact.py (MAP_SCHEMA 3) + .ci/rediacc_ci/tests/test_pytest_impact.py (93 pass); cheap prerequisite first: scripts/ci-runner/pool.ts + scripts/ci-runner/learned-selftest.ts (run.ts --selftest 696 ok, red without the rule). Then land Landlock lease commit adf5b4052 (./run.sh worktree land agent-abde8bf105a3f35b0), the plans PLAN-two-track-merge-dev.md (approved; add to QUEUE Promoted, regenerate plan records), ci:quick, push.
-3. Watch PR #605 CI; /pr-merge when green (babysit phase set; effort quiet).
-4. After the merge: implement PLAN-two-track-merge-dev inline (operator: "Plan as written but you'll do them all in-line as much as possible. If you see more oppurtunity for bug-fix and optimization go for all of them too."), PLAN-pr-loop-single-source (#3e7dcac6), Landlock installer/docs/notify plan (#3c7f53fb), parked #68452957 #3d38c1c9.
+1. Fix review findings 77300bd7.1 (wl_planrec _done_index memo keys on id() of entries without keeping them alive: store the entries tuple itself, compare with `is`) and 77300bd7.2 (resource_lock.held_by_ancestor without O_NOFOLLOW: lstat-check for a symlink and raise), each with a test; mark them; read the 4525b520 review.
+2. Continue PLAN-two-track-merge-dev inline (operator: start now, in the babysit phase): done P0 (profile: done_commit 409 s of 511), P1 re-scoped (e72055c33, 77300bd74: plan-implementation 8m33s -> 1m24s), S1 (4525b5203: prose 40.6 s cold -> 0.56 s warm). Next in order: A1 (path-trace loopback DNS port 53 = network), C1 (nice -n 10 for non-critical gates; C0 cheapPrereqFirst already landed 62c5e6733), RB1-RB5 (rebase consistency, operator "Add and build now"), F1/F2 (freeze guard, LAST: it will freeze later non-fix commits), A0/A2/A3, R0-R4, M1. Tick boxes P0/P1/S1/C0 with --plan-investigate then --plan-tick.
+3. Then vm:check at HEAD (`npm run vm:check -- --changed --base v3.0.1`; rdc.sh fleet-lock re-wrap loop fixed 978940c41..d62569578, second-group fleet comes up now), release us/asia (RELEASE_ASKED=ASKED:2026-11-20T07:05Z, dry run first), `root_grants --apply`, l1vm host key (#3fb4edcc), ci:quick, push, watch PR #605 CI, /pr-merge.
 
 ## Big pieces
-- PR #605 (branch 1104-1): CI red only on ops-health (off-box) and the oracle-10 empty shard (fix adf5b4052 pending landing).
-- Speed-ups built (above); email plan X1/X2/LP-bench ticked (227953057, ee4737ff3); remaining H0-H4, O1, P1 (#45585ba5).
+- PR #605 (1104-1): CI red on ops-health (needs release + root grants) and oracle-10 6/11 (fixed 5ad916229 + 944fb0428, needs push).
+- Committed tonight: speed-ups 6f1b427ec e652db911 b8518fdd5 62c5e6733; report scoping 1349d0875; Landlock 5ad916229; plans cd7667010 (two-track + ten rmcp, not promoted per D51); rdc.sh lock fix 978940c41 33af01173 ec0e9222b d62569578; done_commit index e72055c33 77300bd74; prose cache 4525b5203.
 
 ## Owed ticks
-- #116b1a79, #68452957 after the speed-up commits; #28b00eb3 after the Landlock landing and a green oracle-10 leg.
+- PLAN-two-track-merge-dev P0, P1, S1, C0; #116b1a79 #68452957 (commits above); #28b00eb3 after a green oracle-10 leg.
 
 ## Delegated
-- bb16p240t (shell): vm:check vs v3.0.1; #02389657 #4889018a #116b1a79 leased to it.
+- none running; wake timer to arm.
