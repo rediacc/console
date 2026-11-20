@@ -54,6 +54,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { validateBlockerQuality } from '../lib/blocker-validator.js';
 import { type ControlCase, summarizeControls } from '../lib/controls.js';
+import type { InstallStep } from '../lib/deps/plan.js';
 import { isEntryPoint } from '../lib/entry-point.js';
 import {
   type DriverContext,
@@ -70,7 +71,13 @@ import {
   registerDrivers,
   withManifestGates,
 } from '../lib/pins/driver.js';
-import { lockDrift, planLockfiles, planRemove } from '../lib/pins/drivers/npm.js';
+import {
+  lockDrift,
+  pinnedNpm,
+  planLockfiles,
+  planRemove,
+  stepsOf,
+} from '../lib/pins/drivers/npm.js';
 import {
   movedPinGroups,
   planManifestPins,
@@ -3774,7 +3781,117 @@ function followControls(): ControlCase[] {
       return true;
     }
   };
+  // A pin with a second package.json site: the declared writes and the planned writes must be one set (review abab7fec.1).
+  const twin: PinEntry | undefined = wrangler && {
+    ...wrangler,
+    sites: [
+      ...wrangler.sites,
+      {
+        repo: '.',
+        file: 'workers/other/package.json',
+        role: 'version',
+        match: '"wrangler": "(?<value>[^"]+)"',
+        expect: 1,
+      },
+    ],
+  };
+  const twinTexts: Record<string, string> = {
+    ...texts,
+    '.ci/config/constants.sh': 'readonly WRANGLER_VERSION="4.164.0"\n',
+    'workers/other/package.json': `${JSON.stringify({ name: 'o', devDependencies: { wrangler: '4.164.0' } }, null, 2)}\n`,
+  };
+  const twinCtx: DriverContext = { ...ctx, read: (p) => twinTexts[p.file] ?? null };
+  const byText = (a: string, b: string): number => Number(a > b) - Number(a < b);
+  const twinPlan = twin ? planFollow([twin], twinCtx) : { writes: [], changes: [] };
+  const twinDeclared = twin
+    ? followWrites([twin])
+        .map((p) => p.file)
+        .sort(byText)
+        .join(',')
+    : '';
+  const twinPlanned = twinPlan.writes
+    .map((w) => w.file)
+    .sort(byText)
+    .join(',');
+  // The npm plan builder under a multi-site pin: the follow step and its declared writes ride the plan (review abab7fec.2).
+  const bumpStep = (pkg: string): InstallStep => ({
+    cwd: path.join(REPO_ROOT, 'workers/account'),
+    args: ['update', pkg],
+    label: 'workers/account (update)',
+    packages: [{ name: pkg, current: '4.164.0', latest: '4.165.0', wanted: '4.165.0' }],
+    checks: [],
+  });
+  const built = wrangler
+    ? stepsOf(ctx, wrangler, [bumpStep('wrangler')], pinnedNpm(REPO_ROOT))
+    : null;
+  const followStep = built?.steps.find((st) => st.label.startsWith('registry pin sites follow'));
+  const unrelated = wrangler
+    ? stepsOf(ctx, wrangler, [bumpStep('left-pad')], pinnedNpm(REPO_ROOT))
+    : null;
+  // The `follow` verb of npm-steps on a temp tree: constants.sh moves, a second run writes nothing (review abab7fec.3).
+  const verbRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'pins-selftest-'));
+  FIXTURE_ROOTS.push(verbRoot);
+  const verbFiles: Record<string, string> = {
+    '.ci/config/constants.sh': 'readonly WRANGLER_VERSION="4.164.0"\n',
+    'workers/account/package.json': texts['workers/account/package.json'],
+  };
+  for (const [rel, text] of Object.entries(verbFiles)) {
+    fs.mkdirSync(path.dirname(path.join(verbRoot, rel)), { recursive: true });
+    fs.writeFileSync(path.join(verbRoot, rel), text);
+  }
+  fs.copyFileSync(
+    path.join(REPO_ROOT, '.ci/config/pins.json'),
+    path.join(verbRoot, '.ci/config/pins.json')
+  );
+  const runVerb = (): ReturnType<typeof spawnSync> =>
+    spawnSync(
+      process.execPath,
+      [
+        ...process.execArgv,
+        path.join(REPO_ROOT, 'scripts/lib/pins/drivers/npm-steps.ts'),
+        'follow',
+        Buffer.from(JSON.stringify([bumpStep('wrangler')])).toString('base64'),
+      ],
+      {
+        encoding: 'utf8',
+        env: { ...process.env, CHECK_DEPS_ROOT: verbRoot, CHECK_DEPS_MUTANT: '' },
+      }
+    );
+  const constants = (): string =>
+    fs.readFileSync(path.join(verbRoot, '.ci/config/constants.sh'), 'utf8');
+  const first = runVerb();
+  const afterFirst = constants();
+  const second = runVerb();
+  const afterSecond = constants();
   return [
+    {
+      name: 'pin follow: CONTROL: a pin with two package.json sites declares exactly the sites its plan writes',
+      ok:
+        twin !== undefined &&
+        twinPlanned ===
+          'workers/other/package.json,.ci/config/constants.sh'.split(',').sort().join(',') &&
+        twinDeclared === twinPlanned,
+      detail: `declared=${twinDeclared} planned=${twinPlanned}`,
+    },
+    {
+      name: 'pin follow: CONTROL: the npm plan of a package under a multi-site pin carries the follow step and declares its writes',
+      ok:
+        followStep?.run.includes('follow') === true &&
+        followStep.writes.some((w) => w.file === '.ci/config/constants.sh') &&
+        unrelated !== null &&
+        !unrelated.steps.some((st) => st.label.startsWith('registry pin sites follow')),
+      detail: JSON.stringify(built?.steps.map((st) => st.label)),
+    },
+    {
+      name: 'pin follow: the follow verb moves constants.sh to the anchor version and a second run writes nothing',
+      ok:
+        first.status === 0 &&
+        afterFirst === 'readonly WRANGLER_VERSION="4.165.0"\n' &&
+        second.status === 0 &&
+        afterSecond === afterFirst &&
+        String(second.stdout).includes('0 file(s) rewritten'),
+      detail: `rc=${first.status}/${second.status} ${afterFirst.trim()} ${String(first.stderr).slice(-300)}`,
+    },
     {
       name: 'pin follow: a moved package listed under a multi-site pin moves every site of it to the same version',
       ok:

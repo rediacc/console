@@ -1139,6 +1139,13 @@ def test_timed_command_keeps_stdout_and_exit_and_reports_elapsed_on_stderr() -> 
     assert backup_renet.elapsed_of("") == -1
 
 
+def test_timed_command_elapsed_tracks_a_two_second_command() -> None:
+    # A constant 1, or a value off by more than the clock tick, is red here: `date +%s` read twice around a 2 s sleep differs by 2 or 3.
+    done = _sh(backup_renet.timed_command("sleep 2"), capture_output=True)
+    assert done.returncode == 0
+    assert backup_renet.elapsed_of(done.stderr) in (2, 3)
+
+
 @pytest.mark.skipif(not shutil.which("flock"), reason="needs util-linux flock")
 def test_slot_busy_sees_a_held_flock_and_not_a_free_one(tmp_path: pathlib.Path) -> None:
     lock = str(tmp_path / "slot.lock")

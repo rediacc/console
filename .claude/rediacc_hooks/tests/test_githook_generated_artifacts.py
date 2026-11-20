@@ -482,6 +482,25 @@ def _prefetch_lock():
         yield
 
 
+def _prefetch_fetch_argv(repo: pathlib.Path, remote: str) -> list[str]:
+    """The one batched fetch by oid, with the oids read from stdin: the lazy-fetch spelling of the VCS itself."""
+    return [
+        "git",
+        "-C",
+        str(repo),
+        "-c",
+        "fetch.negotiationAlgorithm=noop",
+        "fetch",
+        "-q",
+        "--no-tags",
+        "--no-write-fetch-head",
+        "--recurse-submodules=no",
+        "--filter=blob:none",
+        remote,
+        "--stdin",
+    ]
+
+
 def _prefetch_main_plans() -> int:
     """Make every `agent/plans` blob of origin/main present in this checkout, and return how many were absent.
 
@@ -510,21 +529,7 @@ def _prefetch_main_plans() -> int:
             # A slow or failed fetch must not error the module-scoped fixture: the plan-renders case alone depends on these blobs, and its own failure quotes PREFETCH_REPORT.
             try:
                 got = subprocess.run(
-                    [
-                        "git",
-                        "-C",
-                        str(REPO_ROOT),
-                        "-c",
-                        "fetch.negotiationAlgorithm=noop",
-                        "fetch",
-                        "-q",
-                        "--no-tags",
-                        "--no-write-fetch-head",
-                        "--recurse-submodules=no",
-                        "--filter=blob:none",
-                        "origin",
-                        "--stdin",
-                    ],
+                    _prefetch_fetch_argv(REPO_ROOT, "origin"),
                     input="\n".join(missing) + "\n",
                     capture_output=True,
                     text=True,
@@ -750,10 +755,67 @@ def test_prefetch_fetches_the_missing_blob_under_the_lock_and_records_nothing(
     assert _prefetch_main_plans() == 1
     assert script.fetches == 1
     # The oids ride stdin under the lazy-fetch flags, never as refspec arguments.
-    assert "--stdin" in script.argv and "--filter=blob:none" in script.argv
+    assert "--stdin" in script.argv
+    assert "--filter=blob:none" in script.argv
     assert script.stdin == "%040d\n" % 2
     assert PREFETCH_REPORT == []
     assert list(tmp_path.glob("plan-blob-prefetch-*.lock"))
+
+
+def _git_local(cwd, *args):
+    return subprocess.run(
+        ["git", "-C", str(cwd), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
+    )
+
+
+def _blobless_clone_of_local_bare(tmp_path):
+    """A local bare repo holding one blob, and a blobless clone of it that lacks the blob. Returns (clone, oid)."""
+    bare, seed, clone = tmp_path / "bare.git", tmp_path / "seed", tmp_path / "clone"
+    assert subprocess.run(["git", "init", "-q", "--bare", str(bare)], check=False).returncode == 0
+    for key in ("uploadpack.allowFilter", "uploadpack.allowAnySHA1InWant"):
+        assert _git_local(bare, "config", key, "true").returncode == 0
+    assert subprocess.run(["git", "init", "-q", str(seed)], check=False).returncode == 0
+    (seed / "plan.md").write_text("a plan blob\n", encoding="utf-8")
+    ident = ["-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+    assert _git_local(seed, "add", "plan.md").returncode == 0
+    assert _git_local(seed, *ident, "commit", "-q", "-m", "seed").returncode == 0
+    assert _git_local(seed, "push", "-q", str(bare), "HEAD:refs/heads/main").returncode == 0
+    oid = _git_local(seed, "rev-parse", "HEAD:plan.md").stdout.strip()
+    cloned = subprocess.run(
+        [
+            "git",
+            "clone",
+            "-q",
+            "--filter=blob:none",
+            "--no-checkout",
+            "file://%s" % bare,
+            str(clone),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert cloned.returncode == 0, cloned.stderr
+    assert _git_local(clone, "cat-file", "-e", oid).returncode != 0, "the blob must start absent"
+    return clone, oid
+
+
+def test_prefetch_argv_brings_a_blob_into_a_real_blobless_clone(tmp_path):
+    """Real git, no network: a refusal by the VCS itself, not only a wrong argv, turns this red."""
+    clone, oid = _blobless_clone_of_local_bare(tmp_path)
+    got = subprocess.run(
+        _prefetch_fetch_argv(clone, "origin"),
+        input=oid + "\n",
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert got.returncode == 0, got.stderr
+    assert _git_local(clone, "cat-file", "-e", oid).returncode == 0, "present after the fetch"
 
 
 def test_prefetch_skips_the_fetch_when_another_worker_filled_the_gap(monkeypatch, tmp_path):
