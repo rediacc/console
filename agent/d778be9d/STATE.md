@@ -1,17 +1,15 @@
-## SESSION d778be9d 2026-11-20T18:07:57Z
+## SESSION d778be9d 2026-11-20T19:41:09Z
 
-# STATE d778be9d (2026-11-20 ~19:15Z, operator at keyboard)
+# STATE d778be9d (2026-11-20 ~20:30Z)
 
 ## Next action
-1. #02389657 #4889018a PR #605 push path: vm:check VERIFIED (tree d71ec94a2f29). ci:quick at 0379bb969 RED on 19 gates (/tmp/m/ciquick-0379bb969.log). FX3 landed (ed9f08417 f1a09b3a0; review ed9f0841 has 3 findings incl. 1 security: plan_impl_facts save path may escape root, fix). Waiting: FX1 (a4b344372b2dd730b, item #1e2e6047: freeze guard reds, hook-integrity, git-op-conditionals, differential goldens, orphan suites leaving claude-worklist in TMPDIR via worklist_for mkdir, sys-path hop, test-block_pr_freeze_commit.py +x, pr_freeze/test types), FX2 (af4bf021287083f8e, #6fd792e9: env-manifest GH_ACTOR, python-env-registry VM_IMAGE, bws-map, policy-inventory, literal-sources pin uses WK_IMAGE_REGISTRY, R0 job profiler/prereq/quality-complete/lane-durations p90). Mine: NEW python-types errors in check_plan_implementation.py (attr-defined x3, assignment), test-review-mark.py (arg-type x2, operator, assignment), wl_review.py (arg-type), prose_style.py (var-annotated): run `npm run -s check:ci-python-types` for lines and fix. pr-task-trailers now green. Land FX1/FX2 via ./run.sh worktree land <id>, rerun ci:quick, push (TURBO_PUSH_REASON red-fix, console then each submodule), release us/asia immediately: RELEASE_ASKED=ASKED:2026-11-20T17:17Z npm run release:local -- --channel edge --workers-only --regions us,asia --branch-release (operator: no real customer, breaks fixed forward), root_grants --apply, l1vm host key #3fb4edcc, CI, /pr-merge.
-2. #99460057 landing tree (operator approved LT1-LT10, writers unlimited, 2 parallel branches): done and HELD in leases until after the #605 push: LT1 agent-af33184710f1d21fc 4f49262af, LT2 agent-a7e8e3fa33c67a609 6e70906aa (swap landing.write_record for commit_policy.write_landing_record), LT4 agent-a6c8cb133c513d755 a96d117b9 (drain prose baseline row ff135f9e35b99942 with check_prose_style.py check --drain; re-run its real-record pass after LT1), LT8 agent-aff6577e8cf0b962c 161dd8bd8 (scope sha d79a6d841ac2). Running: LT3 ac58f7ace10771b4e #77455c8d, LT5 adb62552774fa9ba6 #974efeb5, LT6+LT7 af7525f48f5ad6849 #f334a461. Then LT9 switch-over (./run.sh worktree landing on 1104-1, babysit moves to /home/developer/console-landing, cut next MMDD-N here, draft PR) and LT10 live proof.
+1. #02389657 #4889018a land each fix writer as it reports (./run.sh worktree land <id> > /tmp/m/picks.txt; /tmp/m/land.sh regenerates generated-doc conflicts), then ONE ci:quick, push (TURBO_PUSH_REASON red-fix; console then submodules), release us/asia now: RELEASE_ASKED=ASKED:2026-11-20T17:17Z npm run release:local -- --channel edge --workers-only --regions us,asia --branch-release. Already landed on 1104-1: LT1-LT8, LT13-LT17, LT19, RF-C, RF-P console, RF-G, lint/prose/type fixes.
+2. Live writers: #8591dc69 LT11 af5b8cb4adcf527d6; #b7d80df5 LT18 a5d0a1268e4038e3c; #42a0b1fd LINT afe3e29dbd9575237 (#101a5402); #d33b6c17 TY a27f7c9b49191267a; #d1ef540e LT5b a41cb0f40fa9ae755 (landing-scope 6/67, HIGH review cccacdd7.1); #f8e608ac LT14b a8c1d983a4340e36f; #8be00eda LT12 abf193e236bdd4a1e; #88d79f43 RV a89f5613aec808ac8.
+3. Held for vm:check (VM trigger paths): #2c527dfe RF-A lease agent-af7a06fb403f1d1d4 (10 account commits), #cb065df1 RF-P renet 2b1c4450. Land after the push, vm:check --changed, push again.
+4. #99460057 then LT9 switch-over (./run.sh worktree landing on 1104-1), LT10 live proof, LT16b (promote cuts the next development branch at the landing tip; submodule trees move).
 
 ## Big pieces
-- PR #605 (1104-1): 102 unpushed commits; CI red on the old head only.
-- PLAN-two-track-merge-dev: landing-tree boxes LT1-LT10 added (uncommitted plan edit: commit with the plan-boxes regen after ci:quick), R1-R4 on #605 (R0 job 4346964f4, salt d49b2342d befc4ce2a, devbox ebaa897c4 2f0f54914 69c2e1ea3 0379bb969).
+- PR #605 on 1104-1, ~150 unpushed commits; landing-tree plan PLAN-two-track-merge-dev (rulings ASKED:2026-11-20T18:46Z: one session per tree, shared store, draft turbo-exempt, plain submodule PR, development stacked on landing, one-way, promote after merge).
 
 ## Owed ticks
-- LT1/LT2/LT4/LT8 after landing; R0 figure from the next CI run.
-
-## Delegated
-- FX1 a4b344372b2dd730b, FX2 af4bf021287083f8e, LT3 ac58f7ace10771b4e, LT5 adb62552774fa9ba6, LT6+7 af7525f48f5ad6849.
+- Plan boxes LT1-LT8, LT13-LT17, LT19 tick with their landed shas after ci:quick (git log --grep 'cherry picked from commit <lease sha>').
