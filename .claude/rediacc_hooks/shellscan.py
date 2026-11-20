@@ -77,6 +77,7 @@ import urllib.parse
 import zipfile
 import zlib
 
+from rediacc_hooks import commit_policy
 from rediacc_hooks.wellknown import GH_REPO
 
 # `[[:space:]]` in the C locale, written out. Python's `\s` is Unicode-aware (it matches U+00A0 and friends), which would widen every anchor in this file against a command containing non-breaking space -- a silent behaviour change in the direction of matching MORE, which for a guard is the safe direction but is still not what the bash does.
@@ -582,6 +583,11 @@ def _created_dirs(runs, this_root):
     return created
 
 
+def _within(path, root):
+    """Whether the normalised `path` is `root` or below it, compared as text (the reading `_resolve_root` has always used for this root)."""
+    return path == root or path.startswith(root.rstrip("/") + "/")
+
+
 def _resolve_root(directory, this_root, created=frozenset()):
     """The toplevel of the repository `directory` sits in, or "" when that is this root or nothing resolves.
 
@@ -595,14 +601,18 @@ def _resolve_root(directory, this_root, created=frozenset()):
     target = _git_stdout(["-C", abs_path, "rev-parse", "--show-toplevel"], want_rc=True)
     if target is None:
         # A DIRECTORY OUTSIDE THIS CHECKOUT THAT IS NO REPOSITORY (YET) IS FOREIGN ONLY WHEN IT IS REAL. `git init -q /tmp/x && cd /tmp/x && git commit ...` is one command, so `/tmp/x` holds no repository when the hook runs; answering "" made every caller judge THIS checkout and refuse a fixture it has no business with (finding #5810a9f3). But a path that neither exists nor is created by this same command is a `cd` bash cannot perform, and after `cd /nonexistent; git push origin main` git runs in THIS checkout: treating that path as foreign would let the push past every guard. So it must exist on disk, or sit at or under a directory this command creates first. Anything else, and anything inside this root, keeps resolving to "".
+        #
+        # THE SIBLING BOUND TREE IS NOT OUTSIDE (box LT11). With a landing record, a directory inside the other bound tree (`commit_policy.bound_trees`) that this command creates is where git then runs, so it answers that tree's toplevel; one it does not create is a failed `cd`, which leaves git in this root (""). With no record the trees are this root alone and the reading is the one above.
         norm = os.path.normpath(abs_path)
-        root_norm = os.path.normpath(this_root)
-        outside = this_root and not (
-            norm == root_norm or norm.startswith(root_norm.rstrip("/") + "/")
-        )
         made = any(norm == c or norm.startswith(c.rstrip("/") + "/") for c in created)
-        if outside and (os.path.isdir(norm) or made):
-            return norm
+        if not this_root:
+            return ""
+        trees = commit_policy.bound_trees(this_root)
+        holder = next((t for t in trees if _within(norm, os.path.normpath(t))), None)
+        if holder is None:
+            return norm if (os.path.isdir(norm) or made) else ""
+        if made and holder is not trees[0]:
+            return holder
         return ""
     target = _command_substitution(target)
     if target not in ("", this_root):
