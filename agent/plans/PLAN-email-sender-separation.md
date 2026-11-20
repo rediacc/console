@@ -238,8 +238,9 @@ All steps run through `./rdc.sh --config eu-bench term connect mail@hostinger -c
 - [ ] P1 [live] Production: an edge Worker deploy through `npm run release:local -- --channel edge --workers-only` after X2 and H1-H3, with the rollback version recorded; then one real contact submission on eu from a `@rediacc.io` address.
   Owns: none. Accept: release rc 0 with the rollback id in the tick; the contact mail arrives in `contact@rediacc.com` and, through the list, in muhammed's `Rediacc-Contact` folder, Reply-To the submitter, subject `[Contact] ...`.
   Needs: bench-deploy
-- [ ] LP-bench [live] A fresh bench receipt after X2, recorded and ticked through `worklist.py --live-proof`.
+- [x] LP-bench [live] A fresh bench receipt after X2, recorded and ticked through `worklist.py --live-proof`.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-20T05:57:22Z by d778be9d: live-proof lp-7b154c7403b0 bench account-smoke rc=0 v=4f8572a6-9dad-45ef-b25e-a849d3412567
 
 ## Concurrency
 - **Wave 0:** S0 (store entries) in the main checkout.

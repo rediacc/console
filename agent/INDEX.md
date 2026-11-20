@@ -528,7 +528,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
 | `agent/plans/PLAN-elite-to-onprem-rename.md` | proposed | 92 | 19 | 0 | 28670 |
-| `agent/plans/PLAN-email-sender-separation.md` | approved | 265 | 8 | 10 | 47909 |
+| `agent/plans/PLAN-email-sender-separation.md` | approved | 266 | 7 | 11 | 48047 |
 | `agent/plans/PLAN-enterprise-isolation.md` | executing | 218 | 8 | 26 | 41080 |
 | `agent/plans/PLAN-enterprise-tenants.md` | approved | 478 | 23 | 24 | 66121 |
 | `agent/plans/PLAN-executor-durable-object-policy.md` | approved | 487 | 0 | 18 | 65968 |

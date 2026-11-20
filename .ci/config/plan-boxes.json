@@ -1546,8 +1546,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 10,
+      "open": 7,
+      "done": 11,
       "open_sigs": [
         "1ad331de",
         "1b2ea7aa",
@@ -1555,8 +1555,7 @@
         "2e8f74ba",
         "43b1acc3",
         "4d378f5e",
-        "ea0af500",
-        "ec915c2d"
+        "ea0af500"
       ],
       "done_sigs": [
         "125f446a",
@@ -1568,7 +1567,8 @@
         "96c108e8",
         "a08fed08",
         "c8d94087",
-        "d55eef9d"
+        "d55eef9d",
+        "ec915c2d"
       ]
     },
     "agent/plans/PLAN-enterprise-isolation.md": {
