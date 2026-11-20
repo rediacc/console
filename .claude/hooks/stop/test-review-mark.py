@@ -224,7 +224,11 @@ control(
     mark_with_test(repo, reviewed, fix, "sub/" + rel),
     None,
 )
-control("the superproject-relative --test marks it fixed", resolution(repo, reviewed).split()[1], "fixed")
+control(
+    "the superproject-relative --test marks it fixed",
+    resolution(repo, reviewed).split()[1],
+    "fixed",
+)
 repo, reviewed, fix, rel = test_fixture("ref-super-control", "assert read('a.txt') == 'three'\n")
 control(
     "CONTROL: the same prefix on a repo that is no submodule: refused",

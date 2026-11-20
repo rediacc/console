@@ -286,23 +286,15 @@
     "playwright"
   ],
   "ignoreBinaries": [
-    // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, macOS/Linux/WSL shells); host binaries, never npm-managed. knip 6.29 still parses bare `qemu-img` (e2e VM image inspection on the KVM host), so it stays listed; it now resolves `which` (doctor PATH probes), `security` (macOS keychain), `systemctl` (ops libvirtd/router service control, spawnSync in ops/check.ts) and the Windows cmd.exe/powershell shells natively, so those are dropped
-    "dscl",
+    // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, macOS/Linux/WSL shells); host binaries, never npm-managed. knip 6.29 still parses bare `qemu-img` (e2e VM image inspection on the KVM host), so it stays listed; it now resolves `which` (doctor PATH probes), `security` (macOS keychain), `systemctl` (ops libvirtd/router service control, spawnSync in ops/check.ts) and the Windows cmd.exe/powershell shells natively, so those are dropped; knip 6.46.1 resolves `dscl`, `wsl.exe` and the OpenSSH agent tools (ssh-add, ssh-agent, ssh-keygen, ssh-keyscan) natively too, so they are dropped as well
     "getent",
     "keyctl",
     "qemu-img",
-    "wsl.exe",
 
     // BLOCKER: fontconfig's font matcher, spawned via execFileSync by
     // packages/www/scripts/lib/scenes/card-fonts.ts to resolve a family name to a file for
     // card rendering. A host binary like the rest of this list, never npm-managed
     "fc-match",
-
-    // BLOCKER: ssh-agent tooling spawned for key management in the CLI ssh stack; provided by the host OpenSSH installation
-    "ssh-add",
-    "ssh-agent",
-    "ssh-keygen",
-    "ssh-keyscan",
 
     // BLOCKER: external tools invoked by www build/tutorial scripts (ffmpeg muxing and its ffprobe stream probe, pdftotext content checks, agent-browser session capture); installed on dev/CI hosts, not npm deps
     "agent-browser",
