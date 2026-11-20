@@ -98,6 +98,16 @@ CASES = [
         "git commit -m 'feat(ci): records' -- agent/reviews/1120-1/clean.jsonl",
         False,
     ),
+    (
+        "heredoc -F - feat refused",
+        "git commit -F - -- f.txt <<'EOF'\nfeat(ci): from a heredoc\nEOF",
+        True,
+    ),
+    (
+        "heredoc -F - fix admitted",
+        "git commit -F - -- f.txt <<'EOF'\nfix(ci): from a heredoc\nEOF",
+        False,
+    ),
     ("not a commit", "git status", False),
     ("prose about a commit is not a commit", "echo 'git commit -m feat(x): y'", False),
 ]
