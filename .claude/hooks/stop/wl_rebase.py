@@ -129,7 +129,7 @@ def _files(repo, sha: str) -> frozenset[str] | None:
 
 
 def proof_rows(name: str, proof: dict) -> tuple[list[str], bool, str]:
-    """(notes, ok, detail) for one repo's rebase_proof, the lines `--git rebase-proof` prints and the check it makes: MISSING refuses; CHANGED and UNREVIEWED are named, and UNREVIEWED also refuses through wl_review's own check."""
+    """(notes, ok, detail) for one repo's rebase_proof, the lines `--git rebase-proof` prints and the check it makes: MISSING refuses, and so does a CHANGED commit whose replayed partner has no review yet; every CHANGED and UNREVIEWED commit is named."""
     notes = [
         "%s: CHANGED %s -> %s %s (its patch moved during the rebase, a resolved conflict or an edit: its review record and investigation rows do not carry)"
         % (name, old[:12], new[:12], subject)
@@ -140,10 +140,18 @@ def proof_rows(name: str, proof: dict) -> tuple[list[str], bool, str]:
         for sha in proof["unreviewed"]
     ]
     missing = proof["missing"]
-    detail = (
-        ("%d MISSING: %s" % (len(missing), ", ".join(m[:12] for m in missing))) if missing else ""
-    )
-    return notes, not missing, detail
+    # A CHANGED partner was made by the rebase, so no review record carries to it; it must be reviewed before the proof passes (review 91555649.1). That is the net under the subject-and-file-set pairing: a dropped commit wrongly paired with a replayed one still stops here until someone reads the replayed commit's real content.
+    unreviewed = set(proof["unreviewed"])
+    owed = [new for _old, new, _s in proof["changed"] if new in unreviewed]
+    parts = []
+    if missing:
+        parts.append("%d MISSING: %s" % (len(missing), ", ".join(m[:12] for m in missing)))
+    if owed:
+        parts.append(
+            "%d CHANGED commit(s) not yet reviewed: %s"
+            % (len(owed), ", ".join(n[:12] for n in owed))
+        )
+    return notes, not parts, "; ".join(parts)
 
 
 def rebase_proof(repo, base: str, old_tip: str, new_tip: str, uncovered: set[str]) -> dict | None:
@@ -177,8 +185,12 @@ def rebase_proof(repo, base: str, old_tip: str, new_tip: str, uncovered: set[str
     taken: set[str] = set()
     changed: list[tuple[str, str, str]] = []
     missing: list[str] = []
+    if any(nfiles is None for _n, _subj, nfiles in fresh):
+        return None
     for s, subj in lost:
         files = _files(repo, s)
+        if files is None:
+            return None
         partner = next(
             (
                 n
@@ -200,3 +212,28 @@ def rebase_proof(repo, base: str, old_tip: str, new_tip: str, uncovered: set[str
         "missing": missing,
         "unreviewed": unreviewed,
     }
+
+
+REBASE_RECIPE = (
+    "\n  LEASE BEHIND ITS BASE (PLAN-two-track-merge-dev RB2): the PR this lease was cut beside has merged, and origin/main holds commits the lease lacks, so its commits cannot land as they stand:\n"
+    "%s\n"
+    "  Rebase the lease onto main, prove it, then land:\n"
+    '    in the lease tree: .claude/hooks/stop/worklist.py --git snapshot > "$(mktemp)"   (before the rebase; keep the path)\n'
+    "    /branch-rebase main\n"
+    "    .claude/hooks/stop/worklist.py --git rebase-proof <that snapshot> origin/main\n"
+    "    python3 .claude/hooks/stop/wl_review.py --check\n"
+)
+
+
+def behind_block(verdicts: dict[str, dict[str, Verdict]], pr_merged: bool) -> str:
+    """The rebase recipe for every lease tree that reads behind, or "" (RB2). Only after the PR the lease was cut beside has merged: while it is open the lease's base is that branch, which a lease is expected to trail, and a lease that only reads absorbed needs no rebase."""
+    if not pr_merged:
+        return ""
+    rows = [
+        "    %s %s: behind by %d commit(s)%s"
+        % (lease, repo, v.behind, ", %d absorbed" % v.absorbed if v.absorbed else "")
+        for lease, repos in sorted(verdicts.items())
+        for repo, v in sorted(repos.items())
+        if v.state == "behind"
+    ]
+    return REBASE_RECIPE % "\n".join(rows) if rows else ""

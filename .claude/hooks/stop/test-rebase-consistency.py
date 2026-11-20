@@ -199,11 +199,16 @@ def run() -> int:
         )
         moved = sh(main_p, "rev-parse", "HEAD")
         sh(main_p, "checkout", "-q", "--detach", moved)
-        subprocess.run(
+        picked = subprocess.run(
             ["git", "-C", str(main_p), "cherry-pick", c1],
             capture_output=True,
             text=True,
             check=False,
+        )
+        control(
+            "REBASE (precondition): the replay of c1 onto the moved base conflicts",
+            picked.returncode != 0,
+            picked.stderr[-200:],
         )
         (main_p / "f.txt").write_text("b and x\n", encoding="utf-8")
         sh(main_p, "add", "f.txt")
@@ -285,11 +290,16 @@ def run() -> int:
         )
         moved_w = sh(main_w, "rev-parse", "HEAD")
         sh(main_w, "checkout", "-q", "--detach", moved_w)
-        subprocess.run(
+        picked = subprocess.run(
             ["git", "-C", str(main_w), "cherry-pick", w1],
             capture_output=True,
             text=True,
             check=False,
+        )
+        control(
+            "REBASE (precondition): the replay of w1 onto the moved base conflicts",
+            picked.returncode != 0,
+            picked.stderr[-200:],
         )
         (main_w / "f.txt").write_text("b and x\n", encoding="utf-8")
         sh(main_w, "add", "f.txt")
@@ -318,6 +328,13 @@ def run() -> int:
             not ok and w2[:12] in detail and any("CHANGED" in n and w1[:12] in n for n in notes),
             repr((notes, ok, detail)),
         )
+        reviewed_rows = RB.proof_rows("console", {**wip, "missing": [], "unreviewed": []})
+        owed_rows = RB.proof_rows("console", {**wip, "missing": [], "unreviewed": [w1_new]})
+        control(
+            "REBASE: a CHANGED commit whose replayed partner is unreviewed refuses; reviewed, it passes",
+            not owed_rows[1] and "not yet reviewed" in owed_rows[2] and reviewed_rows[1],
+            repr((owed_rows, reviewed_rows)),
+        )
         control(
             "REBASE: an unreadable range answers None, never an empty pass",
             RB.rebase_proof(main_w, "no-such-ref", w2, w1_new, set()) is None,
@@ -332,6 +349,26 @@ def run() -> int:
             and same["changed"] == []
             and same["missing"] == [],
             repr(same),
+        )
+
+        # RB2: the Stop-hook text. The merged-parent fixture (lease r) read behind once main moved past the absorbed copy.
+        merged_verdicts = {"agent-r": {".": RB.behind_base(lease_r, head_r, p1, "main")}}
+        text = RB.behind_block(merged_verdicts, True)
+        control(
+            "RB2: after the merge a behind lease's block names /branch-rebase and the RB4 proof commands",
+            "/branch-rebase main" in text
+            and "--git rebase-proof" in text
+            and "wl_review.py --check" in text
+            and "agent-r" in text,
+            text[:300],
+        )
+        control(
+            "RB2 (control): while the PR is open nothing blocks",
+            RB.behind_block(merged_verdicts, False) == "",
+        )
+        control(
+            "RB2 (control): an absorbed-only lease needs no rebase",
+            RB.behind_block({"x": {".": RB.Verdict("absorbed", absorbed=2)}}, True) == "",
         )
 
         control(

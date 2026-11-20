@@ -2831,7 +2831,7 @@ def release_local_running(root, proc="/proc"):
     return False
 
 
-def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd):
+def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd, merged=False):
     """Follow this repo's lease trees (wl_worktrees). A survey that raises says so in the report and blocks nothing: a blind reading never accuses a lease."""
     root = C.project_root(C.project_start(event))
     cwd = event.get("cwd")
@@ -2895,13 +2895,28 @@ def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd):
         vadd(
             "worktree-unlanded",
             False,
-            M.V_WORKTREE_UNLANDED % (len(got["unlanded"]), wl_worktrees.unlanded_lines(got)),
+            M.V_WORKTREE_UNLANDED % (len(got["unlanded"]), wl_worktrees.unlanded_lines(got))
+            + _lease_rebase_text(root, session_id, merged),
             subject=[row["id"] for row in got["unlanded"]],
         )
     if report:
         outq_add(
             worklist, session_id, state_doc, "worktree-orphan", M.N_WORKTREE_REPORT % report, 3
         )
+
+
+def _lease_rebase_text(root, session_id, merged):
+    """RB2 (PLAN-two-track-merge-dev): after the PR merged, the rebase recipe for each of this session's unlanded leases that reads behind origin/main; "" otherwise. Only then is the lease's base fetched, so an open PR costs no network call. Never raises: a reader failure leaves the unlanded block as it was."""
+    if not merged:
+        return ""
+    try:
+        import wl_rebase
+        import wl_worktrees
+
+        verdicts = wl_rebase.lease_verdicts(wl_worktrees.read_world(root), session_id[:8], "main")
+        return wl_rebase.behind_block(verdicts, True)
+    except Exception:
+        return ""
 
 
 def _renet_tests_report(worklist, session_id, state_doc):
@@ -4519,7 +4534,16 @@ def run_stop(event, event_ok, worklist, hook_file):
                 ),
             )
 
-    worktree_check(worklist, session_id, state_doc, fold, _roster, event, vadd)
+    worktree_check(
+        worklist,
+        session_id,
+        state_doc,
+        fold,
+        _roster,
+        event,
+        vadd,
+        merged=_loop is not None and _loop.kind in (wl_prscope.MERGED, wl_prscope.ON_MAIN),
+    )
 
     # ---- THE WAKE-UP TIMER (wl_wake; operator 2026-10-03: "the stop hook should check the final step which is 'is stop hook wait triggered in the background?'"). Any background work still running and no timer among the live tasks: the stop would wait on tasks that, if they all hang, never re-invoke the session. INVARIANT, because a rotating or pausable key is exactly how
     # a session stops into that deadlock anyway, and in T_OWED beside bg-report: the work being waited on is the party owed a look.
