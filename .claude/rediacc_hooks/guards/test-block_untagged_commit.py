@@ -149,7 +149,7 @@ BROKEN_RUNNER = (
     "old, new = %r\n"
     "import ast\n"
     "cut = [n for n in ast.parse(src).body if isinstance(n, ast.Assign)"
-    " and any(isinstance(t, ast.Name) and t.id == 'DEFECT' for t in n.targets)]\n"
+    " and any(isinstance(t, ast.Name) and t.id in ('DEFECT', 'TWO_TREE_DEFECT') for t in n.targets)]\n"
     "outside = '\\n'.join(l for i, l in enumerate(src.split('\\n'), 1)"
     " if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut))\n"
     "assert cut and old in outside, 'DEFECT no longer applies outside its own declaration'\n"
@@ -173,14 +173,17 @@ def _declared_defect():
 DEFECT = _declared_defect()
 
 
-def run(command, broken=False, mutant=False):
-    env = dict(os.environ, CLAUDE_PROJECT_DIR=str(REPO))
+def run(command, broken=False, mutant=False, root=REPO, cwd=None, defect=None):
+    env = dict(os.environ, CLAUDE_PROJECT_DIR=str(root))
     # The guard takes its branch from PR_HEAD_REF / GITHUB_HEAD_REF before asking git, so in a PR run it judged the fixture as `0930-1` (no epic file) and the unknown-id probe could never block: green locally, red in CI (#591 run on e532e4ad5). The fixture's branch must come from the fixture. test_guard_chained_state.py scrubs the same names.
     for name in ("PR_HEAD_REF", "GITHUB_HEAD_REF", "GIT_INDEX_FILE", "GIT_DIR"):
         env.pop(name, None)
-    payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
+    doc: dict[str, object] = {"tool_name": "Bash", "tool_input": {"command": command}}
+    if cwd is not None:
+        doc["cwd"] = str(cwd)
+    payload = json.dumps(doc)
     if broken:
-        code = BROKEN_RUNNER % (str(HERE.parents[1]), str(GUARD), DEFECT, str(GUARD))
+        code = BROKEN_RUNNER % (str(HERE.parents[1]), str(GUARD), defect or DEFECT, str(GUARD))
         argv = [sys.executable, "-c", code]
     elif mutant:
         code = MUTANT_RUNNER % (str(HERE.parents[1]), str(GUARD), str(GUARD))
@@ -279,6 +282,113 @@ for name, epic, with_ledger, want in LEDGER_CASES:
     )
     if not ok and err:
         print("    stderr: %s" % err.strip().splitlines()[:2])
+# ---- two trees (box LT12 of agent/plans/PLAN-two-track-merge-dev.md) ----------------------
+# A main checkout on DEV_BRANCH and a linked worktree, the landing tree, on LANDING_BRANCH, each tree declaring its own epic in its own `agent/pr/<branch>.md`, with the landing record in the common git dir. A commit in the other tree, placed by `-C` or by the tool call's cwd, is judged against THAT tree's branch and snapshot; with no record it stays a sibling repository's and passes.
+LANDING_BRANCH, DEV_BRANCH = "1120-1", "1121-1"
+LANDING_EPIC, DEV_EPIC = "aa11bb22", "cc33dd44"
+
+
+def two_trees(record=True):
+    base = pathlib.Path(os.path.realpath(RUN_TMP)) / ("two-%d" % (2 if record else 1))
+    main, landing = base / "main", base / "landing"
+    main.mkdir(parents=True)
+
+    def git(cwd, *argv):
+        subprocess.run(["git", *argv], cwd=str(cwd), check=True, capture_output=True, env=GIT_ENV)
+
+    git(main, "init", "-q", "--initial-branch=%s" % DEV_BRANCH)
+    git(main, "commit", "-q", "--allow-empty", "-m", "seed")
+    git(main, "branch", LANDING_BRANCH)
+    git(main, "worktree", "add", "-q", str(landing), LANDING_BRANCH)
+    for tree, branch, epic in (
+        (main, DEV_BRANCH, DEV_EPIC),
+        (landing, LANDING_BRANCH, LANDING_EPIC),
+    ):
+        (tree / "agent" / "pr").mkdir(parents=True)
+        (tree / "agent" / "pr" / ("%s.md" % branch)).write_text(
+            "### The %s epic\n\n`PR-TASK: %s`\n" % (branch, epic), encoding="utf-8"
+        )
+    if record:
+        (main / ".git" / "rediacc-landing.json").write_text(
+            json.dumps({"path": str(landing), "branch": LANDING_BRANCH}), encoding="utf-8"
+        )
+    return main, landing
+
+
+TT_M, TT_L = two_trees()
+NR_M, NR_L = two_trees(record=False)
+_C = 'git -C %s commit -m "feat: x%s" -- a'
+TWO_TREE_CASES = [
+    # (name, command, root, cwd, want_blocked, flips under TWO_TREE_DEFECT)
+    ("main root: no trailer in the landing tree", _C % (TT_L, ""), TT_M, None, True, True),
+    (
+        "main root: the landing epic in the landing tree",
+        _C % (TT_L, "\n\nPR-TASK: " + LANDING_EPIC),
+        TT_M,
+        None,
+        False,
+        False,
+    ),
+    (
+        "main root: the dev epic in the landing tree",
+        _C % (TT_L, "\n\nPR-TASK: " + DEV_EPIC),
+        TT_M,
+        None,
+        True,
+        True,
+    ),
+    ("landing root: no trailer in the main checkout", _C % (TT_M, ""), TT_L, None, True, True),
+    (
+        "landing root: cwd in the main checkout, no trailer",
+        'git commit -m "feat: x" -- a',
+        TT_L,
+        TT_M,
+        True,
+        True,
+    ),
+    (
+        "landing root: cwd in the main checkout, its epic",
+        'git commit -m "feat: x\n\nPR-TASK: %s" -- a' % DEV_EPIC,
+        TT_L,
+        TT_M,
+        False,
+        False,
+    ),
+    ("no record: no trailer in the sibling tree", _C % (NR_L, ""), NR_M, None, False, False),
+]
+_TT_NS: dict[str, object] = {}
+for _line in GUARD.read_text(encoding="utf-8").split("\n"):
+    if _line.startswith("TWO_TREE_DEFECT = "):
+        exec(_line, _TT_NS)
+TWO_TREE_DEFECT = _TT_NS["TWO_TREE_DEFECT"]
+print()
+for name, command, root, cwd, want, _flips in TWO_TREE_CASES:
+    got, err = run(command, root=root, cwd=cwd)
+    ok = got == want
+    fails += not ok
+    print(
+        "%-56s want=%-8s got=%-8s %s"
+        % (
+            "two trees: " + name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+_flipping = [c for c in TWO_TREE_CASES if c[5]]
+_moved = [
+    c[0]
+    for c in _flipping
+    if run(c[1], broken=True, root=c[2], cwd=c[3], defect=TWO_TREE_DEFECT)[0] != c[4]
+]
+if _flipping and len(_moved) == len(_flipping):
+    print("TWO_TREE_DEFECT control: %d refusal(s) flipped to allowed" % len(_moved))
+else:
+    print("*** FAIL *** TWO_TREE_DEFECT control: %d of %d moved" % (len(_moved), len(_flipping)))
+    fails += 1
+
 if blocked == 0 or blocked == len(CASES):
     print("*** FAIL *** the guard answered the same way on every case")
     fails += 1

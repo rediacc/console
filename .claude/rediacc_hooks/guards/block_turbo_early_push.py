@@ -23,6 +23,8 @@ SCOPE. Every `git push` (any remote or refspec, `-C`/`cd` included) in this chec
 
 THE MERGE PHASE'S POINTER BUMP NEEDS NO REASON (worklist item #8aad9216). `/pr-merge` step 2 pushes the console's submodule pointer bump (and the review records committed for it) to the PR branch, and under turbo that push was refused (`ci-cd` names no open Promoted plan) until a `deadline:` reason was borrowed for it. A plain push is now admitted, ledger kind `merge-pointer-bump`, when BOTH hold: the pushing session's newest phase event (`wl_store.phase_fold` and `wl_standdown.active_phase`, the read `block_focus_spawn` uses, lineage included, the 24-hour cap applied) is `merge` with `branch` equal to the checkout's branch; and every commit of the unpushed range (`origin/<branch>..HEAD`, or `origin/main..HEAD` before the first push), none of them a merge, changes only submodule gitlinks (mode 160000) and paths under `agent/reviews/`. Every destination of the push must be that branch. It FAILS CLOSED: a phase or range that cannot be read admits nothing and the push meets the rules above. Never `gh pr create`.
 
+THE DEVELOPMENT DRAFT NEEDS NO REASON (agent/plans/PLAN-two-track-merge-dev.md, box LT12; operator ruling ASKED:2026-11-20T18:46Z: the development draft PR targets main and is exempt from turbo while the landing PR is open). With a landing record (`commit_policy.landing_record`) the open PR's branch lives in the landing tree, and the main checkout builds the next branch, whose only CI is its draft PR. A push from the development tree (or a submodule of it) whose checked-out branch and every destination differ from the record's branch, and a `gh pr create --draft` there whose head is not the record's branch, are admitted with ledger kind `development-draft`. A push or PR naming the landing branch, a ready (non-draft) PR, and every command in the landing tree keep the rules above.
+
 THE OPERATOR. There is no override token, the convention of every pre-bash guard (`block_second_branch`, `block_git_hook_bypass`): the operator's own `!` command bypasses PreToolUse hooks entirely, so it never reaches this guard.
 
 FAILS OPEN, LOUDLY, when QUEUE.md or a plan cannot be read, or `wl_planqueue` cannot import: a note on stderr, the push allowed, like the sibling guards. `gh` failing on a `red-fix` admits with a note. A `backup` whose age cannot be read is REFUSED: the age is the claim, and an unread claim is not a checked one.
@@ -52,6 +54,8 @@ KINDS = ("ci-cd", "red-fix", "deadline", "backup")
 BATCH_KIND = "batch-complete"
 # The ledger kind of a `/pr-merge` pointer-bump push the merge phase released (see THE MERGE PHASE above); never a TURBO_PUSH_REASON kind.
 MERGE_KIND = "merge-pointer-bump"
+# The ledger kind of a push or draft PR of the development branch while the landing PR is open (see THE DEVELOPMENT DRAFT above); never a TURBO_PUSH_REASON kind.
+DEVELOPMENT_KIND = "development-draft"
 MERGE_PATH_PREFIX = "agent/reviews/"
 GITLINK_MODES = ("160000", "000000")
 REVIEW_MODES = {"100644", "100755", "000000"}
@@ -231,7 +235,15 @@ def _acts(cmd, root, base):
         repo = commit_policy.toplevel(commit_policy.run_dir(run, base)) or root
         if not commit_policy.is_inside(repo, root):
             continue
-        out.append(("pr-create", repo, run.env.get(REASON_ENV), " ".join(["gh", *run.argv]), []))
+        out.append(
+            (
+                "pr-create",
+                repo,
+                run.env.get(REASON_ENV),
+                " ".join(["gh", *run.argv]),
+                list(run.argv),
+            )
+        )
     return out
 
 
@@ -337,6 +349,43 @@ def _open_prs(repo, branch):
             *("pr", "list", "--head", branch, "--state", "open"),
             *("--json", "number", "--jq", ".[].number"),
         ],
+    )
+
+
+# Planted, the development draft is never recognised, so its push and draft PR meet the reason rules again.
+TWO_TREE_DEFECT = ("record = commit_policy.landing_record(root)", "record = None")
+
+
+def _development_draft(root, act, repo, argv):
+    """`argv` is the push's arguments after `push`, or the words after `gh`. The admission line for a push or draft PR of the development branch while a landing record binds the open PR's branch to the landing tree, "" when this act is not one."""
+    record = commit_policy.landing_record(root)
+    if record is None or commit_policy.tree_role(root) != commit_policy.ROLE_DEVELOPMENT:
+        return ""
+    landing = record["branch"]
+    if commit_policy.is_inside(repo, record["path"]):
+        return ""
+    head = commit_policy.current_branch(repo, foreign=True)
+    if not head or head in ("main", landing):
+        return ""
+    if act == "push":
+        dests = [
+            head if dst == "HEAD" else dst for _src, dst in commit_policy.push_destinations(argv)
+        ]
+        if landing in dests:
+            return ""
+        return "a push of the development branch %s while the landing tree holds %s" % (
+            head,
+            landing,
+        )
+    parsed = shellscan.gh_args(list(argv))
+    if not parsed.on("draft"):
+        return ""
+    named = parsed.last("head")
+    if named and named.rsplit(":", 1)[-1] in (landing, "main"):
+        return ""
+    return "a draft PR of the development branch %s while the landing tree holds %s" % (
+        named or head,
+        landing,
     )
 
 
@@ -726,6 +775,10 @@ def run(ev):
     focus = False  # read once, only when a push would be refused
     for act, repo, reason, spelling, args in acts:
         kind, why = _judge(ev, act, repo, reason, open_plans, backup_h, root)
+        if kind is None:
+            draft = _development_draft(root, act, repo, args)
+            if draft:
+                kind, why = DEVELOPMENT_KIND, draft
         if kind is None and act == "push":
             if focus is False:
                 focus = _merge_phase(ev, root, str(ev.field("session_id") or ""))

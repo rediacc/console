@@ -158,6 +158,35 @@ EDGE_CASES = [
 ]
 
 
+# A LANDING COMMIT IS JUDGED IN ITS OWN TREE (agent/plans/PLAN-two-track-merge-dev.md, box LT12). The commit's toplevel used to be foreign whenever it was not the session root, so a commit typed in the landing tree from the development root (or in the main checkout from the landing root) went unjudged. With a landing record both trees are bound (`_bound_trees`), and a commit in the other one is judged against that tree's own branch and epic snapshot (`_judged_root`). Planted, the other tree is foreign again.
+TWO_TREE_DEFECT = ("if real in _bound_trees(root):", "if False:")
+
+
+# THE TWO BOUND TREES (agent/plans/PLAN-two-track-merge-dev.md, box LT12). A landing record (`commit_policy.landing_record`) binds the open PR's branch to a sibling tree beside the main checkout, so a command typed in either tree is this policy's business from either root. Box LT11 moves this pair into commit_policy as `bound_trees` and `is_ours`; the names match so the swap is mechanical.
+def _bound_trees(root):
+    """The realpaths judged as this checkout: the main checkout and the landing tree when `root` sits in either, else `root`'s toplevel alone. With no valid record the answer is `[toplevel(root)]`, the reading before the record existed."""
+    top = commit_policy.toplevel(root) if root else ""
+    if not top:
+        return []
+    top = os.path.realpath(top)
+    record = commit_policy.landing_record(top)
+    if record is None:
+        return [top]
+    common = commit_policy.common_dir(top)
+    main = os.path.dirname(common) if os.path.basename(common) == ".git" else ""
+    if top not in (main, record["path"]):
+        return [top]
+    return list(dict.fromkeys(t for t in (main, record["path"]) if t))
+
+
+def _judged_root(top, root):
+    """The tree to judge a commit whose toplevel `top` is not the session root: that tree itself when it is the other bound tree, "" when it is foreign (a sibling checkout, a scratch repository, a submodule)."""
+    real = os.path.realpath(top)
+    if real in _bound_trees(root):
+        return real
+    return ""
+
+
 def _grep_qx(needle, haystack):
     """`grep -qx -- "$FOUND" <<<"$KNOWN"` -- a whole-RECORD match.
 
@@ -280,18 +309,27 @@ def run(ev):
     # (one that cannot possibly name an epic for a repo it has never heard of), so every such commit was refused for a trailer no epic file could ever supply. Detect a `cd`/`git -C` into another repo anywhere on the line -- a cd applies to every later segment, so this is deliberately line-wide, matching hook_target_repo's convention in lib/command-scan.sh -- and if the git root
     # THAT resolves to is a real repo distinct from this one, this guard has nothing to check: that repo's commits are not this repo's epics' business. THE RESOLUTION MOVED TO lib/command-scan.sh when a third guard needed it. Two siblings had the same defect -- block-unverified-push.sh refused a foreign repo's push against THIS tree's gate stamp (reproduced live), and
     # warn-remote-drift.sh has the same shape latently -- so the walk this file pioneered is now shared rather than copied twice more.
-    if shellscan.target_root(scan, root, verb="commit", cmd=cmd) != "":
-        return hookio.ALLOW
+    target = shellscan.target_root(scan, root, verb="commit", cmd=cmd)
+    if target != "":
+        # The other bound tree is not foreign: its commit is judged there (`_judged_root`).
+        root = _judged_root(target, root)
+        if not root:
+            return hookio.ALLOW
 
     # THE TOOL CALL'S OWN `cwd` IS A SECOND, MORE RELIABLE SIGNAL than the text-parsed `cd`/`-C` hint above -- reproduced live 2026-09-23: a session ran `git commit` with the Bash tool's `cwd` field pointed at an independent local clone (`/home/developer/console-ci-fix-scratch`, cloned to keep a risky change out of this shared tree), with no `cd`/`-C` anywhere in the command text
     # itself, so `target_root` found no hint at all and this guard judged the commit against THIS repo's stale index and its `agent/pr/<this-branch>.md` epic snapshot -- the exact wrong-tree failure the comment above already fixed for the text-hint case, reachable from a second direction the fix never covered. `ev.field("cwd") or root` is the same fallback
     # `block_unproven_bulk_transform.py:262` already uses for this exact field.
     # A repository variable or a moving global option outranks the cwd: `GIT_DIR=<this checkout>/.git git commit` from a scratch cwd commits here (#f2e3507a, `shellscan.git_scope_doubt`).
     _cwd = ev.field("cwd")
-    if _cwd and _cwd != root and not shellscan.git_scope_doubt(cmd):
+    # A `cd`/`-C` hint that placed the commit in the other bound tree above already decided where it is judged.
+    if target == "" and _cwd and _cwd != root and not shellscan.git_scope_doubt(cmd):
         _cwd_root = hookio.git_out(["-C", _cwd, "rev-parse", "--show-toplevel"], want_rc=True)
         if _cwd_root is not None and _cwd_root.strip() not in ("", root):
-            return hookio.ALLOW
+            # A cwd in the other bound tree moves the judgement there.
+            other = _judged_root(_cwd_root.strip(), root)
+            if not other:
+                return hookio.ALLOW
+            root = other
 
     # A `-F <file>` this same command writes first holds an earlier command's bytes (shellscan.writes_file, #9ec22810). Skipping it used to leave the message "unreadable", so the commit was ALLOWED unjudged; the four commit-message guards now refuse it alike, naming the write (commit_policy.written_message_refusal, #9888de00).
     for commit in commit_policy.git_runs(cmd, "commit"):

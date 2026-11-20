@@ -737,13 +737,13 @@ for _label, _command, _pinned, _admitted in BP.CASES:
     )
 
 
-def run(command, cwd, extra=None):
+def run(command, cwd, extra=None, argv=None):
     env = dict(os.environ)
     env.update(extra or {})
     if cwd is not None:
         env["CLAUDE_PROJECT_DIR"] = str(cwd)
     proc = subprocess.run(
-        GUARD_ARGV,
+        argv or GUARD_ARGV,
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}}),
         capture_output=True,
         text=True,
@@ -1047,8 +1047,176 @@ for name, repo in REAL_MIRROR_CASES:
     if not ok and err:
         print("    stderr: %s" % err.strip().splitlines()[:3])
 
+
+# ---- two trees (box LT12 of agent/plans/PLAN-two-track-merge-dev.md) ----------------------
+# A live world whose main checkout moved to the development branch PARKED_BRANCH while a linked worktree, the landing tree, holds the PR branch, with the landing record in the common git dir. A push typed in either tree is judged from either root, and the mirror push and the fast-forward fallback are admitted from either tree's toplevel. With no record the sibling tree stays foreign, as before.
+def _two_tree(d, record=True):
+    """`(main, landing)`: `d` switched to PARKED_BRANCH and the PR branch checked out in a linked worktree beside it."""
+    d = pathlib.Path(os.path.realpath(d))
+    landing = (
+        pathlib.Path(os.path.realpath(tempfile.mkdtemp(prefix="landing-", dir=RUN_TMP))) / "tree"
+    )
+    _git(d, "checkout", "-q", "-b", PARKED_BRANCH)
+    _git(d, "worktree", "add", "-q", str(landing), BRANCH)
+    if record:
+        common = pathlib.Path(
+            _git(d, "rev-parse", "--path-format=absolute", "--git-common-dir").stdout.strip()
+        )
+        (common / "rediacc-landing.json").write_text(
+            json.dumps({"path": str(landing), "branch": BRANCH}), encoding="utf-8"
+        )
+    return d, landing
+
+
+TT_M, TT_L = _two_tree(_make_live())
+TT_SHA = _tip(TT_L, "origin/%s" % BRANCH)
+TM_M, TM_L = _two_tree(_make_mirror(on_main=False))
+NR_M, NR_L = _two_tree(_make_live(), record=False)
+NRM_M, NRM_L = _two_tree(_make_mirror(on_main=False), record=False)
+_FF = "push origin origin/%s:%s" % (BRANCH, MAIN)
+_MIRROR_6B = "push gitlab refs/heads/%s:refs/heads/%s --follow-tags" % (MAIN, MAIN)
+
+TWO_TREE_CASES = [
+    # (name, command, root, extra env, expect_blocked, flips under TWO_TREE_DEFECT)
+    (
+        "main root: HEAD:main typed in the landing tree",
+        "git -C %s push origin HEAD:%s" % (TT_L, MAIN),
+        TT_M,
+        None,
+        True,
+        True,
+    ),
+    (
+        "landing root: HEAD:main typed in the main checkout",
+        "git -C %s push origin HEAD:%s" % (TT_M, MAIN),
+        TT_L,
+        None,
+        True,
+        True,
+    ),
+    (
+        "main root: the fallback typed in the landing tree",
+        "git -C %s %s" % (TT_L, _FF),
+        TT_M,
+        fx(head=TT_SHA),
+        False,
+        False,
+    ),
+    (
+        "main root: the fallback on a red PR, landing tree",
+        "git -C %s %s" % (TT_L, _FF),
+        TT_M,
+        fx(head=TT_SHA, ci="FAILURE"),
+        True,
+        True,
+    ),
+    (
+        "landing root: the fallback typed in the main checkout",
+        "git -C %s %s" % (TT_M, _FF),
+        TT_L,
+        fx(head=TT_SHA),
+        False,
+        False,
+    ),
+    (
+        "landing root: the fallback typed in its own tree",
+        "git %s" % _FF,
+        TT_L,
+        fx(head=TT_SHA),
+        False,
+        False,
+    ),
+    (
+        "main root: the mirror push typed in the landing tree",
+        "git -C %s %s" % (TM_L, _MIRROR_6B),
+        TM_M,
+        None,
+        False,
+        False,
+    ),
+    (
+        "landing root: the mirror push typed in the main checkout",
+        "git -C %s push gitlab %s:%s" % (TM_M, MAIN, MAIN),
+        TM_L,
+        None,
+        False,
+        False,
+    ),
+    (
+        "no record: HEAD:main typed in the sibling tree",
+        "git -C %s push origin HEAD:%s" % (NR_L, MAIN),
+        NR_M,
+        None,
+        False,
+        False,
+    ),
+    (
+        "no record: the mirror push typed in the sibling tree",
+        "git -C %s %s" % (NRM_L, _MIRROR_6B),
+        NRM_M,
+        None,
+        True,
+        False,
+    ),
+]
+
+_TT_NS: dict[str, typing.Any] = {}
+for _line in (
+    (pathlib.Path(__file__).resolve().parent / "block_push_to_protected_branch.py")
+    .read_text(encoding="utf-8")
+    .split("\n")
+):
+    if _line.startswith("TWO_TREE_DEFECT = "):
+        exec(_line, _TT_NS)
+TWO_TREE_DEFECT = _TT_NS["TWO_TREE_DEFECT"]
+_GUARD_FILE = str(pathlib.Path(__file__).resolve().parent / "block_push_to_protected_branch.py")
+BROKEN_ARGV = [
+    sys.executable,
+    "-c",
+    (
+        "import sys; sys.path.insert(0, %r)\n"
+        "from rediacc_hooks import hookio\n"
+        "src = open(%r, encoding='utf-8').read()\n"
+        "old, new = %r\n"
+        "assert src.count(old) == 2, 'the defect no longer applies'\n"
+        "ns = {'__name__': 'broken', '__file__': %r}\n"
+        "exec(compile(src.replace(old, new), 'broken', 'exec'), ns)\n"
+        "ev = hookio.Event(sys.stdin.read())\n"
+        "rc = ns['run'](ev)\n"
+        "sys.stderr.write(ev.result(rc)[2])\n"
+        "sys.exit(rc)\n"
+    )
+    % (str(pathlib.Path(__file__).resolve().parents[1]), _GUARD_FILE, TWO_TREE_DEFECT, _GUARD_FILE),
+]
+
+for name, command, root, extra, want, _flips in TWO_TREE_CASES:
+    got, err = run(command, root, extra)
+    blocked += got
+    ok = got == want
+    fails += not ok
+    print(
+        "%-72s want=%-9s got=%-9s %s"
+        % (
+            "two trees: " + name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok and err:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+_flipping = [c for c in TWO_TREE_CASES if c[5]]
+_moved = [c[0] for c in _flipping if run(c[1], c[2], c[3], argv=BROKEN_ARGV)[0] != c[4]]
+if _flipping and len(_moved) == len(_flipping):
+    print("TWO_TREE_DEFECT control: %d refusal(s) flipped to allowed" % len(_moved))
+else:
+    print("*** FAIL *** TWO_TREE_DEFECT control: %d of %d moved" % (len(_moved), len(_flipping)))
+    fails += 1
+
 # A count, not a concatenation: the case lists carry different tuple shapes.
-TOTAL = len(CASES) + len(GIT_CASES) + len(MIRROR_CASES) + len(REAL_MIRROR_CASES)
+TOTAL = (
+    len(CASES) + len(GIT_CASES) + len(MIRROR_CASES) + len(REAL_MIRROR_CASES) + len(TWO_TREE_CASES)
+)
 
 print()
 # ANTI-VACUITY: see the sibling harness. This guard's only control is this file.

@@ -6,6 +6,7 @@ REAL REPOSITORIES under a `rediacc_ci.runtmp` run directory: a checkout on `main
 THE DEFECT CONTROL plants the guard's own declared `DEFECT` in a copy and requires at least one fire case to flip to allowed. The CONFIG CONTROL holds `.ci/config/commit-policy.json` and `commit_policy.DEFAULTS` to one set of values, the promise `commit_policy`'s docstring makes: a guard that fell back to defaults must not quietly enforce a different policy from the file.
 """
 
+import ast
 import importlib.util
 import json
 import os
@@ -217,7 +218,7 @@ BROKEN_RUNNER = (
     "old, new = %r\n"
     "import ast\n"
     "cut = [n for n in ast.parse(src).body if isinstance(n, ast.Assign)"
-    " and any(isinstance(t, ast.Name) and t.id == 'DEFECT' for t in n.targets)]\n"
+    " and any(isinstance(t, ast.Name) and t.id in ('DEFECT', 'TWO_TREE_DEFECT') for t in n.targets)]\n"
     "outside = '\\n'.join(l for i, l in enumerate(src.split('\\n'), 1)"
     " if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut))\n"
     "assert cut and old in outside, 'DEFECT no longer applies outside its own declaration'\n"
@@ -538,6 +539,116 @@ raw = json.loads((REPO / ".ci" / "config" / "commit-policy.json").read_text(enco
 unread = sorted(k for k in raw if not k.startswith("$") and k not in commit_policy.DEFAULTS)
 if unread:
     print("*** FAIL *** config keys nothing reads: %s" % unread)
+    fails += 1
+
+# ---- two trees (box LT12 of agent/plans/PLAN-two-track-merge-dev.md) ----------------------
+# A main checkout and a linked worktree, the landing tree, with the landing record in the common git dir. A commit typed in the other tree is judged like one in the root, where it used to pass as a scratch repository's; with no record it still passes.
+LANDING_BRANCH, DEV_BRANCH = "1120-1", "1121-1"
+
+
+def two_trees(main_on, landing_on, record=True):
+    """`(main, landing)`: the main checkout on `main_on`, the landing worktree on `landing_on`."""
+    base = pathlib.Path(os.path.realpath(tempfile.mkdtemp(prefix="world-", dir=RUN_TMP)))
+    main, landing = base / "main", base / "landing"
+    make_repo("main", at=main)
+    for branch in {main_on, landing_on} - {"main"}:
+        git(main, "branch", branch)
+    if main_on != "main":
+        git(main, "checkout", "-q", main_on)
+    git(main, "worktree", "add", "-q", str(landing), landing_on)
+    if record:
+        (main / ".git" / "rediacc-landing.json").write_text(
+            json.dumps({"path": str(landing), "branch": LANDING_BRANCH}), encoding="utf-8"
+        )
+    return main, landing
+
+
+LANDING_ON_MAIN = two_trees(DEV_BRANCH, "main")
+MAIN_ON_MAIN = two_trees("main", LANDING_BRANCH)
+NO_RECORD = two_trees(DEV_BRANCH, "main", record=False)
+_HOT = 'commit -m "fix(ci): x [hotfix]%s" -- a.ts' % EVIDENCE
+TWO_TREE_CASES = [
+    # (name, command, root, agent, want_blocked, flips under TWO_TREE_DEFECT)
+    (
+        "main root: a commit on main in the landing tree",
+        "git -C %s commit -m x" % LANDING_ON_MAIN[1],
+        LANDING_ON_MAIN[0],
+        None,
+        True,
+        True,
+    ),
+    (
+        "landing root: a commit on main in the main checkout",
+        "git -C %s commit -m x" % MAIN_ON_MAIN[0],
+        MAIN_ON_MAIN[1],
+        None,
+        True,
+        True,
+    ),
+    (
+        "main root: a hotfix off main in the landing tree",
+        "git -C %s %s" % (MAIN_ON_MAIN[1], _HOT),
+        MAIN_ON_MAIN[0],
+        None,
+        True,
+        True,
+    ),
+    (
+        "main root: a plain landing commit on its branch",
+        "git -C %s commit -m 'fix: y'" % MAIN_ON_MAIN[1],
+        MAIN_ON_MAIN[0],
+        None,
+        False,
+        False,
+    ),
+    (
+        "main root: a writer committing in the landing tree",
+        "git -C %s commit -m 'fix: y'" % MAIN_ON_MAIN[1],
+        MAIN_ON_MAIN[0],
+        "general-purpose",
+        True,
+        True,
+    ),
+    (
+        "no record: a commit on main in the sibling tree",
+        "git -C %s commit -m x" % NO_RECORD[1],
+        NO_RECORD[0],
+        None,
+        False,
+        False,
+    ),
+]
+TWO_TREE_DEFECT = next(
+    ast.literal_eval(node.value)
+    for node in ast.parse(GUARD.read_text(encoding="utf-8")).body
+    if isinstance(node, ast.Assign)
+    and any(isinstance(t, ast.Name) and t.id == "TWO_TREE_DEFECT" for t in node.targets)
+)
+for name, command, root, agent, want, _flips in TWO_TREE_CASES:
+    got, err = run(command, root, agent=agent)
+    ok = got == want
+    fails += not ok
+    print(
+        "%-56s want=%-8s got=%-8s %s"
+        % (
+            "two trees: " + name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+_flipping = [c for c in TWO_TREE_CASES if c[5]]
+_moved = [
+    c[0]
+    for c in _flipping
+    if run(c[1], c[2], broken=True, agent=c[3], defect=TWO_TREE_DEFECT)[0] != c[4]
+]
+if _flipping and len(_moved) == len(_flipping):
+    print("TWO_TREE_DEFECT control: %d refusal(s) flipped to allowed" % len(_moved))
+else:
+    print("*** FAIL *** TWO_TREE_DEFECT control: %d of %d moved" % (len(_moved), len(_flipping)))
     fails += 1
 
 if blocked == 0 or blocked == len(CASES):

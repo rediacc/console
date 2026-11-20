@@ -36,6 +36,7 @@ arm needs a live `gh` answer and stays uncovered here.
 """
 
 import json
+import os
 import pathlib
 import re
 
@@ -160,6 +161,41 @@ EDGE_CASES = [
         "git commit -m '...gh api repos/o/r/pulls/589/merge -X PUT...'",
     ),
 ]
+
+
+# THE PR'S OWN TREE (agent/plans/PLAN-two-track-merge-dev.md, box LT12). Review records stay with the branch's tree, so with a landing record the review precondition and the plan gate read the tree that holds the PR's head branch (`_pr_tree`), not the session root: a merge of the landing PR typed in the development tree read the development tree's `agent/reviews/<head>/`, which never holds them. Planted, every head is judged in the root again.
+TWO_TREE_DEFECT = ("tree = _pr_tree(root, head)", "tree = root")
+
+
+# THE TWO BOUND TREES (agent/plans/PLAN-two-track-merge-dev.md, box LT12). A landing record (`commit_policy.landing_record`) binds the open PR's branch to a sibling tree beside the main checkout, so a command typed in either tree is this policy's business from either root. Box LT11 moves this pair into commit_policy as `bound_trees` and `is_ours`; the names match so the swap is mechanical.
+def _bound_trees(root):
+    """The realpaths judged as this checkout: the main checkout and the landing tree when `root` sits in either, else `root`'s toplevel alone. With no valid record the answer is `[toplevel(root)]`, the reading before the record existed."""
+    top = commit_policy.toplevel(root) if root else ""
+    if not top:
+        return []
+    top = os.path.realpath(top)
+    record = commit_policy.landing_record(top)
+    if record is None:
+        return [top]
+    common = commit_policy.common_dir(top)
+    main = os.path.dirname(common) if os.path.basename(common) == ".git" else ""
+    if top not in (main, record["path"]):
+        return [top]
+    return list(dict.fromkeys(t for t in (main, record["path"]) if t))
+
+
+def _pr_tree(root, head):
+    """The tree holding the PR head branch `head`: the landing tree for the record's branch, else the bound tree that has it checked out, else `root` (also with no record, the reading before it existed)."""
+    trees = _bound_trees(root)
+    if len(trees) < 2 or not head:
+        return root
+    record = commit_policy.landing_record(root)
+    if record and head == record["branch"]:
+        return record["path"]
+    for tree in trees:
+        if commit_policy.current_branch(tree, foreign=True) == head:
+            return tree
+    return root
 
 
 def _admin_word(run):
@@ -371,19 +407,20 @@ def run(ev):
 
         # The plan gate (box L2), console only: the PR's plan read at the PR head's remote-tracking ref when this checkout has it, else the working tree. An absent or unreadable body refuses.
         head = _jq_head_ref(prdata)
+        tree = _pr_tree(root, head)
         if repo == GH_REPO:
             rev = ""
             if head and commit_policy.git(
-                ["rev-parse", "--verify", "-q", "refs/remotes/origin/%s^{commit}" % head], cwd=root
+                ["rev-parse", "--verify", "-q", "refs/remotes/origin/%s^{commit}" % head], cwd=tree
             ):
                 rev = "refs/remotes/origin/%s" % head
-            refusal = plan_gate.plan_merge_refusal(root, _jq_body(prdata), rev=rev)
+            refusal = plan_gate.plan_merge_refusal(tree, _jq_body(prdata), rev=rev)
             if refusal:
                 ev.warn(PLAN_MESSAGE % (num, refusal, repo, num))
                 return hookio.DENY
 
         # The per-commit review precondition (both --auto and immediate), judged on the PR's head branch from the local tree. An unreadable head branch or a reviewer module that does not import refuses: the precondition is unverifiable, and unverifiable never merges.
-        reasons, lines = review_refusals(root, head, repo, _jq_head_oid(prdata))
+        reasons, lines = review_refusals(tree, head, repo, _jq_head_oid(prdata))
         if reasons:
             ev.warn(REVIEWS_MESSAGE % (repo, num, head or "unknown", ", ".join(reasons)))
             ev.warn_raw("".join("  %s\n" % line for line in lines))

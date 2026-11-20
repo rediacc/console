@@ -507,7 +507,7 @@ BROKEN_RUNNER = (
     "old, new = %r\n"
     "import ast\n"
     "cut = [n for n in ast.parse(src).body if isinstance(n, ast.Assign)"
-    " and any(isinstance(t, ast.Name) and t.id == 'DEFECT' for t in n.targets)]\n"
+    " and any(isinstance(t, ast.Name) and t.id in ('DEFECT', 'TWO_TREE_DEFECT') for t in n.targets)]\n"
     "outside = '\\n'.join(l for i, l in enumerate(src.split('\\n'), 1)"
     " if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut))\n"
     "assert old in outside, 'the defect no longer applies outside the DEFECT declaration'\n"
@@ -689,6 +689,128 @@ for defect, pick, what in BATCH_DEFECTS:
             % (defect[1].strip(), len(moved), len(chosen))
         )
         fails += 1
+
+# ---- two trees (box LT12 of agent/plans/PLAN-two-track-merge-dev.md) ----------------------
+# The open-plan world's checkout moved to the development branch 1009-1 while a linked worktree, the landing tree, holds the PR branch 1008-1, with the landing record in the common git dir. The development branch's push and its draft PR need no reason while the landing PR is open (operator ruling ASKED:2026-11-20T18:46Z); a ready PR, anything naming the landing branch, and every command in the landing tree keep the refusal. With no record the same push is refused, as before.
+DEV_BRANCH, LANDING_BRANCH = "1009-1", "1008-1"
+
+
+def two_trees(record=True):
+    main = pathlib.Path(os.path.realpath(world(date=NOW)))
+    landing = main.parent / "landing"
+    G._git(main, "checkout", "-q", "-b", DEV_BRANCH)
+    G._git(main, "worktree", "add", "-q", str(landing), LANDING_BRANCH)
+    if record:
+        (main / ".git" / "rediacc-landing.json").write_text(
+            json.dumps({"path": str(landing), "branch": LANDING_BRANCH}), encoding="utf-8"
+        )
+    return main, landing
+
+
+TT_M, TT_L = two_trees()
+NR_M, NR_L = two_trees(record=False)
+TWO_TREE_CASES = [
+    # (name, command, root, gh, want_blocked, flips under TWO_TREE_DEFECT)
+    (
+        "a push of the development branch",
+        "git push -u origin %s" % DEV_BRANCH,
+        TT_M,
+        GH_NONE,
+        False,
+        True,
+    ),
+    ("a bare push of the development branch", "git push", TT_M, GH_NONE, False, True),
+    (
+        "a draft PR from the development tree",
+        "gh pr create --draft -t x -b y",
+        TT_M,
+        GH_NONE,
+        False,
+        True,
+    ),
+    ("a ready PR from the development tree", "gh pr create -t x -b y", TT_M, GH_NONE, True, False),
+    (
+        "the development tree pushing the landing branch",
+        "git push origin %s" % LANDING_BRANCH,
+        TT_M,
+        GH_NONE,
+        True,
+        False,
+    ),
+    (
+        "HEAD pushed onto the landing branch",
+        "git push origin HEAD:%s" % LANDING_BRANCH,
+        TT_M,
+        GH_NONE,
+        True,
+        False,
+    ),
+    (
+        "a draft PR headed by the landing branch",
+        "gh pr create --draft --head %s -t x -b y" % LANDING_BRANCH,
+        TT_M,
+        GH_NONE,
+        True,
+        False,
+    ),
+    (
+        "the landing tree's own push",
+        "git push origin %s" % LANDING_BRANCH,
+        TT_L,
+        GH_NONE,
+        True,
+        False,
+    ),
+    (
+        "a draft PR from the landing tree",
+        "gh pr create --draft -t x -b y",
+        TT_L,
+        GH_NONE,
+        True,
+        False,
+    ),
+    (
+        "no record: the development branch's push",
+        "git push -u origin %s" % DEV_BRANCH,
+        NR_M,
+        GH_NONE,
+        True,
+        False,
+    ),
+]
+for name, command, root, gh, want, _flips in TWO_TREE_CASES:
+    got, err = run(command, root, gh)
+    blocked += got
+    ok = got == want
+    fails += not ok
+    print(
+        "%-60s want=%-8s got=%-8s %s"
+        % (
+            "two trees: " + name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+_dev_rows = [json.loads(line) for line in ledger_lines(TT_M)]
+_admitted = sum(1 for c in TWO_TREE_CASES if c[2] is TT_M and not c[4])
+if len(_dev_rows) != _admitted or {r["kind"] for r in _dev_rows} != {G.DEVELOPMENT_KIND}:
+    print(
+        "*** FAIL *** development ledger: want %d `%s` line(s), got %r"
+        % (_admitted, G.DEVELOPMENT_KIND, [(r["act"], r["kind"]) for r in _dev_rows])
+    )
+    fails += 1
+else:
+    print("development ledger: %d `%s` line(s)" % (len(_dev_rows), G.DEVELOPMENT_KIND))
+_flipping = [c for c in TWO_TREE_CASES if c[5]]
+_moved = [c[0] for c in _flipping if run(c[1], c[2], c[3], broken=G.TWO_TREE_DEFECT)[0] != c[4]]
+if _flipping and len(_moved) == len(_flipping):
+    print("TWO_TREE_DEFECT control: %d admission(s) flipped to refused" % len(_moved))
+else:
+    print("*** FAIL *** TWO_TREE_DEFECT control: %d of %d moved" % (len(_moved), len(_flipping)))
+    fails += 1
 
 if blocked in (0, len(CASES)):
     print("*** FAIL *** the guard answered the same way on every case")
