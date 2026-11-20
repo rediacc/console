@@ -253,18 +253,19 @@ def test_a_local_run_diffs_against_the_last_green_commit(gate, monkeypatch, caps
     _root, _calls, asked = gate
     monkeypatch.setattr(check_pytest, "last_green_base", lambda _root: FAKE_GREEN_BASE)
     assert check_pytest.main([]) == check_pytest.EXIT_OK
-    assert asked == [FAKE_GREEN_BASE], (
-        "the impact selection did not use the last green commit"
-    )
+    assert asked == [FAKE_GREEN_BASE], "the impact selection did not use the last green commit"
     assert f"base = the last green commit {FAKE_GREEN_BASE[:12]}" in capsys.readouterr().out
 
 
 def test_an_explicit_base_wins_over_the_last_green_commit(gate, monkeypatch):
     _root, _calls, asked = gate
     consulted: list[bool] = []
-    monkeypatch.setattr(
-        check_pytest, "last_green_base", lambda _root: (consulted.append(True), "abc")[1]
-    )
+
+    def consult(_root) -> str:
+        consulted.append(True)
+        return "abc"
+
+    monkeypatch.setattr(check_pytest, "last_green_base", consult)
     assert check_pytest.main(["--base", "origin/main"]) == check_pytest.EXIT_OK
     assert asked == ["origin/main"]
     assert consulted == [], "--base must decide alone"

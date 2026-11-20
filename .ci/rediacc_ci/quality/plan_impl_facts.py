@@ -45,7 +45,9 @@ class Facts:
 
     def __init__(self, root, closure: str, path: str | None = None):
         self.root = root
-        self.rel = path or CACHE_REL  # an absolute path replaces the root-relative default (pathlib join), which is how a test or `--no-fact-cache` redirects the file
+        self.rel = (
+            path or CACHE_REL
+        )  # an absolute path replaces the root-relative default (pathlib join), which is how a test or `--no-fact-cache` redirects the file
         self.path = pathlib.Path(root) / self.rel
         self.closure = closure
         self.data: dict[str, dict] = {k: {} for k in KINDS}
