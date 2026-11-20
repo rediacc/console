@@ -1359,7 +1359,8 @@ def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=No
     if fold is None:
         fold = S.load(worklist, sync=False)
     if loop is None:
-        loop = P.loop_state(root, worklist, session_id, settings=settings)
+        # The loop belongs to the tree this session runs in (a landing session maps its store to the main checkout, so the mapped root would read the development tree's role).
+        loop = P.loop_state(S.own_tree(root), worklist, session_id, settings=settings)
     focus = []
     for owner, ev in sorted((fold.phase or {}).items()):
         if not isinstance(ev, dict) or ev.get("mode") not in wl_standdown.PHASE_MODES:

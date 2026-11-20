@@ -3233,7 +3233,8 @@ V_LOOP_NEXT_MERGE = (
 # The landing tree after its PR merged: promotion replaces the branch cut.
 V_LOOP_NEXT_PROMOTE = (
     "LOOP NEXT: PR #%(pr)s on %(branch)s is merged and this is the landing tree. Promote the "
-    "development branch instead of cutting one here (box LT16):\n"
+    "development branch instead of cutting one here (box LT16). The development session owns it: "
+    "its stop blocks until promotion runs, and it runs\n"
     "    ./run.sh worktree landing --promote\n"
     "It rebases the development branch onto origin/main with `--git rebase-proof`, flips its draft "
     "ready and moves it into this tree. Then work %(next)s's first box on the next development "
