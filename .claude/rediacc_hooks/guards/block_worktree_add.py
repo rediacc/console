@@ -216,7 +216,7 @@ LANDING_SUFFIX = "-landing"
 
 
 def landing_paths(project):
-    """The landing tree's realpaths for the checkout `project` sits in: the fixed sibling of the main checkout, and the path a valid landing record binds. None when git cannot place `project`."""
+    """The landing tree's realpaths for the checkout `project` sits in: the fixed sibling of the main checkout, and the path a valid landing record binds. Empty when git cannot place `project`, and without the sibling when its store is not a `.git` directory beside the tree (a submodule)."""
     common = commit_policy.common_dir(project)
     if not common:
         return ()
