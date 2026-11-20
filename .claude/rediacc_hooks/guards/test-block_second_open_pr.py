@@ -206,7 +206,16 @@ DEV = pathlib.Path(os.path.realpath(DEV))
 # A REAL SUBMODULE (box LT18): private/renet, origin rediacc/renet, checked out on the development branch, so `--show-superproject-working-tree` finds the console from inside it.
 _SUB_SRC = checkout(DEV.parent / "renet-src", RENET_REPO)
 _git(_SUB_SRC, "commit", "-q", "--allow-empty", "-m", "renet base")
-_git(DEV, "-c", "protocol.file.allow=always", "submodule", "add", "-q", str(_SUB_SRC), "private/renet")
+_git(
+    DEV,
+    "-c",
+    "protocol.file.allow=always",
+    "submodule",
+    "add",
+    "-q",
+    str(_SUB_SRC),
+    "private/renet",
+)
 SUB = DEV / "private" / "renet"
 _git(SUB, "remote", "set-url", "origin", "%s/%s.git" % (GH_ORIGIN, RENET_REPO))
 _git(SUB, "checkout", "-q", "-b", DEV_BRANCH)
