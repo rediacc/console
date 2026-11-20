@@ -1051,8 +1051,8 @@ _DONE_INDEX: dict[tuple[int, str], tuple[list, tuple, dict[str, str]]] = {}
 _DONE_INDEX_MAX = 1024
 
 
-def _attested_sigs(doc, rel):
-    """Every sig `doc` attests as done for `rel`, by attested_by_identity's rule: a row under `rel` itself decides alone; otherwise the rows of every folder the plan's identity has."""
+def _attested_sigs(doc, rel, ident=None):
+    """Every sig `doc` attests as done for `rel`, by attested_by_identity's rule: a row under `rel` itself decides alone; otherwise the rows of every folder the plan's identity has. `ident`, when given, is `doc`'s identity index built by the caller for this walk."""
     if not isinstance(doc, dict):
         return set()
     plans = doc.get("plans") or {}
@@ -1060,9 +1060,41 @@ def _attested_sigs(doc, rel):
     if isinstance(entry, dict):
         return set(entry.get("done_sigs") or [])
     out = set()
-    for done in _identity_index(doc).get(plan_identity(rel), ()):
+    for done in (ident if ident is not None else _identity_index(doc)).get(plan_identity(rel), ()):
         out.update(done)
     return out
+
+
+def _walk_identity(doc) -> dict[str, list]:
+    """`doc`'s identity index, built directly: inside one history walk nothing mutates, so the fingerprint `_identity_index` re-checks on every call (its cost was 12 s of check:ci-plan-implementation, 56,340 calls on 2026-11-20) is not needed."""
+    index: dict[str, list] = {}
+    if not isinstance(doc, dict):
+        return index
+    for r, v in (doc.get("plans") or {}).items():
+        if isinstance(v, dict):
+            sigs = v.get("done_sigs")
+            index.setdefault(plan_identity(r), []).append(sigs if isinstance(sigs, list) else [])
+    return index
+
+
+#: Per history object, each document's identity index, shared by every plan's walk over that history (keyed and checked like _DONE_INDEX).
+_HISTORY_IDENT: dict[int, tuple[list, tuple, list]] = {}
+
+
+def _history_identities(history, entries) -> list:
+    cached = _HISTORY_IDENT.get(id(history))
+    if (
+        cached is not None
+        and cached[0] is history
+        and len(cached[1]) == len(entries)
+        and all(a is b for a, b in zip(cached[1], entries, strict=True))
+    ):
+        return cached[2]
+    if len(_HISTORY_IDENT) >= 64:
+        _HISTORY_IDENT.clear()
+    idents = [_walk_identity(doc) for _commit, doc in entries]
+    _HISTORY_IDENT[id(history)] = (history, entries, idents)
+    return idents
 
 
 def _done_index(history, rel):
@@ -1079,8 +1111,9 @@ def _done_index(history, rel):
     ):
         return cached[2]
     running: dict[str, str] = {}
-    for commit, doc in history:
-        now = _attested_sigs(doc, rel)
+    idents = _history_identities(history, entries)
+    for (commit, doc), ident in zip(entries, idents, strict=True):
+        now = _attested_sigs(doc, rel, ident)
         for sig in [s for s in running if s not in now]:
             del running[sig]
         for sig in now:
