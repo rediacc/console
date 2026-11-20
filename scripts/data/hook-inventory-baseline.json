@@ -40,6 +40,7 @@
   ".claude/rediacc_hooks/guards/block_host_toolchain_run.py",
   ".claude/rediacc_hooks/guards/block_inline_python.py",
   ".claude/rediacc_hooks/guards/block_inline_workflow_run.py",
+  ".claude/rediacc_hooks/guards/block_landing_one_way.py",
   ".claude/rediacc_hooks/guards/block_lease_boundary.py",
   ".claude/rediacc_hooks/guards/block_live_proof_ledger_shell_write.py",
   ".claude/rediacc_hooks/guards/block_live_proof_ledger_write.py",

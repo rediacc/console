@@ -12,12 +12,16 @@ The landing tree is made with git's linked-tree verb, so block_worktree_add admi
 
 from __future__ import annotations
 
+import importlib.machinery
 import importlib.util
 import pathlib
 import subprocess
 import sys
 import tempfile
-import types
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import types
 
 HERE = pathlib.Path(__file__).resolve().parent
 SOURCE = HERE / "wl_stack.py"
@@ -71,21 +75,32 @@ def commit(cwd, name: str) -> str:
     return sh(cwd, "rev-parse", "HEAD")
 
 
+class _MutantLoader(importlib.machinery.SourceFileLoader):
+    """wl_stack's own path with another source text: no bytecode is read for it or written from it."""
+
+    def __init__(self, fullname: str, path: str, text: str) -> None:
+        super().__init__(fullname, path)
+        self.text = text
+
+    def get_data(self, path):
+        if path == self.path:
+            return self.text.encode("utf-8")
+        raise OSError("no bytecode for a mutant")
+
+    def set_data(self, *_args, **_kwargs) -> None:
+        return None
+
+
 def load(text: str | None = None) -> types.ModuleType:
-    """wl_stack from its file, or from `text` (a mutant) with the same `__file__`, so its hop to `.claude/rediacc_hooks` resolves identically."""
+    """wl_stack from its file, or from `text` (a mutant) under the same path, so its hop to `.claude/rediacc_hooks` resolves identically."""
     name = "wl_stack_under_test"
-    if text is None:
-        spec = importlib.util.spec_from_file_location(name, SOURCE)
-        if spec is None or spec.loader is None:
-            raise SystemExit("%s is missing" % SOURCE)
-        mod = importlib.util.module_from_spec(spec)
-        sys.modules[name] = mod
-        spec.loader.exec_module(mod)
-        return mod
-    mod = types.ModuleType(name)
-    mod.__file__ = str(SOURCE)
+    loader = None if text is None else _MutantLoader(name, str(SOURCE), text)
+    spec = importlib.util.spec_from_file_location(name, SOURCE, loader=loader)
+    if spec is None or spec.loader is None:
+        raise SystemExit("%s is missing" % SOURCE)
+    mod = importlib.util.module_from_spec(spec)
     sys.modules[name] = mod
-    exec(compile(text, str(SOURCE), "exec"), mod.__dict__)
+    spec.loader.exec_module(mod)
     return mod
 
 
@@ -166,7 +181,15 @@ def controls(ws: types.ModuleType, cp) -> list[str]:
         sh(td, "clone", "-q", str(remote), str(merger))
         sh(merger, "fetch", "-q", "origin", LANDING)
         # A committer of its own, as GitHub signs the copies: a pick by the same identity in the same second would reproduce the very shas.
-        sh(merger, "-c", "user.name=merger", "-c", "user.email=merger@example.invalid", "cherry-pick", "main..origin/%s" % LANDING)
+        sh(
+            merger,
+            "-c",
+            "user.name=merger",
+            "-c",
+            "user.email=merger@example.invalid",
+            "cherry-pick",
+            "main..origin/%s" % LANDING,
+        )
         sh(merger, "push", "-q", "origin", "main")
         control("FIXTURE: main holds copies", sh(merger, "rev-parse", "HEAD~1") != fix)
         got = state()
@@ -176,8 +199,12 @@ def controls(ws: types.ModuleType, cp) -> list[str]:
             got,
         )
         block = ws.stack_block(main, pr_merged=no_pr)
-        control("MERGED: blocks with the promote command", "  %s\n" % ws.PROMOTE_COMMAND in block, block)
-        control("MERGED: names the carried copies", "still carries 2 landing commit(s)" in block, block)
+        control(
+            "MERGED: blocks with the promote command", "  %s\n" % ws.PROMOTE_COMMAND in block, block
+        )
+        control(
+            "MERGED: names the carried copies", "still carries 2 landing commit(s)" in block, block
+        )
         control("MERGED: reports no rebase", ws.stack_report(main, pr_merged=no_pr) == "")
 
         # The development branch rebased onto origin/main by hand: the copies drop, promotion still has not run.
@@ -199,7 +226,11 @@ def controls(ws: types.ModuleType, cp) -> list[str]:
         sh(landing, "checkout", "-q", DEVELOPMENT)
         cp.write_landing_record(str(main), str(landing), DEVELOPMENT)
         got = state()
-        control("PROMOTED: current and quiet", got.state == ws.CURRENT and got.landing == DEVELOPMENT, got)
+        control(
+            "PROMOTED: current and quiet",
+            got.state == ws.CURRENT and got.landing == DEVELOPMENT,
+            got,
+        )
         control("PROMOTED: no block", ws.stack_block(main, pr_merged=no_pr) == "")
         control("PROMOTED: no report", ws.stack_report(main, pr_merged=no_pr) == "")
 
@@ -215,7 +246,11 @@ def controls(ws: types.ModuleType, cp) -> list[str]:
         control("NOTIFY: push names the rebase", "  git rebase %s" % DEVELOPMENT in push, push)
         control("NOTIFY: push names the development tree", str(main) in push, push)
         merged = ws.notify_line(landing, "merged", pr=605)
-        control("NOTIFY: merged names promotion", ws.PROMOTE_COMMAND in merged and "PR #605" in merged, merged)
+        control(
+            "NOTIFY: merged names promotion",
+            ws.PROMOTE_COMMAND in merged and "PR #605" in merged,
+            merged,
+        )
         control("NOTIFY: an unknown event is silent", ws.notify_line(landing, "other") == "")
     if ran[0] < 25:
         fails.append("only %d controls ran" % ran[0])
@@ -226,7 +261,9 @@ def main() -> int:
     real = load()
     cp = real._hooks_pkg()
     if not hasattr(cp, "write_landing_record"):
-        print("FAIL: commit_policy has no landing record (PLAN-two-track-merge-dev LT1 not present)")
+        print(
+            "FAIL: commit_policy has no landing record (PLAN-two-track-merge-dev LT1 not present)"
+        )
         return 1
     fails = controls(real, cp)
     for line in fails:

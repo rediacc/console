@@ -95,7 +95,18 @@ def gh_pr_merged(root, branch: str) -> bool:
         import wl_gh
 
         rows, _err = wl_gh.call(
-            ["pr", "list", "--head", branch, "--state", "merged", "--json", "number", "--limit", "1"],
+            [
+                "pr",
+                "list",
+                "--head",
+                branch,
+                "--state",
+                "merged",
+                "--json",
+                "number",
+                "--limit",
+                "1",
+            ],
             cwd=str(root),
         )
     except Exception:
@@ -120,7 +131,10 @@ def _landing_merged(root, landing: str, main_ref: str, pr_merged) -> str:
     if marks is None or "+" in marks:
         return ""
     if marks:
-        return "its %d commit(s) are absorbed on %s" % (len(marks), main_ref.removeprefix("refs/remotes/"))
+        return "its %d commit(s) are absorbed on %s" % (
+            len(marks),
+            main_ref.removeprefix("refs/remotes/"),
+        )
     if pr_merged(root, landing):
         return "its PR is merged"
     return ""
@@ -136,7 +150,7 @@ def stack_state(root, fetch: bool = True, pr_merged=gh_pr_merged) -> StackState:
     development = cp.current_branch(str(root), foreign=True)
     if not development or development in ("main", landing):
         return StackState(NONE, landing=landing, landing_path=record["path"])
-    base = dict(landing=landing, landing_path=record["path"], development=development)
+    base = {"landing": landing, "landing_path": record["path"], "development": development}
     if not _resolves(root, "refs/heads/" + landing):
         return StackState(NONE, **base)
     if fetch:
@@ -174,7 +188,10 @@ def _merged_text(st: StackState) -> str:
     elif not st.rebased:
         why = "is not rebased onto %s/main" % REMOTE
     else:
-        why = "is rebased onto %s/main, and the rest of promotion (the branch moved into landing, the record rewritten, the draft flipped ready) has not run" % REMOTE
+        why = (
+            "is rebased onto %s/main, and the rest of promotion (the branch moved into landing, the record rewritten, the draft flipped ready) has not run"
+            % REMOTE
+        )
     return (
         "LANDING MERGED (blocks at every effort level): the landing branch %s is on %s/main (%s), "
         "and this tree's development branch %s %s. Promotion runs here before anything else:\n"
