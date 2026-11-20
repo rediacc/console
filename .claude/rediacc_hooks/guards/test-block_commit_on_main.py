@@ -624,8 +624,8 @@ TWO_TREE_DEFECT = next(
     if isinstance(node, ast.Assign)
     and any(isinstance(t, ast.Name) and t.id == "TWO_TREE_DEFECT" for t in node.targets)
 )
-for name, command, root, agent, want, _flips in TWO_TREE_CASES:
-    got, err = run(command, root, agent=agent)
+for name, command, root, tt_agent, want, _flips in TWO_TREE_CASES:
+    got, err = run(command, root, agent=tt_agent)
     ok = got == want
     fails += not ok
     print(

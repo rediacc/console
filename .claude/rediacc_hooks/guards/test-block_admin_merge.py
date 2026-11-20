@@ -358,31 +358,33 @@ BROKEN_ARGV = [
 ]
 
 two_tree_verdicts = set()
-for name, root, head, tips, want, _flips in TWO_TREE_CASES:
-    rc, err = run(TT_MERGE, REASON_BODY, root=root, head=head, oid=tips[head])
-    got = rc != 0 and REVIEWS_MARK in err
-    two_tree_verdicts.add(got)
-    ok = got == want and (got or rc == 0)
-    fails += not ok
+for tt_name, tt_root, tt_head, tt_tips, tt_want, _flips in TWO_TREE_CASES:
+    rc, err = run(TT_MERGE, REASON_BODY, root=tt_root, head=tt_head, oid=tt_tips[tt_head])
+    tt_got = rc != 0 and REVIEWS_MARK in err
+    two_tree_verdicts.add(tt_got)
+    tt_ok = tt_got == tt_want and (tt_got or rc == 0)
+    fails += not tt_ok
     print(
         "%-60s want=%-7s got=%-7s %s"
         % (
-            "two trees: " + name,
-            "refused" if want else "passes",
-            "refused" if got else ("passes" if rc == 0 else "other"),
-            "ok" if ok else "*** FAIL ***",
+            "two trees: " + tt_name,
+            "refused" if tt_want else "passes",
+            "refused" if tt_got else ("passes" if rc == 0 else "other"),
+            "ok" if tt_ok else "*** FAIL ***",
         )
     )
-    if not ok:
+    if not tt_ok:
         print("    rc=%d stderr: %s" % (rc, err.strip().splitlines()[:3]))
 flipping = [c for c in TWO_TREE_CASES if c[5]]
 moved = []
-for name, root, head, tips, want, _flips in flipping:
-    rc, err = run(TT_MERGE, REASON_BODY, root=root, head=head, oid=tips[head], argv=BROKEN_ARGV)
+for tt_name, tt_root, tt_head, tt_tips, tt_want, _flips in flipping:
+    rc, err = run(
+        TT_MERGE, REASON_BODY, root=tt_root, head=tt_head, oid=tt_tips[tt_head], argv=BROKEN_ARGV
+    )
     if rc not in (0, 2):
         raise SystemExit("broken-copy runner crashed (rc %d): %s" % (rc, err[-800:]))
-    if (rc != 0 and REVIEWS_MARK in err) != want:
-        moved.append(name)
+    if (rc != 0 and REVIEWS_MARK in err) != tt_want:
+        moved.append(tt_name)
 if flipping and len(moved) == len(flipping):
     print("TWO_TREE_DEFECT control: %d case(s) flipped to the review refusal" % len(moved))
 else:
