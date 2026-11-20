@@ -1094,6 +1094,13 @@ def test_an_empty_backup_store_kek_is_refused_by_its_worker_key(
     assert "ACCOUNT_BACKUP_STORE_KEK is EMPTY for" in proc.stderr
     assert "Its store entry is %s." % name in proc.stderr
     assert port.REQUIRED_NONEMPTY.count("ACCOUNT_BACKUP_STORE_KEK") == 1
+    # The first empty entry ends the run, so the position is observable: the KEK follows the config server key and precedes the four addresses.
+    order = port.REQUIRED_NONEMPTY
+    assert (
+        order.index("ACCOUNT_CONFIG_SERVER_KEY") + 1
+        == order.index("ACCOUNT_BACKUP_STORE_KEK")
+        == order.index("CONTACT_FROM_EMAIL") - 1
+    )
 
 
 def test_the_free_license_hmac_key_is_pushed_and_demanded(tmp_path: pathlib.Path) -> None:

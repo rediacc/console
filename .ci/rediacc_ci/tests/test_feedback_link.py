@@ -549,6 +549,24 @@ def test_link_warns_and_holds_the_state_when_candidates_are_cut(repo, monkeypatc
     assert not state.exists()
 
 
+def test_link_does_not_claim_a_plan_was_denied_candidates_when_no_plan_changed(
+    repo, monkeypatch, capsys
+):
+    """Fingerprints beyond CANDIDATES_MAX are warned about only when a changed plan exists to have been denied them. Control: the same cut with a changed plan warns."""
+    root, _, _, _ = repo
+    head = _git(root, "rev-parse", "HEAD")
+    items = [
+        _item(FP_A, "confirmed", triageNote=_note()),
+        _item(FP_B, "confirmed", triageNote=_note("another")),
+    ]
+    monkeypatch.setattr(link, "CANDIDATES_MAX", 1)
+    assert _link_once(root, Stub(items), head, root / "state.json", []) == 0
+    assert "beyond the first" not in capsys.readouterr().err
+    base = _commit_plan(root)
+    assert _link_once(root, Stub(items), base, root / "state2.json", []) == 0
+    assert "1 open fingerprint(s) beyond the first 1" in capsys.readouterr().err
+
+
 def test_link_first_run_without_since_is_refused(repo):
     root, _, _, _ = repo
     opts = link.Options(("eu",), snapshot=root / "s.json", state=root / "state.json", root=root)

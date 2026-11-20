@@ -507,6 +507,12 @@ SENDER_KEYS = {
 }
 
 
+def test_the_production_contact_address_is_pinned_by_value() -> None:
+    """SENDER_KEYS reads the constant, so a changed constant would pass it; the literal pins the address the contact form notifies."""
+    assert CONTACT_EMAIL == "contact@rediacc.com"
+    assert deploy_bench.DEFAULT_CONTACT_NOTIFY == "contact@rediacc.com"
+
+
 def test_the_payload_carries_the_four_sender_defaults_and_an_explicit_value_wins(monkeypatch):
     """The bench Worker gets the contact and alerts senders and recipients of Design 2 when the profile binds none; one explicit value overrides only its own key (PLAN-email-sender-separation E1)."""
     _bench_env(monkeypatch)

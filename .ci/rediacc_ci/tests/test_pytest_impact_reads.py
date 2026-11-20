@@ -769,6 +769,36 @@ def test_an_orphan_that_left_the_session_does_not_hang_the_trace(tmp_path, monke
 
 
 @pytest.mark.usefixtures("held_trace")
+def test_a_raise_in_the_wait_loop_still_shuts_the_reader_pool_down_without_waiting(
+    tmp_path, monkeypatch
+):
+    """3ebcb468.1: the worker thread is non-daemon, so a raise out of the wait loop must release it with `shutdown(wait=False, cancel_futures=True)` rather than leave it blocked on a stream a leaked tracee holds open. Control: the normal path's own shutdown waits."""
+    shutdowns: list[dict] = []
+    real_pool = pr.concurrent.futures.ThreadPoolExecutor
+
+    class Spy(real_pool):
+        def shutdown(self, wait=True, *, cancel_futures=False):
+            shutdowns.append({"wait": wait, "cancel_futures": cancel_futures})
+            super().shutdown(wait=wait, cancel_futures=cancel_futures)
+
+    monkeypatch.setattr(pr.concurrent.futures, "ThreadPoolExecutor", Spy)
+
+    calls: list[int] = []
+
+    def kill_session(_sid, **_k):
+        calls.append(1)
+        if len(calls) == 1:
+            raise RuntimeError("the wait loop raised")
+        _Held.last.kill()
+        return []
+
+    monkeypatch.setattr(pr, "_kill_session", kill_session)
+    with pytest.raises(RuntimeError, match="the wait loop raised"):
+        pr.run_trace(tmp_path, ["pytest"])
+    assert shutdowns == [{"wait": False, "cancel_futures": True}]
+
+
+@pytest.mark.usefixtures("held_trace")
 def test_a_failure_folding_the_stream_is_raised_not_swallowed_in_the_thread(tmp_path, monkeypatch):
     """Finding c29ab62a.2: the reader keeps draining, and the run fails loudly with the cause."""
 
