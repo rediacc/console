@@ -109,3 +109,52 @@ def lease_verdicts(
                 tree["path"], tree["head"], cut_at, branch, remote
             )
     return out
+
+
+def _subjects(repo, rng: str) -> list[tuple[str, str]]:
+    rc, out, _err = _git(repo, "log", "--reverse", "--format=%H%x09%s", rng)
+    if rc != 0:
+        return []
+    rows: list[tuple[str, str]] = []
+    for line in out.splitlines():
+        sha, sep, subject = line.partition("\t")
+        if sep:
+            rows.append((sha, subject))
+    return rows
+
+
+def rebase_proof(repo, base: str, old_tip: str, new_tip: str, uncovered: set[str]) -> dict | None:
+    """What a rebase of base..old_tip into new_tip did, and what it left owed (PLAN-two-track-merge-dev RB4).
+
+    carried / absorbed / missing come from `git cherry` exactly as wl_git.equivalent reads them. A missing commit whose subject matches a new commit that has no patch-equivalent of its own is CHANGED: the rebase resolved a conflict in it, so its patch-id moved and the successor map cannot carry its review record or its investigation rows. UNREVIEWED names every commit of base..new_tip in `uncovered` (wl_review.uncovered), the commits with no review record after the rebase. None when git cannot answer.
+    """
+
+    def marks(upstream, head):
+        rc, out, _err = _git(repo, "cherry", upstream, head)
+        if rc != 0:
+            return None
+        return {p[1]: p[0] for p in (ln.split() for ln in out.splitlines()) if len(p) == 2}
+
+    accounted = marks(new_tip, old_tip)
+    split = marks(base, old_tip)
+    new_side = marks(old_tip, new_tip)
+    if accounted is None or split is None or new_side is None:
+        return None
+    old = _subjects(repo, "%s..%s" % (base, old_tip))
+    new = _subjects(repo, "%s..%s" % (base, new_tip))
+    # `git cherry <new_tip> <old_tip>` lists only old commits NOT reachable from the new tip; one it does not list (an unchanged sha) is accounted, exactly as wl_git.equivalent reads it. Only `+` is lost.
+    lost = [(s, subj) for s, subj in old if accounted.get(s) == "+" and split.get(s) == "+"]
+    lost_shas = {s for s, _ in lost}
+    carried = [s for s, _ in old if split.get(s) == "+" and s not in lost_shas]
+    absorbed = [s for s, _ in old if split.get(s) == "-"]
+    fresh = {subj: s for s, subj in new if new_side.get(s) == "+"}
+    changed = [(s, fresh[subj], subj) for s, subj in lost if subj in fresh]
+    missing = [s for s, subj in lost if subj not in fresh]
+    unreviewed = [s for s, _ in new if s in uncovered]
+    return {
+        "carried": carried,
+        "absorbed": absorbed,
+        "changed": changed,
+        "missing": missing,
+        "unreviewed": unreviewed,
+    }

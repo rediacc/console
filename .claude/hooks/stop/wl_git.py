@@ -840,6 +840,7 @@ USAGE = """usage: worklist.py --git <subcommand> [args] [--execute]
   force-push <branch>              --force-with-lease, submodules before console
   snapshot                         print repo=sha for console + every submodule
   verify-rebase <snap> [base]      did every commit survive? by PATCH IDENTITY
+  rebase-proof <snap> [base]       verify-rebase, conflict-resolved commits named, plus the review records owed
                                    base defaults to origin/main; a BARE name is
                                    read as the remote one, and it says so
   rebase-status                    where an in-progress rebase stopped, and why
@@ -1186,6 +1187,80 @@ def main(argv):
                             "`git rebase --abort` returns to the step-0 tips."
                             % (steps, argv_txt, failed[2])
                         )
+
+        elif sub == "rebase-proof":
+            # PLAN-two-track-merge-dev RB4: verify-rebase's accounting with a conflict-resolved commit named CHANGED rather than refused as MISSING, plus the review records the rebase left owed (a commit whose patch moved has no record the successor map can carry). Run after the rebase, before the push.
+            if len(args) < 2:
+                raise RefusalError("rebase-proof needs the snapshot file from `--git snapshot`")
+            try:
+                with open(args[1], encoding="utf-8") as fh:
+                    snap = dict(
+                        ln.strip().split("=", 1)
+                        for ln in fh
+                        if "=" in ln and not ln.lstrip().startswith("#")
+                    )
+            except OSError as exc:
+                raise RefusalError("cannot read the snapshot: %s" % exc) from exc
+            if not snap:
+                raise RefusalError(
+                    "the snapshot names no repo; refusing to report a pass over nothing"
+                )
+            import pathlib
+
+            import wl_rebase
+            import wl_review
+
+            console_base = args[2] if len(args) > 2 else "origin/main"
+            if "/" not in console_base:
+                console_base = "origin/%s" % console_base
+            branch = wl_review.current_branch(root)
+            cfg = wl_review.load_config(root)
+            sub_base = dict(submodules(root))
+            for name, old_tip in sorted(snap.items()):
+                repo = root if name == "console" else os.path.join(root, name)
+                base = (
+                    console_base if name == "console" else "origin/%s" % sub_base.get(name, "main")
+                )
+                rc, new_tip, _ = run_git(["rev-parse", "HEAD"], cwd=repo)
+                if rc != 0:
+                    raise RefusalError("%s: could not read HEAD" % name)
+                uncovered = set(wl_review.uncovered(root, pathlib.Path(repo), branch, cfg, "HEAD"))
+                proof = wl_rebase.rebase_proof(repo, base, old_tip, new_tip, uncovered)
+                if proof is None:
+                    raise RefusalError(
+                        "%s: could not compare %s..%s" % (name, old_tip[:12], new_tip[:12])
+                    )
+                for old, new, subject in proof["changed"]:
+                    plan.note(
+                        "%s: CHANGED %s -> %s %s (conflict-resolved: its patch-id moved, so its review record and investigation rows do not carry)"
+                        % (name, old[:12], new[:12], subject)
+                    )
+                for sha in proof["unreviewed"]:
+                    plan.note(
+                        "%s: UNREVIEWED %s: worklist.py --review-run <me> %s"
+                        % (name, sha[:12], sha[:12])
+                    )
+                plan.check(
+                    "%s: %d carried, %d absorbed, %d changed, %d unreviewed"
+                    % (
+                        name,
+                        len(proof["carried"]),
+                        len(proof["absorbed"]),
+                        len(proof["changed"]),
+                        len(proof["unreviewed"]),
+                    ),
+                    not proof["missing"],
+                    (
+                        "%d MISSING: %s"
+                        % (len(proof["missing"]), ", ".join(m[:12] for m in proof["missing"]))
+                    )
+                    if proof["missing"]
+                    else "",
+                )
+            reasons, lines = wl_review.check_state(root, branch)
+            for line in lines:
+                plan.note(line)
+            plan.check("per-commit reviews (wl_review.py --check)", not reasons, ", ".join(reasons))
 
         elif sub == "snapshot":
             # The pre-rebase tips, in a form verify-rebase can read back. branch-rebase.md's step 0 told a session to `echo` these and reprint them in the report, which makes recovery depend on a human remembering to paste. This makes them an INPUT.

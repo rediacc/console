@@ -164,6 +164,91 @@ def run() -> int:
             repr(verdicts),
         )
 
+        # REBASE (RB4): a branch of two commits replayed onto a moved base, one with a conflict resolved by hand (its patch moves) and one clean.
+        main_p, _lease_p, base_p = world(td / "p")
+        (main_p / "f.txt").write_text("a\n", encoding="utf-8")
+        sh(main_p, "add", "f.txt")
+        sh(main_p, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-qm", "f")
+        base_p = sh(main_p, "rev-parse", "HEAD")
+        sh(main_p, "checkout", "-q", "-b", "dev")
+        (main_p / "f.txt").write_text("b\n", encoding="utf-8")
+        sh(
+            main_p,
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.invalid",
+            "commit",
+            "-qam",
+            "edit f",
+        )
+        c1 = sh(main_p, "rev-parse", "HEAD")
+        c2 = commit(main_p, "g.txt")
+        old_tip = c2
+        sh(main_p, "checkout", "-q", "main")
+        (main_p / "f.txt").write_text("x\n", encoding="utf-8")
+        sh(
+            main_p,
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.invalid",
+            "commit",
+            "-qam",
+            "main moves f",
+        )
+        moved = sh(main_p, "rev-parse", "HEAD")
+        sh(main_p, "checkout", "-q", "--detach", moved)
+        subprocess.run(
+            ["git", "-C", str(main_p), "cherry-pick", c1],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        (main_p / "f.txt").write_text("b and x\n", encoding="utf-8")
+        sh(main_p, "add", "f.txt")
+        sh(
+            main_p,
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.invalid",
+            "-c",
+            "core.editor=true",
+            "cherry-pick",
+            "--continue",
+        )
+        c1_new = sh(main_p, "rev-parse", "HEAD")
+        sh(main_p, "-c", "user.name=t", "-c", "user.email=t@example.invalid", "cherry-pick", c2)
+        c2_new = sh(main_p, "rev-parse", "HEAD")
+        proof = RB.rebase_proof(main_p, moved, old_tip, c2_new, {c2_new})
+        control("REBASE: the proof reads the rebase", proof is not None, repr(proof))
+        proof = proof or {}
+        control(
+            "REBASE: the conflict-resolved commit is flagged CHANGED (patch-id moved)",
+            [(o, n) for o, n, _s in proof.get("changed", [])] == [(c1, c1_new)],
+            repr(proof),
+        )
+        control(
+            "REBASE: the clean commit is carried, nothing missing",
+            proof.get("carried") == [c2] and proof.get("missing") == [],
+            repr(proof),
+        )
+        control(
+            "REBASE: an unreviewed commit is flagged and a reviewed one is not",
+            proof.get("unreviewed") == [c2_new] and c1_new not in proof.get("unreviewed", []),
+            repr(proof),
+        )
+        same = RB.rebase_proof(main_p, base_p, old_tip, old_tip, set())
+        control(
+            "REBASE (identity): with no rebase every commit is carried, none changed or missing",
+            same is not None
+            and same["carried"] == [c1, c2]
+            and same["changed"] == []
+            and same["missing"] == [],
+            repr(same),
+        )
+
         control(
             "BASE: the PR branch while open, main after the merge",
             RB.base_branch(True, "1120-1") == "1120-1"
