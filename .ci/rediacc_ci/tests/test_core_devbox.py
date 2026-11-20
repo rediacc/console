@@ -32,6 +32,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.core import devbox
+from rediacc_ci.well_known import IMAGE_REGISTRY
 from rediacc_ci.core import devbox_shadow_driver as driver
 from rediacc_ci.setup import bridge
 from rediacc_ci.tests import differential as diff
@@ -316,7 +317,7 @@ def claims_image(obs: dict[str, list[str]]) -> None:
     pin = json.loads(
         paths.from_root(".ci", "config", "devcontainer-image.json").read_text(encoding="utf-8")
     )
-    assert stdout_of(obs["run-image-match"]) == ("%s@%s\n" % (pin["image"], pin["digest"])).encode()
+    assert stdout_of(obs["run-image-match"]) == ("%s/%s@%s\n" % (IMAGE_REGISTRY, pin["image"], pin["digest"])).encode()
     assert not any(call[1] == "build" for call in calls_of(obs["ensure-uid-match"]))
     # A present derived tag is REUSED: inspected, never rebuilt.
     assert not any(call[1] == "build" for call in calls_of(obs["ensure-uid-present"]))
@@ -461,7 +462,7 @@ def _fold_twin_spellings(scenario: str, old_out: str) -> str:
 
 
 # The retired twin ran the floating tag; the port runs the pin. The two words the port adds to the `docker run` argv (the runner image variable and the ci:quick clone-root bind) are cut from the port's transcript before the comparison, and `test_up_*` below pins each one by itself.
-TWIN_DEVBOX_IMAGE = "ghcr.io/rediacc/devcontainer:latest"
+TWIN_DEVBOX_IMAGE = IMAGE_REGISTRY + "/devcontainer:latest"
 PORT_ADDED_WORDS = re.compile(
     r'"-e", "CI_RUNNER_IMAGE=[^"]*", |"-v", "([^"]*/rediacc/ci-quick-clones)\1?:[^"]*", '
 )
@@ -1469,7 +1470,7 @@ def _pin_text() -> dict:
 
 def test_the_run_image_is_the_pin_and_never_a_floating_tag() -> None:
     pin = _pin_text()
-    assert "%s@%s" % (pin["image"], pin["digest"]) == devbox.DEVBOX_IMAGE
+    assert "%s/%s@%s" % (IMAGE_REGISTRY, pin["image"], pin["digest"]) == devbox.DEVBOX_IMAGE
     assert ":latest" not in devbox.DEVBOX_IMAGE
     obs = observations(new_transcript("image"))
     # The run image when the base already carries the host's ids is the base itself: the pin.
@@ -1556,7 +1557,7 @@ def test_image_drift_reads_the_runner_variable_in_both_directions() -> None:
     assert _drift_words(current, current.image_drift) == []
     old_tag = InspectedContainer({"PATH": "/usr/bin"}, environment="PATH=/x\n")
     assert _drift_words(old_tag, old_tag.image_drift) == ["CI_RUNNER_IMAGE unset"]
-    other = "CI_RUNNER_IMAGE=ghcr.io/rediacc/devcontainer:latest"
+    other = "CI_RUNNER_IMAGE=%s/devcontainer:latest" % IMAGE_REGISTRY
     stale = InspectedContainer({"PATH": "/usr/bin"}, environment="%s\n" % other)
     assert _drift_words(stale, stale.image_drift) == [other]
     # An unanswerable probe is never a reason to destroy a container.
@@ -1582,7 +1583,7 @@ def test_up_recreates_a_container_on_the_old_image_and_keeps_a_current_one(monke
 
 
 GOOD_DIGEST = "sha256:" + "a" * 64
-PIN_IMAGE = "ghcr.io/rediacc/devcontainer"
+PIN_IMAGE = "devcontainer"
 
 
 @pytest.mark.parametrize(
@@ -1612,6 +1613,6 @@ def test_a_missing_pin_refuses_loudly(tmp_path: pathlib.Path) -> None:
 
 def test_a_well_formed_pin_is_image_at_digest(tmp_path: pathlib.Path) -> None:
     pin = tmp_path / "pin.json"
-    body = {"image": "ghcr.io/x/y", "digest": GOOD_DIGEST, "stage": "full"}
+    body = {"image": "x/y", "digest": GOOD_DIGEST, "stage": "full"}
     pin.write_text(json.dumps(body), encoding="utf-8")
-    assert devbox.image_pin(str(pin)) == "ghcr.io/x/y@" + GOOD_DIGEST
+    assert devbox.image_pin(str(pin)) == "%s/x/y@%s" % (IMAGE_REGISTRY, GOOD_DIGEST)

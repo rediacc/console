@@ -1480,22 +1480,34 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      contents: read
       packages: read
     if: inputs.is_bot != 'true'
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Load well-known
+        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
+
       - name: Measure the devcontainer pull
         env:
-          IMAGE: ghcr.io/rediacc/devcontainer@sha256:b7a40a70140e2d37afc03c5645c199031a635bbe1d16b785e5b4a0e605cdc165
           GH_TOKEN: ${{ github.token }}
-          GH_ACTOR: ${{ github.actor }}
+          LOGIN_USER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
-          trap 'docker rmi -f "$IMAGE" > /dev/null 2>&1 || true; docker logout ghcr.io > /dev/null 2>&1 || true' EXIT
-          echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin
+          IMAGE="${WK_IMAGE_REGISTRY}/$(jq -r '.image + "@" + .digest' .ci/config/devcontainer-image.json)"
+          trap 'docker rmi -f "$IMAGE" > /dev/null 2>&1 || true; docker logout "${WK_IMAGE_REGISTRY%%/*}" > /dev/null 2>&1 || true' EXIT
+          echo "$GH_TOKEN" | docker login "${WK_IMAGE_REGISTRY%%/*}" -u "$LOGIN_USER" --password-stdin
           start=$(date +%s)
           docker pull -q "$IMAGE"
           echo "R0 pull_seconds=$(( $(date +%s) - start ))"
-          docker run --rm --entrypoint sh "$IMAGE" -c 'echo "R0 node=$(node --version) python=$(python3 --version) npm=$(npm --version)"'
+          docker run --rm --entrypoint sh "$IMAGE" -c 'for tool in python3 npm node; do echo "R0 $tool=$("$tool" --version)"; done'
 
   quality-content:
     name: Content

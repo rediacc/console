@@ -105,6 +105,7 @@ from rediacc_ci import log
 from rediacc_ci.core.common import is_ci
 from rediacc_ci.well_known import ACCOUNT_DEV_PORT
 from rediacc_ci.well_known import DEVBOX_UID_IMAGE_REPO as WK_DEVBOX_UID_IMAGE_REPO
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 # The DNS-label cap `${s:0:40}` applies. `.ci/lib/devbox.sh:195`. Well under the 63 a label allows, because the slug also gets a `-code` / `-account` / `-db` / `-term` suffix before it becomes a hostname.
 SLUG_MAX = 40
@@ -139,7 +140,7 @@ UNBOUND_STATUS = 1
 # --------------------------------------------------------------------------- the constants `.ci/config/constants.sh:123-157` defines ---------------------------------------------------------------------------
 # COPIED, NOT READ, and `test_core_devbox.py::test_the_constants_match_constants_sh` parses the `readonly` lines of that file on every run and fails on any drift. Reading them at import would mean parsing bash from Python at every call; copying them and checking the copy is the pattern `account.py` set.
 
-# The run image is the pin in `.ci/config/devcontainer-image.json`, "<image>@<digest>" (PLAN-two-track-merge-dev D6). A missing or malformed pin raises at import: there is no fallback to a floating tag.
+# The run image is the pin in `.ci/config/devcontainer-image.json`, "<IMAGE_REGISTRY>/<image>@<digest>", the pin file storing the repository name under the registry (PLAN-two-track-merge-dev D6). A missing or malformed pin raises at import: there is no fallback to a floating tag.
 DEVCONTAINER_PIN_REL = ".ci/config/devcontainer-image.json"
 RUNNER_IMAGE_ENV = "CI_RUNNER_IMAGE"
 _PIN_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
@@ -147,7 +148,7 @@ _PIN_IMAGE = re.compile(r"[a-z0-9][a-z0-9./_-]*")
 
 
 def image_pin(path: str) -> str:
-    """`<image>@<digest>` from the pin file at `path`; any defect in it is a RuntimeError naming the file."""
+    """`<IMAGE_REGISTRY>/<image>@<digest>` from the pin file at `path`; any defect in it is a RuntimeError naming the file."""
     try:
         with open(path, encoding="utf-8") as handle:
             doc = json.load(handle)
@@ -170,7 +171,7 @@ def image_pin(path: str) -> str:
             "devcontainer image pin malformed: %s needs {image, digest sha256:<64 hex>, stage}"
             % path
         )
-    return "%s@%s" % (image, digest)
+    return "%s/%s@%s" % (IMAGE_REGISTRY, image, digest)
 
 
 DEVBOX_IMAGE = image_pin(

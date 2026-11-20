@@ -1,6 +1,6 @@
 {
-  "$comment": "The devbox and the ci:quick runner use this exact image by digest (PLAN-two-track-merge-dev D6); the pin lives outside .devcontainer/ so it does not change the image's own build context.",
-  "image": "ghcr.io/rediacc/devcontainer",
+  "$comment": "The devbox and the ci:quick runner use this exact image by digest under WK_IMAGE_REGISTRY (PLAN-two-track-merge-dev D6); the pin lives outside .devcontainer/ so it does not change the image's own build context.",
+  "image": "devcontainer",
   "digest": "sha256:b7a40a70140e2d37afc03c5645c199031a635bbe1d16b785e5b4a0e605cdc165",
   "stage": "full"
 }

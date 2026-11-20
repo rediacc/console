@@ -443,6 +443,7 @@
       "IS_BOT",
       "JOB_STATUS",
       "LEG_SUITES",
+      "LOGIN_USER",
       "MAP",
       "MATRIX_DOMAIN",
       "MATRIX_ID",

@@ -1485,7 +1485,8 @@
     ],
     ".ci/rediacc_ci/testrun/e2e.py": [
       "GITHUB_ACTIONS",
-      "RENET_DATA_DIR"
+      "RENET_DATA_DIR",
+      "VM_IMAGE"
     ],
     ".ci/rediacc_ci/testrun/install_methods.py": [
       "DOCKER_TAG",
