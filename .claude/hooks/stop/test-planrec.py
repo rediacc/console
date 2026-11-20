@@ -224,6 +224,14 @@ def build(td):
 
 TD = tempfile.TemporaryDirectory()
 ROOT, BEFORE, AFTER = build(TD.name)
+# RB7 (PLAN-two-track-merge-dev): with origin/main one commit behind, the tick's commit is a branch commit a rebase-merge would rewrite, so compaction refuses rather than write a done= that reads `no such commit` on main.
+sh(ROOT, "git", "update-ref", "refs/remotes/origin/main", BEFORE)
+raises(
+    "RB7: compaction refuses a done= that is not on origin/main",
+    lambda: R.compact(ROOT, REL, "deadbeef", why="auto", park=True),
+    "not on origin/main",
+)
+sh(ROOT, "git", "update-ref", "refs/remotes/origin/main", AFTER)
 RECORD, NOTES = R.compact(ROOT, REL, "deadbeef", why="auto", park=True)
 REC = R.parse(RECORD)
 

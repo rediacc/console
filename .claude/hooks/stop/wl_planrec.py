@@ -296,6 +296,13 @@ def _git_raw(root, *args) -> str:
         return ""
 
 
+def _on_origin_main(root, sha: str) -> bool:
+    """True when `sha` is an ancestor of origin/main, or when this clone has no origin/main to judge against (a fixture, a fresh repo): only a known-unmerged commit is refused."""
+    if not _git_out(root, "rev-parse", "--verify", "--quiet", "refs/remotes/origin/main"):
+        return True
+    return _git_ok(root, "merge-base", "--is-ancestor", sha, "refs/remotes/origin/main")
+
+
 def _live_ref(root) -> str | None:
     """The ref a commit pointer must be reachable from besides origin/main (PLAN-two-track-merge-dev RB5). HEAD in a checkout on a branch, or in the main checkout on a detached HEAD (a rebase in progress). In a linked worktree on a detached HEAD (a lease) the lease's own commits are ancestors of its HEAD but get new shas when the lead cherry-picks them, so HEAD never counts there: the main worktree's branch does, and when that cannot be named (the main worktree is detached too, or git cannot say) the answer is None and only origin/main counts. Fails closed: a linked worktree is never judged by its own HEAD."""
     if _git_ok(root, "symbolic-ref", "-q", "HEAD"):
@@ -1097,6 +1104,12 @@ def derive(root, rel, text=None, history=None):
         if mark == "x":
             c = done_commit(history, rel, s)
             done = sha9(c) if c else "abandoned"
+            if c and not _on_origin_main(root, c):
+                # RB7 (PLAN-two-track-merge-dev): a branch commit is rewritten by the rebase-merge, so `done=<it>` would read `no such commit` on main (RB6's live test). Refused here, so a plan is compacted only once its ticks are on main.
+                problems.append(
+                    "box %r is done at %s, a commit not on origin/main: the PR's rebase-merge rewrites it, so done=%s would read `no such commit` on main. Compact this plan after the PR merges."
+                    % (body[:60], c[:12], sha9(c))
+                )
             if not c and current is not None and attested_at(current, rel, s):
                 # Cannot happen with a walk that includes HEAD's ledger commit, and is reported rather than assumed away: it would mean the history walk is blind, which is the vacuity shape this repo refuses to pass through silently.
                 problems.append(
