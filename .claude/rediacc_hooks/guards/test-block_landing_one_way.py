@@ -240,6 +240,12 @@ PUSH_REFUSED = [
     ("push HEAD", "git push origin HEAD"),
     ("push to main", "git push origin %s:main" % LANDING_BRANCH),
     ("push -u", "git push -u origin %s" % LANDING_BRANCH),
+    ("push development onto the landing branch", "git push origin %s:%s" % (DEV, LANDING_BRANCH)),
+    (
+        "push refs/heads development onto the landing branch",
+        "git push origin refs/heads/%s:%s" % (DEV, LANDING_BRANCH),
+    ),
+    ("push development onto main", "git push origin %s:main" % DEV),
 ]
 for row_name, row_command in PUSH_REFUSED:
     check("taken: %s" % row_name, True, row_command, LANDING)
