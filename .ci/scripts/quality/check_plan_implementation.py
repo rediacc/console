@@ -2037,8 +2037,9 @@ def prefetch_partial_clone(root):
 MEMO_GIT_VERBS = frozenset({"rev-parse", "show", "merge-base", "log", "cat-file", "ls-tree"})
 
 
-def memo_git_reads(module, names=("_git_out", "_git_raw", "_git_ok")) -> None:
-    """Wrap `module`'s `_git_out`, `_git_raw` and `_git_ok` so a read-only verb is asked once per (root, args) for the rest of the process. Installed after the controls, which run uncached."""
+def memo_git_reads(module, names=("_git_out", "_git_raw", "_git_ok")):
+    """Wrap `module`'s git helpers so a read-only verb is asked once per (root, args) until the returned undo runs. main installs it after the controls (which run uncached) and drops it when it next starts, so a second in-process run asks git afresh."""
+    undo = []
     for name in names:
         real = getattr(module, name, None)
         if real is None or getattr(real, "_memo_git", False):
@@ -2056,10 +2057,28 @@ def memo_git_reads(module, names=("_git_out", "_git_raw", "_git_ok")) -> None:
             return _memo[key]
 
         wrapped._memo_git = True
+        wrapped.__wrapped__ = real
         setattr(module, name, wrapped)
+        undo.append((name, real))
+
+    def restore():
+        for name, real in undo:
+            setattr(module, name, real)
+
+    return restore
+
+
+# The undo of every memo main installed; main runs it first, so each run asks git afresh even when an earlier in-process run left its memo in place.
+_MEMO_UNDO: list = []
+
+
+def drop_git_memo() -> None:
+    while _MEMO_UNDO:
+        _MEMO_UNDO.pop()()
 
 
 def main(argv=None) -> int:
+    drop_git_memo()
     argv = list(sys.argv[1:] if argv is None else argv)
     selftest_only = "--selftest" in argv or "--selftest-only" in argv
 
@@ -2118,9 +2137,13 @@ def main(argv=None) -> int:
     # `--selftest` STOPS HERE. The controls are the claim that this instrument can fail; the verdict below is a claim about the tree, and a caller that wants only the first must not be made to pay for the second. test-planenforce.py's C10e drives exactly this mode.
     if selftest_only:
         return 0
-    memo_git_reads(planrec)
-    memo_git_reads(planrec.C, names=("_git",))
-    memo_git_reads(preflight, names=("_git",))
+    _MEMO_UNDO.extend(
+        [
+            memo_git_reads(planrec),
+            memo_git_reads(planrec.C, names=("_git",)),
+            memo_git_reads(preflight, names=("_git",)),
+        ]
+    )
 
     clock, problem = enforce.load_clock(REPO_ROOT)
     if problem:
@@ -2210,7 +2233,7 @@ def main(argv=None) -> int:
         judged = moved_to_done(base_plans, head_plans)
         history = planrec.ledger_history(REPO_ROOT)
         rows = planrec.read_investigations(REPO_ROOT)
-        # One run reads a fixed tree and immutable commits: the submodule listing is taken once and each commit's dates once (strace on 2026-11-20 counted 8,268 identical `git config --get-regexp` calls and hundreds of `git log -1 --format=%cI` per sha).
+        # One run reads a fixed tree and immutable commits: the submodule listing is taken once and each commit's dates once (strace on 2026-11-20 counted 1,378 identical `git config --get-regexp` processes and hundreds of `git log -1 --format=%cI` per sha).
         absent_here = absent_submodules(REPO_ROOT)
         commit_date = functools.lru_cache(maxsize=None)(
             lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%cI", commit)

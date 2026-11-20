@@ -403,12 +403,26 @@ def test_memo_git_reads_caches_read_verbs_only(gate):
     first, second = mod._git("/r", "status", "--porcelain"), mod._git("/r", "status", "--porcelain")
     assert first != second, "a verb outside the allowlist must reach git every time"
     gate.memo_git_reads(mod, names=("_git",))
-    before = len(calls)
-    mod._git("/r", "show", "x")
-    mod._git("/r", "show", "x")
-    assert len(calls) == before + 1, (
-        "a second install must not stack a second memo with its own empty cache"
+    assert mod._git.__wrapped__ is fake_git, (
+        "a second install must not wrap the memo in another memo"
     )
+
+
+def test_the_memo_is_dropped_when_main_starts_again(gate):
+    calls = []
+
+    def fake_git(root, *args):
+        calls.append((root, args))
+        return "answer %d" % len(calls)
+
+    mod = types.SimpleNamespace(_git=fake_git)
+    gate._MEMO_UNDO.append(gate.memo_git_reads(mod, names=("_git",)))
+    assert mod._git("/r", "show", "x") == mod._git("/r", "show", "x")
+    gate.drop_git_memo()
+    assert mod._git is fake_git, (
+        "a later run must ask git afresh, not reuse an earlier run's answers"
+    )
+    assert gate._MEMO_UNDO == []
 
 
 def test_prefetch_follow_matches_the_serial_walk(gate):
