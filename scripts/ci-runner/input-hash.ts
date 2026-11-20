@@ -835,7 +835,7 @@ export function inputHashSelftest(tmpDir: string): void {
     // D6/R1: the image term. Two environments differing only in the pinned image yield different salts, and an absent pin reads as host.
     const hostSalt = saltHash(root, t3, {});
     const imageSalt = saltHash(root, t3, {
-      [RUNNER_IMAGE_ENV]: `ghcr.io/rediacc/devcontainer@sha256:${'a'.repeat(64)}`,
+      [RUNNER_IMAGE_ENV]: `registry.example.invalid/img@sha256:${'a'.repeat(64)}`,
     });
     must(
       hostSalt !== imageSalt,
@@ -845,7 +845,7 @@ export function inputHashSelftest(tmpDir: string): void {
       saltHash(root, t3, { [RUNNER_IMAGE_ENV]: '' }) === hostSalt && imageTerm({}) === 'host',
       'CONTROL: an empty or absent pin is the host term'
     );
-    for (const bad of ['host', 'ghcr.io/rediacc/devcontainer:latest', 'ghcr.io/x@sha256:abc']) {
+    for (const bad of ['host', 'registry.example.invalid/img:latest', 'registry.example.invalid/x@sha256:abc']) {
       let threw = false;
       try {
         imageTerm({ [RUNNER_IMAGE_ENV]: bad });

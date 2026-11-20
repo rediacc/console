@@ -1474,41 +1474,6 @@ jobs:
           GATE_SKIP_MODE: ${{ inputs.external_quality == 'skip' && 'skip' || 'hard' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.announce_gate_skips no-external-quality check:actions check:ci-pin-freshness
 
-  r0-devcontainer-pull:
-    # TEMPORARY, PLAN-two-track-merge-dev R0: one hosted-runner measurement of the pinned devcontainer pull (R1 picks a toolchain stage over the full image above 90 s per job). Its own job so `packages: read` widens no other job's token; reverted in this PR once the figures are on the plan item.
-    name: R0 devcontainer pull (temporary)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      packages: read
-    if: inputs.is_bot != 'true'
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - uses: ./.github/actions/profiler
-        with:
-          runner-label: ubuntu-latest
-
-      - name: Load well-known
-        run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
-
-      - name: Measure the devcontainer pull
-        env:
-          GH_TOKEN: ${{ github.token }}
-          LOGIN_USER: ${{ github.repository_owner }}
-        run: |
-          set -euo pipefail
-          IMAGE="${WK_IMAGE_REGISTRY}/$(jq -r '.image + "@" + .digest' .ci/config/devcontainer-image.json)"
-          trap 'docker rmi -f "$IMAGE" > /dev/null 2>&1 || true; docker logout "${WK_IMAGE_REGISTRY%%/*}" > /dev/null 2>&1 || true' EXIT
-          echo "$GH_TOKEN" | docker login "${WK_IMAGE_REGISTRY%%/*}" -u "$LOGIN_USER" --password-stdin
-          start=$(date +%s)
-          docker pull -q "$IMAGE"
-          echo "R0 pull_seconds=$(( $(date +%s) - start ))"
-          docker run --rm --entrypoint sh "$IMAGE" -c 'for tool in python3 npm node; do echo "R0 $tool=$("$tool" --version)"; done'
-
   quality-content:
     name: Content
     runs-on: ubuntu-latest
