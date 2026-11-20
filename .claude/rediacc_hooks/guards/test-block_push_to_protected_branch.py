@@ -750,6 +750,10 @@ def run(command, cwd, extra=None, argv=None):
         check=False,
         env=env,
     )
+    if argv is not None and proc.returncode not in (0, 2):
+        raise SystemExit(
+            "broken-copy runner crashed (rc %d): %s" % (proc.returncode, proc.stderr[-800:])
+        )
     return proc.returncode != 0, proc.stderr
 
 
@@ -1186,7 +1190,7 @@ BROKEN_ARGV = [
         "sys.stderr.write(ev.result(rc)[2])\n"
         "sys.exit(rc)\n"
     )
-    % (str(pathlib.Path(__file__).resolve().parents[1]), _GUARD_FILE, TWO_TREE_DEFECT, _GUARD_FILE),
+    % (str(pathlib.Path(__file__).resolve().parents[2]), _GUARD_FILE, TWO_TREE_DEFECT, _GUARD_FILE),
 ]
 
 for name, command, root, extra, want, _flips in TWO_TREE_CASES:

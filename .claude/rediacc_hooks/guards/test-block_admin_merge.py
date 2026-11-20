@@ -352,7 +352,7 @@ BROKEN_RUNNER = (
 BROKEN_ARGV = [
     sys.executable,
     "-c",
-    BROKEN_RUNNER % (str(HERE.parents[1]), GUARD_FILE, TWO_TREE_DEFECT, GUARD_FILE),
+    BROKEN_RUNNER % (str(HERE.parents[2]), GUARD_FILE, TWO_TREE_DEFECT, GUARD_FILE),
 ]
 
 two_tree_verdicts = set()
@@ -377,6 +377,8 @@ flipping = [c for c in TWO_TREE_CASES if c[5]]
 moved = []
 for name, root, head, tips, want, _flips in flipping:
     rc, err = run(TT_MERGE, REASON_BODY, root=root, head=head, oid=tips[head], argv=BROKEN_ARGV)
+    if rc not in (0, 2):
+        raise SystemExit("broken-copy runner crashed (rc %d): %s" % (rc, err[-800:]))
     if (rc != 0 and REVIEWS_MARK in err) != want:
         moved.append(name)
 if flipping and len(moved) == len(flipping):
