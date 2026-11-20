@@ -957,10 +957,45 @@ def done_commit(history, rel, sig):
 
     A box can be ticked, reopened and ticked again. The FIRST attesting commit then names the stale original tick: on 2026-10-07 PLAN-ci-consolidation T1, ticked when the plan was written (2553ca19a), reopened (43a2e6b9c) and re-ticked after a fresh investigation (a2e639712), read to check:ci-plan-implementation P-A4 as investigated after its implementation.
     """
-    start = ""
+    return _done_index(history, rel).get(sig, "")
+
+
+# One index per (history, plan): sig -> the first commit of its latest unbroken attesting run. check:ci-plan-implementation asks done_commit about ~2,700 boxes against a ~950-version history, and one history walk per box was 409 s of its 511 s on 2026-11-20 (profile); one walk per plan answers every box of it.
+_DONE_INDEX: dict[tuple[int, str], tuple[list, int, dict[str, str]]] = {}
+_DONE_INDEX_MAX = 1024
+
+
+def _attested_sigs(doc, rel):
+    """Every sig `doc` attests as done for `rel`, by attested_by_identity's rule: a row under `rel` itself decides alone; otherwise the rows of every folder the plan's identity has."""
+    if not isinstance(doc, dict):
+        return set()
+    plans = doc.get("plans") or {}
+    entry = plans.get(rel)
+    if isinstance(entry, dict):
+        return set(entry.get("done_sigs") or [])
+    out = set()
+    for done in _identity_index(doc).get(plan_identity(rel), ()):
+        out.update(done)
+    return out
+
+
+def _done_index(history, rel):
+    """sig -> done commit for every box of `rel`, from one walk over `history` (oldest first), memoized per history object and length, so a history extended or replaced is walked again."""
+    key = (id(history), rel)
+    cached = _DONE_INDEX.get(key)
+    if cached is not None and cached[0] is history and cached[1] == len(history):
+        return cached[2]
+    running: dict[str, str] = {}
     for commit, doc in history:
-        start = (start or commit) if attested_by_identity(doc, rel, sig) else ""
-    return start
+        now = _attested_sigs(doc, rel)
+        for sig in [s for s in running if s not in now]:
+            del running[sig]
+        for sig in now:
+            running.setdefault(sig, commit)
+    if len(_DONE_INDEX) >= _DONE_INDEX_MAX:
+        _DONE_INDEX.clear()
+    _DONE_INDEX[key] = (history, len(history), dict(running))
+    return _DONE_INDEX[key][2]
 
 
 # --------------------------------------------------------------------------- derive(): everything the record can compute about itself.
