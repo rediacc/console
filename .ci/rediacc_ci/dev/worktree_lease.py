@@ -17,6 +17,7 @@ import json
 import os
 import pathlib
 import re
+import shlex
 import signal
 import subprocess
 import sys
@@ -37,19 +38,27 @@ GITLINK_MODE = "160000"
 CONSOLE = "."
 DEFAULT_OWNER = "cli"
 SHOWN_ESCAPES = 5
+# The two trees a lease is cut from (PLAN-two-track-merge-dev LT16), spelled as commit_policy's ROLE_DEVELOPMENT and ROLE_LANDING: the main checkout's live branch, or the branch the landing record binds.
+TREE_DEVELOPMENT = "development"
+TREE_LANDING = "landing"
+TREES = (TREE_DEVELOPMENT, TREE_LANDING)
 
 LEASE_HELP = """\
-Usage: ./run.sh worktree lease [--name <slug>] [--owner <id8>]
+Usage: ./run.sh worktree lease [--name <slug>] [--owner <id8>] [--tree development|landing]
 
 Make one detached tree under .claude/worktrees at the live branch's tip, with
 each submodule at its gitlink and dependencies seeded. Uncommitted work in the
 main checkout is not in it. The last stdout line is the tree's absolute path.
 A submodule with no module store is refused, since no tree can hold its gitlink:
 `git submodule update --init -- <path>` in the main checkout brings the store.
+Run from the landing tree, the verb serves the main checkout it belongs to.
 
 Options:
   --name <slug>   Tree id; default <owner>-<n>
   --owner <id8>   Owning session; default this session's id prefix
+  --tree <tree>   development cuts at the main checkout's live branch, landing
+                  at the branch the landing record binds; default the tree the
+                  verb runs in. The record keeps it, so `land` picks into it.
 """
 
 
@@ -73,6 +82,11 @@ def _hook_module(name):
 
 def live_tip(root):
     """The checked-out branch's commit, or on `main` or a detached HEAD the one live branch's, or `main` between branches."""
+    return spike.must(root, "rev-parse", "--verify", "refs/heads/%s^{commit}" % live_branch(root))
+
+
+def live_branch(root):
+    """The branch `live_tip` reads: the checked-out one, or on `main` or a detached HEAD the one live branch, or `main` between branches."""
     branch = spike.out(root, "symbolic-ref", "-q", "--short", "HEAD")
     if not branch or branch == BASE_BRANCH:
         live = spike.load_commit_policy().live_branches(str(root), gh=False)
@@ -80,7 +94,59 @@ def live_tip(root):
             message = "several live branches, so no single tip: %s" % ", ".join(live)
             raise LeaseRefusedError(message)
         branch = live[0] if live else BASE_BRANCH
-    return spike.must(root, "rev-parse", "--verify", "refs/heads/%s^{commit}" % branch)
+    return branch
+
+
+def _landing_main(root):
+    """The main checkout whose landing record binds the tree `root` sits in, or None. The record lives in the common git dir, `<main>/.git`, so the main checkout is that directory's parent."""
+    policy = spike.load_commit_policy()
+    if policy.tree_role(str(root)) != policy.ROLE_LANDING:
+        return None
+    common = pathlib.Path(policy.common_dir(str(root)))
+    return common.parent if common.name == ".git" else None
+
+
+def _landing_of(root):
+    """`(landing tree path, its branch)` from the landing record of the main checkout `root`, or a refusal naming why none binds."""
+    policy = spike.load_commit_policy()
+    record, problem = policy.read_landing_record(str(root))
+    if record is None:
+        why = problem or "%s names none; ./run.sh worktree landing makes it" % (
+            policy.LANDING_RECORD_NAME
+        )
+        message = "no landing tree: %s" % why
+        raise LeaseRefusedError(message)
+    return pathlib.Path(record["path"]), record["branch"]
+
+
+def tree_branch(root, tree):
+    """The branch a lease cut from `tree` starts on, which its record keeps as `cut_from` for wl_rebase.base_branch (LT15)."""
+    return _landing_of(root)[1] if tree == TREE_LANDING else live_branch(root)
+
+
+def tree_tip(root, tree):
+    """The commit a lease cut from `tree` starts at: the main checkout's live tip, or the landing record's branch."""
+    if tree == TREE_LANDING:
+        _path, branch = _landing_of(root)
+        return spike.must(root, "rev-parse", "--verify", "refs/heads/%s^{commit}" % branch)
+    return live_tip(root)
+
+
+def _cut_tree(record):
+    """The tree a lease record says it was cut from; a record written before LT16 names none and was cut from the main checkout."""
+    return str((record or {}).get("tree") or TREE_DEVELOPMENT)
+
+
+def _live_dir(root, record):
+    """The console checkout a lease lands into: the landing tree for a lease cut from it, else the main checkout."""
+    return _landing_of(root)[0] if _cut_tree(record) == TREE_LANDING else root
+
+
+def _repo_tip(root, record, key):
+    """The live tip one repo of a lease is judged against, in the tree the lease was cut from."""
+    if key == CONSOLE:
+        return tree_tip(root, _cut_tree(record))
+    return spike.out(_live_dir(root, record) / key, "rev-parse", "HEAD")
 
 
 def gitlinks_at(root, tip):
@@ -266,9 +332,12 @@ def _holding_checkout(root):
 
 
 def _main_checkout(root):
-    """`root` normalized, or a refusal when it is no main checkout or its holder is a symlink."""
+    """`root` normalized, or a refusal when it is no main checkout or its holder is a symlink. The landing tree the record binds answers its main checkout, found through the common git dir."""
     root = pathlib.Path(os.path.realpath(root))
     if not (root / ".git").is_dir():
+        main = _landing_main(root)
+        if main is not None and (main / ".git").is_dir():
+            return _main_checkout(main)
         message = "%s is not a main checkout" % root
         main = _holding_checkout(root)
         if main is not None:
@@ -287,10 +356,17 @@ def _store_of(root, sub):
     return store if store.is_dir() and store != root / ".git" else None
 
 
-def make_lease(root, *, name="", owner="", agent=""):
-    """Make one tree and return its normalized absolute path. Raises `LeaseRefusedError`, with nothing left behind, when it cannot."""
+def make_lease(root, *, name="", owner="", agent="", tree=""):
+    """Make one tree and return its normalized absolute path. Raises `LeaseRefusedError`, with nothing left behind, when it cannot. `tree` names where it is cut (TREES); "" means the tree `root` sits in."""
+    origin = os.path.realpath(root)
+    if tree and tree not in TREES:
+        message = "unknown tree %r: one of %s" % (tree, ", ".join(TREES))
+        raise LeaseRefusedError(message)
     root = _main_checkout(root)
-    tip = live_tip(root)
+    # `_main_checkout` answers another path only for the landing tree the record binds.
+    if not tree:
+        tree = TREE_DEVELOPMENT if os.path.realpath(root) == origin else TREE_LANDING
+    tip = tree_tip(root, tree)
     held = gitlinks_at(root, tip)
     # Design 2 step 4 names no exception, and an empty directory would pass `_verify` while the writer reads no code there.
     absent = sorted(sub for sub, _ in held if _store_of(root, sub) is None)
@@ -306,7 +382,7 @@ def make_lease(root, *, name="", owner="", agent=""):
     before = _signal_handlers()
     try:
         spike.arm_signals()
-        return _make_lease_armed(root, repo, held, tip, path, lease_id, owner, agent)
+        return _make_lease_armed(root, repo, held, tip, path, lease_id, owner, agent, tree)
     finally:
         _restore_signal_handlers(before)
 
@@ -328,7 +404,7 @@ def _restore_signal_handlers(before):
         raise failure
 
 
-def _make_lease_armed(root, repo, held, tip, path, lease_id, owner, agent):
+def _make_lease_armed(root, repo, held, tip, path, lease_id, owner, agent, tree):
     try:
         _add_tree(root, path, tip, lease_id)
         for sub, sha in held:
@@ -343,6 +419,8 @@ def _make_lease_armed(root, repo, held, tip, path, lease_id, owner, agent):
                 "owner": owner,
                 "agent": agent,
                 "base": {CONSOLE: tip, **dict(held)},
+                "tree": tree,
+                "cut_from": tree_branch(root, tree),
                 "created_at": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             },
         )
@@ -364,11 +442,17 @@ def _default_owner():
 
 
 def _parse(args):
-    """`{"name": ..., "owner": ...}`, or None after an error line (D4: anything else is refused)."""
-    values = {"name": "", "owner": ""}
+    """`{"name": ..., "owner": ..., "tree": ...}`, or None after an error line (D4: anything else is refused)."""
+    values = {"name": "", "owner": "", "tree": ""}
     rest = list(args)
     while rest:
         arg = rest.pop(0)
+        if arg == "--tree":
+            if not rest or rest[0] not in TREES:
+                log.error("--tree needs one of %s" % ", ".join(TREES))
+                return None
+            values["tree"] = rest.pop(0)
+            continue
         key = arg[2:] if arg in ("--name", "--owner") else ""
         if not key:
             log.error("Unknown option: %s" % arg)
@@ -393,6 +477,7 @@ def cmd_lease(args):
             paths.repo_root(),
             name=values["name"],
             owner=values["owner"] or _default_owner(),
+            tree=values["tree"],
         )
     except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
         log.error("refused: %s" % exc)
@@ -544,10 +629,11 @@ def _merges(tree, tip, key, lease_id):
 def _repo_plan(root, record, key):
     """`(lease tree, live tip, shas oldest first)` for one repo of a lease, or None when the lease holds none there."""
     tree = pathlib.Path(record["path"]) if key == "." else pathlib.Path(record["path"]) / key
-    live = root if key == "." else root / key
+    console = _live_dir(root, record)
+    live = console if key == "." else console / key
     if not tree.is_dir() or not live.is_dir():
         return None
-    tip = live_tip(root) if key == "." else spike.out(live, "rev-parse", "HEAD")
+    tip = _repo_tip(root, record, key)
     head = spike.out(tree, "rev-parse", "HEAD")
     pin = spike.out(
         tree, "rev-parse", "--verify", "-q", "%s%s^{commit}" % (spike.PIN_SPACE, record["id"])
@@ -589,21 +675,25 @@ def land_plan(root, lease_id, notes=None):
                 message = spike.must(plans[key][0], "show", "-s", "--format=%B", sha)
                 notes.append("%s %s serves %s" % (key, sha[:12], "; ".join(_boxes_named(message))))
     lines = []
+    # A lease cut from the landing tree lands there, so every line names that tree; one cut from the main checkout keeps the lines the lead runs where it stands.
+    live = _live_dir(root, record)
+    console_git = "git" if live == root else "git -C %s" % shlex.quote(str(live))
     for key in keys:
         if key not in plans or not plans[key][2]:
             continue
         shas = " ".join(plans[key][2])
         if key == ".":
-            lines.append("git cherry-pick -x %s" % shas)
+            lines.append("%s cherry-pick -x %s" % (console_git, shas))
         else:
+            sub = key if live == root else shlex.quote(str(live / key))
             # A pick on a detached checkout moves no branch, so the submodule takes the console's name first, which `_judge_local` admits (Design 3).
-            if not spike.out(root / key, "symbolic-ref", "-q", "HEAD"):
-                branch = spike.must(root, "symbolic-ref", "--short", "HEAD")
-                lines.append("git -C %s switch -c %s" % (key, branch))
+            if not spike.out(live / key, "symbolic-ref", "-q", "HEAD"):
+                branch = spike.must(live, "symbolic-ref", "--short", "HEAD")
+                lines.append("git -C %s switch -c %s" % (sub, branch))
             lines += [
-                "git -C %s cherry-pick -x %s" % (key, shas),
-                "git add -- %s" % key,
-                "git commit -F <msg> -- %s" % key,
+                "git -C %s cherry-pick -x %s" % (sub, shas),
+                "%s add -- %s" % (console_git, key),
+                "%s commit -F <msg> -- %s" % (console_git, key),
             ]
             if notes is not None:
                 notes.append(
@@ -630,7 +720,8 @@ class BoxLanding(NamedTuple):
 
 def _lease_commits(root, record, key):
     """`(live repo, live tip, lease shas oldest first)` of one repo of a lease, landed or not: what HEAD and the pin hold past the lease's base. The tree may be gone; the pin outlives it."""
-    live = root if key == "." else root / key
+    console = _live_dir(root, record)
+    live = console if key == "." else console / key
     if not live.is_dir():
         return None
     tree = pathlib.Path(record["path"]) if key == "." else pathlib.Path(record["path"]) / key
@@ -643,7 +734,7 @@ def _lease_commits(root, record, key):
     )
     tips += [pin] if pin else []
     base = record.get("base", {}).get(key, "")
-    tip = live_tip(root) if key == "." else spike.out(live, "rev-parse", "HEAD")
+    tip = _repo_tip(root, record, key)
     if not tips or not base:
         return live, tip, []
     listed = spike.out(
@@ -937,7 +1028,7 @@ class GcRow(NamedTuple):
     path: str
     why: list
     subs: list
-    # "tree" on disk, "gone" for a pin or record whose tree is removed, "outside" for what this verb never touches.
+    # "tree" on disk, "gone" for a pin or record whose tree is removed, "outside" for what this verb never touches, "landing" for the landing record's tree (never touched either).
     kind: str
 
 
@@ -1166,10 +1257,11 @@ def _sub_tree_problem(world, tree, key):
     return ""
 
 
-def _store_facts(world, key, pin, head, base):
-    """(entry, problems) for a repo with no tree on disk: its pin and the HEAD git still lists, read in its store."""
+def _store_facts(world, key, pin, head, base, tip=None):
+    """(entry, problems) for a repo with no tree on disk: its pin and the HEAD git still lists, read in its store. `tip`, when given, is the live tip of the tree the lease was cut from."""
     store = world.stores[key]
-    tip = world.tip if key == CONSOLE else spike.out(store, "rev-parse", "HEAD")
+    if tip is None:
+        tip = world.tip if key == CONSOLE else spike.out(store, "rev-parse", "HEAD")
     if not tip:
         return {"dirty": 0, "commits": []}, ["%s: %s has no live tip" % (RULE_LANDED, key)]
     commits, problems = _commit_problems(store, key, [(head, pin)], tip, base)
@@ -1181,10 +1273,18 @@ def _lease_facts(world, lease_id, path, record):
     pins = world.pins.get(lease_id, {})
     base = _base_of(record)
     repos, problems, subs = {}, [], []
+    # A lease cut from the landing tree is landed once the landing branch holds its commits, so its tips are read there.
+    landing = _cut_tree(record) == TREE_LANDING
+    try:
+        console_tip = tree_tip(world.root, TREE_LANDING) if landing else world.tip
+        live = _live_dir(world.root, record)
+    except LeaseRefusedError as exc:
+        why = "%s: cut from the landing tree, %s" % (RULE_LANDED, exc)
+        return Facts(repos={}, problems=[why], subs=[])
     if path.is_dir() and not path.is_symlink():
         keys, problems = _sub_keys(world, path, record)
         repos[CONSOLE], more = _repo_facts(
-            path, CONSOLE, world.tip, pins.get(CONSOLE, ""), base.get(CONSOLE, "")
+            path, CONSOLE, console_tip, pins.get(CONSOLE, ""), base.get(CONSOLE, "")
         )
         problems += more
         for key in keys:
@@ -1194,7 +1294,7 @@ def _lease_facts(world, lease_id, path, record):
                 problems.append(why)
             elif os.path.lexists(tree / ".git"):
                 subs.append(key)
-                tip = spike.out(world.root / key, "rev-parse", "HEAD")
+                tip = spike.out(live / key, "rev-parse", "HEAD")
                 repos[key], more = _repo_facts(tree, key, tip, pins.get(key, ""), base.get(key, ""))
                 problems += more
     heads = {
@@ -1205,8 +1305,11 @@ def _lease_facts(world, lease_id, path, record):
     }
     for key in sorted(set(pins) | set(heads)):
         if key not in repos:
+            tip = None
+            if landing:
+                tip = console_tip if key == CONSOLE else spike.out(live / key, "rev-parse", "HEAD")
             repos[key], more = _store_facts(
-                world, key, pins.get(key, ""), heads.get(key, ""), base.get(key, "")
+                world, key, pins.get(key, ""), heads.get(key, ""), base.get(key, ""), tip
             )
             problems += more
     return Facts(repos=repos, problems=problems, subs=subs)
@@ -1421,8 +1524,9 @@ def _holder_entries(root):
 
 
 def _outside_rows(world):
-    """Console trees git lists elsewhere, such as an operator's `.worktrees/<MMDD-N>`, each kept by rule 1 and never read."""
+    """Console trees git lists elsewhere, such as an operator's `.worktrees/<MMDD-N>`, each kept by rule 1 and never read. The tree the landing record binds is labelled `landing`, since it is the open PR's checkout rather than debris."""
     holder = str(world.root / spike.HOLDER)
+    bound = world.policy.landing_record(str(world.root)) or {}
     claimed = {
         os.path.realpath(str(record.get("path") or ""))
         for record in world.records.values()
@@ -1432,6 +1536,14 @@ def _outside_rows(world):
     for row in world.listed.get(CONSOLE, []):
         tree = row.get("worktree", "")
         if os.path.dirname(tree) != holder and tree not in claimed:
+            if os.path.realpath(tree) == bound.get("path"):
+                why = "%s: %s is the landing tree on %s, which gc never touches" % (
+                    TREE_LANDING,
+                    tree,
+                    bound.get("branch"),
+                )
+                rows.append(GcRow(os.path.basename(tree), tree, [why], [], TREE_LANDING))
+                continue
             why = "%s: %s is no direct child of %s" % (RULE_PLACE, tree, spike.HOLDER)
             rows.append(GcRow(os.path.basename(tree), tree, [why], [], "outside"))
     return rows
@@ -1529,7 +1641,11 @@ def _resolve_superseded(world, lease_id, pairs, reason):
             continue
         key, sha = hits[0]
         repo = world.root / key
-        tip = world.tip if key == CONSOLE else spike.out(repo, "rev-parse", "HEAD")
+        record = world.records.get(lease_id)
+        if _cut_tree(record) == TREE_LANDING:
+            tip = _repo_tip(world.root, record, key)
+        else:
+            tip = world.tip if key == CONSOLE else spike.out(repo, "rev-parse", "HEAD")
         # A change can land split across several commits (one conflicting half through a duplicate fix, the rest through a re-apply), so `landed` may join shas with "+"; their changed paths are united.
         parts = [p for p in landed.split("+") if p]
         fulls = [_quiet(repo, "rev-parse", "--verify", p + "^{commit}") for p in parts]
