@@ -6,7 +6,7 @@ WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bas
 
   commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`; a commit from a lease tree without a valid `Plan-Box:` trailer (`lease_plan_box_refusal` below).
   reference-transaction   in the `prepared` state, a new `refs/heads/*` (old oid all zeros AND the name not yet resolving: a forced move of an existing branch also arrives with zeros, and is not a creation) that breaks the one-branch rule: outside a submodule, only from `main`, with no other live branch and an `MMDD-N` name; in a submodule, only the console's current branch name. LOCAL FACTS ONLY: no `gh`, so a branch counts as live until its upstream is gone.
-  pre-commit              a commit from a lease tree (`commit_policy.lease_root`) that stages a gitlink or a path under `agent/`; a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
+  pre-commit              a commit from a lease tree (`commit_policy.lease_root`) that stages a gitlink or a path under `agent/`; a commit whose staged `.py` blobs fail `ruff check` or `ruff format --check` (`python_lint_pre_commit` below; an absent ruff is a note, never a refusal); a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
   pre-push                a push sending or naming a pin under `refs/worktrees/`, from every repository; any push from a lease tree; a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below). A line a live release run lists is admitted instead (box W1-D of PLAN-local-release, `_release_admitted` below). A push naming `refs/backup/**` meets the backup-ref rules instead of all of these (Design G of PLAN-local-first-delivery, `backup_push` below): the repository's pinned GitLab project only, nothing else in the push, create or fast-forward, immutable snapshots, and incremental session-link and secret scans.
 
 `post-commit` REFUSES NOTHING. In a lease tree it runs the `pin` verb of `.ci/rediacc_ci/dev/worktree_lease.py`, which moves `refs/worktrees/<id>` forward to HEAD, so a commit outlives its tree until it lands (agent/plans/PLAN-worktree-lease.md, Design 3). Outside a lease, it and `post-rewrite` and `post-merge` start the backup worker detached in a repository with a pinned `gitlab` remote, on a branch other than `main` (box G3 of PLAN-local-first-delivery, `spawn_backup` below). They run under the override too.
@@ -31,6 +31,7 @@ import os
 import pathlib
 import posixpath
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -1209,8 +1210,11 @@ def lease_commit_refusal() -> int:
 
 
 def pre_commit(_argv: list[str]) -> int:
-    """The lease boundary, then both generated-file checks, cheapest refusal first: the doc regions, then the registry's artifacts."""
+    """The lease boundary, the staged Python's lint, then both generated-file checks, cheapest refusal first: the doc regions, then the registry's artifacts."""
     code = lease_commit_refusal()
+    if code != 0:
+        return code
+    code = python_lint_pre_commit()
     if code != 0:
         return code
     code = gen_docs_pre_commit()
@@ -1374,6 +1378,191 @@ def artifacts_pre_commit() -> int:
             % (ga.LABEL, staged, enrolled, time.monotonic() - started)
         )
     return 0
+
+
+# THE STAGED PYTHON'S LINT. 66f44dddd landed ruff I001 in `.ci/rediacc_ci/core/devbox.py` and I001 plus a format difference in `.ci/rediacc_ci/tests/test_core_devbox.py`, and only `ci:quick`, about 25 minutes later, caught them, twice. `check:ci-python-lint` stays the authority (its pin, its control, every tracked file); this is its commit-time slice: `ruff check` and `ruff format --check`, ONE
+# invocation per mode over the staged `.py` paths outside `private/` (the gate's own corpus filter), and nothing at all when none is staged.
+#
+# THE COMMIT'S BLOBS, NOT THE WORKING TREE. The paths are written out of the commit's index (GIT_INDEX_FILE under `git commit -- <paths>`) by one `checkout-index` into this worktree's fixed scratch directory, so an unstaged edit neither hides a finding nor causes one. Ruff decides first-party imports from what exists on disk (the `src` roots, and the package a file sits in), so the scratch tree
+# also holds every ruff config file of the index and an EMPTY placeholder for every other `.py`/`.pyi` (`lint_tree_paths` says why empty is enough). With only the staged files there, an import of an unstaged first-party module sorts as third-party and a clean file is refused, which the fixture's first-party case reproduces.
+#
+# AN ABSENT RUFF FAILS OPEN, SAID. `RUFF_BIN` (used alone when set, the gate's own first rung), then the repository's and this hook checkout's bootstrap install (`RUFF_REL`), then PATH. None of them is a note on stderr and an allowed commit: the gate still runs before every push. A ruff that runs and errors, or outruns `RUFF_TIMEOUT`, is UNCHECKED and refused, as everywhere in this file.
+RUFF_REL = ".ci/cache/toolchain/uv-tools/bin/ruff"
+RUFF_CONFIGS = frozenset({"pyproject.toml", "ruff.toml", ".ruff.toml"})
+RUFF_TIMEOUT = 120
+LINT_LABEL = "python-lint pre-commit"
+# Both modes run with `--output-format concise`, whose finding lines start `<path>:<line>:<col>: `; the path is relative to the scratch tree, which is the repository-relative path.
+_CONCISE_PATH = re.compile(r"^(.+?):\d+:\d+: ", re.MULTILINE)
+
+
+def resolve_ruff(repo: str) -> str | None:
+    """The ruff binary this hook runs, or None. `RUFF_BIN`, when set, is the only candidate: a test or an operator naming a binary means that binary."""
+    explicit = os.environ.get("RUFF_BIN")
+    if explicit:
+        return explicit if os.access(explicit, os.X_OK) else None
+    for candidate in (os.path.join(repo, RUFF_REL), str(CONSOLE_ROOT / RUFF_REL)):
+        if os.access(candidate, os.X_OK):
+            return candidate
+    return shutil.which("ruff")
+
+
+def _git_z(repo: str, args: list[str]) -> list[str] | None:
+    proc = _run(["git", *args], repo)
+    if proc.returncode != 0:
+        return None
+    return [p for p in proc.stdout.split("\0") if p]
+
+
+def staged_python(repo: str) -> list[str] | None:
+    """The `.py` paths the commit adds or changes, outside `private/`; None when git cannot say."""
+    return _git_z(
+        repo,
+        [
+            "diff",
+            "--cached",
+            "--name-only",
+            "--diff-filter=ACMR",
+            "-z",
+            "--",
+            "*.py",
+            ":!:private/**",
+        ],
+    )
+
+
+def lint_tree_paths(index: list[str], staged: list[str]) -> tuple[list[str], list[str], list[str]]:
+    """What the scratch tree needs from the index: (blobs to write, empty module placeholders, directories to make).
+
+    The blobs are the staged files and every ruff config file. Every other `.py`/`.pyi` is an EMPTY placeholder, because ruff resolves a dotted import to its full path (`import pkg.mod` is first-party only when `pkg/mod.py` or `pkg/mod/` exists; measured on ruff 0.17.4, where `pkg/__init__.py` alone sorted it as third-party) and reads nothing but existence.
+    """
+    blobs = set(staged)
+    placeholders: set[str] = set()
+    dirs: set[str] = set()
+    for rel in index:
+        if rel.startswith("private/"):
+            continue
+        if posixpath.basename(rel) in RUFF_CONFIGS:
+            blobs.add(rel)
+        parent = posixpath.dirname(rel)
+        if rel.endswith((".py", ".pyi")):
+            placeholders.add(rel)
+            while parent and parent not in dirs:
+                dirs.add(parent)
+                parent = posixpath.dirname(parent)
+        elif "/" in rel:
+            dirs.add(rel.partition("/")[0])
+    return sorted(blobs), sorted(placeholders - blobs), sorted(dirs)
+
+
+def _quoted(paths: list[str]) -> str:
+    return " ".join(shlex.quote(p) for p in paths)
+
+
+def _lint_refusal(ruff: str, staged: list[str], check, fmt) -> int:
+    """The refusal for findings in either mode, with the exact fix commands for the files each mode named."""
+    lines = []
+    fixes = []
+    flagged: set[str] = set()
+    for name, proc, fix in (
+        ("ruff check", check, "check --fix"),
+        ("ruff format --check", fmt, "format"),
+    ):
+        if proc.returncode != 1:
+            continue
+        said = (proc.stdout + proc.stderr).strip()
+        found = sorted({m.group(1) for m in _CONCISE_PATH.finditer(said)} & set(staged)) or staged
+        lines.append("%s:\n%s" % (name, said))
+        fixes.append("%s %s -- %s" % (shlex.quote(ruff), fix, _quoted(found)))
+        flagged.update(found)
+    fixes.append("git add -- %s" % _quoted(sorted(flagged)))
+    return _refuse(
+        "this commit stages Python that ruff refuses (check:ci-python-lint would fail before the push):\n%s\n"
+        "Fix the working tree, stage the result and commit again (the fix rewrites the working-tree copy):\n  %s"
+        % ("\n".join(lines), "\n  ".join(fixes))
+    )
+
+
+def python_lint_pre_commit() -> int:
+    started = time.monotonic()
+    repo = _repo()
+    if not repo:
+        return 0
+    staged = staged_python(repo)
+    if staged is None:
+        return _refuse(
+            "UNCHECKED: `git diff --cached` failed, so the staged Python could not be linted. An unknown is not a pass."
+        )
+    if not staged:
+        return 0
+    config = _index_text(repo, "pyproject.toml")
+    if config is None or "[tool.ruff" not in config:
+        return 0  # a submodule, or any repository without this ruff config: its own CI lints it
+    ruff = resolve_ruff(repo)
+    if ruff is None:
+        sys.stderr.write(
+            "%s: ruff not found (RUFF_BIN, %s, PATH); %d staged .py file(s) NOT linted. "
+            "`.ci/bootstrap.sh` installs it; check:ci-python-lint still runs before the push.\n"
+            % (LINT_LABEL, RUFF_REL, len(staged))
+        )
+        return 0
+    index = _git_z(repo, ["ls-files", "-z"])
+    if index is None:
+        return _refuse(
+            "UNCHECKED: `git ls-files` failed, so the staged Python could not be linted. An unknown is not a pass."
+        )
+    git_dir = _git(["rev-parse", "--absolute-git-dir"])
+    tree = os.path.join(scratch_for(git_dir or repo), "ruff-tree")
+    shutil.rmtree(tree, ignore_errors=True)
+    try:
+        blobs, placeholders, dirs = lint_tree_paths(index, staged)
+        os.makedirs(tree)
+        for rel in dirs:
+            os.makedirs(os.path.join(tree, rel), exist_ok=True)
+        for rel in placeholders:
+            with open(os.path.join(tree, rel), "wb"):
+                pass
+        out = subprocess.run(
+            ["git", "checkout-index", "-f", "-z", "--stdin", "--prefix=%s/" % tree],
+            cwd=repo,
+            input="\0".join(blobs),
+            capture_output=True,
+            text=True,
+            timeout=SELECT_TIMEOUT,
+            check=False,
+        )
+        if out.returncode != 0:
+            return _refuse(
+                "UNCHECKED: `git checkout-index` of the staged Python failed (%s). An unknown is not a pass."
+                % (out.stderr.strip() or "exit %d" % out.returncode)
+            )
+        common = ["--no-cache", "--color", "never", "--output-format", "concise", "--", *staged]
+        check = _run([ruff, "check", *common], tree, timeout=RUFF_TIMEOUT)
+        fmt = _run([ruff, "format", "--check", *common], tree, timeout=RUFF_TIMEOUT)
+    except subprocess.TimeoutExpired as exc:
+        return _refuse(
+            "UNCHECKED: `%s` timed out after %ss while the staged Python was linted. An unknown is not a pass."
+            % (" ".join(str(a) for a in exc.cmd[:3]), exc.timeout)
+        )
+    except OSError as exc:
+        return _refuse(
+            "UNCHECKED: the staged Python could not be linted (%s). An unknown is not a pass."
+            % (str(exc) or type(exc).__name__)
+        )
+    finally:
+        shutil.rmtree(tree, ignore_errors=True)
+    for name, proc in (("ruff check", check), ("ruff format --check", fmt)):
+        if proc.returncode not in (0, 1):
+            return _refuse(
+                "UNCHECKED: `%s` exited %d on the staged Python. An unknown is not a pass.\n%s"
+                % (name, proc.returncode, (proc.stderr or proc.stdout).strip()[-2000:])
+            )
+    if check.returncode == 0 and fmt.returncode == 0:
+        sys.stderr.write(
+            "%s: %d staged .py file(s) clean under ruff check and ruff format (%.2fs)\n"
+            % (LINT_LABEL, len(staged), time.monotonic() - started)
+        )
+        return 0
+    return _lint_refusal(ruff, staged, check, fmt)
 
 
 # THE BACKUP TRIGGER (box G3 of agent/plans/PLAN-local-first-delivery.md). After a commit, a rewrite (`post-rewrite`: amend, rebase) or a merge, the backup worker (`.ci/rediacc_ci/dev/backup_ref.py sync`) is started DETACHED: its own session (`start_new_session=True`), stdin closed, stdout and stderr appended to `<git-dir>/rediacc-backup/log`, and the hook returns at once. Only in a repository whose `gitlab` push URL is its pin in `BACKUP_PATHS` and whose HEAD is a branch other than `main` (a detached HEAD starts nothing either); a fixture repository, a detached rebase step and `main` start nothing. A lease tree never starts it, because a lease never pushes. A failed sync is retried by the next trigger, since the worker pushes the tip as it is then. The worker's argv is `BACKUP_WORKER`, a seam the tests replace with a sleeper.
