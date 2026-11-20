@@ -476,3 +476,26 @@ def test_a_lock_swapped_for_a_symlink_after_the_check_refuses(monkeypatch) -> No
         assert resource_lock.main(["held-by-ancestor", "--resource", "fleet"]) == 2
     finally:
         monkeypatch.undo()
+
+
+@pytest.mark.usefixtures("runtime")
+def test_a_lock_removed_after_the_open_is_not_held(monkeypatch) -> None:
+    path = resource_lock.lock_path("fleet")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("")
+    real_open = resource_lock.os.open
+
+    def removing_open(p, flags, *a, **k):
+        fd = real_open(p, flags, *a, **k)
+        if p == path:
+            os.unlink(path)
+        return fd
+
+    monkeypatch.setattr(resource_lock.os, "open", removing_open)
+    try:
+        assert (
+            resource_lock.main(["held-by-ancestor", "--resource", "fleet"])
+            == resource_lock.EXIT_NOT_HELD
+        )
+    finally:
+        monkeypatch.undo()

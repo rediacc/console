@@ -213,7 +213,7 @@ def held_by_ancestor(resource: str, environ: Mapping[str, str] | None = None) ->
         try:
             same = os.path.samestat(os.fstat(fd), os.lstat(path))
         except FileNotFoundError:
-            same = False
+            return False  # removed after the open: no lock file at the path, so nothing is held there (an acquirer creates a fresh one)
         if not same:
             raise OSError("lock file %s changed or is a symlink after open; refusing" % path)
         try:
