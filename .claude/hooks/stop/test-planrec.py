@@ -326,6 +326,15 @@ falsy(
     "RB7: a one-commit repo (no successor window) refuses a gone sha",
     R.resolve_done(_one, "0123456789")[0],
 )
+control(
+    "RB7: the depth-0 successor lookup itself answers empty, without raising",
+    R._done_successor(_one, "0123456789"),
+    "",
+)
+falsy(
+    "RB7: the depth-0 refusal is not a swallowed build error",
+    "could not be built" in R.resolve_done(_one, "0123456789")[2],
+)
 _rm_real = R._done_successor
 R._done_successor = lambda *_a: ""
 try:
