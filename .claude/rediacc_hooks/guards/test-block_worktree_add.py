@@ -825,6 +825,77 @@ for word, here, names, want in HELPER:
         failures.append("helper: %s" % word)
     print("%-40s want=%-5s got=%-5s %s" % (word, want, got, "ok" if got == want else "*** FAIL"))
 
+print("== the landing paths, on real repositories")
+# `landing_paths` answers the fixed sibling of a main checkout, adds the path a landing record binds, and names no sibling for a repository whose store is not a `.git` directory beside its tree (a submodule's `.git/modules/<name>`, here a separate git dir).
+_LP_ENV = dict(
+    os.environ,
+    GIT_AUTHOR_NAME="t",
+    GIT_AUTHOR_EMAIL="t@example.invalid",
+    GIT_COMMITTER_NAME="t",
+    GIT_COMMITTER_EMAIL="t@example.invalid",
+    GIT_CONFIG_GLOBAL="/dev/null",
+    GIT_CONFIG_SYSTEM="/dev/null",
+)
+_LP = pathlib.Path(tempfile.mkdtemp(prefix="guard-landing-paths-")).resolve()
+atexit.register(shutil.rmtree, str(_LP), True)
+
+
+def _lp_git(cwd, *args):
+    subprocess.run(["git", *args], cwd=str(cwd), check=True, capture_output=True, env=_LP_ENV)
+
+
+_lp_main = _LP / "console"
+_lp_main.mkdir()
+_lp_git(_lp_main, "init", "-q", "-b", "main")
+_lp_git(_lp_main, "commit", "-q", "--allow-empty", "-m", "seed")
+_lp_git(_lp_main, "branch", "0101-1")
+_lp_elsewhere = _LP / "elsewhere"
+_lp_git(_lp_main, "worktree", "add", "-q", str(_lp_elsewhere), "0101-1")
+_lp_sibling = str(_lp_main) + guard.LANDING_SUFFIX
+_lp_bare = _LP / "split"
+_lp_bare.mkdir()
+_lp_git(_lp_bare, "init", "-q", "--separate-git-dir", str(_LP / "store"))
+_lp_rows = [("no record: the sibling alone", guard.landing_paths(str(_lp_main)), (_lp_sibling,))]
+guard.commit_policy.write_landing_record(str(_lp_main), str(_lp_elsewhere), "0101-1")
+_lp_rows += [
+    (
+        "a record: the sibling and the bound path",
+        guard.landing_paths(str(_lp_main)),
+        tuple(sorted((_lp_sibling, str(_lp_elsewhere)))),
+    ),
+    (
+        "the same, read from the landing tree",
+        guard.landing_paths(str(_lp_elsewhere)),
+        tuple(sorted((_lp_sibling, str(_lp_elsewhere)))),
+    ),
+    ("a separate store: no sibling", guard.landing_paths(str(_lp_bare)), ()),
+    ("no repository", guard.landing_paths(str(_LP)), ()),
+]
+for label, got, want in _lp_rows:
+    if got != want:
+        failures.append("landing paths: %s" % label)
+    print("%-40s %s" % (label[:40], "ok" if got == want else "*** FAIL *** %r != %r" % (got, want)))
+# The bound path through the dispatcher: with CLAUDE_PROJECT_DIR in the fixture, a removal of the recorded tree is refused, and the same verb on a path beside it is not.
+for label, command, want in (
+    ("the recorded tree removed", "git worktree remove %s" % _lp_elsewhere, 2),
+    ("control: a path beside it", "git worktree remove %s-x" % _lp_elsewhere, 0),
+):
+    _proc = subprocess.run(
+        [sys.executable, DISPATCH, STEM],
+        input=_payload(command, str(_lp_main)),
+        capture_output=True,
+        text=True,
+        check=False,
+        env=dict(ENV, CLAUDE_PROJECT_DIR=str(_lp_main)),
+        cwd=ROOT,
+    )
+    if _proc.returncode != want:
+        failures.append("landing record: %s" % label)
+    print(
+        "%-40s want=rc%d got=rc%d %s"
+        % (label, want, _proc.returncode, "ok" if _proc.returncode == want else "*** FAIL ***")
+    )
+
 print("== the comment scanners, on the helper (%d rows)" % len(CODE_TEXT))
 for family, text, want in CODE_TEXT:
     got = guard._names_phrase(guard._code_text(family, text))
