@@ -1484,8 +1484,23 @@ jobs:
     # links) held only to avoid the anonymous rate limit.
     permissions:
       contents: read
+      packages: read # TEMPORARY, PLAN-two-track-merge-dev R0: the devcontainer pull measurement below; reverted in this PR once recorded
     if: inputs.is_bot != 'true'
     steps:
+      - name: Measure the devcontainer pull (TEMPORARY, PLAN-two-track-merge-dev R0)
+        # One measurement for R0's decision (full image or a toolchain stage, 90 s threshold): pull time on a hosted runner, and the image's node and python. Reverted in this PR once the figures are on the plan item.
+        env:
+          IMAGE: ghcr.io/rediacc/devcontainer@sha256:b7a40a70140e2d37afc03c5645c199031a635bbe1d16b785e5b4a0e605cdc165
+          GH_TOKEN: ${{ github.token }}
+          GH_ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_ACTOR" --password-stdin
+          start=$(date +%s)
+          docker pull -q "$IMAGE"
+          echo "R0 pull_seconds=$(( $(date +%s) - start ))"
+          docker run --rm --entrypoint sh "$IMAGE" -c 'echo "R0 node=$(node --version) python=$(python3 --version) npm=$(npm --version)"'
+          docker rmi -f "$IMAGE" > /dev/null
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Fetch secrets from Bitwarden
