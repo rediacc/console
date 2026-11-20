@@ -420,7 +420,7 @@ def run(ev):
     # Each create's repo is read from its own walked call (`_create_repo`, over `shellscan.gh_run_repo`), so `-R=x`, `-Rx` and `--repo 'x'` count the open PRs of the repo they name: measured 2026-10-07, `gh pr create -R=rediacc/renet` listed console's. Only a command the walk finds no create in keeps the text reader.
     runs = shellscan.gh_pr_runs(cmd, "create")
     # repo -> (the landing branch an admitted draft stands beside or None, the landing record or None).
-    repos = {}
+    repos: dict[str, tuple[str | None, dict[str, str] | None]] = {}
     if runs:
         for run_ in runs:
             # `--help` prints the usage and creates nothing.

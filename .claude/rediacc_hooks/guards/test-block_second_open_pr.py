@@ -341,7 +341,7 @@ TWO_TREE_CASES = [
         True,
         "this submodule repository",
     ),
-    ("submodule: beside an open PR of another branch", IN_SUB, DEV, G_SUB_OTHER, True, "2 open PR(s)"),
+    ("submodule: beside an open PR of another branch", IN_SUB, DEV, G_SUB_OTHER, True, ALREADY_SUB),
     (
         "submodule: a head that is another branch",
         IN_SUB + " --head 0901-3",
