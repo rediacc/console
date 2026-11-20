@@ -271,6 +271,8 @@ VALUE_OPTS = {
 STDIN_OPTS = frozenset(
     ("--stdin-filename", "--stdin-filepath", "--stdin-file-path", "-filename", "--filename")
 )
+# Flags that make every formatter here print and exit, writing nothing, whatever else is on the line (`ruff format --help`). `-v` is deliberately absent: it is VERBOSE for ruff and black, and the run still writes.
+INFO_FLAGS = frozenset(("--help", "-h", "--version", "-V"))
 BIOME_SUBS = frozenset(("format", "check", "lint"))
 BIOME_WRITE = frozenset(("--write", "--fix", "--apply", "--apply-unsafe"))
 BIOME_SCOPED = frozenset(("--staged", "--changed"))
@@ -502,6 +504,8 @@ def _split(tool, argv):
 
 def _writes(tool, flags, words):
     """(writes, path words) once the subcommand is taken off, or (False, ...) for a read-only run."""
+    if flags & INFO_FLAGS:
+        return False, words
     if tool == "ruff":
         if not words or words[0] not in ("format", "check"):
             return False, words
