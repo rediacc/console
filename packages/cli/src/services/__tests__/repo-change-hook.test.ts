@@ -4,6 +4,9 @@
  * pushBackupSchedule lives in the same module as the hook, so it is observed through its first
  * effect: it reads the local config again and fails on an unknown strategy, which the hook turns
  * into the warning asserted here.
+ *
+ * Before any push the hook reads the account server the deployed units record (`--expect-account-server`) and
+ * re-renders only a schedule this config owns: a run from another config must never repoint the timers.
  */
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -15,6 +18,27 @@ vi.mock('../config/config-resources.js', () => ({
     getLocalConfig: mockGetLocalConfig,
     getBackupStrategy: mockGetBackupStrategy,
     getCurrent: vi.fn(),
+  },
+}));
+const THIS_ORIGIN = 'https://account.example.test';
+const OTHER_ORIGIN = 'https://other.example.test';
+vi.mock('../account/subscription-auth.js', () => ({
+  getSubscriptionServerUrl: () => `${THIS_ORIGIN}/account`,
+}));
+/** What the machine's deployed service units answer to the origin grep. */
+const unitOrigins = vi.hoisted(() => ({ stdout: '' }));
+const mockExec = vi.hoisted(() =>
+  vi.fn((_cmd: string, opts: { onStdout?: (d: Buffer) => void }) => {
+    opts.onStdout?.(Buffer.from(unitOrigins.stdout));
+    return Promise.resolve(0);
+  })
+);
+const mockRelease = vi.hoisted(() => vi.fn());
+vi.mock('../machine/machine-connection.js', () => ({
+  machineConnections: {
+    acquireFor: vi.fn(() =>
+      Promise.resolve({ sftp: { execStreaming: mockExec }, release: mockRelease })
+    ),
   },
 }));
 const mockWarn = vi.hoisted(() => vi.fn());
@@ -29,8 +53,11 @@ const { computeDesiredUnits, computeReconcilePlan } = await import(
 );
 const { sha256Hex } = await import('../backup/backup-schedule-unit-generator.js');
 
+const BOUND = { sshPrivateKey: 'k', machines: { m1: { ip: '10.0.0.1', backupStrategies: ['s'] } } };
+
 beforeEach(() => {
   vi.clearAllMocks();
+  unitOrigins.stdout = `--expect-account-server ${THIS_ORIGIN}\n--expect-account-server ${THIS_ORIGIN}\n`;
 });
 
 describe('reconcileBackupSchedules (G4 hook)', () => {
@@ -42,21 +69,54 @@ describe('reconcileBackupSchedules (G4 hook)', () => {
     expect(mockWarn).not.toHaveBeenCalled();
   });
 
-  it('a machine with strategies pushes its schedule (the push resolves the bound strategies)', async () => {
-    mockGetLocalConfig.mockResolvedValue({ machines: { m1: { backupStrategies: ['s'] } } });
+  it('a machine whose units record this config pushes its schedule (the push resolves the bound strategies)', async () => {
+    mockGetLocalConfig.mockResolvedValue(BOUND);
     mockGetBackupStrategy.mockResolvedValue({
       schedule: '0 3 * * *',
       destinations: [],
       enabled: false,
     });
     await reconcileBackupSchedules('m1');
+    expect(mockExec).toHaveBeenCalledOnce();
+    expect(String(mockExec.mock.calls[0][0])).toContain('--expect-account-server');
+    expect(mockRelease).toHaveBeenCalledOnce();
     // Hook read + the push's own read; the push then reached strategy loading for 's'.
     expect(mockGetLocalConfig).toHaveBeenCalledTimes(2);
     expect(mockGetBackupStrategy).toHaveBeenCalledExactlyOnceWith('s');
   });
 
+  it('a schedule another config owns is not re-rendered: no push, and the warning names both servers', async () => {
+    mockGetLocalConfig.mockResolvedValue(BOUND);
+    unitOrigins.stdout = `--expect-account-server ${OTHER_ORIGIN}\n`;
+    await reconcileBackupSchedules('m1');
+    // The push never started: it would read the local config a second time and load the strategy.
+    expect(mockGetLocalConfig).toHaveBeenCalledOnce();
+    expect(mockGetBackupStrategy).not.toHaveBeenCalled();
+    expect(mockWarn).toHaveBeenCalledOnce();
+    const message = String(mockWarn.mock.calls[0][0]);
+    expect(message).toContain(OTHER_ORIGIN);
+    expect(message).toContain(THIS_ORIGIN);
+    expect(message).toContain('rdc backup schedule -m m1');
+  });
+
+  it('units mixing this config and another are not re-rendered either', async () => {
+    mockGetLocalConfig.mockResolvedValue(BOUND);
+    unitOrigins.stdout = `--expect-account-server ${THIS_ORIGIN}\n--expect-account-server ${OTHER_ORIGIN}\n`;
+    await reconcileBackupSchedules('m1');
+    expect(mockGetBackupStrategy).not.toHaveBeenCalled();
+    expect(String(mockWarn.mock.calls[0][0])).toContain(OTHER_ORIGIN);
+  });
+
+  it('units recording no account server (or none deployed) prove no owner, so nothing is pushed', async () => {
+    mockGetLocalConfig.mockResolvedValue(BOUND);
+    unitOrigins.stdout = '';
+    await reconcileBackupSchedules('m1');
+    expect(mockGetBackupStrategy).not.toHaveBeenCalled();
+    expect(String(mockWarn.mock.calls[0][0])).toContain('record no account server');
+  });
+
   it('a failing push warns with the re-run hint and never throws', async () => {
-    mockGetLocalConfig.mockResolvedValue({ machines: { m1: { backupStrategies: ['s'] } } });
+    mockGetLocalConfig.mockResolvedValue(BOUND);
     mockGetBackupStrategy.mockResolvedValue(undefined);
     await expect(reconcileBackupSchedules('m1')).resolves.toBeUndefined();
     expect(mockWarn).toHaveBeenCalledOnce();

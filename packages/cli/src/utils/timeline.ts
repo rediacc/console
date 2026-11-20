@@ -38,6 +38,12 @@ const activeLabels: Record<string, string> = {
   filesystem_resize: 'Resizing filesystem',
   filesystem_expand: 'Expanding filesystem',
   sessions_end: 'Ending sessions',
+  network_floor: 'Reading used network IDs',
+  machine_connect: 'Opening machine connection',
+  step_claim: 'Claiming job steps',
+  backup_schedule: 'Reconciling backup schedule',
+  post_up: 'Running post-up tasks',
+  fork_up: 'Bringing fork up',
 };
 
 /** Labels shown when step completes (checkmark). */
@@ -74,6 +80,12 @@ const doneLabels: Record<string, string> = {
   filesystem_resize: 'Filesystem resized',
   filesystem_expand: 'Filesystem expanded',
   sessions_end: 'Sessions ended',
+  network_floor: 'Used network IDs read',
+  machine_connect: 'Machine connection opened',
+  step_claim: 'Job steps claimed',
+  backup_schedule: 'Backup schedule reconciled',
+  post_up: 'Post-up tasks done',
+  fork_up: 'Fork brought up',
 };
 
 /** A single rendered timeline step (CLI-side, renet-side, or orchestrated). */

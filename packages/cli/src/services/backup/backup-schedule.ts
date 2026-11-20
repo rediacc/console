@@ -58,6 +58,10 @@ import {
   resolveMachineCpuCount,
 } from './backup-schedule-reconcile.js';
 import {
+  readRecordedScheduleOrigins,
+  scheduleOwnerRefusal,
+} from './backup-schedule-repo-change.js';
+import {
   buildScheduleStatusRows,
   type ExpectedScheduleUnit,
   parseFoldedSystemctlShow,
@@ -274,6 +278,10 @@ export async function buildStrategyCommandsForMachine(
  * render time, so the unit text moves when the repository set does. The reconciler redeploys only
  * what changed (hash diff). Best-effort: the repository operation already happened, so a failure here
  * is reported, never thrown, and a backup running right now keeps its unit until the next attempt.
+ *
+ * Only the schedule's owner re-renders it (backup-schedule-repo-change.ts): the deployed units' recorded
+ * account server is read first, in one exec, before renet is provisioned or a licence refreshed, and a
+ * schedule another config owns, or one recording no owner, is left as it is.
  */
 export async function reconcileSchedulesAfterRepoChange(
   machineName: string,
@@ -283,6 +291,13 @@ export async function reconcileSchedulesAfterRepoChange(
     const localConfig = await configService.getLocalConfig();
     const machine = localConfig.machines[machineName];
     if (!machine?.backupStrategies?.length) return false;
+    const refusal = await ownerRefusalOn(machine, localConfig);
+    if (refusal !== undefined) {
+      outputService.warn(
+        `Backup schedule on ${machineName} was not re-rendered after the repository change: ${refusal}. Re-render it from the config that owns it: rdc backup schedule -m ${machineName}`
+      );
+      return false;
+    }
     await pushBackupSchedule(machineName, { debug: options.debug });
     return true;
   } catch (error) {
@@ -290,6 +305,24 @@ export async function reconcileSchedulesAfterRepoChange(
       `Backup schedule on ${machineName} was not re-rendered after the repository change: ${error instanceof Error ? error.message : String(error)}. Re-run: rdc backup schedule -m ${machineName}`
     );
     return false;
+  }
+}
+
+/** Why this config may not re-render the machine's schedule, read from the units the machine holds; undefined when it may. */
+async function ownerRefusalOn(
+  machine: LocalMachine,
+  localConfig: Awaited<ReturnType<typeof configService.getLocalConfig>>
+): Promise<string | undefined> {
+  const sshPrivateKey =
+    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+  const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
+  try {
+    return scheduleOwnerRefusal(
+      await readRecordedScheduleOrigins(lease.sftp),
+      expectedAccountServerOrigin()
+    );
+  } finally {
+    lease.release();
   }
 }
 

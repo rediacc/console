@@ -79,6 +79,11 @@ const mockReconcile = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 vi.mock('../../services/backup/repo-change-hook.js', () => ({
   reconcileBackupSchedules: mockReconcile,
 }));
+// Whether the new fork moves a backup unit of the machine (a strategy names its family). Default: it does not.
+const mockMovesSchedule = vi.hoisted(() => vi.fn().mockResolvedValue(false));
+vi.mock('../../services/backup/backup-schedule-repo-change.js', () => ({
+  repoChangeMovesSchedule: mockMovesSchedule,
+}));
 vi.mock('../../utils/ssh-keygen.js', () => ({
   generateSSHKeyPair: () => ({ privateKey: 'priv', publicKey: 'pub' }),
 }));
@@ -216,12 +221,7 @@ describe('repo fork --up (the compound class: one repository_fork job carries th
     expect(jobCalls.map((o) => o.functionName)).toEqual(['repository_fork']);
     expect(jobCalls[0].params).toMatchObject({ up: true, grand: 'g-app', repo_name: 'app:w' });
     expect(upCalls).toEqual([]);
-    expect(stepNames(jobCalls[0])).toEqual([
-      'rollbackFork',
-      'identityRefresh',
-      'postRepoUpTasks',
-      'reconcileBackupSchedules',
-    ]);
+    expect(stepNames(jobCalls[0])).toEqual(['rollbackFork', 'identityRefresh', 'postRepoUpTasks']);
     expect(onlyTicket().steps.map((s) => s.name)).toEqual(stepNames(jobCalls[0]));
     expect(onlyTicket().stepsDone).toEqual([]);
     expect(mockRefreshIdentityFor).not.toHaveBeenCalled();
@@ -237,12 +237,8 @@ describe('repo fork --up (the compound class: one repository_fork job carries th
     expect(upCalls).toEqual([]);
     expect(mockRefreshIdentityFor).toHaveBeenCalledTimes(1);
     expect(mockPostRepoUpTasks).toHaveBeenCalledTimes(1);
-    expect(mockReconcile).toHaveBeenCalledExactlyOnceWith('m1');
-    expect(onlyTicket().stepsDone).toEqual([
-      'identityRefresh',
-      'postRepoUpTasks',
-      'reconcileBackupSchedules',
-    ]);
+    expect(mockReconcile).not.toHaveBeenCalled();
+    expect(onlyTicket().stepsDone).toEqual(['identityRefresh', 'postRepoUpTasks']);
   });
 
   it('a failed fork runs no success tail', async () => {
@@ -269,7 +265,6 @@ describe('repo fork --checkpoint --up (the successor class: forkUp is a step, no
       'identityRefresh',
       'forkUp',
       'postRepoUpTasks',
-      'reconcileBackupSchedules',
     ]);
     expect(upCalls).toEqual([]);
     expect(onlyTicket().stepsDone).toEqual([]);
@@ -290,11 +285,7 @@ describe('repo fork (the finalizer class: rollbackFork)', () => {
     await runFork(['--tag', 'w']);
 
     expect(jobCalls.map((o) => o.functionName)).toEqual(['repository_fork']);
-    expect(stepNames(jobCalls[0])).toEqual([
-      'rollbackFork',
-      'identityRefresh',
-      'reconcileBackupSchedules',
-    ]);
+    expect(stepNames(jobCalls[0])).toEqual(['rollbackFork', 'identityRefresh']);
     expect(mockRemoveRepository).not.toHaveBeenCalled();
   });
 
@@ -326,7 +317,6 @@ describe('repo checkout (one repository_fork job, with advanceHeadCommit as a st
     expect(stepNames(jobCalls[0])).toEqual([
       'rollbackFork',
       'identityRefresh',
-      'reconcileBackupSchedules',
       'advanceHeadCommit',
     ]);
     const ticket = onlyTicket();
@@ -376,5 +366,73 @@ describe('repo fork --up network-ID retry (a client second leg that does not run
     await runFork(['--tag', 'w', '--up']);
 
     expect(hints()).toEqual([]);
+  });
+});
+
+describe('repo fork and the backup schedule (a fork re-renders units only when it moves one)', () => {
+  it('a fork no strategy names by family plans no re-render and never calls the reconcile', async () => {
+    await runFork(['--tag', 'pre-cve', '--immutable']);
+
+    expect(mockMovesSchedule).toHaveBeenCalledExactlyOnceWith('m1', expect.any(String));
+    expect(stepNames(jobCalls[0])).not.toContain('reconcileBackupSchedules');
+    expect(mockReconcile).not.toHaveBeenCalled();
+  });
+
+  it('control: a fork a family-scoped strategy covers plans the re-render and runs it once', async () => {
+    mockMovesSchedule.mockResolvedValueOnce(true);
+    await runFork(['--tag', 'w']);
+
+    expect(stepNames(jobCalls[0])).toEqual([
+      'rollbackFork',
+      'identityRefresh',
+      'reconcileBackupSchedules',
+    ]);
+    expect(mockReconcile).toHaveBeenCalledExactlyOnceWith('m1');
+    expect(onlyTicket().stepsDone).toEqual(['identityRefresh', 'reconcileBackupSchedules']);
+  });
+
+  it('asks about the GUID it registered', async () => {
+    await runFork(['--tag', 'w']);
+
+    const guid = (registered.get('app:w') as { repositoryGuid: string }).repositoryGuid;
+    expect(mockMovesSchedule).toHaveBeenCalledWith('m1', guid);
+  });
+});
+
+describe('repo fork timeline (every phase of the wall time has a line)', () => {
+  function captureStdout(): () => string {
+    const chunks: string[] = [];
+    vi.spyOn(process.stdout, 'write').mockImplementation((chunk: unknown) => {
+      chunks.push(String(chunk));
+      return true;
+    });
+    return () => chunks.join('');
+  }
+
+  it('prints the floor read, the connection, the step claim and each ticket step it ran', async () => {
+    mockMovesSchedule.mockResolvedValueOnce(true);
+    const out = captureStdout();
+    await runFork(['--tag', 'w']);
+
+    const text = out();
+    for (const line of [
+      'Used network IDs read',
+      'Machine connection opened',
+      'Repo key deployed',
+      'Job steps claimed',
+      'License identity refreshed',
+      'Backup schedule reconciled',
+    ]) {
+      expect(text).toMatch(new RegExp(`✔ ${line} \\(\\d+(ms|\\.\\ds)\\)`));
+    }
+    expect(text).toMatch(/Total: /);
+  });
+
+  it('control: no re-render ran, so no schedule line is printed', async () => {
+    const out = captureStdout();
+    await runFork(['--tag', 'w']);
+
+    expect(out()).not.toContain('Backup schedule reconciled');
+    expect(out()).toContain('License identity refreshed');
   });
 });

@@ -1301,7 +1301,13 @@ describe('pushBackupSchedule (reconcile)', () => {
     const timer = _testing.generateTimerUnit('hourly-hot', _testing.cronToOnCalendar('0 * * * *'));
     const svcPath = '/etc/systemd/system/rediacc-backup-hourly-hot.service';
     const timerPath = '/etc/systemd/system/rediacc-backup-hourly-hot.timer';
+    const { expectedAccountServerOrigin } = await import('../backup/backup-store-universe.js');
     scriptedExec([
+      // The owner read: the deployed units are held to this config's account server.
+      {
+        match: 'grep -ho',
+        stdout: `--expect-account-server ${expectedAccountServerOrigin()}\n`,
+      },
       { match: /find \/etc\/systemd\/system/, stdout: `${svcPath}\n${timerPath}\n` },
       {
         match: 'sha256sum',

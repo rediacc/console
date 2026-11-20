@@ -1,5 +1,7 @@
 /**
  * G4: every verb that changes the repository set re-renders the machine's backup schedule.
+ * A fork re-renders only when it moves a unit: a strategy that names the family covers the new fork, one that
+ * names exact tags does not, and the fork then touches no schedule at all.
  *
  * fork and migrate are driven for real with the hook mocked. create, delete, promote and
  * `backup restore --as` sit behind executors and prompts the unit tests cannot reach cheaply, so
@@ -23,6 +25,7 @@ const mockGetRepository = vi.hoisted(() => vi.fn());
 const mockAddRepository = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 const mockGetCurrent = vi.hoisted(() => vi.fn());
 const mockGetLocalConfig = vi.hoisted(() => vi.fn());
+const mockGetBackupStrategy = vi.hoisted(() => vi.fn());
 const mockSetRepositoryPlacement = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
@@ -37,6 +40,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
     getLocalMachine: vi.fn().mockResolvedValue({ ip: '127.0.0.1', user: 'root' }),
     getCurrent: mockGetCurrent,
     getLocalConfig: mockGetLocalConfig,
+    getBackupStrategy: mockGetBackupStrategy,
     setRepositoryPlacement: mockSetRepositoryPlacement,
   },
 }));
@@ -157,14 +161,61 @@ beforeEach(() => {
   });
 });
 
+/**
+ * hostinger binds `nightly`, whose include is `include`; the config reads back whatever the fork registered, as the
+ * live config does, so the fork's own GUID reaches the spec resolution.
+ */
+function bindStrategy(include: string[]): void {
+  mockGetLocalConfig.mockResolvedValue({
+    machines: { hostinger: { ip: '10.0.0.3', backupStrategies: ['nightly'] } },
+  });
+  mockGetBackupStrategy.mockResolvedValue({
+    schedule: '0 3 * * *',
+    mode: 'hot',
+    destinations: [],
+    include,
+  });
+  mockGetCurrent.mockImplementation(() => {
+    const tags: Record<string, { repositoryGuid: string }> = {
+      latest: { repositoryGuid: PARENT.repositoryGuid },
+    };
+    for (const [key, value] of mockAddRepository.mock.calls as [
+      string,
+      { repositoryGuid: string },
+    ][])
+      tags[key.split(':')[1]] = { repositoryGuid: value.repositoryGuid };
+    return Promise.resolve({
+      resources: {
+        machines: { hostinger: { ip: '10.0.0.3', user: 'root' } },
+        repositories: { app: { grand: 'latest', placement: { machine: 'hostinger' }, tags } },
+      },
+    });
+  });
+}
+
 describe('G4 wiring: the repo set changes, the schedule re-renders', () => {
-  it('fork reconciles the machine after registering the fork', async () => {
+  it('fork of a family a strategy names reconciles the machine after registering the fork', async () => {
+    bindStrategy(['app']);
     await handleForkAction('app', 'staging', { machine: 'hostinger' });
     expect(mockAddRepository).toHaveBeenCalled();
     expect(mockReconcile).toHaveBeenCalledExactlyOnceWith('hostinger');
     expect(mockAddRepository.mock.invocationCallOrder[0]).toBeLessThan(
       mockReconcile.mock.invocationCallOrder[0]
     );
+  });
+
+  it('fork of a repository whose strategy names an exact tag runs no reconcile', async () => {
+    bindStrategy(['app:latest']);
+    await handleForkAction('app', 'pre-cve', { machine: 'hostinger', immutable: true });
+    expect(mockAddRepository).toHaveBeenCalled();
+    expect(mockGetBackupStrategy).toHaveBeenCalledWith('nightly');
+    expect(mockReconcile).not.toHaveBeenCalled();
+  });
+
+  it('fork on a machine that binds no strategy runs no reconcile', async () => {
+    await handleForkAction('app', 'staging', { machine: 'hostinger' });
+    expect(mockAddRepository).toHaveBeenCalled();
+    expect(mockReconcile).not.toHaveBeenCalled();
   });
 
   it('migrate reconciles both the target and the source after the cutover', async () => {

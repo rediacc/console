@@ -142,10 +142,43 @@ export interface StepRunReport {
   gated: string[];
   /** Due, but not started before the budget ran out. */
   deferred: string[];
+  /**
+   * Wall time of the work done here, in run order: `claim` for each claim exec, then each step that ran (its handler
+   * and its machine-side done marker), so a command can account for the time its steps took.
+   */
+  timings?: StepTiming[];
 }
 
+/** One timed piece of step work: a step's name, or `claim` for a claim exec. */
+interface StepTiming {
+  name: string;
+  duration_ms: number;
+  startedAtMs: number;
+}
+
+/** The name a claim exec is timed under in {@link StepRunReport.timings}. */
+export const CLAIM_TIMING = 'claim';
+
 export function emptyStepReport(): StepRunReport {
-  return { ran: [], doneElsewhere: [], heldElsewhere: [], failed: [], gated: [], deferred: [] };
+  return {
+    ran: [],
+    doneElsewhere: [],
+    heldElsewhere: [],
+    failed: [],
+    gated: [],
+    deferred: [],
+    timings: [],
+  };
+}
+
+/** Run `fn`, recording its wall time under `name` in the report, even when it throws. */
+async function timed<T>(report: StepRunReport, name: string, fn: () => Promise<T>): Promise<T> {
+  const startedAtMs = Date.now();
+  try {
+    return await fn();
+  } finally {
+    (report.timings ??= []).push({ name, duration_ms: Date.now() - startedAtMs, startedAtMs });
+  }
 }
 
 /** Steps still owed after a run: whatever another observer of this config may pick up. */
@@ -206,7 +239,9 @@ function openStepSession(
     async claim(names) {
       if (gone) return undefined;
       try {
-        return await deps.claim({ machine, jobId, steps: names });
+        return await timed(report, CLAIM_TIMING, () =>
+          deps.claim({ machine, jobId, steps: names })
+        );
       } catch (error) {
         if (error instanceof JobGoneError) {
           // The job left the spool, so no observer can ever claim its steps: close the ticket instead of retrying forever.
@@ -231,13 +266,17 @@ function openStepSession(
         report.heldElsewhere.push(step.name);
         return;
       }
-      if (!(await run(step))) return;
-      // The step ran: record it here even if the machine-side done marker fails, since every step is idempotent or keyed by job id and a stale-claim rerun changes nothing.
-      try {
-        await deps.claim({ machine, jobId, steps: [step.name], done: true });
-      } catch (error) {
-        deps.warn(errorText(error));
-      }
+      const ran = await timed(report, step.name, async () => {
+        if (!(await run(step))) return false;
+        // The step ran: record it here even if the machine-side done marker fails, since every step is idempotent or keyed by job id and a stale-claim rerun changes nothing.
+        try {
+          await deps.claim({ machine, jobId, steps: [step.name], done: true });
+        } catch (error) {
+          deps.warn(errorText(error));
+        }
+        return true;
+      });
+      if (!ran) return;
       recordDone(step.name);
       report.ran.push(step.name);
     },
@@ -390,16 +429,18 @@ async function runUnspooledSteps(
   for (const step of dueSteps(ticket, job.state, job.markers)) {
     try {
       const handler = await resolve(step.name);
-      await handler({
-        jobId: '',
-        machine: ticket.machine ?? '',
-        params: step.params ?? {},
-        state: job.state,
-        output: job.output,
-        finishedAt: job.finishedAt,
-        ...(job.exitCode === undefined ? {} : { exitCode: job.exitCode }),
-        ...(job.markers === undefined ? {} : { markers: job.markers }),
-      });
+      await timed(report, step.name, () =>
+        handler({
+          jobId: '',
+          machine: ticket.machine ?? '',
+          params: step.params ?? {},
+          state: job.state,
+          output: job.output,
+          finishedAt: job.finishedAt,
+          ...(job.exitCode === undefined ? {} : { exitCode: job.exitCode }),
+          ...(job.markers === undefined ? {} : { markers: job.markers }),
+        })
+      );
       store.append('step-done', ticket.requestId, { step: step.name });
       report.ran.push(step.name);
     } catch (error) {

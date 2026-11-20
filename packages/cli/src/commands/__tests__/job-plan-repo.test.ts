@@ -408,14 +408,14 @@ describe('repo verbs outside J4: one job per machine, the follow-up as steps', (
         ['repository_fork', 'm1'],
       ]);
       expect(executed[0].params).toMatchObject({ repository: 'g-commit' });
+      // m1 binds no backup strategy, so the new fork moves no unit and no re-render is planned.
       expect(stepNames(executed[0])).toEqual([
         'rollbackFork',
         'identityRefresh',
-        'reconcileBackupSchedules',
         'advanceHeadCommit',
       ]);
       expect(store.tickets().map((ticket) => ticket.verb)).toEqual(['repo checkout']);
-      expect(mockReconcile).toHaveBeenCalledExactlyOnceWith('m1');
+      expect(mockReconcile).not.toHaveBeenCalled();
     });
 
     it('control: a ticket handed back early records no tip and refreshes nothing, and a failed job none either', async () => {

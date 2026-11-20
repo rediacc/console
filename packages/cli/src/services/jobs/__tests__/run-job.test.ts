@@ -185,6 +185,39 @@ describe('exactly once', () => {
   });
 });
 
+describe('step timings', () => {
+  it('times the claim exec and each step that ran, in run order, so a command can print them', async () => {
+    const ticket = addTicket([UP()], 'succeeded');
+    const machine = fakeMachine();
+    const h = handlers(['postRepoUpTasks'], 15);
+    const report = await runTicketSteps(
+      store,
+      ticket,
+      { state: 'succeeded' },
+      stepDeps(machine.claim, h.resolve)
+    );
+    expect(report.timings?.map((t) => t.name)).toEqual(['claim', 'postRepoUpTasks']);
+    const step = report.timings?.[1];
+    // The handler's own delay is inside the step's time, and so is its done marker.
+    expect(step?.duration_ms).toBeGreaterThanOrEqual(15);
+    expect(step?.startedAtMs).toBeGreaterThan(0);
+  });
+
+  it('a step another observer finished is not timed as run here', async () => {
+    const ticket = addTicket([UP()], 'succeeded');
+    const machine = fakeMachine();
+    await machine.claim({ machine: 'm1', jobId: JOB_ID, steps: ['postRepoUpTasks'] });
+    await machine.claim({ machine: 'm1', jobId: JOB_ID, steps: ['postRepoUpTasks'], done: true });
+    const report = await runTicketSteps(
+      store,
+      ticket,
+      { state: 'succeeded' },
+      stepDeps(machine.claim, handlers(['postRepoUpTasks']).resolve)
+    );
+    expect(report.timings?.map((t) => t.name)).toEqual(['claim']);
+  });
+});
+
 describe('success and failure', () => {
   it('a success step never runs on a failed job', async () => {
     const ticket = addTicket([UP(), ROLLBACK()], 'failed');
