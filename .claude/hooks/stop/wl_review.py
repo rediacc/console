@@ -3838,7 +3838,8 @@ def carried_only(doc, carried_doc):
     for e in entries or []:
         if not isinstance(e, dict):
             continue
-        reason = e.get("reason") if isinstance(e.get("reason"), str) else ""
+        raw_reason = e.get("reason")
+        reason = raw_reason if isinstance(raw_reason, str) else ""
         if len(reason) >= (
             CARRIED_STAR_REASON_MIN if e.get("findings") == "*" else CARRIED_REASON_MIN
         ):

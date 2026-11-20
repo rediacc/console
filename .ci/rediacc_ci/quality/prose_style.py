@@ -1510,7 +1510,7 @@ def run_check(
         return 1
 
     exempts = exemptions(globals_)
-    findings = []
+    findings: list[Finding] = []
     notes = []
     exempted = {}
     prose_lines = 0

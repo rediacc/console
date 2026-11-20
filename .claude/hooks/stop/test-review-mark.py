@@ -542,7 +542,8 @@ control(
 
 # A receipt red only on carried gates is carried forward the way the push guard admits it (#68452957).
 LONG = "carried because the live state it reads is off-box and cannot be fixed in code; " * 3
-CARRY_STAR = {"version": 2, "carried": [{"gate": "fast:red", "findings": "*", "reason": LONG}]}
+STAR_ENTRIES = [{"gate": "fast:red", "findings": "*", "reason": LONG}]
+CARRY_STAR = {"version": 2, "carried": STAR_ENTRIES}
 RED_CARRIED = dict(GREEN, exitCode=1, failed=["fast:red"])
 rc, text, committed, calls = verb_with("carried-only", RED_CARRIED, CARRY_STAR)
 control("a receipt red only on a carried gate: the verb commits", (rc, committed), (0, True))
@@ -575,7 +576,7 @@ class SpawnAdvancing(Spawn):
 
     def __call__(self, cmd, **kw):
         self.calls.append((cmd, kw.get("cwd")))
-        root = pathlib.Path(kw.get("cwd"))
+        root = pathlib.Path(kw.get("cwd") or ".")
         if self.advance:
             path = root / ".ci" / "cache" / "prepush-receipt.json"
             doc = json.loads(path.read_text(encoding="utf-8"))
@@ -602,15 +603,16 @@ control(
 )
 
 # carried_only agrees with the push guard's carried_verdict (no stale entries in these fixtures).
-KEYED = {"version": 2, "carried": [{"gate": "g", "findings": ["k1", "k2"], "reason": LONG}]}
+KEYED_ENTRIES = [{"gate": "g", "findings": ["k1", "k2"], "reason": LONG}]
+KEYED = {"version": 2, "carried": KEYED_ENTRIES}
 SHORT = {"version": 2, "carried": [{"gate": "fast:red", "findings": "*", "reason": "too short"}]}
-for label, receipt, doc, want in (
+for label, carried_receipt, doc, want in (
     ("keyed exact", {"failed": ["g"], "findings": {"g": ["k1", "k2"]}}, KEYED, True),
     ("keyed with a stale carried key", {"failed": ["g"], "findings": {"g": ["k1"]}}, KEYED, False),
     (
         "a stale carried gate",
         {"failed": ["fast:red"], "findings": {}},
-        {"version": 2, "carried": CARRY_STAR["carried"] + KEYED["carried"]},
+        {"version": 2, "carried": STAR_ENTRIES + KEYED_ENTRIES},
         False,
     ),
     ("keyed extra key", {"failed": ["g"], "findings": {"g": ["k1", "k9"]}}, KEYED, False),
@@ -625,7 +627,7 @@ for label, receipt, doc, want in (
     ),
     ("star under the reason bar", {"failed": ["fast:red"], "findings": {}}, SHORT, False),
 ):
-    full = dict(GREEN, exitCode=1, **receipt)
+    full = dict(GREEN, exitCode=1, **carried_receipt)
     refusal, _notes = GUARD.carried_verdict(full, doc)
     control(
         "carried_only matches the push guard: %s" % label,

@@ -2058,8 +2058,7 @@ def memo_git_reads(module, names=("_git_out", "_git_raw", "_git_ok")):
                 _memo[key] = _real(root, *args)
             return _memo[key]
 
-        wrapped._memo_git = True
-        wrapped.__wrapped__ = real
+        vars(wrapped).update(_memo_git=True, __wrapped__=real)
         setattr(module, name, wrapped)
         undo.append((name, real))
 
@@ -2073,7 +2072,7 @@ def memo_git_reads(module, names=("_git_out", "_git_raw", "_git_ok")):
 class _RunState:
     """What one main run holds: the run-to-run fact cache, set after the controls and cleared when main returns (the controls and the tests run without it)."""
 
-    facts = None
+    facts: Any = None  # a plan_impl_facts.Facts while main runs; the module is loaded by path, so its class is not importable for an annotation
 
     def clear(self):
         self.facts = None
