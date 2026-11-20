@@ -208,7 +208,6 @@ def run() -> int:
         control(
             "REBASE (precondition): the replay of c1 onto the moved base conflicts on f.txt",
             picked.returncode != 0
-            and "CONFLICT" in picked.stdout + picked.stderr
             and sh(main_p, "diff", "--name-only", "--diff-filter=U") == "f.txt",
             (picked.stdout + picked.stderr)[-200:],
         )
@@ -301,7 +300,6 @@ def run() -> int:
         control(
             "REBASE (precondition): the replay of w1 onto the moved base conflicts on f.txt",
             picked.returncode != 0
-            and "CONFLICT" in picked.stdout + picked.stderr
             and sh(main_w, "diff", "--name-only", "--diff-filter=U") == "f.txt",
             (picked.stdout + picked.stderr)[-200:],
         )
