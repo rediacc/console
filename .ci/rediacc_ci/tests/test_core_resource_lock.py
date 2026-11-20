@@ -443,3 +443,12 @@ def test_a_dangling_symlink_lock_cannot_be_read() -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.symlink_to(path.parent / "nowhere")
     assert resource_lock.main(["held-by-ancestor", "--resource", "fleet"]) == 2
+
+
+@pytest.mark.usefixtures("runtime")
+def test_a_symlinked_lock_refuses_even_without_o_nofollow(monkeypatch) -> None:
+    path = resource_lock.lock_path("fleet")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.symlink_to(path.parent / "nowhere")
+    monkeypatch.delattr(resource_lock.os, "O_NOFOLLOW", raising=False)
+    assert resource_lock.main(["held-by-ancestor", "--resource", "fleet"]) == 2
