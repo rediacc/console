@@ -237,6 +237,26 @@ STRING_LICENSE_ROWS = [
 ]
 REFUSED += STRING_LICENSE_ROWS
 
+# LT3 OF PLAN-two-track-merge-dev: the landing tree, the fixed sibling `<main>-landing` of this checkout's main tree, leaves only by its verb. The path is computed the way the guard computes it, so the rows hold in any checkout; no tree needs to exist there, since the operand alone is judged.
+LANDING = guard.landing_paths(ROOT)[0]
+LANDING_PARENT, LANDING_NAME = os.path.split(LANDING)
+LANDING_ROWS = [
+    ("landing: remove, absolute", "git worktree remove %s" % LANDING),
+    ("landing: remove, force", "git worktree remove --force --force %s" % LANDING),
+    ("landing: remove, relative", "git worktree remove %s" % os.path.relpath(LANDING, ROOT)),
+    ("landing: remove, the bare suffix", "git worktree remove %s" % LANDING_NAME),
+    (
+        "landing: remove, joined to cd",
+        "cd %s && git worktree remove %s" % (LANDING_PARENT, LANDING_NAME),
+    ),
+    ("landing: the run's own directory", "git -C %s worktree remove ." % LANDING),
+    ("landing: move", "git worktree move %s /tmp/x" % LANDING),
+    ("landing: lock", "git worktree lock %s" % LANDING),
+    ("landing: unlock", "git worktree unlock %s" % LANDING),
+    ("landing: inside sh -c", "sh -c 'git worktree remove %s'" % LANDING),
+]
+REFUSED += LANDING_ROWS
+
 # The design review of dd6898eb0: adjacency alone let a script keep the two words apart and still run the verb. Each of these names the phrase in CODE (not a comment), so it is refused.
 APART = {
     "helper.js": (
@@ -595,7 +615,17 @@ ALLOWED = [
     ("the lease tool by path", "%s/run.sh worktree lease" % ROOT),
     ("the lease tool via bash", "bash run.sh worktree lease"),
     ("the lease listing", "./run.sh worktree leases --json"),
-    ("the landing verb", "./run.sh worktree land x"),
+    ("the land verb", "./run.sh worktree land x"),
+    # LT3: the landing tree's own verb is the sanctioned road to it, and a session working inside that tree keeps every verb that names another path.
+    ("the landing tree verb", "./run.sh worktree landing"),
+    ("the landing tree verb by path", "%s/run.sh worktree landing" % ROOT),
+    ("the landing tree verb via bash", "bash run.sh worktree landing"),
+    ("landing: a prune typed inside it", "git -C %s worktree prune" % LANDING),
+    ("landing: another tree removed from inside it", "git -C %s worktree remove /tmp/wt" % LANDING),
+    ("landing: a look-alike sibling", "git worktree remove %s-old" % LANDING),
+    ("landing: a look-alike suffix", "git worktree remove x%s" % LANDING_NAME),
+    ("landing: listing it", "git -C %s worktree list" % LANDING),
+    ("landing: a sentence naming it", "echo git worktree remove %s" % LANDING),
     ("the gc verb", "./run.sh worktree gc --write --id x"),
     # The same verbs on any other tree are not this guard's business.
     ("remove elsewhere", "git worktree remove /tmp/wt"),
@@ -822,6 +852,10 @@ for key, text in (
         print("*** FAIL *** the %s message: %s" % (key, text))
     else:
         print("%s: names the lease tool, recommends no clone" % key)
+for key, text in (("git", guard.GIT_MESSAGE), ("landing", guard.LANDING_MESSAGE)):
+    if "./run.sh worktree landing" not in text:
+        failures.append("message: %s names no landing verb" % key)
+        print("*** FAIL *** the %s message names no landing verb: %s" % (key, text))
 if "./run.sh worktree gc" not in guard.LEASE_MESSAGE:
     failures.append("message: lease")
     print("*** FAIL *** the lease message names no way out: %s" % guard.LEASE_MESSAGE)
@@ -856,6 +890,7 @@ LEASE_ROWS = [(n, c) for n, c in REFUSED if "worktrees" in c and " add " not in 
 for label, pair, rows in (
     ("the declared DEFECT", _declared_defect(), [r for r in REFUSED if "run.sh" in r[1]]),
     ("the lease arm", ("if runs_lease_verb(cmd):", "if False:"), LEASE_ROWS),
+    ("the landing arm", ("    if landing:\n", "    if False:\n"), LANDING_ROWS),
 ):
     # The control needs half the rows to flip; the check runs between waves of rows, so it may flip more than half before it stops.
     flipped = _flip_half(rows, pair)

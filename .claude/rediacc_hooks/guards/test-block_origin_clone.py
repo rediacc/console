@@ -544,6 +544,23 @@ if chain.returncode != 2 or MESSAGE_MARK not in chain.stderr:
 else:
     print("chain: refused by this guard, rc=2")
 
+print("== the message names both tree verbs")
+# Box LT3 of PLAN-two-track-merge-dev: the refusal points at the two trees an assistant may get, the writer's lease and the PR branch's landing tree. The planted copy drops the landing verb from the message, and the same check must then fail, so the green below depends on the text it reads.
+VERBS = ("./run.sh worktree lease", "./run.sh worktree landing")
+MESSAGE_PLANT = ("`./run.sh worktree landing`", "the other tree")
+_probe = REFUSED[0][1]
+for label, pair, want in (("the guard", None, True), ("the planted copy", MESSAGE_PLANT, False)):
+    _rc, _err = run_guard(_probe, defect=pair)
+    _named = _rc == 2 and all(v in _err for v in VERBS)
+    if _named != want:
+        failures.append("message verbs: %s" % label)
+        print(
+            "*** FAIL *** %s: want both verbs named=%s, got %s: %s"
+            % (label, want, _named, _err[-300:])
+        )
+    else:
+        print("%s: both verbs named=%s, as wanted" % (label, _named))
+
 print("== the DEFECT control")
 defect_pair = _declared_defect()
 

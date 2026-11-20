@@ -149,7 +149,9 @@ MESSAGE = (
     "\n"
     "Operator ruling ASKED:2026-11-04T10:15Z: a clone of this origin is refused, in /tmp and\n"
     "anywhere else, because a second tree escapes the one-branch rule and nothing follows or\n"
-    "collects it. Work in this checkout. A separate tree comes from `./run.sh worktree lease`.\n"
+    "collects it. Work in this checkout. A writer's separate tree comes from\n"
+    "`./run.sh worktree lease`, and the open PR's branch is worked in the landing tree from\n"
+    "`./run.sh worktree landing`.\n"
     "CI's object set is `git rev-list --objects HEAD`, with no clone (docs/agent-reference/TRAPS.md).\n"
     "A diagnosis that really needs a pristine clone is the operator's `!`, which bypasses this hook.\n"
 )

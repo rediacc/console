@@ -320,9 +320,19 @@ def reference_transaction(argv: list[str], stdin: str) -> int:
     repo = _repo()
     if not repo:
         return 0
+    # Two trees, one live branch each (box LT3 of PLAN-two-track-merge-dev): `live_branches` leaves out the branch the landing record binds to the other tree, and the record's own branch is cut nowhere but in the landing tree.
     live = cp.live_branches(repo, gh=False)
     parent = cp.superproject(repo)
+    record = cp.landing_record(repo)
+    bound = record if record is not None and cp.tree_role(repo) != cp.ROLE_LANDING else None
     for name in created:
+        if bound is not None and name == bound["branch"]:
+            return _refuse(
+                "creating branch `%s` here. The landing record binds it to the landing tree\n"
+                "%s, which holds the open PR's branch; this tree cuts its own development\n"
+                "branch (`./run.sh worktree landing` makes or refreshes the landing tree)."
+                % (name, bound["path"])
+            )
         others = [b for b in live if b != name]
         if parent:
             console_branch = cp.current_branch(parent, foreign=True)
@@ -337,7 +347,7 @@ def reference_transaction(argv: list[str], stdin: str) -> int:
             return _refuse("`%s` is not an MMDD-N branch name." % name)
         if others:
             return _refuse(
-                "creating branch `%s` while `%s` is live. One branch per repository: continue\n"
+                "creating branch `%s` while `%s` is live. One live branch per tree: continue\n"
                 "on it (`git switch %s`)." % (name, others[0], others[0])
             )
         current = cp.current_branch(repo)

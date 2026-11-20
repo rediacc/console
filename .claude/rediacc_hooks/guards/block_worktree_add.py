@@ -13,7 +13,7 @@ hooks rely on for that distinction, and inventing one on an unverified guess is 
 
 THE SCOPE IS THIS REPOSITORY. "Unconditional" is about who asks, not about which repository: a typed `git worktree add` is refused when the repository it acts on has this checkout's git common dir (the main checkout, a lease, any linked tree) or one under it (a submodule's `.git/modules/*` store), and admitted for a scratch repository with a git common dir of its own, such as the `git init` under /tmp that `./run.sh backup-ref restore`'s printed recipe targets (#a8ae93bd, measured 2026-11-11: that recipe was refused in a throwaway repo). Every doubt refuses: no `cwd` on the event, a `-C` or `cd` directory the walk cannot know or that does not exist, any global option but `-C`/`-c`, a `GIT_*` variable on the run or in the hook's environment, an alias, a verb built at run time, git not answering, or a text match the walk did not account for. Only the direct shell form is scoped; a program or script that runs the phrase is refused as before (`_foreign_adds`).
 
-THE ONE TREE AN ASSISTANT MAY GET is a lease: `./run.sh worktree lease` makes a detached, locked tree under `.claude/worktrees` for a writer, and only GC removes it (agent/plans/PLAN-worktree-lease.md Design 6, the remove arm below). A clone of this origin is `block_origin_clone`'s refusal.
+THE TREES AN ASSISTANT MAY GET come from two verbs. `./run.sh worktree lease` makes a detached, locked tree under `.claude/worktrees` for a writer, and only GC removes it (agent/plans/PLAN-worktree-lease.md Design 6, the remove arm below). `./run.sh worktree landing` makes the one landing tree beside the main checkout (`<main>-landing`), which holds the open PR's branch (box LT3 of agent/plans/PLAN-two-track-merge-dev.md, the landing arm below). Neither verb's text holds the phrase, so nothing here matches either; they are admitted by name in this file's cases. A clone of this origin is `block_origin_clone`'s refusal.
 
 Found live 2026-08-01: a session created a throwaway worktree+branch for a small doc edit mid-/pr-merge, then a second one for a NUL-byte gate fix, after the operator had already twice said to keep changes local instead. The operator then found six PRE-EXISTING worktrees holding real, unrelated work from other sessions sitting untouched in the same repo. Worktrees are cheap to
 create and easy to forget, and each one is a place uncommitted work can silently strand outside the one tree everyone actually watches.
@@ -205,6 +205,57 @@ def runs_lease_verb(cmd):
         # A run aimed at another checkout resolves a bare suffix against that checkout's trees, so this checkout's names say nothing about it.
         known = names if _in_this_checkout(here) else []
         if any(names_lease(w, here, known) for w in args[1:] if not w.startswith("-")):
+            return True
+    return False
+
+
+# THE LANDING TREE LEAVES ONLY BY ITS VERB (box LT3 of agent/plans/PLAN-two-track-merge-dev.md, operator ruling ASKED:2026-11-20T17:47Z). `./run.sh worktree landing` makes it at the fixed sibling of the main checkout, `<main>-landing`, outside `.claude/worktrees`, so the lease arm above never names it, and a typed `git worktree remove|move|prune|lock|unlock` on it would drop the PR branch's tree and whatever it holds uncommitted. So those verbs are refused when an operand names the sibling path or the path the landing record (`commit_policy.landing_record`) binds: a path that resolves into it from the run's directory, or a relative word it ends with, the unique suffix git resolves to a tree (`git worktree remove console-landing`). Unlike a lease, the landing tree is where a session works, so a run executing INSIDE it is judged by its operands alone: `git worktree prune` or a removal of another path typed there stays allowed, and `git worktree remove .` there names the tree and is refused.
+#
+# OUT OF REACH, as for the lease arm: a path held in a variable, a glob, a program that builds the path at run time, a git alias.
+LANDING_SUFFIX = "-landing"
+
+
+def landing_paths(project):
+    """The landing tree's realpaths for the checkout `project` sits in: the fixed sibling of the main checkout, and the path a valid landing record binds. None when git cannot place `project`."""
+    common = commit_policy.common_dir(project)
+    if not common:
+        return ()
+    paths = set()
+    if os.path.basename(common) == ".git":
+        paths.add(os.path.dirname(common) + LANDING_SUFFIX)
+    record = commit_policy.landing_record(project)
+    if record is not None:
+        paths.add(record["path"])
+    return tuple(sorted(paths))
+
+
+def names_landing(word, here, landings):
+    """Does the operand `word`, in a run executing in the absolute directory `here`, name one of the landing trees `landings`? Passed in, so the arm can be driven without a tree on disk."""
+    target = os.path.realpath(os.path.join(here, word))
+    if any(target == p or target.startswith(p + os.sep) for p in landings):
+        return True
+    if word.startswith("/"):
+        return False
+    tail = os.path.normpath(word)
+    return tail not in (".", "..") and any(p.endswith("/" + tail) for p in landings)
+
+
+def runs_landing_verb(cmd, base, landings):
+    """Does `cmd` run a `git worktree` verb in LEASE_VERBS with an operand naming a landing tree? `base` is the absolute directory the command starts in. Judged by run, like `runs_lease_verb`."""
+    if not landings:
+        return False
+    for run_ in shellscan.every_run(cmd):
+        if run_.name.rsplit("/", 1)[-1] != "git":
+            continue
+        argv = [_with_assigned_values(run_, w) for w in run_.argv]
+        at, where = shellscan._git_verb_at(argv)
+        if at is None or argv[at] != "worktree":
+            continue
+        args = argv[at + 1 :]
+        if not args or args[0] not in LEASE_VERBS:
+            continue
+        here = os.path.join(base, run_.cwd or "", where)
+        if any(names_landing(w, here, landings) for w in args[1:] if not w.startswith("-")):
             return True
     return False
 
@@ -1802,6 +1853,7 @@ def shell_verdict(cmd, depth=0):
 GIT_MESSAGE = (
     "❌ BLOCKED: git worktree add is not run from here. A writer that needs its own tree gets "
     "a detached one from `./run.sh worktree lease`, and the lead stays in the current checkout. "
+    "The open PR's branch is worked in the landing tree from `./run.sh worktree landing`. "
     "A real second checkout needs the operator to approve it explicitly THIS session, then run "
     "the command themselves via the `!` prefix (bypasses this hook): never ask through chat and "
     "then run it here, and never create one in an autonomous/cron-fired continuation with no "
@@ -1837,6 +1889,14 @@ LEASE_MESSAGE = (
     "through `./run.sh worktree gc`, whose rules keep a commit nothing has landed, so a tree "
     "moved or unlocked by hand can lose that work. `./run.sh worktree land <id>` prints how "
     "its commits land first. The operator's `!` prefix bypasses this hook."
+)
+
+LANDING_MESSAGE = (
+    "❌ BLOCKED: this runs `git worktree remove|move|prune|lock|unlock` on the landing tree "
+    "beside the main checkout (`<main>-landing`, or the path the landing record binds), which "
+    "holds the open PR's branch. `./run.sh worktree landing` makes it and refreshes it in "
+    "place; a tree removed or moved by hand loses whatever it holds uncommitted and leaves the "
+    "landing record pointing at nothing. The operator's `!` prefix bypasses this hook."
 )
 
 PROGRAM_NOTE = (
@@ -1923,6 +1983,8 @@ EDGE_CASES = [
     # A lease tree leaves only through GC (Design 6): the verbs on its path are refused, the lease tool and the same verbs on any other path are not.
     ("the lease tool is allowed", "./run.sh worktree lease"),
     ("the lease listing is allowed", "./run.sh worktree leases --json"),
+    ("the landing tree verb is allowed", "./run.sh worktree landing"),
+    ("the landing tree verb by path is allowed", "/home/x/console/run.sh worktree landing"),
     ("removing a lease tree", "git worktree remove .claude/worktrees/x"),
     ("force-removing a lease tree", "git worktree remove --force /r/.claude/worktrees/x"),
     ("unlocking a lease tree", "git worktree unlock .claude/worktrees/x"),
@@ -2036,6 +2098,11 @@ def run(ev):
     verdict = _direct_verdict(cmd, ev.field("cwd") or None)
     if verdict:
         ev.warn(messages[verdict])
+        return hookio.DENY
+    project = ev.project_dir
+    landing = runs_landing_verb(cmd, ev.field("cwd") or project, landing_paths(project))
+    if landing:
+        ev.warn(LANDING_MESSAGE)
         return hookio.DENY
     verdict = _program_verdict(cmd, 0, ev.field("cwd") or None)
     if verdict:
