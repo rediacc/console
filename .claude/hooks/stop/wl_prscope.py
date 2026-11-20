@@ -66,7 +66,7 @@ KINDS = (LIVE, NO_PR, MERGED, ON_MAIN, OFF_LOOP, UNREADABLE)
 
 @dataclasses.dataclass(frozen=True)
 class LoopState:
-    """Where the loop stands. `plans` is ordered prerequisites first; `prereqs` names the members that are not the PR's own `Plan:` plans; `stale_promoted` is the queue head's path when it has no open box left (a finished Promoted entry nobody removed), else "". `role` is `landing`, `development` or "" (no landing record), `landing_branch` the record's branch, and `foreign_items` the item ids outside this tree's scope (see TWO TREES)."""
+    """Where the loop stands. `plans` is ordered prerequisites first; `prereqs` names the members that are not the PR's own `Plan:` plans; `stale_promoted` is the queue head's path when it has no open box left (a finished Promoted entry nobody removed), else "". `role` is `landing`, `development` or "" (no landing record), `landing_branch` the record's branch, `foreign_items` the item ids outside this tree's scope (see TWO TREES), and `landing_open` True in the development tree while the landing branch's PR is open."""
 
     kind: str
     branch: str = ""
@@ -91,6 +91,7 @@ class LoopState:
     role: str = ""
     landing_branch: str = ""
     foreign_items: frozenset[str] = frozenset()
+    landing_open: bool = False
 
 
 def _plan_epics(rel):
@@ -233,6 +234,16 @@ def tree_parks(state, focus=None):
     return LANDING_PARKS if role == LANDING else DEVELOPMENT_PARKS
 
 
+def landing_pr_open(wl_ci, top, worklist, session_id, landing_branch):
+    """True when the landing branch's PR is open, read through the same `wl_ci.pr_link` as the tree's own PR; a failed read or no branch answers False (the development tree then reads today's finish text)."""
+    if not landing_branch:
+        return False
+    nodes, err = wl_ci.pr_link(top, worklist, session_id, landing_branch)
+    if err:
+        return False
+    return any(str(n.get("state") or "").upper() == "OPEN" for n in nodes)
+
+
 def _console_top(commit_policy, root):
     top = commit_policy.toplevel(str(root))
     if not top or commit_policy.superproject(top):
@@ -279,6 +290,11 @@ def loop_state(
             "role": role,
             "landing_branch": landing_branch,
             "foreign_items": foreign_items(role, branch, landing_branch, branches),
+            "landing_open": bool(
+                role == DEVELOPMENT
+                and gh
+                and landing_pr_open(wl_ci, top, worklist, session_id, landing_branch)
+            ),
         }
     head = plan_gate.queue_head(top) if role != LANDING else ""
     stale = head if head and _open_count(plan_gate, top, head) == 0 else ""
@@ -390,6 +406,7 @@ __all__ = [
     "epic_items",
     "foreign_items",
     "item_branches",
+    "landing_pr_open",
     "landing_record",
     "loop_state",
     "next_queued",

@@ -146,7 +146,9 @@ def control_loop_state(tmp, wl_prscope, wl_ci, wl_checks):
     check("CONTROL development, no record: nothing foreign", bare.foreign_items, frozenset())
     check(
         "CONTROL development, no record: every other field is unchanged",
-        dataclasses.replace(dev, role="", landing_branch="", foreign_items=frozenset()),
+        dataclasses.replace(
+            dev, role="", landing_branch="", foreign_items=frozenset(), landing_open=False
+        ),
         bare,
     )
 
@@ -188,7 +190,9 @@ def control_loop_state(tmp, wl_prscope, wl_ci, wl_checks):
     }
     ddone = loop(wl_prscope, wl_ci, main, record, done_nodes, branches={})
     text, block = wl_checks.loop_next_text(ddone, str(main), {}, False)
-    check("development: a finished draft is not offered the merge", (text, block), ("", False))
+    check("development: the landing PR is read open", ddone.landing_open, True)
+    check("development: a finished draft is not offered the merge", "/pr-merge here" in text, True)
+    check("development: the merge wait does not block", block, False)
     text, block = wl_checks.loop_next_text(
         dataclasses.replace(ddone, role=""), str(main), {}, False
     )

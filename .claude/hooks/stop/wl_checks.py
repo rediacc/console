@@ -59,6 +59,7 @@ import wl_roundlog
 import wl_rules
 import wl_schedred
 import wl_shapedup
+import wl_stack
 import wl_standdown
 import wl_store as S
 import wl_storestatus
@@ -2404,6 +2405,8 @@ PRIORITY_LADDER = (
                 "commit-review",
                 # A finished lease of this session holding unlanded work (agent/plans/PLAN-worktree-lease.md Design 7): the box's commits exist nowhere the PR can see.
                 "worktree-unlanded",
+                # The landing branch merged while the development branch still builds on it unpromoted (wl_stack, agent/plans/PLAN-two-track-merge-dev.md LT19): every commit made before promotion carries the merged PR a second time.
+                "landing-stack",
             }
         ),
     ),
@@ -3090,6 +3093,9 @@ def loop_governs(state):
     """True when the one-plan-per-PR loop scopes this stop (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4): any loop state but `off-loop` that has something to work, a PR plan set, a queue head or a next plan. A checkout with neither a PR plan nor anything in agent/plans/QUEUE.md has no loop to scope or continue (on main after the last queued plan merged, or a project that never queued one), so it keeps the full battery."""
     if state is None or state.kind == wl_prscope.OFF_LOOP:
         return False
+    # The landing tree reads no queue, so after its PR merged it holds none of the three; promotion is its next step (agent/plans/PLAN-two-track-merge-dev.md LT15).
+    if state.kind == wl_prscope.MERGED and getattr(state, "role", "") == wl_prscope.LANDING:
+        return True
     return bool(state.plans or state.queue_head or state.next_plan)
 
 
@@ -3401,14 +3407,20 @@ def _remaining_recs(fold, session_id, open_items, deferred_recs, in_flight_recs)
 
 
 def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
-    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked (outside the development tree, whose PR is a draft) / unreadable. Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count.
+    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked / unreadable. With a landing record `M.loop_next_variant` picks the merged, no-PR-ahead and finish arms: the landing tree's merge promotes, the development tree's draft opens with --draft, and its finish waits on an open landing PR as an advisory (agent/plans/PLAN-two-track-merge-dev.md LT15). Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count.
 
     A no-PR local batch (agent/plans/PLAN-turbo-local-first.md D2, `local_batch`) never gets "Open it": while the batch fills it is the N_TURBO_LOCAL advisory, and once it is ready the V_LOOP_NEXT_BATCH_OPEN block names the verify-push-open sequence, `me` filling its `--batch-body` line."""
     kind, branch = state.kind, state.branch
     if kind != wl_prscope.UNREADABLE:
         state_doc.pop("loopnext", None)
     stale = M.LOOP_NEXT_STALE % state.stale_promoted if state.stale_promoted else ""
+    # THE TWO-TREE ARMS (agent/plans/PLAN-two-track-merge-dev.md LT15): `role` is the record's reading of the session's own tree ("" without a record), `landing_open` the landing PR's state as the development tree reads it.
+    role = getattr(state, "role", "") or ""
+    landing_open = bool(getattr(state, "landing_open", False))
     nxt = state.next_plan
+    if kind == wl_prscope.MERGED and role == wl_prscope.LANDING and not nxt:
+        # The landing tree reads no queue; the next plan is the main checkout's queue head, which is the development tree's.
+        nxt = wl_prscope.next_queued(root, exclude=state.plans)[0]
     fields = {
         "pr": state.pr,
         "branch": branch,
@@ -3428,7 +3440,7 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
             return "", False
         if C._git(root, "rev-parse", "--verify", "-q", "refs/remotes/origin/%s" % branch):
             fields["delete"] = M.LOOP_NEXT_DELETE % branch
-        return M.V_LOOP_NEXT_MERGED % fields, True
+        return M.loop_next_variant(role, True, landing_open, M.ARM_MERGED) % fields, True
     if kind == wl_prscope.ON_MAIN:
         return (M.V_LOOP_NEXT_ON_MAIN % fields, True) if nxt else ("", False)
     if kind == wl_prscope.NO_PR:
@@ -3445,20 +3457,21 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
                     return M.N_TURBO_LOCAL % fields, False
                 return M.V_LOOP_NEXT_BATCH_OPEN % fields, True
         if fields["ahead"] > 0:
-            return M.V_LOOP_NEXT_NO_PR_OPEN % fields, True
+            return M.loop_next_variant(role, False, landing_open, M.ARM_OPEN) % fields, True
         if not nxt:
             return "", False
         return M.V_LOOP_NEXT_NO_PR_WORK % fields, True
     if kind == wl_prscope.LIVE:
-        # The development tree's PR is its draft: the merge is the landing tree's loop (agent/plans/PLAN-two-track-merge-dev.md LT5).
-        if pr_finish_fired or not state.plans or state.role == wl_prscope.DEVELOPMENT:
+        if pr_finish_fired or not state.plans:
             return "", False
         if any(wl_planenforce.first_box(root, rel) for rel in state.plans):
             return "", False
         # Under turbo the merge waits for the batch (D8): `batch_size` plans finished, or nothing eligible left to take. Under batch-end the batch closed when the PR opened (live_batch_ready).
         if not live_batch_ready(state, True):
             return "", False
-        return M.V_LOOP_NEXT_MERGE % fields, True
+        text = M.loop_next_variant(role, False, landing_open, M.ARM_FINISH)
+        # The development tree's draft while the landing PR is open: the merge is the landing tree's loop (LT5), so the wait rides the advisory queue and never blocks.
+        return text % fields, text is not M.V_LOOP_NEXT_MERGE_WAIT
     if kind == wl_prscope.UNREADABLE:
         sig = hashlib.sha1(str(state.reason).encode("utf-8", "replace")).hexdigest()[:12]
         ln = state_doc.get("loopnext") if isinstance(state_doc.get("loopnext"), dict) else {}
@@ -3481,6 +3494,8 @@ TURBO_OUTRANKED_BY = frozenset({"ci-red", "pr-review", "commit-review", "pr-fini
 TURBO_KEEPS = frozenset({"turbo-next", "idle-capacity"})
 # A lost commit is not hygiene, so no stand-down profile parks this (agent/plans/PLAN-worktree-lease.md Design 7). wl_standdown is sealed, and its keep-lists predate leases, so the keep sits here as TURBO_KEEPS does.
 WORKTREE_KEEPS = frozenset({"worktree-unlanded"})
+# A merged landing branch the development tree still builds on (wl_stack, agent/plans/PLAN-two-track-merge-dev.md LT19) is a FLOOR key, so no stand-down profile parks it either: waiting on writers or winding a PR down does not promote. wl_standdown is sealed, so the keep sits here as WORKTREE_KEEPS does.
+LANDING_KEEPS = frozenset({"landing-stack"})
 # The same design keeps the lease report out of a phase's advisory batching.
 WORKTREE_REPORT = "worktree-orphan"
 # The keys a turbo batch that is still building locally stands down (operator ruling 2026-10-13: turbo is for local implementation, so a red on the open PR does not hold a stop until the prompted plans are complete). Each is reported on every stop instead, and blocks again the moment `turbo_build_parks` is empty.
@@ -5715,6 +5730,15 @@ def run_stop(event, event_ok, worklist, hook_file):
             "THIS IS A HOOK BUG: the pr-babysit finish-line check failed: %s: %s"
             % (type(exc).__name__, str(exc)[:120]),
         )
+    # ---- THE LANDING STACK (agent/plans/PLAN-two-track-merge-dev.md LT19, wl_stack): read from the session's own tree, never the mapped root, since the landing tree's root is the main checkout. A landing branch already merged while the record still names it blocks at every effort level (`landing-stack`, wl_floor.FLOOR): promotion runs before anything else is built on it. A landing branch ahead of the development branch is advisory (`landing-behind`). No record, or the landing tree itself, reads nothing; the readers never raise.
+    _ls_block = wl_stack.stack_block(own)
+    if _ls_block:
+        vadd("landing-stack", False, _ls_block)
+    _ls_report = "" if _ls_block else wl_stack.stack_report(own, fetch=False)
+    if _ls_report:
+        outq_add(worklist, session_id, state_doc, "landing-behind", _ls_report, 1, refresh_min=0)
+    else:
+        outq_drop(state_doc, "landing-behind")
     # ---- LOOP NEXT (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7, operator addition 2026-10-03): after the PR's plan is finished and the PR merged, the turn is held until the next branch, plan and PR exist. One arm per loop state, each naming the exact commands; silent on an empty queue. After the CI read, so `pr-finish` above already decided this stop.
     # A BACKGROUND TASK OF THIS SESSION DOWNGRADES IT to an advisory (a pr-merge watch or a `ci-trace --wait` is the step being waited on), and the unreadable arm is bounded like ci-red.
     # SO DOES A PENDING RUN ON THE HEAD: /pr-merge needs CI Complete SUCCESS, so while the run is in progress there is nothing to merge yet, and blocking every stop only forces a no-op. Found 2026-10-06 on PR #597: the push hook's detached `ci-trace --wait --until-final` watch is not a background task of this session, so `live_bg` stayed false and the merge order blocked each stop of the wait.
@@ -6429,7 +6453,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         def _keeps(v):
             if _profile is wl_standdown.PR_LOOP and v[0] in TURBO_KEEPS:
                 return True
-            if v[0] in WORKTREE_KEEPS:
+            if v[0] in WORKTREE_KEEPS or v[0] in LANDING_KEEPS:
                 return True
             return wl_standdown.keeps(_profile, v[0], v[1], _compaction_due)
 

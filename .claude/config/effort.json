@@ -93,6 +93,10 @@
     "roster-cap": "floor",
     "unread-reports": "floor",
     "wake-timer": "floor",
+    "landing-stack": "floor",
+    "landing-behind": {
+      "advise": "low"
+    },
     "open-items": {
       "block": "smart",
       "advise": "low"
