@@ -797,6 +797,30 @@ def test_a_raise_in_the_wait_loop_still_shuts_the_reader_pool_down_without_waiti
 
 
 @pytest.mark.usefixtures("held_trace")
+def test_control_the_normal_path_shuts_the_reader_pool_down_waiting_first(tmp_path, monkeypatch):
+    """a290dc02.1: the control of the raise-path test above. The normal path's own shutdown waits, then the `finally` shutdown is the idempotent no-wait one."""
+    shutdowns: list[dict] = []
+
+    class Spy(pr.concurrent.futures.ThreadPoolExecutor):
+        def shutdown(self, wait=True, *, cancel_futures=False):
+            shutdowns.append({"wait": wait, "cancel_futures": cancel_futures})
+            super().shutdown(wait=wait, cancel_futures=cancel_futures)
+
+    monkeypatch.setattr(pr.concurrent.futures, "ThreadPoolExecutor", Spy)
+
+    def kill_session(_sid, **_k):
+        _Held.last.kill()
+        return []
+
+    monkeypatch.setattr(pr, "_kill_session", kill_session)
+    pr.run_trace(tmp_path, ["pytest"])
+    assert shutdowns == [
+        {"wait": True, "cancel_futures": False},
+        {"wait": False, "cancel_futures": True},
+    ]
+
+
+@pytest.mark.usefixtures("held_trace")
 def test_a_failure_folding_the_stream_is_raised_not_swallowed_in_the_thread(tmp_path, monkeypatch):
     """Finding c29ab62a.2: the reader keeps draining, and the run fails loudly with the cause."""
 

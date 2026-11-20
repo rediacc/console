@@ -226,7 +226,7 @@ def _push_reason(args, repo, landing, dev):
     for spec_src, spec_dst in pairs:
         src = (current or "HEAD") if spec_src == "HEAD" else spec_src
         dst = current if spec_dst == "HEAD" else spec_dst
-        if dev in (src, dst):
+        if (dst or "").removeprefix("refs/heads/") == dev:
             continue
         sha = _sha(repo, src)
         if not sha:
