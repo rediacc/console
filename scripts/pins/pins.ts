@@ -24,8 +24,9 @@
  *   verify [--restore <stamp> [--inflight <file>]...] [--json]
  *                                          every leaf site matches its count and agrees;
  *                                          no run was killed mid-write
- *   sync-templates [--write] [--json]      the `template:*` docker leaves the app templates'
- *                                          compose image pins imply (scripts/lib/pins/templates.ts):
+ *   sync-templates [--write] [--json]      the template, CLI template, tutorial, compose and
+ *                                          renet proxy docker leaves the compose image pins
+ *                                          imply (scripts/lib/pins/templates.ts):
  *                                          prints the drift and the unpinned references, exits 1
  *                                          on drift; --write rewrites those leaves in pins.json
  *   --selftest                             the fixture controls and their mutants
@@ -3442,6 +3443,19 @@ const CASES: Record<string, Case> = {
       path.join(app, 'docker-compose.yaml'),
       'services:\n  es:\n    image: elasticsearch:8.11.0\n  ui:\n    image: nginx:latest\n'
     );
+    // A CLI template pin and the renet proxy file ride the same sync: every tree is read, a submodule tree must exist.
+    const cli = path.join(root, 'packages/cli/templates/x');
+    fs.mkdirSync(cli, { recursive: true });
+    fs.writeFileSync(
+      path.join(cli, 'docker-compose.yml'),
+      'services:\n  api:\n    image: node:20.20.2-alpine\n'
+    );
+    const proxy = path.join(root, 'private/renet/proxy');
+    fs.mkdirSync(proxy, { recursive: true });
+    fs.writeFileSync(
+      path.join(proxy, 'docker-compose.yml'),
+      'services:\n  p:\n    image: traefik:v3.7.16\n'
+    );
     const env = { PINS_ROOT: root };
     const dry = await runCli(['sync-templates'], env);
     const wrote = await runCli(['sync-templates', '--write'], env);
@@ -3459,6 +3473,8 @@ const CASES: Record<string, Case> = {
         ok:
           dry.rc === 1 &&
           dry.out.includes('add     template:es.elasticsearch') &&
+          dry.out.includes('add     cli-template:x.node') &&
+          dry.out.includes('add     renet:proxy.traefik') &&
           dry.out.includes(
             'unpinned  packages/json/templates/search/es/docker-compose.yaml:5  nginx:latest'
           ),
@@ -3469,10 +3485,11 @@ const CASES: Record<string, Case> = {
         ok:
           wrote.rc === 0 &&
           after.includes('"id": "template:es.elasticsearch"') &&
+          after.includes('"id": "cli-template:x.node"') &&
           keptOthers &&
           after.split('\n').length > before.split('\n').length &&
           again.rc === 0 &&
-          again.out.includes('1 template image pin(s) in sync'),
+          again.out.includes('3 template image pin(s) in sync'),
         detail: `${wrote.rc} ${wrote.out} ${wrote.err} | ${again.rc} ${again.out}`,
       },
       {

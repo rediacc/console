@@ -863,6 +863,42 @@ async function dockerCases(
         'clickhouse/clickhouse-server:25.8.1.5-alpine,clickhouse/clickhouse-server:24.8.2.1-alpine',
     detail: JSON.stringify(chInsp.releases.map((r) => r.version)),
   });
+  // A `v` before the version (renet's traefik:v3.7.16) names a series: the bare tag is no candidate, a newer v tag is.
+  const tf = {
+    ...ch,
+    id: 'renet:proxy.traefik',
+    source: { type: 'dockerhub' as const, image: 'traefik' },
+    sites: [
+      {
+        repo: '.',
+        file: 'compose.yaml',
+        role: 'version',
+        match: '^[ \\t]*image:[ \\t]*["\']?(?<value>traefik:v?\\d[^\\s"\'@#]*)',
+        expect: 1,
+      },
+    ],
+  };
+  const tfRoot = tree({ 'compose.yaml': 'services:\n  p:\n    image: traefik:v3.7.16\n' });
+  const tfHub = () => ({
+    results: [
+      { name: 'v3.7.17', last_updated: iso(OLD) },
+      { name: '3.7.18', last_updated: iso(OLD) },
+      { name: 'v3.7.16', last_updated: iso(OLD) },
+      { name: 'v3.6.9', last_updated: iso(OLD) },
+    ],
+    next: null,
+  });
+  const tfInsp = await dockerDriver(() => deps({ json: tfHub }).deps, mutant).inspect(
+    tf,
+    ctxOf(tfRoot)
+  );
+  out.push({
+    name: 'docker: CONTROL: a v-prefixed tag is read (no "no leading version" throw), and only newer v tags are candidates',
+    ok:
+      tfInsp.current === 'traefik:v3.7.16' &&
+      tfInsp.releases.map((r) => r.version).join(',') === 'traefik:v3.7.17',
+    detail: JSON.stringify(tfInsp.releases.map((r) => r.version)),
+  });
   const fam = await dockerDriver(() => deps({}).deps, mutant).inspect(entry('docker'), ctx);
   out.push({
     name: 'docker: the family entry has nothing to bump itself',

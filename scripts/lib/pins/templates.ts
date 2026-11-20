@@ -25,9 +25,18 @@
  * carries no publish date, so the release-age window cannot be applied to it. check:ci-pin-
  * freshness names every such leaf on every run, so it is visible, never counted as current.
  *
- * THE ID is `template:<app>.<image basename>` (`template:elasticsearch.kibana`), with the
- * service name appended when one template uses the same image twice. The hold key (the id
- * after its colon) therefore never collides with an `image:*` leaf's.
+ * THE TREES. `TREES` below is the one list of scan roots: the app templates (`template:`),
+ * packages/cli/templates (`cli-template:`), .ci/tutorials/apps (`tutorial:`), compose/
+ * (`compose:`) and renet's proxy compose file (`renet:`, a site in the private/renet repo).
+ * Every tree gets the same leaves, the same drift gate both ways and the same freshness
+ * verdict; a new tree is one entry there.
+ *
+ * THE ID is `<prefix><app>.<image basename>` (`template:elasticsearch.kibana`), with the
+ * service name appended when one file uses one image at two different tags (one reference
+ * on two lines is one leaf whose sites expect both). The hold key (the id after its colon)
+ * never collides with an `image:*` leaf's, and two trees never share one: a later tree's
+ * app then carries its tree name (`tutorial:tutorial-heartbeat.node`, as the app template
+ * `template:heartbeat.node` owns the bare key).
  *
  * Usage:
  *   npx tsx scripts/lib/pins/templates.ts --selftest
@@ -44,8 +53,6 @@ import type { PinEntry, PinRegistry, PinSite } from './registry.js';
 
 /** The template tree, console-relative. */
 export const TEMPLATE_ROOT = 'packages/json/templates';
-/** The id prefix every generated leaf carries, and no other entry may. */
-export const TEMPLATE_PREFIX = 'template:';
 /** The hold file every docker leaf names first. */
 const HOLD_FILE = policyPath('.pins-upgrade-blocklist', '.');
 
@@ -53,9 +60,110 @@ const HOLD_FILE = policyPath('.pins-upgrade-blocklist', '.');
 export const isComposeFile = (file: string): boolean =>
   /(^|\/)(docker-)?compose[^/]*\.ya?ml$/.test(file);
 
-/** A template's compose file: packages/json/templates/<category>/<app>/docker-compose.yaml. */
-export const isTemplateCompose = (file: string): boolean =>
-  new RegExp(`^${TEMPLATE_ROOT}/[^/]+/[^/]+/docker-compose\\.yaml$`).test(file);
+/**
+ * One tree of compose files whose exact image pins are generated into `<prefix>` leaves.
+ * THE LIST OF TREES, `TREES` below, is the one place a scan root is declared: adding a tree
+ * there brings its pins under the generator, the drift gate and the freshness gate.
+ */
+export interface PinTree {
+  /** The id prefix of every leaf of the tree, and of no other tree (`template:`). */
+  prefix: string;
+  /** The repo the tree lives in: `.` for the console, a submodule path otherwise. */
+  repo: string;
+  /** The tree's directory, console-relative. */
+  root: string;
+  /** Whether a console-relative path is a compose file of this tree. */
+  test(file: string): boolean;
+  /** The app name the leaf ids carry. */
+  app(file: string): string;
+  /** What the leaf's `name` calls the carrier. */
+  label(file: string): string;
+}
+
+/** The path under the tree root, split on `/`. */
+const under = (t: Pick<PinTree, 'root'>, file: string): string[] =>
+  file.slice(t.root.length + 1).split('/');
+const inRoot = (t: Pick<PinTree, 'root'>, file: string): boolean =>
+  file.startsWith(`${t.root}/`) && isComposeFile(file);
+
+/** Every tree, in id order of precedence: the first tree to own a hold key keeps it bare. */
+export const TREES: readonly PinTree[] = [
+  {
+    prefix: 'template:',
+    repo: '.',
+    root: TEMPLATE_ROOT,
+    test(file) {
+      return new RegExp(`^${TEMPLATE_ROOT}/[^/]+/[^/]+/docker-compose\\.yaml$`).test(file);
+    },
+    app: (file) => under({ root: TEMPLATE_ROOT }, file)[1],
+    label: (file) => `${under({ root: TEMPLATE_ROOT }, file).slice(0, 2).join('/')} app template`,
+  },
+  {
+    prefix: 'cli-template:',
+    repo: '.',
+    root: 'packages/cli/templates',
+    test(file) {
+      return inRoot(this, file);
+    },
+    app(file) {
+      return under(this, file).slice(0, -1).join('-');
+    },
+    label(file) {
+      return `${this.app(file)} CLI template`;
+    },
+  },
+  {
+    prefix: 'tutorial:',
+    repo: '.',
+    root: '.ci/tutorials/apps',
+    test(file) {
+      return inRoot(this, file) && under(this, file).length === 2;
+    },
+    app(file) {
+      return under(this, file)[0];
+    },
+    label(file) {
+      return `${this.app(file)} tutorial app`;
+    },
+  },
+  {
+    prefix: 'compose:',
+    repo: '.',
+    root: 'compose',
+    test(file) {
+      return inRoot(this, file);
+    },
+    app(file) {
+      return under(this, file).slice(0, -1).join('-');
+    },
+    label(file) {
+      return `${this.app(file)} compose file`;
+    },
+  },
+  {
+    prefix: 'renet:',
+    repo: 'private/renet',
+    root: 'private/renet/proxy',
+    test(file) {
+      return file === 'private/renet/proxy/docker-compose.yml';
+    },
+    app: () => 'proxy',
+    label: () => 'renet proxy compose file',
+  },
+];
+
+/** The tree a console-relative path belongs to, or null. Pure. */
+export const treeOf = (file: string): PinTree | null => TREES.find((t) => t.test(file)) ?? null;
+
+/** A compose file of any generated tree. */
+export const isTemplateCompose = (file: string): boolean => treeOf(file) !== null;
+
+/** Whether a registry id is a generated tree leaf. Pure. */
+export const isTreeId = (id: string): boolean => TREES.some((t) => id.startsWith(t.prefix));
+
+/** A site's console-relative file, from the repo it is in. Pure. */
+export const consolePath = (repo: string, file: string): string =>
+  repo === '.' ? file : `${repo}/${file}`;
 
 /** One literal `image:` reference in a compose file. */
 export interface ComposeImage {
@@ -134,11 +242,9 @@ const slug = (s: string): string =>
     .replace(/[^a-z0-9.+-]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-/** The `<category>/<app>` of a template compose file. Pure. */
-function appOf(file: string): { category: string; app: string } {
-  const parts = file.slice(TEMPLATE_ROOT.length + 1).split('/');
-  return { category: parts[0], app: parts[1] };
-}
+/** A console-relative path as the repo-relative file a site names. Pure. */
+const repoFile = (tree: Pick<PinTree, 'repo'>, file: string): string =>
+  tree.repo === '.' ? file : file.slice(tree.repo.length + 1);
 
 /** The non-Docker-Hub registry host of an image, for its BLOCKER reason. Pure. */
 function hostOf(image: string): string {
@@ -146,26 +252,26 @@ function hostOf(image: string): string {
 }
 
 /** The generated leaf of one pinned template reference; `id` is decided by the caller (collisions). Pure. */
-export function templateEntry(img: ComposeImage, id: string): PinEntry {
-  const { category, app } = appOf(img.file);
+export function templateEntry(img: ComposeImage, id: string, copies = 1): PinEntry {
+  const tree = treeOf(img.file) as PinTree;
   const sites: PinSite[] = [];
   const lead = `^[ \\t]*image:[ \\t]*["']?`;
   if (img.tag !== null)
     sites.push({
-      repo: '.',
-      file: img.file,
+      repo: tree.repo,
+      file: repoFile(tree, img.file),
       role: 'version',
       // The tag must start with a version, as isPinned requires: a line edited to `:latest` leaves the site matching nothing, which check:ci-pin-registry reports.
       match: `${lead}(?<value>${esc(img.image)}:v?\\d[^\\s"'@#]*)`,
-      expect: 1,
+      expect: copies,
     });
   if (img.digest !== null)
     sites.push({
-      repo: '.',
-      file: img.file,
+      repo: tree.repo,
+      file: repoFile(tree, img.file),
       role: 'digest',
       match: `${lead}${esc(img.image)}(?::[^\\s"'@#]+)?@(?<value>sha256:[0-9a-f]{64})`,
-      expect: 1,
+      expect: copies,
     });
   const hub = hubRepo(img.image) !== null;
   const source: PinEntry['source'] =
@@ -183,7 +289,7 @@ export function templateEntry(img: ComposeImage, id: string): PinEntry {
   return {
     id,
     kind: 'leaf',
-    name: `${img.image} in the ${category}/${app} app template`,
+    name: `${img.image} in the ${tree.label(img.file)}`,
     driver: 'docker',
     source,
     safety: { mode: 'assisted', major: 'assisted' },
@@ -209,30 +315,56 @@ export interface TemplateScan {
 export function scanTemplates(files: Map<string, string>): TemplateScan {
   const pinned: ComposeImage[] = [];
   const unpinned: TemplateScan['unpinned'] = [];
+  const treeIndex = (f: string): number => TREES.indexOf(treeOf(f) as PinTree);
   const ordered = [...files.keys()]
     .filter(isTemplateCompose)
-    .sort((a, b) => Number(a > b) - Number(a < b));
+    .sort((a, b) => treeIndex(a) - treeIndex(b) || Number(a > b) - Number(a < b));
   for (const file of ordered) {
     for (const img of composeImages(files.get(file) as string, file)) {
       if (isPinned(img)) pinned.push(img);
       else unpinned.push({ img, why: unpinnedWhy(img) });
     }
   }
-  const baseId = (img: ComposeImage): string =>
-    `${TEMPLATE_PREFIX}${slug(appOf(img.file).app)}.${slug(img.image.split('/').pop() as string)}`;
+  // One file may write the same reference on several lines (two services of one image): one leaf, its sites counting every line, since one regex cannot tell identical lines apart.
+  const copiesOf = new Map<string, number>();
+  for (const img of pinned) {
+    const key = `${img.file}\0${img.ref}`;
+    copiesOf.set(key, (copiesOf.get(key) ?? 0) + 1);
+  }
+  const firstOf = new Set<string>();
+  const distinct = pinned.filter((img) => {
+    const key = `${img.file}\0${img.ref}`;
+    if (firstOf.has(key)) return false;
+    firstOf.add(key);
+    return true;
+  });
+  // The hold key is the id after its colon, so two trees may not share one: the first tree keeps the bare name and a later tree's app carries its tree name (`tutorial-heartbeat.node`), or a hold for one pin would silently hold the other.
+  const keyOwner = new Map<string, PinTree>();
+  const baseId = (img: ComposeImage): string => {
+    const tree = treeOf(img.file) as PinTree;
+    const local = `${slug(tree.app(img.file))}.${slug(img.image.split('/').pop() as string)}`;
+    const owner = keyOwner.get(local);
+    if (owner === undefined) keyOwner.set(local, tree);
+    const key =
+      owner === undefined || owner === tree
+        ? local
+        : `${slug(tree.prefix.replace(/:$/, ''))}-${local}`;
+    return `${tree.prefix}${key}`;
+  };
+  const baseIds = new Map<ComposeImage, string>(distinct.map((img) => [img, baseId(img)]));
   const count = new Map<string, number>();
-  for (const img of pinned) count.set(baseId(img), (count.get(baseId(img)) ?? 0) + 1);
+  for (const id of baseIds.values()) count.set(id, (count.get(id) ?? 0) + 1);
   const entries: PinEntry[] = [];
   const seen = new Set<string>();
-  for (const img of pinned) {
-    let id = baseId(img);
+  for (const img of distinct) {
+    let id = baseIds.get(img) as string;
     if ((count.get(id) ?? 0) > 1) id = `${id}-${slug(img.service ?? `line${img.line}`)}`;
     if (seen.has(id))
       throw new Error(
         `${img.file}:${img.line}: two template pins resolve to the id ${id}; give the services distinct names`
       );
     seen.add(id);
-    entries.push(templateEntry(img, id));
+    entries.push(templateEntry(img, id, copiesOf.get(`${img.file}\0${img.ref}`)));
   }
   return { entries, unpinned };
 }
@@ -246,9 +378,7 @@ export interface TemplateDrift {
 
 /** The ids the generated set adds, the registry ids it drops and the ids whose entry differs. Pure. */
 export function templateDrift(reg: PinRegistry, want: PinEntry[]): TemplateDrift {
-  const have = new Map(
-    reg.entries.filter((e) => e.id.startsWith(TEMPLATE_PREFIX)).map((e) => [e.id, e])
-  );
+  const have = new Map(reg.entries.filter((e) => isTreeId(e.id)).map((e) => [e.id, e]));
   const wanted = new Map(want.map((e) => [e.id, e]));
   return {
     added: [...wanted.keys()].filter((id) => !have.has(id)),
@@ -265,8 +395,8 @@ export function templateDrift(reg: PinRegistry, want: PinEntry[]): TemplateDrift
  * Every other entry keeps its position and its bytes. Pure.
  */
 export function withTemplates(reg: PinRegistry, want: PinEntry[]): PinRegistry {
-  const first = reg.entries.findIndex((e) => e.id.startsWith(TEMPLATE_PREFIX));
-  const rest = reg.entries.filter((e) => !e.id.startsWith(TEMPLATE_PREFIX));
+  const first = reg.entries.findIndex((e) => isTreeId(e.id));
+  const rest = reg.entries.filter((e) => !isTreeId(e.id));
   const at = first < 0 ? rest.length : first;
   return { ...reg, entries: [...rest.slice(0, at), ...want, ...rest.slice(at)] };
 }
@@ -316,18 +446,26 @@ export function spliceEntries(text: string, prev: PinRegistry, next: PinRegistry
   return [...lines.slice(0, open + 1), bodies.join(',\n'), ...lines.slice(close)].join('\n');
 }
 
-/** The template compose files under `root`, read from disk (the caller lists them; a scan of `packages/json/templates/*\/*`). */
+/** Every compose file of every tree under `root`, read from disk. A submodule tree that is not on disk throws: a scan that skipped it would report its leaves as removed. */
 export function readTemplateFiles(root: string): Map<string, string> {
   const out = new Map<string, string>();
-  const base = path.join(root, TEMPLATE_ROOT);
-  if (!fs.existsSync(base)) return out;
-  for (const category of fs.readdirSync(base, { withFileTypes: true })) {
-    if (!category.isDirectory()) continue;
-    for (const app of fs.readdirSync(path.join(base, category.name), { withFileTypes: true })) {
-      if (!app.isDirectory()) continue;
-      const rel = `${TEMPLATE_ROOT}/${category.name}/${app.name}/docker-compose.yaml`;
-      const abs = path.join(root, rel);
-      if (fs.existsSync(abs)) out.set(rel, fs.readFileSync(abs, 'utf8'));
+  for (const tree of TREES) {
+    const base = path.join(root, tree.root);
+    if (!fs.existsSync(base)) {
+      if (tree.repo !== '.')
+        throw new Error(
+          `${tree.root} is not on disk, so the ${tree.prefix}* leaves cannot be generated or checked (is ${tree.repo} checked out?)`
+        );
+      continue;
+    }
+    for (const ent of fs.readdirSync(base, { withFileTypes: true, recursive: true })) {
+      if (!ent.isFile()) continue;
+      const rel = path
+        .relative(root, path.join(ent.parentPath, ent.name))
+        .split(path.sep)
+        .join('/');
+      if (rel.includes('/node_modules/') || !tree.test(rel)) continue;
+      out.set(rel, fs.readFileSync(path.join(root, rel), 'utf8'));
     }
   }
   return out;
@@ -450,10 +588,123 @@ export function selftestCases(): ControlCase[] {
       'template:app.postgres-one,template:app.postgres-two',
   });
   cases.push({
-    name: 'CONTROL: a compose file outside the template tree is not scanned',
+    name: 'CONTROL: a compose file outside every tree is not scanned, and a nested file of the template tree is not a template',
     ok:
-      scanTemplates(new Map([['packages/cli/templates/x/docker-compose.yml', es]])).entries
-        .length === 0 && !isTemplateCompose('packages/json/templates/a/b/c/docker-compose.yaml'),
+      scanTemplates(new Map([['packages/e2e-tests/fixtures/x/docker-compose.yml', es]])).entries
+        .length === 0 &&
+      !isTemplateCompose('packages/json/templates/a/b/c/docker-compose.yaml') &&
+      !isTemplateCompose('.ci/tutorials/apps/a/b/docker-compose.yml'),
+  });
+  const planted = new Map([
+    [
+      'packages/cli/templates/app-x/docker-compose.yml',
+      'services:\n  api:\n    image: node:20.20.2-alpine\n',
+    ],
+    [
+      'packages/cli/templates/multi/project-a/docker-compose.yml',
+      'services:\n  db:\n    image: postgres:16.14-alpine\n',
+    ],
+    [
+      '.ci/tutorials/apps/heart/docker-compose.yaml',
+      'services:\n  db:\n    image: postgres:16.14-alpine\n',
+    ],
+    [
+      `${TEMPLATE_ROOT}/web/heart/docker-compose.yaml`,
+      'services:\n  db:\n    image: postgres:16-alpine\n',
+    ],
+    [
+      `${TEMPLATE_ROOT}/web/heart2/docker-compose.yaml`,
+      'services:\n  db:\n    image: postgres:16-alpine\n',
+    ],
+    [
+      'compose/otel-collector/docker-compose.yml',
+      'services:\n  o:\n    image: otel/opentelemetry-collector-contrib:0.111.0\n',
+    ],
+    ['private/renet/proxy/docker-compose.yml', 'services:\n  p:\n    image: traefik:v3.7.16\n'],
+    [
+      'packages/cli/templates/elite/docker-compose.yml',
+      `services:\n  a:\n    image: rustfs/rustfs@sha256:${'c'.repeat(64)}\n  b:\n    image: rustfs/rustfs@sha256:${'c'.repeat(64)}\n`,
+    ],
+  ]);
+  const multi = scanTemplates(planted);
+  cases.push({
+    name: 'every tree yields leaves prefixed by its tree, one reference on two lines is one leaf counting both, and a hold key shared by two trees is made distinct',
+    ok:
+      multi.entries.map((e) => e.id).join() ===
+      [
+        'template:heart.postgres',
+        'template:heart2.postgres',
+        'cli-template:app-x.node',
+        'cli-template:elite.rustfs',
+        'cli-template:multi-project-a.postgres',
+        'tutorial:tutorial-heart.postgres',
+        'compose:otel-collector.opentelemetry-collector-contrib',
+        'renet:proxy.traefik',
+      ].join(),
+    detail: multi.entries.map((e) => e.id).join(),
+  });
+  cases.push({
+    name: 'the leaf of a reference written on two lines expects both, and a second tag of the same image in one file gets its service',
+    ok:
+      multi.entries.find((e) => e.id === 'cli-template:elite.rustfs')?.sites[0].expect === 2 &&
+      scanTemplates(
+        new Map([
+          [
+            'packages/cli/templates/t/docker-compose.yml',
+            'services:\n  a:\n    image: redis:7.4.9\n  b:\n    image: redis:8.0.1\n',
+          ],
+        ])
+      )
+        .entries.map((e) => e.id)
+        .join() === 'cli-template:t.redis-a,cli-template:t.redis-b',
+  });
+  const holdKeys = multi.entries.map((e) => e.id.slice(e.id.indexOf(':') + 1));
+  cases.push({
+    name: 'CONTROL: no two generated leaves share a hold key',
+    ok: new Set(holdKeys).size === holdKeys.length,
+    detail: holdKeys.join(),
+  });
+  const proxy = multi.entries.find((e) => e.id === 'renet:proxy.traefik') as PinEntry;
+  cases.push({
+    name: 'a submodule tree writes the submodule as the site repo and the repo-relative file',
+    ok:
+      proxy.sites[0].repo === 'private/renet' &&
+      proxy.sites[0].file === 'proxy/docker-compose.yml' &&
+      proxy.name === 'traefik in the renet proxy compose file',
+    detail: JSON.stringify(proxy.sites),
+  });
+  cases.push({
+    name: 'a planted pin in a CLI template the registry lacks is drift (added), and a leaf with no carrier is drift (removed)',
+    ok: (() => {
+      const base = scanTemplates(new Map([...planted]));
+      const without = new Map([...planted]);
+      without.delete('packages/cli/templates/app-x/docker-compose.yml');
+      const reg2 = withTemplates(
+        {
+          version: 1,
+          submodules: { scanned: [], unscanned: [] },
+          literalExclude: [],
+          ignores: [],
+          entries: [],
+        } as PinRegistry,
+        scanTemplates(without).entries
+      );
+      const d = templateDrift(reg2, base.entries);
+      const gone = new Map([...planted]);
+      gone.delete('compose/otel-collector/docker-compose.yml');
+      const d2 = templateDrift(reg2, scanTemplates(gone).entries);
+      return (
+        d.added.join() === 'cli-template:app-x.node' &&
+        d.removed.length === 0 &&
+        d2.removed.join() === 'compose:otel-collector.opentelemetry-collector-contrib'
+      );
+    })(),
+  });
+  cases.push({
+    name: 'CONTROL: the shipped tree list holds each prefix once and each prefix ends with a colon',
+    ok:
+      new Set(TREES.map((t) => t.prefix)).size === TREES.length &&
+      TREES.every((t) => t.prefix.endsWith(':')),
   });
   const reg = {
     version: 1,

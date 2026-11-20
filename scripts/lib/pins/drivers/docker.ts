@@ -81,7 +81,9 @@ const REDIGEST_LABEL = /^(.*)@([0-9a-f]{12})$/;
  * `clickhouse-server:24.3.3.102-alpine` as version `24.3.3` with the suffix `.102-alpine`,
  * which no other tag carries, so the pin could never have a candidate and read as current.
  */
-const SHAPE = /^(\d+(?:\.\d+)*)(.*)$/;
+const SHAPE = /^v?(\d+(?:\.\d+)*)(.*)$/;
+/** A `v` before the version (traefik:v3.7.16) is part of the series: `3.7.17` is no candidate for it. */
+const vOf = (tag: string): boolean => tag.startsWith('v');
 const PAGES = 5;
 
 interface HubPage {
@@ -220,11 +222,13 @@ export function dockerDriver(
           const m = SHAPE.exec(name);
           const at = typeof r.last_updated === 'string' ? Date.parse(r.last_updated) : Number.NaN;
           listed.push({
-            major: m && m[2] === cur[2] ? Number(m[1].split('.')[0]) : null,
+            major:
+              m && m[2] === cur[2] && vOf(name) === vOf(tag) ? Number(m[1].split('.')[0]) : null,
             id: typeof r.id === 'number' && Number.isFinite(r.id) ? r.id : null,
             at: Number.isNaN(at) ? null : at,
           });
-          if (!m || m[2] !== cur[2] || m[1].split('.').length !== parts) continue;
+          if (!m || vOf(name) !== vOf(tag) || m[2] !== cur[2] || m[1].split('.').length !== parts)
+            continue;
           if (cmpVersion(m[1], cur[1]) <= 0) continue;
           found.set(name, {
             version: `${image}:${name}`,
