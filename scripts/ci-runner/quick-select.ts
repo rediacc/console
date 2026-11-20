@@ -166,6 +166,8 @@ export interface TouchInputs {
   /** package.json scripts now and at the base; base undefined when it could not be read, which counts every npm script as changed if package.json changed. */
   readonly scriptsNow: Readonly<Record<string, string>>;
   readonly scriptsBase: Readonly<Record<string, string>> | undefined;
+  /** Rule 4, the whole-tree fail-open: a gate with no `paths` is touched by any change. Default true (the `--quick` lane must not drop a gate it cannot place); `--narrow` passes false, since it would otherwise select every path-less gate on any edit. */
+  readonly failOpen?: boolean;
 }
 
 /** The first changed file a candidate's `lists`, `names` or `refs` reaches, with the reason, or undefined (rule 1b). */
@@ -241,7 +243,7 @@ export function touchedSlow(candidates: readonly SlowCandidate[], input: TouchIn
         continue;
       }
     }
-    if (readsWholeTree(c) && input.changed.length > 0) {
+    if (input.failOpen !== false && readsWholeTree(c) && input.changed.length > 0) {
       touches.push({
         id: c.id,
         why: 'it declares no paths, so any change may reach what it reads (the --changed fail-open rule)',

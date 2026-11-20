@@ -24,6 +24,9 @@ import { createHash } from 'node:crypto';
  *                                [--changed] [--json] [--list]
  *                                [--merge-output] [--verbose] [--selftest]
  *                                [--lane <lane> --shard i/N]
+ *                                [--narrow [--print] [--paths <p...> | --whole-tree]]
+ *
+ * `--narrow` selects from the last receipt's non-carried fails, their learned clusters, and the gates the CHANGE SET touches. The change set is the staged paths plus the commits since the receipt's head; other dirty or untracked files in a shared tree are ignored. `--paths <p...>` names the set instead, and `--whole-tree` judges every path that differs from the receipt's head in the working tree.
  *
  * `--lane <lane> --shard i/N` (PLAN-ci-time-budget T2.10) replays one committed CI leg of
  * a sharded lane locally, from `.ci/config/shards/<lane>.json`. Today this only resolves
@@ -49,10 +52,10 @@ import {
   type Grant,
   gateEnv,
   gateSpawnArgv,
-  NONCRITICAL_NICE,
   killLiveGates,
   LEASE_HELD_ENV,
   liveGates,
+  NONCRITICAL_NICE,
   processAlive,
   psFailureState,
   refuseNewGates,
@@ -238,6 +241,10 @@ interface Options {
   narrow: boolean;
   /** `--narrow --print`: print the narrow set and its command, run nothing. */
   narrowPrint: boolean;
+  /** `--narrow --paths <p...>`: the paths the commit in hand will take; the touched-gate rules judge these and no other path. */
+  narrowPaths?: string[];
+  /** `--narrow --whole-tree`: judge every path that differs from the receipt's head in the working tree, other sessions' dirty files included (the behaviour before `--paths` and the staged default). */
+  narrowWholeTree?: boolean;
   /** `--events <abs>`: the machine stream (run-start, gate-red, stage-done, run-end). Default for a --quick run: <receipt dir>/ci-quick-events/<runId>.jsonl. */
   events?: string;
 }
@@ -394,6 +401,20 @@ function parseArgs(argv: readonly string[]): Options {
       case '--print':
         opts.narrowPrint = true;
         break;
+      case '--whole-tree':
+        opts.narrowWholeTree = true;
+        break;
+      case '--paths': {
+        // Variadic: every following argument up to the next flag; a comma also separates, so `--paths a,b` and `--paths a b` read alike.
+        const given: string[] = [];
+        while (argv[i + 1] !== undefined && !argv[i + 1].startsWith('--')) {
+          given.push(...argv[i + 1].split(',').filter(Boolean));
+          i += 1;
+        }
+        if (given.length === 0) throw new Error('ci-runner: --paths needs at least one path');
+        opts.narrowPaths = [...(opts.narrowPaths ?? []), ...given];
+        break;
+      }
       case '--events': {
         // ABSOLUTE ONLY, as --receipt-out: npm runs scripts from whichever directory it chose.
         const out = value(i, arg);
@@ -457,6 +478,12 @@ function parseArgs(argv: readonly string[]): Options {
   }
   if (opts.narrowPrint && !opts.narrow)
     throw new Error('ci-runner: --print goes with --narrow, which it prints instead of running.');
+  if ((opts.narrowPaths !== undefined || opts.narrowWholeTree === true) && !opts.narrow)
+    throw new Error(
+      'ci-runner: --paths and --whole-tree go with --narrow, whose change set they pick.'
+    );
+  if (opts.narrowPaths !== undefined && opts.narrowWholeTree === true)
+    throw new Error('ci-runner: --paths and --whole-tree are two change sets; name one.');
   if (
     opts.narrow &&
     (opts.only !== undefined ||
@@ -2115,6 +2142,80 @@ async function selftest(): Promise<number> {
     '--narrow must refuse --only, being its own selection'
   );
   require_(!refusedArgs(['--quick', '--narrow', '--print']), 'CONTROL: --narrow --print parses');
+  require_(
+    refusedArgs(['--paths', 'a']) && refusedArgs(['--whole-tree']),
+    '--paths and --whole-tree without --narrow must be refused'
+  );
+  require_(
+    refusedArgs(['--narrow', '--paths', 'a', '--whole-tree']) &&
+      refusedArgs(['--narrow', '--paths']),
+    '--paths with --whole-tree, or with no path, must be refused'
+  );
+  require_(
+    JSON.stringify(parseArgs(['--narrow', '--paths', 'a', 'b,c', '--print']).narrowPaths) ===
+      '["a","b","c"]',
+    '--paths must read every argument up to the next flag, commas included'
+  );
+  {
+    const pathless = [{ id: 'g', run: 'npm run g', paths: [], leaves: [], ciOnly: undefined }];
+    const base = {
+      root: REPO_ROOT,
+      changed: ['Dockerfile'],
+      matches: matchesAny,
+      scriptsNow: {},
+      scriptsBase: {},
+    };
+    require_(
+      touchedSlow(pathless, base).length === 1,
+      'CONTROL: the quick lane still selects a path-less gate on any change (rule 4)'
+    );
+    require_(
+      touchedSlow(pathless, { ...base, failOpen: NARROW_FAIL_OPEN }).length === 0,
+      '--narrow must not select a path-less gate just because something changed (rule 4 off)'
+    );
+  }
+  // THE NARROW CHANGE SET IS THE COMMIT'S, NOT THE TREE'S (hostinger bug report 2026-11-20, defect 7).
+  {
+    const fakeGit =
+      (calls: string[][]) =>
+      (args: readonly string[]): string | undefined => {
+        calls.push([...args]);
+        const a = args.join(' ');
+        if (a === 'diff --cached --name-only')
+          return 'Dockerfile\npackages/cli/templates/single-service/docker-compose.yml\npackages/cli/src/embedded.generated.ts';
+        if (a === 'diff --name-only HEAD0 HEAD') return '';
+        if (a === 'diff --name-only HEAD0')
+          return 'Dockerfile\npackages/cli/templates/single-service/docker-compose.yml\npackages/cli/src/embedded.generated.ts\n.claude/other-session.py';
+        if (a === 'ls-files --others --exclude-standard') return '.claude/untracked-peer.py';
+        return undefined;
+      };
+    const calls: string[][] = [];
+    const staged = narrowChangeSet({}, 'HEAD0', fakeGit(calls));
+    require_(
+      staged?.paths.length === 3 && !staged.paths.some((p) => p.startsWith('.claude/')),
+      "the default narrow change set is the staged three; a peer session's dirty files must not be in it"
+    );
+    require_(
+      !calls.some((c) => c[0] === 'ls-files') &&
+        !calls.some((c) => c.join(' ') === 'diff --name-only HEAD0'),
+      'the default narrow change set must not read the working tree (no untracked listing, no diff against the receipt head)'
+    );
+    const whole = narrowChangeSet({ narrowWholeTree: true }, 'HEAD0', fakeGit([]));
+    require_(
+      whole?.paths.includes('.claude/other-session.py') === true &&
+        whole.paths.includes('.claude/untracked-peer.py'),
+      '--whole-tree must still see every dirty and untracked path'
+    );
+    const explicit = narrowChangeSet({ narrowPaths: ['x/y.ts'] }, 'HEAD0', fakeGit([]));
+    require_(
+      explicit?.paths.length === 1 && explicit.paths[0] === 'x/y.ts',
+      '--paths must be the whole change set, whatever is staged or dirty'
+    );
+    require_(
+      narrowChangeSet({}, 'HEAD0', () => undefined) === undefined,
+      'CONTROL: git that cannot answer yields no change set, not an empty one read as clean'
+    );
+  }
   require_(
     receiptDue(parseArgs(['--quick']), false) &&
       !receiptDue(parseArgs(['--quick', '--narrow']), false) &&
@@ -5410,6 +5511,40 @@ function narrowScript(main: string | undefined): string {
   return main === undefined ? 'ci:quick' : 'ci';
 }
 
+/** Rule 4 (a gate with no `paths` is touched by any change) is off for `--narrow`: with it on, check:ci-account-server and every other path-less gate joined the set for any edit (hostinger bug report 2026-11-20, defect 7). */
+const NARROW_FAIL_OPEN = false;
+
+/**
+ * THE CHANGE SET `--narrow` judges, from what the commit in hand takes and not from the working tree (hostinger bug report 2026-11-20, defect 7: a 3-file commit selected gates for every dirty path in a shared tree and reported other sessions' uncommitted files).
+ * `--paths` names the set outright; `--whole-tree` keeps the old reading (`git diff <head>` plus untracked files); the default is the staged set plus the commits since the receipt's head, so a commit already made is still judged. `git` is a parameter so the selftest can plant a dirty tree. Undefined when git cannot answer.
+ */
+function narrowChangeSet(
+  opts: Pick<Options, 'narrowPaths' | 'narrowWholeTree'>,
+  head: string,
+  git: (args: readonly string[]) => string | undefined
+): { paths: string[]; source: string } | undefined {
+  const lines = (raw: string | undefined): string[] | undefined =>
+    raw === undefined ? undefined : raw.split('\n').filter(Boolean);
+  if (opts.narrowPaths !== undefined)
+    return { paths: [...new Set(opts.narrowPaths)], source: '--paths' };
+  if (opts.narrowWholeTree === true) {
+    const named = lines(git(['diff', '--name-only', head]));
+    if (named === undefined) return undefined;
+    const untracked = lines(git(['ls-files', '--others', '--exclude-standard'])) ?? [];
+    return {
+      paths: [...new Set([...named, ...untracked])],
+      source: `whole working tree since ${head.slice(0, 9)}`,
+    };
+  }
+  const staged = lines(git(['diff', '--cached', '--name-only']));
+  const committed = lines(git(['diff', '--name-only', head, 'HEAD']));
+  if (staged === undefined || committed === undefined) return undefined;
+  return {
+    paths: [...new Set([...committed, ...staged])],
+    source: `staged plus committed since ${head.slice(0, 9)}; other dirty files ignored`,
+  };
+}
+
 /**
  * THE NARROW SET (agent/plans/PLAN-gate-scheduling-learned.md section 5): F, the last receipt's fails carried-reds.json does not cover; C, the learned clusters holding any of them; T, the gates whose inputs the fix touched, quick-select.ts rules 1-3 against receipt.head..working tree (rule 4, "no paths means touched", is excluded on purpose: it would select every path-less gate on any edit); A, the gates the changed classes are associated with. Pure over its inputs except the git and file reads it names.
  */
@@ -5449,16 +5584,12 @@ function narrowPlan(
   const head = typeof receipt.head === 'string' ? receipt.head : '';
   let changed: string[] | undefined;
   let T: string[] = [];
+  let changeSource = '';
   if (head !== '') {
-    const named = gitTry(['diff', '--name-only', head]);
-    if (named !== undefined) {
-      const untracked = (gitTry(['ls-files', '--others', '--exclude-standard']) ?? '')
-        .split('\n')
-        .filter(Boolean);
-      changed = expandGitlinks(
-        [...new Set([...named.split('\n').filter(Boolean), ...untracked])],
-        (t) => process.stderr.write(t)
-      );
+    const picked = narrowChangeSet(opts, head, gitTry);
+    if (picked !== undefined) {
+      changeSource = picked.source;
+      changed = expandGitlinks(picked.paths, (t) => process.stderr.write(t));
     }
   }
   if (changed !== undefined) {
@@ -5487,6 +5618,7 @@ function narrowPlan(
         matches: matchesAny,
         scriptsNow: realQuickDiffDeps(opts).scriptsNow(),
         scriptsBase,
+        failOpen: NARROW_FAIL_OPEN,
       }
     ).map((t) => t.id);
     if ('model' in model)
@@ -5505,7 +5637,7 @@ function narrowPlan(
     `  C  their learned clusters ${list(C)}${modelNote}\n`,
     changed === undefined
       ? `  T  UNKNOWN: git could not list what changed since the receipt's head '${head === '' ? '(none)' : head}', so no touched gate is in the set\n`
-      : `  T  inputs the fix touched (quick-select rules 1-3, ${changed.length} changed file(s) since ${head.slice(0, 9)}) ${list(T)}\n`,
+      : `  T  inputs the fix touched (quick-select rules 1-3, ${changed.length} changed file(s): ${changeSource}) ${list(T)}\n`,
     `  A  associated with the changed classes ${list(A)}${modelNote}\n`,
     `  narrow set: ${ids.size} gate(s)\n`,
   ];
