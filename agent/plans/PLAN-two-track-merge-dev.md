@@ -152,10 +152,11 @@ First close the loopback-DNS hole: a `connect` to port 53 counts as network what
   Depends on: A1.
   Accept: the caller, the hostname and the file:line are recorded on the item with a ruling: incidental (go to A2) or under test (stop; the gate stays whole-tree).
     (ticked) 2026-11-20T12:51:48Z by d778be9d: strace -f -e trace=connect,execve,clone,clone3,sendto,sendmmsg on npm run check:ci-account-server (rc 0, 4908 tests): 2 port-53 connects to 10.255.255.254, both from a vitest worker (node .../private/account/node_modules/vitest) resolving nothing.example.invalid, call site private/account/tests/integration/no-live-stripe.test.ts:28; ruling: incidental (the assertion needs only a non-wrapper error), go to A2; recorded on #527aa5b2
-- [ ] A2 [writer] Remove the incidental lookup at its source as A0 names it (a loopback literal or a test hosts entry for a fixture hostname, or a disabled update check), changing nothing any test asserts.
+- [x] A2 [writer] Remove the incidental lookup at its source as A0 names it (a loopback literal or a test hosts entry for a fixture hostname, or a disabled update check), changing nothing any test asserts.
   Owns: the files A0 names; the lead writes them into the brief, and they must fall inside this plan's Owns or the plan header is amended first.
   Depends on: A0 ruling incidental.
   Accept: `npm run -s check:ci-account-server` rc 0 with the same test count as before (the vitest summary line), and an strace run shows no port-53 connect.
+    (ticked) 2026-11-20T13:07:46Z by d778be9d: commit:26e46869d (account 70a89a3): the no-live-stripe passthrough fetches http://127.0.0.1:9/x instead of https://nothing.example.invalid/x; strace -f -e trace=connect on npm run -s check:ci-account-server: rc 0, 0 port-53 connects, Tests 4911 passed (the 4908 of the A0 baseline plus the 3 of the new tests/integration/totp-step.test.ts, private/account 7be4a78 + a62fea8, the TOTP flake fix the first A2 run uncovered)
 - [ ] A3 [lead] Inside the pinned image, run `npx tsx scripts/ci-runner/path-trace.ts --gate check:ci-account-server`, adopt the traced `paths` into scripts/ci-runner/manifest.ts with `pathsOrigin: 'traced'`, and regenerate the lock and the trace ledger row (scripts/ci-runner/trace-ledger.ts).
   Owns: scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json, scripts/ci-runner/trace-ledger.ts
   Depends on: A2, R1.
