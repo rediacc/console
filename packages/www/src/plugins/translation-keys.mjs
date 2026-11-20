@@ -36,19 +36,36 @@ const CLI_LOCALES_PATH = path.resolve(__dirname, '../../../cli/src/i18n/locales'
  * cli-application, 2026-11-19, in the kept ci:quick clone). `astro.config.mjs` passes this digest
  * to the remark plugin as an option, Astro hashes the config, and a changed catalog clears the store.
  *
+ * A missing locales directory digests as empty (the catalogs resolve to nothing then too), and an entry
+ * that is not a readable directory, a dangling symlink included, is skipped.
+ *
+ * @param {string} [root] the locales directory; a parameter so a test can point it at a fixture
  * @returns {string}
  */
-export function catalogDigest() {
+export function catalogDigest(root = CLI_LOCALES_PATH) {
   const hash = crypto.createHash('sha256');
-  for (const lang of fs.readdirSync(CLI_LOCALES_PATH).sort()) {
-    const dir = path.join(CLI_LOCALES_PATH, lang);
-    if (!fs.statSync(dir).isDirectory()) continue;
+  if (!fs.existsSync(root)) return hash.digest('hex');
+  for (const lang of fs.readdirSync(root).sort()) {
+    const dir = path.join(root, lang);
+    if (!isDirectory(dir)) continue;
     for (const file of fs.readdirSync(dir).sort()) {
       if (file.endsWith('.json'))
         hash.update(`${lang}/${file}\0`).update(fs.readFileSync(path.join(dir, file)));
     }
   }
   return hash.digest('hex');
+}
+
+/**
+ * @param {string} target
+ * @returns {boolean} false for a file, and for a dangling symlink that statSync cannot follow.
+ */
+function isDirectory(target) {
+  try {
+    return fs.statSync(target).isDirectory();
+  } catch {
+    return false;
+  }
 }
 
 /** Language assumed when a document declares none. */

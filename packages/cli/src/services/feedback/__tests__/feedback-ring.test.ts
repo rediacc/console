@@ -167,7 +167,7 @@ describe('recordCommand', () => {
     expect(entry.stderrTail.length).toBeLessThanOrEqual(4096);
   });
 
-  it('captures what outputService writes to the terminal, and keeps a long unbroken run', () => {
+  it('captures what outputService writes to the terminal, and drops a long unbroken run', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     installStderrTap();
     outputService.error(`boom ${SECRET}`);
@@ -175,13 +175,18 @@ describe('recordCommand', () => {
     const [entry] = readRing();
     expect(entry.stderrTail).toContain('boom');
     expect(entry.stderrTail).not.toContain('SECRETVALUE');
-    // A single run larger than the bound keeps its end instead of wiping the tail.
+    // A single run larger than the bound is dropped whole: a slice of it could be the tail of a cut secret.
     resetStderrTail();
-    writeStderr(`${'A'.repeat(20000)}\n`);
+    writeStderr(`${SECRET}${'A'.repeat(20000)}`);
     recordCommand({ argv: ['config', 'init'], exitCode: 1 });
-    const last = readRing().at(-1);
-    expect(last?.stderrTail.length).toBeGreaterThan(0);
-    expect(last?.stderrTail.length).toBeLessThanOrEqual(4096);
+    expect(readRing().at(-1)?.stderrTail).toBe('');
+    // Control: the same volume with whitespace keeps the end of the output.
+    resetStderrTail();
+    writeStderr(`${SECRET} ${'A '.repeat(10000)}tail-marker\n`);
+    recordCommand({ argv: ['config', 'init'], exitCode: 1 });
+    const kept = readRing().at(-1)?.stderrTail ?? '';
+    expect(kept).toContain('tail-marker');
+    expect(kept).not.toContain('ECRETVALUE');
     // Control: nothing written, nothing captured.
     resetStderrTail();
     recordCommand({ argv: ['config', 'init'], exitCode: 1 });

@@ -42,8 +42,8 @@ function boundedTail(text: string, max: number): string {
   if (text.length <= max) return text;
   const cut = text.slice(-max);
   const boundary = cut.search(/\s/);
-  // No whitespace in the window: one long run (a base64 blob) larger than the bound. Keep its end rather than wipe the tail; the caller scrubs the result.
-  return boundary >= 0 ? cut.slice(boundary) : cut;
+  // No whitespace in the window: one long run (a base64 blob) larger than the bound. Any slice of it could be the tail of a cut secret, so it is dropped.
+  return boundary >= 0 ? cut.slice(boundary) : '';
 }
 
 /**

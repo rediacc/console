@@ -13,6 +13,12 @@ describe('install-commands', () => {
     expect(WK_SITE_ORIGIN).toMatch(/^https:\/\/[a-z0-9.-]+$/);
   });
 
+  it('pins the production host literally, so a registry host change is a reviewed test edit', () => {
+    expect(WK_SITE_ORIGIN).toBe('https://www.rediacc.com');
+    expect(QUICK_INSTALL_UNIX_COMMAND).toBe('curl -fsSL https://www.rediacc.com/install.sh | bash');
+    expect(QUICK_INSTALL_WIN_COMMAND).toBe('irm https://www.rediacc.com/install.ps1 | iex');
+  });
+
   it('pins the unix one-liner', () => {
     expect(QUICK_INSTALL_UNIX_COMMAND).toBe(`curl -fsSL ${WK_SITE_ORIGIN}/install.sh | bash`);
   });
