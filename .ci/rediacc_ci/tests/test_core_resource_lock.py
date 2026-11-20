@@ -479,7 +479,8 @@ def test_a_lock_swapped_for_a_symlink_after_the_check_refuses(monkeypatch) -> No
 
 
 @pytest.mark.usefixtures("runtime")
-def test_a_lock_removed_after_the_open_is_not_held(monkeypatch) -> None:
+def test_a_lock_removed_after_the_open_refuses(monkeypatch) -> None:
+    """The open fd's inode may still be flock-held by an ancestor; reading it as not held would let rdc.sh wrap a second holder on a fresh file."""
     path = resource_lock.lock_path("fleet")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("")
@@ -493,9 +494,6 @@ def test_a_lock_removed_after_the_open_is_not_held(monkeypatch) -> None:
 
     monkeypatch.setattr(resource_lock.os, "open", removing_open)
     try:
-        assert (
-            resource_lock.main(["held-by-ancestor", "--resource", "fleet"])
-            == resource_lock.EXIT_NOT_HELD
-        )
+        assert resource_lock.main(["held-by-ancestor", "--resource", "fleet"]) == 2
     finally:
         monkeypatch.undo()
