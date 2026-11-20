@@ -35,20 +35,20 @@ def sh(cwd, *args) -> str:
 
 def variant_checks(tag: str, pick) -> None:
     """The selector contract; `pick(role, merged, landing_open, arm)` is the function under test."""
-    L, D = "landing", "development"
-    control(tag + " landing merged promotes", pick(L, True, False, M.ARM_FINISH) is M.V_LOOP_NEXT_PROMOTE)
-    control(tag + " landing merged ignores open", pick(L, True, True, M.ARM_OPEN) is M.V_LOOP_NEXT_PROMOTE)
-    control(tag + " dev finish waits", pick(D, False, True, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE_WAIT)
-    control(tag + " dev finish, landing closed", pick(D, False, False, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE)
-    control(tag + " dev no PR names the draft", pick(D, False, True, M.ARM_OPEN) is M.V_LOOP_NEXT_NO_PR_DRAFT)
-    control(tag + " landing finish merges", pick(L, False, False, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE)
+    land, dev = "landing", "development"
+    control(tag + " landing merged promotes", pick(land, True, False, M.ARM_FINISH) is M.V_LOOP_NEXT_PROMOTE)
+    control(tag + " landing merged ignores open", pick(land, True, True, M.ARM_OPEN) is M.V_LOOP_NEXT_PROMOTE)
+    control(tag + " dev finish waits", pick(dev, False, True, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE_WAIT)
+    control(tag + " dev finish, landing closed", pick(dev, False, False, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE)
+    control(tag + " dev no PR names the draft", pick(dev, False, True, M.ARM_OPEN) is M.V_LOOP_NEXT_NO_PR_DRAFT)
+    control(tag + " landing finish merges", pick(land, False, False, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE)
     for role in (None, ""):
         control(tag + " no record merged", pick(role, True, False, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGED)
         control(tag + " no record finish", pick(role, False, True, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE)
         control(tag + " no record open", pick(role, False, False, M.ARM_OPEN) is M.V_LOOP_NEXT_NO_PR_OPEN)
 
 
-def mutant_pick(role, merged, landing_open, arm=M.ARM_FINISH):
+def mutant_pick(_role, merged, _landing_open, arm=M.ARM_FINISH):
     """Ignores the role: today's text everywhere."""
     if merged:
         return M.V_LOOP_NEXT_MERGED

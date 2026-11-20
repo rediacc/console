@@ -113,7 +113,7 @@ def install_system_deps(
     cwd: pathlib.Path | str,
     runner: typing.Callable[..., typing.Any] = subprocess.run,
     sleep: typing.Callable[[float], None] = time.sleep,
-    fallback: typing.Callable[[], None] = apt_retry.system_fallback,
+    fallback: typing.Callable[[], typing.Any] = apt_retry.system_fallback,
 ) -> bool:
     """True when apt ran, False when every system package was already installed. Raises RefusedError naming the step when the dry run is unreadable or apt fails or passes SYSTEM_DEPS_TIMEOUT_S."""
     base = ["npx", "--no-install", "playwright", "install-deps", browser]

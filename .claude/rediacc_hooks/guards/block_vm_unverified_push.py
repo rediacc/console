@@ -904,7 +904,7 @@ def run(ev):
     except ImportError as exc:
         ev.warn(UNEXAMINED % ("the vm-check trigger or receipt module could not import (%s)" % exc))
         return hookio.ALLOW
-    blocks = []
+    blocks: list[str] = []
     admitted = []
     for tree_root, pushes in groups.items():
         rows = _judge_tree(ev, tree_root, pushes, trigger, receipt_mod, blocks)

@@ -12,6 +12,7 @@ import importlib.util
 import json
 import pathlib
 import tempfile
+import typing
 
 import wl_planconc as X
 import wl_plandeps as D
@@ -150,7 +151,8 @@ check("header: no structural errors", h.errors, ())
 _shared = D.parse_header(plan(dep="PLAN-a.md", extra="Depends-On: PLAN-b.md\n"))
 check("header: errors is an immutable tuple", isinstance(_shared.errors, tuple), True)
 try:
-    _shared.fields[D.FIELD].errors = ("x",)
+    _field: typing.Any = _shared.fields[D.FIELD]
+    _field.errors = ("x",)
     _frozen = False
 except AttributeError:
     _frozen = True

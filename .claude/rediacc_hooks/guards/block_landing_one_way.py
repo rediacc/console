@@ -222,7 +222,7 @@ def _push_reason(args, repo, landing, dev):
         parsed.on("delete") or parsed.on("all") or parsed.on("mirror")
     ):
         pairs = [(current, current)] if current else []
-    offenders = set()
+    offenders: set[str] = set()
     for spec_src, spec_dst in pairs:
         src = (current or "HEAD") if spec_src == "HEAD" else spec_src
         dst = current if spec_dst == "HEAD" else spec_dst

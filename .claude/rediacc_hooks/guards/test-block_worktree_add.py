@@ -855,7 +855,7 @@ _lp_sibling = str(_lp_main) + guard.LANDING_SUFFIX
 _lp_bare = _LP / "split"
 _lp_bare.mkdir()
 _lp_git(_lp_bare, "init", "-q", "--separate-git-dir", str(_LP / "store"))
-_lp_rows = [("no record: the sibling alone", guard.landing_paths(str(_lp_main)), (_lp_sibling,))]
+_lp_rows: list[tuple[str, object, tuple[str, ...]]] = [("no record: the sibling alone", guard.landing_paths(str(_lp_main)), (_lp_sibling,))]
 guard.commit_policy.write_landing_record(str(_lp_main), str(_lp_elsewhere), "0101-1")
 _lp_rows += [
     (
@@ -871,12 +871,12 @@ _lp_rows += [
     ("a separate store: no sibling", guard.landing_paths(str(_lp_bare)), ()),
     ("no repository", guard.landing_paths(str(_LP)), ()),
 ]
-for label, got, want in _lp_rows:
-    if got != want:
+for label, got, want_paths in _lp_rows:
+    if got != want_paths:
         failures.append("landing paths: %s" % label)
-    print("%-40s %s" % (label[:40], "ok" if got == want else "*** FAIL *** %r != %r" % (got, want)))
+    print("%-40s %s" % (label[:40], "ok" if got == want_paths else "*** FAIL *** %r != %r" % (got, want_paths)))
 # The bound path through the dispatcher: with CLAUDE_PROJECT_DIR in the fixture, a removal of the recorded tree is refused, and the same verb on a path beside it is not.
-for label, command, want in (
+for label, command, want_rc in (
     ("the recorded tree removed", "git worktree remove %s" % _lp_elsewhere, 2),
     ("control: a path beside it", "git worktree remove %s-x" % _lp_elsewhere, 0),
 ):
@@ -889,11 +889,11 @@ for label, command, want in (
         env=dict(ENV, CLAUDE_PROJECT_DIR=str(_lp_main)),
         cwd=ROOT,
     )
-    if _proc.returncode != want:
+    if _proc.returncode != want_rc:
         failures.append("landing record: %s" % label)
     print(
         "%-40s want=rc%d got=rc%d %s"
-        % (label, want, _proc.returncode, "ok" if _proc.returncode == want else "*** FAIL ***")
+        % (label, want_rc, _proc.returncode, "ok" if _proc.returncode == want_rc else "*** FAIL ***")
     )
 
 print("== the comment scanners, on the helper (%d rows)" % len(CODE_TEXT))
