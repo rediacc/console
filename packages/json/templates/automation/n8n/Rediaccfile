@@ -8,7 +8,7 @@ up() {
   echo "Starting n8n..."
 
   # Auto-generate encryption key on first run
-  local key_file="./n8n-data/encryption-key.txt"
+  local key_file="${REDIACC_WORKING_DIR:?REDIACC_WORKING_DIR is not set}/n8n-data/encryption-key.txt"
 
   if [ ! -f "$key_file" ]; then
     echo "First run detected - generating encryption key..."

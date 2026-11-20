@@ -198,3 +198,66 @@ services:
     for needle in ("/proc", "/sys", "HOST_ROOT", "host root"):
         assert any(needle in r for r in got), (needle, got)
     assert not any("DOCKER_SOCKET" in r or "/srv/data" in r for r in got), got
+
+
+# ---------------------------------------------------------------------------- secrets stay out of the source tree
+#
+# The lifecycle suite runs each Rediaccfile with the template directory as cwd. A secret, key or password file written with a relative path lands in that source tree: plausible's `./plausible-secret.txt` was left untracked and not ignored by a suite run, one staging command from a committed secret. State a Rediaccfile generates goes under `${REDIACC_WORKING_DIR}` (renet exports it in every deploy, and it is the same directory there). Line-based like the scan above. NOT SCANNED: a path built by concatenation across lines, or a file written under a name that carries no secret/key/credential/password/token word (heartbeat's ignored compose `.env`).
+
+_SECRET_WORD = r"(?:secret|key|cred|passw|token)"
+_REL_ASSIGN = re.compile(
+    r"""^\s*(?:local\s+|export\s+)?([A-Za-z_]*"""
+    + _SECRET_WORD
+    + r"""[A-Za-z_]*)=["']?(?![/$"'~])(\S+?)["']?\s*$""",
+    re.IGNORECASE,
+)
+_REL_REDIRECT = re.compile(
+    r"""\s>>?\s*["']?(?![/$"'~&])(\S*""" + _SECRET_WORD + r"""\S*?)["']?\s*(?:$|[;&|])""",
+    re.IGNORECASE,
+)
+
+
+def secret_path_refusals(text: str) -> list[str]:
+    """Lines of a Rediaccfile that write a secret-named file with a path relative to the template directory."""
+    out: list[str] = []
+    for n, line in enumerate(text.splitlines(), 1):
+        if line.lstrip().startswith("#"):
+            continue
+        m = _REL_ASSIGN.match(line)
+        if m and re.search(r"[./]", m.group(2)):
+            out.append(
+                "line %d: %s=%s is relative to the template directory" % (n, m.group(1), m.group(2))
+            )
+            continue
+        m = _REL_REDIRECT.search(line)
+        if m:
+            out.append("line %d: writes %s relative to the template directory" % (n, m.group(1)))
+    return out
+
+
+def test_no_rediaccfile_writes_a_secret_into_its_own_directory() -> None:
+    files = sorted(TEMPLATES.rglob("Rediaccfile"))
+    assert len(files) >= 20, "found only %d Rediaccfiles under %s" % (len(files), TEMPLATES)
+    bad = {
+        str(f.relative_to(paths.repo_root())): r
+        for f in files
+        if (r := secret_path_refusals(f.read_text(encoding="utf-8")))
+    }
+    assert not bad, (
+        "Rediaccfiles writing a secret into the template directory (use ${REDIACC_WORKING_DIR}/...):\n"
+        + "\n".join("  %s: %s" % (k, "; ".join(v)) for k, v in bad.items())
+    )
+
+
+def test_the_secret_scan_catches_the_plausible_shape_and_passes_the_fix() -> None:
+    """Planted controls: the shape that shipped is refused, the corrected one is not."""
+    before = (
+        'up() {\n  local secret_file="./plausible-secret.txt"\n  echo "K=1" > "$secret_file"\n}\n'
+    )
+    assert secret_path_refusals(before), "the pre-fix plausible shape must be refused"
+    assert secret_path_refusals('local key_file="n8n-data/encryption-key.txt"\n')
+    assert secret_path_refusals('echo "x" > ./admin-credentials.txt\n')
+    after = 'local secret_file="${REDIACC_WORKING_DIR:?not set}/plausible-secret.txt"\n'
+    assert not secret_path_refusals(after)
+    assert not secret_path_refusals('local key_file="/mnt/state/key.txt"\n# key_file="./x.txt"\n')
+    assert not secret_path_refusals("cat > .env <<EOF\nPGPASSWORD=1\nEOF\n")

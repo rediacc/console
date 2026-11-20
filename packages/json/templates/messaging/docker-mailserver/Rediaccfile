@@ -21,7 +21,7 @@ up() {
   echo ""
 
   # Auto-create admin account on first run
-  local credentials_file="./docker-data/dms/admin-credentials.txt"
+  local credentials_file="${REDIACC_WORKING_DIR:?REDIACC_WORKING_DIR is not set}/docker-data/dms/admin-credentials.txt"
 
   if [ ! -f "$credentials_file" ]; then
     echo "First run detected - creating admin mail account..."
