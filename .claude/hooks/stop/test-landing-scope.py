@@ -3,7 +3,7 @@
 
     python3 .claude/hooks/stop/test-landing-scope.py
 
-Two trees of one repository: the main checkout on the development branch and a sibling linked tree on the PR's branch, named by a landing record. Every case runs over real temporary repositories; the PR read (`wl_ci.pr_link`) is a stub answering per branch, and the landing record reaches `wl_prscope.loop_state` through its `landing` seam, since commit_policy's reader is LT1's. Each fire case has a control without the record, which must read exactly as before.
+Two trees of one repository: the main checkout on the development branch and a sibling linked tree on the PR's branch, named by a landing record. Every case runs over real temporary repositories; the PR read (`wl_ci.pr_link`) is a stub answering per branch, and the landing record reaches `wl_prscope.loop_state` through its `landing` seam, since commit_policy's reader is LT1's. The real Stop hook then runs over a red CI read from a copy of the hooks whose commit_policy carries a stand-in for that reader. Each fire case has a control without the record, which must read exactly as before.
 
 A landing stop sees only the PR branch's items and no queue; a development stop sees the queue and its draft, parks the draft's CI, review and finish line, and is never offered the merge; on `main` the landing branch is no second live branch; the landing tree is absent from the unlanded-lease survey, and a lease cut in the landing tree is judged against that tree's own HEAD.
 """
@@ -32,7 +32,7 @@ def _by_file(name):
 
 controls = _by_file("controls")
 runtmp = _by_file("runtmp")
-T = controls.Controls("landing-scope", floor=45)
+T = controls.Controls("landing-scope", floor=60)
 check = T.check
 
 ME = "cafe0000"
@@ -369,6 +369,131 @@ def control_worktrees(tmp, wl_worktrees):
     )
 
 
+# The real hook's CI read, as test_wl_ci_status.py serves it (that module imports pytest; this file runs under a bare python3).
+GH_SHIM = """#!/bin/bash
+for a in "$@"; do
+    case "$a" in
+        *lastEditedAt*) cat "%(base)s/ci-fresh.json"; exit 0 ;;
+        query=*) cat "%(base)s/ci-rollup.json"; exit 0 ;;
+    esac
+done
+case "$*" in
+    *actions/jobs/*) cat "%(base)s/ci-job.json"; exit 0 ;;
+esac
+echo '{}'
+"""
+CI_FRESH = (
+    '{"data":{"repository":{"pullRequests":{"nodes":[{"number":543,'
+    '"lastEditedAt":"2999-01-01T00:00:00Z","updatedAt":"2999-01-01T00:00:00Z"}]}}}}\n'
+)
+CI_JOB = '{"run_id":30514648812,"run_attempt":1,"steps":[{"name":"Shell format","conclusion":"failure"}]}\n'
+CI_RED = (
+    '{"data":{"repository":{"pullRequests":{"nodes":[{"number":543,"url":"u",'
+    '"commits":{"nodes":[{"commit":{"oid":"deadsha0000","statusCheckRollup":'
+    '{"state":"FAILURE","contexts":{"totalCount":1,"pageInfo":{"hasNextPage":false,'
+    '"endCursor":null},"nodes":[{"__typename":"CheckRun","name":"Quality / Static",'
+    '"status":"COMPLETED","conclusion":"FAILURE","databaseId":90784763855,'
+    '"detailsUrl":"https://x/job/90784763855","checkSuite":{"workflowRun":'
+    '{"databaseId":30514648812}}}]}}}}]}}]}}}}\n'
+)
+# LT1's reader, planted in the hook copy's commit_policy until LT1 lands: the record in the common git dir.
+LANDING_STAND_IN = '''
+
+def landing_record(repo_root):
+    """Stand-in for LT1 (test-landing-scope.py): the common git dir's rediacc-landing.json."""
+    import json as _json
+
+    common = git(["rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=repo_root)
+    try:
+        with open(os.path.join(common or "", "rediacc-landing.json"), encoding="utf-8") as fh:
+            return _json.load(fh)
+    except (OSError, ValueError):
+        return None
+'''
+
+
+def control_real_hook(tmp):
+    """The real Stop hook with CI red on the PR: the development tree reports it, the landing tree and a checkout with no record block on it."""
+    import json
+    import shutil
+
+    sys.path[:0] = [str(_CI.parent), str(_REAL.parents[2])]
+    from rediacc_hooks.tests import wlfix
+
+    fix = wlfix.Fixture(tmp / "hookfix")
+    fix.setup()
+    fix.brief_now()
+    hooks = fix.base / "claude" / "hooks"
+    junk = shutil.ignore_patterns("__pycache__", "state")
+    shutil.copytree(wlfix.STOP_DIR, hooks / "stop", ignore=junk)
+    shutil.copytree(wlfix.STOP_DIR.parent / "context", hooks / "context", ignore=junk)
+    shutil.copytree(
+        wlfix.STOP_DIR.parents[1] / "rediacc_hooks", hooks.parent / "rediacc_hooks", ignore=junk
+    )
+    policy = hooks.parent / "rediacc_hooks" / "commit_policy.py"
+    if "def landing_record(" not in policy.read_text(encoding="utf-8"):
+        with policy.open("a", encoding="utf-8") as fh:
+            fh.write(LANDING_STAND_IN)
+    (hooks.parents[1] / ".ci").symlink_to(wlfix.STOP_DIR.parents[2] / ".ci")
+    fix.hook = hooks / "stop" / "worklist.py"
+
+    fix.git("init", "-q", "-b", "main")
+    fix.git("config", "user.email", "t@t")
+    fix.git("config", "user.name", "t")
+    fix.git("remote", "add", "origin", wlfix.FAKE_ORIGIN)
+    (fix.proj / "a.txt").write_text("a\n", encoding="utf-8")
+    fix.git("add", "-A")
+    fix.git("commit", "-qm", "base")
+    fix.git("update-ref", "refs/remotes/origin/pub", fix.git("rev-parse", "HEAD").stdout.strip())
+    (fix.base / "ci-fresh.json").write_text(CI_FRESH, encoding="utf-8")
+    (fix.base / "ci-job.json").write_text(CI_JOB, encoding="utf-8")
+    (fix.base / "ci-rollup.json").write_text(CI_RED, encoding="utf-8")
+    shim = fix.base / "binonly" / "gh"
+    shim.write_text(GH_SHIM % {"base": fix.base}, encoding="utf-8")
+    shim.chmod(0o755)
+    record = fix.proj / ".git" / "rediacc-landing.json"
+
+    def stop(landing_path):
+        if landing_path is None:
+            record.unlink(missing_ok=True)
+        else:
+            record.write_text(json.dumps({"path": str(landing_path), "branch": PR_BRANCH}), "utf-8")
+        fix.stem(".cistate-deadbeef").unlink(missing_ok=True)
+        payload = json.dumps(
+            {
+                "session_id": fix.sid,
+                "cwd": str(fix.proj),
+                "last_assistant_message": "working\n\n## Remaining\n- nothing",
+                "session_crons": [],
+                "background_tasks": wlfix.with_waker([], fix.waker),
+            }
+        )
+        env = dict(fix.env)
+        env.update(
+            PATH="%s:%s" % (fix.base / "binonly", fix.env.get("PATH", "")),
+            TMPDIR=str(fix.base / "tmp"),
+            CLAUDE_PROJECT_DIR=str(fix.proj),
+            WORKLIST_TASKS_DIR=str(fix.base / "tasks"),
+            WORKLIST_PUBLISH_REF="pub",
+            WORKLIST_JUDGE="off",
+            GITHUB_ACTIONS="",
+        )
+        return fix.python([], stdin=payload, env=env)
+
+    red = "CI IS RED ON PR #543"
+    got = stop(None)
+    check("CONTROL no record: the red blocks", (red in got.out, got.decision), (True, "block"))
+    got = stop(fix.base / "console-landing")
+    check("development: the draft's red is no block", red in got.out, False)
+    check(
+        "development: the draft's red is reported",
+        "this is the development tree's draft PR" in got.out,
+        True,
+    )
+    got = stop(fix.proj)
+    check("landing: the PR's red blocks", (red in got.out, got.decision), (True, "block"))
+
+
 def main():
     tmp = pathlib.Path(runtmp.run_dir("landing-scope-")).resolve()
     import wl_checks
@@ -381,6 +506,7 @@ def main():
     control_item_branches(tmp, wl_prscope, wl_ci)
     control_scope_and_parks(wl_prscope, wl_checks)
     control_worktrees(tmp, wl_worktrees)
+    control_real_hook(tmp)
     T.exit()
 
 

@@ -915,7 +915,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_wake.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_wisdom.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_writer_commit_verbs.py | (none) | via pytest (testpaths) | py |
-| .claude/rediacc_hooks/tests/wlfix.py | (none) | via .claude/hooks/stop/test-popup.py | py |
+| .claude/rediacc_hooks/tests/wlfix.py | (none) | via .claude/hooks/stop/test-landing-scope.py | py |
 | .claude/rediacc_hooks/wellknown.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |
 | run.sh | WorktreeCreate, WorktreeRemove | settings.json | sh |
 
