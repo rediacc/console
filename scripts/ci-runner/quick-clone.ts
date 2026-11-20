@@ -23,6 +23,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { isEntryPoint } from '../lib/entry-point.js';
+import { coveredByCarried, parseCarried } from './report.js';
 
 const RECEIPT_REL = path.join('.ci', 'cache', 'prepush-receipt.json');
 /** Where a pinned run's runner writes its receipt. Removed before each pinned run, so the runner never advances an earlier pinned receipt and always leaves a whole one to archive. */
@@ -799,6 +800,7 @@ export interface ReceiptShape {
   exitCode?: number;
   failed?: string[];
   blocked?: string[];
+  findings?: Record<string, string[] | null>;
   gates?: Record<string, { verdict?: string; carriedFrom?: unknown } | undefined>;
   advances?: { to?: string; gates?: Record<string, number> }[];
 }
@@ -822,6 +824,55 @@ export function unjudged(
   if (vouchedTree(receipt) !== tree)
     return `the receipt vouches for ${vouchedTree(receipt) || 'no tree'}, this run judged ${tree}`;
   return undefined;
+}
+
+/** A file's text, or undefined when it cannot be read (absent in the clone means nothing is carried). */
+function readTextOrUndefined(file: string): string | undefined {
+  try {
+    return fs.readFileSync(file, 'utf8');
+  } catch {
+    return undefined;
+  }
+}
+
+/** carried-reds.json text without the entries whose reason is under the push guard's bar (block_unverified_push REASON_MIN 80, STAR_REASON_MIN 160 for `*`): the guard reads such an entry as carrying nothing. Unparseable text passes through for parseCarried to reject. */
+function withReasonBar(text: string | undefined): string | undefined {
+  if (text === undefined) return undefined;
+  try {
+    const doc = JSON.parse(text) as { carried?: unknown };
+    if (!Array.isArray(doc.carried)) return text;
+    doc.carried = doc.carried.filter((e) => {
+      const entry = e as { findings?: unknown; reason?: unknown };
+      const reason = typeof entry.reason === 'string' ? entry.reason : '';
+      return reason.length >= (entry.findings === '*' ? 160 : 80);
+    });
+    return JSON.stringify(doc);
+  } catch {
+    return text;
+  }
+}
+
+/** Whether a RED receipt is red only on gates `.ci/config/carried-reds.json` carries, the way the push guard reads it (block_unverified_push.carried_verdict): something failed and every failed gate is carried whole (`*`) or on exactly the keys the receipt recorded for it. Such a run is not green, and its exit stays 1, but it may still be carried forward to HEAD, because the push guard would admit it there (#68452957). Pure. */
+export function carriedOnly(
+  receipt: ReceiptShape | undefined,
+  carriedText: string | undefined
+): boolean {
+  if (receipt === undefined || receipt.whole !== true) return false;
+  const failed = receipt.failed ?? [];
+  // A gate that could not run here (`blocked`) is admitted by the guard as it is, so it does not decide this either.
+  if (failed.length === 0) return false;
+  const carried = parseCarried(withReasonBar(carriedText));
+  // A carried gate that is not red is stale, and so is a carried key the gate no longer prints: the guard refuses both.
+  if (carried.some((c) => !failed.includes(c.gate))) return false;
+  return failed.every((id) => {
+    const keys = receipt.findings?.[id] ?? null;
+    if (!coveredByCarried(id, keys, carried)) return false;
+    const entry = carried.find((c) => c.gate === id);
+    return (
+      entry?.findings === '*' ||
+      (keys !== null && new Set(keys).size === new Set(entry?.findings).size)
+    );
+  });
 }
 
 /** The exit of a whole-lane run: the runner's own when it failed, and otherwise what the receipt it left says. An advance over a red receipt used to exit 0 (#ea5e31cd). */
@@ -885,13 +936,15 @@ export function followOf(input: {
   judgedTree: string;
   liveTree: string | undefined;
   firstExit: number;
+  /** The first run is red only on carried gates (`carriedOnly`): followed like a green one, because the push guard admits it. */
+  firstCarriedOnly?: boolean;
   latest: ReceiptShape | undefined;
 }): Follow {
-  const { pinned, judgedTree, liveTree, firstExit, latest } = input;
+  const { pinned, judgedTree, liveTree, firstExit, firstCarriedOnly, latest } = input;
   if (!pinned && liveTree === judgedTree) return { kind: 'done' };
   if (liveTree === undefined || liveTree === '')
     return { kind: 'skip', why: 'HEAD^{tree} is unreadable in the checkout' };
-  if (firstExit !== 0)
+  if (firstExit !== 0 && firstCarriedOnly !== true)
     return {
       kind: 'skip',
       why: `the run over tree ${judgedTree.slice(0, 12)} is not green, so nothing is carried to HEAD tree ${liveTree.slice(0, 12)}`,
@@ -1163,6 +1216,12 @@ export async function quickMain(args: readonly string[], seams: QuickSeams): Pro
       judgedTree: prepared.tree,
       liveTree,
       firstExit: first,
+      firstCarriedOnly:
+        first !== 0 &&
+        carriedOnly(
+          readReceipt(receiptPath).receipt,
+          readTextOrUndefined(path.join(prepared.clone, '.ci', 'config', 'carried-reds.json'))
+        ),
       latest: readReceipt(latestPath).receipt,
     });
     if (follow.kind === 'done') return first;
@@ -2232,6 +2291,51 @@ export async function quickCloneSelftest(
           latest: { whole: true, exitCode: 1, failed: ['g'], headTree: 'U' },
         }).kind === 'follow',
       'followOf: a still HEAD is done, an unreadable HEAD is skipped, and a red receipt at HEAD is no newer receipt to leave alone'
+    );
+    const doc = (
+      ...entries: { gate: string; findings: string[] | '*'; reason?: string }[]
+    ): string =>
+      JSON.stringify({
+        version: 2,
+        carried: entries.map((e) => ({ reason: 'r'.repeat(e.findings === '*' ? 160 : 80), ...e })),
+      });
+    const redOn = (
+      failed: string[],
+      findings: Record<string, string[] | null> = {}
+    ): ReceiptShape => ({
+      whole: true,
+      exitCode: 1,
+      failed,
+      findings,
+    });
+    const star = { gate: 'a', findings: '*' as const };
+    const keyed = { gate: 'b', findings: ['k1', 'k2'] };
+    check(
+      carriedOnly(redOn(['a']), doc(star)) &&
+        carriedOnly(redOn(['a', 'b'], { b: ['k1', 'k2'] }), doc(star, keyed)) &&
+        !carriedOnly(redOn(['a', 'c']), doc(star)) &&
+        carriedOnly({ ...redOn(['a']), blocked: ['x'] }, doc(star)) &&
+        !carriedOnly(redOn(['b'], { b: ['k1', 'k9'] }), doc(keyed)) &&
+        !carriedOnly(redOn(['b'], { b: ['k1'] }), doc(keyed)) &&
+        !carriedOnly(redOn(['b']), doc(keyed)) &&
+        !carriedOnly(redOn(['a']), doc(star, keyed)) &&
+        !carriedOnly({ whole: true, exitCode: 0, failed: [] }, doc(star)) &&
+        !carriedOnly(redOn(['a']), undefined) &&
+        !carriedOnly(redOn(['a']), doc({ ...star, reason: 'r'.repeat(159) })),
+      'carriedOnly mirrors the push guard: red only on gates carried whole or on exactly their recorded keys; a gate that could not run does not count against it; an uncarried gate, a new or stale key, a keyless red, a stale carried gate, a green receipt, a missing file or an entry under the reason bar is not'
+    );
+    check(
+      followOf({
+        pinned: false,
+        judgedTree: 'T',
+        liveTree: 'U',
+        firstExit: 1,
+        firstCarriedOnly: true,
+        latest: undefined,
+      }).kind === 'follow' &&
+        followOf({ pinned: false, judgedTree: 'T', liveTree: 'U', firstExit: 1, latest: undefined })
+          .kind === 'skip',
+      'followOf: a first run red only on carried gates is followed like a green one (#68452957), and any other red first run is still skipped'
     );
     check(
       followOf({ pinned: true, judgedTree: 'T', liveTree: 'T', firstExit: 0, latest: undefined })

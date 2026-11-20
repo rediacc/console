@@ -3822,8 +3822,42 @@ def _vouched_tree(receipt):
     return str(receipt.get("headTree") or "")
 
 
+CARRIED_REDS_REL = pathlib.Path(".ci") / "config" / "carried-reds.json"
+# The push guard's bars (block_unverified_push.REASON_MIN, STAR_REASON_MIN): an entry whose reason is shorter carries nothing.
+CARRIED_REASON_MIN, CARRIED_STAR_REASON_MIN = 80, 160
+
+
+def carried_only(doc, carried_doc):
+    """Whether receipt `doc` is red only on gates carried-reds.json (`carried_doc`, parsed) carries, the way the push guard reads it (block_unverified_push.carried_verdict) and ci:quick's follow pass does (quick-clone.ts carriedOnly): something failed and every failed gate is carried whole (`*`) or on exactly the finding keys the receipt recorded for it, by an entry whose reason clears the guard's bar, with no stale carried gate or key. Pure (#68452957)."""
+    failed = doc.get("failed") if isinstance(doc, dict) else None
+    # A gate that could not run here (`blocked`) is admitted by the guard as it is, so it does not decide this either.
+    if not isinstance(failed, list) or not failed:
+        return False
+    entries = carried_doc.get("carried") if isinstance(carried_doc, dict) else None
+    by_gate = {}
+    for e in entries or []:
+        if not isinstance(e, dict):
+            continue
+        reason = e.get("reason") if isinstance(e.get("reason"), str) else ""
+        if len(reason) >= (
+            CARRIED_STAR_REASON_MIN if e.get("findings") == "*" else CARRIED_REASON_MIN
+        ):
+            by_gate[e.get("gate")] = e.get("findings")
+    recorded = doc.get("findings") if isinstance(doc.get("findings"), dict) else {}
+    if any(gate not in failed for gate in by_gate):
+        return False  # a carried gate that is not red is stale, and the guard refuses it
+    for gate in failed:
+        carried = by_gate.get(gate)
+        if carried == "*":
+            continue
+        keys = recorded.get(gate)
+        if not isinstance(carried, list) or not isinstance(keys, list) or set(keys) != set(carried):
+            return False
+    return True
+
+
 def green_receipt_tree(root):
-    """The tree the checkout's latest receipt vouches for when it is a whole, green run, else None."""
+    """The tree the checkout's latest receipt vouches for when it is a whole run that is green, or red only on carried gates (`carried_only`, judged against HEAD's carried-reds.json, as the push guard judges it), else None."""
     try:
         doc = json.loads((pathlib.Path(root) / RECEIPT_REL).read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -3831,7 +3865,14 @@ def green_receipt_tree(root):
     if not isinstance(doc, dict) or doc.get("whole") is not True:
         return None
     if doc.get("exitCode") != 0 or doc.get("failed") not in ([], None):
-        return None
+        try:
+            carried_doc = json.loads(
+                (pathlib.Path(root) / CARRIED_REDS_REL).read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError):
+            return None
+        if not carried_only(doc, carried_doc):
+            return None
     return _vouched_tree(doc) or None
 
 
@@ -3870,7 +3911,8 @@ def advance_after_commit(root, spawn=subprocess.run):
     lines = (res.stdout + res.stderr).splitlines()
     refused = [ln for ln in lines if ln.startswith("ci-runner: --advance-only")]
     tail = refused or [ln for ln in lines if ln.startswith("ci:quick:")]
-    if res.returncode == 0 and green_receipt_tree(root) == head_tree:
+    # A receipt red only on carried gates advances with exit 1 (the runner keeps a red run's exit honest), so success is the receipt now vouching for HEAD, green or carried-only.
+    if res.returncode in (0, 1) and green_receipt_tree(root) == head_tree:
         return "receipt: ADVANCED from tree %s to tree %s with no whole run" % (
             parent_tree[:12],
             head_tree[:12],

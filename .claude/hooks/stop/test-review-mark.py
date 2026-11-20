@@ -496,12 +496,16 @@ class Spawn:
         return subprocess.CompletedProcess(cmd, 0, "", "")
 
 
-def verb_with(name, receipt):
-    """commit_reviews in a fixture() repo whose latest receipt is `receipt` (None: no file), with the advance's spawn recorded."""
+def verb_with(name, receipt, carried=None):
+    """commit_reviews in a fixture() repo whose latest receipt is `receipt` (None: no file) and whose carried-reds.json is `carried` (None: no file), with the advance's spawn recorded."""
     repo, _reviewed, _fix = fixture(name)
+    if carried is not None:
+        cpath = repo / ".ci" / "config" / "carried-reds.json"
+        cpath.parent.mkdir(parents=True, exist_ok=True)
+        cpath.write_text(json.dumps(carried), encoding="utf-8")
     if receipt is not None:
         path = repo / ".ci" / "cache" / "prepush-receipt.json"
-        path.parent.mkdir(parents=True)
+        path.parent.mkdir(parents=True, exist_ok=True)
         tree = git(repo, "rev-parse", "HEAD^{tree}")
         path.write_text(json.dumps(dict(receipt, headTree=tree)), encoding="utf-8")
         (repo / ".git" / "info" / "exclude").write_text(".ci/\n", encoding="utf-8")
@@ -530,6 +534,56 @@ control(
     [(c[-2].endswith("quick-clone.ts"), c[-1], bool(cwd)) for c, cwd in calls],
     [(True, "--advance-only", True)],
 )
+
+# A receipt red only on carried gates is carried forward the way the push guard admits it (#68452957).
+LONG = "carried because the live state it reads is off-box and cannot be fixed in code; " * 3
+CARRY_STAR = {"version": 2, "carried": [{"gate": "fast:red", "findings": "*", "reason": LONG}]}
+RED_CARRIED = dict(GREEN, exitCode=1, failed=["fast:red"])
+rc, text, committed, calls = verb_with("carried-only", RED_CARRIED, CARRY_STAR)
+control("a receipt red only on a carried gate: the verb commits", (rc, committed), (0, True))
+control(
+    "a receipt red only on a carried gate: --advance-only starts once",
+    [(c[-2].endswith("quick-clone.ts"), c[-1]) for c, _cwd in calls],
+    [(True, "--advance-only")],
+)
+rc, text, committed, calls = verb_with(
+    "carried-other",
+    RED_CARRIED,
+    {"version": 2, "carried": [{"gate": "fast:other", "findings": "*", "reason": LONG}]},
+)
+control("CONTROL: a red the carried-reds file does not cover starts nothing", calls, [])
+
+# carried_only agrees with the push guard's carried_verdict (no stale entries in these fixtures).
+KEYED = {"version": 2, "carried": [{"gate": "g", "findings": ["k1", "k2"], "reason": LONG}]}
+SHORT = {"version": 2, "carried": [{"gate": "fast:red", "findings": "*", "reason": "too short"}]}
+for label, receipt, doc, want in (
+    ("keyed exact", {"failed": ["g"], "findings": {"g": ["k1", "k2"]}}, KEYED, True),
+    ("keyed with a stale carried key", {"failed": ["g"], "findings": {"g": ["k1"]}}, KEYED, False),
+    (
+        "a stale carried gate",
+        {"failed": ["fast:red"], "findings": {}},
+        {"version": 2, "carried": CARRY_STAR["carried"] + KEYED["carried"]},
+        False,
+    ),
+    ("keyed extra key", {"failed": ["g"], "findings": {"g": ["k1", "k9"]}}, KEYED, False),
+    ("keyed, no keys recorded", {"failed": ["g"], "findings": {}}, KEYED, False),
+    ("uncarried gate", {"failed": ["g", "h"], "findings": {"g": ["k1"]}}, KEYED, False),
+    ("star", {"failed": ["fast:red"], "findings": {}}, CARRY_STAR, True),
+    (
+        "star, with a gate that could not run",
+        {"failed": ["fast:red"], "findings": {}, "blocked": ["fast:cannot-run"]},
+        CARRY_STAR,
+        True,
+    ),
+    ("star under the reason bar", {"failed": ["fast:red"], "findings": {}}, SHORT, False),
+):
+    full = dict(GREEN, exitCode=1, **receipt)
+    refusal, _notes = GUARD.carried_verdict(full, doc)
+    control(
+        "carried_only matches the push guard: %s" % label,
+        (R.carried_only(full, doc), refusal is None),
+        (want, want),
+    )
 
 print("%d control(s), %d failed" % (Tally.count, Tally.fails))
 sys.exit(1 if Tally.fails else 0)
