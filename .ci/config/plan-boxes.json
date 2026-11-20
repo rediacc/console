@@ -4383,20 +4383,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 18,
-      "done": 6,
+      "open": 15,
+      "done": 9,
       "open_sigs": [
         "1889ccd8",
         "3385a609",
-        "56c84e01",
         "72dbfdc2",
         "75dc0733",
         "8bb8cb57",
         "a2ae6f1c",
         "b498a006",
-        "b60fd388",
         "ce04f9fc",
-        "d35167bd",
         "d6b55389",
         "daa4350c",
         "dd35c1fa",
@@ -4407,11 +4404,14 @@
       ],
       "done_sigs": [
         "3784f37a",
+        "56c84e01",
         "7314ba07",
         "769b389b",
         "7aa63794",
         "acc8f504",
-        "afe59ee1"
+        "afe59ee1",
+        "b60fd388",
+        "d35167bd"
       ]
     },
     "agent/plans/PLAN-unify-trap-corpus.md": {
