@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import importlib.machinery
 import importlib.util
+import os
 import pathlib
 import subprocess
 import sys
@@ -58,11 +59,30 @@ MUTANTS = [
     ),
 ]
 
-IDENT = ["-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+# A hermetic git: no host config, an identity of its own (a rebase writes a committer too), nothing inherited from a hook's GIT_* environment.
+GIT_ENV = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+GIT_ENV.update(
+    GIT_AUTHOR_NAME="t",
+    GIT_AUTHOR_EMAIL="t@example.invalid",
+    GIT_COMMITTER_NAME="t",
+    GIT_COMMITTER_EMAIL="t@example.invalid",
+    GIT_CONFIG_GLOBAL="/dev/null",
+    GIT_CONFIG_SYSTEM="/dev/null",
+)
+# The rebase-merge's copies carry a committer of their own, as GitHub's do: a pick by the same identity in the same second would reproduce the very shas.
+MERGER_ENV = dict(
+    GIT_ENV, GIT_COMMITTER_NAME="merger", GIT_COMMITTER_EMAIL="merger@example.invalid"
+)
 
 
-def sh(cwd, *args) -> str:
-    r = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, check=False)
+def sh(cwd, *args, env=None) -> str:
+    r = subprocess.run(
+        ["git", "-C", str(cwd), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env or GIT_ENV,
+    )
     if r.returncode != 0:
         raise SystemExit("fixture: git %s failed in %s: %s" % (" ".join(args), cwd, r.stderr))
     return r.stdout.strip()
@@ -71,7 +91,7 @@ def sh(cwd, *args) -> str:
 def commit(cwd, name: str) -> str:
     (pathlib.Path(cwd) / name).write_text(name + "\n", encoding="utf-8")
     sh(cwd, "add", name)
-    sh(cwd, *IDENT, "commit", "-qm", name)
+    sh(cwd, "commit", "-qm", name)
     return sh(cwd, "rev-parse", "HEAD")
 
 
@@ -180,16 +200,7 @@ def controls(ws: types.ModuleType, cp) -> list[str]:
         merger = td / "merger"
         sh(td, "clone", "-q", str(remote), str(merger))
         sh(merger, "fetch", "-q", "origin", LANDING)
-        # A committer of its own, as GitHub signs the copies: a pick by the same identity in the same second would reproduce the very shas.
-        sh(
-            merger,
-            "-c",
-            "user.name=merger",
-            "-c",
-            "user.email=merger@example.invalid",
-            "cherry-pick",
-            "main..origin/%s" % LANDING,
-        )
+        sh(merger, "cherry-pick", "main..origin/%s" % LANDING, env=MERGER_ENV)
         sh(merger, "push", "-q", "origin", "main")
         control("FIXTURE: main holds copies", sh(merger, "rev-parse", "HEAD~1") != fix)
         got = state()
