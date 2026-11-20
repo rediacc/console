@@ -2774,6 +2774,15 @@ def both_tree_behind_cases():
             "BOTH TREES: and RB4's post-rebase proof",
         )
     )
+    # The proof's commands are the lease block's (RB2), word for word, so the two cannot drift apart unnoticed.
+    commands = [line for line in GM.REBASE_PROOF if line.startswith("    ")]
+    cases.append(
+        (
+            True,
+            len(commands) == 2 and all(line + "\n" in wl_rebase.REBASE_RECIPE for line in commands),
+            "BOTH TREES: each REBASE_PROOF command is a line of wl_rebase.REBASE_RECIPE",
+        )
+    )
     # The guard's split and RB1's lease reader agree on the same repository.
     head = g(dev, "rev-parse", "HEAD")
     rb1 = wl_rebase.behind_base(dev, head, cut, "main")

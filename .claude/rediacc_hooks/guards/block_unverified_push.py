@@ -588,7 +588,7 @@ EDGE_CASES = [
     # SUBMODULE PUSHES ARE OUT OF SCOPE, deliberately.
     ("cd into a submodule", "cd private/account && git push origin 0831-1"),
     ("git -C into a submodule", "git -C private/renet push"),
-    # A TAB after `-C` is a blank like any other since the Rule T fix to shellscan.target_root (A4); /tmp is not a repository, so the push is judged against this tree either way.
+    # A TAB after `-C` is a blank like any other since the Rule T fix to shellscan.target_root (A4); /tmp is no repository but a real directory outside this checkout, so the push is another repository's and allowed either way (finding #5810a9f3).
     ("git -C with a TAB is still a -C", "git -C\t/tmp push"),
     ("a push in another tree", "cd /tmp && git push"),
 ]
