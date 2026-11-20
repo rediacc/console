@@ -209,12 +209,14 @@ All steps run through `./rdc.sh --config eu-bench term connect mail@hostinger -c
     - a digest row present before step 4 fails the run (the checkout alert went out instantly);
     - a second digest run that mails anything fails the run.
     (ticked) 2026-11-19T14:52:26Z by d778be9d: commit:fbb61bc9d; pytest test_ops_email_routing_drill 17 passed, ruff rc 0; live run is X2
-- [ ] X1 [lead] Local proof chain: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench` on the landed tree (migration applied, the four keys pushed).
+- [x] X1 [lead] Local proof chain: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench` on the landed tree (migration applied, the four keys pushed).
   Local-route: deploy-bench -- the landed tree is deployed to bench eu from this checkout and its D1 migration applied
   Owns: none (runs only). Accept: deploy_bench rc 0 naming the deployed version, and `wrangler d1 execute` showing `alert_digest_items` and the two new `captured_emails` columns on bench eu.
-- [ ] X2 [live] Real send through bench: `npm run login:bench -- --region eu`, then the R1 drill under `bws_env exec --profile bench-login-eu`.
+    (ticked) 2026-11-20T05:54:31Z by d778be9d: commit:2876cc6b5 deploy_bench rc 0 (account-bench version d16a4a9c-03d5-40f9-827d-441839c42d89, account 3beadd5, the four email keys pushed); wrangler d1 execute account-bench --remote lists alert_digest_items and captured_emails from_address, reply_to
+- [x] X2 [live] Real send through bench: `npm run login:bench -- --region eu`, then the R1 drill under `bws_env exec --profile bench-login-eu`.
   Owns: none. Accept: drill rc 0 with its JSON summary in the tick: the contact row From `contact@notify.rediacc.cloud`, Reply-To the drill address, subject `[Contact bench] ...`, To `contact@rediacc.com`; the confirmation From `noreply@notify.rediacc.cloud` with Reply-To `contact@rediacc.com`; the dispute row From `alerts@notify.rediacc.cloud`, `[System bench] ...`, To `alerts@rediacc.io`, within 60 s of the webhook; no checkout row before the digest run and one digest row after it; the second digest run mails 0.
   Needs: bench-deploy
+    (ticked) 2026-11-20T05:54:32Z by d778be9d: commit:2876cc6b5 email_routing_drill rc 0 on bench eu: {"digest_items": 2, "ok": true, "rerun_items": 0, steps 1-7 rc 0: contact rows hold (From contact@notify, Reply-To the drill address, [Contact bench], To contact@rediacc.com; confirmation From noreply@notify with Reply-To contact@rediacc.com), dispute alert row within 0 s ([System bench], To alerts@rediacc.io), checkout queued then one digest row naming the session, rerun 0, cleanup proven}
 - [ ] H0 [live] Survey the hostinger mail repo read-only (Design 5 step 1) and record each file's relevant lines in the tick; correct Design 5 here if the live files disagree.
   Owns: none. Accept: the tick quotes the `mail-server` environment block, the Rediaccfile's `user_add` and `postfix-main.cf` generator lines, the catch-all lines of `postfix-virtual.cf`, the `doveconf -n` protocols and sieve lines, and the head of both muhammed scripts.
   Needs: none
