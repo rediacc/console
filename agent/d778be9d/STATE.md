@@ -1,15 +1,19 @@
-## SESSION d778be9d 2026-11-20T19:41:09Z
+## SESSION d778be9d 2026-11-20T21:44:02Z
 
-# STATE d778be9d (2026-11-20 ~20:30Z)
+# STATE d778be9d (2026-11-20 21:45Z, operator AWAY since 21:42Z)
 
 ## Next action
-1. #02389657 #4889018a land each fix writer as it reports (./run.sh worktree land <id> > /tmp/m/picks.txt; /tmp/m/land.sh regenerates generated-doc conflicts), then ONE ci:quick, push (TURBO_PUSH_REASON red-fix; console then submodules), release us/asia now: RELEASE_ASKED=ASKED:2026-11-20T17:17Z npm run release:local -- --channel edge --workers-only --regions us,asia --branch-release. Already landed on 1104-1: LT1-LT8, LT13-LT17, LT19, RF-C, RF-P console, RF-G, lint/prose/type fixes.
-2. Live writers: #8591dc69 LT11 af5b8cb4adcf527d6; #b7d80df5 LT18 a5d0a1268e4038e3c; #42a0b1fd LINT afe3e29dbd9575237 (#101a5402); #d33b6c17 TY a27f7c9b49191267a; #d1ef540e LT5b a41cb0f40fa9ae755 (landing-scope 6/67, HIGH review cccacdd7.1); #f8e608ac LT14b a8c1d983a4340e36f; #8be00eda LT12 abf193e236bdd4a1e; #88d79f43 RV a89f5613aec808ac8.
-3. Held for vm:check (VM trigger paths): #2c527dfe RF-A lease agent-af7a06fb403f1d1d4 (10 account commits), #cb065df1 RF-P renet 2b1c4450. Land after the push, vm:check --changed, push again.
-4. #99460057 then LT9 switch-over (./run.sh worktree landing on 1104-1), LT10 live proof, LT16b (promote cuts the next development branch at the landing tip; submodule trees move).
+1. #02389657 #4889018a when the running ci:quick (d3ab59d4, void: its reds ci:ci-pr-task-trailers and ci-review-resolutions are fixed in d8811543d a3114345f cc9b734a2) ends: commit review records, run ci:quick on HEAD, then push (TURBO_PUSH_REASON='red-fix: ...'; console then submodules), then release us/asia: RELEASE_ASKED=ASKED:2026-11-20T17:17Z npm run release:local -- --channel edge --workers-only --regions us,asia --branch-release. Then send "go" to the hostinger CVE session (#3d75dbfa; uds:/run/user/1000/cc-socks/4135920.sock).
+2. Next push batch (VM trigger paths, needs `npm run vm:check -- --changed`): land RF-A agent-af7a06fb403f1d1d4 (account), RF-P renet 2b1c4450, H1 renet 0c53467d (#d10eb861), H3 c14a41fce eeea4ae04 (#695daf36, agent-a9e8e90fa53705203), H1b auto-grow (#879a0b3f). Then hostinger: machine setup (#3fb926f3), job dismiss of 3 stale tickets, mautic probe (H1 report commands).
+3. Writers live: H1b af431697429b07fb6, H2 aee98409c532659d6 (#c21c78d4), J1 aa7385a2acfc78f48 (#75de5915), J3 a9b59754c94d51acd (#9725e222). Blog post sentences (peer's post) depend on H1b, J1, J3 landing as worded.
 
 ## Big pieces
-- PR #605 on 1104-1, ~150 unpushed commits; landing-tree plan PLAN-two-track-merge-dev (rulings ASKED:2026-11-20T18:46Z: one session per tree, shared store, draft turbo-exempt, plain submodule PR, development stacked on landing, one-way, promote after merge).
+- PR #605 on 1104-1 (~220 unpushed commits): landing-tree plan LT1-LT8, LT11-LT19 ticked; LT9 switch-over, LT10 live proof open.
+
+## Overnight
+- Landed today (selection): LT wave, review fixes (RF-C RV RF-G), GR gate fixes, H4 narrow scope f81277ff8, LT16b, guard fixes aed056bab 030abed0a, record-path readers a3114345f, landing --status cc9b734a2, epic ledger d8811543d.
+- Decided (rule 2): H3 and renet fixes held for a vm:check push; blog claims made true rather than edited (H1b/J1/J3).
+- Parked [?]: none new.
 
 ## Owed ticks
-- Plan boxes LT1-LT8, LT13-LT17, LT19 tick with their landed shas after ci:quick (git log --grep 'cherry picked from commit <lease sha>').
+- 4a4bd934.2 review mark needs #e2b... verb fix (tracked); LT9/LT10 after the push.
