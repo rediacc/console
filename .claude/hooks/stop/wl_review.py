@@ -3333,6 +3333,25 @@ def is_test_path(path):
     return bool(_TEST_PATH_RE.search(path))
 
 
+def is_selftest_host(repo, rev, path):
+    """True for a file whose own `--selftest` mode is its test suite and that a tracked test runs: the file at `rev` handles `--selftest`, and some tracked test file names its basename and the word selftest (scripts/pins/pins.ts, run by tests/gates/test_gate_pin_cli.py through paths.from_root)."""
+    rc, text = git(repo, "show", "%s:%s" % (rev, path))
+    if rc != 0 or "--selftest" not in text:
+        return False
+    base = pathlib.PurePosixPath(path).name
+    rc, hits = git(repo, "grep", "-l", "-F", base, rev, "--")
+    if rc != 0:
+        return False
+    for hit in hits.splitlines():
+        name = hit.split(":", 1)[1] if ":" in hit else hit
+        if name == path or not is_test_path(name):
+            continue
+        rc, body = git(repo, "show", "%s:%s" % (rev, name))
+        if rc == 0 and "selftest" in body:
+            return True
+    return False
+
+
 def _norm_stem(path):
     """The anchored file's name without directory or extension, lowercased and with `-` read as `_`."""
     return pathlib.PurePosixPath(path).stem.lower().replace("-", "_")
@@ -3687,7 +3706,7 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
                 test_path = test_path.removeprefix(prefix)
         if test_path and test_path not in touched:
             raise ValueError("%s does not touch the named test %s" % (fix[:12], test_path))
-        if test_path and not is_test_path(test_path):
+        if test_path and not (is_test_path(test_path) or is_selftest_host(repo, fix, test_path)):
             raise ValueError("%s is not a test path" % test_path)
         test_claim = bool(TEST_CLAIM_RE.search(finding.claim))
         followed = (

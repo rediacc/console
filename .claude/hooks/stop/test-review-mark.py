@@ -235,6 +235,39 @@ control(
     "does not touch the named test" in (mark_with_test(repo, reviewed, fix, "sub/" + rel) or ""),
     True,
 )
+
+
+# A file whose own --selftest mode is its suite, run by a tracked test, counts as a --test path (scripts/pins/pins.ts and test_gate_pin_cli.py).
+def selftest_host_fixture(name, with_runner):
+    repo, reviewed, _fix = fixture(name)
+    (repo / "tool").mkdir()
+    (repo / "tool" / "host.ts").write_text(
+        "if (argv.includes('--selftest')) { control(read('a.txt')); }\n", encoding="utf-8"
+    )
+    paths_ = ["tool/host.ts"]
+    if with_runner:
+        (repo / "tests").mkdir()
+        (repo / "tests" / "test_host_runs.py").write_text(
+            "SUBJECT = 'host.ts'  # run with --selftest\n", encoding="utf-8"
+        )
+        paths_.append("tests/test_host_runs.py")
+    git(repo, "add", "--", *paths_)
+    git(repo, "commit", "-q", "-m", "selftest host")
+    return repo, reviewed, git(repo, "rev-parse", "HEAD")
+
+
+repo, reviewed, fix = selftest_host_fixture("ref-host", True)
+control(
+    "a selftest host a tracked test runs: not refused as a non-test path",
+    "is not a test path" in (mark_with_test(repo, reviewed, fix, "tool/host.ts") or ""),
+    False,
+)
+repo, reviewed, fix = selftest_host_fixture("ref-host-none", False)
+control(
+    "CONTROL: the same host with no test running it: refused as a non-test path",
+    "is not a test path" in (mark_with_test(repo, reviewed, fix, "tool/host.ts") or ""),
+    True,
+)
 control(
     "normalised stem: numeric prefix and dashes",
     R.related_test("tests/partner-customer-org.test.ts", "db/0090_partner_customer_org.sql"),

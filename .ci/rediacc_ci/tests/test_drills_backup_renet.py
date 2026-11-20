@@ -1140,10 +1140,10 @@ def test_timed_command_keeps_stdout_and_exit_and_reports_elapsed_on_stderr() -> 
 
 
 def test_timed_command_elapsed_tracks_a_two_second_command() -> None:
-    # A constant 1, or a value off by more than the clock tick, is red here: `date +%s` read twice around a 2 s sleep differs by 2 or 3.
+    # A constant 0 or 1 is red here: `date +%s` read twice around a 2 s sleep differs by at least 2. The upper bound leaves room for a loaded runner that overruns the sleep, as the instant-command case above saw.
     done = _sh(backup_renet.timed_command("sleep 2"), capture_output=True)
     assert done.returncode == 0
-    assert backup_renet.elapsed_of(done.stderr) in (2, 3)
+    assert 2 <= backup_renet.elapsed_of(done.stderr) <= 6
 
 
 @pytest.mark.skipif(not shutil.which("flock"), reason="needs util-linux flock")
