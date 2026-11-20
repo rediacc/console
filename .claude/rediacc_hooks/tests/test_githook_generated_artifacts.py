@@ -485,7 +485,7 @@ def _prefetch_lock():
 def _prefetch_main_plans() -> int:
     """Make every `agent/plans` blob of origin/main present in this checkout, and return how many were absent.
 
-    The fixture reaches this checkout's objects through alternates and has no promisor remote of its own, so in a blobless clone (CI's `filter: blob:none`) a plan blob of origin/main that was never fetched is unreadable there: `git show origin/main:<plan>` fails, `check_plan_record.main_view` returns None, and RF refuses every fully ticked plan instead of warning (run 41318476899). One batched fetch by oid, which a full clone never needs.
+    The fixture reaches this checkout's objects through alternates and has no promisor remote of its own, so in a blobless clone (CI's `filter: blob:none`) a plan blob of origin/main that was never fetched is unreadable there: `git show origin/main:<plan>` fails, `check_plan_record.main_view` returns None, and RF refuses every fully ticked plan instead of warning (run 41318476899). One batched fetch by oid, which a full clone never needs, spelled as git's own lazy fetch (`--filter=blob:none --stdin`, no negotiation): the oids as plain refspec arguments were refused on the CI runner (`fatal: bad revision`, `did not send all necessary objects`, 122 of 122 blobs absent, run 44658882057).
 
     Every xdist worker builds its own module world and runs this at once against the same checkout, so the fetch is serialized by a file lock and the missing set is read again under it; whatever still fails, including a failed presence check, is recorded in PREFETCH_REPORT (run 43617661791 refused three plans whose main copies have open boxes, with nothing to say why)."""
     listed = subprocess.run(
@@ -514,13 +514,18 @@ def _prefetch_main_plans() -> int:
                         "git",
                         "-C",
                         str(REPO_ROOT),
+                        "-c",
+                        "fetch.negotiationAlgorithm=noop",
                         "fetch",
                         "-q",
                         "--no-tags",
                         "--no-write-fetch-head",
+                        "--recurse-submodules=no",
+                        "--filter=blob:none",
                         "origin",
-                        *missing,
+                        "--stdin",
                     ],
+                    input="\n".join(missing) + "\n",
                     capture_output=True,
                     text=True,
                     check=False,
@@ -704,7 +709,7 @@ class _Script:
         self.fetch = fetch
         self.fetches = 0
 
-    def run(self, argv, **_kwargs):
+    def run(self, argv, **kwargs):
         if "ls-tree" in argv:
             out = "".join("100644 blob %040d\tagent/plans/p%d.md\n" % (i, i) for i in (1, 2))
             return subprocess.CompletedProcess(argv, 0, out, "")
@@ -713,6 +718,7 @@ class _Script:
             return subprocess.CompletedProcess(argv, rc, out, err)
         assert "fetch" in argv
         self.fetches += 1
+        self.argv, self.stdin = argv, kwargs.get("input")
         if isinstance(self.fetch, BaseException):
             raise self.fetch
         return subprocess.CompletedProcess(argv, self.fetch, "", "denied" if self.fetch else "")
@@ -743,6 +749,9 @@ def test_prefetch_fetches_the_missing_blob_under_the_lock_and_records_nothing(
     script = _scripted(monkeypatch, tmp_path, [ABSENT, ABSENT, PRESENT])
     assert _prefetch_main_plans() == 1
     assert script.fetches == 1
+    # The oids ride stdin under the lazy-fetch flags, never as refspec arguments.
+    assert "--stdin" in script.argv and "--filter=blob:none" in script.argv
+    assert script.stdin == "%040d\n" % 2
     assert PREFETCH_REPORT == []
     assert list(tmp_path.glob("plan-blob-prefetch-*.lock"))
 

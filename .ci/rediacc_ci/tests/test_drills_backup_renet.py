@@ -1133,7 +1133,8 @@ def test_timed_command_keeps_stdout_and_exit_and_reports_elapsed_on_stderr() -> 
     done = _sh(backup_renet.timed_command('echo out; sh -c "exit 3"'), capture_output=True)
     assert done.returncode == 3
     assert done.stdout == "out\n"
-    assert backup_renet.elapsed_of(done.stderr) == 0
+    # `date +%s` ticks whole seconds, so an instant command that straddles a second boundary reads 1 (a loaded CI runner did, run 44658882057).
+    assert 0 <= backup_renet.elapsed_of(done.stderr) <= 1
     assert backup_renet.elapsed_of("noise\nelapsed 12\n") == 12
     assert backup_renet.elapsed_of("") == -1
 
