@@ -92,6 +92,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import io
+import json
 import os
 import re
 import stat
@@ -103,7 +104,7 @@ from typing import Any
 from rediacc_ci import log
 from rediacc_ci.core import release_age
 from rediacc_ci.core.common import is_ci
-from rediacc_ci.well_known import ACCOUNT_DEV_PORT, IMAGE_REGISTRY
+from rediacc_ci.well_known import ACCOUNT_DEV_PORT
 from rediacc_ci.well_known import DEVBOX_UID_IMAGE_REPO as WK_DEVBOX_UID_IMAGE_REPO
 
 # The DNS-label cap `${s:0:40}` applies. `.ci/lib/devbox.sh:195`. Well under the 63 a label allows, because the slug also gets a `-code` / `-account` / `-db` / `-term` suffix before it becomes a hostname.
@@ -139,7 +140,48 @@ UNBOUND_STATUS = 1
 # --------------------------------------------------------------------------- the constants `.ci/config/constants.sh:123-157` defines ---------------------------------------------------------------------------
 # COPIED, NOT READ, and `test_core_devbox.py::test_the_constants_match_constants_sh` parses the `readonly` lines of that file on every run and fails on any drift. Reading them at import would mean parsing bash from Python at every call; copying them and checking the copy is the pattern `account.py` set.
 
-DEVBOX_IMAGE = IMAGE_REGISTRY + "/devcontainer:latest"
+# The run image is the pin in `.ci/config/devcontainer-image.json`, "<image>@<digest>" (PLAN-two-track-merge-dev D6). A missing or malformed pin raises at import: there is no fallback to a floating tag.
+DEVCONTAINER_PIN_REL = ".ci/config/devcontainer-image.json"
+RUNNER_IMAGE_ENV = "CI_RUNNER_IMAGE"
+_PIN_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+_PIN_IMAGE = re.compile(r"[a-z0-9][a-z0-9./_-]*")
+
+
+def image_pin(path: str) -> str:
+    """`<image>@<digest>` from the pin file at `path`; any defect in it is a RuntimeError naming the file."""
+    try:
+        with open(path, encoding="utf-8") as handle:
+            doc = json.load(handle)
+    except (OSError, ValueError) as exc:
+        raise RuntimeError("devcontainer image pin unreadable: %s: %s" % (path, exc)) from exc
+    fields = doc if isinstance(doc, dict) else {}
+    image = fields.get("image")
+    digest = fields.get("digest")
+    stage = fields.get("stage")
+    if (
+        not isinstance(image, str)
+        or not _PIN_IMAGE.fullmatch(image)
+        or ":" in image
+        or not isinstance(digest, str)
+        or not _PIN_DIGEST.fullmatch(digest)
+        or not isinstance(stage, str)
+        or not stage
+    ):
+        raise RuntimeError(
+            "devcontainer image pin malformed: %s needs {image, digest sha256:<64 hex>, stage}"
+            % path
+        )
+    return "%s@%s" % (image, digest)
+
+
+DEVBOX_IMAGE = image_pin(
+    os.path.join(
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        ),
+        DEVCONTAINER_PIN_REL,
+    )
+)
 # The LOCAL repository of the per-operator derived image (`.devcontainer/Dockerfile.uid`): the base with `vscode` renumbered to the host's ids. Deliberately not a ghcr.io/ name, so a derived tag can never be mistaken for something to push.
 DEVBOX_UID_IMAGE_REPO = WK_DEVBOX_UID_IMAGE_REPO
 DEVBOX_PORT_RANGE_START = 17000
@@ -1493,6 +1535,14 @@ class Devbox:
             return stat.S_ISSOCK(os.stat(path).st_mode)
         return False
 
+    def quick_clones_dir(self) -> str:
+        """The directory holding the ci:quick clones, by the rule of `cloneDirFor` in `scripts/ci-runner/quick-clone.ts`: `CI_QUICK_CLONE_DIR` when set (that clone itself), else `${XDG_CACHE_HOME:-$HOME/.cache}/rediacc/ci-quick-clones`, the parent of every checkout's clone."""
+        override = self.env.get("CI_QUICK_CLONE_DIR")
+        if override:
+            return os.path.abspath(override)
+        base = self.env.get("XDG_CACHE_HOME") or os.path.join(self.env.get("HOME", ""), ".cache")
+        return os.path.join(base, "rediacc", "ci-quick-clones")
+
     def lease_dir_ready(self, path: str) -> bool:
         """`[ -d <path> ] || mkdir -m 700 <path>`: the lease pool is there, made now when it was not."""
         return os.path.isdir(path) or self.make_lease_dir(path)
@@ -1900,6 +1950,13 @@ class Devbox:
             )
             binds += [line for line in lines.split("\n") if line]
 
+        # The ci:quick clone root at the SAME path inside the box (PLAN-two-track-merge-dev D6): the clone's own absolute gitdir and worktree links resolve identically on the host and in the box. Created here as the host user, since the engine would make a missing -v source as root.
+        clones = self.quick_clones_dir()
+        with contextlib.suppress(OSError):
+            os.makedirs(clones, exist_ok=True)
+        if os.path.isdir(clones):
+            binds += ["-v", "%s:%s" % (clones, clones)]
+
         lease_env: list[str] = []
         status, lease_src = self.sub(self.core_lease_src)
         self.checked(status)
@@ -2010,6 +2067,8 @@ class Devbox:
             "DEVBOX_WORKSPACE=%s" % workspace,
             "-e",
             "REDIACC_NPM_RUNTIME=devbox",
+            "-e",
+            "%s=%s" % (RUNNER_IMAGE_ENV, DEVBOX_IMAGE),
             "-e",
             "REDIACC_DEV_BIND=0.0.0.0",
             "-e",

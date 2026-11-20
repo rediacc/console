@@ -312,7 +312,7 @@ def claims_proxy(obs: dict[str, list[str]]) -> None:
 
 def claims_image(obs: dict[str, list[str]]) -> None:
     # The derive is SKIPPED when the base's vscode already carries the host's ids: the base is the run image and nothing is built.
-    assert stdout_of(obs["run-image-match"]) == (devbox.DEVBOX_IMAGE + "\n").encode()
+    assert stdout_of(obs["run-image-match"]) == (TWIN_DEVBOX_IMAGE + "\n").encode()
     assert not any(call[1] == "build" for call in calls_of(obs["ensure-uid-match"]))
     # A present derived tag is REUSED: inspected, never rebuilt.
     assert not any(call[1] == "build" for call in calls_of(obs["ensure-uid-present"]))
@@ -447,7 +447,20 @@ def test_devbox_proxy_image_is_the_product_proxy_pin() -> None:
 def _fold_twin_spellings(scenario: str, old_out: str) -> str:
     if scenario in BIND_SPELLING_SCENARIOS:
         old_out = old_out.replace(TWIN_BIND_SPELLING, PORT_BIND_SPELLING)
+    old_out = old_out.replace(TWIN_DEVBOX_IMAGE, devbox.DEVBOX_IMAGE)
+    old_out = old_out.replace(TWIN_DEVBOX_IMAGE.encode().hex(), devbox.DEVBOX_IMAGE.encode().hex())
     return old_out.replace(TWIN_PROXY_IMAGE, '"%s"' % devbox.DEVBOX_PROXY_IMAGE)
+
+
+# The retired twin ran the floating tag; the port runs the pin. The two words the port adds to the `docker run` argv (the runner image variable and the ci:quick clone-root bind) are cut from the port's transcript before the comparison, and `test_up_*` below pins each one by itself.
+TWIN_DEVBOX_IMAGE = "ghcr.io/rediacc/devcontainer:latest"
+PORT_ADDED_WORDS = re.compile(
+    r'"-e", "CI_RUNNER_IMAGE=[^"]*", |"-v", "([^"]*/rediacc/ci-quick-clones)\1?:[^"]*", '
+)
+
+
+def _fold_port_additions(new_out: str) -> str:
+    return PORT_ADDED_WORDS.sub("", new_out)
 
 
 def equivalent(scenario: str, old_out: str, new_out: str) -> bool:
@@ -455,6 +468,7 @@ def equivalent(scenario: str, old_out: str, new_out: str) -> bool:
     old_out = _fold_twin_spellings(scenario, old_out)
     if scenario in NEWLINE_SCENARIOS:
         return _newline_delta_holds(scenario, old_out, new_out)
+    new_out = _fold_port_additions(new_out)
     return _without_delta_labels(old_out, scenario) == _without_delta_labels(new_out, scenario)
 
 
@@ -469,7 +483,7 @@ def divergence(scenario: str, old_out: str, new_out: str) -> str:
     """
     old_out = _fold_twin_spellings(scenario, old_out)
     old_lines = _without_delta_labels(old_out, scenario)
-    new_lines = _without_delta_labels(new_out, scenario)
+    new_lines = _without_delta_labels(_fold_port_additions(new_out), scenario)
     found = [
         "scenario %s diverged (%d twin lines, %d port lines)"
         % (scenario, len(old_lines), len(new_lines))
@@ -1416,3 +1430,85 @@ def test_delta_p7_a_missing_argument_stays_a_refusal() -> None:
         devbox.slug_drift(None)
     with pytest.raises(devbox.DevboxError):
         devbox.route_label(None)
+
+
+# -- the pinned run image (PLAN-two-track-merge-dev D6) ------------------------
+
+
+def _pin_text() -> dict:
+    return json.loads((paths.repo_root() / devbox.DEVCONTAINER_PIN_REL).read_text(encoding="utf-8"))
+
+
+def test_the_run_image_is_the_pin_and_never_a_floating_tag() -> None:
+    pin = _pin_text()
+    assert "%s@%s" % (pin["image"], pin["digest"]) == devbox.DEVBOX_IMAGE
+    assert ":latest" not in devbox.DEVBOX_IMAGE
+    obs = observations(new_transcript("image"))
+    # The run image when the base already carries the host's ids is the base itself: the pin.
+    assert stdout_of(obs["run-image-match"]) == (devbox.DEVBOX_IMAGE + "\n").encode()
+    # A derive builds FROM the pin.
+    builds = [c for rows in obs.values() for c in calls_of(rows) if len(c) > 1 and c[1] == "build"]
+    derives = [c for c in builds if any(word.startswith("BASE=") for word in c)]
+    assert derives, "the image scenario no longer exercises a derive"
+    assert all("BASE=" + devbox.DEVBOX_IMAGE in c for c in derives)
+
+
+def test_every_container_carries_the_runner_image_variable_equal_to_the_pin() -> None:
+    run = _first_run(new_transcript("up-create"), "ok")
+    pairs = [run[at : at + 2] for at in range(len(run) - 1)]
+    assert ["-e", "CI_RUNNER_IMAGE=%s" % devbox.DEVBOX_IMAGE] in pairs
+    assert devbox.RUNNER_IMAGE_ENV == "CI_RUNNER_IMAGE"
+
+
+def test_the_quick_clone_root_is_bound_at_the_same_path() -> None:
+    run = _first_run(new_transcript("up-create"), "ok")
+    binds = [run[at + 1] for at in range(len(run) - 1) if run[at] == "-v"]
+    clones = [b for b in binds if b.split(":")[0].endswith("/rediacc/ci-quick-clones")]
+    assert len(clones) == 1
+    source, _, target = clones[0].partition(":")
+    assert source == target
+
+
+def test_the_quick_clone_dir_follows_the_runner_rule(tmp_path: pathlib.Path) -> None:
+    box = devbox.Devbox(env={"HOME": "/h", "XDG_CACHE_HOME": ""})
+    assert box.quick_clones_dir() == "/h/.cache/rediacc/ci-quick-clones"
+    box = devbox.Devbox(env={"HOME": "/h", "XDG_CACHE_HOME": "/x"})
+    assert box.quick_clones_dir() == "/x/rediacc/ci-quick-clones"
+    box = devbox.Devbox(env={"HOME": "/h", "CI_QUICK_CLONE_DIR": str(tmp_path)})
+    assert box.quick_clones_dir() == str(tmp_path)
+
+
+GOOD_DIGEST = "sha256:" + "a" * 64
+PIN_IMAGE = "ghcr.io/rediacc/devcontainer"
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "not json",
+        "[]",
+        "{}",
+        json.dumps({"image": PIN_IMAGE, "stage": "full"}),
+        json.dumps({"image": PIN_IMAGE, "digest": "sha256:abc", "stage": "full"}),
+        json.dumps({"image": PIN_IMAGE + ":latest", "digest": GOOD_DIGEST, "stage": "full"}),
+        json.dumps({"image": PIN_IMAGE, "digest": GOOD_DIGEST}),
+        json.dumps({"image": "", "digest": GOOD_DIGEST, "stage": "full"}),
+    ],
+)
+def test_a_malformed_pin_refuses_loudly(body: str, tmp_path: pathlib.Path) -> None:
+    pin = tmp_path / "pin.json"
+    pin.write_text(body, encoding="utf-8")
+    with pytest.raises(RuntimeError, match="devcontainer image pin"):
+        devbox.image_pin(str(pin))
+
+
+def test_a_missing_pin_refuses_loudly(tmp_path: pathlib.Path) -> None:
+    with pytest.raises(RuntimeError, match="devcontainer image pin unreadable"):
+        devbox.image_pin(str(tmp_path / "absent.json"))
+
+
+def test_a_well_formed_pin_is_image_at_digest(tmp_path: pathlib.Path) -> None:
+    pin = tmp_path / "pin.json"
+    body = {"image": "ghcr.io/x/y", "digest": GOOD_DIGEST, "stage": "full"}
+    pin.write_text(json.dumps(body), encoding="utf-8")
+    assert devbox.image_pin(str(pin)) == "ghcr.io/x/y@" + GOOD_DIGEST
