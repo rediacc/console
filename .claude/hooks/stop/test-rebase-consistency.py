@@ -206,9 +206,11 @@ def run() -> int:
             check=False,
         )
         control(
-            "REBASE (precondition): the replay of c1 onto the moved base conflicts",
-            picked.returncode != 0,
-            picked.stderr[-200:],
+            "REBASE (precondition): the replay of c1 onto the moved base conflicts on f.txt",
+            picked.returncode != 0
+            and "CONFLICT" in picked.stdout + picked.stderr
+            and sh(main_p, "diff", "--name-only", "--diff-filter=U") == "f.txt",
+            (picked.stdout + picked.stderr)[-200:],
         )
         (main_p / "f.txt").write_text("b and x\n", encoding="utf-8")
         sh(main_p, "add", "f.txt")
@@ -297,9 +299,11 @@ def run() -> int:
             check=False,
         )
         control(
-            "REBASE (precondition): the replay of w1 onto the moved base conflicts",
-            picked.returncode != 0,
-            picked.stderr[-200:],
+            "REBASE (precondition): the replay of w1 onto the moved base conflicts on f.txt",
+            picked.returncode != 0
+            and "CONFLICT" in picked.stdout + picked.stderr
+            and sh(main_w, "diff", "--name-only", "--diff-filter=U") == "f.txt",
+            (picked.stdout + picked.stderr)[-200:],
         )
         (main_w / "f.txt").write_text("b and x\n", encoding="utf-8")
         sh(main_w, "add", "f.txt")
