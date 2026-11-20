@@ -8,13 +8,13 @@ argument-hint: "[branch]  (optional; defaults to the current branch)"
 # wl_prreview.py --check rc 0). The guardrails are
 # the hooks: block_admin_merge, block_push_to_protected_branch and block_premature_ready
 # decide what a merge may do.
-allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(gh pr list:*), Bash(gh pr view:*)
+allowed-tools: Bash(git branch:*), Bash(grep:*), Bash(git rev-parse --git-common-dir), Bash(git -C * branch --show-current), Bash(git status:*), Bash(git submodule status:*), Bash(gh pr list:*), Bash(gh pr view:*)
 ---
 
 ## Current state
 
 - Development tree branch: !`git branch --show-current`
-- Landing tree (the record `rediacc-landing.json` in `git rev-parse --git-common-dir` names its path and branch): !`rec="$(git rev-parse --git-common-dir)/rediacc-landing.json"; if [ -f "$rec" ]; then p=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["path"])' "$rec"); echo "$p on $(git -C "$p" branch --show-current)"; else echo '(no landing record)'; fi`
+- Landing tree (the record `rediacc-landing.json` in `git rev-parse --git-common-dir` names its path and branch): !`rec="$(git rev-parse --git-common-dir)/rediacc-landing.json"; if [ -f "$rec" ]; then l=$(grep -m1 '"path"' "$rec"); p=${l#*: \"}; p=${p%\"*}; if [ -n "$p" ]; then echo "$p on $(git -C "$p" branch --show-current)"; else echo '(landing record unreadable)'; fi; else echo '(no landing record)'; fi`
 - Working tree: !`git status --short | grep -v '.claude/settings.local.json' || echo '(clean aside from settings.local.json)'`
 - Submodule pointers: !`git submodule status private/renet private/account private/elite private/homebrew-tap 2>/dev/null || echo '(unavailable)'`
 - Open PRs on the current branch:
