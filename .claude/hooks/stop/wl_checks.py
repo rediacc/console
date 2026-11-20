@@ -3821,7 +3821,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # THE PR'S ITEM SCOPE (Design 2). On the loop an open item blocks only while it is on an epic of the PR's plan set; off the loop None puts every item in scope. The same predicate scopes the guide below.
     # Bound once with functools.partial so both classify calls below carry it and each call keeps the exact shape the order-key mutation control (test_wl_plan_priority m4) edits.
     _in_scope = (lambda rec: rec["id"] in _scope_ids) if _on_loop else None
-    # TWO TREES (agent/plans/PLAN-two-track-merge-dev.md LT5): on or off the loop, the items another tree's branch owns are queued here, never blocked on (wl_prscope.with_tree_scope). Without a landing record the predicate is unchanged.
+    # TWO TREES (agent/plans/PLAN-two-track-merge-dev.md LT5): on or off the loop, a plain open item outside this tree's scope (wl_prscope.foreign_items) fails the predicate, so classify_items queues it instead of blocking on it (wl_prscope.with_tree_scope). Without a landing record the predicate is unchanged.
     _in_scope = wl_prscope.with_tree_scope(_in_scope, _loop)
     _classify = functools.partial(S.classify_items, in_scope=_in_scope, dep_graph=_dep_graph)
     open_items, _others, deferred_recs, in_flight_recs, _queued_recs = _classify(
@@ -5224,7 +5224,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     with contextlib.suppress(Exception):
         _turbo_parks = turbo_build_parks(_loop, root, _on_loop, _focus)
     _turbo_stood: set[str] = set()
-    # THE TREE'S OWN PARKS (agent/plans/PLAN-two-track-merge-dev.md LT5): the development tree reports its draft PR's red and the landing tree its queue arms; the rest of the parked keys are moved to the advisory queue just ahead of the stand-down.
+    # THE TREE'S OWN PARKS (agent/plans/PLAN-two-track-merge-dev.md LT5): the development tree reports its draft PR's red and the landing tree its queue arms; the other parked keys move to the advisory queue in `park_tree_keys`, after the effort level and ahead of the roster suppression and the stand-down.
     _tree_parks: frozenset = frozenset()
     with contextlib.suppress(Exception):
         _tree_parks = wl_prscope.tree_parks(_loop, _focus)
