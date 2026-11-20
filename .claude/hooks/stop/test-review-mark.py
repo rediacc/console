@@ -211,6 +211,26 @@ control(
     "does not touch the named test" in untouched,
     True,
 )
+# A submodule fix lists submodule-relative paths, so --test named from the superproject root is read without the submodule's prefix (#32aa9f91).
+_super = _SCRATCH / "ref-super"
+_super.mkdir()
+git(_super, "init", "-q", "-b", BRANCH)
+git(_super, "config", "user.email", "fixture@example.invalid")
+git(_super, "config", "user.name", "fixture")
+repo, reviewed, fix, rel = test_fixture("ref-super/sub", "assert read('a.txt') == 'three'\n")
+git(_super, "-c", "protocol.file.allow=always", "submodule", "add", "-q", "./sub", "sub")
+control(
+    "a --test named from the superproject root (sub/tests/...): accepted",
+    mark_with_test(repo, reviewed, fix, "sub/" + rel),
+    None,
+)
+control("the superproject-relative --test marks it fixed", resolution(repo, reviewed).split()[1], "fixed")
+repo, reviewed, fix, rel = test_fixture("ref-super-control", "assert read('a.txt') == 'three'\n")
+control(
+    "CONTROL: the same prefix on a repo that is no submodule: refused",
+    "does not touch the named test" in (mark_with_test(repo, reviewed, fix, "sub/" + rel) or ""),
+    True,
+)
 control(
     "normalised stem: numeric prefix and dashes",
     R.related_test("tests/partner-customer-org.test.ts", "db/0090_partner_customer_org.sql"),

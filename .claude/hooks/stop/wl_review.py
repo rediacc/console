@@ -3678,6 +3678,13 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
             else wl_store.plan_stub_target(str(pathlib.Path(repo) / finding.file))
         )
         if test_path and test_path not in touched:
+            # A submodule fix lists its paths relative to the submodule, so a path named from the console root (private/account/tests/...) is read without that prefix.
+            superproject = git_out(repo, "rev-parse", "--show-superproject-working-tree").strip()
+            if superproject:
+                prefix = os.path.relpath(os.path.realpath(repo), os.path.realpath(superproject)) + "/"
+                if test_path.startswith(prefix):
+                    test_path = test_path[len(prefix) :]
+        if test_path and test_path not in touched:
             raise ValueError("%s does not touch the named test %s" % (fix[:12], test_path))
         if test_path and not is_test_path(test_path):
             raise ValueError("%s is not a test path" % test_path)
