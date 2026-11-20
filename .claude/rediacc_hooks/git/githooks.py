@@ -161,6 +161,9 @@ def commit_msg(argv: list[str]) -> int:
     )
 
 
+PR_FREEZE_REL = ".claude/rediacc_hooks/pr_freeze.py"
+
+
 def pr_freeze_refusal(msg: str, repo: str, branch: str, paths: list[str]) -> int:
     """PLAN-two-track-merge-dev F1: while this branch is in its babysit or merge phase, only fix work lands (.claude/rediacc_hooks/pr_freeze.py). A lease is not judged here: it is detached, and its commits reach the branch through the lead's cherry-picks, which this hook judges then."""
     if not repo or not branch or cp.lease_root(repo):
@@ -169,8 +172,10 @@ def pr_freeze_refusal(msg: str, repo: str, branch: str, paths: list[str]) -> int
     try:
         freeze = _load("pr_freeze", HERE.parent / "pr_freeze.py")
     except (OSError, ImportError, SyntaxError) as exc:
+        if PR_FREEZE_REL in paths:
+            return 0  # the repair path (review 7d2c8fca.1): the commit that restores the module itself lands
         return _refuse(
-            "the PR freeze module cannot be loaded (%s), so no commit can be judged; restore .claude/rediacc_hooks/pr_freeze.py."
+            "the PR freeze module cannot be loaded (%s), so no commit can be judged; restore .claude/rediacc_hooks/pr_freeze.py (a commit staging it is admitted)."
             % exc
         )
     ok, reason = freeze.check(repo, CONSOLE_ROOT, branch, msg, paths)

@@ -268,6 +268,12 @@ def test_a_missing_freeze_module_refuses(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr(gh.cp, "lease_root", lambda _repo: "")
     assert gh.pr_freeze_refusal("fix(x): y", str(tmp_path), BRANCH, ["f.txt"]) != 0
     assert "cannot be loaded" in capsys.readouterr().err
+    assert (
+        gh.pr_freeze_refusal(
+            "fix(hooks): restore the freeze", str(tmp_path), BRANCH, [gh.PR_FREEZE_REL]
+        )
+        == 0
+    ), "the commit restoring the module must land (review 7d2c8fca.1)"
 
 
 def test_commit_msg_reaches_the_freeze(world, monkeypatch, capsys):
