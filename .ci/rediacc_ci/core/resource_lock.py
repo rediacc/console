@@ -410,7 +410,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     holder_p.add_argument("--resource", required=True)
     anc_p = sub.add_parser(
         "held-by-ancestor",
-        help="exit 0 when this process or an ancestor holds the resource, 1 otherwise",
+        help="exit 0 when this process or an ancestor holds the resource, 1 when not, 2 when the lock cannot be read",
     )
     anc_p.add_argument("--resource", required=True)
     args = parser.parse_args(argv)
@@ -425,7 +425,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(ResourceLock(args.resource).holder())
         return 0
     if args.verb == "held-by-ancestor":
-        return 0 if held_by_ancestor(args.resource) else 1
+        # 2, never 1, on an error: rdc.sh wraps only on exactly 1, so a crash cannot send it round the re-wrap loop again.
+        try:
+            return 0 if held_by_ancestor(args.resource) else 1
+        except OSError as exc:
+            print("resource_lock: held-by-ancestor cannot read the lock: %s" % exc, file=sys.stderr)
+            return 2
     cmd = list(args.cmd)
     if cmd and cmd[0] == "--":
         cmd = cmd[1:]

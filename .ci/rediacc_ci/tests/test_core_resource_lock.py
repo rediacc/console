@@ -405,3 +405,23 @@ def test_held_by_ancestor_reads_the_lock_not_the_environment() -> None:
         check=False,
     )
     assert done.returncode == 0, ("a grandchild of the holder must read it as held", done.stderr)
+
+
+@pytest.mark.usefixtures("runtime")
+def test_held_by_ancestor_is_true_for_a_hold_this_process_owns() -> None:
+    lock = resource_lock.ResourceLock("fleet")
+    lock.acquire("this process", wait_s=0)
+    try:
+        assert resource_lock.held_by_ancestor("fleet") is True
+    finally:
+        lock.release()
+    assert resource_lock.held_by_ancestor("fleet") is False
+
+
+@pytest.mark.usefixtures("runtime")
+def test_held_by_ancestor_exits_two_when_the_lock_cannot_be_read(monkeypatch) -> None:
+    def broken(_resource, _environ=None):
+        raise OSError("planted read failure")
+
+    monkeypatch.setattr(resource_lock, "held_by_ancestor", broken)
+    assert resource_lock.main(["held-by-ancestor", "--resource", "fleet"]) == 2
