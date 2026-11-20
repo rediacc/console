@@ -1113,7 +1113,7 @@ def problems_for(root, rel, text, current_ledger):
             )
             continue
         # After a carry the messages name the commit actually checked (review 94f2e23a.4).
-        checked = done if landed.startswith(done) else "%s (landed as %s)" % (done, landed[:12])
+        checked = R.done_label(done, landed)
         ledger = ledger_at(root, landed)
         if ledger is None:
             out.append(

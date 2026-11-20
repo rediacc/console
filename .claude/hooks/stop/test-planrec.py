@@ -285,6 +285,47 @@ truthy(
     "RB7: a done= that resolves directly answers its own full sha",
     _rm_direct == (True, _rm_landed, ""),
 )
+control(
+    "RB7: R4 names a carried done= with its landed sha",
+    R.done_label("abc123def", "fff000111222333"),
+    "abc123def (landed as fff000111222)",
+)
+control(
+    "RB7: R4 names a direct done= as itself",
+    R.done_label("abc123def", "abc123def0000"),
+    "abc123def",
+)
+# The memo follows HEAD: one more commit gives a fresh (root, HEAD) key, and the carried answer still holds.
+_rm_keys = len([k for k in R._DONE_SUCCESSOR if k[0] == str(_rm)])
+sh(_rm, "git", "commit", "-q", "--allow-empty", "-m", "head moves")
+truthy(
+    "RB7: after HEAD moves the carry still resolves",
+    R.resolve_done(_rm, _rm_old[:9])[1] == _rm_landed,
+)
+truthy(
+    "RB7: a HEAD move builds a fresh successor map",
+    len([k for k in R._DONE_SUCCESSOR if k[0] == str(_rm)]) == _rm_keys + 1,
+)
+# Depth 0: a one-commit repository has no window, so a gone sha is refused rather than raising.
+_one = pathlib.Path(tempfile.mkdtemp())
+sh(_one, "git", "init", "-q", "-b", "main")
+sh(
+    _one,
+    "git",
+    "-c",
+    "user.name=t",
+    "-c",
+    "user.email=t@example.com",
+    "commit",
+    "-q",
+    "--allow-empty",
+    "-m",
+    "only",
+)
+falsy(
+    "RB7: a one-commit repo (no successor window) refuses a gone sha",
+    R.resolve_done(_one, "0123456789")[0],
+)
 _rm_real = R._done_successor
 R._done_successor = lambda *_a: ""
 try:

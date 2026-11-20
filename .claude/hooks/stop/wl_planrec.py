@@ -316,8 +316,15 @@ def _done_successor(root, token: str) -> str:
             if depth > 0
             else ""
         )
+        if len(_DONE_SUCCESSOR) >= 8:
+            _DONE_SUCCESSOR.clear()  # one map per (root, HEAD); a long process keeps at most a handful (review f9d4291d.2)
         _DONE_SUCCESSOR[key] = su.lazy_successor_of(root, base, sys.modules[__name__])
     return _DONE_SUCCESSOR[key](token) or ""
+
+
+def done_label(done: str, landed: str) -> str:
+    """How R4 names the commit it checked: the record's `done=` itself, or `<done> (landed as <sha12>)` after the successor map carried it (review 94f2e23a.4)."""
+    return done if landed.startswith(done) else "%s (landed as %s)" % (done, landed[:12])
 
 
 def resolve_done(root, token: str) -> tuple[bool, str, str]:
