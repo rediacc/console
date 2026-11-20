@@ -146,7 +146,9 @@ def _repo_tip(root, record, key):
     """The live tip one repo of a lease is judged against, in the tree the lease was cut from."""
     if key == CONSOLE:
         return tree_tip(root, _cut_tree(record))
-    return spike.out(_live_dir(root, record) / key, "rev-parse", "HEAD")
+    live = _live_dir(root, record) / key
+    # From an uninitialized submodule's empty directory git walks up and answers the console's HEAD.
+    return spike.out(live, "rev-parse", "HEAD") if os.path.lexists(live / ".git") else ""
 
 
 def gitlinks_at(root, tip):
@@ -635,6 +637,15 @@ def _repo_plan(root, record, key):
         return None
     tip = _repo_tip(root, record, key)
     head = spike.out(tree, "rev-parse", "HEAD")
+    if not tip:
+        if head and head != record.get("base", {}).get(key):
+            message = "%s is not checked out in %s, so the commits of %s have nowhere to land" % (
+                key,
+                console,
+                tree,
+            )
+            raise LeaseRefusedError(message)
+        return None
     pin = spike.out(
         tree, "rev-parse", "--verify", "-q", "%s%s^{commit}" % (spike.PIN_SPACE, record["id"])
     )
@@ -722,7 +733,7 @@ def _lease_commits(root, record, key):
     """`(live repo, live tip, lease shas oldest first)` of one repo of a lease, landed or not: what HEAD and the pin hold past the lease's base. The tree may be gone; the pin outlives it."""
     console = _live_dir(root, record)
     live = console if key == "." else console / key
-    if not live.is_dir():
+    if not live.is_dir() or not os.path.lexists(live / ".git"):
         return None
     tree = pathlib.Path(record["path"]) if key == "." else pathlib.Path(record["path"]) / key
     tips = []
@@ -1294,7 +1305,10 @@ def _lease_facts(world, lease_id, path, record):
                 problems.append(why)
             elif os.path.lexists(tree / ".git"):
                 subs.append(key)
-                tip = spike.out(live / key, "rev-parse", "HEAD")
+                if landing:
+                    tip = _repo_tip(world.root, record, key)
+                else:
+                    tip = spike.out(live / key, "rev-parse", "HEAD")
                 repos[key], more = _repo_facts(tree, key, tip, pins.get(key, ""), base.get(key, ""))
                 problems += more
     heads = {
@@ -1307,7 +1321,7 @@ def _lease_facts(world, lease_id, path, record):
         if key not in repos:
             tip = None
             if landing:
-                tip = console_tip if key == CONSOLE else spike.out(live / key, "rev-parse", "HEAD")
+                tip = console_tip if key == CONSOLE else _repo_tip(world.root, record, key)
             repos[key], more = _store_facts(
                 world, key, pins.get(key, ""), heads.get(key, ""), base.get(key, ""), tip
             )

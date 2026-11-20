@@ -87,6 +87,7 @@ def build_two(base_dir, *, picks=2, dev_conflict=False, absorb_dev=False):
     commit(merger, "other.txt", "main side\n", "unrelated")
     if absorb_dev:
         spike.write(merger / "d1.txt", "dev side\n")
+        spike.must(merger, "add", "--", "d1.txt")
         commit(merger, "extra.txt", None, "carries d1 and more")
     spike.must(merger, "fetch", "-q", "origin", LANDING)
     for sha in landing_shas[:picks]:
@@ -339,6 +340,17 @@ def test_land_control_a_development_lease_prints_the_plain_pick(pair):
     result = base.run_land(pair.root, "ld2")
     assert result.returncode == 0, result.stderr
     assert result.stdout.splitlines() == ["git cherry-pick -x %s" % sha]
+
+
+def test_land_refuses_a_submodule_commit_the_landing_tree_cannot_hold(pair):
+    # The fixture's landing tree leaves the submodule uninitialized, so a submodule commit has nowhere to land; skipping it would drop it silently.
+    made = base.run_lease(pair.root, "--name", "ls", "--tree", "landing")
+    assert made.returncode == 0, made.stderr
+    base.sub_commit(pathlib.Path(made.stdout.strip()), "sub-only.txt")
+    result = base.run_land(pair.root, "ls")
+    assert result.returncode == 1
+    assert "is not checked out in %s" % pair.landing in result.stderr
+    assert result.stdout == ""
 
 
 def test_gc_labels_the_landing_tree_landing(pair):
