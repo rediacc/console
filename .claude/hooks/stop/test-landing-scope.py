@@ -452,8 +452,14 @@ def control_real_hook(tmp):
     shim.write_text(GH_SHIM % {"base": fix.base}, encoding="utf-8")
     shim.chmod(0o755)
     record = fix.proj / ".git" / "rediacc-landing.json"
+    # A real linked tree on the PR branch: commit_policy's reader (LT1) binds only an existing tree of this repository at its realpath.
+    landing = pathlib.Path(os.path.realpath(fix.base)) / "console-landing"
+    added = fix.git("worktree", "add", "-q", "-b", PR_BRANCH, str(landing))
+    if added.returncode != 0:
+        raise SystemExit("fixture: the landing tree: %s" % added.stderr)
 
-    def stop(landing_path):
+    def stop(landing_path, tree=None):
+        tree = tree or fix.proj
         if landing_path is None:
             record.unlink(missing_ok=True)
         else:
@@ -462,7 +468,7 @@ def control_real_hook(tmp):
         payload = json.dumps(
             {
                 "session_id": fix.sid,
-                "cwd": str(fix.proj),
+                "cwd": str(tree),
                 "last_assistant_message": "working\n\n## Remaining\n- nothing",
                 "session_crons": [],
                 "background_tasks": wlfix.with_waker([], fix.waker),
@@ -472,7 +478,7 @@ def control_real_hook(tmp):
         env.update(
             PATH="%s:%s" % (fix.base / "binonly", fix.env.get("PATH", "")),
             TMPDIR=str(fix.base / "tmp"),
-            CLAUDE_PROJECT_DIR=str(fix.proj),
+            CLAUDE_PROJECT_DIR=str(tree),
             WORKLIST_TASKS_DIR=str(fix.base / "tasks"),
             WORKLIST_PUBLISH_REF="pub",
             WORKLIST_JUDGE="off",
@@ -483,14 +489,14 @@ def control_real_hook(tmp):
     red = "CI IS RED ON PR #543"
     got = stop(None)
     check("CONTROL no record: the red blocks", (red in got.out, got.decision), (True, "block"))
-    got = stop(fix.base / "console-landing")
+    got = stop(landing)
     check("development: the draft's red is no block", red in got.out, False)
     check(
         "development: the draft's red is reported",
         "this is the development tree's draft PR" in got.out,
         True,
     )
-    got = stop(fix.proj)
+    got = stop(landing, landing)
     check("landing: the PR's red blocks", (red in got.out, got.decision), (True, "block"))
 
     # An open item added on the landing branch, CI green: it blocks only where it is in scope.
@@ -516,7 +522,7 @@ def control_real_hook(tmp):
         )
     got = stop(None)
     check("CONTROL no record: the item blocks", (probe in got.out, got.decision), (True, "block"))
-    got = stop(fix.base / "console-landing")
+    got = stop(landing)
     check("development: the landing branch's item is not shown", probe in got.out, False)
     check("development: the landing branch's item does not block", got.decision, "allow")
 
@@ -526,9 +532,9 @@ def control_real_hook(tmp):
     (projects / "reports" / "pr-babysit-agenttest.md").write_text("# round\n", encoding="utf-8")
     fix.env["WORKLIST_PROJECTS_DIR"] = str(projects)
     finish = "THE WAVE IS NOT FINISHED"
-    got = stop(fix.proj)
+    got = stop(landing, landing)
     check("landing: the finish line blocks", (finish in got.out, got.decision), (True, "block"))
-    got = stop(fix.base / "console-landing")
+    got = stop(landing)
     check("development: the finish line does not block", got.decision, "allow")
 
 

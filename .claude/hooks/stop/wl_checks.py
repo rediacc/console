@@ -1164,12 +1164,22 @@ def plan_status_excerpt(root, live):
     return rel, ""
 
 
+def own_tree(event=None):
+    """The session's own checkout, never the mapped root: C.project_root maps the landing tree to the main checkout (agent/plans/PLAN-two-track-merge-dev.md LT14), whose HEAD is the development branch, so a read of the session's branch, role or PR starts here."""
+    return C.checkout_root(C.project_start(event))
+
+
+def own_branch(event=None):
+    """C.git_branch of `own_tree(event)`."""
+    return C.git_branch(own_tree(event))
+
+
 def triage_context(root, worklist, session_id=""):
     """The facts the CLI can honestly gather about a finding's blast radius.
 
     Passed to the triage judge AND printed in degraded mode, so the session self-assesses on exactly the same facts the model would have seen. `git status --porcelain` is the load-bearing one: it names the files this session already has in flight, which is what makes "is the fix's file set disjoint" an answerable question rather than a guess.
     """
-    branch = C.git_branch(root)
+    branch = own_branch()
     d = plan_dir(root)
     recs = plan_records(root)
     if not d.is_dir():
@@ -1915,7 +1925,7 @@ def handle_session_start(event):
         blocks.append(M.CTX_CHECKLISTS % cl_listing)
         summary.append("%d live handoff checklist(s)" % cl_n)
     # A FOURTH independent block: the last CI verdict for this branch, from the branch cache the push hook's watcher and the Stop hook write (PLAN-ci-verdict box G). Cache only, never the network, so it works with the Stop hook disabled and costs a SessionStart nothing.
-    cv_line = wl_civerdict.session_start_line(C.worklist_for(root), C.git_branch(root))
+    cv_line = wl_civerdict.session_start_line(C.worklist_for(root), own_branch(event))
     if cv_line:
         blocks.append(cv_line)
         summary.append("a cached CI verdict")
@@ -2003,8 +2013,8 @@ def handle_post_compact(event):
     with contextlib.suppress(Exception):
         _fold = S.load(C.worklist_for(C.project_start(event)), sync=False)
         msg += "\n\n" + M.CTX_POSTCOMPACT_FACTS % (
-            C.git_branch(root) or "(detached)",
-            C._git(root, "rev-parse", "--short", "HEAD") or "?",
+            own_branch(event) or "(detached)",
+            C._git(own_tree(event), "rev-parse", "--short", "HEAD") or "?",
             guided_slice(_fold, sid, None, (sid or "")[:8], root)
             or "  (nothing open, in flight or deferred)",
         )
@@ -3699,6 +3709,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     # the cadence lands because the cadence's cap is the next thing to key off block streaks, and a shared counter would make the cap fire on a stranger's behaviour.
     counter = worklist.with_suffix(".blocks-%s" % me8)
     root = C.project_root(C.project_start(event))
+    # The session's own checkout: `root` of the landing tree is the main checkout (LT14), so the branch, role and PR reads below start here.
+    own = own_tree(event)
     # THE SWITCHBOARD (agent/plans/PLAN-stop-hook-turbo.md D3), read ONCE per stop from the event's own root, so a fixture project reads its own QUEUE.md and never the operator's: judge, cadence, agent hint, writer cap and turbo all come from here.
     _cfg, _cfg_problems = wl_planqueue.settings_for(root)
     _writer_cap = wl_roster.writer_cap(root)
@@ -3811,7 +3823,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # THE LOOP STATE (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 1), computed ONCE per stop: which PR, which plan set, which epic items, what comes next. A resolver that raises leaves the checkout off the loop (the full battery) and says so as a hook bug.
     _loop, _loop_err = None, ""
     try:
-        _loop = wl_prscope.loop_state(root, worklist, session_id)
+        _loop = wl_prscope.loop_state(own, worklist, session_id)
     except Exception as exc:
         _loop_err = "%s: %s" % (type(exc).__name__, str(exc)[:160])
     _on_loop = loop_governs(_loop)
@@ -5640,7 +5652,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             _prf_info = cidetail.get("info")
         _prf_num = (_prf_info or {}).get("pr")
         # The branch is read LOCALLY. `agent_branch` is not bound until the unread-reports surface several hundred lines below, and referencing it here raised UnboundLocalError -- caught by the fail-closed arm, which turned the whole check into a HOOK BUG banner on the proving case. That is the arm working; it is not a reason to leave it reachable.
-        _prf_branch = C.git_branch(root) or ""
+        _prf_branch = C.git_branch(own) or ""
         _prf_log = wl_roundlog.roundlog_path(projects_dir, _prf_branch) if projects_dir else None
         # Under turbo the finish line is offered only once the batch is ready (agent/plans/PLAN-stop-hook-turbo.md D8): every plan of the set finished and `batch_size` of them done, or no queued plan left to take. Turbo off: always.
         _prf_batch = (
@@ -5925,7 +5937,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # or any [SILENT] one has demonstrably not delivered it, and a [SILENT] report is the case that is indistinguishable from a healthy agent unless somebody looks.
     #
     # The branch is read HERE and nowhere else on this path now: the report store is keyed per branch in TMPDIR (wl_report.store_root), which is a different tree from agent/ and keeps its own key.
-    agent_branch = C.git_branch(root)
+    agent_branch = C.git_branch(own)
     try:
         _unread = wl_report.unread(
             wl_report.store_root(root),
@@ -7126,7 +7138,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # SPEND THE BUDGET, and only here. `proven` is the one settle that cost a real artifact and a real CI round; the cheap settles (covered/one-off/not-applicable/deferred) cost neither, and charging them would let a session farm the budget with five honest one-offs to buy a pass on the sixth, real gate. Suppressed on failure: the ledger must never raise into gating.
                 if payload == "proven":
                     with contextlib.suppress(Exception):
-                        wl_reggate.charge(C.git_branch(root), reg_sig, "proven")
+                        wl_reggate.charge(C.git_branch(own), reg_sig, "proven")
                 # STICKY: the fixset is persisted, so every later stop absorbs this verdict silently and the text never returns.
                 outq_add(
                     worklist,
@@ -7148,7 +7160,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # broken ledger can only make the hook STRICTER, never laxer.
                 capped = False
                 with contextlib.suppress(Exception):
-                    br = C.git_branch(root)
+                    br = C.git_branch(own)
                     charged, remaining, _debts, forgot = wl_reggate.budget_state(br, root)
                     if not forgot and remaining <= 0:
                         rg = verdict.get("regression_gate") or {}
@@ -7347,7 +7359,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
             sw_text, sw_note = "", ""
             if wide_moment:
-                sw_text, sw_note = wl_shapedup.wide_run(str(root), state_doc, C.git_branch(root))
+                sw_text, sw_note = wl_shapedup.wide_run(str(root), state_doc, C.git_branch(own))
         except Exception as exc:
             sw_text, sw_note = "", "wide shape tier errored: %s" % exc
         S.save_state(worklist, session_id, state_doc)
