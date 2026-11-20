@@ -47,6 +47,7 @@ import importlib.util
 import io
 import json
 import os
+import pathlib
 import re
 import subprocess
 import sys
@@ -58,6 +59,7 @@ from unittest import mock
 import _cipath
 from rediacc_ci import log, paths
 from rediacc_ci.controls import plant
+from rediacc_ci.quality import plan_impl_facts as PIF
 from rediacc_ci.review.successor import (  # the rebase successor map lives in one shared module
     lazy_successor_of,
     make_successor_of,
@@ -2068,6 +2070,31 @@ def memo_git_reads(module, names=("_git_out", "_git_raw", "_git_ok")):
     return restore
 
 
+class _RunState:
+    """What one main run holds: the run-to-run fact cache, set after the controls and cleared when main returns (the controls and the tests run without it)."""
+
+    facts = None
+
+    def clear(self):
+        self.facts = None
+
+
+_RUN = _RunState()
+
+
+def fact_closure_files(planrec, preflight):
+    """The source files whose code computes a cached fact: a change to any of them starts the cache empty (P1 STALE)."""
+    return [
+        __file__,
+        PIF.__file__,
+        planrec.__file__,
+        preflight.__file__,
+        sys.modules["rediacc_ci.review.successor"].__file__,
+        str(pathlib.Path(planrec.__file__).with_name("wl_review.py")),
+        str(pathlib.Path(planrec.__file__).with_name("wl_core.py")),
+    ]
+
+
 # The undo of every memo main installed, run by drops_git_memo when main returns or raises.
 _MEMO_UNDO: list = []
 
@@ -2150,6 +2177,10 @@ def main(argv=None) -> int:
     # `--selftest` STOPS HERE. The controls are the claim that this instrument can fail; the verdict below is a claim about the tree, and a caller that wants only the first must not be made to pay for the second. test-planenforce.py's C10e drives exactly this mode.
     if selftest_only:
         return 0
+    # The run-to-run fact cache (PLAN-two-track-merge-dev P1): installed after the controls, saved when main returns (drops_git_memo runs every _MEMO_UNDO entry).
+    _RUN.facts = PIF.Facts(REPO_ROOT, PIF.closure_hash(fact_closure_files(planrec, preflight)))
+    _MEMO_UNDO.append(_RUN.facts.save)
+    _MEMO_UNDO.append(_RUN.clear)
     _MEMO_UNDO.extend(
         [
             memo_git_reads(planrec),
@@ -2248,11 +2279,15 @@ def main(argv=None) -> int:
         rows = planrec.read_investigations(REPO_ROOT)
         # One run reads a fixed tree and immutable commits: the submodule listing is taken once and each commit's dates once (strace on 2026-11-20 counted 1,378 identical `git config --get-regexp` processes and hundreds of `git log -1 --format=%cI` per sha).
         absent_here = absent_submodules(REPO_ROOT)
-        commit_date = functools.lru_cache(maxsize=None)(
-            lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%cI", commit)
+        commit_date = functools.partial(
+            _RUN.facts.commit_date,
+            "date_c",
+            compute=lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%cI", commit),
         )
-        author_date = functools.lru_cache(maxsize=None)(
-            lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%aI", commit)
+        author_date = functools.partial(
+            _RUN.facts.commit_date,
+            "date_a",
+            compute=lambda commit: planrec._git_out(REPO_ROOT, "log", "-1", "--format=%aI", commit),
         )
         bound = bound_by_the_rule(
             judged,
@@ -2261,7 +2296,7 @@ def main(argv=None) -> int:
             clock.get("baseline_at"),
         )
         prefetch_follow(rel for rel, *_ in judged)
-        successor_of = lazy_successor_of(REPO_ROOT, base, planrec)
+        successor_of = lazy_successor_of(REPO_ROOT, base, planrec, facts=_RUN.facts)
         canon_memo: dict[str, str] = {}
 
         def canon(token):
@@ -2431,7 +2466,20 @@ def prefetch_follow(rels, workers=8):
 
 
 def follow_names(rel):
-    """`git log --follow` names of `rel`, walked once per path."""
+    """`git log --follow` names of `rel`, once per path per run, and across runs through the fact cache keyed on the last commit that touched `rel` (P1)."""
+    if rel not in _FOLLOW and _RUN.facts is not None:
+        last = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "rev-list", "-1", "HEAD", "--", rel],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout.strip()
+        _FOLLOW[rel] = _RUN.facts.follow(rel, last, _follow_walk)
+    return _follow_walk(rel)
+
+
+def _follow_walk(rel):
+    """The walk itself: `git log --follow` names of `rel`, memoized in _FOLLOW."""
     if rel not in _FOLLOW:
         # A git failure ends the run instead of reading as "no pre-move paths", the same blindness check_plan_record.follow_walk closes; three tries absorb a transient lazy fetch on CI's blob:none clone.
         for _ in range(3):
