@@ -3848,7 +3848,7 @@ STATIC: list[Case] = [
     ),
     case(
         "check 2 guards/block_settled_questions.py",
-        ask_json("How should a finished turbo batch push?"),
+        ask_json("How should a finished batch push?"),
         "settled(push how-should timing refused)",
     ),
     case(

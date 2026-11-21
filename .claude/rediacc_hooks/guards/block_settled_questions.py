@@ -8,7 +8,7 @@ fixed lifecycle events and apply regardless of what Claude decides to do." So th
 WHAT IT REFUSES, and nothing more: a PERMISSION-SEEKING question about committing, branching, pushing, opening a PR or merging, OR a routing question about where a task's work should happen (new worktree, a lease, or the current checkout). The lead stays in the main checkout and writers get leases through /writers-now (agent/plans/PLAN-worktree-lease.md Design 6), so the routing question stays settled now that a lease exists. CLAUDE.md settles all of those the same way -- "verified work is committed right away, in small reviewable commits on the single current branch" (session default 1, 2026-09-25), "ask for the big-bang, not for permission to
 patch one thing", and (2026-09-16, live) "[a worktree/branch routing question] shouldn't have asked ... it has big-bang answering usually" -- so asking costs the operator a round trip to repeat a rule they already wrote down.
 
-AND PUSH TIMING (operator ruling ASKED:2026-10-08T10:25Z, "It should not be even askable also for other/future sessions as well"): a question asking WHEN or WHETHER to push or open the PR, in any spelling, including which `TURBO_PUSH_REASON` kind to give. `block_turbo_early_push` and the Stop hook decide that between them (a complete local batch pushes and opens its PR with no reason; an incomplete one is refused with its open boxes named), so it gets its own answer, PUSH_MESSAGE, and is checked before the permission rule. The PUSH TIMING block below carries the shapes and the measurement that motivated them.
+AND PUSH TIMING (operator ruling ASKED:2026-10-08T10:25Z, "It should not be even askable also for other/future sessions as well"): a question asking WHEN or WHETHER to push or open the PR, in any spelling. The two-tree loop and its hooks decide that (agent/plans/PLAN-simple-two-tree-loop.md: the development tree pushes as a backup on the session-default-1 cadence and opens no PR, promote opens the next PR, and the landing tree pushes the fixes of the one PR it lands), so it gets its own answer, PUSH_MESSAGE, and is checked before the permission rule. A question that only DESCRIBES a push inside a design ("the landing tree adds the fix to the PR and pushes, and development picks it up later?") asks nothing about timing and passes. The PUSH TIMING block below carries the shapes and the measurements that motivated them.
 
 THE MATCH IS NARROW ON PURPOSE, and the narrowness is the whole design. A hook that swallows legitimate questions is worse than the nagging it replaces, because the operator never learns what was suppressed. Two independent conditions must BOTH hold:
 
@@ -118,11 +118,11 @@ HEADER_OBJECT = (
 )
 
 # ---- PUSH TIMING: when or whether to push, or to open the PR, is the hooks' decision ----
-# Operator ruling ASKED:2026-10-08T10:25Z, on "how should a finished turbo batch push?": "It should not be even askable also for other/future sessions as well." Under turbo `block_turbo_early_push` releases a push and `gh pr create` once the local batch is complete, by the Stop hook's own reading, and refuses them before that naming what remains; off turbo the cadence of session default 1 decides. Nothing about push timing is left for the operator, so a question about it is refused with that answer.
+# Operator ruling ASKED:2026-10-08T10:25Z, on the question of how a finished batch pushes: "It should not be even askable also for other/future sessions as well." The cadence of session default 1 and the two-tree loop decide push timing (PUSH_MESSAGE), so nothing about it is left for the operator, and a question about it is refused with that answer.
 #
-# Measured before this rule, 2026-10-08, in the lowercased form the matcher reads: of thirteen timing spellings only two were refused ("should i push?" and "when should i push the batch?", both by the permission rule above). The one actually asked, "how should a finished turbo batch push?", passed: `how should` is not a permission shape, and it carries no pronoun.
+# Measured before this rule, 2026-10-08, in the lowercased form the matcher reads: of thirteen timing spellings only two were refused ("should i push?" and "when should i push the batch?", both by the permission rule above). The one actually asked, a how-should question about a finished batch, passed: `how should` is not a permission shape, and it carries no pronoun.
 #
-# THE ACTION is a push or a PR opening in VERB use. `NOUN_MODIFIER` still applies before it ("the main push"), and a closed list of nouns after it marks the event or the machinery rather than the act ("the push job", "the turbo push guard"), so a question ABOUT the push rule or a CI trigger passes.
+# THE ACTION is a push or a PR opening in VERB use. `NOUN_MODIFIER` still applies before it ("the main push"), and a closed list of nouns after it marks the event or the machinery rather than the act ("the push job", "the push guard"), so a question ABOUT the push rule or a CI trigger passes.
 PUSH_ACTION = (
     r"(?<![a-z_])(push(es|ed|ing)?|open(s|ed|ing)? (a |the |its |this )?(pr|pull request)|"
     r"(gh )?pr create|create (a |the )?(pr|pull request))(?![a-z_])"
@@ -142,6 +142,8 @@ PUSH_TIMING_AFTER = (
     r"^[^.?!;]*?((^|[^a-z])(now|yet|first|later|already|today|tonight)([^a-z]|$)|"
     r"(^|[^a-z])or (keep|wait|continue|hold|finish|not)([^a-z]|$))"
 )
+# THE CLAUSE BOUNDS THE AFTER SCAN. Measured false positive, 2026-11-21 (#073c50c5): an operator design question about the two-tree fix flow, "... the landing folder adds it to the PR and pushes, and development picks it up later when it needs it or at handover?", was refused as a timing ask, because `later` belonged to the next clause ("development picks it up later") and the time-word scan read to the sentence end. The time word, the alternative and the condition are read only up to the first comma that does not open an `or` alternative: "push now, or keep working?" and "push it, or wait?" still ask WHEN, while ", and development ... later" is another clause's time.
+CLAUSE_AFTER = r",(?! or(?![a-z]))"
 # A CONDITION after the action ("... once the review is in", "... until ci is green"): a timing ask after a modal lead, but only a precondition of the mechanics after a mechanics lead.
 PUSH_TIMING_CONDITION = r"^[^.?!;]*?(^|[^a-z])(once|until)([^a-z]|$)"
 # A mechanics lead before the action: "how do/does/can/could/would/did ... push" asks how the push is done, so a CONDITION after it (a fork push once a branch is rebased) is part of the mechanics and stays quiet. It never silences a time word or an "or wait" alternative: "how do we push the batch now or later?" still asks WHEN (review ef6e61d0.1). `how should/shall` is not here: that one asks WHEN, and PUSH_TIMING_BEFORE refuses it.
@@ -156,12 +158,6 @@ PUSH_BARE = (
     r"^[^a-z]*(push|open (a |the )?(pr|pull request)|create (a |the )?(pr|pull request))"
     r"( (it|this|that|these|them|now|the batch|the branch|the pr|to origin|yet|first))*"
     r"[^a-z]*\?[^a-z]*$"
-)
-# The reason-kind choice: which TURBO_PUSH_REASON to give is the guard's to judge, never the operator's.
-# A QUESTION about the choice, not prose naming the variable: an interrogative that governs it ("which turbo_push_reason kind fits?") or a modal asking about it ("for turbo_push_reason, should we give ci-cd?"), in a sentence that ends in `?`. Found by check_guard_mention_anchoring, 2026-10-08: the first spelling refused "the docs say never to run turbo_push_reason which ...".
-PUSH_REASON_CHOICE = (
-    r"((^|[^a-z])(which|what) ([a-z_-]+ ){0,3}?turbo_push_reason|"
-    r"turbo_push_reason[^.?!;]*?(should|shall|can|may) (i|we|it)(?![a-z]))[^.!;]*\?"
 )
 # A sentence ABOUT push timing, not asking it: a speech verb before the timing ("should we explain when to push?") disarms it, the mention-vs-target class the CLAUSE anchor answers for the permission rule.
 PUSH_MENTION = r"(^|[^a-z])(explain|document|describe|record|note|report|mention|write)([^a-z]|$)"
@@ -232,11 +228,9 @@ a rule the operator has written down twice.
   Session default 1: "Verified work is committed right away, in small
   reviewable commits on the single current branch." Pushes run on a cadence
   ("at an epic milestone, at least every 2 hours of committed work, and before
-  a stop that leaves unpushed commits"; under `turbo: on` with `turbo_push:
-  batch-end` (the default) a completed batch pushes and opens its PR with no
-  reason, an earlier push needs a `TURBO_PUSH_REASON` kind or a `backup_push_h`
-  backup, and the hooks decide push timing), and "a second branch or PR is the
-  operator's own `!` command; there is nothing to ask for."
+  a stop that leaves unpushed commits"; the hooks and the two-tree loop decide
+  push timing), and "a second branch or PR is the operator's own `!` command;
+  there is nothing to ask for."
 
   Findings rule: "Ask for the big-bang, not for permission to patch one thing...
   put the whole cluster into a single plan ... and ask to run it."
@@ -279,25 +273,26 @@ entry login_bench printed, and the question passes.
     % BENCH_ORIGIN
 )
 
-PUSH_MESSAGE = """BLOCKED: when to push, and when to open the PR, is decided by the hooks, so it is
-never a question for the operator (ruling ASKED:2026-10-08T10:25Z: "It should not
-be even askable also for other/future sessions as well").
+PUSH_MESSAGE = """BLOCKED: when to push, and when to open the PR, is decided by the hooks and the
+two-tree loop, so it is never a question for the operator (ruling
+ASKED:2026-10-08T10:25Z: "It should not be even askable also for other/future
+sessions as well").
 
-  turbo on, turbo_push batch-end: `block_turbo_early_push` admits `git push` and
-  `gh pr create` with NO reason once the local batch is complete, read exactly as
-  the Stop hook reads it (every plan of the batch ticked, and batch_size of them
-  finished or no queued plan left to take); the Stop hook's loop-next block orders
-  the same push then. Before that the guard refuses and names what remains: work
-  it. A real operational reason goes on the command and the guard judges it:
-      TURBO_PUSH_REASON='<ci-cd|red-fix|deadline|backup>: <why>' git push ...
+  Development tree (the main checkout): push the branch as a backup on the
+  session-default-1 cadence (an epic milestone, at least every 2 hours of
+  committed work, before a stop that leaves unpushed commits). It opens no PR:
+  the next PR opens through `./run.sh worktree landing --promote` once the
+  release is green and every plan on the branch is code-complete, and the Stop
+  hook names that step.
 
-  turbo off, or a live PR: push on the session-default-1 cadence (an epic
-  milestone, at least every 2 hours of committed work, before a stop that leaves
-  unpushed commits); the one branch has one PR.
+  Landing tree: push each verified fix to the one open PR; the Stop hook's
+  landing step names the next move (watch, fix, merge, release, hotfix).
 
-So run the push or `gh pr create` and let the guard answer, or keep working the
-boxes it names. A decision that genuinely needs the operator is a worklist [?]
-carrying its own DEFAULT, never a question that blocks the turn.
+Every push still needs its ci:quick receipt, and a vm:check receipt where the
+range touches the VM paths; the push guards answer for both. So run the push
+and let the guards answer, or keep working what the Stop hook names. A decision
+that genuinely needs the operator is a worklist [?] carrying its own DEFAULT,
+never a question that blocks the turn.
 """
 
 EDGE_CASES = [
@@ -403,7 +398,7 @@ EDGE_CASES = [
     # CONTROL: mentioning worktrees is not itself permission-seeking.
     ("a design question about worktrees", "How are worktrees organized across the repos?"),
     # 2026-10-08 (ruling ASKED:2026-10-08T10:25Z): PUSH TIMING. The first case is the question that was actually asked; it passed the permission rule, which is what made the ruling necessary.
-    ("push timing: the question that was asked", "How should a finished turbo batch push?"),
+    ("push timing: the question that was asked", "How should a finished batch push?"),
     ("push timing: push now", "Push now?"),
     ("push timing: open the pr, bare", "Open the PR?"),
     ("push timing: now or keep working", "Push now, or keep working on the batch?"),
@@ -412,7 +407,6 @@ EDGE_CASES = [
     ("push timing: is it time to", "Is it time to open the PR?"),
     ("push timing: ready to push", "Ready to push?"),
     ("push timing: whether to", "Whether to push now or after the batch completes?"),
-    ("push timing: the reason-kind choice", "Which TURBO_PUSH_REASON kind fits this push?"),
     (
         "push timing: a header that is the action",
         {
@@ -425,15 +419,32 @@ EDGE_CASES = [
     ("push timing control: a mention", "Should we explain in the report when to push?"),
     (
         "push timing control: the guard as a noun",
-        "How should the turbo push guard handle submodules?",
+        "How should the push guard handle submodules?",
     ),
     ("push timing control: a CI trigger", "When does the main push job run?"),
     ("push timing control: a fact", "Did the push reach origin?"),
-    # check_guard_mention_anchoring's probe shape, 2026-10-08: prose naming the variable is not a choice asked.
+    # 2026-11-21 (#073c50c5), MEASURED: an operator design question that DESCRIBES a push, with a time word in the next clause. The two rows after it hold the line: the same push with the time word in its own clause, and an `or wait` alternative after a comma, still refuse.
     (
-        "push timing control: prose naming the reason variable",
-        "The docs say TURBO_PUSH_REASON, which the guard reads, is optional here.",
+        "push timing control: a design question describing a push (measured)",
+        {
+            "tool_input": {
+                "questions": [
+                    {
+                        "question": "Go with the reviewed fix flow: development supervises a "
+                        "helper that builds the fix on top of the PR's code, the landing folder "
+                        "adds it to the PR and pushes, and development picks it up later when it "
+                        "needs it or at handover?",
+                        "header": "Fix flow",
+                    }
+                ]
+            }
+        },
     ),
+    (
+        "push timing: the time word in the push's own clause",
+        "Should the landing tree push it later?",
+    ),
+    ("push timing: an or-wait alternative after a comma", "Push it, or wait?"),
     (
         "push timing control: an unrelated operator question",
         "Which locale should the naturalization pipeline translate next?",
@@ -535,16 +546,15 @@ def _objects(sentence):
 
 def _push_timing(sentence, header_object):
     """The matched phrase when this sentence asks WHEN or WHETHER to push or open the PR, else None (see PUSH TIMING)."""
-    choice = re.search(PUSH_REASON_CHOICE, sentence)
-    if choice:
-        return choice.group(0)
     for m in re.finditer(PUSH_ACTION, sentence):
         before, after = sentence[: m.start()], sentence[m.end() :]
-        # `timing_after` is what the time-word rule reads; `after` itself stays whole for the other rules.
+        # `clause` is `after` cut at the clause boundary (CLAUSE_AFTER): the time-word and condition rules read only the action's own clause.
+        clause = re.split(CLAUSE_AFTER, after, maxsplit=1)[0]
+        # `timing_after` is what the time-word rule reads; `after` itself stays whole for the noun, named-command and push-to-main rules.
         timing_after = (
-            re.sub(PUSH_OBJECT_MODIFIER, " ", after)
+            re.sub(PUSH_OBJECT_MODIFIER, " ", clause)
             if re.search(PUSH_MECHANICS_LEAD, before)
-            else after
+            else clause
         )
         if re.search(NOUN_MODIFIER, before) or re.search(PUSH_NOUN_AFTER, after):
             continue
@@ -563,7 +573,7 @@ def _push_timing(sentence, header_object):
                     re.search(PUSH_TIMING_AFTER, timing_after)
                     or (
                         not re.search(PUSH_MECHANICS_LEAD, before)
-                        and re.search(PUSH_TIMING_CONDITION, after)
+                        and re.search(PUSH_TIMING_CONDITION, clause)
                     )
                 )
             )
