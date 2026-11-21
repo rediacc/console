@@ -1,24 +1,17 @@
-## SESSION d778be9d 2026-11-21T13:55:19Z
+## SESSION d778be9d 2026-11-21T14:42:53Z
 
-# STATE d778be9d (2026-11-21 ~13:45Z, hibernating)
+# STATE d778be9d (2026-11-21 ~14:50Z, writers-now round on 3 plans)
 
 ## Big pieces
-- PR #605 (landing tree /home/developer/console-landing, 1104-1, head 3bb555a74): run 44905563521 finished red on Quality / Static (PR description freshness, FIXED by refreshing the body), Quality / Go (Off-box ops health, FIXED: eu-bench key authorized on l1vm, offbox green 13:30Z), Lane budget and Shard receipts (carried, need fresh green timings), CI Complete.
-- PLAN-pr-loop-single-source (1121-1): W1, W2, W3a, W3b, W4 done (W4 8b38c170f, tick 836613cc2); next J0, L1-L3 (lead).
-- PLAN-simple-two-tree-loop: next B10 (delete --phase + test_wl_focus) now that W4 landed, then B7, B8; B9 after single-source.
-- PLAN-ciquick-cpu: machine-load boxes L0-L3 added (755a69174). Load sample 2026-11-21 13:11-13:13Z: ci:quick alone takes the 1-min load from 0.8 to 25 on 24 cores within ~90 s, memory fine (22 GB free).
-
-## Patches waiting to be applied
-- Freshness check (#5eb28959): lease agent-a720fa1da93e53432 commit a0203fe2f. Land with `git cherry-pick -x a0203fe2f`, then add the wl_checks.py `scheduled-stale` hunk from the writer report (after the scheduled-red try block, before OPS HEALTH) and gh-shim freshness routes for stop fixtures; then the red reader should use main_scheduled_workflows (it reads the working tree, blind to 8 of 12 main workflows).
-
-## Next action
-1. `gh run rerun 44905563521 --failed` (never the bare form), then `python3 .ci/scripts/ci/ci-trace.py --wait --run 44905563521` in the background; check ci-vm-bake ran on the PR and published pr-605 images; lane budget clears only once green timings exist.
-2. Land a0203fe2f + the wl_checks hunk (above); dispatch the missed monthly ci-vm-bake (Nov 1 lost in the Actions outage 2026-10-30..2026-11-18).
-3. B10 of PLAN-simple-two-tree-loop, then B7.
-4. Open findings: #1873a644 (ops rebuild drops per-config machine keys), #5c8c1249 (dmarc AUTH_REQUIRED after restart), #a9878a25 (ops_health refresh silent on an unreadable config), #faed0173 (PR body refresh misses chained background pushes), #b1a14849 (backup-check trigger too broad).
+- PR #605 (landing /home/developer/console-landing, 1104-1): rerun of run 44905563521 left only Lane budget + Shard receipts red; fix #664e36ae in flight (writer afe497f8ec79e80bb, operator ruling ASKED:2026-11-21T14:38Z "Fix the gate's math"). Uncommitted budget_report --refresh sits in the landing .ci/config/lane-durations.json.
+- writers-now on PLAN-simple-two-tree-loop, PLAN-pr-loop-single-source, PLAN-ciquick-cpu (survey /tmp/writers-now/1121-1-20261121T1410Z.md): B1 and W3.1 ticked (aef593ede); CL-A writer a5cee19fae23b5c34 (#77f74fba) on freshness wiring + B4 (+ review dfbc8225.1), B10, B7, B8; review writer ad81c8a759f836554 (#b9ff658b) on 6359c982.1 and 85e2fccb.1.
+- Blocked: CL-C and ciquick L1/L3 behind PLAN-ci-quick-cpu-scheduling (exclusive run.ts/manifest.ts); L2 after L0 (#2bb0442a partial); B9 after B4+B10; B0/B11 pushed-head; M0-M3 after writers land.
 
 ## Owed ticks
-- #23d7f955, #e9c304da: done only on the landing branch (9b963603c, 83d63c6a5); tick after promote or when the tick verb reads the landing branch.
+- PRESENT to verify at the gate run: J0 273b8bc6, pr-loop L1 1f6b75da, W4.2 51ceeb4f, W2.5 3cc088a8.
+- #23d7f955, #e9c304da: landing-branch only (9b963603c, 83d63c6a5).
 
-## Decisions (2026-11-21)
-- Operator: one PR per plan; handover when dev plans are code-complete and after a green release; no dev draft PR; outages ask after 24h; 72h wall clock; machine-load boxes into PLAN-ciquick-cpu; Actions-gap check self-fixing, no notification; bake package and environments left as is until PLAN-release-path-protection-2027.
+## Next action
+1. Land each writer report as it arrives (#77f74fba, #664e36ae, #b9ff658b): ./run.sh worktree land <id>, cherry-pick -x, named tests, tick with the landed sha or review-mark fixed, gc the tree.
+2. #664e36ae: cherry-pick the budget fix into the landing tree, budget_report --refresh there, check-lane-budget rc 0, commit fix(ci), ci:quick, push #605 with TURBO_PUSH_REASON red-fix, watch with ci-trace.
+3. #71e94c03 old unlanded leases (31babf1d9, 03c52327d, dirty a1141315); #66c110a1 ci-trace --wait 5xx retry; #a9878a25, #1873a644, #5c8c1249, #faed0173, #b1a14849.
