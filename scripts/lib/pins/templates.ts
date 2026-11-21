@@ -468,8 +468,16 @@ export function readTemplateFiles(root: string): Map<string, string> {
       out.set(rel, fs.readFileSync(path.join(root, rel), 'utf8'));
     }
   }
+  // A scan that reads a handful of files reads as a clean registry; the floor makes a moved or
+  // empty scan root a refusal (38 template compose files on 2026-11-21).
+  if (out.size < MIN_TEMPLATE_COMPOSE_FILES)
+    throw new Error(
+      `only ${out.size} template compose file(s) found under ${TREES.map((t) => t.root).join(', ')} (floor ${MIN_TEMPLATE_COMPOSE_FILES}): a scan root moved or is empty`
+    );
   return out;
 }
+
+export const MIN_TEMPLATE_COMPOSE_FILES = 30;
 
 // ---- controls --------------------------------------------------------------------------------
 
@@ -756,6 +764,21 @@ export function selftestCases(): ControlCase[] {
     ok:
       spliced.includes('"gates": ["check:ci-pin-registry"]') &&
       JSON.stringify(JSON.parse(spliced)) === JSON.stringify(withTemplates(small, scan.entries)),
+  });
+  cases.push({
+    name: 'a scan whose roots exist but hold fewer template compose files than the floor is refused',
+    ok: (() => {
+      const empty = fs.mkdtempSync(path.join(fs.realpathSync('/tmp'), 'tpl-floor-'));
+      try {
+        for (const tree of TREES) fs.mkdirSync(path.join(empty, tree.root), { recursive: true });
+        readTemplateFiles(empty);
+        return false;
+      } catch (e) {
+        return String(e).includes(`floor ${MIN_TEMPLATE_COMPOSE_FILES}`);
+      } finally {
+        fs.rmSync(empty, { recursive: true, force: true });
+      }
+    })(),
   });
   cases.push({
     name: 'CONTROL: a text whose entries do not line up with the parsed registry is refused',
