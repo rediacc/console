@@ -125,10 +125,6 @@
       "block": "low",
       "advise": "low"
     },
-    "turbo-next": {
-      "block": "low",
-      "advise": "low"
-    },
     "idle-capacity": {
       "block": "smart",
       "advise": "low"
@@ -403,7 +399,7 @@
     "commit-remind": {
       "advise": "low"
     },
-    "backup-push": {
+    "landing-release-unreadable": {
       "advise": "low"
     },
     "backup-lag": {

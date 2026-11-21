@@ -103,9 +103,9 @@ PROSE_TARGETS = {
     "block_settled_questions.py": (
         "BLOCKER: a pre-ask guard reads a QUESTION, which is prose by construction, and push "
         "timing is a topic it refuses in any wording (operator ruling ASKED:2026-10-08T10:25Z, "
-        '"It should not be even askable"), naming the TURBO_PUSH_REASON kind too. Every '
-        "probe it refuses (`push now ?`, `which turbo_push_reason ?`, measured 12 of 133 on "
-        "2026-10-09) is that topic, so the refusal is the target, not a mention."
+        '"It should not be even askable"). Every probe it refuses (`push now ?`, measured '
+        "on 2026-10-09 and again after the reason-kind rule went with its variable on "
+        "2026-11-21) is that topic, so the refusal is the target, not a mention."
     ),
 }
 

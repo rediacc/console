@@ -23,7 +23,6 @@ from rediacc_hooks.tests import wlfix
 
 J = wlfix.import_wl("wl_judge")
 R = wlfix.import_wl("wl_planrec")
-CK = wlfix.import_wl("wl_checks")
 M = wlfix.import_wl("worklist_messages")
 
 REL = "agent/plans/PLAN-batch-fixture.md"
@@ -64,18 +63,6 @@ def write_rows(root, rows):
     with ledger.open("a", encoding="utf-8") as fh:
         for row in rows:
             fh.write(json.dumps(row) + "\n")
-
-
-def batch_world(root, extra=(), extra_rows=()):
-    text = plan_text(extra)
-    (root / REL).parent.mkdir(parents=True, exist_ok=True)
-    (root / REL).write_text(text, encoding="utf-8")
-    rows = [
-        {"plan": REL, "sig": sig_of(text, body.split()[0] + " "), "verdict": "partial", "owed": k}
-        for body, k in OWED.items()
-    ]
-    write_rows(root, [*rows, *extra_rows])
-    return types.SimpleNamespace(plans=(REL,), finished=0, batch_size=3), text
 
 
 # ---- R20261110.1: --owed on a partial investigation ---------------------------------------------
@@ -169,90 +156,6 @@ def test_owed_with_no_kind_is_a_usage_error(wl):
     assert "--owed takes a kind" in got.err, got.err
 
 
-# ---- R20261110.2: the boxes, classed --------------------------------------------------------------
-
-
-def test_every_box_of_the_0413_state_is_non_local(tmp_path):
-    state, _text = batch_world(tmp_path)
-    rows = CK._batch_box_facts(state, tmp_path)
-    assert len(rows) == len(TAGGED) + len(OWED)
-    classes = {bid: cls for _plan, bid, _sig, cls in rows}
-    for body in TAGGED:
-        assert classes[body.split()[0]] == "non-writer", classes
-    for body, kind in OWED.items():
-        assert classes[body.split()[0]] == "owed:" + kind, classes
-    assert all(plan == "PLAN-batch-fixture.md" for plan, *_x in rows)
-
-
-def test_inverse_a_box_with_no_row_is_local(tmp_path):
-    state, _text = batch_world(tmp_path, extra=["Z9 a local thing with no row"])
-    classes = {bid: cls for _plan, bid, _sig, cls in CK._batch_box_facts(state, tmp_path)}
-    assert classes["Z9"] == "local"
-
-
-@pytest.mark.parametrize(
-    ("label", "row_extra"),
-    [
-        # D1: a partial row written before `owed` existed counts as local until it is re-recorded.
-        ("an old partial row with no owed", {"verdict": "partial"}),
-        ("a partial row owing code", {"verdict": "partial", "owed": "code"}),
-        ("an absent row", {"verdict": "absent"}),
-    ],
-)
-def test_rows_that_owe_code_or_nothing_named_keep_the_box_local(tmp_path, label, row_extra):
-    text = plan_text(["Z9 a box with a row"])
-    state, _text = batch_world(
-        tmp_path,
-        extra=["Z9 a box with a row"],
-        extra_rows=[{"plan": REL, "sig": sig_of(text, "Z9 "), **row_extra}],
-    )
-    classes = {bid: cls for _plan, bid, _sig, cls in CK._batch_box_facts(state, tmp_path)}
-    assert classes["Z9"] == "local", label
-
-
-def test_the_newest_row_decides(tmp_path):
-    text = plan_text(["Z9 a box re-recorded"])
-    sig = sig_of(text, "Z9 ")
-    state, _text = batch_world(
-        tmp_path,
-        extra=["Z9 a box re-recorded"],
-        extra_rows=[
-            {"plan": REL, "sig": sig, "verdict": "partial"},
-            {"plan": REL, "sig": sig, "verdict": "partial", "owed": "live"},
-        ],
-    )
-    classes = {bid: cls for _plan, bid, _sig, cls in CK._batch_box_facts(state, tmp_path)}
-    assert classes["Z9"] == "owed:live"
-
-
-def test_judge_local_batch_carries_open_local_and_rows(tmp_path, monkeypatch):
-    state, _text = batch_world(tmp_path, extra=["Z9 a local thing with no row"])
-    monkeypatch.setattr(CK, "local_batch_open", lambda *_a: True)
-    got = CK._judge_local_batch(state, tmp_path)
-    assert got is not None
-    assert (got["finished"], got["batch"]) == (0, 3)
-    assert got["open"] == len(TAGGED) + len(OWED) + 1
-    assert got["local"] == 1
-    assert len(got["rows"]) == got["open"]
-
-
-def test_control_judge_local_batch_is_none_when_no_batch_fills(tmp_path, monkeypatch):
-    state, _text = batch_world(tmp_path)
-    monkeypatch.setattr(CK, "local_batch_open", lambda *_a: False)
-    assert CK._judge_local_batch(state, tmp_path) is None
-
-
-def test_a_failed_box_read_keeps_the_batch_facts(tmp_path, monkeypatch):
-    state, _text = batch_world(tmp_path)
-    monkeypatch.setattr(CK, "local_batch_open", lambda *_a: True)
-
-    def boom(*_a):
-        raise OSError("unreadable")
-
-    monkeypatch.setattr(CK, "_batch_box_facts", boom)
-    assert CK._judge_local_batch(state, tmp_path) == {"finished": 0, "batch": 3}
-
-
 # ---- R20261110.2: the prompt and the settle, through a canned claude ----------------------------
 
 
@@ -304,71 +207,6 @@ def ask(local_batch, tracked=None):
         with_riders=False,
         facts={"tracked": tracked or [], "missing_ids": []} if tracked is not None else None,
     )
-
-
-def facts_for(root, monkeypatch, extra=()):
-    state, _text = batch_world(root, extra=extra)
-    monkeypatch.setattr(CK, "local_batch_open", lambda *_a: True)
-    return CK._judge_local_batch(state, root)
-
-
-def test_no_local_box_prompt_and_a_batch_continue_settles_to_stop(tmp_path, monkeypatch, judge):
-    lb = facts_for(tmp_path / "w", monkeypatch)
-    assert lb["local"] == 0
-    judge.answer(dict(BATCH_CONTINUE))
-    verdict, err = ask(lb)
-    assert err is None, err
-    prompt = judge.prompt()
-    assert "There is NO local box work" in prompt
-    assert "H3 [" in prompt
-    assert "owed:ci" in prompt
-    assert "advances\nthe batch's open boxes locally" not in prompt
-    assert verdict["verdict"] == "stop", verdict
-    assert "no local work" in verdict["reason"]
-    assert verdict["next_action"] == ""
-
-
-def test_inverse_one_local_box_keeps_the_continue(tmp_path, monkeypatch, judge):
-    lb = facts_for(tmp_path / "w", monkeypatch, extra=["Z9 a local thing with no row"])
-    assert lb["local"] == 1
-    judge.answer(dict(BATCH_CONTINUE))
-    verdict, err = ask(lb)
-    assert err is None, err
-    prompt = judge.prompt()
-    assert "There is NO local box work" not in prompt
-    assert "1 of the batch's" in prompt
-    assert "Z9 [" in prompt
-    assert verdict["verdict"] == "continue", verdict
-
-
-def test_inverse_a_continue_naming_a_tracked_item_stands(tmp_path, monkeypatch, judge):
-    lb = facts_for(tmp_path / "w", monkeypatch)
-    judge.answer(dict(BATCH_CONTINUE, next_action="Work #a1b2c3d4 locally while the batch waits."))
-    verdict, err = ask(lb, tracked=["a1b2c3d4"])
-    assert err is None, err
-    assert verdict["verdict"] == "continue", verdict
-
-
-def test_a_continue_naming_an_untracked_id_still_settles(tmp_path, monkeypatch, judge):
-    lb = facts_for(tmp_path / "w", monkeypatch)
-    judge.answer(dict(BATCH_CONTINUE, next_action="Work #a1b2c3d4 locally in the batch."))
-    verdict, err = ask(lb, tracked=["ffff0000"])
-    assert err is None, err
-    assert verdict["verdict"] == "stop", verdict
-
-
-def test_inverse_a_continue_not_about_the_batch_stands(tmp_path, monkeypatch, judge):
-    lb = facts_for(tmp_path / "w", monkeypatch)
-    judge.answer(
-        {
-            "verdict": "continue",
-            "reason": "The message reports a finding in wl_judge.py without fixing it.",
-            "next_action": "Fix the finding in wl_judge.py and add its test.",
-        }
-    )
-    verdict, err = ask(lb)
-    assert err is None, err
-    assert verdict["verdict"] == "continue", verdict
 
 
 def test_control_without_box_rows_the_prompt_names_no_boxes_and_nothing_settles(judge):
@@ -448,30 +286,7 @@ def live_owed_world(tmp_path, monkeypatch, landed=True):
         # D1: the newest row is partial with no `owed`, taken on the landed code.
         head = _git(root, "rev-parse", "HEAD")
         write_rows(root, [{"plan": REL, "sig": sig, "verdict": "partial", "head": head}])
-    monkeypatch.setattr(CK, "local_batch_open", lambda *_a: True)
-    return root, types.SimpleNamespace(plans=(REL,), finished=0, batch_size=3)
-
-
-def test_a_live_owed_box_is_not_in_the_local_list(tmp_path, monkeypatch):
-    """FIRE: before the fix J9 read `local` and the prompt listed it as local work."""
-    root, state = live_owed_world(tmp_path, monkeypatch)
-    classes = {bid: cls for _plan, bid, _sig, cls in CK._batch_box_facts(state, root)}
-    assert classes == {"J9": "owed:live", "Z9": "local"}, classes
-    lb = CK._judge_local_batch(state, root)
-    assert (lb["open"], lb["local"]) == (2, 1), lb
-    text = J.local_batch_boxes(lb)
-    local_part, _sep, other_part = text.partition("The other open boxes")
-    assert "Z9" in local_part, text
-    assert "J9" not in local_part, text
-    assert "J9" in other_part, text
-    assert "owed:live" in other_part, text
-
-
-def test_control_with_nothing_landed_a_truly_absent_box_stays_local(tmp_path, monkeypatch):
-    """CONTROL: box-audit reads a box with no landed work `untouched`, so a truly absent box stays local work."""
-    root, state = live_owed_world(tmp_path, monkeypatch, landed=False)
-    classes = {bid: cls for _plan, bid, _sig, cls in CK._batch_box_facts(state, root)}
-    assert classes == {"J9": "local", "Z9": "local"}, classes
+    return root, types.SimpleNamespace(plans=(REL,))
 
 
 def test_live_owed_boxes_is_empty_when_the_audit_fails(tmp_path, monkeypatch):

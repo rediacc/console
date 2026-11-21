@@ -508,7 +508,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_boxready.py | (none) | via .claude/rediacc_hooks/tests/test_plan_gate_ceiling.py | py |
 | .claude/hooks/stop/wl_bravedefault.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_checklist.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
-| .claude/hooks/stop/wl_checks.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |
+| .claude/hooks/stop/wl_checks.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
 | .claude/hooks/stop/wl_ci.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |
 | .claude/hooks/stop/wl_civerdict.py | (none) | via .claude/hooks/post-bash/arm_ci_watch.py | py |
 | .claude/hooks/stop/wl_claimcheck.py | (none) | via .claude/hooks/stop/test-completion-evidence.py | py |
@@ -555,7 +555,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_profile.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_proofcheck.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_prreview.py | (none) | via .claude/hooks/post-bash/github_status_note.py | py |
-| .claude/hooks/stop/wl_prscope.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |
+| .claude/hooks/stop/wl_prscope.py | (none) | via .claude/hooks/stop/test-landing-loopnext.py | py |
 | .claude/hooks/stop/wl_prsignals.py | (none) | via .claude/hooks/stop/wl_prreview.py | py |
 | .claude/hooks/stop/wl_rebase.py | (none) | via .claude/hooks/stop/test-landing-loopnext.py | py |
 | .claude/hooks/stop/wl_reggate.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |

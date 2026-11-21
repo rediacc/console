@@ -73,26 +73,12 @@ def push_note(doc):
     return M.N_CI_HOLD % (head, ahead) if ahead else M.N_CI_HOLD_PUSHED % head
 
 
-def receipt_note(doc):
-    """N_RECEIPT_EARLY, or "" while a turbo local batch is still filling (agent/plans/PLAN-turbo-local-first.md D4): no push is due before the batch completes, so "a stop with unpushed commits" is not a reason to build a receipt then."""
+def receipt_note():
+    """N_RECEIPT_EARLY: a receipt built before a push is due. The batch loop that once held it back while a local batch filled is deleted (agent/plans/PLAN-simple-two-tree-loop.md B4), so the note no longer reads the loop state."""
     syspath = _load_syspath()
     syspath.on_sys_path(syspath.STOP_DIR)
     import worklist_messages as M
 
-    try:
-        import wl_checks
-        import wl_core as C
-        import wl_prscope
-
-        start = C.project_start(doc)
-        root = C.project_root(start)
-        state = wl_prscope.loop_state(
-            root, C.worklist_for(start), str(doc.get("session_id") or ""), gh=False
-        )
-        if wl_checks.local_batch_open(state, root):
-            return ""
-    except Exception:
-        pass
     return M.N_RECEIPT_EARLY
 
 
@@ -102,7 +88,7 @@ def note_for(doc):
     cmd = str(tool_input.get("command") or "") if isinstance(tool_input, dict) else ""
     kind = classify(cmd)
     if kind == "receipt":
-        return receipt_note(doc)
+        return receipt_note()
     if kind == "push":
         return push_note(doc)
     return ""

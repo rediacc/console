@@ -52,15 +52,13 @@ PLAN_DONE = "agent/plans/PLAN-fx-done.md"
 PLAN_OPEN = "agent/plans/PLAN-fx-open.md"
 PLAN_DONE2 = "agent/plans/PLAN-fx-done2.md"
 QUEUE_REL = "agent/plans/QUEUE.md"
-# The turbo switch (agent/plans/PLAN-stop-hook-turbo.md T6): `turbo: on` is committed at the PR head and `turbo: off` sits in the working tree, so a guard that read the working tree would refuse what the head admits.
-QUEUE_TURBO = (
-    "# Plan queue\n\n## Settings\n\n```stop-hook\neffort: high\nturbo: %s\n```\n\n## Promoted\n\n"
-)
+# A queue at the PR head and a different one in the working tree: no QUEUE.md setting admits a second plan, so neither copy changes the plan gate's answer (agent/plans/PLAN-simple-two-tree-loop.md ruling 4).
+QUEUE_TEXT = "# Plan queue\n\n## Settings\n\n```stop-hook\neffort: %s\n```\n\n## Promoted\n\n"
 PLANS = {
     PLAN_DONE: "# PLAN-fx-done\nStatus: approved\n\n## Boxes\n- [x] A the first box is finished and ticked\n- [x] B the second box is finished and ticked\n",
     PLAN_OPEN: "# PLAN-fx-open\nStatus: approved\n\n## Boxes\n- [x] A the first box is finished and ticked\n- [ ] B the second box is still open on this branch\n",
     PLAN_DONE2: "# PLAN-fx-done2\nStatus: approved\n\n## Boxes\n- [x] A the first box is finished and ticked\n",
-    QUEUE_REL: QUEUE_TURBO % "on",
+    QUEUE_REL: QUEUE_TEXT % "high",
 }
 
 _ENV = dict(
@@ -94,7 +92,7 @@ def _make_checkout():
     _git(d, "commit", "-q", "-m", "plans")
     _git(d, "update-ref", "refs/remotes/origin/%s" % BRANCH, "HEAD")
     (d / PLAN_OPEN).write_text(PLANS[PLAN_OPEN].replace("- [ ]", "- [x]"), encoding="utf-8")
-    (d / QUEUE_REL).write_text(QUEUE_TURBO % "off", encoding="utf-8")
+    (d / QUEUE_REL).write_text(QUEUE_TEXT % "low", encoding="utf-8")
     return d
 
 
@@ -153,13 +151,13 @@ CASES = [
         "past",
     ),
     (
-        "turbo on at the head admits two ticked plans",
+        "two ticked plans are refused: a plan rides one PR",
         MERGE,
         "Plan: %s, %s" % (PLAN_DONE, PLAN_DONE2),
-        "past",
+        "plan",
     ),
     (
-        "turbo on at the head still refuses a plan open at the head",
+        "two plans, one open at the head, are refused",
         MERGE,
         "Plan: %s, %s" % (PLAN_DONE2, PLAN_OPEN),
         "plan",

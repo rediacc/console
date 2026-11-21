@@ -109,20 +109,16 @@ PLANS = {
     PLAN_OPEN: "# PLAN-fx-open\nStatus: approved\n\n## Boxes\n- [x] A the first box is finished and ticked\n- [ ] B the second box is still open on this branch\n",
     PLAN_NOBOX: "# PLAN-fx-nobox\nStatus: approved\n\nProse only, no boxes at all.\n",
 }
-# The turbo world (agent/plans/PLAN-stop-hook-turbo.md T6): `turbo: on` committed in QUEUE.md at the pushed sha, `turbo: off` in the working tree only, so a guard that read the working tree would refuse what the pushed commit admits.
+# The two-plan world: a second finished plan committed at the pushed sha. A plan rides exactly one PR (agent/plans/PLAN-simple-two-tree-loop.md ruling 4), so naming both refuses the fallback whatever QUEUE.md says.
 PLAN_DONE2 = "agent/plans/PLAN-fx-done2.md"
-QUEUE_REL = "agent/plans/QUEUE.md"
-QUEUE_TURBO = (
-    "# Plan queue\n\n## Settings\n\n```stop-hook\neffort: high\nturbo: %s\n```\n\n## Promoted\n\n"
-)
 
 
 def _make_live(
-    branch="0914-1", unpushed=False, main_moved=False, hooks=False, turbo=False, parked=False
+    branch="0914-1", unpushed=False, main_moved=False, hooks=False, two_plans=False, parked=False
 ):
     """A console-shaped checkout on `branch`, pushed to a real bare origin, one commit ahead of main.
 
-    `turbo` commits a QUEUE.md with `turbo: on` and a second finished plan, then leaves `turbo: off` in the working tree; `unpushed` adds a local commit `origin/<branch>` never saw; `main_moved` lands a commit on origin's main that the branch does not contain (a fast-forward is then impossible); `parked` is the 2026-10-08 shape (worklist #c1474aae): the PR branch stays pushed while the checkout moves to a new, unpushed branch `PARKED_BRANCH` carrying one more commit; `hooks` points `core.hooksPath` at the git-level hooks AFTER the fixture is built.
+    `two_plans` commits a second finished plan; `unpushed` adds a local commit `origin/<branch>` never saw; `main_moved` lands a commit on origin's main that the branch does not contain (a fast-forward is then impossible); `parked` is the 2026-10-08 shape (worklist #c1474aae): the PR branch stays pushed while the checkout moves to a new, unpushed branch `PARKED_BRANCH` carrying one more commit; `hooks` points `core.hooksPath` at the git-level hooks AFTER the fixture is built.
     """
     bare = pathlib.Path(tempfile.mkdtemp(prefix="origin-", dir=RUN_TMP))
     _git(bare, "init", "-q", "--bare", "--initial-branch=main")
@@ -136,16 +132,13 @@ def _make_live(
         (d / rel).parent.mkdir(parents=True, exist_ok=True)
         (d / rel).write_text(text, encoding="utf-8")
     _git(d, "add", "--", *PLANS)
-    if turbo:
+    if two_plans:
         (d / PLAN_DONE2).write_text(
             PLANS[PLAN_DONE].replace("fx-done", "fx-done2"), encoding="utf-8"
         )
-        (d / QUEUE_REL).write_text(QUEUE_TURBO % "on", encoding="utf-8")
-        _git(d, "add", "--", PLAN_DONE2, QUEUE_REL)
+        _git(d, "add", "--", PLAN_DONE2)
     _git(d, "commit", "-q", "-m", "work")
     _git(d, "push", "-q", "origin", branch)
-    if turbo:
-        (d / QUEUE_REL).write_text(QUEUE_TURBO % "off", encoding="utf-8")
     if main_moved:
         other = pathlib.Path(tempfile.mkdtemp(prefix="other-", dir=RUN_TMP))
         _git(other, "clone", "-q", str(bare), ".")
@@ -174,8 +167,8 @@ LIVE = _make_live()
 LIVE_AHEAD = _make_live(unpushed=True)
 LIVE_BEHIND = _make_live(main_moved=True)
 LIVE_SHA = _tip(LIVE, "origin/0914-1")
-LIVE_TURBO = _make_live(turbo=True)
-LIVE_TURBO_SHA = _tip(LIVE_TURBO, "origin/0914-1")
+LIVE_TWO = _make_live(two_plans=True)
+LIVE_TWO_SHA = _tip(LIVE_TWO, "origin/0914-1")
 PARKED = _make_live(parked=True)
 PARKED_SHA = _tip(PARKED, "origin/0914-1")
 PARKED_LOCAL_SHA = _tip(PARKED, PARKED_BRANCH)
@@ -551,20 +544,20 @@ CASES = [
             % PLAN_OPEN
         ),
     ),
-    # ---- T6 of agent/plans/PLAN-stop-hook-turbo.md: turbo is read at the pushed sha ------------
+    # ---- one plan per PR (agent/plans/PLAN-simple-two-tree-loop.md B4): two plans at the pushed sha refuse ----
     (
-        "L2 turbo on at the pushed sha admits two ticked plans",
+        "L2 two ticked plans at the pushed sha are refused",
         "git push origin 0914-1:%s" % MAIN,
-        LIVE_TURBO,
-        False,
-        fx(head=LIVE_TURBO_SHA, body="Plan: %s, %s" % (PLAN_DONE, PLAN_DONE2)),
+        LIVE_TWO,
+        True,
+        fx(head=LIVE_TWO_SHA, body="Plan: %s, %s" % (PLAN_DONE, PLAN_DONE2)),
     ),
     (
-        "L2 turbo on at the pushed sha still refuses an open plan",
+        "L2 two plans, one open, at the pushed sha are refused",
         "git push origin 0914-1:%s" % MAIN,
-        LIVE_TURBO,
+        LIVE_TWO,
         True,
-        fx(head=LIVE_TURBO_SHA, body="Plan: %s, %s" % (PLAN_DONE, PLAN_OPEN)),
+        fx(head=LIVE_TWO_SHA, body="Plan: %s, %s" % (PLAN_DONE, PLAN_OPEN)),
     ),
     # 65f2a27e.2: a PR answer missing a field is refused by that field's name, not as "PR #None".
     (

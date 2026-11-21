@@ -2820,31 +2820,6 @@ def _teammate_idle_cli():
         fh.write(json.dumps(rec, sort_keys=True) + "\n")
 
 
-def _batch_body_cli(argv):
-    """`--batch-body <me>`: print `plan_gate.batch_body(root, branch)` for the current branch, the PR body a completed turbo batch opens its PR with (agent/plans/PLAN-turbo-local-first.md D2). Read-only. Exit 2 on a bad call, 1 when there is no branch or no plan to name."""
-    if len(argv) != 2 or not C.PREFIX_RE.match(argv[1]):
-        sys.stderr.write(M.CLI_BATCH_BODY_USAGE)
-        sys.exit(2)
-    _identity_or_die(argv[1], _die2)
-    import wl_prscope
-
-    plan_gate, commit_policy = wl_prscope._hooks_pkg()
-    root = str(C.project_root(C.project_start()) or os.getcwd())
-    top = commit_policy.toplevel(root) or root
-    branch = commit_policy.current_branch(top)
-    if not branch or branch == "main":
-        sys.stderr.write(M.CLI_BATCH_BODY_REFUSED % ("no live branch is checked out (%r)" % branch))
-        sys.exit(1)
-    body = plan_gate.batch_body(top, branch)
-    if not body.strip():
-        sys.stderr.write(
-            M.CLI_BATCH_BODY_REFUSED
-            % ("agent/plans/QUEUE.md has no queue head and no plan is named for %s" % branch)
-        )
-        sys.exit(1)
-    sys.stdout.write(body if body.endswith("\n") else body + "\n")
-
-
 RULE_USAGE = (
     "usage: --rule <me>\n"
     "       --rule <me> <check> <subject> <text...> [--until <ISO8601Z>]\n"
@@ -3883,9 +3858,6 @@ def main():
         return
     if sys.argv[1:2] == ["--promote"]:
         _promote_cli(sys.argv[1:])
-        return
-    if sys.argv[1:2] == ["--batch-body"]:
-        _batch_body_cli(sys.argv[1:])
         return
     if sys.argv[1:2] and sys.argv[1] in (
         "--add",

@@ -751,14 +751,6 @@ CLI_ADOPT_DONE = (
 
 # agent/plans/PLAN-stop-hook-turbo.md D9. The CLI_QUEUE_SET_* strings serve `--queue-set`: usage (static) and the refusal reason (one %s).
 
-# `--batch-body` (agent/plans/PLAN-turbo-local-first.md D2): usage (static) and the refusal (one %s: why).
-CLI_BATCH_BODY_USAGE = (
-    "usage: --batch-body <me>\n"
-    "Prints the PR body for the current branch's turbo batch: a `Plan:` line naming the queue "
-    "head plus every plan the Stop hook named for the branch. Pipe it to a file for "
-    "`gh pr create --body-file` once the batch completes.\n"
-)
-CLI_BATCH_BODY_REFUSED = "--batch-body: %s\n"
 CLI_QUEUE_SET_USAGE = (
     'usage: --queue-set <me> [key=value ...] [--note "<text>"]\n'
     "Writes the `## Settings` block of agent/plans/QUEUE.md: effort "
@@ -2431,11 +2423,6 @@ Plan queue switchboard (agent/plans/QUEUE.md `## Settings`):
                                 nothing is committed (it prints the git add
                                 line). Bare: print the resolved settings, the
                                 source of each value, and any problems.
-  --batch-body <me>             print the PR body for the current branch's turbo
-                                batch (a `Plan:` line naming the queue head and
-                                every plan the Stop hook named for the branch),
-                                for `gh pr create --body-file` when the batch
-                                completes
   --promote <me> <plan> <note...>
                                 append a live, unfinished plan to `## Promoted`
                                 with its unfinished prerequisites pulled in
