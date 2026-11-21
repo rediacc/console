@@ -94,27 +94,19 @@ runs:
     # container region sets it), NVM_DIR names the image's nvm, the node on
     # PATH resolves to the image's $NVM_DIR/current/bin/node, and npm is the
     # pinned NPM_VERSION. The versions are printed every run, so the lane's
-    # log shows what the salt's image term stands for.
+    # log shows what the salt's image term stands for. Eight logic lines, the
+    # inline-run cap check:ci-workflows applies to workflow files.
     - id: node
       shell: bash
       env:
         FROM_IMAGE: ${{ inputs.node-from-image }}
         NODE_MAJOR: ${{ inputs.node-version }}
       run: |
-        if [[ "$FROM_IMAGE" != "true" ]]; then
-          echo "key=node${NODE_MAJOR}" >> "$GITHUB_OUTPUT"
-          exit 0
-        fi
+        if [[ "$FROM_IMAGE" != "true" ]]; then echo "key=node${NODE_MAJOR}" >> "$GITHUB_OUTPUT"; exit 0; fi
         [[ "${CI_RUNNER_IMAGE:-}" =~ ^[^[:space:]@]+@sha256:[0-9a-f]{64}$ ]] || { echo "::error::node-from-image needs CI_RUNNER_IMAGE=<image>@sha256:<digest> from the job's image-container region, got '${CI_RUNNER_IMAGE:-}'. Run npx tsx scripts/gate-bind.ts --write."; exit 1; }
-        [[ -n "${NVM_DIR:-}" && -x "$NVM_DIR/current/bin/node" ]] || { echo "::error::node-from-image: NVM_DIR='${NVM_DIR:-}' has no current/bin/node, so this job is not inside the devcontainer image"; exit 1; }
-        on_path="$(command -v node || :)"
-        [[ -n "$on_path" && "$(readlink -f "$on_path")" == "$(readlink -f "$NVM_DIR/current/bin/node")" ]] || { echo "::error::node on PATH is '${on_path}', not the image's $NVM_DIR/current/bin/node"; exit 1; }
-        node_v="$(node --version)"
-        image_v="$("$NVM_DIR/current/bin/node" --version)"
-        [[ "$node_v" == "$image_v" ]] || { echo "::error::node --version is $node_v, the image's node is $image_v"; exit 1; }
+        [[ -x "${NVM_DIR:-/nonexistent}/current/bin/node" && "$(readlink -f "$(command -v node)")" == "$(readlink -f "$NVM_DIR/current/bin/node")" ]] || { echo "::error::node on PATH is '$(command -v node)', not the image's ${NVM_DIR:-<NVM_DIR unset>}/current/bin/node, so this job is not running on the devcontainer image's node"; exit 1; }
+        node_v="$(node --version)"; npm_v="$(npm --version)"; pin="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pin npm)"
         [[ "$node_v" == "v${NODE_MAJOR}."* ]] || { echo "::error::the image's node is $node_v, not major ${NODE_MAJOR}"; exit 1; }
-        pin="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pin npm)"
-        npm_v="$(npm --version)"
         [[ -n "$pin" && "$npm_v" == "$pin" ]] || { echo "::error::the image's npm is ${npm_v}, the pinned NPM_VERSION is '${pin}'. Rebuild the image and bump its digest pin (PLAN-two-track-merge-dev R1)."; exit 1; }
         echo "image toolchain: ${CI_RUNNER_IMAGE} node ${node_v} npm ${npm_v} $(python3 --version)"
         echo "key=img-node${node_v}" >> "$GITHUB_OUTPUT"
