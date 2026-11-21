@@ -447,6 +447,18 @@ SIG_CASES = {
         "\u2717 1 devcontainer pin(s) are behind upstream:",
         "\u2713 Every devcontainer pin is current or deferred (5 of 5 compared with upstream, 0 held).",
     ),
+    "auth-401": (
+        "gh: Bad credentials (HTTP 401)",
+        "retrying after 4013 ms",
+    ),
+    "secret-expired": (
+        "Error: the BWS access token has expired",
+        "token expiry is 2027-01-01, 41 days left",
+    ),
+    "billing-refused": (
+        "The job was not started because recent account payments have failed or your spending limit needs to be increased.",
+        "billing report written to billing.json",
+    ),
 }
 
 
@@ -693,6 +705,62 @@ def test_the_retry_note_exclusion_is_what_keeps_that_verdict(monkeypatch):
     """The plant: with the exclusion switched off the same log reads as infrastructure, so the case above is testing the exclusion and not the row order."""
     monkeypatch.setattr(D, "RETRY_NOTE_RE", re.compile(r"(?!)"))
     assert D.classify([PIN_RETRY % (1, "HTTP 503", 2)]) == ("infra-likely", "bitwarden-5xx")
+
+
+# OPERATOR-ONLY (agent/plans/PLAN-simple-two-tree-loop.md B6): a red no rerun fixes. Each shape is the line a real refusal prints, and the 429 and 403 controls stay infrastructure, since a throttle IS retried.
+@pytest.mark.parametrize(
+    ("lines", "want"),
+    [
+        (
+            [
+                "##[group]Run npm run check:ci-pins",
+                "gh: Bad credentials (HTTP 401)",
+                "Error: gh api exited 1",
+                "##[error]Process completed with exit code 1.",
+            ],
+            ("operator-only", "auth-401"),
+        ),
+        (
+            ["curl: (22) The requested URL returned error: 401 Unauthorized"],
+            ("operator-only", "auth-401"),
+        ),
+        (
+            [
+                "Error: The CLOUDFLARE_API_TOKEN secret has expired",
+                "read tcp 10.0.0.1:443: read: ECONNRESET",
+            ],
+            ("operator-only", "secret-expired"),
+        ),
+        (
+            ["Error: 402 Payment Required: credit balance is too low"],
+            ("operator-only", "billing-refused"),
+        ),
+        (
+            ["error pulling image: 429 Too Many Requests", "Error: pull failed"],
+            ("infra-likely", "registry-refused"),
+        ),
+        (
+            ["unexpected status code 403 from registry"],
+            ("infra-likely", "registry-refused"),
+        ),
+    ],
+)
+def test_operator_only_ranks_ahead_of_infra_and_a_429_stays_infra(lines, want):
+    assert D.classify(lines) == want
+
+
+def test_operator_only_is_a_declared_category_ahead_of_infra():
+    assert "operator-only" in D.CATEGORIES
+    assert D.CATEGORIES.index("operator-only") < D.CATEGORIES.index("infra-likely")
+
+
+def test_a_401_inside_go_test_output_is_not_the_operators():
+    """A `t.Logf` line in a log with a test verdict is what a test chose to print: an auth test asserting a 401 must not read as a refused credential."""
+    lines = [
+        "    auth_test.go:41: got HTTP 401 as expected",
+        "--- FAIL: TestRenew (0.01s)",
+    ]
+    assert D.classify(lines) == ("code-likely", "go-fail")
 
 
 @pytest.mark.parametrize(

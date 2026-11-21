@@ -611,6 +611,94 @@ def test_130b_a_cached_string_info_is_not_a_lookup_failure(wl):
     cichk(wl, "a cached string info reads as the cached state", "no", "PR CI-status lookup failed")
 
 
+# ---- The long-red ledger (agent/plans/PLAN-simple-two-tree-loop.md D4, box B6): wl_ci records each finished round and prints the verdict ----
+
+
+def ledger_rows(fix) -> list[dict]:
+    path = fix.proj / "agent" / "ledgers" / "landing-rounds.jsonl"
+    if not path.exists():
+        return []
+    return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
+
+
+def seed_old_round(fix, hours_ago: float) -> None:
+    """One earlier red round on PR #543, `hours_ago` old, so the PR opened that long ago."""
+    stamp = (datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=hours_ago)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    path = fix.proj / "agent" / "ledgers" / "landing-rounds.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    old = {
+        "pr": 543,
+        "round": 1,
+        "utc": stamp,
+        "kind": "push",
+        "run_id": 1,
+        "heads": "0" * 40,
+        "fix_target": [],
+        "reds": [{"check": "Quality / Static", "category": "code-likely", "signature": ""}],
+        "greens": [],
+        "delta": {"newly_green": [], "newly_red": [], "regressed": [], "repeat": []},
+        "open_hours": 0.0,
+        "opened_at": stamp,
+        "trigger": "stop",
+        "ids": {},
+    }
+    path.write_text(json.dumps(old) + "\n", encoding="utf-8")
+
+
+RED_PAIR = "[%s, %s]" % (
+    ci_job("Quality / Static", "FAILURE"),
+    ci_job("Quality / Security", "SUCCESS", 90784763856),
+)
+
+
+def test_long_red_a_final_red_writes_one_row_and_prints_the_wall_verdict(wl):
+    """A red 80 h after the PR's first round: the stop appends round 2 and the CI block carries the wall ask with its DEFAULT. A second stop over the same finished run appends nothing."""
+    ci_setup(wl)
+    seed_old_round(wl, 80)
+    ci_rollup(wl, "FAILURE", RED_PAIR)
+    got = ci_run(wl)
+    assert "CI IS RED ON PR #543" in got.out, got.out[:400]
+    assert "long red: wall-ask" in got.out, got.out[:1200]
+    assert "DEFAULT: keep fixing" in got.out, got.out[:1200]
+    rows = ledger_rows(wl)
+    assert [r["round"] for r in rows] == [1, 2], rows
+    assert rows[1]["kind"] == "push"
+    assert [r["check"] for r in rows[1]["reds"]] == ["Quality / Static"]
+    assert rows[1]["greens"] == ["Quality / Security"]
+    assert rows[1]["delta"]["repeat"] == ["Quality / Static"]
+    assert rows[1]["open_hours"] >= 80
+    wl.stem(".cistate-deadbeef").unlink(missing_ok=True)
+    ci_run(wl)
+    assert len(ledger_rows(wl)) == 2, ledger_rows(wl)
+
+
+def test_long_red_control_a_young_pr_records_the_row_and_prints_no_verdict(wl):
+    """CONTROL for the case above: the same red on a PR with no earlier round is round 1 with no long-red line, so the line above comes from the 72 h wall and not from any red."""
+    ci_setup(wl)
+    ci_rollup(wl, "FAILURE", RED_PAIR)
+    got = ci_run(wl)
+    assert "CI IS RED ON PR #543" in got.out, got.out[:400]
+    assert "long red:" not in got.out, got.out[:1200]
+    assert [r["round"] for r in ledger_rows(wl)] == [1]
+
+
+def test_long_red_a_green_round_is_recorded_too(wl):
+    """A green head is a round as well: churn reads which checks were green before a fix."""
+    ci_setup(wl)
+    ci_rollup(
+        wl,
+        "SUCCESS",
+        "[%s, %s]" % (run_ctx("Quality / Static", "SUCCESS"), run_ctx("CI Complete", "SUCCESS", 2)),
+    )
+    assert trouble(wl) == ["ok"]
+    rows = ledger_rows(wl)
+    assert len(rows) == 1, rows
+    assert rows[0]["reds"] == []
+    assert rows[0]["greens"] == ["CI Complete", "Quality / Static"]
+
+
 # ---- One green ci:quick per batch (agent/plans/PLAN-ciquick-green-then-batch.md, G4 and G5) ----
 
 STOP_DIR = wlfix.STOP_DIR

@@ -57,7 +57,9 @@ CAUSE_KINDS = (
 )
 # `watchdog-cancel` and `timeout-cancel` name a job that was STOPPED rather than one that failed: the Watchdog Monitor's enforced budget (its `CI BUDGET VIOLATION: '<job>' ran <m>m (budget <b>m)` annotation) or GitHub's own `timeout-minutes` kill (`The job has exceeded the maximum execution time`). They are read from cancel_cause's evidence, and only when the job's log carries no infra or code signature of
 # its own, since a log that says WHY the job ran long (a slow renet setup phase) is the deeper answer.
+# `operator-only` names a red no rerun and no code change can fix: a credential the run presented was refused (HTTP 401), a secret has expired, or a provider refused on billing or quota. It is asked of the operator at once (agent/plans/PLAN-simple-two-tree-loop.md D4); a retry only repeats it, which is why it ranks ahead of `infra-likely`.
 CATEGORIES = (
+    "operator-only",
     "infra-likely",
     "code-likely",
     "watchdog-cancel",
@@ -97,8 +99,42 @@ ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 TS_RE = re.compile(r"^\ufeff?(\d{4}-\d\d-\d\dT(\d\d:\d\d:\d\d))(\.\d+)?Z ?")
 STREAM_RE = re.compile(r"\bvm=(\S+)\s*$")
 
-# SIGNATURES: (id, category, pattern, label, minimum seconds or 0). Infra rows are checked before code rows, so a test that failed BECAUSE a mirror was down reads as infra. Order inside a category matters too: a Bitwarden 503 must not read as a registry 503.
+# SIGNATURES: (id, category, pattern, label, minimum seconds or 0). Operator rows are checked first, then infra rows, then code rows, so a test that failed BECAUSE a mirror was down reads as infra and an upstream gate whose token was refused reads as the operator's. Order inside a category matters too: a Bitwarden 503 must not read as a registry 503.
 SIGNATURES = (
+    # OPERATOR-ONLY rows (agent/plans/PLAN-simple-two-tree-loop.md D4). A 401 is a refused credential, never a rate limit: `429 Too Many Requests` stays on the registry-refused row below, and a 403 stays there too, since registries answer 403 for a throttled anonymous pull.
+    (
+        "auth-401",
+        "operator",
+        re.compile(
+            r"\b401 Unauthorized\b|\(HTTP 401\)|\bHTTP(?:/[\d.]+)? 401\b"
+            r"|\bstatus(?: code)?:? 401\b|\bBad credentials\b"
+        ),
+        "a credential was refused with HTTP 401 (rotate the secret; a rerun repeats it)",
+        0,
+    ),
+    (
+        "secret-expired",
+        "operator",
+        re.compile(
+            r"(?i)\b(?:token|secret|credential|password|api[ _-]?key|certificate)s?\b[^\n]{0,40}?"
+            r"\b(?:has|have|is|are) expired\b"
+            r"|\bexpired (?:token|secret|credential|password|api[ _-]?key|certificate)s?\b"
+        ),
+        "a secret or credential has expired (rotate it; a rerun repeats it)",
+        0,
+    ),
+    (
+        "billing-refused",
+        "operator",
+        re.compile(
+            r"(?i)recent account payments have failed|spending limit needs to be increased"
+            r"|\b402 Payment Required\b|\(HTTP 402\)|\bbilling (?:issue|problem|error|hard limit)\b"
+            r"|\binsufficient (?:credits?|funds|balance)\b|exceeded your current quota"
+            r"|credit balance is too low"
+        ),
+        "a provider refused on billing or quota (the account needs the operator)",
+        0,
+    ),
     # An external gate that could not ask its upstream (scripts/lib/upstream.ts `reportUnreachable`, and its Python copy `rediacc_ci.core.upstream`). Every external gate is hard on the nightly since the operator rulings of 2026-10-13 and 2026-10-14 ("Extend to all seven"), so this red reaches main's scheduled run, and it must read as the upstream's failure rather than as an unknown or as a defect in the tree. FIRST, because its finding lines name a pin, a link or a record beside a status: `Bitwarden CLI (pinned 2026.9.0): GET api.github.com/... -> HTTP 503, after 3 attempt(s)` would otherwise read as the Bitwarden secrets row below, and one that ends on ECONNREFUSED as the generic network row.
     (
         "upstream-unreachable",
@@ -835,7 +871,7 @@ def _sig_hit(line, test_verdict=False):
         body = body[body.index("\u2717") :]
     test_log = test_verdict and bool(TEST_LOG_LINE_RE.match(body))
     for sid, cat, rx, label, min_s in SIGNATURES:
-        if test_log and cat == "infra":
+        if test_log and cat in ("infra", "operator"):
             continue
         m = rx.search(body)
         if not m:
@@ -847,9 +883,10 @@ def _sig_hit(line, test_verdict=False):
 
 
 def classify(lines):
-    """(category, signature id). A test runner's failure line wins over everything, any other infra hit over any other code hit; nothing at all is `unknown`."""
+    """(category, signature id). A test runner's failure line wins over everything, then any operator-only hit, then any other infra hit over any other code hit; nothing at all is `unknown`."""
     code = None
     infra = None
+    operator = None
     verdict = _has_test_verdict(lines)
     for line in lines or []:
         hit = _sig_hit(line, verdict)
@@ -857,10 +894,14 @@ def classify(lines):
             continue
         if hit[0] in TEST_FAILURE_SIGS:
             return "code-likely", hit[0]
-        if hit[1] == "infra":
+        if hit[1] == "operator":
+            operator = operator or hit[0]
+        elif hit[1] == "infra":
             infra = infra or hit[0]
         else:
             code = code or hit[0]
+    if operator:
+        return "operator-only", operator
     if infra:
         return "infra-likely", infra
     return ("code-likely", code) if code else ("unknown", "")
