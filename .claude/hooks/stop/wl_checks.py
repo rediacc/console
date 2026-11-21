@@ -3252,7 +3252,10 @@ def _remaining_recs(fold, session_id, open_items, deferred_recs, in_flight_recs)
 
 
 def loop_next_text(state, root, state_doc, pr_finish_fired):
-    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked / unreadable. With a landing record the landing tree never reaches here (its stop names the D1 state machine's step, `landing_next_text`), and `M.loop_next_variant` picks the development tree's arms: its draft opens with --draft, and its finish waits on an open landing PR as an advisory (agent/plans/PLAN-two-track-merge-dev.md LT15). Once the landing PR is merged and its release green, the development tree's arm is promote (agent/plans/PLAN-simple-two-tree-loop.md D3), blocking only while no [writer] box of the branch's plans is open. Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count."""
+    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked / unreadable.
+    With a landing record the landing tree never reaches here (its stop names the D1 state machine's step, `landing_next_text`), and `M.loop_next_variant` picks the development tree's arms: its draft opens with --draft, and its finish waits on an open landing PR as an advisory (agent/plans/PLAN-two-track-merge-dev.md LT15).
+    Once the landing PR is merged and its release green, the development tree's arm is promote (agent/plans/PLAN-simple-two-tree-loop.md D3), blocking only while no [writer] box of the branch's plans is open. Never fires on an empty queue.
+    The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count."""
     kind, branch = state.kind, state.branch
     if kind != wl_prscope.UNREADABLE:
         state_doc.pop("loopnext", None)
@@ -5441,7 +5444,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # `ci-red` already blocks on the red -- but it has a HARD CEILING of CI_MAX_BLOCKS and then downgrades to a report, for good reasons that are about a red nobody here can fix. Nothing then held the WAVE open. A session could reach green, leave the PR sitting in draft with the review never requested and threads unresolved, and stop clean: every check on the board was satisfied
     # while the thing it was asked to do was unfinished. That is the state a mission tier exists to refuse.
     #
-    # THE FOUR BOXES ARE READ OFF `.claude/commands/pr-babysit.md`, not invented here: green, ready, per-commit reviews clean, human threads resolved; never merges.
+    # THE FOUR BOXES ARE READ OFF `.claude/agents/pr-babysitter.md` loop step 8, not invented here: green, ready, per-commit reviews clean, human threads resolved; never merges.
     #
     # WHAT GATES IT, so it cannot become a tax on every session that happens to have a PR: a pr-babysit ROUND LOG must exist for this branch. That file is the wave's own artifact (wl_roundlog.roundlog_path, the path the skill already writes), so the check fires for a session running the loop and is structurally silent for one that is not.
     #

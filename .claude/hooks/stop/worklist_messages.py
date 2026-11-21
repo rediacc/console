@@ -437,7 +437,7 @@ N_ROSTER_STALE = (
     "are done: python3 %s --reap %s <task-id>..."
 )
 
-# THE FINISH LINE OF A pr-babysit WAVE, rendered as the markdown checkboxes it already is. The four boxes are read off `.claude/commands/pr-babysit.md` (green, ready, per-commit reviews clean, human threads resolved; never merges) rather than invented here. The review box is read live off agent/reviews/<branch>/, and the one box the hook cannot observe (threads) is backed by a ticked worklist item, which is the
+# THE FINISH LINE OF A pr-babysit WAVE, rendered as the markdown checkboxes it already is. The four boxes are read off `.claude/agents/pr-babysitter.md` loop step 8 (green, ready, per-commit reviews clean, human threads resolved; never merges) rather than invented here. The review box is read live off agent/reviews/<branch>/, and the one box the hook cannot observe (threads) is backed by a ticked worklist item, which is the
 # same evidence discipline every other tick carries.
 # THE WAKE-UP TIMER (wl_wake; operator 2026-10-03). A stop that waits on background work is re-invoked only when a task EXITS, so a wait on tasks that all hang never ends. The timer is a task guaranteed to exit.
 V_WAKE_TIMER = (
@@ -455,7 +455,7 @@ V_WAKE_TIMER = (
 V_PR_FINISH = (
     "THE WAVE IS NOT FINISHED. A pr-babysit round log is live for this branch "
     "(%s) and PR #%s has not reached the finish line stated in "
-    ".claude/commands/pr-babysit.md. This is the mission; everything else the "
+    ".claude/agents/pr-babysitter.md loop step 8. This is the mission; everything else the "
     "hook has to say is housekeeping around it.\n"
     "%s\n"
     "The first two boxes are read live off the PR. The third is read live off "

@@ -204,7 +204,7 @@ def test_232b_control_two_invariants_are_both_quoted_with_no_collapse_line(wl):
 
 
 def test_233_the_pr_babysit_finish_line_blocks_a_green_but_unfinished_wave(wl):
-    """The operator's example, generalised: reaching green is not reaching the finish line. `.claude/commands/pr-babysit.md` states it (green, ready, per-commit reviews clean, human threads resolved), and before this change nothing held the wave open once ci-red went quiet.
+    """The operator's example, generalised: reaching green is not reaching the finish line. `.claude/agents/pr-babysitter.md` loop step 8 states it (green, ready, per-commit reviews clean, human threads resolved), and before this change nothing held the wave open once ci-red went quiet.
 
     233b is the CONTROL and 233c the evidence ladder; both continue on this world with no fresh setup, so they stay here. 233b is the gate that stops this becoming a tax on every session that happens to have a PR open: same PR, same green, no pr-babysit wave, not one word. 233c pins that the hook cannot see a resolved thread and refuses to pretend it can: the
     threads box is closed by ticking a worklist item carrying the token, while the per-commit review box is read live off agent/reviews/<branch>/ (this fixture has no branch commits past a base, so it reads clean), which is the same linkage agent/programs/<slug>/CHECKLIST.md uses.

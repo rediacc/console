@@ -1,6 +1,6 @@
 """A feature branch is `MMDD-N`. No suffixes, no words, no decoration.
 
-WHY. `.claude/commands/pr-babysit.md` and `.claude/commands/pr-merge.md` both state the convention, and pr-merge's hand-back section warns that guessing a name produces stray refs the next `/pr-babysit` has to clean up. On 2026-08-26 a session created `0826-1-prerebase` in the console AND in a submodule, as safety copies before a rebase. Reasonable intent, wrong shape: the suffix
+WHY. `.claude/agents/pr-babysitter.md` (loop step 2) and `.claude/commands/pr-merge.md` both state the convention, and pr-merge's hand-back section warns that guessing a name produces stray refs the next `/pr-babysit` has to clean up. On 2026-08-26 a session created `0826-1-prerebase` in the console AND in a submodule, as safety copies before a rebase. Reasonable intent, wrong shape: the suffix
 makes the ref sort next to a wave branch while belonging to no wave, and nothing downstream -- not pr-babysit's branch listing, not the submodule same-name matching in branch-rebase.md's submodule step, not pr-merge's coordinated-PR lookup -- can tell the two apart.
 
 THE SUBMODULE POINT IS THE SHARP ONE. `/pr-merge` finds a submodule's PRs by matching the console branch name EXACTLY. A console branch carrying a suffix silently matches nothing, so a coordinated submodule PR is invisible to the merge path and gets left behind.
@@ -92,7 +92,7 @@ def run(ev):
     ev.warn_raw(
         "BLOCKED: '%s' is not a branch name this repo uses.\n"
         "\n"
-        "Feature branches are MMDD-N and carry NO suffix. pr-babysit.md and pr-merge.md\n"
+        "Feature branches are MMDD-N and carry NO suffix. pr-babysitter.md and pr-merge.md\n"
         "both say so, and pr-merge's hand-back section warns that invented names\n"
         "leave stray refs for the next session to clean up.\n"
         "\n"
