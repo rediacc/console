@@ -38,6 +38,11 @@
       "gate": "check:ci-lane-budget",
       "findings": "*",
       "reason": "Measured CI history, not code: 11 p90s over the 12-minute budget (test-e2e-workers legs 1,2,3,6,7,8,9,11 on opensuse-16.0 only, and probe-file 07, 13#part1, 15), read from .ci/config/lane-durations.json. The gate's own cost model prices every opensuse leg at 11.1-11.8 min; legs of equal model cost measured 8 to 17 min, so the overrun is slow opensuse runs and provisioning, and resharding would only rename the legs (writer analysis 2026-11-21, worklist #898579d3). Lift: drop this entry once budget_report.py --refresh after the next green PR runs brings the legs under 12 min, or once the opensuse fixed cost is cut."
+    },
+    {
+      "gate": "check:ci-embed-asset-freshness",
+      "findings": "*",
+      "reason": "Upstream outage, not code: download.samba.org was unreachable through 2026-11-21 (the gate reports UPSTREAM REACHABILITY FAILURE, not a stale pin and not a defect in the tree), so one embed-asset pin could not be compared. Lift: drop this entry once the gate reaches download.samba.org again and compares the pin."
     }
   ]
 }
