@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-21T11:28:17.507Z",
+  "generatedAt": "2026-11-21T16:02:17.897Z",
   "legs": [
     {
       "index": 1,
@@ -433,6 +433,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_remote_load_sampler.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_repair_org_customer_ids.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_root_grants.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_sched_freshness.py",
         "pytest:.ci/rediacc_ci/tests/test_plan_record_index_view.py",
         "pytest:.ci/rediacc_ci/tests/test_planrec_done_commit_cost.py",
         "pytest:.ci/rediacc_ci/tests/test_private_run_renet.py",
@@ -477,6 +478,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_guard_event_cwd.py",
         "pytest:.claude/rediacc_hooks/tests/test_plan_gate_ceiling.py",
         "pytest:.claude/rediacc_hooks/tests/test_proc.py",
+        "pytest:.claude/rediacc_hooks/tests/test_refresh_pr_body_plan_call.py",
         "pytest:.claude/rediacc_hooks/tests/test_shellscan_differential.py",
         "pytest:.claude/rediacc_hooks/tests/test_stop_hook_edit_check.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_add_many.py",
@@ -484,7 +486,6 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_continuity_surface.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_event_store.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_first_touch.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_focus.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_guide_and_deferrals.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_landing_loop.py",
@@ -654,6 +655,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_boxready.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_core_blocking.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_effort.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_handover.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_idle_and_evidence.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_effort.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_liveproof.py",
