@@ -113,7 +113,7 @@ def fold(worklist, root=None, events: list[dict] | None = None) -> dict[str, dic
                 "answered_at": "",
                 "answered_by": "",
             }
-        elif "answer" in ev and hid in out and valid_answer(ev.get("answer")):
+        elif "answer" in ev and hid in out and valid_answer(str(ev.get("answer") or "")):
             out[hid].update(
                 answer=str(ev["answer"]),
                 answered_at=str(ev.get("at") or ""),

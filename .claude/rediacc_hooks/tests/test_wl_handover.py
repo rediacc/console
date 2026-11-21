@@ -149,7 +149,9 @@ def handover_events(fix):
 def test_the_verbs_append_open_and_answer_events(world):
     got = world.cli("--handover", ME, "stuck", "Quality / Pytest (3/3)", "rounds", "4,", "5,", "6")
     assert got.rc == 0, got.err
-    hid = re.search(r"handover #([0-9a-f]{8}) recorded", got.out).group(1)
+    m = re.search(r"handover #([0-9a-f]{8}) recorded", got.out)
+    assert m, got.out
+    hid = m.group(1)
     rows = handover_events(world)
     assert [(r["kind"], r["check"], r["evidence"]) for r in rows] == [
         ("stuck", "Quality / Pytest (3/3)", "rounds 4, 5, 6")
@@ -165,7 +167,9 @@ def test_the_verbs_refuse_a_bad_kind_a_bad_answer_and_an_unknown_id(world):
     assert world.cli("--handover", ME, "stuck", "only-a-check").rc == 2
     got = world.cli("--handover", ME, "lesson", "Quality / Static", "a CI-only failure")
     assert got.rc == 0, got.err
-    hid = re.search(r"handover #([0-9a-f]{8})", got.out).group(1)
+    m = re.search(r"handover #([0-9a-f]{8})", got.out)
+    assert m, got.out
+    hid = m.group(1)
     assert world.cli("--handover-answer", ME, hid, "maybe").rc == 2
     assert world.cli("--handover-answer", ME, "ffff0000", "done").rc == 2
     # Control: the same answer verb with a valid answer and id is accepted.
