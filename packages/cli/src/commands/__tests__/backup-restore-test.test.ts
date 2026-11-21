@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   setExitCode: vi.fn(),
   addRepository: vi.fn(),
   removeRepository: vi.fn(),
+  getLocalConfig: vi.fn(),
   getRepository: vi.fn(),
   readAnchor: vi.fn(),
   sftpExec: vi.fn(),
@@ -74,6 +75,7 @@ vi.mock('../../utils/repo-target.js', () => ({
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getRepository: mocks.getRepository,
+    getLocalConfig: mocks.getLocalConfig,
     allocateNetworkId: vi.fn().mockResolvedValue(77),
     addRepository: mocks.addRepository,
     removeRepository: mocks.removeRepository,
@@ -182,6 +184,7 @@ beforeEach(() => {
     grandGuid: 'lineage-1',
     credential: 'secret-passphrase',
   });
+  mocks.getLocalConfig.mockResolvedValue({ machines: { m1: {}, l1vm: {} } });
   mocks.readAnchor.mockResolvedValue(SNAP);
   // The index row for the anchored snapshot (10 GiB) and a datastore with room to spare.
   mocks.fetch.mockImplementation((url: string) => {
@@ -226,7 +229,19 @@ describe('backup verify --restore-test', () => {
   it('fails closed when the free space cannot be read', async () => {
     mocks.sftpExec.mockResolvedValue('not a number');
     await expect(run(['verify', 'shop', '--restore-test'])).rejects.toThrow(
-      'commands.backup.verify.restoreTestNoSpace'
+      'commands.backup.verify.restoreTestFreeUnknown'
+    );
+    expect(mocks.addRepository).not.toHaveBeenCalled();
+  });
+
+  it('names the unknown size, not a shortage, when the index has no row for the anchor', async () => {
+    mocks.fetch.mockImplementation((url: string) =>
+      url.includes('/verification')
+        ? Promise.resolve({ snapshotId: SNAP, verificationState: 'proven' })
+        : Promise.reject(Object.assign(new Error('not found'), { status: 404 }))
+    );
+    await expect(run(['verify', 'shop', '--restore-test'])).rejects.toThrow(
+      'commands.backup.verify.restoreTestSizeUnknown'
     );
     expect(mocks.addRepository).not.toHaveBeenCalled();
   });
@@ -348,5 +363,111 @@ describe('backup verify --restore-test', () => {
   it('never puts the credential on the wire params', async () => {
     await run(['verify', 'shop', '--restore-test']);
     expect(JSON.stringify(mocks.execute.mock.calls)).not.toContain('secret-passphrase');
+  });
+});
+
+describe('backup verify --restore-test --restore-to', () => {
+  it('routes the restore and the delete to the named machine, never the source machine', async () => {
+    script({ restore: { success: true, stdout: restoreRecord({ cellsRoot: 'verified' }) } });
+    await run(['verify', 'shop', '--restore-test', '--restore-to', 'l1vm']);
+    const restore = calls().find((c) => c.functionName === 'backup_restore');
+    expect(restore?.machineName).toBe('l1vm');
+    expect(restore?.params).toMatchObject({ at: SNAP, no_seed: true });
+    expect(deletes()).toHaveLength(1);
+    expect(deletes()[0].machineName).toBe('l1vm');
+    expect(deletes()[0].params.repository).toBe(restore?.params.repository);
+    expect(deletes()[0].params.repository).not.toBe('shop');
+    expect(calls().every((c) => c.machineName === 'l1vm')).toBe(true);
+    // The anchor file is on the source machine, so no anchor compare is issued.
+    expect(calls().some((c) => c.functionName === 'backup_compare')).toBe(false);
+    const added = mocks.addRepository.mock.calls[0][1] as {
+      repositoryGuid: string;
+      placement: { machine: string };
+    };
+    expect(added.placement.machine).toBe('l1vm');
+    expect(added.repositoryGuid).not.toBe(SOURCE_GUID);
+    expect(printed()).toMatchObject({
+      status: 'proven',
+      restoredOn: 'l1vm',
+      verificationState: 'proven',
+    });
+    expect(mocks.setExitCode).not.toHaveBeenCalled();
+  });
+
+  it('is not proven when the restore did not verify the manifest root, and records nothing', async () => {
+    script({ restore: { success: true, stdout: restoreRecord({ cellsRoot: 'absent' }) } });
+    await run(['verify', 'shop', '--restore-test', '--restore-to', 'l1vm']);
+    expect(printed()).toMatchObject({ status: 'failed' });
+    expect(mocks.setExitCode).toHaveBeenCalledWith(1);
+    expect(mocks.fetch.mock.calls.some((c) => String(c[0]).includes('/verification'))).toBe(false);
+    expect(deletes()).toHaveLength(1);
+  });
+
+  it('checks the space on the target machine and refuses before registering a copy', async () => {
+    mocks.sftpExec.mockResolvedValue(`${11 * GB}\n`);
+    await expect(run(['verify', 'shop', '--restore-test', '--restore-to', 'l1vm'])).rejects.toThrow(
+      'commands.backup.verify.restoreTestNoSpace'
+    );
+    expect(mocks.addRepository).not.toHaveBeenCalled();
+    expect(mocks.execute).not.toHaveBeenCalled();
+  });
+
+  it('refuses an unknown or empty machine, before any copy exists', async () => {
+    await expect(run(['verify', 'shop', '--restore-test', '--restore-to', 'nope'])).rejects.toThrow(
+      'commands.backup.verify.restoreToUnknown'
+    );
+    await expect(run(['verify', 'shop', '--restore-test', '--restore-to', ''])).rejects.toThrow(
+      'commands.backup.verify.restoreToUnknown'
+    );
+    expect(mocks.addRepository).not.toHaveBeenCalled();
+    expect(mocks.execute).not.toHaveBeenCalled();
+  });
+
+  it('refuses an inherited object name such as constructor as an unknown machine', async () => {
+    await expect(
+      run(['verify', 'shop', '--restore-test', '--restore-to', 'constructor'])
+    ).rejects.toThrow('commands.backup.verify.restoreToUnknown');
+    expect(mocks.addRepository).not.toHaveBeenCalled();
+    expect(mocks.execute).not.toHaveBeenCalled();
+  });
+
+  it.each(['refused', 'not-available'])(
+    'is not proven when the root verified but the passphrase check is %s, and records nothing',
+    async (passphraseCheck) => {
+      script({
+        restore: {
+          success: true,
+          stdout: restoreRecord({ cellsRoot: 'verified', passphraseCheck }),
+        },
+      });
+      await run(['verify', 'shop', '--restore-test', '--restore-to', 'l1vm']);
+      expect(printed()).toMatchObject({ status: 'failed' });
+      expect(mocks.setExitCode).toHaveBeenCalledWith(1);
+      expect(mocks.fetch.mock.calls.some((c) => String(c[0]).includes('/verification'))).toBe(
+        false
+      );
+    }
+  );
+
+  it("refuses the source's own machine", async () => {
+    await expect(run(['verify', 'shop', '--restore-test', '--restore-to', 'm1'])).rejects.toThrow(
+      'commands.backup.verify.restoreToSameMachine'
+    );
+    expect(mocks.addRepository).not.toHaveBeenCalled();
+    expect(mocks.execute).not.toHaveBeenCalled();
+  });
+
+  it('refuses --restore-to without --restore-test', async () => {
+    await expect(run(['verify', 'shop', '--restore-to', 'l1vm'])).rejects.toThrow(
+      'commands.backup.verify.restoreToNeedsRestoreTest'
+    );
+    expect(mocks.execute).not.toHaveBeenCalled();
+  });
+
+  it('control: without the option the compare against the anchor still runs on the source machine', async () => {
+    await run(['verify', 'shop', '--restore-test']);
+    expect(calls().some((c) => c.functionName === 'backup_compare')).toBe(true);
+    expect(calls().every((c) => c.machineName === 'm1')).toBe(true);
+    expect(printed()).not.toHaveProperty('restoredOn');
   });
 });

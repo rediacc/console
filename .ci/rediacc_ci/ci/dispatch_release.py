@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of the retired `.ci/scripts/ci/dispatch-release.sh` (191 lines), whose answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/ci.dispatch-release.jsonl`.
 
-Decides whether the merged commit that triggered this CI run earns a cd-v2 release, and dispatches it. The twin's own 67-line header carries the contract (the `bump-none` rule, why the HEAD commit and not the release range, why every
+Decides whether the merged commit that triggered this CI run earns a cd-release-edge release, and dispatches it. The twin's own 67-line header carries the contract (the `bump-none` rule, why the HEAD commit and not the release range, why every
 failure path FAILS OPEN, and why the decision and the dispatch are separable);
 none of it is restated here.
 
@@ -37,7 +37,7 @@ IN THE FOURTH
 -----------------------------------------------------------------------------
 `${skip_prs% }` and `${keep_prs% }` strip the accumulator's trailing space
 everywhere except the final `log_info`, which uses `${keep_prs:-no PR}` and
-therefore prints `dispatching cd-v2 for abcdef1 (#571 )`. Cosmetic, carried verbatim, and pinned by the differential so nobody "tidies" one side only.
+therefore prints `dispatching cd-release-edge for abcdef1 (#571 )`. Cosmetic, carried verbatim, and pinned by the differential so nobody "tidies" one side only.
 
 -----------------------------------------------------------------------------
 DIVERGENCES, BOTH IN TEXT ONLY A HUMAN READS
@@ -74,7 +74,7 @@ from rediacc_ci.core import gh_retry
 # `.github/labels.yml` and the reviewer's pr-labels vocabulary.
 SKIP_LABEL = "bump-none"
 
-# `STABLE_LABEL='release'` (twin :87). Operator ruling 2026-09-30: a merged PR carrying it (and not bump-none) publishes to edge AND stable, skipping the 7-day soak -- the same cd-v2 run a manual dispatch with `publish_stable: true` starts. Matched exactly like SKIP_LABEL, so `release-notes` and `prerelease` do not count.
+# `STABLE_LABEL='release'` (twin :87). Operator ruling 2026-09-30: a merged PR carrying it (and not bump-none) publishes to edge AND stable, skipping the 7-day soak -- the same cd-release-edge run a manual dispatch with `publish_stable: true` starts. Matched exactly like SKIP_LABEL, so `release-notes` and `prerelease` do not count.
 STABLE_LABEL = "release"
 
 # The stdout line --decide-only prints when the release goes to stable too, after its `decision: release` line. initialize.py reads it (with GITHUB_OUTPUT cleared for the child, so stdout is the only channel); the PR list follows.
@@ -239,7 +239,7 @@ def decide(repository: str, sha: str) -> tuple[bool, str]:
 
     # Defect B: `${keep_prs:-no PR}` is NOT `${keep_prs% }`, so the trailing
     # space of the accumulator prints inside the parentheses.
-    log.info("dispatching cd-v2 for %s (%s)" % (short_sha(sha), keep_prs or "no PR"))
+    log.info("dispatching cd-release-edge for %s (%s)" % (short_sha(sha), keep_prs or "no PR"))
     if stable_prs:
         log.info(
             "%s carries '%s': publishing to edge AND stable, skipping the 7-day soak"
@@ -253,9 +253,9 @@ def decide(repository: str, sha: str) -> tuple[bool, str]:
 
 
 def dispatch(stable: bool) -> int:
-    """`gh workflow run cd-v2.yml --ref main -f ...` (twin :106-116).
+    """`gh workflow run cd-release-edge.yml --ref main -f ...` (twin :106-116).
 
-    `stable` appends `-f publish_stable=true`, which drives cd-v2's stable
+    `stable` appends `-f publish_stable=true`, which drives cd-release-edge's stable
     promote and stable deploys; without it the release is edge only.
 
     DISPATCH_RELEASE_DRY_RUN is a TEST SEAM and is tested for non-emptiness,
@@ -268,7 +268,7 @@ def dispatch(stable: bool) -> int:
         "gh",
         "workflow",
         "run",
-        "cd-v2.yml",
+        "cd-release-edge.yml",
         "--ref",
         "main",
         "-f",

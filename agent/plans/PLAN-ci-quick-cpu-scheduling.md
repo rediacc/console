@@ -1,5 +1,6 @@
 # PLAN: CPU-aware scheduling for ci:quick
 Status: active -- operator-approved direction 2026-09-30 (worklist #4f56fcee); designed by a Plan agent, verified figures below
+Updated: 2026-11-05 -- reread by d778be9d: still queued, no box changed
 Depends-On: no-dep -- the runner, its duration cache and the lane-durations refresh pattern all exist today
 Owner: d778be9d
 First-Seen: 2026-09-30
@@ -72,5 +73,6 @@ Owns: scripts/ci-runner/pool.ts, scripts/ci-runner/exec.ts, scripts/ci-runner/ru
 - [ ] P2 default `cores`; parity leaves `slow`; `build:cli` and the empirical dist edges; the push recipe drops its pre-steps
     (2026-10-05, PLAN-prepush-full-cpu PF0) SHIPPED HALF: `cores` is the default since 2026-09-30 (scripts/ci-runner/run.ts:36). Still open: parity leaving `slow`, the `build:cli` and dist edges, and the push recipe dropping its pre-steps.
 - [ ] P3 the nightly gate-costs capture, .ci/config/gate-costs.json from the first --refresh, gate_costs --check in housekeeping
+  (corrected 2026-11-11, R2) GitHub-only: CI parity -- gate-costs.json is captured from the scheduled CI run's per-gate timings, and a local refresh would record this machine's costs instead.
 - [ ] P4 lanes.ts on baseline cost, then weight/heavy retired from measured gates
     (2026-10-05, PLAN-prepush-full-cpu PF0) The `weight` half is SUPERSEDED by PLAN-prepush-full-cpu PF1, which replaces `weight` with elastic `cores: {min, max}` granted at admit; lanes.ts balancing without `weight` is that plan's writer F. `heavy` and the baseline-cost balancing stay here.

@@ -260,7 +260,7 @@ def main(argv: list[str]) -> int:
             print("      - %s" % c)
         if apply:
             f.write_text(new, encoding="utf-8")
-    # WHICH NAMES ARE ACTUALLY FREE, asked AFTER the rewrite rather than assumed from the argument list. This tool exists to stop a deletion from blanking a live read, and it was printing three delete lines while TWO of the names still had one: breakpoint.yml's app-token (that job hands a human a shell, so it deliberately never fetches from Bitwarden) and watchdog-monitor.yml's
+    # WHICH NAMES ARE ACTUALLY FREE, asked AFTER the rewrite rather than assumed from the argument list. This tool exists to stop a deletion from blanking a live read, and it was printing three delete lines while TWO of the names still had one: breakpoint.yml's app-token (that job hands a human a shell, so it deliberately never fetches from Bitwarden) and ops-watchdog-monitor.yml's
     # tier-1 classifier (its fetch cannot move ahead of the monitor without `continue-on-error`, which check-workflows.sh bans). Both survivals are correct and documented; printing `gh secret delete` for them was not.
     live = {}
     for f in files():

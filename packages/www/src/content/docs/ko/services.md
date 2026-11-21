@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ko
-sourceHash: "4769afb97c2b885d"
-sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
+sourceHash: "a98cadc0afd3474b"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # 서비스
@@ -29,14 +29,33 @@ Rediaccfile은 두 위치에서 검색됩니다.
 
 ### 라이프사이클 함수
 
-Rediaccfile에는 최대 두 개의 함수가 포함됩니다.
+renet은 다음 Rediaccfile 함수를 실행합니다.
 
 | 함수 | 실행 시점 | 목적 | 오류 동작 |
 |------|---------|------|---------|
 | `up()` | 시작 시 | 서비스 시작 (예: `renet compose -- up -d`) | 루트 실패는 **치명적** (모든 것 중지). 하위 디렉터리 실패는 **비치명적** (로그 후 계속) |
 | `down()` | 중지 시 | 서비스 중지 (예: `renet compose -- down`) | **최선 노력** -- 실패가 로그되지만 모든 Rediaccfile이 항상 시도됨 |
+| `health()` | `rdc repo health`, `rdc machine health`, 배포 상태 확인 단계 | 저장소 자체의 상태 보고: 종료 코드 `0` 정상, `1` 경고, `2` 오류 | 모든 Rediaccfile의 `health()`가 실행되며 가장 나쁜 수준이 적용됨. 종료 코드 `75`는 아직 준비 중(경고)이라는 뜻. 그 밖의 종료 코드, 시그널, 시간 초과는 오류(배포 상태 점검은 시간 초과를 아직 준비 중으로 읽고 재시도함, [타임아웃과 종료 순서](#timeouts-and-shutdown-order) 참조). 어떤 Rediaccfile도 `health()`를 정의하지 않은 저장소는 **검사 없음**으로 보고되며 정상으로 간주되지 않음 |
+| `repair()` | `rdc repo repair`, 그리고 `health()`가 정상이 아닌 저장소에 대한 `rdc machine repair` | 같은 파일의 `health()`가 보고한 문제를 복구 | 해당 파일의 `health()`가 정상이 아니고 선언된 클래스가 허용될 때만 실행됨(아래 참조). `health()`가 `75`로 종료하면(아직 준비 중) 경고로 간주되므로, `repair()`는 아직 시작 중인 저장소를 건드리지 않아야 함. 이후 `health()`가 다시 실행됨. 실패하거나 시간 초과된 `repair()`는 오류 |
 
-두 함수 모두 선택 사항입니다. 함수가 정의되지 않으면 자동으로 건너뜁니다.
+모든 함수는 선택 사항입니다. 함수가 정의되지 않으면 자동으로 건너뜁니다.
+
+#### 복구 클래스 선언
+
+`repair()`는 `REDIACC_HEALTH_LEVEL`(`warning` 또는 `error`, 같은 파일의 `health()`가 보고한 수준)과 `REDIACC_HEALTH_OUTPUT`(해당 `health()` 출력의 끝부분)을 받습니다. 주석 한 줄로 함수가 얼마나 안전한지 선언합니다.
+
+```bash
+# rediacc:repair class=auto-safe
+# rediacc:repair class=auto-with-backup window=only
+```
+
+| 클래스 | 실행 주체 |
+|---|---|
+| `auto-safe` | `rdc machine repair`와 `rdc repo repair`가 스스로 실행 |
+| `auto-with-backup` | `--with-backup`을 지정했을 때만, 저장소 스냅샷이 성공한 뒤에 실행 |
+| `operator-only` | 스스로는 실행되지 않음. `rdc repo repair`는 먼저 확인을 묻고(또는 `--yes`를 받음), `rdc machine repair`는 절대 실행하지 않음 |
+
+선언이 없는 `repair()`는 `operator-only`로 취급되므로, 저장소가 안전하다고 밝히지 않는 한 어떤 도구도 저장소의 코드를 무인으로 실행하지 않습니다. `window=only`는 두 번째 조건을 더합니다. 함수는 머신의 유지보수 시간대([모니터링](/ko/docs/monitoring#repair)) 안에서만, 또는 `--window-override`를 지정했을 때만 실행됩니다. 여러 줄이 클래스를 선언하면 가장 제한적인 것이 적용됩니다.
 
 ### 실행 순서
 
@@ -57,11 +76,78 @@ Rediaccfile 함수가 실행될 때 다음 환경 변수를 사용할 수 있습
 
 `{SERVICE}_IP` 변수는 `.rediacc.json`의 슬롯 매핑에서 자동 생성되고 Rediaccfile 함수가 실행되기 전에 내보내집니다. 명명 규칙은 서비스 이름을 대문자로 변환하고 하이픈을 밑줄로 교체한 후 `_IP`를 추가합니다. 예를 들어, 슬롯 `0`의 `listmonk-app`이라는 서비스는 `LISTMONK_APP_IP=127.0.11.2`가 됩니다.
 
-> **경고: Rediaccfile에서 `sudo docker`를 사용하지 마십시오.** `sudo` 명령은 환경 변수를 초기화하므로 `DOCKER_HOST`가 손실되고 Docker 명령이 저장소의 격리된 데몬 대신 시스템 데몬을 대상으로 합니다. 이는 컨테이너 격리를 깨고 포트 충돌을 일으킬 수 있습니다. Rediacc는 `-E` 없이 `sudo docker`를 감지하면 실행을 차단합니다.
+> **경고: Rediaccfile에서 `sudo docker`를 사용하지 마십시오.** `sudo` 명령은 환경 변수를 초기화하므로 `DOCKER_HOST`가 손실되고 Docker 명령이 저장소의 격리된 데몬 대신 시스템 데몬을 대상으로 합니다. 이는 컨테이너 격리를 깨고 포트 충돌을 일으킬 수 있습니다. Rediacc는 `sudo docker`를 감지하면 실행을 차단합니다.
 >
-> Rediaccfile에서 `renet compose`를 사용하십시오. 이는 `DOCKER_HOST`를 자동으로 처리하고, 경로 검색을 위한 네트워킹 레이블을 주입하며, 서비스 네트워킹을 구성합니다. 서비스가 리버스 프록시를 통해 노출되는 방법은 [네트워킹](/en/docs/networking)을 참조하십시오. Docker를 직접 호출하는 경우 `sudo` 없이 `docker`를 사용하십시오. Rediaccfile 함수는 이미 충분한 권한으로 실행됩니다. sudo를 사용해야 한다면 `sudo -E docker`를 사용하여 환경 변수를 보존하십시오.
+> Rediaccfile에서 `renet compose`를 사용하십시오. 이는 `DOCKER_HOST`를 자동으로 처리하고, 경로 검색을 위한 네트워킹 레이블을 주입하며, 서비스 네트워킹을 구성합니다. 서비스가 리버스 프록시를 통해 노출되는 방법은 [네트워킹](/en/docs/networking)을 참조하십시오. Docker를 직접 호출하는 경우 `sudo` 없이 `docker`를 사용하십시오. Rediaccfile 함수는 root가 아닌 유니버설 사용자로 저장소의 Docker 데몬에 접근합니다([권한](/ko/docs/services#privileges) 참조).
 >
 > `renet`은 원격 저수준 도구입니다. 워크스테이션에서의 일반 사용자 워크플로에는 `rdc repo up` 및 `rdc repo down` 같은 `rdc` 명령을 선호하십시오. [rdc vs renet](/en/docs/rdc-vs-renet)을 참조하십시오.
+
+### 권한
+
+`up()`과 `down()`은 읽고 쓸 수 있는 위치를 제한하는 샌드박스 안에서 root가 아닌 유니버설 사용자(`rediacc`)로 실행됩니다. 환경은 상속되지 않고 함수마다 새로 구성되므로 위에 나온 변수, 저장소의 `REDIACC_SECRET_*` 값, 최소한의 `PATH`만 담깁니다. `sudo`는 어떤 티어에서도 사용할 수 없습니다. 샌드박스가 `no_new_privs`를 설정하므로 `sudo`를 쓰는 Rediaccfile 줄은 실패하며 `sudo`를 빼야 합니다. Landlock이 없는 머신은 `up()`과 `down()`을 제한 없이 실행하는 대신 거부합니다.
+
+기본 권한보다 더 필요한 줄은 샌드박스가 돌려주는 오류와 함께 실패하며, 저널과 CLI는 해당하는 Rediaccfile 줄을 권한 부여 명령과 함께 출력합니다.
+
+| Rediaccfile의 동작 | 보이는 결과 | 해결 |
+|---|---|---|
+| `sudo x` | `sudo: The "no new privileges" flag is set` | `sudo`를 뺍니다. 해당 단계는 root가 필요 없거나 권한 부여가 필요합니다 |
+| `chown 5050 ...` 또는 컨테이너가 소유한 디렉터리의 `rm -rf` | `Operation not permitted` 또는 `Permission denied` | 단발성 컨테이너에서 단계를 실행합니다(root는 컨테이너 안에서만 쓰며, 저장소의 Docker 데몬은 저장소 자체 루트 밖의 바인드를 거부합니다): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| 마운트 안에 `.env` 등의 파일 쓰기 | 동작함. 파일은 유니버설 사용자 소유가 됨 | 필요 없음 |
+| `/etc/rediacc/*`, `/proc/kcore` 또는 블록 장치 읽기 | `Permission denied` | 경로 권한을 요청합니다 |
+| 파일 시크릿을 직접 읽기 | `Permission denied` | compose의 `secrets:` 또는 env 모드 시크릿을 사용합니다 |
+| 장치 권한 없이 `nvidia-smi` | 장치가 없음 | 장치 권한을 부여합니다. [GPU](/ko/docs/gpu) 참조 |
+| `sysctl -w` | `Permission denied` | 관리자로서 머신에 한 번 설정합니다 |
+
+#### 권한 요청하기
+
+권한 부여는 `up()`과 `down()`이 접근할 수 있는 범위를 넓힙니다. 권한은 운영자만 부여할 수 있으며, 저장소 바깥에서 부여합니다.
+
+```bash
+rdc repo permission grant <repo-ref> --path /srv/data:rw
+rdc repo permission grant <repo-ref> --root
+rdc repo permission show <repo-ref>
+rdc repo permission revoke <repo-ref> --path /srv/data
+```
+
+`--path`는 Landlock 규칙을 하나 추가하며, `:rw`를 붙이지 않으면 읽기 전용입니다. 머신은 다른 저장소, 데이터스토어, `/etc/rediacc`에 닿는 경로를 거부합니다. `--root`는 권한을 낮추지 않고 함수를 root로 실행하며, 콜드 백업은 이런 저장소를 거부합니다. 에이전트가 시작되기 전에 운영자가 `REDIACC_ALLOW_GRAND_REPO`를 설정하지 않았다면 에이전트는 `--root`를 부여할 수 없습니다. 포크는 새 네트워크 ID를 가지며 권한 없이 시작하고, 재사용된 네트워크 ID에서 발견된 권한은 폐기됩니다.
+
+Rediaccfile은 필요한 것을 주석 줄로 선언할 수 있으며, 이는 요청일 뿐입니다.
+
+```bash
+# rediacc:needs root
+# rediacc:needs path=/srv/data
+# rediacc:needs device=nvidia.com/gpu=all
+```
+
+`up()`은 선언을 부여된 권한과 비교합니다. 권한이 없으면 `up()`은 어느 줄도 실행되기 전에 거부되고, 메시지에 정확한 권한 부여 명령이 출력됩니다. `down()`은 선언을 확인하지 않으므로, 저장소 안에서 수정한 주석으로 운영자의 `repo down`을 막을 수 없습니다. 권한이 정말 필요한 `down()`은 해당 단계에서 직접 실패합니다. `machine converge`는 이런 저장소를 거부될 상태로 다시 시작하는 대신 `needs_lifecycle_grant`로 건너뜁니다.
+
+### 타임아웃과 종료 순서
+
+저장소의 컨테이너는 해당 저장소의 `down()`이 실행을 마칠 때까지 중지되지 않습니다. 저장소 Docker 유닛에 대한 `systemctl stop`과 `restart`, `machine converge`, `repo down --unmount`, 유닛 재작성, 호스트 종료가 모두 해당합니다. 예외는 Docker 데몬이나 호스트의 비정상 종료, 정전, 호스트 종료 때든 `systemctl stop`이나 `restart` 때든 타임아웃을 넘긴 `down()`입니다. 그 `down()`은 종료되고 중지는 아래 설명대로 계속됩니다.
+
+각 Docker 유닛은 데몬에 시그널을 보내기 전에 중지 훅을 실행합니다. 훅은 renet이 이번 데몬 시작에서 이미 실행한 경우가 아니라면 아직 동작 중인 데몬에 `down()`을 실행하고, 데몬이 응답하지 않거나 저장소에 Rediaccfile이 없으면 건너뜁니다. 호스트 종료 시에는 Docker 유닛이 먼저 멈추며 각자 `down()`을 병렬로 실행하고, 이후 정리 유닛이 자동 시작 여부와 관계없이 마운트된 모든 저장소를 언마운트합니다. 유닛의 중지 시간 예산은 17분으로, 재부팅 작업의 30분 제한 안에 들어갑니다. 이 훅 안에서 `down()`이 타임아웃되면 해당 프로세스 그룹에 SIGTERM이 가고 10초 뒤 SIGKILL이 가며(`FunctionKillGrace`, `pkg/orchestration/procgroup.go`), 경고가 기록되고 훅은 0으로 끝나므로 systemd는 중지를 계속합니다. 따라서 타임아웃된 `down()`이 `systemctl stop`이나 재시작을 늦추는 시간은 최대 타임아웃에 10초를 더한 만큼(상한에서 15분 10초)이며, 중지는 유닛의 17분 `TimeoutStopSec` 안으로 제한됩니다. 중지를 거부하는 것은 `repo down --unmount` 같은 renet 자체 경로뿐입니다.
+
+`up()`과 `down()`은 기본적으로 각각 10분이며, `RENET_UP_TIMEOUT`과 `RENET_DOWN_TIMEOUT` 또는 `--up-timeout`과 `--down-timeout`으로 설정합니다. 타임아웃이 되면 프로세스 그룹에 SIGTERM을 보내고 10초 뒤 SIGKILL을 보냅니다. `repo down --unmount`나 converge 재시작처럼 `down()`이 먼저 필요한 경로는 `down()`이 타임아웃되면 컨테이너를 그대로 실행 상태로 두며, `--force`를 주면 계속 진행합니다. Rediaccfile은 주석 한 줄로 제한을 올릴 수 있습니다.
+
+```bash
+# rediacc:timeout up=20m down=15m backup=120s health=60s repair=10m
+```
+
+| 키 | 기본값 | 상한 |
+|---|---|---|
+| `up` | 10분 | 60분 |
+| `down` | 10분 | 15분 |
+| `backup` | 30초 | 300초 |
+| `health` | 30초 | 300초 |
+| `repair` | 5분 | 30분 |
+
+`health()`에도 같은 제한이 적용됩니다. 기본값은 `RENET_HEALTH_TIMEOUT`으로 설정하며, 시간 초과 시 프로세스 그룹에 SIGTERM을 보내고 10초 뒤 SIGKILL을 보냅니다. 배포 상태 확인 단계는 시간 초과된 `health()`를 아직 준비 중으로 보고 다시 시도하고, `rdc repo health`와 `rdc machine health`는 이를 오류로 보고합니다. `repair()`도 `RENET_REPAIR_TIMEOUT`으로 같은 방식을 따르며, 시간 초과된 `repair()`는 실패로 처리됩니다.
+
+지시어는 제한을 올리기만 하며 상한을 넘는 값은 상한으로 잘립니다. 따라서 저장소가 `down()`을 줄여 강제 종료시킬 수는 없습니다. 알 수 없는 키는 경고와 함께 무시됩니다.
+
+저장소 데몬은 Docker의 `live-restore`를 꺼 둡니다. 켜면 데몬을 재시작해도 컨테이너가 살아남겠지만, 컨테이너 shim이 유닛의 cgroup을 공유해 함께 종료되므로 복원된 데몬이 다시 연결할 수 없고, 계획된 중지 동안에도 컨테이너가 마운트를 계속 붙잡게 됩니다.
+
+renet이 관리하는 저장소별 RAM 볼륨(`# rediacc:ram size=6G`, 호스트 RAM은 운영자가 부여)은 설계 단계이며 아직 구현되지 않았습니다.
 
 ### 예시
 

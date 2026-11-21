@@ -28,7 +28,98 @@ const TEMPLATE_FILES = [
   // Added 2026-09-07. Both were on disk and NOT in this list, so this gate was checking 11 of the 13 real templates and saying nothing about the other two.
   'delegation-cert-renewal-alert.ts',
   'lead-magnet.ts',
+  'legal.ts',
+  // Added 2026-11-12 (PLAN-account-notices E1): the one digest shape, plural-aware through tCount.
+  'digest.ts',
+  // Added 2026-11-12 (PLAN-licence-expiry-notices N1): the delegation cert countdown mail.
+  'delegation-expiry.ts',
 ];
+
+/** The CLDR plural categories `Intl.PluralRules` can select. */
+const PLURAL_CATEGORIES = new Set(['zero', 'one', 'two', 'few', 'many', 'other']);
+
+/**
+ * A PLURAL GROUP is an object whose keys are all CLDR categories and include `other`, read by
+ * `tCount(key, count)` in private/account/src/i18n/index.ts as `<key>.<category>` with a
+ * fallback to `<key>.other`. English holds one/other, Russian one/few/many/other, Japanese
+ * other alone, so the generic "every English key exists in every locale" rule cannot apply to
+ * a group's leaves: each locale instead holds `.other` plus exactly the categories its own
+ * plural rules produce, and nothing outside the CLDR set.
+ */
+function pluralGroups(input: unknown, prefix = ''): string[] {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return [];
+  const entries = Object.entries(input as Record<string, unknown>);
+  const keys = entries.map(([k]) => k);
+  if (
+    keys.length > 0 &&
+    keys.includes('other') &&
+    keys.every((k) => PLURAL_CATEGORIES.has(k)) &&
+    entries.every(([, v]) => typeof v === 'string')
+  ) {
+    return [prefix];
+  }
+  return entries.flatMap(([key, value]) => pluralGroups(value, prefix ? `${prefix}.${key}` : key));
+}
+
+function nodeAt(tree: unknown, dotted: string): unknown {
+  let current: unknown = tree;
+  for (const part of dotted.split('.')) {
+    if (!current || typeof current !== 'object' || Array.isArray(current)) return undefined;
+    current = (current as Record<string, unknown>)[part];
+  }
+  return current;
+}
+
+/** Findings for one locale's plural groups, against the groups English declares. */
+function pluralFindings(lang: string, englishTree: unknown, localeTree: unknown): string[] {
+  const required = new Intl.PluralRules(lang).resolvedOptions().pluralCategories;
+  const out: string[] = [];
+  for (const group of pluralGroups(englishTree)) {
+    const node = nodeAt(localeTree, group);
+    if (!node || typeof node !== 'object' || Array.isArray(node)) {
+      out.push(`${lang}/emails.json: missing plural group "${group}"`);
+      continue;
+    }
+    const have = node as Record<string, unknown>;
+    for (const category of new Set(['other', ...required])) {
+      if (typeof have[category] !== 'string') {
+        out.push(`${lang}/emails.json: plural group "${group}" lacks "${category}"`);
+      }
+    }
+    for (const key of Object.keys(have)) {
+      if (!PLURAL_CATEGORIES.has(key)) {
+        out.push(`${lang}/emails.json: plural group "${group}" holds non-CLDR key "${key}"`);
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * The plural check must be able to FIRE before its green means anything: a planted locale
+ * whose group lacks `.other` (and Russian's `few`) has to produce findings, and a complete one
+ * none. Run on every invocation, so a refactor that blinds the check fails the gate itself.
+ */
+function pluralControlFailures(): string[] {
+  const english = { g: { h: { one: '{{count}} x', other: '{{count}} xs' } } };
+  const missingOther = pluralFindings('ru', english, {
+    g: { h: { one: 'a', few: 'b', many: 'c' } },
+  });
+  const complete = pluralFindings('ru', english, {
+    g: { h: { one: 'a', few: 'b', many: 'c', other: 'd' } },
+  });
+  const japanese = pluralFindings('ja', english, { g: { h: { other: 'a' } } });
+  const out: string[] = [];
+  if (!missingOther.some((f) => f.includes('lacks "other"'))) {
+    out.push('CONTROL: a plural group without "other" was not reported; the plural check is blind');
+  }
+  if (complete.length > 0 || japanese.length > 0) {
+    out.push(
+      `CONTROL: a complete plural group was reported: ${[...complete, ...japanese].join('; ')}`
+    );
+  }
+  return out;
+}
 
 /**
  * Files in TEMPLATE_DIR that are NOT templates, named so the drift check below can
@@ -171,6 +262,97 @@ function hasRenderedEmailContract(content: string): boolean {
   return literalEnvelope || delegatedEnvelope;
 }
 
+/**
+ * Findings for one locale: every English key outside a plural group exists, and each plural
+ * group holds the categories the locale's rules select. The plural call lives here, not in
+ * main(), so the control below fails if it is dropped.
+ */
+function localeFindings(lang: string, englishTree: unknown, localeTree: unknown): string[] {
+  const englishPluralGroups = new Set(pluralGroups(englishTree));
+  const inPluralGroup = (key: string) => englishPluralGroups.has(key.replace(/\.[^.]+$/, ''));
+  const localeKeys = new Set(flattenKeys(localeTree));
+  const out: string[] = [];
+  for (const key of flattenKeys(englishTree)) {
+    if (inPluralGroup(key)) continue;
+    if (!localeKeys.has(key)) out.push(`${lang}/emails.json: missing key "${key}"`);
+  }
+  out.push(...pluralFindings(lang, englishTree, localeTree));
+  return out;
+}
+
+/**
+ * Findings for the key names one template names outside t(): the plural fields (tCount's
+ * first argument, and `subjectKey` / `headingKey` in ANY template file, reserved for plural
+ * groups) and the plain fields (`fixedSubjectKey`, `titleKey`, `leadKey`, `consequenceKey`,
+ * `manageNoteKey`, `key`).
+ */
+function templateKeyFindings(
+  fileName: string,
+  content: string,
+  englishKeys: ReadonlySet<string>,
+  englishPluralGroups: ReadonlySet<string>
+): string[] {
+  const errors: string[] = [];
+  // A dotted value only: `key: 'passwordReset' | ...` in auth.ts is a type, not a lookup.
+  for (const match of content.matchAll(
+    /(?:(?<![A-Za-z0-9_$])tCount\(\s*|\b(?:subject|heading)Key:\s*)'([^'.]+\.[^']+)'/g
+  )) {
+    if (!englishPluralGroups.has(match[1])) {
+      errors.push(`${fileName}: "${match[1]}" is used as a plural group but en has none`);
+    }
+  }
+  for (const match of content.matchAll(
+    /\b(?:fixedSubject|title|lead|consequence|manageNote)Key:\s*'([^'.]+\.[^']+)'|\bkey:\s*'([^'.]+\.[^']+)'/g
+  )) {
+    const key = match[1] ?? match[2];
+    if (!englishKeys.has(key)) {
+      errors.push(`${fileName}: references missing email locale key "${key}"`);
+    }
+  }
+
+  return errors;
+}
+
+/** Plants for the key-name checks and the plural wiring; each must be reported or stay silent. */
+function keyControlFailures(): string[] {
+  const out: string[] = [];
+  const keys = new Set(['a.title', 'a.lead']);
+  const groups = new Set(['n.items']);
+  const run = (src: string) => templateKeyFindings('t.ts', src, keys, groups);
+  if (!run("const x = { fixedSubjectKey: 'a.missing' };").some((f) => f.includes('a.missing'))) {
+    out.push('CONTROL: a fixedSubjectKey naming no English key was not reported');
+  }
+  if (!run("const x = { titleKey: 'a.nope' };").some((f) => f.includes('a.nope'))) {
+    out.push('CONTROL: a titleKey naming no English key was not reported');
+  }
+  if (!run("const x = { subjectKey: 'a.title' };").some((f) => f.includes('plural group'))) {
+    out.push('CONTROL: a subjectKey naming a non-plural key was not reported');
+  }
+  if (!run("tCount('a.title', 2)").some((f) => f.includes('plural group'))) {
+    out.push('CONTROL: a tCount of a non-plural key was not reported');
+  }
+  const clean = run(
+    "const x = { fixedSubjectKey: 'a.title', subjectKey: 'n.items', key: 'a.lead' };"
+  );
+  if (clean.length > 0) out.push(`CONTROL: valid key names were reported: ${clean.join('; ')}`);
+  const english = { a: { title: 'T' }, n: { items: { one: '1', other: 'n' } } };
+  if (
+    !localeFindings('de', english, { a: { title: 'T' }, n: { items: { other: 'n' } } }).some((f) =>
+      f.includes('lacks "one"')
+    )
+  ) {
+    out.push('CONTROL: localeFindings no longer applies the plural check');
+  }
+  if (
+    !localeFindings('de', english, { n: { items: { one: '1', other: 'n' } } }).some((f) =>
+      f.includes('missing key "a.title"')
+    )
+  ) {
+    out.push('CONTROL: localeFindings no longer reports a missing key');
+  }
+  return out;
+}
+
 function main(): void {
   console.log('Account Email Template Validation');
   console.log('============================================================\n');
@@ -187,17 +369,16 @@ function main(): void {
   // unchecked templates until 2026-09-07.
   errors.push(...refuseIfListDrifted());
 
-  const englishKeys = new Set(flattenKeys(readJson(path.join(LOCALES_DIR, 'en', 'emails.json'))));
+  errors.push(...pluralControlFailures());
+  errors.push(...keyControlFailures());
+
+  const englishTree = readJson(path.join(LOCALES_DIR, 'en', 'emails.json'));
+  const englishKeys = new Set(flattenKeys(englishTree));
+  const englishPluralGroups = new Set(pluralGroups(englishTree));
 
   for (const lang of LANGUAGES) {
-    const localePath = path.join(LOCALES_DIR, lang, 'emails.json');
-    const localeKeys = new Set(flattenKeys(readJson(localePath)));
-
-    for (const key of englishKeys) {
-      if (!localeKeys.has(key)) {
-        errors.push(`${lang}/emails.json: missing key "${key}"`);
-      }
-    }
+    const localeTree = readJson(path.join(LOCALES_DIR, lang, 'emails.json'));
+    errors.push(...localeFindings(lang, englishTree, localeTree));
   }
 
   for (const fileName of TEMPLATE_FILES) {
@@ -232,6 +413,8 @@ function main(): void {
         errors.push(`${fileName}: references missing email locale key "${concreteKey}"`);
       }
     }
+
+    errors.push(...templateKeyFindings(fileName, content, englishKeys, englishPluralGroups));
   }
 
   if (errors.length > 0) {

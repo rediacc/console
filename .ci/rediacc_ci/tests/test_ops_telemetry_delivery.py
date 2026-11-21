@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import io
 import json
+import pathlib
+import re
 import threading
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -12,7 +14,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from rediacc_ci.ops import telemetry_delivery as td
-from rediacc_ci.well_known import PROXY_BENCH_HOST
+from rediacc_ci.well_known import PROXY_BENCH_HOST, PROXY_BENCH_RETIRING_HOST
 
 if TYPE_CHECKING:
     from collections.abc import Set as AbstractSet
@@ -27,9 +29,17 @@ class Fake:
         self,
         silent: AbstractSet[tuple[str, str]] = frozenset(),
         down: AbstractSet[str] = frozenset(),
+        series: dict[str, tuple[str, str]] | None = None,
     ):
         self.silent = silent  # (host, signal)
         self.down = down
+        # region -> (service, deployment_environment) its spanmetrics series carries; a region absent here has no series.
+        self.series = (
+            {"eu": ("account-eu", "production"), "us": ("account-us", "production")}
+            if series is None
+            else series
+        )
+        self.prom_queries: list[str] = []
         self.probes: dict[str, str] = {}  # probe id -> host
         self.auth: list[str] = []
         self.request_lines: list[str] = []  # every request target as it hit the wire
@@ -64,6 +74,23 @@ class Fake:
                     if seen_host and (seen_host, "traces") not in fake.silent:
                         return self._send(200, b'{"traces":[{"traceID":"a"}]}')
                     return self._send(200, b'{"traces":[]}')
+                if "/uid/prometheus/" in parts.path:
+                    query = qs["query"][0]
+                    fake.prom_queries.append(query)
+                    region = re.search(r'rediacc_region="([^"]+)"', query)
+                    envs = re.search(r'deployment_environment=~"([^"]+)"', query)
+                    svc = re.search(r'service="([^"]+)"', query)
+                    emitted = fake.series.get(region.group(1)) if region else None
+                    hit = (
+                        envs is not None
+                        and svc is not None
+                        and emitted is not None
+                        and emitted[0] == svc.group(1)
+                        and emitted[1] in envs.group(1).split("|")
+                    )
+                    result = [{"metric": {}, "value": [1, "5"]}] if hit else []
+                    body = {"status": "success", "data": {"result": result}}
+                    return self._send(200, json.dumps(body).encode())
                 if "/uid/loki/" in parts.path:
                     pid = qs["query"][0].split('"')[-2]
                     seen_host = fake.probes.get(pid)
@@ -86,7 +113,7 @@ class Fake:
 HOSTS = ["eu.example", "bench.example"]
 
 
-def drive(fake: Fake, hosts=HOSTS, timeout_s=0.3, proxies=frozenset()):
+def drive(fake: Fake, hosts=HOSTS, timeout_s=0.3, proxies=frozenset(), alert=None):
     out = io.StringIO()
     rc = td.run(
         hosts,
@@ -98,6 +125,7 @@ def drive(fake: Fake, hosts=HOSTS, timeout_s=0.3, proxies=frozenset()):
         base_for=lambda h: "%s/host/%s" % (fake.origin, h),
         proxies=frozenset(proxies),
         out=out,
+        alert=alert,
     )
     return rc, out.getvalue()
 
@@ -177,15 +205,15 @@ def test_main_never_echoes_token_even_when_hosts_fail(monkeypatch, capsys):
     assert TOKEN not in cap.out + cap.err
 
 
-def test_all_hosts_is_stable_edge_and_bench():
+def test_all_hosts_is_the_shared_hosts_and_bench():
     regions = [
-        {"id": "eu", "domain": "eu.d", "edgeDomain": "edge-eu.d"},
-        {"id": "us", "domain": "us.d", "edgeDomain": "edge-us.d"},
+        {"id": "eu", "domain": "eu.d"},
+        {"id": "us", "domain": "us.d"},
     ]
     hosts = td.all_hosts(regions)
-    assert hosts[:4] == ["eu.d", "us.d", "edge-eu.d", "edge-us.d"]
-    assert len(hosts) == 5
-    assert hosts[4].startswith("bench")
+    assert hosts[:2] == ["eu.d", "us.d"]
+    assert len(hosts) == 3
+    assert hosts[2].startswith("bench")
 
 
 def test_loki_and_tempo_need_real_results():
@@ -300,10 +328,200 @@ def test_proxy_run_keeps_the_token_out_of_output(make_fake):
 
 
 def test_proxy_hosts_come_from_the_wrangler_routes():
-    assert td.proxy_hosts() == [PROXY_BENCH_HOST]
+    # The eu bench routes its retiring host beside the renamed one until PLAN-multi-region-bench M4.
+    assert td.proxy_hosts() == [PROXY_BENCH_HOST, PROXY_BENCH_RETIRING_HOST]
 
 
 def test_proxy_route_without_a_pattern_is_an_error(tmp_path):
     (tmp_path / "w.toml").write_text("[[routes]]\ncustom_domain = true\n")
     with pytest.raises(ValueError, match="without a pattern"):
         td.proxy_hosts(("w.toml",), root=tmp_path)
+
+
+def test_loki_selector_matches_every_deployed_worker_name():
+    """The Loki service_name label is the Worker's name, so the selector must admit every account and proxy Worker the wrangler configs declare."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    selector_match = re.search(r'=~"([^"]+)"', td.LOKI_SELECTOR)
+    assert selector_match is not None
+    pattern = re.compile(selector_match.group(1))
+    names = []
+    for kind in ("account", "proxy"):
+        for region in ("eu", "us", "asia", "bench-eu"):
+            config = root / "workers" / kind / f"wrangler.{region}.toml"
+            found = re.search(r'^name = "([^"]+)"', config.read_text(), re.MULTILINE)
+            assert found, config
+            names.append(found.group(1))
+    assert len(names) == 8
+    assert all(pattern.fullmatch(n) for n in names), names
+
+
+ALERT_REGIONS = ["eu", "us"]
+
+
+def _alert(envs=("production", "edge")):
+    return td.AlertSeries(list(ALERT_REGIONS), list(envs), "account-{region}")
+
+
+def test_alert_series_present_for_every_region_passes(make_fake):
+    fake = make_fake()
+    rc, text = drive(fake, alert=_alert())
+    assert rc == 0, text
+    assert "PASS eu (alert labels)" in text
+    assert "PASS us (alert labels)" in text
+    assert text.splitlines()[-1] == "2 hosts, 6 signals, 0 silent"
+    assert all(TOKEN not in q for q in fake.prom_queries)
+
+
+def test_alert_series_missing_for_eu_fails_naming_region_and_labels(make_fake):
+    rc, text = drive(make_fake(series={"us": ("account-us", "production")}), alert=_alert())
+    assert rc == 1
+    assert "PASS us (alert labels)" in text
+    line = next(ln for ln in text.splitlines() if ln.startswith("SILENT eu (alert labels)"))
+    assert 'service="account-eu"' in line
+    assert 'deployment_environment=~"production|edge"' in line
+    assert 'rediacc_region="eu"' in line
+    assert "PASS eu.example traces" in text
+
+
+def test_a_worker_emitting_an_unexpected_environment_starves_the_alert_labels(make_fake):
+    """The 2026-11-08 shape: the uuid is found, the series carries `edge`, the config accepts only `production`."""
+    fake = make_fake(series={"eu": ("account-eu", "edge"), "us": ("account-us", "edge")})
+    rc, text = drive(fake, alert=_alert(("production",)))
+    assert rc == 1
+    assert "PASS eu.example traces" in text
+    assert "SILENT eu (alert labels)" in text
+    rc, text = drive(fake, alert=_alert(("production", "edge")))
+    assert rc == 0, text
+
+
+def test_a_series_under_the_old_service_name_does_not_satisfy_the_check(make_fake):
+    """Control: the shared Workers report `account-<region>`, never `rediacc-account-server`."""
+    old = {
+        "eu": ("rediacc-account-server", "edge"),
+        "us": ("rediacc-account-server", "edge"),
+    }
+    rc, text = drive(make_fake(series=old), alert=_alert())
+    assert rc == 1
+    assert "SILENT eu (alert labels)" in text
+    assert 'service="account-eu"' in text
+    rc, text = drive(
+        make_fake(series={"eu": ("account-eu", "edge"), "us": ("account-us", "edge")}),
+        alert=_alert(),
+    )
+    assert rc == 0, text
+
+
+def test_alert_service_template_needs_a_region_placeholder():
+    with pytest.raises(ValueError, match=r"no \{region\}"):
+        td.AlertSeries(["eu"], ["edge"], "account-eu")
+
+
+def test_alert_query_answered_404_names_its_status():
+    def get(url, _headers):
+        if "/uid/prometheus/" in url:
+            return td.Reply(404)
+        return td.Reply(200, b'{"status":"ok"}')
+
+    out = io.StringIO()
+    rc = td.run(
+        ["a.example"], get, "https://g", "tok", timeout_s=0, interval_s=0, out=out, alert=_alert()
+    )
+    assert rc == 1
+    assert "SILENT eu (alert labels)" in out.getvalue()
+    assert "(grafana query answered 404)" in out.getvalue()
+
+
+def test_no_alert_means_no_alert_lines(make_fake):
+    rc, text = drive(make_fake(series={}))
+    assert rc == 0, text
+    assert "alert labels" not in text
+
+
+def test_alert_label_values_are_plain():
+    with pytest.raises(ValueError, match="plain label value"):
+        td.AlertSeries(["eu"], ['x"} or vector(1) #'], "account-{region}")
+    with pytest.raises(ValueError, match="at least one"):
+        td.AlertSeries(["eu"], [], "account-{region}")
+
+
+def test_alert_service_name_must_be_a_plain_label_value():
+    """Review eff0e789.1: the rendered service name is checked too, so a template cannot inject a selector."""
+    with pytest.raises(ValueError, match=r"service name .* is not a plain label value"):
+        td.AlertSeries(["eu"], ["production"], 'account-{region}"} or vector(1) #')
+    assert td.AlertSeries(["eu"], ["production"], "account-{region}").service("eu") == "account-eu"
+
+
+def _split_run(tempo_loki_status: int, prom_status: int):
+    """`run` with an alert where Tempo and Loki answer `tempo_loki_status` and Prometheus answers `prom_status`."""
+
+    def get(url, _headers):
+        if "/uid/prometheus/" in url:
+            return td.Reply(prom_status, b"{}")
+        if "/api/datasources/proxy/" in url:
+            return td.Reply(tempo_loki_status, b"{}")
+        return td.Reply(200, b'{"status":"ok"}')
+
+    out = io.StringIO()
+    rc = td.run(
+        ["a.example"],
+        get,
+        "https://g",
+        "tok",
+        timeout_s=0,
+        interval_s=0,
+        sleep=lambda _s: None,
+        out=out,
+        alert=_alert(),
+    )
+    return rc, out.getvalue()
+
+
+def test_a_prometheus_rejection_joins_the_credential_verdict(capsys):
+    """Review e92ca2bd.1: Prometheus answering 403 beside Tempo and Loki answering 401 is one rejected credential, exit 2."""
+    rc, out = _split_run(401, 403)
+    assert rc == 2
+    assert "SILENT" not in out
+    assert "401/403" in capsys.readouterr().err
+
+
+def test_a_prometheus_error_beside_a_rejection_is_not_a_credential_verdict(capsys):
+    """Control: Prometheus answering 500 is an outage signal, so the 401s elsewhere do not make the run exit 2."""
+    rc, out = _split_run(401, 500)
+    assert rc == 1
+    assert "(grafana query answered 500)" in out
+    assert "rejected" not in capsys.readouterr().err
+
+
+def test_account_environments_come_from_ops_health_config(tmp_path):
+    assert td.account_environments() == ["production", "edge"]
+    assert td.account_service_template() == "account-{region}"
+    (tmp_path / ".ci" / "config").mkdir(parents=True)
+    (tmp_path / td.CONFIG_REL).write_text('{"telemetry": {}}')
+    with pytest.raises(ValueError, match="account_environments"):
+        td.account_environments(tmp_path)
+    with pytest.raises(ValueError, match="account_service_template"):
+        td.account_service_template(tmp_path)
+
+
+def test_main_wires_regions_and_environments_into_the_alert(monkeypatch):
+    monkeypatch.setenv(td.READ_CREDENTIAL_ENV, TOKEN)
+    seen: dict[str, object] = {}
+
+    def fake_run(*_a, **kw):
+        seen["alert"] = kw["alert"]
+        return 0
+
+    monkeypatch.setattr(td, "run", fake_run)
+    assert td.main([]) == 0
+    alert = seen["alert"]
+    assert isinstance(alert, td.AlertSeries)
+    assert {"eu", "us", "asia"} <= set(alert.regions)
+    assert alert.environments == ["production", "edge"]
+    assert alert.service("asia") == "account-asia"
+
+
+def test_docstring_says_the_environment_list_is_not_checked_against_the_rule() -> None:
+    """The environment list mirrors a Grafana rule kept in the observability repo, so the docstring must not claim the two are checked against each other."""
+    doc = " ".join((td.__doc__ or "").split())
+    assert "a hand-kept mirror of the values the alert rule accepts" in doc
+    assert "nothing here reads it" in doc

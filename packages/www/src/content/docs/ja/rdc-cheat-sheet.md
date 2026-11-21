@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: ja
-sourceHash: "44f85425f17be08c"
+sourceHash: "c0ca05a2167060d2"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -143,6 +143,17 @@ sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 | `rdc machine add <machine> --ip <host> --user <user>` | 設定にマシンを追加する |
 | `rdc backup strategy set ...` | 名前付きバックアップ戦略を定義する |
 | `rdc --config <name> <command>` | 名前付き設定ファイルを使用する |
+
+## フィードバック
+
+| コマンド | 説明 |
+|---------|------|
+| `rdc feedback report --last` | 直近に失敗したコマンドから作ったレポートをプレビューする。送信するには `--yes` を付ける |
+| `rdc feedback report --command <n>` | 記録済みのコマンドを報告する(1 が最新) |
+| `rdc feedback report --list-recent` | 記録済みのコマンドを一覧表示して終了する |
+| `rdc feedback report --message <text> [--kind bug\|feedback\|docs]` | 失敗したコマンドなしでメモを報告する |
+| `rdc feedback list [--status <list>]` | ID、フィンガープリント、状態、日付付きでレポートを一覧表示する。修正済みのレポートは `fixed-in-v<version>` と表示される |
+| `rdc feedback show <id>` | ID または一意の接頭辞で 1 件のレポートを表示する |
 
 ## デバッグと直接アクセス
 

@@ -22,8 +22,8 @@ LOGIN_HTML = (
     b"</head><body><div id=root></div></body></html>"
 )
 REGIONS = [
-    {"id": "eu", "domain": "eu.example.test", "edgeDomain": "edge-eu.example.test"},
-    {"id": "us", "domain": "us.example.test", "edgeDomain": "edge-us.example.test"},
+    {"id": "eu", "domain": "eu.example.test"},
+    {"id": "us", "domain": "us.example.test"},
 ]
 
 
@@ -104,7 +104,9 @@ def test_a_login_page_with_no_asset_is_red_not_vacuously_green() -> None:
 
 def test_hosts_by_target_and_region() -> None:
     assert ph.hosts("stable", None, REGIONS) == ["eu.example.test", "us.example.test"]
-    assert ph.hosts("edge", "us", REGIONS) == ["edge-us.example.test"]
+    assert ph.hosts("stable", "us", REGIONS) == ["us.example.test"]
+    with pytest.raises(ValueError, match="unknown target"):
+        ph.hosts("edge", "us", REGIONS)
     assert ph.hosts("bench", None) == [ph.BENCH_ORIGIN.removeprefix("https://").rstrip("/")]
     with pytest.raises(ValueError, match="no regions"):
         ph.hosts("bench", "eu")
@@ -112,9 +114,8 @@ def test_hosts_by_target_and_region() -> None:
         ph.hosts("stable", "mars", REGIONS)
 
 
-def test_the_real_regions_file_gives_three_hosts_per_channel() -> None:
+def test_the_real_regions_file_gives_three_shared_hosts() -> None:
     assert len(ph.hosts("stable", None)) == 3
-    assert len(ph.hosts("edge", None)) == 3
     assert ph.hosts("stable", "eu") == [ACCOUNT_DEFAULT_ORIGIN.split("://", 1)[1]]
 
 

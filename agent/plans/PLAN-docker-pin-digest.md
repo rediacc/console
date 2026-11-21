@@ -114,5 +114,6 @@ Concurrency: parallel -- no other plan owns these files. Inside the plan the ord
 - /home/developer/console/.ci/config/pins.json
 - /home/developer/console/scripts/lib/pins/driver.ts
 
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench proxy-ready
+    (ticked) 2026-11-10T14:36:41Z by d778be9d: live-proof lp-6ebf6d76c347 bench proxy-ready rc=0 v=1f1e3c65-0f6a-4ed5-97bd-9f7572df750a

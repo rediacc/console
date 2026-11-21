@@ -101,8 +101,9 @@ On hostinger the repo `hermes` held 277 overlay2 directories, 20.5 GB of them re
 - [x] L1 [live] Ops VM, after R5 and F1 with the renet pointer bumped (`./rdc.sh ops`): with the pre-F1 renet, repeat L0's leak cycle until D, E and G are non-zero, run `rdc repo prune <ref>` (dry run), then `--apply --offline -y`, then a dry run again; with the F1 renet, repeat the leak cycle twice and dry-run again. Owns: none (proof rows only). Accept: the first dry run reports D, E and G non-zero with sizes within 10% of `du` on the listed paths; after the apply D, E, F1, F2, G and L are 0, `ImageInspect` succeeds on every image, every previously running container runs, `trimmed_bytes` > 0 and `downtime_seconds` is recorded; after the F1 cycles D, E and G stay 0; a `live_proof` row is filed for the `renet` and `cli` surfaces.
     (ticked) 2026-10-28T18:32:10Z by d778be9d: L1 on ops VM rediacc22 (operator ruling ASKED:2026-10-28T18:21Z): pre-F1 renet 182162f made the leak; first dry run (current renet scanner) D 1 E 4 G 6 equal to du byte for byte; repo prune --apply --offline -y rc=0, downtime 15.0s, trimmed 3938308096, container restarted, image inspect ok; dry run after all classes 0; two F1 cycles E 0; live-proof receipt from L2 on hostinger today
     (review note 2026-10-29, 9f92c43e) The live_proof rows for the renet and cli surfaces that the Accept requires are not filed: agent/ledgers/live-proof.jsonl holds no row for this plan, and the tick's "receipt from L2 on hostinger" refers to L2, which is still open. The rows are owed through LP-hostinger and LP-bench below.
-- [ ] L2 [live] Hostinger, dry run only, under the operator ruling: `rdc repo prune -m hostinger --output json` across every mounted repository, no `--apply`. Owns: agent/plans/PLAN-repo-docker-storage-prune.md (the survey table under this box only). Accept: a table of repositories with every class count and its bytes, class E included; no write on the machine; a `live_proof` row filed.
+- [x] L2 [live] Hostinger, dry run only, under the operator ruling: `rdc repo prune -m hostinger --output json` across every mounted repository, no `--apply`. Owns: agent/plans/PLAN-repo-docker-storage-prune.md (the survey table under this box only). Accept: a table of repositories with every class count and its bytes, class E included; no write on the machine; a `live_proof` row filed.
   L2 survey, `rdc repo prune -m hostinger --output json` (dry run, 2026-10-28T18:42Z, rc=0); each cell is count / MiB:
+    (ticked) 2026-11-16T17:05:51Z by d778be9d: L2 survey table (rdc repo prune -m hostinger --output json, dry run, no --apply) 2026-10-28T18:42Z rc=0 and re-survey 2026-11-12 rc=0, class E column included, in plan under the box; live_proof row lp-91fec773a571 hostinger renet-live rc=0 in agent/ledgers/live-proof.jsonl
 
   | Repository | network | A | B | C | D | E | F1 | F2 | G | L | Q | estimate MiB |
   |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -116,11 +117,29 @@ On hostinger the repo `hermes` held 277 overlay2 directories, 20.5 GB of them re
   | miscellaneous | 2816 | 2 / 9466.2 | 0 | 0 | 0 | 7 / 2411.9 | 0 | 0 | 0 | 0 | 0 | 7138.5 |
   | nextcloud | 2880 | 0 | 0 | 0 | 0 | 135 / 2526.2 | 0 | 0 | 0 | 0 | 0 | 2526.2 |
   | observability | 3136 | 0 | 0 | 0 | 0 | 138 / 14.2 | 0 | 0 | 0 | 0 | 0 | 14.2 |
+  (corrected 2026-11-12T04:44Z, measured) L2 re-survey, `rdc repo prune -m hostinger --output json` (dry run, 2026-11-12, rc=0; no `--apply`, no write on the machine); each cell is count / MiB, and class E is 0 on every repository:
+
+  | Repository | network | A | B | C | D | E | F1 | F2 | G | L | Q | estimate MiB |
+  |---|---|---|---|---|---|---|---|---|---|---|---|---|
+  | miscellaneous | 2816 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | nextcloud | 2880 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | gitlab | 2944 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | erpnext | 3008 | 0 | 0 | 2 / 6.2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 6.2 |
+  | observability | 3136 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | marketing | 3200 | 1 / 256.1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | mail | 3264 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | demo-stackoverflow | 10176 | 3 / 438.6 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | hermes | 22912 | 6 / 4171.4 | 0 | 0 | 0 | 0 | 18 / 9.3 | 87 / 1.3 | 0 | 233 / 0.8 | 0 | 11.4 |
+  | mautic | 23168 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | (unnamed in eu-bench, 152807f6, modified 2026-11-12 02:41) | 33472 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+
 - [x] L3 [live] Hostinger `--apply`, OPERATOR APPROVAL REQUIRED. DEFAULT: not run. Ask with the L2 table attached (repositories, reclaimable bytes, expected downtime each); on approval run `rdc repo prune <ref> --apply` online first, then `--offline -y` only for the repositories the operator names, in the window the operator chooses. Owns: none. Accept: the operator's ASKED ruling quoted here; for each approved repository a post-run dry run shows D, E, F1, F2, G and L at 0 and its services answer their health checks.
     (ticked) 2026-10-28T20:42:23Z by d778be9d: commit:5f438b728 live: demo-stackoverflow offline prune rc=0 after the reconcile-lock fix; post-run dry run D/E/F1/F2/G/L 0 on all 9 approved repos; 40/40 containers running, 0 unhealthy; ASKED 2026-10-28 "Apply to all safe repos now"
-- [ ] R7 [writer] Close: move this plan to agent/plans/_done/, citing the commits of R1-R6 and F1 and the L1 and L2 proof rows. Owns: agent/plans/PLAN-repo-docker-storage-prune.md. Accept: `python3 .ci/scripts/quality/check_plan_deps.py` rc 0.
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+- [x] R7 [writer] Close: move this plan to agent/plans/_done/, citing the commits of R1-R6 and F1 and the L1 and L2 proof rows. Owns: agent/plans/PLAN-repo-docker-storage-prune.md. Accept: `python3 .ci/scripts/quality/check_plan_deps.py` rc 0.
+    (ticked) 2026-11-18T14:47:37Z by d778be9d: commit:360207cfc commit:52dc2fff3 commit:5f438b728 commit:688d5664d commit:724a8c174 commit:c4ef40030 commit:dd03f6c08 -- R1-R6 and F1 landed, L1/L2/L3 and both LP receipts ticked in the plan; check_plan_deps.py rc 0. The _done/ move runs after the merge, as check:ci-plan-record's RF rule requires for a plan fully ticked on the branch only
+- [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
   - Accept: `live-proof hostinger renet-live`
+    (ticked) 2026-11-11T06:39:26Z by d778be9d: live-proof lp-91fec773a571 hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 - [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
     (ticked) 2026-10-30T06:18:04Z by d778be9d: live-proof lp-af6920c11252 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981

@@ -1,6 +1,6 @@
 ---
-sourceHash: "f80f4bf22d4accf1"
-sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
+sourceHash: "dee69e89a962aa32"
+sourceCommit: "9900c15aaef286077bf72464af2a52f248a555c5"
 title: "Installimine"
 description: "Installige Rediacci CLI Linuxi, macOS-i või Windowsi."
 category: "Guides"
@@ -177,10 +177,10 @@ rdc update --channel edge      # Lülitu edge kanalile
 rdc update --channel stable    # Lülitu tagasi stable kanalile
 ```
 
-Installige otse edge kanalist:
+www.rediacc.com ühe reaga installerid paigaldavad edge kanali. Stable kanali paigaldamiseks määrake `REDIACC_CHANNEL`:
 
 ```bash
-REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
+REDIACC_CHANNEL=stable curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 Pakethaldite puhul asendage hoidla URL-is `stable` sõnaga `edge`:
@@ -197,7 +197,7 @@ docker pull ghcr.io/rediacc/rdc:edge
 
 Kanal rakendub ühtlaselt kõigi tarnimismeetodite lõikes:
 
-- **Installiskriptid**: `REDIACC_CHANNEL` keskkonna muutuja valib kanali
+- **Installiskriptid**: www ühe reaga installerid kasutavad vaikimisi kanalit `edge`; `REDIACC_CHANNEL` keskkonna muutuja valib mõne muu kanali
 - **Pakettide hoidlad**: `releases.rediacc.com/{format}/{channel}/`
 - **Docker sildid**: `ghcr.io/rediacc/rdc:{channel}`
 - **CLI uuendused**: `rdc update` kontrollib installimise ajal konfigureeritud kanalit

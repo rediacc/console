@@ -59,6 +59,14 @@
  *     frontmatter note contains the English word "content" in prose, which read as a bare
  *     use and switched narrowing off for the whole file.
  *
+ * A KEY SITE WITH NO LITERAL ROOT IS REFUSED, NOT TRUSTED. `LegalDocument.astro` once did
+ * `t(`${pageKey}.${path}`)` with a prop and a parameter: `*.*`, a pattern matching every key of
+ * two or more segments, so the whole catalog looked reachable and all 184 baselined dead keys
+ * read as wired up. A pattern whose FIRST segment is a wildcard is therefore never used, and
+ * its file:line is a hard failure telling the author to make the key resolvable. A literal
+ * root with a wildcard below it (`pages.*.meta.title`) stays accepted, as generosity bounded
+ * by a branch name.
+ *
  * SHRINK-ONLY BASELINE. Turning that blindness off exposed 192 pre-existing dead leaves in
  * one step, none of them deletable by the session that sharpened the gate (the thirteen
  * catalogs are a serialised surface with one owner). They are frozen in
@@ -99,6 +107,24 @@ const WWW_SRC = 'packages/www/src';
 const EN_JSON = 'packages/www/src/i18n/translations/en.json';
 const SOURCE_EXTS = ['.astro', '.tsx', '.ts', '.js', '.mjs', '.md', '.mdx'];
 const BASELINE = 'scripts/data/dead-translation-keys-baseline.json';
+
+/**
+ * Files OUTSIDE `packages/www/src` that read the www catalogs by key, scanned with the same
+ * rules. Each is a scan root, not an exemption: a key still has to be referenced in the file to
+ * count. A listed file that no longer exists is a hard failure, so the list cannot go stale
+ * quietly.
+ *
+ * `legal.consent.*` is the case that added this: the four consent notices are rendered into
+ * `packages/shared/src/legal/consent.generated.ts` (read by the CLI and the account portal) and
+ * no www page shows them. Until LegalDocument.astro's `*.*` was refused, that pattern hid the
+ * scan root being missing.
+ */
+export const CATALOG_CONSUMERS: ReadonlyArray<{ file: string; why: string }> = [
+  {
+    file: 'scripts/gen/gen-legal.ts',
+    why: 'renders legal.consent.<method> of every locale into packages/shared/src/legal/consent.generated.ts',
+  },
+];
 
 /** Floors. Either one failing means the scan lost its input, not that the site is clean. */
 const MIN_SOURCE_FILES = 50;
@@ -282,27 +308,63 @@ export function subtreeNarrowing(src: string, ns: Map<string, string>): SubtreeN
   return { drop, add };
 }
 
+/** A template key path with each `${name}` replaced by its same-file namespace, else `*`. */
+const resolveTemplate = (body: string, ns: Map<string, string>): string =>
+  wildcard(
+    body.replace(/\$\{([A-Za-z_$][\w$]*)\}/g, (whole, name: string) => ns.get(name) ?? whole)
+  );
+
+/**
+ * A pattern whose FIRST segment is not literal names no branch of the catalog. `*.*` (from
+ * `t(`${pageKey}.${path}`)` with both names unresolvable) matches every key of two or more
+ * segments, so one such call vouched for the whole catalog and every dead key in it. See the
+ * header: such a pattern is never used, and its call site is a finding.
+ */
+export const isOpaquePattern = (p: string): boolean => p.split('.')[0].includes('*');
+
+export interface UnresolvableSite {
+  line: number;
+  /** The call as written, e.g. t(`${pageKey}.${path}`). */
+  call: string;
+  pattern: string;
+}
+
+/**
+ * The calls that carry a translation key: t(), to(), ta() and the component-local `text()`
+ * wrapper LegalDocument.astro routes every key through (`text(key)` is `t(key, en.t(key))`).
+ * `text` must not be a method (`res.text(`), hence the lookbehind.
+ */
+const KEY_CALL = String.raw`(?:\bt[ao]?|(?<![\w$.])text)\(\s*`;
+const KEY_CALL_LITERAL = new RegExp(`${KEY_CALL}['"]([^'"]+)['"]`, 'g');
+const KEY_CALL_TEMPLATE = new RegExp(`${KEY_CALL}\`([^\`]+)\``, 'g');
+
+/** Key calls in `src` whose key resolves to an opaque pattern, with 1-based line numbers. */
+export function unresolvableSites(src: string): UnresolvableSite[] {
+  const ns = namespaceVars(src);
+  const out: UnresolvableSite[] = [];
+  for (const m of src.matchAll(KEY_CALL_TEMPLATE)) {
+    const pattern = resolveTemplate(m[1], ns);
+    if (!isOpaquePattern(pattern)) continue;
+    out.push({
+      line: src.slice(0, m.index).split('\n').length,
+      call: `${m[0]})`,
+      pattern,
+    });
+  }
+  return out;
+}
+
 export function referencePatterns(src: string): string[] {
   const pats: string[] = [];
   const ns = namespaceVars(src);
 
-  for (const m of src.matchAll(/\bt[ao]?\(\s*['"]([^'"]+)['"]/g)) pats.push(m[1]);
-  for (const m of src.matchAll(/\bt[ao]?\(\s*`([^`]+)`/g)) {
-    pats.push(
-      wildcard(
-        m[1].replace(/\$\{([A-Za-z_$][\w$]*)\}/g, (whole, name: string) => ns.get(name) ?? whole)
-      )
-    );
-  }
+  for (const m of src.matchAll(KEY_CALL_LITERAL)) pats.push(m[1]);
+  for (const m of src.matchAll(KEY_CALL_TEMPLATE)) pats.push(resolveTemplate(m[1], ns));
   for (const m of src.matchAll(/\{\{t:([^}\s]+)\}\}/g)) pats.push(m[1]);
   // Key paths carried as DATA in a config table, and template key paths built inline.
   for (const m of src.matchAll(/['"]([a-zA-Z][\w]*(?:\.[a-zA-Z][\w]*){2,})['"]/g)) pats.push(m[1]);
   for (const m of src.matchAll(/`([a-zA-Z][\w]*(?:\.[a-zA-Z_${}][\w${}]*){2,})`/g)) {
-    pats.push(
-      wildcard(
-        m[1].replace(/\$\{([A-Za-z_$][\w$]*)\}/g, (whole, name: string) => ns.get(name) ?? whole)
-      )
-    );
+    pats.push(resolveTemplate(m[1], ns));
   }
   // Keys reached by property access on a statically imported catalog: `en.a.b.c`.
   for (const v of catalogImportVars(src)) {
@@ -314,7 +376,10 @@ export function referencePatterns(src: string): string[] {
   // produced both by the `to()` call and by rule 3 seeing the backtick, and leaving either
   // copy in would restore the whole subtree and undo the narrowing.
   const { drop, add } = subtreeNarrowing(src, ns);
-  return drop.size === 0 ? pats : [...pats.filter((p) => !drop.has(p)), ...add];
+  const all = drop.size === 0 ? pats : [...pats.filter((p) => !drop.has(p)), ...add];
+  // An opaque pattern vouches for everything, so it vouches for nothing: main() reports its
+  // site via unresolvableSites() and fails.
+  return all.filter((p) => !isOpaquePattern(p));
 }
 
 /** A pattern matches a key when it equals it or is a prefix of it. `*` spans one segment. */
@@ -345,6 +410,16 @@ export function buildMatcher(patterns: Iterable<string>): (key: string) => boole
 }
 
 const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** The CATALOG_CONSUMERS entries whose file does not exist under `base`. */
+export function missingConsumers(
+  base: string,
+  consumers: ReadonlyArray<{ file: string; why: string }>
+): Array<{ file: string; why: string; abs: string }> {
+  return consumers
+    .map((c) => ({ ...c, abs: path.join(base, c.file) }))
+    .filter((c) => !fs.existsSync(c.abs));
+}
 
 function selftest(): boolean {
   const failures: string[] = [];
@@ -458,6 +533,57 @@ const body = (content as any).problem;`;
     ),
     'prose containing the variable name read as a bare use and disabled narrowing entirely'
   );
+  // A FULLY DYNAMIC key: `${a}.${b}` resolved to `*.*`, a pattern that names no branch and so matched every key of two or more segments. LegalDocument.astro shipped exactly this and made 184 baselined dead keys look wired up.
+  const OPAQUE = 'const text = (p) => t(`${pageKey}.${p}`);\nconst s = to(`${pageKey}.sections`);';
+  check(
+    'PLANT: a key site with no literal first segment does NOT vouch for an unrelated key',
+    !reach(OPAQUE, 'pages.solutionPages.environmentCloning.socialProof.quote') &&
+      !reach(OPAQUE, 'pages.termsOfService.sections.intro.title'),
+    'a leading wildcard is a prefix of every key; this is the defect, not generosity'
+  );
+  check(
+    'a key site with no literal first segment is reported at its line',
+    JSON.stringify(unresolvableSites(OPAQUE).map((s) => [s.line, s.pattern])) ===
+      JSON.stringify([
+        [1, '*.*'],
+        [2, '*.sections'],
+      ]),
+    JSON.stringify(unresolvableSites(OPAQUE))
+  );
+  // The same fully dynamic key, passed through a component-local `text()` wrapper.
+  const OPAQUE_TEXT = 'const x = text(`${a}.${b}`);';
+  check(
+    'a fully dynamic key inside text() is reported, like one inside t()',
+    unresolvableSites(OPAQUE_TEXT).length === 1 &&
+      unresolvableSites(OPAQUE_TEXT)[0].pattern === '*.*'
+  );
+  check(
+    'a literal-root key inside text() is reachable, and a .text( method call is not a key site',
+    reach('const x = text(`pages.${legalPage}.meta.title`);', 'pages.termsOfService.meta.title') &&
+      unresolvableSites('const body = await res.text(`${a}.${b}`);').length === 0
+  );
+  const consumerRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dead-keys-consumers-'));
+  try {
+    const present = path.join(consumerRoot, 'present.ts');
+    fs.writeFileSync(present, '');
+    const gone = missingConsumers(consumerRoot, [
+      { file: 'present.ts', why: 'exists' },
+      { file: 'absent.ts', why: 'removed' },
+    ]);
+    check(
+      'a CATALOG_CONSUMERS entry whose file is gone is reported, a present one is not',
+      gone.length === 1 && gone[0].file === 'absent.ts'
+    );
+  } finally {
+    fs.rmSync(consumerRoot, { recursive: true, force: true });
+  }
+  check(
+    'a namespace that resolves to a literal root is NOT reported (control)',
+    unresolvableSites('const ns = `pages.${page}`;\nconst x = t(`${ns}.meta.title`);').length ===
+      0 &&
+      unresolvableSites(SRC).length === 0 &&
+      unresolvableSites(NARROW).length === 0
+  );
   check(
     'stripComments leaves a URL alone',
     stripComments("const u = 'https://x.dev/a';").includes('https://x.dev/a')
@@ -532,9 +658,45 @@ function main(): void {
 
   const keys = leafKeys(JSON.parse(fs.readFileSync(enPath, 'utf-8')));
   const files = walk(srcDir);
+  const consumers = CATALOG_CONSUMERS.map((c) => ({
+    ...c,
+    abs: path.join(base, c.file),
+  }));
+  const missing = missingConsumers(base, CATALOG_CONSUMERS);
+  if (missing.length > 0) {
+    console.error(
+      `✗ Refusing to run: ${missing.length} catalog consumer(s) in CATALOG_CONSUMERS no longer exist:\n` +
+        missing.map((c) => `  ${c.file}  (${c.why})`).join('\n') +
+        `\n  Point the entry at the file that now reads those keys, or delete it if nothing does.`
+    );
+    process.exit(1);
+  }
   const patterns = new Set<string>();
-  for (const file of files) {
-    for (const p of referencePatterns(fs.readFileSync(file, 'utf-8'))) patterns.add(p);
+  const opaque: string[] = [];
+  for (const file of [...files, ...consumers.map((c) => c.abs)]) {
+    const src = fs.readFileSync(file, 'utf-8');
+    for (const p of referencePatterns(src)) patterns.add(p);
+    for (const site of unresolvableSites(src)) {
+      opaque.push(
+        `${path.relative(base, file)}:${site.line}  ${site.call}  resolves to "${site.pattern}"`
+      );
+    }
+  }
+
+  if (opaque.length > 0) {
+    console.error(
+      `\x1b[31m✗\x1b[0m ${opaque.length} translation key site(s) have no literal first segment, so the\n` +
+        `gate cannot tell which branch they read. Each would vouch for EVERY key in the catalog\n` +
+        `(184 dead keys looked wired up behind one such call), so none of them is used:\n`
+    );
+    printTruncated(opaque, { limit: 30, indent: '  ' });
+    console.error(
+      `\nMake each key resolvable: declare its namespace in the same file with a literal root\n` +
+        `(const ns = \`pages.\${page}\`), and spell the rest of the path at the call\n` +
+        `(t(\`\${ns}.hero.title\`)) rather than passing it in as a parameter. Do NOT baseline\n` +
+        `the keys this hides, and do not allowlist the site.`
+    );
+    process.exit(1);
   }
 
   if (files.length < MIN_SOURCE_FILES || patterns.size < MIN_PATTERNS) {
@@ -604,7 +766,8 @@ function main(): void {
   if (fresh.length === 0) {
     console.log(
       `✓ All ${keys.length} English translation key(s) are reachable from ${files.length} ` +
-        `source file(s) (${patterns.size} reference pattern(s)), ` +
+        `source file(s) and ${consumers.length} catalog consumer(s) (${patterns.size} reference ` +
+        `pattern(s), 0 unresolvable key sites), ` +
         `baseline ${previous.length} known dead.`
     );
     return;

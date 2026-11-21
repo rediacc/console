@@ -92,7 +92,7 @@ def make_successor_of(records, branch_pids, reachable_fn, parent_fn):
     return successor_of
 
 
-def lazy_successor_of(root, base, planrec):
+def lazy_successor_of(root, base, planrec, facts=None):
     """The real `successor_of` for tick_findings, built on first use: a run whose heads were never rewritten pays no `git patch-id` at all.
 
     THE PATCH-ID IS `wl_review.patch_ids` (the batched `wl_review.patch_id`), imported rather than restated, because the records' `Patch-Id:` lines were written by that function and a second spelling of the computation (a different diff command, a different flag) would map nothing and read as a rewritten head with no record.
@@ -107,7 +107,15 @@ def lazy_successor_of(root, base, planrec):
         if base:
             # One batched pass (`wl_review.patch_ids`), newest first as rev-list orders it, so the first sha seen for a patch-id is kept exactly as the per-commit loop kept it.
             listing = planrec._git_out(root, "rev-list", "--no-merges", "%s..HEAD" % base)
-            by_sha = wl_review.patch_ids(root, "%s..HEAD" % base)
+            if facts is not None:
+                # A commit's patch-id never changes: the run-to-run fact cache (plan_impl_facts, PLAN-two-track-merge-dev P1) answers the ones it has seen, and only new commits are hashed.
+                by_sha = facts.patch_ids(
+                    listing.split(),
+                    lambda: wl_review.patch_ids(root, "%s..HEAD" % base),
+                    lambda sha: wl_review.patch_id(root, sha),
+                )
+            else:
+                by_sha = wl_review.patch_ids(root, "%s..HEAD" % base)
             for sha in listing.split():
                 # A failed batch (None) falls back to one call per commit, so a git error costs time, never the map.
                 pid = by_sha.get(sha) if by_sha is not None else wl_review.patch_id(root, sha)

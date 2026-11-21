@@ -15,6 +15,9 @@ WHAT THE REAL HALF NEEDS. The enrolled checkers run the repository's own generat
 
 from __future__ import annotations
 
+import contextlib
+import fcntl
+import hashlib
 import importlib.util
 import json
 import os
@@ -24,6 +27,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 
 import pytest
 
@@ -61,10 +65,12 @@ def _literal(globs: list[str]) -> list[str]:
 
 
 def _planted_hooks(dest: pathlib.Path) -> pathlib.Path:
-    """A copy of the hooks whose `pre_commit` always allows, laid out as `githooks.py` expects (`commit_policy.py` one level up)."""
+    """A copy of the hooks whose `pre_commit` always allows, laid out as `githooks.py` expects (`commit_policy.py` and `syspath.py` one level up)."""
     hooks = dest / ".claude" / "rediacc_hooks" / "git"
     shutil.copytree(HOOKS, hooks, ignore=shutil.ignore_patterns("__pycache__"))
     shutil.copy2(HOOKS.parent / "commit_policy.py", hooks.parent / "commit_policy.py")
+    shutil.copy2(HOOKS.parent / "syspath.py", hooks.parent / "syspath.py")
+    shutil.copy2(HOOKS.parent / "pr_freeze.py", hooks.parent / "pr_freeze.py")
     planted = hooks / "githooks.py"
     text = planted.read_text(encoding="utf-8")
     assert text.count(GD.PLANT_OLD) == 1, "the always-allow plant no longer applies"
@@ -79,6 +85,7 @@ def test_the_registry_enrols_something():
     ids = [a.id for a in GA.enrolled(artifacts)]
     assert "cli-contract" in ids, ids
     assert "plan-renders" in ids, ids
+    assert "skill-reference" in ids, ids
 
 
 # --------------------------------------------------------------------------- the mechanism, in a tiny repository
@@ -435,19 +442,15 @@ def _link_build_products(repo: pathlib.Path) -> None:
             dst.symlink_to(src)
 
 
-def _prefetch_main_plans() -> int:
-    """Make every `agent/plans` blob of origin/main present in this checkout, and return how many were absent.
+# What the plan blob prefetch did in this worker, quoted by the plan-renders assertion: its failure is otherwise invisible, since pytest shows a module fixture's stderr only when that fixture's own first test fails.
+PREFETCH_REPORT: list[str] = []
 
-    The fixture reaches this checkout's objects through alternates and has no promisor remote of its own, so in a blobless clone (CI's `filter: blob:none`) a plan blob of origin/main that was never fetched is unreadable there: `git show origin/main:<plan>` fails, `check_plan_record.main_view` returns None, and RF refuses every fully ticked plan instead of warning (run 41318476899). One batched fetch by oid, which a full clone never needs."""
-    listed = subprocess.run(
-        ["git", "-C", str(REPO_ROOT), "ls-tree", "-r", "origin/main", "--", "agent/plans"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    oids = [row.split()[2] for row in listed.stdout.splitlines() if len(row.split()) >= 3]
-    if not oids:
-        return 0
+
+class _PrefetchError(Exception):
+    """A git read of the prefetch failed; the message is what PREFETCH_REPORT quotes."""
+
+
+def _missing_blobs(oids: list[str]) -> list[str]:
     checked = subprocess.run(
         ["git", "-C", str(REPO_ROOT), "cat-file", "--batch-check=%(objectname) %(objecttype)"],
         input="\n".join(oids) + "\n",
@@ -456,32 +459,101 @@ def _prefetch_main_plans() -> int:
         check=False,
         env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
     )
-    missing = [r.split()[0] for r in checked.stdout.splitlines() if r.endswith(" missing")]
-    if missing:
-        # A slow or failed fetch must not error the module-scoped fixture: the plan-renders case alone depends on these blobs, and its own failure names them.
+    if checked.returncode != 0:
+        # An empty stdout from a failed read would be "nothing missing" (review 0ebbba45.1).
+        raise _PrefetchError(
+            "git cat-file --batch-check failed (rc %d): %s"
+            % (checked.returncode, checked.stderr.strip()[-500:])
+        )
+    return [r.split()[0] for r in checked.stdout.splitlines() if r.endswith(" missing")]
+
+
+@contextlib.contextmanager
+def _prefetch_lock():
+    """An exclusive file lock shared by every worker of this checkout. When the temp directory cannot hold the lock file the prefetch runs unserialized and says so in PREFETCH_REPORT (review 0ebbba45.3)."""
+    key = hashlib.sha256(str(REPO_ROOT).encode()).hexdigest()[:12]
+    lock_path = pathlib.Path(tempfile.gettempdir()) / ("plan-blob-prefetch-%s.lock" % key)
+    with contextlib.ExitStack() as stack:
         try:
-            got = subprocess.run(
-                [
-                    "git",
-                    "-C",
-                    str(REPO_ROOT),
-                    "fetch",
-                    "-q",
-                    "--no-tags",
-                    "--no-write-fetch-head",
-                    "origin",
-                    *missing,
-                ],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=300,
-            )
-            if got.returncode != 0:
-                print("plan blob prefetch failed: %s" % got.stderr.strip(), file=sys.stderr)
-        except subprocess.TimeoutExpired:
-            print("plan blob prefetch timed out", file=sys.stderr)
-    return len(missing)
+            lock = stack.enter_context(open(lock_path, "w"))
+        except OSError as exc:
+            PREFETCH_REPORT.append("plan blob prefetch ran without its lock: %s" % exc)
+        else:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+        yield
+
+
+def _prefetch_fetch_argv(repo: pathlib.Path, remote: str) -> list[str]:
+    """The one batched fetch by oid, with the oids read from stdin: the lazy-fetch spelling of the VCS itself."""
+    return [
+        "git",
+        "-C",
+        str(repo),
+        "-c",
+        "fetch.negotiationAlgorithm=noop",
+        "fetch",
+        "-q",
+        "--no-tags",
+        "--no-write-fetch-head",
+        "--recurse-submodules=no",
+        "--filter=blob:none",
+        remote,
+        "--stdin",
+    ]
+
+
+def _prefetch_main_plans() -> int:
+    """Make every `agent/plans` blob of origin/main present in this checkout, and return how many were absent.
+
+    The fixture reaches this checkout's objects through alternates and has no promisor remote of its own, so in a blobless clone (CI's `filter: blob:none`) a plan blob of origin/main that was never fetched is unreadable there: `git show origin/main:<plan>` fails, `check_plan_record.main_view` returns None, and RF refuses every fully ticked plan instead of warning (run 41318476899). One batched fetch by oid, which a full clone never needs, spelled as git's own lazy fetch (`--filter=blob:none --stdin`, no negotiation): the oids as plain refspec arguments were refused on the CI runner (`fatal: bad revision`, `did not send all necessary objects`, 122 of 122 blobs absent, run 44658882057).
+
+    Every xdist worker builds its own module world and runs this at once against the same checkout, so the fetch is serialized by a file lock and the missing set is read again under it; whatever still fails, including a failed presence check, is recorded in PREFETCH_REPORT (run 43617661791 refused three plans whose main copies have open boxes, with nothing to say why)."""
+    listed = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "ls-tree", "-r", "origin/main", "--", "agent/plans"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    oids = [row.split()[2] for row in listed.stdout.splitlines() if len(row.split()) >= 3]
+    if not oids:
+        PREFETCH_REPORT.append(
+            "origin/main lists no agent/plans blob (ls-tree rc %d)" % listed.returncode
+        )
+        return 0
+    try:
+        if not _missing_blobs(oids):
+            return 0
+        with _prefetch_lock():
+            missing = _missing_blobs(oids)
+            if not missing:
+                return 0
+            # A slow or failed fetch must not error the module-scoped fixture: the plan-renders case alone depends on these blobs, and its own failure quotes PREFETCH_REPORT.
+            try:
+                got = subprocess.run(
+                    _prefetch_fetch_argv(REPO_ROOT, "origin"),
+                    input="\n".join(missing) + "\n",
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=300,
+                )
+                if got.returncode != 0:
+                    PREFETCH_REPORT.append(
+                        "plan blob prefetch failed (rc %d): %s"
+                        % (got.returncode, got.stderr.strip()[-500:])
+                    )
+            except subprocess.TimeoutExpired:
+                PREFETCH_REPORT.append("plan blob prefetch timed out after 300 s")
+            still = _missing_blobs(oids)
+            if still:
+                PREFETCH_REPORT.append(
+                    "%d of %d origin/main plan blob(s) still absent after the fetch"
+                    % (len(still), len(missing))
+                )
+            return len(missing)
+    except _PrefetchError as exc:
+        PREFETCH_REPORT.append(str(exc))
+        return 0
 
 
 @pytest.fixture(scope="module")
@@ -558,9 +630,10 @@ def _enrolled_allowed(w, entry: dict, tag: str) -> tuple[bool, str]:
         check=False,
         timeout=600,
     )
-    assert made.returncode == 0, "`%s` failed in the fixture:\n%s" % (
+    assert made.returncode == 0, "`%s` failed in the fixture:\n%s\nplan blob prefetch: %s" % (
         entry["generator"],
         (made.stderr or made.stdout)[-2000:],
+        "; ".join(PREFETCH_REPORT) or "no failure recorded",
     )
     outputs = [p for p in _changed(w) if GA.matches(p, tuple(entry["outputs"]))]
     assert outputs, (
@@ -576,8 +649,8 @@ def _enrolled_allowed(w, entry: dict, tag: str) -> tuple[bool, str]:
         assert docs, "the doc-region check refused and gen-docs --write wrote nothing"
         GD._git(w.repo, "add", "--", *docs)
         proc = w.commit(rel, *outputs, *docs, label="%s allowed%s" % (entry["id"], tag))
+    # No reset here: `enrolled_allowed` resets in its `finally`, and a second `reset --hard` of the fixture cost 0.6 s per case.
     moved = w.head() != head
-    w.reset(head)
     ok = (
         proc.returncode == 0
         and moved
@@ -633,3 +706,152 @@ def test_no_enrolled_checker_runs_for_an_unrelated_path(world):
     )
     for entry in ENROLLED:
         assert "%s: %s: " % (LABEL, entry["id"]) not in proc.stderr, proc.stderr
+
+
+# The plan blob prefetch, driven through a scripted `subprocess.run` so each outcome it must record is reached: the real run only ever takes the early return of a checkout that already holds every blob (review 0ebbba45.2).
+class _Script:
+    def __init__(self, checks, fetch):
+        self.checks = list(checks)
+        self.fetch = fetch
+        self.fetches = 0
+
+    def run(self, argv, **kwargs):
+        if "ls-tree" in argv:
+            out = "".join("100644 blob %040d\tagent/plans/p%d.md\n" % (i, i) for i in (1, 2))
+            return subprocess.CompletedProcess(argv, 0, out, "")
+        if "cat-file" in argv:
+            rc, out, err = self.checks.pop(0)
+            return subprocess.CompletedProcess(argv, rc, out, err)
+        assert "fetch" in argv
+        self.fetches += 1
+        self.argv, self.stdin = argv, kwargs.get("input")
+        if isinstance(self.fetch, BaseException):
+            raise self.fetch
+        return subprocess.CompletedProcess(argv, self.fetch, "", "denied" if self.fetch else "")
+
+
+ABSENT = (0, "%040d blob\n%040d missing\n" % (1, 2), "")
+PRESENT = (0, "%040d blob\n%040d blob\n" % (1, 2), "")
+
+
+def _scripted(monkeypatch, tmp_path, checks, fetch=0):
+    script = _Script(checks, fetch)
+    monkeypatch.setattr(subprocess, "run", script.run)
+    monkeypatch.setattr(sys.modules[__name__], "PREFETCH_REPORT", [])
+    monkeypatch.setattr(tempfile, "gettempdir", lambda: str(tmp_path))
+    return script
+
+
+def test_prefetch_of_a_complete_checkout_fetches_nothing_and_records_nothing(monkeypatch, tmp_path):
+    script = _scripted(monkeypatch, tmp_path, [PRESENT])
+    assert _prefetch_main_plans() == 0
+    assert script.fetches == 0
+    assert PREFETCH_REPORT == []
+
+
+def test_prefetch_fetches_the_missing_blob_under_the_lock_and_records_nothing(
+    monkeypatch, tmp_path
+):
+    script = _scripted(monkeypatch, tmp_path, [ABSENT, ABSENT, PRESENT])
+    assert _prefetch_main_plans() == 1
+    assert script.fetches == 1
+    # The oids ride stdin under the lazy-fetch flags, never as refspec arguments.
+    assert "--stdin" in script.argv
+    assert "--filter=blob:none" in script.argv
+    assert script.stdin == "%040d\n" % 2
+    assert PREFETCH_REPORT == []
+    assert list(tmp_path.glob("plan-blob-prefetch-*.lock"))
+
+
+def _git_local(cwd, *args):
+    return subprocess.run(
+        ["git", "-C", str(cwd), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
+    )
+
+
+def _blobless_clone_of_local_bare(tmp_path):
+    """A local bare repo holding one blob, and a blobless clone of it that lacks the blob. Returns (clone, oid)."""
+    bare, seed, clone = tmp_path / "bare.git", tmp_path / "seed", tmp_path / "clone"
+    assert subprocess.run(["git", "init", "-q", "--bare", str(bare)], check=False).returncode == 0
+    for key in ("uploadpack.allowFilter", "uploadpack.allowAnySHA1InWant"):
+        assert _git_local(bare, "config", key, "true").returncode == 0
+    assert subprocess.run(["git", "init", "-q", str(seed)], check=False).returncode == 0
+    (seed / "plan.md").write_text("a plan blob\n", encoding="utf-8")
+    ident = ["-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+    assert _git_local(seed, "add", "plan.md").returncode == 0
+    assert _git_local(seed, *ident, "commit", "-q", "-m", "seed").returncode == 0
+    assert _git_local(seed, "push", "-q", str(bare), "HEAD:refs/heads/main").returncode == 0
+    oid = _git_local(seed, "rev-parse", "HEAD:plan.md").stdout.strip()
+    cloned = subprocess.run(
+        [
+            "git",
+            "clone",
+            "-q",
+            "--filter=blob:none",
+            "--no-checkout",
+            "file://%s" % bare,
+            str(clone),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert cloned.returncode == 0, cloned.stderr
+    assert _git_local(clone, "cat-file", "-e", oid).returncode != 0, "the blob must start absent"
+    return clone, oid
+
+
+def test_prefetch_argv_brings_a_blob_into_a_real_blobless_clone(tmp_path):
+    """Real git, no network: a refusal by the VCS itself, not only a wrong argv, turns this red."""
+    clone, oid = _blobless_clone_of_local_bare(tmp_path)
+    got = subprocess.run(
+        _prefetch_fetch_argv(clone, "origin"),
+        input=oid + "\n",
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert got.returncode == 0, got.stderr
+    assert _git_local(clone, "cat-file", "-e", oid).returncode == 0, "present after the fetch"
+
+
+def test_prefetch_skips_the_fetch_when_another_worker_filled_the_gap(monkeypatch, tmp_path):
+    script = _scripted(monkeypatch, tmp_path, [ABSENT, PRESENT])
+    assert _prefetch_main_plans() == 0
+    assert script.fetches == 0
+    assert PREFETCH_REPORT == []
+
+
+def test_prefetch_records_a_failed_presence_check(monkeypatch, tmp_path):
+    script = _scripted(monkeypatch, tmp_path, [(128, "", "fatal: not a git repository")])
+    assert _prefetch_main_plans() == 0
+    assert script.fetches == 0
+    assert len(PREFETCH_REPORT) == 1
+    assert "cat-file --batch-check failed (rc 128)" in PREFETCH_REPORT[0]
+
+
+def test_prefetch_records_a_failed_fetch(monkeypatch, tmp_path):
+    _scripted(monkeypatch, tmp_path, [ABSENT, ABSENT, ABSENT], fetch=1)
+    assert _prefetch_main_plans() == 1
+    assert "plan blob prefetch failed (rc 1): denied" in PREFETCH_REPORT
+    assert any("still absent after the fetch" in r for r in PREFETCH_REPORT)
+
+
+def test_prefetch_records_a_timed_out_fetch(monkeypatch, tmp_path):
+    exc = subprocess.TimeoutExpired("git fetch", 300)
+    _scripted(monkeypatch, tmp_path, [ABSENT, ABSENT, PRESENT], fetch=exc)
+    assert _prefetch_main_plans() == 1
+    assert PREFETCH_REPORT == ["plan blob prefetch timed out after 300 s"]
+
+
+def test_prefetch_still_fetches_when_the_lock_file_cannot_be_opened(monkeypatch, tmp_path):
+    script = _scripted(monkeypatch, tmp_path, [ABSENT, ABSENT, PRESENT])
+    monkeypatch.setattr(tempfile, "gettempdir", lambda: str(tmp_path / "no-such-dir"))
+    assert _prefetch_main_plans() == 1
+    assert script.fetches == 1
+    assert len(PREFETCH_REPORT) == 1
+    assert "ran without its lock" in PREFETCH_REPORT[0]

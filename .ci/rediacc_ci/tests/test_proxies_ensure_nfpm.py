@@ -33,6 +33,17 @@ TWIN_REL = ".ci/scripts/test/proxies/proxy-ensure-nfpm.sh"
 PORT_MODULE = "rediacc_ci.proxies.ensure_nfpm"
 TWIN = ROOT / TWIN_REL
 
+
+def _nfpm_pin(constants: pathlib.Path) -> str:
+    """The pin is read, never restated: a literal here went red on the 2.48.0 to 2.49.0 bump (08f98901)."""
+    text = constants.read_text(encoding="utf-8")
+    match = re.search(r'^readonly NFPM_VERSION="([^"]+)"$', text, re.MULTILINE)
+    assert match is not None, "%s no longer pins NFPM_VERSION" % constants
+    return match.group(1)
+
+
+NFPM_PIN = _nfpm_pin(ROOT / ".ci" / "config" / "constants.sh")
+
 # Every file either side needs inside a fixture root, all copied verbatim.
 FIXTURE_FILES = (
     TWIN_REL,
@@ -239,10 +250,10 @@ def test_real_tree_passes_through_the_port() -> None:
 
 
 def test_a_stubbed_subject_at_the_pin_passes_every_check(tmp_path: pathlib.Path) -> None:
-    fixture = build_fixture(tmp_path, stub_version="nfpm version 2.48.0")
+    fixture = build_fixture(tmp_path, stub_version="nfpm version %s" % NFPM_PIN)
     old, new = run_both(fixture)
     assert old.returncode == 0, old.stderr
-    assert "the installed nfpm reports 2.48.0, exactly the pin" in old.stdout
+    assert "the installed nfpm reports %s, exactly the pin" % NFPM_PIN in old.stdout
     assert_same(old, new)
 
 
@@ -250,7 +261,7 @@ def test_the_banner_names_the_python_subject_not_the_retired_bash_one(
     tmp_path: pathlib.Path,
 ) -> None:
     """RULE T: the proxy drives `rediacc_ci.build.ensure_nfpm`, the module CI runs. The retired bash proxy announced `ensure-nfpm.sh`, a file that no longer exists; a banner naming it is a stale claim about what was tested."""
-    fixture = build_fixture(tmp_path, stub_version="nfpm version 2.48.0")
+    fixture = build_fixture(tmp_path, stub_version="nfpm version %s" % NFPM_PIN)
     _old, new = run_both(fixture)
     assert (
         "proxy ensure-nfpm: local stand-in for .ci/rediacc_ci/build/ensure_nfpm.py\n" in new.stdout
@@ -263,12 +274,12 @@ def test_a_stubbed_subject_at_the_wrong_version_is_caught(tmp_path: pathlib.Path
     fixture = build_fixture(tmp_path, stub_version="nfpm version 1.2.3")
     old, new = run_both(fixture)
     assert old.returncode == 1
-    assert "the installed nfpm reports '1.2.3' but the pin is '2.48.0'" in old.stderr
+    assert "the installed nfpm reports '1.2.3' but the pin is '%s'" % NFPM_PIN in old.stderr
     assert_same(old, new)
 
 
 def test_a_constants_sh_with_no_pin_refuses_before_comparing(tmp_path: pathlib.Path) -> None:
-    fixture = build_fixture(tmp_path, stub_version="nfpm version 2.48.0")
+    fixture = build_fixture(tmp_path, stub_version="nfpm version %s" % NFPM_PIN)
     constants = fixture / ".ci" / "config" / "constants.sh"
     text, n = re.subn(r'readonly NFPM_VERSION="[^"]*"\n', "", constants.read_text(encoding="utf-8"))
     assert n == 1, "the NFPM_VERSION pin line moved in constants.sh"

@@ -1,6 +1,6 @@
 // Watchdog - monitors workflow jobs, uses AI to classify failures, and manages retries. Polls every 30 seconds, exits when the workflow completes or a failure requires action.
 //
-// Runs as a CHAIN of short generations on ubuntu-slim (watchdog-monitor.yml): the 1-vCPU runner's 15-minute job cap is a hard platform limit, so instead of one long monitor job, each generation polls until WATCHDOG_DEADLINE_SECONDS
+// Runs as a CHAIN of short generations on ubuntu-slim (ops-watchdog-monitor.yml): the 1-vCPU runner's 15-minute job cap is a hard platform limit, so instead of one long monitor job, each generation polls until WATCHDOG_DEADLINE_SECONDS
 // and then reports `continue=true` for the workflow to dispatch the next
 // generation. Every terminal path (force-cancel done, rerun dispatched, run completed, mass-cancel observed) returns WITHOUT that output, ending the chain. All decision state is re-derived from the API each poll, so a fresh generation picks up exactly where the last one left off.
 //

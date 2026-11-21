@@ -104,6 +104,8 @@ export class CliRunner {
       // Non-interactive: never prompt for confirmation or the master password.
       REDIACC_YES: '1',
       REDIACC_MASTER_PASSWORD: process.env.REDIACC_MASTER_PASSWORD ?? 'e2e-cli-master',
+      // A development build (0.0.0-dev: the checkout's bundle, the usual e2e CLI) holds the machine's renet unless REDIACC_NO_PROVISION=0 (renet-upload-decision.ts renetHold). A release build (an `E2E_CLI_BIN` or PATH `rdc` that is not 0.0.0-dev) has no development hold, so '0' only overrides an inherited REDIACC_NO_PROVISION=1 for it. The harness setup deploys this run's renet (a per-run licence key) to the fleet, and a CLI that kept an older machine renet failed LICENSE_REQUIRED against the rebuilt one; '0' lets the CLI converge the machine on the renet it was pinned to below.
+      REDIACC_NO_PROVISION: '0',
       ...options.env,
     };
 
@@ -111,7 +113,7 @@ export class CliRunner {
       return new CliRunner(process.env.E2E_CLI_BIN, [], env, undefined, configName);
     }
 
-    // Pin the DEV renet for the CLI's REMOTE provisioning. The CLI resolves its local renet from config.renetPath (default the bare name `renet`, a PATH lookup). On a dev box PATH finds /usr/bin/renet — the HOST'S installed PRODUCTION build — and the CLI's first machine connection DEPLOYS that into the fleet's install slot, silently replacing the dev renet the harness setup put
+    // Pin the DEV renet for the CLI's REMOTE provisioning (REDIACC_NO_PROVISION=0 above is what lets a development build provision at all). The CLI resolves its local renet from config.renetPath (default the bare name `renet`, a PATH lookup). On a dev box PATH finds /usr/bin/renet — the HOST'S installed PRODUCTION build — and the CLI's first machine connection DEPLOYS that into the fleet's install slot, silently replacing the dev renet the harness setup put
     // there and breaking every bridge surface the production build lacks (found live: `functions` vanished fleet-wide right after
     // suite 23's own preflight; both binaries report 0.0.0-dev so the version
     // guard never rejects the downgrade). The pin is an ABSOLUTE config.renetPath (written by initConfig): resolveRenetPath uses an

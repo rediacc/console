@@ -89,7 +89,7 @@ CI_TRUE = "true"
 DEPLOY_REFUSAL = (
     "This stage cannot deploy the account server.",
     "Production and edge are the seven configs under workers/account/:",
-    "  wrangler.{eu,us,asia}.toml, wrangler.edge-{eu,us,asia}.toml, wrangler.bench.toml",
+    "  wrangler.{eu,us,asia}.toml, wrangler.edge-{eu,us,asia}.toml, wrangler.bench-eu.toml",
     "Deploy through the script that resolves them:",
     "  PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region <eu|us|asia> [--target edge]",
 )

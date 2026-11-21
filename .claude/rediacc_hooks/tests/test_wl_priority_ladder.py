@@ -385,7 +385,7 @@ def test_234b_a_failed_review_run_yields_the_investigate_line():
     check, _ = _prr_fake(_prr_state(0, title="failed-run"))
     block, note, once = checks.prreview_nudge({}, PRR_INFO, check, now=1000.0)
     assert "REVIEW RUN FAILED" in block, block
-    assert "gh workflow run claude-review.yml -f pr_number=543" in block, block
+    assert "gh workflow run ops-claude-review.yml -f pr_number=543" in block, block
     assert "wl_prreview.py --draft" not in block, block
     assert note == "", note
     assert once == "", once

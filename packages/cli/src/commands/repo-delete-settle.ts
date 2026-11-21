@@ -5,6 +5,7 @@
 
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
+import { retireRepoLicense } from '../services/account/license-retire.js';
 import { getSubscriptionTokenState } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
@@ -84,10 +85,12 @@ export async function settleCloudBackups(
     const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
     const purged = await purgeLineageRounds(name, lineage, formatSizeBytes);
     if (purged.delayed) {
+      // The repository is gone from the config once this delete settles, so the cancel names the lineage.
       outputService.warn(
         t('commands.backup.purge.delayed', {
           name,
           when: purged.purgeAfter?.replace('T', ' ').slice(0, 16) ?? '-',
+          cancel: `rdc backup purge --lineage ${lineage} --cancel`,
         })
       );
       return;
@@ -134,10 +137,7 @@ export async function settleRepoLicense(
   // No account token means no license was ever issued from this config: nothing to retire, nothing to say.
   if (getSubscriptionTokenState().kind !== 'ready') return;
   try {
-    await accountServerFetch(
-      `/account/api/v1/licenses/repos/${encodeURIComponent(repoConfig.repositoryGuid)}/retire`,
-      { method: 'POST' }
-    );
+    await retireRepoLicense(repoConfig.repositoryGuid);
   } catch (error) {
     outputService.warn(
       t('commands.repo.delete.licenseRetireFailed', {

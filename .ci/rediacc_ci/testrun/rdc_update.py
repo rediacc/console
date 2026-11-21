@@ -10,6 +10,7 @@ Deliberate differences from the twin (Rule T), each with a test that fails on th
   4. UNKNOWN SCENARIO NAMES ARE REFUSED UP FRONT. The twin ran the scenarios before the bad name and only then exited 2. The usage text also promised `up-to-date`, `force`, `stage-apply` and `concurrent`, which never existed; it lists the seven real ones.
   5. `reinstall` RAN `install.sh` WITH THE HOST'S XDG_* VARIABLES, unlike `fresh_install`. A runner with `XDG_DATA_HOME` set would migrate the wrong directory. Both paths now share one environment.
   6. COLOUR ONLY ON A TTY: the twin printed escape sequences into captured logs.
+  7. A SCENARIO THAT NEVER REACHED THE FIXTURE PASSED. The CLI takes its releases URL only from the config install.sh writes, so a lost config sent every `rdc update` to production and the scenarios passed against it. `run_rdc_fetching` fails a fetching command that left the fixture's request count unchanged.
 """
 
 import dataclasses
@@ -53,8 +54,9 @@ class Fixture:
 
     def __init__(self, root: pathlib.Path) -> None:
         self.root = root
+        self.requests = 0
         root.mkdir(parents=True, exist_ok=True)
-        handler = functools.partial(_QuietHandler, directory=str(root))
+        handler = functools.partial(_QuietHandler, directory=str(root), counter=self)
         self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
         self.port = self.server.server_address[1]
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
@@ -117,6 +119,14 @@ class Fixture:
 
 
 class _QuietHandler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args: typing.Any, counter: Fixture, **kwargs: typing.Any) -> None:
+        self._counter = counter
+        super().__init__(*args, **kwargs)
+
+    def do_GET(self) -> None:
+        self._counter.requests += 1
+        super().do_GET()
+
     def log_message(self, *_args: object) -> None:
         return
 
@@ -146,6 +156,8 @@ class Context:
     install_sh: pathlib.Path
     key: str
     binary_name: str
+    # A `-dev` build disables the update CHECK by design (`isUpdateDisabled`), so `--check-only` never contacts any server; `--force` does not consult it.
+    update_check_disabled: bool = False
     failures: list[str] = dataclasses.field(default_factory=list)
 
     def fail(self, message: str) -> None:
@@ -210,6 +222,33 @@ def run_rdc(home: pathlib.Path, fixture: Fixture, *args: str) -> subprocess.Comp
         check=False,
         stdin=subprocess.DEVNULL,
     )
+
+
+def run_rdc_fetching(
+    ctx: Context, home: pathlib.Path, fixture: Fixture, *args: str
+) -> subprocess.CompletedProcess[str]:
+    """`run_rdc` for a command that must read the fixture. No request reaching it means rdc used some other releases URL (the real production one), so the scenario proved nothing."""
+    before = fixture.requests
+    done = run_rdc(home, fixture, *args)
+    if fixture.requests == before:
+        ctx.fail(
+            f"rdc {' '.join(args)} made no request to the fixture server (wrong releases URL?)"
+        )
+    return done
+
+
+def run_rdc_checking(
+    ctx: Context, home: pathlib.Path, fixture: Fixture, *args: str
+) -> subprocess.CompletedProcess[str]:
+    """`run_rdc_fetching` for a command that only reads the fixture through the update check, which a dev build skips."""
+    if ctx.update_check_disabled:
+        return run_rdc(home, fixture, *args)
+    return run_rdc_fetching(ctx, home, fixture, *args)
+
+
+def binary_is_dev_build(binary: pathlib.Path) -> bool:
+    done = subprocess.run([str(binary), "--version"], capture_output=True, text=True, check=False)
+    return done.stdout.strip().endswith("-dev")
 
 
 def combined(done: subprocess.CompletedProcess[str]) -> str:
@@ -281,7 +320,7 @@ def scenario_happy(s: Scenario) -> str:
         return ""
     s.newer()
     # --force bypasses the compareVersions short-circuit: the binary under test often carries a baked-in version at or above the fixture's, and this scenario exercises swap mechanics, not version comparison.
-    done = run_rdc(s.home, fixture, "update", "--force")
+    done = run_rdc_fetching(ctx, s.home, fixture, "update", "--force")
     if done.returncode != 0:
         ctx.fail(f"rdc update non-zero exit: {combined(done)}")
     expect_file(ctx, s.bin_dir / "rdc")
@@ -300,7 +339,7 @@ def scenario_check_only(s: Scenario) -> str:
     if not fresh_install(ctx, s.home, fixture, "edge"):
         return ""
     s.newer()
-    if run_rdc(s.home, fixture, "update", "--check-only").returncode != 0:
+    if run_rdc_checking(ctx, s.home, fixture, "update", "--check-only").returncode != 0:
         ctx.fail("--check-only non-zero")
     expect_absent(ctx, s.bin_dir / "rdc.old")
     return "check-only does not swap"
@@ -313,7 +352,7 @@ def scenario_sha256_mismatch(s: Scenario) -> str:
     if not fresh_install(ctx, s.home, fixture, "edge"):
         return ""
     s.newer(override_sha=BOGUS_SHA)
-    done = run_rdc(s.home, fixture, "update", "--force")
+    done = run_rdc_fetching(ctx, s.home, fixture, "update", "--force")
     if done.returncode == 0:
         ctx.fail("sha mismatch should have failed update")
     elif "failed checksum verification" not in combined(done):
@@ -329,7 +368,7 @@ def scenario_rollback(s: Scenario) -> str:
     if not fresh_install(ctx, s.home, fixture, "edge"):
         return ""
     s.newer()
-    update = run_rdc(s.home, fixture, "update", "--force")
+    update = run_rdc_fetching(ctx, s.home, fixture, "update", "--force")
     if update.returncode != 0:
         ctx.fail(f"update prerequisite failed: {combined(update)}")
     expect_file(ctx, s.bin_dir / "rdc.old")
@@ -383,7 +422,8 @@ def scenario_channel_switch(s: Scenario) -> str:
     if not fresh_install(ctx, s.home, fixture, "stable"):
         return ""
     # `rdc update --channel edge` writes account.updateChannel into the default config, creating it when absent.
-    if run_rdc(s.home, fixture, "update", "--channel", "edge", "--check-only").returncode != 0:
+    switch = run_rdc_checking(ctx, s.home, fixture, "update", "--channel", "edge", "--check-only")
+    if switch.returncode != 0:
         ctx.fail("--channel edge --check-only non-zero")
     config = s.home / ".config/rediacc/rediacc.json"
     expect_file(ctx, config)
@@ -448,7 +488,11 @@ def main(argv: list[str]) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return 2
     ctx = Context(
-        rdc_binary, paths.repo_root() / "packages" / "www" / "public" / "install.sh", key, name
+        rdc_binary,
+        paths.repo_root() / "packages" / "www" / "public" / "install.sh",
+        key,
+        name,
+        binary_is_dev_build(rdc_binary),
     )
     failed = [n for n in selected if not run_scenario(ctx, n)]
     print()

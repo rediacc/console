@@ -1,4 +1,4 @@
-"""The admit gate of `.github/workflows/local-release-assist.yml`: only a commit in the default branch's history may be built next to the release secrets."""
+"""The admit gate of `.github/workflows/ops-local-release-assist.yml`: only a commit in the default branch's history may be built next to the release secrets."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from rediacc_ci import paths, workflows
 if typing.TYPE_CHECKING:
     import pathlib
 
-WORKFLOW = paths.repo_root() / ".github" / "workflows" / "local-release-assist.yml"
+WORKFLOW = paths.repo_root() / ".github" / "workflows" / "ops-local-release-assist.yml"
 ANCESTRY_MARK = "git merge-base --is-ancestor"
 
 

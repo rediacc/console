@@ -526,6 +526,35 @@ async function sourceRulesUniverse() {
   };
 }
 
+/** Repo-relative `/` paths git TRACKS, submodules included, sorted.
+ *  THE SWEEPS BELOW READ THE INDEX, NOT THE DISK. A directory walk from ROOT entered untracked build output (private/bin, packages/shared/dist, .ci/cache/pytest) and a peer's checkout under .claude/worktrees, so the verdict depended on what a previous build had left behind (PLAN-push-decoupling F3). `git ls-files --cached --recurse-submodules` is what CI's checkout holds.
+ *  A FAILED LISTING THROWS (execFileSync raises on a non-zero git) and an EMPTY ONE THROWS TOO: an empty listing would read as "no rule file, no JSX file", which is a green without a run. */
+let trackedFilesCache;
+function trackedFiles() {
+  if (trackedFilesCache) return trackedFilesCache;
+  // A ROOT that is not the work tree's top level lists a subtree or a parent repo's files, so the sweeps would read a different tree than CI's checkout. Loud, like the Python gates' top-level check.
+  const top = execFileSync('git', ['rev-parse', '--show-toplevel'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  }).trim();
+  if (fs.realpathSync(top) !== fs.realpathSync(ROOT)) {
+    throw new Error(`NOT A WORK TREE ROOT: ${ROOT} is inside the work tree at ${top}`);
+  }
+  const stdout = execFileSync('git', ['ls-files', '-z', '--cached', '--recurse-submodules'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+    maxBuffer: 512 * 1024 * 1024,
+  });
+  const files = stdout.split('\0').filter(Boolean).sort();
+  if (files.length === 0) {
+    throw new Error(
+      `VACUOUS INPUT: git tracks no files under ${ROOT}; the sweeps would verify nothing`
+    );
+  }
+  trackedFilesCache = files;
+  return files;
+}
+
 /** Every `.js` rule module file under eslint-rules/, excluding helpers and tests:
  *  the filesystem-truth half of dead-wiring detection now that there is no
  *  ESLint plugin registration to walk. A file here that is neither wired into
@@ -535,18 +564,18 @@ async function sourceRulesUniverse() {
 const RULE_FILE_SKIP_DIRS = new Set(['lib', 'shared', '__tests__']);
 const RULE_FILE_SKIP_NAMES = new Set(['index.js', 'translation-helpers.js']);
 function allRuleModuleFiles(dir) {
+  const prefix = `${path.relative(ROOT, dir).split(path.sep).join('/')}/`;
   const out = [];
-  const walk = (d) => {
-    for (const entry of fs.readdirSync(d, { withFileTypes: true })) {
-      if (entry.isDirectory()) {
-        if (RULE_FILE_SKIP_DIRS.has(entry.name)) continue;
-        walk(path.join(d, entry.name));
-      } else if (entry.name.endsWith('.js') && !RULE_FILE_SKIP_NAMES.has(entry.name)) {
-        out.push(path.relative(ROOT, path.join(d, entry.name)).split(path.sep).join('/'));
-      }
-    }
-  };
-  walk(dir);
+  for (const rel of trackedFiles()) {
+    if (!rel.startsWith(prefix)) continue;
+    const parts = rel.slice(prefix.length).split('/');
+    const name = parts[parts.length - 1];
+    if (parts.slice(0, -1).some((d) => RULE_FILE_SKIP_DIRS.has(d))) continue;
+    if (!name.endsWith('.js') || RULE_FILE_SKIP_NAMES.has(name)) continue;
+    // A path the index still lists after an `rm` is not a rule module the disk holds.
+    if (!fs.existsSync(path.join(ROOT, rel))) continue;
+    out.push(rel);
+  }
   return out.sort((a, b) => Number(a > b) - Number(a < b));
 }
 
@@ -576,23 +605,16 @@ const firedRuleIds = (results) => {
 
 /** Recursive .tsx/.jsx sweep, one representative per (directory, extension). */
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'coverage', '.astro']);
-const jsxCandidates = (dir, out) => {
-  let entries;
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return out;
-  }
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (SKIP_DIRS.has(entry.name)) continue;
-      jsxCandidates(full, out);
-    } else if (entry.name.endsWith('.tsx') || entry.name.endsWith('.jsx')) {
-      // Config is path-scoped, so one file per directory-and-extension decides.
-      const key = `${dir}\0${path.extname(entry.name)}`;
-      if (!out.has(key)) out.set(key, path.relative(ROOT, full));
-    }
+const jsxCandidates = (files, out) => {
+  for (const rel of files) {
+    if (!rel.endsWith('.tsx') && !rel.endsWith('.jsx')) continue;
+    const parts = rel.split('/');
+    if (parts.slice(0, -1).some((d) => SKIP_DIRS.has(d))) continue;
+    // A path the index still lists after an `rm` is not a file the walk would have found.
+    if (!fs.existsSync(path.join(ROOT, rel))) continue;
+    // Config is path-scoped, so one file per directory-and-extension decides.
+    const key = `${parts.slice(0, -1).join('/')}\0${path.extname(rel)}`;
+    if (!out.has(key)) out.set(key, rel);
   }
   return out;
 };
@@ -1014,6 +1036,14 @@ async function main() {
   const missingKnownOffFiles = Object.entries(KNOWN_OFF_MODULES).filter(
     ([, modulePath]) => !fs.existsSync(path.join(ROOT, modulePath))
   );
+  // The sweep above reads disk-present files only, so a wired module deleted from disk would drop out of it silently: name it here.
+  const missingWiredFiles = [...wiredModules].filter((m) => !fs.existsSync(path.join(ROOT, m)));
+  if (missingWiredFiles.length > 0) {
+    err(`${missingWiredFiles.length} RULE_INSTANCES module(s) name a file that no longer exists:`);
+    for (const modulePath of missingWiredFiles) err(`    ${modulePath}`);
+    err("  Restore the rule file, or drop it from scripts/data/source-rules.ts's RULE_INSTANCES.");
+    return 1;
+  }
   if (undocumented.length > 0) {
     err(
       `${undocumented.length} rule module file(s) under eslint-rules/ are wired into NEITHER\n` +
@@ -1226,7 +1256,7 @@ async function main() {
     }
 
     // --------------------------------------------------------------------- Reachability. For a rule that can only report on JSX, "enabled" is not "can ever report": require-testid is 'error' repo-wide and protects zero files, because every tsx/jsx path in the tree turns it off. ---------------------------------------------------------------------
-    const candidates = [...jsxCandidates(ROOT, new Map()).values()];
+    const candidates = [...jsxCandidates(trackedFiles(), new Map()).values()];
     // A sweep over zero files declares every JSX rule unreachable, and one of them is SUPPOSED to be unreachable, so the degenerate case would look partly correct. Floor it. Today: ~30 directory representatives.
     if (candidates.length < MIN_JSX_DIRS) {
       err(

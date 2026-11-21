@@ -47,6 +47,35 @@
       }
     },
     {
+      "id": "skill-reference",
+      "title": "rdc skill reference",
+      "when": "commit",
+      "outputs": [".claude/skills/rdc/reference.md"],
+      "inputs": ["packages/cli/src/**", "packages/cli/scripts/generate-skill-reference.ts"],
+      "inputs_exclude": ["packages/cli/src/__tests__/**"],
+      "generator": "npm run generate:skill-reference -w @rediacc/cli",
+      "gate": "check:test-cli",
+      "deterministic": true,
+      "measured_s": 6.3,
+      "commit": {
+        "check": ["npx", "tsx", "packages/cli/scripts/generate-skill-reference.ts", "--check"],
+        "stale_exit": 3,
+        "budget_s": 90,
+        "links": ["node_modules", "packages/cli/node_modules"],
+        "requires": [
+          { "path": "node_modules/tsx", "fix": "npm install && npm run install:natives" },
+          { "path": "packages/shared/dist", "fix": "npm run build:packages" }
+        ],
+        "blind": "The generator walks the live Commander tree, which imports @rediacc/shared through its built dist in the working tree, so a staged change under packages/shared/src is judged only as far as that build is current. Enrolled after 26840c8f7c reworded `config import-machine` and the reference stayed stale until 9e17b551ca.",
+        "control": {
+          "kind": "replace",
+          "path": "packages/cli/scripts/generate-skill-reference.ts",
+          "old": "'# rdc CLI Reference',",
+          "new": "'# rdc CLI command reference',"
+        }
+      }
+    },
+    {
       "id": "plan-renders",
       "title": "Plan queue and plan index",
       "when": "commit",
@@ -71,7 +100,7 @@
       "commit": {
         "check": ["python3", ".ci/scripts/quality/check_plan_record.py", "--rendered-only"],
         "stale_exit": 1,
-        "budget_s": 45,
+        "budget_s": 90,
         "env_remove": ["PLAN_RECORD_ROOT", "PLAN_RECORD_MIN_PLANS", "REDIACC_CI_ROOT"],
         "blind": "Only R8, RQ and RQ-SETTINGS run (the two rendered files against their renders). R1 to R7, R9, RB and the census need history and the full gate's 77 s, and stay in the pre-push run.",
         "control": {

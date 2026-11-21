@@ -96,8 +96,8 @@ async function build(mutant: DevcontainerMutant | null): Promise<ControlCase[]> 
     const v = patchOf(arg(df, 'BW_VERSION'));
     const list = `${GH}/repos/bitwarden/clients/releases?per_page=100`;
     const full = {
-      [`bw-linux-${v}.zip`]: hex('a'),
-      [`bw-linux-arm64-${v}.zip`]: hex('b'),
+      [`bw-bit-linux-${v}.zip`]: hex('a'),
+      [`bw-bit-linux-arm64-${v}.zip`]: hex('b'),
     };
     const r = await plan('devcontainer:bw', v, {
       [list]: [
@@ -115,7 +115,9 @@ async function build(mutant: DevcontainerMutant | null): Promise<ControlCase[]> 
       r.refused
     );
     const partial = await plan('devcontainer:bw', v, {
-      [list]: [release(`cli-v${v}`, '2026-10-01T00:00:00Z', { [`bw-linux-${v}.zip`]: hex('a') })],
+      [list]: [
+        release(`cli-v${v}`, '2026-10-01T00:00:00Z', { [`bw-bit-linux-${v}.zip`]: hex('a') }),
+      ],
     });
     add(
       'bw: a release with no digest for one hashed asset is refused, not moved with a stale hash',

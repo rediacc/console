@@ -15,12 +15,12 @@ import { configService } from '../services/config/config-resources.js';
 import { ensureRepositoryNetworkId } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
 import { writeStdout } from '../services/core/request-context.js';
-import { getExecutor } from '../services/executor/executor-factory.js';
+import { runCommandJob } from '../services/jobs/command-job.js';
+import { planStep } from '../services/jobs/steps.js';
 import { ERROR_CODES } from '../types/errors.js';
 import { CliExitError } from '../utils/cli-exit-error.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
-import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { formatStepDuration } from '../utils/timeline.js';
@@ -31,6 +31,7 @@ import {
   settleConfigEntry,
   settleRepoLicense,
 } from './repo-delete-settle.js';
+import { settleRepoJob } from './repo-job-outcome.js';
 
 /** Clean up local VS Code SSH artifacts after a repo delete. Non-fatal. */
 async function cleanupDeletedRepoSSH(machineName: string, repoName: string): Promise<void> {
@@ -120,6 +121,13 @@ export async function handleRepoDelete(
   }
 ): Promise<void> {
   try {
+    // A repo whose machine left the config has nothing to reach: its delete is config-only (#80f7476a).
+    const { deleteOnGoneMachine, goneMachineOf } = await import('./repo-delete-machine-gone.js');
+    const goneMachine = await goneMachineOf(ref);
+    if (goneMachine !== undefined) {
+      await deleteOnGoneMachine(ref, goneMachine, options);
+      return;
+    }
     // Converge-to-absent (#45/#95): delete RETAINS the config family by design ("may exist on other machines"), so a delete whose image is already gone is a legitimate sequence, resolve with absentOk and skip the machine dispatch on a definite absence instead of refusing with exit 12.
     const { name, repoKey, machineName, kubeCluster, imageAbsent } = await resolveRepoRef(ref, {
       absentOk: true,
@@ -173,32 +181,43 @@ export async function handleRepoDelete(
     );
 
     // Definite machine-arm absence: the image is already gone, converge straight to the config-side completion (retention/archive messaging).
-    const result: import('../services/executor/local-executor.js').ExecuteResult = imageAbsent
-      ? { success: true, stdout: '', stderr: '', exitCode: 0, durationMs: 0 }
-      : await getExecutor().execute({
-          functionName: 'repository_delete',
-          machineName,
-          ...(kubeCluster !== undefined && { kubeCluster }),
-          // #74, the asymmetric half: `repository_create` above already declares the datastore it recorded, and delete said nothing, so a repo created on a named datastore could not be deleted from it, renet looking for the image on the machine's default.
-          datastore: await recordedDatastoreMount(target),
-          params: { repository: target },
-          debug: options.debug,
-          skipRouterRestart: options.skipRouterRestart,
-        });
-
-    if (result.success) {
+    if (imageAbsent) {
       await handleDeleteSuccess(
         target,
         machineName,
         repoConfig,
         !!options.archiveConfig,
-        result,
+        { success: true, stdout: '', stderr: '', exitCode: 0, durationMs: 0 },
         name,
         !!options.purgeBackups
       );
-    } else {
-      renderLocalExecutionFailure(result, t('commands.repo.delete.failed'));
+      return;
     }
+
+    // One job; the settlement (SSH cleanup, config entry, schedules, cloud backups, licence) is its success step, so a ticket handed back early records nothing that has not happened.
+    const outcome = await runCommandJob(
+      'repo delete',
+      {
+        functionName: 'repository_delete',
+        machineName,
+        ...(kubeCluster !== undefined && { kubeCluster }),
+        // #74, the asymmetric half: `repository_create` above already declares the datastore it recorded, and delete said nothing, so a repo created on a named datastore could not be deleted from it, renet looking for the image on the machine's default.
+        datastore: await recordedDatastoreMount(target),
+        params: { repository: target },
+        debug: options.debug,
+        skipRouterRestart: options.skipRouterRestart,
+      },
+      [
+        planStep('settleRepoDelete', {
+          repo: target,
+          machine: machineName,
+          originalRef: name,
+          archiveConfig: !!options.archiveConfig,
+          purgeBackups: !!options.purgeBackups,
+        }),
+      ]
+    );
+    settleRepoJob('repo delete', outcome, t('commands.repo.delete.failed'));
   } catch (error) {
     handleError(error);
   }

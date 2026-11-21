@@ -3,9 +3,9 @@
  * on purpose (PLAN-pins-command T8, survey item 10).
  *
  * A base-image tag is a judgment call (the language runtime, the distro release, the CUDA
- * generation), so the driver reports and refuses by default: every candidate is labelled
- * `<image>:<tag>`, which the core can only read as a major move, and a major is taken solely
- * by `npm run pins -- bump <id> --major --reason "<why>"`. The candidates are the tags of the
+ * generation), so the driver reports and refuses by default: every series-move candidate is
+ * labelled `<image>:<tag>`, which the core can only read as a major move, and a major is
+ * taken solely by `npm run pins -- bump <id> --major --reason "<why>"`. The candidates are the tags of the
  * same SHAPE as the pin (the same suffix, the same number of version components) with a
  * greater version, newest first, from Docker Hub's tag list with each tag's `last_updated`.
  * A tag of another shape (an `-alpine` sibling, `latest`) is never a candidate.
@@ -30,9 +30,12 @@
  * Hub serves another index digest for the PINNED tag, inspect offers that tag again, labelled
  * `<image>:<tag>@<first 12 hex of the served digest>`. The label carries no second colon on
  * purpose: status.ts `majorLineOf` reads the text after the last colon, and a hex prefix that
- * starts with digits would read as a phantom newer major line. Like every docker candidate the
- * core reads it as a major, so it is taken only with `--major --reason`; it is dated by the
- * tag's last push and waits out the shared release-age window like any new image. The plan
+ * starts with digits would read as a phantom newer major line. It carries `redigest: true`, so
+ * the core reads it as the pinned version and never as a major: a plain `npm run pins -- bump
+ * <id>` takes it (reading it as a major once sent node:26.13.0-slim to a false major-only
+ * refusal, #3bb2d9bc). It is dated by the tag's last push and waits out the shared release-age
+ * window like any new image, and its deferred verdict carries the instant the window clears, so
+ * `pins when` and check:ci-docker-image-freshness name the same time. The plan
  * rewrites the digest alone, and refuses when Hub has moved the tag again since the label
  * was printed. A pinned tag whose digest matches offers nothing.
  *
@@ -52,12 +55,28 @@
  * evidence a re-pushed `26.04` cannot give. The age it gives is never more than the truth; a line whose oldest
  * tag fell past the listed pages only reads younger, and a line with no dated tag reads null
  * (undatable, which the gate fails closed on).
+ *
+ * ONE READ PATH. In production every Docker Hub read goes through the shared reader of
+ * scripts/lib/docker-hub.ts (`hubDeps`), the one check:ci-docker-image-freshness uses: an exchanged
+ * token, a six-hour cache under .ci/cache/registry/ shared across gates and runs, one fetch per URL
+ * (several pins of one image list the same URL), and a bounded 429 wait. A read that cannot answer
+ * throws NotCompared, so the pin reads `not compared`, never current. `plan()` writes a digest, so
+ * its digest read asks the network (`jsonFresh`) instead of trusting a cached answer.
  */
-import { HUB_DEFAULT_BASE, hubRepo, hubTagUrl, parseTagDigest } from '../../docker-hub.js';
+import {
+  HUB_DEFAULT_BASE,
+  type HubReader,
+  hubReader,
+  hubRepo,
+  hubTagUrl,
+  parseTagDigest,
+} from '../../docker-hub.js';
 import { isWithinFreshnessWindow } from '../../release-age.js';
+import { NotCompared } from '../../upstream.js';
 import type { DriverContext, Inspection, PinDriver, PinPlan, PlanStep } from '../driver.js';
 import { leafCurrent, PlanRefused, planLeafSites } from '../driver.js';
 import { type PinEntry, siteMatches } from '../registry.js';
+import { iso, soakClearsAt } from '../soak.js';
 import type { LineDatedRelease } from '../status.js';
 import {
   cmpVersion,
@@ -72,7 +91,14 @@ const BASELINE = { repo: '.', file: 'scripts/data/docker-image-freshness-baselin
 /** Hex characters of the served digest a re-digest label carries. */
 const REDIGEST_HEX = 12;
 const REDIGEST_LABEL = /^(.*)@([0-9a-f]{12})$/;
-const SHAPE = /^(\d+(?:\.\d+){0,2})(.*)$/;
+/**
+ * A tag's leading version and its suffix. Any number of components: a cap of three read
+ * `clickhouse-server:24.3.3.102-alpine` as version `24.3.3` with the suffix `.102-alpine`,
+ * which no other tag carries, so the pin could never have a candidate and read as current.
+ */
+const SHAPE = /^v?(\d+(?:\.\d+)*)(.*)$/;
+/** A `v` before the version (traefik:v3.7.16) is part of the series: `3.7.17` is no candidate for it. */
+const vOf = (tag: string): boolean => tag.startsWith('v');
 const PAGES = 5;
 
 interface HubPage {
@@ -155,23 +181,46 @@ async function redigestRelease(
   const publishedMs = Number.isNaN(at) ? null : at;
   const fresh =
     publishedMs === null || isWithinFreshnessWindow(publishedMs, deps.nowMs(), deps.windowMs());
+  const clearsAt =
+    publishedMs === null || !fresh ? null : soakClearsAt(publishedMs, deps.windowMs());
   return {
     version: `${image}:${tag}@${served.slice('sha256:'.length, 'sha256:'.length + REDIGEST_HEX)}`,
     publishedMs,
+    redigest: true,
     verdict: fresh
       ? {
           eligible: false,
-          why: `a re-digest of ${image}:${tag} to ${served}: ${publishedMs === null ? 'the re-push has no date' : `re-pushed ${new Date(publishedMs).toISOString()}, inside the release-age window`}`,
+          why: `a re-digest of ${image}:${tag} to ${served}: ${publishedMs === null ? 'the re-push has no date' : `re-pushed ${iso(publishedMs)}, inside the release-age window until ${clearsAt === null ? '?' : iso(clearsAt)}`}`,
+          clearsAt,
         }
       : {
           eligible: true,
-          why: `a re-digest of ${image}:${tag}: Docker Hub serves ${served}, the file pins ${pinned}; taken only with --major --reason`,
+          why: `a re-digest of ${image}:${tag}: Docker Hub serves ${served}, the file pins ${pinned}`,
         },
   };
 }
 
+/** Deps whose Docker Hub reads can be told to skip the cache (a plan about to write). */
+export type HubDeps = Deps & { jsonFresh?: Deps['json'] };
+
+/** `json` from a shared Hub reader: the parsed answer, or NotCompared carrying the reader's cause. */
+function readerJson(reader: () => HubReader, maxAgeMs?: number): Deps['json'] {
+  return async (url) => {
+    const r = await reader().read(url, maxAgeMs === undefined ? {} : { maxAgeMs });
+    if (r.ok) return r.json;
+    const u = new URL(url);
+    const unreachable = r.status === null || r.status === 429 || r.status >= 500;
+    throw new NotCompared(r.why, u.host, `GET ${u.host}${u.pathname}`, 0, r.status, unreachable);
+  };
+}
+
+/** The production deps: `realDeps`, with every Docker Hub read through the shared reader. */
+export function hubDeps(root: string, reader: () => HubReader = hubReader): HubDeps {
+  return { ...realDeps(root), json: readerJson(reader), jsonFresh: readerJson(reader, 0) };
+}
+
 export function dockerDriver(
-  depsFor: (root: string) => Deps = realDeps,
+  depsFor: (root: string) => HubDeps = hubDeps,
   mutant?: T8Mutant
 ): PinDriver {
   return {
@@ -207,11 +256,13 @@ export function dockerDriver(
           const m = SHAPE.exec(name);
           const at = typeof r.last_updated === 'string' ? Date.parse(r.last_updated) : Number.NaN;
           listed.push({
-            major: m && m[2] === cur[2] ? Number(m[1].split('.')[0]) : null,
+            major:
+              m && m[2] === cur[2] && vOf(name) === vOf(tag) ? Number(m[1].split('.')[0]) : null,
             id: typeof r.id === 'number' && Number.isFinite(r.id) ? r.id : null,
             at: Number.isNaN(at) ? null : at,
           });
-          if (!m || m[2] !== cur[2] || m[1].split('.').length !== parts) continue;
+          if (!m || vOf(name) !== vOf(tag) || m[2] !== cur[2] || m[1].split('.').length !== parts)
+            continue;
           if (cmpVersion(m[1], cur[1]) <= 0) continue;
           found.set(name, {
             version: `${image}:${name}`,
@@ -266,7 +317,8 @@ export function dockerDriver(
         if (repo === null) throw new PlanRefused(`${refusal} (${image} is not a Docker Hub image)`);
         let answer: unknown;
         try {
-          answer = await depsFor(ctx.root).json(hubTagUrl(HUB_DEFAULT_BASE, repo, tag), image);
+          const d = depsFor(ctx.root);
+          answer = await (d.jsonFresh ?? d.json)(hubTagUrl(HUB_DEFAULT_BASE, repo, tag), image);
         } catch (err) {
           throw new PlanRefused(`${refusal} (${(err as Error).message})`);
         }

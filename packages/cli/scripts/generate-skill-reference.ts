@@ -11,8 +11,13 @@
  *
  * Usage:
  *   npx tsx packages/cli/scripts/generate-skill-reference.ts > reference.md
+ *   npx tsx packages/cli/scripts/generate-skill-reference.ts --write
+ *   npx tsx packages/cli/scripts/generate-skill-reference.ts --check
+ *
+ * `--check` writes nothing: it exits 0 when the committed reference equals the render and STALE_EXIT when it differs or is missing.
+ * The generated-artifacts pre-commit hook runs it (`skill-reference` in .ci/config/generated-artifacts.json).
  */
-import { writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Command } from 'commander';
 import { cli } from '../src/cli.js';
@@ -73,6 +78,11 @@ function walkCommands(cmd: Command, prefix = ''): CommandCapability[] {
     const name = prefix ? `${prefix} ${sub.name()}` : sub.name();
 
     if (sub.commands.length > 0) {
+      // A command that has subcommands AND its own action (`server licence <domain>` beside
+      // `server licence mint`) is still invocable, so it gets its own section too.
+      if ((sub as unknown as { _actionHandler?: unknown })._actionHandler) {
+        results.push(extractLeafCapability(sub, name, prefix));
+      }
       results.push(...walkCommands(sub, name));
     } else {
       results.push(extractLeafCapability(sub, name, prefix));
@@ -104,7 +114,8 @@ function renderOptions(lines: string[], options: CommandCapability['options']): 
   const MD_OPTIONS_HEADING = '**Options:**';
   lines.push(MD_OPTIONS_HEADING, '');
   for (const opt of options) {
-    const def = opt.default === undefined ? '' : ` (default: ${opt.default})`;
+    const shown = opt.default === undefined ? '' : String(opt.default);
+    const def = shown === '' ? '' : ` (default: ${shown})`;
     lines.push(`- \`${opt.flags}\`: ${opt.description}${def}`);
   }
   lines.push('');
@@ -117,7 +128,9 @@ function collectAnnotations(meta: CommandMeta): string[] {
   const AGENT_BLOCKED_LABEL = 'agent: BLOCKED';
   if (meta.agentBlocked) annotations.push(AGENT_BLOCKED_LABEL);
   if (meta.mcp) annotations.push('MCP tool');
-  const FORK_ONLY_LABEL = 'agent: fork-only';
+  // An agent still reaches a grand with REDIACC_ALLOW_GRAND_REPO set by the operator, and an ops VM is exempt (command-policy.ts), so the label names both.
+  const FORK_ONLY_LABEL =
+    'agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)';
   if (meta.grandGuard) annotations.push(FORK_ONLY_LABEL);
   if (meta.forkBlocked) annotations.push('fork-blocked');
   if (meta.mcpExcludeReason) annotations.push(`MCP excluded: ${meta.mcpExcludeReason}`);
@@ -191,12 +204,26 @@ function generateReferenceMarkdown(commands: CommandCapability[]): string {
   return lines.join('\n');
 }
 
+/**
+ * The `--check` exit for a stale or missing reference, `commit.stale_exit` of `skill-reference` in .ci/config/generated-artifacts.json.
+ * Not 1, because Node exits 1 on an uncaught error: a generator that crashes must reach the hook as UNCHECKED, never as a stale reference whose printed fix is this same crashing generator.
+ */
+const STALE_EXIT = 3;
+
 // STDOUT BY DEFAULT, because rdc.sh captures it into a temp file and only swaps it in when it looks right. `--write` is for a person running `npm run generate:skill-reference`, which used to print the reference and leave .claude/skills/rdc/reference.md untouched.
 const markdown = generateReferenceMarkdown(walkCommands(cli));
-if (process.argv.includes('--write')) {
-  const target = fileURLToPath(
-    new URL('../../../.claude/skills/rdc/reference.md', import.meta.url)
-  );
+const target = fileURLToPath(new URL('../../../.claude/skills/rdc/reference.md', import.meta.url));
+if (process.argv.includes('--check')) {
+  const committed = existsSync(target) ? readFileSync(target, 'utf8') : null;
+  if (committed === markdown) {
+    process.stderr.write(`${target} is current\n`);
+  } else {
+    process.stderr.write(
+      `${target} ${committed === null ? 'is missing' : 'differs from the render of the CLI command tree'}; regenerate it: npm run generate:skill-reference -w @rediacc/cli\n`
+    );
+    process.exit(STALE_EXIT);
+  }
+} else if (process.argv.includes('--write')) {
   writeFileSync(target, markdown);
   process.stderr.write(`wrote ${target}\n`);
 } else {

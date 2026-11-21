@@ -1,32 +1,21 @@
-import { WK_ETC_DIR } from '@rediacc/shared/config/well-known.generated';
-import { describe, expect, it, vi } from 'vitest';
-import type { SFTPClient } from '../../../remote/sftp/client.js';
-import { outputService } from '../../core/output.js';
-import { executePlan } from '../backup-schedule-execute.js';
-import type { ReconcilePlan, RemoteUnitState, StrategyDiff } from '../backup-schedule-reconcile.js';
+import { describe, expect, it } from 'vitest';
+import { buildSchedulePayload } from '../backup-schedule-execute.js';
+import type {
+  DesiredUnit,
+  ReconcilePlan,
+  RemoteUnitState,
+  StrategyDiff,
+} from '../backup-schedule-reconcile.js';
 
-/** A fake SFTP client that records every remote command and fails `systemctl disable` on a missing unit, as systemd does. */
-function fakeSftp(units: Set<string>) {
-  const commands: string[] = [];
-  const sftp = {
-    execStreaming: (command: string) => {
-      commands.push(command);
-      const disable = /systemctl disable --now (\S+)/.exec(command);
-      return Promise.resolve(disable && !units.has(disable[1]) ? 1 : 0);
-    },
-  } as unknown as SFTPClient;
-  return { sftp, commands };
-}
-
-function file(path: string, exists: boolean) {
-  return { path, exists, sha256: exists ? 'x' : null };
+function file(exists: boolean) {
+  return { path: '/x', exists, sha256: exists ? 'x' : null };
 }
 
 function removed(name: string, timer: boolean): StrategyDiff {
   const remote: RemoteUnitState = {
-    serviceFile: file(`/etc/systemd/system/rediacc-backup-${name}.service`, timer),
-    timerFile: file(`/etc/systemd/system/rediacc-backup-${name}.timer`, timer),
-    envFile: file(`${WK_ETC_DIR}/backup-${name}.env`, true),
+    serviceFile: file(timer),
+    timerFile: file(timer),
+    envFile: file(true),
     isActiveService: false,
     isActiveAdhoc: false,
     isEnabledTimer: timer,
@@ -36,76 +25,115 @@ function removed(name: string, timer: boolean): StrategyDiff {
   return { name, action: 'removed', desired: null, remote, changedFiles: [] };
 }
 
-function plan(toRemove: StrategyDiff[]): ReconcilePlan {
+function plan(parts: Partial<ReconcilePlan>): ReconcilePlan {
   return {
     toCreate: [],
     toUpdate: [],
-    toRemove,
+    toRemove: [],
     unchanged: [],
     skippedInFlight: [],
     daemonReloadNeeded: false,
+    ...parts,
   };
 }
 
-describe('executePlan removals', () => {
-  it('removes a strategy whose units are gone but whose env file was left behind, without disabling a missing timer', async () => {
-    const { sftp, commands } = fakeSftp(new Set());
-    await executePlan(sftp, plan([removed('weekly-cold', false)]), {});
-    expect(commands.some((c) => c.includes('systemctl disable'))).toBe(false);
-    expect(commands.some((c) => c.includes(`rm -f '${WK_ETC_DIR}/backup-weekly-cold.env'`))).toBe(
-      true
+function desired(name: string, over: Partial<DesiredUnit> = {}): DesiredUnit {
+  return {
+    strategyName: name,
+    serviceContent: `service ${name}`,
+    timerContent: `timer ${name}`,
+    envFileContent: `TOKEN=${name}`,
+    ...over,
+  } as DesiredUnit;
+}
+
+function created(name: string, changed: StrategyDiff['changedFiles'], over?: Partial<DesiredUnit>) {
+  return {
+    name,
+    action: 'created',
+    desired: desired(name, over),
+    remote: null,
+    changedFiles: changed,
+  } as StrategyDiff;
+}
+
+describe('buildSchedulePayload removals', () => {
+  it('removes a strategy whose units are gone but whose env file was left behind, without a timer to disable', () => {
+    const { remove } = buildSchedulePayload(
+      plan({ toRemove: [removed('weekly-cold', false)] }),
+      {}
     );
+    expect(remove).toEqual([
+      { name: 'weekly-cold', timer: false, service: false, env: true, dangling: false },
+    ]);
   });
 
-  it('stops a timer systemd still runs after its unit file is gone', async () => {
-    const { sftp, commands } = fakeSftp(new Set());
+  it('marks a timer systemd still runs after its unit file is gone as dangling', () => {
     const diff = removed('ghost', false);
     if (diff.remote) diff.remote.isActiveTimer = true;
-    await executePlan(sftp, plan([diff]), {});
-    expect(commands.some((c) => c.includes('systemctl stop rediacc-backup-ghost.timer'))).toBe(
-      true
-    );
-    expect(commands.some((c) => c.includes('systemctl disable'))).toBe(false);
+    expect(buildSchedulePayload(plan({ toRemove: [diff] }), {}).remove[0].dangling).toBe(true);
   });
 
-  it('drops the dangling enable link of a timer that is only enabled, and a failure there only warns', async () => {
-    const commands: string[] = [];
-    const sftp = {
-      execStreaming: (command: string) => {
-        commands.push(command);
-        return Promise.resolve(command.includes('systemctl stop') ? 5 : 0);
-      },
-    } as unknown as SFTPClient;
+  it('marks a timer that is only enabled, without its file, as dangling too', () => {
     const diff = removed('linked', false);
     if (diff.remote) diff.remote.isEnabledTimer = true;
-    const warn = vi.spyOn(outputService, 'warn').mockImplementation(() => undefined);
-    try {
-      await executePlan(sftp, plan([diff]), {});
-      expect(warn).toHaveBeenCalledWith(
-        expect.stringContaining('removed strategy "linked" (exit 5)')
-      );
-    } finally {
-      warn.mockRestore();
-    }
-    const stop = commands.find((c) => c.includes('systemctl stop rediacc-backup-linked.timer'));
-    expect(stop).toContain(
-      'rm -f /etc/systemd/system/timers.target.wants/rediacc-backup-linked.timer'
-    );
-    // A failed stop fails the whole command, whatever the steps after it return.
-    expect(stop).toContain('systemctl stop rediacc-backup-linked.timer || rc=$?');
-    expect(stop).toContain('exit $rc');
-    // The env file is still removed after the failed stop: the schedule went on.
-    expect(commands.some((c) => c.includes(`rm -f '${WK_ETC_DIR}/backup-linked.env'`))).toBe(true);
+    expect(buildSchedulePayload(plan({ toRemove: [diff] }), {}).remove[0].dangling).toBe(true);
   });
 
-  it('still disables a timer that exists before removing its files', async () => {
-    const { sftp, commands } = fakeSftp(new Set(['rediacc-backup-nightly.timer']));
-    await executePlan(sftp, plan([removed('nightly', true)]), {});
-    const disable = commands.findIndex((c) =>
-      c.includes('systemctl disable --now rediacc-backup-nightly.timer')
+  it('keeps a timer that exists as a disable, never dangling', () => {
+    const [r] = buildSchedulePayload(plan({ toRemove: [removed('nightly', true)] }), {}).remove;
+    expect(r).toMatchObject({ name: 'nightly', timer: true, service: true, dangling: false });
+  });
+
+  it('skips a removal with no remote state', () => {
+    const diff = { ...removed('x', true), remote: null };
+    expect(buildSchedulePayload(plan({ toRemove: [diff] }), {}).remove).toEqual([]);
+  });
+});
+
+describe('buildSchedulePayload writes', () => {
+  it('carries the changed files of a created strategy, its reload and its timer enable', () => {
+    const p = buildSchedulePayload(
+      plan({ toCreate: [created('a', ['service', 'timer', 'env'])], daemonReloadNeeded: true }),
+      {}
     );
-    const rm = commands.findIndex((c) => c.startsWith("sudo rm -f '"));
-    expect(disable).toBeGreaterThanOrEqual(0);
-    expect(rm).toBeGreaterThan(disable);
+    expect(p.files).toEqual([
+      { name: 'a', kind: 'env', content: 'TOKEN=a' },
+      { name: 'a', kind: 'service', content: 'service a' },
+      { name: 'a', kind: 'timer', content: 'timer a' },
+    ]);
+    expect(p.reload).toBe(true);
+    expect(p.enable).toEqual(['a']);
+  });
+
+  it('writes only the files that changed', () => {
+    const p = buildSchedulePayload(plan({ toUpdate: [created('a', ['timer'])] }), {});
+    expect(p.files.map((f) => f.kind)).toEqual(['timer']);
+  });
+
+  it('removes an env file that is no longer needed instead of writing an empty one', () => {
+    const p = buildSchedulePayload(
+      plan({ toUpdate: [created('a', ['env'], { envFileContent: '' })] }),
+      {}
+    );
+    expect(p.files).toEqual([]);
+    expect(p.remove_env).toEqual(['a']);
+  });
+
+  it('enables no timer for a timerless unit', () => {
+    const p = buildSchedulePayload(
+      plan({ toCreate: [created('fail', ['service'], { timerContent: '' })] }),
+      {}
+    );
+    expect(p.enable).toEqual([]);
+  });
+
+  it('resets a failed service only with --reset-failed', () => {
+    const diff = created('a', ['service']);
+    diff.remote = { ...removed('a', true).remote, isFailed: true } as RemoteUnitState;
+    expect(buildSchedulePayload(plan({ toUpdate: [diff] }), {}).reset_failed).toEqual([]);
+    expect(
+      buildSchedulePayload(plan({ toUpdate: [diff] }), { resetFailed: true }).reset_failed
+    ).toEqual(['a']);
   });
 });

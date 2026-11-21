@@ -105,8 +105,10 @@ Measured: "bridge function(s)" in 32 lines across 26 files (7 generated or user-
 - [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
     (ticked) 2026-10-30T06:19:02Z by d778be9d: live-proof lp-2420c9627afc bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+- [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+    (audit note 2026-11-04) The receipt proves the branch renet binary is live on hostinger at tree 50d35b9d. It does not exercise this plan's own behaviour, which rests on the plan's earlier boxes.
   - Accept: `live-proof hostinger renet-live`
+    (ticked) 2026-11-04T10:27:27Z by d778be9d: live-proof lp-5b07663309b2 hostinger renet-live rc=0 v=renet@sha256:d627bf298b4ba89baa921ca3e04c3a94173d3e2211a7070d5ddd34a60d6440f2
 
 ## Questions put to the operator (all answered 2026-10-23; the rulings section records the answers)
 

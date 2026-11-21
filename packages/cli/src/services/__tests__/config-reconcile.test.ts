@@ -328,6 +328,25 @@ describe('reconcileState network IDs', () => {
     expect(written().state?.repos?.shop?.main?.networkId).toBeUndefined();
   });
 
+  it('rebuilds a fork tag by its own GUID while a never-up sibling stays unresolved', async () => {
+    const { deps, written } = makeDeps(withPlacement(baseConfig(), 'web-1'), {
+      'web-1': listWithIds([{ guid: GRAND }, { guid: FORK, networkId: 2944 }]),
+    });
+    const report = await reconcileState(deps);
+    expect(report.networkIdsRebuilt).toEqual([
+      { repository: 'shop:test', networkId: 2944, machine: 'web-1' },
+    ]);
+    expect(written().state?.repos?.shop?.main?.networkId).toBeUndefined();
+  });
+
+  it('leaves a tag whose GUID is absent from every machine unresolved', async () => {
+    const { deps } = makeDeps(withPlacement(baseConfig(), 'web-1'), {
+      'web-1': listWithIds([{ guid: GRAND, networkId: 2880 }]),
+    });
+    const report = await reconcileState(deps);
+    expect(report.networkIdsRebuilt.map((r) => r.repository)).toEqual(['shop:main']);
+  });
+
   it('skips a repo whose mirror records no ID', async () => {
     const { deps, written } = makeDeps(withPlacement(baseConfig(), 'web-1'), {
       'web-1': listWithIds([{ guid: GRAND }]),

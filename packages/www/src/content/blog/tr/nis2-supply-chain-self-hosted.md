@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: tr
-sourceHash: "c1a20432472d9452"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "02a3f195c73de031"
+sourceCommit: "ddf4affc88b6a49d8b23351f99d04e19870444f3"
 translatedFrom: en
 ---
 
@@ -124,7 +124,7 @@ Hetzner üzerinde Rediacc'a geçildikten sonra:
 
 | Alan | Sonra |
 |---|---|
-| Tedarikçiler | (1) Rediacc OÜ, yazılım lisansı; (2) Hetzner, IaaS |
+| Tedarikçiler | (1) [Rediacc](/tr/legal-information), yazılım lisansı; (2) Hetzner, IaaS |
 | Katman | (1) Kritik olmayan (veri katmanı yok); (2) Kritik (veri katmanı, müşteri kontrolünde) |
 | İşlenen veri | (1) Hiçbiri; (2) Şifreli birimler, anahtarları müşteri tutar |
 | Alt işlemciler | (1) Self-hosted için hiçbiri; (2) Yalnızca Hetzner dahili, kendi DPA'larında listelenmiş |

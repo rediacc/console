@@ -53,6 +53,7 @@ interface ManifestStep {
   docsPath: string;
   shortProse: string;
   command?: string;
+  widget?: 'install-tabs';
   optional?: boolean;
 }
 
@@ -164,6 +165,13 @@ function validateManualStep(step: ManifestStep, issues: Issue[]): void {
   if (!step.command || step.command.trim().length === 0) {
     issues.push({ step: step.id, message: 'manual step is missing command' });
   }
+  // The generator emits a widget only for a storyboard step, so a manual step carrying one could never match its generated form, and regenerating cannot clear it.
+  if (step.widget) {
+    issues.push({
+      step: step.id,
+      message: `manual step sets widget "${step.widget}"; only a storyboard step can be a widget step`,
+    });
+  }
 }
 
 function validateStoryboardStep(step: ManifestStep, issues: Issue[]): void {
@@ -203,7 +211,7 @@ function validateStoryboardStep(step: ManifestStep, issues: Issue[]): void {
   }
 
   const command = scene.card?.commandFull?.trim();
-  if (!command) {
+  if (!command && !step.widget) {
     issues.push({
       step: step.id,
       message: `scene for markerIndex ${step.markerIndex} in "${step.tutorial}" is missing card.commandFull`,
@@ -294,7 +302,8 @@ interface GeneratedStep {
   id: string;
   titleKey: string;
   docsPath: string;
-  command: string;
+  command?: string;
+  widget?: string;
   optional?: boolean;
   prose: Record<string, string>;
 }
@@ -302,6 +311,22 @@ interface GeneratedStep {
 interface GeneratedContent {
   version: number;
   steps: GeneratedStep[];
+}
+
+/** A widget step is rendered by the portal: the generated step must emit the widget and no command. A generated step missing its `command` key is the same as an empty one, never a crash. */
+function checkWidgetStep(mStep: ManifestStep, gStep: GeneratedStep, issues: Issue[]): void {
+  if (gStep.widget !== mStep.widget) {
+    issues.push({
+      step: mStep.id,
+      message: `generated widget mismatch (expected "${mStep.widget}"); run "npm run build:account-onboarding"`,
+    });
+  }
+  if ((gStep.command ?? '').trim().length > 0) {
+    issues.push({
+      step: mStep.id,
+      message: `generated widget step carries a command; run "npm run build:account-onboarding"`,
+    });
+  }
 }
 
 function checkFreshness(manifest: Manifest, issues: Issue[]): void {
@@ -354,7 +379,9 @@ function checkFreshness(manifest: Manifest, issues: Issue[]): void {
         message: `generated English prose does not match manifest shortProse; run "npm run build:account-onboarding"`,
       });
     }
-    if (!gStep.command || gStep.command.trim().length === 0) {
+    if (mStep.widget) {
+      checkWidgetStep(mStep, gStep, issues);
+    } else if (!gStep.command || gStep.command.trim().length === 0) {
       issues.push({
         step: mStep.id,
         message: `generated step is missing command; run "npm run build:account-onboarding"`,
@@ -386,7 +413,73 @@ function checkFreshness(manifest: Manifest, issues: Issue[]): void {
   }
 }
 
+/** The gate's own controls, both directions, run on every invocation so they cannot sit behind a flag nothing passes. Returns the failures. */
+function controls(): string[] {
+  const bad: string[] = [];
+  const step = (over: Partial<ManifestStep>): ManifestStep =>
+    ({
+      id: 's',
+      titleKey: 't',
+      docsPath: 'd',
+      shortProse: 'prose',
+      command: 'rdc x',
+      ...over,
+    }) as ManifestStep;
+  const messages = (run: (issues: Issue[]) => void): string => {
+    const issues: Issue[] = [];
+    run(issues);
+    return issues.map((i) => i.message).join('|');
+  };
+  const gen = (over: Partial<GeneratedStep>): GeneratedStep => ({
+    id: 's',
+    titleKey: 't',
+    docsPath: 'd',
+    command: '',
+    prose: {},
+    ...over,
+  });
+  const w = step({ widget: 'install-tabs' });
+  if (messages((i) => checkWidgetStep(w, gen({ widget: 'install-tabs' }), i)) !== '')
+    bad.push('CONTROL: a widget step emitting its widget and no command was refused');
+  if (!messages((i) => checkWidgetStep(w, gen({}), i)).includes('widget mismatch'))
+    bad.push('a generated widget step missing its widget is not reported (42a85d5a.2)');
+  if (
+    !messages((i) => checkWidgetStep(w, gen({ widget: 'other-tabs' }), i)).includes(
+      'widget mismatch'
+    )
+  )
+    bad.push('a generated widget step naming a different widget is not reported (6b5d1960.2)');
+  if (
+    !messages((i) =>
+      checkWidgetStep(w, gen({ widget: 'install-tabs', command: 'rdc x' }), i)
+    ).includes('carries a command')
+  )
+    bad.push('a generated widget step carrying a command is not reported (42a85d5a.2)');
+  let crashed = false;
+  try {
+    checkWidgetStep(w, { ...gen({ widget: 'install-tabs' }), command: undefined } as never, []);
+  } catch {
+    crashed = true;
+  }
+  if (crashed)
+    bad.push('a generated widget step missing its command key crashed the gate (42a85d5a.3)');
+  if (
+    !messages((i) =>
+      validateManualStep(step({ source: 'manual', widget: 'install-tabs' }), i)
+    ).includes('manual step sets widget')
+  )
+    bad.push('a manual step setting widget is not refused (42a85d5a.1)');
+  if (messages((i) => validateManualStep(step({ source: 'manual' }), i)) !== '')
+    bad.push('CONTROL: a plain manual step was refused');
+  return bad;
+}
+
 function main(): number {
+  const failed = controls();
+  if (failed.length > 0) {
+    for (const f of failed) console.error(`  [controls] ${f}`);
+    return 1;
+  }
   const issues: Issue[] = [];
 
   if (!existsSync(MANIFEST_PATH)) {

@@ -36,8 +36,8 @@
     }
   },
   "measured": {
-    "entryCount": 12,
-    "patternCount": 12,
+    "entryCount": 14,
+    "patternCount": 14,
     "tools": {
       "AskUserQuestion": {
         "search": {
@@ -178,7 +178,9 @@
       "SessionStart": 1,
       "Stop": 1,
       "SubagentStop": 1,
-      "TeammateIdle": 1
+      "TeammateIdle": 1,
+      "WorktreeCreate": 1,
+      "WorktreeRemove": 1
     }
   }
 }

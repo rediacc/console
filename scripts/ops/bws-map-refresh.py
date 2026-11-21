@@ -212,6 +212,12 @@ def main() -> int:
     if not project or not UUID_RE.match(str(project)):
         die("the map has no usable 'project' uuid to refresh from")
 
+    if not os.environ.get("BWS_ACCESS_TOKEN"):
+        # bws itself answers a missing token with an empty "Error:" and exit 1, which names nothing.
+        die(
+            "BWS_ACCESS_TOKEN is not set; run with "
+            'BWS_ACCESS_TOKEN="$(cat ~/.config/rediacc/bws-access-token)" scripts/ops/bws-map-refresh.py'
+        )
     bws = args.bws or shutil.which("bws")
     if not bws or not Path(bws).exists():
         die("bws not found; install it as .devcontainer/Dockerfile does, or pass --bws")

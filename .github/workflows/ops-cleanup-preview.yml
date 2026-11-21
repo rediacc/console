@@ -1,0 +1,133 @@
+name: Cleanup PR Preview
+
+on:
+  pull_request_target: # security: approved — protected by fork guard in job condition
+    types: [closed]
+
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
+
+jobs:
+  cleanup:
+    name: Cleanup Preview
+    runs-on: ubuntu-slim
+    # Checkout only. Cloudflare/Stripe/Turnstile work runs on API tokens, and
+    # the private submodule is fetched with the App token. The `actions: read`
+    # this replaces was never exercised by any step in this job.
+    #
+    # NO `deployments: write`. It existed for a step that deleted the deployment
+    # RECORDS of the `pr-N` environment; ci.yml's deploy-preview job no longer
+    # declares an `environment:`, so no run creates a record and nothing here has
+    # anything to delete. A workflow keeping write scope it cannot use is the
+    # shape this repo's other permission gates exist to catch.
+    #
+    # rediacc_ci.housekeeping.cleanup_github_deployments STAYS in the tree: it
+    # is the manual instrument for edge/stable records, and
+    # cleanup_pr_environments names it in prose as the prerequisite for its own
+    # refusal. Only the automatic step is gone.
+    permissions:
+      contents: read
+    # Skip fork PRs (no access to secrets)
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    steps:
+      # Initial checkout uses the default GITHUB_TOKEN. We need this to land
+      # before the local `./.github/actions/app-token` reference because
+      # local composite actions are loaded from the workspace — without the
+      # repo on disk first, the runner can't resolve them.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch secrets from Bitwarden
+        # LIVE: the BWS_ values below are read by this job's steps, flipped from
+        # secrets.* by the cutover. The secrets.* reads that remain are the
+        # comparator's, which must keep reading GitHub or it compares a value with
+        # itself and passes forever.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            GITHUB_APP_ID > BWS_APP_ID
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+
+      # Mint a GitHub App token scoped to console + account. The composite's
+      # last step is `git config --global
+      # url."https://x-access-token:$TOKEN@github.com/".insteadOf
+      # "https://github.com/"`, which is what makes the later
+      # `git submodule update --init private/account` authenticate.
+      # actions/checkout's own token writes credentials at parent-repo local
+      # scope via includeIf.gitdir, which doesn't apply to submodule gitdirs —
+      # hence the "could not read Username for 'https://github.com'" failure
+      # this PR is fixing.
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,account
+
+      - uses: ./.github/actions/setup-node-npm
+
+      - name: Install dependencies
+        run: npm ci && npm run install:natives
+
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - name: Cleanup preview deployments
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.cleanup_cf_preview --branch "pr-${{ github.event.pull_request.number }}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Install wrangler
+        run: |
+          source .ci/config/constants.sh
+          # The root install carries no wrangler (the Worker directories are not root workspaces), and a bare `npx wrangler` would download an unpinned one. A global install resolves wrangler's whole tree live; --before holds it to the release-age window.
+          before="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before)"
+          npm install -g "wrangler@${WRANGLER_VERSION}" --before "${before}"
+
+      - name: Cleanup preview Worker
+        run: npx --no-install wrangler delete --name pr-${{ github.event.pull_request.number }} --force 2>/dev/null || true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Cleanup preview D1 database
+        run: |
+          DB_NAME="account-pr-${{ github.event.pull_request.number }}"
+          npx --no-install wrangler d1 delete "$DB_NAME" --skip-confirmation 2>/dev/null \
+            && echo "Deleted D1 database: $DB_NAME" \
+            || echo "D1 database $DB_NAME not found (already deleted or never created)"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Initialize account submodule
+        run: git submodule update --init --depth 1 private/account
+
+      - name: Install account dependencies
+        run: npm install --prefix private/account
+
+      - name: Cleanup Stripe sandbox
+        run: npx tsx scripts/cleanup-sandbox.ts --pr-number ${{ github.event.pull_request.number }}
+        working-directory: private/account
+        env:
+          STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
+
+      # Delete the per-PR Turnstile widget minted during deploy. The script
+      # itself treats a missing widget (already deleted by the housekeeping
+      # sweep, or never created) as a no-op, so this step is safe to hard-fail
+      # on anything else. See deploy-preview side at ci.yml's
+      # `Create PR Turnstile widget` step.
+      - name: Cleanup PR Turnstile widget
+        working-directory: private/account
+        run: npx tsx scripts/preview-turnstile.ts delete "${{ github.event.pull_request.number }}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}

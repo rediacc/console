@@ -30,7 +30,7 @@ function base(status: string) {
 
 async function statusRow() {
   const section = await checkSubscription();
-  return section.checks.find((c) => c.value?.toString().startsWith('PROFESSIONAL'));
+  return section.checks.find((c) => c.value.toString().startsWith('PROFESSIONAL'));
 }
 
 describe('the doctor subscription status check', () => {

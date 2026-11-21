@@ -7,8 +7,8 @@ tags:
 subcategory: foundations
 order: 7
 language: de
-sourceHash: "1e10165626ba3730"
-sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
+sourceHash: "af327ad5729b1cab"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 Viele Länder verlangen, dass personenbezogene Daten ihrer Bürger innerhalb der Landesgrenzen gespeichert und verarbeitet werden. Die Self-Hosted-Architektur von Rediacc erfüllt diese Anforderungen von Natur aus: Daten verbleiben auf Ihrer Maschine, in Ihrem Rechenzentrum, in Ihrer Jurisdiktion. Keine Daten verlassen die Maschine während des Klonings, und kein Drittanbieter-SaaS verarbeitet Ihre Daten.
@@ -88,4 +88,4 @@ Das [Bundesgesetz 242-FZ](https://pd.rkn.gov.ru/) verlangt die Speicherung perso
 
 ## Gehosteter Dienst: Regionale Datenresidenz
 
-Für Nutzer des gehosteten Rediacc-Dienstes (nicht Self-Hosted) wird die Datenresidenz durch regionale Infrastruktur durchgesetzt. Drei Regionen stehen zur Verfügung: EU (Frankfurt), USA (Virginia) und Asien-Pazifik (Tokio). Jede Region betreibt unabhängige Datenbanken und Speicher ohne regionsübergreifende Datenflüsse. Transaktions-E-Mails werden über AWS SES zugestellt; EU und USA nutzen dedizierte regionale Endpunkte, Asien-Pazifik nutzt den EU-Endpunkt (eu-central-1). Die EU-Region setzt eine jurisdiktionelle Durchsetzung beim R2-Speicher ein. Die vollständige technische Aufschlüsselung finden Sie unter [Datenregionen](/de/docs/data-regions).
+Für Nutzer des gehosteten Rediacc-Dienstes (nicht Self-Hosted) wird die Datenresidenz über regionale Infrastruktur bereitgestellt. Drei Regionen stehen zur Verfügung: Europäische Union, Östliches Nordamerika und Asien-Pazifik. Jede Region betreibt unabhängige Datenbanken und Speicher ohne regionsübergreifende Datenflüsse. Nur der EU-Konfigurationsspeicher unterliegt einer garantierten Jurisdiktion (die EU-Jurisdiktionsbeschränkung von Cloudflare R2); die Platzierung der Datenbank sowie der Speicher in US und Asien-Pazifik nutzen Standorthinweise von Cloudflare, die nach bestem Bemühen berücksichtigt werden. Transaktions-E-Mails werden über AWS SES zugestellt; EU und USA nutzen dedizierte regionale Endpunkte, Asien-Pazifik nutzt den EU-Endpunkt (eu-central-1). Die vollständige technische Aufschlüsselung finden Sie unter [Datenregionen](/de/docs/data-regions).

@@ -98,6 +98,7 @@ import subprocess
 import sys
 import tempfile
 
+from rediacc_ci import gitx
 from rediacc_ci.controls import Controls
 
 # The seams, spelled exactly as the twin spells them.
@@ -199,6 +200,19 @@ def default_root() -> str:
     return out if completed.returncode == 0 and out else "."
 
 
+def _scan_files(root: pathlib.Path, scan_dir: str, base: pathlib.Path) -> list[pathlib.Path]:
+    """The files under one scan directory, sorted.
+
+    A root that is itself a git work tree is listed with `git ls-files` (tracked, and present on disk), so gitignored state such as `.ci/cache` is not an input of this gate. A root that is not a work tree (a test's `tmp_path`) has no index to list and falls back to the rglob. A work tree that lists NOTHING under a directory that exists is not silently accepted as empty: it falls back to the walk, so a broken listing cannot read as a clean tree.
+    """
+    top = gitx.toplevel(root)
+    if top is not None and top.resolve() == root.resolve():
+        listed = gitx.ls_files(scan_dir, root=root, existing=True)
+        if listed:
+            return [root / rel for rel in listed]
+    return sorted(base.rglob("*"))
+
+
 def grep_hits(root: pathlib.Path) -> tuple[list[str], int]:
     """`grep -rn 'cleanup-staging\\.sh' <root>/.ci <root>/.github --include=*.sh --include=*.yml`.
 
@@ -213,10 +227,10 @@ def grep_hits(root: pathlib.Path) -> tuple[list[str], int]:
         base = root / scan_dir
         if not base.is_dir():
             continue  # `2>/dev/null`: a missing directory is silent to the twin
-        for path in sorted(base.rglob("*")):
+        for path in _scan_files(root, scan_dir, base):
             if not path.is_file():
                 continue
-            # `.ci/cache` is untracked machine-local build state (downloaded toolchains carry their own .sh files); the same prune `paths.walk_tree` applies, restated because this walk is an rglob.
+            # `.ci/cache` is untracked machine-local build state (downloaded toolchains carry their own .sh files). A work-tree root lists TRACKED files only, so the cache never arrives; the same prune stays for the non-git fallback, whose walk is an rglob.
             if (root / ".ci" / "cache") in path.parents:
                 continue
             if path.suffix in SCAN_SUFFIXES:

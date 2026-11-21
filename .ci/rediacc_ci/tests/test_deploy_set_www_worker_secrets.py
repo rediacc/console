@@ -366,9 +366,9 @@ def test_a_value_with_quotes_and_newlines_survives_intact(tmp_path: pathlib.Path
 def test_the_two_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. Every difference below is load bearing, and each is driven by a test above."""
     assert len(port.KEYS) == 24
-    assert len(sibling.KEYS) == 15
+    assert len(sibling.KEYS) == 14
     assert len(port.REQUIRED_NONEMPTY) == 13
-    assert len(sibling.REQUIRED_NONEMPTY) == 11
+    assert len(sibling.REQUIRED_NONEMPTY) == 10
     assert port.GUARD_EXPLANATION != sibling.GUARD_EXPLANATION
     assert not hasattr(port, "WORKER_PREFIX"), "www takes its Worker name whole"
     assert sibling.WORKER_PREFIX == "pr-"
@@ -465,3 +465,25 @@ def test_no_secret_value_reaches_any_child_argv(monkeypatch: pytest.MonkeyPatch)
             assert not any(value in arg for arg in argv), "a secret value is on argv: %r" % argv[0]
     for name, value in sentinels.items():
         assert value in str(calls[-1][1]), "%s never reached wrangler's stdin" % name
+
+
+def test_wrangler_starts_in_the_worker_directory(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Finding fc8ad2fd, the L7 production run of release:local: `www-secrets` ran `npx --no-install wrangler` from the clone root, which has no local wrangler, and died on `npx canceled due to missing packages`. Only workers/www carries the pinned install."""
+    for name, value in FIXTURE_ENV.items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.setattr(port.common, "require_cmd", lambda *_a, **_k: "/bin/true")
+    real_run = subprocess.run
+    cwds: dict[str, object] = {}
+
+    def recording_run(argv, **kw):
+        cwds[argv[0]] = kw.get("cwd")
+        if argv[0] == "npx":
+            return subprocess.CompletedProcess(argv, 0)
+        return real_run(argv, **kw)
+
+    monkeypatch.setattr(port.subprocess, "run", recording_run)
+    assert port.main([]) == 0
+    assert cwds["npx"] == paths.repo_root() / "workers" / "www"
+    assert (paths.repo_root() / "workers" / "www").is_dir()
+    # THE CONTROL: jq, the left half of the pipe, still runs where the caller stands.
+    assert cwds["jq"] is None

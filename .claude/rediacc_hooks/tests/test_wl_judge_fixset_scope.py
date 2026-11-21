@@ -38,13 +38,13 @@ def iso(seconds_ago: float) -> str:
 
 
 def capturing_judge(fix, structured_output: dict) -> None:
-    """A stub `claude` that writes the prompt it receives (argv[2]) to `prompt.txt`, then serves `structured_output`."""
+    """A stub `claude` that writes the prompt it receives (on stdin, as the real CLI reads it) to `prompt.txt`, then serves `structured_output`."""
     payload = json.dumps({"is_error": False, "structured_output": structured_output})
     script = fix.base / "binonly" / "claude"
     script.write_text(
         "#!/usr/bin/env python3\n"
         "import sys\n"
-        "open(%r, 'w').write(sys.argv[2])\n"
+        "open(%r, 'w').write(sys.stdin.read())\n"
         "print(%r)\n" % (str(fix.base / "prompt.txt"), payload),
         encoding="utf-8",
     )

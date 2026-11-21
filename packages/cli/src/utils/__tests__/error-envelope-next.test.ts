@@ -64,6 +64,7 @@ describe('error envelope — next field', () => {
 
   afterEach(() => {
     setOutputFormat('table');
+    vi.unstubAllEnvs();
   });
 
   it('JSON output includes errors[0].next when error carries one', () => {
@@ -80,13 +81,25 @@ describe('error envelope — next field', () => {
     expect(env.errors[0].next).toEqual(sampleNext);
   });
 
-  it('JSON output omits next when error has none', () => {
+  it('JSON output omits next when error has none and the feedback hint is off', () => {
+    vi.stubEnv('REDIACC_FEEDBACK_HINT', '0');
     setOutputFormat('json');
     expect(() => handleError(new Error('plain failure'))).toThrow(/process\.exit/);
 
     const env = JSON.parse(stdoutChunks.join(''));
     expect(env.errors[0].code).toBe(ERROR_CODES.GENERAL_ERROR);
     expect(env.errors[0]).not.toHaveProperty('next');
+  });
+
+  it('JSON output of an error with no next carries only the feedback report option', () => {
+    setOutputFormat('json');
+    expect(() => handleError(new Error('plain failure'))).toThrow(/process\.exit/);
+
+    const env = JSON.parse(stdoutChunks.join(''));
+    expect(env.errors[0].code).toBe(ERROR_CODES.GENERAL_ERROR);
+    expect(env.errors[0].next.options.map((o: { run: string }) => o.run)).toEqual([
+      'rdc feedback report --last',
+    ]);
   });
 
   it('TTY output renders "What to do:" with bulleted options', () => {

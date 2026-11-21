@@ -29,6 +29,7 @@ interface ImportReady {
   staging: string;
   fresh: boolean;
   seeded: boolean;
+  placed?: boolean;
   existingBytes: number;
   rsyncPath: string;
 }
@@ -42,6 +43,7 @@ interface ImportTarget {
   guid: string;
   datastore: string;
   seedGuid?: string;
+  adoptSha256?: string;
   allocatedBytes: number;
 }
 interface SourceRepo {
@@ -102,6 +104,7 @@ const sourceRepo: SourceRepo = {
 
 let root: string;
 let events: string[];
+let targets: ImportTarget[];
 let rsyncArgs: string[][];
 let registered: { name: string; tag: string }[];
 
@@ -153,6 +156,7 @@ function deps(over: Partial<UploadDeps> = {}, ready: Partial<ImportReady> = {}):
     mintGuid: () => 'fresh-guid',
     openImportSession: (t) => {
       events.push(`open:${t.guid}`);
+      targets.push(t);
       return Promise.resolve({
         ready: {
           staging: `${WK_DATASTORE_PATH}/repositories/.restore-${t.guid}`,
@@ -200,6 +204,7 @@ const opts = (image: string, over: Partial<UploadOptions> = {}): UploadOptions =
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'ul-'));
   events = [];
+  targets = [];
   rsyncArgs = [];
   registered = [];
 });
@@ -313,6 +318,43 @@ describe('runUpload', () => {
     await m.runUpload(opts(image), deps());
     expect(events[0]).toBe('open:pending-guid');
     expect(events).toContain('register:pending-guid');
+  });
+
+  it('a rerun after a kill past placement adopts the placed image and registers it', async () => {
+    const m = await load();
+    const image = seedState('complete', true);
+    const d = deps({}, { placed: true, fresh: false, staging: '' });
+    const { exitCode } = await m.runUpload(opts(image), d);
+    expect(exitCode).toBe(0);
+    expect(targets[0]).toMatchObject({ guid: 'pending-guid', adoptSha256: DIGEST });
+    expect(events).toEqual([
+      'open:pending-guid',
+      `finalize:${DIGEST}`,
+      'quit',
+      'register:pending-guid',
+    ]);
+    const st = readImageState(localImagePaths(root, 'hostinger', 'mail', 'latest').state);
+    expect(st?.upload).toMatchObject({ guid: 'pending-guid', status: 'finalized' });
+  });
+
+  it('a placed image the machine refuses to adopt stays refused and is never registered', async () => {
+    const m = await load();
+    const image = seedState('complete', true);
+    const d = deps({
+      openImportSession: () => Promise.reject(new Error('repository pending-guid already exists')),
+    });
+    await expect(m.runUpload(opts(image), d)).rejects.toThrow(/already exists/);
+    expect(events.some((e) => e.startsWith('register'))).toBe(false);
+    const st = readImageState(localImagePaths(root, 'hostinger', 'mail', 'latest').state);
+    expect(st?.upload?.status).toBe('staging');
+  });
+
+  it('a fresh upload asks for no adoption and still sends the bytes', async () => {
+    const m = await load();
+    const image = seedState('complete');
+    await m.runUpload(opts(image), deps());
+    expect(targets[0]?.adoptSha256).toBeUndefined();
+    expect(events).toContain('rsync');
   });
 
   it('sends --sparse only when the staging is fresh', async () => {

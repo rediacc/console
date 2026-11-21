@@ -8,12 +8,13 @@ argument-hint: "[branch]  (optional; defaults to the current branch)"
 # wl_prreview.py --check rc 0). The guardrails are
 # the hooks: block_admin_merge, block_push_to_protected_branch and block_premature_ready
 # decide what a merge may do.
-allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(gh pr list:*), Bash(gh pr view:*)
+allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(gh pr list:*), Bash(gh pr view:*), Bash(./run.sh worktree landing --status)
 ---
 
 ## Current state
 
-- Branch: !`git branch --show-current`
+- Development tree branch: !`git branch --show-current`
+- Landing tree (the record `rediacc-landing.json` in `git rev-parse --git-common-dir` names its path and branch): !`./run.sh worktree landing --status`
 - Working tree: !`git status --short | grep -v '.claude/settings.local.json' || echo '(clean aside from settings.local.json)'`
 - Submodule pointers: !`git submodule status private/renet private/account private/elite private/homebrew-tap 2>/dev/null || echo '(unavailable)'`
 - Open PRs on the current branch:
@@ -23,6 +24,8 @@ allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status
 
 Merge the current branch's coordinated PRs (parent repo `rediacc/console` + any submodule PRs on the **same branch name**) and end on a clean local `main`. If `$ARGUMENTS` is empty, use the current branch. **This is the release path: a merge to `console/main` auto-triggers the edge deploy (`cd-v2.yml`) UNLESS the PR carries the `bump-none` label, in which case the merge is
 deliberately release-free and steps 5 and 6 shrink to almost nothing.** The label is never applied by hand: Console CI's `pr-labels` job decides the bump once at the green head from the per-commit reviews (`bump-major`/`bump-minor` from the highest verdict, no label for a patch, `bump-none` only when every commit's review says `none`).
+
+**Two trees.** The landing tree (`git -C /home/developer/console-landing`, or the path in the record) holds the branch that carries the open landing PR, and this command runs there: the landing session babysits and merges, the development session builds on a branch stacked on the landing branch. Every `git` call below names the landing tree, so `$ARGUMENTS` and the state block read its branch, never the development tree's. The development tree is left alone until promotion (step 7).
 
 **Who runs this.** Operator ruling 2026-10-02 (agent/plans/PLAN-plan-per-pr-loop.md, box M1): the per-PR loop in `.claude/agents/pr-babysitter.md` invokes this command itself when its finish condition holds, and the operator may invoke it too. The finish condition is the gate, not an ask: <!-- scope: pr.merge-condition -->every box of the PR's plan ticked (or an `Operational-Reason:` line in the PR body, which admits the merge with boxes still open), `CI Complete` SUCCESS on the head (`ci-trace.py`), `wl_review.py --check` at exit 0, and `Review Complete` green on the head with `wl_prreview.py --check` at exit 0; the merge itself is `gh pr merge --rebase --auto` (step 3).
 
@@ -76,10 +79,12 @@ git -C <worktree-path> status --short
 git -C <worktree-path> diff --stat  # and per-submodule, if any submodule shows dirty too
 ```
 
-A worktree with nothing dirty and nothing unpushed is debris, so remove it:
+A lease tree (under `.claude/worktrees/`) is never removed by hand: `git worktree remove|prune|lock` on it is hook-refused. List them with `./run.sh worktree leases`, then `./run.sh worktree gc` shows which are safe, and `./run.sh worktree gc --write` removes only those that hold nothing dirty and no unlanded commit.
+
+The landing tree (the path in `rediacc-landing.json`) is never removed and never counted as debris: it is the one tree this command runs in. Any other worktree with nothing dirty and nothing unpushed is debris, so remove it:
 
 ```bash
-git worktree remove <worktree-path> --force
+git worktree remove <worktree-path>
 git worktree prune
 ```
 
@@ -92,13 +97,13 @@ silently. Report what it is and ask, the same as an unclear dirty file in the ma
 Observed live 2026-08-01: six stray worktrees had accumulated in one checkout. Two held real, substantial uncommitted work from other sessions (a ~270-line CLI+Go feature, six locale files' worth of in-progress translation). Both turned out to be fully superseded by `main` (verified byte-identical / a strict subset before deleting), but that was established by checking, not assumed
 from how old or untouched the worktree looked.
 
-**Creating a new worktree from inside `/pr-merge` (or any assistant session) is hook-blocked.** `.claude/hooks/pre-bash/block-worktree-add.sh` refuses `git worktree add` from the assistant's own Bash tool unconditionally. If this flow genuinely needs one (it normally does not; steps 4-6 operate on the existing checkout), ask the operator to run the command themselves via the `!`
-prefix. This does not affect step 7's `git checkout -b <MMDD-N>` guidance, which creates a branch in the current checkout, not a new worktree, and is unaffected by the hook.
+**Creating a new worktree from inside `/pr-merge` (or any assistant session) is hook-blocked.** `.claude/rediacc_hooks/guards/block_worktree_add.py` refuses `git worktree add` from the assistant's own Bash tool unconditionally; a writer's tree is a lease, from `./run.sh worktree lease`. If this flow genuinely needs one (it normally does not; steps 4-6 operate on the existing checkout), ask the operator to run the command themselves via the `!`
+prefix. This does not affect step 7's `git switch -c <MMDD-N>` guidance and `./run.sh worktree landing --promote`, which cut a branch in an existing checkout and move one into the existing landing tree, and are unaffected by the hook.
 
-- Current branch is **not** `main`, and it matches the branch shown above (or the `$ARGUMENTS` override).
+- The landing tree's branch is **not** `main`, and it matches the landing branch shown above (or the `$ARGUMENTS` override).
 - Working tree is clean except `.claude/settings.local.json` (leave that uncommitted; never `git add` it).
 
-**If it is NOT clean, do not just stop. Identify whose work it is first.** This tree is shared: a concurrent session may hold uncommitted work in it, and that work is *not* part of this land. Steps 4 and 6 run `git checkout main` / `git merge --ff-only`, which carry uncommitted changes across silently when they do not conflict and abort mid-way when they do. Neither outcome is one
+**If it is NOT clean, do not just stop. Identify whose work it is first.** This tree is shared: a concurrent session may hold uncommitted work in it, and that work is *not* part of this land. Steps 4 and 6 run `git switch --detach origin/main` in the landing tree, which carries uncommitted changes across silently when they do not conflict and abort mid-way when they do. Neither outcome is one
 you want to discover after a merge has already landed.
 
   So: report what is dirty and who it belongs to, and **never** `git add`, `stash`, `restore`
@@ -144,7 +149,7 @@ The pointer bump changed only submodule SHAs (trees verified identical in step 2
 - Trace it with `.ci/scripts/ci/ci-trace.py --wait` (run_in_background: true). Do NOT hand-roll a loop: ad-hoc watch commands are refused by `block-adhoc-sanctioned.sh`, and a hand-rolled watch left running blocks the Stop hook. The script keys on the PR HEAD, so a watchdog rerun and a superseded run are both handled structurally. Exit 0 green, 1 red, 2 no verdict, 3 head moved. **One wait per command**. Never chain a second wait onto the same watch, because the notification fires on process exit, so a chained wait can swallow the CI verdict (observed 2026-08-24, ninety minutes lost).
 - **Wait for the PR review, then answer it.** `Review Complete` is a required check (operator ruling 2026-10-03, PLAN-github-pr-review-restore GR8): the PR does not merge until it is green on the head. Once the PR is ready, start `python3 .claude/hooks/stop/wl_prreview.py --wait` (run_in_background: true, one wait per command, bounded at 35 minutes by its default `--timeout 2100`). Its exit code decides the next move:
   - **0, reviewed.** `wl_prreview.py --status` names the token and the findings. `current`, `capped` and `exhausted` are green. `outage` is green too, and it is the one excused case: the LLM was unavailable for the head's last attempt, which is recorded under DECISIONS in the round log. `hygiene` means findings or threads are unanswered: triage each finding as fixed, not-a-bug with evidence, or waived with an operator ASKED: for an operator-only triage (a deferral is refused), and write the dispositions with `wl_prreview.py --draft > <file>`. Commit each fix first, run `wl_prreview.py --answer <file>` citing the local sha, and only then push: a push over an unanswered summary fails `Review Gate`, and the watchdog cancels the run. The follow-up review of the new head repeats the cycle, bounded by the review budget's cap tiers.
-  - **4, failed-run.** The Claude Review run failed for a reason other than an outage. That is work, not an excuse: find the run (`gh run list --repo rediacc/console --workflow claude-review.yml --limit 5`), read why it failed (`.ci/scripts/ci/ci-trace.py --run <id> --why`, then `--job <id> --log`), fix the cause, re-dispatch with `gh workflow run claude-review.yml -f pr_number=<console-pr>`, and wait again.
+  - **4, failed-run.** The Claude Review run failed for a reason other than an outage. That is work, not an excuse: find the run (`gh run list --repo rediacc/console --workflow ops-claude-review.yml --limit 5`), read why it failed (`.ci/scripts/ci/ci-trace.py --run <id> --why`, then `--job <id> --log`), fix the cause, re-dispatch with `gh workflow run ops-claude-review.yml -f pr_number=<console-pr>`, and wait again.
   - **3, timeout or no review.** Never a pass, and never a reason to merge. Check that a Claude Review run exists for the head, re-dispatch it when none does, and wait again.
 
   `wl_prreview.py --check` then reads rc 0 (no summary, or the newest one answered or empty with every finding thread resolved); rc 1 is an unanswered summary or an unresolved thread to answer, and rc 2 (the API could not be read) is retried, not merged over.
@@ -185,7 +190,7 @@ This is git-level identical to what a rebase-merge would have produced (nothing 
 
 <!-- scope: pr.ff-fallback -->**The push is this session's own, typed here.** Operator ruling 2026-10-02 (PLAN-plan-per-pr-loop boxes M2 and M5): `block_push_to_protected_branch` admits exactly this one push to `main`, and refuses it unless every condition below reads true. Anything it cannot read is a refusal, and a refusal names the condition that failed.
   - **Shape:** one `git push` to `origin` with exactly one refspec `<src>:main`, where `<src>` names the PR's `MMDD-N` branch (`<branch>`, `origin/<branch>`, or a `refs/` spelling of either) or its tip sha (never `HEAD`). The branch is read from the refspec, never from the checkout, so the push works from any checkout, and no flag but `-q`/`-v`: no `--force`, `--force-with-lease`, `+`, `--delete`, `--tags`, `--follow-tags`, `--all` or `--mirror`.
-  - **Local facts:** the checkout is the console's own; the commit is exactly `origin/<branch>`, the pushed tip of the `MMDD-N` branch the refspec names (or, for a sha, of any `MMDD-N` branch on the remote); `origin/main` is its ancestor (`commit_policy.ff_fallback_refusal`).
+  - **Local facts:** the checkout is the console's own (the main checkout or the landing tree); the commit is exactly `origin/<branch>`, the pushed tip of the `MMDD-N` branch the refspec names (or, for a sha, of any `MMDD-N` branch on the remote); `origin/main` is its ancestor (`commit_policy.ff_fallback_refusal`).
   - **The PR:** that commit is the head of the OPEN PR for the branch (`gh pr view`), and `CI Complete` is SUCCESS on it, read through `.ci/scripts/ci/ci-trace.py --json --ref <branch>`, never a raw check read.
   - **The reason:** the PR body carries an `Operational-Reason:` line naming the "can't be rebased" refusal. The plan's box ledger becomes the alternative proof once box L2 links a PR to its plan (`agent/plans/QUEUE.md`).<!-- /scope -->
 
@@ -195,11 +200,11 @@ If the ancestry check does NOT print "pure fast-forward" (main has moved ahead o
 - Verify: `gh pr view <console-pr> --repo rediacc/console --json state` → `MERGED`, and capture `console/main` HEAD.
 - **The merge ends the phase by itself.** The Stop hook reads the PR as merged, records `build`, and prints one `PHASE ENDED` line naming what it parked; steps 4-6 run under the battery of the effort level, which is where the release-path checks belong.
 
-### 4. Check out main (first pass, since it will go stale again in step 5, see step 6)
+### 4. Move the landing tree to main (first pass, since it will go stale again in step 5, see step 6)
 - `git fetch origin --prune`
-- `git checkout main && git merge --ff-only origin/main`
+- In the landing tree: `git switch --detach origin/main` (a branch named `main` is never checked out there; the landing tree holds the branch of the PR until promotion).
 - `git submodule update --init --recursive` takes **all** submodules, not just the merged ones. The old form named only the merged pointers, which left `private/homebrew-tap` and `private/elite` sitting at whatever commit the previous branch had them at while `main`'s record moved on.
-- Verify: local `main` == `origin/main`, working tree clean (only `settings.local.json` may differ), `git submodule status` shows no `+`/`-`.
+- Verify: the landing tree's HEAD == `origin/main`, working tree clean (only `settings.local.json` may differ), `git submodule status` shows no `+`/`-`.
 
 ### 5. Watch the release land (the merge to main IS the edge release, unless bump-none)
 
@@ -231,7 +236,7 @@ The push to `console/main` runs **Console CI** (`ci.yml`; on `main` it does the 
 land is not done until this is green.
 - Find the **Console CI** run for the merged commit: `.ci/scripts/ci/ci-trace.py --runs --ref main` (event `push`, matching the merged SHA), then trace it by id with `.ci/scripts/ci/ci-trace.py --run <id> --wait` (or `--ref main --wait`), run_in_background: true. A bare `--wait` on `main` reads the current branch's PR and gives no verdict. On `main` the watchdog auto-retries transient failures; `--run` reads per-job conclusions of that run, so a rerun lands as a new attempt of the same id rather than fooling it.
 - **One merge, one real run.** When the merged SHA shows two Console CI push runs, the later one is a no-op by design: its Duplicate Run Check (`rediacc_ci.ci.sibling_runs dedupe`) finds the earlier run, every job skips, it ends green and its summary names the original. Trace the original. The release gate refuses to dispatch while another push run on the same SHA concluded failure, and names that run (`sibling_runs release-gate`); the fix is that run's red, never a dispatch around it. An EARLIER run on the SHA that was cancelled as a whole refuses too, unless the releasing run is its clean retry: attempt 1, with no job failed, cancelled or timed out (operator ruling 2026-10-06). A re-attempted retry therefore never releases after a cancel; push a new commit, or dispatch by hand once the commit is known good. A red push run on `main` blocks the Stop hook until an item carries `push:ci run:<id>` (2026-10-06: v1.8.0 released while run 37437282770 on the same SHA was still queued, and that run then failed).
-- Console CI on `main` is green **before** the Release run exists. Once it is, find the **Release to Edge** run (`.ci/scripts/ci/ci-trace.py --runs --ref main --workflow "Release to Edge"`, event `workflow_dispatch`, matching the merged SHA) and watch it **by id**: `.ci/scripts/ci/ci-trace.py --run <id> --wait` (run_in_background: true). That is the run that actually tags and deploys edge.
+- Console CI on `main` is green **before** the Release run exists. Once it is, find the **CD - Release to Edge** run (`.ci/scripts/ci/ci-trace.py --runs --ref main --workflow "CD - Release to Edge"`, event `workflow_dispatch`, matching the merged SHA) and watch it **by id**: `.ci/scripts/ci/ci-trace.py --run <id> --wait` (run_in_background: true). That is the run that actually tags and deploys edge.
 
 **NOT "the same way" as the branch watch above, and this cost a false green.** A branch's GraphQL `statusCheckRollup` does NOT contain a `workflow_dispatch` run's check runs. Measured 2026-08-26 on Release run 32968110599 (head `1c006e53`): the REST check-runs API for that exact commit showed `in_progress Tag & Release`, while the rollup for `refs/heads/main` returned 81 contexts,
 state SUCCESS, **none in flight**. So `--wait --ref main` printed `GREEN ... every context succeeded or was skipped` and exited 0 while the release was mid-flight. That happened twice, including with `--until-final`. Following this step as it was previously written would certify a release that had not run. `--run` reads per-JOB conclusions instead (in-flight → exit 2,
@@ -263,14 +268,14 @@ The release state is no longer main-only. `cd-preflight` (CD Preflight in `ci.ym
 
   The push is the operator's: `block_push_to_protected_branch` admits only the step-3 fast-forward fallback (the open PR's head), which a commit made on `main` never is, and the git-level `pre-push` hook refuses it for everyone else, so the report names the commit and the exact line for the operator to run, `! COMMIT_POLICY_OK=1 git push origin main`. State plainly in the report which commit went on `main` and why.
   - This is the ONLY situation in which committing on `main` is allowed without the operator calling it a hotfix in the task. It applies **after** a merge performed by this command, to a failure in that merge's own release path. Everything else goes on the one feature branch.
-  - It does **not** extend to re-cutting a release. Re-dispatching stays the operator's call (`gh workflow run "Release to Edge" -f ci_run_id=<console-ci-run-id> -f release_mode=retry`), because that ships artifacts rather than fixing code.
+  - It does **not** extend to re-cutting a release. Re-dispatching stays the operator's call (`gh workflow run "CD - Release to Edge" -f ci_run_id=<console-ci-run-id> -f release_mode=retry`), because that ships artifacts rather than fixing code.
 
 ### 6. Re-sync main after the release run
 
 The merge still releases edge through CD, but CD no longer pushes to console `main`: the contract floor is an ordinary commit in the next PR and there is no console homebrew gitlink bump. The merge is therefore the last write to `main` and there is no resync trap: the local checkout is at most one fast-forward behind. An agent may also release edge itself with `release:local --channel edge` (docs/agent-reference/release-process.md).
 
 - `git fetch origin --prune`
-- `git merge --ff-only origin/main`
+- In the landing tree: `git switch --detach origin/main`
 - `git submodule update --init --recursive`
 - Verify clean: `git status --short` shows nothing but `.claude/settings.local.json`, and `git submodule status` shows no `+`/`-`.
 
@@ -316,9 +321,9 @@ ever rejected as non-fast-forward, GitLab has diverged again: **report and stop*
 
 Report the outcome in step 8 either way, including a skip. A mirror that quietly stops being written is indistinguishable from one that is up to date, which is how the first drift went unnoticed for months.
 
-### 7. Hand the tree back safely: you are now sitting on `main`
+### 7. Hand the trees back safely: promotion replaces the branch cut
 
-Steps 4 and 6 leave the checkout on `main`, which is correct for verifying the release but is a **loaded gun for whatever happens next**: `main` is the one branch this repo forbids pushing, and a tree parked there invites the next piece of work to be written straight onto it.
+Steps 4 and 6 leave the landing tree on `origin/main` (detached), which is correct for verifying the release but is a **loaded gun for whatever happens next**: `main` is the one branch this repo forbids pushing, and a tree parked there invites the next piece of work to be written straight onto it.
 
 That is not hypothetical. A session finished a `/pr-merge`, stayed on `main`, and built an entire feature there, 26 new files across 18 paths, before anything noticed. It reached a branch only because `/pr-babysit` happened to be invoked afterwards and created one. Nothing was lost, but the recovery was luck, not design: had the operator not run `/pr-babysit`, the work would still
 be uncommitted on `main`. `block_commit_on_main` now refuses any commit there that is not a `[hotfix]`, so the same session today would be stopped at its first commit, but the refusal is a late place to find out.
@@ -327,12 +332,13 @@ So finish by making the state explicit rather than leaving it implied:
 
 - **Sweep for a review that landed after the merge.** A follow-up Claude review can finish after `--rebase --auto` lands (the review of a pointer-bump head, or a re-dispatch still in flight). Read it with `python3 .claude/hooks/stop/wl_prreview.py --status --pr <merged-console-pr>`; each finding it lists that has no answer becomes a worklist item (`worklist.py --add <me> "<finding> from PR #<n>'s late review"`), fixed on the next branch like any other finding, never dropped because the PR is closed.
 - **Delete the merged local branch in every repository**, console and each submodule that carried
-it, once `gh pr view <n> --repo rediacc/<r> --json state` reads `MERGED`: `git branch -D <merged>` (and `git -C private/<sm> branch -D <merged>`). A merged branch is no longer live, but leaving it behind makes the next cut harder to read; with it gone the checkout holds no feature branch, which is the one state in which `block_second_branch` admits a new one.
-- **Cut the next branch at once: one live branch, around the clock** (operator ruling 2026-10-02, PLAN-plan-per-pr-loop rulings 3 and 4). Once the merged branch is deleted on the remote and pruned locally (`git fetch origin --prune` in each repo; `block_second_branch` keeps a merged name live while any remote-tracking ref for it remains), cut `MMDD-(MAX+1)` from `main` with `git switch -c <MMDD-N>`, the name computed from PR heads below. `block_second_branch` admits only that name, and its refusal prints the computed one. `main` stays read-only: no tracked file is edited before the cut. The first push of the new branch writes the queue head as the PR body's `Plan:` line unless the body names a plan first; a branch that will not work the queue head (operator follow-ups, a fix batch) carries an `Operational-Reason:` naming its work before that push. `agent/plans/QUEUE.md` `## In flight` shows what the branch is bound to.
+it, once `gh pr view <n> --repo rediacc/<r> --json state` reads `MERGED`: `git branch -D <merged>` (and `git -C private/<sm> branch -D <merged>`). A merged branch is no longer live, but leaving it behind makes the next cut harder to read.
+- **Promote the development branch** (replaces the branch cut while a development branch exists): `./run.sh worktree landing --promote` refuses a dirty tree or an unmerged landing PR, rebases the development branch onto `origin/main` with `--git rebase-proof` (landing's copies read absorbed through `git cherry` and drop out), moves it into the landing tree, rewrites the record, cuts the next development branch in the main checkout and prints `gh pr ready <draft>`. Run that printed command: the development draft becomes the next landing PR.
+- **Cut the next branch at once (only when no development branch existed, so promotion had nothing to move): one live branch, around the clock** (operator ruling 2026-10-02, PLAN-plan-per-pr-loop rulings 3 and 4). Once the merged branch is deleted on the remote and pruned locally (`git fetch origin --prune` in each repo; `block_second_branch` keeps a merged name live while any remote-tracking ref for it remains), cut `MMDD-(MAX+1)` from `main` with `git switch -c <MMDD-N>` in the main checkout, the name computed from PR heads below. `block_second_branch` admits only that name, and its refusal prints the computed one. `main` stays read-only: no tracked file is edited before the cut. The first push of the new branch writes the queue head as the PR body's `Plan:` line unless the body names a plan first; a branch that will not work the queue head (operator follow-ups, a fix batch) carries an `Operational-Reason:` naming its work before that push. `agent/plans/QUEUE.md` `## In flight` shows what the branch is bound to.
 - **Refresh the PR-condition ledger on the new branch.** `npx tsx scripts/gates/check-pr-condition-ledger.ts --refresh` records every PR a `REVISIT WHEN PR #N MERGES` clause names that has merged since; when `.ci/config/merged-prs.json` changes, it is the new branch's first commit, and the offline `pr-conditions` probe in check:ci-suppression-liveness then reds any hold whose PR just merged (agent/plans/PLAN-k3s-137-and-pr-conditions.md, B).
 - **Then start the next queued plan.** The loop pulls the next approved plan from `agent/plans/QUEUE.md` (box L2), <!-- scope: pr.one-plan-per-pr -->one plan per PR by default (<!-- scope: pr.turbo-batch-end -->with `turbo: on` in that file's `## Settings`, a batch: the Stop hook names further queued plans for free writer slots, and <!-- scope: pr.queued-plan-start -->a queued plan starts only when the hook names it; with `turbo_push: batch-end`, the default, the batch is verified locally and pushed once when it completes, so the new branch has no push and no PR until then beyond a `backup_push_h` backup push or a push whose `TURBO_PUSH_REASON` `block_turbo_early_push` admits), and runs `.claude/agents/pr-babysitter.md` on the new branch. The Stop hook's `loop-next` block names that plan, its first open box and the exact next command (the cut, `gh pr create --draft`, or the work), and holds the turn until the branch, the plan and its PR exist. When the plan starts, <!-- scope: pr.epic-carries-plan -->its epic is created with `worklist.py --epic <me> new --plan <rel> <title>` and the plan's items are attached to it, because the Stop hook blocks a stop only on items under the PR plan set's epics. <!-- scope: pr.plan-set -->The PR body's `Plan:` lines define the PR's plan set: one plan by default, every listed plan when an `Operational-Reason:` line records the operator adding them or `turbo: on` is set at the PR head, and in every case their unfinished prerequisites (`Depends-On:`), which the Stop hook, the CI plan gate (check:ci-plan-implementation, rule P-A1) and the merge gate count alike. An empty queue ends the loop with the branch cut and the report written. Before any writer on the new branch, the plan is preflighted: `.claude/hooks/stop/worklist.py --plan-preflight <me> <plan>`, the survey fan-out, then `--plan-preflight <me> <plan> --write` in one `chore(plan): preflight <slug> @ <B12>` commit, as `.claude/agents/pr-babysitter.md` loop step 0 describes.
 - If the tree already carries uncommitted work (the §0 shared-tree case), say so again here:
-that work is now sitting on `main` and moves onto the new branch with the cut, before it is committed.
+that work is now sitting on a detached `origin/main` and moves onto the new branch with the cut, before it is committed.
 - **The name this command just merged is now CONSUMED, and its branch is gone.** A rebase-merge
 deletes the head branch, so `git branch -r` no longer shows it and the next session can pick it again. Seen live on 2026-08-26: `0826-1` merged as PR #576 at 11:01, and a session working from the remote branch list took `0826-1` a second time. Compute the next N from PR HEADS:
 

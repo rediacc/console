@@ -1,4 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockInspect, mockProvision, mockWarn, mockInfo, mockExecFileSync, mockExecSync } =
   vi.hoisted(() => ({
@@ -27,6 +30,12 @@ vi.mock('../core/embedded-assets.js', () => ({
   isSEA: () => false,
 }));
 
+// A release build: a development build holds the machine's renet (renet-provision-hold.test.ts).
+vi.mock('../../utils/platform.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../utils/platform.js')>()),
+  isDevBuild: () => false,
+}));
+
 vi.mock('../machine/machine-connection.js', () => ({
   sftpConfigForMachine: vi.fn(() => ({ host: '10.0.0.5', username: 'root', privateKey: 'k' })),
   withSharedOrPooledSftp: vi.fn(),
@@ -40,6 +49,20 @@ vi.mock('../renet/provision-state.js', () => ({
 // An absolute path that exists, so resolveRenetPath never falls back to `which`.
 const CONFIG = { renetPath: process.execPath };
 const MACHINE = { ip: '10.0.0.5', user: 'root', port: 22 };
+
+// Trees made by renetTree(), removed after each test.
+const renetTrees: string[] = [];
+afterEach(() => {
+  for (const dir of renetTrees.splice(0)) fs.rmSync(dir, { recursive: true, force: true });
+});
+
+/** A renet source tree on disk: the guard only reads a work tree that holds renet's `build.sh`. */
+function renetTree(): string {
+  const top = fs.mkdtempSync(path.join(os.tmpdir(), 'renet-access-'));
+  renetTrees.push(top);
+  fs.writeFileSync(path.join(top, 'build.sh'), '');
+  return top;
+}
 
 function inspectResult(overrides: Record<string, unknown> = {}) {
   return {
@@ -56,6 +79,10 @@ function inspectResult(overrides: Record<string, unknown> = {}) {
 
 function load() {
   return import('../renet/renet-execution.js');
+}
+
+function loadCleanBuild() {
+  return import('../renet/renet-clean-build.js');
 }
 
 describe('acquireRemoteRenet', () => {
@@ -144,12 +171,13 @@ describe('acquireRemoteRenet', () => {
   });
 
   it('the upload guard refuses a dirty renet tree and names the opt-in', async () => {
+    const top = renetTree();
     mockExecFileSync.mockImplementation((_cmd: string, args: string[]) =>
-      args.includes('rev-parse') ? '/src/renet\n' : ' M pkg/list.go\n?? pkg/new.go\n'
+      args.includes('rev-parse') ? `${top}\n` : ' M pkg/list.go\n?? pkg/new.go\n'
     );
     // A tree dirty at selection time gets a clean HEAD build instead (renet-clean-build.test.ts); the guard still refuses a tree that turned dirty after that choice.
-    const { assertRenetSourceClean } = await load();
-    const uploadGuard = () => assertRenetSourceClean('/src/renet/bin/renet', MACHINE);
+    const { assertRenetSourceClean } = await loadCleanBuild();
+    const uploadGuard = () => assertRenetSourceClean(path.join(top, 'bin', 'renet'), MACHINE);
 
     expect(() => uploadGuard()).toThrow(/REDIACC_ALLOW_DIRTY_RENET/);
     expect(() => uploadGuard()).toThrow(/pkg\/new\.go/);
@@ -160,12 +188,13 @@ describe('acquireRemoteRenet', () => {
   });
 
   it('the upload guard passes a clean tree and a binary outside any git tree', async () => {
-    const { assertRenetSourceClean } = await load();
+    const { assertRenetSourceClean } = await loadCleanBuild();
 
+    const top = renetTree();
     mockExecFileSync.mockImplementation((_cmd: string, args: string[]) =>
-      args.includes('rev-parse') ? '/src/renet\n' : ''
+      args.includes('rev-parse') ? `${top}\n` : ''
     );
-    expect(() => assertRenetSourceClean('/src/renet/bin/renet', MACHINE)).not.toThrow();
+    expect(() => assertRenetSourceClean(path.join(top, 'bin', 'renet'), MACHINE)).not.toThrow();
 
     mockExecFileSync.mockImplementation(() => {
       throw new Error('not a git repository');

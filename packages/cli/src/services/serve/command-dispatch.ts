@@ -33,6 +33,7 @@
 
 import type { ContractCommand, ContractOption } from '@rediacc/shared/cli-contract';
 import { getCommand } from '@rediacc/shared/cli-contract';
+import type { JobOverlap } from '@rediacc/shared/cli-contract/wire';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
 import { CommanderError } from 'commander';
@@ -49,6 +50,7 @@ import {
   runInRequestContext,
 } from '../core/request-context.js';
 import type { ExecuteResult, Executor, RenetEvent } from '../executor/types.js';
+import { RequestIdMinter, withInvocationMinter } from '../jobs/attach.js';
 import {
   currentRequestTelemetry,
   runWithRequestTelemetry,
@@ -90,19 +92,16 @@ export interface DispatchArgs {
    * route can forward it for exactly-once re-attach dedup.
    */
   onEvent: (event: RenetEvent, line?: number) => void;
+  /** The client's idempotency key for this invocation (CommandRequest.requestId). */
+  requestId?: string;
+  /** The client asked for `--background` (CommandRequest.background): each job returns its ticket at once. */
+  background?: boolean;
   /**
-   * Whether the command's machine work runs as a DETACHED job. Defaults to the
-   * contract's `detachable`; the serve route computes it (its `deps.detach` can
-   * override) and passes it here, so a proxied long command survives a dropped
-   * connection.
+   * Called once per job with its id, machine and the overlaps the start met,
+   * the instant it starts and before any event. The route emits its
+   * `kind:'job'` line from it so a client can follow even if the request drops.
    */
-  detached?: boolean;
-  /**
-   * Called once with the job id the instant a detached run starts, before any
-   * event. The route uses it to emit its `kind:'job'` line so a client can
-   * re-attach even if the connection drops before the first event.
-   */
-  onJobStarted?: (jobId: string) => void;
+  onJobStarted?: (jobId: string, machine: string, overlaps?: JobOverlap[]) => void;
   /**
    * The config the command runs against, in place of the config on disk. The
    * container tier passes the one it decrypted for the session (its disk holds
@@ -148,6 +147,9 @@ export interface DispatchOutcome {
    */
   unpersistedConfigWrites: number;
 }
+
+/** The error code of a refusal that carries none of its own: another job holds the scope. */
+const BUSY_ERROR_CODE = 'BUSY';
 
 /**
  * Commands the executor will not run, however the policy is written.
@@ -374,7 +376,7 @@ export function prepareCommand(
 }
 
 export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutcome> {
-  const { argv, entry } = args.prepared;
+  const { argv } = args.prepared;
   const started = Date.now();
 
   // Per-dispatch config freshness: configService memoizes a ResourceState view per process, which in a long-lived serve process freezes the repository/machine world at first use while clients may rewrite the config between dispatches, the same staleness class the executor daemon hit (it built vaults from a boot snapshot). Reset both layers up front.
@@ -386,22 +388,35 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   let functionName: string | undefined;
   let machineName: string | undefined;
 
-  // Every machine call a served command makes runs detached and is FOLLOWED to completion: the executor cannot assume the client's connection outlives the work, so it starts a job that survives a drop and streams its spool back. `onJobStarted` fires once per job so the route can announce a re-attach point. The detach decision defaults to the contract's `detachable` and is
-  // overridden by the route when it must (deps.detach).
-  const detached = args.detached ?? entry.detachable;
-  // Renet's own stdout is the command's answer only for a verb that asked for it live (`passthroughOutput`: repo exec, repo logs) or under --debug. For every other verb a local run drops it (the step detector keeps step lines only, and a captureOutput verb prints what it chose from `result.stdout` itself), so a proxied run must not carry it either: the proxy client prints `output` events, which put renet's full repository-list JSON (the machine probe's answer) on the stdout of `repo up` and `repo down`. Events are therefore dropped here for such a verb; the raw `result.stdout` still travels on the wire for clients that want it.
-  let forwardRenetOutput = false;
+  // Every machine call a served command makes is one job, attached for the window the executor seam sets and handed back as a ticket when it outlives it: the executor cannot assume the client's connection outlives the work. `onJobStarted` fires once per job so the route can announce the job line. A client-supplied request id is the invocation id: each call of the command mints `<id>:<machine>:<seq>` from it, so a retried POST attaches to the jobs the first one started and a second call of the same command is its own job.
+  const minter = args.requestId ? new RequestIdMinter(args.requestId) : undefined;
+  // Renet's raw `output` events reach the caller only for the call that asked for them (passthroughOutput or --debug): tapExecutor (services/executor/event-tap.ts) decides that per call.
+  let refusedOverlaps: JobOverlap[] | undefined;
   const recordingExecutor: Executor = {
     async execute(options) {
-      if (options.passthroughOutput || options.debug) forwardRenetOutput = true;
       functionName = options.functionName;
       machineName = options.machineName;
-      const result = await args.executor.execute({
-        ...options,
-        detached,
-        follow: true,
-        ...(args.onJobStarted ? { onJobStarted: args.onJobStarted } : {}),
-      });
+      let result: ExecuteResult;
+      try {
+        result = await args.executor.execute({
+          ...options,
+          // `runCommandJob` has already minted from the same minter, and its ticket is under that id.
+          ...(minter && options.requestId === undefined
+            ? { requestId: minter.next(options.machineName) }
+            : {}),
+          ...(args.onJobStarted
+            ? {
+                onJobStarted: (jobId: string, machine?: string, overlaps?: JobOverlap[]) =>
+                  args.onJobStarted?.(jobId, machine ?? options.machineName, overlaps),
+              }
+            : {}),
+        });
+      } catch (error) {
+        // An overlap refusal (BUSY) names the jobs that hold the scope; handleError flattens the error, so the dispatch keeps them for the result line.
+        const held = refusedOverlapsOf(error);
+        if (held) refusedOverlaps = held;
+        throw error;
+      }
       lastResult = result;
       return result;
     },
@@ -411,26 +426,29 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
     output: createOutputState(),
     stdout: [],
     stderr: [],
-    onEvent: (event, line) => {
-      if (event.type === 'output' && !forwardRenetOutput) return;
-      args.onEvent(event, line);
-    },
+    onEvent: args.onEvent,
     executor: recordingExecutor,
+    ...(args.background ? { background: true } : {}),
     ...(args.config ? { config: createRequestConfigScope(args.config) } : {}),
   };
 
-  const outcome = await runWithRequestTelemetry(args.caller, () =>
-    runInRequestContext(context, async () => {
-      const program = createCli();
-      harden(program, context.stderr);
-      try {
-        await program.parseAsync(argv, { from: 'user' });
-        return { failed: false as const };
-      } catch (error) {
-        endFailedCommandSpan(error, Date.now() - started);
-        return { failed: true as const, error };
-      }
-    })
+  const outcome = await runWithRequestTelemetry(
+    args.caller,
+    () =>
+      withInvocationMinter(minter, () =>
+        runInRequestContext(context, async () => {
+          const program = createCli();
+          harden(program, context.stderr);
+          try {
+            await program.parseAsync(argv, { from: 'user' });
+            return { failed: false as const };
+          } catch (error) {
+            endFailedCommandSpan(error, Date.now() - started);
+            return { failed: true as const, error };
+          }
+        })
+      ),
+    'command'
   );
 
   const { text: stdout, bytes: stdoutBytes } = joinStdout(context.stdout);
@@ -451,7 +469,17 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   }
 
   const failure = toFailure(outcome.error, lastResult, Date.now() - started, stderr);
-  return { result: failure, ...common };
+  // A BUSY refusal is a structured result: the code, and the jobs that hold the scope with their attach commands.
+  const refused = refusedOverlaps
+    ? { ...failure, errorCode: failure.errorCode ?? BUSY_ERROR_CODE, overlaps: refusedOverlaps }
+    : failure;
+  return { result: refused, ...common };
+}
+
+/** The overlaps a refused start carried (JobOverlapRefusedError), or undefined for any other error. */
+function refusedOverlapsOf(error: unknown): JobOverlap[] | undefined {
+  const overlaps = (error as { overlaps?: unknown } | null)?.overlaps;
+  return Array.isArray(overlaps) && overlaps.length > 0 ? (overlaps as JobOverlap[]) : undefined;
 }
 
 /**

@@ -39,7 +39,10 @@ Owns: agent/plans/PLAN-ciquick-reds-1023-1.md, packages/cli/src/**, packages/cli
     (ticked) 2026-10-31 by d778be9d: commit:b9beaaa08 packages/cli/src/i18n/locales/en/cli.json:1; plus 34e20a1f (format), f54d4746 (search index, env baseline, archival), 7311b12d (summary lengths); check:i18n, check:format, check:ci-search-index, check:ci-account-env-retired rc 0 (investigation recorded late, --retro)
     (evidence) ci:quick on c4b84457: check:ci-agent-session-archival ok (the 5cc33087 move landed in 183ee8c8)
 - [ ] R4 Receipt: `npm run ci:quick` on a still tree. Accept: rc 0, or every remaining red named with its reason (check:ci-plan-implementation counts open Promoted boxes; check:ci-budget-freshness needs a nightly capture)
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+  (corrected 2026-11-11, R2) GitHub-only: CI parity -- the rc 0 itself runs locally, but check:ci-budget-freshness needs the scheduled CI capture, so the open red waits on CI.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench cli-bench
-- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after a VERIFIED vm:check on the same tree.
+    (ticked) 2026-11-10T14:05:18Z by d778be9d: live-proof lp-d4e1904525e2 bench cli-bench rc=0 v=cli:f47a394037e51464b49970f977e3626925fc67b5
+- [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after a VERIFIED vm:check on the same tree.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-11T06:35:36Z by d778be9d: live-proof lp-2d701fc43b73 hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13

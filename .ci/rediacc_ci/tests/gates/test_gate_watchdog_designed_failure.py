@@ -118,7 +118,7 @@ def test_retry_sweeper_still_excludes_this_workflow(gate):
     gate.assertions += 1
     gate.assert_contains(
         SWEEPER.read_text(encoding="utf-8"),
-        ".github/workflows/watchdog-monitor.yml",
+        ".github/workflows/ops-watchdog-monitor.yml",
         "the sweeper no longer excludes the watchdog by path",
     )
     gate.log_pass("path exclusion still in place alongside the marker")
@@ -143,13 +143,13 @@ def test_control_marker_removal_is_detectable(gate, tmp_path):
 
 def test_the_subject_is_reachable_from_the_workflow(gate):
     """PORT-ONLY. Everything above reads a FILE; nothing so far proves that file is the one the workflow runs. A subject nobody invokes is a subject whose assertions cost nothing to satisfy."""
-    workflow = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
+    workflow = paths.from_root(".github", "workflows", "ops-watchdog-monitor.yml")
     if not workflow.is_file():
-        gate.log_fail("watchdog-monitor.yml is missing, so the subject has no caller")
+        gate.log_fail("ops-watchdog-monitor.yml is missing, so the subject has no caller")
     gate.assertions += 1
     gate.assert_contains(
         workflow.read_text(encoding="utf-8"),
         "watchdog-monitor.cjs",
-        "watchdog-monitor.yml no longer names the script every case above reads",
+        "ops-watchdog-monitor.yml no longer names the script every case above reads",
     )
     gate.log_pass("the workflow still invokes %s" % paths.relative_to_root(SUT))

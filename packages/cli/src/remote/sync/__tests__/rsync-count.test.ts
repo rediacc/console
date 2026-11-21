@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { newRsyncCountState, updateRsyncCount } from '../rsync-count.js';
+import {
+  newRsyncBytesState,
+  newRsyncCountState,
+  updateRsyncBytes,
+  updateRsyncCount,
+} from '../rsync-count.js';
 
 // Captured from `rsync -a --verbose --inplace --no-whole-file --progress` over a tree of a.txt and sub/b.txt.
 const REAL_OUTPUT =
@@ -30,5 +35,40 @@ describe('updateRsyncCount', () => {
     const state = newRsyncCountState();
     expect(updateRsyncCount(state, 'sending incremental file list\n')).toBe(0);
     expect(updateRsyncCount(state, '(xfer#3, to-chk=0/4)')).toBe(3);
+  });
+});
+
+describe('updateRsyncBytes', () => {
+  const twoFiles =
+    '\r         1,000  50%    1.00MB/s    0:00:00  \r         2,000 100%    1.00MB/s    0:00:00 (xfr#1, to-chk=1/3)\n' +
+    '\r           500 100%    1.00MB/s    0:00:00 (xfr#2, to-chk=0/3)\n';
+
+  it('sums the finished files instead of keeping the last file size', () => {
+    expect(updateRsyncBytes(newRsyncBytesState(), twoFiles)).toBe(2500);
+  });
+
+  it('sums across chunks and counts a line seen through the carry once', () => {
+    const state = newRsyncBytesState();
+    updateRsyncBytes(state, '2,000 100%    1.00MB/s    0:00:00 (xfr#1, to-chk=1/3)\n');
+    expect(updateRsyncBytes(state, '500 100%    1.00MB/s    0:00:00 (xfr#2, to-chk=0/3)\n')).toBe(
+      2500
+    );
+  });
+
+  it('ignores a file still in flight and unrelated output', () => {
+    const state = newRsyncBytesState();
+    expect(updateRsyncBytes(state, 'a.txt\n   900  40%  1.00MB/s  0:00:01 \n')).toBe(0);
+  });
+
+  it('keys a final line split inside its xfr# digits by the whole number', () => {
+    const state = newRsyncBytesState();
+    // The filler pushes file 1's line out of the carry, so only a terminator keeps the split line off key 1.
+    updateRsyncBytes(
+      state,
+      `100 100%    1.00MB/s    0:00:00 (xfr#1, to-chk=11/12)\n${'x'.repeat(120)}\n`
+    );
+    updateRsyncBytes(state, '700 100%    1.00MB/s    0:00:00 (xfr#1');
+    // Without the terminator, the partial line stored 700 under key 1 and overwrote file 1.
+    expect(updateRsyncBytes(state, '2, to-chk=0/12)\n')).toBe(800);
   });
 });

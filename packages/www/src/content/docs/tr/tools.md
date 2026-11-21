@@ -10,8 +10,8 @@ tags:
 subcategory: cli-tools
 order: 9
 language: tr
-sourceHash: "3c5f1e7f8063438b"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "87078fbf0b283224"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 # Araçlar
@@ -248,7 +248,7 @@ Mevcut sürümü, güncelleme kanalını ve otomatik güncelleme yapılandırmas
 #### Yayın Kanalları
 
 ```bash
-rdc update --channel edge      # Sürekli dağıtılan üretim güncellemeleri
-rdc update --channel stable    # Edge'den 7 gün sonra tercih edilen (varsayılan)
+rdc update --channel edge      # Sürekli dağıtılan üretim güncellemeleri (varsayılan)
+rdc update --channel stable    # Edge'den 7 gün sonra tercih edilen
 rdc update --status            # Mevcut kanal ve sürüm bilgisini göster
 ```

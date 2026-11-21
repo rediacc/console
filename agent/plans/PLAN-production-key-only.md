@@ -254,28 +254,9 @@ There are two account keypairs today. Production is one keypair, the same for al
 
   Owns: private/account/CLAUDE.md, private/account (gitlink bump only), docs/agent-reference/local-env.md, private/renet/CLAUDE.md. Accept: `npm run check:ci-doc-region-parity` (the doc lint lane that covers these files) rc 0.
 
-- [ ] L1 [live] Park the six entries, after K1-K3 are on the branch and right before the merge. The window is short because main's `account dev` still needs `_DEV` until the merge.
-  1. `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env park ACCOUNT_ED25519_PRIVATE_KEY_DEV ACCOUNT_ED25519_PUBLIC_KEY_DEV ACCOUNT_JWT_SECRET_DEV ACCOUNT_SERVER_API_KEY_DEV ACCOUNT_X25519_PRIVATE_KEY_DEV ACCOUNT_X25519_PUBLIC_KEY_DEV`. It must print six MATCH lines with names only.
-  2. Record the ids (unchanged, from .ci/config/bws-secret-map.json:61-93) and the verdicts. No value is ever printed.
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) L1
 
-- [ ] K6 [writer] After L1: map refresh and the no-DEV gate (G1). Changes:
-  - Run `scripts/ops/bws-map-refresh.py` so bws-secret-map.json loses the six `_DEV` entries and gains no `__` entries.
-  - Remove .ci/config/bws-unrequested.json:51-74 and .ci/config/env-manifest.json:107-117 rows. Regenerate doc-registry.md with `npx tsx scripts/gen/gen-docs.ts --write`.
-  - Add the no-dev-keys gate (.ci/scripts/quality/check_no_dev_keys.py plus .ci/rediacc_ci/quality/no_dev_keys.py). It refuses:
-    - (a) any store name ending `_DEV` in the map, bws-unrequested, env-manifest, or the store side of any secret-supply spec;
-    - (b) the regex `(?<![A-Z0-9_])ACCOUNT_[A-Z0-9_]+_DEV(?![A-Z0-9_])` in tracked files under .ci/ (except .ci/shadow and .ci/cache), scripts/, .github/, private/renet/build.sh, private/account/{src,scripts,CLAUDE.md}, docs/;
-    - (c) any `__`-prefixed store name bound by a profile;
-    - (d) `RENET_KEYLESS` outside .github/workflows and tests;
-    - (e) a `CACHE_STORE_NAMES` value that is not exactly its own name.
-  - Register it in package.json, gate-costs.json and lane-durations.json.
-  - Change .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py:1158 to assemble the literal at run time (under PLAN-executor-durable-object-policy's lease).
-
-  Tests (gate test, controls):
-  - Each rule goes red on its planted fixture in a temp tree: a `_DEV` map row, an `ACCOUNT_JWT_SECRET_DEV` line in a .py, a `__X` profile binding, `RENET_KEYLESS=1` in rdc.sh, and a `_DEV` cache alias.
-  - `__ACCOUNT_X_DEV` text alone does not trip rule (b).
-  - The real tree is green.
-
-  Owns: .ci/config/bws-secret-map.json, .ci/config/bws-unrequested.json, .ci/config/env-manifest.json, scripts/data/doc-registry.md, .ci/scripts/quality/check_no_dev_keys.py (new), .ci/rediacc_ci/quality/no_dev_keys.py (new), .ci/rediacc_ci/tests/gates/test_gate_no_dev_keys.py (new), package.json (one script line), .ci/config/gate-costs.json, .ci/config/lane-durations.json, .ci/rediacc_ci/tests/test_deploy_deploy_proxy.py (line 1158 only). Accept: `npm run check:ci-bws-map`, `check:ci-bws-map-live` and `check:ci-secret-supply` rc 0, and the gate test rc 0.
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) K6
 
 - [x] N1 [writer] renet Go: delete the nolicense build. Changes:
   - Delete private/renet/pkg/license/runtime_nolicense.go. Drop `//go:build !nolicense` from runtime_licensed.go and the license tests (chain_interleave, crosslang_repo_license, renew, runtime_selection).
@@ -293,13 +274,14 @@ There are two account keypairs today. Production is one keypair, the same for al
 
   Owns: private/renet/build.sh, .github/workflows/ci-build-renet.yml (line 545 only), .ci/rediacc_ci/tests/test_renet_build_key_required.py, .ci/rediacc_ci/tests/test_private_renet_build_dev_flavor.py. Accept: those pytest files rc 0 (the keyless and `RENET_KEYLESS` cases now refused), and `env -u ACCOUNT_ED25519_PUBLIC_KEY bash private/renet/build.sh dev` rc 1.
 
-- [ ] N3 [writer] The console build path. Changes:
+- [x] N3 [writer] The console build path. Changes:
   - Delete .ci/rediacc_ci/core/renet_flavor.py and its test. rdc.sh:97 always uses `bin/`. local_common.py (:1238, :1445) and its shadow driver lose the flavor. build_renet.py drops the flag forwarding (:38-39).
   - After the build, `ensure_renet_built` runs `renet_key_gate` against the binary and refuses on anything but the production fingerprint.
   - rdc_sh_env_check, renet_types, drills (license.py, vm_check.py, upgrade_converge.py, tenant_isolation.py), start_backup_plane, private/license_e2e and proxies/license_e2e drop the flavor and use issued licences.
   - env-manifest.json, python-env-registry.json and check_workflow_env_provision.py lose `RDC_RENET_LICENSE`.
+    (ticked) 2026-11-04T19:26:55Z by d778be9d: commit:7e9e832bc pytest over the key, build, drill and env tests rc=0 with 169 passed and 1 skipped, the corrected git grep prints nothing, check:ci-env-manifest, check:ci-python-env-registry, check:ci-rdc-sh-env and check:ci-workflow-env-provision rc=0
 
-  Owns: the console files above and their tests in the header Owns. Accept: `PYTHONPATH=.ci python3 -m pytest` over every test named in Owns rc 0, `npm run check:ci-env-manifest`, `check:ci-python-env-registry`, `check:ci-rdc-sh-env` and `check:ci-workflow-env-provision` rc 0, and `git grep -n -E "nolicense|RDC_RENET_LICENSE|bin/enforce" -- .ci rdc.sh ':!.ci/shadow' ':!.ci/cache'` prints nothing.
+  Owns: the console files above and their tests in the header Owns. Accept: `PYTHONPATH=.ci python3 -m pytest` over every test named in Owns rc 0, `npm run check:ci-env-manifest`, `check:ci-python-env-registry`, `check:ci-rdc-sh-env` and `check:ci-workflow-env-provision` rc 0, and `git grep -n -E "nolicense|RDC_RENET_LICENSE|bin/enforce" -- .ci rdc.sh ':!.ci/shadow' ':!.ci/cache' ':!.ci/rediacc_ci/tests' ':!.ci/rediacc_ci/release/renet_key_gate.py' ':!.ci/rediacc_ci/drills/upgrade_converge.py'` prints nothing. (corrected ASKED:2026-11-04T16:07Z: the gate refuses a nolicense binary, the drill builds the old pre-isolation commit, and the tests assert the refusal; each is a live control.)
 
 - [x] N4 [writer] CLI. Changes:
   - packages/cli/src/services/renet/renet-execution.ts (:186, :300) and renet-clean-build-fs.ts drop the flavor flag and `bin/enforce`.
@@ -320,30 +302,37 @@ There are two account keypairs today. Production is one keypair, the same for al
   Owns: those docs. Accept: `npm run check:ci-prose-style` and `npm run check:ci-doc-region-parity` rc 0.
 
 - [ ] L2 [live] Bench redeploy with the production six, after the merge.
+  (corrected ASKED:2026-11-05T07:06Z) "After the merge" no longer applies: `deploy_bench` runs from the branch head, and steps 1 to 6 stand. The record is the version id, the smoke rc and the bench licence drill. L1 and K6 moved to agent/plans/PLAN-first-release-checks.md and are not prerequisites of this box.
   1. Run `bws_env exec --profile deploy-bench -- PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench`. Record the version id, smoke rc and rollback command.
   2. Run `prune_worker_secrets --region bench` to check for extras.
   3. Point eu-bench's `account.e2ePublicKey` at bench's new server-info key (`buildInitAccountUpdate`, packages/cli/src/commands/config.ts:127-146; the writer confirms the exact verb).
   4. Re-login with rediacc_ci.ops.login_bench.
   5. Run `--config eu-bench subscription refresh -m <each bench machine>`.
   6. Run a bench backup drill. It must pass with licences under `fingerprint:fb37f1ae16f8b7c0`.
+  (corrected 2026-11-11, R2) Local-route: deploy-bench -- deploy_bench runs from the branch head, and the version id, smoke rc and bench licence drill are the record.
 
-- [ ] L3 [live] hostinger, read-only first.
+- [x] L3 [live] hostinger, read-only first.
   1. Run `renet_key_gate` against the local `private/renet/bin/renet` built by `./rdc.sh`. It must pass and name `fingerprint:fb37f1ae16f8b7c0`.
-  2. Run `./rdc.sh machine status hostinger --config eu-remote --licenses -o json`. Every repo licence must be present under that fingerprint.
+  2. Run `./rdc.sh machine status hostinger --config eu-bench --licenses -o json`. Every repo licence must be present under that fingerprint.
   3. Then, with the operator's go (a mutating verb uploads renet), rerun the snapshot that failed on one repo and record its rc and record id.
+    (ticked) 2026-11-07T08:54:53Z by d778be9d: live 2026-11-07: (1) renet_key_gate private/renet/bin/renet rc=0 naming fingerprint:fb37f1ae16f8b7c0. (2) REDIACC_NO_PROVISION=1 ./rdc.sh --config eu-bench machine status hostinger --licenses -o json rc=1 on the old remote renet (it rejects the section list "licenses,system,stale-processes", a version-skew finding), so the full listing machine status hostinger -o json rc=0 was read: license_statuses 13 for 13 repositories, all status valid, lastRenewal keyId fingerprint:fb37f1ae16f8b7c0 on every one, none without a repository. (3) operator go ASKED:2026-11-07T08:27Z "Install now" (renet installed, so the snapshot uploads no renet): backup snapshot demo-heartbeat@hostinger --bwlimit 100Mbps --parallelism 2 rc=0, record id 20261107T084519Z-f6fab71abceb119f, status stored, identityVerdict same (the failed run had died on "no installed repository license", which any repo hit under the DEV key). Outputs /tmp/m/host-production-key-only-c0e271b1/ and /tmp/m/hostB/snap-demo-heartbeat.json
+  (live record 2026-11-07, review 49a73d02.3) Step 2 as written, `./rdc.sh machine status hostinger --config eu-bench --licenses -o json`, returned rc=1 in the tick's own record, and the tick closed on the substitute full listing `machine status hostinger -o json`. Re-run as written on 2026-11-07 against the installed renet (`REDIACC_NO_PROVISION=1 ./rdc.sh --config eu-bench machine status hostinger --licenses -o json`), it exits rc=0 with 13 license_statuses, all status valid, every lastRenewal keyId equal to the fingerprint that step 1 of the tick above shows renet_key_gate naming, so the licences are present under that fingerprint (output /tmp/m/rf/l3.out), so step 2 now holds as written.
 
 - [ ] L4 [live] Local machines and VMs.
   1. Run `./run.sh setup` on each dev box. The cache must now hold the production public key, which `renet_key_gate.key_fingerprint` checks.
   2. Run `./run.sh account reset` (DB only) or `rdc --dev subscription refresh -m <vm>` for each ops VM.
   3. Run `npm run vm:check -- --changed` green on the merged tree.
 
-- [ ] L5 [live] Replace the nolicense renet on hostinger, after N1-N3 land. Run `renet_key_gate` on the freshly built `private/renet/bin/renet` (it must pass and name `fingerprint:fb37f1ae16f8b7c0`), then `./rdc.sh --config eu-remote machine setup hostinger`, then confirm the remote `/usr/lib/rediacc/renet/current/renet` sha equals the local one and is no longer `sha256:f56e1ef1a638d33d`. Record both hashes and a snapshot rc.
+- [x] L5 [live] Replace the nolicense renet on hostinger, after N1-N3 land. Run `renet_key_gate` on the freshly built `private/renet/bin/renet` (it must pass and name `fingerprint:fb37f1ae16f8b7c0`), then `./rdc.sh --config eu-bench machine setup hostinger`, then confirm the remote `/usr/lib/rediacc/renet/current/renet` sha equals the local one and is no longer `sha256:f56e1ef1a638d33d`. Record both hashes and a snapshot rc.
+    (ticked) 2026-11-07T08:54:43Z by d778be9d: live 2026-11-07 under operator ruling ASKED:2026-11-07T08:27Z "Install now": PYTHONPATH=.ci python3 -m rediacc_ci.release.renet_key_gate private/renet/bin/renet rc=0 (ok, production key fingerprint:fb37f1ae16f8b7c0; retired key refused); ./rdc.sh --config eu-bench machine setup hostinger rc=0; remote /usr/lib/rediacc/renet/current/renet sha256:eb4796dcdcab71f38c9db84ad06c11d18210a467b670e9e12c5b914255d954fc equals the local sha256 (the previous remote renet was sha256:0e2223099081, and neither is sha256:f56e1ef1a638d33d); snapshot rc: backup snapshot demo-heartbeat@hostinger --bwlimit 100Mbps --parallelism 2 rc=0, snapshotId 20261107T084519Z-f6fab71abceb119f, status stored. Outputs /tmp/m/hostB/ and /tmp/m/host-production-key-only-c0e271b1/
 
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof after L2.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof after L2.
   Accept: live-proof bench cli-bench
   (note 2026-10-30) The operator dropped the account-smoke bench check as this box's Accept. The earlier ground, that the plan touched no account code, was wrong: L2 redeploys the account worker on bench with the production keys. The account worker's behaviour under those keys is proven by L2 itself (deploy_bench smoke rc, step 6's bench backup drill with licences under `fingerprint:fb37f1ae16f8b7c0`), and the nolicense removal (N4) adds packages/cli, whose bench check is cli-bench, so the box stays on that check.
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench after L3 and a verified vm:check on the same tree. Ask the operator first, because provisioning restarts the router.
+    (ticked) 2026-11-10T14:06:09Z by d778be9d: live-proof lp-7839152929cc bench cli-bench rc=0 v=cli:f47a394037e51464b49970f977e3626925fc67b5
+- [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench after L3 and a verified vm:check on the same tree. Ask the operator first, because provisioning restarts the router.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-11T06:37:35Z by d778be9d: live-proof lp-13644232e18a hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 
 ## Alternatives rejected
 

@@ -109,7 +109,11 @@
       "cookiePolicy": "Política de cookies",
       "refundPolicy": "Política de reembolso",
       "telemetryPolicy": "Política de telemetría",
-      "legalInformation": "Información legal"
+      "legalInformation": "Información legal",
+      "acceptableUsePolicy": "Política de uso aceptable",
+      "dataProcessingAgreement": "Acuerdo de encargo de tratamiento de datos",
+      "serviceLevelAgreement": "Acuerdo de nivel de servicio",
+      "enterpriseLicense": "Licencia Enterprise"
     },
     "legalDisclosure": {
       "summary": "{{companyName}} | Código registral {{registryCode}} | IVA {{vatNumber}} |",
@@ -331,7 +335,25 @@
     "subtitle": "Tu cuenta, facturación y configuraciones permanecen en la región que elijas.",
     "reassurance": "Los datos de tus servidores y copias de seguridad permanecen en tu propia infraestructura.",
     "footer": "Elige la región más cercana a ti o la que requiera tu organización.",
-    "footerNote": "No se puede cambiar después del registro."
+    "footerNote": "No se puede cambiar después del registro.",
+    "resolving": "Buscando tu región...",
+    "countdown": "Te llevamos a {{region}} en {{seconds}} segundos.",
+    "countdownAnnounce": "Te llevamos a {{region}} en {{seconds}} segundos. Elige Cancelar para quedarte aquí o Cambiar región para elegir otra.",
+    "cancel": "Cancelar",
+    "change": "Cambiar región",
+    "enterprise": "¿Eres cliente empresarial?",
+    "lookup": {
+      "description": "Introduce tu correo de trabajo para encontrar el inicio de sesión de tu organización.",
+      "label": "Correo de trabajo",
+      "placeholder": "tu@empresa.com",
+      "privacy": "Solo se envía el dominio para encontrar tu región. Tu correo solo rellena de antemano la página de inicio de sesión.",
+      "submit": "Continuar",
+      "checking": "Comprobando...",
+      "back": "Volver a las regiones",
+      "invalid": "Introduce un dominio de empresa, como company.com.",
+      "miss": "No se encontró un inicio de sesión de empresa para ese dominio. Elige una región.",
+      "error": "La búsqueda no está disponible ahora mismo. Elige una región."
+    }
   },
   "solutions": {
     "categories": {

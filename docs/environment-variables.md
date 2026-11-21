@@ -56,12 +56,13 @@ Tokens obtained interactively are stored per config at `<configDir>/api-token-<c
 | `REDIACC_UPDATE_INTERVAL_HOURS` | Auto-update check cooldown. |
 | `REDIACC_SSH_LINGER_MS` | SSH connection-pool idle linger. |
 | `REDIACC_PROVISION_LOCK_TIMEOUT_MS` | Renet provisioning lock timeout. |
-| `REDIACC_ALLOW_DOWNGRADE` | Permits renet binary downgrade during provisioning. |
+| `REDIACC_ALLOW_DOWNGRADE` | Permits a renet replacement the provisioner refuses by default: a downgrade, a release binary over a dev build, or a binary whose build stamp it cannot verify. An executor never uploads, with or without it. |
 | `REDIACC_ALLOW_DIRTY_RENET` | Permits uploading a dev renet binary built from a source tree with uncommitted or untracked changes. Mutating verbs only; read-only verbs never upload. |
 | `REDIACC_SKIP_ROUTER_RESTART` / `REDIACC_SKIP_SETUP_CHECK` | Renet execution skips (advanced). The router-restart skip affects mutating verbs only: read-only verbs never replace renet or restart the router. |
 | `REDIACC_DEFAULT_OUTPUT` | Default output format when `--output` is unset. |
 | `REDIACC_VSCODE_PATH` | Explicit VS Code executable path. |
 | `REDIACC_LANG` | CLI language override. |
+| `REDIACC_FEEDBACK_HINT` | `0` turns off the `Unexpected? rdc feedback report --last` line a failing command prints (stderr in text mode, a `next` option in the JSON envelope). |
 | `REDIACC_TELEMETRY_DISABLED` / `REDIACC_TELEMETRY_ENDPOINT` | Telemetry opt-out / dev endpoint. |
 | `NO_COLOR` | Disables ANSI color (informal standard; any non-empty value). |
 

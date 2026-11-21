@@ -40,6 +40,11 @@ export function dropAccessBindings(access: AccessConfig, machineName: string): A
   return { ...access, keys };
 }
 
+/** Whether any access key binds `machineName`. */
+export function hasAccessBindings(access: AccessConfig | undefined, machineName: string): boolean {
+  return Object.values(access?.keys ?? {}).some((key) => key.machines?.[machineName] !== undefined);
+}
+
 export abstract class ConfigAccessService extends ConfigServiceBase {
   /** Load the current (or named) config, failing when none is active. */
   protected abstract requireSelfHosted(configName?: string): Promise<RdcConfig>;

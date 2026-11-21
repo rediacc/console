@@ -7,6 +7,7 @@ import { t } from '../i18n/index.js';
 import { parseRetentionSpec, RetentionSpecError } from '../services/backup/backup-retention.js';
 import {
   bandwidthToBytesPerSecond,
+  destinationTarget,
   parseCpuLimitPercent,
   readCapBytesPerSecond,
 } from '../services/backup/backup-strategy-validate.js';
@@ -26,6 +27,10 @@ interface UpsertDestOpts {
   destinationName: string;
   enabled?: boolean;
   bwlimit?: string;
+  /** A registered store id the destination writes to; absent keeps the stored one (or `home`). */
+  target?: string;
+  /** Makes the destination a replicate one: the account server copies this store into `target`, so the machine uploads nothing to it. */
+  replicateFrom?: string;
 }
 
 /**
@@ -48,8 +53,9 @@ function definedOnly(o: Record<string, unknown>): Record<string, unknown> {
  * Build the destination record to store, from the flags. Pure: no config reads,
  * no writes, so a test can drive the exact object the operator's flags produce
  * and hand it straight to the unit generator. Every destination is the chunk
- * store (`hosted-service`); the stored `endpoint` and `vaultContent` of an
- * existing destination are kept by the merge in `addBackupDestination`.
+ * store (`hosted-service`); `target` names the registered store it writes to, and an
+ * existing destination's stored target is kept by the merge in `addBackupDestination`
+ * when the flag is absent.
  */
 export function buildDestination(
   o: Omit<UpsertDestOpts, 'strategyName'>
@@ -61,9 +67,31 @@ export function buildDestination(
       name: o.destinationName,
       enabled: o.enabled,
       bandwidthLimit: o.bwlimit,
+      target: o.target,
+      ...(o.replicateFrom === undefined ? {} : { mode: 'replicate', from: o.replicateFrom }),
     }),
     'backup destination'
   );
+}
+
+/** A replicate destination copies `from` into its target: refuse a self-copy where it is typed, with the target the merge would leave (the flag, else the stored one, else `home`). */
+export async function assertReplicaIsNotSelfCopy(
+  o: Pick<UpsertDestOpts, 'strategyName' | 'destinationName' | 'target' | 'replicateFrom'>
+): Promise<void> {
+  if (o.replicateFrom === undefined && o.target === undefined) return;
+  const stored = (await configService.getBackupStrategy(o.strategyName))?.destinations.find(
+    (d) => d.name === o.destinationName
+  );
+  // Without --replicate-from the stored source stands, so a new --target is checked against it too.
+  const storedFrom = stored?.mode === 'replicate' ? stored.from : undefined;
+  const from = o.replicateFrom ?? storedFrom;
+  if (from === undefined) return;
+  const target = destinationTarget({ target: o.target ?? stored?.target });
+  if (from === target) {
+    throw new ValidationError(
+      `Backup destination "${o.destinationName}" would replicate "${from}" into itself; pass --target <storeId> naming a different store than ${o.replicateFrom === undefined ? 'the stored source' : '--replicate-from'}.`
+    );
+  }
 }
 
 export async function upsertBackupDestination(o: UpsertDestOpts): Promise<void> {

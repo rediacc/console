@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_PASSWORD } from '../src/constants';
+import { assertLandlockSelected } from '../src/utils/landlock';
 import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
@@ -11,13 +12,14 @@ import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunc
  * resize operations, and cleanup.
  */
 test.describe
-  .serial('Full Repository Workflow @bridge @integration', () => {
+  .serial('Full Repository Workflow @bridge @integration @landlock', () => {
     let runner: RenetFunctionsTestRunner;
     const repositoryName = e2eRepoGuid();
     const datastorePath = DEFAULT_DATASTORE_PATH;
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
+      await assertLandlockSelected(runner);
       // This suite does not call resetWorkerState itself, so it depends on whichever suite ran before it (project order is fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) not having wiped the shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe.
       await runner.ensureDatastoreReady(datastorePath);
     });
@@ -25,7 +27,7 @@ test.describe
     test.afterAll(async () => {
       // Cleanup: ensure repository is unmounted and deleted even if tests fail
       try {
-        await runner.repositoryUnmount(repositoryName, datastorePath);
+        await runner.repositoryUnmount(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
       } catch {
         /* ignore */
       }
@@ -108,7 +110,11 @@ test.describe
 
     // Phase 5: Resize (requires unmounted repo)
     test('5.1 unmount: unmount for resize', async () => {
-      const result = await runner.repositoryUnmount(repositoryName, datastorePath);
+      const result = await runner.repositoryUnmount(
+        repositoryName,
+        datastorePath,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -135,15 +141,16 @@ test.describe
  * Tests containers within the repository context.
  */
 test.describe
-  .serial('Container Repository Integration @bridge @integration', () => {
+  .serial('Container Repository Integration @bridge @integration @landlock', () => {
     let runner: RenetFunctionsTestRunner;
     const repositoryName = e2eRepoGuid();
     const containerName = 'test-nginx';
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const networkId = DEFAULT_NETWORK_ID;
 
-    test.beforeAll(() => {
+    test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
+      await assertLandlockSelected(runner);
     });
 
     test.afterAll(async () => {
@@ -154,7 +161,7 @@ test.describe
         /* ignore */
       }
       try {
-        await runner.repositoryUnmount(repositoryName, datastorePath);
+        await runner.repositoryUnmount(repositoryName, datastorePath, networkId);
       } catch {
         /* ignore */
       }
@@ -263,7 +270,11 @@ test.describe
     });
 
     test('10. unmount repository', async () => {
-      const result = await runner.repositoryUnmount(repositoryName, datastorePath);
+      const result = await runner.repositoryUnmount(
+        repositoryName,
+        datastorePath,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -293,7 +304,11 @@ test.describe('Error Recovery Integration @bridge @integration', () => {
     const mount = await runner.repositoryMount(nonexistent, TEST_PASSWORD, DEFAULT_DATASTORE_PATH);
     const up = await runner.repositoryUp(nonexistent, DEFAULT_DATASTORE_PATH);
     const down = await runner.repositoryDown(nonexistent, DEFAULT_DATASTORE_PATH);
-    const unmount = await runner.repositoryUnmount(nonexistent, DEFAULT_DATASTORE_PATH);
+    const unmount = await runner.repositoryUnmount(
+      nonexistent,
+      DEFAULT_DATASTORE_PATH,
+      DEFAULT_NETWORK_ID
+    );
     const rm = await runner.repositoryRm(nonexistent, DEFAULT_DATASTORE_PATH);
 
     // Strict operations - fail because the resource doesn't exist. up is strict: it implies mount, and SafeStartup refuses a mount with no credentials for a repo that was never created (observed live).

@@ -1,5 +1,8 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { Command } from 'commander';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   format: 'table' as 'json' | 'table',
@@ -11,7 +14,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../i18n/index.js', () => ({ t: (key: string) => key }));
-vi.mock('../../utils/errors.js', () => ({
+vi.mock('../../utils/errors.js', async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
   getOutputFormat: () => mocks.format,
   handleError: (error: unknown) => {
     throw error;
@@ -34,6 +38,8 @@ vi.mock('../../services/config/config-resources.js', () => ({
 }));
 
 const { registerGpuCommands } = await import('../machine/gpu.js');
+const { setCommandJobDeps } = await import('../../services/jobs/command-job.js');
+const { TicketStore } = await import('../../services/jobs/ticket-store.js');
 
 const REPORT = {
   inventory: {
@@ -70,10 +76,36 @@ async function run(): Promise<void> {
   await program.parseAsync(['machine', 'gpu', 'list', 'm1'], { from: 'user' });
 }
 
+let dir: string;
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.format = 'table';
-  mocks.execute.mockResolvedValue({ success: true, stdout: JSON.stringify(REPORT) });
+  mocks.execute.mockResolvedValue({
+    success: true,
+    exitCode: 0,
+    durationMs: 1,
+    state: 'succeeded',
+    stdout: JSON.stringify(REPORT),
+  });
+  dir = mkdtempSync(join(tmpdir(), 'machine-gpu-list-'));
+  const store = new TicketStore('test', dir);
+  setCommandJobDeps({
+    executor: () => ({ execute: mocks.execute }),
+    store: () => store,
+    stepDeps: () =>
+      Promise.resolve({
+        observer: { configName: 'test' },
+        warn: () => undefined,
+        claim: ({ steps }) =>
+          Promise.resolve(steps.map((name) => ({ name, result: 'claimed' as const }))),
+      }),
+  });
+});
+
+afterEach(() => {
+  setCommandJobDeps();
+  rmSync(dir, { recursive: true, force: true });
 });
 
 describe('rdc machine gpu list', () => {
@@ -115,6 +147,9 @@ describe('rdc machine gpu list', () => {
   it('says so when the machine has no GPUs and no recorded inventory', async () => {
     mocks.execute.mockResolvedValue({
       success: true,
+      exitCode: 0,
+      durationMs: 1,
+      state: 'succeeded',
       stdout: JSON.stringify({ inventory: { gpus: [], specs: [] }, recorded: false, grants: [] }),
     });
     await run();
@@ -125,7 +160,13 @@ describe('rdc machine gpu list', () => {
   });
 
   it('reports a failed dispatch without rendering', async () => {
-    mocks.execute.mockResolvedValue({ success: false, error: 'boom' });
+    mocks.execute.mockResolvedValue({
+      success: false,
+      exitCode: 1,
+      durationMs: 1,
+      state: 'failed',
+      error: 'boom',
+    });
     await run();
     expect(mocks.fail).toHaveBeenCalled();
     expect(mocks.print).not.toHaveBeenCalled();

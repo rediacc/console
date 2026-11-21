@@ -20,6 +20,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { hostname } from 'node:os';
+import { t } from '../../i18n/index.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { assertJobId } from '../executor/job-client.js';
 import type { RenetEvent } from '../executor/types.js';
@@ -32,7 +33,14 @@ import {
   toSpoolSteps,
   toTicketSteps,
 } from './steps.js';
-import type { Ticket, TicketState, TicketStep, TicketStore, TicketVia } from './ticket-store.js';
+import type {
+  ExpiredReason,
+  Ticket,
+  TicketState,
+  TicketStep,
+  TicketStore,
+  TicketVia,
+} from './ticket-store.js';
 
 // --- the observation ---------------------------------------------------------
 
@@ -83,6 +91,30 @@ interface ClaimRequest {
   done?: boolean;
 }
 
+/** `renet job claim` exits with this when the job is not in the spool: the steps it owes can never run. */
+const JOB_NOT_FOUND_EXIT = 16;
+
+/** Each expiry reason's text, spelled as literal keys so the orphan check sees every one of them. */
+const REASON_TEXT: Record<ExpiredReason, () => string> = {
+  gone: () => t('commands.job.steps.reason.gone'),
+  'never-started': () => t('commands.job.steps.reason.never-started'),
+  age: () => t('commands.job.steps.reason.age'),
+  dismissed: () => t('commands.job.steps.reason.dismissed'),
+};
+
+/** The one line printed when a ticket is given up on: `job X: steps abandoned (reason)`. */
+export function abandonedLine(jobId: string, reason: ExpiredReason): string {
+  return t('commands.job.steps.abandoned', { jobId, reason: REASON_TEXT[reason]() });
+}
+
+/** The claim reached the machine and the job is gone from it. */
+export class JobGoneError extends Error {
+  constructor(jobId: string) {
+    super(`Job ${jobId} is gone from the machine`);
+    this.name = 'JobGoneError';
+  }
+}
+
 /** `renet job claim --id <jobId> --steps a,b [--done]`, run on the job's machine. */
 export type ClaimExec = (request: ClaimRequest) => Promise<ClaimAnswer[]>;
 
@@ -110,10 +142,43 @@ export interface StepRunReport {
   gated: string[];
   /** Due, but not started before the budget ran out. */
   deferred: string[];
+  /**
+   * Wall time of the work done here, in run order: `claim` for each claim exec, then each step that ran (its handler
+   * and its machine-side done marker), so a command can account for the time its steps took.
+   */
+  timings?: StepTiming[];
 }
 
+/** One timed piece of step work: a step's name, or `claim` for a claim exec. */
+interface StepTiming {
+  name: string;
+  duration_ms: number;
+  startedAtMs: number;
+}
+
+/** The name a claim exec is timed under in {@link StepRunReport.timings}. */
+export const CLAIM_TIMING = 'claim';
+
 export function emptyStepReport(): StepRunReport {
-  return { ran: [], doneElsewhere: [], heldElsewhere: [], failed: [], gated: [], deferred: [] };
+  return {
+    ran: [],
+    doneElsewhere: [],
+    heldElsewhere: [],
+    failed: [],
+    gated: [],
+    deferred: [],
+    timings: [],
+  };
+}
+
+/** Run `fn`, recording its wall time under `name` in the report, even when it throws. */
+async function timed<T>(report: StepRunReport, name: string, fn: () => Promise<T>): Promise<T> {
+  const startedAtMs = Date.now();
+  try {
+    return await fn();
+  } finally {
+    (report.timings ??= []).push({ name, duration_ms: Date.now() - startedAtMs, startedAtMs });
+  }
 }
 
 /** Steps still owed after a run: whatever another observer of this config may pick up. */
@@ -146,6 +211,7 @@ function openStepSession(
 ): StepSession {
   const { jobId, machine } = ticket;
   const resolve = deps.resolve ?? resolveStepHandler;
+  let gone = false;
   const recordDone = (name: string) => store.append('step-done', ticket.requestId, { step: name });
 
   const run = async (step: TicketStep): Promise<boolean> => {
@@ -171,9 +237,19 @@ function openStepSession(
 
   return {
     async claim(names) {
+      if (gone) return undefined;
       try {
-        return await deps.claim({ machine, jobId, steps: names });
+        return await timed(report, CLAIM_TIMING, () =>
+          deps.claim({ machine, jobId, steps: names })
+        );
       } catch (error) {
+        if (error instanceof JobGoneError) {
+          // The job left the spool, so no observer can ever claim its steps: close the ticket instead of retrying forever.
+          gone = true;
+          store.append('expired', ticket.requestId, { reason: 'gone' });
+          deps.warn(abandonedLine(jobId, 'gone'));
+          return undefined;
+        }
         deps.warn(errorText(error));
         report.failed.push(...names);
         return undefined;
@@ -190,13 +266,17 @@ function openStepSession(
         report.heldElsewhere.push(step.name);
         return;
       }
-      if (!(await run(step))) return;
-      // The step ran: record it here even if the machine-side done marker fails, since every step is idempotent or keyed by job id and a stale-claim rerun changes nothing.
-      try {
-        await deps.claim({ machine, jobId, steps: [step.name], done: true });
-      } catch (error) {
-        deps.warn(errorText(error));
-      }
+      const ran = await timed(report, step.name, async () => {
+        if (!(await run(step))) return false;
+        // The step ran: record it here even if the machine-side done marker fails, since every step is idempotent or keyed by job id and a stale-claim rerun changes nothing.
+        try {
+          await deps.claim({ machine, jobId, steps: [step.name], done: true });
+        } catch (error) {
+          deps.warn(errorText(error));
+        }
+        return true;
+      });
+      if (!ran) return;
       recordDone(step.name);
       report.ran.push(step.name);
     },
@@ -349,16 +429,18 @@ async function runUnspooledSteps(
   for (const step of dueSteps(ticket, job.state, job.markers)) {
     try {
       const handler = await resolve(step.name);
-      await handler({
-        jobId: '',
-        machine: ticket.machine ?? '',
-        params: step.params ?? {},
-        state: job.state,
-        output: job.output,
-        finishedAt: job.finishedAt,
-        ...(job.exitCode === undefined ? {} : { exitCode: job.exitCode }),
-        ...(job.markers === undefined ? {} : { markers: job.markers }),
-      });
+      await timed(report, step.name, () =>
+        handler({
+          jobId: '',
+          machine: ticket.machine ?? '',
+          params: step.params ?? {},
+          state: job.state,
+          output: job.output,
+          finishedAt: job.finishedAt,
+          ...(job.exitCode === undefined ? {} : { exitCode: job.exitCode }),
+          ...(job.markers === undefined ? {} : { markers: job.markers }),
+        })
+      );
       store.append('step-done', ticket.requestId, { step: step.name });
       report.ran.push(step.name);
     } catch (error) {
@@ -367,6 +449,16 @@ async function runUnspooledSteps(
     }
   }
   return report;
+}
+
+/**
+ * A retried start attaches to the job the first start made and renet keeps that start's params and steps, so the ticket
+ * keeps its plan too: the retry's own may carry ids minted afresh (a commit guid). A start that was refused made no
+ * job, so the retry's plan stands.
+ */
+function keepsFirstPlan(store: TicketStore, requestId: string): boolean {
+  const prior = store.tickets().find((t) => t.requestId === requestId);
+  return prior !== undefined && (prior.jobId !== undefined || !prior.acknowledged);
 }
 
 export async function runJob<R>(
@@ -378,6 +470,8 @@ export async function runJob<R>(
   const requestId = (deps.mintRequestId ?? randomUUID)();
   const startedAt = (deps.now ?? (() => new Date()))().toISOString();
 
+  const plan = keepsFirstPlan(store, requestId) ? {} : { steps: toTicketSteps(steps) };
+
   store.append('starting', requestId, {
     verb: call.verb,
     function: call.function,
@@ -385,7 +479,7 @@ export async function runJob<R>(
     repo: call.repo,
     via: call.via ?? { kind: 'ssh' },
     startedAt,
-    steps: toTicketSteps(steps),
+    ...plan,
   });
 
   const outcome = await call.start({ requestId, steps: toSpoolSteps(steps) });
@@ -513,6 +607,7 @@ function liveClaimExec(observer: ConfigIdentity): ClaimExec {
           stderr += data.toString();
         },
       });
+      if (exitCode === JOB_NOT_FOUND_EXIT) throw new JobGoneError(request.jobId);
       if (exitCode !== 0) {
         const detail = (stderr || stdout).trim().split('\n')[0] ?? '';
         throw new Error(

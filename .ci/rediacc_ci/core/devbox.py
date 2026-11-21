@@ -1,4 +1,4 @@
-"""`.ci/lib/devbox.sh`, ported function for function: all fifty-five of them.
+"""`.ci/lib/devbox.sh`, ported function for function: all fifty-four of them (`devbox_build_image` was retired: a pinned digest cannot be built locally).
 
 PORTED FROM `.ci/lib/devbox.sh` (1606 lines, 54 functions).
 The twin, `.ci/lib/devbox.sh`, is DELETED (PLAN-retire-bash-oracles B3): its transcripts are frozen in `.ci/rediacc_ci/tests/goldens/twins/lib.devbox.jsonl`, and `.ci/rediacc_ci/setup/bridge.py` runs `devbox_*` bodies through this module in process.
@@ -12,7 +12,7 @@ EVERY FUNCTION THE TWIN DEFINES HAS A COUNTERPART, in two shapes.
   THE THREE PURE ONES are module-level functions, exactly as the first slice (2026-09-23) shipped them: `slugify` (`devbox_slugify:186`), `slug_drift` (`devbox_slug_drift:242`) and `route_label` (`devbox_route_label:902`). Their whole answer is computation over their own arguments, and they stay importable without constructing anything.
 
   THE OTHER FIFTY-ONE are methods of `Devbox`, one per function, named by the function's name minus its `devbox_` / `_devbox_` prefix: `Devbox.worktree` is `devbox_worktree`, `Devbox.bind_if_present` is `_devbox_bind_if_present`, `Devbox.exec` is `devbox_exec`.
-  `Devbox` also carries the three pure functions as printing methods, so a caller (and the differential driver) can reach all fifty-five through one surface, `Devbox.invoke("<bash name>", argv)`, which binds positional arguments the way bash does.
+  `Devbox` also carries the three pure functions as printing methods, so a caller (and the differential driver) can reach all fifty-four through one surface, `Devbox.invoke("<bash name>", argv)`, which binds positional arguments the way bash does.
 
 EACH METHOD TAKES ITS ARGUMENTS AS BASH DOES, as strings in `*argv`, and RETURNS AN EXIT STATUS. What the function prints goes to the instance's `stdout` and `stderr` streams, never to a return value, because every caller of the twin reads a function's answer by capturing what it PRINTED (`d="$(devbox_docker)"`) and its verdict by its STATUS (`devbox_container_running || ...`).
 A port that returned values instead would have to restate, at every call site, which of the two channels the twin's caller really read.
@@ -92,6 +92,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import io
+import json
 import os
 import re
 import stat
@@ -101,7 +102,6 @@ import time
 from typing import Any
 
 from rediacc_ci import log
-from rediacc_ci.core import release_age
 from rediacc_ci.core.common import is_ci
 from rediacc_ci.well_known import ACCOUNT_DEV_PORT, IMAGE_REGISTRY
 from rediacc_ci.well_known import DEVBOX_UID_IMAGE_REPO as WK_DEVBOX_UID_IMAGE_REPO
@@ -139,7 +139,49 @@ UNBOUND_STATUS = 1
 # --------------------------------------------------------------------------- the constants `.ci/config/constants.sh:123-157` defines ---------------------------------------------------------------------------
 # COPIED, NOT READ, and `test_core_devbox.py::test_the_constants_match_constants_sh` parses the `readonly` lines of that file on every run and fails on any drift. Reading them at import would mean parsing bash from Python at every call; copying them and checking the copy is the pattern `account.py` set.
 
-DEVBOX_IMAGE = IMAGE_REGISTRY + "/devcontainer:latest"
+# The run image is the pin in `.ci/config/devcontainer-image.json`, "<IMAGE_REGISTRY>/<image>@<digest>", the pin file storing the repository name under the registry (PLAN-two-track-merge-dev D6). A missing or malformed pin raises at import: there is no fallback to a floating tag.
+DEVCONTAINER_PIN_REL = ".ci/config/devcontainer-image.json"
+RUNNER_IMAGE_ENV = "CI_RUNNER_IMAGE"
+_PIN_DIGEST = re.compile(r"sha256:[0-9a-f]{64}")
+_PIN_IMAGE = re.compile(r"[a-z0-9][a-z0-9./_-]*")
+
+
+def image_pin(path: str) -> str:
+    """`<IMAGE_REGISTRY>/<image>@<digest>` from the pin file at `path`; any defect in it is a RuntimeError naming the file."""
+    try:
+        with open(path, encoding="utf-8") as handle:
+            doc = json.load(handle)
+    except (OSError, ValueError) as exc:
+        raise RuntimeError("devcontainer image pin unreadable: %s: %s" % (path, exc)) from exc
+    fields = doc if isinstance(doc, dict) else {}
+    image = fields.get("image")
+    digest = fields.get("digest")
+    stage = fields.get("stage")
+    if (
+        not isinstance(image, str)
+        or not _PIN_IMAGE.fullmatch(image)
+        or ":" in image
+        or "." in image.split("/", 1)[0]
+        or not isinstance(digest, str)
+        or not _PIN_DIGEST.fullmatch(digest)
+        or not isinstance(stage, str)
+        or not stage
+    ):
+        raise RuntimeError(
+            "devcontainer image pin malformed: %s needs {image, digest sha256:<64 hex>, stage}"
+            % path
+        )
+    return "%s/%s@%s" % (IMAGE_REGISTRY, image, digest)
+
+
+DEVBOX_IMAGE = image_pin(
+    os.path.join(
+        os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        ),
+        DEVCONTAINER_PIN_REL,
+    )
+)
 # The LOCAL repository of the per-operator derived image (`.devcontainer/Dockerfile.uid`): the base with `vscode` renumbered to the host's ids. Deliberately not a ghcr.io/ name, so a derived tag can never be mistaken for something to push.
 DEVBOX_UID_IMAGE_REPO = WK_DEVBOX_UID_IMAGE_REPO
 DEVBOX_PORT_RANGE_START = 17000
@@ -539,7 +581,7 @@ def repo_root_default() -> str:
 
 
 class Devbox:
-    """The fifty-one side-effecting functions, over one environment and one pair of streams.
+    """The fifty side-effecting functions, over one environment and one pair of streams.
 
     CONSTRUCT ONE PER TOP-LEVEL CALL. The instance carries the shell state bash would carry across one invocation (errexit, the current streams) and the configuration bash resolves at SOURCE time (`CONSOLE_ROOT_DIR`, the state file, `DEVBOX_LIB_DIR`, `DEVBOX_CI_DIR`, whether stderr gets colour). A long-lived instance would freeze the source-time answers across calls, which is also what a long-lived shell does, and is fine; it is the per-call mutable part that must not leak.
 
@@ -1221,9 +1263,9 @@ class Devbox:
         return 0
 
     def ensure_image(self, *argv: str) -> int:
-        """`devbox_ensure_image`, `.ci/lib/devbox.sh:382-409`: present (and not forced), else pull, else build; then `ensure_uid_image` in every arm that obtained the base.
+        """`devbox_ensure_image`, `.ci/lib/devbox.sh:382-409`: present (and not forced), else pull the pinned digest; then `ensure_uid_image` in every arm that obtained the base.
 
-        ghcr.io/rediacc/* is private. A GitHub token needs the read:packages scope to pull it -- repo+workflow is NOT enough, and the registry's only signal is the word "denied", which reads like the image does not exist. So a failed pull explains that and falls back to building from .devcontainer/Dockerfile, and the build's status is the function's.
+        ghcr.io/rediacc/* is private. A GitHub token needs the read:packages scope to pull it -- repo+workflow is NOT enough, and the registry's only signal is the word "denied", which reads like the image does not exist. A failed pull is an error naming the digest and the fix; the twin's fallback to a local build is gone (Rule T delta).
         """
         force_pull = self._opt(argv, 0, "false")
         d = self.docker_words()
@@ -1237,50 +1279,13 @@ class Devbox:
         )
         if self.run([*d, "pull", DEVBOX_IMAGE])[0] == 0:
             return self.checked(self.ensure_uid_image())
-        self.log("warn", "Could not pull %s" % DEVBOX_IMAGE)
+        # A pinned digest has no local-build fallback: a local build can never equal the digest, so it would run an image whose receipt-salt term (CI_RUNNER_IMAGE) names something else.
+        self.log("error", "Could not pull the pinned devbox image %s" % DEVBOX_IMAGE)
         self.log(
             "info",
-            "That registry is private. To pull it, a GitHub token needs the read:packages scope:",
+            "Log in to ghcr.io (a GitHub token with read:packages: echo $PAT | docker login ghcr.io -u <user> --password-stdin) and check the network, then re-run.",
         )
-        self.log("info", "    echo $PAT | docker login ghcr.io -u <user> --password-stdin")
-        self.log(
-            "info", "Falling back to building the image locally from .devcontainer/Dockerfile."
-        )
-        if self.cond(self.build_image) != 0:
-            return 1
-        return self.checked(self.ensure_uid_image())
-
-    def build_image(self, *_argv: str) -> int:
-        """`devbox_build_image`, `.ci/lib/devbox.sh:413-429`: build the devcontainer image from source.
-
-        The fallback for a machine with no registry access. Slower than a pull (this Dockerfile installs a Go toolchain, Node, a desktop and Playwright deps), but it needs no credentials, which is the whole point. The Dockerfile is looked for under the MOUNT ROOT, so a linked worktree builds from its main checkout's `.devcontainer`.
-        """
-        d = self.docker_words()
-        status, root = self.sub(self.mount_root)
-        self.checked(status)
-        dockerfile_dir = root + "/.devcontainer"
-        if not os.path.isfile(dockerfile_dir + "/Dockerfile"):
-            self.log("error", "No Dockerfile at %s" % dockerfile_dir)
-            return 1
-        # NPM_BEFORE: the release-age cutoff the Dockerfile's `npm install -g` lines require (an empty one fails the build). `.ci/lib/devbox.sh` asks the same module through its `npm-before` verb.
-        npm_before = release_age.npm_before()
-        self.log("step", "Building %s locally (this takes a while)" % DEVBOX_IMAGE)
-        build = [
-            *d,
-            "build",
-            "-t",
-            DEVBOX_IMAGE,
-            "--build-arg",
-            "NPM_BEFORE=%s" % npm_before,
-            "-f",
-            dockerfile_dir + "/Dockerfile",
-            dockerfile_dir,
-        ]
-        if self.run(build)[0] != 0:
-            self.log("error", "Local image build failed")
-            return 1
-        self.log("info", "Built %s" % DEVBOX_IMAGE)
-        return 0
+        return 1
 
     # ------------------------------------------------------------------ THE RUN IMAGE
 
@@ -1493,6 +1498,14 @@ class Devbox:
             return stat.S_ISSOCK(os.stat(path).st_mode)
         return False
 
+    def quick_clones_dir(self) -> str:
+        """The directory holding the ci:quick clones, by the rule of `cloneDirFor` in `scripts/ci-runner/quick-clone.ts`: `CI_QUICK_CLONE_DIR` when set (that clone itself), else `${XDG_CACHE_HOME:-$HOME/.cache}/rediacc/ci-quick-clones`, the parent of every checkout's clone."""
+        override = self.env.get("CI_QUICK_CLONE_DIR")
+        if override:
+            return os.path.abspath(override)
+        base = self.env.get("XDG_CACHE_HOME") or os.path.join(self.env.get("HOME", ""), ".cache")
+        return os.path.join(base, "rediacc", "ci-quick-clones")
+
     def lease_dir_ready(self, path: str) -> bool:
         """`[ -d <path> ] || mkdir -m 700 <path>`: the lease pool is there, made now when it was not."""
         return os.path.isdir(path) or self.make_lease_dir(path)
@@ -1530,6 +1543,32 @@ class Devbox:
         self.checked(status)
         if lease_src and DEVBOX_CORE_LEASE_DEST not in present:
             self.write(DEVBOX_CORE_LEASE_DEST + "\n")
+        # The ci:quick clone root, once it exists on the host (`up` creates it): a container made before the bind was added lacks it, and the devbox is recreated to gain it.
+        clones = self.quick_clones_dir()
+        if os.path.isdir(clones) and clones not in present:
+            self.write(clones + "\n")
+        return 0
+
+    def image_drift(self, *argv: str) -> int:
+        """The existing container's `CI_RUNNER_IMAGE` against the pin: one line saying what it carries when it differs, nothing when it matches.
+
+        A container created on the old floating tag has no such variable, or another value, and its receipt salt would name an image it is not running. The run image can be a DERIVED uid image, so the container's image reference is no signal; the variable is, because `up` sets it from the pin on every container it creates. Empty when there is no container or docker cannot inspect it: an unanswerable probe is never the reason a container is destroyed. Status 0 on every path.
+        """
+        d = self.docker_words()
+        cid = self._req(argv, 0)
+        if not cid:
+            return 0
+        status, env = self.value(
+            [*d, "inspect", "-f", '{{range .Config.Env}}{{.}}{{"\\n"}}{{end}}', cid], err=NULL
+        )
+        if status != 0 or not env:
+            return 0
+        wanted = "%s=%s" % (RUNNER_IMAGE_ENV, DEVBOX_IMAGE)
+        lines = env.split("\n")
+        if wanted in lines:
+            return 0
+        carried = [x for x in lines if x.startswith(RUNNER_IMAGE_ENV + "=")]
+        self.write((carried[0] if carried else RUNNER_IMAGE_ENV + " unset") + "\n")
         return 0
 
     def service_process_alive(self, *argv: str) -> int:
@@ -1815,6 +1854,30 @@ class Devbox:
                         return 1
                     cid = ""
 
+        if cid:
+            status, stale = self.sub(self.image_drift, cid)
+            self.checked(status)
+            if stale:
+                self.log(
+                    "warn",
+                    "Image drift: the container carries %s, the pin is %s" % (stale, DEVBOX_IMAGE),
+                )
+                if not rehost:
+                    self.log(
+                        "info",
+                        "--no-rehost given: leaving it alone. It keeps running the older image.",
+                    )
+                else:
+                    self.log(
+                        "warn", "About to DESTROY and recreate this container on the pinned image:"
+                    )
+                    self._destroy_banner(
+                        "  keep the container as it is instead: DEVBOX_NO_REHOST=1 ./run.sh devbox up"
+                    )
+                    if self.cond(self.remove) != 0:
+                        return 1
+                    cid = ""
+
         if self.cond(self.container_running) == 0:
             self.log("info", "Devbox already running for this worktree")
             # CONVERGE ON "EVERY ROUTE ANSWERS", not on "a container exists": revive a dead service, then wait for the routes before the snapshot.
@@ -1899,6 +1962,13 @@ class Devbox:
                 mode,
             )
             binds += [line for line in lines.split("\n") if line]
+
+        # The ci:quick clone root at the SAME path inside the box (PLAN-two-track-merge-dev D6): the clone's own absolute gitdir and worktree links resolve identically on the host and in the box. Created here as the host user, since the engine would make a missing -v source as root.
+        clones = self.quick_clones_dir()
+        with contextlib.suppress(OSError):
+            os.makedirs(clones, exist_ok=True)
+        if os.path.isdir(clones):
+            binds += ["-v", "%s:%s" % (clones, clones)]
 
         lease_env: list[str] = []
         status, lease_src = self.sub(self.core_lease_src)
@@ -2010,6 +2080,8 @@ class Devbox:
             "DEVBOX_WORKSPACE=%s" % workspace,
             "-e",
             "REDIACC_NPM_RUNTIME=devbox",
+            "-e",
+            "%s=%s" % (RUNNER_IMAGE_ENV, DEVBOX_IMAGE),
             "-e",
             "REDIACC_DEV_BIND=0.0.0.0",
             "-e",
@@ -2331,7 +2403,7 @@ class Devbox:
             self.log("info", "devbox is usable: mount, identity and writability all verified")
         return status
 
-    # ------------------------------------------------------------------ one entry point for all fifty-five
+    # ------------------------------------------------------------------ one entry point for all fifty-four
 
     def invoke(self, name: str, argv: list[str] | tuple[str, ...] = ()) -> int:
         """`( set -e; <name> "$@" )`: call a twin function by its BASH name, and return the subshell's status.
@@ -2362,7 +2434,7 @@ def _pad(text: str, width: int) -> bytes:
     return data + b" " * max(0, width - len(data))
 
 
-# The fifty-five, bash name -> `Devbox` attribute. `test_core_devbox.py` asserts this is exactly the set the twin defines.
+# The fifty-four, bash name -> `Devbox` attribute. `test_core_devbox.py` asserts this is exactly the set the twin defines.
 BASH_NAMES = {
     "devbox_worktree": "worktree",
     "devbox_mount_root": "mount_root",
@@ -2395,7 +2467,6 @@ BASH_NAMES = {
     "devbox_image_present": "image_present",
     "devbox_image_digest": "image_digest",
     "devbox_ensure_image": "ensure_image",
-    "devbox_build_image": "build_image",
     "devbox_base_user_ids": "base_user_ids",
     "devbox_uid_image": "uid_image",
     "devbox_run_image": "run_image",

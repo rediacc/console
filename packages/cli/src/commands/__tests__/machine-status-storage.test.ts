@@ -221,6 +221,8 @@ describe('table/JSON section parity guard', () => {
     jobs: 'table',
     // The CLI shows stale renet processes through its own staleBinary probe table, not listResult.stale_processes.
     stale_processes: 'table',
+    // The certificates section feeds `rdc machine health` (expiry and shared-CNAME findings); `machine status` draws no table for it.
+    certificates: 'json-only',
   };
 
   it('renders storage_health in the table (the gap this change closes)', () => {
@@ -230,10 +232,14 @@ describe('table/JSON section parity guard', () => {
   // health_drift used to be the one JSON-only section, visible only via `--strict`. The watchdog maintains it to catch containers failing their
   // healthchecks for days; a signal you must already suspect to see is not a
   // signal. --strict still governs the exit code, but the data is now shown.
-  it('leaves no section JSON-only', () => {
+  //
+  // The one exception is certificates: its signal is not hidden, because `rdc machine health` folds the section into
+  // its findings and exit code (applyCertificates in commands/machine/health-folds.ts, held by
+  // commands/machine/__tests__/health-certs.test.ts). A new JSON-only section needs the same, or a table here.
+  it('leaves no section JSON-only except certificates, which machine health reports', () => {
     const jsonOnly = Object.entries(SECTION_COVERAGE)
       .filter(([, mode]) => mode === 'json-only')
       .map(([key]) => key);
-    expect(jsonOnly).toEqual([]);
+    expect(jsonOnly).toEqual(['certificates']);
   });
 });

@@ -14,6 +14,7 @@ import {
   openResponse,
   sealRequest,
 } from '@rediacc/shared/e2e';
+import { LEGAL_URLS } from '@rediacc/shared/legal';
 import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
 import {
   API_TOKEN_IP_REBIND_PATH,
@@ -42,6 +43,14 @@ type ServerKeyMaterial = {
   key: Awaited<ReturnType<typeof importX25519PublicKey>>;
   keyId: string;
 };
+
+/** A server-info read that answered a non-2xx status; `status` lets callers classify it without reading the message. */
+export class ServerInfoStatusError extends Error {
+  constructor(public readonly status: number) {
+    super(`server-info returned ${status}`);
+    this.name = 'ServerInfoStatusError';
+  }
+}
 
 /**
  * No E2E key is known for the server a request goes to: the active config saved none for it, and
@@ -161,7 +170,7 @@ async function discoverServerKey(
   const resp = await fetch(`${serverUrl}/account/api/v1/.well-known/server-info`, {
     signal: AbortSignal.timeout(5000),
   });
-  if (!resp.ok) throw new Error(`server-info returned ${resp.status}`);
+  if (!resp.ok) throw new ServerInfoStatusError(resp.status);
   const info = (await resp.json()) as {
     e2e?: { keys?: { keyId: string; publicKeySpki: string }[] };
   };
@@ -286,7 +295,7 @@ export async function fetchServerInfo(serverUrl: string): Promise<ServerInfo> {
     headers: { 'User-Agent': `rdc/${VERSION}` },
     signal: AbortSignal.timeout(5000),
   });
-  if (!res.ok) throw new Error(`server-info returned ${res.status}`);
+  if (!res.ok) throw new ServerInfoStatusError(res.status);
   return res.json() as Promise<ServerInfo>;
 }
 
@@ -459,14 +468,96 @@ async function accountServerFetchOnce<T>(
     handle426Response(parsed, getInstallMethod());
   }
 
+  warnUpcomingTerms(resp.headers?.get(TERMS_NOTICE_HEADER) ?? null);
+
   // Check the inner HTTP status
   if (status >= 400) {
-    const msg = (parsed as { error?: string }).error ?? `Account server returned HTTP ${status}`;
-    const code = (parsed as { code?: string }).code;
-    throw createAccountError(msg, status, code, parsed);
+    throwInnerStatusError(parsed, status);
   }
 
   return parsed;
+}
+
+/** Throws the typed error for a failed inner response (a Terms refusal gets its own error). */
+function throwInnerStatusError(
+  parsed: { error?: string; code?: string; details?: Record<string, unknown> },
+  status: number
+): never {
+  if (status === 403 && parsed.code === TERMS_ACCEPTANCE_REQUIRED) {
+    throw termsRequiredError(parsed);
+  }
+  if (status === 503 && parsed.code === DELEGATION_CERT_REFUSED) {
+    throw Object.assign(
+      new ValidationError(t('errors.delegationCertRefused', { code: DELEGATION_CERT_REFUSED })),
+      { status, code: DELEGATION_CERT_REFUSED }
+    );
+  }
+  const msg = parsed.error ?? `Account server returned HTTP ${status}`;
+  throw createAccountError(msg, status, parsed.code, parsed);
+}
+
+/** The code an on-prem server answers with (503) while it runs on the free tier after refusing its cert at boot. */
+const DELEGATION_CERT_REFUSED = 'DELEGATION_CERT_REFUSED';
+
+/** The server's refusal code when the account (or an anonymous FREE request) has not accepted the current Terms. */
+const TERMS_ACCEPTANCE_REQUIRED = 'TERMS_ACCEPTANCE_REQUIRED';
+/** The response header a server adds while a newer Terms version is announced but not yet in force. */
+const TERMS_NOTICE_HEADER = 'x-rediacc-terms';
+
+/** Whether this process already printed the upcoming-Terms notice. */
+let termsNoticeShown = false;
+
+/** Test seam: forget that the upcoming-Terms notice was printed. */
+export function resetTermsNoticeForTests(): void {
+  termsNoticeShown = false;
+}
+
+/** Parse `upcoming=<v>; effective=<d>; url=<u>` into its fields. */
+function parseTermsNotice(header: string): { upcoming?: string; effective?: string; url?: string } {
+  const fields: Record<string, string> = {};
+  for (const part of header.split(';')) {
+    const eq = part.indexOf('=');
+    if (eq > 0) fields[part.slice(0, eq).trim()] = part.slice(eq + 1).trim();
+  }
+  return fields;
+}
+
+/** Print the upcoming-Terms notice on stderr, once per process. It never refuses anything. */
+function warnUpcomingTerms(header: string | null): void {
+  if (termsNoticeShown || !header) return;
+  const { upcoming, effective, url } = parseTermsNotice(header);
+  if (!upcoming) return;
+  termsNoticeShown = true;
+  writeStderr(
+    `${t('errors.terms.upcoming', { version: upcoming, effective: effective ?? '', url: url ?? '' })}\n`
+  );
+}
+
+/**
+ * The refusal as one validation-class line with the URL to accept at. No prompt is ever opened:
+ * a token call cannot accept for the account, and an anonymous FREE call is answered by the
+ * acceptance flow before the request, so a refusal here means the cached acceptance went stale.
+ */
+function termsRequiredError(parsed: { details?: Record<string, unknown> }): ValidationError {
+  const details = parsed.details ?? (parsed as Record<string, unknown>);
+  // A refusal without a document URL still names where the Terms are.
+  const url = typeof details.url === 'string' && details.url ? details.url : LEGAL_URLS.terms;
+  const acceptUrl = typeof details.acceptUrl === 'string' ? details.acceptUrl : '';
+  const flag = typeof details.flag === 'string' ? details.flag : undefined;
+  const env = typeof details.env === 'string' ? details.env : undefined;
+  let message: string;
+  if (flag && env) {
+    message = t('errors.terms.requiredFree', { url, flag, env });
+  } else if (acceptUrl) {
+    message = t('errors.terms.requiredAccept', { url, acceptUrl });
+  } else {
+    message = t('errors.terms.required', { url });
+  }
+  return Object.assign(new ValidationError(message), {
+    status: 403,
+    code: TERMS_ACCEPTANCE_REQUIRED,
+    details,
+  });
 }
 
 const NON_JSON_SNIPPET_MAX = 120;

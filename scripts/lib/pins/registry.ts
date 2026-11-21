@@ -48,6 +48,7 @@ export const SCANNERS = [
   'go-mod',
   'pin-lock-json',
   'ceph-pin',
+  'compose-image',
 ] as const;
 export type ScannerId = (typeof SCANNERS)[number];
 

@@ -112,6 +112,29 @@ const PROXY_EXCLUSIONS: Record<string, string> = {
   'machine access push':
     "Rewrites who may log in to the machine from the CALLER's access keys; an executor never rewrites the access it connects with, and it would push its own config's keys. Run it without --proxy.",
 
+  // ── The install record and child processes on the caller's machine ─────
+  'server status':
+    "Finds the server through the caller's local install record; a remote executor holds none. Run it without --proxy.",
+  'server upgrade':
+    "Drives child commands and the caller's local install record (and --local-image, the caller's Docker); a remote executor would act from its own. Run it without --proxy.",
+  'server backup':
+    "Writes the recovery bundle (the server's keys) to the caller's terminal or file; through an executor the keys would cross another machine. Run it without --proxy.",
+  'server bundle':
+    "Runs the caller's local docker (pull and save) and writes the bundle to the caller's disk; a remote executor would write it to its own. Run it without --proxy.",
+  'server licence mint':
+    "Mints the certificate with the caller's login and writes it to the caller's file; a remote executor holds neither. Run it without --proxy.",
+  'server licence':
+    "Mints the certificate with the caller's login and records it in the caller's local install record; a remote executor holds neither. Run it without --proxy.",
+
+  // ── The caller's config set ───────────────────────────────────────────
+  'repo admin orphan list':
+    "Judges each image against every config the CALLER can read; a remote executor would judge against its own configs and report the caller's repositories as orphans. Run it without --proxy.",
+  'repo admin orphan delete':
+    "Refuses a GUID any config the CALLER can read still names; a remote executor would check its own configs and could delete an image the caller's config names. Run it without --proxy.",
+
+  'machine prune':
+    "With --orphaned-repos or --prune-unknown it judges each image against every config the CALLER can read; a remote executor would judge against its own configs and delete the caller's repositories. Run it without --proxy.",
+
   // ── Caller-held secrets ───────────────────────────────────────────────
   'machine converge':
     "Restarts each repo daemon with the env secrets from the CALLER's config; a remote executor would restart them with its own copy, or with none. Run it without --proxy.",

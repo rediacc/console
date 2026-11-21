@@ -22,6 +22,7 @@ WHAT IS AND IS NOT A WRITER. Plan and Explore agents never wrote across 131 tran
 """
 
 import datetime
+import functools
 import json
 import os
 import pathlib
@@ -213,15 +214,23 @@ def session_subagents_dir(cwd, session_id):
     if not session_id:
         return None
     try:
-        proj = RPT._projects_dir() / RPT._munged(C.project_root(C.project_start({"cwd": cwd})))
+        projs = [
+            p
+            for p in C.projects_dirs(
+                C.project_root(C.project_start({"cwd": cwd})), base=RPT._projects_dir()
+            )
+            if p.is_dir()
+        ]
     except (OSError, ValueError, TypeError, RuntimeError):
         return None
-    if not proj.is_dir():
+    if not projs:
         return None
-    direct = proj / session_id
-    if direct.is_dir() or len(session_id) >= 36:
-        return direct / "subagents"
-    hits = [p for p in proj.glob(session_id + "*") if p.is_dir()]
+    for proj in projs:
+        if (proj / session_id).is_dir():
+            return proj / session_id / "subagents"
+    if len(session_id) >= 36:
+        return projs[0] / session_id / "subagents"
+    hits = [p for proj in projs for p in proj.glob(session_id + "*") if p.is_dir()]
     if len(hits) != 1:
         return None
     return hits[0] / "subagents"
@@ -260,6 +269,10 @@ def load_metas(sub_dir):
             "name": str(info.get("name") or ""),
             "jsonl": meta.with_name("agent-%s.jsonl" % aid),
             "spawned": spawned,
+            # The harness records the writer's own tree here when it spawned one; "" is a main-tree writer.
+            "worktree": str(info.get("worktreePath") or ""),
+            # The harness's own mark, written as an agent ends and gone from the meta it rewrites on a resume.
+            "finished": info.get("finished") is True,
         }
     return out
 
@@ -584,10 +597,17 @@ def transcript_waiting(jsonl, now):
     For the callers with no fresh Stop event (the spawn guard, `--lease worker:queue`, `--status`): an agent whose last record ended the turn, written inside WAIT_HORIZON_MIN, with a background shell still armed. 2026-09-24: without this the estimate counted such an agent as finished until the next stop refreshed the event, so `--lease worker:queue` refused ("3 of 4 busy") in the same minute the spawn guard blocked at 4 of 4."""
     import wl_liveness as L
 
+    if not L._record_is_idle(last_record(jsonl)):
+        return ""
+    return transcript_armed(jsonl, now)
+
+
+def transcript_armed(jsonl, now):
+    """The shell id an agent still has armed, or "", WITHOUT asking whether its last record ended the turn.
+
+    For a caller whose own event proves the turn ended (the SubagentStop capture): the transcript's tail may not be flushed yet, so its last record can be an `api-request`, which `transcript_waiting`'s idle test reads as working. The WAIT_HORIZON_MIN and `armed_shells` checks are the same as `transcript_waiting`'s."""
     mt = _mtime(jsonl)
     if mt is None or now - mt > WAIT_HORIZON_MIN * 60:
-        return ""
-    if not L._record_is_idle(last_record(jsonl)):
         return ""
     armed = armed_shells(jsonl)
     return armed[-1] if armed else ""
@@ -716,6 +736,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     plan_holders: dict[str, list[str]] | None = None
     plan_serving: dict[str, set[str]] = {}
     plan_declared: dict[str, tuple[str, ...] | None] = {}
+    plan_isolated: set[str] = set()
     plan_error = ""
     xinfo = None
     order_key = queue_order
@@ -738,6 +759,8 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
                 served.update(p for p in (X.item_plan(r) for r in leases.get(w, ())) if p)
             plan_serving[aid] = served
             plan_declared[aid] = X.declared_owns(text)
+            if (metas.get(aid) or {}).get("worktree"):
+                plan_isolated.add(aid)
     except Exception as exc:
         plan_holders = None
         plan_error = "%s: %s" % (type(exc).__name__, str(exc)[:160])
@@ -746,7 +769,9 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     if plan_holders is not None:
         plan_conflicts = [
             (aid, sorted(plan_serving[aid]), list(v.lines))
-            for aid, v in PO.conflicts(plan_serving, plan_holders, xinfo, plan_declared)
+            for aid, v in PO.conflicts(
+                plan_serving, plan_holders, xinfo, plan_declared, isolated=plan_isolated
+            )
         ]
 
     covered: list[Any] = []
@@ -907,7 +932,16 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         row["age_min"] = None if not row["spawned"] else max(0.0, (now - row["spawned"]) / 60.0)
         row.pop("jsonl", None)
 
+    # THE REPORT EACH FINISHED WORKER LEFT (agent/plans/PLAN-tick-tracking.md Design 5, box T7): every dead row cites the worker's captured report id and the box sigs it names, and a coordinator's row lists each child (metas whose `parentAgentId` is that worker) the same way. A store that cannot be read cites nothing.
+    dead_cites = {}
+    if leased_dead:
+        try:
+            dead_cites = report_citations([(i, w) for i, w, _c in leased_dead], metas, start)
+        except (OSError, ValueError, ImportError, AttributeError, TypeError):
+            dead_cites = {}
+
     return {
+        "dead_cites": dead_cites,
         "state": state,
         "blind": blind,
         "rows": live,
@@ -942,13 +976,20 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
 
 # The commands whose PATH OPERANDS a Bash call writes, deletes or moves (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.1). A3 made 330 Bash calls against 78 Edits on 2026-09-24, and every edit the judge then asked the lead to sweep went through Bash: `sed -i` over the guards, two Python rewrites of baseline files, `git rm -r --cached` plus `rm -rf` of a directory.
 # NO `sed` HERE: an in-place editor (sed, gsed, `perl -i`) is read by `shellscan.in_place_edit` first in `_run_operands` (#6378e10e), and a sed that edits nothing in place writes nothing, so the generic arm must never see one.
-BASH_WRITE_VERBS = frozenset({"rm", "mv", "cp", "tee", "truncate", "install"})
+BASH_WRITE_VERBS = frozenset({"rm", "mv", "cp", "tee", "truncate", "install", "touch"})
 # `git <sub>` spellings whose operands are written.
 GIT_WRITE_SUBS = frozenset({"rm", "mv"})
 # A cheap prefilter: a command with none of these cannot write a file by any route read below, so the lexer never sees it.
 _BASH_MAYBE_WRITES = re.compile(
-    r">|\b(?:rm|mv|cp|sed|gsed|perl|tee|truncate|install|python3?|git)\b"
+    r">|\b(?:rm|mv|cp|sed|gsed|perl|tee|truncate|install|touch|python3?|git|npm|npx|tsx|node)\b"
+    r"|--(?:update|write|fix)\b"
 )
+# The registry of generated-and-committed artifacts: each entry's `generator` command rewrites its `outputs`, so a run of it writes them though no path of theirs appears in the command (#862b2aed: `npm run check:ci-plan-record -- --update` rewrites agent/plans/QUEUE.md and agent/INDEX.md).
+GENERATED_ARTIFACTS = ".ci/config/generated-artifacts.json"
+# Launchers in front of the program a generator names: `npx tsx scripts/gen/gen-docs.ts --write` and `tsx scripts/gen/gen-docs.ts --write` are one generator.
+_LAUNCHERS = frozenset({"npx", "tsx", "node", "python", "python3", "bash", "sh", "uv", "exec"})
+# The options of a generator that make it WRITE. A run must carry each the generator carries; a generator with none of them must be matched on all its options. `--rendered-only` narrows what `check:ci-plan-record -- --update` writes and is not required.
+_WRITE_OPTION = re.compile(r"^--(?:update|write|fix)")
 # A Python body that writes, deletes or moves a file. Its presence makes every repo-path literal in the body count as written, which errs toward subtracting (Decision 2): a missed subtraction costs the lead a blocked turn, an extra one only defers the question to the writer's own tick.
 _PY_WRITES = re.compile(
     r"open\((?:[^()]|\([^()]*\))*?,\s*(?:mode\s*=\s*)?['\"][rbt]*[wax+][rbtwax+]*(?::\w*)?['\"]"
@@ -1009,6 +1050,8 @@ def _run_operands(run, shellscan):
         return []
     if name == "truncate":
         return _operands(argv, takes_value=("-s", "-r"))
+    if name == "touch":
+        return _operands(argv, takes_value=("-d", "-t", "-r", "--date", "--reference"))
     if name in ("cp", "install"):
         target = _target_dir(argv)
         if target:
@@ -1074,10 +1117,111 @@ def _loop_values(word, run):
     ]
 
 
-def bash_write_paths(cmd, cwd, root):
+def _identity(words):
+    """`(program words, options)` of one command line: the leading launchers dropped (`_LAUNCHERS`), a `./` stripped, the `--` separator dropped, and every other `-`-word an option."""
+    words = [w for w in words if w != "--"]
+    while words and words[0].rsplit("/", 1)[-1] in _LAUNCHERS and len(words) > 1:
+        words = words[1:]
+    prog = [w.removeprefix("./") for w in words if not w.startswith("-")]
+    return prog, [w for w in words if w.startswith("-")]
+
+
+@functools.lru_cache(maxsize=8)
+def _generators(root):
+    """`[(program words, required options, outputs)]` from `GENERATED_ARTIFACTS` under `root`, each `npm run <script>` generator also under the root package.json command its script runs. Empty when the registry cannot be read: the regenerate route then proves no write."""
+    import shlex
+
+    base = pathlib.Path(root)
+    try:
+        reg = json.loads((base / GENERATED_ARTIFACTS).read_text(encoding="utf-8"))
+        artifacts = list(reg.get("artifacts") or [])
+    except (OSError, ValueError, AttributeError):
+        return ()
+    try:
+        scripts = (
+            json.loads((base / "package.json").read_text(encoding="utf-8")).get("scripts") or {}
+        )
+    except (OSError, ValueError, AttributeError):
+        scripts = {}
+    out = []
+    for art in artifacts:
+        outputs = [str(o) for o in (art.get("outputs") or []) if isinstance(o, str)]
+        try:
+            words = shlex.split(str(art.get("generator") or ""))
+        except ValueError:
+            continue
+        if not outputs or not words or words[0] == "hand-edited:":
+            continue
+        spellings = [words]
+        if words[:2] == ["npm", "run"] and len(words) > 2 and "-w" not in words:
+            body = str(scripts.get(words[2]) or "")
+            extra = words[words.index("--") + 1 :] if "--" in words else []
+            if body and not re.search(r"[;&|<>`$]", body):
+                spellings.append(shlex.split(body) + extra)
+        for spelling in spellings:
+            prog, opts = _identity(spelling)
+            if not prog:
+                continue
+            need = [o for o in opts if _WRITE_OPTION.match(o)] or opts
+            out.append((tuple(prog), tuple(need), tuple(outputs)))
+    return tuple(out)
+
+
+def _tree_of(base, root):
+    """The root of the tree a run in the absolute directory `base` belongs to: the lease tree (`<root>/.claude/worktrees/<name>`) holding it, and `root` for any other directory, the main checkout's and one outside the repository alike: a registered generator matched from outside the repository was named by an absolute path under `root`, so its outputs are the main checkout's."""
+    import posixpath
+
+    root = str(root).rstrip("/")
+    full = posixpath.normpath(str(base))
+    if full != root and not full.startswith(root + "/"):
+        return root
+    m = re.match(r"^(\.claude/worktrees/[^/]+)(?:/|$)", full[len(root) + 1 :])
+    return posixpath.join(root, m.group(1)) if m else root
+
+
+def _regen_outputs(run, base, root):
+    """The output paths (absolute or relative to `base`) of every registered generator `run` is a run of: its program words start with the generator's, and it carries the generator's write options."""
+    import glob
+
+    prog, opts = _identity([str(run.name or ""), *[str(a) for a in run.argv or []]])
+    prefix = str(root).rstrip("/") + "/"
+    prog = [w.removeprefix(prefix) for w in prog]
+    out = []
+    for gen_prog, need, outputs in _generators(str(root)):
+        if tuple(prog[: len(gen_prog)]) != gen_prog or not all(o in opts for o in need):
+            continue
+        for pattern in outputs:
+            if not _UNEXPANDABLE.search(pattern):
+                out.append(pattern)
+                continue
+            hits = sorted(glob.glob(os.path.join(base, pattern), recursive=True))
+            out.extend(h for h in hits if os.path.isfile(h)) if hits else out.append(pattern)
+    return out
+
+
+def _script_args(run, shellscan):
+    """The words a Python run passes its program as `sys.argv[1:]`, or [] when they cannot be located."""
+    import posixpath
+
+    argv = [str(a) for a in run.argv or []]
+    try:
+        kind, value = shellscan.program_parse(posixpath.basename(str(run.name or "")), argv)
+    except Exception:
+        return []
+    anchor = "-" if kind == "stdin" else value
+    if kind not in ("file", "inline", "stdin") or anchor not in argv:
+        return []
+    return argv[argv.index(anchor) + 1 :]
+
+
+def bash_write_paths(cmd, cwd, root, strict=False, _depth=0):
     """Every repo-relative path a Bash command writes, deletes or moves, read from what bash would RUN (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.1).
 
     Three routes: an output redirect (the lexer's per-run writes, the same answer `shellscan.write_targets` gives, with the run's own directory), the path operands of `BASH_WRITE_VERBS` and `git rm|mv`, and the repo-path string literals of a Python program (its `-c` value, the heredoc it reads as stdin, or a script it runs by path, `_python_text`) that writes, unlinks or moves a file. Every path is joined to the `cd` in force for its clause and then to `cwd`, the directory the call ran in. A directory operand is returned as the directory and covers its subtree (`wl_reggate._covers`). A word holding the variable of an enclosing `for` loop is also read once per word the loop walks (`_loop_values`), so `for D in src; do echo x > $D/a.md; done` writes `src/a.md`. Any other unknowable operand (`"$f"` that `read` assigned, `*.json`) is cut back to its literal directory, and to nothing when that directory is the repository root, which would cover every path the lead changed (`_norm_under`). Never raises: an unlexable command writes nothing it can prove.
+
+    A fourth route: a run of a registered generator (`GENERATED_ARTIFACTS`, `_regen_outputs`) writes that generator's outputs, which its command line never names.
+
+    `strict` is the reading for a caller that REFUSES on a write, `block_commit_of_live_writer_file` (#862b2aed). The default errs toward counting a write, because the judge SUBTRACTS what a writer wrote and a missed subtraction blocks the lead's turn. A refusal runs the other way: an extra path refuses a commit of a file the writer never touched. On 2026-11-16 a read-only survey agent wrote `derive.py` under /tmp holding `json.dump(out, open(sys.argv[1], 'w'))` beside the literals `agent/INDEX.md`, `agent/plans/QUEUE.md` and `.ci/config/plan-boxes.json` (inputs it READ), and ran it: the unresolvable `sys.argv[1]` target made every literal count as written, and the guard refused the lead's commit of those three files. Strict reads a Python program's write targets only (`_py_written_paths(strict=True)`), with `sys.argv[N]` taken from the run's own words, and walks the command line a `subprocess` call runs as a command of its own.
     """
     import posixpath
 
@@ -1112,16 +1256,35 @@ def bash_write_paths(cmd, cwd, root):
             add(operand, run.cwd)
             for value in _loop_values(operand, run):
                 add(value, run.cwd)
+        run_base = base_cwd if run.cwd is None else posixpath.join(base_cwd, str(run.cwd))
+        tree = _tree_of(run_base, root)
+        for output in _regen_outputs(run, run_base, root):
+            # A registered output is relative to the root of the tree the run is in, whatever directory it `cd`ed to (an `npm run` finds the root package.json from a subdirectory): the main checkout's root, or a lease tree's, whose paths in_lease_tree then drops (2026-11-20: a lease writer's `gen-docs.ts --write` was recorded as an edit of the main checkout's scripts/data/doc-registry.md and refused the lead's commit of it).
+            rel = _norm_under(str(output), tree, root)
+            if rel:
+                out.add(rel)
         if posixpath.basename(str(run.name or "")).startswith("python"):
-            py_bodies.append((_python_text(shellscan, run, cmd, base_cwd), run.cwd))
+            py_bodies.append(
+                (_python_text(shellscan, run, cmd, base_cwd), run.cwd, _script_args(run, shellscan))
+            )
     for target in loose:
         # A redirect on a brace group or a subshell belongs to no simple command, so only write_targets sees it.
         if target not in seen_writes:
             add(target, None)
-    for text, run_cwd in py_bodies:
-        if text and _PY_WRITES.search(text):
+    for text, run_cwd, args in py_bodies:
+        if not text or not _PY_WRITES.search(text):
+            continue
+        if not strict:
             for lit in _py_written_paths(text):
                 add(lit, run_cwd)
+            continue
+        subcommands: list[str] = []
+        for lit in _py_written_paths(text, strict=True, argv=args, subcommands=subcommands):
+            add(lit, run_cwd)
+        if _depth < 2:
+            run_dir = base_cwd if run_cwd is None else posixpath.join(base_cwd, str(run_cwd))
+            for sub in subcommands:
+                out.update(bash_write_paths(sub, run_dir, root, strict=True, _depth=_depth + 1))
     return {p for p in out if p not in ("/dev/null", "/dev/stdout", "/dev/stderr")}
 
 
@@ -1154,6 +1317,18 @@ _WRITE_LIKE_ATTRS = frozenset(
 _WRITE_LIKE_NAMES = frozenset({"copy", "copy2", "copyfile", "copytree", "move", "rmtree"})
 
 
+def _is_subprocess_call(node):
+    """Whether the call is `subprocess.<anything>(...)`: strict reading walks its literal command line whether or not the line looks write-shaped, because a registered generator (`npm run check:ci-plan-boxes -- --update`) writes files no verb or redirect in its words shows."""
+    import ast
+
+    f = node.func
+    return (
+        isinstance(f, ast.Attribute)
+        and isinstance(f.value, ast.Name)
+        and f.value.id == "subprocess"
+    )
+
+
 def _unlisted_write(node):
     """Whether the call is a write whose target `_py_written_paths` cannot name: a pandas or matplotlib writer, a symlink, a shutil function imported bare, or a subprocess carrying a write verb or a redirect."""
     import ast
@@ -1174,17 +1349,20 @@ def _unlisted_write(node):
     return f.attr in _WRITE_LIKE_ATTRS
 
 
-def _py_written_paths(text):
+def _py_written_paths(text, strict=False, argv=None, subcommands=None):
     """The repo-path literals a Python body writes, deletes or moves.
 
-    The body is parsed, and a path counts only as the target of a write-shaped call (`open(x, 'w')`, `Path(x).write_text`, `os.replace`, `shutil.move|copy*|rmtree`) where `x` is a literal, or a name bound once to a literal (or to `Path(<literal>)`, or a literal list a `for` walks). A path named only inside a string being written (a replacement text mentioning `agent/INDEX.md`) is not a target. When a write target cannot be resolved this way, or the body does not parse, the old reading stands: every path-shaped literal in the body counts, because a missed subtraction blocks the lead's turn while an extra one only defers the question to the writer's own tick."""
+    The body is parsed, and a path counts only as the target of a write-shaped call (`open(x, 'w')`, `Path(x).write_text`, `os.replace`, `shutil.move|copy*|rmtree`) where `x` is a literal, or a name bound once to a literal (or to `Path(<literal>)`, or a literal list a `for` walks). A path named only inside a string being written (a replacement text mentioning `agent/INDEX.md`) is not a target. When a write target cannot be resolved this way, or the body does not parse, the old reading stands: every path-shaped literal in the body counts, because a missed subtraction blocks the lead's turn while an extra one only defers the question to the writer's own tick.
+
+    `strict` (#862b2aed, `bash_write_paths`) never falls back to every literal: a body that does not parse writes nothing it can prove, and an unresolvable target is dropped while the resolved ones still count. `sys.argv[N]` resolves to `argv[N - 1]`, the words the run passes the program. The write calls the default leaves unresolved are resolved too (`shutil` functions imported bare, the pandas and matplotlib writers, symlinks), and the command line of a `subprocess` call whose first argument is literal is appended to `subcommands` for the caller to read as a Bash command."""
     import ast
+    import shlex
 
     every = [lit for lit in _PY_PATH_LIT.findall(text) if _is_path_lit(lit)]
     try:
         tree = ast.parse(text)
     except (SyntaxError, ValueError):
-        return every
+        return [] if strict else every
     bound: dict[str, list[ast.expr]] = {}
     for node in ast.walk(tree):
         if (
@@ -1210,6 +1388,19 @@ def _py_written_paths(text):
                     return None
                 out += got
             return out
+        if (
+            strict
+            and argv is not None
+            and isinstance(node, ast.Subscript)
+            and isinstance(node.value, ast.Attribute)
+            and node.value.attr == "argv"
+            and isinstance(node.value.value, ast.Name)
+            and node.value.value.id == "sys"
+            and isinstance(node.slice, ast.Constant)
+            and isinstance(node.slice.value, int)
+            and 1 <= node.slice.value <= len(argv)
+        ):
+            return [argv[node.slice.value - 1]]
         if isinstance(node, ast.Name):
             values = bound.get(node.id)
             if not values:
@@ -1330,9 +1521,55 @@ def _py_written_paths(text):
                     take(a)
             elif len(args) > 1:
                 take(args[1])
+    if strict:
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and (_unlisted_write(node) or _is_subprocess_call(node)):
+                _strict_unlisted(node, strs, found, subcommands, shlex)
+        return [lit for lit in found if _is_path_lit(lit)]
     if unresolved or any(_unlisted_write(n) for n in ast.walk(tree) if isinstance(n, ast.Call)):
         return every
     return [lit for lit in found if _is_path_lit(lit)]
+
+
+def _strict_unlisted(node, strs, found, subcommands, shlex):
+    """`_py_written_paths(strict=True)` for one call `_unlisted_write` names: its target when `strs` resolves it, and a literal `subprocess` command line appended to `subcommands`. An unresolvable target adds nothing."""
+    import ast
+
+    f = node.func
+    args = node.args
+
+    def take(expr):
+        got = strs(expr) if expr is not None else None
+        if got:
+            found.extend(got)
+
+    def arg(n, *names):
+        for kw in node.keywords:
+            if kw.arg in names:
+                return kw.value
+        return args[n] if len(args) > n else None
+
+    if isinstance(f, ast.Name):
+        if f.id == "move":
+            take(arg(0, "src"))
+        take(arg(0, "path") if f.id == "rmtree" else arg(1, "dst"))
+        return
+    if not isinstance(f, ast.Attribute):
+        return
+    owner = f.value.id if isinstance(f.value, ast.Name) else None
+    if owner == "subprocess":
+        first = arg(0, "args")
+        words = strs(first) if first is not None else None
+        if words and subcommands is not None:
+            shell = isinstance(first, ast.Constant)
+            subcommands.append(words[0] if shell else shlex.join(words))
+        return
+    if f.attr in ("symlink_to", "hardlink_to"):
+        take(f.value)
+    elif f.attr in ("symlink", "link"):
+        take(arg(1, "dst"))
+    else:
+        take(arg(0, "path_or_buf", "fname", "path", "excel_writer", "buf"))
 
 
 def _python_text(shellscan, run, cmd, cwd):
@@ -1362,8 +1599,16 @@ def _shellscan():
     return shellscan
 
 
-def edit_paths(jsonl, root):
-    """Every repo-relative path one transcript's tool calls changed: the `file_path` (or `notebook_path`) of every edit tool call, and since R20260925.1 every path a Bash call wrote, deleted or moved (`bash_write_paths`, joined to the record's own `cwd`). Paths outside `root` are kept absolute, which never matches a `git status` line and so subtracts nothing."""
+_LEASE_TREE = re.compile(r"^\.claude/worktrees/[^/]+/.")
+
+
+def in_lease_tree(path):
+    """A path inside a lease tree (`.claude/worktrees/<name>/...`): a writer's edit there is not dirt in the main tree. A path outside the repo, and the tree directory itself, are not."""
+    return bool(_LEASE_TREE.match(path))
+
+
+def edit_paths(jsonl, root, strict=False):
+    """Every repo-relative path one transcript's tool calls changed: the `file_path` (or `notebook_path`) of every edit tool call, and since R20260925.1 every path a Bash call wrote, deleted or moved (`bash_write_paths`, joined to the record's own `cwd`). A path inside a lease tree (`.claude/worktrees/<name>/`) is dropped (`in_lease_tree`), so it subtracts nothing from the lead's fix-set. Paths outside `root` are kept absolute, which never matches a `git status` line and so subtracts nothing. `strict` is `bash_write_paths`'s reading for a caller that refuses on a write (block_commit_of_live_writer_file, #862b2aed)."""
     try:
         data = jsonl.read_bytes()
     except (OSError, AttributeError):
@@ -1382,18 +1627,22 @@ def edit_paths(jsonl, root):
             raw = block.get("input")
             inp = raw if isinstance(raw, dict) else {}
             if block.get("name") == "Bash":
-                out |= bash_write_paths(str(inp.get("command") or ""), rec.get("cwd"), root)
+                out |= bash_write_paths(
+                    str(inp.get("command") or ""), rec.get("cwd"), root, strict=strict
+                )
                 continue
             if block.get("name") not in EDIT_TOOLS:
                 continue
             path = str(inp.get("file_path") or inp.get("notebook_path") or "")
             if path:
-                out.add(path.removeprefix(base))
-    return out
+                # NORMALIZED FIRST: `<root>/.claude/x/../../../.claude/worktrees/<id>/f` names a lease file, and unnormalized it kept its `.claude/x/..` head, dodged `in_lease_tree`, and made block_commit_of_live_writer_file refuse a lease writer's own commit (2026-11-05).
+                # A relative spelling is normalized too: a `..` path that climbs back into a lease tree dodged the lease filter the same way.
+                out.add(os.path.normpath(path).removeprefix(base))
+    return {p for p in out if not in_lease_tree(p)}
 
 
 class WriterPaths(set):
-    """The paths the judge's tick-based fix-set subtracts, plus `by_tick`: {tick id: the paths of that ticked item's own lease workers}. A plain set to every caller that only subtracts; `wl_reggate.fixset_files` reads `by_tick` to answer a tick with its own writers' files (R20260925.2)."""
+    """The paths the judge's tick-based fix-set subtracts, plus `by_tick`: {tick id: the paths of that ticked item's own leased agents}, with the paths each agent edited inside a worktree lease tree left out (`in_lease_tree`: they are not dirt in the main tree). A plain set to every caller that only subtracts; `wl_reggate.fixset_files` reads `by_tick` to answer a tick with its own writers' files (R20260925.2)."""
 
     by_tick: dict
 
@@ -1760,6 +2009,101 @@ def row_line(row):
     )
 
 
+def _report_boxes(store, entry):
+    """[(sig, state, owed halves)] of one report index entry: its `boxes` field (T6), else its body through `wl_planbox.parse_tick`. None when the body had to be read and could not be, so a caller never reads an unread body as one naming no box."""
+    import wl_planbox
+
+    boxes = entry.get("boxes")
+    # A capped list (`boxes_capped`) lost a box; the body holds them all.
+    if not isinstance(boxes, list) or entry.get("boxes_capped"):
+        try:
+            body = (store / str(entry.get("body") or "")).read_text(
+                encoding="utf-8", errors="replace"
+            )
+        except OSError:
+            return None
+        boxes = [
+            {"sig": r.sig, "state": r.state, "owed": [list(x) for x in r.owed]}
+            for r in wl_planbox.parse_tick(body)
+        ]
+    out = []
+    for b in boxes:
+        if isinstance(b, dict) and b.get("sig"):
+            halves = sorted({str(x[1]) for x in b.get("owed") or [] if len(x) > 1})
+            out.append((str(b["sig"]), str(b.get("state") or "?"), halves))
+    return out
+
+
+def latest_report(entries, agent_id):
+    """The newest index entry captured for `agent_id` (its id is the agent's short id, or that id with a `-N` suffix), or None."""
+    import wl_report
+
+    rid = wl_report.short_id(agent_id)
+    hits = [e for e in entries if str(e["id"]) == rid or str(e["id"]).startswith(rid + "-")]
+    return hits[-1] if hits else None
+
+
+def _cite(store, entries, agent_id):
+    entry = latest_report(entries, agent_id)
+    if entry is None:
+        return "%s: no captured report" % agent_id, []
+    boxes = _report_boxes(store, entry)
+    if boxes is None:
+        return "%s: report %s, boxes unread (body %s could not be read)" % (
+            agent_id,
+            entry["id"],
+            entry.get("body") or "(none)",
+        ), []
+    sigs = " ".join(sig for sig, _st, _h in boxes) or "no box named"
+    return "%s: report %s, boxes %s" % (agent_id, entry["id"], sigs), boxes
+
+
+def report_citations(dead, metas, start, entries=None, store=None):
+    """{item id: [citation line]} for `[(item id, worker id)]`: the worker's report id and box sigs, then one line per child of a coordinator (a meta whose parent is the worker)."""
+    import wl_report
+
+    store = wl_report.store_root(start) if store is None else store
+    entries = wl_report.read_index(store) if entries is None else entries
+    kids = children_map(metas)
+    out = {}
+    for item, worker in dead:
+        lines = [_cite(store, entries, worker)[0]]
+        lines += ["child " + _cite(store, entries, k)[0] for k in sorted(kids.get(worker, []))]
+        out[item] = lines
+    return out
+
+
+_SIG_INDEX: dict[Any, Any] = {}
+
+
+def _sig_index(entries, store):
+    """{box sig: (report id, state, owed halves)} of the newest report naming each sig, built once per (store, index length, last id) and reused within the process. The key assumes the index is append-only and a captured report body is written once, so an in-place rewrite of an earlier body in the same process is not seen (a hook run is one process and a report is never rewritten). A Stop hook run calls item_box_citations once per item it cites; without the index each call re-read and re-parsed every captured report body (measured 2026-11-18: 6 calls, 35,220 report reads, 25,992 parse_tick calls, 35 s of a 90 s stop on a weeks-old session)."""
+    key = (str(store), len(entries), str(entries[-1].get("id")) if entries else "")
+    hit = _SIG_INDEX.get(key)
+    if hit is not None:
+        return hit
+    found = {}
+    for entry in entries:
+        for sig, state, halves in _report_boxes(store, entry) or []:
+            found[sig] = (entry["id"], state, halves)
+    _SIG_INDEX.clear()
+    _SIG_INDEX[key] = found
+    return found
+
+
+def item_box_citations(text, entries, store):
+    """["report <rid> names box <sig> (<state>, owed <halves>)"] for each box sig `text` names that a captured report's TICK line names (the newest report per sig)."""
+    named = set(re.findall(r"(?<![0-9a-z])([0-9a-f]{8})(?![0-9a-z])", text or ""))
+    if not named:
+        return []
+    index = _sig_index(entries, store)
+    found = {sig: index[sig] for sig in named if sig in index}
+    return [
+        "report %s names box %s (%s, owed %s)" % (rid, sig, state, ",".join(halves) or "nothing")
+        for sig, (rid, state, halves) in sorted(found.items())
+    ]
+
+
 def defect_rows(verdict):
     """{"cap", "silent", "unleased", "dead"}: the rendered rows each roster block quotes. Never truncated: a defect list is short by nature, and a capped one would hide the id the remedy needs."""
     rows = verdict.get("rows") or {}
@@ -1775,8 +2119,10 @@ def defect_rows(verdict):
             "    %s: last status %s ago via %s%s"
             % (w, _mins(age), src, "" if coverer == w else "; its live descendant is %s" % coverer)
         )
+    cites = verdict.get("dead_cites") or {}
     dead = [
-        "    #%s leased to worker:%s, which is not live and has no live descendant" % (i, w)
+        "    #%s leased to worker:%s, which is not live and has no live descendant%s"
+        % (i, w, "".join("\n      " + c for c in cites.get(i) or []))
         for i, w, _c in verdict.get("leased_dead") or []
     ]
     # MERGED (operator ruling 2026-09-24, "Evidence counts as status"): a worker whose newest evidence is STATUS_PING_MIN old is the same fact as a silent one, so its status row rides the silent block rather than a second key.

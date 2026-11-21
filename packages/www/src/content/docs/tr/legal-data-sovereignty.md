@@ -7,8 +7,8 @@ tags:
 subcategory: foundations
 order: 7
 language: tr
-sourceHash: "1e10165626ba3730"
-sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
+sourceHash: "af327ad5729b1cab"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 Birçok ülke, vatandaşlarının kişisel verilerinin ulusal sınırlar içinde depolanmasını ve işlenmesini gerektirir. Rediacc'ın kendi sunucunuzda barındırma mimarisi bu gereksinimleri tasarım gereği karşılar: veriler makinenizde, veri merkezinizde, yetki alanınızda kalır. Klonlama sırasında hiçbir veri makineyi terk etmez ve hiçbir üçüncü taraf SaaS verilerinizi işlemez.
@@ -88,4 +88,4 @@ Tüm yetki alanlarında uyumluluk denklemi aynıdır:
 
 ## Barındırılan Hizmet: Bölgesel Veri Yerleşimi
 
-Barındırılan Rediacc hizmetinin kullanıcıları için (kendi sunucunuzda barındırılan değil), veri yerleşimi bölgesel altyapı aracılığıyla sağlanır. Üç bölge kullanılabilir: AB (Frankfurt), ABD (Virginia) ve Asya Pasifik (Tokyo). Her bölge, bölgeler arası veri akışı olmadan bağımsız veritabanları ve depolama çalıştırır. İşlemsel e-postalar AWS SES üzerinden teslim edilir; AB ve ABD özel bölgesel uç noktalar kullanır, Asya Pasifik ise AB uç noktasını (eu-central-1) kullanır. AB bölgesi, R2 depolamada yargı yetkisi zorlaması uygular. Tam teknik döküm için [Veri Bölgeleri](/tr/docs/data-regions) sayfasına bakın.
+Barındırılan Rediacc hizmetinin kullanıcıları için (kendi sunucunuzda barındırılan değil), veri yerleşimi bölgesel altyapı aracılığıyla sağlanır. Üç bölge kullanılabilir: Avrupa Birliği, Doğu Kuzey Amerika ve Asya Pasifik. Her bölge, bölgeler arası veri akışı olmadan bağımsız veritabanları ve depolama çalıştırır. Yalnızca AB yapılandırma depolaması garanti edilen bir yetki alanına bağlıdır (Cloudflare R2'nin AB yetki alanı kısıtlaması); veritabanı yerleşimi ile US ve Asya Pasifik depolaması Cloudflare konum ipuçlarını kullanır ve bunlar elinden gelenin en iyisi esasıyla uygulanır. İşlemsel e-postalar AWS SES üzerinden iletilir; AB ve ABD özel bölgesel uç noktalar kullanır, Asya Pasifik ise AB uç noktasını (eu-central-1) kullanır. Teknik ayrıntıların tamamı için [Veri Bölgeleri](/tr/docs/data-regions) sayfasına bakın.

@@ -550,15 +550,15 @@ def test_more_shards_than_gates_refuses(gate):
 
 def test_the_ceiling_is_units_not_entries(gate):
     gate.log_test("the ceiling counts INDIVISIBLE UNITS, which is the stricter threshold")
-    # 16 entries in quality-www-build are 2 units, because 15 of them are welded together by one mutex group and fourteen needs edges (browser-smoke and page-density joined build:www on 2026-09-27; they read its dist). Counting entries would
+    # 17 entries in quality-www-build are 2 units, because 16 of them are welded together by one mutex group and fifteen needs edges (browser-smoke and page-density joined build:www on 2026-09-27, and check:ci-dist-raw-translation-keys on 2026-11-17; they read its dist). Counting entries would
     # let five shards through and leave three empty.
     message = probe(gate)["refusals"]["www5"]
     gate.assert_contains(
         message,
-        "only 2 indivisible unit(s) (16 entries",
+        "only 2 indivisible unit(s) (17 entries",
         "the refusal must count units and SAY it counted entries too",
     )
-    gate.log_pass("the ceiling is units, not entries: 16 www-build entries are 2 units")
+    gate.log_pass("the ceiling is units, not entries: 17 www-build entries are 2 units")
 
 
 def test_a_lane_with_zero_lock_entries_refuses(gate):

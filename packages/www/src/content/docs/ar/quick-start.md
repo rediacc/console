@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: ar
-sourceHash: "05e87ddd9ad815ff"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "1a57c2ff08008d4e"
+sourceCommit: "c1e4f1e1584c84a89aaa6b606f4195df0d6725b0"
 ---
 
 # البدء السريع
@@ -223,7 +223,7 @@ rdc backup usage
 
 ترفع اللقطات إلى التخزين المجزّأ، الذي يحتاج إلى خادم حساب ومستودع مرخَّص. تُخزَّن البيانات المتغيّرة فقط، لذا تكلّف اللقطة الثانية لنفس المستودع الفرق فقط بدلاً من الصورة كاملة.
 
-للنسخ الاحتياطية نوع وجهة واحد، هو التخزين المجزّأ الذي تستضيفه الخدمة، ويسمّي `--to` في `repo push` جهازاً فقط. يُعلن الاحتفاظ لكل سلسلة مستودع بالأمر `rdc backup retention set`، وتأتي التشغيلات المجدولة من `rdc backup strategy set` مع `rdc backup schedule`. راجع [النسخ الاحتياطي والاستعادة](/ar/docs/backup-restore).
+تُكتب النسخ الاحتياطية في مخازن مسجَّلة: `home`، المخزن المستضاف الذي يملكه كل اشتراك، إضافةً إلى أي منطقة مستضافة ثانية أو bucket خاص بالعميل، ويُسمّى كل منها بالخيار `--target` في الوجهة (راجع [وجهات النسخ الاحتياطي](/ar/docs/backup-destinations)). ويسمّي `--to` في `repo push` جهازاً فقط. يُعلن الاحتفاظ لكل سلسلة مستودع بالأمر `rdc backup retention set`، وتأتي التشغيلات المجدولة من `rdc backup strategy set` مع `rdc backup schedule`. راجع [النسخ الاحتياطي والاستعادة](/ar/docs/backup-restore).
 
 ### 4. السحب من مصدر بعيد
 

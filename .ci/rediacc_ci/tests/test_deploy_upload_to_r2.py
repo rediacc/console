@@ -972,7 +972,7 @@ def test_the_r2_credentials_are_bridged_into_the_aws_names(tmp_path: pathlib.Pat
 
 
 def test_the_bucket_is_read_from_the_environment(tmp_path: pathlib.Path) -> None:
-    """`RELEASES_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"` in constants.sh.
+    """`RELEASES_BUCKET="${RELEASES_BUCKET:-releases}"` in constants.sh.
     The port does not source constants.sh, so this proves the override still reaches BOTH the four R2 primitives and the bash guard's child."""
     old, new, old_calls, new_calls = run_both(tmp_path, RELEASES_BUCKET="other-bucket")
     assert old.returncode == 0

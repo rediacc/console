@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import hashlib
 import inspect
+import json
 import os
 import re
 import shutil
@@ -75,6 +76,7 @@ FAKE_NPX = r'''#!/usr/bin/python3
 """Recording fake for `npx --no-install wrangler d1`. See the test module docstring."""
 import json
 import os
+import re
 import sys
 
 argv = sys.argv[1:]
@@ -95,6 +97,15 @@ rest = argv[2:] if argv[:2] == ["--no-install", "wrangler"] else None
 if rest is None:
     sys.stderr.write("fake npx: unmodelled tool %r\n" % (argv[:1],))
     sys.exit(127)
+
+# `--no-install` AS npm 11.21.0 RESOLVES IT, when asked: only a node_modules/.bin/wrangler at or above the cwd counts, never PATH.
+if os.environ.get("FAKE_NPX_LOCAL_ONLY"):
+    here = os.getcwd()
+    while not os.path.exists(os.path.join(here, "node_modules", ".bin", "wrangler")):
+        if os.path.dirname(here) == here:
+            sys.stderr.write('npm error npx canceled due to missing packages and no YES option: ["wrangler@4.160.0"]\n')
+            sys.exit(1)
+        here = os.path.dirname(here)
 
 if rest[:2] == ["d1", "export"]:
     fail_until = int(os.environ.get("FAKE_EXPORT_FAIL_UNTIL", "0"))
@@ -147,6 +158,21 @@ if rest[:2] == ["d1", "execute"]:
     if os.environ.get("FAKE_EXECUTE_FAILS_ON") == str(call_index):
         sys.stderr.write("wrangler: execute refused (fixture)\n")
         sys.exit(3)
+    commands = [a.split("=", 1)[1] for a in rest if a.startswith("--command=")]
+    if commands and commands[0].startswith("SELECT"):
+        # The `--row-parity` reads. FAKE_COUNTS maps a database name to {table: rows}.
+        counts = json.loads(os.environ.get("FAKE_COUNTS", "{}")).get(rest[2], {})
+        if commands[0].startswith("SELECT name FROM sqlite_master"):
+            rows = [{"name": name} for name in sorted(counts)]
+        else:
+            # Like D1: answer only the tables the query names, and refuse a compound SELECT past its limit.
+            named = re.findall(r"SELECT '([A-Za-z_][A-Za-z0-9_]*)' AS t", commands[0])
+            if len(named) > int(os.environ.get("FAKE_COMPOUND_LIMIT", "5")):
+                sys.stderr.write("too many terms in compound SELECT: SQLITE_ERROR [code: 7500]\n")
+                sys.exit(1)
+            rows = [{"t": name, "n": counts[name]} for name in named if name in counts]
+        sys.stdout.write(json.dumps([{"results": rows}]) + "\n")
+        sys.exit(0)
     if "--json" in rest:
         mode = os.environ.get("FAKE_FK", "clean")
         if mode == "silent":
@@ -154,6 +180,9 @@ if rest[:2] == ["d1", "execute"]:
             # about. Non-zero, no stdout, its stderr swallowed by 2>/dev/null.
             sys.stderr.write("wrangler: could not reach the API (fixture)\n")
             sys.exit(1)
+        if mode == "garbage":
+            sys.stdout.write("<html>gateway timeout</html>\n")
+            sys.exit(0)
         if mode == "violations":
             sys.stdout.write(
                 json.dumps([{"results": [{"table": "sessions", "rowid": 1}]}]) + "\n"
@@ -237,6 +266,10 @@ def fixture(tmp_path: pathlib.Path, *, sanitize_sql: bool = False) -> pathlib.Pa
         ROOT / ".ci" / "config" / "well-known.generated.sh",
         root / ".ci" / "config" / "well-known.generated.sh",
     )
+    # The worker directory the port's wrangler calls run from, with a stand-in for its pinned install (`FAKE_NPX_LOCAL_ONLY` looks for it).
+    local_bin = root.joinpath(*port.WRANGLER_CWD_REL, "node_modules", ".bin")
+    local_bin.mkdir(parents=True, exist_ok=True)
+    (local_bin / "wrangler").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     if sanitize_sql:
         (root / ".ci" / "scripts" / "deploy" / "sanitize-d1.sql").write_text(
             "UPDATE users SET email = 'redacted@example.com';\n", encoding="utf-8"
@@ -469,14 +502,22 @@ def test_the_generated_import_sql_is_byte_identical(tmp_path) -> None:
 # --------------------------------------------------------------------------- Argument handling ---------------------------------------------------------------------------
 
 
+# The twin's usage line, which the frozen golden holds: the port's own adds the two opt-in options.
+TWIN_USAGE = port.USAGE.replace(" [--drop-tables <t1,t2,...>] [--row-parity]", "")
+
+
 def test_a_missing_source_or_target_is_the_usage_line_and_exit_1(tmp_path) -> None:
     for args in (("--source", "a"), ("--target", "b"), ()):
         _root, old, new = run_both(tmp_path, args=args)
-        _agree(old, new, f"usage-{args}")
-        proc, calls = old
-        assert proc.returncode == 1
-        assert proc.stderr == "✗ %s\n" % as_twin(port.USAGE)
-        assert _calls(calls) == [], "nothing may run before the arguments are known"
+        old_proc, old_calls = old
+        new_proc, new_calls = new
+        assert old_proc.returncode == new_proc.returncode == 1
+        assert old_proc.stdout == new_proc.stdout
+        assert old_proc.stderr == "✗ %s\n" % as_twin(TWIN_USAGE)
+        assert new_proc.stderr == "✗ %s\n" % port.USAGE
+        assert _calls(old_calls) == _calls(new_calls) == [], (
+            "nothing may run before the arguments are known"
+        )
 
 
 def test_an_unknown_argument_names_itself_and_exits_1(tmp_path) -> None:
@@ -666,18 +707,44 @@ def test_defect_a_a_missing_sqlite3_refuses_with_the_common_sh_wording(tmp_path)
 def test_defect_b_a_verification_that_could_not_run_reports_zero_violations(
     tmp_path,
 ) -> None:
-    """The FK probe exits 1 with nothing on stdout and its stderr discarded. The script prints its success line and exits 0, which is the failure this whole step exists to prevent, applied to itself."""
-    assert port.A_FAILED_FK_CHECK_REPORTS_ZERO_VIOLATIONS
+    """THE TWIN'S SIDE, frozen: the FK probe exits 1 with nothing on stdout, and the twin printed its success line and exited 0. The port departs from it here on purpose: the same run exits 1 and names the failed call."""
     _root, old, new = run_both(tmp_path, FAKE_FK="silent")
-    _agree(old, new, "fk-silent")
 
     proc, calls = old
-    assert proc.returncode == 0, "a verification that never ran is scored as a pass"
+    assert proc.returncode == 0, "the twin scored a verification that never ran as a pass"
     assert "✓ FK integrity check passed (0 violations)" in proc.stderr
-    assert "wrangler: could not reach the API" not in proc.stderr, (
-        "2>/dev/null means the operator is not even told"
-    )
     assert _verbs(calls)[-1] == "d1 execute"
+
+    port_proc, port_calls = new
+    assert port_proc.returncode == 1, port_proc.stderr
+    assert "FK integrity check passed" not in port_proc.stderr
+    assert _verbs(port_calls) == _verbs(calls), "the same calls, a different verdict"
+
+
+def test_defect_b_repaired_a_verification_that_could_not_run_exits_1(tmp_path) -> None:
+    """DEFECT B repaired: the same silent failure is a refusal naming wrangler's status, wrangler's own stderr reaches the operator, and the success line is never printed."""
+    assert not port.A_FAILED_FK_CHECK_REPORTS_ZERO_VIOLATIONS
+    _root, proc, calls = _port_only(tmp_path, args=SEED_ARGS, FAKE_FK="silent")
+    assert proc.returncode == 1, proc.stderr
+    assert "FK integrity check passed" not in proc.stderr
+    assert "FK integrity check could not run: wrangler d1 execute" in proc.stderr
+    assert "exited 1" in proc.stderr
+    assert "wrangler: could not reach the API (fixture)" in proc.stderr
+    assert _verbs(calls)[-1] == "d1 execute"
+
+
+def test_defect_b_repaired_an_answer_that_is_not_a_result_set_exits_1(tmp_path) -> None:
+    _root, proc, _calls_log = _port_only(tmp_path, args=SEED_ARGS, FAKE_FK="garbage")
+    assert proc.returncode == 1, proc.stderr
+    assert "is not a D1 result set" in proc.stderr
+    assert "FK integrity check passed" not in proc.stderr
+
+
+def test_fk_violations_reads_only_a_result_set() -> None:
+    assert port.fk_violations('[{"results": []}]') == []
+    assert port.fk_violations('[{"results": [{"table": "t"}]}]') == [{"table": "t"}]
+    for bad in ("", "null", "{}", "[]", '[{"results": 3}]', "<html>"):
+        assert port.fk_violations(bad) is None, bad
 
 
 def test_defect_c_the_account_id_is_never_required(tmp_path) -> None:
@@ -692,28 +759,6 @@ def test_defect_c_the_account_id_is_never_required(tmp_path) -> None:
 
 
 # --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
-
-
-def test_bash_arithmetic_gt_zero_follows_bash_rather_than_int() -> None:
-    """EVERY ROW HERE WAS PROBED AGAINST REAL BASH, and three of them are surprising: a bare word is a VARIABLE and is fatal under `set -u`, `0x10` is hex, and `08` is a malformed octal that evaluates FALSE without stopping."""
-    assert port.bash_arithmetic_gt_zero("1") is True
-    assert port.bash_arithmetic_gt_zero("0") is False
-    assert port.bash_arithmetic_gt_zero("") is False, "an empty count is zero, not an error"
-    assert port.bash_arithmetic_gt_zero("   ") is False
-    assert port.bash_arithmetic_gt_zero("-3") is False
-    assert port.bash_arithmetic_gt_zero("010") is True, "octal 10 is 8, still positive"
-    assert port.bash_arithmetic_gt_zero("0x10") is True, "hex is arithmetic too"
-    assert port.bash_arithmetic_gt_zero("08") is False, (
-        "bash cannot parse 08 as octal; the comparison is FALSE and does not stop"
-    )
-    assert port.bash_arithmetic_gt_zero("1a") is False, "a bad number, not a variable"
-    assert port.bash_arithmetic_gt_zero("1 2") is False, "a syntax error, not a variable"
-
-    # THE FATAL ROWS: a bare word is a variable reference, and an unset one under `set -u` ends the script.
-    for fatal in ("null", "a b", "a-b"):
-        with pytest.raises(port.BashUnboundError) as caught:
-            port.bash_arithmetic_gt_zero(fatal)
-        assert caught.value.name == fatal.split()[0].split("-")[0]
 
 
 def test_config_flag_words_splits_the_way_an_unquoted_expansion_does() -> None:
@@ -735,6 +780,7 @@ def test_the_argv_builders_match_the_twins_words() -> None:
         "--remote",
         "--output=/t/e.sql",
     ]
+    assert port.export_argv("db", "/t/e.sql", ["--config", "w"])[-3:-1] == ["--config", "w"]
     assert port.execute_file_argv("db", [], "/t/i.sql")[-1] == "--file=/t/i.sql"
     assert port.execute_file_argv("db", ["--config", "w"], "/t/i.sql")[-3:-1] == ["--config", "w"]
     assert port.fk_check_argv("db", [])[-2:] == [
@@ -750,7 +796,8 @@ def test_the_helpers_the_selftest_leans_on_are_exported() -> None:
         "export_argv",
         "execute_file_argv",
         "fk_check_argv",
-        "bash_arithmetic_gt_zero",
+        "fk_violations",
+        "export_redacted",
         "wc_lines",
     ):
         assert inspect.isfunction(getattr(port, name)), name
@@ -814,3 +861,166 @@ def test_the_usage_line_runs_as_printed_from_the_repository_root() -> None:
     )
     assert proc.returncode == 1, proc.stderr
     assert proc.stderr == "✗ %s\n" % port.USAGE
+
+
+# --------------------------------------------------------------------------- The two opt-in additions: --drop-tables and --row-parity ---------------------------------------------------------------------------
+
+SEED_ARGS = ("--source", "account-eu-src", "--target", "account-eu")
+
+
+def _port_only(tmp_path, *, args, **extra):
+    """The port alone: these options do not exist in the twin, so there is no golden to agree with."""
+    root = fixture(tmp_path)
+    proc, calls = _run_live(root, "new", args=args, **extra)
+    return root, proc, calls
+
+
+def test_drop_tables_empties_those_rows_after_the_dump_and_keeps_the_schema(tmp_path) -> None:
+    _root, proc, _calls_log = _port_only(
+        tmp_path,
+        args=(*SEED_ARGS, "--drop-tables", "sessions,users"),
+        FAKE_STASH_FILE=str(tmp_path / "import.sql"),
+    )
+    assert proc.returncode == 0, proc.stderr
+    sql = (tmp_path / "import.sql").read_text(encoding="utf-8")
+    assert sql.endswith(
+        'DELETE FROM "sessions";\nDELETE FROM "users";\nPRAGMA foreign_keys=ON;\n'
+    ), sql
+    # Rows go, the schema stays: the CREATE statements are untouched and no extra DROP is generated.
+    assert sql.count("DROP TABLE IF EXISTS") == 2
+    assert "CREATE TABLE `sessions`" in sql
+
+
+def test_without_drop_tables_the_import_has_no_delete(tmp_path) -> None:
+    _root, proc, _calls_log = _port_only(
+        tmp_path, args=SEED_ARGS, FAKE_STASH_FILE=str(tmp_path / "import.sql")
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "DELETE FROM" not in (tmp_path / "import.sql").read_text(encoding="utf-8")
+
+
+def test_drop_tables_refuses_a_name_that_is_not_an_identifier(tmp_path) -> None:
+    _root, proc, calls = _port_only(
+        tmp_path, args=(*SEED_ARGS, "--drop-tables", 'a";DROP TABLE x;--')
+    )
+    assert proc.returncode == 1
+    assert "not a plain identifier" in proc.stderr
+    assert _calls(calls) == [], "the refusal comes before anything runs"
+
+
+def test_drop_tables_refuses_a_name_with_a_trailing_newline(tmp_path) -> None:
+    _root, proc, calls = _port_only(tmp_path, args=(*SEED_ARGS, "--drop-tables", "sessions\n"))
+    assert proc.returncode == 1
+    assert "not a plain identifier" in proc.stderr
+    assert _calls(calls) == []
+
+
+def test_row_parity_passes_when_every_table_matches(tmp_path) -> None:
+    counts = json.dumps(
+        {"account-eu-src": {"users": 3, "sessions": 5}, "account-eu": {"users": 3, "sessions": 5}}
+    )
+    _root, proc, calls = _port_only(tmp_path, args=(*SEED_ARGS, "--row-parity"), FAKE_COUNTS=counts)
+    assert proc.returncode == 0, proc.stderr
+    assert "Row parity holds: 2 tables, 8 rows in the source" in proc.stderr
+    reads = [c for c in _calls(calls) if "--command=SELECT" in c]
+    assert len(reads) == 4, reads  # table list and counts, source then target
+
+
+def test_row_parity_names_the_table_that_arrived_short(tmp_path) -> None:
+    counts = json.dumps(
+        {"account-eu-src": {"users": 3, "sessions": 5}, "account-eu": {"users": 3, "sessions": 4}}
+    )
+    _root, proc, _calls_log = _port_only(
+        tmp_path, args=(*SEED_ARGS, "--row-parity"), FAKE_COUNTS=counts
+    )
+    assert proc.returncode == 1
+    assert "row parity: sessions: source 5, target 4, expected 5" in proc.stderr
+    assert "users" not in proc.stderr.replace("account-eu", "")
+
+
+def test_row_parity_expects_zero_rows_for_a_dropped_table(tmp_path) -> None:
+    counts = json.dumps(
+        {"account-eu-src": {"users": 3, "sessions": 5}, "account-eu": {"users": 3, "sessions": 0}}
+    )
+    _root, proc, _calls_log = _port_only(
+        tmp_path, args=(*SEED_ARGS, "--drop-tables", "sessions", "--row-parity"), FAKE_COUNTS=counts
+    )
+    assert proc.returncode == 0, proc.stderr
+    # Control: the same counts without the drop are a parity failure, so the pass above is the drop's doing.
+    _root2, control, _calls2 = _port_only(
+        tmp_path / "control", args=(*SEED_ARGS, "--row-parity"), FAKE_COUNTS=counts
+    )
+    assert control.returncode == 1
+
+
+def test_row_parity_refuses_a_table_missing_from_the_target(tmp_path) -> None:
+    counts = json.dumps({"account-eu-src": {"users": 3, "sessions": 5}, "account-eu": {"users": 3}})
+    _root, proc, _calls_log = _port_only(
+        tmp_path, args=(*SEED_ARGS, "--row-parity"), FAKE_COUNTS=counts
+    )
+    assert proc.returncode == 1
+    assert "sessions: missing in the target (source 5 rows)" in proc.stderr
+
+
+def test_drop_tables_naming_a_table_the_source_lacks_fails_the_parity_run(tmp_path) -> None:
+    counts = json.dumps({"account-eu-src": {"users": 3}, "account-eu": {"users": 3}})
+    _root, proc, _calls_log = _port_only(
+        tmp_path, args=(*SEED_ARGS, "--drop-tables", "nope", "--row-parity"), FAKE_COUNTS=counts
+    )
+    assert proc.returncode == 1
+    assert "names a table the source does not have: nope" in proc.stderr
+
+
+def test_row_parity_counts_in_chunks_d1_accepts(tmp_path) -> None:
+    """D1 refuses a long compound SELECT; the fake refuses past FAKE_COMPOUND_LIMIT (5), so nine tables pass only when the count query is chunked."""
+    tables = {"t%d" % i: i for i in range(9)}
+    counts = json.dumps({"account-eu-src": tables, "account-eu": tables})
+    _root, proc, calls = _port_only(tmp_path, args=(*SEED_ARGS, "--row-parity"), FAKE_COUNTS=counts)
+    assert proc.returncode == 0, proc.stderr
+    assert "Row parity holds: 9 tables, 36 rows in the source" in proc.stderr
+    reads = [c for c in _calls(calls) if "--command=SELECT" in c]
+    # Per side: the table list, then ceil(9 / PARITY_CHUNK) count queries.
+    assert len(reads) == 2 * (1 + 3), reads
+
+
+def test_parity_differences_is_pure() -> None:
+    assert port.parity_differences({"a": 1}, {"a": 1}, []) == []
+    assert port.parity_differences({"a": 1}, {"a": 0}, ["a"]) == []
+    assert port.parity_differences({"a": 1, "b": 2}, {"a": 1, "c": 1}, []) == [
+        "b: missing in the target (source 2 rows)",
+        "c: only in the target (1 rows)",
+    ]
+
+
+@pytest.mark.parametrize("name", ["users\n", "a b", "1x", ""])
+def test_table_name_is_anchored_for_match_and_search_alike(name: str) -> None:
+    assert port.TABLE_NAME.fullmatch(name) is None
+    assert port.TABLE_NAME.match(name) is None
+    assert port.TABLE_NAME.search(name) is None
+
+
+def test_table_name_accepts_a_plain_identifier() -> None:
+    assert port.TABLE_NAME.search("users_2") is not None
+
+
+# --------------------------------------------------------------------------- finding fc8ad2fd: the worker directory ---------------------------------------------------------------------------
+
+
+def test_every_wrangler_call_runs_from_the_worker_directory(tmp_path) -> None:
+    """Defect 1 of finding fc8ad2fd: run from outside a worker directory (here the fixture's parent, as `test_d1_migrations` runs it from the repository root), `npx --no-install` finds no pinned install and answers "npx canceled due to missing packages". Every call, row parity included, must come from `workers/account`."""
+    _root, proc, calls = _port_only(
+        tmp_path, args=(*SEED_ARGS, "--row-parity"), FAKE_NPX_LOCAL_ONLY="1"
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "npx canceled" not in proc.stdout + proc.stderr
+    assert _verbs(calls)[:3] == ["d1 export", "d1 execute", "d1 execute"], _verbs(calls)
+
+
+def test_the_local_only_fake_refuses_without_the_pinned_install(tmp_path) -> None:
+    """THE CONTROL: with the worker directory's install removed, the same fake fails every export the way npm does, so the test above can go red."""
+    root = fixture(tmp_path)
+    (root.joinpath(*port.WRANGLER_CWD_REL, "node_modules", ".bin", "wrangler")).unlink()
+    proc, calls = _run_live(root, "new", args=SEED_ARGS, FAKE_NPX_LOCAL_ONLY="1")
+    assert proc.returncode != 0
+    assert "npx canceled due to missing packages" in proc.stdout + proc.stderr
+    assert _verbs(calls).count("d1 export") == port.EXPORT_ATTEMPTS

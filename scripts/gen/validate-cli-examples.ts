@@ -19,6 +19,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { glob } from 'glob';
+// The positional-detector control runs at import and exits 1 on a failed case, so the gate proves its detector before it validates anything
+import '../__tests__/positional-cli-detector.control.ts';
 // Curated contract examples (also parsed and gated by the contract generator;
 // validated here too so this script stays the one place that proves every `rdc …` line in the repo against the command tree)
 import { COMMAND_EXAMPLES } from '../../packages/cli/src/config/command-docs.ts';
@@ -255,7 +257,7 @@ function formatParsedError(parsed: ReturnType<typeof parseRdcCommand>): string {
     case 'missing-mandatory-option':
       return `Missing mandatory option ${parsed.flag} for "rdc ${parsed.commandPath}"`;
     default:
-      return `Invalid command (${parsed.reason || 'unknown'})`;
+      return `Invalid command (${parsed.reason})`;
   }
 }
 

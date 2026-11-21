@@ -12,6 +12,7 @@ THE ANTI-VACUITY CLAIMS, because a differential that compared two empty transcri
 """
 
 import contextlib
+import difflib
 import http.server
 import json
 import os
@@ -32,6 +33,7 @@ from rediacc_ci import paths
 from rediacc_ci.core import account, account_lifecycle, shadow_driver, stubfarm
 from rediacc_ci.core import account_lifecycle_shadow_driver as lifecycle_driver
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.wkloader import path_farm_without
 from rediacc_ci.well_known import ACCOUNT_DEV_PORT
 
 # NO MODULE-LEVEL GROUP SINCE 2026-10-05 (agent/plans/PLAN-prepush-full-cpu.md PF14). The module used to declare `XDIST_GROUP = "ports"`, which put all 107 items (183 s of test time on 2026-10-03) and three other modules on one worker. Two resources here really are machine-wide, both fixed by the drivers rather than by these tests, so only the items that touch one carry a group, each named for its resource:
@@ -398,16 +400,7 @@ def test_a_missing_curl_degrades_on_both_sides_instead_of_raising(tmp_path) -> N
     """
     farm = tmp_path / "nocurl"
     farm.mkdir()
-    linked = 0
-    for directory in ("/usr/bin", "/bin"):
-        source = pathlib.Path(directory)
-        if not source.is_dir():
-            continue
-        for entry in source.iterdir():
-            if entry.name == "curl" or (farm / entry.name).exists():
-                continue
-            (farm / entry.name).symlink_to(entry)
-            linked += 1
+    linked = path_farm_without(farm, ("curl",))
     assert linked > 100, "the PATH farm collapsed to %d binaries; nothing below would run" % linked
     assert not (farm / "curl").exists(), "curl survived into the farm, so this proves nothing"
     assert shutil.which("curl") is not None, (
@@ -1134,6 +1127,35 @@ def _argv_delta_3a8d1f46(line: str) -> str:
 _LOCK_SHA_LINE = re.compile(r"\| state (web_lock_sha|lock_sha)=")
 
 
+# RULE T, commit 89015bba60 (the atomic shared dist swap): the port builds `@rediacc/shared` into `dist.build-<pid>` and `@rediacc/provisioning` as a second call, where the twin ran one `npm run build:packages`; a fake npm that emits nothing also makes the port warn that it keeps the old dist. The shared call is rewritten onto the twin's `npm run build:packages` (idempotent on the twin's own lines); the provisioning call and the warning are dropped outright on both sides (the warning is pinned by `test_a_build_that_emits_nothing_warns_and_keeps_the_old_dist` in test_setup_build_packages.py). The `call#N` / `err#N` counters are renumbered per prefix on every counted line of every lifecycle scenario, so the one build step meets the twin's one line. `test_delta_89015bba_the_build_is_two_staged_calls_in_the_port` pins the port's shape and that the rewrite meets a twin line.
+_BUILD_SHARED_CALL = re.compile(
+    r"\| npm run build -w @rediacc/shared -- --outDir \S+dist\.build-\d+ .*$"
+)
+_BUILD_PROVISIONING_CALL = re.compile(r"\| npm run build -w @rediacc/provisioning$")
+_BUILD_EMITTED_NOTHING = re.compile(r"\| ⚠ Shared build emitted nothing; keeping the existing ")
+_COUNTED_LINE = re.compile(r"^(obs \S+ \w+#)\d+(\|.*)$")
+
+
+def _build_delta_89015bba(lines: list[str]) -> list[str]:
+    out: list[str] = []
+    counters: dict[str, int] = {}
+    for original in lines:
+        if _BUILD_PROVISIONING_CALL.search(original) or _BUILD_EMITTED_NOTHING.search(original):
+            continue
+        line = _BUILD_SHARED_CALL.sub("| npm run build:packages", original)
+        counted = _COUNTED_LINE.match(line)
+        if counted:
+            number = counters.get(counted.group(1), 0)
+            counters[counted.group(1)] = number + 1
+            line = "%s%d%s" % (counted.group(1), number, counted.group(2))
+        out.append(line)
+    return out
+
+
+# RULE T, PR-TASK 79b7e92e: the port gives the root login a partner org, a POST to `/test/ensure-partner` and one banner row the twin never had. Both are dropped on both sides (the call counters are renumbered after), and `test_delta_79b7e92e_root_gets_a_partner_org_in_the_dev_logins` pins the port's side.
+_ROOT_PARTNER_LINE = re.compile(r"/test/ensure-partner|root also has a partner org")
+
+
 def _lifecycle_comparable(lines: list[str], scenario: str) -> list[str]:
     skip = LIFECYCLE_DELTA_CASES.get(scenario, set())
     kept = []
@@ -1141,11 +1163,11 @@ def _lifecycle_comparable(lines: list[str], scenario: str) -> list[str]:
         parts = line.split(" ", 2)
         if len(parts) > 1 and parts[0] == "obs" and parts[1] in skip:
             continue
-        if _LOCK_SHA_LINE.search(line):
+        if _LOCK_SHA_LINE.search(line) or _ROOT_PARTNER_LINE.search(line):
             continue
         delta = _argv_delta_3a8d1f46(line)
         kept.append(_PIDS_LINE.sub(lambda m: m.group(1) + m.group(2).replace(",", " "), delta))
-    return kept
+    return _build_delta_89015bba(kept)
 
 
 def _run_lifecycle(side: str, scenario: str) -> tuple[int, str, str]:
@@ -1188,6 +1210,41 @@ def drive_lifecycle(side: str, scenario: str) -> tuple[int, str, str]:
     return _LIFECYCLE_CACHE[key]
 
 
+def _transcript_divergence(scenario: str, old: list[str], new: list[str], cap: int = 60) -> str:
+    """An ordered diff of the two transcripts, so a reorder or a duplicated line shows up instead of an empty set difference."""
+    lines = list(
+        difflib.unified_diff(old, new, fromfile="bash twin", tofile="port", lineterm="", n=1)
+    )
+    shown = lines[:cap]
+    if len(lines) > cap:
+        shown.append("... %d more diff lines" % (len(lines) - cap))
+    return "scenario %s diverged:\n%s" % (scenario, "\n".join(shown))
+
+
+def test_the_divergence_message_shows_a_duplicated_line() -> None:
+    """79a0a3d9.1: a line printed twice is a divergence the message names."""
+    message = _transcript_divergence("demo", ["obs a"], ["obs a", "obs a"])
+    assert "+obs a" in message
+    assert message.startswith("scenario demo diverged:")
+
+
+def test_the_divergence_message_is_capped_and_says_how_much_it_cut() -> None:
+    old = ["obs %d" % i for i in range(100)]
+    new = ["obs x%d" % i for i in range(100)]
+    message = _transcript_divergence("demo", old, new)
+    assert "... " in message
+    assert message.rstrip().endswith("more diff lines")
+    assert len(message.splitlines()) <= 1 + 60 + 1
+
+
+def test_the_divergence_message_shows_a_reorder() -> None:
+    """CONTROL. Two transcripts that differ only in order: the old set difference printed `[]` for them."""
+    message = _transcript_divergence("demo", ["obs a", "obs b"], ["obs b", "obs a"])
+    assert "+obs b" in message
+    assert "-obs b" in message
+    assert "[]" not in message
+
+
 @pytest.mark.xdist_group(LIFECYCLE_GROUP)
 @pytest.mark.parametrize("scenario", LIFECYCLE_SCENARIOS)
 def test_the_lifecycle_port_matches_the_live_twin(scenario: str) -> None:
@@ -1198,8 +1255,7 @@ def test_the_lifecycle_port_matches_the_live_twin(scenario: str) -> None:
     old = _lifecycle_comparable(old_out.splitlines(), scenario)
     new = _lifecycle_comparable(new_out.splitlines(), scenario)
     if old != new:
-        diverged = sorted(set(old) ^ set(new))
-        pytest.fail("scenario %s diverged:\n%s" % (scenario, "\n".join(diverged[:40])))
+        pytest.fail(_transcript_divergence(scenario, old, new))
 
 
 @pytest.mark.xdist_group(LIFECYCLE_GROUP)
@@ -1611,7 +1667,8 @@ def test_stripe_listen_takes_its_key_from_the_environment(monkeypatch, tmp_path)
     monkeypatch.setenv("PATH", "%s:%s" % (bindir, os.environ["PATH"]))
     monkeypatch.setenv("STRIPE_SANDBOX_SECRET_KEY", key)
     monkeypatch.delenv("STRIPE_API_KEY", raising=False)
-    monkeypatch.delenv("STRIPE_SANDBOX_WEBHOOK_SECRET", raising=False)
+    # setenv, not delenv: stripe_auto writes os.environ["STRIPE_SANDBOX_WEBHOOK_SECRET"] itself, and a delenv of an absent name registers no undo, so the secret outlived this test and broke deploy_bench's half-set-pair check in a later module (ci:quick 2026-11-12, test_ops_units).
+    monkeypatch.setenv("STRIPE_SANDBOX_WEBHOOK_SECRET", "")
     monkeypatch.setattr(account_lifecycle, "_capture", lambda _argv, **_kw: (1, ""))
     monkeypatch.setattr(account_lifecycle, "_tail", lambda *_a, **_kw: None)
     monkeypatch.setattr(account_lifecycle, "_sleep", lambda _s: __import__("time").sleep(0.05))
@@ -1642,7 +1699,8 @@ def test_delta_3a8d1f46_dev_credentials_send_every_body_on_stdin(monkeypatch, ca
     assert account_lifecycle.dev_credentials("4800") == 0
     capsys.readouterr()
     posts = [(argv, body) for argv, body, _env in calls if argv[0] == "curl" and "POST" in argv]
-    assert len(posts) == 6, [argv for argv, _ in posts]
+    assert len(posts) == 7, [argv for argv, _ in posts]
+    assert any(argv[4].endswith("/test/ensure-partner") for argv, _ in posts)
     bodies: list[str] = []
     for argv, body in posts:
         assert argv[-2:] == ["--data", "@-"], argv
@@ -1653,6 +1711,25 @@ def test_delta_3a8d1f46_dev_credentials_send_every_body_on_stdin(monkeypatch, ca
         assert bodies[-1], argv
     assert sum('"password":"%s"' % ("a" * 16) in b for b in bodies) == 3
     assert any('"password":"%s"' % account_lifecycle.STORE_PASSWORD in b for b in bodies)
+
+
+def test_delta_79b7e92e_root_gets_a_partner_org_in_the_dev_logins(monkeypatch, capsys) -> None:
+    """PR-TASK 79b7e92e. The root email is promoted through `/test/ensure-partner` right after its login, and the banner says so."""
+    calls: list[tuple[list[str], object, dict | None]] = []
+    monkeypatch.setattr(account_lifecycle.subprocess, "run", _recording_run(calls))
+    assert account_lifecycle.dev_credentials("4800") == 0
+    out = capsys.readouterr().out
+    posts = [(argv, body) for argv, body, _env in calls if argv[0] == "curl" and "POST" in argv]
+    urls = [argv[4].rsplit("/test/", 1)[1] for argv, _ in posts]
+    assert urls.index("ensure-partner") == 3
+    raw = posts[3][1]
+    body = raw.decode() if isinstance(raw, bytes) else str(raw)
+    assert '"orgName":"Root partner (dev)"' in body
+    assert account_lifecycle.DEFAULT_ROOT_EMAIL in body
+    root_line = next(ln for ln in out.splitlines() if "root also has a partner org" in ln)
+    assert "customer/partner/admin" in root_line, "the banner names the areas root can open"
+    assert len(root_line) == 69, "the closing bar stays in its column"
+    assert root_line.endswith("│")
 
 
 def test_delta_3a8d1f46_the_rustfs_keys_reach_docker_through_its_environment(
@@ -1706,6 +1783,27 @@ def test_delta_3a8d1f46_the_recording_still_carries_the_twins_argv() -> None:
     assert "application/json --data @-" in new_dev
     twin_line = next(line for line in old_dev.splitlines() if "ensure-login" in line)
     assert _argv_delta_3a8d1f46(twin_line) != twin_line
+
+
+@pytest.mark.xdist_group(LIFECYCLE_GROUP)
+def test_delta_89015bba_the_build_is_two_staged_calls_in_the_port() -> None:
+    """The control on `_build_delta_89015bba`: the frozen twin transcript still carries the single `npm run build:packages`, the port's carries the staged shared build plus the provisioning build, and the rewrite is what makes them meet."""
+    _, old_dev, _ = drive_lifecycle("old", "dev")
+    _, new_dev, _ = drive_lifecycle("new", "dev")
+    assert "| npm run build:packages" in old_dev
+    assert "npm run build -w @rediacc/shared -- --outDir" in new_dev
+    assert "npm run build -w @rediacc/provisioning" in new_dev
+    assert "| npm run build:packages" not in new_dev
+    comparable_new = _lifecycle_comparable(new_dev.splitlines(), "dev")
+    comparable_old = _lifecycle_comparable(old_dev.splitlines(), "dev")
+    assert "npm run build -w @rediacc/shared" not in "\n".join(comparable_new)
+    assert "npm run build -w @rediacc/provisioning" not in "\n".join(comparable_new)
+    # The rewrite is what makes them meet: the port's comparable lines hold the twin's single build line, at the twin's counter.
+    twin_build = [line for line in comparable_old if line.endswith("| npm run build:packages")]
+    assert twin_build
+    assert [
+        line for line in comparable_new if line.endswith("| npm run build:packages")
+    ] == twin_build
 
 
 def test_delta_l6_a_failing_install_shows_more_than_its_last_line(tmp_path, capsys) -> None:

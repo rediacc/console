@@ -16,6 +16,7 @@ import re
 import shutil
 import subprocess
 import textwrap
+import threading
 import time
 
 import pytest
@@ -381,6 +382,126 @@ def test_the_stub_farm_really_shadows_docker(tmp_path) -> None:
     assert len(calls) >= 8, "the twin made %d stubbed calls; the farm is not being reached" % len(
         calls
     )
+
+
+# Larger than the default pipe buffer (64 KiB) and the default pipe-max-size (1 MiB), so a write into an unread pipe cannot complete into the buffer and the stub's exit cannot be missed.
+PAYLOAD = b"keys\n" * 262144
+
+
+def _feed_node_stub(tmp_path, rows: list[dict], *, after_exit: bool, timeout_s: float = 30) -> str:
+    """Pipe key JSON into the node stub as env.sh's `echo "$KEYS" | node ...` does. With `after_exit` the producer writes only once the stub has provably exited, so a stub that never reads loses the write with EPIPE (what SIGPIPE is under bash) with no timing involved; a stub that drains reads to EOF first, so it must be fed before the wait. Returns the stub's exit status, "EPIPE" when the write found the stub gone, or "KILLED" when the watchdog had to kill a stub that outlived `timeout_s` (a hung stub is never read as an EPIPE)."""
+    case = svc_driver.Case("pipe", "start", [], rows)
+    farm = svc_driver.build_farm(tmp_path, case)
+    env = svc_driver.side_env(tmp_path, farm, case)
+    with subprocess.Popen(
+        [str(farm.bin / "node"), "-e", "x.private)"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        bufsize=0,
+        env=env,
+    ) as proc:
+        assert proc.stdin is not None
+        # Armed before the wait as well as the write: a stub that never exits would block `wait` for ever, and a stub that stays alive without reading would block the write; the watchdog kills it either way, so the test fails instead of hanging.
+        killed = threading.Event()
+
+        def _kill() -> None:
+            # A stub that already exited is not a hung one: a Timer firing between its clean exit and `cancel` must not turn that exit into "KILLED".
+            if proc.poll() is None:
+                killed.set()
+                proc.kill()
+
+        watchdog = threading.Timer(timeout_s, _kill)
+        watchdog.start()
+        try:
+            if after_exit:
+                proc.wait()
+            pending = memoryview(PAYLOAD)
+            while pending:  # an unbuffered write may take only what fits the pipe
+                pending = pending[proc.stdin.write(pending) :]
+            proc.stdin.close()
+        except BrokenPipeError:
+            return "KILLED" if killed.is_set() else "EPIPE"
+        finally:
+            watchdog.cancel()
+        return "KILLED" if killed.is_set() else str(proc.wait())
+
+
+def _pipefail_status(tmp_path, rows: list[dict]) -> int:
+    """env.sh's shape under bash: `set -o pipefail; <producer> | node ...`; the pipeline's exit status."""
+    case = svc_driver.Case("pipe", "start", [], rows)
+    farm = svc_driver.build_farm(tmp_path, case)
+    env = svc_driver.side_env(tmp_path, farm, case)
+    script = 'set -o pipefail; head -c %d /dev/zero | node -e "x.private)" > /dev/null' % len(
+        PAYLOAD
+    )
+    return subprocess.run(["bash", "-c", script], env=env, timeout=30, check=False).returncode
+
+
+def test_the_keygen_node_stub_drains_stdin_like_node(tmp_path) -> None:
+    """REGRESSION (2026-11-17, ci:quick under load): `start/preferred-busy` exited 141. `env.sh` pipes the key JSON into `node` under pipefail; the stub answered without reading, so `echo` hit a closed pipe and SIGPIPE ended env.sh. The producer writes after the consumer has exited, so the control row (no drain) loses the write every time and the KEYGEN row, which reads to EOF and so cannot have exited, never does."""
+    undrained = [svc_driver.row("node", "-e *.private)*", out="PRIVKEY")]
+    assert _feed_node_stub(tmp_path / "control", undrained, after_exit=True) == "EPIPE"
+    keygen = [r for r in svc_driver.KEYGEN if r["name"] == "node" and ".private)" in r["glob"]]
+    assert len(keygen) == 1
+    assert _feed_node_stub(tmp_path / "fixed", keygen, after_exit=False) == "0"
+
+
+def test_a_stub_that_never_exits_is_killed_by_the_watchdog_not_waited_on(
+    tmp_path, monkeypatch
+) -> None:
+    """Finding 3db5d182.1: with `after_exit` the wait ran before the watchdog was armed, so a stub that never exits hung the test. The node stub is replaced by a process that exits only when killed, and the feed must return \"KILLED\", which the \"EPIPE\" control row never accepts (finding 07304bd3.1)."""
+    real_popen = subprocess.Popen
+
+    class Hangs:
+        def __init__(self) -> None:
+            self.killed = threading.Event()
+            self.stdin = self
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_exc) -> None:
+            return None
+
+        def wait(self) -> int:
+            self.killed.wait()
+            return -9
+
+        def poll(self) -> int | None:
+            return -9 if self.killed.is_set() else None
+
+        def kill(self) -> None:
+            self.killed.set()
+
+        def write(self, _data) -> int:
+            raise BrokenPipeError
+
+    def popen(argv, *args, **kwargs):
+        if str(argv[0]).endswith("/node"):
+            return Hangs()
+        return real_popen(argv, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "Popen", popen)
+    done: list[str] = []
+    undrained = [svc_driver.row("node", "-e *.private)*", out="PRIVKEY")]
+    worker = threading.Thread(
+        target=lambda: done.append(
+            _feed_node_stub(tmp_path, undrained, after_exit=True, timeout_s=0.5)
+        ),
+        daemon=True,
+    )
+    worker.start()
+    worker.join(15)
+    assert not worker.is_alive(), "the feed is still waiting on a stub that never exits"
+    assert done == ["KILLED"]
+
+
+def test_the_keygen_node_stub_survives_a_pipefail_pipeline(tmp_path) -> None:
+    """The same regression through bash: the undrained control ends the pipeline with 141 (SIGPIPE), the KEYGEN row with 0."""
+    undrained = [svc_driver.row("node", "-e *.private)*", out="PRIVKEY")]
+    assert _pipefail_status(tmp_path / "control", undrained) == 141
+    keygen = [r for r in svc_driver.KEYGEN if r["name"] == "node" and ".private)" in r["glob"]]
+    assert _pipefail_status(tmp_path / "fixed", keygen) == 0
 
 
 def test_a_transcript_difference_is_a_divergence() -> None:

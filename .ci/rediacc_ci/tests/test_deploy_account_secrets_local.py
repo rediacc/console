@@ -67,83 +67,105 @@ def test_the_real_tree_agrees():
     assert code == (0 if installed else 2), lines
 
 
+def _regions_row(region):
+    doc = json.loads(local.paths.repo_root().joinpath("regions.json").read_text(encoding="utf-8"))
+    return next(r for r in doc["regions"] if r["id"] == region)
+
+
 @pytest.mark.parametrize(
-    ("region", "target", "worker", "suffix", "ses", "jur"),
+    ("region", "suffix", "ses", "jur", "worker"),
     [
-        ("eu", "stable", "rediacc-account-eu", "EU", "eu-central-1", "eu"),
-        ("eu", "edge", "edge-rediacc-account-eu", "EU", "eu-central-1", "eu"),
-        ("us", "stable", "rediacc-account-us", "US", "us-east-1", ""),
-        ("asia", "edge", "edge-rediacc-account-asia", "ASIA", "eu-central-1", ""),
+        ("eu", "EU", "eu-central-1", "eu", "account-eu"),
+        ("us", "US", "us-east-1", "", "account-us"),
+        ("asia", "ASIA", "eu-central-1", "", "account-asia"),
     ],
 )
-def test_derive_reads_regions_json(region, target, worker, suffix, ses, jur):
-    d = local.derive(region, target)
+def test_derive_reads_regions_json(region, suffix, ses, jur, worker):
+    d = local.derive(region)
+    row = _regions_row(region)
+    # The Worker name is pinned literally as well as against the row, so a wrong workerName in regions.json fails here.
     assert d["WORKER_NAME"] == worker
+    assert d["WORKER_NAME"] == row["workerName"]
     assert d["SUFFIX"] == suffix
     assert d["AWS_SES_REGION"] == ses
     assert d["R2_JURISDICTION"] == jur
-    assert d["TARGET"] == target
-    assert d["BACKUP_BUCKET_STABLE"].startswith("rediacc-backups-")
-    assert d["BACKUP_BUCKET_EDGE"].startswith("edge-rediacc-backups-")
+    # The shared Worker takes Stripe, which is the pusher's `stable` channel, and has one bucket.
+    assert d["TARGET"] == "stable"
+    assert d["BACKUP_BUCKET_STABLE"] == row["backupR2"]["name"]
+    assert "BACKUP_BUCKET_EDGE" not in d
 
 
 def test_derive_refuses_an_unknown_region():
     with pytest.raises(local.RefusalError):
-        local.derive("mars", "stable")
+        local.derive("mars")
 
 
-def test_every_region_and_channel_has_a_profile_binding_its_suffix():
-    for region, suffix in (("eu", "EU"), ("us", "US"), ("asia", "ASIA")):
-        for target in ("stable", "edge"):
-            names = local.profile_store_names(local.profile_name(region, target))
-            for prefix in (
-                "AWS_SES_ACCESS_KEY_ID",
-                "AWS_SES_SECRET_ACCESS_KEY",
-                "OBS_OTLP_CREDENTIALS",
-            ):
-                assert "%s_%s" % (prefix, suffix) in names
-            assert ("STRIPE_WEBHOOK_SECRET_" + suffix in names) == (target == "stable")
-            own = target.upper()
-            other = "EDGE" if target == "stable" else "STABLE"
-            assert "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_" + own in names
-            assert "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_" + other not in names
-            # One config server key per region and channel: its own name and no other.
-            assert "ACCOUNT_CONFIG_SERVER_KEY_%s_%s" % (suffix, own) in names
-            assert [n for n in names if n.startswith("ACCOUNT_CONFIG_SERVER_KEY")] == [
-                "ACCOUNT_CONFIG_SERVER_KEY_%s_%s" % (suffix, own)
-            ]
+def test_the_per_channel_profiles_are_gone():
+    table = local.bws_env.profiles()
+    assert sorted(p for p in table if p.startswith("account-secrets-")) == [
+        "account-secrets-asia",
+        "account-secrets-eu",
+        "account-secrets-us",
+    ]
 
 
-def test_profile_binds_every_variable_the_push_reads():
+def test_every_region_has_a_profile_binding_its_suffix_and_stripe():
+    for region, suffix, key_value in (
+        ("eu", "EU", "STABLE"),
+        ("us", "US", "EDGE"),
+        ("asia", "ASIA", "EDGE"),
+    ):
+        names = local.profile_store_names(local.profile_name(region))
+        for prefix in (
+            "AWS_SES_ACCESS_KEY_ID",
+            "AWS_SES_SECRET_ACCESS_KEY",
+            "OBS_OTLP_CREDENTIALS",
+            "STRIPE_WEBHOOK_SECRET",
+        ):
+            assert "%s_%s" % (prefix, suffix) in names
+        assert "STRIPE_SECRET_KEY" in names
+        # One backup pair, and the old edge pair is never bound.
+        assert "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE" in names
+        assert "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE" not in names
+        # One config server key and one KEK per region. EU takes the EU_STABLE value, because the seeded config objects were encrypted under it; US and ASIA seed from edge, so they take their edge value, bound under the `_STABLE` local name the pusher reads.
+        keys = [n for n in names if n.startswith("ACCOUNT_CONFIG_SERVER_KEY")]
+        keks = [n for n in names if n.startswith("ACCOUNT_BACKUP_STORE_KEK")]
+        if key_value == "STABLE":
+            assert keys == ["ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE"]
+            assert keks == ["ACCOUNT_BACKUP_STORE_KEK_EU_STABLE"]
+        else:
+            assert keys == ["ACCOUNT_CONFIG_SERVER_KEY_%s_EDGE" % suffix]
+            assert keks == ["ACCOUNT_BACKUP_STORE_KEK_%s_EDGE" % suffix]
+
+
+@pytest.mark.parametrize("region", ["eu", "us", "asia"])
+def test_profile_binds_every_variable_the_push_reads(region):
     """Every non-computed source the push reads, plus the fan-ins, is bound by the profile."""
-    for target in ("stable", "edge"):
-        names = set(local.profile_store_names(local.profile_name("eu", target)))
-        read = {source for _k, _v, source in pusher.KEYS if source}
-        if target == "edge":
-            read.discard("STRIPE_SECRET_KEY")
-        read.discard("AWS_SES_REGION")  # from regions.json, not the store
-        assert read <= names, sorted(read - names)
+    names = set(local.profile_store_names(local.profile_name(region)))
+    read = {source for _k, _v, source in pusher.KEYS if source}
+    read.discard("AWS_SES_REGION")  # from regions.json, not the store
+    assert read <= names, sorted(read - names)
 
 
-@pytest.mark.parametrize("target", ["stable", "edge"])
-def test_dry_run_prints_the_31_names_and_no_value(target, capsys, monkeypatch):
+def test_dry_run_prints_every_pushed_name_and_no_value(capsys, monkeypatch):
     # The pin reads workers/account/node_modules, which the quality-pytest job does not install; this case is about the names, and the refusal has its own case.
     monkeypatch.setattr(local.wrangler_pin, "check", lambda _root: (0, []))
-    rc = local.run(["--region", "eu", "--target", target, "--dry-run"])
+    rc = local.run(["--region", "eu", "--dry-run"])
     out = capsys.readouterr().out
     assert rc == 0
-    # 31 since PLAN-free-license F2 (2fc16b442) added FREE_LICENSE_HMAC_KEY, which the account Worker reads.
-    assert "31 Worker key(s) pushed:" in out
+    # The count follows the pusher's own list (a hard-coded one went stale when ACCOUNT_AE_READ_TOKEN and CLOUDFLARE_ACCOUNT_ID joined it).
+    assert "%d Worker key(s) pushed:" % len(pusher.KEYS) in out
     assert "  ACCOUNT_CONFIG_SERVER_KEY\n" in out
+    assert "  ACCOUNT_BACKUP_STORE_KEK\n" in out
     assert "  FREE_LICENSE_HMAC_KEY\n" in out
     for key, _v, _s in pusher.KEYS:
         assert "  %s\n" % key in out
-    assert "rediacc-backups-eu" in out
+    assert _regions_row("eu")["backupR2"]["name"] in out
 
 
 def test_usage_errors_exit_2(capsys):
-    assert local.run(["--region", "eu"]) == 2
-    assert local.run(["--region", "eu", "--target", "prod"]) == 2
+    assert local.run([]) == 2
+    assert local.run(["--region", "eu", "--target", "stable"]) == 2
     assert "usage" in capsys.readouterr().err
 
 
@@ -164,7 +186,7 @@ def test_planted_drift_refuses_before_any_push(monkeypatch, capsys):
     pushed: list[object] = []
     env = {**td._ENV, "CLOUDFLARE_TURNSTILE_SECRET_KEY": "0xSTALE-BITWARDEN-VALUE"}
     rc = local.run(
-        ["--region", "eu", "--target", "stable"],
+        ["--region", "eu"],
         hydrate_fn=lambda _p: env,
         fetch=td.fake_fetch(td._live(), {td._SITEKEY: td._PLANT_WIDGET_VALUE}),
         push_fn=_recorder(pushed),
@@ -180,14 +202,14 @@ def test_matching_widget_pushes_with_the_derived_environment(monkeypatch):
     monkeypatch.setattr(wrangler_pin, "check", lambda _root: (0, []))
     pushed: list[dict[str, str]] = []
     rc = local.run(
-        ["--region", "eu", "--target", "edge"],
+        ["--region", "eu"],
         hydrate_fn=lambda _p: _env_ok(),
         fetch=td.fake_fetch(td._live(), {td._SITEKEY: td._PLANT_WIDGET_VALUE}),
         push_fn=_recorder(pushed),
     )
     assert rc == 0
-    assert pushed[0]["WORKER_NAME"] == "edge-rediacc-account-eu"
-    assert pushed[0]["TARGET"] == "edge"
+    assert pushed[0]["WORKER_NAME"] == _regions_row("eu")["workerName"]
+    assert pushed[0]["TARGET"] == "stable"
 
 
 def test_a_pin_mismatch_refuses_before_hydration(monkeypatch, capsys):
@@ -196,7 +218,7 @@ def test_a_pin_mismatch_refuses_before_hydration(monkeypatch, capsys):
     def boom(_p):
         raise AssertionError("hydrated despite a pin mismatch")
 
-    rc = local.run(["--region", "eu", "--target", "stable"], hydrate_fn=boom)
+    rc = local.run(["--region", "eu"], hydrate_fn=boom)
     assert rc == 1
     assert "pin mismatch" in capsys.readouterr().err
 
@@ -233,8 +255,8 @@ ENV = {"CLOUDFLARE_API_TOKEN": "tok", "CLOUDFLARE_ACCOUNT_ID": "acct"}
 
 def test_prune_dry_run_lists_extras_and_deletes_nothing():
     pushed = prune.expected_names()
-    api = _Api({"rediacc-account-eu": _names(*pushed, "OLD_NAME")})
-    rc, lines, rows = prune.run(["--region", "eu", "--target", "stable"], ENV, api)
+    api = _Api({"account-eu": _names(*pushed, "OLD_NAME")})
+    rc, lines, rows = prune.run(["--region", "eu"], ENV, api)
     assert rc == 1
     assert rows[0].extras == ["OLD_NAME"]
     assert "extras: OLD_NAME" in "\n".join(lines)
@@ -242,30 +264,30 @@ def test_prune_dry_run_lists_extras_and_deletes_nothing():
 
 
 def test_prune_reports_nothing_when_live_equals_pushed():
-    api = _Api({"rediacc-account-eu": _names(*prune.expected_names())})
-    rc, lines, _rows = prune.run(["--region", "eu", "--target", "stable"], ENV, api)
+    api = _Api({"account-eu": _names(*prune.expected_names())})
+    rc, lines, _rows = prune.run(["--region", "eu"], ENV, api)
     assert rc == 0
     assert "extras: none" in lines[0]
 
 
 def test_prune_ignores_non_secret_text_bindings():
     live = [*_names(*prune.expected_names()), {"name": "SIGNING", "type": "secret_key"}]
-    api = _Api({"rediacc-account-eu": live})
-    rc, _l, _r = prune.run(["--region", "eu", "--target", "stable"], ENV, api)
+    api = _Api({"account-eu": live})
+    rc, _l, _r = prune.run(["--region", "eu"], ENV, api)
     assert rc == 0
 
 
 def test_prune_delete_goes_through_the_secrets_endpoint():
-    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "OLD/NAME")})
-    rc, lines, _r = prune.run(["--region", "eu", "--target", "stable", "--delete"], ENV, api)
+    api = _Api({"account-eu": _names(*prune.expected_names(), "OLD/NAME")})
+    rc, lines, _r = prune.run(["--region", "eu", "--delete"], ENV, api)
     assert rc == 0
     deletes = [p for m, p in api.calls if m == "DELETE"]
-    assert deletes == ["/accounts/acct/workers/scripts/rediacc-account-eu/secrets/OLD%2FNAME"]
-    assert "deleted rediacc-account-eu: OLD/NAME" in lines
+    assert deletes == ["/accounts/acct/workers/scripts/account-eu/secrets/OLD%2FNAME"]
+    assert "deleted account-eu: OLD/NAME" in lines
 
 
 def test_prune_delete_without_a_region_deletes_nothing():
-    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "OLD/NAME")})
+    api = _Api({"account-eu": _names(*prune.expected_names(), "OLD/NAME")})
     rc, lines, _r = prune.run(["--delete"], ENV, api)
     assert rc == 2
     assert api.calls == []
@@ -301,7 +323,7 @@ def _bws(have: dict[str, str]):
 
 def _archive(api, have, *extra):
     return prune.run(
-        ["--region", "eu", "--target", "stable", "--archive", *extra],
+        ["--region", "eu", "--archive", *extra],
         ENV,
         api,
         values=_bws(have),
@@ -309,7 +331,7 @@ def _archive(api, have, *extra):
 
 
 def test_prune_archive_puts_then_confirms_then_deletes():
-    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "API_KEY")})
+    api = _Api({"account-eu": _names(*prune.expected_names(), "API_KEY")})
     rc, lines, _r = _archive(api, {"ACCOUNT_SERVER_API_KEY": SECRET_VALUE})
     assert rc == 0
     assert [m for m, _p in api.calls] == ["GET", "GET", "PUT", "GET", "DELETE"]
@@ -317,12 +339,12 @@ def test_prune_archive_puts_then_confirms_then_deletes():
         {"name": "__ARCHIVE_API_KEY", "text": SECRET_VALUE, "type": "secret_text"}
     ]
     assert api.calls[-1][1].endswith("/secrets/API_KEY")
-    assert "archived rediacc-account-eu: API_KEY as __ARCHIVE_API_KEY (from the bws value)" in lines
+    assert "archived account-eu: API_KEY as __ARCHIVE_API_KEY (from the bws value)" in lines
 
 
 def test_prune_archive_never_overwrites_an_existing_archive():
     live = _names(*prune.expected_names(), "API_KEY", "__ARCHIVE_API_KEY")
-    api = _Api({"rediacc-account-eu": live})
+    api = _Api({"account-eu": live})
     rc, lines, _r = _archive(api, {"ACCOUNT_SERVER_API_KEY": SECRET_VALUE})
     assert rc == 1
     assert {m for m, _p in api.calls} == {"GET"}
@@ -330,7 +352,7 @@ def test_prune_archive_never_overwrites_an_existing_archive():
 
 
 def test_prune_archive_refuses_to_write_on_a_non_list_listing():
-    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "API_KEY")})
+    api = _Api({"account-eu": _names(*prune.expected_names(), "API_KEY")})
     gets = 0
 
     def fetch(method, path, token, body=None):
@@ -342,7 +364,7 @@ def test_prune_archive_refuses_to_write_on_a_non_list_listing():
         return api(method, path, token, body)
 
     rc, lines, _r = prune.run(
-        ["--region", "eu", "--target", "stable", "--archive"],
+        ["--region", "eu", "--archive"],
         ENV,
         fetch,
         values=_bws({"ACCOUNT_SERVER_API_KEY": SECRET_VALUE}),
@@ -353,7 +375,7 @@ def test_prune_archive_refuses_to_write_on_a_non_list_listing():
 
 
 def test_prune_delete_with_dry_run_deletes_nothing():
-    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "OLD_NAME")})
+    api = _Api({"account-eu": _names(*prune.expected_names(), "OLD_NAME")})
     rc, lines, _r = prune.run(["--region", "eu", "--delete", "--dry-run"], ENV, api)
     assert rc == 2
     assert api.calls == []
@@ -361,17 +383,17 @@ def test_prune_delete_with_dry_run_deletes_nothing():
 
 
 def test_prune_archive_leaves_a_name_without_a_bws_value():
-    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "API_KEY", "ODD_NAME")})
+    api = _Api({"account-eu": _names(*prune.expected_names(), "API_KEY", "ODD_NAME")})
     rc, lines, _r = _archive(api, {})
     assert rc == 1
     assert {m for m, _p in api.calls} == {"GET"}
     text = "\n".join(lines)
-    assert "no recoverable copy, left in place: rediacc-account-eu: API_KEY" in text
+    assert "no recoverable copy, left in place: account-eu: API_KEY" in text
     assert "ODD_NAME (bws key: unmapped)" in text
 
 
 def test_prune_archive_uses_the_region_suffix_for_otlp():
-    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "OTLP_CLIENT_CREDENTIALS")})
+    api = _Api({"account-eu": _names(*prune.expected_names(), "OTLP_CLIENT_CREDENTIALS")})
     rc, _l, _r = _archive(
         api, {"OBS_OTLP_CREDENTIALS_EU": SECRET_VALUE, "OBS_OTLP_CREDENTIALS_US": "x"}
     )
@@ -381,7 +403,7 @@ def test_prune_archive_uses_the_region_suffix_for_otlp():
 
 def test_prune_archive_names_are_not_extras():
     live = _names(*prune.expected_names(), "__ARCHIVE_API_KEY")
-    api = _Api({"rediacc-account-eu": live})
+    api = _Api({"account-eu": live})
     rc, lines, rows = _archive(api, {})
     assert rc == 0
     assert rows[0].extras == []
@@ -389,7 +411,7 @@ def test_prune_archive_names_are_not_extras():
 
 
 def test_prune_archive_never_prints_the_value():
-    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "API_KEY")})
+    api = _Api({"account-eu": _names(*prune.expected_names(), "API_KEY")})
     _rc, lines, _r = _archive(api, {"ACCOUNT_SERVER_API_KEY": SECRET_VALUE})
     assert SECRET_VALUE not in "\n".join(lines)
     _rc, lines, _r = _archive(api, {"ACCOUNT_SERVER_API_KEY": SECRET_VALUE}, "--dry-run")
@@ -397,7 +419,7 @@ def test_prune_archive_never_prints_the_value():
 
 
 def test_prune_archive_dry_run_writes_nothing():
-    api = _Api({"rediacc-account-eu": _names(*prune.expected_names(), "API_KEY")})
+    api = _Api({"account-eu": _names(*prune.expected_names(), "API_KEY")})
     rc, lines, _r = _archive(api, {"ACCOUNT_SERVER_API_KEY": SECRET_VALUE}, "--dry-run")
     assert rc == 1
     assert {m for m, _p in api.calls} == {"GET"}
@@ -415,16 +437,14 @@ def test_prune_archive_waits_for_a_listing_that_lags_the_put(monkeypatch):
                 Lagging.gets += 1
                 if Lagging.gets < 3:
                     return [
-                        r
-                        for r in self.live["rediacc-account-eu"]
-                        if not r["name"].startswith("__ARCHIVE_")
+                        r for r in self.live["account-eu"] if not r["name"].startswith("__ARCHIVE_")
                     ]
             return super().__call__(method, path, token, body)
 
-    api = Lagging({"rediacc-account-eu": _names(*prune.expected_names(), "API_KEY")})
+    api = Lagging({"account-eu": _names(*prune.expected_names(), "API_KEY")})
     rc, lines, _r = _archive(api, {"ACCOUNT_SERVER_API_KEY": SECRET_VALUE})
     assert rc == 0
-    assert "deleted rediacc-account-eu: API_KEY" in lines
+    assert "deleted account-eu: API_KEY" in lines
 
 
 def test_prune_archive_keeps_the_original_when_the_archive_is_not_listed(monkeypatch):
@@ -437,7 +457,7 @@ def test_prune_archive_keeps_the_original_when_the_archive_is_not_listed(monkeyp
                 return {}
             return super().__call__(method, path, token)
 
-    api = Lossy({"rediacc-account-eu": _names(*prune.expected_names(), "API_KEY")})
+    api = Lossy({"account-eu": _names(*prune.expected_names(), "API_KEY")})
     rc, lines, _r = _archive(api, {"ACCOUNT_SERVER_API_KEY": SECRET_VALUE})
     assert rc == 1
     assert "DELETE" not in {m for m, _p in api.calls}

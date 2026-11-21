@@ -15,7 +15,11 @@ A RECORD-ONLY COMMIT ADVANCES THE RECEIPT INSTEAD OF VOIDING IT (agent/plans/PLA
 diff is recomputed here with `git diff --no-renames`, never read from the step's own `paths`, must lie inside the record globs of .ci/policy/record-paths.json as committed in the pushed tree, and every reader gate of the touched globs must appear in the step's `gates` at exit 0, or red and listed in `failed` so the carry rule judges it. A path outside the set still voids the
 receipt. The extra git calls run only on the branch that refused before, so the common push stays one `rev-parse` and one file read.
 
-A LIVE BRANCH BEHIND origin/main IS REFUSED TOO (operator finding 2026-10-03). PR #592's first CI run went red only on Quality / Branch because main had moved three commits after 1003-1 was cut, and the push clone's origin/main was stale. Once the receipt allows, `behind_base_refusal` fetches origin/main itself (a stale ref would pass the ancestry test vacuously) and refuses an MMDD-N push to origin that does not contain it, printing the REBASE LOCALLY recipe CI prints. A fetch that fails or times out cannot judge, says so and allows.
+A COMMIT THAT ONLY SHRINKS .ci/config/carried-reds.json ADVANCES TOO (agent/plans/PLAN-ciquick-green-then-batch.md G3). Every tick that changes a carried key set edits that file, and each edit voided the receipt and forced a whole run. The file is a record path with derived readers, but a step touching it is admitted only by `carried_shrink_refusal`: the step touches that file alone, both blobs are read from git and parse, the carry at the new tree excuses nothing the old one did not (an entry added, keys added, or a switch between `"*"` and keys all refuse), and no dropped excuse still covers a red in the receipt. Removing an excuse can only make the push verdict stricter, so a shrink needs no new lane, only its readers; the rule is in this guard, not the policy, so no policy edit turns the carry file into a plain record.
+
+A LIVE BRANCH BEHIND origin/main IS REFUSED TOO (operator finding 2026-10-03). PR #592's first CI run went red only on Quality / Branch because main had moved three commits after 1003-1 was cut, and the push clone's origin/main was stale. Once the receipt allows, `behind_base_refusal` fetches origin/main itself (a stale ref would pass the ancestry test vacuously) and refuses an MMDD-N push to origin that does not contain it, printing the REBASE LOCALLY recipe CI prints. A fetch that fails or times out cannot judge, says so and allows. The refusal says whether the missing base commits are behind or ABSORBED, copies of this branch's own commits left by a rebase-merged parent (`base_split`, the split RB1's lease reader draws).
+
+EACH TREE IS JUDGED BY ITS OWN RECEIPT (PLAN-two-track-merge-dev LT6). A push typed in a linked tree of this repository, such as the landing tree that holds the PR branch beside this checkout, reads that tree's HEAD, branch and `.ci/cache/prepush-receipt.json` (`push_tree`); it used to return ALLOW because its toplevel was not CLAUDE_PROJECT_DIR. A push in another repository (another git common directory: a submodule, a scratch repository) is still not this guard's.
 
 =============================================================================
 PORT NOTES
@@ -38,6 +42,7 @@ import sys
 from typing import Any
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
+from rediacc_hooks.guards import _backup_push
 
 CHAIN = "pre-bash"
 # Re-keyed from 39 to 40 on 2026-09-22 to make room for block_push_to_protected_branch.py at 39: "this branch may not be pushed to at all" is checked before "is this tree gate-verified".
@@ -45,9 +50,24 @@ ORDER = 39
 
 # The confinement check is what keeps an advance from being a second way past the tree comparison: without it a step claiming "records only" over a code commit authorises that commit, which is a receipt for a tree no gate judged. The tree comparison itself is pinned by the frozen golden's push-wrong-tree rows.
 DEFECT = ("confined = not outside", "confined = True")
+# The further mutants the own suite plants (test-block_unverified_push.py), each against the case it names there.
+MUTANTS = {
+    # LT6: a linked tree of this repository is waved through again, as before the per-tree judgement.
+    "sibling-tree-waved": (
+        'return target if store and commit_policy.common_dir(target) == store else ""',
+        'return ""',
+    ),
+    # LT6: a linked tree's push is judged against CLAUDE_PROJECT_DIR's receipt and HEAD instead of its own.
+    "sibling-judged-as-project": (
+        'return target if store and commit_policy.common_dir(target) == store else ""',
+        'return project if store and commit_policy.common_dir(target) == store else ""',
+    ),
+    # LT7: every base commit the branch lacks reads behind, so a rebase-merged parent is no longer read absorbed.
+    "absorbed-read-behind": ("    return plus, minus\n", "    return plus + minus, 0\n"),
+}
 
 PUSH_AT_COMMAND_POS = hookio.rx(
-    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+push([{S}]|$)"
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+push([{S}]|$)"
 )
 
 
@@ -568,7 +588,7 @@ EDGE_CASES = [
     # SUBMODULE PUSHES ARE OUT OF SCOPE, deliberately.
     ("cd into a submodule", "cd private/account && git push origin 0831-1"),
     ("git -C into a submodule", "git -C private/renet push"),
-    # A TAB after `-C` is a blank like any other since the Rule T fix to shellscan.target_root (A4); /tmp is not a repository, so the push is judged against this tree either way.
+    # A TAB after `-C` is a blank like any other since the Rule T fix to shellscan.target_root (A4); /tmp is no repository but a real directory outside this checkout, so the push is another repository's and allowed either way (finding #5810a9f3).
     ("git -C with a TAB is still a -C", "git -C\t/tmp push"),
     ("a push in another tree", "cd /tmp && git push"),
 ]
@@ -632,15 +652,15 @@ def _carried_at_head(root):
         proc = subprocess.run(
             ["git", "-C", root, "show", "HEAD:%s" % CARRIED_REL],
             capture_output=True,
-            text=True,
             check=False,
         )
     except OSError:
         return None
     if proc.returncode != 0:
         return None
+    # UnicodeDecodeError is a ValueError, so a non-UTF-8 blob is the corrupt-file case below.
     try:
-        return json.loads(proc.stdout)
+        return json.loads(proc.stdout.decode("utf-8"))
     except ValueError as exc:
         return {UNPARSEABLE: str(exc)[:120]}
 
@@ -853,6 +873,8 @@ def behind_base_refusal(ev, root, cmd):
     WHY. PR #592's first CI run (run 37110619739) went red only on Quality / Branch, "Check whether the branch is behind its base": main had moved three commits after 1003-1 was cut, and the local ci:quick ran in a push clone whose origin/main was stale. The CI gate (.ci/rediacc_ci/quality/branch.py) fetches the base itself before judging, so this does too: a stale `refs/remotes/origin/main` would make the ancestry test pass vacuously.
 
     A FAILED OR TIMED-OUT FETCH CANNOT JUDGE, and says so and allows: a base check must never become a push outage, the same fail-open-on-a-broken-environment line the receipt arm draws.
+
+    BOTH TREES, ONE BASE (PLAN-two-track-merge-dev LT7, serving RB3). `root` is the tree the push was typed in (`push_tree`), so the PR branch pushed from the landing tree and the development branch pushed from this checkout are each read from their own HEAD; both are MMDD-N, so both are judged against origin/main. Once the PR branch is rebase-merged, the development branch still holds the PR's original commits while main holds their copies: `base_split` reads that ABSORBED rather than behind, and the refusal names which kind it is above CI's recipe and RB4's proof.
     """
     if hookio.git_out(["-C", root, "remote", "get-url", BASE_REMOTE], want_rc=True) is None:
         return None
@@ -899,23 +921,74 @@ def behind_base_refusal(ev, root, cmd):
             is not None
         ):
             continue
-        behind = hookio.git_out(["-C", root, "rev-list", "--count", "%s..%s" % (sha, base_ref)])
+        missing = hookio.git_out(["-C", root, "rev-list", "--count", "%s..%s" % (sha, base_ref)])
         recent = hookio.git_out(["-C", root, "log", "--oneline", "-5", "%s..%s" % (sha, base_ref)])
-        return (
-            "%s (%s) is %s commit(s) behind %s, freshly fetched.\n"
-            "  CI's Quality / Branch step refuses exactly this, after a ~15-minute round.\n"
-            "  Recent commits on %s not in this branch:\n%s\n%s\n"
-            % (
+        split = base_split(root, sha, base_ref)
+        if split is None:
+            head = "%s (%s) is %s commit(s) behind %s, freshly fetched.\n" % (
                 branch,
                 sha[:12],
-                behind or "?",
+                missing or "?",
                 base_ref,
+            )
+        elif split[0] == 0:
+            head = (
+                "%s (%s) does not contain %s, freshly fetched, and every one of the %d commit(s)\n"
+                "  it lacks is a patch-equivalent copy of a commit on this branch: a rebase-merged\n"
+                "  parent, read ABSORBED, not behind. The rebase drops the copies and replays only\n"
+                "  this branch's own commits.\n" % (branch, sha[:12], base_ref, split[1])
+            )
+        else:
+            head = "%s (%s) is %d commit(s) behind %s, freshly fetched%s.\n" % (
+                branch,
+                sha[:12],
+                split[0],
+                base_ref,
+                (
+                    ", and %d more absorbed (patch-equivalent copies of this branch's commits)"
+                    % split[1]
+                )
+                if split[1]
+                else "",
+            )
+        return (
+            "%s"
+            "  CI's Quality / Branch step refuses exactly this, after a ~15-minute round.\n"
+            "  Recent commits on %s not in this branch:\n%s\n%s\n%s"
+            % (
+                head,
                 BASE,
                 "\n".join("    %s" % line for line in recent.splitlines()),
                 "\n".join(rebase_recipe(BASE, branch)),
+                "\n".join(REBASE_PROOF),
             )
         )
     return None
+
+
+#: The post-rebase proof RB4 added (`worklist.py --git rebase-proof`, .claude/hooks/stop/wl_rebase.py `rebase_proof`), printed under CI's recipe: it names every commit whose patch moved in a resolved conflict and every review record the rebase owes. The same commands as the lease block `wl_rebase.REBASE_RECIPE` (RB2) prints; test-block_unverified_push.py pins each command line here to that text.
+REBASE_PROOF = [
+    "  Then, from the snapshot taken BEFORE the rebase, the commits whose patch moved and the review",
+    "  records the rewritten commits owe (PLAN-two-track-merge-dev RB4):",
+    "",
+    "    .claude/hooks/stop/worklist.py --git rebase-proof <that snapshot> origin/%s" % BASE,
+    "    python3 .claude/hooks/stop/wl_review.py --check",
+    "",
+]
+
+
+def base_split(root, sha, base_ref):
+    """`(behind, absorbed)` for the commits of `base_ref` that `sha` lacks, None when git cannot say.
+
+    The split RB1's lease reader draws (.claude/hooks/stop/wl_rebase.py `behind_base`), read the same way: `git cherry <sha> <base_ref>` marks a base commit `-` when this branch holds a patch-equivalent commit (absorbed: a rebase-merged parent, whose copies on main carry new shas) and `+` when it holds none (behind). REPRODUCED, NOT CALLED: `behind_base` fetches with its own 60-second budget and no prompt guard, and this guard already fetched under FETCH_TIMEOUT with GIT_TERMINAL_PROMPT=0. test-block_unverified_push.py pins the two verdicts equal on the same repositories. Both kinds still refuse: CI's Quality / Branch step judges ancestry alone, so an absorbed-only branch is red there too; the split only says which rebase it is.
+    """
+    out = hookio.git_out(["-C", root, "cherry", sha, base_ref], want_rc=True)
+    if out is None:
+        return None
+    lines = out.splitlines()
+    plus = sum(1 for line in lines if line.startswith("+"))
+    minus = sum(1 for line in lines if line.startswith("-"))
+    return plus, minus
 
 
 #: The record set: globs a commit may touch without voiding a receipt, each with the gates that read it. Read from the PUSHED tree, never the worktree, for the reason carried-reds.json is read from HEAD.
@@ -1019,7 +1092,6 @@ def _record_policy_at(root, tree):
         proc = subprocess.run(
             ["git", "-C", root, "show", "%s:%s" % (tree, RECORD_POLICY_REL)],
             capture_output=True,
-            text=True,
             check=False,
         )
     except OSError as exc:
@@ -1027,7 +1099,7 @@ def _record_policy_at(root, tree):
     if proc.returncode != 0:
         return [], "the pushed tree has no %s" % RECORD_POLICY_REL
     try:
-        doc = json.loads(proc.stdout)
+        doc = json.loads(proc.stdout.decode("utf-8"))
     except ValueError:
         return [], "%s in the pushed tree does not parse" % RECORD_POLICY_REL
     return parse_record_policy(doc)
@@ -1067,6 +1139,113 @@ def keyed_carry_vouches(reader, step, judged):
     return isinstance(carried, set) and set(recorded) <= carried
 
 
+def carried_widening(old, new):
+    """Every way the carry map `new` excuses more than `old` (both `parse_carried` maps), one phrase each; [] when `new` carries nothing `old` did not. PURE. A test plant forces it to [] to show the addition world's refusal is this check at work.
+
+    Judged on the EFFECTIVE carry, after the reason bar, so an entry whose reason is lengthened past REASON_MIN counts as added, and a reworded reason that changes nothing carried counts as nothing. A switch between `"*"` and keys is refused in both directions: it is a rewrite of what the gate is excused for, and a rewrite is when a full run should judge it.
+    """
+    out = []
+    for gate in sorted(new):
+        was, now = old.get(gate), new[gate]
+        if was is None:
+            out.append("adds a carry for %s" % gate)
+        elif (was == "*") != (now == "*"):
+            out.append('switches %s between "*" and keys' % gate)
+        elif isinstance(now, set) and isinstance(was, set) and now - was:
+            out.append("adds key(s) to %s: %s" % (gate, ", ".join(sorted(now - was))))
+    return out
+
+
+def removed_still_red(old, new, judged):
+    """Every excuse `old` holds and `new` drops that still covers a red in the receipt, one phrase each. PURE.
+
+    A whole-gate removal is still red when the receipt lists the gate in `failed`. A key removal is still red when the gate is in `failed` and the receipt's findings for it hold the key, or hold no parsable list at all, which cannot show the key gone.
+    """
+    out = []
+    for gate in sorted(old):
+        was, now = old[gate], new.get(gate)
+        if gate not in judged["failed"]:
+            continue
+        if was == "*":
+            if now is None:
+                out.append("%s (its whole-gate carry)" % gate)
+            continue
+        dropped = was - now if isinstance(now, set) else set(was) if now is None else set()
+        if not dropped:
+            continue
+        emitted = judged["findings"].get(gate)
+        if not isinstance(emitted, list):
+            out.append(
+                "%s (the receipt records no finding keys to show %s gone)"
+                % (gate, ", ".join(sorted(dropped)))
+            )
+            continue
+        hit = sorted(dropped & {k for k in emitted if isinstance(k, str)})
+        if hit:
+            out.append("%s: %s" % (gate, ", ".join(hit)))
+    return out
+
+
+def _carried_at_tree(root, tree):
+    """(`parse_carried` map, None) for carried-reds.json as committed in `tree`, or (None, why). An absent or broken file is a why, never an empty map: a step that creates or corrupts the carry file is not a shrink."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", root, "show", "%s:%s" % (tree, CARRIED_REL)],
+            capture_output=True,
+            check=False,
+        )
+    except OSError as exc:
+        return None, "git could not read %s at %s (%s)" % (CARRIED_REL, tree[:12], exc)
+    if proc.returncode != 0:
+        return None, "tree %s has no %s" % (tree[:12], CARRIED_REL)
+    # Bytes, decoded here: a blob that is not valid UTF-8 is a why naming it, never a UnicodeDecodeError out of the guard.
+    try:
+        text = proc.stdout.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        return None, "%s at tree %s is not valid UTF-8 (%s)" % (CARRIED_REL, tree[:12], exc)
+    try:
+        doc = json.loads(text)
+    except ValueError as exc:
+        doc = {UNPARSEABLE: str(exc)}
+    carried, error = parse_carried(doc)
+    if error is not None:
+        return None, "at tree %s: %s" % (tree[:12], error)
+    return carried, None
+
+
+def carried_shrink_refusal(root, frm, to, paths, judged):
+    """Why a step touching carried-reds.json is not a SHRINK of it, else None (G3, agent/plans/PLAN-ciquick-green-then-batch.md).
+
+    The file is a record (.ci/policy/record-paths.json) only for a commit that can make the push verdict stricter and never laxer: the step touches that file and nothing else, both trees carry a well-formed file, read here from git rather than from any claim in the step, `new` excuses nothing `old` did not (`carried_widening`), and no excuse it drops still covers a red in the receipt (`removed_still_red`; carried_verdict would refuse that push anyway, and here it is named at the step). This rule holds whatever the record policy says, so a policy edit cannot turn the carry file into a plain record.
+    """
+    others = sorted(p for p in paths if p != CARRIED_REL)
+    if others:
+        return (
+            "it edits %s together with %d other path(s) (%s); a carry-file step must touch that file alone.\n"
+            "  Commit the shrink of the carry file on its own, or re-run npm run ci:quick."
+            % (CARRIED_REL, len(others), ", ".join(others[:5]))
+        )
+    old, why = _carried_at_tree(root, frm)
+    if why is None:
+        new, why = _carried_at_tree(root, to)
+    if why is not None:
+        return "it edits %s, and the edit cannot be judged a shrink: %s." % (CARRIED_REL, why)
+    widened = carried_widening(old, new)
+    if widened:
+        return (
+            "it WIDENS %s: %s.\n"
+            "  A step may only remove carries; an added or widened excuse needs a new gate run."
+            % (CARRIED_REL, "; ".join(widened))
+        )
+    red = removed_still_red(old, new, judged)
+    if red:
+        return (
+            "it removes excuses from %s that still cover reds in the receipt: %s.\n"
+            "  Fix the finding first, or keep its carry." % (CARRIED_REL, "; ".join(red))
+        )
+    return None
+
+
 def step_refusal(root, step, records, judged):
     """Why one advance does not carry the receipt from its `from` to its `to`, else None.
 
@@ -1093,6 +1272,10 @@ def step_refusal(root, step, records, judged):
                 " and %d more" % (len(outside) - 5) if len(outside) > 5 else "",
             )
         )
+    if CARRIED_REL in paths:
+        why = carried_shrink_refusal(root, frm, to, paths, judged)
+        if why is not None:
+            return why
     readers = sorted({r for rec in matched.values() if rec is not None for r in rec["readers"]})
     gates = step.get("gates")
     gates = gates if isinstance(gates, dict) else {}
@@ -1407,20 +1590,90 @@ def v2_ls_tree(root, tree):
     return out
 
 
+def _entry_matches(globs, e):
+    """A glob matches the path, or (input-hash.ts `entryMatches`) names a gitlink directory bare or as `<gitlink>/**`, which reaches the gitlink entry itself."""
+    if any(v2_match_glob(gl, e[3]) for gl in globs):
+        return True
+    return e[0] == "160000" and any(gl == e[3] or gl == e[3] + "/**" for gl in globs)
+
+
 def v2_input_lines(entries, globs, files):
     """`<mode> <oid>\\t<path>` (no newline) for every entry a glob matches or `files` names, sorted by path bytes."""
     named = set(files)
-    picked = [e for e in entries if e[3] in named or any(v2_match_glob(gl, e[3]) for gl in globs)]
+    picked = [e for e in entries if e[3] in named or _entry_matches(globs, e)]
     picked.sort(key=lambda e: e[3].encode("utf-8", "surrogateescape"))
     return ["%s %s\t%s" % (e[0], e[2], e[3]) for e in picked]
+
+
+def v2_list_lines(entries, dirs):
+    """`list\\t<dir>\\t<child>\\t<kind>` per immediate tracked child of each listed directory ('' is the root): kind is the blob mode, `tree` for a subdirectory, `commit` for a gitlink. input-hash.ts `listLines`."""
+    out = []
+    for d in dict.fromkeys(dirs):
+        prefix = "" if d == "" else d + "/"
+        seen = set()
+        for e in entries:
+            p = e[3]
+            if not p.startswith(prefix) or len(p) == len(prefix):
+                continue
+            rest = p[len(prefix) :]
+            child, slash, _ = rest.partition("/")
+            if child in seen:
+                continue
+            seen.add(child)
+            kind = "tree" if slash else ("commit" if e[0] == "160000" else e[0])
+            out.append("list\t%s\t%s\t%s" % (d, child, kind))
+    return out
+
+
+def v2_name_lines(entries, globs):
+    """`name\\t<mode>\\t<path>` for every tracked entry a `names` glob matches. input-hash.ts `nameLines`."""
+    globs = list(dict.fromkeys(globs))
+    if not globs:
+        return []
+    return [
+        "name\t%s\t%s" % (e[0], e[3]) for e in entries if any(v2_match_glob(g, e[3]) for g in globs)
+    ]
+
+
+def v2_resolve_ref(root, ref):
+    """The commit `ref` resolves to in `root`, or None. input-hash.ts `gitResolveRef`."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", root, "rev-parse", "--verify", "--quiet", ref + "^{commit}"],
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    out = proc.stdout.decode("utf-8", "replace").strip()
+    return out if proc.returncode == 0 and re.fullmatch(r"[0-9a-f]{40,64}", out) else None
+
+
+def v2_extra_lines(entries, lists=(), names=(), refs=(), root=".", resolve=None):
+    """The name-shaped lines of PLAN-ciquick-cpu W2.4 (`list`, `name`, `ref`) and the first ref that resolves to nothing, or None. input-hash.ts builds the same lines in `computeGateHashes`; a ref that does not resolve is an unknown input there (`ref-unresolved:<name>`) and a refusal here."""
+    resolve = resolve or (lambda r: v2_resolve_ref(root, r))
+    extras = v2_list_lines(entries, lists) + v2_name_lines(entries, names)
+    unresolved = None
+    for r in refs:
+        at = resolve(r)
+        if at is None:
+            unresolved = unresolved or r
+            continue
+        extras.append("ref\t%s\t%s" % (r, at))
+    return extras, unresolved
 
 
 def _line_path(line):
     return line.partition("\t")[2].encode("utf-8", "surrogateescape")
 
 
-def v2_files_hash(lines):
-    return v2_sha("files\n" + "".join(line + "\n" for line in sorted(lines, key=_line_path)))
+def v2_files_hash(lines, extras=()):
+    """sha of `files\\n` and the path lines sorted by path bytes; with name-shaped `extras`, those deduplicated, sorted by whole bytes, after `extra\\n`. No extras is the pre-W2.4 preimage exactly. input-hash.ts `filesHash`."""
+    base = "files\n" + "".join(line + "\n" for line in sorted(lines, key=_line_path))
+    if not extras:
+        return v2_sha(base)
+    tail = sorted(set(extras), key=lambda x: x.encode("utf-8", "surrogateescape"))
+    return v2_sha(base + "extra\n" + "".join(x + "\n" for x in tail))
 
 
 def _show_at(root, tree, rel):
@@ -1434,16 +1687,26 @@ def _show_at(root, tree, rel):
     return proc.stdout.decode("utf-8") if proc.returncode == 0 else None
 
 
+#: Why an exempt gate's verdict moves with no tracked input moving; the twin of EXEMPT_KINDS in scripts/ci-runner/input-hash.ts.
+EXEMPT_KINDS = ("clock", "history", "network", "cache")
+
+
 def _exempt_ids(doc):
-    """Ids named by .ci/policy/carry-exempt.json, `{"schema": 1, "exempt": [{"id", "reason"}]}`. Any other shape is an error (ValueError), never an empty set."""
+    """Ids named by .ci/policy/carry-exempt.json, `{"schema": 1, "exempt": [{"id", "reason", "kind"?}]}`. Any other shape is an error (ValueError), never an empty set, and so is a `kind` outside EXEMPT_KINDS: input-hash.ts `exemptRowsOf` refuses the same rows, so the runner and this guard never disagree about which file is well-formed."""
     items = doc.get("exempt") if isinstance(doc, dict) else None
     if (
         not isinstance(doc, dict)
         or doc.get("schema") != 1
         or not isinstance(items, list)
-        or not all(isinstance(i, dict) and isinstance(i.get("id"), str) for i in items)
+        or not all(isinstance(i, dict) and isinstance(i.get("id"), str) and i["id"] for i in items)
     ):
         raise ValueError("carry-exempt.json is not {schema: 1, exempt: [{id, reason}]}")
+    for i in items:
+        if "kind" in i and i["kind"] not in EXEMPT_KINDS:
+            raise ValueError(
+                "carry-exempt.json: %s has kind %r; a kind is one of %s"
+                % (i["id"], i["kind"], "|".join(EXEMPT_KINDS))
+            )
     return {i["id"] for i in items}
 
 
@@ -1477,9 +1740,26 @@ def _carried_refusal(root, tree, gid, entry, lock_entry, entries, exempt, memo=N
         return "%s: defHash differs at the pushed tree (the gate or its scripts changed)" % gid
     globs = inputs.get("globs") or []
     files = inputs.get("files") or []
-    key = ("files", json.dumps([globs, files], sort_keys=True))
+    # The name-shaped inputs (W2.4) are recorded only by a gate that declares them; absent, the key and the hash are the pre-W2.4 ones.
+    named = {f: inputs.get(f) or [] for f in ("lists", "names", "refs")}
+    for f, v in named.items():
+        if not isinstance(v, list) or not all(isinstance(x, str) for x in v):
+            return "%s: inputs.%s is not a list of strings (field inputs)" % (gid, f)
+    key = ("files", json.dumps([globs, files, named], sort_keys=True))
     if key not in memo:
-        memo[key] = v2_files_hash(v2_input_lines(entries, globs, files))
+        extras, unresolved = v2_extra_lines(
+            entries, named["lists"], named["names"], named["refs"], root=root
+        )
+        memo[key] = (
+            ("unresolved", unresolved)
+            if unresolved is not None
+            else v2_files_hash(v2_input_lines(entries, globs, files), extras)
+        )
+    if isinstance(memo[key], tuple):
+        return "%s: inputs.refs names %s, which resolves to no commit here (field filesHash)" % (
+            gid,
+            memo[key][1],
+        )
     if memo[key] != entry.get("filesHash"):
         return "%s: filesHash differs at the pushed tree (an input changed after the carry)" % gid
     origin = carried.get("headTree")
@@ -1719,6 +1999,26 @@ def receipt_refusal(root, tree, receipt):
     return refusal
 
 
+def push_tree(ev, scan, cmd, project):
+    """The working tree a push in `cmd` is judged in, or "" when it is another repository's push.
+
+    THE SHELL'S WORKING DIRECTORY NAMES THE TREE FIRST, then a `-C`/`cd` in the command moves it (`shellscan.target_root`, resolved from that directory, so a relative hint means what bash makes of it). A plain `git push origin 0923-1` run with the tool's cwd inside private/account was once judged against the CONSOLE receipt and refused as "a different tree" (#e83d9ba9, 2026-09-25), and `git -C <scratch-repo> push origin main` was refused for a stamp that belongs to console (reproduced 2026-09-01).
+
+    A TREE OF THIS REPOSITORY IS JUDGED, NOT WAVED THROUGH (PLAN-two-track-merge-dev LT6). The landing tree beside this checkout and this checkout are two linked trees of one repository, each on its own MMDD-N branch and each with its own `.ci/cache`, because `npm run ci:quick` keeps one clean clone per tree path (scripts/ci-runner/quick-clone.ts `cloneDirFor`) and writes the receipt into the tree it ran from. A push typed in the landing tree used to return ALLOW here because its toplevel was not CLAUDE_PROJECT_DIR, so the PR branch was pushed unjudged; it is now judged against the landing tree's own receipt. "This repository" is one git common directory: a submodule (its own store under .git/modules), a scratch repository and an independent repository under private/ each have another, and stay theirs.
+    """
+    here = project
+    cwd = ev.raw("cwd")
+    if cwd not in ("", "null"):
+        top = hookio.git_out(["-C", cwd, "rev-parse", "--show-toplevel"], want_rc=True)
+        if top:
+            here = top
+    target = shellscan.target_root(scan, here, verb="push", cmd=cmd) or here
+    if os.path.realpath(target) == os.path.realpath(project):
+        return project
+    store = commit_policy.common_dir(project)
+    return target if store and commit_policy.common_dir(target) == store else ""
+
+
 def every_push_deletes_only(scan):
     """True when every `git ... push` segment in the command only deletes remote refs.
 
@@ -1748,6 +2048,10 @@ def run(ev):
         return hookio.ALLOW
     cmd, scan = state
 
+    # A push of nothing but `refs/backup/**` to its repository's pin is the git-level pre-push hook's to judge (box G5 of PLAN-local-first-delivery, `_backup_push`).
+    if _backup_push.admitted(ev, cmd):
+        return hookio.ALLOW
+
     # Command position, so prose about pushing is not a push. Same anchor as block-untagged-commit.sh; see lib/command-scan.sh for why the raw string is never matched directly.
     if not hookio.grep_q(PUSH_AT_COMMAND_POS, scan):
         return hookio.ALLOW
@@ -1761,21 +2065,14 @@ def run(ev):
     if every_push_deletes_only(scan):
         return hookio.ALLOW
 
-    root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
+    project = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
+    if project == "":
+        return hookio.ALLOW
+
+    # THE PUSH IS JUDGED IN ITS OWN TREE (PLAN-two-track-merge-dev LT6). Everything below reads `root`: its receipt, its HEAD, its branch, its committed carry file.
+    root = push_tree(ev, scan, cmd, project)
     if root == "":
         return hookio.ALLOW
-
-    # ANOTHER REPO'S PUSH IS NOT THIS TREE'S BUSINESS, and it was being refused as though it were. Reproduced 2026-09-01: `git -C <scratch-repo> push origin main` exited 2 here, because the gate-run stamp compared below belongs to CONSOLE and the scratch tree can never match it. The message then reads as "your gates are stale" about a repo the gates were never run against. Same
-    # class as block-untagged-commit.sh:52-69; the resolution now lives in lib/command-scan.sh rather than being written a third time.
-    if shellscan.target_root(scan, root, verb="push") != "":
-        return hookio.ALLOW
-
-    # THE SHELL'S OWN WORKING DIRECTORY NAMES THE REPO TOO, not only `-C`/`cd` in the command. A plain `git push origin 0923-1` run with the tool's cwd already inside private/account was judged against the CONSOLE receipt and refused as "a different tree" (#e83d9ba9, 2026-09-25). A payload cwd whose top level is not this root's is another repository's push.
-    cwd = ev.raw("cwd")
-    if cwd not in ("", "null"):
-        top = hookio.git_out(["-C", cwd, "rev-parse", "--show-toplevel"], want_rc=True)
-        if top and os.path.realpath(top) != os.path.realpath(root):
-            return hookio.ALLOW
 
     # SUBMODULE PUSHES ARE OUT OF SCOPE, deliberately. They advance no console branch and trigger no console CI; cancel-old-ci.sh draws the same line for the same reason. The pointer-bump commit that DOES advance console is covered by the ordinary path.
     if hookio.case_glob(

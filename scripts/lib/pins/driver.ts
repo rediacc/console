@@ -39,7 +39,15 @@ export interface Release {
    * release itself and says so here; the core reads the release-age window only when this is
    * absent. `why` is printed beside a refusal.
    */
-  verdict?: { eligible: boolean; why: string };
+  verdict?: { eligible: boolean; why: string; clearsAt?: number | null };
+  /**
+   * The SAME version again with new content: a Docker Official Image tag re-pushed under another
+   * index digest (scripts/lib/pins/drivers/docker.ts THE RE-DIGEST). The version text differs
+   * from `current` only by the digest label, so scripts/lib/pins/status.ts never reads it as a
+   * major: a plain `bump <id>` takes it once its verdict is eligible, and while it is not, a
+   * driver verdict that carries `clearsAt` names the instant `when` and the gates print.
+   */
+  redigest?: true;
   /**
    * The driver's own rule says this release opens a BREAKING line though its leading number is
    * the pinned one's (a Go minor line, 1.26 -> 1.27, changes the `go` directive of every go.mod).
@@ -135,6 +143,8 @@ export interface PinDriver {
  *                  (the sync before 2026-10-19, 4ba8aab48)
  *   no-version-gate a plan that writes a manifest or .syncpackrc.json runs only its entry's own
  *                  gates, without check:version (the gate list before 2026-10-19)
+ *   no-registry-gate a plan that writes a manifest runs without check:ci-pin-registry, so a registry
+ *                  pin whose sites disagree after the bump passes (the gate list before 2026-11-20)
  *   breaking-is-minor a release a driver marks breaking (a Go minor line) is judged by its
  *                  leading number alone, so a plain bump and apply-soaked take it
  *   breaking-unlisted the newer-majors report leaves out a line a driver marks breaking, so
@@ -158,6 +168,7 @@ export const MUTANTS = [
   'shared-message',
   'no-manifest-pin',
   'no-version-gate',
+  'no-registry-gate',
   'breaking-is-minor',
   'breaking-unlisted',
 ] as const;
@@ -176,10 +187,15 @@ const syncpackJudged = (p: RepoPath): boolean =>
  * leaves the gate list alone.
  */
 export function withManifestGates(plan: PinPlan, mutant: Mutant | null = null): PinPlan {
-  if (mutant === 'no-version-gate' || plan.entry.gates.includes('check:version')) return plan;
   const touched = [...plan.writes, ...plan.steps.flatMap((s) => s.writes)];
   if (!touched.some(syncpackJudged)) return plan;
-  return { ...plan, entry: { ...plan.entry, gates: [...plan.entry.gates, 'check:version'] } };
+  const add = [
+    ...(mutant === 'no-version-gate' ? [] : ['check:version']),
+    // A moved manifest version can be one site of a registry pin whose other sites disagree afterwards (worklist #43aebb3a: wrangler in workers/account/package.json against constants.sh); check:ci-pin-registry judges that.
+    ...(mutant === 'no-registry-gate' ? [] : ['check:ci-pin-registry']),
+  ].filter((g) => !plan.entry.gates.includes(g));
+  if (add.length === 0) return plan;
+  return { ...plan, entry: { ...plan.entry, gates: [...plan.entry.gates, ...add] } };
 }
 
 // ---- the shared leaf planner ----------------------------------------------------------------
@@ -302,6 +318,10 @@ export interface Fixture {
       published: string | null;
       values?: Record<string, string>;
       breaking?: { line: string; why: string };
+      /** Release.redigest, so the core's re-digest rule runs under a fixture. */
+      redigest?: true;
+      /** Release.verdict, `clearsAt` as an ISO instant. */
+      verdict?: { eligible: boolean; why: string; clearsAt?: string };
     }>
   >;
   /** Commands the stub runner answers: the first whose regex matches the command line wins; `out` is what it prints, and `events` the lines it writes to the file the command's `--events <file>` names. */
@@ -377,6 +397,17 @@ function fixtureDriver(name: Driver): PinDriver {
           version: r.version,
           publishedMs: r.published === null ? null : Date.parse(r.published),
           ...(r.breaking ? { breaking: r.breaking } : {}),
+          ...(r.redigest ? { redigest: true as const } : {}),
+          ...(r.verdict
+            ? {
+                verdict: {
+                  eligible: r.verdict.eligible,
+                  why: r.verdict.why,
+                  clearsAt:
+                    r.verdict.clearsAt === undefined ? null : Date.parse(r.verdict.clearsAt),
+                },
+              }
+            : {}),
         })),
       });
     },

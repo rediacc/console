@@ -1923,3 +1923,408 @@ def test_a_python_heredoc_writes_only_the_targets_of_write_calls(tmp_path, cmd, 
     )
     assert proc.returncode == 0, proc.stderr[-600:]
     assert json.loads(proc.stdout) == sorted(want), cmd
+
+
+# ---- W12: a lease tree's paths count as the main tree's, and isolation reaches the backstop -----
+
+LEASE_PATHS_SNIPPET = r"""
+import json, pathlib, sys
+sys.path.insert(0, sys.argv[1])
+import wl_roster as R
+print(json.dumps(sorted(R.edit_paths(pathlib.Path(sys.argv[2]), pathlib.Path(sys.argv[3])))))
+"""
+
+
+def _lease_transcript(tmp_path, _root, calls):
+    recs = []
+    for n, (name, tool_input, cwd) in enumerate(calls):
+        block = {"type": "tool_use", "id": "toolu_%d" % n, "name": name, "input": tool_input}
+        recs.append(
+            json.dumps(
+                {
+                    "type": "assistant",
+                    "cwd": cwd,
+                    "message": {"role": "assistant", "stop_reason": "tool_use", "content": [block]},
+                }
+            )
+        )
+    jsonl = tmp_path / "agent-x.jsonl"
+    jsonl.write_text("\n".join(recs) + "\n", encoding="utf-8")
+    return jsonl
+
+
+def _edit_paths(tmp_path, calls):
+    root = tmp_path / "repo"
+    root.mkdir(exist_ok=True)
+    jsonl = _lease_transcript(tmp_path, root, calls(root))
+    proc = subprocess.run(
+        [sys.executable, "-c", LEASE_PATHS_SNIPPET, str(wlfix.STOP_DIR), str(jsonl), str(root)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    return json.loads(proc.stdout)
+
+
+def test_w12_a_lease_edit_is_dropped_not_the_main_tree_path(tmp_path):
+    got = _edit_paths(
+        tmp_path,
+        lambda root: [("Edit", {"file_path": "%s/.claude/worktrees/x/src/a.ts" % root}, str(root))],
+    )
+    assert got == []
+
+
+def test_w12_a_lease_edit_spelled_with_dotdot_is_dropped(tmp_path):
+    got = _edit_paths(
+        tmp_path,
+        lambda root: [
+            (
+                "Write",
+                {"file_path": "%s/.claude/tests/../../.claude/worktrees/x/src/a.ts" % root},
+                str(root),
+            )
+        ],
+    )
+    assert got == []
+
+
+def test_w12_a_relative_lease_edit_spelled_with_dotdot_is_dropped(tmp_path):
+    """Review aa366a68.1. CONTROL: a relative main-tree path with a `..` in it is kept, normalized."""
+    got = _edit_paths(
+        tmp_path,
+        lambda root: [
+            ("Write", {"file_path": ".claude/x/../../.claude/worktrees/x/src/a.ts"}, str(root)),
+            ("Write", {"file_path": "src/y/../a.ts"}, str(root)),
+        ],
+    )
+    assert got == ["src/a.ts"]
+
+
+def test_w12_a_bash_write_from_a_lease_cwd_is_dropped(tmp_path):
+    got = _edit_paths(
+        tmp_path,
+        lambda root: [
+            ("Bash", {"command": "touch src/b.ts"}, "%s/.claude/worktrees/x" % root),
+        ],
+    )
+    assert got == []
+
+
+def test_w12_control_a_bash_write_from_the_main_cwd_is_kept(tmp_path):
+    got = _edit_paths(tmp_path, lambda root: [("Bash", {"command": "touch src/b.ts"}, str(root))])
+    assert got == ["src/b.ts"]
+
+
+def test_w12_control_a_main_tree_edit_and_a_path_outside_the_repo_are_unchanged(tmp_path):
+    got = _edit_paths(
+        tmp_path,
+        lambda root: [
+            ("Edit", {"file_path": "%s/src/c.ts" % root}, str(root)),
+            ("Edit", {"file_path": "/elsewhere/.claude/worktrees/x/src/d.ts"}, str(root)),
+            ("Edit", {"file_path": "%s/.claude/worktrees/x" % root}, str(root)),
+        ],
+    )
+    assert got == [".claude/worktrees/x", "/elsewhere/.claude/worktrees/x/src/d.ts", "src/c.ts"]
+
+
+def test_w12_load_metas_reads_the_recorded_worktree_path(tmp_path):
+    sub = tmp_path / "subagents"
+    sub.mkdir()
+    (sub / "agent-iso.meta.json").write_text(
+        json.dumps(
+            {"agentType": "general-purpose", "worktreePath": "/r/.claude/worktrees/agent-iso"}
+        ),
+        encoding="utf-8",
+    )
+    (sub / "agent-plain.meta.json").write_text(
+        json.dumps({"agentType": "general-purpose"}), encoding="utf-8"
+    )
+    roster = wlfix.import_wl("wl_roster")
+    metas = roster.load_metas(sub)
+    assert metas["iso"]["worktree"] == "/r/.claude/worktrees/agent-iso"
+    assert metas["plain"]["worktree"] == ""
+
+
+def _conc_world():
+    planconc = wlfix.import_wl("wl_planconc")
+    xi = {
+        "PLAN-a.md": planconc.PlanX("PLAN-a.md", owns=("src/**",)),
+        "PLAN-b.md": planconc.PlanX("PLAN-b.md", owns=("src/**",)),
+    }
+    serving = {"wa": {"PLAN-a.md"}, "wb": {"PLAN-b.md"}}
+    live = {
+        "PLAN-a.md": ["writer wa (general-purpose)"],
+        "PLAN-b.md": ["writer wb (general-purpose)"],
+    }
+    return xi, serving, live
+
+
+def test_w12_two_isolated_writers_on_one_file_are_not_a_conflict():
+    planorder = wlfix.import_wl("wl_planorder")
+    xi, serving, live = _conc_world()
+    assert planorder.conflicts(serving, live, xi.__getitem__, None, isolated={"wa", "wb"}) == []
+
+
+def test_w12_control_two_plain_writers_and_the_overlap_still_trips():
+    """Since 4940ad9eb an overlap counts only between two writers that share a tree, so the control needs two plain writers beside the isolated one; one plain writer overlapping only the isolated one is not a conflict."""
+    planorder = wlfix.import_wl("wl_planorder")
+    planconc = wlfix.import_wl("wl_planconc")
+    xi, serving, live = _conc_world()
+    assert planorder.conflicts(serving, live, xi.__getitem__, None) != []
+    assert planorder.conflicts(serving, live, xi.__getitem__, None, isolated={"wa"}) == []
+    xi["PLAN-c.md"] = planconc.PlanX("PLAN-c.md", owns=("src/**",))
+    serving["wc"] = {"PLAN-c.md"}
+    live["PLAN-c.md"] = ["writer wc (general-purpose)"]
+    got = planorder.conflicts(serving, live, xi.__getitem__, None, isolated={"wa"})
+    assert [aid for aid, _v in got] == ["wb", "wc"]
+
+
+def test_w12_control_an_isolated_writer_still_trips_an_exclusive_plan():
+    planorder = wlfix.import_wl("wl_planorder")
+    planconc = wlfix.import_wl("wl_planconc")
+    xi, serving, live = _conc_world()
+    xi["PLAN-b.md"] = planconc.PlanX("PLAN-b.md", owns=("src/**",), exclusive=True)
+    got = planorder.conflicts(serving, live, xi.__getitem__, None, isolated={"wa", "wb"})
+    assert got != []
+
+
+def test_w12_hold_of_a_queue_item_reads_isolation_when_told():
+    planorder = wlfix.import_wl("wl_planorder")
+    xi, _serving, live = _conc_world()
+    rec = {"id": "q1", "text": "queued item PLAN-a.md [deadbeef]"}
+    live_b = {"PLAN-b.md": live["PLAN-b.md"]}
+    assert planorder.X.item_plan(rec) == "PLAN-a.md"
+    assert planorder.hold(rec, live_b, xi.__getitem__) is not None
+    assert planorder.hold(rec, live_b, xi.__getitem__, isolated=True) is None
+
+
+# ---- PLAN-tick-tracking T7: report ids and box sigs in LEASED TO A FINISHED WORKER --------------
+
+COORD = "a465aa7e2ca09a227"
+CHILD_BOXES = {
+    "live-proof-ladder": ("a1111aaaa1111aaa1", "7692f2db"),
+    "drills-upgrade": ("a2222bbbb2222bbb2", "1d17b634"),
+    "privdrop-probe": ("a3333cccc3333ccc3", "afa91934"),
+    "sampler": ("a4444dddd4444ddd4", "339bf791"),
+    "executor-seam": ("a5555eeee5555eee5", "3d256594"),
+}
+TICK_FIX = pathlib.Path(__file__).resolve().parent / "tick_tracking_fixtures" / "planbox"
+OLD_DEAD_ROW = "    #%s leased to worker:%s, which is not live and has no live descendant"
+
+
+def _report_world(tmp_path):
+    """Five finished child metas of the coordinator, each with its captured report (the round's real bodies, indexed without a `boxes` field, as a legacy row is)."""
+    report = wlfix.import_wl("wl_report")
+    store = tmp_path / "reports"
+    metas = {COORD: {"parent": ""}}
+    entries = []
+    for writer, (aid, _sig) in CHILD_BOXES.items():
+        metas[aid] = {"parent": COORD}
+        rel = "1104-1/%s.md" % writer
+        (store / "1104-1").mkdir(parents=True, exist_ok=True)
+        (store / rel).write_text(
+            (TICK_FIX / ("%s.report" % writer)).read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        entries.append({"ev": "report", "id": report.short_id(aid), "body": rel})
+    return store, metas, entries
+
+
+def test_report_dead_row_cites_each_child_report_with_its_box(tmp_path):
+    roster = wlfix.import_wl("wl_roster")
+    report = wlfix.import_wl("wl_report")
+    store, metas, entries = _report_world(tmp_path)
+    cites = roster.report_citations([("i1", COORD)], metas, None, entries=entries, store=store)
+    lines = cites["i1"]
+    assert lines[0] == "%s: no captured report" % COORD
+    for aid, sig in CHILD_BOXES.values():
+        assert "child %s: report %s, boxes %s" % (aid, report.short_id(aid), sig) in lines
+    rows = roster.defect_rows({"leased_dead": [("i1", COORD, "")], "dead_cites": cites})["dead"]
+    assert rows.startswith(OLD_DEAD_ROW % ("i1", COORD))
+    for aid, sig in CHILD_BOXES.values():
+        assert report.short_id(aid) in rows
+        assert sig in rows
+
+
+def test_report_item_naming_a_box_renders_the_report_beside_it(tmp_path):
+    roster = wlfix.import_wl("wl_roster")
+    report = wlfix.import_wl("wl_report")
+    store, _metas, entries = _report_world(tmp_path)
+    got = roster.item_box_citations("- [ ] H2 live run of box afa91934 (d778be9d)", entries, store)
+    rid = report.short_id(CHILD_BOXES["privdrop-probe"][0])
+    assert got == ["report %s names box afa91934 (partial, owed live)" % rid]
+    assert roster.item_box_citations("- [ ] no box here", entries, store) == []
+
+
+def test_report_item_box_citations_match_the_unindexed_newest_report_per_sig(tmp_path):
+    """0f739755.5: the index-backed lookup must equal the per-call scan it replaced (newest report naming each sig wins). CONTROL: a sig no report names yields no line, and a longer entry list is not served from the shorter list's index."""
+    roster = wlfix.import_wl("wl_roster")
+    store, _metas, entries = _report_world(tmp_path)
+    sigs = [sig for _aid, sig in CHILD_BOXES.values()]
+    text = " ".join("box %s" % sig for sig in sigs) + " box deadbeef"
+    newest = {}
+    for entry in entries:
+        for sig, state, halves in roster._report_boxes(store, entry) or []:
+            newest[sig] = (entry["id"], state, halves)
+    want = [
+        "report %s names box %s (%s, owed %s)" % (rid, sig, state, ",".join(halves) or "nothing")
+        for sig, (rid, state, halves) in sorted(newest.items())
+        if sig in text
+    ]
+    assert want, "the fixture names no box, so the comparison proves nothing"
+    assert roster.item_box_citations(text, entries, store) == want
+    assert "deadbeef" not in " ".join(roster.item_box_citations(text, entries, store))
+    assert roster.item_box_citations(text, entries[:-1], store) != want
+
+
+def test_report_an_unreadable_body_is_cited_as_unread_not_as_naming_no_box(tmp_path):
+    """Review d03f8895.1: a captured report whose body cannot be read was cited `boxes no box named`, a claim about boxes never read."""
+    roster = wlfix.import_wl("wl_roster")
+    report = wlfix.import_wl("wl_report")
+    store, metas, entries = _report_world(tmp_path)
+    aid, sig = CHILD_BOXES["sampler"]
+    (store / "1104-1" / "sampler.md").unlink()
+    lines = roster.report_citations([("i1", COORD)], metas, None, entries=entries, store=store)[
+        "i1"
+    ]
+    rid = report.short_id(aid)
+    assert "child %s: report %s, boxes no box named" % (aid, rid) not in lines
+    assert (
+        "child %s: report %s, boxes unread (body 1104-1/sampler.md could not be read)" % (aid, rid)
+        in lines
+    )
+    assert roster.item_box_citations("- [ ] box %s" % sig, entries, store) == []
+
+
+def test_report_control_the_old_dead_row_holds_no_report_id():
+    roster = wlfix.import_wl("wl_roster")
+    report = wlfix.import_wl("wl_report")
+    old = OLD_DEAD_ROW % ("i1", COORD)
+    rows = roster.defect_rows({"leased_dead": [("i1", COORD, "")]})["dead"]
+    assert rows == old
+    for aid, _sig in CHILD_BOXES.values():
+        assert report.short_id(aid) not in old
+
+
+# Reviews 7ee1b55d.1 and 7ee1b55d.2: the regenerate route joined a registered output to the run's own `cd` directory (`tools/.ci/config/plan-boxes.json`, a file nobody wrote), and strict mode never walked a `subprocess` command line without a write verb or redirect, so a generator run from Python proved no write.
+REGEN_STRICT_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_roster as R
+print(json.dumps(sorted(R.bash_write_paths(sys.argv[2], sys.argv[3], sys.argv[3], strict=True))))
+"""
+BOXES = ".ci/config/plan-boxes.json"
+BOXES_RUN = "npm run check:ci-plan-boxes -- --update"
+SUBPROCESS_BOXES = "python3 - <<'EOF'\nimport subprocess\nsubprocess.run(%r)\nEOF" % (
+    ["npm", "run", "check:ci-plan-boxes", "--", "--update"],
+)
+SUBPROCESS_GIT = "python3 - <<'EOF'\nimport subprocess\nsubprocess.run(['git', 'status'])\nEOF"
+REGEN_STRICT_CASES = [
+    ("cd tools && " + BOXES_RUN, [BOXES]),
+    (BOXES_RUN, [BOXES]),
+    (SUBPROCESS_BOXES, [BOXES]),
+    ("cd tools && npm run check:ci-other -- --update", []),
+    (SUBPROCESS_GIT, []),
+]
+
+
+@pytest.mark.parametrize(("cmd", "want"), REGEN_STRICT_CASES)
+def test_a_registered_generator_run_writes_its_outputs_from_the_root(tmp_path, cmd, want):
+    (tmp_path / ".ci" / "config").mkdir(parents=True)
+    (tmp_path / "tools").mkdir()
+    (tmp_path / ".ci" / "config" / "generated-artifacts.json").write_text(
+        json.dumps(
+            {
+                "schema": 1,
+                "artifacts": [{"id": "plan-boxes", "outputs": [BOXES], "generator": BOXES_RUN}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", REGEN_STRICT_SNIPPET, str(wlfix.STOP_DIR), cmd, str(tmp_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    assert json.loads(proc.stdout) == want, cmd
+
+
+# 2026-11-20: a registered generator run inside a lease tree was joined to the MAIN checkout's root, so a lease writer's `gen-docs.ts --write` read as an edit of the main checkout's outputs and block_commit_of_live_writer_file refused the lead's own commit of them. The outputs belong to the tree the run is in.
+REGEN_TREE_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_roster as R
+got = R.bash_write_paths(sys.argv[2], sys.argv[4], sys.argv[3], strict=True)
+print(json.dumps([sorted(got), sorted(p for p in got if not R.in_lease_tree(p))]))
+"""
+LEASE = ".claude/worktrees/agent-x"
+REGEN_TREE_CASES = [
+    ("", [BOXES], [BOXES]),
+    ("tools", [BOXES], [BOXES]),
+    (LEASE, [LEASE + "/" + BOXES], []),
+    (LEASE + "/tools", [LEASE + "/" + BOXES], []),
+]
+
+
+@pytest.mark.parametrize(("sub", "want", "kept"), REGEN_TREE_CASES)
+def test_a_generator_run_in_a_lease_writes_the_lease_trees_outputs(tmp_path, sub, want, kept):
+    (tmp_path / ".ci" / "config").mkdir(parents=True)
+    (tmp_path / LEASE / "tools").mkdir(parents=True)
+    (tmp_path / "tools").mkdir()
+    (tmp_path / ".ci" / "config" / "generated-artifacts.json").write_text(
+        json.dumps(
+            {
+                "schema": 1,
+                "artifacts": [{"id": "plan-boxes", "outputs": [BOXES], "generator": BOXES_RUN}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    cwd = str(tmp_path / sub) if sub else str(tmp_path)
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            REGEN_TREE_SNIPPET,
+            str(wlfix.STOP_DIR),
+            BOXES_RUN,
+            str(tmp_path),
+            cwd,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    assert json.loads(proc.stdout) == [want, kept], sub
+
+
+def test_a_generator_run_from_outside_the_repository_writes_the_main_checkouts_outputs(tmp_path):
+    """`cd /tmp && npx tsx <root>/scripts/gen/gen-docs.ts --write` writes the main checkout's output, so it is recorded as one."""
+    root = tmp_path / "repo"
+    (root / ".ci" / "config").mkdir(parents=True)
+    outside = tmp_path / "elsewhere"
+    outside.mkdir()
+    run = "npx tsx scripts/gen/gen-docs.ts --write"
+    (root / ".ci" / "config" / "generated-artifacts.json").write_text(
+        json.dumps(
+            {
+                "schema": 1,
+                "artifacts": [
+                    {"id": "docs", "outputs": ["scripts/data/doc-registry.md"], "generator": run}
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    cmd = "cd %s && npx tsx %s/scripts/gen/gen-docs.ts --write" % (outside, root)
+    proc = subprocess.run(
+        [sys.executable, "-c", REGEN_TREE_SNIPPET, str(wlfix.STOP_DIR), cmd, str(root), str(root)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    assert json.loads(proc.stdout)[0] == ["scripts/data/doc-registry.md"]

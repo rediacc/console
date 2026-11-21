@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: ru
-sourceHash: "c1a20432472d9452"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "02a3f195c73de031"
+sourceCommit: "ddf4affc88b6a49d8b23351f99d04e19870444f3"
 translatedFrom: en
 ---
 
@@ -126,7 +126,7 @@ Self-хостинг изменяет список поставщиков, но �
 
 | Поле | После |
 |---|---|
-| Поставщики | (1) Rediacc OÜ, лицензия на ПО; (2) Hetzner, IaaS |
+| Поставщики | (1) [Rediacc](/ru/legal-information), лицензия на ПО; (2) Hetzner, IaaS |
 | Уровень | (1) Некритический (нет уровня данных); (2) Критический (уровень данных, но под управлением клиента) |
 | Обрабатываемые данные | (1) Нет; (2) Зашифрованные тома, ключи у клиента |
 | Субобработчики | (1) Нет для self-хостинга; (2) Только внутренние для Hetzner, указаны в их DPA |

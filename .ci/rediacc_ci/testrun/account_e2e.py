@@ -24,11 +24,13 @@ import subprocess
 import sys
 import tempfile
 import time
+import typing
 import urllib.error
 import urllib.request
 
 from rediacc_ci import log, paths, proc
 from rediacc_ci.core import common
+from rediacc_ci.infra import apt_retry
 from rediacc_ci.testrun import shard
 
 MIN_WEBAUTHN_TESTS = 20
@@ -60,6 +62,108 @@ class UsageError(Exception):
 
 class RefusedError(Exception):
     """The run cannot proceed; the message is the diagnostic. Exit 1."""
+
+
+# `playwright install-deps` runs `apt-get update` as root. On 2026-11-11 (run 43043942649, job 130614077193) the ubuntu 26.04 runner image could not resolve security.ubuntu.com and the step sat on 20 s `Ign:` lines for about 10 minutes before global-setup began, with stderr discarded. The runner image already carries the libraries, so apt is skipped when every package Playwright would install is present, and otherwise it is bounded and fails by name.
+SYSTEM_DEPS_TIMEOUT_S = 120
+
+
+ALL_PRESENT_LINE = "All system dependencies are installed."
+MISSING_HEADER = "Missing system dependencies"
+PACKAGE_NAME = re.compile(r"[a-z0-9][a-z0-9+.:-]*")
+
+
+def dry_run_packages(dry_run_output: str) -> list[str]:
+    """Package names `playwright install-deps --dry-run` lists under its `Missing system dependencies (N):` header (Playwright 1.65, which exits 1 when any are missing); empty when it prints no such list. Raises RefusedError for a listed line that is not a package name."""
+    packages: list[str] = []
+    listing = False
+    for line in dry_run_output.splitlines():
+        if line.startswith(MISSING_HEADER):
+            listing = True
+        elif listing and line.startswith((" ", "\t")) and line.strip():
+            name = line.strip()
+            # A package name only: an option-looking line must never reach dpkg-query or apt-get as an argument, and a listed line that is not a name is refused rather than dropped, so a missing library is not found only at browser launch.
+            if not PACKAGE_NAME.fullmatch(name):
+                raise RefusedError(
+                    f"playwright install-deps --dry-run lists {name[:80]!r}, which is not a package name; cannot tell which system packages are missing"
+                )
+            packages.append(name)
+        elif listing:
+            break
+    return packages
+
+
+def packages_missing(packages: list[str], runner: typing.Callable[..., typing.Any]) -> list[str]:
+    """The subset of `packages` dpkg does not report installed."""
+    missing = []
+    for package in packages:
+        result = runner(
+            ["dpkg-query", "-W", "-f=${Status}", package],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0 or "install ok installed" not in (result.stdout or ""):
+            missing.append(package)
+    return missing
+
+
+def install_system_deps(
+    browser: str,
+    cwd: pathlib.Path | str,
+    runner: typing.Callable[..., typing.Any] = subprocess.run,
+    sleep: typing.Callable[[float], None] = time.sleep,
+    fallback: typing.Callable[[], typing.Any] = apt_retry.system_fallback,
+) -> bool:
+    """True when apt ran, False when every system package was already installed. Raises RefusedError naming the step when the dry run is unreadable or apt fails or passes SYSTEM_DEPS_TIMEOUT_S."""
+    base = ["npx", "--no-install", "playwright", "install-deps", browser]
+    try:
+        dry = runner(
+            [*base, "--dry-run"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=SYSTEM_DEPS_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RefusedError(
+            f"playwright install-deps --dry-run {browser} timed out after {SYSTEM_DEPS_TIMEOUT_S}s"
+        ) from exc
+    out = dry.stdout or ""
+    if dry.returncode == 0 and ALL_PRESENT_LINE in out:
+        log.info(f"Playwright system deps for {browser} already present; skipping apt")
+        return False
+    packages = dry_run_packages(out)
+    if dry.returncode not in (0, 1) or (dry.returncode == 1 and not packages):
+        # rc=1 is how Playwright 1.65 reports missing packages; rc=1 with no list is a real failure, and stdout is where it speaks.
+        raise RefusedError(
+            f"playwright install-deps --dry-run {browser} failed (rc={dry.returncode}): {((dry.stderr or '').strip() or out.strip())[-300:]}"
+        )
+    if not packages:
+        # An unparseable dry run (an output-format change) must not read as "nothing missing": the libraries would then be found absent only at browser launch.
+        raise RefusedError(
+            f"playwright install-deps --dry-run {browser} printed no `Missing system dependencies` list; cannot tell which system packages are missing"
+        )
+    missing = packages_missing(packages, runner)
+    if not missing:
+        log.info(
+            f"Playwright system deps for {browser} already present ({len(packages)} packages); skipping apt"
+        )
+        return False
+    log.info(f"Installing Playwright system deps for {browser}; missing: {' '.join(missing)}")
+    try:
+        apt_retry.run_with_retry(
+            base,
+            timeout=SYSTEM_DEPS_TIMEOUT_S,
+            runner=runner,
+            sleep=sleep,
+            fallback=fallback,
+            cwd=cwd,
+        )
+    except apt_retry.AptRetryError as exc:
+        raise RefusedError(f"playwright install-deps {browser}: {exc}") from exc
+    return True
 
 
 @dataclasses.dataclass
@@ -355,6 +459,8 @@ class Run:
             "PORT": self.api_port,
             # TEST_MODE is the only opener for the /test/* seed and email-capture routes; deployed Workers never set it.
             "TEST_MODE": "true",
+            # The Terms gate (private/account src/middleware/terms.ts, on by default) answers 403 TERMS_ACCEPTANCE_REQUIRED to every signed-in call of a user who has not accepted the Terms, and the e2e users never do; TERMS_GATE=false is honoured only under TEST_MODE, as in tests/integration/helpers/test-db.ts.
+            "TERMS_GATE": "false",
         }
         if listen_secret:
             env["STRIPE_WEBHOOK_SECRET"] = listen_secret
@@ -411,12 +517,7 @@ class Run:
             ):
                 raise RefusedError(f"npx playwright install {browser} failed")
             if common.is_ci():
-                subprocess.run(
-                    ["npx", "--no-install", "playwright", "install-deps", browser],
-                    cwd=self.e2e_dir,
-                    stderr=subprocess.DEVNULL,
-                    check=False,
-                )
+                install_system_deps(browser, self.e2e_dir)
 
     def run_tests(self, projects: list[str], files: list[str]) -> bool:
         log.step("Running Account Portal E2E tests...")

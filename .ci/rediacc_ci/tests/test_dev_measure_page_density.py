@@ -10,7 +10,7 @@ import socket
 import stat
 import subprocess
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -295,3 +295,89 @@ def test_runs_as_a_module_with_the_documented_command() -> None:
         env={**os.environ, "PYTHONPATH": str(mpd.paths.repo_root() / ".ci")},
     )
     assert proc.returncode == 0, proc.stderr
+
+
+@pytest.mark.usefixtures("browser")
+def test_a_server_that_survives_sigkill_is_named_on_stderr(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A wait that times out after the kill must not pass in silence: the run still writes its rows, but the leaked pid is reported."""
+    real_popen = subprocess.Popen
+    started: list[subprocess.Popen[bytes]] = []
+
+    class Stubborn:
+        def __init__(self, argv: list[str], **kwargs: Any) -> None:
+            self.real = real_popen(argv, **kwargs)
+            started.append(self.real)
+            self.pid = self.real.pid
+
+        def terminate(self) -> None:
+            return None
+
+        def poll(self) -> int | None:
+            return self.real.poll()
+
+        def kill(self) -> None:
+            self.real.kill()
+
+        def wait(self, timeout: float | None = None) -> int:
+            raise subprocess.TimeoutExpired("server", timeout or 0)
+
+    def popen(argv: list[str], **kwargs: Any) -> object:
+        # `subprocess` is one module for the whole process: only the preview server is stubborn.
+        return Stubborn(argv, **kwargs) if "http.server" in argv else real_popen(argv, **kwargs)
+
+    monkeypatch.setattr(mpd.subprocess, "Popen", popen)
+    try:
+        assert mpd.main([str(tmp_path / "out.csv")], www=_site(tmp_path)) == 0
+    finally:
+        for proc in started:
+            proc.kill()
+            proc.wait()
+    err = capsys.readouterr().err
+    assert "still alive 10 s after SIGKILL" in err
+    assert "pid %d" % started[0].pid in err
+
+
+def test_wait_for_server_names_a_server_that_exited_before_listening() -> None:
+    """748cdf09.1: the early-exit poll stops the wait at once instead of burning SERVER_WAIT_SECONDS."""
+    dead = subprocess.Popen([sys.executable, "-c", "raise SystemExit(3)"])
+    dead.wait()
+    with pytest.raises(mpd.ServerExitedError, match="exited with code 3"):
+        mpd.wait_for_server(mpd.pick_port(), dead)
+
+
+@pytest.mark.usefixtures("browser")
+def test_main_retries_a_server_that_exits_and_gives_up_after_three_attempts(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """748cdf09.1/.2: three attempts in all (two retries), each picking a port, and the last exit is reported with rc=1."""
+    ports: list[int] = []
+    real = mpd.pick_port
+
+    def spy() -> int:
+        port = real()
+        ports.append(port)
+        return port
+
+    def always_exited(port: int, _server: Any = None) -> None:
+        raise mpd.ServerExitedError("the server on %d exited with code 1 before it listened" % port)
+
+    class Gone:
+        pid = 1
+        returncode = 1
+
+        def __init__(self, *_a: Any, **_k: Any) -> None:
+            pass
+
+        def poll(self) -> int:
+            return 1
+
+    monkeypatch.setattr(mpd, "pick_port", spy)
+    monkeypatch.setattr(mpd.subprocess, "Popen", Gone)
+    monkeypatch.setattr(mpd, "wait_for_server", always_exited)
+    assert mpd.main([str(tmp_path / "o.csv")], www=_site(tmp_path)) == 1
+    assert len(ports) == 3
+    assert "exited with code 1 before it listened" in capsys.readouterr().err

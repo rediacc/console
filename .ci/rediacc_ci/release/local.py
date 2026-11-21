@@ -1,10 +1,14 @@
 """Publish an edge release from the local machine (box W2-B of agent/plans/PLAN-local-release.md).
 
-    npm run release:local -- --channel edge [--dry-run] [--workers-only [--regions eu,us]]
+    npm run release:local -- --channel edge [--dry-run] [--workers-only [--regions eu,us] [--branch-release]]
 
 npm consumes a `--dry-run` placed before `--`, so the flag goes after it: `npm run release:local -- --channel edge --dry-run`.
 
-EDGE ONLY. Operator ruling ASKED:2026-10-27T09:45Z: "EU/ASIA/US stable should be asked! They're CI/CD only. BUT edge and bench could be released via agent or with CI/CD." `--channel stable` is refused here, with or without `--workers-only`, and names promote-stable.yml; stable is promoted only through CI/CD. cd-v2.yml keeps releasing edge on merge, so this entry is a second edge path, and the two share the release lock: the R2 sentinel `cli/v<V>/.released` and the tag/Release check of `check_existing_release`.
+EDGE ONLY. Public eu/us/asia run on ONE shared Worker set (`account-<r>`, `proxy-<r>` and `signer-<r>` per region at `<r>.rediacc.cloud`, plus `www`; ENVIRONMENT=edge, regions.json; PLAN-product-domain-rename ruling 5), so an edge run is what deploys public production. `--channel stable` is refused here, with or without `--workers-only`, and names cd-release-stable.yml: stable is the CLI channel the Enterprise company Workers ride through rings (PLAN-enterprise-isolation ruling 12), promoted through CI/CD only (operator ruling ASKED:2026-10-27T09:45Z). cd-release-edge.yml keeps releasing edge on merge, so this entry is a second edge path, and the two share the release lock: the R2 sentinel `cli/v<V>/.released` and the tag/Release check of `check_existing_release`.
+
+`--workers-only` deploys those shared edge Workers (www, and per region the signer, account and proxy) from the release clone of HEAD, at the version `cli/edge/manifest.json` names; it cuts, builds, seals, tags and publishes no CLI.
+
+`--branch-release` (operator ruling ASKED:2026-11-13T05:02Z), valid only with `--channel edge --workers-only`, deploys those Workers from a pushed branch head rather than from origin/main: the origin-main gate admits a HEAD that is the tip of a branch on origin and descends from a freshly fetched origin/main (`local_gates.branch_release_refusals`), and every other gate runs unchanged. The run refuses before anything else, the dry run included, unless its environment carries `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z`; block_unasked_release proves that minute against the operator's answer before a real run starts. The Worker never claims a version it does not match: what it reports (www's `APP_VERSION`, and the smoke's `VERSION`) is `<live version>+<branch>.<sha8>`, semver build metadata. The deploy records, the proxy and the executor artifacts keep the live version itself, since that is the release whose executor artifacts are staged and the X.Y.Z `deploy_record` accepts. The release record carries `branch_release`, `branch`, `head_sha`, `asked` and `app_version`.
 
 THE LAUNCH FORM. The npm script runs exactly the shape `release_run.entry_refusal` admits (.claude/rediacc_hooks/git/release_run.py, THE ENTRY INVOCATION): `PYTHONPATH="$PWD/.ci" PYTHONPYCACHEPREFIX=/dev/null /usr/bin/python3 -P -s -m rediacc_ci.release.local`. A real run refuses before anything else when this process is not that entry, because the release-run record it writes later would be refused anyway.
 
@@ -16,7 +20,7 @@ THE LOCK HOLDS THROUGH THE RUN. The gates judge it once; a concurrent CD edge re
 
 THE TAG IS THREE ROWS, ONE UNIT. The git-level pre-push hook admits the tag push only by the exact object id the release-run record lists, and an annotated tag's object id does not exist until the tag is made. So `tag-create` makes the local tag in the clone (`rediacc_ci.release.tag --create-only`, whose only stdout line is the oid), `tag-record` re-writes the release-run record (same run id and path, so REDIACC_RELEASE_RUN is unchanged) with `(clone, origin, refs/tags/v<V>, oid)`, and `tag-push` pushes `refs/tags/v<V>` only while it is still that oid (`--push-oid`). The record is first written with no push at all.
 
-THE ASSIST (local-release-assist.yml, THE R2 CONTRACT in its header). As soon as the keyed renet set exists, `assist-stage-in` empties `staging/local-release/v<V>/` in WK_RELEASES_BUCKET (a stale `.complete` of an earlier attempt must never be read as this run's) and uploads `private-bin/` with `checksums.sha256`, every embedded renet checked against it first; then `assist-dispatch` starts the workflow while the other builds run. `assist-fetch` waits for `cli/.complete`, takes its run id only when the marker names this sha exactly and `gh run view` shows that id is this workflow on this sha, stops early when a dispatch of this sha created since the dispatch completed red, fetches the four SEAs into dist/cli (so SHA256SUMS covers them) and checks each against its `.sha256`. `assist-clean` removes the prefix at the end of stage, and `assist-clean-on-stop` (an `on_failure` row armed by `assist-stage-in`) removes it when the run stops anywhere after the stage-in, after `assist-cancel-on-stop` (armed by `assist-dispatch`) has cancelled this attempt's assist if it is still in flight. A marker whose run was created before this attempt's dispatch is an earlier attempt's, and `assist-fetch` waits past it.
+THE ASSIST (ops-local-release-assist.yml, THE R2 CONTRACT in its header). As soon as the keyed renet set exists, `assist-stage-in` empties `staging/local-release/v<V>/` in WK_RELEASES_BUCKET (a stale `.complete` of an earlier attempt must never be read as this run's) and uploads `private-bin/` with `checksums.sha256`, every embedded renet checked against it first; then `assist-dispatch` starts the workflow while the other builds run. `assist-fetch` waits for `cli/.complete`, takes its run id only when the marker names this sha exactly and `gh run view` shows that id is this workflow on this sha, stops early when a dispatch of this sha created since the dispatch completed red, fetches the four SEAs into dist/cli (so SHA256SUMS covers them) and checks each against its `.sha256`. `assist-clean` removes the prefix at the end of stage, and `assist-clean-on-stop` (an `on_failure` row armed by `assist-stage-in`) removes it when the run stops anywhere after the stage-in, after `assist-cancel-on-stop` (armed by `assist-dispatch`) has cancelled this attempt's assist if it is still in flight. A marker whose run was created before this attempt's dispatch is an earlier attempt's, and `assist-fetch` waits past it.
 
 PROVENANCE (plan decision 6). Sigstore needs the GitHub OIDC identity, so `provenance` writes `dist/cli/SHA256SUMS` over every Release asset (`create_github_release.release_assets`: `dist/cli/**` and `dist/packages/**`) and its armoured detached signature `dist/cli/SHA256SUMS.asc`, made with the release GPG key of the `release-local` profile in a throwaway GNUPGHOME. Both ride the GitHub Release, whose asset set is `dist/cli/**`.
 
@@ -24,7 +28,7 @@ NO SECRET IN THIS PROCESS. A credentialed step runs as a child `PYTHONPATH=.ci p
 
 `--dry-run` resolves the version and runs the gates read-only, then prints every step with its profiles and the key NAMES they bind. It reads no secret value and writes nothing: the gates' fetch becomes `git ls-remote`, the release lock reads the public sentinel URL and `git ls-remote --tags`, the release clone is not made (named as not judged), and no record is written. It exits 1 naming each refusal, else 0.
 
-A REAL RUN, after the gates admit: the release clone's `origin` is pointed at the real remote (it was cloned from this checkout) with gh as its credential helper, the release-run record is written through `release_run.write_release_run` and exported as REDIACC_RELEASE_RUN to every child, then the steps run in order, each timed. On a failure the run stops; the `on_failure` rows of an armed region (the deploy rollback) and the `always` rows (the deploy records, the release record) still run. The release record (every step's id, rc and wall seconds, for L1's timing comparison) is written to R2 once at `release-records/v<V>/edge/run-<id>.json`, and on a full release also at `release-records/v<V>/edge.json`, the key `local_gates` and the stable soak read.
+A REAL RUN, after the gates admit: the release clone's `origin` is pointed at the real remote (it was cloned from this checkout) with gh as its credential helper, the release-run record is written through `release_run.write_release_run` and exported as REDIACC_RELEASE_RUN to every child, then the steps run in order, each timed. On a failure the run stops; the `on_failure` rows of an armed region (the deploy rollback) and the `always` rows (the deploy records, the release record) still run. The release record (every step's id, rc and wall seconds, for L1's timing comparison) is written to R2 once at `release-records/v<V>/edge/run-<id>.json`, and on a full release also at `release-records/v<V>/edge.json` (`edge_record_key`), the key `local_gates` (the stable soak) and `rings_run` (bench and the fast tier) read. `record_document` is that record's one schema; a CD edge release writes the same document through `cd_edge_record`.
 """
 
 from __future__ import annotations
@@ -58,8 +62,9 @@ SELF = "rediacc_ci.release.local"
 CHANNEL = "edge"
 CHANNELS = ("edge", "stable")
 STABLE_REFUSAL = (
-    "--channel stable is promoted through CI/CD only (.github/workflows/promote-stable.yml); "
-    "release:local publishes edge (operator ruling ASKED:2026-10-27T09:45Z)"
+    "--channel stable is the CLI channel Enterprise company Workers ride through rings, promoted "
+    "through CI/CD only (.github/workflows/cd-release-stable.yml); release:local publishes edge "
+    "(operator ruling ASKED:2026-10-27T09:45Z)"
 )
 SECTIONS = (
     "version",
@@ -78,9 +83,11 @@ RETRIES_NO_FAIL = 3
 # Seconds slept before the 2nd and 3rd attempt of a `can_fail=False` row: a transient remote or R2 error gets time to clear.
 RETRY_BACKOFF = (5.0, 20.0)
 RECORD_PREFIX = "release-records/v%s/edge"
-ASSIST_WORKFLOW = "local-release-assist.yml"
+ASK_ENV = "RELEASE_ASKED"
+BRANCH_RELEASE_USAGE = "--branch-release applies to --channel edge --workers-only only"
+ASSIST_WORKFLOW = "ops-local-release-assist.yml"
 ASSIST_NAME = "Local Release Assist"
-# local-release-assist.yml THE R2 CONTRACT: one prefix in WK_RELEASES_BUCKET, private-bin/ in, cli/ out, cli/.complete last.
+# ops-local-release-assist.yml THE R2 CONTRACT: one prefix in WK_RELEASES_BUCKET, private-bin/ in, cli/ out, cli/.complete last.
 ASSIST_PREFIX = "staging/local-release/v%s"
 ASSIST_SEAS = ("rdc-mac-arm64", "rdc-mac-x64", "rdc-win-x64.exe", "rdc-win-arm64.exe")
 # The file list of ci-build-renet.yml's `renet-binaries-<sha>` artifact, which the assist's SEA builds read.
@@ -154,15 +161,17 @@ class Step:
         )
 
 
-# The store names the edge www Worker secrets read under another spelling (cd-deploy-worker.yml `Set Worker secrets`, target edge).
+# The store names the www Worker secrets read under another spelling (cd-deploy-worker.yml `Set Worker secrets`). The www Worker takes live billing: the live key and the live EU webhook secret, a pair that stays together.
 WWW_BINDS = (
     "AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID",
     "AWS_SES_SECRET_ACCESS_KEY_EU > AWS_SES_SECRET_ACCESS_KEY",
     "AWS_SES_REGION_EU > AWS_SES_REGION",
-    "STRIPE_SANDBOX_SECRET_KEY > STRIPE_SECRET_KEY",
-    "STRIPE_SANDBOX_WEBHOOK_SECRET > STRIPE_WEBHOOK_SECRET",
+    "STRIPE_SECRET_KEY > STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET_EU > STRIPE_WEBHOOK_SECRET",
 )
 TURNSTILE = ("TURNSTILE_SITE_KEY > VITE_TURNSTILE_SITE_KEY",)
+# The www pages build reads the same widget's site key under Astro's public spelling; seven www forms render no widget without it (production 2026-11-12).
+WWW_TURNSTILE = ("TURNSTILE_SITE_KEY > PUBLIC_TURNSTILE_SITE_KEY",)
 LOCK_CHECK = (*PY, SELF, "_lock-check", "--version", "{version}")
 
 
@@ -230,6 +239,14 @@ def _table() -> tuple[Step, ...]:
         # ---- 3. builds, in the release clone
         Step("deps", "builds", ("npm", "ci"), **w),
         Step("natives", "builds", ("npm", "run", "install:natives"), **w),
+        # PLAN-terms-acceptance Design 1: the committed entity projection must equal the vault before anything is built from it, on --workers-only too. It prints field names only and exits 1 on drift or an unreachable vault.
+        Step(
+            "legal-entity-verify",
+            "builds",
+            (*PY, "rediacc_ci.legal.entity", "verify"),
+            profiles=("legal-entity",),
+            **w,
+        ),
         Step("packages", "builds", ("npm", "run", "build:packages"), **w),
         Step(
             "account-deps",
@@ -268,7 +285,7 @@ def _table() -> tuple[Step, ...]:
             ),
             profiles=("release-local",),
         ),
-        # The assist starts as soon as the keyed renet set exists (local-release-assist.yml THE R2 CONTRACT): stage it, then dispatch.
+        # The assist starts as soon as the keyed renet set exists (ops-local-release-assist.yml THE R2 CONTRACT): stage it, then dispatch.
         Step(
             "assist-stage-in",
             "builds",
@@ -764,11 +781,14 @@ def _table() -> tuple[Step, ...]:
             "www-pages",
             "deploy",
             ("npm", "run", "build", "-w", "@rediacc/www"),
+            # `{build_meta}` is empty on a release and `+<branch>.<sha8>` on a branch release, so the footer never claims a version the Worker does not match.
             env=(
-                ("APP_VERSION", "{version}"),
+                ("APP_VERSION", "{version}{build_meta}"),
                 ("NODE_OPTIONS", "--max-old-space-size=4096"),
                 ("PUBLIC_VIDEO_CDN_BASE_URL", "{media_origin}"),
             ),
+            profiles=("deploy-workers",),
+            binds=WWW_TURNSTILE,
             gh_env=("GITHUB_TOKEN",),
             **w,
         ),
@@ -800,7 +820,7 @@ def _table() -> tuple[Step, ...]:
         Step(
             "www-deploy",
             "deploy",
-            (*PY, "rediacc_ci.deploy.deploy_edge"),
+            (*PY, "rediacc_ci.deploy.deploy_www"),
             profiles=("deploy-workers",),
             env=(
                 ("DEPLOY_RECORD_OUT", "{out}/www-record.json"),
@@ -814,7 +834,7 @@ def _table() -> tuple[Step, ...]:
             (*PY, "rediacc_ci.deploy.set_www_worker_secrets"),
             profiles=("release-local", "deploy-workers"),
             binds=WWW_BINDS,
-            env=(("WORKER_NAME", "edge-rediacc-www"),),
+            env=(("WORKER_NAME", "www"),),
             **w,
         ),
         Step(
@@ -832,6 +852,7 @@ def _table() -> tuple[Step, ...]:
             **w,
         ),
         Step("account-worker-deps", "deploy", ("npm", "install"), cwd="clone:workers/account", **w),
+        Step("signer-worker-deps", "deploy", ("npm", "install"), cwd="clone:workers/signer", **w),
         Step("proxy-worker-deps", "deploy", ("npm", "install"), cwd="clone:workers/proxy", **w),
         Step(
             "order",
@@ -856,7 +877,7 @@ def _table() -> tuple[Step, ...]:
                 "rediacc_ci.deploy.deploy_record",
                 "before",
                 "--target",
-                "edge",
+                "stable",
                 "--region",
                 "{region}",
                 "--version",
@@ -868,10 +889,34 @@ def _table() -> tuple[Step, ...]:
             per_region=True,
             **w,
         ),
+        # THE SIGNER BEFORE THE ACCOUNT WORKER (finding fc8ad2fd). Every account config binds LICENSE_SIGNER to `signer-<region>`, and Cloudflare refuses the account deploy with error 10143 while that Worker is missing. The same two steps `deploy_bench._ensure_signers` runs on bench: the control database the signer binds (`control_db ensure`, which creates and migrates only what is missing), then the signer itself under the deploy-signer profile, the one profile that binds the signing key. Both are idempotent: a present database is left alone, and a present signer is redeployed from the same template with the same key.
+        Step(
+            "control-db",
+            "deploy",
+            (*PY, "rediacc_ci.enterprise.control_db", "ensure", "--region", "{region}"),
+            profiles=("deploy-signer",),
+            per_region=True,
+            **w,
+        ),
+        Step(
+            "signer-deploy",
+            "deploy",
+            (
+                *PY,
+                "rediacc_ci.deploy.deploy_signer",
+                "--target",
+                "{region}",
+                "--record",
+                "{out}/{region}/signer.json",
+            ),
+            profiles=("deploy-signer",),
+            per_region=True,
+            **w,
+        ),
         Step(
             "account-deploy",
             "deploy",
-            (*PY, "rediacc_ci.deploy.deploy_account", "--region", "{region}", "--target", "edge"),
+            (*PY, "rediacc_ci.deploy.deploy_account", "--region", "{region}"),
             profiles=("deploy-workers",),
             per_region=True,
             **w,
@@ -884,8 +929,6 @@ def _table() -> tuple[Step, ...]:
                 "rediacc_ci.deploy.account_secrets_local",
                 "--region",
                 "{region}",
-                "--target",
-                "edge",
             ),
             per_region=True,
             **w,
@@ -897,7 +940,7 @@ def _table() -> tuple[Step, ...]:
                 *PY,
                 "rediacc_ci.deploy.deploy_proxy",
                 "--target",
-                "edge",
+                "stable",
                 "--region",
                 "{region}",
                 "--version",
@@ -916,7 +959,7 @@ def _table() -> tuple[Step, ...]:
                 *PY,
                 "rediacc_ci.deploy.deploy_proxy",
                 "--target",
-                "edge",
+                "stable",
                 "--region",
                 "{region}",
                 "--smoke-only",
@@ -935,7 +978,7 @@ def _table() -> tuple[Step, ...]:
                 "rediacc_ci.deploy.console_executor",
                 "--enable",
                 "--target",
-                "edge",
+                "stable",
                 "--region",
                 "{region}",
             ),
@@ -964,7 +1007,7 @@ def _table() -> tuple[Step, ...]:
             "verify-endpoints",
             "smoke",
             (*PY, "rediacc_ci.deploy.verify_edge_endpoints"),
-            env=(("VERSION", "{version}"), ("WORKERS_ONLY", "{workers_only}")),
+            env=(("VERSION", "{version}{build_meta}"), ("WORKERS_ONLY", "{workers_only}")),
             rc_as="smoke_rc",
             **w,
         ),
@@ -1033,7 +1076,7 @@ def _table() -> tuple[Step, ...]:
             arm="record-before-{region}",
             **w,
         ),
-        # ---- 10. tag-and-release (cd-v2.yml tag-and-release); the version tag itself is the seal's twin above
+        # ---- 10. tag-and-release (cd-release-edge.yml tag-and-release); the version tag itself is the seal's twin above
         Step(
             "tag-submodules",
             "release",
@@ -1089,18 +1132,28 @@ STEPS: tuple[Step, ...] = _table()
 
 
 def plan(
-    regions: Sequence[str], *, workers_only: bool = False, steps: Sequence[Step] = STEPS
+    regions: Sequence[str],
+    *,
+    workers_only: bool = False,
+    branch_release: bool = False,
+    pinned: bool = False,
+    steps: Sequence[Step] = STEPS,
 ) -> list[Step]:
     """The rows one run executes, in table order, per-region rows expanded over `regions`.
 
-    A release takes every row except the workers-only version row; `--workers-only` takes the `workers` rows only, so it reads the live edge version instead of cutting one, and builds, seals, tags and publishes nothing.
+    A release takes every row except the workers-only version row; `--workers-only` takes the `workers` rows only, so it reads the live edge version instead of cutting one, and builds, seals, tags and publishes nothing. `branch_release` hands `--branch-release` to the gates row, and `pinned` hands it `--commit {sha}`.
     """
     out: list[Step] = []
-    for step in steps:
-        if workers_only and not step.workers:
+    for row in steps:
+        if workers_only and not row.workers:
             continue
-        if not workers_only and step.kind == "channel-version":
+        if not workers_only and row.kind == "channel-version":
             continue
+        step = row
+        if branch_release and row.kind == "gates":
+            step = dataclasses.replace(row, argv=(*row.argv, "--branch-release"))
+        if pinned and row.kind == "gates":
+            step = dataclasses.replace(step, argv=(*step.argv, "--commit", "{sha}"))
         if step.per_region:
             out.extend(step.for_region(r) for r in regions)
         else:
@@ -1157,13 +1210,17 @@ def render(template: str, ctx: Context) -> str:
     return re.sub(r"\{([a-z_]+)\}", lambda m: str(ctx[m.group(1)]), text)
 
 
-def base_context(root: pathlib.Path, regions: Sequence[str], workers_only: bool) -> Context:
+def base_context(
+    root: pathlib.Path, regions: Sequence[str], workers_only: bool, commit: str | None = None
+) -> Context:
+    """The template values of a run. `commit` (`--commit <sha>`, D1.8 of PLAN-push-decoupling) pins head, tree and account pointer to that commit in place of HEAD; the gates refuse a commit that is not an ancestor of the branch tip."""
     wk = well_known(root)
-    _rc, head = _git(root, "rev-parse", "HEAD")
-    _rc, tree = _git(root, "rev-parse", "HEAD^{tree}")
+    at = "%s^{commit}" % commit if commit else "HEAD"
+    _rc, head = _git(root, "rev-parse", at)
+    _rc, tree = _git(root, "rev-parse", "%s^{tree}" % head)
     _rc, origin = _git(root, "remote", "get-url", "origin")
-    # The account commit HEAD's tree points at: the clone is HEAD, so its private/account is this gitlink.
-    _rc, account = _git(root, "rev-parse", "HEAD:private/account")
+    # The account commit the commit's tree points at: the clone is that commit, so its private/account is this gitlink.
+    _rc, account = _git(root, "rev-parse", "%s:private/account" % head)
     m = re.search(r"github\.com[:/]([^/]+/[^/]+?)(?:\.git)?$", origin)
     return Context(
         channel=CHANNEL,
@@ -1178,11 +1235,34 @@ def base_context(root: pathlib.Path, regions: Sequence[str], workers_only: bool)
         repo=m.group(1) if m else "",
         clone=str(root / CLONE_REL / tree),
         workers_only="true" if workers_only else "",
+        branch_release="",
+        build_meta="",
         smoke_rc="-1",
         path=os.environ.get("PATH", ""),
         outcomes={},
         regions=list(regions),
     )
+
+
+_META_UNSAFE = re.compile(r"[^0-9A-Za-z-]+")
+
+
+def branch_context(
+    root: pathlib.Path, head: str, asked: str, heads: local_gates.Heads = local_gates.live_heads
+) -> dict[str, str]:
+    """The context a branch release adds: the origin branch whose tip is HEAD (a read-only `git ls-remote`), the RELEASE_ASKED minute, and `build_meta`, `+<branch>.<sha8>` with each run of characters semver build metadata refuses folded to `-`. An unpushed HEAD names the branch `unpushed`; a failed read of origin's branches names it `unread` and carries the reason in `branch_read`. The origin-main gate refuses both."""
+    remote, why = heads(root)
+    if remote is None:
+        branch, read = "unread", why or "the read of origin's branches failed"
+    else:
+        branch, read = local_gates.pushed_branch(remote, head) or "unpushed", ""
+    return {
+        "branch_release": "true",
+        "branch": branch,
+        "branch_read": read,
+        "asked": asked,
+        "build_meta": "+%s.%s" % (_META_UNSAFE.sub("-", branch).strip("-") or "branch", head[:8]),
+    }
 
 
 # --------------------------------------------------------------------------- children
@@ -1220,6 +1300,12 @@ def child_env(step: Step, ctx: Context, root: pathlib.Path) -> dict[str, str]:
     env = {k: v for k, v in os.environ.items() if k != "PYTHONPYCACHEPREFIX"}
     env["PYTHONPATH"] = str(tree_root / ".ci")
     env["BWS_ENV_ROOT"] = str(root)
+    # The clone's toolchain cache is empty: the aws resolver borrows this checkout's (core.awscli rung 3).
+    env[awscli.TOOLCHAIN_ROOT_ENV] = str(root)
+    # An operator's own DEPLOY_RECORD_BRANCH must not move a normal release's records under branch-<label>/.
+    env.pop(deploy_record.BRANCH_KEY_ENV, None)
+    if ctx.get("branch_release"):
+        env[deploy_record.BRANCH_KEY_ENV] = ctx["build_meta"].lstrip("+")
     out = ctx.get("out")
     if out:
         env["GITHUB_OUTPUT"] = str(pathlib.Path(out) / ("github-output-%s" % step.id))
@@ -1248,6 +1334,8 @@ def profile_keys(profiles: Sequence[str]) -> list[str]:
 class GateResult:
     refusals: list[str]
     notes: list[str]
+    # How many gates the dry run could not judge; counted where the note is written, never read back out of the note text.
+    unjudged: int = 0
 
 
 def _ls_remote_main(root: pathlib.Path) -> tuple[str | None, str]:
@@ -1298,16 +1386,38 @@ def dry_gates(root: pathlib.Path, version: str | None, ctx: Context) -> GateResu
         "local-gates: clone: not judged under --dry-run (it writes the release clone %s)"
         % paths_rel(root, pathlib.Path(ctx["clone"]))
     ]
+    ancestry_unjudged: list[str] = []
+
+    pinned = str(ctx.get("pinned_commit") or "")
+
+    def ancestor(r: pathlib.Path, base: str, head: str) -> bool | None:
+        if pinned and base == pinned and head != pinned:
+            # The pin's own check asks (pin, HEAD tip) and keeps git's "cannot tell", so check() refuses it as the real run does. The origin-main check asks (origin/main, pin), so a pin that equals origin/main still reaches the unjudged note below. When HEAD is the pin, both checks ask the same (pin, pin) and cannot be told apart: the stand-in answers it, with its unjudged note, since a commit is its own ancestor and git fails there only when the object is absent.
+            return local_gates.live_ancestor(r, base, head)
+        # The real run fetches origin's objects first; a dry run writes nothing, so a base commit this checkout lacks cannot be judged.
+        verdict = local_gates.live_ancestor(r, base, head)
+        if verdict is None:
+            ancestry_unjudged.append(base[:12])
+        return True if verdict is None else verdict
+
     refusals = local_gates.check(
         root,
         "edge",
+        commit=ctx.get("pinned_commit") or None,
         fetch=_ls_remote_main,
+        ancestor=ancestor,
         sentinel=public_sentinel(ctx["releases_origin"]),
         existing=readonly_existing,
         version=version,
         clone=lambda _r, _t, _h: None,
+        branch_release=bool(ctx.get("branch_release")),
     )
-    return GateResult([r.line() for r in refusals], notes)
+    notes.extend(
+        "local-gates: origin-main: whether origin/main %s is an ancestor of HEAD is not judged under --dry-run (the object is not fetched)"
+        % base
+        for base in ancestry_unjudged
+    )
+    return GateResult([r.line() for r in refusals], notes, 1 + len(ancestry_unjudged))
 
 
 def paths_rel(root: pathlib.Path, path: pathlib.Path) -> str:
@@ -1366,6 +1476,12 @@ def describe(steps: Sequence[Step], ctx: Context) -> list[str]:
             lines.append("      binds: %s" % " ".join(binds))
         if step.kind != "run":
             lines.append("      (%s, run by the entry)" % step.kind)
+            if step.argv:
+                # Every non-run row that carries an argv runs it as a child (the gates row among them): print it, so a dry run shows each command, the flags (`--branch-release`) the gates judge with included.
+                lines.append(
+                    "      %s$ %s"
+                    % (_cwd_label(step), " ".join(shlex.quote(a) for a in child_argv(step, ctx)))
+                )
         else:
             lines.append(
                 "      %s$ %s"
@@ -1597,7 +1713,10 @@ def internal_gates(step: Step, run: Run) -> int:
     lines = [ln for ln in proc.stdout.splitlines() if ln.strip()]
     for line in lines:
         print(line)
-    return gates_verdict(proc.returncode, lines, bool(run.ctx.get("workers_only")))
+    verdict = gates_verdict(proc.returncode, lines, bool(run.ctx.get("workers_only")))
+    # The waiver rides the record only when the verdict admits: a refused run records none.
+    run.ctx["red_waiver"] = local_gates.waiver_from_lines(lines) if verdict == 0 else None
+    return verdict
 
 
 def gates_verdict(rc: int, lines: list[str], workers_only: bool) -> int:
@@ -1617,25 +1736,82 @@ def gates_verdict(rc: int, lines: list[str], workers_only: bool) -> int:
     return 1
 
 
-def release_record(run: Run) -> dict[str, Any]:
-    ctx = run.ctx
+def edge_record_key(version: str) -> str:
+    """The one record per edge version that `local_gates` (the stable soak) and `rings_run` (bench and the fast tier) read."""
+    return RECORD_PREFIX % version + ".json"
+
+
+def workers_record_key(version: str) -> str:
+    """The record a successful workers-only release leaves per version, at a key `rings_run` can read without listing `edge/run-<id>.json`. It is not `edge.json`: that key means the version was released in full, which the stable soak (`local_gates`) relies on."""
+    return RECORD_PREFIX % version + "-workers.json"
+
+
+def record_document(
+    *,
+    kind: str,
+    version: str,
+    sha: str,
+    tree: str,
+    run_id: str,
+    regions: Sequence[str],
+    smoke_rc: int,
+    failed_step: str | None,
+    steps: Sequence[StepResult],
+    workers_only: bool = False,
+    branch_release: bool = False,
+    branch: str | None = None,
+    asked: str | None = None,
+    build_meta: str = "",
+    assist_run: str | None = None,
+    red_waiver: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """The edge release record, schema 1: one shape for every writer (`release-local` here, `release-cd` from `cd_edge_record`)."""
     return {
         "schema": 1,
-        "kind": "release-local",
-        "version": ctx["version"],
+        "kind": kind,
+        "version": version,
         "channel": CHANNEL,
-        "sha": ctx["sha"],
-        "tree": ctx["tree"],
-        "run_id": ctx["run_id"],
-        "workers_only": bool(ctx.get("workers_only")),
-        "regions": ctx["regions"],
-        "assist_run": ctx.get("assist_run"),
+        "sha": sha,
+        "tree": tree,
+        "run_id": run_id,
+        "workers_only": workers_only,
+        "branch_release": branch_release,
+        "branch": branch,
+        "head_sha": sha,
+        "asked": asked,
+        "red_waiver": red_waiver,
+        "app_version": "%s%s" % (version, build_meta),
+        "regions": list(regions),
+        "assist_run": assist_run,
         "recorded_at": _now(),
-        "smoke_rc": int(ctx["smoke_rc"]),
-        "failed_step": run.failed or None,
-        "total_seconds": round(sum(r.seconds for r in run.results), 3),
-        "steps": [dataclasses.asdict(r) for r in run.results],
+        "smoke_rc": smoke_rc,
+        "failed_step": failed_step,
+        "total_seconds": round(sum(r.seconds for r in steps), 3),
+        "steps": [dataclasses.asdict(r) for r in steps],
     }
+
+
+def release_record(run: Run) -> dict[str, Any]:
+    ctx = run.ctx
+    branch_release = bool(ctx.get("branch_release"))
+    return record_document(
+        kind="release-local",
+        version=ctx["version"],
+        sha=ctx["sha"],
+        tree=ctx["tree"],
+        run_id=ctx["run_id"],
+        regions=ctx["regions"],
+        smoke_rc=int(ctx["smoke_rc"]),
+        failed_step=run.failed or None,
+        steps=run.results,
+        workers_only=bool(ctx.get("workers_only")),
+        branch_release=branch_release,
+        branch=ctx.get("branch") if branch_release else None,
+        asked=ctx.get("asked") if branch_release else None,
+        build_meta=ctx.get("build_meta", ""),
+        assist_run=ctx.get("assist_run"),
+        red_waiver=ctx.get("red_waiver"),
+    )
 
 
 def internal_release_record(step: Step, run: Run) -> int:
@@ -1649,12 +1825,20 @@ def internal_release_record(step: Step, run: Run) -> int:
     body.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     prefix = RECORD_PREFIX % record["version"]
     keys = ["%s/run-%s.json" % (prefix, run.ctx["run_id"])]
+    keep = ""
     if not run.failed and not record["workers_only"]:
-        keys.append(prefix + ".json")
+        keys.append(edge_record_key(record["version"]))
+    elif not run.failed:
+        # The first successful workers-only release of a version is its record; a later one keeps it (the put is write-once).
+        keep = workers_record_key(record["version"])
+        keys.append(keep)
     rc = 0
     for key in keys:
+        extra = ("--keep",) if key == keep else ()
         writer = dataclasses.replace(
-            step, argv=(*PY, SELF, "_write-record", "--key", key, "--file", str(body)), kind="run"
+            step,
+            argv=(*PY, SELF, "_write-record", "--key", key, "--file", str(body), *extra),
+            kind="run",
         )
         rc |= subprocess.run(
             child_argv(writer, run.ctx),
@@ -1723,7 +1907,7 @@ def bind_main(argv: list[str]) -> int:
 def bind_refusals(specs: Sequence[str], env: dict[str, str]) -> list[str]:
     """Why the specs cannot be bound from `env`: a STORE no carried profile declares, or one the profile left empty. Names only.
 
-    No spec, nothing to refuse: a row that only takes the GitHub token (`gh_env` with no profile: cleanup-channel-tags, www-pages, tag-submodules, github-release) reads no store, so it needs no carried profile.
+    No spec, nothing to refuse: a row that only takes the GitHub token (`gh_env` with no profile: cleanup-channel-tags, tag-submodules, github-release) reads no store, so it needs no carried profile.
     """
     if not specs:
         return []
@@ -1756,11 +1940,16 @@ def write_record_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="%s _write-record" % SELF)
     parser.add_argument("--key", required=True)
     parser.add_argument("--file", required=True)
+    parser.add_argument(
+        "--keep", action="store_true", help="an existing record at the key is kept, not an error"
+    )
     args = parser.parse_args(argv)
     record = json.loads(pathlib.Path(args.file).read_text(encoding="utf-8"))
     try:
         deploy_record.write_record_once(record, args.key)
     except deploy_record.RecordError as exc:
+        if args.keep and "already exists" in str(exc):
+            return 0
         print("%s _write-record: %s" % (SELF, exc), file=sys.stderr)
         return 1
     return 0
@@ -2197,7 +2386,7 @@ def assist_clean(version: str, clone: pathlib.Path) -> str:
 
 
 def assist_main(argv: list[str]) -> int:
-    """`_assist stage-in|fetch|cancel|clean --version V [--sha S --since ISO]`: the local half of local-release-assist.yml's R2 contract, run in the release clone (`stage-in`, `fetch` and `clean` inside an r2-artifacts child). `fetch` prints the assist run id as its last stdout line; `cancel` stops this attempt's in-flight assist on a stop."""
+    """`_assist stage-in|fetch|cancel|clean --version V [--sha S --since ISO]`: the local half of ops-local-release-assist.yml's R2 contract, run in the release clone (`stage-in`, `fetch` and `clean` inside an r2-artifacts child). `fetch` prints the assist run id as its last stdout line; `cancel` stops this attempt's in-flight assist on a stop."""
     parser = argparse.ArgumentParser(prog="%s _assist" % SELF)
     parser.add_argument("verb", choices=("stage-in", "fetch", "cancel", "clean"))
     parser.add_argument("--version", required=True)
@@ -2248,8 +2437,11 @@ def launch_probe_main(argv: list[str]) -> int:
 
 
 def parse(argv: list[str]) -> argparse.Namespace:
+    # No abbreviations: block_unasked_release judges `--branch-release` and `--dry-run` as exact words, so `--branch` must not reach the run as the flag.
     parser = argparse.ArgumentParser(
-        prog="npm run release:local --", description=(__doc__ or "").splitlines()[0]
+        prog="npm run release:local --",
+        description=(__doc__ or "").splitlines()[0],
+        allow_abbrev=False,
     )
     parser.add_argument("--channel", required=True, choices=CHANNELS)
     parser.add_argument(
@@ -2258,7 +2450,17 @@ def parse(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--workers-only",
         action="store_true",
-        help="deploy the edge Workers of the live version only (plan decision 3)",
+        help="deploy only the shared edge Workers that serve public eu/us/asia (www, and per region signer, account, proxy) from HEAD at the live edge version; no CLI is cut (plan decision 3)",
+    )
+    parser.add_argument(
+        "--branch-release",
+        action="store_true",
+        help="with --channel edge --workers-only: deploy the pushed branch head (descended from origin/main) instead of origin/main; needs RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z",
+    )
+    parser.add_argument(
+        "--commit",
+        default="",
+        help="release this ancestor of the branch tip instead of HEAD: the context and every gate judge it, and the release clone is built from it",
     )
     parser.add_argument(
         "--regions",
@@ -2268,6 +2470,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
     args = parser.parse_args(argv)
     if args.regions and not args.workers_only:
         parser.error("--regions applies to --workers-only")
+    if args.branch_release and (args.channel != CHANNEL or not args.workers_only):
+        parser.error(BRANCH_RELEASE_USAGE)
     return args
 
 
@@ -2292,17 +2496,38 @@ def main(
     runner: Runner = default_runner,
     gates: Callable[..., GateResult] | None = None,
     internal: dict[str, Callable[[Step, Run], int]] | None = None,
+    heads: local_gates.Heads = local_gates.live_heads,
 ) -> int:
     args = parse(argv)
     if args.channel != CHANNEL:
         print("%s: refused: %s" % (SELF, STABLE_REFUSAL), file=sys.stderr)
         return 2
+    asked = os.environ.get("RELEASE_ASKED", "")
+    if args.branch_release and not local_gates.ASKED_RE.fullmatch(asked):
+        print(
+            "%s: refused: --branch-release needs %s=ASKED:<YYYY-MM-DDTHH:MM>Z naming the operator's answer (got %r)"
+            % (SELF, ASK_ENV, asked),
+            file=sys.stderr,
+        )
+        return 2
     root = root or paths.repo_root()
     regions = resolve_regions(root, args.regions)
-    ctx = base_context(root, regions, args.workers_only)
-    # The webhook check reads each region's production domain, as cd-v2.yml's per-region loop does.
+    ctx = base_context(root, regions, args.workers_only, args.commit)
+    if args.commit:
+        ctx["pinned_commit"] = ctx["sha"]
+    if args.branch_release:
+        ctx.update(branch_context(root, ctx["sha"], asked, heads))
+    # The webhook check reads each region's production domain, as cd-release-edge.yml's per-region loop does.
     domains = {r: d.get("domain") or "" for r, d in read_regions(root).items()}
-    steps = [_with_domain(s, domains) for s in plan(regions, workers_only=args.workers_only)]
+    steps = [
+        _with_domain(s, domains)
+        for s in plan(
+            regions,
+            workers_only=args.workers_only,
+            branch_release=args.branch_release,
+            pinned=bool(args.commit),
+        )
+    ]
 
     if args.dry_run:
         return dry_run(root, args, steps, ctx, runner, gates or dry_gates)
@@ -2372,7 +2597,7 @@ def dry_run(
 ) -> int:
     print(
         "release:local --channel edge%s (dry run): no secret value is read and nothing is written"
-        % (" --workers-only" if args.workers_only else "")
+        % _flags(args)
     )
     run = Run(root, ctx, runner=runner, internal={"channel-version": internal_channel_version})
     for step in steps:
@@ -2383,6 +2608,20 @@ def dry_run(
         "version: %s%s"
         % (version or "unresolved", " (bump %s)" % ctx["bump"] if "bump" in ctx else "")
     )
+    if ctx.get("branch_release") and ctx.get("branch_read"):
+        print("branch release: origin's branches could not be read: %s" % ctx["branch_read"])
+    if ctx.get("branch_release"):
+        print(
+            "branch release: %s at %s; the Workers report %s%s (%s=%s)"
+            % (
+                ctx["branch"],
+                ctx["sha"][:12],
+                version or "<version?>",
+                ctx["build_meta"],
+                ASK_ENV,
+                ctx["asked"],
+            )
+        )
     refusals = list(prereq_refusals(args.workers_only))
     result = gates(root, version, ctx)
     refusals += filter_workers(result.refusals, args.workers_only)
@@ -2398,10 +2637,30 @@ def dry_run(
     if refusals:
         print("refused: %d refusal(s): %s" % (len(refusals), ", ".join(_codes(refusals))))
         return 1
+    unjudged = result.unjudged
     print(
-        "admitted: every gate passes; the run above is what `npm run release:local -- --channel edge` executes"
+        "admitted: every %sgate passes%s; the run above is what `npm run release:local -- --channel edge%s` executes"
+        % (
+            "judged " if unjudged else "",
+            " (%d not judged under --dry-run, see the notes)" % unjudged if unjudged else "",
+            _flags(args),
+        )
     )
     return 0
+
+
+def _flags(args: argparse.Namespace) -> str:
+    """The run's flags after `--channel edge`, as typed, `--dry-run` left out."""
+    flags = ""
+    if args.workers_only:
+        flags += " --workers-only"
+        if args.regions:
+            flags += " --regions %s" % args.regions
+    if args.branch_release:
+        flags += " --branch-release"
+    if args.commit:
+        flags += " --commit %s" % args.commit
+    return flags
 
 
 def _codes(lines: list[str]) -> list[str]:

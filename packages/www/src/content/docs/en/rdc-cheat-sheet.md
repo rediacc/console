@@ -142,6 +142,17 @@ Write-only deploy-time credentials. `get` returns the digest only. The value is 
 | `rdc backup strategy set ...` | Define a named backup strategy |
 | `rdc --config <name> <command>` | Use a named config file |
 
+## Feedback
+
+| Command | Description |
+|---------|-------------|
+| `rdc feedback report --last` | Preview a report built from the newest failed command; add `--yes` to send |
+| `rdc feedback report --command <n>` | Report a recorded command (1 is the newest) |
+| `rdc feedback report --list-recent` | List the recorded commands and exit |
+| `rdc feedback report --message <text> [--kind bug\|feedback\|docs]` | Report a note without a failed command |
+| `rdc feedback list [--status <list>]` | List reports with id, fingerprint, status and dates; a fixed report reads `fixed-in-v<version>` |
+| `rdc feedback show <id>` | Show one report by id or unique prefix |
+
 ## Debug and Escape Hatch
 
 | Command | Description |

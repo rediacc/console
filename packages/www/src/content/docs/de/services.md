@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: de
-sourceHash: "4769afb97c2b885d"
-sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
+sourceHash: "a98cadc0afd3474b"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # Dienste
@@ -30,14 +30,33 @@ Versteckte Verzeichnisse (Namen, die mit `.` beginnen) werden übersprungen.
 
 ### Lebenszyklus-Funktionen
 
-Ein Rediaccfile enthält bis zu zwei Funktionen:
+renet führt diese Rediaccfile-Funktionen aus:
 
 | Funktion | Ausführungszeitpunkt | Zweck | Fehlerverhalten |
 |----------|---------------------|-------|-----------------|
 | `up()` | Beim Starten | Dienste starten (z. B. `renet compose -- up -d`) | Fehler im Root-Rediaccfile sind **kritisch** (stoppt alles). Fehler in Unterverzeichnissen sind **nicht-kritisch** (werden protokolliert, es wird mit dem nächsten fortgefahren). |
 | `down()` | Beim Stoppen | Dienste stoppen (z. B. `renet compose -- down`) | **Best-Effort** -- Fehler werden protokolliert, aber alle Rediaccfiles werden immer verarbeitet. |
+| `health()` | Bei `rdc repo health`, bei `rdc machine health` und im Health-Gate des Deployments | Den eigenen Zustand des Repositorys melden: Exit `0` ok, `1` Warnung, `2` Fehler | Das `health()` jedes Rediaccfiles läuft, und die schlechteste Stufe zählt. Exit `75` heißt: noch im Aufwärmen (eine Warnung). Jeder andere Exit, ein Signal oder ein Zeitlimit ist ein Fehler (das Health-Gate des Deployments wertet ein Zeitlimit als „noch im Aufwärmen“ und versucht es erneut, siehe [Zeitlimits und Reihenfolge beim Herunterfahren](#timeouts-and-shutdown-order)). Ein Repository, dessen Rediaccfiles kein `health()` definieren, meldet **keine Prüfung**, nie „gesund“ |
+| `repair()` | Bei `rdc repo repair` und bei `rdc machine repair` für ein Repository, dessen `health()` nicht ok ist | Beheben, was das `health()` derselben Datei gemeldet hat | Läuft nur, wenn das `health()` seiner Datei nicht ok ist und die deklarierte Klasse erlaubt ist (siehe unten). Ein `health()` mit Exit `75` (noch im Aufwärmen) zählt als Warnung, daher sollte ein `repair()` ein Repository, das noch startet, in Ruhe lassen. Danach läuft `health()` erneut. Ein fehlgeschlagenes `repair()` oder eines mit Zeitüberschreitung ist ein Fehler |
 
-Beide Funktionen sind optional. Wenn eine Funktion nicht definiert ist, wird sie stillschweigend übersprungen.
+Jede Funktion ist optional. Ist eine Funktion nicht definiert, wird sie stillschweigend übersprungen.
+
+#### Eine Reparaturklasse deklarieren
+
+`repair()` erhält `REDIACC_HEALTH_LEVEL` (`warning` oder `error`, die Stufe, die das `health()` der eigenen Datei gemeldet hat) und `REDIACC_HEALTH_OUTPUT` (das Ende der Ausgabe dieses `health()`). Eine Kommentarzeile legt fest, wie sicher die Funktion ist:
+
+```bash
+# rediacc:repair class=auto-safe
+# rediacc:repair class=auto-with-backup window=only
+```
+
+| Klasse | Wer sie ausführt |
+|---|---|
+| `auto-safe` | `rdc machine repair` und `rdc repo repair` führen sie selbstständig aus |
+| `auto-with-backup` | Läuft nur mit `--with-backup`, nach einem erfolgreichen Snapshot des Repositorys |
+| `operator-only` | Läuft nie von selbst. `rdc repo repair` fragt zuerst nach (oder nimmt `--yes`); `rdc machine repair` führt sie nie aus |
+
+Ein `repair()` ohne Deklaration ist `operator-only`, sodass kein Werkzeug den Code eines Repositorys unbeaufsichtigt ausführt, solange das Repository ihn nicht als sicher kennzeichnet. `window=only` fügt eine zweite Bedingung hinzu: Die Funktion läuft nur innerhalb des Wartungsfensters der Maschine ([Überwachung](/de/docs/monitoring#repair)) oder mit `--window-override`. Deklarieren mehrere Zeilen eine Klasse, gilt die restriktivste.
 
 ### Ausführungsreihenfolge
 
@@ -58,11 +77,78 @@ Wenn eine Rediaccfile-Funktion ausgeführt wird, stehen folgende Umgebungsvariab
 
 Die `{SERVICE}_IP`-Variablen werden automatisch aus den Slot-Zuordnungen in `.rediacc.json` generiert und werden vor der Ausführung Ihrer Rediaccfile-Funktionen exportiert. Die Namenskonvention wandelt den Dienstnamen in Großbuchstaben um, ersetzt Bindestriche durch Unterstriche und hängt `_IP` an. Beispiel: Ein Dienst namens `listmonk-app` mit Slot `0` wird zu `LISTMONK_APP_IP=127.0.11.2`.
 
-> **Warnung: Verwenden Sie kein `sudo docker` in Rediaccfiles.** Der `sudo`-Befehl setzt Umgebungsvariablen zurück, wodurch `DOCKER_HOST` verloren geht und Docker-Befehle den System-Daemon statt des isolierten Repository-Daemons ansprechen. Dies bricht die Container-Isolation und kann Port-Konflikte verursachen. Rediacc blockiert die Ausführung, wenn es `sudo docker` ohne `-E` erkennt.
+> **Warnung: Verwenden Sie kein `sudo docker` in Rediaccfiles.** Der `sudo`-Befehl setzt Umgebungsvariablen zurück, wodurch `DOCKER_HOST` verloren geht und Docker-Befehle den System-Daemon statt des isolierten Repository-Daemons ansprechen. Dies bricht die Container-Isolation und kann Port-Konflikte verursachen. Rediacc blockiert die Ausführung, wenn es `sudo docker` erkennt.
 >
-> Verwenden Sie `renet compose` in Ihren Rediaccfiles. Es übernimmt automatisch `DOCKER_HOST`, injiziert Netzwerk-Labels für die Routen-Erkennung und konfiguriert das Dienst-Netzwerk. Siehe [Netzwerk](/de/docs/networking) für Details, wie Dienste über den Reverse Proxy bereitgestellt werden. Wenn Sie Docker direkt aufrufen, verwenden Sie `docker` ohne `sudo`, da Rediaccfile-Funktionen bereits mit ausreichenden Rechten laufen. Wenn Sie sudo verwenden müssen, nutzen Sie `sudo -E docker`, um Umgebungsvariablen zu erhalten.
+> Verwenden Sie `renet compose` in Ihren Rediaccfiles. Es übernimmt automatisch `DOCKER_HOST`, injiziert Netzwerk-Labels für die Routen-Erkennung und konfiguriert das Dienst-Netzwerk. Siehe [Netzwerk](/de/docs/networking) für Details, wie Dienste über den Reverse Proxy bereitgestellt werden. Wenn Sie Docker direkt aufrufen, verwenden Sie `docker` ohne `sudo`: Rediaccfile-Funktionen erreichen den Docker-Daemon des Repositories als universeller Benutzer, ohne root (siehe [Berechtigungen](#privileges)).
 >
 > `renet` ist das remote Low-Level-Tool. Für normale Benutzer-Workflows von Ihrer Workstation bevorzugen Sie `rdc`-Befehle wie `rdc repo up` und `rdc repo down`. Siehe [rdc vs renet](/de/docs/rdc-vs-renet).
+
+### Berechtigungen
+
+`up()` und `down()` laufen als universeller Benutzer (`rediacc`), nicht als root, in einer Sandbox, die einschränkt, wo sie lesen und schreiben dürfen. Die Umgebung wird für die Funktion neu aufgebaut statt geerbt und enthält daher die oben genannten Variablen, die `REDIACC_SECRET_*`-Werte des Repositories und einen minimalen `PATH`. `sudo` ist in keiner Stufe verfügbar: Die Sandbox setzt `no_new_privs`, sodass eine Rediaccfile-Zeile mit `sudo` fehlschlägt und `sudo` entfernt werden muss. Eine Maschine ohne Landlock lehnt `up()` und `down()` ab, statt sie ohne Einschränkung auszuführen.
+
+Eine Zeile, die mehr als die Standardrechte braucht, scheitert mit der Fehlermeldung der Sandbox, und das Journal sowie die CLI geben die passende Zeile des Rediaccfile zusammen mit dem Freigabe-Befehl aus.
+
+| Ein Rediaccfile macht | Es sieht | Lösung |
+|--------------------|--------------------|--------------------|
+| `sudo x` | `sudo: The "no new privileges" flag is set` | `sudo` entfernen. Der Schritt braucht entweder kein root oder eine Freigabe |
+| `chown 5050 ...` oder `rm -rf` auf ein Verzeichnis, das einem Container gehört | `Operation not permitted` / `Permission denied` | Den Schritt in einem Einmal-Container ausführen (root im Container; der Docker-Daemon des Repositorys lehnt Binds außerhalb der eigenen Wurzelverzeichnisse des Repositorys ab): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| Schreibt `.env` oder andere Dateien im Mount | Funktioniert; die Dateien gehören dem universellen Benutzer | Keine |
+| Liest `/etc/rediacc/*`, `/proc/kcore` oder ein Blockgerät | `Permission denied` | Eine Pfad-Freigabe anfordern |
+| Liest ein Datei-Secret direkt | `Permission denied` | Compose-`secrets:` oder ein Secret im Env-Modus verwenden |
+| `nvidia-smi` ohne Geräte-Freigabe | Das Gerät fehlt | Das Gerät freigeben, siehe [GPUs](/de/docs/gpu) |
+| `sysctl -w` | `Permission denied` | Einmal auf der Maschine als Administrator setzen |
+
+#### Eine Freigabe anfordern
+
+Eine Freigabe erweitert, was `up()` und `down()` erreichen dürfen. Nur ein Operator erteilt sie, von außerhalb des Repositories:
+
+```bash
+rdc repo permission grant <repo-ref> --path /srv/data:rw
+rdc repo permission grant <repo-ref> --root
+rdc repo permission show <repo-ref>
+rdc repo permission revoke <repo-ref> --path /srv/data
+```
+
+`--path` fügt eine Landlock-Regel hinzu, schreibgeschützt, sofern nicht `:rw` angegeben ist, und die Maschine lehnt einen Pfad ab, der ein anderes Repository, den Datastore oder `/etc/rediacc` erreicht. `--root` führt die Funktionen als root ohne Rechteverzicht aus, und ein Cold-Backup lehnt ein solches Repository ab. Agents können `--root` nicht erteilen, es sei denn, der Operator hat `REDIACC_ALLOW_GRAND_REPO` gesetzt, bevor der Agent gestartet wurde. Ein Fork hat eine neue Netzwerk-ID und startet ohne Freigabe, und eine Freigabe, die unter einer wiederverwendeten Netzwerk-ID gefunden wird, wird verworfen.
+
+Ein Rediaccfile kann mit einer Kommentarzeile angeben, was es braucht, nur als Anforderung:
+
+```bash
+# rediacc:needs root
+# rediacc:needs path=/srv/data
+# rediacc:needs device=nvidia.com/gpu=all
+```
+
+`up()` vergleicht die Angabe mit der Freigabe. Fehlt die Freigabe, wird `up()` abgelehnt, bevor eine Zeile läuft, und die Meldung gibt den genauen Freigabe-Befehl aus. `down()` prüft die Angabe nie, damit ein im Repository bearbeiteter Kommentar das `repo down` eines Operators nicht verhindern kann; ein `down()`, das die Freigabe wirklich braucht, scheitert in seinem eigenen Schritt. `machine converge` überspringt ein solches Repository als `needs_lifecycle_grant`, statt es in die Ablehnung hinein neu zu starten.
+
+### Zeitlimits und Reihenfolge beim Herunterfahren
+
+Die Container eines Repositorys werden erst gestoppt, wenn dessen `down()` gelaufen und beendet ist. Das gilt für `systemctl stop` und `restart` der Docker-Unit des Repositorys, für `machine converge`, `repo down --unmount`, das Neuschreiben einer Unit und das Herunterfahren des Hosts. Ausnahmen sind ein Absturz des Docker-Daemons oder des Hosts, ein Stromausfall und ein `down()`, das sein Zeitlimit überschreitet, sei es beim Herunterfahren des Hosts oder bei `systemctl stop` oder `restart`. Dieses `down()` wird beendet und der Stopp geht weiter, wie unten beschrieben.
+
+Jede Docker-Unit führt vor dem Signal an den Daemon einen Stop-Hook aus. Der Hook führt `down()` gegen den noch laufenden Daemon aus, sofern renet es für diesen Daemon-Start nicht bereits getan hat, und überspringt es, wenn der Daemon nicht antwortet oder das Repository kein Rediaccfile hat. Beim Herunterfahren des Hosts stoppen zuerst die Docker-Units, die jeweils parallel `down()` ausführen, danach hängt eine Aufräum-Unit jedes eingehängte Repository aus, mit oder ohne Autostart. Das Stopp-Budget einer Unit beträgt 17 Minuten und passt damit in das 30-Minuten-Limit des Reboot-Jobs. Überschreitet `down()` in diesem Hook das Zeitlimit, erhält seine Prozessgruppe SIGTERM und 10 Sekunden später SIGKILL (`FunctionKillGrace`, `pkg/orchestration/procgroup.go`), eine Warnung wird protokolliert und der Hook endet mit 0, sodass systemd den Stopp fortsetzt. Ein `down()` mit Zeitüberschreitung verzögert `systemctl stop` oder einen Neustart also um bis zu sein Zeitlimit plus 10 Sekunden (15 Minuten 10 Sekunden an der Obergrenze), und der Stopp bleibt durch das `TimeoutStopSec` der Unit von 17 Minuten begrenzt. Die Weigerung zu stoppen gilt nur für die eigenen Abläufe von renet, etwa `repo down --unmount`.
+
+`up()` und `down()` erhalten standardmäßig je 10 Minuten, einstellbar mit `RENET_UP_TIMEOUT` und `RENET_DOWN_TIMEOUT` oder `--up-timeout` und `--down-timeout`. Beim Zeitlimit erhält die Prozessgruppe SIGTERM und nach 10 Sekunden SIGKILL. Ein Ablauf, der zuerst `down()` braucht, etwa `repo down --unmount` oder ein Converge-Neustart, lässt die Container weiterlaufen, wenn `down()` das Zeitlimit überschreitet; `--force` macht trotzdem weiter. Ein Rediaccfile kann ein Limit per Kommentarzeile anheben:
+
+```bash
+# rediacc:timeout up=20m down=15m backup=120s health=60s repair=10m
+```
+
+| Schlüssel | Standard | Obergrenze |
+|---|---|---|
+| `up` | 10 Minuten | 60 Minuten |
+| `down` | 10 Minuten | 15 Minuten |
+| `backup` | 30 Sekunden | 300 Sekunden |
+| `health` | 30 Sekunden | 300 Sekunden |
+| `repair` | 5 Minuten | 30 Minuten |
+
+`health()` ist auf dieselbe Weise begrenzt: Sein Standard wird mit `RENET_HEALTH_TIMEOUT` gesetzt, und bei einem Zeitlimit erhält seine Prozessgruppe SIGTERM und 10 Sekunden später SIGKILL. Das Health-Gate des Deployments wertet ein `health()` mit Zeitüberschreitung als noch im Aufwärmen und versucht es erneut; `rdc repo health` und `rdc machine health` melden es als Fehler. `repair()` folgt demselben Modell mit `RENET_REPAIR_TIMEOUT`, und ein `repair()` mit Zeitüberschreitung gilt als fehlgeschlagen.
+
+Eine Direktive hebt ein Limit nur an und wird auf ihre Obergrenze begrenzt. Das Repository kann `down()` also nicht bis zum Abbruch verkürzen. Unbekannte Schlüssel werden mit einer Warnung ignoriert.
+
+Repository-Daemons lassen `live-restore` von Docker ausgeschaltet. Container würden zwar einen Daemon-Neustart überleben, aber die Container-Shims teilen sich die Cgroup der Unit und werden mit ihr beendet. Der wiederhergestellte Daemon könnte sie nicht wieder anbinden, und die Container hielten den Mount bei einem geplanten Stopp belegt.
+
+Ein von renet verwaltetes RAM-Volume pro Repository (`# rediacc:ram size=6G`, der Host-RAM wird vom Operator freigegeben) ist bisher nur ein Entwurf und noch nicht umgesetzt.
 
 ### Beispiel
 

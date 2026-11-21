@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-releaseversion-cd-retry-assert.sh`, retired in W7 P5.
 
-Both-ways test for the artifact-version assertion's reachability in `.github/workflows/cd-v2.yml`.
+Both-ways test for the artifact-version assertion's reachability in `.github/workflows/cd-release-edge.yml`.
 
 WHAT THE ASSERTION IS FOR. assert-artifact-version.sh compares the version baked into the CI artifacts against the version CD is about to publish them under. It is the only thing standing between "these bytes were built as 1.2.16" and a GitHub Release labelled 1.2.17.
 
@@ -18,7 +18,7 @@ import pathlib
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-WORKFLOW = paths.from_root(".github", "workflows", "cd-v2.yml")
+WORKFLOW = paths.from_root(".github", "workflows", "cd-release-edge.yml")
 STEP_NAME = "Assert artifact version matches promotion target"
 
 # The twin's awk program, verbatim, so the equivalence control below drives the real thing rather than a paraphrase of it.
@@ -68,7 +68,7 @@ def test_step_exists(gate):
     gate.assert_contains(
         block, "assert_artifact_version", "the step must still run the assertion script"
     )
-    gate.log_pass("step found in cd-v2.yml")
+    gate.log_pass("step found in cd-release-edge.yml")
 
 
 def test_retry_mode_no_longer_skips_it(gate):
@@ -86,9 +86,9 @@ def test_workers_only_still_skips_it(gate):
         "workers_only != 'true'",
         "workers-only promotes no artifacts, so it stays excluded",
     )
-    # `skip_release` WAS REMOVED FROM cd-v2 (2026-08-26) and asserting it here would now pin a condition that cannot exist. decide-release-mode.sh wrote that output `false` on all three of its paths, so every guard reading it was permanently true -- a condition that cannot be false is a claim, not a guard.
+    # `skip_release` WAS REMOVED FROM cd-release-edge (2026-08-26) and asserting it here would now pin a condition that cannot exist. decide-release-mode.sh wrote that output `false` on all three of its paths, so every guard reading it was permanently true -- a condition that cannot be false is a claim, not a guard.
     #
-    # Match the CONDITION (`outputs.skip_release`), not the bare word: cd-v2 now carries a comment explaining why the clause was removed, and asserting on the word alone flagged that prose. A gate that cannot survive being written about is too broad.
+    # Match the CONDITION (`outputs.skip_release`), not the bare word: cd-release-edge now carries a comment explaining why the clause was removed, and asserting on the word alone flagged that prose. A gate that cannot survive being written about is too broad.
     gate.assert_not_contains(
         block,
         "outputs.skip_release",
@@ -127,10 +127,10 @@ def test_planted_old_condition_is_caught(gate, tmp_path):
     if anchor not in lines:
         gate.log_fail(
             "CONTROL could not plant its defect: the anchor line %r is gone from "
-            "cd-v2.yml, so the mutation is a no-op and the checks above would be "
+            "cd-release-edge.yml, so the mutation is a no-op and the checks above would be "
             "passing over an unmutated fixture" % anchor
         )
-    planted = tmp_path / "cd-v2.yml"
+    planted = tmp_path / "cd-release-edge.yml"
     planted.write_text(
         "\n".join(replacement if line == anchor else line for line in lines) + "\n",
         encoding="utf-8",

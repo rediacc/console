@@ -203,7 +203,7 @@ def test_a_dangling_value_flag_exits_on_both_sides() -> None:
 
     Why it mattered more than its reachability suggested: the production caller (`.github/actions/profiler/index.js:117-123`) spawns the sampler `detached: true` and `child.unref()`s it, so nothing would have reaped the spin before GitHub's 6-hour job ceiling, and `PROFILER_MAX_SECONDS` could not help because it is evaluated inside a loop the spin never reached.
 
-    Counted, not estimated: of the twin's 14 real invocation sites, TWELVE pass a value after the flag (`index.js:117`, `profiler-control.sh:121`, `test-profiler-report.sh:398,409,421,478,506`, `test_gate_profiler_report.py:548,568,592,656,703`) and TWO use `--probe` only (`profiler-probe.yml:54,72`), so ZERO were reachable -- `test-profiler-report.sh` was retired in W7 P5
+    Counted, not estimated: of the twin's 14 real invocation sites, TWELVE pass a value after the flag (`index.js:117`, `profiler-control.sh:121`, `test-profiler-report.sh:398,409,421,478,506`, `test_gate_profiler_report.py:548,568,592,656,703`) and TWO use `--probe` only (`ops-profiler-probe.yml:54,72`), so ZERO were reachable -- `test-profiler-report.sh` was retired in W7 P5
     census batch A8 and the count is left as it was taken -- it was one hand-typed invocation away and it failed
     silently, which is why it was worth fixing.
 
@@ -533,7 +533,7 @@ def test_an_octal_invalid_interval_now_runs_on_both_sides(tmp_path: pathlib.Path
     that collected nothing rather than as a crash. `INTERVAL=$((10#$INTERVAL))`
     closes it; `#META` now records the normalised `8`.
 
-    Blast radius: `.github/actions/profiler/action.yml:25` defaults `interval` to `'10'` and the three live callers of the composite (`profiler-probe.yml:89,108,127`) pass `'5'`, so zero were affected.
+    Blast radius: `.github/actions/profiler/action.yml:25` defaults `interval` to `'10'` and the three live callers of the composite (`ops-profiler-probe.yml:89,108,127`) pass `'5'`, so zero were affected.
     """
     cg = _cgroup_v2(tmp_path)
     env = {

@@ -84,7 +84,7 @@ curl -i -H "Authorization: Bearer $TOKEN" \
   https://api.cloudflare.com/client/v4/zones/<prod-zone-id>/dns_records
 ```
 
-The 9 PR-preview sites in `ci.yml` and 4 in `cleanup-preview.yml` will use this token. The cd-stage call (1 site in `ci.yml:669`) keeps using the prod token because cd-stage purges prod-zone cache on PR runs.
+The 9 PR-preview sites in `ci.yml` and 4 in `ops-cleanup-preview.yml` will use this token. The cd-stage call (1 site in `ci.yml:669`) keeps using the prod token because cd-stage purges prod-zone cache on PR runs.
 
 ---
 

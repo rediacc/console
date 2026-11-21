@@ -1,0 +1,2251 @@
+"""`./run.sh enterprise add` (box C1): the resumable onboarding run, its live steps over fakes, and the CLI. Nothing here reaches Cloudflare, bws or AWS."""
+
+from __future__ import annotations
+
+import email.message
+import http.client
+import importlib
+import io
+import json
+import os
+import shutil
+import sqlite3
+import sys
+import types
+import urllib.error
+from typing import Any, NoReturn, cast
+
+import pytest
+
+from rediacc_ci import __main__ as entry
+from rediacc_ci import paths
+from rediacc_ci.core import run_verbs, wrangler
+from rediacc_ci.enterprise import cli, configs, dns, lab, onboarding, registry
+
+_REAL_LIVE_CF_ROWS = onboarding.live_cf_rows
+
+T0 = "2026-11-09T00:00:00Z"
+IDS = iter("c%016x" % n for n in range(1, 10_000))
+
+
+@pytest.fixture(autouse=True)
+def _two_deployable_benches(monkeypatch):
+    """These tests place bench companies in eu and us; the real regions.json marks the us bench not deployable until box L1 of PLAN-multi-region-bench.md, so its control database is not in the registry yet."""
+    monkeypatch.setattr(registry, "bench_region_ids", lambda: ["eu", "us"])
+
+
+def _db() -> sqlite3.Connection:
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript(registry.migration_sql())
+    return conn
+
+
+class World:
+    """Every control database of one environment, as in-memory sqlite behind the registry's Query shape."""
+
+    def __init__(self, bench: bool = False, down: frozenset[str] = frozenset()):
+        self.dbs = {db: _db() for db in registry.databases(bench).values()}
+        self.down = set(down)
+
+    def query(self, database, sql, params):
+        if database in self.down:
+            raise ConnectionError("no route to %s" % database)
+        cur = self.dbs[database].execute(sql, params)
+        rows = [dict(r) for r in cur.fetchall()]
+        self.dbs[database].commit()
+        return rows
+
+    def rows(self, database, sql):
+        return [dict(r) for r in self.dbs[database].execute(sql).fetchall()]
+
+
+class Recorder:
+    """One action per step, recording the order; `fail` names steps that raise once."""
+
+    def __init__(self, fail: set[str] | None = None, raise_with=None):
+        self.calls: list[str] = []
+        self.fail = set(fail or ())
+        self.raise_with = raise_with or (lambda step: onboarding.OnboardingError("%s broke" % step))
+        self.contexts: list[onboarding.Context] = []
+
+    def actions(self) -> dict:
+        def make(step):
+            def act(ctx):
+                self.calls.append(step)
+                self.contexts.append(ctx)
+                if step in self.fail:
+                    self.fail.discard(step)
+                    raise self.raise_with(step)
+                if step == "control-row":
+                    return onboarding.write_control_row(ctx)
+                if step == "audit":
+                    return onboarding.write_audit(ctx)
+                if step == "d1":
+                    return "00000000-0000-4000-8000-000000000001"
+                return ""
+
+            return act
+
+        return {step: make(step) for step in onboarding.STEPS}
+
+
+def _note(seen: list, item: object, result: Any) -> Any:
+    """Record `item` and return `result`: a recording stand-in in one expression."""
+    seen.append(item)
+    return result
+
+
+def _never(*_args: object) -> NoReturn:
+    raise AssertionError("the add ran although the arguments were refused")
+
+
+def _req(**kw) -> onboarding.Request:
+    base: dict[str, Any] = {
+        "name": "acme",
+        "region": "eu",
+        "owner": "owner@acme.example",
+        "storage_gb": 100,
+        "max_machines": 50,
+        "max_storage_gb": 1024,
+    }
+    base.update(kw)
+    return onboarding.Request(**base)
+
+
+def _run(world, req, rec, **kw):
+    return onboarding.run(
+        req,
+        query=world.query,
+        actions=rec.actions(),
+        new_id=lambda: next(IDS),
+        now=lambda: T0,
+        **kw,
+    )
+
+
+# --- validation ------------------------------------------------------------------
+
+
+def test_a_bench_company_is_placed_only_in_a_deployable_bench_region(monkeypatch):
+    """`enterprise add --bench --region us` works once the us bench is deployable (a bench-us account Worker exists), and is refused naming the bench regions until then."""
+    monkeypatch.setattr(registry, "bench_region_ids", lambda: ["eu"])
+    with pytest.raises(
+        onboarding.OnboardingError, match=r"--region us is not a region of bench \(eu\)"
+    ):
+        onboarding.check_request(_req(bench=True, region="us"))
+    monkeypatch.setattr(registry, "bench_region_ids", lambda: ["eu", "us"])
+    onboarding.check_request(_req(bench=True, region="us"))
+    # control: the production check is untouched by the bench list
+    onboarding.check_request(_req(region="us"))
+
+
+@pytest.mark.parametrize(
+    ("kw", "needle"),
+    [
+        ({"name": "eu"}, "reserved"),
+        ({"name": "Acme"}, "DNS label"),
+        ({"region": "mars"}, "region"),
+        ({"owner": "not-an-address"}, "owner"),
+        ({"storage_gb": 0}, "storage"),
+        ({"max_machines": None}, "--max-machines is required"),
+        ({"max_storage_gb": None}, "--max-storage-gb is required"),
+        ({"max_machines": 0}, "--max-machines must be"),
+        ({"max_storage_gb": -5}, "--max-storage-gb must be"),
+        ({"lookup_domain": "gmail.com"}, "free-mail"),
+        ({"owner": "boss@gmail.com"}, "free-mail"),
+        ({"bench": True, "region": "asia"}, "bench"),
+        ({"allow_ips": ("not-an-ip",)}, "allow"),
+    ],
+)
+def test_a_bad_request_is_refused_before_anything_runs(kw, needle):
+    world, rec = World(bench=bool(kw.get("bench"))), Recorder()
+    out = _run(world, _req(**kw), rec)
+    assert out.rc == 1
+    assert needle in out.error
+    assert rec.calls == []
+
+
+def test_an_unlisted_company_may_have_a_free_mail_owner():
+    world, rec = World(), Recorder()
+    out = _run(world, _req(owner="boss@gmail.com", unlisted=True), rec)
+    assert out.rc == 0, out.error
+
+
+def test_the_lookup_domain_defaults_to_the_owner_domain():
+    assert _req().lookup == "acme.example"
+    assert _req(lookup_domain="Corp.Example.").lookup == "corp.example"
+
+
+# --- the run ---------------------------------------------------------------------
+
+
+def test_a_fresh_add_runs_every_step_in_order_and_activates():
+    world, rec = World(), Recorder()
+    out = _run(world, _req(), rec)
+    assert out.rc == 0, out.error
+    assert rec.calls == list(onboarding.STEPS)
+    assert out.changed == onboarding.STEPS
+    rows = world.rows("control-eu", "SELECT id, name, state, unlisted FROM companies")
+    assert rows == [{"id": out.company_id, "name": "acme", "state": "active", "unlisted": 0}]
+    steps = world.rows("control-eu", "SELECT step, status FROM onboarding ORDER BY step")
+    assert {s["step"] for s in steps} == set(onboarding.STEPS)
+    assert {s["status"] for s in steps} == {"done"}
+    audit = world.rows("control-eu", "SELECT company_id, action FROM audit")
+    assert audit == [{"company_id": out.company_id, "action": "add"}]
+    # Only the company's own region holds it.
+    assert world.rows("control-us", "SELECT * FROM companies") == []
+
+
+def test_a_rerun_changes_nothing():
+    world = World()
+    first = _run(world, _req(), Recorder())
+    rec = Recorder()
+    again = _run(world, _req(), rec)
+    assert again.rc == 0
+    assert again.company_id == first.company_id
+    assert again.changed == ()
+    assert rec.calls == []
+
+
+def test_a_stop_after_d1_resumes_from_the_next_step_with_the_same_id():
+    world = World()
+    killed = _run(world, _req(), Recorder(), stop_after="d1")
+    assert killed.rc == 1
+    assert "stopped after d1" in killed.error
+    rec = Recorder()
+    resumed = _run(world, _req(), rec)
+    assert resumed.rc == 0, resumed.error
+    assert resumed.company_id == killed.company_id
+    assert rec.calls == list(onboarding.STEPS[onboarding.STEPS.index("d1") + 1 :])
+    # The d1 detail recorded by the killed run reaches the resumed steps.
+    assert rec.contexts[0].details["d1"] == "00000000-0000-4000-8000-000000000001"
+
+
+def test_a_stop_after_a_step_the_company_already_finished_is_refused():
+    """2026-11-15 bench rerun: the proof's kill after d1 met finished companies, the run stopped nowhere and exited 0."""
+    world = World()
+    first = _run(world, _req(), Recorder())
+    rec = Recorder()
+    killed = _run(world, _req(), rec, stop_after="d1")
+    assert killed.rc == 1
+    assert killed.changed == ()
+    assert "already finished step d1" in killed.error
+    assert killed.company_id == first.company_id
+    assert rec.calls == []
+    # control: a company not yet past d1 stops there
+    killed = _run(World(), _req(), Recorder(), stop_after="d1")
+    assert killed.rc == 1
+    assert killed.changed == ("control-row", "d1")
+
+
+def test_a_stop_after_that_names_no_step_is_refused_before_anything_runs():
+    rec = Recorder()
+    out = _run(World(), _req(), rec, stop_after="d2")
+    assert out.rc == 1
+    assert "stop_after 'd2' is not a step" in out.error
+    assert rec.calls == []
+
+
+class Digests(Recorder):
+    """A Recorder whose `configs` step records the digest `self.digest` holds, with the CONFIGS_DIGEST action reading it."""
+
+    def __init__(self, digest: str = "d-1", **kw):
+        super().__init__(**kw)
+        self.digest = digest
+
+    def actions(self) -> dict:
+        acts = super().actions()
+        plain = acts["configs"]
+
+        def configs(ctx):
+            plain(ctx)
+            return self.digest
+
+        acts["configs"] = configs
+        acts[onboarding.CONFIGS_DIGEST] = lambda _ctx: self.digest
+        return acts
+
+
+def test_a_drifted_config_runs_configs_and_deploy_again_then_converges():
+    """2026-11-15 bench rerun: EMAIL_CAPTURE_D1 joined the bench config, and the companies added before it never got it, because every resume skipped `configs` and `deploy`."""
+    world = World()
+    rec = Digests()
+    assert _run(world, _req(), rec).rc == 0
+    rec.calls.clear()
+    assert _run(world, _req(), rec).changed == ()
+    rec.digest = "d-2"
+    lines: list[str] = []
+    drifted = _run(world, _req(), rec, out=lines.append)
+    assert drifted.rc == 0, drifted.error
+    assert drifted.changed == onboarding.CONVERGE_STEPS
+    assert rec.calls == list(onboarding.CONVERGE_STEPS)
+    assert any("configs differ" in line for line in lines)
+    rec.calls.clear()
+    again = _run(world, _req(), rec)
+    assert again.changed == ()
+    assert rec.calls == []
+
+
+def test_a_refused_stop_after_a_drifted_resume_prints_no_rerun_message():
+    """Review 0d0ae336.1: the refusal returns with nothing rerun, so the line "configs and deploy run again" must not print."""
+    world = World()
+    rec = Digests()
+    assert _run(world, _req(), rec).rc == 0
+    rec.calls.clear()
+    rec.digest = "d-2"
+    lines: list[str] = []
+    out = _run(world, _req(), rec, stop_after="d1", out=lines.append)
+    assert out.rc == 1
+    assert "already finished step d1" in out.error
+    assert rec.calls == []
+    assert not any("run again" in line for line in lines)
+    # control: a stop_after the drift reruns (configs) prints the line and runs
+    lines.clear()
+    again = _run(world, _req(), rec, stop_after="configs", out=lines.append)
+    assert again.changed == ("configs",)
+    assert any("run again" in line for line in lines)
+
+
+def test_a_resume_with_a_different_allow_ips_reruns_configs_and_deploy(tmp_path):
+    """Review 0d0ae336.2: the live digest covers the request's allowlist, so a resume with another `--allow-ips` is drift; the same list is not."""
+    _tree(tmp_path)
+    actions = onboarding.live_actions(runner=None, out_root=tmp_path)
+    d1 = {"d1": "11111111-2222-4333-8444-555555555555"}
+    listed = _ctx(World(), d1, allow_ips=("203.0.113.7",))
+    recorded = actions["configs"](listed)
+    same = _ctx(World(), d1, allow_ips=("203.0.113.7",))
+    assert actions[onboarding.CONFIGS_DIGEST](same) == recorded
+    assert actions[onboarding.CONFIGS_DIGEST](_ctx(World(), d1)) != recorded
+
+
+def test_a_company_added_before_the_digest_was_recorded_converges_once():
+    world = World()
+    assert _run(world, _req(), Recorder()).rc == 0  # its configs step recorded no digest
+    rec = Digests()
+    assert _run(world, _req(), rec).changed == onboarding.CONVERGE_STEPS
+    assert _run(world, _req(), rec).changed == ()
+    # control: without the digest action a resume never checks the configs
+    world = World()
+    _run(world, _req(), Recorder())
+    assert _run(world, _req(), Recorder()).changed == ()
+
+
+def test_a_drift_check_that_fails_stops_the_add_naming_it():
+    world = World()
+    _run(world, _req(), Digests())
+    rec = Digests()
+    acts = rec.actions()
+
+    def broken(_ctx):
+        raise configs.ConfigError("acme template unreadable")
+
+    acts[onboarding.CONFIGS_DIGEST] = broken
+    out = onboarding.run(_req(), query=world.query, actions=acts, now=lambda: T0)
+    assert out.rc == 1
+    assert "the configs drift check failed" in out.error
+    assert "acme" not in out.error
+    assert rec.calls == []
+
+
+def test_a_drifted_config_on_a_company_with_a_failed_deploy_reruns_from_configs():
+    world = World()
+    rec = Digests(fail={"deploy"})
+    assert _run(world, _req(), rec).rc == 1
+    rec.digest = "d-2"
+    rec.calls.clear()
+    out = _run(world, _req(), rec)
+    assert out.rc == 0, out.error
+    assert rec.calls[:2] == ["configs", "deploy"]
+
+
+def test_a_failed_step_is_recorded_and_retried_on_resume():
+    world = World()
+    out = _run(world, _req(), Recorder(fail={"buckets"}))
+    assert out.rc == 1
+    assert "buckets" in out.error
+    status = world.rows("control-eu", "SELECT status FROM onboarding WHERE step = 'buckets'")
+    assert status == [{"status": "failed"}]
+    rec = Recorder()
+    assert _run(world, _req(), rec).rc == 0
+    assert rec.calls[0] == "buckets"
+
+
+def test_a_not_built_seam_stops_the_add_naming_its_box():
+    world = World()
+    actions = Recorder().actions()
+    actions["bootstrap"] = onboarding.not_built("A1", "the company bootstrap endpoint")
+    out = onboarding.run(
+        _req(), query=world.query, actions=actions, new_id=lambda: next(IDS), now=lambda: T0
+    )
+    assert out.rc == 1
+    assert "not built yet: A1" in out.error
+    assert "bootstrap" in out.error
+
+
+def test_an_unexpected_exception_propagates():
+    world = World()
+    rec = Recorder(fail={"configs"}, raise_with=KeyError)
+    with pytest.raises(KeyError):
+        _run(world, _req(), rec)
+
+
+def test_an_unlisted_company_skips_the_lookup_writer():
+    world, rec = World(), Recorder()
+    out = _run(world, _req(unlisted=True), rec)
+    assert out.rc == 0
+    assert "lookup" not in rec.calls
+    assert "lookup" in out.changed
+    detail = world.rows("control-eu", "SELECT detail FROM onboarding WHERE step = 'lookup'")
+    assert detail == [{"detail": "unlisted"}]
+    assert world.rows("control-eu", "SELECT unlisted FROM companies") == [{"unlisted": 1}]
+
+
+def test_a_name_held_in_another_region_is_refused():
+    world = World()
+    assert _run(world, _req(region="us"), Recorder()).rc == 0
+    rec = Recorder()
+    out = _run(world, _req(region="eu"), rec)
+    assert out.rc == 1
+    assert "already registered in us" in out.error
+    assert rec.calls == []
+
+
+def test_an_unreachable_region_refuses_the_add_and_names_it():
+    world = World(down=frozenset({"control-asia"}))
+    rec = Recorder()
+    out = _run(world, _req(), rec)
+    assert out.rc == 1
+    assert "asia" in out.error
+    assert rec.calls == []
+
+
+def test_a_removed_company_name_may_be_taken_again():
+    world = World()
+    first = _run(world, _req(), Recorder())
+    world.query(
+        "control-eu",
+        "UPDATE companies SET state = 'removed', name = ? WHERE id = ?",
+        ["acme-gone", first.company_id],
+    )
+    out = _run(world, _req(), Recorder())
+    assert out.rc == 0
+    assert out.company_id != first.company_id
+
+
+def test_bench_uses_the_bench_control_database_signer_and_environment():
+    world, rec = World(bench=True), Recorder()
+    out = _run(world, _req(bench=True, region="us"), rec)
+    assert out.rc == 0, out.error
+    plan = rec.contexts[0].plan
+    assert plan.database == "control-bench-us"
+    assert plan.signer == "signer-bench-us"
+    assert plan.environment == "bench"
+    assert world.rows("control-bench-us", "SELECT name FROM companies") == [{"name": "acme"}]
+
+
+def test_production_plan_names_the_regional_signer_and_stable():
+    plan = onboarding.plan_for(_req(region="asia"), "c0123456789abcdef")
+    assert plan.database == "control-asia"
+    assert plan.signer == "signer-asia"
+    assert plan.environment == "stable"
+    assert plan.hosts[0].startswith("acme.")
+    assert plan.hosts[1].startswith("acme-proxy.")
+
+
+def test_the_outcome_lines_carry_the_opaque_id_not_the_label():
+    world = World()
+    lines: list[str] = []
+    out = _run(world, _req(), Recorder(), out=lines.append)
+    assert lines
+    assert all(out.company_id in line for line in lines)
+    assert not any("acme" in line for line in lines)
+
+
+# --- live steps over fakes ---------------------------------------------------------
+
+
+class Proc:
+    def __init__(self, rc=0, out="", err=""):
+        self.returncode, self.stdout, self.stderr = rc, out, err
+
+
+def _tree(tmp_path):
+    for sub in ("workers/proxy", "workers/account"):
+        (tmp_path / sub).mkdir(parents=True)
+    shutil.copy(paths.repo_root() / "regions.json", tmp_path / "regions.json")
+    return tmp_path
+
+
+def _ctx(world, details=None, **kw):
+    plan = onboarding.plan_for(_req(**kw), "c0123456789abcdef")
+    return onboarding.Context(plan=plan, query=world.query, details=dict(details or {}), now=T0)
+
+
+def test_live_d1_step_creates_the_company_database_through_control_db(monkeypatch):
+    seen = []
+
+    def ensure(name, region, *, runner):
+        del runner
+        seen.append((name, region))
+        return "11111111-2222-4333-8444-555555555555", True
+
+    monkeypatch.setattr(onboarding.control_db, "ensure_database", ensure)
+    actions = onboarding.live_actions(runner=lambda *_a, **_k: Proc())
+    assert actions["d1"](_ctx(World())) == "11111111-2222-4333-8444-555555555555"
+    assert seen == [("account-acme", "eu")]
+
+
+def test_live_configs_step_writes_both_files_and_bench_sets_the_environment(tmp_path):
+    _tree(tmp_path)
+    actions = onboarding.live_actions(runner=None, out_root=tmp_path)
+    d1 = {"d1": "11111111-2222-4333-8444-555555555555"}
+    actions["configs"](_ctx(World(bench=True), d1, bench=True))
+    account = (tmp_path / "workers/account/enterprise.acme.toml").read_text()
+    assert 'ENVIRONMENT = "bench"' in account
+    assert account.count('EMAIL_CAPTURE_D1 = "true"') == 1
+    assert (tmp_path / "workers/proxy/enterprise.acme.toml").exists()
+    actions["configs"](_ctx(World(), d1))
+    assert (
+        'ENVIRONMENT = "stable"' in (tmp_path / "workers/account/enterprise.acme.toml").read_text()
+    )
+    assert "EMAIL_CAPTURE_D1" not in (tmp_path / "workers/account/enterprise.acme.toml").read_text()
+
+
+def test_live_configs_step_records_the_digest_of_what_it_wrote_and_the_check_renders_the_same(
+    tmp_path,
+):
+    _tree(tmp_path)
+    actions = onboarding.live_actions(runner=None, out_root=tmp_path)
+    d1 = {"d1": "11111111-2222-4333-8444-555555555555"}
+    ctx = _ctx(World(bench=True), d1, bench=True)
+    recorded = actions["configs"](ctx)
+    proxy = (tmp_path / "workers/proxy/enterprise.acme.toml").read_text()
+    account = (tmp_path / "workers/account/enterprise.acme.toml").read_text()
+    assert recorded == onboarding.config_digest(proxy, account)
+    assert actions[onboarding.CONFIGS_DIGEST](ctx) == recorded
+    # control: a config that renders differently (here the production one) has another digest
+    assert actions[onboarding.CONFIGS_DIGEST](_ctx(World(), d1)) != recorded
+
+
+def test_live_configs_step_refuses_without_a_d1_id(tmp_path):
+    actions = onboarding.live_actions(runner=None, out_root=tmp_path)
+    with pytest.raises(onboarding.OnboardingError, match="d1"):
+        actions["configs"](_ctx(World()))
+
+
+def test_live_buckets_step_creates_buckets_and_queues():
+    calls = []
+
+    def runner(argv, *, cwd=None):
+        del cwd
+        calls.append(argv[len(wrangler.ARGV) :])
+        return Proc(0)
+
+    onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
+    assert ["r2", "bucket", "list", "--jurisdiction", "eu"] in calls
+    assert ["r2", "bucket", "create", "configs-acme", "--jurisdiction", "eu"] in calls
+    assert ["r2", "bucket", "create", "backups-acme", "--jurisdiction", "eu"] in calls
+    assert ["queues", "create", "backup-replicate-acme"] in calls
+    assert ["queues", "create", "backup-replicate-acme-dlq"] in calls
+
+
+def test_live_buckets_step_reuses_what_the_list_shows_and_never_creates_it():
+    calls = []
+
+    def runner(argv, *, cwd=None):
+        del cwd
+        args = argv[len(wrangler.ARGV) :]
+        calls.append(args)
+        if "list" in args and args[0] == "r2":
+            return Proc(0, "name: configs-acme\nname: backups-acme\n")
+        if "list" in args:
+            return Proc(0, "backup-replicate-acme-dlq\n")
+        return Proc(0)
+
+    onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
+    created = [c for c in calls if "create" in c]
+    # only the queue is created: its -dlq sibling is listed, and must not match it
+    assert created == [["queues", "create", "backup-replicate-acme"]]
+
+
+def test_live_buckets_step_control_creates_when_the_list_is_empty():
+    """THE CONTROL: with an empty list every resource is created, so the reuse test above can go red."""
+    calls = []
+
+    def runner(argv, *, cwd=None):
+        del cwd
+        calls.append(argv[len(wrangler.ARGV) :])
+        return Proc(0)
+
+    onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
+    assert len([c for c in calls if "create" in c]) == 4
+
+
+def test_live_buckets_step_does_not_read_exists_from_a_create_error():
+    def runner(argv, *, cwd=None):
+        del cwd
+        if "create" in argv:
+            return Proc(1, "", "The bucket you tried to create already exists")
+        return Proc(0)
+
+    with pytest.raises(onboarding.OnboardingError, match="already exists"):
+        onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
+
+
+def test_live_buckets_step_names_the_cause_of_a_create_failure_with_the_label_masked():
+    def runner(argv, *, cwd=None):
+        del cwd
+        if "create" in argv:
+            out = '{"error": {"text": "bucket configs-acme is taken", "notes": [{"text": "see docs"}]}}'
+            err = 'Using "CF_EMAIL" environment variable. This is deprecated\nrate limited'
+            return Proc(1, out, err)
+        return Proc(0)
+
+    with pytest.raises(onboarding.OnboardingError) as err:
+        onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
+    text = str(err.value)
+    assert "bucket configs-<name> is taken | see docs | rate limited" in text
+    assert "acme" not in text
+    assert "deprecated" not in text
+
+
+def test_a_short_label_is_masked_as_a_whole_token_only():
+    """Review 304248ab.2: a two-character plan name does not rewrite the letters inside other words of wrangler's cause."""
+    cause = onboarding._cause(Proc(1, "", "bucket ab-x for ab is a bad abacus"), "ab")
+    assert cause == ": bucket <name>-x for <name> is a bad abacus"
+
+
+def test_every_name_derived_from_the_label_is_masked_and_another_identifier_is_not():
+    """Review bc35c3f0.3: names.py joins the label to its prefix or suffix with `-` or `.`, so every derived name carries it as a whole token and is masked; a different identifier that merely starts with the same letters is not the company's name and stays."""
+    derived = [
+        onboarding.names.proxy_worker("acme"),
+        onboarding.names.proxy_container_app("acme"),
+        onboarding.names.hosts("acme", "example.com")[1],
+    ]
+    cause = onboarding._cause(Proc(1, "", "failed: %s; other acmecorp" % " ".join(derived)), "acme")
+    assert "acme " not in cause
+    assert "acme-" not in cause
+    assert cause.count("<name>") == 3
+    assert cause.endswith("other acmecorp")
+
+
+def test_live_buckets_step_names_the_cause_of_a_list_failure():
+    def runner(argv, *, cwd=None):
+        del cwd
+        return Proc(1, "", "not authorized") if "list" in argv else Proc(0)
+
+    with pytest.raises(onboarding.OnboardingError, match=r"listing.*exited 1.*not authorized"):
+        onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
+
+
+def test_live_migrate_step_names_the_cause_of_a_failure():
+    def runner(*_args, **_kwargs):
+        return Proc(1, "", "d1 acme says no")
+
+    with pytest.raises(onboarding.OnboardingError) as err:
+        onboarding.live_actions(runner=runner)["migrate"](_ctx(World()))
+    assert "d1 <name> says no" in str(err.value)
+
+
+def _local_only_npx(tmp_path, *, install: bool):
+    """A fake `npx` that resolves as npm 11.21.0 does: only a node_modules/.bin/wrangler at or above the cwd counts, never PATH. Returns (PATH dir, repository root with or without the account worker's install)."""
+    stub = tmp_path / "bin"
+    stub.mkdir()
+    npx = stub / "npx"
+    npx.write_text(
+        '#!/bin/sh\nd=$(pwd -P)\nwhile [ ! -e "$d/node_modules/.bin/wrangler" ]; do\n'
+        "  if [ \"$d\" = / ]; then echo 'npm error npx canceled due to missing packages' >&2; exit 1; fi\n"
+        '  d=$(dirname "$d")\ndone\nexit 0\n',
+        encoding="utf-8",
+    )
+    npx.chmod(0o755)
+    root = tmp_path / "repo"
+    worker = root.joinpath(*onboarding.pc.ACCOUNT_REL)
+    worker.mkdir(parents=True)
+    if install:
+        (worker / "node_modules" / ".bin").mkdir(parents=True)
+        (worker / "node_modules" / ".bin" / "wrangler").write_text("#!/bin/sh\n", encoding="utf-8")
+    return str(stub), root
+
+
+def test_live_buckets_step_finds_the_pinned_wrangler_as_npm_resolves_it(tmp_path, monkeypatch):
+    """Finding e69747ea: the buckets step ran from an empty temporary directory, where npx finds no wrangler."""
+    stub, root = _local_only_npx(tmp_path, install=True)
+    monkeypatch.setenv("PATH", stub + os.pathsep + os.environ["PATH"])
+    onboarding.live_actions(runner=None, out_root=root)["buckets"](_ctx(World()))
+
+
+def test_live_buckets_step_control_fails_without_the_install(tmp_path, monkeypatch):
+    """THE CONTROL: with no install in the account worker the same fake refuses, so the test above can go red."""
+    stub, root = _local_only_npx(tmp_path, install=False)
+    monkeypatch.setenv("PATH", stub + os.pathsep + os.environ["PATH"])
+    with pytest.raises(onboarding.OnboardingError):
+        onboarding.live_actions(runner=None, out_root=root)["buckets"](_ctx(World()))
+
+
+def test_live_buckets_step_runs_from_the_account_worker():
+    seen = []
+
+    def runner(_argv, *, cwd=None):
+        seen.append(str(cwd))
+        return Proc(0)
+
+    onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
+    assert seen
+    assert all(cwd.endswith("workers/account") for cwd in seen), seen
+
+
+def test_live_buckets_step_names_a_failure_without_the_label():
+    def runner(*_args, **_kwargs):
+        return Proc(1, "", "acme exploded")
+
+    with pytest.raises(onboarding.OnboardingError) as err:
+        onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
+    assert "acme" not in str(err.value)
+    assert "c0123456789abcdef" in str(err.value)
+
+
+def test_live_migrate_step_runs_from_the_account_worker_with_the_company_config():
+    seen = []
+
+    def runner(argv, *, cwd=None):
+        seen.append((argv[len(wrangler.ARGV) :], str(cwd)))
+        return Proc(0)
+
+    onboarding.live_actions(runner=runner)["migrate"](_ctx(World()))
+    argv, cwd = seen[0]
+    assert argv == [
+        "d1", "migrations", "apply", "account-acme", "--remote", "--config", "enterprise.acme.toml",
+    ]  # fmt: skip
+    assert cwd.endswith("workers/account")
+
+
+def test_live_lookup_step_puts_the_owner_domain_to_the_account_host():
+    puts = []
+
+    def lookup_put(domain, host, namespace_id):
+        puts.append((domain, host, namespace_id))
+        return 0
+
+    actions = onboarding.live_actions(runner=None, lookup_put=lookup_put, lookup_namespace="ns1")
+    actions["lookup"](_ctx(World()))
+    assert puts
+    assert puts[0][0] == "acme.example"
+    assert puts[0][1].startswith("acme.")
+    assert puts[0][2] == "ns1"
+
+
+def test_live_lookup_step_turns_a_refusal_into_an_onboarding_error():
+    def lookup_put(*_args):
+        raise onboarding.enterprise_lookup.LookupRefusedError("set ENTERPRISE_LOOKUP_PEPPER")
+
+    actions = onboarding.live_actions(runner=None, lookup_put=lookup_put)
+    with pytest.raises(onboarding.OnboardingError, match="PEPPER"):
+        actions["lookup"](_ctx(World()))
+
+
+def _portal_ok(_tree, _env):
+    return 0
+
+
+@pytest.fixture(autouse=True)
+def _no_live_cloudflare_read(monkeypatch):
+    """The deploy step's orphan check reads Cloudflare; every test but the orphan ones runs with an account holding none."""
+    monkeypatch.setattr(onboarding, "live_cf_rows", lambda _path: [])
+
+
+class _CfBodies:
+    """A fake `cf_auth.curl_json` answering canned bodies in order, recording each URL."""
+
+    def __init__(self, *bodies):
+        self.bodies = list(bodies)
+        self.urls = []
+
+    def __call__(self, _method, url, _headers):
+        self.urls.append(url)
+        return self.bodies.pop(0)
+
+
+@pytest.fixture
+def real_cf_rows(monkeypatch):
+    """The autouse stub is lifted for the tests of live_cf_rows itself."""
+    monkeypatch.setattr(onboarding, "live_cf_rows", _REAL_LIVE_CF_ROWS)
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "t")
+
+
+@pytest.mark.usefixtures("real_cf_rows")
+def test_live_cf_rows_follows_every_page(monkeypatch):
+    """Review 95a4308f.3: an application on page two is read."""
+    fake = _CfBodies(
+        {"success": True, "result": [{"id": "a"}], "result_info": {"total_pages": 2}},
+        {"success": True, "result": [{"id": "b"}], "result_info": {"total_pages": 2}},
+    )
+    monkeypatch.setattr(onboarding.cf_auth, "curl_json", fake)
+    assert onboarding.live_cf_rows("/containers/applications") == [{"id": "a"}, {"id": "b"}]
+    assert [u.rsplit("page=", 1)[1] for u in fake.urls] == ["1", "2"]
+
+
+@pytest.mark.usefixtures("real_cf_rows")
+def test_live_cf_rows_stops_at_a_short_page_without_a_page_count(monkeypatch):
+    fake = _CfBodies({"success": True, "result": [{"id": "a"}]})
+    monkeypatch.setattr(onboarding.cf_auth, "curl_json", fake)
+    assert onboarding.live_cf_rows("/x") == [{"id": "a"}]
+    assert len(fake.urls) == 1
+
+
+@pytest.mark.usefixtures("real_cf_rows")
+def test_live_cf_rows_gives_up_on_a_listing_that_never_ends(monkeypatch):
+    """Review 558ee735.1: a listing of full pages with no page count stops at CF_MAX_PAGES with an error naming the path."""
+    monkeypatch.setattr(onboarding, "CF_MAX_PAGES", 3)
+    full = {"success": True, "result": [{"id": str(i)} for i in range(onboarding.CF_PAGE_SIZE)]}
+    fake = _CfBodies(full, full, full, full)
+    monkeypatch.setattr(onboarding.cf_auth, "curl_json", fake)
+    with pytest.raises(onboarding.OnboardingError, match="listing of /x did not end"):
+        onboarding.live_cf_rows("/x")
+    assert len(fake.urls) == 3
+
+
+@pytest.mark.usefixtures("real_cf_rows")
+def test_live_cf_rows_reads_a_listing_that_ends_on_the_last_allowed_page(monkeypatch):
+    """Control for 558ee735.1: a listing whose last page is CF_MAX_PAGES is read whole, not refused."""
+    monkeypatch.setattr(onboarding, "CF_MAX_PAGES", 2)
+    pages = [
+        {"success": True, "result": [{"id": "a"}], "result_info": {"total_pages": 2}},
+        {"success": True, "result": [{"id": "b"}], "result_info": {"total_pages": 2}},
+    ]
+    monkeypatch.setattr(onboarding.cf_auth, "curl_json", _CfBodies(*pages))
+    assert onboarding.live_cf_rows("/x") == [{"id": "a"}, {"id": "b"}]
+
+
+@pytest.mark.parametrize(
+    ("body", "match"),
+    [
+        (
+            {"success": False, "errors": [{"message": "no scope"}]},
+            "refused the read of /x .no scope.",
+        ),
+        ({"success": True, "result": {"not": "a list"}}, "refused the read of /x .no message."),
+    ],
+)
+@pytest.mark.usefixtures("real_cf_rows")
+def test_live_cf_rows_refuses_a_failed_or_malformed_answer(monkeypatch, body, match):
+    """Review 95a4308f.2: the error branches name the path and Cloudflare's message."""
+    monkeypatch.setattr(onboarding.cf_auth, "curl_json", _CfBodies(body))
+    with pytest.raises(onboarding.OnboardingError, match=match):
+        onboarding.live_cf_rows("/x")
+
+
+@pytest.mark.usefixtures("real_cf_rows")
+def test_live_cf_rows_turns_an_auth_failure_into_an_onboarding_error(monkeypatch):
+    def boom(*_a):
+        raise onboarding.cf_auth.CfAuthError("curl failed with the token in it")
+
+    monkeypatch.setattr(onboarding.cf_auth, "curl_json", boom)
+    with pytest.raises(onboarding.OnboardingError, match="the Cloudflare read of /x failed") as err:
+        onboarding.live_cf_rows("/x")
+    assert "token" not in str(err.value)
+
+
+@pytest.mark.usefixtures("real_cf_rows")
+def test_live_cf_rows_needs_the_token(monkeypatch):
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
+    with pytest.raises(onboarding.OnboardingError, match="needs CLOUDFLARE_API_TOKEN"):
+        onboarding.live_cf_rows("/x")
+
+
+def _cf_rows(apps, namespaces):
+    def rows(path):
+        return {
+            "/containers/applications": apps,
+            "/workers/durable_objects/namespaces": namespaces,
+        }[path]
+
+    return rows
+
+
+def _deploy_with(tmp_path, rows):
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    ran = []
+
+    def deploy(module, _argv):
+        ran.append(module)
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+        cf_rows=rows,
+    )
+    return ctx, actions, ran
+
+
+def test_deploy_refuses_an_orphan_container_application_before_any_deploy(tmp_path):
+    ctx, actions, ran = _deploy_with(
+        tmp_path,
+        _cf_rows(
+            [
+                {
+                    "id": "orphan1",
+                    "name": "proxy-acme-orgexecutor",
+                    "durable_objects": {"namespace_id": "ns-dead"},
+                }
+            ],
+            [],
+        ),
+    )
+    with pytest.raises(onboarding.OnboardingError, match=r"orphan1 is an orphan"):
+        actions["deploy"](ctx)
+    assert ran == []
+
+
+def test_deploy_ignores_another_companys_orphan_application(tmp_path):
+    other = {
+        "id": "other1",
+        "name": "proxy-zzz-orgexecutor",
+        "durable_objects": {"namespace_id": "ns-gone"},
+    }
+    ctx, actions, ran = _deploy_with(tmp_path, _cf_rows([other], []))
+    actions["deploy"](ctx)
+    assert len(ran) == 4
+
+
+def test_deploy_accepts_the_companys_own_live_application(tmp_path):
+    own = {
+        "id": "own1",
+        "name": "proxy-acme-orgexecutor",
+        "durable_objects": {"namespace_id": "ns-own"},
+    }
+    namespaces = [{"id": "ns-own", "script": "proxy-acme", "class": "OrgExecutor"}]
+    ctx, actions, ran = _deploy_with(tmp_path, _cf_rows([own], namespaces))
+    actions["deploy"](ctx)
+    assert len(ran) == 4
+
+
+def test_live_deploy_step_deploys_proxy_then_account_with_each_own_config(tmp_path):
+    _tree(tmp_path)
+    actions = onboarding.live_actions(runner=None, out_root=tmp_path)
+    d1 = {"d1": "11111111-2222-4333-8444-555555555555"}
+    ctx = _ctx(World(), d1)
+    actions["configs"](ctx)
+    ran = []
+
+    def deploy(module, argv):
+        ran.append((module, argv))
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    actions["deploy"](ctx)
+    assert [m for m, _ in ran] == [
+        "rediacc_ci.deploy.deploy_proxy",
+        "rediacc_ci.deploy.deploy_account",
+        "rediacc_ci.deploy.deploy_proxy",
+        "rediacc_ci.deploy.console_executor",
+    ]
+    proxy_argv, account_argv = ran[0][1], ran[1][1]
+    assert "--proxy-config" in proxy_argv
+    assert "--account-config" not in proxy_argv
+    assert "--account-config" in account_argv
+    assert "--proxy-config" not in account_argv
+    assert account_argv[account_argv.index("--company-id") + 1] == "c0123456789abcdef"
+
+
+def test_live_deploy_step_claims_the_wildcard_before_the_proxy_smoke_runs(tmp_path):
+    """The proxy deploy smoke-tests the company's proxy host, whose record the wildcard claim creates: a first deploy cannot pass when the claim waits for the route step."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    order = []
+
+    def ensure(_check_only):
+        order.append("dns")
+        return "ok"
+
+    def deploy(module, _argv):
+        order.append(module.rsplit(".", 1)[1])
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=ensure,
+    )
+    actions["deploy"](ctx)
+    assert order == ["dns", "deploy_proxy", "deploy_account", "deploy_proxy", "console_executor"]
+
+
+def test_live_deploy_step_smokes_the_proxy_only_after_the_account_worker_is_deployed(tmp_path):
+    """A first deploy's /v1/ready asks the company account Worker's ExecutorIssuer, so the first proxy run defers its smoke and a --smoke-only run follows the account deploy (bench run 6 failed 503 issuer-probe-failed for 300 s). Control: the account run never carries either flag."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    ran = []
+
+    def deploy(module, argv):
+        ran.append((module.rsplit(".", 1)[1], argv))
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    actions["deploy"](ctx)
+    (_, first), (_, account), (_, last), _switch = ran
+    assert "--defer-smoke" in first
+    assert "--smoke-only" not in first
+    assert "--smoke-only" in last
+    assert "--defer-smoke" not in last
+    assert "--defer-smoke" not in account
+    assert "--smoke-only" not in account
+
+
+def test_live_deploy_step_deploys_nothing_when_the_wildcard_claim_fails(tmp_path):
+    """The control: a refused claim stops the step before any module runs."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+
+    def deploy(_m, _a):
+        raise AssertionError("deployed")
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=RouteWorld({}, dns.DnsClaimError("Universal SSL is not enabled")).ensure,
+    )
+    with pytest.raises(onboarding.OnboardingError, match="Universal SSL is not enabled"):
+        actions["deploy"](ctx)
+
+
+def test_live_deploy_step_switches_the_console_executor_on_after_the_proxy_smoke(tmp_path):
+    """2026-11-16 `proof proxy`: every console leg of an onboarded company answered 503 CONSOLE_EXECUTION_UNAVAILABLE, because nothing put the account Worker's EXECUTOR_MODE secret. The switch runs last, against the company's account config, once the proxy smoke has passed (the ring release's `executor-enable` order)."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    ran = []
+
+    def deploy(module, argv):
+        ran.append((module.rsplit(".", 1)[1], argv))
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    actions["deploy"](ctx)
+    module, argv = ran[-1]
+    assert module == "console_executor"
+    assert "--smoke-only" in ran[-2][1]
+    assert "--enable" in argv
+    assert "--account-config" in argv
+    assert argv[argv.index("--company-id") + 1] == "c0123456789abcdef"
+
+
+@pytest.mark.parametrize("failing", ["deploy_account", "--smoke-only"])
+def test_a_failed_deploy_or_smoke_never_switches_the_console_executor_on(tmp_path, failing):
+    """Control: the switch never opens a console onto a proxy that was not smoked."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    ran = []
+
+    def deploy(module, argv):
+        ran.append(module.rsplit(".", 1)[1])
+        return 1 if module.endswith(failing) or failing in argv else 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    with pytest.raises(onboarding.OnboardingError, match="exited 1"):
+        actions["deploy"](ctx)
+    assert "console_executor" not in ran
+
+
+def test_a_failed_executor_switch_is_named_and_rolls_nothing_back(tmp_path):
+    """The smoked proxy stays serving with the console closed: no proxy rollback runs, and the refusal names the switch and its stated cause."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    ran = []
+
+    def deploy(module, argv):
+        ran.append(argv)
+        if module.endswith("console_executor"):
+            return onboarding.Ran(1, "UNKNOWN: secret list did not parse")
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    with pytest.raises(
+        onboarding.OnboardingError,
+        match=r"console_executor exited 1: UNKNOWN: secret list did not parse",
+    ):
+        actions["deploy"](ctx)
+    assert not any("--rollback" in argv for argv in ran)
+
+
+def test_a_failed_deploy_names_the_childs_stated_cause_with_the_label_masked(tmp_path):
+    """2026-11-16 `proof proxy`: the allowlist claim said only `deploy_account exited 1`, while the child had printed why (its portal smoke got the allowlist's 403). The cause the child stated reaches the refusal, the company label masked to its id."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+
+    def deploy(module, _argv):
+        if module.endswith("deploy_account"):
+            return onboarding.Ran(
+                1, "Portal smoke UNKNOWN on https://acme.rediacc.cloud: answered 403"
+            )
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    with pytest.raises(onboarding.OnboardingError) as caught:
+        actions["deploy"](ctx)
+    text = str(caught.value)
+    assert "deploy_account exited 1: Portal smoke UNKNOWN" in text
+    assert "answered 403" in text
+    assert "acme" not in text.replace("c0123456789abcdef", "")
+
+
+def test_run_module_keeps_a_failed_childs_stderr_tail_and_passes_it_through(monkeypatch, capsys):
+    """The production seam: the child's stderr is echoed as it arrives and a failed child's last lines become the cause; a child that exits 0 states none."""
+    script = "import sys; print('noise', file=sys.stderr); print('the real cause', file=sys.stderr); sys.exit(3)"
+    real_popen = onboarding.subprocess.Popen
+
+    def popen(argv, **kwargs):
+        return real_popen([argv[0], "-c", script], **kwargs)
+
+    monkeypatch.setattr(onboarding.subprocess, "Popen", popen)
+    failed = onboarding.run_module("rediacc_ci.deploy.deploy_account", [])
+    assert failed.rc == 3
+    assert failed.cause.endswith("the real cause")
+    assert "the real cause" in capsys.readouterr().err
+
+    script = "import sys; print('fine', file=sys.stderr)"
+    assert onboarding.run_module("rediacc_ci.deploy.deploy_account", []) == onboarding.Ran(0, "")
+
+
+def test_run_module_echoes_each_stderr_line_while_the_child_runs_and_inherits_stdin_and_stdout(
+    monkeypatch, tmp_path
+):
+    """Review 99089b73.1: the child's stderr is a pipe, so each line must reach this process's stderr before the child exits, not at the end; stdin and stdout stay the parent's, which is what wrangler reads to decide it is interactive."""
+    flag = tmp_path / "echoed"
+    # The child waits for the parent to have echoed its first line; a parent that echoes only after the exit never writes the flag, and the child exits 4.
+    script = (
+        "import pathlib, sys, time\n"
+        "print('first line', file=sys.stderr, flush=True)\n"
+        "flag = pathlib.Path(sys.argv[1])\n"
+        "deadline = time.monotonic() + 10\n"
+        "while not flag.exists() and time.monotonic() < deadline:\n"
+        "    time.sleep(0.05)\n"
+        "sys.exit(0 if flag.exists() else 4)\n"
+    )
+    real_popen = onboarding.subprocess.Popen
+    seen: dict[str, Any] = {}
+
+    def popen(argv, **kwargs):
+        seen.update(kwargs, argv=argv)
+        return real_popen([argv[0], "-c", script, str(flag)], **kwargs)
+
+    class Echo(io.StringIO):
+        def write(self, text):
+            if "first line" in text:
+                flag.write_text("1")
+            return super().write(text)
+
+    monkeypatch.setattr(onboarding.subprocess, "Popen", popen)
+    monkeypatch.setattr(onboarding.sys, "stderr", Echo())
+    assert onboarding.run_module("rediacc_ci.deploy.deploy_account", ["--region", "eu"]) == (
+        onboarding.Ran(0, "")
+    )
+    # Review 443fc3c7.1: the argv the fake replaces is the module launch itself, from the repo root with `.ci` first on the path.
+    assert seen["argv"] == [
+        sys.executable,
+        "-m",
+        "rediacc_ci.deploy.deploy_account",
+        "--region",
+        "eu",
+    ]
+    assert seen["cwd"] == str(paths.repo_root())
+    assert seen["env"]["PYTHONPATH"].split(os.pathsep)[0] == str(paths.repo_root() / ".ci")
+    assert seen["stderr"] is onboarding.subprocess.PIPE
+    assert "stdin" not in seen
+    assert "stdout" not in seen
+
+
+def test_run_module_launches_the_real_module_with_python_dash_m(capfd):
+    """Review 443fc3c7.1: no fake popen. `deploy_proxy`'s own argparse answers `--help` with rc 0 and an unknown flag with rc 2 and its error as the kept cause, before it reads any credential or network."""
+    assert onboarding.run_module("rediacc_ci.deploy.deploy_proxy", ["--help"]) == onboarding.Ran(
+        0, ""
+    )
+    assert "usage: rediacc_ci.deploy.deploy_proxy" in capfd.readouterr().out
+    failed = onboarding.run_module("rediacc_ci.deploy.deploy_proxy", ["--no-such-flag"])
+    assert failed.rc == 2
+    assert "unrecognized arguments: --no-such-flag" in failed.cause
+    assert "unrecognized arguments: --no-such-flag" in capfd.readouterr().err
+
+
+def test_live_deploy_step_names_the_failed_module(tmp_path):
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=lambda _m, _a: 1,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    with pytest.raises(onboarding.OnboardingError, match="deploy_proxy exited 1"):
+        actions["deploy"](ctx)
+
+
+def test_live_smoke_step_requires_both_hosts_to_answer():
+    seen = []
+
+    def fetch(url):
+        seen.append(url)
+        return 200 if "-proxy." not in url else 502
+
+    actions = onboarding.live_actions(runner=None, fetch=fetch)
+    with pytest.raises(onboarding.OnboardingError, match="proxy host answered 502"):
+        actions["smoke"](_ctx(World()))
+    assert len(seen) == 2
+
+
+class RouteWorld:
+    """The route step's two seams: the wildcard ensure and the Worker a host routes to."""
+
+    def __init__(self, routes: dict[str, str], dns_error: Exception | None = None):
+        self.routes = routes
+        self.dns_error = dns_error
+        self.ensured: list[bool] = []
+
+    def ensure(self, check_only):
+        self.ensured.append(check_only)
+        if self.dns_error:
+            raise self.dns_error
+        return "ok"
+
+    def actions(self):
+        return onboarding.live_actions(
+            runner=None, ensure_dns=self.ensure, route_of=lambda host: self.routes.get(host, "")
+        )
+
+
+def _route_ctx():
+    ctx = _ctx(World())
+    return ctx, ctx.plan.hosts, ctx.plan.name
+
+
+def test_live_route_step_passes_when_both_hosts_route_to_the_company_workers():
+    ctx, (account, proxy), name = _route_ctx()
+    rw = RouteWorld({account: "account-%s" % name, proxy: "proxy-%s" % name})
+    assert rw.actions()["route"](ctx) == ""
+    assert rw.ensured == [False]
+
+
+@pytest.mark.parametrize("missing", [0, 1])
+def test_live_route_step_refuses_a_host_without_its_route(missing):
+    ctx, hosts, name = _route_ctx()
+    routes = {hosts[0]: "account-%s" % name, hosts[1]: "proxy-%s" % name}
+    del routes[hosts[missing]]
+    with pytest.raises(onboarding.OnboardingError, match="no Worker"):
+        RouteWorld(routes).actions()["route"](ctx)
+
+
+def test_live_route_step_refuses_a_host_routed_to_another_worker():
+    ctx, (account, proxy), name = _route_ctx()
+    rw = RouteWorld({account: "account-%s" % name, proxy: "proxy-eu"})
+    with pytest.raises(onboarding.OnboardingError, match="not proxy-%s" % name):
+        rw.actions()["route"](ctx)
+
+
+def test_live_route_step_refuses_when_the_wildcard_claim_fails_before_reading_routes():
+    ctx, _hosts, _name = _route_ctx()
+
+    def never(_host):
+        raise AssertionError("routes were read")
+
+    actions = onboarding.live_actions(
+        runner=None,
+        ensure_dns=RouteWorld({}, dns.DnsClaimError("Universal SSL is not enabled")).ensure,
+        route_of=never,
+    )
+    with pytest.raises(onboarding.OnboardingError, match="Universal SSL is not enabled"):
+        actions["route"](ctx)
+
+
+def test_live_route_step_reads_routes_through_the_lab_matcher_when_none_is_injected(monkeypatch):
+    """Review 7f868920.1: the production default is `lab.routed_worker`, bound on first use; a LabError from it names the company by id."""
+    ctx, (account, proxy), name = _route_ctx()
+    routes = {account: "account-%s" % name, proxy: "proxy-%s" % name}
+    monkeypatch.setattr(lab, "routed_worker", lambda host: routes[host])
+    actions = onboarding.live_actions(runner=None, ensure_dns=lambda _c: "ok")
+    assert actions["route"](ctx) == ""
+
+    def broken(_host):
+        raise onboarding.proof.LabError("the zone cannot be read")
+
+    monkeypatch.setattr(lab, "routed_worker", broken)
+    with pytest.raises(onboarding.OnboardingError, match="company c0123456789abcdef: the zone"):
+        actions["route"](ctx)
+
+
+def test_a_company_onboarded_before_the_route_step_reruns_only_route():
+    world = World()
+    out = _run(world, _req(), Recorder())
+    database = registry.control_database("eu", False)
+    world.dbs[database].execute(
+        "DELETE FROM onboarding WHERE company_id = ? AND step = 'route'", (out.company_id,)
+    )
+    world.dbs[database].commit()
+    rec = Recorder()
+    again = _run(world, _req(), rec)
+    assert rec.calls == ["route"]
+    assert again.changed == ("route",)
+
+
+def test_live_secrets_step_hands_the_company_to_the_provisioner():
+    got = []
+
+    def provision(company):
+        got.append(company)
+        return types.SimpleNamespace(created=["A"], reused=[], pushed=["A", "B"])
+
+    actions = onboarding.live_actions(runner=None, provision=provision)
+    detail = actions["secrets"](_ctx(World()))
+    assert got[0].id == "c0123456789abcdef"
+    assert got[0].worker == "account-acme"
+    assert got[0].r2_jurisdiction == "eu"
+    assert "1 created" in detail
+
+
+def test_live_secrets_step_without_a_provisioner_refuses_by_name():
+    with pytest.raises(onboarding.OnboardingError, match="--bws-project"):
+        onboarding.live_actions(runner=None)["secrets"](_ctx(World()))
+
+
+def test_live_provision_names_every_missing_secrets_input_at_once():
+    provision = onboarding.live_provision("proj", env={})
+    co = types.SimpleNamespace(id="c0123456789abcdef", region="eu")
+    with pytest.raises(onboarding.OnboardingError) as caught:
+        provision(cast("Any", co))
+    message = str(caught.value)
+    for name in (
+        "CF_MANAGEMENT_TOKEN",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SES_FROM",
+        "OBS_OTLP_CREDENTIALS_EU",
+    ):
+        assert name in message
+    assert message.startswith("company %s: " % co.id)
+
+
+class FakeAccount:
+    def __init__(self, status: int = 201, payload: dict | None = None):
+        self.status = status
+        self.payload = payload or {}
+        self.calls: list[tuple[str, str, dict]] = []
+
+    def __call__(self, url, key, body):
+        self.calls.append((url, key, body))
+        return self.status, self.payload
+
+
+def _account_actions(fake, key="k-secret"):
+    return onboarding.live_actions(runner=None, post=fake, api_key_of=lambda _company: key)
+
+
+def _seeded_ctx(world, **kw):
+    """A context whose control database already holds the company's row and scope, as after the control-row step."""
+    ctx = _ctx(world, **kw)
+    onboarding.write_control_row(ctx)
+    return ctx
+
+
+def test_control_row_registers_the_scope_the_signer_reads_and_bootstrap_sends_its_subscription_id():
+    world = World()
+    ctx = _ctx(world)
+    onboarding.write_control_row(ctx)
+    first = world.rows(ctx.plan.database, "SELECT * FROM scope")
+    onboarding.write_control_row(ctx)
+    rows = world.rows(ctx.plan.database, "SELECT * FROM scope")
+    assert len(rows) == 1
+    # A rerun keeps the row the first run wrote, its subscription id included (captured after run one, not read back from the same database).
+    assert rows == first
+    assert first[0]["subscription_id"]
+    assert rows[0]["company_id"] == "c0123456789abcdef"
+    assert rows[0]["renewal_host"] == ctx.plan.hosts[0]
+    assert rows[0]["max_expiry_days"] > 365
+    fake = FakeAccount(201)
+    _account_actions(fake)["bootstrap"](ctx)
+    sent = fake.calls[0][2]
+    assert sent["subscriptionId"] == rows[0]["subscription_id"]
+    assert sent["maxActivations"] == rows[0]["max_machines"] == 50
+    assert sent["maxRepositorySizeGb"] == rows[0]["max_storage_gb"]
+    assert sent["maxActivations"] != 1
+
+
+def test_bootstrap_sends_the_limits_a_changed_scope_row_holds():
+    world = World()
+    ctx = _ctx(world)
+    onboarding.write_control_row(ctx)
+    world.query(ctx.plan.database, "UPDATE scope SET max_machines = 7, max_storage_gb = 30", [])
+    fake = FakeAccount(201)
+    _account_actions(fake)["bootstrap"](ctx)
+    assert fake.calls[0][2]["maxActivations"] == 7
+    assert fake.calls[0][2]["maxRepositorySizeGb"] == 30
+
+
+def test_bootstrap_without_a_scope_row_refuses_before_calling_the_worker():
+    fake = FakeAccount(201)
+    with pytest.raises(onboarding.OnboardingError, match="no scope"):
+        _account_actions(fake)["bootstrap"](_ctx(World()))
+    assert fake.calls == []
+
+
+def test_live_bootstrap_creates_through_the_account_route():
+    fake = FakeAccount(201)
+    detail = _account_actions(fake)["bootstrap"](_seeded_ctx(World()))
+    url, key, body = fake.calls[0]
+    assert url.endswith("/account/api/v1/subscriptions/enterprise/bootstrap")
+    assert url.startswith("https://")
+    assert key == "k-secret"
+    assert body["companyId"] == "c0123456789abcdef"
+    assert set(body) == {
+        "companyId",
+        "ownerEmail",
+        "storageGb",
+        "subscriptionId",
+        "maxActivations",
+        "maxRepositorySizeGb",
+    }
+    assert detail == "created"
+
+
+def test_live_bootstrap_rerun_is_success():
+    assert (
+        _account_actions(FakeAccount(200))["bootstrap"](_seeded_ctx(World()))
+        == "already bootstrapped"
+    )
+
+
+def test_live_bootstrap_owner_change_refuses_with_its_status_and_code():
+    fake = FakeAccount(409, {"code": "OWNER_MISMATCH"})
+    with pytest.raises(onboarding.OnboardingError, match=r"HTTP 409 \(OWNER_MISMATCH\)"):
+        _account_actions(fake)["bootstrap"](_seeded_ctx(World()))
+
+
+def test_live_bootstrap_and_invite_refuse_naming_the_missing_key():
+    fake = FakeAccount()
+    for step in ("bootstrap", "invite"):
+        with pytest.raises(onboarding.OnboardingError, match=onboarding.ACCOUNT_KEY_ENV):
+            _account_actions(fake, key="")[step](_seeded_ctx(World()))
+    assert fake.calls == []
+
+
+def test_live_bootstrap_uses_the_company_key_not_the_environment_key(monkeypatch):
+    # Run 8 of region-loss: the shared key in the caller's environment got HTTP 401 from the company Worker.
+    monkeypatch.setenv(onboarding.ACCOUNT_KEY_ENV, "shared-key")
+    fake = FakeAccount(201)
+    asked = []
+
+    def company_key(company_id):
+        asked.append(company_id)
+        return "company-key"
+
+    onboarding.live_actions(runner=None, post=fake, api_key_of=company_key)["bootstrap"](
+        _seeded_ctx(World())
+    )
+    assert fake.calls[0][1] == "company-key"
+    assert asked == ["c0123456789abcdef"]
+
+
+def test_live_bootstrap_without_a_company_key_source_never_falls_back_to_the_environment(
+    monkeypatch,
+):
+    monkeypatch.setenv(onboarding.ACCOUNT_KEY_ENV, "shared-key")
+    fake = FakeAccount()
+    with pytest.raises(onboarding.OnboardingError, match="bws-project"):
+        onboarding.live_actions(runner=None, post=fake)["bootstrap"](_seeded_ctx(World()))
+    assert fake.calls == []
+
+
+def test_live_api_key_reads_the_company_entry_from_the_project(monkeypatch):
+    class Store:
+        def read(self, names):
+            assert names == ["c0123456789abcdef_ACCOUNT_SERVER_API_KEY"]
+            return {names[0]: "k-company"}
+
+    monkeypatch.setattr(onboarding.secrets.BwsStore, "from_env", lambda *_a, **_k: Store())
+    assert onboarding.live_api_key("proj", {})("c0123456789abcdef") == "k-company"
+
+
+def test_live_invite_posts_the_owner_mail_route():
+    fake = FakeAccount(200, {"sent": True})
+    _account_actions(fake)["invite"](_ctx(World()))
+    url, _key, body = fake.calls[0]
+    assert url.endswith("/enterprise/owner-mail")
+    assert set(body) == {"companyId", "ownerEmail"}
+
+
+@pytest.mark.parametrize("status", [202, 204])
+def test_live_account_call_accepts_any_2xx(status):
+    fake = FakeAccount(status)
+    _account_actions(fake)["bootstrap"](_seeded_ctx(World()))
+    assert len(fake.calls) == 1
+
+
+@pytest.mark.parametrize(
+    ("status", "payload", "tail", "body"),
+    [
+        (500, {}, "", ""),
+        (302, {}, "", ""),
+        (403, {"code": "NOPE"}, " (NOPE)", ': {"code": "NOPE"}'),
+    ],
+)
+def test_live_account_call_refuses_a_non_2xx_with_or_without_a_code(status, payload, tail, body):
+    with pytest.raises(onboarding.OnboardingError) as caught:
+        _account_actions(FakeAccount(status, payload))["bootstrap"](_seeded_ctx(World()))
+    expected = "refused with HTTP %d%s on POST /account/api/v1/subscriptions/enterprise/bootstrap%s"
+    assert str(caught.value).endswith(expected % (status, tail, body))
+
+
+def test_live_account_call_names_the_path_and_the_body_of_a_refusal():
+    body = {"error": "D1_ERROR: no such table: company_orgs"}
+    with pytest.raises(onboarding.OnboardingError) as caught:
+        _account_actions(FakeAccount(500, body))["bootstrap"](_seeded_ctx(World()))
+    message = str(caught.value)
+    assert "HTTP 500" in message
+    assert "POST /account/api/v1/subscriptions/enterprise/bootstrap" in message
+    assert "no such table: company_orgs" in message
+
+
+def test_live_account_call_truncates_the_body_and_masks_the_key():
+    body = {"_text": "boom k-secret " + "x" * 2000}
+    with pytest.raises(onboarding.OnboardingError) as caught:
+        _account_actions(FakeAccount(500, body))["bootstrap"](_seeded_ctx(World()))
+    message = str(caught.value)
+    assert "k-secret" not in message
+    assert "<redacted>" in message
+    assert len(message) < 800
+
+
+def test_body_tail_masks_a_key_that_json_escapes():
+    """Review 61885324.2: a key with a quote, a backslash or a non-ASCII character appears escaped in the rendered body and is masked in that spelling too."""
+    key = 'k"x\\y\u00e9z'
+    tail = onboarding._body_tail({"error": "bad key " + key}, (key,))
+    assert tail == ': {"error": "bad key <redacted>"}'
+
+
+def test_a_json_object_with_a_text_field_is_printed_whole():
+    """Review 61885324.4: an object with a field besides `_text` prints whole; an object whose only field is a string `_text` (the `_json_body` wrapper, or a server object of that same shape) prints as plain text."""
+    tail = onboarding._body_tail({"_text": "a", "code": "X"}, ())
+    assert tail == ': {"_text": "a", "code": "X"}'
+    assert onboarding._body_tail({"_text": "plain"}, ()) == ": plain"
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (b"Internal Server Error", {"_text": "Internal Server Error"}),
+        (b'{"ok": true}', {"ok": True}),
+        (b"", {}),
+        (b"  \n", {}),
+    ],
+)
+def test_json_body_wraps_plain_text_and_leaves_an_empty_body_empty(raw, expected):
+    """Review 61885324.1 and .3: a non-JSON reply keeps its text, a blank one is {}."""
+    assert onboarding._json_body(raw) == expected
+
+
+def test_account_post_keeps_a_non_json_success_body(monkeypatch):
+    """Review 61885324.1: the success path returns the plain text of a 2xx non-JSON reply."""
+
+    class Reply(io.BytesIO):
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+    monkeypatch.setattr(onboarding.https, "urlopen", lambda *_a, **_k: Reply(b"created"))
+    assert onboarding.account_post("https://h/x", "k", {}) == (200, {"_text": "created"})
+
+
+def test_live_account_call_control_a_bodyless_refusal_adds_no_tail():
+    with pytest.raises(onboarding.OnboardingError) as caught:
+        _account_actions(FakeAccount(500, {}))["bootstrap"](_seeded_ctx(World()))
+    assert str(caught.value).endswith("/enterprise/bootstrap")
+
+
+def test_account_post_keeps_a_non_json_error_body(monkeypatch):
+    class Reply(io.BytesIO):
+        pass
+
+    def refuse(*_a, **_k):
+        raise urllib.error.HTTPError(
+            "https://h/x", 500, "err", email.message.Message(), Reply(b"Internal Server Error")
+        )
+
+    monkeypatch.setattr(onboarding.https, "urlopen", refuse)
+    assert onboarding.account_post("https://h/x", "k", {}) == (
+        500,
+        {"_text": "Internal Server Error"},
+    )
+
+
+def test_account_post_names_the_status_when_the_error_body_cannot_be_read(monkeypatch):
+    class Broken(io.BytesIO):
+        def read(self, *_a):
+            raise OSError("reset")
+
+    def refuse(*_a, **_k):
+        raise urllib.error.HTTPError(
+            "https://h", 502, "bad gateway", email.message.Message(), Broken()
+        )
+
+    monkeypatch.setattr(onboarding.https, "urlopen", refuse)
+    assert onboarding.account_post("https://h/x", "k", {}) == (502, {})
+
+
+def test_account_post_survives_an_incomplete_read_of_the_error_body(monkeypatch):
+    class Cut(io.BytesIO):
+        def read(self, *_a):
+            raise http.client.IncompleteRead(b"par", 10)
+
+    def refuse(*_a, **_k):
+        raise urllib.error.HTTPError(
+            "https://h", 502, "bad gateway", email.message.Message(), Cut()
+        )
+
+    monkeypatch.setattr(onboarding.https, "urlopen", refuse)
+    assert onboarding.account_post("https://h/x", "k", {}) == (502, {})
+
+
+def test_account_post_closes_the_error_response_it_read(monkeypatch):
+    """An HTTPError owns its response; left open it is finalised later as a ResourceWarning in an unrelated test."""
+    err = urllib.error.HTTPError(
+        "https://h", 403, "no", email.message.Message(), io.BytesIO(b'{"code": "NOPE"}')
+    )
+
+    def refuse(*_a, **_k):
+        raise err
+
+    monkeypatch.setattr(onboarding.https, "urlopen", refuse)
+    assert onboarding.account_post("https://h/x", "k", {}) == (403, {"code": "NOPE"})
+    assert err.fp is None or err.fp.closed
+
+
+def test_http_status_closes_the_error_response(monkeypatch):
+    err = urllib.error.HTTPError("https://h", 404, "gone", email.message.Message(), io.BytesIO(b""))
+
+    def refuse(*_a, **_k):
+        raise err
+
+    monkeypatch.setattr(onboarding.https, "urlopen", refuse)
+    assert onboarding.http_status("https://h/x") == 404
+    assert err.fp is None or err.fp.closed
+
+
+def test_http_status_of_a_plain_answer_is_its_status(monkeypatch):
+    class Reply:
+        status = 204
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+    monkeypatch.setattr(onboarding.https, "urlopen", lambda *_a, **_k: Reply())
+    assert onboarding.http_status("https://h/x") == 204
+
+
+def test_account_post_keeps_the_status_of_a_success_whose_body_was_cut_off(monkeypatch):
+    """Review 9bfbbb2f.1: the server answered 200, so the call is not "no answer" (0)."""
+
+    class Reply:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+        def read(self):
+            raise http.client.IncompleteRead(b"par", 10)
+
+    monkeypatch.setattr(onboarding.https, "urlopen", lambda *_a, **_k: Reply())
+    assert onboarding.account_post("https://h/x", "k", {}) == (200, {})
+
+
+def test_live_account_calls_accept_a_success_with_an_empty_body():
+    """Review f2446371.2: a cut-off 200 reads as (200, {}), which both callers take as success."""
+    assert _account_actions(FakeAccount(200, {}))["invite"](_ctx(World())) == ""
+    assert (
+        _account_actions(FakeAccount(200, {}))["bootstrap"](_seeded_ctx(World()))
+        == "already bootstrapped"
+    )
+
+
+def test_live_account_call_with_no_answer_refuses():
+    with pytest.raises(onboarding.OnboardingError, match="no answer"):
+        _account_actions(FakeAccount(0))["invite"](_ctx(World()))
+
+
+def test_live_actions_cover_every_step_and_the_configs_digest():
+    assert set(onboarding.live_actions(runner=None)) == {
+        *onboarding.STEPS,
+        onboarding.CONFIGS_DIGEST,
+    }
+
+
+# --- the CLI ---------------------------------------------------------------------
+
+
+def test_cli_help_is_rc_0(capsys):
+    assert cli.main(["--help"]) == 0
+    out = capsys.readouterr().out
+    for word in ("add", "proof", "control"):
+        assert word in out
+
+
+def test_cli_no_subcommand_is_usage():
+    assert cli.main([]) == 2
+
+
+def test_cli_add_parses_into_a_request():
+    got = []
+
+    def add(req, opts):
+        got.append((req, opts))
+        return onboarding.Outcome(0, "c0123456789abcdef", ("d1",))
+
+    rc = cli.main(
+        [
+            "add", "acme", "--region", "us", "--owner", "o@acme.example", "--storage-gb", "50",
+            "--max-machines", "12", "--max-storage-gb", "300",
+            "--allow-ip", "192.0.2.1", "--allow-ip", "192.0.2.0/24", "--unlisted",
+            "--lookup-domain", "acme.example", "--bench", "--bws-project", "p1",
+        ],
+        add=add,
+    )  # fmt: skip
+    assert rc == 0
+    req, opts = got[0]
+    assert req == onboarding.Request(
+        name="acme",
+        region="us",
+        owner="o@acme.example",
+        storage_gb=50,
+        max_machines=12,
+        max_storage_gb=300,
+        allow_ips=("192.0.2.1", "192.0.2.0/24"),
+        unlisted=True,
+        lookup_domain="acme.example",
+        bench=True,
+    )
+    assert opts.bws_project == "p1"
+
+
+def test_cli_add_returns_the_outcome_rc_and_prints_the_error(capsys):
+    def add(_req, _opts):
+        return onboarding.Outcome(1, "", (), "refused: free-mail")
+
+    assert (
+        cli.main(
+            [
+                "add",
+                "acme",
+                "--region",
+                "eu",
+                "--owner",
+                "o@x.example",
+                "--storage-gb",
+                "1",
+                "--max-machines",
+                "1",
+                "--max-storage-gb",
+                "1",
+            ],
+            add=add,
+        )
+        == 1
+    )
+    assert "free-mail" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("drop", "flag"), [("--max-machines", "max-machines"), ("--max-storage-gb", "max-storage-gb")]
+)
+def test_cli_add_without_a_limit_is_a_usage_error_naming_the_flag(drop, flag, capsys):
+    """Review cbaa9996.1: both limits are argparse-required, so omitting one is exit 2 like --storage-gb, before the add runs."""
+    limits = {"--max-machines": "12", "--max-storage-gb": "300"}
+    base = ["add", "acme", "--region", "eu", "--owner", "o@acme.example", "--storage-gb", "5"]
+    rest = [x for k, v in limits.items() if k != drop for x in (k, v)]
+    assert cli.main(base + rest, add=_never) == 2
+    assert flag in capsys.readouterr().err
+
+
+def test_cli_add_with_both_limits_runs_the_real_validation_and_steps():
+    """Review cbaa9996.2: THE CONTROL runs the real run over the fake world, not a stub that skips check_request."""
+    limits = ["--max-machines", "12", "--max-storage-gb", "300"]
+    base = ["add", "acme", "--region", "eu", "--owner", "o@acme.example", "--storage-gb", "5"]
+    world, rec = World(), Recorder()
+    seen: list[onboarding.Request] = []
+
+    def real(req, _opts):
+        seen.append(req)
+        return _run(world, req, rec)
+
+    assert cli.main(base + limits, add=real) == 0
+    assert (seen[0].max_machines, seen[0].max_storage_gb) == (12, 300)
+    assert rec.calls != []
+
+
+def test_given_limits_reach_the_scope_row_and_the_bootstrap_body():
+    world = World()
+    ctx = _seeded_ctx(world, max_machines=9, max_storage_gb=77)
+    rows = world.rows(ctx.plan.database, "SELECT * FROM scope")
+    assert (rows[0]["max_machines"], rows[0]["max_storage_gb"]) == (9, 77)
+    fake = FakeAccount(201)
+    _account_actions(fake)["bootstrap"](ctx)
+    assert fake.calls[0][2]["maxActivations"] == 9
+    assert fake.calls[0][2]["maxRepositorySizeGb"] == 77
+
+
+def test_cli_add_missing_flag_is_usage():
+    assert cli.main(["add", "acme", "--region", "eu"], add=_never) == 2
+
+
+def test_cli_proof_hands_off_to_the_proof_module(monkeypatch):
+    seen: list[Any] = []
+    monkeypatch.setattr(cli.proof, "main", lambda argv: _note(seen, argv, 0))
+    assert cli.main(["proof", "signer", "--bench"]) == 0
+    assert seen == [["signer", "--bench"]]
+
+
+@pytest.mark.parametrize(("verb", "box"), [("list", "C2"), ("remove", "C2"), ("release", "K2")])
+def test_cli_unbuilt_verbs_refuse_naming_their_box(verb, box, monkeypatch, capsys):
+    monkeypatch.setattr(cli, "_module", lambda _name: None)
+    assert cli.main([verb]) == 2
+    assert "not built yet: %s" % box in capsys.readouterr().err
+
+
+class FakeLifecycle(types.SimpleNamespace):
+    """The C2 lifecycle surface the CLI calls, recording each call."""
+
+    class LifecycleError(RuntimeError):
+        pass
+
+    def __init__(self):
+        super().__init__(calls=[])
+        self.Context = types.SimpleNamespace
+        for verb in ("list", "update", "suspend", "export", "remove"):
+            setattr(self, "cmd_" + verb, self._recorder(verb))
+
+    def _recorder(self, verb):
+        def record(ctx, *args, **kw):
+            self.calls.append((verb, ctx, args, kw))
+            return 0
+
+        return record
+
+
+def _lifecycle(monkeypatch):
+    fake = FakeLifecycle()
+    monkeypatch.setattr(cli, "_module", lambda name: fake if name == cli.LIFECYCLE else None)
+    return fake
+
+
+@pytest.mark.parametrize(
+    ("argv", "verb", "args", "kw"),
+    [
+        (["list", "--all"], "list", (), {"include_removed": True}),
+        (["suspend", "acme", "--resume"], "suspend", ("acme",), {"resume": True}),
+        (["export", "acme"], "export", ("acme",), {}),
+        (
+            ["remove", "acme", "--delete-data", "--confirm", "acme"],
+            "remove",
+            ("acme",),
+            {"delete_data": True, "confirm": "acme"},
+        ),
+        (
+            ["update", "acme", "--max-machines", "12", "--ring", "small", "--ring-reason", "pilot"],
+            "update",
+            ("acme",),
+            {
+                "max_machines": 12, "max_storage_gb": None, "max_expiry_days": None,
+                "allow_ips": None, "ring": "small", "ring_reason": "pilot",
+            },
+        ),
+        (
+            ["update", "acme", "--clear-allow-ips"],
+            "update",
+            ("acme",),
+            {
+                "max_machines": None, "max_storage_gb": None, "max_expiry_days": None,
+                "allow_ips": [], "ring": None, "ring_reason": None,
+            },
+        ),
+    ],
+)  # fmt: skip
+def test_cli_lifecycle_verbs_call_the_c2_commands(monkeypatch, argv, verb, args, kw):
+    fake = _lifecycle(monkeypatch)
+    built = []
+
+    def context(_lifecycle, **opts):
+        built.append(opts)
+        return "ctx"
+
+    assert cli.main(argv, context=context) == 0
+    assert fake.calls == [(verb, "ctx", args, kw)]
+    assert built[0]["bench"] is False
+
+
+def test_cli_lifecycle_bench_flag_reaches_the_context(monkeypatch):
+    _lifecycle(monkeypatch)
+    built: list[Any] = []
+    cli.main(["list", "--bench"], context=lambda _lc, **o: _note(built, o, "ctx"))
+    assert built[0]["bench"] is True
+
+
+def test_lifecycle_context_binds_the_registry_and_the_live_adapters_lazily(tmp_path):
+    fake = FakeLifecycle()
+    ctx = cli.lifecycle_context(
+        fake, bench=True, query=lambda _d, _s, _p: [], export_root=tmp_path, env={}
+    )
+    assert ctx.registry.bench is True
+    assert ctx.export_root == tmp_path
+    company = types.SimpleNamespace(region="eu")
+    for seam, call in ((ctx.exporter, "dump_d1"), (ctx.teardown, "undeploy")):
+        with pytest.raises(FakeLifecycle.LifecycleError, match="CLOUDFLARE_API_TOKEN"):
+            getattr(seam, call)(company)
+    with pytest.raises(FakeLifecycle.LifecycleError, match="--bws-project"):
+        ctx.store.read(["x"])
+
+
+def test_cli_lifecycle_usage_is_rc_2(monkeypatch):
+    _lifecycle(monkeypatch)
+    assert cli.main(["suspend"], context=lambda _lc, **_o: "ctx") == 2
+
+
+def test_cli_control_ensure_hands_off(monkeypatch):
+    seen: list[Any] = []
+    monkeypatch.setattr(cli.control_db, "main", lambda argv: _note(seen, argv, 0))
+    assert cli.main(["control", "ensure", "--bench"]) == 0
+    assert seen == [["ensure", "--bench"]]
+
+
+def test_cli_dns_hands_off(monkeypatch):
+    seen: list[Any] = []
+    monkeypatch.setattr(cli.dns, "main", lambda argv: _note(seen, argv, 0))
+    assert cli.main(["dns", "ensure", "--check"]) == 0
+    assert seen == [["ensure", "--check"]]
+
+
+def test_the_run_sh_verb_is_registered():
+    row = next(v for v in entry.VERBS if v.name == "enterprise")
+    assert entry._resolve(row) is run_verbs.enterprise_main
+    assert "enterprise add" in run_verbs.HELP
+    assert "enterprise proof" in run_verbs.HELP
+
+
+def test_live_deploy_step_builds_the_portal_with_the_sitekey_before_deploy_account(tmp_path):
+    """Bench run 7: deploy_account refused a dist built without the Turnstile sitekey. The build runs after the proxy deploy and before the account deploy, handed the environment that carries the key."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    order = []
+    seen = {}
+
+    def deploy(module, _argv):
+        order.append(module.rsplit(".", 1)[1])
+        return 0
+
+    def portal(tree, env):
+        order.append("portal")
+        seen["tree"], seen["key"] = tree, env.get("TURNSTILE_SITE_KEY")
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        deploy=deploy,
+        portal=portal,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+        env={"TURNSTILE_SITE_KEY": "0xKEY"},
+    )
+    actions["deploy"](ctx)
+    assert order.index("portal") < order.index("deploy_account")
+    assert seen == {"tree": tmp_path, "key": "0xKEY"}
+
+
+def test_live_deploy_step_stops_when_the_portal_build_fails(tmp_path):
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    ran: list[str] = []
+
+    def record_deploy(module: str, _argv: Any) -> int:
+        ran.append(module)
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        deploy=record_deploy,
+        portal=lambda _t, _e: 2,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    with pytest.raises(onboarding.OnboardingError, match="portal build exited 2"):
+        actions["deploy"](ctx)
+    assert "rediacc_ci.deploy.deploy_account" not in ran
+
+
+def test_build_portal_refuses_a_missing_sitekey_by_name_and_runs_the_release_row(
+    tmp_path, monkeypatch
+):
+    with pytest.raises(onboarding.OnboardingError, match="TURNSTILE_SITE_KEY"):
+        onboarding.build_portal(tmp_path, {"TURNSTILE_SITE_KEY": " "})
+    calls: list[tuple[Any, Any, Any]] = []
+
+    def record_call(argv: Any, cwd: Any, env: Any) -> int:
+        calls.append((argv, cwd, env))
+        return 0
+
+    monkeypatch.setattr(onboarding.subprocess, "call", record_call)
+    assert onboarding.build_portal(tmp_path, {"TURNSTILE_SITE_KEY": "0xKEY"}) == 0
+    argv, cwd, env = calls[0]
+    assert "workers/account/dist/account" in " ".join(argv)
+    assert cwd == str(tmp_path / "private/account/web")
+    assert env["VITE_TURNSTILE_SITE_KEY"] == "0xKEY"
+    assert env["VITE_CI_MODE"] == "false"
+
+
+def _rollback_world(tmp_path, previous, fail):
+    """A deploy step whose fake proxy run records `previous` and whose `fail` module (or `--smoke-only` run) exits 1."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    ran = []
+
+    def deploy(module, argv):
+        ran.append((module.rsplit(".", 1)[1], argv))
+        if "--defer-smoke" in argv:
+            record = argv[argv.index("--record") + 1]
+            with open(record, "w", encoding="utf-8") as fh:
+                json.dump({"previous_version_id": previous}, fh)
+        if "--rollback" in argv:
+            return 0
+        if fail == "account" and module.endswith("deploy_account"):
+            return 1
+        if fail == "smoke" and "--smoke-only" in argv:
+            return 1
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        deploy=deploy,
+        portal=_portal_ok,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    return actions, ctx, ran
+
+
+@pytest.mark.parametrize("fail", ["account", "smoke"])
+def test_live_deploy_step_rolls_the_proxy_back_to_the_recorded_version_on_a_later_failure(
+    tmp_path, fail
+):
+    """Review d39e851d.1: a deferred-smoke proxy deploy leaves the new version live and unsmoked, so a failing account deploy or --smoke-only run returns it to the recorded previous version."""
+    actions, ctx, ran = _rollback_world(tmp_path, "aaaaaaaa-1111-4222-8333-444444444444", fail)
+    with pytest.raises(onboarding.OnboardingError, match="exited 1"):
+        actions["deploy"](ctx)
+    last_module, last_argv = ran[-1]
+    assert last_module == "deploy_proxy"
+    assert last_argv[last_argv.index("--rollback") + 1] == "aaaaaaaa-1111-4222-8333-444444444444"
+
+
+def test_live_deploy_step_with_no_previous_version_fails_without_a_rollback(tmp_path, capsys):
+    actions, ctx, ran = _rollback_world(tmp_path, None, "account")
+    with pytest.raises(onboarding.OnboardingError, match="deploy_account exited 1"):
+        actions["deploy"](ctx)
+    assert not any("--rollback" in argv for _m, argv in ran)
+    assert "no earlier proxy version to roll back to" in capsys.readouterr().err
+
+
+def test_live_deploy_step_with_an_unreadable_proxy_record_says_so_instead_of_no_earlier_version(
+    tmp_path, capsys
+):
+    """Review a597b802.1: a corrupt record is not a first deploy, so the run names the live unsmoked version."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    inner = []
+
+    def deploy(module, argv):
+        inner.append((module.rsplit(".", 1)[1], argv))
+        if "--defer-smoke" in argv:
+            with open(argv[argv.index("--record") + 1], "w", encoding="utf-8") as fh:
+                fh.write("{not json")
+        return 1 if module.endswith("deploy_account") else 0
+
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    live = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        deploy=deploy,
+        portal=_portal_ok,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    with pytest.raises(onboarding.OnboardingError, match="deploy_account exited 1"):
+        live["deploy"](ctx)
+    err = capsys.readouterr().err
+    assert "cannot be read" in err
+    assert "no earlier proxy version" not in err
+    assert not any("--rollback" in argv for _m, argv in inner)
+
+
+def test_live_deploy_step_reports_a_failed_proxy_rollback(tmp_path, capsys):
+    """Review a597b802.2: a rollback that itself exits non-zero is named, with the version it tried."""
+    previous = "aaaaaaaa-1111-4222-8333-444444444444"
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+
+    def deploy(module, argv):
+        if "--defer-smoke" in argv:
+            with open(argv[argv.index("--record") + 1], "w", encoding="utf-8") as fh:
+                json.dump({"previous_version_id": previous}, fh)
+        if "--rollback" in argv:
+            return 3
+        return 1 if module.endswith("deploy_account") else 0
+
+    live = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        deploy=deploy,
+        portal=_portal_ok,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    with pytest.raises(onboarding.OnboardingError, match="deploy_account exited 1"):
+        live["deploy"](ctx)
+    assert "the proxy rollback to %s exited 3" % previous in capsys.readouterr().err
+
+
+def test_live_deploy_step_removes_its_proxy_record_directory(tmp_path):
+    """Review a597b802.4: the record's scratch directory does not outlive the step."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    seen = []
+
+    def deploy(_module, argv):
+        seen.append(argv[argv.index("--record") + 1] if "--record" in argv else None)
+        return 0
+
+    live = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        deploy=deploy,
+        portal=_portal_ok,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    live["deploy"](ctx)
+    records = [r for r in seen if r]
+    assert records
+    assert not os.path.exists(os.path.dirname(records[0]))
+
+
+def test_build_portal_binds_the_sitekey_stripped(tmp_path, monkeypatch):
+    """Review 324e02dd.1: the guard tests the stripped key, so the build gets the stripped key."""
+    calls = []
+
+    def call(_argv, *, cwd, env):
+        del cwd
+        calls.append(env)
+        return 0
+
+    monkeypatch.setattr(onboarding.subprocess, "call", call)
+    assert onboarding.build_portal(tmp_path, {"TURNSTILE_SITE_KEY": "  0xKEY\n"}) == 0
+    assert calls[0]["VITE_TURNSTILE_SITE_KEY"] == "0xKEY"
+
+
+def test_build_portal_strips_only_the_sitekey_among_its_binds(tmp_path, monkeypatch):
+    """Review 4894e625.1: another bound variable keeps its surrounding whitespace."""
+    local = importlib.import_module("rediacc_ci.release.local")
+    step = types.SimpleNamespace(
+        id=onboarding.PORTAL_STEP,
+        binds=("TURNSTILE_SITE_KEY > VITE_TURNSTILE_SITE_KEY", "OTHER_VALUE > VITE_OTHER"),
+        env=(),
+        argv=("true",),
+        cwd="",
+    )
+    monkeypatch.setattr(local, "STEPS", [step])
+    calls = []
+
+    def call(_argv, *, cwd, env):
+        del cwd
+        calls.append(env)
+        return 0
+
+    monkeypatch.setattr(onboarding.subprocess, "call", call)
+    env = {"TURNSTILE_SITE_KEY": " 0xKEY ", "OTHER_VALUE": "  keep \n"}
+    assert onboarding.build_portal(tmp_path, env) == 0
+    assert calls[0]["VITE_TURNSTILE_SITE_KEY"] == "0xKEY"
+    assert calls[0]["VITE_OTHER"] == "  keep \n"

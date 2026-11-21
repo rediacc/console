@@ -7,15 +7,18 @@ import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
 import { writeStderr, writeStdout } from '../services/core/request-context.js';
 import { type ExecuteResult, type RenetEvent } from '../services/executor/executor-factory.js';
+import { localExecutorService } from '../services/executor/local-executor.js';
+import { CLAIM_TIMING, type StepRunReport } from '../services/jobs/run-job.js';
 import { debugEnabled } from '../utils/debug.js';
 import {
   buildTimingSummary,
   formatStepDuration,
   getActiveLabel,
   getDoneLine,
+  recordTimelineStep,
   type TimelineStep,
 } from '../utils/timeline.js';
-import type { ForkPlan } from './repo-fork.js';
+import type { ForkActionOptions, ForkPlan } from './repo-fork.js';
 
 /** Print one completed-step line in the streamed timeline format. */
 function printStepLine(step: TimelineStep): void {
@@ -132,4 +135,46 @@ export function finishTimeline(
       })
     );
   }
+}
+
+/** The timeline name of a ticket step: the existing phase name where one exists, else the step's own. */
+const TICKET_STEP_TIMELINE: Readonly<Record<string, string>> = {
+  [CLAIM_TIMING]: 'step_claim',
+  identityRefresh: 'identity_refresh',
+  reconcileBackupSchedules: 'backup_schedule',
+  postRepoUpTasks: 'post_up',
+  forkUp: 'fork_up',
+};
+
+/** Append the job's ticket-step timings (claims and each step that ran here) to the timeline. */
+export function recordTicketStepTimings(steps: TimelineStep[], report: StepRunReport): void {
+  for (const timing of report.timings ?? []) {
+    steps.push({
+      name: TICKET_STEP_TIMELINE[timing.name] ?? timing.name,
+      duration_ms: timing.duration_ms,
+      startedAtMs: timing.startedAtMs,
+    });
+  }
+}
+
+/**
+ * Fire the deferred license-identity refresh. Runs concurrent with the up
+ * portion (legacy leg) or the post-up tasks (compound leg). Warn-only: a
+ * failed refresh never fails the fork.
+ */
+export function startIdentityRefresh(
+  steps: TimelineStep[],
+  options: ForkActionOptions,
+  forkParams: Record<string, unknown>
+): Promise<void> {
+  return recordTimelineStep(
+    steps,
+    'identity_refresh',
+    () => localExecutorService.refreshIdentityFor('repository_fork', options.machine, forkParams),
+    { parallel: true }
+  ).catch((error: unknown) => {
+    outputService.warn(
+      `License identity refresh failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`
+    );
+  });
 }

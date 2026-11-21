@@ -70,3 +70,35 @@ def test_the_pointers_are_the_stamp_table() -> None:
     assert r2_promote.pointers("archlinux") == ("rediacc.conf",)
     assert r2_promote.pointers("apt") == r2_promote.pointers("apk") == ()
     assert r2_promote.POINTERS_GO_LAST is True
+
+
+def test_parse_listing_carries_the_unquoted_etag() -> None:
+    reply = {
+        "Contents": [
+            {
+                "Key": "p/a",
+                "Size": 1,
+                "LastModified": "2026-09-25T12:00:00+00:00",
+                "ETag": '"abc-2"',
+            }
+        ]
+    }
+    assert r2_promote.parse_listing(json.dumps(reply), "p/")[0].etag == "abc-2"
+
+
+def test_fetch_and_put_labels_name_the_bucket_and_key(monkeypatch) -> None:
+    """Review 749969c5.2: a failed fetch or put is reported as "<bucket>/<key>", so the message names the bucket it hit."""
+    t = r2_promote.Transfers("promote", "https://r2.example", 0.0, bucket="b-dst")
+    labels: list[str] = []
+    argvs: list[list[str]] = []
+
+    def fake(argv: list[str], what: str) -> int:
+        argvs.append(argv)
+        labels.append(what)
+        return 0
+
+    monkeypatch.setattr(t, "_retried", fake)
+    t.get("edge/v1/cli.tgz", "/tmp/unused")
+    t.put("/tmp/unused", "edge/v1/cli.tgz")
+    assert labels == ["fetch of b-dst/edge/v1/cli.tgz", "put of b-dst/edge/v1/cli.tgz"]
+    assert all(any("b-dst" in part for part in argv) for argv in argvs)

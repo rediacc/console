@@ -5,8 +5,13 @@ import { getMsys2Environment, getRsyncPath, getSshPath } from '../msys2/paths.js
 import type { SyncProgress, SyncResult } from '../types/index.js';
 import { commandExists, getPlatform } from '../utils/platform.js';
 import { prepareRsyncPaths } from './pathConverter.js';
-import { newRsyncCountState, updateRsyncCount } from './rsync-count.js';
-import { parseSkippedEntries } from './rsync-skipped.js';
+import {
+  newRsyncBytesState,
+  newRsyncCountState,
+  updateRsyncBytes,
+  updateRsyncCount,
+} from './rsync-count.js';
+import { createSkipLineScan, parseSkippedEntries } from './rsync-skipped.js';
 
 /**
  * Gets the rsync command/path for the current platform
@@ -349,19 +354,26 @@ export async function executeRsync(
 
     let filesTransferred = 0;
     let bytesTransferred = 0;
+    // The size on the last progress line: what a run that never finished a file (no 100% xfr# line) reports.
+    let lastProgressBytes = 0;
     let stderrText = '';
+    // rsync prints "skipping non-regular file" as an info message, which the sender writes to stdout, so the skip scan reads both streams. Only the skip lines of stdout are kept.
+    const stdoutSkips = createSkipLineScan();
     const countState = newRsyncCountState();
+    const bytesState = newRsyncBytesState();
 
     rsync.stdout.on('data', (data: Buffer) => {
       const output = data.toString();
+      stdoutSkips.push(output);
       options.onStdout?.(output);
 
       // Parse progress from rsync output
       // Format: "   123,456,789 100%   12.34MB/s    0:00:00 (xfr#123, to-chk=456/789)"
       const progressMatch = /(\d[\d,]*)\s+(\d+)%\s+([\d.]+\w+\/s)\s+([\d:]+)/.exec(output);
-      if (progressMatch && options.onProgress) {
+      if (progressMatch) {
         const bytes = Number.parseInt(progressMatch[1].replaceAll(',', ''), 10);
-        options.onProgress({
+        lastProgressBytes = bytes;
+        options.onProgress?.({
           currentFile: '',
           bytesTransferred: bytes,
           totalBytes: 0,
@@ -369,8 +381,8 @@ export async function executeRsync(
           speed: progressMatch[3],
           eta: progressMatch[4],
         });
-        bytesTransferred = bytes;
       }
+      bytesTransferred = updateRsyncBytes(bytesState, output) || lastProgressBytes;
 
       // Count transferred files: the running maximum xfr# over the whole run, so a chunk that carries several xfr# counters is never counted by its first one alone
       filesTransferred = updateRsyncCount(countState, output);
@@ -420,7 +432,7 @@ export async function executeRsync(
         bytesTransferred,
         errors: success ? [] : errors,
         duration: Date.now() - startTime,
-        skipped: parseSkippedEntries(stderrText),
+        skipped: parseSkippedEntries(`${stdoutSkips.text()}\n${stderrText}`),
       });
     });
 

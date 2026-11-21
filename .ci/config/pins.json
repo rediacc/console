@@ -210,6 +210,13 @@
           "files": [
             "Dockerfile"
           ]
+        },
+        {
+          "scanner": "compose-image",
+          "repo": ".",
+          "files": [
+            "packages/e2e-tests/fixtures/**"
+          ]
         }
       ],
       "sites": [],
@@ -834,7 +841,7 @@
           "role": "sha256:amd64",
           "arg": "BW_SHA256_AMD64",
           "expect": 1,
-          "asset": "bw-linux-{version}.zip"
+          "asset": "bw-bit-linux-{version}.zip"
         },
         {
           "repo": ".",
@@ -842,7 +849,7 @@
           "role": "sha256:arm64",
           "arg": "BW_SHA256_ARM64",
           "expect": 1,
-          "asset": "bw-linux-arm64-{version}.zip"
+          "asset": "bw-bit-linux-arm64-{version}.zip"
         }
       ],
       "derive": [],
@@ -1849,6 +1856,66 @@
           "role": "sha256:darwin-aarch64",
           "env": "AGG_SHA256_DARWIN_AARCH64",
           "asset": "agg-aarch64-apple-darwin",
+          "expect": 1
+        }
+      ],
+      "derive": [
+        {
+          "run": "npx tsx scripts/gen/gen-docs.ts --write",
+          "cwd": ".",
+          "writes": [
+            {
+              "repo": ".",
+              "file": "scripts/data/doc-registry.md"
+            }
+          ]
+        }
+      ],
+      "literals": []
+    },
+    {
+      "id": "toolchain:cosign",
+      "kind": "leaf",
+      "name": "cosign (sigstore)",
+      "driver": "toolchain",
+      "source": {
+        "type": "github-release",
+        "repo": "sigstore/cosign",
+        "tagPrefix": "v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-toolchain-pins",
+        "check:ci-toolchain-env-dockerfile-sync"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "version",
+          "env": "COSIGN_VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:linux-amd64",
+          "env": "COSIGN_SHA256_LINUX_AMD64",
+          "asset": "cosign-linux-amd64",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".devcontainer/toolchain.env",
+          "role": "sha256:linux-arm64",
+          "env": "COSIGN_SHA256_LINUX_ARM64",
+          "asset": "cosign-linux-arm64",
           "expect": 1
         }
       ],
@@ -4059,6 +4126,1190 @@
       ],
       "derive": [],
       "literals": []
+    },
+    {
+      "id": "template:plausible.community-edition",
+      "kind": "leaf",
+      "name": "ghcr.io/plausible/community-edition in the analytics/plausible app template",
+      "driver": "docker",
+      "source": {
+        "type": "none",
+        "reason": "BLOCKER: ghcr.io serves this image, and the OCI tag list it answers carries no publish date, so the release-age window cannot be applied and no pins source type reads it (dockerhub and quay-tags cover the registries the other images use); a dated source for ghcr.io is the change that would judge it"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/analytics/plausible/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>ghcr\\.io/plausible/community-edition:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:plausible.postgres",
+      "kind": "leaf",
+      "name": "postgres in the analytics/plausible app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "postgres"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/analytics/plausible/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>postgres:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:plausible.clickhouse-server",
+      "kind": "leaf",
+      "name": "clickhouse/clickhouse-server in the analytics/plausible app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "clickhouse/clickhouse-server"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/analytics/plausible/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>clickhouse/clickhouse-server:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:redis.redis",
+      "kind": "leaf",
+      "name": "redis in the caching/redis app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "redis"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/caching/redis/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>redis:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:arangodb.arangodb",
+      "kind": "leaf",
+      "name": "arangodb in the databases/arangodb app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "arangodb"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/databases/arangodb/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>arangodb:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:cassandra.cassandra",
+      "kind": "leaf",
+      "name": "cassandra in the databases/cassandra app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "cassandra"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/databases/cassandra/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>cassandra:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:couchdb.couchdb",
+      "kind": "leaf",
+      "name": "couchdb in the databases/couchdb app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "couchdb"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/databases/couchdb/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>couchdb:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:influxdb.influxdb",
+      "kind": "leaf",
+      "name": "influxdb in the databases/influxdb app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "influxdb"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/databases/influxdb/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>influxdb:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:mssql.server",
+      "kind": "leaf",
+      "name": "mcr.microsoft.com/mssql/server in the databases/mssql app template",
+      "driver": "docker",
+      "source": {
+        "type": "none",
+        "reason": "BLOCKER: mcr.microsoft.com serves this image, and the OCI tag list it answers carries no publish date, so the release-age window cannot be applied and no pins source type reads it (dockerhub and quay-tags cover the registries the other images use); a dated source for mcr.microsoft.com is the change that would judge it"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/databases/mssql/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>mcr\\.microsoft\\.com/mssql/server:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:mysql.mariadb",
+      "kind": "leaf",
+      "name": "mariadb in the databases/mysql app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "mariadb"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/databases/mysql/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>mariadb:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:neo4j.neo4j",
+      "kind": "leaf",
+      "name": "neo4j in the databases/neo4j app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "neo4j"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/databases/neo4j/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>neo4j:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:percona.percona",
+      "kind": "leaf",
+      "name": "percona in the databases/percona app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "percona"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/databases/percona/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>percona:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:solr.solr",
+      "kind": "leaf",
+      "name": "solr in the databases/solr app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "solr"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/databases/solr/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>solr:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:listmonk.postgres",
+      "kind": "leaf",
+      "name": "postgres in the messaging/listmonk app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "postgres"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/messaging/listmonk/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>postgres:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:rabbitmq.rabbitmq",
+      "kind": "leaf",
+      "name": "rabbitmq in the messaging/rabbitmq app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "rabbitmq"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/messaging/rabbitmq/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>rabbitmq:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:heartbeat.postgres",
+      "kind": "leaf",
+      "name": "postgres in the monitoring/heartbeat app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "postgres"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/monitoring/heartbeat/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>postgres:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:heartbeat.node",
+      "kind": "leaf",
+      "name": "node in the monitoring/heartbeat app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "node"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/monitoring/heartbeat/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>node:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:nextcloud-aio.code",
+      "kind": "leaf",
+      "name": "collabora/code in the platforms/nextcloud-aio app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "collabora/code"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/platforms/nextcloud-aio/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>collabora/code:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:wordpress.mysql",
+      "kind": "leaf",
+      "name": "mysql in the platforms/wordpress app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "mysql"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/platforms/wordpress/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>mysql:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:elasticsearch.elasticsearch",
+      "kind": "leaf",
+      "name": "elasticsearch in the search/elasticsearch app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "elasticsearch"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/search/elasticsearch/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>elasticsearch:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "template:elasticsearch.kibana",
+      "kind": "leaf",
+      "name": "kibana in the search/elasticsearch app template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "kibana"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/json/templates/search/elasticsearch/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>kibana:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-template:app-postgres-criu.node",
+      "kind": "leaf",
+      "name": "node in the app-postgres-criu CLI template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "node"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/templates/app-postgres-criu/docker-compose.yml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>node:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-template:app-postgres-criu.postgres",
+      "kind": "leaf",
+      "name": "postgres in the app-postgres-criu CLI template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "postgres"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/templates/app-postgres-criu/docker-compose.yml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>postgres:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-template:app-postgres.node",
+      "kind": "leaf",
+      "name": "node in the app-postgres CLI template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "node"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/templates/app-postgres/docker-compose.yml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>node:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-template:app-postgres.postgres",
+      "kind": "leaf",
+      "name": "postgres in the app-postgres CLI template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "postgres"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/templates/app-postgres/docker-compose.yml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>postgres:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-template:elite.rustfs",
+      "kind": "leaf",
+      "name": "rustfs/rustfs in the elite CLI template",
+      "driver": "docker",
+      "source": {
+        "type": "none",
+        "reason": "BLOCKER: the reference pins a digest with no tag, so it names no version a newer release could be compared with; a tag beside the digest (rustfs/rustfs:<tag>@sha256:...) is the change that lets the docker driver judge it"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/templates/elite/docker-compose.yml",
+          "role": "digest",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?rustfs/rustfs(?::[^\\s\"'@#]+)?@(?<value>sha256:[0-9a-f]{64})",
+          "expect": 2
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-template:multi-project-project-a.node",
+      "kind": "leaf",
+      "name": "node in the multi-project-project-a CLI template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "node"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/templates/multi-project/project-a/docker-compose.yml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>node:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-template:multi-project-project-a.postgres",
+      "kind": "leaf",
+      "name": "postgres in the multi-project-project-a CLI template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "postgres"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/templates/multi-project/project-a/docker-compose.yml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>postgres:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-template:multi-project-project-b.redis",
+      "kind": "leaf",
+      "name": "redis in the multi-project-project-b CLI template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "redis"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/templates/multi-project/project-b/docker-compose.yml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>redis:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-template:single-service.nginx",
+      "kind": "leaf",
+      "name": "nginx in the single-service CLI template",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "nginx"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/templates/single-service/docker-compose.yml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>nginx:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "tutorial:demo-pgadmin.postgres",
+      "kind": "leaf",
+      "name": "postgres in the demo-pgadmin tutorial app",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "postgres"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".ci/tutorials/apps/demo-pgadmin/docker-compose.yml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>postgres:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "tutorial:demo-pgadmin.pgadmin4",
+      "kind": "leaf",
+      "name": "dpage/pgadmin4 in the demo-pgadmin tutorial app",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "dpage/pgadmin4"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".ci/tutorials/apps/demo-pgadmin/docker-compose.yml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>dpage/pgadmin4:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "tutorial:tutorial-heartbeat.postgres",
+      "kind": "leaf",
+      "name": "postgres in the heartbeat tutorial app",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "postgres"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".ci/tutorials/apps/heartbeat/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>postgres:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "tutorial:tutorial-heartbeat.node",
+      "kind": "leaf",
+      "name": "node in the heartbeat tutorial app",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "node"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".ci/tutorials/apps/heartbeat/docker-compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>node:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "tutorial:secrets-demo.node",
+      "kind": "leaf",
+      "name": "node in the secrets-demo tutorial app",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "node"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".ci/tutorials/apps/secrets-demo/docker-compose.yml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>node:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "compose:otel-collector.opentelemetry-collector-contrib",
+      "kind": "leaf",
+      "name": "otel/opentelemetry-collector-contrib in the otel-collector compose file",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "otel/opentelemetry-collector-contrib"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "compose/otel-collector/docker-compose.yml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>otel/opentelemetry-collector-contrib:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "renet:proxy.traefik",
+      "kind": "leaf",
+      "name": "traefik in the renet proxy compose file",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "traefik"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry",
+        "check:ci-pin-freshness"
+      ],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "proxy/docker-compose.yml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>traefik:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
     }
   ],
   "ignores": [
@@ -4095,6 +5346,18 @@
       "file": "pkg/kube/csidriver/crds.go",
       "match": "client/config/crd",
       "reason": "BLOCKER: names the external-snapshotter release the embedded VolumeSnapshot CRDs were vendored from; it moves only when the CRDs are re-vendored from the new tag, which a version bump alone does not do (PLAN-pins-command survey item 4)"
+    },
+    {
+      "scanner": "compose-image",
+      "repo": "private/renet",
+      "file": "tests/fixtures/docker-compose-valid.yml",
+      "reason": "BLOCKER: a sample compose file listed in private/renet/tests/README.md as a test fixture, which no test, build or deploy pulls (nothing in renet references the path), so its image tags are sample input rather than a deployed version"
+    },
+    {
+      "scanner": "compose-image",
+      "repo": "private/renet",
+      "file": "tests/fixtures/docker-compose-with-ports.yml",
+      "reason": "BLOCKER: a sample compose file listed in private/renet/tests/README.md as a test fixture, which no test, build or deploy pulls (nothing in renet references the path), so its image tags are sample input rather than a deployed version"
     }
   ]
 }

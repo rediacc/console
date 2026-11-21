@@ -59,6 +59,7 @@ import { fileURLToPath } from 'node:url';
 import {
   type ChangeSet,
   ChangeSetRefusal,
+  isScoped,
   refuseUnusableChangeSet,
   selectChanged,
 } from '../ci-runner/select';
@@ -71,6 +72,9 @@ interface LockEntry {
   id: string;
   gate?: boolean;
   paths?: string[];
+  lists?: string[];
+  names?: string[];
+  refs?: string[];
 }
 
 interface Run {
@@ -280,6 +284,27 @@ function selftest(): number {
     'the two refusals carry DIFFERENT messages, so the remedy is the right one',
     `empty=${emptyMsg.slice(0, 40)} unresolved=${unresolvedMsg.slice(0, 40)}`
   );
+  // THE SHARED SCOPED RULE (W2.4): lists or names scope a gate without paths; refs alone does not. main() counts the lock's shape with this same predicate.
+  const kinds = [
+    { id: 'l', lists: ['cfg'] },
+    { id: 'n', names: ['tpl/*.md'] },
+    { id: 'r', refs: ['HEAD'] },
+    { id: 'pr', paths: ['src/**'], refs: ['HEAD'] },
+    { id: 'e', paths: [] as string[] },
+    { id: 'w' },
+  ];
+  const scopedIds = shapeOf(kinds).scoped.join(',');
+  check(
+    scopedIds === 'l,n,pr,e',
+    'lists, names, paths (even []) scope a gate; a refs-only gate and a bare gate do not',
+    `got ${scopedIds}`
+  );
+  const unscopedCount = selectChanged(kinds, cs(['unrelated/x']), matches).unscoped;
+  check(
+    unscopedCount === 2,
+    'CONTROL: selectChanged counts exactly the two gates isScoped calls unscoped, so the gate and the runner share one rule',
+    `got ${unscopedCount}`
+  );
   // `paths: []` says "nothing selects me" and must NOT be treated as "says nothing".
   const explicitEmpty = selectChanged([{ id: 'z', paths: [] }, ...specs], cs(['docs/x']), matches);
   check(
@@ -288,6 +313,14 @@ function selftest(): number {
     'z was selected'
   );
   return finish('selftest');
+}
+
+/** The lock's gates split the way select.ts splits them (`isScoped`). main() reports and checks the runner against this split, and the selftest drives it. */
+function shapeOf(gates: readonly LockEntry[]): { scoped: string[]; unscoped: string[] } {
+  return {
+    scoped: gates.filter((e) => isScoped(e)).map((e) => e.id),
+    unscoped: gates.filter((e) => !isScoped(e)).map((e) => e.id),
+  };
 }
 
 function finish(label: string): number {
@@ -307,8 +340,8 @@ function main(): number {
 
   const lock = readLock();
   const gates = lock.filter((e) => e.gate === true);
-  const unscoped = gates.filter((e) => e.paths === undefined).map((e) => e.id);
-  const scoped = gates.filter((e) => e.paths !== undefined).map((e) => e.id);
+  // THE SAME RULE select.ts applies (`isScoped`): paths, lists or names scope a gate; refs alone does not. Restating it as `paths === undefined` would count a lists/names gate as always-selected and then fault the runner for not selecting it.
+  const { scoped, unscoped } = shapeOf(gates);
   // ZERO INPUTS IS A FAILURE, NEVER A PASS.
   if (gates.length === 0) {
     refuse(

@@ -57,23 +57,23 @@ The ONLY caller that passes `--sanitize` is the removed edge-clone-d1.yml workfl
 "The target D1 never sees real PII" -- is true only because the target sees nothing at all. Reproduced here, not repaired: recreating a deleted 152-line SQL file is not a port's decision.
 
 -----------------------------------------------------------------------------
-DEFECT B -- A FAILED FK VERIFICATION IS REPORTED AS ZERO VIOLATIONS
+DEFECT B -- A FAILED FK VERIFICATION WAS REPORTED AS ZERO VIOLATIONS (REPAIRED)
 -----------------------------------------------------------------------------
-Step 5 is the script's whole safety claim, and it cannot fail for any reason other than a violation it actually managed to read:
+Step 5 is the script's whole safety claim, and the twin could not fail it for any reason other than a violation it actually managed to read:
 
     FK_RESULT=$(npx wrangler d1 execute ... --json 2>/dev/null || true)
     FK_COUNT=$(echo "$FK_RESULT" | jq '.[0].results | length' 2>/dev/null || echo "0")
     if [[ "$FK_COUNT" -gt 0 ]]; then ... fi
     log_info "FK integrity check passed (0 violations)"
 
-`2>/dev/null || true` discards both wrangler's message and its status, so an expired token, a network failure or a wrangler crash all yield an empty `FK_RESULT`. `jq` on empty input then prints NOTHING and exits 0 -- so the `|| echo "0"` fallback never even fires -- and `[[ "" -gt 0 ]]` is false without error. Driven 2026-09-14:
+`2>/dev/null || true` discards both wrangler's message and its status, so an expired token, a network failure or a wrangler crash all yield an empty `FK_RESULT`, `jq` on it prints nothing and exits 0, and `[[ "" -gt 0 ]]` is false without error. Driven 2026-09-14:
 
     $ FK_RESULT=""; FK_COUNT=$(echo "$FK_RESULT" | jq '.[0].results | length' 2>/dev/null || echo "0")
     $ echo "[$FK_COUNT]"; [[ "$FK_COUNT" -gt 0 ]] && echo gt || echo notgt
     []
     notgt
 
-The run then prints `✓ FK integrity check passed (0 violations)` and exits 0. This is the "an API call that failed folded into the check passed" shape, on the step whose entire job is to notice corruption. Reproduced here, not repaired.
+REPAIRED 2026-11-13 (PLAN-d1-eu-jurisdiction W2, which reuses this check for the jurisdiction move): `verify_fk` reads wrangler's status and its stderr reaches the operator; a non-zero status, or an answer that is not a D1 result set, prints why and exits 1. Only a result set actually read counts its violations. This is the one place the port departs from the frozen twin on purpose, and `test_deploy_clone_d1.py` pins the departure.
 
 -----------------------------------------------------------------------------
 DEFECT C -- THE HEADER PROMISES A GUARD ON `CLOUDFLARE_ACCOUNT_ID` THAT IS ABSENT
@@ -111,14 +111,19 @@ A FOURTH, SMALLER ONE, STATED RATHER THAN HIDDEN: `$CONFIG_FLAG` unquoted is sub
 from __future__ import annotations
 
 import contextlib
+import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+from typing import TYPE_CHECKING
 
 from rediacc_ci import log
 from rediacc_ci.core import common, wrangler
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.clone_d1"
@@ -148,13 +153,26 @@ DROP_STATEMENTS_SED = (
 IMPORT_HEADER = ("PRAGMA defer_foreign_keys=ON;", "PRAGMA foreign_keys=OFF;")
 IMPORT_FOOTER = ("PRAGMA foreign_keys=ON;",)
 
-# `jq '.[0].results | length'` (twin :152) and the `--command` at :151.
-FK_JQ = ".[0].results | length"
+# The `jq` that prints the violation rows (twin :155) and the `--command` at :151.
 FK_RESULTS_JQ = ".[0].results"
 FK_COMMAND = "PRAGMA foreign_key_check"
 
 # The usage line (twin :50), which is also the only place `--wrangler-config` is documented. `--sanitize` is absent from it; see DEFECT D. `PYTHONPATH=.ci` is part of the command: run from the repository root without it, `python3 -m` cannot find `rediacc_ci` (review finding 08928e86.2).
-USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.clone_d1 --source <db-name> --target <db-name> [--wrangler-config <path>]"
+USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.clone_d1 --source <db-name> --target <db-name> [--wrangler-config <path>] [--drop-tables <t1,t2,...>] [--row-parity]"
+
+# THE TWO OPT-IN ADDITIONS (PLAN-product-domain-rename W2), both absent from the twin and off unless asked, so a run without them is byte-identical to the frozen twin.
+#
+# `--drop-tables a,b` EMPTIES those tables' ROWS in the target inside the same import (a `DELETE FROM` after the dump, under the FK pragmas), and leaves their schema: the seed of a new region keeps its migrations aligned and drops the rows that would claim objects the new bucket does not hold. Each name must be a plain SQL identifier, because it is interpolated into the import file.
+#
+# `--row-parity` compares per-table row counts of source and target after the import (`PARITY_TABLES_SQL`, then `UNION ALL` counts of PARITY_CHUNK tables per query), and fails the run on any difference. A table named by `--drop-tables` is expected to hold 0 rows in the target. This reads rows rather than trusting the FK check, which cannot see a table that arrived short.
+TABLE_NAME = re.compile(r"\A[A-Za-z_][A-Za-z0-9_]*\Z")
+# D1 refuses a long compound SELECT (`too many terms in compound SELECT: SQLITE_ERROR [code: 7500]`, measured 2026-11-08 at 15 arms on the 84-table bench database while 4 passed), so the count query runs PARITY_CHUNK tables at a time.
+PARITY_CHUNK = 4
+
+PARITY_TABLES_SQL = (
+    "SELECT name FROM sqlite_master WHERE type = 'table' "
+    "AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '\\_cf\\_%' ESCAPE '\\' ORDER BY name"
+)
 
 # The one variable `require_var` demands (twin :54). The header claims two; see
 # DEFECT C.
@@ -163,9 +181,9 @@ REQUIRED_VAR = "CLOUDFLARE_API_TOKEN"
 # `"$SCRIPT_DIR/sanitize-d1.sql"` (twin :117), relative to the repository root so the missing-file path is checkable without guessing at an absolute one.
 SANITIZE_SQL_RELATIVE = (".ci", "scripts", "deploy", "sanitize-d1.sql")
 
-# The four defects in the module docstring, as constants a test can assert by name instead of restating the sentence.
+# The four defects in the module docstring, as constants a test can assert by name instead of restating the sentence. DEFECT B is repaired, so its constant is False.
 THE_SANITIZE_PATH_CANNOT_WORK = True
-A_FAILED_FK_CHECK_REPORTS_ZERO_VIOLATIONS = True
+A_FAILED_FK_CHECK_REPORTS_ZERO_VIOLATIONS = False
 THE_ACCOUNT_ID_GUARD_THE_HEADER_PROMISES_IS_ABSENT = True
 THE_BLOCKER_COMMENTS_NAME_A_VALUE_THAT_IS_NEVER_BUILT = True
 
@@ -181,10 +199,10 @@ class BashExitError(Exception):
         self.code = code
 
 
-def parse_argv(argv: list[str]) -> tuple[str, str, str, bool]:
+def parse_argv(argv: list[str]) -> tuple[str, str, str, bool, list[str], bool]:
     """The `while [[ $# -gt 0 ]]` loop (twin :24-47).
 
-    Returns `(source, target, wrangler_config, sanitize)`.
+    Returns `(source, target, wrangler_config, sanitize, drop_tables, row_parity)`.
 
     LAST FLAG WINS, because each arm assigns rather than appends: `--source a --source b` clones `b`. That is bash's behaviour here and it is reproduced rather than turned into an error.
 
@@ -194,11 +212,13 @@ def parse_argv(argv: list[str]) -> tuple[str, str, str, bool]:
     target_db = ""
     wrangler_config = ""
     sanitize = False
+    drop_tables: list[str] = []
+    row_parity = False
 
     index = 0
     while index < len(argv):
         flag = argv[index]
-        if flag in ("--source", "--target", "--wrangler-config"):
+        if flag in ("--source", "--target", "--wrangler-config", "--drop-tables"):
             if index + 1 >= len(argv):
                 print(
                     "%s: %s: $2: unbound variable" % (SELF, flag),
@@ -211,16 +231,27 @@ def parse_argv(argv: list[str]) -> tuple[str, str, str, bool]:
                 source_db = value
             elif flag == "--target":
                 target_db = value
+            elif flag == "--drop-tables":
+                drop_tables = [name for name in value.split(",") if name]
+                bad = [name for name in drop_tables if not TABLE_NAME.fullmatch(name)]
+                if bad:
+                    log.error(
+                        "--drop-tables names a table that is not a plain identifier: %s" % bad[0]
+                    )
+                    raise BashExitError(1)
             else:
                 wrangler_config = value
             index += 2
+        elif flag == "--row-parity":
+            row_parity = True
+            index += 1
         elif flag == "--sanitize":
             sanitize = True
             index += 1
         else:
             log.error("Unknown argument: %s" % flag)
             raise BashExitError(1)
-    return source_db, target_db, wrangler_config, sanitize
+    return source_db, target_db, wrangler_config, sanitize, drop_tables, row_parity
 
 
 def config_flag_words(wrangler_config: str) -> list[str]:
@@ -236,9 +267,26 @@ def config_flag_words(wrangler_config: str) -> list[str]:
     return ("--config %s" % wrangler_config).split()
 
 
-def export_argv(source_db: str, out_path: str) -> list[str]:
-    """`npx wrangler d1 export "$SOURCE_DB" --remote --output=...` (twin :94)."""
-    return [*wrangler.ARGV, "d1", "export", source_db, "--remote", "--output=%s" % out_path]
+# THE DIRECTORY EVERY wrangler CALL RUNS FROM (finding fc8ad2fd, met live 2026-11-10). `npx --no-install` runs only a `node_modules/.bin/wrangler` at or above its cwd, or npm's global prefix; npm 11.21.0 never reads PATH. Run from the repository root, where `test_d1_migrations` calls `main`, it answered "npm error npx canceled due to missing packages and no YES option: ["wrangler@4.160.0"]". `workers/account` holds the pinned install (its lockfile) and only per-region configs (`wrangler.<r>.toml`), no default `wrangler.toml`, so no config is picked up implicitly. Every path this module passes wrangler is absolute; a relative `--wrangler-config` (no caller passes one, DEFECT D) resolves against this directory.
+WRANGLER_CWD_REL = ("workers", "account")
+
+
+def wrangler_cwd() -> str:
+    """The worker directory the wrangler calls run from, under this run's repository root."""
+    return str(common.repo_root().joinpath(*WRANGLER_CWD_REL))
+
+
+def export_argv(source_db: str, out_path: str, config_words: Sequence[str] = ()) -> list[str]:
+    """`npx wrangler d1 export "$SOURCE_DB" --remote --output=...` (twin :94); `config_words` is the optional `--config <toml>` that `ops.d1_relocate` passes."""
+    return [
+        *wrangler.ARGV,
+        "d1",
+        "export",
+        source_db,
+        "--remote",
+        *config_words,
+        "--output=%s" % out_path,
+    ]
 
 
 def execute_file_argv(target_db: str, config_words: list[str], file_path: str) -> list[str]:
@@ -343,7 +391,7 @@ def export_line_report(export_sql: str) -> str:
     return "Exported %s lines (%s)" % (lines, size)
 
 
-def run_export(source_db: str, tmpdir: str) -> int:
+def run_export(source_db: str, tmpdir: str, config_words: Sequence[str] = ()) -> int:
     """The retry loop (twin :92-101). Returns the LAST attempt's status.
 
     `>"$TMPDIR/export.log" 2>&1` merges both streams into the log, which is what makes the redaction possible at all: the pre-signed URL can arrive on either one. The loop breaks on the first success, and the warning between attempts names the attempt number so a retry is visible in the job log.
@@ -353,9 +401,10 @@ def run_export(source_db: str, tmpdir: str) -> int:
         export_rc = 0
         with open(os.path.join(tmpdir, "export.log"), "wb") as handle:
             export_rc = _run(
-                export_argv(source_db, os.path.join(tmpdir, "export.sql")),
+                export_argv(source_db, os.path.join(tmpdir, "export.sql"), config_words),
                 stdout=handle,
                 stderr=subprocess.STDOUT,
+                cwd=wrangler_cwd(),
             )
         if export_rc == 0:
             break
@@ -369,6 +418,24 @@ def run_export(source_db: str, tmpdir: str) -> int:
             if status:
                 raise BashExitError(status)
     return export_rc
+
+
+def export_redacted(source_db: str, tmpdir: str, config_words: Sequence[str] = ()) -> None:
+    """Step 1 whole: the retried export into `<tmpdir>/export.sql`, its log printed with the pre-signed URL redacted, and the line report. A failed export raises BashExitError with wrangler's status. `ops.d1_relocate` calls this too, so there is one export path."""
+    log.step("Exporting D1 database: %s" % source_db)
+    export_rc = run_export(source_db, tmpdir, config_words)
+
+    # THE REDACTION, and `|| true` because `grep -v` exits 1 when it filters everything out. Its stdout is the script's stdout.
+    _run(["grep", "-v", REDACT_PATTERN, os.path.join(tmpdir, "export.log")])
+
+    if export_rc != 0:
+        log.error(
+            "wrangler d1 export %s failed (exit %d) after %d attempts; its full output "
+            "is above (R2 URL redacted)" % (source_db, export_rc, EXPORT_ATTEMPTS)
+        )
+        raise BashExitError(export_rc)
+
+    log.info(export_line_report(os.path.join(tmpdir, "export.sql")))
 
 
 def sanitize(tmpdir: str, root: str) -> None:
@@ -410,7 +477,22 @@ def sanitize(tmpdir: str, root: str) -> None:
     log.info("Sanitized (%s lines)" % wc_lines(export_sql))
 
 
-def build_import_sql(tmpdir: str) -> None:
+def quoted(name: str) -> str:
+    """A table name as a quoted SQL identifier. Only a name that passed `TABLE_NAME` reaches here, so there is nothing to escape."""
+    return f'"{name}"'
+
+
+def delete_rows_statement(name: str) -> str:
+    """The `--drop-tables` statement for one table: its rows only, never the table."""
+    return "".join(("DELETE FROM ", quoted(name), ";\n"))
+
+
+def count_select(name: str) -> str:
+    """One arm of the per-table count query: the table's name as data and its row count."""
+    return "".join(("SELECT '", name, "' AS t, COUNT(*) AS n FROM ", quoted(name)))
+
+
+def build_import_sql(tmpdir: str, drop_tables: list[str] | None = None) -> None:
     """Steps 2 and 3 (twin :126-138).
 
     The strip is IN PLACE on `export.sql` and runs whether or not `--sanitize` was asked for. The DROP statements are generated FROM the stripped file, so a table the strip removed cannot be dropped, and the dump is then appended whole. Order inside `import.sql` is: two pragmas, every DROP, the dump, one
@@ -431,39 +513,43 @@ def build_import_sql(tmpdir: str) -> None:
         out.flush()
         _run(["cat", export_sql], stdout=out)
         out.flush()
+        # `--drop-tables`: rows only, after the dump, still under the FK pragmas of the header.
+        out.writelines(delete_rows_statement(name).encode("utf-8") for name in drop_tables or [])
         out.writelines(("%s\n" % line).encode("utf-8") for line in IMPORT_FOOTER)
 
 
-def verify_fk(target_db: str, config_words: list[str]) -> None:
-    """Step 5 (twin :148-158). DEFECT B lives here, whole.
+def fk_violations(fk_result: str) -> list | None:
+    """The violation rows of a `PRAGMA foreign_key_check --json` answer, or None when the answer is not a D1 result set (the `.[0].results` list)."""
+    try:
+        rows = json.loads(fk_result)[0]["results"]
+    except (ValueError, LookupError, TypeError):
+        return None
+    return rows if isinstance(rows, list) else None
 
-    `2>/dev/null || true` on the wrangler call and `2>/dev/null || echo "0"` on the jq call mean the only observable outcome of a failed verification is the success line. Reproduced exactly, including the fact that on empty input `jq` prints nothing and exits 0, so the `|| echo "0"` fallback does not fire and `FK_COUNT` is the empty string rather than `0`.
+
+def verify_fk(target_db: str, config_words: list[str]) -> None:
+    """Step 5 (twin :148-158), with DEFECT B repaired.
+
+    A wrangler call that failed, or an answer that is not a D1 result set, raises BashExitError(1) with the reason; wrangler's own stderr is inherited, so its message reaches the operator. Only a result set actually read is counted, and a violation prints the twin's line and its rows (through the twin's `jq`) and exits 1.
     """
     log.step("Verifying foreign key integrity")
-    _, fk_result = _capture(fk_check_argv(target_db, config_words), stderr=subprocess.DEVNULL)
+    status, fk_result = _capture(fk_check_argv(target_db, config_words), cwd=wrangler_cwd())
+    if status:
+        log.error(
+            "FK integrity check could not run: wrangler d1 execute %s exited %d"
+            % (target_db, status)
+        )
+        raise BashExitError(1)
+    rows = fk_violations(fk_result)
+    if rows is None:
+        log.error(
+            "FK integrity check could not run: the answer for %s is not a D1 result set: %s"
+            % (target_db, (fk_result.strip() or "(empty)")[:200])
+        )
+        raise BashExitError(1)
 
-    # `echo "$FK_RESULT" | jq ...`: echo appends a newline, so jq's input is never truly empty, and jq's own status is discarded either way.
-    _flush()
-    jq = subprocess.run(
-        ["jq", FK_JQ],
-        input=("%s\n" % fk_result).encode("utf-8"),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    fk_count = jq.stdout.decode("utf-8", "surrogateescape").rstrip("\n")
-    if jq.returncode != 0:
-        fk_count = "0"
-
-    try:
-        violations = bash_arithmetic_gt_zero(fk_count)
-    except BashUnboundError as exc:
-        # bash prints `<script>: line 153: <name>: unbound variable` and stops. Same three facts, same stream, same status; the EXIT trap still runs.
-        print("%s: %s: unbound variable" % (SELF, exc.name), file=sys.stderr, flush=True)
-        raise BashExitError(1) from exc
-
-    if violations:
-        log.error("Foreign key violations found: %s" % fk_count)
+    if rows:
+        log.error("Foreign key violations found: %d" % len(rows))
         _flush()
         subprocess.run(
             ["jq", FK_RESULTS_JQ],
@@ -475,75 +561,105 @@ def verify_fk(target_db: str, config_words: list[str]) -> None:
     log.info("FK integrity check passed (0 violations)")
 
 
-# A bash NAME, used to tell "this expression mentions an unset variable" from "this expression is malformed". The lookbehind keeps the `a` in `1a` out: that is a bad NUMBER, and bash treats the two cases differently.
-BASH_NAME = re.compile(r"(?<![0-9A-Za-z_])[A-Za-z_][A-Za-z0-9_]*")
+def query_argv(db: str, config_words: list[str], sql: str) -> list[str]:
+    """`wrangler d1 execute <db> --remote [--config ..] --command=<sql> --json`."""
+    return [
+        *wrangler.ARGV,
+        "d1",
+        "execute",
+        db,
+        "--remote",
+        *config_words,
+        "--command=%s" % sql,
+        "--json",
+    ]
 
-# A complete bash arithmetic literal: optional sign, then hex, octal or decimal.
-BASH_NUMBER = re.compile(r"^[+-]?(?:0[xX][0-9a-fA-F]+|0[0-7]*|[1-9][0-9]*)$")
+
+def _query_rows(db: str, config_words: list[str], sql: str) -> list[dict]:
+    """The result rows of one read-only query; a failed wrangler or unreadable answer raises BashExitError(1) with the reason, never an empty answer."""
+    status, out = _capture(
+        query_argv(db, config_words, sql), stderr=subprocess.DEVNULL, cwd=wrangler_cwd()
+    )
+    if status:
+        log.error("row parity: wrangler d1 execute %s failed (exit %d)" % (db, status))
+        raise BashExitError(1)
+    try:
+        return list(json.loads(out)[0]["results"])
+    except (ValueError, LookupError, TypeError):
+        log.error("row parity: the answer for %s is not a D1 result set" % db)
+        raise BashExitError(1) from None
 
 
-class BashUnboundError(Exception):
-    """`set -u` firing inside an arithmetic evaluation. FATAL, exit 1."""
-
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
-        self.name = name
-
-
-def bash_arithmetic_gt_zero(text: str) -> bool:
-    """`[[ "$FK_COUNT" -gt 0 ]]`, which is ARITHMETIC EVALUATION under `set -u`.
-
-    Five behaviours, all probed against real bash on 2026-09-14 rather than reasoned about, because three of them are surprising:
-
-        [$v]      exit  output
-        [null]    1     bash: line 1: null: unbound variable        <- FATAL
-        [a b]     1     bash: line 1: a: unbound variable           <- FATAL
-        [1a]      0     [[: 1a: value too great for base   -> FALSE
-        [08]      0     [[: 08: value too great for base   -> FALSE
-        [0x10]    0     -> TRUE  (hex)
-        [010]     0     -> TRUE  (octal 8)
-        []        0     -> FALSE
-        [-2]      0     -> FALSE
-
-    THE FATAL ROWS ARE THE POINT. A bare word is a VARIABLE REFERENCE, and an unset one under `set -u` ends the script with exit 1 and no message of the script's own -- so a `jq` program that ever emitted `null` here would turn a clone into a hard failure rather than a verdict. It cannot today: `jq length` prints a number or the pipeline fails and `|| echo "0"` supplies one.
-    Reproduced anyway, because the next person to edit that jq program should not have to rediscover it.
-
-    THE TWO NON-FATAL ERROR ROWS ARE REPRODUCED WITH THEIR DIAGNOSTIC, minus bash's own `<file>: line <n>:` prefix, because the zero-padded-octal class has bitten this campaign four times and a silent FALSE would hide it a fifth. The residual case (a non-numeric value that does not start with a digit and names no variable, e.g. `+`) evaluates FALSE here with no message, where bash
-    prints an `arithmetic syntax error`; it is unreachable
-    from `jq length` and from this script's `|| echo "0"` fallback.
-    """
-    stripped = text.strip()
-    if stripped == "":
-        return False
-    if BASH_NUMBER.match(stripped):
-        negative = stripped.startswith("-")
-        digits = stripped.lstrip("+-")
-        if digits[:2].lower() == "0x":
-            value = int(digits, 16)
-        elif digits.startswith("0") and digits != "0":
-            value = int(digits, 8)
-        else:
-            value = int(digits)
-        return (-value if negative else value) > 0
-    name = BASH_NAME.search(stripped)
-    if name:
-        raise BashUnboundError(name.group(0))
-    if stripped[0].isdigit():
-        # `[[: 08: value too great for base (error token is "08")`, verbatim apart from bash's own `<file>: line <n>:` prefix.
-        print(
-            '%s: [[: %s: value too great for base (error token is "%s")'
-            % (SELF, stripped, stripped),
-            file=sys.stderr,
-            flush=True,
+def table_counts(db: str, config_words: list[str]) -> dict[str, int]:
+    """Row count of every user table of `db`."""
+    tables = [str(row["name"]) for row in _query_rows(db, config_words, PARITY_TABLES_SQL)]
+    if not tables:
+        return {}
+    for name in tables:
+        if not TABLE_NAME.fullmatch(name):
+            log.error(
+                "row parity: %s holds a table whose name is not a plain identifier: %s" % (db, name)
+            )
+            raise BashExitError(1)
+    counts: dict[str, int] = {}
+    for start in range(0, len(tables), PARITY_CHUNK):
+        union = " UNION ALL ".join(
+            count_select(name) for name in tables[start : start + PARITY_CHUNK]
         )
-    return False
+        counts.update(
+            {str(row["t"]): int(row["n"]) for row in _query_rows(db, config_words, union)}
+        )
+    return counts
+
+
+def parity_differences(
+    source: dict[str, int], target: dict[str, int], dropped: list[str]
+) -> list[str]:
+    """One line per table whose target count is not the source count (0 for a dropped table), and per table present on one side only."""
+    lines: list[str] = []
+    for name in sorted(set(source) | set(target)):
+        if name not in target:
+            lines.append("%s: missing in the target (source %d rows)" % (name, source[name]))
+            continue
+        if name not in source:
+            lines.append("%s: only in the target (%d rows)" % (name, target[name]))
+            continue
+        want = 0 if name in dropped else source[name]
+        if target[name] != want:
+            lines.append(
+                "%s: source %d, target %d, expected %d" % (name, source[name], target[name], want)
+            )
+    return lines
+
+
+def verify_row_parity(
+    source_db: str, target_db: str, config_words: list[str], dropped: list[str]
+) -> None:
+    """`--row-parity`: raise BashExitError(1) listing every table whose rows differ."""
+    log.step("Verifying per-table row parity: %s -> %s" % (source_db, target_db))
+    source = table_counts(source_db, [])
+    target = table_counts(target_db, config_words)
+    unknown = [name for name in dropped if name not in source]
+    if unknown:
+        log.error("--drop-tables names a table the source does not have: %s" % ", ".join(unknown))
+        raise BashExitError(1)
+    lines = parity_differences(source, target, dropped)
+    if lines:
+        for line in lines:
+            log.error("row parity: %s" % line)
+        raise BashExitError(1)
+    log.info(
+        "Row parity holds: %d tables, %d rows in the source" % (len(source), sum(source.values()))
+    )
 
 
 def main(argv: list[str]) -> int:
     root = str(common.repo_root())
 
     try:
-        source_db, target_db, wrangler_config, wants_sanitize = parse_argv(argv)
+        source_db, target_db, wrangler_config, wants_sanitize, drop_tables, row_parity = parse_argv(
+            argv
+        )
     except BashExitError as exc:
         return exc.code
 
@@ -566,32 +682,20 @@ def main(argv: list[str]) -> int:
 
     try:
         # --- Step 1: export ------------------------------------------------
-        log.step("Exporting D1 database: %s" % source_db)
-        export_rc = run_export(source_db, tmpdir)
-
-        # THE REDACTION, and `|| true` because `grep -v` exits 1 when it filters everything out. Its stdout is the script's stdout.
-        _run(["grep", "-v", REDACT_PATTERN, os.path.join(tmpdir, "export.log")])
-
-        if export_rc != 0:
-            log.error(
-                "wrangler d1 export %s failed (exit %d) after %d attempts; its full output "
-                "is above (R2 URL redacted)" % (source_db, export_rc, EXPORT_ATTEMPTS)
-            )
-            raise BashExitError(export_rc)
-
-        log.info(export_line_report(os.path.join(tmpdir, "export.sql")))
+        export_redacted(source_db, tmpdir)
 
         # --- Step 1.5: sanitize --------------------------------------------
         if wants_sanitize:
             sanitize(tmpdir, root)
 
         # --- Steps 2 and 3: strip, then wrap -------------------------------
-        build_import_sql(tmpdir)
+        build_import_sql(tmpdir, drop_tables)
 
         # --- Step 4: import ------------------------------------------------
         log.step("Importing into D1 database: %s" % target_db)
         status = _run(
-            execute_file_argv(target_db, config_words, os.path.join(tmpdir, "import.sql"))
+            execute_file_argv(target_db, config_words, os.path.join(tmpdir, "import.sql")),
+            cwd=wrangler_cwd(),
         )
         if status:
             raise BashExitError(status)
@@ -599,6 +703,10 @@ def main(argv: list[str]) -> int:
 
         # --- Step 5: verify ------------------------------------------------
         verify_fk(target_db, config_words)
+
+        # --- Step 6: row parity (opt-in) -----------------------------------
+        if row_parity:
+            verify_row_parity(source_db, target_db, config_words, drop_tables)
     except BashExitError as exc:
         return exc.code
     finally:

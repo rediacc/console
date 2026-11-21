@@ -10,6 +10,7 @@
 
 import { parseDurationSeconds, RPO_MIN_SECONDS, rpoProblem } from '@rediacc/shared/backup/duration';
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
+import { BACKUP_STORE_ID_PATTERN } from '@rediacc/shared/config-schema';
 import { t } from '../../i18n/index.js';
 import type { BackupStrategyDestination } from '../../types/index.js';
 import { ValidationError } from '../../utils/errors.js';
@@ -128,7 +129,7 @@ export function cpuQuotaValue(limitPercent: number, cpuCount: number): string | 
 /**
  * The cap one strategy run uploads at, in bytes/second, or undefined for none.
  *
- * Every cap that is set binds, the strategy's and each destination's, and one run is ONE upload whatever the number of destinations, so the tightest cap of them all wins: a looser destination cap never lifts the strategy's. Before this the run read only the strategy-level field, so `backup strategy set s --destination d --bwlimit 6M` stored a cap no unit ever applied.
+ * Every cap that is set binds, the strategy's and each of `destinations`. The unit generator calls it with ONE destination per snapshot command, so each destination gets its own cap and a looser one never lifts the strategy's; called with several, the tightest wins. Before this the run read only the strategy-level field, so `backup strategy set s --destination d --bwlimit 6M` stored a cap no unit ever applied.
  */
 export function effectiveBandwidthLimit(
   strategy: { bandwidthLimit?: string },
@@ -201,30 +202,132 @@ function targetsReason(strategy: ScheduledStrategy): string | undefined {
   return undefined;
 }
 
-/** An unusable destination kind, or destinations on more than one endpoint. */
-function destinationsReason(destinations: BackupStrategyDestination[]): string | undefined {
+/** The store every subscription has; a destination without a `target` writes here. */
+export const HOME_STORE_ID = 'home';
+
+/** The store id a destination writes to. */
+export function destinationTarget(dest: { target?: string }): string {
+  return dest.target ?? HOME_STORE_ID;
+}
+
+/**
+ * The non-home targets of `destinations` that the validator could not check against the account's registered stores
+ * (no list was available). The caller says so, since an offline validation covers shape and duplicates only.
+ */
+export function uncheckedTargets(
+  destinations: { target?: string }[],
+  registeredStores: readonly string[] | undefined
+): string[] {
+  if (registeredStores) return [];
+  return [...new Set(destinations.map(destinationTarget))].filter((id) => id !== HOME_STORE_ID);
+}
+
+/**
+ * An unusable destination kind, a malformed or repeated target, or (with a store list) an unregistered one.
+ *
+ * `registeredStores` is the list the CLI fetched from the account server (GET /backups/stores); the server cannot read
+ * configs, so it cannot check them itself. Absent means offline: shape and duplicates only.
+ */
+function destinationsReason(
+  destinations: BackupStrategyDestination[],
+  registeredStores: readonly string[] | undefined
+): string | undefined {
   for (const dest of destinations) {
     const reason = unschedulableDestinationReason(dest);
     if (reason) return `${reason} Refusing to generate a unit that would back up nothing.`;
   }
-  const endpoints = new Set(destinations.map((d) => d.endpoint ?? ''));
-  if (endpoints.size <= 1) return undefined;
-  return (
-    `This backup strategy has destinations on ${endpoints.size} different endpoints. ` +
-    'One run takes one snapshot to one endpoint; split the destinations into one strategy per endpoint.'
-  );
+  const seen = new Set<string>();
+  for (const dest of destinations) {
+    const reason = targetReason(dest, seen, registeredStores);
+    if (reason) return reason;
+  }
+  return replicationReason(destinations);
+}
+
+/** Whether a destination is copied server-side from another store instead of uploaded by the machine. */
+export function isReplicateDestination(dest: { mode?: string }): boolean {
+  return dest.mode === 'replicate';
+}
+
+/** The destinations a machine snapshots into: every one that is not a replicate destination. */
+export function uploadDestinations<D extends { mode?: string }>(destinations: D[]): D[] {
+  return destinations.filter((d) => !isReplicateDestination(d));
+}
+
+/**
+ * The replicate rules, over the enabled destinations the scheduler passes. A replicate destination needs `from`, a store
+ * that is not its own target and is the target of ANOTHER ENABLED UPLOAD destination of the strategy (the machine must
+ * put the snapshot there first). A source that is itself a replicate destination's target would be a chain, which the
+ * server refuses too. A strategy whose destinations are all replicate has nothing to upload and is refused.
+ */
+function replicationReason(destinations: BackupStrategyDestination[]): string | undefined {
+  const replicas = destinations.filter(isReplicateDestination);
+  if (replicas.length === 0) return undefined;
+  const uploadTargets = new Set(uploadDestinations(destinations).map(destinationTarget));
+  if (uploadTargets.size === 0) {
+    return 'Every destination of this backup strategy is a replicate destination, so no machine would upload anything. Add an enabled upload destination to copy from.';
+  }
+  const replicaTargets = new Set(replicas.map(destinationTarget));
+  for (const dest of replicas) {
+    const reason = replicaSourceReason(dest, uploadTargets, replicaTargets);
+    if (reason) return reason;
+  }
+  return undefined;
+}
+
+/** The first problem with one replicate destination's `from`. */
+function replicaSourceReason(
+  dest: BackupStrategyDestination,
+  uploadTargets: ReadonlySet<string>,
+  replicaTargets: ReadonlySet<string>
+): string | undefined {
+  const from = dest.from;
+  if (from === undefined || !BACKUP_STORE_ID_PATTERN.test(from)) {
+    return `Backup destination "${dest.name}" is a replicate destination and needs \`from\`, the store id it copies from.`;
+  }
+  if (from === destinationTarget(dest)) {
+    return `Backup destination "${dest.name}" replicates "${from}" into itself; its target must differ from \`from\`.`;
+  }
+  if (replicaTargets.has(from)) {
+    return `Backup destination "${dest.name}" replicates from "${from}", which is itself a replicate destination. A copy of a copy is not supported; replicate from the store a machine uploads to.`;
+  }
+  if (!uploadTargets.has(from)) {
+    return `Backup destination "${dest.name}" replicates from "${from}", which is not the target of another enabled upload destination of this strategy. Add or enable an upload destination that writes to "${from}".`;
+  }
+  return undefined;
+}
+
+/** The first problem with one destination's target, recording it in `seen` so a repeat is caught. */
+function targetReason(
+  dest: BackupStrategyDestination,
+  seen: Set<string>,
+  registeredStores: readonly string[] | undefined
+): string | undefined {
+  const target = destinationTarget(dest);
+  if (!BACKUP_STORE_ID_PATTERN.test(target)) {
+    return `Backup destination "${dest.name}" has target "${target}", which is not a store id (lowercase letters, digits and dashes).`;
+  }
+  if (seen.has(target)) {
+    return `Two destinations of this backup strategy name the target "${target}". Each destination is its own recovery point in its own store; point one of them at another registered store or disable it.`;
+  }
+  seen.add(target);
+  if (registeredStores && !registeredStores.includes(target)) {
+    return `Backup destination "${dest.name}" names the target "${target}", which is not a registered store. Registered stores: ${registeredStores.join(', ') || '(none)'}.`;
+  }
+  return undefined;
 }
 
 /**
  * Why a strategy cannot be turned into a unit, or undefined when it can.
  *
- * `destinations` defaults to every destination; the scheduler passes the enabled ones. One strategy run is ONE snapshot, whatever the number of destinations (renet uploads to the account server its licences name), so enabled destinations naming two different endpoints cannot both be honoured and are refused rather than half-served.
+ * `destinations` defaults to every destination; the scheduler passes the enabled ones. One run takes one snapshot per enabled destination, each into its own store, so two destinations naming the same target are refused as a duplicate. `registeredStores` is the account's store list when the caller has one; without it the targets are validated for shape and duplicates only (see uncheckedTargets).
  *
  * `exclude` is accepted: the unit generator resolves it to GUIDs and emits `--exclude-repo <guid>`.
  */
 export function strategyUnschedulableReason(
   strategy: ScheduledStrategy,
-  destinations: BackupStrategyDestination[] = strategy.destinations
+  destinations: BackupStrategyDestination[] = strategy.destinations,
+  registeredStores?: readonly string[]
 ): string | undefined {
   const reason =
     invalidCronReason(strategy.schedule) ??
@@ -238,7 +341,7 @@ export function strategyUnschedulableReason(
       ? undefined
       : cronFloorReason(strategy.verify.deepSchedule, 'Deep-verify schedule')) ??
     targetsReason(strategy) ??
-    destinationsReason(destinations);
+    destinationsReason(destinations, registeredStores);
   if (reason) return reason;
   try {
     effectiveBandwidthLimit(strategy, destinations);
@@ -255,8 +358,9 @@ export function strategyUnschedulableReason(
 /** Throwing form for the schedule path. */
 export function assertStrategySchedulable(
   strategy: ScheduledStrategy,
-  destinations: BackupStrategyDestination[] = strategy.destinations
+  destinations: BackupStrategyDestination[] = strategy.destinations,
+  registeredStores?: readonly string[]
 ): void {
-  const reason = strategyUnschedulableReason(strategy, destinations);
+  const reason = strategyUnschedulableReason(strategy, destinations, registeredStores);
   if (reason) throw new Error(reason);
 }

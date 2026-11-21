@@ -103,8 +103,34 @@ UNREADABLE = world()
 # A submodule-shaped nested repository under private/.
 WITH_SUB = world()
 G.world(WITH_SUB / "private" / "renet")
-# A repository outside the console.
+# A real console submodule: `.gitmodules` names private/renet, so red-fix there may lean on the console's open PR for the same branch (worklist #29531257).
+SUB_LISTED = world()
+G.world(SUB_LISTED / "private" / "renet")
+(SUB_LISTED / ".gitmodules").write_text(
+    '[submodule "private/renet"]\n\tpath = private/renet\n'
+    "\turl = https://github.com/fixture/renet.git\n",
+    encoding="utf-8",
+)
+# 3e82900b.1: the same submodule on a detached HEAD, where the console is never asked, so the refusal must not claim it was.
+SUB_DETACHED = world()
+G.world(SUB_DETACHED / "private" / "renet")
+G._git(SUB_DETACHED / "private" / "renet", "checkout", "-q", "--detach")
+(SUB_DETACHED / ".gitmodules").write_text(
+    '[submodule "private/renet"]\n\tpath = private/renet\n'
+    "\turl = https://github.com/fixture/renet.git\n",
+    encoding="utf-8",
+)
+# `gh pr list` answers an open PR only in the console checkout: the submodule has none yet, the live case of console PR 605.
+GH_CONSOLE_ONLY = stub(
+    "#!/bin/sh\n"
+    'if [ "$1" = api ]; then echo \'{"data":{"repository":{"pullRequests":{"nodes":[]}}}}\'; '
+    "exit 0; fi\n"
+    'case "$PWD" in */private/*) exit 0;; esac\necho 605\n'
+)
+# A repository outside the console. A push publishes to its URL (#f2e3507a), so the admitted one sends to a repository none of the judged world's remotes name, and OUTSIDE_SAME keeps the fixture's own origin, the judged world's too, which is this checkout's push.
 OUTSIDE = world()
+G._git(OUTSIDE, "remote", "set-url", "origin", "https://example.invalid/outside/scratch.git")
+OUTSIDE_SAME = world()
 
 # ---- THE BATCH (operator ruling ASKED:2026-10-08T10:25Z): PLAN-fx-a is the queue head, so it is the branch's local batch; PLAN-fx-b is a later Promoted plan, still open, so condition (b) holds in every world below.
 TICKED = "- [x] FX1 a ticked box\n"
@@ -158,6 +184,14 @@ CASES = [
         OPEN_OLD,
         GH_NONE,
         False,
+        "",
+    ),
+    (
+        "a repository outside whose origin is this checkout's",
+        "git -C %s push origin 1008-1" % OUTSIDE_SAME,
+        OPEN_OLD,
+        GH_NONE,
+        True,
         "",
     ),
     ("an empty command", "", OPEN_OLD, GH_NONE, False, ""),
@@ -247,6 +281,59 @@ CASES = [
         GH_DOWN,
         False,
         "UNVERIFIED",
+    ),
+    # ---- red-fix in a submodule (worklist #29531257): the console's open PR on the same branch is the live PR
+    (
+        "red-fix submodule push, console PR open",
+        "cd private/renet && " + (R % "red-fix: console PR 605 needs the submodule half") + PUSH,
+        SUB_LISTED,
+        GH_CONSOLE_ONLY,
+        False,
+        "",
+    ),
+    (
+        "red-fix first submodule PR, console PR open",
+        "cd private/renet && "
+        + (R % "red-fix: console PR 605 needs the submodule half")
+        + "gh pr create --repo fixture/renet --head 1008-1 -t x -b y",
+        SUB_LISTED,
+        GH_CONSOLE_ONLY,
+        False,
+        "",
+    ),
+    (
+        "red-fix submodule PR, no open PR anywhere",
+        "cd private/renet && "
+        + (R % "red-fix: console PR 605 needs the submodule half")
+        + "gh pr create --repo fixture/renet --head 1008-1 -t x -b y",
+        SUB_LISTED,
+        GH_NONE,
+        True,
+        "has no open PR here or in the console",
+    ),
+    (
+        "red-fix submodule on a detached HEAD does not claim the console was checked",
+        "cd private/renet && " + (R % "red-fix: console PR 605 needs the submodule half") + PUSH,
+        SUB_DETACHED,
+        GH_NONE,
+        True,
+        "`(detached)` has no open PR, so",
+    ),
+    (
+        "red-fix nested repo not in .gitmodules, console PR open",
+        "cd private/renet && " + (R % "red-fix: console PR 605 needs the submodule half") + PUSH,
+        WITH_SUB,
+        GH_CONSOLE_ONLY,
+        True,
+        "has no open PR, so",
+    ),
+    (
+        "red-fix in the console with no open PR",
+        (R % "red-fix: lint red on the live PR, fixed here") + PUSH,
+        SUB_LISTED,
+        GH_NONE,
+        True,
+        "has no open PR, so",
     ),
     # ---- deadline
     (
@@ -405,6 +492,14 @@ CASES = [
     ),
 ]
 
+# BOX G5 OF PLAN-local-first-delivery: the shared backup-ref cases (`_backup_push.CASES`), in a turbo world with an open Promoted box, so every push it does not admit is refused here.
+BP = importlib.import_module("rediacc_hooks.guards._backup_push")
+BACKUP_WORLDS = {True: BP.plant(world()), False: BP.plant(world(), pinned=False)}
+CASES += [
+    (label, command, BACKUP_WORLDS[pinned], GH_NONE, not admitted, "")
+    for label, command, pinned, admitted in BP.CASES
+]
+
 BROKEN_RUNNER = (
     "import sys; sys.path.insert(0, %r)\n"
     "from rediacc_hooks import hookio\n"
@@ -412,7 +507,7 @@ BROKEN_RUNNER = (
     "old, new = %r\n"
     "import ast\n"
     "cut = [n for n in ast.parse(src).body if isinstance(n, ast.Assign)"
-    " and any(isinstance(t, ast.Name) and t.id == 'DEFECT' for t in n.targets)]\n"
+    " and any(isinstance(t, ast.Name) and t.id in ('DEFECT', 'TWO_TREE_DEFECT') for t in n.targets)]\n"
     "outside = '\\n'.join(l for i, l in enumerate(src.split('\\n'), 1)"
     " if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut))\n"
     "assert old in outside, 'the defect no longer applies outside the DEFECT declaration'\n"
@@ -594,6 +689,195 @@ for defect, pick, what in BATCH_DEFECTS:
             % (defect[1].strip(), len(moved), len(chosen))
         )
         fails += 1
+
+# ---- two trees (box LT12 of agent/plans/PLAN-two-track-merge-dev.md) ----------------------
+# The open-plan world's checkout moved to the development branch 1009-1 while a linked worktree, the landing tree, holds the PR branch 1008-1, with the landing record in the common git dir. The development branch's push and its draft PR need no reason while the landing PR is open (operator ruling ASKED:2026-11-20T18:46Z); a ready PR, anything naming the landing branch, and every command in the landing tree keep the refusal. With no record the same push is refused, as before.
+DEV_BRANCH, LANDING_BRANCH = "1009-1", "1008-1"
+
+
+def two_trees(record=True):
+    main = pathlib.Path(os.path.realpath(world(date=NOW)))
+    landing = main.parent / "landing"
+    G._git(main, "checkout", "-q", "-b", DEV_BRANCH)
+    G._git(main, "worktree", "add", "-q", str(landing), LANDING_BRANCH)
+    if record:
+        (main / ".git" / "rediacc-landing.json").write_text(
+            json.dumps({"path": str(landing), "branch": LANDING_BRANCH}), encoding="utf-8"
+        )
+    return main, landing
+
+
+TT_M, TT_L = two_trees()
+NR_M, NR_L = two_trees(record=False)
+TWO_TREE_CASES = [
+    # (name, command, root, gh, want_blocked, flips under TWO_TREE_DEFECT)
+    (
+        "a push of the development branch",
+        "git push -u origin %s" % DEV_BRANCH,
+        TT_M,
+        GH_NONE,
+        False,
+        True,
+    ),
+    ("a bare push of the development branch", "git push", TT_M, GH_NONE, False, True),
+    (
+        "a draft PR from the development tree",
+        "gh pr create --draft -t x -b y",
+        TT_M,
+        GH_NONE,
+        False,
+        True,
+    ),
+    ("a ready PR from the development tree", "gh pr create -t x -b y", TT_M, GH_NONE, True, False),
+    (
+        "the development tree pushing the landing branch",
+        "git push origin %s" % LANDING_BRANCH,
+        TT_M,
+        GH_NONE,
+        True,
+        False,
+    ),
+    (
+        "HEAD pushed onto the landing branch",
+        "git push origin HEAD:%s" % LANDING_BRANCH,
+        TT_M,
+        GH_NONE,
+        True,
+        False,
+    ),
+    (
+        "a draft PR headed by the landing branch",
+        "gh pr create --draft --head %s -t x -b y" % LANDING_BRANCH,
+        TT_M,
+        GH_NONE,
+        True,
+        False,
+    ),
+    (
+        "the landing tree's own push",
+        "git push origin %s" % LANDING_BRANCH,
+        TT_L,
+        GH_NONE,
+        True,
+        False,
+    ),
+    (
+        "a draft PR from the landing tree",
+        "gh pr create --draft -t x -b y",
+        TT_L,
+        GH_NONE,
+        True,
+        False,
+    ),
+    (
+        "no record: the development branch's push",
+        "git push -u origin %s" % DEV_BRANCH,
+        NR_M,
+        GH_NONE,
+        True,
+        False,
+    ),
+    (
+        "landing root: the development branch pushed from the main checkout",
+        "git -C %s push -u origin %s" % (TT_M, DEV_BRANCH),
+        TT_L,
+        GH_NONE,
+        False,
+        True,
+    ),
+    # A push to this checkout's own origin publishes from any clone, so with no record the sibling's push is judged as this checkout's (`commit_policy.scoped_repo`), and with one it is judged as the landing tree's.
+    (
+        "no record: the sibling tree's push from the development root",
+        "git -C %s push origin %s" % (NR_L, LANDING_BRANCH),
+        NR_M,
+        GH_NONE,
+        True,
+        False,
+    ),
+    (
+        "development root: the landing branch pushed from the landing tree",
+        "git -C %s push origin %s" % (TT_L, LANDING_BRANCH),
+        TT_M,
+        GH_NONE,
+        True,
+        False,
+    ),
+]
+# THE SCOPE CASES (box LT11): a command typed in the sibling tree is judged in that tree, where `is_inside(repo, root)` skipped a PR as a scratch repository's and judged a push as the session root's own. Each flips under SCOPE_DEFECT, the bound trees cut to the session root.
+SCOPE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
+SCOPE_CASES = [
+    (
+        "landing root: the development branch pushed from the main checkout",
+        "git -C %s push -u origin %s" % (TT_M, DEV_BRANCH),
+        TT_L,
+        GH_NONE,
+        False,
+    ),
+    (
+        "development root: a draft PR typed in the landing tree",
+        "cd %s && gh pr create --draft -t x -b y" % TT_L,
+        TT_M,
+        GH_NONE,
+        True,
+    ),
+    (
+        "landing root: a ready PR typed in the main checkout",
+        "cd %s && gh pr create -t x -b y" % TT_M,
+        TT_L,
+        GH_NONE,
+        True,
+    ),
+]
+for name, command, root, gh, want, _flips in TWO_TREE_CASES:
+    got, err = run(command, root, gh)
+    blocked += got
+    ok = got == want
+    fails += not ok
+    print(
+        "%-60s want=%-8s got=%-8s %s"
+        % (
+            "two trees: " + name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+for name, command, root, gh, want in SCOPE_CASES:
+    got, err = run(command, root, gh)
+    planted, _ = run(command, root, gh, broken=SCOPE_DEFECT)
+    ok = got == want and planted != want
+    fails += not ok
+    print(
+        "%-60s want=%-8s got=%-8s planted=%-8s %s"
+        % (
+            "two trees: " + name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "BLOCKED" if planted else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if got != want:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+_dev_rows = [json.loads(line) for line in ledger_lines(TT_M)]
+_admitted = sum(1 for c in TWO_TREE_CASES if c[2] is TT_M and not c[4])
+if len(_dev_rows) != _admitted or {r["kind"] for r in _dev_rows} != {G.DEVELOPMENT_KIND}:
+    print(
+        "*** FAIL *** development ledger: want %d `%s` line(s), got %r"
+        % (_admitted, G.DEVELOPMENT_KIND, [(r["act"], r["kind"]) for r in _dev_rows])
+    )
+    fails += 1
+else:
+    print("development ledger: %d `%s` line(s)" % (len(_dev_rows), G.DEVELOPMENT_KIND))
+_flipping = [c for c in TWO_TREE_CASES if c[5]]
+_moved = [c[0] for c in _flipping if run(c[1], c[2], c[3], broken=G.TWO_TREE_DEFECT)[0] != c[4]]
+if _flipping and len(_moved) == len(_flipping):
+    print("TWO_TREE_DEFECT control: %d admission(s) flipped to refused" % len(_moved))
+else:
+    print("*** FAIL *** TWO_TREE_DEFECT control: %d of %d moved" % (len(_moved), len(_flipping)))
+    fails += 1
 
 if blocked in (0, len(CASES)):
     print("*** FAIL *** the guard answered the same way on every case")

@@ -95,6 +95,9 @@ SKIP_SUFFIXES = (
     ".gz",
 )
 
+# JSON translation catalogs are not implementations of the BLOCKER contract: a catalog of UI strings holds the one-word status labels a CLI prints as quoted values, and a 3,300-line `cli.json` reaches the table threshold by vocabulary alone (en 11, de, fr, it, pt 10, on 2026-11-07, after `rdc repo health` added its finding texts). Skipped by DIRECTORY and extension, never by file name, so a new locale needs no edit here; the skipped count is part of the inventory message and a test below proves the skip is live, so it cannot decay into a blanket `.json` skip.
+TRANSLATION_CATALOG = re.compile(r"(^|/)i18n/(locales|translations)/.+\.json$")
+
 
 # --------------------------------------------------------------------------- Extractors ---------------------------------------------------------------------------
 
@@ -131,7 +134,7 @@ def files_carrying_a_table() -> dict[str, int]:
     found: dict[str, int] = {}
     scanned = 0
     for rel in tracked_files():
-        if rel.endswith(SKIP_SUFFIXES):
+        if rel.endswith(SKIP_SUFFIXES) or TRANSLATION_CATALOG.search(rel):
             continue
         path = ROOT / rel
         if not path.is_file():
@@ -176,6 +179,21 @@ def test_the_set_of_files_carrying_a_phrase_table_is_the_known_set():
     )
     # 4 since PLAN-retire-bash-oracles section 12 U1 deleted the bash mirror (`.ci/scripts/lib/blocker-validator.sh`); 6 since PLAN-retire-bash-oracles B3 deleted check-submodule-branches.sh, whose reply table its port still carries; 5 since review_report_replies.py was retired with the PR-level Claude review (2026-10-02); 6 again since wl_prreview.py restored that review's reply tool (2026-10-03); 5 since wl_prreview.py imports review_comments' table through rediacc_hooks.syspath.import_from_ci instead of carrying a copy.
     assert len(found) == 4, "inventory shape changed: %s" % shape
+
+
+def test_the_translation_catalog_skip_is_narrow_and_live():
+    """The skip covers locale JSON and nothing else: a table in code, or in JSON outside a catalog directory, is still inventoried, and the pattern still matches real tracked catalogs (so it is not a dead exemption)."""
+    assert TRANSLATION_CATALOG.search("packages/cli/src/i18n/locales/de/cli.json")
+    assert TRANSLATION_CATALOG.search("packages/www/src/i18n/translations/en.json")
+    for rel in (
+        ".ci/rediacc_ci/core/allowlist.py",
+        "scripts/lib/blocker-validator.ts",
+        "packages/cli/src/i18n/locales/de/cli.ts",
+        "config/phrases.json",
+    ):
+        assert not TRANSLATION_CATALOG.search(rel), rel
+    live = [rel for rel in tracked_files() if TRANSLATION_CATALOG.search(rel)]
+    assert len(live) >= 10, "the catalog skip matches %d tracked file(s); it is dead" % len(live)
 
 
 def test_the_inventory_detector_would_find_a_planted_table():

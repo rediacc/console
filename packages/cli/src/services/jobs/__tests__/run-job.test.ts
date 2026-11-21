@@ -185,6 +185,39 @@ describe('exactly once', () => {
   });
 });
 
+describe('step timings', () => {
+  it('times the claim exec and each step that ran, in run order, so a command can print them', async () => {
+    const ticket = addTicket([UP()], 'succeeded');
+    const machine = fakeMachine();
+    const h = handlers(['postRepoUpTasks'], 15);
+    const report = await runTicketSteps(
+      store,
+      ticket,
+      { state: 'succeeded' },
+      stepDeps(machine.claim, h.resolve)
+    );
+    expect(report.timings?.map((t) => t.name)).toEqual(['claim', 'postRepoUpTasks']);
+    const step = report.timings?.[1];
+    // The handler's own delay is inside the step's time, and so is its done marker.
+    expect(step?.duration_ms).toBeGreaterThanOrEqual(15);
+    expect(step?.startedAtMs).toBeGreaterThan(0);
+  });
+
+  it('a step another observer finished is not timed as run here', async () => {
+    const ticket = addTicket([UP()], 'succeeded');
+    const machine = fakeMachine();
+    await machine.claim({ machine: 'm1', jobId: JOB_ID, steps: ['postRepoUpTasks'] });
+    await machine.claim({ machine: 'm1', jobId: JOB_ID, steps: ['postRepoUpTasks'], done: true });
+    const report = await runTicketSteps(
+      store,
+      ticket,
+      { state: 'succeeded' },
+      stepDeps(machine.claim, handlers(['postRepoUpTasks']).resolve)
+    );
+    expect(report.timings?.map((t) => t.name)).toEqual(['claim']);
+  });
+});
+
 describe('success and failure', () => {
   it('a success step never runs on a failed job', async () => {
     const ticket = addTicket([UP(), ROLLBACK()], 'failed');
@@ -355,6 +388,72 @@ describe('runJob', () => {
     expect(result.ticket.steps.map((s) => s.name)).toEqual(['postRepoUpTasks']);
     expect(h.ran).toEqual([]);
     expect(machine.calls).toEqual([]);
+  });
+
+  describe('a retried start of one request id', () => {
+    const planFor = (guid: string) => [planStep('postRepoUpTasks', { repo: guid, machine: 'm1' })];
+    const pendingCall = (): JobCall<{ ok: true }> => ({
+      verb: 'repo commit',
+      function: 'repository_commit',
+      machine: 'm1',
+      start: async () => ({ kind: 'pending', jobId: JOB_ID }),
+    });
+    const refusingCall = (): JobCall<{ ok: true }> => ({
+      ...pendingCall(),
+      start: () => Promise.reject(new Error('BUSY')),
+    });
+    const deps = () => ({
+      store,
+      steps: stepDeps(fakeMachine().claim, handlers(['postRepoUpTasks']).resolve),
+      mintRequestId: () => 'r1',
+    });
+
+    it('keeps the first plan, which is the one the deduped job carries', async () => {
+      await runJob(pendingCall(), planFor('guid-first'), deps());
+      const retried = await runJob(pendingCall(), planFor('guid-retry'), deps());
+
+      expect(store.tickets()).toHaveLength(1);
+      expect(retried.ticket.steps[0].params).toMatchObject({ repo: 'guid-first' });
+    });
+
+    it('keeps the first plan while the first start has no answer yet', async () => {
+      store.append('starting', 'r1', { steps: toTicketSteps(planFor('guid-first')) });
+      const retried = await runJob(pendingCall(), planFor('guid-retry'), deps());
+
+      expect(retried.ticket.steps[0].params).toMatchObject({ repo: 'guid-first' });
+    });
+
+    it('takes the retry plan and reopens the ticket after a refused first start', async () => {
+      await expect(runJob(refusingCall(), planFor('guid-first'), deps())).rejects.toThrow('BUSY');
+      store.append('acknowledged', 'r1', { state: 'unknown' });
+
+      const retried = await runJob(pendingCall(), planFor('guid-retry'), deps());
+
+      expect(retried.ticket.steps[0].params).toMatchObject({ repo: 'guid-retry' });
+      expect(retried.ticket.acknowledged).toBe(false);
+      expect(store.pending().map((t) => t.requestId)).toEqual(['r1']);
+    });
+
+    it('keeps an acknowledged ticket closed when the retry meets a job that already ran', async () => {
+      await runJob(pendingCall(), planFor('guid-first'), deps());
+      store.append('finished', 'r1', { state: 'succeeded', exitCode: 0 });
+      store.append('acknowledged', 'r1', { state: 'succeeded' });
+
+      await runJob(pendingCall(), planFor('guid-retry'), deps());
+
+      expect(store.tickets().find((t) => t.requestId === 'r1')?.acknowledged).toBe(true);
+      expect(store.pending().map((t) => t.requestId)).toEqual([]);
+    });
+
+    it('control: a different request id keeps its own plan', async () => {
+      await runJob(pendingCall(), planFor('guid-first'), deps());
+      const other = await runJob(pendingCall(), planFor('guid-other'), {
+        ...deps(),
+        mintRequestId: () => 'r2',
+      });
+
+      expect(other.ticket.steps[0].params).toMatchObject({ repo: 'guid-other' });
+    });
   });
 });
 

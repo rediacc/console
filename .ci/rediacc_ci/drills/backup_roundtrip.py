@@ -24,7 +24,7 @@ THE PROOF NEEDS THE VM, so it is run by an operator; the port's logic (ordering,
 
 DELIBERATE DELTAS FROM THE BASH (Rule T), each with a test that fails on the bash behaviour:
 
-  * THE SOURCE LICENCE IS INSTALLED BEFORE `repository create`. The bash created the repo first (`local-roundtrip.sh:126` before `:133`), which only a nolicense renet accepts; an enforcing renet refuses a create with no installed licence for the guid.
+  * THE SOURCE LICENCE IS INSTALLED BEFORE `repository create`. The bash created the repo first (`local-roundtrip.sh:126` before `:133`), which a licence-enforcing renet refuses: a create with no installed licence for the guid fails.
   * SSH GOES AS THE PROVISIONED USER WITH THE STAGED KEY. The bash ssh'd to a hardcoded account with no identity file; the fleet provisions `$USER` and authorizes only `~/.renet/staging/.ssh/id_rsa` (`vm_ssh`).
   * AN SSH FAILURE IS NOT "renet missing". The bash's preflight read any non-zero exit, an auth refusal (255) included, as a missing binary.
 
@@ -41,6 +41,7 @@ import http.client
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import time
@@ -64,7 +65,13 @@ SCOPES = [
     "backup:manage",
 ]
 CLIENT_MACHINE_ID = pathlib.Path("/etc/machine-id")
+# `license.datastoreIDPattern`: what renet accepts as a license-store scope.
+DATASTORE_ID = re.compile(r"^[0-9a-fA-F-]{8,64}$")
 LOGIN_PHRASE = "RoundTrip123!"  # a throwaway local-plane account, created and used only here
+
+
+# What the descriptor probe prints when the datastore has no descriptor at all.
+NO_DESCRIPTOR = "NO-DATASTORE-DESCRIPTOR"
 
 
 class StepError(Exception):
@@ -145,6 +152,30 @@ class Api:
         except ValueError as exc:
             raise StepError("%s %s -> not JSON: %s" % (method, path, raw[:80])) from exc
 
+    def accept_terms(self) -> bool:
+        """Accept the current Terms for the logged-in throwaway account, as the portal checkbox does; every `/portal` route answers 403 TERMS_ACCEPTANCE_REQUIRED until then. True when it accepted, False when already satisfied. Any other answer raises StepError."""
+        status = self.call("GET", "/portal/terms")
+        if not isinstance(status.get("satisfied"), bool):
+            raise StepError("the Terms status carries no boolean `satisfied`: %r" % (status,))
+        if status["satisfied"]:
+            return False
+        current = status.get("current") or {}
+        if not current.get("version") or not current.get("sha256"):
+            raise StepError("the Terms status names no current version: %r" % (status,))
+        answer = self.call(
+            "POST",
+            "/portal/terms/accept",
+            {
+                "version": current["version"],
+                "sha256": current["sha256"],
+                "locale": "en",
+                "method": "web-checkbox",
+            },
+        )
+        if answer.get("accepted") is not True:
+            raise StepError("the Terms acceptance was refused: %r" % (answer,))
+        return True
+
     def healthy(self) -> bool:
         try:
             status, _ = self._request("GET", "/health", None, 5)
@@ -175,6 +206,7 @@ class Roundtrip:
         self.say = say or print
         self.failures = 0
         self.created: list[str] = []
+        self._license_root: str | None = None
 
     # ---------------------------------------------------------------- reporting
 
@@ -214,6 +246,7 @@ class Roundtrip:
             "POST", "/test/ensure-subscription", {"email": email, "planCode": "PROFESSIONAL"}
         )["subscriptionId"]
         self.api.call("POST", "/auth/login", creds)
+        self.api.accept_terms()
         token = self.api.call(
             "POST",
             "/api-tokens",
@@ -224,14 +257,37 @@ class Roundtrip:
         self.api.cookies.clear()
         return sub
 
-    def issue_license(self, guid: str, grand: str, kind: str) -> None:
-        """Mint a licence server-side and install it where renet reads it.
+    def license_root(self) -> str:
+        """The directory renet reads repo licences from for `self.datastore`: the flat `repos` population, or `datastores/<id>/repos` when the datastore carries a descriptor identity (`license.RepoLicenseBaseDir`). Resolved once per run from the descriptor on the VM. An absent descriptor, or one renet cannot read an identity from, is the flat population, as `datastore.IdentityAt` answers; a probe that fails (ssh, sudo) raises, because guessing the flat root on a scoped datastore installs the licence where renet never reads it."""
+        if self._license_root is None:
+            root = "/var/lib/rediacc/license/repos"
+            descriptor = "%s/.rediacc/datastore.json" % self.datastore
+            probe = self.run_vm(
+                "sudo -n sh -c 'if [ -e %s ]; then cat %s; else echo %s; fi'"
+                % (descriptor, descriptor, NO_DESCRIPTOR),
+                must=False,
+            )
+            if probe.returncode != 0:
+                raise StepError(
+                    "cannot read the datastore descriptor %s on the machine (exit %d): %s"
+                    % (descriptor, probe.returncode, (probe.stderr or probe.stdout).strip())
+                )
+            ident = ""
+            if probe.stdout.strip() != NO_DESCRIPTOR:
+                try:
+                    ident = str(json.loads(probe.stdout).get("datastoreId", ""))
+                except (ValueError, AttributeError):
+                    ident = ""
+            if DATASTORE_ID.fullmatch(ident):
+                root = "/var/lib/rediacc/license/datastores/%s/repos" % ident
+            self._license_root = root
+        return self._license_root
 
-        The filename is the blob's own publicKeyId, so licences from different account universes coexist instead of clobbering.
-        """
+    def fetch_license(self, guid: str, grand: str, kind: str) -> dict:
+        """Ask the account server this drill talks to for a repo licence."""
         machine_id = self.run_vm("sudo -n renet machine-id").stdout.strip("\r\n")
         client_id = CLIENT_MACHINE_ID.read_text(encoding="utf-8").strip()
-        license_doc = self.api.call(
+        doc = self.api.call(
             "POST",
             "/licenses/activate-repo",
             {
@@ -243,16 +299,25 @@ class Roundtrip:
                 "requestedSizeGb": 1,
             },
         )["license"]
+        return dict(doc)
+
+    def issue_license(self, guid: str, grand: str, kind: str) -> None:
+        """Mint a licence server-side and install it where renet reads it.
+
+        The filename is the blob's own publicKeyId, so licences from different account universes coexist instead of clobbering.
+        """
+        license_doc = self.fetch_license(guid, grand, kind)
         blob = self.work / "lic.json"
         blob.write_text(json.dumps(license_doc, indent=2), encoding="utf-8")
         blob.chmod(0o600)
-        target = "/var/lib/rediacc/license/repos/%s/%s.json" % (guid, license_doc["publicKeyId"])
+        directory = "%s/%s" % (self.license_root(), guid)
+        target = "%s/%s.json" % (directory, license_doc["publicKeyId"])
         self.run_vm("cat > /tmp/rt-lic.json", blob.read_text(encoding="utf-8"))
         self.run_vm(
-            "sudo -n mkdir -p /var/lib/rediacc/license/repos/%s && "
+            "sudo -n mkdir -p %s && "
             "sudo -n cp /tmp/rt-lic.json %s && "
             "sudo -n chmod 640 %s && "
-            "rm -f /tmp/rt-lic.json" % (guid, target, target)
+            "rm -f /tmp/rt-lic.json" % (directory, target, target)
         )
 
     def create_source(self, src: str) -> None:
@@ -339,7 +404,7 @@ class Roundtrip:
         for guid in self.created:
             self.run_vm("sudo -n renet repository unmount --name %s" % guid, must=False)
             self.run_vm("sudo -n renet repository delete --name %s --force" % guid, must=False)
-            self.run_vm("sudo -n rm -rf /var/lib/rediacc/license/repos/%s" % guid, must=False)
+            self.run_vm("sudo -n rm -rf %s/%s" % (self.license_root(), guid), must=False)
         self.run_vm("rm -f /tmp/rt_pass.txt", must=False)
         if self.created:
             self.say("removed repos %s and their licences" % " and ".join(self.created))
@@ -394,6 +459,13 @@ class Roundtrip:
             "manifest index carries the snapshot",
             snap,
             str(listed[0]["snapshotId"]) if listed else "",
+        )
+        # A run with no hook declares crash consistency on its commit: the listing must say so, so a run
+        # that stopped declaring (or one that claimed an application quiesce it never had) is visible here.
+        self.check(
+            "the commit declared its consistency",
+            "crash-consistent",
+            str(listed[0].get("consistency", "")) if listed else "",
         )
         usage = self.api.call("GET", "/backups/usage")
         self.check(

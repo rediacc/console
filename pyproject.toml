@@ -311,6 +311,10 @@ ignore = [
 ]
 # THE `.ci` PROGRAMS WHOSE JOB IS TO SURVIVE THEIR OWN FAILURE, one file each.
 # Every other `.ci` file is held to BLE001 and narrows its except.
+".ci/rediacc_ci/ops/deploy_bench.py" = [
+    # BLOCKER: rediacc_ci.core.local_common writes the checkout (stamps, gypi, key cache), and login_bench, ops_health and portal_sitekey_guard import this module, so a module-level import would make each a transitive tree writer for check:ci-gate-tree-writes; the portal build step imports it where it runs
+    "PLC0415",
+]
 ".ci/rediacc_ci/ci/publish_ci_verdict.py" = [
     # BLOCKER: a verdict or status publisher has to post `unknown` rather than crash, because a crash or a render bug loses the verdict the run already produced, and a status note or sample must never change or break the caller it reports for
     "BLE001",

@@ -112,7 +112,9 @@ def _rm(argv: list[str]) -> tuple[int, str]:
 
 
 def main(argv: list[str]) -> int:
-    del argv  # the twin parses nothing; extra arguments are ignored by both
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
 
     try:
         awscli.require()

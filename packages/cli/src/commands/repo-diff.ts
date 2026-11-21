@@ -1,11 +1,15 @@
+import { DEFAULTS } from '@rediacc/shared/config';
 import chalk from 'chalk';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { ensureRepositoryNetworkId } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
-import { writeStdout } from '../services/core/request-context.js';
-import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
+import { setExitCode, writeStdout } from '../services/core/request-context.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
+import { optStr } from '../services/jobs/steps-support.js';
+import type { OutputFormat } from '../types/index.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
@@ -226,15 +230,15 @@ type DiffMode =
   | { kind: 'content'; path: string }
   | { kind: 'render'; render: (d: DiffResult) => void };
 
-function pickRenderer(options: DiffOptions, asJson: boolean): (d: DiffResult) => void {
-  if (asJson) return (d) => outputService.print(d, 'json');
+function pickRenderer(options: DiffOptions, format: OutputFormat): (d: DiffResult) => void {
+  if (format !== 'table') return (d) => outputService.print(d, format);
   if (options.nameOnly) return renderNameOnly;
   if (options.stat) return renderStat;
   return renderNameStatus;
 }
 
 /** Pick the single output mode, enforcing mutual exclusivity. */
-function selectMode(options: DiffOptions, asJson: boolean): DiffMode {
+function selectMode(options: DiffOptions, format: OutputFormat): DiffMode {
   const contentMode = options.content !== undefined;
   const formats = [options.nameOnly, options.stat, contentMode].filter(Boolean).length;
   if (formats > 1) {
@@ -246,13 +250,13 @@ function selectMode(options: DiffOptions, asJson: boolean): DiffMode {
     }
     return { kind: 'content', path: options.content };
   }
-  return { kind: 'render', render: pickRenderer(options, asJson) };
+  return { kind: 'render', render: pickRenderer(options, format) };
 }
 
 async function runDiff(ref: string, options: DiffOptions): Promise<void> {
-  // JSON output rides the global -o json (the per-command --json flag is retired).
-  const asJson = getOutputFormat() === 'json';
-  const mode = selectMode(options, asJson);
+  // Structured output rides the global -o format (the per-command --json flag is retired).
+  const format = getOutputFormat();
+  const mode = selectMode(options, format);
   const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref, { readOnly: true });
   const { baseGuid, targetGuid } = await resolveBaseTarget(repoKey, options.base);
   if (baseGuid === targetGuid) {
@@ -272,33 +276,72 @@ async function runDiff(ref: string, options: DiffOptions): Promise<void> {
     })
   );
 
-  const result: ExecuteResult = await getExecutor().execute({
-    functionName: 'repository_diff',
-    machineName,
-    ...(kubeCluster !== undefined && { kubeCluster }),
-    // #74: both sides of the diff are GUIDs inside this family, so the family's recorded placement is the datastore renet must read them from.
-    datastore: await recordedDatastoreMount(repoKey),
-    params: { repository: repoKey, ...params },
-    debug: options.debug,
-    skipRouterRestart: options.skipRouterRestart,
-    captureOutput: true,
-  });
-
-  if (!result.success) {
-    // renderLocalExecutionFailure sets renet's own exit code (1 when it reported none).
-    renderLocalExecutionFailure(result, result.error ?? t('commands.repo.diff.failed'));
+  // The render is the job's step, so a ticket handed back early prints nothing half-done.
+  const outcome = await runCommandJob(
+    'repo diff',
+    {
+      functionName: 'repository_diff',
+      machineName,
+      ...(kubeCluster !== undefined && { kubeCluster }),
+      // #74: both sides of the diff are GUIDs inside this family, so the family's recorded placement is the datastore renet must read them from.
+      datastore: await recordedDatastoreMount(repoKey),
+      params: { repository: repoKey, ...params },
+      debug: options.debug,
+      skipRouterRestart: options.skipRouterRestart,
+      captureOutput: true,
+    },
+    [planStep('renderRepoDiff', { mode: modeName(options), format, path: modePath(mode) })]
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
     return;
   }
-  renderResult(mode, result.stdout ?? '', asJson);
+  if (!outcome.result.success) {
+    // renderLocalExecutionFailure sets renet's own exit code (1 when it reported none).
+    renderLocalExecutionFailure(
+      outcome.result,
+      outcome.result.error ?? t('commands.repo.diff.failed')
+    );
+  }
 }
 
+/** The output form the render step reproduces from its params. */
+function modeName(options: DiffOptions): string {
+  if (options.content !== undefined) return 'content';
+  if (options.nameOnly) return 'name-only';
+  if (options.stat) return 'stat';
+  return 'name-status';
+}
+
+const DEFAULT_DIFF_MODE = 'name-status';
+
+function modePath(mode: DiffMode): string {
+  return mode.kind === 'content' ? mode.path : '';
+}
+
+bindStepHandler('renderRepoDiff', ({ output, params }) => {
+  const name = optStr(params, 'mode') ?? DEFAULT_DIFF_MODE;
+  const format = (optStr(params, 'format') ?? DEFAULTS.CONTEXT.OUTPUT_FORMAT) as OutputFormat;
+  const path = optStr(params, 'path');
+  const mode: DiffMode =
+    name === 'content' && path !== undefined
+      ? { kind: 'content', path }
+      : {
+          kind: 'render',
+          render: pickRenderer({ nameOnly: name === 'name-only', stat: name === 'stat' }, format),
+        };
+  renderResult(mode, output ?? '', format);
+  return Promise.resolve();
+});
+
 /** Parse the renet JSON payload and render it per the selected mode. */
-function renderResult(mode: DiffMode, stdout: string, asJson: boolean): void {
+function renderResult(mode: DiffMode, stdout: string, format: OutputFormat): void {
   if (mode.kind === 'content') {
     const c = extractJson<ContentDiffResult>(stdout);
     if (!c) throw new Error(t('commands.repo.diff.failed'));
-    if (asJson) outputService.print(c, 'json');
-    else renderContent(c);
+    if (format === 'table') renderContent(c);
+    else outputService.print(c, format);
     return;
   }
   const d = extractJson<DiffResult>(stdout);

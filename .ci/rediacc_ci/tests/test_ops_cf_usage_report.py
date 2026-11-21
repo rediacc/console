@@ -23,6 +23,19 @@ CEILINGS = {
     "r2_class_b_month": 100,
     "d1_storage_bytes": 1000,
 }
+# The real container ceilings (the `report` object of cf-spend-guard.json); the account-wide keys above are loosened per test.
+CONTAINER_CEILINGS = {
+    "containers_memory_gib_seconds_month": 20_000_000,
+    "containers_vcpu_seconds_month": 2_500_000,
+    "containers_total_usd_month": 350,
+    "containers_target_usd_month": 50,
+    "containers_bench_target_usd_month": 10,
+}
+
+APPLICATIONS = [
+    {"id": "app1", "name": "proxy-eu-orgexecutor"},
+    {"id": "bench1", "name": "proxy-bench-orgexecutor"},
+]
 
 DATA = {
     "r2StorageAdaptiveGroups": [
@@ -72,6 +85,9 @@ class Fake:
         self.loki_down = loki_down
         self.telemetry = telemetry
         self.gql_status = gql_status
+        self.apps = APPLICATIONS
+        self.apps_status = 200
+        self.pages: dict[int, list] | None = None
         self.calls: list = []
 
     def __call__(self, method, url, headers, body):
@@ -85,6 +101,13 @@ class Fake:
                 "data": {"viewer": {"accounts": [{name: self.data[name]}]}},
                 "errors": None,
             }
+        if "/containers/applications" in url:
+            page = int(urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)["page"][0])
+            if self.apps_status != 200:
+                return self.apps_status, None
+            if self.pages is not None:
+                return 200, {"result": self.pages.get(page, [])}
+            return 200, {"result": self.apps if page == 1 else []}
         if "/uid/loki/" in url:
             if self.loki_down:
                 return 502, None
@@ -103,7 +126,13 @@ class Fake:
 
 def go(fake, ceilings=None):
     out = io.StringIO()
-    rc = ur.run(ENV, fake, now=NOW, ceilings=ceilings or dict.fromkeys(CEILINGS, 10**12), out=out)
+    rc = ur.run(
+        ENV,
+        fake,
+        now=NOW,
+        ceilings=ceilings or (dict.fromkeys(CEILINGS, 10**12) | CONTAINER_CEILINGS),
+        out=out,
+    )
     return rc, out.getvalue()
 
 
@@ -120,7 +149,7 @@ def test_under_budget_is_exit_0_and_folds_the_reads():
 
 
 def test_one_bucket_over_the_ceiling_is_exit_1_and_named():
-    ceilings = dict.fromkeys(CEILINGS, 10**12) | {"r2_storage_bytes": 100}
+    ceilings = (dict.fromkeys(CEILINGS, 10**12) | CONTAINER_CEILINGS) | {"r2_storage_bytes": 100}
     rc, text = go(Fake(), ceilings)
     assert rc == 1
     assert "OVER r2.storage.total.bytes value=105 ceiling=100" in text
@@ -177,27 +206,38 @@ def test_no_secret_reaches_the_output_or_a_body(capsys):
     assert fake.calls[0][2] == {"Authorization": "Bearer %s" % TOKEN}
 
 
+def _write_report(tmp_path, report):
+    (tmp_path / ".ci/config").mkdir(parents=True, exist_ok=True)
+    (tmp_path / ur.CONFIG_REL).write_text(json.dumps({"report": report}))
+
+
 def test_ceilings_come_from_the_json_report_object(tmp_path):
-    (tmp_path / ".ci/config").mkdir(parents=True)
-    (tmp_path / ur.CONFIG_REL).write_text(
-        json.dumps({"report": {"r2_storage_bytes": 7, "bogus": 1}})
-    )
+    _write_report(tmp_path, dict.fromkeys(ur.CEILING_KEYS, 5) | {"r2_storage_bytes": 7, "bogus": 1})
     got = ur.load_ceilings(tmp_path)
     assert got["r2_storage_bytes"] == 7.0
-    assert got["workers_requests_month"] == ur.DEFAULT_CEILINGS["workers_requests_month"]
+    assert got["workers_requests_month"] == 5.0
     assert "bogus" not in got
-    assert ur.load_ceilings(tmp_path / "missing") == ur.DEFAULT_CEILINGS
+    assert set(got) == set(ur.CEILING_KEYS)
 
 
-def test_default_ceilings_agree_with_the_ruled_report_object():
-    """Review 24da2fcc.1: a duplicated default drifted (100 against the ruled 350); every ruled key must equal its default."""
-    report = json.loads(
-        (ur.Path(__file__).resolve().parents[2] / "config/cf-spend-guard.json").read_text()
-    )["report"]
-    ruled = {k: v for k, v in report.items() if k in ur.DEFAULT_CEILINGS}
-    assert ruled, "the report object must carry ceilings"
-    for key, value in ruled.items():
-        assert ur.DEFAULT_CEILINGS[key] == value, key
+def test_a_missing_ceiling_key_raises(tmp_path):
+    for key in ur.CEILING_KEYS:
+        _write_report(tmp_path, {k: 5 for k in ur.CEILING_KEYS if k != key})
+        with pytest.raises(ur.ReportError, match=key):
+            ur.load_ceilings(tmp_path)
+
+
+def test_a_missing_file_or_report_object_raises(tmp_path):
+    with pytest.raises(ur.ReportError):
+        ur.load_ceilings(tmp_path / "missing")
+    (tmp_path / ".ci/config").mkdir(parents=True)
+    (tmp_path / ur.CONFIG_REL).write_text("{}")
+    with pytest.raises(ur.ReportError, match="report"):
+        ur.load_ceilings(tmp_path)
+
+
+def test_the_real_report_object_carries_every_ceiling():
+    assert set(ur.load_ceilings()) == set(ur.CEILING_KEYS)
 
 
 def test_malformed_ceiling_json_is_an_error_not_the_defaults(tmp_path):
@@ -209,7 +249,9 @@ def test_malformed_ceiling_json_is_an_error_not_the_defaults(tmp_path):
 
 
 def test_container_usage_over_the_ceiling_is_exit_1_and_names_the_cost():
-    ceilings = dict.fromkeys(CEILINGS, 10**12) | {"containers_memory_gib_seconds_month": 40}
+    ceilings = (dict.fromkeys(CEILINGS, 10**12) | CONTAINER_CEILINGS) | {
+        "containers_memory_gib_seconds_month": 40
+    }
     rc, text = go(Fake(), ceilings)
     assert rc == 1
     assert "OVER containers.app.app1 gib_seconds=50 (ceiling 40)" in text
@@ -226,7 +268,8 @@ def test_container_usage_over_the_ceiling_is_exit_1_and_names_the_cost():
     }
     rc, text = go(
         Fake(data=data),
-        dict.fromkeys(CEILINGS, 10**12) | {"containers_memory_gib_seconds_month": 3_000_000},
+        (dict.fromkeys(CEILINGS, 10**12) | CONTAINER_CEILINGS)
+        | {"containers_memory_gib_seconds_month": 3_000_000},
     )
     assert rc == 1
     assert "est_cost_usd=10.00" in text
@@ -265,7 +308,9 @@ def test_container_total_over_the_account_ceiling_is_exit_1_though_each_app_is_u
         }
         for n in range(3)
     ]
-    ceilings = dict.fromkeys(CEILINGS, 10**12) | {"containers_total_usd_month": 50}
+    ceilings = (dict.fromkeys(CEILINGS, 10**12) | CONTAINER_CEILINGS) | {
+        "containers_total_usd_month": 50
+    }
     rc, text = go(Fake(data=DATA | {"containersMetricsAdaptiveGroups": rows}), ceilings)
     assert rc == 1
     assert "OVER containers.total est_cost_usd=" in text
@@ -287,7 +332,7 @@ def _one_app(usd_memory: float, usd_vcpu: float) -> dict:
 
 
 # The real per-metric ceilings (each about 50 USD alone) and the per-target dollar ceiling.
-TARGET_CEILINGS = dict.fromkeys(CEILINGS, 10**12) | {
+TARGET_CEILINGS = (dict.fromkeys(CEILINGS, 10**12) | CONTAINER_CEILINGS) | {
     "containers_memory_gib_seconds_month": 20_000_000,
     "containers_vcpu_seconds_month": 2_500_000,
     "containers_target_usd_month": 50,
@@ -305,3 +350,99 @@ def test_a_target_at_20_usd_memory_plus_20_usd_vcpu_is_not_over():
     rc, text = go(Fake(data=_one_app(20, 20)), TARGET_CEILINGS)
     assert rc == 0, text
     assert "OK   containers.app.app1" in text
+
+
+def _app_usd(app_id: str, usd: float) -> dict:
+    """A container row whose estimated cost is `usd`, all of it memory."""
+    return DATA | {
+        "containersMetricsAdaptiveGroups": [
+            {
+                "dimensions": {"applicationId": app_id},
+                "sum": {
+                    "cpuTimeSec": 0.0,
+                    "allocatedMemory": usd / ur.CONTAINERS_USD_PER_GIB_SECOND * 2**30,
+                },
+            }
+        ]
+    }
+
+
+def test_a_bench_proxy_application_at_12_usd_is_over_its_10_usd_ceiling():
+    rc, text = go(Fake(data=_app_usd("bench1", 12)), TARGET_CEILINGS)
+    assert rc == 1, text
+    assert "OVER containers.app.bench1" in text
+    assert "est_cost_usd=12.00 (ceiling 10.00) bench proxy" in text
+
+
+def test_a_production_proxy_application_at_12_usd_stays_under_its_50_usd_ceiling():
+    rc, text = go(Fake(data=_app_usd("app1", 12)), TARGET_CEILINGS)
+    assert rc == 0, text
+    assert "OK   containers.app.app1" in text
+    assert "(ceiling 50.00)" in text
+    assert "bench proxy" not in text
+
+
+def test_a_bench_proxy_application_at_8_usd_is_not_over():
+    rc, text = go(Fake(data=_app_usd("bench1", 8)), TARGET_CEILINGS)
+    assert rc == 0, text
+    assert "OK   containers.app.bench1" in text
+
+
+def test_a_failed_application_listing_is_exit_2(capsys):
+    fake = Fake()
+    fake.apps_status = 403
+    rc, _ = go(fake)
+    assert rc == 2
+    assert "containers application listing: answered 403" in capsys.readouterr().err
+
+
+def _full_page(prefix: str) -> list[dict]:
+    return [
+        {"id": "%s%d" % (prefix, i), "name": "%s-app-%d" % (prefix, i)}
+        for i in range(ur.CONTAINER_PAGE_SIZE)
+    ]
+
+
+def test_the_application_listing_walks_every_full_page_and_stops_at_a_short_one():
+    fake = Fake()
+    fake.pages = {1: _full_page("a"), 2: _full_page("b"), 3: [{"id": "c0", "name": "tail"}]}
+    names = ur.container_app_names(fake, {}, "acct")
+    assert len(names) == 2 * ur.CONTAINER_PAGE_SIZE + 1
+    assert names["c0"] == "tail"
+    assert names["b99"] == "b-app-99"
+    pages = [int(u.rsplit("page=", 1)[1]) for _m, u, _h, _b in fake.calls]
+    assert pages == [1, 2, 3]
+    # control: a short first page is the whole listing, and no second page is asked for
+    one = Fake()
+    one.pages = {1: [{"id": "x", "name": "only"}], 2: _full_page("z")}
+    assert ur.container_app_names(one, {}, "acct") == {"x": "only"}
+    assert len(one.calls) == 1
+
+
+def test_a_listing_that_never_ends_is_a_report_error(monkeypatch):
+    monkeypatch.setattr(ur, "CONTAINER_MAX_PAGES", 2)
+    fake = Fake()
+    fake.pages = {1: _full_page("a"), 2: _full_page("b"), 3: _full_page("c")}
+    with pytest.raises(ur.ReportError, match="more than 2 pages"):
+        ur.container_app_names(fake, {}, "acct")
+
+
+@pytest.mark.parametrize(
+    "row", [{"id": "app9"}, {"name": "proxy-bench-orgexecutor"}, {"id": "", "name": "x"}, "app9"]
+)
+def test_a_listed_row_without_an_id_or_a_name_is_a_report_error(row, capsys):
+    fake = Fake()
+    fake.apps = [*APPLICATIONS, row]
+    rc, _ = go(fake)
+    assert rc == 2
+    assert "has no id or no name" in capsys.readouterr().err
+    # control: the listing without that row reports normally
+    assert go(Fake())[0] != 2
+
+
+def test_every_bench_proxy_worker_of_regions_json_is_a_bench_application():
+    assert ur.bench_container_app_names() == {
+        "proxy-bench-orgexecutor",
+        "proxy-bench-us-orgexecutor",
+        "proxy-bench-asia-orgexecutor",
+    }

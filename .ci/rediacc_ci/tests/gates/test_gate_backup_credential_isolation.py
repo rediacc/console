@@ -1,12 +1,13 @@
 """`check:ci-backup-credential-isolation`, driven as a process over a fixture root built from the real tree's own files.
 
-WHAT THIS ADDS TO THE GATE'S OWN `--selftest`. The controls prove each rule as a function on small fixtures. Here the entry point runs end to end with `--root` pointing at a scratch copy of the five real inputs (deploy_bench.py, secret-supply.json, regions.json, wrangler.bench.toml, cd-deploy-account.yml) plus a rotation-scopes file, so the corpus discovery, the census, the SKIP for an absent scopes file and the exit codes are proven on the shapes the tree really has. One plant per rule must turn the run red.
+WHAT THIS ADDS TO THE GATE'S OWN `--selftest`. The controls prove each rule as a function on small fixtures. Here the entry point runs end to end with `--root` pointing at a scratch copy of the five real inputs (deploy_bench.py, secret-supply.json, regions.json, wrangler.bench-eu.toml, cd-deploy-account.yml) plus a rotation-scopes file, so the corpus discovery, the census, the SKIP for an absent scopes file and the exit codes are proven on the shapes the tree really has. One plant per rule must turn the run red.
 """
 
 import json
 import pathlib
 import shutil
 import sys
+import tomllib
 
 import pytest
 
@@ -19,7 +20,9 @@ COPIED = (
     ".ci/rediacc_ci/ops/deploy_bench.py",
     ".ci/config/secret-supply.json",
     "regions.json",
-    "workers/account/wrangler.bench.toml",
+    "workers/account/wrangler.bench-eu.toml",
+    "workers/account/wrangler.bench-us.toml",
+    "workers/account/wrangler.bench-asia.toml",
     ".github/workflows/cd-deploy-account.yml",
 )
 SCOPES_REL = "private/account/scripts/rotation/r2-backup-tokens.json"
@@ -28,6 +31,14 @@ ITEM_PERMS = ["Workers R2 Storage Bucket Item Read", "Workers R2 Storage Bucket 
 
 def _scopes() -> dict:
     regions = json.loads((ROOT / "regions.json").read_text(encoding="utf-8"))["regions"]
+
+    def bench_bucket(region: str) -> str:
+        toml = tomllib.loads(
+            (ROOT / "workers" / "account" / ("wrangler.bench-%s.toml" % region)).read_text(
+                encoding="utf-8"
+            )
+        )
+        return next(b["bucket_name"] for b in toml["r2_buckets"] if b["binding"] == "BACKUP_BUCKET")
 
     def buckets(field: str) -> list[dict]:
         out = []
@@ -44,7 +55,7 @@ def _scopes() -> dict:
             "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_" + env,
         ]
 
-    # The shape B1 writes (private/account/scripts/rotation/r2-backup-tokens.json): one shared permission list and a `tokens` table with camelCase name lists.
+    # The shape B1 writes (private/account/scripts/rotation/r2-backup-tokens.json): one shared permission list and a `tokens` table with camelCase name lists. Four tokens: the shared set's (stable) and one bench per region.
     return {
         "$comment": "fixture",
         "permissions": ITEM_PERMS,
@@ -54,15 +65,13 @@ def _scopes() -> dict:
                 "buckets": buckets("backupR2"),
                 "bitwardenSecretNames": names("STABLE"),
             },
-            "cf-r2-backup-edge": {
-                "environment": "edge",
-                "buckets": buckets("edgeBackupR2"),
-                "bitwardenSecretNames": names("EDGE"),
-            },
-            "cf-r2-backup-bench": {
-                "environment": "bench",
-                "buckets": [{"name": "rediacc-backups-bench"}],
-                "bitwardenSecretNames": names("BENCH"),
+            **{
+                "cf-r2-backup-bench-%s" % r: {
+                    "environment": "bench-%s" % r,
+                    "buckets": [{"name": bench_bucket(r)}],
+                    "bitwardenSecretNames": names("BENCH_%s" % r.upper()),
+                }
+                for r in ("eu", "us", "asia")
             },
         },
     }
@@ -101,13 +110,14 @@ def test_selftest_passes():
 def test_the_real_tree_is_clean():
     result = harness.run([sys.executable, str(GATE)], cwd=ROOT)
     assert result.rc == 0, result.combined
-    assert "1 stable fetches, 1 edge fetches" in result.err
+    assert "1 stable fetches" in result.err
+    assert "edge fetches" not in result.err
 
 
 def test_a_fixture_of_the_real_inputs_is_clean_and_compares_the_scopes(tmp_path):
     result = _gate(_root(tmp_path))
     assert result.rc == 0, result.combined
-    assert "3 token scopes" in result.err
+    assert "4 token scopes" in result.err
     assert "SKIP" not in result.combined
 
 
@@ -129,7 +139,7 @@ PLANTS = [
     (
         "profile-source",
         ".ci/config/secret-supply.json",
-        '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"',
+        '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"',
         '"CLOUDFLARE_R2_ACCESS_KEY_ID > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"',
     ),
     (
@@ -141,8 +151,14 @@ PLANTS = [
     (
         "workflow-pair",
         ".github/workflows/cd-deploy-account.yml",
-        "if: inputs.target != 'stable'",
-        "if: inputs.target == 'stable'",
+        "      - name: Fetch the backup key pair from Bitwarden\n",
+        "      - name: Fetch the backup key pair from Bitwarden\n        if: inputs.target == 'stable'\n",
+    ),
+    (
+        "workflow-pair",
+        ".github/workflows/cd-deploy-account.yml",
+        "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE",
+        "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE",
     ),
     (
         "workflow-source",
@@ -153,13 +169,23 @@ PLANTS = [
     (
         "rotation-scopes",
         SCOPES_REL,
-        '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH"',
+        '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU"',
         '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE"',
     ),
+    (
+        "rotation-scopes",
+        SCOPES_REL,
+        '"tokens": {',
+        (
+            '"tokens": {"cf-r2-backup-edge": {"environment": "edge", "buckets": [], '
+            '"bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE"]}, '
+        ),
+    ),
 ]
+PLANT_IDS = ["%s-%d" % (p[0], i) for i, p in enumerate(PLANTS)]
 
 
-@pytest.mark.parametrize(("rule", "rel", "old", "new"), PLANTS, ids=[p[0] for p in PLANTS])
+@pytest.mark.parametrize(("rule", "rel", "old", "new"), PLANTS, ids=PLANT_IDS)
 def test_one_plant_per_rule_turns_the_run_red(tmp_path, rule, rel, old, new):
     root = _root(tmp_path)
     _plant(root, rel, old, new)

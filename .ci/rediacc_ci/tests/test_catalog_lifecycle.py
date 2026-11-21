@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import stat
+import subprocess
 import time
 from typing import TYPE_CHECKING
 
@@ -53,6 +55,13 @@ def env(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib.Path
     docker = bindir / "docker"
     docker.write_text(DOCKER_STUB, encoding="utf-8")
     docker.chmod(docker.stat().st_mode | stat.S_IXUSR)
+    renet = bindir / "renet"
+    renet.write_text("#!/bin/bash\nexit 0\n", encoding="utf-8")
+    renet.chmod(renet.stat().st_mode | stat.S_IXUSR)
+    work = tmp_path / "repo-mount"
+    work.mkdir()
+    monkeypatch.setenv("REDIACC_NETWORK_ID", "2816")
+    monkeypatch.setenv("REDIACC_WORKING_DIR", str(work))
     (tmp_path / "ps_ok.json").write_text(PS_OK, encoding="utf-8")
     (tmp_path / "ps_bad.json").write_text(PS_STARTING, encoding="utf-8")
     monkeypatch.setenv("PATH", "%s:/usr/local/bin:/usr/bin:/bin" % bindir)
@@ -380,3 +389,114 @@ def test_original_network_mode_is_kept(env: pathlib.Path, monkeypatch: pytest.Mo
     assert lifecycle.main([], package_dir=env) == 0
     assert not any(line.startswith("docker network") for line in _docker_log(env))
     assert os.environ["REPOSITORY_NETWORK_MODE"] == "mine"
+
+
+SOLR_REDIACCFILE = os.path.join(
+    os.path.dirname(__file__),
+    "../../../packages/json/templates/databases/solr/Rediaccfile",
+)
+
+
+def _run_solr_up(workdir: pathlib.Path, chown_rc: int) -> tuple[int, list[str], str]:
+    """Source the real solr Rediaccfile with `renet` replaced by a recording stub whose chown one-shot answers `chown_rc`."""
+    log = workdir / "renet.log"
+    script = f"""
+renet() {{
+    echo "$*" >> {shlex.quote(str(log))}
+    case "$*" in
+        *--entrypoint\\ chown*) return {chown_rc} ;;
+    esac
+    return 0
+}}
+sleep() {{ :; }}
+source {shlex.quote(os.path.abspath(SOLR_REDIACCFILE))}
+up
+"""
+    done = subprocess.run(
+        ["bash", "-c", script],
+        cwd=workdir,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=60,
+    )
+    calls = log.read_text().splitlines() if log.exists() else []
+    return done.returncode, calls, done.stdout
+
+
+def test_solr_up_stops_when_the_root_chown_one_shot_fails(tmp_path: pathlib.Path) -> None:
+    """Review 42a84c60.2: Solr must not start on a data directory that was not handed to uid 8983."""
+    rc, calls, stdout = _run_solr_up(tmp_path, chown_rc=1)
+    assert rc != 0
+    assert any("--entrypoint chown" in call for call in calls)
+    assert not any("up -d" in call for call in calls), calls
+    assert "Starting Apache Solr" not in stdout
+
+
+def test_solr_up_control_a_passing_chown_starts_solr(tmp_path: pathlib.Path) -> None:
+    rc, calls, stdout = _run_solr_up(tmp_path, chown_rc=0)
+    assert rc == 0
+    assert any("up -d" in call for call in calls), calls
+    assert "Starting Apache Solr" in stdout
+
+
+# ---------------------------------------------------------------------------- the precondition
+
+
+def test_refuses_to_start_without_a_licensed_repo_session(
+    env: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """No network id: exit 1 at once, name the command that provides it, run no template and write no results."""
+    _template(env, "cat1/good")
+    monkeypatch.delenv("REDIACC_NETWORK_ID")
+    started = time.monotonic()
+    rc = lifecycle.main([], package_dir=env)
+    err = capsys.readouterr().err
+    assert rc == 1
+    assert time.monotonic() - started < 5
+    assert "Refusing to start" in err
+    assert "REDIACC_NETWORK_ID" in err
+    assert "rdc term <repo>" in err
+    assert not (env / "test-results.json").exists()
+    assert _docker_log(env) == []
+
+
+@pytest.mark.parametrize("value", ["0", "abc", ""])
+def test_a_zero_or_malformed_network_id_is_refused(
+    env: pathlib.Path, monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    _template(env, "cat1/good")
+    monkeypatch.setenv("REDIACC_NETWORK_ID", value)
+    assert lifecycle.main([], package_dir=env) == 1
+    assert not (env / "test-results.json").exists()
+
+
+def test_refuses_without_renet_on_path(
+    env: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _template(env, "cat1/good")
+    (env.parent / "bin" / "renet").unlink()
+    monkeypatch.setenv("PATH", str(env.parent / "bin"))
+    assert lifecycle.main([], package_dir=env) == 1
+    assert "`renet` is not on PATH" in capsys.readouterr().err
+
+
+def test_refuses_a_working_dir_inside_the_template_tree(
+    env: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A secret written under the source tree would sit one staging command from a commit."""
+    directory = _template(env, "cat1/good")
+    monkeypatch.setenv("REDIACC_WORKING_DIR", str(directory))
+    assert lifecycle.main([], package_dir=env) == 1
+    assert "inside the template source tree" in capsys.readouterr().err
+
+
+def test_a_satisfied_precondition_proceeds(env: pathlib.Path) -> None:
+    _template(env, "cat1/good")
+    assert lifecycle.main([], package_dir=env) == 0
+    assert _results(env)["summary"]["passed"] == 1
+
+
+def test_help_needs_no_repo_session(env: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("REDIACC_NETWORK_ID")
+    assert lifecycle.main(["--help"], package_dir=env) == 0

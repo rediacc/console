@@ -77,6 +77,44 @@ const SCAN_ROOTS = [
 // The gate test's seam; see the header.
 const FIXTURE_ROOT = process.env.EXTERNAL_LINKS_FIXTURE_ROOT || undefined;
 
+// UNRELEASED SITE PAGES. A `${WK_SITE_ORIGIN}/<lang>/<path>` link that production answers 404 or 410, while `packages/www/src/pages/[lang]/<path>.astro` exists in this tree, cites a page the next release ships, not a dead one: measured 2026-11-12, docs/legal/enterprise-order-form.md cited four legal pages the same branch added, and run 43143370918 failed on all four. Such a link is named under its own heading and never fails the run. Only a static page file counts (no dynamic segment, no content collection), in a locale the site builds and with the shared `getLanguagePaths` generator, and a fixture run keeps every 404 a break unless the gate test names a stub site origin. check:ci-redirects separately refuses a redirect rule that would shadow that page once it ships.
+const SITE_PAGES_DIR = 'packages/www/src/pages/[lang]';
+const SITE_LOCALES_DIR = 'packages/www/src/i18n/translations';
+const SHARED_LOCALE_PATHS = /^export const getStaticPaths = getLanguagePaths;\s*$/m;
+
+// A fixture run resolves the page in its own tree, and only when the gate test names the stub that stands in for the site; unset, every fixture 404 stays a break.
+const SITE_ORIGIN = FIXTURE_ROOT ? process.env.EXTERNAL_LINKS_SITE_ORIGIN || null : WK_SITE_ORIGIN;
+const SITE_ROOT = FIXTURE_ROOT ?? process.cwd();
+
+function unreleasedSitePage(url: string): string | null {
+  if (!SITE_ORIGIN) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+  if (parsed.origin !== SITE_ORIGIN) return null;
+  const m = parsed.pathname
+    .replace(/\/$/, '')
+    .match(/^\/([a-z]{2}(?:-[a-z]+)?)\/([a-z0-9-]+(?:\/[a-z0-9-]+)*)$/);
+  if (!m?.[1] || !m[2]) return null;
+  // The locale must be one the site builds (a translations file in the tree), so /zz/<page> stays a break.
+  if (!fs.existsSync(path.join(SITE_ROOT, SITE_LOCALES_DIR, `${m[1]}.json`))) return null;
+  for (const rel of [`${m[2]}.astro`, `${m[2]}/index.astro`]) {
+    const file = path.join(SITE_PAGES_DIR, rel);
+    let text: string;
+    try {
+      text = fs.readFileSync(path.join(SITE_ROOT, file), 'utf8');
+    } catch {
+      continue;
+    }
+    // Only a page built for every locale by the shared generator is sure to ship with the next release; a page with its own path list may leave this locale out.
+    return SHARED_LOCALE_PATHS.test(text) ? file : null;
+  }
+  return null;
+}
+
 const CONCURRENCY = 5;
 // THE OUTAGE BREAKER. With no network every link spends the full retry budget, which over this corpus outlasts the job's timeout and would end the run as a cancelled step rather than as the finding below. Once this many links in a row have come back unreachable and not one host has answered, the rest are not asked: the run is red either way, and the finding names the hosts that were tried.
 const OUTAGE_BREAKER = 20;
@@ -573,8 +611,10 @@ async function processQueue(entries: LinkEntry[]): Promise<{
   excluded: number;
   knownBroken: number;
   checked: number;
+  unreleased: Array<{ entry: LinkEntry; page: string }>;
 }> {
   const broken: LinkEntry[] = [];
+  const unreleased: Array<{ entry: LinkEntry; page: string }> = [];
   const unreachable: Array<{ who: string; url: string; err: NotCompared }> = [];
   const notAskedUrls: string[] = [];
   const skipped: LinkEntry[] = [];
@@ -626,6 +666,12 @@ async function processQueue(entries: LinkEntry[]): Promise<{
       }
       answered++;
       if (result.kind === 'broken') {
+        const page =
+          result.status === 404 || result.status === 410 ? unreleasedSitePage(entry.url) : null;
+        if (page) {
+          unreleased.push({ entry, page });
+          continue;
+        }
         broken.push(entry);
         console.error(`  BROKEN [${result.status}]: ${entry.url}`);
         for (const loc of entry.locations) {
@@ -638,7 +684,17 @@ async function processQueue(entries: LinkEntry[]): Promise<{
   const workers = Array.from({ length: CONCURRENCY }, () => worker());
   await Promise.all(workers);
 
-  return { broken, unreachable, notAsked, notAskedUrls, skipped, excluded, knownBroken, checked };
+  return {
+    broken,
+    unreachable,
+    notAsked,
+    notAskedUrls,
+    skipped,
+    excluded,
+    knownBroken,
+    checked,
+    unreleased,
+  };
 }
 
 /** The first place a link is cited, and how many more there are. */
@@ -863,8 +919,17 @@ async function main() {
   );
   console.log('Checking links...\n');
 
-  const { broken, unreachable, notAsked, notAskedUrls, skipped, excluded, knownBroken, checked } =
-    await processQueue(entries);
+  const {
+    broken,
+    unreachable,
+    notAsked,
+    notAskedUrls,
+    skipped,
+    excluded,
+    knownBroken,
+    checked,
+    unreleased,
+  } = await processQueue(entries);
 
   console.log('Auditing allowlist liveness...\n');
   const liveness = await auditAllowlist(allLinks, skipped);
@@ -878,6 +943,7 @@ async function main() {
   console.log(`  Excluded (patterns):${excluded}`);
   console.log(`  Skipped (allowlist):${skipped.length}`);
   console.log(`  Known-broken (tracked):${knownBroken}`);
+  console.log(`  Unreleased (in tree):${unreleased.length}`);
   console.log(`  Broken:            ${broken.length}`);
   console.log(`  Not answered:      ${unreachable.length}`);
   console.log(`  Not asked (outage):${notAsked}`);
@@ -921,6 +987,13 @@ async function main() {
     console.log(`\n  WARNING: KNOWN_BROKEN links that now answer 2xx:`);
     for (const url of liveness.healed) console.log(`    - ${url}`);
     console.log(`    Fixed upstream. Delete the TREE_KNOWN_BROKEN entry.`);
+  }
+
+  if (unreleased.length > 0) {
+    console.log(`\n  Site pages this tree adds, not live until the next release (not failed):`);
+    for (const { entry, page } of unreleased) {
+      console.log(`    - ${entry.url}  (${page}; cited at ${where(entry)})`);
+    }
   }
 
   if (knownBroken > 0) {

@@ -35,9 +35,7 @@ GOLDEN_USAGE = {
     ),
     "fix": "Usage: ./run.sh fix [format|lint|shell|all]",
 }
-GOLDEN_DRILL_USAGE = (
-    "Usage: ./run.sh drill [universe|transfer|license|backup|backup-onprem|vmcheck] [--selftest]"
-)
+GOLDEN_DRILL_USAGE = "Usage: ./run.sh drill [universe|transfer|license|backup|backup-onprem|backup-elite-compose|vmcheck] [--selftest]"
 
 
 def noting(log: list, item, result=0):

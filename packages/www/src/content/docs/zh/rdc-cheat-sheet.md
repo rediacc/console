@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: zh
-sourceHash: "44f85425f17be08c"
+sourceHash: "c0ca05a2167060d2"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -143,6 +143,17 @@ sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 | `rdc machine add <machine> --ip <host> --user <user>` | 向配置中添加机器 |
 | `rdc backup strategy set ...` | 定义命名备份策略 |
 | `rdc --config <name> <command>` | 使用命名配置文件 |
+
+## 反馈
+
+| 命令 | 说明 |
+|------|------|
+| `rdc feedback report --last` | 预览由最近一次失败命令生成的报告;加上 `--yes` 即可发送 |
+| `rdc feedback report --command <n>` | 报告一条已记录的命令(1 为最新) |
+| `rdc feedback report --list-recent` | 列出已记录的命令后退出 |
+| `rdc feedback report --message <text> [--kind bug\|feedback\|docs]` | 不依赖失败命令,报告一条备注 |
+| `rdc feedback list [--status <list>]` | 列出报告的 ID、指纹、状态和日期;已修复的报告显示为 `fixed-in-v<version>` |
+| `rdc feedback show <id>` | 按 ID 或唯一前缀显示单个报告 |
 
 ## 调试与直接访问
 

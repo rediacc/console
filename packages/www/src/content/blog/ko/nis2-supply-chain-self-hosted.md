@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: ko
-sourceHash: "c1a20432472d9452"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "02a3f195c73de031"
+sourceCommit: "ddf4affc88b6a49d8b23351f99d04e19870444f3"
 translatedFrom: en
 ---
 
@@ -124,7 +124,7 @@ Hetzner에서 Rediacc으로 이전 후:
 
 | 필드 | 이후 |
 |---|---|
-| 벤더 | (1) Rediacc OÜ, 소프트웨어 라이선스; (2) Hetzner, IaaS |
+| 벤더 | (1) [Rediacc](/ko/legal-information), 소프트웨어 라이선스; (2) Hetzner, IaaS |
 | 티어 | (1) 비중요(데이터 플레인 없음); (2) 중요(데이터 플레인, 단 고객 통제) |
 | 처리 데이터 | (1) 없음; (2) 암호화된 볼륨, 고객이 키 보유 |
 | 하위 처리자 | (1) 셀프호스팅에 해당 없음; (2) Hetzner 내부 전용, DPA에 명시 |

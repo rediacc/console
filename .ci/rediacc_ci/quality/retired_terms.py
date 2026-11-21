@@ -30,6 +30,8 @@ WHERE IT REFUSES AND WHERE IT ADVISES, and the split follows ownership:
     adds one, and it refuses while any submodule is NOT CHECKED, because a drain
     judged without a submodule would read that submodule's debt as fixed.
 
+A PLAN EXEMPTION, `plan_exempt` on one term: a list of `{glob, blocker}` entries naming plans that may keep naming THAT term without citing its retirement, because they record the old name on purpose (a rename's own history, say) and a citation would be noise. It is per term and plans only: an item has no path to match, and a file is the shipped system, which `file_baseline` and the marker already cover. A glob is matched against the plan's repository-relative path, `*` and `?` inside one path segment and `**` across segments. Every entry is refused unless it carries a `BLOCKER:` reason `allowlist.validate_reason` accepts; an entry whose glob matches ZERO live plans is CANNOT RUN (rc 2), the `file_exclusions` rule; and an entry that matches a live plan it does not excuse (the plan no longer names the term, or now cites the retirement) is WIDE and refused (rc 1), so a glob can never cover more than the plans that need it and narrows as they are rewritten. Every exempted pair prints as `EXEMPT` on every run, so the exemption stays visible. Prefer the citation: a plan that can name the retirement plan in one word needs no exemption.
+
 THE IDENTITY OF A SUBJECT IS ITS OWN CITATION. An item whose id appears in `retired_by`, and a plan whose stem does, are the retirement itself and are never findings. A path in `retired_by` is matched by its STEM (`PLAN-backup-program`), because a plan moves exactly once at close, from `agent/plans/` into `_done/`, and a citation must survive that move.
 
 ANTI-VACUITY, in the gate rather than in anybody's memory of having checked:
@@ -92,12 +94,22 @@ class CannotRunError(Exception):
 
 
 @dataclasses.dataclass(frozen=True)
+class Exemption:
+    """One `plan_exempt` entry: the plans matching `glob` may name the term without citing its retirement."""
+
+    glob: str
+    regex: re.Pattern[str]
+    blocker: str
+
+
+@dataclasses.dataclass(frozen=True)
 class Term:
     id: str
     regex: re.Pattern[str]
     retired: str
     reason: str
     retired_by: tuple[str, ...]
+    plan_exempt: tuple[Exemption, ...] = ()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -149,6 +161,39 @@ def cites_retirement(subject: Subject, term: Term) -> bool:
     return False
 
 
+def glob_regex(glob: str) -> re.Pattern[str]:
+    """A path glob as a full-match regex: `**` crosses `/`, `*` and `?` stay inside one segment."""
+    out = []
+    i = 0
+    while i < len(glob):
+        if glob.startswith("**/", i):
+            out.append("(?:.*/)?")
+            i += 3
+        elif glob.startswith("**", i):
+            out.append(".*")
+            i += 2
+        elif glob[i] == "*":
+            out.append("[^/]*")
+            i += 1
+        elif glob[i] == "?":
+            out.append("[^/]")
+            i += 1
+        else:
+            out.append(re.escape(glob[i]))
+            i += 1
+    return re.compile("".join(out) + r"\Z")
+
+
+def exemption_for(subject: Subject, term: Term) -> Exemption | None:
+    """The `plan_exempt` entry of `term` covering `subject`, or None. Plans only: an item has no path."""
+    if subject.kind != "plan":
+        return None
+    for ex in term.plan_exempt:
+        if ex.regex.match(subject.key):
+            return ex
+    return None
+
+
 def excerpt(text: str, m: re.Match[str], width: int = 60) -> str:
     lo = max(0, m.start() - width)
     hi = min(len(text), m.end() + width)
@@ -156,8 +201,7 @@ def excerpt(text: str, m: re.Match[str], width: int = 60) -> str:
     return ("..." if lo else "") + out + ("..." if hi < len(text) else "")
 
 
-def judge(subjects: list[Subject], terms: list[Term]) -> list[Finding]:
-    """Every (subject, term) where the subject names the term and cites none of its retirements."""
+def _raw_findings(subjects: list[Subject], terms: list[Term]) -> list[Finding]:
     out = []
     for subject in subjects:
         for term in terms:
@@ -165,6 +209,47 @@ def judge(subjects: list[Subject], terms: list[Term]) -> list[Finding]:
             if m and not cites_retirement(subject, term):
                 out.append(Finding(subject, term, excerpt(subject.text, m)))
     return out
+
+
+def judge(subjects: list[Subject], terms: list[Term]) -> list[Finding]:
+    """Every (subject, term) where the subject names the term, cites none of its retirements, and no `plan_exempt` entry covers it."""
+    return [f for f in _raw_findings(subjects, terms) if exemption_for(f.subject, f.term) is None]
+
+
+def exempted(subjects: list[Subject], terms: list[Term]) -> list[tuple[Finding, Exemption]]:
+    """Every finding a `plan_exempt` entry excused, with that entry, so the render can print it."""
+    out = []
+    for f in _raw_findings(subjects, terms):
+        ex = exemption_for(f.subject, f.term)
+        if ex is not None:
+            out.append((f, ex))
+    return out
+
+
+def exemption_problems(plans: list[Subject], terms: list[Term]) -> tuple[list[str], list[str]]:
+    """(dead, wide): entries matching no live plan, and live plans an entry matches without excusing them.
+
+    DEAD is CANNOT RUN, because an exemption that matches nothing is a config defect, not a verdict. WIDE is a refusal: the glob covers a plan that does not name the term (or now cites the retirement), so it is broader than the debt it excuses and is narrowed or deleted.
+    """
+    dead: list[str] = []
+    wide: list[str] = []
+    for term in terms:
+        for ex in term.plan_exempt:
+            matched = [p for p in plans if ex.regex.match(p.key)]
+            if not matched:
+                dead.append(
+                    "term %r: plan_exempt %r matches no live plan; delete the entry, an "
+                    "exemption must not outlive what it excuses" % (term.id, ex.glob)
+                )
+                continue
+            wide.extend(
+                "term %r: plan_exempt %r covers %s, which does not name the term without "
+                "citing its retirement; narrow the glob or delete the entry"
+                % (term.id, ex.glob, p.key)
+                for p in matched
+                if not _raw_findings([p], [term])
+            )
+    return dead, wide
 
 
 def parse_terms(doc: dict) -> tuple[list[Term], list[str]]:
@@ -228,8 +313,38 @@ def parse_terms(doc: dict) -> tuple[list[Term], list[str]]:
             for t in negatives
             if regex.search(t)
         )
-        terms.append(Term(tid, regex, retired, reason, retired_by))
+        exemptions, ex_problems = _parse_plan_exempt(where, entry.get("plan_exempt"))
+        problems.extend(ex_problems)
+        terms.append(Term(tid, regex, retired, reason, retired_by, exemptions))
     return terms, problems
+
+
+def _parse_plan_exempt(where: str, raw: object) -> tuple[tuple[Exemption, ...], list[str]]:
+    """One term's `plan_exempt` entries, and every reason one cannot be trusted. Absent is no exemption."""
+    if raw is None:
+        return (), []
+    if not isinstance(raw, list):
+        return (), ["%s: plan_exempt must be a list" % where]
+    out: list[Exemption] = []
+    problems: list[str] = []
+    seen: set[str] = set()
+    for i, entry in enumerate(raw):
+        if not isinstance(entry, dict):
+            problems.append("%s: plan_exempt[%d] must be an object {glob, blocker}" % (where, i))
+            continue
+        glob = str(entry.get("glob") or "")
+        if not glob:
+            problems.append("%s: plan_exempt[%d] has no glob" % (where, i))
+            continue
+        name = "%s plan_exempt %s" % (where, glob)
+        if glob in seen:
+            problems.append("%s is listed twice" % name)
+        seen.add(glob)
+        problem = _blocker_problem(name, str(entry.get("blocker") or ""))
+        if problem:
+            problems.append(problem)
+        out.append(Exemption(glob, glob_regex(glob), str(entry.get("blocker") or "")))
+    return tuple(out), problems
 
 
 def unresolved_refs(
@@ -696,6 +811,10 @@ class Report:
     #: None under `--owner`: the Stop hook's call judges that session's items and nothing else.
     files: FileScan | None = None
     file_baseline: dict[tuple[str, str], int] = dataclasses.field(default_factory=dict)
+    #: Plan findings a `plan_exempt` entry excused, printed every run.
+    exempt: list[tuple[Finding, Exemption]] = dataclasses.field(default_factory=list)
+    #: `plan_exempt` entries covering a plan they do not excuse; each is a refusal outside `--owner`.
+    wide_exemptions: list[str] = dataclasses.field(default_factory=list)
 
 
 def gather(
@@ -729,6 +848,9 @@ def gather(
             "ZERO live plans among %d enumerated plan file(s) under %s; the plan half is "
             "not seeing the corpus" % (enumerated, root)
         )
+    dead, wide = exemption_problems(plans, terms)
+    if dead:
+        raise CannotRunError("%s cannot be trusted:\n  %s" % (config, "\n  ".join(dead)))
     findings = judge(items + plans, terms)
     files = None if owner else scan_submodules(root, terms, exclusions, env)
     return Report(
@@ -742,6 +864,8 @@ def gather(
         missing_ids,
         files,
         file_baseline,
+        exempted(plans, terms),
+        wide,
     )
 
 
@@ -832,7 +956,8 @@ def render(report: Report, owner: str) -> int:
     advised_items = [f for f in item_findings if f not in refused_items]
     log.info(
         "  %d term(s); %d item(s) folded, %d open; %d live plan(s) of %d enumerated; "
-        "%d item finding(s), %d plan finding(s) (%d baselined, %d new, %d stale baseline pair(s))"
+        "%d item finding(s), %d plan finding(s) (%d baselined, %d new, %d stale baseline pair(s)), "
+        "%d plan pair(s) exempt by %d plan_exempt entr(ies)"
         % (
             len(report.terms),
             report.items_folded,
@@ -844,6 +969,8 @@ def render(report: Report, owner: str) -> int:
             len(held),
             len(new),
             len(stale),
+            len(report.exempt),
+            sum(len(t.plan_exempt) for t in report.terms),
         )
     )
 
@@ -864,6 +991,13 @@ def render(report: Report, owner: str) -> int:
     for f in refused_items:
         log.error("  ITEM %s" % line(f))
     if not owner:
+        for f, ex in report.exempt:
+            log.warn(
+                "  EXEMPT plan %s names %r by plan_exempt %r (%s)"
+                % (f.subject.key, f.term.id, ex.glob, ex.blocker)
+            )
+        for problem in report.wide_exemptions:
+            log.error("  WIDE %s" % problem)
         for f in held:
             log.warn("  BASELINED plan %s" % line(f))
         for f in new:
@@ -873,7 +1007,9 @@ def render(report: Report, owner: str) -> int:
                 "  STALE baseline %s no longer names %r: drain it with "
                 "`.ci/scripts/quality/check_retired_terms.py --write-baseline`" % (plan, term)
             )
-    refused = len(refused_items) + (0 if owner else len(new) + len(stale))
+    refused = len(refused_items) + (
+        0 if owner else len(new) + len(stale) + len(report.wide_exemptions)
+    )
     files_note = ""
     if report.files is not None:
         refused += render_files(report, report.files)
@@ -891,8 +1027,8 @@ def render(report: Report, owner: str) -> int:
             "open item of %s" % owner if owner else "new live plan or submodule file",
             ""
             if owner
-            else " (%d item advisory(ies), %d plan pair(s) baselined%s)"
-            % (len(advised_items), len(held), files_note),
+            else " (%d item advisory(ies), %d plan pair(s) baselined, %d exempt%s)"
+            % (len(advised_items), len(held), len(report.exempt), files_note),
         )
     )
     return 0
@@ -1082,14 +1218,12 @@ def selftest() -> bool:
         "PLANT: a bare BACKUP_S3_BUCKET is a finding",
         _flagged([old_family], terms) == {("#aaaa2222", "BACKUP_S3_pre-rename")},
     )
-    regional = Subject(
-        "item", "#aaaa3333", "(x) copy the configs into edge-rediacc-configs-eu", "aaaaaaaa"
-    )
+    regional = Subject("item", "#aaaa3333", "(x) copy the configs into configs-eu", "aaaaaaaa")
     check(
-        "CONTROL: edge-rediacc-configs-eu is a live regional bucket and is allowed",
+        "CONTROL: configs-eu is the live regional bucket and is allowed",
         _flagged([regional], terms) == set(),
     )
-    bare = _mutant(regional, "edge-rediacc-configs-eu", "edge-rediacc-configs and verify")
+    bare = _mutant(regional, "configs-eu", "edge-rediacc-configs and verify")
     check(
         "PLANT: the bare edge-rediacc-configs bucket is a finding",
         _flagged([bare], terms) == {("#aaaa3333", "edge-rediacc-configs")},
@@ -1174,6 +1308,7 @@ def selftest() -> bool:
     blank = baseline_pairs({"plan_baseline": [{"plan": "p", "term": "t", "blocker": "later"}]})[1]
     check("PLANT: a baseline entry without a BLOCKER reason is refused", blank != [])
 
+    _exempt_controls(check, good)
     _file_controls(check, terms, by_id)
 
     # The real fold: a closed item is ignored and an open one is seen, written through the real writer verbs.
@@ -1225,6 +1360,94 @@ def _fixture_tree(base: pathlib.Path, *, declared: list[str], present: dict[str,
                 target.write_text(body, encoding="utf-8")
         if files:
             proc.run(["git", "-C", str(repo), "add", "-A"], env=env)
+
+
+EXEMPT_BLOCKER = "BLOCKER: this plan records the rename itself, so the old name is its subject"
+
+
+def _exempt_controls(check: Checker, good: dict) -> None:
+    """`plan_exempt` in both directions, on fixture terms: the shipped config carries no entry to lean on."""
+    doc = json.loads(json.dumps(good))
+    second = dict(doc["terms"][0], id="u", pattern="bar", must_match=["a bar"])
+    second["must_not_match"] = ["a foo"]
+    doc["terms"][0]["plan_exempt"] = [
+        {"glob": "agent/plans/*rename*.md", "blocker": EXEMPT_BLOCKER}
+    ]
+    doc["terms"].append(second)
+    terms, problems = parse_terms(doc)
+    check("CONTROL: a term with a reasoned plan_exempt entry parses clean", problems == [])
+    if problems:
+        return
+    rename = Subject("plan", "agent/plans/PLAN-rename-x.md", "rename foo to qux, and bar too")
+    check(
+        "CONTROL: a plan under an exempt glob is not refused for that term, and the run sees it",
+        _flagged([rename], terms) == {(rename.key, "u")}
+        and [(f.subject.key, f.term.id) for f, _ in exempted([rename], terms)]
+        == [(rename.key, "t")],
+    )
+    check(
+        "PLANT: the same plan is still refused for a term without the exemption",
+        (rename.key, "u") in _flagged([rename], terms),
+    )
+    other = Subject("plan", "agent/plans/PLAN-other.md", "deploy foo")
+    check(
+        "PLANT: a plan outside the glob naming the exempt term is refused",
+        _flagged([other], terms) == {(other.key, "t")},
+    )
+    deeper = Subject("plan", "agent/plans/_done/PLAN-rename-x.md", "deploy foo")
+    check(
+        "PLANT: `*` stays inside one path segment, so a deeper plan is not exempt",
+        _flagged([deeper], terms) == {(deeper.key, "t")},
+    )
+    item = Subject("item", "agent/plans/PLAN-rename-x.md", "deploy foo", "aaaaaaaa")
+    check(
+        "PLANT: an item is never exempt, whatever its key",
+        _flagged([item], terms) == {(item.key, "t")},
+    )
+    check(
+        "PLANT: a file under the glob is unaffected, the exemption is plans only",
+        _counts("agent/plans/PLAN-rename-x.md", "deploy foo\n", terms)[0] == {"t": 1},
+    )
+    check(
+        "CONTROL: an entry matching a plan it excuses is neither dead nor wide",
+        exemption_problems([rename, other], terms) == ([], []),
+    )
+    dead, _ = exemption_problems([other], terms)
+    check("PLANT: a glob matching no live plan is refused as dead", len(dead) == 1)
+    fixed = Subject("plan", rename.key, "rename done, and bar too")
+    check(
+        "PLANT: a glob covering a plan that no longer names the term is WIDE",
+        len(exemption_problems([fixed], terms)[1]) == 1,
+    )
+    wide = json.loads(json.dumps(doc))
+    wide["terms"][0]["plan_exempt"] = [{"glob": "agent/plans/**", "blocker": EXEMPT_BLOCKER}]
+    wide_terms = parse_terms(wide)[0]
+    check(
+        "PLANT: agent/plans/** over a corpus where only one plan names the term is WIDE",
+        len(
+            exemption_problems([rename, Subject("plan", "agent/plans/PLAN-y.md", "z")], wide_terms)[
+                1
+            ]
+        )
+        == 1,
+    )
+    for label, blocker in (
+        ("no", ""),
+        ("a non-BLOCKER", "later"),
+        ("a low-effort", "BLOCKER: tbd"),
+    ):
+        bad = json.loads(json.dumps(doc))
+        bad["terms"][0]["plan_exempt"][0]["blocker"] = blocker
+        check(
+            "PLANT: a plan_exempt entry with %s reason is refused" % label,
+            any("plan_exempt" in p for p in parse_terms(bad)[1]),
+        )
+    unglobbed = json.loads(json.dumps(doc))
+    unglobbed["terms"][0]["plan_exempt"] = [{"blocker": EXEMPT_BLOCKER}]
+    check(
+        "PLANT: a plan_exempt entry with no glob is refused",
+        any("has no glob" in p for p in parse_terms(unglobbed)[1]),
+    )
 
 
 def _file_controls(check: Checker, terms: list[Term], by_id: dict[str, Term]) -> None:

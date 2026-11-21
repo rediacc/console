@@ -1,6 +1,6 @@
 """The verbs `./run.sh` used to serve from `.ci/legacy/run-legacy.sh`, one entry function each.
 
-WHAT THIS REPLACES. `.ci/legacy/run-legacy.sh` was the dispatcher for service, account, rotation, worktree, devbox, drill, quality, fix, clean and help. Each verb here is the same arm in Python, calling the ports that already existed (`core.service`, `core.account`, `core.account_lifecycle`, `core.devbox`, `core.local_common`, `core.toolchain`, `security.shellcheck`, `security.shfmt`,
+WHAT THIS REPLACES. `.ci/legacy/run-legacy.sh` was the dispatcher for service, account, rotation, worktree, devbox, drill, quality, fix, clean and help; `enterprise` was added here after it, and hands its whole tree to `rediacc_ci.enterprise.cli`. Each verb here is the same arm in Python, calling the ports that already existed (`core.service`, `core.account`, `core.account_lifecycle`, `core.devbox`, `core.local_common`, `core.toolchain`, `security.shellcheck`, `security.shfmt`,
 `quality.submodule_branches`) rather than a second copy of them. `rediacc_ci/__main__.py` names every entry below in its VERBS table; `./run.sh` forwards everything except the two media verbs to it.
 
 EVERY ENTRY TAKES THE VERB'S REMAINING ARGV (verb already removed) and RETURNS AN EXIT STATUS, which is what `__main__` expects. An entry that hands the terminal to a child (`devbox shell`) lets that child own the exit code and the signals, as `exec` did in the router.
@@ -41,6 +41,7 @@ DRILL_MODULES = {
     "license": "rediacc_ci.drills.license",
     "backup": "rediacc_ci.drills.backup",
     "backup-onprem": "rediacc_ci.drills.backup_onprem",
+    "backup-elite-compose": "rediacc_ci.drills.backup_elite_compose",
     "vmcheck": "rediacc_ci.drills.vm_check",
 }
 
@@ -186,6 +187,10 @@ DEVELOPMENT COMMANDS:
   dev                 Start the www (marketing site) development server
   (rdc)               Use ./rdc.sh instead (standalone CLI runner)
   worktree <cmd>      Manage git worktrees (create, switch, prune, list)
+  backup-ref sync     Back up the checked-out branch to refs/backup/ on GitLab
+  legal-entity sync|verify
+                      Project the SELLER_* vault entries into packages/shared/src/legal/
+                      entity.generated.{json,ts}, or verify that projection (field names only)
   setup [--check]     Prepare this machine: INSTALL the toolchain (node, gcc, Go,
                       gh, jq), set the git identity and credentials, then docker,
                       the devcontainer image, and a browser VS Code for THIS
@@ -232,9 +237,24 @@ DRILL COMMANDS (scripted walkthroughs; non-zero exit on any failed assertion):
   drill backup        Live chunk-store battery: session mint, seed and incremental
                       upload, byte-identical restore, quota refusal (no VMs needed)
   drill backup-onprem Chunk-store backup against a local RustFS (the Elite on-prem plane)
+  drill backup-elite-compose
+                      Elite compose stack on one ops VM, snapshot from a second (two VMs)
   drill vmcheck       Repo shell, sync, SFTP and VS Code on the ops VMs (npm run vm:check)
   drill <name> --selftest
                       Plant one failing assertion; the run MUST exit non-zero
+
+ENTERPRISE COMMANDS (one company's own Workers, database and buckets):
+  enterprise add <company> --region <r> --owner <mail> --storage-gb <n>
+                      Onboard a company, resumable; --bench uses bench control and signers
+  enterprise list     List the companies of every region (--all includes removed)
+  enterprise update <company>   Change limits, the IP allowlist or the ring override
+  enterprise suspend <company>  Suspend a company (--resume clears it)
+  enterprise export <company>   Export its database, buckets and durable secrets
+  enterprise remove <company>   Undeploy after an export (--delete-data --confirm <company>)
+  enterprise release  Release the company Workers ring by ring
+  enterprise proof <verb> [--bench]  Run one live proof of PLAN-enterprise-isolation.md
+  enterprise control ensure     Create and migrate the regional control databases
+  enterprise dns ensure [--check]  The wildcard record and Universal SSL of the product zone
 
 QUALITY COMMANDS:
   quality lint        Run linting (ESLint + Knip)
@@ -363,6 +383,7 @@ DRILL_ARMS: dict[str, Arm] = {
     "license": _module_arm(DRILL_MODULES["license"]),
     "backup": _module_arm(DRILL_MODULES["backup"]),
     "backup-onprem": _module_arm(DRILL_MODULES["backup-onprem"]),
+    "backup-elite-compose": _module_arm(DRILL_MODULES["backup-elite-compose"]),
     "vmcheck": _module_arm(DRILL_MODULES["vmcheck"]),
 }
 
@@ -375,6 +396,12 @@ def drill_main(argv: list[str]) -> int:
     print()
     print(usage_line("drill", DRILL_ARMS) + " [--selftest]")
     return 1
+
+
+def enterprise_main(argv: list[str]) -> int:
+    """`./run.sh enterprise <verb>`: the whole subcommand tree is `rediacc_ci.enterprise.cli`'s, as `worktree` is `dev.worktree`'s."""
+    _flush()
+    return importlib.import_module("rediacc_ci.enterprise.cli").main(argv)
 
 
 # --------------------------------------------------------------------------- devbox ---------------------------------------------------------------------------

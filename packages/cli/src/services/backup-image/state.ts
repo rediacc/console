@@ -11,17 +11,22 @@ import {
   chmodSync,
   closeSync,
   existsSync,
-  fsyncSync,
-  linkSync,
   mkdirSync,
   openSync,
   readFileSync,
   renameSync,
+  statSync,
   unlinkSync,
-  writeSync,
 } from 'node:fs';
 import { hostname } from 'node:os';
 import { dirname, join } from 'node:path';
+import {
+  fsyncDir,
+  publishExclusive,
+  unlinkQuietly,
+  type WriteHooks,
+  writeDurableTemp,
+} from './durable-write.js';
 
 const DEFAULT_OUTCOME = 'failed';
 
@@ -193,66 +198,6 @@ function sanitizeImageState(state: ImageState): ImageState {
   };
 }
 
-function fsyncDir(dir: string): void {
-  try {
-    const fd = openSync(dir, 'r');
-    try {
-      fsyncSync(fd);
-    } finally {
-      closeSync(fd);
-    }
-  } catch {
-    // Directory fsync is unsupported on some platforms (Windows); the rename already happened.
-  }
-}
-
-export interface WriteHooks {
-  /** Test seam: runs after the temp file is durable and before the rename. */
-  beforeRename?: () => void;
-}
-
-/**
- * Writes all of `body` to `fd`. writeSync may write fewer bytes than asked (a full disk mid-write);
- * the rest is written in further calls, and a call that writes nothing throws instead of looping.
- */
-export function writeFully(
-  fd: number,
-  body: string,
-  write: (fd: number, buf: Buffer, offset: number, length: number) => number = writeSync
-): void {
-  const buf = Buffer.from(body, 'utf8');
-  let offset = 0;
-  while (offset < buf.length) {
-    const n = write(fd, buf, offset, buf.length - offset);
-    if (n <= 0) throw new Error(`short write: ${offset} of ${buf.length} bytes written`);
-    offset += n;
-  }
-}
-
-function unlinkQuietly(path: string): void {
-  try {
-    unlinkSync(path);
-  } catch {
-    // Already gone.
-  }
-}
-
-/** Writes `body` to a new 0600 file, fsynced; the file is removed again when any step fails. */
-function writeDurableTemp(tmp: string, body: string): void {
-  const fd = openSync(tmp, 'wx', 0o600);
-  try {
-    try {
-      writeFully(fd, body);
-      fsyncSync(fd);
-    } finally {
-      closeSync(fd);
-    }
-  } catch (error) {
-    unlinkQuietly(tmp);
-    throw error;
-  }
-}
-
 /** Atomic write: temp file in the same directory, fsync, rename, fsync of the directory. */
 export function writeImageState(statePath: string, state: ImageState, hooks?: WriteHooks): void {
   const dir = dirname(statePath);
@@ -396,6 +341,21 @@ export interface LockDeps {
   beforePublish?: () => void;
   /** Test seam: runs after a dead holder was read, before its lock is moved aside. */
   beforeTakeover?: () => void;
+  /** An unreadable lock older than this is an abandoned half-written one; defaults to `UNREADABLE_LOCK_GRACE_MS`. */
+  unreadableGraceMs?: number;
+  /** Test seam: blocks for the given milliseconds between attempts on an unreadable lock; defaults to a synchronous wait. */
+  sleep?: (ms: number) => void;
+}
+
+/** A live run finishes writing its lock in milliseconds, so an unreadable one this old is a crash's leftover. */
+const UNREADABLE_LOCK_GRACE_MS = 10_000;
+
+/** An unreadable lock is judged again after this long, for `UNREADABLE_LOCK_ATTEMPTS` attempts in all. */
+export const UNREADABLE_LOCK_RETRY_MS = 10_000;
+const UNREADABLE_LOCK_ATTEMPTS = 3;
+
+export function sleepSync(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
 export class ImageLockError extends Error {
@@ -421,7 +381,11 @@ function readLock(lockPath: string): LockInfo | null {
   try {
     const parsed = JSON.parse(readFileSync(lockPath, 'utf8')) as Partial<LockInfo>;
     if (typeof parsed.pid === 'number' && typeof parsed.host === 'string') {
-      return { pid: parsed.pid, host: parsed.host, startedAt: parsed.startedAt ?? '' };
+      return {
+        pid: parsed.pid,
+        host: parsed.host,
+        startedAt: parsed.startedAt ?? '',
+      };
     }
   } catch {
     // Missing or unreadable: handled by the caller.
@@ -441,7 +405,7 @@ function lockRefusal(lockPath: string, holder: LockInfo | null): ImageLockError 
   return new ImageLockError(
     holder
       ? `another run holds ${lockPath} (pid ${holder.pid} on ${holder.host})`
-      : `${lockPath} exists and is unreadable`,
+      : `${lockPath} exists and is unreadable; if no run is writing it, remove it by hand`,
     holder
   );
 }
@@ -452,15 +416,18 @@ function uniqueSibling(path: string, kind: string): string {
 
 /**
  * Creates the lock file exclusively; false when it already exists. The body is written to a
- * temp file first and hard-linked into place (link fails with EEXIST like O_EXCL), so the lock
- * is never visible without its holder: a crash leaves at most a stray temp file, never an empty lock.
+ * temp file first and hard-linked into place (link fails with EEXIST like O_EXCL), so on a
+ * filesystem with hard links the lock is never visible without its holder: a crash leaves at most
+ * a stray temp file. Without hard links `publishExclusive` writes the lock in place, and a crash
+ * mid-write can leave an empty lock, which a later run takes over after a grace period.
  */
 function tryCreateLock(lockPath: string, info: LockInfo, deps: LockDeps): boolean {
   const tmp = uniqueSibling(lockPath, 'tmp');
-  writeDurableTemp(tmp, JSON.stringify(info));
+  const body = JSON.stringify(info);
+  writeDurableTemp(tmp, body);
   try {
     deps.beforePublish?.();
-    linkSync(tmp, lockPath);
+    publishExclusive(tmp, lockPath, body);
     return true;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'EEXIST') return false;
@@ -479,7 +446,7 @@ function sameHolder(a: LockInfo, b: LockInfo | null): boolean {
  * of them move it, and the content check catches a run that moved a fresh lock another run had just
  * created in its place, which is put back. True when the dead lock is gone and creation may retry.
  */
-function takeOver(lockPath: string, dead: LockInfo): boolean {
+function takeOver(lockPath: string, dead: LockInfo | null): boolean {
   const grave = uniqueSibling(lockPath, 'stale');
   try {
     renameSync(lockPath, grave);
@@ -488,13 +455,14 @@ function takeOver(lockPath: string, dead: LockInfo): boolean {
     throw error;
   }
   const moved = readLock(grave);
-  if (sameHolder(dead, moved)) {
+  // A null `dead` is an unreadable lock: it is the same one only while it is still unreadable.
+  if (dead === null ? moved === null : sameHolder(dead, moved)) {
     unlinkQuietly(grave);
     return true;
   }
   // A live lock went aside: put it back unless yet another run has created one meanwhile.
   try {
-    linkSync(grave, lockPath);
+    publishExclusive(grave, lockPath, JSON.stringify(moved));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
   } finally {
@@ -522,6 +490,68 @@ export function acquireLocalLock(lockPath: string, deps: LockDeps = {}): LockInf
 }
 
 /**
+ * Whether an unreadable lock is an abandoned half-written one. Its mtime is read against the mtime of
+ * a probe file made beside it, so both come from the clock of the filesystem that holds the lock: a
+ * network or exFAT mount stamping files on a clock that differs from this host's cannot make a live
+ * run's fresh empty lock look old. When the probe cannot be made or read, the lock is not taken
+ * over: the filesystem's clock is unknown, and judging the lock by this host's clock instead would let
+ * a mount whose clock runs behind make a live run's fresh lock look old (review ee0ca8b1.1). The
+ * cost is that an abandoned lock in such a directory is never cleared automatically: the refusal
+ * names the path and says to remove it by hand (review 5ea6a6f0.1). `readHolderRetrying` calls this up
+ * to three times, 10 s apart, before that refusal (operator ruling 2026-11-15). A directory too read-only or
+ * too full for a probe file usually cannot take a new lock either.
+ */
+function isAbandonedUnreadable(lockPath: string, graceMs = UNREADABLE_LOCK_GRACE_MS): boolean {
+  let lockMtime: number;
+  try {
+    lockMtime = statSync(lockPath).mtimeMs;
+  } catch {
+    return false;
+  }
+  const probe = `${lockPath}.clock-${process.pid}-${randomBytes(4).toString('hex')}`;
+  try {
+    closeSync(openSync(probe, 'w'));
+    return statSync(probe).mtimeMs - lockMtime > graceMs;
+  } catch {
+    // The probe could not be created, stat-ed or closed: with no filesystem clock to compare against,
+    // the lock's age is unknown, so it is not called abandoned (review ee0ca8b1.1, .2).
+    return false;
+  } finally {
+    try {
+      unlinkSync(probe);
+    } catch {
+      // The probe was never made or is already gone; nothing is left to clean up.
+    }
+  }
+}
+
+function takeOverUnreadable(lockPath: string, deps: LockDeps): void {
+  deps.beforeTakeover?.();
+  if (!takeOver(lockPath, null)) throw lockRefusal(lockPath, readLock(lockPath));
+}
+
+/**
+ * Reads the holder of a lock, judging an unreadable one up to `UNREADABLE_LOCK_ATTEMPTS` times,
+ * `UNREADABLE_LOCK_RETRY_MS` apart. 'cleared' means the lock is gone or an abandoned unreadable one
+ * was moved aside; null means it stayed unreadable and unjudgeable through every attempt.
+ */
+function readHolderRetrying(lockPath: string, deps: LockDeps): LockInfo | null | 'cleared' {
+  const sleep = deps.sleep ?? sleepSync;
+  for (let attempt = 1; attempt <= UNREADABLE_LOCK_ATTEMPTS; attempt++) {
+    const holder = readLock(lockPath);
+    if (holder !== null) return holder;
+    if (!existsSync(lockPath)) return 'cleared';
+    if (isAbandonedUnreadable(lockPath, deps.unreadableGraceMs)) {
+      takeOverUnreadable(lockPath, deps);
+      return 'cleared';
+    }
+    // A live writer finishes its lock in milliseconds, so the next read may find it readable.
+    if (attempt < UNREADABLE_LOCK_ATTEMPTS) sleep(UNREADABLE_LOCK_RETRY_MS);
+  }
+  return null;
+}
+
+/**
  * After a create found the lock taken: returns once the lock is gone (it vanished, or its dead
  * holder was moved aside) so creation may retry; throws when a live or foreign holder keeps it.
  */
@@ -531,8 +561,8 @@ function clearDeadHolder(
   alive: (pid: number) => boolean,
   deps: LockDeps
 ): void {
-  const holder = readLock(lockPath);
-  if (holder === null && !existsSync(lockPath)) return;
+  const holder = readHolderRetrying(lockPath, deps);
+  if (holder === 'cleared') return;
   if (holder === null || !isTakeoverable(holder, host, alive)) {
     throw lockRefusal(lockPath, holder);
   }

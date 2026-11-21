@@ -209,6 +209,7 @@ SENTINEL = "E2E_SKIPPED="
 SENTINEL_COUNT = re.compile(r"E2E_SKIPPED=([0-9]+)")
 SKIPPED_LINE = re.compile(r", skipped\)")
 SKIPPED_LIST_MAX = 80
+NO_TESTS_FOUND = re.compile(r"No tests found")
 
 
 @dataclasses.dataclass
@@ -216,12 +217,15 @@ class Scan:
     """What the streamed run said about skips."""
 
     sentinel_seen: bool = False
+    no_tests_found: bool = False
     skipped: int = 0
     lines: list[str] = dataclasses.field(default_factory=list)
 
     def feed(self, line: str) -> None:
         if SENTINEL in line:
             self.sentinel_seen = True
+        if NO_TESTS_FOUND.search(line):
+            self.no_tests_found = True
         self.skipped += sum(int(n) for n in SENTINEL_COUNT.findall(line))
         if SKIPPED_LINE.search(line) and len(self.lines) < SKIPPED_LIST_MAX:
             self.lines.append(line)
@@ -268,6 +272,21 @@ def judge_skips(scan: Scan) -> int | None:
     return None
 
 
+def judge_empty_selection(scan: Scan, shard_arg: str, vm_image: str) -> str | None:
+    """The empty-selection guard: the message when a run selected zero tests, else `None`.
+
+    Playwright answers an empty selection with a bare exit 1 ("Error: No tests found"), which reads as a broken suite. An empty leg is a configuration fault (a leg whose every suite the config deselects on this image, as shard leg 6/11 was on oracle-10 once Landlock-tagged suites were deselected there), so it fails by name, never passes.
+    """
+    if not scan.no_tests_found:
+        return None
+    leg = f"shard leg {shard_arg}" if shard_arg else "this run"
+    return (
+        f"{leg} selected ZERO tests on VM_IMAGE={vm_image or '(unset)'}: every suite it names is deselected there "
+        "(playwright.config.ts grepInvert/testIgnore, landlockSelection.ts) or the grep matches nothing. "
+        "An empty run is not a pass; fix the selection or move the leg's suites."
+    )
+
+
 def pin_local_renet_data_dir() -> None:
     """A local run keeps renet's data dir at `~/.renet`, where `renet ops up` staged the VMs' authorized key.
 
@@ -311,6 +330,16 @@ def main(argv: list[str]) -> int:
         verdict = judge_skips(scan)
         if verdict is not None:
             return verdict
+    return final_verdict(
+        rc, judge_empty_selection(scan, opts.shard, os.environ.get("VM_IMAGE", ""))
+    )
+
+
+def final_verdict(rc: int, empty: str | None) -> int:
+    """The run's exit: an empty selection fails whatever Playwright exited with (a pass-with-no-tests flag exits 0), otherwise Playwright's own verdict."""
+    if empty is not None:
+        log.error(empty)
+        return 1
     if rc == 0:
         log.info("E2E tests passed")
         return 0

@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: ru
-sourceHash: "d6d980d721be2373"
-sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
+sourceHash: "78e880294cc0bf15"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 # Цепочка лицензий и делегирование
@@ -118,7 +118,7 @@ POST /licenses/renew
 
 ### Как работает делегирование
 
-1. Admin Enterprise генерирует пару ключей Ed25519 на on-premise сервере.
+1. Админ генерирует пару ключей Ed25519 на on-premise сервере.
 2. Admin запрашивает сертификат делегирования у вышестоящего сервера:
    ```
    POST /admin/delegation-certs
@@ -322,8 +322,8 @@ Retry-After: 78234
 
 Когда новый сертификат загружается обратно на on-premise, `/onprem/cert-upload` проверяет, что `genesisSequence` нового сертификата по-прежнему связывается с известной записью в локальном реестре:
 
-- Если `cert.genesisSequence > localHead.sequence` - возвращает `409 CHAIN_HEAD_BEHIND` (вышестоящий сервер находится на форкнутой цепочке).
-- Если `cert.genesisSequence > 0` и запись в локальном реестре при данном порядковом номере имеет `chainHash`, отличный от `cert.genesisHash` - возвращает `409 CHAIN_FORK_ON_UPLOAD` (локальная цепочка разошлась).
+- Если `cert.genesisSequence > localHead.sequence`, возвращается `409` с кодом `chain-ahead`.
+- Если `cert.genesisSequence > 0`, а запись локального реестра на этой последовательности имеет `chainHash`, отличный от `cert.genesisHash`, возвращается `409` с кодом `chain-fork`.
 - В противном случае сертификат принимается. Будущие выдачи продолжаются с `localHead.sequence + 1`.
 
 Это означает, что **заморозка записей во время транзита не требуется**. Цепочка расширяется естественным образом с обеих сторон. Аналогично тому, как продление X.509 обрабатывает серийные номера в процессе выдачи.

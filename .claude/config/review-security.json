@@ -1,0 +1,80 @@
+{
+  "$comment": "The per-commit review's SECURITY CHECKLIST (operator ruling 2026-11-19, worklist #bbd0f487). Read by .claude/hooks/stop/wl_reviewsec.py, which renders the items into wl_review.PROMPT at review time under render_cap_chars, and folds the learned layer from agent/ledgers/review-security.jsonl on top. Every finding of class `security` blocks a push whatever its severity, so an item names a concrete defect a diff can show, never a general worry. Public-repo leaks are out of scope by the same ruling.",
+  "version": 1,
+  "render_cap_chars": 2500,
+  "$render_cap_chars": "The rendered block's ceiling in characters, base items plus the learned lines for the touched files. test-wl_review-security.py pins the shipped base well under it and the worst-case render at or under it.",
+  "learn": {
+    "every_h": 6,
+    "scan_commits": 300,
+    "max_fp_notes": 24,
+    "max_learned_items": 12,
+    "render_fp_notes": 4,
+    "render_learned": 3
+  },
+  "$learn": "wl_reviewsec.maybe_learn, run by the review child after each review at most once per every_h hours: scans the newest scan_commits commits and every record under agent/reviews/, appends proposal rows, applies them with an audit row each, and retires the oldest applied rows of a type past max_fp_notes or max_learned_items. render_fp_notes and render_learned cap the learned lines one prompt carries, and only lines about a file the commit touches are rendered.",
+  "items": [
+    {
+      "id": "S1",
+      "area": "secrets",
+      "text": "A secret (token, key, password, private key, bws value) placed on argv, in a log line, an error message, printed output or a committed file; env or stdin carries it instead",
+      "examples": [],
+      "added_from": "operator ruling 2026-11-19 (a)"
+    },
+    {
+      "id": "S2",
+      "area": "secrets",
+      "text": "A redaction or sensitivity check that tests only the exact key or pointer it is handed and misses nested fields, arrays or a parent object",
+      "examples": ["`rdc config field get --pointer /credentials` printed every secret below the parent pointer"],
+      "added_from": "commit b940b84b3"
+    },
+    {
+      "id": "S3",
+      "area": "secrets",
+      "text": "A secret read outside the bws_env profiles (`bws_env exec --profile <p>`): a hard-coded value, a new .env file, or a token copied into a config or a workflow env block",
+      "examples": [],
+      "added_from": "operator ruling 2026-11-19 (a)"
+    },
+    {
+      "id": "S4",
+      "area": "injection",
+      "text": "A shell command string built from input (repo name, path, config or user value) without quoting: renet runs it as root and the CLI sends it over ssh; an argv array or shell quoting is safe",
+      "examples": [],
+      "added_from": "operator ruling 2026-11-19 (b)"
+    },
+    {
+      "id": "S5",
+      "area": "injection",
+      "text": "A D1 or other SQL query built by concatenation or template interpolation instead of bound parameters (`.bind()`)",
+      "examples": [],
+      "added_from": "operator ruling 2026-11-19 (b)"
+    },
+    {
+      "id": "S6",
+      "area": "injection",
+      "text": "A path from input used by sync, sftp, a file write or an extract without refusing `..`, an absolute path or a symlink that escapes the target directory",
+      "examples": [],
+      "added_from": "operator ruling 2026-11-19 (b)"
+    },
+    {
+      "id": "S7",
+      "area": "auth",
+      "text": "An account Worker route whose auth, tenant (org or team) or role check is removed, weakened, moved after the data access, or skipped on an error path",
+      "examples": [],
+      "added_from": "operator ruling 2026-11-19 (c)"
+    },
+    {
+      "id": "S8",
+      "area": "ci",
+      "text": "A GitHub workflow that widens `permissions:`, checks out the PR head under `pull_request_target` or `workflow_run`, or interpolates `${{ github.event.* }}` into a `run:` script",
+      "examples": [],
+      "added_from": "operator ruling 2026-11-19 (c)"
+    },
+    {
+      "id": "S9",
+      "area": "guard",
+      "text": "A hook, guard or gate changed so it can no longer refuse: a fail-open on error, an environment bypass, a widened allowlist, or a test that no longer reaches the refusal",
+      "examples": [],
+      "added_from": "operator ruling 2026-11-19 (c)"
+    }
+  ]
+}

@@ -65,7 +65,25 @@ EDGE_CASES = [
     ("inside bash -c", "bash -c 'ruff format'"),
     ("python -m black with no path", "python3 -m black"),
     ("go fmt over the whole module", "go fmt ./..."),
+    ("ruff check --fix with a value option only", "ruff check --fix --select E"),
+    ("prettier --write on the root", "prettier --write ."),
+    ("biome format --write with no path", "biome format --write"),
+    ("a value option is not an info flag", "ruff format --line-length 100"),
     # CONTROLS: every one of these must pass.
+    ("ruff format --help", "ruff format --help"),
+    ("ruff format -h", "ruff format -h"),
+    ("ruff --version", "ruff --version"),
+    ("ruff check --fix --help", "ruff check --fix --help"),
+    ("ruff help format", "ruff help format"),
+    ("ruff format --diff with no path", "ruff format --diff"),
+    ("biome format --write --help", "biome format --write --help"),
+    ("prettier --write --help", "prettier --write --help"),
+    ("prettier --version", "prettier --version"),
+    ("black --version", "black --version"),
+    ("eslint --fix --help", "eslint --fix --help"),
+    ("gofmt -w -h", "gofmt -w -h"),
+    ("shfmt -w --version", "shfmt -w --version"),
+    ("golangci-lint run --fix --help", "golangci-lint run --fix --help"),
     ("explicit paths after --", "ruff format -- a.py b.py"),
     ("a check is read-only", "ruff format --check"),
     ("ruff check without --fix", "ruff check"),
@@ -271,6 +289,8 @@ VALUE_OPTS = {
 STDIN_OPTS = frozenset(
     ("--stdin-filename", "--stdin-filepath", "--stdin-file-path", "-filename", "--filename")
 )
+# Flags that make every formatter here print and exit, writing nothing, whatever else is on the line (`ruff format --help`). `-v` is deliberately absent: it is VERBOSE for ruff and black, and the run still writes.
+INFO_FLAGS = frozenset(("--help", "-h", "--version", "-V"))
 BIOME_SUBS = frozenset(("format", "check", "lint"))
 BIOME_WRITE = frozenset(("--write", "--fix", "--apply", "--apply-unsafe"))
 BIOME_SCOPED = frozenset(("--staged", "--changed"))
@@ -502,6 +522,8 @@ def _split(tool, argv):
 
 def _writes(tool, flags, words):
     """(writes, path words) once the subcommand is taken off, or (False, ...) for a read-only run."""
+    if flags & INFO_FLAGS:
+        return False, words
     if tool == "ruff":
         if not words or words[0] not in ("format", "check"):
             return False, words

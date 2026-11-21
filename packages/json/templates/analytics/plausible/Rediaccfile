@@ -8,7 +8,7 @@ up() {
   echo "Starting Plausible Community Edition..."
 
   # Auto-generate SECRET_KEY_BASE on first run
-  local secret_file="./plausible-secret.txt"
+  local secret_file="${REDIACC_WORKING_DIR:?REDIACC_WORKING_DIR is not set}/plausible-secret.txt"
 
   if [ ! -f "$secret_file" ]; then
     echo "First run detected - generating SECRET_KEY_BASE..."

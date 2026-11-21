@@ -19,9 +19,9 @@
  *                   PartnerApplicationForm:202, NewsletterSignup:89) while a fourth read
  *                   it directly and errored. One declaration replaces all four.
  *   `openRegionPicker` / `forceOpenRegionPicker`
- *                   RegionPickerModal.tsx:165-166 assigns them and DELETES them on
- *                   unmount, so both are optional; each takes an optional path
- *                   (RegionPickerModal.tsx:114 and :123) and returns void.
+ *                   RegionPickerModal.tsx assigns them (both open the picker) and DELETES
+ *                   them on unmount, so both are optional; each takes an optional path and
+ *                   returns void. The path also selects the mode: login counts down, sign-up asks.
  *
  * Optional rather than required is the honest shape twice over: the analytics script is
  * blockable and may never define `plausible`, and the region picker removes its own

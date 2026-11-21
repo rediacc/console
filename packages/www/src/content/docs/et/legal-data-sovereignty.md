@@ -1,5 +1,5 @@
 ---
-sourceHash: "1e10165626ba3730"
+sourceHash: "af327ad5729b1cab"
 title: "Andmesuveräänsus"
 description: "Kuidas Rediacc'i ise majutatud arhitektuur rahuldab andmete elukoha ja suveräänsuse nõuded ülemaailmsetes jurisdiktsioonides."
 category: "Legal"
@@ -87,4 +87,4 @@ Kõigis jurisdiktsioonides on vastavusvõrrand sama:
 
 ## Majutatud teenus: piirkondlik andmete elukoht
 
-Rediacc'i majutatud teenuse kasutajatele (mitte ise majutatavatele) tagatakse andmete elukoht piirkondliku infrastruktuuri kaudu. Saadaval on kolm piirkonda: EL (Frankfurt), USA (Virginia) ja Aasia-Vaikne ookean (Tokyo). Iga piirkond töötab sõltumatute andmebaaside ja salvestusega, piirkonnaüleseid andmevooge ei toimu. Tehingulist e-posti edastatakse AWS SES-i kaudu; EL ja USA kasutavad spetsiaalseid piirkondlikke lõpp-punkte, Aasia-Vaikse ookeani piirkond kasutab EL-i lõpp-punkti (eu-central-1). EL-i piirkond kasutab R2-salvestuse puhul jurisdiktsioonilist täitmist. Täieliku tehnilise ülevaate saamiseks vaadake [Andmepiirkondi](/en/docs/data-regions).
+Rediacc'i majutatud teenuse kasutajatele (mitte ise majutatavatele) pakutakse andmete elukohta piirkondliku infrastruktuuri kaudu. Saadaval on kolm piirkonda: Euroopa Liit, Põhja-Ameerika ida ja Aasia-Vaikse ookeani piirkond. Iga piirkond töötab sõltumatute andmebaaside ja salvestusega, piirkonnaüleseid andmevooge ei toimu. Tagatud jurisdiktsiooniga on seotud ainult EU konfiguratsioonisalvestus (Cloudflare R2 EL-i jurisdiktsioonipiirang); andmebaasi paigutus ning US ja Aasia-Vaikse ookeani piirkonna salvestus kasutavad Cloudflare'i asukohavihjeid, mida järgitakse parima võimaluse korral. Tehingulist e-posti edastatakse AWS SES-i kaudu; EL ja USA kasutavad pühendatud regionaalseid lõpp-punkte, Aasia ja Vaikse ookeani piirkond kasutab EL-i lõpp-punkti (eu-central-1). Täielikku tehnilist ülevaadet vaadake: [Andmepiirkondi](/et/docs/data-regions).

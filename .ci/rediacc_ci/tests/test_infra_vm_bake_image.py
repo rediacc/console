@@ -4,7 +4,8 @@ Every case drives the module through a fake `run` (or a fake download), so nothi
 
   * fetch: a registry "not found" and any other pull failure are both a MISS that exports nothing, while a pull that lands one image is a HIT that exports REDIACC_OPS_DISKS_PATH, BAKED_IMAGE_KEY and RENET_SETUP_OFFLINE (the stock fallback depends on the first, the baked leg on the second);
   * probe: "not found" is a miss, but an auth failure raises, so a broken login cannot pass for a missing image;
-  * install-oras: a download whose sha256 differs from the pin is refused.
+  * install-oras: a download whose sha256 differs from the pin is refused;
+  * tag namespaces: a main run reads and writes `<key>` only and never resolves a `pr-<n>-<key>` tag, a pull_request run publishes only under its own `pr-<n>-` prefix, and a run on neither publishes nowhere.
 """
 
 from __future__ import annotations
@@ -40,6 +41,17 @@ class FakeRun:
         if effect:
             effect[0](argv)
         return subprocess.CompletedProcess(argv, rc, out, err)
+
+
+PR_ENV = {"GITHUB_EVENT_NAME": "pull_request", "GITHUB_REF": "refs/pull/605/merge"}
+MAIN_ENV = {"GITHUB_EVENT_NAME": "push", "GITHUB_REF": "refs/heads/main"}
+
+
+@pytest.fixture(autouse=True)
+def _main_run_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every CLI case runs as a main push unless it says otherwise: CI itself runs these tests on pull_request."""
+    for name, value in MAIN_ENV.items():
+        monkeypatch.setenv(name, value)
 
 
 def _pulls_one_image(argv: list[str]) -> None:
@@ -171,6 +183,65 @@ def test_cli_fetch_failed_oras_install_is_a_miss(
     assert run.calls == []
 
 
+# --- plan --------------------------------------------------------------------
+
+
+def _key_for(distro: str) -> str:
+    return "vm-bake-v1-%s-2026-11-08e81f4c97c76189" % distro
+
+
+def test_plan_lists_only_the_distros_without_a_tag() -> None:
+    present = {vbi.image_ref(_key_for("debian-13"))}
+    missing = vbi.missing_distros(
+        ["ubuntu-24.04", "debian-13", "fedora-43"], _key_for, lambda ref: ref in present
+    )
+    assert missing == ["ubuntu-24.04", "fedora-43"]
+
+
+def test_plan_probe_error_propagates_rather_than_reading_as_a_miss() -> None:
+    def broken(_ref: str) -> bool:
+        raise vbi.BakeImageError("oras manifest fetch failed (rc=1): unauthorized")
+
+    with pytest.raises(vbi.BakeImageError, match="unauthorized"):
+        vbi.missing_distros(["debian-13"], _key_for, broken)
+
+
+@pytest.mark.parametrize(
+    ("present", "missing", "bake"),
+    [
+        ({"debian-13", "fedora-43"}, "[]", "false"),
+        ({"debian-13"}, '["fedora-43"]', "true"),
+    ],
+)
+def test_cli_plan_emits_the_bake_matrix(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: pathlib.Path,
+    present: set[str],
+    missing: str,
+    bake: str,
+) -> None:
+    out = tmp_path / "out"
+    out.touch()
+    monkeypatch.setenv("GITHUB_OUTPUT", str(out))
+    monkeypatch.setattr(vbi, "_key", _key_for)
+    refs = {vbi.image_ref(_key_for(d)) for d in present}
+    monkeypatch.setattr(vbi, "tag_exists", lambda ref: ref in refs)
+    assert vbi.main(["plan", "--distro", "debian-13", "--distro", "fedora-43"]) == 0
+    assert out.read_text() == "missing=%s\nbake=%s\n" % (missing, bake)
+
+
+def test_cli_plan_fails_on_a_probe_error(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def broken(_ref: str) -> bool:
+        raise vbi.BakeImageError("unauthorized")
+
+    monkeypatch.setattr(vbi, "_key", _key_for)
+    monkeypatch.setattr(vbi, "tag_exists", broken)
+    assert vbi.main(["plan", "--distro", "debian-13"]) == 1
+    assert "unauthorized" in capsys.readouterr().err
+
+
 # --- build and publish -------------------------------------------------------
 
 
@@ -215,6 +286,152 @@ def test_publish_fails_when_the_tag_does_not_resolve_after_push(tmp_path: pathli
     image.write_bytes(b"qcow2")
     with pytest.raises(vbi.BakeImageError, match="does not resolve"):
         vbi.publish(image, KEY, "debian-13", FakeRun((0, "", ""), (1, "", "x: not found")))
+
+
+# --- tag namespaces: a main run never reads a tag a pull request can write ----
+
+PR_REF = (IMAGE_REGISTRY + "/ci-vm-bake:pr-605-") + KEY
+MAIN_IMAGE_REF = (IMAGE_REGISTRY + "/ci-vm-bake:") + KEY
+
+
+@pytest.mark.parametrize(
+    "env",
+    [
+        MAIN_ENV,
+        {"GITHUB_EVENT_NAME": "schedule", "GITHUB_REF": "refs/heads/main"},
+        {"GITHUB_EVENT_NAME": "workflow_dispatch", "GITHUB_REF": "refs/heads/main"},
+    ],
+)
+def test_main_scope_reads_and_writes_only_mains_namespace(env: dict[str, str]) -> None:
+    scope = vbi.scope_from_env(env)
+    assert scope.read_refs(KEY) == [MAIN_IMAGE_REF]
+    assert scope.write_ref(KEY) == MAIN_IMAGE_REF
+
+
+def test_pr_scope_writes_only_its_own_namespace_and_reads_it_before_mains() -> None:
+    scope = vbi.scope_from_env(PR_ENV)
+    assert scope.write_ref(KEY) == PR_REF
+    assert scope.read_refs(KEY) == [PR_REF, MAIN_IMAGE_REF]
+    other = vbi.scope_from_env({**PR_ENV, "GITHUB_REF": "refs/pull/606/merge"})
+    assert PR_REF not in other.read_refs(KEY)
+
+
+@pytest.mark.parametrize(
+    "env",
+    [
+        {"GITHUB_EVENT_NAME": "workflow_dispatch", "GITHUB_REF": "refs/heads/1104-1"},
+        {"GITHUB_EVENT_NAME": "push", "GITHUB_REF": "refs/heads/1104-1"},
+        {},
+    ],
+)
+def test_a_run_off_main_and_off_a_pr_reads_main_and_publishes_nowhere(
+    env: dict[str, str],
+) -> None:
+    scope = vbi.scope_from_env(env)
+    assert scope.read_refs(KEY) == [MAIN_IMAGE_REF]
+    with pytest.raises(vbi.BakeImageError, match="may not publish"):
+        scope.write_ref(KEY)
+
+
+def test_a_pull_request_without_its_merge_ref_is_refused() -> None:
+    with pytest.raises(vbi.BakeImageError, match="refs/pull/<number>/merge"):
+        vbi.scope_from_env({"GITHUB_EVENT_NAME": "pull_request", "GITHUB_REF": "refs/heads/main"})
+
+
+def test_image_ref_refuses_a_namespace_that_is_not_a_pr_prefix() -> None:
+    for prefix in ("pr--", "pr-0-", "main-", "pr-1"):
+        with pytest.raises(vbi.BakeImageError, match="not a tag namespace"):
+            vbi.image_ref(KEY, prefix)
+
+
+def test_main_fetch_never_resolves_a_pr_namespace_tag(tmp_path: pathlib.Path) -> None:
+    """The registry holds only the PR's tag: a main run pulls main's ref alone and misses."""
+
+    def registry(argv: list[str], **_kw: Any) -> subprocess.CompletedProcess[str]:
+        pulled.append(argv[2])
+        if argv[2] == PR_REF:
+            _pulls_one_image(argv)
+            return subprocess.CompletedProcess(argv, 0, "", "")
+        return subprocess.CompletedProcess(argv, 1, "", "x: not found")
+
+    pulled: list[str] = []
+    image, reason = vbi.fetch(KEY, tmp_path / "d", registry, scope=vbi.scope_from_env(MAIN_ENV))
+    assert image is None
+    assert pulled == [MAIN_IMAGE_REF]
+    assert reason == "no baked image published for %s" % KEY
+    # Control: the same registry serves a PR run from its own namespace.
+    pulled.clear()
+    image, _ = vbi.fetch(KEY, tmp_path / "d", registry, scope=vbi.scope_from_env(PR_ENV))
+    assert image is not None
+    assert pulled == [PR_REF]
+
+
+def test_pr_fetch_falls_back_to_mains_image_on_not_found(tmp_path: pathlib.Path) -> None:
+    run = FakeRun((1, "", "x: not found"), (0, "", "", _pulls_one_image))
+    image, reason = vbi.fetch(KEY, tmp_path / "d", run, scope=vbi.scope_from_env(PR_ENV))
+    assert (image, reason) == (tmp_path / "d" / IMAGE_NAME, "")
+    assert [c[2] for c in run.calls] == [PR_REF, MAIN_IMAGE_REF]
+
+
+def test_pr_fetch_does_not_fall_back_past_a_registry_error(tmp_path: pathlib.Path) -> None:
+    run = FakeRun((1, "", "connection reset by peer"))
+    image, reason = vbi.fetch(KEY, tmp_path / "d", run, scope=vbi.scope_from_env(PR_ENV))
+    assert image is None
+    assert "connection reset" in reason
+    assert len(run.calls) == 1
+
+
+def test_cli_publish_in_a_pr_run_pushes_only_to_the_pr_namespace(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    for name, value in PR_ENV.items():
+        monkeypatch.setenv(name, value)
+    image = tmp_path / IMAGE_NAME
+    image.write_bytes(b"qcow2")
+    run = FakeRun((0, "", ""), (0, "{}", ""))
+    monkeypatch.setattr(vbi.publish, "__defaults__", (run,))
+    monkeypatch.setattr(vbi.tag_exists, "__defaults__", (run,))
+    argv = ["publish", "--distro", "debian-13", "--key", KEY, "--image", str(image)]
+    assert vbi.main(argv) == 0
+    touched = [arg for call in run.calls for arg in call if arg.startswith(IMAGE_REGISTRY)]
+    assert [c[:2] for c in run.calls] == [["oras", "push"], ["oras", "manifest"]]
+    assert touched == [PR_REF, PR_REF]
+
+
+def test_cli_plan_in_a_pr_run_counts_mains_tag_as_present(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    for name, value in PR_ENV.items():
+        monkeypatch.setenv(name, value)
+    out = tmp_path / "out"
+    out.touch()
+    monkeypatch.setenv("GITHUB_OUTPUT", str(out))
+    monkeypatch.setattr(vbi, "_key", _key_for)
+    present = {
+        vbi.image_ref(_key_for("debian-13")),
+        vbi.image_ref(_key_for("fedora-43"), "pr-605-"),
+    }
+    monkeypatch.setattr(vbi, "tag_exists", lambda ref: ref in present)
+    argv = ["plan", "--distro", "debian-13", "--distro", "fedora-43", "--distro", "oracle-10"]
+    assert vbi.main(argv) == 0
+    assert out.read_text() == 'missing=["oracle-10"]\nbake=true\n'
+
+
+def test_cli_plan_off_main_and_off_a_pr_fails_before_any_probe(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("GITHUB_REF", "refs/heads/1104-1")
+    monkeypatch.setattr(vbi, "_key", _key_for)
+    probed: list[str] = []
+
+    def probe(ref: str) -> bool:
+        probed.append(ref)
+        return False
+
+    monkeypatch.setattr(vbi, "tag_exists", probe)
+    assert vbi.main(["plan", "--distro", "debian-13"]) == 1
+    assert "may not publish" in capsys.readouterr().err
+    assert probed == []
 
 
 # --- install-oras ------------------------------------------------------------

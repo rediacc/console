@@ -24,8 +24,10 @@ import { machineConnections } from '../services/machine/machine-connection.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertResourceName, compositeKey } from '../utils/config-schema.js';
 import { getOutputFormat, ValidationError } from '../utils/errors.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
 import { shellQuote } from '../utils/shell-quote.js';
 import { readSourceAnchor } from './backup-restore-chunk.js';
+import type { BackupManifestsResponse } from './backup-storage.js';
 import { lineageOf } from './backup-storage-browse.js';
 import {
   type CompareRecord,
@@ -33,9 +35,7 @@ import {
   parseRestoreStats,
   type RestoreStats,
 } from './backup-storage-parser.js';
-import type { BackupManifestsResponse } from './backup-storage.js';
 import { postVerification, type VerificationAnswer } from './backup-verification.js';
-import { resolveRepoRef } from '../utils/repo-target.js';
 
 /** The copy needs the image plus headroom for the staging file's metadata and the filesystem. */
 const SPACE_FACTOR = 1.2;
@@ -50,6 +50,8 @@ interface RestoreTestResult {
   reason?: string;
   passphraseCheck?: string;
   compare?: CompareRecord;
+  /** Set by `--restore-to`: the machine the copy was restored on, and that the proof is the manifest root, not a file compare. */
+  restoredOn?: string;
   /** What the server holds for the snapshot after the verdict was posted; absent when nothing was posted. */
   verificationState?: string;
   cleanup: 'deleted' | 'failed';
@@ -126,6 +128,8 @@ async function deleteCopy(
   return 'failed';
 }
 
+const REASON_ROOT_NOT_VERIFIED =
+  'the restore did not verify the snapshot manifest root, so the copy is not proven';
 const REASON_RESTORE_FAILED = 'the restore of the copy failed';
 const REASON_COMPARE_UNREADABLE = 'unreadable compare record';
 
@@ -138,13 +142,39 @@ interface Verdict {
   postFailed: boolean;
 }
 
+/**
+ * The verdict of a `--restore-to` copy. The anchor file lives on the source machine, so the copy is held to the snapshot's manifest instead: every chunk is hash-checked on download and the resolved inventory must equal the manifest's recorded root.
+ */
+function manifestVerdict(record: RestoreStats | undefined): Verdict {
+  const passphraseCheck = record?.passphraseCheck;
+  if (record?.cellsRoot !== 'verified') {
+    return {
+      status: 'failed',
+      reason: REASON_ROOT_NOT_VERIFIED,
+      passphraseCheck,
+      postFailed: false,
+    };
+  }
+  if (passphraseCheck !== 'opened') {
+    return {
+      status: 'failed',
+      reason:
+        'the copy matches the manifest but the passphrase did not open it, so it is not proven',
+      passphraseCheck,
+      postFailed: false,
+    };
+  }
+  return { status: 'proven', passphraseCheck, postFailed: false };
+}
+
 /** Restore the snapshot into the copy and hold it to the anchor. Never throws on a verdict, only on infrastructure. */
 async function restoreAndCompare(args: {
   copy: string;
   machine: string;
   lineage: string;
   snapshotId: string;
-  sourceGuid: string;
+  /** The source's GUID for the anchor compare; undefined for `--restore-to`, where the anchor is not on this machine. */
+  sourceGuid: string | undefined;
 }): Promise<Verdict> {
   const { copy, machine, lineage, snapshotId, sourceGuid } = args;
   await deployRepoKeyIfNeeded(copy, machine);
@@ -164,6 +194,7 @@ async function restoreAndCompare(args: {
       postFailed: false,
     };
   }
+  if (sourceGuid === undefined) return manifestVerdict(record);
   const compare = await getExecutor().execute({
     functionName: 'backup_compare',
     machineName: machine,
@@ -211,20 +242,37 @@ async function restoreAndCompare(args: {
   return { status: 'proven', passphraseCheck, compare: verdict, postFailed: false };
 }
 
-const SPACE_UNKNOWN = '?';
 const STATE_UNRECORDED = 'unrecorded';
 
 interface RestoreTestPlan {
   repoKey: string;
+  /** Where the copy is restored: the source's machine, or the `--restore-to` machine. */
   machineName: string;
+  /** Set only for `--restore-to`. */
+  restoreTo?: string;
   lineage: string;
   snapshotId: string;
   source: SourceRepo & { credential: string };
 }
 
+/** `--restore-to` names a machine of this config other than the source's own. */
+async function assertRestoreToMachine(restoreTo: string, sourceMachine: string): Promise<void> {
+  const machines = (await configService.getLocalConfig()).machines;
+  if (!restoreTo || !Object.hasOwn(machines, restoreTo)) {
+    throw new ValidationError(t('commands.backup.verify.restoreToUnknown', { machine: restoreTo }));
+  }
+  if (restoreTo === sourceMachine) {
+    throw new ValidationError(
+      t('commands.backup.verify.restoreToSameMachine', { machine: restoreTo })
+    );
+  }
+}
+
 /** Every refusal that can be made before a copy is registered: credential, anchor and room. */
-async function planRestoreTest(repoRef: string): Promise<RestoreTestPlan> {
-  const { repoKey, machineName } = await resolveRepoRef(repoRef);
+async function planRestoreTest(repoRef: string, restoreTo?: string): Promise<RestoreTestPlan> {
+  const { repoKey, machineName: sourceMachine } = await resolveRepoRef(repoRef);
+  if (restoreTo !== undefined) await assertRestoreToMachine(restoreTo, sourceMachine);
+  const machineName = restoreTo ?? sourceMachine;
   const source = (await configService.getRepository(repoKey)) as SourceRepo | undefined;
   if (!source) throw new ValidationError(`Repository "${repoKey}" not found in this config.`);
   if (!source.credential) {
@@ -233,24 +281,35 @@ async function planRestoreTest(repoRef: string): Promise<RestoreTestPlan> {
     );
   }
   const lineage = lineageOf(source);
-  const snapshotId = await readSourceAnchor({ repoName: repoKey, machine: machineName });
+  const snapshotId = await readSourceAnchor({ repoName: repoKey, machine: sourceMachine });
   if (!snapshotId) {
     throw new ValidationError(t('commands.backup.verify.restoreTestNoAnchor', { name: repoKey }));
   }
   const imageBytes = await indexedImageBytes(lineage, snapshotId);
   const free = await datastoreFreeBytes(machineName);
-  if (imageBytes === undefined || free === undefined || free < imageBytes * SPACE_FACTOR) {
+  if (imageBytes === undefined) {
+    throw new ValidationError(
+      t('commands.backup.verify.restoreTestSizeUnknown', { snapshot: snapshotId })
+    );
+  }
+  if (free === undefined) {
+    throw new ValidationError(
+      t('commands.backup.verify.restoreTestFreeUnknown', { machine: machineName })
+    );
+  }
+  if (free < imageBytes * SPACE_FACTOR) {
     throw new ValidationError(
       t('commands.backup.verify.restoreTestNoSpace', {
         snapshot: snapshotId,
-        need: imageBytes === undefined ? SPACE_UNKNOWN : Math.ceil(imageBytes * SPACE_FACTOR),
-        free: free ?? SPACE_UNKNOWN,
+        need: Math.ceil(imageBytes * SPACE_FACTOR),
+        free,
       })
     );
   }
   return {
     repoKey,
     machineName,
+    restoreTo,
     lineage,
     snapshotId,
     source: { ...source, credential: source.credential },
@@ -299,14 +358,18 @@ function buildResult(
         }),
     ...(verdict.passphraseCheck && { passphraseCheck: verdict.passphraseCheck }),
     ...(verdict.compare && { compare: verdict.compare }),
+    ...(plan.restoreTo && { restoredOn: plan.restoreTo }),
     ...(held && { verificationState: held }),
     cleanup,
   };
 }
 
 /** Run the restore test for one repository and print its verdict. Exit 1 unless proven. */
-export async function runRestoreTest(repoRef: string): Promise<void> {
-  const plan = await planRestoreTest(repoRef);
+export async function runRestoreTest(
+  repoRef: string,
+  options: { restoreTo?: string } = {}
+): Promise<void> {
+  const plan = await planRestoreTest(repoRef, options.restoreTo);
   const copy = await registerCopy(plan);
 
   let verdict: Verdict;
@@ -318,7 +381,7 @@ export async function runRestoreTest(repoRef: string): Promise<void> {
       machine: plan.machineName,
       lineage: plan.lineage,
       snapshotId: plan.snapshotId,
-      sourceGuid: plan.source.repositoryGuid,
+      sourceGuid: plan.restoreTo === undefined ? plan.source.repositoryGuid : undefined,
     });
     if (verdict.status === 'proven' || verdict.postFailed) {
       answer = await postVerification(plan.snapshotId, 'restore-test', verdict.status);

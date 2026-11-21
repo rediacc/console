@@ -266,11 +266,14 @@ def _stage_receipt(root: pathlib.Path) -> None:
     src = root / "private" / "renet"
     lock = b'{"components": {}}'
     (src / "embed-assets.lock.json").write_bytes(lock)
+    dockerfile = b"FROM ubuntu:26.10 AS criu-builder-amd64\n"
+    (src / "Dockerfile").write_bytes(dockerfile)
     asset = src / "pkg" / "embed" / "assets" / "amd64" / "base" / "criu-linux-amd64.zst"
     asset.parent.mkdir(parents=True)
     asset.write_bytes(b"criu")
     receipt = {
         "lockfileSha256": hashlib.sha256(lock).hexdigest(),
+        "dockerfileSha256": hashlib.sha256(dockerfile).hexdigest(),
         "assets": {
             "amd64/base/criu-linux-amd64.zst": {"sha256": hashlib.sha256(b"criu").hexdigest()}
         },

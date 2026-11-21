@@ -3,15 +3,15 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import { getExecutor } from '../services/executor/executor-factory.js';
+import { runCommandJob } from '../services/jobs/command-job.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
-import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
-import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
-import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { handleError, ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { assertMachineExists } from './_validate.js';
-import { parseDatastorePruneOutput } from './datastore-prune-parser.js';
+import { type AutostartListOptions, handleAutostartList } from './repo-autostart-list.js';
+import { settleRepoJob } from './repo-job-outcome.js';
+import { ownershipParams, renderRootOwnedDryRun } from './repo-ownership-params.js';
 import { registerRepoPolicyCommand } from './repo-policy.js';
 import { registerRepoPromoteCommand } from './repo-promote.js';
 import { registerRepoPruneCommand } from './repo-prune.js';
@@ -45,6 +45,7 @@ function requireMachine(machine: string | undefined): string {
 
 /** Execute a machine-level function (no repository context needed). */
 async function executeMachineFunction(
+  verb: string,
   functionName: string,
   options: { machine: string; debug?: boolean; skipRouterRestart?: boolean },
   messages: { starting: string; completed: string; failed: string }
@@ -52,85 +53,21 @@ async function executeMachineFunction(
   await assertMachineExists(options.machine);
   outputService.info(messages.starting);
 
-  const result = await getExecutor().execute({
-    functionName,
-    machineName: options.machine,
-    params: {},
-    debug: options.debug,
-    skipRouterRestart: options.skipRouterRestart,
-  });
-
-  if (result.success) {
+  // One machine job and no client follow-up: the completed line is the only tail, printed once the job is seen to succeed.
+  const outcome = await runCommandJob(
+    verb,
+    {
+      functionName,
+      machineName: options.machine,
+      params: {},
+      debug: options.debug,
+      skipRouterRestart: options.skipRouterRestart,
+    },
+    []
+  );
+  if (settleRepoJob(verb, outcome, outcome.result.error ?? messages.failed)) {
     outputService.success(messages.completed);
-  } else {
-    renderLocalExecutionFailure(result, result.error ?? messages.failed);
   }
-}
-
-interface AutostartListPayload {
-  service_installed?: boolean;
-  service_enabled?: boolean;
-  repositories?: { name: string; enabled: boolean; on_disk: boolean }[] | null;
-}
-
-interface AutostartListOptions {
-  machine: string;
-  cluster?: string;
-  debug?: boolean;
-  skipRouterRestart?: boolean;
-}
-
-/** `repo autostart list`, fetch the renet payload and render it. */
-async function handleAutostartList(options: AutostartListOptions): Promise<void> {
-  await assertMachineExists(options.machine);
-  outputService.info(
-    t('commands.repo.admin.autostart.list.starting', { machine: options.machine })
-  );
-
-  const result = await getExecutor().execute({
-    functionName: 'repository_autostart_list',
-    machineName: options.machine,
-    params: {},
-    debug: options.debug,
-    skipRouterRestart: options.skipRouterRestart,
-    captureOutput: true,
-  });
-
-  if (!result.success) {
-    renderLocalExecutionFailure(
-      result,
-      result.error ?? t('commands.repo.admin.autostart.list.failed')
-    );
-    return;
-  }
-
-  // renet relays a single JSON object with `[repository_autostart_list]` line prefixes, same shape the prune parser extracts.
-  const payload = parseDatastorePruneOutput(result.stdout ?? '') as AutostartListPayload;
-  const format = getOutputFormat();
-  if (format !== 'table') {
-    outputService.print(payload, format);
-    return;
-  }
-
-  const resolve = createGuidResolver(await loadGuidMap());
-  const rows = (payload.repositories ?? []).map((r) => ({
-    repository: resolve(r.name),
-    guid: r.name,
-    enabled: r.enabled ? 'yes' : 'no',
-    onDisk: r.on_disk ? 'yes' : 'no',
-  }));
-
-  if (rows.length === 0) {
-    outputService.info(t('commands.repo.admin.autostart.list.empty', { machine: options.machine }));
-  } else {
-    outputService.print(rows, 'table');
-  }
-  outputService.info(
-    t('commands.repo.admin.autostart.list.service', {
-      installed: payload.service_installed ? 'yes' : 'no',
-      enabled: payload.service_enabled ? 'yes' : 'no',
-    })
-  );
 }
 
 /**
@@ -167,7 +104,11 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
             repoKey,
             machineName,
             { size: options.size },
-            { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
+            {
+              ...options,
+              ...(kubeCluster !== undefined && { kubeCluster }),
+              job: { verb: 'repo resize', steps: [] },
+            },
             {
               starting: t('commands.repo.resize.starting', {
                 repository: ref,
@@ -210,7 +151,11 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
             repoKey,
             machineName,
             { size: options.size },
-            { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
+            {
+              ...options,
+              ...(kubeCluster !== undefined && { kubeCluster }),
+              job: { verb: 'repo expand', steps: [] },
+            },
             {
               starting: t('commands.repo.expand.starting', {
                 repository: ref,
@@ -262,7 +207,11 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
             repoKey,
             machineName,
             {},
-            { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
+            {
+              ...options,
+              ...(kubeCluster !== undefined && { kubeCluster }),
+              job: { verb: 'repo admin validate', steps: [] },
+            },
             {
               starting: t('commands.repo.admin.validate.starting', {
                 repository: ref,
@@ -309,7 +258,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
               repoKey,
               machineName,
               {},
-              options,
+              { ...options, job: { verb: 'repo admin autostart enable', steps: [] } },
               {
                 starting: t('commands.repo.admin.autostart.enable.starting', {
                   repository: ref,
@@ -322,6 +271,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
           } else {
             const machine = requireMachine(options.machine);
             await executeMachineFunction(
+              'repo admin autostart enable',
               'repository_autostart_enable_all',
               { ...options, machine },
               {
@@ -363,7 +313,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
               repoKey,
               machineName,
               {},
-              options,
+              { ...options, job: { verb: 'repo admin autostart disable', steps: [] } },
               {
                 starting: t('commands.repo.admin.autostart.disable.starting', {
                   repository: ref,
@@ -376,6 +326,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
           } else {
             const machine = requireMachine(options.machine);
             await executeMachineFunction(
+              'repo admin autostart disable',
               'repository_autostart_disable_all',
               { ...options, machine },
               {
@@ -414,6 +365,9 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
     .description(t('commands.repo.admin.ownership.description'))
     .argument('<ref>', t('options.repoRef'))
     .option('--uid <uid>', t('commands.repo.admin.ownership.uidOption'))
+    .option('--root-owned', t('commands.repo.admin.ownership.rootOwnedOption'))
+    .option('--dry-run', t('commands.repo.admin.ownership.dryRunOption'))
+    .option('--undo', t('commands.repo.admin.ownership.undoOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
@@ -421,22 +375,31 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
         ref: string,
         options: {
           uid?: string;
+          rootOwned?: boolean;
+          dryRun?: boolean;
+          undo?: boolean;
           debug?: boolean;
           skipRouterRestart?: boolean;
         }
       ) => {
         try {
+          const params = ownershipParams(options);
           const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
           await assertCommandPolicy(CMD.REPO_ADMIN_OWNERSHIP, repoKey);
-          const params: Record<string, unknown> = {};
-          if (options.uid) params.owner_uid = options.uid;
+          // The dry run's answer is the list renet prints on stdout; without capturing it the list reached the terminal only under --debug.
+          const listing = options.rootOwned === true && options.dryRun === true;
 
-          await executeRepoFunction(
+          const result = await executeRepoFunction(
             'repository_ownership',
             repoKey,
             machineName,
             params,
-            { ...options, ...(kubeCluster !== undefined && { kubeCluster }) },
+            {
+              ...options,
+              ...(kubeCluster !== undefined && { kubeCluster }),
+              ...(listing && { captureOutput: true }),
+              job: { verb: 'repo admin ownership', steps: [] },
+            },
             {
               starting: t('commands.repo.admin.ownership.starting', {
                 repository: ref,
@@ -446,6 +409,9 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
               failed: t('commands.repo.admin.ownership.failed'),
             }
           );
+          if (listing && result.success && result.state !== 'running') {
+            renderRootOwnedDryRun(repoKey, machineName, result.stdout);
+          }
         } catch (error) {
           handleError(error);
         }
@@ -552,6 +518,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
             {
               ...options,
               ...(resolved.kubeCluster !== undefined && { kubeCluster: resolved.kubeCluster }),
+              job: { verb: 'repo admin template apply', steps: [] },
             },
             {
               starting: t('commands.repo.admin.template.starting', {

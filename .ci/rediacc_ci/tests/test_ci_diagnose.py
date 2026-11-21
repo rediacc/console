@@ -77,7 +77,9 @@ def the_job():
 # ---- the real run ---------------------------------------------------------------
 
 
-def test_the_real_run_reads_cancelled_by_the_watchdog_budget(tmp_path):
+def test_the_real_run_reads_cancelled_by_the_watchdog_budget(tmp_path, monkeypatch):
+    # The recorded run's job name carries its leg count ("1/8"), and check:ci-budget-freshness prunes names the shard manifests no longer ship, so a leg-count change removes that row from the committed lane-durations.json. The table is injected here; test_p90_table_reads_the_committed_lane_durations covers the committed read.
+    monkeypatch.setattr(D, "_p90_table", lambda: {the_job()["name"]: 8.6})
     fetch = FakeFetch(real_routes(), real_texts())
     d = D.diagnose(fetch, RUN, attempt=1, cache_dir=tmp_path)
     assert d["schema"] == "ci-verdict/v1"
@@ -94,16 +96,17 @@ def test_the_real_run_reads_cancelled_by_the_watchdog_budget(tmp_path):
     assert ff["step"] == "Run E2E Tests (Workers)"
     assert ff["category"] == "infra-likely"
     assert ff["signature"] == "slow-setup"
-    # The p90 comes from the COMMITTED lane-durations.json, which check:ci-budget-freshness keeps current, so the expected value is read from the same table rather than pinned: the pinned 540 (9.0m) went stale on the 2026-10-04 refresh (8.6m), a true drift and not a regression.
-    recorded = D._p90_table().get(the_job()["name"])
-    assert isinstance(recorded, (int, float)), (
-        "the job must have a recorded p90 in lane-durations.json"
-    )
-    assert ff["p90_s"] == round(float(recorded) * 60), (
-        "the job's recorded p90 must be quoted beside its 1069 s step"
+    assert ff["p90_s"] == 516, (
+        "the job's recorded p90 (8.6 min) must be quoted beside its 1069 s step"
     )
     assert any("(916s)" in ln for ln in ff["excerpt"]), ff["excerpt"]
     assert d["next"] == ".ci/scripts/ci/ci-trace.py --job %s --errors" % JOB
+
+
+def test_p90_table_reads_the_committed_lane_durations():
+    table = D._p90_table()
+    assert table, "lane-durations.json must carry a non-empty job_p90_minutes table"
+    assert all(isinstance(v, (int, float)) for v in table.values()), table
 
 
 def test_the_real_run_names_the_900_second_silence(tmp_path):
@@ -405,6 +408,10 @@ SIG_CASES = {
         'level=info msg="[setup] essentials end 1790907838 (23s)" vm=rediacc1',
     ),
     "go-fail": ("--- FAIL: TestPkgInstallRetry (0.50s)", "--- PASS: TestPkgInstallRetry (0.50s)"),
+    "go-pkg-fail": (
+        "FAIL\texample.com/mod/cmd/tool\t75.457s",
+        "FAIL",
+    ),
     "gate-finding": (
         "::finding::P-A1:b7ac548bf529",
         "findings: 0 (::finding:: lines would appear here)",
@@ -431,6 +438,10 @@ SIG_CASES = {
     "upstream-unreachable": (
         "  Bitwarden CLI (pinned 2026.9.0): GET api.github.com/repos/bitwarden/clients/releases -> HTTP 503, after 3 attempt(s)",
         "? Bitwarden CLI: attempt 1 of 3 failed (HTTP 503), asking again in 2 s",
+    ),
+    "audit-finding": (
+        "\u2717 Stale allowlist entry: 1244012 does not appear in audit-report.json",
+        "\u2713 No production vulnerabilities",
     ),
     "pin-stale": (
         "\u2717 1 devcontainer pin(s) are behind upstream:",
@@ -468,13 +479,126 @@ def test_the_same_error_wrapper_without_a_stall_stays_code():
     assert D.classify(lines) == ("code-likely", "error")
 
 
-def test_a_stall_outranks_a_code_failure_in_the_same_log():
-    """Precedence is the table's own: any infra hit wins over any code hit, so a real failure beside a stall reads infra and the excerpt still shows both."""
+def test_a_go_test_failure_outranks_a_stall_in_the_same_log():
+    """A test runner's own failure line wins over an infra row: a rerun would not fix a failed test."""
     lines = [
         "2026-10-07T18:20:00.0000000Z --- FAIL: TestX (0.1s)",
         "2026-10-07T18:22:20.0000000Z apt install of btrfs-progs failed or stalled past 30s in all 3 attempts",
     ]
+    assert D.classify(lines) == ("code-likely", "go-fail")
+
+
+GO_FAIL_EXCERPT = "job_133045740418_go_test_fail_excerpt.log"
+
+
+def _go_fail_lines():
+    return (FIX / GO_FAIL_EXCERPT).read_text(encoding="utf-8").splitlines()
+
+
+def test_a_go_job_with_passing_stall_simulations_reads_the_test_failure():
+    """Quality / Go job 133045740418 (run 43789577407): passing tests logged simulated apt stalls, `--- FAIL: TestRunRepositoryLicenseStatusJSON` was the failure."""
+    lines = _go_fail_lines()
+    assert D.classify(lines) == ("code-likely", "go-fail")
+    quoted = "\n".join(D.excerpt(lines))
+    assert "TestRunRepositoryLicenseStatusJSON" in quoted
+    assert "stalled past" not in quoted
+
+
+def test_the_package_fail_line_alone_is_a_test_failure():
+    lines = ["2026-11-16T02:13:22.2243890Z FAIL\texample.com/mod/cmd/tool\t75.457s"]
+    assert D.classify(lines) == ("code-likely", "go-pkg-fail")
+
+
+def test_a_stall_inside_a_test_log_line_is_no_infra_verdict_when_the_log_has_a_verdict():
+    """Control: the `_test.go:<n>:` lines of a log that also holds a PASS verdict: the simulated stall is not read."""
+    lines = [ln for ln in _go_fail_lines() if "_test.go:" in ln]
+    lines.append("2026-11-16T02:13:22.3000000Z --- PASS: TestOther (0.00s)")
+    assert any("stalled past" in ln for ln in lines)
+    assert D.classify(lines) == ("unknown", "")
+
+
+def test_a_cut_off_log_with_a_stall_in_a_test_log_line_stays_infra():
+    """A run cut off by the runner has no FAIL/ok/PASS line; a stall printed through `t.Fatalf` is the real failure."""
+    lines = [ln for ln in _go_fail_lines() if "_test.go:" in ln]
+    assert any("stalled past" in ln for ln in lines)
     assert D.classify(lines) == ("infra-likely", "pkg-install-stall")
+
+
+STALL_TEST_LINE = "2026-11-16T02:13:20.0000000Z     x_test.go:12: apt install of jq failed or stalled past 30s in all 3 attempts"
+
+
+def test_a_gate_fail_line_is_no_test_verdict():
+    """A non-Go gate line `FAIL: check:foo` plus a cut-off stall in a test log line still reads infra."""
+    lines = ["2026-11-16T02:13:19.0000000Z FAIL: check:foo", STALL_TEST_LINE]
+    assert not D._has_test_verdict(lines)
+    assert D.classify(lines) == ("infra-likely", "pkg-install-stall")
+
+
+def test_real_runner_verdict_shapes_switch_the_infra_skip_off():
+    """Control: a package `FAIL<TAB>pkg`, an `ok  <TAB>pkg`, a bare PASS and a pytest case line are verdicts."""
+    shapes = [
+        "FAIL\texample.com/mod/a\t0.1s",
+        "ok  \texample.com/mod/a\t0.1s",
+        "PASS",
+        "FAILED tests/test_x.py::test_y - assert 0",
+        "tests/test_x.py::test_y PASSED                                      [ 50%]",
+        "tests/test_x.py::test_z FAILED                                      [100%]",
+        "=== 1 failed, 2 passed in 0.5s ===",
+    ]
+    for shape in shapes:
+        lines = ["2026-11-16T02:13:19.0000000Z " + shape, STALL_TEST_LINE]
+        assert D._has_test_verdict(lines), shape
+        assert D.classify(lines)[0] != "infra-likely", shape
+
+
+def test_render_agrees_with_classify_when_the_verdict_is_outside_the_excerpt(tmp_path, monkeypatch):
+    """The verdict line sits far below the excerpt window: render must still treat the test log line as test output."""
+    log_lines = ["2026-11-16T02:13:%02d.0000000Z filler %d" % (i, i) for i in range(12)]
+    log_lines.append(STALL_TEST_LINE)
+    log_lines.append("2026-11-16T02:13:21.0000000Z ##[error]boom")
+    log_lines += ["2026-11-16T02:13:22.0000000Z filler %d" % i for i in range(30)]
+    log_lines.append("2026-11-16T02:13:59.0000000Z --- PASS: TestOther (0.00s)")
+    monkeypatch.setattr(D, "evidence", lambda log, _job: ("s", log.splitlines(), False))
+    fetch = FakeFetch({}, {"actions/jobs/1/logs": "\n".join(log_lines)})
+    job = {"id": 1, "name": "J", "status": "completed", "conclusion": "failure", "steps": []}
+    block, _gaps = D._focus(fetch, job, cache_dir=tmp_path)
+    assert (block["category"], block["signature"]) == ("code-likely", "step-error"), block
+    assert block["test_verdict"] is True
+    assert not D._has_test_verdict(block["excerpt"])
+    d = D._blank(1, 1, None)
+    d["first_failure"] = block
+    quoted = [ln for ln in D.render(d).splitlines() if "stalled past" in ln]
+    assert quoted == [], quoted
+
+
+def test_an_error_line_does_not_pull_an_infra_window_next_to_a_test_failure():
+    """A stall just before `##[error]` is not quoted when a Go FAIL line is the verdict."""
+    lines = [
+        "2026-11-16T02:13:20.0000000Z --- FAIL: TestX (0.1s)",
+        "2026-11-16T02:13:21.0000000Z ok  \texample.com/mod/a\t0.1s",
+        "2026-11-16T02:13:21.1000000Z x",
+        "2026-11-16T02:13:21.2000000Z x",
+        "2026-11-16T02:13:21.3000000Z x",
+        "2026-11-16T02:13:21.4000000Z x",
+        "2026-11-16T02:13:21.5000000Z x",
+        "2026-11-16T02:13:21.6000000Z x",
+        "2026-11-16T02:13:21.7000000Z apt install of jq failed or stalled past 30s in all 3 attempts",
+        "2026-11-16T02:13:22.0000000Z ##[error]Process completed with exit code 1.",
+    ]
+    assert D.classify(lines) == ("code-likely", "go-fail")
+    quoted = "\n".join(D.excerpt(lines))
+    assert "TestX" in quoted
+    assert "stalled past" not in quoted
+
+
+def test_a_real_stall_without_a_test_failure_stays_infra():
+    """Control: the same stall text outside a test log line, and no FAIL line, is still the package-manager stall."""
+    lines = [
+        "2026-11-16T02:13:22.0000000Z apt install of qemu-system-x86 jq failed or stalled past 30s in all 3 attempts",
+        "2026-11-16T02:13:22.1000000Z --- PASS: TestParseThinPoolStatus (0.00s)",
+    ]
+    assert D.classify(lines) == ("infra-likely", "pkg-install-stall")
+    assert any("stalled past" in ln for ln in D.excerpt(lines))
 
 
 PIN_RETRY = "2026-10-14T03:10:01.0000000Z ? Bitwarden CLI: attempt %d of 3 failed (%s), asking again in %d s"
@@ -1249,3 +1373,54 @@ def test_span_of_a_job_cancelled_before_it_ran_is_no_duration():
     """FIRES-if-unfixed: run 37633980671 a2 (2026-10-07) carried started_at after completed_at, and `--history` printed "-7m40s"."""
     assert D._span("2026-10-07T14:20:00Z", "2026-10-07T14:12:20Z") is None
     assert D._span("2026-10-07T14:12:20Z", "2026-10-07T14:20:00Z") == 460
+
+
+# The excerpt of run 42182422300's Security job (job 127846206473), PLAN-health-checks-local N6 / F11. The Bitwarden fetch SUCCEEDED; the only line that names `bws` beside a three-digit 5xx number is a gate's own success line, where 520 is a COUNT of `env.BWS_*` reads. The exit 1 came from `npm audit`'s allowlist check.
+SECURITY_AUDIT_RUN = [
+    "2026-11-06T10:37:29.7286673Z Authenticating with Bitwarden...",
+    "2026-11-06T10:37:56.4608282Z ✓ bws map: 151 secret(s) mapped, 27 caller file(s) all resolve (floor 19), 520 env.BWS_* read(s) each supplied by a fetch above it",
+    "2026-11-06T10:38:40.2847563Z → Auditing production dependencies (no allowlist for new advisories)",
+    "2026-11-06T10:38:40.7338308Z ✓ No production vulnerabilities",
+    "2026-11-06T10:38:40.7338877Z → Auditing all dependencies (allowlist for dev-only)",
+    "2026-11-06T10:38:42.2973717Z ✗ Stale allowlist entry: 1244012 does not appear in audit-report.json",
+    "2026-11-06T10:38:42.2976464Z ✗ Allowlist problems found \u2014 see errors above: an entry either has an available fix without a BLOCKER annotation, or is stale",
+    "2026-11-06T10:38:42.3172227Z ##[error]Process completed with exit code 1.",
+]
+
+
+def test_an_npm_audit_exit_after_successful_bitwarden_lines_is_the_audit_finding():
+    """The current classifier read the count `520` on the bws success line as an HTTP 5xx and called the job infrastructure, so a re-run was advised for a red that is a stale allowlist entry in the tree."""
+    assert D.classify(SECURITY_AUDIT_RUN) == ("code-likely", "audit-finding")
+    assert "allowlist" in D.signature_label("audit-finding")
+
+
+def test_a_success_marked_line_alone_is_no_signature_hit():
+    """Control on the cause: the success-marked line alone is no hit, so the verdict does not depend on the audit row outranking it."""
+    assert D._sig_hit(SECURITY_AUDIT_RUN[1]) is None
+    assert D.classify(SECURITY_AUDIT_RUN[:2]) == ("unknown", "")
+
+
+def test_a_line_with_a_pass_mark_and_a_failure_mark_is_still_read():
+    line = "2026-11-06T10:38:42.0Z \u2713 No production vulnerabilities \u2717 Stale allowlist entry: 1 is stale"
+    assert D._sig_hit(line) is not None
+    assert D.classify([line]) == ("code-likely", "audit-finding")
+
+
+def test_the_pass_part_of_a_mixed_line_is_not_read_but_its_failure_part_is():
+    """A pass mark followed by a failure mark reads from the failure mark: the 520 count in the pass part is no Bitwarden 5xx, the stale allowlist entry after it is the finding."""
+    line = (
+        "2026-11-06T10:38:42.0Z \u2713 bws map: 520 env.BWS_* read(s) each supplied "
+        "\u2717 Stale allowlist entry: 1 is stale"
+    )
+    assert D.classify([line]) == ("code-likely", "audit-finding")
+    count_only = "2026-11-06T10:38:42.0Z \u2713 bws map: 520 env.BWS_* read(s) \u2717 failed"
+    assert D._sig_hit(count_only) is None
+
+
+def test_a_real_bitwarden_5xx_still_reads_infra_beside_the_audit_lines():
+    """Control for the other direction: a genuine Bitwarden failure is still infrastructure, and still outranks the audit finding."""
+    lines = [
+        "2026-11-06T10:37:30.0000000Z ##[warning]bws-secrets: attempt 4 of 4 failed (Received error message from server: [502 Bad Gateway])",
+        *SECURITY_AUDIT_RUN[5:],
+    ]
+    assert D.classify(lines) == ("infra-likely", "bitwarden-5xx")

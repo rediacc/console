@@ -9,13 +9,18 @@ EACH SIDE ON ITS OWN. A private/account range charges the account side and a ren
 
 THE LEDGER. An admitted escape appends one line per push to agent/ledgers/vm-check-push-reasons.jsonl in the world; a refused command, a command whose second push is refused, and a push a VERIFIED receipt admits append nothing. All three are read back from the file.
 
-THE MUTANTS ARE PROVEN HERE TOO. The guard's `DEFECT` and every one of its `MUTANTS` (`inputs-always-equal`, `asked-always-true`, `phases-ignored`, `account-side-dropped`) are each planted in a copy run through the same payloads, and each must flip at least one refusal to allowed; a suite whose green did not depend on that line would pass the copy too.
+THE VERIFIED CHAIN (agent/plans/PLAN-vmcheck-incremental.md V2). A renet-only receipt whose run diffed against a both-phase VERIFIED account commit admits a push touching both sides; the same receipt is refused when the account side moved after that commit (`chain-touched`), when the base commit has no receipt, and when its receipt is NOT_VERIFIED (`chain-broken`).
+
+TWO TREES OF ONE REPOSITORY (PLAN-two-track-merge-dev LT6). A linked tree beside a VERIFIED console world, on its own branch with its own CLI change: its push, typed there or named by `git -C`, is refused with no receipt of its own and admitted with one, and the console world's own push stays admitted.
+
+THE MUTANTS ARE PROVEN HERE TOO. The guard's `DEFECT` and every one of its `MUTANTS` (`inputs-always-equal`, `asked-always-true`, `phases-ignored`, `account-side-dropped`, `chain-touched-ignored`, `sibling-tree-unjudged`) are each planted in a copy run through the same payloads, and each must flip at least one refusal to allowed; a suite whose green did not depend on that line would pass the copy too.
 """
 
 import importlib.util
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -75,7 +80,10 @@ MISMATCH = G.plant_receipt(G.world(new_dir("mismatch-"), cli=True), built=G.FAKE
 ESC_NR = built("vmc-cli-none")
 ESC_DL = built("vmc-cli-none")
 ESC_NV = built("vmc-cli-not-verified")
+# A push publishes to its URL (#f2e3507a), so the admitted outside push sends to a repository none of the judged world's remotes name, and OUTSIDE_SAME keeps the fixture's own origin, the judged world's too, which is this checkout's push.
 OUTSIDE = built("vmc-docs-only")
+G._git(OUTSIDE, "remote", "set-url", "origin", "https://example.invalid/outside/scratch.git")
+OUTSIDE_SAME = built("vmc-docs-only")
 # HEAD reverts the CLI change that `G.TIP_BRANCH` still carries: a command pushing both commits is judged on each.
 REVERTED = built("vmc-reverted")
 REVERTED_VERIFIED = built("vmc-reverted")
@@ -148,6 +156,11 @@ ESC_GATEWAY = G.plant_receipt(
     "NOT_VERIFIED",
     reason_class="account-gateway",
 )
+# The V2 chain worlds: a renet-only receipt for the pushed tree naming a both-phase VERIFIED commit as its base.
+CHAIN_OK = built("vmc-chain-ok")
+CHAIN_ACCOUNT_AFTER = built("vmc-chain-account-after")
+CHAIN_NO_BASE = built("vmc-chain-no-base")
+CHAIN_BASE_NV = built("vmc-chain-base-not-verified")
 ACCOUNT_HIT = "private/account/%s" % G.ACCOUNT_SRC
 TIP = G.TIP_BRANCH
 TIP_PUSH = "git push origin %s:refs/heads/x" % TIP
@@ -190,6 +203,27 @@ R = "VM_CHECK_PUSH_REASON='%s' "
 PUSH = "git push origin 1008-1"
 NR = (R % ("not-runtime: " + FILES + ASK)) + PUSH
 
+
+# ---- two trees of one repository (PLAN-two-track-merge-dev LT6): a linked tree beside the console world, on its own branch with its own CLI change and its own .ci/cache. The submodule checkouts are copied in, since a linked tree checks out none. CLAUDE_PROJECT_DIR stays on the console world and VERIFIED there, so only the linked tree's own receipt can admit its push.
+def linked_world(root, name, receipt):
+    tree = pathlib.Path(root).parent / name
+    G._git(root, "worktree", "add", "-q", "-b", "1008-2", str(tree), "HEAD")
+    for sub in (G.RENET, G.ACCOUNT):
+        shutil.rmtree(tree / sub, ignore_errors=True)
+        shutil.copytree(pathlib.Path(root) / sub, tree / sub, symlinks=True)
+    G._put(tree, G.CLI_FILE, "export const sftp = 3;\n")
+    G._git(tree, "add", G.CLI_FILE)
+    G._git(tree, "commit", "-q", "-m", "landing work")
+    if receipt:
+        G.plant_receipt(tree)
+    return tree
+
+
+SIB_MAIN = built("vmc-cli-verified")
+SIB_TREE = linked_world(SIB_MAIN, "landing-none", receipt=False)
+SIB_OK_MAIN = built("vmc-cli-verified")
+SIB_OK_TREE = linked_world(SIB_OK_MAIN, "landing-verified", receipt=True)
+
 CASES = [
     # (name, command, root, transcript, cwd, expect_blocked, stderr needle) ---- the trigger
     ("docs only: a bare push", PUSH, DOCS, None, None, False, ""),
@@ -213,6 +247,61 @@ CASES = [
         "npm run vm:check -- --changed",
     ),
     ("CLI touched: an implicit push", "git push", CLI_NONE, None, None, True, ""),
+    # LT6: a push typed in the linked tree is judged there. `HEAD` there is the linked tree's commit; read in the console world it would be the VERIFIED one.
+    (
+        "linked tree: HEAD pushed, no receipt of its own",
+        "git push origin HEAD",
+        SIB_MAIN,
+        None,
+        str(SIB_TREE),
+        True,
+        "packages/cli/src/remote/sftp.ts",
+    ),
+    (
+        "linked tree: its branch pushed, no receipt of its own",
+        "git push origin 1008-2",
+        SIB_MAIN,
+        None,
+        str(SIB_TREE),
+        True,
+        "",
+    ),
+    (
+        "linked tree: a -C push from the console world",
+        "git -C %s push origin HEAD" % SIB_TREE,
+        SIB_MAIN,
+        None,
+        None,
+        True,
+        "",
+    ),
+    (
+        "linked tree: its own VERIFIED receipt admits HEAD",
+        "git push origin HEAD",
+        SIB_OK_MAIN,
+        None,
+        str(SIB_OK_TREE),
+        False,
+        "",
+    ),
+    (
+        "linked tree: and its branch",
+        "git push origin 1008-2",
+        SIB_OK_MAIN,
+        None,
+        str(SIB_OK_TREE),
+        False,
+        "",
+    ),
+    (
+        "linked tree CONTROL: the console world's own push stays VERIFIED",
+        "git push origin 1008-1",
+        SIB_MAIN,
+        None,
+        None,
+        False,
+        "",
+    ),
     ("CLI touched: a -C push", "git -C . push origin 1008-1", CLI_NONE, None, None, True, ""),
     (
         "CLI touched: an sh -c payload",
@@ -360,6 +449,35 @@ CASES = [
     ),
     ("both sides: both costs named", PUSH, BOTH_ACCOUNT_ONLY, None, None, True, "renet phase"),
     ("both sides, both phases VERIFIED", PUSH, BOTH_VERIFIED, None, None, False, ""),
+    # ---- the VERIFIED chain (PLAN-vmcheck-incremental V2): a renet-only receipt whose run diffed against a both-phase VERIFIED commit
+    ("chain: the account side rides its VERIFIED base", PUSH, CHAIN_OK, None, None, False, ""),
+    (
+        "chain: the account side changed after the base",
+        PUSH,
+        CHAIN_ACCOUNT_AFTER,
+        None,
+        None,
+        True,
+        "[chain-touched] the account side changed since the VERIFIED base",
+    ),
+    (
+        "chain: the base has no receipt",
+        PUSH,
+        CHAIN_NO_BASE,
+        None,
+        None,
+        True,
+        "[chain-broken]",
+    ),
+    (
+        "chain: the base receipt is NOT_VERIFIED",
+        PUSH,
+        CHAIN_BASE_NV,
+        None,
+        None,
+        True,
+        "which does not cover it: [not-verified]",
+    ),
     (
         "account checkout is not the pointer",
         PUSH,
@@ -609,6 +727,15 @@ CASES = [
         False,
         "",
     ),
+    (
+        "a repository outside whose origin is this checkout's",
+        "git -C %s push origin 1008-1" % OUTSIDE_SAME,
+        CLI_NONE,
+        None,
+        None,
+        True,
+        "",
+    ),
     ("an empty command", "", CLI_NONE, None, None, False, ""),
     # ---- the escape, admitted
     ("not-runtime, answered", NR, ESC_NR, ANSWERED, None, False, ""),
@@ -795,6 +922,17 @@ CASES = [
     ),
 ]
 
+# BOX G5 OF PLAN-local-first-delivery: the shared backup-ref cases (`_backup_push.CASES`), in a world whose range touches the CLI, so every push it does not admit is refused here.
+BP = importlib.import_module("rediacc_hooks.guards._backup_push")
+BACKUP_WORLDS = {
+    True: BP.plant(built("vmc-cli-none")),
+    False: BP.plant(built("vmc-cli-none"), pinned=False),
+}
+CASES += [
+    (label, command, BACKUP_WORLDS[pinned], None, None, not admitted, "")
+    for label, command, pinned, admitted in BP.CASES
+]
+
 BROKEN_RUNNER = (
     "import sys; sys.path.insert(0, %r)\n"
     "from rediacc_hooks import hookio\n"
@@ -816,8 +954,9 @@ BROKEN_RUNNER = (
 
 
 def ledger_lines(root):
-    path = pathlib.Path(root) / LEDGER
-    return path.read_text(encoding="utf-8").splitlines() if path.is_file() else []
+    # Not named `path`: block_live_proof_ledger_shell_write reads Python bindings without scope, so a `path` bound to a ledger here made `transcript()`'s `path.write_text` read as a ledger write and refused every run of this harness from the Bash tool.
+    reasons = pathlib.Path(root) / LEDGER
+    return reasons.read_text(encoding="utf-8").splitlines() if reasons.is_file() else []
 
 
 def run(command, root, transcript_path, cwd, broken=None):
@@ -998,16 +1137,21 @@ MUST_FLIP = {
     # Only the empty-sides call admits it: with the account side dropped, the renet phase is still missing.
     "phases-ignored": "both sides, an account-only VERIFIED receipt",
     "account-side-dropped": "account range, a renet-only VERIFIED receipt",
+    "chain-touched-ignored": "chain: the account side changed after the base",
+    "sibling-tree-unjudged": "linked tree: HEAD pushed, no receipt of its own",
 }
 for label, mutant in CONTROLS:
-    flipped = [
-        n for n, c, r, tr, cwd, w, _ in CASES if w and not run(c, r, tr, cwd, broken=mutant)[0]
-    ]
     must = MUST_FLIP.get(label)
+    # A control stops at its first flip: the named case when it has one, else the first refusal that turns allowed.
+    flipped = []
+    for n, c, r, tr, cwd, w, _ in CASES:
+        if w and (must is None or n == must) and not run(c, r, tr, cwd, broken=mutant)[0]:
+            flipped.append(n)
+            break
     if flipped and (must is None or must in flipped):
         print(
-            "%s control: planted %r; %d refusal(s) flipped to allowed, e.g. %r"
-            % (label, mutant[1], len(flipped), must or flipped[0])
+            "%s control: planted %r; refusal flipped to allowed: %r"
+            % (label, mutant[1], must or flipped[0])
         )
     else:
         print(
@@ -1015,7 +1159,7 @@ for label, mutant in CONTROLS:
             % (
                 label,
                 mutant,
-                "every refusal still refused" if not flipped else "%r did not flip" % must,
+                "the named case %r did not flip" % must if must else "no refusal turned allowed",
             )
         )
         fails += 1

@@ -1,29 +1,29 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { outputService } from '../services/core/output.js';
+import { currentOutputFormat, setCurrentOutputFormat } from '../services/core/output-format.js';
 import {
   currentRequestContext,
   DispatchExit,
   exitProcess,
   writeStdout,
 } from '../services/core/request-context.js';
+import { printFeedbackHint, withFeedbackOption } from '../services/feedback/hint.js';
+import { recordCommand } from '../services/feedback/ring.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
 import { type CliError, ERROR_CODES, type NextAction, ValidationError } from '../types/errors.js';
 import { EXIT_CODES, type OutputFormat } from '../types/index.js';
 import { CliExitError } from './cli-exit-error.js';
-
-// Global output format (set by main program before command execution)
-let currentOutputFormat: OutputFormat = 'table';
 
 /**
  * Set the current output format for error handling.
  * Should be called after parsing CLI options but before running commands.
  */
 export function setOutputFormat(format: OutputFormat): void {
-  currentOutputFormat = format;
+  setCurrentOutputFormat(format);
 }
 
 export function getOutputFormat(): OutputFormat {
-  return currentOutputFormat;
+  return currentOutputFormat();
 }
 
 /** Determine if an error is retryable based on exit code */
@@ -78,6 +78,10 @@ export function namedFailureOf(error: unknown): NamedFailure | undefined {
       ...(error.connectTarget && { connectTarget: error.connectTarget }),
     };
   }
+  // A provisioner refusal keeps its code across `rdc serve`, so a proxied caller can act on it.
+  if (error instanceof CliExitError && error.code.startsWith('RENET_')) {
+    return { errorCode: error.code, guidance: error.guidance };
+  }
   const named = sshConnectError(error);
   if (!named?.errorCode) return undefined;
   const connectTarget = unreachableTarget(error);
@@ -120,6 +124,9 @@ function outputJsonError(cliError: CliError): void {
         retryable: isRetryable(cliError),
         guidance: getGuidance(cliError),
         ...(cliError.next && { next: cliError.next }),
+        ...((cliError as { overlaps?: unknown[] }).overlaps?.length && {
+          overlaps: (cliError as { overlaps?: unknown[] }).overlaps,
+        }),
       },
     ],
     warnings: outputService.getWarnings(),
@@ -166,11 +173,24 @@ export function handleError(error: unknown): never {
     hasDetails: Boolean(cliError.details?.length),
   });
 
-  if (currentOutputFormat === 'json') {
-    outputJsonError(cliError);
+  const argv = process.argv.slice(2);
+  const hintContext = { argv, exitCode: cliError.exitCode };
+  const json = currentOutputFormat() === 'json';
+  if (json) {
+    const next = withFeedbackOption(cliError.next, hintContext);
+    outputJsonError(next ? { ...cliError, next } : cliError);
   } else {
     outputTextError(cliError);
   }
+
+  recordCommand({
+    argv,
+    exitCode: cliError.exitCode,
+    errorCode: cliError.code,
+    errorMessage: cliError.message,
+  });
+  // JSON mode carries the hint in the envelope's `next`; text mode prints it after the error.
+  if (!json) printFeedbackHint(hintContext);
 
   // Fire-and-forget telemetry shutdown (don't block exit). Inside an executor dispatch the process keeps serving other callers, and a shut-down SDK cannot be restarted, so one failed request would silence telemetry for all of them.
   if (!currentRequestContext()) {

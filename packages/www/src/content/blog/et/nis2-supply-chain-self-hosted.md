@@ -12,8 +12,8 @@ tags:
   - vastavus
 featured: false
 language: et
-sourceHash: "c1a20432472d9452"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "02a3f195c73de031"
+sourceCommit: "ddf4affc88b6a49d8b23351f99d04e19870444f3"
 translatedFrom: en
 ---
 
@@ -80,19 +80,19 @@ Rediacc on üles ehitatud teisiti. Täielik arhitektuur on dokumenteeritud [arhi
 - `rdc` töötab operaatori tööjaamal. See loeb lamedat JSON-konfiguratsioonifaili (kaustas `~/.config/rediacc/`), ühendub operaatori enda masinatega üle SSH ja saadab käske.
 - `renet` töötab operaatori enda serveris root-õigustega ja haldab LUKS2-krüptitud kettakujutisi, isoleeritud Dockeri daemoneid ja pöördpuhverserverit.
 
-Operaator ei logi kunagi Rediacc OÜ taristusse varukoopia, taastamise või hargnemise käivitamiseks. Andmetees ei ole Rediacc OÜ pilve. Hoidla LUKS2 mandaat säilitatakse operaatori kohalikus konfiguratsioonifailis (moodus `0600`), mitte kunagi serveris, mitte kunagi saadetuna Rediaccile. Andmetee näeb välja selline:
+Operaator ei logi kunagi Rediacci taristusse varukoopia, taastamise või hargnemise käivitamiseks. Andmetees ei ole Rediacci pilve. Hoidla LUKS2 mandaat säilitatakse operaatori kohalikus konfiguratsioonifailis (moodus `0600`), mitte kunagi serveris, mitte kunagi saadetuna Rediaccile. Andmetee näeb välja selline:
 
 1. **Operaatori tööjaam.** Käivitab `rdc`. Hoiab LUKS2 mandaati.
 2. **Operaatori enda server.** Käivitab `renet`. Hoiab LUKS2-krüptitud hoidlaid.
 3. **Varukoopia sihtkoht.** Kas operaatori kontrollitav teine masin (`rdc repo push`) või majutatud tükksalvestus (`rdc backup snapshot`), mis hoiab ainult šifreeritud rakke, mida adresseeritakse nende SHA-256 järgi. LUKS-mandaat ei jõua ei ühegi ega teiseni.
 
-Kihti 4 pole. Rediacc OÜ ei ole alluttöötleja ühelegi operaatorile, kes pole katsetuslikku [Pilveadapterisse](/et/docs/architecture) registreerunud. Ise majutavate operaatorite jaoks on suhe Rediacc OÜ-ga tarkvaralitsents, mitte andmetöötlusleping.
+Kihti 4 pole. Rediacc ei ole alluttöötleja ühelegi operaatorile, kes pole katsetuslikku [Pilveadapterisse](/et/docs/architecture) registreerunud. Ise majutavate operaatorite jaoks on suhe Rediacciga tarkvaralitsents, mitte andmetöötlusleping.
 
 See on andmetee argument ja see on õige argument, millega tarnijate registri vestluses alustada. SaaS-i konkurent saab pakkuda kliendi hallatavaid võtmeid (ja enamik kaasaegseid pakubki). SaaS-i konkurent ei saa pakkuda "me ei ole alluttöötleja."
 
-Teine löök, pärast seda kui andmetee argument on kohale jõudnud, on võtmehaldus. Rediacciga on LUKS2 mandaat operaatori konfiguratsioonifailis, punkt. Võtmejärelvalvet pole, taasteteenus puudub, mida Rediacc OÜ saaks käivitada, kui operaator mandaadi kaotab. See on ka soovituslik arhitektuur [nullteadmiste konfiguratsioonihoidlale](/et/docs/config-storage), kus krüptovõti tuletatakse kliendi poolel passivõtme PRF-laiendist ning server säilitab läbipaistmatuid plokke. Server ei saa lugeda SSH-võtmeid, LUKS2 mandaate, IP-aadresse ega ühtegi selget konfiguratsiooniteksti. Juurdepääsu loa rotatsioon ei anna serverile tagasiulatuvat lugemisõigust.
+Teine löök, pärast seda kui andmetee argument on kohale jõudnud, on võtmehaldus. Rediacciga on LUKS2 mandaat operaatori konfiguratsioonifailis, punkt. Võtmejärelvalvet pole, taasteteenus puudub, mida Rediacc saaks käivitada, kui operaator mandaadi kaotab. See on ka soovituslik arhitektuur [nullteadmiste konfiguratsioonihoidlale](/et/docs/config-storage), kus krüptovõti tuletatakse kliendi poolel passivõtme PRF-laiendist ning server säilitab läbipaistmatuid plokke. Server ei saa lugeda SSH-võtmeid, LUKS2 mandaate, IP-aadresse ega ühtegi selget konfiguratsiooniteksti. Juurdepääsu loa rotatsioon ei anna serverile tagasiulatuvat lugemisõigust.
 
-Article 21(2)(h) (krüpteerimine) seisukohast on see oluline. Article 21(2)(d) (tarneahel) seisukohast on see olulisem, sest see eemaldab viimase loogilise juurdepääsutee Rediacc OÜ-lt operaatori andmetele.
+Article 21(2)(h) (krüpteerimine) seisukohast on see oluline. Article 21(2)(d) (tarneahel) seisukohast on see olulisem, sest see eemaldab viimase loogilise juurdepääsutee Rediaccilt operaatori andmetele.
 
 ## Mida ise majutamine ei kaota
 
@@ -100,7 +100,7 @@ Ise majutamine nihutab tarnijate nimekirja, ei kustuta seda. Kolm asja, mida aud
 
 **1. Teil on ikkagi hankijad, lihtsalt erinevad.** Riistvara hankija (Hetzner, Hostinger, OVH, teie kolokatsiooniruumid, teie enda bare metal). Hypervisor (KVM, VMware). Operatsioonisüsteem (Debian, Ubuntu, RHEL). Konteinerite register (Docker Hub, GHCR, teie privaatne register). Aluspildid, mida teie teenused tõmbavad. Igaüks neist on Article 21(2)(d) kanne. Ise majutamine nihutab hankijate nimekirja, ei kustuta seda.
 
-**2. Rediaccil ei ole veel ISO 27001, SOC 2 ega BSI C5.** Need on teekaardil, mitte käes. Hanketiimi jaoks, mis kasutab sertifikaate väravamehhanismina, on see reaalne hõõrdekoht. Kaitsetav vastuargument on see, mida see postitus on esitanud: andmetee argument tähendab, et enamik sellest, mida need sertifikaadid tõendavad (hankija pilve turvakontrollid, hankija töötajate juurdepääsu haldamine, hankija alluttöötlejate haldamine), ei ole reguleerimisalas, sest Rediacc OÜ ei ole andmetees. Seda argumenti tuleb esitada hoolikalt ja kaitstavalt, mitte sertifikaatide asendajana siis, kui ostja vajab just sertifikaate.
+**2. Rediaccil ei ole veel ISO 27001, SOC 2 ega BSI C5.** Need on teekaardil, mitte käes. Hanketiimi jaoks, mis kasutab sertifikaate väravamehhanismina, on see reaalne hõõrdekoht. Kaitsetav vastuargument on see, mida see postitus on esitanud: andmetee argument tähendab, et enamik sellest, mida need sertifikaadid tõendavad (hankija pilve turvakontrollid, hankija töötajate juurdepääsu haldamine, hankija alluttöötlejate haldamine), ei ole reguleerimisalas, sest Rediacc ei ole andmetees. Seda argumenti tuleb esitada hoolikalt ja kaitstavalt, mitte sertifikaatide asendajana siis, kui ostja vajab just sertifikaate.
 
 **3. GRC kiht on ikkagi teie oma.** Rediacc annab operaatorile üle 70-sündmuselise räsiketiga auditilogi (`rdc config audit verify` valideerib ahela algusest lõpuni). See ei anna teile tarnijate registrit, kontrollraamistikku ega tõendite kogumise töövoogu. Need tulevad ikka Drata, Vanta, OneTrust või mõne Euroopa tulijate käest. Kaasleva [tegeliku arve postituse](/et/blog/nis2-the-real-bill) kaudu saate täpsemat teavet selle täiendavuse kulustruktuuri kohta.
 
@@ -123,7 +123,7 @@ Pärast Rediaccile üleminekut Hetzneris:
 
 | Väli | Pärast |
 |---|---|
-| Hankijad | (1) Rediacc OÜ, tarkvaralitsents; (2) Hetzner, IaaS |
+| Hankijad | (1) [Rediacc](/et/legal-information), tarkvaralitsents; (2) Hetzner, IaaS |
 | Tase | (1) Mittekriitiline (andmetasandit pole); (2) Kriitiline (andmetasand, kuid kliendi hallatav) |
 | Töödeldud andmed | (1) Puuduvad; (2) Krüptitud mahud, klient hoiab võtmeid |
 | Alluttöötlejad | (1) Ise majutavatele puuduvad; (2) Ainult Hetzner-sisesed, loetletud nende DPA-s |

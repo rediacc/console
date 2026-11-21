@@ -1,13 +1,6 @@
-import { PassThrough } from 'node:stream';
-import { describe, expect, it, vi } from 'vitest';
-
-const writes = vi.hoisted(() => [] as string[]);
-vi.mock('../../services/core/request-context.js', async () => {
-  const actual = await vi.importActual<object>('../../services/core/request-context.js');
-  return { ...actual, writeStderr: (s: string) => writes.push(s) };
-});
-
-const { buildSSHExitErrorMessage, teeStderrTail } = await import('../term-ssh-exit.js');
+import { describe, expect, it } from 'vitest';
+import { CliExitError } from '../../utils/cli-exit-error.js';
+import { buildSSHExitErrorMessage, createStderrTail, sshExitError } from '../term-ssh-exit.js';
 
 describe("term connect carries the remote's own error (C11)", () => {
   it("makes renet's cobra Error line the message instead of the generic code hint", () => {
@@ -25,7 +18,9 @@ describe("term connect carries the remote's own error (C11)", () => {
   it('names the version skew when the remote renet rejects a flag the CLI sent', () => {
     const tail = 'Error: unknown flag: --datastore\nUsage: renet term ...\n';
     const message = buildSSHExitErrorMessage(1, tail, 'server-1');
-    expect(message).toBe('renet on server-1 is older than this CLI; run machine setup');
+    expect(message).toBe(
+      'renet on server-1 is older than this CLI; run machine setup directly, without --proxy, since an executor never uploads renet'
+    );
     expect(message).not.toContain('unknown flag');
   });
 
@@ -45,14 +40,28 @@ describe("term connect carries the remote's own error (C11)", () => {
     expect(buildSSHExitErrorMessage(255)).toContain('SSH connection failed');
   });
 
-  it('tees every stderr chunk to the terminal and keeps the tail for the error', async () => {
-    writes.length = 0;
-    const stream = new PassThrough();
-    const tail = teeStderrTail(stream);
-    stream.write('first line\n');
-    stream.end('Error: unknown repo\n');
-    await new Promise((r) => stream.on('end', r));
-    expect(writes.join('')).toBe('first line\nError: unknown repo\n');
-    expect(buildSSHExitErrorMessage(1, tail())).toContain('unknown repo');
+  it('keeps the stderr tail for the error', () => {
+    const tail = createStderrTail();
+    tail.add('first line\n');
+    tail.add('Error: unknown repo\n');
+    expect(tail.read()).toBe('first line\nError: unknown repo\n');
+    tail.add('x'.repeat(5000));
+    expect(tail.read()).toHaveLength(4096);
+    expect(buildSSHExitErrorMessage(1, 'first line\nError: unknown repo\n')).toContain(
+      'unknown repo'
+    );
+  });
+});
+
+describe('the exit code of a term connect session', () => {
+  it("makes a -c command's exit code the CLI's exit code", () => {
+    const error = sshExitError(3, '', 'server-1', true);
+    expect(error).toBeInstanceOf(CliExitError);
+    expect((error as CliExitError).exitCode).toBe(3);
+  });
+
+  it("keeps 255 as ssh's own connection failure, and an interactive shell's generic failure", () => {
+    expect(sshExitError(255, '', 'server-1', true)).not.toBeInstanceOf(CliExitError);
+    expect(sshExitError(3, '', 'server-1', false)).not.toBeInstanceOf(CliExitError);
   });
 });

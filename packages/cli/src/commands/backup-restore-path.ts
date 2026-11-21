@@ -7,6 +7,12 @@
  */
 
 import { t } from '../i18n/index.js';
+import {
+  executeWithStoreFallback,
+  pickStores,
+  type ResolveInStore,
+  storeParam,
+} from '../services/backup/backup-store-pick.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
@@ -134,9 +140,10 @@ const NO_LISTING_MESSAGES: Record<string, string> = {
 const NO_LISTING_FALLBACK = 'commands.backup.restore.pathNoListing';
 
 /**
- * Run `backup_restore_path` for `repoKey` on `machineName`. `resolveSnapshot` maps the
- * `--at` value to a snapshot id; it is a parameter, not an import, because backup.ts owns
- * the resolver and the stream scope and a static import back would close a cycle.
+ * Run `backup_restore_path` for `repoKey` on `machineName`. `resolveSnapshot` returns the
+ * resolver that maps the `--at` value to a snapshot id inside one store; it is a parameter,
+ * not an import, because backup.ts owns the resolver and the stream scope and a static
+ * import back would close a cycle.
  */
 export async function runRestorePath(args: {
   repoKey: string;
@@ -144,8 +151,10 @@ export async function runRestorePath(args: {
   at: string;
   path: string;
   to?: string;
+  /** `--from <storeId>`: the backup store to read; without it the account's best-ranked store. */
+  from?: string;
   debug?: boolean;
-  resolveSnapshot: (lineage: string, at: string) => Promise<string>;
+  resolveSnapshot: (lineage: string, at: string) => Promise<ResolveInStore>;
 }): Promise<void> {
   const { repoKey, machineName, at, path, to, debug, resolveSnapshot } = args;
   const repo = await configService.getRepository(repoKey);
@@ -156,43 +165,44 @@ export async function runRestorePath(args: {
     throw new ValidationError(t('commands.backup.restore.pathNeedsCredential', { name: repoKey }));
   }
   const lineage = lineageOf(repo);
-  const snapshotId = await resolveSnapshot(lineage, at);
-
-  const result = await executeRepoFunction(
-    'backup_restore_path',
-    repoKey,
-    machineName,
-    { lineage, at: snapshotId, path, to: to ?? '' },
-    {
-      debug,
-      captureOutput: true,
-      // The record print rides the job's ticket (PLAN-detached-jobs J4): a backgrounded restore-path prints it from `rdc job wait`.
-      job: {
-        verb: 'backup restore',
-        steps: [planStep('reportRestorePath', { repo: repoKey, snapshot: snapshotId })],
-      },
-    },
-    {
-      starting: t('commands.backup.restore.pathStarting', {
-        name: repoKey,
-        path,
-        snapshot: snapshotId,
-      }),
-      completed: t('commands.backup.restore.pathCompleted', { name: repoKey }),
-      failed: t('commands.backup.restore.pathFailed', { name: repoKey }),
-    }
+  const resolveIn = await resolveSnapshot(lineage, at);
+  // Each store tried resolves the time inside itself, so a fallback reads the snapshot that store holds. A store that fails for its own reasons (a 5xx, a refused grant) hands the read to the next ranked one. renet fetches into a staging file and places under --to only afterwards, rolling back what it placed on failure, so a failed attempt leaves nothing under --to for the next one to meet.
+  const pick = await pickStores(lineage, args.from);
+  const failedMessage = t('commands.backup.restore.pathFailed', { name: repoKey });
+  await executeWithStoreFallback(
+    pick,
+    resolveIn,
+    (store, snapshotId) =>
+      executeRepoFunction(
+        'backup_restore_path',
+        repoKey,
+        machineName,
+        { lineage, at: snapshotId, path, to: to ?? '', ...storeParam(store) },
+        {
+          debug,
+          captureOutput: true,
+          failureIsAnswer: true,
+          // The record print rides the job's ticket (PLAN-detached-jobs J4): a backgrounded restore-path prints it from `rdc job wait`.
+          job: {
+            verb: 'backup restore',
+            steps: [
+              planStep('reportRestorePath', { repo: repoKey, snapshot: snapshotId }),
+              planStep('reportRestorePathFailure', { repo: repoKey, snapshot: snapshotId }),
+            ],
+          },
+        },
+        {
+          starting: t('commands.backup.restore.pathStarting', {
+            name: repoKey,
+            path,
+            snapshot: snapshotId,
+          }),
+          completed: t('commands.backup.restore.pathCompleted', { name: repoKey }),
+          failed: failedMessage,
+        }
+      ),
+    failedMessage
   );
-
-  if (!result.success) {
-    // 18 is a distinct code, as with browse: "this snapshot cannot address the path" is not "it broke".
-    if (result.exitCode === RENET_NO_LISTING_EXIT) {
-      const key = NO_LISTING_MESSAGES[noListingReason(result)];
-      outputService.warn(t(key ?? NO_LISTING_FALLBACK, { name: repoKey, snapshot: snapshotId }));
-      setExitCode(RENET_NO_LISTING_EXIT);
-    }
-    // Any other failure was rendered, with its exit code, by executeRepoFunction.
-    return;
-  }
 }
 
 /** Print the restore-path record parsed from the job's stdout. */
@@ -227,6 +237,28 @@ async function reportRestorePath(repoKey: string, stdout: string | undefined): P
     outputService.warn(t('commands.backup.restore.pathSkipped', { count: record.skipped }));
   }
 }
+
+/**
+ * The failure tail: 18 is a distinct code, as with browse ("this snapshot cannot address the path" is not "it broke"). It is a ticket step so a
+ * backgrounded restore-path keeps the warning and the exit code when `rdc job wait` or the finished notice runs it. Any other failure was rendered, with its exit code, by executeRepoFunction.
+ * The step sees the job's output and exit code, not its stderr, because a ticket step has only the replayed output: a NO_LISTING reason that renet printed only to stderr falls back to the generic message.
+ */
+function reportRestorePathFailure(
+  repoKey: string,
+  snapshotId: string,
+  exitCode: number | undefined,
+  output: string | undefined
+): void {
+  if (exitCode !== RENET_NO_LISTING_EXIT) return;
+  const key = NO_LISTING_MESSAGES[noListingReason({ stdout: output })];
+  outputService.warn(t(key ?? NO_LISTING_FALLBACK, { name: repoKey, snapshot: snapshotId }));
+  setExitCode(RENET_NO_LISTING_EXIT);
+}
+
+bindStepHandler('reportRestorePathFailure', ({ params, output, exitCode }) => {
+  reportRestorePathFailure(String(params.repo), String(params.snapshot), exitCode, output);
+  return Promise.resolve();
+});
 
 bindStepHandler('reportRestorePath', ({ params, output }) =>
   reportRestorePath(String(params.repo), output)

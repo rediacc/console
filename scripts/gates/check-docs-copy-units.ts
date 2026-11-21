@@ -172,7 +172,7 @@ const main = (): number => {
         offences.push(`${file}: a ${b.lang} block offers ${units.length} copy unit(s)`);
       }
       for (const unit of units) {
-        const head = (b.texts[unit.start] || '').trim();
+        const head = (b.texts[unit.start] ?? '').trim();
         if (DANGLING.has(head)) {
           offences.push(`${file}: a copy unit starts on \`${head}\`, which is not a command`);
         }

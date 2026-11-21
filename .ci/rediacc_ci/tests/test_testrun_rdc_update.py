@@ -50,6 +50,7 @@ if (( rollback )); then
 fi
 if [[ "${FAKE_UPDATE_MODE:-}" == unreachable ]]; then echo "connect ECONNREFUSED" >&2; exit 1; fi
 if (( check )); then
+  curl -fsS "$REDIACC_RELEASES_URL/cli/$channel/manifest.json" >/dev/null || { echo "manifest fetch failed" >&2; exit 1; }
   mkdir -p "$HOME/.config/rediacc"
   printf '{"account":{"updateChannel":"%s"}}\n' "$channel" > "$HOME/.config/rediacc/rediacc.json"
   exit 0
@@ -149,7 +150,10 @@ def test_each_scenario_matches_the_twin(
 
 
 def test_a_broken_updater_fails_the_same_scenarios(tmp_path: pathlib.Path) -> None:
-    """A rdc that does nothing: the swap scenarios fail on both sides, and the same ones."""
+    """A rdc that does nothing: the swap scenarios fail on both sides, and the same ones.
+
+    The one delta is check-only: the twin let an updater that never contacted the fixture pass it (rc 0, no swap), the port fails it with "made no request to the fixture server".
+    """
     inert = tmp_path / "inert"
     inert.write_text('#!/bin/bash\n[[ "$1" == --version ]] && echo 1.0.3\nexit 0\n')
     inert.chmod(0o755)
@@ -157,15 +161,16 @@ def test_a_broken_updater_fails_the_same_scenarios(tmp_path: pathlib.Path) -> No
     new = drive(tmp_path, "py", ["happy", "rollback", "check-only"], inert)
     assert old.code == 1
     assert old.err.count("FAIL:") >= 2
-    assert (new.code, ANSI.sub("", new.out).count("PASS:")) == (
-        old.code,
-        ANSI.sub("", old.out).count("PASS:"),
-    )
+    assert new.code == 1
+    assert ANSI.sub("", old.out).count("PASS:") == 1
+    assert ANSI.sub("", new.out).count("PASS:") == 0
     old_failed = FAILED_LINE.search(ANSI.sub("", old.err))
     new_failed = FAILED_LINE.search(ANSI.sub("", new.err))
     assert old_failed
     assert new_failed
-    assert old_failed.group(0) == new_failed.group(0)
+    assert old_failed.group(0) == "FAILED: happy rollback"
+    assert new_failed.group(0) == "FAILED: happy rollback check-only"
+    assert "made no request to the fixture server" in new.err
 
 
 FAILED_LINE = re.compile(r"FAILED: .*")
@@ -321,3 +326,74 @@ def test_the_fixture_serves_the_tree_shape_install_sh_expects(
         assert manifest["binaries"]["linux-x64"]["sha256"] == "f" * 64
     finally:
         fixture.stop()
+
+
+def make_ctx(fake_rdc: pathlib.Path, *, dev: bool) -> rdc_update.Context:
+    return rdc_update.Context(
+        fake_rdc, pathlib.Path("install.sh"), "linux-x64", "rdc-linux-x64", dev
+    )
+
+
+def stub_run_rdc(
+    monkeypatch: pytest.MonkeyPatch, fixture: rdc_update.Fixture, *, hit: bool
+) -> list[tuple[str, ...]]:
+    """Replace `run_rdc` with a call that records its args and, when `hit`, counts one fixture request."""
+    calls: list[tuple[str, ...]] = []
+
+    def run(
+        _home: pathlib.Path, _fixture: rdc_update.Fixture, *args: str
+    ) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        if hit:
+            fixture.requests += 1
+        return subprocess.CompletedProcess(args, 0, "", "")
+
+    monkeypatch.setattr(rdc_update, "run_rdc", run)
+    return calls
+
+
+def test_a_dev_build_skips_the_fixture_request_check(
+    tmp_path: pathlib.Path, fake_rdc: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ctx = make_ctx(fake_rdc, dev=True)
+    fixture = rdc_update.Fixture(tmp_path / "fx")
+    try:
+        calls = stub_run_rdc(monkeypatch, fixture, hit=False)
+        done = rdc_update.run_rdc_checking(ctx, tmp_path, fixture, "update", "--check-only")
+    finally:
+        fixture.stop()
+    assert done.returncode == 0
+    assert calls == [("update", "--check-only")]
+    assert ctx.failures == [], "a dev build never contacts the fixture on --check-only"
+
+
+def test_a_release_build_fails_when_the_fixture_got_no_request(
+    tmp_path: pathlib.Path, fake_rdc: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture = rdc_update.Fixture(tmp_path / "fx")
+    try:
+        silent = make_ctx(fake_rdc, dev=False)
+        stub_run_rdc(monkeypatch, fixture, hit=False)
+        rdc_update.run_rdc_checking(silent, tmp_path, fixture, "update", "--check-only")
+        assert len(silent.failures) == 1
+        assert "made no request to the fixture server" in silent.failures[0]
+
+        reached = make_ctx(fake_rdc, dev=False)
+        stub_run_rdc(monkeypatch, fixture, hit=True)
+        rdc_update.run_rdc_checking(reached, tmp_path, fixture, "update", "--check-only")
+        assert reached.failures == []
+    finally:
+        fixture.stop()
+
+
+@pytest.mark.parametrize(
+    ("version_line", "expected"),
+    [("1.0.3-dev", True), ("1.0.3", False)],
+)
+def test_binary_is_dev_build_reads_the_version_suffix(
+    tmp_path: pathlib.Path, version_line: str, expected: bool
+) -> None:
+    binary = tmp_path / "rdc"
+    binary.write_text(f"#!/bin/bash\necho {version_line}\n")
+    binary.chmod(0o755)
+    assert rdc_update.binary_is_dev_build(binary) is expected

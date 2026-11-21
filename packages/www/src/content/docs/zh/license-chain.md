@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: zh
-sourceHash: "d6d980d721be2373"
-sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
+sourceHash: "78e880294cc0bf15"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 # 许可证链与委托
@@ -118,7 +118,7 @@ POST /licenses/renew
 
 ### 委托工作原理
 
-1. 企业管理员在本地部署服务器上生成 Ed25519 密钥对。
+1. 管理员在本地部署服务器上生成 Ed25519 密钥对。
 2. 管理员从上游申请委托证书：
    ```
    POST /admin/delegation-certs
@@ -322,8 +322,8 @@ Retry-After: 78234
 
 当新证书上传回本地部署时，`/onprem/cert-upload` 验证新证书的 `genesisSequence` 仍链接到本地颁发账本中的已知条目：
 
-- 若 `cert.genesisSequence > localHead.sequence`，返回 `409 CHAIN_HEAD_BEHIND`（上游处于分叉链上）。
-- 若 `cert.genesisSequence > 0` 且该序列处的本地账本条目的 `chainHash` 与 `cert.genesisHash` 不同，返回 `409 CHAIN_FORK_ON_UPLOAD`（本地链已与上游分叉）。
+- 若 `cert.genesisSequence > localHead.sequence`，返回 `409`，代码为 `chain-ahead`。
+- 若 `cert.genesisSequence > 0` 且该序列处的本地账本条目的 `chainHash` 与 `cert.genesisHash` 不同，返回 `409`，代码为 `chain-fork`。
 - 否则，证书被接受。后续颁发从 `localHead.sequence + 1` 继续。
 
 这意味着**传输期间无需写入冻结**。链在两端自然延伸，与 X.509 证书续期处理在途序列号的方式相同。

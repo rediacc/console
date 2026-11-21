@@ -208,7 +208,7 @@ def test_workflow_closure_is_computed_not_name_matched(gate, tmp_path):
     )
     # CONTROL: the closure is a computation, not 'every workflow file'.
     gate.assert_not_contains(
-        closure, "watchdog-monitor.yml", "a workflow ci.yml never calls is NOT in the closure"
+        closure, "ops-watchdog-monitor.yml", "a workflow ci.yml never calls is NOT in the closure"
     )
 
     # Both branches classify FULL (fail-closed either way), with distinct reasons proving the runtime closure is what decided.
@@ -219,7 +219,7 @@ def test_workflow_closure_is_computed_not_name_matched(gate, tmp_path):
         "workflow-closure:.github/workflows/cd-stage.yml",
         "attributed to the closure, where a cd-* pattern would have missed it",
     )
-    plan = classify([".github/workflows/watchdog-monitor.yml"])
+    plan = classify([".github/workflows/ops-watchdog-monitor.yml"])
     gate.assert_eq(plan["mode"], "full", "a non-closure workflow change is still full in v1")
     gate.assert_contains(
         dumps(plan["full_reasons"]), "workflow-non-closure:", "but attributed as non-closure"
@@ -782,7 +782,7 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
     # THE REPORTED CASE (commit bcc4f1ee1, 2026-08-06): an Apache-2.0 attribution-URL check that ran the ceph fork test, because scripts/** was a single blanket rule.
     expect_classify(gate, "gate source only", "reduced|19|", "scripts/gates/check-embed-credits.ts")
     expect_classify(gate, "gate lib only", "reduced|19|", "scripts/lib/blocker-validator.ts")
-    # FULL since 2026-09-30: housekeeping.yml's gate-costs-capture executes scripts/ci-runner/run.ts and its budget check reads gates.lock.json, so check_scope_scripts_reachability requires the `scripts-ci-runner` harness rule, the same verdict scripts/ci already has.
+    # FULL since 2026-09-30: ops-housekeeping.yml's gate-costs-capture executes scripts/ci-runner/run.ts and its budget check reads gates.lock.json, so check_scope_scripts_reachability requires the `scripts-ci-runner` harness rule, the same verdict scripts/ci already has.
     expect_classify(
         gate,
         "ci-runner only",

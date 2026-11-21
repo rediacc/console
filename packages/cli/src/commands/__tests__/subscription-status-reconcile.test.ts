@@ -11,12 +11,15 @@ vi.mock('../../i18n/index.js', () => ({
 
 const mockPrint = vi.hoisted(() => vi.fn());
 const infos = vi.hoisted(() => [] as string[]);
+const reports = vi.hoisted(() => [] as string[]);
 const warns = vi.hoisted(() => [] as string[]);
 vi.mock('../../services/core/output.js', () => ({
   outputService: {
     info: (m: string) => infos.push(m),
+    report: (m: string) => reports.push(m),
     warn: (m: string) => warns.push(m),
     success: vi.fn(),
+    format: () => 'TABLE',
     print: mockPrint,
   },
 }));
@@ -35,7 +38,19 @@ const mockListRepos = vi.hoisted(() => vi.fn());
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getTeam: vi.fn().mockResolvedValue(undefined),
-    listRepositories: mockListRepos,
+    // The status verb reads the config's GUIDs through getCurrent; the repos a test lists become its resources.
+    getCurrent: async () => ({
+      resources: {
+        repositories: Object.fromEntries(
+          ((await mockListRepos()) as { name: string; config: { repositoryGuid: string } }[]).map(
+            (r) => [
+              r.name,
+              { grand: 'main', tags: { main: { repositoryGuid: r.config.repositoryGuid } } },
+            ]
+          )
+        ),
+      },
+    }),
   },
 }));
 const mockFetch = vi.hoisted(() => vi.fn());
@@ -55,6 +70,7 @@ const recent = [
 describe('subscription status reconcile view', () => {
   beforeEach(() => {
     infos.length = 0;
+    reports.length = 0;
     warns.length = 0;
   });
 
@@ -73,7 +89,7 @@ describe('subscription status reconcile view', () => {
     expect(split.totalTrackedRepos + split.notInConfigCount).toBe(recent.length);
   });
 
-  it('prints the in-config and not-in-config lines from the report', async () => {
+  it('prints the table of this config and one summary line for the rest', async () => {
     mockReport.mockResolvedValue({
       planCode: 'ENTERPRISE',
       status: 'active',
@@ -92,10 +108,10 @@ describe('subscription status reconcile view', () => {
       { name: 'y', config: { repositoryGuid: 'b' } },
     ]);
     await executeSubscriptionStatus();
-    const out = infos.join('\n');
-    expect(out).toContain('remoteRepoLicensesInConfig:');
-    expect(out).toContain('"totalTrackedRepos":2');
-    expect(out).toContain('remoteRepoLicensesNotInConfig:{"count":2}');
+    const out = reports.join('\n');
+    expect(out).toContain('status.licencesHeader');
+    expect(out).toContain('status.elsewhereSummary');
+    expect(out).not.toContain('remoteRepoLicensesInConfig');
     expect(out).not.toContain('commands.subscription.status.remoteRepoLicenses:');
   });
 
@@ -122,7 +138,7 @@ describe('subscription status reconcile view', () => {
     } finally {
       setOutputFormat('table');
     }
-    expect(infos).toEqual([]);
+    expect(reports).toEqual([]);
     expect(mockPrint).toHaveBeenCalledTimes(1);
     const [data, format] = mockPrint.mock.calls[0] as [Record<string, unknown>, string];
     expect(format).toBe('json');
@@ -150,7 +166,7 @@ describe('subscription status reconcile view', () => {
     });
     mockListRepos.mockResolvedValue([]);
     await executeSubscriptionStatus();
-    expect(infos.join('\n')).toContain('commands.subscription.status.remoteRepoLicenses:');
+    expect(reports.join('\n')).toContain('commands.subscription.status.remoteRepoLicenses:');
   });
 });
 

@@ -23,10 +23,10 @@ ATTEMPT = {
     "body": (
         "<!-- claude-review-attempt: %s -->\nattempts: 1\nclass: error_max_turns\n"
         "A review pass was attempted on `4d3b950` and produced no report (`error_max_turns`).\n"
-        "`gh workflow run claude-review.yml --ref <this PR's branch> -f pr_number=594`" % HEAD
+        "`gh workflow run ops-claude-review.yml --ref <this PR's branch> -f pr_number=594`" % HEAD
     ),
 }
-RERUN = "gh workflow run claude-review.yml --ref 1004-1 -f pr_number=594"
+RERUN = "gh workflow run ops-claude-review.yml --ref 1004-1 -f pr_number=594"
 
 
 @pytest.fixture(scope="module")

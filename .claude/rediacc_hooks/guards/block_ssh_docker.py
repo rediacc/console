@@ -24,7 +24,7 @@ BRIDGE = hookio.rx(SSH_AT_CMD + r"[^|;&]*192\.168\.111\.")
 
 MESSAGE = (
     "❌ BLOCKED: Do not run raw ssh+docker on a rediacc-managed machine. Use: ./rdc.sh "
-    "term connect -m MACHINE -r REPO -c DOCKER_CMD. That runs inside the repo sandbox "
+    "term connect REPO@MACHINE -c DOCKER_CMD. That runs inside the repo sandbox "
     "with DOCKER_HOST preset, no sudo needed. Only bypass by editing "
     ".claude/settings.json if rdc genuinely cannot reach the daemon (e.g. host-level "
     "docker, not a rediacc repo)."

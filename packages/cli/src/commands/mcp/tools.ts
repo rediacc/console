@@ -155,6 +155,7 @@ async function executeTool(
   const result = await executeRdcCommand(argv, {
     ...options,
     timeoutMs: tool.timeoutMs ?? options.defaultTimeoutMs,
+    ...(tool.attachWindowMs !== undefined && args.background === true ? { background: true } : {}),
   });
   return {
     content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],

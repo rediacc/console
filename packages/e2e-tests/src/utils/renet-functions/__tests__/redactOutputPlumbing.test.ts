@@ -33,6 +33,7 @@ vi.mock('../../log', () => ({ log: (...args: unknown[]) => h.lines.push(args.joi
 vi.mock('../../ssh', () => ({
   getSSHExecutor: () => ({
     escapeForNestedSSH: (c: string) => c,
+    escapeForSSH: (c: string) => c,
     getSSHOptions: () => '',
     getInnerSSHOptions: () => '',
   }),

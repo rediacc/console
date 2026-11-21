@@ -22,6 +22,12 @@ WHAT IT CHECKS:
         - An open PR for that branch
         - The PR linked in the console PR description
         - All review comments on the submodule PR addressed
+        On the development draft (the console PR is a draft beside exactly
+        one ready console PR, the landing PR), the matching branch is the
+        development branch's name. A pointer the development branch carries
+        unchanged from the landing branch (an ancestor of the submodule's
+        branch of the landing name) is the landing PR's pairing, and is
+        validated on that PR's run instead.
   2. For submodules without pointer changes:
      - Confirms they are on 'main' (expected behavior)
 
@@ -124,7 +130,14 @@ import time
 from rediacc_ci import gitx, log, paths
 from rediacc_ci.controls import Controls, git_isolated
 from rediacc_ci.core import common, gh_retry
-from rediacc_ci.well_known import ACCOUNT_REPO, ELITE_REPO, GH_ORIGIN, HOMEBREW_TAP_REPO, RENET_REPO
+from rediacc_ci.well_known import (
+    ACCOUNT_REPO,
+    ELITE_REPO,
+    GH_ORIGIN,
+    GH_REPO,
+    HOMEBREW_TAP_REPO,
+    RENET_REPO,
+)
 
 GH_HOST = GH_ORIGIN.removeprefix("https://")
 
@@ -394,6 +407,62 @@ def branch_has_merged_pr(repo: str, branch: str) -> bool:
     return len(rows) > 0
 
 
+def development_landing(branch: str, console_prs: list[dict]) -> str:
+    """The landing branch when `branch` heads the DEVELOPMENT draft, "" otherwise (agent/plans/PLAN-two-track-merge-dev.md, box LT18).
+
+    The development draft is the console PR of `branch` when it is a draft and exactly one other open console PR is ready: that PR's head is the landing branch. The landing PR's own run, a draft with nothing ready beside it, and a ready PR all answer "", so their pairing stays the one-name rule. Pure, so the selftest drives both directions.
+    """
+    own = [row for row in console_prs if row.get("headRefName") == branch]
+    if len(own) != 1 or own[0].get("isDraft") is not True:
+        return ""
+    ready = [
+        row
+        for row in console_prs
+        if row.get("headRefName") != branch and row.get("isDraft") is False
+    ]
+    if len(ready) != 1:
+        return ""
+    return str(ready[0].get("headRefName") or "")
+
+
+def console_open_prs() -> list[dict]:
+    """The console's open PRs (`headRefName`, `isDraft`), [] when gh is missing or the read fails.
+
+    [] costs only the landing pairing: the gate then holds the development draft to the one-name rule, the stricter answer, and a failed read says so.
+    """
+    if not have_gh():
+        return []
+    ok, out = gh_probe(
+        True,
+        "open console PRs in %s" % GH_REPO,
+        ["pr", "list", "--repo", GH_REPO, "--state", "open", "--json", "headRefName,isDraft"],
+    )
+    if not ok:
+        log.warn("could not list the open console PRs; the landing pairing is not applied")
+        return []
+    try:
+        rows = json.loads(out or "[]")
+    except ValueError:
+        return []
+    if not isinstance(rows, list):
+        return []
+    return [row for row in rows if isinstance(row, dict)]
+
+
+def landing_carries(root: pathlib.Path, sm_path: str, landing: str, commit: str) -> bool:
+    """Is `commit` on the submodule's origin branch named `landing`? A fetch or ancestry failure answers False, the strict direction."""
+    if not landing or not commit:
+        return False
+    fetched = _run(["git", "-C", sm_path, "fetch", "--quiet", "origin", landing], cwd=str(root))
+    if fetched.returncode != 0:
+        return False
+    ancestor = _run(
+        ["git", "-C", sm_path, "merge-base", "--is-ancestor", commit, "FETCH_HEAD"],
+        cwd=str(root),
+    )
+    return ancestor.returncode == 0
+
+
 def console_pr_body(env: dict[str, str] | None = None) -> tuple[bool, str]:
     """(ok, body). ok=False means the fetch failed, not that the body is empty."""
     environ = os.environ if env is None else env
@@ -582,6 +651,14 @@ def main(argv: list[str] | None = None) -> int:
                 "submodule PR links there this run" % pr_number
             )
 
+    # The development draft's landing branch, "" on every other run (box LT18).
+    landing = development_landing(branch, console_open_prs()) if pr_number else ""
+    if landing:
+        log.info(
+            "development draft beside the landing PR of '%s': submodule PRs pair by '%s'"
+            % (landing, branch)
+        )
+
     for sm_path in SUBMODULE_ORDER:
         try:
             present = require_initialised(root, sm_path)
@@ -620,6 +697,12 @@ def main(argv: list[str] | None = None) -> int:
 
         sm_branch = submodule_branch(root, sm_path)
         if sm_branch != branch and not branch_exists_in_remote(root, sm_path, branch):
+            if landing and landing_carries(root, sm_path, landing, sm_commit):
+                log.info(
+                    "✓ %s: pointer carried from the landing branch '%s'; its PR pairs there"
+                    % (sm_path, landing)
+                )
+                continue
             log.error("✗ %s: has pointer changes but branch '%s' not found" % (sm_path, branch))
             log.error(
                 "  AI FIX: cd %s && git checkout -b %s && git push -u origin %s"
@@ -687,6 +770,16 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     log.info("All submodule branches validated successfully")
     return 0
+
+
+def _fixture_rev(repo: pathlib.Path, ref: str) -> str:
+    """The commit `ref` names in `repo`, for the selftest's fixtures."""
+    return subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", ref],
+        stdout=subprocess.PIPE,
+        text=True,
+        check=True,
+    ).stdout.strip()
 
 
 @git_isolated
@@ -846,6 +939,81 @@ def selftest() -> int:
             "VACUITY: a path that is not a repo reads as 'detached', never as a branch",
             submodule_branch(root, "private/renet"),
             "detached",
+        )
+
+    # -- development_landing: the development draft's pairing (box LT18) --
+    def pr(head: str, draft: bool) -> dict:
+        return {"headRefName": head, "isDraft": draft}
+
+    ctl.check(
+        "PLANT: the development draft beside the ready landing PR pairs with the landing branch",
+        development_landing("1121-1", [pr("1104-1", False), pr("1121-1", True)]),
+        "1104-1",
+    )
+    ctl.check(
+        "MIRROR: the landing PR's own run keeps the one-name pairing",
+        development_landing("1104-1", [pr("1104-1", False), pr("1121-1", True)]),
+        "",
+    )
+    ctl.check(
+        "MIRROR: a draft with nothing ready beside it is no development draft",
+        development_landing("1121-1", [pr("1121-1", True)]),
+        "",
+    )
+    ctl.check(
+        "MIRROR: a ready PR beside another is no development draft",
+        development_landing("1121-1", [pr("1104-1", False), pr("1121-1", False)]),
+        "",
+    )
+    ctl.check(
+        "MIRROR: two ready PRs beside the draft name no single landing branch",
+        development_landing(
+            "1121-1", [pr("1104-1", False), pr("0901-3", False), pr("1121-1", True)]
+        ),
+        "",
+    )
+    ctl.check(
+        "VACUITY: an unread listing pairs nothing",
+        development_landing("1121-1", []),
+        "",
+    )
+
+    # -- landing_carries: the submodule's landing branch holds the pointer --
+    with tempfile.TemporaryDirectory() as tmp:
+        base = pathlib.Path(tmp)
+        origin = base / "origin"
+        work = base / "console" / "private" / "renet"
+        git = ["git", "-c", "user.name=s", "-c", "user.email=s@example.invalid"]
+        subprocess.run(["git", "init", "-q", "-b", "main", str(origin)], check=True)
+        subprocess.run(
+            [*git, "-C", str(origin), "commit", "-q", "--allow-empty", "-m", "a"], check=True
+        )
+        subprocess.run(["git", "-C", str(origin), "branch", "1104-1"], check=True)
+        on_landing = _fixture_rev(origin, "1104-1")
+        subprocess.run(
+            [*git, "-C", str(origin), "commit", "-q", "--allow-empty", "-m", "b"], check=True
+        )
+        beyond = _fixture_rev(origin, "main")
+        work.mkdir(parents=True)
+        subprocess.run(["git", "init", "-q", "-b", "main", str(work)], check=True)
+        subprocess.run(["git", "-C", str(work), "remote", "add", "origin", str(origin)], check=True)
+        subprocess.run(["git", "-C", str(work), "fetch", "-q", "origin"], check=True)
+        console = base / "console"
+        ctl.truthy(
+            "PLANT: a pointer on the submodule's landing branch is carried from landing",
+            landing_carries(console, "private/renet", "1104-1", on_landing),
+        )
+        ctl.falsy(
+            "MIRROR: a pointer beyond the landing branch is not",
+            landing_carries(console, "private/renet", "1104-1", beyond),
+        )
+        ctl.falsy(
+            "MIRROR: a landing branch the submodule lacks carries nothing",
+            landing_carries(console, "private/renet", "0901-3", on_landing),
+        )
+        ctl.falsy(
+            "VACUITY: no landing branch carries nothing",
+            landing_carries(console, "private/renet", "", on_landing),
         )
 
     # -- the unreplied-comment oracle --------------------------------------

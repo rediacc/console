@@ -288,9 +288,24 @@ describe('pushAccess', () => {
     expect(readFileSync(authorizedKeysPath(), 'utf8')).toBe(EXISTING);
   });
 
-  it('a machine with no binding removes only this config’s marked lines', async () => {
+  it('a config with no access section writes and removes nothing, even over its own marked lines', async () => {
     await pushAccess('hostinger');
+    const afterPush = readFileSync(authorizedKeysPath(), 'utf8');
+    vi.clearAllMocks();
     access = undefined;
+
+    const report = await pushAccess('hostinger');
+    expect(report.noAccessSection).toBe(true);
+    expect(report.written).toBe(false);
+    expect(report.changes).toEqual([]);
+    expect(fakeSftp.writeFile).not.toHaveBeenCalled();
+    expect(fakeSftp.execStreaming).not.toHaveBeenCalled();
+    expect(readFileSync(authorizedKeysPath(), 'utf8')).toBe(afterPush);
+  });
+
+  it('an explicitly empty access section removes this config’s marked lines', async () => {
+    await pushAccess('hostinger');
+    access = {};
 
     const report = await pushAccess('hostinger');
     expect(report.changes.map((c) => c.action)).toEqual(['remove']);
@@ -306,7 +321,7 @@ describe('the lockout guard on removal (review c29ac396.1)', () => {
     expect(adopted.changes.map((c) => c.action)).toEqual(['adopt']);
     const before = readFileSync(authorizedKeysPath(), 'utf8');
     vi.clearAllMocks();
-    access = undefined;
+    access = {};
 
     const error = await pushAccess('hostinger').catch((e: unknown) => e);
 
@@ -330,7 +345,7 @@ describe('the lockout guard on removal (review c29ac396.1)', () => {
       authorizedKeysPath(),
       `${readFileSync(authorizedKeysPath(), 'utf8')}${SESSION.publicKey} re-added\n`
     );
-    access = undefined;
+    access = {};
 
     const report = await pushAccess('hostinger');
     expect(report.changes.map((c) => c.action)).toEqual(['remove']);

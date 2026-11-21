@@ -199,3 +199,6 @@ file:.github/actions/bws-secrets/fetch.sh
 
 # BLOCKER: an operator-owned file: .claude/rediacc_hooks/guards/block_protected_files.py:29-31 refuses its deletion or restore from the assistant's shell, so retiring it (it has no tracked caller, .ci/policy/.dead-bash-allowlist:33) is the operator's decision (W7P5-c D2), and porting a file the operator may delete would be work against that decision
 file:scripts/pre-commit-check.sh
+
+# BLOCKER: the H2 privdrop probe deployed as a repository's Rediaccfile by the drill's per-repo fork runner (drills/privdrop_probe.py); renet sources it as bash and calls its up/down functions, and the probe's whole point is what that bash lifecycle can read as the dropped user, so a Python port would test a different process
+file:.ci/rediacc_ci/drills/privdrop-probe/Rediaccfile

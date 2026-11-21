@@ -1,6 +1,7 @@
 import { repoDockerHost } from '@rediacc/shared/config/runtime-paths';
 import { installRepoLicence } from '../../licence';
 import { log } from '../../log';
+import { peerKnownHostsArg } from '../peerKnownHosts';
 import type { ExecResult } from '../types';
 
 /**
@@ -177,7 +178,7 @@ export class RepositoryHelpers {
    * push; deltaBase ships only the changed extents against an existing base.
    * --dest-user omitted → renet infers it from SUDO_USER (we run under sudo).
    */
-  deltaPushToMachine(
+  async deltaPushToMachine(
     repoGuid: string,
     destHost: string,
     datastorePath: string,
@@ -190,6 +191,7 @@ export class RepositoryHelpers {
     if (opts.destUser) cmd += ` --dest-user "${opts.destUser}"`;
     if (opts.deltaBase) cmd += ` --delta-base "${opts.deltaBase}"`;
     if (opts.retainBase) cmd += ` --retain-base "${opts.retainBase}"`;
+    cmd += await peerKnownHostsArg(this.executeViaBridge, 'dest-known-hosts', destHost);
     return this.executeViaBridge(cmd);
   }
 
@@ -198,7 +200,7 @@ export class RepositoryHelpers {
    * deltaBase ships only the changed extents against a base byte-identical on both
    * ends; force overwrites an existing local repo.
    */
-  deltaPullFromMachine(
+  async deltaPullFromMachine(
     repoGuid: string,
     srcHost: string,
     datastorePath: string,
@@ -211,6 +213,7 @@ export class RepositoryHelpers {
     if (opts.srcUser) cmd += ` --src-user "${opts.srcUser}"`;
     if (opts.deltaBase) cmd += ` --delta-base "${opts.deltaBase}"`;
     if (opts.force) cmd += ' --force';
+    cmd += await peerKnownHostsArg(this.executeViaBridge, 'src-known-hosts', srcHost);
     return this.executeViaBridge(cmd);
   }
 

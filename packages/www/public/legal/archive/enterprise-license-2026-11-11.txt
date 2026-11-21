@@ -1,0 +1,73 @@
+Enterprise Software License
+Effective Date: November 11, 2026
+
+1. Scope and Order Form
+
+This Enterprise Software License ("License") applies to Enterprise Subscriptions purchased from Rediacc OÜ ("Rediacc") or through an authorized Rediacc partner on an Order Form. The License, the Order Form and the Terms of Service <https://www.rediacc.com/en/terms-of-service> together form the agreement for that Subscription. If they conflict, the Order Form governs, then this License, then the Terms of Service.
+
+Where an Enterprise Subscription is purchased through a partner, fees and payment terms are agreed between the Customer and the partner, and the license rights and restrictions are granted by Rediacc under this License.
+
+2. Definitions
+
+- "Licensed Software" means the On-Premise Software and, where the Order Form includes it, the self-hosted account server software for running the Platform on the Customer's own infrastructure, in object code form, together with the updates Rediacc provides.
+- "Activation Ceiling" means the maximum number of Machines that may hold an activation at one time, as stated in the Order Form, or 25 where none is stated.
+- "Subscription Term" means the period stated in the Order Form, including renewals.
+- "Partner" means a reseller or service provider authorized by Rediacc to sell Enterprise Subscriptions.
+
+3. License Grant
+
+Subject to this License and payment of the fees, Rediacc grants the Customer, for the Subscription Term, a non-exclusive, non-transferable, non-sublicensable license to install and use the Licensed Software on infrastructure the Customer owns or controls, up to the Activation Ceiling, solely for the Customer's and its affiliates' internal business purposes. Contractors may use the Licensed Software on the Customer's behalf, and the Customer is responsible for them.
+
+4. Restrictions
+
+The restrictions of the Terms of Service apply. In addition, the Customer will not exceed the Activation Ceiling, run the self-hosted account server for anyone other than the Customer and its affiliates, or provide the Licensed Software to third parties as a hosted or managed service unless the Order Form expressly allows it.
+
+5. Delivery, License Files and Validation
+
+Rediacc delivers the Licensed Software electronically. Licenses are signed files that the Licensed Software validates, including offline. A self-hosted account server operates under its own license and records acceptance of the Customer's agreement through the Order Form rather than through the online acceptance flow of the Platform.
+
+6. Support and Updates
+
+Rediacc or the Partner provides support and updates at the level stated in the Order Form. Where none is stated, support is provided by email on business days, and updates are made available for the Licensed Software during the Subscription Term.
+
+7. Fees and Payment
+
+Fees, invoicing and payment terms are stated in the Order Form. Unless the Order Form says otherwise, invoices are payable within thirty (30) days, fees are exclusive of taxes, and fees for the Subscription Term are non-cancellable and non-refundable except as this License or the Terms of Service provide.
+
+8. Ownership
+
+Rediacc and its licensors own, or have the right to license, the Licensed Software and all intellectual property rights in it. The Licensed Software is licensed, not sold, and no right is granted except as expressly stated in this License.
+
+9. Limited Warranty
+
+Rediacc warrants that, for ninety (90) days after delivery, the Licensed Software will materially conform to its Documentation. The Customer's exclusive remedy for a breach of this warranty is for Rediacc to correct the non-conformity or, if Rediacc cannot do so within a reasonable time, for either party to terminate the affected Subscription and for Rediacc to refund the prepaid fees for the remaining Subscription Term.
+
+EXCEPT FOR THIS LIMITED WARRANTY, THE LICENSED SOFTWARE IS PROVIDED "AS IS", AND THE DISCLAIMER OF WARRANTIES IN THE TERMS OF SERVICE APPLIES.
+
+10. Limitation of Liability
+
+The limitation of liability in the Terms of Service applies, except that the cap is the fees paid or payable for the Subscription under the Order Form in the twelve (12) months before the event giving rise to the claim, unless the Order Form sets a different amount.
+
+11. Infringement Defense
+
+Rediacc's infringement defense obligation in the Terms of Service applies to the Licensed Software.
+
+12. Verification
+
+The Licensed Software reports activation counts to the license service, or, for an offline self-hosted account server, keeps local activation records. On reasonable request, no more than once a year, the Customer will confirm in writing its activation counts. If the Customer exceeds the Activation Ceiling, the parties will agree an amended Order Form, and the Customer will pay the fees for the excess usage at the rates in the Order Form.
+
+13. Term and Termination
+
+This License applies for the Subscription Term. Either party may terminate it for a material breach not cured within thirty (30) days of written notice. On expiry or termination, the Customer stops using the Licensed Software, except that Repositories already running continue to operate at the feature level of the Community plan, and deletes license files on request.
+
+14. Export, Governing Law and General Terms
+
+The export control, governing law, dispute resolution and general terms of the Terms of Service apply to this License, unless the Order Form sets other terms. The arbitration section of the Terms of Service applies only to Customers whose principal place of business is in the United States.
+
+15. Source of This License
+
+Portions of this License are adapted from the Common Paper Software License Agreement Standard Terms Version 1.1 (commonpaper.com/standards/software-license-agreement/1.1 <https://commonpaper.com/standards/software-license-agreement/1.1>), published by Common Paper, Inc. under the Creative Commons Attribution 4.0 International license (CC BY 4.0 <https://creativecommons.org/licenses/by/4.0/>). The text has been modified: it is restructured, shortened and adapted to the Services. Common Paper, Inc. does not endorse this License.
+
+Questions?
+
+For questions about Enterprise licensing, or to request an Order Form, contact us at contact@rediacc.com <mailto:contact@rediacc.com>.

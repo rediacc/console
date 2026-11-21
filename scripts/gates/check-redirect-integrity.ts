@@ -9,6 +9,9 @@
  *      (self-maps A -> A are legal — they trigger lang-prefix addition
  *      when the request has no lang; the Worker's self-redirect guard
  *      prevents loops when lang is already present).
+ *   2b. No rule rewrites a live page: an exact key naming one (unless it maps
+ *      to itself), or a pattern matching one that has no exact key. The Worker
+ *      reads this table before ASSETS, so such a rule hides the page.
  *   3. Every pattern `from` compiles as `new RegExp()`.
  *
  * Run via: `npm run check:ci-redirects`
@@ -28,8 +31,10 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const REDIRECTS_JSON = path.join(REPO_ROOT, 'workers/www/src/redirects.json');
-const MANIFEST = path.join(REPO_ROOT, 'packages/www/dist/route-manifest.json');
+// The gate test's seam: a fixture tree holding both inputs at their repo-relative paths.
+const ROOT = process.env.REDIRECT_INTEGRITY_FIXTURE_ROOT || REPO_ROOT;
+const REDIRECTS_JSON = path.join(ROOT, 'workers/www/src/redirects.json');
+const MANIFEST = path.join(ROOT, 'packages/www/dist/route-manifest.json');
 
 interface Rule {
   to: string | null;
@@ -122,6 +127,43 @@ if (chains.length > 0) {
   );
 }
 ok('no redirect chains');
+
+// --- Check 2b: No rule shadows a live page ---------------------------------
+// The Worker consults this table BEFORE serving ASSETS (workers/www/src/index.ts), so a key naming a live page answers its 410 or 301 and the page is never served. A self-map (A -> A) is the one key a live page may carry: the Worker's self-redirect guard falls through to ASSETS. Measured 2026-11-12: `/acceptable-use-policy` kept its 410 from when the page was deleted, and the page the new Terms of Service cite came back in the build behind it.
+
+// Exact wins over pattern (workers/www/src/redirect-aliases.ts), so a live page with an exact self-map is safe from every pattern, and a live page with no exact key is shadowed by the first pattern that rewrites it to anything but itself.
+const shadowed: Array<{ from: string; via: string; to: string | null; status: number }> = [];
+for (const [from, rule] of Object.entries(redirects.exact)) {
+  if (livePaths.has(from) && rule.to !== from)
+    shadowed.push({ from, via: 'exact', to: rule.to, status: rule.status });
+}
+for (const live of livePaths) {
+  if (redirects.exact[live]) continue;
+  for (const p of redirects.patterns) {
+    let m: RegExpMatchArray | null = null;
+    try {
+      m = live.match(new RegExp(p.from));
+    } catch {
+      continue; // check 3 names an uncompilable pattern
+    }
+    if (!m) continue;
+    const to = p.to === null ? null : p.to.replaceAll(/\$(\d+)/g, (_, n) => m?.[Number(n)] ?? '');
+    if (to !== live) shadowed.push({ from: live, via: `pattern ${p.from}`, to, status: p.status });
+    break;
+  }
+}
+if (shadowed.length > 0) {
+  const lines = shadowed
+    .map(
+      (s) => `  ${s.from}  ->  ${s.to ?? '(gone)'} ${s.status}  (${s.via}; source is a live page)`
+    )
+    .join('\n');
+  fail(
+    `${shadowed.length} rule(s) shadow a live page:\n${lines}\n\n` +
+      `Fix: delete the exact rule, or narrow the pattern (or give the page an exact self-map), since the Worker serves the page only once no rule rewrites it.`
+  );
+}
+ok('no rule shadows a live page');
 
 // --- Check 3: Pattern regex compiles ---------------------------------------
 

@@ -573,7 +573,7 @@ describe('localExecutorService create/fork licensing flow', () => {
     expect(result.success).toBe(true);
     expect(mockRefreshRepoLicenseIdentity).toHaveBeenCalledTimes(1);
     // The shared SFTP session is passed through to license issuance.
-    expect(mockRefreshRepoLicenseIdentity.mock.calls[0][4]).toBeDefined();
+    expect(mockRefreshRepoLicenseIdentity.mock.calls[0][5]).toBeDefined();
   });
 
   it('skips the identity refresh when deferIdentityRefresh is set', async () => {
@@ -655,7 +655,7 @@ describe('localExecutorService create/fork licensing flow', () => {
       expect(result.success).toBe(true);
       expect(mockIssueRepoLicense).toHaveBeenCalledTimes(1);
       // The target is params.tag (the commit object), exactly as for a fork. Minting against params.repository would licence a repo that already has one and leave the commit unlicensed, which is the bug.
-      expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({
+      expect(mockIssueRepoLicense.mock.calls[0][3]).toMatchObject({
         repositoryGuid: commitGuid,
         kind: 'fork',
         grandGuid: 'grand-1',
@@ -669,7 +669,7 @@ describe('localExecutorService create/fork licensing flow', () => {
 
       await localExecutorService.execute(commitOptions);
 
-      expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({
+      expect(mockIssueRepoLicense.mock.calls[0][3]).toMatchObject({
         repositoryGuid: commitGuid,
         kind: 'fork',
         grandGuid: 'guid-1',
@@ -682,7 +682,7 @@ describe('localExecutorService create/fork licensing flow', () => {
       await localExecutorService.execute(commitOptions);
 
       expect(mockRefreshRepoLicenseIdentity).toHaveBeenCalledTimes(1);
-      expect(mockRefreshRepoLicenseIdentity.mock.calls[0][2]).toMatchObject({
+      expect(mockRefreshRepoLicenseIdentity.mock.calls[0][3]).toMatchObject({
         repositoryGuid: commitGuid,
       });
     });
@@ -712,9 +712,9 @@ describe('localExecutorService create/fork licensing flow', () => {
 
     expect(mockRefreshRepoLicenseIdentity).toHaveBeenCalledTimes(1);
     const call = mockRefreshRepoLicenseIdentity.mock.calls[0];
-    expect(call[1]).toBe('PRIVATE_KEY');
-    expect(call[2]).toMatchObject({ repositoryGuid: 'guid-1', kind: 'grand' });
-    expect(call[4]).toBeDefined();
+    expect(call[2]).toBe('PRIVATE_KEY');
+    expect(call[3]).toMatchObject({ repositoryGuid: 'guid-1', kind: 'grand' });
+    expect(call[5]).toBeDefined();
     // The lease was released, dropping the last reference and closing.
     expect(mockClose).toHaveBeenCalledTimes(1);
   });
@@ -858,7 +858,7 @@ describe('localExecutorService create/fork licensing flow', () => {
 
       expect(result.success).toBe(true);
       // One field, two jobs: the server embeds it in the signed payload and the writer puts the blob on the path renet reads for this datastore.
-      expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({
+      expect(mockIssueRepoLicense.mock.calls[0][3]).toMatchObject({
         repositoryGuid: 'guid-1',
         kind: 'grand',
         datastoreId: DS_ID,
@@ -888,7 +888,7 @@ describe('localExecutorService create/fork licensing flow', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(mockIssueRepoLicense.mock.calls[0][2].datastoreId).toBeUndefined();
+      expect(mockIssueRepoLicense.mock.calls[0][3].datastoreId).toBeUndefined();
       // And it does not pay for a registry round-trip it has no use for.
       expect(mockExec).not.toHaveBeenCalledWith(expect.stringContaining('datastore list'));
     });
@@ -909,7 +909,7 @@ describe('localExecutorService create/fork licensing flow', () => {
         captureOutput: true,
       });
 
-      expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({
+      expect(mockIssueRepoLicense.mock.calls[0][3]).toMatchObject({
         repositoryGuid: forkGuid,
         kind: 'fork',
         datastoreId: DS_ID,
@@ -920,7 +920,7 @@ describe('localExecutorService create/fork licensing flow', () => {
       await localExecutorService.execute(datastoreCreate);
 
       // The post-create refresh prefers renet's scan, which now sees the repo. The resolved id rides along as the fallback for a scan that cannot answer, without it the PROVEN reissue would land unscoped and undo the pre-issuance fix one step later.
-      expect(mockRefreshRepoLicenseIdentity.mock.calls[0][2]).toMatchObject({
+      expect(mockRefreshRepoLicenseIdentity.mock.calls[0][3]).toMatchObject({
         repositoryGuid: 'guid-1',
         datastoreId: DS_ID,
       });
@@ -975,7 +975,7 @@ describe('localExecutorService create/fork licensing flow', () => {
 
         expect(result.success).toBe(true);
         expect(mockRefreshRepoLicenseIdentity).toHaveBeenCalledTimes(1);
-        expect(mockRefreshRepoLicenseIdentity.mock.calls[0][2].datastoreId).toBeUndefined();
+        expect(mockRefreshRepoLicenseIdentity.mock.calls[0][3].datastoreId).toBeUndefined();
       });
     });
   });

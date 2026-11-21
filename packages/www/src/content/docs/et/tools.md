@@ -8,8 +8,8 @@ tags:
 subcategory: cli-tools
 order: 9
 language: et
-sourceHash: "3c5f1e7f8063438b"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "87078fbf0b283224"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 # Tööriistad
@@ -246,7 +246,7 @@ Kuvab praeguse versiooni, uuenduskanali ja automaatse uuendamise konfiguratsioon
 #### Väljalaskekanalid
 
 ```bash
-rdc update --channel edge      # Pidevalt juurutatavad tootmisuuendused
-rdc update --channel stable    # Edutatud edge'ist pärast 7-päevast leotamist (vaikimisi)
+rdc update --channel edge      # Pidevalt juurutatavad tootmisuuendused (vaikimisi)
+rdc update --channel stable    # Edutatud edge'ist pärast 7-päevast leotamist
 rdc update --status            # Kuva praegune kanal ja versiooni info
 ```

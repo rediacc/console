@@ -2991,13 +2991,6 @@
       "message": "Need type annotation for \"seen\" (hint: \"seen: dict[<type>, <type>] = ...\")"
     },
     {
-      "id": "3febbda96157f75d",
-      "file": ".claude/rediacc_hooks/tests/test_guards_differential.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"_FIXTURES\" (hint: \"_FIXTURES: dict[<type>, <type>] = ...\")"
-    },
-    {
       "id": "30047c6eae3ac695",
       "file": ".claude/rediacc_hooks/tests/test_guards_differential.py",
       "code": "var-annotated",

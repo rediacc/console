@@ -13,7 +13,7 @@ const daysFromNow = (days: number): string =>
 
 describe('computeDelegationCertValidity', () => {
   describe('plan defaults (no override, no expiry)', () => {
-    it.each(['COMMUNITY', 'PROFESSIONAL', 'BUSINESS', 'ENTERPRISE'] as const)(
+    it.each(['FREE', 'COMMUNITY', 'PROFESSIONAL', 'BUSINESS', 'ENTERPRISE'] as const)(
       'returns the per-plan default for %s',
       (planCode) => {
         const result = computeDelegationCertValidity({

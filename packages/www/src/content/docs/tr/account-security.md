@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: tr
-sourceHash: "48538a4c661c9f72"
-sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
+sourceHash: "55c979711279a92e"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 ### Kimlik Doğrulama
@@ -106,12 +106,12 @@ Her API isteği tüm geçerli katmanlardan sırasıyla geçer. Ekip kapsamlı bi
 ### Güncelleme Kanalları
 
 CLI iki yayın kanalını destekler:
-- **stable** (varsayılan): 7 günlük bekleme süresinin ardından edge'den terfi ettirilir; muhafazakar bir yükseltme temposu için bu kanalı seçin
-- **edge**: En son özellikler, her sürümde güncellenir
+- **edge** (varsayılan): En son özellikler, her sürümde güncellenir
+- **stable**: 7 günlük bekleme süresinin ardından edge'den terfi ettirilir; muhafazakar bir yükseltme temposu için bu kanalı seçin
 
 ```bash
-rdc update --channel edge      # Edge'e geç
-rdc update --channel stable    # Stable'a geri dön
+rdc update --channel stable    # Stable'a geç
+rdc update --channel edge      # Edge'e geri dön
 rdc update --status            # Geçerli kanalı göster
 ```
 

@@ -98,15 +98,24 @@ class FakeVm:
 class FakeApi(rt.Api):
     """A scripted account API."""
 
-    def __init__(self, fail_path: str = "") -> None:
+    def __init__(self, fail_path: str = "", consistency: str = "crash-consistent") -> None:
         super().__init__("http://127.0.0.1:1")
         self.fail_path = fail_path
+        self.consistency = consistency
+        self.terms_accepted = False
         self.calls: list[tuple[str, str, dict | None]] = []
 
     def call(self, method: str, path: str, body: dict | None = None, *_ignored: object) -> dict:
         self.calls.append((method, path, body))
         if self.fail_path and path == self.fail_path:
             raise rt.StepError("%s %s -> HTTP 500" % (method, path))
+        if path == "/portal/terms":
+            if self.terms_accepted:
+                return {"satisfied": True}
+            return {"satisfied": False, "current": {"version": "2026-01-01", "sha256": "a" * 64}}
+        if path == "/portal/terms/accept":
+            self.terms_accepted = True
+            return {"accepted": True}
         if path == "/test/ensure-subscription":
             return {"subscriptionId": "sub-1"}
         if path == "/api-tokens":
@@ -114,7 +123,7 @@ class FakeApi(rt.Api):
         if path == "/licenses/activate-repo":
             return {"license": {"publicKeyId": "kid-1", "blob": "x"}}
         if path == "/backups/manifests":
-            return {"manifests": [{"snapshotId": "S1"}]}
+            return {"manifests": [{"snapshotId": "S1", "consistency": self.consistency}]}
         if path == "/backups/usage":
             return {"storedBytes": 4242}
         return {}
@@ -147,6 +156,7 @@ def test_a_clean_run_passes_and_tears_down_both_repos(tmp_path: pathlib.Path) ->
         "source repo licence is valid",
         "snapshot stored",
         "manifest index carries the snapshot",
+        "the commit declared its consistency",
         "quota ledger equals bytes uploaded",
         "wrong passphrase: refused",
         "wrong passphrase: places nothing",
@@ -189,6 +199,16 @@ def test_a_control_that_does_not_fire_fails_the_run(tmp_path: pathlib.Path) -> N
     rc, out, _ = _run(tmp_path, FakeVm(control_rc=0))
     assert rc == 1
     assert "FAIL  control did NOT fire" in out
+
+
+@pytest.mark.parametrize("declared", ["", "app-quiesced"])
+def test_a_commit_that_declares_the_wrong_consistency_fails_the_run(
+    tmp_path: pathlib.Path, declared: str
+) -> None:
+    """A run with no hook must say crash-consistent: silence, or a quiesce nothing performed, is a failure."""
+    rc, out, _ = _run(tmp_path, FakeVm(), FakeApi(consistency=declared))
+    assert rc >= 1
+    assert "FAIL  the commit declared its consistency" in out
 
 
 def test_a_failed_snapshot_is_a_verdict_and_still_tears_down(tmp_path: pathlib.Path) -> None:
@@ -408,3 +428,37 @@ def test_an_ssh_failure_is_not_reported_as_renet_missing() -> None:
     missing = rt.preflight_vm(lambda _c, _s: rt.VmResult(1), "192.168.111.11", "alice", "/k")
     assert missing.startswith("renet missing on 192.168.111.11")
     assert rt.preflight_vm(lambda _c, _s: rt.VmResult(0), "h", "u", "k") == ""
+
+
+def test_accept_terms_accepts_once_when_unaccepted_and_not_when_satisfied() -> None:
+    api = FakeApi()
+    assert api.accept_terms() is True
+    assert api.calls[-1] == (
+        "POST",
+        "/portal/terms/accept",
+        {"version": "2026-01-01", "sha256": "a" * 64, "locale": "en", "method": "web-checkbox"},
+    )
+    before = len(api.calls)
+    assert api.accept_terms() is False
+    assert [c[1] for c in api.calls[before:]] == ["/portal/terms"]
+
+
+def test_accept_terms_fails_by_name_when_the_acceptance_is_refused() -> None:
+    api = FakeApi(fail_path="/portal/terms/accept")
+    with pytest.raises(rt.StepError, match="portal/terms/accept"):
+        api.accept_terms()
+
+
+@pytest.mark.parametrize("shape", [{}, {"satisfied": "true"}, {"satisfied": None}])
+def test_accept_terms_refuses_a_status_without_a_boolean_satisfied(shape: dict) -> None:
+    """85d9bad6.1: a wrong-shape answer is named, never read as "unsatisfied, so accept"."""
+
+    class Odd(FakeApi):
+        def call(self, method: str, path: str, body: dict | None = None, *ignored: object) -> dict:
+            if path == "/portal/terms":
+                return {**shape, "current": {"version": "2026-01-01", "sha256": "a" * 64}}
+            return super().call(method, path, body, *ignored)
+
+    api = Odd()
+    with pytest.raises(rt.StepError, match="boolean `satisfied`"):
+        api.accept_terms()

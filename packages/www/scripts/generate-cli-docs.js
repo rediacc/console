@@ -222,6 +222,12 @@ function buildEnrichedSyntax(group, ...subParts) {
   return base + suffix;
 }
 
+/** True when the command-tree node of this path takes arguments or options of its own, so a group with sub-commands is also a command. */
+function hasOwnInvocation(group, ...subParts) {
+  const node = commandTreeLookup[getCommandTreeKey(group, ...subParts)];
+  return (node?.arguments?.length ?? 0) > 0 || (node?.options?.length ?? 0) > 0;
+}
+
 function emitOptionsTable(group, ...subParts) {
   const key = getCommandTreeKey(group, ...subParts);
   const node = commandTreeLookup[key];
@@ -412,6 +418,15 @@ export function generate(lang, cliJsonEn, { sourceHash } = {}) {
           lines.push('');
         }
 
+        // A sub-group that is also invocable on its own (e.g. `server licence <domain>`, `repo replicate <ref>`) keeps its usage line and option table beside its sub-commands
+        if (hasOwnInvocation(group, subKey)) {
+          lines.push('```bash');
+          lines.push(buildEnrichedSyntax(group, subKey));
+          lines.push('```');
+          lines.push(...emitOptionsTable(group, subKey));
+          lines.push('');
+        }
+
         // Nested sub-commands
         const nestedKeys = getSubCommandKeys(subData);
         for (const nestedKey of nestedKeys) {
@@ -526,7 +541,6 @@ export function generate(lang, cliJsonEn, { sourceHash } = {}) {
     'noActiveConfig',
     'permissionDenied',
     'machineRequired',
-    'teamRequired',
     'regionRequired',
   ];
 

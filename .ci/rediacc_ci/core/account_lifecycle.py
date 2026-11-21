@@ -57,7 +57,7 @@ import tempfile
 import threading
 
 from rediacc_ci import log
-from rediacc_ci.core import account, env, local_common, ports
+from rediacc_ci.core import account, env, local_common, ports, prepare_lock
 from rediacc_ci.well_known import DEV_USER_EMAIL as WK_DEV_USER_EMAIL
 
 # `ACCOUNT_PIDS`, `.ci/lib/account.sh:39`: every background process `account_dev` starts, killed by `account_cleanup`.
@@ -546,6 +546,13 @@ def dev_credentials(gateway_port: str) -> int:
         ok = _post(base + "/test/ensure-login", payload) and ok
     ok = (
         _post(
+            base + "/test/ensure-partner",
+            '{"email":"%s","tier":"silver","orgName":"Root partner (dev)"}' % root_email,
+        )
+        and ok
+    )
+    ok = (
+        _post(
             base + "/test/ensure-subscription",
             '{"email":"%s","planCode":"PROFESSIONAL"}' % DEV_USER_EMAIL,
         )
@@ -590,6 +597,7 @@ def dev_credentials(gateway_port: str) -> int:
         account.banner_row("Dev logins (fresh passwords each start)"),
         "  ├%s┤" % rule,
         account.banner_row("root     %s %s" % (_pad_bytes(root_email, 32), root_pw)),
+        account.banner_row("         (root also has a partner org: customer/partner/admin)"),
         account.banner_row("user     %s %s" % (_pad_bytes(DEV_USER_EMAIL, 32), user_pw)),
         account.banner_row("partner  %s %s" % (_pad_bytes(DEV_PARTNER_EMAIL, 32), partner_pw)),
         "  ├%s┤" % rule,
@@ -1007,7 +1015,9 @@ def test(args: list[str]) -> int:
     log.step("Running account tests")
     directory = account.account_dir()
     _cd_or_die(directory)
-    status = _run(["npx", "--no-install", "vitest", "run", *args], cwd=directory)
+    # Shared for the whole run: the suites import `@rediacc/shared` from `packages/shared/dist`, which a concurrent `ensure_packages_built` would otherwise delete under them (worklist #6fbf7fa3).
+    with prepare_lock.held(local_common.local_root_dir(), shared=True):
+        status = _run(["npx", "--no-install", "vitest", "run", *args], cwd=directory)
     if status != 0:
         raise ErrexitError(status, "vitest exited %d" % status)
     return 0

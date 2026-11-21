@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import textwrap
+import types
 import typing
 
 import pytest
@@ -115,6 +116,51 @@ def test_every_account_deploy_is_behind_its_order_check_and_bracketed_by_records
             assert order_step.argv[:3] == ("python3", "-m", "rediacc_ci.release.order")
 
 
+def test_every_account_deploy_follows_its_regions_signer() -> None:
+    """Finding fc8ad2fd: every account config binds LICENSE_SIGNER to `signer-<region>`, and Cloudflare refuses the account deploy with error 10143 while it is missing. As on bench (`deploy_bench._ensure_signers`): the control database, then the signer under the deploy-signer profile, before the account deploy, in a release and in a workers-only run alike."""
+    for steps in (EDGE, WORKERS):
+        order = ids(steps)
+        deps = order.index("signer-worker-deps")
+        assert steps[deps].cwd == "clone:workers/signer"
+        for region in REGIONS:
+            control = steps[order.index("control-db-%s" % region)]
+            signer = steps[order.index("signer-deploy-%s" % region)]
+            deploy = order.index("account-deploy-%s" % region)
+            assert deps < order.index(control.id) < order.index(signer.id) < deploy
+            assert control.argv == (
+                "python3",
+                "-m",
+                "rediacc_ci.enterprise.control_db",
+                "ensure",
+                "--region",
+                region,
+            )
+            assert signer.argv[:5] == (
+                "python3",
+                "-m",
+                "rediacc_ci.deploy.deploy_signer",
+                "--target",
+                region,
+            )
+            assert control.profiles == signer.profiles == ("deploy-signer",)
+
+
+def test_the_dry_run_names_the_signer_rows(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(local, "prereq_refusals", no_prereqs)
+    rc = local.main(
+        ["--channel", "edge", "--dry-run"], runner=FakeRunner(VERSION_ANSWERS), gates=_gates([])
+    )
+    out = capsys.readouterr().out
+    assert rc == 0
+    for region in REGIONS:
+        for step_id in ("control-db-%s" % region, "signer-deploy-%s" % region):
+            assert re.search(
+                r"^  \[deploy\] %s  profile=deploy-signer" % re.escape(step_id), out, re.MULTILINE
+            ), step_id
+
+
 def test_the_lock_is_judged_again_before_the_first_stage_write_and_right_before_the_seal() -> None:
     order = ids(EDGE)
     first_stage = next(i for i, s in enumerate(EDGE) if s.section == "stage")
@@ -159,6 +205,28 @@ def test_workers_only_builds_seals_and_publishes_nothing() -> None:
     assert not any(s.id.endswith(("-us", "-asia")) for s in one)
 
 
+@pytest.mark.parametrize("steps", [EDGE, WORKERS], ids=["release", "workers-only"])
+def test_the_legal_entity_is_verified_before_the_packages_build(steps: list[local.Step]) -> None:
+    """PLAN-terms-acceptance Design 1: no release or Worker deploy goes out while the committed entity projection trails the vault, so `legal-entity-verify` runs under the `legal-entity` profile before `packages`, on `--workers-only` too."""
+    order = ids(steps)
+    assert "legal-entity-verify" in order
+    assert order.index("legal-entity-verify") < order.index("packages")
+    step = next(s for s in steps if s.id == "legal-entity-verify")
+    assert step.section == "builds"
+    assert step.profiles == ("legal-entity",)
+    assert step.argv[-2:] == ("rediacc_ci.legal.entity", "verify")
+    ctx = local.Context(version="9.9.9", sha="a" * 40, channel="edge", outcomes={})
+    argv = local.child_argv(step, ctx)
+    assert argv[:6] == [
+        "python3",
+        "-m",
+        "rediacc_ci.core.bws_env",
+        "exec",
+        "--profile",
+        "legal-entity",
+    ]
+
+
 def test_every_module_and_profile_named_exists() -> None:
     supply = json.loads((ROOT / ".ci/config/secret-supply.json").read_text(encoding="utf-8"))[
         "consumers"
@@ -199,7 +267,53 @@ def test_the_www_secrets_bind_the_eu_ses_pair_under_the_unsuffixed_names() -> No
     step = next(s for s in EDGE if s.id == "www-secrets")
     assert "AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID" in step.binds
     assert "AWS_SES_SECRET_ACCESS_KEY_EU > AWS_SES_SECRET_ACCESS_KEY" in step.binds
-    assert "STRIPE_SANDBOX_SECRET_KEY > STRIPE_SECRET_KEY" in step.binds
+    # The live key and its live webhook secret, from one store side: a mixed pair (live key, sandbox secret) fails open.
+    assert "STRIPE_SECRET_KEY > STRIPE_SECRET_KEY" in step.binds
+    assert "STRIPE_WEBHOOK_SECRET_EU > STRIPE_WEBHOOK_SECRET" in step.binds
+    assert not [b for b in step.binds if "SANDBOX" in b]
+
+
+def test_the_www_steps_deploy_and_bind_the_worker_the_wrangler_config_names() -> None:
+    deploy = next(s for s in EDGE if s.id == "www-deploy")
+    secrets = next(s for s in EDGE if s.id == "www-secrets")
+    assert "rediacc_ci.deploy.deploy_www" in deploy.argv
+    assert "rediacc_ci.deploy.set_www_worker_secrets" in secrets.argv
+    config = (pathlib.Path(__file__).resolve().parents[3] / "workers/www/wrangler.toml").read_text()
+    name = re.search(r'^name = "([^"]+)"', config, re.MULTILINE)
+    assert name
+    assert dict(secrets.env)["WORKER_NAME"] == name.group(1)
+
+
+def test_the_www_pages_build_binds_the_turnstile_site_key_through_a_keyed_profile() -> None:
+    """Seven www forms read PUBLIC_TURNSTILE_SITE_KEY at build time; a keyless build refused every visitor (2026-11-12)."""
+    pages = next(s for s in EDGE if s.id == "www-pages")
+    deploy = next(s for s in EDGE if s.id == "www-deploy")
+    assert "TURNSTILE_SITE_KEY > PUBLIC_TURNSTILE_SITE_KEY" in pages.binds
+    assert "deploy-workers" in pages.profiles
+    assert "GITHUB_TOKEN" in pages.gh_env
+    assert "deploy-workers" in deploy.profiles, "deploy_www's keyless-dist refusal needs the key"
+    argv = local.child_argv(pages, local.Context(version="1.2.3", media_origin="https://m"))
+    assert argv[:4] == ["python3", "-m", "rediacc_ci.core.bws_env", "exec"]
+    spec_at = argv.index("--spec")
+    assert argv[spec_at : spec_at + 2] == [
+        "--spec",
+        "TURNSTILE_SITE_KEY > PUBLIC_TURNSTILE_SITE_KEY",
+    ]
+
+
+def test_an_empty_turnstile_site_key_refuses_the_www_bind() -> None:
+    env = {
+        "REDIACC_BWS_PROFILES": "deploy-workers",
+        "TURNSTILE_SITE_KEY": "",
+    }
+    (why,) = [
+        line
+        for line in local.bind_refusals(["TURNSTILE_SITE_KEY > PUBLIC_TURNSTILE_SITE_KEY"], env)
+        if "TURNSTILE_SITE_KEY" in line
+    ]
+    assert "empty" in why
+    env["TURNSTILE_SITE_KEY"] = "0x4AAAAAAAfixturefixture"
+    assert local.bind_refusals(["TURNSTILE_SITE_KEY > PUBLIC_TURNSTILE_SITE_KEY"], env) == []
 
 
 def test_every_push_uses_the_session_github_token() -> None:
@@ -243,7 +357,9 @@ def _gates(refusals: list[str]):
     def gates(root, version, ctx):
         del root, ctx
         assert version == "9.9.9"
-        return local.GateResult(list(refusals), ["local-gates: clone: not judged under --dry-run"])
+        return local.GateResult(
+            list(refusals), ["local-gates: clone: not judged under --dry-run"], unjudged=1
+        )
 
     return gates
 
@@ -300,7 +416,21 @@ def test_a_green_dry_run_exits_zero(
     )
     out = capsys.readouterr().out
     assert rc == 0
-    assert out.splitlines()[-1].startswith("admitted: every gate passes")
+    assert out.splitlines()[-1].startswith("admitted: every judged gate passes (1 not judged")
+
+
+def test_a_dry_run_with_every_gate_judged_says_every_gate_passes(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review 01f2a26f.2, the control: with nothing left unjudged the claim is unqualified."""
+    monkeypatch.setattr(local, "prereq_refusals", no_prereqs)
+    rc = local.main(
+        ["--channel", "edge", "--dry-run"],
+        runner=FakeRunner(VERSION_ANSWERS),
+        gates=lambda _r, _v, _c: local.GateResult([], []),
+    )
+    assert rc == 0
+    assert capsys.readouterr().out.splitlines()[-1].startswith("admitted: every gate passes;")
 
 
 def test_a_workers_only_dry_run_drops_the_lock_refusal(
@@ -328,6 +458,426 @@ def test_regions_needs_workers_only() -> None:
         local.parse(["--channel", "edge", "--regions", "eu"])
 
 
+# --------------------------------------------------------------------------- --branch-release
+
+BRANCH_ARGV = ["--channel", "edge", "--workers-only", "--regions", "eu", "--branch-release"]
+HEAD_SHA = "0123456789abcdef" * 2 + "01234567"
+
+
+def _heads(branch: str = "1104-1"):
+    def heads(root: pathlib.Path) -> tuple[dict[str, str] | None, str]:
+        del root
+        return {"main": "f" * 40, branch: HEAD_SHA}, ""
+
+    return heads
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["--channel", "edge", "--branch-release"],
+        ["--channel", "edge", "--dry-run", "--branch-release"],
+        ["--channel", "stable", "--workers-only", "--branch-release"],
+        # No abbreviation reaches the run as the flag: block_unasked_release judges the exact word.
+        ["--channel", "edge", "--workers-only", "--branch"],
+    ],
+)
+def test_branch_release_outside_edge_workers_only_is_a_usage_error(
+    argv: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    with pytest.raises(SystemExit) as exc:
+        local.parse(argv)
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert local.BRANCH_RELEASE_USAGE in err or "unrecognized arguments: --branch" in err
+
+
+@pytest.mark.parametrize("asked", [None, "", "ASKED:2026-11-13T05:02", "2026-11-13T05:02Z"])
+def test_branch_release_without_release_asked_refuses_before_any_step(
+    asked: str | None, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    if asked is None:
+        monkeypatch.delenv(local.ASK_ENV, raising=False)
+    else:
+        monkeypatch.setenv(local.ASK_ENV, asked)
+    runner = FakeRunner()
+    seen: list[str] = []
+
+    def gates(root, version, ctx):
+        del root, version, ctx
+        seen.append("gates")
+        return local.GateResult([], [])
+
+    for argv in (BRANCH_ARGV, [*BRANCH_ARGV, "--dry-run"]):
+        rc = local.main(argv, runner=runner, gates=gates, heads=_heads())
+        assert rc == 2
+        assert "RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z" in capsys.readouterr().err
+    assert runner.calls == []
+    assert seen == []
+
+
+def test_the_gates_row_carries_branch_release_only_on_a_branch_release() -> None:
+    (plain,) = [s for s in WORKERS if s.kind == "gates"]
+    assert "--branch-release" not in plain.argv
+    branch = local.plan(REGIONS, workers_only=True, branch_release=True)
+    (gates,) = [s for s in branch if s.kind == "gates"]
+    assert gates.argv[-1] == "--branch-release"
+    assert ids(branch) == ids(WORKERS)
+
+
+def test_branch_context_names_the_branch_and_the_build_metadata(tmp_path: pathlib.Path) -> None:
+    got = local.branch_context(tmp_path, HEAD_SHA, "ASKED:2026-11-13T05:02Z", _heads())
+    assert got == {
+        "branch_release": "true",
+        "branch": "1104-1",
+        "branch_read": "",
+        "asked": "ASKED:2026-11-13T05:02Z",
+        "build_meta": "+1104-1.01234567",
+    }
+    odd = local.branch_context(tmp_path, HEAD_SHA, "", _heads("feat/x_y"))
+    assert odd["build_meta"] == "+feat-x-y.01234567"
+    unpushed = local.branch_context(tmp_path, HEAD_SHA, "", lambda _r: ({}, ""))
+    assert unpushed["build_meta"] == "+unpushed.01234567"
+    assert unpushed["branch_read"] == ""
+
+
+def test_a_failed_branch_read_is_named_unread_with_its_reason(tmp_path: pathlib.Path) -> None:
+    got = local.branch_context(tmp_path, HEAD_SHA, "", lambda _r: (None, "ls-remote timed out"))
+    assert got["branch"] == "unread"
+    assert got["branch_read"] == "ls-remote timed out"
+    assert got["build_meta"] == "+unread.01234567"
+    blank = local.branch_context(tmp_path, HEAD_SHA, "", lambda _r: (None, ""))
+    assert blank["branch"] == "unread"
+    assert blank["branch_read"]
+
+
+def test_the_dry_run_names_a_failed_branch_read(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review 01f2a26f.1: the dry run prints why origin's branches could not be read."""
+    monkeypatch.setattr(local, "prereq_refusals", no_prereqs)
+    monkeypatch.setenv("RELEASE_ASKED", "ASKED:2026-11-13T05:02Z")
+    monkeypatch.setattr(
+        local,
+        "branch_context",
+        lambda *_a: {
+            "branch_release": "true",
+            "branch": "unread",
+            "branch_read": "ls-remote timed out",
+            "asked": "",
+            "build_meta": "+unread.01234567",
+        },
+    )
+    local.main(
+        ["--channel", "edge", "--workers-only", "--dry-run", "--branch-release"],
+        runner=FakeRunner(VERSION_ANSWERS),
+        gates=lambda _r, _v, _c: local.GateResult([], []),
+    )
+    assert "branch release: origin's branches could not be read: ls-remote timed out" in (
+        capsys.readouterr().out
+    )
+
+
+def test_the_dry_run_describes_every_child_command(tmp_path: pathlib.Path) -> None:
+    ctx = local.Context(clone=str(tmp_path / "c"), version="9.9.9", releases_origin="https://x")
+    steps = [
+        *local.plan(REGIONS, workers_only=True, branch_release=True),
+        local.Step("stamp-x", "assist", ("echo", "stamped-{version}"), kind="stamp"),
+        local.Step("no-argv", "assist", (), kind="stamp"),
+    ]
+    text = "\n".join(local.describe(steps, ctx))
+    assert "--branch-release" in text
+    assert "echo stamped-9.9.9" in text
+    assert text.count("$ ") == sum(1 for s in steps if s.argv)
+
+
+def _dry_ancestry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, verdict
+) -> local.GateResult:
+    monkeypatch.setattr(local, "_ls_remote_main", lambda _r: ("a" * 40, ""))
+    monkeypatch.setattr(local.local_gates, "live_heads", lambda _r: ({"b": HEAD_SHA}, ""))
+    monkeypatch.setattr(local.local_gates, "live_ancestor", lambda _r, _a, _h: verdict)
+    seen: dict[str, object] = {}
+
+    def check(root, channel, **kw):
+        del root, channel
+        seen["verdict"] = kw["ancestor"](tmp_path, "a" * 40, HEAD_SHA)
+        return []
+
+    monkeypatch.setattr(local.local_gates, "check", check)
+    ctx = local.Context(
+        clone=str(tmp_path / "c"), releases_origin="https://x.invalid", branch_release="true"
+    )
+    result = local.dry_gates(tmp_path, "9.9.9", ctx)
+    result.notes.append("verdict=%s" % seen["verdict"])
+    return result
+
+
+def test_the_dry_run_states_an_ancestry_it_cannot_judge(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    unknown = _dry_ancestry(monkeypatch, tmp_path, None)
+    assert any("not judged under --dry-run" in n and "ancestor" in n for n in unknown.notes)
+    assert unknown.notes[-1] == "verdict=True"
+    # 943b7b90.2: the clone and the ancestry are the two gates not judged, counted as a field.
+    assert unknown.unjudged == 2
+    # Controls: a definite answer is passed through and no note is added.
+    for verdict in (True, False):
+        known = _dry_ancestry(monkeypatch, tmp_path, verdict)
+        assert not any("ancestor" in n for n in known.notes)
+        assert known.notes[-1] == "verdict=%s" % verdict
+        assert known.unjudged == 1
+
+
+def _env_of(steps: list[local.Step], step_id: str, ctx: local.Context, key: str) -> str:
+    (step,) = [s for s in steps if s.id == step_id]
+    return local.child_env(step, ctx, ROOT)[key]
+
+
+def test_app_version_carries_the_build_metadata_on_a_branch_release(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = _tmp_root(tmp_path)
+    ctx = local.base_context(root, ["eu"], True)
+    ctx.update(version="9.9.9")
+    steps = local.plan(["eu"], workers_only=True, branch_release=True)
+    # Control: a plain workers-only run reports the live version itself.
+    assert _env_of(steps, "www-pages", ctx, "APP_VERSION") == "9.9.9"
+    assert _env_of(steps, "verify-endpoints", ctx, "VERSION") == "9.9.9"
+    ctx.update(local.branch_context(root, HEAD_SHA, "ASKED:2026-11-13T05:02Z", _heads()))
+    assert _env_of(steps, "www-pages", ctx, "APP_VERSION") == "9.9.9+1104-1.01234567"
+    assert _env_of(steps, "verify-endpoints", ctx, "VERSION") == "9.9.9+1104-1.01234567"
+    # The deploy records and the executor artifacts keep the live X.Y.Z release they select.
+    assert _env_of(steps, "www-deploy", ctx, "DEPLOY_RECORD_VERSION") == "9.9.9"
+    (proxy,) = [s for s in steps if s.id == "proxy-deploy-eu"]
+    argv = local.child_argv(proxy, ctx)
+    assert argv[argv.index("--version") + 1] == "9.9.9"
+
+
+def test_the_release_record_carries_the_branch_release_fields(tmp_path: pathlib.Path) -> None:
+    root = _tmp_root(tmp_path)
+    ctx = local.base_context(root, ["eu"], True)
+    ctx.update(version="9.9.9", run_id="t")
+    plain = local.release_record(local.Run(root, ctx))
+    assert plain["branch_release"] is False
+    assert plain["branch"] is None
+    assert plain["asked"] is None
+    assert plain["app_version"] == "9.9.9"
+    assert plain["head_sha"] == ctx["sha"]
+    ctx.update(local.branch_context(root, ctx["sha"], "ASKED:2026-11-13T05:02Z", _heads()))
+    record = local.release_record(local.Run(root, ctx))
+    assert record["branch_release"] is True
+    assert record["branch"] == "unpushed"  # the fixture's HEAD is not the planted branch tip
+    assert record["asked"] == "ASKED:2026-11-13T05:02Z"
+    assert record["head_sha"] == ctx["sha"]
+    assert record["app_version"] == "9.9.9+unpushed.%s" % ctx["sha"][:8]
+
+
+def _written_keys(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, *, workers_only: bool, fail: bool
+) -> list[tuple[str, bool]]:
+    tmp_path = tmp_path / ("%s-%s" % (workers_only, fail))
+    tmp_path.mkdir()
+    root = _tmp_root(tmp_path)
+    ctx = local.base_context(root, ["eu"], workers_only)
+    ctx.update(version="9.9.9", run_id="t", out=str(tmp_path / "out"))
+    run = local.Run(root, ctx)
+    if fail:
+        run.failed = "account-deploy-eu"
+    calls: list[list[str]] = []
+
+    def fake_run(argv, **_kw):
+        calls.append(list(argv))
+        return types.SimpleNamespace(returncode=0)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(local.subprocess, "run", fake_run)
+        patch.setattr(local, "child_argv", lambda step, _ctx: list(step.argv))
+        patch.setattr(local, "child_env", lambda *_a: {})
+        step = local.Step("release-record", "records", ("x",), cwd="root")
+        assert local.internal_release_record(step, run) == 0
+    return [(c[c.index("--key") + 1], "--keep" in c) for c in calls]
+
+
+def test_a_workers_only_release_leaves_its_own_record_never_edge_json(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    got = _written_keys(tmp_path, monkeypatch, workers_only=True, fail=False)
+    assert got == [
+        ("release-records/v9.9.9/edge/run-t.json", False),
+        (local.workers_record_key("9.9.9"), True),
+    ]
+    assert local.workers_record_key("9.9.9") != local.edge_record_key("9.9.9")
+
+
+def test_a_failed_workers_only_release_and_a_full_one_keep_their_records(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    failed = _written_keys(tmp_path, monkeypatch, workers_only=True, fail=True)
+    assert failed == [("release-records/v9.9.9/edge/run-t.json", False)]
+    full = _written_keys(tmp_path, monkeypatch, workers_only=False, fail=False)
+    assert full == [
+        ("release-records/v9.9.9/edge/run-t.json", False),
+        (local.edge_record_key("9.9.9"), False),
+    ]
+
+
+def test_write_record_keep_accepts_an_existing_record_and_plain_refuses_it(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    body = tmp_path / "r.json"
+    body.write_text("{}", encoding="utf-8")
+
+    def exists(_record, _key):
+        raise local.deploy_record.RecordError("k already exists: a deploy record is written once")
+
+    monkeypatch.setattr(local.deploy_record, "write_record_once", exists)
+    args = ["--key", "k", "--file", str(body)]
+    assert local.write_record_main([*args, "--keep"]) == 0
+    assert local.write_record_main(args) == 1
+
+
+def test_the_release_record_carries_the_admitted_red_waiver(tmp_path: pathlib.Path) -> None:
+    root = _tmp_root(tmp_path)
+    ctx = local.base_context(root, ["eu"], True)
+    ctx.update(version="9.9.9", run_id="t")
+    assert local.release_record(local.Run(root, ctx))["red_waiver"] is None
+    waiver = {"gates": ["check:ci-ops-health"], "asked": "ASKED:2026-11-16T05:02Z", "reason": "x"}
+    line = "%s%s" % (local.local_gates.WAIVER_LINE, json.dumps(waiver))
+    ctx["red_waiver"] = local.local_gates.waiver_from_lines(["other", line])
+    assert local.release_record(local.Run(root, ctx))["red_waiver"] == waiver
+
+
+def _drive_internal_gates(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, rc: int, stdout: str
+) -> tuple[int, local.Run]:
+    root = _tmp_root(tmp_path)
+    ctx = local.base_context(root, ["eu"], True)
+    ctx.update(version="9.9.9", run_id="t")
+    monkeypatch.setattr(local, "child_env", lambda _s, _c, _r: {})
+    monkeypatch.setattr(local, "child_argv", lambda _s, _c: ["gates"])
+    monkeypatch.setattr(
+        local.subprocess,
+        "run",
+        lambda *_a, **_k: subprocess.CompletedProcess(["gates"], rc, stdout, ""),
+    )
+    run = local.Run(root, ctx)
+    run.ctx["red_waiver"] = "stale"
+    return local.internal_gates(local.Step("gates", "gates", ("x",)), run), run
+
+
+_WAIVER = {"gates": ["check:ci-ops-health"], "asked": "ASKED:2026-11-16T05:02Z", "reason": "x"}
+_WAIVER_LINE = "%s%s" % (local.local_gates.WAIVER_LINE, json.dumps(_WAIVER))
+
+
+def test_internal_gates_records_the_waiver_an_admitting_child_printed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    rc, run = _drive_internal_gates(monkeypatch, tmp_path, 0, _WAIVER_LINE + "\n")
+    assert rc == 0
+    assert run.ctx["red_waiver"] == _WAIVER
+
+
+def test_internal_gates_records_no_waiver_when_the_child_refuses(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    out = "%s\nlocal-gates: ci-quick: no receipt\n" % _WAIVER_LINE
+    rc, run = _drive_internal_gates(monkeypatch, tmp_path, 1, out)
+    assert rc == 1
+    assert run.ctx["red_waiver"] is None
+
+
+def test_internal_gates_records_no_waiver_without_a_waiver_line(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    rc, run = _drive_internal_gates(monkeypatch, tmp_path, 0, "local-gates: admitted\n")
+    assert rc == 0
+    assert run.ctx["red_waiver"] is None
+
+
+def test_a_branch_release_dry_run_prints_the_branch_and_hands_the_flag_to_the_gates(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv(local.ASK_ENV, "ASKED:2026-11-13T05:02Z")
+    monkeypatch.setattr(local, "prereq_refusals", no_prereqs)
+    monkeypatch.setattr(local, "internal_channel_version", _set_version)
+    monkeypatch.setattr(local, "base_context", _base_context_at(HEAD_SHA))
+    seen: dict[str, typing.Any] = {}
+
+    def gates(root, version, ctx):
+        del root
+        seen.update(version=version, branch_release=ctx["branch_release"])
+        return local.GateResult([], [])
+
+    rc = local.main([*BRANCH_ARGV, "--dry-run"], runner=FakeRunner(), gates=gates, heads=_heads())
+    out = capsys.readouterr().out
+    assert rc == 0, out
+    assert seen == {"version": "9.9.9", "branch_release": "true"}
+    lines = out.splitlines()
+    assert lines[0].startswith(
+        "release:local --channel edge --workers-only --regions eu --branch-release (dry run)"
+    )
+    assert (
+        "branch release: 1104-1 at %s; the Workers report 9.9.9+1104-1.01234567 "
+        "(RELEASE_ASKED=ASKED:2026-11-13T05:02Z)" % HEAD_SHA[:12]
+    ) in lines
+    assert re.search(r"rediacc_ci\.release\.local_gates .*--branch-release", out)
+    assert "--workers-only --regions eu --branch-release` executes" in lines[-1]
+
+
+def test_a_branch_release_dry_run_prints_why_origin_branches_were_unreadable(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review 01f2a26f.1: the unread-branches line is printed under --dry-run, and absent when the read worked."""
+    monkeypatch.setenv(local.ASK_ENV, "ASKED:2026-11-13T05:02Z")
+    monkeypatch.setattr(local, "prereq_refusals", no_prereqs)
+    monkeypatch.setattr(local, "internal_channel_version", _set_version)
+    monkeypatch.setattr(local, "base_context", _base_context_at(HEAD_SHA))
+
+    def gates(_root, _version, _ctx):
+        return local.GateResult([], [])
+
+    def unread(_root):
+        return None, "branch listing exited 128"
+
+    local.main([*BRANCH_ARGV, "--dry-run"], runner=FakeRunner(), gates=gates, heads=unread)
+    assert (
+        "branch release: origin's branches could not be read: branch listing exited 128"
+        in capsys.readouterr().out
+    )
+    local.main([*BRANCH_ARGV, "--dry-run"], runner=FakeRunner(), gates=gates, heads=_heads())
+    assert "could not be read" not in capsys.readouterr().out
+
+
+def _base_context_at(sha: str):
+    real = local.base_context
+
+    def base_context(root, regions, workers_only, commit=None):
+        ctx = real(root, regions, workers_only, commit)
+        ctx["sha"] = sha
+        return ctx
+
+    return base_context
+
+
+def test_the_dry_gates_hand_branch_release_to_the_gates(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    seen: list[bool] = []
+
+    def check(root, channel, **kw):
+        del root, channel
+        seen.append(kw["branch_release"])
+        return []
+
+    monkeypatch.setattr(local.local_gates, "check", check)
+    ctx = local.Context(clone=str(tmp_path / "c"), releases_origin="https://x.invalid")
+    local.dry_gates(tmp_path, "9.9.9", ctx)
+    ctx["branch_release"] = "true"
+    local.dry_gates(tmp_path, "9.9.9", ctx)
+    assert seen == [False, True]
+
+
 @pytest.mark.parametrize(
     "argv",
     [
@@ -342,7 +892,7 @@ def test_stable_is_refused_locally(argv: list[str], capsys: pytest.CaptureFixtur
     rc = local.main(argv, runner=runner, gates=_gates([]))
     err = capsys.readouterr().err
     assert rc == 2
-    assert "promote-stable.yml" in err
+    assert "cd-release-stable.yml" in err
     assert "ASKED:2026-10-27T09:45Z" in err
     assert runner.calls == []
 
@@ -750,8 +1300,8 @@ def test_every_bind_is_declared_by_the_profiles_of_its_step() -> None:
 
 
 def test_bind_refusals_names_an_undeclared_or_empty_store() -> None:
-    env = {"REDIACC_BWS_PROFILES": "release-local", "STRIPE_SANDBOX_SECRET_KEY": "x"}
-    assert local.bind_refusals(["STRIPE_SANDBOX_SECRET_KEY > STRIPE_SECRET_KEY"], env) == []
+    env = {"REDIACC_BWS_PROFILES": "release-local", "STRIPE_SECRET_KEY": "x"}
+    assert local.bind_refusals(["STRIPE_SECRET_KEY > STRIPE_SECRET_KEY"], env) == []
     (empty,) = local.bind_refusals(["AWS_SES_REGION_EU > AWS_SES_REGION"], env)
     assert "AWS_SES_REGION_EU" in empty
     assert "empty" in empty
@@ -1322,3 +1872,162 @@ def test_assist_failed_run_names_only_a_red_dispatch_of_this_sha_since_the_dispa
     assert local.assist_failed_run(SHA, since) == "5"
     monkeypatch.setattr(local, "_gh_json", lambda _args: None)
     assert local.assist_failed_run(SHA, since) == ""
+
+
+def test_children_borrow_the_main_toolchain_and_a_branch_release_names_its_record_keys(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = _tmp_root(tmp_path)
+    ctx = local.base_context(root, ["eu"], True)
+    ctx.update(version="9.9.9")
+    steps = local.plan(["eu"], workers_only=True, branch_release=True)
+    (step,) = [s for s in steps if s.id == "www-deploy"]
+    plain = local.child_env(step, ctx, root)
+    assert plain[local.awscli.TOOLCHAIN_ROOT_ENV] == str(root)
+    assert local.deploy_record.BRANCH_KEY_ENV not in plain
+    ctx.update(local.branch_context(root, HEAD_SHA, "ASKED:2026-11-13T05:02Z", _heads()))
+    branch = local.child_env(step, ctx, root)
+    assert branch[local.deploy_record.BRANCH_KEY_ENV] == "1104-1.01234567"
+
+
+def test_a_normal_release_does_not_inherit_the_operators_record_branch(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv(local.deploy_record.BRANCH_KEY_ENV, "stray.01234567")
+    root = _tmp_root(tmp_path)
+    ctx = local.base_context(root, ["eu"], True)
+    ctx.update(version="9.9.9")
+    (step,) = [s for s in local.plan(["eu"], workers_only=True) if s.id == "www-deploy"]
+    assert local.deploy_record.BRANCH_KEY_ENV not in local.child_env(step, ctx, root)
+
+
+def _git_out(root: pathlib.Path, *argv: str) -> str:
+    env = dict(
+        os.environ,
+        GIT_AUTHOR_NAME="F",
+        GIT_AUTHOR_EMAIL="f@x.invalid",
+        GIT_COMMITTER_NAME="F",
+        GIT_COMMITTER_EMAIL="f@x.invalid",
+    )
+    proc = subprocess.run(
+        ["git", "-C", str(root), *argv], check=True, env=env, capture_output=True, text=True
+    )
+    return proc.stdout.strip()
+
+
+def _gitlink_commit(root: pathlib.Path, pointer: str, message: str) -> str:
+    _git_out(root, "update-index", "--add", "--cacheinfo", "160000,%s,private/account" % pointer)
+    _git_out(root, "commit", "-qm", message)
+    return _git_out(root, "rev-parse", "HEAD")
+
+
+def test_the_context_of_a_pinned_commit_is_that_commits_not_heads(tmp_path: pathlib.Path) -> None:
+    root = _tmp_root(tmp_path)
+    pinned = _gitlink_commit(root, "a" * 40, "account at a")
+    pinned_tree = _git_out(root, "rev-parse", "HEAD^{tree}")
+    later = _gitlink_commit(root, "b" * 40, "account at b")
+    assert later != pinned
+    ctx = local.base_context(root, ["eu"], True, pinned)
+    assert ctx["sha"] == pinned
+    assert ctx["tree"] == pinned_tree
+    assert ctx["account_pointer"] == "a" * 40
+    assert ctx["build_tag"] == "local-%s" % pinned[:12]
+    assert ctx["clone"].endswith(pinned_tree)
+    # Control: with no pin the context is HEAD's.
+    head = local.base_context(root, ["eu"], True)
+    assert (head["sha"], head["account_pointer"]) == (later, "b" * 40)
+
+
+def test_the_pinned_run_hands_its_commit_to_the_gates_row_only() -> None:
+    pinned = local.plan(REGIONS, workers_only=True, pinned=True)
+    plain = local.plan(REGIONS, workers_only=True)
+    (row,) = [s for s in pinned if s.kind == "gates"]
+    assert row.argv[-2:] == ("--commit", "{sha}")
+    assert all("--commit" not in s.argv for s in plain)
+    assert [s.id for s in pinned] == [s.id for s in plain]
+
+
+def test_a_pinned_dry_run_judges_the_gates_at_the_commit(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    seen: dict[str, object] = {}
+
+    def check(root, channel, **kw):
+        del root, channel
+        seen["commit"] = kw["commit"]
+        return []
+
+    monkeypatch.setattr(local.local_gates, "check", check)
+    ctx = local.Context(clone=str(tmp_path / "c"), releases_origin="https://x.invalid")
+    local.dry_gates(tmp_path, "9.9.9", ctx)
+    assert seen["commit"] is None
+    ctx["pinned_commit"] = HEAD_SHA
+    local.dry_gates(tmp_path, "9.9.9", ctx)
+    assert seen["commit"] == HEAD_SHA
+
+
+def test_a_pinned_dry_run_does_not_admit_a_pin_whose_ancestry_is_unknown(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    """b0fb4096.1: the pin's ancestry check keeps git's None, so check() refuses it as the real run does; the origin-main check still passes None through with its note."""
+    monkeypatch.setattr(local.local_gates, "live_ancestor", lambda _r, _a, _h: None)
+    seen: dict[str, object] = {}
+
+    def check(root, channel, **kw):
+        del root, channel
+        seen["pin"] = kw["ancestor"](tmp_path, HEAD_SHA, "t" * 40)
+        seen["origin"] = kw["ancestor"](tmp_path, "a" * 40, HEAD_SHA)
+        return []
+
+    monkeypatch.setattr(local.local_gates, "check", check)
+    ctx = local.Context(clone=str(tmp_path / "c"), releases_origin="https://x.invalid")
+    ctx["pinned_commit"] = HEAD_SHA
+    result = local.dry_gates(tmp_path, "9.9.9", ctx)
+    assert seen["pin"] is None
+    assert seen["origin"] is True
+    assert result.unjudged == 2
+    assert sum("origin-main" in n for n in result.notes) == 1
+
+
+def test_a_pin_equal_to_origin_main_still_notes_the_unjudged_origin_check(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    """71610e80.2: the pin's check asks (pin, tip) and the origin-main check asks (origin/main, pin); with both bases the same commit, the origin check keeps its note. Control: the pin check is still left unjudged."""
+    monkeypatch.setattr(local.local_gates, "live_ancestor", lambda _r, _a, _h: None)
+    seen: dict[str, object] = {}
+
+    def check(root, channel, **kw):
+        del root, channel
+        seen["pin"] = kw["ancestor"](tmp_path, HEAD_SHA, "t" * 40)
+        seen["origin"] = kw["ancestor"](tmp_path, HEAD_SHA, HEAD_SHA)
+        return []
+
+    monkeypatch.setattr(local.local_gates, "check", check)
+    ctx = local.Context(clone=str(tmp_path / "c"), releases_origin="https://x.invalid")
+    ctx["pinned_commit"] = HEAD_SHA
+    result = local.dry_gates(tmp_path, "9.9.9", ctx)
+    assert seen["pin"] is None
+    assert seen["origin"] is True
+    assert sum("origin-main" in n for n in result.notes) == 1
+
+
+def test_a_pinned_dry_run_with_head_at_the_pin_answers_the_identical_pair_with_the_stand_in(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    """Review 5d49bf9f.1: with HEAD at the pin the pin's check and the origin-main check ask the same (pin, pin), so the stand-in answers it with an unjudged note; git's verdict is passed through when it has one. Control: a pin behind the tip keeps git's None."""
+    verdicts: list[bool | None] = [None, True]
+    monkeypatch.setattr(local.local_gates, "live_ancestor", lambda _r, _a, _h: verdicts.pop(0))
+    seen: dict[str, object] = {}
+
+    def check(root, channel, **kw):
+        del root, channel
+        seen["same_none"] = kw["ancestor"](tmp_path, HEAD_SHA, HEAD_SHA)
+        seen["same_true"] = kw["ancestor"](tmp_path, HEAD_SHA, HEAD_SHA)
+        return []
+
+    monkeypatch.setattr(local.local_gates, "check", check)
+    ctx = local.Context(clone=str(tmp_path / "c"), releases_origin="https://x.invalid")
+    ctx["pinned_commit"] = HEAD_SHA
+    result = local.dry_gates(tmp_path, "9.9.9", ctx)
+    assert seen == {"same_none": True, "same_true": True}
+    assert result.unjudged == 2

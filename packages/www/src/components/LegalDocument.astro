@@ -1,0 +1,143 @@
+---
+/**
+ * One legal document page: hero, table of contents, numbered sections, contact and related links.
+ *
+ * Every legal page renders through here, so the entity tokens are filled in one place
+ * (`legal-tokens.ts`). A key a locale does not have yet falls back to English, so a page that
+ * ships before its translations never renders a bare key.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { createTranslator } from '../i18n/utils';
+import { legalPageName, type LegalPageKey } from '../lib/legal-pages';
+import { orderedKeys } from '../utils/legal-order';
+import { interpolateTree, legalTokens } from '../utils/legal-tokens';
+import type { Language } from '../i18n/types';
+import '../styles/legal-page.css';
+
+interface Related {
+  /** Path after the language prefix. */
+  page: string;
+  /** Translation key of the link label. */
+  labelKey: string;
+}
+
+interface Props {
+  lang: Language;
+  /** Translation root of the page, for example `pages.termsOfService`. */
+  pageKey: LegalPageKey;
+  related: Related[];
+}
+
+const { lang, pageKey, related } = Astro.props;
+const { t, to } = createTranslator(lang);
+const en = createTranslator('en');
+const tokens = legalTokens(lang);
+
+const legalPage = legalPageName(pageKey);
+
+// Every key is spelled in full, `pages.${legalPage}.<path>`, at its call: a key assembled from a
+// prop and a parameter resolves to no branch, and check:ci-dead-translation-keys refuses it
+// inside t(), to() or text().
+const text = (key: string) => interpolateTree(t(key, en.t(key)), tokens);
+const sections = interpolateTree(
+  (to(`pages.${legalPage}.sections` as any) ??
+    en.to(`pages.${legalPage}.sections` as any)) as Record<string, any>,
+  tokens
+);
+// English is the source of truth for the numbering; a locale's own numbers can be stale.
+const enSections = en.to(`pages.${legalPage}.sections` as any) as Record<string, any>;
+const sectionKeys = orderedKeys(sections, enSections);
+const relatedPages = related.map(({ page, labelKey }) => ({
+  href: `/${lang}/${page}`,
+  label: t(labelKey, en.t(labelKey)),
+}));
+---
+
+<BaseLayout
+  lang={lang}
+  title={text(`pages.${legalPage}.meta.title`)}
+  description={text(`pages.${legalPage}.meta.description`)}
+  keywords={text(`pages.${legalPage}.meta.keywords`)}
+  ogType="website"
+>
+  <article class="legal-page">
+    <section class="legal-hero">
+      <div class="legal-hero-content">
+        <h1>{text(`pages.${legalPage}.hero.title`)}</h1>
+        <p class="effective-date">{text(`pages.${legalPage}.hero.effectiveDate`)}</p>
+        <slot name="hero-extra" />
+      </div>
+    </section>
+
+    <div class="legal-content">
+      <div class="legal-layout">
+        <nav class="legal-toc" aria-label={text(`pages.${legalPage}.toc.title`)}>
+          <h2>{text(`pages.${legalPage}.toc.title`)}</h2>
+          <ol>
+            {sectionKeys.map((key) => (
+              <li>
+                <a href={`#${sections[key].id}`}>{sections[key].title}</a>
+              </li>
+            ))}
+          </ol>
+        </nav>
+
+        <div class="legal-body">
+          {sectionKeys.map((key) => {
+            const section = sections[key];
+            return (
+              <section id={section.id}>
+                <h2>{section.title}</h2>
+                {section.content?.map((p: string) => (
+                  <p set:html={p} />
+                ))}
+                {section.items && (
+                  <ul>
+                    {section.items.map((item: string) => (
+                      <li set:html={item} />
+                    ))}
+                  </ul>
+                )}
+                {section.subsections && orderedKeys(section.subsections, enSections[key]?.subsections).map((subKey) => {
+                  const sub = section.subsections[subKey];
+                  return (
+                    <>
+                      <h3>{sub.title}</h3>
+                      {sub.content?.map((p: string) => (
+                        <p set:html={p} />
+                      ))}
+                      {sub.items && (
+                        <ul>
+                          {sub.items.map((item: string) => (
+                            <li set:html={item} />
+                          ))}
+                        </ul>
+                      )}
+                    </>
+                  );
+                })}
+                {section.content2?.map((p: string) => (
+                  <p set:html={p} />
+                ))}
+              </section>
+            );
+          })}
+
+          <div class="legal-contact">
+            <h2>{text(`pages.${legalPage}.contact.title`)}</h2>
+            <p set:html={text(`pages.${legalPage}.contact.description`)} />
+          </div>
+
+          <div class="legal-related">
+            <h2>{text(`pages.${legalPage}.related.title`)}</h2>
+            <ul class="legal-related-links">
+              {relatedPages.map(({ href, label }) => (
+                <li><a href={href}>{label}</a></li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+</BaseLayout>

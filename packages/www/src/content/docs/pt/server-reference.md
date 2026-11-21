@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: pt
-sourceHash: "a64de9af83bd943a"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "5858f8461b70efa2"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # Referência do Servidor
@@ -195,15 +195,20 @@ Enviar backups para outra máquina. Os snapshots do armazenamento em chunks são
 ```bash
 # Enviar para maquina remota (SSH + rsync)
 renet backup push --name {uuid} --network-id {id} --target machine \
-  --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup
+  --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup \
+  --dest-known-hosts {known-hosts-base64}
 
 # Obter de remoto
 renet backup pull --name {uuid} --network-id {id} --source machine \
-  --src-host {host} --src-user {user} --src-path /mnt/rediacc --src {uuid}.backup
+  --src-host {host} --src-user {user} --src-path /mnt/rediacc --src {uuid}.backup \
+  --src-known-hosts {known-hosts-base64}
 
 # Listar backups remotos
-renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc
+renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc \
+  --src-known-hosts {known-hosts-base64}
 ```
+
+`{known-hosts-base64}` é o registo `known_hosts` da outra máquina, codificado em base64 (por exemplo, `ssh-keyscan -t ed25519 {host} | base64 -w0`).
 
 > A maioria dos utilizadores deve usar `rdc repo push/pull` em vez disso. Os comandos `rdc` tratam automaticamente das credenciais e da resolucao de maquinas.
 

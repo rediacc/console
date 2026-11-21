@@ -838,7 +838,7 @@ def test_collect_captures_reads_a_capture_dispatched_on_the_pr_head(monkeypatch)
         assert caps == []
         assert sources == []
         assert ("workflow_dispatch", "main") in calls
-        assert len(calls) == len(gc.CAPTURE_EVENTS)
+        assert len(calls) == len(gc.CAPTURE_EVENTS) * len(gc.CAPTURE_WORKFLOW_NAMES)
 
 
 def test_local_branch_reads_none_when_detached_failing_or_missing(tmp_path, monkeypatch):
@@ -862,3 +862,41 @@ def test_local_branch_reads_none_when_detached_failing_or_missing(tmp_path, monk
     assert gc._local_branch() == ""
     monkeypatch.setenv("PATH", str(tmp_path / "nothing"))
     assert gc._local_branch() == ""
+
+
+def _not_found(*_a):
+    raise gc.ghx.GhError(["gh", "api", "x"], 1, "gh: Not Found (HTTP 404)", gc.ghx.FAILURE_FAILED)
+
+
+def test_collect_captures_reads_the_predecessor_name_while_github_404s_the_renamed_one():
+    """A workflow rename lands on a branch before main: GitHub answers 404 for the new file name until the merge, and the predecessor's runs carry the same captures (ci:quick on 2655e28b23, 2d47c02363)."""
+    old = gc.CAPTURE_WORKFLOW_NAMES[1]
+
+    def list_runs(_repo, wf, event, *_a):
+        if wf == gc.CAPTURE_WORKFLOW:
+            _not_found()
+        return (
+            [{"id": 7, "head_sha": "g", "created_at": "2026-11-08"}] if event == "schedule" else []
+        )
+
+    blobs = {70: _zip("gate-costs.json", json.dumps(capture([gate("g", 1, 1)])))}
+    caps, sources, _warnings = gc.collect_captures(
+        "o/r",
+        limit=3,
+        list_runs=list_runs,
+        list_artifacts=lambda _repo, _run: [{"id": 70, "name": "gate-costs-g"}],
+        download=lambda _repo, aid: blobs[aid],
+    )
+    assert old == "housekeeping.yml"
+    assert [s["id"] for s in sources] == [7]
+    assert caps[0]["gates"][0]["id"] == "g"
+
+
+def test_collect_captures_still_raises_when_every_workflow_name_is_404():
+    with pytest.raises(gc.ghx.GhError, match="HTTP 404"):
+        gc.collect_captures(
+            "o/r",
+            list_runs=_not_found,
+            list_artifacts=lambda *_a: [],
+            download=lambda *_a: b"",
+        )

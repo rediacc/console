@@ -109,6 +109,8 @@ class _Gateway(http.server.BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if self.path == "/health":
             self._reply({"ok": True})
+        elif self.path.endswith("/portal/terms"):
+            self._reply({"satisfied": True})
         elif self.path.endswith("/portal/subscription"):
             self._reply({"id": "sub-1"})
         else:

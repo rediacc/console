@@ -78,6 +78,7 @@ export function renderLocalExecutionFailure(
           code,
           message,
           guidance: result.errorGuidance,
+          details: outputTail,
           retryable: false,
         },
       ],

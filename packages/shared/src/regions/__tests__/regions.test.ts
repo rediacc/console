@@ -44,14 +44,12 @@ const TEST_REGIONS: RegionInfo[] = [
     id: 'eu',
     label: 'Europe',
     domain: regionOf('eu').domain,
-    edgeDomain: regionOf('eu').edgeDomain,
     default: true,
   },
   {
     id: 'us',
     label: 'United States',
     domain: regionOf('us').domain,
-    edgeDomain: regionOf('us').edgeDomain,
     default: false,
   },
 ];
@@ -77,15 +75,7 @@ describe('Regions', () => {
         expect(region).toHaveProperty('id');
         expect(region).toHaveProperty('label');
         expect(region).toHaveProperty('domain');
-        expect(region).toHaveProperty('edgeDomain');
         expect(typeof region.default).toBe('boolean');
-      }
-    });
-
-    it('should have edgeDomain for each region', () => {
-      for (const region of BAKED_IN_REGIONS) {
-        expect(region.edgeDomain).toBeTruthy();
-        expect(region.edgeDomain).toContain('edge-');
       }
     });
   });

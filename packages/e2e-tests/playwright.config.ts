@@ -1,6 +1,7 @@
 import path from 'node:path';
 import * as test from '@playwright/test';
 import dotenv from 'dotenv';
+import { landlockGrepInvert } from './src/utils/landlockSelection';
 
 dotenv.config({ path: path.resolve(__dirname, '.env'), quiet: true });
 
@@ -28,6 +29,9 @@ export default test.defineConfig({
    * ceph was excluded originally; kube/ and migrate/ were added later and the
    * ignore list was never updated. Keep this list in sync with the subdirs. */
   testIgnore: ['**/ceph/**', '**/kube/**', '**/migrate/**', '**/ops-lifecycle/**'],
+  /* Suites tagged @landlock need a Rediaccfile up()/down(), which renet refuses where Landlock is inactive by default
+   * (oracle-10). They are left out of that leg here, by topology, because the zero-skip gate rejects collect-then-skip. */
+  grepInvert: landlockGrepInvert(process.env.VM_IMAGE),
   /* Global setup ensures infrastructure is running */
   globalSetup: require.resolve('./src/base/bridge-global-setup'),
   globalTeardown: require.resolve('./src/base/bridge-global-teardown'),
@@ -109,10 +113,10 @@ export default test.defineConfig({
     ...(process.env.CI ? [] : [{ name: 'test-20', testMatch: '20-*.test.ts' }]),
     { name: 'test-21', testMatch: '21-*.test.ts' },
     { name: 'test-22', testMatch: '22-*.test.ts' },
-    // CLI-migrate routing (suite 23) — first rdc-driven e2e (CliRunner). Two workers, no ceph; distro-agnostic routing logic, so CI runs it on the single CLI_SUITE leg (ct-tests.yml ubuntu-24.04 include). Always runs locally.
+    // CLI-migrate routing (suites 23a and 23b) — first rdc-driven e2e (CliRunner). Two workers, no ceph; distro-agnostic routing logic, so CI runs them only with CLI_SUITE=1 (ct-tests.yml test-e2e-full-integration, on separate ubuntu-24.04 legs). Always runs locally and in the vm:check cli-migrate-23 leg, where one invocation takes both files on one fleet; workers: 1 and fullyParallel: false (above) run them one at a time, 23a then 23b, never concurrently.
     ...(process.env.CI && process.env.CLI_SUITE !== '1'
       ? []
-      : [{ name: 'test-23', testMatch: '23-*.test.ts' }]),
+      : [{ name: 'test-23', testMatch: ['23a-*.test.ts', '23b-*.test.ts'] }]),
     // Chunk-store backup, machine tier (suite 25). Unconditional: it needs only a worker VM, which every E2E Workers leg has, and it carries the live coverage of the `backup_verify` verb (check:ci-e2e-coverage counts a verb dark unless a suite a LIVE config selects exercises it). It never skips where a worker exists, which is what `--fail-on-skip` requires.
     { name: 'test-25', testMatch: '25-*.test.ts' },
     // Suite 26 (control plane + upload engine) needs an account server and a renet that registers the chunk-store run verb — neither exists on the E2E Workers legs, and a skip there is a job failure. Gated, so CI collects nothing rather than skipping. Locally it always runs and fails closed on its own prerequisites.
@@ -133,5 +137,7 @@ export default test.defineConfig({
     ...(process.env.BACKUP_LARGE_REPO_SUITE === '1'
       ? [{ name: 'test-31', testMatch: '31-*.test.ts' }]
       : []),
+    // Detached jobs on a worker (suite 32, PLAN-jobs-backup-real-machine-tests E1): two concurrent `renet job start/claim` processes against one spool, asserted on machine state. Unconditional: it needs only a worker VM, which every E2E Workers leg has.
+    { name: 'test-32', testMatch: '32-*.test.ts' },
   ],
 });

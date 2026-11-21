@@ -65,6 +65,8 @@ function buildExecutorAuditEvent(
     cliVersion: VERSION,
     commandPath: event.commandPath,
     destructive: event.destructive,
+    ...(event.jobId ? { jobId: event.jobId } : {}),
+    ...(event.outcome ? { outcome: event.outcome } : {}),
   };
 
   const { functionName, machineName } = event;

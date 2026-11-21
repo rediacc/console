@@ -24,8 +24,10 @@ const h = vi.hoisted(() => ({
 const probeRepoPresent = h.probeRepoPresent;
 const expectRepoState = h.expectRepoState;
 
-vi.mock('../../services/executor/executor-factory.js', () => ({
+vi.mock('../../services/executor/executor-factory.js', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
   expectRepoState: h.expectRepoState,
+  getExecutor: vi.fn(),
 }));
 
 vi.mock('../../services/config/config-resources.js', () => ({

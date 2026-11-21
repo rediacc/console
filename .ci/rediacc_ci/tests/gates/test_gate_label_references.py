@@ -2,7 +2,7 @@
 
 Behavioural test for `.ci/scripts/quality/check_label_references.py`: every GitHub label a workflow or a `.ci` script references by name must be declared in `.github/labels.yml`. The subject was the bash twin `check-label-references.sh` until W7 P5 froze it against recorded goldens and deleted it; the entry point is what CI runs and what every case below drives.
 
-WHAT IT GUARDS. Labels are this repo's kill switches and routing flags, and the failure is SILENT fail-open: `promote-stable.yml` searched for a label that did not exist, a search for a nonexistent label returns zero PRs rather than an error, so the promotion block simply never fired. `full-ci`, `autopilot` and `autopilot-blocked` were all referenced by merged code for weeks while
+WHAT IT GUARDS. Labels are this repo's kill switches and routing flags, and the failure is SILENT fail-open: `cd-release-stable.yml` searched for a label that did not exist, a search for a nonexistent label returns zero PRs rather than an error, so the promotion block simply never fired. `full-ci`, `autopilot` and `autopilot-blocked` were all referenced by merged code for weeks while
 absent.
 
 ONE DIRECTION ONLY, and that is a decision rather than an omission: a declared label nothing references is inventory, not an error. `test_declared_but_unreferenced_is_fine` is the case that pins it, and it is the converse without which every firing case here would also be satisfied by a gate that reds on anything.

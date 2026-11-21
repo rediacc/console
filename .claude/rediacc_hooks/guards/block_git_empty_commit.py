@@ -22,7 +22,8 @@ refuses, never what it catches.
 PORT NOTE ON WHERE `git rev-parse HEAD` RUNS. The bash does not `cd` anywhere, so HEAD is read from the hook process's own working directory and NOT from CLAUDE_PROJECT_DIR. That is carried across by leaving `cwd` unset on the call below; passing the project dir would be a fix, and this is a port.
 """
 
-from rediacc_hooks import commit_policy, hookio, shellscan
+from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.guards import _repo_scope
 from rediacc_hooks.wellknown import GH_REPO
 
 CHAIN = "pre-bash"
@@ -92,14 +93,24 @@ EDGE_CASES = [
 ]
 
 
+def _elsewhere(ev, cmd, scan):
+    """Does every `git commit` in `cmd` land outside this checkout and its submodules? False on any doubt (`_repo_scope.elsewhere`)."""
+    root = shellscan.repo_root_env(ev)
+    expected = _repo_scope.text_matches(ALLOW_EMPTY, scan)
+    return _repo_scope.elsewhere(
+        cmd, ev.field("cwd") or None, root, _repo_scope.verb_is("commit"), expected
+    )
+
+
 def run(ev):
     cmd = ev.raw("tool_input", "command")
-    # SCOPE: this policy is about THIS checkout and its submodules. A commit in a repository outside it (a `/tmp` fixture, even one the same command `git init`s) is not its business (finding #5810a9f3).
-    if commit_policy.foreign_only(ev, cmd, ("commit",)):
-        return hookio.ALLOW
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
+    # SCOPE: this policy is about CI runs in THIS checkout and its submodules. A commit whose every target is a repository with a git common dir of its own (a `/tmp` scratch repository, even one the same command `git init`s, finding #5810a9f3), or a directory outside this tree naming no repository, is not its business (#381462dc).
+    if _elsewhere(ev, cmd, scan):
+        return hookio.ALLOW
 
-    if not hookio.grep_q(ALLOW_EMPTY, scan):
+    # The walk is asked too: ALLOW_EMPTY reads `git commit` as two adjacent words, so `git -C <this checkout> commit --allow-empty` was admitted (measured 2026-11-11, rc 0 from cwd /tmp).
+    if not (hookio.grep_q(ALLOW_EMPTY, scan) or _repo_scope.walked_commit_flag(cmd, "allow-empty")):
         return hookio.ALLOW
 
     claim = ev.env("CI_RETRIGGER_NO_RUN_FOR", "")

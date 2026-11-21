@@ -87,7 +87,7 @@ def test_cli_with_a_seed_never_prints_the_seed_or_the_code(monkeypatch, capsys):
     out, err = capsys.readouterr()
     assert RFC_SEED_B32 not in out + err
     assert current not in out + err
-    assert "ok REDIACC_BENCH_TOTP_SEED decodes" in out
+    assert "ok BENCH_ROOT_TOTP_SEED decodes" in out
 
 
 def test_cli_with_a_bad_seed_exits_1_without_echoing_it(monkeypatch, capsys):
@@ -95,7 +95,7 @@ def test_cli_with_a_bad_seed_exits_1_without_echoing_it(monkeypatch, capsys):
     assert totp.main([]) == 1
     out, err = capsys.readouterr()
     assert "not base32 1!" not in out + err
-    assert "REDIACC_BENCH_TOTP_SEED" in err
+    assert "BENCH_ROOT_TOTP_SEED" in err
 
 
 def test_cli_refuses_arguments():

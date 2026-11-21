@@ -8,17 +8,44 @@ The cases below are this guard's own, added to the shared shell cases: the opera
     test-block_review_file_shell_write.py
 """
 
+import atexit
 import importlib
 import importlib.util
 import json
 import pathlib
+import shutil
 import sys
+import tempfile
 import typing
 
 SHARED = pathlib.Path(__file__).resolve().with_name("test-block_review_file_edit.py")
 STEM = "block_review_file_shell_write"
 # A line that writes a Python program opening a review file for writing (#3ff3bb16 rows).
 _REVIEW_WRITER = "printf \"open('agent/reviews/x/y.md','w')\\n\" > /tmp/r87s.py"
+# d218ebf3, verbatim: the command that rewrote a review record through a listing over `agent/`.
+_LISTING_MEASURED = """python3 - <<'EOF'
+import re,glob,subprocess
+files=subprocess.run(['grep','-rlE','AKIA[A-Z0-9]{16}','agent/'],capture_output=True,text=True).stdout.split()
+for f in files:
+    s=open(f).read()
+    n=re.sub(r'AKIA[A-Z0-9]{16}',lambda m:'AKIA…'+m.group(0)[-4:],s)
+    if n!=s: open(f,'w').write(n); print('redacted',f)
+EOF"""
+
+
+# ffbd9211.2: a review directory whose name reads as a file, present only under a directory the run reaches by its own `cd`, never under the guard process's directory or the repository root.
+_DOTTED = pathlib.Path(tempfile.mkdtemp(prefix="test-review-dotted-"))
+atexit.register(shutil.rmtree, str(_DOTTED), True)
+(_DOTTED / "agent" / "reviews" / "1104-1.v2").mkdir(parents=True)
+_DOTTED_REVIEWS = str(_DOTTED / "agent" / "revi*s")
+# A listing loop that leaves `f` naming a review file, for the ffbd9211.1 rows.
+_LISTED = "import glob\nfor f in glob.glob('agent/**/*.md', recursive=True):\n    print(f)\n"
+
+
+def _py(code):
+    """`code` as a python3 heredoc, the shape the measured command took."""
+    return "python3 - <<'EOF'\n%s\nEOF" % code
+
 
 OWN_CASES = [
     # #f6334e52: each refusal was allowed (rc 0) at 5e00d0768, because the operand was read as typed (`$D/y.md`).
@@ -306,9 +333,803 @@ OWN_CASES = [
         "git archive HEAD | tar -xf - -C agent/reviews/b",
         True,
     ),
+    # d218ebf3: a write target bound to what a LISTING over an ancestor of the review directory returns. The measured command rewrote a review record on 2026-11-10 (rc 0 at a49d20475): its target `f` comes from `grep -rlE ... agent/`, so no review literal ever reaches it. Each refusal below was allowed (rc 0) there; every control was allowed there too and stays allowed.
+    ("a listing over agent/ feeds the write target (measured)", _LISTING_MEASURED, True),
+    (
+        "glob.glob over agent/ feeds open for write",
+        _py(
+            "import glob\nfor f in glob.glob('agent/**/*.md', recursive=True):\n    open(f, 'w').write('x')"
+        ),
+        True,
+    ),
+    (
+        "Path('agent').rglob feeds write_text",
+        _py(
+            "from pathlib import Path\nfor p in Path('agent').rglob('*.md'):\n"
+            "    p.write_text(p.read_text().replace('a', 'b'))"
+        ),
+        True,
+    ),
+    (
+        "os.walk('agent') feeds open for write",
+        _py(
+            "import os\nfor root, dirs, names in os.walk('agent'):\n    for n in names:\n"
+            "        with open(os.path.join(root, n), 'w') as h:\n            h.write('x')"
+        ),
+        True,
+    ),
+    (
+        "an indexed glob result under ./agent",
+        _py("import glob\nfiles = glob.glob('./agent/*/*/*.md')\nopen(files[0], 'w').write('x')"),
+        True,
+    ),
+    (
+        "glob with root_dir agent, joined back",
+        _py(
+            "import glob, os\nfor f in glob.glob('**/*.md', root_dir='agent', recursive=True):\n"
+            "    open(os.path.join('agent', f), 'w').write('x')"
+        ),
+        True,
+    ),
+    (
+        "an absolute root ending in /agent",
+        _py(
+            "import os\nfor r, d, ns in os.walk('/home/developer/console/agent'):\n"
+            "    for n in ns:\n        open(os.path.join(r, n), 'w').write('x')"
+        ),
+        True,
+    ),
+    (
+        "an absolute walk of /x/agent feeds the target",
+        _py(
+            "import pathlib\nfor p in pathlib.Path('/srv/console/agent').glob('*/*/*.md'):\n"
+            "    p.write_bytes(b'x')"
+        ),
+        True,
+    ),
+    (
+        "find over agent through check_output, splitlines",
+        _py(
+            "import subprocess, pathlib\n"
+            "out = subprocess.check_output(['find', 'agent', '-name', '*.md'], text=True)\n"
+            "for f in out.splitlines():\n    pathlib.Path(f).write_text('x')"
+        ),
+        True,
+    ),
+    (
+        "git ls-files agent, list() and a comprehension",
+        _py(
+            "import subprocess\nnames = list(subprocess.run('git ls-files agent', shell=True, "
+            "capture_output=True, text=True).stdout.split())\n"
+            "[open(n, 'a').write('x') for n in names]"
+        ),
+        True,
+    ),
+    (
+        "a listing handed to sed -i through subprocess",
+        _py(
+            "import glob, subprocess\nfiles = glob.glob('agent/**/*.md', recursive=True)\n"
+            "subprocess.run(['sed', '-i', 's/a/b/', *files])"
+        ),
+        True,
+    ),
+    (
+        "a path derived from the listed one",
+        _py(
+            "from pathlib import Path\nfor p in Path('agent').rglob('*.md'):\n"
+            "    p.with_suffix('.md').write_text('x')"
+        ),
+        True,
+    ),
+    (
+        "a relative path under agent rebuilt from the listed one",
+        _py(
+            "import glob, os\nfor f in glob.glob('agent/**/*.md', recursive=True):\n"
+            "    open('agent/' + os.path.relpath(f, 'agent'), 'w').write('x')"
+        ),
+        True,
+    ),
+    # The shell spellings of the same class: a listing's output reaches sed -i through xargs, a substitution or a read.
+    (
+        "grep -rl over agent/ piped to xargs sed -i",
+        "grep -rl AKIA agent/ | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "find over agent piped to xargs -0 sed -i",
+        "find agent -name '*.md' -print0 | xargs -0 sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a for loop over a grep -rl of agent/",
+        "for f in $(grep -rl AKIA agent/); do sed -i s/a/b/ $f; done",
+        True,
+    ),
+    (
+        "a read loop over a grep -rl of agent",
+        'grep -rl AKIA agent | while read f; do sed -i s/a/b/ "$f"; done',
+        True,
+    ),
+    (
+        "a variable holding a git ls-files of agent",
+        "F=$(git ls-files agent); sed -i s/a/b/ $F",
+        True,
+    ),
+    # Controls: a listing that is only read, a write elsewhere, a root that is no ancestor, and the repository root (the accepted limit: a listing over the whole tree is too broad to judge, and refusing it would refuse every repo-wide rewrite).
+    (
+        "the measured grep -rl over agent/, results printed",
+        _py(
+            "import subprocess\nfiles = subprocess.run(['grep', '-rlE', 'AKIA[A-Z0-9]{16}', 'agent/'], "
+            "capture_output=True, text=True).stdout.split()\nprint(files)"
+        ),
+        False,
+    ),
+    ("the measured grep in the shell", "grep -rlE 'AKIA[A-Z0-9]{16}' agent/", False),
+    (
+        "glob.glob over agent/ only read",
+        _py(
+            "import glob\nfor f in glob.glob('agent/**/*.md', recursive=True):\n    print(open(f).read())"
+        ),
+        False,
+    ),
+    (
+        "Path('agent').rglob only read",
+        _py(
+            "from pathlib import Path\nfor p in Path('agent').rglob('*.md'):\n    print(p.read_text())"
+        ),
+        False,
+    ),
+    (
+        "os.walk('agent') only read",
+        _py(
+            "import os\nfor root, dirs, names in os.walk('agent'):\n    for n in names:\n"
+            "        print(open(os.path.join(root, n)).read())"
+        ),
+        False,
+    ),
+    (
+        "a listing copied out to /tmp",
+        _py(
+            "import glob, os\nfor f in glob.glob('agent/**/*.md', recursive=True):\n"
+            "    open('/tmp/out/' + os.path.basename(f), 'w').write(open(f).read())"
+        ),
+        False,
+    ),
+    (
+        "a listing written as content of a scratch file",
+        _py(
+            "import glob\nout = open('/tmp/list.txt', 'w')\n"
+            "out.write('\\n'.join(glob.glob('agent/**', recursive=True)))"
+        ),
+        False,
+    ),
+    (
+        "a sibling root under agent that holds no reviews",
+        _py(
+            "from pathlib import Path\nfor p in Path('agent/plans').rglob('*.md'):\n    p.write_text('x')"
+        ),
+        False,
+    ),
+    (
+        "a root whose name only starts with agent",
+        _py(
+            "import os\nfor r, d, ns in os.walk('agent-tools'):\n    open(os.path.join(r, ns[0]), 'w')"
+        ),
+        False,
+    ),
+    (
+        "a listing over the repository root that writes (the accepted limit)",
+        _py(
+            "import glob\nfor f in glob.glob('**/*.md', recursive=True):\n"
+            "    s = open(f).read()\n    open(f, 'w').write(s.replace('agent/plans/', 'agent/plans/_done/'))"
+        ),
+        False,
+    ),
+    (
+        "grep -rl over . piped to xargs sed -i (the accepted limit)",
+        "grep -rl AKIA . | xargs sed -i s/a/b/",
+        False,
+    ),
+    ("grep -rl over agent/ piped to xargs cat", "grep -rl AKIA agent/ | xargs cat", False),
+    (
+        "a for loop over agent/plans",
+        "for f in $(grep -rl x agent/plans); do sed -i s/a/b/ $f; done",
+        False,
+    ),
+    # #6fdc7136: a substitution or a feed is lexed as text of its own, so the `cd` in force was lost. Each refusal was allowed (rc 0) at 00932b650 except the first, refused there only because any unknown value under `cd agent` completes `agent/<x>`; the controls were allowed there too and stay allowed.
+    (
+        "a for loop over a grep -rl of . under cd agent",
+        'cd agent && for f in $(grep -rl x .); do sed -i s/a/b/ "$f"; done',
+        True,
+    ),
+    (
+        "a for loop over a grep -rl of .. under cd agent/plans",
+        'cd agent/plans && for f in $(grep -rl x ..); do sed -i s/a/b/ "$f"; done',
+        True,
+    ),
+    (
+        "a substitution operand over .. under cd agent/plans",
+        "cd agent/plans && sed -i s/a/b/ $(grep -rl x ..)",
+        True,
+    ),
+    (
+        "a variable holding a grep -rl of .. under cd agent/plans",
+        "cd agent/plans && F=$(grep -rl x ..); sed -i s/a/b/ $F",
+        True,
+    ),
+    (
+        "grep -rl over . piped to xargs sed -i under cd agent",
+        "cd agent && grep -rl x . | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "find over . piped to xargs sed -i under cd agent",
+        "cd agent && find . -name '*.md' | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "grep -rl over .. piped to xargs sed -i under cd agent/plans",
+        "cd agent/plans && grep -rl x .. | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a for loop over a grep -rl of . under cd agent/plans",
+        'cd agent/plans && for f in $(grep -rl x .); do sed -i s/a/b/ "$f"; done',
+        False,
+    ),
+    (
+        "grep -rl over . piped to xargs sed -i under cd agent/plans",
+        "cd agent/plans && grep -rl x . | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "a listing under cd agent piped to xargs cat",
+        "cd agent && grep -rl x . | xargs cat",
+        False,
+    ),
+    (
+        "a listing whose .. climbs out of agent",
+        "cd agent/plans && grep -rl x ../.. | xargs sed -i s/a/b/",
+        False,
+    ),
+    # 727fc4a4.1: allowed (rc 0) at 727fc4a419, where an anchored root holding `..` was read only at its `agent` segments; aafefb4b31 folds the `..`.
+    (
+        "grep -rl over agent/plans/../revi*s piped to xargs sed -i",
+        "grep -rl x agent/plans/../revi*s | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a python write over glob of agent/plans/../reviews",
+        _py(
+            "import glob\n"
+            "for f in glob.glob('agent/plans/../reviews/**/*.md', recursive=True):\n"
+            "    open(f, 'w')"
+        ),
+        True,
+    ),
+    (
+        "grep -rl over agent/plans/../plans piped to xargs sed -i",
+        "grep -rl x agent/plans/../plans | xargs sed -i s/a/b/",
+        False,
+    ),
+    # 727fc4a4.2: rg over one file prints its lines, not names; the first two were refused (rc 2) at 727fc4a419, which read every rg run as a listing.
+    (
+        "python writes paths rg prints out of one review file",
+        _py(
+            "import subprocess\n"
+            "out = subprocess.run(['rg', '-o', 'packages/[a-z/]+', "
+            "'agent/reviews/1104-1/clean.jsonl'], capture_output=True, text=True).stdout\n"
+            "for p in out.split():\n"
+            "    open(p, 'w')"
+        ),
+        False,
+    ),
+    (
+        "python writes paths rg prints out of one file under cwd agent/reviews",
+        _py(
+            "import subprocess\n"
+            "out = subprocess.run(['rg', '-o', 'packages/[a-z/]+', 'clean.jsonl'], "
+            "capture_output=True, text=True, cwd='agent/reviews/1104-1').stdout\n"
+            "for p in out.split():\n"
+            "    open(p, 'w')"
+        ),
+        False,
+    ),
+    (
+        "rg over the agent directory piped to xargs sed -i",
+        "rg -o x agent | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "rg -H over one review file cut to names and fed to sed -i",
+        "rg -H x agent/plans/../revi*s/1104-1/clean.jsonl | cut -d: -f1 | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "rg over two roots under agent piped to xargs sed -i",
+        "rg x agent/plans agent | xargs sed -i s/a/b/",
+        True,
+    ),
+    # A search that prints lines crashed the guard (TypeError on the None roots, so it decided nothing), measured 2026-11-10.
+    (
+        "grep over one plan file piped to xargs sed -i",
+        "grep x agent/plans/a.md | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "a line-printing grep before a review write",
+        "grep x agent/plans/a.md | xargs echo; sed -i s/a/b/ agent/reviews/x/y.md",
+        True,
+    ),
+    # 727fc4a4.3: the listing name is cleared by a later straight-line rebinding; the first two were refused (rc 2) at 727fc4a419.
+    (
+        "a listing loop name rebound to /tmp before a write",
+        _py(
+            "import glob\n"
+            "for f in glob.glob('agent/**/*.md', recursive=True):\n"
+            "    print(f)\n"
+            "f = '/tmp/x'\n"
+            "open(f, 'w')"
+        ),
+        False,
+    ),
+    (
+        "a listing loop name rebound to /tmp inside the loop before a write",
+        _py(
+            "import glob\n"
+            "for f in glob.glob('agent/**/*.md', recursive=True):\n"
+            "    f = '/tmp/x'\n"
+            "    open(f, 'w')"
+        ),
+        False,
+    ),
+    (
+        "a listing loop name rebound to /tmp only after the write",
+        _py(
+            "import glob\n"
+            "for f in glob.glob('agent/**/*.md', recursive=True):\n"
+            "    open(f, 'w')\n"
+            "    f = '/tmp/x'"
+        ),
+        True,
+    ),
+    (
+        "a while loop that rebinds the name to a listing after the write",
+        _py(
+            "import glob\n"
+            "f = '/tmp/x'\n"
+            "while True:\n"
+            "    open(f, 'w')\n"
+            "    f = glob.glob('agent/**/*.md', recursive=True)[0]"
+        ),
+        True,
+    ),
+    (
+        "a listing name rebound to /tmp in one branch only",
+        _py(
+            "import glob\n"
+            "f = glob.glob('agent/**/*.md', recursive=True)[0]\n"
+            "if f:\n"
+            "    f = '/tmp/x'\n"
+            "open(f, 'w')"
+        ),
+        True,
+    ),
+    (
+        "a comprehension rebinding the name to a listing in the write",
+        _py(
+            "import glob\n"
+            "files = glob.glob('agent/**/*.md', recursive=True)\n"
+            "f = '/tmp/x'\n"
+            "[open(f, 'w') for f in files]"
+        ),
+        True,
+    ),
+    (
+        "a name rebound to another listing value before the write",
+        _py(
+            "import glob\n"
+            "files = glob.glob('agent/**/*.md', recursive=True)\n"
+            "f = '/tmp/x'\n"
+            "f = files[0]\n"
+            "open(f, 'w')"
+        ),
+        True,
+    ),
+    # ffbd9211.1: a write in a try's handler, else or finally block, or a match case, read the plain assignment before the whole statement; the four refusals were allowed (rc 0) at ffbd92113d.
+    (
+        "a try binding a listing, the write in its except handler",
+        _py(
+            "import glob\n"
+            "f = '/tmp/x'\n"
+            "try:\n"
+            "    f = glob.glob('agent/**/*.md', recursive=True)[0]\n"
+            "    raise ValueError\n"
+            "except ValueError:\n"
+            "    open(f, 'w')"
+        ),
+        True,
+    ),
+    (
+        "a try binding a listing, the write in its else block",
+        _py(
+            "import glob\n"
+            "f = '/tmp/x'\n"
+            "try:\n"
+            "    f = glob.glob('agent/**/*.md', recursive=True)[0]\n"
+            "except ValueError:\n"
+            "    pass\n"
+            "else:\n"
+            "    open(f, 'w')"
+        ),
+        True,
+    ),
+    (
+        "a try binding a listing, the write in its finally block",
+        _py(
+            "import glob\n"
+            "f = '/tmp/x'\n"
+            "try:\n"
+            "    f = glob.glob('agent/**/*.md', recursive=True)[0]\n"
+            "finally:\n"
+            "    open(f, 'w')"
+        ),
+        True,
+    ),
+    (
+        "a match capturing a listing element, the write in its case",
+        _py(
+            "import glob\n"
+            "f = '/tmp/x'\n"
+            "match glob.glob('agent/**/*.md', recursive=True):\n"
+            "    case [f, *_]:\n"
+            "        open(f, 'w')"
+        ),
+        True,
+    ),
+    (
+        "a listing name rebound to /tmp in the except handler before the write",
+        _py(
+            _LISTED + "try:\n"
+            "    f = glob.glob('agent/**/*.md', recursive=True)[0]\n"
+            "except ValueError:\n"
+            "    f = '/tmp/x'\n"
+            "    open(f, 'w')"
+        ),
+        False,
+    ),
+    (
+        "a listing name rebound to /tmp in a try body before the write",
+        _py(_LISTED + "try:\n    f = '/tmp/x'\n    open(f, 'w')\nexcept ValueError:\n    pass"),
+        False,
+    ),
+    (
+        "a match capturing a listing element, the write rebinds first",
+        _py(
+            "import glob\n"
+            "match glob.glob('agent/**/*.md', recursive=True):\n"
+            "    case [f, *_]:\n"
+            "        f = '/tmp/x'\n"
+            "        open(f, 'w')"
+        ),
+        False,
+    ),
+    # ffbd9211.2: the directory test read the guard process's directory, so a directory named like a file under the run's own cwd read as one file; the refusal was allowed (rc 0) at ffbd92113d.
+    (
+        "python writes paths rg prints out of a dotted review directory under cwd",
+        _py(
+            "import subprocess\n"
+            "out = subprocess.run(['rg', '-o', 'packages/[a-z/]+', '1104-1.v2'], "
+            "capture_output=True, text=True, cwd=%r).stdout\n"
+            "for p in out.split():\n"
+            "    open(p, 'w')" % _DOTTED_REVIEWS
+        ),
+        True,
+    ),
+    (
+        "python writes paths rg prints out of a dotted review file under cwd",
+        _py(
+            "import subprocess\n"
+            "out = subprocess.run(['rg', '-o', 'packages/[a-z/]+', '1104-1.v3'], "
+            "capture_output=True, text=True, cwd=%r).stdout\n"
+            "for p in out.split():\n"
+            "    open(p, 'w')" % _DOTTED_REVIEWS
+        ),
+        False,
+    ),
+    # ffbd9211.3: grep -H and grep over two file roots print each line with its file; the three refusals were allowed (rc 0) at ffbd92113d.
+    (
+        "grep -H over one review file cut to names and fed to sed -i",
+        "grep -H x agent/plans/../revi*s/1104-1/clean.jsonl | cut -d: -f1 | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "grep --with-filename over one review file cut to names and fed to sed -i",
+        (
+            "grep --with-filename x agent/plans/../revi*s/1104-1/clean.jsonl "
+            "| cut -d: -f1 | xargs sed -i s/a/b/"
+        ),
+        True,
+    ),
+    (
+        "grep over two file roots cut to names and fed to sed -i",
+        (
+            "grep x agent/plans/a.md agent/plans/../revi*s/1104-1/clean.jsonl "
+            "| cut -d: -f1 | xargs sed -i s/a/b/"
+        ),
+        True,
+    ),
+    (
+        "grep -r over one review file cut to names and fed to sed -i",
+        "grep -r x agent/plans/../revi*s/1104-1/clean.jsonl | cut -d: -f1 | xargs sed -i s/a/b/",
+        True,
+    ),
+    # The rows above hand grep, through a `cut`, to xargs: the stage that produces the input is read alone (`shellscan._Run.feed_stages`, #3661517d), so `cut -d: -f1` is no root of the grep. The two below hand grep its words alone through a program.
+    (
+        "python writes the files grep -H names in one review file",
+        _py(
+            "import subprocess\n"
+            "out = subprocess.run(['grep', '-H', 'x', 'agent/reviews/1104-1/clean.jsonl'], "
+            "capture_output=True, text=True).stdout\n"
+            "for line in out.splitlines():\n"
+            "    open(line.split(':')[0], 'w')"
+        ),
+        True,
+    ),
+    (
+        "python writes the files grep --with-filename names in one review file",
+        _py(
+            "import subprocess\n"
+            "out = subprocess.run(['grep', '--with-filename', 'x', "
+            "'agent/reviews/1104-1/clean.jsonl'], capture_output=True, text=True).stdout\n"
+            "for line in out.splitlines():\n"
+            "    open(line.split(':')[0], 'w')"
+        ),
+        True,
+    ),
+    (
+        "python writes paths grep prints out of one review file",
+        _py(
+            "import subprocess\n"
+            "out = subprocess.run(['grep', '-o', 'packages/[a-z/]+', "
+            "'agent/reviews/1104-1/clean.jsonl'], capture_output=True, text=True).stdout\n"
+            "for p in out.split():\n"
+            "    open(p, 'w')"
+        ),
+        False,
+    ),
+    (
+        "grep -H over one plan file cut to names and fed to sed -i",
+        "grep -H x agent/plans/a.md | cut -d: -f1 | xargs sed -i s/a/b/",
+        False,
+    ),
+    # #3661517d: the feed was read as one bag of every stage's words, lexed as one command. The first allowed row was refused (rc 2) and the echo row allowed (rc 0) at 13f2459fb0, both measured 2026-11-10.
+    ("a listing sorted and fed to sed -i", "grep -rl x agent/ | sort | xargs sed -i s/a/b/", True),
+    (
+        "grep -H over a review file cut to names and fed to sed -i",
+        "grep -H x agent/reviews/b/c.jsonl | cut -d: -f1 | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "grep lines filtered by grep -v and fed to sed -i",
+        "grep -o x README.md | grep -v agent | xargs sed -i s/a/b/",
+        False,
+    ),
+    ("a file list fed to cat", "cat list.txt | xargs cat", False),
+    (
+        "a listing after an echo stage fed to sed -i",
+        "echo README.md | grep -rl x agent/ | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing in a subshell under cd fed to sed -i",
+        "(cd agent && grep -rl x .) | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing in a brace group fed to sed -i",
+        "{ echo a; grep -rl x agent/; } | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing through a loop's echo fed to sed -i",
+        "grep -rl x agent/ | while read f; do echo $f | xargs sed -i s/a/b/; done",
+        True,
+    ),
+    (
+        "a listing piped to xargs that reads a here-string",
+        "grep -rl x agent/ | xargs sed -i s/a/b/ <<< README.md",
+        False,
+    ),
+    (
+        "a listing piped into a grep over its own file, fed to sed -i",
+        "grep -rl x agent/ | grep -o x README.md | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "a listing piped into a cat of its own file, fed to sed -i",
+        "grep -rl x agent/ | cat list.txt | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "a listing through a process substitution fed to sed -i",
+        "xargs sed -i s/a/b/ < <(grep -rl x agent/ | sort)",
+        True,
+    ),
+    (
+        "a listing piped through cat /dev/stdin, fed to sed -i (b3ef7ca3.1)",
+        "grep -rl x agent/ | cat /dev/stdin | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing piped through grep over /dev/fd/0, fed to sed -i (b3ef7ca3.1)",
+        "grep -rl x agent/ | grep x /dev/fd/0 | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing piped through cat of a variable, fed to sed -i (b3ef7ca3.1)",
+        "grep -rl x agent/ | cat $F | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing piped through cat /proc/self/fd/0, fed to sed -i (c797f428.2)",
+        "grep -rl x agent/ | cat /proc/self/fd/0 | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing piped through cat /proc/thread-self/fd/0, fed to sed -i (c797f428.1)",
+        "grep -rl x agent/ | cat /proc/thread-self/fd/0 | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing piped through cat //dev/stdin, fed to sed -i (c797f428.1)",
+        "grep -rl x agent/ | cat //dev/stdin | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing piped through cat /dev/./stdin, fed to sed -i (c797f428.1)",
+        "grep -rl x agent/ | cat /dev/./stdin | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing piped through cat /dev/stdin/, fed to sed -i (c797f428.1)",
+        "grep -rl x agent/ | cat /dev/stdin/ | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing piped through cat of a backtick operand, fed to sed -i (c797f428.2)",
+        "grep -rl x agent/ | cat `echo x` | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "control: a listing piped into a cat of /dev/null stays a stdin-ignoring stage",
+        "grep -rl x agent/ | cat /dev/null | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "control: a listing piped into a cat of a named file stays a stdin-ignoring stage",
+        "grep -rl x agent/ | cat README.md | xargs sed -i s/a/b/",
+        False,
+    ),
+    # #8638dd20: a listing root holding a variable was read as the literal `$D`. The first four rows were allowed (rc 0) at 4c9b439aac, measured 2026-11-10.
+    (
+        "a listing over an assigned root fed to sed -i",
+        "D=agent; grep -rl x $D | xargs sed -i s/a/b/",
+        True,
+    ),
+    ("sed -i over a listing of an assigned root", "D=agent; sed -i s/a/b/ $(grep -rl x $D)", True),
+    (
+        "a listing over a loop root fed to sed -i",
+        "for D in agent; do grep -rl x $D | xargs sed -i s/a/b/; done",
+        True,
+    ),
+    (
+        "a listing over an exported root fed to sed -i",
+        "export D=agent/reviews; grep -rl x $D | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing over a root read from a listing, fed to sed -i",
+        "grep -rl x agent/ | while read D; do grep -rl y $D | xargs sed -i s/a/b/; done",
+        True,
+    ),
+    (
+        "sed -i over a backquoted listing of an assigned root",
+        "D=agent; sed -i s/a/b/ `grep -rl x $D`",
+        True,
+    ),
+    (
+        "a listing over a quoted assigned root fed to sed -i",
+        'D=agent; grep -rl x "${D}/" | xargs sed -i s/a/b/',
+        True,
+    ),
+    (
+        "find over an assigned root fed to sed -i",
+        "D=agent; find $D -name '*.md' | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing over a root spelled in two variables",
+        "A=age; B=nt; grep -rl x $A$B | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing over an unknown root under cd agent",
+        "cd agent && grep -rl x $UNSET_ROOT | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing over an assigned plans root fed to sed -i",
+        "D=agent/plans; grep -rl x $D | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "sed -i over a listing of an assigned plans root",
+        "D=agent/plans; sed -i s/a/b/ $(grep -rl x $D)",
+        False,
+    ),
+    (
+        "grep lines of an assigned file fed to sed -i",
+        "D=README.md; grep -o x $D | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "a listing over an unknown root at the top level",
+        "grep -rl x $UNSET_ROOT | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "a listing over a plans root assigned under cd agent",
+        "cd agent && D=plans; grep -rl x $D | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
+        "a listing over two variables spelling plans",
+        "A=age; B=nt; grep -rl x $A$B/plans | xargs sed -i s/a/b/",
+        False,
+    ),
+    # a6ad833c.1: a root whose value is a listing over itself recurses to _SCOPE_DEPTH_CAP; past it the root is the review directory only when the line spells it.
+    (
+        "a self-referencing root past the depth cap on a line naming reviews",
+        "D=$(grep -rl x $D); grep -rl x $D | xargs sed -i s/reviews/b/",
+        True,
+    ),
+    (
+        "control: a self-referencing root past the depth cap on a line naming no reviews",
+        "D=$(grep -rl x $D); grep -rl x $D | xargs sed -i s/a/b/",
+        False,
+    ),
 ]
 
 MUTANTS = [
+    (
+        "past the depth cap a root never reads as the review directory (a6ad833c.1)",
+        (
+            "return [root, _WORST] if _SPELLS_REVIEWS.search(cmd) else [root]",
+            "return [root]",
+        ),
+    ),
+    (
+        "a stdin device read as a named file (b3ef7ca3.1)",
+        (
+            "return spelled in _STDIN_DEVICES",
+            'return spelled == "-"',
+        ),
+    ),
+    (
+        "a stdin spelling read as typed, no slash or dot folding (c797f428.1)",
+        (
+            'spelled = posixpath.normpath(re.sub(r"/+", "/", operand))',
+            "spelled = operand",
+        ),
+    ),
+    (
+        "a backtick operand read as a named file (c797f428.2)",
+        (
+            'if "$" in operand or "`" in operand:',
+            'if "$" in operand:',
+        ),
+    ),
     (
         "operands read as typed only (#f6334e52)",
         (
@@ -384,6 +1205,189 @@ MUTANTS = [
         "an indirect expansion read as $! (8ef78586.1)",
         ('elif body.startswith("!") and len(body) > 1:', "elif False:"),
     ),
+    (
+        "a Python target bound to a listing not read (d218ebf3)",
+        (
+            "if any(_listing_target(t, listed, calls, bound, review_names, parents) for t in targets):",
+            "if False:",
+        ),
+    ),
+    (
+        "rglob read as a one-level glob (d218ebf3)",
+        ('("/**/" if func.attr == "rglob" else "/")', '"/"'),
+    ),
+    (
+        "a listing fed through xargs not read (d218ebf3)",
+        ("        if _lists_under(stage.text, where, scope):\n            return True\n", ""),
+    ),
+    (
+        "the feed lexed as one bag of every stage (#3661517d)",
+        (
+            "    for stage in reversed(run.feed_stages):\n",
+            "    for stage in [shellscan.FeedStage('data', run.feed or '')]:\n",
+        ),
+    ),
+    (
+        "a filter stage read as ending the walk (#3661517d)",
+        (
+            '        if stage.kind == "data" or _ignores_stdin(stage.text):\n',
+            "        if True:\n",
+        ),
+    ),
+    (
+        "a data stage read as passing the pipe through (#3661517d)",
+        (
+            '        if stage.kind == "data" or _ignores_stdin(stage.text):\n',
+            "        if _ignores_stdin(stage.text):\n",
+        ),
+    ),
+    (
+        "an echo of an expansion read as ignoring its stdin (#3661517d)",
+        (
+            '            if any("$" in a or "`" in a for a in argv):\n                return False\n',
+            "            pass\n",
+        ),
+    ),
+    (
+        "a search with a file operand read as passing stdin through (#3661517d)",
+        (
+            "    return bool(operands) and not any(_may_be_stdin(o) for o in operands)\n",
+            "    return False\n",
+        ),
+    ),
+    (
+        "a value's source read for the word reviews alone (d218ebf3)",
+        (
+            "return bool(_SPELLS_REVIEWS.search(text)) or _lists_under(text, where, scope)",
+            "return bool(_SPELLS_REVIEWS.search(text))",
+        ),
+    ),
+    (
+        "the repository root read as an ancestor (d218ebf3 limit)",
+        ('        if i == 0 and seg in ("*", "**"):\n            return False\n', ""),
+    ),
+    (
+        "a copy out to a literal directory refused (d218ebf3)",
+        ('if head in ("", ".", "./") or _root_walks_reviews(head):', "if True:"),
+    ),
+    (
+        "a listing read without the cd its output is used under (#6fdc7136)",
+        (
+            "        where and _text_lists_reviews(text, where, scope)\n",
+            "        False\n",
+        ),
+    ),
+    (
+        "a listing root's .. not folded (#6fdc7136)",
+        ("    return _root_walks_reviews(folded)\n", "    return False\n"),
+    ),
+    (
+        "every rg run read as a listing (727fc4a4.2)",
+        (
+            "        lists = len(operands) != 1 or _names_a_directory(operands[0], where)\n",
+            "        lists = True\n",
+        ),
+    ),
+    (
+        "rg over one directory read as one file (727fc4a4.2)",
+        (
+            "    return any(os.path.isdir(path) for path in _disk_readings(text, where))",
+            "    return False",
+        ),
+    ),
+    (
+        "a search printing lines joined as roots (crash, 2026-11-10)",
+        (
+            "    if roots is None:\n        return None\n    roots = [form",
+            "    roots = [form",
+        ),
+    ),
+    (
+        "a listing name kept past a straight-line rebinding (727fc4a4.3)",
+        ("            if value is None or carries(value):\n", "            if True:\n"),
+    ),
+    (
+        "any rebinding clears a listing name (727fc4a4.3)",
+        ("            if value is None or carries(value):\n", "            if False:\n"),
+    ),
+    (
+        "only a loop around the write keeps a listing name (ffbd9211.1)",
+        (
+            "        if _binds(parent, name):\n            return None\n        cur = parent\n",
+            (
+                "        if isinstance(parent, (ast.For, ast.While)) and _binds(parent, name):\n"
+                "            return None\n        cur = parent\n"
+            ),
+        ),
+    ),
+    (
+        "any binding around the write keeps a listing name (ffbd9211.1)",
+        (
+            "                    if isinstance(earlier, ast.Assign) and all(\n",
+            "                    if False and all(\n",
+        ),
+    ),
+    (
+        "a match capture read as no binding (ffbd9211.1)",
+        (
+            "        if isinstance(n, (ast.ExceptHandler, ast.MatchAs, ast.MatchStar)) and n.name == name:\n",
+            "        if isinstance(n, ast.ExceptHandler) and n.name == name:\n",
+        ),
+    ),
+    (
+        "a match subject not carried to its captures (ffbd9211.1)",
+        (
+            "            pairs.extend((case.pattern, node.subject) for case in node.cases)\n",
+            "            pass\n",
+        ),
+    ),
+    (
+        "an rg root tested from the process directory only (ffbd9211.2)",
+        (
+            "        words.insert(0, os.path.join(os.path.expanduser(str(where)), text))\n",
+            "        pass\n",
+        ),
+    ),
+    (
+        "grep -H read as printing no names (ffbd9211.3)",
+        (
+            '_SEARCH_LISTING_LETTERS = {"grep": frozenset("lLrRH"), "rg": frozenset("lH")}',
+            '_SEARCH_LISTING_LETTERS = {"grep": frozenset("lLrR"), "rg": frozenset("lH")}',
+        ),
+    ),
+    (
+        "--with-filename read as printing no names (ffbd9211.3)",
+        ('        "--with-filename",\n    )\n)\n', "    )\n)\n"),
+    ),
+    (
+        "a listing root read as typed (#8638dd20)",
+        ("    roots = [form for r in roots for form in _root_forms(r, run, scope)]\n", ""),
+    ),
+    (
+        "a substitution's roots read without the line's variables (#8638dd20)",
+        ("_names_reviews(text, _run_dir(run), (run, cmd))", "_names_reviews(text, _run_dir(run))"),
+    ),
+    (
+        "a listing text with no agent word never lexed (#8638dd20)",
+        (
+            '    expands = scope is not None and ("$" in text or "`" in text)\n',
+            "    expands = False\n",
+        ),
+    ),
+    (
+        "the pre-filter blind to a feed spelled in variables (#8638dd20)",
+        (
+            'and not ("xargs" in cmd and ("$" in cmd or "`" in cmd))',
+            "",
+        ),
+    ),
+    (
+        "grep over two roots read as printing no names (ffbd9211.3)",
+        (
+            '    if family == "grep" and not lists:\n        lists = len(operands) > 1\n',
+            "",
+        ),
+    ),
 ]
 
 
@@ -409,7 +1413,11 @@ def _planted(shared, old, new):
 
     def run(_stem, payload):
         event = hookio.Event(json.dumps(payload))
-        rc = ns["run"](event)
+        # dispatch.py reports a guard that raises and lets the command through, so a planted crash (the errors a broken guard raises) reads as allowed.
+        try:
+            rc = ns["run"](event)
+        except (TypeError, AttributeError, KeyError, IndexError, ValueError) as exc:
+            return 0, "guard crashed: %r" % exc
         _rc, out, err = event.result(rc)
         return rc, out + err
 

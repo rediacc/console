@@ -13,8 +13,11 @@ THE FIXTURE IS A GIT REPOSITORY, and that is not scaffolding. The gate's corpus 
 import importlib.util
 import json
 
+import pytest
+
 from rediacc_ci import paths
-from rediacc_ci.core.bws_env import ARCHIVE_PATTERN, JSON_REQUIRED, PARKED_PATTERN
+from rediacc_ci.core.bws_env import ARCHIVE_PATTERN, PARKED_PATTERN
+from rediacc_ci.core.bws_env import SELLER_FIELDS as BWS_ENV_SELLER_FIELDS
 from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_bws_map.py")
@@ -65,18 +68,22 @@ REACHABILITY = {
     "repos": {"console": {"ALPHA_TOKEN": {"reachable": True, "via": "org:all"}}},
 }
 
-# ASSERTION 14 READS .ci/config/secret-supply.json UNCONDITIONALLY and refuses when the `account-dev` profile binds no SELLER_* name, so the fixture carries a profile binding exactly the nine fields `bws_env.JSON_REQUIRED["SELLER_PROFILE_JSON"]` declares. Imported, not re-typed, for the same reason the gate imports them: a second copy here would test the fixture against itself.
-SELLER_FIELDS = sorted(JSON_REQUIRED["SELLER_PROFILE_JSON"])
+# ASSERTION 14 READS .ci/config/secret-supply.json UNCONDITIONALLY and refuses when the `account-dev` profile binds no SELLER_* name, so the fixture carries the `account-dev` and `legal-entity` profiles, each binding exactly the ten fields `bws_env.SELLER_FIELDS` declares. Imported, not re-typed, for the same reason the gate imports them: a second copy here would test the fixture against itself.
+SELLER_FIELDS = sorted(BWS_ENV_SELLER_FIELDS)
 
 
-def supply(fields) -> dict:
+def supply(fields, legal_fields=None) -> dict:
     return {
         "consumers": {
             "account-dev": {
                 "why": "fixture",
                 "required": ["AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID"],
                 "optional": list(fields),
-            }
+            },
+            "legal-entity": {
+                "why": "fixture",
+                "required": list(SELLER_FIELDS if legal_fields is None else legal_fields),
+            },
         }
     }
 
@@ -255,8 +262,23 @@ def test_seller_field_dropped_from_profile_reds(gate, tmp_path):
     gate.log_pass("assertion 14: a profile missing one declared SELLER field fails")
 
 
+def test_seller_field_dropped_from_legal_entity_profile_reds(gate, tmp_path):
+    """The control for the second profile: one SELLER name short in `legal-entity` alone fails 14d, naming the field and the profile. The clean fixture (test_clean_fixture_passes) is the other half."""
+    fixture(gate, tmp_path)
+    dropped = SELLER_FIELDS[0]
+    write(
+        tmp_path / ".ci/config/secret-supply.json",
+        json.dumps(supply(SELLER_FIELDS, [f for f in SELLER_FIELDS if f != dropped])),
+    )
+    out = run_gate(gate, tmp_path)
+    gate.assert_contains(out, dropped, "assertion 14 names the SELLER field the profile lost")
+    gate.assert_contains(out, "'legal-entity'", "and names the profile")
+    gate.assert_contains(out, "rc=1", "and fails")
+    gate.log_pass("assertion 14: the legal-entity profile one SELLER name short fails by name")
+
+
 def test_seller_fields_agree_on_the_real_tree(gate):
-    """The live `account-dev` profile binds exactly the fields `bws_env` declares. The fixture cases prove the comparison can fail; this proves the committed tree is on the passing side of it."""
+    """The live `account-dev` and `legal-entity` profiles bind exactly the fields `bws_env` declares. The fixture cases prove the comparison can fail; this proves the committed tree is on the passing side of it."""
     python3 = harness.require_tool("python3", "install python3; the subject is a python3 program")
     probe = (
         "import sys; sys.path.insert(0, %r); import check_bws_map as g; "
@@ -358,3 +380,26 @@ def test_the_refresher_drops_parked_names_and_leaves_archives_to_their_own_split
     assert parked == ["__ALPHA_DEV"]
     assert [e["key"] for e in kept] == ["ALPHA", "__ALPHA__ROTATED_20260101T000000Z"]
     assert module.PARKED_RE.pattern == PARKED_PATTERN
+
+
+def test_the_refresher_names_a_missing_access_token_before_it_runs_bws(monkeypatch, capsys):
+    """With BWS_ACCESS_TOKEN unset the refresher exits 1 naming the variable, and never reaches the bws lookup or a listing."""
+    src = paths.from_root("scripts", "ops", "bws-map-refresh.py")
+    spec = importlib.util.spec_from_file_location("bws_map_refresh_token", src)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    monkeypatch.delenv("BWS_ACCESS_TOKEN", raising=False)
+    monkeypatch.setattr(module.sys, "argv", ["bws-map-refresh.py", "--dry-run"])
+
+    def reached(*_args, **_kwargs):
+        raise AssertionError("the token guard must stop the run before bws is looked up")
+
+    monkeypatch.setattr(module.shutil, "which", reached)
+    monkeypatch.setattr(module, "list_live", reached)
+    with pytest.raises(SystemExit) as stop:
+        module.main()
+    assert stop.value.code == 1
+    err = capsys.readouterr().err
+    assert "BWS_ACCESS_TOKEN is not set" in err

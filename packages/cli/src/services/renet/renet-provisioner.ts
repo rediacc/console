@@ -12,7 +12,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient, SFTPClientConfig } from '../../remote/sftp/index.js';
-import { busy } from '../../utils/cli-exit-error.js';
+import { busy, CliExitError } from '../../utils/cli-exit-error.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { VERSION } from '../../version.js';
 import { reportStateWriteRefused } from '../config/state-write-failure.js';
@@ -23,8 +23,8 @@ import {
   type RenetArch,
 } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
+import { currentRequestContext } from '../core/request-context.js';
 import { withSharedOrPooledSftp } from '../machine/machine-connection.js';
-import { compareVersions } from '../update/updater.js';
 import {
   dropProvisionEntry,
   getFreshProvisionEntry,
@@ -47,6 +47,12 @@ import type {
   ProvisionOptions,
   ProvisionResult,
 } from './renet-provisioner-types.js';
+import { detectRemoteArch, getRemoteHashAndVersion } from './renet-remote-probe.js';
+import {
+  decideRenetReplacement,
+  type RenetRefusalCode,
+  readRenetBuild,
+} from './renet-replacement.js';
 import { buildSlotPruneStep } from './renet-slot-prune.js';
 
 /** Root directory for versioned renet installs on remote machines */
@@ -100,6 +106,9 @@ export function buildRouterRefreshCommand(remoteRenetPath: string): string {
   );
 }
 
+/** A provision's result; a refusal carries its code. */
+type GuardedProvisionResult = ProvisionResult & { code?: RenetRefusalCode };
+
 /**
  * Service for provisioning renet binaries to remote Linux machines.
  *
@@ -110,7 +119,7 @@ export function buildRouterRefreshCommand(remoteRenetPath: string): string {
  * Installation flow:
  * 1. Compute SHA256 of local binary
  * 2. Single SSH call: `renet hash` + `renet version` (sha256sum fallback)
- * 3. If hash mismatch + version guard passes: SFTP upload to staging, atomic mv to the versioned install path
+ * 3. If the replacement guard passes: SFTP upload to staging when the hash differs, atomic mv to the versioned install path, `current` repointed
  *
  * Maintains an in-memory cache to avoid redundant checks within TTL.
  */
@@ -118,7 +127,7 @@ class RenetProvisionerService {
   private readonly cache = new Map<string, CacheEntry>();
   /** Hosts trusted from the persisted entry whose remote slot no mutating call has probed yet. */
   private readonly unprobed = new Set<string>();
-  private readonly inflight = new Map<string, Promise<ProvisionResult>>();
+  private readonly inflight = new Map<string, Promise<GuardedProvisionResult>>();
   /** Per-host arch memo so partial cache misses skip the remote `uname -m` exec */
   private readonly archByHost = new Map<string, RenetArch>();
   /** Local binary hash memo keyed by source path, validated by (mtime, size) */
@@ -138,7 +147,17 @@ class RenetProvisionerService {
     config: SFTPClientConfig,
     options?: ProvisionOptions,
     sharedSftp?: SFTPClient
-  ): Promise<ProvisionResult> {
+  ): Promise<GuardedProvisionResult> {
+    // `acquireRemoteRenet` routes a served request away from here. This is the last line, ahead of the verified cache and any exec, so no other route inside a request can reach a machine's renet.
+    if (currentRequestContext() !== undefined) {
+      return {
+        success: false,
+        action: 'failed',
+        remotePath: REMOTE_INSTALL_PATH,
+        code: 'RENET_UPLOAD_REFUSED_IN_EXECUTOR',
+        error: `An executor never replaces a machine's renet: ${config.host} keeps the one it has. Run \`rdc machine setup\` without --proxy to update it.`,
+      };
+    }
     const cacheKey = this.buildCacheKey(config);
     const verified = await this.lookupVerified(cacheKey, options?.localBinaryPath);
     if (verified && (await this.remoteSlotStillCurrent(config, cacheKey, verified, sharedSftp))) {
@@ -170,14 +189,21 @@ class RenetProvisionerService {
    * exec reads the hash and version of the versioned slot and of `current`
    * (renet-inspect.ts). A proven match is recorded, a local write only, when
    * both hold the local bytes, which is exactly what `provision()` leaves.
+   *
+   * `fresh` looks at the machine even when a provision was proven recently, for a
+   * caller that runs what the machine has: a remembered match names the slot of a
+   * binary that may have been replaced since, and hides the drift.
    */
   async inspect(
     config: SFTPClientConfig,
-    options?: { localBinaryPath?: string },
+    options?: { localBinaryPath?: string; fresh?: boolean },
     sharedSftp?: SFTPClient
   ): Promise<RenetInspectResult> {
     const cacheKey = this.buildCacheKey(config);
-    const verified = await this.lookupVerified(cacheKey, options?.localBinaryPath);
+    const verified =
+      options?.fresh === true
+        ? null
+        : await this.lookupVerified(cacheKey, options?.localBinaryPath);
     if (verified) return matchedInspect(verified.arch, verified.hash, REMOTE_INSTALL_PATH);
 
     return withSharedOrPooledSftp(sharedSftp, config, async (sftp) => {
@@ -282,7 +308,7 @@ class RenetProvisionerService {
     config: SFTPClientConfig,
     options?: ProvisionOptions,
     sharedSftp?: SFTPClient
-  ): Promise<ProvisionResult> {
+  ): Promise<GuardedProvisionResult> {
     try {
       return await withSharedOrPooledSftp(sharedSftp, config, (sftp) =>
         this.doProvision(sftp, config, options)
@@ -290,6 +316,8 @@ class RenetProvisionerService {
     } catch (error) {
       // Fail open: a machine that failed to provision must not be skipped by the persistent cache on the next attempt.
       await dropProvisionEntry(this.buildCacheKey(config)).catch(() => undefined);
+      // Any CliExitError is a coded refusal (today BUSY on the remote install lock) and keeps its code, exit status and next action; an uncoded failure becomes a failed result.
+      if (error instanceof CliExitError) throw error;
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         success: false,
@@ -305,10 +333,17 @@ class RenetProvisionerService {
     sftp: SFTPClient,
     config: SFTPClientConfig,
     options?: ProvisionOptions
-  ): Promise<ProvisionResult> {
+  ): Promise<GuardedProvisionResult> {
     const context = await this.buildProvisionContext(sftp, config, options?.localBinaryPath);
-    const remote = await this.getRemoteHashAndVersion(sftp, context.remoteInstallPath);
-    const versionRejected = this.buildVersionRejectedResult(remote.version, context);
+    // A probe that cannot run throws for the slot and for `current` alike: reading it as "no renet" would upload past the replacement guard. An absent binary is not a failed exec, since the probe command ends in `|| true`, so strict mode throws only when the exec itself fails.
+    const remote = await getRemoteHashAndVersion(sftp, context.remoteInstallPath, {
+      strict: true,
+    });
+    // `current` is what the machine runs, and the install below repoints it even when the slot already holds the local binary.
+    const current = await getRemoteHashAndVersion(sftp, REMOTE_CURRENT_PATH, {
+      strict: true,
+    });
+    const versionRejected = this.buildVersionRejectedResult(config.host, remote, current, context);
     if (versionRejected) return versionRejected;
 
     const stagingPath = this.buildStagingPath();
@@ -392,7 +427,7 @@ class RenetProvisionerService {
     if (memoized) {
       return memoized;
     }
-    const arch = await this.detectArch(sftp);
+    const arch = await detectRemoteArch(sftp);
     this.archByHost.set(cacheKey, arch);
     return arch;
   }
@@ -431,21 +466,39 @@ class RenetProvisionerService {
     return { success: true, action: 'verified', arch, remotePath: remoteInstallPath };
   }
 
+  /**
+   * The refusal of the replacement this provision would make, or null. The renet being replaced is
+   * `current`, or the slot on a machine with no `current`. A machine already running the local bytes
+   * has nothing replaced.
+   */
   private buildVersionRejectedResult(
-    remoteVersion: string | null,
+    host: string,
+    slot: { hash: string | null; version: string | null },
+    current: { hash: string | null; version: string | null },
     context: ProvisionContext
-  ): ProvisionResult | null {
-    const isDowngrade = remoteVersion && compareVersions(VERSION, remoteVersion) < 0;
-    if (!isDowngrade || process.env.REDIACC_ALLOW_DOWNGRADE) {
-      return null;
-    }
+  ): GuardedProvisionResult | null {
+    if (process.env.REDIACC_ALLOW_DOWNGRADE) return null;
+    const running = current.hash ? current : slot;
+    if (!running.hash || running.hash === context.localHash) return null;
+
+    const embedded = isSEA();
+    const refusal = decideRenetReplacement({
+      cli: VERSION,
+      embedded,
+      // A SEA carries the renet built with it, which is the answer when its stamp cannot be read.
+      local: readRenetBuild(context.binary).version ?? (embedded ? VERSION : null),
+      running: running.version,
+      host,
+    });
+    if (!refusal) return null;
 
     return {
       success: false,
       action: 'version_rejected',
       arch: context.arch,
       remotePath: context.remoteInstallPath,
-      error: `Remote has renet v${remoteVersion} but this CLI bundles v${VERSION}. Run \`rdc update\` to upgrade your CLI, or set REDIACC_ALLOW_DOWNGRADE=1 to force.`,
+      code: refusal.code,
+      error: refusal.message,
     };
   }
 
@@ -499,58 +552,6 @@ class RenetProvisionerService {
     }
 
     throw new Error('Cannot provision renet: not running as SEA and no localBinaryPath provided');
-  }
-
-  /**
-   * Detect the remote machine's architecture.
-   * Uses `uname -m` output which is reliable across all Linux distributions.
-   */
-  private async detectArch(sftp: SFTPClient): Promise<RenetArch> {
-    try {
-      // uname -m returns the machine hardware name, which is the most reliable cross-distribution method for architecture detection: - x86_64 for AMD64/Intel 64-bit - aarch64 for ARM64
-      const arch = await sftp.exec('uname -m');
-      const archStr = arch.trim().toLowerCase();
-
-      if (archStr === 'aarch64' || archStr === 'arm64') {
-        return 'arm64';
-      }
-      // Default to amd64 for x86_64 and any other architecture
-      return 'amd64';
-    } catch {
-      // If exec fails (e.g., restricted shell), fall back to filesystem detection Check multiple paths that indicate ARM64 across different distros: - /lib/aarch64-linux-gnu: Debian/Ubuntu multiarch - /lib64/ld-linux-aarch64.so.1: RHEL/CentOS/Fedora ARM64 dynamic linker
-      const arm64Paths = ['/lib/aarch64-linux-gnu', '/lib64/ld-linux-aarch64.so.1'];
-      for (const p of arm64Paths) {
-        if (await sftp.exists(p)) {
-          return 'arm64';
-        }
-      }
-      return 'amd64';
-    }
-  }
-
-  /**
-   * Get the remote binary's hash and version in a single SSH call.
-   * Returns hash (for content comparison) and version (for downgrade guard).
-   * Uses `renet hash` + `renet version` combined, with sha256sum fallback.
-   */
-  private async getRemoteHashAndVersion(
-    sftp: SFTPClient,
-    remoteInstallPath: string
-  ): Promise<{ hash: string | null; version: string | null }> {
-    try {
-      const escapedInstallPath = shellQuote(remoteInstallPath);
-      // Single SSH exec: get both hash and version. Two lines of output. Falls back to sha256sum if `renet hash` isn't available (pre-0.6.0).
-      const output = await sftp.exec(
-        `(${escapedInstallPath} hash 2>/dev/null || sha256sum ${escapedInstallPath} | cut -d' ' -f1) && ${escapedInstallPath} version 2>/dev/null || true`
-      );
-      const lines = output.trim().split('\n');
-      const hash = lines[0]?.trim().split(/\s+/)[0] ?? null;
-      const versionMatch = /\d+\.\d+\.\d+/.exec(lines.slice(1).join(' '));
-      return { hash, version: versionMatch ? versionMatch[0] : null };
-    } catch {
-      // Binary doesn't exist or exec failed, needs install, no version to guard
-      return { hash: null, version: null };
-    }
   }
 
   /**

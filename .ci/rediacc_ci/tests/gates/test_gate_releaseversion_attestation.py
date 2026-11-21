@@ -2,7 +2,7 @@
 
 Both-ways test for `rediacc_ci.release.verify_artifact_attestation`, the port of the retired `.ci/scripts/release/verify-artifact-attestation.sh` (PLAN-retire-bash-oracles B3: the bash is gone, so the gate now drives the code CD runs).
 
-WHAT IT IS FOR. cd-v2.yml runs it after downloading the release artifacts and before publishing them. It re-verifies the Sigstore build provenance that cd-stage.yml attached, proving the bytes CD is about to publish are the bytes CI produced.
+WHAT IT IS FOR. cd-release-edge.yml runs it after downloading the release artifacts and before publishing them. It re-verifies the Sigstore build provenance that cd-stage.yml attached, proving the bytes CD is about to publish are the bytes CI produced.
 
 WHAT WAS BROKEN. Every `gh attestation verify` failure became a `::warning::` and the script had NO failing exit path at all -- it could not fail, for any input, ever. Its header called that a "transition period"; nothing recorded when the period ended, so it never would. Worse, `find` over two absent directories prints nothing, the loop body never runs, and it exited 0 having
 verified precisely zero artifacts, indistinguishable from a clean pass.

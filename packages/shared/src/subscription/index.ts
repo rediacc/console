@@ -56,6 +56,8 @@ export {
   verifyAndDecodeSubscription,
   verifySignature,
 } from './crypto.js';
+// Delegation cert id (shared by the CLI and the on-premise account server)
+export { DELEGATION_CERT_ID_LENGTH, delegationCertId } from './delegation-cert-id.js';
 export type {
   ComputedValidity,
   ComputeValidityInput,

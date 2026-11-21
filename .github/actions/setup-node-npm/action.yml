@@ -1,7 +1,7 @@
 name: Setup Node and npm
 description: >
   Node at the requested major, then npm replaced by the exact NPM_VERSION pinned in
-  .devcontainer/toolchain.env. Node bundles its own npm, and npm 11 at that exact pin
+  .devcontainer/toolchain.env. Node bundles its own npm, and npm at that exact pin
   is the only npm this repository supports: it writes every committed lockfile, and
   check:ci-lockfile refuses a lockfile any other npm would write. This is the ONLY place
   a workflow may use actions/setup-node; check:ci-lockfile fails on a setup-node step

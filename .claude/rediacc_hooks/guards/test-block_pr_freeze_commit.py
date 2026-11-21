@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+"""Control harness for block_pr_freeze_commit (PLAN-two-track-merge-dev F2): the F1 case table, driven through the dispatcher against a scratch repository and a planted babysit phase event.
+
+Both directions: a guard that always refuses passes the refusal rows, one that never refuses passes the admit rows, so each row is asserted. A CONTROL row runs the same feat commit with no phase, so a refusal is the freeze's and not the harness's.
+"""
+
+import datetime
+import json
+import os
+import pathlib
+import subprocess
+import sys
+import tempfile
+
+DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
+GUARD_ARGV = [sys.executable, DISPATCH, "block_pr_freeze_commit"]
+BRANCH = "1120-1"
+OWNER = "d778be9d"
+
+
+def _now():
+    return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _world(tmp, phase=True):
+    repo = pathlib.Path(tmp) / "repo"
+    subprocess.run(["git", "init", "-q", "-b", BRANCH, str(repo)], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repo),
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.invalid",
+            "commit",
+            "-q",
+            "--allow-empty",
+            "-m",
+            "base",
+        ],
+        check=True,
+    )
+    (repo / ".ci" / "policy").mkdir(parents=True)
+    (repo / ".ci" / "policy" / "record-paths.json").write_text(
+        json.dumps({"version": 1, "records": [{"glob": "agent/reviews/**", "except": []}]})
+    )
+    store = pathlib.Path(tmp) / "store"
+    store.mkdir()
+    if phase:
+        ev = {
+            "ev": "phase",
+            "at": _now(),
+            "by": OWNER,
+            "o": OWNER,
+            "mode": "babysit",
+            "branch": BRANCH,
+            "pr": 605,
+            "why": "test",
+            "h": "0",
+            "br": BRANCH,
+            "ns": 2,
+        }
+        (store / ("%s.jsonl" % OWNER)).write_text(json.dumps(ev) + "\n")
+    return repo, store
+
+
+def run(repo, store, cmd, cwd=None, extra_env=None):
+    env = dict(
+        os.environ,
+        CLAUDE_PROJECT_DIR=str(repo),
+        WORKLIST_STORE_DIR=str(store),
+        TMPDIR=str(store.parent),
+        **(extra_env or {}),
+    )
+    p = subprocess.run(
+        GUARD_ARGV,
+        input=json.dumps(
+            {"tool_name": "Bash", "tool_input": {"command": cmd}, "cwd": str(cwd or repo)}
+        ),
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=str(repo),
+        check=False,
+    )
+    return p.returncode != 0, p.stdout + p.stderr
+
+
+CASES = [
+    # (name, command, expect_blocked)
+    ("feat refused", "git commit -m 'feat(ci): a new thing' -- f.txt", True),
+    ("chore(pins) refused", "git commit -m 'chore(pins): bump npm' -- f.txt", True),
+    ("fix admitted", "git commit -m 'fix(ci): a fix' -- f.txt", False),
+    ("test admitted", "git commit -m 'test(ci): a test' -- f.txt", False),
+    ("chore(reviews) admitted", "git commit -m 'chore(reviews): records' -- f.txt", False),
+    ("chore(plans) admitted", "git commit -m 'chore(plans): tick' -- f.txt", False),
+    (
+        "record paths only admitted",
+        "git commit -m 'feat(ci): records' -- agent/reviews/1120-1/clean.jsonl",
+        False,
+    ),
+    (
+        "heredoc -F - feat refused",
+        "git commit -F - -- f.txt <<'EOF'\nfeat(ci): from a heredoc\nEOF",
+        True,
+    ),
+    (
+        "heredoc -F - fix admitted",
+        "git commit -F - -- f.txt <<'EOF'\nfix(ci): from a heredoc\nEOF",
+        False,
+    ),
+    ("not a commit", "git status", False),
+    ("prose about a commit is not a commit", "echo 'git commit -m feat(x): y'", False),
+]
+
+
+def main():
+    fails = []
+    with tempfile.TemporaryDirectory() as tmp:
+        repo, store = _world(tmp)
+        for name, cmd, want in CASES:
+            got, out = run(repo, store, cmd)
+            if got != want:
+                fails.append("%s: blocked=%s, want %s\n%s" % (name, got, want, out[-400:]))
+            elif want and "worklist.py --phase <me> build" not in out:
+                fails.append("%s: the refusal does not name the escape\n%s" % (name, out[-400:]))
+        # A -F <file> message is read off disk.
+        msgfile = pathlib.Path(tmp) / "msg.txt"
+        msgfile.write_text("feat(ci): from a file\n")
+        got, out = run(repo, store, "git commit -F %s -- f.txt" % msgfile)
+        if not got:
+            fails.append("-F file feat: not refused\n%s" % out[-400:])
+        # A relative -F file beside the tool call's cwd (review 84a5679f.4).
+        sub = repo / "sub"
+        sub.mkdir()
+        (sub / "rel-msg.txt").write_text("feat(ci): relative to the cwd\n")
+        got, out = run(repo, store, "git commit -F rel-msg.txt -- f.txt", cwd=sub)
+        if not got:
+            fails.append("-F file relative to the cwd: not refused\n%s" % out[-400:])
+        # No pathspec: the staged paths are judged (review 84a5679f.3): a staged record file alone is admitted, a staged code file is refused.
+        rec = repo / "agent" / "reviews" / "1120-1" / "clean.jsonl"
+        rec.parent.mkdir(parents=True)
+        rec.write_text("{}\n")
+        subprocess.run(["git", "-C", str(repo), "add", str(rec)], check=True)
+        got, out = run(repo, store, "git commit -m 'feat(ci): records only, no pathspec'")
+        if got:
+            fails.append("no pathspec, staged record file: refused\n%s" % out[-400:])
+        (repo / "code.py").write_text("x = 1\n")
+        subprocess.run(["git", "-C", str(repo), "add", "code.py"], check=True)
+        got, out = run(repo, store, "git commit -m 'feat(ci): code, no pathspec'")
+        if not got:
+            fails.append("no pathspec, staged code file: not refused\n%s" % out[-400:])
+    with tempfile.TemporaryDirectory() as tmp:
+        # -a: unstaged tracked changes join the judged paths (review b5f9d11c.2).
+        repo, store = _world(tmp)
+        ident = ["-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+        (repo / "tracked.py").write_text("x = 1\n")
+        subprocess.run(["git", "-C", str(repo), "add", "tracked.py"], check=True)
+        subprocess.run(
+            ["git", "-C", str(repo), *ident, "commit", "-q", "-m", "fix: tracked"], check=True
+        )
+        (repo / "tracked.py").write_text("x = 2\n")
+        rec = repo / "agent" / "reviews" / "1120-1" / "clean.jsonl"
+        rec.parent.mkdir(parents=True)
+        rec.write_text("{}\n")
+        subprocess.run(["git", "-C", str(repo), "add", str(rec)], check=True)
+        got, out = run(repo, store, "git commit -m 'feat(ci): records only'")
+        if got:
+            fails.append(
+                "-a absent: the staged record file alone must be admitted\n%s" % out[-400:]
+            )
+        got, out = run(repo, store, "git commit -a -m 'feat(ci): records and tracked.py'")
+        if not got:
+            fails.append(
+                "-a: the unstaged tracked.py must join the paths and refuse the feat\n%s"
+                % out[-400:]
+            )
+        # Git cannot list the paths (a corrupt index): judged with none, so a feat is refused and a fix admitted (review b5f9d11c.1/.3).
+        bad = pathlib.Path(tmp) / "corrupt-index"
+        bad.write_bytes(b"not an index")
+        got, out = run(
+            repo,
+            store,
+            "git commit -m 'feat(ci): unlistable'",
+            extra_env={"GIT_INDEX_FILE": str(bad)},
+        )
+        if not got:
+            fails.append("unlistable paths: a feat must be refused\n%s" % out[-400:])
+        got, out = run(
+            repo,
+            store,
+            "git commit -m 'fix(ci): unlistable'",
+            extra_env={"GIT_INDEX_FILE": str(bad)},
+        )
+        if got:
+            fails.append("unlistable paths: a fix must be admitted\n%s" % out[-400:])
+    with tempfile.TemporaryDirectory() as tmp:
+        repo, store = _world(tmp, phase=False)
+        got, out = run(repo, store, "git commit -m 'feat(ci): no phase' -- f.txt")
+        if got:
+            fails.append("CONTROL: with no phase a feat commit must be admitted\n%s" % out[-400:])
+    for f in fails:
+        print("FAIL", f)
+    total = len(CASES) + 9
+    if fails:
+        print("%d of %d case(s) failed" % (len(fails), total))
+        return 1
+    print("%d case(s) passed" % total)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

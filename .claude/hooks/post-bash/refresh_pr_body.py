@@ -132,7 +132,7 @@ def main():
     if hookio.grep_q_line(r"(^| )--dry-run( |$)", cmd):
         return 0
 
-    root = event.project_dir
+    root = commit_policy.command_tree(event.project_dir, event.field("cwd"))
     # `command -v gh >/dev/null 2>&1 || exit 0` -- a PATH lookup, not a subprocess.
     if shutil.which("gh") is None:
         return 0

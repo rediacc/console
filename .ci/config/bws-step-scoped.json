@@ -20,7 +20,7 @@
   ],
   "names": {
     "ACCOUNT_ED25519_PRIVATE_KEY": {
-      "reason": "BLOCKER: the production licence-signing key; any step that can read it can mint a licence every released renet accepts, and its only consumers are the per-run account server start and the Worker secret push, one step per job"
+      "reason": "BLOCKER: the production licence-signing key; any step that can read it can mint a licence every released renet accepts, and its only consumers are the two cd-deploy Worker secret pushes, one step per job"
     },
     "ACCOUNT_X25519_PRIVATE_KEY": {
       "reason": "BLOCKER: the production X25519 key the account Worker decrypts with; it is pushed to the Worker by exactly one step in each of the three deploy jobs and no other step of those jobs has any use for it"

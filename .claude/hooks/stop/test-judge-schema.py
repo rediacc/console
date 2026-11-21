@@ -678,9 +678,13 @@ class FakeProc:
 
 
 def fake_run(cmd, **_kw):
-    CAPTURED["prompt"] = cmd[cmd.index("-p") + 1]
+    CAPTURED["prompt"] = _kw.get("input_text") or ""
     CAPTURED["schema"] = json.loads(cmd[cmd.index("--json-schema") + 1])
     CAPTURED["argv"] = list(cmd)
+    # Recorded per call, so a call site that puts the prompt back on argv (E2BIG on a long one) fails a control instead of passing unseen.
+    CAPTURED["prompt_on_argv"] = bool(CAPTURED["prompt"]) and any(
+        CAPTURED["prompt"] in str(a) for a in cmd
+    )
     return FakeProc(json.dumps({"is_error": False, "structured_output": CAPTURED["answer"]}))
 
 
@@ -764,6 +768,14 @@ control(
     if "--tools" in CAPTURED["argv"]
     else "MISSING",
     "",
+)
+control(
+    "the prompt is on stdin and a non-empty one reached the call",
+    bool(CAPTURED["prompt"]),
+    True,
+)
+control(
+    "and it is NOT on argv, where a long one fails with E2BIG", CAPTURED["prompt_on_argv"], False
 )
 control(
     "the fix signal puts the rubric in the prompt",

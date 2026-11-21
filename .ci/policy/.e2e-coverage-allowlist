@@ -59,9 +59,6 @@ machine_uninstall
 # leaves the Registry, fails the gate until it is deleted.
 # ---------------------------------------------------------------------------
 
-# BLOCKER: repository_migrate and repository_gc are dispatched only by the CLI job plans (packages/cli/src/services/jobs/plans.ts:121 and :308); their real-machine regression is box M1 of agent/plans/PLAN-jobs-backup-real-machine-tests.md (suite 23: migrate deletes the source only after the target is up, gc keeps a candidate mounted between list and delete), which waits on agent/plans/PLAN-detached-jobs.md J4 (verb tails) and J16 (repo-verb conversions) to land the job path it tests. M1 deletes these two lines.
-repository_gc
-repository_migrate
 
 # BLOCKER: the bring-up steps of `rdc cluster provision` (packages/cli/src/services/cluster/cluster-provision.ts:182-251). On the CI fleet `renet ops up` bootstraps ceph on the ceph VMs before any suite runs (packages/provisioning/src/ops/OpsVMLifecycle.ts:82), and cluster-provision.ts:223 skips all three verbs when a mon already answers, so reaching them needs ceph VMs that come up without ceph, which the shared ceph suites (playwright.ceph*.config.ts) cannot run on.
 ceph_bootstrap_cluster

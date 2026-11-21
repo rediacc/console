@@ -902,11 +902,25 @@ def _writer_for(payloads, explicit=None):
     return agent_session_slug(me[:8]) if me else "_shared"
 
 
+def own_tree(root):
+    """The checkout this session runs in, when `root` is the store root it maps to; else `root`.
+
+    The landing tree answers C.project_root with the main checkout (shared store, STATE.md, sidecars), whose HEAD is the development branch. A read of "the branch this session is on" starts here instead, so a landing session reads its own tree's branch. With no landing record the two roots agree and the answer is `root`.
+    """
+    try:
+        own = C.checkout_root(C.project_start())
+        same = os.path.realpath(str(C.project_root(own))) == os.path.realpath(str(root))
+    except (OSError, ValueError, RuntimeError):
+        return root
+    return own if same else root
+
+
 _BRANCH_CACHE = {}
 
 
 def _branch_of(root):
     """Cached: git_branch shells out, and this runs on every append."""
+    root = own_tree(root)
     key = str(root)
     if key not in _BRANCH_CACHE:
         try:
@@ -940,6 +954,7 @@ def append_events(worklist, payloads, writer=None, root=None):
     hh = host_hash()
     for ev in payloads:
         if isinstance(ev, dict):
+            _redact_secret_shapes(ev)
             ev.setdefault("h", hh)
             if br:
                 ev.setdefault("br", br)
@@ -951,6 +966,15 @@ def append_events(worklist, payloads, writer=None, root=None):
         target.parent.mkdir(parents=True, exist_ok=True)
     _append_lines(target, events_lock_path(worklist), payloads)
     _journal_append(target, payloads, root)
+
+
+def event_order(ev):
+    """The (stamp, ns) sort key of one event. A non-numeric or infinite `ns` in a store file sorts as 0 rather than raising."""
+    try:
+        ns = int(ev.get("ns") or 0)
+    except (TypeError, ValueError, OverflowError):
+        ns = 0
+    return (str(ev.get("at") or ""), ns)
 
 
 def _parse_events(text):
@@ -981,7 +1005,7 @@ def _read_events(worklist, root=None):
         with contextlib.suppress(OSError):
             out.extend(_parse_events(legacy.read_text(encoding="utf-8", errors="replace")))
     # (at, ns): the stamp orders across machines and the nanosecond counter orders within a second on this one. A missing ns sorts first inside its second, which is where an older event belongs.
-    out.sort(key=lambda e: (str(e.get("at") or ""), int(e.get("ns") or 0)))
+    out.sort(key=event_order)
     return out
 
 
@@ -1002,7 +1026,7 @@ def phase_fold(worklist, root=None):
         out.extend(
             _parse_events("\n".join(ln for ln in text.splitlines() if _PHASE_LINE.search(ln)))
         )
-    out.sort(key=lambda e: (str(e.get("at") or ""), int(e.get("ns") or 0)))
+    out.sort(key=event_order)
     phase: dict[Any, Any] = {}
     _records, _md, _cli, _h, lineage = _fold_events(out, phase=phase)
     return Fold([], "", lineage, phase=phase)
@@ -1407,23 +1431,26 @@ def load(worklist, sync=True):
 # ---- item verbs (CLI-origin events) ----------------------------------------
 
 
-def add_item(worklist, by, text, state=" ", owner=None):
-    rid = new_item_id(text)
-    append_events(
-        worklist,
-        [
-            {
-                "ev": "add",
-                "id": rid,
-                "at": C.stamp_now(),
-                "by": by,
-                "s": state,
-                "o": owner if owner is not None else by,
-                "t": text,
-            }
-        ],
-    )
-    return rid
+def add_item(worklist, by, text, state=" ", owner=None, root=None):
+    return add_items(worklist, by, [text], state, owner, root=root)[0]
+
+
+def add_items(worklist, by, texts, state=" ", owner=None, root=None):
+    """One add event per text, all written by a single append under one lock. -> their ids, in order."""
+    events = [
+        {
+            "ev": "add",
+            "id": new_item_id(text),
+            "at": C.stamp_now(),
+            "by": by,
+            "s": state,
+            "o": owner if owner is not None else by,
+            "t": text,
+        }
+        for text in texts
+    ]
+    append_events(worklist, events, root=root)
+    return [ev["id"] for ev in events]
 
 
 def set_state(worklist, by, item_id, state, note="", extra=None):
@@ -1644,10 +1671,11 @@ def classify_items(
 
 
 def owner_age_hours(owner, projects_dir):
-    """Hours since the owner's newest transcript write, or None if no transcript matches (unknown owner: word label, foreign machine). The newest match wins so a short prefix matching several sessions reads as the LIVELIEST of them -- the conservative direction."""
+    """`projects_dir` is one directory or a list of them (C.projects_dirs). Hours since the owner's newest transcript write, or None if no transcript matches (unknown owner: word label, foreign machine). The newest match wins so a short prefix matching several sessions reads as the LIVELIEST of them -- the conservative direction."""
     if not owner or not projects_dir:
         return None
-    matches = _glob.glob(os.path.join(projects_dir, owner + "*.jsonl"))
+    dirs = [projects_dir] if isinstance(projects_dir, (str, os.PathLike)) else list(projects_dir)
+    matches = [m for d in dirs for m in _glob.glob(os.path.join(str(d), owner + "*.jsonl"))]
     if not matches:
         return None
     newest = max(os.path.getmtime(m) for m in matches)
@@ -1823,6 +1851,27 @@ _SECRET_SHAPES = (
 )
 
 _CONFLICT_RE = re.compile(r"^(<<<<<<<|=======|>>>>>>>)")
+
+
+_AWS_KEY_ID_KEEP = re.compile(r"\b(AKIA|ASIA|AIDA|AROA)[0-9A-Z]{12}([0-9A-Z]{4})\b")
+
+
+def redact_secret_shapes(text):
+    """`text` with every secret shape replaced: an AWS key id keeps its prefix and last four characters (enough to tell keys apart), any other shape becomes `[redacted]`."""
+    out = _AWS_KEY_ID_KEEP.sub(r"\1...\2", str(text))
+    for shape in _SECRET_SHAPES:
+        out = shape.sub("[redacted]", out)
+    return out
+
+
+def _redact_secret_shapes(ev):
+    """Redact one event in place AT THE DOOR, over its serialized JSON so keys, nested values and any container type json writes are all covered: the store is tracked, and on 2026-11-10 an `add` whose text quoted an AWS key id went straight into agent/worklist because only the lint read these shapes. No shape's pattern matches a quote or a backslash, so a match never spans a JSON delimiter or escape, and the replacements carry neither, so the text stays valid JSON."""
+    text = json.dumps(ev)
+    if not secret_shapes_in(text):
+        return
+    clean = json.loads(redact_secret_shapes(text))
+    ev.clear()
+    ev.update(clean)
 
 
 def secret_shapes_in(text):
@@ -2573,10 +2622,15 @@ def loop_state(worklist, session_id):
     return ("overdue" if mine[0] <= now else "ok"), mine[0], mine[1], others, mine[2]
 
 
-def agent_state_shape(body):
-    """Shape verdict for a STATE.md body not yet on disk: thin | bloated | aimless | waitled | unfocused | ok, plus a detail string.
+AGENT_OWED_RE = re.compile(r"^##[ \t]+Owed ticks\b", re.MULTILINE | re.IGNORECASE)
 
-    Extracted so BOTH write paths (`worklist.py --state` and the PreToolUse guard) refuse a bad document AT WRITE TIME with the identical rule the Stop check reads with. The handover this replaces once accepted any body and let the check reject it a stop later; an accept-then-reject asymmetry leaves the one artifact designed to survive compaction broken while the session believes
+
+def agent_state_shape(body, owed=None):
+    """Shape verdict for a STATE.md body not yet on disk: thin | bloated | aimless | waitled | unfocused | owing | ok, plus a detail string.
+
+    `owed` is the [(plan, sig, verdict)] the box audit finds tickable-now or live-owed in plans this session owns (`wl_boxaudit.owned_owed_cached`, agent/plans/PLAN-tick-tracking.md T12). When it is non-empty, a body with no `## Owed ticks` section is `owing`, refused like `unfocused`; None or [] demands nothing, so every caller that passes no audit keeps today's verdict. Only the write path passes it (`worklist.py --state`, through `_owed_for_state`): the owed demand is a WRITE-TIME rule, and the Stop check's read (`agent_state_state`) deliberately passes none, so a document written before a box became owed is not turned stale by the audit between writes (review a94cd7a7.1).
+
+    Extracted so the one write path (`worklist.py --state`; `block_agent_state_shape` denies every direct Write or Edit, so the CLI is the only writer) refuses a bad document AT WRITE TIME with the rule the Stop check reads with, the owed demand aside. The handover this replaces once accepted any body and let the check reject it a stop later; an accept-then-reject asymmetry leaves the one artifact designed to survive compaction broken while the session believes
     it is fine.
 
     `aimless` replaces the old fragmented/paragraph guard, which was an explicit proxy for a 600-char cap and counted every markdown heading as a paragraph (split on blank lines), which is why the old message had to forbid headings outright. Presence of a `## Next action` section is a strictly better gate: it targets the one question STATE.md exists to answer, and padding cannot
@@ -2584,25 +2638,63 @@ def agent_state_shape(body):
 
     The subject is ONE SECTION, not the whole document, so the cap is flat again (see AGENT_STATE_MAX_CHARS).
     """
+    problems = agent_state_problems(body, owed)
+    return problems[0] if problems else ("ok", "%d chars" % len((body or "").strip()))
+
+
+def agent_state_problems(body, owed=None):
+    """EVERY failing shape verdict of a STATE.md body as [(verdict, detail)], in the order thin, bloated, aimless, waitled, unfocused, owing; [] when the body is fine (R20261101.3).
+
+    `agent_state_shape` returns the first of these, so the Stop check and the guard keep their one verdict. `--state` prints all of them: a body with two faults reported one per attempt, and four refusals in 20 s were spent while the context was nearly full. A thin body fails nothing else (too short to judge), and a body with no `## Next action` section cannot be `waitled`.
+    """
     text = (body or "").strip()
     if len(text) < AGENT_STATE_MIN_CHARS:
-        return "thin", "%d chars, minimum %d" % (len(text), AGENT_STATE_MIN_CHARS)
+        return [("thin", "%d chars, minimum %d" % (len(text), AGENT_STATE_MIN_CHARS))]
+    out = []
     if len(text) > AGENT_STATE_MAX_CHARS:
-        return "bloated", "%d chars, maximum %d" % (len(text), AGENT_STATE_MAX_CHARS)
+        out.append(
+            (
+                "bloated",
+                "%d chars, maximum %d, over by %d chars"
+                % (len(text), AGENT_STATE_MAX_CHARS, len(text) - AGENT_STATE_MAX_CHARS),
+            )
+        )
     m = AGENT_NEXT_RE.search(text)
     if not m:
-        return "aimless", "no '## Next action' section; the next action IS the value"
-    lead, lead_text = agent_next_lead(text, m.end())
-    if lead == "wait":
-        return "waitled", "the first step is %r; a wait is a CONDITION, not a next action" % (
-            lead_text[:70],
-        )
+        out.append(("aimless", "no '## Next action' section; the next action IS the value"))
+    else:
+        lead, lead_text = agent_next_lead(text, m.end())
+        if lead == "wait":
+            out.append(
+                (
+                    "waitled",
+                    "the first step is %r; a wait is a CONDITION, not a next action"
+                    % (lead_text[:70],),
+                )
+            )
     if not AGENT_BIG_RE.search(text):
-        return "unfocused", (
-            "no '## Big pieces' section; name the census's big pieces (the plans marked "
-            "! BIG PIECE ! in the SessionStart plans block), or 'none' when no plan carries an open box"
+        out.append(
+            (
+                "unfocused",
+                (
+                    "no '## Big pieces' section; name the census's big pieces (the plans marked "
+                    "! BIG PIECE ! in the SessionStart plans block), or 'none' when no plan carries an open box"
+                ),
+            )
         )
-    return "ok", "%d chars" % len(text)
+    if owed and not AGENT_OWED_RE.search(text):
+        out.append(
+            (
+                "owing",
+                "no '## Owed ticks' section, and the box audit finds %d owed box(es) in plans this "
+                "session owns: %s. Name each (`worklist.py --box-audit <me>` prints the lines)"
+                % (
+                    len(owed),
+                    ", ".join("%s#%s %s" % (p.rsplit("/", 1)[-1], g, v) for p, g, v in owed[:6]),
+                ),
+            )
+        )
+    return out
 
 
 def agent_next_lead(text, start):

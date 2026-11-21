@@ -11,7 +11,7 @@ Deliberate differences from the twin (Rule T), each with a test that fails on th
   5. The throwaway secrets come from `secrets.token_hex` instead of `openssl rand -hex 32`, whose silent failure left them empty in the retired `ci-env.sh` (see `infra/ci_env.py`). Same shape, 64 hex characters.
   6. The cookie jar lives in memory; the twin wrote and removed `account-for-e2e-cookies.txt`.
   7. The ED25519 signing pair is taken from the environment when BOTH `ACCOUNT_ED25519_PRIVATE_KEY` and `ACCOUNT_ED25519_PUBLIC_KEY` are set (the twin always minted its own), and the PUBLIC half is published as `ACCOUNT_ED25519_PUBLIC_KEY` next to `REDIACC_ACCOUNT_SERVER`. A renet build has to bake the signer's public key, or every licence this server signs is filed under a fingerprint renet never looks up (`start_backup_plane`). The private half is never printed or written.
-  8. `--require-env-pair` refuses to mint: without both halves in the environment the leg fails before anything starts. The CI legs pass it with the PRODUCTION pair mapped from Bitwarden, because they deploy the run's one production-keyed renet (agent/plans/PLAN-free-license.md R2, F2) and a throwaway pair would sign licences that renet refuses at the first repository create, long after this step reported success.
+  8. A CI leg signs with a pair minted here, per run (agent/plans/PLAN-production-key-only.md D6): the production private key never reaches a CI job. The leg builds renet AFTER this step, with the public half this step publishes, so every licence the server signs is filed under the fingerprint that renet looks up. `--require-env-pair`, which demanded the production pair from Bitwarden for the run's one shared production-keyed renet, is gone, and passing it is a usage error. `--emit-pair` mints a pair for a caller that starts its own server (rediacc_ci.testrun.account_e2e) and prints it as two `export` lines for that step's `eval`; nothing starts and nothing is written.
   9. `ACCOUNT_SERVER_API_KEY` is taken from the environment when set (the twin always minted it), so a caller that drives the server's X-API-Key routes, such as renet's subscription system tests, holds the key without this leg ever printing it.
   10. `ACCOUNT_CONFIG_SERVER_KEY` is taken from the environment when set, else minted like the JWT secret. The node entry refuses to boot when `CONFIG_R2_*` is set without it, and the backup plane's RustFS step exports `CONFIG_R2_*` into this server's environment.
 """
@@ -22,6 +22,7 @@ import json
 import os
 import pathlib
 import secrets
+import shlex
 import shutil
 import signal
 import subprocess
@@ -29,6 +30,8 @@ import sys
 import time
 
 from rediacc_ci import log, paths
+from rediacc_ci.drills.lib import TWO_FACTOR_TOKEN_SCOPES
+from rediacc_ci.ops import totp
 
 LOGIN_PHRASE = "E2eClusterLicensing123!"
 HEALTH_TRIES = 60
@@ -51,7 +54,7 @@ const priv = crypto.createPrivateKey({ key: Buffer.from(process.env.ACCOUNT_ED25
 process.stdout.write(crypto.createPublicKey(priv).export({ type: "spki", format: "der" }).toString("base64"));
 """
 SCOPES = ["license:read", "license:activate", "subscription:read"]
-USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account [--port <n>] [--email <addr>] [--plan <code>] [--name <label>] [--scopes <a,b>] [--advertise-host <ip>] [--require-env-pair]"
+USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account [--port <n>] [--email <addr>] [--plan <code>] [--name <label>] [--scopes <a,b>] [--advertise-host <ip>] | --emit-pair"
 
 
 class LegError(Exception):
@@ -71,8 +74,8 @@ class Options:
         self.scopes = ",".join(SCOPES)
         # The host the published account server URL names; the server itself is always probed and seeded on 127.0.0.1.
         self.advertise_host = "127.0.0.1"
-        # Delta 8: the ED25519 pair must come from the environment; nothing is minted.
-        self.require_env_pair = False
+        # Delta 8: print a freshly minted ED25519 pair as `export` lines and start nothing.
+        self.emit_pair = False
 
 
 def parse(argv: list[str]) -> Options:
@@ -88,8 +91,8 @@ def parse(argv: list[str]) -> Options:
     i = 0
     while i < len(argv):
         flag = argv[i]
-        if flag == "--require-env-pair":
-            opts.require_env_pair = True
+        if flag == "--emit-pair":
+            opts.emit_pair = True
             i += 1
             continue
         if flag not in names:
@@ -123,26 +126,13 @@ def generate_keys() -> dict[str, str]:
     return json.loads(done.stdout)
 
 
-def server_keys(require_env_pair: bool = False) -> dict[str, str]:
+def server_keys() -> dict[str, str]:
     """The throwaway key set, with the ED25519 signing pair taken from the environment when BOTH halves are there.
 
-    A caller that bakes the public half into a renet build (`start_backup_plane`) has to hold the pair before this server starts, or the licence blobs it signs are filed under a fingerprint that renet never looks up. Half a pair is ignored: a lone public key would sign nothing, and a lone private key has no matching public half to publish. With `require_env_pair` (delta 8) half a pair, or none, is a LegError naming both variables, so a CI leg never mints a pair its production-keyed renet refuses. The private half is passed to the server through its environment only, never printed or written.
+    The normal case, and every CI leg's (delta 8), is a pair minted here: the leg builds renet afterwards with the public half `publish` exports. A caller that bakes the public half into a renet build BEFORE this server starts (`start_backup_plane`) hands its own pair in through the environment instead, and a pair whose halves do not match is refused, because the server would sign licences that do not verify under the key the renet bakes. Half a pair is ignored: a lone public key would sign nothing, and a lone private key has no matching public half to publish. The private half is passed to the server through its environment only, never printed or written.
     """
     private = os.environ.get("ACCOUNT_ED25519_PRIVATE_KEY", "").strip()
     public = os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", "").strip()
-    if require_env_pair and not (private and public):
-        missing = [
-            name
-            for name, value in (
-                ("ACCOUNT_ED25519_PRIVATE_KEY", private),
-                ("ACCOUNT_ED25519_PUBLIC_KEY", public),
-            )
-            if not value
-        ]
-        raise LegError(
-            f"--require-env-pair: {' and '.join(missing)} not set; this leg signs with the production pair (map both from Bitwarden), and a minted pair would sign licences the production-keyed renet refuses",
-            show_log=False,
-        )
     keys = generate_keys()
     if private and public:
         if derived_public_key() != public:
@@ -227,6 +217,30 @@ def listener_pid(port: str) -> str:
     return lines[0] if lines else ""
 
 
+def reap_recorded(port: str, pid_file: pathlib.Path, wait_s: float = 10.0) -> bool:
+    """Stop the server an earlier run of this tool left on `port`: only when `pid_file` names the pid that still listens there.
+
+    A successful run leaves its server running on purpose (the suite that follows needs it), so the next run is where it is stopped; a listener this tool did not record is never touched and the caller still refuses it. True once the port is free: `/health` no longer answers AND nothing listens there, since a server can stop answering while it still holds the socket, and the next server would fail to bind. A pid file names whichever run wrote it last, so two live runs on one port and one temp directory are not told apart; the second stops the first's server instead of being refused, which is why each CI job has its own runner and its own `RUNNER_TEMP`.
+    """
+    try:
+        recorded = pid_file.read_text().strip()
+    except OSError:
+        return False
+    if not recorded.isdigit() or listener_pid(port) != recorded:
+        return False
+    try:
+        os.kill(int(recorded), signal.SIGTERM)
+    except OSError:
+        return False
+    deadline = time.monotonic() + wait_s
+    while time.monotonic() < deadline:
+        if not healthy(port) and not listener_pid(port):
+            pid_file.unlink(missing_ok=True)
+            return True
+        time.sleep(0.25)
+    return False
+
+
 def tail(path: pathlib.Path, count: int = 40) -> str:
     try:
         return "\n".join(path.read_text(errors="replace").splitlines()[-count:])
@@ -286,13 +300,19 @@ def run(opts: Options) -> int:
 
     server: subprocess.Popen | None = None
     try:
-        if healthy(opts.port):
+        occupied = healthy(opts.port)
+        if occupied and reap_recorded(opts.port, pid_file):
+            log.info(
+                f"stopped the account server an earlier run left on port {opts.port} (pid recorded in {pid_file})"
+            )
+            occupied = False
+        if occupied:
             raise LegError(
                 f"Something already answers /health on port {opts.port}; refusing to seed a server this run did not start.",
                 show_log=False,
             )
         log.step("Generating throwaway server keys...")
-        keys = server_keys(opts.require_env_pair)
+        keys = server_keys()
         log.step(f"Starting account server on port {opts.port}...")
         db_path = pathlib.Path(temp) / f"e2e-account-{os.getpid()}.db"
         try:
@@ -352,6 +372,9 @@ def seed_and_mint(api: Api, opts: Options) -> tuple[str, str]:
     if not _json_get(login, "user", "id"):
         log.error(f"Headless login failed: {login}")
         raise LegError(f"could not open a session for {opts.email}")
+    accept_terms(api)
+    if TWO_FACTOR_TOKEN_SCOPES.intersection(token_scopes(opts)):
+        ensure_two_factor(api, opts.email)
     _, subscription = api.call("GET", "/portal/subscription")
     subscription_id = _json_get(subscription, "id") or ""
     if not subscription_id:
@@ -366,6 +389,63 @@ def seed_and_mint(api: Api, opts: Options) -> tuple[str, str]:
         log.error(f"API token mint failed: {minted}")
         raise LegError("could not mint an API token")
     return str(token), str(subscription_id)
+
+
+def accept_terms(api: Api) -> None:
+    """Accept the current Terms for the logged-in seeded user, as the portal checkbox does. The account gates every `/portal` route behind the Terms (403 TERMS_ACCEPTANCE_REQUIRED), and a seeded user has never seen them; `account_accept_terms` in drills/lib.py does the same for the drills."""
+    code, raw = api.call("GET", "/portal/terms")
+    try:
+        status = json.loads(raw)
+    except ValueError:
+        status = None
+    if code != 200 or not isinstance(status, dict) or not isinstance(status.get("satisfied"), bool):
+        raise LegError(f"/portal/terms answered HTTP {code}: {raw[:300]}")
+    if status["satisfied"]:
+        return
+    current = status.get("current")
+    if not isinstance(current, dict) or not current.get("version") or not current.get("sha256"):
+        raise LegError(f"/portal/terms names no current version: {raw[:300]}")
+    code, answer = api.call(
+        "POST",
+        "/portal/terms/accept",
+        {
+            "version": current["version"],
+            "sha256": current["sha256"],
+            "locale": "en",
+            "method": "web-checkbox",
+        },
+    )
+    if not 200 <= code < 300 or _json_get(answer, "accepted") is not True:
+        raise LegError(f"the Terms acceptance was refused: HTTP {code}: {answer[:300]}")
+
+
+def ensure_two_factor(api: Api, email: str) -> None:
+    """Enrol TOTP for the logged-in seeded user, as `account_ensure_two_factor` in drills/lib.py does: the account refuses to mint a token with a backup-storage or delegation-issuing scope without 2FA, and that refusal stays in force. Setup and enable need an elevated session, which the dev-only `/test/elevate` grants. A refused step raises by name."""
+    code, raw = api.call("GET", "/auth/2fa/status")
+    enabled = _json_field(raw, "enabled")
+    if code != 200 or not isinstance(enabled, bool):
+        raise LegError(f"the 2FA status read was refused: HTTP {code}: {raw[:300]}")
+    if enabled:
+        return
+    code, raw = api.call("POST", "/test/elevate", {"email": email})
+    if not 200 <= code < 300 or _json_field(raw, "elevated") is not True:
+        raise LegError(f"the /test/elevate step was refused: HTTP {code}: {raw[:300]}")
+    code, raw = api.call("POST", "/auth/2fa/setup", {})
+    secret = _json_field(raw, "secret")
+    if not 200 <= code < 300 or not isinstance(secret, str) or not secret:
+        raise LegError(f"the 2FA setup was refused: HTTP {code}: {raw[:300]}")
+    code, raw = api.call("POST", "/auth/2fa/enable", {"code": totp.code(secret)})
+    if not 200 <= code < 300 or _json_field(raw, "enabled") is not True:
+        raise LegError(f"the 2FA enable was refused: HTTP {code}: {raw[:300]}")
+
+
+def _json_field(text: str, key: str) -> object:
+    """One top-level field of a JSON object answer, or None; unlike `_json_get` it keeps a literal False."""
+    try:
+        value: object = json.loads(text)
+    except ValueError:
+        return None
+    return value.get(key) if isinstance(value, dict) else None
 
 
 def _json_get(text: str, *keys: str) -> object:
@@ -396,10 +476,18 @@ def terminate(server: subprocess.Popen) -> None:
 
 def publish(server_url: str, token: str, public_key: str) -> None:
     """The server URL, the token and the PUBLIC signing key (unmasked: it is public, and a renet build bakes it). The private half never reaches this function."""
+    # In-process, so a follow-on command exec'd by `start_backup_plane -- <cmd>` inherits them (a local run has no $GITHUB_ENV).
+    os.environ.update(
+        REDIACC_ACCOUNT_SERVER=server_url,
+        ACCOUNT_ED25519_PUBLIC_KEY=public_key,
+        E2E_ACCOUNT_API_TOKEN=token,
+    )
     github_env = os.environ.get("GITHUB_ENV")
     if github_env:
-        # Not a `secrets.*` value, so Actions would not mask it on its own.
-        print(f"::add-mask::{token}")
+        # Not a `secrets.*` value, so Actions would not mask it on its own. Off Actions the line is a workflow command nobody consumes,
+        # only the token in plain text in a terminal or a captured log (the start_backup_plane.export_credentials rule).
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            print(f"::add-mask::{token}")
         with open(github_env, "a", encoding="utf-8") as handle:
             handle.write(
                 f"REDIACC_ACCOUNT_SERVER={server_url}\n"
@@ -419,6 +507,18 @@ def publish(server_url: str, token: str, public_key: str) -> None:
     print(f"E2E_ACCOUNT_API_TOKEN={token}", flush=True)
 
 
+def emit_pair() -> int:
+    """Delta 8: a fresh ED25519 pair as two shell `export` lines on stdout, for `pair="$(... --emit-pair)"` then `eval "$pair"` in the one step that starts its own server. The pair is throwaway and verifies nothing outside that step; the assignment form keeps a failed mint fatal under `bash -e`, where a bare `eval "$(...)"` would swallow it."""
+    try:
+        keys = generate_keys()
+    except LegError as exc:
+        log.error(str(exc))
+        return 1
+    print(f"export ACCOUNT_ED25519_PRIVATE_KEY={shlex.quote(keys['edPriv'])}")
+    print(f"export ACCOUNT_ED25519_PUBLIC_KEY={shlex.quote(keys['edPub'])}", flush=True)
+    return 0
+
+
 def main(argv: list[str]) -> int:
     try:
         opts = parse(argv)
@@ -426,6 +526,8 @@ def main(argv: list[str]) -> int:
         log.error(str(exc))
         print(USAGE, file=sys.stderr)
         return 2
+    if opts.emit_pair:
+        return emit_pair()
     return run(opts)
 
 

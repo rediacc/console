@@ -7,8 +7,9 @@ WHAT IS LIVE, AND WHERE EACH PIECE COMES FROM. A PreToolUse event carries no bac
   * the session's agents are `wl_roster.load_metas(wl_roster.session_subagents_dir(cwd, session_id))`;
   * an agent is LIVE when its transcript exists and `wl_roster.proven_finished` does NOT say it ended its turn
     (that test is one-directional: every ambiguous shape reads as working, which is the safe side here too);
-  * its paths are `wl_roster.edit_paths` over its own transcript and every descendant's
+  * its paths are `wl_roster.edit_paths(..., strict=True)` over its own transcript and every descendant's
     (`children_map` + `descendants`), since a writer's own sub-writers are part of its unfinished work.
+    STRICT, because a path counted here REFUSES a commit: the judge's default reading counts every path literal of a Python program whose write target it cannot resolve, and on 2026-11-16 that made a read-only survey agent, whose /tmp script dumped JSON to `sys.argv[1]` and READ `agent/INDEX.md`, `agent/plans/QUEUE.md` and `.ci/config/plan-boxes.json`, the "writer" of all three. Strict counts Edit/Write calls, redirects, in-place edits, write verbs, resolved Python write targets and runs of a registered generator (`.ci/config/generated-artifacts.json`).
 
 A FINISHED writer's own files are never refused. They are exactly what the lead commits once the output is spot-checked, which is the normal flow (CLAUDE.md rule 1). The one exception is a finished sub-writer with a live ancestor anywhere up its spawn chain (parent, grandparent, ...; finished intermediate writers do not break the chain): its edits count as part of that ancestor's unfinished work, so they are refused until the ancestor ends.
 
@@ -38,6 +39,8 @@ DEFECT = (
     "if writer == spec or (",
     "if False and (",
 )
+# Planted, the bound trees are the session root alone, so a commit typed in the sibling bound tree goes unjudged again (box LT11).
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 # What a roster read can raise, including TypeError and AttributeError for a transcript or meta file of an unexpected shape. Each one fails open, and the stderr note carries the exception text, so a bug in this guard's own code inside the same read is visible there rather than silent; any other exception type is reported as a crash by the dispatcher.
 ROSTER_ERRORS = (
@@ -50,7 +53,9 @@ ROSTER_ERRORS = (
     AttributeError,
 )
 
-# THE DIFFERENTIAL'S WORLD. A config directory holding one session with a live and a finished writer, so `test_guards_differential` sees this guard refuse and sees its DEFECT stop the refusal: a payload without a locatable session only ever reaches the fail-open branch.
+# THE DIFFERENTIAL'S WORLD. A repository of its own holding a config directory with one session that has a live and a finished writer, so `test_guards_differential` sees this guard refuse and sees its DEFECT stop the refusal: a payload without a locatable session only ever reaches the fail-open branch.
+#
+# ITS OWN REPOSITORY, NOT THE ONE RUNNING PYTEST, found 2026-11-06 (#d7056e06). The world used to be planted under the munged path of the running checkout, and the cases ran there. From a lease tree that can never refuse: `wl_core.project_root` answers a lease with the main checkout (6fd1f6511), so the session was looked up under a directory nothing planted, and every case took the fail-open branch, where the DEFECT cannot bite. A lease writer's own edits are also dropped by `wl_roster.in_lease_tree`, so no planting from inside a lease could have made a lease commit refusable. So the root is named twice: `CLAUDE_PROJECT_DIR` in the `writers` variant, which is where `wl_core.project_start` starts (above the hook file's own repository and the cwd), and the harness's `CWD_WORLDS` for the cwd the commit's repository is resolved from; the payloads carry no `cwd`, so the guard reads `ev.cwd`.
 FIXTURE_SESSION = "f1x7ure0-live-writer-guard-000000000000"
 FIXTURE_DIR = "zz-live-writer-fixture"
 LIVE_AGENT = "afixturelivewriter0001"
@@ -74,16 +79,16 @@ def _tool(name, tool_input, n):
 def write_session(config_dir, root, session_id, agents):
     """Plant a session under `<config_dir>/projects/<munged root>/<session_id>/subagents`.
 
-    `agents` is `[(agent_id, description, [absolute edited paths], live, parent)]`. A live agent's transcript ends on a tool call still in flight; a finished one ends its turn and is back-dated an hour, well past `wl_roster.FINISHED_QUIET_S`. Shared by the differential fixture and `test-block_commit_of_live_writer_file.py`, so the two cannot drift apart on what a live transcript looks like.
+    `agents` is `[(agent_id, description, [calls], live, parent)]`, each call an absolute path planted as an Edit of it, or a `(tool name, tool input)` pair planted as written (a Bash command a writer or a reader ran). A live agent's transcript ends on a tool call still in flight; a finished one ends its turn and is back-dated an hour, well past `wl_roster.FINISHED_QUIET_S`. Shared by the differential fixture and `test-block_commit_of_live_writer_file.py`, so the two cannot drift apart on what a live transcript looks like.
     """
     munged = "".join(ch if ch.isalnum() else "-" for ch in str(root))
     sub = pathlib.Path(config_dir) / "projects" / munged / session_id / "subagents"
     sub.mkdir(parents=True, exist_ok=True)
     for aid, desc, paths, live, parent in agents:
-        lines = [
-            _record("tool_use", [_tool("Edit", {"file_path": p}, n)], str(root))
-            for n, p in enumerate(paths)
-        ]
+        lines = []
+        for n, p in enumerate(paths):
+            name, tool_input = p if isinstance(p, tuple) else ("Edit", {"file_path": p})
+            lines.append(_record("tool_use", [_tool(name, tool_input, n)], str(root)))
         if live:
             lines.append(
                 _record("tool_use", [_tool("Bash", {"command": "sleep 1"}, len(paths))], str(root))
@@ -103,9 +108,14 @@ def write_session(config_dir, root, session_id, agents):
 
 
 def _writer_world(target):
-    root = pathlib.Path(__file__).resolve().parents[3]
+    # Imported here: only this fixture builder spawns a process, and the guard itself pays nothing for it on a Bash call.
+    import subprocess
+
+    root = pathlib.Path(target)
+    root.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)
     write_session(
-        target,
+        root / "config",
         root,
         FIXTURE_SESSION,
         [
@@ -119,14 +129,21 @@ def _writer_world(target):
             ),
         ],
     )
-    return target
+    return str(root)
 
 
 FIXTURES = {"live-writer-world": _writer_world}
 
 ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
     ("default", {}, {}),
-    ("writers", {"CLAUDE_CONFIG_DIR": "{FIXTURE:live-writer-world}"}, {}),
+    (
+        "writers",
+        {
+            "CLAUDE_CONFIG_DIR": "{FIXTURE:live-writer-world}/config",
+            "CLAUDE_PROJECT_DIR": "{FIXTURE:live-writer-world}",
+        },
+        {},
+    ),
 ]
 
 
@@ -134,7 +151,6 @@ def _payload(command):
     return {
         "tool_name": "Bash",
         "session_id": FIXTURE_SESSION,
-        "cwd": "/home/developer/console",
         "tool_input": {"command": command},
     }
 
@@ -207,7 +223,7 @@ def live_writers(cwd, session_id, now=None):
         for member in [aid, *roster.descendants(aid, kids)]:
             member_jsonl = (metas.get(member) or {}).get("jsonl")
             if member_jsonl is not None:
-                paths |= roster.edit_paths(member_jsonl, root)
+                paths |= roster.edit_paths(member_jsonl, root, strict=True)
         if paths:
             out.append((aid, meta, {os.path.normpath(os.path.join(root, p)) for p in paths}))
     return root, out
@@ -282,10 +298,12 @@ def run(ev):
         return hookio.ALLOW
     created = commit_policy.created_dirs(cmd, cwd)
     found: dict[str, tuple] = {}
+    # Either bound tree is this checkout (box LT11): a writer of the landing session edits the landing tree, so a commit typed there takes its files.
+    trees = commit_policy.bound_trees(root)
     for commit in commits:
-        repo = commit_policy.run_repo(commit, cwd, created)
+        repo = commit_policy.run_repo(commit, cwd, created, root)
         # A commit resolving to no repository is one git refuses; one outside this checkout takes no file a writer of it edited.
-        if not repo or not commit_policy.is_inside(repo, root):
+        if not repo or not commit_policy.is_ours(repo, root, trees):
             continue
         committed = committed_paths(commit, cmd, repo, cwd)
         for aid, meta, paths in writers:

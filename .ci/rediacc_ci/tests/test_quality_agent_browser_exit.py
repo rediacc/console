@@ -120,6 +120,7 @@ def test_line_skip_list_matches_case(tmp_path: pathlib.Path, line: str) -> None:
     box = tmp_path / "box"
     box.mkdir(exist_ok=True)
     (box / "x.sh").write_text("set -e\n" + line + "\n", encoding="utf-8")
+    abe.stage(box)
     port_hit = len(abe.scan(str(box))) > 0
     assert port_hit == bash_hit, "disagreement on %r" % line
 
@@ -144,6 +145,7 @@ def test_unterminated_last_line_is_dropped_by_both(tmp_path: pathlib.Path) -> No
     assert code == 0, err
     assert out.strip() == "1"
     assert len(abe._read_lines(target.read_text(encoding="utf-8"))) == 1
+    abe.stage(tmp_path)
     assert abe.scan(str(tmp_path)) == []
 
     # And its MIRROR: the same content WITH the newline is seen by both.
@@ -208,6 +210,7 @@ def test_shell_corpus_matches_grep_rl(tmp_path: pathlib.Path) -> None:
         cwd=str(tmp_path),
     )
     assert code == 0, err
+    abe.stage(tmp_path)
     from_bash = sorted(line[2:] for line in out.strip().split("\n"))
     from_port = sorted(
         p[len(str(tmp_path)) + 1 :]
@@ -225,8 +228,31 @@ def test_js_corpus_prunes_dist_and_the_shell_one_does_not(tmp_path: pathlib.Path
     dist.mkdir()
     (dist / "b.js").write_text("execSync('agent-browser open x');\n", encoding="utf-8")
     (dist / "b.sh").write_text('agent-browser open "$u"\n', encoding="utf-8")
+    abe.stage(tmp_path)
     assert abe._corpus(str(tmp_path), abe.JS_SUFFIXES, abe.JS_PRUNE) == []
     assert len(abe._corpus(str(tmp_path), abe.SH_SUFFIXES, abe.SH_PRUNE)) == 1
+
+
+def test_untracked_files_are_not_in_either_corpus(tmp_path: pathlib.Path) -> None:
+    """The corpus is the index. A violation written after staging, in a build-output directory, is invisible to both halves; the same violation staged is found, so the plant is a real one."""
+    (tmp_path / "keep.sh").write_text("echo hi\n", encoding="utf-8")
+    abe.stage(tmp_path)
+    box = tmp_path / "bin" / "probe"
+    box.mkdir(parents=True)
+    (box / "x.sh").write_text('set -e\nagent-browser open "$U" >/dev/null\n', encoding="utf-8")
+    (box / "x.ts").write_text("execSync('agent-browser open ' + u);\n", encoding="utf-8")
+    assert abe.scan(str(tmp_path)) == []
+    assert abe.scan_js(str(tmp_path)) == []
+    abe.stage(tmp_path)
+    assert len(abe.scan(str(tmp_path))) == 1
+    assert len(abe.scan_js(str(tmp_path))) == 1
+
+
+def test_a_directory_that_is_not_a_work_tree_root_is_refused(tmp_path: pathlib.Path) -> None:
+    """Never an empty corpus: an unstaged directory raises rather than reading as clean."""
+    (tmp_path / "x.sh").write_text('set -e\nagent-browser open "$U" >/dev/null\n', encoding="utf-8")
+    with pytest.raises(abe.TrackedListingError):
+        abe.scan(str(tmp_path))
 
 
 # --------------------------------------------------------------------------- The gate as a whole ---------------------------------------------------------------------------
@@ -239,6 +265,7 @@ def test_js_half_runs_first_and_hides_the_shell_half(tmp_path: pathlib.Path) -> 
     """
     (tmp_path / "a.ts").write_text("execSync('agent-browser open ' + u);\n", encoding="utf-8")
     (tmp_path / "b.sh").write_text('set -e\nagent-browser open "$u"\n', encoding="utf-8")
+    abe.stage(tmp_path)
     assert len(abe.scan_js(str(tmp_path))) == 1
     assert len(abe.scan(str(tmp_path))) == 1
     # Both fire independently; main() prints only the first. That ordering is asserted by the ledger row rather than re-driven here, because main() resolves its root from the environment.

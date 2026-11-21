@@ -54,8 +54,8 @@ def _git(repo: pathlib.Path, *args: str, date: str = "") -> None:
     assert result.rc == 0, harness.render_output(result)
 
 
-def record(sha: str, findings: list[tuple[str, str]]) -> str:
-    """A `.md` record in the shape `wl_review.render` writes (the parts the CI parser reads)."""
+def record(sha: str, findings: list[tuple[str, ...]]) -> str:
+    """A `.md` record in the shape `wl_review.render` writes (the parts the CI parser reads). A finding is (severity, resolution) or (severity, resolution, class); the `Class:` line sits before `Resolution:` as `wl_review.render` places it."""
     lines = [
         "# Review %s: feat: change" % sha[:8],
         "",
@@ -71,11 +71,12 @@ def record(sha: str, findings: list[tuple[str, str]]) -> str:
         "## Findings",
         "",
     ]
-    for n, (sev, resolution) in enumerate(findings, start=1):
+    for n, (sev, resolution, *klass) in enumerate(findings, start=1):
         lines += [
             "### %s.%d [%s] src/a.py:%d" % (sha[:8], n, sev, n),
             "Anchor: in-diff",
             "Claim: claim %d goes wrong when the list is empty" % n,
+            *(["Class: %s" % klass[0]] if klass else []),
             "Resolution: %s" % resolution,
             "",
         ]
@@ -104,7 +105,7 @@ class Fixture:
         _git(self.repo, "add", "--", rel)
         _git(self.repo, "commit", "-q", "-m", "change %d" % self.n, date=date)
 
-    def plant(self, findings: list[tuple[str, str]], sha: str = "c" * 40) -> pathlib.Path:
+    def plant(self, findings: list[tuple[str, ...]], sha: str = "c" * 40) -> pathlib.Path:
         d = self.repo / "agent" / "reviews" / BRANCH
         d.mkdir(parents=True, exist_ok=True)
         path = d / ("%s.md" % sha)
@@ -214,6 +215,25 @@ def test_an_open_high_refuses_and_an_open_low_does_not(gate, fx):
     gate.assert_exit(0, result, "an open low is below block_at and advisory")
     gate.assert_contains(result.out, "1 open")
     gate.log_pass("block_at is honoured in both directions")
+
+
+def test_an_open_low_security_finding_refuses_and_other_classes_do_not(gate, fx):
+    path = fx.plant([("low", "open", "security")])
+    result = fx.run()
+    gate.assert_exit(1, result, "an open low security finding blocks at any severity")
+    gate.assert_contains(result.out, "OPEN [low] cccccccc.1")
+    for control in (("low", "open", "other"), ("low", "open")):
+        path.write_text(record("c" * 40, [control]), encoding="utf-8")
+        gate.assert_exit(0, fx.run(), "an open low %r finding stays advisory" % (control,))
+    for resolved in (FIXED, NOT_A_BUG):
+        path.write_text(record("c" * 40, [("low", resolved, "security")]), encoding="utf-8")
+        gate.assert_exit(0, fx.run(), "a resolved security finding passes: %s" % resolved[:9])
+    gate.log_pass("a security finding blocks at any severity and only while open")
+
+
+def test_the_security_class_name_matches_the_local_layer(gate):
+    gate.assert_eq(RR.SECURITY_CLASS, _load_wl_review().SECURITY_CLASS, "SECURITY_CLASS parity")
+    gate.log_pass("the class that blocks at any severity is spelled the same in both layers")
 
 
 # --------------------------------------------------------------------------- rule iv
@@ -330,7 +350,7 @@ def test_selftest_exits_zero_and_counts_its_controls(gate):
     result = harness.run([sys.executable, str(SHIM), "--selftest"])
     gate.assert_exit(0, result, "the selftest")
     count = int(result.out.strip().splitlines()[-1].split(" control(s)")[0])
-    gate.assert_eq(count >= 37, True, "the selftest ran at least its floor of controls")
+    gate.assert_eq(count >= 41, True, "the selftest ran at least its floor of controls")
     gate.log_pass("the selftest passes %d controls" % count)
 
 

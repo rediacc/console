@@ -12,8 +12,8 @@ tags:
   - conformidade
 featured: false
 language: pt
-sourceHash: "c1a20432472d9452"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "02a3f195c73de031"
+sourceCommit: "ddf4affc88b6a49d8b23351f99d04e19870444f3"
 translatedFrom: en
 ---
 
@@ -123,7 +123,7 @@ Após migrar para a Rediacc no Hetzner:
 
 | Campo | Depois |
 |---|---|
-| Fornecedores | (1) Rediacc OÜ, licença de software; (2) Hetzner, IaaS |
+| Fornecedores | (1) [Rediacc](/pt/legal-information), licença de software; (2) Hetzner, IaaS |
 | Nível | (1) Não crítico (sem plano de dados); (2) Crítico (plano de dados, mas controlado pelo cliente) |
 | Dados tratados | (1) Nenhum; (2) Volumes encriptados, cliente detém as chaves |
 | Subprocessadores | (1) Nenhum para auto-alojado; (2) Apenas internos da Hetzner, listados no DPA deles |

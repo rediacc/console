@@ -50,6 +50,8 @@ interface SimGate {
   heavy?: boolean;
   mutex?: string[];
   reads?: string[];
+  /** The nice value the gate runs at (exec.ts gateSpawnArgv, PLAN-two-track-merge-dev D3); default 0. Under oversubscription CPU is shared by CFS weight, 1024 at nice 0 and 110 at nice 10. */
+  niceness?: number;
   /**
    * What the scheduler is TOLD, when it differs from the truth: the duration cache's planning wall (`estMs`, the ewma), its least-contended wall, CPU and per-core share. Absent fields fall back to the truth. This is the seam that models a stale cache: an elastic gate whose ewma was learned at a width it no longer gets.
    */
@@ -118,6 +120,9 @@ interface RunResult extends SimResult {
 }
 
 const EPS_MS = 1e-6;
+
+const byText = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+const byKey = (a: [string, number], b: [string, number]): number => byText(a[0], b[0]);
 
 function specOf(g: SimGate): GateSpec {
   return {
@@ -203,6 +208,53 @@ function runState(run: SimRun, cfg: SimConfig) {
   };
 }
 type RunState = ReturnType<typeof runState>;
+
+/** CFS weight per nice value for the two values the runner uses (sched_prio_to_weight). */
+const CFS_WEIGHT: Record<number, number> = { 0: 1024, 10: 110 };
+
+/**
+ * Each running gate's progress rate (its share of its own width, at most 1) when the machine is oversubscribed: cores are water-filled by weight, a gate's weight being its width times its CFS weight relative to nice 0, and no gate gets more than its width. With every gate at nice 0 the weights are proportional to width, so every rate is the same cores / demand the simulator always used.
+ */
+export function shareRates(
+  states: readonly RunState[],
+  width: (s: RunState, id: string) => number,
+  cores: number
+): Map<RunState, Map<string, number>> {
+  const out = new Map<RunState, Map<string, number>>();
+  const items: { s: RunState; id: string; w: number; weight: number }[] = [];
+  let demand = 0;
+  for (const s of states) {
+    out.set(s, new Map());
+    for (const id of s.running.keys()) {
+      const w = width(s, id);
+      demand += w;
+      const nice = s.truth.get(id)?.niceness ?? 0;
+      items.push({ s, id, w, weight: w * ((CFS_WEIGHT[nice] ?? 1024) / 1024) });
+    }
+  }
+  if (demand <= cores) {
+    for (const it of items) out.get(it.s)?.set(it.id, 1);
+    return out;
+  }
+  let left = cores;
+  let active = items.filter((it) => it.w > 0);
+  for (const it of items) if (it.w <= 0) out.get(it.s)?.set(it.id, 1);
+  while (active.length > 0) {
+    const sumW = active.reduce((acc, it) => acc + it.weight, 0);
+    const unit = sumW > 0 ? left / sumW : 0;
+    const capped = active.filter((it) => it.weight * unit >= it.w - 1e-12);
+    if (capped.length === 0) {
+      for (const it of active) out.get(it.s)?.set(it.id, (it.weight * unit) / it.w);
+      break;
+    }
+    for (const it of capped) {
+      out.get(it.s)?.set(it.id, 1);
+      left -= it.w;
+    }
+    active = active.filter((it) => !capped.includes(it));
+  }
+  return out;
+}
 
 /**
  * The engine under simulate() and simulateRuns(). Each run passes through admit() only at the moments runPool would: when it starts, when one of its own gates ends, and on its lease timer. Under a lease (`tokens`) a launch draws tokens the way PoolLease.reconcile does and is fitted by the pool's own fitToLease; without one the passes see no lease at all, as before the lease existed.
@@ -366,10 +418,12 @@ function engine(
 
     let demand = 0;
     for (const s of states) for (const id of s.running.keys()) demand += width(s, id);
-    const rate = demand > 0 ? Math.min(1, cfg.machineCores / demand) : 1;
+    const rates = shareRates(states, width, cfg.machineCores);
+    const rateOf = (s: RunState, id: string): number => rates.get(s)?.get(id) ?? 1;
     let step = Number.POSITIVE_INFINITY;
     for (const s of states) {
       for (const [id, left] of s.running) {
+        const rate = rateOf(s, id);
         step = Math.min(step, left / rate, toPhase(s, id) / rate);
       }
       if (!started(s)) step = Math.min(step, s.run.startMs - t);
@@ -388,7 +442,7 @@ function engine(
     for (const s of states) {
       let ended = false;
       for (const [id, left] of s.running) {
-        const rest = left - step * rate;
+        const rest = left - step * rateOf(s, id);
         if (rest <= EPS_MS) {
           s.running.delete(id);
           s.ends.set(id, t);
@@ -599,6 +653,40 @@ export function schedulerSelftest(): { failures: string[]; assertions: number; t
       `${name.padEnd(28)} makespan ${(r.makespanMs / 1000).toFixed(1).padStart(6)} s   idle ${r.idleCoreS.toFixed(1).padStart(7)} core-s`
     );
   };
+
+  // 0. PRIORITY (PLAN-two-track-merge-dev D3/C1): eight one-core gates on four cores, admitted together. At equal priority each runs at half speed and the pinned gate ends at 200 s; with the seven others at nice 10 the pinned gate keeps a whole core and ends at 100 s. Same gates, same grants: only the share moves.
+  const prioCfg = {
+    sched: 'slots' as const,
+    machineCores: 4,
+    jobs: 8,
+    heavyLimit: 8,
+    budget: { cores: 8, epsilon: 0, maxProcs: 16, memMb: 64 * 1024 },
+  };
+  const prioGates = (niceOthers: number): SimGate[] => [
+    { id: 'pin', cores: 1, wallMs: 100_000 },
+    ...Array.from({ length: 7 }, (_, i) => ({
+      id: `other${i}`,
+      cores: 1,
+      wallMs: 100_000,
+      niceness: niceOthers,
+    })),
+  ];
+  const prioFlat = simulate(prioGates(0), prioCfg);
+  const prio = simulate(prioGates(10), prioCfg);
+  check(
+    Math.abs((prioFlat.ends.get('pin') ?? 0) - 200_000) < 1,
+    `CONTROL: at equal priority a one-core gate on a 2x-oversubscribed machine ends at 200 s, got ${prioFlat.ends.get('pin')}`
+  );
+  check(
+    (prio.ends.get('pin') ?? Number.POSITIVE_INFINITY) < 0.6 * (prioFlat.ends.get('pin') ?? 0),
+    `a pinned single-core gate must end sooner under saturation when the rest are niced, got ${prio.ends.get('pin')} vs ${prioFlat.ends.get('pin')}`
+  );
+  check(
+    [...prio.ends.keys()].sort(byText).join() === [...prioFlat.ends.keys()].sort(byText).join() &&
+      [...prio.grants.entries()].sort(byKey).join() ===
+        [...prioFlat.grants.entries()].sort(byKey).join(),
+    'priority must not change which gates run or what they are granted'
+  );
 
   // 1. THE MIX: cores cuts idle core-seconds by at least 30% with no worse makespan, and never exceeds C(1+epsilon) (capCheck at exactly that).
   const mix = syntheticMix();

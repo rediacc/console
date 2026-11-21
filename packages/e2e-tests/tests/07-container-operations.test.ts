@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID } from '../src/constants';
+import { assertLandlockSelected } from '../src/utils/landlock';
 import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
@@ -32,7 +33,7 @@ const TEST_REPOSITORY_NAME = e2eRepoGuid();
 
 const TEST_PASSWORD = 'testpassword123';
 
-test.describe('Container Operations @bridge', () => {
+test.describe('Container Operations @bridge @landlock', () => {
   let runner: RenetFunctionsTestRunner;
   const testRepo = e2eRepoGuid();
   const testContainer = `nginx-ops-${Date.now()}`;
@@ -41,6 +42,7 @@ test.describe('Container Operations @bridge', () => {
 
   test.beforeAll(async () => {
     runner = RenetFunctionsTestRunner.forWorker();
+    await assertLandlockSelected(runner);
     await runner.resetWorkerState();
 
     // 1. Initialize datastore
@@ -85,7 +87,7 @@ test.describe('Container Operations @bridge', () => {
     await runner.repositoryDown(testRepo, datastorePath, networkId);
 
     // Unmount and delete repository
-    await runner.repositoryUnmount(testRepo, datastorePath);
+    await runner.repositoryUnmount(testRepo, datastorePath, networkId);
     await runner.repositoryRm(testRepo, datastorePath);
 
     // Teardown daemon
@@ -239,6 +241,30 @@ test.describe('Container Operations @bridge', () => {
       /healthy|warming|unhealthy|unknown/
     );
   });
+
+  test('repository_repair plans a repair run without running any repair()', async () => {
+    const result = await runner.repositoryRepair(testRepo, {
+      allowClasses: 'auto-safe',
+      dryRun: true,
+      datastorePath,
+    });
+    // The RepairReport JSON (renet cmd/renet/repository_repair.go) names how many repair() functions ran; a dry run plans only, so none ran and none failed.
+    // The report rides the function runner's log line as msg="[repository_repair] {...}" with escaped quotes (as tests 25 and 30 unwrap), so undo that before matching.
+    const out = runner.getCombinedOutput(result).replaceAll('\\"', '"');
+    expect(out).toMatch(/"ran":\s*0/);
+    expect(out).toMatch(/"failed":\s*0/);
+  });
+
+  test('proxy_acme_fix dry run reports collisions or names the missing proxy config', async () => {
+    const result = await runner.proxyAcmeFix({ dryRun: true });
+    // renet proxy acme-fix --json answers with a Result carrying `collisions` (exit 0), or fails (non-zero) naming config.env on a machine whose proxy has none. Anything else (an unknown function, a bad flag, a zero exit without the Result) is a regression.
+    const out = runner.getCombinedOutput(result);
+    if (result.code === 0) {
+      expect(out).toMatch(/"collisions"/);
+    } else {
+      expect(out).toMatch(/config\.env/);
+    }
+  });
 });
 
 /**
@@ -247,7 +273,7 @@ test.describe('Container Operations @bridge', () => {
  * Tests container lifecycle in proper order with a real container.
  */
 test.describe
-  .serial('Container Lifecycle @bridge @lifecycle', () => {
+  .serial('Container Lifecycle @bridge @lifecycle @landlock', () => {
     let runner: RenetFunctionsTestRunner;
     const repositoryName = e2eRepoGuid();
     const containerName = `nginx-lifecycle-${Date.now()}`;
@@ -256,6 +282,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
+      await assertLandlockSelected(runner);
       await runner.resetWorkerState();
 
       // 1. Initialize datastore
@@ -302,7 +329,7 @@ test.describe
       await runner.repositoryDown(repositoryName, datastorePath, networkId);
 
       // Unmount and delete repository
-      await runner.repositoryUnmount(repositoryName, datastorePath);
+      await runner.repositoryUnmount(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
       await runner.repositoryRm(repositoryName, datastorePath);
 
       // Teardown daemon
@@ -516,7 +543,7 @@ test.describe('Container Error Handling @bridge', () => {
  *
  * Tests operations on multiple containers using a multi-service docker-compose.
  */
-test.describe('Multiple Container Operations @bridge', () => {
+test.describe('Multiple Container Operations @bridge @landlock', () => {
   let runner: RenetFunctionsTestRunner;
   const repositoryName = e2eRepoGuid();
   const container1 = `nginx-multi1-${Date.now()}`;
@@ -526,6 +553,7 @@ test.describe('Multiple Container Operations @bridge', () => {
 
   test.beforeAll(async () => {
     runner = RenetFunctionsTestRunner.forWorker();
+    await assertLandlockSelected(runner);
     await runner.resetWorkerState();
 
     // 1. Initialize datastore
@@ -576,7 +604,7 @@ test.describe('Multiple Container Operations @bridge', () => {
     await runner.repositoryDown(repositoryName, datastorePath, networkId);
 
     // Unmount and delete repository
-    await runner.repositoryUnmount(repositoryName, datastorePath);
+    await runner.repositoryUnmount(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
     await runner.repositoryRm(repositoryName, datastorePath);
 
     // Teardown daemon

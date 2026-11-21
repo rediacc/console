@@ -42,6 +42,7 @@ import contextlib
 import dataclasses
 import datetime
 import difflib
+import functools
 import importlib
 import os
 import pathlib
@@ -551,20 +552,39 @@ FIELD_SPECS: dict[str, FieldSpec] = {
 }
 
 
+@functools.cache
 def _key_re(name: str) -> re.Pattern[str]:
     return re.compile(r"^%s:[ \t]*(.*?)[ \t]*$" % re.escape(name))
 
 
+@functools.cache
 def _emph_re(name: str) -> re.Pattern[str]:
     return re.compile(r"^\*{1,2}%s\*{0,2}:|^%s\*{1,2}:" % (re.escape(name), re.escape(name)))
+
+
+#: How many distinct plan texts `parse_header` remembers under the default specs; the tree holds about 256 plans, and a `Graph.load` head and a whole-file read of one plan are two texts.
+HEADER_CACHE = 1024
 
 
 def parse_header(text: str, specs: dict[str, FieldSpec] | None = None) -> Header:
     """Every field in `specs` (default `FIELD_SPECS`) read from `text`'s header. Pure: no filesystem.
 
     A field counts when its line is anchored at column 0 in the first `spec.window` lines. The first occurrence is parsed; a second one anywhere in the header block, one past the window, or an emphasised key (`**Depends-On:**`) is a structural error in `Header.errors`. The header block ends at the first section heading, fence or checkbox.
+
+    Under the default specs the answer is memoized on the text (`_parse_default`): every `Graph` parses every plan, and one `check_plan_record.py --rendered-only` run built 68 graphs and 21,284 headers before its graph was shared (measured 2026-11-19). Each call gets its own `fields` dict, so a caller that edits it cannot change the next caller's header. Explicit `specs` are never cached.
     """
-    specs = FIELD_SPECS if specs is None else specs
+    if specs is None:
+        cached = _parse_default(text or "")
+        return dataclasses.replace(cached, fields=dict(cached.fields))
+    return _parse_header(text, specs)
+
+
+@functools.lru_cache(maxsize=HEADER_CACHE)
+def _parse_default(text: str) -> Header:
+    return _parse_header(text, FIELD_SPECS)
+
+
+def _parse_header(text: str, specs: dict[str, FieldSpec]) -> Header:
     lines = (text or "").splitlines()
     head = "\n".join(lines[:STATUS_LINES])
     sm = STATUS_RE.search(head)
@@ -866,6 +886,321 @@ def _closest(boxes: list[Box], task: str) -> str:
     )
 
 
+# --------------------------------------------------------------------------- Per-box Depends-on (agent/plans/PLAN-idle-writer-capacity.md D3, operator ruling R4 of 2026-11-09).
+
+# A box's own `Depends on:` clause, on its line or a continuation line. The clause ends at a sentence period (one followed by a space or the line end, so `PLAN-y.md` keeps its dot), a `;` or a `(`: `Depends on: PF3; lands after PF8` names PF3 alone, and `PF1, PF2 (JSON contract)` names PF1 and PF2. The header field is `Depends-On:` with a hyphen and never matches.
+BOX_DEPENDS_RE = re.compile(r"\bDepends on:[ \t]*((?:[^.;(\n]|\.(?=\S))*)", re.IGNORECASE)
+_BOX_REF_RE = re.compile(
+    r"(PLAN-[A-Za-z0-9_-][A-Za-z0-9._-]*?\.md(?:#[A-Za-z0-9][\w.\-]*)?)"
+    r"|(?<![\w-])([A-Z][A-Za-z]{0,3}\d[\w.\-]*)"
+)
+_BOX_RANGE_RE = re.compile(r"^([A-Z][A-Za-z]{0,3})(\d+)-\1(\d+)$")
+# The longest range a clause may expand: a typo (`T1-T9000`) must not become nine thousand refs.
+_BOX_RANGE_MAX = 64
+_BOX_START_RE = re.compile(r"^\s*[-*+]\s+\[[ xX?>]\]\s+\S")
+
+
+def box_depends(block: str) -> tuple[str, ...] | None:
+    """The refs a box's own `Depends on:` clause names, or None when the box states no clause. `none` (and a clause naming only a merge) is the empty tuple. Same-plan ids come back bare (`S2`), ranges expanded (`SC5-SC8` to SC5..SC8), other plans as their token (`PLAN-y.md`, `PLAN-y.md#T3`). A merge phrase is no ref: whether a box waits for the merge is `wl_planenforce.after_merge`'s question."""
+    clauses = [m.group(1) for m in BOX_DEPENDS_RE.finditer(re.sub(r"[*`]+", "", block or ""))]
+    if not clauses:
+        return None
+    out: list[str] = []
+    for clause in clauses:
+        if clause.strip().lower().startswith(OWNS_NONE):
+            continue
+        for m in _BOX_REF_RE.finditer(clause):
+            if m.group(1):
+                refs = [m.group(1)]
+            else:
+                tok = m.group(2).rstrip(".-")
+                rng = _BOX_RANGE_RE.match(tok)
+                lo, hi = (int(rng.group(2)), int(rng.group(3))) if rng else (0, -1)
+                if rng and lo <= hi and hi - lo < _BOX_RANGE_MAX:
+                    refs = ["%s%d" % (rng.group(1), n) for n in range(lo, hi + 1)]
+                else:
+                    refs = [tok]
+            out.extend(r for r in refs if r not in out)
+    return tuple(out)
+
+
+def box_block(text: str, line: int) -> str:
+    """The box at `line` with its continuation lines (following non-blank lines indented deeper than the box's bullet, up to the next box), emphasis left in place for the caller to strip."""
+    lines = (text or "").splitlines()
+    if not 0 <= line < len(lines):
+        return ""
+    indent = len(lines[line]) - len(lines[line].lstrip())
+    j = line + 1
+    while j < len(lines):
+        nxt = lines[j]
+        if not nxt.strip() or _BOX_START_RE.match(nxt):
+            break
+        if len(nxt) - len(nxt.lstrip()) <= indent:
+            break
+        j += 1
+    return "\n".join(lines[line:j])
+
+
+# --------------------------------------------------------------------------- LP8: a box that waits on GitHub (agent/plans/PLAN-local-first-delivery.md Design L, operator ruling R2 of 2026-11-11: "The planner should really find no way to test/deploy locally to go with github.").
+
+LP_GITHUB_WAIT = "LP8"
+GITHUB_ONLY = "GitHub-only"
+LOCAL_ROUTE = "Local-route"
+# Why a box may wait on GitHub at all: CD (only the release pipeline deploys it), CI parity (the proof IS that CI agrees), native-runner (a platform no local machine has), soak (calendar time on a released channel), preview (a per-PR preview no local deploy reproduces).
+GITHUB_ONLY_KINDS = ("CD", "CI parity", "native-runner", "soak", "preview")
+GITHUB_WHY_MIN = 20
+# The surface map the phrase list and the runner ids live in; read here with `json` alone so the pre-edit guard needs no `.ci` import for LP8.
+PROOF_MAP_REL = ".ci/config/proof-tiers.json"
+_TAG_RE = re.compile(r"\b(GitHub-only|Local-route):[ \t]*([^\n]*)")
+_CORRECTED_RE = re.compile(r"^\s*(?:[-*+]\s+)?\(corrected\b")
+
+# The `Needs:` sub-line (agent/plans/PLAN-push-decoupling.md D3.1, D3.2): what a box waits for before it can start. Never on the box line, whose first 120 normalized characters are its signature (`wl_planrec.box_sig`); an indented sub-line `Needs: <value>`, or a `Needs: <value>` inside an indented `(corrected ...)` line, and the last one wins.
+NEEDS = "Needs"
+# `none`: provable from a lease or the main checkout as it stands; `bench-deploy`: the branch's code on bench; `verified-vmcheck`: a VERIFIED vm:check receipt on the tree; `pushed-head`: the branch tip on origin. Ordered from the least to the most a box waits for.
+NEEDS_VALUES = ("none", "bench-deploy", "verified-vmcheck", "pushed-head")
+# The class of each `tiers.live.local_runners` id, which a `Local-route:` correction derives its `Needs:` from. A runner missing here derives `pushed-head` (fails closed: the box keeps waiting for a push); test-plandeps.py holds this map equal to the runner ids of .ci/config/proof-tiers.json.
+RUNNER_NEEDS = {
+    "deploy-bench": "bench-deploy",
+    "bench-cli": "bench-deploy",
+    "d1-migrations": "bench-deploy",
+    "deploy-proxy-bench": "bench-deploy",
+    "enterprise-bench": "bench-deploy",
+    "vm-check": "verified-vmcheck",
+    "hostinger": "verified-vmcheck",
+    "e2e-local": "verified-vmcheck",
+    "www-local": "none",
+}
+_NEEDS_SUBLINE_RE = re.compile(r"^\s+(?:[-*+]\s+)?Needs:[ \t]*([^\n]*)$")
+_NEEDS_ANY_RE = re.compile(r"\bNeeds:[ \t]*([^\n]*)")
+# A `Needs:` on the box line is judged only when a value of the grammar follows it, so a box that names the tag in prose (`Parse and derive Needs: beside ...`) is not a finding.
+_NEEDS_ON_BOX_RE = re.compile(r"\bNeeds:[ \t]*(?:%s)(?![\w-])" % "|".join(NEEDS_VALUES))
+# The phrase scrub drops a `Needs:` value, so `pushed-head` is never searched for a `github_waits` phrase.
+_NEEDS_SCRUB_RE = re.compile(r"\bNeeds:[ \t]*[^\s,;)]*")
+
+
+def runner_needs(route: tuple[str, ...] | list[str]) -> str:
+    """The `Needs:` a `Local-route:` correction derives: the most demanding class among its runners (`RUNNER_NEEDS`), `pushed-head` for a runner with no class, "" for no runner."""
+    if not route:
+        return ""
+    return max((RUNNER_NEEDS.get(r, "pushed-head") for r in route), key=NEEDS_VALUES.index)
+
+
+@dataclasses.dataclass(frozen=True)
+class GitHubWait:
+    """LP8's reading of one box block: the `github_waits` phrases it names (outside a tag's own value), the kind of its valid `GitHub-only:` tag ("" when none), the runners of its valid `Local-route:` correction (() when none), the grammar errors of a malformed tag, route or `Needs:` line, the stated `Needs:` value ("" when none or malformed) and the raw value of the last `Needs:` written ("" when none was)."""
+
+    phrases: tuple[str, ...]
+    kind: str = ""
+    route: tuple[str, ...] = ()
+    errors: tuple[str, ...] = ()
+    needs: str = ""
+    needs_raw: str = ""
+
+    @property
+    def cleared(self) -> bool:
+        return bool(self.kind or self.route)
+
+    @property
+    def derived_needs(self) -> str:
+        """The `Needs:` a valid tag implies (D3.2): `pushed-head` for any `GitHub-only:` kind, the class of the route's runners for `Local-route:`, "" with neither."""
+        if self.kind:
+            return "pushed-head"
+        return runner_needs(self.route)
+
+    @property
+    def effective_needs(self) -> str:
+        """The stated value, else the derived one; "" when the box states none and no tag implies one."""
+        return self.needs or self.derived_needs
+
+    @property
+    def needs_malformed(self) -> bool:
+        """A `Needs:` line was written and its value is not one of NEEDS_VALUES."""
+        return bool(self.needs_raw) and not self.needs
+
+    @property
+    def finding(self) -> bool:
+        return bool(self.errors) or (bool(self.phrases) and not self.cleared)
+
+
+def github_wait_config(
+    root: str | os.PathLike[str],
+) -> tuple[tuple[str, ...], tuple[str, ...]] | None:
+    """(github_waits phrases, local runner ids) from `<root>/.ci/config/proof-tiers.json`, or None when the map cannot be read or carries no phrase. Never raises: a guard that cannot read the map warns and skips LP8, the gate's LP7 notices the empty list."""
+    import json
+
+    try:
+        raw = json.loads((pathlib.Path(root) / PROOF_MAP_REL).read_text(encoding="utf-8"))
+        live = raw["tiers"]["live"]
+        phrases = tuple(p for p in live.get("github_waits") or () if isinstance(p, str) and p)
+        runners = tuple(r for r in (live.get("local_runners") or {}) if isinstance(r, str))
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return None
+    return (phrases, runners) if phrases else None
+
+
+def _phrase_re(phrase: str) -> re.Pattern[str]:
+    """A phrase as a whole word: `CD` never matches inside `CDN` or `proxy-cd`. A phrase with a capital letter matches case-sensitively (`CD`, not the shell's `cd`), an all-lowercase one in any case (`Released`)."""
+    flags = 0 if any(c.isupper() for c in phrase) else re.IGNORECASE
+    return re.compile(r"(?<![\w-])%s(?![\w-])" % re.escape(phrase), flags)
+
+
+def _tag_why(value: str) -> tuple[str, str]:
+    """(head, why) of a tag value split at its first ` -- `; a `)` closing the enclosing `(corrected ...)` parenthesis is not part of the why."""
+    parts = REASON_SPLIT_RE.split(value.strip(), maxsplit=1)
+    why = parts[1].strip() if len(parts) > 1 else ""
+    while why.endswith(")") and why.count(")") > why.count("("):
+        why = why[:-1].rstrip()
+    return parts[0].strip(), why
+
+
+def _why_errors(why: str, tag: str) -> list[str]:
+    if not why:
+        return ["`%s:` has no ` -- <why>`" % tag]
+    if why.lower() in VAGUE_REASONS or len(why) < GITHUB_WHY_MIN:
+        return [
+            "`%s:` why %r is under %d characters; say why no local path proves it"
+            % (tag, why, GITHUB_WHY_MIN)
+        ]
+    return []
+
+
+def box_github_wait(
+    block: str,
+    phrases: tuple[str, ...] | list[str],
+    runners: tuple[str, ...] | list[str] | None = None,
+) -> GitHubWait:
+    """LP8's reading of one box block (`box_block`). A tag counts on the box line or on an indented `(corrected ...)` line under it, and the last one of each kind wins (a later correction supersedes an earlier one):
+
+        GitHub-only: <CD|CI parity|native-runner|soak|preview> -- <why no local path, 20+ chars>
+        Local-route: <runner>[, <runner>...] -- <how the branch proves it, 20+ chars>
+
+    `runners` are the `tiers.live.local_runners` ids; None skips the runner-name check, while an empty list means no runner is known, so every route is refused. Phrases are matched over the whole block with every tag's value and every `Needs:` value removed, so a why that says "only CD deploys edge" is not itself a wait.
+
+    `Needs: <none|bench-deploy|verified-vmcheck|pushed-head>` counts on an indented sub-line, or inside an indented `(corrected ...)` line, and the last one wins. On the box line it is an error when a value of the grammar follows it (that line is the signature; `Needs:` in prose there is no finding), an unknown value is an error, and so is a stated value that differs from the one a valid tag derives (`derived_needs`)."""
+    lines = (block or "").replace("`", "").replace("*", "").splitlines()
+    tag_lines = lines[:1] + [ln for ln in lines[1:] if _CORRECTED_RE.match(ln)]
+    kind = ""
+    route: tuple[str, ...] = ()
+    errors: dict[str, list[str]] = {GITHUB_ONLY: [], LOCAL_ROUTE: [], NEEDS: []}
+    needs_raw = ""
+    for ln in lines[1:]:
+        m = _NEEDS_SUBLINE_RE.match(ln)
+        if m is None and _CORRECTED_RE.match(ln):
+            m = _NEEDS_ANY_RE.search(ln)
+        if m is not None:
+            needs_raw = m.group(1).strip() or "(empty)"
+    needs = ""
+    if needs_raw:
+        words = _tag_why(needs_raw)[0].rstrip(").,;").split()
+        if words and words[0] in NEEDS_VALUES:
+            needs = words[0]
+        else:
+            errors[NEEDS].append(
+                "`%s:` value %r is not one of %s" % (NEEDS, needs_raw, "|".join(NEEDS_VALUES))
+            )
+    if lines and _NEEDS_ON_BOX_RE.search(lines[0]):
+        errors[NEEDS].append(
+            "`%s:` sits on the box line, whose text is the box signature; move it to an "
+            "indented sub-line" % NEEDS
+        )
+    for n, ln in enumerate(tag_lines):
+        # A `Needs:` sharing a `(corrected ...)` line is no part of a tag's why: its value token goes, and a tag written after it stays.
+        for m in _TAG_RE.finditer(_NEEDS_SCRUB_RE.sub("", ln) if n else ln):
+            tag, (head, why) = m.group(1), _tag_why(m.group(2))
+            errs = _why_errors(why, tag)
+            if tag == GITHUB_ONLY:
+                canon = {k.lower(): k for k in GITHUB_ONLY_KINDS}.get(head.lower(), "")
+                if not canon:
+                    errs.insert(
+                        0,
+                        "`%s:` kind %r is not one of %s"
+                        % (tag, head, ", ".join(GITHUB_ONLY_KINDS)),
+                    )
+                errors[tag] = errs
+                kind = "" if errs else canon
+            else:
+                names = tuple(n.strip() for n in head.split(",") if n.strip())
+                unknown = [n for n in names if runners is not None and n not in runners]
+                if not names:
+                    errs.insert(0, "`%s:` names no runner" % tag)
+                elif unknown:
+                    errs.insert(
+                        0,
+                        "`%s:` runner(s) %s are not in tiers.live.local_runners (%s)"
+                        % (tag, ", ".join(unknown), ", ".join(runners or ())),
+                    )
+                errors[tag] = errs
+                route = () if errs else names
+    derived = "pushed-head" if kind else runner_needs(route)
+    if needs and derived and needs != derived:
+        errors[NEEDS].append(
+            "`%s: %s` contradicts the box's valid `%s:` tag, which derives `%s: %s`"
+            % (NEEDS, needs, GITHUB_ONLY if kind else LOCAL_ROUTE, NEEDS, derived)
+        )
+    scrubbed = _TAG_RE.sub("", _NEEDS_SCRUB_RE.sub("", "\n".join(lines)))
+    found = tuple(p for p in phrases if _phrase_re(p).search(scrubbed))
+    return GitHubWait(
+        found,
+        kind,
+        route,
+        tuple(errors[GITHUB_ONLY] + errors[LOCAL_ROUTE] + errors[NEEDS]),
+        needs,
+        needs_raw,
+    )
+
+
+def box_needs(block: str) -> GitHubWait:
+    """The `Needs:` reading of one box block with no phrase list and no runner-name check: `effective_needs`, `needs_malformed`, and the tag a derived value came from. `wl_boxready` judges a box's readiness through it."""
+    return box_github_wait(block, (), None)
+
+
+def github_wait_findings(
+    text: str,
+    phrases: tuple[str, ...] | list[str],
+    runners: tuple[str, ...] | list[str] | None = None,
+) -> list[tuple[str, str]]:
+    """[(LP8, message)] for every OPEN box of a plan that waits on GitHub (names a `github_waits` phrase) with no valid `GitHub-only:` tag or `Local-route:` correction, and for every malformed tag, route or `Needs:` line (an unknown value, a value on the box line, a value a valid tag contradicts). A ticked box is history and is not judged. Shared by `check:ci-plan-live-proof` and the pre-edit guard (`github_wait_introduced`)."""
+    out: list[tuple[str, str]] = []
+    if not phrases:
+        return out
+    for box in plan_boxes(text):
+        if box.done:
+            continue
+        wait = box_github_wait(box_block(text, box.line), phrases, runners)
+        if not wait.finding:
+            continue
+        name = box.id or box.sig[:8]
+        if wait.errors:
+            out.extend((LP_GITHUB_WAIT, "box %s: %s" % (name, err)) for err in wait.errors)
+            continue
+        out.append(
+            (
+                LP_GITHUB_WAIT,
+                "box %s waits on GitHub (%s) with no `%s: <%s> -- <why>` tag and no `%s: <runner> "
+                "-- <how>` correction; ruling R2 asks for the local route first"
+                % (
+                    name,
+                    ", ".join(repr(p) for p in wait.phrases),
+                    GITHUB_ONLY,
+                    "|".join(GITHUB_ONLY_KINDS),
+                    LOCAL_ROUTE,
+                ),
+            )
+        )
+    return out
+
+
+def github_wait_introduced(
+    before: str | None,
+    after: str,
+    phrases: tuple[str, ...] | list[str],
+    runners: tuple[str, ...] | list[str] | None = None,
+) -> list[tuple[str, str]]:
+    """The LP8 findings of `after` that `before` did not already carry: the pre-edit guard's reading, so an edit is refused for a wait it adds and never for one it leaves as it was."""
+    had = set(github_wait_findings(before or "", phrases, runners))
+    return [f for f in github_wait_findings(after, phrases, runners) if f not in had]
+
+
 def _read_head(path: pathlib.Path) -> str | None:
     try:
         with path.open("rb") as fh:
@@ -899,6 +1234,7 @@ class Graph:
         self._finished: frozenset[str] | None = None
         self._full: dict[str, str] = {}
         self._tasks: dict[tuple[str, str], TaskVerdict] = {}
+        self._investigations: list | None = None
 
     @classmethod
     def from_texts(cls, texts: dict[str, str], index_text: str = "") -> Graph:
@@ -1028,7 +1364,11 @@ class Graph:
         if self.root is None:
             return False
         try:
-            row = importlib.import_module("wl_planrec").investigation_for(self.root, rel, sig)
+            rec = importlib.import_module("wl_planrec")
+            # The ledger is read once per graph, not once per task edge: a graph lives for one judgement over files nobody writes meanwhile, and re-reading it per edge was 266 full decodes of the ledger per `check_plan_record.py --rendered-only` run (measured 2026-11-19). A read that raises is not remembered.
+            if self._investigations is None:
+                self._investigations = rec.read_investigations(self.root)
+            row = rec.investigation_for(self.root, rel, sig, rows=self._investigations)
         except (ImportError, AttributeError, OSError, ValueError):
             return False
         return bool(row) and str(row.get("verdict") or "").strip().lower() == "present"
@@ -1042,8 +1382,67 @@ class Graph:
         return Target(token, LIVE, rel, status)
 
     def is_complete(self, token: str) -> bool:
-        """True when the token's plan is finished (a Status in FINISHED_STATES, folder not consulted) or a `_done/` tombstone. A task edge counts as complete only with its whole plan until T12 teaches box-level completion."""
+        """True when the token's plan is finished (a Status in FINISHED_STATES, folder not consulted) or a `_done/` tombstone. A task edge `PLAN-y.md#<id>` of a LIVE plan counts as complete when that one box is ticked with evidence (`_with_task`)."""
         return self.resolve(token).state == COMPLETE
+
+    # ---- per-box edges (agent/plans/PLAN-idle-writer-capacity.md D3, operator ruling R4)
+
+    def box_blockers(
+        self,
+        rel: str,
+        block: str,
+        clear: Callable[[Target, Edge], bool] | None = None,
+    ) -> list[tuple[str, str]]:
+        """[(ref, why)] for every unresolved dependency of one box of plan `rel`, `block` being the box with its continuation lines (`box_block`).
+
+        A box that states its own `Depends on:` clause is judged by that clause alone and strictly: a same-plan id needs its box ticked with evidence (`task_verdict`), a task token `PLAN-y.md#<id>` the same through `resolve` and `_with_task`, a plan token needs the plan finished, and a ref that resolves to nothing holds the box. A box that states none is judged by the plan's `Depends-On:` edges: a finished one passes, and a LIVE one passes when `clear(target, edge)` says so (the writer-readiness rule of `wl_boxready` passes it). A dangling, withdrawn or ambiguous edge always holds."""
+        refs = box_depends(block)
+        out: list[tuple[str, str]] = []
+        if refs is not None:
+            for ref in refs:
+                if ref.startswith("PLAN-"):
+                    t = self.resolve(ref)
+                    if t.state != COMPLETE:
+                        out.append((ref, t.detail or t.state))
+                    continue
+                verdict = self.task_verdict(rel, ref)
+                if verdict.state != TASK_DONE:
+                    out.append((ref, verdict.detail or verdict.state))
+            return out
+        base = rel.rsplit("/", 1)[-1]
+        for edge in self.edges(rel):
+            if edge.plan == base:
+                continue
+            t = self.resolve(str(edge))
+            if t.state == COMPLETE:
+                continue
+            if t.state == LIVE and clear is not None and clear(t, edge):
+                continue
+            out.append((str(edge), t.detail or t.state))
+        return out
+
+    def own_line_free(self, rel: str, sig: str) -> bool:
+        """True when the open box of `rel` with signature `sig` states its own `Depends on:` clause and every ref of it resolves (operator ruling R4): its plan-level edges then do not hold it. False for any other case, including a box that cannot be found."""
+        text = self._full_text(rel)
+        box = next((b for b in plan_boxes(text) if b.sig == sig and not b.done), None)
+        if box is None:
+            return False
+        block = box_block(text, box.line)
+        return box_depends(block) is not None and not self.box_blockers(rel, block)
+
+    def writer_box_free(self, rel: str, sig: str) -> bool:
+        """True when the open box of `rel` with signature `sig` is explicitly `[writer]`-tagged, not post-merge, and `box_blockers` under `wl_boxready`'s writer-clear predicate finds nothing: a prerequisite whose remaining work is all live, operator or post-merge does not hold a writer box (operator ruling KEEP of 2026-11-09). This is the dependency half of the readiness rule the IDLE CAPACITY block applies (ready_boxes also checks Owns overlaps and holding items, which do not gate a start), so the verbs that start the work (`--lease`, `--plan-tick`) read the same verdict and a box the block names is never refused. False without a root (the predicate reads plan files) or a matching open box."""
+        if self.root is None:
+            return False
+        text = self._full_text(rel)
+        box = next((b for b in plan_boxes(text) if b.sig == sig and not b.done), None)
+        if box is None:
+            return False
+        block = box_block(text, box.line)
+        ready = importlib.import_module("wl_boxready")
+        if not ready.writer_tagged(box.body) or ready.post_merge(block):
+            return False
+        return not self.box_blockers(rel, block, clear=ready.writer_clear(self.root))
 
     # ---- edges
 
@@ -1304,6 +1703,12 @@ def item_deps(graph: Graph | None, text: str, fold: Any = ()) -> ItemDeps | None
         if graph.plans[target.rel].header.status in graph.finished():
             return None
         rel = target.rel
+        # A linked box that states its own resolved `Depends on:` line is free whatever its plan waits on (operator ruling R4 of 2026-11-09), and so is a ready `[writer]` box whose prerequisites hold only non-writer work (ruling KEEP); any other box keeps the plan-level verdict.
+        link = LINK_RE.search(text or "")
+        if link and (
+            graph.own_line_free(rel, link.group(2)) or graph.writer_box_free(rel, link.group(2))
+        ):
+            return None
         root_list, tasks = graph.roots_with_tasks(rel)
         roots = tuple(root_list)
         reach = {r.rsplit("/", 1)[-1] for r in _reachable(graph, rel)}

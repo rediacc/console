@@ -10,8 +10,9 @@ import typing
 
 import pytest
 
+from rediacc_ci.ops import apply_cf_redirect_rules as mod
 from rediacc_ci.tests import ops_cf_harness as h
-from rediacc_ci.well_known import APEX_DOMAIN, SITE_ORIGIN
+from rediacc_ci.well_known import APEX_DOMAIN, PRODUCT_DOMAIN, SITE_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -198,3 +199,135 @@ def test_delta_two_matching_rulesets_are_refused(world: h.World) -> None:
     rc_p, _, err_p = world.port("rediacc_ci.ops.apply_cf_redirect_rules", [], world.env(**ENV))
     assert rc_p == 1
     assert "more than one http_request_dynamic_redirect ruleset" in err_p
+
+
+CLOUD_ZONE = "30f0c9cf60109cd4e10eb2d0a285b0db"
+
+
+def test_zone_rules_are_the_two_cloud_redirects_to_www() -> None:
+    # The real product host is pinned as its two labels: the expressions below are built from the constant, which would follow a wrong value.
+    assert PRODUCT_DOMAIN.split(".") == ["rediacc", "cloud"]
+    cloud = mod.RULE_SETS[PRODUCT_DOMAIN]
+    assert [r.label for r in cloud] == ["cloud-apex", "cloud-www"]
+    payloads = [mod.rule_payload(r) for r in cloud]
+    assert (
+        payloads[0]["expression"]
+        == '(http.request.full_uri wildcard r"https://' + PRODUCT_DOMAIN + '/*")'
+    )
+    assert payloads[1]["expression"] == (
+        '(http.request.full_uri wildcard r"https://www.' + PRODUCT_DOMAIN + '/*")'
+    )
+    for payload in payloads:
+        value = payload["action_parameters"]["from_value"]
+        assert value["status_code"] == 301
+        # A fixed URL is a `value`; Cloudflare refuses a quoted string as an `expression`.
+        assert value["target_url"] == {"value": SITE_ORIGIN + "/"}
+    edge = mod.RULE_SETS[APEX_DOMAIN][1]
+    assert edge.expression == (
+        '(http.request.full_uri wildcard r"https://edge.' + APEX_DOMAIN + '/*")'
+    )
+    assert mod.RULE_SETS[APEX_DOMAIN][0] is mod.APEX_RULE
+
+
+def test_fixed_target_rule_sends_a_value_and_keep_path_rule_an_expression() -> None:
+    # Cloudflare parses `target_url.expression` as a ruleset expression: a quoted URL there was
+    # refused live on 2026-11-09 with "Filter parsing error (1:1) ... expected identifier character".
+    fixed = mod.rule_payload(
+        mod._host_rule("f", "a." + PRODUCT_DOMAIN, SITE_ORIGIN, "fixed", keep_path=False)
+    )
+    target = fixed["action_parameters"]["from_value"]["target_url"]
+    assert target == {"value": SITE_ORIGIN + "/"}
+    assert "expression" not in target
+    kept = mod.rule_payload(
+        mod._host_rule("k", "edge." + APEX_DOMAIN, SITE_ORIGIN, "kept", keep_path=True)
+    )
+    kept_target = kept["action_parameters"]["from_value"]["target_url"]
+    assert set(kept_target) == {"expression"}
+    assert kept_target["expression"].startswith("wildcard_replace(http.request.full_uri, ")
+    assert kept["action_parameters"]["from_value"]["preserve_query_string"] is True
+    assert mod.rule_payload(mod.APEX_RULE)["action_parameters"]["from_value"]["target_url"] == {
+        "expression": mod.APEX_TARGET_EXPR
+    }
+
+
+def test_zone_without_a_redirect_ruleset_gets_one_created(world: h.World) -> None:
+    empty = {"method": "GET", "match": "/rulesets", "body": {"success": True, "result": []}}
+    created = {
+        "method": "POST",
+        "match": "/rulesets",
+        "body": {"success": True, "result": {"id": "NEW-RS"}},
+    }
+    world.set_routes([empty, created])
+    env = world.env(**ENV)
+    rc, out, _ = world.port(
+        "rediacc_ci.ops.apply_cf_redirect_rules", ["--zone", PRODUCT_DOMAIN, "--dry-run"], env
+    )
+    assert rc == 0
+    assert "no http_request_dynamic_redirect ruleset" in out
+    assert all(m == "GET" for m, _ in _urls(world))
+    world.reset_log()
+    rc, out, _ = world.port(
+        "rediacc_ci.ops.apply_cf_redirect_rules", ["--zone", PRODUCT_DOMAIN], env
+    )
+    assert rc == 0
+    assert "created ruleset NEW-RS with 2 rule(s)" in out
+    post = next(c for c in world.calls() if c["method"] == "POST")
+    assert CLOUD_ZONE in post["url"]
+    body = json.loads(post["body"])
+    assert body["phase"] == "http_request_dynamic_redirect"
+    assert body["kind"] == "zone"
+    assert len(body["rules"]) == 2
+
+
+def test_default_run_without_a_redirect_ruleset_creates_it_with_the_apex_rule(
+    world: h.World,
+) -> None:
+    """The no-`--zone` run on a zone with no redirect ruleset used to fail; it now creates the ruleset with the one apex rule, the same create `--zone` makes."""
+    empty = {"method": "GET", "match": "/rulesets", "body": {"success": True, "result": []}}
+    created = {
+        "method": "POST",
+        "match": "/rulesets",
+        "body": {"success": True, "result": {"id": "NEW-RS"}},
+    }
+    world.set_routes([empty, created])
+    rc, out, _ = world.port("rediacc_ci.ops.apply_cf_redirect_rules", [], world.env(**ENV))
+    assert rc == 0
+    assert "created ruleset NEW-RS with 1 rule(s)" in out
+    post = next(c for c in world.calls() if c["method"] == "POST")
+    assert mod.ZONE_IDS[mod.APEX_DOMAIN] in post["url"]
+    assert len(json.loads(post["body"])["rules"]) == 1
+
+
+def test_zone_adds_only_the_missing_rule(world: h.World) -> None:
+    apex = mod.RULE_SETS[PRODUCT_DOMAIN][0]
+    present = {
+        "id": "have-apex",
+        "expression": apex.expression,
+        "action": "redirect",
+        "action_parameters": {"from_value": {"status_code": 301}},
+    }
+    appended = {
+        "method": "POST",
+        "match": "/rulesets/RS1/rules",
+        "body": {"success": True, "result": {"rules": [present, {"id": "new-www"}]}},
+    }
+    world.set_routes(routes([present], (appended,)))
+    rc, out, _ = world.port(
+        "rediacc_ci.ops.apply_cf_redirect_rules",
+        ["--zone", PRODUCT_DOMAIN],
+        world.env(**ENV),
+    )
+    assert rc == 0
+    assert "cloud-apex redirect rule present (id=have-apex)" in out
+    assert "created cloud-www redirect rule id=new-www" in out
+    posts = [c for c in world.calls() if c["method"] == "POST"]
+    assert len(posts) == 1
+    assert json.loads(posts[0]["body"])["expression"].endswith("www." + PRODUCT_DOMAIN + '/*")')
+
+
+def test_unknown_zone_is_a_usage_error(world: h.World) -> None:
+    world.set_routes(routes([RULE]))
+    for args in (["--zone"], ["--zone", "example.org"]):
+        rc, _, err = world.port("rediacc_ci.ops.apply_cf_redirect_rules", args, world.env(**ENV))
+        assert rc == 2
+        assert "--zone takes one of" in err

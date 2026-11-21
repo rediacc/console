@@ -8,7 +8,8 @@ THE FOUR RULES (plan D4), each a refusal with exit 1:
 
     (i)   a finding whose resolution is the retired `deferred #<item>`, at any severity;
     (ii)  an `open` finding at or above `block_at` from `.ci/config/commit-review.json`,
-          the same threshold `wl_review.py --check` applies;
+          or of class `security` at any severity (operator ruling 2026-11-19), the
+          same test `wl_review.py --check` applies (`finding_blocks`);
     (iii) a resolution string that matches none of the grammar below. The display
           parser used to map an unknown word to `open`, which hid a typo, a hand edit
           and a grammar a newer writer invented, so here an unreadable resolution is
@@ -57,6 +58,8 @@ CONFIG_REL = ".ci/config/commit-review.json"
 REVIEWS_REL = review_table.REVIEWS_REL
 WORKLIST = "python3 .claude/hooks/stop/worklist.py"
 SEV_RANK = {"high": 3, "medium": 2, "low": 1}
+# Mirrors `wl_review.SECURITY_CLASS`: an open finding of this class blocks at any severity. A parity test pins the two.
+SECURITY_CLASS = "security"
 CLAIM_CLIP = 200
 
 ISOZ = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z"
@@ -117,6 +120,7 @@ class Row:
     claim: str
     resolution: str
     file: str
+    klass: str = ""
 
     def where(self) -> str:
         return "%s:%d" % (self.path, self.line)
@@ -143,7 +147,7 @@ class Verdict:
 
 
 def judge(records: Iterable[review_table.Record], block_at: str) -> Verdict:
-    """Rules i, ii and iii over parsed records. Pure: no git, no filesystem."""
+    """Rules i, ii and iii over parsed records. Rule ii also blocks an open finding of class `security` at any severity, as `wl_review.finding_blocks` does. Pure: no git, no filesystem."""
     rank = SEV_RANK[block_at]
     v = Verdict(counts=dict.fromkeys((*KINDS, UNKNOWN), 0))
     for rec in records:
@@ -152,14 +156,17 @@ def judge(records: Iterable[review_table.Record], block_at: str) -> Verdict:
             v.malformed.append("%s: %s" % (rec.file or rec.sha, rec.problem))
         for f in rec.findings:
             v.findings += 1
-            row = Row(f.id, f.severity, f.path, f.line, f.claim, f.resolution, rec.file)
+            row = Row(f.id, f.severity, f.path, f.line, f.claim, f.resolution, rec.file, f.klass)
             kind = kind_of(f.resolution)
             v.counts[kind or UNKNOWN] += 1
             if kind == "deferred":
                 v.deferred.append(row)
             elif kind == "waived":
                 v.waived.append(row)
-            elif kind == "open" and SEV_RANK.get(f.severity, SEV_RANK["high"]) >= rank:
+            elif kind == "open" and (
+                f.klass.strip().lower() == SECURITY_CLASS
+                or SEV_RANK.get(f.severity, SEV_RANK["high"]) >= rank
+            ):
                 v.blocking.append(row)
             elif not kind:
                 v.unknown.append(row)
@@ -317,7 +324,8 @@ def report(branch: str, v: Verdict, reviewable: int | None, vacuous: bool) -> li
         out += _row_lines("OPEN", r, rel)
     if v.blocking:
         out.append(
-            "  An open finding at or above block_at blocks the merge: fix it and mark it "
+            "  An open finding at or above block_at, or of class security at any severity, "
+            "blocks the merge: fix it and mark it "
             "`fixed <sha>`, or mark it `not-a-bug <evidence>`."
         )
     for r in v.unknown:
@@ -473,9 +481,15 @@ SELFTEST_RESOLUTIONS = (
 )
 
 
-def _finding(sev: str, res: str, n: int = 1) -> review_table.Finding:
+def _finding(sev: str, res: str, n: int = 1, klass: str = "") -> review_table.Finding:
     return review_table.Finding(
-        id="abcdef01.%d" % n, severity=sev, path="a.py", line=n, claim="c", resolution=res
+        id="abcdef01.%d" % n,
+        severity=sev,
+        path="a.py",
+        line=n,
+        claim="c",
+        resolution=res,
+        klass=klass,
     )
 
 
@@ -519,7 +533,7 @@ def _fixture_repo(tmp: pathlib.Path) -> pathlib.Path:
 @controls.git_isolated
 def selftest() -> int:
     """Both directions on every rule, plus the git walk rule iv depends on."""
-    ctl = controls.Controls("review-resolutions", floor=37)
+    ctl = controls.Controls("review-resolutions", floor=41)
 
     for text, want in SELFTEST_RESOLUTIONS:
         ctl.check("grammar: %r" % text[:40], kind_of(text), want)
@@ -552,6 +566,28 @@ def selftest() -> int:
         verdict(_finding("low", "open")).refusals,
         0,
     )
+    ctl.check(
+        "rule ii: an open low security finding refuses at block_at high",
+        len(verdict(_finding("low", "open", klass="security")).blocking),
+        1,
+    )
+    for spelled in ("Security", "SECURITY"):
+        ctl.check(
+            "rule ii: an open low finding whose Class line reads %r still refuses" % spelled,
+            len(verdict(_finding("low", "open", klass=spelled)).blocking),
+            1,
+        )
+    ctl.check(
+        "rule ii control: an open low other finding is advisory",
+        verdict(_finding("low", "open", klass="other")).refusals,
+        0,
+    )
+    for res in (fixed, "not-a-bug | the existence oracle refuted the claim | oracle %s" % _AT):
+        ctl.check(
+            "rule ii control: a resolved low security finding is clean (%s)" % res.split(" ")[0],
+            verdict(_finding("low", res, klass="security")).refusals,
+            0,
+        )
     ctl.check(
         "rule ii: an open medium refuses at block_at medium",
         len(verdict(_finding("medium", "open"), block_at="medium").blocking),

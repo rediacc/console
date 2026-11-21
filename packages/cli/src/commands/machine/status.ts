@@ -3,6 +3,7 @@ import type {
   JobInfo,
   JobOrigin,
   ListResult,
+  RepositoryResources,
   StorageHealthResult,
   SystemInfo,
 } from '@rediacc/shared/renet-contract/data/list-types.generated';
@@ -28,11 +29,13 @@ import {
 } from '../../services/backup/backup-schedule-coverage.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
+import { pendingExitCode, runCommandJob } from '../../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../../services/jobs/steps.js';
 import type { RenetProcess } from '../../services/renet/renet-daemons.js';
-import type { InfraConfig, MachineConfig, OutputFormat } from '../../types/index.js';
+import type { InfraConfig, MachineConfig } from '../../types/index.js';
 import { ambiguous, notFound } from '../../utils/cli-exit-error.js';
 import { extractAutoRoute, extractCustomDomain } from '../../utils/domain-helpers.js';
-import { handleError } from '../../utils/errors.js';
+import { getOutputFormat, handleError } from '../../utils/errors.js';
 import {
   createGuidResolver,
   createRepoNameResolver,
@@ -40,6 +43,8 @@ import {
   type RepoNameSource,
   resolveGuids,
 } from '../../utils/guid-resolver.js';
+import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
+import { startSpinner, stopSpinner } from '../../utils/spinner.js';
 import {
   filterRepositoriesBySearch,
   runContainerHealthCheck,
@@ -53,7 +58,6 @@ type RepoNameResolver = (
 ) => { name: string; source: RepoNameSource };
 
 import { setExitCode, writeStderr, writeStdout } from '../../services/core/request-context.js';
-import { withSpinner } from '../../utils/spinner.js';
 
 /** Parse size strings like "71.9G", "180.3G" into GB numbers. */
 function parseSizeToGb(size: string | undefined): number {
@@ -163,10 +167,39 @@ function formatBytesShort(bytes: number | undefined): string {
   return `${b} B`;
 }
 
+/** The marker of a repository whose cgroup has no memory.max (PLAN-repo-resource-limits Decision 5). */
+export const NO_MEMORY_CAP = 'no cap';
+
+/**
+ * The resource cells of a repository row: memory as "current / max", the OOM kills at the cap, and the RAM volume as
+ * "used / size". A repository with no memory.max shows NO_MEMORY_CAP for its max; one with no resources section
+ * (unmounted, or no cgroup) shows '-'.
+ */
+export function repoResourceCells(r: RepositoryResources | undefined): {
+  memory: string;
+  oomKills: number | string;
+  ram: string;
+} {
+  if (!r) return { memory: '-', oomKills: '-', ram: '-' };
+  const max = r.memory_max > 0 ? formatBytesShort(r.memory_max) : NO_MEMORY_CAP;
+  return {
+    memory: `${formatBytesShort(r.memory_current)} / ${max}`,
+    oomKills: r.oom_kills,
+    ram: r.ram_size > 0 ? `${formatBytesShort(r.ram_used)} / ${formatBytesShort(r.ram_size)}` : '-',
+  };
+}
+
+/** The display names of the repositories whose cgroup runs without a memory.max: any one of them can take the host's memory. */
+export function uncappedRepoNames(listResult: ListResult, repoName: RepoNameResolver): string[] {
+  return getRepositories(listResult)
+    .filter((repo) => repo.resources !== undefined && !(repo.resources.memory_max > 0))
+    .map((repo) => repoName(repo.name, repo.repo_name).name);
+}
+
 function getSections(
   resolve: (guid: string) => string,
   repoName: RepoNameResolver,
-  licenseDetail: Map<string, RuntimeRepoLicenseStatus>,
+  licenseDetail: LicenseDetail,
   baseDomain?: string,
   machineName?: string
 ): SectionRenderer[] {
@@ -191,6 +224,7 @@ function getSections(
             autostart: repo.autostart ? 'Yes' : 'No',
             containers: repo.container_count,
             disk: repo.disk_space?.use_percent ?? '-',
+            ...repoResourceCells(repo.resources),
             modified: repo.modified_human,
           };
         }),
@@ -297,7 +331,7 @@ function getSections(
       getData: (r) => {
         const currentMachineId = r.system?.machine_id;
         return getLicenseStatuses(r).map((l) => {
-          const extra = licenseDetail.get(l.repositoryGuid);
+          const extra = licenseDetail?.get(l.repositoryGuid);
           return {
             repository: resolve(l.repositoryGuid),
             status: l.status,
@@ -306,7 +340,7 @@ function getSections(
             machine_match: getMachineMatch(currentMachineId, l.machineId),
             datastore: extra?.datastoreId?.slice(0, 8) ?? '-',
             // The whole reason this column exists: a blocked-backup marker means unattended backups have been failing on licensing since that timestamp, and nothing else in this output says so.
-            backups: extra?.blockedBackup ? `BLOCKED ${extra.blockedBackup.reason}` : 'ok',
+            backups: licenseDetailBackups(licenseDetail, extra),
             renewed: formatRenewalOutcome(extra?.lastRenewal),
           };
         });
@@ -336,7 +370,8 @@ function formatRenewalOutcome(renewal: RuntimeRepoLicenseStatus['lastRenewal']):
  * single cell in a wide table on a machine with thirty repos is exactly where
  * that gets missed.
  */
-function renderBlockedBackupAlerts(licenseDetail: Map<string, RuntimeRepoLicenseStatus>): void {
+function renderBlockedBackupAlerts(licenseDetail: LicenseDetail): void {
+  if (!licenseDetail) return;
   for (const entry of licenseDetail.values()) {
     const marker = entry.blockedBackup;
     if (!marker) continue;
@@ -505,7 +540,7 @@ function renderTableMode(
   infra: InfraConfig | undefined,
   resolve: (guid: string) => string,
   repoName: RepoNameResolver,
-  licenseDetail: Map<string, RuntimeRepoLicenseStatus>,
+  licenseDetail: LicenseDetail,
   machineName?: string
 ): void {
   const tableSections = getSections(
@@ -532,6 +567,16 @@ function renderTableMode(
     writeStdout(`${outputService.formatTable(data)}\n`);
   }
 
+  const uncapped = uncappedRepoNames(listResult, repoName);
+  if (uncapped.length > 0) {
+    outputService.info(
+      t('commands.machine.status.noMemoryCap', {
+        count: uncapped.length,
+        names: uncapped.join(', '),
+      })
+    );
+  }
+
   const repoServerSourced = getRepositories(listResult).some(
     (r) => repoName(r.name, r.repo_name).source === 'server'
   );
@@ -556,13 +601,13 @@ function renderTableMode(
   printStorageSummary(listResult.system);
 }
 
-function buildEnrichedJson(
+export function buildEnrichedJson(
   listResult: ListResult,
   machineConfig: MachineConfig | undefined,
   infra: InfraConfig | undefined,
   resolve: (guid: string) => string,
   repoName: RepoNameResolver,
-  licenseDetail: Map<string, RuntimeRepoLicenseStatus>,
+  licenseDetail: LicenseDetail,
   machineName: string
 ): Record<string, unknown> {
   const baseDomain = infra?.baseDomain;
@@ -594,9 +639,10 @@ function buildEnrichedJson(
     storage: deriveStorageSummary(listResult.system),
     // Scripted consumers get the marker and the datastore scope too; a
     // `machine status -o json | jq` health check should not have to shell out to renet separately to learn that backups are blocked.
+    // An entry whose detail is unknown (the whole detail unreadable or never read, or no entry for this guid) is marked `backups: unknown`, as the table's cell says: a `.blockedBackup` check must not read a missing field as not blocked.
     license_statuses: getLicenseStatuses(listResult).map((l) => ({
       ...l,
-      ...(licenseDetail.get(l.repositoryGuid) ?? {}),
+      ...(licenseDetail?.get(l.repositoryGuid) ?? { backups: 'unknown' }),
     })),
   };
 }
@@ -629,79 +675,107 @@ async function resolveStatusMachine(name: string | undefined): Promise<string> {
 }
 
 /**
- * Everything `machine status` reads, fetched concurrently.
+ * The sections a `machine status` job asks `list-all` for. The licence detail and the stale-binary probe ride
+ * the same job as the rest (its `licenses` and `stale-processes` sections), so a filtered run asks for both next
+ * to what it was asked for. Undefined is the full listing.
+ */
+function requestedSections(sections: string[]): string[] | undefined {
+  return sections.length > 0
+    ? [...new Set([...sections, 'licenses', 'stale-processes'])]
+    : undefined;
+}
+
+/**
+ * What `machine status` renders from a finished `list-all` job: the listing plus the local config and the
+ * backup standing derived from it.
  *
- * The licence detail rides along whenever the Licenses section will be rendered
- * (no section flags = every section). It answers what `renet list` cannot:
- * which datastore holds each licence, whether a scheduled backup is blocked,
+ * The licence detail is read whenever the Licenses section will be rendered (no section flags = every section).
+ * It answers what `renet list` cannot: which datastore holds each licence, whether a scheduled backup is blocked,
  * and what the last unattended renewal did.
  */
 async function gatherStatus(
   machineName: string,
   sections: string[],
-  debug: boolean | undefined
+  listResult: ListResult
 ): Promise<{
   listResult: ListResult;
   guidMap: Awaited<ReturnType<typeof loadGuidMap>>;
   machineConfig: MachineConfig | undefined;
-  licenseDetail: Map<string, RuntimeRepoLicenseStatus>;
+  licenseDetail: LicenseDetail;
   staleBinary: RenetProcess[] | null;
   staleBackups: StaleBackupRepo[];
   missedTargets: MissedTargetRepo[];
   failedVerifies: FailedVerifyRepo[];
 }> {
-  const { fetchMachineStatus, fetchRepoLicenseDetail } = await import(
-    '../../services/machine/machine-status.js'
-  );
-  const wantsLicenses = sections.length === 0 || sections.includes('licenses');
-
-  const [listResult, guidMap, machineConfig, licenseEntries, staleBinary] = await Promise.all([
-    withSpinner(
-      t('commands.machine.status.fetching', { machine: machineName }),
-      () =>
-        fetchMachineStatus(machineName, {
-          debug,
-          sections: sections.length > 0 ? sections : undefined,
-        }),
-      t('commands.machine.status.fetched')
-    ),
+  const [guidMap, machineConfig] = await Promise.all([
     loadGuidMap(),
     configService.getLocalMachine(machineName).catch(() => undefined),
-    wantsLicenses ? fetchRepoLicenseDetail(machineName) : Promise.resolve([]),
-    fetchStaleBinaries(machineName),
   ]);
+  const wantsLicenses = sections.length === 0 || sections.includes('licenses');
+  const licenseDetail = wantsLicenses ? licenseDetailOf(listResult) : new Map();
+  if (wantsLicenses && licenseDetail === undefined) {
+    outputService.warn(t('commands.machine.status.licenseDetailUnreadable'));
+  }
 
   return {
     listResult,
     guidMap,
     machineConfig,
-    licenseDetail: new Map(licenseEntries.map((entry) => [entry.repositoryGuid, entry])),
-    staleBinary,
+    licenseDetail,
+    staleBinary: staleBinariesOf(listResult),
     staleBackups: await fetchStaleBackups(machineName, listResult),
     missedTargets: await fetchMissedTargets(machineName, listResult),
     failedVerifies: failedVerifyRepos(listResult.backup_coverage),
   };
 }
 
-/**
- * renet processes still running a replaced binary (C4). Read from /proc over its own exec, so it
- * answers whatever renet version the machine has. Null when the probe could not run: unknown is
- * never reported as "none stale".
- */
-export async function fetchStaleBinaries(machineName: string): Promise<RenetProcess[] | null> {
-  try {
-    const { machineConnections } = await import('../../services/machine/machine-connection.js');
-    const { probeStaleRenetProcesses } = await import('../../services/renet/renet-daemons.js');
-    const { REMOTE_RENET_PATH } = await import('../../services/renet/renet-provisioner.js');
-    const lease = await machineConnections.acquire(machineName);
-    try {
-      return await probeStaleRenetProcesses(lease.sftp, REMOTE_RENET_PATH);
-    } finally {
-      lease.release();
-    }
-  } catch {
-    return null;
+/** The per-repo licence detail of a listing by repository GUID; undefined (unknown, never "none") when the listing has no licences section or an entry is not the shape the table reads. */
+export type LicenseDetail = Map<string, RuntimeRepoLicenseStatus> | undefined;
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+/** The fields the status table and the blocked-backup alert read: a mismatch there would render as `undefined` cells. */
+function isLicenseEntry(entry: unknown): entry is RuntimeRepoLicenseStatus {
+  if (!isObject(entry)) return false;
+  const { repositoryGuid, status, datastoreId, blockedBackup, lastRenewal } = entry;
+  if (typeof repositoryGuid !== 'string' || typeof status !== 'string') return false;
+  if (datastoreId !== undefined && typeof datastoreId !== 'string') return false;
+  if (
+    blockedBackup !== undefined &&
+    !(isObject(blockedBackup) && typeof blockedBackup.reason === 'string')
+  ) {
+    return false;
   }
+  return (
+    lastRenewal === undefined || (isObject(lastRenewal) && typeof lastRenewal.outcome === 'string')
+  );
+}
+
+export function licenseDetailOf(listResult: ListResult): LicenseDetail {
+  const entries: unknown = listResult.license_statuses;
+  if (!Array.isArray(entries) || !entries.every(isLicenseEntry)) return undefined;
+  return new Map(entries.map((entry) => [entry.repositoryGuid, entry]));
+}
+
+/** The `backups` cell: unknown detail is never `ok`. */
+function licenseDetailBackups(
+  licenseDetail: LicenseDetail,
+  extra: RuntimeRepoLicenseStatus | undefined
+): string {
+  if (licenseDetail === undefined) return 'unknown';
+  return extra?.blockedBackup ? `BLOCKED ${extra.blockedBackup.reason}` : 'ok';
+}
+
+/**
+ * renet processes still running a replaced binary, from the listing's `stale-processes` section. Null when
+ * the section is absent (a renet that predates it) or /proc was unreadable: unknown is never "none stale".
+ */
+export function staleBinariesOf(listResult: ListResult): RenetProcess[] | null {
+  const section = listResult.stale_processes;
+  if (section?.status !== 'ok' || !section.processes) return null;
+  return section.processes.map((p) => ({ pid: p.pid, unit: p.unit || '-', exe: p.exe }));
 }
 
 /** Repos whose latest run missed their declared target and that are not yet stale (D-rpo). */
@@ -848,6 +922,16 @@ export function runningJobLines(
   ];
 }
 
+/**
+ * The jobs a `repository_status` record carries (renet filters them to the repo's GUID, so nothing is
+ * left to filter here). Anything that is not a record with a `jobs` array, an older renet's answer
+ * included, yields none.
+ */
+export function jobsOfStatusRecord(record: unknown): JobInfo[] {
+  const jobs = (record as { jobs?: unknown } | null)?.jobs;
+  return Array.isArray(jobs) ? (jobs as JobInfo[]) : [];
+}
+
 /** The jobs section for JSON output, with each repo GUID resolved to its name. */
 export function enrichJobs(
   jobs: JobInfo[] | undefined,
@@ -886,7 +970,144 @@ function renderRunningJobs(jobs: JobInfo[] | undefined, resolve: (guid: string) 
   for (const line of lines.slice(1)) outputService.info(line);
 }
 
-export function registerStatusCommand(machine: Command, program: Command): void {
+/** The flags the render step needs, carried on the ticket as step params: scalars only, never a secret. */
+type StatusRenderOptions = Pick<
+  QueryOptions,
+  'healthCheck' | 'stabilityCheck' | 'search' | 'strict' | 'storageHealth'
+> & { syncCerts?: boolean };
+
+/** The plan params of the `renderMachineStatus` step: the section filter and the render flags that were set. */
+function statusStepParams(
+  machineName: string,
+  sections: string[],
+  options: StatusRenderOptions
+): Record<string, string | boolean> {
+  return {
+    machine: machineName,
+    sections: sections.join(','),
+    ...(options.healthCheck && { healthCheck: true }),
+    ...(options.stabilityCheck && { stabilityCheck: true }),
+    ...(options.search && { search: options.search }),
+    ...(options.strict && { strict: true }),
+    ...(options.storageHealth && { storageHealth: true }),
+    ...(options.syncCerts && { syncCerts: true }),
+  };
+}
+
+/** The `renderMachineStatus` step: render the listing the `list-all` job produced, as tables or as data. */
+async function renderStatusFromJob(
+  machineName: string,
+  sections: string[],
+  output: string | undefined,
+  options: StatusRenderOptions
+): Promise<void> {
+  const { parseMachineStatus } = await import('../../services/machine/machine-status.js');
+  const {
+    listResult,
+    guidMap,
+    machineConfig,
+    licenseDetail,
+    staleBinary,
+    staleBackups,
+    missedTargets,
+    failedVerifies,
+  } = await gatherStatus(machineName, sections, parseMachineStatus(output));
+
+  const infra = machineConfig?.infra;
+  const format = getOutputFormat();
+  const resolve = createGuidResolver(guidMap);
+  const repoName = createRepoNameResolver(guidMap);
+
+  // Folded-in section refinements (06 §6.1): --health-check / --stability-check
+  // gate and return; --search narrows the repositories section.
+  if (options.healthCheck) {
+    runContainerHealthCheck(listResult, format, resolve);
+    return;
+  }
+  if (options.stabilityCheck) {
+    runServiceStabilityCheck(listResult, format, resolve);
+    return;
+  }
+  if (options.search) {
+    listResult.repositories = filterRepositoriesBySearch(
+      listResult.repositories,
+      options.search,
+      (guid, serverName) => repoName(guid, serverName).name
+    );
+  }
+
+  if (format === 'table') {
+    renderTableMode(
+      listResult,
+      machineConfig,
+      infra,
+      resolve,
+      repoName,
+      licenseDetail,
+      machineName
+    );
+    renderBlockedBackupAlerts(licenseDetail);
+    renderStaleness(staleBinary, staleBackups, resolve, failedVerifies, missedTargets);
+    renderRunningJobs(listResult.jobs, resolve);
+  } else {
+    const enriched = buildEnrichedJson(
+      listResult,
+      machineConfig,
+      infra,
+      resolve,
+      repoName,
+      licenseDetail,
+      machineName
+    );
+    outputService.print(
+      statusJsonDocument(
+        enriched,
+        listResult.jobs,
+        resolve,
+        staleBinary,
+        staleBackups,
+        failedVerifies,
+        missedTargets
+      ),
+      format
+    );
+  }
+
+  // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)
+  if (!options.storageHealth) {
+    writeStderr(`\n${t('commands.machine.status.storageHealthHint')}\n`);
+  }
+
+  // --strict: exit non-zero when any container has crossed the health-drift threshold. Lets CI scripts gate deploys on post-deploy convergence without hand-parsing the JSON.
+  // Exit code 2 matches the precedent in machine/health.ts (0 = clean,
+  // 1 = warn, 2 = error).
+  if (options.strict && (listResult.health_drift?.entries.length ?? 0) > 0) {
+    const count = listResult.health_drift?.entries.length ?? 0;
+    writeStderr(`\n${t('commands.machine.status.strictDriftDetected', { count })}\n`);
+    setExitCode(2);
+  }
+
+  if (options.syncCerts) {
+    await runOptInCertSync(machineName);
+  }
+}
+
+bindStepHandler('renderMachineStatus', async ({ machine, output, params }) => {
+  // The spinner of the attached call ends before the table prints; in a ticket's later run there is none.
+  stopSpinner(true);
+  const sections =
+    typeof params.sections === 'string' && params.sections ? params.sections.split(',') : [];
+  await renderStatusFromJob(machine, sections, output, {
+    healthCheck: params.healthCheck === true,
+    stabilityCheck: params.stabilityCheck === true,
+    search: typeof params.search === 'string' ? params.search : undefined,
+    strict: params.strict === true,
+    storageHealth: params.storageHealth === true,
+    syncCerts: params.syncCerts === true,
+  });
+});
+
+export function registerStatusCommand(machine: Command): void {
   machine
     .command('status')
     .argument('[name]', t('options.name'))
@@ -910,96 +1131,37 @@ export function registerStatusCommand(machine: Command, program: Command): void 
     .action(async (name: string | undefined, options: QueryOptions & { syncCerts?: boolean }) => {
       try {
         const machineName = await resolveStatusMachine(name);
-
         const sections = collectSections(options);
 
-        const {
-          listResult,
-          guidMap,
-          machineConfig,
-          licenseDetail,
-          staleBinary,
-          staleBackups,
-          missedTargets,
-          failedVerifies,
-        } = await gatherStatus(machineName, sections, options.debug);
-
-        const infra = machineConfig?.infra;
-        const format = program.opts().output as OutputFormat;
-        const resolve = createGuidResolver(guidMap);
-        const repoName = createRepoNameResolver(guidMap);
-
-        // Folded-in section refinements (06 §6.1): --health-check / --stability-check
-        // gate and return; --search narrows the repositories section.
-        if (options.healthCheck) {
-          runContainerHealthCheck(listResult, format, resolve);
+        // One read job; the render is its step, so a ticket handed back early prints nothing half-done.
+        const { machineStatusJob } = await import('../../services/machine/machine-status.js');
+        // The job captures its output, so nothing else shows while the machine lists itself.
+        startSpinner(t('commands.machine.status.fetching', { machine: machineName }));
+        let outcome: Awaited<ReturnType<typeof runCommandJob>>;
+        try {
+          outcome = await runCommandJob(
+            'machine status',
+            await machineStatusJob(machineName, {
+              debug: options.debug,
+              sections: requestedSections(sections),
+            }),
+            [planStep('renderMachineStatus', statusStepParams(machineName, sections, options))]
+          );
+        } catch (error) {
+          stopSpinner(false);
+          throw error;
+        }
+        stopSpinner(outcome.kind !== 'pending' && outcome.result.success);
+        if (outcome.kind === 'pending') {
+          const code = pendingExitCode(outcome);
+          if (code !== undefined) setExitCode(code);
           return;
         }
-        if (options.stabilityCheck) {
-          runServiceStabilityCheck(listResult, format, resolve);
-          return;
-        }
-        if (options.search) {
-          listResult.repositories = filterRepositoriesBySearch(
-            listResult.repositories,
-            options.search,
-            (guid, serverName) => repoName(guid, serverName).name
+        if (!outcome.result.success) {
+          renderLocalExecutionFailure(
+            outcome.result,
+            t('commands.machine.status.fetching', { machine: machineName })
           );
-        }
-
-        if (format === 'json') {
-          const enriched = buildEnrichedJson(
-            listResult,
-            machineConfig,
-            infra,
-            resolve,
-            repoName,
-            licenseDetail,
-            machineName
-          );
-          outputService.print(
-            statusJsonDocument(
-              enriched,
-              listResult.jobs,
-              resolve,
-              staleBinary,
-              staleBackups,
-              failedVerifies,
-              missedTargets
-            ),
-            format
-          );
-        } else {
-          renderTableMode(
-            listResult,
-            machineConfig,
-            infra,
-            resolve,
-            repoName,
-            licenseDetail,
-            machineName
-          );
-          renderBlockedBackupAlerts(licenseDetail);
-          renderStaleness(staleBinary, staleBackups, resolve, failedVerifies, missedTargets);
-          renderRunningJobs(listResult.jobs, resolve);
-        }
-
-        // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)
-        if (!options.storageHealth) {
-          writeStderr(`\n${t('commands.machine.status.storageHealthHint')}\n`);
-        }
-
-        // --strict: exit non-zero when any container has crossed the health-drift threshold. Lets CI scripts gate deploys on post-deploy convergence without hand-parsing the JSON.
-        // Exit code 2 matches the precedent in machine/health.ts (0 = clean,
-        // 1 = warn, 2 = error).
-        if (options.strict && (listResult.health_drift?.entries.length ?? 0) > 0) {
-          const count = listResult.health_drift?.entries.length ?? 0;
-          writeStderr(`\n${t('commands.machine.status.strictDriftDetected', { count })}\n`);
-          setExitCode(2);
-        }
-
-        if (options.syncCerts) {
-          await runOptInCertSync(machineName);
         }
       } catch (error) {
         handleError(error);

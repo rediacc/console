@@ -727,6 +727,30 @@ def test_refresh_refuses_a_partial_harvest(gate):
         gate.log_pass("a partial harvest is refused and leaves the file untouched")
 
 
+REFRESH_OK_PY = REFRESH_PARTIAL_PY.replace(
+    "module.harvest = lambda",
+    "module.MIN_BASELINE_JOBS = 2\nmodule.harvest = lambda",
+)
+
+
+def test_refresh_rewrites_the_provenance_with_the_numbers(gate):
+    """Review f45bef09.1: a refresh stamps `refreshed_from` with the branch and run count it harvested, so the file never names runs its jobs no longer come from."""
+    with harness.temp_dir() as d:
+        workflow(d / "wf", "ubuntu-latest")
+        (d / "base.json").write_text(
+            '{"format": 1, "refreshed_at": null, "refreshed_from": "branch 0923-1 (PR #590)", "jobs": {}}\n',
+            encoding="utf-8",
+        )
+        result = run_inline(gate, REFRESH_OK_PY, os.fspath(d / "base.json"), os.fspath(d / "wf"))
+        gate.assert_exit(0, result, "a harvest at the (lowered) floor writes the baseline")
+        written = json.loads((d / "base.json").read_text(encoding="utf-8"))
+        gate.assert_contains(
+            written["refreshed_from"], "1 Console CI run(s) of branch main", "names this harvest"
+        )
+        gate.assert_not_contains(written["refreshed_from"], "0923-1", "drops the old provenance")
+        gate.log_pass("a refresh rewrites refreshed_from")
+
+
 def test_stale_baseline_fails(gate):
     with harness.temp_dir() as d:
         workflow(d / "wf", "ubuntu-slim")

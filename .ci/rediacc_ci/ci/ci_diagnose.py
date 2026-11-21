@@ -34,15 +34,16 @@ REVIEW_CONTEXTS = ("Review Complete", "Review Status", "Claude Review")
 REVIEW_JOB_CONTEXTS = ("Review Status", "Claude Review")
 # Never a CI result, whatever their conclusion. "CI Verdict" is this module's own published diagnosis, "Publish CI Verdict" is the job that posts it, and REVIEW_JOB_CONTEXTS report through Review Complete. Exact names, never substrings, so Console CI's own "Review Gate" stays blocking.
 NONBLOCKING_CONTEXTS = frozenset({CHECK_NAME, PUBLISH_JOB_NAME, *REVIEW_JOB_CONTEXTS})
-# The watchdog's own exclusions (WATCHDOG_EXCLUDE_PATTERNS in .github/workflows/watchdog-monitor.yml): aggregators and observers, never the first failure of a Console CI run. All of REVIEW_CONTEXTS stay here, Review Complete included: the review runs in its own workflows after CI, so it observes a Console CI run rather than belonging to it, and its required-check verdict is read by ci-trace and the Stop hook (wl_ci.py), not by the watchdog. Matched as substrings; none of REVIEW_CONTEXTS is a substring of "Review Gate".
+# The watchdog's own exclusions (WATCHDOG_EXCLUDE_PATTERNS in .github/workflows/ops-watchdog-monitor.yml): aggregators and observers, never the first failure of a Console CI run. All of REVIEW_CONTEXTS stay here, Review Complete included: the review runs in its own workflows after CI, so it observes a Console CI run rather than belonging to it, and its required-check verdict is read by ci-trace and the Stop hook (wl_ci.py), not by the watchdog. Matched as substrings; none of REVIEW_CONTEXTS is a substring of "Review Gate".
 WATCHDOG_EXCLUDED = ("Watchdog", "CI Complete", *REVIEW_CONTEXTS)
-# DOWNSTREAM OF A VERDICT, never the cause of one. Console CI jobs that read another job's result and fail BECAUSE it failed: every job whose `needs:` holds `ci-complete` in .github/workflows/ci.yml (Pipeline Sentinel, Finalize Release Sentinel, PR Labels) and the install legs' own roll-up. Main push run 37394654719 attempt 2 (2026-10-06) had exactly two failures, CI Complete and Pipeline Sentinel, both reporting a
+# DOWNSTREAM OF A VERDICT, never the cause of one. Console CI jobs that read another job's result and fail BECAUSE it failed: every job whose `needs:` holds `ci-complete` in .github/workflows/ci.yml (Pipeline Sentinel, Finalize Release Sentinel, PR Labels, Report schedule) and the install legs' own roll-up. Main push run 37394654719 attempt 2 (2026-10-06) had exactly two failures, CI Complete and Pipeline Sentinel, both reporting a
 # Validate Promotion that hit its 15 min timeout, and `--why` named Pipeline Sentinel as the first failure. test_ci_diagnose pins this list against ci.yml's `needs:` graph, so a new downstream job cannot slip in as a root cause. Matched as substrings, like WATCHDOG_EXCLUDED.
 DOWNSTREAM_JOBS = (
     "Pipeline Sentinel",
     "Finalize Release Sentinel",
     "PR Labels",
     "Install Methods Complete",
+    "Report schedule",
 )
 AGGREGATORS = (*WATCHDOG_EXCLUDED, *DOWNSTREAM_JOBS)
 CAUSE_KINDS = (
@@ -192,7 +193,17 @@ SIGNATURES = (
         "a pinned version is behind upstream (the message names the bump command)",
         0,
     ),
+    # `npm audit`'s allowlist check (rediacc_ci.security.audit). Security job 127846206473 (run 42182422300) failed on a stale allowlist entry and read `bitwarden-5xx`, because a gate's success line carried the count 520 beside `bws`.
+    (
+        "audit-finding",
+        "code",
+        re.compile(r"\u2717 (?:Stale allowlist entry|Allowlist problems found)"),
+        "npm audit's allowlist check failed (delete the stale entry or fix the dependency)",
+        0,
+    ),
     ("go-fail", "code", re.compile(r"^--- FAIL: "), "a Go test failed", 0),
+    # `go test` closes a failing package with `FAIL<TAB><import path><TAB><seconds>s`; the bare `FAIL` line before it is not matched.
+    ("go-pkg-fail", "code", re.compile(r"^FAIL\t\S+"), "a Go package failed its tests", 0),
     # This repo's gates print `::finding::<key>` beside the finding they report (Quality / Branch on run 36974364712: `::finding::P-A1:...` under "P-A1 OPEN BOXES").
     ("gate-finding", "code", re.compile(r"^::finding::\S"), "a repo gate reported a finding", 0),
     ("pytest-failed", "code", re.compile(r"^FAILED \S+::"), "a pytest case failed", 0),
@@ -382,6 +393,7 @@ class HttpFetcher:
             with self._open(url, True, False) as resp:
                 return resp.read().decode("utf-8", "replace"), ""
         except urllib.error.HTTPError as exc:
+            exc.close()
             location = exc.headers.get("Location") if exc.code in (301, 302, 303, 307) else None
             if not location:
                 return None, "HTTP %s for %s" % (exc.code, path)
@@ -781,16 +793,50 @@ def failing_step_slice(log, job):
     return step.get("name") or "", out or lines
 
 
+# A test runner's own failure verdict outranks every infra row: a Go `--- FAIL:` / `FAIL<TAB>pkg` line or a pytest `FAILED path::case` line names a test that failed, and a stall or 5xx text elsewhere in the same log is, at best, the cause the test's own output states. Quality / Go job 133045740418 (run 43789577407) read `pkg-install-stall` because passing tests logged simulated stalls, while `--- FAIL: TestRunRepositoryLicenseStatusJSON` was the failure; an infra label invites a rerun instead of a fix. Playwright's mark is not here: a browser leg that failed on a dropped connection prints the same mark, and that stays an infra read.
+TEST_FAILURE_SIGS = frozenset({"go-fail", "go-pkg-fail", "pytest-failed"})
+# A `t.Logf` line from `go test -v` (`    ops_host_bounded_test.go:212: err=...`). Its text is what a test chose to print, often a simulated failure, so no infra row reads it.
+TEST_LOG_LINE_RE = re.compile(r"^\s*[\w.-]+_test\.go:\d+: ")
 SHORT_TS_RE = re.compile(r"^\d\d:\d\d:\d\d ")
 # An external gate's RETRY NOTE (`? <pin>: attempt 1 of 3 failed (HTTP 503), asking again in 2 s`) is no verdict: the next attempt may have succeeded, and an infra hit outranks every code hit, so reading it would turn a stale-pin red that followed a retry into an infrastructure one. Same rule as the per-attempt lines of the pkg-install-stall row. The verdict is the finding the gate prints when the budget is spent.
 RETRY_NOTE_RE = re.compile(r"attempt \d+ of \d+ failed \(.*\), asking again in ")
 
 
-def _sig_hit(line):
-    body = SHORT_TS_RE.sub("", TS_RE.sub("", line, count=1), count=1)
+# A test runner's verdict line: Go `--- FAIL:` / `--- PASS:`, a package `FAIL<TAB>pkg` / `ok  <TAB>pkg` summary, a bare `PASS` / `FAIL` alone on a line, a pytest `PASSED|FAILED path::case` line (the -rA form) or `path::case PASSED|FAILED` (the -v form) or its `==== N passed ... ====` summary. A gate's own `FAIL: check:foo` line is no verdict. A `t.Logf` line is read as test output only in a log that carries a verdict: a run the runner cut off prints its `t.Fatalf` text with no verdict, and that text may be the real infra failure.
+TEST_VERDICT_RE = re.compile(
+    r"^(?:\s*--- (?:PASS|FAIL):"
+    r"|(?:FAIL|ok)\t\S"
+    r"|ok  \s*\S+\s"
+    r"|(?:PASS|FAIL)\s*$"
+    r"|(?:PASSED|FAILED) \S+::"
+    r"|\S+::\S+ (?:PASSED|FAILED)\b"
+    r"|=+ .*\b(?:passed|failed)\b.* =+\s*$)"
+)
+
+
+def _body(line):
+    return SHORT_TS_RE.sub("", TS_RE.sub("", line, count=1), count=1)
+
+
+def _has_test_verdict(lines):
+    return any(TEST_VERDICT_RE.match(_body(ln)) for ln in lines or [])
+
+
+def _sig_hit(line, test_verdict=False):
+    """`test_verdict`: the log holds a test runner verdict (`_has_test_verdict`), so its `_test.go:<n>:` lines are test output and no infra row reads them."""
+    body = _body(line)
     if RETRY_NOTE_RE.search(body):
         return None
+    # A line a gate marks as a pass is no failure signature: `\u2713 bws map: ..., 520 env.BWS_* read(s)` matched the Bitwarden 5xx row on its COUNT.
+    # A line that carries a failure mark after its pass mark is read from that mark on: the pass part (and any count in it) is no signature, the failure part is.
+    if body.lstrip().startswith("\u2713"):
+        if "\u2717" not in body:
+            return None
+        body = body[body.index("\u2717") :]
+    test_log = test_verdict and bool(TEST_LOG_LINE_RE.match(body))
     for sid, cat, rx, label, min_s in SIGNATURES:
+        if test_log and cat == "infra":
+            continue
         m = rx.search(body)
         if not m:
             continue
@@ -801,15 +847,22 @@ def _sig_hit(line):
 
 
 def classify(lines):
-    """(category, signature id). Any infra hit wins over any code hit; nothing at all is `unknown`."""
+    """(category, signature id). A test runner's failure line wins over everything, any other infra hit over any other code hit; nothing at all is `unknown`."""
     code = None
+    infra = None
+    verdict = _has_test_verdict(lines)
     for line in lines or []:
-        hit = _sig_hit(line)
+        hit = _sig_hit(line, verdict)
         if not hit:
             continue
+        if hit[0] in TEST_FAILURE_SIGS:
+            return "code-likely", hit[0]
         if hit[1] == "infra":
-            return "infra-likely", hit[0]
-        code = code or hit[0]
+            infra = infra or hit[0]
+        else:
+            code = code or hit[0]
+    if infra:
+        return "infra-likely", infra
     return ("code-likely", code) if code else ("unknown", "")
 
 
@@ -823,8 +876,16 @@ def signature_label(sid):
 def excerpt(lines, max_hits=3, context=3, max_lines=8, clip=200):
     """Up to `max_hits` windows around signature hits (first) and `##[error]` lines, each <= `max_lines`."""
     lines = list(lines or [])
-    sig_idx = [i for i, ln in enumerate(lines) if _sig_hit(ln)]
-    err_idx = [i for i, ln in enumerate(lines) if "##[error]" in ln and i not in sig_idx]
+    verdict = _has_test_verdict(lines)
+    hits = [_sig_hit(ln, verdict) for ln in lines]
+    # Once a test runner's failure line exists, only windows around failure lines are quoted: no other signature hit and no `##[error]` line (whose preceding window may carry a stall or 5xx text) opens one, since an infra row's lines would pull the reader back to a rerun.
+    decisive = any(h and h[0] in TEST_FAILURE_SIGS for h in hits)
+    sig_idx = [i for i, h in enumerate(hits) if h and (not decisive or h[0] in TEST_FAILURE_SIGS)]
+    err_idx = (
+        []
+        if decisive
+        else [i for i, ln in enumerate(lines) if "##[error]" in ln and i not in sig_idx]
+    )
     windows: list[tuple[int, int]] = []
     for i in sig_idx + err_idx:
         if any(a <= i <= b for a, b in windows):
@@ -976,7 +1037,8 @@ def evidence(log, job):
     A step that only RE-RAISES an earlier step's outcome carries nothing but the runner's exit line: Housekeeping run 37294996911 failed in `Fail the job when the budget check failed` (0 s) while the check itself ran, and logged, under `continue-on-error` in an earlier step. Widening to the log before the step's end lets that earlier output be classified and excerpted, and `widened` says so.
     """
     step, lines = failing_step_slice(log, job)
-    if any(_sig_hit(ln) for ln in lines) or any(
+    verdict = _has_test_verdict(lines)
+    if any(_sig_hit(ln, verdict) for ln in lines) or any(
         "##[error]" in ln and "##[error]Process completed with exit code" not in ln for ln in lines
     ):
         return step, lines, False
@@ -1003,6 +1065,7 @@ def _focus(fetch, job, cache_dir=None, cause=None):
         "signature": "",
         "excerpt": [],
         "widened": False,
+        "test_verdict": False,
     }
     log, _err = job_log(fetch, jid, completed=job.get("status") == "completed", cache_dir=cache_dir)
     gaps = []
@@ -1011,6 +1074,8 @@ def _focus(fetch, job, cache_dir=None, cause=None):
         block["step"] = step or block["step"]
         block["category"], block["signature"] = classify(lines)
         block["excerpt"] = excerpt(lines)
+        # Stored so render() quotes the hit lines under the verdict classify() and excerpt() used, not one recomputed from the excerpt window.
+        block["test_verdict"] = _has_test_verdict(lines)
         block["widened"] = widened
         gaps = log_gaps(log)
     block["category"], block["signature"] = cancel_reclassify(
@@ -1225,7 +1290,8 @@ def render(d, budget_lines=12):
     room = max(0, budget_lines - len(fixed) - len(tail))
     # The HIT lines first: a window's context lines are for --errors, while the summary has room for only a handful.
     ex = ff.get("excerpt") or []
-    hits = [ln for ln in ex if _sig_hit(ln) or "##[error]" in ln]
+    verdict = bool(ff.get("test_verdict"))
+    hits = [ln for ln in ex if _sig_hit(ln, verdict) or "##[error]" in ln]
     body = ["    " + ln for ln in (hits or ex)[:room]]
     lines = [_clip(ln, 180) for ln in fixed + body + tail][:budget_lines]
     text = "\n".join(lines)

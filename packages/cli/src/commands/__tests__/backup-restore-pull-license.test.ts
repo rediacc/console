@@ -67,7 +67,6 @@ vi.mock('../../utils/remote-resolve.js', () => ({
   resolveRemoteName: (name: string) => Promise.resolve({ type: mockPlaceType.current, name }),
 }));
 vi.mock('../repo-backup-list.js', () => ({
-  fetchBackupList: vi.fn().mockResolvedValue([]),
   renderBackupList: vi.fn(),
 }));
 vi.mock('../../services/repo/repo-key-deployment.js', () => ({
@@ -180,7 +179,8 @@ describe('backup restore (pull route) licenses the minted GUID before backup_pul
     await run(ARGS);
 
     expect(mockIssueRepo).toHaveBeenCalledTimes(1);
-    const [machine, , params] = mockIssueRepo.mock.calls[0];
+    const [machineName, machine, , params] = mockIssueRepo.mock.calls[0];
+    expect(machineName).toBe('m2');
     expect(machine.name).toBe('m2');
     expect(params.repositoryGuid).toBe(mintedGuid());
     expect(params.repositoryGuid).not.toBe(SOURCE_GUID);
@@ -192,7 +192,9 @@ describe('backup restore (pull route) licenses the minted GUID before backup_pul
       mockExecute.mock.invocationCallOrder[pullAt]
     );
     expect(fnCalls().filter((f) => f === 'backup_pull')).toHaveLength(1);
-    expect(mockRelease).toHaveBeenCalledTimes(2);
+    // Every lease is released: the route probe's, the licence context's and the size measure's.
+    expect(mockRelease).toHaveBeenCalledTimes(mockAcquire.mock.calls.length);
+    expect(mockAcquire).toHaveBeenCalledTimes(3);
   });
 
   it('skips issuance when the target already holds a valid licence for the GUID', async () => {
@@ -208,7 +210,7 @@ describe('backup restore (pull route) licenses the minted GUID before backup_pul
     await run(ARGS);
     expect(mockIssueRepo).not.toHaveBeenCalled();
     expect(mockIssueFree).toHaveBeenCalledTimes(1);
-    expect(mockIssueFree.mock.calls[0][2]).toMatchObject({
+    expect(mockIssueFree.mock.calls[0][3]).toMatchObject({
       repositoryGuid: mintedGuid(),
       requestedSizeGb: 7,
     });
@@ -218,7 +220,7 @@ describe('backup restore (pull route) licenses the minted GUID before backup_pul
     mockPlaceType.current = 'cluster';
     await run(ARGS);
     expect(mockMeasure).not.toHaveBeenCalled();
-    expect(mockIssueRepo.mock.calls[0][2].requestedSizeGb).toBe(1);
+    expect(mockIssueRepo.mock.calls[0][3].requestedSizeGb).toBe(1);
   });
 
   it('a failed issuance runs no pull and drops the registration, so a retry is not blocked', async () => {

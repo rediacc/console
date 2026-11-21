@@ -6,6 +6,9 @@ One private GHCR package, `ghcr.io/rediacc/ci-vm-bake`, holds every baked image 
 Subcommands, one per workflow step, so each `run:` stays one line:
 
   install-oras   download the pinned oras release, verify its sha256, put it on GITHUB_PATH.
+  plan           (ci-vm-bake.yml) probe every named distro and output the ones whose tag is
+                 missing as a JSON list, the bake matrix, so a run whose keys all exist stops
+                 before it builds renet. Any probe error fails the step, as in probe.
   probe          (ci-vm-bake.yml) compute the key and report whether the tag already exists.
                  A registry "not found" is a miss; any other oras failure is an error, so a
                  broken login cannot pass for a missing image and trigger a pointless rebake.
@@ -17,6 +20,15 @@ Subcommands, one per workflow step, so each `run:` stays one line:
                  hit=true. Every failure, "not found" included, is a miss (hit=false, exit 0): the
                  leg then runs the stock image exactly as before.
 
+Tag namespaces. A tag is `<prefix><key>`, and the run's event decides the prefix, never an argument (`scope_from_env`):
+
+  push, schedule or dispatch on main   prefix "" (main's namespace): publish there, read only there.
+  pull_request #N                      prefix "pr-N-": publish only there, read pr-N- first, then main's.
+  anything else (a dispatch on a       read main's namespace, publish nowhere (plan, probe and
+  branch, a hand run)                  publish refuse).
+
+So a main run never resolves a tag a pull request published. A PR head's bake workflow and the composite actions it uses can differ from main's without changing the key (the key hashes the renet install path, vm_bake_key.py and this module, not ci-vm-bake.yml or .github/actions), so an image a PR head built must not reach main's legs or another PR's. A PR leg still reads main's image, the more trusted of the two. The namespace binds the code paths in this module; it is not a registry permission: a job holding `packages: write` on a same-repository head can push any tag by editing this module, exactly as a push-triggered workflow on any branch of this repository can.
+
 Outputs go to $GITHUB_OUTPUT and exports to $GITHUB_ENV when those are set, and to stdout as KEY=value lines otherwise, so each subcommand can be driven by hand.
 """
 
@@ -24,14 +36,17 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import os
 import pathlib
 import platform
+import re
 import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Unpack
 
 from rediacc_ci.core import https
@@ -39,7 +54,7 @@ from rediacc_ci.infra import vm_bake_key
 from rediacc_ci.well_known import GH_ORIGIN, GH_REPO, IMAGE_REGISTRY
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable, Mapping, Sequence
 
     from rediacc_ci.proc import RunKwargs
 
@@ -79,10 +94,62 @@ class BakeImageError(RuntimeError):
     """A bake-side step failed in a way the workflow must see."""
 
 
-def image_ref(key: str) -> str:
+MAIN_REF = "refs/heads/main"
+PR_PREFIX_RE = re.compile(r"^pr-[1-9][0-9]*-$")
+_PR_MERGE_REF_RE = re.compile(r"^refs/pull/([1-9][0-9]*)/merge$")
+_MAIN_EVENTS = ("push", "schedule", "workflow_dispatch")
+
+
+def image_ref(key: str, prefix: str = "") -> str:
+    """The tag for key in the namespace prefix: "" is main's, "pr-<n>-" a pull request's."""
     if not vm_bake_key.KEY_RE.match(key):
         raise BakeImageError("not a bake key: %r" % key)
-    return "%s:%s" % (REPOSITORY, key)
+    if prefix and not PR_PREFIX_RE.match(prefix):
+        raise BakeImageError("not a tag namespace: %r" % prefix)
+    return "%s:%s%s" % (REPOSITORY, prefix, key)
+
+
+@dataclass(frozen=True)
+class Scope:
+    """The namespaces a run reads, in order, and the one it may publish to (None: none)."""
+
+    read_prefixes: tuple[str, ...]
+    write_prefix: str | None
+    label: str
+
+    def read_refs(self, key: str) -> list[str]:
+        return [image_ref(key, p) for p in self.read_prefixes]
+
+    def write_ref(self, key: str) -> str:
+        if self.write_prefix is None:
+            raise BakeImageError(
+                "this run (%s) may not publish a baked image: only a push, schedule or dispatch"
+                " on %s writes main's namespace, and only a pull_request run writes its own"
+                " pr-<number>- namespace" % (self.label, MAIN_REF)
+            )
+        return image_ref(key, self.write_prefix)
+
+
+MAIN_SCOPE = Scope(read_prefixes=("",), write_prefix="", label="main")
+
+
+def scope_from_env(env: Mapping[str, str]) -> Scope:
+    """The run's namespaces from GITHUB_EVENT_NAME and GITHUB_REF; a pull_request without its merge ref raises."""
+    event = env.get("GITHUB_EVENT_NAME", "")
+    ref = env.get("GITHUB_REF", "")
+    if event == "pull_request":
+        found = _PR_MERGE_REF_RE.match(ref)
+        if not found:
+            raise BakeImageError(
+                "a pull_request run with GITHUB_REF=%r, not refs/pull/<number>/merge" % ref
+            )
+        prefix = "pr-%s-" % found.group(1)
+        return Scope(read_prefixes=(prefix, ""), write_prefix=prefix, label="pull_request")
+    if event in _MAIN_EVENTS and ref == MAIN_REF:
+        return MAIN_SCOPE
+    return Scope(
+        read_prefixes=("",), write_prefix=None, label="%s on %s" % (event or "?", ref or "?")
+    )
 
 
 def _emit(kind: str, pairs: dict[str, str]) -> None:
@@ -160,6 +227,37 @@ def tag_exists(ref: str, run: RunFn = _run) -> bool:
     )
 
 
+def present_ref(key: str, scope: Scope, exists: Callable[[str], bool] | None = None) -> str | None:
+    """The first of the scope's read refs that resolves, else None; a probe error propagates."""
+    probe = exists or tag_exists
+    for ref in scope.read_refs(key):
+        if probe(ref):
+            return ref
+    return None
+
+
+def missing_distros(
+    distros: Sequence[str],
+    key_for: Callable[[str], str],
+    exists: Callable[[str], bool] | None = None,
+    scope: Scope = MAIN_SCOPE,
+) -> list[str]:
+    """The distros whose key has no tag the scope reads, in the given order.
+
+    A probe error propagates, and so does a scope that may not publish: a plan for a run that
+    can bake nothing must fail rather than emit a matrix whose every leg then fails.
+    """
+    out: list[str] = []
+    for distro in distros:
+        key = key_for(distro)
+        target = scope.write_ref(key)
+        found = present_ref(key, scope, exists)
+        print("%s exists" % found if found else "%s is missing" % target, flush=True)
+        if found is None:
+            out.append(distro)
+    return out
+
+
 # --- build -------------------------------------------------------------------
 
 
@@ -219,9 +317,11 @@ def build(
 # --- publish -----------------------------------------------------------------
 
 
-def publish(image: pathlib.Path, key: str, distro: str, run: RunFn = _run) -> str:
-    """Push image under the key's tag, then prove the tag resolves."""
-    ref = image_ref(key)
+def publish(
+    image: pathlib.Path, key: str, distro: str, run: RunFn = _run, *, scope: Scope = MAIN_SCOPE
+) -> str:
+    """Push image under the key's tag in the scope's write namespace, then prove the tag resolves."""
+    ref = scope.write_ref(key)
     if not image.is_file() or image.stat().st_size == 0:
         raise BakeImageError("no image to publish at %s" % image)
     argv = [
@@ -250,9 +350,22 @@ def publish(image: pathlib.Path, key: str, distro: str, run: RunFn = _run) -> st
 # --- fetch -------------------------------------------------------------------
 
 
-def fetch(key: str, dest: pathlib.Path, run: RunFn = _run) -> tuple[pathlib.Path | None, str]:
-    """(image, "") on a hit; (None, reason) on any miss. A registry or pull failure is a miss, never an exception."""
-    ref = image_ref(key)
+def fetch(
+    key: str, dest: pathlib.Path, run: RunFn = _run, *, scope: Scope = MAIN_SCOPE
+) -> tuple[pathlib.Path | None, str]:
+    """(image, "") on a hit in the first of the scope's read refs that has one; (None, reason) on a miss.
+
+    A "not found" moves on to the next namespace; any other failure is a miss at once, never an exception.
+    """
+    reason = ""
+    for ref in scope.read_refs(key):
+        image, reason = _pull(ref, dest, run)
+        if image is not None or not reason.startswith("no baked image"):
+            return image, reason
+    return None, reason
+
+
+def _pull(ref: str, dest: pathlib.Path, run: RunFn) -> tuple[pathlib.Path | None, str]:
     shutil.rmtree(dest, ignore_errors=True)
     dest.mkdir(parents=True)
     try:
@@ -268,7 +381,7 @@ def fetch(key: str, dest: pathlib.Path, run: RunFn = _run) -> tuple[pathlib.Path
         shutil.rmtree(dest, ignore_errors=True)
         err = (res.stderr or "").strip()
         if "not found" in err.lower():
-            return None, "no baked image published for %s" % key
+            return None, "no baked image published for %s" % ref.rsplit(":", 1)[1]
         return None, "oras pull %s failed (rc=%d): %s" % (ref, res.returncode, err)
     files = [p for p in dest.iterdir() if p.is_file()]
     if len(files) != 1 or files[0].stat().st_size == 0:
@@ -296,6 +409,8 @@ def _parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("install-oras")
     p.add_argument("--dest", type=pathlib.Path, default=_default_oras_dir())
+    p = sub.add_parser("plan")
+    p.add_argument("--distro", action="append", required=True)
     p = sub.add_parser("probe")
     p.add_argument("--distro", required=True)
     p = sub.add_parser("build")
@@ -317,11 +432,12 @@ def _parser() -> argparse.ArgumentParser:
 def _cmd_fetch(distro: str, dest: pathlib.Path, oras_dir: pathlib.Path) -> int:
     """Every failure here is a miss, and a miss is the stock image: always exit 0, so the step needs no continue-on-error."""
     try:
+        scope = scope_from_env(os.environ)
         key = _key(distro)
         if shutil.which("oras") is None:
             install_oras(oras_dir)
             os.environ["PATH"] = "%s%s%s" % (oras_dir, os.pathsep, os.environ.get("PATH", ""))
-        image, reason = fetch(key, dest)
+        image, reason = fetch(key, dest, scope=scope)
     except (BakeImageError, vm_bake_key.BakeKeyError, OSError) as exc:
         print("::warning::no baked image, using the stock image: %s" % exc)
         _emit("output", {"hit": "false"})
@@ -336,7 +452,10 @@ def _cmd_fetch(distro: str, dest: pathlib.Path, oras_dir: pathlib.Path) -> int:
         {"REDIACC_OPS_DISKS_PATH": str(dest), "BAKED_IMAGE_KEY": key, "RENET_SETUP_OFFLINE": "1"},
     )
     _emit("output", {"hit": "true", "key": key})
-    print("baked image %s (%d bytes) from %s" % (image.name, image.stat().st_size, image_ref(key)))
+    print(
+        "baked image %s (%d bytes) for %s, read in the %s scope"
+        % (image.name, image.stat().st_size, key, scope.label)
+    )
     return 0
 
 
@@ -351,14 +470,21 @@ def main(argv: Sequence[str] | None = None) -> int:
                 with open(path_file, "a", encoding="utf-8") as handle:
                     handle.write("%s\n" % args.dest)
             return 0
-        if args.cmd == "probe":
-            key = _key(args.distro)
-            exists = tag_exists(image_ref(key))
-            print(
-                "%s %s"
-                % (image_ref(key), "exists; nothing to bake" if exists else "is missing; baking")
+        if args.cmd == "plan":
+            missing = missing_distros(args.distro, _key, scope=scope_from_env(os.environ))
+            _emit(
+                "output", {"missing": json.dumps(missing), "bake": "true" if missing else "false"}
             )
-            _emit("output", {"key": key, "exists": "true" if exists else "false"})
+            return 0
+        if args.cmd == "probe":
+            scope = scope_from_env(os.environ)
+            key = _key(args.distro)
+            target = scope.write_ref(key)
+            found = present_ref(key, scope)
+            print(
+                "%s exists; nothing to bake" % found if found else "%s is missing; baking" % target
+            )
+            _emit("output", {"key": key, "exists": "true" if found else "false"})
             return 0
         if args.cmd == "build":
             image = build(args.distro, args.key, args.output, args.renet)
@@ -366,7 +492,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             _emit("output", {"image": str(image)})
             return 0
         if args.cmd == "publish":
-            print("published %s" % publish(args.image, args.key, args.distro))
+            ref = publish(args.image, args.key, args.distro, scope=scope_from_env(os.environ))
+            print("published %s" % ref)
             return 0
         return _cmd_fetch(args.distro, args.dest, args.oras_dir)
     except (BakeImageError, vm_bake_key.BakeKeyError) as exc:

@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: ko
-sourceHash: "44f85425f17be08c"
+sourceHash: "c0ca05a2167060d2"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -143,6 +143,17 @@ sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 | `rdc machine add <machine> --ip <host> --user <user>` | config에 머신 추가 |
 | `rdc backup strategy set ...` | 명명된 백업 전략 정의 |
 | `rdc --config <name> <command>` | 명명된 config 파일 사용 |
+
+## 피드백
+
+| 명령 | 설명 |
+|---------|-------------|
+| `rdc feedback report --last` | 가장 최근에 실패한 명령으로 만든 보고서를 미리 봅니다. 전송하려면 `--yes`를 추가합니다 |
+| `rdc feedback report --command <n>` | 기록된 명령을 보고합니다(1이 가장 최근) |
+| `rdc feedback report --list-recent` | 기록된 명령을 나열하고 종료합니다 |
+| `rdc feedback report --message <text> [--kind bug\|feedback\|docs]` | 실패한 명령 없이 메모를 보고합니다 |
+| `rdc feedback list [--status <list>]` | ID, 지문, 상태, 날짜와 함께 보고서를 나열합니다. 수정된 보고서는 `fixed-in-v<version>`으로 표시됩니다 |
+| `rdc feedback show <id>` | ID 또는 고유한 접두사로 보고서 하나를 표시합니다 |
 
 ## 디버그 및 이스케이프 해치
 

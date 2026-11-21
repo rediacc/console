@@ -138,6 +138,17 @@ EDGE_CASES = [
 ]
 
 
+# A LANDING PUSH IS JUDGED IN ITS OWN TREE (agent/plans/PLAN-two-track-merge-dev.md, box LT12). With a landing record the session root and the landing tree are both this checkout (`commit_policy.bound_trees`), and review records stay with the branch's tree, so a push in either tree, or in a submodule of either, is judged against the tree that holds it (`_owning_tree`). Before this a push typed in the landing tree from the development root was skipped as a scratch repository's. Planted, the bound trees are the session root's alone again.
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
+
+
+def _owning_tree(top, root):
+    """The bound tree `top` is or sits below (the longest match), "" when none: a scratch repository's push carries none of this branch's commits."""
+    trees = commit_policy.bound_trees(root)
+    owners = [tree for tree in trees if commit_policy.is_inside(top, tree)]
+    return os.path.realpath(max(owners, key=len)) if owners else ""
+
+
 def _push_runs(cmd):
     """Every `git push` bash would run, including one `npx -c` or `find -exec` starts (#503f0ba8): it publishes the same commits."""
     return [r for r in shellscan.every_run(cmd) if r.git_sub == "push"]
@@ -198,17 +209,18 @@ def run(ev):
         if top in seen:
             continue
         seen.add(top)
-        # Only this project and the repositories inside it (its submodules): a scratch repository's push carries none of this branch's commits, and its reviews would never exist.
-        real_top, real_root = os.path.realpath(top), os.path.realpath(root)
-        if real_top != real_root and not real_top.startswith(real_root + os.sep):
+        # Only this project and the repositories inside it (its submodules), in whichever bound tree holds them: a scratch repository's push carries none of this branch's commits, and its reviews would never exist.
+        owner = _owning_tree(top, str(root))
+        if not owner:
             continue
+        tree = pathlib.Path(owner)
         repo = pathlib.Path(top)
         branch = rv.current_branch(repo)
         if not branch:
             continue
-        label = rv.repo_label(root, repo)
+        label = rv.repo_label(tree, repo)
         try:
-            st = rv.branch_state(root, branch, repos={label})
+            st = rv.branch_state(tree, branch, repos={label})
         except Exception as exc:
             ev.warn(
                 "per-commit review check skipped for %s (%s: %s)" % (label, type(exc).__name__, exc)

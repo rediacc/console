@@ -6,8 +6,8 @@ Priority: P2 -- refusal wording that cost calls, no wrong block
 Concurrency: parallel -- touches only the stop hook's refusal text
 Owns: .claude/hooks/stop/worklist.py, .claude/hooks/stop/worklist_messages.py, .claude/hooks/stop/wl_store.py, .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/wl_report.py, .claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py, .claude/rediacc_hooks/tests/test_wl_state_document.py, .claude/rediacc_hooks/tests/test_wl_report_inbox.py
 First-Seen: 2026-11-01
-Owner: 45048a90 (adopted from retro retro-late 20261101)
-Updated: 2026-11-01
+Owner: d778be9d (adopted from 45048a90 2026-11-04)
+Updated: 2026-11-04
 
 **Scope.** This retro covers lead transcript bytes 0 to 10523302. That runs to 2026-11-01T19:45:02Z, the last record in the range, at line 4380 and offset 10521114. The early band (#b4940dfa) has the same session and date and a range contained in this one, so this single retro answers both. No `PLAN-stop-hook-retro-20261101.md` exists yet, so the task numbering starts at R20261101.1. The boxes in `PLAN-stop-hook-retro-20260924.md` and `-20260925.md` were not re-proposed. Of those, R20260924.21 (the ready-to-paste `ASKED:` hint) and R20260924.8 (the extra accepted evidence shapes) held, and are cited below.
 
@@ -165,10 +165,14 @@ The write was accepted at 19:40:54 (line 4356, offset 10487797). The body had th
 
 ## Tasks
 
-- [ ] **R20261101.1** `--tick` evaluates the evidence gate and the commit-reference gate together, names every unmet requirement in one refusal, and ends both refusal messages with a line carrying the `commit:<sha>` and `nocommit:<no-tracked-change|research|operator-deferred>` forms. Test: .claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py.
-- [ ] **R20261101.2** A verified `ASKED:<minute>Z` stands in for the commit reference on a `--tick`. An ASKED that matches no AskUserQuestion answer still fails, and a `nocommit:` word outside the three reasons is still refused. Test: .claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py.
-- [ ] **R20261101.3** `worklist.py --state` reports every failing shape verdict (and the overage in characters) in one refusal, while `agent_state_shape` keeps returning the first. Test: .claude/rediacc_hooks/tests/test_wl_state_document.py.
-- [ ] **R20261101.4** The unread-reports block, and its `older not shown` line, name `worklist.py --reports`, and `wl_report.py` prints its usage line on an unknown mode. Test: .claude/rediacc_hooks/tests/test_wl_report_inbox.py.
+- [x] **R20261101.1** `--tick` evaluates the evidence gate and the commit-reference gate together, names every unmet requirement in one refusal, and ends both refusal messages with a line carrying the `commit:<sha>` and `nocommit:<no-tracked-change|research|operator-deferred>` forms. Test: .claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py.
+    (ticked) 2026-11-09T02:42:48Z by d778be9d: commit:7860756fc9 landed from lease agent-a0a0279b0f7269a07, review fixes f71f050614 and 88049859ab; pytest test_wl_tick_commit_ref, test_wl_tick_evidence_shapes, test_wl_state_document, test_wl_report_inbox and three neighbours 145 passed rc 0
+- [x] **R20261101.2** A verified `ASKED:<minute>Z` stands in for the commit reference on a `--tick`. An ASKED that matches no AskUserQuestion answer still fails, and a `nocommit:` word outside the three reasons is still refused. Test: .claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py.
+    (ticked) 2026-11-09T02:42:47Z by d778be9d: commit:7860756fc9 landed from lease agent-a0a0279b0f7269a07, review fixes f71f050614 and 88049859ab; pytest test_wl_tick_commit_ref, test_wl_tick_evidence_shapes, test_wl_state_document, test_wl_report_inbox and three neighbours 145 passed rc 0
+- [x] **R20261101.3** `worklist.py --state` reports every failing shape verdict (and the overage in characters) in one refusal, while `agent_state_shape` keeps returning the first. Test: .claude/rediacc_hooks/tests/test_wl_state_document.py.
+    (ticked) 2026-11-09T02:42:49Z by d778be9d: commit:726d73cc43 landed from lease agent-a0a0279b0f7269a07, review fixes f71f050614 and 88049859ab; pytest test_wl_tick_commit_ref, test_wl_tick_evidence_shapes, test_wl_state_document, test_wl_report_inbox and three neighbours 145 passed rc 0
+- [x] **R20261101.4** The unread-reports block, and its `older not shown` line, name `worklist.py --reports`, and `wl_report.py` prints its usage line on an unknown mode. Test: .claude/rediacc_hooks/tests/test_wl_report_inbox.py.
+    (ticked) 2026-11-09T02:42:50Z by d778be9d: commit:58876982bb landed from lease agent-a0a0279b0f7269a07, review fixes f71f050614 and 88049859ab; pytest test_wl_tick_commit_ref, test_wl_tick_evidence_shapes, test_wl_state_document, test_wl_report_inbox and three neighbours 145 passed rc 0
 
 ### Critical Files for Implementation
 - /home/developer/console/.claude/hooks/stop/worklist.py

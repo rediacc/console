@@ -31,6 +31,7 @@ EXEMPT_JOBS = [
     "cancel-watchdog",
     "build-renet",
     "pr-labels",
+    "report-schedule",
     "duplicate-run",
 ]
 # Ordinary jobs. Enough of them, with the exempt five, to clear the gate's 10-job anti-vacuity floor.
@@ -64,7 +65,8 @@ def scaffold(
     no_aggregator=False,
 ):
     """Writes a well-formed pair, then applies exactly the requested defect."""
-    plain = ["initialize", "quality"] if few_jobs else list(PLAIN_JOBS)
+    # One plain job: with the eight exempt it stays below the gate's 10-job floor.
+    plain = ["initialize"] if few_jobs else list(PLAIN_JOBS)
 
     all_jobs = []
     for j in EXEMPT_JOBS + plain:

@@ -3,31 +3,38 @@
   "exempt": [
     {
       "id": "check:ci-plan-folders",
-      "reason": "Reads the current UTC date (dt.datetime.now) to age plans against .ci/config/plan-lifecycle.json, so its verdict turns red as the calendar advances while agent/plans/** and every other tracked input stay byte-identical."
+      "reason": "Reads the current UTC date (dt.datetime.now) to age plans against .ci/config/plan-lifecycle.json, so its verdict turns red as the calendar advances while agent/plans/** and every other tracked input stay byte-identical.",
+      "kind": "clock"
     },
     {
       "id": "check:ci-plan-housekeeping",
-      "reason": "Judges plan ages and allowlist entries that die on their own stated date against the wall clock (dt.datetime.now in plan_housekeeping.py), so a pass today becomes a fail later with no tracked input changed; its module also sits outside the declared paths."
+      "reason": "Judges plan ages and allowlist entries that die on their own stated date against the wall clock (dt.datetime.now in plan_housekeeping.py), so a pass today becomes a fail later with no tracked input changed; its module also sits outside the declared paths.",
+      "kind": "clock"
     },
     {
       "id": "check:ci-plan-deps",
-      "reason": "Compares plan Priority against the merge-base with the target branch (D17, origin/main, GITHUB_BASE_REF) and reads dates, so its verdict depends on git history and on how far origin/main has moved, not on tracked file content alone."
+      "reason": "Compares plan Priority against the merge-base with the target branch (D17, origin/main, GITHUB_BASE_REF) and reads dates, so its verdict depends on git history and on how far origin/main has moved, not on tracked file content alone.",
+      "kind": "history"
     },
     {
       "id": "check:ci-runner-selftest",
-      "reason": "Selftest of the runner drives quick-select and merge-base resolution against origin/main, reads .ci/cache state and the clock, so its verdict depends on history and untracked cache files that no tracked-input hash covers."
+      "reason": "Selftest of the runner drives quick-select and merge-base resolution against origin/main, reads .ci/cache state and the clock, so its verdict depends on history and untracked cache files that no tracked-input hash covers.",
+      "kind": "history"
     },
     {
       "id": "check:ci-gate-manifest",
-      "reason": "Judges slow/fast gate classification from the local untracked .ci/cache/gate-durations.json (measured timings), so the verdict changes when the cache changes even though every tracked file is identical."
+      "reason": "Judges slow/fast gate classification from the local untracked .ci/cache/gate-durations.json (measured timings), so the verdict changes when the cache changes even though every tracked file is identical.",
+      "kind": "cache"
     },
     {
       "id": "check:ci-pytest",
-      "reason": "Runs the whole pytest suite, whose tests read the clock, git history, the untracked .ci/cache toolchain and junit state, and files outside the declared paths; its verdict can move with none of the hashed inputs changing."
+      "reason": "Runs the whole pytest suite, whose tests read the clock, git history, the untracked .ci/cache toolchain and junit state, and files outside the declared paths; its verdict can move with none of the hashed inputs changing.",
+      "kind": "cache"
     },
     {
       "id": "check:ci-lockfile",
-      "reason": "Runs npm ci --dry-run and npm install --package-lock-only under the pinned npm, which resolve against the live registry (including release-age windows), so a package published or yanked flips the verdict with no tracked input changed."
+      "reason": "Runs npm ci --dry-run and npm install --package-lock-only under the pinned npm, which resolve against the live registry (including release-age windows), so a package published or yanked flips the verdict with no tracked input changed.",
+      "kind": "network"
     },
     {
       "id": "check:ci-setup-idempotency",
@@ -35,11 +42,13 @@
     },
     {
       "id": "check:ci-guard-mention-anchoring",
-      "reason": "Executes every hook guard live with cwd at the repo root, and guards read repo, worklist and git state, so the verdict can move while the declared guard files stay byte-identical."
+      "reason": "Executes every hook guard live with cwd at the repo root, and guards read repo, worklist and git state, so the verdict can move while the declared guard files stay byte-identical.",
+      "kind": "history"
     },
     {
       "id": "check:ci-account-portal",
-      "reason": "Runs npm ci, tsc, biome and vite build in the private/account submodule against untracked node_modules and the live npm registry, so the verdict is not a function of tracked inputs."
+      "reason": "Runs npm ci, tsc, biome and vite build in the private/account submodule against untracked node_modules and the live npm registry, so the verdict is not a function of tracked inputs.",
+      "kind": "network"
     },
     {
       "id": "check:ci-paths-origin",
@@ -47,23 +56,128 @@
     },
     {
       "id": "check:ci-renet",
-      "reason": "Delegates to private/renet/.ci/ci.sh quality, which runs Go with GOTOOLCHAIN=auto and can fetch toolchains and modules, so the result can move without any tracked input changing."
+      "reason": "Delegates to private/renet/.ci/ci.sh quality, which runs Go with GOTOOLCHAIN=auto and can fetch toolchains and modules, so the result can move without any tracked input changing.",
+      "kind": "network"
     },
     {
       "id": "check:ci-pr-condition-ledger",
-      "reason": "Asks GitHub whether each PR that a BLOCKER clause names has merged, so its verdict turns red when another PR merges while every tracked input stays byte-identical; a carried green would hide exactly that."
+      "reason": "Asks GitHub whether each PR that a BLOCKER clause names has merged, so its verdict turns red when another PR merges while every tracked input stays byte-identical; a carried green would hide exactly that.",
+      "kind": "network"
     },
     {
       "id": "check:ci-lane-budget",
-      "reason": "Fails on the age of .ci/config/lane-durations.json against the wall clock (freshnessFindings with new Date() in check-lane-budget.ts), so its verdict turns red as the calendar advances at an identical tree."
+      "reason": "Fails on the age of .ci/config/lane-durations.json against the wall clock (freshnessFindings with new Date() in check-lane-budget.ts), so its verdict turns red as the calendar advances at an identical tree.",
+      "kind": "clock"
     },
     {
       "id": "check:ci-secret-reachability",
-      "reason": "Judges the age of its record and each allowlist expiry against the wall clock (dt.datetime.now in check_secret_reachability.py), so its verdict moves as the calendar advances at an identical tree."
+      "reason": "Judges the age of its record and each allowlist expiry against the wall clock (dt.datetime.now in check_secret_reachability.py), so its verdict moves as the calendar advances at an identical tree.",
+      "kind": "clock"
     },
     {
       "id": "check:ci-timeout-headroom",
-      "reason": "Judges the age of its baseline against the wall clock (dt.datetime.now in check_job_timeout_headroom.py), so its verdict moves as the calendar advances at an identical tree."
+      "reason": "Judges the age of its baseline against the wall clock (dt.datetime.now in check_job_timeout_headroom.py), so its verdict moves as the calendar advances at an identical tree.",
+      "kind": "clock"
+    },
+    {
+      "id": "check:deps",
+      "reason": "Asks the npm registry (npm outdated and registry.npmjs.org packuments, check-deps.ts:753) for every dependency, so its verdict moves when a package is published with no tracked input changed.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-devcontainer-pins",
+      "reason": "Asks api.github.com for the releases of each devcontainer pin source (check-devcontainer-pin-freshness.ts:61), so a new upstream release turns it red at an identical tree.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-bws-map-live",
+      "reason": "Lists the live Bitwarden store through the bws CLI (bws_map_live.py:142,164) and compares names with bws-secret-map.json, so a secret deleted upstream flips it with no tracked input changed.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-pr-epic-block",
+      "reason": "Reads the PR body through gh pr view (check-pr-epic-block.ts:288), so an edit to the PR description flips the verdict with the tree byte-identical.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-docker-image-freshness",
+      "reason": "Asks hub.docker.com for each pinned image's tags and push times (through scripts/lib/docker-hub.ts:233 createHubReader) and judges them against Date.now() (check-docker-image-freshness.ts:952), so a new upstream push or the calendar flips it at an identical tree.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-i18n-www-translation-freshness",
+      "reason": "Diffs each translation's English source against the blob at the sourceCommit named in its frontmatter (validate-translation-freshness.js:149, getFileAtCommit), so the verdict depends on which commits the checkout holds, not on tracked file bytes alone.",
+      "kind": "history"
+    },
+    {
+      "id": "check:ci-renet-types",
+      "reason": "Stamps the generated types with `git describe --tags --always` (renet_types.py:124), so tags and history reach the verdict beyond the hashed files.",
+      "kind": "history"
+    },
+    {
+      "id": "check:ci-resprofile",
+      "reason": "Fails past a sunset 30 days after seeding (check_resprofile.py:62,196, time.time) and judges the previous run's untracked captures, so its verdict moves with the calendar at an identical tree.",
+      "kind": "clock"
+    },
+    {
+      "id": "check:ci-go-deps",
+      "reason": "Ages blocklist entries and the release-age window against the wall clock (go_deps.py:257-258, agecheck.entry_age_days and verdict) on top of live go list -u and OSV answers, so the calendar flips it at an identical tree.",
+      "kind": "clock"
+    },
+    {
+      "id": "check:ci-security-audit",
+      "reason": "Refuses allowlist entries older than AGE_FAIL_DAYS and defers advisories by release age (audit.py:12-13, :23) over live npm audit answers, so the calendar flips it at an identical tree.",
+      "kind": "clock"
+    },
+    {
+      "id": "check:actions",
+      "reason": "Resolves every pinned action ref against the GitHub REST API (ACTIONS_API_BASE and GITHUB_TOKEN in check-actions.ts) and reds when an answer was not obtained, so a tag moved or deleted upstream flips the verdict with every tracked file unchanged.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-label-inventory",
+      "reason": "Compares the declared label inventory with the live label list read through the gh CLI, so a label added or removed on GitHub flips the verdict while the tracked declaration file stays byte-identical.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-agent-session-archival",
+      "reason": "Asks GitHub for each PR merged-at time through gh (it refuses to run without gh or a GH_TOKEN in CI), so its verdict moves when a PR merges while every tracked input stays the same.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-embed-asset-freshness",
+      "reason": "Compares each embedded asset pin with the upstream release it names, read from the GitHub API and download.samba.org, and fails closed on a network error, so a new upstream release flips the verdict at an identical tree.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-proxy-docker-prepull",
+      "reason": "Runs the real docker-prepull against docker and pulls hello-world from registry-1.docker.io in both argument shapes (an unreachable registry exits 77, no verdict), so the result depends on the registry rather than on any tracked input.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-proxy-ensure-nfpm",
+      "reason": "Runs the real ensure_nfpm, which downloads the pinned nfpm tarball from release hosting and checks its sum on a cold cache, so the verdict depends on that host being reachable and serving the same bytes, not on tracked files alone.",
+      "kind": "network"
+    },
+    {
+      "id": "check:ci-no-otlp-creds",
+      "reason": "Scans untracked build output (the private/bin/renet-* binaries and the packages/cli/dist bundle) for a baked OTLP credential, and no manifest node produces those files, so a rebuild changes what it inspects while no tracked input moves.",
+      "kind": "cache"
+    },
+    {
+      "id": "check:ci-no-rclone-embedded",
+      "reason": "Scans untracked build output (private/bin/renet-*, private/renet/bin/renet*, dist/cli/rdc-*) and the staged embed cache for an rclone payload, and no manifest node produces those files, so a rebuild or a restored cache changes the verdict with tracked inputs identical.",
+      "kind": "cache"
+    },
+    {
+      "id": "check:ci-pr-task-trailers",
+      "reason": "Judges the commit messages in the range base..tip (the log between PR_BASE_REF and the tip) and the reachability of each attributed sha, so a rebase or a new commit moves the verdict while every tracked file stays byte-identical.",
+      "kind": "history"
+    },
+    {
+      "id": "check:ci-review-resolutions",
+      "reason": "Walks merge-base(origin/base, HEAD)..HEAD and reads the current branch name to find the review files that apply, so the verdict depends on repository history and branch state rather than on tracked file content alone.",
+      "kind": "history"
     }
   ]
 }

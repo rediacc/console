@@ -17,6 +17,7 @@ import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { requestNetworkIdAuto } from '../services/executor/executor-factory.js';
 import type { ExecuteOptions } from '../services/executor/types.js';
+import { servedRecordGuid } from '../services/jobs/attach.js';
 import {
   type CommandJobOutcome,
   JobDispatchedError,
@@ -142,7 +143,7 @@ function settleCreateOutcome(name: string, outcome: CommandJobOutcome): void {
   const unfinished = outstandingSteps(outcome.steps);
   if (unfinished.length > 0) {
     outputService.warn(
-      `repo create: ${name} was created, but the step(s) ${unfinished.join(', ')} did not finish; rdc job wait settles them.`
+      t('commands.repo.create.stepsUnfinished', { name, steps: unfinished.join(', ') })
     );
   }
 }
@@ -204,16 +205,30 @@ export async function registerNewRepo(
   extra: { sshPrivateKey?: string; sshPublicKey?: string },
   target: NetworkIdTarget,
   /** The create job asks renet for the ID (`network_id: "auto"`): no ID is allocated here and the record carries none. */
-  networkIdAuto = false
-): Promise<{ repositoryGuid: string; networkId?: number }> {
+  networkIdAuto = false,
+  /** The requested size: a retry asking for another one is a different request. */
+  size?: string
+): Promise<{ repositoryGuid: string; networkId?: number; reattached?: true }> {
   // Validate before ANY write: allocateNetworkId persists, and a refused name must leave the config untouched.
   const { assertResourceName, compositeKey } = await import('../utils/config-schema.js');
   assertResourceName(name);
-  const existing = await configService.getRepository(name);
+  // A family left with only forks of a forgotten grand is not a live repo of this name: `repo delete` refuses it, so the create must not call the name taken.
+  const existing = await configService.getLiveGrand(name);
+  // A POST retried with the same body id, placement and size finds the record its first attempt registered (the guid derives from all three): attach to it, so the create job dedupes on the request id instead of the retry failing as a duplicate. The same id asking for another placement or size is a different request and meets the duplicate error.
+  const servedGuid = servedRecordGuid(`create:${name}:${JSON.stringify(placement)}:${size ?? ''}`);
+  if (existing && servedGuid !== undefined && existing.repositoryGuid === servedGuid) {
+    return {
+      repositoryGuid: servedGuid,
+      ...(existing.networkId === undefined || existing.networkId <= 0
+        ? {}
+        : { networkId: existing.networkId }),
+      reattached: true,
+    };
+  }
   if (existing) {
     throw new Error(t('commands.repo.create.alreadyExists', { name }));
   }
-  const repositoryGuid = randomUUID();
+  const repositoryGuid = servedGuid ?? randomUUID();
   // D3(a): the floor is the target machine's used set, so a lagging counter skips IDs other devices placed there.
   const networkId = networkIdAuto
     ? undefined
@@ -265,14 +280,16 @@ async function handleRepoCreateOnMachine(
 
     const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
     const target: NetworkIdTarget = { machine: options.machine };
-    const { repositoryGuid } = await registerNewRepo(
+    const { repositoryGuid, reattached } = await registerNewRepo(
       name,
       { machine: options.machine },
       { sshPrivateKey, sshPublicKey },
       target,
-      true
+      true,
+      options.size
     );
-    createdGuid = repositoryGuid;
+    // A reattached record is the first attempt's, so this invocation's failure must not roll it back.
+    if (!reattached) createdGuid = repositoryGuid;
 
     outputService.info(
       t('commands.repo.create.registered', {
@@ -342,14 +359,16 @@ async function handleRepoCreateOnDatastore(
       datastore: placement.mountPath,
       ...(placement.kubeCluster !== undefined && { kubeCluster: placement.kubeCluster }),
     };
-    const { repositoryGuid } = await registerNewRepo(
+    const { repositoryGuid, reattached } = await registerNewRepo(
       name,
       { datastore: options.datastore },
       {},
       target,
-      true
+      true,
+      options.size
     );
-    createdGuid = repositoryGuid;
+    // A reattached record is the first attempt's, so this invocation's failure must not roll it back.
+    if (!reattached) createdGuid = repositoryGuid;
 
     outputService.info(
       t('commands.repo.create.registered', {

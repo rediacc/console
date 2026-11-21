@@ -16,15 +16,12 @@
  * destination throws rather than producing a unit with no ExecStart at all.
  */
 
-import {
-  WK_ACCOUNT_DEFAULT_ORIGIN,
-  WK_DATASTORE_PATH,
-} from '@rediacc/shared/config/well-known.generated';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../../types/index.js';
 import {
-  buildAdhocSystemdRun,
   buildBackupCommands,
+  generateAdhocServiceUnit,
   generateServiceUnit,
 } from '../backup/backup-schedule-unit-generator.js';
 
@@ -110,7 +107,7 @@ describe('scheduled backups to the chunk store', () => {
       DATASTORE,
       RENET
     );
-    expect(commands[0]).toContain('--bwlimit 6000000');
+    expect(commands[0]).toMatch(/--bwlimit 6000000(?!\d)/);
     expect(commands[0]).not.toContain('--bwlimit 6M');
   });
 
@@ -122,7 +119,7 @@ describe('scheduled backups to the chunk store', () => {
       DATASTORE,
       RENET
     );
-    expect(commands[0]).toContain('--bwlimit 12500000');
+    expect(commands[0]).toMatch(/--bwlimit 12500000(?!\d)/);
     expect(commands[0]).toContain('--parallelism 2');
   });
 
@@ -130,12 +127,27 @@ describe('scheduled backups to the chunk store', () => {
     // `backup strategy set s --destination d --bwlimit 6M` stores the cap on the destination; the generator read only the strategy-level field, so no unit ever applied it.
     const { commands } = buildBackupCommands(
       strategy({ bandwidthLimit: '100Mbps' }),
-      [hosted('a'), { ...hosted('b'), bandwidthLimit: '6M' }],
+      [
+        hosted('a'),
+        { ...hosted('b'), target: 'offsite', bandwidthLimit: '6M' },
+        { ...hosted('c'), target: 'third', bandwidthLimit: '200Mbps' },
+      ],
       DATASTORE,
-      RENET
+      RENET,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true
     );
-    expect(commands[0]).toContain('--bwlimit 6000000');
-    expect(commands[0]).not.toContain('--bwlimit 12500000');
+    // Each destination's command carries its own cap: the strategy's for a, b's own for b.
+    expect(commands[0]).toMatch(/--bwlimit 12500000(?!\d)/);
+    expect(commands[1]).toMatch(/--bwlimit 6000000(?!\d)/);
+    expect(commands[1]).not.toMatch(/--bwlimit 12500000(?!\d)/);
+    // c's own cap (200 Mbps) is looser than the strategy's, so the strategy's 100 Mbps wins on c's command.
+    expect(commands[2]).toMatch(/--bwlimit 12500000(?!\d)/);
+    expect(commands[2]).not.toMatch(/--bwlimit 25000000(?!\d)/);
   });
 
   it('runs the scheduled unit and the ad-hoc strategy run at low CPU and I/O priority', () => {
@@ -157,11 +169,10 @@ describe('scheduled backups to the chunk store', () => {
       DATASTORE,
       RENET
     );
-    const adhoc = buildAdhocSystemdRun('rediacc-backup-s-adhoc', commands);
-    expect(adhoc).toMatch(/^sudo systemd-run --unit=rediacc-backup-s-adhoc --remain-after-exit /);
-    expect(adhoc).toContain(
-      '-p Nice=10 -p IOSchedulingClass=best-effort -p IOSchedulingPriority=7'
-    );
+    const adhoc = generateAdhocServiceUnit('s', commands, 8);
+    expect(adhoc).toContain('Type=oneshot');
+    expect(adhoc).toContain('\nNice=10\nIOSchedulingClass=best-effort\nIOSchedulingPriority=7\n');
+    expect(adhoc).toContain('\nTimeoutStartSec=infinity\n');
     expect(adhoc).toContain('--bwlimit 12500000 --parallelism 2');
   });
 
@@ -172,9 +183,7 @@ describe('scheduled backups to the chunk store', () => {
       '--parallelism 2 --expected-interval 3600s --read-bwlimit 50000000'
     );
     const { commands } = buildBackupCommands(s, [hosted()], DATASTORE, RENET);
-    expect(buildAdhocSystemdRun('rediacc-backup-s-adhoc', commands)).toContain(
-      '--read-bwlimit 50000000'
-    );
+    expect(generateAdhocServiceUnit('s', commands, 8)).toContain('--read-bwlimit 50000000');
   });
 
   it('keeps a read cap of 0 as --read-bwlimit 0 (unlimited), never dropping it to the verb default', () => {
@@ -223,23 +232,28 @@ describe('scheduled backups to the chunk store', () => {
     ).toThrow(/Bandwidth limit "fast" cannot be converted/);
   });
 
-  it('takes ONE snapshot per run whatever the number of destinations (G3)', () => {
-    // A command per destination uploaded the same cells twice and committed two manifests for one point in time. The renet command carries nothing from the destination, so a second one could only ever repeat the first.
+  it('takes one snapshot per destination it is given, each into its own store (C2)', () => {
     const { commands } = buildBackupCommands(
       strategy(),
-      [hosted('chunks-a'), hosted('chunks-b')],
+      [hosted('chunks-a'), { ...hosted('chunks-b'), target: 'offsite' }],
       DATASTORE,
-      RENET
+      RENET,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      true
     );
-    expect(commands).toHaveLength(1);
+    expect(commands).toHaveLength(2);
+    expect(commands[0]).not.toContain('--store');
+    expect(commands[1]).toContain('--store offsite');
   });
 
-  it('refuses destinations on two different endpoints, which one snapshot cannot serve', () => {
-    const a: BackupStrategyDestination = { ...hosted('a'), endpoint: WK_ACCOUNT_DEFAULT_ORIGIN };
-    const b: BackupStrategyDestination = { ...hosted('b'), endpoint: 'https://s3.example.com' };
-    expect(() => buildBackupCommands(strategy(), [a, b], DATASTORE, RENET)).toThrow(
-      /2 different endpoints/
-    );
+  it('refuses two destinations that name the same target', () => {
+    expect(() =>
+      buildBackupCommands(strategy(), [hosted('a'), hosted('b')], DATASTORE, RENET)
+    ).toThrow(/name the target "home"/);
   });
 });
 
@@ -318,12 +332,22 @@ describe('the CPU ceiling reaches the scheduled unit and the ad-hoc run', () => 
     expect(() => unit(101, 8)).toThrow();
   });
 
-  it('puts the quota on the ad-hoc systemd-run, resolved by the machine shell', () => {
-    const adhoc = buildAdhocSystemdRun('u', ['renet backup snapshot']);
-    expect(adhoc).toContain('-p CPUQuota=$(( $(nproc) * 50 ))%');
-    expect(buildAdhocSystemdRun('u', ['x'], 20)).toContain('-p CPUQuota=$(( $(nproc) * 20 ))%');
-    expect(buildAdhocSystemdRun('u', ['x'], 100)).not.toContain('CPUQuota');
-    expect(() => buildAdhocSystemdRun('u', ['x'], 0)).toThrow();
+  it('puts the quota on the ad-hoc unit, from the machine core count', () => {
+    expect(generateAdhocServiceUnit('u', ['renet backup snapshot'], 8)).toContain(
+      '\nCPUQuota=400%\n'
+    );
+    expect(generateAdhocServiceUnit('u', ['x'], 8, 20)).toContain('\nCPUQuota=160%\n');
+    expect(generateAdhocServiceUnit('u', ['x'], 8, 100)).not.toContain('CPUQuota');
+    expect(() => generateAdhocServiceUnit('u', ['x'], 8, 0)).toThrow();
+  });
+
+  it('renders one ExecStart per command, in order', () => {
+    const unitText = generateAdhocServiceUnit('u', ['renet a', 'renet b'], 4);
+    // More than one command runs in one `sh -c`, so a failure does not skip the next and the unit still exits non-zero.
+    expect(unitText).toMatch(
+      /ExecStart=\/bin\/sh -c .*renet a \|\| rc=1;.*renet b \|\| rc=1;.*exit \$\$rc/
+    );
+    expect(unitText).not.toContain('[Install]');
   });
 });
 

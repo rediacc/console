@@ -312,12 +312,153 @@ def project_root(start):
     Resolves from WHEREVER IT IS POINTED, deliberately. It cannot tell a repo
     from a repo nested inside one, and it must not try -- see project_start(),
     which is what every caller should be pointing it at.
+
+    Two redirects: a lease tree answers with the checkout that holds it (lease_main), and the landing tree answers with the main checkout (landing_main), so both trees of agent/plans/PLAN-two-track-merge-dev.md share one worklist store, one STATE.md and one set of TMPDIR sidecars.
     """
+    tree = checkout_root(start)
+    return landing_main(tree) or tree
+
+
+def checkout_root(start):
+    """project_root WITHOUT the landing redirect: the checkout a session works in (a lease still answers with its holder). A read of the session's own HEAD (its branch) starts here, since project_root of the landing tree is the main checkout, whose HEAD is the development branch."""
     p = pathlib.Path(start).resolve()
     for candidate in [p, *p.parents]:
         if (candidate / ".git").exists():
-            return candidate
+            return lease_main(candidate) or candidate
     return p
+
+
+def _git_dirs(tree):
+    """(git dir, common dir) of a checkout, read from its files, or None. A hot path, so no subprocess."""
+    dotgit = tree / ".git"
+    try:
+        if dotgit.is_dir():
+            git_dir = dotgit.resolve()
+        else:
+            text = dotgit.read_text(encoding="utf-8").strip()
+            if not text.startswith("gitdir:"):
+                return None
+            git_dir = (tree / text[len("gitdir:") :].strip()).resolve()
+        commondir = git_dir / "commondir"
+        if not commondir.is_file():
+            return git_dir, git_dir
+        return git_dir, (git_dir / commondir.read_text(encoding="utf-8").strip()).resolve()
+    except (OSError, ValueError, RuntimeError):
+        return None
+
+
+def lease_main(tree):
+    """The checkout holding `tree` when `tree` is its lease, `<main>/.claude/worktrees/<id>`, else None (agent/plans/PLAN-worktree-lease.md Design 4).
+
+    A lease has one store, the main checkout's. The rule needs position AND git's word: a linked tree's git dir is `<common>/worktrees/<id>` with a `commondir` file, and `<main>` shares that common dir. A `.git` file into `modules/` has no `commondir`, an operator's `.worktrees/<MMDD-N>` is not under `.claude`, and both keep their own root. The admin directory's name is compared rather than a literal so worklist.py's twin stays identical to this.
+    """
+    tree = pathlib.Path(tree)
+    if tree.parent.parent.name != ".claude" or not (tree / ".git").is_file():
+        return None
+    mine = _git_dirs(tree)
+    if mine is None or mine[0] == mine[1] or mine[0].parent.parent != mine[1]:
+        return None
+    if mine[0].parent.name != tree.parent.name:
+        return None
+    main = tree.parents[2]
+    theirs = _git_dirs(main) if (main / ".git").exists() else None
+    return main if theirs is not None and theirs[1] == mine[1] else None
+
+
+# The landing record (agent/plans/PLAN-two-track-merge-dev.md, box LT1): one JSON object {"path": <realpath>, "branch": <MMDD-N>} in the COMMON git dir, so every tree of the repository reads the same file. commit_policy.py writes and validates it; this module reads it without a subprocess, because project_root is a hot path.
+LANDING_RECORD_NAME = "rediacc-landing.json"
+# The git config key naming a common dir's main checkout, `core.<this>`. worklist.py's twin assembles the same string from two halves.
+CORE_TREE_KEY = "worktree"
+
+
+def _common_main(common):
+    """The main checkout of common git dir `common`, or None: core.worktree when the dir sets one (a submodule's `.git/modules/<name>`), else the parent of a dir named `.git`. Confirmed against git's own answer by sharing the common dir."""
+    main = None
+    try:
+        text = (common / "config").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        text = ""
+    section = ""
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("["):
+            section = line.strip("[]").strip().lower()
+            continue
+        key, sep, value = line.partition("=")
+        if section == "core" and sep and key.strip().lower() == CORE_TREE_KEY:
+            main = (common / value.strip()).resolve()
+    if main is None and common.name == ".git":
+        main = common.parent
+    if main is None or not (main / ".git").exists():
+        return None
+    theirs = _git_dirs(main)
+    return main if theirs is not None and theirs[0] == theirs[1] == common else None
+
+
+def landing_record(tree):
+    """The landing record of `tree`'s repository as {"path", "branch"}, or None when there is none or it is not a well-formed binding of an existing tree of this repository. commit_policy.read_landing_record is the full validator and names the defect; a defective record here simply binds nothing."""
+    dirs = _git_dirs(pathlib.Path(tree))
+    if dirs is None:
+        return None
+    try:
+        data = json.loads((dirs[1] / LANDING_RECORD_NAME).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(data, dict) or sorted(data) != ["branch", "path"]:
+        return None
+    path, branch = data["path"], data["branch"]
+    if not isinstance(path, str) or not isinstance(branch, str) or not os.path.isabs(path):
+        return None
+    land = pathlib.Path(path)
+    theirs = _git_dirs(land) if (land / ".git").is_file() else None
+    if theirs is None or theirs[1] != dirs[1]:
+        return None
+    return {"path": path, "branch": branch}
+
+
+def landing_main(tree):
+    """The main checkout when `tree` is the landing tree its repository's landing record binds, else None (agent/plans/PLAN-two-track-merge-dev.md, box LT14).
+
+    The rule needs git's word as lease_main's does: `tree` is a linked worktree (its git dir is `<common>/worktrees/<id>`), its realpath equals the record's path, and the main checkout shares that common dir. With no record every tree keeps its own root.
+    """
+    tree = pathlib.Path(tree)
+    if not (tree / ".git").is_file():
+        return None
+    mine = _git_dirs(tree)
+    if mine is None or mine[0] == mine[1] or mine[0].parent.parent != mine[1]:
+        return None
+    rec = landing_record(tree)
+    if rec is None or os.path.realpath(str(tree)) != os.path.realpath(rec["path"]):
+        return None
+    return _common_main(mine[1])
+
+
+def _munged(path):
+    """Claude Code's project-directory naming: every non-alphanumeric character of the absolute path becomes a `-`."""
+    return re.sub(r"[^A-Za-z0-9]", "-", str(path))
+
+
+def projects_dirs(root, base=None):
+    """Every directory holding this repo's session transcripts: the main checkout's, then the landing tree's when a landing record binds one (a landing session writes under its own tree's name).
+
+    With `base` None this is projects_dir's answer as a list: $WORKLIST_PROJECTS_DIR alone when set, else the directories under ~/.claude/projects that exist. With `base` given (the subagent scans' `<config dir>/projects`), the candidate Paths under it, existing or not, since those callers test is_dir themselves.
+    """
+    if base is None:
+        env = os.environ.get("WORKLIST_PROJECTS_DIR")
+        if env:
+            return [env]
+    try:
+        main = pathlib.Path(root).resolve()
+    except (OSError, RuntimeError):
+        return []
+    trees = [main]
+    rec = landing_record(main)
+    if rec is not None and pathlib.Path(rec["path"]) != main:
+        trees.append(pathlib.Path(rec["path"]))
+    if base is not None:
+        return [pathlib.Path(base) / _munged(t) for t in trees]
+    home = pathlib.Path.home() / ".claude" / "projects"
+    return [str(home / _munged(t)) for t in trees if (home / _munged(t)).is_dir()]
 
 
 def projects_dir(root):
@@ -328,13 +469,14 @@ def projects_dir(root):
     The convention, verified on this machine rather than assumed: the harness writes ~/.claude/projects/<abs-repo-path-with-/-as->/<session-uuid>.jsonl, e.g. /home/muhammed/.claude/projects/-home-muhammed-monorepo-console/.
 
     Returns "" rather than guessing when the directory is absent: "" means CANNOT SAY, and owner_age_hours already treats that as "unknown owner", which is the conservative direction (unknown never reads as dead by transcript, only by its own section stamp).
+
+    The main checkout's directory only: projects_dirs answers the landing tree's beside it. The name is the harness's own munging (_munged, every non-alphanumeric character a `-`); the earlier `/`-only replace named a directory the harness never writes for a path holding `.` or `_`.
     """
     env = os.environ.get("WORKLIST_PROJECTS_DIR")
     if env:
         return env
     try:
-        slug = str(pathlib.Path(root).resolve()).replace("/", "-")
-        cand = pathlib.Path.home() / ".claude" / "projects" / slug
+        cand = pathlib.Path.home() / ".claude" / "projects" / _munged(pathlib.Path(root).resolve())
     except (OSError, RuntimeError):
         return ""
     return str(cand) if cand.is_dir() else ""

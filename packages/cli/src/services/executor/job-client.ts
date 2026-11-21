@@ -19,17 +19,18 @@
  *     cursor past complete lines, so a line cut in half by a dropped connection
  *     is re-sent in full on resume. Counting it here would silently skip it.
  *
- * This module holds the pure, dependency-free half: the remote command builders,
- * parsing, line accounting, version-skew detection, and the status-to-result
- * mapping. The I/O half (SSH, stream plumbing, the reconnect loop) lives in
+ * This module holds the pure half, free of I/O: the remote command builders,
+ * parsing, line accounting, version-skew detection, the status-to-result
+ * mapping and the overlap text (which reads the i18n catalog). The I/O half (SSH, stream plumbing, the reconnect loop) lives in
  * job-remote.ts, which imports from here and never the other way around.
  */
 
 import type { BackgroundEnvelope, JobOverlap } from '@rediacc/shared/cli-contract/wire';
 import { z } from 'zod';
+import { t } from '../../i18n/index.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { writeStdout } from '../core/request-context.js';
-import { type JobOutputCollector } from './job-output-collector.js';
+import { failedJobStderr, type JobOutputCollector } from './job-output-collector.js';
 import { type RenetEnv, type RenetLaunch, sudoRenet } from './renet-launch.js';
 import type { ExecuteResult, RenetEvent } from './types.js';
 
@@ -242,7 +243,7 @@ export function isRenetFlagUnsupported(output: string): boolean {
 
 /** The answer to a renet that is older than the CLI talking to it. `machine` is the machine's name. */
 export function renetOlderThanCliMessage(machine: string): string {
-  return `renet on ${machine} is older than this CLI; run machine setup`;
+  return `renet on ${machine} is older than this CLI; run machine setup directly, without --proxy, since an executor never uploads renet`;
 }
 
 /**
@@ -357,25 +358,43 @@ export function backgroundEnvelope(params: {
 
 /** One overlap as a stderr warning line plus the command that shows the other job (section 19). */
 export function overlapWarningLines(overlap: JobOverlap): string[] {
-  const head = `${overlap.action === 'refuse' ? 'Refused' : 'Warning'}: ${overlapSubject(overlap)}, ${originLabel(overlap.origin)}.`;
-  return overlap.attach ? [head, `  See it: ${overlap.attach}`] : [head];
+  const key =
+    overlap.action === 'refuse'
+      ? 'errors.jobs.overlap.refusedHead'
+      : 'errors.jobs.overlap.warningHead';
+  const head = t(key, { subject: overlapSubject(overlap), origin: originLabel(overlap.origin) });
+  return overlap.attach
+    ? [head, t('errors.jobs.overlap.seeIt', { attach: overlap.attach })]
+    : [head];
 }
 
 /** "job <id> (<function> on <repo>) is running, started <ts>". */
 function overlapSubject(overlap: JobOverlap): string {
-  const what = overlap.unit ?? `job ${overlap.jobId ?? UNKNOWN_JOB_ID}`;
+  const what =
+    overlap.unit ?? t('errors.jobs.overlap.whatJob', { id: overlap.jobId ?? UNKNOWN_JOB_ID });
   const doing = overlap.function ?? overlap.command ?? DEFAULT_WORK_LABEL;
   const scope = overlap.repo ?? overlap.repoGuid;
-  const on = scope ? ` on ${scope}` : '';
-  const started = overlap.startedAt ? `, started ${overlap.startedAt}` : '';
-  return `${what} (${doing}${on}) is ${overlap.state ?? DEFAULT_JOB_STATE}${started}`;
+  return t('errors.jobs.overlap.subject', {
+    what,
+    doing,
+    scope: scope ? t('errors.jobs.overlap.onScope', { scope }) : '',
+    state: overlap.state ?? DEFAULT_JOB_STATE,
+    started: overlap.startedAt
+      ? t('errors.jobs.overlap.startedAt', { timestamp: overlap.startedAt })
+      : '',
+  });
 }
 
 /** "started by <user> via <client> (config <name>)", or the older-renet fallback. */
 function originLabel(origin: JobOverlap['origin']): string {
-  if (!origin) return 'started by: unknown (older renet)';
-  const config = origin.config?.name ? ` (config ${origin.config.name})` : '';
-  return `started by ${origin.sshUser ?? UNKNOWN_ORIGIN} via ${origin.client ?? UNKNOWN_ORIGIN}${config}`;
+  if (!origin) return t('errors.jobs.overlap.originUnknown');
+  return t('errors.jobs.overlap.originStarted', {
+    user: origin.sshUser ?? UNKNOWN_ORIGIN,
+    client: origin.client ?? UNKNOWN_ORIGIN,
+    config: origin.config?.name
+      ? t('errors.jobs.overlap.originConfig', { name: origin.config.name })
+      : '',
+  });
 }
 
 /** Parse `renet job start --json` output into a validated handle. */
@@ -401,23 +420,6 @@ export function parseJobList(stdout: string): JobStatus[] {
   const parsed: unknown = JSON.parse(extractJsonValue(stdout));
   if (parsed === null) return [];
   return z.array(JobStatusSchema).parse(parsed);
-}
-
-/** What `renet job gc --json` prints. */
-const JobGcResultSchema = z.object({
-  removed: z.array(z.string()).nullable().default([]),
-  count: z.number(),
-});
-
-export interface JobGcResult {
-  removed: string[];
-  count: number;
-}
-
-/** Parse `renet job gc --json` output. */
-export function parseJobGcResult(stdout: string): JobGcResult {
-  const parsed = JobGcResultSchema.parse(JSON.parse(extractJsonObject(stdout)));
-  return { removed: parsed.removed ?? [], count: parsed.count };
 }
 
 /**
@@ -453,6 +455,17 @@ export function isTerminalState(state: JobStatus['state']): boolean {
 // id the machine made up (`j1-deadbeef; rm -rf /`) must never reach a shell.
 
 /**
+ * The `command` of a job start. Empty arguments name no `--args`, because renet refuses any `--args` on a payload kind,
+ * `{}` included (validateCommandKind), and `license-write` passes `{}`.
+ */
+export function jobStartCommand(
+  name: string,
+  args?: Record<string, unknown>
+): { name: string; args?: string } {
+  return args && Object.keys(args).length > 0 ? { name, args: JSON.stringify(args) } : { name };
+}
+
+/**
  * Build the `renet job start` launch for a DETACHED execution.
  *
  * `env` is passed in rather than computed here, both to keep this module
@@ -481,17 +494,23 @@ export function buildJobStartCommand(params: {
   origin?: string;
   /** The `--steps` JSON array (section 18): the client-side step plan renet keeps in the spool. */
   steps?: string;
+  /** A command kind (section 14) to run instead of a vault function, with its `--args` JSON object. */
+  command?: { name: string; args?: string };
 }): RenetLaunch {
-  const { remoteRenetPath, env, timeoutMs, debug, requestId, attach, origin, steps } = params;
+  const { remoteRenetPath, env, timeoutMs, debug, requestId, attach, origin, steps, command } =
+    params;
   const timeoutFlag = timeoutMs ? ` --timeout ${timeoutMs}ms` : '';
   const debugFlag = debug ? ' --debug' : '';
   const requestFlag = requestId ? ` --request-id ${shellQuote(requestId)}` : '';
   const attachFlag = attach ? ` --attach ${shellQuote(attach)}` : '';
   const originFlag = origin ? ` --origin ${shellQuote(origin)}` : '';
   const stepsFlag = steps ? ` --steps ${shellQuote(steps)}` : '';
+  const commandFlag = command
+    ? ` --command ${shellQuote(command.name)}${command.args ? ` --args ${shellQuote(command.args)}` : ''}`
+    : '';
   return sudoRenet(
     env,
-    `${shellQuote(remoteRenetPath)} job start --executor local --json${timeoutFlag}${debugFlag}${requestFlag}${attachFlag}${originFlag}${stepsFlag}`
+    `${shellQuote(remoteRenetPath)} job start --executor local --json${timeoutFlag}${debugFlag}${requestFlag}${attachFlag}${originFlag}${stepsFlag}${commandFlag}`
   );
 }
 
@@ -516,7 +535,7 @@ const OverlapRefusalSchema = z.object({
  */
 const PreconditionRefusalSchema = z.object({
   refused: z.literal('precondition'),
-  expect: z.enum(['repo_present', 'repo_absent', 'repo_unmounted']),
+  expect: z.enum(['repo_present', 'repo_absent', 'repo_unmounted', 'ceph_datastores_exist']),
   state: z.string(),
   repository: z.string(),
   repo_guid: z.string(),
@@ -728,7 +747,7 @@ export function createEventLineReader(
  * before renet's own output, so we start at the first brace rather than
  * assuming the payload begins at byte zero.
  */
-function extractJsonObject(stdout: string): string {
+export function extractJsonObject(stdout: string): string {
   const start = stdout.indexOf('{');
   const end = stdout.lastIndexOf('}');
   if (start < 0 || end < start) {
@@ -751,6 +770,11 @@ function extractJsonValue(stdout: string): string {
   return trimmed.slice(start);
 }
 
+/** A failed job carries the last renet log lines of any level, led by older error and warning lines: its own explanation is often info-level, and the error/warning-only stderr leaves a bare "signal: killed". */
+function jobStderr(success: boolean, output: { stderr: string; tail?: string }): string {
+  return !success && output.tail ? failedJobStderr(output.stderr, output.tail) : output.stderr;
+}
+
 /**
  * Map a terminal job status onto the ExecuteResult the rest of the CLI expects,
  * so a detached run renders and exits exactly like a synchronous one.
@@ -763,7 +787,7 @@ function extractJsonValue(stdout: string): string {
 export function jobStatusToExecuteResult(
   status: JobStatus,
   wallMs: number,
-  output?: Pick<JobOutputCollector, 'stdout' | 'stderr' | 'steps'>
+  output?: Pick<JobOutputCollector, 'stdout' | 'stderr' | 'steps'> & { tail?: string }
 ): ExecuteResult {
   const success = status.state === 'succeeded';
   const operationDurationMs = jobDurationMs(status) ?? wallMs;
@@ -778,7 +802,7 @@ export function jobStatusToExecuteResult(
     ...(output
       ? {
           stdout: output.stdout,
-          stderr: output.stderr,
+          stderr: jobStderr(success, output),
           ...(output.steps.length > 0 ? { steps: output.steps } : {}),
         }
       : {}),

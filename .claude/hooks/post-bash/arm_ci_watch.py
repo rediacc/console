@@ -46,6 +46,7 @@ _SYSPATH.on_sys_path(_SYSPATH.STOP_DIR)
 
 C = importlib.import_module("wl_core")
 hookio = importlib.import_module("rediacc_hooks.hookio")
+commit_policy = importlib.import_module("rediacc_hooks.commit_policy")
 shellscan = importlib.import_module("rediacc_hooks.shellscan")
 
 TRACE = pathlib.Path(".ci") / "scripts" / "ci" / "ci-trace.py"
@@ -239,7 +240,9 @@ def main():
     if not starts_ci(ev.raw("tool_input", "command")):
         return 0
     try:
-        line = arm(ev.project_dir, ev.field("session_id"))
+        line = arm(
+            commit_policy.command_tree(ev.project_dir, ev.field("cwd")), ev.field("session_id")
+        )
     except Exception as exc:
         line = "CI watch NOT armed (hook error %s: %s)" % (type(exc).__name__, str(exc)[:160])
     if line:

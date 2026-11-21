@@ -367,7 +367,7 @@ def first_read(text: str, sub_pattern: re.Pattern) -> re.Match | None:
 
 
 def job_takes_submodules(job: dict) -> bool:
-    # A job may init its submodules with an explicit `git submodule update` instead of actions/checkout's flag, and housekeeping.yml does exactly that. Recognising only the actions/checkout form would report a job that is perfectly correct, and a gate that cries wolf gets ignored the one time it is right.
+    # A job may init its submodules with an explicit `git submodule update` instead of actions/checkout's flag, and ops-housekeeping.yml does exactly that. Recognising only the actions/checkout form would report a job that is perfectly correct, and a gate that cries wolf gets ignored the one time it is right.
     for step in job.get("steps") or []:
         if isinstance(step, dict) and re.search(
             r"git submodule (update|init)", str(step.get("run") or "")

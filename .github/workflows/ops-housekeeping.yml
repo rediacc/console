@@ -1,0 +1,411 @@
+name: Housekeeping
+
+# Nightly cleanup, decoupled from the release pipeline. This previously ran
+# inline on every push-to-main (a job in ci.yml), which meant version/R2/GHCR
+# cleanup raced live releases, including the orphan sweep that can delete a
+# version's bytes. Running it only on a schedule (or manual dispatch) guarantees
+# it never overlaps a release, so the sentinel+tag bijection is the sole guard
+# for R2 orphans and IN_FLIGHT_VERSION is intentionally NOT set.
+#
+# Four independent jobs:
+#   cleanup            - rediacc_ci.housekeeping.cleanup_versions (releases, tags,
+#                        GHCR, deployments, CF Pages, envs, D1, Turnstile, R2 orphans,
+#                        branches, workflow runs/artifacts/cache).
+#   stripe-cleanup     - Stripe sandbox orphan sweep. No sandbox webhook is verified: the
+#                        edge hosts it pointed at are gone with the product-domain rename.
+#   cf-leftovers       - rediacc_ci.housekeeping.cf_leftovers: a report-only listing of Workers
+#                        scripts, edge/bench D1 databases, routes and custom domains no
+#                        wrangler config accounts for. Deletes nothing; findings never fail it.
+#   budget-check       - rediacc_ci.ci.freshness --check --cadence nightly: every
+#                        artifact .ci/config/freshness.json registers against fresh
+#                        measurements, reported to the nightly-status issue.
+#   gate-costs-capture - a serial ci:quick plus one third of the slow gates, measuring
+#                        each gate's CPU, uploaded as the artifact gate_costs --refresh reads.
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # Daily at 03:00 UTC (clear of CI '0 1' and cd-release-stable '0 6')
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Preview deletions without deleting (cleanup job only)'
+        type: boolean
+        default: true
+
+# Every job below declares its own permissions, so this workflow-level default
+# is deliberately empty: a job added without a block gets nothing and fails
+# loudly, rather than silently inheriting a scope nobody audited it for.
+permissions: {}
+
+concurrency:
+  group: housekeeping
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Cleanup versions
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    # ubuntu-latest, not ubuntu-slim: slim has a hard 15-minute platform
+    # cap, so the 60-minute timeout below was unreachable -- a long run was
+    # silently CANCELLED at 15 rather than timing out. Found by CHECK 3 in
+    # .ci/scripts/security/check_workflow_gates.py.
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    # Checkout only. Every destructive call in this job (releases, tags, GHCR
+    # versions, deployments, environments, branches, runs, artifacts, caches)
+    # runs on the housekeeping-preset App token, not GITHUB_TOKEN.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install the pinned aws CLI
+        uses: ./.github/actions/setup-aws
+
+      - name: Fetch secrets from Bitwarden
+        # LIVE: the BWS_ values below are read by this job's steps, flipped from
+        # secrets.* by the cutover. The secrets.* reads that remain are the
+        # comparator's, which must keep reading GitHub or it compares a value with
+        # itself and passes forever.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN > BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN
+            CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
+            CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
+            CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            GITHUB_APP_ID > BWS_APP_ID
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          preset: housekeeping
+          repositories: console,renet,elite,account
+
+      # Retry BEFORE the cleanups: a run this reruns may itself be a cleanup
+      # (that is the measured case -- Cleanup PR Preview), so giving it the
+      # night's own window to succeed is better than reaping around it.
+      - name: Retry retryable failed runs
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.retry_failed_runs ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      # PLAN-cd-errors-in-ci W4: refuse to delete anything from a release state
+      # that is already broken or cannot be read. rediacc_ci.release.cd_preflight
+      # is read-only; (a) is the sentinel/tag bijection and (c) the floor and
+      # channel pointers. DRIFT or an UNCHECKED read (R2 or `git ls-remote`
+      # unreachable, zero sentinels) exits non-zero, and the cleanup below has
+      # no status function, so it is skipped: housekeeping refuses, never heals.
+      # No version is under release at 03:00, and --release-version is
+      # required, so 0.0.0 is passed: it has no sentinel and no tag, so the
+      # exclusion it buys excludes nothing and no pointer is excused.
+      # AFTER the retry step on purpose: rerunning a failed CD run is how a
+      # sentinel left without its tag gets its tag, and this check must not
+      # block that repair. The tunnel reaper below still runs (`!cancelled()`);
+      # it touches no release state.
+      - name: Release-state preflight (read-only, fails closed)
+        env:
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_preflight
+          --phase pr --release-version 0.0.0 --checks a,c
+
+      - name: Cleanup old releases, tags, packages, previews, R2 orphans, branches
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.cleanup_versions ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+          # IN_FLIGHT_VERSION intentionally unset: nightly never overlaps a
+          # release, so Phase 8d's sentinel+tag bijection is the correct guard.
+          # The ${IN_FLIGHT_VERSION:-} default in the script no-ops when absent.
+
+      # Reap breakpoint tunnels whose in-job teardown never ran. Two paths skip
+      # `if: always()` entirely -- the CI watchdog's force-cancel and a runner
+      # crash -- so this is the ONLY backstop for them. Terminal run state is
+      # the primary signal (the tunnel name encodes the run id); age is a
+      # secondary guard; an inconclusive GitHub answer is never acted on.
+      #
+      # Age-guarded nightly rather than workflow_run-triggered on purpose:
+      # cleanup-on-ci-cancel.yml was exactly that reactive shape and it deleted
+      # in-flight release binaries. Same lesson, shorter floor.
+      #
+      # Continues past a failure of the step above: an unrelated R2 hiccup must
+      # not leave a live tunnel up for another 24 hours.
+      - name: Reap orphaned breakpoint tunnels
+        if: ${{ !cancelled() }}
+        run: .ci/breakpoint/scripts/reap-breakpoint-orphans.sh ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ env.BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+
+  stripe-cleanup:
+    name: Stripe sandbox cleanup
+    # ubuntu-latest, not ubuntu-slim: slim has a hard 15-minute platform
+    # cap, so the 30-minute timeout below was unreachable -- a long run was
+    # silently CANCELLED at 15 rather than timing out. Found by CHECK 3 in
+    # .ci/scripts/security/check_workflow_gates.py.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # pull-requests: read is for cleanup-orphans.ts, which is handed
+    # GH_TOKEN: github.token and shells out to `gh pr view --json state`.
+    # It requireEnv()s the token, so an unscoped one fails the step rather
+    # than degrading. The App token minted here is preset: readonly and
+    # carries no pull_requests scope, so it cannot serve that call.
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch secrets from Bitwarden
+        # LIVE: the BWS_ values below are read by this job's steps, flipped from
+        # secrets.* by the cutover. The secrets.* reads that remain are the
+        # comparator's, which must keep reading GitHub or it compares a value with
+        # itself and passes forever.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            GITHUB_APP_ID > BWS_APP_ID
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+      - uses: ./.github/actions/setup-node-npm
+
+      - name: Install dependencies
+        run: npm ci && npm run install:natives
+
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - uses: ./.github/actions/app-token
+        id: app-token-stripe
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,account
+
+      - name: Initialize account submodule
+        run: git submodule update --init private/account
+
+      - name: Install account dependencies
+        run: npm install
+        working-directory: private/account
+
+      - name: Cleanup orphaned Stripe sandbox resources
+        run: npx tsx scripts/cleanup-orphans.ts
+        working-directory: private/account
+        env:
+          STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          GH_TOKEN: ${{ github.token }}
+
+  cf-leftovers:
+    name: Cloudflare leftovers report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+
+      # Report only: GET listings, no deletion. A finding is a line in this log and exits 0;
+      # only an unreadable listing fails the step, so an API outage is not read as "nothing found".
+      - name: Report Cloudflare leftovers
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.cf_leftovers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+
+      # The live half of check:ci-region-consistency: the seven account targets (stable and edge in eu, us,
+      # asia, plus bench) against Cloudflare, GET only, names and ids only. Drift exits 1; a listing the token
+      # cannot read (R2 needs Workers R2 Storage Read) is UNCHECKED and exits 2, never green.
+      - name: Region consistency (live)
+        if: ${{ !cancelled() }}
+        run: .ci/scripts/quality/check_region_consistency.py --live
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+
+  budget-check:
+    name: CI time budget check
+    # T3.3 (PLAN-ci-time-budget). No app-token: none of the housekeeping presets
+    # (readonly, housekeeping, cd) grant `issues`, the same reason ops-nightly-status.yml
+    # gives for using its own job-scoped `github.token` instead of the App -- it cannot
+    # bypass the branch-protection ruleset and creates no further workflow runs, so it
+    # is the smaller grant for the same read (Actions API) plus post (an issue comment)
+    # this job needs.
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read # sample ci.yml's own runs/jobs/artifacts (budget_report.py)
+      issues: write # post to the nightly-red issue thread on a failing check
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # .ci for the rediacc_ci package, scripts/ci for report-budget-check.cjs,
+          # .github for the workflow YAML budget_report.py's lane_display_patterns reads,
+          # scripts/ci-runner for the gates.lock.json gate_costs.py --check compares against;
+          # .ci also carries config/freshness.json, the registry the check step runs.
+          sparse-checkout: |
+            .ci
+            .github
+            scripts/ci
+            scripts/ci-runner
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-slim
+
+      # ONE STEP, ONE REPORT WRITER (agent/plans/PLAN-ci-consolidation.md Part B). Every
+      # artifact .ci/config/freshness.json registers at the nightly cadence is checked
+      # here (today lane-durations.json via budget_report --check and gate-costs.json
+      # via gate_costs --check), and rediacc_ci.ci.freshness alone writes the summary
+      # the report step posts, one section per artifact. A missing artifact, a check
+      # that cannot start and a refused registry are all failures, never a pass.
+      - name: CI time budget check
+        id: budget-check
+        run: |
+          set +e
+          PYTHONPATH=.ci python3 -m rediacc_ci.ci.freshness --check --cadence nightly --report-to /tmp/budget-check.txt
+          rc=$?
+          echo "rc=$rc" >>"$GITHUB_OUTPUT"
+          exit 0
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      # A SEPARATE STEP FROM THE FAILURE ITSELF, so the issue gets posted whether or
+      # not the next step's own `exit 1` runs -- see report-budget-check.cjs's own
+      # header for why this posts its own dated section rather than reusing
+      # report-nightly-status.cjs's function, which is wired to a DIFFERENT trigger
+      # (workflow_run: completed of "Console CI") with no payload this cron carries.
+      - name: Report a stale or over-budget CI leg
+        if: steps.budget-check.outputs.rc != '0'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          BUDGET_CHECK_SUMMARY_PATH: /tmp/budget-check.txt
+        with:
+          script: return await require('./scripts/ci/report-budget-check.cjs')({github, context, core})
+
+      - name: Fail the job when the budget check failed
+        if: steps.budget-check.outputs.rc != '0'
+        run: exit 1
+
+  gate-costs-capture:
+    name: Gate cost capture
+    # PLAN-ci-quick-cpu-scheduling 2.5. CI runs each gate as its own workflow step, so
+    # the only per-gate CPU figures come from this serial run (--jobs 1: every gate
+    # uncontended). gate_costs.py --refresh/--check read the last SAMPLE_CAPTURES (3)
+    # uploads, all the repository's 3-day artifact retention leaves alive
+    # (.ci/config/actions-retention.json; check:ci-workflows caps retention-days there).
+    #
+    # TWO RUNS, ONE CAPTURE. The serial ci:quick measures the fast gates, but --quick
+    # runs a slow gate only when the day's diff touches it (3 of 69 in capture
+    # 37294996911), so the slow gates went unmeasured for weeks. The second run takes
+    # one third of the slow set per night (run.ts --slow-rotation, split by CI step
+    # p90 so each third is 1112-1293 s with its prerequisites). THREE, the same as
+    # gate_costs's SAMPLE_CAPTURES: the repository keeps artifacts 3 days, so no more
+    # than 3 nightly captures exist at once and every slow gate must fall inside
+    # them. Both runs land in ONE gate-costs-<sha> artifact, because collect_captures
+    # reads the first gate-costs-* artifact of a run.
+    #
+    # BUDGET, 2026-10-07: setup about 1 min; the quick run 277.5 s healthy, bounded at
+    # 12 min; the rotation 19-22 min by p90 (a local 4/5 sample ran 1.2x its p90
+    # estimate once build:www was counted), bounded at 32 min with every slow gate
+    # killed at 600 s (a 1-core grant can stretch a parallel suite past its p90, and
+    # the kill names it rather than eating the night). 50 minutes clears the sum of
+    # both bounds. Each gate also carries the runner's own kill timer
+    # (scripts/ci-runner/gate-timeout.ts), so a hung gate is killed and NAMED in the
+    # log rather than silently outliving the job, as it did on 2026-10-06 and -07
+    # (check:ci-docs-browse-invariants, a 0.5 s gate, still running at the cancel).
+    # Gates this bare checkout cannot run (no submodules, no Go or uv toolchain) fail
+    # fast and land in the file's `unmeasured` list, not in its medians.
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+        with:
+          natives: 'true'
+
+      # Gate reds are expected on this checkout and do not fail the capture; a missing
+      # or empty report does, since an artifact nobody can read measures nothing. The
+      # runner's stderr (a start and a finish line per gate) streams into this log
+      # live AND into a file uploaded below, so a run that is cut short still shows
+      # which gate it was waiting on. On the outer timeout the runner's SIGTERM
+      # handler prints the gates still running and kills their process groups.
+      #
+      # CAPTURE_DIR puts the three captures OUTSIDE the checkout (#b4e94451): written to
+      # the repo root, quick.json counted as a changed file in the rotation's diff. It is
+      # set per step because job-level `env` cannot read the `runner` context.
+      - name: Capture per-gate CPU (serial ci:quick)
+        env:
+          CAPTURE_DIR: ${{ runner.temp }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.capture_gate_costs quick
+
+      # Never fails by itself: a hung or unreadable rotation must not cost the night's
+      # fast capture, so its verdict is carried in `rc` and the last step fails on it.
+      - name: Capture slow-gate rotation (one third per night)
+        id: rotation
+        env:
+          CAPTURE_DIR: ${{ runner.temp }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.capture_gate_costs rotation
+
+      - name: Merge the rotation into the capture
+        env:
+          CAPTURE_DIR: ${{ runner.temp }}
+          ROTATION_RC: ${{ steps.rotation.outputs.rc }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.capture_gate_costs merge
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: gate-costs-${{ github.sha }}
+          path: ${{ runner.temp }}/gate-costs.json
+          retention-days: 3
+          if-no-files-found: error
+
+      # The runner's stderr, kept whatever happened above. NOT named gate-costs-*:
+      # gate_costs.collect_captures reads the first artifact with that prefix as a capture.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: capture-logs-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/gate-costs-*.log
+          retention-days: 3
+          if-no-files-found: warn
+
+      - name: Fail the job when the slow rotation failed
+        if: steps.rotation.outputs.rc != '0'
+        run: exit 1

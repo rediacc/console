@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: de
-sourceHash: "d6d980d721be2373"
-sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
+sourceHash: "78e880294cc0bf15"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 # Lizenz-Chain & Delegation
@@ -118,7 +118,7 @@ Ein Delegierungszertifikat enthält:
 
 ### Wie Delegation funktioniert
 
-1. Enterprise-Admin generiert ein Ed25519-Schlüsselpaar auf dem On-Premise-Server.
+1. Der Admin generiert ein Ed25519-Schlüsselpaar auf dem On-Premise-Server.
 2. Admin fordert ein Delegierungszertifikat vom vorgelagerten System an:
    ```
    POST /admin/delegation-certs
@@ -322,8 +322,8 @@ Ein Erneuerungsanforderungs-Manifest erfasst den Kettenkopf zum Generierungszeit
 
 Wenn das neue Zertifikat zurück auf den On-Premise-Server hochgeladen wird, prüft `/onprem/cert-upload`, ob `genesisSequence` des neuen Zertifikats noch mit einem bekannten Eintrag im lokalen Ausstellungs-Ledger verbunden ist:
 
-- Wenn `cert.genesisSequence > localHead.sequence` - gibt `409 CHAIN_HEAD_BEHIND` zurück (vorgelagertes System befindet sich auf einer abgezweigten Kette).
-- Wenn `cert.genesisSequence > 0` und der lokale Ledger-Eintrag an dieser Sequenz einen anderen `chainHash` als `cert.genesisHash` hat - gibt `409 CHAIN_FORK_ON_UPLOAD` zurück (lokale Kette hat sich abgezweigt).
+- Wenn `cert.genesisSequence > localHead.sequence` - gibt `409` mit dem Code `chain-ahead` zurück.
+- Wenn `cert.genesisSequence > 0` und der lokale Ledger-Eintrag an dieser Sequenz einen anderen `chainHash` als `cert.genesisHash` hat - gibt `409` mit dem Code `chain-fork` zurück.
 - Andernfalls wird das Zertifikat akzeptiert. Zukünftige Ausstellungen setzen bei `localHead.sequence + 1` fort.
 
 Das bedeutet, **während des Transits ist kein Schreibstopp erforderlich**. Die Kette verlängert sich auf beiden Seiten natürlich. Entspricht der Handhabung von In-Flight-Seriennummern bei der X.509-Zertifikatserneuerung.

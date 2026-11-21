@@ -24,6 +24,9 @@ import { createHash } from 'node:crypto';
  *                                [--changed] [--json] [--list]
  *                                [--merge-output] [--verbose] [--selftest]
  *                                [--lane <lane> --shard i/N]
+ *                                [--narrow [--print] [--paths <p...> | --whole-tree]]
+ *
+ * `--narrow` selects from the last receipt's non-carried fails, their learned clusters, and the gates the CHANGE SET touches. The change set is the staged paths plus the commits since the receipt's head; other dirty or untracked files in a shared tree are ignored. `--paths <p...>` names the set instead, and `--whole-tree` judges every path that differs from the receipt's head in the working tree.
  *
  * `--lane <lane> --shard i/N` (PLAN-ci-time-budget T2.10) replays one committed CI leg of
  * a sharded lane locally, from `.ci/config/shards/<lane>.json`. Today this only resolves
@@ -48,9 +51,11 @@ import {
   execGate,
   type Grant,
   gateEnv,
+  gateSpawnArgv,
   killLiveGates,
   LEASE_HELD_ENV,
   liveGates,
+  NONCRITICAL_NICE,
   processAlive,
   psFailureState,
   refuseNewGates,
@@ -72,6 +77,11 @@ import {
   type GateHash,
   inputHashSelftest,
   type LockEntry,
+  type LsEntry,
+  listLines,
+  lsTree,
+  matchGlob,
+  nameLines,
   type PriorGate,
   type PriorReceipt,
   planCarry,
@@ -83,6 +93,7 @@ import {
 import { stepDurationsMs } from './lanes';
 import { learnedSelftest } from './learned-selftest';
 import { grantFromEnv, leaseClientSelftest, openLease, type RunnerLease } from './lease-client';
+import { seedReceipt } from './lease-seed';
 import {
   cappedChanged,
   type GateLedger,
@@ -93,6 +104,7 @@ import {
   openLedger,
   outcomeOf,
 } from './ledger';
+import { localWarnSelftest, softenLocalWarn, warnedExitCodeFor, warnedFor } from './local-warn';
 import { GATES, type GateSpec } from './manifest';
 import {
   buildGraph,
@@ -104,7 +116,7 @@ import {
   runPool,
   type Sched,
 } from './pool';
-import { NO_CARRY_ENV, quickCloneSelftest } from './quick-clone';
+import { ADVANCE_REFUSED_EXIT, leaseMainOf, NO_CARRY_ENV, quickCloneSelftest } from './quick-clone';
 import {
   admitTouched,
   type DropKind,
@@ -144,7 +156,13 @@ import {
   type Utilisation,
   utilisation,
 } from './report';
-import { type ChangeSet, ChangeSetRefusal, selectChanged } from './select';
+import {
+  type ChangeSet,
+  ChangeSetRefusal,
+  type NameEntry,
+  selectChanged,
+  selectSelftest,
+} from './select';
 import { legIds, parseShardManifest, shardManifestPath } from './shard-manifest';
 import { predictMakespan, reclaimLoopSelftest, schedulerSelftest } from './sim';
 import { unitsFrom } from './unit-enumerators';
@@ -207,6 +225,10 @@ interface Options {
   shard?: { index: number; of: number };
   /** `--receipt-out`: where to write the push receipt instead of this checkout's own `.ci/cache/`. */
   receiptOut?: string;
+  /** `--advance-from <abs path>`: the receipt a `--quick` advance plans from, in place of the one at the destination. quick-clone.ts passes a pinned run's receipt on its follow pass, so the step starts at the tree the pinned run judged (agent/plans/PLAN-push-decoupling.md D1.2). */
+  advanceFrom?: string;
+  /** `--advance-only`: take the record-only advance or nothing. When the receipt cannot be advanced the run prints why and exits ADVANCE_REFUSED_EXIT without running the lane (`worklist.py --review-commit` starts it, agent/plans/PLAN-push-decoupling.md R3). */
+  advanceOnly?: boolean;
   /** `--gate-timeout <s>`: one kill timer for every gate, in place of each gate's derived one (gate-timeout.ts). */
   gateTimeoutMs?: number;
   /** `--slow-rotation i/N`: run only bucket i of the slow set split N ways by cost (`rotationBucket`), for housekeeping's gate-cost capture. */
@@ -219,6 +241,10 @@ interface Options {
   narrow: boolean;
   /** `--narrow --print`: print the narrow set and its command, run nothing. */
   narrowPrint: boolean;
+  /** `--narrow --paths <p...>`: the paths the commit in hand will take; the touched-gate rules judge these and no other path. */
+  narrowPaths?: string[];
+  /** `--narrow --whole-tree`: judge every path that differs from the receipt's head in the working tree, other sessions' dirty files included (the behaviour before `--paths` and the staged default). */
+  narrowWholeTree?: boolean;
   /** `--events <abs>`: the machine stream (run-start, gate-red, stage-done, run-end). Default for a --quick run: <receipt dir>/ci-quick-events/<runId>.jsonl. */
   events?: string;
 }
@@ -375,12 +401,37 @@ function parseArgs(argv: readonly string[]): Options {
       case '--print':
         opts.narrowPrint = true;
         break;
+      case '--whole-tree':
+        opts.narrowWholeTree = true;
+        break;
+      case '--paths': {
+        // Variadic: every following argument up to the next flag; a comma also separates, so `--paths a,b` and `--paths a b` read alike.
+        const given: string[] = [];
+        while (argv[i + 1] !== undefined && !argv[i + 1].startsWith('--')) {
+          given.push(...argv[i + 1].split(',').filter(Boolean));
+          i += 1;
+        }
+        if (given.length === 0) throw new Error('ci-runner: --paths needs at least one path');
+        opts.narrowPaths = [...(opts.narrowPaths ?? []), ...given];
+        break;
+      }
       case '--events': {
         // ABSOLUTE ONLY, as --receipt-out: npm runs scripts from whichever directory it chose.
         const out = value(i, arg);
         if (!path.isAbsolute(out))
           throw new Error(`ci-runner: ${arg} needs an absolute path, got '${out}'`);
         opts.events = out;
+        i += 1;
+        break;
+      }
+      case '--advance-only':
+        opts.advanceOnly = true;
+        break;
+      case '--advance-from': {
+        const from = value(i, arg);
+        if (!path.isAbsolute(from))
+          throw new Error(`ci-runner: ${arg} needs an absolute path, got '${from}'`);
+        opts.advanceFrom = from;
         i += 1;
         break;
       }
@@ -427,6 +478,12 @@ function parseArgs(argv: readonly string[]): Options {
   }
   if (opts.narrowPrint && !opts.narrow)
     throw new Error('ci-runner: --print goes with --narrow, which it prints instead of running.');
+  if ((opts.narrowPaths !== undefined || opts.narrowWholeTree === true) && !opts.narrow)
+    throw new Error(
+      'ci-runner: --paths and --whole-tree go with --narrow, whose change set they pick.'
+    );
+  if (opts.narrowPaths !== undefined && opts.narrowWholeTree === true)
+    throw new Error('ci-runner: --paths and --whole-tree are two change sets; name one.');
   if (
     opts.narrow &&
     (opts.only !== undefined ||
@@ -570,6 +627,34 @@ function expandGitlinks(named: readonly string[], warn: (text: string) => void):
 }
 
 /**
+ * The two listings a `lists`/`names` gate is scoped by under `--changed` (select.ts): the tracked entries at the merge base, and the judged state, which is the diff's own other side, the working tree: the index entries minus the tracked files deleted on disk (`git diff <base>` lists those as changed too). Untracked files are on neither side, as in the diff. Lazy, so a run with no such gate never lists anything; undefined when git cannot answer.
+ */
+function changeSetListings(mergeBase: string): NonNullable<ChangeSet['listings']> {
+  const before = (): NameEntry[] | undefined => {
+    try {
+      return lsTree(REPO_ROOT, mergeBase).map((e) => ({ mode: e.mode, path: e.path }));
+    } catch {
+      return undefined;
+    }
+  };
+  const after = (): NameEntry[] | undefined => {
+    const staged = gitTry(['ls-files', '-s', '-z']);
+    const deleted = gitTry(['ls-files', '-d', '-z']);
+    if (staged === undefined || deleted === undefined) return undefined;
+    const gone = new Set(deleted.split('\0').filter(Boolean));
+    const out: NameEntry[] = [];
+    for (const rec of staged.split('\0')) {
+      const tab = rec.indexOf('\t');
+      if (tab < 0) continue;
+      const p = rec.slice(tab + 1);
+      if (!gone.has(p)) out.push({ mode: rec.slice(0, rec.indexOf(' ')), path: p });
+    }
+    return out;
+  };
+  return { before, after };
+}
+
+/**
  * The change set, WITH its provenance. It used to return a bare `string[]` and
  * swallow a git failure into `[]` under a warning that said "selecting every gate"
  * -- which was false, because `select()` then dropped every path-declaring gate for
@@ -595,6 +680,7 @@ function changedFiles(): ChangeSet {
       files: expandGitlinks(named, (t) => process.stderr.write(t)),
       origin: 'resolved',
       base,
+      listings: changeSetListings(mergeBase),
     };
   } catch (err) {
     return {
@@ -776,7 +862,7 @@ function slowClosure(specs: readonly GateSpec[]): Set<string> {
 const ROTATION_UNPRICED_MS = 60_000;
 
 /**
- * THE SLOW ROTATION (housekeeping.yml's gate-cost capture). `--quick` runs a slow gate only when the day's diff touches it, so a nightly capture of the quick lane measured 3 of 69 slow gates (capture 37294996911) and most went unmeasured for weeks. Bucket i of N is that night's share: the slow gates sorted by cost (CI step p90, else ROTATION_UNPRICED_MS) and dealt longest first onto the lightest bucket (LPT), so N consecutive nights measure every one and no night carries two of the longest. Deterministic for a given lane-durations.json, which is what lets a rotation index taken from the date mean anything.
+ * THE SLOW ROTATION (ops-housekeeping.yml's gate-cost capture). `--quick` runs a slow gate only when the day's diff touches it, so a nightly capture of the quick lane measured 3 of 69 slow gates (capture 37294996911) and most went unmeasured for weeks. Bucket i of N is that night's share: the slow gates sorted by cost (CI step p90, else ROTATION_UNPRICED_MS) and dealt longest first onto the lightest bucket (LPT), so N consecutive nights measure every one and no night carries two of the longest. Deterministic for a given lane-durations.json, which is what lets a rotation index taken from the date mean anything.
  */
 export function rotationBucket(
   ids: readonly string[],
@@ -1402,6 +1488,23 @@ async function fileAppears(file: string, ms: number): Promise<boolean> {
   return false;
 }
 
+/** A gate normally dies within well under a second of its runner being SIGKILLed; a host at load 15 has been seen to miss a fixed 3 s. The bound is generous on purpose: the control still fails when the gate truly survives, only later. */
+const RUNNER_DEATH_BOUND_MS = 20_000;
+
+/** Poll until `pid` is gone; the elapsed ms when it went, or null when it was still alive at `boundMs`. */
+export async function waitGone(
+  pid: number,
+  boundMs: number,
+  alive: (pid: number) => boolean
+): Promise<number | null> {
+  const start = Date.now();
+  while (Date.now() - start < boundMs) {
+    if (!alive(pid)) return Date.now() - start;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  return alive(pid) ? null : Date.now() - start;
+}
+
 /** SIGKILL the pid a planted gate wrote, so a broken check never leaves its plant running. */
 function killPidFile(file: string): void {
   try {
@@ -1463,6 +1566,47 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
   require_(!processAlive(zPid), 'processAlive must call an exited, unreaped child (a zombie) dead');
   require_(processAlive(process.pid), 'processAlive must call a running process alive');
   require_(!processAlive(Number.NaN), 'processAlive must refuse a pid that is not a number');
+  // D3 (PLAN-two-track-merge-dev C1): a gate off the critical path launches niced, a pinned one at base priority.
+  const offPath = gateSpawnArgv('true', true, false);
+  const onPath = gateSpawnArgv('true', true, true);
+  require_(
+    offPath.cmd === 'nice' &&
+      offPath.args.slice(0, 3).join(' ') === `-n ${NONCRITICAL_NICE} bash` &&
+      offPath.niceness === NONCRITICAL_NICE,
+    `a non-pinned gate's argv must carry the nice prefix, got ${offPath.cmd} ${offPath.args.slice(0, 3).join(' ')}`
+  );
+  require_(
+    onPath.cmd === 'bash' &&
+      onPath.niceness === 0 &&
+      gateSpawnArgv('true', true, undefined).cmd === 'bash' &&
+      gateSpawnArgv('true', false, false).cmd === 'bash',
+    'CONTROL: a pinned gate, a run with ranking off and an unwrapped spawn keep base priority'
+  );
+  require_(
+    criticalOf({ on: true, order: { pinned: new Set(['a']) } }, 'a') === true &&
+      criticalOf({ on: true, order: { pinned: new Set(['a']) } }, 'b') === false &&
+      criticalOf({ on: false }, 'a') === undefined &&
+      criticalOf(undefined, 'a') === undefined,
+    'criticalOf: pinned is critical, unpinned is not, ranking off decides nothing'
+  );
+  const niceSpec = {
+    id: 'selftest:nice',
+    run: 'nice',
+    heavy: false,
+    needs: [],
+  } as unknown as GateSpec;
+  const [base, niced] = await Promise.all([
+    execGate(niceSpec, { cwd: REPO_ROOT, mergeOutput: false, critical: true }),
+    execGate(niceSpec, { cwd: REPO_ROOT, mergeOutput: false, critical: false }),
+  ]);
+  // The kernel clamps nice at 19, so under an already-niced runner (ci:quick runs its gates, this selftest among them, below the critical path) the step is what is left above the runner's own level.
+  const baseNice = Number(base.stdout.trim());
+  require_(
+    Number(niced.stdout.trim()) - baseNice === Math.min(NONCRITICAL_NICE, 19 - baseNice) &&
+      niced.niceness === NONCRITICAL_NICE &&
+      base.niceness === 0,
+    `a non-critical gate must run min(${NONCRITICAL_NICE}, 19 - the critical gate's level) nice levels below a critical one, got ${base.stdout.trim()} and ${niced.stdout.trim()}`
+  );
   require_(
     psFailureState({ status: 1, stdout: '', stderr: '' }) === 'Z',
     "psFailureState: ps's quiet exit 1 means no such process, so the pid is gone"
@@ -1588,12 +1732,33 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
     );
     killed9.child.kill('SIGKILL');
     await killed9.done;
-    const kDeadline = Date.now() + 3_000;
-    while (pidAlive(kGate) && Date.now() < kDeadline) await new Promise((r) => setTimeout(r, 50));
+    const goneAfter = await waitGone(kGate, RUNNER_DEATH_BOUND_MS, pidAlive);
     require_(
-      Number.isInteger(kGate) && !pidAlive(kGate),
-      `a gate must die within 3 s of its runner being SIGKILLed, pid ${kGate} is still alive`
+      Number.isInteger(kGate) && goneAfter !== null,
+      `a gate must die within ${RUNNER_DEATH_BOUND_MS / 1000} s of its runner being SIGKILLed (it normally takes well under 1 s; the bound only absorbs host load), pid ${kGate} was still alive after ${RUNNER_DEATH_BOUND_MS} ms`
     );
+    // THE PLANT: a gate that survives its runner (here a process in its own session, outside the watcher's group) must make waitGone report null, or the control above could never go red. Short bound; the plant is killed at once.
+    const survivor = spawn('tail', ['-f', '/dev/null'], { stdio: 'ignore', detached: true });
+    // Node reports a failed spawn (ENOENT for a missing `tail`) asynchronously, as an 'error' event; wait for 'spawn' or 'error' before reading the outcome, or the message below would always say "nothing". The listener also keeps a missing binary from aborting the selftest as an unhandled event.
+    const survivorSpawnError = await new Promise<Error | null>((resolve) => {
+      survivor.once('error', (e) => resolve(e));
+      survivor.once('spawn', () => resolve(null));
+    });
+    require_(
+      survivorSpawnError === null && survivor.pid !== undefined,
+      `CONTROL: the plant needs the tail binary, spawn said ${String(survivorSpawnError ?? 'nothing')}`
+    );
+    const survivorPid = survivor.pid ?? Number.NaN;
+    const survivorGone = await waitGone(survivorPid, 600, pidAlive);
+    require_(
+      survivorGone === null,
+      `CONTROL: waitGone must report null for a gate that survives (plant pid ${survivorPid}), got ${survivorGone}`
+    );
+    try {
+      survivor.kill('SIGKILL');
+    } catch {
+      /* gone */
+    }
     killPidFile(kPid);
 
     const [t, sig] = await Promise.all([timed.done, signalled.done]);
@@ -1664,6 +1829,11 @@ function syntheticSpec(id: string, run: string, needs?: string[]): GateSpec {
   };
 }
 
+/** The most the hand-kept selftest sum ever printed before every require_ counted; the real count must stay above it. */
+const SELFTEST_ASSERTION_FLOOR = 413;
+/** Floor for selftest()'s own require_ calls alone, well under the 188 counted when it was set, so a legitimate removal does not trip it. */
+const SELFTEST_REQUIRE_FLOOR = 150;
+
 /**
  * The runner's anti-vacuity control, wired into the `ci` npm key itself so it
  * cannot sit behind a flag nothing invokes -- the exact failure
@@ -1702,7 +1872,10 @@ async function selftest(): Promise<number> {
   const text = captured.join('');
 
   const failures: string[] = [];
+  // EVERY require_ COUNTS. The printed total used to be a hand-kept sum of literals ("9 + 1 + ... + 4 + 11"), which nothing kept in step with the calls: it read 413 while the W2.4 advance and select controls ran uncounted, and it left out two sub-selftests (local-warn, quick-clone) entirely.
+  let requireCount = 0;
   const require_ = (cond: boolean, message: string): void => {
+    requireCount += 1;
     if (!cond) failures.push(message);
   };
   require_(exitCode === 1, `a failing gate must make the run exit 1, got ${exitCode}`);
@@ -1970,6 +2143,80 @@ async function selftest(): Promise<number> {
   );
   require_(!refusedArgs(['--quick', '--narrow', '--print']), 'CONTROL: --narrow --print parses');
   require_(
+    refusedArgs(['--paths', 'a']) && refusedArgs(['--whole-tree']),
+    '--paths and --whole-tree without --narrow must be refused'
+  );
+  require_(
+    refusedArgs(['--narrow', '--paths', 'a', '--whole-tree']) &&
+      refusedArgs(['--narrow', '--paths']),
+    '--paths with --whole-tree, or with no path, must be refused'
+  );
+  require_(
+    JSON.stringify(parseArgs(['--narrow', '--paths', 'a', 'b,c', '--print']).narrowPaths) ===
+      '["a","b","c"]',
+    '--paths must read every argument up to the next flag, commas included'
+  );
+  {
+    const pathless = [{ id: 'g', run: 'npm run g', paths: [], leaves: [], ciOnly: undefined }];
+    const base = {
+      root: REPO_ROOT,
+      changed: ['Dockerfile'],
+      matches: matchesAny,
+      scriptsNow: {},
+      scriptsBase: {},
+    };
+    require_(
+      touchedSlow(pathless, base).length === 1,
+      'CONTROL: the quick lane still selects a path-less gate on any change (rule 4)'
+    );
+    require_(
+      touchedSlow(pathless, { ...base, failOpen: NARROW_FAIL_OPEN }).length === 0,
+      '--narrow must not select a path-less gate just because something changed (rule 4 off)'
+    );
+  }
+  // THE NARROW CHANGE SET IS THE COMMIT'S, NOT THE TREE'S (hostinger bug report 2026-11-20, defect 7).
+  {
+    const fakeGit =
+      (calls: string[][]) =>
+      (args: readonly string[]): string | undefined => {
+        calls.push([...args]);
+        const a = args.join(' ');
+        if (a === 'diff --cached --name-only')
+          return 'Dockerfile\npackages/cli/templates/single-service/docker-compose.yml\npackages/cli/src/templates/embedded.generated.ts';
+        if (a === 'diff --name-only HEAD0 HEAD') return '';
+        if (a === 'diff --name-only HEAD0')
+          return 'Dockerfile\npackages/cli/templates/single-service/docker-compose.yml\npackages/cli/src/templates/embedded.generated.ts\n.claude/other-session.py';
+        if (a === 'ls-files --others --exclude-standard') return '.claude/untracked-peer.py';
+        return undefined;
+      };
+    const calls: string[][] = [];
+    const staged = narrowChangeSet({}, 'HEAD0', fakeGit(calls));
+    require_(
+      staged?.paths.length === 3 && !staged.paths.some((p) => p.startsWith('.claude/')),
+      "the default narrow change set is the staged three; a peer session's dirty files must not be in it"
+    );
+    require_(
+      !calls.some((c) => c[0] === 'ls-files') &&
+        !calls.some((c) => c.join(' ') === 'diff --name-only HEAD0'),
+      'the default narrow change set must not read the working tree (no untracked listing, no diff against the receipt head)'
+    );
+    const whole = narrowChangeSet({ narrowWholeTree: true }, 'HEAD0', fakeGit([]));
+    require_(
+      whole?.paths.includes('.claude/other-session.py') === true &&
+        whole.paths.includes('.claude/untracked-peer.py'),
+      '--whole-tree must still see every dirty and untracked path'
+    );
+    const explicit = narrowChangeSet({ narrowPaths: ['x/y.ts'] }, 'HEAD0', fakeGit([]));
+    require_(
+      explicit?.paths.length === 1 && explicit.paths[0] === 'x/y.ts',
+      '--paths must be the whole change set, whatever is staged or dirty'
+    );
+    require_(
+      narrowChangeSet({}, 'HEAD0', () => undefined) === undefined,
+      'CONTROL: git that cannot answer yields no change set, not an empty one read as clean'
+    );
+  }
+  require_(
     receiptDue(parseArgs(['--quick']), false) &&
       !receiptDue(parseArgs(['--quick', '--narrow']), false) &&
       !receiptDue(parseArgs(['--quick']), true),
@@ -2002,6 +2249,38 @@ async function selftest(): Promise<number> {
   require_(
     receiptPathFor(parseArgs(['--quick'])) === RECEIPT_PATH,
     "CONTROL: without --receipt-out the receipt stays in this checkout's own cache"
+  );
+  // A lease's --narrow reads the main checkout's receipt, which the seed copies; no receipt is no copy and no failure.
+  {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-lease-receipt-'));
+    const rel = path.relative(REPO_ROOT, RECEIPT_PATH);
+    const live = path.join(dir, 'live');
+    const lease = path.join(dir, 'lease');
+    try {
+      fs.mkdirSync(lease);
+      seedReceipt(lease, live);
+      require_(
+        !fs.existsSync(path.join(lease, rel)),
+        'CONTROL: a main checkout with no receipt seeds none into the lease'
+      );
+      fs.mkdirSync(path.dirname(path.join(live, rel)), { recursive: true });
+      fs.writeFileSync(path.join(live, rel), '{"failed":[]}');
+      seedReceipt(lease, live);
+      require_(
+        fs.readFileSync(path.join(lease, rel), 'utf8') === '{"failed":[]}',
+        "the seed must copy the main checkout's receipt to the path --narrow reads in the lease"
+      );
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+  require_(
+    wholeLane('/main') === '`npm run ci:quick` in /main' && narrowScript('/main') === 'ci',
+    'in a lease the narrow messages must name the main checkout and the script a lease can run'
+  );
+  require_(
+    wholeLane(undefined) === '`npm run ci:quick`' && narrowScript(undefined) === 'ci:quick',
+    'CONTROL: outside a lease the narrow messages name ci:quick and no other checkout'
   );
   let relRefused = false;
   try {
@@ -2353,6 +2632,63 @@ async function selftest(): Promise<number> {
   // --quick DIFF SELECTION (quick-select.ts). The pure half: touch, import closure, npm script change, the mutant matcher, the budget, the base fallback.
   const qs = quickSelectSelftest(os.tmpdir(), matchesAny);
   for (const f of qs.failures) require_(false, `quick-select: ${f}`);
+  // THE --changed NAME-SHAPED SCOPE (select.ts, W2.4), under the runner's own glob dialect.
+  const sel = selectSelftest(matchesAny);
+  for (const f of sel.failures) require_(false, `select: ${f}`);
+  require_(sel.assertions > 0, 'select: the selftest asserted nothing');
+  // THE LOCAL ADVISORY GATE (local-warn.ts): warning in the quick lane, still blocking in CI, read from the real manifest and workflow.
+  const lw = localWarnSelftest(REPO_ROOT, GATES);
+  for (const f of lw.failures) require_(false, `local-warn: ${f}`);
+  // THE RECEIPT CARRIES THE SOFTENED RUN: `warned` and the real exit code reach the gate's receipt entry, the verdict stays ok with exitCode 0, and an unsoftened gate carries neither.
+  {
+    const spec = GATES.find((g) => g.gate);
+    if (spec === undefined) {
+      require_(false, 'local-warn receipt: the manifest has no gate to build a receipt entry from');
+    } else {
+      const soft = new Map<string, string>();
+      const codes = new Map<string, number | null>();
+      soft.set(spec.id, `${spec.id} exited 7; fixture`);
+      codes.set(spec.id, 7);
+      const input = {
+        specs: [spec],
+        results: [{ id: spec.id, status: 'ok', exitCode: 7 }],
+        carry: new Map<string, PriorGate>(),
+        hashes: new Map<string, GateHash>(),
+        findings: {},
+        tree: 'fixture',
+        disposable: false,
+      };
+      const warnedEntry = receiptGates({ ...input, warned: soft, warnedCodes: codes })[spec.id];
+      const plainEntry = receiptGates({ ...input, warned: new Map(), warnedCodes: new Map() })[
+        spec.id
+      ];
+      require_(
+        warnedEntry?.verdict === 'ok' &&
+          warnedEntry.exitCode === 0 &&
+          warnedEntry.warned === `${spec.id} exited 7; fixture` &&
+          warnedEntry.warnedExitCode === 7,
+        `local-warn receipt: a softened gate's entry must keep verdict ok and exitCode 0 and carry warned and warnedExitCode 7, got ${JSON.stringify(warnedEntry)}`
+      );
+      // A gate killed by a signal has no exit code: its warnedExitCode is null, never 0 (the entry's own exitCode stays 0, the verdict being ok).
+      const killedEntry = receiptGates({
+        ...input,
+        warned: soft,
+        warnedCodes: new Map<string, number | null>([[spec.id, null]]),
+      })[spec.id];
+      require_(
+        killedEntry?.verdict === 'ok' &&
+          killedEntry.exitCode === 0 &&
+          killedEntry.warnedExitCode === null,
+        `local-warn receipt: a softened gate killed by a signal must carry warnedExitCode null, got ${JSON.stringify(killedEntry)}`
+      );
+      require_(
+        plainEntry !== undefined &&
+          plainEntry.warned === undefined &&
+          plainEntry.warnedExitCode === undefined,
+        `local-warn receipt: an unsoftened gate carries neither field, got ${JSON.stringify(plainEntry)}`
+      );
+    }
+  }
   // END TO END THROUGH select() ITSELF, so the lane wiring is under test and not only the helper: a touched slow gate is selected, an untouched one deferred, the fast gate kept. The leaves are real files with no relative imports, so neither can reach the other's closure.
   {
     // Each fixture DECLARES paths that match nothing in the diff: a slow gate without paths is selected by any change (quick-select rule 4), which would hide whether the leaf rule selected it.
@@ -2776,7 +3112,7 @@ async function selftest(): Promise<number> {
   const leaseCheck = await leaseClientSelftest(os.tmpdir());
   for (const f of leaseCheck.failures) require_(false, `lease-client: ${f}`);
 
-  // THE ADVANCE (PLAN-prepush-full-cpu part 5): every refusal and the chain. 11 assertions.
+  // THE ADVANCE (PLAN-prepush-full-cpu part 5): every refusal, the red rule, the carried-input rule and the chain. 22 assertions.
   {
     const policy = parseRecordPolicy(
       JSON.stringify({
@@ -2854,10 +3190,219 @@ async function selftest(): Promise<number> {
         plan(undefined, ['agent/reviews/x.md']).kind === 'full',
       'a narrowed receipt, a receipt naming no tree, and no receipt must each run the whole lane'
     );
+    // THE RED RULE (2026-11-16): a red receipt advances past records its reds do not read, and only those.
+    const red = { ...whole, exitCode: 1, failed: ['g:other'] };
+    const redOk = plan(red, ['agent/reviews/x.md']);
     require_(
-      plan({ ...whole, exitCode: 1, failed: ['g'] }, ['agent/reviews/x.md']).kind === 'full' &&
-        plan({ ...whole, failed: ['g'] }, ['agent/reviews/x.md']).kind === 'full',
-      'a red receipt must run the lane again, since an advance could only keep it red'
+      redOk.kind === 'advance' && redOk.readers.join() === 'g:plan',
+      `a red receipt whose failed gate reads no touched record must advance, got ${JSON.stringify(redOk)}`
+    );
+    const redReader = plan({ ...red, failed: ['g:other', 'g:plan'] }, ['agent/reviews/x.md']);
+    require_(
+      redReader.kind === 'full' && redReader.why.includes('g:plan'),
+      `a red receipt whose failed gate READS a touched record must run the lane and name it, got ${JSON.stringify(redReader)}`
+    );
+    require_(
+      plan({ ...red, failed: ['g:other', 'g:plan'] }, ['agent/worklist/d.jsonl']).kind ===
+        'advance',
+      'CONTROL: the same red reader does not block a step that touches only a record it does not read'
+    );
+    require_(
+      plan(red, ['agent/reviews/x.md', 'scripts/ci-runner/run.ts']).kind === 'full',
+      'a code path in the range must run the whole lane over a red receipt too'
+    );
+    require_(
+      plan({ ...whole, exitCode: 1 }, ['agent/reviews/x.md']).kind === 'full',
+      'a red receipt that lists no failed gate must run the lane: there is nothing to judge the records against'
+    );
+    require_(
+      plan({ ...whole, failed: ['g:plan'] }, ['agent/reviews/x.md']).kind === 'full',
+      'a failed list alone (exitCode 0) still counts as red for the gates it names'
+    );
+    for (const damaged of ['g:plan', { 0: 'g:plan' }, [7], null]) {
+      require_(
+        plan({ ...whole, failed: damaged } as unknown as typeof whole, ['agent/reviews/x.md'])
+          .kind === 'full',
+        `a receipt whose failed list is ${JSON.stringify(damaged)} must run the lane, not advance as if nothing failed`
+      );
+    }
+    require_(
+      plan({ ...whole, failed: [] }, ['agent/reviews/x.md']).kind === 'advance',
+      'CONTROL: an empty failed list on a green receipt still advances'
+    );
+    require_(
+      advanceExit(0, red) === 1,
+      'an advance over a red receipt must still exit non-zero, so the red is never read as cleared'
+    );
+    // A CARRIED VERDICT OVER A TOUCHED INPUT: the push guard recomputes it at the pushed tree, so the advance refreshes it or the lane runs.
+    const carriedEntry = (globs: string[]): ReceiptGate => ({
+      inputHash: 'h',
+      defHash: 'd',
+      filesHash: 'f',
+      inputs: { globs, files: [], scripts: [] },
+      verdict: 'ok',
+      exitCode: 0,
+      findings: null,
+      judgedTree: 'TA',
+      carriedFrom: { headTree: 'TA', head: 'c', finishedAt: '' },
+    });
+    const carryingReader = {
+      ...whole,
+      gates: { 'g:plan': carriedEntry(['agent/reviews/**']), 'g:tree': carriedEntry(['src/**']) },
+    };
+    const refreshPlan = plan(carryingReader, ['agent/reviews/x.md']);
+    require_(
+      refreshPlan.kind === 'advance' && refreshPlan.refresh.join() === 'g:plan',
+      `a carried reader whose inputs the step touched must be refreshed, and only it, got ${JSON.stringify(refreshPlan)}`
+    );
+    const okPlan = plan(whole, ['agent/reviews/x.md']);
+    require_(
+      okPlan.kind === 'advance' && okPlan.refresh.length === 0,
+      'CONTROL: with nothing carried there is nothing to refresh'
+    );
+    const carryingOther = {
+      ...whole,
+      gates: { 'g:tree': carriedEntry(['**']) },
+    };
+    const unreadPlan = plan(carryingOther, ['agent/reviews/x.md']);
+    require_(
+      unreadPlan.kind === 'full' && unreadPlan.why.includes('g:tree'),
+      `a carried verdict over a touched input that is no reader of it must run the lane and be named, got ${JSON.stringify(unreadPlan)}`
+    );
+    // NAME-SHAPED CARRIED INPUTS (W2.4): a carried entry recording `lists`/`names` is stale when the step changed the listing, which no content glob of it sees; one recording `refs` is stale on every step.
+    const lsEntry = (p: string): LsEntry => ({ mode: '100644', type: 'blob', oid: 'o', path: p });
+    const trees: Record<string, LsEntry[]> = {
+      T0: [lsEntry('agent/reviews/old.md'), lsEntry('src/a.ts')],
+      T1: [lsEntry('agent/reviews/old.md'), lsEntry('agent/reviews/new.md'), lsEntry('src/a.ts')],
+    };
+    const namedEntry = (
+      named: { lists?: string[]; names?: string[]; refs?: string[] },
+      globs: string[] = ['package-lock.json']
+    ): ReceiptGate => ({
+      ...carriedEntry(globs),
+      inputs: { globs, files: [], scripts: [], ...named },
+    });
+    const planNamed = (
+      gates: Record<string, ReceiptGate>,
+      paths: string[],
+      entriesAt: ((t: string) => LsEntry[] | undefined) | undefined = (t) => trees[t]
+    ) =>
+      planAdvance({
+        receipt: { ...whole, gates },
+        headTree: 'T1',
+        policy,
+        diff: at(paths),
+        known,
+        entriesAt,
+      });
+    const listAdd = planNamed({ 'g:plan': namedEntry({ lists: ['agent/reviews'] }) }, [
+      'agent/reviews/new.md',
+    ]);
+    require_(
+      listAdd.kind === 'advance' && listAdd.refresh.join() === 'g:plan',
+      `a child added to a listed directory must refresh the carried lists reader (no content glob of it matches the path), got ${JSON.stringify(listAdd)}`
+    );
+    const nameAdd = planNamed({ 'g:plan': namedEntry({ names: ['agent/reviews/*.md'] }) }, [
+      'agent/reviews/new.md',
+    ]);
+    require_(
+      nameAdd.kind === 'advance' && nameAdd.refresh.join() === 'g:plan',
+      `a new names match must refresh the carried names reader, got ${JSON.stringify(nameAdd)}`
+    );
+    const sameListing = (t: string): LsEntry[] | undefined =>
+      trees.T0.map((e) => ({ ...e, oid: t }));
+    const listEdit = planNamed(
+      { 'g:plan': namedEntry({ lists: ['agent/reviews'], names: ['agent/reviews/*.md'] }) },
+      ['agent/reviews/old.md'],
+      sameListing
+    );
+    require_(
+      listEdit.kind === 'advance' && listEdit.refresh.length === 0,
+      `CONTROL: a content edit that leaves the listing alone must refresh nothing, got ${JSON.stringify(listEdit)}`
+    );
+    const otherList = planNamed({ 'g:plan': namedEntry({ lists: ['src'] }) }, [
+      'agent/reviews/new.md',
+    ]);
+    require_(
+      otherList.kind === 'advance' && otherList.refresh.length === 0,
+      `CONTROL: a child added to an unlisted directory must refresh nothing, got ${JSON.stringify(otherList)}`
+    );
+    const listNonReader = planNamed({ 'g:tree': namedEntry({ lists: ['agent/reviews'] }) }, [
+      'agent/reviews/new.md',
+    ]);
+    require_(
+      listNonReader.kind === 'full' && listNonReader.why.includes('g:tree'),
+      `a carried lists entry whose listing moved and that no touched record re-runs must run the lane and be named, got ${JSON.stringify(listNonReader)}`
+    );
+    require_(
+      planNamed(
+        { 'g:plan': namedEntry({ lists: ['agent/reviews'] }) },
+        ['agent/reviews/old.md'],
+        () => undefined
+      ).kind === 'advance' &&
+        planNamed(
+          { 'g:tree': namedEntry({ lists: ['agent/reviews'] }) },
+          ['agent/reviews/old.md'],
+          () => undefined
+        ).kind === 'full',
+      'a tree git cannot list counts a lists entry as moved: the re-run direction, never a carry'
+    );
+    const refReader = planNamed({ 'g:plan': namedEntry({ refs: ['HEAD'] }) }, [
+      'agent/reviews/old.md',
+    ]);
+    const refOther = planNamed({ 'g:tree': namedEntry({ refs: ['HEAD'] }) }, [
+      'agent/reviews/old.md',
+    ]);
+    require_(
+      refReader.kind === 'advance' &&
+        refReader.refresh.join() === 'g:plan' &&
+        refOther.kind === 'full' &&
+        refOther.why.includes('g:tree'),
+      `a carried refs entry is stale on every step (a new commit moves HEAD): a reader is refreshed, any other runs the lane, got ${JSON.stringify([refReader, refOther])}`
+    );
+    require_(
+      planNamed({ 'g:tree': carriedEntry(['src/**']) }, ['agent/reviews/new.md']).kind ===
+        'advance',
+      'CONTROL: a carried entry recording no lists/names/refs is untouched by the listing check'
+    );
+    const refreshed = refreshCarried(carryingReader.gates, ['g:plan'], { 'g:plan': 0 }, 'T1');
+    require_(
+      refreshed['g:plan'].carriedFrom === null &&
+        refreshed['g:plan'].judgedTree === 'T1' &&
+        refreshed['g:plan'].inputHash === null &&
+        refreshed['g:tree'].carriedFrom !== null,
+      `a refreshed reader must be an uncarried verdict of the step's tree with no input hash, and nothing else may move, got ${JSON.stringify(refreshed)}`
+    );
+    require_(
+      refreshCarried(carryingReader.gates, ['g:plan'], { 'g:plan': 1 }, 'T1')['g:plan']
+        .carriedFrom !== null,
+      'a reader that failed at the step must keep its entry: the guard refuses that step on its exit code'
+    );
+    const writtenStep: Advance = {
+      from: 'T0',
+      to: 'T1',
+      paths: ['agent/reviews/x.md'],
+      gates: { 'g:plan': 0 },
+      findings: {},
+      finishedAt: 'now',
+    };
+    const written = advancedReceipt(
+      carryingReader as unknown as Receipt,
+      ['g:plan'],
+      { 'g:plan': 0 },
+      'T1',
+      writtenStep
+    );
+    const writtenGates: Partial<typeof written.gates> = written.gates;
+    require_(
+      writtenGates['g:plan']?.judgedTree === 'T1' &&
+        writtenGates['g:plan'].carriedFrom === null &&
+        writtenGates['g:tree'] !== undefined &&
+        writtenGates['g:tree'].carriedFrom !== null &&
+        written.advances.length === 1 &&
+        written.advances[0] === writtenStep &&
+        written.headTree === carryingReader.headTree,
+      `the receipt written by an advance must carry the refreshed gates and the appended step, got ${JSON.stringify(written)}`
     );
     require_(
       planAdvance({ receipt: whole, headTree: 'T0', policy, diff: at([]), known }).kind === 'full',
@@ -2974,6 +3519,35 @@ async function selftest(): Promise<number> {
   const proc = await processCheck;
   failures.push(...proc.failures);
 
+  // The total: every require_ above, plus the assertions each sub-selftest counted itself (their failures reach `failures` through require_ or a push, their passes only through `.assertions`).
+  const subAssertions = [
+    keyed,
+    sim,
+    qs,
+    sel,
+    lw,
+    leaseCheck,
+    inc,
+    cloneCheck,
+    proc,
+    rankCheck,
+    ledgerCheck,
+    streamCheck,
+    learned,
+  ].reduce((n, r) => n + r.assertions, timeoutAssertions);
+  const total = requireCount + subAssertions;
+  const ownCount = requireCount;
+  // Sub-selftests alone count above the total floor, so require_ has its own: 188 calls counted when this was written.
+  require_(
+    ownCount > SELFTEST_REQUIRE_FLOOR,
+    `only ${ownCount} require_ call(s) counted, not above the floor of ${SELFTEST_REQUIRE_FLOOR}: require_ stopped counting`
+  );
+  // ANTI-VACUITY FLOOR: 413 is what the hand-kept sum printed before the count was real. A count at or below it means require_ stopped counting or a sub-selftest stopped reporting, not that the suite is smaller.
+  require_(
+    total > SELFTEST_ASSERTION_FLOOR,
+    `the selftest counted ${total} assertion(s) (${requireCount} require_ + ${subAssertions} from sub-selftests), not above the floor of ${SELFTEST_ASSERTION_FLOOR}: the count collapsed`
+  );
+
   if (failures.length > 0) {
     process.stderr.write('CONTROL FAILED: ci-runner --selftest did not fire\n');
     for (const f of failures) process.stderr.write(`  - ${f}\n`);
@@ -2982,7 +3556,7 @@ async function selftest(): Promise<number> {
     return 1;
   }
   process.stdout.write(
-    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 3 + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2 + qs.assertions + 10 + 5 + 9 + 10 + 4 + leaseCheck.assertions + 12 + inc.assertions + (process.platform !== 'win32' ? 2 : 0) + timeoutAssertions + proc.assertions + 4 + 11 + rankCheck.assertions + ledgerCheck.assertions + streamCheck.assertions + learned.assertions} assertions)\n`
+    `ci-runner: selftest ok (${requireCount + subAssertions} assertions: ${requireCount} require_, the floor check included, + ${subAssertions} from sub-selftests)\n`
   );
   return 0;
 }
@@ -3084,6 +3658,8 @@ interface Receipt {
   slowAdmitted: string[];
   /** `{gate id: cores}` the pool granted each gate it launched, the CI_RUNNER_CORES its process saw. Diagnostic. Always written. */
   grantedCores: Record<string, number>;
+  /** `{gate id: nice value}` each launched gate ran at (PLAN-two-track-merge-dev D3: 0 on the critical path, NONCRITICAL_NICE off it). Diagnostic; the guard does not read it. Absent on a receipt written before 2026-11-20. */
+  niceness?: Record<string, number>;
   /** `{gate id: {ready, start, end, cores}}` in ms from the run's start, every launched gate (report.ts timelineOf). Diagnostic; the guard does not read it. Always written on a fresh run; absent on a receipt written before 2026-10-06. */
   timeline?: Record<string, GateTiming>;
   /**
@@ -3096,8 +3672,12 @@ interface Receipt {
 interface ReceiptGate extends PriorGate {
   defHash: string;
   filesHash: string;
-  inputs: { globs: string[]; files: string[]; scripts: string[] };
+  inputs: GateHash['inputs'];
   verdict: 'ok' | 'fail' | 'blocked' | 'deferred' | 'ciOnly';
+  /** Set on a gate the local quick lane downgraded from red (local-warn.ts): verdict stays `ok`, which is all the push guard admits, and this names what failed. */
+  warned?: string;
+  /** With `warned`: the real exit code of the softened run (null when killed), since `exitCode` reads 0 there. */
+  warnedExitCode?: number | null;
 }
 
 function gitOut(args: readonly string[]): string {
@@ -3190,6 +3770,11 @@ function parseStaleSubmodules(status: string): string[] {
     .split('\n')
     .filter((line) => line.startsWith('+'))
     .map((line) => line.slice(1).trim().split(/\s+/)[1] ?? line);
+}
+
+/** The receipt an advance plans from: `--advance-from` when given, else the destination it writes. */
+function advanceBasePath(opts: Options): string {
+  return opts.advanceFrom ?? receiptPathFor(opts);
 }
 
 /** The receipt's destination: `--receipt-out` when given, else this checkout's own cache. */
@@ -3293,8 +3878,8 @@ function mergeDroppedVerified(existing: unknown, run: OnlyRun): { merged?: Recei
   };
 }
 
-/** How many archived receipts (`receipts/<headTree>.json`) a destination keeps. */
-const RECEIPT_ARCHIVE_KEEP = 50;
+/** How many archived receipts (`receipts/<headTree>.json`) a destination keeps. Carry reads all of them (PLAN-ciquick-cpu A1), so this is how far back a verdict can still be reused; at about 340 KB each, 200 is about 70 MB on disk. */
+const RECEIPT_ARCHIVE_KEEP = 200;
 
 /** Writes `receipt` to `<dirname(dest)>/receipts/<headTree>.json`, where the guard looks up a carried entry's origin, and drops all but the newest RECEIPT_ARCHIVE_KEEP by mtime. */
 function archiveReceipt(receipt: Receipt, dest: string): void {
@@ -3324,31 +3909,33 @@ interface IncrementalInput {
   scripts: Record<string, string>;
   /** carry-exempt.json's text at `tree`, or null. */
   exemptText: string | null;
-  /** The receipt at the destination before this run replaces it. */
-  prior: PriorReceipt | null;
+  /** Every receipt the destination holds before this run replaces it, newest first: the latest and the archive (`loadPriorReceipts`). */
+  priors: readonly PriorReceipt[];
   disposable: boolean;
   /** The gate ids the run selected. */
   selected: string[];
 }
 
 /**
- * The carry decision, pure. Only a disposable clone carries (the tree is then the bytes the gates read); anywhere else every selected gate runs.
+ * The carry decision, pure. Only a disposable clone carries (the tree is then the bytes the gates read); anywhere else every selected gate runs. Inside a clone `planCarry` (input-hash.ts) decides, and only a green carries there: a red at unchanged inputs re-runs and comes back in `rejudged`.
  */
 function decideCarry(input: {
   disposable: boolean;
-  prior: PriorReceipt | null;
+  priors: readonly PriorReceipt[];
   hashes: Map<string, GateHash>;
   selected: string[];
   salt: string;
-}): { carry: Map<string, PriorGate>; run: string[] } {
-  if (!input.disposable) return { carry: new Map(), run: [...input.selected] };
-  return planCarry(input.prior, input.hashes, input.selected, input.salt);
+}): { carry: Map<string, PriorGate>; run: string[]; rejudged: string[] } {
+  if (!input.disposable) return { carry: new Map(), run: [...input.selected], rejudged: [] };
+  return planCarry(input.priors, input.hashes, input.selected, input.salt);
 }
 
 /** Hashes every gate at the judged tree, then decides which selected gates keep the prior verdict. */
 function incrementalPlan(input: IncrementalInput): {
   carry: Map<string, PriorGate>;
   run: string[];
+  /** Selected gates whose input hash matched but whose prior verdict was red, so they run instead of carrying. */
+  rejudged: string[];
   hashes: Map<string, GateHash>;
   salt: string;
 } {
@@ -3368,7 +3955,7 @@ function incrementalPlan(input: IncrementalInput): {
 /** The incremental inputs a real run reads from git at `tree`; undefined when the lock or package.json cannot be read. */
 function incrementalInputOf(
   tree: string,
-  prior: PriorReceipt | null,
+  priors: readonly PriorReceipt[],
   disposable: boolean,
   selected: string[]
 ): IncrementalInput | undefined {
@@ -3383,13 +3970,43 @@ function incrementalInputOf(
     lock,
     scripts: (JSON.parse(pkgText) as { scripts?: Record<string, string> }).scripts ?? {},
     exemptText: gitTry(['show', `${tree}:${CARRY_EXEMPT_REL}`]) ?? null,
-    prior,
+    priors,
     disposable,
     selected,
   };
 }
 
-/** `failed`, `findings` and `exitCode` over fresh AND carried verdicts, so a carried red stays red and still clears carried-reds.json by exact key. */
+/**
+ * Every receipt `dest` still holds, NEWEST FIRST by `finishedAt`: the latest file and each archived `receipts/<headTree>.json` beside it (PLAN-ciquick-cpu A1). Before this the carry read the latest file alone, so a red run followed by a one-line fix threw away every verdict the archive still held. A file that does not parse, or is not an object, is skipped: `planCarry` judges usability, and an unreadable receipt can only cost a re-run.
+ */
+export function loadPriorReceipts(dest: string): PriorReceipt[] {
+  const out: PriorReceipt[] = [];
+  const read = (file: string): void => {
+    try {
+      const doc = JSON.parse(fs.readFileSync(file, 'utf8')) as unknown;
+      if (doc !== null && typeof doc === 'object' && !Array.isArray(doc))
+        out.push(doc as PriorReceipt);
+    } catch {
+      // absent or unreadable: nothing to carry from it
+    }
+  };
+  read(dest);
+  const dir = path.join(path.dirname(dest), 'receipts');
+  let names: string[] = [];
+  try {
+    names = fs.readdirSync(dir).filter((n) => n.endsWith('.json'));
+  } catch {
+    names = [];
+  }
+  for (const n of names.sort()) read(path.join(dir, n));
+  // Stable: the latest file was read first, so on a tie with its own archive copy it stays first.
+  return out
+    .map((r, i) => ({ r, i, at: typeof r.finishedAt === 'string' ? r.finishedAt : '' }))
+    .sort((a, b) => (a.at === b.at ? a.i - b.i : a.at < b.at ? 1 : -1))
+    .map((x) => x.r);
+}
+
+/** `failed`, `findings` and `exitCode` over fresh AND carried verdicts. `decideCarry` carries only greens, so a carried entry is never `fail`; one that is still counts as failed rather than vanishing from `failed`. */
 function mergeVerdicts(
   results: ReadonlyArray<{ id: string; status: string }>,
   freshExit: number,
@@ -3428,6 +4045,9 @@ function receiptGates(input: {
   tree: string;
   /** Only a disposable clone's hashes are a statement about the judged bytes; elsewhere inputHash is null. */
   disposable: boolean;
+  /** The local-warn records to read; this run's by default. A selftest passes its own. */
+  warned?: ReadonlyMap<string, string>;
+  warnedCodes?: ReadonlyMap<string, number | null>;
 }): Record<string, ReceiptGate> {
   const out: Record<string, ReceiptGate> = {};
   const byResult = new Map(input.results.map((r) => [r.id, r]));
@@ -3455,10 +4075,18 @@ function receiptGates(input: {
       out[spec.id] = {
         ...base,
         verdict,
-        exitCode: ran.exitCode,
+        // A softened gate is ok with exit code 0; the real code rides in warnedExitCode.
+        exitCode:
+          verdict === 'ok' && warnedFor(spec.id, input.warned) !== undefined ? 0 : ran.exitCode,
         findings: verdict === 'fail' ? (input.findings[spec.id] ?? null) : null,
         judgedTree: input.tree,
         carriedFrom: null,
+        ...(warnedFor(spec.id, input.warned) === undefined
+          ? {}
+          : {
+              warned: warnedFor(spec.id, input.warned),
+              warnedExitCode: warnedExitCodeFor(spec.id, input.warnedCodes),
+            }),
       };
     } else if (spec.gate) {
       out[spec.id] = {
@@ -3519,7 +4147,7 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
     const specs = ids.map((id) => syntheticSpec(id, 'true'));
     const plan = (
       tree: string,
-      prior: PriorReceipt | null,
+      prior: PriorReceipt | readonly PriorReceipt[] | null,
       opts: { lock?: Record<string, LockEntry>; disposable?: boolean } = {}
     ) =>
       incrementalPlan({
@@ -3528,7 +4156,7 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
         lock: opts.lock ?? lockOf('true'),
         scripts: {},
         exemptText: null,
-        prior,
+        priors: prior === null ? [] : Array.isArray(prior) ? prior : [prior as PriorReceipt],
         disposable: opts.disposable ?? true,
         selected: ids,
       });
@@ -3617,23 +4245,42 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
       'CONTROL: the untouched gate stays carried when only the other input moves'
     );
 
-    // INCREMENTAL-PROOF-3: a planted red stays red when carried.
+    // INCREMENTAL-PROOF-3: a planted red is never carried; an unchanged failing gate runs again.
     const redFirst = plan(t3, null);
     const rRed = receiptOf(t3, redFirst, { 'g:b': 'fail' });
     const sameTree = plan(t3, rRed);
-    const carriedRed = sameTree.carry.get('g:b');
     check(
-      carriedRed?.verdict === 'fail',
-      'INCREMENTAL-PROOF-3: an unchanged failing gate is carried as fail, never as ok'
+      sameTree.run.includes('g:b') && !sameTree.carry.has('g:b'),
+      `INCREMENTAL-PROOF-3: an unchanged failing gate must re-run, never carry; carried ${[...sameTree.carry.keys()].join()} ran ${sameTree.run.join()}`
     );
-    const merged = mergeVerdicts([], 0, {}, sameTree.carry);
+    check(
+      [...sameTree.carry.values()].every((pg) => pg.verdict === 'ok'),
+      `INCREMENTAL-PROOF-3: every carried verdict is ok, got ${JSON.stringify([...sameTree.carry])}`
+    );
+    check(
+      sameTree.hashes.get('g:b')?.inputHash === rRed.gates['g:b'].inputHash,
+      "INCREMENTAL-PROOF-3: the red's input hash is unchanged, so only its verdict sends it to run"
+    );
+    check(
+      sameTree.carry.get('g:a')?.verdict === 'ok' && sameTree.carry.get('g:none')?.verdict === 'ok',
+      `CONTROL: the unchanged green gates beside the red still carry as ok; carried ${[...sameTree.carry.keys()].join()} ran ${sameTree.run.join()}`
+    );
+    check(
+      sameTree.rejudged.join() === 'g:b' && identical.rejudged.length === 0,
+      `rejudged names exactly the red at unchanged inputs and is empty when nothing was red, got ${sameTree.rejudged.join()} / ${identical.rejudged.join()}`
+    );
+    const blockedPrior: PriorReceipt = {
+      ...rRed,
+      gates: { ...rRed.gates, 'g:a': { ...rRed.gates['g:a'], verdict: 'blocked', exitCode: null } },
+    };
+    check(
+      plan(t3, blockedPrior).run.includes('g:a'),
+      'INCREMENTAL-PROOF-3: a gate whose prior verdict was blocked re-runs'
+    );
+    const merged = mergeVerdicts([], 0, {}, new Map([['g:b', rRed.gates['g:b']]]));
     check(
       merged.failed.join() === 'g:b' && merged.exitCode === 1,
-      `INCREMENTAL-PROOF-3: a carried fail must stay in failed with exitCode 1, got ${JSON.stringify(merged)}`
-    );
-    check(
-      merged.findings['g:b']?.join() === 'g:b:key',
-      'INCREMENTAL-PROOF-3: a carried fail keeps its findings, so carried-reds.json can still match it by key'
+      `a fail entry handed to mergeVerdicts as carried still counts as failed with exitCode 1, got ${JSON.stringify(merged)}`
     );
     check(
       mergeVerdicts([], 0, {}, new Map()).exitCode === 0,
@@ -3694,6 +4341,51 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
       `receiptGates must name deferred, ciOnly and blocked (a skipped gate), got ${JSON.stringify(mixed)}`
     );
 
+    // A1: CARRY FROM A RECEIPT TWO RUNS BACK. r1 judged b/y.txt at y1 green; a red run at a broken b/y.txt follows; restoring y1 must carry g:b from r1 even though the newest receipt never judged that hash.
+    write('b/y.txt', 'yBAD\n');
+    const tBad = commit('break b');
+    const badPlan = plan(tBad, r1);
+    const rBad = { ...receiptOf(tBad, badPlan, { 'g:b': 'fail' }), finishedAt: 'z-later' };
+    write('b/y.txt', 'y1\n');
+    const tFix = commit('fix b');
+    const fixed = plan(tFix, [rBad, r1]);
+    check(
+      fixed.carry.get('g:b')?.carriedFrom?.headTree === t1 && fixed.rejudged.length === 0,
+      `A1: the fix restores the inputs r1 judged green two runs back, so g:b carries from r1; carried ${[...fixed.carry.keys()].join()} ran ${fixed.run.join()}`
+    );
+    check(
+      plan(tFix, rBad).run.includes('g:b'),
+      'CONTROL: with only the latest (red) receipt, as before A1, the restored gate runs'
+    );
+    write('b/y.txt', 'y9\n');
+    const tOther = commit('other b');
+    check(
+      plan(tOther, [rBad, r1]).run.includes('g:b'),
+      'CONTROL: an inputHash no receipt judged carries from none of them'
+    );
+    // loadPriorReceipts: the latest file and the archive, newest first.
+    const ldest = path.join(root, 'load', 'receipt.json');
+    fs.mkdirSync(path.join(root, 'load', 'receipts'), { recursive: true });
+    fs.writeFileSync(ldest, JSON.stringify({ ...r1, finishedAt: '2026-01-03' }));
+    fs.writeFileSync(
+      path.join(root, 'load', 'receipts', 'a.json'),
+      JSON.stringify({ ...r1, headTree: 'a', finishedAt: '2026-01-01' })
+    );
+    fs.writeFileSync(
+      path.join(root, 'load', 'receipts', 'b.json'),
+      JSON.stringify({ ...r1, headTree: 'b', finishedAt: '2026-01-02' })
+    );
+    fs.writeFileSync(path.join(root, 'load', 'receipts', 'c.json'), 'not json');
+    const loaded = loadPriorReceipts(ldest).map((r) => r.finishedAt);
+    check(
+      loaded.join() === '2026-01-03,2026-01-02,2026-01-01',
+      `loadPriorReceipts reads the latest and the archive newest first and skips an unreadable file, got ${loaded.join()}`
+    );
+    check(
+      loadPriorReceipts(path.join(root, 'nowhere', 'receipt.json')).length === 0,
+      'CONTROL: no receipt at all loads none'
+    );
+
     // The archive keeps the newest RECEIPT_ARCHIVE_KEEP, and the one just written.
     const dest = path.join(root, 'out', 'receipt.json');
     for (let i = 0; i < RECEIPT_ARCHIVE_KEEP + 3; i++) {
@@ -3708,6 +4400,135 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
         kept.includes('newest.json') &&
         !kept.includes('tree0.json'),
       `the archive must keep ${RECEIPT_ARCHIVE_KEEP} receipts, newest first, got ${kept.length}`
+    );
+
+    // THE FOLLOW PASS (agent/plans/PLAN-push-decoupling.md R2, D1.2): after `ci:quick --commit <sha>` judged a pinned ancestor, quick-clone.ts runs `--quick --receipt-out <latest> --advance-from <pinned receipt>` at HEAD. The advance plans from the pinned receipt, and a lane run carries from the archive the pinned run filled.
+    // Under .git, so the scratch repository never commits the receipts it holds.
+    const fol = path.join(root, '.git', 'fol');
+    const pinnedPath = path.join(fol, 'pinned-receipt.json');
+    const latestPath = path.join(fol, 'prepush-receipt.json');
+    const followOpts = parseArgs([
+      '--quick',
+      '--receipt-out',
+      latestPath,
+      '--advance-from',
+      pinnedPath,
+    ]);
+    check(
+      advanceBasePath(followOpts) === pinnedPath && narrowingFlags(followOpts).length === 0,
+      '--advance-from must name the receipt the advance plans from, and must not narrow the lane'
+    );
+    check(
+      advanceBasePath(parseArgs(['--quick', '--receipt-out', latestPath])) === latestPath,
+      'CONTROL: with no --advance-from the advance plans from the destination'
+    );
+    const greenOf = (tree: string): Receipt =>
+      ({
+        ...receiptOf(tree, plan(tree, null), {}),
+        exitCode: 0,
+        failed: [],
+        advances: [],
+      }) as unknown as Receipt;
+    const followPolicy = parseRecordPolicy(
+      JSON.stringify({
+        records: [{ glob: 'agent/reviews/**', readers: [{ id: 'g:a', evidence: 'x' }] }],
+      })
+    );
+    const noRenames = (from: string, to: string): string[] =>
+      git('diff', '--name-only', '--no-renames', from, to).split('\n').filter(Boolean);
+    const followPlan = (base: unknown, headTree: string, diff = noRenames) =>
+      planAdvance({
+        receipt: base,
+        headTree,
+        policy: followPolicy,
+        diff,
+        known: new Set(ids),
+      });
+    write('a/x.txt', 'xPinned\n');
+    const tPin = commit('the pinned commit');
+    const pinned = greenOf(tPin);
+    fs.mkdirSync(fol, { recursive: true });
+    fs.writeFileSync(pinnedPath, JSON.stringify(pinned));
+    archiveReceipt(pinned, pinnedPath);
+    fs.writeFileSync(latestPath, JSON.stringify({ ...r1, exitCode: 0, failed: [], advances: [] }));
+    const baseOf = (opts: Options): unknown =>
+      JSON.parse(fs.readFileSync(advanceBasePath(opts), 'utf8'));
+
+    // Record-only movement: one step from the pinned tree, and only the record's reader runs.
+    write('agent/reviews/r.md', 'r\n');
+    const tRec = commit('a record after the pin');
+    const recPlan = followPlan(baseOf(followOpts), tRec);
+    check(
+      recPlan.kind === 'advance' &&
+        recPlan.from === tPin &&
+        recPlan.to === tRec &&
+        recPlan.readers.join() === 'g:a',
+      `a record-only commit after the pinned tree must advance from it with the record's reader alone, got ${JSON.stringify(recPlan)}`
+    );
+    if (recPlan.kind === 'advance') {
+      const step: Advance = {
+        from: recPlan.from,
+        to: recPlan.to,
+        paths: recPlan.paths,
+        gates: { 'g:a': 0 },
+        findings: {},
+        finishedAt: 'now',
+      };
+      const advanced = advancedReceipt(
+        baseOf(followOpts) as Receipt,
+        recPlan.refresh,
+        step.gates,
+        recPlan.to,
+        step
+      );
+      check(
+        advanced.advances.length === 1 &&
+          advanced.headTree === tPin &&
+          advanced.advances[0].to === tRec &&
+          Object.keys(advanced.advances[0].gates).join() === 'g:a',
+        `the follow pass must append exactly one step to the pinned receipt, got ${JSON.stringify(advanced.advances)}`
+      );
+    }
+    check(
+      followPlan(baseOf(parseArgs(['--quick', '--receipt-out', latestPath])), tRec).kind === 'full',
+      'CONTROL: planned from the older latest receipt, the code change between it and the pin runs the lane'
+    );
+
+    // Code movement: no advance, and the lane carries every gate whose input hash the pinned run judged.
+    write('b/y.txt', 'yFollow\n');
+    const tCode = commit('code after the pin');
+    check(
+      followPlan(baseOf(followOpts), tCode).kind === 'full',
+      'a code commit after the pinned tree must not advance'
+    );
+    const carriedPlan = plan(tCode, loadPriorReceipts(latestPath));
+    check(
+      carriedPlan.carry.get('g:a')?.carriedFrom?.headTree === tPin &&
+        carriedPlan.run.includes('g:b') &&
+        carriedPlan.run.includes('g:none'),
+      `the lane after a code commit must carry g:a from the pinned tree and run the rest, carried ${[...carriedPlan.carry.keys()].join()} ran ${carriedPlan.run.join()}`
+    );
+    check(
+      plan(
+        tCode,
+        loadPriorReceipts(path.join(root, '.git', 'fol-none', 'prepush-receipt.json'))
+      ).run.includes('g:a'),
+      'CONTROL: with no archived pinned receipt the same gate runs'
+    );
+
+    // A rename from code into the record set: the --no-renames diff lists the old code path, so it does not advance.
+    const tBefore = git('rev-parse', 'HEAD^{tree}');
+    git('mv', 'a/x.txt', 'agent/reviews/moved.md');
+    const tMoved = commit('move code into the records');
+    check(
+      followPlan(greenOf(tBefore), tMoved).kind === 'full',
+      'a rename from a code path to a record path must not advance'
+    );
+    check(
+      followPlan(greenOf(tBefore), tMoved, (from, to) =>
+        git('diff', '--name-only', '-M', from, to).split('\n').filter(Boolean)
+      ).kind === 'advance',
+      'CONTROL: a rename-following diff lists only the record path, which is why the follow pass diffs with --no-renames'
     );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
@@ -3794,6 +4615,21 @@ async function listUnits(lane: string | undefined): Promise<number> {
     process.stderr.write(`ci-runner: ${(error as Error).message}\n`);
     return 2;
   }
+}
+
+/** D3: a gate is critical when ranking is on and the rank pinned it (the long-chain gates); with ranking off every gate keeps base priority (undefined). */
+export function criticalOf(
+  ranking: { on: true; order: { pinned: ReadonlySet<string> } } | { on: false } | undefined,
+  id: string
+): boolean | undefined {
+  return ranking?.on ? ranking.order.pinned.has(id) : undefined;
+}
+
+/** `{gate id: nice value}` for every gate whose executor reported one; the receipt's `niceness`. */
+function nicenessOf(results: readonly GateResult[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const r of results) if (r.niceness !== undefined) out[r.id] = r.niceness;
+  return out;
 }
 
 /** `{gate id: cores granted}` for every gate that launched; the receipt's `grantedCores`. */
@@ -4061,14 +4897,19 @@ async function runGraph(
       // A width someone chose (--jobs) or a grant this runner was launched under is a ceiling on this run, not a figure to improve on: only a run sized to the machine may spend the machine's idle.
       idleCoreMs:
         opts.jobs === undefined && grantFromEnv() === undefined ? cpuSampler.idleCoreMs : undefined,
-      exec: (spec, grant: Grant) =>
-        execGate(spec, {
-          cwd: REPO_ROOT,
-          mergeOutput: opts.mergeOutput,
-          ...PROFILE_OPTS,
-          grant,
-          timeoutMs: limits.get(spec.id),
-        }),
+      exec: async (spec, grant: Grant) =>
+        softenLocalWarn(
+          spec,
+          opts.quick && opts.lane === undefined,
+          await execGate(spec, {
+            cwd: REPO_ROOT,
+            mergeOutput: opts.mergeOutput,
+            ...PROFILE_OPTS,
+            grant,
+            timeoutMs: limits.get(spec.id),
+            critical: criticalOf(ranking, spec.id),
+          })
+        ),
       // Start lines under --json too, where they go to stderr: a serial capture otherwise shows nothing between the plan and the end, and a hang cannot be told from a slow gate.
       onStart:
         opts.verbose || opts.json
@@ -4212,11 +5053,113 @@ interface Advance {
 }
 
 type AdvancePlan =
-  | { kind: 'advance'; from: string; to: string; paths: string[]; readers: string[] }
+  | {
+      kind: 'advance';
+      from: string;
+      to: string;
+      paths: string[];
+      readers: string[];
+      /** Readers whose receipt entry is CARRIED over inputs the step touched: `runAdvance` rewrites each as judged at `to` once it passes there (`refreshCarried`). */
+      refresh: string[];
+    }
   | { kind: 'full'; why: string };
 
 /**
- * Whether a `--quick` run may ADVANCE the receipt instead of running the lane: the receipt on disk is whole, green and names a tree, HEAD has moved from the end of its chain, and every path that moved lies inside the record set. Pure, so the selftest drives every refusal; the caller supplies the diff and the policy.
+ * The carried receipt entries whose recorded inputs cover a changed path. block_unverified_push recomputes every carried entry's `filesHash` at the pushed tree (`_carried_refusal`), so each of these is refused there with "filesHash differs" unless the advance replaces it. Reproduced 2026-11-16: check:ci-plan-bindings is carried in 12 of the last 40 receipts and its `paths` cover agent/plans/**, so a plan-only advance over such a receipt was written by the runner and then refused at the push. Pure.
+ */
+function carriedOverPaths(gates: unknown, paths: readonly string[], step?: StepTrees): string[] {
+  if (gates === null || typeof gates !== 'object') return [];
+  const out: string[] = [];
+  for (const [id, raw] of Object.entries(gates as Record<string, unknown>)) {
+    const e = raw as Partial<ReceiptGate> | null;
+    if (e === null || typeof e !== 'object' || e.carriedFrom == null) continue;
+    const globs = Array.isArray(e.inputs?.globs) ? e.inputs.globs : [];
+    const files = Array.isArray(e.inputs?.files) ? e.inputs.files : [];
+    if (
+      paths.some((p) => files.includes(p) || globs.some((g) => matchGlob(g, p))) ||
+      namedInputsMoved(e.inputs, step)
+    )
+      out.push(id);
+  }
+  return out.sort((a, b) => Number(a > b) - Number(a < b));
+}
+
+/** The two trees of one advance step and a reader of their listings, so a carried entry's `lists` and `names` lines can be compared across the step. `entriesAt` answers undefined when git cannot list a tree. */
+interface StepTrees {
+  from: string;
+  to: string;
+  entriesAt: (tree: string) => readonly LsEntry[] | undefined;
+}
+
+/**
+ * Whether a carried entry's NAME-SHAPED inputs (PLAN-ciquick-cpu W2.4, input-hash.ts) moved across the step, which the push guard would see as "filesHash differs". The changed paths alone cannot say it: an add under a listed directory matches no content glob of a gate that reads only the listing. So:
+ *   - `lists` and `names`: the `list`/`name` lines of the step's `from` tree against its `to` tree, exactly as input-hash.ts builds them. A tree git cannot list counts as moved, the re-run direction.
+ *   - `refs`: always moved. The receipt does not record the commit a ref resolved to, and an advance is a new commit by construction (its `to` differs from its `from`), so `HEAD` has moved and any other ref may have. A moved ref means a re-run, never a carry the guard then refuses.
+ * An entry recording none of the three never moves here, which keeps every pre-W2.4 receipt's advance unchanged. Pure over `step`.
+ */
+function namedInputsMoved(
+  inputs: Partial<GateHash['inputs']> | undefined,
+  step?: StepTrees
+): boolean {
+  const arr = (v: unknown): string[] =>
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+  const lists = arr(inputs?.lists);
+  const names = arr(inputs?.names);
+  if (arr(inputs?.refs).length > 0) return true;
+  if (lists.length === 0 && names.length === 0) return false;
+  const before = step?.entriesAt(step.from);
+  const after = step?.entriesAt(step.to);
+  if (before === undefined || after === undefined) return true;
+  const lines = (entries: readonly LsEntry[]): string =>
+    [...new Set([...listLines(entries, lists), ...nameLines(entries, names)])]
+      .sort((a, b) => Number(a > b) - Number(a < b))
+      .join('\n');
+  return lines(before) !== lines(after);
+}
+
+/**
+ * The receipt's `gates` after an advance: each `refresh` reader that passed at the step stops being a carry and becomes a verdict of the step's tree. `inputHash` is cleared because the entry's hashes describe the older inputs, so a later run can never carry from it; the reader ran here, which is what an uncarried entry says. A reader that did not pass is left as it was, and the push guard refuses that step on the reader's exit code. Pure.
+ */
+function refreshCarried(
+  gates: Record<string, ReceiptGate>,
+  refresh: readonly string[],
+  stepGates: Record<string, number>,
+  to: string
+): Record<string, ReceiptGate> {
+  const out = { ...gates };
+  for (const id of refresh) {
+    const entry = sparse(out)[id];
+    if (entry === undefined || stepGates[id] !== 0) continue;
+    out[id] = {
+      ...entry,
+      inputHash: null,
+      verdict: 'ok',
+      exitCode: 0,
+      findings: null,
+      judgedTree: to,
+      carriedFrom: null,
+    };
+  }
+  return out;
+}
+
+/** The receipt `runAdvance` writes: the old one with its refreshed readers re-judged at `to` and the step appended. Pure, so the selftest reads the very object that reaches the disk. */
+function advancedReceipt(
+  receipt: Receipt,
+  refresh: readonly string[],
+  stepGates: Record<string, number>,
+  to: string,
+  step: Advance
+): Receipt & { advances: Advance[] } {
+  return {
+    ...receipt,
+    gates: refreshCarried(receipt.gates, refresh, stepGates, to),
+    advances: [...((receipt.advances as Advance[] | undefined) ?? []), step],
+  };
+}
+
+/**
+ * Whether a `--quick` run may ADVANCE the receipt instead of running the lane: the receipt on disk is whole and names a tree, HEAD has moved from the end of its chain, every path that moved lies inside the record set, and no gate the receipt lists as failed reads a record that moved. A red receipt stays red across the advance (`advanceExit`); the step only spares the lane. Pure, so the selftest drives every refusal; the caller supplies the diff and the policy.
  */
 function planAdvance(input: {
   receipt: unknown;
@@ -4224,6 +5167,8 @@ function planAdvance(input: {
   policy: RecordGlob[] | string | undefined;
   diff: (from: string, to: string) => string[] | undefined;
   known: ReadonlySet<string>;
+  /** The tracked entries of a tree, for carried entries that record `lists` or `names`; absent or undefined counts their inputs as moved. */
+  entriesAt?: (tree: string) => readonly LsEntry[] | undefined;
 }): AdvancePlan {
   const r = input.receipt as Partial<Receipt> | null | undefined;
   if (r === null || typeof r !== 'object' || r.whole !== true)
@@ -4232,8 +5177,19 @@ function planAdvance(input: {
     return { kind: 'full', why: `the receipt is not schema ${SCHEMA}; a whole run writes one` };
   if (typeof r.headTree !== 'string' || r.headTree === '')
     return { kind: 'full', why: 'the receipt vouches for no tree' };
-  if (r.exitCode !== 0 || (r.failed ?? []).length > 0)
-    return { kind: 'full', why: 'the receipt is red, and an advance could only keep it red' };
+  // A RED RECEIPT ADVANCES ONLY PAST RECORDS ITS REDS DO NOT READ (operator ruling 2026-11-16, judged below once the readers are known). A red with no `failed` list names nothing to compare the readers with, so it runs the lane.
+  // A `failed` that is present but not a list of ids is a damaged receipt: reading it as an empty list would advance a receipt that may be red.
+  if (
+    r.failed !== undefined &&
+    (!Array.isArray(r.failed) || r.failed.some((g) => typeof g !== 'string'))
+  )
+    return { kind: 'full', why: "the receipt's failed list is not a list of gate ids" };
+  const failed = Array.isArray(r.failed) ? r.failed : [];
+  if (r.exitCode !== 0 && failed.length === 0)
+    return {
+      kind: 'full',
+      why: 'the receipt is red and lists no failed gate to judge the records against',
+    };
   const chain = Array.isArray(r.advances) ? r.advances : [];
   const from = chain.length > 0 ? chain[chain.length - 1].to : r.headTree;
   if (input.headTree === '') return { kind: 'full', why: 'HEAD^{tree} is unreadable' };
@@ -4267,7 +5223,26 @@ function planAdvance(input: {
       kind: 'full',
       why: `record-paths.json names reader(s) that are not manifest gates: ${unknown.join(', ')}`,
     };
-  return { kind: 'advance', from, to: input.headTree, paths, readers };
+  // THE RED RULE. `failed`, `findings` and `exitCode` keep describing the receipt's own tree after an advance (block_unverified_push step_refusal reads them that way). That stays true only for a red gate whose inputs the step did not touch: a failed gate that reads a touched record would be re-run here and its old verdict left standing beside the new one, so the lane runs again and judges it whole.
+  const redReaders = readers.filter((id) => failed.includes(id));
+  if (redReaders.length > 0)
+    return {
+      kind: 'full',
+      why: `the receipt is red on ${redReaders.join(', ')}, which read(s) the changed record path(s); the lane must judge them again`,
+    };
+  // A CARRIED VERDICT OVER A TOUCHED INPUT (`carriedOverPaths`). When the step re-runs that gate, its entry is refreshed; when no touched record lists it as a reader, nothing here re-judges it and the guard would refuse the push, so the lane runs.
+  const stale = carriedOverPaths(r.gates, paths, {
+    from,
+    to: input.headTree,
+    entriesAt: input.entriesAt ?? (() => undefined),
+  });
+  const unread = stale.filter((id) => !readers.includes(id));
+  if (unread.length > 0)
+    return {
+      kind: 'full',
+      why: `the receipt carries ${unread.length} verdict(s) whose inputs changed and that no touched record lists as a reader (${unread.slice(0, 3).join(', ')}${unread.length > 3 ? ', ...' : ''}); the push guard would refuse them at this tree`,
+    };
+  return { kind: 'advance', from, to: input.headTree, paths, readers, refresh: stale };
 }
 
 /** The record-set policy as HEAD carries it (the guard reads the same copy), parsed; undefined when HEAD has none. */
@@ -4345,10 +5320,13 @@ async function runAdvance(
   };
   try {
     const priorAdvances = receipt.advances as Advance[] | undefined;
-    fs.writeFileSync(
-      dest,
-      `${JSON.stringify({ ...receipt, advances: [...(priorAdvances ?? []), step] }, null, 2)}\n`
-    );
+    const advanced = advancedReceipt(receipt, plan.refresh, gates, plan.to, step);
+    fs.writeFileSync(dest, `${JSON.stringify(advanced, null, 2)}\n`);
+    const refreshed = plan.refresh.filter((id) => gates[id] === 0);
+    if (refreshed.length > 0)
+      humanOut(
+        `ci-runner: ${refreshed.length} carried verdict(s) whose inputs this step touched are now judged at ${plan.to.slice(0, 9)}: ${refreshed.join(', ')}\n`
+      );
     humanOut(
       `ci-runner: receipt at ${dest} advanced to tree ${plan.to.slice(0, 9)} (advances[${(priorAdvances ?? []).length}])\n`
     );
@@ -4359,7 +5337,7 @@ async function runAdvance(
   const carriedRed = advanceExit(exitCode, receipt);
   if (carriedRed !== exitCode)
     humanOut(
-      `ci-runner: the readers passed, but the advanced receipt is still RED: exitCode ${receipt.exitCode}, failed: ${receipt.failed.join(', ') || '(none listed)'}\n`
+      `ci-runner: the readers passed, but the advanced receipt is still RED: exitCode ${receipt.exitCode}, failed: ${receipt.failed.join(', ') || '(none listed)'}. Those verdicts are of tree ${String(receipt.headTree).slice(0, 9)}; run this again at the same HEAD for a whole run that judges them afresh.\n`
     );
   return carriedRed;
 }
@@ -4523,6 +5501,50 @@ function defaultEventsFile(opts: Options, runId: string): string {
   return path.join(dir, `${runId}.jsonl`);
 }
 
+/** The whole lane, named where it can run: `ci:quick` is refused in a lease, whose main checkout is where the receipt comes from. */
+function wholeLane(main: string | undefined): string {
+  return main === undefined ? '`npm run ci:quick`' : `\`npm run ci:quick\` in ${main}`;
+}
+
+/** The script a narrow set runs under here: `ci:quick` routes to a refusal in a lease, and `ci` does not. */
+function narrowScript(main: string | undefined): string {
+  return main === undefined ? 'ci:quick' : 'ci';
+}
+
+/** Rule 4 (a gate with no `paths` is touched by any change) is off for `--narrow`: with it on, check:ci-account-server and every other path-less gate joined the set for any edit (hostinger bug report 2026-11-20, defect 7). */
+const NARROW_FAIL_OPEN = false;
+
+/**
+ * THE CHANGE SET `--narrow` judges, from what the commit in hand takes and not from the working tree (hostinger bug report 2026-11-20, defect 7: a 3-file commit selected gates for every dirty path in a shared tree and reported other sessions' uncommitted files).
+ * `--paths` names the set outright; `--whole-tree` keeps the old reading (`git diff <head>` plus untracked files); the default is the staged set plus the commits since the receipt's head, so a commit already made is still judged. `git` is a parameter so the selftest can plant a dirty tree. Undefined when git cannot answer.
+ */
+function narrowChangeSet(
+  opts: Pick<Options, 'narrowPaths' | 'narrowWholeTree'>,
+  head: string,
+  git: (args: readonly string[]) => string | undefined
+): { paths: string[]; source: string } | undefined {
+  const lines = (raw: string | undefined): string[] | undefined =>
+    raw === undefined ? undefined : raw.split('\n').filter(Boolean);
+  if (opts.narrowPaths !== undefined)
+    return { paths: [...new Set(opts.narrowPaths)], source: '--paths' };
+  if (opts.narrowWholeTree === true) {
+    const named = lines(git(['diff', '--name-only', head]));
+    if (named === undefined) return undefined;
+    const untracked = lines(git(['ls-files', '--others', '--exclude-standard'])) ?? [];
+    return {
+      paths: [...new Set([...named, ...untracked])],
+      source: `whole working tree since ${head.slice(0, 9)}`,
+    };
+  }
+  const staged = lines(git(['diff', '--cached', '--name-only']));
+  const committed = lines(git(['diff', '--name-only', head, 'HEAD']));
+  if (staged === undefined || committed === undefined) return undefined;
+  return {
+    paths: [...new Set([...committed, ...staged])],
+    source: `staged plus committed since ${head.slice(0, 9)}; other dirty files ignored`,
+  };
+}
+
 /**
  * THE NARROW SET (agent/plans/PLAN-gate-scheduling-learned.md section 5): F, the last receipt's fails carried-reds.json does not cover; C, the learned clusters holding any of them; T, the gates whose inputs the fix touched, quick-select.ts rules 1-3 against receipt.head..working tree (rule 4, "no paths means touched", is excluded on purpose: it would select every path-less gate on any edit); A, the gates the changed classes are associated with. Pure over its inputs except the git and file reads it names.
  */
@@ -4540,7 +5562,7 @@ function narrowPlan(
   } catch {
     return {
       lines: [],
-      error: `ci-runner: --narrow needs the last receipt at ${dest}; run \`npm run ci:quick\` first`,
+      error: `ci-runner: --narrow needs the last receipt at ${dest}; run ${wholeLane(leaseMainOf(REPO_ROOT))} first`,
     };
   }
   const gates = specs.filter((s) => s.gate);
@@ -4562,16 +5584,12 @@ function narrowPlan(
   const head = typeof receipt.head === 'string' ? receipt.head : '';
   let changed: string[] | undefined;
   let T: string[] = [];
+  let changeSource = '';
   if (head !== '') {
-    const named = gitTry(['diff', '--name-only', head]);
-    if (named !== undefined) {
-      const untracked = (gitTry(['ls-files', '--others', '--exclude-standard']) ?? '')
-        .split('\n')
-        .filter(Boolean);
-      changed = expandGitlinks(
-        [...new Set([...named.split('\n').filter(Boolean), ...untracked])],
-        (t) => process.stderr.write(t)
-      );
+    const picked = narrowChangeSet(opts, head, gitTry);
+    if (picked !== undefined) {
+      changeSource = picked.source;
+      changed = expandGitlinks(picked.paths, (t) => process.stderr.write(t));
     }
   }
   if (changed !== undefined) {
@@ -4600,6 +5618,7 @@ function narrowPlan(
         matches: matchesAny,
         scriptsNow: realQuickDiffDeps(opts).scriptsNow(),
         scriptsBase,
+        failOpen: NARROW_FAIL_OPEN,
       }
     ).map((t) => t.id);
     if ('model' in model)
@@ -4618,18 +5637,17 @@ function narrowPlan(
     `  C  their learned clusters ${list(C)}${modelNote}\n`,
     changed === undefined
       ? `  T  UNKNOWN: git could not list what changed since the receipt's head '${head === '' ? '(none)' : head}', so no touched gate is in the set\n`
-      : `  T  inputs the fix touched (quick-select rules 1-3, ${changed.length} changed file(s) since ${head.slice(0, 9)}) ${list(T)}\n`,
+      : `  T  inputs the fix touched (quick-select rules 1-3, ${changed.length} changed file(s): ${changeSource}) ${list(T)}\n`,
     `  A  associated with the changed classes ${list(A)}${modelNote}\n`,
     `  narrow set: ${ids.size} gate(s)\n`,
   ];
   if (ids.size === 0)
     return {
       lines,
-      error:
-        'ci-runner: --narrow found nothing to run: no non-carried fail, no touched gate, no cluster or association. Run the whole lane: npm run ci:quick',
+      error: `ci-runner: --narrow found nothing to run: no non-carried fail, no touched gate, no cluster or association. Run the whole lane: ${wholeLane(leaseMainOf(REPO_ROOT))}`,
     };
   lines.push(
-    `  run it: npm run ci:quick -- --narrow   (the same set: npx tsx scripts/ci-runner/run.ts --only ${[...ids].join(',')})\n`
+    `  run it: npm run ${narrowScript(leaseMainOf(REPO_ROOT))} -- --narrow  (the same set: npx tsx scripts/ci-runner/run.ts --only ${[...ids].join(',')})\n`
   );
   return { ids, lines };
 }
@@ -4716,11 +5734,19 @@ async function main(): Promise<number> {
     : (text: string) => process.stdout.write(text);
 
   // THE ADVANCE (agent/plans/PLAN-prepush-full-cpu.md part 5): a whole `--quick` run whose receipt is only a record-only commit behind runs those records' readers and appends a step, rather than the whole lane again. Every refusal is printed, so a whole run says why it was not an advance.
-  if (opts.quick && !opts.list && narrowingFlags(opts).length === 0 && opts.lane === undefined) {
+  const advanceable =
+    opts.quick && !opts.list && narrowingFlags(opts).length === 0 && opts.lane === undefined;
+  if (opts.advanceOnly && !advanceable) {
+    process.stderr.write(
+      `ci-runner: --advance-only needs a whole --quick run (no --list, --lane or narrowing flag), so nothing ran\n`
+    );
+    return ADVANCE_REFUSED_EXIT;
+  }
+  if (advanceable) {
     const dest = receiptPathFor(opts);
     let existing: unknown;
     try {
-      existing = JSON.parse(fs.readFileSync(dest, 'utf8'));
+      existing = JSON.parse(fs.readFileSync(advanceBasePath(opts), 'utf8'));
     } catch {
       existing = undefined;
     }
@@ -4732,9 +5758,26 @@ async function main(): Promise<number> {
       diff: (from, to) =>
         gitTry(['diff', '--name-only', '--no-renames', from, to])?.split('\n').filter(Boolean),
       known: new Set(specs.map((spec) => spec.id)),
+      entriesAt: (() => {
+        const memo = new Map<string, LsEntry[] | undefined>();
+        return (tree: string) => {
+          if (!memo.has(tree)) {
+            try {
+              memo.set(tree, lsTree(REPO_ROOT, tree));
+            } catch {
+              memo.set(tree, undefined);
+            }
+          }
+          return memo.get(tree);
+        };
+      })(),
     });
     if (plan.kind === 'advance')
       return runAdvance(specs, plan, existing as Receipt, dest, opts, humanOut);
+    if (opts.advanceOnly) {
+      humanOut(`ci-runner: --advance-only REFUSED, no lane runs: ${plan.why}\n`);
+      return ADVANCE_REFUSED_EXIT;
+    }
     humanOut(`ci-runner: --quick runs the whole lane, not an advance: ${plan.why}\n`);
   }
 
@@ -4791,18 +5834,13 @@ async function main(): Promise<number> {
   let hashes = new Map<string, GateHash>();
   let salt = '';
   if (recording && headTreeAtStart !== '') {
-    let prior: PriorReceipt | null = null;
-    try {
-      prior = JSON.parse(fs.readFileSync(receiptPathFor(opts), 'utf8')) as PriorReceipt;
-    } catch {
-      prior = null;
-    }
+    const priors = loadPriorReceipts(receiptPathFor(opts));
     // NOTHING CARRIES when quick-clone.ts says so: a clone made this run holds no build output while a carried prerequisite leaves `needs` and is not rebuilt, and `--no-carry` asks for every gate to be judged again.
     const noCarry = process.env[NO_CARRY_ENV] === '1';
     if (noCarry) humanOut('incremental: carry is off for this run, every selected gate runs\n');
     const input = incrementalInputOf(
       headTreeAtStart,
-      narrowingFlags(opts).length === 0 && !noCarry ? prior : null,
+      narrowingFlags(opts).length === 0 && !noCarry ? priors : [],
       disposable,
       [...selection.ids]
     );
@@ -4816,8 +5854,9 @@ async function main(): Promise<number> {
       if (disposable) {
         const uncarriable = plan.run.filter((id) => hashes.get(id)?.inputHash === null).length;
         humanOut(
-          `incremental: ${carry.size} carried, ${plan.run.length} run (${uncarriable} that may never carry: an env entry, carry-exempt.json, or such a prerequisite)\n`
+          `incremental: ${carry.size} carried from ${new Set([...carry.values()].map((pg) => pg.carriedFrom?.headTree)).size} of ${input.priors.length} held receipt(s), ${plan.run.length} run (${uncarriable} that may never carry: an env entry, carry-exempt.json, or such a prerequisite; ${plan.rejudged.length} red at unchanged inputs, re-judged because a red never carries)\n`
         );
+        if (plan.rejudged.length > 0) humanOut(`  re-judged: ${plan.rejudged.join(', ')}\n`);
         const named = [...carry.keys()].slice(0, 10);
         if (named.length > 0)
           humanOut(
@@ -5063,6 +6102,7 @@ async function main(): Promise<number> {
         pushBase: selection.pushBase ?? null,
         slowAdmitted: selection.slowAdmitted ?? [],
         grantedCores: grantsOf(results),
+        niceness: nicenessOf(results),
         timeline: timelineOf(results, startedAt),
         advances: [],
       },

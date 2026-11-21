@@ -152,7 +152,16 @@ describe('CLI contract', () => {
     // 88 -> 89: `repo prune` landed (PLAN-repo-docker-storage-prune R5). It runs repository_docker_prune on the machine holding the repository and is non-interactive, so it is proxy-capable like `repo trim`. `machine access push` (PLAN-ssh-key-source-ranges C1) is machine-plane but excluded below: an executor never rewrites its own access.
     //
     // 89 -> 90: `rdc job wait` landed (PLAN-detached-jobs J5). It follows a machine job over SSH like the other `job *` verbs, which are proxy-capable and never detachable (they read the spool).
-    expect(proxyCapableCommands().length).toBe(90);
+    //
+    // 90 -> 93: `repo permission grant`, `repo permission revoke` and `repo permission show` landed. Each runs a repository_permission_* renet function on the machine that holds the repository and is non-interactive, so all three are proxy-capable and detachable like `repo gpu grant`.
+    //
+    // 93 -> 94: `repo health` (PLAN-health-checks-local G3) runs repository_health on the machine that holds the repository, non-interactive, so proxy-capable and detachable like `repo status`.
+    //
+    // 94 -> 96: `repo repair` and `machine repair` (PLAN-health-checks-local X2, X4) run renet functions on the machine that holds the repository, non-interactive, so proxy-capable and detachable.
+    //
+    // 96 -> 97: `rdc job dismiss` landed. It acknowledges a ticket in the machine's job spool over SSH like the other `job *` verbs, which are proxy-capable and never detachable.
+    // 97 -> 96: `machine prune` judges --orphaned-repos and --prune-unknown against the caller's configs, so it is excluded from proxying.
+    expect(proxyCapableCommands().length).toBe(96);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {
@@ -185,6 +194,12 @@ describe('CLI contract', () => {
     excluded.push('backup download', 'backup upload');
     // The operator's credential or token drives them: the listing key, the passphrase checks and the repair's account calls (PLAN-backup-integrity C3 to C5, S2).
     excluded.push('backup check', 'backup churn', 'backup repair', 'backup toc-key sync');
+    // `rdc server` finds the box through the caller's install record, drives child commands and prints the server's keys; `server install` is interactive (PLAN-enterprise-tenants C7).
+    excluded.push('server status', 'server upgrade', 'server backup', 'server licence');
+    // Judged against every config the caller can read: an executor would judge against its own configs and could delete an image the caller's config names.
+    excluded.push('repo admin orphan list', 'repo admin orphan delete');
+    // `machine prune --orphaned-repos` and `--prune-unknown` share that verdict, and the flags decide at runtime, so the whole verb is excluded.
+    excluded.push('machine prune');
 
     for (const pathKey of excluded) {
       const cmd = getCommand(pathKey);
@@ -270,6 +285,9 @@ describe('CLI contract', () => {
       'repo push --strategy=auto|physical|shared',
       'repo secret set --mode=env|file',
       'serve --mode=daemon|container',
+      'server bundle --arch=amd64|arm64',
+      'server install --licence=auto|free',
+      'server install --tls=letsencrypt|cloudflare|byo',
       'vscode connect --server-provider=openvscode|code-server',
       'vscode serve status --server-provider=openvscode|code-server',
       'vscode serve stop --server-provider=openvscode|code-server',
@@ -356,7 +374,12 @@ describe('CLI contract', () => {
       'vscode serve stop',
     ]);
     const detachable = CLI_CONTRACT.commands.filter((c) => c.detachable).map((c) => c.pathKey);
-    expect(detachable).toHaveLength(78);
+    // 81 -> 82: `repo health` (one repository_health read job, its print a step).
+    // 82 -> 84: `repo repair` and `machine repair` (PLAN-health-checks-local X2, X4).
+    expect(detachable).toHaveLength(83);
+    // 84 -> 83: `machine prune` is not proxy-capable, so not detachable.
+    expect(getCommand('machine prune')?.proxyCapable).toBe(false);
+    expect(getCommand('machine prune')?.detachable).toBe(false);
     // The J0 covered verbs and the J0b converted rows a conversion box owns are all jobs; spot the four forms (single call, precondition fold, command-kind, multi-call).
     for (const pathKey of [
       'repo list',

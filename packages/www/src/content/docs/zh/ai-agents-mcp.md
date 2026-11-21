@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: zh
-sourceHash: "442b5cfa49239dbc"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "9fcdf73439f82d82"
+sourceCommit: "7aedf8f834a72520b4ea8a4a1226b5b94afed2ae"
 ---
 
 ## 概述
@@ -132,7 +132,7 @@ export REDIACC_ALLOW_GRAND_REPO='gitlab'   # 一个仓库
 claude   # 或 cursor、gemini 等
 ```
 
-覆盖是根据进程祖先验证的：仅当覆盖已存在于代理进程本身的环境中时才算数，这意味着你在代理（以及它启动的 MCP 服务器）启动之前导出了它。代理无法通过在会话中途设置该变量来自我授予访问权限。故意没有服务器标志用于此目的：MCP 服务器参数中的标志不能证明是谁设置的，而祖先检查可以。机器级访问（例如 `term connect -m <machine>` 不指定仓库）仍需要 `*`；仓库名称列表无法解锁该权限。
+覆盖是根据进程祖先验证的：仅当覆盖已存在于代理进程本身的环境中时才算数，这意味着你在代理（以及它启动的 MCP 服务器）启动之前导出了它。代理无法通过在会话中途设置该变量来自我授予访问权限。故意没有服务器标志用于此目的：MCP 服务器参数中的标志不能证明是谁设置的，而祖先检查可以。机器级访问（例如 `term connect <machine>` 不指定仓库）仍需要 `*`；仓库名称列表无法解锁该权限。
 
 ### 每仓库 SSH 密钥与服务端沙箱
 

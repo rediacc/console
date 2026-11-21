@@ -21,7 +21,6 @@
     ".ci/rediacc_ci/tests/test_core_bws_env.py": 3,
     ".ci/rediacc_ci/tests/test_ops_build_server.py": 1,
     ".ci/rediacc_ci/tests/test_security_rdc_sh_env_check.py": 5,
-    ".ci/scripts/quality/check_bws_map.py": 1,
     ".ci/scripts/quality/check_secret_supply.py": 1,
     ".claude/agents/account-dev.md": 1,
     ".claude/agents/media-pipeline.md": 1,

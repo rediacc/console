@@ -1,0 +1,91 @@
+Data Processing Agreement
+Effective Date: November 11, 2026
+
+1. Scope and Roles
+
+This Data Processing Agreement ("DPA") forms part of the Terms of Service <https://www.rediacc.com/en/terms-of-service> between Rediacc OÜ ("Rediacc", the "Processor") and the Customer, where the Customer uses the Services as a business and Rediacc processes Customer Personal Data on the Customer's behalf. Terms defined in the Terms of Service have the same meaning here.
+
+For Customer Personal Data, the Customer is the controller (or a processor acting for its own controller) and Rediacc is the processor (or subprocessor). For Account, billing and acceptance records and for Telemetry Data, Rediacc is an independent controller, as described in the Privacy Policy <https://www.rediacc.com/en/privacy-policy>, and this DPA does not apply to that processing.
+
+Customer Data on the Customer's Machines is not processed by Rediacc. Encrypted configuration storage and hosted backups are encrypted with keys Rediacc does not hold, so Rediacc stores those blobs but cannot read their contents.
+
+2. Definitions
+
+- "Data Protection Laws" means the EU General Data Protection Regulation (Regulation (EU) 2016/679, "GDPR"), the UK GDPR, and any other data protection law that applies to the processing under this DPA.
+- "Customer Personal Data" means personal data that Rediacc processes on behalf of the Customer in providing the Platform, such as the names and email addresses of Authorized Users and team members invited by the Customer, and encrypted data the Customer stores on the Platform.
+- "Personal Data Breach", "processing", "controller", "processor" and "data subject" have the meanings given in the GDPR.
+- "SCCs" means the standard contractual clauses approved by European Commission Implementing Decision (EU) 2021/914.
+- "Subprocessor" means a third party engaged by Rediacc to process Customer Personal Data.
+
+3. Processing on Instructions
+
+Rediacc processes Customer Personal Data only on the Customer's documented instructions, which are the Terms of Service, this DPA and the Customer's use and configuration of the Services, unless the law requires otherwise, in which case Rediacc informs the Customer before processing unless the law prohibits it. Rediacc informs the Customer if it believes an instruction infringes Data Protection Laws.
+
+4. Details of Processing
+
+- Subject matter and purpose: providing the Platform, including Account and team management, license issuance, encrypted configuration storage, hosted backup storage and support
+- Duration: the term of the Terms of Service, plus the deletion period in Section 11
+- Nature of processing: collection, storage, transmission, retrieval and deletion
+- Categories of data subjects: the Customer's Authorized Users, invited team members and partner contacts
+- Categories of personal data: names, email addresses, organization and role, authentication data (password hashes, passkey public keys), network addresses and user agents of sessions, and any personal data inside encrypted data the Customer stores on the Platform
+- Special categories: none intended; the Customer must not store special categories of data on the Platform unencrypted
+
+5. Confidentiality
+
+Rediacc ensures that every person authorized to process Customer Personal Data is bound by an obligation of confidentiality.
+
+6. Security
+
+Rediacc implements appropriate technical and organizational measures under GDPR Article 32, including:
+
+- encryption in transit (TLS 1.2 or later) and at rest, and client-side encryption of configuration storage and hosted backups with keys Rediacc does not hold
+- access to production systems limited to authorized personnel, with multi-factor authentication
+- logical separation of customer data and regional data storage
+- logging and monitoring of production systems, and regular testing of security measures
+
+7. Subprocessors
+
+The Customer authorizes Rediacc to engage Subprocessors. Rediacc imposes on each Subprocessor data protection obligations no less protective than this DPA and remains responsible for its Subprocessors' performance. The current Subprocessors are:
+
+- Cloudflare, Inc. (United States; global network): hosting of the account portal and API (Workers), the account database (D1), hosted backup and object storage (R2), content delivery and DNS, and bot protection on forms (Turnstile)
+- Amazon Web Services, Inc. (Amazon Simple Email Service, in the AWS region that serves the Customer's account region): delivery of transactional email such as sign-in links, notices and invoices
+- Stripe, Inc. and its affiliates (United States and Ireland): payment processing, subscription billing, invoicing and tax calculation for paid Subscriptions
+- Hostinger (virtual servers in the European Union): hosting of the telemetry and observability endpoint (otlp.rediacc.io) that receives Telemetry Data and service logs
+
+Rediacc gives at least thirty (30) days' notice before adding or replacing a Subprocessor, by updating this page and notifying the Account email. The Customer may object on reasonable data protection grounds within that period. If the parties cannot resolve the objection, the Customer may terminate the affected Services and receive a refund of prepaid fees for the period after termination.
+
+Website analytics (Plausible) do not process Customer Personal Data and are covered by the Privacy Policy.
+
+8. International Transfers
+
+Where Customer Personal Data is transferred to a country outside the European Economic Area that does not have an adequacy decision, the SCCs are incorporated into this DPA by reference: Module Two (controller to processor) where the Customer is a controller, and Module Three (processor to processor) where the Customer is a processor. For the SCCs: the optional docking clause (Clause 7) applies; Clause 9(a) Option 2 (general authorization) applies with the notice period in Section 7; the optional language in Clause 11 does not apply; Clauses 17 and 18 select the law and courts of Estonia; and Annexes I and II are completed by Sections 1, 4 and 6 and Annex III by Section 7 of this DPA.
+
+For transfers subject to the UK GDPR, the International Data Transfer Addendum issued by the UK Information Commissioner applies together with the SCCs. Rediacc relies on the EU-US Data Privacy Framework for Subprocessors certified under it.
+
+9. Data Subject Requests and Assistance
+
+Rediacc promptly forwards to the Customer any request from a data subject about Customer Personal Data and does not respond itself except on the Customer's instructions. Taking into account the nature of the processing, Rediacc assists the Customer in responding to such requests and in meeting its obligations under GDPR Articles 32 to 36, including data protection impact assessments and prior consultations.
+
+10. Personal Data Breach
+
+Rediacc notifies the Customer without undue delay, and in any case within seventy-two (72) hours, after becoming aware of a Personal Data Breach affecting Customer Personal Data. The notice describes, as far as known, the nature of the breach, the categories and approximate number of data subjects and records concerned, the likely consequences and the measures taken or proposed. Rediacc takes reasonable steps to contain and remedy the breach.
+
+11. Deletion or Return
+
+At the end of the Services, the Customer may export Customer Personal Data within thirty (30) days. Rediacc then deletes Customer Personal Data from active systems, and from backups within ninety (90) days, unless the law requires Rediacc to keep it.
+
+12. Audits
+
+Rediacc makes available to the Customer the information necessary to demonstrate compliance with GDPR Article 28, primarily through written answers to reasonable security questionnaires and through available audit reports and certifications of Rediacc and its Subprocessors. Where that information is insufficient or a supervisory authority requires it, the Customer may conduct an audit, at its own cost, on thirty (30) days' notice, during business hours, no more than once a year, under confidentiality obligations and in a way that does not disrupt the Services or other customers.
+
+13. Liability and Precedence
+
+Each party's liability under this DPA is subject to the limitations of the Terms of Service, except where Data Protection Laws do not allow it. If this DPA conflicts with the Terms of Service, this DPA governs for the processing of Customer Personal Data; if the SCCs conflict with this DPA, the SCCs govern.
+
+14. Source of This DPA
+
+Portions of this DPA are adapted from the Common Paper Data Processing Agreement Standard Terms Version 1.1 (commonpaper.com/standards/data-processing-agreement/1.1 <https://commonpaper.com/standards/data-processing-agreement/1.1>), published by Common Paper, Inc. under the Creative Commons Attribution 4.0 International license (CC BY 4.0 <https://creativecommons.org/licenses/by/4.0/>). The text has been modified: it is restructured, shortened and adapted to the Services. Common Paper, Inc. does not endorse this DPA.
+
+Questions?
+
+For questions about this Data Processing Agreement, or to object to a Subprocessor, contact us at contact@rediacc.com <mailto:contact@rediacc.com>.

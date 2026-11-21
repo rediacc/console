@@ -22,6 +22,8 @@
  *      equals what is declared, so a derivation that has drifted from its own output
  *      is caught rather than trusted.
  *
+ * THE NAME-SHAPED FIELDS (PLAN-ciquick-cpu W2.4). `lists` (directories whose listing a gate reads) and `names` (globs whose matching names it reads) scope a gate just as `paths` does, so either one also requires `pathsOrigin`, and each must still name something: a listed directory with no tracked file under it, or a names glob matching nothing, is the same silent drop as a dead paths glob. `refs` scopes nothing and needs no origin. All three must be well-formed (`nameInputProblem` in scripts/ci-runner/input-hash.ts, the reader that hashes them), and an empty array is refused: it declares nothing and only moves defHash.
+ *
  * NO ENTRY USES `derived:` TODAY. Every one of the 46 is a human-typed literal
  * array, so the `derived:` branch is real code with zero real callers -- exactly
  * B2's `SHARD_COUNTS` shape, proven only by `--selftest`'s fixture until W2.5's
@@ -45,6 +47,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { nameInputProblem } from '../ci-runner/input-hash';
 import { globToRegExp } from '../ci-runner/run';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -56,11 +59,14 @@ const LOCK = path.join(REPO_ROOT, 'scripts', 'ci-runner', 'gates.lock.json');
  */
 const MIN_SCOPED_ENTRIES = 30;
 
-interface LockEntry {
+type LockEntry = {
   id: string;
   paths?: string[];
+  lists?: string[];
+  names?: string[];
+  refs?: string[];
   pathsOrigin?: string;
-}
+};
 
 /**
  * A REFUSAL, not a finding: the gate cannot see its subject at all (an empty
@@ -92,19 +98,50 @@ function pathsOriginFindings(
 ): string[] {
   const findings: string[] = [];
   const hasPaths = (e: LockEntry): boolean => e.paths !== undefined;
+  // `lists` and `names` scope a gate as `paths` does (W2.4), so they need an origin too; `refs` scopes nothing.
+  const scopedBy = (e: LockEntry): string[] =>
+    (['paths', 'lists', 'names'] as const).filter((f) => e[f] !== undefined);
   const hasOrigin = (e: LockEntry): boolean => e.pathsOrigin !== undefined;
 
   for (const e of entries) {
-    if (hasPaths(e) && !hasOrigin(e)) {
+    const scope = scopedBy(e);
+    if (scope.length > 0 && !hasOrigin(e)) {
       findings.push(
-        `${e.id}: declares \`paths\` with no \`pathsOrigin\` -- required whenever paths is present.`
+        `${e.id}: declares \`${scope.join('`, `')}\` with no \`pathsOrigin\` -- required whenever paths, lists or names is present.`
       );
     }
-    if (hasOrigin(e) && !hasPaths(e)) {
+    if (hasOrigin(e) && scope.length === 0) {
       findings.push(
-        `${e.id}: declares \`pathsOrigin\` with no \`paths\` -- pathsOrigin describes how paths ` +
-          `was produced, so it is meaningless without one.`
+        `${e.id}: declares \`pathsOrigin\` with no \`paths\`, \`lists\` or \`names\` -- pathsOrigin describes how ` +
+          `they were produced, so it is meaningless without one.`
       );
+    }
+    const problem = nameInputProblem(e);
+    if (problem !== null) {
+      findings.push(`${e.id}: ${problem}.`);
+      continue;
+    }
+    for (const f of ['lists', 'names', 'refs'] as const) {
+      if (e[f] !== undefined && (e[f] ?? []).length === 0)
+        findings.push(`${e.id}: declares an empty \`${f}\` -- it names nothing; drop the key.`);
+    }
+    for (const d of e.lists ?? []) {
+      const prefix = d === '' ? '' : `${d}/`;
+      if (!tracked.some((f) => f.startsWith(prefix) && f.length > prefix.length)) {
+        findings.push(
+          `${e.id}: listed directory \`${d === '' ? "'' (the root)" : d}\` holds ZERO tracked files -- its listing ` +
+            `is empty forever, so the gate would never see a child arrive. Name a tracked directory or drop it.`
+        );
+      }
+    }
+    for (const g of e.names ?? []) {
+      const re = globToRegExp(g);
+      if (!tracked.some((f) => re.test(f))) {
+        findings.push(
+          `${e.id}: names glob \`${g}\` matches ZERO tracked files -- a dead glob drops out of every ` +
+            `--changed run and nothing else would say so.`
+        );
+      }
     }
   }
 
@@ -112,7 +149,8 @@ function pathsOriginFindings(
     if (!hasPaths(e) || !hasOrigin(e)) continue;
     const origin = e.pathsOrigin as string;
     const globs = e.paths as string[];
-    if (origin === 'declared') {
+    // 'traced' is written by scripts/ci-runner/path-trace.ts; both origins get the no-dead-glob check here.
+    if (origin === 'declared' || origin === 'traced') {
       for (const g of globs) {
         const re = globToRegExp(g);
         if (!tracked.some((f) => re.test(f))) {
@@ -149,7 +187,8 @@ function pathsOriginFindings(
       }
     } else {
       findings.push(
-        `${e.id}: pathsOrigin "${origin}" is neither \`'declared'\` nor \`` + 'derived:<tool>`.'
+        `${e.id}: pathsOrigin "${origin}" is neither \`'declared'\`, \`'traced'\` nor \`` +
+          'derived:<tool>`.'
       );
     }
   }
@@ -205,6 +244,74 @@ function selftest(): number {
     'an unrecognised pathsOrigin value is a finding',
     run([{ id: 'a', paths: ['x.ts'], pathsOrigin: 'made-up' }], ['x.ts'])[0]?.includes(
       'is neither'
+    ) === true
+  );
+
+  // W2.4: lists, names, refs.
+  check(
+    'CONTROL: lists and names with an origin, naming tracked things, and refs alone, are silent',
+    run(
+      [
+        { id: 'a', lists: ['', 'd'], names: ['d/*.ts'], pathsOrigin: 'traced' },
+        { id: 'b', refs: ['HEAD'] },
+        { id: 'c', paths: ['x.ts'], refs: ['origin/main'], pathsOrigin: 'declared' },
+      ],
+      ['x.ts', 'd/y.ts']
+    ).length === 0
+  );
+  check(
+    'lists with no pathsOrigin is a finding',
+    run([{ id: 'a', lists: ['d'] }], ['d/y.ts'])[0]?.includes('`lists` with no `pathsOrigin`') ===
+      true
+  );
+  check(
+    'names with no pathsOrigin is a finding',
+    run([{ id: 'a', names: ['d/**'] }], ['d/y.ts'])[0]?.includes(
+      '`names` with no `pathsOrigin`'
+    ) === true
+  );
+  check(
+    'CONTROL: pathsOrigin beside lists alone is not the orphan-origin finding',
+    run([{ id: 'a', lists: ['d'], pathsOrigin: 'traced' }], ['d/y.ts']).length === 0
+  );
+  check(
+    'a listed directory with no tracked file under it is a finding (dd/ is not under d/)',
+    run([{ id: 'a', lists: ['d'], pathsOrigin: 'traced' }], ['dd/y.ts', 'd'])[0]?.includes(
+      'holds ZERO tracked files'
+    ) === true
+  );
+  check(
+    'a names glob matching nothing tracked is a finding',
+    run([{ id: 'a', names: ['nope/**'], pathsOrigin: 'traced' }], ['x.ts'])[0]?.includes(
+      'names glob `nope/**` matches ZERO'
+    ) === true
+  );
+  for (const origin of ['traced', 'declared']) {
+    check(
+      `a ${origin} paths glob matching nothing tracked is a dead-glob finding (51b85403.1)`,
+      run([{ id: 'a', paths: ['nope/**'], pathsOrigin: origin }], ['x.ts'])[0]?.includes(
+        'matches ZERO tracked files'
+      ) === true
+    );
+  }
+  check(
+    'CONTROL: a traced paths glob matching a tracked file is no finding',
+    run([{ id: 'a', paths: ['x.ts'], pathsOrigin: 'traced' }], ['x.ts']).length === 0
+  );
+  check(
+    'a malformed lists item (trailing /) is a finding',
+    run([{ id: 'a', lists: ['d/'], pathsOrigin: 'traced' }], ['d/y.ts'])[0]?.includes(
+      'not a plain relative directory'
+    ) === true
+  );
+  check(
+    'revision syntax in refs is a finding',
+    run([{ id: 'a', refs: ['HEAD~1'] }], ['x.ts'])[0]?.includes('not a plain ref name') === true
+  );
+  check(
+    'an empty lists array is a finding',
+    run([{ id: 'a', paths: ['x.ts'], lists: [], pathsOrigin: 'declared' }], ['x.ts'])[0]?.includes(
+      'empty `lists`'
     ) === true
   );
 

@@ -4,10 +4,12 @@ WHY A SECOND LAYER (the commit-policy plan in agent/plans, section 5.3; operator
 
 WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bash guards):
 
-  commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`.
+  commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`; a commit from a lease tree without a valid `Plan-Box:` trailer (`lease_plan_box_refusal` below).
   reference-transaction   in the `prepared` state, a new `refs/heads/*` (old oid all zeros AND the name not yet resolving: a forced move of an existing branch also arrives with zeros, and is not a creation) that breaks the one-branch rule: outside a submodule, only from `main`, with no other live branch and an `MMDD-N` name; in a submodule, only the console's current branch name. LOCAL FACTS ONLY: no `gh`, so a branch counts as live until its upstream is gone.
-  pre-commit              a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
-  pre-push                a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below). A line a live release run lists is admitted instead (box W1-D of PLAN-local-release, `_release_admitted` below).
+  pre-commit              a commit from a lease tree (`commit_policy.lease_root`) that stages a gitlink or a path under `agent/`; a commit whose staged `.py` blobs fail `ruff check` or `ruff format --check` (`python_lint_pre_commit` below; an absent ruff is a note, never a refusal); a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
+  pre-push                a push sending or naming a pin under `refs/worktrees/`, from every repository; any push from a lease tree; a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below). A line a live release run lists is admitted instead (box W1-D of PLAN-local-release, `_release_admitted` below). A push naming `refs/backup/**` meets the backup-ref rules instead of all of these (Design G of PLAN-local-first-delivery, `backup_push` below): the repository's pinned GitLab project only, nothing else in the push, create or fast-forward, immutable snapshots, and incremental session-link and secret scans.
+
+`post-commit` REFUSES NOTHING. In a lease tree it runs the `pin` verb of `.ci/rediacc_ci/dev/worktree_lease.py`, which moves `refs/worktrees/<id>` forward to HEAD, so a commit outlives its tree until it lands (agent/plans/PLAN-worktree-lease.md, Design 3). Outside a lease, it and `post-rewrite` and `post-merge` start the backup worker detached in a repository with a pinned `gitlab` remote, on a branch other than `main` (box G3 of PLAN-local-first-delivery, `spawn_backup` below). They run under the override too.
 
 THE PRE-BASH LAYER STAYS AUTHORITATIVE FOR AGENTS; this is the backstop. It reads no `gh`, so it cannot compute today's next name or know a PR merged; it checks shape and local liveness only.
 
@@ -20,17 +22,21 @@ LOADED BY FILE, NOT BY PACKAGE. Git runs a hook as a plain executable with no pa
 
 from __future__ import annotations
 
+import datetime
 import hashlib
+import importlib
 import importlib.util
 import json
 import os
 import pathlib
 import posixpath
 import re
+import shlex
 import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import urllib.parse
 
@@ -52,6 +58,7 @@ def _load(name: str, path: pathlib.Path):
 cp = _load("commit_policy", HERE.parent / "commit_policy.py")
 ga = _load("githook_artifacts", HERE / "artifacts.py")
 rr = _load("githook_release_run", HERE / "release_run.py")
+sp = _load("githook_syspath", HERE.parent / "syspath.py")
 
 SHAPE = re.compile(r"^[0-9]{4}-[0-9]+$")
 
@@ -148,7 +155,137 @@ def commit_msg(argv: list[str]) -> int:
                 "[no-review] is for writing only; these paths are not: %s."
                 % (", ".join(offenders[:8]) or "(no staged path)")
             )
+    return (
+        lease_pr_task_refusal(msg, repo)
+        or lease_plan_box_refusal(msg, repo)
+        or pr_freeze_refusal(msg, repo, branch, paths)
+    )
+
+
+PR_FREEZE_REL = ".claude/rediacc_hooks/pr_freeze.py"
+#: The paths a repair commit may stage while the module cannot load: the module and its own test, nothing else.
+PR_FREEZE_REPAIR = frozenset(
+    {PR_FREEZE_REL, ".claude/rediacc_hooks/tests/test_githook_pr_freeze.py"}
+)
+
+
+def pr_freeze_refusal(msg: str, repo: str, branch: str, paths: list[str]) -> int:
+    """PLAN-two-track-merge-dev F1: while this branch is in its babysit or merge phase, only fix work lands (.claude/rediacc_hooks/pr_freeze.py). A lease is not judged here: it is detached, and its commits reach the branch through the lead's cherry-picks, which this hook judges then."""
+    if not repo or not branch or cp.lease_root(repo):
+        return 0
+    # FAILS CLOSED when the module itself is missing or broken (review 9188027d.1), as a broken commit_policy.py does through _load: a deleted freeze must not silently admit every commit. A loader error INSIDE pr_freeze.check (an unreadable store) still fails open there, with a note.
+    try:
+        freeze = _load("pr_freeze", HERE.parent / "pr_freeze.py")
+    except (OSError, ImportError, SyntaxError) as exc:
+        if PR_FREEZE_REL in paths and set(paths) <= PR_FREEZE_REPAIR:
+            return 0  # the repair path (review 7d2c8fca.1): a commit of the module (and its test) alone lands; anything else beside it does not (8d45a5c5.1)
+        return _refuse(
+            "the PR freeze module cannot be loaded (%s), so no commit can be judged; restore .claude/rediacc_hooks/pr_freeze.py (a commit staging only it, and its test, is admitted)."
+            % exc
+        )
+    ok, reason = freeze.check(repo, CONSOLE_ROOT, branch, msg, paths)
+    if not ok:
+        return _refuse(reason)
+    if reason:
+        sys.stderr.write("commit-policy: note: %s\n" % reason)
     return 0
+
+
+# A LEASE COMMIT NAMES A DECLARED EPIC (#c9ca8d23). In the main checkout `block_untagged_commit` refuses a `PR-TASK:` trailer that is missing or names no epic of the branch; a lease writer's commit reached the tree with `PR-TASK: tracked finding #d31b4054` (f07996f4f, lease 9010a7b9) because nothing here asked. The epic set is the MAIN checkout's (its live branch's `agent/pr/<branch>.md` united with
+# `agent/worklist/epics.jsonl`), since the lease is detached and an epic declared after the lease was cut lives only there. The parser is the guard's own, imported with `.claude` on `sys.path`: `trailer_id`, `declared_epics`, `epic_named`, `epic_menu` and the two refusal texts. With no epic set at all there is nothing to judge an id against, and the guard allows that case too.
+GUARD_PACKAGE_ROOT = CONSOLE_ROOT / ".claude"
+
+
+def _untagged_guard():
+    sp.on_sys_path(GUARD_PACKAGE_ROOT)
+    return importlib.import_module("rediacc_hooks.guards.block_untagged_commit")
+
+
+def _main_branch(main: str) -> str:
+    """The main checkout's live branch. Git exports `GIT_DIR` and `GIT_INDEX_FILE` to a hook, and `-C` does not override them, so a plain `git -C <main>` from the lease's `commit-msg` answered the LEASE's detached HEAD: empty, which judged the trailer against the ledger alone (measured by `test_pr_task_hook_runs_under_a_real_git_commit`)."""
+    env = {
+        k: v
+        for k, v in os.environ.items()
+        if not k.startswith("GIT_") or k.startswith("GIT_CONFIG")
+    }
+    try:
+        done = subprocess.run(
+            ["git", "-C", main, "branch", "--show-current"],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return done.stdout.strip() if done.returncode == 0 else ""
+
+
+def lease_pr_task_refusal(msg: str, repo: str) -> int:
+    lease = cp.lease_root(repo) if repo else ""
+    if not lease:
+        return 0
+    main = lease.partition(cp.LEASE_HOLDER)[0]
+    guard = _untagged_guard()
+    branch = _main_branch(main)
+    known, shown, snap, branch_key = guard.declared_epics(main, branch)
+    menu = "\n".join(guard.epic_menu(shown, snap, branch_key, branch))
+    found = guard.trailer_id(msg)
+    if found == "":
+        return _refuse(
+            "this commit from the lease tree %s carries no PR-TASK trailer.\n%s%s\n"
+            % (lease, guard.MISSING_TRAILER, menu)
+        )
+    if known and not guard.epic_named(found, known):
+        return _refuse(
+            "this commit from the lease tree %s names no declared epic.\n%s%s\n"
+            % (lease, guard.NO_EPIC % found, menu)
+        )
+    return 0
+
+
+# A LEASE COMMIT NAMES THE PLAN BOX IT SERVES (agent/plans/PLAN-tick-tracking.md, box T3). `land` refuses a lease commit without a valid `Plan-Box:` trailer (T2); this hook refuses the same message at commit time, so the writer fixes it in its own lease before the lead reads it. The grammar is read in process from `wl_planbox.py`, loaded by file. The tree checks (the plan exists, the box is open, the clause is defined) import the worklist's plan modules, so they run as `<this hook's interpreter, sys.executable> wl_planbox.py check --root <main checkout>`, a process whose own directory resolves those imports with no `sys.path` entry here. Only in a lease tree; the main checkout pays one `lease_root` call, which starts no subprocess outside the holder path.
+PLANBOX_PATH = CONSOLE_ROOT / ".claude" / "hooks" / "stop" / "wl_planbox.py"
+PLANBOX_TIMEOUT_S = 60
+
+
+def lease_plan_box_refusal(msg: str, repo: str) -> int:
+    lease = cp.lease_root(repo) if repo else ""
+    if not lease:
+        return 0
+    main = lease.partition(cp.LEASE_HOLDER)[0]
+    pb = _load("githook_planbox", PLANBOX_PATH)
+    parsed = pb.parse_plan_box(msg)
+    if not parsed.ok:
+        return _refuse(
+            "this commit from the lease tree %s carries no valid Plan-Box trailer:\n  %s\n"
+            "The grammar: %s\n%s" % (lease, "\n  ".join(parsed.errors), pb.GRAMMAR, cp.LEASE_ADVICE)
+        )
+    if parsed.none_reason is not None:
+        return 0
+    try:
+        done = subprocess.run(
+            [sys.executable, str(PLANBOX_PATH), "check", "--root", main],
+            input=msg,
+            capture_output=True,
+            text=True,
+            timeout=PLANBOX_TIMEOUT_S,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return _refuse("UNCHECKED: the Plan-Box trailer could not be checked (%s)." % exc)
+    if done.returncode == 0:
+        return 0
+    if done.returncode == 1:
+        return _refuse(
+            "this commit from the lease tree %s names a plan box `land` would refuse:\n  %s\n"
+            "The grammar: %s" % (lease, "\n  ".join(done.stderr.strip().splitlines()), pb.GRAMMAR)
+        )
+    return _refuse(
+        "UNCHECKED: the Plan-Box check exited %d: %s"
+        % (done.returncode, done.stderr.strip()[-400:])
+    )
 
 
 # --------------------------------------------------------------------------- reference-transaction ---------------------------------------------------------------------------
@@ -184,9 +321,19 @@ def reference_transaction(argv: list[str], stdin: str) -> int:
     repo = _repo()
     if not repo:
         return 0
+    # Two trees, one live branch each (box LT3 of PLAN-two-track-merge-dev): `live_branches` leaves out the branch the landing record binds to the other tree, and the record's own branch is cut nowhere but in the landing tree.
     live = cp.live_branches(repo, gh=False)
     parent = cp.superproject(repo)
+    record = cp.landing_record(repo)
+    bound = record if record is not None and cp.tree_role(repo) != cp.ROLE_LANDING else None
     for name in created:
+        if bound is not None and name == bound["branch"]:
+            return _refuse(
+                "creating branch `%s` here. The landing record binds it to the landing tree\n"
+                "%s, which holds the open PR's branch; this tree cuts its own development\n"
+                "branch (`./run.sh worktree landing` makes or refreshes the landing tree)."
+                % (name, bound["path"])
+            )
         others = [b for b in live if b != name]
         if parent:
             console_branch = cp.current_branch(parent, foreign=True)
@@ -201,7 +348,7 @@ def reference_transaction(argv: list[str], stdin: str) -> int:
             return _refuse("`%s` is not an MMDD-N branch name." % name)
         if others:
             return _refuse(
-                "creating branch `%s` while `%s` is live. One branch per repository: continue\n"
+                "creating branch `%s` while `%s` is live. One live branch per tree: continue\n"
                 "on it (`git switch %s`)." % (name, others[0], others[0])
             )
         current = cp.current_branch(repo)
@@ -235,26 +382,26 @@ def _main_push_refusal(
 
 # THE GITLAB MIRROR PUSH (operator ruling 2026-10-03, worklist #1cad85a1: "Allow the agent to push it"). Step 6b of .claude/commands/pr-merge.md copies GitHub's `main` to the self-hosted mirror after each merge with `git push gitlab refs/heads/main:refs/heads/main --follow-tags`. It moves no history GitHub does not already hold, so it is admitted here and in `block_push_to_protected_branch`, which loads these helpers from this file rather than keeping a second copy.
 #
-# THE URL IS PINNED HERE, not read from .ci/config/well-known.env: the registry holds no GitLab value, and the remote itself lives only in local `.git/config` (pr-merge.md says so), so the one thing that can say "this remote is the console mirror" is a literal both layers compare against. Only the https spelling is admitted; an `insteadOf` rewrite that sends the push elsewhere fails the comparison, because git hands this hook the rewritten location.
+# THE URL IS PINNED HERE, not read from .ci/config/well-known.env: this file runs as a git hook in trees that may carry no `.ci`, so it reads nothing outside `.claude`, and the guard and the harnesses take the host from `MIRROR_HOST` below rather than typing it. The remote itself lives only in local `.git/config` (pr-merge.md says so), so the one thing that can say "this remote is the console mirror" is a literal both layers compare against. Only the https spelling is admitted; an `insteadOf` rewrite that sends the push elsewhere fails the comparison, because git hands this hook the rewritten location.
 MIRROR_REMOTE = "gitlab"
 MIRROR_HOST = "gitlab.rediacc.io"
 MIRROR_PATH = "/rediacc-org/github/console.git"
 
 
-def mirror_url_refusal(url: str) -> str:
-    """ "" when `url` is the console's GitLab mirror, else why not. Credentials in the URL are never echoed."""
+def _pinned_url_refusal(url: str, path: str, what: str) -> str:
+    """ "" when `url` is `https://<MIRROR_HOST><path>` with no port, query or fragment (userinfo is tolerated and ignored), else why not, naming `what` the pin is. Credentials in the URL are never echoed."""
     try:
         parts = urllib.parse.urlsplit(url or "")
         port = parts.port
         host = parts.hostname
     except ValueError:
         return "the `%s` URL cannot be parsed" % MIRROR_REMOTE
-    want = "https://%s%s" % (MIRROR_HOST, MIRROR_PATH)
+    want = "https://%s%s" % (MIRROR_HOST, path)
     if (
         parts.scheme != "https"
         or host != MIRROR_HOST
         or port is not None
-        or parts.path != MIRROR_PATH
+        or parts.path != path
         or parts.query
         or parts.fragment
     ):
@@ -263,8 +410,13 @@ def mirror_url_refusal(url: str) -> str:
             if parts.scheme
             else "(a local path)"
         )
-        return "`%s` points at %s, not the console mirror %s" % (MIRROR_REMOTE, shown, want)
+        return "`%s` points at %s, not %s %s" % (MIRROR_REMOTE, shown, what, want)
     return ""
+
+
+def mirror_url_refusal(url: str) -> str:
+    """ "" when `url` is the console's GitLab mirror, else why not. Credentials in the URL are never echoed."""
+    return _pinned_url_refusal(url, MIRROR_PATH, "the console mirror")
 
 
 def mirror_main_refusal(repo: str, sha: str) -> str:
@@ -326,6 +478,342 @@ def _mirror_push_refusal(repo: str, url: str, lines: list[list[str]]) -> str:
     return mirror_main_refusal(repo, local_oid)
 
 
+# THE BACKUP REFS (Design G of agent/plans/PLAN-local-first-delivery.md, operator ruling R1 2026-11-11). Unpushed work gets an off-machine copy under `refs/backup/<branch>/` on the repository's own GitLab project: `live` fast-forwarded on every commit, an immutable `daily-<YYYY-MM-DD>` per UTC day, and an immutable `pre-rewrite-<YYYYMMDDTHHMMZ>` keeping the old `live` tip when history is rewritten. Never a force push.
+#
+# THE PINS. `BACKUP_PATHS` maps a repository, by its path below the console root ("" for the console itself), to its project path on `MIRROR_HOST`: the console's backup refs go to the mirror project, each submodule's to a project of the same group named after it. `refs/backup/**` to any other URL, `origin` (public GitHub) included, is refused; before this, pre-push judged only `refs/heads/*`, and a backup ref to any remote passed unjudged. `.ci/rediacc_ci/setup/backup_remotes.py` adds the submodule remotes from this map.
+#
+# THE RULES (`backup_ref_refusal`). A backup push carries nothing but `refs/backup/**`. `live`: a create, a fast-forward, or a delete in a push that creates a `pre-rewrite-*` at the same old oid. The worker pushes that pair with `--atomic`; the flag is not visible to a pre-push hook, so the pairing is what is checked. `daily-*` and `pre-rewrite-*`: create only, deleted only once the stamp in the name is past `BACKUP_RETENTION_DAYS`. No receipt is asked (R1).
+#
+# THE SCANS ARE INCREMENTAL. The session-link scan and a secret-shape scan judge `<tips> --not --remotes <each line's remote old oid>`, so a sync that moves `live` reads only the commits after the old `live` tip. The secret scan reads the ADDED lines of each commit's patch with `wl_store.secret_shapes_in`, the scanner every tracked worklist write passes, and names the shape, never the match.
+#
+# NEVER `refs/remotes/*`. Every "is it published" question here (`--not --remotes`, `_published`, `block_unpushed_submodule_pin`) reads a remote-tracking ref as published, so the worker reads the remote with `git ls-remote` and never fetches a backup ref into `refs/remotes/`.
+BACKUP_SPACE = "refs/backup/"
+BACKUP_PATHS = {
+    "": MIRROR_PATH,
+    "private/renet": "/rediacc-org/github/renet.git",
+    "private/account": "/rediacc-org/github/account.git",
+    "private/elite": "/rediacc-org/github/elite.git",
+}
+BACKUP_RETENTION_DAYS = {"daily": 90, "pre-rewrite": 30}
+_BACKUP_SNAPSHOT_RE = re.compile(r"^(?:(daily)-(\d{4}-\d{2}-\d{2})|(pre-rewrite)-(\d{8}T\d{4}Z))$")
+BACKUP_SCAN_TIMEOUT = 600
+
+
+def _utcnow() -> datetime.datetime:
+    return datetime.datetime.now(datetime.UTC)
+
+
+def backup_repo_key(repo: str) -> str | None:
+    """The `BACKUP_PATHS` key of `repo`: "" for the console, the submodule's path below its superproject for a pinned submodule, None otherwise."""
+    if not repo:
+        return None
+    sup = cp.superproject(repo)
+    if not sup:
+        # No superproject: the console, which is the repository that lists the pinned submodules. A standalone repository with the mirror URL is not it.
+        return "" if os.path.isfile(os.path.join(repo, ".gitmodules")) else None
+    rel = os.path.relpath(os.path.realpath(repo), os.path.realpath(sup))
+    return rel if rel in BACKUP_PATHS else None
+
+
+def backup_url_refusal(repo: str, url: str) -> str:
+    """ "" when `url` is the pinned GitLab project for `repo`'s backup refs, else why not."""
+    key = backup_repo_key(repo)
+    if key is None:
+        return "this repository has no pinned GitLab project for backup refs (BACKUP_PATHS)"
+    return _pinned_url_refusal(url, BACKUP_PATHS[key], "the pinned backup project")
+
+
+def is_backup_push(lines: list[list[str]]) -> bool:
+    """Whether any pushed line updates a ref under `refs/backup/`."""
+    return any(line[2].startswith(BACKUP_SPACE) for line in lines)
+
+
+def backup_snapshot(leaf: str) -> tuple[str, datetime.datetime] | None:
+    """`(kind, stamp)` for a `daily-<YYYY-MM-DD>` or `pre-rewrite-<YYYYMMDDTHHMMZ>` leaf, None for any other name."""
+    m = _BACKUP_SNAPSHOT_RE.match(leaf)
+    if not m:
+        return None
+    try:
+        if m.group(1):
+            return "daily", datetime.datetime.strptime(m.group(2) + "+0000", "%Y-%m-%d%z")
+        stamp = datetime.datetime.strptime(m.group(4)[:-1] + "+0000", "%Y%m%dT%H%M%z")
+        return "pre-rewrite", stamp
+    except ValueError:
+        return None
+
+
+def _split_backup_ref(ref: str) -> tuple[str, str]:
+    """`(branch, leaf)` of `refs/backup/<branch>/<leaf>`; the branch is "" when the ref has no leaf below a branch."""
+    branch, _sep, leaf = ref[len(BACKUP_SPACE) :].rpartition("/")
+    return branch, leaf
+
+
+def backup_ref_refusal(repo: str, url: str, lines: list[list[str]]) -> str:
+    """ "" when this push is an admitted backup-ref update (the rules above), else why not."""
+    why = backup_url_refusal(repo, url)
+    if why:
+        return why
+    others = [line[2] for line in lines if not line[2].startswith(BACKUP_SPACE)]
+    if others:
+        return "a push to `%s**` carries no other ref, and this one also sends %s" % (
+            BACKUP_SPACE,
+            ", ".join("`%s`" % ref for ref in others[:5]),
+        )
+    kept: dict[str, set[str]] = {}
+    for _local_ref, new, remote_ref, old in lines:
+        branch, leaf = _split_backup_ref(remote_ref)
+        snap = backup_snapshot(leaf)
+        if branch and snap and snap[0] == "pre-rewrite" and old == cp.ZERO_OID:
+            kept.setdefault(branch, set()).add(new)
+    now = _utcnow()
+    for _local_ref, new, remote_ref, old in lines:
+        branch, leaf = _split_backup_ref(remote_ref)
+        if not branch:
+            return "`%s` is not `%s<branch>/<live|daily-...|pre-rewrite-...>`" % (
+                remote_ref,
+                BACKUP_SPACE,
+            )
+        if leaf == "live":
+            if new == cp.ZERO_OID:
+                if old not in kept.get(branch, set()):
+                    return (
+                        "this deletes `%s` without creating `%s%s/pre-rewrite-<stamp>` at its old tip `%s` in the same push"
+                        % (remote_ref, BACKUP_SPACE, branch, old[:12])
+                    )
+                continue
+            if old == cp.ZERO_OID:
+                continue
+            if cp.git(["merge-base", "--is-ancestor", old, new], cwd=repo) is None:
+                return (
+                    "`%s` moves from `%s` to `%s`, which is no fast-forward (or the old tip is not here); "
+                    "a rewrite keeps the old tip as a `pre-rewrite-*` ref and restarts live, never a force"
+                    % (remote_ref, old[:12], new[:12])
+                )
+            continue
+        snap = backup_snapshot(leaf)
+        if snap is None:
+            return (
+                "`%s` is not `live`, `daily-<YYYY-MM-DD>` or `pre-rewrite-<YYYYMMDDTHHMMZ>`"
+                % remote_ref
+            )
+        kind, stamp = snap
+        if new == cp.ZERO_OID:
+            days = BACKUP_RETENTION_DAYS[kind]
+            if now - stamp <= datetime.timedelta(days=days):
+                return "`%s` is inside its %d-day retention and may not be deleted" % (
+                    remote_ref,
+                    days,
+                )
+            continue
+        if old != cp.ZERO_OID:
+            return "`%s` already exists at `%s`; a `%s-*` ref is created once and never moved" % (
+                remote_ref,
+                old[:12],
+                kind,
+            )
+    return ""
+
+
+def _secret_scanner():
+    """`wl_store.secret_shapes_in`, imported with `.claude/hooks/stop` on sys.path for the import only."""
+    stop = str(sp.STOP_DIR)
+    inserted = sp.on_sys_path(stop)
+    try:
+        return importlib.import_module("wl_store").secret_shapes_in
+    finally:
+        if inserted and stop in sys.path:
+            sys.path.remove(stop)
+
+
+# A PEM HEADER IS NOT A KEY (PR-TASK 79b7e92e, measured 2026-11-19). The scanner's PEM shape matches the header alone, and this tree carries dozens of test fixtures with a placeholder body (`ABC`, `MIIabc`, `test`). One of them, in `0bfa82fdf4dc`, refused every backup sync of 1104-1 while the Stop hook kept advising the sync. So in a backup push the PEM shape counts only when a key body
+# follows it: `PEM_MIN_BODY` base64 characters, the size of the smallest real private key (PKCS#8 Ed25519), on the header's own line (an escaped `\n` string) or on the added lines right after it (armor headers such as `Version: ...` and blank lines are skipped). A body that stops short, at `-----END`, at a line that is not base64, or at a line that is not added, is a placeholder. Every other shape is judged as before.
+PEM_SHAPE = r"-----BEGIN [A-Z ]*PRIVATE KEY"
+PEM_MIN_BODY = 64
+_PEM_HEAD_RE = re.compile(PEM_SHAPE + r"[A-Z ]*-*")
+_PEM_ESCAPED_EOL = re.compile(r"(?:\\r)?\\n")
+_PEM_BODY_RE = re.compile(r"[A-Za-z0-9+/=]+")
+_PEM_ARMOR_HEADER_RE = re.compile(r"[A-Za-z][A-Za-z0-9-]*: .*")
+
+
+def pem_body(text: str) -> tuple[int, bool]:
+    """`(base64 characters, stopped)` of a PEM body fragment: one added line, or the rest of the header's line. `stopped` is True once the body has ended (an `-----END`, or a segment that is neither base64, an armor header nor blank)."""
+    end = text.find("-----END")
+    stopped = end >= 0
+    if stopped:
+        text = text[:end]
+    count = 0
+    for raw_segment in _PEM_ESCAPED_EOL.split(text):
+        segment = raw_segment.strip()
+        if not segment or _PEM_ARMOR_HEADER_RE.fullmatch(segment):
+            continue
+        if not _PEM_BODY_RE.fullmatch(segment):
+            return count, True
+        count += len(segment)
+    return count, stopped
+
+
+def backup_exclusions(repo: str, lines: list[list[str]]) -> list[str]:
+    """Each line's remote old oid that is a commit here: the history the remote already holds under these refs. An old oid missing here is left out, which only widens the scan."""
+    out: list[str] = []
+    for line in lines:
+        old = line[3]
+        if old == cp.ZERO_OID or old in out:
+            continue
+        if cp.git(["cat-file", "-e", "%s^{commit}" % old], cwd=repo) is not None:
+            out.append(old)
+    return out
+
+
+def outgoing_secret_shapes(
+    repo: str, lines: list[list[str]], exclude: list[str]
+) -> tuple[list[str], str]:
+    """`(offenders, unchecked)`: each new commit (`<tips> --not --remotes <exclude>`) whose patch ADDS a line carrying a secret shape, as `<sha12> <subject>: <shape>`, and a non-empty `unchecked` when the range or the scanner could not be read. Streamed, so a long first sync never holds its whole patch in memory."""
+    tips = [line[1] for line in lines if line[1] != cp.ZERO_OID]
+    if not tips:
+        return [], ""
+    try:
+        shapes_in = _secret_scanner()
+    except ImportError as exc:
+        return [], "wl_store.secret_shapes_in cannot be imported (%s)" % exc
+    argv = [
+        "git",
+        "log",
+        "--cc",
+        "--no-color",
+        "--no-ext-diff",
+        "--no-textconv",
+        "--format=%x1e%H%x1f%s",
+        *tips,
+        "--not",
+        "--remotes",
+        *exclude,
+    ]
+    offenders: list[str] = []
+    seen: set[tuple[str, str]] = set()
+    sha = subject = ""
+    try:
+        proc = subprocess.Popen(argv, cwd=repo, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    except OSError as exc:
+        return [], "`git log --cc` did not start (%s)" % exc
+    stream = proc.stdout
+    if stream is None:
+        proc.kill()
+        proc.wait()
+        return [], "`git log --cc` gave no output stream"
+    # A watchdog, not a clock read per line: a git that stalls without writing would block the read below for ever.
+    # The watchdog records that it fired before it kills, so the verdict below does not depend on whether the Timer thread has exited by the time the closed pipe is read (18716f60.1).
+    expired = threading.Event()
+
+    def _expire() -> None:
+        expired.set()
+        proc.kill()
+
+    timer = threading.Timer(BACKUP_SCAN_TIMEOUT, _expire)
+    timer.daemon = True
+    timer.start()
+    # Hunk lines carry one prefix column per parent (`--cc` on a merge shows only what no parent had). A line is ADDED when every column is `+`. Header lines (`+++ b/path`) are told apart from content by position: only a line outside a hunk is a header, so an added line `++ x` is scanned.
+    cols = 0
+    # The base64 characters of a PEM body still being read (`PEM_SHAPE` above), None when no header is open. Any line that is not an added line closes it.
+    pem: int | None = None
+
+    def _flag(shape: str) -> None:
+        if (sha, shape) in seen:
+            return
+        seen.add((sha, shape))
+        offenders.append("%s %s: %s" % (sha[:12], subject[:60], shape))
+
+    try:
+        with stream:
+            for raw in stream:
+                text = raw.decode("utf-8", "replace").rstrip("\n")
+                if text.startswith("\x1e"):
+                    sha, _sep, subject = text[1:].partition("\x1f")
+                    cols = 0
+                    pem = None
+                    continue
+                if text.startswith("@@"):
+                    cols = len(text) - len(text.lstrip("@")) - 1
+                    pem = None
+                    continue
+                if text.startswith("diff "):
+                    cols = 0
+                    pem = None
+                    continue
+                if not cols or text[:cols] != "+" * cols:
+                    # A header an earlier commit added shows here only as a context line, so it opens the count for a body this commit adds under it (review ff1355d4.1); any other non-added line closes it.
+                    head = _PEM_HEAD_RE.search(text[cols:]) if cols else None
+                    pem = None
+                    if head:
+                        # A body the context line already holds in full is an earlier commit's, and one that ended there leaves nothing open.
+                        count, stopped = pem_body(text[cols:][head.end() :])
+                        if not stopped and count < PEM_MIN_BODY:
+                            pem = count
+                    continue
+                added = text[cols:]
+                if pem is not None:
+                    more, stopped = pem_body(added)
+                    pem += more
+                    if pem >= PEM_MIN_BODY:
+                        _flag(PEM_SHAPE)
+                        pem = None
+                    elif stopped:
+                        pem = None
+                for shape in shapes_in(added):
+                    if shape != PEM_SHAPE:
+                        _flag(shape)
+                        continue
+                    head = _PEM_HEAD_RE.search(added)
+                    count, stopped = pem_body(added[head.end() :] if head else "")
+                    if count >= PEM_MIN_BODY:
+                        _flag(PEM_SHAPE)
+                    elif not stopped:
+                        pem = count
+    finally:
+        timer.cancel()
+    if expired.is_set():
+        proc.wait()
+        return [], "`git log --cc` ran past %ds" % BACKUP_SCAN_TIMEOUT
+    if proc.wait() != 0:
+        return [], "`git log --cc <tips> --not --remotes <old tips>` exited %d" % proc.returncode
+    return offenders, ""
+
+
+def backup_push(repo: str, url: str, lines: list[list[str]]) -> int:
+    """The whole pre-push verdict of a push naming `refs/backup/**`: the ref rules, then the incremental session-link and secret scans."""
+    reason = backup_ref_refusal(repo, url, lines)
+    if reason:
+        return _refuse(
+            "this push names `%s**` and is not an admitted backup-ref update (%s).\n"
+            "Backup refs go only to the repository's pinned GitLab project, alone in their push,\n"
+            "created or fast-forwarded and never forced (agent/plans/PLAN-local-first-delivery.md,\n"
+            "Design G); `./run.sh backup-ref sync` pushes them." % (BACKUP_SPACE, reason)
+        )
+    exclude = backup_exclusions(repo, lines)
+    leaks, unchecked = outgoing_session_leaks(repo, lines, exclude)
+    secrets: list[str] = []
+    if not unchecked and not leaks:
+        secrets, unchecked = outgoing_secret_shapes(repo, lines, exclude)
+    if unchecked:
+        return _refuse(
+            "UNCHECKED: the new commits of this backup push could not be scanned (%s).\n"
+            "An unknown is not a pass." % unchecked
+        )
+    if leaks:
+        return _refuse(
+            "%d new commit(s) in this backup push carry a Claude session link, Claude-Session\n"
+            "trailer or Claude Code footer:\n  %s\n%s"
+            % (len(leaks), "\n  ".join(leaks[:20]), SESSION_ADVICE)
+        )
+    if secrets:
+        return _refuse(
+            "%d new commit(s) in this backup push add a line carrying a secret shape (the shape is\n"
+            "named, never the value):\n  %s\n"
+            "Remove the secret and rotate it; a history rewrite of the unpushed range is the\n"
+            "operator's call." % (len(secrets), "\n  ".join(secrets[:20]))
+        )
+    return 0
+
+
 # THE RELEASE RUN (box W1-D of agent/plans/PLAN-local-release.md). A local release, `python3 -m rediacc_ci.release.local`, pushes what CD pushed: the tap repository's formula commit and the like, some of them to `main`. A line is admitted only when `REDIACC_RELEASE_RUN` names a record under `.ci/cache/release/` of the console root whose pid is a live ancestor of this hook with a matching start time and argv, that provably ran the console's tracked, unmodified entry, whose tree is the console's `HEAD^{tree}`, and which lists that exact `(toplevel, remote, remote_ref, oid)`, `remote` being the first argument git hands this hook; `release_run.py` beside this file is the record format, its writer and its reader. An admitted line skips the branch rules and the backup check (the release gates judged both before any push); every other line meets the rules below unchanged. When the variable is set, a failed record says why on stderr at once, and a line the record does not list says so beside the refusal of that line, and only then: a tag or an ordinary branch push the rules admit anyway prints no release-run noise.
 def _release_admitted(
     repo: str, remote: str, lines: list[list[str]]
@@ -359,10 +847,12 @@ def _refuse_lines(notes: dict[int, str], refused: list[list[str]], message: str)
     return _refuse(message)
 
 
-def outgoing_session_leaks(repo: str, lines: list[list[str]]) -> tuple[list[str], str]:
+def outgoing_session_leaks(
+    repo: str, lines: list[list[str]], exclude: list[str] | None = None
+) -> tuple[list[str], str]:
     """`(offenders, unchecked)`: each outgoing commit or annotated tag whose message carries a session link, a session trailer or the footer (`session_leak`), as `<sha12> <subject>: <line>`, and a non-empty `unchecked` when the range could not be read.
 
-    OUTGOING MEANS NO REMOTE HAS IT YET: each pushed tip's commits `--not --remotes`, so a commit some remote-tracking ref already holds (the four that reached GitHub before this hook existed) does not block every later push, while every NEW one does, whichever remote it is going to. A deleted ref sends nothing. An unreadable range is UNCHECKED and refused by the caller: an unknown is not a pass.
+    OUTGOING MEANS NO REMOTE HAS IT YET: each pushed tip's commits `--not --remotes`, so a commit some remote-tracking ref already holds (the four that reached GitHub before this hook existed) does not block every later push, while every NEW one does, whichever remote it is going to. `exclude` adds oids the remote already holds under the pushed refs (the backup path's old tips), so a backup sync reads only its new commits. A deleted ref sends nothing. An unreadable range is UNCHECKED and refused by the caller: an unknown is not a pass.
     """
     if not repo:
         return [], "the repository cannot be read"
@@ -384,7 +874,10 @@ def outgoing_session_leaks(repo: str, lines: list[list[str]]) -> tuple[list[str]
         tips.append(local_oid)
     if not tips:
         return offenders, ""
-    log = cp.git(["log", "--format=%H%x1f%s%x1f%B%x1e", *tips, "--not", "--remotes"], cwd=repo)
+    log = cp.git(
+        ["log", "--format=%H%x1f%s%x1f%B%x1e", *tips, "--not", "--remotes", *(exclude or [])],
+        cwd=repo,
+    )
     if log is None:
         return [], "`git log <tips> --not --remotes` failed"
     for record in log.split("\x1e"):
@@ -398,12 +891,35 @@ def outgoing_session_leaks(repo: str, lines: list[list[str]]) -> tuple[list[str]
     return offenders, ""
 
 
+def pin_lines(lines: list[list[str]]) -> list[str]:
+    """Each pushed line that sends or names a pin under `refs/worktrees/`, as `<local> -> <remote>`. The source counts too: `refs/worktrees/x:refs/heads/y` publishes the pin's commit under another name."""
+    return [
+        "%s -> %s" % (line[0], line[2])
+        for line in lines
+        if line[0].startswith(cp.PIN_SPACE) or line[2].startswith(cp.PIN_SPACE)
+    ]
+
+
 def pre_push(argv: list[str], stdin: str) -> int:
     repo = _repo()
     current = cp.current_branch(repo) if repo else ""
     remote = argv[0] if argv else "origin"
     lines = [line.split() for line in stdin.split("\n") if len(line.split()) == 4]
-    # FIRST, before every admission below (the mirror push, a release run): none of them makes a session link fit to publish.
+    # BEFORE every admission below: a pin never leaves the machine, and no lease pushes, whatever a mirror or release record says (agent/plans/PLAN-worktree-lease.md, Design 6).
+    pins = pin_lines(lines)
+    if pins:
+        return _refuse(
+            "this pushes a lease pin, and a pin never leaves the machine:\n  %s\n"
+            "`%s*` holds a lease's commits locally until they land."
+            % ("\n  ".join(pins), cp.PIN_SPACE)
+        )
+    lease = cp.lease_root(repo)
+    if lease:
+        return _refuse("this pushes from the lease tree %s.\n%s" % (lease, cp.LEASE_ADVICE))
+    # A push naming `refs/backup/**` is judged whole by the backup rules, its own incremental scans included (Design G of PLAN-local-first-delivery); before them it reached no rule at all.
+    if is_backup_push(lines):
+        return backup_push(repo, argv[1] if len(argv) > 1 else "", lines)
+    # FIRST of the rest (the mirror push, a release run): none of them makes a session link fit to publish.
     leaks, unchecked = outgoing_session_leaks(repo, lines)
     if unchecked:
         return _refuse(
@@ -671,8 +1187,36 @@ def _unchecked(why: str) -> int:
     )
 
 
+def lease_commit_refusal() -> int:
+    """A commit from a lease tree that holds a gitlink or a path under `agent/`. The index this hook sees is the commit's own, under `git commit -- <paths>` too. A diff that cannot be read in a lease is UNCHECKED and refused; outside a lease this starts no subprocess beyond `_repo`."""
+    repo = _repo()
+    lease = cp.lease_root(repo)
+    if not lease:
+        return 0
+    changes = cp.diff_changes(repo, "--cached")
+    if changes is None:
+        return _refuse(
+            "UNCHECKED: `git diff --cached` failed in the lease tree %s. An unknown is not a pass."
+            % lease
+        )
+    offenders = cp.lease_commit_offenders(*changes)
+    if offenders:
+        return _refuse(
+            "this commit from the lease tree %s stages what only the lead commits:\n  %s\n"
+            "Commit the other paths by pathspec, and name these in the report.\n%s"
+            % (lease, "\n  ".join(offenders), cp.LEASE_ADVICE)
+        )
+    return 0
+
+
 def pre_commit(_argv: list[str]) -> int:
-    """Both generated-file checks, cheapest refusal first: the doc regions, then the registry's artifacts."""
+    """The lease boundary, the staged Python's lint, then both generated-file checks, cheapest refusal first: the doc regions, then the registry's artifacts."""
+    code = lease_commit_refusal()
+    if code != 0:
+        return code
+    code = python_lint_pre_commit()
+    if code != 0:
+        return code
     code = gen_docs_pre_commit()
     if code != 0:
         return code
@@ -836,7 +1380,269 @@ def artifacts_pre_commit() -> int:
     return 0
 
 
+# THE STAGED PYTHON'S LINT. 66f44dddd landed ruff I001 in `.ci/rediacc_ci/core/devbox.py` and I001 plus a format difference in `.ci/rediacc_ci/tests/test_core_devbox.py`, and only `ci:quick`, about 25 minutes later, caught them, twice. `check:ci-python-lint` stays the authority (its pin, its control, every tracked file); this is its commit-time slice: `ruff check` and `ruff format --check`, ONE
+# invocation per mode over the staged `.py` paths outside `private/` (the gate's own corpus filter), and nothing at all when none is staged.
+#
+# THE COMMIT'S BLOBS, NOT THE WORKING TREE. The paths are written out of the commit's index (GIT_INDEX_FILE under `git commit -- <paths>`) by one `checkout-index` into this worktree's fixed scratch directory, so an unstaged edit neither hides a finding nor causes one. Ruff decides first-party imports from what exists on disk (the `src` roots, and the package a file sits in), so the scratch tree
+# also holds every ruff config file of the index and an EMPTY placeholder for every other `.py`/`.pyi` (`lint_tree_paths` says why empty is enough). With only the staged files there, an import of an unstaged first-party module sorts as third-party and a clean file is refused, which the fixture's first-party case reproduces.
+#
+# AN ABSENT RUFF FAILS OPEN, SAID. `RUFF_BIN` (used alone when set, the gate's own first rung), then the repository's and this hook checkout's bootstrap install (`RUFF_REL`), then PATH. None of them is a note on stderr and an allowed commit: the gate still runs before every push. A ruff that runs and errors, or outruns `RUFF_TIMEOUT`, is UNCHECKED and refused, as everywhere in this file.
+RUFF_REL = ".ci/cache/toolchain/uv-tools/bin/ruff"
+RUFF_CONFIGS = frozenset({"pyproject.toml", "ruff.toml", ".ruff.toml"})
+RUFF_TIMEOUT = 120
+LINT_LABEL = "python-lint pre-commit"
+# Both modes run with `--output-format concise`, whose finding lines start `<path>:<line>:<col>: `; the path is relative to the scratch tree, which is the repository-relative path.
+_CONCISE_PATH = re.compile(r"^(.+?):\d+:\d+: ", re.MULTILINE)
+
+
+def resolve_ruff(repo: str) -> str | None:
+    """The ruff binary this hook runs, or None. `RUFF_BIN`, when set, is the only candidate: a test or an operator naming a binary means that binary."""
+    explicit = os.environ.get("RUFF_BIN")
+    if explicit:
+        return explicit if os.access(explicit, os.X_OK) else None
+    for candidate in (os.path.join(repo, RUFF_REL), str(CONSOLE_ROOT / RUFF_REL)):
+        if os.access(candidate, os.X_OK):
+            return candidate
+    return shutil.which("ruff")
+
+
+def _git_z(repo: str, args: list[str]) -> list[str] | None:
+    proc = _run(["git", *args], repo)
+    if proc.returncode != 0:
+        return None
+    return [p for p in proc.stdout.split("\0") if p]
+
+
+def staged_python(repo: str) -> list[str] | None:
+    """The `.py` paths the commit adds or changes, outside `private/`; None when git cannot say."""
+    return _git_z(
+        repo,
+        [
+            "diff",
+            "--cached",
+            "--name-only",
+            "--diff-filter=ACMR",
+            "-z",
+            "--",
+            "*.py",
+            ":!:private/**",
+        ],
+    )
+
+
+def lint_tree_paths(index: list[str], staged: list[str]) -> tuple[list[str], list[str], list[str]]:
+    """What the scratch tree needs from the index: (blobs to write, empty module placeholders, directories to make).
+
+    The blobs are the staged files and every ruff config file. Every other `.py`/`.pyi` is an EMPTY placeholder, because ruff resolves a dotted import to its full path (`import pkg.mod` is first-party only when `pkg/mod.py` or `pkg/mod/` exists; measured on ruff 0.17.4, where `pkg/__init__.py` alone sorted it as third-party) and reads nothing but existence.
+    """
+    blobs = set(staged)
+    placeholders: set[str] = set()
+    dirs: set[str] = set()
+    for rel in index:
+        if rel.startswith("private/"):
+            continue
+        if posixpath.basename(rel) in RUFF_CONFIGS:
+            blobs.add(rel)
+        parent = posixpath.dirname(rel)
+        if rel.endswith((".py", ".pyi")):
+            placeholders.add(rel)
+            while parent and parent not in dirs:
+                dirs.add(parent)
+                parent = posixpath.dirname(parent)
+        elif "/" in rel:
+            dirs.add(rel.partition("/")[0])
+    return sorted(blobs), sorted(placeholders - blobs), sorted(dirs)
+
+
+def _quoted(paths: list[str]) -> str:
+    return " ".join(shlex.quote(p) for p in paths)
+
+
+def _lint_refusal(ruff: str, staged: list[str], check, fmt) -> int:
+    """The refusal for findings in either mode, with the exact fix commands for the files each mode named."""
+    lines = []
+    fixes = []
+    flagged: set[str] = set()
+    for name, proc, fix in (
+        ("ruff check", check, "check --fix"),
+        ("ruff format --check", fmt, "format"),
+    ):
+        if proc.returncode != 1:
+            continue
+        said = (proc.stdout + proc.stderr).strip()
+        found = sorted({m.group(1) for m in _CONCISE_PATH.finditer(said)} & set(staged)) or staged
+        lines.append("%s:\n%s" % (name, said))
+        fixes.append("%s %s -- %s" % (shlex.quote(ruff), fix, _quoted(found)))
+        flagged.update(found)
+    fixes.append("git add -- %s" % _quoted(sorted(flagged)))
+    return _refuse(
+        "this commit stages Python that ruff refuses (check:ci-python-lint would fail before the push):\n%s\n"
+        "Fix the working tree, stage the result and commit again (the fix rewrites the working-tree copy):\n  %s"
+        % ("\n".join(lines), "\n  ".join(fixes))
+    )
+
+
+def python_lint_pre_commit() -> int:
+    started = time.monotonic()
+    repo = _repo()
+    if not repo:
+        return 0
+    staged = staged_python(repo)
+    if staged is None:
+        return _refuse(
+            "UNCHECKED: `git diff --cached` failed, so the staged Python could not be linted. An unknown is not a pass."
+        )
+    if not staged:
+        return 0
+    config = _index_text(repo, "pyproject.toml")
+    if config is None or "[tool.ruff" not in config:
+        return 0  # a submodule, or any repository without this ruff config: its own CI lints it
+    ruff = resolve_ruff(repo)
+    if ruff is None:
+        sys.stderr.write(
+            "%s: ruff not found (RUFF_BIN, %s, PATH); %d staged .py file(s) NOT linted. "
+            "`.ci/bootstrap.sh` installs it; check:ci-python-lint still runs before the push.\n"
+            % (LINT_LABEL, RUFF_REL, len(staged))
+        )
+        return 0
+    index = _git_z(repo, ["ls-files", "-z"])
+    if index is None:
+        return _refuse(
+            "UNCHECKED: `git ls-files` failed, so the staged Python could not be linted. An unknown is not a pass."
+        )
+    git_dir = _git(["rev-parse", "--absolute-git-dir"])
+    tree = os.path.join(scratch_for(git_dir or repo), "ruff-tree")
+    shutil.rmtree(tree, ignore_errors=True)
+    try:
+        blobs, placeholders, dirs = lint_tree_paths(index, staged)
+        os.makedirs(tree)
+        for rel in dirs:
+            os.makedirs(os.path.join(tree, rel), exist_ok=True)
+        for rel in placeholders:
+            with open(os.path.join(tree, rel), "wb"):
+                pass
+        out = subprocess.run(
+            ["git", "checkout-index", "-f", "-z", "--stdin", "--prefix=%s/" % tree],
+            cwd=repo,
+            input="\0".join(blobs),
+            capture_output=True,
+            text=True,
+            timeout=SELECT_TIMEOUT,
+            check=False,
+        )
+        if out.returncode != 0:
+            return _refuse(
+                "UNCHECKED: `git checkout-index` of the staged Python failed (%s). An unknown is not a pass."
+                % (out.stderr.strip() or "exit %d" % out.returncode)
+            )
+        common = ["--no-cache", "--color", "never", "--output-format", "concise", "--", *staged]
+        check = _run([ruff, "check", *common], tree, timeout=RUFF_TIMEOUT)
+        fmt = _run([ruff, "format", "--check", *common], tree, timeout=RUFF_TIMEOUT)
+    except subprocess.TimeoutExpired as exc:
+        return _refuse(
+            "UNCHECKED: `%s` timed out after %ss while the staged Python was linted. An unknown is not a pass."
+            % (" ".join(str(a) for a in exc.cmd[:3]), exc.timeout)
+        )
+    except OSError as exc:
+        return _refuse(
+            "UNCHECKED: the staged Python could not be linted (%s). An unknown is not a pass."
+            % (str(exc) or type(exc).__name__)
+        )
+    finally:
+        shutil.rmtree(tree, ignore_errors=True)
+    for name, proc in (("ruff check", check), ("ruff format --check", fmt)):
+        if proc.returncode not in (0, 1):
+            return _refuse(
+                "UNCHECKED: `%s` exited %d on the staged Python. An unknown is not a pass.\n%s"
+                % (name, proc.returncode, (proc.stderr or proc.stdout).strip()[-2000:])
+            )
+    if check.returncode == 0 and fmt.returncode == 0:
+        sys.stderr.write(
+            "%s: %d staged .py file(s) clean under ruff check and ruff format (%.2fs)\n"
+            % (LINT_LABEL, len(staged), time.monotonic() - started)
+        )
+        return 0
+    return _lint_refusal(ruff, staged, check, fmt)
+
+
+# THE BACKUP TRIGGER (box G3 of agent/plans/PLAN-local-first-delivery.md). After a commit, a rewrite (`post-rewrite`: amend, rebase) or a merge, the backup worker (`.ci/rediacc_ci/dev/backup_ref.py sync`) is started DETACHED: its own session (`start_new_session=True`), stdin closed, stdout and stderr appended to `<git-dir>/rediacc-backup/log`, and the hook returns at once. Only in a repository whose `gitlab` push URL is its pin in `BACKUP_PATHS` and whose HEAD is a branch other than `main` (a detached HEAD starts nothing either); a fixture repository, a detached rebase step and `main` start nothing. A lease tree never starts it, because a lease never pushes. A failed sync is retried by the next trigger, since the worker pushes the tip as it is then. The worker's argv is `BACKUP_WORKER`, a seam the tests replace with a sleeper.
+BACKUP_WORKER = ("-m", "rediacc_ci.dev.backup_ref", "sync", "--quiet")
+
+
+def _detach(argv: list[str], **kwargs) -> subprocess.Popen:
+    """`subprocess.Popen`, named so a test can record the call without replacing `Popen` under every `subprocess.run`."""
+    return subprocess.Popen(argv, **kwargs)
+
+
+def spawn_backup(tree: str) -> bool:
+    """Start the backup worker detached for the repository at `tree`, when it qualifies (above). True when one was started. Never raises: the commit already exists."""
+    url = cp.git(["remote", "get-url", "--push", MIRROR_REMOTE], cwd=tree)
+    if not url or backup_url_refusal(tree, url):
+        return False
+    branch = cp.current_branch(tree)
+    if not branch or branch == "main":
+        return False
+    git_dir = cp.git(["rev-parse", "--absolute-git-dir"], cwd=tree)
+    if not git_dir:
+        return False
+    env = {k: v for k, v in os.environ.items() if k not in cp.REPO_ENV}
+    inherited = env.get("PYTHONPATH", "")
+    code = str(CONSOLE_ROOT / ".ci")
+    env["PYTHONPATH"] = "%s:%s" % (code, inherited) if inherited else code
+    try:
+        state = pathlib.Path(git_dir) / "rediacc-backup"
+        state.mkdir(parents=True, exist_ok=True)
+        with (state / "log").open("ab") as log:
+            _detach(
+                [sys.executable, *BACKUP_WORKER],
+                cwd=tree,
+                env=env,
+                stdin=subprocess.DEVNULL,
+                stdout=log,
+                stderr=log,
+                start_new_session=True,
+                close_fds=True,
+            )
+    except OSError as exc:
+        sys.stderr.write("commit-policy: backup sync not started in %s: %s\n" % (tree, exc))
+        return False
+    return True
+
+
+def post_rewrite_or_merge() -> int:
+    """`post-rewrite` and `post-merge`: the backup trigger, outside a lease tree. Refuses nothing."""
+    tree = os.getcwd()
+    if not cp.lease_root(tree):
+        spawn_backup(tree)
+    return 0
+
+
+def post_commit() -> int:
+    """Move the lease pin for the tree the commit landed in, or, outside a lease, start the backup trigger (above). Git runs this hook from the top of that tree. Outside a holder path `lease_root` starts no subprocess. The commit already exists, so a failure here is a warning and the exit stays 0."""
+    tree = os.getcwd()
+    if not cp.lease_root(tree):
+        spawn_backup(tree)
+        return 0
+    inherited = os.environ.get("PYTHONPATH", "")
+    code = str(CONSOLE_ROOT / ".ci")
+    env = {**os.environ, "PYTHONPATH": "%s:%s" % (code, inherited) if inherited else code}
+    try:
+        done = _run([sys.executable, "-m", "rediacc_ci.dev.worktree_lease", "pin"], tree, env)
+    except (OSError, subprocess.SubprocessError) as exc:
+        sys.stderr.write("commit-policy: pin not moved in %s: %s\n" % (tree, exc))
+        return 0
+    sys.stderr.write(done.stderr)
+    if done.returncode != 0:
+        sys.stderr.write("commit-policy: pin not moved in %s: exit %d\n" % (tree, done.returncode))
+    return 0
+
+
 def main(hook: str, argv: list[str]) -> int:
+    # Before the override: a pin refuses nothing, and a commit made under the override is as much in need of one.
+    if hook == "post-commit":
+        return post_commit()
+    if hook in ("post-rewrite", "post-merge"):
+        return post_rewrite_or_merge()
     if os.environ.get("COMMIT_POLICY_OK", "") == "1":
         return 0
     if hook == "commit-msg":

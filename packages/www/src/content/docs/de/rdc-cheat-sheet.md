@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: de
-sourceHash: "44f85425f17be08c"
+sourceHash: "c0ca05a2167060d2"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -143,6 +143,17 @@ Schreibgeschützte Anmeldedaten zur Bereitstellungszeit. `get` gibt nur den Dige
 | `rdc machine add <machine> --ip <host> --user <user>` | Maschine zur Konfiguration hinzufügen |
 | `rdc backup strategy set ...` | Benannte Sicherungsstrategie definieren |
 | `rdc --config <name> <command>` | Benannte Konfigurationsdatei verwenden |
+
+## Feedback
+
+| Befehl | Beschreibung |
+|--------|--------------|
+| `rdc feedback report --last` | Vorschau eines Reports aus dem neuesten fehlgeschlagenen Befehl; mit `--yes` senden |
+| `rdc feedback report --command <n>` | Einen aufgezeichneten Befehl melden (1 ist der neueste) |
+| `rdc feedback report --list-recent` | Aufgezeichnete Befehle auflisten und beenden |
+| `rdc feedback report --message <text> [--kind bug\|feedback\|docs]` | Eine Notiz ohne fehlgeschlagenen Befehl melden |
+| `rdc feedback list [--status <list>]` | Reports mit ID, Fingerabdruck, Status und Datum auflisten; ein behobener Report zeigt `fixed-in-v<version>` |
+| `rdc feedback show <id>` | Einen Report über ID oder eindeutiges Präfix anzeigen |
 
 ## Diagnose und Direktzugriff
 

@@ -92,9 +92,11 @@ BLINDNESS IS REPORTED, NEVER PASSED. A plan holding raw `- [ ]` lines that the p
 """
 
 import importlib
+import math
 import os
 import pathlib
 import re
+from typing import Any
 
 import wl_core as C
 import wl_planfid as P
@@ -269,6 +271,37 @@ def prepare(rows):
     return out
 
 
+_TOKEN_INDEX: dict[Any, Any] = {}
+_PREPARED: dict[Any, Any] = {}
+
+
+def _token_index(prepared):
+    """{token: (position, ...)} over PREPARED rows, built once per prepared list (measured 2026-11-18: 861 tasks x every item of a weeks-old store cost 13 s of a 90 s stop)."""
+    key = id(prepared)
+    hit = _TOKEN_INDEX.get(key)
+    if hit is not None and hit[0] is prepared and hit[2] == P.MIN_MATCH_TOKENS:
+        return hit[1]
+    index: dict[str, list[int]] = {}
+    for pos, (_iid, _state, it, _ids) in enumerate(prepared):
+        if len(it) >= P.MIN_MATCH_TOKENS:
+            for tok in it:
+                index.setdefault(tok, []).append(pos)
+    _TOKEN_INDEX.clear()
+    _TOKEN_INDEX[key] = (prepared, index, P.MIN_MATCH_TOKENS)
+    return index
+
+
+def _prepared(rows):
+    """`prepare(rows)` once per rows list: plan_rows hands the same item rows to `reconcile` for every plan (40 on 2026-11-18, 7.6 s of re-tokenising)."""
+    hit = _PREPARED.get(id(rows))
+    if hit is not None and hit[0] is rows and hit[2] == P.MIN_MATCH_TOKENS:
+        return hit[1]
+    out = prepare(rows)
+    _PREPARED.clear()
+    _PREPARED[id(rows)] = (rows, out, P.MIN_MATCH_TOKENS)
+    return out
+
+
 def match_item(task, prepared):
     """(item_id, state) of the worklist item that stands for this task, or None.
 
@@ -287,12 +320,21 @@ def match_item(task, prepared):
     if len(tt) < P.MIN_MATCH_TOKENS:
         return None
     best = None
-    for iid, state, it, _ids in prepared:
-        if len(it) < P.MIN_MATCH_TOKENS:
-            continue
+    # Only items sharing a token can overlap; the index keeps fold order, so ties break exactly as the full scan did.
+    index = _token_index(prepared)
+    # Exact pruning by pigeonhole: a match needs inter >= 0.7*|tt| or inter >= 0.7*|it| >= 0.7*MIN, so it shares at least m tokens with tt and therefore contains one of tt's (|tt| - m + 1) rarest tokens. Candidates come only from those postings.
+    m = max(
+        1,
+        min(
+            math.ceil(P.TASK_MATCH * len(tt) - 1e-9),
+            math.ceil(P.TASK_MATCH * P.MIN_MATCH_TOKENS - 1e-9),
+        ),
+    )
+    rare = sorted(tt, key=lambda tok: len(index.get(tok, ())))[: len(tt) - m + 1]
+    cand = sorted({i for tok in rare for i in index.get(tok, ())})
+    for pos in cand:
+        iid, state, it, _ids = prepared[pos]
         inter = len(tt & it)
-        if not inter:
-            continue
         if inter / len(tt) >= P.TASK_MATCH or inter / len(it) >= P.TASK_MATCH:
             score = inter / float(min(len(tt), len(it)))
             better = best is None or score > best[0]
@@ -316,7 +358,7 @@ def reconcile(open_tasks, done_tasks, rows):
                  the remedy is a tick, and ticks already have a gate of their
                  own with evidence rules this check has no business restating.
     """
-    prepared = prepare(rows)
+    prepared = _prepared(rows)
     untracked, stale_open, reopened = [], [], 0
     for t in open_tasks:
         hit = match_item(t, prepared)
@@ -493,7 +535,7 @@ def store_item_states(root):
             events.extend(S._parse_events(f.read_text(encoding="utf-8", errors="replace")))
         except OSError:
             continue
-    events.sort(key=lambda e: (str(e.get("at") or ""), int(e.get("ns") or 0)))
+    events.sort(key=S.event_order)
     records = S._fold_events(events)[0]
     return {rid: str(r.get("state") or " ") for rid, r in records.items() if r.get("state") != "~"}
 

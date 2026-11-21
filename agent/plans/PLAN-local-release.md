@@ -203,15 +203,8 @@ Design inputs, summarized below with file:line:
 
 ### Live
 
-- [ ] L1 [lead] One real edge release from the local machine, after the 1023-1 PR merges.
-  - Record per-step timings in Results and compare them with the last CD pair: CI run 39898575743 plus CD run 39902042581, about 39 min to dispatch and about 60 min end to end.
-  - Accept:
-    - the release record in R2 shows every step ok;
-    - `rdc --version` from the edge channel names V;
-    - the R1 order entry reads satisfied;
-    - the account Worker reaches eu edge after the CLI.
-- [ ] L2 [lead] The first stable release through `release:local --channel stable` after the soak, together with the R3 live check (`subscription status` against `machine status hostinger --licenses`).
-  - Accept: `verify_stable_endpoints` rc=0, and the stable deploy records are in R2.
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) L1
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) L2
 
 ## Order
 

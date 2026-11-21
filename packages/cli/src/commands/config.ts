@@ -5,10 +5,8 @@ import {
   getSubscriptionServerUrl,
   normalizeServerUrl,
 } from '../services/account/subscription-auth.js';
-import type { ReconcileDeps } from '../services/config/config-reconcile.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import { setExitCode } from '../services/core/request-context.js';
 import type { OutputFormat, RdcConfig } from '../types/index.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { registerAuditCommands } from './config/audit.js';
@@ -16,7 +14,9 @@ import { registerCurrentCommand } from './config/current.js';
 import { registerEditCommands } from './config/edit.js';
 import { registerFieldCommands } from './config/field.js';
 import { registerAccessCommands } from './config-access.js';
+import { registerImportMachineCommand } from './config-import-machine.js';
 import { registerPruneCommand as registerConfigPruneCommand } from './config-prune-cmd.js';
+import { type ReconcileCliOptions, runReconcile } from './config-reconcile.js';
 import { registerRemoteCommands, rotateCek } from './config-remote.js';
 import { registerSSHCommands } from './config-ssh.js';
 
@@ -260,106 +260,6 @@ async function applyRevealGate(cfg: RdcConfig): Promise<void> {
     });
   } catch {
     /* best-effort */
-  }
-}
-
-interface ReconcileCliOptions {
-  machine?: string[];
-  dryRun?: boolean;
-  acceptObserved?: boolean;
-}
-
-/**
- * `config reconcile` body (extracted so the action stays thin). Rebuilds the
- * state half from machine truth; under --accept-observed it also rewrites an
- * unambiguous machine-arm placement drift (spec/04 §4.3) through the
- * version-bumping resources writer, distinct from the state writer.
- */
-async function runReconcile(program: Command, options: ReconcileCliOptions): Promise<void> {
-  try {
-    await runReconcileInner(program, options);
-  } catch (error) {
-    handleError(error);
-  }
-}
-
-/** Build the reconcile DI deps: a config loader filtered to `--machine`, and the
- * two writers (state-half and version-bumping resources), both no-ops under --dry-run. */
-async function buildReconcileDeps(
-  cfgName: string,
-  filter: string[] | undefined,
-  dryRun: boolean | undefined
-): Promise<ReconcileDeps> {
-  const { fetchMachineStatus } = await import('../services/machine/machine-status.js');
-  const { configFileStorage } = await import('../adapters/config-file-storage.js');
-  const { updateSyncedConfig } = await import('../services/config/synced-write.js');
-  const noop = async () => {};
-  return {
-    loadConfig: async () => {
-      const cfg = await configService.getCurrent();
-      if (!cfg || !filter?.length) return cfg;
-      const machines = Object.fromEntries(
-        Object.entries(cfg.resources?.machines ?? {}).filter(([n]) => filter.includes(n))
-      );
-      return { ...cfg, resources: { ...(cfg.resources ?? {}), machines } };
-    },
-    fetchStatus: (m) => fetchMachineStatus(m),
-    writeState: dryRun
-      ? noop
-      : async (updater) => {
-          await configFileStorage.updateState(cfgName, updater);
-        },
-    writeResources: dryRun
-      ? noop
-      : async (updater) => {
-          await updateSyncedConfig(cfgName, updater);
-        },
-  };
-}
-
-async function runReconcileInner(program: Command, options: ReconcileCliOptions): Promise<void> {
-  const { reconcileState } = await import('../services/config/config-reconcile.js');
-  const cfgName = configService.getEffectiveConfigName();
-  const filter = options.machine;
-
-  // --accept-observed rewrites a declaration from "observed on exactly one machine", which is meaningless when --machine scanned only a subset: rewriting from partial evidence is a guess. Refuse the combination
-  // (spec/04 §4.3); run it unfiltered instead.
-  if (options.acceptObserved && filter?.length) {
-    throw new ValidationError(t('commands.config.reconcile.acceptObservedUnfiltered'));
-  }
-
-  const deps = await buildReconcileDeps(cfgName, filter, options.dryRun);
-  const report = await reconcileState(deps, { acceptObserved: options.acceptObserved });
-
-  const format = program.opts().output as OutputFormat;
-  outputService.print(
-    {
-      dryRun: !!options.dryRun,
-      reconciledAt: report.reconciledAt,
-      machinesSeen: report.machinesSeen,
-      unreachable: report.machinesUnreachable,
-      placementsFilled: report.placementsFilled,
-      placementsAccepted: report.placementsAccepted,
-      conflicts: report.conflicts,
-      networkIdsRebuilt: report.networkIdsRebuilt,
-      networkIdsDiverged: report.networkIdsDiverged,
-    },
-    format
-  );
-  // D4(a): the machine's ID replaced a differing recorded one; one line per repo says so.
-  for (const d of report.networkIdsDiverged) {
-    outputService.info(
-      t('errors.repo.networkIdDiverged', {
-        repository: d.repository,
-        localId: d.previous,
-        machineId: d.networkId,
-        machine: d.machine,
-      })
-    );
-  }
-  // Exit 6 (NETWORK) when nothing was reachable but machines were tried.
-  if (report.machinesSeen.length === 0 && report.machinesUnreachable.length > 0) {
-    setExitCode(6);
   }
 }
 
@@ -612,7 +512,7 @@ ${t('help.examples')}
     .option('--machine <m...>', t('commands.config.reconcile.optionMachine'))
     .option('--dry-run', t('options.dryRun'))
     .option('--accept-observed', t('commands.config.reconcile.optionAcceptObserved'))
-    .action((options: ReconcileCliOptions) => runReconcile(program, options));
+    .action((options: ReconcileCliOptions) => runReconcile(options));
 
   // config rotate-cek, destructive, org-wide (Q3): registered here, not under `config remote`, because it rotates the ORGANIZATION's key, not this device's link. The impl still lives in config-remote.ts alongside the store internals.
   config
@@ -636,4 +536,5 @@ ${t('help.examples')}
   registerFieldCommands(config, program);
   registerEditCommands(config, program);
   registerAuditCommands(config, program);
+  registerImportMachineCommand(config, program);
 }

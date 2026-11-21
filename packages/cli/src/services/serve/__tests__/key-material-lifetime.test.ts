@@ -10,6 +10,7 @@
 
 import { existsSync, statSync } from 'node:fs';
 import type { AddressInfo } from 'node:net';
+import { fileURLToPath } from 'node:url';
 import { serve } from '@hono/node-server';
 import { CLI_CONTRACT_VERSION } from '@rediacc/shared/cli-contract';
 import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
@@ -19,7 +20,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const PRIVATE_KEY =
   '-----BEGIN OPENSSH PRIVATE KEY-----\nMU4-SECRET-KEY-BYTES\n-----END OPENSSH PRIVATE KEY-----\n';
 const KNOWN_HOSTS = '10.9.9.9 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5MU4KNOWNHOSTSMARKER';
-const CONFIG_MARKER = 'mu4-config-marker-machine';
+// Config content that must never reach disk. Not the machine name: the job ticket legitimately names the machine it ran on.
+const CONFIG_MARKER = 'mu4-config-marker-user';
+const MACHINE_NAME = 'mu4-machine';
 
 interface RecordedWrite {
   target: string;
@@ -223,10 +226,12 @@ const CONFIG = {
   schemaVersion: 3,
   id: '00000000-0000-4000-8000-0000000000dd',
   version: 1,
+  // Any file that exists: the executor resolves a local renet path before it touches the machine, and a CI unit job has no renet on PATH. This test file stands in, so the run never depends on the host having a renet binary.
+  renetPath: fileURLToPath(import.meta.url),
   credentials: { ssh: { privateKey: PRIVATE_KEY } },
   resources: {
     machines: {
-      [CONFIG_MARKER]: { ip: '10.9.9.9', user: 'deploy', port: 22, knownHosts: KNOWN_HOSTS },
+      [MACHINE_NAME]: { ip: '10.9.9.9', user: CONFIG_MARKER, port: 22, knownHosts: KNOWN_HOSTS },
     },
     repositories: {},
   },
@@ -280,7 +285,7 @@ describe('MU4: key material lifetime on the dispatch path', () => {
       body: JSON.stringify({
         contractVersion: CLI_CONTRACT_VERSION,
         pathKey: 'machine status',
-        positionals: { name: CONFIG_MARKER },
+        positionals: { name: MACHINE_NAME },
       }),
     });
   }

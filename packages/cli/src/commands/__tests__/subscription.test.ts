@@ -2,7 +2,8 @@ import {
   WK_ACCOUNT_DEFAULT_ORIGIN,
   WK_ACCOUNT_DEV_PORT,
 } from '@rediacc/shared/config/well-known.generated';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installJobDeps } from './job-deps.js';
 
 const {
   mockGetSubscriptionTokenState,
@@ -24,6 +25,7 @@ const {
   mockGetSubscriptionScopeMismatch,
   mockSaveStoredSubscriptionToken,
   mockOutputInfo,
+  mockOutputReport,
   mockOutputWarn,
   mockOutputSuccess,
   mockOutputError,
@@ -33,6 +35,7 @@ const {
   mockPromptRegionSelection,
   mockReadStdinValue,
   mockHandleError,
+  mockRenewInstalledLicenses,
 } = vi.hoisted(() => ({
   mockGetSubscriptionTokenState: vi.fn(),
   mockFetchLicenseReportOrThrow: vi.fn(),
@@ -58,6 +61,7 @@ const {
   }),
   mockSaveStoredSubscriptionToken: vi.fn(),
   mockOutputInfo: vi.fn(),
+  mockOutputReport: vi.fn(),
   mockOutputWarn: vi.fn(),
   mockOutputSuccess: vi.fn(),
   mockOutputError: vi.fn(),
@@ -69,6 +73,7 @@ const {
   mockPromptRegionSelection: vi.fn(),
   mockReadStdinValue: vi.fn(),
   mockHandleError: vi.fn(),
+  mockRenewInstalledLicenses: vi.fn(),
 }));
 
 vi.mock('../../i18n/index.js', () => ({
@@ -104,6 +109,10 @@ vi.mock('../../services/account/license.js', () => ({
   refreshRepoLicenseIdentity: mockRefreshRepoLicenseIdentity,
 }));
 
+vi.mock('../../services/account/free-license.js', () => ({
+  renewInstalledLicenses: mockRenewInstalledLicenses,
+}));
+
 vi.mock('../../utils/repo-target.js', () => ({
   resolveRepoRef: mockResolveRepoRef,
 }));
@@ -130,9 +139,12 @@ vi.mock('../../services/renet/renet-execution.js', () => ({
 vi.mock('../../services/core/output.js', () => ({
   outputService: {
     info: mockOutputInfo,
+    report: mockOutputReport,
     warn: mockOutputWarn,
     success: mockOutputSuccess,
     error: mockOutputError,
+    format: () => 'TABLE',
+    print: vi.fn(),
   },
 }));
 
@@ -161,10 +173,29 @@ const {
 const { Command } = await import('commander');
 
 const { renderRepoBatchRefreshSummary } = await import('../subscription-output.js');
+const { executeSubscriptionRefresh } = await import('../subscription-actions.js');
 
 describe('subscription command helpers', () => {
+  let restoreJobDeps: () => void;
+  const jobs: Record<string, unknown>[] = [];
+
   beforeEach(() => {
     vi.clearAllMocks();
+    // `status -m` and `refresh -m` each run one licence job; its answer is what the test configured for the machine read.
+    jobs.length = 0;
+    restoreJobDeps = installJobDeps(async (options) => {
+      jobs.push(options as unknown as Record<string, unknown>);
+      return {
+        success: true,
+        exitCode: 0,
+        durationMs: 1,
+        state: 'succeeded',
+        stdout:
+          options.functionName === 'license-status'
+            ? JSON.stringify((await mockReadRuntimeRepoLicenseStatuses()) ?? [])
+            : '[]',
+      };
+    });
     mockWithSpinner.mockImplementation(async (_label: string, fn: () => Promise<unknown>) => fn());
     mockGetLocalConfig.mockResolvedValue({
       sshPrivateKey: 'PRIVATE_KEY',
@@ -258,9 +289,9 @@ describe('subscription command helpers', () => {
     await executeSubscriptionStatus();
 
     expect(mockFetchLicenseReportOrThrow).toHaveBeenCalledTimes(1);
-    expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.status.remote');
-    expect(mockOutputInfo).toHaveBeenCalledWith('Organization: Acme');
-    expect(mockOutputInfo).toHaveBeenCalledWith('Team: Platform');
+    expect(mockOutputReport).toHaveBeenCalledWith('commands.subscription.status.remote');
+    expect(mockOutputReport).toHaveBeenCalledWith('Organization: Acme');
+    expect(mockOutputReport).toHaveBeenCalledWith('Team: Platform');
     expect(mockOutputWarn).toHaveBeenCalledWith('commands.subscription.status.issuanceUsageHigh80');
     expect(mockReadMachineActivationStatus).not.toHaveBeenCalled();
   });
@@ -274,7 +305,7 @@ describe('subscription command helpers', () => {
     await expect(executeSubscriptionStatus()).rejects.toThrow(
       'Token is bound to a different IP address'
     );
-    expect(mockOutputInfo).not.toHaveBeenCalledWith('commands.subscription.status.remote');
+    expect(mockOutputReport).not.toHaveBeenCalledWith('commands.subscription.status.remote');
   });
 
   // Same swallow, same class: refresh reported a generic "could not read" string and dropped the server's own reason on the floor.
@@ -304,7 +335,6 @@ describe('subscription command helpers', () => {
   it.each([
     ['status', () => executeSubscriptionStatus()],
     ['refresh', () => executeAccountRefresh()],
-    ['refresh -m', () => executeMachineRefresh('hostinger')],
   ])('%s fails on a missing token with its own diagnostic', async (_verb, run) => {
     mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
 
@@ -315,6 +345,117 @@ describe('subscription command helpers', () => {
     );
     expect(mockOutputInfo).not.toHaveBeenCalledWith('errors.subscription.notLoggedIn');
     expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
+  });
+
+  // No login: a FREE licence renews through renet's blob-authenticated path, so a no-token refresh -m renews instead of failing on the token.
+  describe('refresh -m without a login', () => {
+    beforeEach(() => {
+      mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
+    });
+
+    it('renews through the token-free path and prints one line per repo', async () => {
+      mockRenewInstalledLicenses.mockResolvedValue({
+        renewed: 1,
+        results: [
+          { repositoryGuid: 'guid-a', outcome: 'renewed' },
+          { repositoryGuid: 'guid-b', outcome: 'skipped_fresh' },
+          { repositoryGuid: 'guid-c', outcome: 'refused', code: 'LOGIN_REQUIRED' },
+        ],
+      });
+
+      await executeMachineRefresh('hostinger');
+
+      expect(mockRenewInstalledLicenses).toHaveBeenCalledTimes(1);
+      expect(mockRenewInstalledLicenses.mock.calls[0][2]).toMatchObject({
+        remoteRenetPath: '/usr/bin/renet',
+      });
+      expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+      expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
+      expect(mockOutputInfo).toHaveBeenCalledWith(
+        'commands.subscription.refresh.noLogin.repoRenewed:guid-a'
+      );
+      expect(mockOutputInfo).toHaveBeenCalledWith(
+        'commands.subscription.refresh.noLogin.repoNotDue:guid-b'
+      );
+      expect(mockOutputWarn).toHaveBeenCalledWith(
+        'commands.subscription.refresh.noLogin.repoNeedsLogin:guid-c:LOGIN_REQUIRED'
+      );
+      expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.refresh.noLogin.paidNote');
+    });
+
+    it('still reports that login is needed when nothing could renew without one', async () => {
+      mockRenewInstalledLicenses.mockResolvedValue({
+        renewed: 0,
+        results: [{ repositoryGuid: 'paid-1', outcome: 'refused', code: 'LOGIN_REQUIRED' }],
+      });
+
+      await expect(executeMachineRefresh('hostinger')).rejects.toThrow(
+        'errors.subscription.notLoggedIn'
+      );
+    });
+
+    it('prints the none line and succeeds when no license is installed', async () => {
+      mockRenewInstalledLicenses.mockResolvedValue({ renewed: 0, results: [] });
+
+      await expect(executeMachineRefresh('hostinger')).resolves.toBeUndefined();
+
+      expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.refresh.noLogin.none');
+    });
+
+    it('names a real renewal failure instead of asking for a login', async () => {
+      mockRenewInstalledLicenses.mockResolvedValue({
+        renewed: 0,
+        results: [{ repositoryGuid: 'guid-e', outcome: 'error', message: 'connection reset' }],
+      });
+
+      const error = await executeMachineRefresh('hostinger').catch((e: unknown) => e);
+
+      expect((error as Error).message).toContain('commands.subscription.refresh.noLogin.failed');
+      expect((error as Error).message).not.toContain('errors.subscription.notLoggedIn');
+      expect(mockOutputWarn).toHaveBeenCalledWith(
+        'commands.subscription.refresh.noLogin.repoFailed:guid-e:connection reset'
+      );
+      expect(mockOutputInfo).not.toHaveBeenCalledWith(
+        'commands.subscription.refresh.noLogin.paidNote'
+      );
+    });
+
+    it('prints no paid-licence note beside a failure whose error says a login does not change it', async () => {
+      mockRenewInstalledLicenses.mockResolvedValue({
+        renewed: 0,
+        results: [
+          { repositoryGuid: 'paid-1', outcome: 'refused', code: 'LOGIN_REQUIRED' },
+          { repositoryGuid: 'guid-e', outcome: 'error', message: 'connection reset' },
+        ],
+      });
+
+      const error = await executeMachineRefresh('hostinger').catch((e: unknown) => e);
+
+      expect((error as Error).message).toContain('commands.subscription.refresh.noLogin.failed');
+      expect(mockOutputWarn).toHaveBeenCalledWith(
+        'commands.subscription.refresh.noLogin.repoNeedsLogin:paid-1:LOGIN_REQUIRED'
+      );
+      expect(mockOutputInfo).not.toHaveBeenCalledWith(
+        'commands.subscription.refresh.noLogin.paidNote'
+      );
+    });
+
+    it('with a token the batch refresh runs and the token-free renewal does not', async () => {
+      mockGetSubscriptionTokenState.mockReturnValue({
+        kind: 'ready',
+        serverUrl: `http://localhost:${WK_ACCOUNT_DEV_PORT}`,
+        token: { token: 'rdt_test', teamName: 'Platform', orgName: 'Acme' },
+      });
+
+      await executeMachineRefresh('hostinger');
+
+      expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
+      expect(mockRenewInstalledLicenses).not.toHaveBeenCalled();
+    });
+  });
+
+  afterEach(() => {
+    restoreJobDeps();
   });
 
   it('status -m prints the missing-token diagnostic and still renders the repo table', async () => {
@@ -347,7 +488,7 @@ describe('subscription command helpers', () => {
 
     expect(mockOutputWarn).toHaveBeenCalledWith('commands.subscription.status.parseFailed');
     expect(mockReadMachineActivationStatus).not.toHaveBeenCalled();
-    expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.repo.status.empty');
+    expect(mockOutputReport).toHaveBeenCalledWith('commands.subscription.repo.status.empty');
   });
 
   it('status fails hard when token team and current config team differ', async () => {
@@ -398,31 +539,29 @@ describe('subscription command helpers', () => {
     expect(mockAcquireRemoteRenet).toHaveBeenCalledTimes(1);
     expect(mockAcquireRemoteRenet.mock.calls[0][0]).toBe('read-only');
     expect(mockReadMachineActivationStatus).toHaveBeenCalledTimes(1);
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.activation.status.header:hostinger'
     );
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.activation.status.machineId:machine-activation-id'
     );
-    expect(mockOutputSuccess).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.activation.status.active:2026-03-12T00:00:00Z'
     );
 
-    expect(mockReadRuntimeRepoLicenseStatuses).toHaveBeenCalledWith(
-      expect.objectContaining({ machineName: 'hostinger' }),
-      'PRIVATE_KEY',
-      '/usr/bin/renet'
-    );
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    // The table is the job's answer: one license-status job on the machine.
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]).toMatchObject({ functionName: 'license-status', machineName: 'hostinger' });
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.repo.status.header:hostinger'
     );
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.repo.status.entry:repo-valid:valid:commands.subscription.repo.status.hardExpirySuffix:2026-05-10T14:29:53.723Z'
     );
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.repo.status.entry:repo-missing:missing:'
     );
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.repo.status.entry:repo-machine:machine mismatch:'
     );
     // The account view is a different scope: no -m means no machine report.
@@ -503,12 +642,12 @@ describe('subscription command helpers', () => {
 
     await executeMachineStatus('hostinger');
 
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.repo.status.lastRenewal:renewed: (seq 42)'
     );
     expect(mockOutputWarn).not.toHaveBeenCalledWith(expect.stringContaining('lastRenewal'));
     // The datastore a licence is scoped to rides on the entry line.
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       expect.stringContaining(
         'commands.subscription.repo.status.datastoreSuffix:7f3c9e11-8a4b-4c2d-9e5f-1a2b3c4d5e6f'
       )
@@ -522,10 +661,10 @@ describe('subscription command helpers', () => {
     await executeMachineStatus('hostinger');
 
     expect(mockOutputWarn).toHaveBeenCalledWith('commands.subscription.status.parseFailed');
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'commands.subscription.repo.status.header:hostinger'
     );
-    expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.repo.status.empty');
+    expect(mockOutputReport).toHaveBeenCalledWith('commands.subscription.repo.status.empty');
   });
 
   it('refresh with no flags re-reads account state and never touches a machine', async () => {
@@ -553,7 +692,7 @@ describe('subscription command helpers', () => {
     await executeAccountRefresh();
 
     expect(mockFetchLicenseReportOrThrow).toHaveBeenCalledTimes(1);
-    expect(mockOutputInfo).toHaveBeenCalledWith('commands.subscription.status.remote');
+    expect(mockOutputReport).toHaveBeenCalledWith('commands.subscription.status.remote');
     expect(mockAcquireRemoteRenet).not.toHaveBeenCalled();
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
   });
@@ -576,6 +715,68 @@ describe('subscription command helpers', () => {
     expect(mockOutputWarn).toHaveBeenCalledWith('repo-bad: quota reached');
   });
 
+  it("plain refresh -m never asks the batch to adopt another account server's licences", async () => {
+    await executeMachineRefresh('hostinger');
+    expect(mockRefreshRepoLicensesBatch.mock.calls[0][7]).toEqual({ adoptOrigin: false });
+  });
+
+  it('refresh -m --adopt-origin carries the flag through the job step into the batch', async () => {
+    await executeMachineRefresh('hostinger', { adoptOrigin: true });
+    expect(mockRefreshRepoLicensesBatch.mock.calls[0][7]).toEqual({ adoptOrigin: true });
+  });
+
+  it('--adopt-origin without -m refuses before touching the account or a machine', async () => {
+    await expect(executeSubscriptionRefresh({ adoptOrigin: true })).rejects.toThrow(
+      'commands.subscription.refresh.adoptOriginNeedsTarget'
+    );
+    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+    expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalled();
+  });
+
+  it('refresh with both -m and --repo refuses first, even with --adopt-origin', async () => {
+    await expect(
+      executeSubscriptionRefresh({ machine: 'hostinger', repo: 'shop:test', adoptOrigin: true })
+    ).rejects.toThrow('commands.subscription.refresh.targetExclusive');
+    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+    expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalled();
+  });
+
+  it('refresh -m routes to the machine batch and no flag routes to the account refresh', async () => {
+    await executeSubscriptionRefresh({ machine: 'hostinger' });
+    expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
+    expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
+    mockRefreshRepoLicensesBatch.mockClear();
+    mockFetchLicenseReportOrThrow.mockResolvedValue({
+      planCode: 'COMMUNITY',
+      status: 'active',
+      machineSlots: { active: 0, max: 1, machines: [] },
+      repoLicenseIssuances: { used: 0, limit: 10 },
+      repoLicenses: { recent: [], totalTrackedRepos: 0 },
+    });
+    await executeSubscriptionRefresh({});
+    expect(mockFetchLicenseReportOrThrow).toHaveBeenCalledTimes(1);
+    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+    expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalled();
+  });
+
+  it('refresh --repo --adopt-origin hands the flag to the repo reissue; a plain --repo hands none', async () => {
+    await executeSubscriptionRefresh({ repo: 'shop:test', adoptOrigin: true });
+    expect(mockRefreshRepoLicenseIdentity.mock.calls[0][3]).toEqual(
+      expect.objectContaining({ adoptOrigin: true })
+    );
+    mockRefreshRepoLicenseIdentity.mockClear();
+    await executeSubscriptionRefresh({ repo: 'shop:test' });
+    expect(mockRefreshRepoLicenseIdentity.mock.calls[0][3]).not.toHaveProperty('adoptOrigin');
+  });
+
+  it('refresh -m --adopt-origin with no login refuses instead of renewing in place', async () => {
+    mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
+    await expect(executeMachineRefresh('hostinger', { adoptOrigin: true })).rejects.toThrow(
+      'commands.subscription.refresh.adoptOriginNeedsLogin'
+    );
+    expect(mockRenewInstalledLicenses).not.toHaveBeenCalled();
+  });
+
   it('refresh --repo derives the machine from the ref and refreshes one license', async () => {
     await executeRepoLicenseRefresh('shop:test');
 
@@ -583,6 +784,7 @@ describe('subscription command helpers', () => {
     expect(mockGetLocalMachine).toHaveBeenCalledWith('hostinger');
     expect(mockGetRepository).toHaveBeenCalledWith('shop:test');
     expect(mockRefreshRepoLicenseIdentity).toHaveBeenCalledWith(
+      'hostinger',
       expect.objectContaining({ machineName: 'hostinger' }),
       'PRIVATE_KEY',
       { repositoryGuid: 'repo-guid', grandGuid: 'grand-guid', kind: 'fork' }
@@ -606,6 +808,7 @@ describe('subscription command helpers', () => {
     await executeRepoLicenseRefresh('shop:test');
 
     expect(mockRefreshRepoLicenseIdentity).toHaveBeenCalledWith(
+      'hostinger',
       expect.objectContaining({ machineName: 'hostinger' }),
       'PRIVATE_KEY',
       {
@@ -617,6 +820,7 @@ describe('subscription command helpers', () => {
     );
     // The control: rewriting the expected mount must not match.
     expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalledWith(
+      expect.anything(),
       expect.anything(),
       'PRIVATE_KEY',
       expect.objectContaining({ datastoreMount: '/mnt/rediacc-ds/tier1-mutated' })
@@ -631,7 +835,7 @@ describe('subscription command helpers', () => {
 
     await executeRepoLicenseRefresh('shop:test');
 
-    const params = mockRefreshRepoLicenseIdentity.mock.calls[0][2] as Record<string, unknown>;
+    const params = mockRefreshRepoLicenseIdentity.mock.calls[0][3] as Record<string, unknown>;
     expect(params).not.toHaveProperty('datastoreMount');
   });
 
@@ -657,7 +861,7 @@ describe('subscription command helpers', () => {
       recoveryFailureMode: null,
     });
 
-    expect(mockOutputInfo).toHaveBeenCalledWith(
+    expect(mockOutputReport).toHaveBeenCalledWith(
       'Repo licenses: scanned 2, issued 1, refreshed 0, unchanged 1, failed 1'
     );
     expect(mockOutputWarn).toHaveBeenCalledWith('repo-x: account quota reached');

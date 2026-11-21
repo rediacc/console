@@ -99,8 +99,8 @@ def _no_value_anywhere(runner: FakeWrangler, text: str) -> None:
 def test_bench_pushes_exactly_four_keys_once_on_stdin() -> None:
     p = pbc.plan("bench", None)
     assert (p.worker, p.bucket, p.jurisdiction) == (
-        "rediacc-account-bench",
-        "rediacc-backups-bench",
+        "account-bench",
+        "backups-bench",
         "",
     )
     runner = FakeWrangler(EXISTING)
@@ -115,17 +115,17 @@ def test_bench_pushes_exactly_four_keys_once_on_stdin() -> None:
         "secret",
         "bulk",
         "--name",
-        "rediacc-account-bench",
+        "account-bench",
     ]
     assert cwd == str(paths.repo_root() / "workers" / "account")
     assert json.loads(stdin or "") == {
         "ACCOUNT_BACKUP_S3_ENDPOINT": ENDPOINT,
-        "ACCOUNT_BACKUP_S3_BUCKET": "rediacc-backups-bench",
+        "ACCOUNT_BACKUP_S3_BUCKET": "backups-bench",
         "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": KEY_ID,
         "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": SECRET,
     }
     lists = [c[0] for c in runner.calls if c[0][3:5] == ["secret", "list"]]
-    assert lists == [pbc.list_argv("rediacc-account-bench")] * 2
+    assert lists == [pbc.list_argv("account-bench")] * 2
     assert [c[0][3:5] for c in runner.calls] == [
         ["secret", "list"],
         ["secret", "bulk"],
@@ -137,8 +137,8 @@ def test_bench_pushes_exactly_four_keys_once_on_stdin() -> None:
 def test_stable_eu_takes_the_eu_jurisdiction_host_and_its_own_bucket() -> None:
     p = pbc.plan("stable", "eu")
     assert (p.worker, p.bucket, p.jurisdiction, p.host) == (
-        "rediacc-account-eu",
-        "rediacc-backups-eu",
+        "account-eu",
+        "backups-eu",
         "eu",
         ACCOUNT_DEFAULT_ORIGIN.split("://", 1)[1],
     )
@@ -147,15 +147,14 @@ def test_stable_eu_takes_the_eu_jurisdiction_host_and_its_own_bucket() -> None:
     assert rc == 0
     doc = json.loads(runner.bulk_calls()[0][2] or "")
     assert doc["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://acct0000.eu.r2.cloudflarestorage.com"
-    assert doc["ACCOUNT_BACKUP_S3_BUCKET"] == "rediacc-backups-eu"
+    assert doc["ACCOUNT_BACKUP_S3_BUCKET"] == "backups-eu"
 
 
 @pytest.mark.parametrize("region", ["eu", "us", "asia"])
 def test_every_real_worker_config_agrees_with_regions_json(region: str) -> None:
-    for target, prefix in (("stable", "rediacc-account-"), ("edge", "edge-rediacc-account-")):
-        p = pbc.plan(target, region)
-        assert p.worker == prefix + region
-        assert p.bucket.endswith("rediacc-backups-" + region)
+    p = pbc.plan("stable", region)
+    assert p.worker == "account-" + region
+    assert p.bucket == "backups-" + region
 
 
 def test_a_changed_name_set_after_the_push_is_refused_loudly() -> None:
@@ -186,13 +185,13 @@ def test_a_red_portal_after_names_the_rollback() -> None:
 
 def test_dry_run_runs_only_the_read_only_steps() -> None:
     runner = FakeWrangler(EXISTING)
-    text, rc = _push(pbc.plan("edge", "us"), runner, dry_run=True)
+    text, rc = _push(pbc.plan("stable", "us"), runner, dry_run=True)
     assert rc == 0
     assert runner.bulk_calls() == []
     assert [c[0][3:5] for c in runner.calls] == [["secret", "list"]]
     for name in pbc.PUSHED:
         assert name in text
-    assert "edge-rediacc-account-us" in text
+    assert "account-us" in text
     assert "nothing written" in text
     _no_value_anywhere(runner, text)
 
@@ -239,7 +238,7 @@ def test_plan_refusals() -> None:
     with pytest.raises(pbc.PushError, match="no regions"):
         pbc.plan("bench", "eu")
     with pytest.raises(pbc.PushError, match="unknown region"):
-        pbc.plan("edge", "mars")
+        pbc.plan("stable", "mars")
 
 
 def test_plan_refuses_a_config_that_binds_another_bucket(tmp_path: pathlib.Path) -> None:
@@ -251,11 +250,8 @@ def test_plan_refuses_a_config_that_binds_another_bucket(tmp_path: pathlib.Path)
                     {
                         "id": "eu",
                         "domain": "eu.example.test",
-                        "edgeDomain": "edge-eu.example.test",
                         "workerName": "w-eu",
-                        "edgeWorkerName": "edge-w-eu",
                         "backupR2": {"name": "b-eu"},
-                        "edgeBackupR2": {"name": "edge-b-eu"},
                         "r2Jurisdiction": "eu",
                     }
                 ]
@@ -265,7 +261,7 @@ def test_plan_refuses_a_config_that_binds_another_bucket(tmp_path: pathlib.Path)
     toml = 'name = "w-eu"\n[[r2_buckets]]\nbinding = "BACKUP_BUCKET"\nbucket_name = "%s"\njurisdiction = "eu"\n'
     (tmp_path / "workers" / "account" / "wrangler.eu.toml").write_text(toml % "b-eu")
     assert pbc.plan("stable", "eu", root=tmp_path).bucket == "b-eu"
-    (tmp_path / "workers" / "account" / "wrangler.eu.toml").write_text(toml % "edge-b-eu")
+    (tmp_path / "workers" / "account" / "wrangler.eu.toml").write_text(toml % "other-b-eu")
     with pytest.raises(pbc.PushError, match="disagree"):
         pbc.plan("stable", "eu", root=tmp_path)
 
@@ -296,17 +292,17 @@ def test_main_re_executes_under_its_own_profile(monkeypatch: pytest.MonkeyPatch)
 
     monkeypatch.delenv("REDIACC_BWS_PROFILES", raising=False)
     monkeypatch.setattr(pbc.subprocess, "run", fake_run)
-    assert pbc.main(["--target", "edge", "--region", "eu", "--dry-run"]) == 0
+    assert pbc.main(["--target", "stable", "--region", "eu", "--dry-run"]) == 0
     (argv,) = seen
-    assert argv[1:6] == ["-m", "rediacc_ci.core.bws_env", "exec", "--profile", "backup-push-edge"]
-    assert argv[-5:] == ["--target", "edge", "--region", "eu", "--dry-run"]
+    assert argv[1:6] == ["-m", "rediacc_ci.core.bws_env", "exec", "--profile", "backup-push-stable"]
+    assert argv[-5:] == ["--target", "stable", "--region", "eu", "--dry-run"]
 
 
 def test_main_usage_error_exits_2_before_any_profile(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(pbc.subprocess, "run", lambda *_a, **_k: pytest.fail("re-executed"))
     assert pbc.main(["--target", "stable"]) == 2
     assert pbc.main(["--target", "bench", "--region", "eu"]) == 2
-    assert pbc.main(["--target", "edge", "--region", "mars"]) == 2
+    assert pbc.main(["--target", "stable", "--region", "mars"]) == 2
 
 
 def test_main_a_config_mismatch_is_a_refusal_and_exits_1(
@@ -321,11 +317,8 @@ def test_main_a_config_mismatch_is_a_refusal_and_exits_1(
                     {
                         "id": "eu",
                         "domain": "eu.example.test",
-                        "edgeDomain": "edge-eu.example.test",
                         "workerName": "w-eu",
-                        "edgeWorkerName": "edge-w-eu",
                         "backupR2": {"name": "b-eu"},
-                        "edgeBackupR2": {"name": "edge-b-eu"},
                         "r2Jurisdiction": "eu",
                     }
                 ]
@@ -333,7 +326,7 @@ def test_main_a_config_mismatch_is_a_refusal_and_exits_1(
         )
     )
     (tmp_path / "workers" / "account" / "wrangler.eu.toml").write_text(
-        'name = "w-eu"\n[[r2_buckets]]\nbinding = "BACKUP_BUCKET"\nbucket_name = "edge-b-eu"\njurisdiction = "eu"\n'
+        'name = "w-eu"\n[[r2_buckets]]\nbinding = "BACKUP_BUCKET"\nbucket_name = "other-b-eu"\njurisdiction = "eu"\n'
     )
     monkeypatch.setattr(pbc.paths, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(pbc.subprocess, "run", lambda *_a, **_k: pytest.fail("re-executed"))

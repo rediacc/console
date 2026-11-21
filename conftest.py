@@ -412,6 +412,19 @@ def _untracked(root) -> set[str]:
     return {path for path in result.stdout.split("\0") if path and not path.startswith(REVIEWS)}
 
 
+@pytest.fixture(autouse=True)
+def _restore_process_environment():
+    """Put os.environ back to what it was before each test.
+
+    Code under test writes os.environ directly (`account_lifecycle.stripe_auto` exports STRIPE_SANDBOX_WEBHOOK_SECRET, deploy and verb entry points set tokens and paths), and monkeypatch undoes only what monkeypatch itself set: a `delenv` of an absent name registers no undo. On 2026-11-12 one such write outlived its test and failed `test_ops_units`'s deploy_bench payload test in a later module of the same session, so the environment is restored per test, whatever wrote it.
+    """
+    saved = dict(os.environ)
+    yield
+    if os.environ != saved:
+        os.environ.clear()
+        os.environ.update(saved)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _tree_snapshot(request):
     """Fail the session when a test left an untracked file in the real tree."""

@@ -120,6 +120,8 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // Cluster backref on materialized pool members — non-secret inventory.
   '/resources/machines/*/cluster/cluster': { kind: 'public' },
   '/resources/machines/*/cluster/pool': { kind: 'public' },
+  // When window-only repair fixes may run (`rdc machine repair`); a schedule, not an identifier.
+  '/resources/machines/*/maintenanceWindow': { kind: 'public' },
 
   // ── Datastores (named local/rbd registry; unencrypted by design, 02 §5) ────
   '/resources/datastores/*/backend/kind': { kind: 'public' },
@@ -183,7 +185,10 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/resources/backupStrategies/*/destinations/*/name': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/enabled': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/bandwidthLimit': { kind: 'public' },
-  // hosted-service destination: the endpoint identifies a customer/elite plane (mirror accountServer/releasesUrl → identifier); vaultContent is the credential bag, one container-level secret leaf.
+  // A destination names the registered store it writes to (`target`, a store id; absent means home). `endpoint` and `vaultContent` are removed fields the schema refuses (z.never); their pointers stay registered, as for repoSchedules.
+  '/resources/backupStrategies/*/destinations/*/target': { kind: 'public' },
+  '/resources/backupStrategies/*/destinations/*/mode': { kind: 'public' },
+  '/resources/backupStrategies/*/destinations/*/from': { kind: 'public' },
   '/resources/backupStrategies/*/destinations/*/endpoint': { kind: 'identifier' },
   '/resources/backupStrategies/*/destinations/*/vaultContent': { kind: 'secret' },
   // Verification switches and a cron; non-sensitive.
@@ -274,6 +279,8 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/repos/*/*/networkId': { kind: 'public' },
   '/state/repos/*/*/registryPort': { kind: 'public' },
   '/state/repos/*/*/gpuDevices': { kind: 'public' },
+  '/state/repos/*/*/lifecycleRoot': { kind: 'public' },
+  '/state/repos/*/*/lifecyclePaths': { kind: 'public' },
   '/state/repos/*/*/pushState/*/verifiedBase': { kind: 'public' },
   '/state/repos/*/*/pushState/*/lastPushAt': { kind: 'public' },
   '/state/repos/*/*/pushState/*/method': { kind: 'public' },
@@ -289,6 +296,11 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/repos/*/*/reflog/*/at': { kind: 'public' },
   '/state/repos/*/*/reflog/*/message': { kind: 'public' },
   '/state/networkIds/next': { kind: 'public' },
+  // The Terms acceptance the CLI recorded for the anonymous Free License: a version, the text's hash, a timestamp and the method. No secret, so all four leaves are public.
+  '/state/terms/version': { kind: 'public' },
+  '/state/terms/sha256': { kind: 'public' },
+  '/state/terms/acceptedAt': { kind: 'public' },
+  '/state/terms/method': { kind: 'public' },
   // Last-backup-activity record per repo (state). All leaves are runtime observations keyed by a repo name the config already lists in the clear — registered public, so nothing here is committed.
   '/state/backupRuns/*/lastRunAt': { kind: 'public' },
   '/state/backupRuns/*/kind': { kind: 'public' },
@@ -317,6 +329,8 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/certCache/*/rawSize': { kind: 'public' },
   // Managed replica/canary sets (spec 05, R2-F17). repoGuid mirrors the spec-side repositoryGuid (identifier there), so it gets the same agent-redaction here; commit:false per the state rule above.
   '/state/replicaSets/*/repo': { kind: 'public' },
+  '/state/replicaSets/*/phase': { kind: 'public' },
+  '/state/replicaSets/*/refreshing': { kind: 'public' },
   '/state/replicaSets/*/repoGuid': { kind: 'identifier', commit: false },
   '/state/replicaSets/*/datastore': { kind: 'public' },
   '/state/replicaSets/*/cluster': { kind: 'public' },

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD } from '../src/constants';
+import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD, DEFAULT_NETWORK_ID } from '../src/constants';
 import { e2eRepoGuid, installRepoLicence } from '../src/utils/licence';
 import {
   type ExecResult,
@@ -176,7 +176,7 @@ test.describe
     test.afterAll(async () => {
       // Cleanup: unmount and delete the test repository
       try {
-        await runner.repositoryUnmount(testRepo, DEFAULT_DATASTORE_PATH);
+        await runner.repositoryUnmount(testRepo, DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID);
       } catch {
         /* ignore */
       }

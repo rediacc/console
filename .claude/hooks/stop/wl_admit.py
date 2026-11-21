@@ -325,10 +325,24 @@ def _is_operator_turn(rec):
         return False
     content = (rec.get("message") or {}).get("content")
     if isinstance(content, str):
-        return bool(content.strip())
+        return bool(content.strip()) and not content.lstrip().startswith(HARNESS_PREFIXES)
     if isinstance(content, list):
-        return not any(isinstance(b, dict) and b.get("type") == "tool_result" for b in content)
+        if any(isinstance(b, dict) and b.get("type") == "tool_result" for b in content):
+            return False
+        text = " ".join(
+            str(b.get("text") or "")
+            for b in content
+            if isinstance(b, dict) and b.get("type") == "text"
+        )
+        return not text.lstrip().startswith(HARNESS_PREFIXES)
     return False
+
+
+# Two more user records with no isMeta flag that are the harness, not a person: a background task's completion notice, and the summary a compaction opens the next context with. Measured 2026-11-08 in one 3 MB transcript tail: of four records the predicate called the operator, one was a task notification and one the compaction summary.
+HARNESS_PREFIXES = (
+    "<task-notification>",
+    "This session is being continued from a previous conversation",
+)
 
 
 def turn_tools(path):

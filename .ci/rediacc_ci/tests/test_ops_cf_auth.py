@@ -5,6 +5,7 @@ The bash differentials and the older Rule T deltas of `cf_auth` live in `test_op
 
 from __future__ import annotations
 
+import io
 import json
 
 import pytest
@@ -163,3 +164,14 @@ def test_resolve_scoped_prefers_a_supplied_token_and_never_prompts(
     monkeypatch.setenv("CF_EMAIL", "ops@example.invalid")
     auth = cf_auth.resolve_scoped("cf-notifications")
     assert (auth.token, auth.created) == ("SCOPED-TOKEN", True)
+
+
+def test_resolve_without_a_credential_on_a_non_tty_raises_naming_the_env_vars(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in ("CF_MANAGEMENT_TOKEN", "CF_GLOBAL_API_KEY", "CF_EMAIL"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr("builtins.input", lambda *_a: pytest.fail("prompted"))
+    monkeypatch.setattr("sys.stdin", io.StringIO(""))
+    with pytest.raises(cf_auth.CfAuthError, match="CF_MANAGEMENT_TOKEN"):
+        cf_auth.resolve()

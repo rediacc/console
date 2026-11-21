@@ -74,3 +74,80 @@ def test_a_formatter_that_cannot_run_leaves_a_comparable_file(
     monkeypatch.undo()
     assert formatted.read_text(encoding="utf-8") == '{"generated":true}\n'
     assert mod.files_differ(fresh, formatted) is False
+
+
+def test_the_printed_remedy_is_the_command_the_gate_compares(
+    tmp_path: pathlib.Path, monkeypatch
+) -> None:
+    """The gate rules on biome-formatted generator output, so the remedy it prints must run the generator and then biome on the committed file.
+
+    The generator alone left the file unformatted and the gate red. The formatter the gate actually spawns is captured and its path and subcommand are checked against the remedy's own text, so the two cannot drift apart.
+    """
+    seen: list[list[str]] = []
+
+    class _Done:
+        returncode = 0
+
+    def fake_run(argv, **_kw):
+        seen.append(list(argv))
+        return _Done()
+
+    fresh = tmp_path / "fresh.json"
+    fresh.write_text("{}\n", encoding="utf-8")
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    mod.format_through_stdin(tmp_path, fresh, tmp_path / "formatted.json")
+    (argv,) = seen
+    first, second = mod.REMEDY.split(" && ")
+    assert first == "npx tsx %s" % mod.GENERATOR
+    # The spawned formatter differs from the remedy's only by the two flags that make it a stdin
+    # comparison (`--no-install`, `--stdin-file-path=`) where the remedy writes the file in place.
+    command = [a for a in argv if a != "--no-install" and not a.startswith("--stdin-file-path=")]
+    assert argv.count("--stdin-file-path=%s" % mod.SCHEMA_REL) == 1
+    assert second.split() == [*command, "--write", mod.SCHEMA_REL]
+
+
+def _drive_main(tmp_path: pathlib.Path, monkeypatch, *, stale: bool, go_status: int) -> None:
+    """Run `main` with every external tool replaced, so only the branch under test decides."""
+    monkeypatch.setattr(mod.paths, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(mod, "generate", lambda _root, _out: 0)
+    monkeypatch.setattr(mod, "format_through_stdin", lambda _root, _fresh, _formatted: None)
+    monkeypatch.setattr(mod, "files_differ", lambda _a, _b: stale)
+    monkeypatch.setattr(mod, "print_diff", lambda _a, _b: None)
+    monkeypatch.setattr(mod, "require_submodule", lambda _marker, _label, _env=None: True)
+
+    class _Done:
+        returncode = go_status
+
+    monkeypatch.setattr(mod.subprocess, "run", lambda _argv, **_kw: _Done())
+
+
+def _write_schema(root: pathlib.Path) -> None:
+    schema = root / mod.SCHEMA_REL
+    schema.parent.mkdir(parents=True)
+    schema.write_text("{}\n", encoding="utf-8")
+
+
+def test_a_missing_schema_prints_the_remedy(tmp_path: pathlib.Path, monkeypatch, capsys) -> None:
+    _drive_main(tmp_path, monkeypatch, stale=False, go_status=0)
+    assert mod.main([]) == 1
+    err = capsys.readouterr().err
+    assert "MISSING" in err
+    assert mod.REMEDY in err
+
+
+def test_a_stale_schema_prints_the_remedy(tmp_path: pathlib.Path, monkeypatch, capsys) -> None:
+    _write_schema(tmp_path)
+    _drive_main(tmp_path, monkeypatch, stale=True, go_status=0)
+    assert mod.main([]) == 1
+    err = capsys.readouterr().err
+    assert "STALE" in err
+    assert mod.REMEDY in err
+
+
+def test_a_go_mismatch_prints_the_remedy(tmp_path: pathlib.Path, monkeypatch, capsys) -> None:
+    _write_schema(tmp_path)
+    _drive_main(tmp_path, monkeypatch, stale=False, go_status=1)
+    assert mod.main([]) == 1
+    err = capsys.readouterr().err
+    assert "Go types do not match" in err
+    assert mod.REMEDY in err

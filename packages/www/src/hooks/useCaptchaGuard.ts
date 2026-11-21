@@ -9,7 +9,7 @@ import { useCallback, useMemo, useState } from 'react';
  * When the Turnstile script is blocked (ad blocker, offline, a Cloudflare hiccup) the
  * widget renders nothing at all, so the visitor gets "Please complete the captcha
  * verification." over a form containing no captcha, and no way forward. Observed in
- * production on edge.rediacc.com.
+ * production.
  *
  * The requirement is not the bug and is not relaxed here: `token` still has to be
  * present before a form submits. What changes is that failure becomes VISIBLE and

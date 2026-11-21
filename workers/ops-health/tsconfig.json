@@ -1,0 +1,20 @@
+{
+  // Wired into `npm run typecheck` through `rediacc_ci.quality.typecheck_workers`,
+  // which installs this project's deps first: `types` below resolves only from THIS
+  // directory's node_modules, never the repo root.
+  "compilerOptions": {
+    "target": "ES2022",
+    // ESNext because `moduleResolution: bundler` below requires an esnext-family module
+    // setting. src/__tests__ (vitest, run by `npm run test:unit`) is typechecked with the
+    // Worker source and imports nothing outside this directory.
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": ["@cloudflare/workers-types"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src", "vitest.config.ts"]
+}

@@ -27,10 +27,12 @@ THE TWO ORACLES, and they are the whole design. This repo has exactly two correc
 When neither direction holds the histories genuinely diverged, and this refuses rather than guessing. Fail closed: an unreadable probe is never a pass.
 """
 
+import contextlib
 import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -838,6 +840,7 @@ USAGE = """usage: worklist.py --git <subcommand> [args] [--execute]
   force-push <branch>              --force-with-lease, submodules before console
   snapshot                         print repo=sha for console + every submodule
   verify-rebase <snap> [base]      did every commit survive? by PATCH IDENTITY
+  rebase-proof <snap> [base]       verify-rebase, conflict-resolved commits named, plus the review records owed
                                    base defaults to origin/main; a BARE name is
                                    read as the remote one, and it says so
   rebase-status                    where an in-progress rebase stopped, and why
@@ -1185,6 +1188,68 @@ def main(argv):
                             % (steps, argv_txt, failed[2])
                         )
 
+        elif sub == "rebase-proof":
+            # PLAN-two-track-merge-dev RB4: verify-rebase's accounting with a conflict-resolved commit named CHANGED rather than refused as MISSING, plus the review records the rebase left owed (a commit whose patch moved has no record the successor map can carry). Run after the rebase, before the push.
+            if len(args) < 2:
+                raise RefusalError("rebase-proof needs the snapshot file from `--git snapshot`")
+            try:
+                with open(args[1], encoding="utf-8") as fh:
+                    snap = dict(
+                        ln.strip().split("=", 1)
+                        for ln in fh
+                        if "=" in ln and not ln.lstrip().startswith("#")
+                    )
+            except OSError as exc:
+                raise RefusalError("cannot read the snapshot: %s" % exc) from exc
+            if not snap:
+                raise RefusalError(
+                    "the snapshot names no repo; refusing to report a pass over nothing"
+                )
+            import pathlib
+
+            import wl_rebase
+            import wl_review
+
+            console_base = args[2] if len(args) > 2 else "origin/main"
+            if "/" not in console_base:
+                console_base = "origin/%s" % console_base
+            branch = wl_review.current_branch(root)
+            cfg = wl_review.load_config(root)
+            sub_base = dict(submodules(root))
+            for name, old_tip in sorted(snap.items()):
+                repo = root if name == "console" else os.path.join(root, name)
+                base = (
+                    console_base if name == "console" else "origin/%s" % sub_base.get(name, "main")
+                )
+                rc, new_tip, _ = run_git(["rev-parse", "HEAD"], cwd=repo)
+                if rc != 0:
+                    raise RefusalError("%s: could not read HEAD" % name)
+                uncovered = set(wl_review.uncovered(root, pathlib.Path(repo), branch, cfg, "HEAD"))
+                proof = wl_rebase.rebase_proof(repo, base, old_tip, new_tip, uncovered)
+                if proof is None:
+                    raise RefusalError(
+                        "%s: could not compare %s..%s" % (name, old_tip[:12], new_tip[:12])
+                    )
+                notes, ok, detail = wl_rebase.proof_rows(name, proof)
+                for line in notes:
+                    plan.note(line)
+                plan.check(
+                    "%s: %d carried, %d absorbed, %d changed, %d unreviewed"
+                    % (
+                        name,
+                        len(proof["carried"]),
+                        len(proof["absorbed"]),
+                        len(proof["changed"]),
+                        len(proof["unreviewed"]),
+                    ),
+                    ok,
+                    detail,
+                )
+            reasons, lines = wl_review.check_state(root, branch)
+            for line in lines:
+                plan.note(line)
+            plan.check("per-commit reviews (wl_review.py --check)", not reasons, ", ".join(reasons))
+
         elif sub == "snapshot":
             # The pre-rebase tips, in a form verify-rebase can read back. branch-rebase.md's step 0 told a session to `echo` these and reprint them in the report, which makes recovery depend on a human remembering to paste. This makes them an INPUT.
             plan.note("save this, then pass the file to verify-rebase")
@@ -1448,16 +1513,22 @@ def selftest():
 
         _clean = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
         _blocked = False
+        # Own process group: a timeout kills git's editor children (sh, tail) too, which subprocess.run's timeout alone leaves running forever.
+        _proc = subprocess.Popen(
+            ["git", "-C", _ed, "commit", "--amend"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env=_clean,
+            start_new_session=True,
+        )
         try:
-            subprocess.run(
-                ["git", "-C", _ed, "commit", "--amend"],
-                capture_output=True,
-                env=_clean,
-                timeout=5,
-                check=False,
-            )
+            _proc.wait(timeout=5)
         except subprocess.TimeoutExpired:
             _blocked = True
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(_proc.pid, signal.SIGKILL)
+            _proc.wait()
         check("CONTROL: the same call WITHOUT the env blocks, so the fix is load-bearing", _blocked)
     finally:
         shutil.rmtree(_ed, ignore_errors=True)
@@ -1719,7 +1790,6 @@ def selftest():
     # EVERY `dels is None` GUARD, BOTH WAYS. These were the two fail-OPEN sites this session closed: `staged_deletions` returns None when its probe fails, None is falsy, and a bare `if dels:` therefore read "the probe broke" as "no deletions". force-push had it right and two other paths did not.
     #
     # Controls that only exercised the happy path would not have seen the inversion, which is the whole reason this block asserts BOTH returns per site: None must refuse, and an empty list must NOT.
-    import contextlib
     import io
 
     real_sd = globals()["staged_deletions"]

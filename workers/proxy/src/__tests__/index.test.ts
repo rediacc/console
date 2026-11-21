@@ -402,7 +402,7 @@ describe('span attributes (telemetry export T14)', () => {
     const secrets = [CALLER, ISSUED, 'org-1', 'team-1', 'org-1:team-1'];
     const all: Record<string, unknown>[] = [];
     const logged: string[] = [];
-    // Logs leave the platform too (wrangler.toml and wrangler.bench.toml name a logs destination),
+    // Logs leave the platform too (wrangler.toml and wrangler.bench-eu.toml name a logs destination),
     // so every console line written during the walk is checked with the attributes.
     for (const level of ['log', 'info', 'warn', 'error', 'debug'] as const) {
       vi.spyOn(console, level).mockImplementation((...args: unknown[]) => {

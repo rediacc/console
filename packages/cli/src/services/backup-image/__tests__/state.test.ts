@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { writeFully } from '../durable-write.js';
 import {
   acquireLocalLock,
   type BeginRunInput,
@@ -24,7 +25,6 @@ import {
   readImageState,
   recordUpload,
   releaseLocalLock,
-  writeFully,
   writeImageState,
 } from '../state.js';
 

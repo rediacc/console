@@ -6,17 +6,20 @@ Each judge is shown failing on a planted defect beside a healthy control. The gi
 from __future__ import annotations
 
 import copy
+import dataclasses
 import hashlib
 import json
 from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from rediacc_ci import paths
+from rediacc_ci import well_known as WK
 from rediacc_ci.proof import live_tier as LT
 from rediacc_ci.proof import receipt as R
 from rediacc_ci.proof import surfaces as S
 from rediacc_ci.review import successor as SUCC
-from rediacc_ci.tests.test_proof_surfaces import World
+from rediacc_ci.tests.test_proof_surfaces import REGISTRY_RELS, World, _commit, _write
 from rediacc_ci.well_known import BENCH_ORIGIN
 
 if TYPE_CHECKING:
@@ -84,8 +87,8 @@ def _cli_row(**over: Any) -> dict[str, Any]:
     return LT.build_row(_ident(["cli"]), R.VERIFIED, **body)
 
 
-def _account_row() -> dict[str, Any]:
-    """A healthy VERIFIED account-smoke row: the bench cache deploy, the account VM phase."""
+def _account_row(ladder: dict[str, Any] | None = None) -> dict[str, Any]:
+    """A healthy VERIFIED account-smoke row: the bench cache deploy, the account VM phase; `ladder` replaces the default admitting run id."""
     argv = [list(r.argv) for r in LT.expand(LT.registry()["account-smoke"], "bench")]
     return LT.build_row(
         _ident(["account"]),
@@ -113,7 +116,7 @@ def _account_row() -> dict[str, Any]:
             "log_sha256": "b" * 64,
             "tail": ['{"status":"ok"}'],
         },
-        ladder={"vm": "vmc-10280533-5ddf37"},
+        ladder=ladder or {"vm": "vmc-10280533-5ddf37"},
     )
 
 
@@ -122,7 +125,14 @@ def _account_row() -> dict[str, Any]:
 
 def test_the_committed_registry_parses_with_fixed_argv_only() -> None:
     checks = LT.registry()
-    assert set(checks) == {"account-smoke", "proxy-ready", "cli-bench", "www-smoke", "renet-live"}
+    assert set(checks) == {
+        "account-smoke",
+        "proxy-ready",
+        "cli-bench",
+        "www-smoke",
+        "renet-live",
+        "enterprise-proof",
+    }
     for check in checks.values():
         for step in check.steps:
             assert step.argv[0] not in LT.REFUSED_PROGRAMS
@@ -368,6 +378,24 @@ def test_a_vm_phase_surface_needs_its_ladder_run() -> None:
     assert any("ladder.vm" in p for p in LT.validate_row(row))
 
 
+def _waived_account_row(waived: str) -> dict[str, Any]:
+    return _account_row({"vm": None, "waived": waived, "head_tree": TREE})
+
+
+def test_a_well_formed_waived_row_is_a_valid_receipt() -> None:
+    """The positive control for the waiver: the judge LP5 runs passes a ticked-eligible waived row."""
+    assert LT.validate_row(_waived_account_row("ASKED:2026-11-10T13:38Z")) == []
+
+
+@pytest.mark.parametrize("suffix", ["\n", " ", "\r\n"])
+def test_a_waiver_token_with_a_trailing_character_is_refused(suffix: str) -> None:
+    """`$` matches before a trailing newline; the token must be the whole minute, nothing after it."""
+    token = "ASKED:2026-11-10T13:38Z"
+    assert LT.validate_row(_waived_account_row(token)) == [], "the control must pass first"
+    problems = LT.validate_row(_waived_account_row(token + suffix))
+    assert any("ladder.waived" in p for p in problems), problems
+
+
 def test_an_account_row_on_a_moved_account_checkout_is_refused() -> None:
     row = _account_row()
     row["submodules"]["private/account"]["checkout"] = "9" * 40
@@ -405,20 +433,94 @@ def test_a_renet_hash_row_judges_the_renet_build_even_for_a_cli_only_plan() -> N
             "log_sha256": "c" * 64,
             "tail": ["f" * 64],
         },
-        ladder={"vm": None},
+        ladder={"vm": "vmc-11040941-158f0e"},
     )
     assert LT.validate_row(row) == []
     _plant("renet.modified", True)(row)
     assert any(p.startswith("modified-build") for p in LT.validate_row(row))
 
 
+def _renet_cli_only_row(vm: str | None) -> dict[str, Any]:
+    check = LT.registry()["renet-live"]
+    argv = [list(r.argv) for r in LT.expand(check, "hostinger")]
+    renet = {"built": PTR_R, "modified": False, "sha256": "f" * 64}
+    return LT.build_row(
+        _ident(["cli"], renet=renet),
+        R.VERIFIED,
+        at="2026-10-28T10:00:00Z",
+        by="d778be9d",
+        plan="agent/plans/PLAN-demo.md",
+        box="2f44fc06",
+        target="hostinger",
+        region=None,
+        deploy={
+            "surface": "renet",
+            "worker": None,
+            "version_id": f"renet:{PTR_R}@sha256:{'f' * 64}",
+            "source": "rdc:eu-bench",
+            "deployed_head": HEAD,
+            "confirmed_live": True,
+        },
+        check={
+            "id": "renet-live",
+            "args": [],
+            "argv": argv,
+            "rc": 0,
+            "duration_s": 9.0,
+            "log_sha256": "c" * 64,
+            "tail": ["f" * 64],
+        },
+        ladder={"vm": vm},
+    )
+
+
+def test_a_renet_hash_row_on_a_cli_only_plan_needs_its_ladder_run() -> None:
+    """A renet-hash check provisions renet on a real machine, so a null ladder.vm is refused even when the row's surfaces carry no VM phase (the reopened LP-hostinger receipt of PLAN-ssh-key-source-ranges)."""
+    row = _renet_cli_only_row("vmc-11040941-158f0e")
+    assert LT.validate_row(row) == [], "the control must pass before the plant"
+    assert S.phases_for(row["surfaces"]) == frozenset()
+    assert LT.ladder_phases(row["surfaces"], LT.registry()["renet-live"]) == frozenset({"renet"})
+    refused = _renet_cli_only_row(None)
+    assert any("ladder.vm" in p for p in LT.validate_row(refused))
+
+
+def test_a_tree_row_on_a_cli_only_plan_keeps_a_null_ladder() -> None:
+    row = _cli_row()
+    assert LT.ladder_phases(row["surfaces"], LT.registry()["cli-bench"]) == frozenset()
+    assert row["ladder"] == {"vm": None}
+    assert LT.validate_row(row) == []
+
+
 def test_an_unrecorded_deploy_never_validates() -> None:
+    row = _cli_row()
+    row["check"]["id"] = "www-smoke"
+    row["check"]["argv"] = [list(r.argv) for r in LT.expand(LT.registry()["www-smoke"], "bench")]
+    row["surfaces"] = ["www"]
+    _reid(row)
+    assert any("identifies no deploy" in p for p in LT.validate_row(row))
+
+
+def _proxy_row(version: str) -> dict[str, Any]:
     row = _cli_row()
     row["check"]["id"] = "proxy-ready"
     row["check"]["argv"] = [list(r.argv) for r in LT.expand(LT.registry()["proxy-ready"], "bench")]
     row["surfaces"] = ["proxy"]
+    row["deploy"] = {
+        "surface": "proxy",
+        "worker": "proxy-bench",
+        "version_id": version,
+        "source": LT.BENCH_PROXY_CACHE,
+        "deployed_head": HEAD,
+        "confirmed_live": True,
+    }
     _reid(row)
-    assert any("identifies no deploy" in p for p in LT.validate_row(row))
+    return row
+
+
+def test_a_bench_proxy_row_validates_with_a_version_uuid_only() -> None:
+    assert LT.validate_row(_proxy_row(UUID)) == [], "the control must pass before the plant"
+    assert any("malformed" in p for p in LT.validate_row(_proxy_row("proxy:" + HEAD)))
+    assert LT.DEPLOY_SURFACE[LT.BENCH_PROXY_CACHE] == "proxy"
 
 
 # ------------------------------------------------------------------ the git checks and the kept log
@@ -560,6 +662,203 @@ def test_a_successor_whose_surface_code_changed_fails_the_inputs_digest(world: W
     assert any("inputs is not the digest of head successor" in p for p in problems), problems
 
 
+# ------------------------------------------------------------------ the argv at the row's own tree
+
+WK_LINE = "WK_BENCH_ORIGIN="
+
+
+def _today_argv(region: str | None = None) -> list[list[str]]:
+    return [list(r.argv) for r in LT.expand(LT.registry()["account-smoke"], "bench", region=region)]
+
+
+def _argv_with(old: str, new: str, region: str | None = None) -> list[list[str]]:
+    """Today's account-smoke argv with `old` replaced by `new` in every argument: the argv a registry that named `new` expanded."""
+    return [[a.replace(old, new) for a in argv] for argv in _today_argv(region)]
+
+
+def _set_origin(world: World, origin: str) -> None:
+    lines = (world.root / WK.REGISTRY_REL).read_text(encoding="utf-8").splitlines()
+    assert sum(ln.startswith(WK_LINE) for ln in lines) == 1, "the fixture copies one origin line"
+    text = "\n".join(WK_LINE + origin if ln.startswith(WK_LINE) else ln for ln in lines)
+    _write(world.root, WK.REGISTRY_REL, text + "\n")
+
+
+def _edit_map(world: World, edit: Callable[[dict[str, Any]], None]) -> None:
+    raw = json.loads((world.root / S.MAP_REL).read_text(encoding="utf-8"))
+    edit(raw)
+    _write(world.root, S.MAP_REL, json.dumps(raw, indent=1) + "\n")
+
+
+def _account_row_here(
+    world: World, argv: list[list[str]], region: str | None = None
+) -> dict[str, Any]:
+    """A VERIFIED account-smoke row recorded at the world's HEAD, carrying `argv`."""
+    ident = R.identity(world.root, ["account"])
+    return LT.build_row(
+        ident,
+        R.VERIFIED,
+        at="2026-11-10T13:40:00Z",
+        by="d778be9d",
+        plan="agent/plans/PLAN-demo.md",
+        box="114951f1",
+        target="bench",
+        region=region,
+        deploy={
+            "surface": "account",
+            "worker": "rediacc-account-bench",
+            "version_id": UUID,
+            "source": "bench-cache",
+            "deployed_head": ident["head"],
+            "confirmed_live": True,
+        },
+        check={
+            "id": "account-smoke",
+            "args": [],
+            "argv": argv,
+            "rc": 0,
+            "duration_s": 3.1,
+            "log_sha256": "b" * 64,
+            "tail": ['{"status":"ok"}'],
+        },
+        ladder={"vm": "vmc-11101338-5ddf37"},
+    )
+
+
+def _moved_on(world: World) -> None:
+    """A later commit puts back the checkout's own registry, the one today's HEAD expands."""
+    for rel in REGISTRY_RELS:
+        _write(world.root, rel, paths.from_root(rel).read_text(encoding="utf-8"))
+    _commit(world.root, "the registry moves on")
+
+
+def test_a_receipt_recorded_before_the_origin_moved_is_judged_at_its_own_tree(
+    world: World,
+) -> None:
+    """PLAN-multi-region-bench M1: a receipt recorded while WK_BENCH_ORIGIN named the retiring host stays valid after the origin moved, because its argv was the registry's argv at its own tree."""
+    assert WK.BENCH_RETIRING_ORIGIN != WK.BENCH_ORIGIN, "the fixture needs two origins"
+    _set_origin(world, WK.BENCH_RETIRING_ORIGIN)
+    _commit(world.root, "the registry names the retiring host")
+    row = _account_row_here(world, _argv_with(WK.BENCH_ORIGIN, WK.BENCH_RETIRING_ORIGIN))
+    _moved_on(world)
+    assert _git_head(world) != row["head"], "the judge runs at a later HEAD"
+    assert any("check.argv is not the registry's argv" in p for p in LT.validate_row(row)), (
+        "against today's registry the old argv differs, which is the case this test reproduces"
+    )
+    assert LT.validate_row(row, root=world.root) == []
+
+
+def test_a_receipt_whose_argv_was_not_its_own_trees_is_refused(world: World) -> None:
+    """Control: the same tree, the argv of a registry the tree did NOT hold (today's origin)."""
+    _set_origin(world, WK.BENCH_RETIRING_ORIGIN)
+    tree_commit = _commit(world.root, "the registry names the retiring host")
+    row = _account_row_here(world, _today_argv())
+    _moved_on(world)
+    assert not any("argv" in p for p in LT.validate_row(row)), "it matches today's registry"
+    tree = S.make_git(world.root)(["rev-parse", f"{tree_commit}^{{tree}}"]) or ""
+    problems = LT.validate_row(row, root=world.root)
+    assert (
+        f"check.argv is not the registry's argv for this check, target and arguments in tree {tree[:12]}"
+        in problems
+    ), problems
+
+
+def test_a_step_changed_since_the_receipt_is_judged_by_the_trees_steps(world: World) -> None:
+    def older_path(raw: dict[str, Any]) -> None:
+        argv = raw["tiers"]["live"]["checks"]["account-smoke"]["steps"][0]["argv"]
+        argv[-1] = argv[-1].replace("/health", "/healthz")
+
+    _edit_map(world, older_path)
+    _commit(world.root, "the health step had another path")
+    then = _account_row_here(world, _argv_with("/health", "/healthz"))
+    forged = _account_row_here(world, _today_argv())
+    _moved_on(world)
+    assert LT.validate_row(then, root=world.root) == []
+    assert any(
+        "check.argv is not the registry's argv" in p
+        for p in LT.validate_row(forged, root=world.root)
+    )
+
+
+def test_a_regional_receipt_reads_regions_json_at_its_own_tree(world: World) -> None:
+    regions = json.loads(paths.from_root(LT.BENCH_REGIONS_REL).read_text(encoding="utf-8"))
+    host = LT.bench_object("us")["host"]
+    for row in regions["regions"]:
+        if row["id"] == "us":
+            row["bench"]["host"] = "bench-then.example.invalid"
+    _write(world.root, LT.BENCH_REGIONS_REL, json.dumps(regions, indent=1) + "\n")
+    _commit(world.root, "the us bench had another host")
+    then = _account_row_here(
+        world, _argv_with(host, "bench-then.example.invalid", "us"), region="us"
+    )
+    forged = _account_row_here(world, _today_argv("us"), region="us")
+    _moved_on(world)
+    assert LT.validate_row(then, root=world.root) == []
+    assert any(
+        "check.argv is not the registry's argv" in p
+        for p in LT.validate_row(forged, root=world.root)
+    )
+
+
+@pytest.mark.parametrize(
+    ("plant", "named"),
+    [
+        ("no-map", f"check.argv cannot be judged: {S.MAP_REL} is not in tree"),
+        ("map-not-json", f"check.argv cannot be judged: {S.MAP_REL} in tree"),
+        ("no-check", "check account-smoke is not in the registry in tree"),
+        ("no-well-known", f"check.argv cannot be judged: {WK.REGISTRY_REL} is not in tree"),
+    ],
+)
+def test_a_tree_whose_registry_cannot_be_read_refuses_the_row(
+    world: World, plant: str, named: str
+) -> None:
+    """The registry at the row's tree is read or the row is refused naming the file: never a fallback to today's registry."""
+    if plant == "no-map":
+        (world.root / S.MAP_REL).unlink()
+    elif plant == "map-not-json":
+        _write(world.root, S.MAP_REL, "{not json\n")
+    elif plant == "no-check":
+        _edit_map(world, lambda raw: raw["tiers"]["live"]["checks"].pop("account-smoke"))
+    else:
+        (world.root / WK.REGISTRY_REL).unlink()
+    _commit(world.root, f"plant {plant}")
+    row = _account_row_here(world, _today_argv())
+    _moved_on(world)
+    assert not any("argv" in p for p in LT.validate_row(row)), "it matches today's registry"
+    problems = LT.validate_row(row, root=world.root)
+    assert any(p.startswith(named) for p in problems), problems
+
+
+def test_a_tree_without_regions_json_refuses_a_regional_row_naming_the_file(
+    world: World,
+) -> None:
+    """Review 70771fff.1: regions.json is read only for a regional bench, and a tree lacking it refuses that row naming the file."""
+    (world.root / LT.BENCH_REGIONS_REL).unlink()
+    _commit(world.root, "the tree lacks regions.json")
+    row = _account_row_here(world, _today_argv("us"), region="us")
+    _moved_on(world)
+    problems = LT.validate_row(row, root=world.root)
+    assert any(f"{LT.BENCH_REGIONS_REL} is not in tree" in p for p in problems), problems
+
+
+def test_a_tree_without_regions_json_still_passes_a_non_regional_row(world: World) -> None:
+    """Control for 70771fff.1: a row with no region never reads regions.json, so the same tree judges it clean."""
+    (world.root / LT.BENCH_REGIONS_REL).unlink()
+    _commit(world.root, "the tree lacks regions.json")
+    row = _account_row_here(world, _today_argv())
+    _moved_on(world)
+    assert LT.validate_row(row, root=world.root) == []
+
+
+def test_check_at_refuses_sources_whose_steps_lack_the_renet_hash_step() -> None:
+    """Review 70771fff.2: `check_at` applies parse_checks' renet-hash/deploy rules to the sources' steps."""
+    check = LT.registry()["renet-live"]
+    live = copy.deepcopy(S.MAP.live)
+    LT.check_at(check, dataclasses.replace(LT.checkout_sources(), live=live))  # control: whole
+    live["checks"]["renet-live"]["steps"].pop()
+    with pytest.raises(LT.RegistryError, match="no renet-hash step"):
+        LT.check_at(check, dataclasses.replace(LT.checkout_sources(), live=live))
+
+
 # ------------------------------------------------------------------ the ledger and the match
 
 
@@ -618,3 +917,65 @@ def test_a_row_whose_surfaces_hold_a_non_string_is_reported_not_raised(bad) -> N
     assert any("surfaces is not a non-empty list of known surfaces" in p for p in problems), (
         problems
     )
+
+
+# ---- one bench per region (PLAN-multi-region-bench W5) ----------------------------
+
+
+def test_a_regional_bench_run_expands_to_that_benches_origin_and_config() -> None:
+    check = LT.registry()["account-smoke"]
+    for region in ("us", "asia"):
+        bench = LT.bench_object(region)
+        runs = LT.expand(check, "bench", region=region)
+        assert [r.argv[-1] for r in runs] == [
+            f"https://{bench['host']}/account/api/v1/health",
+            f"https://{bench['host']}/account/api/v1/.well-known/server-info",
+        ]
+        assert LT.target_entry("bench", region)["config"] == f"{region}-bench"
+
+
+def test_control_the_home_bench_expands_the_same_with_no_region_or_eu() -> None:
+    check = LT.registry()["account-smoke"]
+    plain = [r.argv for r in LT.expand(check, "bench")]
+    assert plain == [r.argv for r in LT.expand(check, "bench", region="eu")]
+    assert plain[0][-1] == BENCH_ORIGIN + "/account/api/v1/health"
+
+
+def test_a_region_does_not_move_hostinger() -> None:
+    assert LT.target_entry("hostinger", "us") == LT.target_entry("hostinger")
+
+
+def test_an_unknown_region_has_no_bench() -> None:
+    with pytest.raises(LT.RegistryError, match="no region 'mars'"):
+        LT.bench_object("mars")
+
+
+def test_a_regional_row_validates_only_against_its_own_regions_argv() -> None:
+    row = _cli_row()
+    row["check"]["id"] = "account-smoke"
+    row["surfaces"] = ["account"]
+    row["region"] = "us"
+    row["check"]["argv"] = [
+        list(r.argv) for r in LT.expand(LT.registry()["account-smoke"], "bench", region="us")
+    ]
+    row["deploy"] = {
+        "surface": "account",
+        "worker": "account-bench-us",
+        "version_id": UUID,
+        "source": LT.BENCH_CACHE,
+        "deployed_head": HEAD,
+        "confirmed_live": True,
+    }
+    _reid(row)
+    assert not any("argv" in p for p in LT.validate_row(row))
+    row["region"] = "asia"
+    _reid(row)
+    assert any("check.argv is not the registry's argv" in p for p in LT.validate_row(row))
+
+
+def test_cli_bench_runs_through_each_benchs_rdc_config() -> None:
+    check = LT.registry()["cli-bench"]
+    assert [r.argv[2] for r in LT.expand(check, "bench")] == ["eu-bench"]
+    assert [r.argv[2] for r in LT.expand(check, "bench", region="eu")] == ["eu-bench"]
+    assert [r.argv[2] for r in LT.expand(check, "bench", region="us")] == ["us-bench"]
+    assert [r.argv[2] for r in LT.expand(check, "bench", region="asia")] == ["asia-bench"]

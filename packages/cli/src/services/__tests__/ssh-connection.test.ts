@@ -106,6 +106,8 @@ describe('getSSHConnectionDetails', () => {
       DOCKER_SOCKET: `${WK_RUNTIME_DIR}/net-7104/docker-7104.sock`,
       DOCKER_HOST: `unix://${WK_RUNTIME_DIR}/net-7104/docker-7104.sock`,
       REDIACC_DATASTORE_PATH: WK_DATASTORE_PATH,
+      // renet creates the universal user rediacc as uid 7111 (config.RediaccUID).
+      UNIVERSAL_USER_ID: '7111',
     });
     // REDIACC_DATASTORE names a datastore on the machine; a path never travels under it.
     expect(result.environment).not.toHaveProperty('REDIACC_DATASTORE');

@@ -12,6 +12,7 @@ copying the gate script into a mirrored tree, which is the port's one structural
 import os
 
 from rediacc_ci import paths
+from rediacc_ci.quality import go_module_sync
 from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_go_module_sync.py")
@@ -48,6 +49,8 @@ def seed_module(root) -> None:
     tool = root / "tool"
     tool.mkdir(parents=True, exist_ok=True)
     (tool / "go.mod").write_text(GOMOD, encoding="utf-8")
+    # The gate discovers modules through the git index, so the fixture root is a one-off repository holding the module.
+    go_module_sync.stage(root)
 
 
 def run_gate(root, bindir) -> harness.RunResult:
@@ -90,6 +93,7 @@ def test_finding_no_modules_is_a_failure_not_a_pass(gate, tmp_path):
     bindir = tmp_path / "bin"
     bindir.mkdir()
     write_fake_go(bindir, "tidy")
+    go_module_sync.stage(tmp_path)
     result = run_gate(tmp_path, bindir)
     gate.assert_eq(result.rc, 1, "zero discovered modules must not read as success")
     gate.assert_contains(result.combined, "verified NOTHING", "the vacuity guard is what fires")

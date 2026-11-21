@@ -108,14 +108,18 @@ import {
   shardPlan,
 } from '../ci-runner/lanes.js';
 import { laneCanEmit, rewriteStrategyRegions } from '../gate-bind.js';
+import { validateBlockerQuality } from '../lib/blocker-validator.js';
 import { GREEN, NC, RED } from '../lib/console.js';
 import { summarizeControls } from '../lib/controls.js';
 import { envRoot } from '../lib/repo-root.js';
+import { recordProblem } from './lib/gate-problems.js';
 
 const ROOT = envRoot('QUALITY_COMPLETE_ROOT');
 
 const LOCK = 'scripts/ci-runner/gates.lock.json';
 const WORKFLOW = '.github/workflows/ci-quality.yml';
+/** This file, as the validator's messages name it: the reasons live here, not in a list file. */
+const SELF = 'scripts/gates/check-quality-complete.ts';
 
 /** The job that aggregates the shards. Named once so a rename reds loudly. */
 export const AGGREGATOR_JOB = 'quality-complete';
@@ -218,7 +222,8 @@ export function readReceipts(dir: string): { receipts: ShardReceipt[]; problems:
     const hasGates = typeof r.gates === 'number';
     const hasUnits = Array.isArray(r.units);
     if (hasGates === hasUnits) {
-      problems.push(
+      recordProblem(
+        problems,
         `${file}: a receipt needs EXACTLY ONE of a numeric \`gates\` (lock-id currency) or ` +
           `a \`units\` array (unit currency, T2.11); got ${JSON.stringify(parsed)}`
       );
@@ -475,6 +480,20 @@ export const DECLARED_HAND_WRITTEN_LANES: Readonly<Record<string, string>> = {
   'quality-pytest':
     'split out of quality-security (PLAN-ci-time-budget T2.15) to run the one hand-written ' +
     'Python package test step, which no gate-bind region emits; T2.8 unit sharding replaces it',
+  'ci-quick':
+    'runs the RUNNER, never the gates: one hand-written `Quick lane plan` step with a ' +
+    'collapse floor, so no gate-bind region has a gate to emit',
+  'quality-account':
+    'checks out the private account submodule under an App token and builds natives, then ' +
+    'runs hand-written `npm run check:ci-account-*` steps and the account suite; the manifest ' +
+    'binds them by step name, and a region would not carry the secrets and checkout order',
+  'quality-go':
+    'hand-written steps by design: they install clang, prefer the archive mirror and run ' +
+    'against the renet checkout, an ordering a generated region would not preserve; the ' +
+    'manifest binds them by step name',
+  'quality-packages':
+    'hand-written steps that interleave installs (agent-browser, OpenTofu) with the package ' +
+    'test suites they serve, and upload artifacts; the manifest binds them by step name',
   'quality-secure-storage':
     'a three-OS matrix (ubuntu, macOS, Windows) that runs one vitest file against the real ' +
     'keyring, Keychain and DPAPI backends; it holds no manifest gate, and an emitted region ' +
@@ -490,17 +509,13 @@ export const DECLARED_HAND_WRITTEN_LANES: Readonly<Record<string, string>> = {
  * registered a manifest gate against them.
  *
  * NOT A SECOND ALLOWLIST, and the difference is the whole point. An entry here is an
- * open decision, printed on every run: either the lane earns a region by having gates
- * registered against it, or it moves into `DECLARED_HAND_WRITTEN_LANES` with its reason.
- * Deciding that is a design call this gate deliberately does not make; making the gap
- * VISIBLE instead of silent is what it does.
+ * open decision, and `partitionFindings` reports every entry as a finding, so the gate is
+ * red while one stands: either the lane earns a region by having gates registered against
+ * it, or it moves into `DECLARED_HAND_WRITTEN_LANES` with its reason. Deciding that is a
+ * design call this gate deliberately does not make; refusing to let the gap ride a green
+ * is what it does.
  */
-export const UNDECIDED_LANES: readonly string[] = [
-  'ci-quick',
-  'quality-packages',
-  'quality-account',
-  'quality-go',
-];
+export const UNDECIDED_LANES: readonly string[] = [];
 
 /**
  * Step names a lane's `# >>> gate-bind` region emits, per lane.
@@ -649,12 +664,33 @@ export function partitionFindings(
     }
   }
 
+  // THE UNDECIDED CLAUSE (PLAN-health-checks-local N1). The set is kept as the place a NEW lane could be parked, but a parked lane is a red, not a printed note: a decision that prints on every green run is a decision nobody takes.
+  for (const lane of [...undecided].sort((a, b) => Number(a > b) - Number(a < b))) {
+    findings.push(
+      `${lane} is UNDECIDED: setup-having and region-less, hand-written by omission. ` +
+        'Give it a `# >>> gate-bind` region by registering gates against it, or move it into ' +
+        'DECLARED_HAND_WRITTEN_LANES with the reason recorded.'
+    );
+  }
+
   // THE ALLOWLIST CLAUSE. A lane with no setup step is hand-written by construction; one WITH a setup step chose to be, and the choice has to be recorded or the allowlist quietly absorbs lanes that should have earned a region.
+  // THE REASON CLAUSE (review #eacd21f4). Neither the BLOCKER validator nor the suppressions inventory reads this map (both cover list files, not source), so until this clause a one-word reason passed on being non-empty. Every WRITTEN reason now meets the canonical rules in .ci/rediacc_ci/core/allowlist.py (banned phrases, deferral substrings, the length floor) through the same client the TypeScript BLOCKER gates use. An empty reason stays legal only on a lane with no setup step, which the clause above already treats as self-explaining.
   for (const [lane, why] of Object.entries(handWritten).sort()) {
     if (known.has(lane) && hasSetup(lane) && why.trim() === '') {
       findings.push(
         `${lane} is allowlisted as hand-written and HAS an \`- id: setup\` step, so it ` +
           'could hold a region, with no reason recorded for why it does not'
+      );
+      continue;
+    }
+    if (why.trim() === '') continue;
+    const rejected = validateBlockerQuality(lane, why, SELF);
+    if (rejected !== null) {
+      findings.push(
+        `${lane}'s DECLARED_HAND_WRITTEN_LANES reason fails the BLOCKER rules (${rejected.kind}). ` +
+          'Write why this lane holds no region (what its steps need that an emitted region ' +
+          'would not carry), not a label:\n' +
+          rejected.message
       );
     }
   }
@@ -901,8 +937,9 @@ const PART_REGIONS: ReadonlySet<string> = new Set(['quality-code']);
 const PART_HAND: Readonly<Record<string, string>> = {
   'quality-branch': 'no `- id: setup`, so invariant 11 forbids a region here',
   [HOST_LANE]: 'holds this gate, which must never be conjuncted onto a shard leg',
+  'quality-go': 'installs clang and runs against the renet checkout, an order a region drops',
 };
-const PART_UNDECIDED: readonly string[] = ['quality-go'];
+const PART_UNDECIDED: readonly string[] = [];
 const PART_SETUP = (lane: string): boolean => lane !== 'quality-branch';
 
 function selftest(): number {
@@ -1164,6 +1201,29 @@ function selftestControls(scratch: string[]): number {
       ).some((f) => f.includes('quality-new is in NO set')),
     },
     {
+      name: 'FIRES: any undecided lane is a finding, so an open decision cannot ride a green',
+      ok: (() => {
+        // quality-go is taken out of the hand-written set, so the undecided clause alone is judged and the case does not also trip the "in 2 sets" clause.
+        const { 'quality-go': _decided, ...hand } = PART_HAND;
+        const found = partitionFindings(
+          PART_JOBS,
+          PART_REGIONS,
+          hand,
+          ['quality-go'],
+          PART_SETUP,
+          {}
+        );
+        return (
+          found.some((f) => f.includes('quality-go is UNDECIDED')) &&
+          !found.some((f) => f.includes('in 2 sets'))
+        );
+      })(),
+    },
+    {
+      name: 'CONTROL: an empty undecided set is silent when every lane is decided',
+      ok: partitionFindings(PART_JOBS, PART_REGIONS, PART_HAND, [], PART_SETUP, {}).length === 0,
+    },
+    {
       name: 'FIRES: a lane in BOTH sets (region-bearing and allowlisted at once)',
       ok: partitionFindings(
         PART_JOBS,
@@ -1205,6 +1265,65 @@ function selftestControls(scratch: string[]): number {
         PART_SETUP,
         {}
       ).some((f) => f.includes('quality-branch is allowlisted')),
+    },
+    {
+      name: 'FIRES: a one-word reason on a setup-having lane (non-empty is not enough)',
+      ok: partitionFindings(
+        PART_JOBS,
+        PART_REGIONS,
+        { ...PART_HAND, 'quality-go': 'by design' },
+        PART_UNDECIDED,
+        PART_SETUP,
+        {}
+      ).some(
+        (f) =>
+          f.includes("quality-go's DECLARED_HAND_WRITTEN_LANES reason") && f.includes('too-short')
+      ),
+    },
+    {
+      name: 'FIRES: a banned placeholder reason, even on a lane with no setup step',
+      ok: partitionFindings(
+        PART_JOBS,
+        PART_REGIONS,
+        { ...PART_HAND, 'quality-branch': 'TBD.' },
+        PART_UNDECIDED,
+        PART_SETUP,
+        {}
+      ).some(
+        (f) =>
+          f.includes("quality-branch's DECLARED_HAND_WRITTEN_LANES reason") &&
+          f.includes('low-effort')
+      ),
+    },
+    {
+      name: 'CONTROL: a specific reason on a setup-having lane is no finding',
+      ok: !partitionFindings(
+        PART_JOBS,
+        PART_REGIONS,
+        {
+          ...PART_HAND,
+          'quality-go':
+            'installs clang, prefers the archive mirror and runs against the renet checkout',
+        },
+        PART_UNDECIDED,
+        PART_SETUP,
+        {}
+      ).some((f) => f.includes('quality-go')),
+    },
+    {
+      name: 'CONTROL: every live DECLARED_HAND_WRITTEN_LANES reason passes the BLOCKER rules',
+      ok: (() => {
+        const entries = Object.entries(DECLARED_HAND_WRITTEN_LANES);
+        return (
+          entries.length >= 4 &&
+          entries.every(([lane, why]) => validateBlockerQuality(lane, why, SELF) === null)
+        );
+      })(),
+      detail: JSON.stringify(
+        Object.entries(DECLARED_HAND_WRITTEN_LANES)
+          .map(([lane, why]) => [lane, validateBlockerQuality(lane, why, SELF)?.kind ?? 'ok'])
+          .filter(([, verdict]) => verdict !== 'ok')
+      ),
     },
     {
       name: 'FIRES: a list naming a job the workflow no longer defines',

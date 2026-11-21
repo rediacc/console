@@ -49,6 +49,11 @@
         "scripts/lib/pins/drivers/npm-steps.ts",
         // BLOCKER: run BY PATH, never imported: the leaf of the cli-tool:tofu-providers pin in .ci/config/pins.json names `npx tsx scripts/pins/tofu-provider-pins.ts --lock` as the step that moves its exact provider versions, and --check/--write render the provider pin file. No npm script names it, because a pins driver compares one version per leaf and this leaf carries one per provider.
         "scripts/pins/tofu-provider-pins.ts",
+        // Run BY PATH by hand (`npx tsx scripts/ci-runner/path-trace.ts --gate <id> --write`, `npx tsx scripts/ci-runner/trace-honest.ts --quick`): the PLAN-ciquick-cpu derivation and honesty tools, which no npm script names (the package.json key budget is shrink-only) and which only .ci/rediacc_ci/tests/test_path_trace*.py and each other reach.
+        "scripts/ci-runner/path-trace.ts",
+        "scripts/ci-runner/trace-honest.ts",
+        // scripts/ci-runner/trace-ledger.ts is the data module path-trace.ts writes by path (LEDGER_REL) and .ci/rediacc_ci/tests/test_path_trace.py reads; no TypeScript import reaches it.
+        "scripts/ci-runner/trace-ledger.ts",
         // Loaded BY PATH, not by import: .ci/scripts/quality/lint-rule-liveness.mjs:449
         // `import(path.join(ROOT, 'scripts/data/source-rules.ts'))`, which knip cannot
         // follow. It is the per-rule scope table the liveness gate derives its universe from.
@@ -83,8 +88,10 @@
       "ignoreExportsUsedInFile": true,
       "project": ["scripts/**/*.ts"],
       "ignoreBinaries": [
-        // BLOCKER: .github/workflows/cleanup-preview.yml runs `npx --no-install wrangler` against a global install it makes itself at the toolchain pin (WRANGLER_VERSION, --before the release-age window); the root workspace deliberately carries no wrangler dependency, since the Worker directories are not root workspaces
-        "wrangler"
+        // BLOCKER: .github/workflows/ops-cleanup-preview.yml runs `npx --no-install wrangler` against a global install it makes itself at the toolchain pin (WRANGLER_VERSION, --before the release-age window); the root workspace deliberately carries no wrangler dependency, since the Worker directories are not root workspaces
+        "wrangler",
+        // BLOCKER: scripts/ci-runner/path-trace.ts runs each traced gate under the host's strace(1) and refuses loudly when it is missing; a Linux host tool, not an npm dependency
+        "strace"
       ]
     },
     "packages/locales": {
@@ -279,22 +286,15 @@
     "playwright"
   ],
   "ignoreBinaries": [
-    // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, macOS/Linux/WSL shells); host binaries, never npm-managed. knip 6.29 still parses bare `qemu-img` (e2e VM image inspection on the KVM host), so it stays listed; it now resolves `which` (doctor PATH probes), `security` (macOS keychain), `systemctl` (ops libvirtd/router service control, spawnSync in ops/check.ts) and the Windows cmd.exe/powershell shells natively, so those are dropped
-    "dscl",
+    // BLOCKER: platform/system tools spawned via child_process at runtime by the CLI (user lookups, keyrings, macOS/Linux/WSL shells); host binaries, never npm-managed. knip 6.29 still parses bare `qemu-img` (e2e VM image inspection on the KVM host), so it stays listed; it now resolves `which` (doctor PATH probes), `security` (macOS keychain), `systemctl` (ops libvirtd/router service control, spawnSync in ops/check.ts) and the Windows cmd.exe/powershell shells natively, so those are dropped; knip 6.46.1 resolves `dscl`, `wsl.exe` and the OpenSSH agent tools (ssh-add, ssh-agent, ssh-keygen, ssh-keyscan) natively too, so they are dropped as well
     "getent",
     "keyctl",
     "qemu-img",
-    "wsl.exe",
 
     // BLOCKER: fontconfig's font matcher, spawned via execFileSync by
     // packages/www/scripts/lib/scenes/card-fonts.ts to resolve a family name to a file for
     // card rendering. A host binary like the rest of this list, never npm-managed
     "fc-match",
-
-    // BLOCKER: ssh-agent tooling spawned for key management in the CLI ssh stack; provided by the host OpenSSH installation
-    "ssh-add",
-    "ssh-agent",
-    "ssh-keyscan",
 
     // BLOCKER: external tools invoked by www build/tutorial scripts (ffmpeg muxing and its ffprobe stream probe, pdftotext content checks, agent-browser session capture); installed on dev/CI hosts, not npm deps
     "agent-browser",

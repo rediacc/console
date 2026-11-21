@@ -109,7 +109,11 @@
       "cookiePolicy": "Informativa sui cookie",
       "refundPolicy": "Politica di rimborso",
       "telemetryPolicy": "Politica di telemetria",
-      "legalInformation": "Informazioni legali"
+      "legalInformation": "Informazioni legali",
+      "acceptableUsePolicy": "Politica di utilizzo accettabile",
+      "dataProcessingAgreement": "Accordo sul trattamento dei dati",
+      "serviceLevelAgreement": "Accordo sul livello di servizio",
+      "enterpriseLicense": "Licenza Enterprise"
     },
     "legalDisclosure": {
       "summary": "{{companyName}} | Codice registro {{registryCode}} | IVA {{vatNumber}} |",
@@ -331,7 +335,25 @@
     "subtitle": "Il tuo account, la fatturazione e le configurazioni rimangono nella regione che scegli. Non la lasciano mai.",
     "reassurance": "I dati dei tuoi server e i backup restano sulla tua infrastruttura.",
     "footer": "Scegli la regione più vicina a te o quella richiesta dalla tua organizzazione. Non può essere cambiata dopo la registrazione.",
-    "footerNote": "Non è modificabile dopo la registrazione."
+    "footerNote": "Non è modificabile dopo la registrazione.",
+    "resolving": "Sto cercando la tua regione...",
+    "countdown": "Ti portiamo su {{region}} tra {{seconds}} secondi.",
+    "countdownAnnounce": "Ti portiamo su {{region}} tra {{seconds}} secondi. Scegli Annulla per restare qui, oppure Cambia regione per sceglierne un'altra.",
+    "cancel": "Annulla",
+    "change": "Cambia regione",
+    "enterprise": "Sei un cliente enterprise?",
+    "lookup": {
+      "description": "Inserisci la tua email di lavoro per trovare l'accesso della tua organizzazione.",
+      "label": "Email di lavoro",
+      "placeholder": "tu@azienda.com",
+      "privacy": "Per trovare la tua regione viene inviato solo il dominio. La tua email serve solo a precompilare la pagina di accesso.",
+      "submit": "Continua",
+      "checking": "Verifica in corso...",
+      "back": "Torna alle regioni",
+      "invalid": "Inserisci un dominio aziendale, ad esempio company.com.",
+      "miss": "Nessun accesso aziendale trovato per questo dominio. Scegli invece una regione.",
+      "error": "La ricerca non è disponibile al momento. Scegli invece una regione."
+    }
   },
   "solutions": {
     "categories": {

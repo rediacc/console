@@ -109,7 +109,11 @@
       "cookiePolicy": "Política de Cookies",
       "refundPolicy": "Política de Reembolso",
       "telemetryPolicy": "Política de Telemetria",
-      "legalInformation": "Informação Legal"
+      "legalInformation": "Informação Legal",
+      "acceptableUsePolicy": "Política de Utilização Aceitável",
+      "dataProcessingAgreement": "Acordo de Tratamento de Dados",
+      "serviceLevelAgreement": "Acordo de Nível de Serviço",
+      "enterpriseLicense": "Licença Enterprise"
     },
     "legalDisclosure": {
       "summary": "{{companyName}} | Código de registo {{registryCode}} | NIF {{vatNumber}} |",
@@ -331,7 +335,25 @@
     "subtitle": "A sua conta, facturação e configurações ficam na região que escolher.",
     "reassurance": "Os dados dos seus servidores e backups permanecem na sua própria infraestrutura.",
     "footer": "Escolha a região mais próxima de si ou onde a sua organização o exige.",
-    "footerNote": "Não pode ser alterada após o registo."
+    "footerNote": "Não pode ser alterada após o registo.",
+    "resolving": "A procurar a sua região...",
+    "countdown": "A redirecioná-lo para {{region}} dentro de {{seconds}} segundos.",
+    "countdownAnnounce": "A redirecioná-lo para {{region}} dentro de {{seconds}} segundos. Escolha Cancelar para ficar aqui ou Alterar região para escolher outra.",
+    "cancel": "Cancelar",
+    "change": "Alterar região",
+    "enterprise": "É cliente empresarial?",
+    "lookup": {
+      "description": "Introduza o seu e-mail profissional para encontrar o início de sessão da sua organização.",
+      "label": "E-mail profissional",
+      "placeholder": "voce@empresa.com",
+      "privacy": "Só o domínio é enviado para encontrar a sua região. O seu e-mail serve apenas para preencher previamente a página de início de sessão.",
+      "submit": "Continuar",
+      "checking": "A verificar...",
+      "back": "Voltar às regiões",
+      "invalid": "Introduza um domínio de empresa, como company.com.",
+      "miss": "Não foi encontrado nenhum início de sessão de empresa para esse domínio. Escolha antes uma região.",
+      "error": "A pesquisa não está disponível neste momento. Escolha antes uma região."
+    }
   },
   "solutions": {
     "categories": {

@@ -85,6 +85,12 @@ describe('estimateRpoCost reproduces the D-cost table', () => {
   });
 });
 
+describe('d1RowsPerRun', () => {
+  it('is 9 fixed rows plus one per changed cell', () => {
+    for (const n of [0, 1, 10, 30]) expect(row(5, n).d1RowsPerRun).toBe(9 + n);
+  });
+});
+
 describe('the churn cap verdict (D-safeguard)', () => {
   it('COMMUNITY (10 GiB quota, 20 GiB cap) at 5 minutes and N=10 reaches the cap in under two days', () => {
     const e = estimateRpoCost({

@@ -16,6 +16,7 @@ from __future__ import annotations
 import inspect
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -37,10 +38,14 @@ TWIN_REL = ".ci/scripts/deploy/deploy-www.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "deploy_www.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-BASE_ENV = {
+# The production lane refuses a www dist without this key (`www_sitekey_refusal`); the fixture builds one that carries it, so the twin's goldens, recorded before the refusal existed, still describe every keyed run.
+SITE_KEY = "0x4AAAAAAAwwwfixturekey"
+
+CREDENTIALS = {
     "CLOUDFLARE_API_TOKEN": "tok-fixture",
     "CLOUDFLARE_ACCOUNT_ID": "acct-fixture",
 }
+BASE_ENV = {**CREDENTIALS, "TURNSTILE_SITE_KEY": SITE_KEY}
 
 # A MODEL of `wrangler d1`, not wrangler. Serves and mutates a JSON state file mapping database name to uuid, so "does this database exist" is a real question with a real answer that a delete and a create both change.
 #
@@ -145,6 +150,11 @@ if rest[:1] == ["deploy"]:
     sys.stdout.write("Deployed worker\n")
     sys.exit(0)
 
+if rest[:2] == ["secret", "put"]:
+    emit("secret-put-name: %s\n" % rest[2])
+    emit("secret-put-stdin: %s\n" % sys.stdin.read())
+    sys.exit(0)
+
 sys.stderr.write("fake wrangler: unmodelled subcommand %r\n" % (rest,))
 sys.exit(127)
 '''
@@ -182,8 +192,9 @@ def fixture(
     worker_files: tuple[str, ...] = ("wrangler.toml",),
     node_modules: bool = True,
     databases: dict[str, str] | None = None,
+    www_bundle: str | None = "const k='%s';" % SITE_KEY,
 ) -> pathlib.Path:
-    """A throwaway repository holding the twin, common.sh and a workers/www."""
+    """A throwaway repository holding the twin, common.sh and a workers/www whose `dist/assets` holds one bundle (`www_bundle`, none when None)."""
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
@@ -204,11 +215,16 @@ def fixture(
         (worker / name).write_text('name = "rediacc-www"\n', encoding="utf-8")
     if node_modules:
         (worker / "node_modules").mkdir(exist_ok=True)
+    if www_bundle is not None:
+        (worker / "dist" / "assets").mkdir(parents=True, exist_ok=True)
+        (worker / "dist" / "assets" / "index.js").write_text(www_bundle, encoding="utf-8")
 
     for side in ("old", "new"):
-        (root / f"{side}-d1.json").write_text(
-            json.dumps({} if databases is None else databases), encoding="utf-8"
-        )
+        # The twin's golden names its databases `account-db-pr-<n>`; the port's are `account-pr-<n>` (PLAN-product-domain-rename), so the port's side starts from the same state under its own names.
+        named = {} if databases is None else databases
+        if side == "new":
+            named = {_new_name(k): v for k, v in named.items()}
+        (root / f"{side}-d1.json").write_text(json.dumps(named), encoding="utf-8")
     return root
 
 
@@ -229,7 +245,8 @@ def _run(
         "--",
         "drop=%s" % drop,
         "drop_env=%s" % ",".join(drop_env),
-        "worker_files=%s" % ",".join(sorted(p.name for p in worker.iterdir())),
+        # `dist` is the port's keyed build, which the twin never read, so it stays out of the golden key.
+        "worker_files=%s" % ",".join(sorted(p.name for p in worker.iterdir() if p.name != "dist")),
         "d1=%s" % (root / "old-d1.json").read_text(encoding="utf-8"),
         *("%s=%s" % kv for kv in sorted(extra.items())),
     ]
@@ -296,10 +313,40 @@ def run_both(tmp_path: pathlib.Path, *args: str, fixture_kw: dict | None = None,
     return root, old, new
 
 
+def _new_name(text: str) -> str:
+    """The twin's database name in the port's spelling."""
+    return text.replace("account-db-pr-", "account-pr-")
+
+
+def _golden(text: str) -> str:
+    """The port's database name written back in the twin's spelling, so every OTHER byte is still compared."""
+    return text.replace("account-pr-", "account-db-pr-")
+
+
+PREVIEW_PEPPER_STDIN = re.compile(r"^secret-put-stdin: [0-9a-f]{64}$", re.MULTILINE)
+
+
+def _mask_preview_pepper(calls: str) -> str:
+    """A preview's pepper is random per deploy (`secrets.token_hex(32)`), so the call log carries it as `<preview-pepper>` before it is compared with the golden; the tests below pin its shape and that it is never the production value."""
+    return PREVIEW_PEPPER_STDIN.sub("secret-put-stdin: <preview-pepper>", calls)
+
+
 def _agree(old, new, label: str) -> None:
     """THE THREE STREAMS SEPARATELY, plus the call log and the generated config."""
     old_proc, old_calls, old_config = old
     new_proc, new_calls, new_config = new
+    # `_golden` maps the port's spelling onto the twin's, which would hide a port that still used the retired name, so the port's raw streams are refused for it first.
+    for stream, text in (
+        ("stdout", new_proc.stdout),
+        ("stderr", new_proc.stderr),
+        ("calls", new_calls),
+        ("config", new_config),
+    ):
+        assert "account-db-pr-" not in text, f"{label}: the port's {stream} names account-db-pr-"
+    new_proc = subprocess.CompletedProcess(
+        new_proc.args, new_proc.returncode, _golden(new_proc.stdout), _golden(new_proc.stderr)
+    )
+    new_calls, new_config = _mask_preview_pepper(_golden(new_calls)), _golden(new_config)
     assert new_proc.returncode == old_proc.returncode, (
         f"{label}: exit diverged: {old_proc.returncode!r} vs {new_proc.returncode!r}\n"
         f"old stderr: {old_proc.stderr!r}\nnew stderr: {as_twin(new_proc.stderr)!r}"
@@ -335,6 +382,87 @@ def test_production_deploys_with_no_config_flag_and_never_touches_d1(tmp_path) -
     assert "Deploying www production worker..." in proc.stderr
 
 
+def test_the_pepper_is_pushed_as_a_worker_secret_on_stdin_after_the_deploy(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(root, "new", ENTERPRISE_LOOKUP_PEPPER="pepper-fixture-value")
+    assert proc.returncode == 0, proc.stderr
+    assert _calls(calls) == [
+        "npx --no-install wrangler deploy",
+        "npx --no-install wrangler secret put ENTERPRISE_LOOKUP_PEPPER",
+    ], calls
+    assert "secret-put-stdin: pepper-fixture-value\n" in calls
+    assert "pepper-fixture-value" not in " ".join(_calls(calls)), "the value rode argv"
+    assert "pepper-fixture-value" not in proc.stdout + proc.stderr
+
+
+def test_a_failed_deploy_pushes_no_pepper(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(
+        root, "new", ENTERPRISE_LOOKUP_PEPPER="x", FAKE_NPX_FAIL_ON_CALL="1"
+    )
+    assert proc.returncode != 0
+    assert not any("secret put" in c for c in _calls(calls)), calls
+
+
+def test_a_failed_pepper_push_fails_the_run(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, _calls_log, _config = _run_live(
+        root, "new", ENTERPRISE_LOOKUP_PEPPER="x", FAKE_NPX_FAIL_ON_CALL="2"
+    )
+    assert proc.returncode != 0
+
+
+# --------------------------------------------------------------------------- the keyless-dist refusal (2026-11-12)
+
+
+@pytest.mark.parametrize(
+    ("label", "fixture_kw", "env", "needle"),
+    [
+        ("unbound key", {}, {"TURNSTILE_SITE_KEY": ""}, "TURNSTILE_SITE_KEY is not bound"),
+        ("malformed key", {}, {"TURNSTILE_SITE_KEY": "not-a-key"}, "does not look like"),
+        ("no built pages", {"www_bundle": None}, {}, "no built www pages at"),
+        (
+            "the 2026-11-12 keyless build",
+            {"www_bundle": "const k='';"},
+            {},
+            "carry no Turnstile site key",
+        ),
+    ],
+)
+def test_production_refuses_a_keyless_www_dist_before_any_deploy(
+    tmp_path, label, fixture_kw, env, needle
+) -> None:
+    root = fixture(tmp_path, **fixture_kw)
+    proc, calls, _config = _run_live(root, "new", **env)
+    assert proc.returncode == 1, (label, proc.stderr)
+    assert needle in proc.stderr, (label, proc.stderr)
+    assert "wrangler" not in " ".join(_calls(calls)), (label, calls)
+    assert "Deploying www production worker" not in proc.stderr, label
+
+
+def test_the_refusal_reads_only_the_pages_bundles_not_the_portals(tmp_path) -> None:
+    """A key that sits only in `dist/account/assets` (the portal) does not vouch for the www pages."""
+    root = fixture(tmp_path, www_bundle="const k='';")
+    portal = root / "workers" / "www" / "dist" / "account" / "assets"
+    portal.mkdir(parents=True)
+    (portal / "portal.js").write_text("const k='%s';" % SITE_KEY, encoding="utf-8")
+    proc, calls, _config = _run_live(root, "new")
+    assert proc.returncode == 1, proc.stderr
+    assert "carry no Turnstile site key" in proc.stderr
+    assert _calls(calls) == []
+
+
+def test_a_keyed_www_dist_deploys_and_the_preview_lane_needs_no_key(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(root, "new")
+    assert proc.returncode == 0, proc.stderr
+    assert _calls(calls) == ["npx --no-install wrangler deploy"]
+    preview_root = fixture(tmp_path / "p", www_bundle=None)
+    proc, calls, _config = _run_live(preview_root, "new", "--name", "pr-7", TURNSTILE_SITE_KEY="")
+    assert proc.returncode == 0, proc.stderr
+    assert "npx --no-install wrangler deploy --config wrangler.preview.toml" in _calls(calls)
+
+
 def test_preview_mints_a_database_and_the_generated_toml_is_byte_identical(tmp_path) -> None:
     _root, old, new = run_both(tmp_path, "--name", "pr-379")
     _agree(old, new, "preview-fresh")
@@ -351,6 +479,8 @@ def test_preview_mints_a_database_and_the_generated_toml_is_byte_identical(tmp_p
             "--config wrangler.preview.toml"
         ),
         "npx --no-install wrangler deploy --config wrangler.preview.toml",
+        PREVIEW_PEPPER_PUT,
+        PREVIEW_TURNSTILE_PUT,
     ], calls
 
     # The generated config, byte for byte, is what the deploy was handed.
@@ -379,6 +509,12 @@ def test_the_generated_toml_carries_the_twins_em_dash_and_backticks(tmp_path) ->
     assert "\u2014" not in PORT_FILE.read_text(encoding="utf-8")
 
 
+PREVIEW_PEPPER_PUT = (
+    "npx --no-install wrangler secret put ENTERPRISE_LOOKUP_PEPPER --config wrangler.preview.toml"
+)
+PREVIEW_TURNSTILE_PUT = "npx --no-install wrangler secret put CLOUDFLARE_TURNSTILE_SECRET_KEY --config wrangler.preview.toml"
+
+
 def test_an_existing_database_is_deleted_first(tmp_path) -> None:
     """THE CLEAN-SLATE PATH. The delete only happens when the first `d1 info` answered with a uuid, so this is the case the first lookup exists for."""
     _root, old, new = run_both(
@@ -401,6 +537,8 @@ def test_an_existing_database_is_deleted_first(tmp_path) -> None:
             "--config wrangler.preview.toml"
         ),
         "npx --no-install wrangler deploy --config wrangler.preview.toml",
+        PREVIEW_PEPPER_PUT,
+        PREVIEW_TURNSTILE_PUT,
     ], calls
     assert "Deleting existing D1 database: account-db-pr-42 (clean slate)" in proc.stderr
     assert "Deleted account-db-pr-42" in proc.stderr
@@ -457,15 +595,24 @@ def test_fact_a_non_pr_name_is_accepted_verbatim(tmp_path) -> None:
 def test_fact_the_production_database_guard_cannot_fire() -> None:
     """THE REFUSAL AT twin :69-72 IS UNREACHABLE, and both halves are asserted.
 
-    The guard itself works (`is_protected` says yes to both names); no output `db_name_for` can produce ever reaches it, because the template carries a literal `-pr-` for every input including the empty string.
+    The guard itself works (`is_protected` says yes to every shared database); no output `db_name_for` can produce ever reaches it, because the template carries a literal `-pr-` for every input including the empty string.
     """
     assert port.PRODUCTION_GUARD_IS_UNREACHABLE is True
-    assert port.is_protected("account-db") is True
-    assert port.is_protected("edge-account-db") is True
-    for name in ("", "pr-", "pr-1", "account-db", "edge-account-db", "pr-account-db"):
+    shared = (
+        "account-eu",
+        "account-us",
+        "account-asia",
+        "account-bench",
+        "account-eu-j",
+        "account-bench-j",
+    )
+    for name in shared:
+        assert port.is_protected(name) is True, name
+    assert not port.is_protected("account-db"), "the retired bare name guards nothing"
+    for name in ("", "pr-", "pr-1", "account-eu", "pr-account-eu", "account-bench"):
         assert not port.is_protected(port.db_name_for(name)), name
-    assert port.db_name_for("") == "account-db-pr-"
-    assert port.db_name_for("pr-account-db") == "account-db-pr-account-db"
+    assert port.db_name_for("") == "account-pr-"
+    assert port.db_name_for("pr-account-eu") == "account-pr-account-eu"
 
 
 # --------------------------------------------------------------------------- Refusals ---------------------------------------------------------------------------
@@ -474,8 +621,8 @@ def test_fact_the_production_database_guard_cannot_fire() -> None:
 def test_a_missing_wrangler_toml_refuses_before_anything_else(tmp_path) -> None:
     """AND IT REFUSES BEFORE `require_var`, so a run with no credentials at all still reports the missing worker rather than the missing token."""
     root = fixture(tmp_path, worker_files=())
-    old = _run(root, "old", drop_env=tuple(BASE_ENV))
-    new = _run(root, "new", drop_env=tuple(BASE_ENV))
+    old = _run(root, "old", drop_env=tuple(CREDENTIALS))
+    new = _run(root, "new", drop_env=tuple(CREDENTIALS))
     _agree(old, new, "no-worker")
 
     proc, calls, _config = old
@@ -639,10 +786,10 @@ def test_planted_defect_is_caught_by_the_call_log(tmp_path) -> None:
     new_calls = call_log.read_text(encoding="utf-8")
 
     assert new_proc.returncode == old_proc.returncode, "the plant changed the exit code"
-    assert new_proc.stdout == old_proc.stdout, "the plant changed stdout; wrong plant"
-    assert new_proc.stderr == old_proc.stderr, "the plant changed stderr; wrong plant"
-    assert new_calls != old_calls, "THE CALL LOG DID NOT SEE IT: this gate cannot fail"
-    assert "npx --no-install wrangler d1 create account-db-pr-3\n" in new_calls
+    assert _golden(new_proc.stdout) == old_proc.stdout, "the plant changed stdout; wrong plant"
+    assert _golden(new_proc.stderr) == old_proc.stderr, "the plant changed stderr; wrong plant"
+    assert _golden(new_calls) != old_calls, "THE CALL LOG DID NOT SEE IT: this gate cannot fail"
+    assert "npx --no-install wrangler d1 create account-pr-3\n" in new_calls
 
 
 # --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
@@ -690,8 +837,19 @@ def test_strip_newlines_removes_both_bytes_anywhere_in_the_token() -> None:
 
 def test_the_generated_toml_ends_with_exactly_one_newline() -> None:
     body = port.preview_toml("pr-1", "db", "u")
-    assert body.endswith('migrations_dir = "../../private/account/drizzle"\n')
+    assert body.endswith('props = { tier = "shared", region = "eu" }\n')
     assert not body.endswith("\n\n")
+
+
+def test_a_preview_signs_through_the_bench_signer_and_holds_no_key() -> None:
+    """Since PLAN-enterprise-isolation S3 the account Worker refuses a private key and needs LICENSE_SIGNER; the preview binds signer-bench-eu."""
+    body = port.preview_toml("pr-1", "db", "u")
+    assert (
+        '[[services]]\nbinding = "LICENSE_SIGNER"\nservice = "signer-bench-eu"\nentrypoint = "LicenseSigner"\n'
+        in body
+    )
+    assert 'props = { tier = "shared", region = "eu" }' in body
+    assert "ED25519_PRIVATE_KEY" not in body
 
 
 def test_a_preview_worker_persists_no_logs_or_traces() -> None:
@@ -732,3 +890,65 @@ def test_diagnostics_are_prefixed_with_the_module_name() -> None:
     """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
     assert port.SELF == "rediacc_ci.deploy.deploy_www"
     assert port.__name__ == port.SELF
+
+
+# --- a preview answers /api/enterprise-lookup (found in the 2026-11-16 live run: 503 unavailable) ---
+
+
+def test_a_preview_binds_the_lookup_namespace_and_the_account_worker() -> None:
+    """The route answers 503 `unavailable` without the ENTERPRISE_LOOKUP namespace; the preview binds its own (no id, so wrangler provisions one) and never the production namespace id."""
+    body = port.preview_toml("pr-1", "db", "u")
+    assert '[[kv_namespaces]]\nbinding = "ENTERPRISE_LOOKUP"\n' in body
+    assert '[[services]]\nbinding = "ACCOUNT"\nservice = "account-bench"\n' in body
+    assert "7bbf3025c29349f5b4f833c1d47d8eb5" not in body
+
+
+def test_a_preview_pushes_the_turnstile_dummy_secret_after_the_deploy(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(root, "new", "--name", "pr-9")
+    assert proc.returncode == 0, proc.stderr
+    names = _calls(calls)
+    assert names[-3] == "npx --no-install wrangler deploy --config wrangler.preview.toml"
+    assert names[-2] == PREVIEW_PEPPER_PUT
+    assert names[-1] == PREVIEW_TURNSTILE_PUT
+    assert "secret-put-stdin: 1x0000000000000000000000000000000AA\n" in calls
+    assert "secret put ENTERPRISE_LOOKUP_PEPPER" in calls, (
+        "a preview's own pepper is pushed with no production one in the run"
+    )
+
+
+def test_a_preview_never_receives_the_production_pepper(tmp_path) -> None:
+    """Code from a PR branch served at the public pr-N URL must not hold the production pepper: the preview gets its own random pepper, which keys its own empty namespace."""
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(
+        root, "new", "--name", "pr-9", ENTERPRISE_LOOKUP_PEPPER="pepper-fixture-value"
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "pepper-fixture-value" not in calls, "the production pepper reached the preview"
+    puts = [c for c in _calls(calls) if "secret put" in c]
+    assert [c.split()[5] for c in puts] == [
+        "ENTERPRISE_LOOKUP_PEPPER",
+        "CLOUDFLARE_TURNSTILE_SECRET_KEY",
+    ]
+    values = re.findall(r"^secret-put-stdin: (.*)$", calls, re.MULTILINE)
+    assert len(values) == 2
+    assert values[1] == port.TURNSTILE_ALWAYS_PASSES
+    assert re.fullmatch(r"[0-9a-f]{64}", values[0]), values[0]
+
+
+def test_each_preview_deploy_gets_a_fresh_pepper(tmp_path) -> None:
+    peppers = []
+    for n in ("a", "b"):
+        root = fixture(tmp_path / n)
+        proc, calls, _config = _run_live(root, "new", "--name", "pr-9")
+        assert proc.returncode == 0, proc.stderr
+        peppers.append(re.findall(r"^secret-put-stdin: (.*)$", calls, re.MULTILINE)[0])
+    assert peppers[0] != peppers[1]
+    assert all(re.fullmatch(r"[0-9a-f]{64}", p) for p in peppers), peppers
+
+
+def test_a_failed_preview_deploy_pushes_no_secret(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(root, "new", "--name", "pr-9", FAKE_NPX_FAIL_ON_CALL="5")
+    assert proc.returncode != 0
+    assert not any("secret put" in c for c in _calls(calls)), calls

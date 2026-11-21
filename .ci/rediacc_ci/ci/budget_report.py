@@ -146,6 +146,19 @@ DRIFT_THRESHOLD = 0.25
 #   3. MATERIALITY. The move, divided by the lane's `unitParallelism`, is at least `MATERIAL_LEG_MS` of leg wall, and it is over `DRIFT_THRESHOLD` of the committed value. A smaller move changes no reader's answer; many of them in one leg are judged as that leg's sum, by the same two numbers.
 # A refresh writes the p90 of the window, which sits between the median and the max, so a check that follows a refresh on the same sample has no drift finding by construction (test_a_check_after_a_refresh_on_the_same_sample_is_green).
 MIN_DRIFT_RUNS = 2
+# A variant's fixedMinutes is the p90 over its legs, and legs of one run share that run's runner and mirror conditions (an apt slowdown inside the guest VMs hits every leg of a run alike). MEASURED 2026-11-14 on 5 sampled runs, 2 of which had successful E2E legs: ubuntu-24.04 fixedMinutes 5.4 -> 12.78, one run's transient apt slowness, because the p90 of ~16 legs from 2 runs is that run's second-worst leg, and committing it put 47 legs over 12 min in check:ci-lane-budget. So a variant the table already prices moves on 3 runs, one more than the 2 a unit or job entry needs: with 2 runs the p90 is still one run's tail. 3 runs is a floor, not immunity: at about 8 legs per run, 24 legs put the p90 near the 3rd-highest leg, so one bad run with 3 or more slow legs can still set it unless `VARIANT_OUTLIER_RUN_FACTOR` drops that run; what 3 runs buys is that a single run can no longer be ALL of the sample. The check never reads variantCosts (`compute_for_check` skips their logs), so there is no drift verdict to align; the refresh is the only judge.
+MIN_VARIANT_RUNS = 3
+# Run-level outlier rule, the part MIN_VARIANT_RUNS cannot give (its comment above names the gap). A run whose median leg fixed cost for a variant is more than this factor over the median of the OTHER runs' medians is a slow-runner day (every leg of it shares the cause), and its legs stay out of that variant's fixedMinutes; it needs MIN_VARIANT_RUNS runs to judge, since with fewer there is no majority to be an outlier against. MEASURED 2026-11-14 on ubuntu-24.04: run 43360983417's four legs (fixed 9.7, 10.5, 12.6, 14.6 min, median 11.6) against 6.3 and 5.0 for the other two runs gave fixedMinutes 11.77 over the 15 legs; without that run the p90 is 6.4. Units and leg extras are not filtered (an extra is real work a leg does, a unit's p90 has its own run-count rule).
+VARIANT_OUTLIER_RUN_FACTOR = 1.5
+# HOW A LEG'S WHOLE-JOB p90 IS TAKEN (`job_p90_minutes`, the number check-lane-budget.ts holds against the 12-minute budget; operator ruling ASKED:2026-11-21T14:38Z "Fix the gate's math").
+# MEASURED 2026-11-21: E2E Workers (opensuse-16.0, 9/11) ran 9.1, 9.8, 8.6, 19.0 (run 44698709463) and 8.3 minutes, and legs 8/11, 9/11 and 11/11 refreshed to p90s of 13.4 to 14.4 from 8 sampled runs. The linear-interpolation p90 (`_percentile`) of n samples sits at rank 0.9 * (n - 1), between the two slowest, so at 5 to 8 samples one slow runner carries 60 to 30 percent of the gap to the max, and one run in eight priced a leg that ran under 10 minutes seven times out of eight.
+# THE RULE has two parts, both stated in every refresh's output. (1) The NEAREST-RANK p90, the ceil(0.9 * n)-th smallest sample, a value a run really took with at least 90 percent of the sample at or under it: at n >= `JOB_P90_MIN_SAMPLES` it sets aside exactly the slowest floor(n / 10) samples and nothing else.
+# (2) Below that floor the nearest rank IS the max, and a 10-sample floor alone is not reachable here: the 14-day window held 8 completed PR runs on 2026-11-21 (ci-trace.py --runs on 1104-1, every PR run in the repo), so a refresh with that floor kept every committed p90, the outlier-made ones included. So below the floor the slowest sample is set aside when it is over `JOB_P90_OUTLIER_FACTOR` times the median of the others, one sample at most and only from `MIN_VARIANT_RUNS` samples (a majority to be an outlier against), the run-level rule `VARIANT_OUTLIER_RUN_FACTOR` already applies to variant prices.
+# A committed p90 moves on `MIN_VARIANT_RUNS` runs (`refreshed_on_evidence`), a name new to the table is written from any count, and a leg slow in two runs of eight, or at 13 minutes in most runs, stays over budget: the second slow run is the max, and a slow median is never an outlier.
+JOB_P90_MIN_SAMPLES = 10
+JOB_P90_OUTLIER_FACTOR = 1.5
+# How many completed PR-full runs the refresh reads for `job_p90_minutes` alone, so the rank floor above is reachable when the PR cadence allows: a leg succeeds in only some PR runs, so a 10-run window could never put 10 samples under one leg. The 14-day window caps it first (8 runs on 2026-11-21). The other tables keep the `limit` sample (`--refresh-limit`), which is also what `--check` reads, so a check after a refresh still judges the sample the refresh wrote; `--check` never reads job p90s, so `compute_for_check` does not widen. Bounded: at most this many runs' job pages, about 4 pages per run.
+JOB_P90_SAMPLE_LIMIT = 20
 # Half a minute of leg wall: check-lane-budget.ts `REBALANCE_ADVISORY_MIN` (0.5 minutes), read from that file by test_the_materiality_floor_is_the_lane_budget_gates_own_advisory_threshold so the two cannot part.
 MATERIAL_LEG_MS = 30_000
 # D-W2/T3.4: the two direct (non-lane-sharded) ci.yml jobs job-timeout-baseline.json used to cover, now `job_max_seconds`' own baseline. See check_job_timeout_headroom.py.
@@ -218,6 +231,36 @@ def stats(values: Sequence[float | None]) -> dict[str, float] | None:
         "p90": round(_percentile(clean, 90), 1),
         "max": round(max(clean), 1),
         "n": len(clean),
+    }
+
+
+def job_p90(values: Sequence[float | None]) -> float | None:
+    """A whole-job wall sample's p90, MINUTES, rounded as `stats` rounds; None for an empty sample. `job_p90_stats` holds the rule."""
+    s = job_p90_stats(values)
+    return None if s is None else s["p90"]
+
+
+def job_p90_stats(values: Sequence[float | None]) -> dict[str, float] | None:
+    """`{"p90", "max", "n", "set_aside"}` for one name's job walls; None when empty. See `JOB_P90_MIN_SAMPLES` for the two-part rule and why it is not `_percentile`.
+
+    At n >= `JOB_P90_MIN_SAMPLES` the nearest-rank p90, which sets aside the slowest floor(n / 10). Below it, the max of the sample after setting aside the slowest sample when it is over `JOB_P90_OUTLIER_FACTOR` times the median of the others (from `MIN_VARIANT_RUNS` samples, one at most). The rank is integer arithmetic, since a float ceil of 0.9 * 70 reads the 64th value. `set_aside` counts the samples above the p90's rank that the rule left out, which the refresh prints."""
+    ordered = sorted(v for v in values if v is not None)
+    if not ordered:
+        return None
+    n = len(ordered)
+    if n >= JOB_P90_MIN_SAMPLES:
+        rank = (9 * n + 9) // 10
+    elif n >= MIN_VARIANT_RUNS and ordered[-1] > JOB_P90_OUTLIER_FACTOR * statistics.median(
+        ordered[:-1]
+    ):
+        rank = n - 1
+    else:
+        rank = n
+    return {
+        "p90": round(ordered[rank - 1], 1),
+        "max": round(ordered[-1], 1),
+        "n": n,
+        "set_aside": n - rank,
     }
 
 
@@ -460,6 +503,21 @@ def fetch_jobs(repo: str, run_id: int) -> list[dict[str, Any]]:
     return jobs
 
 
+def _jobs_or_skip(repo: str, run_id: Any) -> list[dict[str, Any]] | None:
+    """`fetch_jobs`, except a run whose jobs stay unreadable after the retry budget on a server or connection fault answers None and is NAMED on stderr. Any other failure (a 4xx, auth, a bad document) still raises: one old run behind a failing endpoint must not block every refresh (2026-11-11, run 36670172984, HTTP 502), but a skip is never silent."""
+    try:
+        return fetch_jobs(repo, run_id)
+    except ghx.GhError as exc:
+        transient = exc.failure == ghx.FAILURE_TIMED_OUT or gh_retry.is_transient(exc.stderr)
+        if isinstance(exc, ghx.GhBadOutputError) or not transient:
+            raise
+        log.warn(
+            "skipped run %s: jobs unreadable after %d attempts: %s"
+            % (run_id, GH_ATTEMPTS, exc.stderr.strip() or exc.failure)
+        )
+        return None
+
+
 # The needs graph, aliased the way check_job_timeout_headroom.refresh() is.
 
 _JOB_HEADER_RE = re.compile(r"^  ([A-Za-z0-9_.-]+):\s*$")
@@ -588,7 +646,7 @@ def _alias_set(name: str) -> set[str]:
 
 
 # `CI Verdict` is not a job of `ci.yml` at all -- it is posted by the SEPARATE `ci-verdict.yml` workflow once the run completes, together with its `Publish CI Verdict` job -- yet `actions/runs/{id}/jobs` can return such an after-the-fact observer alongside ci.yml's own jobs, timestamped after the pipeline itself, and critical_path's plain "latest completed_at wins" sink rule would mistake it for the run's true finish line (measured on run 35128695736 with an earlier observer, 13+ hours late). `CI Complete` is NOT excluded here: it is a genuine ci.yml job and the plan's own section 1b ends its sample critical path there.
-# `Review Complete`, `Review Status` and `Claude Review` are the PR review (PLAN-github-pr-review-restore), posted by `claude-review.yml` and `review-status.yml` against the head SHA, finishing whenever the review does: observers of the same kind. Review Complete being a required check on main again (operator ruling 2026-10-03) puts it on the merge path, not on Console CI's critical path, which is what this list times.
+# `Review Complete`, `Review Status` and `Claude Review` are the PR review (PLAN-github-pr-review-restore), posted by `ops-claude-review.yml` and `ops-review-status.yml` against the head SHA, finishing whenever the review does: observers of the same kind. Review Complete being a required check on main again (operator ruling 2026-10-03) puts it on the merge path, not on Console CI's critical path, which is what this list times.
 CRITICAL_PATH_EXCLUDE = (
     "CI Verdict",
     "Publish CI Verdict",
@@ -647,6 +705,7 @@ def critical_path(graph: dict[str, set[str]], jobs: list[dict[str, Any]]) -> lis
 # T3.2: mapping a LANE (a job's YAML key, e.g. "quality-pytest") to the regex that matches its REAL Actions API display name, and computing each lane's fixed setup cost.
 
 _TEMPLATE_RE = re.compile(r"\$\{\{.*?\}\}")
+_LEG_COUNT_RE = re.compile(r"/\d+")
 
 
 def _display_name_pattern(name: str, has_matrix: bool) -> re.Pattern[str]:
@@ -655,12 +714,20 @@ def _display_name_pattern(name: str, has_matrix: bool) -> re.Pattern[str]:
     A `${{ ... }}` template segment becomes a non-greedy wildcard: the workflow names the SHAPE, the API fills in the real matrix values. A job with NO template but a real `strategy: matrix:` (`has_matrix`) instead gets an OPTIONAL `" (<anything>)"` tail, because that is what the Actions API auto-appends when a matrixed job's name does not already vary per combination -- see `_STRATEGY_RE`'s own comment for the measured example. A job with neither matches its name VERBATIM, so an unsharded lane like `quality-content` is never accidentally satisfied by a same-prefixed sharded one.
     """
     if _TEMPLATE_RE.search(name):
-        pattern = ".+?".join(re.escape(part) for part in _TEMPLATE_RE.split(name))
+        parts = _TEMPLATE_RE.split(name)
+        # A `/<n>` right after a template is the leg COUNT the workflow hard-codes (`${{ matrix.shard }}/9`). It is not part of the shape: runs from before a leg-count change carry the old n, and a pattern pinned to the current n prices no leg until runs with the new one exist (the e2e lane went /8 -> /9 and the stock refresh priced none of it).
+        pattern = ".+?".join(_template_part(i, part) for i, part in enumerate(parts))
     else:
         pattern = re.escape(name)
         if has_matrix:
             pattern += r"(?: \([^)]*\))?"
     return re.compile("^%s$" % pattern)
+
+
+def _template_part(i, part):
+    """One literal segment of a templated job name, escaped; a leading `/<n>` after a template (every segment but the first) matches any leg count."""
+    count = _LEG_COUNT_RE.match(part) if i else None
+    return (r"/\d+" + re.escape(part[count.end() :])) if count else re.escape(part)
 
 
 def lane_display_patterns(
@@ -685,7 +752,93 @@ def lane_display_patterns(
         for callee_id, callee_rec in callee_jobs.items():
             base = "%s / %s" % (caller_display, callee_rec["name"])
             patterns[callee_id] = _display_name_pattern(base, callee_rec["has_matrix"])
+    # `_display_name_pattern` drops a hard-coded `/<n>` leg count from the shape, so two lanes whose names differ only in that count compile to one pattern and `prune_names_to_leg_counts` could not tell whose leg a name is. No such pair exists today; a new one is refused here, with both lane ids, rather than attributed to whichever lane comes first.
+    by_shape: dict[str, str] = {}
+    for lane, pattern in patterns.items():
+        other = by_shape.setdefault(pattern.pattern, lane)
+        if other != lane:
+            raise ValueError(
+                "lanes %r and %r have display names that match the same pattern (%s); their names may differ by more than a leg count"
+                % (other, lane, pattern.pattern)
+            )
     return patterns
+
+
+def _without_yaml_comment(line: str) -> str:
+    """`line` without a trailing YAML comment: a `#` at the start or preceded by whitespace, outside single and double quotes. A quote opens a span only at the start of a token (the line start or after whitespace), or, inside a flow collection, after `[`, `{` or `,`; a flow collection opens at a `[` or `{` that starts the value (after `: ` or `- `, at the line start, or nested; review 4d768d72.4: a `:[` glued inside a plain scalar opens none), so an apostrophe inside a plain word (`it's`) or after a comma in a plain scalar (`a,'x`) opens none."""
+    quote = ""
+    depth = 0
+    for index, char in enumerate(line):
+        before = line[:index].rstrip()
+        if quote:
+            if char == quote:
+                quote = ""
+        elif char in "'\"" and (
+            index == 0 or line[index - 1].isspace() or (depth and line[index - 1] in "[{,")
+        ):
+            quote = char
+        elif char in "[{" and (
+            depth or not before or (before[-1] in ":-" and line[index - 1].isspace())
+        ):
+            depth += 1
+        elif char in "]}" and depth:
+            depth -= 1
+        elif char == "#" and (index == 0 or line[index - 1].isspace()):
+            return line[:index]
+    return line
+
+
+def lanes_passing_also(root: Path, workflow: str = DEFAULT_WORKFLOW) -> dict[str, bool]:
+    """`{job id: whether its block passes `--also` to the E2E runner outside a comment, whole-line or trailing}` for every callee job of `workflow`, read the way `lane_display_patterns` reads the same files. `--also` is how a leg takes suites its shard manifest does not name, which is the only source of a variant's `legExtraMinutes`; a job without it carries none."""
+    ci_jobs = parse_workflow_jobs((root / ".github" / "workflows" / workflow).read_text("utf-8"))
+    out: dict[str, bool] = {}
+    for rec in ci_jobs.values():
+        callee = rec["uses"]
+        if not callee:
+            continue
+        callee_path = root / callee.removeprefix("./")
+        if not callee_path.is_file():
+            continue
+        current: str | None = None
+        in_jobs = False
+        for line in callee_path.read_text(encoding="utf-8").splitlines():
+            if line == "jobs:":
+                in_jobs = True
+                continue
+            if not in_jobs:
+                continue
+            if line and not line.startswith(" "):
+                break
+            header = _JOB_HEADER_RE.match(line)
+            if header:
+                current = header.group(1)
+                out[current] = False
+            elif current is not None and "--also" in _without_yaml_comment(line):
+                out[current] = True
+    return out
+
+
+def drop_stale_leg_extras(
+    variant_costs: Mapping[str, Any], passes_also: Mapping[str, bool]
+) -> tuple[dict[str, Any], list[str]]:
+    """`(variantCosts minus every legExtraMinutes of a lane whose job no longer passes `--also`, one note per dropped entry)`. `merge_variant_costs` keeps an unmeasured extra, and a pre-split run still in the window measures it again, so without this the extra of suites that moved to their own job (ruling #12755b25) comes back on every refresh. A lane whose job `passes_also` does not name is left alone: nothing says its extras are stale."""
+    out: dict[str, Any] = {}
+    notes: list[str] = []
+    for lane, variants in variant_costs.items():
+        job_id = VARIANT_LANE_JOBS.get(lane)
+        if job_id is None or passes_also.get(job_id, True):
+            out[lane] = variants
+            continue
+        lane_out: dict[str, Any] = {}
+        for variant, cost in variants.items():
+            if "legExtraMinutes" in cost:
+                notes.append(
+                    "variantCosts[%s][%s].legExtraMinutes: DROPPED %s; job %s passes no --also"
+                    % (lane, variant, cost["legExtraMinutes"], job_id)
+                )
+            lane_out[variant] = {k: v for k, v in cost.items() if k != "legExtraMinutes"}
+        out[lane] = lane_out
+    return out, notes
 
 
 # vCPUs of a GitHub-hosted standard runner in a PUBLIC repository (docs.github.com "GitHub-hosted runners": ubuntu-latest, ubuntu-24.04, ubuntu-22.04 are 4 vCPU / 16 GB; a private repository gets 2). The repo is public (`gh repo view --json isPrivate`, 2026-10-05). A label absent here has no derivable count.
@@ -1158,16 +1311,19 @@ def gate_step_seconds(
     root: Path,
     patterns: Mapping[str, re.Pattern[str]],
     jobs_by_run: Sequence[list[dict[str, Any]]],
+    runs: dict[str, int] | None = None,
 ) -> dict[str, float]:
     """`{gate id: p90 seconds}`, each gate's OWN step (`_exclusive_ci_steps` -- see there for why a step SHARED by several gates is excluded rather than mis-attributed), timed by `completed_at - started_at`, success-only (both the job and the step), over `jobs_by_run` -- the SAME PR-full sample `jobs`/`units`/`job_p90_minutes` already walk, so this costs no extra network call and inherits the same 14-day sample-age refusal `refresh_lane_durations` already applies to that sample.
     `patterns` is `lane_display_patterns`'s own map (already general over every job inside a reusable workflow, not only the test lanes), keyed by the job's YAML id -- the same key `ci.job` names.
-    A gate whose job has no pattern yet, or whose named step never appears success-only in the sample, contributes no entry -- never a guessed number."""
+    A gate whose job has no pattern yet, or whose named step never appears success-only in the sample, contributes no entry -- never a guessed number.
+    `runs`, when given, is filled with `{gate id: how many sampled runs measured its step}`, the evidence `refreshed_on_evidence` keeps a committed value on."""
     samples: dict[str, list[float]] = {}
+    seen_in: dict[str, set[int]] = {}
     for gate_id, (job_id, step_name) in _exclusive_ci_steps(root).items():
         pattern = patterns.get(job_id)
         if pattern is None:
             continue
-        for run_jobs in jobs_by_run:
+        for run_index, run_jobs in enumerate(jobs_by_run):
             for job in run_jobs:
                 if job.get("conclusion") != "success" or not pattern.match(job.get("name") or ""):
                     continue
@@ -1178,11 +1334,14 @@ def gate_step_seconds(
                     end = _iso_to_epoch(step.get("completed_at"))
                     if start is not None and end is not None:
                         samples.setdefault(gate_id, []).append(max(0.0, end - start))
+                        seen_in.setdefault(gate_id, set()).add(run_index)
     result: dict[str, float] = {}
     for gate_id, secs in samples.items():
         s = stats(secs)
         if s is not None:
             result[gate_id] = s["p90"]
+            if runs is not None:
+                runs[gate_id] = len(seen_in.get(gate_id, ()))
     return result
 
 
@@ -1357,6 +1516,33 @@ def ops_variant_measurement(job: dict[str, Any], log_text: str) -> dict[str, Any
     }
 
 
+# The `run` stamp of a row whose job is not in `run_of`: it belongs to no sampled run.
+UNMAPPED_RUN = -1
+
+
+def _without_slow_runs(rows: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    """`rows` minus every leg of a run whose median fixed cost is over `VARIANT_OUTLIER_RUN_FACTOR` times the median of the other runs' medians (see that constant). Rows without a `run` key, or fewer than `MIN_VARIANT_RUNS` runs, are returned whole.
+
+    A row stamped `UNMAPPED_RUN` belongs to no sampled run, so it is left out of the judgement (pooled, they would form one pseudo-run that could be called an outlier or could hide one) and is always kept."""
+    by_run: dict[Any, list[float]] = {}
+    for r in rows:
+        if r.get("run") is None:
+            return list(rows)
+        if r["run"] == UNMAPPED_RUN:
+            continue
+        by_run.setdefault(r["run"], []).append(float(r["fixed_minutes"]))
+    if len(by_run) < MIN_VARIANT_RUNS:
+        return list(rows)
+    medians = {run: statistics.median(vals) for run, vals in by_run.items()}
+    slow = {
+        run
+        for run, med in medians.items()
+        if med
+        > VARIANT_OUTLIER_RUN_FACTOR * statistics.median(m for k, m in medians.items() if k != run)
+    }
+    return [r for r in rows if r["run"] not in slow]
+
+
 def aggregate_variant_costs(
     measurements: Mapping[str, Sequence[Mapping[str, Any]]],
 ) -> dict[str, dict[str, dict[str, Any]]]:
@@ -1369,7 +1555,9 @@ def aggregate_variant_costs(
         lane_out: dict[str, dict[str, Any]] = {}
         for variant, vrows in sorted(by_variant.items()):
             cost: dict[str, Any] = {
-                "fixedMinutes": round(_percentile([r["fixed_minutes"] for r in vrows], 90), 2)
+                "fixedMinutes": round(
+                    _percentile([r["fixed_minutes"] for r in _without_slow_runs(vrows)], 90), 2
+                )
             }
             extras: dict[int, list[float]] = {}
             unit_samples: dict[str, list[float]] = {}
@@ -1444,10 +1632,13 @@ def collect_variant_costs(
     fetch_log: Callable[[str, int], str] = fetch_job_log,
     cache_dir: Path | None = None,
     max_jobs: int = VARIANT_LOG_MAX_JOBS,
+    runs: dict[str, int] | None = None,
+    variant_runs: dict[str, int] | None = None,
 ) -> tuple[dict[str, dict[str, dict[str, Any]]], dict[str, int]]:
-    """`(variantCosts measured from `jobs_by_run`'s success legs, {lane: legs priced})`. A leg whose log cannot be fetched or parsed is skipped with a warning; a lane that prices no leg is simply absent, which `merge_variant_costs` turns into "kept the prior value" rather than a dropped one."""
+    """`(variantCosts measured from `jobs_by_run`'s success legs, {lane: legs priced})`. A leg whose log cannot be fetched or parsed is skipped with a warning; a lane that prices no leg is simply absent, which `merge_variant_costs` turns into "kept the prior value" rather than a dropped one. `runs`, when given, is filled with `{lane: how many sampled runs its priced legs came from}`, the evidence the refresh keeps a committed lane on. `variant_runs`, when given, is filled the same way per `<lane>/<variant>`, since a lane's legs can price one variant from two runs and another from one."""
     manifest_ids = _manifest_unit_ids(root, VARIANT_E2E_LANE)
     candidates: list[tuple[str, dict[str, Any]]] = []
+    run_of: dict[int, int] = {}
     for lane, job_id in VARIANT_LANE_JOBS.items():
         pattern = patterns.get(job_id)
         if pattern is None:
@@ -1456,11 +1647,12 @@ def collect_variant_costs(
                 % (job_id, lane)
             )
             continue
-        for run_jobs in jobs_by_run:
+        for run_index, run_jobs in enumerate(jobs_by_run):
             for job in run_jobs:
                 name = job.get("name") or ""
                 if job.get("conclusion") == "success" and pattern.match(name) and job_leg(name):
                     candidates.append((lane, job))
+                    run_of[id(job)] = run_index
     if len(candidates) > max_jobs:
         log.warn(
             "budget_report: %d variant legs in the sample; reading the logs of the first %d only"
@@ -1483,6 +1675,8 @@ def collect_variant_costs(
         results = list(pool.map(read, candidates))
 
     measurements: dict[str, list[dict[str, Any]]] = {}
+    priced_runs: dict[str, set[int]] = {}
+    priced_variant_runs: dict[str, set[int]] = {}
     unpriced = 0
     for lane, job, text in results:
         if text is None:
@@ -1495,7 +1689,23 @@ def collect_variant_costs(
         if row is None:
             unpriced += 1
             continue
+        row["run"] = run_of.get(id(job), UNMAPPED_RUN)
         measurements.setdefault(lane, []).append(row)
+    # The run evidence is counted over the rows the price is drawn from: a run `_without_slow_runs` drops no longer backs the figure, so a variant left with fewer than MIN_VARIANT_RUNS runs after the drop is a thin sample. An unmapped row backs no run.
+    for lane, lane_rows in measurements.items():
+        by_variant: dict[str, list[Mapping[str, Any]]] = {}
+        for row in lane_rows:
+            by_variant.setdefault(row["variant"], []).append(row)
+            if row["run"] != UNMAPPED_RUN:
+                priced_runs.setdefault(lane, set()).add(row["run"])
+        for variant, vrows in by_variant.items():
+            priced_variant_runs[f"{lane}/{variant}"] = {
+                r["run"] for r in _without_slow_runs(vrows) if r["run"] != UNMAPPED_RUN
+            }
+    if runs is not None:
+        runs.update({lane: len(indexes) for lane, indexes in priced_runs.items()})
+    if variant_runs is not None:
+        variant_runs.update({key: len(indexes) for key, indexes in priced_variant_runs.items()})
     if unpriced:
         log.warn(
             "budget_report: %d variant leg log(s) carried no parseable timing; skipped" % unpriced
@@ -1580,9 +1790,9 @@ def main_push_only_p90(
                 walls.setdefault(name, []).append(wall)
     out: dict[str, float] = {}
     for name, values in walls.items():
-        s = stats(values)
-        if s is not None:
-            out[name] = s["p90"]
+        p90 = job_p90(values)
+        if p90 is not None:
+            out[name] = p90
     return out
 
 
@@ -1599,6 +1809,7 @@ def compute_lane_durations(
     log_cache_dir: Path | None = None,
     as_of: float | None = None,
     measure_variants: bool = True,
+    job_p90_limit: int = JOB_P90_SAMPLE_LIMIT,
 ) -> dict[str, Any]:
     """The FRESH numbers `--refresh` writes and `--check` compares against: `{"jobs", "units", "job_max_seconds", "job_p90_minutes", "gate_step_p90_seconds", "variant_costs", "variant_legs", "unit_parallelism", "missing_artifact_lanes"}`. `fetch_log`/`log_cache_dir` feed `collect_variant_costs` (the cache defaults to `VARIANT_LOG_CACHE_REL_PATH` under the repo root); `measure_variants=False` skips that log fetch entirely and leaves `variant_costs` and `variant_legs` empty, which is what `--check` (`compute_for_check`) wants, since only `--refresh` writes them. Never touches `refreshed_at` or `concurrency` -- the caller's job, since `--check` must compute this WITHOUT stamping anything."""
     tree_root = root if root is not None else paths.repo_root()
@@ -1606,33 +1817,57 @@ def compute_lane_durations(
     # THE PR SAMPLE HONOURS `--branch`, AS THE REPORT'S DOES SINCE 34ac34c13. `--refresh --branch 0923-1` still sampled PR runs with NO branch filter, so the durations it wrote came from whichever branches' runs the listing served, not the branch named. `class_branch_filter` keeps a default-branch refresh repo-wide.
     # The completion bound is passed only when one is set, so the live path calls `fetch_runs` exactly as it always has.
     bound: dict[str, Any] = {} if as_of is None else {"as_of": as_of}
+    # ONE LISTING, TWO SAMPLES: the newest `limit` runs feed every table but `job_p90_minutes`, which reads all the runs up to `job_p90_limit` (`JOB_P90_SAMPLE_LIMIT`; see there). A `job_p90_limit` at or under `limit` reads one sample, as `compute_for_check` asks.
+    wide_limit = max(limit, job_p90_limit)
     pr_runs = fetch_runs(
         repo,
         workflow,
         "pull_request",
         class_branch_filter("pr-full", branch),
         REFRESH_PR_STATUS,
-        limit,
+        wide_limit,
         **bound,
     )
     # Fetched JOB_FETCH_WORKERS at a time: the walk was serial and, at 10 to 15 runs of 150+ jobs (3 pages each), was ~250 s of the ~430 s a `--check` took (measured 2026-10-20). Results are read in run order, so every consumer below sees the same list the serial loop built, and a GhError propagates from the first failing run in that order; the fetches not yet started are cancelled first, so the error does not wait for the remaining runs' job pages (only the calls already in flight finish).
     with ThreadPoolExecutor(max_workers=JOB_FETCH_WORKERS) as pool:
-        futures = [pool.submit(fetch_jobs, repo, run["id"]) for run in pr_runs]
+        futures = [pool.submit(_jobs_or_skip, repo, run["id"]) for run in pr_runs]
         try:
-            pr_jobs_by_run = [f.result() for f in futures]
+            fetched = [f.result() for f in futures]
         except BaseException:
             for f in futures:
                 f.cancel()
             raise
+    # `pr_runs` and `pr_jobs_by_run` stay parallel: a skipped run leaves both. The `limit` sample is the newest `limit` runs listed, readable or not, so widening the job p90 window never pulls an older run into the other tables.
+    wide = [(run, jobs) for run, jobs in zip(pr_runs, fetched, strict=True) if jobs is not None]
+    readable = [
+        (run, jobs)
+        for index, (run, jobs) in enumerate(zip(pr_runs, fetched, strict=True))
+        if index < limit and jobs is not None
+    ]
+    if pr_runs[:limit] and not readable:
+        raise ghx.GhError([], 1, "every sampled PR run's jobs were unreadable", ghx.FAILURE_FAILED)
+    pr_runs = [run for run, _ in readable]
+    pr_jobs_by_run = [jobs for _, jobs in readable]
+    wide_runs = [run for run, _ in wide]
+    wide_jobs_by_run = [jobs for _, jobs in wide]
 
     patterns = lane_display_patterns(tree_root, workflow)
+    # How many sampled runs measured each entry, per section: the evidence `refreshed_on_evidence` and the job drift check count, the same `MIN_DRIFT_RUNS` units are held to.
+    measured_runs: dict[str, dict[str, int]] = {
+        "jobs": {},
+        "job_p90_minutes": {},
+        "gate_step_p90_seconds": {},
+        "variant_costs": {},
+        "variant_entries": {},
+    }
     jobs_minutes: dict[str, float] = {}
     for lane, pattern in patterns.items():
         runner_re = RUNNER_STEP_PATTERNS.get(lane)
         if runner_re is None:
             continue
         samples: list[float] = []
-        for run_jobs in pr_jobs_by_run:
+        lane_runs: set[int] = set()
+        for run_index, run_jobs in enumerate(pr_jobs_by_run):
             for job in run_jobs:
                 if job.get("conclusion") != "success":
                     continue
@@ -1641,23 +1876,31 @@ def compute_lane_durations(
                 cost = job_fixed_cost_minutes(job, runner_re)
                 if cost is not None:
                     samples.append(cost)
+                    lane_runs.add(run_index)
         s = stats(samples)
         if s is not None:
             jobs_minutes[lane] = s["p90"]
+            measured_runs["jobs"][lane] = len(lane_runs)
 
     # T3.1: check 2's own gap -- a whole-job p90 (success-only wall time, MINUTES) by Actions API DISPLAY NAME (e.g. "Tests + Infra / E2E K8s Ceph"), for every job seen in the same PR-full sample `jobs_minutes` above already walks. `check-lane-budget.ts` reads it by display name (`displayNamePattern`, one pattern per call site), so this writes the number under the one name `--refresh` can derive without re-parsing `ci.yml` a second time.
+    # Over the WIDE sample, by `job_p90_stats` (`JOB_P90_MIN_SAMPLES` states the rule).
     job_wall_by_name: dict[str, list[float]] = {}
-    for run_jobs in pr_jobs_by_run:
+    job_runs_by_name: dict[str, set[int]] = {}
+    for run_index, run_jobs in enumerate(wide_jobs_by_run):
         for job in run_jobs:
             name = job.get("name") or "?"
             wall = job_wall_minutes(job)
             if wall is not None:
                 job_wall_by_name.setdefault(name, []).append(wall)
+                job_runs_by_name.setdefault(name, set()).add(run_index)
     job_p90_minutes: dict[str, float] = {}
+    p90_stats: dict[str, dict[str, float]] = {}
     for name, walls in job_wall_by_name.items():
-        s = stats(walls)
+        s = job_p90_stats(walls)
         if s is not None:
             job_p90_minutes[name] = s["p90"]
+            p90_stats[name] = s
+            measured_runs["job_p90_minutes"][name] = len(job_runs_by_name[name])
 
     bucket_titles = _e2e_shard_bucket_titles()
     run_ids = [run["id"] for run in pr_runs]
@@ -1702,6 +1945,8 @@ def compute_lane_durations(
             cache_dir=log_cache_dir
             if log_cache_dir is not None
             else tree_root / VARIANT_LOG_CACHE_REL_PATH,
+            runs=measured_runs["variant_costs"],
+            variant_runs=measured_runs["variant_entries"],
         )
     units_ms: dict[str, float] = {}
     unit_stats: dict[str, dict[str, float]] = {}
@@ -1715,15 +1960,39 @@ def compute_lane_durations(
 
     # THE HEADROOM SAMPLE IS ALWAYS THE DEFAULT BRANCH: `ci.yml` runs on `push` to `main` only, so a `--branch` naming a PR branch would sample zero push runs and leave `job_max_seconds` unmeasured.
     main_runs = fetch_runs(repo, workflow, "push", DEFAULT_BRANCH, DEFAULT_STATUS, limit, **bound)
-    main_jobs_by_run = [fetch_jobs(repo, run["id"]) for run in main_runs]
+    main_fetched = [(run, _jobs_or_skip(repo, run["id"])) for run in main_runs]
+    if main_runs and all(jobs is None for _, jobs in main_fetched):
+        raise ghx.GhError(
+            [], 1, "every sampled main-push run's jobs were unreadable", ghx.FAILURE_FAILED
+        )
+    main_runs = [run for run, jobs in main_fetched if jobs is not None]
+    main_jobs_by_run = [jobs for _, jobs in main_fetched if jobs is not None]
     # A job that never runs on a PR (the release chain) takes its p90 from the SAME main-push sample; a job the PR sample ran keeps its PR number, untouched. See `main_push_only_p90`.
-    main_only = main_push_only_p90(pr_jobs_by_run, main_jobs_by_run)
+    main_only = main_push_only_p90(wide_jobs_by_run, main_jobs_by_run)
     for name in sorted(main_only):
         log.info(
             "budget_report: job_p90_minutes %r = %.1f from %d main-push run(s) (it ran in no sampled PR run)"
             % (name, main_only[name], len(main_runs))
         )
     job_p90_minutes.update(main_only)
+    for name in main_only:
+        measured_runs["job_p90_minutes"][name] = sum(
+            1
+            for run_jobs in main_jobs_by_run
+            if any(
+                job.get("name") == name and job_wall_minutes(job) is not None for job in run_jobs
+            )
+        )
+        main_stats = job_p90_stats(
+            [
+                job_wall_minutes(job)
+                for run_jobs in main_jobs_by_run
+                for job in run_jobs
+                if job.get("name") == name
+            ]
+        )
+        if main_stats is not None:
+            p90_stats[name] = main_stats
     job_max_seconds: dict[str, dict[str, Any]] = {}
     for name in HEADROOM_JOBS:
         wall_minutes = [
@@ -1739,8 +2008,8 @@ def compute_lane_durations(
             }
 
     leg_samples, untraced_legs = traced_leg_samples(
-        pr_runs,
-        pr_jobs_by_run,
+        wide_runs,
+        wide_jobs_by_run,
         patterns,
         lambda sha, rel: _git_show(tree_root, sha, rel),
     )
@@ -1750,6 +2019,8 @@ def compute_lane_durations(
         untraced_legs,
         today_leg_hashes(tree_root, patterns),
         patterns,
+        counts=measured_runs["job_p90_minutes"],
+        evidence=p90_stats,
     )
     return {
         "jobs": jobs_minutes,
@@ -1759,7 +2030,11 @@ def compute_lane_durations(
         "job_max_seconds": job_max_seconds,
         "job_p90_minutes": job_p90_minutes,
         # CI-representative gate-step timing for check-gate-manifest.ts's tier verdict; see gate_step_seconds.
-        "gate_step_p90_seconds": gate_step_seconds(tree_root, patterns, pr_jobs_by_run),
+        "gate_step_p90_seconds": gate_step_seconds(
+            tree_root, patterns, pr_jobs_by_run, measured_runs["gate_step_p90_seconds"]
+        ),
+        # The evidence behind each `jobs`/`job_p90_minutes`/`gate_step_p90_seconds` entry, read by the refresh's keep rule and the job drift check and never written; see `refreshed_on_evidence`. Filled by the call above before this dict is read.
+        "measured_runs": measured_runs,
         # Per-matrix-variant leg pricing measured from the same sample's job logs; see `collect_variant_costs`.
         "variant_costs": variant_costs,
         "variant_legs": variant_legs,
@@ -1767,9 +2042,12 @@ def compute_lane_durations(
         # Derived from the runner label, not sampled; see derive_unit_parallelism.
         "unit_parallelism": derive_unit_parallelism(tree_root, workflow),
         # T3.1: the PR sample's own age findings, carried out so `--refresh` can REFUSE to stamp a fresh `refreshed_at` on them (see refresh_lane_durations).
-        "stale_sample": stale_sample_findings(pr_runs),
+        "stale_sample": stale_sample_findings(wide_runs),
         # Which PR runs the numbers came from, so a refresh names its sample rather than only its size.
         "sampled_runs": [_run_summary(run) for run in pr_runs],
+        # The wider sample `job_p90_minutes` alone reads (`JOB_P90_SAMPLE_LIMIT`), and each name's p90, max and sample count over it, printed by the refresh and never written.
+        "job_p90_sampled_runs": [_run_summary(run) for run in wide_runs],
+        "job_p90_stats": p90_stats,
         # The leg contents each measured leg ran; see `job_p90_plans` and `prefer_todays_leg`.
         "job_p90_plans": leg_plans,
     }
@@ -1846,8 +2124,13 @@ def prefer_todays_leg(
     untraced: set[str],
     today: Mapping[str, tuple[int | None, Mapping[int, str]]],
     patterns: Mapping[str, re.Pattern[str]],
+    *,
+    counts: dict[str, int] | None = None,
+    evidence: dict[str, dict[str, float]] | None = None,
 ) -> tuple[dict[str, float], dict[str, list[str]]]:
     """`(job_p90_minutes, job_p90_plans)` with each MIXED leg measured on today's leg alone.
+
+    The p90 is `job_p90_stats`'. `counts` (sampled runs per name) and `evidence` (`job_p90_stats` per name), when given, are rewritten for every name priced on a subset here, so the refresh's evidence floor counts the samples the written p90 came from, not the whole window's.
 
     A display name names a position, and a sample of a leg's earlier contents says nothing about the leg that ships now.
     When some of a name's traced samples ran today's leg and others ran a retired one, the p90 is taken over today's samples only and the plan entry names today's hash alone.
@@ -1868,16 +2151,31 @@ def prefer_todays_leg(
         if len(walls) < MIN_DRIFT_RUNS:
             # Too thin to price today's leg, and the rest describes a leg that no longer ships: the name is measured on the retired samples alone and records only their hashes, so the gate sets it aside until a refresh sees enough runs of today's leg.
             retired = [(h, w) for h, w in rows if h != current]
-            s = stats([w for _, w in retired])
+            s = job_p90_stats([w for _, w in retired])
             if s is not None:
                 p90[name] = s["p90"]
                 plans[name] = sorted({h for h, _ in retired})
+                _record_subset(name, s, counts, evidence)
             continue
-        s = stats(walls)
+        s = job_p90_stats(walls)
         if s is not None:
             p90[name] = s["p90"]
             plans[name] = [current]
+            _record_subset(name, s, counts, evidence)
     return p90, plans
+
+
+def _record_subset(
+    name: str,
+    s: dict[str, float],
+    counts: dict[str, int] | None,
+    evidence: dict[str, dict[str, float]] | None,
+) -> None:
+    """`prefer_todays_leg`'s evidence write for one name priced on a subset of its samples."""
+    if counts is not None:
+        counts[name] = int(s["n"])
+    if evidence is not None:
+        evidence[name] = s
 
 
 def _is_today(
@@ -2250,6 +2548,44 @@ def refreshed_units(
     return units
 
 
+def refreshed_on_evidence(
+    committed: Mapping[str, float],
+    measured: Mapping[str, float],
+    runs: Mapping[str, int],
+    min_runs: int = MIN_DRIFT_RUNS,
+) -> tuple[dict[str, float], list[str]]:
+    """`(the entries a refresh writes, the ids it kept on a thin sample)` for `jobs`, `job_p90_minutes` and `gate_step_p90_seconds`: `refreshed_units`' rule, counted in `runs` (how many sampled runs measured each id; absent is zero). An entry the table already holds moves only on `min_runs` runs (`MIN_DRIFT_RUNS` unless the caller asks for more), either direction; an id new to the table is written from one. `job_p90_minutes` asks for `MIN_VARIANT_RUNS`: check-lane-budget.ts judges each leg on it, and `job_p90_stats` needs that many samples before its outlier rule has a majority to judge against.
+
+    WHY. These three were rewritten from any sample, one run included. MEASURED 2026-11-07: the 14-day pull_request window held one Console CI run (41769535457, a 23-commit PR), and recomputed on it the refresh writes check:ci-plan-live-proof's step at 3.0 s over a committed 69.3 s and Quality / Branch at 3.5 m over 10.3 m. check-gate-manifest.ts judges `slow` on that step and check-lane-budget.ts judges every job on these p90s, so one runner's numbers set a tier and a lane verdict.
+    """
+    out = dict(committed)
+    kept: list[str] = []
+    for key, value in measured.items():
+        if key in committed and runs.get(key, 0) < min_runs:
+            if committed[key] != value:
+                kept.append(key)
+            continue
+        out[key] = value
+    return out, sorted(kept)
+
+
+def prune_names_to_leg_counts(
+    table: Mapping[str, Any], root: Path, patterns: Mapping[str, re.Pattern[str]]
+) -> dict[str, Any]:
+    """`table` (display name -> value) minus every leg name whose `i/n` the lane's committed shard manifest no longer ships: `n` other than its `of`, or `i` past it. The same reasoning as `prune_units_to_manifests`: the merge keeps a name this sample did not measure, so after a leg-count change (e2e /8 -> /9) the old names stay forever beside the new ones and describe legs that no longer exist. A name that matches no lane pattern, carries no `i/n`, or belongs to a lane with no readable manifest is kept."""
+    today = today_leg_hashes(root, patterns)
+    kept: dict[str, Any] = {}
+    for name, value in table.items():
+        lane = next((ln for ln, pat in patterns.items() if pat.match(name)), None)
+        leg = _LEG_INDEX_RE.search(name)
+        if lane in today and leg is not None and leg.group(2) is not None:
+            of, _legs = today[lane]
+            if of is not None and (int(leg.group(2)) != of or int(leg.group(1)) > of):
+                continue
+        kept[name] = value
+    return kept
+
+
 def prune_units_to_manifests(units: dict[str, Any], root: Path) -> dict[str, Any]:
     """Drop a unit id its lane's committed manifest no longer names.
 
@@ -2309,10 +2645,11 @@ def refresh_lane_durations(
             % (len(stale), SAMPLE_MAX_AGE_DAYS)
         )
         return 1
+    sample_size = sample_size_text(computed, limit)
     for lane in computed["missing_artifact_lanes"]:
         log.warn(
             "budget_report --refresh: lane %r has NO unit-duration artifacts in the last "
-            "%d sampled PR-full run(s); its units are UNCHANGED, not zeroed." % (lane, limit)
+            "%s; its units are UNCHANGED, not zeroed." % (lane, sample_size)
         )
     if (
         not computed["jobs"]
@@ -2323,10 +2660,11 @@ def refresh_lane_durations(
         and not computed.get("variant_costs")
     ):
         log.error(
-            "budget_report --refresh: matched nothing at all across %d sampled run(s); "
-            "refusing to stamp refreshed_at on numbers nothing verified." % limit
+            "budget_report --refresh: matched nothing at all across %s; "
+            "refusing to stamp refreshed_at on numbers nothing verified." % sample_size
         )
         return 1
+    evidence = computed.get("measured_runs") or {}
 
     # .ci/config/lane-durations.json -> the repo root, three levels up, so a fixture path prunes against its own tree.
     repo_root_for_pruning = path.resolve().parent.parent.parent
@@ -2336,7 +2674,11 @@ def refresh_lane_durations(
         updated["$comment"] = existing["$comment"]
     updated["refreshed_at"] = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     updated["concurrency"] = existing.get("concurrency", 20)
-    updated["jobs"] = {**existing.get("jobs", {}), **computed["jobs"]}
+    # `jobs`, `job_p90_minutes` and `gate_step_p90_seconds` move on the evidence units move on (`refreshed_on_evidence`), and every entry a thin sample left alone is named.
+    kept_on_thin: dict[str, list[str]] = {}
+    updated["jobs"], kept_on_thin["jobs"] = refreshed_on_evidence(
+        existing.get("jobs", {}), computed["jobs"], evidence.get("jobs") or {}
+    )
     measured_stats = computed.get("unit_stats") or {}
     updated["units"] = prune_units_to_manifests(
         refreshed_units(existing.get("units", {}), computed["units"], measured_stats),
@@ -2382,9 +2724,30 @@ def refresh_lane_durations(
     if "rebalanceConstraints" in existing:
         updated["rebalanceConstraints"] = existing["rebalanceConstraints"]
     # variantCosts is MEASURED (collect_variant_costs) and merged so nothing the sample missed is dropped: an unmeasured lane, variant, leg extra or unit keeps its prior value, and every such keep is printed.
-    variant_costs, variant_notes = merge_variant_costs(
-        existing.get("variantCosts") or {}, computed.get("variant_costs") or {}
-    )
+    # A variant the table already prices moves only on `MIN_VARIANT_RUNS` runs of leg logs (one more than `MIN_DRIFT_RUNS`, see its comment): one run's legs all ran on one day's runners. The count is per variant (`variant_entries`): a lane whose legs price ubuntu-24.04 from two runs and fedora-43 from one moves the first and keeps the second, which `merge_variant_costs` names. A variant the table does not price yet is written from one run.
+    existing_variants = existing.get("variantCosts") or {}
+    variant_runs = evidence.get("variant_costs") or {}
+    entry_runs = evidence.get("variant_entries") or {}
+    measured_variants = {lane: dict(v) for lane, v in (computed.get("variant_costs") or {}).items()}
+    for lane in sorted(measured_variants):
+        if lane not in existing_variants:
+            continue
+        for variant in sorted(measured_variants[lane]):
+            if variant not in (existing_variants[lane] or {}):
+                continue
+            seen = entry_runs.get("%s/%s" % (lane, variant), variant_runs.get(lane, 0))
+            if seen < MIN_VARIANT_RUNS:
+                del measured_variants[lane][variant]
+                kept_on_thin.setdefault("variantCosts", []).append("%s/%s" % (lane, variant))
+        if not measured_variants[lane]:
+            del measured_variants[lane]
+    variant_costs, variant_notes = merge_variant_costs(existing_variants, measured_variants)
+    try:
+        passes_also = lanes_passing_also(repo_root_for_pruning, workflow)
+    except FileNotFoundError:
+        passes_also = {}
+    variant_costs, dropped_notes = drop_stale_leg_extras(variant_costs, passes_also)
+    variant_notes = [*variant_notes, *dropped_notes]
     for note in variant_notes:
         log.warn("budget_report --refresh: %s" % note)
     for lane, legs in sorted((computed.get("variant_legs") or {}).items()):
@@ -2405,21 +2768,91 @@ def refresh_lane_durations(
             }
             for lane, variants in variant_costs.items()
         }
-    updated["job_p90_minutes"] = {
-        **existing.get("job_p90_minutes", {}),
-        **computed["job_p90_minutes"],
-    }
+    existing_p90 = existing.get("job_p90_minutes", {})
+    p90_runs = evidence.get("job_p90_minutes") or {}
+    updated["job_p90_minutes"], kept_on_thin["job_p90_minutes"] = refreshed_on_evidence(
+        existing_p90, computed["job_p90_minutes"], p90_runs, MIN_VARIANT_RUNS
+    )
+    # The rule, every refresh, and each leg whose p90 is under the budget only because the rule set a slower sample aside: an outlier rule that prints nothing is how a real slowdown would hide.
+    wide_runs = computed.get("job_p90_sampled_runs")
+    print(
+        "budget_report --refresh: job_p90_minutes is the nearest-rank p90 over %s (the newest up to %d): "
+        "at n >= %d it sets aside the slowest floor(n/10) sample(s); below %d it is the max after setting "
+        "aside the slowest sample when it is over %gx the median of the others (one at most, from %d "
+        "samples); an entry the table holds moves on no fewer than %d sampled run(s)."
+        % (
+            "%d run(s)" % len(wide_runs) if isinstance(wide_runs, list) else "the sample",
+            JOB_P90_SAMPLE_LIMIT,
+            JOB_P90_MIN_SAMPLES,
+            JOB_P90_MIN_SAMPLES,
+            JOB_P90_OUTLIER_FACTOR,
+            MIN_VARIANT_RUNS,
+            MIN_VARIANT_RUNS,
+        ),
+        file=sys.stderr,
+    )
+    p90_evidence = computed.get("job_p90_stats") or {}
+    for name in sorted(computed["job_p90_minutes"]):
+        s = p90_evidence.get(name)
+        if not s or updated["job_p90_minutes"].get(name) != s["p90"]:
+            continue
+        if s.get("set_aside") and s["max"] > PER_LEG_BUDGET_MINUTES >= s["p90"]:
+            print(
+                "budget_report --refresh: job_p90_minutes %s = %.1f from %d sample(s), the slowest %d set "
+                "aside (max %.1f, over the %gm budget)."
+                % (
+                    name,
+                    s["p90"],
+                    s["n"],
+                    s["set_aside"],
+                    s["max"],
+                    PER_LEG_BUDGET_MINUTES,
+                ),
+                file=sys.stderr,
+            )
+    # Leg names the current shard manifests no longer ship are dropped from both name-keyed tables. A workflow missing from this tree (a `--lane-durations` path outside a repo) leaves the patterns empty, which prunes nothing; any other read failure, and an ambiguous pattern pair, surface.
+    try:
+        leg_patterns = lane_display_patterns(repo_root_for_pruning, workflow)
+    except FileNotFoundError:
+        leg_patterns = {}
+    updated["job_p90_minutes"] = prune_names_to_leg_counts(
+        updated["job_p90_minutes"], repo_root_for_pruning, leg_patterns
+    )
+    # A name kept on a thin sample keeps its plan entry too: its p90 still describes the samples that entry names.
+    rewritten = [
+        name
+        for name in computed["job_p90_minutes"]
+        if name not in existing_p90 or p90_runs.get(name, 0) >= MIN_VARIANT_RUNS
+    ]
     plans = merged_job_p90_plans(
         existing.get("job_p90_plans") or {},
-        computed["job_p90_minutes"],
-        computed.get("job_p90_plans") or {},
+        rewritten,
+        {n: v for n, v in (computed.get("job_p90_plans") or {}).items() if n in set(rewritten)},
     )
+    plans = prune_names_to_leg_counts(plans, repo_root_for_pruning, leg_patterns)
     if plans:
         updated["job_p90_plans"] = plans
-    updated["gate_step_p90_seconds"] = prune_gate_steps_to_lock(
-        {**existing.get("gate_step_p90_seconds", {}), **computed["gate_step_p90_seconds"]},
-        repo_root_for_pruning,
+    gate_steps, kept_on_thin["gate_step_p90_seconds"] = refreshed_on_evidence(
+        existing.get("gate_step_p90_seconds", {}),
+        computed["gate_step_p90_seconds"],
+        evidence.get("gate_step_p90_seconds") or {},
     )
+    updated["gate_step_p90_seconds"] = prune_gate_steps_to_lock(gate_steps, repo_root_for_pruning)
+    for table_key, ids in kept_on_thin.items():
+        if ids:
+            log.warn(
+                "budget_report --refresh: %d %s entr(ies) measured by fewer than %d sampled run(s) KEEP "
+                "their committed value (%s%s)."
+                % (
+                    len(ids),
+                    table_key,
+                    MIN_VARIANT_RUNS
+                    if table_key in ("variantCosts", "job_p90_minutes")
+                    else MIN_DRIFT_RUNS,
+                    ", ".join(ids[:3]),
+                    ", ..." if len(ids) > 3 else "",
+                )
+            )
     if isinstance(existing.get("job_max_seconds"), dict):
         updated["job_max_seconds"] = existing["job_max_seconds"]
     if computed["job_max_seconds"]:
@@ -2434,24 +2867,35 @@ def refresh_lane_durations(
         return 0
     path.write_text(payload, encoding="utf-8")
     print(
-        "lane-durations.json refreshed from %d sampled run(s): %d job(s), %d unit(s) measured "
-        "(%d kept on a thin sample), %d headroom job(s), %d other job p90(s), %d gate step p90(s)."
+        "lane-durations.json refreshed from %s: %d job(s), %d unit(s) measured "
+        "(%d kept on a thin sample), %d headroom job(s), %d other job p90(s) (%d kept on a thin sample), "
+        "%d gate step p90(s) (%d kept on a thin sample)."
         % (
-            limit,
+            sample_size,
             len(computed["jobs"]),
             len(computed["units"]),
             len(kept_thin),
             len(computed["job_max_seconds"]),
             len(computed["job_p90_minutes"]),
+            len(kept_on_thin["job_p90_minutes"]),
             len(computed["gate_step_p90_seconds"]),
+            len(kept_on_thin["gate_step_p90_seconds"]),
         )
     )
     return 0
 
 
+def sample_size_text(computed: Mapping[str, Any], limit: int) -> str:
+    """How many runs a measurement read, for a summary line: the count of `sampled_runs`, never the requested `limit`. MEASURED 2026-11-07: the refresh printed "refreshed from 10 sampled run(s)" over a 14-day window that held one pull_request run. A compute that names no runs (a test fake) says so rather than borrowing the limit."""
+    runs = computed.get("sampled_runs")
+    if isinstance(runs, list):
+        return "%d sampled run(s)" % len(runs)
+    return "an unnamed sample (limit %d)" % limit
+
+
 def compute_for_check(*args: Any, **kwargs: Any) -> dict[str, Any]:
-    """`compute_lane_durations` without the variant-cost job logs, which `check_lane_durations` never reads (see `measure_variants`)."""
-    return compute_lane_durations(*args, measure_variants=False, **kwargs)
+    """`compute_lane_durations` without the variant-cost job logs or the wider job p90 window, neither of which `check_lane_durations` reads (see `measure_variants`, `JOB_P90_SAMPLE_LIMIT`)."""
+    return compute_lane_durations(*args, measure_variants=False, job_p90_limit=0, **kwargs)
 
 
 def _compute_sample(
@@ -2511,11 +2955,12 @@ def check_lane_durations(
         return 1
 
     computed = _compute_sample(compute, repo, workflow, branch, limit, as_of)
+    sample_size = sample_size_text(computed, limit)
     # EVERY FINDING IS KEYED (`freshness.Keyed`, review d21f5510.1): `lane-durations:<class>:<lane, unit or job>`, never the count, the run id or the measured number, so the same finding keeps its key from run to run.
     findings: list[str] = [
         Keyed(
             "lane-durations:no-unit-artifacts:%s" % key_part(lane),
-            "lane %r has NO unit-duration artifacts in the last %d sampled run(s)." % (lane, limit),
+            "lane %r has NO unit-duration artifacts in the last %s." % (lane, sample_size),
         )
         for lane in computed["missing_artifact_lanes"]
     ]
@@ -2525,10 +2970,16 @@ def check_lane_durations(
     )
 
     committed_jobs = committed.get("jobs") or {}
+    # A job's drift needs the evidence a unit's does (`MIN_DRIFT_RUNS` runs; absent is zero), because the refresh keeps a thinly measured job's committed value (`refreshed_on_evidence`) and a check that judged it would red on the very sample the refresh just declined to write.
+    job_runs = (computed.get("measured_runs") or {}).get("jobs") or {}
+    thin_jobs: list[str] = []
     for lane, minutes in sorted(computed["jobs"].items()):
         f = leg_over_budget_finding(lane, minutes)
         if f:
             findings.append(Keyed("lane-durations:leg-over-budget:%s" % key_part(lane), f))
+        if job_runs.get(lane, 0) < MIN_DRIFT_RUNS:
+            thin_jobs.append(lane)
+            continue
         d = drift_finding("job %r fixed cost" % lane, committed_jobs.get(lane), minutes)
         if d:
             findings.append(Keyed("lane-durations:drift:job:%s" % key_part(lane), d))
@@ -2574,6 +3025,14 @@ def check_lane_durations(
             shape["thin"],
             MIN_DRIFT_RUNS,
             no_row,
+        ),
+        "%d job lane(s) measured: %d judged for drift, %d thin (fewer than %d sampled runs, not judged%s)."
+        % (
+            len(computed["jobs"]),
+            len(computed["jobs"]) - len(thin_jobs),
+            len(thin_jobs),
+            MIN_DRIFT_RUNS,
+            ": %s" % ", ".join(thin_jobs) if thin_jobs else "",
         ),
         sample_line(computed, as_of),
     ]

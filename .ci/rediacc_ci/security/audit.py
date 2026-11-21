@@ -11,7 +11,7 @@ WHAT THE GATE DOES, in the order it does it, because the order is the contract:
 
   0. parse both allowlists, refuse any entry whose `# BLOCKER:` is missing or
      low-effort, then refuse any entry older than AGE_FAIL_DAYS.
-  1. force npm to 11.x, then `npm audit signatures` with two retries and a TUF
+  1. force npm to the pinned NPM_VERSION, then `npm audit signatures` with two retries and a TUF
      cache wipe between them. A bad signature is NOT allowlistable.
   2. pass 1, production dependencies: `npm audit --json --omit=dev`, zero
      tolerance except for `.audit-prod-allowlist`.
@@ -168,7 +168,7 @@ DEV_ALLOWLIST = policy_rel(".audit-allowlist")
 DEPS_BLOCKLIST = policy_rel(".deps-upgrade-blocklist")
 
 
-# The npm installed when the running one is not 11.x (audit.sh:387), read from `.devcontainer/toolchain.env` NPM_VERSION, the one npm pin every lane shares. Read at call time, so importing this module never depends on the pins file; see the BLOCKER above it about npm 10's Sigstore client.
+# The npm installed when the running one is not exactly the pin (audit.sh:387 forced 11.x), read from `.devcontainer/toolchain.env` NPM_VERSION, the one npm pin every lane shares. Read at call time, so importing this module never depends on the pins file; see the BLOCKER above it about npm 10's Sigstore client.
 def npm_pin() -> str:
     return "npm@" + toolchain.pin_for("npm")
 
@@ -1156,10 +1156,14 @@ class Audit:
             return 1
 
         # -- pass 0: signatures --------------------------------------------
+        # The pin, not a hardcoded major: a `startswith("11.")` here reinstalled npm on every run once the pin moved to 12, and each reinstall removed the npm binary for a moment, so every gate ci:quick started in that window died with `npm: command not found` (exit 127, 2026-11-14).
         version, _status = capture(["npm", "--version"], line=385, quiet_err=False)
-        if not version.startswith("11."):
-            advisory.log_warn("Upgrading npm to 11.x for Sigstore attestation key compatibility")
-            proc = spawn(["npm", "install", "-g", npm_pin(), "--no-audit", "--no-fund"], line=387)
+        want = npm_pin()
+        if "npm@" + version.strip() != want:
+            advisory.log_warn(
+                "Moving npm to the pinned %s for Sigstore attestation key compatibility" % want
+            )
+            proc = spawn(["npm", "install", "-g", want, "--no-audit", "--no-fund"], line=387)
             if proc.returncode != 0:
                 raise DieError(proc.returncode)
 

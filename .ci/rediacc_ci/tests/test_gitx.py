@@ -424,6 +424,50 @@ def test_file_modes_report_what_git_recorded_not_what_is_on_disk(repo):
     assert gitx.file_modes(root=repo) == {"tracked.txt": "100755"}
 
 
+def test_file_modes_fail_loudly_when_git_rejects_the_listing(repo, monkeypatch):
+    """Finding b8426e58.1: an old git rejects `--format`, and an empty map would let a mode gate pass unchecked."""
+    real = gitx.git
+    monkeypatch.setattr(
+        gitx,
+        "git",
+        lambda _args, **kw: real(["ls-files", "--no-such-option"], **kw),
+    )
+    with pytest.raises(RuntimeError, match=r"git 2\.38") as exc:
+        gitx.file_modes(root=repo)
+    # Review 29bc388f.1: git's own message rides along, so a cause other than an old git is readable.
+    assert "no-such-option" in str(exc.value)
+    # Control: the real listing still answers.
+    monkeypatch.setattr(gitx, "git", real)
+    assert gitx.file_modes(root=repo) == {"tracked.txt": "100644"}
+
+
+def test_file_modes_return_the_same_map_for_644_755_and_a_gitlink(repo):
+    """The --format reader must equal the `ls-files -s` map, with a spaced path and a gitlink (160000)."""
+    (repo / "run.sh").write_text("x\n")
+    (repo / "with space.txt").write_text("y\n")
+    rc, _o, err = sh("git add run.sh 'with space.txt' && git update-index --chmod=+x run.sh", repo)
+    assert rc == 0, err
+    rc, _o, err = sh(
+        "git update-index --add --cacheinfo 160000,0123456789012345678901234567890123456789,sub/mod",
+        repo,
+    )
+    assert rc == 0, err
+    want = {
+        "tracked.txt": "100644",
+        "run.sh": "100755",
+        "with space.txt": "100644",
+        "sub/mod": "160000",
+    }
+    assert gitx.file_modes(root=repo) == want
+    _rc, out, _err = sh("git ls-files -s -z", repo)
+    old = {}
+    for entry in out.split("\0"):
+        if entry:
+            meta, _, path = entry.partition("\t")
+            old[path] = meta.split()[0]
+    assert old == want
+
+
 def test_file_modes_equal_raw_ls_files_s_on_the_real_repository():
     """Differential against the query the script-exec-bit gate's retired bash twin ran at its line 82."""
     root = diff.repo()

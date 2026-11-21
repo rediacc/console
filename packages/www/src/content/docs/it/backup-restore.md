@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: it
-sourceHash: "243d934efa7d9d54"
-sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
+sourceHash: "677e95e38761776f"
+sourceCommit: "d1141cb40538b792a1c385b399ef948033e3139a"
 ---
 
 # Backup e Ripristino
@@ -45,6 +45,8 @@ Da questa unica decisione derivano le proprietà.
 
 La quota è conteggiata in **byte fisici unici memorizzati**: ciò che è effettivamente trattenuto dopo la deduplicazione, non la somma di ciò che i tuoi snapshot rappresentano logicamente. Trenta snapshot di un repository che cambia lentamente costano quasi come uno solo. `rdc backup usage` mostra i byte memorizzati rispetto alla tua quota, un numero per abbonamento che parte da 10 GB nel piano Community.
 
+Una macchina con licenza gratuita non ha backup ospitati e i verbi di backup la rifiutano con un messaggio di upgrade. Registra un account (il piano Community è gratuito), collega la macchina e i suoi backup rientreranno nei 10 GB di storage ospitato.
+
 ### Cosa serve agli snapshot
 
 Il caricamento di uno snapshot passa attraverso il server dell'account, che autorizza ogni esecuzione rispetto alla licenza installata del repository e consegna alla macchina un permesso di scrittura di breve durata. Questo percorso richiede quindi un server dell'account raggiungibile dalla macchina e un repository con licenza. Senza di essi, lo snapshot viene rifiutato anziché saltato silenziosamente, e `rdc backup manifests`, `rdc backup usage` e `rdc backup retention` non hanno nulla da leggere.
@@ -59,9 +61,9 @@ Il push e il pull da macchina a macchina non necessitano di nessuno dei due. Son
 - **Non è una replica continua.** Uno snapshot è un punto che hai catturato, e puoi perdere tutto ciò che è stato scritto dall'ultimo. Quanto sia dipende dalla frequenza con cui lo esegui.
 - **Gli oggetti memorizzati sono write-once, non WORM certificato.** Le celle vengono scritte con una condizione di sola creazione, il permesso ottenuto da una macchina non può eliminare nulla, e le eliminazioni avvengono lato server secondo la politica di conservazione. È una barriera reale contro una macchina compromessa che distrugge i propri backup. Non è una certificazione di conformità, e non viene verificata come tale.
 
-### Un solo tipo di destinazione
+### Destinazioni
 
-I backup nello storage a chunk hanno un solo tipo di destinazione: uno storage a chunk ospitato dal servizio, raggiunto tramite il server degli account. Non esiste un registro di endpoint di storage esterni, quindi `--to` e `--from` su `repo push` e `repo pull` indicano soltanto una macchina.
+Una strategia può scrivere nello store `home`, in una seconda regione ospitata o in un bucket del cliente registrato, e ogni destinazione è un punto di ripristino a sé. Store, indicazione dello store di una destinazione, ripristino con `--from` e stato per destinazione sono nella pagina [Destinazioni di backup](/it/docs/backup-destinations). `--to` e `--from` su `repo push` e `repo pull` indicano ancora soltanto una macchina.
 
 ### Comandi per lo storage a chunk
 
@@ -92,6 +94,7 @@ rdc backup usage
 | `--dry-run` | Solo pianificazione: nessun caricamento. Riporta cosa verrebbe spostato |
 | `--cold` | Ferma i container, congela, riavvia, poi carica. Non combinabile con `--dry-run` |
 | `--reseed` | Non fidarti dell'ancora locale e carica un inventario completo. Ricarica tutto e riaddebita la quota |
+| `--accept-identity-change` | Accetta l'immagine come nuova base quando la sua identità LUKS è cambiata o l'immagine si è ridotta. Carica uno snapshot completo, e un'esecuzione pianificata non lo applica mai |
 | `--read-bwlimit <limit>` | Limite alla velocità con cui lo snapshot legge l'immagine dal disco, nelle stesse unità di `--bwlimit` (predefinito `50M`, `0` = illimitato) |
 | `--hash-parallelism <n>` | Numero di worker di hashing (predefinito `1`, `0` = uno per CPU, fino a `16`) |
 | `--debug` | Abilita l'output dettagliato |
@@ -305,6 +308,7 @@ Una strategia può dichiarare la politica per i repository che copre: `rdc backu
 | `--keep-weekly <n>` | Conserva lo snapshot più recente per ciascuna di queste settimane |
 | `--keep-monthly <n>` | Conserva lo snapshot più recente per ciascuno di questi mesi |
 | `--keep-yearly <n>` | Conserva lo snapshot più recente per ciascuno di questi anni |
+| `--keep-within <duration>` | Conserva ogni snapshot entro questo intervallo dal più recente del flusso, ad esempio `24h`; l'intervallo si misura dallo snapshot più recente e non da adesso, quindi un flusso fermo non elimina nulla dalla sua finestra |
 | `--stream <id>` | Applica la politica a un solo flusso di backup invece che al valore predefinito dell'intero repository |
 
 Fornisci almeno una regola. `set` sostituisce ogni parametro invece di unirli, quindi l'intera politica va passata ogni volta. `set` senza regole viene rifiutato invece di essere trattato come "non conservare nulla", perché svuotare una politica è esattamente lo scopo di `clear`. `clear` rimuove la politica dichiarata, così torna ad applicarsi il valore predefinito del piano o del server; non significa mai "non conservare nulla" né "conservare tutto".
@@ -325,6 +329,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 Un orario viene risolto solo tra gli snapshot di questo repository sulla sua macchina di origine. Gli snapshot scritti da altre macchine o da fork dello stesso lignaggio non vengono considerati, a meno che `--any-stream` non allarghi la ricerca di proposito. Se il flusso del repository non si può determinare, il ripristino viene rifiutato e richiede `--any-stream` invece di tirare a indovinare.
 
+Quando più store contengono il repository, il ripristino legge lo store il cui snapshot più recente ha superato l'ultima verifica e passa allo store successivo se uno store fallisce. `--from <storeId>` legge un solo store indicato e non ripiega mai su un altro. Vedi [Destinazioni di backup](/it/docs/backup-destinations).
+
 Ripristinare con un nuovo nome tramite `--as` non sovrascrive nulla, quindi un'esercitazione di ripristino è sicura da eseguire su una macchina live. Ripristinare su un nome già esistente viene rifiutato.
 
 | Opzione | Descrizione |
@@ -334,14 +340,19 @@ Ripristinare con un nuovo nome tramite `--as` non sovrascrive nulla, quindi un'e
 | `-m, --machine <machine>` | Macchina su cui ripristinare |
 | `--datastore <name>` | Ripristina in questo datastore denominato, la cui macchina collegata lo ospita |
 | `--at <time>` | Ripristina un punto nel tempo: un id di snapshot o un orario RFC 3339 |
+| `--from <storeId>` | Legge lo snapshot da questo store di backup. Senza l'opzione viene letto lo store con lo snapshot verificato più recente, e in caso di errore si passa allo store successivo. Con `--from` non c'è alcun ripiego |
 | `--any-stream` | Con `--at`, considera anche gli snapshot di altre macchine e dei fork di questo lignaggio |
 | `--up` | Distribuisce il repository ripristinato dopo il trasferimento |
+| `--allow-unopenable` | Colloca l'immagine anche se la passphrase del repository non la apre (uno snapshot precedente a un cambio di passphrase) |
+| `--salvage` | Prosegue oltre i chunk persi o corrotti e lascia le loro celle come buchi. Richiede `--as` |
 | `--health-window <seconds>` | Per quanto tempo osservare la salute del repository distribuito |
 | `--health-timeout <seconds>` | Per quanto tempo attendere che diventi sano |
 | `-y, --yes` | Salta la conferma |
 | `--debug` | Abilita l'output dettagliato |
 
 Ripristinare un repository richiede la sua credenziale LUKS, che vive nella tua configurazione. Se hai lo storage della configurazione abilitato, quella credenziale torna insieme alla tua configurazione su una macchina nuova. In caso contrario, conserva una copia della configurazione in un luogo che la macchina guasta non si porta via con sé.
+
+Un ripristino verifica la passphrase prima di collocare qualsiasi cosa. Dopo che l'immagine è stata assemblata e che dimensione e header LUKS risultano corretti, la passphrase della configurazione prova ad aprirla. Se si apre, il ripristino segnala il successo. Se non si apre, il ripristino fallisce e non colloca nulla, e l'immagine assemblata resta in area di staging, così un nuovo tentativo con la passphrase giusta non la scarica di nuovo. Uno snapshot creato prima di un cambio di passphrase si apre solo con la vecchia; `--allow-unopenable` colloca comunque un'immagine del genere e segnala che non è stata aperta.
 
 ### Dimostra il ripristino su ogni macchina
 
@@ -368,6 +379,132 @@ rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
 Gli elenchi completi delle opzioni si trovano sotto [Invia un Backup a un'Altra Macchina](#push-a-backup-to-another-machine) e [Scarica un Backup da un'Altra Macchina](#pull-a-backup-from-another-machine).
+
+## Verifica e riparazione dei backup
+
+Uno snapshot caricato non è ancora uno snapshot che si ripristina. Ogni snapshot ha uno stato di verifica, che i controlli seguenti fanno avanzare.
+
+### La scala di verifica
+
+| Stato | Impostato da | Dimostra |
+|-------|--------------|----------|
+| `unverified` | Ogni nuovo snapshot | Ancora nulla |
+| `verified` | Il controllo a campione dopo un'esecuzione, `--deep`, o un passaggio `--store` pulito | L'ancora della macchina o i chunk archiviati corrispondono ai loro hash. Il filesystem all'interno non viene giudicato |
+| `proven` | `rdc backup check`, o `--restore-test` | La passphrase apre contenuto reale |
+| `failed` | Qualsiasi controllo che ha trovato un problema | Non ci si può fare affidamento |
+
+Uno snapshot `failed` resta tale finché non passa un controllo che ha letto gli stessi dati. La conservazione mantiene lo snapshot `verified` più recente e lo snapshot `proven` più recente di ogni flusso che non sia `failed`, oltre al numero di snapshot da tenere, così una serie di notti sbagliate non può spazzare via tutte le versioni buone. L'eliminazione di uno di questi due snapshot viene rifiutata.
+
+```bash
+rdc backup verify my-app --deep
+rdc backup verify my-app --store
+rdc backup verify my-app --restore-test
+```
+
+`--deep` ricalcola l'hash di ogni cella sulla macchina. `--store` fa ricalcolare al server l'hash di ogni chunk archiviato e indica quelli mancanti o corrotti. `--restore-test` ripristina lo snapshot dell'ancora con un nome temporaneo direttamente dallo store, lo confronta, registra il risultato ed elimina la copia. Le tre opzioni non si possono combinare.
+
+### Pianificazione della verifica
+
+`rdc backup schedule` aggiunge la verifica alle unità che genera. Il servizio di snapshot termina con un controllo a campione di celle casuali, e uno snapshot fallito non viene mai verificato. Un timer giornaliero a un orario sfalsato esegue una verifica completa di un repository per esecuzione sotto `CPUQuota=100%`, ruotando tra i repository: il ciclo è il maggiore tra 7 e il numero di repository, in notti. Un blocco `verify` facoltativo della strategia lo regola con `spotAfterRun`, `deepSchedule` (un'espressione cron) e `off`, che non genera né il controllo a campione né il timer.
+
+Le unità pianificate non contengono alcuna passphrase per scelta progettuale, quindi i due controlli che ne hanno bisogno, `rdc backup check` e `--restore-test`, si eseguono dalla CLI, dove risiede la configurazione. Una volta al mese per il primo e una volta a trimestre per il secondo è una cadenza ragionevole.
+
+### Dimostrare la passphrase
+
+```bash
+rdc backup check my-app
+```
+
+`rdc backup check` apre con la passphrase l'elenco archiviato di uno snapshot recente, ripristina un file in una directory temporanea, lo confronta con la dimensione elencata e registra `proven` o `failed`. Viene eliminata solo la directory temporanea. `--path <file>` sceglie il file; per impostazione predefinita è il file non vuoto più piccolo. Uno snapshot senza elenco archiviato viene segnalato in modo esplicito e non è `proven`.
+
+### Riparazione e recupero
+
+```bash
+rdc backup repair my-app --dry-run
+rdc backup repair my-app
+rdc backup restore my-app --at <snapshot-id> --as my-app-salvage --salvage
+```
+
+La chiave di un chunk è l'hash dei suoi byte, quindi un oggetto archiviato il cui hash non corrisponde alla chiave non potrà mai soddisfare un ripristino. `rdc backup repair` fa rileggere al server ogni oggetto danneggiato, lo elimina solo se è ancora errato e ricarica la cella dall'ancora di questa macchina dopo averne ricalcolato l'hash. Rifiuta di procedere finché un backup tiene il lignaggio, indica gli snapshot che usavano i chunk danneggiati e li segna come `failed`. Un chunk che l'ancora della macchina non contiene non si può riparare, e il comando termina con un codice diverso da zero. `--dry-run` non modifica nulla.
+
+`--salvage` serve per uno snapshot che non si può riparare. Ripristina solo con un nuovo nome tramite `--as`, mai sopra un repository esistente, scrive ogni cella danneggiata come un buco, elenca i buchi per intervallo di byte e termina con codice diverso da zero e stato `restored-damaged`. Un buco dentro l'header LUKS rende l'immagine non apribile, e il rapporto lo segnala. Un singolo file lontano da una cella danneggiata si ripristina comunque in modo pulito con `--path`.
+
+### Chiavi dell'elenco
+
+L'elenco di navigazione di uno snapshot è sigillato con una chiave pubblica, così la macchina può scriverlo senza possedere la passphrase. La CLI ricava quella chiave dalla credenziale del repository e installa la metà pubblica quando lo schedule viene distribuito. Se una macchina possiede già una chiave diversa, viene segnalata con il nome del repository e non viene sovrascritta.
+
+```bash
+rdc backup toc-key sync my-app --dry-run
+rdc backup toc-key sync my-app --replace
+```
+
+`--replace` installa la chiave ricavata al posto di una diversa e invia la passphrase per dimostrarlo. Un repository che possiede una chiave ma non ha né un keyfile né un mount non ottiene alcun elenco, e il journal dell'unità lo dice. Uno snapshot di questo tipo si ripristina comunque per intero; solo la navigazione e `rdc backup check` hanno bisogno dell'elenco.
+
+### Avvisi di errore
+
+Uno snapshot o una verifica falliti raggiungono l'account tramite un rapporto di errore, e anche un flusso che smette di riferire oltre il suo periodo di tolleranza viene segnalato. L'account invia una email riepilogativa per abbonamento al giorno, in base alla preferenza sullo stato di salute dei backup nella pagina Notifiche del portale, attiva per impostazione predefinita. `rdc machine health` mostra una verifica fallita come avviso e termina con codice diverso da zero. Un flusso con un obiettivo dichiarato che non ha riferito entro l'ora prevista della sua prossima esecuzione, o le cui ultime tre esecuzioni hanno mancato l'obiettivo, invia un proprio avviso, al massimo uno per flusso ogni 6 ore, con l'obiettivo, il valore raggiunto e il motivo. La latenza di rilevamento è pari all'intervallo del ciclo di manutenzione, cioè un'ora, quindi un avviso può arrivare fino a un'ora dopo il mancato obiettivo. Un flusso senza obiettivo resta nel riepilogo giornaliero.
+
+## Backup di Livello Critico
+
+Un repository che deve perdere minuti anziché un giorno dichiara un obiettivo di protezione. Gli snapshot girano allora a cadenza ravvicinata, a ogni esecuzione vengono caricate le celle modificate e l'account tiene sotto controllo l'obiettivo.
+
+### Dichiarare un obiettivo
+
+```bash
+# Misura quanto cambia tra un'esecuzione e l'altra, poi leggi la proiezione e la raccomandazione sulla dimensione della cella.
+rdc backup churn mail --samples 12 --interval 5m
+
+# Dichiara un obiettivo di 15 minuti per un repository su una strategia.
+rdc backup strategy set nightly-hot --repo-rpo mail=15m
+
+# Oppure un unico obiettivo per ogni repository coperto dalla strategia (almeno 5m; none lo rimuove).
+rdc backup strategy set nightly-hot --rpo 15m
+```
+
+L'obiettivo è una finestra di perdita: il tempo che separa l'ultima modifica che un ripristino può recuperare da un guasto, compreso il tempo del caricamento. Un'esecuzione che termina dopo l'obiettivo conta come mancata anche se lo snapshot è riuscito. `rdc machine health` mostra il valore raggiunto accanto all'obiettivo. Impostare un obiettivo stampa una stima del costo mensile basata sulla misura del churn; un repository senza misura viene rifiutato finché non si esegue `rdc backup churn <repo>` o non si passa `--no-estimate`. `--dry-run` mostra la modifica senza scriverla.
+
+Un'esecuzione chiede allo storage soltanto delle celle cambiate dallo snapshot precedente, più un campione a rotazione di 16 celle invariate che lo storage deve ancora possedere. Se manca una cella campionata, quell'esecuzione chiede di tutto e ricarica ciò che non c'è più. Un repository invariato registra un'esecuzione `unchanged` invece di un nuovo snapshot. Ogni esecuzione ha una scadenza massima: un'esecuzione bloccata viene terminata e conta come mancata, invece di fermare in silenzio il timer.
+
+Più repository della stessa macchina condividono un unico slot di esecuzione, quindi due obiettivi non avviano mai due caricamenti contemporaneamente.
+
+### Hook di pre-backup
+
+Un repository può mettere in quiescenza la propria applicazione attorno al congelamento. Lo fanno due funzioni facoltative del suo Rediaccfile.
+
+```bash
+backup_prepare() { docker exec db psql -c "CHECKPOINT"; }
+backup_finish()  { :; }
+```
+
+In un'esecuzione a caldo viene eseguito `backup_prepare`, il file system viene sincronizzato e clonato con reflink, e poi `backup_finish` gira sempre, anche dopo un prepare fallito. L'hashing e il caricamento partono solo dopo il ritorno di `backup_finish`, quindi l'applicazione non viene mai trattenuta durante il caricamento. Ogni funzione ha un timeout di 30 secondi per impostazione predefinita e di 300 al massimo, e una funzione che lo supera viene terminata insieme a tutto il suo gruppo di processi. Le scritture trattenute da un hook terminano quando `backup_finish` ritorna. Se lo stesso renet viene terminato, un timer armato prima dell'hook esegue `backup_finish` entro il doppio del timeout più 30 secondi. Uno snapshot passato dall'hook viene registrato come `app-quiesced`; senza hook è `crash-consistent`. Un'esecuzione a freddo non usa mai l'hook, perché ferma da sé i servizi.
+
+Nota di sicurezza: l'hook è codice del repository. Gira con un ambiente costruito ad hoc e non con quello dell'unità di backup, quindi le credenziali di backup non gli sono visibili. Docker è raggiungibile solo tramite il proxy di policy del repository, con le sue restrizioni in vigore. Un hook che fallisce o va in timeout viene registrato con il suo esito (`failed`, `timeout`) e segnalato, e un finish andato in timeout genera subito un avviso, perché l'applicazione potrebbe essere ancora in quiescenza.
+
+### Dimensione delle celle
+
+Per impostazione predefinita l'immagine viene tagliata in celle da 4 MiB. Un repository con piccole scritture sparse, come una casella di posta, carica molti meno byte con celle da 1 MiB, mentre grandi scritture raggruppate non guadagnano nulla da una cella più piccola e moltiplicano soltanto le richieste. `rdc backup churn` raccomanda una dimensione in base al pattern di scrittura misurato, e `--repo-cell-size mail=1M` la applica. Cambiare la dimensione delle celle riavvia da zero il repository: ogni cella viene ricaricata e addebitata come attiva finché la conservazione non elimina la vecchia catena, e i fork sulla vecchia griglia smettono di deduplicare. Un'esecuzione pianificata non modifica mai la griglia da sola. Una dimensione che taglierebbe l'immagine in più di 262.144 celle viene rifiutata, perché oltre quel limite la potatura viene rinviata (256 GiB a 1 MiB).
+
+### Distruzione ritardata
+
+```bash
+rdc backup immutability show
+rdc backup immutability set 7
+rdc backup undelete <snapshot-id>
+```
+
+Con una finestra di `D` giorni (da 0 a 30), l'eliminazione di uno snapshot, la rimozione di un repository e una modifica della conservazione che mantiene meno dati attendono tutte `D` giorni prima di avere effetto, e ognuna può essere annullata fino ad allora (`rdc backup undelete`, `purge --cancel`). Uno snapshot eliminato continua a poter essere ripristinato mentre attende. Una modifica che mantiene più dati si applica subito, mentre accorciare o disattivare la finestra stessa attende lo scadere della vecchia finestra. Ognuna di queste azioni avvisa subito il proprietario e gli amministratori. Lo spazio viene liberato dopo la finestra e il periodo di attesa di 7 giorni, quindi `D + 7` giorni dopo la richiesta.
+
+Ecco i limiti, senza giri di parole. La protezione è applicata dal server dell'account, non dall'object store: non è uno storage WORM e non viene usato alcun blocco di bucket o di oggetto. Non protegge da un proprietario o amministratore che lascia scadere la finestra, né dalla perdita dello storage stesso, dato che non esiste una seconda destinazione. La riparazione elimina subito un oggetto corrotto, perché un nuovo hash ne dimostra il danno, e ogni riparazione viene registrata e segnalata. L'accorpamento di una catena di manifest riscrive la cronologia senza rimuovere alcuno stato ripristinabile. Un abbonamento annullato con retain-on-cancel segue il proprio ciclo di 60 giorni.
+
+### Storage attivo e in attesa
+
+`rdc backup usage` riporta due valori. **Attivo** è ciò che gli snapshot conservati possono ripristinare, e solo questo viene addebitato sulla quota del piano. **In attesa** è lo storage che nessuno snapshot conservato nomina più e che attende 7 giorni di tolleranza prima dell'eliminazione; non viene addebitato, e il riepilogo di utilizzo lo mostra come in attesa di eliminazione.
+
+Lo storage in attesa non è illimitato. Il tetto di churn è il doppio della quota del piano. Oltre il tetto, a un flusso che ha completato un commit meno di 60 minuti prima viene rifiutato un nuovo caricamento finché lo storage in attesa non si svuota, la macchina registra l'esecuzione come `throttled` e conta come obiettivo mancato, con il tetto indicato come motivo. Un flusso che gira ogni ora o più lentamente non viene mai rifiutato.
+
+### Avvisi di obiettivo mancato
+
+Un flusso con un obiettivo invia un proprio avviso quando supera la prossima esecuzione prevista o ha mancato tre esecuzioni consecutive, al massimo uno per flusso ogni 6 ore, senza attendere il riepilogo giornaliero. L'avviso riporta l'obiettivo, il valore raggiunto e il motivo. La latenza di rilevamento è pari all'intervallo del ciclo di manutenzione, cioè un'ora, quindi un avviso può arrivare fino a un'ora dopo il mancato obiettivo. Una richiesta distruttiva soggetta a distruzione ritardata avvisa subito.
 
 ## Backup Pianificati
 

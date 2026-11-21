@@ -86,8 +86,10 @@ ESC_NR = built("bck-console-none")
 ESC_DL = built("bck-console-none")
 ESC_NV = built("bck-console-not-verified")
 ESC_MIRROR = built("bck-docs-only")
-# A second repository the scope cases push from with `git -C`.
+# A second repository the scope cases push from with `git -C`. A push publishes to its URL (#f2e3507a), so the admitted one sends to a repository none of the judged world's remotes name, and OUTSIDE_SAME keeps the fixture's own origin, the judged world's too, which is this checkout's push.
 OUTSIDE = built("bck-docs-only")
+G.VM._git(OUTSIDE, "remote", "set-url", "origin", "https://example.invalid/outside/scratch.git")
+OUTSIDE_SAME = built("bck-docs-only")
 
 
 def transcript(answer_ts):
@@ -184,6 +186,14 @@ CASES = [
         CONSOLE_NONE,
         None,
         False,
+        "",
+    ),
+    (
+        "a repository outside whose origin is this checkout's",
+        "git -C %s push origin 1008-1" % OUTSIDE_SAME,
+        CONSOLE_NONE,
+        None,
+        True,
         "",
     ),
     ("an empty command", "", CONSOLE_NONE, None, False, ""),
@@ -360,6 +370,17 @@ CASES = [
     ),
 ]
 
+# BOX G5 OF PLAN-local-first-delivery: the shared backup-ref cases (`_backup_push.CASES`), in a world whose range touches the console backup paths, so every push it does not admit is refused here.
+BP = importlib.import_module("rediacc_hooks.guards._backup_push")
+BACKUP_WORLDS = {
+    True: BP.plant(built("bck-console-none")),
+    False: BP.plant(built("bck-console-none"), pinned=False),
+}
+CASES += [
+    (label, command, BACKUP_WORLDS[pinned], None, not admitted, "")
+    for label, command, pinned, admitted in BP.CASES
+]
+
 BROKEN_RUNNER = (
     "import sys; sys.path.insert(0, %r)\n"
     "from rediacc_hooks import hookio\n"
@@ -517,17 +538,15 @@ MUST_FLIP = {
     "asked-always-true": "an ASKED matching no answer",
 }
 for label, mutant in CONTROLS:
-    flipped = [
-        n
-        for n, c, r, tr, w, _ in CASES
-        if w and not run(c, r, tr, broken=mutant, cwd=CWD.get(n))[0]
-    ]
     must = MUST_FLIP[label]
+    # A control stops at its first flip: only the named case decides it.
+    flipped = []
+    for n, c, r, tr, w, _ in CASES:
+        if w and n == must and not run(c, r, tr, broken=mutant, cwd=CWD.get(n))[0]:
+            flipped.append(n)
+            break
     if must in flipped:
-        print(
-            "%s control: planted %r; %d refusal(s) flipped to allowed, including %r"
-            % (label, mutant[1], len(flipped), must)
-        )
+        print("%s control: planted %r; refusal flipped to allowed: %r" % (label, mutant[1], must))
     else:
         print(
             "*** FAIL *** %s control: with %r planted, %r did not flip (flipped: %r)"

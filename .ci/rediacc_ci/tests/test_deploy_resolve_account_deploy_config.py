@@ -53,26 +53,29 @@ def run_both(
     return old, new, old_output, new_output
 
 
-def test_edge_target_selects_edge_worker_and_sandbox(tmp_path: pathlib.Path) -> None:
-    env = {
-        "TARGET": "edge",
-        "MATRIX_ID": "eu",
-        "MATRIX_SECRET_SUFFIX": "EU",
-        "MATRIX_WORKER_NAME": "w",
-        "MATRIX_DOMAIN": "d",
-        "MATRIX_EDGE_WORKER_NAME": "ew",
-        "MATRIX_EDGE_DOMAIN": "ed",
-    }
-    (old_exit, old_out, old_err), (new_exit, new_out, new_err), old_output, new_output = run_both(
-        tmp_path, env
+def test_a_non_stable_target_is_refused_by_the_port(tmp_path: pathlib.Path) -> None:
+    """Port only: since the product-domain rename one shared Worker set per region is the only target, so the twin's edge answer (edge Worker, `--sandbox`) is retired and `TARGET=edge` exits 1 and writes nothing."""
+    out = tmp_path / "output.txt"
+    env = diff.env_for(
+        TARGET="edge",
+        MATRIX_ID="eu",
+        MATRIX_SECRET_SUFFIX="EU",
+        MATRIX_WORKER_NAME="w",
+        MATRIX_DOMAIN="d",
+        GITHUB_OUTPUT=str(out),
+        PYTHONPATH=".ci",
+        PYTHONDONTWRITEBYTECODE="1",
     )
-    assert (old_exit, old_out, old_err) == (0, "", "")
-    assert (new_exit, new_out, new_err) == (0, "", "")
-    assert old_output == "region=eu\nworker=ew\ndomain=ed\nsandbox=--sandbox\n"
-    assert new_output == old_output
+    rc, stdout, stderr = diff.bash_streams(
+        "python3 -m rediacc_ci.deploy.%s" % MODULE, env=env, timeout=30
+    )
+    assert (rc, stdout) == (1, "")
+    assert "TARGET=edge is not a deploy target" in stderr
+    assert not out.exists()
 
 
 def test_stable_target_selects_stable_worker_and_no_sandbox(tmp_path: pathlib.Path) -> None:
+    # The two MATRIX_EDGE_* values are no longer read; they stay because the recorded golden's key covers this exact environment.
     env = {
         "TARGET": "stable",
         "MATRIX_ID": "us",

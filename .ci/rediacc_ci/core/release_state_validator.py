@@ -135,7 +135,7 @@ from rediacc_ci import log, paths
 from rediacc_ci.core import awscli
 from rediacc_ci.well_known import RELEASES_BUCKET
 
-# `RSV_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"` (release-state-validator.sh:72).
+# `RSV_BUCKET="${RELEASES_BUCKET:-releases}"` (release-state-validator.sh:72).
 DEFAULT_BUCKET = RELEASES_BUCKET
 
 # `RSV_SENTINEL_KEY=".released"` (:73). The commit marker, written LAST.
@@ -179,7 +179,7 @@ def _log_error(message: str) -> None:
 
 
 def bucket(env: dict[str, str] | None = None) -> str:
-    """`${RELEASES_BUCKET:-rediacc-releases}`, read at CALL time.
+    """`${RELEASES_BUCKET:-releases}`, read at CALL time.
 
     Read per call rather than frozen at import, because the twin reads it at SOURCE time (`:72`) into a variable every function then interpolates, and a caller that exports `RELEASES_BUCKET` after sourcing gets the OLD value in bash and would get the NEW one from a module constant here. Neither behaviour is better; they just have to be the same, and a function is the only spelling
     a test can pin.

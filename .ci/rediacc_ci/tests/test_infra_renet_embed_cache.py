@@ -7,15 +7,20 @@ The receipt check is also driven against build.sh's own `_embed_receipt_is_curre
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
+import os
 import pathlib
 import shutil
+import signal
 import subprocess
+import time
 
 import pytest
 
 from rediacc_ci.infra import renet_embed_cache as rec
+from rediacc_ci.tests import pathmask
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 BUILD_SH = ROOT / "private" / "renet" / "build.sh"
@@ -53,6 +58,7 @@ def _skeleton(tmp_path: pathlib.Path) -> pathlib.Path:
     lock_bytes = json.dumps(LOCK).encode()
     src.mkdir(parents=True)
     (src / "embed-assets.lock.json").write_bytes(lock_bytes)
+    (src / "Dockerfile").write_text("FROM ubuntu:26.10 AS rsync-builder-amd64\n", encoding="utf-8")
     assets = rec.assets_dir(src)
     for d in ("", "amd64", "amd64/base", "amd64/cluster", "arm64", "arm64/base", "arm64/cluster"):
         (assets / d).mkdir(parents=True, exist_ok=True)
@@ -71,6 +77,7 @@ def _staged(tmp_path: pathlib.Path) -> pathlib.Path:
         entries[rel] = {"sha256": _sha(payload)}
     receipt = {
         "lockfileSha256": _sha((src / "embed-assets.lock.json").read_bytes()),
+        "dockerfileSha256": _sha((src / "Dockerfile").read_bytes()),
         "assets": entries,
     }
     (assets / ".staged.json").write_text(json.dumps(receipt), encoding="utf-8")
@@ -88,6 +95,23 @@ def test_the_checkout_skeleton_is_not_current(tmp_path):
 def test_a_lockfile_change_invalidates_the_receipt(tmp_path):
     src = _staged(tmp_path)
     (src / "embed-assets.lock.json").write_text(json.dumps({**LOCK, "bump": 1}), encoding="utf-8")
+    assert not rec.receipt_is_current(src)
+
+
+def test_a_dockerfile_change_invalidates_the_receipt(tmp_path):
+    """A base image or configure flag changes the compiled bytes; the lockfile alone missed renet 5e0987c6."""
+    src = _staged(tmp_path)
+    assert rec.receipt_is_current(src)
+    (src / "Dockerfile").write_text("FROM ubuntu:24.04 AS rsync-builder-amd64\n", encoding="utf-8")
+    assert not rec.receipt_is_current(src)
+
+
+def test_a_receipt_without_the_dockerfile_digest_is_not_current(tmp_path):
+    src = _staged(tmp_path)
+    path = rec.assets_dir(src) / ".staged.json"
+    receipt = json.loads(path.read_text(encoding="utf-8"))
+    del receipt["dockerfileSha256"]
+    path.write_text(json.dumps(receipt), encoding="utf-8")
     assert not rec.receipt_is_current(src)
 
 
@@ -111,7 +135,11 @@ def test_an_unlisted_extra_asset_invalidates_the_receipt(tmp_path):
 
 def test_an_empty_receipt_never_satisfies(tmp_path):
     src = _skeleton(tmp_path)
-    receipt = {"lockfileSha256": _sha((src / "embed-assets.lock.json").read_bytes()), "assets": {}}
+    receipt = {
+        "lockfileSha256": _sha((src / "embed-assets.lock.json").read_bytes()),
+        "dockerfileSha256": _sha((src / "Dockerfile").read_bytes()),
+        "assets": {},
+    }
     (rec.assets_dir(src) / ".staged.json").write_text(json.dumps(receipt), encoding="utf-8")
     assert not rec.receipt_is_current(src)
 
@@ -214,6 +242,21 @@ def test_a_receipt_written_by_build_sh_is_accepted_by_both(tmp_path):
 
 
 @needs_build_sh
+def test_a_missing_dockerfile_fails_the_digest_instead_of_hashing_nothing(tmp_path):
+    """`sha256sum | cut` exits 0 with an empty hash; an empty receipt field would then match an unlabelled image (review f21afb43.1)."""
+    src = _staged(tmp_path)
+    (src / "Dockerfile").unlink()
+    assets = rec.assets_dir(src)
+    digest = _bash(src, "_embed_dockerfile_sha")
+    assert digest.returncode != 0
+    assert digest.stdout == ""
+    written = _bash(src, '_embed_write_receipt "%s" "%s/.staged.json"' % (assets, assets))
+    assert written.returncode != 0
+    assert not _shell_says_current(src)
+    assert not rec.receipt_is_current(src)
+
+
+@needs_build_sh
 @pytest.mark.parametrize(
     "mutate",
     [
@@ -231,9 +274,218 @@ def test_a_receipt_written_by_build_sh_is_accepted_by_both(tmp_path):
             lambda s: (s / "embed-assets.lock.json").write_text("{}", encoding="utf-8"),
             id="lock-changed",
         ),
+        pytest.param(
+            lambda s: (s / "Dockerfile").write_text("FROM ubuntu:24.04\n", encoding="utf-8"),
+            id="dockerfile-changed",
+        ),
     ],
 )
 def test_python_and_build_sh_agree(tmp_path, mutate):
     src = _staged(tmp_path)
     mutate(src)
     assert rec.receipt_is_current(src) is _shell_says_current(src)
+
+
+# ---------------------------------------------------------------------------
+# embed_assets itself, driven against a fake `docker` on a fake assets tree.
+# Origin: the 2026-11-14 restage printed `zstd: can't stat ... -- ignored` four times and still ended "Embedded assets ready" with a current receipt.
+# ---------------------------------------------------------------------------
+
+FAKE_DOCKER = """#!/bin/bash
+case "$1" in
+  image) cat "$FAKE_RECIPE_FILE" ;;
+  create) echo fakecontainer ;;
+  rm) ;;
+  cp)
+    dest="$3"
+    case "$(basename "$dest")" in
+      "$FAKE_CP_FAIL") exit 1 ;;
+      "$FAKE_CP_NOOP") exit 0 ;;
+    esac
+    printf 'fresh:%s' "$(basename "$dest")" > "$dest"
+    ;;
+esac
+"""
+
+
+def _embed(
+    src: pathlib.Path,
+    tmp_path: pathlib.Path,
+    *,
+    fail: str = "",
+    noop: str = "",
+    build_sh: pathlib.Path = BUILD_SH,
+    timeout_s: int | None = None,
+    base_path: str | None = None,
+):
+    bindir = tmp_path / "fakebin"
+    bindir.mkdir(exist_ok=True)
+    docker = bindir / "docker"
+    docker.write_text(FAKE_DOCKER, encoding="utf-8")
+    docker.chmod(0o755)
+    recipe = tmp_path / "recipe"
+    recipe.write_text(_sha((src / "Dockerfile").read_bytes()) + "\n", encoding="utf-8")
+    script = (
+        'source "$1" || true; set +e; SCRIPT_DIR="$2"; EMBED_LOCKFILE="$2/embed-assets.lock.json"; '
+        'PATH="$3:$7"; export FAKE_RECIPE_FILE="$4" FAKE_CP_FAIL="$5" FAKE_CP_NOOP="$6"; '
+        "embed_assets --force"
+    )
+    cmd = [
+        "bash",
+        "-c",
+        script,
+        "bash",
+        str(build_sh),
+        str(src),
+        str(bindir),
+        str(recipe),
+        fail,
+        noop,
+        base_path if base_path is not None else os.environ.get("PATH", "/usr/bin:/bin"),
+    ]
+    if timeout_s is not None:
+        # The result is None only when THIS call outlived its timeout (it was waiting); any exit code, 124 and 137 included, is a real result.
+        # A new session lets the whole group (the subshell holding fd 9 and any child) die with it.
+        with subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            start_new_session=True,
+        ) as proc:
+            try:
+                out, err = proc.communicate(timeout=timeout_s)
+            except subprocess.TimeoutExpired:
+                os.killpg(proc.pid, signal.SIGKILL)
+                proc.communicate()
+                return None
+        return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
+    return subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=120)
+
+
+_MISSING_EMBED_TOOLS = [
+    what
+    for what, present in (
+        ("the private/renet submodule (build.sh)", BUILD_SH.is_file()),
+        ("jq", shutil.which("jq") is not None),
+        ("zstd", shutil.which("zstd") is not None),
+    )
+    if not present
+]
+needs_embed_tools = pytest.mark.skipif(
+    bool(_MISSING_EMBED_TOOLS),
+    reason="embed_assets tests need " + ", ".join(_MISSING_EMBED_TOOLS or ["nothing"]),
+)
+
+
+@needs_embed_tools
+def test_a_full_staging_compresses_every_asset_and_writes_a_current_receipt(tmp_path):
+    src = _skeleton(tmp_path)
+    proc = _embed(src, tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    assets = rec.assets_dir(src)
+    for rel in ASSETS:
+        assert (assets / rel).is_file(), rel
+        assert not (assets / rel[: -len(".zst")]).exists()
+    assert rec.receipt_is_current(src)
+
+
+@needs_embed_tools
+def test_a_failed_copy_does_not_leave_the_old_artifact_for_the_receipt(tmp_path):
+    src = _skeleton(tmp_path)
+    assets = rec.assets_dir(src)
+    stale = assets / "arm64/base/criu-linux-arm64.zst"
+    stale.write_bytes(b"OLD BYTES")
+    proc = _embed(src, tmp_path, fail="criu-linux-arm64")
+    assert proc.returncode != 0
+    assert not stale.exists(), "the stale .zst survived a failed extraction"
+    assert not (assets / ".staged.json").exists()
+
+
+@needs_embed_tools
+def test_a_raw_file_that_vanishes_before_compression_is_a_hard_error(tmp_path):
+    """cp exits 0 but nothing is there: the shape a concurrent `zstd --rm` produces."""
+    src = _skeleton(tmp_path)
+    proc = _embed(src, tmp_path, noop="criu-linux-arm64")
+    assert proc.returncode != 0
+    assert "missing before compression" in proc.stderr
+    assert not (rec.assets_dir(src) / ".staged.json").exists()
+
+
+PREFIX_REV = "5e0987c6"
+
+
+@needs_embed_tools
+def test_control_the_pre_fix_build_sh_stages_over_a_vanished_raw_file(tmp_path):
+    """CONTROL, driving the real build.sh at its pre-fix revision (renet 5e0987c6): the bare `zstd` loop saw a missing input, errexit is off under `if ! embed_assets`, and the function still returned 0 with a receipt. The same input fails in the current build.sh (the test above)."""
+    shown = subprocess.run(
+        ["git", "-C", str(BUILD_SH.parent), "show", f"{PREFIX_REV}:build.sh"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if shown.returncode != 0:
+        # A shallow or partial submodule checkout lacks the old revision; the control cannot run, and says so.
+        pytest.skip(
+            f"private/renet has no revision {PREFIX_REV} (shallow checkout?): {shown.stderr.strip()}"
+        )
+    old = tmp_path / "build-pre-fix.sh"
+    old.write_text(shown.stdout, encoding="utf-8")
+    src = _skeleton(tmp_path)
+    proc = _embed(src, tmp_path, noop="criu-linux-arm64", build_sh=old)
+    assert proc.returncode == 0, proc.stderr
+    assert "Embedded assets ready" in proc.stdout
+    assert (rec.assets_dir(src) / ".staged.json").is_file()
+
+
+@needs_embed_tools
+@pytest.mark.skipif(shutil.which("flock") is None, reason="needs flock")
+def test_a_second_staging_waits_while_one_holds_the_tree(tmp_path):
+    src = _skeleton(tmp_path)
+    assets = rec.assets_dir(src)
+    holder = subprocess.Popen(["flock", str(assets), "sleep", "30"], start_new_session=True)
+    try:
+        for _ in range(100):
+            if subprocess.run(["flock", "-n", str(assets), "true"], check=False).returncode != 0:
+                break
+            time.sleep(0.1)
+        else:
+            pytest.fail("the holder never took the lock on the assets tree")
+        assert _embed(src, tmp_path, timeout_s=2) is None, (
+            "embed_assets ran while another staging held the tree"
+        )
+    finally:
+        # flock's `sleep` child inherits the lock fd: kill the whole group.
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(holder.pid, signal.SIGKILL)
+        holder.wait()
+    done = _embed(src, tmp_path)
+    assert done is not None
+    assert done.returncode == 0
+
+
+@needs_embed_tools
+def test_a_host_without_flock_stages_unlocked_and_says_so(tmp_path):
+    """Review 59c3f980.1: without a flock binary embed_assets still stages, and prints one note that it is not serialized."""
+    src = _skeleton(tmp_path)
+    # `pathmask` mirrors only the PATH entries that hold flock. The local mirror of EVERY entry it replaced listed the WSL `/mnt/c` directories over 9p and cost 67 s of a 68 s test.
+    masked = pathmask.path_without("flock", tmp_path)
+    pathmask.assert_absent("flock", masked)
+    done = _embed(src, tmp_path, base_path=masked)
+    assert done is not None
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert (done.stdout + done.stderr).count("flock not found") == 1
+    assert rec.receipt_is_current(src)
+
+
+@needs_embed_tools
+@pytest.mark.skipif(shutil.which("flock") is None, reason="needs flock")
+def test_a_missing_assets_directory_is_created_before_the_lock(tmp_path):
+    """Review 59c3f980.1: the assets directory is created before locking, so a fresh tree is locked and staged rather than skipping the lock."""
+    src = _skeleton(tmp_path)
+    shutil.rmtree(rec.assets_dir(src))
+    done = _embed(src, tmp_path)
+    assert done is not None
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert "flock not found" not in done.stdout + done.stderr
+    assert rec.receipt_is_current(src)

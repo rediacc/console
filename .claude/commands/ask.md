@@ -1,15 +1,16 @@
 ---
 description: Surface every decision currently waiting on the operator and put them as structured multiple-choice questions, so the operator never has to write a long prompt to be asked. Collects the four places a pending decision hides - `[?]` worklist deferrals with their DEFAULT/WHY/HOW, DECISIONS logged in the active round log for post-hoc veto, gate/finding choices this session parked, and the operator-owned "Yours" lines of the last Remaining section - then asks in batches with a recommended option first. Free text after the command narrows the scope to matching items.
 argument-hint: "[filter: a substring, an item id, or a topic; omit to ask about everything pending]"
-allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git branch:*), Bash(ls:*), Bash(grep:*), Bash(date:*)
+allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(git branch:*), Bash(ls:*), Bash(grep:*), Bash(date:*), Bash(./run.sh worktree landing --status)
 ---
 
 ## Pending decisions, gathered
 
-- Branch: !`git branch --show-current`
+- Branch (this tree): !`git branch --show-current`
+- Branch (landing tree, from the `rediacc-landing.json` record under the git common dir): !`./run.sh worktree landing --status`
 - UTC now: !`date -u +%Y-%m-%dT%H:%MZ`
-- Open worklist items (`[?]` = already parked for you, `[ ]` = open work): !`.claude/hooks/stop/worklist.py --list --open 2>/dev/null | head -40 || echo '(worklist unavailable)'`
-- Round log with DECISIONS awaiting veto: !`ls -t ~/.claude/projects/$(pwd | sed 's/[^A-Za-z0-9]/-/g')/reports/pr-babysit-*.md 2>/dev/null | head -1 || echo '(no active round log)'`
+- Open worklist items (`[?]` = already parked for you, `[ ]` = open work): !`.claude/hooks/stop/worklist.py --list --open 2>&1 | head -40`
+- Round log with DECISIONS awaiting veto: !`ls -t ~/.claude/projects/$(pwd | sed 's/[^A-Za-z0-9]/-/g')/reports/pr-babysit-*.md 2>&1 | head -1`
 - DECISIONS recorded in it: !`f=$(ls -t ~/.claude/projects/$(pwd | sed 's/[^A-Za-z0-9]/-/g')/reports/pr-babysit-*.md 2>/dev/null | head -1); [ -n "$f" ] && grep -cE '^- (DECISION|[0-9]{4}-[0-9]{2}-[0-9]{2} OPERATOR RULING)' "$f" 2>/dev/null || echo 0`
 
 ## What to do

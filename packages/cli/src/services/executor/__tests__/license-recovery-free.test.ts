@@ -98,6 +98,7 @@ describe('ensureRepoLicenseForProvisioning with no login', () => {
     m.resolveAuthority.mockResolvedValue('free');
     await ensureRepoLicenseForProvisioning(CREATE, MACHINE, 'key', '/usr/bin/renet', SFTP);
     expect(m.issueFree).toHaveBeenCalledWith(
+      'm1',
       MACHINE,
       'key',
       {
@@ -218,7 +219,7 @@ describe('recovery of a refused repo', () => {
       serverErrorSample: 'size limit',
     });
     const out = await recover(UP);
-    expect(m.refreshBatch).toHaveBeenCalledWith(MACHINE, 'key', '/usr/bin/renet', SFTP, X);
+    expect(m.refreshBatch).toHaveBeenCalledWith('m1', MACHINE, 'key', '/usr/bin/renet', SFTP, X);
     expect(out).toMatchObject({ errorCode: 'REPO_LICENSE_ISSUANCE_REQUIRED' });
   });
 
@@ -230,7 +231,14 @@ describe('recovery of a refused repo', () => {
   it('keeps machine-wide semantics for a verb naming no repo', async () => {
     m.refreshBatch.mockResolvedValue({ recoveryFailureMode: null });
     await recover({ functionName: 'repository_up_all', machineName: 'm1', params: {} } as never);
-    expect(m.refreshBatch).toHaveBeenCalledWith(MACHINE, 'key', '/usr/bin/renet', SFTP, undefined);
+    expect(m.refreshBatch).toHaveBeenCalledWith(
+      'm1',
+      MACHINE,
+      'key',
+      '/usr/bin/renet',
+      SFTP,
+      undefined
+    );
   });
 
   it('takes a GUID-spelled repository param as the GUID without a config lookup', async () => {
@@ -242,7 +250,7 @@ describe('recovery of a refused repo', () => {
       machineName: 'm1',
       params: { repository: guid.toUpperCase() },
     } as never);
-    expect(m.refreshBatch).toHaveBeenCalledWith(MACHINE, 'key', '/usr/bin/renet', SFTP, guid);
+    expect(m.refreshBatch).toHaveBeenCalledWith('m1', MACHINE, 'key', '/usr/bin/renet', SFTP, guid);
     expect(m.getRepository).not.toHaveBeenCalled();
   });
 
@@ -253,7 +261,14 @@ describe('recovery of a refused repo', () => {
       machineName: 'm1',
       params: { repository: 'app', tag: 'dev' },
     } as never);
-    expect(m.refreshBatch).toHaveBeenCalledWith(MACHINE, 'key', '/usr/bin/renet', SFTP, undefined);
+    expect(m.refreshBatch).toHaveBeenCalledWith(
+      'm1',
+      MACHINE,
+      'key',
+      '/usr/bin/renet',
+      SFTP,
+      undefined
+    );
   });
 
   describe('with no login', () => {
@@ -301,7 +316,7 @@ describe('refreshRepoIdentityFor runs with no skip switch', () => {
     m.acquire.mockResolvedValue(lease);
     m.resolveCtx.mockResolvedValue(CTX);
     await refreshRepoIdentityFor('repository_fork', 'm1', { tag: 'x' });
-    expect(m.refreshIdentity).toHaveBeenCalledWith(MACHINE, 'key', CTX, undefined, SFTP);
+    expect(m.refreshIdentity).toHaveBeenCalledWith('m1', MACHINE, 'key', CTX, undefined, SFTP);
     expect(release).toHaveBeenCalledTimes(1);
   });
 

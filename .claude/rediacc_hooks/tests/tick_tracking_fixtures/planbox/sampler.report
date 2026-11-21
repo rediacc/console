@@ -1,0 +1,52 @@
+---
+agent_id: a5bc6b756fa793919
+agent_type: general-purpose
+agent_name: general-purpose
+session: d778be9d
+branch: 1104-1
+at: 2026-11-05T20:25:17Z
+source: hook
+sends: 0
+open_boxes: 0
+transcript: /home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888/subagents/agent-a5bc6b756fa793919.jsonl
+bytes: 3807
+---
+
+## Final message
+
+L2 is partial. The sampler is committed as `d93cb2901`, and the live hostinger runs have not been done. The lease tree id is `agent-a5bc6b756fa793919`, and the tree is clean.
+
+I ran `npx tsx scripts/gen/gen-docs.ts --write` in this lease, as the coordinator ruled. Only `docs/ci-overhaul/07-port-brief.md` and `scripts/data/doc-registry.md` changed. I did not try the two-commit split. The earlier commit attempt with the sampler files alone was refused for stale generated docs, so I committed all four paths together. The post-commit hook reports the tree verified clean.
+
+**Pytest interpreter defect (for tracking)**
+- `PYTHONPATH=.ci python3 -m pytest ...` exits 1 with `No module named pytest`, and `/usr/bin/python3` has no pip.
+- `/home/developer/console/.venv/bin/python -m pytest ...` exits 1 with the same error. That venv has no pytest.
+- The only pytest I found is `/home/developer/lang-gpu/.venv/bin/python`. With the repo `pyproject.toml` it fails: `unrecognized arguments: --dist`, because that venv lacks xdist.
+- This command passes: `PYTHONPATH=.ci /home/developer/lang-gpu/.venv/bin/python -m pytest .ci/rediacc_ci/tests/test_ops_remote_load_sampler.py -q -p no:cacheprovider -c /dev/null --rootdir=.` exits 0 with 9 passed.
+- The exact command the brief named therefore cannot run in this tree.
+
+**Live L2 sequence** (main checkout, hostinger through `eu-bench`, with the branch renet provisioned):
+```
+mkdir -p /tmp/rdc-bdl
+PYTHONPATH=.ci python3 -m rediacc_ci.ops.remote_load_sampler --machine hostinger --config eu-bench -- ./rdc.sh backup download mail@hostinger --to /tmp/rdc-bdl --config eu-bench
+./rdc.sh machine status hostinger --config eu-bench      # expect 0 transfer snapshots
+PYTHONPATH=.ci python3 -m rediacc_ci.ops.remote_load_sampler --machine hostinger --config eu-bench -- ./rdc.sh backup download mail@hostinger --to /tmp/rdc-bdl --config eu-bench
+./rdc.sh machine status hostinger --config eu-bench      # expect 0 transfer snapshots
+sha256sum /tmp/rdc-bdl/hostinger/mail.latest.img         # compare with the state file's digest
+```
+The sampler's own exit is the download's rc when that is non-zero. Otherwise it exits 3 for sampling failure, 4 when peak load exceeds baseline + 3.5 or peak iowait exceeds 15, and 0 when neither threshold is exceeded. The sampler does not check transfer snapshots; the `machine status` lines do.
+
+**TICK block**
+- Plan file: `agent/plans/PLAN-backup-local-image.md`, box `339bf791` L2 [live].
+- Clause list:
+  1. `./rdc.sh backup download mail@hostinger --to /tmp/rdc-bdl --config eu-bench` exits 0, state `complete`, sha256 compare passes.
+  2. The same command again exits 0, with `literalBytes` recorded.
+  3. Load and iowait sampler before, during and after, and `machine status` showing 0 transfer snapshots after each run.
+  4. No upload on production.
+  5. Accept: both runs exit 0, with timings, sizes, `literalBytes`, both digests and the load peak under "Live records".
+- Clauses the commits satisfy:
+  - `d93cb2901` satisfies the sampler half of clause 3: `.ci/rediacc_ci/ops/remote_load_sampler.py` and `.ci/rediacc_ci/tests/test_ops_remote_load_sampler.py`. The commit also carries the regenerated `docs/ci-overhaul/07-port-brief.md` and `scripts/data/doc-registry.md`.
+  - Clauses 1, 2, 4 and 5 are not done, and neither is the `machine status` half of clause 3. Nothing on the box may be ticked yet.
+- Acceptance command for the committed work: the pytest above, exit 0, 9 passed. The L2 box has no tickable acceptance until the live runs record their results.
+- Open clauses and the command that closes each:
+  - Clauses 1, 2, 3 (status half), 4 and 5: the live sequence above, then record the rc, timing, size, `literalBytes`, both sha256 values and the sampler summary line under "Live records".

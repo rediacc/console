@@ -251,3 +251,26 @@ def test_delta_the_data_dir_pin_leaves_actions_and_an_explicit_value_alone(
     monkeypatch.setenv("RENET_DATA_DIR", "/elsewhere")
     e2e.pin_local_renet_data_dir()
     assert os.environ["RENET_DATA_DIR"] == "/elsewhere"
+
+
+def test_delta_an_empty_selection_is_named_by_leg_and_image() -> None:
+    scan = e2e.Scan()
+    scan.feed("Error: No tests found.")
+    msg = e2e.judge_empty_selection(scan, "6/11", "oracle-10")
+    assert msg is not None
+    assert "shard leg 6/11" in msg
+    assert "VM_IMAGE=oracle-10" in msg
+    assert "not a pass" in msg
+
+
+def test_delta_a_run_with_tests_is_not_an_empty_selection() -> None:
+    scan = e2e.Scan()
+    scan.feed("Running 4 tests using 1 worker")
+    assert e2e.judge_empty_selection(scan, "6/11", "oracle-10") is None
+
+
+def test_delta_an_empty_selection_fails_even_when_playwright_exits_zero() -> None:
+    assert e2e.final_verdict(0, "shard leg 6/11 selected ZERO tests on VM_IMAGE=oracle-10") == 1
+    assert e2e.final_verdict(1, "shard leg 6/11 selected ZERO tests on VM_IMAGE=oracle-10") == 1
+    assert e2e.final_verdict(0, None) == 0, "CONTROL: a run with tests that passed is green"
+    assert e2e.final_verdict(1, None) == 1

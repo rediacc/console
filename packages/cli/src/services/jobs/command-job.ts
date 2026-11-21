@@ -14,12 +14,12 @@
  * has not happened (the reason each J0 verb sat in BACKGROUND_UNSAFE).
  */
 
-import { randomUUID } from 'node:crypto';
 import { getEffectiveConfigName } from '../config/config-name.js';
 import { currentRequestContext } from '../core/request-context.js';
 import { getExecutor } from '../executor/executor-factory.js';
 import { observedJob } from '../executor/job-call.js';
 import type { ExecuteOptions, ExecuteResult, Executor } from '../executor/types.js';
+import { invocationMinter } from './attach.js';
 import {
   type JobCall,
   type JobStartOutcome,
@@ -97,7 +97,7 @@ export async function runCommandJob(
   let last: ExecuteResult | undefined;
   let requestId: string | undefined;
   const mint = () => {
-    requestId = randomUUID();
+    requestId = invocationMinter().next(options.machineName);
     return requestId;
   };
   const call = commandJobCall(verb, { ...options, verb }, inner, (result) => {

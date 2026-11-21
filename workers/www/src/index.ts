@@ -3,19 +3,21 @@ import { createApp } from '../../../private/account/src/app.js';
 import type { Database } from '../../../private/account/src/db/index.js';
 import * as schema from '../../../private/account/src/db/schema.js';
 import { envSchema } from '../../../private/account/src/types/env.js';
+import { handleEnterpriseLookup, type LookupEnv } from './enterprise-lookup';
+import { handleGeo } from './geo';
 import { applyRedirect } from './redirect-aliases';
 import { findSmartRedirect } from './smart-redirect';
 
-interface Env {
+interface Env extends LookupEnv {
   ASSETS: Fetcher;
-  // Only bound in PR previews (deploy-www.sh mints account-db-pr-N and injects the binding via wrangler.preview.toml). On stable / edge, /account/api/* is served by the regional workers, so DB is absent here and the branch below 410s.
+  // Only bound in PR previews (deploy-www.sh mints account-db-pr-N and injects the binding via wrangler.preview.toml). On www.rediacc.com, /account/api/* is served by the regional workers, so DB is absent here and the branch below 410s.
   DB?: D1Database;
-  // Service binding to the EU regional account worker. Used to forward the public marketing endpoints (contact submit, newsletter subscribe) so the forms on www.rediacc.com / edge.rediacc.com can reach a DB-bound backend without cross-origin CORS. Bound on stable + edge wrangler configs, absent on PR previews (which serve via env.DB instead).
+  // Service binding to the EU regional account worker. Used to forward the public marketing endpoints (contact submit, newsletter subscribe) so the forms on www.rediacc.com can reach a DB-bound backend without cross-origin CORS. Bound in workers/www/wrangler.toml (the one www config, www.rediacc.com), absent on PR previews (which serve via env.DB instead).
   ACCOUNT?: Fetcher;
   [key: string]: unknown;
 }
 
-// --------------------------------------------------------------------------- Preview origin rewriting --------------------------------------------------------------------------- On non-stable hostnames (edge.rediacc.com, pr-397.rediacc.workers.dev), rewrite https://www.rediacc.com → the current origin in all text responses so that install commands, canonical URLs, sitemaps, etc.
+// --------------------------------------------------------------------------- Preview origin rewriting --------------------------------------------------------------------------- On non-stable hostnames (a PR preview such as pr-397.rediacc.workers.dev), rewrite https://www.rediacc.com → the current origin in all text responses so that install commands, canonical URLs, sitemaps, etc.
 // reflect the preview domain. Stable (www.rediacc.com) traffic is unaffected — on that hostname isPreview is false and rewriteOrigin() is skipped. ---------------------------------------------------------------------------
 
 const WWW_ORIGIN = WK_SITE_ORIGIN;
@@ -67,10 +69,10 @@ export async function rewriteOrigin(
   }
 
   // Rewrite install script defaults so CLI uses the preview channel and auto-connects to the preview account server.
-  // Bash: ${REDIACC_CHANNEL:-stable}  PowerShell: } else { "stable" }
-  body = body.replaceAll('REDIACC_CHANNEL:-stable', `REDIACC_CHANNEL:-${channel}`);
+  // Bash: ${REDIACC_CHANNEL:-edge}  PowerShell: } else { "edge" }
+  body = body.replaceAll('REDIACC_CHANNEL:-edge', `REDIACC_CHANNEL:-${channel}`);
   body = body.replaceAll('REDIACC_SERVER_URL:-}', `REDIACC_SERVER_URL:-${origin}}`);
-  body = body.replaceAll('} else { "stable" }', `} else { "${channel}" }`);
+  body = body.replaceAll('} else { "edge" }', `} else { "${channel}" }`);
 
   // Rewrite channel references in website HTML (install commands baked at build time)
   for (const format of ['apt', 'rpm', 'apk', 'archlinux', 'cli', 'npm']) {
@@ -233,7 +235,7 @@ function handleAccountApi(request: Request, env: Env, url: URL): Response | Prom
   return new Response(
     JSON.stringify({
       error: 'gone',
-      message: 'Account API is served by regional workers (eu/us/asia.rediacc.com).',
+      message: 'Account API is served by regional workers (eu/us/asia.rediacc.cloud).',
     }),
     { status: 410, headers: { 'content-type': 'application/json; charset=utf-8' } }
   );
@@ -356,6 +358,14 @@ export default {
 
     if (url.pathname === '/robots.txt' && isPreview) {
       return Promise.resolve(buildDisallowRobots());
+    }
+
+    if (url.pathname === '/api/geo' && request.method === 'GET') {
+      return Promise.resolve(handleGeo(request));
+    }
+
+    if (url.pathname === '/api/enterprise-lookup') {
+      return handleEnterpriseLookup(request, env);
     }
 
     if (isAccountApiPath(url.pathname)) {

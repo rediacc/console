@@ -3,13 +3,14 @@ description: Distill the current session into a durable handoff - a hook-enforce
 argument-hint: "[slug] (kebab-case dir under agent/programs/; omit and one is proposed; existing dir = update mode)"
 # User-only by operator ruling 2026-10-09 ("I forgot about handoff command. let's include it into the exception list for CI & hook(s)"): the one entry in the model-invocation exception list.
 disable-model-invocation: true
-allowed-tools: Bash(ls:*), Bash(git branch:*), Bash(git status:*), Bash(date:*)
+allowed-tools: Bash(ls:*), Bash(git branch:*), Bash(git status:*), Bash(date:*), Bash(./run.sh worktree landing --status)
 ---
 
 ## Current state
 
 - Existing program suites (empty = none yet): !`ls agent/programs/ 2>/dev/null || echo '(none yet)'`
-- Branch: !`git branch --show-current`
+- Branch (this tree): !`git branch --show-current`
+- Branch (landing tree, from the `rediacc-landing.json` record under the git common dir): !`./run.sh worktree landing --status`
 - UTC now: !`date -u +%Y-%m-%dT%H:%MZ`
 
 ## Mode

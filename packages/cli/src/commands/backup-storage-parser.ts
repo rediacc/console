@@ -154,6 +154,8 @@ export interface RestoreStats {
   status?: string;
   /** Why a restore failed or was placed with a caveat; for a failure it names a kept staged copy. */
   reason?: string;
+  /** `verified` when the restored inventory resolved to the root the snapshot's manifest records; `absent` for a manifest that carries none. */
+  cellsRoot?: string;
   /** Whether a test-open proved the image opens: `opened`, `refused`, or `not-available`. */
   passphraseCheck?: 'opened' | 'refused' | 'not-available';
   /** A salvage restore's holes, by byte range. */

@@ -119,6 +119,13 @@ GLOB_ROOTS = {
             "exits 0 with non-empty output; no suite is named individually"
         ),
     ),
+    ".claude/hooks/post-bash/": (
+        ("test-",),
+        (
+            "run by .claude/rediacc_hooks/tests/test_hooks_delegates.py:_discover_tailed, "
+            "the same _TAILED_ROOTS glob as .claude/hooks/stop/"
+        ),
+    ),
     ".claude/hooks/context/": (
         ("test-",),
         (

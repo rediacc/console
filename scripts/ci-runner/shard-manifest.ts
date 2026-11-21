@@ -104,7 +104,8 @@ export function parseShardManifest(text: string, lane: string): ShardManifestFil
   if (!Array.isArray(file.legs)) {
     throw new Error(`shard manifest for lane "${lane}" is missing "legs".`);
   }
-  for (const leg of file.legs) {
+  // Parsed JSON can hold anything, so each leg is checked as `unknown`.
+  for (const leg of file.legs as unknown[]) {
     if (
       leg === null ||
       typeof leg !== 'object' ||

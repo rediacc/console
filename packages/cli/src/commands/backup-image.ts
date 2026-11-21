@@ -1,9 +1,14 @@
 import { join, resolve as resolvePath } from 'node:path';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { runStoreFetch } from '../services/backup-image/store-fetch.js';
+import {
+  runStoreFetch,
+  storeCellsRootLine,
+  storeFetchJson,
+} from '../services/backup-image/store-fetch.js';
 import { runDownload, runUpload } from '../services/backup-image/transfer.js';
 import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
 import { setExitCode, writeStdout } from '../services/core/request-context.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { resolveRepoRefLocal } from '../utils/repo-target.js';
@@ -50,6 +55,8 @@ interface DownloadCliOptions {
   skipVerify?: boolean;
   skipSpaceCheck?: boolean;
   store?: boolean;
+  /** With --store, the backup store to read (`--from <storeId>`). */
+  from?: string;
   at?: string;
 }
 
@@ -73,18 +80,22 @@ async function runStoreDownloadCommand(refs: string[], options: DownloadCliOptio
   const { name, tag, repoKey } = await resolveRepoRefLocal(refs[0]);
   const dest = join(resolvePath(options.to), `${name}.${tag}.img`);
   const result = await withInterrupt((signal) =>
-    runStoreFetch({ ref: repoKey, dest, at: options.at, signal }, realStoreFetchDeps())
+    runStoreFetch(
+      { ref: repoKey, dest, at: options.at, store: options.from, signal },
+      realStoreFetchDeps()
+    )
   );
   const { record } = result;
+  outputService.info(t('commands.backup.restore.storeServed', { store: result.store }));
   if (json) {
-    writeStdout(
-      `${JSON.stringify({ status: record.status, image: dest, snapshotId: result.snapshotId, bytesFetched: record.bytesFetched ?? 0 })}\n`
-    );
+    writeStdout(`${JSON.stringify(storeFetchJson({ ...result, dest }))}\n`);
     return;
   }
   writeStdout(
     `${t('commands.backup.download.storeDone', { repo: repoKey, snapshot: result.snapshotId, image: dest, bytes: String(record.bytesFetched ?? 0) })}\n`
   );
+  const rootLine = storeCellsRootLine(record);
+  if (rootLine) writeStdout(`${rootLine}\n`);
   if (process.platform !== 'linux') {
     writeStdout(`${t('commands.backup.download.storeOfflineNote')}\n`);
   }
@@ -107,6 +118,7 @@ function registerDownload(backup: Command): void {
     .option('--skip-space-check', t('commands.backup.download.optionSkipSpaceCheck'))
     .option('--store', t('commands.backup.download.optionStore'))
     .option('--at <time|snapshot>', t('commands.backup.download.optionAt'))
+    .option('--from <storeId>', t('commands.backup.download.optionFrom'))
     .action(async (refs: string[], options: DownloadCliOptions) => {
       try {
         if (options.store) {
@@ -114,6 +126,9 @@ function registerDownload(backup: Command): void {
           return;
         }
         if (options.at) throw new ValidationError(t('errors.backupImage.atNeedsStore'));
+        if (options.from !== undefined) {
+          throw new ValidationError(t('errors.backupImage.fromNeedsStore'));
+        }
         assertDownloadSelection(refs, options);
         const json = getOutputFormat() === 'json';
         const { exitCode } = await withInterrupt((signal) =>

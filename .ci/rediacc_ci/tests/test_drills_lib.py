@@ -7,6 +7,7 @@ Nothing here starts a real gateway: the gateway cases use a fake `run.sh` and a 
 
 from __future__ import annotations
 
+import gc
 import http.cookiejar
 import http.server
 import io
@@ -626,6 +627,11 @@ def test_the_shim_forwards_retargets_and_refuses_when_stopped() -> None:
 class _Account(http.server.BaseHTTPRequestHandler):
     seen: typing.ClassVar[list[tuple[str, str, str]]] = []
     twofa: typing.ClassVar[bool] = False
+    terms_accepted: typing.ClassVar[bool] = True
+    refuse_accept: typing.ClassVar[bool] = False
+    enrolled: typing.ClassVar[bool] = False
+    refuse_enable: typing.ClassVar[bool] = False
+    refuse_elevate: typing.ClassVar[bool] = False
 
     def _body(self) -> str:
         length = int(self.headers.get("Content-Length") or 0)
@@ -650,9 +656,29 @@ class _Account(http.server.BaseHTTPRequestHandler):
                 self._reply({"user": {"id": "u1"}}, "session=abc; Path=/")
         elif self.path.endswith("/auth/2fa/verify"):
             self._reply({"user": {"id": "u1"}}, "session=abc; Path=/")
+        elif self.path.endswith("/portal/terms/accept"):
+            if self.refuse_accept:
+                self._reply({"error": "TERMS_ACCEPTANCE_INVALID"})
+            else:
+                type(self).terms_accepted = True
+                self._reply({"accepted": True, "version": "2026-01-01"})
+        elif self.path.endswith("/test/elevate"):
+            self._reply({"error": "User not found"} if self.refuse_elevate else {"elevated": True})
+        elif self.path.endswith("/auth/2fa/setup"):
+            self._reply({"secret": "JBSWY3DPEHPK3PXP", "uri": "otpauth://x"})
+        elif self.path.endswith("/auth/2fa/enable"):
+            if self.refuse_enable:
+                self._reply({"error": "Invalid code"})
+            else:
+                type(self).enrolled = True
+                self._reply({"enabled": True, "backupCodes": []})
         elif self.path.endswith("/api-tokens"):
             ok = bool(self.headers.get("Cookie"))
-            self._reply({"token": "rdt_xyz"} if ok else {"error": "no session"})
+            wants_2fa = any(s in body for s in ("backup:manage", "backup:restore"))
+            if wants_2fa and not (self.enrolled or self.twofa):
+                self._reply({"code": "TWO_FACTOR_REQUIRED"})
+            else:
+                self._reply({"token": "rdt_xyz"} if ok else {"error": "no session"})
         else:
             self._reply({"ok": True})
 
@@ -660,8 +686,20 @@ class _Account(http.server.BaseHTTPRequestHandler):
         self.seen.append(("GET", self.path, self.headers.get("Cookie") or ""))
         if "totp-code" in self.path:
             self._reply({"code": "123456"})
+        elif self.path.endswith("/auth/2fa/status"):
+            self._reply({"enabled": self.enrolled or self.twofa})
+        elif self.path.endswith("/portal/terms"):
+            if self.terms_accepted:
+                self._reply({"satisfied": True})
+            else:
+                self._reply(
+                    {"satisfied": False, "current": {"version": "2026-01-01", "sha256": "a" * 64}}
+                )
         elif self.path.endswith("/portal/subscription"):
-            self._reply({"id": "sub-1"})
+            if not self.terms_accepted:
+                self._reply({"code": "TERMS_ACCEPTANCE_REQUIRED"})
+            else:
+                self._reply({"id": "sub-1"})
         else:
             self._reply({})
 
@@ -679,6 +717,11 @@ def account(
 ) -> typing.Iterator[tuple[lib.Drill, http.cookiejar.CookieJar]]:
     _Account.seen = []
     _Account.twofa = False
+    _Account.enrolled = False
+    _Account.refuse_enable = False
+    _Account.refuse_elevate = False
+    _Account.terms_accepted = True
+    _Account.refuse_accept = False
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Account)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     (tmp_path / ".account-state").write_text(
@@ -717,6 +760,98 @@ def test_the_headless_login_chain_completes_a_two_factor_challenge(
     assert drill.twofa_used is True
     verify = next(body for _m, path, body in _Account.seen if path.endswith("/auth/2fa/verify"))
     assert json.loads(verify) == {"challengeToken": "chal", "code": "123456"}
+
+
+def _accept_calls() -> list[str]:
+    return [body for _m, path, body in _Account.seen if path.endswith("/portal/terms/accept")]
+
+
+def test_a_session_with_unaccepted_terms_accepts_once_then_reads_the_subscription(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    drill, jar = account
+    _Account.terms_accepted = False
+    assert drill.account_session("a@b.c", "pw", jar)
+    assert [json.loads(b) for b in _accept_calls()] == [
+        {"version": "2026-01-01", "sha256": "a" * 64, "locale": "en", "method": "web-checkbox"}
+    ]
+    assert drill.account_subscription_id(jar) == "sub-1"
+
+
+def test_a_session_with_accepted_terms_makes_no_accept_call(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    drill, jar = account
+    assert drill.account_session("a@b.c", "pw", jar)
+    assert _accept_calls() == []
+
+
+def test_a_refused_terms_acceptance_fails_by_name(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    drill, jar = account
+    _Account.terms_accepted = False
+    _Account.refuse_accept = True
+    with pytest.raises(lib.GatewayError, match="Terms acceptance was refused"):
+        drill.account_session("a@b.c", "pw", jar)
+
+
+def test_a_terms_status_read_that_is_refused_fails_by_name(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    drill, jar = account
+    monkeypatch.setattr(
+        drill, "_request", lambda *_a, **_k: '{"code": "TERMS_ACCEPTANCE_REQUIRED"}'
+    )
+    with pytest.raises(lib.GatewayError, match="Terms status read was refused"):
+        drill.account_accept_terms(jar)
+
+
+def _enable_calls() -> list[str]:
+    return [body for _m, path, body in _Account.seen if path.endswith("/auth/2fa/enable")]
+
+
+def test_a_backup_scope_mint_enrols_two_factor_once_then_succeeds(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    drill, jar = account
+    assert drill.account_session("a@b.c", "pw", jar)
+    scopes = ["backup:read", "backup:manage"]
+    assert drill.account_mint_token(jar, "sub-1", "tok", scopes) == "rdt_xyz"
+    assert drill.account_mint_token(jar, "sub-1", "tok2", scopes) == "rdt_xyz"
+    assert len(_enable_calls()) == 1
+    assert any(p.endswith("/test/elevate") for _m, p, _b in _Account.seen)
+
+
+def test_an_already_enrolled_account_does_not_enrol_again(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    drill, jar = account
+    _Account.enrolled = True
+    assert drill.account_session("a@b.c", "pw", jar)
+    assert drill.account_mint_token(jar, "sub-1", "tok", ["backup:restore"]) == "rdt_xyz"
+    assert _enable_calls() == []
+    assert not any(p.endswith("/auth/2fa/setup") for _m, p, _b in _Account.seen)
+
+
+def test_a_non_backup_mint_does_not_touch_two_factor(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    drill, jar = account
+    assert drill.account_session("a@b.c", "pw", jar)
+    drill.account_mint_token(jar, "sub-1", "tok", ["backup:read"])
+    assert not any("/auth/2fa/" in p for _m, p, _b in _Account.seen)
+
+
+def test_a_refused_two_factor_enable_fails_by_name(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    drill, jar = account
+    _Account.refuse_enable = True
+    assert drill.account_session("a@b.c", "pw", jar)
+    with pytest.raises(lib.GatewayError, match="2FA enable was refused"):
+        drill.account_mint_token(jar, "sub-1", "tok", ["backup:manage"])
 
 
 def test_a_token_mint_without_a_session_raises(
@@ -898,6 +1033,47 @@ def test_purge_refuses_anything_but_a_lowercase_guid(bad: str) -> None:
         lib.purge_license_state_script([PURGE_A, bad])
 
 
+def test_a_gateway_running_before_the_restart_is_left_running_after_teardown(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """2026-11-11: `drill backup` stopped a running dev gateway and killed its own at exit, so a later `vm:check --changed` found none."""
+    drill, killed = _fake_gateway_drill(tmp_path, monkeypatch)
+    monkeypatch.setattr(drill, "gateway_alive", lambda: True)
+    monkeypatch.setattr(drill, "stop_worktree_stack", lambda: None)
+    drill.restart_gateway()
+    assert drill.gateway_preexisted
+    drill.teardown()
+    assert killed == []
+
+
+def test_no_gateway_before_the_restart_means_teardown_kills_ours(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    drill, killed = _fake_gateway_drill(tmp_path, monkeypatch)
+    monkeypatch.setattr(drill, "gateway_alive", lambda: False)
+    drill.restart_gateway()
+    assert not drill.gateway_preexisted
+    drill.teardown()
+    assert {pid for pid, _sig in killed} == {424242}
+
+
+def test_a_second_restart_does_not_mistake_the_drills_own_gateway_for_an_earlier_one(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 59b334fd.3: on a second restart_gateway the healthy gateway is the drill's own, so teardown still kills it."""
+    drill, killed = _fake_gateway_drill(tmp_path, monkeypatch)
+    monkeypatch.setattr(drill, "gateway_alive", lambda: False)
+    drill.restart_gateway()
+    monkeypatch.setattr(drill, "gateway_alive", lambda: True)
+    monkeypatch.setattr(drill, "stop_worktree_stack", lambda: None)
+    drill.restart_gateway()
+    assert not drill.gateway_preexisted
+    drill.teardown()
+    assert {pid for pid, _sig in killed} == {424242}, (
+        "the drill's own gateway must be killed at exit"
+    )
+
+
 @pytest.mark.parametrize(
     ("state", "healthy", "expect_stop"),
     [(True, True, True), (True, False, False), (False, True, False)],
@@ -943,3 +1119,38 @@ def test_a_stop_that_leaves_the_stack_answering_is_an_error_not_a_reuse(
         )
     with pytest.raises(lib.GatewayError, match="did not stop"):
         drill.stop_worktree_stack()
+
+
+def test_a_refused_elevate_fails_at_its_own_step(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    """bd78842b.2: the elevate answer is read, so a refusal is named at the step."""
+    drill, jar = account
+    assert drill.account_session("a@b.c", "pw", jar)
+    _Account.refuse_elevate = True
+    with pytest.raises(lib.GatewayError, match="/test/elevate step was refused"):
+        drill.account_mint_token(jar, "sub-1", "tok", ["backup:manage"])
+    assert not any(p.endswith("/auth/2fa/setup") for _m, p, _b in _Account.seen)
+    with pytest.raises(lib.GatewayError, match="/test/elevate step was refused"):
+        drill.account_admin_session("a@b.c", "pw", jar)
+
+
+def test_a_backup_scope_mint_needs_a_jar_account_session_logged_in(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    """bd78842b.3: a jar that never went through account_session is refused, and a collected jar's record does not leak to a new one."""
+    drill, jar = account
+    assert drill.account_session("a@b.c", "pw", jar)
+    stranger = http.cookiejar.CookieJar()
+    with pytest.raises(lib.GatewayError, match="needs a jar that account_session logged in"):
+        drill.account_mint_token(stranger, "sub-1", "tok", ["backup:manage"])
+    assert not any("/test/elevate" in p for _m, p, _b in _Account.seen)
+    # The record is keyed by the jar object, never by id(): an id can be reused once the jar is collected.
+    assert not any(isinstance(key, int) for key in drill.session_emails)
+    second = http.cookiejar.CookieJar()
+    assert drill.account_session("c@d.e", "pw", second)
+    assert second in drill.session_emails
+    before = len(drill.session_emails)
+    del second
+    gc.collect()
+    assert len(drill.session_emails) == before - 1

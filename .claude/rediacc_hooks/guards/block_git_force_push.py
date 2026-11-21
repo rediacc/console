@@ -4,7 +4,7 @@ THE LEASE EXCEPTION, box M3 of PLAN-plan-per-pr-loop (operator ruling 2026-10-02
 
   * no other forcing form anywhere in the command: no --force, -f, --mirror, and no `+refspec`;
   * every lease push the text shows is one the lexer placed (a count mismatch is a push this guard cannot judge, and is refused);
-  * the repository is inside this checkout, and its checked-out branch is an `MMDD-N` name that is its ONE live branch (`commit_policy.live_branches`, local facts only); in a submodule that name is also the console's;
+  * the repository is inside this checkout, and its checked-out branch is an `MMDD-N` name that is its ONE live branch (`commit_policy.live_branches`, local facts only, which with a landing record counts only the tree's own branch, so the landing tree republishes the PR branch and the main checkout the development branch); in a submodule that name is also the console's;
   * the push names only that branch: no refspec (git pushes the current branch), `<branch>`, `HEAD`, `HEAD:<branch>` or `<branch>:<branch>`, `refs/heads/` spellings included, to `origin`;
   * a lease value, when given, names that same branch (`--force-with-lease=<branch>[:<expected sha>]`).
 
@@ -33,16 +33,54 @@ Nothing in this repo pushes with --mirror or a + refspec (verified by grep over 
 
 import os
 import re
+import subprocess
 
 from rediacc_hooks import commit_policy, hookio, shellscan
 
 CHAIN = "pre-bash"
 ORDER = 18
 
+
+def _two_trees(path, tree):
+    """A main checkout on the development branch `0831-2` and its landing tree, a linked tree at the sibling `<main>-landing` holding the PR branch `0831-1`, bound by the landing record (box LT3 of agent/plans/PLAN-two-track-merge-dev.md). Answers the tree named by `tree`."""
+    env = dict(
+        os.environ,
+        GIT_AUTHOR_NAME="Fixture",
+        GIT_AUTHOR_EMAIL="fixture@example.invalid",
+        GIT_COMMITTER_NAME="Fixture",
+        GIT_COMMITTER_EMAIL="fixture@example.invalid",
+        GIT_AUTHOR_DATE="2026-01-01T00:00:00+00:00",
+        GIT_COMMITTER_DATE="2026-01-01T00:00:00+00:00",
+        GIT_CONFIG_GLOBAL="/dev/null",
+        GIT_CONFIG_SYSTEM="/dev/null",
+    )
+    main = path / "console"
+    landing = path / "console-landing"
+    main.mkdir(parents=True)
+    for argv in (
+        ["init", "-q", "--initial-branch=main"],
+        ["commit", "-q", "--allow-empty", "-m", "seed"],
+        ["branch", "0831-1"],
+        ["worktree", "add", "-q", str(landing), "0831-1"],
+        ["checkout", "-q", "-b", "0831-2"],
+    ):
+        subprocess.run(["git", *argv], cwd=str(main), check=True, capture_output=True, env=env)
+    commit_policy.write_landing_record(str(main), str(landing), "0831-1")
+    return landing if tree == "landing" else main
+
+
+FIXTURES = {
+    "landing-tree": lambda p: _two_trees(p, "landing"),
+    "development-tree": lambda p: _two_trees(p, "development"),
+}
+
 # THE TWO GIT WORLDS THE LEASE ARM DISTINGUISHES. `default` keeps its label and points at a checkout on `main`, where no lease is admitted, so every record the cross-corpus froze before M3 answers as it did. `live-branch` is a checkout on `0831-1`, the one live branch, where a lease naming it is admitted. Without the second world no case could reach the allow arm, and without the first the corpus would read the live checkout's branch.
 ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
     ("default", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-main}"}, {}),
     ("live-branch", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-ahead}"}, {}),
+    # LT3: two trees, one live branch each. Each tree's lease admits its own branch only because `commit_policy.live_branches` leaves out the branch the landing record binds to the other tree; without the binding both worlds hold two live branches and every lease is refused. The M3 cases below are the matrix: `M3 lease to the live branch` (`0831-1`) is admitted in `landing-tree` and `live-branch` only, and `M3 lease to another branch` (`0831-2`) in `development-tree` only.
+    ("landing-tree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:landing-tree}"}, {}),
+    ("development-tree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:development-tree}"}, {}),
 ]
 
 # The verdict itself. Until #e8be3092 this re-qualified the regex's plus arm to `+refs/`, the first attempt the header records; since every placed push is also read by `_push_forces`, that one arm can no longer reopen the hole alone, which is the point of reading pushes the way git does. Planting `if False:` here lets every force through.
@@ -50,6 +88,8 @@ DEFECT = (
     "if hookio.grep_q(FORCE_PUSH, scan) or any(any(_push_forces(r)) for r in pushes):",
     "if False:",
 )
+# Planted, the bound trees are the session root alone, so a deletion or a lease push typed in the sibling bound tree is judged as the root's own again (box LT11).
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 # ANCHORED TO COMMAND POSITION 2026-08-28, after check:ci-guard-mention-anchoring found this guard refusing an ordinary sentence. Matching the phrase ANYWHERE means a doc line, a worklist note or an `echo` explaining the rule is refused as if it were the rule being broken. This NARROWS PROSE ONLY: every control below still blocks the real command, at line start and after a
 # separator. NOT AN ALLOW-LIST, which this guard's own text forbids: the set of refused FLAGS is untouched. Only the position of `git push` is constrained, so a sentence about force-pushing stops being treated as one.
@@ -229,12 +269,14 @@ def deletion_refusal(ev, cmd):
     created = commit_policy.created_dirs(cmd, base)
     top = commit_policy.toplevel(root)
     console = commit_policy.current_branch(top, foreign=True) if top else ""
+    # Either bound tree is this checkout (box LT11): a push typed in the sibling answers its own toplevel, whose branch is in use there.
+    trees = commit_policy.bound_trees(root)
     for run in commit_policy.git_runs(cmd, "push"):
         names, prunes = _deleted_refs(run)
         if not names and not prunes:
             continue
-        repo = commit_policy.scoped_repo(run, base, root, created)
-        if repo and not commit_policy.is_inside(repo, root):
+        repo = commit_policy.scoped_repo(run, base, root, created, cmd, trees=trees)
+        if repo and not commit_policy.is_ours(repo, root, trees):
             continue
         if prunes:
             return "`--prune` deletes every remote branch its refspecs do not match locally"
@@ -279,14 +321,16 @@ def _lease_run_refusal(run, root, base):
     parsed = shellscan.git_push_args(args)
     positionals = parsed.operands
     repo = commit_policy.run_repo(run, base)
-    if not repo or not commit_policy.is_inside(repo, root):
+    # Either bound tree is this checkout (box LT11), and the console whose name a submodule's branch carries is the bound tree holding it.
+    trees = commit_policy.bound_trees(root)
+    if not repo or not commit_policy.is_ours(repo, root, trees):
         return "the repository it pushes is not inside this checkout"
     live = commit_policy.current_branch(repo)
     if not commit_policy.BRANCH_SHAPE.match(live):
         return "the checkout is on `%s`, not an MMDD-N branch" % (live or "(detached)")
     if commit_policy.live_branches(repo, gh=False) != [live]:
         return "`%s` is not the ONE live branch here" % live
-    top = commit_policy.toplevel(root)
+    top = commit_policy.toplevel(commit_policy.owning_tree(repo, trees) or root)
     if os.path.realpath(repo) != os.path.realpath(top):
         console = commit_policy.current_branch(top, foreign=True) if top else ""
         if live != console:

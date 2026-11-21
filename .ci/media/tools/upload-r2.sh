@@ -56,7 +56,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # needed (.ci/scripts/deploy -> .ci/scripts -> .ci -> root), which is why nothing about
 # REPO_ROOT changed in the move.
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-# The well-known WK_* facts (WK_MEDIA_ORIGIN below), spelled from the repo root rather than from here
+# The well-known WK_* facts (WK_MEDIA_ORIGIN and WK_MEDIA_BUCKET below), spelled from the repo root rather than from here
 # so a future relocation of this file is one line rather than a hunt for a `../..` that silently
 # resolves to the wrong depth.
 # shellcheck source=../../config/well-known.generated.sh
@@ -98,7 +98,7 @@ require_file() {
 # or a wrong size is recorded in a committed manifest and read back as truth later.
 # shellcheck source=../portable.sh
 source "$REPO_ROOT/.ci/media/portable.sh"
-BUCKET="rediacc-www-media"
+BUCKET="$WK_MEDIA_BUCKET"
 CACHE_CONTROL="public, max-age=31536000"
 MANIFEST_HELPER="$REPO_ROOT/packages/www/scripts/lib/update-video-manifest.ts"
 

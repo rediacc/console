@@ -43,6 +43,8 @@ interface RemarkFile {
 export interface RemarkResolveTranslationsOptions {
   /** Fallback language if not found in frontmatter */
   defaultLanguage?: string;
+  /** Hash of the locale catalogs; read by nobody, present so Astro's config digest changes with them. */
+  catalogDigest?: string;
 }
 
 /**

@@ -3,7 +3,7 @@
 
 Nightly sweep that re-runs the failed jobs of workflow runs that failed for a reason a rerun can fix. Usage: `retry_failed_runs.py [--dry-run]`.
 
-THE FILTERS ARE THE FEATURE, and the twin's 40-line banner is the evidence for each one: three measured days of runs held 64 failures, 63 of them watchdog-monitor.yml failing BY DESIGN. So `cancelled` is never retried, the watchdog is excluded BY PATH rather than by its generated display name, a run whose head is no longer any branch tip is treated as superseded, and both an
+THE FILTERS ARE THE FEATURE, and the twin's 40-line banner is the evidence for each one: three measured days of runs held 64 failures, 63 of them ops-watchdog-monitor.yml failing BY DESIGN. So `cancelled` is never retried, the watchdog is excluded BY PATH rather than by its generated display name, a run whose head is no longer any branch tip is treated as superseded, and both an
 attempt cap and an age floor apply. All five are reproduced exactly; dropping any one turns a sweeper with an expected yield of ~1 per night into one that retries 63 deliberate failures.
 
 EXPECTED YIELD IS ~1 PER NIGHT, AND THE SUMMARY LINE IS WHAT MAKES A ZERO
@@ -43,7 +43,7 @@ DEFAULT_MAX_ATTEMPT = 3
 DEFAULT_MAX_RETRIES_PER_RUN = 5
 
 # `EXCLUDED_PATHS` (:74-76). BY PATH, NEVER BY DISPLAY NAME: watchdog-monitor's name is generated per run ("Watchdog: run <id> (gen N)"), so a name match is unwritable, and without this entry 63 of 64 candidates are noise.
-EXCLUDED_PATHS = (".github/workflows/watchdog-monitor.yml",)
+EXCLUDED_PATHS = (".github/workflows/ops-watchdog-monitor.yml",)
 
 # `gh api ... --jq` (:91) and (:97-98), and the `jq -r` record splitter (:153).
 BRANCHES_JQ = ".[].commit.sha"

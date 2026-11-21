@@ -96,50 +96,59 @@ const CLOSURES = {
   // ct-tests.yml:195 `test-e2e-workers`. FIVE matrix legs, one per distro (:203-207), each of them a 90-minute ceiling: the single most expensive key in the table, hence first.
   e2e_workers: {
     jobNames: [
-      // PLAN-ci-time-budget T2.12 shards each distro leg eight ways (ct-tests.yml `E2E Workers (<os>, <i>/8)`).
-      'E2E Workers (ubuntu-24.04, 1/8)',
-      'E2E Workers (ubuntu-24.04, 2/8)',
-      'E2E Workers (ubuntu-24.04, 3/8)',
-      'E2E Workers (ubuntu-24.04, 4/8)',
-      'E2E Workers (ubuntu-24.04, 5/8)',
-      'E2E Workers (ubuntu-24.04, 6/8)',
-      'E2E Workers (ubuntu-24.04, 7/8)',
-      'E2E Workers (ubuntu-24.04, 8/8)',
-      'E2E Workers (debian-13, 1/8)',
-      'E2E Workers (debian-13, 2/8)',
-      'E2E Workers (debian-13, 3/8)',
-      'E2E Workers (debian-13, 4/8)',
-      'E2E Workers (debian-13, 5/8)',
-      'E2E Workers (debian-13, 6/8)',
-      'E2E Workers (debian-13, 7/8)',
-      'E2E Workers (debian-13, 8/8)',
-      'E2E Workers (fedora-43, 1/8)',
-      'E2E Workers (fedora-43, 2/8)',
-      'E2E Workers (fedora-43, 3/8)',
-      'E2E Workers (fedora-43, 4/8)',
-      'E2E Workers (fedora-43, 5/8)',
-      'E2E Workers (fedora-43, 6/8)',
-      'E2E Workers (fedora-43, 7/8)',
-      'E2E Workers (fedora-43, 8/8)',
-      'E2E Workers (opensuse-16.0, 1/8)',
-      'E2E Workers (opensuse-16.0, 2/8)',
-      'E2E Workers (opensuse-16.0, 3/8)',
-      'E2E Workers (opensuse-16.0, 4/8)',
-      'E2E Workers (opensuse-16.0, 5/8)',
-      'E2E Workers (opensuse-16.0, 6/8)',
-      'E2E Workers (opensuse-16.0, 7/8)',
-      'E2E Workers (opensuse-16.0, 8/8)',
-      'E2E Workers (oracle-10, 1/8)',
-      'E2E Workers (oracle-10, 2/8)',
-      'E2E Workers (oracle-10, 3/8)',
-      'E2E Workers (oracle-10, 4/8)',
-      'E2E Workers (oracle-10, 5/8)',
-      'E2E Workers (oracle-10, 6/8)',
-      'E2E Workers (oracle-10, 7/8)',
-      'E2E Workers (oracle-10, 8/8)',
+      // PLAN-ci-time-budget T2.12 shards each distro leg nine ways since operator ruling #d7502b7d (ct-tests.yml `E2E Workers (<os>, <i>/9)`).
+      'E2E Workers (ubuntu-24.04, 1/9)',
+      'E2E Workers (ubuntu-24.04, 2/9)',
+      'E2E Workers (ubuntu-24.04, 3/9)',
+      'E2E Workers (ubuntu-24.04, 4/9)',
+      'E2E Workers (ubuntu-24.04, 5/9)',
+      'E2E Workers (ubuntu-24.04, 6/9)',
+      'E2E Workers (ubuntu-24.04, 7/9)',
+      'E2E Workers (ubuntu-24.04, 8/9)',
+      'E2E Workers (ubuntu-24.04, 9/9)',
+      'E2E Workers (debian-13, 1/9)',
+      'E2E Workers (debian-13, 2/9)',
+      'E2E Workers (debian-13, 3/9)',
+      'E2E Workers (debian-13, 4/9)',
+      'E2E Workers (debian-13, 5/9)',
+      'E2E Workers (debian-13, 6/9)',
+      'E2E Workers (debian-13, 7/9)',
+      'E2E Workers (debian-13, 8/9)',
+      'E2E Workers (debian-13, 9/9)',
+      'E2E Workers (fedora-43, 1/9)',
+      'E2E Workers (fedora-43, 2/9)',
+      'E2E Workers (fedora-43, 3/9)',
+      'E2E Workers (fedora-43, 4/9)',
+      'E2E Workers (fedora-43, 5/9)',
+      'E2E Workers (fedora-43, 6/9)',
+      'E2E Workers (fedora-43, 7/9)',
+      'E2E Workers (fedora-43, 8/9)',
+      'E2E Workers (fedora-43, 9/9)',
+      'E2E Workers (opensuse-16.0, 1/9)',
+      'E2E Workers (opensuse-16.0, 2/9)',
+      'E2E Workers (opensuse-16.0, 3/9)',
+      'E2E Workers (opensuse-16.0, 4/9)',
+      'E2E Workers (opensuse-16.0, 5/9)',
+      'E2E Workers (opensuse-16.0, 6/9)',
+      'E2E Workers (opensuse-16.0, 7/9)',
+      'E2E Workers (opensuse-16.0, 8/9)',
+      'E2E Workers (opensuse-16.0, 9/9)',
+      'E2E Workers (oracle-10, 1/9)',
+      'E2E Workers (oracle-10, 2/9)',
+      'E2E Workers (oracle-10, 3/9)',
+      'E2E Workers (oracle-10, 4/9)',
+      'E2E Workers (oracle-10, 5/9)',
+      'E2E Workers (oracle-10, 6/9)',
+      'E2E Workers (oracle-10, 7/9)',
+      'E2E Workers (oracle-10, 8/9)',
+      'E2E Workers (oracle-10, 9/9)',
+      // test-e2e-full-integration (operator ruling #12755b25): the suites that rode leg 1's --also, on the same closure, as legs of their own; ubuntu is two legs since suite 23 split into 23a and 23b ("Split 23, no cap").
+      'E2E Full Integration (ubuntu-24.04, 1/2)',
+      'E2E Full Integration (ubuntu-24.04, 2/2)',
+      'E2E Full Integration (fedora-43, 1/1)',
     ],
     submodules: VM_E2E_SUBMODULES,
-    // 348e25fcb (spec W T2.12) shards this leg eight ways per distro off this manifest (ct-tests.yml:430); the other seven VM/E2E keys have no shard manifest of their own, so it is added on top of the shared list rather than into it. Found by test_gate_greenlight_closure_trace.py.
+    // 348e25fcb (spec W T2.12) shards this leg nine ways per distro (eight until #d7502b7d) off this manifest (ct-tests.yml:430); the other seven VM/E2E keys have no shard manifest of their own, so it is added on top of the shared list rather than into it. Found by test_gate_greenlight_closure_trace.py.
     paths: [...VM_E2E_PATHS, '.ci/config/shards/test-e2e-workers.json'],
   },
   // ct-tests.yml:943.
@@ -173,6 +182,9 @@ const CLOSURES = {
     paths: VM_E2E_PATHS,
   },
   // ct-tests.yml `test-e2e-backup-browse-at`, suite 27 under playwright.backup-browse-at.config.ts. Its own lane so a scope decision about K8s Multinode cannot skip it. Over-inclusive on purpose: VM_E2E_PATHS already names .ci/rediacc_ci (start_backup_plane.py, start_account.py, account_lifecycle.py), packages/e2e-tests (the suite, the config, src/utils/backup) and the renet/cli build chain.
+  // The job is gated on `(inputs.full_suite == 'true' && inputs.run_e2e_backup_browse_at != 'false') || inputs.backup_changed == 'true'`
+  // (J6: a push or PR that changes a backup path runs it too, and ct-backup-nightly.yml runs it nightly). The closure is unchanged: a run where it was skipped
+  // under the scope engine still has no evidence for it, and one where backup_changed ran it has.
   e2e_backup_browse_at: {
     jobNames: ['E2E Backup Browse-At'],
     submodules: VM_E2E_SUBMODULES,
@@ -338,6 +350,8 @@ const CLOSURES = {
       '.github/actions/app-token',
       // Added f39c7fbda: blanks the step-scoped signing key after its one consuming step. Found by test_gate_greenlight_closure_trace.py.
       '.github/actions/bws-scrub',
+      // Added with the apt hardening: the Account E2E legs run this composite before their apt installs, rewriting the runner's apt sources to archive.ubuntu.com on hosted runners. A local composite resolves from the WORKSPACE, so a change to it must re-run this key. Found by test_gate_greenlight_closure_trace.py.
+      '.github/actions/apt-mirror',
       // package.json defines build:packages (package.json:21); the lockfile is
       // what `npm ci` resolves and what keys the node_modules cache.
       'package.json',
@@ -473,7 +487,8 @@ const CLOSURES = {
   },
   // ct-tests.yml:183 `test-unit`. Last: at 14 minutes on ubuntu-slim it is the cheapest key in the table, so it is the one to starve if the budget dies.
   unit: {
-    jobNames: ['Unit'],
+    // Two legs since operator ruling #12755b25 ("Shard into 2"), each running every suite with vitest --shard=<i>/2.
+    jobNames: ['Unit (1/2)', 'Unit (2/2)'],
     // NO LONGER EMPTY. The job took a bare checkout until the suite failed with ENOENT on private/renet/pkg/prune/datastore.go: datastore-prune-parser asserts the CLI's prune fixtures cover every kind renet reports, by parsing that Go source, and throws rather than skipping when it is absent. renet is therefore a HARD dependency of this key -- a change to
     // DatastorePrunableResources must re-run these tests, or the fixtures drift and nothing says so.
     //

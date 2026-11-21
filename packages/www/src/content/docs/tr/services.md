@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: tr
-sourceHash: "4769afb97c2b885d"
-sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
+sourceHash: "a98cadc0afd3474b"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # Servisler
@@ -30,14 +30,33 @@ Gizli dizinler (`.` ile başlayan adlar) atlanır.
 
 ### Yaşam Döngüsü Fonksiyonları
 
-Bir Rediaccfile en fazla iki fonksiyon içerir:
+renet, Rediaccfile içindeki şu fonksiyonları çalıştırır:
 
 | Fonksiyon | Ne zaman çalışır | Amacı | Hata davranışı |
 |-----------|-------------------|-------|----------------|
 | `up()` | Başlatma sırasında | Servisleri başlatma (ör. `renet compose -- up -d`) | Kök hatası **kritiktir** (her şeyi durdurur). Alt dizin hataları **kritik değildir** (günlüğe kaydedilir, devam eder) |
 | `down()` | Durdurma sırasında | Servisleri durdurma (ör. `renet compose -- down`) | **En iyi çaba** -- hatalar günlüğe kaydedilir ancak tüm Rediaccfile'lar her zaman denenir |
+| `health()` | `rdc repo health` ile, `rdc machine health` ile ve dağıtımın sağlık geçidinde | Deponun kendi sağlığını bildirmek: çıkış `0` tamam, `1` uyarı, `2` hata | Her Rediaccfile'ın `health()` fonksiyonu çalışır ve en kötü düzey sayılır. Çıkış `75` hâlâ ısınıyor demektir (uyarı). Başka herhangi bir çıkış, bir sinyal veya zaman aşımı hatadır (dağıtımın sağlık geçidi zaman aşımını hâlâ ısınıyor diye okur ve yeniden dener, bkz. [Zaman Aşımları ve Kapatma Sırası](#timeouts-and-shutdown-order)). Hiçbir Rediaccfile'ın `health()` tanımlamadığı bir depo **denetim yok** bildirir, asla sağlıklı değil |
+| `repair()` | `rdc repo repair` ile ve `health()` sonucu tamam olmayan bir depo için `rdc machine repair` ile | Aynı dosyanın `health()` fonksiyonunun bildirdiği sorunu gidermek | Yalnızca kendi dosyasının `health()` sonucu tamam değilse ve bildirilen sınıfa izin veriliyorsa çalışır (aşağıya bakın). `75` ile çıkan bir `health()` (hâlâ ısınıyor) uyarı sayılır; bu yüzden `repair()` hâlâ başlamakta olan bir depoya dokunmamalıdır. Ardından `health()` yeniden çalışır. Başarısız olan veya zaman aşımına uğrayan bir `repair()` hatadır |
 
-Her iki fonksiyon da isteğe bağlıdır. Tanımlanmamış fonksiyonlar sessizce atlanır.
+Her fonksiyon isteğe bağlıdır. Tanımlanmamış bir fonksiyon sessizce atlanır.
+
+#### Onarım sınıfı bildirme
+
+`repair()`, `REDIACC_HEALTH_LEVEL` (`warning` veya `error`, kendi dosyasındaki `health()` fonksiyonunun bildirdiği düzey) ve `REDIACC_HEALTH_OUTPUT` (o `health()` çıktısının son kısmı) değerlerini alır. Bir yorum satırı, fonksiyonun ne kadar güvenli olduğunu bildirir:
+
+```bash
+# rediacc:repair class=auto-safe
+# rediacc:repair class=auto-with-backup window=only
+```
+
+| Sınıf | Kim çalıştırır |
+|---|---|
+| `auto-safe` | `rdc machine repair` ve `rdc repo repair` kendiliğinden çalıştırır |
+| `auto-with-backup` | Yalnızca `--with-backup` ile, deponun başarılı bir anlık görüntüsünden sonra çalışır |
+| `operator-only` | Kendiliğinden asla çalışmaz. `rdc repo repair` önce sorar (veya `--yes` alır); `rdc machine repair` asla çalıştırmaz |
+
+Bildirimi olmayan bir `repair()`, `operator-only` sayılır; böylece depo güvenli olduğunu söylemedikçe hiçbir araç deponun kodunu gözetimsiz çalıştırmaz. `window=only` ikinci bir koşul ekler: fonksiyon yalnızca makinenin bakım penceresi içinde ([İzleme](/tr/docs/monitoring#repair)) veya `--window-override` ile çalışır. Birden çok satır sınıf bildirirse en kısıtlayıcı olan geçerlidir.
 
 ### Çalıştırma Sırası
 
@@ -58,11 +77,78 @@ Bir Rediaccfile fonksiyonu çalıştığında, aşağıdaki ortam değişkenleri
 
 `{SERVICE}_IP` değişkenleri `.rediacc.json` dosyasından otomatik olarak oluşturulur ve Rediaccfile işlevleriniz çalışmadan önce dışa aktarılır. Adlandırma kuralı, servis adını büyük harfe çevirir, tireleri alt çizgi ile değiştirir ve sonuna `_IP` ekler. Örneğin, slot `0` ile `listmonk-app` servisi `LISTMONK_APP_IP=127.0.11.2` olur.
 
-> **Uyarı: Rediaccfile'larda `sudo docker` kullanmayın.** `sudo` komutu ortam değişkenlerini sıfırlar, bu da `DOCKER_HOST` değişkeninin kaybolmasına ve Docker komutlarının deponun izole daemon'u yerine sistem daemon'unu hedeflemesine neden olur. Bu, konteyner izolasyonunu bozar ve port çakışmalarına yol açabilir. Rediacc, `-E` olmadan `sudo docker` algılarsa çalıştırmayı engeller.
+> **Uyarı: Rediaccfile'larda `sudo docker` kullanmayın.** `sudo` komutu ortam değişkenlerini sıfırlar, bu da `DOCKER_HOST` değişkeninin kaybolmasına ve Docker komutlarının deponun izole daemon'u yerine sistem daemon'unu hedeflemesine neden olur. Bu, konteyner izolasyonunu bozar ve port çakışmalarına yol açabilir. Rediacc, `sudo docker` algılarsa çalıştırmayı engeller.
 >
-> Rediaccfile'larınızda `renet compose` kullanın -- bu, `DOCKER_HOST` değişkenini otomatik olarak yönetir, yönlendirme keşfi için ağ etiketlerini enjekte eder ve servis ağını yapılandırır. Servislerin ters proxy aracılığıyla nasıl sunulduğuna dair ayrıntılar için [Ağ](/tr/docs/networking) sayfasına bakın. Docker'ı doğrudan çağırıyorsanız, `sudo` olmadan `docker` kullanın -- Rediaccfile fonksiyonları zaten yeterli yetkiyle çalışır. sudo kullanmanız gerekiyorsa, ortam değişkenlerini korumak için `sudo -E docker` kullanın.
+> Rediaccfile'larınızda `renet compose` kullanın -- bu, `DOCKER_HOST` değişkenini otomatik olarak yönetir, yönlendirme keşfi için ağ etiketlerini enjekte eder ve servis ağını yapılandırır. Servislerin ters proxy aracılığıyla nasıl sunulduğuna dair ayrıntılar için [Ağ](/tr/docs/networking) sayfasına bakın. Docker'ı doğrudan çağırıyorsanız, `sudo` olmadan `docker` kullanın -- Rediaccfile fonksiyonları deponun Docker daemon'una root olmadan, evrensel kullanıcı olarak erişir (bkz. [Ayrıcalıklar](#privileges)).
 >
 > `renet` uzak düşük seviye araçtır. İş istasyonunuzdan normal kullanıcı iş akışları için `rdc repo up` ve `rdc repo down` gibi `rdc` komutlarını tercih edin. Bkz. [rdc vs renet](/tr/docs/rdc-vs-renet).
+
+### Ayrıcalıklar
+
+`up()` ve `down()`, nerede okuyup yazabileceklerini sınırlayan bir sandbox içinde root olarak değil, evrensel kullanıcı (`rediacc`) olarak çalışır. Ortam miras alınmaz, fonksiyon için baştan kurulur; bu yüzden yukarıdaki değişkenleri, deponun `REDIACC_SECRET_*` değerlerini ve asgari bir `PATH` içerir. `sudo` hiçbir katmanda kullanılamaz: sandbox `no_new_privs` ayarlar, dolayısıyla `sudo` kullanan bir Rediaccfile satırı başarısız olur ve `sudo`dan vazgeçmesi gerekir. Landlock olmayan bir makine, `up()` ve `down()` fonksiyonlarını sınırsız çalıştırmak yerine reddeder.
+
+Varsayılandan fazlasına ihtiyaç duyan bir satır, sandbox'ın verdiği hatayla başarısız olur; günlük ve CLI, Rediaccfile'ın ilgili satırını izin verme komutuyla birlikte yazdırır.
+
+| Rediaccfile ne yapıyor | Ne görüyor | Çözüm |
+|---|---|---|
+| `sudo x` | `sudo: The "no new privileges" flag is set` | `sudo`yu bırakın. Adım ya root gerektirmez ya da bir izin gerektirir |
+| `chown 5050 ...` veya bir konteynerin sahip olduğu dizinde `rm -rf` | `Operation not permitted` veya `Permission denied` | Adımı tek kullanımlık bir konteynerde çalıştırın (root konteyner içinde; deponun Docker daemon'ı deponun kendi kökleri dışındaki bağlamaları reddeder): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| Mount içine `.env` veya başka dosyalar yazar | Çalışır; dosyalar evrensel kullanıcıya aittir | Gerek yok |
+| `/etc/rediacc/*`, `/proc/kcore` veya bir blok aygıtını okur | `Permission denied` | Yol izni isteyin |
+| Bir dosya sırrını doğrudan okur | `Permission denied` | Compose `secrets:` veya env kipinde bir sır kullanın |
+| Aygıt izni olmadan `nvidia-smi` | Aygıt yok | Aygıt izni verin, bkz. [GPU'lar](/tr/docs/gpu) |
+| `sysctl -w` | `Permission denied` | Makinede bir yönetici olarak bir kez ayarlayın |
+
+#### İzin isteme
+
+Bir izin, `up()` ve `down()` fonksiyonlarının ulaşabileceği alanı genişletir. İzni yalnızca bir operatör verir, repo dışından:
+
+```bash
+rdc repo permission grant <repo-ref> --path /srv/data:rw
+rdc repo permission grant <repo-ref> --root
+rdc repo permission show <repo-ref>
+rdc repo permission revoke <repo-ref> --path /srv/data
+```
+
+`--path` bir Landlock kuralı ekler; `:rw` verilmedikçe salt okunurdur ve makine başka bir repoya, veri deposuna veya `/etc/rediacc`'e ulaşan yolu reddeder. `--root` fonksiyonları ayrıcalık düşürmeden root olarak çalıştırır ve soğuk yedek böyle bir repoyu reddeder. Operatör, ajan başlamadan önce `REDIACC_ALLOW_GRAND_REPO` ayarını yapmadıysa ajanlar `--root` veremez. Bir fork yeni bir ağ kimliğine sahiptir ve izinsiz başlar; yeniden kullanılan bir ağ kimliği altında bulunan izin ise atılır.
+
+Bir Rediaccfile, ihtiyacını bir yorum satırıyla bildirebilir; bu yalnızca bir istektir:
+
+```bash
+# rediacc:needs root
+# rediacc:needs path=/srv/data
+# rediacc:needs device=nvidia.com/gpu=all
+```
+
+`up()` bildirimi izinle karşılaştırır. İzin eksikse `up()` hiçbir satır çalışmadan reddedilir ve mesajda tam izin komutu yazdırılır. `down()` bildirimi hiç denetlemez; böylece repo içinde düzenlenen bir yorum, operatörün `repo down` komutunu durduramaz. İzne gerçekten ihtiyaç duyan bir `down()` kendi adımında başarısız olur. `machine converge`, böyle bir repoyu reddedilecek duruma yeniden başlatmak yerine `needs_lifecycle_grant` olarak atlar.
+
+### Zaman Aşımları ve Kapatma Sırası
+
+Bir deponun konteynerleri, `down()` işlevi çalışıp bitmeden durmaz. Bu, deponun Docker birimine yapılan `systemctl stop` ve `restart`, `machine converge`, `repo down --unmount`, bir birimin yeniden yazılması ve ana makinenin kapatılması için geçerlidir. İstisnalar Docker daemon'ının veya ana makinenin çökmesi, elektrik kesintisi ve ister ana makine kapanırken ister `systemctl stop` veya `restart` sırasında olsun, zaman aşımına uğrayan bir `down()` işlevidir. Böyle bir `down()` sonlandırılır ve durdurma aşağıda anlatıldığı gibi sürer.
+
+Her Docker birimi, daemon'a sinyal göndermeden önce bir durdurma kancası çalıştırır. Kanca, renet bu daemon başlangıcı için zaten çalıştırmadıysa `down()` işlevini hâlâ çalışan daemon üzerinde yürütür; daemon yanıt vermiyorsa veya depoda Rediaccfile yoksa atlar. Ana makine kapanırken önce Docker birimleri durur, her biri `down()` işlevini paralel çalıştırır; ardından bir süpürme birimi, otomatik başlatma olsun olmasın bağlı tüm depoları ayırır. Bir birimin durdurma bütçesi 17 dakikadır ve yeniden başlatma işinin 30 dakikalık sınırına sığar. `down()` bu kancada zaman aşımına uğrarsa süreç grubu SIGTERM alır, 10 saniye sonra SIGKILL gelir (`FunctionKillGrace`, `pkg/orchestration/procgroup.go`), bir uyarı günlüğe yazılır ve kanca 0 ile çıkar; böylece systemd durdurmayı sürdürür. Zaman aşımına uğrayan bir `down()`, `systemctl stop` veya yeniden başlatmayı en fazla kendi zaman aşımı artı 10 saniye kadar geciktirir (üst sınırda 15 dakika 10 saniye) ve durdurma, birimin 17 dakikalık `TimeoutStopSec` değeriyle sınırlı kalır. Durdurmayı reddetme yalnızca renet'in kendi yolları için geçerlidir, örneğin `repo down --unmount`.
+
+`up()` ve `down()` varsayılan olarak 10'ar dakika alır; `RENET_UP_TIMEOUT` ve `RENET_DOWN_TIMEOUT` ile ya da `--up-timeout` ve `--down-timeout` ile ayarlanır. Zaman aşımında süreç grubu SIGTERM alır, 10 saniye sonra SIGKILL gelir. `repo down --unmount` veya converge yeniden başlatması gibi önce `down()` gerektiren bir yol, `down()` zaman aşımına uğrarsa konteynerleri çalışır durumda bırakır; `--force` devam eder. Bir Rediaccfile, yorum satırıyla bir sınırı yükseltebilir:
+
+```bash
+# rediacc:timeout up=20m down=15m backup=120s health=60s repair=10m
+```
+
+| Anahtar | Varsayılan | Üst sınır |
+|---|---|---|
+| `up` | 10 dakika | 60 dakika |
+| `down` | 10 dakika | 15 dakika |
+| `backup` | 30 saniye | 300 saniye |
+| `health` | 30 saniye | 300 saniye |
+| `repair` | 5 dakika | 30 dakika |
+
+`health()` de aynı şekilde sınırlıdır: varsayılan süresi `RENET_HEALTH_TIMEOUT` ile ayarlanır ve zaman aşımında işlem grubuna önce SIGTERM, 10 saniye sonra SIGKILL gönderilir. Dağıtımın sağlık geçidi, zaman aşımına uğrayan bir `health()` çağrısını hâlâ ısınıyor sayar ve yeniden dener; `rdc repo health` ve `rdc machine health` ise bunu hata olarak bildirir. `repair()` aynı modeli `RENET_REPAIR_TIMEOUT` ile izler ve zaman aşımına uğrayan bir `repair()` başarısız sayılır.
+
+Yönerge yalnızca sınırı yükseltir ve üst sınıra kırpılır; böylece depo `down()` işlevini zorla sonlandırılacak kadar kısaltamaz. Bilinmeyen anahtarlar uyarıyla yok sayılır.
+
+Depo daemon'ları Docker'ın `live-restore` özelliğini kapalı tutar. Konteynerler daemon yeniden başlatmasından sağ çıkardı, ancak shim süreçleri birimin cgroup'unu paylaşır ve onunla birlikte sonlandırılır; geri yüklenen daemon bunlara yeniden bağlanamazdı ve konteynerler planlı durdurmada bağlama noktasını meşgul tutardı.
+
+Her depo için renet tarafından yönetilen bir RAM birimi (`# rediacc:ram size=6G`, ana makine RAM'ini operatör tahsis eder) yalnızca bir tasarımdır ve henüz uygulanmamıştır.
 
 ### Örnek
 

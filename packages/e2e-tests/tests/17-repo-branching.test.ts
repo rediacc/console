@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD } from '../src/constants';
+import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD, DEFAULT_NETWORK_ID } from '../src/constants';
 import { e2eRepoGuid, installRepoLicence } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
@@ -46,7 +46,7 @@ test.describe
     });
 
     test.afterAll(async () => {
-      await runner.repositoryUnmount(repo, DS).catch(() => {});
+      await runner.repositoryUnmount(repo, DS, DEFAULT_NETWORK_ID).catch(() => {});
       await runner.repositoryRm(checkoutFork, DS).catch(() => {});
       await runner.repositoryRm(commitGuid, DS).catch(() => {});
       await runner.repositoryRm(repo, DS).catch(() => {});
@@ -70,7 +70,7 @@ test.describe
     });
 
     test('whole-image merge fast-forwards a down working fork to the commit', async () => {
-      await runner.repositoryUnmount(repo, DS);
+      await runner.repositoryUnmount(repo, DS, DEFAULT_NETWORK_ID);
       const result = await runner.repositoryMerge(repo, commitGuid, DS);
       expect(runner.isSuccess(result)).toBe(true);
     });
@@ -87,7 +87,7 @@ test.describe
       runner = RenetFunctionsTestRunner.forWorker();
       await runner.datastoreInitPool('10G', DS, true);
       await runner.repositoryNew(parent, '1G', TEST_PASSWORD, DS);
-      await runner.repositoryUnmount(parent, DS).catch(() => {});
+      await runner.repositoryUnmount(parent, DS, DEFAULT_NETWORK_ID).catch(() => {});
     });
 
     test.afterAll(async () => {
@@ -110,7 +110,7 @@ test.describe
       expect(runner.isSuccess(co)).toBe(true);
       const mount2 = await runner.repositoryMount(writable, TEST_PASSWORD, DS);
       expect(runner.isSuccess(mount2)).toBe(true);
-      await runner.repositoryUnmount(writable, DS).catch(() => {});
+      await runner.repositoryUnmount(writable, DS, DEFAULT_NETWORK_ID).catch(() => {});
     });
   });
 
@@ -136,16 +136,16 @@ test.describe
       await runner.repositoryMount(ours, TEST_PASSWORD, DS);
       await runner.writeFileToRepository(ours, 'fileX.txt', 'ours-X', DS);
       await runner.writeFileToRepository(ours, 'fileOurs.txt', 'ours-only', DS);
-      await runner.repositoryUnmount(ours, DS);
+      await runner.repositoryUnmount(ours, DS, DEFAULT_NETWORK_ID);
       await runner.repositoryMount(theirs, TEST_PASSWORD, DS);
       await runner.writeFileToRepository(theirs, 'fileX.txt', 'theirs-X', DS);
       await runner.writeFileToRepository(theirs, 'fileZ.txt', 'theirs-Z', DS);
-      await runner.repositoryUnmount(theirs, DS);
+      await runner.repositoryUnmount(theirs, DS, DEFAULT_NETWORK_ID);
     });
 
     test.afterAll(async () => {
       for (const r of [ours, theirs, base, work]) {
-        await runner.repositoryUnmount(r, DS).catch(() => {});
+        await runner.repositoryUnmount(r, DS, DEFAULT_NETWORK_ID).catch(() => {});
         await runner.repositoryRm(r, DS).catch(() => {});
       }
     });
@@ -185,7 +185,7 @@ test.describe
       await runner.datastoreInitPool('10G', DS, true);
       await runner.repositoryNew(repo, '1G', TEST_PASSWORD, DS);
       await runner.writeFileToRepository(repo, 'marker.txt', `v1-${stamp}`, DS);
-      await runner.repositoryUnmount(repo, DS).catch(() => {});
+      await runner.repositoryUnmount(repo, DS, DEFAULT_NETWORK_ID).catch(() => {});
     });
 
     test.afterAll(async () => {
@@ -211,7 +211,7 @@ test.describe
       // Modify, then re-push with a delta base but NO --force: regression for the fork-exists guard blocking a verified delta re-push.
       await runner.repositoryMount(repo, TEST_PASSWORD, DS);
       await runner.writeFileToRepository(repo, 'marker.txt', `v2-${stamp}`, DS);
-      await runner.repositoryUnmount(repo, DS);
+      await runner.repositoryUnmount(repo, DS, DEFAULT_NETWORK_ID);
       const result = await runner.deltaPushToMachine(repo, runner.getWorkerVM2(), DS, {
         deltaBase: base1,
         retainBase: base2,
@@ -226,7 +226,7 @@ test.describe
       // Diverge worker1 locally, then pull worker2's version back over it. Regression for `pull --force` being a no-op (bridge never forwarded force).
       await runner.repositoryMount(repo, TEST_PASSWORD, DS);
       await runner.writeFileToRepository(repo, 'marker.txt', `local-${stamp}`, DS);
-      await runner.repositoryUnmount(repo, DS);
+      await runner.repositoryUnmount(repo, DS, DEFAULT_NETWORK_ID);
       const result = await runner.deltaPullFromMachine(repo, runner.getWorkerVM2(), DS, {
         deltaBase: base2,
         force: true,
@@ -257,12 +257,12 @@ test.describe
       await runner.datastoreInitPool('10G', DS, true);
       await runner.repositoryNew(grand, '1G', TEST_PASSWORD, DS);
       await runner.writeFileToRepository(grand, 'marker.txt', `grand-v1-${stamp}`, DS);
-      await runner.repositoryUnmount(grand, DS).catch(() => {});
+      await runner.repositoryUnmount(grand, DS, DEFAULT_NETWORK_ID).catch(() => {});
     });
 
     test.afterAll(async () => {
       for (const r of [fork, grand]) {
-        await runner.repositoryUnmount(r, DS).catch(() => {});
+        await runner.repositoryUnmount(r, DS, DEFAULT_NETWORK_ID).catch(() => {});
         await runner.repositoryRm(r, DS).catch(() => {});
       }
     });
@@ -287,7 +287,7 @@ test.describe
       );
       await runner.repositoryMount(fork, TEST_PASSWORD, DS);
       await runner.writeFileToRepository(fork, 'marker.txt', `fork-v2-${stamp}`, DS);
-      await runner.repositoryUnmount(fork, DS).catch(() => {});
+      await runner.repositoryUnmount(fork, DS, DEFAULT_NETWORK_ID).catch(() => {});
 
       const grandBefore = await imageSha(grand);
       const forkBefore = await imageSha(fork);

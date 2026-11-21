@@ -55,9 +55,10 @@ describe('resolveAndSyncServer', () => {
     await expect(resolveAndSyncServer({})).resolves.toBe('http://gateway.test:4800');
     expect(writtenPointers()).toEqual([
       '/account/accountServer',
-      '/account/updateChannel',
       '/account/e2ePublicKey',
+      '/account/updateChannel',
     ]);
+    expect(mockInfo).toHaveBeenCalledWith('commands.subscription.login.channelSynced');
   });
 
   it('fails the login when the e2e key cannot be persisted, rather than falling back to the production key', async () => {
@@ -92,6 +93,8 @@ describe('resolveAndSyncServer', () => {
     );
     await expect(resolveAndSyncServer({})).resolves.toBe('http://gateway.test:4800');
     expect(mockWarn).toHaveBeenCalledWith('update channel not saved: remote config offline');
+    // A dropped write must not be announced as "Update channel set to ..."
+    expect(mockInfo).not.toHaveBeenCalledWith('commands.subscription.login.channelSynced');
     expect(writtenPointers()).toContain('/account/e2ePublicKey');
   });
 

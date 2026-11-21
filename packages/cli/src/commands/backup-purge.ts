@@ -3,6 +3,10 @@
  * at once, keeping the repository itself. The same account call `repo delete --purge-backups`
  * makes (DELETE /backups/lineages/:guid), without the repository delete around it: no machine is
  * reached and the config record is only read.
+ *
+ * `rdc backup purge --lineage <guid>`: the same call for a lineage whose repository is gone from
+ * the config (deleted without `--purge-backups`), named by the id `backup usage` lists. A lineage
+ * a config repository still owns is refused and goes through the repo-ref form, which knows forks.
  */
 
 import type { Command } from 'commander';
@@ -86,6 +90,7 @@ interface PurgeOptions {
   dryRun?: boolean;
   yes?: boolean;
   cancel?: boolean;
+  lineage?: string;
 }
 
 /** `YYYY-MM-DD HH:MM` (UTC) of an ISO instant. */
@@ -115,8 +120,22 @@ async function footprintAfterPurge(
   }
 }
 
+/** What a purge acts on: the display name (the repository, or the lineage id itself) and the lineage. */
+interface PurgeTarget {
+  repoKey: string;
+  lineage: string;
+  byLineage: boolean;
+}
+
+/** The command that cancels a delayed purge of this target, as the operator types it. */
+function cancelCommand(target: PurgeTarget): string {
+  return target.byLineage
+    ? `rdc backup purge --lineage ${target.lineage} --cancel`
+    : `rdc backup purge ${target.repoKey} --cancel`;
+}
+
 /** The config record behind the ref, read only. Unknown repos and forks are refused here, before any account call. */
-async function resolvePurgeTarget(repoRef: string): Promise<{ repoKey: string; lineage: string }> {
+async function resolvePurgeTarget(repoRef: string): Promise<PurgeTarget> {
   const { repoKey } = await resolveRepoRefLocal(repoRef);
   const repo = await configService.getRepository(repoKey);
   if (!repo) {
@@ -127,17 +146,55 @@ async function resolvePurgeTarget(repoRef: string): Promise<{ repoKey: string; l
   if (repo.grandGuid && repo.grandGuid !== repo.repositoryGuid) {
     throw new ValidationError(t('commands.backup.purge.forkRefused', { name: repoKey }));
   }
-  return { repoKey, lineage: lineageOf(repo) };
+  return { repoKey, lineage: lineageOf(repo), byLineage: false };
 }
 
-/** Typed-name confirmation: anything but the exact repository name cancels. */
-async function confirmByName(repoKey: string, snapshots: number, bytes: string): Promise<boolean> {
+/**
+ * The `--lineage` target: the id itself, refused while a repository in this config still owns it
+ * (that repository's purge goes through its ref) and checked against the agent policy like any
+ * purge. The owner check reads this config only; the server's delayed purge window is what a
+ * purge from another config falls back on. A `--cancel` skips the owner check: cancelling deletes
+ * nothing, and the cancel `repo delete --purge-backups` prints must run while a fork of the
+ * deleted repository still holds the lineage.
+ */
+async function resolveLineageTarget(lineage: string, cancel: boolean): Promise<PurgeTarget> {
+  const owner = cancel
+    ? undefined
+    : (await configService.listRepositories()).find((r) => lineageOf(r.config) === lineage);
+  if (owner) {
+    throw new ValidationError(
+      t('commands.backup.purge.lineageOwned', { lineage, name: owner.name })
+    );
+  }
+  await assertCommandPolicy(CMD.BACKUP_PURGE, undefined, lineage);
+  return { repoKey: lineage, lineage, byLineage: true };
+}
+
+/** Exactly one of `<repo-ref>` and `--lineage` names what is purged. */
+function purgeTarget(repoRef: string | undefined, options: PurgeOptions): Promise<PurgeTarget> {
+  if (Boolean(repoRef) === Boolean(options.lineage)) {
+    throw new ValidationError(t('commands.backup.purge.targetRequired'));
+  }
+  return options.lineage
+    ? resolveLineageTarget(options.lineage, Boolean(options.cancel))
+    : resolvePurgeTarget(repoRef ?? '');
+}
+
+/** Typed-name confirmation: anything but the exact repository name (or lineage id) cancels. */
+async function confirmByName(
+  target: PurgeTarget,
+  snapshots: number,
+  bytes: string
+): Promise<boolean> {
   const { askInput } = await import('../utils/prompt.js');
+  const key = target.byLineage
+    ? 'commands.backup.purge.confirmLineage'
+    : 'commands.backup.purge.confirm';
   const answer = await askInput(
-    t('commands.backup.purge.confirm', { name: repoKey, count: snapshots, bytes }),
+    t(key, { name: target.repoKey, count: snapshots, bytes }),
     /[\s\S]*/
   );
-  return answer === repoKey;
+  return answer === target.repoKey;
 }
 
 /** `purge --cancel`: undo a purge a delayed-deletion window is holding. Nothing is deleted or read besides the cancel. */
@@ -186,11 +243,12 @@ function printDryRun(
   );
 }
 
-async function runBackupPurge(repoRef: string, options: PurgeOptions): Promise<void> {
+async function runBackupPurge(repoRef: string | undefined, options: PurgeOptions): Promise<void> {
   if (options.cancel && options.dryRun) {
     throw new ValidationError(t('commands.backup.purge.cancelExclusive'));
   }
-  const { repoKey, lineage } = await resolvePurgeTarget(repoRef);
+  const target = await purgeTarget(repoRef, options);
+  const { repoKey, lineage } = target;
   if (options.cancel) {
     await runCancelPurge(repoKey, lineage);
     return;
@@ -230,14 +288,15 @@ async function runBackupPurge(repoRef: string, options: PurgeOptions): Promise<v
 
   if (
     !options.yes &&
-    !(await confirmByName(repoKey, snapshots, formatSizeBytes(before.storedBytes)))
+    !(await confirmByName(target, snapshots, formatSizeBytes(before.storedBytes)))
   ) {
     outputService.info(t('status.cancelled'));
     return;
   }
 
   const purged = await purgeLineageRounds(repoKey, lineage, formatSizeBytes);
-  await reportPurged({ repoKey, lineage, plan, before, purged, format });
+  const cancel = cancelCommand(target);
+  await reportPurged({ repoKey, lineage, plan, before, purged, format, cancel });
 }
 
 interface PurgeReport {
@@ -247,11 +306,13 @@ interface PurgeReport {
   before: { storedBytes: number; chunkCount: number };
   purged: LineagePurgeResponse;
   format: OutputFormat;
+  /** The command that cancels a delayed purge, named in the delayed warning. */
+  cancel: string;
 }
 
 /** What the operator is told once the rounds end: held (delayed), or done with the usage before and after. */
 async function reportPurged(report: PurgeReport): Promise<void> {
-  const { repoKey, lineage, plan, before, purged, format } = report;
+  const { repoKey, lineage, plan, before, purged, format, cancel } = report;
   const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
   // A delayed answer deleted nothing: say when it runs and how to stop it, and skip the success line and the usage delta, which would claim bytes that are still stored and charged.
   if (purged.delayed) {
@@ -263,6 +324,7 @@ async function reportPurged(report: PurgeReport): Promise<void> {
       t('commands.backup.purge.delayed', {
         name: repoKey,
         when: purged.purgeAfter ? minuteOf(purged.purgeAfter) : '-',
+        cancel,
       })
     );
     return;
@@ -293,17 +355,18 @@ async function reportPurged(report: PurgeReport): Promise<void> {
   }
 }
 
-/** Register `backup purge <repo-ref> [--dry-run] [-y] [--cancel]`. */
+/** Register `backup purge [repo-ref] [--lineage <guid>] [--dry-run] [-y] [--cancel]`. */
 export function registerBackupPurge(backup: Command): void {
   backup
     .command('purge')
-    .argument('<repo-ref>', t('options.repoRef'))
+    .argument('[repo-ref]', t('options.repoRef'))
     .summary(t('commands.backup.purge.descriptionShort'))
     .description(t('commands.backup.purge.description'))
+    .option('--lineage <guid>', t('commands.backup.purge.optionLineage'))
     .option('--dry-run', t('options.dryRun'))
     .option('-y, --yes', t('options.yes'))
     .option('--cancel', t('commands.backup.purge.optionCancel'))
-    .action(async (repoRef: string, options: PurgeOptions) => {
+    .action(async (repoRef: string | undefined, options: PurgeOptions) => {
       try {
         await runBackupPurge(repoRef, options);
       } catch (error) {

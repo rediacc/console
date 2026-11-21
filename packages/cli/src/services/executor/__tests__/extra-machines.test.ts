@@ -20,6 +20,23 @@ describe('resolveExtraMachines', () => {
     expect(getLocalMachine).toHaveBeenCalledWith('machine-12');
   });
 
+  it("carries the peer machine's knownHosts into the extra machine", async () => {
+    getLocalMachine.mockResolvedValue({
+      ip: '10.0.0.2',
+      port: 22,
+      user: 'u',
+      datastore: '/mnt/x',
+      knownHosts: '10.0.0.2 ssh-ed25519 AAAA',
+    });
+
+    const peers = await resolveExtraMachines({ to: 'machine-12' }, 'datastore_attach');
+
+    expect(peers?.['machine-12']).toMatchObject({
+      ip: '10.0.0.2',
+      knownHosts: '10.0.0.2 ssh-ed25519 AAAA',
+    });
+  });
+
   it('never reads the directory `to` of backup_restore_path as a machine name', async () => {
     const peers = await resolveExtraMachines(
       { lineage: 'l', at: 's', path: 'a.bin', to: '/tmp/restore-here' },

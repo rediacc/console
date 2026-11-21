@@ -112,9 +112,57 @@ export interface CosignRun {
 }
 export type CosignRunner = (args: string[]) => CosignRun;
 
-/** The cosign binary: PINS_COSIGN when set, else `cosign` on PATH. */
-export const cosignBinary = (env: NodeJS.ProcessEnv = process.env): string =>
-  env.PINS_COSIGN && env.PINS_COSIGN !== '' ? env.PINS_COSIGN : 'cosign';
+/** COSIGN_VERSION from .devcontainer/toolchain.env, or null when the file or the key is absent. */
+function pinnedCosignVersion(root: string): string | null {
+  try {
+    const text = fs.readFileSync(path.join(root, '.devcontainer', 'toolchain.env'), 'utf8');
+    return /^COSIGN_VERSION=(\S+)$/m.exec(text)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function isExecutableFile(file: string): boolean {
+  try {
+    fs.accessSync(file, fs.constants.X_OK);
+    return fs.statSync(file).isFile();
+  } catch {
+    return false;
+  }
+}
+
+// One warning per unexecutable cached file: systemCosign resolves the binary on every call, so a run with several cosign checks would repeat the line.
+const warnedUnexecutable = new Set<string>();
+
+/**
+ * The cosign binary, in this order: PINS_COSIGN when set, the toolchain cache at the pin
+ * (`.ci/bootstrap.sh install cosign` writes .ci/cache/toolchain/cosign/<COSIGN_VERSION>/cosign),
+ * then `cosign` on PATH.
+ */
+export const cosignBinary = (
+  env: NodeJS.ProcessEnv = process.env,
+  root: string = REPO_ROOT
+): string => {
+  if (env.PINS_COSIGN && env.PINS_COSIGN !== '') return env.PINS_COSIGN;
+  const v = pinnedCosignVersion(root);
+  if (v) {
+    const cached = path.join(root, '.ci', 'cache', 'toolchain', 'cosign', v, 'cosign');
+    // An unexecutable file is no rung: spawning it would fail with EACCES, which reads as a broken check and not as the missing binary the install hint answers.
+    if (isExecutableFile(cached)) {
+      // Repaired: a later break of the same file warns again.
+      warnedUnexecutable.delete(cached);
+      return cached;
+    }
+    // Said aloud: the PATH rung below may be any cosign version, not the pinned one this file was proven with.
+    if (fs.existsSync(cached) && !warnedUnexecutable.has(cached)) {
+      warnedUnexecutable.add(cached);
+      process.stderr.write(
+        `warning: the pinned cosign ${cached} is not an executable file; falling back to the cosign on PATH, which may not be version ${v}\n`
+      );
+    }
+  }
+  return 'cosign';
+};
 
 export function systemCosign(env: NodeJS.ProcessEnv = process.env): CosignRunner {
   return (args) => {
@@ -130,7 +178,7 @@ export function systemCosign(env: NodeJS.ProcessEnv = process.env): CosignRunner
 
 /** The install line a missing-cosign refusal prints; the module path is the one this file was proven with. */
 export const COSIGN_FIX =
-  'install cosign (sigstore) and re-run, or point PINS_COSIGN at a cosign binary; a Go toolchain builds one with ' +
+  'run `.ci/bootstrap.sh install cosign` (the pinned, sha256-verified binary) and re-run, or point PINS_COSIGN at a cosign binary; a Go toolchain builds one with ' +
   `\`GOBIN=<dir> go install ${new URL(WK_GH_ORIGIN).host}/sigstore/cosign/v2/cmd/cosign@v2.6.5\` (Go proxy plus sumdb verified)`;
 
 // ---- certificate reading --------------------------------------------------------------------

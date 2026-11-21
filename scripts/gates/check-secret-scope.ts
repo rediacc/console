@@ -52,7 +52,7 @@
  *                           BWS_ACCESS_TOKEN only, and the org holds zero. So this
  *                           entry forgives a read that resolves to the empty string.
  *                           The allowlist keeps it because deleting the read would
- *                           hide the defect rather than fix it; watchdog-monitor.yml
+ *                           hide the defect rather than fix it; ops-watchdog-monitor.yml
  *                           carries the measurement and the decision it needs.
  *
  * ---- gate ----

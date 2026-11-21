@@ -464,7 +464,7 @@ def test_wait_failed_run_rc4_names_the_investigation(capsys):
     err = capsys.readouterr().err
     assert "claude-code-action exited 1 at step Run review" in err
     assert "investigate the Claude Review run" in err
-    assert "gh workflow run claude-review.yml -f pr_number=%d" % PR in err
+    assert "gh workflow run ops-claude-review.yml -f pr_number=%d" % PR in err
 
 
 @pytest.mark.parametrize("title", [None, "stale: head moved", "draft: not ready", "nonsense"])
@@ -527,7 +527,7 @@ def test_wait_failed_run_names_the_attempt_class_and_the_rerun(capsys):
     assert P.cmd_wait(None, 60, gh, sleeper=clock.sleep, clock=clock) == 4
     err = capsys.readouterr().err
     assert "review attempt (class error_max_turns)" in err
-    assert "gh workflow run claude-review.yml --ref %s -f pr_number=%d" % (BRANCH, PR) in err
+    assert "gh workflow run ops-claude-review.yml --ref %s -f pr_number=%d" % (BRANCH, PR) in err
     # ONE "Next:" (review finding 3bc91573.1): the attempt's action replaces the generic investigation line.
     assert err.count("Next:") == 1, err
     assert "investigate the Claude Review run" not in err

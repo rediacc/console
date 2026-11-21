@@ -1,7 +1,10 @@
 """PF18: the duration-ordered collection's fallbacks (the happy path is in test_xdist_groups.py)."""
 
+import contextlib
 import json
+import os
 
+import conftest
 from rediacc_ci import xdist_groups
 
 
@@ -31,3 +34,17 @@ def test_unknown_file_is_priced_at_the_default_between_known_ones() -> None:
     files = ["short.py", "unknown.py", "long.py"]
     order = xdist_groups.order_longest_first(files, {"short.py": 1.0, "long.py": 50.0}, 10.0)
     assert [files[i] for i in order] == ["long.py", "unknown.py", "short.py"]
+
+
+def test_the_environment_restore_fixture_undoes_a_write_and_a_deletion(monkeypatch) -> None:
+    """3e517f65.1: the autouse fixture in the root conftest puts os.environ back, whatever wrote it."""
+    monkeypatch.setenv("ABAD_KEPT", "kept")
+    monkeypatch.delenv("ABAD_NEW", raising=False)
+    cycle = conftest._restore_process_environment._get_wrapped_function()()
+    next(cycle)
+    os.environ["ABAD_NEW"] = "leaked"
+    os.environ.pop("ABAD_KEPT")
+    with contextlib.suppress(StopIteration):
+        next(cycle)
+    assert "ABAD_NEW" not in os.environ
+    assert os.environ.get("ABAD_KEPT") == "kept"

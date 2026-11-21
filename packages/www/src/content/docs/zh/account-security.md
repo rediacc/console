@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: zh
-sourceHash: "48538a4c661c9f72"
-sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
+sourceHash: "55c979711279a92e"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 ### 身份验证
@@ -106,12 +106,12 @@ Rediacc使用三个独立的权限层：
 ### 更新渠道
 
 CLI支持两个发布渠道：
-- **stable**（默认）：经过 7 天浸泡期后从 edge 升级而来；若偏好保守的升级节奏请选择此通道
-- **edge**：最新功能，每次发布时更新
+- **edge**（默认）：最新功能，每次发布时更新
+- **stable**：经过 7 天浸泡期后从 edge 升级而来；若偏好保守的升级节奏请选择此通道
 
 ```bash
-rdc update --channel edge      # Switch to edge
-rdc update --channel stable    # Switch back to stable
+rdc update --channel stable    # 切换到 stable
+rdc update --channel edge      # 切回 edge
 rdc update --status            # Show current channel
 ```
 

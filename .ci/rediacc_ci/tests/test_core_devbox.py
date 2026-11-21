@@ -1,4 +1,4 @@
-"""`rediacc_ci.core.devbox` against the transcripts frozen from the retired `.ci/lib/devbox.sh` (`goldens/twins/lib.devbox.jsonl`): all fifty-five functions.
+"""`rediacc_ci.core.devbox` against the transcripts frozen from the retired `.ci/lib/devbox.sh` (`goldens/twins/lib.devbox.jsonl`): all fifty-four functions (`devbox_build_image` is retired).
 
 THE TWIN IS DELETED. The bash side of every scenario was driven by `rediacc_ci.core.devbox_shadow_driver` while `devbox.sh` existed and its full transcripts are the golden; this file compares the port's live transcript against them. A Rule-T change to the port is recorded with `regolden --source port`.
 
@@ -35,6 +35,7 @@ from rediacc_ci.core import devbox
 from rediacc_ci.core import devbox_shadow_driver as driver
 from rediacc_ci.setup import bridge
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.well_known import IMAGE_REGISTRY
 
 TWIN = ".ci/lib/devbox.sh"
 PORT = ".ci/rediacc_ci/core/devbox.py"
@@ -312,7 +313,14 @@ def claims_proxy(obs: dict[str, list[str]]) -> None:
 
 def claims_image(obs: dict[str, list[str]]) -> None:
     # The derive is SKIPPED when the base's vscode already carries the host's ids: the base is the run image and nothing is built.
-    assert stdout_of(obs["run-image-match"]) == (devbox.DEVBOX_IMAGE + "\n").encode()
+    # Pinned to the pin FILE, read here on its own, not to the port constant: a port that drifted from the pin would otherwise pass (review 69c2e1ea.1).
+    pin = json.loads(
+        paths.from_root(".ci", "config", "devcontainer-image.json").read_text(encoding="utf-8")
+    )
+    assert (
+        stdout_of(obs["run-image-match"])
+        == ("%s/%s@%s\n" % (IMAGE_REGISTRY, pin["image"], pin["digest"])).encode()
+    )
     assert not any(call[1] == "build" for call in calls_of(obs["ensure-uid-match"]))
     # A present derived tag is REUSED: inspected, never rebuilt.
     assert not any(call[1] == "build" for call in calls_of(obs["ensure-uid-present"]))
@@ -374,7 +382,7 @@ DELTA_LABELS = {
     "lifecycle": {"stop-ps-fails"},  # D7
     "state": {"get-dot", "get-star", "get-bracket"},  # D11
     "status": {"conflict"},  # D4
-    "up-create": {"no-group", "octal"},  # D1, D6
+    "up-create": {"no-group", "octal", "image-fails"},  # D1, D6, D13
     "up-existing": {"start-fails"},  # D9
 }
 
@@ -386,8 +394,12 @@ def _label_of(line: str) -> str:
     return line[4:].partition(" ")[0]
 
 
+# D13 (the ruling that a failed pull of the pin builds nothing): the `image` scenario's two fallback steps, proved by `test_delta_d13_*` against the port alone. Kept out of `DELTA_LABELS` because that table's parametrized test needs a twin transcript recorded under its own test id.
+D13_LABELS = {"image": {"ensure-pull-fails", "ensure-build-fails"}}
+
+
 def _without_delta_labels(out: str, scenario: str) -> list[str]:
-    skip = DELTA_LABELS.get(scenario, set())
+    skip = DELTA_LABELS.get(scenario, set()) | D13_LABELS.get(scenario, set())
     return [line for line in out.splitlines() if _label_of(line) not in skip]
 
 
@@ -447,7 +459,34 @@ def test_devbox_proxy_image_is_the_product_proxy_pin() -> None:
 def _fold_twin_spellings(scenario: str, old_out: str) -> str:
     if scenario in BIND_SPELLING_SCENARIOS:
         old_out = old_out.replace(TWIN_BIND_SPELLING, PORT_BIND_SPELLING)
+    old_out = old_out.replace(TWIN_DEVBOX_IMAGE, devbox.DEVBOX_IMAGE)
+    old_out = old_out.replace(TWIN_DEVBOX_IMAGE.encode().hex(), devbox.DEVBOX_IMAGE.encode().hex())
     return old_out.replace(TWIN_PROXY_IMAGE, '"%s"' % devbox.DEVBOX_PROXY_IMAGE)
+
+
+# The retired twin ran the floating tag; the port runs the pin. The two words the port adds to the `docker run` argv (the runner image variable and the ci:quick clone-root bind) are cut from the port's transcript before the comparison, and `test_up_*` below pins each one by itself.
+TWIN_DEVBOX_IMAGE = IMAGE_REGISTRY + "/devcontainer:latest"
+PORT_ADDED_WORDS = re.compile(
+    r'"-e", "CI_RUNNER_IMAGE=[^"]*", |"-v", "([^"]*/rediacc/ci-quick-clones)\1?:[^"]*", '
+)
+
+
+# The one extra `docker inspect` the port makes of an existing container (`Devbox.image_drift`), a line of its own in the transcript.
+PORT_ADDED_CALL = re.compile(
+    r'^obs \S+ call\| \["docker", "inspect", "-f", "\{\{range \.Config\.Env\}\}[^\n]*\n',
+    re.MULTILINE,
+)
+
+
+# The clone-root bind joins the list of missing bind destinations once the directory exists: one more log row in `up`'s bind-drift report.
+PORT_ADDED_DRIFT_ROW = re.compile(
+    r"^obs \S+ err\| \S+ {3}\S*/rediacc/ci-quick-clones\n", re.MULTILINE
+)
+
+
+def _fold_port_additions(new_out: str) -> str:
+    folded = PORT_ADDED_WORDS.sub("", new_out)
+    return PORT_ADDED_DRIFT_ROW.sub("", PORT_ADDED_CALL.sub("", folded))
 
 
 def equivalent(scenario: str, old_out: str, new_out: str) -> bool:
@@ -455,6 +494,7 @@ def equivalent(scenario: str, old_out: str, new_out: str) -> bool:
     old_out = _fold_twin_spellings(scenario, old_out)
     if scenario in NEWLINE_SCENARIOS:
         return _newline_delta_holds(scenario, old_out, new_out)
+    new_out = _fold_port_additions(new_out)
     return _without_delta_labels(old_out, scenario) == _without_delta_labels(new_out, scenario)
 
 
@@ -469,7 +509,7 @@ def divergence(scenario: str, old_out: str, new_out: str) -> str:
     """
     old_out = _fold_twin_spellings(scenario, old_out)
     old_lines = _without_delta_labels(old_out, scenario)
-    new_lines = _without_delta_labels(new_out, scenario)
+    new_lines = _without_delta_labels(_fold_port_additions(new_out), scenario)
     found = [
         "scenario %s diverged (%d twin lines, %d port lines)"
         % (scenario, len(old_lines), len(new_lines))
@@ -554,7 +594,7 @@ def stub_functions() -> set[str]:
 
 
 def test_every_function_is_driven_by_some_scenario() -> None:
-    """Every one of the fifty-five is the subject of a step, so none of them is licensed by a ledger that never called it."""
+    """Every one of the fifty-four is the subject of a step, so none of them is licensed by a ledger that never called it."""
     driven = stub_functions() | {"devbox_slugify", "devbox_slug_drift", "devbox_route_label"}
     assert driven == set(devbox.BASH_NAMES), sorted(set(devbox.BASH_NAMES) ^ driven)
 
@@ -578,11 +618,6 @@ PLANTS = (
         "a gone worktree no longer falls back to its literal path",
         "Devbox.worktree_path",
         "identity-gone",
-    ),
-    (
-        "build_image looks under the worktree instead of the mount root",
-        "Devbox.build_image",
-        "identity-worktree",
     ),
     ("the run image is always the base, so nothing is ever derived", "Devbox.run_image", "image"),
     ("the derived tag drops the recipe hash", "Devbox.uid_image", "image"),
@@ -621,14 +656,6 @@ def planted_value(attribute: str):
             return original(self) if os.path.isdir(self.console_root) else ""
 
         return worktree_path
-    if attribute == "Devbox.build_image":
-
-        def build_image(self, *_argv):
-            self.docker_words()
-            self.log("error", "No Dockerfile at %s/.devcontainer" % self.worktree_path())
-            return 1
-
-        return build_image
     if attribute == "Devbox.run_image":
 
         def run_image(self, *_argv):
@@ -754,10 +781,15 @@ def test_the_stub_answers_by_pattern_ordinal_and_history() -> None:
 # -- the twin is retired, and the port carries all of it ------------------------
 
 
-def test_the_port_defines_these_fifty_five_and_nothing_else() -> None:
-    """The twin's function list was measured against `devbox.BASH_NAMES` while the bash existed (fifty-five names); the count is what is kept."""
-    assert len(devbox.BASH_NAMES) == 55
-    assert len(set(devbox.BASH_NAMES.values())) == 55
+def test_the_port_defines_these_fifty_four_and_nothing_else() -> None:
+    """The twin's function list was measured against `devbox.BASH_NAMES` while the bash existed (fifty-five names, `devbox_build_image` since retired); the count is what is kept."""
+    assert len(devbox.BASH_NAMES) == 54
+    assert len(set(devbox.BASH_NAMES.values())) == 54
+
+
+def test_the_retired_build_is_gone_and_nothing_reaches_it() -> None:
+    assert "devbox_build_image" not in devbox.BASH_NAMES
+    assert not hasattr(devbox.Devbox, "build_image")
 
 
 def test_every_twin_function_has_a_counterpart_and_none_is_unported() -> None:
@@ -1385,6 +1417,20 @@ def test_delta_d9_a_failed_docker_start_says_what_failed() -> None:
     assert any("Could not start the existing devbox container" in line for line in errs)
 
 
+def test_delta_d13_a_failed_pull_of_the_pin_is_an_error_with_no_local_build() -> None:
+    """Defect D13, fixed by ruling: a local build can never equal the pinned digest, so a failed pull names the digest and the fix and builds nothing. The twin fell back to a build."""
+    for scenario, label in (("image", "ensure-pull-fails"), ("image", "ensure-build-fails")):
+        obs = port_obs(scenario)[label]
+        assert status_of(obs) == 1
+        errs = " ".join(errs_of(obs))
+        assert "Could not pull the pinned devbox image " + devbox.DEVBOX_IMAGE in errs
+        assert "docker login ghcr.io" in errs
+        assert not any(call[1] == "build" for call in calls_of(obs))
+    up = port_obs("up-create")["image-fails"]
+    assert status_of(up) == 1
+    assert not any(call[1] == "build" for call in calls_of(up))
+
+
 def test_delta_d10_the_basename_fallback_ignores_the_locale() -> None:
     """Defect D10, fixed: one checkout has one hostname, whatever the caller's locale. The twin answered `my-box----9` under the C locale and `my-box---9` under UTF-8; both are the C answer now."""
     c_locale = port_obs("identity-detached")
@@ -1416,3 +1462,163 @@ def test_delta_p7_a_missing_argument_stays_a_refusal() -> None:
         devbox.slug_drift(None)
     with pytest.raises(devbox.DevboxError):
         devbox.route_label(None)
+
+
+# -- the pinned run image (PLAN-two-track-merge-dev D6) ------------------------
+
+
+def _pin_text() -> dict:
+    return json.loads((paths.repo_root() / devbox.DEVCONTAINER_PIN_REL).read_text(encoding="utf-8"))
+
+
+def test_the_run_image_is_the_pin_and_never_a_floating_tag() -> None:
+    pin = _pin_text()
+    assert "%s/%s@%s" % (IMAGE_REGISTRY, pin["image"], pin["digest"]) == devbox.DEVBOX_IMAGE
+    assert ":latest" not in devbox.DEVBOX_IMAGE
+    obs = observations(new_transcript("image"))
+    # The run image when the base already carries the host's ids is the base itself: the pin.
+    assert stdout_of(obs["run-image-match"]) == (devbox.DEVBOX_IMAGE + "\n").encode()
+    # A derive builds FROM the pin.
+    builds = [c for rows in obs.values() for c in calls_of(rows) if len(c) > 1 and c[1] == "build"]
+    derives = [c for c in builds if any(word.startswith("BASE=") for word in c)]
+    assert derives, "the image scenario no longer exercises a derive"
+    assert all("BASE=" + devbox.DEVBOX_IMAGE in c for c in derives)
+
+
+def test_every_container_carries_the_runner_image_variable_equal_to_the_pin() -> None:
+    run = _first_run(new_transcript("up-create"), "ok")
+    pairs = [run[at : at + 2] for at in range(len(run) - 1)]
+    assert ["-e", "CI_RUNNER_IMAGE=%s" % devbox.DEVBOX_IMAGE] in pairs
+    assert devbox.RUNNER_IMAGE_ENV == "CI_RUNNER_IMAGE"
+
+
+def test_the_quick_clone_root_is_bound_at_the_same_path() -> None:
+    run = _first_run(new_transcript("up-create"), "ok")
+    binds = [run[at + 1] for at in range(len(run) - 1) if run[at] == "-v"]
+    clones = [b for b in binds if b.split(":")[0].endswith("/rediacc/ci-quick-clones")]
+    assert len(clones) == 1
+    source, _, target = clones[0].partition(":")
+    assert source == target
+
+
+def test_the_quick_clone_dir_follows_the_runner_rule(tmp_path: pathlib.Path) -> None:
+    box = devbox.Devbox(env={"HOME": "/h", "XDG_CACHE_HOME": ""})
+    assert box.quick_clones_dir() == "/h/.cache/rediacc/ci-quick-clones"
+    box = devbox.Devbox(env={"HOME": "/h", "XDG_CACHE_HOME": "/x"})
+    assert box.quick_clones_dir() == "/x/rediacc/ci-quick-clones"
+    box = devbox.Devbox(env={"HOME": "/h", "CI_QUICK_CLONE_DIR": str(tmp_path)})
+    assert box.quick_clones_dir() == str(tmp_path)
+
+
+class InspectedContainer(devbox.Devbox):
+    """`Devbox` over one existing container whose `docker inspect` answers are given: its mount destinations and its environment."""
+
+    def __init__(self, *args, mounts: str = "x\n", environment: str = "", **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.mounts = mounts
+        self.environment = environment
+
+    def run(self, argv, out=devbox.INHERIT, err=devbox.INHERIT, extra_env=None):
+        del err, extra_env
+        if argv[1:2] == ["ps"]:
+            answer = "cid\n"
+        elif argv[1:3] == ["inspect", "-f"] and ".Mounts" in argv[3]:
+            answer = self.mounts
+        elif argv[1:3] == ["inspect", "-f"] and ".Config.Env" in argv[3]:
+            answer = self.environment
+        else:
+            answer = ""
+        if out == devbox.CAPTURE:
+            return 0, answer
+        self.write(answer)
+        return 0, ""
+
+
+def _drift_words(box: InspectedContainer, fn) -> list[str]:
+    status, text = box.sub(fn, "cid") if fn == box.image_drift else box.sub(fn)
+    assert status == 0
+    return [line for line in text.split("\n") if line]
+
+
+def test_missing_binds_reports_the_clone_root_when_the_container_lacks_it(
+    tmp_path: pathlib.Path,
+) -> None:
+    env = {"HOME": str(tmp_path), "XDG_CACHE_HOME": str(tmp_path / "cache"), "PATH": "/usr/bin"}
+    clones = tmp_path / "cache" / "rediacc" / "ci-quick-clones"
+    box = InspectedContainer(env, mounts="/some/mount\n")
+    # CONTROL: the directory does not exist yet (`up` makes it), so there is nothing to bind and nothing to report.
+    assert str(clones) not in _drift_words(box, box.missing_binds)
+    clones.mkdir(parents=True)
+    assert str(clones) in _drift_words(box, box.missing_binds)
+    bound = InspectedContainer(env, mounts="/some/mount\n%s\n" % clones)
+    assert str(clones) not in _drift_words(bound, bound.missing_binds)
+
+
+def test_image_drift_reads_the_runner_variable_in_both_directions() -> None:
+    pin = "CI_RUNNER_IMAGE=%s" % devbox.DEVBOX_IMAGE
+    current = InspectedContainer({"PATH": "/usr/bin"}, environment="PATH=/x\n%s\n" % pin)
+    assert _drift_words(current, current.image_drift) == []
+    old_tag = InspectedContainer({"PATH": "/usr/bin"}, environment="PATH=/x\n")
+    assert _drift_words(old_tag, old_tag.image_drift) == ["CI_RUNNER_IMAGE unset"]
+    other = "CI_RUNNER_IMAGE=%s/devcontainer:latest" % IMAGE_REGISTRY
+    stale = InspectedContainer({"PATH": "/usr/bin"}, environment="%s\n" % other)
+    assert _drift_words(stale, stale.image_drift) == [other]
+    # An unanswerable probe is never a reason to destroy a container.
+    silent = InspectedContainer({"PATH": "/usr/bin"}, environment="")
+    assert _drift_words(silent, silent.image_drift) == []
+
+
+def test_up_recreates_a_container_on_the_old_image_and_keeps_a_current_one(monkeypatch) -> None:
+    monkeypatch.setitem(
+        driver.STUB_SCENARIOS, "image-drift", ("main", "C", driver.image_drift_steps)
+    )
+    stale = observations(new_transcript("image-drift"))
+    assert "image-drift-rehost" in stale
+    assert "image-current" in stale
+    drifted = " ".join(errs_of(stale["image-drift-rehost"]))
+    assert "Image drift: the container carries CI_RUNNER_IMAGE unset" in drifted
+    assert any(call[1] == "rm" for call in calls_of(stale["image-drift-rehost"]))
+    assert "Image drift" not in " ".join(errs_of(stale["image-current"]))
+    assert not any(call[1] == "rm" for call in calls_of(stale["image-current"]))
+    kept = " ".join(errs_of(stale["image-drift-no-rehost"]))
+    assert "keeps running the older image" in kept
+    assert not any(call[1] == "rm" for call in calls_of(stale["image-drift-no-rehost"]))
+
+
+GOOD_DIGEST = "sha256:" + "a" * 64
+PIN_IMAGE = "devcontainer"
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "not json",
+        "[]",
+        "{}",
+        json.dumps({"image": PIN_IMAGE, "stage": "full"}),
+        json.dumps({"image": PIN_IMAGE, "digest": "sha256:abc", "stage": "full"}),
+        json.dumps({"image": PIN_IMAGE + ":latest", "digest": GOOD_DIGEST, "stage": "full"}),
+        json.dumps({"image": PIN_IMAGE, "digest": GOOD_DIGEST}),
+        json.dumps({"image": "", "digest": GOOD_DIGEST, "stage": "full"}),
+        json.dumps(
+            {"image": IMAGE_REGISTRY + "/devcontainer", "digest": GOOD_DIGEST, "stage": "full"}
+        ),
+    ],
+)
+def test_a_malformed_pin_refuses_loudly(body: str, tmp_path: pathlib.Path) -> None:
+    pin = tmp_path / "pin.json"
+    pin.write_text(body, encoding="utf-8")
+    with pytest.raises(RuntimeError, match="devcontainer image pin"):
+        devbox.image_pin(str(pin))
+
+
+def test_a_missing_pin_refuses_loudly(tmp_path: pathlib.Path) -> None:
+    with pytest.raises(RuntimeError, match="devcontainer image pin unreadable"):
+        devbox.image_pin(str(tmp_path / "absent.json"))
+
+
+def test_a_well_formed_pin_is_image_at_digest(tmp_path: pathlib.Path) -> None:
+    pin = tmp_path / "pin.json"
+    body = {"image": "x/y", "digest": GOOD_DIGEST, "stage": "full"}
+    pin.write_text(json.dumps(body), encoding="utf-8")
+    assert devbox.image_pin(str(pin)) == "%s/x/y@%s" % (IMAGE_REGISTRY, GOOD_DIGEST)

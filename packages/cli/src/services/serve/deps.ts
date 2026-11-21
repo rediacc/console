@@ -28,6 +28,10 @@ export interface ExecutorAuditEvent {
   exitCode: number;
   durationMs: number;
   destructive: boolean;
+  /** The job the command ran as, when it ran as one. */
+  jobId?: string;
+  /** `started` for a ticket handed back before the job ended, else the job's terminal state. */
+  outcome?: 'started' | 'succeeded' | 'failed' | 'cancelled';
 }
 
 export interface ServeCrypto {

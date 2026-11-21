@@ -33,7 +33,10 @@ import {
   readLockPackages,
 } from '../../deps/shared.js';
 import { isEntryPoint } from '../../entry-point.js';
+import type { DriverContext } from '../driver.js';
+import { loadRegistry } from '../registry.js';
 import { movedPinGroups, planManifestPins, sourceManifests } from './pin-manifests.js';
+import { followers, planFollow } from './pin-site-follow.js';
 
 const decode = (b64: string): InstallStep[] =>
   JSON.parse(Buffer.from(b64, 'base64').toString('utf8')) as InstallStep[];
@@ -113,11 +116,46 @@ function sync(steps: InstallStep[]): number {
   return 0;
 }
 
+/** The other version sites of a registry pin follow the package.json site `npm update` moved (worklist #43aebb3a). */
+function follow(steps: InstallStep[]): number {
+  const reg = loadRegistry(path.join(CONSOLE_ROOT, '.ci/config/pins.json'));
+  const entries = followers(reg, new Set(steps.flatMap((s) => s.packages.map((p) => p.name))));
+  const ctx: DriverContext = {
+    root: CONSOLE_ROOT,
+    reg,
+    read: (p) => {
+      const f = path.join(CONSOLE_ROOT, p.repo, p.file);
+      return fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : null;
+    },
+    fixture: null,
+    mutant: null,
+  };
+  let plan: ReturnType<typeof planFollow>;
+  try {
+    plan = planFollow(entries, ctx);
+  } catch (e) {
+    console.error((e as Error).message);
+    return 1;
+  }
+  for (const c of plan.changes) console.log(`  ${c}`);
+  for (const w of plan.writes) fs.writeFileSync(path.join(CONSOLE_ROOT, w.repo, w.file), w.after);
+  console.log(
+    `registry pin sites: ${entries.length} pin(s) followed, ${plan.writes.length} file(s) rewritten`
+  );
+  return 0;
+}
+
 if (isEntryPoint(import.meta.filename)) {
   const [verb, payload] = process.argv.slice(2);
-  if ((verb !== 'guard' && verb !== 'sync') || !payload) {
-    console.error('usage: npm-steps.ts guard|sync <base64 json>');
+  if ((verb !== 'guard' && verb !== 'sync' && verb !== 'follow') || !payload) {
+    console.error('usage: npm-steps.ts guard|sync|follow <base64 json>');
     process.exit(2);
   }
-  process.exit(verb === 'guard' ? guard(decode(payload)) : sync(decode(payload)));
+  process.exit(
+    verb === 'guard'
+      ? guard(decode(payload))
+      : verb === 'sync'
+        ? sync(decode(payload))
+        : follow(decode(payload))
+  );
 }

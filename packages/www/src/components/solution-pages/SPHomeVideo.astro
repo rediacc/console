@@ -11,6 +11,7 @@
  * never applies here.
  */
 import type { Language } from '../../i18n/types';
+import { createTranslator } from '../../i18n/utils';
 import SPSolutionVideo from './SPSolutionVideo.astro';
 
 interface Props {
@@ -18,12 +19,19 @@ interface Props {
 }
 
 const { lang } = Astro.props as Props;
+const { t } = createTranslator(lang);
 ---
 
 <section class="sp-home-video">
   <div class="sp-home-video-inner sp-hero-media">
     <SPSolutionVideo lang={lang} slug="home" />
   </div>
+  {/* Reuses the install page's string (pages.install.hero.downloadsLink), so no new key. */}
+  <p class="sp-home-video-note">
+    <a class="sp-home-video-link" href={`/${lang}/downloads`}>
+      {t('pages.install.hero.downloadsLink')} &rarr;
+    </a>
+  </p>
 </section>
 
 <style>
@@ -34,6 +42,32 @@ const { lang } = Astro.props as Props;
   .sp-home-video-inner {
     max-width: 48rem;
     margin: 0 auto;
+  }
+
+  .sp-home-video-note {
+    margin: var(--space-4) 0 0;
+    text-align: center;
+  }
+
+  .sp-home-video-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .sp-home-video-link:hover {
+    color: var(--color-text);
+  }
+
+  .sp-home-video-link:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
   }
 
   @media (max-width: 900px) {

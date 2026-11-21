@@ -8,7 +8,7 @@ subcategory: cli-tools
 order: 3
 cardGrid: true
 language: ar
-sourceHash: "44f85425f17be08c"
+sourceHash: "c0ca05a2167060d2"
 sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 ---
 
@@ -143,6 +143,17 @@ sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
 | `rdc machine add <machine> --ip <host> --user <user>` | إضافة جهاز إلى الإعدادات |
 | `rdc backup strategy set ...` | تحديد استراتيجية نسخ احتياطي مسماة |
 | `rdc --config <name> <command>` | استخدام ملف إعدادات مسمى |
+
+## الملاحظات
+
+| الأمر | الوصف |
+|-------|-------|
+| `rdc feedback report --last` | معاينة تقرير مبني من أحدث أمر فاشل؛ أضف `--yes` للإرسال |
+| `rdc feedback report --command <n>` | الإبلاغ عن أمر مسجّل (1 هو الأحدث) |
+| `rdc feedback report --list-recent` | سرد الأوامر المسجّلة ثم الخروج |
+| `rdc feedback report --message <text> [--kind bug\|feedback\|docs]` | الإبلاغ عن ملاحظة بدون أمر فاشل |
+| `rdc feedback list [--status <list>]` | سرد التقارير مع المعرّف والبصمة والحالة والتواريخ؛ ويظهر التقرير المُصلَح بالصيغة `fixed-in-v<version>` |
+| `rdc feedback show <id>` | عرض تقرير واحد بالمعرّف أو ببادئة فريدة |
 
 ## التشخيص والوصول المباشر
 

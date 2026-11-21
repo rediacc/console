@@ -460,7 +460,7 @@ RDC_CMD = re.compile(
     r"(?:^|[;&|(]|\$\(|`)\s*((?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*)(?:\S*/)?(?:rdc\.sh|rdc)(?![\w.\-/])([^\n;&|]*)",
     re.MULTILINE,
 )
-BENCH_CONFIG_FLAG = re.compile(r"(?:^|\s)--config[= ]eu-bench(?![\w.-])")
+BENCH_CONFIG_FLAG = re.compile(r"(?:^|\s)--config[= ](eu|us|asia)-bench(?![\w.-])")
 # A COPY of `rediacc_ci.ops.login_bench.LOGIN_NEEDED_MARKERS`, for the reason the bws markers above are copied: a hook has no route onto `.ci/`. The CLI strings are `loginIpMismatch`, `errors.subscription.ipRebind.nonInteractive` / `reloginOnly` and `errors.subscription.notLoggedIn` in packages/cli/src/i18n/locales/en/cli.json.
 BENCH_LOGIN_MARKERS = (
     "tied to another network address",
@@ -471,37 +471,86 @@ BENCH_LOGIN_MARKERS = (
 
 
 def _bench_rdc_run(cmd):
-    """True when `cmd` runs rdc against the eu-bench config (flag, `--config=` form, or a `REDIACC_CONFIG=eu-bench` prefix)."""
+    """The bench region (`eu`, `us` or `asia`) when `cmd` runs rdc against a bench config (flag, `--config=` form, or a `REDIACC_CONFIG=<r>-bench` prefix), else None (PLAN-multi-region-bench W5)."""
     for m in RDC_CMD.finditer(_QUOTED.sub("''", cmd or "")):
-        if BENCH_CONFIG_FLAG.search(m.group(2)) or re.search(
-            r"(?:^|\s)REDIACC_CONFIG=eu-bench(?:\s|$)", m.group(1)
-        ):
-            return True
-    return False
+        found = BENCH_CONFIG_FLAG.search(m.group(2)) or re.search(
+            r"(?:^|\s)REDIACC_CONFIG=(eu|us|asia)-bench(?:\s|$)", m.group(1)
+        )
+        if found is not None:
+            return found.group(1)
+    return None
 
 
 def rule_bench_login_is_the_agents_step(cmd, out, _root, _resp):
-    """An eu-bench login that is tied to another IP address, or absent, is fixed by the agent itself with `npm run login:bench`.
+    """A bench login (eu-bench, us-bench or asia-bench) that is tied to another IP address, or absent, is fixed by the agent itself with `npm run login:bench` (`-- --region <r>` for us and asia).
 
     Operator order 2026-10-30. The CLI's message for a login bound to another network address tells a HUMAN to run a command in an interactive terminal and type an authenticator code. It is right for a person and wrong for an agent: on 2026-10-30 an agent read it on `./rdc.sh --config eu-bench machine status hostinger` and asked the operator for the TOTP code, though `npm run login:bench`
     (`.ci/rediacc_ci/ops/login_bench.py`, docs/agent-reference/bench-login.md) logs eu-bench in headlessly with the operator's bench account and is agent-allowed. The CLI is the shipped product and does not know this repository's tooling, so the pointer lives here, beside the output it qualifies.
 
-    BENCH ONLY. Another config (eu-remote, edge, stable) keeps human login, so the same message from it says nothing here.
+    BENCH ONLY: the three regional bench configs. Another config (eu-remote, edge, stable) keeps human login, so the same message from it says nothing here.
     """
     text = out or ""
     if not any(marker in text for marker in BENCH_LOGIN_MARKERS):
         return None
-    if not _bench_rdc_run(cmd):
+    region = _bench_rdc_run(cmd)
+    if region is None:
         return None
+    login = (
+        "npm run login:bench" if region == "eu" else "npm run login:bench -- --region %s" % region
+    )
     return (
-        "trapguard[bench-login-is-the-agents-step]: the eu-bench login is tied to another "
-        "network address, or absent. Logging eu-bench in is YOUR step, not the operator's "
-        "(operator order 2026-10-30): run `npm run login:bench` (headless, the operator's "
-        "bench account through the bench-login bws profile; it refreshes the bench IP "
-        "allowlist too), then rerun the command. DO NOT ask the operator for an "
-        "authenticator code and DO NOT run `rdc subscription login` interactively for "
-        "eu-bench. Two TOTP logins inside one 30 s window collide, so a second login right "
-        "after waits for the next window. docs/agent-reference/bench-login.md"
+        "trapguard[bench-login-is-the-agents-step]: the %s-bench login is tied to another "
+        "network address, or absent. Logging %s-bench in is YOUR step, not the operator's "
+        "(operator order 2026-10-30): run `%s` (headless, the operator's "
+        % (region, region, login)
+        + (
+            "bench account through the bench-login-%s bws profile; it refreshes the bench IP "
+            "allowlist too), then rerun the command. DO NOT ask the operator for an "
+            "authenticator code and DO NOT run `rdc subscription login` interactively for "
+            "a bench config. Two TOTP logins inside one 30 s window collide, so a second login right "
+            "after waits for the next window. docs/agent-reference/bench-login.md" % region
+        )
+    )
+
+
+# The checkout this file lives in: <repo>/.claude/hooks/trapguard/dispatch.py.
+_REPO = pathlib.Path(__file__).resolve().parents[3]
+_SHAPES_MODULE = "trapguard_shapes"
+
+
+def _shapes():
+    """`shapes.py` beside this file, loaded once by path (this directory is not a package)."""
+    loaded = sys.modules.get(_SHAPES_MODULE)
+    if loaded is not None:
+        return loaded
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        _SHAPES_MODULE, pathlib.Path(__file__).resolve().parent / "shapes.py"
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load trapguard/shapes.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[_SHAPES_MODULE] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def rule_shape_lessons(cmd, out, _root, _resp):
+    """The one generic rule for every lesson that carries a `Shape: post <regex>` line (PLAN-experience-feedback P3).
+
+    A lesson in docs/agent-reference/TRAPS.md or a memory note names the command and the output that together show its trap; `shapes.py` reads it, checks its Shape-Fires and Shape-Silent samples, and this rule adds the lesson's own sentence after a call that matches both. A new lesson of this kind needs a Shape line, not a new rule here.
+
+    The corpus is read from THIS checkout (the one holding this file), not the payload's cwd, which is wherever the command ran; `SHAPE_ROOT` overrides it so the suite can hand it a fixture corpus. A shape whose samples do not behave is skipped here and named by the pre-bash guard `block_shape_lessons`.
+
+    ONE NOTE PER SESSION FOR THE WHOLE RULE, as for every trapguard rule: the dispatcher dedupes on the rule id, so a second post shape firing later in the same session is not repeated. Acceptable while post shapes are few; key the ledger on the shape id when they are not.
+    """
+    root = os.environ.get("SHAPE_ROOT") or str(_REPO)
+    notes = _shapes().post_notes(cmd, out, root)
+    if not notes:
+        return None
+    return "\n".join(
+        "trapguard[shape-lessons]: lesson %s: %s" % (shape_id, text) for shape_id, text in notes
     )
 
 
@@ -513,6 +562,7 @@ RULES = (
     rule_rebase_unverified,
     rule_bws_auth_failure,
     rule_bench_login_is_the_agents_step,
+    rule_shape_lessons,
 )
 
 # The rules that judge the COMMAND alone and never read `tool_response`. Over the payload bound only these run (plan section 4.3.1): the response was not read whole, so a rule keyed on it would be judging a truncated output.

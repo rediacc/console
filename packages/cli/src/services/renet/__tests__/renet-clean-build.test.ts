@@ -15,7 +15,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { RenetCleanBuildDeps } from '../renet-execution.js';
+import type { RenetCleanBuildDeps } from '../renet-clean-build.js';
 
 const { mockExecFileSync, mockProvision, mockInfo } = vi.hoisted(() => ({
   mockExecFileSync: vi.fn(),
@@ -34,6 +34,11 @@ vi.mock('../../core/output.js', () => ({
   outputService: { warn: vi.fn(), info: mockInfo },
 }));
 vi.mock('../../core/embedded-assets.js', () => ({ isSEA: () => false }));
+// A release build: a development build holds the machine's renet (renet-provision-hold.test.ts).
+vi.mock('../../../utils/platform.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../utils/platform.js')>()),
+  isDevBuild: () => false,
+}));
 vi.mock('../../machine/machine-connection.js', () => ({
   sftpConfigForMachine: vi.fn(() => ({ host: '10.0.0.5', username: 'root', privateKey: 'k' })),
   withSharedOrPooledSftp: vi.fn(),
@@ -123,6 +128,10 @@ const cacheRoot = () => path.join(superproject, '.ci', 'cache', 'renet-head');
 const keyId = () => createHash('sha256').update(KEY).digest('hex').slice(0, 16);
 
 function load() {
+  return import('../renet-clean-build.js');
+}
+
+function loadExecution() {
   return import('../renet-execution.js');
 }
 
@@ -138,6 +147,7 @@ beforeEach(() => {
   workingBinary = path.join(top, 'bin', 'renet');
   fs.mkdirSync(path.join(top, 'bin'), { recursive: true });
   fs.writeFileSync(workingBinary, 'dirty build');
+  fs.writeFileSync(path.join(top, 'build.sh'), '');
   fs.mkdirSync(path.join(top, 'pkg', 'embed', 'assets', 'amd64'), { recursive: true });
   fs.writeFileSync(path.join(top, 'pkg', 'embed', 'assets', 'amd64', 'x.zst'), 'asset');
   fs.mkdirSync(path.join(superproject, 'private', 'account', '.cache'), { recursive: true });
@@ -186,6 +196,23 @@ describe('selectRenetUploadBinary', () => {
     const { deps } = fakeDeps();
     const selection = await selectRenetUploadBinary('/usr/local/bin/renet', deps);
     expect(selection.localBinaryPath).toBe('/usr/local/bin/renet');
+    expect(deps.build).not.toHaveBeenCalled();
+  });
+
+  it('a binary cached inside another repository (no renet build.sh) is used as it is', async () => {
+    const cached = path.join(superproject, '.ci', 'cache', 'renet-main', 'k', 'renet');
+    fs.mkdirSync(path.dirname(cached), { recursive: true });
+    fs.writeFileSync(cached, 'cached');
+    mockExecFileSync.mockImplementation((_cmd: string, args: string[]) => {
+      if (args.includes('--show-toplevel')) return `${superproject}\n`;
+      if (args.includes('--porcelain')) return ' M README.md\n';
+      throw new Error(`unexpected git ${args.join(' ')}`);
+    });
+    const { selectRenetUploadBinary } = await load();
+    const { deps } = fakeDeps();
+    const selection = await selectRenetUploadBinary(cached, deps);
+    expect(selection.localBinaryPath).toBe(cached);
+    expect(selection.cleanCommit).toBeNull();
     expect(deps.build).not.toHaveBeenCalled();
   });
 
@@ -375,7 +402,7 @@ describe('acquireRemoteRenet with a dirty renet tree', () => {
       arch: 'amd64',
       remotePath: '/usr/lib/rediacc/renet/1.2.4/renet',
     });
-    const { acquireRemoteRenet } = await load();
+    const { acquireRemoteRenet } = await loadExecution();
     await acquireRemoteRenet('provision', { renetPath: workingBinary }, MACHINE, 'key', {});
 
     const options = mockProvision.mock.calls[0][1] as {
@@ -397,7 +424,7 @@ describe('acquireRemoteRenet with a dirty renet tree', () => {
       arch: 'amd64',
       remotePath: '/usr/lib/rediacc/renet/1.2.4/renet',
     });
-    const { acquireRemoteRenet } = await load();
+    const { acquireRemoteRenet } = await loadExecution();
     await acquireRemoteRenet('provision', { renetPath: workingBinary }, MACHINE, 'key', {});
     const options = mockProvision.mock.calls[0][1] as {
       localBinaryPath: string;

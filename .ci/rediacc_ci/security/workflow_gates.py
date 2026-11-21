@@ -24,7 +24,7 @@ THE SIX CHECKS, and what each one reads:
   5. every Bitwarden-fetching job with a sparse checkout must include
      `.ci/config` in the cone. Reads `$ROOT_DIR`, NOT `$WORKFLOWS_DIR`.
   6. nothing optional may precede the watchdog's monitor step. Reads
-     `$ROOT_DIR/.github/workflows/watchdog-monitor.yml`, NOT `$WORKFLOWS_DIR`.
+     `$ROOT_DIR/.github/workflows/ops-watchdog-monitor.yml`, NOT `$WORKFLOWS_DIR`.
 
 PORT NOTES -- unless an item says otherwise it is REPRODUCED, not repaired. Fixing one only HERE would make the differential lie, so the two ways an item can end are: reproduced in both sides, or fixed in BOTH SIDES IN LOCKSTEP in one change that also flips its differential test and re-records the shadow ledger. CHECK 6's checkout exemption took the second route on 2026-09-10;
 everything else below is still the first.
@@ -38,7 +38,7 @@ Reproduced here by resolving the root the same way the twin does and never letti
 CHECK 5 GLOBS `*.yml` ONLY. `:894-895` uses `.glob("*.yml")` for both `.github/workflows` and `.ci/breakpoint/workflow`; a `.yaml` workflow is invisible to CHECK 5 while CHECKS 1/2/3 all accept both extensions. Measured: 0 `.yaml` files under either directory today.
 
 CHECK 6's CHECKOUT EXEMPTION WAS FIXED IN BOTH SIDES ON 2026-09-10, in lockstep. It used to test the step's *NAME*, not its `uses:`: `names` was built as `step.get("name") or str(step.get("uses",""))` and the exemption then asked `"actions/checkout" in name`, so a checkout step that HAS a `name:` lost the exemption unless the name itself contained `actions/checkout`. Measured on
-the real tree: 139 of the 144 `actions/checkout` steps under `.github/workflows` are unnamed (so they were exempt by the `uses:` fallback) and 5 are named (so they were not). `watchdog-monitor.yml`'s own checkout is unnamed, which is why the gate was green while one ordinary `name: Checkout` edit would have turned it red on the single workflow it guards. It now reads `uses:` and
+the real tree: 139 of the 144 `actions/checkout` steps under `.github/workflows` are unnamed (so they were exempt by the `uses:` fallback) and 5 are named (so they were not). `ops-watchdog-monitor.yml`'s own checkout is unnamed, which is why the gate was green while one ordinary `name: Checkout` edit would have turned it red on the single workflow it guards. It now reads `uses:` and
 nothing else, and the same code path grew the type guards it never had: a non-str `name:` used to raise `TypeError` and an empty or malformed watchdog YAML used to raise `AttributeError`, both surfacing as a traceback under bash's "move the step after the monitor" message. Both now report cleanly and still exit 1. `test_check6_a_named_checkout_is_exempt`,
 `test_check6_a_non_string_step_name` and `test_check6_a_malformed_workflow_reports_cleanly` pin all three on both sides.
 
@@ -1020,7 +1020,7 @@ def step_label(step: dict) -> str:
 def is_checkout(step: dict) -> bool:
     """A repository checkout, decided by `uses:` and NEVER by the display name.
 
-    FIXED 2026-09-10. This used to ask `"actions/checkout" in <label>`, and the label only falls back to `uses:` when the step has no `name:`. So the exemption held for the 139 unnamed checkout steps under .github/workflows and was lost for the 5 named ones. One ordinary edit (`name: Checkout` on watchdog-monitor.yml's own checkout, which is unnamed today) would have turned this
+    FIXED 2026-09-10. This used to ask `"actions/checkout" in <label>`, and the label only falls back to `uses:` when the step has no `name:`. So the exemption held for the 139 unnamed checkout steps under .github/workflows and was lost for the 5 named ones. One ordinary edit (`name: Checkout` on ops-watchdog-monitor.yml's own checkout, which is unnamed today) would have turned this
     gate red on the one workflow it exists to guard, with a message telling the author to move the checkout AFTER the monitor and leave the monitor's scripts off disk.
     """
     uses = step.get("uses")
@@ -1029,7 +1029,7 @@ def is_checkout(step: dict) -> bool:
 
 def check6(yaml: ModuleType, root_dir: str) -> int:
     root = pathlib.Path(root_dir)
-    workflow = root / ".github" / "workflows" / "watchdog-monitor.yml"
+    workflow = root / ".github" / "workflows" / "ops-watchdog-monitor.yml"
 
     if not workflow.exists():
         print("error: %s is missing; CHECK 6 cannot report" % workflow, file=sys.stderr, flush=True)
@@ -1073,7 +1073,7 @@ def check6(yaml: ModuleType, root_dir: str) -> int:
             if name in PREREQS or is_checkout(step) or harmless(step):
                 continue
             offenders.append(
-                "watchdog-monitor.yml: job '%s' runs %r BEFORE %r, "
+                "ops-watchdog-monitor.yml: job '%s' runs %r BEFORE %r, "
                 "and it can stop the watch: a failure there ends the job and the watchdog "
                 "monitors nothing while reporting a failure that looks like its own. "
                 "TWO ways out. Move it after the monitor with `if: always()`; or add it to "
@@ -1091,7 +1091,7 @@ def check6(yaml: ModuleType, root_dir: str) -> int:
     # ANTI-VACUITY: a renamed monitor step would empty this check silently.
     if not found_monitor:
         print(
-            "error: no job in watchdog-monitor.yml has a %r step. Either it was "
+            "error: no job in ops-watchdog-monitor.yml has a %r step. Either it was "
             "renamed -- update CHECK 6 -- or the watchdog lost its monitor." % MONITOR,
             file=sys.stderr,
             flush=True,

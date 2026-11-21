@@ -93,7 +93,7 @@ case "${1:-}" in
     config) exit "${FAKE_GIT_CONFIG_EXIT:-0}" ;;
     submodule)
         if [[ -n "${FAKE_GIT_SUBMODULE_FAIL:-}" ]]; then
-            echo "fake git: submodule update refused" >&2
+            echo "${FAKE_GIT_SUBMODULE_ERR:-fake git: submodule update refused}" >&2
             exit 1
         fi
         if [[ -n "${FAKE_GIT_SUBMODULE_CREATES:-}" ]]; then
@@ -978,10 +978,28 @@ def test_a_failing_submodule_update_stops_the_run(tmp_path: pathlib.Path) -> Non
         env_extra={**PAT_ENV, "FAKE_GIT_SUBMODULE_FAIL": "1"},
         sentinel=False,
     )
-    assert old[0] == 1
-    assert old[2].endswith("✗ Failed to initialize submodules\n")
-    assert "fake git: submodule update refused" not in old[2], "the twin sends its stderr to null"
+    assert new[0] == 1
+    assert "✗ Failed to initialize submodules\n" in new[2]
+    # Intentional change against the twin (Rule T): git's own message reaches the log, after the error line.
+    assert new[2].endswith("fake git: submodule update refused\n")
+    assert "s3cr3t-app-token" not in new[1] + new[2]
     assert_identical(old, new, files)
+
+
+def test_a_token_in_a_failing_submodule_update_is_redacted(tmp_path: pathlib.Path) -> None:
+    """git echoes remotes in its errors; the credentialed URL must never reach the log."""
+    _old, new, _files = run_both(
+        tmp_path,
+        env_extra={
+            **PAT_ENV,
+            "FAKE_GIT_SUBMODULE_FAIL": "1",
+            "FAKE_GIT_SUBMODULE_ERR": "fatal: unable to access https://x-access-token:s3cr3t-app-token@github.com/o/r/",
+        },
+        sentinel=False,
+    )
+    assert new[0] == 1
+    assert "s3cr3t-app-token" not in new[1] + new[2]
+    assert "x-access-token:***@github.com/o/r/" in new[2]
 
 
 def test_a_submodule_update_that_lies_about_success_is_caught(

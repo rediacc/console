@@ -94,6 +94,12 @@ export interface CommandRequestContext {
    */
   executor?: Executor;
   /**
+   * The client asked for `--background` (CommandRequest.background): every
+   * machine job of this request starts with a zero attach window. Read per
+   * request, never from the process global, which concurrent requests share.
+   */
+  background?: boolean;
+  /**
    * The config this request's commands run against, overriding the disk.
    *
    * Set by the container tier, whose config exists only as the plaintext it
@@ -212,14 +218,41 @@ function bufferStderr(context: CommandRequestContext, chunk: string | Uint8Array
   if (text) context.stderr.push(text);
 }
 
+let stderrListener: ((text: string) => void) | undefined;
+
+/**
+ * Observe what the CLI writes to the terminal's stderr outside a dispatch (the
+ * feedback ring's tail). One listener; undefined removes it. Every CLI stderr
+ * write goes through writeStderr or outputService, which the proxy-safe output
+ * gate enforces, so the listener sees the CLI's whole stderr without patching
+ * the process stream.
+ */
+export function setStderrListener(listener: ((text: string) => void) | undefined): void {
+  stderrListener = listener;
+}
+
+/** Hand one terminal stderr write to the listener. A listener failure never reaches the write. */
+export function notifyStderr(chunk: string | Uint8Array): void {
+  if (!stderrListener) return;
+  try {
+    stderrListener(typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString());
+  } catch {
+    // Observing stderr never interferes with the write itself.
+  }
+}
+
 /**
  * Raw stderr, or this request's buffer. A byte chunk (a subprocess's raw
  * output) is decoded as UTF-8 inside a dispatch, since stderr travels as text.
  */
 export function writeStderr(chunk: string | Uint8Array): void {
   const context = storage.getStore();
-  if (context) bufferStderr(context, chunk);
-  else process.stderr.write(chunk);
+  if (context) {
+    bufferStderr(context, chunk);
+    return;
+  }
+  notifyStderr(chunk);
+  process.stderr.write(chunk);
 }
 
 /**

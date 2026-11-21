@@ -26,7 +26,7 @@ TWO RELATIONS, because there are two ways the wiring is wrong:
 FAIL-CLOSED ON WHAT IT CANNOT RESOLVE. `runs-on: ${{ inputs.runner }}` cannot be
 resolved statically. An unresolvable runner counts as REQUIRING coverage, never as exempt: "we could not tell" must cost an allowlist line with a reason, because the alternative is a silent hole shaped exactly like the ones this repo keeps finding.
 
-COVERAGE IS DIRECT OR THROUGH A VERIFIED WRAPPER. A job is covered when its own steps use the action, or when they use a composite that carries it. Whether a JavaScript action's `post:` hook still fires when the action is nested inside a composite was the open question profiler-probe.yml existed to answer, and on 2026-08-08 it answered YES on real runners (run 31252148469: the
+COVERAGE IS DIRECT OR THROUGH A VERIFIED WRAPPER. A job is covered when its own steps use the action, or when they use a composite that carries it. Whether a JavaScript action's `post:` hook still fires when the action is nested inside a composite was the open question ops-profiler-probe.yml existed to answer, and on 2026-08-08 it answered YES on real runners (run 31252148469: the
 panel appeared on ubuntu-slim and on ubuntu-latest through a composite wrapper). So `./.github/actions/setup-workspace` is a wrapper from here on, and the roughly 26 jobs that already call it are covered without an edit each.
 
 A WRAPPER IS VERIFIED, NOT TRUSTED. Coverage for those jobs now hangs on one `uses:` line inside somebody else's file, and deleting that line would leave 26 jobs reporting as profiled while profiling nothing, a fail-open of exactly the shape this gate exists to prevent. So each wrapper's own `action.yml` must be shown to reference the profiler before it counts, and a wrapper that

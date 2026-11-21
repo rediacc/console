@@ -23,6 +23,7 @@ import wl_admit
 import wl_agents as A
 import wl_backlog
 import wl_bgsweep
+import wl_boxready
 import wl_checklist
 import wl_ci
 import wl_civerdict
@@ -33,6 +34,7 @@ import wl_defersettle
 import wl_deflect
 import wl_effort
 import wl_effort_tune
+import wl_feedback_triage
 import wl_git
 import wl_hints
 import wl_histfirst
@@ -57,8 +59,10 @@ import wl_roundlog
 import wl_rules
 import wl_schedred
 import wl_shapedup
+import wl_stack
 import wl_standdown
 import wl_store as S
+import wl_storestatus
 import wl_trapfires
 import wl_uncommitted
 import wl_wake
@@ -100,6 +104,28 @@ DESIGN_DOCS = os.environ.get("WORKLIST_DESIGN_DOCS", "docs/ci-overhaul")
 DOCS_DRIFT_MAX = int(os.environ.get("WORKLIST_DOCS_DRIFT_MAX", "10"))
 # What counts as "the program surface": changing these is changing the thing the design docs describe.
 PROGRAM_SURFACE = os.environ.get("WORKLIST_PROGRAM_SURFACE", ".ci .github .claude").split()
+
+
+def backup_lag(root):
+    """The `backup-lag` advisory text, or None. Asks `backup_ref status --cached` (the live oid the last sync recorded, so no network at a stop): exit 1 means the branch is more than 50 commits ahead of its live backup, or its oldest unbacked commit is more than 6 h old (agent/plans/PLAN-local-first-delivery.md G6). Any other exit, a timeout or a missing module is silence."""
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.path.join(str(root), ".ci") + os.pathsep + env.get("PYTHONPATH", "")
+    try:
+        proc = subprocess.run(
+            [_sys.executable, "-m", "rediacc_ci.dev.backup_ref", "status", "--cached"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=10,
+            env=env,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    # Exit 1 is also what python gives for a module it cannot find, so the verdict line on stdout is required too.
+    if proc.returncode != 1 or not proc.stdout.startswith("backup-ref: "):
+        return None
+    return "BACKUP LAG: %s" % proc.stdout.strip().removeprefix("backup-ref: ")
 
 
 def broken_schedules(event, now=None):
@@ -205,7 +231,7 @@ CITE_RE = re.compile(
     # a live refusal: `agent/worklist/<prefix>.jsonl` and `agent/ledgers/*.jsonl` are this hook's own store and investigation ledger, cited constantly in evidence lines and tick messages, and every one of those citations was silently unresolvable to citation_state -- `json` matched the shorter prefix nowhere near far enough, since the alternation requires an EXACT trailing match up to `:`.
     # EVERY TRACKED TEXT EXTENSION, 2026-10-20 (worklist #6522a5ba): `private/account/drizzle/0059_backup_manifest_index.sql:1` was refused as evidence-free, the seventh time this alternation was found one format short. The tracked text extensions of the console and its submodules were added at once, and test_wl_cite_extensions.py::test_every_tracked_text_extension_is_citable re-derives that set from `git ls-files` on every run, so the next new format fails a test instead of a tick. Binaries and the empty .gitkeep placeholder stay out (that test's UNCITABLE set names them).
     r"(?<![\w./-])("
-    r"\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|jsonl|md|ya?ml|go|toml|astro|css|mdx|svg|cast|txt|sql|golden|list|log|grit|conf|service|html|xml|template|sum|mod|snap|ps1|patch|c|asc|awk|b64|bats|cfg|cmd|cql|csv|env|example|excalidraw|fixture|ini|jsonc|mts|nginx|postgresql|pub|sha256|tmpl|tsv|uid|webmanifest|lock|map|path|timer|hcl|pem|sig)"
+    r"\.?[\w][\w./-]*\.(?:py|ts|tsx|js|cjs|mjs|sh|json|jsonl|md|ya?ml|go|toml|astro|css|mdx|svg|cast|txt|sql|golden|list|log|grit|conf|service|html|xml|template|sum|mod|snap|ps1|patch|c|asc|awk|b64|bats|cfg|cmd|cql|csv|env|example|excalidraw|fixture|ini|jsonc|mts|nginx|postgresql|pub|sha256|tmpl|tsv|uid|webmanifest|lock|map|path|timer|hcl|pem|sig|body|msg|report)"
     # NESTED DOTFILES, 2026-09-24: the optional directory prefix below. `private/account/.env:12` and `.ci/policy/.dead-bash-allowlist:19` could not be cited at all, because the lookbehind refuses a dot right after `/` and the branch had no way to consume the directories in front of it. Found while building wl_defersettle, whose settle evidence cites an env key's line.
     r"|(?:\.?[\w][\w.-]*/)*\.[\w][\w-]*"
     # EXTENSIONLESS BUILD FILES, 2026-09-30, the same class again: `.devcontainer/Dockerfile:1` was refused by --plan-investigate as "carries no <path>:<line> citation", so no Dockerfile or Makefile in the repo could be cited (worklist #ebd1753c). Named, not open-ended: a bare `word:3` in prose must not start matching.
@@ -1139,12 +1165,22 @@ def plan_status_excerpt(root, live):
     return rel, ""
 
 
+def own_tree(event=None):
+    """The session's own checkout, never the mapped root: C.project_root maps the landing tree to the main checkout (agent/plans/PLAN-two-track-merge-dev.md LT14), whose HEAD is the development branch, so a read of the session's branch, role or PR starts here."""
+    return C.checkout_root(C.project_start(event))
+
+
+def own_branch(event=None):
+    """C.git_branch of `own_tree(event)`."""
+    return C.git_branch(own_tree(event))
+
+
 def triage_context(root, worklist, session_id=""):
     """The facts the CLI can honestly gather about a finding's blast radius.
 
     Passed to the triage judge AND printed in degraded mode, so the session self-assesses on exactly the same facts the model would have seen. `git status --porcelain` is the load-bearing one: it names the files this session already has in flight, which is what makes "is the fix's file set disjoint" an answerable question rather than a guess.
     """
-    branch = C.git_branch(root)
+    branch = own_branch()
     d = plan_dir(root)
     recs = plan_records(root)
     if not d.is_dir():
@@ -1890,7 +1926,7 @@ def handle_session_start(event):
         blocks.append(M.CTX_CHECKLISTS % cl_listing)
         summary.append("%d live handoff checklist(s)" % cl_n)
     # A FOURTH independent block: the last CI verdict for this branch, from the branch cache the push hook's watcher and the Stop hook write (PLAN-ci-verdict box G). Cache only, never the network, so it works with the Stop hook disabled and costs a SessionStart nothing.
-    cv_line = wl_civerdict.session_start_line(C.worklist_for(root), C.git_branch(root))
+    cv_line = wl_civerdict.session_start_line(C.worklist_for(root), own_branch(event))
     if cv_line:
         blocks.append(cv_line)
         summary.append("a cached CI verdict")
@@ -1978,8 +2014,8 @@ def handle_post_compact(event):
     with contextlib.suppress(Exception):
         _fold = S.load(C.worklist_for(C.project_start(event)), sync=False)
         msg += "\n\n" + M.CTX_POSTCOMPACT_FACTS % (
-            C.git_branch(root) or "(detached)",
-            C._git(root, "rev-parse", "--short", "HEAD") or "?",
+            own_branch(event) or "(detached)",
+            C._git(own_tree(event), "rev-parse", "--short", "HEAD") or "?",
             guided_slice(_fold, sid, None, (sid or "")[:8], root)
             or "  (nothing open, in flight or deferred)",
         )
@@ -2340,6 +2376,8 @@ PRIORITY_LADDER = (
             {
                 # The worklist's own `- [ ]` boxes, and the two states that turn a parked box back into an order.
                 "open-items",
+                # An owned open item quiet past the resolve rung with nobody on it, which no other check names this stop (wl_storestatus, agent/plans/PLAN-stop-hook-store-status.md D2): the one-shot ladder has stopped naming it, and it is still work in hand.
+                "wl-stale",
                 # In focus mode, the open items carrying the focus PR's `pr:<n>`: the babysit loop's own fix work (wl_standdown).
                 "focus-pr-items",
                 # A plan this session ADOPTED (its Owner line says so) with boxes nothing tracks: the adoption is the statement that it is being executed.
@@ -2350,6 +2388,8 @@ PRIORITY_LADDER = (
                 "loop-next",
                 # Turbo (agent/plans/PLAN-stop-hook-turbo.md D5): a free writer slot and an eligible queued plan on the live PR.
                 "turbo-next",
+                # Free writer slots and ready `[writer]` boxes (agent/plans/PLAN-idle-writer-capacity.md D5): idle capacity beside asked-for work is the mission stalling, the failure of 2026-11-09.
+                "idle-capacity",
                 "defer-expired",
                 "undefaulted",
                 # agent/programs/<slug>/CHECKLIST.md -- deliverable and wave boxes, same four-state markdown the worklist uses.
@@ -2363,6 +2403,10 @@ PRIORITY_LADDER = (
                 "pr-review",
                 # An open per-commit review finding at or above `block_at` (agent/plans/PLAN-per-commit-review.md section 7): it protects the PR the way ci-red does, so it shares ci-red's tier rather than sitting in hygiene where it could be starved by real work.
                 "commit-review",
+                # A finished lease of this session holding unlanded work (agent/plans/PLAN-worktree-lease.md Design 7): the box's commits exist nowhere the PR can see.
+                "worktree-unlanded",
+                # The landing branch merged while the development branch still builds on it unpromoted (wl_stack, agent/plans/PLAN-two-track-merge-dev.md LT19): every commit made before promotion carries the merged PR a second time.
+                "landing-stack",
             }
         ),
     ),
@@ -2389,6 +2433,9 @@ PRIORITY_LADDER = (
                 "roster-silent",
                 # A scheduled workflow red on main that this session claimed, or ticked without evidence (wl_schedred): the party owed is the release pipeline (promote-stable counts only green scheduled runs), which cannot see this session stop.
                 "scheduled-red",
+                # The same party owed for the live fleet (wl_opshealth): a red ops-health check this session claimed, or an off-box alerter whose cron stopped, is a production fault the operator learns of only by mail, and a rotating key would let it sit behind unrelated checks.
+                "ops-health-red",
+                "ops-health-offbox-stale",
                 # The context crossed ctx_budget.WISDOM_FRACTION with its in-flight work not handed over (wisdom_due): the party owed is the next context, which cannot see this one and rediscovers whatever it did not write down.
                 "wisdom-due",
             }
@@ -2559,6 +2606,332 @@ def _soaked_pins_report(worklist, session_id, state_doc):
             outq_add(worklist, session_id, state_doc, "soaked-pins", text, 3)
 
 
+VM_CHECK_LOCK_NAME = "rediacc-vm-check.lock"
+
+
+def vm_check_lock_path(environ=None):
+    """The fleet lock `npm run vm:check` holds for its whole run, at the path `.ci/rediacc_ci/drills/vm_check.py` lock_path computes: `$XDG_RUNTIME_DIR`, then `/run/user/<uid>`, each only when it is this user's directory, else a per-user name in /tmp."""
+    env = os.environ if environ is None else environ
+    uid = os.getuid()
+    for runtime in ((env.get("XDG_RUNTIME_DIR") or "").strip(), "/run/user/%d" % uid):
+        with contextlib.suppress(OSError):
+            if runtime and os.path.isdir(runtime) and os.stat(runtime).st_uid == uid:
+                return os.path.join(runtime, VM_CHECK_LOCK_NAME)
+    return os.path.join("/tmp", "rediacc-vm-check-%d.lock" % uid)
+
+
+# The argv words that name a vm:check process: `npm run vm:check` runs `python3 -m rediacc_ci.drills.vm_check`, and a direct run names the file.
+VM_CHECK_ARGV = ("rediacc_ci.drills.vm_check", "drills/vm_check.py")
+# A process runs a script or module only through an interpreter, so the word that names it counts only behind one: `tail -f <repo>/drills/vm_check.py` or `grep scripts/ci-runner/quick-clone.ts` merely carries the path (reviews a90d9cb2.1, d640b348.1).
+# `uv` is not here: `uv run` is a wrapper, and the pid a lock records is the interpreter's own, never the wrapper's (review 94493878.2).
+RUNNER_ARGV0 = re.compile(r"^(python[0-9.]*|node(js)?|tsx|bun|deno)$")
+# Interpreter options that take the NEXT word as their value, so that word is no operand (`node --require p.cjs --import l.mjs script.ts`).
+RUNNER_VALUE_OPTS = frozenset(
+    (
+        "--require",
+        "-r",
+        "--import",
+        "--loader",
+        "--experimental-loader",
+        "-W",
+        "-X",
+        "--conditions",
+        "-C",
+    )
+)
+
+
+# The launchers that take a `run` subcommand before the script. The repo itself launches the two scripts through `tsx <script>` (package.json `ci:quick`) and `python3 -m rediacc_ci.drills.vm_check` (`vm:check`), and a lock records the interpreter's own pid, so these two are for a direct run.
+RUNNER_SUBCOMMAND_RUN = frozenset(("bun", "deno"))
+
+
+def argv_runs(words, targets):
+    """True when `words` is an interpreter run (RUNNER_ARGV0) whose SCRIPT, the first operand (or the module after `-m`), IS one of `targets` or ends with it after a `/`. The script is also the word after `--`, and the word after the `run` subcommand of `bun` and `deno` (RUNNER_SUBCOMMAND_RUN). A lone `-` (the stdin program) is no run.
+
+    Only the first operand counts: `python3 tools/lint.py .ci/rediacc_ci/drills/vm_check.py` runs lint.py and merely carries the path as an argument (review 94493878.3). An option from RUNNER_VALUE_OPTS skips its value; an unknown option that takes a value makes the next word read as the script, which fails toward "not a run", so the block stays.
+    """
+    if not words or not RUNNER_ARGV0.match(os.path.basename(words[0])):
+        return False
+    rest = iter(words[1:])
+    launcher = os.path.basename(words[0])
+    for word in rest:
+        if word == "-":
+            # A lone `-` is the stdin program (`python3 - x.py`): the words after it are its arguments, not a script (review b4a8c573.1).
+            return False
+        if word in RUNNER_VALUE_OPTS:
+            next(rest, None)
+            continue
+        if word not in ("-m", "--") and word.startswith("-"):
+            continue
+        if word == "run" and launcher in RUNNER_SUBCOMMAND_RUN:
+            # `bun run x.ts` and `deno run x.ts` name the script after the subcommand (review b4a8c573.2).
+            continue
+        script = next(rest, "") if word in ("-m", "--") else word
+        return any(script == t or script.endswith("/" + t) for t in targets)
+    return False
+
+
+def vm_check_holder(raw, proc="/proc"):
+    """True when `raw`, the lock file's bytes, names a live pid whose argv is a vm:check run (`vm_check.Lock.acquire` writes `{"pid", "session", "since"}` once it holds the lock).
+
+    The flock alone says SOMETHING holds the file, not that it is vm:check: a `flock` the agent itself starts on that path would stand the unlanded-lease block down (review cc0a9ef9.1). An empty or malformed owner, a dead pid, a pid reused by another program or an unreadable argv all read False, so the block stays.
+    """
+    try:
+        pid = int(json.loads(raw.decode("utf-8", "replace")).get("pid"))
+        argv = pathlib.Path(proc, str(pid), "cmdline").read_bytes().split(b"\0")
+    except (ValueError, TypeError, AttributeError, OSError, OverflowError):
+        return False
+    words = [a.decode("utf-8", "replace") for a in argv]
+    return pid > 0 and argv_runs(words, VM_CHECK_ARGV)
+
+
+def vm_check_running(path=None):
+    """True only when a vm:check run holds the fleet lock (vm_check_holder names it); a missing file, an unreadable one, a free lock or a holder that is not vm:check reads as not running, so a blind reading never stands a check down."""
+    import fcntl
+
+    path = path or vm_check_lock_path()
+    try:
+        fd = os.open(path, os.O_RDONLY)
+    except OSError:
+        return False
+    try:
+        fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
+    except BlockingIOError:
+        try:
+            return vm_check_holder(os.pread(fd, 4096, 0))
+        except OSError:
+            return False
+    except OSError:
+        return False
+    else:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        return False
+    finally:
+        os.close(fd)
+
+
+# The argv word that names a ci:quick run: `npm run ci:quick` runs `tsx scripts/ci-runner/quick-clone.ts`, and the pid `acquireLock` writes is the node process whose argv carries that script path as its own word (measured 2026-11-06 under tsx: `node --require .../preflight.cjs --import .../loader.mjs <script>`).
+# The whole repo-relative path, so a leading directory glued on (`xscripts/ci-runner/quick-clone.ts`) is no match: `argv_runs` accepts the word itself or one ending with `/` plus this (review 2dc5d5a9.1).
+CI_QUICK_ARGV = "scripts/ci-runner/quick-clone.ts"
+
+
+def ci_quick_lock_path(root, environ=None):
+    """The pid lock `npm run ci:quick` holds for its whole run on the checkout `root`: `<clone>.lock` beside the kept clone, where `scripts/ci-runner/quick-clone.ts` cloneDirFor puts it (`CI_QUICK_CLONE_DIR`, else `${XDG_CACHE_HOME:-~/.cache}/rediacc/ci-quick-clones/<basename>-<sha8 of the real path>`)."""
+    env = os.environ if environ is None else environ
+    override = env.get("CI_QUICK_CLONE_DIR") or ""
+    if override:
+        return os.path.abspath(override) + ".lock"
+    base = env.get("XDG_CACHE_HOME") or os.path.join(
+        env.get("HOME") or os.path.expanduser("~"), ".cache"
+    )
+    real = os.path.realpath(root)
+    key = hashlib.sha256(real.encode("utf-8")).hexdigest()[:8]
+    return os.path.join(
+        base, "rediacc", "ci-quick-clones", "%s-%s.lock" % (os.path.basename(real), key)
+    )
+
+
+# `LOCK_WAIT_MS` in scripts/ci-runner/quick-clone.ts (90 minutes): how long a second ci:quick waits for the lock. A lock older than twice that is not a run in progress worth holding a landing for, whatever its pid says (design review of 581e1fe96). test-wl_worktrees.py fails if this copy and the TypeScript constant part.
+CI_QUICK_LOCK_WAIT_S = 90 * 60
+CI_QUICK_MAX_AGE_S = 2 * CI_QUICK_LOCK_WAIT_S
+CI_QUICK_SCRIPT = "scripts/ci-runner/quick-clone.ts"
+
+
+def _lock_age_s(at, now):
+    """Seconds since the ISO-8601 `at` `acquireLock` writes (`new Date().toISOString()`), None when it is missing or does not parse."""
+    try:
+        stamp = datetime.datetime.fromisoformat(str(at))
+    except (TypeError, ValueError):
+        return None
+    if stamp.tzinfo is None:
+        return None
+    return now - stamp.timestamp()
+
+
+def _same_checkout(pid, words, root, proc):
+    """Is the ci:quick at `pid` this checkout's? Its cwd is `root` (npm runs the script in the package root, and quick-clone.ts never changes directory), or the script word resolved against that cwd is `<root>/scripts/ci-runner/quick-clone.ts`. A reused pid running another checkout's ci:quick answers neither."""
+    try:
+        cwd = os.path.realpath(os.path.join(proc, str(pid), "cwd"))
+    except OSError:
+        return False
+    real_root = os.path.realpath(root)
+    if cwd == real_root:
+        return True
+    want = os.path.join(real_root, CI_QUICK_SCRIPT)
+    return any(
+        argv_runs([words[0], w], (CI_QUICK_ARGV,))
+        and os.path.realpath(os.path.join(cwd, w)) == want
+        for w in words[1:]
+    )
+
+
+def green_receipt_on_unpushed_head(root, receipt_path=None):
+    """True only when the pre-push receipt passed (`exitCode` 0) for exactly the commit HEAD names, and HEAD is not yet on its upstream: the push that receipt buys is still owed, and landing a lease now would move HEAD and void it. A missing or malformed receipt, a red one, a receipt for another commit, a HEAD git cannot read, or a HEAD its upstream already contains reads False, so a blind reading never stands the unlanded-lease block down."""
+    path = pathlib.Path(
+        receipt_path or pathlib.Path(root) / ".ci" / "cache" / "prepush-receipt.json"
+    )
+    try:
+        receipt = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    # `type(...) is int`: JSON `false` and `0.0` compare equal to 0 but are not an exit code a run wrote.
+    if (
+        not isinstance(receipt, dict)
+        or type(receipt.get("exitCode")) is not int
+        or receipt["exitCode"] != 0
+    ):
+        return False
+    try:
+        head = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=20,
+        ).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if not head or receipt.get("head") != head:
+        return False
+    try:
+        pushed = subprocess.run(
+            ["git", "-C", str(root), "merge-base", "--is-ancestor", "HEAD", "@{upstream}"],
+            check=False,
+            capture_output=True,
+            timeout=20,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    # rc 0: the upstream holds HEAD (pushed); rc 1: it does not; anything else (no upstream) is a doubt.
+    return pushed.returncode == 1
+
+
+def ci_quick_running(root, path=None, proc="/proc", now=None):
+    """True only when the ci:quick lock of `root` exists and names a live pid whose argv is a ci:quick run of THIS checkout, taken within CI_QUICK_MAX_AGE_S (`acquireLock` writes `{"pid", "at"}` with one `wx` create and removes the file in its `finally`). A missing file, a malformed owner, a dead pid (the stale file a killed run leaves), a pid reused by another program, a ci:quick of another checkout, or an `at` that is missing, unparseable or older than twice the lock wait reads False, so a blind reading never stands the unlanded-lease block down."""
+    path = path or ci_quick_lock_path(root)
+    try:
+        owner = json.loads(pathlib.Path(path).read_bytes().decode("utf-8", "replace"))
+        pid = int(owner.get("pid"))
+        argv = pathlib.Path(proc, str(pid), "cmdline").read_bytes().split(b"\0")
+    except (ValueError, TypeError, AttributeError, OSError, OverflowError):
+        return False
+    age = _lock_age_s(owner.get("at"), time.time() if now is None else now)
+    if age is None or age > CI_QUICK_MAX_AGE_S:
+        return False
+    words = [a.decode("utf-8", "replace") for a in argv]
+    if pid <= 0 or not argv_runs(words, (CI_QUICK_ARGV,)):
+        return False
+    return _same_checkout(pid, words, root, proc)
+
+
+def release_local_running(root, proc="/proc"):
+    """True when a live process of THIS checkout runs `release:local` (the `rediacc_ci.release.local` module). A branch release ships HEAD only while HEAD is the pushed tip and its receipts name HEAD^{tree}, so landing a lease mid-run would make it refuse or ship a tree nobody verified. A process of another checkout, or an unreadable /proc, reads False."""
+    try:
+        pids = [d.name for d in pathlib.Path(proc).iterdir() if d.name.isdigit()]
+    except OSError:
+        return False
+    for pid in pids:
+        try:
+            words = [
+                a.decode("utf-8", "replace")
+                for a in pathlib.Path(proc, pid, "cmdline").read_bytes().split(b"\0")
+                if a
+            ]
+        except OSError:
+            continue
+        if "rediacc_ci.release.local" in words and _same_checkout(int(pid), words, root, proc):
+            return True
+    return False
+
+
+def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd, merged=False):
+    """Follow this repo's lease trees (wl_worktrees). A survey that raises says so in the report and blocks nothing: a blind reading never accuses a lease."""
+    root = C.project_root(C.project_start(event))
+    cwd = event.get("cwd")
+    try:
+        import wl_worktrees
+
+        got = wl_worktrees.survey(
+            root,
+            session_id,
+            fold.items,
+            lambda: wl_worktrees.live_work(roster, cwd, session_id),
+            state_doc.get("worktrees") or {},
+        )
+        report = wl_worktrees.report_lines(got)
+    except Exception as exc:
+        text = M.N_WORKTREE_REPORT % ("  the survey raised %s: %s" % (type(exc).__name__, exc))
+        outq_add(worklist, session_id, state_doc, "worktree-orphan", text, 3)
+        return
+    state_doc["worktrees"] = got["cache"]
+    if got["unlanded"] and vm_check_running():
+        # Landing a CLI or renet commit while a vm:check runs changes the tree it rebuilds from on every rdc call (a run of 2026-11-06 failed V1.1 that way), so the lease waits for the run: reported, not blocked.
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "worktree-orphan",
+            M.N_WORKTREE_VMCHECK % wl_worktrees.unlanded_lines(got),
+            3,
+        )
+    elif got["unlanded"] and ci_quick_running(root):
+        # Landing a lease moves HEAD, and the receipt a running ci:quick writes vouches for the tree it started on, the one the push guard keys on HEAD^{tree}: landing now voids the run (#b872c325). The lease waits for it: reported, not blocked.
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "worktree-orphan",
+            M.N_WORKTREE_CIQUICK % wl_worktrees.unlanded_lines(got),
+            3,
+        )
+    elif got["unlanded"] and release_local_running(root):
+        # Any running release:local of this checkout (`release_local_running` matches the module, so a --branch-release run counts too) ships HEAD, and refuses unless HEAD is the pushed tip (the pushed branch head for --branch-release) with receipts on HEAD^{tree}: landing now makes the release refuse. The lease waits for it: reported, not blocked.
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "worktree-orphan",
+            M.N_WORKTREE_RELEASE % wl_worktrees.unlanded_lines(got),
+            3,
+        )
+    elif got["unlanded"] and green_receipt_on_unpushed_head(root):
+        # A passing ci:quick receipt for exactly HEAD, not yet pushed: landing now moves HEAD and voids the receipt the push needs, another full run. The lease waits for the push: reported, not blocked.
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "worktree-orphan",
+            M.N_WORKTREE_RECEIPT % wl_worktrees.unlanded_lines(got),
+            3,
+        )
+    elif got["unlanded"]:
+        vadd(
+            "worktree-unlanded",
+            False,
+            M.V_WORKTREE_UNLANDED % (len(got["unlanded"]), wl_worktrees.unlanded_lines(got))
+            + _lease_rebase_text(root, session_id, merged),
+            subject=[row["id"] for row in got["unlanded"]],
+        )
+    if report:
+        outq_add(
+            worklist, session_id, state_doc, "worktree-orphan", M.N_WORKTREE_REPORT % report, 3
+        )
+
+
+def _lease_rebase_text(root, session_id, merged):
+    """RB2 (PLAN-two-track-merge-dev): after the PR merged, the rebase recipe for each of this session's unlanded leases that reads behind origin/main; "" otherwise. Only then is the lease's base fetched, so an open PR costs no network call. Never raises: a reader failure leaves the unlanded block as it was."""
+    if not merged:
+        return ""
+    try:
+        import wl_rebase
+        import wl_worktrees
+
+        verdicts = wl_rebase.lease_verdicts(wl_worktrees.read_world(root), session_id[:8], "main")
+        return wl_rebase.behind_block(verdicts, True)
+    except Exception:
+        return ""
+
+
 def _renet_tests_report(worklist, session_id, state_doc):
     """Advise the renet test command when renet Go code changed and no receipt covers it (PLAN-renet-change-test-triggers M4). NEVER blocks and never raises."""
     with contextlib.suppress(Exception):
@@ -2720,6 +3093,9 @@ def loop_governs(state):
     """True when the one-plan-per-PR loop scopes this stop (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4): any loop state but `off-loop` that has something to work, a PR plan set, a queue head or a next plan. A checkout with neither a PR plan nor anything in agent/plans/QUEUE.md has no loop to scope or continue (on main after the last queued plan merged, or a project that never queued one), so it keeps the full battery."""
     if state is None or state.kind == wl_prscope.OFF_LOOP:
         return False
+    # The landing tree reads no queue, so after its PR merged it holds none of the three; promotion is its next step (agent/plans/PLAN-two-track-merge-dev.md LT15).
+    if state.kind == wl_prscope.MERGED and getattr(state, "role", "") == wl_prscope.LANDING:
+        return True
     return bool(state.plans or state.queue_head or state.next_plan)
 
 
@@ -2870,25 +3246,181 @@ def live_batch_ready(state, finished_all):
     return wl_prscope.batch_ready(state, finished_all)
 
 
+# The three classes `_batch_box_facts` gives an open box of the batch (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.2).
+BOX_NON_WRITER = "non-writer"
+BOX_LOCAL = "local"
+BOX_OWED_PREFIX = "owed:"
+
+
+def _batch_box_facts(state, root):
+    """[(plan basename, box id, sig, class)] for every open box of `state.plans`, in plan order.
+
+    The class is `non-writer` when the box's tag names work no writer does or waits for the merge (`wl_boxready.non_writer`, `post_merge`); `owed:<kind>` when the newest investigation row for (plan, sig) is `partial` with an `owed` other than `code` (`wl_planrec.INV_OWED`); `owed:<kind>` also when `worklist.py --box-audit` reads the box `live-owed` (`wl_judge.live_owed_boxes`, lesson a6d0391f), the kind being its unproved halves; `local` otherwise, which includes an untagged box with no row and no landed work, and an old partial row written before `owed` existed whose box the audit does not read live-owed (D1). A plan is read through `plan_gate`'s Moved-To follow, the same read `_set_finished` makes; a plan that cannot be read adds no row."""
+    import wl_planrec as R
+
+    plan_gate = wl_prscope._hooks_pkg()[0]
+    rows = R.read_investigations(root)
+    live_owed = None
+    out = []
+    for rel in state.plans or ():
+        text, read = plan_gate._plan_text(str(root), rel, "")
+        if not text:
+            continue
+        for _i, raw, body, sig in R.open_boxes(text):
+            if wl_boxready.non_writer(raw) or wl_boxready.post_merge(raw):
+                cls = BOX_NON_WRITER
+            else:
+                row = R.investigation_for(root, rel, sig, rows) or R.investigation_for(
+                    root, read, sig, rows
+                )
+                owed = str((row or {}).get("owed") or "")
+                if row and row.get("verdict") == "partial" and owed and owed != "code":
+                    cls = BOX_OWED_PREFIX + owed
+                else:
+                    cls = BOX_LOCAL
+            if cls == BOX_LOCAL:
+                # The row alone misses a box box-audit reads live-owed (an old partial row with no `owed`, an Accept naming a CI run id): lesson a6d0391f, wl_judge.live_owed_boxes.
+                if live_owed is None:
+                    live_owed = wl_judge.live_owed_boxes(root)
+                kind = live_owed.get((_base(rel), sig)) or live_owed.get((_base(read), sig))
+                if kind:
+                    cls = BOX_OWED_PREFIX + kind
+            box_id = (body.split() or [sig])[0]
+            out.append((_base(rel), box_id, sig, cls))
+    return out
+
+
 def _judge_local_batch(state, root):
-    """The judge's `local_batch` argument (agent/plans/PLAN-turbo-local-first.md D6): `{"finished", "batch"}` while a local batch fills, else None. A failed read is None, today's prompt."""
+    """The judge's `local_batch` argument (agent/plans/PLAN-turbo-local-first.md D6): `{"finished", "batch", "open", "local", "rows"}` while a local batch fills, else None. `rows` is `_batch_box_facts`, `open` its length and `local` how many of them are local work (R20261110.2), so the judge is told which boxes a local action could advance instead of being told that some could. A failed read is None, today's prompt; a failed box read keeps the batch facts and drops the box ones."""
     try:
-        if local_batch_open(state, root):
-            return {"finished": int(state.finished), "batch": int(state.batch_size)}
+        if not local_batch_open(state, root):
+            return None
+        got = {"finished": int(state.finished), "batch": int(state.batch_size)}
+    except Exception:
+        return None
+    try:
+        rows = _batch_box_facts(state, root)
+    except Exception:
+        return got
+    got["rows"] = rows
+    got["open"] = len(rows)
+    got["local"] = sum(1 for r in rows if r[3] == BOX_LOCAL)
+    return got
+
+
+def _judge_receipt_run(root):
+    """The judge's `receipt_run` (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.3): "vm:check" while a vm:check run holds the fleet lock, "ci:quick" while this checkout's ci:quick lock names a live run, else None. The same two readings that hold the unlanded-lease block; a failed read is None."""
+    try:
+        if vm_check_running():
+            return "vm:check"
+        if ci_quick_running(root):
+            return "ci:quick"
     except Exception:
         pass
     return None
 
 
+# A worker id that names no agent: the queue placeholder and the lead itself (wl_leasehelp.LEAD_WORKER).
+_PSEUDO_WORKERS = frozenset({"queue", wl_leasehelp.LEAD_WORKER})
+
+
+def _item_id_named(item_id, message):
+    """True when `message` names `item_id`, with or without its `#`."""
+    return bool(re.search(r"(?<![0-9a-zA-Z])#?%s(?![0-9a-zA-Z])" % re.escape(item_id), message))
+
+
+def _judge_facts(me8, message, recs, task_ids, root, reports=None, read_only=None):
+    """The judge's `facts` (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.4, .5): what the checklist asked the model to find by reading, measured here.
+
+    tracked       the ids of `recs` (the remaining items' records) and `task_ids` (the harness tasks).
+    missing_ids   the tracked ids `message` never names.
+    wake_until    the fire time (epoch) of this session's wake timer, only while its lock names a live wl_wake process (wl_wake.read_lock, is_waker_pid).
+    item_workers  {item id: [{id, current, type, kind, title}]}: every worker each item was leased to (the store's `lease_workers`, then `worker`), with the agent type and title of its newest report-index row (`reports`, wl_report.read_index) and `kind` "Plan", "read-only" or "writer" by type (`read_only`, wl_roster.read_only_types); the queue and lead placeholders are left out.
+    """
+    message = message or ""
+    tracked = [str(r.get("id")) for r in recs if r.get("id")] + [str(t) for t in task_ids]
+    missing = [i for i in tracked if not _item_id_named(i, message)]
+    wake_until = None
+    with contextlib.suppress(Exception):
+        lock = wl_wake.read_lock(me8)
+        if lock and wl_wake.is_waker_pid(lock.get("pid")):
+            wake_until = float(lock.get("until"))
+    if reports is None:
+        try:
+            reports = wl_report.read_index(wl_report.store_root(root))
+        except Exception:
+            reports = []
+    by_short: dict[str, dict] = {}
+    for row in reports or ():
+        rid = str(row.get("id") or "")
+        by_short[rid.rsplit("-", 1)[0] if re.search(r"-\d+$", rid) else rid] = row
+    if read_only is None:
+        read_only = wl_roster.read_only_types(root)
+    workers: dict[str, list] = {}
+    for rec in recs:
+        ids = list(rec.get("lease_workers") or ())
+        cur = str(rec.get("worker") or "") if rec.get("state") == ">" else ""
+        if cur and cur not in ids:
+            ids.append(cur)
+        rows = []
+        for wid in ids:
+            if not wid or wid in _PSEUDO_WORKERS:
+                continue
+            row = by_short.get(wl_report.short_id(wid)) or {}
+            atype = str(row.get("type") or row.get("agent") or "")
+            kind = ""
+            if atype:
+                kind = (
+                    "Plan" if atype == "Plan" else "read-only" if atype in read_only else "writer"
+                )
+            rows.append(
+                {
+                    "id": wid,
+                    "current": wid == cur,
+                    "type": atype,
+                    "kind": kind,
+                    "title": str(row.get("title") or ""),
+                }
+            )
+        if rows:
+            workers[str(rec.get("id"))] = rows
+    return {
+        "tracked": tracked,
+        "missing_ids": missing,
+        "wake_until": wake_until,
+        "item_workers": workers,
+    }
+
+
+def _remaining_recs(fold, session_id, open_items, deferred_recs, in_flight_recs):
+    """The records behind the judge's remaining lines: the open items (matched by their display line, which `classify_items` may extend with a suffix), then the deferred and in-flight records it returned."""
+    shown = list(open_items)
+    out = []
+    for rec in getattr(fold, "items", None) or ():
+        if rec.get("state") not in (" ", ">") or not C.owned_by_me(rec.get("owner"), session_id):
+            continue
+        disp = S.brief_line(rec)
+        if any(line == disp or line.startswith(disp + " ") for line in shown):
+            out.append(rec)
+    seen = {id(r) for r in out}
+    return out + [r for r in (*deferred_recs, *in_flight_recs) if id(r) not in seen]
+
+
 def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
-    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked / unreadable. Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count.
+    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked / unreadable. With a landing record `M.loop_next_variant` picks the merged, no-PR-ahead and finish arms: the landing tree's merge promotes, the development tree's draft opens with --draft, and its finish waits on an open landing PR as an advisory (agent/plans/PLAN-two-track-merge-dev.md LT15). Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count.
 
     A no-PR local batch (agent/plans/PLAN-turbo-local-first.md D2, `local_batch`) never gets "Open it": while the batch fills it is the N_TURBO_LOCAL advisory, and once it is ready the V_LOOP_NEXT_BATCH_OPEN block names the verify-push-open sequence, `me` filling its `--batch-body` line."""
     kind, branch = state.kind, state.branch
     if kind != wl_prscope.UNREADABLE:
         state_doc.pop("loopnext", None)
     stale = M.LOOP_NEXT_STALE % state.stale_promoted if state.stale_promoted else ""
+    # THE TWO-TREE ARMS (agent/plans/PLAN-two-track-merge-dev.md LT15): `role` is the record's reading of the session's own tree ("" without a record), `landing_open` the landing PR's state as the development tree reads it.
+    role = getattr(state, "role", "") or ""
+    landing_open = bool(getattr(state, "landing_open", False))
     nxt = state.next_plan
+    if kind == wl_prscope.MERGED and role == wl_prscope.LANDING and not nxt:
+        # The landing tree reads no queue; the next plan is the main checkout's queue head, which is the development tree's.
+        nxt = wl_prscope.next_queued(root, exclude=state.plans)[0]
     fields = {
         "pr": state.pr,
         "branch": branch,
@@ -2908,7 +3440,17 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
             return "", False
         if C._git(root, "rev-parse", "--verify", "-q", "refs/remotes/origin/%s" % branch):
             fields["delete"] = M.LOOP_NEXT_DELETE % branch
-        return M.V_LOOP_NEXT_MERGED % fields, True
+        text = M.loop_next_variant(role, True, landing_open, M.ARM_MERGED) % fields
+        # The landing tree's merge is the development session's cue to promote (operator ruling ASKED:2026-11-20T18:46Z): the stop names the cross-session message to send, beside the development stop's own block.
+        notice = (
+            wl_stack.notify_line(own_tree(), "merged", pr=state.pr) if role == "landing" else ""
+        )
+        if notice:
+            text += (
+                "\nSend the development session this message (SendMessage to its session):\n"
+                + notice
+            )
+        return text, True
     if kind == wl_prscope.ON_MAIN:
         return (M.V_LOOP_NEXT_ON_MAIN % fields, True) if nxt else ("", False)
     if kind == wl_prscope.NO_PR:
@@ -2925,7 +3467,7 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
                     return M.N_TURBO_LOCAL % fields, False
                 return M.V_LOOP_NEXT_BATCH_OPEN % fields, True
         if fields["ahead"] > 0:
-            return M.V_LOOP_NEXT_NO_PR_OPEN % fields, True
+            return M.loop_next_variant(role, False, landing_open, M.ARM_OPEN) % fields, True
         if not nxt:
             return "", False
         return M.V_LOOP_NEXT_NO_PR_WORK % fields, True
@@ -2937,7 +3479,9 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
         # Under turbo the merge waits for the batch (D8): `batch_size` plans finished, or nothing eligible left to take. Under batch-end the batch closed when the PR opened (live_batch_ready).
         if not live_batch_ready(state, True):
             return "", False
-        return M.V_LOOP_NEXT_MERGE % fields, True
+        text = M.loop_next_variant(role, False, landing_open, M.ARM_FINISH)
+        # The development tree's draft while the landing PR is open: the merge is the landing tree's loop (LT5), so the wait rides the advisory queue and never blocks.
+        return text % fields, text is not M.V_LOOP_NEXT_MERGE_WAIT
     if kind == wl_prscope.UNREADABLE:
         sig = hashlib.sha1(str(state.reason).encode("utf-8", "replace")).hexdigest()[:12]
         ln = state_doc.get("loopnext") if isinstance(state_doc.get("loopnext"), dict) else {}
@@ -2957,7 +3501,13 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
 # `pr-finish` and `loop-next` are the merge offer: once the batch is ready a new plan would reopen the set the merge waits on.
 TURBO_OUTRANKED_BY = frozenset({"ci-red", "pr-review", "commit-review", "pr-finish", "loop-next"})
 # The turbo arm blocks under the PR-loop profile; wl_standdown.PR_LOOP's keep-list predates it, so the keep is added here, beside the arm. The cap wait and focus mode still park it: with no free slot, or in a wind-down, nothing new starts.
-TURBO_KEEPS = frozenset({"turbo-next"})
+TURBO_KEEPS = frozenset({"turbo-next", "idle-capacity"})
+# A lost commit is not hygiene, so no stand-down profile parks this (agent/plans/PLAN-worktree-lease.md Design 7). wl_standdown is sealed, and its keep-lists predate leases, so the keep sits here as TURBO_KEEPS does.
+WORKTREE_KEEPS = frozenset({"worktree-unlanded"})
+# A merged landing branch the development tree still builds on (wl_stack, agent/plans/PLAN-two-track-merge-dev.md LT19) is a FLOOR key, so no stand-down profile parks it either: waiting on writers or winding a PR down does not promote. wl_standdown is sealed, so the keep sits here as WORKTREE_KEEPS does.
+LANDING_KEEPS = frozenset({"landing-stack"})
+# The same design keeps the lease report out of a phase's advisory batching.
+WORKTREE_REPORT = "worktree-orphan"
 # The keys a turbo batch that is still building locally stands down (operator ruling 2026-10-13: turbo is for local implementation, so a red on the open PR does not hold a stop until the prompted plans are complete). Each is reported on every stop instead, and blocks again the moment `turbo_build_parks` is empty.
 TURBO_BUILD_PARKS = frozenset({"ci-red"})
 
@@ -2986,6 +3536,19 @@ def turbo_build_parks(state, root, on_loop, focus):
     if live_batch_ready(state, _set_finished(state, root)) or _set_unreadable(state, root):
         return frozenset()
     return TURBO_BUILD_PARKS
+
+
+def park_tree_keys(violations, parks, role, advise):
+    """`violations` without the tree's parked findings (agent/plans/PLAN-two-track-merge-dev.md LT5). Each finding whose base key is in `parks` and is not `always` goes to `advise(key, text)` with wl_prscope.TREE_PARK_NOTE ahead of its text; the rest come back in order. Empty `parks` returns `violations` itself."""
+    if not parks:
+        return violations
+    kept = []
+    for key, always, text in violations:
+        if not always and str(key).split(":", 1)[0] in parks:
+            advise(key, "%s\n%s" % (wl_prscope.TREE_PARK_NOTE % (role, key), text))
+            continue
+        kept.append((key, always, text))
+    return kept
 
 
 def turbo_next_text(state, root, writers):
@@ -3030,7 +3593,12 @@ def focus_advisory_filter(focus, state_doc):
     """The `only=` predicate for this stop's advisory release: None (everything) outside focus or when the batch is due, else the PR's own advisory keys."""
     if not focus or wl_standdown.batch_due(state_doc.get("standdown")):
         return None
-    return wl_standdown.advisory_kept
+    return _focus_advisory_kept
+
+
+def _focus_advisory_kept(key):
+    """wl_standdown's released keys plus the lease report."""
+    return wl_standdown.advisory_kept(key) or str(key).split(":", 1)[0] == WORKTREE_REPORT
 
 
 def focus_advisory_bookkeeping(worklist, session_id, focus, state_doc):
@@ -3041,7 +3609,7 @@ def focus_advisory_bookkeeping(worklist, session_id, focus, state_doc):
     if wl_standdown.batch_due(sd):
         sd["batch_at"] = C.stamp_now()
     sd["adv_held"] = sum(
-        1 for e in _outq(state_doc)["items"] if not wl_standdown.advisory_kept(_outq_display_key(e))
+        1 for e in _outq(state_doc)["items"] if not _focus_advisory_kept(_outq_display_key(e))
     )
     S.save_state(worklist, session_id, state_doc)
 
@@ -3105,7 +3673,7 @@ def focus_resolve(root, worklist, session_id, me8, fold, state_doc):
             # Ended by the verb (or replaced by a newer on-event): the newest owned event says why.
             newest: dict[str, Any] = max(
                 (e for o, e in (fold.phase or {}).items() if o and owned(o)),
-                key=lambda e: (str(e.get("at") or ""), int(e.get("ns") or 0)),
+                key=S.event_order,
                 default={},
             )
             why = (
@@ -3166,6 +3734,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     # the cadence lands because the cadence's cap is the next thing to key off block streaks, and a shared counter would make the cap fire on a stranger's behaviour.
     counter = worklist.with_suffix(".blocks-%s" % me8)
     root = C.project_root(C.project_start(event))
+    # The session's own checkout: `root` of the landing tree is the main checkout (LT14), so the branch, role and PR reads below start here.
+    own = own_tree(event)
     # THE SWITCHBOARD (agent/plans/PLAN-stop-hook-turbo.md D3), read ONCE per stop from the event's own root, so a fixture project reads its own QUEUE.md and never the operator's: judge, cadence, agent hint, writer cap and turbo all come from here.
     _cfg, _cfg_problems = wl_planqueue.settings_for(root)
     _writer_cap = wl_roster.writer_cap(root)
@@ -3278,7 +3848,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # THE LOOP STATE (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 1), computed ONCE per stop: which PR, which plan set, which epic items, what comes next. A resolver that raises leaves the checkout off the loop (the full battery) and says so as a hook bug.
     _loop, _loop_err = None, ""
     try:
-        _loop = wl_prscope.loop_state(root, worklist, session_id)
+        _loop = wl_prscope.loop_state(own, worklist, session_id)
     except Exception as exc:
         _loop_err = "%s: %s" % (type(exc).__name__, str(exc)[:160])
     _on_loop = loop_governs(_loop)
@@ -3288,6 +3858,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     # THE PR'S ITEM SCOPE (Design 2). On the loop an open item blocks only while it is on an epic of the PR's plan set; off the loop None puts every item in scope. The same predicate scopes the guide below.
     # Bound once with functools.partial so both classify calls below carry it and each call keeps the exact shape the order-key mutation control (test_wl_plan_priority m4) edits.
     _in_scope = (lambda rec: rec["id"] in _scope_ids) if _on_loop else None
+    # TWO TREES (agent/plans/PLAN-two-track-merge-dev.md LT5): on or off the loop, a plain open item outside this tree's scope (wl_prscope.foreign_items) fails the predicate, so classify_items queues it instead of blocking on it (wl_prscope.with_tree_scope). Without a landing record the predicate is unchanged.
+    _in_scope = wl_prscope.with_tree_scope(_in_scope, _loop)
     _classify = functools.partial(S.classify_items, in_scope=_in_scope, dep_graph=_dep_graph)
     open_items, _others, deferred_recs, in_flight_recs, _queued_recs = _classify(
         fold, session_id, live_worker_ids=_live_worker_ids, order_key=_order_key
@@ -3783,6 +4355,59 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
     else:
         _q["items"] = [e for e in _q["items"] if e.get("key") != "ladder"]
+    # ---- THE STORE STATUS (agent/plans/PLAN-stop-hook-store-status.md S3, D3), computed ONCE from the fold, classification, roster and ladder this stop already holds: no second pass over history. The snapshot is written here, before the bookkeeping save, so a blocked stop and an allowed stop both advance it. A failure leaves the stop exactly as before.
+    _ss_rows, _ss_changes, _ss_first = [], [], True
+    _ss_failure = ""
+    try:
+        _ss_prev = state_doc.get("store_snap")
+        _ss_prev = _ss_prev if isinstance(_ss_prev, dict) else None
+        _ss_first = _ss_prev is None
+        _ss_queued = {r["id"] for r in _queued_recs}
+        _ss_open = (
+            wl_storestatus.open_item_ids(
+                fold, session_id, {r["id"] for r in in_flight_recs}, _ss_queued
+            )
+            if open_items
+            else set()
+        )
+        _ss_cover = wl_storestatus.covering(
+            fold,
+            session_id,
+            _ss_open,
+            {
+                "ladder-investigate": ladder_inv,
+                "ladder-resolve": ladder_res,
+                "ladder-gone": ladder_gone,
+                "ladder-idle": ladder_idle,
+            },
+            _roster,
+        )
+        _ss_now = time.time()
+        _ss_rows = wl_storestatus.freshness(
+            fold,
+            session_id,
+            _ss_prev,
+            _live_worker_ids,
+            worker_verdicts,
+            set((_roster or {}).get("verified") or ()),
+            _ss_queued,
+            _ss_cover,
+            _ss_now,
+            graph=_dep_graph,
+        )
+        _ss_changes = wl_storestatus.changes(_ss_prev, fold, session_id)
+        state_doc["store_snap"] = wl_storestatus.snapshot(
+            fold, session_id, _ss_now, queued=_ss_queued
+        )
+    except Exception as exc:
+        # A broken status block SAYS SO, as the guide below does: the wl-stale check and the snapshot silently never running was the swallowed failure.
+        _ss_failure = (
+            "STORE STATUS unavailable (hook bug, fix the store status block in wl_checks): %s: %s"
+            % (type(exc).__name__, str(exc)[:160])
+        )
+    _ss_system, _ss_reason = wl_storestatus.stop_texts(_ss_rows, _ss_changes, _ss_first, me8)
+    if _ss_failure:
+        _ss_system = "%s\n\n%s" % (_ss_system, _ss_failure) if _ss_system else _ss_failure
     S.save_state(worklist, session_id, state_doc)
 
     # ---- v11: the store-derived guide, present on EVERY full stop (allow and block alike), so the session reports from the store, not memory. Never breaks gating, and a broken guide SAYS SO rather than vanishing.
@@ -3962,6 +4587,17 @@ def run_stop(event, event_ok, worklist, hook_file):
                 ),
             )
 
+    worktree_check(
+        worklist,
+        session_id,
+        state_doc,
+        fold,
+        _roster,
+        event,
+        vadd,
+        merged=_loop is not None and _loop.kind in (wl_prscope.MERGED, wl_prscope.ON_MAIN),
+    )
+
     # ---- THE WAKE-UP TIMER (wl_wake; operator 2026-10-03: "the stop hook should check the final step which is 'is stop hook wait triggered in the background?'"). Any background work still running and no timer among the live tasks: the stop would wait on tasks that, if they all hang, never re-invoke the session. INVARIANT, because a rotating or pausable key is exactly how
     # a session stops into that deadlock anyway, and in T_OWED beside bg-report: the work being waited on is the party owed a look.
     if live_bg and not _wakers:
@@ -4072,10 +4708,23 @@ def run_stop(event, event_ok, worklist, hook_file):
     if not event_ok:
         vadd("event-unparseable", True, M.V_EVENT_UNPARSEABLE % hook_file)
     if open_items:
+        # An item naming a box a captured report names gets that report cited beside it (agent/plans/PLAN-tick-tracking.md Design 5, box T7).
+        _oi_lines = ["    " + i for i in open_items]
+        with contextlib.suppress(Exception):
+            _oi_store = wl_report.store_root(root)
+            _oi_entries = wl_report.read_index(_oi_store)
+            _oi_lines = [
+                "    "
+                + i
+                + "".join(
+                    "\n      " + c for c in wl_roster.item_box_citations(i, _oi_entries, _oi_store)
+                )
+                for i in open_items
+            ]
         vadd(
             "open-items",
             False,
-            M.V_OPEN_ITEMS % (len(open_items), "\n".join("    " + i for i in open_items)),
+            M.V_OPEN_ITEMS % (len(open_items), "\n".join(_oi_lines)),
         )
     # FOCUS MODE: the PR's own fix work (items carrying the focus's `pr:<n>`) still blocks; `open-items` above is still produced and the FOCUS profile parks it, so the rest is counted and named on exit.
     if _focus:
@@ -4420,9 +5069,28 @@ def run_stop(event, event_ok, worklist, hook_file):
     # ---- THE PR'S PLAN SET IS NOT FINISHED (wl_planenforce). The only BLOCKING plan push: `plan-tasks` asks whether a plan's boxes are TRACKED, `plan-backlog` names what comes NEXT, and this asks whether the PR's own plans are DONE. Scoped to the loop state's set, prerequisites first, with no ceiling (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 5); off the loop the scope is empty and it is silent.
     # A BACKGROUND TASK OF THIS SESSION TURNS IT INTO AN ADVISORY: a writer on the box or a `ci-trace --wait` is the work happening, and the box count of one plan is the exit.
     try:
+        # A [?] of this session declaring GATES: pr-plan-set holds the set while deferral_holds admits it (a DEFAULT, a recorded WHY, inside S.DEFER_WINDOW_MIN): the block stands down to the advisory, naming the deferral (wl_planenforce.GATE_TAG).
+        def _pe_holds(r):
+            return wl_planenforce.deferral_holds(
+                r,
+                C.stamp_age_min(r.get("upd", "")),
+                S.DEFER_WINDOW_MIN,
+                C.DEFAULT_TOKEN.search,
+            )
+
+        _pe_gate = wl_planenforce.gating_deferral(fold.items, session_id, C.owned_by_me, _pe_holds)
         _pe_state, _pe_text, _pe_detail = wl_planenforce.evaluate(
-            root, _loop_plans, session_id, live=bool(live_bg)
+            root, _loop_plans, session_id, live=bool(live_bg) or bool(_pe_gate)
         )
+        if _pe_gate and _pe_text:
+            _pe_text = (
+                "HELD BY #%s (%s): the operator's answer to that deferral, or its DEFAULT, moves this set.\n%s"
+                % (
+                    _pe_gate,
+                    wl_planenforce.GATE_TAG,
+                    _pe_text,
+                )
+            )
         if _pe_state == wl_planenforce.BLOCK and _pe_text:
             vadd("plan-unimplemented", False, M.V_PLAN_UNIMPLEMENTED % {"body": _pe_text})
         elif _pe_state == wl_planenforce.ADVISORY and _pe_text and not _focus:
@@ -4432,6 +5100,38 @@ def run_stop(event, event_ok, worklist, hook_file):
             outq_drop(state_doc, "plan-pr-open")
     except Exception:
         pass
+
+    # ---- LANDED WORK ON AN OPEN BOX WITH NO INVESTIGATION ROW (agent/plans/PLAN-tick-tracking.md Design 6, box T10). A commit landed on the live branch names a still-open box, by trailer or by report TICK, and the box has no investigation row; held for wl_boxaudit.OWED_STOPS stops in a row it blocks with the audit line and the --plan-investigate command. Writing the row drops the key. The audit is cached per HEAD and ledger size.
+    try:
+        import wl_boxaudit
+
+        _bo_memo, _bo_rows = wl_boxaudit.stop_check(
+            state_doc.get("boxowed"), wl_boxaudit.uninvestigated_cached(root, me8)
+        )
+        state_doc["boxowed"] = _bo_memo
+        if _bo_rows:
+            vadd(
+                "plan-box-owed",
+                False,
+                M.V_PLAN_BOX_OWED
+                % {
+                    "n": len(_bo_rows),
+                    "stops": wl_boxaudit.OWED_STOPS,
+                    "rows": "\n".join(
+                        "  %s\n    %s" % (line, cmd or "(no landed sha to cite)")
+                        for _k, line, cmd in _bo_rows[:8]
+                    ),
+                },
+                subject=sorted(k for k, _l, _c in _bo_rows),
+            )
+    except Exception as exc:
+        # A gate that raises says so: a bare pass here left plan-box-owed silently off (review 82fd346d.3).
+        vadd(
+            "plan-box-owed",
+            False,
+            "THIS IS A HOOK BUG: the plan-box-owed check failed: %s: %s"
+            % (type(exc).__name__, str(exc)[:120]),
+        )
 
     pstate, pahead, pref = wl_ci.publish_divergence(root)
     if pstate == "stale-local":
@@ -4561,6 +5261,10 @@ def run_stop(event, event_ok, worklist, hook_file):
     with contextlib.suppress(Exception):
         _turbo_parks = turbo_build_parks(_loop, root, _on_loop, _focus)
     _turbo_stood: set[str] = set()
+    # THE TREE'S OWN PARKS (agent/plans/PLAN-two-track-merge-dev.md LT5): the development tree reports its draft PR's red and the landing tree its queue arms; the other parked keys move to the advisory queue in `park_tree_keys`, after the effort level and ahead of the roster suppression and the stand-down.
+    _tree_parks: frozenset = frozenset()
+    with contextlib.suppress(Exception):
+        _tree_parks = wl_prscope.tree_parks(_loop, _focus)
     try:
         cistate, cidetail = wl_ci.ci_trouble(
             root,
@@ -4570,7 +5274,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             (last_msg or "") + "\n" + "\n".join(deferred),
             ref=_ci_ref,
             owned=_ci_owned,
-            hold="ci-red" in _turbo_parks,
+            hold="ci-red" in _turbo_parks or "ci-red" in _tree_parks,
         )
     except Exception as exc:
         cistate, cidetail = "unreadable", "%s: %s" % (type(exc).__name__, str(exc)[:120])
@@ -4619,6 +5323,13 @@ def run_stop(event, event_ok, worklist, hook_file):
                 len(cidetail["hard"]),
                 wl_ci.ci_rows_line(cidetail["hard"]),
                 _open_in_set(_loop, root),
+            )
+        elif cistate == "trouble" and "ci-red" in _tree_parks:
+            # The development tree's draft PR: one report line on every stop while the red stands, never a block (wl_prscope.DRAFT_CI_NOTE).
+            ci_report = wl_prscope.DRAFT_CI_NOTE % (
+                _pr,
+                len(cidetail["hard"]),
+                wl_ci.ci_rows_line(cidetail["hard"]),
             )
         elif cistate == "trouble":
             vadd(
@@ -4709,6 +5420,54 @@ def run_stop(event, event_ok, worklist, hook_file):
                 M.N_BACKUP_PUSH % _bp,
                 1,
                 refresh_min=60,
+                on_change=False,
+            )
+    except Exception:
+        pass
+    #   backup-lag      the branch is more than 50 commits or 6 h ahead of its live backup ref (`backup_ref status --cached`, advise level only).
+    try:
+        _bl = backup_lag(root)
+        if _bl:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "backup-lag",
+                _bl,
+                1,
+                refresh_min=60,
+                on_change=False,
+            )
+    except Exception:
+        pass
+    #   feedback-triage-due  the newest ci:quick receipt is red with no triage run since, or the last triage run is over 24 h old (agent/plans/PLAN-rdc-feedback.md T4, advise level only).
+    try:
+        _ft = wl_feedback_triage.due(root)
+        if _ft:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "feedback-triage-due",
+                _ft,
+                1,
+                refresh_min=360,
+                on_change=False,
+            )
+    except Exception:
+        pass
+    #   ciquick-on-red  a full ci:quick is running while the newest receipt is red and no --narrow run has passed since (agent/plans/PLAN-ciquick-green-then-batch.md G5).
+    try:
+        _cr = wl_ci.ciquick_on_red(root, live_bg)
+        if _cr:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "ciquick-on-red",
+                M.N_CIQUICK_ON_RED % _cr,
+                1,
+                refresh_min=30,
                 on_change=False,
             )
     except Exception:
@@ -4819,6 +5578,42 @@ def run_stop(event, event_ok, worklist, hook_file):
             1,
             refresh_min=60,
         )
+    # ---- OPS HEALTH (agent/plans/PLAN-health-checks-local.md L3, D-local). The machines the operator's rdc config names, the local probes and the off-box alerter, read from the shared .ci/cache/ops-health/state.json; a check past its TTL spawns ONE detached refresher and this stop never waits for it. Ownership is wl_schedred's claim, so one session is blocked and every other one gets an advisory.
+    #   block   a red this session claimed (`ops-health-red`), or the off-box alerter's last cron older than its limit (`ops-health-offbox-stale`).
+    #   advise  a red a peer owns (`ops-health-peer`); a cache that cannot be parsed or a check that answered rc 2 (`ops-health-unreadable`, also the key of a raise here, which never blocks).
+    try:
+        import wl_opshealth
+
+        _oh = wl_opshealth.assess(root, worklist, fold.items, session_id)
+        if _oh["block"]:
+            vadd("ops-health-red", False, _oh["block"])
+        if _oh["offbox_stale"]:
+            vadd("ops-health-offbox-stale", False, _oh["offbox_stale"])
+        if _oh["peer"]:
+            outq_add(
+                worklist, session_id, state_doc, "ops-health-peer", _oh["peer"], 2, refresh_min=360
+            )
+        if _oh["unreadable"]:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "ops-health-unreadable",
+                _oh["unreadable"],
+                2,
+                refresh_min=60,
+            )
+    except Exception as exc:
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "ops-health-unreadable",
+            "THIS IS A HOOK BUG: the ops-health check failed: %s: %s"
+            % (type(exc).__name__, str(exc)[:160]),
+            1,
+            refresh_min=60,
+        )
     # ---- THE PR-LEVEL CLAUDE REVIEW ON A GREEN HEAD (agent/plans/PLAN-github-pr-review-restore.md, box GR9). Only once ci_trouble reads the head green: before that the review has not run, and a red head has its own block. Review Complete is a required check (operator ruling 2026-10-03), so an unanswered summary or a failed review run is work this loop owns; the
     # bounded ceiling and the gh budget live in prreview_nudge and prreview_runner.
     if cistate == "ok" and isinstance(cidetail, dict):
@@ -4882,7 +5677,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             _prf_info = cidetail.get("info")
         _prf_num = (_prf_info or {}).get("pr")
         # The branch is read LOCALLY. `agent_branch` is not bound until the unread-reports surface several hundred lines below, and referencing it here raised UnboundLocalError -- caught by the fail-closed arm, which turned the whole check into a HOOK BUG banner on the proving case. That is the arm working; it is not a reason to leave it reachable.
-        _prf_branch = C.git_branch(root) or ""
+        _prf_branch = C.git_branch(own) or ""
         _prf_log = wl_roundlog.roundlog_path(projects_dir, _prf_branch) if projects_dir else None
         # Under turbo the finish line is offered only once the batch is ready (agent/plans/PLAN-stop-hook-turbo.md D8): every plan of the set finished and `batch_size` of them done, or no queued plan left to take. Turbo off: always.
         _prf_batch = (
@@ -4945,6 +5740,15 @@ def run_stop(event, event_ok, worklist, hook_file):
             "THIS IS A HOOK BUG: the pr-babysit finish-line check failed: %s: %s"
             % (type(exc).__name__, str(exc)[:120]),
         )
+    # ---- THE LANDING STACK (agent/plans/PLAN-two-track-merge-dev.md LT19, wl_stack): read from the session's own tree, never the mapped root, since the landing tree's root is the main checkout. A landing branch already merged while the record still names it blocks at every effort level (`landing-stack`, wl_floor.FLOOR): promotion runs before anything else is built on it. A landing branch ahead of the development branch is advisory (`landing-behind`). No record, or the landing tree itself, reads nothing; the readers never raise.
+    _ls_block = wl_stack.stack_block(own)
+    if _ls_block:
+        vadd("landing-stack", False, _ls_block)
+    _ls_report = "" if _ls_block else wl_stack.stack_report(own, fetch=False)
+    if _ls_report:
+        outq_add(worklist, session_id, state_doc, "landing-behind", _ls_report, 1, refresh_min=0)
+    else:
+        outq_drop(state_doc, "landing-behind")
     # ---- LOOP NEXT (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7, operator addition 2026-10-03): after the PR's plan is finished and the PR merged, the turn is held until the next branch, plan and PR exist. One arm per loop state, each naming the exact commands; silent on an empty queue. After the CI read, so `pr-finish` above already decided this stop.
     # A BACKGROUND TASK OF THIS SESSION DOWNGRADES IT to an advisory (a pr-merge watch or a `ci-trace --wait` is the step being waited on), and the unreadable arm is bounded like ci-red.
     # SO DOES A PENDING RUN ON THE HEAD: /pr-merge needs CI Complete SUCCESS, so while the run is in progress there is nothing to merge yet, and blocking every stop only forces a no-op. Found 2026-10-06 on PR #597: the push hook's detached `ci-trace --wait --until-final` watch is not a background task of this session, so `live_bg` stayed false and the merge order blocked each stop of the wait.
@@ -4968,6 +5772,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 % (type(exc).__name__, str(exc)[:120]),
             )
     # ---- TURBO NEXT (agent/plans/PLAN-stop-hook-turbo.md D5/D8): turbo on, a live PR, a free writer slot and an eligible queued plan. Names at most the free-slot count of plans, records them for refresh_pr_body (a plan joins the PR when the hook names it), and blocks; a bug, a red CI or a hook-integrity block outranks it, and then the text rides the advisory queue instead.
+    _tn_text = ""
     if _on_loop and _loop is not None and _loop.turbo:
         try:
             if _turbo_err:
@@ -4992,6 +5797,41 @@ def run_stop(event, event_ok, worklist, hook_file):
                 "loop-next",
                 True,
                 "THIS IS A HOOK BUG: the turbo-next check failed: %s: %s"
+                % (type(exc).__name__, str(exc)[:120]),
+            )
+    # ---- IDLE CAPACITY (agent/plans/PLAN-idle-writer-capacity.md D5, operator rulings R1-R3 of 2026-11-09): free writer slots and ready `[writer]` boxes meet. Names the boxes and the `/writers-now` line, never spawns. Stands down in a babysit or merge phase; the plans TURBO NEXT named this stop are left out and take their slots; outranked like TURBO NEXT, it rides the advisory queue. With turbo off it reads only the PR's plan set, one plan per PR. The subject latch keeps an unchanged set from holding every stop: it surfaces again after 30 minutes or when the set changes.
+    if _on_loop and _loop is not None and _roster is not None and not _roster.get("blind"):
+        try:
+            _ic_text = wl_boxready.idle_capacity_text(
+                root,
+                free=int(_writer_cap) - len(_roster.get("writers") or ()),
+                cap=int(_writer_cap),
+                phase=bool(_focus),
+                turbo_picks=tuple(_loop.turbo_picks or ()) if _tn_text else (),
+                plans=None if _loop.turbo else tuple(_loop.plans or ()),
+                live_plans=sorted((_roster.get("plan_holders") or {}).keys()),
+                items=fold.items,
+                me8=me8,
+            )
+            _ic_outranked = any(
+                k in TURBO_OUTRANKED_BY or a or str(t).startswith("THIS IS A HOOK BUG")
+                for k, a, t in violations
+            )
+            _ic_subject = re.findall(r"PLAN-[\w.-]+\.md#[0-9a-f]{8}", _ic_text)
+            if _ic_text and not _ic_outranked:
+                vadd("idle-capacity", False, _ic_text, subject=_ic_subject, latch_min=30)
+                outq_drop(state_doc, "idle-capacity")
+            elif _ic_text:
+                outq_add(
+                    worklist, session_id, state_doc, "idle-capacity", _ic_text, 0, refresh_min=0
+                )
+            else:
+                outq_drop(state_doc, "idle-capacity")
+        except Exception as exc:
+            vadd(
+                "loop-next",
+                True,
+                "THIS IS A HOOK BUG: the idle-capacity check failed: %s: %s"
                 % (type(exc).__name__, str(exc)[:120]),
             )
     if ci_report:
@@ -5131,10 +5971,13 @@ def run_stop(event, event_ok, worklist, hook_file):
     # or any [SILENT] one has demonstrably not delivered it, and a [SILENT] report is the case that is indistinguishable from a healthy agent unless somebody looks.
     #
     # The branch is read HERE and nowhere else on this path now: the report store is keyed per branch in TMPDIR (wl_report.store_root), which is a different tree from agent/ and keeps its own key.
-    agent_branch = C.git_branch(root)
+    agent_branch = C.git_branch(own)
     try:
         _unread = wl_report.unread(
-            wl_report.store_root(root), agent_branch or wl_report.NO_BRANCH, session_id
+            wl_report.store_root(root),
+            agent_branch or wl_report.NO_BRANCH,
+            session_id,
+            peer_live=lambda owner: S.session_liveness(worklist, owner)[0] == "live",
         )
         # AUTO-READ WHAT THE LEAD ALREADY RECEIVED (agent/plans/PLAN-stop-hook-continuity.md P1.5): a completed task notification with a non-empty result in this session's own transcript is the report delivered, so demanding `--read` for it was restating a fact the hook holds. [SILENT] reports are never auto-read.
         if _unread:
@@ -5155,11 +5998,12 @@ def run_stop(event, event_ok, worklist, hook_file):
                 for e in _unread[-10:]
             )
             if len(_unread) > 10:
-                _rows = "    (%d older not shown)\n%s" % (len(_unread) - 10, _rows)
+                _rows = M.N_UNREAD_OLDER % (len(_unread) - 10, _rows)
             _ur_text = M.N_UNREAD_REPORTS % (
                 len(_unread),
                 agent_branch or "?",
                 _rows,
+                _rp,
                 _rp,
                 _rp,
                 me8,
@@ -5339,6 +6183,9 @@ def run_stop(event, event_ok, worklist, hook_file):
             True,
             M.V_LADDER_RESOLVE % ("\n".join("    " + s for s in ladder_res), facts, me8),
         )
+    # ---- THE STORE'S FRESHNESS VERDICT (agent/plans/PLAN-stop-hook-store-status.md D2): a stale or orphaned owned item that no check above names. It fires on every stop while the item stays stale, with no latch, because every exit is one the session completes alone.
+    if wl_storestatus.blocking(_ss_rows):
+        vadd("wl-stale", False, wl_storestatus.render_stale(_ss_rows, me8))
     # ---- v12 CI-WAITING FORCE. The observed failure, three times in one night: the only thing in flight is a CI watch, the run is healthy, and the stop is a Remaining table while 30+ aged [?] sit untouched. When watching CI is ALL the in-flight work, waiting is not a valid stop: the aged backlog is demanded, oldest first, bounded per stop. Every named item has a single-turn solo
     # exit (do it and tick, execute its DEFAULT early, or re-justify with --defer, which resets its age below CI_FORCE_MIN_AGE), so pressure converts into action, never a deadlock.
     ci_watching, watch_desc = wl_ci.ci_watch_only(live_bg)
@@ -5549,6 +6396,13 @@ def run_stop(event, event_ok, worklist, hook_file):
     violations = _effort_kept
     if bgwait_due and not any(k == "bg-report" for k, _a, _t in violations):
         bgwait_due = False  # turned down by the level, not delivered
+    # ---- THE TREE'S PARKS (agent/plans/PLAN-two-track-merge-dev.md LT5, wl_prscope.tree_parks): a parked key's finding rides the advisory queue under its own key, the way the effort level moves one. An `always` finding (a check that raised) is never parked.
+    violations = park_tree_keys(
+        violations,
+        _tree_parks,
+        getattr(_loop, "role", ""),
+        lambda key, text: outq_add(worklist, session_id, state_doc, key, text, 1, refresh_min=0),
+    )
 
     # Saved EAGERLY. The state doc is bookkeeping that must survive every exit below, several of which emit without saving -- exactly the shape that made the output queue lose latched sections before it was moved to compute-time persistence.
     S.save_state(worklist, session_id, state_doc)
@@ -5608,6 +6462,8 @@ def run_stop(event, event_ok, worklist, hook_file):
 
         def _keeps(v):
             if _profile is wl_standdown.PR_LOOP and v[0] in TURBO_KEEPS:
+                return True
+            if v[0] in WORKTREE_KEEPS or v[0] in LANDING_KEEPS:
                 return True
             return wl_standdown.keeps(_profile, v[0], v[1], _compaction_due)
 
@@ -5801,6 +6657,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             ("\n\n" + ci_report if ci_report else "")
             + ("\n\n" + queue_note if queue_note else "")
             + ("\n\n" + _pr_scope_line if _pr_scope_line else "")
+            # The store's count line and change summary (plan D3); the table itself rides the systemMessage only, so the model's context does not pay for it.
+            + ("\n\n" + _ss_reason if _ss_reason else "")
         )
         # THE ADVISORY QUEUE WAS STARVED BY A PRODUCTIVE SESSION: `outq_drain` runs on the allow path only, and measured 2026-09-17, ten parsed plan boxes went unseen across roughly twenty consecutive blocked stops. The digest (operator ruling 2026-09-24, "One quoted + others named") names up to OUTQ_DIGEST_MAX sections on every block and delivers the one-line ones outright; a
         # multi-line body stays queued for a clean stop, so the focused violation above is never displaced by a wall. The two CI notes are skipped because they already ride `extras` in full.
@@ -5869,7 +6727,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             _hage = C.stamp_age_min(_hl.get("block_at") or "")
             # Not in focus mode: the wind-down spends no tokens on advice.
             if not _focus and (_hage is None or _hage >= BLOCK_HINT_MIN):
-                _hpick = wl_hints.hint_pick(wl_hints.load_corpus(wl_hints.hints_path(root))[0], _hl)
+                _hents = wl_hints.load_corpus(wl_hints.hints_path(root))[0]
+                _hpick = wl_hints.hint_pick(wl_hints.rotation(root, _hents), _hl)
                 if _hpick:
                     _block_hint = "\n\n" + wl_hints.render(*_hpick)
                     _hl["block_at"] = C.stamp_now()
@@ -5916,7 +6775,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             {
                 # SURFACED, not len(shown): `shown` may carry the synthetic collapse block, which is one entry standing for several checks. Every invariant is surfaced (quoted or named) plus at most one rotating pick.
                 "systemMessage": "Stop hook: %d check(s) outstanding, surfacing %d.%s"
-                % (len(violations), len(_inv) + (1 if pick is not None else 0), sysmsg_tail),
+                % (len(violations), len(_inv) + (1 if pick is not None else 0), sysmsg_tail)
+                + ("\n\n" + _ss_system if _ss_system else ""),
                 "decision": "block",
                 "reason": M.R_BLOCK_FOCUS
                 % (
@@ -6157,6 +7017,14 @@ def run_stop(event, event_ok, worklist, hook_file):
                 with_riders=_riders,
                 closed=wl_judge.closed_items(fold, lambda o: C.owned_by_me(o, session_id)),
                 effort_level=_cfg.effort,
+                receipt_run=_judge_receipt_run(root),
+                facts=_judge_facts(
+                    me8,
+                    last_msg,
+                    _remaining_recs(fold, session_id, open_items, deferred_recs, in_flight_recs),
+                    [i for i, _sub, _st in tasks],
+                    root,
+                ),
             )
         if err is not None:
             # FAIL CLOSED, by operator instruction. A judge that cannot answer must not become the way out.
@@ -6178,6 +7046,11 @@ def run_stop(event, event_ok, worklist, hook_file):
         # A continue the effort level reads as stop (wl_judge.settle_by_effort) rides its report key's own threshold instead of the block.
         for _ekey, _etext in verdict.get("effort_advised") or []:
             outq_add(worklist, session_id, state_doc, _ekey, _etext, 2)
+        # A content-free continue read as stop (wl_judge.settle_contentless, R20261110.7) is reported, never blocked on.
+        if verdict.get("contentless"):
+            outq_add(
+                worklist, session_id, state_doc, "judge-contentless", str(verdict["contentless"]), 2
+            )
         # DEFER-SETTLE VERDICT: banks, corroborates, and acts only through wl_defersettle's own evidence-gated tick. It cannot block, so it runs before any path below that can exit.
         if settle_batch:
             with contextlib.suppress(Exception):
@@ -6299,7 +7172,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # SPEND THE BUDGET, and only here. `proven` is the one settle that cost a real artifact and a real CI round; the cheap settles (covered/one-off/not-applicable/deferred) cost neither, and charging them would let a session farm the budget with five honest one-offs to buy a pass on the sixth, real gate. Suppressed on failure: the ledger must never raise into gating.
                 if payload == "proven":
                     with contextlib.suppress(Exception):
-                        wl_reggate.charge(C.git_branch(root), reg_sig, "proven")
+                        wl_reggate.charge(C.git_branch(own), reg_sig, "proven")
                 # STICKY: the fixset is persisted, so every later stop absorbs this verdict silently and the text never returns.
                 outq_add(
                     worklist,
@@ -6321,7 +7194,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 # broken ledger can only make the hook STRICTER, never laxer.
                 capped = False
                 with contextlib.suppress(Exception):
-                    br = C.git_branch(root)
+                    br = C.git_branch(own)
                     charged, remaining, _debts, forgot = wl_reggate.budget_state(br, root)
                     if not forgot and remaining <= 0:
                         rg = verdict.get("regression_gate") or {}
@@ -6455,7 +7328,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             C.emit(
                 {
                     "systemMessage": "Stop hook: judge says continue (%d in a row). %s"
-                    % (judge_streak + 1, verdict["reason"][:110]),
+                    % (judge_streak + 1, verdict["reason"][:110])
+                    + ("\n\n" + _ss_system if _ss_system else ""),
                     "decision": "block",
                     "reason": M.R_JUDGE_CONTINUE
                     % (
@@ -6464,6 +7338,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                         verdict["next_action"],
                         "\n".join("  " + r for r in remaining_lines[:12]),
                     )
+                    + ("\n\n" + _ss_reason if _ss_reason else "")
                     + guide_tail,
                 }
             )
@@ -6518,7 +7393,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
             sw_text, sw_note = "", ""
             if wide_moment:
-                sw_text, sw_note = wl_shapedup.wide_run(str(root), state_doc, C.git_branch(root))
+                sw_text, sw_note = wl_shapedup.wide_run(str(root), state_doc, C.git_branch(own))
         except Exception as exc:
             sw_text, sw_note = "", "wide shape tier errored: %s" % exc
         S.save_state(worklist, session_id, state_doc)
@@ -6600,7 +7475,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 session_id,
                 state_doc,
                 "hint-proposals",
-                M.N_HINT_PROPOSALS_PENDING % len(pending),
+                wl_hints.pending_note(session_id, len(pending)),
                 3,
                 refresh_min=wl_hints.PROPOSAL_REFRESH_MIN,
             )
@@ -6656,11 +7531,15 @@ def run_stop(event, event_ok, worklist, hook_file):
     if not _focus and (parts or wl_popup.should_pop()):
         with contextlib.suppress(Exception):  # an advisory must never wedge a stop
             ledger = state_doc.setdefault("hints", {})
-            picked = wl_hints.hint_pick(hint_entries, ledger)
+            # An entry a live, tested enforcer carries has left rotation (PLAN-experience-feedback.md P7).
+            picked = wl_hints.hint_pick(wl_hints.rotation(root, hint_entries), ledger)
             if picked:
                 parts.append(wl_hints.render(*picked))
     # outq_drain persisted the queue already; this save carries the judge-line marker pop and any late state mutation, and one redundant atomic write is cheaper than reasoning about which came last. It happens BEFORE the exit below, because a silent allow must still bank everything a loud one does.
     S.save_state(worklist, session_id, state_doc)
+    # THE STORE STATUS TABLE, for the operator (agent/plans/PLAN-stop-hook-store-status.md D3), only while the session owns an open, in-flight or deferred item: an allow with none stays silent, as v18 ruled below.
+    if _ss_system and (_ss_rows or _ss_failure):
+        parts.append(_ss_system)
     if not parts:
         # v18: nothing actionable, nothing queued, no judge line to show. This used to be impossible (the guide was unconditional) and is now the common shape of a clean stop, so it exits with zero bytes, exit 0. Everything above still ran and still persisted -- the silence is the report, not a skipped battery.
         raise SystemExit(0)

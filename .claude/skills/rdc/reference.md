@@ -10,6 +10,7 @@ List detached jobs on a machine, newest first
 **Options:**
 
 - `-m, --machine <name>`: Target machine name (omit to list this config's pending job tickets)
+- `--all`: Include expired and dismissed tickets
 
 > MCP tool
 
@@ -56,6 +57,18 @@ Resume following a job from its ticket, then acknowledge it and exit with the jo
 - `-m, --machine <name>`: Target machine name (optional when this config holds a ticket for the job)
 - `--timeout <duration>`: Stop waiting after this long (30s, 5m, 2h; a bare number is seconds). The job keeps running.
 
+> MCP excluded: An agent cannot usefully block until the job ends; poll with job_status and job_logs.
+
+### rdc job dismiss [job-id]
+
+Give up on job tickets locally: their owed steps are dropped and the ticket stops showing up. Makes no machine call and does not touch the job itself.
+
+**Options:**
+
+- `--stale`: Dismiss every pending ticket older than --older-than (default 24h)
+- `--older-than <duration>`: With --stale, the minimum ticket age, e.g. 90m, 24h (default: 24h)
+- `-y, --yes`: Skip confirmation prompt
+
 > MCP tool
 
 ### rdc job gc
@@ -80,7 +93,7 @@ Open a shell on a machine, or inside a repository with its Docker set up.
 - `--external`: Force launching in external terminal window
 - `--reset-home`: Reset per-repo home overlay for a fresh start
 
-> agent: fork-only
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ## Infrastructure
 
@@ -104,6 +117,7 @@ Remove a machine from the config. Does not touch the machine itself.
 
 - `-y, --yes`: Skip confirmation prompt
 - `--force`: Remove the machine even if repositories are placed on it or backup strategies are bound to it, leaving those references dangling.
+- `--archive-repos`: Archive the config entries of the repositories placed on this machine (credentials kept, restorable)
 
 > MCP tool
 
@@ -134,6 +148,7 @@ Install renet and prepare a registered machine for repositories.
 - `--datastore-path <path>`: Datastore path on remote machine (default: /mnt/rediacc)
 - `--datastore-size <size>`: Datastore size (e.g., 95%, 100G) (default: 95%)
 - `--no-converge`: Skip restarting repository daemons still on an older runtime layout (same as REDIACC_SKIP_RUNTIME_CONVERGE=1)
+- `--offline`: Air-gapped setup: no package-manager call; the machine must already hold docker, its compose plugin and the essential tools
 - `--debug`: Enable debug output
 
 > MCP tool
@@ -166,11 +181,21 @@ Show a machine's system, repositories, containers, and services. Read-only: neve
 
 Check machine health for CI/CD pipelines
 
+> MCP tool
+
+### rdc machine repair <name>
+
+Run the safe fixes for a machine's health findings, then re-check (exit 0 nothing left, 1 warnings or operator items left, 2 an error left or a fix failed)
+
 **Options:**
 
-- `-t, --team <name>`: Team name
+- `--dry-run`: List the fixes that would run without running them
+- `--code <code>`: Only fix this finding code (repeatable)
+- `--with-backup`: Allow auto-with-backup fixes, each after a successful snapshot of its repository
+- `--window-override`: Run window-only fixes outside the maintenance window
+- `--set-window <window>`: Store the machine's maintenance window (HH:MM-HH:MM, UTC) or clear it with off, then exit
 
-> MCP tool
+> MCP excluded: Runs fixes on a machine (restarts, prune, repository repair()); use the CLI, where the safety classes, the maintenance window and the journal apply
 
 ### rdc machine provision <name>
 
@@ -196,6 +221,7 @@ Destroy a cloud-provisioned machine and remove from config
 **Options:**
 
 - `--force`: Skip confirmation prompt
+- `--archive-repos`: Archive the config entries of the repositories placed on this machine (credentials kept, restorable)
 - `--debug`: Enable debug output
 
 > MCP tool
@@ -248,6 +274,7 @@ Roll the renet daemons that still run a replaced binary onto the installed one, 
 **Options:**
 
 - `--include-docker`: Also restart each per-repo rediacc-docker-N supervisor (restarts that repo's containers)
+- `--repo <name>`: Limit the restart to one repo's supervisor (needs --include-docker)
 - `--json`: Print the report as JSON
 
 > MCP tool
@@ -401,6 +428,8 @@ Create or update a backup strategy
 **Options:**
 
 - `--destination <name>`: Destination name within the strategy. Creates a Rediacc chunk-store destination
+- `--target <storeId>`: Registered store id the destination writes to (default: home). Use with --destination
+- `--replicate-from <storeId>`: Make the destination a replica: the account server copies this store into the destination's target, so the machine uploads nothing to it. Use with --destination and --target
 - `--cron <expression>`: Cron schedule (e.g., "0 * * * *" for hourly)
 - `--mode <mode>`: Backup mode: "hot" snapshots while everything keeps running, "cold" stops the containers for the moment the snapshot is taken
 - `--bwlimit <limit>`: Upload bandwidth limit in bytes per second, with an optional K/M/G suffix (e.g., "6M", "500K")
@@ -410,8 +439,8 @@ Create or update a backup strategy
 - `--exclude <repos>`: Exclude these repos from backup (comma-separated names)
 - `--retention <spec>`: Snapshot retention, for example last=7,daily=7,weekly=4,monthly=6 ("none" removes it)
 - `--rpo <duration>`: Declared protection target, for example 15m (at least 5m; none clears it)
-- `--repo-rpo <ref=duration>`: Per-repo target as <ref>=<duration>, repeatable (none removes it); name:* is the family (default: )
-- `--repo-cell-size <ref=size>`: Per-repository cell size as <ref>=<size>, repeatable. A change re-seeds the repository (default: )
+- `--repo-rpo <ref=duration>`: Per-repo target as <ref>=<duration>, repeatable (none removes it); name:* is the family
+- `--repo-cell-size <ref=size>`: Per-repository cell size as <ref>=<size>, repeatable. A change re-seeds the repository
 - `--no-estimate`: Skip the churn and cost estimate
 - `--dry-run`: Show what would change and write nothing
 - `--enable`: Enable the strategy or destination
@@ -536,6 +565,7 @@ Verify a repository's backup anchor against the chunk store
 - `--deep`: Re-hash every recorded cell (full verification) instead of a sampled check
 - `--store`: Have the server re-hash every stored chunk of this repository and name any missing or corrupt one
 - `--restore-test`: Restore the anchor's snapshot under a throwaway name straight from the store, compare it with the anchor, record the result and delete the copy
+- `--restore-to <machine>`: With --restore-test, restore the copy on this machine instead of the source's, for a repository larger than the source's free space; the copy is held to the snapshot's manifest root and deleted afterwards
 - `--debug`: Enable debug output
 
 > MCP tool
@@ -550,6 +580,7 @@ List the files a repository contains. By default this is a local read-only walk 
 - `--depth <n>`: Limit descent to N levels (0 for unlimited)
 - `--limit <n>`: Maximum entries to return (0 for unlimited)
 - `--at <time|snapshot>`: List the snapshot taken at or before this time, or this snapshot id (reads the chunk store)
+- `--from <storeId>`: With --at, read the snapshot from this backup store instead of the best-ranked one
 - `--debug`: Enable debug output
 
 > MCP tool
@@ -570,6 +601,12 @@ Upload a chunk-store snapshot: full inventory first, changed cells after
 - `--hash-parallelism <n>`: Cells hashed at once (default 1; 0 = one per CPU, up to 16)
 - `--cpu-limit <percent>`: CPU ceiling for this snapshot: percent of all cores, 1-100 (default 50; 100 = no ceiling)
 - `--debug`: Enable debug output
+
+> MCP tool
+
+### rdc backup retention [repo-ref]
+
+Show the snapshot retention policy the server is enforcing.
 
 > MCP tool
 
@@ -715,8 +752,9 @@ Copy repository images from a machine to a local directory or an external drive.
 - `--skip-space-check`: Warn instead of refusing when the target may not have enough free space
 - `--store`: Rebuild the encrypted image straight from the backup store, with no machine. Needs an API token with the backup:read and backup:restore scopes in REDIACC_TOKEN
 - `--at <time|snapshot>`: With --store, the snapshot to fetch: a time (ISO 8601) or a snapshot id (default: the newest)
+- `--from <storeId>`: With --store, read from this backup store instead of the best-ranked one; it never falls back to another store
 
-> agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
 
 ### rdc backup upload <image-file>
 
@@ -734,7 +772,7 @@ Send a local repository image, made by 'rdc backup download', to a machine and r
 - `--skip-verify`: Skip comparing the local image with the sha256 recorded when it was downloaded
 - `--debug`: Enable debug output
 
-> agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
 
 ### rdc backup restore <artifact-ref>
 
@@ -746,6 +784,7 @@ Turn a backup artifact into a live repository. Placement is stated here.
 - `-m, --machine <name>`: Machine name
 - `--datastore <name>`: Restore into this named datastore (its attached machine hosts it)
 - `--at <time>`: Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)
+- `--from <storeId>`: Read the snapshot from this backup store (default: the store with the newest verified snapshot, falling back to the next on a store failure)
 - `--any-stream`: With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)
 - `--no-seed`: Fetch every chunk from the store instead of reusing local anchors or repository images (proves the store is readable)
 - `--allow-unopenable`: Place the image even if the repository passphrase does not open it (a snapshot from before a passphrase change)
@@ -758,19 +797,20 @@ Turn a backup artifact into a live repository. Placement is stated here.
 - `-y, --yes`: Skip confirmation prompt
 - `--debug`: Enable debug output
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
-### rdc backup purge <repo-ref>
+### rdc backup purge [repo-ref]
 
 Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept.
 
 **Options:**
 
+- `--lineage <guid>`: Purge a backup lineage by its id (as `rdc backup usage` lists it) when its repository is no longer in this config
 - `--dry-run`: Show what would be done without making changes
 - `-y, --yes`: Skip confirmation prompt
 - `--cancel`: Cancel a delayed purge before it takes effect
 
-> agent: fork-only | MCP excluded: Deletes every stored snapshot of a repository at once; a wrong call discards all of its backups.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Deletes every stored snapshot of a repository at once; a wrong call discards all of its backups.
 
 ### rdc cluster create <cluster>
 
@@ -1115,7 +1155,7 @@ Delete a repository and its data. A fork's config entry moves to deletedReposito
 - `--skip-router-restart`: Skip restarting the route server after binary update
 - `--dry-run`: Show what would be done without making changes
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo up [ref]
 
@@ -1137,7 +1177,7 @@ Deploy or update a repository (mount, run Rediaccfile up which calls renet compo
 - `--skip-router-restart`: Skip restarting the route server after binary update
 - `--dry-run`: Show what would be done without making changes
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo down [ref]
 
@@ -1156,7 +1196,7 @@ Stop repository Docker containers (runs Rediaccfile down via renet compose). The
 - `--skip-router-restart`: Skip restarting the route server after binary update
 - `--dry-run`: Show what would be done without making changes
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo status <ref>
 
@@ -1181,6 +1221,31 @@ List repositories on a machine
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
 > MCP tool
+
+### rdc repo health <ref>
+
+Run the repository's Rediaccfile health() checks and exit 0 (ok), 1 (warning) or 2 (error)
+
+**Options:**
+
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
+
+> MCP tool
+
+### rdc repo repair <ref>
+
+Run the repository's Rediaccfile repair() functions that their declared class allows, then health() again (exit 0 ok, 1 warning, 2 error or a failed repair)
+
+**Options:**
+
+- `--dry-run`: Show which repair() would run, without running any
+- `--with-backup`: Allow auto-with-backup repair() functions, after a successful snapshot of the repository
+- `--window-override`: Run window-only repair() functions outside the machine's maintenance window
+- `-y, --yes`: Run undeclared (operator-only) repair() functions without asking
+- `--debug`: Enable debug output
+
+> MCP excluded: Runs a repository's own repair() code, operator-only ones after a prompt; use the CLI, where the classes and the prompt apply
 
 ### rdc repo cat <ref>
 
@@ -1242,7 +1307,7 @@ Freeze the current state of a mounted working fork into a new immutable commit (
 - `--author <author>`: Commit author
 - `--debug`: Enable debug output
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo branch <ref>
 
@@ -1252,7 +1317,7 @@ Create a named branch ref pointing at the working fork's current commit (its tip
 
 - `--branch <branch>`: Name of the new branch
 
-> agent: fork-only | MCP excluded: Config-only ref operation: use CLI directly
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Config-only ref operation: use CLI directly
 
 ### rdc repo checkout <commit-or-branch-ref>
 
@@ -1265,7 +1330,7 @@ Reflink-clone an immutable commit (or a branch tip) into a fresh writable workin
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo log <ref>
 
@@ -1289,7 +1354,7 @@ Merge a source commit or fork into a target working fork. The live target is nev
 - `--base <guid>`: Common-ancestor commit GUID for a three-way merge (used with --resolve). Defaults to the source commit's parent or the target's current commit.
 - `--debug`: Enable debug output
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo admin archive list
 
@@ -1318,6 +1383,7 @@ Validate the CLI config refs (branches, HEAD) against the objects actually prese
 **Options:**
 
 - `-m, --machine <name>`: Target machine name
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -1330,7 +1396,7 @@ Validate repository integrity (LUKS container, filesystem consistency, configura
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | MCP excluded: Use repo status for MCP.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Use repo status for MCP.
 
 ### rdc repo admin autostart enable [ref]
 
@@ -1341,7 +1407,7 @@ Enable autostart for a repository (omit name to enable all)
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | fork-blocked
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | fork-blocked
 
 ### rdc repo admin autostart disable [ref]
 
@@ -1352,7 +1418,7 @@ Disable autostart for a repository (omit name to disable all)
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | fork-blocked
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | fork-blocked
 
 ### rdc repo admin autostart list
 
@@ -1371,10 +1437,13 @@ Change repository directory ownership UID on the mounted volume (default: 7111).
 **Options:**
 
 - `--uid <uid>`: Owner UID (default: 7111)
+- `--root-owned`: Hand root-owned files to the owner UID below directories owned by root or that UID, recording each in an undo manifest
+- `--dry-run`: With --root-owned: list the files that would change, and change nothing
+- `--undo`: With --root-owned: return the files in the undo manifest that the owner UID still owns to root
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | MCP excluded: Destructive ownership transfer.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Destructive ownership transfer.
 
 ### rdc repo admin template list
 
@@ -1394,7 +1463,28 @@ Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique 
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | MCP excluded: Requires file upload; use CLI directly.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Requires file upload; use CLI directly.
+
+### rdc repo admin orphan list <machine>
+
+List the repository images on a machine and whether each one is an orphan that no config names.
+
+**Options:**
+
+- `--debug`: Enable debug output
+
+### rdc repo admin orphan delete <ref>
+
+Delete one orphan repository image by GUID. A GUID that any config names is refused, and so is a mounted or running image unless --force-delete-mounted is passed.
+
+**Options:**
+
+- `--force-delete-mounted`: Delete the image even when it is mounted or has running Docker containers
+- `-y, --yes`: Skip confirmation prompt
+- `--dry-run`: Show what would be done without making changes
+- `--debug`: Enable debug output
+
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo gc
 
@@ -1418,7 +1508,7 @@ Make a validated fork the production repository under its parent name. The paren
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | MCP excluded: Production swap; human decision.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Production swap; human decision.
 
 ### rdc repo resize <ref>
 
@@ -1430,7 +1520,7 @@ Resize a repository offline (supports both grow and shrink). Repo must be unmoun
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | fork-blocked | MCP excluded: Disk resize: destructive infrastructure operation, use CLI directly
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | fork-blocked | MCP excluded: Disk resize: destructive infrastructure operation, use CLI directly
 
 ### rdc repo expand <ref>
 
@@ -1442,7 +1532,7 @@ Expand a mounted repository online (zero downtime, grow-only). Grows the LUKS co
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> agent: fork-only | fork-blocked | MCP excluded: Storage expansion: destructive infrastructure operation, use CLI directly
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | fork-blocked | MCP excluded: Storage expansion: destructive infrastructure operation, use CLI directly
 
 ### rdc repo trim [ref]
 
@@ -1472,7 +1562,7 @@ Classify a repository's Docker storage and reclaim it: unused images, build cach
 - `-m, --machine <name>`: Target machine name
 - `--debug`: Enable debug output
 
-> agent: fork-only | MCP excluded: Reclaims Docker storage and, with --offline, stops the repository's Docker daemon. Use the CLI directly.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Reclaims Docker storage and, with --offline, stops the repository's Docker daemon. Use the CLI directly.
 
 ### rdc repo policy set [ref]
 
@@ -1484,8 +1574,17 @@ Set size policy fields. Only the flags you pass are changed; other stored fields
 - `--max-quota <size>`: Auto-grow ceiling (e.g. 200G); required for auto-grow
 - `--grow-threshold <percent>`: Filesystem used % that triggers a grow (default 85)
 - `--grow-step <step>`: Growth per step: absolute (10G) or percent of quota (20%)
+- `--grow-when-free-bytes <size>`: Grow when free space falls below this size (e.g. 1G); 0 means one grow step
 - `--auto-trim <bool>`: Enable scheduled trim (true/false)
 - `--trim-interval <hours>`: Minimum hours between automatic trims (default 24)
+- `--memory-max <size>`: Memory cap of the repository (e.g. 10G, or max to remove); at the cap one of its containers is OOM-killed, nothing outside it
+- `--memory-high <size>`: Memory throttle point of the repository (e.g. 8G, or max to remove)
+- `--cpu-max <cores>`: CPU cap of the repository in cores (4, 2.5) or N%, or max to remove
+- `--io-max <limits>`: I/O cap of the repository's device: rbps=,wbps=,riops=,wiops= (any subset, e.g. rbps=200M,wbps=100M; KEY=max removes one), or max
+- `--pids-max <count>`: Process cap of the repository (pids.max), or max to remove
+- `--ram-volume <size>`: Size of the repository's RAM volume at <mount>/.ram (e.g. 8G, or max to remove); the memory cap must stay 1G above it
+- `--clear-limits`: Remove every limit and the RAM volume of the repository
+- `--force`: Allow a memory cap below the repository's current memory use
 - `-m, --machine <name>`: Target machine name
 - `--debug`: Enable debug output
 
@@ -1515,7 +1614,7 @@ Push repository to another machine. Storage destinations are retired; use `rdc b
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo pull <ref>
 
@@ -1533,7 +1632,7 @@ Pull repository from another machine. Storage sources are retired; use `rdc back
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo migrate <ref>
 
@@ -1551,7 +1650,24 @@ Live-migrate a repository from one machine to another with minimal downtime. Two
 - `--keep-source`: Keep the source images after a successful move (by default they are deleted; leftover copies are not addressable by any config record and reconcile flags them as strays)
 - `--debug`: Enable debug output
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
+
+### rdc repo replicate <ref>
+
+Create N read replicas of a repository in seconds, regardless of database size. Takes ONE datastore snapshot, then makes N constant-time fork-attaches (copy-on-write, throwaway local writes) spread across the cluster's nodes, and applies a generated overlay: one pinned PersistentVolume per replica, a StatefulSet, and two Services ({repo}-rw to the primary, {repo}-ro across the replicas). Replicas are POINT-IN-TIME copies: no replication stream, no read-your-writes; each replica runs one crash-recovery pass before serving. Refresh them with 'repo replicate refresh'. Replica sets are managed state: see 'repo replicate status' and remove with 'repo replicate remove'.
+
+**Options:**
+
+- `--replicas <n>`: Number of read replicas to create
+- `--image <image>`: Engine image the replicas run (same engine as the primary)
+- `--port <port>`: Port the engine serves on
+- `--pvc <name>`: Volume name the engine mounts as its data dir (default: data)
+- `--primary-app <label>`: The primary pod's 'app' label value the -rw Service targets (default: the repo name)
+- `--headless`: Make the -ro Service headless: DNS returns every replica pod IP for driver-side balancing (long-lived DB connections skew a normal Service's per-connection balancing)
+- `--refresh <interval>`: Intended refresh interval recorded on the set (e.g. 1h); run 'repo replicate refresh' to roll it
+- `--debug`: Enable debug output
+
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo replicate status <ref>
 
@@ -1567,7 +1683,7 @@ Remove a replica set: delete its generated k8s objects (label-scoped), discard i
 
 - `--debug`: Enable debug output
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo replicate refresh <ref>
 
@@ -1577,7 +1693,7 @@ Roll every replica onto a fresh point-in-time snapshot, ONE at a time: bounce th
 
 - `--debug`: Enable debug output
 
-> agent: fork-only | MCP excluded: Rolling replica re-clone. The re-fork path is where a missing LUKS re-open would empty the whole replica set (bug #49), and it has never been exercised on a live cluster.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Rolling replica re-clone. The re-fork path is where a missing LUKS re-open would empty the whole replica set (bug #49), and it has never been exercised on a live cluster.
 
 ### rdc repo canary create <ref>
 
@@ -1592,7 +1708,7 @@ Run a NEW image next to the stable one and send it a percentage of live traffic.
 - `--replicas <n>`: Canary Deployment replica count (default: 1)
 - `--debug`: Enable debug output
 
-> agent: fork-only | MCP excluded: Runs a new image against the primary's SHARED LIVE DATA. The replicate probe validates a different mechanism and says nothing about this one.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Runs a new image against the primary's SHARED LIVE DATA. The replicate probe validates a different mechanism and says nothing about this one.
 
 ### rdc repo canary status <ref>
 
@@ -1609,7 +1725,7 @@ Change the percent of traffic routed to a canary. Takes a fresh release-undo gro
 - `--weight <percent>`: Percent of traffic routed to the canary (integer 0-100; 0 = dark, 100 = full flip)
 - `--debug`: Enable debug output
 
-> agent: fork-only | MCP excluded: Shifts REAL PRODUCTION TRAFFIC between versions. A release decision belongs to the operator, and the weighted split has never been observed working on a live machine (bug #42 made it inert until today).
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Shifts REAL PRODUCTION TRAFFIC between versions. A release decision belongs to the operator, and the weighted split has never been observed working on a live machine (bug #42 made it inert until today).
 
 ### rdc repo canary remove <ref>
 
@@ -1619,7 +1735,7 @@ Remove a canary's Deployment and Service (label-scoped); the stable Service serv
 
 - `--debug`: Enable debug output
 
-> agent: fork-only | MCP excluded: Tears down a canary that is taking live traffic. Excluded with the family it belongs to.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Tears down a canary that is taking live traffic. Excluded with the family it belongs to.
 
 ### rdc repo sync upload <ref>
 
@@ -1636,7 +1752,7 @@ Upload files to a repository via rsync over SSH (delta transfer). Use --mirror t
 - `--exclude <patterns...>`: Patterns to exclude from sync
 - `--dry-run`: Show what would be done without making changes
 
-> agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
 
 ### rdc repo sync download <ref>
 
@@ -1653,7 +1769,7 @@ Download files from a repository via rsync over SSH (delta transfer). Use --mirr
 - `--exclude <patterns...>`: Patterns to exclude from sync
 - `--dry-run`: Show what would be done without making changes
 
-> agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
 
 ### rdc repo sync status <ref>
 
@@ -1692,7 +1808,7 @@ Run a command inside a repository container. The command's own exit code is pass
 - `-u, --user <user>`: User to run the command as
 - `--debug`: Enable debug output
 
-> MCP tool | agent: fork-only
+> MCP tool | agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc repo tunnel <ref>
 
@@ -1705,7 +1821,7 @@ Create an SSH port-forward tunnel to a container's port on a remote machine. Aut
 - `--local <port>`: Local port (defaults to same as remote port)
 - `--url-only`: Print only the local URL once the tunnel is ready (machine-readable)
 
-> agent: fork-only | MCP excluded: Interactive SSH tunnel: blocks until Ctrl+C
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt) | MCP excluded: Interactive SSH tunnel: blocks until Ctrl+C
 
 ### rdc repo secret get <ref>
 
@@ -1762,6 +1878,34 @@ Withdraw a CDI device from the repository's containers. Containers that already 
 **Options:**
 
 - `--device <cdi-name>`: Fully qualified CDI device name (e.g. nvidia.com/gpu=all)
+- `--debug`: Enable debug output
+
+### rdc repo permission grant <ref>
+
+Let the repository's Rediaccfile up() and down() reach a path, or run as root. --root is refused to an agent unless the operator set REDIACC_ALLOW_GRAND_REPO before the agent started.
+
+**Options:**
+
+- `--root`: Run up() and down() as root, with no privilege drop
+- `--path <path>`: Absolute path up() and down() may reach, PATH[:ro|:rw] (read-only by default)
+- `--debug`: Enable debug output
+
+### rdc repo permission revoke <ref>
+
+Withdraw a lifecycle path grant, or the root grant, from the repository. The next up() and down() run with what remains.
+
+**Options:**
+
+- `--root`: Withdraw the root grant
+- `--path <path>`: Absolute path to withdraw
+- `--debug`: Enable debug output
+
+### rdc repo permission show <ref>
+
+Show whether the repository's up() and down() run as root, and which paths they may reach.
+
+**Options:**
+
 - `--debug`: Enable debug output
 
 ## Tools
@@ -1841,6 +1985,7 @@ Remove dead weight from the local config file at ~/.config/rediacc/<config>.json
 - `--refs-only`: Restrict to dangling cross-references (machine→strategy, strategy→repo excludes/includes). Skips cert-cache and archives. Mutually exclusive with --certs-only and --archives-only.
 - `--purge-archived`: Drop ALL archived repositories regardless of age, not just those past grace. Equivalent to running 'rdc repo admin archive purge' for every archived repo. Use only when you're sure you don't need any of the stashed credentials for restore.
 - `--orphan-repos`: Remove repository entries that are placed on no machine. Each entry holds that repo's credential and SSH key, so this is unrecoverable. Run 'rdc config reconcile' first so placement reflects the machines.
+- `--gone-machine-repos`: Archive repository entries placed on a machine that is no longer in the config. Archived, not dropped: each keeps its credential and is restorable until the archive grace expires. Selects only this bucket: the cert-cache, archive and cross-reference buckets are skipped unless their own --*-only flag is also given.
 - `--grace-days <days>`: Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set.
 
 > MCP tool
@@ -2061,6 +2206,18 @@ Verify the integrity of the SHA-256 hash chain across all audit entries
 
 > MCP tool
 
+### rdc config import-machine <machine>
+
+Copy one machine from another config into the active config: the machine entry when the active config lacks it, every repository placed on the machine with every tag, and each backup strategy bound to the machine. Nothing that already exists is overwritten, except a differing backup strategy under --strategy-from-source. Equal entries are left alone, and a differing entry (a same-name repository with another GUID, a machine at another address) is refused. Any refusal writes nothing. The report names entries only and never prints a credential, key or GUID.
+
+**Options:**
+
+- `--from <config>`: Config to copy from
+- `--dry-run`: Show what would be copied without writing
+- `--strategy-from-source`: Replace a differing backup strategy with the source config's version instead of refusing it
+
+> MCP excluded: Copies a machine and its repositories between named configs; config mutation, use CLI directly
+
 ### rdc doctor
 
 Run diagnostic checks on the CLI environment: Node.js version, renet binary availability, config file validity, SSH key status, and network connectivity. Outputs a structured health report with pass/fail indicators.
@@ -2082,6 +2239,56 @@ Print the third-party components bundled with rdc: the binaries renet embeds and
 
 > MCP tool
 
+### rdc legal
+
+Print the legal document links in the CLI language with the binding English links, the current Terms of Service version with its checksum and archive URL, the acceptance on record (from the account server when logged in, from this config when anonymous), and the contracting entity. Third-party notices are under rdc credits --licenses.
+
+**Options:**
+
+- `--json`: Print machine-readable JSON
+
+> MCP tool
+
+### rdc feedback report
+
+Build a report from the newest failed command (--last), a recorded command (--command <n>) or a message alone, print exactly what would be sent, and send it after confirmation. An agent without --yes gets the preview and the command to send it, never a hidden send.
+
+**Options:**
+
+- `--last`: Use the newest failed command
+- `--command <n>`: Use the recorded command at this index (1 is the newest; see --list-recent)
+- `--list-recent`: List the recorded commands and exit
+- `--kind <kind>`: Report kind: bug, feedback or docs
+- `--message <text>`: Free-text note to include (scrubbed before sending)
+
+> MCP tool
+
+### rdc feedback list
+
+List the feedback reports visible to this machine: id, short fingerprint, status and dates. A fixed report reads fixed-in-v<version>. Uses the stored API token, or an installed Free License when there is none.
+
+**Options:**
+
+- `--status <list>`: Only these statuses, comma separated (new, screening, quarantined, confirmed, planned, fixed, rejected)
+
+> MCP tool
+
+### rdc feedback show <id>
+
+Show one feedback report by its id (or a unique prefix of it), with its status, occurrence count and dates.
+
+> MCP tool
+
+### rdc version
+
+Print the CLI version, platform, update channel and the active license: the plan when logged in, "anonymous (FREE per repository)" without a login, and "unknown (server unreachable)" when the account server cannot be reached. The --version flag still prints the bare version.
+
+**Options:**
+
+- `--json`: Print machine-readable JSON
+
+> MCP tool
+
 ### rdc vscode connect <target>
 
 Open VS Code on a machine or inside a repository.
@@ -2099,7 +2306,7 @@ Open VS Code on a machine or inside a repository.
 - `--server-provider <id>`: Browser VS Code server implementation (openvscode, code-server)
 - `--server-archive <file>`: Pre-staged server tarball path on the machine (airgapped installs)
 
-> agent: fork-only
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
 
 ### rdc vscode serve status <target>
 
@@ -2182,6 +2389,15 @@ Authenticate via browser or API token
 - `--password-stdin`: Sign in headlessly with the account password read from stdin (REDIACC_LOGIN_EMAIL required)
 - `--server <url>`: Account server URL
 
+### rdc subscription register
+
+Create an account in the browser (email pre-filled) and log in
+
+**Options:**
+
+- `--email <address>`: Email address to pre-fill on the sign-up page
+- `--server <url>`: Account server URL
+
 ### rdc subscription logout
 
 Clear stored subscription token
@@ -2201,6 +2417,27 @@ Show subscription, and license state for a machine.
 **Options:**
 
 - `-m, --machine <name>`: Machine name
+- `--all`: Also list the licenses of deleted repositories and of repositories not in this config
+
+### rdc subscription notices
+
+List the account's notices: license expiry, backup health, renewals, certificates and Terms.
+
+**Options:**
+
+- `--all`: Include dismissed notices and every page, not only the last 30 days
+- `--unread`: Only notices not yet read
+- `--mark-read`: Mark the listed notices as read
+
+### rdc subscription retire [guid]
+
+Retire the license of a repository that is gone, so it leaves the license counts and notices.
+
+**Options:**
+
+- `--force`: Retire a license whose repository is still in this config and not hard-expired
+- `--expired`: Retire every hard-expired license of a deleted repository or one not in this config
+- `--dry-run`: With --expired: list what would be retired and change nothing
 
 ### rdc subscription refresh
 
@@ -2210,6 +2447,7 @@ Refresh licenses from the account server.
 
 - `-m, --machine <name>`: Machine name
 - `--repo <ref>`: Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)
+- `--adopt-origin`: Reissue licenses another account server issued from this config's account server, moving them over. Without it such licenses are left untouched.
 
 ### rdc mcp serve
 
@@ -2231,3 +2469,115 @@ Run this process as an executor so clients can run commands through it instead o
 - `--mode <mode>`: Placement: daemon (customer host) or container (default: daemon)
 
 > MCP excluded: Runs the executor daemon in the foreground until SIGINT; it never returns.
+
+### rdc server install [machine]
+
+Install the self-hosted account server on an existing machine: check the machine, set up renet when it is missing, wait for DNS, configure TLS, create the repository, generate its keys on the machine, license it, start it and create the owner account. Every value has a flag; on a terminal a missing value is asked for. A rerun skips the steps that are already done.
+
+**Options:**
+
+- `--ip <address>`: Address of an existing server or LAN device to register first
+- `--user <name>`: SSH user on that machine
+- `--port <port>`: SSH port on that machine (default: 22)
+- `--name <name>`: Name to register that machine under (default: server-<ip>)
+- `--domain <host>`: Public domain of the server, for example accounts.example.com
+- `--store-domain <host>`: Public domain of its backup store (default: <name>-store.<rest of the domain>)
+- `--repo <name>`: Repository name (default: elite)
+- `--size <size>`: Repository size (default: 10G)
+- `--owner <email>`: Email of the owner account, created during the install (default: the logged-in account)
+- `--tls <method>`: How the certificate is obtained: letsencrypt (HTTP-01), cloudflare (DNS-01) or byo (an existing certificate)
+- `--cf-token <token>`: Cloudflare API token for DNS-01 (with --tls cloudflare)
+- `--cert-email <email>`: Email Let's Encrypt sends expiry notices to (default: the owner)
+- `--tls-cert <file>`: Certificate file in PEM form (with --tls byo), covering both domains
+- `--tls-key <file>`: Private key file of that certificate (with --tls byo)
+- `--tls-ca <file>`: CA certificate the server's certificate chains to, used for the health check
+- `--licence <mode>`: auto: a certificate from the logged-in account, or the free tier when there is none; free: start on the free tier
+- `--cert <file>`: Delegation certificate file for an offline install; it must name the key generated on the machine
+- `--image <ref>`: Server image to run (default: ghcr.io/rediacc/server:latest)
+- `--image-file <tar>`: Saved image archive (docker save) to ship instead of pulling
+- `--local-image`: Save the --image from the local Docker and ship it instead of pulling
+- `--no-dns-wait`: Print the DNS records without waiting for them to resolve
+- `--offline`: Install air-gapped from --bundle: no upstream, registry or package call
+- `--bundle <dir>`: Offline bundle directory written by 'rdc server bundle'
+- `--bws-project <id>`: Also copy the generated keys to this Bitwarden Secrets Manager project; without it no key leaves the machine
+- `--rotate`: With --bws-project, replace a stored value that differs instead of refusing
+- `-y, --yes`: Ask nothing: take the defaults and refuse a missing value
+
+> MCP excluded: Long interactive install that registers machines, mints a licence and prints a one-time key bundle; use the CLI.
+
+### rdc server status <domain>
+
+Show the health, tier, certificate and image of an installed server
+
+**Options:**
+
+- `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
+- `--repo <name>`: Repository the server runs in (default: elite)
+
+> MCP tool
+
+### rdc server upgrade <domain>
+
+Upgrade an installed server: fork its repository as a rollback point, place the new image, apply the template again when the built-in one is newer, and restart
+
+**Options:**
+
+- `--image <ref>`: Server image to run (default: ghcr.io/rediacc/server:latest)
+- `--image-file <tar>`: Saved image archive (docker save) to ship instead of pulling
+- `--local-image`: Save the --image from the local Docker and ship it instead of pulling
+- `--bundle <dir>`: Upgrade from an offline bundle written by 'rdc server bundle'
+- `--force`: Apply a newer template even over local edits to the deployed files
+- `-y, --yes`: Ask nothing: take the defaults and refuse a missing value
+- `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
+- `--repo <name>`: Repository the server runs in (default: elite)
+
+> MCP excluded: Forks, replaces the image and restarts the account server; use the CLI.
+
+### rdc server backup <domain>
+
+Print the recovery bundle (the keys) of an installed server, or write it to a file
+
+**Options:**
+
+- `--out <file>`: Write the bundle to this file (mode 0600) instead of stdout
+- `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
+- `--repo <name>`: Repository the server runs in (default: elite)
+
+> MCP excluded: Prints the server's private keys; they must not land in an agent transcript.
+
+### rdc server licence <domain>
+
+Move a free-tier server to a delegation certificate from the logged-in account, or from --cert
+
+**Options:**
+
+- `--cert <file>`: Delegation certificate file for an offline install; it must name the key generated on the machine
+- `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
+- `--repo <name>`: Repository the server runs in (default: elite)
+
+> MCP excluded: Mints a delegation certificate and restarts the account server; use the CLI.
+
+### rdc server licence mint
+
+Mint a licence certificate for an offline box's request (run online, logged in)
+
+**Options:**
+
+- `--request <file>`: The delegation request file the offline install wrote
+- `--out <file>`: File to write the certificate to
+
+> MCP excluded: Mints a delegation certificate under the caller's login for a box's key; use the CLI.
+
+### rdc server bundle
+
+Build an offline bundle (images, renet, manifest, checksums) for an air-gapped install. Run it on a machine with internet access.
+
+**Options:**
+
+- `--out <dir>`: Directory to write the bundle into
+- `--arch <arch>`: Target architecture of the box (default: amd64)
+- `--tag <tag>`: Server image tag to bundle
+- `--image <ref>`: Bundle this local image instead of pulling a tag
+- `--with-cli <platforms>`: Also download this CLI version's binaries for these platforms, comma-separated: linux-x64, linux-arm64, mac-x64, mac-arm64, win-x64, win-arm64
+
+> MCP excluded: Pulls and saves several GB of images with the local Docker and writes them to disk; use the CLI.

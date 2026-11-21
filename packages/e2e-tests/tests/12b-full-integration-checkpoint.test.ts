@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_PASSWORD } from '../src/constants';
+import { assertLandlockSelected } from '../src/utils/landlock';
 import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
@@ -10,7 +11,7 @@ import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunc
  * Note: checkpoint_list and checkpoint_delete are not implemented in Go.
  */
 test.describe
-  .serial('Checkpoint Workflow @bridge @integration', () => {
+  .serial('Checkpoint Workflow @bridge @integration @landlock', () => {
     let runner: RenetFunctionsTestRunner;
     const repositoryName = e2eRepoGuid();
     const checkpoint1 = 'initial-state';
@@ -20,6 +21,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
+      await assertLandlockSelected(runner);
       // This suite does not call resetWorkerState itself, so it depends on whichever suite ran before it (project order is fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) not having wiped the shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe.
       await runner.ensureDatastoreReady(datastorePath);
       // Check if CRIU is available - checkpoint tests require it
@@ -30,7 +32,7 @@ test.describe
     test.afterAll(async () => {
       // Cleanup: ensure repository is unmounted and deleted even if tests fail
       try {
-        await runner.repositoryUnmount(repositoryName, datastorePath);
+        await runner.repositoryUnmount(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
       } catch {
         /* ignore */
       }
@@ -122,7 +124,11 @@ test.describe
 
     // Cleanup - always run even if CRIU tests were skipped
     test('8. unmount repository', async () => {
-      const result = await runner.repositoryUnmount(repositoryName, datastorePath);
+      const result = await runner.repositoryUnmount(
+        repositoryName,
+        datastorePath,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 

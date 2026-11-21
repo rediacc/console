@@ -114,9 +114,12 @@ In scope: ACCOUNT_ED25519_PRIVATE_KEY, ACCOUNT_X25519_PRIVATE_KEY, RELEASE_GPG_P
 
   Accept: `.claude/hooks/stop/worklist.py --list | grep -F bws-step-scope-followup`
 - [ ] S9 Live proof, branch push: on "Console CI" for the PR head, the "Console CT - Tests" legs test-e2e-workers, test-renet-go and test-account-e2e, plus stripe-sandbox and deploy-preview, all pass, and each scrub step shows in the job log.
+  (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CI parity -- the scrub steps run only inside the GitHub Actions jobs of the PR head, and their job logs are the evidence
+    Needs: pushed-head
 
   Accept: `.ci/scripts/ci/ci-trace.py --wait --until-final`
 - [ ] S10 POST-MERGE: on main, "Deploy Account Workers" (job deploy), "Deploy WWW Worker" (job deploy) and "CD - Stage Artifacts (Reusable)" pass on the edge CD run. "CI - OPS Tests" (job ops-vm-provision) passes on its next dispatch.
+  (corrected 2026-11-11, R2) GitHub-only: CD -- the named jobs are workflows on the edge CD run on main, and only that pipeline runs them.
 
   Accept: `.ci/scripts/ci/ci-trace.py --branch main --wait --until-final`
 

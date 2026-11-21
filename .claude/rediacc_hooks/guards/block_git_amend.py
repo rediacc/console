@@ -12,6 +12,7 @@ here, so the awk is ported rather than replaced, and the two live side by side e
 import re
 
 from rediacc_hooks import commit_policy, hookio, shellscan
+from rediacc_hooks.guards import _repo_scope
 
 CHAIN = "pre-bash"
 ORDER = 17
@@ -147,7 +148,9 @@ def run(ev):
     if lifted:
         scan = "%s\n%s" % (scan, "\n".join(lifted))
 
-    if hookio.grep_q_line(AMEND, scan):
+    # The walk is asked too (#381462dc sweep): AMEND reads `git commit` as two adjacent words, so `git -C <this checkout> commit --amend` and `git -c k=v commit --amend` were admitted (measured 2026-11-11, rc 0 from cwd /tmp). Only the spellings with a word between `git` and `commit`, or an alias for it: the adjacent spelling is AMEND's over the lifted view above, and DEFECT plants on that.
+    walked = _repo_scope.walked_commit_flag(cmd, "amend", adjacent=False)
+    if hookio.grep_q_line(AMEND, scan) or walked:
         ev.warn(MESSAGE)
         return hookio.DENY
     return hookio.ALLOW

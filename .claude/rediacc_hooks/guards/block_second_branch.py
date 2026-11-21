@@ -14,6 +14,8 @@ A LOCAL creation is allowed only when all of these hold: the checkout is on `mai
 
 A REMOTE name (push, `gh pr create --head`, a `git/refs` POST) is allowed only when it is the repository's current branch. `main` is `block_push_to_protected_branch`'s business, not this guard's.
 
+TWO TREES, ONE LIVE BRANCH EACH (box LT3 of agent/plans/PLAN-two-track-merge-dev.md, operator ruling ASKED:2026-11-20T17:47Z). The landing tree beside this checkout (`./run.sh worktree landing`) holds the open PR's branch, bound to it by the landing record (`commit_policy.landing_record`), and this checkout holds the development branch. `commit_policy.live_branches` reads that binding, so in each tree the count above sees only that tree's own branch: the development branch is cut here, from `main`, while the PR branch stays live in the landing tree, and a third branch still meets a live one in either tree. One arm is added here: a local creation of the branch the record binds, typed anywhere but the landing tree, is refused before the exists-already pass, because that branch belongs to the landing tree whatever the count says.
+
 ALWAYS ALLOWED: a rename (`branch -m <live> <new>`: the count stays at one, and `block_stale_pr_branch_date`'s advice depends on it); every read and delete form; a name that already exists locally (nothing is created); a repository outside this checkout, `/tmp` fixtures included.
 
 `gh` FAILING WHILE A CREATION IS JUDGED IS A REFUSAL, and the message says so and names the operator's `!` route. Liveness that cannot be read is not liveness that was checked.
@@ -26,6 +28,7 @@ import os
 import subprocess
 
 from rediacc_hooks import commit_policy, hookio
+from rediacc_hooks.guards import _backup_push
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -33,6 +36,8 @@ ORDER = 46
 
 # The live-count test. With it gone a second branch is cut beside a live one whenever the name happens to be today's next, which is exactly the parallel-branch drift the ruling forbids.
 DEFECT = ("if live:", "if False:")
+# Planted, the bound trees are the session root alone, so a creation typed in the sibling bound tree is skipped as a scratch repository's again (box LT11).
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 LOCAL_KINDS = frozenset(("checkout-b", "switch-c", "branch", "copy", "worktree"))
 REMOTE_KINDS = frozenset(("push", "gh-pr-create", "gh-api-ref"))
@@ -96,12 +101,24 @@ def _refuse(ev, text):
         "BLOCKED: %s\n"
         "\n"
         "Operator ruling, 2026-09-25: one branch and one PR per repository, and agents\n"
-        "do not open new ones. Work lands on the one live MMDD-N branch; a new branch\n"
-        "is cut only from `main`, once the previous one's PR has merged or closed AND its\n"
+        "do not open new ones; since 2026-11-20 one live branch per tree, the PR branch in\n"
+        "the landing tree and the development branch in the main checkout. Work lands on\n"
+        "the tree's one live MMDD-N branch; a new branch\n"
+        "is cut only from `main`, once the tree's previous one's PR has merged or closed AND its\n"
         "branch is deleted (operator ruling 2026-10-02), under today's next name. There is no agent path around this: when a second branch is\n"
         "genuinely wanted, the operator runs it with the `!` prefix.\n" % text
     )
     return hookio.DENY
+
+
+def _landing_bound(repo, name):
+    """The landing tree's path when `name` is the branch the landing record of `repo`'s repository binds and `repo` is not that tree, else ""."""
+    record = commit_policy.landing_record(repo)
+    if record is None or name != record["branch"]:
+        return ""
+    if commit_policy.tree_role(repo) == commit_policy.ROLE_LANDING:
+        return ""
+    return record["path"]
 
 
 def _gh_down(ev, exc, name):
@@ -170,6 +187,9 @@ def run(ev):
     cmd = ev.raw("tool_input", "command")
     if cmd in ("", "null"):
         return hookio.ALLOW
+    # A push of nothing but `refs/backup/**` to its repository's pin is the git-level pre-push hook's to judge (box G5 of PLAN-local-first-delivery, `_backup_push`).
+    if _backup_push.admitted(ev, cmd):
+        return hookio.ALLOW
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
     base = ev.field("cwd") or root
     creations = [
@@ -179,15 +199,16 @@ def run(ev):
     ]
     if not creations:
         return hookio.ALLOW
-    console_top = commit_policy.toplevel(root)
-    console_branch = commit_policy.current_branch(console_top) if console_top else ""
+    trees = commit_policy.bound_trees(root)
     # LOCAL time, deliberately, like block_stale_pr_branch_date: a branch is named for the operator's day.
     today = datetime.datetime.now().astimezone().strftime("%m%d")
     for creation in creations:
         repo = creation.repo_root
-        # A directory that resolves to no repository is one git itself will refuse; one outside this checkout is not this policy's business.
-        if not repo or not commit_policy.is_inside(repo, root):
+        # A directory that resolves to no repository is one git itself will refuse; one outside this checkout is not this policy's business. Either bound tree is this checkout (box LT11), and a creation in the sibling is judged against that tree's console branch.
+        if not repo or not commit_policy.is_ours(repo, root, trees):
             continue
+        console_top = commit_policy.toplevel(commit_policy.owning_tree(repo, trees) or root)
+        console_branch = commit_policy.current_branch(console_top) if console_top else ""
         name = creation.name.strip("'\"")
         if creation.kind in REMOTE_KINDS:
             current = commit_policy.current_branch(repo)
@@ -198,6 +219,15 @@ def run(ev):
                 ev,
                 "this names a remote branch `%s` that is not the one live branch `%s`."
                 % (name, current or "(detached)"),
+            )
+        bound = _landing_bound(repo, name)
+        if bound:
+            return _refuse(
+                ev,
+                "creating `%s` in %s. The landing record binds `%s` to the landing tree %s, "
+                "which holds the open PR's branch; it is worked there, and this tree cuts its "
+                "own development branch. `./run.sh worktree landing` makes or refreshes that "
+                "tree." % (name, repo, name, bound),
             )
         if name in commit_policy.local_branches(repo):
             continue

@@ -14,6 +14,7 @@ import { formatDuration } from '@rediacc/shared/backup/duration';
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { isSensitiveKey } from '@rediacc/shared/telemetry';
 import type { BackupStrategyConfig, BackupStrategyDestination } from '../../types/index.js';
+import { shellQuote } from '../../utils/shell-quote.js';
 import { envFilePath } from './backup-env-file.js';
 import { cronMaxGapSeconds } from './backup-schedule-interval.js';
 import type { UnitRun, UnitScope } from './backup-schedule-targets.js';
@@ -32,12 +33,21 @@ import {
   assertStrategySchedulable,
   cpuQuotaValue,
   DEFAULT_CPU_LIMIT_PERCENT,
+  destinationTarget,
   effectiveBandwidthLimit,
+  HOME_STORE_ID,
   invalidCronReason,
   parseCpuLimitPercent,
   readCapBytesPerSecond,
   STRATEGY_UPLOAD_PARALLELISM,
+  uploadDestinations,
 } from './backup-strategy-validate.js';
+
+/** renet's flag on every chunk-store session verb (private/renet cmd/renet/backup_endpoints.go flagExpectAccountServer). */
+export const EXPECT_ACCOUNT_SERVER_FLAG = '--expect-account-server';
+
+/** renet's flag naming the registered store a session writes to (private/renet, box R2). */
+const STORE_FLAG = '--store';
 
 /** SHA-256 hex digest for UTF-8 content, used by the reconciler for diff. */
 export function sha256Hex(content: string): string {
@@ -187,7 +197,9 @@ function buildChunkStoreCommand(
   scope: UnitScope,
   cpuCount: number | undefined,
   schedule: string,
-  run: UnitRun | undefined
+  run: UnitRun | undefined,
+  accountServer: string | undefined,
+  storeFlag: string | undefined
 ): string {
   const parts = [`${remoteRenetPath} backup snapshot`, `--datastore ${datastore}`];
   // `mode: cold` was REFUSED here until 2026-08-15, because `backup snapshot` had no way to express it and scheduling one would have run a HOT snapshot where the operator asked for cold, their stated intent silently inverted. The verb now has --cold, so the mode is emitted instead of rejected.
@@ -195,7 +207,8 @@ function buildChunkStoreCommand(
   // ORDERING HAZARD, and it bites inside a timer at 03:00: renet must be deployed to a machine BEFORE a unit carrying --cold is written to it. An older renet dies at cobra's flag parse, and the failure surfaces as a backup that silently never ran. `backup schedule` seeds the binary first, which is what keeps this in the right order.
   if ((strategy.mode ?? BACKUP_DEFAULTS.MODE) === 'cold') parts.push('--cold');
   parts.push(...scopeFlags(scope));
-  // The cap is the tightest of the strategy's and its destinations' (effectiveBandwidthLimit), in bytes/second. Parallelism is always pinned: a capped run fanned over renet's default workers only queues them on the one budget.
+  if (storeFlag !== undefined) parts.push(`${STORE_FLAG} ${storeFlag}`);
+  // The cap is the tightest of the strategy's and this command's destination's (effectiveBandwidthLimit), in bytes/second. Parallelism is always pinned: a capped run fanned over renet's default workers only queues them on the one budget.
   const bwlimit = effectiveBandwidthLimit(strategy, destinations);
   if (bwlimit !== undefined) parts.push(`--bwlimit ${bwlimit}`);
   parts.push(`--parallelism ${STRATEGY_UPLOAD_PARALLELISM}`);
@@ -207,7 +220,17 @@ function buildChunkStoreCommand(
   const readCap = readCapBytesPerSecond(strategy.readBandwidthLimit);
   if (readCap !== undefined) parts.push(`--read-bwlimit ${readCap}`);
   parts.push(...cpuFlags(strategy, cpuCount));
+  parts.push(...accountServerFlags(accountServer));
   return parts.join(' ');
+}
+
+/**
+ * The `--expect-account-server` flag of a scheduled command: the config's account-server origin, so renet refuses a
+ * licence from another account universe at 03:00, where the CLI's pre-flight never runs. The origin is a URL origin
+ * (scheme, host, port), which carries no space and no `%`, so it needs no quoting and no systemd specifier escape.
+ */
+export function accountServerFlags(accountServer: string | undefined): string[] {
+  return accountServer ? [`${EXPECT_ACCOUNT_SERVER_FLAG} ${accountServer}`] : [];
 }
 
 /** The `--cpu-limit` and `--cpu-quota` flags of a scheduled command. The ceiling itself is the unit's CPUQuota= (cpuQuotaDirective); the flags only make the snapshot record say what bound it. Emitted only with a resolved core count, like the directive. */
@@ -234,7 +257,36 @@ function unresolvedScope(strategy: BackupStrategyConfig): UnitScope {
   return { exclude: [] };
 }
 
-/** One command per strategy run + the env-vars for the whole unit. */
+/**
+ * The `--store` argument of one destination's command, or undefined to omit it.
+ *
+ * A destination on `home` omits it, so a single-destination timer reads the same on a released renet. A destination on
+ * any other store REFUSES when the machine's renet lacks the flag: dropping it would write that destination's snapshot
+ * into `home`, the wrong-store write the flag exists to prevent.
+ */
+function storeArgument(
+  dest: BackupStrategyDestination,
+  renetHasStoreFlag: boolean
+): string | undefined {
+  const target = destinationTarget(dest);
+  if (target === HOME_STORE_ID) return undefined;
+  if (!renetHasStoreFlag) {
+    throw new Error(
+      `Backup destination "${dest.name}" targets the store "${target}", but the renet on this machine does not list ${STORE_FLAG}. Update renet on the machine, or point the destination at "${HOME_STORE_ID}".`
+    );
+  }
+  return target;
+}
+
+/**
+ * One command per enabled destination, in declaration order, each carrying its own `--store` and bandwidth cap, plus the
+ * env-vars for the whole unit. Every command is its own session, lease and commit, so each destination is a separate
+ * recovery point; {@link isolateCommands} keeps one failure from skipping the next. With no destination at all one
+ * command is emitted, as before.
+ *
+ * `renetHasStoreFlag` says the machine's renet lists `--store` (see storeFlagForRenet); it defaults to false, which
+ * omits the flag and refuses any destination that needs it.
+ */
 export function buildBackupCommands(
   strategy: BackupStrategyConfig,
   destinations: BackupStrategyDestination[],
@@ -243,27 +295,47 @@ export function buildBackupCommands(
   scope: UnitScope = unresolvedScope(strategy),
   cpuCount?: number,
   schedule: string = strategy.schedule,
-  run?: UnitRun
+  run?: UnitRun,
+  accountServer?: string,
+  renetHasStoreFlag = false
 ): BackupBuild {
   const envVars: Record<string, string> = {};
 
-  // A HARD ERROR, not a skip. Emitting nothing is the defect the hosted-service branch was written to fix: a timer that backed up nothing with no error anywhere. The rules live in backup-strategy-validate.ts, shared with `backup strategy bind`. One run is ONE snapshot whatever the number of destinations: a second identical command would upload the same cells again and commit a second manifest for the same point in time.
+  // A HARD ERROR, not a skip. Emitting nothing is the defect the hosted-service branch was written to fix: a timer that backed up nothing with no error anywhere. The rules live in backup-strategy-validate.ts, shared with `backup strategy bind`.
   assertStrategySchedulable(strategy, destinations);
-  return {
-    commands: [
-      buildChunkStoreCommand(
-        strategy,
-        destinations,
-        datastore,
-        remoteRenetPath,
-        scope,
-        cpuCount,
-        schedule,
-        run
-      ),
-    ],
-    envVars,
-  };
+  // A replicate destination takes no machine command: the account server copies into it after each commit on its source.
+  const uploads = uploadDestinations(destinations);
+  const perDestination: (BackupStrategyDestination | undefined)[] =
+    uploads.length > 0 ? uploads : [undefined];
+  const commands = perDestination.map((dest) =>
+    buildChunkStoreCommand(
+      strategy,
+      dest ? [dest] : [],
+      datastore,
+      remoteRenetPath,
+      scope,
+      cpuCount,
+      schedule,
+      run,
+      accountServer,
+      dest ? storeArgument(dest, renetHasStoreFlag) : undefined
+    )
+  );
+  return { commands, envVars };
+}
+
+/**
+ * The ExecStart= commands of a unit, with the snapshot commands isolated from one another.
+ *
+ * systemd stops a oneshot at its first failing ExecStart=, which would skip every later destination, and `ExecStart=-`
+ * would run them all but report success. With more than one command they run in ONE `sh -c`: each is followed by
+ * `|| rc=1`, so the next still runs, and the shell exits non-zero when any failed, which is what OnFailure= and the
+ * dead-man check key on. `$$` is systemd's escape for a literal dollar sign. A single command stays bare.
+ */
+export function isolateCommands(commands: string[]): string[] {
+  if (commands.length <= 1) return commands;
+  const script = `rc=0; ${commands.map((c) => `${c} || rc=1;`).join(' ')} exit $$rc`;
+  return [`/bin/sh -c ${shellQuote(script)}`];
 }
 
 /**
@@ -321,19 +393,33 @@ function cpuQuotaDirective(strategy: BackupStrategyConfig, cpuCount: number | un
 }
 
 /**
- * The `systemd-run` line `backup run` uses when a strategy has no deployed unit: the strategy's commands (which carry its cap and parallelism) inside a transient unit at the same low priority a scheduled unit gets.
+ * The transient service `backup run` starts for a strategy with no deployed unit (PLAN-detached-jobs section 21): the
+ * strategy's commands (which carry its cap and parallelism) as sequential `ExecStart=` lines of a oneshot unit at the
+ * same low priority a scheduled unit gets. It is written to the machine first so the backup-unit job can start it by
+ * name, which a `systemd-run` line could not be. The core count comes from the machine (`resolveMachineCpuCount`),
+ * as for a scheduled unit; 100 asks for no ceiling and writes no directive.
  */
-export function buildAdhocSystemdRun(
-  unit: string,
+export function generateAdhocServiceUnit(
+  strategyName: string,
   commands: string[],
+  cpuCount: number,
   cpuLimit: number = DEFAULT_CPU_LIMIT_PERCENT
 ): string {
-  // The core count is resolved by the machine's own shell when the line runs (`$(nproc)`), so the quota is right for whichever machine executes it, with no extra round trip. 100 asks for no ceiling and writes no property.
-  const limit = parseCpuLimitPercent(cpuLimit);
-  const cpuProp = limit >= 100 ? '' : ` -p CPUQuota=$(( $(nproc) * ${limit} ))%`;
-  const props = LOW_PRIORITY_PROPERTIES.map((p) => `-p ${p}`).join(' ') + cpuProp;
-  const fullCmd = commands.join(' && ');
-  return `sudo systemd-run --unit=${unit} --remain-after-exit ${props} /bin/bash -c '${fullCmd.replaceAll("'", "'\\''")}'`;
+  const quota = cpuQuotaValue(parseCpuLimitPercent(cpuLimit), cpuCount);
+  const quotaLine = quota === undefined ? '' : `CPUQuota=${quota}\n`;
+  return `[Unit]
+Description=Rediacc Ad-hoc Backup (${strategyName})
+After=network-online.target
+
+[Service]
+Type=oneshot
+${LOW_PRIORITY_DIRECTIVES}
+${quotaLine}TimeoutStartSec=infinity
+TimeoutStopSec=90
+${isolateCommands(commands)
+  .map((cmd) => `ExecStart=${cmd}`)
+  .join('\n')}
+`;
 }
 
 interface ServiceUnitBuild {
@@ -357,7 +443,9 @@ export function generateServiceUnit(
   scope?: UnitScope,
   cpuCount?: number,
   schedule: string = strategy.schedule,
-  run?: UnitRun
+  run?: UnitRun,
+  accountServer?: string,
+  renetHasStoreFlag = false
 ): ServiceUnitBuild {
   const { commands, envVars } = buildBackupCommands(
     strategy,
@@ -367,14 +455,20 @@ export function generateServiceUnit(
     scope,
     cpuCount,
     schedule,
-    run
+    run,
+    accountServer,
+    renetHasStoreFlag
   );
   // The spot verify is a second ExecStart of a oneshot unit: systemd runs them in order and stops at the first failure, so a failed snapshot is never verified, and a failed verify fails the unit (and with it OnFailure=). It carries the snapshot's scope; `scope ?? unresolved` already threw above for a name-bearing strategy.
   const verify = verifySettings(strategy);
+  const verifyLines: string[] = [];
   if (!verify.off && verify.spotAfterRun) {
-    commands.push(spotVerifyCommand(remoteRenetPath, datastore, scope ?? { exclude: [] }));
+    verifyLines.push(spotVerifyCommand(remoteRenetPath, datastore, scope ?? { exclude: [] }));
   }
-  const execLines = commands.map((cmd) => `ExecStart=${cmd}`);
+  const execLines = [
+    ...isolateCommands(commands).map((cmd) => `ExecStart=${cmd}`),
+    ...verifyLines.map((cmd) => `ExecStart=${cmd}`),
+  ];
   const envFileLine =
     Object.keys(envVars).length > 0 ? `EnvironmentFile=${envFilePath(strategyName)}\n` : '';
   const renewLine = `ExecStartPre=${licenseRenewCommand(remoteRenetPath)}\n`;
@@ -498,15 +592,21 @@ export function generateAlertServiceUnit(
   datastore: string,
   remoteRenetPath: string,
   scope: UnitScope,
-  kind: 'snapshot' | 'verify'
+  kind: 'snapshot' | 'verify',
+  accountServer?: string
 ): string {
   const failedFile = `rediacc-backup-${failedUnitName}.service`;
+  // `backup report` mints a session from the licence too, so it is held to the same account server as the snapshot.
+  const report = [
+    failureReportCommand(remoteRenetPath, datastore, scope, failedFile, kind),
+    ...accountServerFlags(accountServer),
+  ].join(' ');
   return `[Unit]
 Description=Rediacc Backup Failure Report (${failedUnitName})
 
 [Service]
 Type=oneshot
 ${LOW_PRIORITY_DIRECTIVES}
-ExecStart=${failureReportCommand(remoteRenetPath, datastore, scope, failedFile, kind)}
+ExecStart=${report}
 `;
 }

@@ -642,8 +642,8 @@ def cmd_wait(
                 note = attempt_note(runner, repo, number, head)
                 # ONE "Next:". The attempt comment's action (re-run, excused, push) is the specific one, so it replaces the generic investigate line rather than printing beside it (review finding 3bc91573.1); the generic line stays the fallback when no attempt comment exists.
                 generic = (
-                    "  Next: investigate the Claude Review run (gh run list --workflow claude-review.yml), fix the cause,"
-                    " then re-dispatch with `gh workflow run claude-review.yml -f pr_number=%d`."
+                    "  Next: investigate the Claude Review run (gh run list --workflow ops-claude-review.yml), fix the cause,"
+                    " then re-dispatch with `gh workflow run ops-claude-review.yml -f pr_number=%d`."
                     % number
                 )
                 print(

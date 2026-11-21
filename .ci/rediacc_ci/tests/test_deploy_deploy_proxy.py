@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -26,7 +27,13 @@ from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_proxy as port
 from rediacc_ci.deploy import proxy_configs
 from rediacc_ci.tests import differential as diff
-from rediacc_ci.well_known import BENCH_ORIGIN, PROXY_BENCH_HOST, PROXY_EDGE_US_HOST, PROXY_US_HOST
+from rediacc_ci.tests.test_proof_surfaces import World, _commit, _write
+from rediacc_ci.well_known import (
+    BENCH_ORIGIN,
+    PROXY_BENCH_HOST,
+    PROXY_BENCH_RETIRING_HOST,
+    PROXY_US_HOST,
+)
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -167,7 +174,7 @@ FAKE_CURL = """#!/usr/bin/python3
 import json
 import os
 import sys
-from rediacc_ci.well_known import PROXY_EDGE_US_HOST
+from rediacc_ci.well_known import PROXY_US_HOST
 
 url = sys.argv[-1]
 with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
@@ -204,16 +211,16 @@ BASE_ENV = {
 CURL = "curl\t-sS\t-o\t/dev/null\t-w\t%{http_code}\t--max-time\t30\t"
 CURL_BODY = "curl\t-sS\t-w\t\\n%{http_code}\t--max-time\t30\t"
 
-# The six generated targets: (target, region, config, route).
-SIX = tuple(
+# The three generated targets, one shared Worker set per region: (target, region, config, route).
+THREE = tuple(
     (
-        "edge" if key.startswith("edge-") else "stable",
-        key.removeprefix("edge-"),
+        "stable",
+        key,
         t.config,
         t.routes[0],
     )
     for key, t in proxy_configs.targets(proxy_configs.load_regions(ROOT)).items()
-    if t.generated
+    if t.generated and not t.key.startswith("bench")
 )
 
 
@@ -278,6 +285,8 @@ def _run(
         "PYTHONPATH": str(ROOT / ".ci"),
         "PYTHONDONTWRITEBYTECODE": "1",
         "REDIACC_CI_ROOT": str(root),
+        # The per-test lock directory (conftest `_isolated_lock_dir`), so the deploy's bench lock is never the operator's real one.
+        "XDG_RUNTIME_DIR": os.environ.get("XDG_RUNTIME_DIR", ""),
         "FAKE_CALL_LOG": str(call_log),
         "FAKE_CHILD": child,
         **BASE_ENV,
@@ -296,6 +305,12 @@ def _run(
         input="",
     )
     return proc, call_log.read_text(encoding="utf-8")
+
+
+def _renamed(text: str) -> str:
+    """The golden record's names written in the names the port prints now (PLAN-product-domain-rename): `rediacc-proxy-<r>`, `rediacc-account-<r>` and their bench forms lost the prefix, and the product hosts moved to rediacc.cloud. Every OTHER byte of the record is still compared."""
+    text = re.sub(r"rediacc-(proxy|account)-(eu|us|asia|bench)", r"\1-\2", text)
+    return re.sub(r"(proxy\.(?:eu|us|asia|bench))\.rediacc\.com", r"\1.rediacc.cloud", text)
 
 
 def run_golden(tmp_path: pathlib.Path, root: pathlib.Path, *args: str, **kw):
@@ -319,6 +334,8 @@ def run_golden(tmp_path: pathlib.Path, root: pathlib.Path, *args: str, **kw):
         work=(str(tmp_path),),
     )
     new, calls = _run(tmp_path, root, args, **kw)
+    out, err = _renamed(out), _renamed(err)
+    frozen = {**frozen, "calls": _renamed(frozen["calls"])}
     assert (new.returncode, new.stdout, new.stderr) == (rc, out, err), (
         "the live answer diverged from the golden record:\nrecord: %r\nlive:   %r"
         % ((rc, out, err), (new.returncode, new.stdout, new.stderr))
@@ -347,17 +364,18 @@ def _release_calls(root: pathlib.Path, config: str, host: str) -> str:
     )
 
 
-# ---- the six generated targets ---------------------------------------------
+# ---- the three generated targets -------------------------------------------
 
 
-def test_the_six_targets_are_the_generated_configs() -> None:
-    """ANTI-VACUITY for the parametrization below: six, one per (channel, region)."""
-    assert sorted((t, r) for t, r, _c, _h in SIX) == sorted(
-        (t, r) for t in ("edge", "stable") for r in ("eu", "us", "asia")
+def test_the_three_targets_are_the_generated_configs() -> None:
+    """ANTI-VACUITY for the parametrization below: three, one per region, and no edge target."""
+    assert sorted((t, r) for t, r, _c, _h in THREE) == sorted(
+        ("stable", r) for r in ("eu", "us", "asia")
     )
+    assert "edge" not in port.SUPPORTED_TARGETS
 
 
-@pytest.mark.parametrize(("target", "region", "config", "host"), SIX, ids=[s[2] for s in SIX])
+@pytest.mark.parametrize(("target", "region", "config", "host"), THREE, ids=[s[2] for s in THREE])
 def test_each_target_deploys_its_own_config_with_the_pinned_argv(
     tmp_path: pathlib.Path, target: str, region: str, config: str, host: str
 ) -> None:
@@ -389,19 +407,31 @@ def test_each_target_deploys_its_own_config_with_the_pinned_argv(
     assert "build_renet" not in calls
 
 
-def test_the_edge_us_and_stable_us_routes_are_the_well_known_hosts() -> None:
-    hosts = {(t, r): h for t, r, _c, h in SIX}
-    assert hosts[("edge", "us")] == PROXY_EDGE_US_HOST
+def test_the_us_route_is_the_well_known_host() -> None:
+    hosts = {(t, r): h for t, r, _c, h in THREE}
     assert hosts[("stable", "us")] == PROXY_US_HOST
 
 
 def test_every_real_config_passes_the_gate_it_is_deployed_through() -> None:
-    for target, region, config, _host in SIX:
+    for target, region, config, _host in THREE:
         spec, _text = port.select(ROOT, target, region)
         assert spec.config == config
     spec, _text = port.select(ROOT, "bench", None)
-    assert spec.config == "wrangler.bench.toml"
-    assert spec.routes == (PROXY_BENCH_HOST,)
+    assert spec.config == "wrangler.bench-eu.toml"
+    assert spec.routes == (PROXY_BENCH_HOST, PROXY_BENCH_RETIRING_HOST)
+
+
+@pytest.mark.parametrize("region", ["us", "asia"])
+def test_a_bench_proxy_is_selected_in_every_bench_region(region: str) -> None:
+    """The per-region acceptance that replaced the eu-only refusal: `--target bench --region us|asia` selects that region's own bench proxy, config and record."""
+    spec, _text = port.select(ROOT, "bench", region)
+    assert spec.config == "wrangler.bench-%s.toml" % region
+    assert spec.name == "proxy-bench-%s" % region
+    assert port.bench_version_record(region)[-1] == "proxy-bench-%s.json" % region
+    assert port.bench_version_record("eu") == port.BENCH_VERSION_RECORD
+    # control: an unknown region is still refused by name
+    with pytest.raises(port.RefusedError, match="--target bench refuses --region mars"):
+        port.select(ROOT, "bench", "mars")
 
 
 # ---- the config gate runs before any credential ------------------------------
@@ -412,9 +442,7 @@ def test_a_us_config_carrying_an_eu_binding_refuses_before_any_fetch_or_build(
 ) -> None:
     """With no token in the environment: the gate runs first, so a config that reaches another region is never handed a credential, and the call log stays empty."""
     root = _fixture_root(tmp_path)
-    _plant(
-        root, "wrangler.us.toml", 'service = "rediacc-account-us"', 'service = "rediacc-account-eu"'
-    )
+    _plant(root, "wrangler.us.toml", 'service = "account-us"', 'service = "account-eu"')
     proc, calls = run_golden(
         tmp_path,
         root,
@@ -435,16 +463,16 @@ def test_a_us_config_carrying_an_eu_binding_refuses_before_any_fetch_or_build(
         line.startswith("✗ --target stable refused: workers/proxy/wrangler.us.toml: ")
         for line in lines
     ), proc.stderr
-    assert "rediacc-account-eu" in proc.stderr
+    assert "account-eu" in proc.stderr
     assert "names eu, which is not us" in proc.stderr
 
 
-def test_an_edge_config_naming_the_stable_worker_refuses(tmp_path: pathlib.Path) -> None:
+def test_a_config_carrying_a_retired_prefixed_worker_name_refuses(tmp_path: pathlib.Path) -> None:
     root = _fixture_root(tmp_path)
-    _plant(
-        root, "wrangler.edge-eu.toml", 'name = "edge-rediacc-proxy-eu"', 'name = "rediacc-proxy-eu"'
+    _plant(root, "wrangler.eu.toml", 'name = "proxy-eu"', 'name = "rediacc-proxy-eu"')
+    proc, calls = _run(
+        tmp_path, root, ("--target", "stable", "--region", "eu", "--version", VERSION)
     )
-    proc, calls = _run(tmp_path, root, ("--target", "edge", "--region", "eu", "--version", VERSION))
     assert proc.returncode == 1
     assert calls == ""
     assert "rediacc-proxy-eu" in proc.stderr
@@ -467,19 +495,26 @@ def test_a_missing_config_refuses_before_any_fetch(tmp_path: pathlib.Path) -> No
     ("args", "fragment"),
     [
         (("--target", "production", "--region", "eu"), "--target production is not supported"),
-        (("--target", "edge"), "--region is required for --target edge"),
+        (("--target", "stable"), "--region is required for --target stable"),
         (
             ("--target", "stable", "--region", "mars", "--version", VERSION),
             "--region mars is not supported",
         ),
-        (("--target", "bench", "--region", "us"), "--target bench refuses --region us"),
+        (("--target", "bench", "--region", "mars"), "--target bench refuses --region mars"),
         (("--target", "stable", "--region", "eu"), "--version is required for a stable deploy"),
         (
-            ("--target", "edge", "--region", "eu", "--version", "next"),
+            ("--target", "stable", "--region", "eu", "--version", "next"),
             "--version 'next' is not a release version",
         ),
     ],
-    ids=["unknown-target", "no-region", "unknown-region", "bench-us", "no-version", "bad-version"],
+    ids=[
+        "unknown-target",
+        "no-region",
+        "unknown-region",
+        "bench-mars",
+        "no-version",
+        "bad-version",
+    ],
 )
 def test_argument_refusals_need_no_token_and_run_nothing(
     tmp_path: pathlib.Path, args: tuple[str, ...], fragment: str
@@ -506,7 +541,7 @@ def test_a_missing_token_refuses_before_the_fetch(tmp_path: pathlib.Path) -> Non
     proc, calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "us", "--version", VERSION),
+        ("--target", "stable", "--region", "us", "--version", VERSION),
         drop_env=("CLOUDFLARE_API_TOKEN",),
         REDIACC_BWS_PROFILES="deploy-proxy",
     )
@@ -518,7 +553,7 @@ def test_a_missing_token_refuses_before_the_fetch(tmp_path: pathlib.Path) -> Non
 # ---- dry runs ---------------------------------------------------------------
 
 
-DRY_TARGETS = (*((t, r, c) for t, r, c, _h in SIX), ("bench", "eu", "wrangler.bench.toml"))
+DRY_TARGETS = (*((t, r, c) for t, r, c, _h in THREE), ("bench", "eu", "wrangler.bench-eu.toml"))
 
 
 @pytest.mark.parametrize(
@@ -543,16 +578,27 @@ def test_a_dry_run_works_for_every_target_without_credentials(
     assert proc.stderr.endswith("✓ Dry run passed. Nothing was deployed.\n")
 
 
-def test_the_edge_us_dry_run_is_pinned(tmp_path: pathlib.Path) -> None:
+def test_the_us_dry_run_is_pinned(tmp_path: pathlib.Path) -> None:
     root = _fixture_root(tmp_path)
-    proc, _calls = run_golden(tmp_path, root, "--target", "edge", "--region", "us", "--dry-run")
+    proc, calls = _run(tmp_path, root, ("--target", "stable", "--region", "us", "--dry-run"))
     assert proc.returncode == 0, proc.stderr
+    assert "--config\twrangler.us.toml" in calls
+    assert proc.stderr.endswith("✓ Dry run passed. Nothing was deployed.\n")
+
+
+def test_an_edge_target_is_no_longer_a_target(tmp_path: pathlib.Path) -> None:
+    """The edge Workers are gone: `--target edge` is refused before any credential, fetch or build."""
+    root = _fixture_root(tmp_path)
+    proc, calls = _run(tmp_path, root, ("--target", "edge", "--region", "eu", "--version", VERSION))
+    assert proc.returncode == 1
+    assert calls == ""
+    assert "--target edge is not supported: only stable, bench deploys." in proc.stderr
 
 
 def test_a_failed_dry_run_propagates_wranglers_status(tmp_path: pathlib.Path) -> None:
     root = _fixture_root(tmp_path)
     proc, _calls = _run(
-        tmp_path, root, ("--target", "edge", "--region", "eu", "--dry-run"), FAKE_NPX_RC="5"
+        tmp_path, root, ("--target", "stable", "--region", "eu", "--dry-run"), FAKE_NPX_RC="5"
     )
     assert proc.returncode == 5
     assert "Dry run passed" not in proc.stderr
@@ -560,7 +606,7 @@ def test_a_failed_dry_run_propagates_wranglers_status(tmp_path: pathlib.Path) ->
 
 # ---- bench ------------------------------------------------------------------
 
-BENCH_PROFILE_ENV = {"REDIACC_BWS_PROFILES": "deploy-proxy-bench"}
+BENCH_PROFILE_ENV = {"REDIACC_BWS_PROFILES": "deploy-proxy-bench-eu"}
 
 
 def test_a_bench_deploy_builds_from_the_tree_and_stages_locally(tmp_path: pathlib.Path) -> None:
@@ -568,7 +614,7 @@ def test_a_bench_deploy_builds_from_the_tree_and_stages_locally(tmp_path: pathli
     proc, calls = run_golden(tmp_path, root, "--target", "bench", **BENCH_PROFILE_ENV)
     assert proc.returncode == 0, proc.stderr
     stage = root / "workers" / "proxy" / "stage"
-    config = "wrangler.bench.toml"
+    config = "wrangler.bench-eu.toml"
     assert calls == (
         "npm\trun\tbuild\t--workspace\t@rediacc/shared\n"
         "  cwd=root\n"
@@ -592,7 +638,7 @@ def test_a_bench_deploy_builds_from_the_tree_and_stages_locally(tmp_path: pathli
         f"{CURL}https://{PROXY_BENCH_HOST}/v1/server-info\n"
         f"{CURL_BODY}https://{PROXY_BENCH_HOST}/v1/ready\n"
     )
-    assert "✓ Deployed rediacc-proxy-bench: version %s.\n" % NEW_ID in proc.stderr
+    assert "✓ Deployed proxy-bench: version %s.\n" % NEW_ID in proc.stderr
 
 
 def test_a_bench_deploy_without_the_licence_key_refuses_before_any_build(
@@ -626,7 +672,7 @@ def test_a_stable_deploy_needs_no_licence_key(tmp_path: pathlib.Path) -> None:
 def test_a_bench_run_without_its_profile_reexecutes_under_it(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Unbound, the run hands itself to `bws_env exec --profile deploy-proxy-bench` after the gate and returns that child's status."""
+    """Unbound, the run hands itself to `bws_env exec --profile deploy-proxy-bench-eu` after the gate and returns that child's status."""
     root = _fixture_root(tmp_path)
     monkeypatch.setenv("REDIACC_CI_ROOT", str(root))
     monkeypatch.delenv("REDIACC_BWS_PROFILES", raising=False)
@@ -647,7 +693,7 @@ def test_a_bench_run_without_its_profile_reexecutes_under_it(
         "rediacc_ci.core.bws_env",
         "exec",
         "--profile",
-        "deploy-proxy-bench",
+        "deploy-proxy-bench-eu",
         "--",
     ]
     assert env is not None
@@ -670,7 +716,7 @@ def test_an_edge_run_without_a_token_reexecutes_under_the_deploy_proxy_profile(
         return 5
 
     monkeypatch.setattr(port, "_run", fake_run)
-    args = ["--target", "edge", "--region", "eu", "--smoke-only"]
+    args = ["--target", "stable", "--region", "eu", "--smoke-only"]
     assert port.main(args) == 5
     assert seen == [port.reexec_argv(args, port.PROFILE)]
     assert seen[0][5] == "deploy-proxy"
@@ -680,9 +726,9 @@ def test_an_edge_run_without_a_token_reexecutes_under_the_deploy_proxy_profile(
 
 WRANGLER_OUTPUT = f"""Total Upload: 312.40 KiB / gzip: 61.02 KiB
 Worker Startup Time: 12 ms
-Uploaded edge-rediacc-proxy-us (6.10 sec)
-Deployed edge-rediacc-proxy-us triggers (1.20 sec)
-  {PROXY_EDGE_US_HOST} (custom domain)
+Uploaded proxy-us (6.10 sec)
+Deployed proxy-us triggers (1.20 sec)
+  {PROXY_US_HOST} (custom domain)
 Current Version ID: 4fb58b44-1c2d-4e5f-8a9b-0c1d2e3f4a5b
 """
 
@@ -722,7 +768,7 @@ def test_a_deploy_without_a_version_line_fails(tmp_path: pathlib.Path) -> None:
     proc, calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "eu", "--version", VERSION),
+        ("--target", "stable", "--region", "eu", "--version", VERSION),
         FAKE_NO_VERSION_LINE="1",
     )
     assert proc.returncode == 1
@@ -735,7 +781,7 @@ def test_a_listed_version_that_differs_from_the_printed_one_fails(tmp_path: path
     proc, calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "eu", "--version", VERSION),
+        ("--target", "stable", "--region", "eu", "--version", VERSION),
         FAKE_LISTED_ID="33333333-3333-4333-8333-333333333333",
     )
     assert proc.returncode == 1
@@ -750,7 +796,7 @@ def test_a_first_deploy_has_no_rollback_target(tmp_path: pathlib.Path) -> None:
     proc, _calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "asia", "--version", VERSION, "--record", str(record)),
+        ("--target", "stable", "--region", "asia", "--version", VERSION, "--record", str(record)),
         FAKE_NO_PREVIOUS="1",
     )
     assert proc.returncode == 0, proc.stderr
@@ -794,7 +840,7 @@ def test_ready_on_the_old_version_is_not_ready(tmp_path: pathlib.Path) -> None:
     proc, _calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "us", "--version", VERSION),
+        ("--target", "stable", "--region", "us", "--version", VERSION),
         FAKE_READY_VERSION=PREV_ID,
         FAKE_READY_TIMEOUT="0",
     )
@@ -825,7 +871,7 @@ def test_an_unhealthy_deploy_fails_the_smoke_before_server_info(tmp_path: pathli
     proc, calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "eu", "--version", VERSION),
+        ("--target", "stable", "--region", "eu", "--version", VERSION),
         FAKE_HEALTH="503",
     )
     assert proc.returncode == 1
@@ -838,7 +884,7 @@ def test_an_open_server_info_fails_the_smoke_before_ready(tmp_path: pathlib.Path
     proc, calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "eu", "--version", VERSION),
+        ("--target", "stable", "--region", "eu", "--version", VERSION),
         FAKE_INFO="200",
     )
     assert proc.returncode == 1
@@ -851,7 +897,7 @@ def test_a_failed_fetch_deploys_nothing(tmp_path: pathlib.Path) -> None:
     proc, calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "eu", "--version", VERSION),
+        ("--target", "stable", "--region", "eu", "--version", VERSION),
         FAKE_CHILD_RC="3",
     )
     assert proc.returncode == 3
@@ -863,7 +909,7 @@ def test_a_failed_deploy_prints_no_closing_lines(tmp_path: pathlib.Path) -> None
     proc, calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "eu", "--version", VERSION),
+        ("--target", "stable", "--region", "eu", "--version", VERSION),
         FAKE_NPX_RC="6",
     )
     assert proc.returncode == 6
@@ -880,22 +926,22 @@ def test_the_record_carries_what_a_rollback_needs(tmp_path: pathlib.Path) -> Non
     proc, _calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "us", "--version", VERSION, "--record", str(record)),
+        ("--target", "stable", "--region", "us", "--version", VERSION, "--record", str(record)),
     )
     assert proc.returncode == 0, proc.stderr
     written = json.loads(record.read_text())
     assert isinstance(written.pop("cold_start_ms"), int)
     assert written == {
         "release_by_version": {NEW_ID: VERSION},
-        "target": "edge",
+        "target": "stable",
         "region": "us",
-        "worker": "edge-rediacc-proxy-us",
-        "config": "workers/proxy/wrangler.edge-us.toml",
+        "worker": "proxy-us",
+        "config": "workers/proxy/wrangler.us.toml",
         "version_id": NEW_ID,
         "previous_version_id": PREV_ID,
         "artifacts_version": VERSION,
         "smoke_rc": 0,
-        "rollback": "cd workers/proxy && npx --no-install wrangler rollback %s --config wrangler.edge-us.toml"
+        "rollback": "cd workers/proxy && npx --no-install wrangler rollback %s --config wrangler.us.toml"
         % PREV_ID,
         "migration_tag": "v3",
         "var_overrides": {},
@@ -922,11 +968,11 @@ V3 = V2 + '\n[[migrations]]\ntag = "v3"\ndeleted_classes = ["ExecutorContainer"]
 def test_a_v1_to_v3_deploy_is_forward_only(tmp_path: pathlib.Path) -> None:
     root = _fixture_root(tmp_path)
     record = tmp_path / "record.json"
-    previous = _previous_config(tmp_path, root, "wrangler.edge-us.toml", V1)
+    previous = _previous_config(tmp_path, root, "wrangler.us.toml", V1)
     proc, _calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "us", "--version", VERSION, "--record", str(record)),
+        ("--target", "stable", "--region", "us", "--version", VERSION, "--record", str(record)),
         FAKE_PREV_CONFIG=previous,
     )
     assert proc.returncode == 0, proc.stderr
@@ -942,17 +988,15 @@ def test_a_v1_to_v3_deploy_is_forward_only(tmp_path: pathlib.Path) -> None:
 def test_a_v3_to_v3_deploy_writes_the_rollback_command(tmp_path: pathlib.Path) -> None:
     root = _fixture_root(tmp_path)
     record = tmp_path / "record.json"
-    previous = _previous_config(tmp_path, root, "wrangler.edge-us.toml", V3)
+    previous = _previous_config(tmp_path, root, "wrangler.us.toml", V3)
     proc, _calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "us", "--version", VERSION, "--record", str(record)),
+        ("--target", "stable", "--region", "us", "--version", VERSION, "--record", str(record)),
         FAKE_PREV_CONFIG=previous,
     )
     assert proc.returncode == 0, proc.stderr
-    want = (
-        "cd workers/proxy && npx --no-install wrangler rollback %s --config wrangler.edge-us.toml"
-    )
+    want = "cd workers/proxy && npx --no-install wrangler rollback %s --config wrangler.us.toml"
     assert json.loads(record.read_text())["rollback"] == want % PREV_ID
     assert "forward-only" not in proc.stderr
 
@@ -965,7 +1009,7 @@ def test_a_deploy_with_no_previous_release_config_is_not_forward_only(
     proc, _calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "us", "--version", VERSION, "--record", str(record)),
+        ("--target", "stable", "--region", "us", "--version", VERSION, "--record", str(record)),
     )
     assert proc.returncode == 0, proc.stderr
     assert "forward-only" not in json.loads(record.read_text())["rollback"]
@@ -1056,21 +1100,59 @@ def test_the_forward_only_rule_compares_whole_migration_lists() -> None:
 def test_smoke_only_smokes_the_recorded_version_and_deploys_nothing(tmp_path: pathlib.Path) -> None:
     root = _fixture_root(tmp_path)
     record = tmp_path / "record.json"
-    record.write_text(json.dumps({"version_id": NEW_ID, "target": "edge"}), encoding="utf-8")
+    record.write_text(json.dumps({"version_id": NEW_ID, "target": "stable"}), encoding="utf-8")
     proc, calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "us", "--smoke-only", "--record", str(record)),
+        ("--target", "stable", "--region", "us", "--smoke-only", "--record", str(record)),
     )
     assert proc.returncode == 0, proc.stderr
     assert calls == (
-        f"{CURL}https://{PROXY_EDGE_US_HOST}/v1/health\n"
-        f"{CURL}https://{PROXY_EDGE_US_HOST}/v1/server-info\n"
-        f"{CURL_BODY}https://{PROXY_EDGE_US_HOST}/v1/ready\n"
+        f"{CURL}https://{PROXY_US_HOST}/v1/health\n"
+        f"{CURL}https://{PROXY_US_HOST}/v1/server-info\n"
+        f"{CURL_BODY}https://{PROXY_US_HOST}/v1/ready\n"
     )
     data = json.loads(record.read_text())
     assert data["smoke_rc"] == 0
-    assert data["target"] == "edge", "the deploy step's fields are kept"
+    assert data["target"] == "stable", "the deploy step's fields are kept"
+
+
+def test_a_failing_smoke_only_names_the_recorded_rollback_like_a_deploy_smoke(
+    tmp_path: pathlib.Path,
+) -> None:
+    """After a deferred-smoke deploy the --smoke-only run is the first smoke of that version: its failure prints the record's rollback line, as a failed deploy-time smoke does (review d39e851d.1)."""
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    record.write_text(
+        json.dumps(
+            {"version_id": NEW_ID, "previous_version_id": PREV_ID, "rollback": "REVERT-LINE"}
+        ),
+        encoding="utf-8",
+    )
+    proc, _calls = _run(
+        tmp_path,
+        root,
+        ("--target", "stable", "--region", "us", "--smoke-only", "--record", str(record)),
+        FAKE_HEALTH="503",
+    )
+    assert proc.returncode == 1
+    assert "✗ Rollback: REVERT-LINE\n" in proc.stderr
+
+
+def test_a_failing_smoke_only_of_a_first_deploy_prints_the_no_rollback_line_and_still_fails(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    record.write_text(json.dumps({"version_id": NEW_ID}), encoding="utf-8")
+    proc, _calls = _run(
+        tmp_path,
+        root,
+        ("--target", "stable", "--region", "us", "--smoke-only", "--record", str(record)),
+        FAKE_HEALTH="503",
+    )
+    assert proc.returncode == 1
+    assert "Rollback: none: no earlier deployment of this Worker exists" in proc.stderr
 
 
 def test_smoke_only_without_a_record_reads_the_newest_deployment(tmp_path: pathlib.Path) -> None:
@@ -1095,14 +1177,14 @@ def test_smoke_only_without_a_record_reads_the_newest_deployment(tmp_path: pathl
 def test_no_closing_line_names_executor_token(tmp_path: pathlib.Path) -> None:
     """The Worker mints its own token over ISSUER (operator ruling 2026-10-25T19:08Z), so a deploy never tells a human to put one."""
     root = _fixture_root(tmp_path)
-    for target, region in (("edge", "eu"), ("stable", "us")):
+    for target, region in (("stable", "eu"), ("stable", "us")):
         proc, _calls = _run(
             tmp_path, root, ("--target", target, "--region", region, "--version", VERSION)
         )
         assert proc.returncode == 0, proc.stderr
         assert "EXECUTOR_TOKEN" not in proc.stderr + proc.stdout
     proc, _calls = _run(
-        tmp_path, root, ("--target", "bench"), REDIACC_BWS_PROFILES="deploy-proxy-bench"
+        tmp_path, root, ("--target", "bench"), REDIACC_BWS_PROFILES="deploy-proxy-bench-eu"
     )
     assert proc.returncode == 0, proc.stderr
     assert "EXECUTOR_TOKEN" not in proc.stderr + proc.stdout
@@ -1204,7 +1286,7 @@ def _smoke_fixture(monkeypatch, answers, doh=None):
     monkeypatch.setattr(port, "_curl", fake)
     monkeypatch.setattr(port, "_sleep", sleeps.append)
     monkeypatch.setattr(port, "_doh_lookup", lambda _host: doh)
-    monkeypatch.setattr(port, "wait_ready", lambda _fetch, _url, _version, _timing=None: 0)
+    monkeypatch.setattr(port, "wait_ready", lambda _fetch, _url, _version, _timing=None, **_kw: 0)
     monkeypatch.setenv(port.RESOLVE_WINDOW_ENV, "1000")
     monkeypatch.setenv(port.DOH_URL_ENV, "https://doh.invalid/dns-query")
     return fake, sleeps
@@ -1272,6 +1354,108 @@ def test_persistent_resolution_failure_fails_with_a_clear_message(monkeypatch, c
     assert "answered 000, expected 200" in err
 
 
+def test_a_first_deploy_polls_a_tls_handshake_failure_until_the_certificate_exists(
+    monkeypatch,
+) -> None:
+    """curl exit 35 with status 000 is the certificate not being issued yet; the first-deploy smoke keeps asking, sleeping CERT_INTERVAL_S between asks."""
+    fake, sleeps = _smoke_fixture(monkeypatch, [("000", 35), ("000", 35), ("200", 0), ("401", 0)])
+    _clock(monkeypatch, [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
+    assert port.smoke(HOST, NEW_ID, first_deploy=True) == 0
+    assert len(fake.calls) == 4
+    assert sleeps == [port.CERT_INTERVAL_S, port.CERT_INTERVAL_S]
+
+
+def test_a_first_deploy_gives_up_after_the_certificate_window(monkeypatch, capsys) -> None:
+    fake, _ = _smoke_fixture(monkeypatch, [("000", 35)])
+    _clock(monkeypatch, [1.0, 2.0, port.CERT_WINDOW_S + 10])
+    assert port.smoke(HOST, NEW_ID, first_deploy=True) == 1
+    assert len(fake.calls) == 2
+    assert "/v1/health answered 000, expected 200" in capsys.readouterr().err
+
+
+def test_a_later_deploy_fails_a_tls_handshake_failure_at_once(monkeypatch) -> None:
+    """Control: without first_deploy the same answer is one request and a failure."""
+    fake, sleeps = _smoke_fixture(monkeypatch, [("000", 35)])
+    assert port.smoke(HOST, NEW_ID) == 1
+    assert len(fake.calls) == 1
+    assert sleeps == []
+
+
+def test_a_first_deploy_does_not_retry_a_real_status(monkeypatch) -> None:
+    fake, sleeps = _smoke_fixture(monkeypatch, [("500", 0)])
+    assert port.smoke(HOST, NEW_ID, first_deploy=True) == 1
+    assert len(fake.calls) == 1
+    assert sleeps == []
+
+
+def test_a_first_deploy_hands_a_mid_wait_resolution_failure_to_the_resolve_retry(
+    monkeypatch, capsys
+) -> None:
+    """Review 8fc33ca1.3: curl exit 6 inside the certificate wait ends the wait, so the resolve retry answers it; the certificate wait is logged once (exit 35), not again for the exit-6 answer."""
+    fake, _ = _smoke_fixture(monkeypatch, [("000", 35), ("000", 6), ("200", 0), ("401", 0)])
+    _clock(monkeypatch, [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+    assert port.smoke(HOST, NEW_ID, first_deploy=True) == 0
+    assert len(fake.calls) == 4
+    err = capsys.readouterr()
+    assert (err.out + err.err).count("waiting for its certificate") == 1
+
+
+@pytest.mark.parametrize(
+    ("record", "first"),
+    [
+        ({"previous_version_id": None, "smoke_rc": None}, True),
+        ({"previous_version_id": PREV_ID}, False),
+        ({"smoke_rc": None}, False),
+        ({"previous_version_id": ""}, False),
+        ({"previous_version_id": 0}, False),
+        ({"previous_version_id": False}, False),
+    ],
+    ids=["first", "later", "no-key", "empty-string", "zero", "false"],
+)
+def test_a_smoke_only_waits_for_the_certificate_of_a_recorded_first_deploy(
+    tmp_path: pathlib.Path, record, first
+) -> None:
+    """Review 8fc33ca1.1: the deferred-smoke record decides, so --smoke-only of a first deploy also waits; a later deploy, a record without the key and no record do not."""
+    path = tmp_path / "record.json"
+    assert port._recorded_first_deploy(path) is False
+    path.write_text(json.dumps(record), encoding="utf-8")
+    assert port._recorded_first_deploy(path) is first
+    path.write_text("not json", encoding="utf-8")
+    assert port._recorded_first_deploy(path) is False
+    assert port._recorded_first_deploy(None) is False
+
+
+def test_the_resolve_window_starts_after_a_certificate_wait_that_used_most_of_its_window(
+    monkeypatch,
+) -> None:
+    """Review f8792635.1: a first deploy whose certificate wait ran 280 s and then got curl exit 6 still has its whole resolve window; the DoH pin is not taken at once."""
+    lookups: list[str] = []
+    fake, _ = _smoke_fixture(
+        monkeypatch, [("000", 35), ("000", 6), ("200", 0), ("401", 0)], doh="198.51.100.9"
+    )
+
+    def doh(host: str) -> str:
+        lookups.append(host)
+        return "198.51.100.9"
+
+    monkeypatch.setattr(port, "_doh_lookup", doh)
+    now = [0.0]
+    napped: list[float] = []
+
+    def sleep(seconds: float) -> None:
+        napped.append(seconds)
+        now[0] += 280.0 if len(napped) == 1 else seconds
+
+    monkeypatch.setenv(port.RESOLVE_WINDOW_ENV, "50")
+    monkeypatch.setattr(port, "_sleep", sleep)
+    monkeypatch.setattr(port, "time", types.SimpleNamespace(monotonic=lambda: now[0]))
+    assert port.smoke(HOST, NEW_ID, first_deploy=True) == 0
+    assert lookups == []
+    assert all(pin is None for _url, pin in fake.calls)
+    assert napped[0] == port.CERT_INTERVAL_S
+    assert port.RESOLVE_INTERVAL_S in napped[1:]
+
+
 def test_the_doh_lookup_reads_the_first_a_record(monkeypatch) -> None:
     class Resp:
         def __enter__(self):
@@ -1334,26 +1518,26 @@ def test_a_bench_rollback_runs_wrangler_rollback_smokes_and_records(
         REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
     )
     assert proc.returncode == 0, proc.stderr
-    assert calls == _rollback_calls("wrangler.bench.toml", PROXY_BENCH_HOST, TO_ID)
+    assert calls == _rollback_calls("wrangler.bench-eu.toml", PROXY_BENCH_HOST, TO_ID)
     written = json.loads(record.read_text())
     assert isinstance(written.pop("cold_start_ms"), int)
     assert written == {
         "target": "bench",
         "region": "eu",
-        "worker": "rediacc-proxy-bench",
-        "config": "workers/proxy/wrangler.bench.toml",
+        "worker": "proxy-bench",
+        "config": "workers/proxy/wrangler.bench-eu.toml",
         "rolled_back": True,
         "version_id": TO_ID,
         "requested_version_id": TO_ID,
         "previous_version_id": PREV_ID,
         "artifacts_version": None,
         "smoke_rc": 0,
-        "rollback": "cd workers/proxy && npx --no-install wrangler rollback %s --config wrangler.bench.toml"
+        "rollback": "cd workers/proxy && npx --no-install wrangler rollback %s --config wrangler.bench-eu.toml"
         % PREV_ID,
         "migration_tag": "v3",
         "var_overrides": {},
     }
-    assert "✓ Rolled back rediacc-proxy-bench: version %s.\n" % TO_ID in proc.stderr
+    assert "✓ Rolled back proxy-bench: version %s.\n" % TO_ID in proc.stderr
     assert "Deployed" not in proc.stderr
 
 
@@ -1487,23 +1671,21 @@ def _guard(command: str) -> subprocess.CompletedProcess:
     ["", "RELEASE_ASKED=ASKED:2026-01-01T00:00Z ", "RELEASE_ASKED=yes "],
     ids=["no-ask", "unproven-ask", "malformed-ask"],
 )
-def test_a_stable_rollback_is_held_by_the_same_ask_as_a_stable_deploy(prefix: str) -> None:
-    """The stable deploy path's guard is `block_unasked_release`, which judges this module by its `--target`: a stable rollback is refused without a proven RELEASE_ASKED exactly as the stable deploy beside it is, and the bench rollback is free in the same run (both directions)."""
+def test_a_stable_rollback_and_deploy_are_admitted_without_an_ask(prefix: str) -> None:
+    """Shared deploys are free (PLAN-product-domain-rename W7, operator ruling 2026-11-08): the pre-bash release guard admits a `--target stable` deploy and rollback with no ask, and the bench rollback beside them, in every prefix spelling."""
     py = "PYTHONPATH=.ci python3 -m %s" % port.SELF
     stable_deploy = _guard("%s%s --target stable --region eu --version %s" % (prefix, py, VERSION))
     stable_rollback = _guard("%s%s --target stable --region eu --rollback %s" % (prefix, py, TO_ID))
     bench_rollback = _guard("%s --target bench --rollback %s" % (py, TO_ID))
-    assert stable_deploy.returncode == 2, "control: the stable deploy itself must be refused"
-    assert stable_rollback.returncode == 2, stable_rollback.stderr
-    assert "deploy_proxy (a stable target)" in stable_rollback.stderr
-    assert "RELEASE_ASKED" in stable_rollback.stderr
+    assert stable_deploy.returncode == 0, stable_deploy.stderr
+    assert stable_rollback.returncode == 0, stable_rollback.stderr
     assert bench_rollback.returncode == 0, bench_rollback.stderr
 
 
 def test_the_raw_wrangler_rollback_on_bench_stays_refused() -> None:
     """The sanctioned path is this module: the guard keeps refusing the raw verb it replaces."""
     proc = _guard(
-        "cd workers/proxy && npx wrangler rollback %s --config wrangler.bench.toml" % TO_ID
+        "cd workers/proxy && npx wrangler rollback %s --config wrangler.bench-eu.toml" % TO_ID
     )
     assert proc.returncode == 2
     assert "a raw publish verb" in proc.stderr
@@ -1522,7 +1704,7 @@ def test_the_new_options_keep_target_the_only_t_option() -> None:
 
 @pytest.mark.parametrize(
     ("target", "region"),
-    [("edge", "eu"), ("stable", "eu")],
+    [("stable", "eu")],
 )
 @pytest.mark.parametrize("dry_run", [False, True], ids=["deploy", "dry-run"])
 def test_var_is_refused_off_bench(
@@ -1542,7 +1724,7 @@ def test_var_reaches_wrangler_deploy_as_its_own_var_flag_and_is_recorded(
 ) -> None:
     """`--var KEY=VALUE` becomes wrangler's `--var KEY:VALUE`, in order, the toml is not touched, and the record names the overrides."""
     root = _fixture_root(tmp_path)
-    config = root / "workers" / "proxy" / "wrangler.bench.toml"
+    config = root / "workers" / "proxy" / "wrangler.bench-eu.toml"
     before = config.read_bytes()
     record = tmp_path / "record.json"
     proc, calls = _run(
@@ -1563,7 +1745,7 @@ def test_var_reaches_wrangler_deploy_as_its_own_var_flag_and_is_recorded(
     assert proc.returncode == 0, proc.stderr
     assert (
         "npx\t--no-install\twrangler\tdeploy\t--var\tEXECUTOR_HEAVY_CAP:2\t"
-        "--var\tEXECUTOR_CAP:2\t--config\twrangler.bench.toml\n"
+        "--var\tEXECUTOR_CAP:2\t--config\twrangler.bench-eu.toml\n"
     ) in calls
     assert config.read_bytes() == before, "the toml must never be rewritten"
     data = json.loads(record.read_text())
@@ -1609,7 +1791,7 @@ def test_a_var_the_config_refusals_reject_is_refused_before_anything_runs(
 
 
 def test_the_rendered_override_parses_back_to_exactly_the_overridden_vars() -> None:
-    text = (PROXY_DIR / "wrangler.bench.toml").read_text(encoding="utf-8")
+    text = (PROXY_DIR / "wrangler.bench-eu.toml").read_text(encoding="utf-8")
     rendered = port.with_var_overrides(text, {"EXECUTOR_CAP": '2" # "x\\'})
     assert rendered is not None
     got = tomllib.loads(rendered)
@@ -1632,7 +1814,8 @@ def test_var_reaches_the_bench_dry_run_too(tmp_path: pathlib.Path) -> None:
     assert proc.returncode == 0, proc.stderr
     assert calls == (
         "npx\t--no-install\twrangler\tdeploy\t--dry-run\t--outdir\t%s\t--containers-rollout\tnone\t"
-        "--var\tEXECUTOR_CAP:3\t--config\twrangler.bench.toml\n  cwd=proxy\n" % port.DRY_RUN_OUTDIR
+        "--var\tEXECUTOR_CAP:3\t--config\twrangler.bench-eu.toml\n  cwd=proxy\n"
+        % port.DRY_RUN_OUTDIR
     )
 
 
@@ -1680,10 +1863,25 @@ def test_var_is_refused_with_smoke_only(tmp_path: pathlib.Path) -> None:
     assert "--var is refused with --smoke-only" in proc.stderr
 
 
-def test_help_names_both_new_options() -> None:
+def test_defer_smoke_is_refused_on_a_shared_target(tmp_path: pathlib.Path) -> None:
+    """A shared target is smoked by its own deploy, so the company-only flag cannot switch that smoke off."""
+    root = _fixture_root(tmp_path)
+    proc, calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--defer-smoke"),
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 1
+    assert calls == ""
+    assert "--defer-smoke is refused without --company" in proc.stderr
+
+
+def test_help_names_the_new_options() -> None:
     text = port._parser().format_help()
     assert "--rollback VERSION_ID" in text
     assert "--var KEY=VALUE" in text
+    assert "--defer-smoke" in text
 
 
 # ---- review 4a915178: the rollback's revert line, id case and failure record ----
@@ -1725,7 +1923,7 @@ def test_the_shared_forward_only_check_reads_the_previous_release_off_bench(
     monkeypatch.setattr(port, "previous_release_migrations", lambda *_a: v1)
     monkeypatch.setattr(port, "shallow_checkout", lambda _r: False)
     state = port.forward_only_state(
-        root, worker, "wrangler.edge-us.toml", bench=False, record_path=None, version=None
+        root, worker, "wrangler.us.toml", bench=False, record_path=None, version=None
     )
     assert state == (True, "v3")
     assert port.revert_line("c", PREV_ID, True, "v3").startswith("forward-only:")
@@ -1751,7 +1949,7 @@ def test_an_uppercase_rollback_id_is_lowercased_for_wrangler_the_smoke_and_the_r
         REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
     )
     assert proc.returncode == 0, proc.stderr
-    assert calls == _rollback_calls("wrangler.bench.toml", PROXY_BENCH_HOST, low)
+    assert calls == _rollback_calls("wrangler.bench-eu.toml", PROXY_BENCH_HOST, low)
     assert UPPER_ID not in calls + proc.stderr
     assert json.loads(record.read_text())["version_id"] == low
 
@@ -1826,11 +2024,11 @@ def test_an_edge_rollback_asks_the_forward_only_question_about_the_live_release(
     record.write_text(
         json.dumps({"artifacts_version": VERSION, "migration_tag": "v3"}), encoding="utf-8"
     )
-    previous = _previous_config(tmp_path, root, "wrangler.edge-us.toml", V1)
+    previous = _previous_config(tmp_path, root, "wrangler.us.toml", V1)
     proc, _calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "us", "--rollback", TO_ID, "--record", str(record)),
+        ("--target", "stable", "--region", "us", "--rollback", TO_ID, "--record", str(record)),
         FAKE_LISTED_ID=TO_ID,
         FAKE_READY_VERSION=TO_ID,
         FAKE_PREV_CONFIG=previous,
@@ -1845,7 +2043,7 @@ def test_an_edge_rollback_with_no_recorded_release_says_so(tmp_path: pathlib.Pat
     proc, _calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "us", "--rollback", TO_ID),
+        ("--target", "stable", "--region", "us", "--rollback", TO_ID),
         FAKE_LISTED_ID=TO_ID,
         FAKE_READY_VERSION=TO_ID,
     )
@@ -1888,7 +2086,7 @@ def test_two_consecutive_rollbacks_both_know_the_live_release(tmp_path: pathlib.
         encoding="utf-8",
     )
     common: dict[str, typing.Any] = {"FAKE_LISTED_ID": TO_ID, "FAKE_READY_VERSION": TO_ID}
-    args = ("--target", "edge", "--region", "us", "--rollback", TO_ID, "--record", str(record))
+    args = ("--target", "stable", "--region", "us", "--rollback", TO_ID, "--record", str(record))
     proc, _calls = _run(tmp_path, root, args, **common)
     assert proc.returncode == 0, proc.stderr
     first = json.loads(record.read_text())
@@ -1902,7 +2100,7 @@ def test_two_consecutive_rollbacks_both_know_the_live_release(tmp_path: pathlib.
     proc, _calls = _run(
         tmp_path,
         root,
-        ("--target", "edge", "--region", "us", "--rollback", other, "--record", str(record)),
+        ("--target", "stable", "--region", "us", "--rollback", other, "--record", str(record)),
         FAKE_LISTED_ID=other,
         FAKE_READY_VERSION=other,
     )
@@ -1946,3 +2144,341 @@ def test_the_ready_route_never_reaches_an_executor() -> None:
 
 def test_the_module_says_so() -> None:
     assert "starts no executor container" in (port.__doc__ or "")
+
+
+# ---- the bench deploy record live_proof reads (item #99279bf8) ----------------
+
+
+def _bench_record(root: pathlib.Path) -> pathlib.Path:
+    return root.joinpath(*port.BENCH_VERSION_RECORD)
+
+
+def test_a_passing_bench_deploy_writes_the_live_proof_record(tmp_path: pathlib.Path) -> None:
+    """The record `live_proof` confirms a proxy-ready check against: worker, config, the version the smoke passed on, and the identity of the tree it was built from."""
+    root = _fixture_root(tmp_path)
+    proc, _calls = _run(
+        tmp_path, root, ("--target", "bench"), REDIACC_BWS_PROFILES=port.BENCH_PROFILE
+    )
+    assert proc.returncode == 0, proc.stderr
+    data = json.loads(_bench_record(root).read_text(encoding="utf-8"))
+    assert data["worker"] == port.BENCH_WORKER
+    assert data["config"] == "workers/proxy/wrangler.bench-eu.toml"
+    assert data["version_id"] == NEW_ID
+    assert data["surfaces"] == sorted(port.BENCH_RECORD_SURFACES)
+    for key in ("head", "tree", "dirty", "inputs", "submodules", "at"):
+        assert key in data, key
+    assert (
+        "Bench proxy version %s recorded in .ci/cache/live-deploys/proxy-bench-eu.json" % NEW_ID
+        in (proc.stderr)
+    )
+
+
+def test_a_failing_bench_smoke_writes_no_live_proof_record(tmp_path: pathlib.Path) -> None:
+    root = _fixture_root(tmp_path)
+    proc, calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench"),
+        FAKE_READY_CODE="503",
+        FAKE_READY_TIMEOUT="0",
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 1
+    assert calls.endswith("/v1/ready\n"), "the control: the deploy ran and the smoke failed"
+    assert not _bench_record(root).exists()
+
+
+@pytest.mark.parametrize(
+    ("args", "needle", "ready"),
+    [
+        (("--target", "bench", "--var", "EXECUTOR_CAP=2"), "--var overrides", NEW_ID),
+        # With no deploy the newest deployment is PREV_ID, so /v1/ready answers it.
+        (("--target", "bench", "--smoke-only"), None, PREV_ID),
+        (("--target", "stable", "--region", "us", "--version", VERSION), None, NEW_ID),
+    ],
+)
+def test_only_a_plain_bench_deploy_writes_the_live_proof_record(
+    tmp_path: pathlib.Path, args: tuple[str, ...], needle: str | None, ready: str
+) -> None:
+    root = _fixture_root(tmp_path)
+    proc, _calls = _run(
+        tmp_path, root, args, REDIACC_BWS_PROFILES=port.BENCH_PROFILE, FAKE_READY_VERSION=ready
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert not _bench_record(root).exists()
+    if needle is not None:
+        assert needle in proc.stderr, "a skipped record is named, never silent"
+
+
+def test_the_bench_worker_constant_is_the_bench_configs_worker() -> None:
+    spec = proxy_configs.targets(proxy_configs.load_regions(ROOT))["bench-eu"]
+    assert spec.name == port.BENCH_WORKER
+    assert spec.config == proxy_configs.BENCH_CONFIG
+
+
+def test_a_tree_that_moved_during_the_deploy_records_nothing(tmp_path: pathlib.Path) -> None:
+    world = World(tmp_path / "console")
+    built = port.bench_identity(world.root)
+    record = port.record_bench_version(
+        world.root, port.BENCH_WORKER, "wrangler.bench-eu.toml", NEW_ID.upper(), built
+    )
+    assert record["version_id"] == NEW_ID, "the id is stored lowercase, the shape live_tier accepts"
+    assert record["head"] == built["head"]
+    assert len(str(built["head"])) == 40
+    assert record["dirty"] is False
+    on_disk = json.loads(_bench_record(world.root).read_text(encoding="utf-8"))
+    assert on_disk == record
+    _bench_record(world.root).unlink()
+    _write(world.root, "workers/proxy/src/index.ts", "export {};\n")
+    _commit(world.root, "moved")
+    with pytest.raises(port.RefusedError, match="moved during the deploy"):
+        port.record_bench_version(
+            world.root, port.BENCH_WORKER, "wrangler.bench-eu.toml", NEW_ID, built
+        )
+    assert not _bench_record(world.root).exists()
+
+
+def test_a_us_bench_deploy_records_beside_the_eu_record_not_over_it(tmp_path: pathlib.Path) -> None:
+    world = World(tmp_path / "console")
+    built = port.bench_identity(world.root)
+    record = port.record_bench_version(
+        world.root, "proxy-bench-us", "wrangler.bench-us.toml", NEW_ID, built, region="us"
+    )
+    us_path = world.root.joinpath(*port.bench_version_record("us"))
+    assert json.loads(us_path.read_text(encoding="utf-8")) == record
+    assert record["worker"] == "proxy-bench-us"
+    # control: the eu record path was not written
+    assert not _bench_record(world.root).exists()
+
+
+def test_a_submodule_that_moved_during_the_deploy_records_nothing(tmp_path: pathlib.Path) -> None:
+    """The identity carries both submodules' pointer and checkout, so a checkout that moves after the build refuses the record even when the console head, tree and inputs did not move."""
+    world = World(tmp_path / "console")
+    built = port.bench_identity(world.root)
+    # The control: nothing moved, so the record is written.
+    port.record_bench_version(
+        world.root, port.BENCH_WORKER, "wrangler.bench-eu.toml", NEW_ID, built
+    )
+    _bench_record(world.root).unlink()
+    world.renet_commit({"cmd/renet/moved.go": "package main\n"})
+    now = port.bench_identity(world.root)
+    assert now["submodules"] != built["submodules"]
+    with pytest.raises(port.RefusedError, match="submodules"):
+        port.record_bench_version(
+            world.root, port.BENCH_WORKER, "wrangler.bench-eu.toml", NEW_ID, built
+        )
+    assert not _bench_record(world.root).exists()
+
+
+def test_record_bench_returns_1_and_logs_when_the_tree_moved(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The exit-1 contract `main` propagates: a moved tree is an error line and 1, with no record; the control (unmoved) is 0 and writes it."""
+    world = World(tmp_path / "console")
+    built = port.bench_identity(world.root)
+    assert (
+        port._record_bench(
+            world.root, port.BENCH_WORKER, "wrangler.bench-eu.toml", NEW_ID, built, {}
+        )
+        == 0
+    )
+    assert _bench_record(world.root).is_file()
+    _bench_record(world.root).unlink()
+    capsys.readouterr()
+    _write(world.root, "workers/proxy/src/index.ts", "export {};\n")
+    _commit(world.root, "moved")
+    assert (
+        port._record_bench(
+            world.root, port.BENCH_WORKER, "wrangler.bench-eu.toml", NEW_ID, built, {}
+        )
+        == 1
+    )
+    assert "moved during the deploy" in capsys.readouterr().err
+    assert not _bench_record(world.root).exists()
+
+
+def test_a_pending_container_settings_answer_reruns_the_deploy_once(monkeypatch):
+    calls = []
+    answers = [
+        (
+            1,
+            "The Worker version was deployed, but its Durable Object-managed Container application settings were not fully applied. Re-run",
+        ),
+        (0, "Current Version ID: 11111111-2222-3333-4444-555555555555"),
+    ]
+
+    def fake(argv, merge_stderr=False):
+        assert merge_stderr, "the retry must read stderr, where wrangler prints the message"
+        calls.append(argv)
+        return answers[len(calls) - 1]
+
+    monkeypatch.setattr(port, "_run_tee", fake)
+    status, output = port.deploy_with_settings_retry(["wrangler", "deploy"])
+    assert status == 0
+    assert len(calls) == 2
+    assert "Current Version ID" in output
+
+
+def test_control_another_failure_is_not_retried(monkeypatch):
+    calls = []
+
+    def fake(argv, merge_stderr=False):
+        assert merge_stderr, "the retry must read stderr, where wrangler prints the message"
+        calls.append(argv)
+        return 1, "Authentication error [code: 10000]"
+
+    monkeypatch.setattr(port, "_run_tee", fake)
+    status, _ = port.deploy_with_settings_retry(["wrangler", "deploy"])
+    assert status == 1
+    assert len(calls) == 1
+
+
+def test_a_second_pending_answer_is_returned_not_looped(monkeypatch):
+    calls = []
+
+    def fake(argv, merge_stderr=False):
+        assert merge_stderr, "the retry must read stderr, where wrangler prints the message"
+        calls.append(argv)
+        return 1, "Container application settings were not fully applied"
+
+    monkeypatch.setattr(port, "_run_tee", fake)
+    status, _ = port.deploy_with_settings_retry(["wrangler", "deploy"])
+    assert status == 1
+    assert len(calls) == 2
+
+
+def test_run_tee_with_merge_keeps_stderr_lines():
+    """The 2026-11-14 miss: wrangler prints the pending-settings error on stderr, which the plain tee never kept."""
+    code = "import sys; print('out'); print('Container application settings were not fully applied', file=sys.stderr); sys.exit(1)"
+    status, output = port._run_tee([sys.executable, "-c", code], merge_stderr=True)
+    assert status == 1
+    assert port.CONTAINER_SETTINGS_PENDING in output
+
+
+def test_control_run_tee_without_merge_keeps_stdout_only():
+    code = "import sys; print('out'); print('err-line', file=sys.stderr)"
+    status, output = port._run_tee([sys.executable, "-c", code])
+    assert status == 0
+    assert "out" in output
+    assert "err-line" not in output
+
+
+def test_run_tee_with_merge_copies_the_stderr_lines_to_this_stdout(capsys):
+    """Review e1d98fe8.1: a merged stderr line leaves this process on stdout, which is the changed destination."""
+    code = "import sys; print('err-line', file=sys.stderr)"
+    port._run_tee([sys.executable, "-c", code], merge_stderr=True)
+    captured = capsys.readouterr()
+    assert "err-line" in captured.out
+    assert "err-line" not in captured.err
+
+
+# ---- review d39e851d.2 and 0c280db0.1: main's company path, in process ----
+
+
+SMOKE_KWARGS: list[dict[str, object]] = []
+
+
+def _company_main(
+    monkeypatch, tmp_path, *flags, version_flag=("--version", "1.2.3"), first_deploy=False
+):
+    """Run `main` for a stubbed company down to the smoke; returns (status, calls) with every external step replaced. `first_deploy` makes the Worker unlisted before the deploy; the keywords each smoke got land in SMOKE_KWARGS."""
+    calls: list[str] = []
+    SMOKE_KWARGS.clear()
+    version = "11111111-2222-3333-4444-555555555555"
+    proxy_config = tmp_path / "wrangler.toml"
+    proxy_config.write_text("", encoding="utf-8")
+    company = types.SimpleNamespace(
+        company_id="c1",
+        proxy_config=proxy_config,
+        profile_target="stable",
+        mask=lambda text: text,
+        region="eu",
+    )
+    spec = types.SimpleNamespace(name="proxy-c1", config="wrangler.toml", routes=["p.example"])
+    monkeypatch.setattr(port.console_executor, "company_from_values", lambda *_a: company)
+    monkeypatch.setattr(port, "select_company", lambda *_a: (spec, ""))
+    monkeypatch.setattr(port, "override_refusals", lambda *_a: [])
+    monkeypatch.setattr(port, "stage_release", lambda *_a: 0)
+    monkeypatch.setattr(port, "forward_only_state", lambda *_a, **_k: (False, None))
+    listings = iter([None, version] if first_deploy else [version, version])
+    monkeypatch.setattr(port, "deployed_version", lambda _c: next(listings))
+    monkeypatch.setattr(port, "revert_line", lambda *_a: "REVERT")
+    monkeypatch.setattr(port.os, "chdir", lambda _p: None)
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "x")
+
+    def fake_tee(_argv, merge_stderr=False):
+        # Reached only through deploy_with_settings_retry, which reads stderr: a main that calls _run_tee bare passes False.
+        assert merge_stderr
+        calls.append("deploy")
+        return 0, "Current Version ID: %s" % version
+
+    def fake_smoke(*_a, **kw):
+        calls.append("smoke")
+        SMOKE_KWARGS.append(kw)
+        return 0
+
+    monkeypatch.setattr(port, "_run_tee", fake_tee)
+    monkeypatch.setattr(port, "smoke", fake_smoke)
+    argv = [
+        "--company",
+        "acme",
+        "--company-id",
+        "c1",
+        "--company-domain",
+        "x.example",
+        "--region",
+        "eu",
+        "--proxy-config",
+        str(proxy_config),
+        *version_flag,
+        *flags,
+    ]
+    return port.main(argv), calls
+
+
+def test_main_deploys_through_the_settings_retry_and_smokes_without_defer(monkeypatch, tmp_path):
+    status, calls = _company_main(monkeypatch, tmp_path)
+    assert status == 0
+    assert calls == ["deploy", "smoke"]
+
+
+def test_only_a_first_deploy_smokes_with_the_certificate_wait(monkeypatch, tmp_path):
+    config = tmp_path / "wrangler.toml"
+    assert _company_main(monkeypatch, tmp_path, first_deploy=True)[0] == 0
+    assert [{"first_deploy": True, "config": config, "outcome": {}}] == SMOKE_KWARGS
+    # control: a Worker that was already listed is a later deploy
+    assert _company_main(monkeypatch, tmp_path)[0] == 0
+    assert [{"first_deploy": False, "config": config, "outcome": {}}] == SMOKE_KWARGS
+
+
+def test_smoke_only_hands_the_smoke_the_company_config_its_allowlist_is_read_from(
+    monkeypatch, tmp_path
+):
+    """V7 bench 2026-11-16: `--smoke-only` on a company must hand `smoke` the deployed config, or its ALLOW_IPS is never read."""
+    status, calls = _company_main(monkeypatch, tmp_path, "--smoke-only", version_flag=())
+    assert status == 0
+    assert calls == ["smoke"]
+    assert [
+        {"first_deploy": False, "config": tmp_path / "wrangler.toml", "outcome": {}}
+    ] == SMOKE_KWARGS
+
+
+def test_defer_smoke_deploys_and_skips_the_smoke_and_records_no_smoke_rc(monkeypatch, tmp_path):
+    record = tmp_path / "record.json"
+    status, calls = _company_main(monkeypatch, tmp_path, "--defer-smoke", "--record", str(record))
+    assert status == 0
+    assert calls == ["deploy"]
+    assert json.loads(record.read_text(encoding="utf-8"))["smoke_rc"] is None
+
+
+ROLLBACK_ID = "11111111-2222-3333-4444-555555555555"
+
+
+@pytest.mark.parametrize("flag", [["--smoke-only"], ["--rollback", ROLLBACK_ID], ["--dry-run"]])
+def test_defer_smoke_is_refused_beside_smoke_only_rollback_and_dry_run(
+    monkeypatch, tmp_path, flag, capsys
+):
+    status, calls = _company_main(monkeypatch, tmp_path, "--defer-smoke", *flag, version_flag=())
+    assert status == 1
+    assert calls == []
+    assert "--defer-smoke needs a plain deploy" in capsys.readouterr().err

@@ -307,7 +307,7 @@ def _stage_local(root: pathlib.Path) -> tuple[bool, str]:
     out = io.StringIO()
     err = io.StringIO()
     with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-        rc = executor_artifacts.main(["stage-local", "--dest", str(dest)])
+        rc = executor_artifacts.main(["stage-local", "--image-smoke-only", "--dest", str(dest)])
     if rc != 0:
         return False, err.getvalue().strip()
     return True, out.getvalue().strip()

@@ -5,7 +5,10 @@ import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { getDatastore, requireDatastoreHost } from '../services/config/config-datastores.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import { getExecutor } from '../services/executor/executor-factory.js';
+import { setExitCode } from '../services/core/request-context.js';
+import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import type { MachineConnectionLease } from '../services/machine/machine-connection.js';
 import { deployAllRepoKeys } from '../services/repo/repo-key-deployment.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
@@ -258,6 +261,19 @@ export function printServiceUrlPattern(repoName: string, machineDomain: string):
   }
 }
 
+/**
+ * A job handed back (`--background`, a lost tail, a Ctrl-C detach) is still running: it has no outcome yet, so the
+ * caller prints no success line and no failure. The executor already printed the ticket or resume hint; a lost tail
+ * or a detach carries a non-zero exit code, which is kept. True when the call was handed back.
+ */
+export function settleHandedBack(
+  result: Pick<ExecuteResult, 'state' | 'success' | 'exitCode'>
+): boolean {
+  if (result.state !== 'running') return false;
+  if (!result.success) setExitCode(result.exitCode);
+  return true;
+}
+
 export async function handleUpAll(options: {
   machine?: string;
   /** Commander sets this false when `--no-start` is passed (mount-only batch). */
@@ -292,6 +308,7 @@ export async function handleUpAll(options: {
     skipRouterRestart: options.skipRouterRestart,
   });
 
+  if (settleHandedBack(result)) return;
   if (result.success) {
     outputService.success(t('commands.repo.upAll.completed'));
   } else {
@@ -333,11 +350,18 @@ export async function handleDownAll(options: {
     skipRouterRestart: options.skipRouterRestart,
   });
 
+  if (settleHandedBack(result)) return;
   if (result.success) {
     outputService.success(t('commands.repo.down.allCompleted'));
   } else {
     renderLocalExecutionFailure(result, t('commands.repo.down.allFailed'));
   }
+}
+
+// An empty or missing list renders as '-', so '' falls through like undefined does.
+function joinOrDash(values: string[] | undefined): string {
+  const joined = values?.join(', ');
+  return joined === undefined || joined === '' ? '-' : joined;
 }
 
 // Renders the `repo list` table: resolves tag/type from local config, marks server-sourced names (not in local config) with ' *', and prints a legend when any such name is shown.
@@ -350,13 +374,21 @@ export async function printRepoListTable(resolved: Record<string, unknown>[]): P
   });
   const configLookup = new Map<
     string,
-    { grandGuid?: string; tag?: string; gpuDevices?: string[] }
+    {
+      grandGuid?: string;
+      tag?: string;
+      gpuDevices?: string[];
+      lifecycleRoot?: boolean;
+      lifecyclePaths?: string[];
+    }
   >();
   for (const rc of repoConfigs) {
     configLookup.set(rc.config.repositoryGuid, {
       grandGuid: rc.config.grandGuid,
       tag: rc.config.tag,
       gpuDevices: rc.config.gpuDevices,
+      lifecycleRoot: rc.config.lifecycleRoot,
+      lifecyclePaths: rc.config.lifecyclePaths,
     });
   }
   const compact = resolved.map((r) => {
@@ -374,7 +406,8 @@ export async function printRepoListTable(resolved: Record<string, unknown>[]): P
       containers: r.container_count,
       services: r.service_count,
       modified: r.modified_human,
-      gpu: cfg?.gpuDevices?.join(', ') || '-',
+      gpu: joinOrDash(cfg?.gpuDevices),
+      lifecycle: cfg?.lifecycleRoot ? 'root' : joinOrDash(cfg?.lifecyclePaths),
     };
   });
   outputService.print(compact, 'table');
@@ -382,6 +415,27 @@ export async function printRepoListTable(resolved: Record<string, unknown>[]): P
     outputService.info(t('commands.repo.list.serverNameLegend'));
   }
 }
+
+/** The `renderRepoList` step: resolve each repo's display name and print the listing the job produced. */
+async function renderRepoListOutput(output: string | undefined): Promise<void> {
+  const format = getOutputFormat();
+  const repositories = parseRepositoryListOutput(output ?? '[]');
+  const nameResolver = createRepoNameResolver(await loadGuidMap());
+  // Resolve each repo's display name: local config > server repo_name > GUID. Keep the GUID under `guid` and record where the name came from in `name_source`.
+  const resolved: Record<string, unknown>[] = repositories.map((r) => {
+    const guid = String(r.name);
+    const { name, source } = nameResolver(guid, r.repo_name as string | undefined);
+    return { ...r, name, guid, name_source: source };
+  });
+  if (format === 'table') {
+    await printRepoListTable(resolved);
+  } else {
+    outputService.print(resolved, format);
+  }
+  outputService.success(t('commands.repo.list.completed'));
+}
+
+bindStepHandler('renderRepoList', ({ output }) => renderRepoListOutput(output));
 
 export async function handleRepoList(options: {
   machine?: string;
@@ -405,35 +459,31 @@ export async function handleRepoList(options: {
     // is the whole fix; without --datastore the machine's default stays correct.
     const datastore = options.datastore ? namedDatastoreMount(options.datastore) : undefined;
     outputService.info(t('commands.repo.list.starting', { machine: machineName }));
-    const format = getOutputFormat();
-    const result = await getExecutor().execute({
-      functionName: 'repository_list',
-      machineName,
-      kubeCluster,
-      datastore,
-      params: {},
-      debug: options.debug,
-      captureOutput: true,
-      skipRouterRestart: options.skipRouterRestart,
-    });
-
-    if (result.success) {
-      const repositories = parseRepositoryListOutput(result.stdout ?? '[]');
-      const nameResolver = createRepoNameResolver(await loadGuidMap());
-      // Resolve each repo's display name: local config > server repo_name > GUID. Keep the GUID under `guid` and record where the name came from in `name_source`.
-      const resolved: Record<string, unknown>[] = repositories.map((r) => {
-        const guid = String(r.name);
-        const { name, source } = nameResolver(guid, r.repo_name as string | undefined);
-        return { ...r, name, guid, name_source: source };
-      });
-      if (format === 'table') {
-        await printRepoListTable(resolved);
-      } else {
-        outputService.print(resolved, format);
-      }
-      outputService.success(t('commands.repo.list.completed'));
-    } else {
-      renderLocalExecutionFailure(result, t('commands.repo.list.failed', { error: result.error }));
+    // Name resolution and the table are the job's step, so a ticket handed back early prints nothing half-done.
+    const outcome = await runCommandJob(
+      'repo list',
+      {
+        functionName: 'repository_list',
+        machineName,
+        kubeCluster,
+        datastore,
+        params: {},
+        debug: options.debug,
+        captureOutput: true,
+        skipRouterRestart: options.skipRouterRestart,
+      },
+      [planStep('renderRepoList', { machine: machineName })]
+    );
+    if (outcome.kind === 'pending') {
+      const code = pendingExitCode(outcome);
+      if (code !== undefined) setExitCode(code);
+      return;
+    }
+    if (!outcome.result.success) {
+      renderLocalExecutionFailure(
+        outcome.result,
+        t('commands.repo.list.failed', { error: outcome.result.error })
+      );
     }
   } catch (error) {
     handleError(error);

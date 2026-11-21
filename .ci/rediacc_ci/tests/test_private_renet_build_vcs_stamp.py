@@ -4,7 +4,7 @@ THE DEFECT. Go records `vcs.revision`/`vcs.modified` from the repository it find
 
 THE FIX UNDER TEST. Every `go build` in build.sh goes through `_go_build`, which cds to renet's root in a subshell and, when `.git` is a gitlink file, points `GIT_DIR` at the gitdir it names and `GIT_WORK_TREE` at renet's root.
 
-REAL GIT, REAL GO. The fixture is an outer repository holding an inner one as a real submodule, the inner carrying a copy of the real build.sh and a one-file `./cmd/renet`. A fake `go` would prove only that the env vars are set, not that Go then stamps the right commit, so the module skips where `go` is absent, as `test_proxies_go_unit.py` does. `test_the_fixture_reproduces_the_defect` is the control: a plain `go build` in the same submodule must stamp the OUTER commit, or the fixture cannot tell the fix from its absence.
+REAL GIT, REAL GO. The fixture is an outer repository holding an inner one as a real submodule, the inner carrying a copy of the real build.sh and a one-file `./cmd/renet`. A fake `go` would prove only that the env vars are set, not that Go then stamps the right commit, so the module skips where `go` is absent, as `test_proxies_go_unit.py` does. `test_the_fixture_reproduces_the_defect` is the control: a plain `go build` in the same submodule must stamp exactly one of two known shapes, the OUTER commit with modified=true (the defect, Go 1.26) or the submodule's own commit with modified=false (Go 1.27 fixed it, measured on the Go 1.27 release the toolchain pinned on 2026-11-16). The shape is bound to the toolchain version (`_expected_control_stamp`): Go below 1.27 must show the defect, 1.27 and later must show the submodule's own commit, and any other stamp fails, so a regression that gives the wrong shape for the running version cannot pass. The control never skips and the build.sh tests stay true on both toolchains. On Go 1.27 the plain build no longer reproduces the defect, so the fix is proven there by `test_the_helper_points_git_at_the_submodule_whatever_the_toolchain_stamps`, not by the stamp tests.
 """
 
 from __future__ import annotations
@@ -142,14 +142,42 @@ def _build_sh_go_build(
     )
 
 
+def _expected_control_stamp(version: str, sub_head: str, outer_head: str) -> tuple[str, str]:
+    """The stamp a plain `go build` in the submodule gives: the outer commit, dirty, below Go 1.27; the submodule's own commit, clean, from 1.27."""
+    found = re.search(r"go(\d+)\.(\d+)", version)
+    if found is None:
+        raise RuntimeError(f"CONTROL: cannot read a Go version from {version!r}")
+    if (int(found.group(1)), int(found.group(2))) < (1, 27):
+        return (outer_head, "true")
+    return (sub_head, "false")
+
+
+def test_the_control_binds_each_stamp_shape_to_its_go_version() -> None:
+    assert _expected_control_stamp("go version go1.26.3 linux/amd64", "sub", "outer") == (
+        "outer",
+        "true",
+    )
+    assert _expected_control_stamp("go version go1.27.0 linux/amd64", "sub", "outer") == (
+        "sub",
+        "false",
+    )
+    assert _expected_control_stamp("go version go2.0 linux/amd64", "sub", "outer") == (
+        "sub",
+        "false",
+    )
+    with pytest.raises(RuntimeError, match="cannot read a Go version"):
+        _expected_control_stamp("go version devel", "sub", "outer")
+
+
 def test_the_fixture_reproduces_the_defect(tmp_path: pathlib.Path) -> None:
     sub, sub_head, outer_head, env = _fixture(tmp_path)
     out = tmp_path / "plain.bin"
     _run(["go", "build", "-o", str(out), "./cmd/renet"], sub, {**env, "CGO_ENABLED": "0"})
-    assert _stamp(out, env) == (outer_head, "true"), (
-        "CONTROL: a plain go build stamps the outer repo"
-    )
     assert sub_head != outer_head
+    stamp = _stamp(out, env)
+    version = _run(["go", "version"], tmp_path, env).strip()
+    expected = _expected_control_stamp(version, sub_head, outer_head)
+    assert stamp == expected, f"CONTROL: {version} stamped {stamp}, expected {expected}"
 
 
 def test_build_sh_stamps_the_submodule_commit_clean(tmp_path: pathlib.Path) -> None:
@@ -167,6 +195,37 @@ def test_build_sh_stamps_a_dirty_submodule_as_modified(tmp_path: pathlib.Path) -
     out = tmp_path / "dirty.bin"
     _build_sh_go_build(sub, out, env)
     assert _stamp(out, env) == (sub_head, "true")
+
+
+def test_the_helper_points_git_at_the_submodule_whatever_the_toolchain_stamps(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review fc7f0170.1: on a Go whose plain build already stamps the submodule (1.27) the stamp tests pass with or without the GIT_DIR fix, so this one reads what the helper hands `go` through a recording fake: GIT_DIR names the submodule's real gitdir, GIT_WORK_TREE its root, cwd its root. Control: a standalone clone (a `.git` directory) is handed neither."""
+    sub, _sub_head, _outer, env = _fixture(tmp_path)
+    bindir = tmp_path / "fakebin"
+    bindir.mkdir()
+    record = tmp_path / "seen.txt"
+    fake = bindir / "go"
+    fake.write_text(
+        '#!/bin/sh\nprintf "%s\\n%s\\n%s\\n" "${GIT_DIR-unset}" "${GIT_WORK_TREE-unset}" "$PWD" > "$SEEN"\n',
+        encoding="utf-8",
+    )
+    fake.chmod(0o755)
+    fake_env = {**env, "PATH": "%s%s%s" % (bindir, os.pathsep, env["PATH"]), "SEEN": str(record)}
+    _build_sh_go_build(sub, tmp_path / "x.bin", fake_env, cwd=tmp_path)
+    git_dir, work_tree, cwd = record.read_text(encoding="utf-8").splitlines()
+    link = (sub / ".git").read_text(encoding="utf-8").strip().removeprefix("gitdir: ")
+    assert git_dir == str((sub / link).resolve())
+    assert os.path.isdir(git_dir)
+    assert work_tree == str(sub)
+    assert os.path.realpath(cwd) == os.path.realpath(sub)
+    # Control: with a `.git` directory the helper leaves Go's own discovery alone.
+    standalone = tmp_path / "standalone"
+    standalone.mkdir()
+    shutil.copy2(BUILD_SH, standalone / "build.sh")
+    (standalone / ".git").mkdir()
+    _build_sh_go_build(standalone, tmp_path / "y.bin", fake_env, cwd=tmp_path)
+    assert record.read_text(encoding="utf-8").splitlines()[:2] == ["unset", "unset"]
 
 
 def test_a_broken_gitlink_fails_naming_the_missing_gitdir(tmp_path: pathlib.Path) -> None:

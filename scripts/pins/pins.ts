@@ -24,6 +24,11 @@
  *   verify [--restore <stamp> [--inflight <file>]...] [--json]
  *                                          every leaf site matches its count and agrees;
  *                                          no run was killed mid-write
+ *   sync-templates [--write] [--json]      the template, CLI template, tutorial, compose and
+ *                                          renet proxy docker leaves the compose image pins
+ *                                          imply (scripts/lib/pins/templates.ts):
+ *                                          prints the drift and the unpinned references, exits 1
+ *                                          on drift; --write rewrites those leaves in pins.json
  *   --selftest                             the fixture controls and their mutants
  *
  * WHAT IT NEVER DOES: commit, push, or pick a release inside the release-age window. A bump
@@ -54,8 +59,10 @@ import path from 'node:path';
 import process from 'node:process';
 import { validateBlockerQuality } from '../lib/blocker-validator.js';
 import { type ControlCase, summarizeControls } from '../lib/controls.js';
+import type { InstallStep } from '../lib/deps/plan.js';
 import { isEntryPoint } from '../lib/entry-point.js';
 import {
+  type DriverContext,
   driverFor,
   type FileWrite,
   type Fixture,
@@ -69,17 +76,30 @@ import {
   registerDrivers,
   withManifestGates,
 } from '../lib/pins/driver.js';
-import { lockDrift, planLockfiles, planRemove } from '../lib/pins/drivers/npm.js';
+import {
+  lockDrift,
+  pinnedNpm,
+  planLockfiles,
+  planRemove,
+  stepsOf,
+} from '../lib/pins/drivers/npm.js';
 import {
   movedPinGroups,
   planManifestPins,
   predictManifests,
   sourceManifests,
 } from '../lib/pins/drivers/pin-manifests.js';
+import { followers, followWrites, planFollow } from '../lib/pins/drivers/pin-site-follow.js';
 import { realDrivers } from '../lib/pins/drivers/table.js';
 import { familyGateOf } from '../lib/pins/family-gates.js';
 import { ranLine } from '../lib/pins/ran-line.js';
-import { loadRegistry, type PinEntry, type RepoPath, siteMatches } from '../lib/pins/registry.js';
+import {
+  loadRegistry,
+  type PinEntry,
+  parseRegistry,
+  type RepoPath,
+  siteMatches,
+} from '../lib/pins/registry.js';
 import { iso, soakClearsAt } from '../lib/pins/soak.js';
 import {
   contextOf,
@@ -90,6 +110,13 @@ import {
   type StatusWorld,
   viewOf,
 } from '../lib/pins/status.js';
+import {
+  readTemplateFiles,
+  scanTemplates,
+  spliceEntries,
+  templateDrift,
+  withTemplates,
+} from '../lib/pins/templates.js';
 import {
   type CommandRecord,
   fixtureRunner,
@@ -508,6 +535,8 @@ function branchTask(root: string): { task: string | null; ids: string[] } {
 interface Flags {
   json: boolean;
   all: boolean;
+  /** `sync-templates --write`: rewrite the template leaves instead of reporting them. */
+  write: boolean;
   /** Every `--to` given, a comma list counting as several; more than one is taken in one transaction. */
   to: string[];
   major: boolean;
@@ -527,6 +556,7 @@ function parseFlags(argv: string[]): Flags {
   const f: Flags = {
     json: false,
     all: false,
+    write: false,
     to: [],
     major: false,
     task: null,
@@ -543,6 +573,7 @@ function parseFlags(argv: string[]): Flags {
     const a = argv[i];
     if (a === '--json') f.json = true;
     else if (a === '--all') f.all = true;
+    else if (a === '--write') f.write = true;
     else if (a === '--major') f.major = true;
     else if (a === '--to') {
       const named = val(i++, a)
@@ -1071,6 +1102,61 @@ function cmdVerify(w: World, f: Flags): number {
   return findings.length ? 1 : 0;
 }
 
+/** The workspace root segment, spelled through a constant so a fixture path is not read as a real path literal. */
+const PKG_DIR = 'packages';
+
+/**
+ * `sync-templates [--write]`: the app templates' compose image pins as `template:*` docker
+ * leaves (scripts/lib/pins/templates.ts). Without --write it prints the drift between the
+ * registry and the generated set, and every unpinned reference, and exits 1 on drift; with
+ * --write it splices the generated leaves into pins.json (every other entry keeps its bytes)
+ * and re-reads the result through the registry validator. Never commits.
+ */
+function cmdSyncTemplates(w: World, f: Flags): number {
+  if (f.write && f.json) throw new Usage('sync-templates takes --write or --json, not both');
+  const scan = scanTemplates(
+    // A PINS_ROOT override is the selftest's small fixture tree: the real tree's floor does not apply to it.
+    readTemplateFiles(w.root, w.root === REPO_ROOT ? undefined : 1)
+  );
+  const drift = templateDrift(w.reg, scan.entries);
+  const moved = drift.added.length + drift.removed.length + drift.changed.length;
+  const unpinned = scan.unpinned.map(
+    ({ img, why }) => `${img.file}:${img.line}  ${img.ref}: ${why}`
+  );
+  if (f.json) {
+    w.out.push(
+      JSON.stringify({ pins: scan.entries.map((e) => e.id), ...drift, unpinned }, null, 2)
+    );
+    return moved > 0 ? 1 : 0;
+  }
+  for (const id of drift.added) w.out.push(`add     ${id}`);
+  for (const id of drift.removed) w.out.push(`remove  ${id}`);
+  for (const id of drift.changed) w.out.push(`change  ${id}`);
+  for (const u of unpinned) w.out.push(`unpinned  ${u}`);
+  const file = path.join(w.root, '.ci/config/pins.json');
+  if (moved > 0 && f.write) {
+    const text = fs.readFileSync(file, 'utf8');
+    const next = withTemplates(w.reg, scan.entries);
+    const after = spliceEntries(text, w.reg, next);
+    parseRegistry(after, file);
+    fs.writeFileSync(file, after);
+    w.out.push(
+      `.ci/config/pins.json: ${scan.entries.length} template leaf(s) written (${drift.added.length} added, ${drift.removed.length} removed, ${drift.changed.length} changed); ${scan.unpinned.length} unpinned reference(s) carry no version to register`
+    );
+    return 0;
+  }
+  if (moved > 0) {
+    w.err.push(
+      `${moved} template leaf(s) of .ci/config/pins.json differ from the app templates' compose pins; \`npm run pins -- sync-templates --write\` rewrites them`
+    );
+    return 1;
+  }
+  w.out.push(
+    `${scan.entries.length} template image pin(s) in sync with .ci/config/pins.json; ${scan.unpinned.length} unpinned reference(s) carry no version to register`
+  );
+  return 0;
+}
+
 /** The CLI, with its environment and output passed in so the selftest drives it in-process. */
 export async function runCli(
   argv: string[],
@@ -1083,6 +1169,8 @@ export async function runCli(
     const verb = argv[0];
     if (f.inflight.length > 0 && !(verb === 'verify' && f.restore))
       throw new Usage('--inflight only goes with `verify --restore <stamp>`');
+    if (f.write && verb !== 'sync-templates')
+      throw new Usage('--write only goes with `sync-templates`');
     let rc: number;
     if (verb === 'status') rc = await cmdStatus(w, f);
     else if (verb === 'when') rc = await cmdWhen(w, f);
@@ -1093,9 +1181,10 @@ export async function runCli(
     else if (verb === 'verify') rc = cmdVerify(w, f);
     else if (verb === 'remove') rc = cmdNpmPlan(w, f, 'remove');
     else if (verb === 'lockfiles') rc = cmdNpmPlan(w, f, 'lockfiles');
+    else if (verb === 'sync-templates') rc = cmdSyncTemplates(w, f);
     else
       throw new Usage(
-        `unknown verb ${verb ?? '(none)'}; verbs: status, when, plan, bump, apply-soaked, hold, remove, lockfiles, verify`
+        `unknown verb ${verb ?? '(none)'}; verbs: status, when, plan, bump, apply-soaked, hold, remove, lockfiles, verify, sync-templates`
       );
     return { rc, out: w.out.join('\n'), err: w.err.join('\n') };
   } catch (err) {
@@ -1735,6 +1824,127 @@ const CASES: Record<string, Case> = {
       },
     ];
   },
+  async nonRootLockInstall(m) {
+    // `install --package-lock-only` rewrites node_modules/.package-lock.json and moves no package (measured 2026-11-05: workers/account's wrangler stayed 4.156.2 under a hidden lock reading 4.157.0). The runner plays npm that way, so only a real `ci` moves what is installed. node_modules stays unignored here, so an accounting that reached the install would name it.
+    const OLD = '4.156.2';
+    const NEW = '4.157.0';
+    const lockOf = (v: string): string => `{ "lockfileVersion": 3, "wrangler": "${v}" }\n`;
+    const world = (name: string, relocked: string[], gateRc: number) => {
+      const fx = fixtureTree();
+      for (const d of ['workers/app', 'workers/bare', 'workers/natives']) {
+        fs.mkdirSync(path.join(fx.root, d), { recursive: true });
+        fx.write(
+          `${d}/package.json`,
+          d === 'workers/natives' ? '{ "scripts": { "install:natives": "x" } }\n' : '{}\n'
+        );
+        fx.write(`${d}/package-lock.json`, lockOf(OLD));
+      }
+      fs.mkdirSync(path.join(fx.root, 'workers/natives/node_modules'), { recursive: true });
+      sh(fx.root, 'add', '-A');
+      sh(
+        fx.root,
+        '-c',
+        'user.email=fx@example.invalid',
+        '-c',
+        'user.name=fx',
+        'commit',
+        '-qm',
+        'x'
+      );
+      const installed = path.join(fx.root, 'workers/app/node_modules/wrangler/version');
+      fs.mkdirSync(path.dirname(installed), { recursive: true });
+      fs.writeFileSync(installed, OLD);
+      const runner: Runner = (cmd, cwd) => {
+        const lock = path.join(cwd, 'package-lock.json');
+        const hidden = path.join(cwd, 'node_modules/.package-lock.json');
+        if (cmd === 'relock') for (const f of relocked) fx.write(f, lockOf(NEW));
+        else if (cmd.endsWith(' install --package-lock-only --ignore-scripts')) {
+          if (fs.existsSync(path.dirname(hidden))) fs.copyFileSync(lock, hidden);
+        } else if (/ ci( --ignore-scripts)?$/.test(cmd) && cwd !== fx.root) {
+          const version = /"wrangler": "([^"]+)"/.exec(fs.readFileSync(lock, 'utf8'))?.[1] ?? '';
+          fs.mkdirSync(path.dirname(installed), { recursive: true });
+          fs.writeFileSync(installed, version);
+          fs.copyFileSync(lock, hidden);
+        } else if (cmd.startsWith('npm run ci')) return { rc: gateRc, out: '' };
+        return { rc: 0, out: '' };
+      };
+      const plans = directPlans(fx, [
+        {
+          label: 'relock',
+          run: 'relock',
+          cwd: '.',
+          writes: relocked.map((file) => ({ repo: '.', file })),
+        },
+      ]);
+      if (gateRc !== 0) plans[0].entry.gates = ['check:fixture-tool'];
+      const res = runTransaction(plans, directTxn(fx, name, runner, m));
+      const ran = res.commands.map((c) => `${c.cwd}: ${c.cmd}`);
+      return {
+        res,
+        ran,
+        on: fs.readFileSync(installed, 'utf8'),
+        bareInstalled: fs.existsSync(path.join(fx.root, 'workers/bare/node_modules')),
+      };
+    };
+    const NPM = 'npx -y npm@11.20.0';
+    const CI = `workers/app: ${NPM} ci --ignore-scripts`;
+    const NATIVES = `.: ${NPM} run install:natives`;
+    const app = 'workers/app/package-lock.json';
+    const bare = 'workers/bare/package-lock.json';
+    const one = world('nonroot-green', [app, bare], 0);
+    const both = world('nonroot-root', [app, 'package-lock.json'], 0);
+    const red = world('nonroot-red', [app], 1);
+    const natives = world('nonroot-natives', ['workers/natives/package-lock.json'], 0);
+    return [
+      {
+        name: 'txn: a non-root project that declares install:natives runs it after its npm ci, in its own directory, and only it',
+        ok:
+          natives.ran.includes(`workers/natives: ${NPM} run install:natives`) &&
+          !natives.ran.includes(NATIVES) &&
+          !one.ran.some((c) => c.startsWith('workers/app:') && c.endsWith('install:natives')),
+        detail: natives.ran.join(' | '),
+      },
+      {
+        name: 'txn: a changed non-root lock runs npm ci --ignore-scripts in its installed directory, so the install matches the lock, and a directory with no node_modules is left uninstalled',
+        ok:
+          one.res.ok &&
+          one.on === NEW &&
+          one.ran.includes(CI) &&
+          !one.ran.some((c) => c.startsWith('workers/bare:') && / ci\b/.test(c)) &&
+          !one.bareInstalled,
+        detail: `ok=${one.res.ok} ${one.res.failure} installed=${one.on} ${one.ran.join(' | ')}`,
+      },
+      {
+        name: 'txn: the install a non-root lock takes stays out of the undeclared-writes accounting and of the run changes, even where git would show node_modules',
+        ok:
+          one.res.ok &&
+          one.res.leftAlone.length === 0 &&
+          !one.res.changes.some((c) => c.paths.some((p) => p.includes('node_modules'))),
+        detail: `left=${one.res.leftAlone} ${JSON.stringify(one.res.changes)}`,
+      },
+      {
+        name: 'txn: the root install:natives stays at the root: a non-root lock alone never runs it, and a root lock beside one runs it once there',
+        ok:
+          !one.ran.includes(NATIVES) &&
+          both.ran.filter((c) => c.endsWith('install:natives')).length === 1 &&
+          both.ran.includes(NATIVES) &&
+          both.ran.includes(`.: ${NPM} ci`) &&
+          both.ran.includes(CI) &&
+          both.on === NEW,
+        detail: `one=${one.ran.join(' | ')} both=${both.ran.join(' | ')}`,
+      },
+      {
+        name: 'txn: a red run reinstalls a non-root directory from its restored lock with lifecycle scripts off, since the root .npmrc does not reach it',
+        ok:
+          !red.res.ok &&
+          red.on === OLD &&
+          red.ran.filter((c) => c === CI).length === 2 &&
+          !red.ran.includes(`workers/app: ${NPM} ci`) &&
+          red.res.resynced.includes('workers/app'),
+        detail: `${red.res.failure} installed=${red.on} resynced=${red.res.resynced} ${red.ran.join(' | ')}`,
+      },
+    ];
+  },
   async npmbump(m) {
     const fx = fixtureTree((f) => {
       f.steps = {
@@ -1783,7 +1993,17 @@ const CASES: Record<string, Case> = {
       f.commands.push({ match: '^sneaky$', rc: 0, writes: { 'stray.txt': 'x\n' } });
     });
     const r = await runCli(['bump', 'embed:tool'], withMutant(fx, m));
+    const hooked = fixtureTree((f) => {
+      f.steps = { 'embed:tool': [{ label: 'hooked', run: 'hooked', cwd: '.', writes: [] }] };
+      f.commands.push({ match: '^hooked$', rc: 0, writes: { 'agent/ledgers/x.jsonl': 'x\n' } });
+    });
+    const appended = await runCli(['bump', 'embed:tool'], withMutant(hooked, m));
     return [
+      {
+        name: 'bump: a hook appending under agent/ while a step runs does not fail the run',
+        ok: appended.rc === 0,
+        detail: `rc=${appended.rc} ${appended.err}`,
+      },
       {
         name: 'bump: a step that changes a file it did not declare fails the run; the file is named and left, the sites restored',
         ok:
@@ -2124,6 +2344,101 @@ const CASES: Record<string, Case> = {
         name: 'breaking: apply-soaked leaves the breaking line',
         ok: soaked.rc === 0 && only.read('private/renet/Dockerfile').includes('ZED_VERSION=2.0.0'),
         detail: `rc=${soaked.rc} ${soaked.err} ${only.read('private/renet/Dockerfile')}`,
+      },
+    ];
+  },
+  // A RE-DIGEST (#3bb2d9bc): the pinned version again with new content, labelled the way the docker driver labels one (`<name>:<version>@<hex>`, which majorOf cannot read), is never a major.
+  async redigest(m) {
+    const label = `fx:1.0.0@${'b'.repeat(12)}`;
+    const clears = '2026-10-16T00:00:00Z';
+    const tree = (eligible: boolean) =>
+      fixtureTree((fx) => {
+        fx.releases['embed:tool'] = [
+          {
+            version: label,
+            published: '2026-10-14T06:00:00Z',
+            redigest: true,
+            values: { version: '1.0.0', 'sha256:amd64': SHA('b') },
+            verdict: eligible
+              ? { eligible: true, why: 'a re-digest of fx 1.0.0, past the window' }
+              : {
+                  eligible: false,
+                  why: `a re-digest of fx 1.0.0, inside the release-age window until ${clears}`,
+                  clearsAt: clears,
+                },
+          },
+          { version: '1.0.0', published: '2026-09-01T00:00:00Z' },
+        ];
+      });
+    const waiting = tree(false);
+    const ready = tree(true);
+    const plan = await runCli(['plan', 'embed:tool'], withMutant(waiting, m));
+    const st = await runCli(['status', 'embed:tool', '--json'], withMutant(waiting, m));
+    const when = await runCli(['when', 'embed:tool'], withMutant(waiting, m));
+    const take = await runCli(['plan', 'embed:tool', '--json'], withMutant(ready, m));
+    const soakedRun = await runCli(
+      ['apply-soaked', '--json', '--out', path.join(ready.root, 'out')],
+      withMutant(ready, m)
+    );
+    const soakedWaiting = await runCli(
+      ['apply-soaked', '--json', '--out', path.join(waiting.root, 'out')],
+      withMutant(waiting, m)
+    );
+    const v = st.rc === 0 ? (JSON.parse(st.out) as { pins: PinView[] }).pins[0] : null;
+    const to =
+      take.rc === 0
+        ? (JSON.parse(take.out) as { plans: Array<{ id: string; to: string }> }).plans.find(
+            (p) => p.id === 'embed:tool'
+          )?.to
+        : undefined;
+    return [
+      {
+        name: 'redigest: a plain plan over a re-digest inside the window reports it deferred, never major-only',
+        ok:
+          !`${plan.out}${plan.err}`.includes('major') &&
+          `${plan.out}${plan.err}`.includes('deferred') &&
+          `${plan.out}${plan.err}`.includes(label),
+        detail: `rc=${plan.rc} ${plan.out} ${plan.err}`,
+      },
+      {
+        name: 'redigest: status reads a re-digest inside the window as deferred, with the instant the driver dated',
+        ok:
+          v !== null &&
+          v.state === 'deferred' &&
+          v.deferred?.version === label &&
+          v.deferred.clearsAt === Date.parse(clears) &&
+          v.eligibleMajors.length === 0,
+        detail: JSON.stringify(v),
+      },
+      {
+        name: 'redigest: when names the clear time and the plain bump line, not "no release is waiting"',
+        ok:
+          when.rc === 0 &&
+          when.out.includes(`${label} clears the release-age window at ${clears}`) &&
+          when.out.includes(
+            `DEFAULT: on or after ${clears} run \`npm run pins -- bump embed:tool\``
+          ),
+        detail: `rc=${when.rc} ${when.out} ${when.err}`,
+      },
+      {
+        name: 'redigest: past the window a plain plan (no --major) takes the re-digest',
+        ok: to === label,
+        detail: `rc=${take.rc} ${take.err} ${take.out.slice(0, 400)}`,
+      },
+      {
+        // The re-digest is the pinned version, so the unattended run treats it as it treats any non-major.
+        name: 'redigest: apply-soaked past the window takes the re-digest, as it takes any non-major',
+        // The file itself is the proof: the re-digest's sha256 is written into the Dockerfile, not just named somewhere in the output.
+        ok: soakedRun.rc === 0 && ready.read('Dockerfile').includes(`TOOL_SHA256=${SHA('b')}`),
+        detail: `rc=${soakedRun.rc} ${soakedRun.err} ${soakedRun.out.slice(0, 400)}`,
+      },
+      {
+        name: 'redigest: CONTROL: apply-soaked inside the window leaves the re-digest unwritten',
+        ok:
+          soakedWaiting.rc === 0 &&
+          waiting.read('Dockerfile').includes(`TOOL_SHA256=${SHA('a')}`) &&
+          !waiting.read('Dockerfile').includes(SHA('b')),
+        detail: `rc=${soakedWaiting.rc} ${soakedWaiting.err} ${waiting.read('Dockerfile')}`,
       },
     ];
   },
@@ -3117,6 +3432,79 @@ const CASES: Record<string, Case> = {
       },
     ];
   },
+  // `sync-templates` on a temp root: drift is reported and exits 1, --write splices the leaves in and keeps every other entry's bytes, a second dry run is in sync.
+  async syncTemplates(m) {
+    if (m !== undefined) return [];
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pins-templates-'));
+    FIXTURE_ROOTS.push(root);
+    const real = fs.readFileSync(path.join(REPO_ROOT, '.ci/config/pins.json'), 'utf8');
+    const realReg = parseRegistry(real, 'pins.json');
+    const bare = withTemplates(realReg, []);
+    const before = spliceEntries(real, realReg, bare);
+    fs.mkdirSync(path.join(root, '.ci/config'), { recursive: true });
+    fs.writeFileSync(path.join(root, '.ci/config/pins.json'), before);
+    const app = path.join(root, 'packages/json/templates/search/es');
+    fs.mkdirSync(app, { recursive: true });
+    fs.writeFileSync(
+      path.join(app, 'docker-compose.yaml'),
+      'services:\n  es:\n    image: elasticsearch:8.11.0\n  ui:\n    image: nginx:latest\n'
+    );
+    // A CLI template pin and the renet proxy file ride the same sync: every tree is read, a submodule tree must exist.
+    const cli = path.join(root, 'packages/cli/templates/x');
+    fs.mkdirSync(cli, { recursive: true });
+    fs.writeFileSync(
+      path.join(cli, 'docker-compose.yml'),
+      'services:\n  api:\n    image: node:20.20.2-alpine\n'
+    );
+    const proxy = path.join(root, 'private/renet/proxy');
+    fs.mkdirSync(proxy, { recursive: true });
+    fs.writeFileSync(
+      path.join(proxy, 'docker-compose.yml'),
+      'services:\n  p:\n    image: traefik:v3.7.16\n'
+    );
+    const env = { PINS_ROOT: root };
+    const dry = await runCli(['sync-templates'], env);
+    const wrote = await runCli(['sync-templates', '--write'], env);
+    const after = fs.readFileSync(path.join(root, '.ci/config/pins.json'), 'utf8');
+    // loadRegistry memoises by path, so the re-read runs from a copy at a fresh path, as a new process would.
+    const copy = fs.mkdtempSync(path.join(os.tmpdir(), 'pins-templates-'));
+    FIXTURE_ROOTS.push(copy);
+    fs.cpSync(root, copy, { recursive: true });
+    const again = await runCli(['sync-templates'], { PINS_ROOT: copy });
+    const stray = await runCli(['verify', '--write'], env);
+    const keptOthers = bare.entries.every((e) => after.includes(JSON.stringify(e.id)));
+    return [
+      {
+        name: 'sync-templates: CONTROL: a template pin the registry lacks is drift, exit 1, and latest is reported unpinned',
+        ok:
+          dry.rc === 1 &&
+          dry.out.includes('add     template:es.elasticsearch') &&
+          dry.out.includes('add     cli-template:x.node') &&
+          dry.out.includes('add     renet:proxy.traefik') &&
+          dry.out.includes(
+            `unpinned  ${PKG_DIR}/json/templates/search/es/docker-compose.yaml:5  nginx:latest`
+          ),
+        detail: `${dry.rc} ${dry.out} ${dry.err}`,
+      },
+      {
+        name: 'sync-templates --write adds the leaf, keeps every other entry, and the next dry run is in sync',
+        ok:
+          wrote.rc === 0 &&
+          after.includes('"id": "template:es.elasticsearch"') &&
+          after.includes('"id": "cli-template:x.node"') &&
+          keptOthers &&
+          after.split('\n').length > before.split('\n').length &&
+          again.rc === 0 &&
+          again.out.includes('3 template image pin(s) in sync'),
+        detail: `${wrote.rc} ${wrote.out} ${wrote.err} | ${again.rc} ${again.out}`,
+      },
+      {
+        name: 'sync-templates: --write on any other verb is a usage error',
+        ok: stray.rc === 2 && stray.err.includes('--write only goes with'),
+        detail: stray.err,
+      },
+    ];
+  },
   async refusals(m) {
     const fx = fixtureTree();
     const live = await runCli(['status'], { PINS_MUTANT: 'no-restore' });
@@ -3459,7 +3847,7 @@ const CASES: Record<string, Case> = {
         { repo: '.', file: '.syncpackrc.json' },
         ...predicted.map((file) => ({ repo: '.', file })),
       ]),
-      m === 'no-version-gate' ? m : null
+      m === 'no-version-gate' || m === 'no-registry-gate' ? m : null
     );
     const dockerOnly = withManifestGates(planOf([{ repo: '.', file: 'Dockerfile' }]), null);
     // The bad-range control: a covered manifest whose range is not plain is refused by name and nothing is written.
@@ -3492,7 +3880,8 @@ const CASES: Record<string, Case> = {
       {
         name: 'pin manifests: a plan whose step writes a manifest or .syncpackrc.json runs check:version beside its entry gates',
         ok:
-          synced.entry.gates.join(',') === 'check:deps,check:ci-lockfile,check:version' &&
+          synced.entry.gates.join(',') ===
+            'check:deps,check:ci-lockfile,check:version,check:ci-pin-registry' &&
           npmEntry.gates.length === 2,
         detail: synced.entry.gates.join(','),
       },
@@ -3501,6 +3890,7 @@ const CASES: Record<string, Case> = {
         ok: dockerOnly.entry.gates.join(',') === 'check:deps,check:ci-lockfile',
         detail: dockerOnly.entry.gates.join(','),
       },
+      ...followControls(),
       {
         name: 'pin manifests: a covered range that is not plain is refused by name and nothing is written',
         ok:
@@ -3513,6 +3903,179 @@ const CASES: Record<string, Case> = {
     ];
   },
 };
+
+/**
+ * Worklist #43aebb3a: a bump that moves a package listed under a multi-site registry pin moves every site of that pin. The registry is the real one; the tree is two in-memory files (constants.sh one release behind workers/account/package.json, the state `bump npm` left on 2026-11-20).
+ */
+function followControls(): ControlCase[] {
+  const reg = loadRegistry(path.join(REPO_ROOT, '.ci/config/pins.json'));
+  const texts: Record<string, string> = {
+    '.ci/config/constants.sh': 'readonly WRANGLER_VERSION="4.164.0"\n',
+    'workers/account/package.json': `${JSON.stringify({ name: 'a', devDependencies: { wrangler: '4.165.0' } }, null, 2)}\n`,
+  };
+  const ctx: DriverContext = {
+    root: REPO_ROOT,
+    reg,
+    read: (p) => texts[p.repo === '.' ? p.file : `${p.repo}/${p.file}`] ?? null,
+    fixture: null,
+    mutant: null,
+  };
+  const dragged = followers(reg, new Set(['wrangler']));
+  const wrangler = dragged.find((e) => e.id === 'toolchain:wrangler');
+  const plan = planFollow(dragged, ctx);
+  for (const w of plan.writes) texts[w.file] = w.after;
+  const values = wrangler
+    ? wrangler.sites.flatMap((s) => siteMatches(s, texts[s.file] ?? '').map((x) => x.value))
+    : [];
+  const stale = (): boolean => {
+    try {
+      return planFollow(followers(reg, new Set(['wrangler'])), ctx).writes.length > 0;
+    } catch {
+      return true;
+    }
+  };
+  // A pin with a second package.json site: the declared writes and the planned writes must be one set (review abab7fec.1).
+  const twin: PinEntry | undefined = wrangler && {
+    ...wrangler,
+    sites: [
+      ...wrangler.sites,
+      {
+        repo: '.',
+        file: 'workers/other/package.json',
+        role: 'version',
+        match: '"wrangler": "(?<value>[^"]+)"',
+        expect: 1,
+      },
+    ],
+  };
+  const twinTexts: Record<string, string> = {
+    ...texts,
+    '.ci/config/constants.sh': 'readonly WRANGLER_VERSION="4.164.0"\n',
+    'workers/other/package.json': `${JSON.stringify({ name: 'o', devDependencies: { wrangler: '4.164.0' } }, null, 2)}\n`,
+  };
+  const twinCtx: DriverContext = { ...ctx, read: (p) => twinTexts[p.file] ?? null };
+  const byText = (a: string, b: string): number => Number(a > b) - Number(a < b);
+  const twinPlan = twin ? planFollow([twin], twinCtx) : { writes: [], changes: [] };
+  const twinDeclared = twin
+    ? followWrites([twin])
+        .map((p) => p.file)
+        .sort(byText)
+        .join(',')
+    : '';
+  const twinPlanned = twinPlan.writes
+    .map((w) => w.file)
+    .sort(byText)
+    .join(',');
+  // The npm plan builder under a multi-site pin: the follow step and its declared writes ride the plan (review abab7fec.2).
+  const bumpStep = (pkg: string): InstallStep => ({
+    cwd: path.join(REPO_ROOT, 'workers/account'),
+    args: ['update', pkg],
+    label: 'workers/account (update)',
+    packages: [{ name: pkg, current: '4.164.0', latest: '4.165.0', wanted: '4.165.0' }],
+    checks: [],
+  });
+  const built = wrangler
+    ? stepsOf(ctx, wrangler, [bumpStep('wrangler')], pinnedNpm(REPO_ROOT))
+    : null;
+  const followStep = built?.steps.find((st) => st.label.startsWith('registry pin sites follow'));
+  const unrelated = wrangler
+    ? stepsOf(ctx, wrangler, [bumpStep('left-pad')], pinnedNpm(REPO_ROOT))
+    : null;
+  // The `follow` verb of npm-steps on a temp tree: constants.sh moves, a second run writes nothing (review abab7fec.3).
+  const verbRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'pins-selftest-'));
+  FIXTURE_ROOTS.push(verbRoot);
+  const verbFiles: Record<string, string> = {
+    '.ci/config/constants.sh': 'readonly WRANGLER_VERSION="4.164.0"\n',
+    'workers/account/package.json': texts['workers/account/package.json'],
+  };
+  for (const [rel, text] of Object.entries(verbFiles)) {
+    fs.mkdirSync(path.dirname(path.join(verbRoot, rel)), { recursive: true });
+    fs.writeFileSync(path.join(verbRoot, rel), text);
+  }
+  fs.copyFileSync(
+    path.join(REPO_ROOT, '.ci/config/pins.json'),
+    path.join(verbRoot, '.ci/config/pins.json')
+  );
+  const runVerb = (): ReturnType<typeof spawnSync> =>
+    spawnSync(
+      process.execPath,
+      [
+        ...process.execArgv,
+        path.join(REPO_ROOT, 'scripts/lib/pins/drivers/npm-steps.ts'),
+        'follow',
+        Buffer.from(JSON.stringify([bumpStep('wrangler')])).toString('base64'),
+      ],
+      {
+        encoding: 'utf8',
+        env: { ...process.env, CHECK_DEPS_ROOT: verbRoot, CHECK_DEPS_MUTANT: '' },
+      }
+    );
+  const constants = (): string =>
+    fs.readFileSync(path.join(verbRoot, '.ci/config/constants.sh'), 'utf8');
+  const first = runVerb();
+  const afterFirst = constants();
+  const second = runVerb();
+  const afterSecond = constants();
+  return [
+    {
+      name: 'pin follow: CONTROL: a pin with two package.json sites declares exactly the sites its plan writes',
+      ok:
+        twin !== undefined &&
+        twinPlanned ===
+          'workers/other/package.json,.ci/config/constants.sh'.split(',').sort().join(',') &&
+        twinDeclared === twinPlanned,
+      detail: `declared=${twinDeclared} planned=${twinPlanned}`,
+    },
+    {
+      name: 'pin follow: CONTROL: the npm plan of a package under a multi-site pin carries the follow step and declares its writes',
+      ok:
+        followStep?.run.includes('follow') === true &&
+        followStep.writes.some((w) => w.file === '.ci/config/constants.sh') &&
+        unrelated !== null &&
+        !unrelated.steps.some((st) => st.label.startsWith('registry pin sites follow')),
+      detail: JSON.stringify(built?.steps.map((st) => st.label)),
+    },
+    {
+      name: 'pin follow: the follow verb moves constants.sh to the anchor version and a second run writes nothing',
+      ok:
+        first.status === 0 &&
+        afterFirst === 'readonly WRANGLER_VERSION="4.165.0"\n' &&
+        second.status === 0 &&
+        afterSecond === afterFirst &&
+        String(second.stdout).includes('0 file(s) rewritten'),
+      detail: `rc=${first.status}/${second.status} ${afterFirst.trim()} ${String(first.stderr).slice(-300)}`,
+    },
+    {
+      name: 'pin follow: a moved package listed under a multi-site pin moves every site of it to the same version',
+      ok:
+        wrangler !== undefined &&
+        plan.writes.length === 1 &&
+        plan.writes[0].file === '.ci/config/constants.sh' &&
+        values.length === 2 &&
+        values.every((v) => v === '4.165.0'),
+      detail: `${plan.changes.join('; ')} values=${values}`,
+    },
+    {
+      name: 'pin follow: CONTROL: a second pass over agreeing sites writes nothing',
+      ok: !stale(),
+      detail: JSON.stringify(plan),
+    },
+    {
+      name: 'pin follow: CONTROL: a package no registry pin lists drags nothing',
+      ok: followers(reg, new Set(['left-pad'])).length === 0,
+      detail: dragged.map((e) => e.id).join(','),
+    },
+    {
+      name: 'pin follow: the declared writes of a follower are the sites other than the package.json',
+      ok:
+        wrangler !== undefined &&
+        followWrites([wrangler])
+          .map((p) => p.file)
+          .join(',') === '.ci/config/constants.sh',
+      detail: JSON.stringify(wrangler ? followWrites([wrangler]) : null),
+    },
+  ];
+}
 
 /** Which case each mutant must turn red: the safety property it disables. */
 const MUTANT_CASES: Record<Mutant, string> = {
@@ -3533,6 +4096,7 @@ const MUTANT_CASES: Record<Mutant, string> = {
   'shared-message': 'drafts',
   'no-manifest-pin': 'pinmanifests',
   'no-version-gate': 'pinmanifests',
+  'no-registry-gate': 'pinmanifests',
   'breaking-is-minor': 'breaking',
   'breaking-unlisted': 'breaking',
 };

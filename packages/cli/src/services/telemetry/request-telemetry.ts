@@ -25,6 +25,8 @@ interface OpenCommandSpan {
 
 export interface RequestTelemetryScope {
   caller?: TelemetryCaller;
+  /** The executor route serving this request (`command`, `job-poll`, `job-cancel`), written on its span as `rediacc.proxy.route`. */
+  route?: string;
   open?: OpenCommandSpan;
 }
 
@@ -34,6 +36,10 @@ export function currentRequestTelemetry(): RequestTelemetryScope | undefined {
   return storage.getStore();
 }
 
-export function runWithRequestTelemetry<T>(caller: TelemetryCaller | undefined, fn: () => T): T {
-  return storage.run(caller ? { caller } : {}, fn);
+export function runWithRequestTelemetry<T>(
+  caller: TelemetryCaller | undefined,
+  fn: () => T,
+  route?: string
+): T {
+  return storage.run({ ...(caller ? { caller } : {}), ...(route ? { route } : {}) }, fn);
 }

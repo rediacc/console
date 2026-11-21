@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: ar
-sourceHash: "48538a4c661c9f72"
-sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
+sourceHash: "55c979711279a92e"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 ### المصادقة
@@ -106,12 +106,12 @@ rdc subscription login
 ### قنوات التحديث
 
 يدعم CLI قناتي اصدار:
-- **stable** (الافتراضي): تمت الترقية من edge بعد فترة نقع لمدة 7 أيام؛ اختر هذه القناة للحصول على وتيرة ترقية محافظة
-- **edge**: احدث الميزات، يتم التحديث عند كل اصدار
+- **edge** (الافتراضي): احدث الميزات، يتم التحديث عند كل اصدار
+- **stable**: تمت الترقية من edge بعد فترة نقع لمدة 7 أيام؛ اختر هذه القناة للحصول على وتيرة ترقية محافظة
 
 ```bash
-rdc update --channel edge      # Switch to edge
-rdc update --channel stable    # Switch back to stable
+rdc update --channel stable    # التبديل إلى stable
+rdc update --channel edge      # العودة إلى edge
 rdc update --status            # Show current channel
 ```
 

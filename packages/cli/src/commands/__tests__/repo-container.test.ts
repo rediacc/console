@@ -14,7 +14,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ExecuteOptions } from '../../services/executor/types.js';
 
 const execute = vi.fn((_options: ExecuteOptions) =>
-  Promise.resolve({ success: true, exitCode: 0, allSteps: [] })
+  Promise.resolve<{ success: boolean; exitCode: number; allSteps: never[]; stdout?: string }>({
+    success: true,
+    exitCode: 0,
+    allSteps: [],
+  })
 );
 
 vi.mock('../../services/executor/executor-factory.js', () => ({
@@ -131,5 +135,50 @@ describe('repo logs options', () => {
     await run(['logs', 'shop', '-c', 'web', '--lines', 'abc']);
     expect(execute).not.toHaveBeenCalled();
     expect(handleError).toHaveBeenCalled();
+  });
+});
+
+describe('repo exec unknown container', () => {
+  const listing = {
+    success: true,
+    exitCode: 0,
+    allSteps: [],
+    stdout: '{"Names":"observability-grafana"}\n{"Names":"observability-loki"}\n',
+  };
+
+  it('names the repo containers and the closest match, and does not exec', async () => {
+    execute.mockResolvedValueOnce(listing);
+    await run(['exec', 'obs', '-c', 'grafana', '--', 'echo', 'ok']);
+    expect(execute.mock.calls.some((c) => c[0].functionName === 'container_exec')).toBe(false);
+    const err = handleError.mock.calls.at(-1)?.[0] as Error;
+    expect(err.message).toContain('observability-grafana, observability-loki');
+    expect(err.message).toContain('Did you mean "observability-grafana"');
+  });
+
+  it('control: a known container runs the exec silently', async () => {
+    execute.mockResolvedValueOnce(listing);
+    await run(['exec', 'obs', '-c', 'observability-grafana', '--', 'echo', 'ok']);
+    expect(handleError).not.toHaveBeenCalled();
+    expect(execute.mock.calls.at(-1)?.[0].functionName).toBe('container_exec');
+  });
+
+  it('a container ID prefix that docker accepts runs the exec', async () => {
+    execute.mockResolvedValueOnce({
+      ...listing,
+      stdout:
+        '{"ID":"abc123def456","Names":"observability-grafana"}\n{"ID":"fff000111222","Names":"observability-loki"}\n',
+    });
+    await run(['exec', 'obs', '-c', 'abc123', '--', 'echo', 'ok']);
+    expect(handleError).not.toHaveBeenCalled();
+    expect(execute.mock.calls.at(-1)?.[0].functionName).toBe('container_exec');
+  });
+
+  it('control: an ID prefix shared by two containers is still refused', async () => {
+    execute.mockResolvedValueOnce({
+      ...listing,
+      stdout: '{"ID":"abc111","Names":"a"}\n{"ID":"abc222","Names":"b"}\n',
+    });
+    await run(['exec', 'obs', '-c', 'abc', '--', 'echo', 'ok']);
+    expect(execute.mock.calls.some((c) => c[0].functionName === 'container_exec')).toBe(false);
   });
 });

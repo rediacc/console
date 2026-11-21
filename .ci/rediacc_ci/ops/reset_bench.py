@@ -1,14 +1,16 @@
-"""Port of `scripts/ops/reset-bench.sh` (198 lines): wipe the bench environment back to a clean state.
+"""Port of the retired bash reset script (198 lines): wipe the bench environment back to a clean state.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.reset_bench [--yes] [--d1-only] [--r2-only]
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.reset_bench [--region <eu|us|asia>] [--yes] [--d1-only] [--r2-only]
 
-DESTRUCTIVE. It drops every table of the bench D1 database (`account-db-bench`) and re-applies migrations, then deletes every object in the bench R2 bucket (`rediacc-configs-bench`). The worker code and DNS are untouched; `deploy_bench` redeploys code. Without `--yes` one confirmation is asked: type `wipe bench`.
+DESTRUCTIVE. It drops every table of one region's bench D1 database (`account-bench` for the default `--region eu`; the DB binding of `wrangler.bench-<region>.toml` for the others) and re-applies migrations, then deletes every object in that bench's R2 config bucket (`configs-bench`). There is no `--region all`: a wipe names its region, and the confirmation names it too (`wipe bench`, `wipe bench-us`). The worker code and DNS are untouched; `deploy_bench` redeploys code. Without `--yes` one confirmation is asked: type `wipe bench`.
 
 Auth is `cf_auth`. As in the bash, the credential is destroyed on the way out whether the run succeeded or not, a pre-supplied `CF_MANAGEMENT_TOKEN` included (the scoped token is treated as single-use for this script).
 
+PRODUCTION GUARD. While `.ci/config/bench-production.json` declares a subscription, every mode exits 2 (for a subscription declared in the chosen region) before the profile re-exec and before any credential is read; a second check after the token is minted (`bench_production.d1_refusal`) refuses when the live D1 holds `backup_manifests` rows of a declared subscription. While the static refusal stands that check is never reached with a declaration, so it is the backstop that takes over if the static refusal is ever relaxed to allow a mode (the reached case is its own test with `reset_refusal` patched out). There is no override flag.
+
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_reset_bench.py` that fails on the bash behaviour).
 
-  1. THE R2 WIPE USES THE S3 API, AND A FAILED LISTING IS A FAILURE. The listing was `curl -sS <CF REST .../r2/buckets/<b>/objects> 2>/dev/null || echo '{"result":[]}'` with jq errors discarded. Run live on 2026-10-01 that endpoint answers `Authentication error` to the minted management token (it carries no R2 permission group, and the REST API serves no object listing), so the bash read EVERY run as "Bucket is already empty (or listing API not available -- continuing)" and ended "bench has been reset" with the bucket untouched. The port lists and deletes through the S3-compatible endpoint (ListObjectsV2 with continuation tokens, then DELETE per key) signed with `CLOUDFLARE_R2_ENDPOINT` / `CLOUDFLARE_R2_ACCESS_KEY_ID` / `CLOUDFLARE_R2_SECRET_ACCESS_KEY` (bound by the reset-bench profile, which the run re-executes under when it is not already bound), which are checked before anything is wiped; the credentials travel on curl's stdin, not argv. Any non-200 page stops the run.
+  1. THE R2 WIPE USES THE S3 API, AND A FAILED LISTING IS A FAILURE. The listing was `curl -sS <CF REST .../r2/buckets/<b>/objects> 2>/dev/null || echo '{"result":[]}'` with jq errors discarded. Run live on 2026-10-01 that endpoint answers `Authentication error` to the minted management token (it carries no R2 permission group, and the REST API serves no object listing), so the bash read EVERY run as "Bucket is already empty (or listing API not available -- continuing)" and ended "bench has been reset" with the bucket untouched. The port lists and deletes through the S3-compatible endpoint (ListObjectsV2 with continuation tokens, then DELETE per key) signed with `CLOUDFLARE_R2_ENDPOINT` / `CLOUDFLARE_R2_ACCESS_KEY_ID` / `CLOUDFLARE_R2_SECRET_ACCESS_KEY` (bound by the reset-bench-eu profile, which the run re-executes under when it is not already bound), which are checked before anything is wiped; the credentials travel on curl's stdin, not argv. Any non-200 page stops the run.
   2. TABLE NAMES ARE QUOTED AS DATA. `DROP TABLE IF EXISTS "$t"` interpolated the name unescaped; an embedded double quote now doubles, as SQLite requires.
   8. THE DROP RUNS CHILDREN BEFORE PARENTS. Live against bench on 2026-10-01 the bash failed the drop every time (`no such table: main.organizations: SQLITE_ERROR`, 75 tables, nothing dropped): D1 enforces foreign keys, ignores `PRAGMA foreign_keys = OFF`, and the tables were dropped in name order. The port orders the drops by the `REFERENCES` in each table's `CREATE` text (`drop_order`) and uses `PRAGMA defer_foreign_keys = on`, D1's supported switch.
   3. A FAILED OBJECT DELETE IS NAMED, with the count already deleted (the bash loop ran `npx wrangler r2 object delete ... >/dev/null` under `set -e` and stopped with only wrangler's text).
@@ -20,6 +22,7 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
 
 from __future__ import annotations
 
+import contextlib
 import html
 import json
 import os
@@ -30,16 +33,15 @@ import sys
 import urllib.parse
 
 from rediacc_ci import log, paths
-from rediacc_ci.core import wrangler
-from rediacc_ci.ops import cf_auth
+from rediacc_ci.core import resource_lock, wrangler
+from rediacc_ci.deploy import set_account_worker_secrets
+from rediacc_ci.ops import bench_preflight, bench_production, cf_auth
 
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
-DB_UUID = "ac45c2de-053b-404c-bc47-9ad9cbd2bb15"
-DB_NAME = "account-db-bench"
-BUCKET = "rediacc-configs-bench"
+# The database, its id and the bucket come from wrangler.bench-eu.toml (`bench_preflight.bench_names`), the one declaration a repoint changes; a literal here read a stale database id.
 CONFIRMATION = "wipe bench"
-# The Bitwarden profile this re-executes under (.ci/config/secret-supply.json): the R2 S3-API trio the wipe signs with, and the Cloudflare global key that `cf_auth` mints a management token from. The trio left the deploy-bench profile (agent/plans/PLAN-backup-credential-isolation.md B2), so a deploy no longer carries a key that reaches every bucket.
-PROFILE = "reset-bench"
+# The Bitwarden profile this re-executes under (.ci/config/secret-supply.json): the R2 S3-API trio the wipe signs with, and the Cloudflare global key that `cf_auth` mints a management token from. The trio left the deploy-bench-eu profile (agent/plans/PLAN-backup-credential-isolation.md B2), so a deploy no longer carries a key that reaches every bucket.
+PROFILE = "reset-bench-eu"
 TABLE_QUERY = (
     "SELECT name, sql FROM sqlite_master WHERE type='table' "
     "AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'"
@@ -47,13 +49,14 @@ TABLE_QUERY = (
 HELP = """Wipe the bench environment back to a clean state.
 
 Usage:
-  reset_bench [--yes] [--d1-only] [--r2-only]
+  reset_bench [--region <eu|us|asia>] [--yes] [--d1-only] [--r2-only]
 
+  --region    which bench to wipe (default eu); the confirmation phrase names the region
   --yes, -y   skip the confirmation prompt
   --d1-only   skip the R2 wipe
   --r2-only   skip the D1 wipe
 
-Resources: D1 account-db-bench, R2 rediacc-configs-bench. The worker code and
+Resources: the DB and CONFIG_BUCKET bindings of the region's workers/account/wrangler.bench*.toml. The worker code and
 DNS are not touched; rediacc_ci.ops.deploy_bench redeploys them.
 """
 
@@ -63,7 +66,7 @@ class ResetError(Exception):
 
 
 def _reexec_under_profile(argv: list[str]) -> int | None:
-    """Run the same entry point under the reset-bench Bitwarden profile and return its exit status; None when already bound."""
+    """Run the same entry point under the reset-bench-eu Bitwarden profile and return its exit status; None when already bound."""
     profiles = (os.environ.get("REDIACC_BWS_PROFILES") or "").split(",")
     if PROFILE in profiles:
         return None
@@ -89,12 +92,41 @@ def _reexec_under_profile(argv: list[str]) -> int | None:
     ).returncode
 
 
-def _query(auth: cf_auth.Auth, sql: str) -> dict:
-    url = "%s/accounts/%s/d1/database/%s/query" % (cf_auth.CF_API_BASE, ACCOUNT_ID, DB_UUID)
+def confirmation(region: str = bench_preflight.DEFAULT_REGION) -> str:
+    """The phrase that confirms a wipe: `wipe bench-<region>`, so no region's wipe is confirmed by another's phrase."""
+    return "%s-%s" % (CONFIRMATION, region)
+
+
+def _names(region: str = bench_preflight.DEFAULT_REGION) -> bench_preflight.BenchNames:
+    config = bench_preflight.config_name(region)
+    try:
+        return bench_preflight.bench_names(region=region)
+    except (OSError, ValueError) as exc:
+        raise ResetError("cannot read the bench names from %s: %s" % (config, exc)) from None
+
+
+def _query(auth: cf_auth.Auth, sql: str, region: str = bench_preflight.DEFAULT_REGION) -> dict:
+    database_id = _names(region).database_id
+    if not database_id:
+        raise ResetError(
+            "%s's DB binding carries no database_id" % bench_preflight.config_name(region)
+        )
+    url = "%s/accounts/%s/d1/database/%s/query" % (cf_auth.CF_API_BASE, ACCOUNT_ID, database_id)
     try:
         return cf_auth.curl_json("POST", url, auth.headers, json.dumps({"sql": sql}), flags="-sS")
     except cf_auth.CfAuthError as exc:
         raise ResetError(str(exc)) from None
+
+
+def _rows(auth: cf_auth.Auth, sql: str, region: str = bench_preflight.DEFAULT_REGION) -> list[dict]:
+    """The result rows of one D1 read; ResetError on a failed query or an unexpected shape."""
+    answer = _query(auth, sql, region)
+    if answer.get("success") is not True:
+        raise ResetError("D1 query failed")
+    try:
+        return list(answer["result"][0]["results"])
+    except (KeyError, IndexError, TypeError):
+        raise ResetError("D1 query failed: unexpected response shape") from None
 
 
 REFERENCES = re.compile(r'REFERENCES\s+[`"\[]?([A-Za-z0-9_]+)', re.IGNORECASE)
@@ -130,9 +162,11 @@ def quote_identifier(name: str) -> str:
     return '"%s"' % name.replace('"', '""')
 
 
-def _wipe_d1(auth: cf_auth.Auth, env: dict[str, str]) -> None:
-    log.step("Querying D1 table list (%s)" % DB_NAME)
-    listed = _query(auth, TABLE_QUERY)
+def _wipe_d1(
+    auth: cf_auth.Auth, env: dict[str, str], region: str = bench_preflight.DEFAULT_REGION
+) -> None:
+    log.step("Querying D1 table list (%s)" % _names(region).database_name)
+    listed = _query(auth, TABLE_QUERY, region)
     if listed.get("success") is not True:
         print(json.dumps(listed, indent=2))
         raise ResetError("D1 query failed")
@@ -149,12 +183,12 @@ def _wipe_d1(auth: cf_auth.Auth, env: dict[str, str]) -> None:
         for table in tables:
             sql += " DROP TABLE IF EXISTS %s;" % quote_identifier(table)
         sql += ' DROP TABLE IF EXISTS "__drizzle_migrations";'
-        result = _query(auth, sql)
+        result = _query(auth, sql, region)
         if result.get("success") is not True:
             print(json.dumps(result, indent=2))
             raise ResetError("Drop tables failed")
         log.info("All tables dropped")
-    log.step("Re-applying migrations to %s" % DB_NAME)
+    log.step("Re-applying migrations to %s" % _names(region).database_name)
     worker_dir = paths.repo_root() / "workers" / "account"
     _npm_install_if_needed(worker_dir, env)
     _run(
@@ -163,10 +197,10 @@ def _wipe_d1(auth: cf_auth.Auth, env: dict[str, str]) -> None:
             "d1",
             "migrations",
             "apply",
-            DB_NAME,
+            _names(region).database_name,
             "--remote",
             "--config",
-            "wrangler.bench.toml",
+            bench_preflight.config_name(region),
         ],
         worker_dir,
         env,
@@ -197,15 +231,27 @@ XML_NEXT_TOKEN = re.compile(r"<NextContinuationToken>([^<]*)</NextContinuationTo
 
 
 class R2Credentials:
-    """The R2 S3-API credentials, read by name from the environment (the reset-bench Bitwarden profile binds them)."""
+    """The R2 S3-API credentials, read by name from the environment (the reset-bench-eu Bitwarden profile binds them)."""
 
-    def __init__(self) -> None:
+    def __init__(self, region: str = bench_preflight.DEFAULT_REGION) -> None:
+        self.config = bench_preflight.config_name(region)
         self.endpoint = (os.environ.get("CLOUDFLARE_R2_ENDPOINT") or "").rstrip("/")
         self.key_id = os.environ.get("CLOUDFLARE_R2_ACCESS_KEY_ID") or ""
         self.secret = os.environ.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY") or ""
+        # The bucket and its jurisdiction are the CONFIG_BUCKET binding's; a jurisdictional bucket is only reachable through the `.<jurisdiction>.` host.
+        try:
+            names = bench_preflight.bench_names(region=region)
+            self.bucket, self.jurisdiction = names.config_bucket, names.config_jurisdiction
+        except (OSError, ValueError):
+            self.bucket, self.jurisdiction = "", ""
+
+    def host(self) -> str:
+        """The S3 endpoint for the bound bucket, through `apply_jurisdiction` like every other R2 endpoint."""
+        return set_account_worker_secrets.apply_jurisdiction(self.endpoint, self.jurisdiction)
 
     def missing(self) -> list[str]:
         names = {
+            "CONFIG_BUCKET in %s" % self.config: self.bucket,
             "CLOUDFLARE_R2_ENDPOINT": self.endpoint,
             "CLOUDFLARE_R2_ACCESS_KEY_ID": self.key_id,
             "CLOUDFLARE_R2_SECRET_ACCESS_KEY": self.secret,
@@ -228,7 +274,7 @@ def _s3(creds: R2Credentials, method: str, path: str) -> tuple[int, str]:
             "-",
             "-w",
             "\n%{http_code}",
-            "%s/%s" % (creds.endpoint, path),
+            "%s/%s" % (creds.host(), path),
         ],
         input=config,
         capture_output=True,
@@ -249,11 +295,15 @@ def list_bucket_keys(creds: R2Credentials) -> list[str]:
         query = "list-type=2&max-keys=1000"
         if token:
             query += "&continuation-token=%s" % urllib.parse.quote(token, safe="")
-        status, body = _s3(creds, "GET", "%s?%s" % (BUCKET, query))
+        status, body = _s3(creds, "GET", "%s?%s" % (creds.bucket, query))
         if status != 200:
-            raise ResetError("listing %s failed: HTTP %d %s" % (BUCKET, status, body.strip()[:200]))
+            raise ResetError(
+                "listing %s failed: HTTP %d %s" % (creds.bucket, status, body.strip()[:200])
+            )
         if "<ListBucketResult" not in body:
-            raise ResetError("listing %s failed: the answer was not a ListBucketResult" % BUCKET)
+            raise ResetError(
+                "listing %s failed: the answer was not a ListBucketResult" % creds.bucket
+            )
         # The answer is machine-generated and flat; a regex read avoids an XML parser on a network answer.
         keys += [html.unescape(k) for k in XML_KEY.findall(body)]
         truncated = "true" if "<IsTruncated>true</IsTruncated>" in body else "false"
@@ -264,14 +314,16 @@ def list_bucket_keys(creds: R2Credentials) -> list[str]:
 
 
 def _wipe_r2(creds: R2Credentials) -> None:
-    log.step("Listing objects in %s (S3 API)" % BUCKET)
+    log.step("Listing objects in %s (S3 API)" % creds.bucket)
     keys = list_bucket_keys(creds)
     if not keys:
         log.info("Bucket is already empty")
         return
-    log.step("Deleting %d objects from %s" % (len(keys), BUCKET))
+    log.step("Deleting %d objects from %s" % (len(keys), creds.bucket))
     for index, key in enumerate(keys):
-        status, body = _s3(creds, "DELETE", "%s/%s" % (BUCKET, urllib.parse.quote(key, safe="/")))
+        status, body = _s3(
+            creds, "DELETE", "%s/%s" % (creds.bucket, urllib.parse.quote(key, safe="/"))
+        )
         if status not in (200, 204):
             raise ResetError(
                 "deleting %s failed: HTTP %d %s; %d of %d objects deleted"
@@ -281,6 +333,19 @@ def _wipe_r2(creds: R2Credentials) -> None:
 
 
 def main(argv: list[str]) -> int:
+    # The stack holds the bench region lock `_main` takes, until the run returns.
+    with contextlib.ExitStack() as stack:
+        return _main(argv, stack)
+
+
+def _main(argv: list[str], stack: contextlib.ExitStack) -> int:
+    original = list(argv)
+    try:
+        region, argv = bench_preflight.take_region(argv)
+        bench_preflight.bench_object(region)
+    except (ValueError, OSError) as exc:
+        log.error("%s (reset_bench takes one region, never `all`)" % exc)
+        return 2
     assume_yes = False
     do_d1 = True
     do_r2 = True
@@ -299,15 +364,36 @@ def main(argv: list[str]) -> int:
             log.error("Run with --help for usage.")
             return 2
 
+    # The production guard runs before the profile re-exec and before any credential is read; there is no override flag.
+    try:
+        protected = bench_production.load()
+        refusal = bench_production.reset_refusal(protected, region)
+    except bench_production.ProductionRefusalError as exc:
+        refusal = str(exc)
+    if refusal:
+        log.error(refusal)
+        return bench_production.REFUSAL_EXIT
+
     for cmd in ("curl", "npx"):
         if shutil.which(cmd) is None:
             log.error("Required command '%s' is not available" % cmd)
             return 1
-    rebound = _reexec_under_profile(argv)
+    rebound = _reexec_under_profile(original)
     if rebound is not None:
         return rebound
+    # The region's bench lock before any credential, so a wipe never lands under a deploy or a proof (PLAN-push-decoupling.md D1.6).
+    try:
+        stack.enter_context(resource_lock.bench_held(region, "reset_bench"))
+    except resource_lock.ResourceBusyError as exc:
+        log.error("reset_bench: %s" % exc)
+        return 1
 
-    r2 = R2Credentials()
+    try:
+        bench = _names(region)
+    except ResetError as exc:
+        log.error(str(exc))
+        return 1
+    r2 = R2Credentials(region)
     if do_r2 and r2.missing():
         log.error("the R2 wipe needs %s in the environment" % ", ".join(r2.missing()))
         return 1
@@ -319,28 +405,37 @@ def main(argv: list[str]) -> int:
     try:
         env = cf_auth.wrangler_env(auth, ACCOUNT_ID, scrub_global_key=True)
         cf_auth.await_propagation(auth)
+        try:
+            held = bench_production.d1_refusal(
+                lambda sql: _rows(auth, sql, region), bench_production.for_region(protected, region)
+            )
+        except (ResetError, bench_production.ProductionRefusalError) as exc:
+            held = "the bench production D1 check could not run: %s" % exc
+        if held:
+            log.error(held)
+            return bench_production.REFUSAL_EXIT
         if not assume_yes:
             print()
-            log.warn("About to wipe the bench environment:")
+            log.warn("About to wipe the bench environment (region %s):" % region)
             if do_d1:
-                print("  D1: drop all rows from %s, then re-apply migrations" % DB_NAME)
+                print("  D1: drop all rows from %s, then re-apply migrations" % bench.database_name)
             if do_r2:
-                print("  R2: delete all objects from %s" % BUCKET)
+                print("  R2: delete all objects from %s" % r2.bucket)
             print()
             # `read -rp` semantics: the prompt goes to stderr, and only when stdin is a terminal.
             if sys.stdin.isatty():
-                sys.stderr.write("Type 'wipe bench' to continue: ")
+                sys.stderr.write("Type '%s' to continue: " % confirmation(region))
                 sys.stderr.flush()
             try:
                 confirm = input()
             except EOFError:
                 confirm = ""
-            if confirm != CONFIRMATION:
+            if confirm != confirmation(region):
                 log.error("Aborted.")
                 return 1
         try:
             if do_d1:
-                _wipe_d1(auth, env)
+                _wipe_d1(auth, env, region)
             if do_r2:
                 _wipe_r2(r2)
         except ResetError as exc:
@@ -350,8 +445,8 @@ def main(argv: list[str]) -> int:
         log.info("bench has been reset")
         print(
             "  Worker code is unchanged. To redeploy fresh code: "
-            "PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench "
-            "(it also seeds the ROOT_EMAIL user the reset removed)"
+            "PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench%s "
+            "(it also seeds the ROOT_EMAIL user the reset removed)" % (" --region " + region)
         )
         return 0
     except cf_auth.CfAuthError as exc:

@@ -1,0 +1,61 @@
+Acceptable Use Policy
+Effective Date: November 11, 2026
+
+1. Scope
+
+This Acceptable Use Policy ("Policy") applies to everyone who uses the Services of Rediacc OÜ ("Rediacc"), including the CLI, the Renet Agent, the account portal, the API, hosted backup storage and the Free License. It forms part of the Terms of Service <https://www.rediacc.com/en/terms-of-service>, and terms defined there have the same meaning here.
+
+Customer Data stays on Machines that Rediacc does not control. This Policy still applies to what is deployed with the Services, and the Customer is responsible for every Authorized User and every automation acting under its Account or on its Machines.
+
+2. Prohibited Content
+
+The Services must not be used to store, host, distribute or process:
+
+- child sexual abuse material, or content that sexually exploits or endangers minors
+- content that infringes or misappropriates intellectual property, privacy or other rights of others
+- malware, ransomware, spyware, botnet controllers or other code designed to harm systems or data
+- content that is unlawful where it is hosted or accessed, including terrorist content and illegal hate speech
+- personal data processed without a lawful basis
+
+3. Prohibited Activities
+
+The Services must not be used to:
+
+- gain or attempt unauthorized access to any system, network, account or data, including Rediacc's
+- scan, probe, penetration test or load test Rediacc infrastructure without Rediacc's prior written permission
+- launch or facilitate denial-of-service attacks, or operate open proxies, open relays or anonymization services for abuse
+- send unsolicited bulk communications (spam), or conduct phishing or fraud
+- mine cryptocurrency on the Platform or on hosted backup storage
+- impersonate any person or entity, or misrepresent an affiliation
+- violate export control or sanctions laws
+- violate any applicable law or regulation
+
+4. Abuse of the Platform and of Free Plans
+
+The following are prohibited:
+
+- circumventing or attempting to circumvent license validation, Machine activation limits, rate limits, size limits or other technical limits
+- obtaining Free Licenses or Accounts in volume, through rotating network addresses or Machine identifiers, or by other means designed to evade the Free License limits
+- interfering with or placing an unreasonable load on the Platform, or using it in a way that degrades service for others
+- reselling, redistributing or offering the Services to third parties as a managed service without Rediacc's prior written consent
+- sharing Account credentials or API tokens outside the Authorized Users of the Account
+
+5. Security Research
+
+Good faith security research is welcome when it is reported to contact@rediacc.com <mailto:contact@rediacc.com> with the subject "Security", avoids privacy violations, data destruction and service degradation, and is limited to Accounts and Machines the researcher owns. Rediacc does not take action against research that follows these conditions.
+
+6. Reporting Violations
+
+Suspected violations of this Policy can be reported to contact@rediacc.com <mailto:contact@rediacc.com> with the subject "Abuse". Copyright complaints follow the procedure in the Copyright Complaints section of the Terms of Service <https://www.rediacc.com/en/terms-of-service>. Reports of illegal content are handled under the EU Digital Services Act where it applies.
+
+7. Enforcement
+
+Rediacc may investigate suspected violations. Depending on the severity, Rediacc may warn the Customer, remove or disable access to content on the Platform, refuse to issue or renew licenses, suspend or terminate the Account, and report unlawful activity to the competent authorities. Where practical and lawful, Rediacc gives notice and an opportunity to cure before acting, except where the violation poses an immediate risk to the Services, to others or to Rediacc.
+
+8. Changes to This Policy
+
+Rediacc may update this Policy under the change procedure in the Terms of Service <https://www.rediacc.com/en/terms-of-service>.
+
+Questions?
+
+If you have questions about this Acceptable Use Policy, or need to report abuse, contact us at contact@rediacc.com <mailto:contact@rediacc.com>.

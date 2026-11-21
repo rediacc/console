@@ -1,23 +1,135 @@
 """Preflights for rediacc_ci.ops.deploy_bench, run BEFORE its first remote write.
 
-WHY THIS EXISTS. On 2026-09-24 a bench deploy applied 21 D1 migrations and THEN failed: wrangler.bench.toml binds R2 bucket rediacc-backups-bench, which nothing had created, so bench was left serving its old worker on a newer schema. The retry bundled from a drifted node_modules (packages/shared and workers/account resolving zod 3.25.76 against a lockfile pinning 4.x) and Cloudflare refused the worker at startup ("uuid is not a function"). Both are knowable before anything remote changes.
+WHY THIS EXISTS. On 2026-09-24 a bench deploy applied 21 D1 migrations and THEN failed: wrangler.bench-eu.toml (then wrangler.bench-eu.toml) binds R2 bucket rediacc-backups-bench, which nothing had created, so bench was left serving its old worker on a newer schema. The retry bundled from a drifted node_modules (packages/shared and workers/account resolving zod 3.25.76 against a lockfile pinning 4.x) and Cloudflare refused the worker at startup ("uuid is not a function"). Both are knowable before anything remote changes.
 
 Python rather than a sourced bash library: Ruling 7 (2026-09-06) bans new bash under scripts/ops.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_preflight lockfile <dir>...
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_preflight buckets <wrangler-config>
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_preflight buckets --region <eu|us|asia>
 """
 
+import dataclasses
 import json
 import re
 import subprocess
 import sys
+import tomllib
 
+from rediacc_ci import paths
 from rediacc_ci.core import wrangler
 
-BUCKET_NAME = re.compile(r'^\s*bucket_name\s*=\s*"([^"]+)"', re.MULTILINE)
-JURISDICTION = re.compile(r"^\s*jurisdiction\s*=", re.MULTILINE)
+BENCH_CONFIG_DIR = ("workers", "account")
+# The region a bare invocation means. Every region, this one included, carries its id in its names (`wrangler.bench-eu.toml`, `bench-eu.json`, `deploy-bench-eu`).
+DEFAULT_REGION = "eu"
+
+# The profile role to its name pattern, one `%s` for the region id. A role is spelled here once, so no caller holds a region-less profile name that could be bound by mistake.
+PROFILE_PATTERNS = {
+    "deploy": "deploy-bench-%s",
+    "login": "bench-login-%s",
+    "backup-push": "backup-push-bench-%s",
+    "deploy-proxy": "deploy-proxy-bench-%s",
+    "reset": "reset-bench-%s",
+    "region-smoke": "region-smoke-bench-%s",
+}
+
+
+def config_name(region: str = DEFAULT_REGION) -> str:
+    """The account wrangler config of REGION's bench: `wrangler.bench-<region>.toml`."""
+    return "wrangler.bench-%s.toml" % region
+
+
+def profile_for(role: str, region: str = DEFAULT_REGION) -> str:
+    """The Bitwarden profile of REGION's bench for ROLE (a key of PROFILE_PATTERNS): `<role pattern>` with the region id, whose spec maps that bench's own `_<REGION>` store entries onto the names the tools read. An unknown role is a KeyError."""
+    return PROFILE_PATTERNS[role] % region
+
+
+def foreign_profiles(role: str, region: str, bound: list[str]) -> list[str]:
+    """The profiles in BOUND that belong to another bench region of ROLE. `bws_env exec` never overwrites a name already set, so a run for REGION under one of them would keep the other bench's values silently; the caller refuses instead."""
+    mine = profile_for(role, region)
+    prefix = PROFILE_PATTERNS[role].removesuffix("%s")
+    return [p for p in bound if p != mine and p.startswith(prefix)]
+
+
+def config_rel(region: str = DEFAULT_REGION) -> tuple[str, str, str]:
+    return (*BENCH_CONFIG_DIR, config_name(region))
+
+
+def bench_object(region: str, root=None) -> dict:
+    """The `bench` object of REGION's row in regions.json. A ValueError names an unknown region or a row without a bench."""
+    path = (root or paths.repo_root()) / "regions.json"
+    rows = json.loads(path.read_text(encoding="utf-8"))["regions"]
+    for row in rows:
+        if str(row.get("id")) == region:
+            bench = row.get("bench")
+            if not isinstance(bench, dict):
+                raise ValueError("region %r has no bench object in regions.json" % region)
+            return bench
+    raise ValueError(
+        "no region %r in regions.json (one of %s)" % (region, ", ".join(bench_regions(root)))
+    )
+
+
+def bench_regions(root=None) -> list[str]:
+    """The ids of the regions whose regions.json row carries a bench object, in file order."""
+    path = (root or paths.repo_root()) / "regions.json"
+    rows = json.loads(path.read_text(encoding="utf-8"))["regions"]
+    return [str(r["id"]) for r in rows if isinstance(r.get("bench"), dict)]
+
+
+def take_region(argv: list[str]) -> tuple[str, list[str]]:
+    """`(region, rest)`: REGION from a `--region <r>` or `--region=<r>` in ARGV (the home region when absent) and the other arguments. A flag with no value, or given twice, is a ValueError."""
+    region, rest, seen = DEFAULT_REGION, [], False
+    items = iter(argv)
+    for arg in items:
+        if arg == "--region" or arg.startswith("--region="):
+            if seen:
+                raise ValueError("--region given twice")
+            seen = True
+            value = arg.partition("=")[2] if "=" in arg else next(items, "")
+            if not value:
+                raise ValueError("--region needs a value")
+            region = value
+        else:
+            rest.append(arg)
+    return region, rest
+
+
 LISTED_NAME = re.compile(r"^name:\s+(\S+)", re.MULTILINE)
+
+
+@dataclasses.dataclass(frozen=True)
+class BenchNames:
+    """The names and jurisdictions a bench account wrangler config declares: where reset_bench and the preflights read them from, so a repoint (PLAN-d1-eu-jurisdiction) is a toml change; deploy_bench reads the BACKUP_BUCKET binding through push_backup_credentials._config_binding."""
+
+    database_name: str
+    database_id: str
+    config_bucket: str
+    config_jurisdiction: str
+    backup_bucket: str
+    backup_jurisdiction: str
+
+
+def bench_names(config=None, region: str = DEFAULT_REGION) -> BenchNames:
+    """BenchNames from CONFIG (default: REGION's `workers/account/wrangler.bench*.toml`). A missing DB binding is a ValueError, never a silent default; a missing bucket binding reads as "" and each caller that needs the bucket refuses it by name."""
+    path = paths.repo_root().joinpath(*config_rel(region)) if config is None else config
+    with open(path, "rb") as fh:
+        doc = tomllib.load(fh)
+    dbs = {b.get("binding"): b for b in doc.get("d1_databases") or []}
+    buckets = {b.get("binding"): b for b in doc.get("r2_buckets") or []}
+    db = dbs.get("DB") or {}
+    config_b, backup_b = buckets.get("CONFIG_BUCKET") or {}, buckets.get("BACKUP_BUCKET") or {}
+    names = BenchNames(
+        db.get("database_name") or "",
+        db.get("database_id") or "",
+        config_b.get("bucket_name") or "",
+        config_b.get("jurisdiction") or "",
+        backup_b.get("bucket_name") or "",
+        backup_b.get("jurisdiction") or "",
+    )
+    if not names.database_name:
+        raise ValueError("%s binds no DB database with a database_name" % path)
+    return names
 
 
 MARKS = ("missing", "invalid", "extraneous")
@@ -102,37 +214,54 @@ def lockfile(dirs):
     return 0
 
 
-def buckets(config):
-    """Create every R2 bucket the config binds that does not exist yet.
-
-    A binding that names a jurisdiction is refused rather than guessed: creating it in the default jurisdiction would put the data somewhere the config did not ask for.
-    """
-    with open(config, encoding="utf-8") as fh:
-        text = fh.read()
-    if JURISDICTION.search(text):
+def _list_buckets(cwd, jurisdiction):
+    """The bucket names `wrangler r2 bucket list` shows in JURISDICTION ("" = default), or None when the listing failed (reported on stderr)."""
+    argv = [*wrangler.ARGV, "r2", "bucket", "list"]
+    if jurisdiction:
+        argv += ["--jurisdiction", jurisdiction]
+    listing = subprocess.run(argv, cwd=cwd, capture_output=True, text=True, check=False)
+    if listing.returncode != 0:
         print(
-            "✗ %s binds a jurisdictional R2 bucket; create it by hand with --jurisdiction, "
-            "then rerun" % config,
+            "✗ could not list R2 buckets (jurisdiction %s): %s"
+            % (jurisdiction or "default", listing.stderr.strip()[:300]),
             file=sys.stderr,
         )
-        return 1
-    listing = subprocess.run(
-        [*wrangler.ARGV, "r2", "bucket", "list"], capture_output=True, text=True, check=False
-    )
-    if listing.returncode != 0:
-        print("✗ could not list R2 buckets: %s" % listing.stderr.strip()[:300], file=sys.stderr)
-        return 1
-    existing = set(LISTED_NAME.findall(listing.stdout))
-    for bucket in BUCKET_NAME.findall(text):
-        if bucket in existing:
+        return None
+    return set(LISTED_NAME.findall(listing.stdout))
+
+
+def buckets(config):
+    """Create every R2 bucket the config binds that does not exist yet, in the jurisdiction the binding names.
+
+    Both wrangler calls start in `workers/account`: `npx --no-install` finds only a `node_modules/.bin/wrangler` at or above its cwd, never PATH (finding e69747ea), and `--config` is not passed, so the caller's directory does not matter.
+
+    A bucket exists per jurisdiction: a same-name bucket in the default jurisdiction does not satisfy a binding with `jurisdiction = "eu"`, so each jurisdiction is listed on its own and the create carries the binding's `--jurisdiction`.
+    """
+    with open(config, "rb") as fh:
+        doc = tomllib.load(fh)
+    wanted = [
+        (b["bucket_name"], b.get("jurisdiction") or "")
+        for b in doc.get("r2_buckets") or []
+        if b.get("bucket_name")
+    ]
+    cwd = paths.repo_root() / "workers" / "account"
+    existing = {}
+    for jurisdiction in sorted({j for _, j in wanted}):
+        names = _list_buckets(cwd, jurisdiction)
+        if names is None:
+            return 1
+        existing[jurisdiction] = names
+    for bucket, jurisdiction in wanted:
+        if bucket in existing[jurisdiction]:
             continue
-        print("→ creating R2 bucket %s (bound in %s, absent)" % (bucket, config))
-        made = subprocess.run(
-            [*wrangler.ARGV, "r2", "bucket", "create", bucket],
-            capture_output=True,
-            text=True,
-            check=False,
+        print(
+            "→ creating R2 bucket %s%s (bound in %s, absent)"
+            % (bucket, " in jurisdiction " + jurisdiction if jurisdiction else "", config)
         )
+        argv = [*wrangler.ARGV, "r2", "bucket", "create", bucket]
+        if jurisdiction:
+            argv += ["--jurisdiction", jurisdiction]
+        made = subprocess.run(argv, cwd=cwd, capture_output=True, text=True, check=False)
         if made.returncode != 0:
             print("✗ creating %s failed: %s" % (bucket, made.stderr.strip()[:300]), file=sys.stderr)
             return 1
@@ -142,8 +271,18 @@ def buckets(config):
 def main(argv):
     if len(argv) >= 2 and argv[0] == "lockfile":
         return lockfile(argv[1:])
+    if argv == ["buckets", "--region"]:
+        print("✗ --region needs a value", file=sys.stderr)
+        return 2
     if len(argv) == 2 and argv[0] == "buckets":
         return buckets(argv[1])
+    if len(argv) == 3 and argv[0] == "buckets" and argv[1] == "--region":
+        try:
+            bench_object(argv[2])
+        except ValueError as exc:
+            print("✗ %s" % exc, file=sys.stderr)
+            return 2
+        return buckets(str(paths.repo_root().joinpath(*config_rel(argv[2]))))
     print("\n".join(__doc__.strip().splitlines()[-2:]), file=sys.stderr)
     return 2
 

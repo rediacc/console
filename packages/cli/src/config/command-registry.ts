@@ -61,8 +61,13 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   { name: 'vscode', domain: 'TOOLS' },
   { name: 'mcp', domain: 'TOOLS' },
   { name: 'credits', domain: 'TOOLS' },
+  { name: 'version', domain: 'TOOLS' },
+  { name: 'legal', domain: 'TOOLS' },
+  { name: 'feedback', domain: 'TOOLS' },
   // The enterprise proxy executor daemon.
   { name: 'serve', domain: 'TOOLS' },
+  // The self-hosted account server (Elite) as a repo on one machine.
+  { name: 'server', domain: 'TOOLS' },
 ] as const;
 
 /** Lookup a command definition by name. */

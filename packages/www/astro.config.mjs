@@ -18,6 +18,7 @@ import jsonGeneratorIntegration from './src/integrations/json-generator.ts';
 import routeManifestIntegration from './src/integrations/route-manifest-generator.ts';
 import { rehypeStableHeadingIds } from './src/plugins/rehype-stable-heading-ids.mjs';
 import { remarkDocsCliLinks } from './src/plugins/remark-docs-cli-links.ts';
+import { catalogDigest } from './src/plugins/translation-keys.mjs';
 import { remarkResolveTranslations } from './src/plugins/remark-resolve-translations.ts';
 import { remarkTutorialEmbed } from './src/plugins/remark-tutorial-embed.ts';
 import { remarkVideoEmbed } from './src/plugins/remark-video-embed.ts';
@@ -189,6 +190,11 @@ export default defineConfig({
     define: {
       __APP_VERSION__: JSON.stringify(version),
     },
+    resolve: {
+      // React 19 ships its own compiler runtime. `react-compiler-runtime` is the polyfill Video.js imports (308 `import { c }` sites) so React 17 and 18 can run compiled code; on React 19 its first branch returns `React.__COMPILER_RUNTIME.c`, the same one-line `useMemoCache` call `react/compiler-runtime` exports, and the rest of its 5,465 B is a fallback that can never run.
+      // The alias drops that fallback from the click-to-play player chunk (check:ci-client-bundle-budget holds it under a 300,000 B ceiling). A React below 19 has no `react/compiler-runtime`, so this fails the build loudly rather than mis-rendering. Pinned by src/__tests__/react-compiler-runtime-alias.test.ts.
+      alias: [{ find: /^react-compiler-runtime$/, replacement: 'react/compiler-runtime' }],
+    },
   },
   markdown: {
     processor: unified({
@@ -196,7 +202,7 @@ export default defineConfig({
         remarkVideoEmbed,
         remarkTutorialEmbed,
         remarkDocsCliLinks,
-        remarkResolveTranslations,
+        [remarkResolveTranslations, { catalogDigest: catalogDigest() }],
       ],
       // Runs BEFORE Astro's default rehypeHeadingIds, which respects an existing id, so these ids win and also land in file.data.astro.headings.
       rehypePlugins: [rehypeStableHeadingIds],

@@ -117,6 +117,14 @@ export interface InputChange {
 export interface InputDecl {
   scope(rel: string, read: SeamReader): boolean;
   moves?(c: InputChange, read: SeamReader): boolean;
+  /**
+   * Whether an edit to `rel` as it stands could move a row, asked BEFORE any edit exists
+   * (`gen-docs.ts --could-affect`, the pre-agent guard `warn_writer_brief`). Absent means the
+   * answer is `moves` on a hypothetical add of the file. Declared only where that answer is
+   * useless, and built from the same helpers `rows` calls; the selftest proves every file a
+   * provider's rows name today answers true.
+   */
+  could?(rel: string, read: SeamReader, root: string): boolean;
 }
 
 /** A path appeared, disappeared or changed type: the only changes a listing-only provider can see. */
@@ -232,8 +240,9 @@ export const readGatesLock = (root: string): LockEntry[] => {
         'empty table and report success, which is the vacuity this generator exists to refuse.'
     );
   }
-  const entries = parsed as LockEntry[];
-  for (const [i, g] of entries.entries()) {
+  // Typed as what JSON can hold, not as what it should: the checks below ARE the proof that each entry is a LockEntry.
+  const unchecked = parsed as (Partial<LockEntry> | null)[];
+  for (const [i, g] of unchecked.entries()) {
     if (typeof g?.id !== 'string' || g.id === '') {
       throw new Error(`${GATES_LOCK} entry ${i} has no id`);
     }
@@ -241,7 +250,7 @@ export const readGatesLock = (root: string): LockEntry[] => {
       throw new Error(`${GATES_LOCK} entry ${i} (${g.id}) has no ci.kind`);
     }
   }
-  return entries;
+  return unchecked as LockEntry[];
 };
 
 /**
@@ -378,8 +387,9 @@ const wiredHooks = (root: string): WiredHook[] => {
         // The command is a shell line: `bash "$CLAUDE_PROJECT_DIR/.claude/hooks/x.sh"` or `python3 "$CLAUDE_PROJECT_DIR/.claude/hooks/y.py" --flag`. Pull every hook path out of it rather than assuming one shape, so a wrapper that runs two guards is not silently reported as running one. BOTH hook trees, and the alternation is load-bearing rather than tidy. This pattern was
         // `\.claude\/hooks\/`, which cannot match `.claude/rediacc_hooks/`: measured 2026-09-07 it found 14 of the 15 hook paths in the wiring and missed exactly `.claude/rediacc_hooks/dispatch.py`. That one miss is the whole problem, because the dispatcher is the ONLY edge from settings.json into the 64 guard modules, so widening the FILE LIST without fixing this pattern would
         // seed the closure without its single entry point and report all 64 live guards as dead code. Captures repo-relative now, so a key names a real path from the repo root.
+        // `run.sh` is the other way in: the WorktreeCreate and WorktreeRemove entries reach the lease tool through it, and they sat out of this table until 2026-11-04.
         for (const hit of (h.command ?? '').matchAll(
-          /\.claude\/(?:hooks|rediacc_hooks)\/[A-Za-z0-9_./-]+/g
+          /\.claude\/(?:hooks|rediacc_hooks)\/[A-Za-z0-9_./-]+|(?<=\$\{?CLAUDE_PROJECT_DIR\}?\/|(?<![\w./])\.\/)run\.sh/g
         )) {
           out.push({ event, matcher: m.matcher ?? '(any)', file: hit[0] ?? '' });
         }
@@ -635,12 +645,14 @@ const commentForm = (rel: string, text: string): string => {
 };
 
 /** Whether a tracked path can be a suppression mechanism at all, decided before its content is read. */
-const isMechanismCandidate = (f: string): boolean => {
+export const isMechanismCandidate = (f: string): boolean => {
   // A FROZEN TEST CORPUS IS NOT A SUPPRESSION MECHANISM. Goldens under a tests directory are byte copies of real allow/block lists, recorded so a port can be proved to agree with the reader it replaces, and they carry BLOCKER: for the same reason the originals do. The predicate below is "carries BLOCKER: and is not source or prose", which cannot tell a recording from the thing
   // recorded: when W1 P3's allowlist goldens landed on 2026-09-06 this census went 24 rows to 39, and all 15 additions were copies of lists already counted once. A census that double-counts its own fixtures overstates the escape hatches in the tree, which is the one number this table exists to keep honest.
   if (/(^|\/)tests\/goldens\//.test(f)) return false;
   // THE WORKLIST EVENT LOGS ARE PROSE THAT GROWS ON EVERY VERB. `agent/worklist/*.jsonl` carries session notes, and a note that quotes `BLOCKER:` made this census list the log and then change its row on the next unrelated `--tick`, so the region could not be committed in a state a clean checkout reproduces.
   if (f.startsWith('agent/worklist/')) return false;
+  // PER-COMMIT REVIEW RECORDS ARE PROSE TOO. `agent/reviews/<branch>/clean.jsonl` quotes findings, and one that quoted `BLOCKER:` listed the record here (#4960f2e8); that row then made the archival check refuse to archive the branch's review directory once it aged out.
+  if (/^agent\/reviews\/.*\.(md|jsonl)$/.test(f)) return false;
   return !NOT_A_MECHANISM.has(path.extname(f));
 };
 
@@ -1772,6 +1784,15 @@ const NOT_A_DISCOVERER = ['agent/', 'docs/', '.ci/config/', '.ci/policy/', 'scri
 const GENERATED_PROJECTIONS = [GATES_LOCK];
 
 /**
+ * `manifest.ts` is half generated: path-trace.ts writes each traced gate's `paths:`, `lists:` and `names:` arrays into it, the same file lists the gates lock projects. Those arrays are the read set a gate was MEASURED to touch, so a path in one is not a program writing a location down, and left in, manifest.ts wins the code tier for every baseline a traced gate reads (the seven nis2 manifests read "hardcoded in scripts/ci-runner/manifest.ts", review 434f1d3b.5). The arrays are cut before tokens are read; every other line of the file still counts.
+ */
+const GENERATED_INPUT_FILE = 'scripts/ci-runner/manifest.ts';
+const GENERATED_INPUT_ARRAY = /^ {4}(?:paths|lists|names): \[(?:[^\n]*\],|\n[\s\S]*?\n {4}\],)$/gm;
+
+export const namerText = (f: string, text: string): string =>
+  f === GENERATED_INPUT_FILE ? text.replace(GENERATED_INPUT_ARRAY, '') : text;
+
+/**
  * The wiring tier's internal order, most authoritative first.
  *
  * Alphabetical order alone picked arbitrary winners: `.syncpackrc.json` resolved to
@@ -1900,12 +1921,36 @@ const bindingTokens = (text: string): RegExp[] =>
   jsonTokens([...text.matchAll(BINDING)].map((m) => m[2]).join('\n'));
 
 /** Everything a namer contributes to this table: its token patterns, then its binding patterns, in order. */
-const namerTokens = (text: string | null): string =>
-  text === null
+const namerTokens = (f: string, raw: string | null): string => {
+  const text = raw === null ? null : namerText(f, raw);
+  return text === null
     ? ''
     : [...jsonTokens(text), ...bindingTokens(text).map((re) => new RegExp(`=${re.source}`))]
         .map((re) => re.source)
         .join('\n');
+};
+
+/** The tracked, present `.json`/`.jsonc` members of one home, as `rows` lists them. */
+const homeMembers = (root: string, dir: string): string[] => {
+  const listed = lsFiles(root, ...(dir === '.' ? ['*.json', '*.jsonc'] : [dir]));
+  // ROOT MEANS DEPTH ONE. `git ls-files -- '*.json'` matches at every depth, and a pathspec that quietly swept `packages/**` into the root bucket would report a predicate violation for every workspace manifest in the repository.
+  return presentFiles(root, listed).present.filter(
+    (f) => isJsonMember(f) && (dir === '.' ? !f.includes('/') : path.dirname(f) === dir)
+  );
+};
+
+/** Every home's members, once per root per process: `could` asks about many paths in one call. */
+const allMembers = (() => {
+  const memo = new Map<string, string[]>();
+  return (root: string): string[] => {
+    let got = memo.get(root);
+    if (got === undefined) {
+      got = JSON_HOMES.flatMap(({ dir }) => homeMembers(root, dir));
+      memo.set(root, got);
+    }
+    return got;
+  };
+})();
 
 export const jsonInventoryProvider: Provider = {
   id: 'json-inventory',
@@ -1925,7 +1970,7 @@ export const jsonInventoryProvider: Provider = {
       const isWiring = WIRING_EXT.includes(path.extname(f)) || f.startsWith('.vscode/');
       let text = '';
       try {
-        text = fs.readFileSync(path.join(root, f), 'utf-8');
+        text = namerText(f, fs.readFileSync(path.join(root, f), 'utf-8'));
       } catch {
         continue;
       }
@@ -1946,11 +1991,7 @@ export const jsonInventoryProvider: Provider = {
 
     const rows: ProviderRow[] = [];
     for (const { home, dir } of JSON_HOMES) {
-      const listed = lsFiles(root, ...(dir === '.' ? ['*.json', '*.jsonc'] : [dir]));
-      // ROOT MEANS DEPTH ONE. `git ls-files -- '*.json'` matches at every depth, and a pathspec that quietly swept `packages/**` into the root bucket would report a predicate violation for every workspace manifest in the repository.
-      const members = presentFiles(root, listed).present.filter(
-        (f) => isJsonMember(f) && (dir === '.' ? !f.includes('/') : path.dirname(f) === dir)
-      );
+      const members = homeMembers(root, dir);
       // ANTI-VACUITY PER HOME, NOT JUST IN TOTAL. Three of these four could empty out without the total reaching zero, and this table's whole claim is about WHERE files live: a home that silently stopped being scanned reads as a home that has been cleaned up.
       if (members.length === 0) {
         throw new Error(
@@ -2014,7 +2055,18 @@ export const jsonInventoryProvider: Provider = {
     scope: () => true,
     moves: (c) =>
       (isJsonMember(c.path) && membershipChanged(c)) ||
-      (isNamerCandidate(c.path) && namerTokens(c.before()) !== namerTokens(c.after())),
+      (isNamerCandidate(c.path) &&
+        namerTokens(c.path, c.before()) !== namerTokens(c.path, c.after())),
+    // A member can arrive or leave; a namer matters only when one of its tokens names a member today, since nearly every code file carries some `.json` token and an add would count them all.
+    could: (rel, read, root) => {
+      if (isJsonMember(rel)) return true;
+      if (!isNamerCandidate(rel)) return false;
+      const tokens = jsonTokens(namerText(rel, read(rel) ?? ''));
+      return (
+        tokens.length > 0 &&
+        allMembers(root).some((m) => m !== rel && tokens.some((re) => re.test(m)))
+      );
+    },
   },
 };
 
@@ -2324,11 +2376,66 @@ export const generatedArtifactsProvider: Provider = {
   inputs: filesInput(GENERATED_ARTIFACTS),
 };
 
+const AGENT_REFERENCE_PAGE_RE = /^docs\/agent-reference\/[^/]+\.md$/;
+
+/** The first level-one heading outside a code fence, or an empty string when the page has none. A fence closes only on its own marker character, at least as long as its opener (CommonMark), so a ~~~ block holding a ``` line stays fenced. */
+const firstHeading = (text: string): string => {
+  let fence = '';
+  for (const line of text.split('\n')) {
+    const marker = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
+    const found = marker?.[1] ?? '';
+    if (fence === '') {
+      if (found !== '') fence = found;
+      else if (line.startsWith('# ')) return line.slice(2).trim();
+    } else if (
+      found[0] === fence[0] &&
+      found.length >= fence.length &&
+      marker?.[2]?.trim() === ''
+    ) {
+      fence = '';
+    }
+  }
+  return '';
+};
+
+/** A page title as a table cell: a pipe is escaped so it cannot split the row, and a page with no heading outside a fence says so rather than showing a blank. */
+const titleCell = (title: string): string => {
+  if (title === '') return '(no title)';
+  return title.replaceAll('|', '\\|');
+};
+
+/**
+ * Every tracked page under `docs/agent-reference/`, one row each with its first heading.
+ *
+ * THE LISTING IS THE POINT. A page in that folder is lookup material that CLAUDE.md and the gate docs point readers to, and a new one used to be reachable only from whichever page happened to link it (`cloudflare-spend.md` was linked from one sentence of `ci-gates.md`). Deriving the rows from the index makes a new page appear here the moment it is tracked, and a heading edit moves its row.
+ */
+export const agentReferenceProvider: Provider = {
+  id: 'agent-reference',
+  scans: 'the tracked docs/agent-reference/*.md pages, one row per page',
+  columns: ['Page', 'Title'],
+  rows: (root) => {
+    const { present } = presentFiles(root, lsFiles(root, 'docs/agent-reference'));
+    return present
+      .filter((f) => AGENT_REFERENCE_PAGE_RE.test(f))
+      .map((f) => ({
+        key: f,
+        cells: [`\`${f}\``, titleCell(firstHeading(fs.readFileSync(path.join(root, f), 'utf-8')))],
+      }));
+  },
+  missing: (root) =>
+    presentFiles(
+      root,
+      lsFiles(root, 'docs/agent-reference').filter((f) => AGENT_REFERENCE_PAGE_RE.test(f))
+    ).missing,
+  inputs: { scope: (rel) => AGENT_REFERENCE_PAGE_RE.test(rel) },
+};
+
 export const PROVIDERS: readonly Provider[] = [
   gatesProvider,
   gatesSummaryProvider,
   proseStyleProvider,
   generatedArtifactsProvider,
+  agentReferenceProvider,
   hookGuardsProvider,
   hookSummaryProvider,
   suppressionsProvider,

@@ -16,7 +16,8 @@ import { VaultBuilder } from '../src/utils/vault/VaultBuilder';
  *
  * Tests the S3-compatible storage the bridge VM serves (RustFS) and the
  * machine-to-machine backup_push / backup_pull that remains after the storage
- * arm was retired.
+ * arm was retired. The timed push-bandwidth-cap test lives in
+ * 15-storage-backup-bandwidth.test.ts, its own unit so each file stays inside the leg budget.
  *
  * Prerequisites:
  * - RustFS must be running on bridge VM (renet ops rustfs start)

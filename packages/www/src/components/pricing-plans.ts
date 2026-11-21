@@ -1,4 +1,4 @@
-import { PLAN_ORDER, PLAN_PRICING } from '@rediacc/shared/subscription';
+import { PLAN_ORDER, PLAN_PRICING, type PlanCode } from '@rediacc/shared/subscription';
 import type { Language } from '../i18n/types';
 import { createTranslator } from '../i18n/utils';
 
@@ -16,11 +16,20 @@ export interface PlanMetric {
 }
 
 /**
- * The self-serve plan grid, shared by the pricing page and the homepage preview.
- *
- * Community is deliberately absent. It is the post-cancellation fallback state
- * an account is reverted to when payment lapses, not something anyone can buy,
- * so it gets no card, no column and no signup path.
+ * The plans the grid SELLS. Community is deliberately absent: it is the post-cancellation
+ * fallback state an account is reverted to when payment lapses, not something anyone can buy.
+ * Free is absent too: it is the no-account licence a machine takes from the CLI
+ * (agent/plans/PLAN-free-license.md), with its own `#free-license` section. It joined
+ * PLAN_ORDER on 2026-10-31 and the old filter named only Community, so a fourth card
+ * appeared with a $0 price, a dead "Start trial" button and the raw text
+ * `pages.pricing.plans.free.name` as its title in all 13 locales. A fifth code added to
+ * PLAN_ORDER stays off the grid until someone gives it copy on purpose.
+ */
+const GRID_PLANS: ReadonlySet<PlanCode> = new Set(['PROFESSIONAL', 'BUSINESS', 'ENTERPRISE']);
+
+/**
+ * The self-serve plan grid, built from GRID_PLANS and shared by the pricing page and the
+ * homepage preview.
  *
  * Annual prices come from the shared constants (an explicit 15%-off value, not
  * a 10x-monthly shortcut).
@@ -30,7 +39,7 @@ export interface PlanMetric {
  * comparison table no longer tints a column.
  */
 export function buildPlans(): PricingPlan[] {
-  return PLAN_ORDER.filter((code) => code !== 'COMMUNITY').map((code) => {
+  return PLAN_ORDER.filter((code) => GRID_PLANS.has(code)).map((code) => {
     const id = code.toLowerCase();
     return {
       id,
@@ -52,7 +61,7 @@ export function buildPlans(): PricingPlan[] {
  * its own literal namespace.
  */
 export function buildMetricsFor(lang: Language) {
-  const { ta, to } = createTranslator(lang);
+  const { t, ta } = createTranslator(lang);
   // `ta()` is typed `string[]`; this branch holds objects. Double cast, the
   // same shape ResourceBriefPage.astro:60 uses. Without it `tsc --noEmit` fails TS2352 on this file, and it is the only .ts (not .astro) `ta()` call site
   // with an object array, so it is the only one tsc sees.
@@ -61,14 +70,11 @@ export function buildMetricsFor(lang: Language) {
     label: string;
     tooltip?: string;
   }[];
-  const values = to('pages.pricing.technicalSummary.values') as
-    | Record<string, Record<string, string>>
-    | undefined;
-
+  // Each value goes through t(), not a default dash: the default drew a dash in every row of a card whose plan had no values, which reads as "not included" rather than as missing copy, and a production build now fails on the miss instead (translator.ts strictByDefault).
   return (planId: string): PlanMetric[] =>
     metrics.map((metric) => ({
       label: metric.label,
       tooltip: metric.tooltip,
-      value: values?.[planId]?.[metric.key] ?? '—',
+      value: t(`pages.pricing.technicalSummary.values.${planId}.${metric.key}`),
     }));
 }

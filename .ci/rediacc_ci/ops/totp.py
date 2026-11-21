@@ -6,7 +6,7 @@
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.totp
 
-The module exists to be imported (`rediacc_ci.ops.login_bench` derives the bench login code with it). The command line runs the RFC 6238 Appendix B self-check and, when `REDIACC_BENCH_TOTP_SEED` is set, confirms that the seed decodes and yields a six-digit code. It prints only `ok` lines or a named error: never the seed, never a code.
+The module exists to be imported (`rediacc_ci.ops.login_bench` derives the bench login code with it). The command line runs the RFC 6238 Appendix B self-check and, when `BENCH_ROOT_TOTP_SEED` is set, confirms that the seed decodes and yields a six-digit code. It prints only `ok` lines or a named error: never the seed, never a code.
 
 A seed is accepted the way authenticator apps accept one: case-insensitive, with spaces and hyphens ignored and the `=` padding optional.
 """
@@ -24,7 +24,7 @@ import time
 
 STEP = 30
 DIGITS = 6
-SEED_ENV = "REDIACC_BENCH_TOTP_SEED"
+SEED_ENV = "BENCH_ROOT_TOTP_SEED"
 
 # RFC 6238 Appendix B, SHA-1 rows: the seed is the ASCII string "12345678901234567890"; the RFC prints 8-digit codes, and the 6-digit code is their last six digits.
 RFC_SEED_ASCII = b"12345678901234567890"

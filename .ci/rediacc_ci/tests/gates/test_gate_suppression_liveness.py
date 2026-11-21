@@ -37,6 +37,7 @@ import json
 import os
 import re
 import shutil
+import subprocess
 
 from rediacc_ci import paths, well_known
 from rediacc_ci.tests.gates import harness
@@ -263,6 +264,63 @@ def test_oracle_floor_skips_instead_of_condemning(gate):
             result.combined, "FAIL", "must not condemn against a suspect oracle"
         )
         gate.log_pass("oracle floor skips loudly instead of condemning")
+
+
+def _plant_shell_tree(root):
+    """A git checkout whose one tracked shell script is `scripts/tracked.sh`, beside an UNTRACKED `.sh` a build left under `.ci/cache`."""
+    (root / "scripts").mkdir(exist_ok=True)
+    (root / "scripts" / "tracked.sh").write_text("tracked_fn() {\n  :\n}\n", encoding="utf-8")
+    (root / ".ci" / "cache").mkdir(parents=True, exist_ok=True)
+    (root / ".ci" / "cache" / "planted.sh").write_text("planted_fn() {\n  :\n}\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q", os.fspath(root)], check=True)
+    subprocess.run(["git", "-C", os.fspath(root), "add", "scripts/tracked.sh"], check=True)
+
+
+def test_dead_bash_universe_is_the_tracked_listing(gate):
+    """THE UNIVERSE IS `git ls-files`, NOT A DISK WALK (b8426e58.3). A `.sh` an untracked build directory holds must not keep a `manual:` entry alive, and the CONTROL is the tracked script, which does."""
+    with harness.temp_dir() as root:
+        make_fixture(gate, root)
+        _plant_shell_tree(root)
+        write_policy(
+            root,
+            ".dead-bash-allowlist",
+            "# BLOCKER: planted entry naming an untracked build output, which must read as dead here\n"
+            "manual:.ci/cache/planted.sh\n",
+        )
+        result = run_gate(gate, root)
+        gate.assert_exit(1, result, "an entry naming an untracked .sh must be condemned")
+        gate.assert_contains(result.combined, ".ci/cache/planted.sh", "names the untracked entry")
+    with harness.temp_dir() as root:
+        make_fixture(gate, root)
+        _plant_shell_tree(root)
+        write_policy(
+            root,
+            ".dead-bash-allowlist",
+            "# BLOCKER: control entry naming a tracked script, which must stay live in this test\n"
+            "manual:scripts/tracked.sh\n",
+        )
+        result = run_gate(gate, root)
+        gate.assert_exit(0, result, "an entry naming a tracked .sh must stay live")
+        gate.log_pass("the dead-bash universe is the tracked listing, not the disk")
+
+
+def test_dead_bash_git_failure_is_loud_in_a_checkout(gate):
+    """A CHECKOUT WHOSE `git ls-files` FAILS IS NOT AN ABSENT SHELL TREE (b8426e58.2). An empty `.git` directory makes git refuse; the probe must say so rather than skip."""
+    with harness.temp_dir() as root:
+        make_fixture(gate, root)
+        (root / "scripts").mkdir(exist_ok=True)
+        (root / "scripts" / "tracked.sh").write_text("tracked_fn() {\n  :\n}\n", encoding="utf-8")
+        (root / ".git").mkdir()
+        write_policy(
+            root,
+            ".dead-bash-allowlist",
+            "# BLOCKER: entry whose oracle is unreadable because git fails in this fixture\n"
+            "manual:scripts/tracked.sh\n",
+        )
+        result = run_gate(gate, root)
+        gate.assert_contains(result.combined, "git ls-files failed", "names the git failure")
+        assert result.rc != 0, "a failing git listing in a checkout must not exit 0"
+        gate.log_pass("a git failure in a checkout is loud")
 
 
 def test_vacuous_run_fails(gate):

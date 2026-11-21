@@ -11,7 +11,7 @@ THE THREE CONDITIONS, each read through the reader the Stop hook and the merge g
       TURBO_PUSH_REASON='<kind>: <why, 20+ chars>' git push -u origin <branch>
 
     ci-cd     a plan needs a check only CI/CD runs; the why names the plan (basename or slug) and its box
-    red-fix   a fix for a red on the live PR; an OPEN PR for the branch must exist (`gh pr list --head`)
+    red-fix   a fix for a red on the live PR; an OPEN PR for the branch must exist (`gh pr list --head`). In a console submodule (a path `.gitmodules` names) the console's open PR for the same branch name counts too: the submodule PR is what the red console PR needs, so it cannot exist yet when its first push or `gh pr create` runs (worklist #29531257, console PR 605, 2026-11-11)
     deadline  production or CD state that cannot wait; the why names it
     backup    the oldest unpushed commit (`origin/<branch>..HEAD`, or `origin/main..HEAD` before the first push) is older than `backup_push_h` hours (QUEUE.md, default 4; 0 turns the valve off). Never admits `gh pr create`: a backup is a push with no PR, which triggers no CI.
 
@@ -23,6 +23,8 @@ SCOPE. Every `git push` (any remote or refspec, `-C`/`cd` included) in this chec
 
 THE MERGE PHASE'S POINTER BUMP NEEDS NO REASON (worklist item #8aad9216). `/pr-merge` step 2 pushes the console's submodule pointer bump (and the review records committed for it) to the PR branch, and under turbo that push was refused (`ci-cd` names no open Promoted plan) until a `deadline:` reason was borrowed for it. A plain push is now admitted, ledger kind `merge-pointer-bump`, when BOTH hold: the pushing session's newest phase event (`wl_store.phase_fold` and `wl_standdown.active_phase`, the read `block_focus_spawn` uses, lineage included, the 24-hour cap applied) is `merge` with `branch` equal to the checkout's branch; and every commit of the unpushed range (`origin/<branch>..HEAD`, or `origin/main..HEAD` before the first push), none of them a merge, changes only submodule gitlinks (mode 160000) and paths under `agent/reviews/`. Every destination of the push must be that branch. It FAILS CLOSED: a phase or range that cannot be read admits nothing and the push meets the rules above. Never `gh pr create`.
 
+THE DEVELOPMENT DRAFT NEEDS NO REASON (agent/plans/PLAN-two-track-merge-dev.md, box LT12; operator ruling ASKED:2026-11-20T18:46Z: the development draft PR targets main and is exempt from turbo while the landing PR is open). With a landing record (`commit_policy.landing_record`) the open PR's branch lives in the landing tree, and the main checkout builds the next branch, whose only CI is its draft PR. A push from the development tree (or a submodule of it) whose checked-out branch and every destination differ from the record's branch, and a `gh pr create --draft` there whose head is not the record's branch, are admitted with ledger kind `development-draft`. A push or PR naming the landing branch, a ready (non-draft) PR, and every command in the landing tree keep the rules above.
+
 THE OPERATOR. There is no override token, the convention of every pre-bash guard (`block_second_branch`, `block_git_hook_bypass`): the operator's own `!` command bypasses PreToolUse hooks entirely, so it never reaches this guard.
 
 FAILS OPEN, LOUDLY, when QUEUE.md or a plan cannot be read, or `wl_planqueue` cannot import: a note on stderr, the push allowed, like the sibling guards. `gh` failing on a `red-fix` admits with a note. A `backup` whose age cannot be read is REFUSED: the age is the claim, and an unread claim is not a checked one.
@@ -30,11 +32,13 @@ FAILS OPEN, LOUDLY, when QUEUE.md or a plan cannot be read, or `wl_planqueue` ca
 
 import datetime
 import json
+import os
 import pathlib
 import re
 import time
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
+from rediacc_hooks.guards import _backup_push
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -50,6 +54,8 @@ KINDS = ("ci-cd", "red-fix", "deadline", "backup")
 BATCH_KIND = "batch-complete"
 # The ledger kind of a `/pr-merge` pointer-bump push the merge phase released (see THE MERGE PHASE above); never a TURBO_PUSH_REASON kind.
 MERGE_KIND = "merge-pointer-bump"
+# The ledger kind of a push or draft PR of the development branch while the landing PR is open (see THE DEVELOPMENT DRAFT above); never a TURBO_PUSH_REASON kind.
+DEVELOPMENT_KIND = "development-draft"
 MERGE_PATH_PREFIX = "agent/reviews/"
 GITLINK_MODES = ("160000", "000000")
 REVIEW_MODES = {"100644", "100755", "000000"}
@@ -114,7 +120,7 @@ def world(
     (path / QUEUE_REL).write_text(queue, encoding="utf-8")
     (path / "agent/plans/PLAN-fx-a.md").write_text(FIXTURE_PLAN % box, encoding="utf-8")
     _git(path, "init", "-q", "--initial-branch=main")
-    _git(path, "remote", "add", "origin", "https://github.com/fixture/console.git")
+    _git(path, "remote", "add", "origin", _backup_push.OTHER_ORIGIN)
     _git(path, "commit", "-q", "--allow-empty", "-m", "seed", env_date=date)
     _git(path, "update-ref", "refs/remotes/origin/main", "HEAD")
     _git(path, "checkout", "-q", "-b", "1008-1")
@@ -214,22 +220,32 @@ def _skipped(args):
 def _acts(cmd, root, base):
     """[(act, repo, reason-or-None, spelling)] for every judged push and create in `cmd`, in order."""
     created = commit_policy.created_dirs(cmd, base)
+    # EITHER BOUND TREE IS THIS CHECKOUT (box LT11): with a landing record a push or PR typed in the sibling tree (or a submodule of it) is judged here, where `is_inside(repo, root)` skipped it as a scratch repository's.
+    trees = commit_policy.bound_trees(root)
     out = []
     for run in commit_policy.git_runs(cmd, "push"):
         _, _, args = commit_policy.git_split(run.argv)
         if _skipped(args):
             continue
-        repo = commit_policy.scoped_repo(run, base, root, created)
-        if repo and not commit_policy.is_inside(repo, root):
+        repo = commit_policy.scoped_repo(run, base, root, created, cmd, trees=trees)
+        if repo and not commit_policy.is_ours(repo, root, trees):
             continue
         out.append(
             ("push", repo or root, run.env.get(REASON_ENV), " ".join(["git push", *args]), args)
         )
     for run in shellscan.gh_pr_runs(cmd, "create"):
         repo = commit_policy.toplevel(commit_policy.run_dir(run, base)) or root
-        if not commit_policy.is_inside(repo, root):
+        if not commit_policy.is_ours(repo, root, trees):
             continue
-        out.append(("pr-create", repo, run.env.get(REASON_ENV), " ".join(["gh", *run.argv]), []))
+        out.append(
+            (
+                "pr-create",
+                repo,
+                run.env.get(REASON_ENV),
+                " ".join(["gh", *run.argv]),
+                list(run.argv),
+            )
+        )
     return out
 
 
@@ -310,7 +326,73 @@ def _named_plan(why, open_plans):
     return ""
 
 
-def _judge(ev, act, repo, reason, open_plans, backup_h):
+def _is_submodule(root, repo):
+    """Whether `repo` is a checkout of a submodule the console's `.gitmodules` names."""
+    if not repo or not root or os.path.realpath(repo) == os.path.realpath(root):
+        return False
+    if not os.path.isfile(os.path.join(root, ".gitmodules")):
+        return False
+    out = commit_policy.git(
+        ["config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$"], cwd=root
+    )
+    real = os.path.realpath(repo)
+    for line in (out or "").splitlines():
+        parts = line.split(None, 1)
+        if len(parts) == 2 and os.path.realpath(os.path.join(root, parts[1])) == real:
+            return True
+    return False
+
+
+def _open_prs(repo, branch):
+    """The open PR numbers `gh` lists for `branch` in the repository checked out at `repo`; raises `GhUnavailableError`."""
+    return commit_policy._gh_lines(
+        repo,
+        [
+            *("pr", "list", "--head", branch, "--state", "open"),
+            *("--json", "number", "--jq", ".[].number"),
+        ],
+    )
+
+
+# Planted, the development draft is never recognised, so its push and draft PR meet the reason rules again.
+TWO_TREE_DEFECT = ("record = commit_policy.landing_record(root)", "record = None")
+
+
+def _development_draft(root, act, repo, argv):
+    """`argv` is the push's arguments after `push`, or the words after `gh`. The admission line for a push or draft PR of the development branch while a landing record binds the open PR's branch to the landing tree, "" when this act is not one."""
+    record = commit_policy.landing_record(root)
+    if record is None:
+        return ""
+    landing = record["branch"]
+    # The act's own tree decides, not the session's: a push typed in the development tree from the landing root is the development draft's too. `is_inside` and not `is_ours`: the question is the landing tree's directory (a submodule of it included), never the pair of bound trees.
+    if commit_policy.is_inside(repo, record["path"]):
+        return ""
+    head = commit_policy.current_branch(repo, foreign=True)
+    if not head or head in ("main", landing):
+        return ""
+    if act == "push":
+        dests = [
+            head if dst == "HEAD" else dst for _src, dst in commit_policy.push_destinations(argv)
+        ]
+        if landing in dests:
+            return ""
+        return "a push of the development branch %s while the landing tree holds %s" % (
+            head,
+            landing,
+        )
+    parsed = shellscan.gh_args(list(argv))
+    if not parsed.on("draft"):
+        return ""
+    named = parsed.last("head")
+    if named and named.rsplit(":", 1)[-1] in (landing, "main"):
+        return ""
+    return "a draft PR of the development branch %s while the landing tree holds %s" % (
+        named or head,
+        landing,
+    )
+
+
+def _judge(ev, act, repo, reason, open_plans, backup_h, root=""):
     """(kind, why) when admitted, else (None, the refusal line)."""
     if reason is None:
         return None, "no `%s=` on it" % REASON_ENV
@@ -329,21 +411,11 @@ def _judge(ev, act, repo, reason, open_plans, backup_h):
     if kind == "red-fix":
         branch = commit_policy.current_branch(repo)
         try:
-            prs = commit_policy._gh_lines(
-                repo,
-                [
-                    "pr",
-                    "list",
-                    "--head",
-                    branch,
-                    "--state",
-                    "open",
-                    "--json",
-                    "number",
-                    "--jq",
-                    ".[].number",
-                ],
-            )
+            prs = _open_prs(repo, branch)
+            # A submodule's first PR is what a red console PR on the same branch needs, so the console's open PR stands for the live PR there.
+            tree = _tree_of(root, repo)
+            if not prs and branch and _is_submodule(tree, repo):
+                prs = _open_prs(tree, branch)
         except commit_policy.GhUnavailableError as exc:
             ev.warn(
                 "block-turbo-early-push: `gh` could not say whether `%s` has an open PR (%s); "
@@ -354,8 +426,12 @@ def _judge(ev, act, repo, reason, open_plans, backup_h):
         if not prs:
             return (
                 None,
-                "`red-fix`, but `%s` has no open PR, so there is no red on a live PR to fix"
-                % (branch or "(detached)"),
+                "`red-fix`, but `%s` has no open PR%s, so there is no red on a live PR to fix"
+                % (
+                    branch or "(detached)",
+                    # The console is looked up only for a named branch, so a detached HEAD checked nothing there.
+                    " here or in the console" if branch and _is_submodule(root, repo) else "",
+                ),
             )
     if kind == "backup":
         if act == "pr-create":
@@ -614,12 +690,19 @@ def _batch_lines(batch):
     )
 
 
+def _tree_of(root, repo):
+    """The bound tree holding `repo` (the longest match), else `root`: with no landing record always `root`, the reading before the record existed."""
+    owners = [t for t in commit_policy.bound_trees(root) if commit_policy.is_inside(repo, t)]
+    return max(owners, key=len) if owners else root
+
+
 def _row(root, act, repo, kind, why, open_plans):
-    """One ledger line for one admitted act."""
+    """One ledger line for one admitted act. `repo` is named relative to the bound tree holding it: an act typed in the sibling tree is not below `root`."""
+    tree = _tree_of(root, repo)
     return {
         "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "branch": commit_policy.current_branch(repo),
-        "repo": "." if repo == root else str(pathlib.Path(repo).relative_to(root)),
+        "repo": "." if repo == tree else str(pathlib.Path(repo).relative_to(tree)),
         "act": act,
         "kind": kind,
         "why": why,
@@ -652,7 +735,8 @@ starts) needs a real operational reason while Promoted plans are still open.
 An operational reason goes on the command itself, `<kind>: <why, %(min)d+ chars>`:
 
     ci-cd     a plan needs a check only CI/CD runs; name the plan and its box
-    red-fix   a fix for a red on the live PR (an open PR for the branch is required)
+    red-fix   a fix for a red on the live PR (an open PR for the branch is required;
+              in a submodule, the console's open PR on the same branch counts)
     deadline  production or CD state that cannot wait; name it
     backup    the oldest unpushed commit is older than backup_push_h (%(h)s h here);
               a plain push only, never `gh pr create`
@@ -669,6 +753,9 @@ The operator's own `!` command does not pass through this guard.
 def run(ev):
     cmd = ev.raw("tool_input", "command")
     if cmd in ("", "null"):
+        return hookio.ALLOW
+    # A push of nothing but `refs/backup/**` to its repository's pin is the git-level pre-push hook's to judge (box G5 of PLAN-local-first-delivery, `_backup_push`).
+    if _backup_push.admitted(ev, cmd):
         return hookio.ALLOW
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
     if not root:
@@ -698,7 +785,11 @@ def run(ev):
     refusals = []
     focus = False  # read once, only when a push would be refused
     for act, repo, reason, spelling, args in acts:
-        kind, why = _judge(ev, act, repo, reason, open_plans, backup_h)
+        kind, why = _judge(ev, act, repo, reason, open_plans, backup_h, root)
+        if kind is None:
+            draft = _development_draft(root, act, repo, args)
+            if draft:
+                kind, why = DEVELOPMENT_KIND, draft
         if kind is None and act == "push":
             if focus is False:
                 focus = _merge_phase(ev, root, str(ev.field("session_id") or ""))

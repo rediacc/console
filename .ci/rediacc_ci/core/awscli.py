@@ -9,7 +9,7 @@ THE RUNGS, IN ORDER, mirrored by `resolve_aws` in `.ci/bootstrap.sh`:
 
   1. `AWS_BIN`, when set and non-empty. Set but not an executable file is a REFUSAL, never a fall-through: an operator who pointed the variable somewhere asked for that binary, and quietly running a different one is how a pin stops meaning anything. CI exports it at the pinned install (B7 of the plan).
   2. `aws` on PATH, TAKEN AS FOUND, with no version probe. About 36 test files put a fake `aws` on PATH that records every call it receives, and a probe here would add an `aws --version` to each of those ledgers. `bash .ci/bootstrap.sh doctor` shows a PATH aws beside the pin, so drift is visible rather than enforced.
-  3. `.ci/cache/toolchain/aws-cli/<AWSCLI_VERSION>/bin/aws`, the install `bash .ci/bootstrap.sh install aws` makes, accepted only when it reports the pinned version: a cache left at an older pin is not the pin.
+  3. `.ci/cache/toolchain/aws-cli/<AWSCLI_VERSION>/bin/aws`, the install `bash .ci/bootstrap.sh install aws` makes, accepted only when it reports the pinned version: a cache left at an older pin is not the pin. A release clone's own cache is empty, so the same path under the checkout named by `REDIACC_TOOLCHAIN_ROOT` (set by `release:local` for its children) is tried after it. Measured 2026-11-14: without it a branch release stopped at order-eu with "no aws CLI found" while the pin sat in the main checkout's cache.
 
 THE LOGICAL argv[0] STAYS `"aws"`. Call sites build their argv with `AWS` at the head, so dry-run output, logs and the simulate_promotion differential stay byte-identical, and only the exec (`argv()`, `run()`) swaps in the resolved binary. When nothing resolves, `argv()` hands the argv back unchanged, so the exec fails exactly as it did before this module (FileNotFoundError, or exit 127 from a shell), and a caller that wants the refusal up front asks `require()`.
 """
@@ -36,6 +36,9 @@ AWS = "aws"
 
 # The explicit-binary rung's variable.
 ENV_KEY = "AWS_BIN"
+
+# The main checkout whose toolchain cache a release clone borrows. `release:local` runs its children in a clean clone under .ci/cache/release whose own cache is empty, so `local.child_env` names the checkout it was started from here, and the cache rung looks in it after the clone's own.
+TOOLCHAIN_ROOT_ENV = "REDIACC_TOOLCHAIN_ROOT"
 
 # The pin key in .devcontainer/toolchain.env.
 PIN_KEY = "AWSCLI_VERSION"
@@ -134,9 +137,13 @@ def resolve(env: Mapping[str, str] | None = None, root: pathlib.Path | None = No
         version = pin()
     except toolchain.PinError:
         return None
-    cached = cache_binary(version, root)
-    if _executable(str(cached)) and _cached_version(cached) == version:
-        return str(cached)
+    candidates = [cache_binary(version, root)]
+    borrowed = environ.get(TOOLCHAIN_ROOT_ENV, "")
+    if borrowed:
+        candidates.append(cache_binary(version, pathlib.Path(borrowed)))
+    for cached in candidates:
+        if _executable(str(cached)) and _cached_version(cached) == version:
+            return str(cached)
     return None
 
 

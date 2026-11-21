@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: it
-sourceHash: "442b5cfa49239dbc"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "9fcdf73439f82d82"
+sourceCommit: "7aedf8f834a72520b4ea8a4a1226b5b94afed2ae"
 ---
 
 ## Panoramica
@@ -132,7 +132,7 @@ export REDIACC_ALLOW_GRAND_REPO='gitlab'   # un repo
 claude   # oppure cursor, gemini, ecc.
 ```
 
-L'override è verificato rispetto all'ascendenza del processo: conta solo se era già presente nell'ambiente del processo agent stesso, il che significa che l'hai esportato prima che l'agent (e il server MCP che ha generato) si avviasse. Un agent non può concedersi accesso impostando la variabile a metà sessione. Non c'è intenzionalmente nessun flag del server per questo: un flag negli argomenti del server MCP non porta alcuna prova di chi l'ha messo lì, mentre il controllo dell'ascendenza sì. L'accesso a livello di macchina (come `term connect -m <machine>` senza un repo) richiede ancora `*`; un elenco di nomi di repo non lo sblocca.
+L'override è verificato rispetto all'ascendenza del processo: conta solo se era già presente nell'ambiente del processo agent stesso, il che significa che l'hai esportato prima che l'agent (e il server MCP che ha generato) si avviasse. Un agent non può concedersi accesso impostando la variabile a metà sessione. Non c'è intenzionalmente nessun flag del server per questo: un flag negli argomenti del server MCP non porta alcuna prova di chi l'ha messo lì, mentre il controllo dell'ascendenza sì. L'accesso a livello di macchina (come `term connect <machine>` senza un repo) richiede ancora `*`; un elenco di nomi di repo non lo sblocca.
 
 ### Chiavi SSH per repository e sandbox lato server
 

@@ -70,6 +70,7 @@ RESIDUALS, named rather than pretended away:
 """
 
 import contextlib
+import functools
 import hashlib
 import json
 import math
@@ -192,8 +193,12 @@ BULLET_RE = re.compile(r"^(?P<ind> {0,3})(?:[-*+]|\d+[.)])\s+(?P<body>\S.*)$")
 CHECKBOX_RE = re.compile(r"^\s*[-*+]\s+\[[ xX?>]\]\s+(?P<body>\S.*)$")
 
 
+_NON_ALNUM_RE = re.compile(r"[^a-z0-9]+")
+_EMPHASIS_RE = re.compile(r"[*_`]+")
+
+
 def _norm(s):
-    return re.sub(r"[^a-z0-9]+", " ", (s or "").lower()).strip()
+    return _NON_ALNUM_RE.sub(" ", (s or "").lower()).strip()
 
 
 # How much of a claimed missing task must be built out of one real task line. 0.7 measured against the corpus: a paraphrase or a truncated quote of a real task clears it, while the plan's DECISIONS bullets score 0.23-0.33 against their nearest task and are rejected.
@@ -221,7 +226,18 @@ def plan_tasks(text):
     """The plan's discrete tasks, as a de-duplicated list of strings.
 
     A checkbox line is a task WHEREVER it appears: the author wrote a box, which is as explicit as a plan gets. A plain bullet counts only under an action-shaped heading, for the reason on ACTION_HEADING_RE.
+
+    The answer is a pure function of `text`, memoized on the text itself (`_plan_tasks`): `wl_planfile.plan_boxes` calls it three times per plan, and one `check_plan_record.py --rendered-only` run asked about the same plans 6,571 times before the per-run graph was shared and 2,335 after (measured 2026-11-19). Each call gets a fresh list, so a caller that mutates its copy cannot change the next caller's answer.
     """
+    return list(_plan_tasks(text or ""))
+
+
+#: How many distinct plan texts `_plan_tasks` remembers. Every `wl_planfile.plan_boxes` call adds up to three (the text, and the text minus its open or its done boxes), and the tree holds about 256 plans.
+PLAN_TASKS_CACHE = 1024
+
+
+@functools.lru_cache(maxsize=PLAN_TASKS_CACHE)
+def _plan_tasks(text):
     tasks, seen, fenced, action = [], set(), False, False
     for raw in (text or "").splitlines():
         if FENCE_RE.match(raw):
@@ -243,14 +259,14 @@ def plan_tasks(text):
                 body = b.group("body")
         if not body:
             continue
-        body = re.sub(r"[*_`]+", "", body).strip()
+        body = _EMPHASIS_RE.sub("", body).strip()
         key = _norm(body)[:120]
         # The 8-character floor screens out stray plain bullets; a checkbox is explicit at any length ("- [ ] WC1: e2e." is a box).
         if not key or (not cb and len(key) < 8) or key in seen:
             continue
         seen.add(key)
         tasks.append(body[:300])
-    return tasks
+    return tuple(tasks)
 
 
 # ---- Tier 1: the shape of this session's items ------------------------------

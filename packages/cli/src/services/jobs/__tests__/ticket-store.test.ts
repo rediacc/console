@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { COMPACT_THRESHOLD, foldEvents, TicketStore } from '../ticket-store.js';
+import { COMPACT_THRESHOLD, type ExpiredReason, foldEvents, TicketStore } from '../ticket-store.js';
 
 let base: string;
 
@@ -181,5 +181,57 @@ describe('ticket store: compaction', () => {
     seed(store, COMPACT_THRESHOLD + 1, 1);
     store.compactIfNeeded();
     expect(() => statSync(`${store.path}.lock`)).toThrow();
+  });
+});
+
+describe('ticket store: expired', () => {
+  it('folds an expired event into an acknowledged ticket carrying the reason', () => {
+    const store = storeIn();
+    store.append('starting', 'r1', { machine: 'm1' });
+    store.append('expired', 'r1', { reason: 'never-started' });
+    const [ticket] = storeIn().tickets();
+    expect(ticket.acknowledged).toBe(true);
+    expect(ticket.expiredReason).toBe('never-started');
+    expect(storeIn().pending()).toEqual([]);
+    expect(storeIn().all()).toHaveLength(1);
+  });
+
+  it('a late started event revives a ticket expired as never-started, and no other reason', () => {
+    const store = storeIn();
+    store.append('starting', 'r1', { machine: 'm1' });
+    store.append('expired', 'r1', { reason: 'never-started' });
+    store.append('started', 'r1', { jobId: 'j1-aaaaaaaa' });
+    const [revived] = storeIn().tickets();
+    expect(revived.expiredReason).toBeUndefined();
+    expect(revived.acknowledged).toBe(false);
+    expect(storeIn().pending()).toHaveLength(1);
+
+    store.append('starting', 'r2', { machine: 'm1' });
+    store.append('expired', 'r2', { reason: 'dismissed' });
+    store.append('started', 'r2', { jobId: 'j2-aaaaaaaa' });
+    expect(storeIn().find('r2')?.expiredReason).toBe('dismissed');
+  });
+
+  it('drops a reason outside the schema and defaults the fold to age', () => {
+    const store = storeIn();
+    store.append('starting', 'r1', {});
+    store.append('expired', 'r1', { reason: 'bogus' as ExpiredReason });
+    expect(storeIn().tickets()[0].expiredReason).toBe('age');
+  });
+
+  it('compaction drops expired tickets with the acknowledged ones', () => {
+    const store = storeIn();
+    for (let i = 0; i <= COMPACT_THRESHOLD; i++) {
+      store.append('starting', `r${i}`, { machine: 'm' });
+      store.append('expired', `r${i}`, { reason: 'gone' });
+    }
+    store.append('starting', 'x', { machine: 'm' });
+    store.append('expired', 'x', { reason: 'gone' });
+    expect(store.compactIfNeeded()).toBe(true);
+    expect(
+      storeIn()
+        .all()
+        .map((t) => t.requestId)
+    ).not.toContain('x');
   });
 });

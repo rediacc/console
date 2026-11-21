@@ -165,14 +165,14 @@ def test_the_keep_prs_trailing_space_is_defect_b(bindir: pathlib.Path) -> None:
     old = assert_identical(
         bindir, "--decide-only", expect_exit=0, env_extra={"FAKE_GH_STDOUT": "571 feature"}
     )
-    assert "✓ dispatching cd-v2 for abcdef1 (#571 )\n" in old[2]
+    assert "✓ dispatching cd-release-edge for abcdef1 (#571 )\n" in old[2]
     old = assert_identical(
         bindir,
         "--decide-only",
         expect_exit=0,
         env_extra={"FAKE_GH_STDOUT": "571 feature\n572 chore"},
     )
-    assert "✓ dispatching cd-v2 for abcdef1 (#571 #572 )\n" in old[2]
+    assert "✓ dispatching cd-release-edge for abcdef1 (#571 #572 )\n" in old[2]
 
 
 def test_two_labelled_prs_and_nothing_else_skip(bindir: pathlib.Path) -> None:
@@ -276,7 +276,7 @@ def test_dispatch_only_never_looks_anything_up(bindir: pathlib.Path) -> None:
     )
     assert old[1] == "decision: release\n"
     assert old[2] == (
-        "call: gh workflow run cd-v2.yml --ref main -f release_mode=patch -f ci_run_id=42\n"
+        "call: gh workflow run cd-release-edge.yml --ref main -f release_mode=patch -f ci_run_id=42\n"
     )
     assert "gh api" not in old[2]
 
@@ -291,7 +291,7 @@ def test_full_mode_dispatches_after_deciding_to_release(bindir: pathlib.Path) ->
             "GITHUB_RUN_ID": "7",
         },
     )
-    assert "call: gh workflow run cd-v2.yml" in old[2]
+    assert "call: gh workflow run cd-release-edge.yml" in old[2]
     assert old[1] == "decision: release\n"
 
 
@@ -320,7 +320,7 @@ def test_the_dry_run_seam_prints_the_command_instead_of_running_it(
     )
     assert old[1] == (
         "decision: release\n"
-        "DRY-RUN: gh workflow run cd-v2.yml --ref main -f release_mode=patch -f ci_run_id=999\n"
+        "DRY-RUN: gh workflow run cd-release-edge.yml --ref main -f release_mode=patch -f ci_run_id=999\n"
     )
     assert "workflow run" not in old[2]
 
@@ -558,7 +558,7 @@ def test_dispatch_only_with_publish_stable_true_passes_the_input(bindir: pathlib
         "decision: release\n"
         "::notice title=Release to stable::abcdef1 publishes to edge AND stable "
         "(publish_stable=true), skipping the 7-day soak.\n"
-        "DRY-RUN: gh workflow run cd-v2.yml --ref main -f release_mode=patch "
+        "DRY-RUN: gh workflow run cd-release-edge.yml --ref main -f release_mode=patch "
         "-f ci_run_id=42 -f publish_stable=true\n"
     )
     old = assert_identical(
@@ -568,7 +568,7 @@ def test_dispatch_only_with_publish_stable_true_passes_the_input(bindir: pathlib
         env_extra={"FAKE_GH_ECHO": "stderr", "GITHUB_RUN_ID": "42", "PUBLISH_STABLE": "true"},
     )
     assert old[2] == (
-        "call: gh workflow run cd-v2.yml --ref main -f release_mode=patch -f ci_run_id=42 "
+        "call: gh workflow run cd-release-edge.yml --ref main -f release_mode=patch -f ci_run_id=42 "
         "-f publish_stable=true\n"
     )
 
@@ -588,7 +588,7 @@ def test_dispatch_only_without_exactly_true_stays_on_edge(bindir: pathlib.Path, 
     )
     assert old[1] == (
         "decision: release\n"
-        "DRY-RUN: gh workflow run cd-v2.yml --ref main -f release_mode=patch -f ci_run_id=42\n"
+        "DRY-RUN: gh workflow run cd-release-edge.yml --ref main -f release_mode=patch -f ci_run_id=42\n"
     )
 
 

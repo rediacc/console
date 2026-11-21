@@ -1,5 +1,5 @@
-import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { deriveTocPublicKeyLine } from '@rediacc/shared/backup/toc-key';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -172,11 +172,25 @@ describe('backup toc-key sync', () => {
     expect(mocks.setExitCode).not.toHaveBeenCalled();
   });
 
-  it('--dry-run reads and writes nothing on the machine', async () => {
-    machine(null);
-    await run(['sync', 'mail', '--dry-run']);
-    expect(mocks.execStreaming).not.toHaveBeenCalled();
-    expect(printed().results[0].outcome).toBe('dry-run');
+  it('--dry-run only reads the machine key and prints whether it equals the derived one', async () => {
+    const cases: [string | null, string, boolean | undefined, number | undefined][] = [
+      [null, 'would-install', undefined, undefined],
+      [line, 'unchanged', true, undefined],
+      ['rediacc-toc-x25519 OTHERKEY', 'differs', false, 1],
+    ];
+    for (const [stored, outcome, equal, exit] of cases) {
+      vi.clearAllMocks();
+      calls.length = 0;
+      machine(stored);
+      await run(['sync', 'mail', '--dry-run']);
+      const [r] = printed().results as { outcome: string; machineKeyEqual?: boolean }[];
+      expect(r.outcome).toBe(outcome);
+      expect(r.machineKeyEqual).toBe(equal);
+      expect(calls.map((c) => c.command)).toHaveLength(1);
+      expect(calls[0].command).toContain('toc-key status');
+      if (exit === undefined) expect(mocks.setExitCode).not.toHaveBeenCalled();
+      else expect(mocks.setExitCode).toHaveBeenCalledWith(exit);
+    }
   });
 
   it('a repository with no credential warns and exits 1, asking the machine nothing', async () => {

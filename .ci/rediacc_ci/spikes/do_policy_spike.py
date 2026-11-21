@@ -1,6 +1,6 @@
 """rediacc_ci.spikes.do_policy_spike: the `durable_object` scheduling-policy spike (S1 of PLAN-executor-durable-object-policy).
 
-Three verbs: `deploy`, `run` and `teardown`. The scratch Worker `rediacc-do-policy-spike` lives in `.ci/cache/do-policy-spike/` (never under workers/), runs on workers.dev only, and carries one `durable_object`-policy container entry with two images: a tiny probe image and the real executor image (workers/proxy/Dockerfile). Credentials come from the `deploy-proxy-bench` Bitwarden profile, entered by re-executing under `rediacc_ci.core.bws_env exec`; only names are ever printed.
+Three verbs: `deploy`, `run` and `teardown`. The scratch Worker `rediacc-do-policy-spike` lives in `.ci/cache/do-policy-spike/` (never under workers/), runs on workers.dev only, and carries one `durable_object`-policy container entry with two images: a tiny probe image and the real executor image (workers/proxy/Dockerfile). Credentials come from the `deploy-proxy-bench-eu` Bitwarden profile, entered by re-executing under `rediacc_ci.core.bws_env exec`; only names are ever printed.
 
 `run` proves DU1 to DU7 of the plan against the deployed Worker and writes one JSON record, whose `verdict` is GO (Design A), FALLBACK-1 (B), FALLBACK-2 (C) or STOP. `teardown` runs `wrangler delete` and `wrangler containers delete` and exits 1 while any application of the scratch Worker remains.
 
@@ -27,7 +27,7 @@ from typing import Any
 from rediacc_ci.core import https
 
 SELF = "rediacc_ci.spikes.do_policy_spike"
-PROFILE = "deploy-proxy-bench"
+PROFILE = "deploy-proxy-bench-eu"
 PROFILES_ENV = "REDIACC_BWS_PROFILES"
 WORKER_NAME = "rediacc-do-policy-spike"
 PACKAGE_PARENT = str(pathlib.Path(__file__).resolve().parents[2])
@@ -356,7 +356,8 @@ class Worker:
             with https.urlopen(request, timeout=timeout, http="loopback") as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
-            body = exc.read().decode("utf-8", "replace")
+            with exc:
+                body = exc.read().decode("utf-8", "replace")
             try:
                 return {"http_status": exc.code, **json.loads(body)}
             except ValueError:
@@ -822,7 +823,7 @@ def bound() -> bool:
 
 
 def reexec(argv: list[str]) -> int:
-    """This same run under the deploy-proxy-bench profile; the values reach only the child's environment."""
+    """This same run under the deploy-proxy-bench-eu profile; the values reach only the child's environment."""
     env = dict(os.environ)
     env["PYTHONPATH"] = PACKAGE_PARENT + (
         os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else ""

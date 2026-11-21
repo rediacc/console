@@ -314,6 +314,44 @@ export async function learnedSelftest(): Promise<{
     }
   }
 
+  // A CHEAP PREREQUISITE GOES FIRST, over today's order and the learned one: build:packages waited 1,113-1,514 s behind check:ci-pytest's grant (2026-11-20). A costly prerequisite keeps its place.
+  {
+    const specs = [
+      fixtureSpec('cp:big'),
+      fixtureSpec('cp:pre'),
+      fixtureSpec('cp:dep', { needs: ['cp:pre'] }),
+      fixtureSpec('cp:costly'),
+      fixtureSpec('cp:dep2', { needs: ['cp:costly'] }),
+    ];
+    const durations = new Map([
+      ['cp:big', 900_000],
+      ['cp:pre', 2_000],
+      ['cp:dep', 100_000],
+      ['cp:costly', 60_000],
+      ['cp:dep2', 5_000],
+    ]);
+    const order = { pinned: new Set(['cp:big']), preflight: [], value: new Map<string, number>() };
+    for (const sched of ['slots', 'cores'] as const) {
+      const plan = { jobs: 4, durations, sched, budget: P24_BUDGET };
+      for (const [label, o] of [
+        ['today', undefined],
+        ['learned', order],
+      ] as const) {
+        const ids = [...specs]
+          .sort(planAdmission(specs, { ...plan, order: o }).rank)
+          .map((g) => g.id);
+        check(
+          ids[0] === 'cp:pre',
+          `${sched}/${label}: a cheap prerequisite is admitted first, got ${ids.join()}`
+        );
+        check(
+          ids.indexOf('cp:costly') > ids.indexOf('cp:big'),
+          `CONTROL ${sched}/${label}: a costly prerequisite (60 s) is not lifted above the long gate, got ${ids.join()}`
+        );
+      }
+    }
+  }
+
   // T7: THE PROPERTY over archived timelines and seeded mixes.
   {
     const dir = path.join(REPO_ROOT, '.ci', 'cache', 'receipts');

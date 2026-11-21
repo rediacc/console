@@ -359,25 +359,28 @@ def ls_files(
 
 
 def file_modes(*pathspecs: str, root: os.PathLike[str] | str | None = None) -> dict[str, str]:
-    """`git ls-files -s` as {path: mode}. The mode git RECORDED, not the disk's.
+    """`git ls-files --format=%(objectmode) %(path)` as {path: mode}. The mode git RECORDED, not the disk's.
 
     THE DISTINCTION IS THE WHOLE POINT, and `check-python-lint.sh` pays for it in prose: CI lints a fresh checkout, so what CI sees is whatever git recorded. A file chmod +x on disk AFTER `git add` is 755 locally and 644 in CI, which is exactly how two files passed a local gate and failed the same gate in CI on 2026-08-28.
     """
-    args = ["ls-files", "-s", "-z"]
+    args = ["ls-files", "-z", "--format=%(objectmode) %(path)"]
     if pathspecs:
         args.append("--")
         args.extend(pathspecs)
     result = git(args, root=root)
     if not result.ok:
-        return {}
+        # An empty map would read as "no file has a mode", and a mode gate over it passes without checking anything; `ls-files --format` needs git 2.38, so an older git lands here.
+        raise RuntimeError(
+            "git ls-files --format failed: %s (the --format option needs git 2.38 or newer; read the message for the real cause)"
+            % (result.stderr.strip() or "no stderr")
+        )
     out: dict[str, str] = {}
     for entry in result.stdout.split("\0"):
         if not entry:
             continue
-        meta, _, path = entry.partition("\t")
-        fields = meta.split()
-        if len(fields) >= 1 and path:
-            out[path] = fields[0]
+        mode, _, path = entry.partition(" ")
+        if mode and path:
+            out[path] = mode
     return out
 
 

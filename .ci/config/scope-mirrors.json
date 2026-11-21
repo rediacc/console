@@ -82,7 +82,7 @@
       ]
     },
     "pr.one-branch-one-pr": {
-      "sha": "d5513bc36ebf",
+      "sha": "d79a6d841ac2",
       "atoms": [
         "`block_second_branch`",
         "`block_second_open_pr`"

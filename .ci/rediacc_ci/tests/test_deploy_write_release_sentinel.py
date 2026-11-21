@@ -250,7 +250,7 @@ def test_the_three_aws_calls_are_made_in_order(tmp_path: pathlib.Path) -> None:
 
 
 def test_releases_bucket_is_honoured(tmp_path: pathlib.Path) -> None:
-    """`RSV_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"`. Every one of the
+    """`RSV_BUCKET="${RELEASES_BUCKET:-releases}"`. Every one of the
     three keys is built from it, so a port that hard-coded the default would write the sentinel into the wrong bucket in a staging run."""
     old, new = drive(tmp_path, HAPPY, env_extra={"RELEASES_BUCKET": "rediacc-staging"})
     assert old.rc == 0

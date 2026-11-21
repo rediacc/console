@@ -18,6 +18,9 @@ up                 # Start Flask application
 down               # Stop services and cleanup tunnel
 ```
 
+## Host requirement
+QUIC needs `net.core.rmem_max` and `net.core.wmem_max` at 7500000 on the machine. `up()` runs as the unprivileged universal user and cannot set them, so an administrator runs `sudo sysctl -w net.core.rmem_max=7500000 net.core.wmem_max=7500000` once, or persists them in `/etc/sysctl.d`.
+
 ## Configuration
 Set environment variable before running:
 - `CLOUDFLARE_TUNNEL_HOST`: Domain for tunnel (default: demo.rediacc.com)

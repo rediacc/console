@@ -77,6 +77,12 @@ export const CommandRequestSchema = z.object({
     .string()
     .regex(/^[A-Za-z0-9][A-Za-z0-9._:@-]{0,199}$/)
     .optional(),
+  /**
+   * `-b` / `--background`: the executor starts each machine job with a zero
+   * attach window and answers with the job's ticket at once, so the client does
+   * not follow it. Absent means the served window (the job is followed).
+   */
+  background: z.boolean().optional(),
 });
 
 type CommandRequest = z.infer<typeof CommandRequestSchema>;
@@ -268,12 +274,9 @@ export const StreamLineSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('job'),
     jobId: z.string(),
-    /**
-     * The machine the job runs on, so a client polls it without re-deriving
-     * the target. Optional only until the serve route emits it (J6b).
-     */
-    machine: z.string().min(1).optional(),
-    /** Line offset to resume from when re-attaching to a detached job. */
+    /** The machine the job runs on, so a client polls it without re-deriving the target. */
+    machine: z.string().min(1),
+    /** The spool line the stream starts after: the highest ordinal the client already holds, so the polls resume past it. */
     sinceLine: z.number().int().nonnegative().default(0),
     /** The overlapping jobs the start met (section 19). */
     overlaps: z.array(JobOverlapSchema).optional(),
@@ -298,12 +301,15 @@ export type { StreamLine };
  * Design 4). `more: true` tells the client to poll again at once.
  */
 export const JobPollResponseSchema = z.object({
-  events: z.array(z.object({ line: z.number().int().positive(), event: WireEventSchema })),
+  /** `line` is the event's 0-based index in the job's spool, so a first poll from `sinceLine` 0 may carry line 0. */
+  events: z.array(z.object({ line: z.number().int().nonnegative(), event: WireEventSchema })),
   nextLine: z.number().int().nonnegative(),
   more: z.boolean(),
   status: z.object({
     state: JobStateSchema,
     exitCode: z.number().int().optional(),
+    /** When the job started, from renet's status file: the terminal audit's duration is `finishedAt` minus this. */
+    startedAt: z.string().optional(),
     finishedAt: z.string().optional(),
     function: z.string(),
   }),
@@ -348,14 +354,6 @@ export const PROXY_ROUTES = {
   sessionCek: (sessionId: string) => `/v1/session/${sessionId}/cek`,
   /** The same route as a server-side pattern, so the two cannot drift apart. */
   sessionCekPattern: '/v1/session/:id/cek',
-  /**
-   * Re-attach to a detached job's held event stream: `?machine=<m>&sinceLine=<n>`.
-   * Replaced by `jobPoll`; J6b deletes it together with the serve route and the
-   * client's re-attach loop.
-   */
-  jobEvents: (jobId: string) => `/v1/jobs/${jobId}/events`,
-  /** The same route as a server-side pattern, so client and server cannot drift. */
-  jobEventsPattern: '/v1/jobs/:id/events',
   /** One short poll: `?machine=<m>&sinceLine=<n>&maxLines=<k>`, answered by JobPollResponseSchema. */
   jobPoll: (jobId: string) => `/v1/jobs/${jobId}/poll`,
   jobPollPattern: '/v1/jobs/:id/poll',

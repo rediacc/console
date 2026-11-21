@@ -9,6 +9,7 @@ import { type AuditEvent, AuditEventsRequestSchema } from '@rediacc/shared';
 import { repoDockerSocketPath } from '@rediacc/shared/config/runtime-paths';
 import { DEFAULT_DATASTORE_PATH } from '../src/constants';
 import { type CliResult, CliRunner } from '../src/utils/CliRunner';
+import { assertLandlockSelected } from '../src/utils/landlock';
 import { loginCliToAccount } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
@@ -275,7 +276,7 @@ interface CliConfigFile {
 }
 
 test.describe
-  .serial('rdc --proxy through a local executor @cli @proxy', () => {
+  .serial('rdc --proxy through a local executor @cli @proxy @landlock', () => {
     test.setTimeout(600_000);
 
     let cli: CliRunner;
@@ -355,6 +356,7 @@ test.describe
       cli = CliRunner.create({ configName: CONFIG_NAME });
       caller = CliRunner.create({ configName: CONFIG_NAME, env: { REDIACC_TOKEN: CALLER_TOKEN } });
       stranger = CliRunner.create({ configName: CONFIG_NAME, env: { REDIACC_TOKEN: WRONG_TOKEN } });
+      await assertLandlockSelected(runner);
 
       // The config records the fleet's host keys, so one that outlived a fleet reset is stale: recreated each run (see CliRunner.resetConfig).
       await CliRunner.resetConfig(CONFIG_NAME);

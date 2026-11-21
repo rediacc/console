@@ -67,6 +67,7 @@ import subprocess
 import sys
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan
+from rediacc_hooks.guards import _backup_push
 from rediacc_hooks.wellknown import GH_REPO
 
 CHAIN = "pre-bash"
@@ -86,7 +87,9 @@ ENVS = [
     ("this-worktree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:this-worktree-snapshot}"}, {}),
 ]
 
-GIT_AT_CMD = hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+")
+GIT_AT_CMD = hookio.rx(
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+"
+)
 GIT_PUSH_AT_CMD = GIT_AT_CMD + hookio.rx(r"push([{S}]|$)")
 
 
@@ -175,6 +178,16 @@ EDGE_CASES = [
     ("mirror with --force", "git push --force gitlab main:main"),
     ("mirror a bare --mirror push", "git push --mirror gitlab"),
 ]
+
+
+# THE LANDING TREE IS THIS CHECKOUT TOO (agent/plans/PLAN-two-track-merge-dev.md, box LT12). With a landing record the main checkout and the landing tree are both bound (`commit_policy.bound_trees`): a push typed in either is judged from either root (`commit_policy.foreign_only` reads both as this checkout, box LT11), and the mirror push and the fast-forward fallback are admitted from either tree's own toplevel (`_console_tree`). Before this a push in the landing tree from the development root was skipped as a scratch repository's, every spelling of `main` included, and the admitted fallback typed there from the landing root's sibling was refused. Planted, the admission reads the session root alone again; the scope half is planted in the suite as a `bound_trees` mutant, since it lives in commit_policy.
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
+
+
+def _console_tree(repo, root):
+    """Whether `repo` is the toplevel of one of the bound trees itself (a submodule of one is not: it has no mirror and no fallback)."""
+    trees = commit_policy.bound_trees(root)
+    return bool(repo) and os.path.realpath(repo) in {os.path.realpath(t) for t in trees}
 
 
 def _count(pattern, text, distinct=False):
@@ -281,7 +294,7 @@ def _ci_green(live, number, sha):
         return "ci-trace did not read the open PR #%s" % number
     if trace.get("head") != sha:
         return "ci-trace read head `%s`, not `%s`" % (str(trace.get("head"))[:12], sha[:12])
-    # CI COMPLETE, NOT THE TRACER'S WHOLE VERDICT (operator ruling 2026-10-03, for the unattended merge cycle). `main`'s ruleset requires CI Complete alone, and it aggregates the PR's own CI. The whole verdict also counted contexts no workflow on the head defines: on #591 the base branch's retired review-status.yml kept posting a failing "Review Complete", which refused this push while CI Complete was SUCCESS (run 37089591716).
+    # CI COMPLETE, NOT THE TRACER'S WHOLE VERDICT (operator ruling 2026-10-03, for the unattended merge cycle). `main`'s ruleset requires CI Complete alone, and it aggregates the PR's own CI. The whole verdict also counted contexts no workflow on the head defines: on #591 the base branch's retired ops-review-status.yml kept posting a failing "Review Complete", which refused this push while CI Complete was SUCCESS (run 37089591716).
     # Exit 1 is a red whole verdict, which CI Complete then decides; exit 2 (no verdict) and 3 (head moved) are never a pass (review 2effee58.1).
     if proc.returncode not in (0, 1):
         return "ci-trace gave no verdict on `%s` (rc %d)" % (sha[:12], proc.returncode)
@@ -302,8 +315,7 @@ def mirror_refusal(ev, run, flags, positionals):
         return "the refspec `%s` is not `refs/heads/main:refs/heads/main`" % positionals[1]
     root = ev.project_dir
     repo = commit_policy.run_repo(run, ev.field("cwd") or root)
-    top = commit_policy.toplevel(root)
-    if not repo or not top or os.path.realpath(repo) != os.path.realpath(top):
+    if not _console_tree(repo, root):
         return "only the console checkout's own main has the mirror"
     urls: list[str] = []
     for extra in ([], ["--push"]):
@@ -352,8 +364,7 @@ def ff_fallback_refusal(ev, cmd, scan, text_scan):
         return "the refspec `%s` is not `<live branch or sha>:main`" % refspec
     root = ev.project_dir
     repo = commit_policy.run_repo(run, ev.field("cwd") or root)
-    top = commit_policy.toplevel(root)
-    if not repo or not top or os.path.realpath(repo) != os.path.realpath(top):
+    if not _console_tree(repo, root):
         return "only the console checkout's own main has the fallback"
     # THE BRANCH COMES FROM THE PUSHED SOURCE, NEVER FROM THE CHECKOUT (worklist #c1474aae). On 2026-10-08 the operator parked 1007-1's local commits onto a new branch 1008-1, and `git push origin origin/1007-1:main` was refused as "not the live branch 1008-1" although every condition held for PR #599's head 6779389a9. What moves `main` is the commit the refspec names, so that commit, and the PR whose head it is, are the whole question.
     named = _source_branch(src)
@@ -430,6 +441,9 @@ def run(ev):
     cmd = ev.raw("tool_input", "command")
     if cmd in ("", "null"):
         return hookio.ALLOW
+    # A push of nothing but `refs/backup/**` to its repository's pin is the git-level pre-push hook's to judge (box G5 of PLAN-local-first-delivery, `_backup_push`).
+    if _backup_push.admitted(ev, cmd):
+        return hookio.ALLOW
 
     # SCOPE: this policy is about THIS checkout and its submodules. A push in a repository outside it (a `/tmp` fixture, even one the same command `git init`s) is not its business (finding #5810a9f3).
     # The GitLab mirror push (`git push gitlab main:main`) is the operator's own ruling about console clones, so a repository outside this checkout is judged for it (test-block_push_to_protected_branch.py, "mirror: -C into another repository").
@@ -469,7 +483,7 @@ def run(ev):
     # `cd "${CLAUDE_PROJECT_DIR:-.}"`, same convention as block_merge_with_unpushed.py, then
     # resolve any `-C <dir>` / `cd <dir>` hint the command itself carries (a chained dispatcher runs several guards in one interpreter, so this reads cwd rather than changing it).
     root = ev.project_dir
-    target = shellscan.target_root(scan, root, verb="push")
+    target = shellscan.target_root(scan, root, verb="push", cmd=cmd)
     git_root = target if target != "" else root
 
     branch = hookio.git_out(["symbolic-ref", "--short", "-q", "HEAD"], cwd=git_root, want_rc=True)

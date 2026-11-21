@@ -159,6 +159,12 @@ def git_out(cwd, *args):
     return r.stdout.strip() if r.returncode == 0 else ""
 
 
+def compact_on_main(root, *args, **kwargs):
+    """R.compact with origin/main moved to HEAD first: every fixture commit stands for merged work, and RB7 refuses a done= that is not on origin/main. The RB7 control calls R.compact itself, with origin/main held back."""
+    sh(root, "git", "update-ref", "refs/remotes/origin/main", "HEAD")
+    return R.compact(root, *args, **kwargs)
+
+
 def build(td):
     """(root, before_sha, after_sha). Two ledger commits: open, then ticked."""
     root = pathlib.Path(td) / "repo"
@@ -224,7 +230,128 @@ def build(td):
 
 TD = tempfile.TemporaryDirectory()
 ROOT, BEFORE, AFTER = build(TD.name)
-RECORD, NOTES = R.compact(ROOT, REL, "deadbeef", why="auto", park=True)
+# RB7 (PLAN-two-track-merge-dev): with origin/main one commit behind, the tick's commit is a branch commit a rebase-merge would rewrite, so compaction refuses rather than write a done= that reads `no such commit` on main.
+sh(ROOT, "git", "update-ref", "refs/remotes/origin/main", BEFORE)
+raises(
+    "RB7: compaction refuses a done= that is not on origin/main",
+    lambda: R.compact(ROOT, REL, "deadbeef", why="auto", park=True),
+    "not on origin/main",
+)
+# RB7 second half: R4's done= survives a rebase-merge through the successor map. A branch commit with its review record (Commit/Parent/Patch-Id, as wl_review writes it), main moved, the commit cherry-picked (a new sha), the branch deleted and the orphan pruned, as a fresh checkout of main would have it.
+_rm = pathlib.Path(tempfile.mkdtemp())
+sh(_rm, "git", "init", "-q", "-b", "main")
+sh(_rm, "git", "config", "user.email", "t@example.com")
+sh(_rm, "git", "config", "user.name", "t")
+sh(_rm, "git", "commit", "-q", "--allow-empty", "-m", "base")
+sh(_rm, "git", "checkout", "-q", "-b", "dev")
+(_rm / "x.txt").write_text("x\n", encoding="utf-8")
+sh(_rm, "git", "add", "x.txt")
+sh(_rm, "git", "commit", "-q", "-m", "tick the box")
+_rm_old = git_out(_rm, "rev-parse", "HEAD")
+_rm_parent = git_out(_rm, "rev-parse", "HEAD^")
+_rm_show = subprocess.run(
+    ["git", "-C", str(_rm), "show", _rm_old], capture_output=True, text=True, check=True
+).stdout
+_rm_pid = subprocess.run(
+    ["git", "-C", str(_rm), "patch-id", "--stable"],
+    input=_rm_show,
+    capture_output=True,
+    text=True,
+    check=True,
+).stdout.split()[0]
+(_rm / "agent" / "reviews" / "dev").mkdir(parents=True)
+(_rm / "agent" / "reviews" / "dev" / ("%s.md" % _rm_old)).write_text(
+    "# review\nCommit: %s\nParent: %s\nPatch-Id: %s\n" % (_rm_old, _rm_parent, _rm_pid),
+    encoding="utf-8",
+)
+sh(_rm, "git", "checkout", "-q", "main")
+sh(_rm, "git", "commit", "-q", "--allow-empty", "-m", "main moved")
+sh(_rm, "git", "cherry-pick", _rm_old)
+_rm_landed = git_out(_rm, "rev-parse", "HEAD")
+sh(_rm, "git", "branch", "-q", "-D", "dev")
+sh(_rm, "git", "reflog", "expire", "--expire=now", "--all")
+sh(_rm, "git", "gc", "-q", "--prune=now")
+falsy(
+    "RB7 (precondition): the pre-merge sha no longer resolves",
+    R.resolve(_rm, "commit", _rm_old[:9])[0],
+)
+_rm_ok, _rm_sha, _rm_why = R.resolve_done(_rm, _rm_old[:9])
+truthy(
+    "RB7: R4's done= is carried to the landed copy through the successor map",
+    _rm_ok and _rm_sha == _rm_landed and "successor" in _rm_why,
+)
+_rm_direct = R.resolve_done(_rm, _rm_landed[:9])
+truthy(
+    "RB7: a done= that resolves directly answers its own full sha",
+    _rm_direct == (True, _rm_landed, ""),
+)
+control(
+    "RB7: R4 names a carried done= with its landed sha",
+    R.done_label("abc123def", "fff000111222333"),
+    "abc123def (landed as fff000111222)",
+)
+control(
+    "RB7: R4 names a direct done= as itself",
+    R.done_label("abc123def", "abc123def0000"),
+    "abc123def",
+)
+# The memo follows HEAD: one more commit gives a fresh (root, HEAD) key, and the carried answer still holds.
+_rm_keys = len([k for k in R._DONE_SUCCESSOR if k[0] == str(_rm)])
+sh(_rm, "git", "commit", "-q", "--allow-empty", "-m", "head moves")
+truthy(
+    "RB7: after HEAD moves the carry still resolves",
+    R.resolve_done(_rm, _rm_old[:9])[1] == _rm_landed,
+)
+truthy(
+    "RB7: a HEAD move builds a fresh successor map",
+    len([k for k in R._DONE_SUCCESSOR if k[0] == str(_rm)]) == _rm_keys + 1,
+)
+# Depth 0: a one-commit repository has no window, so a gone sha is refused rather than raising.
+_one = pathlib.Path(tempfile.mkdtemp())
+sh(_one, "git", "init", "-q", "-b", "main")
+sh(
+    _one,
+    "git",
+    "-c",
+    "user.name=t",
+    "-c",
+    "user.email=t@example.com",
+    "commit",
+    "-q",
+    "--allow-empty",
+    "-m",
+    "only",
+)
+falsy(
+    "RB7: a one-commit repo (no successor window) refuses a gone sha",
+    R.resolve_done(_one, "0123456789")[0],
+)
+control(
+    "RB7: the depth-0 successor lookup itself answers empty, without raising",
+    R._done_successor(_one, "0123456789"),
+    "",
+)
+falsy(
+    "RB7: the depth-0 refusal is not a swallowed build error",
+    "could not be built" in R.resolve_done(_one, "0123456789")[2],
+)
+_rm_real = R._done_successor
+R._done_successor = lambda *_a: ""
+try:
+    falsy(
+        "RB7 (mutant): without the successor lookup the done= is refused",
+        R.resolve_done(_rm, _rm_old[:9])[0],
+    )
+finally:
+    R._done_successor = _rm_real
+sh(ROOT, "git", "update-ref", "-d", "refs/remotes/origin/main")
+truthy("RB7: a clone with no origin/main judges nothing", R._on_origin_main(ROOT, AFTER))
+falsy(
+    "RB7: a git failure (not a repository) refuses",
+    R._on_origin_main(pathlib.Path(tempfile.mkdtemp()), AFTER),
+)
+sh(ROOT, "git", "update-ref", "refs/remotes/origin/main", AFTER)
+RECORD, NOTES = compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True)
 REC = R.parse(RECORD)
 
 # --------------------------------------------------------------------------- 1. THE GRAMMAR. Parsed back out of the exact bytes that would go on disk. ---------------------------------------------------------------------------
@@ -398,6 +525,26 @@ truthy(
 )
 # The refusal names only refs that exist: this clone has no origin/main yet, so the message must not point at it; once the ref exists (carrying the base), it is named.
 falsy("resolve commit: no origin/main ref, so the refusal does not name it", "origin/main" in _why)
+
+# RB5 (PLAN-two-track-merge-dev): from a lease (a linked worktree on a detached HEAD) a lease-only commit is refused at write time, and a commit on the live branch is accepted.
+_lv = pathlib.Path(tempfile.mkdtemp())
+sh(_lv, "git", "init", "-q", "-b", "1120-1")
+sh(_lv, "git", "config", "user.email", "t@example.com")
+sh(_lv, "git", "config", "user.name", "t")
+sh(_lv, "git", "commit", "-q", "--allow-empty", "-m", "on the live branch")
+_lv_branch = git_out(_lv, "rev-parse", "HEAD")
+_lv_lease = _lv.parent / (_lv.name + "-lease")
+sh(_lv, "git", "worktree", "add", "-q", "--detach", str(_lv_lease), "HEAD")
+sh(_lv_lease, "git", "commit", "-q", "--allow-empty", "-m", "lease only")
+_lv_only = git_out(_lv_lease, "rev-parse", "HEAD")
+falsy(
+    "RB5: a lease-only commit pointer is refused from inside the lease",
+    R.resolve(_lv_lease, "commit", _lv_only)[0],
+)
+truthy(
+    "RB5 (control): a live-branch commit resolves from inside the lease",
+    R.resolve(_lv_lease, "commit", _lv_branch)[0],
+)
 sh(_orph, "git", "update-ref", "refs/remotes/origin/main", _base)
 _ok2, _why2 = R.resolve(_orph, "commit", _orphan)
 truthy(
@@ -559,28 +706,111 @@ control(
     R.done_commit([("T1", _ticked), ("R", _open)], REL, R.box_sig(TASK_DONE)),
     "",
 )
+# A plan moved between folders keeps its boxes' tick dates: the ledger row follows the path, the identity is the basename.
+_live_rel = "agent/plans/PLAN-fixture.md"
+_done_rel = "agent/plans/_done/PLAN-fixture.md"
+_pre = {"plans": {_live_rel: _ticked["plans"][REL]}}
+_moved = {"plans": {_done_rel: _ticked["plans"][REL]}}
+control(
+    "a plan moved to _done/ is still done at its tick, not at the move",
+    R.done_commit([("T1", _pre), ("MV", _moved)], _done_rel, R.box_sig(TASK_DONE)),
+    "T1",
+)
+truthy(
+    "...and attested_by_identity reads the moved row",
+    R.attested_by_identity(_pre, _done_rel, R.box_sig(TASK_DONE)),
+)
+# Review 8cc0b5f9.1: the per-ledger identity index follows an in-place change to the ledger's rows. CONTROL first (an unchanged ledger still answers from its index), then the mutation.
+_mut = json.loads(json.dumps(_pre))
+_mut_sig = R.box_sig(TASK_DONE)
+truthy(
+    "CONTROL: an indexed ledger attests the box under the other folder",
+    R.attested_by_identity(_mut, _done_rel, _mut_sig),
+)
+truthy(
+    "...and a second ask of the unchanged ledger answers the same",
+    R.attested_by_identity(_mut, _done_rel, _mut_sig),
+)
+_mut["plans"][_live_rel]["done_sigs"] = []
+falsy(
+    "a row whose done_sigs was reassigned after indexing is no longer attested",
+    R.attested_by_identity(_mut, _done_rel, _mut_sig),
+)
+_mut["plans"][_live_rel] = {"done_sigs": [_mut_sig]}
+truthy(
+    "...and a replaced row is read again",
+    R.attested_by_identity(_mut, _done_rel, _mut_sig),
+)
+del _mut["plans"][_live_rel]
+falsy(
+    "...and a dropped row is no longer attested",
+    R.attested_by_identity(_mut, _done_rel, _mut_sig),
+)
+# Review 56d48380.1: an in-place append to an initially EMPTY done_sigs list shows through the index too (the index must hold the ledger's own list, not a fresh `[]` for a falsy one).
+_empty: dict = {"plans": {_live_rel: {"done_sigs": []}}}
+falsy(
+    "CONTROL: an indexed ledger whose done_sigs is empty attests nothing",
+    R.attested_by_identity(_empty, _done_rel, _mut_sig),
+)
+_empty["plans"][_live_rel]["done_sigs"].append(_mut_sig)
+truthy(
+    "...and an in-place append to that empty list is read on the next ask",
+    R.attested_by_identity(_empty, _done_rel, _mut_sig),
+)
+# Review f142ed91.1: a box ticked before the move and reopened after it, with the pre-move row still in the ledger, is not done.
+_reopened = {"plans": {_live_rel: _ticked["plans"][REL], _done_rel: _open["plans"][REL]}}
+falsy(
+    "a box reopened after a move is not attested by the stale pre-move row",
+    R.attested_by_identity(_reopened, _done_rel, R.box_sig(TASK_DONE)),
+)
+control(
+    "...and done_commit reads it as not done",
+    R.done_commit(
+        [("T1", _pre), ("MV", _moved), ("R", _reopened)], _done_rel, R.box_sig(TASK_DONE)
+    ),
+    "",
+)
+control(
+    "...the re-tick after the reopen is dated at the re-tick",
+    R.done_commit(
+        [("T1", _pre), ("MV", _moved), ("R", _reopened), ("T2", _moved)],
+        _done_rel,
+        R.box_sig(TASK_DONE),
+    ),
+    "T2",
+)
+control(
+    "...the unmoved control: a plan that never moved is dated by its own path, as before",
+    R.done_commit([("T1", _ticked), ("T2", _ticked)], REL, R.box_sig(TASK_DONE)),
+    "T1",
+)
+control(
+    "...and an unrelated plan's row never attests",
+    R.done_commit([("T1", _ticked)], "agent/plans/_done/PLAN-other.md", R.box_sig(TASK_DONE)),
+    "",
+)
 
 # --------------------------------------------------------------------------- 7. compact(): every refusal, and the pair that proves it is not refusing everything. ---------------------------------------------------------------------------
 raises(
     "compacting a plan with open boxes and no --park is refused",
-    lambda: R.compact(ROOT, REL, "deadbeef", why="auto"),
+    lambda: compact_on_main(ROOT, REL, "deadbeef", why="auto"),
     "A `compacted` status is in the FINISHED set",
 )
 truthy(
     "CONTROL: the same plan compacts under --park",
-    bool(R.compact(ROOT, REL, "deadbeef", why="auto", park=True)[0]),
+    bool(compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True)[0]),
 )
 
 (ROOT / REL).write_text(PLAN + "\nan uncommitted line\n", encoding="utf-8")
 raises(
     "compacting a DIRTY path is refused",
-    lambda: R.compact(ROOT, REL, "deadbeef", why="auto", park=True),
+    lambda: compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True),
     "uncommitted changes",
 )
 (ROOT / REL).write_text(PLAN, encoding="utf-8")
 truthy(
     "CONTROL: once clean again it compacts",
-    bool(R.compact(ROOT, REL, "deadbeef", why="auto", park=True)[0]),
+    bool(compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True)[0]),
 )
 
 (ROOT / REL).write_text(RECORD, encoding="utf-8")
@@ -588,25 +818,25 @@ sh(ROOT, "git", "add", "-A")
 sh(ROOT, "git", "commit", "-qm", "the record lands")
 raises(
     "compacting something that is already a record is refused",
-    lambda: R.compact(ROOT, REL, "deadbeef", why="auto", park=True),
+    lambda: compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True),
     "already a record",
 )
 # ORDER MATTERS HERE. A record just written by `--write` is BOTH a record and a dirty path; if the dirty branch won, the message would say "commit the path first", and doing that then compacts the RECORD -- pointing the new blob at the record instead of the plan. Pinned so the ordering cannot be shuffled back.
 (ROOT / REL).write_text(RECORD + "\nan uncommitted trailing line\n", encoding="utf-8")
 raises(
     "a record that is ALSO dirty still reports being a record, not being dirty",
-    lambda: R.compact(ROOT, REL, "deadbeef", why="auto", park=True),
+    lambda: compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True),
     "already a record",
 )
 (ROOT / REL).write_text(RECORD, encoding="utf-8")
 raises(
     "an unknown --why source is refused",
-    lambda: R.compact(ROOT, REL, "deadbeef", why="wishful", park=True),
+    lambda: compact_on_main(ROOT, REL, "deadbeef", why="wishful", park=True),
     "--why must be one of",
 )
 raises(
     "compacting a path that does not exist is refused",
-    lambda: R.compact(ROOT, "agent/PLAN-nope.md", "deadbeef"),
+    lambda: compact_on_main(ROOT, "agent/PLAN-nope.md", "deadbeef"),
     "does not exist",
 )
 
@@ -755,7 +985,7 @@ control(
 )
 truthy("the record fits its own budget", len(RECORD.encode()) <= R.size_budget(len(REC["boxes"])))
 
-authored, _n = R.compact(ROOT, REL, "deadbeef", why="author", park=True)
+authored, _n = compact_on_main(ROOT, REL, "deadbeef", why="author", park=True)
 truthy("--why author leaves placeholders to fill", R.PLACEHOLDER_RE.search(authored) is not None)
 falsy("--why auto fills them from the plan's own sections", R.PLACEHOLDER_RE.search(RECORD) is None)
 
@@ -810,7 +1040,7 @@ sh(ROOT, "git", "add", "-A")
 sh(ROOT, "git", "commit", "-qm", "a plan that ends with a blank line")
 sh(ROOT, "git", "update-ref", "refs/remotes/origin/main", "HEAD")
 truthy("the edge fixture really does end with a blank line", EDGE_TEXT.endswith("\n\n"))
-edge_rec, _n = R.compact(ROOT, EDGE, "deadbeef", why="auto")
+edge_rec, _n = compact_on_main(ROOT, EDGE, "deadbeef", why="auto")
 R.write_atomic(ROOT / EDGE, edge_rec)
 edge_body, _note = R.revive(ROOT, EDGE)
 control("revive returns the trailing blank line too", edge_body, EDGE_TEXT)
@@ -837,7 +1067,7 @@ own_ledger["plans"][OWN] = {
 (ROOT / R.LEDGER_REL).write_text(json.dumps(own_ledger, indent=2) + "\n", encoding="utf-8")
 sh(ROOT, "git", "add", "-A")
 sh(ROOT, "git", "commit", "-qm", "an unowned plan")
-own_rec, _n = R.compact(ROOT, OWN, "deadbeef", why="auto", park=True)
+own_rec, _n = compact_on_main(ROOT, OWN, "deadbeef", why="auto", park=True)
 control(
     "the record keeps the whole Owner sentence",
     R.parse(own_rec)["owner"],
@@ -883,12 +1113,12 @@ sh(ROOT, "git", "add", "-A")
 sh(ROOT, "git", "commit", "-qm", "a plan too small to be worth compacting")
 raises(
     "a plan smaller than the blob-ratio floor is refused at WRITE time",
-    lambda: R.compact(ROOT, TINY, "deadbeef", why="auto"),
+    lambda: compact_on_main(ROOT, TINY, "deadbeef", why="auto"),
     "nothing would be compacted",
 )
 truthy(
     "CONTROL: the big fixture is comfortably over the same floor",
-    bool(R.compact(ROOT, REL, "deadbeef", why="auto", park=True)[0]),
+    bool(compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True)[0]),
 )
 
 # --------------------------------------------------------------------------- 10f. A DROPPED BOX IS NAMED. plan_tasks discards a box whose normalised key is empty (a checkbox is kept at any other length), so the line exists in the plan and in NEITHER list -- and _assert_boxes_preserved cannot see it, because it runs the same parser on both sides.
@@ -907,7 +1137,7 @@ short_ledger["plans"][SHORT] = {
 (ROOT / R.LEDGER_REL).write_text(json.dumps(short_ledger, indent=2) + "\n", encoding="utf-8")
 sh(ROOT, "git", "add", "-A")
 sh(ROOT, "git", "commit", "-qm", "a plan with an unparseable box")
-_short_rec, short_notes = R.compact(ROOT, SHORT, "deadbeef", why="auto", park=True)
+_short_rec, short_notes = compact_on_main(ROOT, SHORT, "deadbeef", why="auto", park=True)
 truthy(
     "a checkbox the parser drops is REPORTED, not silently left out",
     any("NOT in the record" in n for n in short_notes),
@@ -915,7 +1145,8 @@ truthy(
 truthy(
     "CONTROL: the plan with no unparseable box says nothing of the kind",
     not any(
-        "NOT in the record" in n for n in R.compact(ROOT, REL, "deadbeef", why="auto", park=True)[1]
+        "NOT in the record" in n
+        for n in compact_on_main(ROOT, REL, "deadbeef", why="auto", park=True)[1]
     ),
 )
 
@@ -945,7 +1176,7 @@ _gitbin.symlink_to(shutil.which("git"))
 _saved = (os.environ.get("PATH", ""), os.environ.get("HOME", ""))
 os.environ["PATH"], os.environ["HOME"] = str(_gitdir), str(_gitdir)
 try:
-    model_rec, model_notes = R.compact(ROOT, REL, "deadbeef", why="model", park=True)
+    model_rec, model_notes = compact_on_main(ROOT, REL, "deadbeef", why="model", park=True)
 finally:
     os.environ["PATH"], os.environ["HOME"] = _saved
 truthy(
@@ -1387,6 +1618,19 @@ raises(
     "scripts/ci-runner/run.ts:9999",
 )
 control("CONTROL: prose with no citation is silent", _plain(ROOT, "nothing cited here", "x"), None)
+# 910aa507.1: the hint follows the kind of refusal. A dead sha gets the landed-sha hint and not the path hint; a bad path gets the path hint and not the sha hint; both kinds get both.
+_DEAD_SHA = "0123456789abcdef0123456789abcdef01234567"
+_sha_only = _refusal(lambda: _plain(ROOT, "landed in %s" % _DEAD_SHA, "x"))
+truthy("a dead sha refusal carries the landed-sha hint", "cite the landed sha" in _sha_only)
+falsy("...and not the repo-relative path hint", "full repo-relative path" in _sha_only)
+_path_only = _refusal(lambda: _plain(ROOT, "see run.ts:352", "x"))
+truthy("a bad path refusal carries the path hint", "full repo-relative path" in _path_only)
+falsy("...and not the landed-sha hint", "cite the landed sha" in _path_only)
+_both = _refusal(lambda: _plain(ROOT, "see run.ts:352 and %s" % _DEAD_SHA, "x"))
+truthy(
+    "a refusal of both kinds carries both hints",
+    "full repo-relative path" in _both and "cite the landed sha" in _both,
+)
 
 _CIT_PLAN = "agent/PLAN-citation-fixture.md"
 _CIT_OPEN = "Wire the citation resolver into the tick verb of this fixture plan"

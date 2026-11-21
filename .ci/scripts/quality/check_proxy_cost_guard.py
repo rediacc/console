@@ -64,7 +64,7 @@ INT_LITERAL_RE = re.compile(r"^\d+$")
 
 PROXY_REL = ("workers", "proxy")
 CONFIG_GLOB = "wrangler*.toml"
-BENCH_CONFIG = "wrangler.bench.toml"
+BENCH_CONFIG = "wrangler.bench-eu.toml"
 EU_CONFIG = "wrangler.eu.toml"
 REQUIRED_CONFIGS = (EU_CONFIG, BENCH_CONFIG)
 # The local-development config is judged against the per-config budget but is not deployed, so it does not count toward the deployable set.

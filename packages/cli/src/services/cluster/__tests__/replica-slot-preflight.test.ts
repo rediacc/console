@@ -1,8 +1,8 @@
 /**
- * The pre-flight is only worth having if the placement paths actually reach it,
- * so this file tests the WIRING rather than the check: it replaces the
- * pre-flight with one that refuses everything, and asserts that a replica-set
- * placement stops before dispatching anything to a machine.
+ * The pre-flight is only worth having if the placement path actually reaches it,
+ * so this file tests the WIRING rather than the check: it replaces the pre-flight
+ * with one that refuses everything, and asserts that a replica-set placement stops
+ * before recording anything or starting a job.
  *
  * The unit behaviour of the check itself lives in
  * services/__tests__/license-preflight.test.ts.
@@ -10,113 +10,85 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockAssertSlots, mockExecute } = vi.hoisted(() => ({
+const { mockAssertSlots, mockRun, mockRecord } = vi.hoisted(() => ({
   mockAssertSlots: vi.fn(),
-  mockExecute: vi.fn(),
+  mockRun: vi.fn(),
+  mockRecord: vi.fn(),
 }));
 
 vi.mock('../../account/license-preflight.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../account/license-preflight.js')>()),
   assertMachineSlotsAvailable: mockAssertSlots,
 }));
-
-vi.mock('../../executor/executor-factory.js', () => ({
-  getExecutor: () => ({ execute: mockExecute }),
+vi.mock('../cluster-job.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../cluster-job.js')>()),
+  runClusterPhase: mockRun,
 }));
-
-// The fork licence step reaches the account and a machine lease; stub both (its behaviour is covered in repo-replicate.test.ts).
-vi.mock('../../account/free-license.js', () => ({
-  issueFreeRepoLicense: vi.fn().mockResolvedValue(undefined),
-  resolveLicenseAuthority: vi.fn().mockResolvedValue('free'),
+vi.mock('../cluster-target.js', () => ({
+  resolveExecutionTarget: vi.fn(() => Promise.resolve({ machineName: 'cp1', cluster: 'prod' })),
 }));
-vi.mock('../../machine/machine-connection.js', () => ({
-  machineConnections: {
-    acquire: vi.fn(() =>
-      Promise.resolve({ machine: {}, sshPrivateKey: 'key', sftp: {}, release: vi.fn() })
-    ),
+vi.mock('../../config/config-cluster-ops.js', () => ({
+  getCluster: vi.fn(() =>
+    Promise.resolve({ pools: [{ name: 'w', role: 'hyperconverged', count: 2 }] })
+  ),
+}));
+vi.mock('../../config/config-resources.js', () => ({
+  configService: {
+    getCurrent: vi.fn(() => Promise.resolve({ state: {} })),
+    setStateBucket: mockRecord,
+    getLocalMachine: vi.fn((name: string) => Promise.resolve({ ip: `10.0.0.${name.slice(-1)}` })),
+    getRepository: vi.fn(() => Promise.resolve({ repositoryGuid: 'guid-sqldb' })),
   },
 }));
+vi.mock('../../core/output.js', () => ({
+  outputService: { info: vi.fn(), success: vi.fn(), warn: vi.fn() },
+}));
 
-const { provisionReplicaDatastores } = await import('../repo-replicate.js');
+const { replicateRepo } = await import('../repo-replicate-ops.js');
 
 const base = {
   repo: 'sqldb',
-  repoGuid: 'guid-sqldb',
-  setName: 'set1',
+  cluster: 'prod',
   datastore: 'ds-data',
-  snapshot: 'replicate-set1',
-  controlMachine: 'cp1',
-  controlMount: '/mnt/rediacc-ds/ds-control-prod',
+  image: 'postgres:16',
+  port: 5432,
 };
-
-const nodes = [
-  { machine: 'n1', ip: '10.0.0.1' },
-  { machine: 'n2', ip: '10.0.0.2' },
-];
 
 describe('replica placement asks for machine slots first', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAssertSlots.mockResolvedValue(undefined);
-    mockExecute.mockImplementation((options: { functionName: string; params?: { tag?: string } }) =>
-      Promise.resolve({
-        success: true,
-        stdout:
-          options.functionName === 'datastore_list'
-            ? JSON.stringify(
-                ['set1-r1', 'set1-r2', 'set1-r3'].map((tag) => ({
-                  name: `ds-data:${tag}`,
-                  datastoreId: `id-${tag}`,
-                }))
-              )
-            : '{}',
-      })
-    );
+    mockRecord.mockResolvedValue(undefined);
+    mockRun.mockResolvedValue({ result: { success: true }, pending: true, unfinished: [] });
   });
 
   it('counts the DISTINCT nodes the round-robin reaches, not the replica count', async () => {
     // Three replicas over two nodes touch two machines, so two slots. Charging three would refuse a placement that fits.
-    await provisionReplicaDatastores({ ...base, replicas: 3, nodes });
+    await replicateRepo({ ...base, replicas: 3 });
 
     expect(mockAssertSlots).toHaveBeenCalledWith({ machineCount: 2 });
   });
 
-  it('refuses before the snapshot, so a refused placement changes nothing', async () => {
+  it('refuses before anything is recorded or started, so a refused placement changes nothing', async () => {
     mockAssertSlots.mockRejectedValue(new Error('Maximum machines (5) reached'));
 
-    await expect(provisionReplicaDatastores({ ...base, replicas: 3, nodes })).rejects.toThrow(
-      /Maximum machines/
-    );
+    await expect(replicateRepo({ ...base, replicas: 3 })).rejects.toThrow(/Maximum machines/);
 
-    // Not even the datastore snapshot ran: this is the whole point of checking early rather than discovering the wall on the third fork-attach.
-    expect(mockExecute).not.toHaveBeenCalled();
+    expect(mockRecord).not.toHaveBeenCalled();
+    expect(mockRun).not.toHaveBeenCalled();
   });
 
-  it('reports the partial state when a placement dies part-way through', async () => {
-    // First replica lands, second fails: a real, working, incomplete deployment. Keyed on the replica's own tag rather than a call count, so the test does not silently start asserting the wrong replica when the dispatch sequence
-    // for one replica changes.
-    mockExecute.mockImplementation((options: unknown) => {
-      if (JSON.stringify(options).includes('set1-r2')) {
-        throw new Error('Maximum machines (5) reached');
-      }
-      return Promise.resolve({
-        success: true,
-        stdout:
-          (options as { functionName?: string }).functionName === 'datastore_list'
-            ? JSON.stringify([{ name: 'ds-data:set1-r1', datastoreId: 'id-set1-r1' }])
-            : '{}',
-      });
-    });
+  it('reports the partial state when the first job fails', async () => {
+    mockRun.mockRejectedValue(new Error('Replica step "replica_fork" failed on cp1: no space'));
 
-    const error = await provisionReplicaDatastores({ ...base, replicas: 2, nodes }).then(
+    const error = await replicateRepo({ ...base, replicas: 2 }).then(
       () => {
-        throw new Error('expected provisionReplicaDatastores to reject, but it resolved');
+        throw new Error('expected replicateRepo to reject, but it resolved');
       },
       (e: unknown) => e as Error
     );
 
-    expect(error.message).toContain('Maximum machines (5) reached');
-    expect(error.message).toContain('1 machine(s) completed (n1)');
+    expect(error.message).toContain('no space');
     expect(error.message).toContain('Nothing was rolled back');
     expect(error.message).toContain('rdc repo replicate sqldb --replicas 2');
   });

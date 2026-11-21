@@ -8,7 +8,20 @@ First-Seen: 2026-10-24
 Priority: P1 -- one repo's shell can open another repo's Docker API; containers from a sandbox's first compose run have no loopback policy; every repo's mount is listed in every sandbox
 Concurrency: parallel -- waves: RA (D1) alone; then RB (D3), RC (D2+D5), RD (D4) in parallel with the disjoint Owns under Tasks; DR (drill) after U1 is ticked and RA-RD land
 Owns: private/renet/pkg/daemon/netgroup*.go, private/renet/pkg/daemon/start_foreground.go, private/renet/pkg/daemon/runtime_epoch.go, private/renet/pkg/daemon/testdata/**, private/renet/pkg/daemon/setup.go, private/renet/pkg/runpaths/runpaths.go, private/renet/cmd/renet/daemon_dockerproxy_exec.go, private/renet/pkg/dockerproxy/**, private/renet/cmd/renet/sandbox_overlay_linux.go, private/renet/cmd/renet/sandbox_groups*.go, private/renet/cmd/renet/sandbox_exec.go, private/renet/cmd/renet/sandbox_gateway.go, private/renet/cmd/renet/sandbox_gateway_transfer.go, private/renet/cmd/renet/sandbox_repo_view*.go, private/renet/cmd/renet/ebpf_inspect*.go, private/renet/pkg/ebpf/**, private/renet/pkg/orchestration/workflows.go, private/renet/pkg/prune/prune.go, private/renet/pkg/i18n/locales/**, private/renet/docs/DOCKERD_SANDBOX.md, .ci/rediacc_ci/drills/tenant_isolation.py, .ci/rediacc_ci/tests/test_drills_tenant_isolation.py, .ci/rediacc_ci/drills/vm_check.py
+Revalidated: 2026-11-07 @ 1afbc7a24298
 Live-Proof: hostinger -- the netgroup, docker proxy, sandbox and eBPF code under private/renet/pkg and private/renet/cmd/renet is the renet surface, whose only live target is hostinger.
+
+<!-- preflight:begin -->
+```text
+preflight 2026-11-07 @ 1afbc7a24298
+open boxes: 2 (absent 1, partial 1)
+citations: 0 unresolved, 0 drifted, 0 relocated
+overlap since 5daeb5dcc847: 2 commit(s)
+  5e12d5953349 fix(vm-check): vm:check runs its external area legs itself
+  8df618dfabd4 fix(e2e,vm-check): suite 11 fails at its create, and vm:check forgets an ambiguous stale grand
+dependencies: 0
+```
+<!-- preflight:end -->
 
 ## Why
 
@@ -72,8 +85,11 @@ Live QA on .11 (2026-10-24, renet binary identical to 230dea5, repos isoa/isob/i
 - [x] DR [drill] wave 3, after U1 is ticked and CX lands. Owns: .ci/rediacc_ci/drills/tenant_isolation.py, .ci/rediacc_ci/tests/test_drills_tenant_isolation.py, the I1 registration in vm_check.py: step I1 below -- Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_drills_tenant_isolation.py -q` rc 0; `npm run check:ci-pytest` rc 0; `npm run vm:check -- --only I1` with every I1 row ok; then a full `npm run vm:check` VERIFIED.
     (ticked) 2026-10-24T13:23:13Z by d778be9d: commit:5df0888f8 DR drill rows I1 (tenant isolation) and I2 (session teardown) all ok in VERIFIED vmc run 4 (124/124, tree 9e70707b951f, renet 614e255)
 - [ ] H1 [operator window] after release, on one machine: `rdc machine converge <m> --dry-run` lists every repo stale (epoch 2), then the real pass -- Accept: converge-last.json shows every repo converged or pending with a reason, and `stat -c %G /var/run/rediacc/net-*/docker-*[0-9].sock` prints only `rediacc-net-*`.
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+  (corrected ASKED:2026-11-05T07:06Z) One eu-bench machine with a renet carrying D1-D5, with no release and no operator window: `rdc --config eu-bench machine converge <m> --dry-run` lists every repo stale (epoch 2), then the real pass. The Accept stands on that machine, and the tick states that the proof is bench-only.
+- [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
   - Accept: `live-proof hostinger renet-live`
+    (preflight) 2026-11-07: open. No investigation row records this box, so no partial verdict is claimed for it; the receipt `live-proof hostinger renet-live` named in Accept is the evidence still owed.
+    (ticked) 2026-11-11T06:39:54Z by d778be9d: live-proof lp-bcbbd8f02cff hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 
 RB and RC's sudo acceptance lines (`TestPrivateRepoViewLinux`, the `ebpf_e2e` tests) run on an ops VM through the drill harness's sanctioned path (vm_check's own helpers), never by hand-copying test binaries: a pre-bash guard refuses scp/ssh deployment of binaries. RB and RC stay open until those lines and I1 pass.
 

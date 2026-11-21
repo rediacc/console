@@ -5,10 +5,17 @@
  * until each runs as one job. CONVERTED lists the verbs whose conversion box has landed. A verb in both is a converted
  * verb still refused, or a refused verb claimed converted; either is a box ticked against the wrong state.
  */
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { CLI_CONTRACT } from '@rediacc/shared/cli-contract';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { assertDetachable, BACKGROUND_UNSAFE } from '../../executor/proxy-command.js';
+import type { ExecuteOptions } from '../../executor/types.js';
+import { runCommandJob, setCommandJobDeps } from '../command-job.js';
 import { CONVERTED, JOB_PLANS } from '../plans.js';
+import { planStep } from '../steps.js';
+import { TicketStore } from '../ticket-store.js';
 
 const contract = new Map(CLI_CONTRACT.commands.map((c) => [c.pathKey, c]));
 const unsafe = Object.keys(BACKGROUND_UNSAFE).sort((a, b) => a.localeCompare(b));
@@ -59,4 +66,124 @@ describe('BACKGROUND_UNSAFE and CONVERTED', () => {
       expect(BACKGROUND_UNSAFE[verb], verb).toBeUndefined();
     }
   });
+});
+
+type Placement = 'unsafe' | 'converted' | 'both' | 'neither';
+
+/** The detachable verbs that are in both sets or in neither: the invariant's offenders. */
+function offendersOf(
+  detachable: readonly string[],
+  refused: ReadonlySet<string>,
+  converted: ReadonlySet<string>
+): string[] {
+  return detachable.filter((verb) => {
+    const where = placement(verb, refused, converted);
+    return where !== 'unsafe' && where !== 'converted';
+  });
+}
+
+/** Which of the two states a verb is in. The invariant is that every detachable verb is `unsafe` or `converted`. */
+function placement(
+  verb: string,
+  refused: ReadonlySet<string>,
+  converted: ReadonlySet<string>
+): Placement {
+  const a = refused.has(verb);
+  const b = converted.has(verb);
+  if (a && b) return 'both';
+  if (a) return 'unsafe';
+  return b ? 'converted' : 'neither';
+}
+
+describe('every detachable verb is in exactly one of BACKGROUND_UNSAFE or CONVERTED', () => {
+  const refused = new Set(Object.keys(BACKGROUND_UNSAFE));
+  const detachable = CLI_CONTRACT.commands.filter((c) => c.detachable).map((c) => c.pathKey);
+
+  it('holds for the whole contract', () => {
+    expect(offendersOf(detachable, refused, CONVERTED)).toEqual([]);
+  });
+
+  it('control: a verb planted in both sets, and one planted in neither, are both caught', () => {
+    expect(placement('repo up', new Set(['repo up']), new Set(['repo up']))).toBe('both');
+    expect(placement('repo up', new Set(), new Set())).toBe('neither');
+    expect(placement('repo up', new Set(['repo up']), new Set())).toBe('unsafe');
+    expect(placement('repo up', new Set(), new Set(['repo up']))).toBe('converted');
+  });
+
+  it('control: the offender filter itself catches planted verbs and passes a well-placed one', () => {
+    const verbs = ['both-verb', 'neither-verb', 'unsafe-verb', 'converted-verb'];
+    const unsafe = new Set(['both-verb', 'unsafe-verb']);
+    const converted = new Set(['both-verb', 'converted-verb']);
+    expect(offendersOf(verbs, unsafe, converted)).toEqual(['both-verb', 'neither-verb']);
+  });
+});
+
+describe('under --background every converted verb records its steps in the spool and on the ticket', () => {
+  let dir: string;
+  let store: TicketStore;
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'invariant-bg-'));
+    store = new TicketStore('test', dir);
+    setCommandJobDeps({
+      store: () => store,
+      stepDeps: () =>
+        Promise.resolve({
+          observer: { configName: 'test' },
+          warn: () => undefined,
+          claim: ({ steps }) =>
+            Promise.resolve(steps.map((name) => ({ name, result: 'claimed' as const }))),
+        }),
+    });
+  });
+
+  afterEach(() => {
+    setCommandJobDeps();
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  const stepped = [...CONVERTED].filter((verb) => (JOB_PLANS[verb]?.steps ?? []).length > 0);
+
+  it('covers every converted verb that plans steps, and there are many', () => {
+    expect(stepped.length).toBeGreaterThan(40);
+  });
+
+  it.each(stepped)(
+    '%s: the ticket comes back running with its planned steps recorded',
+    async (verb) => {
+      const planned = [...(JOB_PLANS[verb].steps ?? [])];
+      const starts: ExecuteOptions[] = [];
+      setCommandJobDeps({
+        executor: () => ({
+          execute(options) {
+            starts.push(options);
+            return Promise.resolve({
+              success: true,
+              exitCode: 0,
+              durationMs: 0,
+              state: 'running' as const,
+              jobId: 'job-1',
+              attached: false,
+            });
+          },
+        }),
+      });
+
+      const outcome = await runCommandJob(
+        verb,
+        // The command-kind verbs (backup status, machine restart-services, ...) plan no `fn`: the placeholder only labels the
+        // fake call, and what the case pins is the steps, not the function.
+        { functionName: JOB_PLANS[verb].fn ?? 'x', machineName: 'm1', attachWindowMs: 0 },
+        planned.map((name) => planStep(name))
+      );
+
+      expect(outcome.kind).toBe('pending');
+      if (outcome.kind !== 'pending') return;
+      expect(outcome.ticket.state).toBe('running');
+      expect(starts).toHaveLength(1);
+      expect(starts[0].jobSteps?.map((st) => st.name)).toEqual(planned);
+      expect(outcome.ticket.steps.map((st) => st.name)).toEqual(planned);
+      expect(outcome.ticket.stepsDone).toEqual([]);
+    }
+  );
 });

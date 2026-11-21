@@ -1,7 +1,6 @@
 import {
   WK_ACCOUNT_DEFAULT_ORIGIN,
   WK_BENCH_ORIGIN,
-  WK_EDGE_ORIGIN,
   WK_SITE_ORIGIN,
 } from '@rediacc/shared/config/well-known.generated';
 import { BAKED_IN_REGIONS, type RegionInfo } from '@rediacc/shared/regions';
@@ -19,7 +18,6 @@ const regionOf = (id: string): RegionInfo => {
 describe('getLocalAccountUrl', () => {
   it('marketing hosts get no local URL (picker handles the handoff)', () => {
     expect(getLocalAccountUrl(WK_SITE_ORIGIN)).toBeUndefined();
-    expect(getLocalAccountUrl(WK_EDGE_ORIGIN)).toBeUndefined();
     expect(getLocalAccountUrl('https://localhost')).toBeUndefined();
   });
 
@@ -29,7 +27,7 @@ describe('getLocalAccountUrl', () => {
 
   it('portal hosts link straight to /account/', () => {
     expect(getLocalAccountUrl(WK_ACCOUNT_DEFAULT_ORIGIN)).toBe('/account/');
-    expect(getLocalAccountUrl(`https://${regionOf('eu').edgeDomain}`)).toBe('/account/');
+    expect(getLocalAccountUrl(`https://${regionOf('us').domain}`)).toBe('/account/');
     expect(getLocalAccountUrl(WK_BENCH_ORIGIN)).toBe('/account/');
     expect(getLocalAccountUrl('https://onprem.internal.example')).toBe('/account/');
   });

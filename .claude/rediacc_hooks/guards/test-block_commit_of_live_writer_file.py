@@ -51,11 +51,38 @@ SEEDED = (
     "src/live.ts",
     "src/done.ts",
     "src/other.ts",
+    "src/lease.ts",
     "lib/child.py",
     "lib/grand.py",
     "docs/a.md",
     "out/x.txt",
+    "agent/INDEX.md",
+    "agent/plans/QUEUE.md",
+    ".ci/config/plan-boxes.json",
+    "docs/w.md",
+    "docs/s.md",
+    "docs/r.md",
+    "docs/p.md",
+    "docs/argv.md",
+    "docs/sub.md",
+    "docs/cp.md",
 )
+# The two generators the #862b2aed writer runs, as the real registry spells them: a run of one writes its outputs though the command names none of them.
+REGISTRY = {
+    "schema": 1,
+    "artifacts": [
+        {
+            "id": "plan-renders",
+            "outputs": ["agent/plans/QUEUE.md", "agent/INDEX.md"],
+            "generator": "npm run check:ci-plan-record -- --rendered-only --update",
+        },
+        {
+            "id": "plan-boxes",
+            "outputs": [".ci/config/plan-boxes.json"],
+            "generator": "npm run check:ci-plan-boxes -- --update",
+        },
+    ],
+}
 
 
 def git(repo, *argv):
@@ -77,6 +104,7 @@ def seed(repo, rels):
 REPO = make_repo()
 OUTSIDE = make_repo()
 seed(REPO, SEEDED)
+(REPO / ".ci/config/generated-artifacts.json").write_text(json.dumps(REGISTRY), encoding="utf-8")
 seed(OUTSIDE, ("src/live.ts",))
 for repo in (REPO, OUTSIDE):
     git(repo, "add", "-A")
@@ -109,6 +137,14 @@ guard.write_session(
             "",
         ),
         (DONE, "suite finished writer", [str(REPO / "src/done.ts")], False, ""),
+        # A lease writer edits inside its own tree; the commit names the same file in the main tree.
+        (
+            "asuiteleasewriter0006",
+            "suite lease writer",
+            [str(REPO / ".claude/worktrees/x/src/lease.ts")],
+            True,
+            "",
+        ),
         (
             "asuitenestwriter00005",
             "suite nested-submodule writer",
@@ -120,6 +156,92 @@ guard.write_session(
         (CHILD, "suite sub-writer", [str(REPO / "lib/child.py")], False, LIVE),
         # Finished under a finished parent, two levels below the live writer.
         (GRAND, "suite grand-writer", [str(REPO / "lib/grand.py")], False, CHILD),
+    ],
+)
+# The same file edited in the main tree, by a live writer of another session.
+MAIN_SESSION = "c0ffee11-live-writer-suite-000000000000"
+guard.write_session(
+    CONFIG,
+    REPO,
+    MAIN_SESSION,
+    [("asuitemainwriter0007", "suite main-tree writer", [str(REPO / "src/lease.ts")], True, "")],
+)
+# #862b2aed, the incident replayed: a LIVE read-only survey agent that only read the three plan records (cat, grep, stat, git status) and ran a /tmp script dumping JSON to `sys.argv[1]` beside the three paths as literals. The judge's default reading counted every literal of that script as written, and the guard refused the lead's commit of all three.
+READER_SESSION = "c0ffee22-live-writer-suite-000000000000"
+READER = "asuitereadonlyagent008"
+DERIVE = (
+    "S=$(mktemp -d); cat > $S/derive.py <<'EOF'\n"
+    "import json, sys\n"
+    "recs = ['agent/plans/QUEUE.md', 'agent/INDEX.md', '.ci/config/plan-boxes.json']\n"
+    "json.dump(recs, open(sys.argv[1], 'w'), indent=1)\n"
+    "EOF\n"
+    "python3 $S/derive.py $S/derived.json"
+)
+guard.write_session(
+    CONFIG,
+    REPO,
+    READER_SESSION,
+    [
+        (
+            READER,
+            "suite read-only survey",
+            [
+                ("Bash", {"command": "cat agent/INDEX.md | head -40"}),
+                ("Bash", {"command": "grep -n Promoted agent/plans/QUEUE.md; stat agent/INDEX.md"}),
+                (
+                    "Bash",
+                    {"command": "sed -n 1,20p .ci/config/plan-boxes.json && git status --short"},
+                ),
+                ("Bash", {"command": DERIVE}),
+            ],
+            True,
+            "",
+        )
+    ],
+)
+# CONTROL for the reader: a live writer that really writes, one call per route the strict reading keeps.
+WRITER_SESSION = "c0ffee33-live-writer-suite-000000000000"
+BASH_WRITER = "asuitebashwriter00009"
+guard.write_session(
+    CONFIG,
+    REPO,
+    WRITER_SESSION,
+    [
+        (
+            BASH_WRITER,
+            "suite bash writer",
+            [
+                ("Write", {"file_path": str(REPO / "docs/w.md"), "content": "x"}),
+                ("Bash", {"command": "sed -i s/seed/x/ docs/s.md"}),
+                ("Bash", {"command": "echo x > docs/r.md"}),
+                ("Bash", {"command": "npm run check:ci-plan-record -- --update"}),
+                ("Bash", {"command": "npm run -s check:ci-plan-boxes -- --update"}),
+                ("Bash", {"command": "python3 - <<'EOF'\nopen('docs/p.md', 'w').write('x')\nEOF"}),
+                (
+                    "Bash",
+                    {
+                        "command": "python3 - docs/argv.md <<'EOF'\nimport sys\n"
+                        "open(sys.argv[1], 'w').write('docs/a.md')\nEOF"
+                    },
+                ),
+                (
+                    "Bash",
+                    {
+                        "command": "python3 - <<'EOF'\nimport subprocess\n"
+                        "subprocess.run(['sed', '-i', 's/seed/x/', 'docs/sub.md'])\nEOF"
+                    },
+                ),
+                (
+                    "Bash",
+                    {
+                        "command": "python3 - <<'EOF'\nfrom shutil import copy\n"
+                        "copy('docs/a.md', 'docs/cp.md')\nEOF"
+                    },
+                ),
+            ],
+            True,
+            "",
+        )
     ],
 )
 # A session directory with no subagents is an honest empty roster, not an unreadable one.
@@ -176,6 +298,22 @@ CASES = [
         SESSION,
     ),
     ("a directory pathspec covers it", "git commit -F m -- src/", None, True, LIVE, SESSION),
+    (
+        "a lease writer's own-tree edit does not claim the main-tree file",
+        "git commit -F m -- src/lease.ts",
+        None,
+        False,
+        "",
+        SESSION,
+    ),
+    (
+        "CONTROL: a main-tree writer on the same file is still refused",
+        "git commit -F m -- src/lease.ts",
+        None,
+        True,
+        "asuitemainwriter0007",
+        MAIN_SESSION,
+    ),
     # ---- a gitlink pathspec commits the submodule pointer, never the submodule's files (#e59c13a0)
     (
         "a submodule root pathspec does not cover its files",
@@ -277,6 +415,83 @@ CASES = [
         True,
         LIVE,
         SESSION,
+    ),
+    # ---- #862b2aed: only real writes count, by the routes a writer really uses ----------------
+    ("a Write tool call", "git commit -F m -- docs/w.md", None, True, BASH_WRITER, WRITER_SESSION),
+    ("a sed -i", "git commit -F m -- docs/s.md", None, True, BASH_WRITER, WRITER_SESSION),
+    ("a > redirect", "git commit -F m -- docs/r.md", None, True, BASH_WRITER, WRITER_SESSION),
+    (
+        "plan-record --update writes QUEUE.md",
+        "git commit -F m -- agent/plans/QUEUE.md",
+        None,
+        True,
+        BASH_WRITER,
+        WRITER_SESSION,
+    ),
+    (
+        "plan-record --update writes INDEX.md",
+        "git commit -F m -- agent/INDEX.md",
+        None,
+        True,
+        BASH_WRITER,
+        WRITER_SESSION,
+    ),
+    (
+        "a plan-boxes --update run",
+        "git commit -F m -- .ci/config/plan-boxes.json",
+        None,
+        True,
+        BASH_WRITER,
+        WRITER_SESSION,
+    ),
+    (
+        "a python literal write",
+        "git commit -F m -- docs/p.md",
+        None,
+        True,
+        BASH_WRITER,
+        WRITER_SESSION,
+    ),
+    (
+        "a python write to sys.argv[1]",
+        "git commit -F m -- docs/argv.md",
+        None,
+        True,
+        BASH_WRITER,
+        WRITER_SESSION,
+    ),
+    (
+        "a sed -i a python subprocess runs",
+        "git commit -F m -- docs/sub.md",
+        None,
+        True,
+        BASH_WRITER,
+        WRITER_SESSION,
+    ),
+    (
+        "a bare shutil copy destination",
+        "git commit -F m -- docs/cp.md",
+        None,
+        True,
+        BASH_WRITER,
+        WRITER_SESSION,
+    ),
+    # docs/a.md is written only AS TEXT by the argv writer and only READ as the copy source.
+    (
+        "a path only written as text or copied from",
+        "git commit -F m -- docs/a.md",
+        None,
+        False,
+        "",
+        WRITER_SESSION,
+    ),
+    (
+        "the incident: a read-only agent's records",
+        "git commit -F m -- .ci/config/plan-boxes.json agent/INDEX.md agent/plans/QUEUE.md",
+        None,
+        False,
+        "",
+        READER_SESSION,
     ),
     # ---- inverse ----------------------------------------------------------------------------
     ("a finished writer's file", "git commit -F m -- src/done.ts", None, False, "", SESSION),
@@ -399,6 +614,21 @@ for label, (old, new) in MUTATIONS:
     verdict = "ok (the refusal flipped to allowed)" if red else "*** FAIL *** %r" % err[-300:]
     print("%-42s %s" % ("mutation: " + label, verdict))
 
+# The reverse mutation (#862b2aed): the guard on the judge's DEFAULT reading must refuse the read-only agent's commit again, or the allow above never depended on the strict reading.
+INCIDENT = "git commit -F m -- .ci/config/plan-boxes.json agent/INDEX.md agent/plans/QUEUE.md"
+code = RUNNER % (
+    str(CLAUDE),
+    str(GUARD),
+    ("roster.edit_paths(member_jsonl, root, strict=True)", "roster.edit_paths(member_jsonl, root)"),
+    str(GUARD),
+)
+good, _ = run(INCIDENT, session=READER_SESSION)
+bad, err = run(INCIDENT, session=READER_SESSION, runner=code)
+red = bad and not good and READER in err
+fails += not red
+verdict = "ok (the allow flipped to refused)" if red else "*** FAIL *** %r" % err[-300:]
+print("%-42s %s" % ("mutation: the default reading", verdict))
+
 print()
-print("%d case(s), %d mutation(s); FAILURES: %d" % (len(CASES), len(MUTATIONS), fails))
+print("%d case(s), %d mutation(s); FAILURES: %d" % (len(CASES), len(MUTATIONS) + 1, fails))
 sys.exit(1 if fails else 0)

@@ -132,7 +132,8 @@ def main():
     if not hookio.grep_q_line("git push", cmd):
         return 0
 
-    root = hookio.Event(payload).project_dir
+    event = hookio.Event(payload)
+    root = commit_policy.command_tree(event.project_dir, event.field("cwd"))
     branch = _capture(["git", "-C", root, "rev-parse", "--abbrev-ref", "HEAD"])
     # `rev-parse --abbrev-ref HEAD` returns the LITERAL STRING "HEAD" on a detached checkout, unlike `symbolic-ref` which fails outright (see wl_core.py's git_branch, which chose symbolic-ref for exactly this reason). Guarded explicitly rather than relying on "no branch is ever named HEAD" as an implicit safety net: `gh pr list --head HEAD` would just find nothing today, but
     # that is luck holding the door shut, not a check.

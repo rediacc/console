@@ -1,5 +1,6 @@
 import { createEmptyRdcConfig } from '@rediacc/shared/config-schema';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installJobDeps } from '../../../commands/__tests__/job-deps.js';
 import type { ClusterConfig, MachineConfig, RdcConfig } from '../../../types/index.js';
 import { configService } from '../../config/config-resources.js';
 import { auditService } from '../../core/audit.js';
@@ -13,6 +14,7 @@ import {
   rehearseCluster,
 } from '../cluster-fork.js';
 import { installK8s } from '../cluster-kube.js';
+import { describeMigrateAttachFailure, describeRollback } from '../cluster-migrate-messages.js';
 
 // A 2-node k8s cluster: server on prod-cp-1, agent on prod-w-1.
 const k8sCluster: ClusterConfig = {
@@ -130,7 +132,14 @@ function execMock(listCluster = 'prod', destCluster = 'dest') {
 // Health gate: no real waits in unit tests.
 __setHealthGateDelay(() => Promise.resolve());
 
+let restoreJobDeps: () => void;
+beforeEach(() => {
+  // Each cluster phase is a ticketed job; its ticket goes to a temp store, never the real one.
+  restoreJobDeps = installJobDeps((options) => localExecutorService.execute(options));
+});
+
 afterEach(() => {
+  restoreJobDeps();
   vi.restoreAllMocks();
   __setHealthGateClock(() => Date.now()); // reset any per-test clock override
 });
@@ -511,6 +520,44 @@ describe('migrateCluster (P3 in-Ceph fenced remap, zero-copy)', () => {
   });
 });
 
+describe('describeRollback', () => {
+  it('says a still-running rollback is running', () => {
+    const running = describeRollback('running', 'prod-cp-1');
+    expect(running).toMatch(/STILL RUNNING/);
+    expect(running).not.toMatch(/did NOT finish/);
+  });
+  it('keeps the failed and rolled-back wording', () => {
+    expect(describeRollback('failed', 'prod-cp-1')).toMatch(/did NOT finish/);
+    expect(describeRollback('rolled-back', 'prod-cp-1')).toMatch(/ROLLED BACK/);
+  });
+});
+
+describe('describeMigrateAttachFailure', () => {
+  const base = {
+    clusterName: 'prod',
+    controlName: 'prod-cp-1',
+    controlDs: 'ds1',
+    controlDsMount: '/mnt/ds1',
+    controlIp: '10.0.0.5',
+    original: 'boom',
+  };
+  it('advises no manual command beside a still-running rollback', () => {
+    const msg = describeMigrateAttachFailure({ ...base, rollback: 'running' });
+    expect(msg).toMatch(/STILL RUNNING/);
+    expect(msg).not.toMatch(/renet datastore attach/);
+    expect(msg).not.toMatch(/identity-rewrite/);
+    expect(msg).toMatch(/Original error: boom/);
+  });
+  it.each(['failed', 'rolled-back'] as const)(
+    'keeps the manual recovery commands for %s',
+    (rollback) => {
+      const msg = describeMigrateAttachFailure({ ...base, rollback });
+      expect(msg).toMatch(/renet datastore attach --name ds1 --force/);
+      expect(msg).toMatch(/--new-node-ip 10\.0\.0\.5/);
+    }
+  );
+});
+
 describe('rehearseCluster (P3 ephemeral throwaway fork → gate → discard)', () => {
   it('forks writes=local role=rehearsal with --up, then discards (uninstall + detach --discard)', async () => {
     stubOutput();
@@ -595,5 +642,136 @@ describe('rehearseCluster (P3 ephemeral throwaway fork → gate → discard)', (
     for (const d of discards) {
       expect(d.machineName).toBe('dest-cp-1');
     }
+  });
+
+  it('reports the gate failure, not the teardown, when the teardown is still running', async () => {
+    stubOutput();
+    stubConfig({ prod: cephCluster, dest: cephCluster });
+    let clock = 0;
+    __setHealthGateClock(() => {
+      clock += 200_000;
+      return clock;
+    });
+    const exec = vi.spyOn(localExecutorService, 'execute').mockImplementation((opts) => {
+      if (opts.functionName === 'kube_health') {
+        return Promise.resolve({ success: false, error: 'not ready' } as never);
+      }
+      if (opts.functionName === 'kube_uninstall') {
+        return Promise.resolve({ success: true, state: 'running', jobId: 'job-1' } as never);
+      }
+      if (opts.functionName === 'kube_join_token') {
+        return Promise.resolve({
+          success: true,
+          stdout: '{"token":"K10abcdef::server:0123456789abcdef"}',
+        } as never);
+      }
+      if (opts.functionName === 'datastore_list') {
+        return Promise.resolve({ success: true, stdout: datastoreListJson('prod') } as never);
+      }
+      if (opts.functionName === 'datastore_fork') {
+        const parent = String((opts.params as { parent?: string }).parent ?? 'ds');
+        const tag = String((opts.params as { tag?: string }).tag ?? 't');
+        return Promise.resolve({ success: true, stdout: forkRecordJson(parent, tag) } as never);
+      }
+      if (opts.functionName === 'ceph_client_config_export') {
+        return Promise.resolve({ success: true, stdout: cephConfigExportJson() } as never);
+      }
+      return Promise.resolve({ success: true } as never);
+    });
+
+    await expect(rehearseCluster('prod', { cluster: 'dest', tag: 'r1' })).rejects.toThrow(
+      /health gate/
+    );
+    const names = exec.mock.calls.map((c) => c[0].functionName);
+    // The teardown stops at the running phase: no datastore is detached beside it.
+    expect(names).toContain('kube_uninstall');
+    expect(names).not.toContain('datastore_detach');
+    expect(vi.mocked(outputService.warn)).toHaveBeenCalledWith(
+      expect.stringContaining('teardown not finished')
+    );
+  });
+
+  it('reports the gate failure, not the teardown, when the teardown itself throws a non-pending error', async () => {
+    stubOutput();
+    stubConfig({ prod: cephCluster, dest: cephCluster });
+    let clock = 0;
+    __setHealthGateClock(() => {
+      clock += 200_000;
+      return clock;
+    });
+    // A failed step is reported through warn; a warn that throws (a closed stderr) escapes the best-effort step.
+    vi.spyOn(outputService, 'warn').mockImplementation((msg: string) => {
+      if (msg.startsWith('  discard:')) throw new Error('stderr closed');
+    });
+    vi.spyOn(localExecutorService, 'execute').mockImplementation((opts) => {
+      if (opts.functionName === 'kube_health' || opts.functionName === 'kube_uninstall') {
+        return Promise.resolve({ success: false, error: 'not ready' } as never);
+      }
+      if (opts.functionName === 'kube_join_token') {
+        return Promise.resolve({
+          success: true,
+          stdout: '{"token":"K10abcdef::server:0123456789abcdef"}',
+        } as never);
+      }
+      if (opts.functionName === 'datastore_list') {
+        return Promise.resolve({ success: true, stdout: datastoreListJson('prod') } as never);
+      }
+      if (opts.functionName === 'datastore_fork') {
+        const parent = String((opts.params as { parent?: string }).parent ?? 'ds');
+        const tag = String((opts.params as { tag?: string }).tag ?? 't');
+        return Promise.resolve({ success: true, stdout: forkRecordJson(parent, tag) } as never);
+      }
+      if (opts.functionName === 'ceph_client_config_export') {
+        return Promise.resolve({ success: true, stdout: cephConfigExportJson() } as never);
+      }
+      return Promise.resolve({ success: true } as never);
+    });
+
+    await expect(rehearseCluster('prod', { cluster: 'dest', tag: 'r1' })).rejects.toThrow(
+      /health gate/
+    );
+    expect(vi.mocked(outputService.warn)).toHaveBeenCalledWith(
+      expect.stringContaining('teardown not finished: Error: stderr closed')
+    );
+  });
+
+  it('control: a completed teardown leaves no teardown warning', async () => {
+    stubOutput();
+    stubConfig({ prod: cephCluster, dest: cephCluster });
+    let clock = 0;
+    __setHealthGateClock(() => {
+      clock += 200_000;
+      return clock;
+    });
+    vi.spyOn(localExecutorService, 'execute').mockImplementation((opts) => {
+      if (opts.functionName === 'kube_health') {
+        return Promise.resolve({ success: false, error: 'not ready' } as never);
+      }
+      if (opts.functionName === 'kube_join_token') {
+        return Promise.resolve({
+          success: true,
+          stdout: '{"token":"K10abcdef::server:0123456789abcdef"}',
+        } as never);
+      }
+      if (opts.functionName === 'datastore_list') {
+        return Promise.resolve({ success: true, stdout: datastoreListJson('prod') } as never);
+      }
+      if (opts.functionName === 'datastore_fork') {
+        const parent = String((opts.params as { parent?: string }).parent ?? 'ds');
+        const tag = String((opts.params as { tag?: string }).tag ?? 't');
+        return Promise.resolve({ success: true, stdout: forkRecordJson(parent, tag) } as never);
+      }
+      if (opts.functionName === 'ceph_client_config_export') {
+        return Promise.resolve({ success: true, stdout: cephConfigExportJson() } as never);
+      }
+      return Promise.resolve({ success: true } as never);
+    });
+
+    await expect(rehearseCluster('prod', { cluster: 'dest', tag: 'r1' })).rejects.toThrow(
+      /health gate/
+    );
+    expect(vi.mocked(outputService.warn)).not.toHaveBeenCalledWith(
+      expect.stringContaining('teardown not finished')
+    );
   });
 });

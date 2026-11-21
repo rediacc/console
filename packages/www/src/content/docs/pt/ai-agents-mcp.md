@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: pt
-sourceHash: "442b5cfa49239dbc"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "9fcdf73439f82d82"
+sourceCommit: "7aedf8f834a72520b4ea8a4a1226b5b94afed2ae"
 ---
 
 ## Visão Geral
@@ -132,7 +132,7 @@ export REDIACC_ALLOW_GRAND_REPO='gitlab'   # um repositório
 claude   # ou cursor, gemini, etc.
 ```
 
-A anulação é verificada contra a ancestralidade do processo: ela apenas conta quando já estava presente no ambiente do próprio processo agente, o que significa que você a exportou antes do agente (e do servidor MCP que ele criou) iniciar. Um agente não pode se conceder acesso definindo a variável no meio da sessão. Não há intencionalmente nenhum sinalizador de servidor para isso: um sinalizador nos argumentos do servidor MCP não carrega prova de quem o colocou lá, enquanto a verificação de ancestralidade faz. O acesso ao nível da máquina (como `term connect -m <machine>` sem um repositório) ainda requer `*`; uma lista de nomes de repositórios não o desbloqueia.
+A anulação é verificada contra a ancestralidade do processo: ela apenas conta quando já estava presente no ambiente do próprio processo agente, o que significa que você a exportou antes do agente (e do servidor MCP que ele criou) iniciar. Um agente não pode se conceder acesso definindo a variável no meio da sessão. Não há intencionalmente nenhum sinalizador de servidor para isso: um sinalizador nos argumentos do servidor MCP não carrega prova de quem o colocou lá, enquanto a verificação de ancestralidade faz. O acesso ao nível da máquina (como `term connect <machine>` sem um repositório) ainda requer `*`; uma lista de nomes de repositórios não o desbloqueia.
 
 ### Chaves SSH por repositório e sandbox do lado do servidor
 

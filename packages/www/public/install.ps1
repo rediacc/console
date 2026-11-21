@@ -28,9 +28,9 @@ $ConfigDir = "$env:APPDATA\rediacc"
 # Channel resolution. Order:
 #   1. REDIACC_CHANNEL env var (explicit caller intent - wins).
 #   2. Existing server.json::updateChannel (the channel `rdc update` uses).
-#   3. Default 'stable'.
+#   3. Default 'edge'.
 # Reading server.json on a re-install avoids the trap where install.ps1 picks
-# `stable` while `rdc update` reads server.json::updateChannel=edge and jumps
+# `edge` while `rdc update` reads server.json::updateChannel=stable and jumps
 # the binary on the very next invocation. Both paths now agree by default.
 $Channel = if ($env:REDIACC_CHANNEL) {
     $env:REDIACC_CHANNEL
@@ -39,7 +39,7 @@ $Channel = if ($env:REDIACC_CHANNEL) {
     $existing = if (Test-Path $serverJson) {
         try { (Get-Content $serverJson -Raw | ConvertFrom-Json).updateChannel } catch { $null }
     } else { $null }
-    if ($existing) { $existing } else { "stable" }
+    if ($existing) { $existing } else { "edge" }
 }
 
 function Write-ColorOutput {
@@ -79,7 +79,7 @@ function Remove-LegacyState {
 # EITHER a specific server was requested OR the channel differs from default.
 # Windows config dir is %APPDATA%\rediacc per @rediacc/shared/paths getConfigDir().
 function Write-InstallConfig {
-    $DefaultChannel = "stable"
+    $DefaultChannel = "edge"
     if ([string]::IsNullOrEmpty($ServerUrl) -and $Channel -eq $DefaultChannel) {
         return
     }

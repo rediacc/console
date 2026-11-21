@@ -42,8 +42,10 @@ On hostinger (2026-10-23), the observability repo's Alloy bound `/var/run/docker
     (ticked) 2026-10-25T00:12:07Z by d778be9d: already implemented by renet 3c3e1f59 (fix A: host /run and its daemon sockets refused on the hard tier in compose validation, not overridable by --unsafe; fix B: the containerd sandbox binds no host /run), carried into the gate by 031d303c and pinned for the sandbox by 6f5f15c0; proven live on fork vmcheck-base:b1probe net 8256 (3c3e1f59 body); tests rc=0 2026-10-25: go test ./pkg/compose -run TestValidate_(HostDaemonSocketBinds|DaemonSocketThroughVariable|OwnDockerSocket|OwnResolvedRuntimePaths|NonRuntimeBinds), ./pkg/dockerpolicy -run TestHardBindsAreDeniedEvenWithTheGrant|TestInternalDockerSocketBindIsHard, ./pkg/dockerproxy, ./cmd/renet -run TestSandboxNeverBindsHostRunOrCDIRun; private/renet/pkg/compose/validate_test.go:242
 - [x] T3 [R] Update `docs/DOCKERD_SANDBOX.md` with the outcome and the `${DOCKER_SOCKET}` guidance.
     (ticked) 2026-10-25T00:12:09Z by d778be9d: already done in renet 3c3e1f59: private/renet/docs/DOCKERD_SANDBOX.md:278 section Private /run and host daemon sockets gives the outcome, both layers and the ${DOCKER_SOCKET}:/var/run/docker.sock guidance, and :410 records the cross-repo limitation closed
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+- [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+    (audit note 2026-11-04) The receipt proves the branch renet binary is live on hostinger at tree 50d35b9d. It does not exercise this plan's own behaviour, which rests on the plan's earlier boxes.
   - Accept: `live-proof hostinger renet-live`
+    (ticked) 2026-11-04T10:27:29Z by d778be9d: live-proof lp-bb43029bc4b3 hostinger renet-live rc=0 v=renet@sha256:d627bf298b4ba89baa921ca3e04c3a94173d3e2211a7070d5ddd34a60d6440f2
 
 ## T1 result (2026-10-23)
 

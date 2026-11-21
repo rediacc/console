@@ -115,7 +115,14 @@ export const backlogProblem = (text: string): string => {
   const rest = lines.slice(i + 1);
   const stop = rest.findIndex((l) => /^#{1,6} /.test(l));
   const body = stop < 0 ? rest : rest.slice(0, stop);
-  const listed = body.filter((l) => /^- \[.\] `#[0-9a-f]+`/.test(l)).length;
+  // A backlog past the renderer's size budget (wl_epic.BLOCK_BUDGET, the PR body limit) ends with "_+K more open item(s) ..._": those K count toward N.
+  const markers = body
+    .map((l) => /^_\+(\d+) more open item\(s\) /.exec(l.trim()))
+    .filter((mm): mm is RegExpExecArray => mm !== null);
+  if (markers.length > 1)
+    return `${markers.length} "+K more" lines, the renderer writes at most one`;
+  const more = markers.length === 1 ? Number(markers[0][1]) : 0;
+  const listed = body.filter((l) => /^- \[.\] `#[0-9a-f]+`/.test(l)).length + more;
   const none = body.some((l) => l.trim() === '_none_');
   if (declared === 0)
     return none && listed === 0 ? '' : 'declares 0 open items but is not "_none_"';
@@ -188,6 +195,20 @@ const selftest = (): number => {
   check(
     'CONTROL: a count below the list fires (rows added by hand)',
     backlogProblem(backlog(1, [item('aa11'), item('bb22')])).includes('lists 2')
+  );
+  const more = (k: number) =>
+    `_+${k} more open item(s) not listed here (the PR body limit); the full list: \`worklist.py --list --open\`_`;
+  check(
+    'a budget-capped backlog passes when listed + the "+K more" line equals N',
+    backlogProblem(backlog(3, [item('aa11'), more(2)])) === ''
+  );
+  check(
+    'CONTROL: a "+K more" line that does not make up N fires',
+    backlogProblem(backlog(5, [item('aa11'), more(2)])).includes('lists 3')
+  );
+  check(
+    'CONTROL: two "+K more" lines fire',
+    backlogProblem(backlog(5, [item('aa11'), more(2), more(2)])).includes('2 "+K more"')
   );
   check('CONTROL: N=0 with no "_none_" fires', backlogProblem(backlog(0, [])) !== '');
   check(

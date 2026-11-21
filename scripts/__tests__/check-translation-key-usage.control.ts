@@ -32,9 +32,13 @@ const EN = path.join(WWW_SRC, 'i18n/translations/en.json');
 
 interface Case {
   name: string;
+  /** Probe file name inside the mirror's components/. Default: __control_probe__.tsx. */
+  file?: string;
   source: string;
   /** true when the gate must REPORT the planted bad key */
   shouldDetect: boolean;
+  /** What the report would contain if the gate flagged this source. Default: BAD. */
+  marker?: string;
 }
 
 const BAD = 'thisKeyDoesNotExistAnywhere';
@@ -87,12 +91,47 @@ const CASES: Case[] = [
     shouldDetect: false,
   },
   {
-    name: 'dynamic suffix stays unresolvable, as before',
+    // This was `shouldDetect: false` ("dynamic suffix stays unresolvable") until 2026-11-17, when the gate learned to check a dynamic key as a wildcard. Its fixed tail matches no en.json path, so it is now a finding.
+    name: 'dynamic suffix under a namespace whose fixed tail matches nothing is detected',
     source:
       "const NS = 'pages.partners.form';\nexport const C = ({ i }: { i: string }) => <p>{t(`${NS}.${i}." +
       BAD +
       '`)}</p>;\n',
+    shouldDetect: true,
+  },
+  {
+    name: 'literal-prefix dynamic key whose fixed tail matches nothing is detected',
+    source:
+      'export const C = ({ id }: { id: string }) => <p>{t(`pages.pricing.plans.${id}.' +
+      BAD +
+      '`)}</p>;\n',
+    shouldDetect: true,
+  },
+  {
+    name: 'literal-prefix dynamic key with a glued segment is detected',
+    source: 'export const C = ({ c }: { c: string }) => <p>{t(`' + BAD + '_${c}`)}</p>;\n',
+    shouldDetect: true,
+  },
+  {
+    name: 'SILENT: a dynamic key whose wildcard matches real paths (the pricing card) is clean',
+    source:
+      'export const C = ({ id }: { id: string }) => <p>{t(`pages.pricing.plans.${id}.name`)}</p>;\n',
     shouldDetect: false,
+    marker: 'pages.pricing.plans.*.name',
+  },
+  {
+    // A wildcard matching only a BRANCH passed the gate while the strict translator threw on the object (review 885c6c5d.2).
+    name: 'a dynamic key whose wildcard reaches only a branch object is detected',
+    source:
+      'export const C = ({ id }: { id: string }) => <p>{t(`pages.pricing.plans.${id}`)}</p>;\n',
+    shouldDetect: true,
+    marker: 'pages.pricing.plans.*',
+  },
+  {
+    name: 'a plain .ts helper is scanned, not only .astro/.tsx',
+    file: '__control_probe__.ts',
+    source: "export const k = (t: (k: string) => string) => t('pages." + BAD + "');\n",
+    shouldDetect: true,
   },
 ];
 
@@ -175,8 +214,10 @@ function runCases(mirror: string): number {
   let failures = 0;
 
   for (const c of CASES) {
-    fs.writeFileSync(probe, c.source, 'utf8');
-    const detected = gateReports(BAD, mirror);
+    const target = path.join(probeDir, c.file ?? '__control_probe__.tsx');
+    fs.writeFileSync(target, c.source, 'utf8');
+    const detected = gateReports(c.marker ?? BAD, mirror);
+    if (target !== probe) fs.rmSync(target);
     const ok = detected === c.shouldDetect;
     failures += ok ? 0 : 1;
     console.log(
@@ -223,7 +264,9 @@ function report(failures: number): void {
     );
     process.exit(1);
   }
-  console.log(`\n✓ namespace discovery handles ${CASES.length} shapes, both directions`);
+  console.log(
+    `\n✓ namespace discovery and dynamic-key wildcards handle ${CASES.length} shapes, both directions`
+  );
 }
 
 main();

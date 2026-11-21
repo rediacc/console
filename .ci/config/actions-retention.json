@@ -5,7 +5,7 @@
     "gate can hold the tree to it offline.",
     "",
     "WHY IT MATTERS. GitHub caps every upload at this value whatever its `retention-days:`",
-    "says. housekeeping.yml asked for 30 on its gate-costs artifact, and gate-costs-c277f2ab",
+    "says. ops-housekeeping.yml asked for 30 on its gate-costs artifact, and gate-costs-c277f2ab",
     "(created 2026-10-05T10:16Z) expired 2026-10-08T10:11Z: three days. A workflow that",
     "asks for more than this reads as a promise nobody keeps, and code that samples N",
     "artifacts back (gate_costs.SAMPLE_CAPTURES) was sized against that promise.",

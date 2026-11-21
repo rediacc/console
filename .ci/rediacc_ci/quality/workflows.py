@@ -65,7 +65,7 @@ variables with no context equivalent.
 
 NOTE THE EXPLICIT BOUNDARY CLASS rather than `\b`: in awk regex `\b` is a BACKSPACE, not a word boundary. The first version of this rule used it and matched nothing -- permanently vacuous, and green. Caught only by planting a violation. The class also stops $HOMEBREW_PREFIX reading as $HOME.
 
-Comment lines are prose, not values -- housekeeping.yml:72 documents
+Comment lines are prose, not values -- ops-housekeeping.yml:72 documents
 `${IN_FLIGHT_VERSION:-}` inside an env: block and must not read as a violation.
 
 ANY shell-style variable, not a list of six. The six-name form (RUNNER_TEMP|RUNNER_OS|GITHUB_WORKSPACE|GITHUB_SHA|HOME|PWD) let `SECRET_X: $SOME_VAR` through -- the exact idiom a job-start secret fetch invites, and one that ships an EMPTY string because GitHub never expands it. Widened 2026-09-02.
@@ -515,6 +515,227 @@ def check_env_shell_vars(errors: Errors, root: pathlib.Path, workflow_dir: str) 
         errors.count += 1
 
 
+# Options that may sit between `sudo` and `-E`: `-H`, `-n`, `--login`, and the ones that take a value (`-u root`, `-g grp`, ...).
+SUDO_OPT = (
+    r"(?:-[A-Za-z]*[ugCDRTUrtph][ \t]+[^\s-][^\s;&|)]*|-[A-Za-z]+|--[a-z-]+(?:=[^\s;&|)]+)?)[ \t]+"
+)
+SUDO_E_RE = re.compile(
+    r"(^|[;&|(`]|\$\()[ \t]*sudo[ \t]+(?:%s)*(-[A-Za-z]*E[A-Za-z]*|--preserve-env([ \t]|$))"
+    % SUDO_OPT
+)
+
+
+def sudo_preserve_env_hits(lines: list[str]) -> list[tuple[int, str]]:
+    """Uncommented lines that run `sudo -E` (or `--preserve-env`), which sudo-rs ignores."""
+    out: list[tuple[int, str]] = []
+    for number, line in enumerate(lines, start=1):
+        if COMMENT_RE.match(line):
+            continue
+        body = re.sub(r"^[ \t]*(-[ \t]+)?(run:[ \t]*[|>]?[-+]?[ \t]*)?", "", line)
+        if SUDO_E_RE.search(body):
+            out.append((number, line))
+    return out
+
+
+def check_sudo_preserve_env(errors: Errors, root: pathlib.Path, workflow_dir: str) -> None:
+    """No run step may rely on `sudo -E`: ubuntu-26.04 ships sudo-rs, where `-E` is a no-op."""
+    base = root / workflow_dir
+    if not base.is_dir():
+        return
+    for path in sorted(base.glob("*.yml")):
+        hits = sudo_preserve_env_hits(read_lines(path))
+        if not hits:
+            continue
+        errors.report(
+            "`sudo -E` in %s: ubuntu-26.04 sudo-rs ignores it and drops the whole environment"
+            % path.name,
+            [
+                *["    %s:%d: %s" % (path.name, number, line.strip()) for number, line in hits],
+                '    Fix: `sudo env "NAME=value" ... cmd`, naming each variable the command reads',
+                "    (PATH, HOME, RENET_DATA_DIR, VM_NET_BASE ...).",
+                "",
+            ],
+        )
+
+
+SUDO_ENV_RE = re.compile(
+    r"(^|[;&|(`]|\$\()[ \t]*(?:[A-Za-z_][A-Za-z0-9_]*=(?:\"[^\"]*\"|'[^']*'|[^\s\"'])*[ \t]+)*sudo[ \t]+env([ \t]|$)"
+)
+STEP_START_RE = re.compile(
+    r"^([ \t]*)-([ \t]+)(name|run|uses|env|with|if|id|shell|working-directory|timeout-minutes):"
+)
+KEY_LINE_RE = re.compile(r"^([ \t]*)(?:-[ \t]+)?([A-Za-z_][A-Za-z0-9_-]*):(.*)$")
+FLOW_KEY_RE = re.compile(
+    r"^[ \t]*(?:\"([A-Za-z_][A-Za-z0-9_]*)\"|'([A-Za-z_][A-Za-z0-9_]*)'|([A-Za-z_][A-Za-z0-9_]*))[ \t]*:"
+)
+
+
+def flow_env_names(text: str) -> list[str]:
+    """Top-level keys of a flow-style mapping `{A: '1', "B": x}`; commas and colons inside quoted values or nested brackets do not start a key."""
+    names: list[str] = []
+    depth = 0
+    quote = ""
+    start = 0
+    for index, char in enumerate(text):
+        if quote:
+            if char == quote:
+                quote = ""
+        elif char in "\"'" and _opens_scalar(text, index):
+            quote = char
+        elif char in "{[":
+            depth += 1
+            if depth == 1 and char == "{":
+                start = index + 1
+        elif char in "}]":
+            depth -= 1
+        elif char == "," and depth == 1:
+            names.extend(_flow_key(text[start:index]))
+            start = index + 1
+    if start:
+        # A mapping that opens on this line and closes on a later one leaves depth above 0: its last entry runs to the end of the text.
+        closing = text.rfind("}") if depth <= 0 else -1
+        names.extend(_flow_key(text[start : closing if closing > start else len(text)]))
+    return names
+
+
+def _opens_scalar(text: str, index: int) -> bool:
+    """A quote starts a quoted scalar only at the start of a value or key (after `{`, `[`, `,` or `:` and blanks); an apostrophe inside a plain value such as `it's` does not."""
+    before = text[:index].rstrip(" \t\r\n")
+    return not before or before[-1] in "{[,:"
+
+
+def _flow_key(entry: str) -> list[str]:
+    found = FLOW_KEY_RE.match(entry)
+    return [next(g for g in found.groups() if g)] if found else []
+
+
+class StepFacts:
+    """What one workflow step says about `sudo env`: its run lines and its own `env:` names."""
+
+    __slots__ = ("env_names", "run_lines")
+
+    def __init__(self) -> None:
+        self.env_names: list[str] = []
+        self.run_lines: list[tuple[int, str]] = []
+
+
+def step_facts(lines: list[str]) -> list[StepFacts]:
+    """Split a workflow into steps; collect each step's `run:` text and step-level `env:` keys.
+
+    A step starts at a `- key:` line using a step key and ends at the next non-blank, non-comment line at or left of that dash. Only keys at the step's own key column count, so a deeper `with:` mapping is not read. Job- and workflow-level `env:` are not collected: a job may export variables a `sudo env` line rightly leaves out.
+    """
+    steps: list[StepFacts] = []
+    cur = StepFacts()
+    live = False
+    dash = 0
+    key_col = 0
+    mode = ""  # "run" inside a run block scalar, "env" inside the step env mapping
+    mode_indent = 0
+    env_child = -1
+    for number, raw in enumerate(lines, start=1):
+        line = raw.removesuffix("\r")
+        if re.match(r"^[ \t]*$", line):
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        if mode and indent > mode_indent:
+            if COMMENT_RE.match(line):
+                continue
+            if mode == "run":
+                cur.run_lines.append((number, line))
+                continue
+            if env_child < 0:
+                env_child = indent
+            entry = KEY_LINE_RE.match(line)
+            if indent == env_child and entry:
+                cur.env_names.append(entry.group(2))
+            continue
+        mode = ""
+        if COMMENT_RE.match(line):
+            continue
+        start = STEP_START_RE.match(line)
+        if start and (not live or indent <= dash):
+            cur = StepFacts()
+            steps.append(cur)
+            live = True
+            dash = indent
+            key_col = indent + 1 + len(start.group(2))
+            col = key_col
+        elif live and indent <= dash:
+            live = False
+            continue
+        else:
+            col = indent
+        key = KEY_LINE_RE.match(line)
+        if not live or not key or col != key_col:
+            continue
+        name, rest = key.group(2), key.group(3).strip()
+        if name == "run":
+            if rest[:1] in ("|", ">"):
+                mode, mode_indent = "run", key_col
+            elif rest:
+                cur.run_lines.append((number, rest))
+        elif name == "env" and not rest:
+            mode, mode_indent, env_child = "env", key_col, -1
+        elif name == "env" and rest.startswith("{"):
+            cur.env_names.extend(flow_env_names(rest))
+    return steps
+
+
+def sudo_env_drop_hits(lines: list[str]) -> list[tuple[int, str, list[str]]]:
+    """`sudo env ...` run lines that leave out a variable their own step's `env:` block sets.
+
+    `sudo env NAME=value cmd` hands the command ONLY the names it lists, so a step-level `env:` entry never reaches it unless that `sudo env` line itself (with its backslash continuations, from `env` onward) says `NAME=`; an `export` or prefix assignment elsewhere in the step does not count. Returns (line, text, missing names) for the first offending `sudo env` line of each offending step; a compliant `sudo env` line before it is skipped.
+    """
+    out: list[tuple[int, str, list[str]]] = []
+    for step in step_facts(lines):
+        if not step.env_names:
+            continue
+        for index, (number, text) in enumerate(step.run_lines):
+            found = SUDO_ENV_RE.search(text.lstrip())
+            if not found:
+                continue
+            command = text.lstrip()[found.end() :]
+            follow = index + 1
+            last = text
+            while last.rstrip().endswith("\\") and follow < len(step.run_lines):
+                last = step.run_lines[follow][1]
+                command += "\n" + last
+                follow += 1
+            missing = [
+                name
+                for name in step.env_names
+                if not re.search(r"(?<![A-Za-z0-9_])%s=" % re.escape(name), command)
+            ]
+            if missing:
+                out.append((number, step.run_lines[index][1], missing))
+                break
+    return out
+
+
+def check_sudo_env_drops(errors: Errors, root: pathlib.Path, workflow_dir: str) -> None:
+    """A `sudo env` call must name every variable its own step's `env:` block sets."""
+    base = root / workflow_dir
+    if not base.is_dir():
+        return
+    for path in sorted(base.glob("*.yml")):
+        hits = sudo_env_drop_hits(read_lines(path))
+        if not hits:
+            continue
+        errors.report(
+            "`sudo env` drops step env variables in %s: it passes only the names it lists"
+            % path.name,
+            [
+                *[
+                    "    %s:%d: missing %s: %s"
+                    % (path.name, number, ", ".join(missing), line.strip())
+                    for number, line, missing in hits
+                ],
+                '    Fix: add `"NAME=$NAME"` for each missing variable to the `sudo env` line.',
+                "",
+            ],
+        )
+
+
 def pr_environment_hits(lines: list[str], file_label: str) -> list[str]:
     """Both syntactic forms of a `pr-`-prefixed deployment environment."""
     out: list[str] = []
@@ -780,6 +1001,8 @@ def main(argv: list[str] | None = None) -> int:
     check_inline_run_blocks(errors, root, workflow_dir, max_logic)
     check_env_shell_vars(errors, root, workflow_dir)
     check_pr_environment_names(errors, root, workflow_dir)
+    check_sudo_preserve_env(errors, root, workflow_dir)
+    check_sudo_env_drops(errors, root, workflow_dir)
     check_gh_slurp_jq(errors, root, files)
     retention_lines = check_retention_days(errors, root, files)
 
@@ -942,7 +1165,7 @@ def selftest() -> int:
         0,
     )
     ctl.check(
-        "MIRROR: a COMMENT inside an env: block is prose (housekeeping.yml:72)",
+        "MIRROR: a COMMENT inside an env: block is prose (ops-housekeeping.yml:72)",
         len(env_shell_hits(["    env:", "      # documents ${IN_FLIGHT_VERSION:-}"])),
         0,
     )

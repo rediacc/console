@@ -63,7 +63,6 @@ vi.mock('../../utils/remote-resolve.js', () => ({
   resolveRemoteName: (name: string) => Promise.resolve({ type: 'machine', name }),
 }));
 vi.mock('../repo-backup-list.js', () => ({
-  fetchBackupList: vi.fn().mockResolvedValue([]),
   renderBackupList: vi.fn(),
 }));
 // The pull route installs the minted GUID's licence first (ensureRestorePullLicense); here one is already installed, so it is skipped. backup-restore-pull-license.test.ts covers issuance.

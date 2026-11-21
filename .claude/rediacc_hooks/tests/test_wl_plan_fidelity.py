@@ -469,7 +469,7 @@ def shim_planfid(fix, plan_fidelity: str) -> None:
     body = (
         "#!/usr/bin/env python3\n"
         "import json, sys\n"
-        'prompt = " ".join(sys.argv[1:])\n'
+        'prompt = " ".join(sys.argv[1:]) + sys.stdin.read()  # the real CLI reads the prompt from stdin\n'
         'if "DECOMPOSITION" in prompt:\n'
         '    open(%r, "a").write("call\\n")\n'
         '    out = {"is_error": False,\n'

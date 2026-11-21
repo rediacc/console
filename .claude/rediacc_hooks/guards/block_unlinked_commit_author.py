@@ -37,6 +37,7 @@ import re
 import subprocess
 
 from rediacc_hooks import commit_policy, hookio, shellscan
+from rediacc_hooks.guards import _repo_scope
 from rediacc_hooks.wellknown import OPERATOR_EMAIL
 
 CHAIN = "pre-bash"
@@ -47,7 +48,7 @@ ORDER = 5
 DEFECT = ("if override:", "if False:")
 
 COMMIT_AT_COMMAND_POS = hookio.rx(
-    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+commit([{S}]|$)"
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+commit([{S}]|$)"
 )
 
 C_FLAG = hookio.rx(r'\-c[{S}]+"?user\.email=[^"{S}]+')
@@ -152,6 +153,14 @@ def _allowed(email, identity):
     return email in pool
 
 
+def _elsewhere(ev, cmd, scan, root):
+    """Does every `git commit` in `cmd` land outside this checkout and its submodules? False on any doubt (`_repo_scope.elsewhere`), and the commit is then judged here."""
+    expected = _repo_scope.text_matches(COMMIT_AT_COMMAND_POS, scan)
+    return _repo_scope.elsewhere(
+        cmd, ev.field("cwd") or None, root, _repo_scope.verb_is("commit"), expected
+    )
+
+
 def run(ev):
     state = shellscan.hook_init(ev.payload)
     if state is None:
@@ -159,7 +168,8 @@ def run(ev):
     cmd, scan = state
 
     # Is this a commit at all? Command position, so prose about committing is not. Deliberately NOT `git tag` and NOT `gh pr create`: a tag writes a tagger and a PR body has no author email, so widening here would only invite false positives.
-    if not hookio.grep_q(COMMIT_AT_COMMAND_POS, scan):
+    # The walk is asked too: a global option spelled `--opt=value` (`git --git-dir=<dir> commit`) is not a shape COMMIT_AT_COMMAND_POS reads past, and the walk places that commit all the same.
+    if not (hookio.grep_q(COMMIT_AT_COMMAND_POS, scan) or commit_policy.git_runs(cmd, "commit")):
         return hookio.ALLOW
 
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
@@ -177,13 +187,11 @@ def run(ev):
         ev.warn("this command is harmless.")
         return hookio.DENY
 
-    # WHICH REPO IS JUDGED, and this deliberately DIFFERS from block-untagged-commit.sh. That guard exits on ANY foreign root because epics are console's business alone. Three submodules carried this exact defect, so a commit into one of them IS in scope here; only a repo outside this tree is somebody else's identity policy.
-    target = shellscan.target_root(scan, root, verb="commit")
-    if target != "":
-        if not hookio.case_glob(target, "%s/*" % root):
-            return hookio.ALLOW  # an independent checkout -- not this guard's business
-    else:
-        target = root
+    # WHICH REPO IS JUDGED, and this deliberately DIFFERS from block-untagged-commit.sh. That guard exits on ANY foreign root because epics are console's business alone. Three submodules carried this exact defect, so a commit into one of them IS in scope here; only a repository outside this tree is somebody else's identity policy (`_elsewhere`, #381462dc). Past that test the commit is judged here, so a
+    # target outside the root is no longer let through by its path alone: `GIT_DIR=<this checkout>/.git git -C <scratch> commit` was (measured 2026-11-11, rc 0), and `_elsewhere` reads that `GIT_DIR` as a doubt.
+    if _elsewhere(ev, cmd, scan, root):
+        return hookio.ALLOW
+    target = shellscan.target_root(scan, root, verb="commit", cmd=cmd) or root
 
     identity_file = ev.env("COMMIT_IDENTITY_FILE") or "%s/.ci/config/commit-identity.json" % root
     if not os.access(identity_file, os.R_OK):

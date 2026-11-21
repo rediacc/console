@@ -749,7 +749,7 @@ GUARD = pathlib.Path(__file__).resolve().parent / "block_unverified_push.py"
 R_PLAN = "check:fixture-plan-implementation"
 R_ARCH = "check:fixture-session-archival"
 R_TREE = "check:fixture-tree-shape"
-ADV_POLICY = {
+ADV_POLICY: dict[str, Any] = {
     "version": 1,
     "records": [
         {
@@ -772,7 +772,7 @@ WORKLIST = "agent/worklist/abcd1234.jsonl"
 BOTH_REVIEW_READERS = {R_PLAN: 0, R_ARCH: 0}
 
 
-def adv_world(name, carried_doc=None):
+def adv_world(name, carried_doc=None, policy=None):
     """A repo whose base commit carries the record policy (and optionally carried-reds.json); returns (root, base tree)."""
     root = pathlib.Path(tempfile.mkdtemp(dir=RUN_TMP)) / name
     root.mkdir()
@@ -781,7 +781,7 @@ def adv_world(name, carried_doc=None):
     g(root, "config", "user.name", "p")
     (root / ".ci" / "policy").mkdir(parents=True)
     (root / ".ci" / "policy" / "record-paths.json").write_text(
-        json.dumps(ADV_POLICY), encoding="utf-8"
+        json.dumps(ADV_POLICY if policy is None else policy), encoding="utf-8"
     )
     (root / "code.txt").write_text("code\n", encoding="utf-8")
     GM._write_fixture_lock(root)
@@ -1089,6 +1089,319 @@ adv_receipt(
     droppedVerified=passed_at(t0),
 )
 ADV_WORLDS.append(("ADVANCE: a --only pass at the receipt tree carries along the chain", 0, w))
+
+# --- G3 (agent/plans/PLAN-ciquick-green-then-batch.md): a commit that only SHRINKS carried-reds.json advances; an added or widened carry still voids. The carry file is a record with its own reader here, as in the real policy. Every refusal world below is built so that carried_verdict at HEAD would ADMIT it, which makes the step rule the only thing refusing; the plant at the end proves that by flipping them.
+R_CARRY = "check:fixture-carry-reader"
+CARRY_POLICY = dict(
+    ADV_POLICY,
+    records=ADV_POLICY["records"]
+    + [
+        {
+            "glob": GM.CARRIED_REL,
+            "except": [],
+            "readers": [{"id": R_CARRY, "evidence": "fixture:4"}],
+        }
+    ],
+)
+CARRY_READER = {R_CARRY: 0}
+OTHER_GATE = "check:fixture-other-carried"
+
+
+def carry_doc(*entries):
+    return {"version": 2, "carried": list(entries)}
+
+
+def carry_commit(root, doc, *also):
+    """Rewrite carried-reds.json to `doc` (plus one appended line per path in `also`), commit, return HEAD^{tree}."""
+    (root / GM.CARRIED_REL).write_text(json.dumps(doc), encoding="utf-8")
+    return adv_commit(root, *also) if also else _commit_all(root)
+
+
+def _commit_all(root):
+    g(root, "add", "-A")
+    g(root, "commit", "-qm", "carry edit")
+    return g(root, "rev-parse", "HEAD^{tree}")
+
+
+def carry_world(name, base, receipt_findings, new_doc, also=(), readers=None):
+    """A world whose base carries `base`, whose receipt (at the base tree) is red on exactly the gates in `receipt_findings` with those keys, and whose HEAD rewrites the carry to `new_doc` behind one advance with its readers green. Returns (root, base tree, head tree)."""
+    root, t0 = adv_world(name, carried_doc=base, policy=CARRY_POLICY)
+    t1 = carry_commit(root, new_doc, *also)
+    gates = dict(CARRY_READER, **(readers or {}))
+    adv_receipt(
+        root,
+        t0,
+        [step(t0, t1, gates, paths=(GM.CARRIED_REL, *also))],
+        exitCode=1,
+        failed=sorted(receipt_findings),
+        findings={k: None if v is None else list(v) for k, v in receipt_findings.items()},
+    )
+    return root, t0, t1
+
+
+CARRY_WORLDS = []
+# G3-1. ADMITTED: a stale key removed, K1 still red and still carried. At the base the push was refused (K2 carried, no longer emitted); after the shrink it is admitted through the advance.
+w, t0, t1 = carry_world(
+    "carry-remove-stale-key",
+    carry_doc(keyed(K1, K2)),
+    {TRAILERS: [K1]},
+    carry_doc(keyed(K1)),
+)
+CARRY_WORLDS.append(("G3: a removal-only carry commit advances the receipt", 0, w))
+# Its control: the same receipt at the base tree, before the shrink, is refused as stale. Without this the admitted world could be admitted for a reason that has nothing to do with the advance.
+w, t0 = adv_world("carry-remove-stale-key-base", carry_doc(keyed(K1, K2)), policy=CARRY_POLICY)
+adv_receipt(w, t0, None, exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
+CARRY_WORLDS.append(("G3 CONTROL: the same receipt before the shrink is refused (stale K2)", 2, w))
+
+# G3-2. ADMITTED: a whole entry removed for a gate that is not red in the receipt.
+w, t0, t1 = carry_world(
+    "carry-remove-whole-entry",
+    carry_doc(keyed(K1), keyed(K2, gate=OTHER_GATE)),
+    {TRAILERS: [K1]},
+    carry_doc(keyed(K1)),
+)
+CARRY_WORLDS.append(("G3: removing a whole entry whose gate is not red advances", 0, w))
+
+# G3-3. REFUSED: an ADDED entry. The receipt is red on OTHER_GATE with K2 and the base does not carry it; the commit adds exactly that carry, so carried_verdict at HEAD would pass. Laundering a red through a record path is what the rule stops.
+w, t0, t1 = carry_world(
+    "carry-add-entry",
+    carry_doc(keyed(K1)),
+    {TRAILERS: [K1], OTHER_GATE: [K2]},
+    carry_doc(keyed(K1), keyed(K2, gate=OTHER_GATE)),
+)
+CARRY_WORLDS.append(("G3: an added carry entry is refused", 2, w))
+added_out = drive(w, ADV_PUSH)[1]
+cases.append(
+    (
+        True,
+        "WIDENS" in added_out and "adds a carry for %s" % OTHER_GATE in added_out,
+        "G3: the added-entry refusal says WIDENS and names the gate",
+    )
+)
+
+# G3-4. REFUSED: a WIDENED entry, K2 added to the TRAILERS keys while the receipt emits K1 and K2.
+w, t0, t1 = carry_world(
+    "carry-widen-keys",
+    carry_doc(keyed(K1)),
+    {TRAILERS: [K1, K2]},
+    carry_doc(keyed(K1, K2)),
+)
+CARRY_WORLDS.append(("G3: a widened carry entry (a key added) is refused", 2, w))
+cases.append(
+    (
+        True,
+        "adds key(s) to %s: %s" % (TRAILERS, K2) in drive(w, ADV_PUSH)[1],
+        "G3: the widened-entry refusal names the added key",
+    )
+)
+
+# G3-5. REFUSED: keys widened to "*", the whole gate.
+w, t0, t1 = carry_world(
+    "carry-widen-star",
+    carry_doc(keyed(K1, gate=OTHER_GATE)),
+    {OTHER_GATE: None},
+    carry_doc(keyed("*", gate=OTHER_GATE, reason=STAR_REASON)),
+)
+CARRY_WORLDS.append(('G3: keys widened to "*" are refused', 2, w))
+
+# G3-6. REFUSED: a reason lengthened past the bar. The entry existed but carried nothing, so making it carry is an addition.
+w, t0, t1 = carry_world(
+    "carry-reason-past-bar",
+    carry_doc(keyed(K1), keyed(K2, gate=OTHER_GATE, reason="too short to carry")),
+    {TRAILERS: [K1], OTHER_GATE: [K2]},
+    carry_doc(keyed(K1), keyed(K2, gate=OTHER_GATE)),
+)
+CARRY_WORLDS.append(("G3: a reason lengthened past the bar is refused as an addition", 2, w))
+
+# G3-7. REFUSED: a removal-only carry edit COMBINED with a record path whose readers are green too. Each half would advance alone.
+w, t0, t1 = carry_world(
+    "carry-remove-plus-review",
+    carry_doc(keyed(K1, K2)),
+    {TRAILERS: [K1]},
+    carry_doc(keyed(K1)),
+    also=(REVIEW,),
+    readers=BOTH_REVIEW_READERS,
+)
+CARRY_WORLDS.append(("G3: a carry removal combined with another path is refused", 2, w))
+cases.append(
+    (
+        True,
+        "must touch that file alone" in drive(w, ADV_PUSH)[1] and REVIEW in drive(w, ADV_PUSH)[1],
+        "G3: the combined refusal names the other path",
+    )
+)
+
+# G3-8. REFUSED: K2 removed while the receipt still emits it. carried_verdict would refuse too (a NEW finding); the message proves the step rule named it first.
+w, t0, t1 = carry_world(
+    "carry-remove-still-red",
+    carry_doc(keyed(K1, K2)),
+    {TRAILERS: [K1, K2]},
+    carry_doc(keyed(K1)),
+)
+CARRY_WORLDS.append(("G3: removing an excuse whose finding is still red is refused", 2, w))
+cases.append(
+    (
+        True,
+        "still cover reds in the receipt: %s: %s" % (TRAILERS, K2) in drive(w, ADV_PUSH)[1],
+        "G3: the still-red refusal comes from the step rule and names the key",
+    )
+)
+
+# G3-9. REFUSED: a whole-gate carry removed while the gate is red with no keys.
+w, t0, t1 = carry_world(
+    "carry-remove-star-still-red",
+    carry_doc(keyed(K1), keyed("*", gate=OTHER_GATE, reason=STAR_REASON)),
+    {TRAILERS: [K1], OTHER_GATE: None},
+    carry_doc(keyed(K1)),
+)
+CARRY_WORLDS.append(("G3: removing a whole-gate carry whose gate is still red is refused", 2, w))
+
+# G3-10. REFUSED: the carry file CREATED by the step. An absent file is not an empty set to shrink from.
+w, t0 = adv_world("carry-created", policy=CARRY_POLICY)
+(w / ".ci" / "config").mkdir(parents=True)
+t1 = carry_commit(w, carry_doc(keyed(K1)))
+adv_receipt(
+    w,
+    t0,
+    [step(t0, t1, CARRY_READER, paths=(GM.CARRIED_REL,))],
+    exitCode=1,
+    failed=[TRAILERS],
+    findings={TRAILERS: [K1]},
+)
+CARRY_WORLDS.append(("G3: a step that creates the carry file is refused", 2, w))
+
+# G3-11. REFUSED: a removal-only commit whose carry reader was NOT re-run. The shrink rule does not replace the record readers.
+w, t0, t1 = carry_world(
+    "carry-remove-reader-missing",
+    carry_doc(keyed(K1, K2)),
+    {TRAILERS: [K1]},
+    carry_doc(keyed(K1)),
+)
+body = json.loads((w / ".ci" / "cache" / "prepush-receipt.json").read_text(encoding="utf-8"))
+body["advances"][0]["gates"] = {}
+(w / ".ci" / "cache" / "prepush-receipt.json").write_text(json.dumps(body), encoding="utf-8")
+CARRY_WORLDS.append(("G3: a removal whose carry reader did not re-run is refused", 2, w))
+
+# G3-12. REFUSED: the carry file at HEAD is not valid UTF-8. The guard must name it, not raise out of git's decode.
+w, t0 = adv_world("carry-not-utf8", carry_doc(keyed(K1, K2)), policy=CARRY_POLICY)
+(w / GM.CARRIED_REL).write_bytes(b'{"version": 2, "carried": [\xff\xfe]}')
+t1 = _commit_all(w)
+adv_receipt(
+    w,
+    t0,
+    [step(t0, t1, CARRY_READER, paths=(GM.CARRIED_REL,))],
+    exitCode=1,
+    failed=[TRAILERS],
+    findings={TRAILERS: [K1]},
+)
+CARRY_WORLDS.append(("G3: a carry file that is not valid UTF-8 is refused", 2, w))
+utf8_run = drive(w, ADV_PUSH)
+cases.append(
+    (
+        True,
+        "not valid UTF-8" in utf8_run[1] and "Traceback" not in utf8_run[1],
+        "G3: the non-UTF-8 refusal names the cause and does not traceback",
+    )
+)
+
+ADV_WORLDS.extend(CARRY_WORLDS)
+
+
+# G3 PLANT: carried_shrink_refusal alone is replaced by a function returning None (its one-file test, carried_widening and removed_still_red go with it). Every world in SHRINK_FLIPS must flip to admitted, so the step rule, not carried_verdict, is what refused them; the SHRINK_HOLDS worlds must keep their verdict (the still-red and reader-missing ones because carried_verdict and the record readers refuse them anyway: two locks on one door).
+def drive_shrink_off(where, cmd):
+    runner = (
+        "import sys; sys.path.insert(0, %r)\n"
+        "from rediacc_hooks import hookio\n"
+        "src = open(%r, encoding='utf-8').read()\n"
+        "ns = {'__name__': 'broken', '__file__': %r}\n"
+        "exec(compile(src, 'broken', 'exec'), ns)\n"
+        "ns['carried_shrink_refusal'] = lambda *a, **k: None\n"
+        "ev = hookio.Event(sys.stdin.read())\n"
+        "sys.exit(ns['run'](ev))\n"
+    ) % (str(GUARD.parents[2]), str(GUARD), str(GUARD))
+    proc = subprocess.run(
+        [sys.executable, "-c", runner],
+        input=json.dumps({"tool_input": {"command": cmd}}),
+        capture_output=True,
+        text=True,
+        cwd=str(where),
+        env=dict(os.environ, CLAUDE_PROJECT_DIR=str(where)),
+        check=False,
+    )
+    return proc.returncode
+
+
+SHRINK_FLIPS = {
+    "G3: an added carry entry is refused",
+    "G3: a widened carry entry (a key added) is refused",
+    'G3: keys widened to "*" are refused',
+    "G3: a reason lengthened past the bar is refused as an addition",
+    "G3: a carry removal combined with another path is refused",
+}
+SHRINK_HOLDS = {
+    "G3: a removal-only carry commit advances the receipt",
+    "G3: removing a whole entry whose gate is not red advances",
+    "G3: removing an excuse whose finding is still red is refused",
+    "G3: removing a whole-gate carry whose gate is still red is refused",
+    "G3: a removal whose carry reader did not re-run is refused",
+}
+for label, want, root in CARRY_WORLDS:
+    if label in SHRINK_FLIPS:
+        cases.append((0, drive_shrink_off(root, ADV_PUSH), "G3 PLANT flips: " + label))
+    elif label in SHRINK_HOLDS:
+        cases.append((want, drive_shrink_off(root, ADV_PUSH), "G3 PLANT holds: " + label))
+cases.append(
+    (
+        True,
+        len([lab for lab, _, _ in CARRY_WORLDS if lab in SHRINK_FLIPS | SHRINK_HOLDS])
+        == len(SHRINK_FLIPS | SHRINK_HOLDS),
+        "G3 PLANT: every named world exists, so the plant cannot shrink to nothing",
+    )
+)
+
+# G3 PURE: the two judgements over parse_carried maps, both directions.
+_old = {TRAILERS: {K1, K2}, OTHER_GATE: "*"}
+cases.append(
+    (True, GM.carried_widening(_old, {TRAILERS: {K1}}) == [], "G3 PURE: a subset widens nothing")
+)
+cases.append(
+    (True, GM.carried_widening(_old, dict(_old)) == [], "G3 PURE: an equal map widens nothing")
+)
+cases.append(
+    (True, GM.carried_widening(_old, {TRAILERS: {K1, "new"}}) != [], "G3 PURE: an added key widens")
+)
+cases.append(
+    (
+        True,
+        GM.carried_widening(_old, {OTHER_GATE: {K1}}) != [],
+        'G3 PURE: "*" to keys is a rewrite, refused',
+    )
+)
+_judged = {"failed": {TRAILERS}, "findings": {TRAILERS: [K1]}}
+cases.append(
+    (
+        True,
+        GM.removed_still_red({TRAILERS: {K1, K2}}, {TRAILERS: {K1}}, _judged) == [],
+        "G3 PURE: a stale key removal is clean",
+    )
+)
+cases.append(
+    (
+        True,
+        GM.removed_still_red({TRAILERS: {K1, K2}}, {TRAILERS: {K2}}, _judged) != [],
+        "G3 PURE: removing an emitted key is still red",
+    )
+)
+cases.append(
+    (
+        True,
+        GM.removed_still_red(
+            {TRAILERS: {K1}}, {}, {"failed": {TRAILERS}, "findings": {TRAILERS: None}}
+        )
+        != [],
+        "G3 PURE: unknown findings cannot show a removed key gone",
+    )
+)
 
 for label, want, root in ADV_WORLDS:
     cases.append((want, drive(root, ADV_PUSH)[0], label))
@@ -1555,6 +1868,127 @@ def test_v2_whole_tree_carry():
     )
 
 
+def test_v2_name_inputs():
+    """PLAN-ciquick-cpu W2.4: a carried gate recording `lists`, `names` or `refs` is recomputed with those lines at the pushed tree. A new child of a listed directory, or a new names match, voids the carry; an edit to a listed child's content does not; a new HEAD voids a refs: [HEAD] carry and nothing else; a ref that resolves to nothing is refused by name."""
+    root = pathlib.Path(RUN_TMP) / "v2-name-inputs"
+    root.mkdir()
+
+    def wgit(*a):
+        return subprocess.run(
+            ["git", "-C", str(root), *a], capture_output=True, text=True, check=True, env=GM._env()
+        ).stdout.strip()
+
+    def lk(gid, **kw):
+        return {"id": gid, "run": "npm run " + gid, "gate": True, "leaves": [], **kw}
+
+    gl = {
+        "check:lists": lk("check:lists", paths=["docs.txt"], pathsOrigin="declared", lists=["src"]),
+        "check:names": lk("check:names", names=["src/**"], pathsOrigin="traced"),
+        "check:refs": lk("check:refs", paths=["docs.txt"], pathsOrigin="declared", refs=["HEAD"]),
+        "check:noref": lk("check:noref", refs=["refs/heads/nope"]),
+    }
+    scripts = {gid: "echo " + gid for gid in gl}
+    wgit("init", "--initial-branch=main", "-q")
+    (root / "src").mkdir()
+    (root / "src" / "a.txt").write_text("a\n", encoding="utf-8")
+    (root / "docs.txt").write_text("n\n", encoding="utf-8")
+    (root / "package.json").write_text(json.dumps({"scripts": scripts}), encoding="utf-8")
+    GM._write_fixture_lock(root, [*GM.FIXTURE_LOCK, *gl.values()])
+    wgit("add", "-A")
+    wgit("commit", "-q", "-m", "A")
+    tree = wgit("rev-parse", "HEAD^{tree}")
+    entries = GM.v2_ls_tree(str(root), tree)
+    head = wgit("rev-parse", "HEAD")
+
+    def carried(gid, globs):
+        g = gl[gid]
+        named = {f: g[f] for f in ("lists", "names", "refs") if f in g}
+        inputs = {"globs": globs, "files": [], "scripts": [gid], **named}
+        extras, _ = GM.v2_extra_lines(
+            entries,
+            g.get("lists", []),
+            g.get("names", []),
+            g.get("refs", []),
+            resolve=lambda r: head if r == "HEAD" else "f" * 40,
+        )
+        return GM._gate_entry(
+            "ok",
+            inputHash="fixture-hash",
+            defHash=GM.v2_def_hash(g, {gid: scripts[gid]}),
+            filesHash=GM.v2_files_hash(GM.v2_input_lines(entries, globs, []), extras),
+            inputs=inputs,
+            judgedTree=tree,
+        )
+
+    gates = {
+        "check:fixture-ok": GM._gate_entry("ok"),
+        "check:fixture-cionly": GM._gate_entry("ciOnly"),
+        "check:lists": carried("check:lists", ["docs.txt"]),
+        "check:names": carried("check:names", []),
+        "check:refs": carried("check:refs", ["docs.txt"]),
+        "check:noref": carried("check:noref", ["**"]),
+    }
+    origin = {"headTree": tree, "whole": True, "exitCode": 0, "failed": [], "gates": gates}
+    archive = root / ".ci" / "cache" / "receipts"
+    archive.mkdir(parents=True)
+    (archive / ("%s.json" % tree)).write_text(json.dumps(origin), encoding="utf-8")
+    src = {"headTree": tree, "head": "x", "finishedAt": "now"}
+
+    def receipt(carry):
+        g = {k: (dict(v, carriedFrom=src) if k in carry else v) for k, v in gates.items()}
+        return dict(origin, schema=GM.RECEIPT_SCHEMA, gates=g, droppedTouched=[])
+
+    three = ("check:lists", "check:names", "check:refs")
+    cases.append(
+        (
+            "",
+            GM.v2_verdict(str(root), tree, receipt(three)),
+            "NAMES: lists, names and refs carry at the identical tree and HEAD",
+        )
+    )
+    why = GM.v2_verdict(str(root), tree, receipt(("check:noref",)))
+    cases.append(
+        (
+            True,
+            "check:noref" in why and "refs/heads/nope" in why and "resolves to no commit" in why,
+            "NAMES: a carried ref that resolves to nothing is refused by name: %s" % why,
+        )
+    )
+    # An edit to the content of a listed child: new tree, new HEAD. lists and names still carry.
+    (root / "src" / "a.txt").write_text("edited\n", encoding="utf-8")
+    wgit("commit", "-q", "-am", "B")
+    edited = wgit("rev-parse", "HEAD^{tree}")
+    cases.append(
+        (
+            "",
+            GM.v2_verdict(str(root), edited, receipt(("check:lists", "check:names"))),
+            "NAMES: an edit to an unread listed child keeps the lists and names carries",
+        )
+    )
+    why = GM.v2_verdict(str(root), edited, receipt(("check:refs",)))
+    cases.append(
+        (
+            True,
+            "check:refs" in why and "filesHash" in why,
+            "NAMES: a new HEAD voids a refs: [HEAD] carry: %s" % why,
+        )
+    )
+    # A new child of the listed directory.
+    (root / "src" / "new.txt").write_text("n\n", encoding="utf-8")
+    wgit("add", "-A")
+    wgit("commit", "-q", "-m", "C")
+    added = wgit("rev-parse", "HEAD^{tree}")
+    for gid in ("check:lists", "check:names"):
+        why = GM.v2_verdict(str(root), added, receipt((gid,)))
+        cases.append(
+            (
+                True,
+                gid in why and "filesHash" in why,
+                "NAMES: a new file in the listed directory voids the %s carry: %s" % (gid, why),
+            )
+        )
+
+
 def test_v2_helpers():
     cases.append((True, GM.v2_match_glob("src/**", "src/a/b.ts"), "GLOB: ** crosses /"))
     cases.append((False, GM.v2_match_glob("src/*", "src/a/b.ts"), "GLOB: * does not cross /"))
@@ -1601,6 +2035,81 @@ def test_v2_helpers():
             GM.v2_files_hash(lines),
             GM.v2_files_hash(list(reversed(lines))),
             "FILES: the hash does not depend on input order",
+        )
+    )
+    cases.append(
+        (
+            lines,
+            GM.v2_input_lines(entries, ["src/**", "private/x/**"], []),
+            "FILES: a `<gitlink>/**` glob reaches the gitlink entry, as input-hash.ts entryMatches does",
+        )
+    )
+    cases.append(
+        (
+            manual,
+            GM.v2_files_hash(lines, []),
+            "FILES: no name-shaped extras is the pre-W2.4 preimage byte for byte",
+        )
+    )
+    tree_entries = [
+        ("100644", "blob", "a" * 40, "d/f"),
+        ("100755", "blob", "a" * 40, "d/x"),
+        ("100644", "blob", "a" * 40, "d/s/deep"),
+        ("100644", "blob", "a" * 40, "d/s/deeper"),
+        ("160000", "commit", "c" * 40, "d/sub"),
+        ("100644", "blob", "a" * 40, "dd/f"),
+    ]
+    cases.append(
+        (
+            [
+                "list\td\tf\t100644",
+                "list\td\tx\t100755",
+                "list\td\ts\ttree",
+                "list\td\tsub\tcommit",
+            ],
+            GM.v2_list_lines(tree_entries, ["d"]),
+            "LISTS: one line per immediate child with its kind; dd/ is not a child of d",
+        )
+    )
+    cases.append(
+        (
+            ["list\t\td\ttree", "list\t\tdd\ttree"],
+            GM.v2_list_lines(tree_entries, [""]),
+            "LISTS: '' lists the root",
+        )
+    )
+    extras, unresolved = GM.v2_extra_lines(
+        tree_entries, ["d"], ["d/s/*"], ["HEAD"], resolve=lambda _r: "e" * 40
+    )
+    cases.append(
+        (
+            (True, None),
+            (
+                "name\t100644\td/s/deep" in extras and ("ref\tHEAD\t" + "e" * 40) in extras,
+                unresolved,
+            ),
+            "EXTRA: names and refs lines are built, nothing unresolved",
+        )
+    )
+    cases.append(
+        (
+            GM.v2_files_hash(lines, extras),
+            GM.v2_files_hash(lines, list(reversed(extras)) + extras[:1]),
+            "EXTRA: the hash does not depend on extras order or duplicates",
+        )
+    )
+    cases.append(
+        (
+            True,
+            GM.v2_files_hash(lines, extras) != GM.v2_files_hash(lines),
+            "EXTRA: extras move the hash",
+        )
+    )
+    cases.append(
+        (
+            "refs/heads/nope",
+            GM.v2_extra_lines(tree_entries, refs=["refs/heads/nope"], resolve=lambda _r: None)[1],
+            "EXTRA: an unresolved ref is reported, not folded into an empty line",
         )
     )
     cases.append(
@@ -1953,7 +2462,388 @@ test_v2_planted_input_change_refuses()
 test_v2_carried_red_never_green()
 test_v1_receipt_refused()
 test_v2_whole_tree_carry()
+test_v2_name_inputs()
 test_v2_helpers()
+
+
+def test_backup_refs():
+    """BOX G5 OF PLAN-local-first-delivery: the shared backup-ref cases (`_backup_push.CASES`), each in a console-shaped checkout with no receipt, so every push the predicate does not admit is refused here."""
+    bp = importlib.import_module("rediacc_hooks.guards._backup_push")
+    worlds = {}
+    for pinned in (True, False):
+        root = tempfile.mkdtemp(dir=RUN_TMP)
+        for argv in (
+            ["init", "-q", "-b", "0827-1"],
+            ["config", "user.email", "p@example.invalid"],
+            ["config", "user.name", "p"],
+            ["commit", "-q", "--allow-empty", "-m", "base"],
+        ):
+            subprocess.run(["git", "-C", root, *argv], capture_output=True, check=True)
+        worlds[pinned] = bp.plant(root, pinned=pinned)
+    for label, command, pinned, admitted in bp.CASES:
+        root = worlds[pinned]
+        rc = subprocess.run(
+            GUARD_ARGV,
+            input=json.dumps({"tool_input": {"command": command}}),
+            capture_output=True,
+            text=True,
+            cwd=root,
+            env=dict(os.environ, CLAUDE_PROJECT_DIR=root),
+            check=False,
+        ).returncode
+        cases.append((0 if admitted else 2, rc, label))
+
+
+test_backup_refs()
+
+
+# --- two trees of one repository: each push judged in its own tree (PLAN-two-track-merge-dev LT6) ----------
+# The landing tree holds the PR branch beside the main checkout, which holds the development branch: two linked trees of one repository, one git common directory, each with its own .ci/cache. Before LT6 a push typed in the landing tree returned ALLOW because its toplevel was not CLAUDE_PROJECT_DIR. Every case here keeps CLAUDE_PROJECT_DIR on the main checkout and moves only the payload's cwd or a `-C`, the way the harness sends a command typed in the other tree.
+MUTANT_RUNNER = (
+    "import sys; sys.path.insert(0, %r)\n"
+    "from rediacc_hooks import hookio\n"
+    "src = open(%r, encoding='utf-8').read()\n"
+    "old, new = %r\n"
+    "import ast\n"
+    "cut = [n for n in ast.parse(src).body if isinstance(n, ast.Assign)"
+    " and any(isinstance(t, ast.Name) and t.id in ('DEFECT', 'MUTANTS') for t in n.targets)]\n"
+    "outside = '\\n'.join(l for i, l in enumerate(src.split('\\n'), 1)"
+    " if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut))\n"
+    "assert outside.count(old) == 1, 'the mutant must name exactly one line outside its declaration'\n"
+    "ns = {'__name__': 'broken', '__file__': %r}\n"
+    "exec(compile(src.replace(old, new), 'broken', 'exec'), ns)\n"
+    "ev = hookio.Event(sys.stdin.read())\n"
+    "rc = ns['run'](ev)\n"
+    "sys.stderr.write(ev.result(rc)[2])\n"
+    "sys.exit(rc)\n"
+)
+
+
+def drive_tree(project, tree, cmd, mutant=None):
+    """`(rc, stderr)` of `cmd` typed in `tree` while the session's project is `project`; `mutant` names one of the guard's MUTANTS to plant in a copy."""
+    if mutant is None:
+        argv = GUARD_ARGV
+    else:
+        argv = [
+            sys.executable,
+            "-c",
+            MUTANT_RUNNER % (str(GUARD.parents[2]), str(GUARD), GM.MUTANTS[mutant], str(GUARD)),
+        ]
+    proc = subprocess.run(
+        argv,
+        input=json.dumps({"tool_input": {"command": cmd}, "cwd": str(tree)}),
+        capture_output=True,
+        text=True,
+        cwd=str(project),
+        env=dict(os.environ, CLAUDE_PROJECT_DIR=str(project)),
+        check=False,
+    )
+    if proc.returncode not in (0, 2):
+        raise SystemExit("guard runner crashed (rc %d): %s" % (proc.returncode, proc.stderr[-800:]))
+    return proc.returncode, proc.stderr
+
+
+def linked_tree(main, path, branch, start="HEAD"):
+    """A linked tree of `main` at `path` on a new `branch`: one common git directory, its own HEAD and its own .ci/cache."""
+    g(main, "worktree", "add", "-q", "-b", branch, str(path), start)
+    return path
+
+
+def two_tree_cases():
+    """LT6: a push typed in the landing tree is refused without that tree's receipt and admitted with it."""
+    tw = pathlib.Path(tempfile.mkdtemp(dir=RUN_TMP))
+    dev = tw / "console"
+    subprocess.run(["git", "init", "-q", "-b", "1120-2", str(dev)], check=True, capture_output=True)
+    g(dev, "config", "user.email", "p@example.invalid")
+    g(dev, "config", "user.name", "p")
+    (dev / "base.txt").write_text("base\n", encoding="utf-8")
+    GM._write_fixture_lock(dev)
+    g(dev, "add", "-A")
+    g(dev, "commit", "-qm", "base")
+    landing = linked_tree(dev, tw / "console-landing", "1120-1")
+    (landing / "pr.txt").write_text("pr\n", encoding="utf-8")
+    g(landing, "add", "--", "pr.txt")
+    g(landing, "commit", "-qm", "pr work")
+    push = "git push origin 1120-1"
+    via_c = "git -C %s push origin 1120-1" % landing
+    # The main checkout holds a whole, green receipt for ITS tree; the landing tree holds none yet. No `origin` remote, so the base check stands aside and the receipt is the only thing judged.
+    plant_green(dev)
+    rc, err = drive_tree(dev, landing, push)
+    cases.append(
+        (2, rc, "TWO TREES: a push typed in the landing tree with no receipt of its own is refused")
+    )
+    cases.append(
+        (
+            True,
+            "no local gate run has judged this tree" in err,
+            "TWO TREES: and the refusal names the missing receipt",
+        )
+    )
+    cases.append(
+        (
+            2,
+            drive_tree(dev, dev, via_c)[0],
+            "TWO TREES: `git -C <landing>` from the main checkout is judged in the landing tree",
+        )
+    )
+    cases.extend(
+        (
+            0,
+            drive_tree(dev, landing, push, mutant=name)[0],
+            "TWO TREES MUTANT %s: the refusal flips to allowed" % name,
+        )
+        for name in ("sibling-tree-waved", "sibling-judged-as-project")
+    )
+    # The main checkout's receipt copied into the landing tree names the main checkout's tree, not the landing tree's HEAD, so it vouches for nothing there.
+    (landing / ".ci" / "cache").mkdir(parents=True, exist_ok=True)
+    shutil.copy(
+        dev / ".ci" / "cache" / "prepush-receipt.json",
+        landing / ".ci" / "cache" / "prepush-receipt.json",
+    )
+    cases.append(
+        (
+            2,
+            drive_tree(dev, landing, push)[0],
+            "TWO TREES: the other tree's receipt does not vouch for the landing tree's HEAD",
+        )
+    )
+    plant_green(landing)
+    cases.append(
+        (
+            0,
+            drive_tree(dev, landing, push)[0],
+            "TWO TREES: the landing tree's own receipt admits its push",
+        )
+    )
+    cases.append(
+        (
+            0,
+            drive_tree(dev, dev, via_c)[0],
+            "TWO TREES: and admits the same push through `git -C <landing>`",
+        )
+    )
+    # CONTROL: the main checkout is still judged by its own receipt, whatever the landing tree holds.
+    (dev / ".ci" / "cache" / "prepush-receipt.json").unlink()
+    cases.append(
+        (
+            2,
+            drive_tree(dev, dev, "git push origin 1120-2")[0],
+            "TWO TREES CONTROL: the main checkout without its receipt is refused",
+        )
+    )
+    plant_green(dev)
+    cases.append(
+        (
+            0,
+            drive_tree(dev, dev, "git push origin 1120-2")[0],
+            "TWO TREES CONTROL: and admitted with it",
+        )
+    )
+    # CONTROL: a repository with another common git directory is still another repository's push, even beside the two trees.
+    other = tw / "other"
+    subprocess.run(
+        ["git", "init", "-q", "-b", "1120-1", str(other)], check=True, capture_output=True
+    )
+    cases.append(
+        (
+            0,
+            drive_tree(dev, other, push)[0],
+            "TWO TREES CONTROL: an independent repository beside them stays its own",
+        )
+    )
+    cases.append(
+        (
+            0,
+            drive_tree(dev, dev, "git -C %s push origin 1120-1" % other)[0],
+            "TWO TREES CONTROL: and so does `git -C` into it",
+        )
+    )
+    shutil.rmtree(tw, ignore_errors=True)
+
+
+two_tree_cases()
+
+# --- behind-base for both trees (PLAN-two-track-merge-dev LT7, serving RB3) -------------------------------
+# A bare origin, the main checkout on the development branch, the landing tree on the PR branch, and a mover clone that rebase-merges the PR branch into main the way GitHub's `--rebase` does: new shas, the same patches.
+_WL_REBASE = importlib.util.spec_from_file_location(
+    "wl_rebase", REPO / ".claude" / "hooks" / "stop" / "wl_rebase.py"
+)
+if _WL_REBASE is None or _WL_REBASE.loader is None:
+    raise SystemExit("%s: .claude/hooks/stop/wl_rebase.py is missing" % __file__)
+wl_rebase = importlib.util.module_from_spec(_WL_REBASE)
+# Registered before it runs: its frozen dataclass looks its own module up in sys.modules.
+sys.modules["wl_rebase"] = wl_rebase
+_WL_REBASE.loader.exec_module(wl_rebase)
+
+
+def both_tree_behind_cases():
+    """LT7: the PR branch and the development branch are each judged against origin/main from their own tree; a rebase-merged parent reads absorbed."""
+    bb = pathlib.Path(tempfile.mkdtemp(dir=RUN_TMP))
+    origin_git = bb / "origin.git"
+    dev = bb / "console"
+    mover_tree = bb / "mover"
+    subprocess.run(
+        ["git", "init", "-q", "--bare", "-b", "main", str(origin_git)],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(["git", "init", "-q", "-b", "main", str(dev)], check=True, capture_output=True)
+    g(dev, "config", "user.email", "p@example.invalid")
+    g(dev, "config", "user.name", "p")
+    g(dev, "remote", "add", "origin", str(origin_git))
+    (dev / "base.txt").write_text("base\n", encoding="utf-8")
+    GM._write_fixture_lock(dev)
+    g(dev, "add", "-A")
+    g(dev, "commit", "-qm", "base")
+    g(dev, "push", "-q", "origin", "main")
+    g(dev, "fetch", "-q", "origin")
+    cut = g(dev, "rev-parse", "HEAD")
+    # The PR branch: two commits, pushed. The development branch is cut from its tip and adds one of its own; the PR branch then lives only in the landing tree.
+    g(dev, "checkout", "-qb", "1120-1")
+    for i in range(2):
+        (dev / ("pr-%d.txt" % i)).write_text("pr %d\n" % i, encoding="utf-8")
+        g(dev, "add", "-A")
+        g(dev, "commit", "-qm", "pr %d" % i)
+    g(dev, "push", "-q", "origin", "1120-1")
+    g(dev, "checkout", "-qb", "1120-2")
+    (dev / "dev.txt").write_text("dev\n", encoding="utf-8")
+    g(dev, "add", "--", "dev.txt")
+    g(dev, "commit", "-qm", "dev work")
+    landing = bb / "console-landing"
+    g(dev, "worktree", "add", "-q", str(landing), "1120-1")
+    # main moves on origin before the merge, so the PR branch in the landing tree is behind.
+    subprocess.run(
+        ["git", "clone", "-q", str(origin_git), str(mover_tree)], check=True, capture_output=True
+    )
+    g(mover_tree, "config", "user.email", "q@example.invalid")
+    g(mover_tree, "config", "user.name", "q")
+    (mover_tree / "main-0.txt").write_text("m\n", encoding="utf-8")
+    g(mover_tree, "add", "-A")
+    g(mover_tree, "commit", "-qm", "main moves")
+    g(mover_tree, "push", "-q", "origin", "main")
+    plant_green(landing)
+    rc, err = drive_tree(dev, landing, "git push --force-with-lease origin 1120-1")
+    cases.append(
+        (2, rc, "BOTH TREES: the PR branch in the landing tree, behind origin/main, is refused")
+    )
+    cases.append(
+        (
+            True,
+            "1120-1" in err and "1 commit(s) behind" in err,
+            "BOTH TREES: the refusal names the PR branch and counts it behind",
+        )
+    )
+    # The PR branch is rebased and rebase-merged: main now carries copies of its two commits under new shas.
+    g(mover_tree, "fetch", "-q", "origin", "1120-1")
+    g(mover_tree, "checkout", "-q", "-b", "pr", "FETCH_HEAD")
+    g(mover_tree, "rebase", "-q", "main")
+    g(mover_tree, "checkout", "-q", "main")
+    g(mover_tree, "merge", "-q", "--ff-only", "pr")
+    g(mover_tree, "push", "-q", "origin", "main")
+    plant_green(dev)
+    push = "git push origin 1120-2"
+    rc, err = drive_tree(dev, dev, push)
+    cases.append(
+        (
+            2,
+            rc,
+            "BOTH TREES: the development branch after the PR's rebase-merge is refused (CI judges ancestry)",
+        )
+    )
+    cases.append(
+        (True, "absorbed" in err, "BOTH TREES: the rebase-merged parent's copies are read absorbed")
+    )
+    cases.append(
+        (
+            True,
+            "1 commit(s) behind" in err and "2 more absorbed" in err,
+            "BOTH TREES: the main commit before the merge reads behind, the two copies absorbed",
+        )
+    )
+    cases.append(
+        (
+            True,
+            ci_recipe("1120-2") in err,
+            "BOTH TREES: the refusal prints CI's REBASE LOCALLY recipe verbatim",
+        )
+    )
+    cases.append(
+        (
+            True,
+            all(line in err for line in GM.REBASE_PROOF if line.strip()),
+            "BOTH TREES: and RB4's post-rebase proof",
+        )
+    )
+    # The proof's commands are the lease block's (RB2), word for word, so the two cannot drift apart unnoticed.
+    commands = [line for line in GM.REBASE_PROOF if line.startswith("    ")]
+    cases.append(
+        (
+            True,
+            len(commands) == 2 and all(line + "\n" in wl_rebase.REBASE_RECIPE for line in commands),
+            "BOTH TREES: each REBASE_PROOF command is a line of wl_rebase.REBASE_RECIPE",
+        )
+    )
+    # The guard's split and RB1's lease reader agree on the same repository.
+    head = g(dev, "rev-parse", "HEAD")
+    rb1 = wl_rebase.behind_base(dev, head, cut, "main")
+    cases.append(
+        (
+            True,
+            (rb1.state, rb1.behind, rb1.absorbed) == ("behind", 1, 2)
+            and GM.base_split(str(dev), head, "origin/main") == (1, 2),
+            "BOTH TREES: base_split equals RB1's reader, behind 1 and absorbed 2",
+        )
+    )
+    cases.append(
+        (
+            True,
+            "absorbed" not in drive_tree(dev, dev, push, mutant="absorbed-read-behind")[1],
+            "BOTH TREES MUTANT absorbed-read-behind: the absorbed reading is gone",
+        )
+    )
+    # Absorbed only: the development branch rebased onto the main commit before the merge, so every base commit it lacks is a copy of one of its own.
+    g(dev, "rebase", "-q", g(dev, "rev-parse", "origin/main~2"))
+    plant_green(dev)
+    head = g(dev, "rev-parse", "HEAD")
+    rc, err = drive_tree(dev, dev, push)
+    cases.append((2, rc, "BOTH TREES: an absorbed-only development branch is still refused"))
+    cases.append(
+        (
+            True,
+            "ABSORBED" in err
+            and "every one of the 2 commit(s)" in err
+            and "behind origin/main" not in err,
+            "BOTH TREES: and reads ABSORBED with nothing behind",
+        )
+    )
+    cases.append(
+        (
+            False,
+            "ABSORBED" in drive_tree(dev, dev, push, mutant="absorbed-read-behind")[1],
+            "BOTH TREES MUTANT absorbed-read-behind: the absorbed-only branch reads behind",
+        )
+    )
+    rb1 = wl_rebase.behind_base(dev, head, cut, "main")
+    cases.append(
+        (
+            True,
+            (rb1.state, rb1.absorbed) == ("absorbed", 2)
+            and GM.base_split(str(dev), head, "origin/main") == (0, 2),
+            "BOTH TREES: RB1's reader reads it absorbed too",
+        )
+    )
+    # CONTROL: at the base, the development branch is admitted.
+    g(dev, "rebase", "-q", "origin/main")
+    plant_green(dev)
+    rc, err = drive_tree(dev, dev, push)
+    cases.append(
+        (0, rc, "BOTH TREES CONTROL: the development branch on top of origin/main is admitted")
+    )
+    cases.append((False, "REBASE LOCALLY" in err, "BOTH TREES CONTROL: and prints no recipe"))
+    shutil.rmtree(bb, ignore_errors=True)
+
+
+both_tree_behind_cases()
 
 shutil.rmtree(d, ignore_errors=True)
 

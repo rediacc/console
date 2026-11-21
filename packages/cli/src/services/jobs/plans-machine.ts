@@ -38,12 +38,12 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   },
   'backup schedule': {
     form: 'command-kind',
+    fn: 'backup-schedule',
     lock: 'machine-exclusive',
-    lockGap: { runs: 'backup-unit', overlap: 'machine-shared' },
     timeout: '10m',
     box: 'J17',
     steps: ['seedStrategyRetention', 'warnIfConfigStorageUnenrolled'],
-    note: `${NEW_KIND}; the license refresh inside it is HTTP between two machine phases (J0b finding 3)`,
+    note: 'the plan is computed from a read of the machine before the job and rides it as a stdin payload; the license refresh before it is HTTP between two machine phases (J0b finding 3) and stays client-driven',
   },
   'backup status': {
     form: 'command-kind',
@@ -52,7 +52,7 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     timeout: '10m',
     box: 'J17',
     steps: ['renderBackupStatus'],
-    note: NEW_KIND,
+    note: 'with a strategy, a second read job (backup-journal) follows the table',
   },
 
   // J18: machine verbs.
@@ -62,7 +62,7 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'read',
     timeout: '10m',
     box: 'J18',
-    steps: ['reconcileConfigState'],
+    steps: ['recordMachineListing', 'reconcileConfigState', 'reconcileConfigStateFailed'],
     note: 'one list-all job per machine under one group; the command stays exempt from the proxy',
   },
   'machine converge': {
@@ -92,8 +92,8 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   },
   'machine infra push': {
     form: 'compound',
+    fn: 'infra-push',
     lock: 'machine-exclusive',
-    lockGap: { runs: 'infra-push', overlap: 'read' },
     timeout: '10m',
     box: 'J18',
     steps: ['ensureMachineDns'],
@@ -105,18 +105,27 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'machine-exclusive',
     timeout: '24h',
     box: 'J18',
-    steps: ['setMachineInfra'],
+    steps: ['setMachineInfra', 'pushProvisionedInfra'],
     exception: 'the tofu legs stay local (section 24)',
     note: 'infra push is the successor and carries no secret (J0b finding 2); addMachine and knownHosts precede the job, which needs the machine record to connect',
   },
   'machine prune': {
     form: 'compound',
-    fn: 'network_prune',
+    fn: 'machine_prune',
     lock: 'machine-exclusive',
     timeout: '10m',
     box: 'J18',
-    steps: ['cleanupSshArtifacts', 'purgeExpiredArchives', 'renderPruneOutcome'],
-    note: 'repository_prune then network_prune; the orphaned and unknown forms need the config GUID set in the vault (J0b finding 9)',
+    steps: ['purgeExpiredArchives', 'renderPruneOutcome'],
+    note: 'one machine_prune job runs repository_prune then the unit prune and renders in renderPruneOutcome; the deletion sets of the orphaned and unknown forms stay client-side after a finished job (the config GUID set is not in the vault)',
+  },
+  // X2 (PLAN-health-checks-local): read the findings, then one fix call per finding, each re-checked first; every call is an attached probe.
+  'machine repair': {
+    form: 'compound',
+    lock: 'machine-exclusive',
+    lockFrom: 'daemons-restart',
+    timeout: '24h',
+    box: 'J18',
+    note: `${CHAIN}; each fix depends on the re-check before it (list-all, then repository_trim, container_restart, daemons-restart, proxy_acme_fix or repository_repair)`,
   },
   'machine restart-services': {
     form: 'command-kind',
@@ -133,8 +142,8 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'machine-exclusive',
     timeout: '24h',
     box: 'J18',
-    steps: ['postSetupMachineTasks'],
-    note: 'the bootstrap upload runs before the job; the converge pass is a recorded successor',
+    steps: ['postSetupMachineTasks', 'convergeAfterSetup', 'settleSetupFailed'],
+    note: 'the bootstrap upload runs before the job; the converge pass is a recorded successor step, and a failed setup still owes the router refresh',
   },
   'machine status': {
     form: 'command-kind',
@@ -153,7 +162,13 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'machine-exclusive',
     timeout: '24h',
     box: 'J19',
-    steps: ['updateClusterRecord', 'materializeClusterMachines', 'recordClusterAudit'],
+    steps: [
+      'updateClusterRecord',
+      'materializeClusterMachines',
+      'recordClusterAudit',
+      'groupMemberSucceeded',
+      'groupMemberFailed',
+    ],
     exception: 'the tofu or KVM legs stay local (section 24)',
     note: CHAIN,
   },
@@ -176,12 +191,12 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   },
   'cluster join': {
     form: 'compound',
-    fn: 'kube_join',
+    fn: 'cluster_join',
     lock: 'machine-exclusive',
     timeout: '24h',
     box: 'J19',
     steps: ['updateMachineCluster', 'recordClusterAudit'],
-    note: 'kube_join consumes the kube_join_token output',
+    note: 'one cluster_join job on the member reads the join token from the control plane over ssh and joins with it',
   },
   'cluster migrate': {
     form: 'compound',
@@ -275,7 +290,7 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'machine-exclusive',
     timeout: '24h',
     box: 'J19',
-    steps: ['recordDatastore'],
+    steps: ['setDatastoreSize'],
   },
   'datastore snapshot create': {
     form: 'single',
@@ -314,10 +329,10 @@ export const MACHINE_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
   'subscription status': {
     form: 'command-kind',
     lock: 'read',
-    lockGap: { runs: 'license-status', overlap: 'read' },
+    lockFrom: 'license-status',
     timeout: '10m',
     box: 'J20',
     steps: ['renderSubscriptionStatus'],
-    note: `${NEW_KIND} (license-status)`,
+    note: 'the license-status command kind (renet d433dc9); the machine activation read stays HTTP',
   },
 };

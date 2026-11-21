@@ -2,7 +2,7 @@
 
 WHAT IT DECIDES. Four rules, each stated once here and enforced twice:
 
-  * ONE BRANCH. Each repository (the console and every submodule under `private/`) holds at most one live non-`main` local branch, named `MMDD-N`, and a submodule's branch carries the console's name. `branch_creations` finds every spelling of creating a branch in a Bash command; `live_branches` and `next_branch_name` answer whether that creation is allowed.
+  * ONE BRANCH. Each repository (the console and every submodule under `private/`) holds at most one live non-`main` local branch, named `MMDD-N`, and a submodule's branch carries the console's name. `branch_creations` finds every spelling of creating a branch in a Bash command; `live_branches` and `next_branch_name` answer whether that creation is allowed. A landing record (`landing_record`) binds the open PR's branch to a second, landing tree, and each tree then holds one live branch of its own (`tree_role`, `misplaced_branch`).
   * `[hotfix]` ON `main` ONLY. A commit on `main` must carry the tag at the end of its subject, a `Hotfix-Evidence:` trailer and at most `hotfix_max_files` paths (`hotfix_ok`). Off `main` the tag is refused, so the audit stays clean.
   * `[no-review]` ONLY ON WRITING. Every path must match `no_review_eligible` and none `no_review_denied` (`no_review_eligible`). The tag never rides a `[hotfix]` (operator ruling 1, 2026-09-25: hotfixes are always reviewed).
   * NO CI SKIP TOKENS in a commit an agent writes (`skip_tokens`). A skipped workflow leaves the required `CI Complete` check at "Expected" forever.
@@ -166,6 +166,78 @@ def superproject(repo_root: str) -> str:
     return git(["rev-parse", "--show-superproject-working-tree"], cwd=repo_root) or ""
 
 
+# --------------------------------------------------------------------------- lease trees ---------------------------------------------------------------------------
+#
+# THE LEASE BOUNDARY (agent/plans/PLAN-worktree-lease.md, Design 6). `block_lease_boundary` and `git/githooks.py` share these helpers, so both layers agree on what a lease is and what it may commit.
+
+LEASE_HOLDER = "/.claude/worktrees/"
+PIN_SPACE = "refs/worktrees/"
+LEASE_ADVICE = (
+    "A lease tree commits on its detached HEAD with the pathspec form and stops there. Landing is\n"
+    "the lead's, in the main checkout: `./run.sh worktree land <id>` prints the cherry-picks and\n"
+    "the gitlink commits (agent/plans/PLAN-worktree-lease.md, Design 3)."
+)
+
+
+def lease_root(directory: str) -> str:
+    """The lease tree `directory` sits in, "" when it sits in none. A submodule tree inside a lease answers that lease.
+
+    A LEASE IS A LINKED TREE BELOW `<main>/.claude/worktrees/<id>` WHOSE COMMON GIT DIRECTORY IS `<main>/.git` OR A MODULE STORE UNDER IT. The linked test keeps out a plain repository at such a path, and the store test keeps out a tree another checkout made there. An operator's `.worktrees/<MMDD-N>` has no such path and stays a real second checkout.
+
+    NO SUBPROCESS UNLESS THE PATH HAS THE HOLDER: a directory with no holder in its realpath cannot sit below one, and every commit and push in the main checkout comes through here. `foreign=True` because git-level hooks carry `GIT_DIR`, and the question is about the directory.
+    """
+    if not directory:
+        return ""
+    real = os.path.realpath(directory)
+    prefix, found, rest = (real + "/").partition(LEASE_HOLDER)
+    name = rest.split("/", 1)[0]
+    if not found or not name:
+        return ""
+    answer = git(
+        ["rev-parse", "--path-format=absolute", "--git-common-dir", "--absolute-git-dir"],
+        cwd=real,
+        foreign=True,
+    )
+    lines = (answer or "").split("\n")
+    if len(lines) != 2:
+        return ""
+    common, own = (os.path.realpath(line) for line in lines)
+    store = prefix + "/.git"
+    if common == own or not (common == store or common.startswith(store + "/modules/")):
+        return ""
+    return prefix + LEASE_HOLDER + name
+
+
+def diff_changes(repo_root: str, *spec: str) -> tuple[set[str], set[str]] | None:
+    """`(changed paths, the gitlinks among them)` from `git diff --raw <spec>`, None when git cannot answer. A mode of 160000 on either side is a gitlink. `--ignore-submodules=none` because a `submodule.<name>.ignore` setting would hide exactly those rows."""
+    out = git(
+        ["diff", "--raw", "--no-renames", "--no-abbrev", "--ignore-submodules=none", "-z", *spec],
+        cwd=repo_root,
+    )
+    if out is None:
+        return None
+    fields = out.split("\0")
+    paths: set[str] = set()
+    links: set[str] = set()
+    for meta, path in zip(fields[0::2], fields[1::2], strict=False):
+        paths.add(path)
+        if "160000" in meta.lstrip(":").split()[:2]:
+            links.add(path)
+    return paths, links
+
+
+def lease_commit_offenders(paths: typing.Iterable[str], links: typing.Iterable[str]) -> list[str]:
+    """What a lease may not commit, labelled: a gitlink, and anything under `agent/`. Both land from the main checkout."""
+    gitlinks = set(links)
+    out = []
+    for path in sorted(set(paths)):
+        if path in gitlinks:
+            out.append("%s (a gitlink)" % path)
+        elif path == "agent" or path.startswith("agent/"):
+            out.append(path)
+    return out
+
+
 # --------------------------------------------------------------------------- branches ---------------------------------------------------------------------------
 
 
@@ -204,14 +276,241 @@ def remote_branch_present(repo_root: str, branch: str) -> bool:
     return branch in (out or "").split("\n")
 
 
+# --------------------------------------------------------------------------- the landing tree ---------------------------------------------------------------------------
+#
+# TWO TREES, ONE LIVE BRANCH EACH (agent/plans/PLAN-two-track-merge-dev.md, box LT1). A static linked worktree, the LANDING tree, holds the open PR's `MMDD-N` branch, and the main checkout, the DEVELOPMENT tree, holds the next one. The binding is one record in the COMMON git directory, so every tree of the repository reads the same file: `LANDING_RECORD_NAME` with exactly the keys of `LANDING_RECORD_KEYS`, `path` the landing tree's absolute realpath and `branch` its `MMDD-N` name. The landing verb writes it with `write_landing_record`.
+#
+# STRICT READING. A record that fails any check (unreadable, not a JSON object, a missing or extra key, a relative path, a branch off the shape, a path that is not a tree of this repository) binds nothing: `landing_record` answers None and `landing_record_problem` names the defect, so a guard can report it. A half-trusted record would hide a live branch from the one-branch rule. With no record the rule reads exactly as before the binding existed.
+
+LANDING_RECORD_NAME = "rediacc-landing.json"
+LANDING_RECORD_KEYS = ("path", "branch")
+ROLE_LANDING = "landing"
+ROLE_DEVELOPMENT = "development"
+
+
+def landing_record_path(repo_root: str) -> str:
+    """Where the record of `repo_root`'s repository lives (its common git dir), "" when git cannot say."""
+    common = common_dir(repo_root)
+    return os.path.join(common, LANDING_RECORD_NAME) if common else ""
+
+
+def read_landing_record(repo_root: str) -> tuple[dict[str, str] | None, str]:
+    """`(record, problem)`: the validated record and "", `(None, "")` when there is none, or `(None, <defect>)` when one exists and fails a check."""
+    where = landing_record_path(repo_root)
+    if not where or not os.path.lexists(where):
+        return None, ""
+    try:
+        with open(where, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, UnicodeDecodeError, ValueError) as exc:
+        return None, "%s is unreadable: %s" % (where, exc)
+    if not isinstance(data, dict) or sorted(data) != sorted(LANDING_RECORD_KEYS):
+        return None, "%s is not an object with exactly the keys %s" % (
+            where,
+            ", ".join(LANDING_RECORD_KEYS),
+        )
+    path, branch = data["path"], data["branch"]
+    if not isinstance(path, str) or not isinstance(branch, str):
+        return None, "%s holds a non-string path or branch" % where
+    if not os.path.isabs(path) or os.path.realpath(path) != path:
+        return None, "%s: path `%s` is not an absolute realpath" % (where, path)
+    if not BRANCH_SHAPE.match(branch):
+        return None, "%s: branch `%s` is not an MMDD-N name" % (where, branch)
+    if not os.path.isdir(path):
+        return None, "%s: path `%s` does not exist" % (where, path)
+    if common_dir(path) != common_dir(repo_root):
+        return None, "%s: path `%s` is not a tree of this repository" % (where, path)
+    if not _is_linked_tree(path):
+        return None, "%s: path `%s` is not the toplevel of a linked tree" % (where, path)
+    return {"path": path, "branch": branch}, ""
+
+
+def _is_linked_tree(path: str) -> bool:
+    """Whether `path` is the toplevel of a LINKED tree (its own git dir differs from the common one).
+
+    The landing tree is always a linked tree. A record naming the main checkout would make the development tree read as the landing tree, so its live set would shrink to the record's branch and the one-branch rule would admit a second branch there (review finding fab1b63d.1); a record naming a subdirectory would bind nothing a toplevel matches.
+    """
+    answer = git(
+        ["rev-parse", "--path-format=absolute", "--show-toplevel", "--absolute-git-dir"],
+        cwd=path,
+        foreign=True,
+    )
+    lines = (answer or "").split("\n")
+    if len(lines) != 2:
+        return False
+    top, own = (os.path.realpath(line) for line in lines)
+    return top == os.path.realpath(path) and own != common_dir(path)
+
+
+def landing_record(repo_root: str) -> dict[str, str] | None:
+    """The validated landing record of `repo_root`'s repository, None when there is none or it fails a check."""
+    return read_landing_record(repo_root)[0]
+
+
+def landing_record_problem(repo_root: str) -> str:
+    """Why an existing landing record binds nothing, "" when it is valid or absent."""
+    return read_landing_record(repo_root)[1]
+
+
+def write_landing_record(repo_root: str, path: str, branch: str) -> str:
+    """Bind the landing tree `path` to `branch` for `repo_root`'s repository and answer the record's path.
+
+    Raises ValueError on a branch off the shape, a path that is not a tree of this repository or not the toplevel of a linked tree (the main checkout is never the landing tree), or a repository git cannot place. The write is atomic (a sibling temporary file, then a rename), so a reader never sees half a record.
+    """
+    if not BRANCH_SHAPE.match(branch):
+        raise ValueError("branch `%s` is not an MMDD-N name" % branch)
+    real = os.path.realpath(path)
+    where = landing_record_path(repo_root)
+    if not where:
+        raise ValueError("no git repository at %s" % repo_root)
+    if not os.path.isdir(real) or common_dir(real) != common_dir(repo_root):
+        raise ValueError("`%s` is not a tree of this repository" % real)
+    if not _is_linked_tree(real):
+        raise ValueError("`%s` is not the toplevel of a linked tree" % real)
+    temp = "%s.%d.tmp" % (where, os.getpid())
+    try:
+        with open(temp, "w", encoding="utf-8") as handle:
+            json.dump({"path": real, "branch": branch}, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+        os.replace(temp, where)
+    except BaseException:
+        # A failed write leaves no stray temporary file in the common git dir (review finding fab1b63d.2).
+        if os.path.lexists(temp):
+            os.unlink(temp)
+        raise
+    return where
+
+
+def _tree_top(repo_root: str) -> str:
+    top = git(["rev-parse", "--show-toplevel"], cwd=repo_root, foreign=True) if repo_root else None
+    return os.path.realpath(top) if top else ""
+
+
+def _role(repo_root: str, record: dict[str, str] | None) -> str:
+    if record and _tree_top(repo_root) == record["path"]:
+        return ROLE_LANDING
+    return ROLE_DEVELOPMENT
+
+
+def tree_binding(repo_root: str) -> tuple[dict[str, str] | None, str]:
+    """`(record, role)` for `repo_root`: its own repository's record, else, for a submodule, the superproject's (box LT11).
+
+    A SUBMODULE READS THE CONSOLE'S RECORD THROUGH ITS SUPERPROJECT. The landing verb gives each submodule tree a branch named after the console's, from the one module store both submodule trees share, so that store holds the landing name and the development name together. Its own common dir holds no record, and without this lookup each submodule tree saw both names live. The role is the superproject tree's: a submodule tree inside the landing tree is a landing tree. `(None, ROLE_DEVELOPMENT)` when neither repository holds a valid record.
+    """
+    record = landing_record(repo_root)
+    if record is not None:
+        return record, _role(repo_root, record)
+    parent = (
+        git(["rev-parse", "--show-superproject-working-tree"], cwd=repo_root, foreign=True)
+        if repo_root and os.path.isdir(repo_root)
+        else None
+    )
+    if parent:
+        record = landing_record(parent)
+        if record is not None:
+            return record, _role(parent, record)
+    return None, ROLE_DEVELOPMENT
+
+
+def tree_role(repo_root: str) -> str:
+    """`ROLE_LANDING` when `repo_root` sits in the tree the landing record binds (a submodule tree inside it included), else `ROLE_DEVELOPMENT` (also with no valid record)."""
+    return tree_binding(repo_root)[1]
+
+
+def main_checkout(repo_root: str) -> str:
+    """The main checkout of `repo_root`'s repository (the directory holding its common `.git`), "" when the common dir is no `.git` directory (a bare store, a module store)."""
+    common = common_dir(repo_root)
+    return os.path.dirname(common) if common and os.path.basename(common) == ".git" else ""
+
+
+def bound_trees(root: str) -> list[str]:
+    """The trees a command typed from `root` may act on as this project's own: `root` first, then, when the landing record binds a sibling, the other bound tree (box LT11).
+
+    From the main checkout the other tree is the record's landing path; from the landing tree it is the main checkout, the directory of the common git dir. Any other `root` (a lease tree, a scratch repository) and a repository with no valid record answer `[root]` alone, so every caller reads exactly what `is_inside(path, root)` read before the binding existed.
+    """
+    if not root:
+        return []
+    record = landing_record(root)
+    if record is None:
+        return [root]
+    top, main = _tree_top(root), main_checkout(root)
+    if not main or top not in (main, record["path"]):
+        return [root]
+    other = record["path"] if top == main else main
+    return [root, other]
+
+
+def is_ours(path: str, root: str, trees: list[str] | None = None) -> bool:
+    """Whether `path` is inside one of `bound_trees(root)` (`trees`, when the caller already holds them): the bound-tree spelling of `is_inside(path, root)`, identical to it with no landing record."""
+    return any(is_inside(path, tree) for tree in (bound_trees(root) if trees is None else trees))
+
+
+def command_tree(project_dir: str, cwd: str) -> str:
+    """The bound tree a command typed in `cwd` belongs to: the sibling bound tree when `cwd` lies inside it, else `project_dir` (box LT11; the post-bash hooks of box LT13 read the branch and file the review there).
+
+    With no landing record, a `project_dir` that is neither bound tree, or a `cwd` outside the sibling, the answer is `project_dir` itself, the reading before the landing tree existed. A `cwd` in a submodule of the sibling answers the sibling: the console tree is the one whose branch and PR the command serves.
+    """
+    # A command typed in the project directory itself reads no record: no git call, the hot path of every post-bash hook.
+    if not cwd or not project_dir or is_inside(cwd, project_dir):
+        return project_dir
+    trees = bound_trees(project_dir)
+    if len(trees) < 2:
+        return project_dir
+    return next((tree for tree in trees[1:] if is_inside(cwd, tree)), project_dir)
+
+
+def submodule_paths(tree: str) -> list[str]:
+    """The checkouts `tree`'s `.gitmodules` registers and that exist, as absolute paths. A repository that merely sits inside the tree (gitignored, cloned beside the submodules) is not one."""
+    listing = git(
+        ["config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$"],
+        cwd=str(tree),
+        foreign=True,
+    )
+    out = []
+    for line in (listing or "").splitlines():
+        parts = line.split(None, 1)
+        if len(parts) == 2 and os.path.exists(os.path.join(str(tree), parts[1].strip(), ".git")):
+            out.append(os.path.join(str(tree), parts[1].strip()))
+    return out
+
+
+def owning_tree(repo: str, trees: typing.Iterable[str]) -> str | None:
+    """The tree of `trees` (normally `bound_trees(root)`) that `repo` is, or whose `.gitmodules` registers it; None when it belongs to none. Membership is registration, not location: a gitignored repository inside a tree belongs to no tree."""
+    real = os.path.realpath(str(repo))
+    for tree in trees:
+        if real == os.path.realpath(str(tree)) or real in {
+            os.path.realpath(p) for p in submodule_paths(str(tree))
+        }:
+            return tree
+    return None
+
+
+def misplaced_branch(repo_root: str) -> str:
+    """The branch checked out in the wrong tree, "" when none: the record's branch in a development tree, or any other branch in the landing tree. A detached HEAD is never misplaced, and with no valid record nothing is. A submodule tree reads its superproject's record (`tree_binding`)."""
+    record, role = tree_binding(repo_root)
+    if record is None:
+        return ""
+    current = current_branch(repo_root, foreign=True)
+    if not current:
+        return ""
+    if role == ROLE_LANDING:
+        return current if current != record["branch"] else ""
+    return current if current == record["branch"] else ""
+
+
 def live_branches(repo_root: str, gh: bool = True) -> list[str]:
     """The live non-`main` local branches.
 
     A branch stops being live once its PR is MERGED or CLOSED, none is OPEN, AND its remote branch is gone (`gh=True`, raising `GhUnavailableError` when gh cannot answer). The last condition is box M6 of PLAN-plan-per-pr-loop (operator ruling 2026-10-02): the next `MMDD-N` is cut only after the previous PR merged and its branch was deleted, and "deleted" is read locally as no remote-tracking ref left for it (GitHub's delete-on-merge, then `git fetch --prune`). With `gh=False`, the git-level reading, the only local signal is an upstream that is configured and gone (`[gone]` after a prune), which is what a merged-and-deleted PR head leaves behind.
+
+    A VALID LANDING RECORD SPLITS THE SET BY TREE: in the landing tree only the record's branch can be live, and in a development tree every branch but the record's can, so each tree sees its own branch and a third one still counts where branches are cut. A submodule tree splits by the superproject's record (`tree_binding`). No record, or a defective one, leaves the set exactly as it was.
     """
+    record, role = tree_binding(repo_root)
     out = []
     for branch in local_branches(repo_root):
         if branch == "main":
+            continue
+        if record is not None and (branch == record["branch"]) != (role == ROLE_LANDING):
             continue
         if gh:
             states = _gh_lines(repo_root, [*GH_PR_STATES[:3], branch, *GH_PR_STATES[3:]])
@@ -372,8 +671,15 @@ def effective_dir(run, base: str, created=frozenset()) -> str:
     return os.path.normpath(shellscan._git_invocation(run.argv, base)[1])
 
 
-def run_repo(run, base: str, created=frozenset()) -> str:
-    """The toplevel of the repository a walked command acts on, "" when it resolves to none (see `effective_dir` for a failed `cd`)."""
+def run_repo(run, base: str, created=frozenset(), root: str = "") -> str:
+    """The toplevel of the repository a walked command acts on, "" when it resolves to none (see `effective_dir` for a failed `cd`).
+
+    A run whose landing a repository variable or a moving global option leaves unknown (`shellscan.git_run_scope_doubt`) answers `toplevel(root)`, this checkout, when the caller passes `root`, and "" otherwise. A caller that skips a repository outside this checkout passes `root`, so the doubt is judged here; a caller that ADMITS only a run it placed inside this checkout (a lease push, the mirror push) passes none, so a doubt never reaches its admission.
+    """
+    from rediacc_hooks import shellscan
+
+    if shellscan.git_run_scope_doubt(run):
+        return toplevel(root) if root else ""
     return toplevel(effective_dir(run, base, created))
 
 
@@ -384,29 +690,208 @@ def created_dirs(cmd: str, base: str) -> frozenset:
     return frozenset(shellscan._created_dirs(runs(cmd), base))
 
 
-def scoped_repo(run, base: str, root: str, created=frozenset()) -> str:
+def common_dir(directory: str) -> str:
+    """The absolute, resolved git common dir of the repository `directory` sits in, "" when git cannot say (no repository, no directory, git not answering)."""
+    if not directory or not os.path.isdir(directory):
+        return ""
+    got = git(
+        ["rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=directory, foreign=True
+    )
+    return os.path.realpath(got) if got else ""
+
+
+# A PUSH PUBLISHES TO ITS PUSH URL, not to the directory it runs in (#f2e3507a, measured 2026-11-11): a scratch repository whose `origin` is this checkout's GitHub repository force-pushed `main` past block_git_force_push and block_push_to_protected_branch, which placed it by its directory, while a push to a local bare remote publishes nothing anyone else reads. A verb that can repoint a remote earlier in the same command makes the destination read at hook time stale.
+_REMOTE_EDIT_VERBS = ("remote", "config", "clone")
+_SCP_LIKE = re.compile(r"^[^/]*:")
+
+
+def _edits_remotes(cmd: str) -> bool:
+    """Does `cmd` run a git verb that can add or repoint a remote (`remote`, `config`, `clone`) anywhere, so a push in it may go where the hook-time config does not say?"""
+    from rediacc_hooks import shellscan
+
+    for r in shellscan.every_run(cmd):
+        if _base(r.name) != "git":
+            continue
+        _, sub, _args = git_split(list(r.xargv if r.xargv is not None else r.argv))
+        if sub in _REMOTE_EDIT_VERBS:
+            return True
+    return False
+
+
+def _config_get(directory: str, *args: str) -> str:
+    return git(["config", *args], cwd=directory, foreign=True) or ""
+
+
+def _default_push_remote(directory: str) -> str:
+    """The remote a `git push` with no repository operand sends to, in git's order: `branch.<b>.pushRemote`, `remote.pushDefault`, `branch.<b>.remote`, then `origin`."""
+    branch = current_branch(directory, foreign=True)
+    keys = ["remote.pushDefault"]
+    if branch:
+        keys = ["branch.%s.pushRemote" % branch, "remote.pushDefault", "branch.%s.remote" % branch]
+    for key in keys:
+        got = _config_get(directory, "--get", key)
+        if got:
+            return got
+    return "origin"
+
+
+_UNRESOLVED_MARKS = ("$", "`", "\0")
+_SCP_URL = re.compile(r"^(?:[^@/]+@)?[^:/]+:(.*)$")
+
+
+def _url_key(url: str) -> str:
+    """The repository path a network URL names, lowercased, with no host, user, port, leading or trailing slash or `.git`: `https://github.com/o/r.git`, `git@github.com:o/r` and `ssh://git@gh-alias:22/o/r/` all key `o/r`. The host is left out on purpose, so an ssh host alias (`git@gh:o/r`) still matches. "" when none can be read."""
+    if any(m in url for m in _UNRESOLVED_MARKS):
+        return ""
+    if "://" in url:
+        path = url.split("://", 1)[1].partition("/")[2]
+    else:
+        m = _SCP_URL.match(url)
+        path = m.group(1) if m else ""
+    path = path.strip("/").lower()
+    return path.removesuffix(".git")
+
+
+def _our_url_keys(root: str) -> set[str]:
+    """The `_url_key` of every repository a push from this checkout could publish to: each `url`/`pushurl` of this checkout's remotes, each submodule's `.gitmodules` URL and its own remotes, and the console's GitHub repository (`wellknown.GH_REPO`), which stands even when the config cannot be read."""
+    from rediacc_hooks import wellknown
+
+    remote_rx = r"^remote\..*\.(url|pushurl)$"
+    urls = [s.partition(" ")[2] for s in _config_get(root, "--get-regexp", remote_rx).split("\n")]
+    modules = os.path.join(root, ".gitmodules")
+    if os.path.isfile(modules):
+        listing = _config_get(root, "-f", modules, "--get-regexp", r"^submodule\..*\.(url|path)$")
+        for line in listing.split("\n"):
+            key, _, value = line.partition(" ")
+            if key.endswith(".url"):
+                urls.append(value)
+            elif key.endswith(".path") and os.path.isdir(os.path.join(root, value)):
+                sub = _config_get(os.path.join(root, value), "--get-regexp", remote_rx)
+                urls.extend(s.partition(" ")[2] for s in sub.split("\n"))
+    keys = {_url_key(u) for u in urls if u}
+    keys.add(str(wellknown.GH_REPO).lower())
+    keys.discard("")
+    return keys
+
+
+def _url_elsewhere(url: str, directory: str, root: str, ours: set[str]) -> bool:
+    """Does a push to `url` from `directory` publish nothing this checkout's policy reads?
+
+    A path on this machine (plain, relative to `directory`, or `file://`) answers True unless it is inside `root` or a repository sharing this checkout's git store. A network URL answers True only when its repository path (`_url_key`) is none of `ours`. A `~`, an unexpanded word and a URL no key can be read from answer False.
+    """
+    if any(m in url for m in _UNRESOLVED_MARKS):
+        return False
+    if url.startswith("file://"):
+        path = url[len("file://") :]
+    elif "://" in url or _SCP_LIKE.match(url):
+        key = _url_key(url)
+        return bool(key) and key not in ours
+    else:
+        path = url
+    if not path or path.startswith("~"):
+        return False
+    path = os.path.normpath(os.path.join(directory, path))
+    if is_inside(path, root):
+        return False
+    store = common_dir(root)
+    theirs = common_dir(path)
+    return not (theirs and (not store or is_inside(theirs, store)))
+
+
+def push_elsewhere(run, directory: str, root: str, cmd: str | None = None) -> bool:
+    """Does the walked `git push` `run`, running in `directory`, send only to repositories this checkout's policy does not read: a local repository outside this checkout's store, or a network repository that is none of this checkout's own (`_our_url_keys`)?
+
+    False on every doubt: a global option but `-C` (`-c remote.<r>.pushurl=...` repoints the push), a `remote`/`config`/`clone` run in the same `cmd`, a `url.*.insteadOf`/`pushInsteadOf` rewrite, an option git itself refuses, a configured remote whose push URL git cannot read, and any URL `_url_elsewhere` does not place. `cmd` is the whole command; without it the same-command check is skipped, so every guard caller passes it.
+    """
+    argv = list(run.xargv if run.xargv is not None else run.argv)
+    globs, _sub, args = git_split(argv)
+    k = 0
+    while k < len(globs):
+        if globs[k] == "-C" and k + 1 < len(globs):
+            k += 2
+            continue
+        return False
+    if cmd is not None and _edits_remotes(cmd):
+        return False
+    from rediacc_hooks import shellscan
+
+    parsed = shellscan.git_push_args(args)
+    if parsed.problems:
+        return False
+    exists = os.path.isdir(directory)
+    if exists and _config_get(directory, "--get-regexp", r"^url\..*insteadof$"):
+        return False
+    dest = parsed.operands[0] if parsed.operands else (parsed.last("repo") or "")
+    if not dest:
+        dest = _default_push_remote(directory) if exists else "origin"
+    remotes = (git(["remote"], cwd=directory, foreign=True) or "").split("\n") if exists else []
+    if dest in remotes:
+        got = git(["remote", "get-url", "--push", "--all", dest], cwd=directory, foreign=True)
+        urls = [u for u in (got or "").split("\n") if u.strip()]
+        if not urls:
+            return False
+    else:
+        # Not a configured remote, so git reads the word as a URL or a path: a fresh `git init` has no `origin`, and `git push origin` there names a directory `origin` that holds nothing.
+        urls = [dest]
+    ours = _our_url_keys(root)
+    return all(_url_elsewhere(u, directory, root, ours) for u in urls)
+
+
+def scoped_repo(
+    run,
+    base: str,
+    root: str,
+    created=frozenset(),
+    cmd: str | None = None,
+    judged: str = "",
+    trees: list[str] | None = None,
+) -> str:
     """Where a walked command acts, for a guard that judges only this checkout and its submodules.
 
     The toplevel when the directory is a repository; else the directory ITSELF when it lies outside `root`; else "" (a directory inside `root` that names no repository, which git refuses and a guard keeps judging as this checkout). WHY THE SECOND ARM: `git init -q /tmp/x && cd /tmp/x && git branch feat` is one command, so at hook time `/tmp/x` is no repository yet and `toplevel` answers "", which every caller read as "judge this checkout" and refused a fixture it has no business with (finding #5810a9f3). Callers test `is_inside(result, root)`, and a directory outside `root` fails it, so the fixture is let through.
+
+    THE DOUBTS JUDGE THIS CHECKOUT, answering `judged`: "" by default, which every caller of the `not repo or is_inside(repo, root)` shape judges as this checkout, and this checkout's toplevel for a caller that reads "" as a directory git refuses (`branch_creations`). A repository variable or a moving global option (`shellscan.git_run_scope_doubt`): `GIT_DIR=<this checkout>/.git git -C <scratch> commit` commits here. And a `git push` outside `root` that `push_elsewhere` cannot place on this machine: a push publishes to its URL, so a scratch clone whose `origin` is this checkout's repository publishes as surely as this checkout would. `cmd`, the whole command, feeds that check its same-command remote edits.
+
+    BOTH BOUND TREES ARE THIS CHECKOUT (box LT11). A directory inside either bound tree that names no repository judges as this checkout (""). A push typed in the sibling tree (the landing tree from the main checkout, the main checkout from the landing tree) to a repository this checkout's policy reads answers the sibling's own toplevel ONLY for a caller that passes `trees` (`bound_trees(root)`), because it tests the answer with `is_ours`. A caller that passes none still tests `is_inside(answer, root)`, which would read that toplevel as foreign and let the push through unjudged, so it keeps `judged`, the answer before the binding. With no record the trees are `[root]` and every answer is the one before the binding.
     """
+    from rediacc_hooks import shellscan
+
+    if shellscan.git_run_scope_doubt(run):
+        return judged
+    aware = trees is not None
+    if trees is None:
+        trees = bound_trees(root)
     directory = run_dir(run, base)
     top = toplevel(directory)
-    if top:
-        return top
-    if is_inside(directory, root):
-        return ""
-    # An outside directory that does not exist and that this command does not create is a `cd` bash cannot perform: after `cd /nonexistent; git push --force origin main` git runs in THIS checkout, so it is judged as this checkout (shellscan._resolve_root keeps the same rule).
-    made = any(directory == c or directory.startswith(c.rstrip("/") + "/") for c in created)
-    return directory if (os.path.isdir(directory) or made) else ""
+    if not top:
+        if is_ours(directory, root, trees):
+            return ""
+        # An outside directory that does not exist and that this command does not create is a `cd` bash cannot perform: after `cd /nonexistent; git push --force origin main` git runs in THIS checkout, so it is judged as this checkout (shellscan._resolve_root keeps the same rule).
+        made = any(directory == c or directory.startswith(c.rstrip("/") + "/") for c in created)
+        if not (os.path.isdir(directory) or made):
+            return ""
+        top = directory
+    if (
+        run.git_sub == "push"
+        and not is_inside(top, root)
+        and not push_elsewhere(run, directory, root, cmd)
+    ):
+        return top if aware and is_ours(top, root, trees) else judged
+    return top
 
 
 def foreign_only(ev, cmd: str, subs: tuple[str, ...] | None = None) -> bool:
     """Whether every `git` invocation in `cmd` (only those running a subcommand in `subs`, when given) acts on a directory OUTSIDE this checkout, so a guard that judges only the console and its submodules has nothing to say.
 
-    False when `cmd` holds no such invocation, and false as soon as ONE of them lands in this checkout, in a submodule of it, or in a directory inside it that names no repository (see `scoped_repo`). The directory is resolved per invocation from its own `cd` and `-C`, starting at the tool call's `cwd`. A submodule is a different toplevel and is NOT foreign: only the path test decides.
+    False when `cmd` holds no such invocation, and false as soon as ONE of them lands in this checkout, in a submodule of it, or in a directory inside it that names no repository (see `scoped_repo`). The directory is resolved per invocation from its own `cd` and `-C`, starting at the tool call's `cwd`. A submodule is a different toplevel and is NOT foreign: only the path test decides. "This checkout" is either bound tree (`is_ours`, box LT11): a landing commit is never foreign to the development session, nor a development commit to the landing session.
     """
     root = ev.env("CLAUDE_PROJECT_DIR") or git(["rev-parse", "--show-toplevel"]) or ""
     if not root:
+        return False
+    from rediacc_hooks import shellscan
+
+    # A repository variable spelled anywhere, or carried by the hook's own environment, can send every git of the line to this checkout; `scoped_repo` reads each run's own variables and options.
+    if shellscan.git_scope_doubt_text(cmd):
         return False
     base = ev.field("cwd") or root
     picked = [r for r in git_runs(cmd) if subs is None or r.git_sub in subs]
@@ -414,12 +899,11 @@ def foreign_only(ev, cmd: str, subs: tuple[str, ...] | None = None) -> bool:
     picked = [r for r in picked if r.git_sub not in ("init", "clone")] or picked
     if not picked:
         return False
-    from rediacc_hooks import shellscan
-
     created = shellscan._created_dirs(runs(cmd), base)
+    trees = bound_trees(root)
     for run in picked:
-        repo = scoped_repo(run, base, root, created)
-        if not repo or is_inside(repo, root):
+        repo = scoped_repo(run, base, root, created, cmd, trees=trees)
+        if not repo or is_ours(repo, root, trees):
             return False
     return True
 
@@ -491,7 +975,14 @@ def push_destinations(args: list[str]) -> list[tuple[str, str]]:
     return out
 
 
-def _git_creations(run, start: str, root: str, created=frozenset()) -> list[Creation]:
+def _creation_repo(run, start: str, root: str, created=frozenset(), cmd: str | None = None) -> str:
+    """`scoped_repo` for a creation, with a doubt placed in this checkout rather than in "": block_second_branch skips a creation whose repository is "" (a directory git refuses), so `GIT_DIR=<this checkout>/.git git -C <scratch> branch x` and a scratch clone's push to this checkout's `origin` were let through (#f2e3507a)."""
+    return scoped_repo(run, start, root, created, cmd, judged=toplevel(root) or root)
+
+
+def _git_creations(
+    run, start: str, root: str, created=frozenset(), cmd: str | None = None
+) -> list[Creation]:
     _, sub, args = git_split(run.argv)
     found: list[tuple[str, str]] = []
     if sub in ("checkout", "switch"):
@@ -518,7 +1009,7 @@ def _git_creations(run, start: str, root: str, created=frozenset()) -> list[Crea
         if value:
             found.append((value, "worktree"))
     elif sub == "push":
-        repo = scoped_repo(run, start, root, created)
+        repo = _creation_repo(run, start, root, created, cmd)
         heads = set(local_branches(repo)) if repo else set()
         for src, dst in push_destinations(args):
             # `git push origin v1.2` pushes a TAG, and so does `v1.2:v1.2`: a destination is a branch being named only when its source is not a tag, and a bare refspec only when it IS a local branch (anything else is a tag, a sha, or a refspec git itself will refuse).
@@ -533,11 +1024,13 @@ def _git_creations(run, start: str, root: str, created=frozenset()) -> list[Crea
         return [Creation(repo, name, kind) for name, kind in found]
     if not found:
         return []
-    repo = scoped_repo(run, start, root, created)
+    repo = _creation_repo(run, start, root, created, cmd)
     return [Creation(repo, name, kind) for name, kind in found]
 
 
-def _gh_creations(run, start: str, root: str, created=frozenset()) -> list[Creation]:
+def _gh_creations(
+    run, start: str, root: str, created=frozenset(), cmd: str | None = None
+) -> list[Creation]:
     """The branch a walked `gh` call creates: `gh pr create --head <name>` or a `gh api .../git/refs` POST.
 
     Read through `shellscan.gh_args`, the one pflag reader the gh guards share (#d2d5f89d), so every spelling gh accepts is the branch it names: `-H x`, `-Hx`, `-H=x` (`x`, never `=x`), `--head=x`, a bundle ending in it (`-dH x`), a `pr`-level flag before the verb (`gh pr -R r create -H x`), and a value-taking flag's value is never a flag (`-t --head` titles a PR "--head"). The REST form's method is `shellscan.gh_api_method` (`-XPOST`, `--method=POST`, `-X=POST`, or a field with no `-X`) and its endpoint the call's own operand, so a `git/refs` in a header or a `--jq` is no endpoint. Measured 2026-10-07 through dispatch.py, before this: `gh pr create -dH 0229-7` was admitted (rc=0) where `--head 0229-7` is refused, and `-H=0101-1` was refused as a branch called `=0101-1`.
@@ -552,7 +1045,9 @@ def _gh_creations(run, start: str, root: str, created=frozenset()) -> list[Creat
         if value:
             return [
                 Creation(
-                    scoped_repo(run, start, root, created), value.rsplit(":", 1)[-1], "gh-pr-create"
+                    _creation_repo(run, start, root, created, cmd),
+                    value.rsplit(":", 1)[-1],
+                    "gh-pr-create",
                 )
             ]
         return []
@@ -564,7 +1059,7 @@ def _gh_creations(run, start: str, root: str, created=frozenset()) -> list[Creat
         fields = [v for n, v in parsed.flags if n in ("field", "raw-field")]
         ref = next((f.split("=", 1)[1] for f in fields if f.startswith("ref=")), "")
         name = ref.removeprefix("refs/heads/")
-        return [Creation(scoped_repo(run, start, root, created), name, "gh-api-ref")]
+        return [Creation(_creation_repo(run, start, root, created, cmd), name, "gh-api-ref")]
     return []
 
 
@@ -581,9 +1076,9 @@ def branch_creations(cmd: str, root: str, base: str | None = None) -> list[Creat
     for run in runs(cmd):
         name = _base(run.name)
         if name == "git":
-            out.extend(_git_creations(run, start, root, created))
+            out.extend(_git_creations(run, start, root, created, cmd))
         elif name == "gh":
-            out.extend(_gh_creations(run, start, root, created))
+            out.extend(_gh_creations(run, start, root, created, cmd))
     return out
 
 

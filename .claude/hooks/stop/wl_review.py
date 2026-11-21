@@ -6,7 +6,7 @@ WHY. The operator ruled on 2026-10-02 that a per-commit haiku review through a C
 THE FLOW. A `git commit` (or rebase, cherry-pick, merge, revert, pull) in any Bash call fires the post-bash member `.claude/hooks/post-bash/review_commit.py`. It asks `uncovered()` which commits of the branch have no review, takes the per-sha lock for up to `max_spawn_per_trigger` of them and starts this file as a DETACHED child for each (`--run`). The child reads the
 commit from the object store, calls haiku with a JSON schema and no tools, validates every finding's anchor against the diff and writes the review file atomically, or appends the ledger line for a verdict `ledger_eligible` accepts. It never runs `git add`: the index is shared, and the file rides the session's next commit or `worklist.py --review-commit`.
 
-NOTHING HERE DEPENDS ON THE STOP HOOK, which the operator disabled on 2026-10-02. Three readers enforce and surface the record without it: the pre-bash guard `block_push_with_unrecorded_reviews` refuses a push while a commit is unreviewed, a review is unrecorded or a `block_at` finding is open; the post-bash member reports each finished review on the session's next Bash call; and SessionStart prints `session_start_line()`. The Stop hook's `commit-review` keys
+NOTHING HERE DEPENDS ON THE STOP HOOK, which the operator disabled on 2026-10-02. Three readers enforce and surface the record without it: the pre-bash guard `block_push_with_unrecorded_reviews` refuses a push while a commit is unreviewed, a review is unrecorded or a blocking finding is open (at or above `block_at`, or of class `security` at any severity, `finding_blocks`); the post-bash member reports each finished review on the session's next Bash call; and SessionStart prints `session_start_line()`. The Stop hook's `commit-review` keys
 read the same `branch_state()` when it is switched back on.
 
 SEALED. Every knob is in `.ci/config/commit-review.json`; the only environment reads are the temp directory and the two recursion guards, so a stray export cannot retune a review.
@@ -16,6 +16,7 @@ THE CHILD RUNS NO HOOKS OF THIS REPO. `claude -p` fires the project's hooks when
 
 from __future__ import annotations
 
+import collections
 import contextlib
 import dataclasses
 import datetime
@@ -26,6 +27,7 @@ import json
 import keyword
 import os
 import pathlib
+import posixpath
 import re
 import shutil
 import subprocess
@@ -54,6 +56,7 @@ DEFAULTS = {
     "block_at": "high",
     "review_epoch": "",
     "retention_days": 14,
+    "review_skip_globs": [],
 }
 
 SEVERITIES = ("high", "medium", "low")
@@ -95,7 +98,7 @@ RESOLUTION_RES = (
 RESOLUTION_BY_KIND = dict(RESOLUTION_RES)
 RESOLUTION_GRAMMAR = "open | fixed <sha40> | not-a-bug | <evidence> | waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z (legacy: deferred #<item>), each signed `| <me8> <isoZ>`"
 VERDICT_RE = re.compile(
-    r"^(findings|clean|skipped \((?:gitlink-only|no-review)\)|failed \([^()\n]{1,200}\))$"
+    r"^(findings|clean|skipped \((?:gitlink-only|no-review|record-only)\)|failed \([^()\n]{1,200}\))$"
 )
 FINDING_HEAD = re.compile(r"^### ([0-9a-f]{8})\.(\d+) \[(high|medium|low)\] (\S.*):(\d+)$")
 HEADER_KEYS = (
@@ -124,7 +127,12 @@ COST_RE = re.compile(r"^\$(\d+\.\d{4}) USD, (\d+) call\(s\), (\d+\.\d)s$")
 # THE CLEAN LEDGER (agent/plans/PLAN-clean-review-ledger.md D1, D2). A verdict that leaves nothing to do (clean or skipped, no finding, the whole diff seen, nothing dropped) is one JSON line in `agent/reviews/<branch>/clean.jsonl` instead of a tracked file; every other verdict stays `<sha40>.md`, and for any sha a `.md` beats a ledger line.
 LEDGER_NAME = "clean.jsonl"
 LEDGER_V = 1
-LEDGER_VERDICTS = ("clean", "skipped (gitlink-only)", "skipped (no-review)")
+LEDGER_VERDICTS = (
+    "clean",
+    "skipped (gitlink-only)",
+    "skipped (no-review)",
+    "skipped (record-only)",
+)
 LEDGER_KEYS = frozenset(
     (
         "attempt",
@@ -151,9 +159,9 @@ Severity:
 high = on the changed path it will produce wrong behaviour, data loss, a security hole, a broken build or a CI gate that can no longer fail;
 medium = a real bug only on an edge path, changed behaviour with no test, or a comment that states the wrong behaviour;
 low = anything else worth a line.
-Style and naming are never above low, and neither is anything in prose (plans, notes, generated ledgers, Markdown). Do not speculate about code you cannot see. The diff shows changed lines with a few lines of context, so imports, definitions and declarations usually sit OUTSIDE it: never claim a name is undefined, not imported, missing or a typo because you cannot see its definition here, only when the diff itself removes or renames it. Quote code only as it appears in the diff, character for character. Every finding names a file from this diff and a line number in the NEW version of that file. The claim must say what goes wrong and when, in one sentence a reviewer can check. If the commit only moves or renames text, answer clean. Also classify the commit for release labels: bump none (no user-facing change), patch, minor (new capability), major (only recommend); kind from bug, feature, docs, ci.
+Style and naming are never above low, and neither is anything in prose (plans, notes, generated ledgers, Markdown). Do not speculate about code you cannot see. The diff shows changed lines with a few lines of context, so imports, definitions and declarations usually sit OUTSIDE it: never claim a name is undefined, not imported, missing or a typo because you cannot see its definition here, only when the diff itself removes or renames it. Quote code only as it appears in the diff, character for character. Every finding names a file from this diff and a line number in the NEW version of that file. The claim must say what goes wrong and when, in one sentence a reviewer can check. If the commit only moves or renames text, answer clean. Give every finding a class: doc-contradicts-code (a comment, docstring or message says what the code does not do), missing-control-test (a change with no test, or a test that cannot fail), swallowed-error (a failure is dropped or turned into a pass), seam-not-restored (a patched seam, env var or global leaks into later code), security (a defect from the SECURITY CHECKLIST below), or other. A "Prior on this file" line is a base rate of what earlier reviews fixed or refuted there: it never replaces a defect you can see in the diff, and it is no reason to report one. Also classify the commit for release labels: bump none (no user-facing change), patch, minor (new capability), major (only recommend); kind from bug, feature, docs, ci.
 
-COMMIT MESSAGE:
+%(prior)sCOMMIT MESSAGE:
 %(message)s
 
 STAT:
@@ -162,6 +170,25 @@ STAT:
 DIFF (may be truncated; truncated files: %(truncated)s):
 %(diff)s
 """
+
+# The finding classes the schema offers, ending in `other`. The one list is wl_reviewclass.CLASS_NAMES; test_wl_review_history pins the two together (the schema is built at import, before that module is on the path).
+FINDING_CLASSES = (
+    "doc-contradicts-code",
+    "missing-control-test",
+    "swallowed-error",
+    "seam-not-restored",
+    "security",
+    "other",
+)
+
+# The class whose every open finding blocks, whatever its severity (operator ruling 2026-11-19, worklist #bbd0f487): finding_blocks is the one test, read by branch_state (and through it --check, the push guard and the Stop hook) and by surface_new.
+SECURITY_CLASS = "security"
+
+
+def finding_blocks(finding, block_rank):
+    """True when an OPEN finding refuses the push: its severity is at or above `block_at`, or its class is `security` at any severity."""
+    return finding.klass == SECURITY_CLASS or SEV_RANK[finding.severity] >= block_rank
+
 
 SCHEMA = {
     "type": "object",
@@ -175,12 +202,13 @@ SCHEMA = {
             "items": {
                 "type": "object",
                 "additionalProperties": False,
-                "required": ["severity", "file", "line", "claim"],
+                "required": ["severity", "file", "line", "claim", "class"],
                 "properties": {
                     "severity": {"type": "string", "enum": list(SEVERITIES)},
                     "file": {"type": "string"},
                     "line": {"type": "integer", "minimum": 1},
                     "claim": {"type": "string", "maxLength": CLAIM_MAX},
+                    "class": {"type": "string", "enum": list(FINDING_CLASSES)},
                 },
             },
         },
@@ -246,10 +274,12 @@ def ledger_path(root, branch):
 
 
 def git(repo, *args, stdin=None, timeout=30):
-    """(rc, stdout) of one git call; rc 127 when git could not run."""
+    """(rc, stdout) of one git call; rc 127 when git could not run.
+
+    `--no-optional-locks` is load-bearing: every call here is a read, and a plain `git status` (branch_state asks one on every Stop hook, push guard and `--status`) opportunistically rewrites `.git/index` when its stat data is stale, which takes `.git/index.lock`. A `git cherry-pick a b` or a `git commit` of the lead running at that moment dies with `Unable to create '.git/index.lock': File exists` (worklist #65b47fef). The reviewer and the post-bash trigger issue no index-taking call, so this closes the one that is left."""
     try:
         done = subprocess.run(
-            ["git", "-C", str(repo), *args],
+            ["git", "--no-optional-locks", "-C", str(repo), *args],
             input=stdin,
             capture_output=True,
             text=True,
@@ -324,6 +354,8 @@ class Finding:
     anchor: str
     claim: str
     resolution: str = "open"
+    # The review class (wl_reviewclass.CLASS_NAMES) the reviewer gave the finding, "" for a record written before B6. Not covered by body_sig, so old records verify unchanged.
+    klass: str = ""
 
     def resolution_kind(self):
         for kind, rx in RESOLUTION_RES:
@@ -372,9 +404,14 @@ class Review:
         return not self.verdict.startswith("failed")
 
 
+# The AWS key-id shape check:ci-tracked-credentials reds on (scripts/gates/check-tracked-credentials.ts AWS_RE). Review records are committed to a public repository, and a reviewer quotes what the diff shows: a rotation manifest's key ids reached agent/reviews on 2026-11-10 and reddened the gate. A claim keeps the last four characters, enough to tell keys apart.
+_AWS_KEY_ID = re.compile(r"\b(AKIA|ASIA|AIDA|AROA)[0-9A-Z]{12}([0-9A-Z]{4})\b")
+
+
 def normalise_claim(text, cap=CLAIM_MAX):
     text = str(text or "").replace("\u2014", "--").replace("\u2013", "--")
     text = re.sub(r"\s+", " ", text).strip()
+    text = _AWS_KEY_ID.sub(r"\1...\2", text)
     return text[:cap]
 
 
@@ -463,10 +500,18 @@ def render(review):
             "### %s [%s] %s:%d" % (f.id, f.severity, f.file, f.line),
             "Anchor: %s" % f.anchor,
             "Claim: %s" % f.claim,
+            *(["Class: %s" % f.klass] if f.klass else []),
             "Resolution: %s" % f.resolution,
             "",
         ]
     return "\n".join(lines).rstrip("\n") + "\n"
+
+
+def _class_names():
+    """The finding classes (wl_reviewclass.CLASS_NAMES, `other` last), imported lazily like the other stop-hook helpers."""
+    import wl_reviewclass
+
+    return wl_reviewclass.CLASS_NAMES
 
 
 class MalformedReviewError(ValueError):
@@ -547,12 +592,18 @@ def parse(text):
         if body:
             raise MalformedReviewError("text after `(none)`", body[0][0])
     while body:
-        if len(body) < 4:
+        # `Class:` sits between Claim and Resolution and is optional: a record written before B6 has the four-line shape.
+        width = 5 if len(body) >= 5 and body[3][1].startswith("Class: ") else 4
+        if len(body) < width:
             raise MalformedReviewError(
                 "a finding needs a heading, Anchor:, Claim: and Resolution:", body[0][0]
             )
-        (hn, head), (an, anchor), (cn, claim), (rn, resolution) = body[:4]
-        body = body[4:]
+        (hn, head), (an, anchor), (cn, claim) = body[:3]
+        klass = body[3][1][len("Class: ") :] if width == 5 else ""
+        if width == 5 and not klass.strip():
+            raise MalformedReviewError("`Class:` line with no class name", body[3][0])
+        rn, resolution = body[width - 1]
+        body = body[width:]
         m = FINDING_HEAD.match(head)
         if not m:
             raise MalformedReviewError(
@@ -576,7 +627,12 @@ def parse(text):
             anchor=anchor[8:],
             claim=claim[7:],
             resolution=resolution[12:],
+            klass=klass,
         )
+        if klass and klass not in _class_names():
+            raise MalformedReviewError(
+                "Class %r is not one of %s" % (klass[:40], ", ".join(_class_names())), hn
+            )
         if not finding.resolution_kind():
             raise MalformedReviewError(
                 "Resolution %r is not %s" % (finding.resolution[:80], RESOLUTION_GRAMMAR), rn
@@ -1198,6 +1254,8 @@ def spawn_detached(root, repo, sha, branch, python=None):
                 stderr=subprocess.STDOUT,
                 start_new_session=True,
                 close_fds=True,
+                # Nothing the reviewer or the CLI it starts runs may refresh the index under the lead's own call.
+                env={**os.environ, "GIT_OPTIONAL_LOCKS": "0"},
             )
     except OSError:
         release_lock(sha)
@@ -1242,20 +1300,149 @@ def _commit_facts(repo, sha):
     return paths, gitlink_only, subject, message, parent
 
 
-def _is_review_record_chunk(chunk):
-    """True for a `diff --git` section of a file under `agent/reviews/`."""
+def _glob_re(glob):
+    """Regex for a glob that uses only `**` (any depth) and `*` (no slash), the dialect `.ci/policy/record-paths.json` is written in."""
+    out, i = [], 0
+    while i < len(glob):
+        if glob.startswith("**/", i):
+            out.append("(?:.*/)?")
+            i += 3
+        elif glob.startswith("**", i):
+            out.append(".*")
+            i += 2
+        elif glob[i] == "*":
+            out.append("[^/]*")
+            i += 1
+        else:
+            out.append(re.escape(glob[i]))
+            i += 1
+    return re.compile("".join(out) + r"\Z")
+
+
+# A skip glob is honoured only when every path it can match is a record file: the skip list lives in files a commit can edit, so a glob such as "**", "agent/**" or "agent/**/*.py" would otherwise turn later code commits record-only (reviews 623c29ce.1 and c8abe868.1). The rule is positive, not a denylist: under agent/ the glob's last segment must name a record file (a *.jsonl or *.json pattern, or exactly STATE.md or QUEUE.md) and, for the pattern form, sit in a directory the glob names literally (agent/worklist/*.jsonl, never agent/**/*.json, which would take every JSON file under agent/); under .ci/config/ only the named record files are admitted, as literals.
+SKIP_AGENT_ROOT = "agent/"
+SKIP_AGENT_TAILS = (".jsonl", ".json")
+SKIP_AGENT_NAMES = ("STATE.md", "QUEUE.md")
+SKIP_CONFIG_LITERALS = (".ci/config/plan-boxes.json", ".ci/config/carried-reds.json")
+#: The one value of a record's `review` key in .ci/policy/record-paths.json (check:ci-record-paths refuses any other): the record stays in the per-commit review.
+REVIEW_KEEP = "keep"
+
+
+def admissible_skip_glob(glob):
+    """True when every path `glob` can match is a record file (see SKIP_AGENT_* and SKIP_CONFIG_LITERALS)."""
+    # The review records themselves: skip_globs adds this glob whatever the lists hold, so the policy naming it is no widening. Refusing it printed a refusal on every run for the one glob that was then skipped anyway (found 2026-11-16 by running skip_globs on the real policy).
+    if glob in SKIP_CONFIG_LITERALS or glob == REVIEWS_REL + "/**":
+        return True
+    if not glob.startswith(SKIP_AGENT_ROOT):
+        return False
+    head, _, tail = glob.rpartition("/")
+    if tail in SKIP_AGENT_NAMES:
+        return True
+    # The directory of a pattern glob is named literally below agent/ (one wildcard segment at
+    # most would still span every directory's JSON), so a json pattern cannot reach another tree.
+    literal_dir = head != SKIP_AGENT_ROOT.rstrip("/") and not any(c in head for c in "*?[")
+    return literal_dir and tail.endswith(SKIP_AGENT_TAILS)
+
+
+def skip_globs(root, cfg=None):
+    """The reviewer's own skip list (PLAN-experience-feedback P5): `review_skip_globs` of commit-review.json plus every glob of `.ci/policy/record-paths.json`, read at runtime and never edited here. A path matching one is a record (a ledger, a worklist, a review file, or a STATE.md the config list names), not code, so it leaves the reviewed diff and the stat. The record file's `except` globs are honoured. A glob that could match a non-record file is refused (admissible_skip_glob) and named on stderr, so the list cannot be widened to hide code.
+
+    A RECORD MARKED `"review": "keep"` IS NOT A SKIP. The plan files and agent/INDEX.md advance a pre-push receipt like any record (operator ruling 2026-11-16) and are still reviewed per commit, so the policy marks them and they are left out here in silence: they were never asked to be skipped, so there is nothing to refuse and nothing to print. The flag can only add to what is reviewed. A commit that deletes it leaves a glob admissible_skip_glob refuses, which is named on stderr and reviewed anyway.
+    """
+    cfg = cfg if cfg is not None else load_config(root)
+    globs: list[tuple[str, list[str]]] = [
+        (g, []) for g in cfg.get("review_skip_globs") or [] if isinstance(g, str)
+    ]
+    try:
+        importlib.import_module("wl_proc")  # its import puts .ci on sys.path
+        from rediacc_ci.policy_paths import policy_path
+
+        doc = json.loads(policy_path("record-paths.json", root).read_text(encoding="utf-8"))
+        for rec in doc.get("records", []):
+            if isinstance(rec, dict) and isinstance(rec.get("glob"), str):
+                if rec.get("review") == REVIEW_KEEP:
+                    continue
+                excepts = [e for e in rec.get("except") or [] if isinstance(e, str)]
+                globs.append((rec["glob"], excepts))
+    except ImportError as exc:
+        print(
+            "wl_review: record-paths globs not loaded, so record files may enter the reviewed diff (%s)"
+            % exc,
+            file=sys.stderr,
+        )
+    except (OSError, ValueError, AttributeError):
+        pass
+    refused = [g for g, _e in globs if not admissible_skip_glob(g)]
+    if refused:
+        print(
+            "wl_review: skip glob(s) refused (outside the record roots or covering code): %s"
+            % ", ".join(refused),
+            file=sys.stderr,
+        )
+    globs = [(g, ex) for g, ex in globs if admissible_skip_glob(g)]
+    if not any(g == REVIEWS_REL + "/**" for g, _e in globs):
+        globs.append((REVIEWS_REL + "/**", []))
+    return [(_glob_re(g), [_glob_re(e) for e in ex], g) for g, ex in globs]
+
+
+def numstat_rows(repo, sha):
+    """[(path, added, deleted)] for every path of `sha`, read verbatim from `git show --numstat -z` (a binary file counts as "-"); None when git failed, so a failed read is not an empty stat."""
+    rc, out = git(repo, "show", "--numstat", "-z", "--format=", sha)
+    if rc != 0:
+        return None
+    rows = []
+    fields = out.split("\0")
+    k = 0
+    while k < len(fields):
+        head = fields[k].lstrip("\n")
+        k += 1
+        if not head:
+            continue
+        parts = head.split("\t", 2)
+        if len(parts) < 3:
+            continue
+        added, deleted, path = parts[0], parts[1], parts[2]
+        if path == "" and k + 1 < len(fields):
+            # A rename: the record is "a\td\t" then the old and the new path as two fields.
+            path = fields[k + 1]
+            k += 2
+        rows.append((path, added, deleted))
+    return rows
+
+
+def render_stat(rows, kept):
+    """One `path | +added -deleted` line per row whose path is in `kept`, then a total line; "" when none is kept."""
+    keep = set(kept)
+    lines = ["%s | +%s -%s" % (p, a, d) for p, a, d in rows if p in keep]
+    if not lines:
+        return ""
+    return "\n".join([*lines, "%d file(s) changed" % len(lines)])
+
+
+def stat_paths(paths, skips):
+    """The commit's paths the reviewed stat lists: every path the skip list does not cover, `except` globs honoured."""
+    return [p for p in paths if not is_skipped_path(p, skips)]
+
+
+def is_skipped_path(path, skips):
+    return any(rx.match(path) and not any(e.match(path) for e in exc) for rx, exc, _g in skips)
+
+
+def _is_skipped_chunk(chunk, skips):
+    """True for a `diff --git` section of a file the skip list covers (review records included)."""
     m = re.match(r"diff --git a/(.*?) b/(.*)", chunk)
-    return m is not None and m.group(2).startswith(REVIEWS_REL + "/")
+    return m is not None and is_skipped_path(m.group(2), skips)
 
 
-def capped_diff(repo, sha, cap):
+def capped_diff(repo, sha, cap, skips=None):
     """(diff_text, total_bytes, file_count, unreviewed_files). Whole per-file sections are kept until `cap`; the rest are listed, never cut mid-file."""
     rc, diff = git(repo, "show", "-U%d" % ANCHOR_SLACK, "--no-color", "--format=", "-M", sha)
     if rc != 0:
         return "", 0, 0, []
     chunks = re.split(r"(?m)^(?=diff --git )", diff)
     # The review records that ride a commit (CLAUDE.md rule 1, Cadence) are the reviewer's own output, never its input: a commit of only those is not reviewed at all, and in a mixed commit they are left out, or every record would draw a finding about itself.
-    chunks = [c for c in chunks if c.strip() and not _is_review_record_chunk(c)]
+    skips = skips if skips is not None else skip_globs(CONSOLE_ROOT)
+    chunks = [c for c in chunks if c.strip() and not _is_skipped_chunk(c, skips)]
     kept, cut, used = [], [], 0
     for chunk in chunks:
         m = re.match(r"diff --git a/(.*?) b/(.*)", chunk)
@@ -1313,7 +1500,14 @@ def validate(structured, paths, diff_text, sha, is_writing=None):
         except (TypeError, ValueError):
             line = 0
         claim = normalise_claim(item.get("claim"))
-        if path not in paths or sev not in SEV_RANK or line < 1 or not claim:
+        klass = item.get("class")
+        if (
+            path not in paths
+            or sev not in SEV_RANK
+            or line < 1
+            or not claim
+            or klass not in FINDING_CLASSES
+        ):
             dropped += 1
             continue
         if is_writing is not None and sev != "low" and is_writing(path):
@@ -1329,6 +1523,7 @@ def validate(structured, paths, diff_text, sha, is_writing=None):
                 line=line,
                 anchor="in-diff" if inside else "outside-diff",
                 claim=claim,
+                klass=klass,
             )
         )
     labels_in = structured.get("labels") if isinstance(structured, dict) else None
@@ -2102,10 +2297,10 @@ def claude_reviewer(prompt, cfg, log=print):
     env = dict(os.environ)
     env["STOPHOOK_CHILD"] = "1"
     env["COMMIT_REVIEW_CHILD"] = "1"
+    env["GIT_OPTIONAL_LOCKS"] = "0"
     argv = [
         resolve_claude(),
         "-p",
-        prompt,
         "--output-format",
         "json",
         "--json-schema",
@@ -2120,7 +2315,10 @@ def claude_reviewer(prompt, cfg, log=print):
     import wl_judge
 
     def _call():
-        return wl_proc.run(argv, timeout=int(cfg["timeout_s"]), env=env, cwd=str(workdir))
+        # The prompt goes on stdin: on argv a large one fails with E2BIG ("[Errno 7] Argument list too long").
+        return wl_proc.run(
+            argv, input_text=prompt, timeout=int(cfg["timeout_s"]), env=env, cwd=str(workdir)
+        )
 
     why = ""
     spent = {"usd": 0.0, "calls": 0, "seconds": 0.0, "known": False}
@@ -2169,6 +2367,48 @@ def claude_reviewer(prompt, cfg, log=print):
         if proc.returncode == wl_proc.SPAWN_FAILED_RC:
             break
     return None, why, _cost()
+
+
+PRIOR_MAX_FILES = 8
+
+
+def prior_lines(idx, paths, limit=PRIOR_MAX_FILES):
+    """One "Prior on this file" line per touched file that has history in the A1 index, the files with the most fixed findings first, at most `limit`. A file with no fixed or refuted finding adds nothing."""
+    import wl_reviewclass
+
+    rows = []
+    for path in sorted(set(paths)):
+        prior = wl_reviewclass.file_prior(idx, path)
+        if prior["fixed"] or prior["refuted"]:
+            rows.append((-prior["fixed"], path, prior))
+    rows.sort(key=lambda r: (r[0], r[1]))
+    return [
+        "Prior on this file: %s: %d fixed, %d refuted%s."
+        % (path, p["fixed"], p["refuted"], (", top class %s" % p["top"]) if p["top"] else "")
+        for _n, path, p in rows[:limit]
+    ]
+
+
+def prior_text(root, paths, log=print):
+    """The prompt's prior block ("" when no touched file has history, or the index cannot be read: a prior is never a reason to fail a review)."""
+    import wl_reviewclass
+
+    notes: list[str] = []
+    try:
+        lines = prior_lines(wl_reviewclass.index(root, notes=notes), paths)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        log("prior-on-file index unavailable (%s: %s)" % (type(exc).__name__, exc))
+        return ""
+    for note in notes:
+        log(note)
+    return "\n".join(lines) + "\n\n" if lines else ""
+
+
+def security_text(root, paths, log=print):
+    """The prompt's security checklist block (wl_reviewsec.render): the base items of .claude/config/review-security.json plus the learned lines about these paths, under the checklist's character cap; "" with a logged reason when the checklist cannot be read."""
+    import wl_reviewsec
+
+    return wl_reviewsec.security_text(root, paths, log)
 
 
 def _load_commit_policy(root):
@@ -2242,6 +2482,7 @@ def run_review(
         if not paths or reviews_only(paths):
             log("nothing to review in %s" % full)
             return None
+        skips = skip_globs(root, cfg)
         out_path = review_path(root, branch, full)
         pid = patch_id(repo, full)
         _by_sha, by_patch = review_index(root, branch)
@@ -2266,14 +2507,27 @@ def run_review(
             review.verdict, review.model = "skipped (gitlink-only)", "(none)"
         elif _no_review_skip(root, message, paths):
             review.verdict, review.model = "skipped (no-review)", "(none)"
+        elif all(is_skipped_path(p, skips) for p in paths):
+            review.verdict, review.model = "skipped (record-only)", "(none)"
         else:
-            diff_text, total, nfiles, cut = capped_diff(repo, full, int(cfg["diff_cap_bytes"]))
+            diff_text, total, nfiles, cut = capped_diff(
+                repo, full, int(cfg["diff_cap_bytes"]), skips
+            )
             review.diff_bytes, review.diff_files = total, nfiles
             review.truncated, review.unreviewed = bool(cut), cut
-            stat = git_out(
-                repo, "show", "--stat", "--format=", full, "--", ".", ":(exclude)%s" % REVIEWS_REL
-            )
+            # The stat lists exactly the paths the diff kept, through the same is_skipped_path
+            # test (its `except` globs included), so the two never disagree (review 623c29ce.2).
+            kept = stat_paths(paths, skips)
+            # The stat is built from the commit's own --numstat -z (every path verbatim, no pathspec): no argv limit on a large commit and no glob magic in a path such as `a[1].py` (review 60c6a9aa.1 and .2).
+            rows = numstat_rows(repo, full)
+            if rows is None:
+                log("numstat failed for %s: the stat is withheld" % full[:12])
+                stat = "(unavailable: git show --numstat failed)"
+            else:
+                stat = render_stat(rows, kept)
             prompt = PROMPT % {
+                # The security checklist rides the `prior` slot ahead of the prior lines, so the template keeps the placeholders every caller fills.
+                "prior": security_text(root, kept, log) + prior_text(root, kept, log),
                 "message": message or "(empty)",
                 "stat": stat or "(empty)",
                 "truncated": ", ".join(cut) or "(none)",
@@ -2384,10 +2638,9 @@ def branch_state(root, branch, cfg=None, items=None, repos=None, extra_repos=(),
                 continue
             if kind != "open":
                 continue
-            (st["blocking"] if SEV_RANK[f.severity] >= block_rank else st["advisory"]).append(
-                (path, f)
-            )
-            if SEV_RANK[f.severity] >= block_rank and any(f.id in text for text in leased.values()):
+            blocks = finding_blocks(f, block_rank)
+            (st["blocking"] if blocks else st["advisory"]).append((path, f))
+            if blocks and any(f.id in text for text in leased.values()):
                 st["blocking_in_flight"].append((path, f))
     for label in sorted(set(repos if repos is not None else seen_repos) | set(extra_repos)):
         repo = repo_from_label(root, label)
@@ -2583,7 +2836,7 @@ def _ref_age(root, ref, now=None):
 
 
 def check_state(root, branch, label="console", cfg=None, expected_tip=""):
-    """(reasons, lines) for the merge-and-ready precondition: every commit since the base has a review record in `agent/reviews/<branch>/` with no open finding at or above `block_at` and no deferred finding, and every record is committed. Empty `reasons` means the branch is clean. Local only: no network call.
+    """(reasons, lines) for the merge-and-ready precondition: every commit since the base has a review record in `agent/reviews/<branch>/` with no open blocking finding (at or above `block_at`, or of class `security` at any severity) and no deferred finding, and every record is committed. Empty `reasons` means the branch is clean. Local only: no network call.
 
     THE TIP IS NAMED, AND CAN BE PINNED (finding 71afd29f.3). A branch judged at `origin/<branch>` is judged at this clone's remote-tracking ref, which no fetch refreshes here, so the output names that ref, its sha and when it last moved. `expected_tip` (the PR's `headRefOid`, which block_admin_merge already reads with its `gh pr view`; `--expect-tip <sha>` on the CLI) pins it: a walked tip that does not contain that commit refuses as `stale-tip`, so commits the PR would merge are never judged by their absence.
 
@@ -2798,9 +3051,10 @@ def surface_new(root, branch, session_id, cfg=None):
             lines.append("review %s is MALFORMED: %s" % (path.name, err))
             continue
         opened = [f for f in review.findings if f.resolution_kind() == "open"]
-        blocking = [f for f in opened if SEV_RANK[f.severity] >= block_rank]
+        blocking = [f for f in opened if finding_blocks(f, block_rank)]
+        security = sum(1 for f in opened if f.klass == SECURITY_CLASS)
         lines.append(
-            "review %s (%s): %s, %d open finding(s), %d at or above %s"
+            "review %s (%s): %s, %d open finding(s), %d at or above %s%s"
             % (
                 review.sha8,
                 review.repo,
@@ -2808,6 +3062,9 @@ def surface_new(root, branch, session_id, cfg=None):
                 len(opened),
                 len(blocking),
                 cfg["block_at"],
+                (" or of class security (%d, blocking at any severity)" % security)
+                if security
+                else "",
             )
         )
         for f in blocking[:5]:
@@ -2939,7 +3196,31 @@ def _cites_line(root, cited, number):
     return False
 
 
-def _citation_ok(repo, evidence):
+def _project_checkouts(project):
+    """The console checkout and each `.gitmodules` checkout that exists on disk, as paths."""
+    root = pathlib.Path(project)
+    out = [str(root)]
+    rc, text = git(root, "config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$")
+    for line in text.splitlines() if rc == 0 else []:
+        parts = line.split(None, 1)
+        if len(parts) == 2 and (root / parts[1].strip() / ".git").exists():
+            out.append(str(root / parts[1].strip()))
+    return out
+
+
+def _sha_on_branch(repo, evidence):
+    for m in CITE_SHA.finditer(evidence):
+        full = git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % m.group(1))
+        if full and git(repo, "merge-base", "--is-ancestor", full, "HEAD")[0] == 0:
+            return True
+    return False
+
+
+def _citation_ok(repo, evidence, project=None):
+    """Whether `evidence` cites a line that exists or a commit on the branch.
+
+    A finding of a submodule commit is read in the submodule (`repo`), but its evidence is written from the console and often cites a console file (`agent/plans/X.md:188`, `packages/cli/...:71`) or a commit of ANOTHER project repository (a renet sha in a console finding). `project`, the console root, widens both to the whole project: a path also resolves inside the console checkout, and a sha counts on any project checkout's HEAD. Each is still a file holding that line, or a commit that is an ancestor of a checked-out HEAD, so a made-up citation fails as before.
+    """
     root = os.path.abspath(repo)
     cited_paths = list(_cited_paths(evidence))
     if any(_cites_line(root, cited, number) for cited, number in cited_paths):
@@ -2952,11 +3233,18 @@ def _citation_ok(repo, evidence):
         if cited.startswith(prefix)
     ):
         return True
-    for m in CITE_SHA.finditer(evidence):
-        full = git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % m.group(1))
-        if full and git(repo, "merge-base", "--is-ancestor", full, "HEAD")[0] == 0:
-            return True
-    return False
+    if _sha_on_branch(repo, evidence):
+        return True
+    if project is None:
+        return False
+    console = os.path.abspath(project)
+    if console != root and any(_cites_line(console, c, n) for c, n in cited_paths):
+        return True
+    return any(
+        _sha_on_branch(other, evidence)
+        for other in _project_checkouts(project)
+        if os.path.abspath(other) != root
+    )
 
 
 REBASED_COPY_DEPTH = 400
@@ -3032,6 +3320,8 @@ TEST_CLAIM_RE = re.compile(
     r"|\b(?:tests?|coverage)\b[^.;]{0,40}?\b(?:missing|absent|lacks?)\b",
     re.IGNORECASE,
 )
+# The refusal names the escape a test-only fix needs: a claim worded without "untested" or "no test" (a red suite, a missing control) is still closed by a test, when the mark names it.
+TEST_OPTION_HINT = "; when the fix is a test, name it: `--review-mark <me> <id> fixed <sha> --test <repo-relative test path>`"
 # `*-selftest.ts` / `*_selftest.py` are this repo's standalone selftests (scripts/gates/check-standalone-selftests.ts runs them), tests by definition.
 _TEST_PATH_RE = re.compile(
     r"(^|/)(tests?|__tests__)/|(^|/)test[_-][^/]*$|[_.-]tests?\.[A-Za-z]+$|\.(test|spec)\.[A-Za-z]+$|[_.-]selftest\.[A-Za-z]+$"
@@ -3043,19 +3333,312 @@ def is_test_path(path):
     return bool(_TEST_PATH_RE.search(path))
 
 
+def is_selftest_host(repo, rev, path):
+    """True for a file whose own `--selftest` mode is its test suite and that a tracked test already runs, both judged at `rev`, the reviewed commit, so a fix cannot make its own file a test host by adding the text (scripts/pins/pins.ts, run by tests/gates/test_gate_pin_cli.py through paths.from_root). The test must name the file as a whole token: its basename quoted, after whitespace or after a path separator (so a full path matches too), and never as the prefix of a longer name such as host.ts.bak."""
+    rc, text = git(repo, "show", "%s:%s" % (rev, path))
+    if rc != 0 or "--selftest" not in text:
+        return False
+    base = pathlib.PurePosixPath(path).name
+    token = re.compile(r"(?:^|[\"'/\s])%s(?:[\"'\s,)]|$)" % re.escape(base), re.MULTILINE)
+    rc, hits = git(repo, "grep", "-l", "-F", base, rev, "--")
+    if rc != 0:
+        return False
+    for hit in hits.splitlines():
+        name = hit.split(":", 1)[1] if ":" in hit else hit
+        if name == path or not is_test_path(name):
+            continue
+        rc, body = git(repo, "show", "%s:%s" % (rev, name))
+        if rc == 0 and "selftest" in body and token.search(body):
+            return True
+    return False
+
+
 def _norm_stem(path):
     """The anchored file's name without directory or extension, lowercased and with `-` read as `_`."""
     return pathlib.PurePosixPath(path).stem.lower().replace("-", "_")
 
 
+_NUMERIC_PREFIX_RE = re.compile(r"^\d+_")
+
+
 def related_test(test_path, anchored):
-    """Whether `test_path` is the test of the anchored file: its basename carries the anchored file's stem (`wl_roster.py` is tested by `test_wl_roster.py` or `test_wl_roster_plans.py`). A test of some other module never closes this finding."""
+    """Whether `test_path` is the test of the anchored file: its basename carries the anchored file's stem as a whole token (`wl_roster.py` is tested by `test_wl_roster.py` or `test_wl_roster_plans.py`), or the stem without a leading `_` or `wl_` when that is at least 4 characters (`test_roster.py` closes `wl_roster.py`). A gate `check_<stem>.py` is also closed by a test carrying `<stem>` (`test_gate_<stem>.py`), the `check_` prefix being no part of the test's name; the 4-character minimum above applies to that `<stem>` too, so `check_io.py` is not closed by `test_gate_io.py`.
+    A leading migration number is dropped from the stem first (`0090_partner_org.sql` is tested by `test_partner_org.py`). A test whose name carries none of these forms never closes this finding."""
     stem = _norm_stem(anchored)
     name = pathlib.PurePosixPath(test_path).name.lower().replace("-", "_")
+    # The repo names a private module's test without its leading `_` (`test_x_predicate.py` for a private `_x.py`) and a stop-hook module's without `wl_` (`test-x.py` for `wl_x.py`); a stripped stem shorter than 4 characters is not read, so `wl_io.py` does not claim `test_io_x.py`.
+    bare = stem.lstrip("_")
+    bare = bare.removeprefix("wl_")
+    # A gate `check_<stem>.py` is tested by `test_gate_<stem>.py` (or `test_<stem>.py`): the `check_` prefix is not part of the test's name.
+    bare = bare.removeprefix("check_")
+    # A migration's number is no part of its test's name (`0090_partner_org.sql` is tested by `partner-org-migration.test.ts`).
+    bare = _NUMERIC_PREFIX_RE.sub("", bare)
+    stems = {stem} | ({bare} if len(bare) >= 4 else set())
     # The stem stands as a whole token of the test's name: `io` is not in `test_radio.py`.
-    return (
-        bool(stem) and re.search(r"(?<![a-z0-9])%s(?![a-z0-9])" % re.escape(stem), name) is not None
+    return any(
+        s and re.search(r"(?<![a-z0-9])%s(?![a-z0-9])" % re.escape(s), name) is not None
+        for s in stems
     )
+
+
+MOVE_MAX_COMMITS = 60
+MOVE_MAX_ROUNDS = 3
+MOVE_MIN_LINES = 3
+# A moved line is code, not scaffolding: a bare brace or a very short line is in every file.
+MOVE_MIN_LINE_LEN = 6
+
+
+def _meaningful(line):
+    text = line.strip()
+    return text if len(text) >= MOVE_MIN_LINE_LEN and any(c.isalnum() for c in text) else ""
+
+
+def _diff_lines(text):
+    """({path: removed lines}, {path: added lines}) of a `git show -U0` text, lines stripped and the trivial ones dropped.
+
+    The `---`/`+++` file headers are read only between a `diff --git` line and its first `@@` hunk: inside a hunk a removed `-- comment` (SQL, Lua, Haskell) is the line `--- comment`, and read as a header it renamed the file every later removed line was filed under (review 4bcec972.1).
+    """
+    removed: dict[str, list[str]] = {}
+    added: dict[str, list[str]] = {}
+    old = new = ""
+    in_hunk = False
+    for line in text.splitlines():
+        if line.startswith("diff --git "):
+            in_hunk = False
+        elif line.startswith("@@"):
+            in_hunk = True
+        elif not in_hunk and line.startswith("--- "):
+            old = "" if line == "--- /dev/null" else line[4:].removeprefix("a/")
+        elif not in_hunk and line.startswith("+++ "):
+            new = "" if line == "+++ /dev/null" else line[4:].removeprefix("b/")
+        elif in_hunk and line[:1] in ("-", "+"):
+            side, path = (removed, old) if line[0] == "-" else (added, new)
+            kept = _meaningful(line[1:]) if path else ""
+            if kept:
+                side.setdefault(path, []).append(kept)
+    return removed, added
+
+
+def _literal_pathspecs(paths):
+    """`paths` as git pathspecs that match only themselves: a bare pathspec is a glob, so a file named `[id].tsx` also matched `i.tsx` and `d.tsx`, whose commits were read as its own (review ab7e9e28.2)."""
+    return [":(literal)%s" % path for path in sorted(paths)]
+
+
+def move_search_note(repo, base, fix, anchored, successors=()):
+    """A refusal sentence when `moved_successors` could not read every commit of `base..fix` that touches the anchored file or a successor it found (it takes the newest MOVE_MAX_COMMITS of them), else "" (review 4bcec972.2: a move older than that was never seen and nothing said so; review ab7e9e28.1: from round 2 on the search reads the successors' commits too, so they are counted too)."""
+    rc, out = git(
+        repo,
+        "rev-list",
+        "--count",
+        "--no-merges",
+        "%s..%s" % (base, fix),
+        "--",
+        *_literal_pathspecs({anchored, *successors}),
+    )
+    if rc != 0 or not out.strip().isdigit():
+        # An uncounted range may be longer than the search reads: say so instead of reading as complete (review 21ac17b2.1).
+        return (
+            " (the move search could not count the commits in %s..%s, so it may have read only part of them)"
+            % (
+                base[:12],
+                fix[:12],
+            )
+        )
+    total = int(out.strip())
+    if total <= MOVE_MAX_COMMITS:
+        return ""
+    return (
+        " (the move search read only the newest %d of the %d commits in %s..%s that touch the file)"
+        % (
+            MOVE_MAX_COMMITS,
+            total,
+            base[:12],
+            fix[:12],
+        )
+    )
+
+
+def moved_successors(repo, anchored, base, fix):
+    """The files that received code the anchored file lost in `base..fix`: a file is a successor when at least MOVE_MIN_LINES of its added lines, and at least half of them, are lines the same commit removed from the anchored file (or from an earlier successor).
+
+    `git log --follow` sees a whole-file rename only, and `-C` a copy of at least half a file: neither sees a function extracted into a neighbour (0477d0c75 moved 246 lines of config.ts into config-reconcile.ts, which git reads as a 32% copy). The anchored file is never its own successor.
+
+    Only a commit that touches a source can move lines out of it, so the log is limited to the sources: the MOVE_MAX_COMMITS cap then counts those commits, not every commit of a long range (bf0bded8.2: the onprem/ -> lab/ move sat beyond the newest 60 of 207 commits, and the fix in lab/testca.py was refused).
+    """
+    sources = {anchored}
+    found: set[str] = set()
+    for _ in range(MOVE_MAX_ROUNDS):
+        rc, out = git(
+            repo,
+            "log",
+            "--format=%H",
+            "--no-merges",
+            "-n",
+            str(MOVE_MAX_COMMITS),
+            "%s..%s" % (base, fix),
+            "--",
+            *_literal_pathspecs(sources),
+        )
+        grew = False
+        for sha in out.split() if rc == 0 else []:
+            rc2, text = git(repo, "show", "--format=", "-U0", "--no-color", "--no-ext-diff", sha)
+            if rc2 != 0:
+                continue
+            removed, added = _diff_lines(text)
+            lost = collections.Counter(line for src in sources for line in removed.get(src, ()))
+            if not lost:
+                continue
+            for path, lines in added.items():
+                if path in sources or path in found:
+                    continue
+                pool = lost.copy()
+                hits = 0
+                for line in lines:
+                    if pool[line] > 0:
+                        pool[line] -= 1
+                        hits += 1
+                if hits >= MOVE_MIN_LINES and hits * 2 >= len(lines):
+                    found.add(path)
+                    grew = True
+        if not grew:
+            break
+        sources = {anchored, *found}
+    return found
+
+
+CLAIM_IDENT_RE = re.compile(
+    r"\b(?:[A-Za-z0-9_.-]+\.(?:tsx?|jsx?|py|go|sh|json|md)|[A-Za-z_][A-Za-z0-9_]*(?:[a-z0-9][A-Z]|_)[A-Za-z0-9_]*)\b"
+)
+
+
+def claim_identifiers(claim):
+    """The names a claim is about: identifiers carrying a case change or an underscore (`followByPolls`, `PROXY_LOST_BUDGET_MS`) and file names, at least 6 characters. A plain word names nothing."""
+    return {m.group(0) for m in CLAIM_IDENT_RE.finditer(claim or "") if len(m.group(0)) >= 6}
+
+
+def claim_exercised_by_test(repo, fix, test_path, claim):
+    """Whether the lines the fix ADDED to `test_path` name something the claim is about, by whole token: the test is related by what it tests, not by its file name. A commit whose test mentions none of the claim's names answers nothing."""
+    names = claim_identifiers(claim)
+    if not names:
+        return False
+    rc, text = git(
+        repo, "show", "--format=", "-U0", "--no-color", "--no-ext-diff", fix, "--", test_path
+    )
+    if rc != 0:
+        return False
+    body = "\n".join(
+        line[1:]
+        for line in text.splitlines()
+        if line.startswith("+") and not line.startswith("+++")
+    )
+    return any(
+        re.search(r"(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])" % re.escape(n), body) for n in names
+    )
+
+
+_IMPORT_LINE_RE = re.compile(
+    r"\b(?:import|require|from|importlib|load_module|patch|mock)\b", re.IGNORECASE
+)
+
+
+def _norm_text(text):
+    """Lowercased, with `-` read as `_`, so `cli-root-yes` and `cli_root_yes` compare equal."""
+    return text.lower().replace("-", "_")
+
+
+def references_anchored_file(repo, fix, test_path, anchored):
+    """Whether the content of `test_path` at `fix` names the anchored file: its repo-relative path or its basename as a whole token, or its stem (a leading numeric prefix such as `0090_` dropped) when that is at least 4 characters and compound (carries an underscore once `-` is read as `_`).
+    A test whose file name carries none of the stem (`cli-root-yes.test.ts` for `index.ts`, `partner-customer-optional-org-migration.test.ts` for `0090_partner_customer_optional_org.sql`) still counts when its content names the file by one of those forms (`index.ts` as a token, the compound stem); an import written without the extension (`from './index'`) is answered by `imports_anchored_module` on the lines the fix added, not here. Only an explicit `--test` the fix touches reaches this: a test that names nothing of the anchored file never closes the finding. A file git cannot read at `fix` answers False."""
+    rc, text = git(repo, "show", "%s:%s" % (fix, test_path))
+    if rc != 0:
+        return False
+    body = _norm_text(text)
+    anchored_n = _norm_text(anchored)
+    base = pathlib.PurePosixPath(anchored_n)
+    needles = {anchored_n, base.name}
+    for stem in (base.stem, _NUMERIC_PREFIX_RE.sub("", base.stem)):
+        # A single-token stem (`index`, `onboarding`) turns up in unrelated tests as an identifier or a comment, so only a compound stem names the file on its own.
+        if len(stem) >= 4 and "_" in stem:
+            needles.add(stem)
+    return any(
+        re.search(r"(?<![a-z0-9])%s(?![a-z0-9])" % re.escape(n), body) is not None
+        for n in needles
+        if n
+    )
+
+
+def imports_anchored_module(repo, fix, test_path, anchored):
+    """Whether the lines the fix ADDED to `test_path` import or patch the anchored module by name (`from x.onboarding import ...`, `import {a} from './blob-storage.service'`), so a test whose file name does not carry the stem (`blob-list.test.ts` for `blob-storage.service.ts`) still counts as the anchored file's test (#d8f3ba65). Only import-like lines count: a bare mention of a common stem in an unrelated test answers nothing."""
+    stem = pathlib.PurePosixPath(anchored).stem.lower()
+    if not stem:
+        return False
+    rc, text = git(
+        repo, "show", "--format=", "-U0", "--no-color", "--no-ext-diff", fix, "--", test_path
+    )
+    if rc != 0:
+        return False
+    variants = {stem, stem.replace("-", "_"), stem.replace("_", "-")}
+    parent = pathlib.PurePosixPath(anchored).parent.name.lower()
+    parents = {parent, parent.replace("-", "_"), parent.replace("_", "-")} if parent else set()
+    anchored_low = anchored.lower()
+    anchored_bare = str(pathlib.PurePosixPath(anchored_low).with_suffix(""))
+    test_dir = pathlib.PurePosixPath(test_path.lower()).parent
+    for line in text.splitlines():
+        if not line.startswith("+") or line.startswith("+++") or not _IMPORT_LINE_RE.search(line):
+            continue
+        body = line[1:].lower()
+        for token in re.findall(r"[a-z0-9_.@~/-]+", body):
+            if _token_names_anchored(
+                token,
+                variants,
+                parents,
+                test_dir,
+                anchored_low,
+                anchored_bare,
+                _bare_token_is_module(body, token),
+            ):
+                return True
+    return False
+
+
+_MODULE_SUFFIXES = {"ts", "tsx", "js", "jsx", "mjs", "cjs", "py", "go", "rs"}
+
+
+def _bare_token_is_module(body, token):
+    """Whether a bare word (no `/` or `.`) sits where a module name does: inside quotes (`'index'`, `"index"`), or right after `from`/`import` on a line with no `from '<path>'` clause (`from index import x`, even with a quoted trailing comment). `import { index } from '../other/thing'` carries the identifier `index`, which names no module (review a27ac34b.1)."""
+    if "/" in token or "." in token:
+        return True
+    esc = re.escape(token)
+    if re.search(r"""['"`]%s['"`]""" % esc, body):
+        return True
+    return not re.search(r"""\bfrom\s*['"`]""", body) and bool(
+        re.search(r"\b(?:from|import)\s+%s\b" % esc, body)
+    )
+
+
+def _token_names_anchored(
+    token, variants, parents, test_dir, anchored, anchored_bare, bare_ok=True
+):
+    """One import-line token against the anchored file: a relative path is resolved from the test's directory and must equal the anchored path, and any other path or dotted module must carry the anchored stem with the anchored parent directory just before it (or be the bare stem), so `../other/index` is no match for `src/foo/index.ts` (review fc93df02.1)."""
+    if token.startswith(".") and "/" in token:
+        resolved = posixpath.normpath(str(test_dir / token))
+        head, _, tail = resolved.rpartition(".")
+        if tail in _MODULE_SUFFIXES:
+            resolved = head
+        return resolved in (anchored, anchored_bare)
+    if not bare_ok:
+        return False
+    parts = [p for p in re.split(r"[/.]", token) if p]
+    if len(parts) > 1 and parts[-1] in _MODULE_SUFFIXES:
+        parts = parts[:-1]
+    for v in variants:
+        vparts = [p for p in re.split(r"[/.]", v) if p]
+        for i in range(len(parts) - len(vparts) + 1):
+            if parts[i : i + len(vparts)] == vparts and (
+                i == 0 or not parents or parts[i - 1] in parents
+            ):
+                return True
+    return False
 
 
 def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_ok=None):
@@ -3073,10 +3656,13 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
             i = args.index("--test")
             if i + 1 >= len(args):
                 raise ValueError("--test takes the path of the test the fix touches")
-            test_path = args[i + 1].strip()
+            # `path::name` names a test inside the file: the path part is what the fix touched, and its padding (`path :: name`) is not part of the path.
+            test_path = args[i + 1].split("::", 1)[0].strip()
             del args[i : i + 2]
         if len(args) != 1:
             raise ValueError("fixed takes exactly one sha (and optionally --test <path>)")
+        # `commit:<sha>` is the --tick evidence form, and a session closing a finding with the sha it just ticked reaches for it (2026-11-12): the prefix names the same commit.
+        args[0] = args[0].removeprefix("commit:")
         fix = git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % args[0])
         if not fix:
             raise ValueError("%s does not resolve to a commit in %s" % (args[0], review.repo))
@@ -3114,30 +3700,69 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
             else wl_store.plan_stub_target(str(pathlib.Path(repo) / finding.file))
         )
         if test_path and test_path not in touched:
+            # A submodule fix lists its paths relative to the submodule, so a path named from the console root (private/account/tests/...) is read without that prefix.
+            superproject = git_out(repo, "rev-parse", "--show-superproject-working-tree").strip()
+            if superproject:
+                prefix = (
+                    os.path.relpath(os.path.realpath(repo), os.path.realpath(superproject)) + "/"
+                )
+                test_path = test_path.removeprefix(prefix)
+        if test_path and test_path not in touched:
             raise ValueError("%s does not touch the named test %s" % (fix[:12], test_path))
-        if test_path and not is_test_path(test_path):
+        if test_path and not (
+            is_test_path(test_path) or is_selftest_host(repo, review.sha, test_path)
+        ):
             raise ValueError("%s is not a test path" % test_path)
-        if (
-            finding.file not in touched
-            and not set(renamed.splitlines()) & set(touched)
-            and not (moved and moved in touched)
+        test_claim = bool(TEST_CLAIM_RE.search(finding.claim))
+        followed = (
+            finding.file in touched
+            or bool(set(renamed.splitlines()) & set(touched))
+            or bool(moved and moved in touched)
             # A "no test for this change" finding is closed by a test elsewhere: the fix may touch a test file instead of the anchored one, named by --test or found among the paths the fix touches.
-            and not (test_path and related_test(test_path, finding.file))
-            and not (
-                TEST_CLAIM_RE.search(finding.claim)
+            or bool(test_path and related_test(test_path, finding.file))
+            # A test named by --test whose added lines import the anchored module tests it whatever its file is called (#d8f3ba65).
+            or bool(test_path and imports_anchored_module(repo, fix, test_path, finding.file))
+            # A test named by --test whose content names the anchored file's path, basename or stem reads the file it covers, whatever its own file is called (#7b73e110).
+            or bool(test_path and references_anchored_file(repo, fix, test_path, finding.file))
+            or (
+                test_claim
                 and any(is_test_path(t) and related_test(t, finding.file) for t in touched)
             )
-        ):
+            # A test named by --test is related by what it tests when the lines the fix added to it name something the claim is about.
+            or bool(
+                test_path
+                and test_claim
+                and claim_exercised_by_test(repo, fix, test_path, finding.claim)
+            )
+        )
+        if not followed:
+            # The anchored code may have moved between the reviewed commit and the fix: a fix of the file that received it, or of that file's test, is a fix of the anchor.
+            moved_to = moved_successors(repo, finding.file, review.sha, fix)
+            followed = bool(moved_to & set(touched)) or (
+                (bool(test_path) or test_claim)
+                and any(
+                    related_test(t, m)
+                    for m in moved_to
+                    for t in ([test_path] if test_path else [x for x in touched if is_test_path(x)])
+                )
+            )
+        if not followed:
             raise ValueError(
-                "%s does not touch %s, nor a test whose name carries `%s`"
-                % (fix[:12], finding.file, _norm_stem(finding.file))
+                "%s does not touch %s, nor a file its code moved to, nor a test whose name carries `%s`%s%s"
+                % (
+                    fix[:12],
+                    finding.file,
+                    _norm_stem(finding.file),
+                    move_search_note(repo, review.sha, fix, finding.file, moved_to),
+                    "" if test_path else TEST_OPTION_HINT,
+                )
             )
         resolution = "fixed %s | %s" % (fix, stamp)
     elif kind == "not-a-bug":
         evidence = normalise_claim(" ".join(args), 400).replace("|", "/")
         if len(evidence) < 20:
             raise ValueError("not-a-bug needs at least 20 characters of evidence")
-        if not _citation_ok(repo, evidence):
+        if not _citation_ok(repo, evidence, root):
             raise ValueError(
                 "not-a-bug evidence must cite a path:line that exists or a sha on this branch"
             )
@@ -3183,8 +3808,132 @@ def _new_ledger_shas(root, path):
     return {r.sha for r in read_ledger(path)[0]} - before
 
 
-def commit_reviews(root, branch, run=subprocess.run):
-    """`git add -A` + `git commit -F <msg> -- <paths>` for the branch's finished, uncommitted review records: `.md` files, the ledger and deleted `.md` files (`-A` stages a deletion). Returns (rc, text)."""
+RECEIPT_REL = pathlib.Path(".ci") / "cache" / "prepush-receipt.json"
+QUICK_CLONE_REL = pathlib.Path("scripts") / "ci-runner" / "quick-clone.ts"
+#: quick-clone.ts and run.ts exit with this when `--advance-only` finds no record-only step to take.
+ADVANCE_REFUSED_EXIT = 4
+#: The advance prepares the kept clone and runs only the touched records' readers; an hour is far past any such run.
+ADVANCE_TIMEOUT_S = 3600
+
+
+def _vouched_tree(receipt):
+    """The tree a receipt vouches for: its own `headTree`, moved along its `advances` (quick-clone.ts vouchedTree)."""
+    steps = receipt.get("advances") or []
+    if steps and isinstance(steps, list) and isinstance(steps[-1], dict):
+        return str(steps[-1].get("to") or "")
+    return str(receipt.get("headTree") or "")
+
+
+CARRIED_REDS_REL = pathlib.Path(".ci") / "config" / "carried-reds.json"
+# The push guard's bars (block_unverified_push.REASON_MIN, STAR_REASON_MIN): an entry whose reason is shorter carries nothing.
+CARRIED_REASON_MIN, CARRIED_STAR_REASON_MIN = 80, 160
+
+
+def carried_only(doc, carried_doc):
+    """Whether receipt `doc` is red only on gates carried-reds.json (`carried_doc`, parsed) carries, the way the push guard reads it (block_unverified_push.carried_verdict) and ci:quick's follow pass does (quick-clone.ts carriedOnly): something failed and every failed gate is carried whole (`*`) or on exactly the finding keys the receipt recorded for it, by an entry whose reason clears the guard's bar, with no stale carried gate or key. Pure (#68452957)."""
+    failed = doc.get("failed") if isinstance(doc, dict) else None
+    # A gate that could not run here (`blocked`) is admitted by the guard as it is, so it does not decide this either.
+    if not isinstance(failed, list) or not failed:
+        return False
+    entries = carried_doc.get("carried") if isinstance(carried_doc, dict) else None
+    by_gate = {}
+    for e in entries or []:
+        if not isinstance(e, dict):
+            continue
+        raw_reason = e.get("reason")
+        reason = raw_reason if isinstance(raw_reason, str) else ""
+        if len(reason) >= (
+            CARRIED_STAR_REASON_MIN if e.get("findings") == "*" else CARRIED_REASON_MIN
+        ):
+            by_gate[e.get("gate")] = e.get("findings")
+    recorded = doc.get("findings") if isinstance(doc.get("findings"), dict) else {}
+    if any(gate not in failed for gate in by_gate):
+        return False  # a carried gate that is not red is stale, and the guard refuses it
+    for gate in failed:
+        carried = by_gate.get(gate)
+        if carried == "*":
+            continue
+        keys = recorded.get(gate)
+        if not isinstance(carried, list) or not isinstance(keys, list) or set(keys) != set(carried):
+            return False
+    return True
+
+
+def green_receipt_tree(root):
+    """The tree the checkout's latest receipt vouches for when it is a whole run that is green, or red only on carried gates (`carried_only`, judged against HEAD's carried-reds.json, as the push guard judges it), else None."""
+    try:
+        doc = json.loads((pathlib.Path(root) / RECEIPT_REL).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(doc, dict) or doc.get("whole") is not True:
+        return None
+    if doc.get("exitCode") != 0 or doc.get("failed") not in ([], None):
+        # HEAD's carried-reds.json, as the push guard reads it, never the working tree's.
+        shown = git_out(root, "show", "HEAD:%s" % CARRIED_REDS_REL.as_posix())
+        try:
+            carried_doc = json.loads(shown) if shown else None
+        except ValueError:
+            return None
+        if not carried_only(doc, carried_doc):
+            return None
+    return _vouched_tree(doc) or None
+
+
+def advance_after_commit(root, spawn=subprocess.run):
+    """After a `--review-commit` commit, carry a green whole receipt for the parent tree forward to HEAD with the records-only advance (agent/plans/PLAN-push-decoupling.md R3, D1.2). Returns the line to print.
+
+    Starts nothing unless the latest receipt is whole, green and vouches for `HEAD~1^{tree}`: a red, narrowed or absent receipt has nothing true to carry, and one already at HEAD needs no step. The advance is `quick-clone.ts --advance-only`, which prepares the kept clone at HEAD, runs the touched records' readers and appends one `advances` step, and exits ADVANCE_REFUSED_EXIT, running no lane, when the commit is not record-only. A clone held by a running ci:quick is not waited for: that run's follow pass brings the receipt forward itself.
+    """
+    head_tree = git_out(root, "rev-parse", "HEAD^{tree}")
+    parent_tree = git_out(root, "rev-parse", "HEAD~1^{tree}")
+    if not head_tree or not parent_tree:
+        return "receipt: HEAD or its parent has no readable tree, so nothing was advanced"
+    vouched = green_receipt_tree(root)
+    if vouched == head_tree:
+        return "receipt: the green receipt already vouches for tree %s" % head_tree[:12]
+    if vouched != parent_tree:
+        return (
+            "receipt: no green whole receipt vouches for the parent tree %s, so nothing was advanced"
+            % (parent_tree[:12])
+        )
+    tsx = pathlib.Path(root) / "node_modules" / ".bin" / "tsx"
+    cmd = [str(tsx), str(pathlib.Path(root) / QUICK_CLONE_REL), "--advance-only"]
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    try:
+        res = spawn(
+            cmd,
+            cwd=str(root),
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=ADVANCE_TIMEOUT_S,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return "receipt: ADVANCE NOT STARTED: %s (%s)" % (" ".join(cmd), exc)
+    lines = (res.stdout + res.stderr).splitlines()
+    refused = [ln for ln in lines if ln.startswith("ci-runner: --advance-only")]
+    tail = refused or [ln for ln in lines if ln.startswith("ci:quick:")]
+    # A receipt red only on carried gates advances with exit 1 (the runner keeps a red run's exit honest), so success is the receipt now vouching for HEAD, green or carried-only.
+    if res.returncode in (0, 1) and green_receipt_tree(root) == head_tree:
+        return "receipt: ADVANCED from tree %s to tree %s with no whole run" % (
+            parent_tree[:12],
+            head_tree[:12],
+        )
+    why = tail[0] if refused else (tail[-1] if tail else "(no ci:quick line)")
+    if res.returncode == ADVANCE_REFUSED_EXIT:
+        return "receipt: ADVANCE REFUSED, the push guard will ask for npm run ci:quick: %s" % why
+    return "receipt: ADVANCE FAILED (exit %d), the push guard will ask for npm run ci:quick: %s" % (
+        res.returncode,
+        why,
+    )
+
+
+def commit_reviews(root, branch, run=subprocess.run, advance=advance_after_commit):
+    """`git add -A` + `git commit -F <msg> -- <paths>` for the branch's finished, uncommitted review records: `.md` files, the ledger and deleted `.md` files (`-A` stages a deletion). Returns (rc, text).
+
+    After a commit lands, `advance(root)` carries a green receipt for the parent tree forward to the new tree (`advance_after_commit`), so a records-only commit after a green ci:quick needs no hand re-run before the push; its line is appended to the text and never changes the rc, which is the commit's.
+    """
     st = branch_state(root, branch, repos=())
     files = recordable(st)
     if not files:
@@ -3225,9 +3974,13 @@ def commit_reviews(root, branch, run=subprocess.run):
             text=True,
             check=False,
         )
-        return done.returncode, (
-            done.stdout + done.stderr
-        ).strip() or "committed %d review file(s): %s" % (len(rels), " ".join(rels))
+        text = (done.stdout + done.stderr).strip() or "committed %d review file(s): %s" % (
+            len(rels),
+            " ".join(rels),
+        )
+        if done.returncode == 0 and advance is not None:
+            text = "%s\n%s" % (text, advance(root))
+        return done.returncode, text
     finally:
         with contextlib.suppress(OSError):
             os.unlink(msg_path)
@@ -3591,6 +4344,13 @@ def main(argv):
             log=log,
         )
         print(path or "nothing written")
+        # The security checklist learns from the record at its own cadence (wl_reviewsec.maybe_learn); a failure is logged and never changes the review's exit.
+        try:
+            import wl_reviewsec
+
+            wl_reviewsec.maybe_learn(root, log=log)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            log("security learner failed: %s: %s" % (type(exc).__name__, exc))
         return 0
     if argv[0] == "--check":
         branch = _opt(argv, "--branch") or current_branch(root)

@@ -5,11 +5,6 @@
       "status": 410,
       "rationale": "No /about page exists in the live route manifest and no sufficiently close heir was found."
     },
-    "/acceptable-use-policy": {
-      "to": null,
-      "status": 410,
-      "rationale": "No /acceptable-use-policy in the manifest; the closest live policy pages (cookie-policy, privacy-policy, etc.) are distinct documents with no meaningful overlap."
-    },
     "/api": {
       "to": null,
       "status": 410,
@@ -855,11 +850,6 @@
       "status": 301,
       "rationale": "Self-map: adds /en/ prefix when accessed without a language. Lives at /[lang]/terms-of-service."
     },
-    "/terms-of-service/acceptable-use-policy": {
-      "to": null,
-      "status": 410,
-      "rationale": "Override legal pattern: /acceptable-use-policy page was deleted; no live heir."
-    },
     "/transparency": {
       "to": null,
       "status": 410,
@@ -906,7 +896,7 @@
       "from": "^/(terms-of-service|privacy-policy|cookie-policy|telemetry-policy|refund-policy|acceptable-use-policy)/(terms-of-service|privacy-policy|cookie-policy|telemetry-policy|refund-policy|acceptable-use-policy)$",
       "to": "/$2",
       "status": 301,
-      "rationale": "Concatenated legal paths caused by old relative-href bug in legal pages. Second segment is the link target the user intended to reach (they were on the first-segment page and clicked a relative link expecting to land on the second-segment page). Pattern covers all 30 theoretical combinations; 11 observed in GSC. NOTE: /acceptable-use-policy is absent from route-manifest.json \u2014 any concat path whose second segment is acceptable-use-policy (e.g. /terms-of-service/acceptable-use-policy, observed in GSC) will redirect to a potentially missing page. Verify that /acceptable-use-policy is live before deploying, or add it to the manifest."
+      "rationale": "Concatenated legal paths caused by old relative-href bug in legal pages. Second segment is the link target the user intended to reach (they were on the first-segment page and clicked a relative link expecting to land on the second-segment page). Pattern covers all 30 theoretical combinations; 11 observed in GSC. /acceptable-use-policy is live again (2026-11-12), so /terms-of-service/acceptable-use-policy, observed in GSC, reaches it through this pattern."
     },
     {
       "from": "^/[a-z]+ntact$",

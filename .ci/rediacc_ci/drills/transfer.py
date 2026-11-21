@@ -20,7 +20,6 @@ import os
 import shutil
 import subprocess
 import sys
-import time
 
 from rediacc_ci import log
 from rediacc_ci.drills import lib
@@ -40,7 +39,7 @@ class Transfer:
         self.restart = restart_gateway
         self.rdc = str(drill.root / "rdc.sh")
         # A fresh dev user, and so a fresh store, on every run: a second run's `config remote enable --master-password` against the store the first left behind dies with a raw WebCrypto OperationError.
-        self.email = "drill-transfer-%d@rediacc.io" % int(time.time())
+        self.email = lib.run_email("transfer")
         self.device1 = ""
         self.device2 = ""
         self.server_url = ""

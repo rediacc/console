@@ -4,7 +4,9 @@ import { configService } from '../services/config/config-resources.js';
 import { ensureRepositoryNetworkId } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode, writeStdout } from '../services/core/request-context.js';
-import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
+import type { ExecuteResult } from '../services/executor/executor-factory.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
@@ -43,6 +45,12 @@ function decodeCatPayload(stdout: string): void {
   ).trim();
   writeStdout(Buffer.from(b64Value, 'base64'));
 }
+
+// The `printRepoCat` step writes the file bytes once the job's output is seen, so a ticket handed back early writes nothing.
+bindStepHandler('printRepoCat', ({ output }) => {
+  decodeCatPayload(output ?? '');
+  return Promise.resolve();
+});
 
 /**
  * repo cat, bounded, pipeable single-file read inside the repo mount
@@ -106,24 +114,28 @@ export function registerRepoCatCommand(repo: Command): void {
             })
           );
 
-          const result = await getExecutor().execute({
-            functionName: 'repository_cat',
-            machineName,
-            kubeCluster,
-            // #74: declare the datastore the repo is RECORDED on; renet resolves
-            // the image from the machine vault, never from the params bag.
-            datastore: await recordedDatastoreMount(repoKey),
-            params: { repository: repoKey, ...params },
-            debug: options.debug,
-            skipRouterRestart: options.skipRouterRestart,
-            captureOutput: true,
-          });
-
-          if (!result.success) {
-            renderCatFailure(result);
+          const outcome = await runCommandJob(
+            'repo cat',
+            {
+              functionName: 'repository_cat',
+              machineName,
+              kubeCluster,
+              // #74: declare the datastore the repo is RECORDED on; renet resolves
+              // the image from the machine vault, never from the params bag.
+              datastore: await recordedDatastoreMount(repoKey),
+              params: { repository: repoKey, ...params },
+              debug: options.debug,
+              skipRouterRestart: options.skipRouterRestart,
+              captureOutput: true,
+            },
+            [planStep('printRepoCat')]
+          );
+          if (outcome.kind === 'pending') {
+            const code = pendingExitCode(outcome);
+            if (code !== undefined) setExitCode(code);
             return;
           }
-          decodeCatPayload(result.stdout ?? '');
+          if (!outcome.result.success) renderCatFailure(outcome.result);
         } catch (error) {
           handleError(error);
         }

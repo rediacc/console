@@ -148,8 +148,7 @@ function allFamiliesConfig(): RdcConfig {
             {
               kind: 'hosted-service',
               name: 'offsite',
-              endpoint: 'https://s3.example.com',
-              vaultContent: { accessKeyId: 'AKID', secretAccessKey: 'SEC' },
+              target: 'offsite-r2',
               enabled: true,
             },
           ],

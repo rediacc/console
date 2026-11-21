@@ -90,6 +90,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   configWithNamedDatastore();
   mockExecute.mockImplementation(({ functionName, datastore }) => {
+    if (functionName === 'repository_fsck') {
+      return Promise.resolve({ success: true, stdout: '{"fsck_present":{"guids":[]}}\n' });
+    }
     if (functionName !== 'repository_list') return Promise.resolve({ success: true, stdout: '' });
     // The orphan exists ONLY in the named datastore. A run that enumerates just the default finds nothing to collect.
     return Promise.resolve({
@@ -112,23 +115,63 @@ describe('repo gc / fsck enumerate every recorded datastore (#74)', () => {
   it('finds a gc candidate that lives only in the named datastore', async () => {
     await run(['gc', '-m', 'm1', '--apply']);
 
-    const del = mockExecute.mock.calls.find((c) => c[0].functionName === 'repository_delete');
-    expect(del, 'the orphan in the named datastore was never collected').toBeDefined();
-    expect(del?.[0].params.repository).toBe(ORPHAN_GUID);
+    const gc = mockExecute.mock.calls.find((c) => c[0].functionName === 'repository_gc');
+    expect(gc, 'the orphan in the named datastore was never collected').toBeDefined();
+    expect(gc?.[0].params.candidates).toContain(ORPHAN_GUID);
   });
 
   it('deletes the candidate from the datastore it was found in, not the default', async () => {
     await run(['gc', '-m', 'm1', '--apply']);
 
-    const del = mockExecute.mock.calls.find((c) => c[0].functionName === 'repository_delete');
-    expect(del?.[0].datastore).toBe(NAMED_MOUNT);
+    const gc = mockExecute.mock.calls.find((c) => c[0].functionName === 'repository_gc');
+    expect(gc?.[0].params.candidates).toBe(`${ORPHAN_GUID}@${NAMED_MOUNT}`);
   });
 
-  it('enumerates only the default when nothing is placed on a named datastore', async () => {
+  it.each([
+    ['a comma', 'tier,1'],
+    ['an at sign', 'tier@1'],
+  ])(
+    'refuses a datastore name with %s, which the candidate list cannot carry',
+    async (_n, name) => {
+      mockGetCurrent.mockResolvedValue({
+        resources: { repositories: { app: { placement: { datastore: name } } } },
+      });
+      mockExecute.mockImplementation(({ functionName, datastore }) =>
+        Promise.resolve({
+          success: true,
+          stdout:
+            functionName === 'repository_list' && datastore === `/mnt/rediacc-ds/${name}`
+              ? JSON.stringify([{ name: ORPHAN_GUID, mounted: false }])
+              : JSON.stringify([]),
+        })
+      );
+
+      await expect(run(['gc', '-m', 'm1', '--apply'])).rejects.toThrow('datastorePathUnsupported');
+      expect(mockExecute.mock.calls.some((c) => c[0].functionName === 'repository_gc')).toBe(false);
+    }
+  );
+
+  it('control: a datastore path without either character is sent', async () => {
+    await run(['gc', '-m', 'm1', '--apply']);
+
+    expect(mockExecute.mock.calls.some((c) => c[0].functionName === 'repository_gc')).toBe(true);
+  });
+
+  it('fsck is one repository_fsck job naming each recorded mount, and lists nothing else', async () => {
+    await run(['admin', 'fsck', '-m', 'm1']);
+
+    const fsck = mockExecute.mock.calls.filter((c) => c[0].functionName === 'repository_fsck');
+    expect(fsck).toHaveLength(1);
+    expect(fsck[0][0].params).toEqual({ datastores: NAMED_MOUNT });
+    expect(listedDatastores()).toEqual([]);
+  });
+
+  it('fsck names no extra datastore when nothing is placed on a named one', async () => {
     mockGetCurrent.mockResolvedValue({ resources: { repositories: { app: {} } } });
 
     await run(['admin', 'fsck', '-m', 'm1']);
 
-    expect(listedDatastores()).toEqual([undefined]);
+    const fsck = mockExecute.mock.calls.find((c) => c[0].functionName === 'repository_fsck');
+    expect(fsck?.[0].params).toEqual({});
   });
 });

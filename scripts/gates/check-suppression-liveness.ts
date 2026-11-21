@@ -469,17 +469,23 @@ const PROBES: Probe[] = [
       // A glob: root is live if the directory still exists; a dispatch: prefix is live if some shell function still starts with it; a manual: file is live if the script is still there.
       const names = new Set<string>();
       const shDirs: string[] = [];
-      const walk = (d: string): void => {
-        if (!fs.existsSync(d)) return;
-        for (const e of fs.readdirSync(d, { withFileTypes: true })) {
-          if (e.name === 'node_modules' || e.name === '.git') continue;
-          const p = path.join(d, e.name);
-          if (e.isDirectory()) walk(p);
-          else if (e.name.endsWith('.sh')) shDirs.push(path.relative(root, p));
-        }
-      };
-      for (const base of ['.ci', 'scripts', '.claude', '.devcontainer', 'packages', 'private']) {
-        walk(path.join(root, base));
+      // A TRACKED listing, never a disk walk: walking `.ci`, `packages` and `private` descended into `.ci/cache`, every `dist/` and `private/bin`, so this gate read as a whole-tree reader of untracked build output, and a stray `.sh` a build dropped there counted as a live shell file. `--recurse-submodules` keeps the `private/*` submodules' scripts in the universe, as the walk had them.
+      let listing: string;
+      try {
+        listing = execSync(
+          'git ls-files -z --recurse-submodules -- .ci scripts .claude .devcontainer packages private',
+          { cwd: root, encoding: 'utf-8', maxBuffer: 256 * 1024 * 1024 }
+        );
+      } catch (err) {
+        // A checkout (`.git` present) whose listing fails is a broken oracle, not an absent shell tree: null would read as a skip and the dead-bash entries would go unchecked without a word. A root with no `.git` is a fixture or an export, where null is the documented answer.
+        if (fs.existsSync(path.join(root, '.git')))
+          throw new Error(
+            `dead-bash-allowlist: git ls-files failed in ${root}, so the shell-file universe is unreadable: ${(err as Error).message}`
+          );
+        return null;
+      }
+      for (const rel of listing.split('\0')) {
+        if (rel.endsWith('.sh') && fs.existsSync(path.join(root, rel))) shDirs.push(rel);
       }
       for (const extra of ['run.sh', 'rdc.sh']) {
         if (fs.existsSync(path.join(root, extra))) shDirs.push(extra);

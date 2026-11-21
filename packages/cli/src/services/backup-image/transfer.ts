@@ -9,7 +9,7 @@
  */
 
 import { accessSync, chmodSync, constants, existsSync, mkdirSync, statSync } from 'node:fs';
-import { basename } from 'node:path';
+import { basename, dirname } from 'node:path';
 import { t } from '../../i18n/index.js';
 import { buildImageRsyncArgs, RETRYABLE_RSYNC_EXITS } from '../../remote/sync/image-rsync.js';
 import { ValidationError } from '../../utils/errors.js';
@@ -283,9 +283,12 @@ class DownloadRun {
 
   private async rsyncOnce(session: ExportSession): Promise<RsyncOutcome> {
     const { o, d } = this.ctx;
+    const freshDest = !existsSync(this.paths.image);
     const args = buildImageRsyncArgs({
       direction: 'download',
-      freshDest: !existsSync(this.paths.image),
+      freshDest,
+      // Only a fresh destination can take --sparse, so only it pays for the probe.
+      sparseDest: freshDest ? probeSparse(dirname(this.paths.image)) : undefined,
       sshCommand: sshCommandOf(session.transport),
       bwlimitKiBps: o.bwlimitKiBps,
       remoteRsyncPath: session.transport

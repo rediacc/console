@@ -10,11 +10,10 @@
  * two orchestrators.
  */
 
-import { DEFAULTS } from '@rediacc/shared/config';
 import type { ClusterPool } from '../../types/index.js';
 import { configService } from '../config/config-resources.js';
-import { getExecutor } from '../executor/executor-factory.js';
 import { parseCapturedJson } from '../executor/local-executor.js';
+import { runClusterPhase } from './cluster-job.js';
 
 /**
  * The Ceph cluster name is a fixed identity ("ceph") that is distinct from the
@@ -40,14 +39,7 @@ export async function dispatchCeph(
   params: Record<string, unknown>,
   debug?: boolean
 ): Promise<void> {
-  const result = await getExecutor().execute({ functionName, machineName, params, debug });
-  if (!result.success) {
-    throw new Error(
-      `Ceph install step "${functionName}" failed on ${machineName}: ${
-        result.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR
-      }`
-    );
-  }
+  await runClusterPhase(functionName, machineName, params, { debug, label: 'Ceph install step' });
 }
 
 /** Resolve every ceph-pool member (name + IP) in pool/index order. */
@@ -77,18 +69,12 @@ export async function exportCephClientConfig(
   monMachine: string,
   debug?: boolean
 ): Promise<{ conf: string; keyring: string }> {
-  const exported = await getExecutor().execute({
-    functionName: 'ceph_client_config_export',
-    machineName: monMachine,
-    params: {},
-    debug,
-    captureOutput: true,
-  });
-  if (!exported.success) {
-    throw new Error(
-      `Failed to export ceph client config from ${monMachine}: ${exported.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`
-    );
-  }
+  const { result: exported } = await runClusterPhase(
+    'ceph_client_config_export',
+    monMachine,
+    {},
+    { debug, capture: true, label: 'Ceph client config export' }
+  );
   const payload = parseCapturedJson<{ conf?: string; keyring?: string }>(exported.stdout);
   if (!payload.conf || !payload.keyring) {
     throw new Error(`ceph_client_config_export on ${monMachine} returned no conf/keyring`);

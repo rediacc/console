@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { installRepoLicence } from '../../src/utils/licence';
 import { getOpsManager, getOpsManagerForGroup } from '../../src/utils/renet-functions/OpsManager';
+import { peerKnownHostsArg } from '../../src/utils/renet-functions/peerKnownHosts';
 import { RenetFunctionsTestRunner } from '../../src/utils/renet-functions/RenetFunctionsTestRunner';
 import type { ExecResult } from '../../src/utils/renet-functions/types';
 
@@ -299,9 +300,10 @@ test.describe
       // Ship the control-plane image A .11 -> B .51 (per-image FIEMAP-delta block
       // transfer — the migrate data plane, runtime-agnostic; --dest-user inferred
       // from SUDO_USER). This is the actual cross-group, cross-LAN hop.
+      const pin = await peerKnownHostsArg(onA, 'dest-known-hosts', B_WORKER_IP);
       const push = await onA(
         `sudo renet backup push --name ${REPO} --datastore ${DATASTORE} --target machine ` +
-          `--dest-host ${B_WORKER_IP} --dest-path ${DATASTORE} --dest ${REPO} --strategy physical`,
+          `--dest-host ${B_WORKER_IP} --dest-path ${DATASTORE} --dest ${REPO} --strategy physical${pin}`,
         600_000
       );
       expect(push.code, `image transfer A->B: ${push.stderr}`).toBe(0);

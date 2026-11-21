@@ -371,6 +371,126 @@ def test_the_live_fetch_with_no_origin_refuses(tmp_path: pathlib.Path) -> None:
     assert "fetch of origin main failed" in got.message
 
 
+# --------------------------------------------------------------------------- (e') origin/main under --branch-release
+
+
+def branch_world(tmp_path: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
+    """A repository whose main is pushed to a bare origin, then one commit ahead of it (HEAD, not yet pushed)."""
+    root = tagged_repo(tmp_path)
+    bare = tmp_path / "origin.git"
+    git(tmp_path, "init", "-q", "--bare", str(bare))
+    git(root, "remote", "add", "origin", str(bare))
+    git(root, "push", "-q", "origin", "main")
+    (root / "branch.txt").write_text("the branch's work\n", encoding="utf-8")
+    commit_all(root, "on the branch")
+    return root, bare
+
+
+def codes_and_text(found: list[lg.Refusal]) -> str:
+    return " | ".join(r.line() for r in found)
+
+
+def test_a_branch_release_admits_a_pushed_descendant_of_origin_main(tmp_path: pathlib.Path) -> None:
+    root, _bare = branch_world(tmp_path)
+    git(root, "push", "-q", "origin", "HEAD:refs/heads/1104-1")
+    head = head_of(root)
+    assert lg.branch_release_refusals(root, head, lg.live_fetch) == []
+    heads, why = lg.live_heads(root)
+    assert why == ""
+    assert lg.pushed_branch(heads or {}, head) == "1104-1"
+
+
+def test_a_branch_release_refuses_an_unpushed_head(tmp_path: pathlib.Path) -> None:
+    root, _bare = branch_world(tmp_path)
+    found = lg.branch_release_refusals(root, head_of(root), lg.live_fetch)
+    assert [r.code for r in found] == ["origin-main"]
+    assert "the tip of no branch on origin" in found[0].message
+
+
+def test_a_branch_release_refuses_a_head_not_descended_from_origin_main(
+    tmp_path: pathlib.Path,
+) -> None:
+    root, _bare = branch_world(tmp_path)
+    git(root, "push", "-q", "origin", "HEAD:refs/heads/1104-1")
+    # origin/main moves to a sibling of HEAD: same parent, another commit, so HEAD no longer descends from it.
+    sibling = git(root, "commit-tree", "HEAD~1^{tree}", "-p", "HEAD~1", "-m", "main moved on")
+    git(root, "push", "-q", "origin", "%s:refs/heads/main" % sibling)
+    found = lg.branch_release_refusals(root, head_of(root), lg.live_fetch)
+    assert [r.code for r in found] == ["origin-main"], codes_and_text(found)
+    assert "is not an ancestor of HEAD" in found[0].message
+
+
+def test_a_branch_release_refuses_when_nothing_can_be_read(tmp_path: pathlib.Path) -> None:
+    root = tagged_repo(tmp_path)
+    head = head_of(root)
+    failed = lg.branch_release_refusals(root, head, lambda _r: (None, "offline"))
+    assert [r.message for r in failed] == [
+        "the fetch of origin main failed, so nothing is judged: offline"
+    ]
+    unread = lg.branch_release_refusals(
+        root,
+        head,
+        lambda _r: (head, ""),
+        heads=lambda _r: (None, "ls-remote exited 128"),
+        ancestor=lambda _r, _a, _h: None,
+    )
+    assert [r.code for r in unread] == ["origin-main", "origin-main"]
+    assert "whether HEAD is pushed is not judged" in unread[0].message
+    assert "git cannot tell whether origin/main" in unread[1].message
+
+
+def test_pushed_branch_prefers_the_branch_over_main() -> None:
+    sha = "a" * 40
+    assert lg.pushed_branch({"main": sha, "1104-1": sha, "other": "b" * 40}, sha) == "1104-1"
+    assert lg.pushed_branch({"main": sha}, sha) == "main"
+    assert lg.pushed_branch({"main": "b" * 40}, sha) is None
+
+
+def test_check_branch_release_swaps_only_the_origin_main_rule(tmp_path: pathlib.Path) -> None:
+    root = green_world(tmp_path)
+    head = head_of(root)
+    world: dict[str, Any] = {
+        "fetch": lambda _r: ("f" * 40, ""),
+        "sentinel": lambda _v: False,
+        "existing": free,
+        "next_version": lambda _r: "1.0.1",
+    }
+    # Control: without the flag the equality rule holds, so a HEAD that is not origin/main refuses.
+    plain = lg.check(root, "edge", **world)
+    assert [r.code for r in plain] == ["origin-main"]
+    assert "is not origin/main" in plain[0].message
+    # With it, a pushed HEAD descended from origin/main is admitted, and every other gate still ran.
+    pushed = lg.check(
+        root,
+        "edge",
+        branch_release=True,
+        heads=lambda _r: ({"1104-1": head}, ""),
+        ancestor=lambda _r, _a, _h: True,
+        **world,
+    )
+    assert pushed == []
+    unpushed = lg.check(
+        root,
+        "edge",
+        branch_release=True,
+        heads=lambda _r: ({}, ""),
+        ancestor=lambda _r, _a, _h: False,
+        **{**world, "sentinel": lambda _v: True},
+    )
+    assert [r.code for r in unpushed] == ["origin-main", "origin-main", "lock"]
+
+
+def test_check_branch_release_is_edge_only(tmp_path: pathlib.Path) -> None:
+    root = green_world(tmp_path)
+    got = lg.check(root, "stable", branch_release=True, fetch=lambda _r: (None, "unused"))
+    assert [(r.code, r.message) for r in got] == [
+        ("usage", "--branch-release applies to --channel edge only")
+    ]
+    with pytest.raises(SystemExit) as exc:
+        lg.main(["--channel", "stable", "--branch-release"])
+    assert exc.value.code == 2
+
+
 # --------------------------------------------------------------------------- (f) the release lock
 
 
@@ -467,6 +587,14 @@ def test_stable_force_with_an_unproven_minute_refuses() -> None:
     assert "has not soaked" in messages
 
 
+def test_stable_force_with_a_trailing_newline_refuses_as_malformed() -> None:
+    """`$` matches before a trailing newline; the token must be the whole minute."""
+    got = stable({"smoke_rc": 0, "recorded_at": stamp(2)}, force_asked=ASKED + "\n", proven=True)
+    assert any("is not ASKED:<YYYY-MM-DDTHH:MM>Z" in r.message for r in got)
+    control = stable({"smoke_rc": 0, "recorded_at": stamp(2)}, force_asked=ASKED, proven=True)
+    assert not any("is not ASKED" in r.message for r in control)
+
+
 def test_stable_force_with_a_proven_minute_skips_the_age() -> None:
     assert stable({"smoke_rc": 0, "recorded_at": stamp(2)}, force_asked=ASKED, proven=True) == []
 
@@ -543,3 +671,110 @@ def test_check_stable_runs_the_stable_gate(tmp_path: pathlib.Path) -> None:
         record=lambda _k: (None, "absent"),
     )
     assert [r.code for r in got] == ["stable"]
+
+
+# --------------------------------------------------------------------------- --commit (D1.8)
+
+
+def test_the_previous_tag_of_a_pinned_commit_is_read_from_that_commit(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = tagged_repo(tmp_path)
+    pinned = head_of(root)
+    (root / "more.txt").write_text("later\n", encoding="utf-8")
+    commit_all(root, "later")
+    git(root, "tag", "v2.0.0")
+    assert lg.previous_tag(root) == "v2.0.0"
+    assert lg.previous_tag(root, pinned) == "v1.0.0"
+
+
+def test_vm_check_of_a_pinned_commit_reads_the_pinned_trees_receipt(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = tagged_repo(tmp_path, {TRIGGER: "x = 1\n"})
+    pinned, pinned_tree = head_of(root), tree_of(root)
+    write_vm_receipt(
+        root,
+        vm_receipt(
+            tree=pinned_tree,
+            phases={
+                "renet": {"required": True, "ran": True},
+                "account": {"required": True, "ran": True},
+            },
+        ),
+    )
+    (root / "more.txt").write_text("later\n", encoding="utf-8")
+    commit_all(root, "later")
+    assert lg.vm_check_refusal(root, pinned_tree, "v1.0.0", pinned) is None
+    # Control: the same range judged at the later HEAD is refused: the receipt belongs to the pinned tree.
+    later = lg.vm_check_refusal(root, tree_of(root), "v1.0.0")
+    assert later is not None
+    assert later.code == "vm-check"
+
+
+def test_check_judges_the_pinned_ancestor_while_head_is_later(tmp_path: pathlib.Path) -> None:
+    root = green_world(tmp_path)
+    pinned, pinned_tree = head_of(root), tree_of(root)
+    (root / "more.txt").write_text("later\n", encoding="utf-8")
+    commit_all(root, "later")
+    seen: list[tuple[str, str]] = []
+
+    def clone(_root: pathlib.Path, tree: str, head: str) -> None:
+        seen.append((tree, head))
+
+    def run(**kw: Any) -> list[lg.Refusal]:
+        return lg.check(
+            root,
+            "edge",
+            fetch=lambda _r: (pinned, ""),
+            sentinel=lambda _v: False,
+            existing=free,
+            next_version=lambda _r: "1.0.1",
+            clone=clone,
+            **kw,
+        )
+
+    assert run(commit=pinned) == []
+    assert seen == [(pinned_tree, pinned)]
+    # Control: unpinned, the later HEAD has no green receipt and is not origin/main.
+    assert [r.code for r in run()] == ["ci-quick", "origin-main"]
+
+
+def test_check_refuses_a_pin_whose_ancestry_the_tool_cannot_tell(tmp_path: pathlib.Path) -> None:
+    """71610e80.3: the dry run passes git's None for the pin through, and the real `check` must refuse it. Control: a True verdict admits the same pin."""
+    root = green_world(tmp_path)
+    pinned = head_of(root)
+
+    def run(verdict: bool | None) -> list[lg.Refusal]:
+        return lg.check(
+            root,
+            "edge",
+            commit=pinned,
+            fetch=lambda _r: (pinned, ""),
+            sentinel=lambda _v: False,
+            existing=free,
+            next_version=lambda _r: "1.0.1",
+            clone=lambda _root, _tree, _head: None,
+            ancestor=lambda _r, _a, _h: verdict,
+        )
+
+    assert "commit" in [r.code for r in run(None)]
+    assert run(True) == []
+
+
+def test_check_refuses_a_commit_that_is_not_an_ancestor_of_the_tip(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = green_world(tmp_path)
+    git(root, "checkout", "-q", "-b", "side")
+    (root / "side.txt").write_text("side\n", encoding="utf-8")
+    commit_all(root, "side")
+    side = head_of(root)
+    git(root, "checkout", "-q", "main")
+    got = lg.check(
+        root, "edge", commit=side, fetch=lambda _r: (side, ""), sentinel=lambda _v: False
+    )
+    assert [r.code for r in got] == ["commit"]
+    assert "not an ancestor" in got[0].message
+    missing = lg.check(root, "edge", commit="f" * 40)
+    assert [r.code for r in missing] == ["git"]

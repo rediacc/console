@@ -18,7 +18,7 @@ WHY CHECK 1 WAS NOT ENOUGH, and this is a receipt. `f1ce6911f` fixed `claude-rev
 
     PR_HEAD_REF: ${{ github.event.pull_request.head.ref || github.event.workflow_run.head_branch }}
 
-Two clauses, THREE effective triggers: that file declares `workflow_call` only, its sole caller `claude-review.yml:90` declares `workflow_run`, `pull_request` and `workflow_dispatch`, and the calling job's `if:` (`claude-review.yml:70-88`) admits all three. On the `workflow_dispatch` path both clauses are empty, `.ci/rediacc_ci/review/discover_epics.py:151` refused, and the review
+Two clauses, THREE effective triggers: that file declares `workflow_call` only, its sole caller `ops-claude-review.yml:90` declares `workflow_run`, `pull_request` and `workflow_dispatch`, and the calling job's `if:` (`ops-claude-review.yml:70-88`) admits all three. On the `workflow_dispatch` path both clauses are empty, `.ci/rediacc_ci/review/discover_epics.py:151` refused, and the review
 died at its first job. CHECK 1 was green throughout, for two independent reasons:
 
   1. It never reads the VALUE. `step_sets_var()` is presence-only, so any
@@ -49,7 +49,7 @@ Two more things it deliberately does not do:
     on 2026-09-16. 16 setter steps, 4 unmodelled, and:
 
       WITHOUT E1: 5 findings. Two are the multi-clause sites the exclusion was
-      argued from, and both ARE false positives -- `review-status.yml:114`
+      argued from, and both ARE false positives -- `ops-review-status.yml:114`
       (empty on `workflow_run`) and `claude-review-reusable.yml:289` (likewise),
       because `.ci/scripts/review/review-status.sh:148` and
       `.ci/scripts/review/claude-review-gate.sh:782` each `case` on `$EVENT_NAME`
@@ -316,7 +316,7 @@ def narrow_by_if(triggers: set[str], condition) -> set[str]:
         which is already correct.
       * `ci-quality.yml:514` -- same shape; narrows `quality-branch` to
         `{pull_request}` and covers `ci-quality.yml:538`.
-      * `claude-review.yml:70-88` -- a three-way disjunction, every disjunct
+      * `ops-claude-review.yml:70-88` -- a three-way disjunction, every disjunct
         carrying an event equality. Rule 3 narrows to `{workflow_run,
         pull_request, workflow_dispatch}`: no loss, which is exactly what made
         the `f1ce6911f` bug reachable.
@@ -368,7 +368,7 @@ def has_event_name_env(env) -> bool:
       * `ci-quality.yml:663-668` passes `GITHUB_EVENT_NAME` beside an
         empty-on-push `github.head_ref`; this is what keeps `:665` silent, since its
         job `if:` (`:634`) does not narrow.
-      * `review-status.yml:106` (`EVENT_NAME`) ->
+      * `ops-review-status.yml:106` (`EVENT_NAME`) ->
         `.ci/scripts/review/review-status.sh:148` `case "${EVENT_NAME:-}"`, whose
         `workflow_run` arm resolves the PR from `WR_RUN_ID` and an artifact instead.
       * `claude-review-reusable.yml:283` ->
@@ -460,7 +460,7 @@ class WorkflowSet:
     def effective_triggers(self, wf_name: str, _seen: frozenset = frozenset()) -> set[str]:
         """The events this workflow can really run under.
 
-        A `workflow_call`-only file is a CALLEE and has no triggers of its own: its effective set is the union over its local callers of (that caller's own effective set, narrowed by the calling job's `if:`). Verified edges in this tree, depth 2: `ci.yml:506 -> ci-quality.yml`, `claude-review.yml:90 -> claude-review-reusable.yml`. `_seen` is the cycle guard.
+        A `workflow_call`-only file is a CALLEE and has no triggers of its own: its effective set is the union over its local callers of (that caller's own effective set, narrowed by the calling job's `if:`). Verified edges in this tree, depth 2: `ci.yml:506 -> ci-quality.yml`, `ops-claude-review.yml:90 -> claude-review-reusable.yml`. `_seen` is the cycle guard.
         """
         if wf_name in _seen:
             return set()
@@ -884,7 +884,7 @@ jobs:
                 f"(ci-quality.yml:663-668): {[f.render() for f in found]}"
             )
 
-    # -- silent control 3: all-event-equality disjunction, claude-review.yml:70 -
+    # -- silent control 3: all-event-equality disjunction, ops-claude-review.yml:70 -
     with tempfile.TemporaryDirectory() as td:
         disjunction = """\
 name: N

@@ -1,4 +1,4 @@
-name: Console CT - Update Flow
+name: CT - Update Flow
 
 # End-to-end tests for install.sh + `rdc update` lifecycle. Runs the
 # real rdc binary against a local Python HTTP fixture server that serves

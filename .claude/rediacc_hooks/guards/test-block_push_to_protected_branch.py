@@ -25,6 +25,10 @@ import sys
 import tempfile
 import typing
 
+import _hookpath
+
+from rediacc_hooks.guards import _backup_push as BP
+
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 
 # ONE PID-STAMPED RUN DIRECTORY holds both fixture repos, and the next run sweeps it when this one was killed before `atexit` could fire: 114 `guard-push-main-*` repos had leaked into /tmp by 2026-09-24. See `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop, which test_canonical_sys_path_hop.py freezes; it is stdlib-only for exactly this reason.
@@ -37,6 +41,16 @@ if _RUNTMP is None or _RUNTMP.loader is None:
     )
 runtmp = importlib.util.module_from_spec(_RUNTMP)
 _RUNTMP.loader.exec_module(runtmp)
+
+# The mirror host is `githooks.MIRROR_HOST`, the one place it is typed; loaded BY FILE like `runtmp`, since the git hook layer sits outside any package path.
+_GITHOOKS = importlib.util.spec_from_file_location(
+    "githooks_for_push_guard",
+    pathlib.Path(__file__).resolve().parents[1] / "git" / "githooks.py",
+)
+if _GITHOOKS is None or _GITHOOKS.loader is None:
+    raise SystemExit("%s: .claude/rediacc_hooks/git/githooks.py is missing" % __file__)
+githooks = importlib.util.module_from_spec(_GITHOOKS)
+_GITHOOKS.loader.exec_module(githooks)
 
 RUN_TMP = runtmp.run_dir("guard-push-main-")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_push_to_protected_branch"]
@@ -171,7 +185,11 @@ _git(TWIN, "push", "-q", "origin", "0914-1:refs/heads/0914-2")
 _git(TWIN, "fetch", "-q", "origin")
 TWIN_SHA = _tip(TWIN, "origin/0914-1")
 
-MIRROR_URL = "https://gitlab.rediacc.io/rediacc-org/github/console.git"
+# The host is read from the hook layer for every row below. This suite only requires a gitlab. host; the exact literal is pinned by test_the_mirror_host_is_the_pinned_literal in tests/test_githook_backup_ref.py, so a wrong host in `githooks` fails that test.
+if not githooks.MIRROR_HOST.startswith("gitlab."):
+    raise SystemExit("githooks.MIRROR_HOST is %r, want a gitlab. host" % githooks.MIRROR_HOST)
+MIRROR_HOST = githooks.MIRROR_HOST
+MIRROR_URL = "https://%s/rediacc-org/github/console.git" % MIRROR_HOST
 
 
 def _make_mirror(on_main=True, url=MIRROR_URL, ahead=False, behind=False, hooks=False):
@@ -207,7 +225,7 @@ def _make_mirror(on_main=True, url=MIRROR_URL, ahead=False, behind=False, hooks=
 MIRROR = _make_mirror()
 MIRROR_FEATURE = _make_mirror(on_main=False)
 MIRROR_WRONG_URL = _make_mirror(url="https://gitlab.example.invalid/rediacc-org/github/console.git")
-MIRROR_WRONG_PATH = _make_mirror(url="https://gitlab.rediacc.io/someone/else.git")
+MIRROR_WRONG_PATH = _make_mirror(url="https://%s/someone/else.git" % MIRROR_HOST)
 MIRROR_AHEAD = _make_mirror(ahead=True)
 MIRROR_BEHIND = _make_mirror(behind=True)
 MIRROR_NO_REMOTE = _make_mirror(url=None)
@@ -253,7 +271,7 @@ if a[:2] == ["api", "graphql"]:
         nodes = [ctx]
         extra = os.environ.get("FX_EXTRA", "")
         if extra:
-            # A failing context no workflow on the head defines, as main's retired review-status.yml posted on #591.
+            # A failing context no workflow on the head defines, as main's retired ops-review-status.yml posted on #591.
             nodes.append({"__typename": "StatusContext", "context": extra, "state": "FAILURE", "targetUrl": ""})
         commit = {
             "oid": head,
@@ -707,20 +725,35 @@ CASES = [
     ),
 ]
 
+# BOX G5 OF PLAN-local-first-delivery: the shared backup-ref cases (`_backup_push.CASES`) in checkouts ON main. This guard judges only a push reaching main, and none of the shared commands names it, so each is allowed before G5 and after. The same commands with `HEAD:main` added are the ones that matter here: the predicate admits only a push whose EVERY destination is under `refs/backup/`, so each must still be refused.
+BACKUP_WORLDS = {
+    True: BP.plant(_make_repo(MAIN)),
+    False: BP.plant(_make_repo(MAIN), pinned=False),
+}
+for _label, _command, _pinned, _admitted in BP.CASES:
+    CASES.append((_label, _command, BACKUP_WORLDS[_pinned], False))
+    CASES.append(
+        (_label + ", plus HEAD:main", "%s HEAD:%s" % (_command, MAIN), BACKUP_WORLDS[_pinned], True)
+    )
 
-def run(command, cwd, extra=None):
+
+def run(command, cwd, extra=None, argv=None):
     env = dict(os.environ)
     env.update(extra or {})
     if cwd is not None:
         env["CLAUDE_PROJECT_DIR"] = str(cwd)
     proc = subprocess.run(
-        GUARD_ARGV,
+        argv or GUARD_ARGV,
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}}),
         capture_output=True,
         text=True,
         check=False,
         env=env,
     )
+    if argv is not None and proc.returncode not in (0, 2):
+        raise SystemExit(
+            "broken-copy runner crashed (rc %d): %s" % (proc.returncode, proc.stderr[-800:])
+        )
     return proc.returncode != 0, proc.stderr
 
 
@@ -1018,8 +1051,203 @@ for name, repo in REAL_MIRROR_CASES:
     if not ok and err:
         print("    stderr: %s" % err.strip().splitlines()[:3])
 
+
+# ---- two trees (box LT12 of agent/plans/PLAN-two-track-merge-dev.md) ----------------------
+# A live world whose main checkout moved to the development branch PARKED_BRANCH while a linked worktree, the landing tree, holds the PR branch, with the landing record in the common git dir. A push typed in either tree is judged from either root, and the mirror push and the fast-forward fallback are admitted from either tree's toplevel. With no record the sibling tree stays foreign, as before.
+def _two_tree(d, record=True):
+    """`(main, landing)`: `d` switched to PARKED_BRANCH and the PR branch checked out in a linked worktree beside it."""
+    d = pathlib.Path(os.path.realpath(d))
+    landing = (
+        pathlib.Path(os.path.realpath(tempfile.mkdtemp(prefix="landing-", dir=RUN_TMP))) / "tree"
+    )
+    _git(d, "checkout", "-q", "-b", PARKED_BRANCH)
+    _git(d, "worktree", "add", "-q", str(landing), BRANCH)
+    if record:
+        common = pathlib.Path(
+            _git(d, "rev-parse", "--path-format=absolute", "--git-common-dir").stdout.strip()
+        )
+        (common / "rediacc-landing.json").write_text(
+            json.dumps({"path": str(landing), "branch": BRANCH}), encoding="utf-8"
+        )
+    return d, landing
+
+
+TT_M, TT_L = _two_tree(_make_live())
+TT_SHA = _tip(TT_L, "origin/%s" % BRANCH)
+TM_M, TM_L = _two_tree(_make_mirror(on_main=False))
+NR_M, NR_L = _two_tree(_make_live(), record=False)
+NRM_M, NRM_L = _two_tree(_make_mirror(on_main=False), record=False)
+_FF = "push origin origin/%s:%s" % (BRANCH, MAIN)
+_MIRROR_6B = "push gitlab refs/heads/%s:refs/heads/%s --follow-tags" % (MAIN, MAIN)
+
+TWO_TREE_CASES = [
+    # (name, command, root, extra env, expect_blocked, the mutant it flips under: "defect" (TWO_TREE_DEFECT), "helper" (HELPER_ARGV), or None)
+    (
+        "main root: HEAD:main typed in the landing tree",
+        "git -C %s push origin HEAD:%s" % (TT_L, MAIN),
+        TT_M,
+        None,
+        True,
+        "helper",
+    ),
+    (
+        "landing root: HEAD:main typed in the main checkout",
+        "git -C %s push origin HEAD:%s" % (TT_M, MAIN),
+        TT_L,
+        None,
+        True,
+        "helper",
+    ),
+    (
+        "main root: the fallback typed in the landing tree",
+        "git -C %s %s" % (TT_L, _FF),
+        TT_M,
+        fx(head=TT_SHA),
+        False,
+        "defect",
+    ),
+    (
+        "main root: the fallback on a red PR, landing tree",
+        "git -C %s %s" % (TT_L, _FF),
+        TT_M,
+        fx(head=TT_SHA, ci="FAILURE"),
+        True,
+        "helper",
+    ),
+    (
+        "landing root: the fallback typed in the main checkout",
+        "git -C %s %s" % (TT_M, _FF),
+        TT_L,
+        fx(head=TT_SHA),
+        False,
+        "defect",
+    ),
+    (
+        "landing root: the fallback typed in its own tree",
+        "git %s" % _FF,
+        TT_L,
+        fx(head=TT_SHA),
+        False,
+        None,
+    ),
+    (
+        "main root: the mirror push typed in the landing tree",
+        "git -C %s %s" % (TM_L, _MIRROR_6B),
+        TM_M,
+        None,
+        False,
+        "defect",
+    ),
+    (
+        "landing root: the mirror push typed in the main checkout",
+        "git -C %s push gitlab %s:%s" % (TM_M, MAIN, MAIN),
+        TM_L,
+        None,
+        False,
+        "defect",
+    ),
+    (
+        "no record: HEAD:main typed in the sibling tree",
+        "git -C %s push origin HEAD:%s" % (NR_L, MAIN),
+        NR_M,
+        None,
+        False,
+        None,
+    ),
+    (
+        "no record: the mirror push typed in the sibling tree",
+        "git -C %s %s" % (NRM_L, _MIRROR_6B),
+        NRM_M,
+        None,
+        True,
+        None,
+    ),
+]
+
+_TT_NS: dict[str, typing.Any] = {}
+for _line in (
+    (pathlib.Path(__file__).resolve().parent / "block_push_to_protected_branch.py")
+    .read_text(encoding="utf-8")
+    .split("\n")
+):
+    if _line.startswith("TWO_TREE_DEFECT = "):
+        exec(_line, _TT_NS)
+TWO_TREE_DEFECT = _TT_NS["TWO_TREE_DEFECT"]
+_GUARD_FILE = str(pathlib.Path(__file__).resolve().parent / "block_push_to_protected_branch.py")
+BROKEN_ARGV = [
+    sys.executable,
+    "-c",
+    (
+        "import sys; sys.path.insert(0, %r)\n"
+        "from rediacc_hooks import hookio\n"
+        "src = open(%r, encoding='utf-8').read()\n"
+        "old, new = %r\n"
+        "assert src.count(old) == 2, 'the defect no longer applies'\n"
+        "ns = {'__name__': 'broken', '__file__': %r}\n"
+        "exec(compile(src.replace(old, new), 'broken', 'exec'), ns)\n"
+        "ev = hookio.Event(sys.stdin.read())\n"
+        "rc = ns['run'](ev)\n"
+        "sys.stderr.write(ev.result(rc)[2])\n"
+        "sys.exit(rc)\n"
+    )
+    % (str(pathlib.Path(__file__).resolve().parents[2]), _GUARD_FILE, TWO_TREE_DEFECT, _GUARD_FILE),
+]
+
+for name, command, root, extra, want, _flips in TWO_TREE_CASES:
+    got, err = run(command, root, extra)
+    blocked += got
+    ok = got == want
+    fails += not ok
+    print(
+        "%-72s want=%-9s got=%-9s %s"
+        % (
+            "two trees: " + name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+        )
+    )
+    if not ok and err:
+        print("    stderr: %s" % err.strip().splitlines()[:3])
+# THE SCOPE HALF LIVES IN commit_policy (box LT11): `foreign_only` reads either bound tree as this checkout, so its mutant is `bound_trees` answering the session root alone, planted before the guard loads.
+HELPER_ARGV = [
+    sys.executable,
+    "-c",
+    (
+        "import sys; sys.path.insert(0, %r)\n"
+        "from rediacc_hooks import commit_policy, hookio\n"
+        "commit_policy.bound_trees = lambda root: [root] if root else []\n"
+        "src = open(%r, encoding='utf-8').read()\n"
+        "ns = {'__name__': 'broken', '__file__': %r}\n"
+        "exec(compile(src, 'broken', 'exec'), ns)\n"
+        "ev = hookio.Event(sys.stdin.read())\n"
+        "rc = ns['run'](ev)\n"
+        "sys.stderr.write(ev.result(rc)[2])\n"
+        "sys.exit(rc)\n"
+    )
+    % (str(pathlib.Path(__file__).resolve().parents[2]), _GUARD_FILE, _GUARD_FILE),
+]
+for _label, _argv in (("defect", BROKEN_ARGV), ("helper", HELPER_ARGV)):
+    _flipping = [c for c in TWO_TREE_CASES if c[5] == _label]
+    _moved = [c[0] for c in _flipping if run(c[1], c[2], c[3], argv=_argv)[0] != c[4]]
+    _still = [
+        c[0]
+        for c in TWO_TREE_CASES
+        if c[5] is None and run(c[1], c[2], c[3], argv=_argv)[0] != c[4]
+    ]
+    if _flipping and len(_moved) == len(_flipping) and not _still:
+        print("%s control: %d two-tree case(s) flipped, none other" % (_label, len(_moved)))
+    else:
+        print(
+            "*** FAIL *** %s control: %d of %d moved, %d unflagged moved (%r)"
+            % (_label, len(_moved), len(_flipping), len(_still), _still)
+        )
+        fails += 1
+
 # A count, not a concatenation: the case lists carry different tuple shapes.
-TOTAL = len(CASES) + len(GIT_CASES) + len(MIRROR_CASES) + len(REAL_MIRROR_CASES)
+TOTAL = (
+    len(CASES) + len(GIT_CASES) + len(MIRROR_CASES) + len(REAL_MIRROR_CASES) + len(TWO_TREE_CASES)
+)
 
 print()
 # ANTI-VACUITY: see the sibling harness. This guard's only control is this file.

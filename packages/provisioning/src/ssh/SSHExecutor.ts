@@ -12,6 +12,14 @@ import {
 const execAsync = promisify(exec);
 
 /**
+ * Escape text for the inside of a POSIX double-quoted string: backslash, double quote, `$` and backtick are the four characters a shell still interprets there.
+ * `!` is left alone: history expansion applies only to an interactive shell, and every shell on this path runs a `-c` command, where `\!` would keep its backslash.
+ */
+export function escapeForDoubleQuotes(text: string): string {
+  return text.replaceAll(/[\\"$`]/g, '\\$&');
+}
+
+/**
  * SSH configuration options.
  */
 export interface SSHConfig {
@@ -313,20 +321,19 @@ export class SSHExecutor {
   }
 
   /**
-   * Escape a command for single-hop SSH.
+   * Escape a command for single-hop SSH, whose builder wraps it in double quotes for the local shell.
+   * The remote shell receives the command byte for byte, so `$`, `$(...)` and backticks expand on the remote host.
    */
   escapeForSSH(command: string): string {
-    return command.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+    return escapeForDoubleQuotes(command);
   }
 
   /**
-   * Escape a command for nested (two-hop) SSH.
-   * Requires double escaping: first for inner SSH, then for outer SSH.
+   * Escape a command for nested (two-hop) SSH: the local shell and the bridge shell each strip one double-quote layer, so the command is escaped once per layer.
+   * The target shell receives the command byte for byte, so `$`, `$(...)` and backticks expand on the target host.
    */
   escapeForNestedSSH(command: string): string {
-    // First escape for the inner SSH (target), then for outer SSH (bridge)
-    const escapedForTarget = command.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
-    return escapedForTarget.replaceAll('\\', '\\\\').replaceAll('"', '\\"');
+    return escapeForDoubleQuotes(escapeForDoubleQuotes(command));
   }
 
   /**

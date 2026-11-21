@@ -110,6 +110,8 @@ if a[:2] == ["pr", "view"]:
         "headRefName": os.environ["FX_HEAD_REF"],
         "body": os.environ.get("FX_BODY", ""),
     }
+    if os.environ.get("FX_HEAD_OID"):
+        pr["headRefOid"] = os.environ["FX_HEAD_OID"]
     if os.environ.get("FX_GH") == "nobody":
         del pr["body"]
     print(json.dumps(pr))
@@ -207,21 +209,26 @@ ADMIN_CASES = [
 ]
 
 
-def run(command, body):
+def run(command, body, root=CHECKOUT, head=BRANCH, oid="", argv=None):
     env = dict(
         os.environ,
         PATH="%s:%s" % (STUB_DIR, os.environ["PATH"]),
-        CLAUDE_PROJECT_DIR=str(CHECKOUT),
-        FX_HEAD_REF=BRANCH,
+        CLAUDE_PROJECT_DIR=str(root),
+        FX_HEAD_REF=head,
+        # The reviewer's sidecars (TMPDIR/claude-worklist) land in the suite's own run directory, which runtmp removes.
+        TMPDIR=tempfile.mkdtemp(prefix="tmp-", dir=RUN_TMP),
     )
+    env.pop("FX_HEAD_OID", None)
+    if oid:
+        env["FX_HEAD_OID"] = oid
     if body is None:
         env["FX_GH"] = "nobody"
     else:
         env["FX_BODY"] = body
     proc = subprocess.run(
-        GUARD_ARGV,
+        argv or GUARD_ARGV,
         input=json.dumps(
-            {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(CHECKOUT)}
+            {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(root)}
         ),
         capture_output=True,
         text=True,
@@ -254,15 +261,152 @@ for name, command, want in ADMIN_CASES:
     if not ok:
         print("    rc=%d stderr: %s" % (rc, err.strip().splitlines()[:3]))
 
+# ---- two trees (box LT12 of agent/plans/PLAN-two-track-merge-dev.md) ----------------------
+# A main checkout on DEV and a linked worktree on LANDING, each branch one reviewed commit past `origin/main` with its review committed in its OWN tree, and the landing record in the common git dir. With the record the review precondition reads the tree that holds the PR's head; a guard reading the session root finds no record of the other tree's commits and refuses. The no-record world keeps the root's reading.
+LANDING, DEV = "1120-1", "1121-1"
+REVIEWS_MARK = "fails the per-commit review precondition"
+REASON_BODY = "Operational-Reason: a two-tree fixture names no plan"
+_SYSPATH_SPEC = importlib.util.spec_from_file_location(
+    "_admin_merge_syspath", HERE.parents[1] / "syspath.py"
+)
+if _SYSPATH_SPEC is None or _SYSPATH_SPEC.loader is None:
+    raise SystemExit("%s: syspath.py is missing" % __file__)
+_syspath = importlib.util.module_from_spec(_SYSPATH_SPEC)
+_SYSPATH_SPEC.loader.exec_module(_syspath)
+_syspath.on_sys_path(_syspath.STOP_DIR)
+rv = importlib.import_module("wl_review")
+
+
+def _reviewed_commit(tree, branch, name):
+    """One commit on `branch` in `tree`, its review written in the reviewer's own format and committed beside it, and `origin/<branch>` at the result."""
+    (tree / name).write_text("a = 1\n", encoding="utf-8")
+    _git(tree, "add", "--", name)
+    _git(tree, "commit", "-q", "-m", "fix(x): %s" % name)
+    sha = _git(tree, "rev-parse", "HEAD")
+    review = rv.Review(
+        sha=sha,
+        subject="fix(x): %s" % name,
+        branch=branch,
+        reviewed_at="2026-11-20T00:00:00Z",
+        model="m",
+    )
+    target = rv.review_path(tree, branch, sha)
+    rv.write_atomic(target, rv.render(review))
+    _git(tree, "add", "--", str(target.relative_to(tree)))
+    _git(tree, "commit", "-q", "-m", "chore(reviews): record")
+    _git(tree, "update-ref", "refs/remotes/origin/%s" % branch, "HEAD")
+    return _git(tree, "rev-parse", "HEAD")
+
+
+def two_trees(record=True):
+    """`(main, landing, tips)`: the main checkout on DEV, the landing worktree on LANDING, and each branch's pushed tip."""
+    base = pathlib.Path(os.path.realpath(tempfile.mkdtemp(prefix="world-", dir=RUN_TMP)))
+    main, landing = base / "main", base / "landing"
+    main.mkdir()
+    _git(main, "init", "-q", "--initial-branch=main")
+    _git(main, "commit", "-q", "--allow-empty", "-m", "seed")
+    _git(main, "update-ref", "refs/remotes/origin/main", "HEAD")
+    _git(main, "branch", LANDING)
+    _git(main, "checkout", "-q", "-b", DEV)
+    _git(main, "worktree", "add", "-q", str(landing), LANDING)
+    tips = {DEV: _reviewed_commit(main, DEV, "dev.py")}
+    tips[LANDING] = _reviewed_commit(landing, LANDING, "landing.py")
+    if record:
+        common = pathlib.Path(_git(main, "rev-parse", "--path-format=absolute", "--git-common-dir"))
+        (common / "rediacc-landing.json").write_text(
+            json.dumps({"path": str(landing), "branch": LANDING}), encoding="utf-8"
+        )
+    return main, landing, tips
+
+
+TT_MAIN, TT_LANDING, TT_TIPS = two_trees()
+NR_MAIN, NR_LANDING, NR_TIPS = two_trees(record=False)
+TT_MERGE = "gh pr merge 7 --repo %s --rebase --auto" % GH_REPO
+
+TWO_TREE_CASES = [
+    # (name, root, head, tips, want refused by the review arm, flips under TWO_TREE_DEFECT)
+    ("main root merges the landing PR", TT_MAIN, LANDING, TT_TIPS, False, True),
+    ("landing root merges the landing PR", TT_LANDING, LANDING, TT_TIPS, False, False),
+    ("landing root merges the dev draft", TT_LANDING, DEV, TT_TIPS, False, True),
+    ("main root merges the dev draft", TT_MAIN, DEV, TT_TIPS, False, False),
+    ("no record: main root merges the sibling's PR", NR_MAIN, LANDING, NR_TIPS, True, False),
+]
+
+GUARD_FILE = str(HERE.parent / "block_admin_merge.py")
+_ns: dict[str, object] = {}
+for _line in pathlib.Path(GUARD_FILE).read_text(encoding="utf-8").split("\n"):
+    if _line.startswith("TWO_TREE_DEFECT = "):
+        exec(_line, _ns)
+TWO_TREE_DEFECT = _ns["TWO_TREE_DEFECT"]
+BROKEN_RUNNER = (
+    "import sys; sys.path.insert(0, %r)\n"
+    "from rediacc_hooks import hookio\n"
+    "src = open(%r, encoding='utf-8').read()\n"
+    "old, new = %r\n"
+    "assert src.count(old) == 2, 'the defect no longer applies'\n"
+    "ns = {'__name__': 'broken', '__file__': %r}\n"
+    "exec(compile(src.replace(old, new), 'broken', 'exec'), ns)\n"
+    "ev = hookio.Event(sys.stdin.read())\n"
+    "rc = ns['run'](ev)\n"
+    "sys.stderr.write(ev.result(rc)[2])\n"
+    "sys.exit(rc)\n"
+)
+BROKEN_ARGV = [
+    sys.executable,
+    "-c",
+    BROKEN_RUNNER % (str(HERE.parents[2]), GUARD_FILE, TWO_TREE_DEFECT, GUARD_FILE),
+]
+
+two_tree_verdicts = set()
+for tt_name, tt_root, tt_head, tt_tips, tt_want, _flips in TWO_TREE_CASES:
+    rc, err = run(TT_MERGE, REASON_BODY, root=tt_root, head=tt_head, oid=tt_tips[tt_head])
+    tt_got = rc != 0 and REVIEWS_MARK in err
+    two_tree_verdicts.add(tt_got)
+    tt_ok = tt_got == tt_want and (tt_got or rc == 0)
+    fails += not tt_ok
+    print(
+        "%-60s want=%-7s got=%-7s %s"
+        % (
+            "two trees: " + tt_name,
+            "refused" if tt_want else "passes",
+            "refused" if tt_got else ("passes" if rc == 0 else "other"),
+            "ok" if tt_ok else "*** FAIL ***",
+        )
+    )
+    if not tt_ok:
+        print("    rc=%d stderr: %s" % (rc, err.strip().splitlines()[:3]))
+flipping = [c for c in TWO_TREE_CASES if c[5]]
+moved = []
+for tt_name, tt_root, tt_head, tt_tips, tt_want, _flips in flipping:
+    rc, err = run(
+        TT_MERGE, REASON_BODY, root=tt_root, head=tt_head, oid=tt_tips[tt_head], argv=BROKEN_ARGV
+    )
+    if rc not in (0, 2):
+        raise SystemExit("broken-copy runner crashed (rc %d): %s" % (rc, err[-800:]))
+    if (rc != 0 and REVIEWS_MARK in err) != tt_want:
+        moved.append(tt_name)
+if flipping and len(moved) == len(flipping):
+    print("TWO_TREE_DEFECT control: %d case(s) flipped to the review refusal" % len(moved))
+else:
+    print(
+        "*** FAIL *** TWO_TREE_DEFECT control: %d of %d case(s) flipped"
+        % (len(moved), len(flipping))
+    )
+    fails += 1
+
 print()
 # ANTI-VACUITY: a gate that answered one way on every input compared against a constant.
-for label, seen in (("plan-gate", verdicts), ("admin-ban", admin_verdicts)):
+for label, seen in (
+    ("plan-gate", verdicts),
+    ("admin-ban", admin_verdicts),
+    ("two-tree", two_tree_verdicts),
+):
     if len(seen) < 2:
         print(
             "*** FAIL *** every %s case got %s: the suite compared the guard against a constant"
             % (label, seen)
         )
         fails += 1
-print("%d case(s)" % (len(CASES) + len(ADMIN_CASES)))
+print("%d case(s)" % (len(CASES) + len(ADMIN_CASES) + len(TWO_TREE_CASES)))
 print("FAILURES: %d" % fails)
 sys.exit(1 if fails else 0)

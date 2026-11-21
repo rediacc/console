@@ -9,6 +9,7 @@ import { getMachineHealth } from '../parsing-health.js';
 function machineWith(overrides: {
   blockDevices?: unknown[];
   repositories?: unknown[];
+  containers?: unknown[];
   licenseStatuses?: unknown[];
 }) {
   return {
@@ -17,7 +18,7 @@ function machineWith(overrides: {
       // when absent, which is the shape the caller actually guards for. An empty object is not a payload renet emits — SystemInfo always carries memory/disk/datastore — so faking one only tests an impossible state.
       network: {},
       services: [],
-      containers: [],
+      containers: { containers: overrides.containers ?? [] },
       system_containers: [],
       block_devices: overrides.blockDevices ?? [],
       repositories: overrides.repositories ?? [],
@@ -72,14 +73,18 @@ describe('unmounted repository reporting', () => {
   // the repos that actually fell over.
   it('ignores an unmounted repo that is not set to autostart', () => {
     const issues = issuesOf(
-      machineWith({ repositories: [{ name: 'demo', mounted: false, autostart: false }] })
+      machineWith({
+        repositories: [{ name: 'demo', mounted: false, autostart: false }],
+      })
     );
     expect(issues.join(' ')).not.toContain('not mounted');
   });
 
   it('reports an unmounted repo that should have autostarted', () => {
     const issues = issuesOf(
-      machineWith({ repositories: [{ name: 'mail', mounted: false, autostart: true }] })
+      machineWith({
+        repositories: [{ name: 'mail', mounted: false, autostart: true }],
+      })
     );
     expect(issues.join(' ')).toContain('1 repository(ies) not mounted');
   });
@@ -113,7 +118,12 @@ describe('docker daemon count', () => {
             containers_running: false,
             container_count: 0,
           },
-          { name: 'parked', mounted: false, docker_running: false, container_count: 0 },
+          {
+            name: 'parked',
+            mounted: false,
+            docker_running: false,
+            container_count: 0,
+          },
         ],
       })
     );
@@ -127,7 +137,9 @@ describe('repo license reporting', () => {
   // The gap: partial-missing was counted but never surfaced, so repos could drop out of backups (the sync skips unlicensed repos) with no signal anywhere.
   it('reports partially missing licenses', () => {
     const issues = issuesOf(
-      machineWith({ licenseStatuses: [...lic('missing', 3), ...lic('valid', 8)] })
+      machineWith({
+        licenseStatuses: [...lic('missing', 3), ...lic('valid', 8)],
+      })
     );
     expect(issues.join(' ')).toContain('3 repo license(s) missing');
   });
@@ -274,5 +286,98 @@ describe('backup coverage', () => {
   it('says nothing when no backup state exists', () => {
     const issues = issuesOf(machineWith({}));
     expect(issues.join(' ')).not.toContain('backed up');
+  });
+});
+
+describe('per-repo disk usage', () => {
+  const repo = (name: string, usePercent?: string) => ({
+    name,
+    mounted: true,
+    autostart: true,
+    ...(usePercent
+      ? {
+          disk_space: {
+            total: '100G',
+            used: '1G',
+            available: '1G',
+            use_percent: usePercent,
+          },
+        }
+      : {}),
+  });
+
+  // CONTROL: demo-stackoverflow sat at 99% and raised no issue.
+  it('warns over 85% and names the repo', () => {
+    const health = getMachineHealth(machineWith({ repositories: [repo('datastore-a', '86%')] }));
+    expect(health.issues.join(' ')).toContain('datastore-a');
+    expect(health.issues.join(' ')).toContain('86%');
+    expect(health.exitCode).toBe(1);
+  });
+
+  it('is critical over 95% and names the repo', () => {
+    const health = getMachineHealth(
+      machineWith({ repositories: [repo('demo-stackoverflow', '99%')] })
+    );
+    expect(health.issues.join(' ')).toContain('demo-stackoverflow');
+    expect(health.exitCode).toBe(2);
+  });
+
+  it('adds no issue at 85% exactly, below the threshold, or without disk_space', () => {
+    const health = getMachineHealth(
+      machineWith({
+        repositories: [repo('a', '85%'), repo('b', '40%'), repo('no-disk-space')],
+      })
+    );
+    expect(health.issues).toEqual([]);
+    expect(health.exitCode).toBe(0);
+  });
+});
+
+describe('restarting containers', () => {
+  const container = (status: string, state = 'restarting') => ({
+    name: 'web',
+    id: 'abc',
+    state,
+    status,
+    repository: 'hermes',
+  });
+
+  it('judges a Restarting status as a restart loop with exit 3', () => {
+    const health = getMachineHealth(
+      machineWith({ containers: [container('Restarting (1) 5 seconds ago')] })
+    );
+    expect(health.issues.join(' ')).toContain('restart loop');
+    expect(health.exitCode).toBe(3);
+  });
+
+  it('leaves a running container alone', () => {
+    const health = getMachineHealth(
+      machineWith({ containers: [container('Up 3 hours', 'running')] })
+    );
+    expect(health.issues).toEqual([]);
+    expect(health.exitCode).toBe(0);
+  });
+});
+
+describe('container health-streak findings carry their own severity', () => {
+  const streaking = (name: string, failing_streak: number) => ({
+    name,
+    repository: 'g1',
+    state: 'running',
+    status: 'Up',
+    health: { status: 'starting', failing_streak },
+  });
+
+  it('is critical only for a container over 5, a warning for one at 3 to 5', () => {
+    const health = getMachineHealth(
+      machineWith({ containers: [streaking('mild', 4), streaking('bad', 9)] })
+    );
+    const bySubject = Object.fromEntries(
+      health.findings
+        .filter((f) => f.code === 'container.health-streak')
+        .map((f) => [f.subject, f.severity])
+    );
+    expect(bySubject).toEqual({ mild: 'warning', bad: 'critical' });
+    expect(health.exitCode).toBe(3);
   });
 });

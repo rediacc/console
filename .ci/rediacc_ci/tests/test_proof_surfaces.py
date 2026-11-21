@@ -14,6 +14,8 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from rediacc_ci import paths, well_known
+from rediacc_ci.proof import live_tier
 from rediacc_ci.proof import surfaces as trig
 
 if TYPE_CHECKING:
@@ -29,6 +31,9 @@ ENV = {
     "PATH": "/usr/bin:/bin:/usr/local/bin",
     "HOME": "/nonexistent",
 }
+
+
+REGISTRY_RELS = (trig.MAP_REL, well_known.REGISTRY_REL, live_tier.BENCH_REGIONS_REL)
 
 
 def _git(cwd: pathlib.Path, *args: str) -> str:
@@ -57,6 +62,9 @@ class World:
         root.mkdir()
         _git(root, "init", "-q", "-b", "main")
         _write(root, "README.md", "x\n")
+        # The files a live receipt's argv is expanded from, as committed in this checkout: `live_tier.validate_row` reads them from a row's own tree, and every real console tree carries them.
+        for rel in REGISTRY_RELS:
+            _write(root, rel, paths.from_root(rel).read_text(encoding="utf-8"))
         self.sub = root / "private" / "renet"
         self.sub.mkdir(parents=True)
         _git(self.sub, "init", "-q", "-b", "main")
@@ -184,7 +192,7 @@ def test_renet_path_forms(path: str, hit: bool) -> None:
         ("package-lock.json", True),
         ("tsconfig.json", True),
         ("wrangler.toml", True),
-        ("wrangler.bench.toml", True),
+        ("wrangler.bench-eu.toml", True),
         ("dev.defaults.env", True),
         ("docker-compose.yml", True),
         ("Dockerfile", True),
@@ -215,7 +223,9 @@ def test_console_sides_map_each_path_to_its_sides() -> None:
 def test_glob_grammar_is_the_owns_grammar() -> None:
     """`**` spans segments, `*` stays inside one, and a literal is exact: the former `/` and `_` prefix forms are gone with the tables."""
     assert trig.matches("private/renet/cmd/renet/sandbox_a.go", ("private/renet/cmd/**",))
-    assert trig.matches("private/account/wrangler.bench.toml", ("private/account/wrangler*.toml",))
+    assert trig.matches(
+        "private/account/wrangler.bench-eu.toml", ("private/account/wrangler*.toml",)
+    )
     assert not trig.matches("private/account/x/wrangler.toml", ("private/account/wrangler*.toml",))
     assert not trig.matches("private/renet/build.sh.bak", ("private/renet/build.sh",))
     assert not trig.matches("private/renet/cmdx/a.go", ("private/renet/cmd/**",))
@@ -830,7 +840,7 @@ def test_a_test_file_or_a_document_hits_nothing(path: str) -> None:
         ("packages/cli/src/services/repo/repo-key-deployment.ts", {"cli", "cli-remote"}),
         ("workers/account/src/index.ts", {"account-worker"}),
         ("workers/proxy/src/index.ts", {"proxy"}),
-        ("workers/proxy/wrangler.bench.toml", {"proxy"}),
+        ("workers/proxy/wrangler.bench-eu.toml", {"proxy"}),
         ("workers/proxy/package.json", set()),
         ("packages/www/src/pages/index.astro", {"www"}),
         ("workers/www/src/index.ts", {"www"}),
@@ -875,6 +885,7 @@ def test_the_committed_map_parses_with_every_named_surface() -> None:
         "account-worker",
         "proxy",
         "www",
+        "enterprise",
     }
     assert trig.SIDES == ("renet", "account")
     assert trig.MAP.phases["renet"] == {"renet", "cli-remote"}
@@ -1259,3 +1270,65 @@ def test_the_naturalization_ledger_is_no_www_surface() -> None:
     ledger = "packages/www/src/i18n/translations/.naturalized-hashes.json"
     assert trig.owns_surfaces([ledger]) == {}
     assert "www" in trig.owns_surfaces(["packages/www/src/i18n/translations/en.json"])
+
+
+# ----------------------------------------------------------------------------- V2: the newest VERIFIED base on the branch
+
+
+def branch_git(
+    commits: Sequence[str], calls: list[list[str]] | None = None
+) -> Callable[[Sequence[str]], str | None]:
+    """A git that lists `commits` (newest first) for `rev-list` and answers `t-<commit>` as each tree."""
+
+    def git(args: Sequence[str]) -> str | None:
+        if calls is not None:
+            calls.append(list(args))
+        if args[0] == "rev-list":
+            return "\n".join(commits)
+        if args[0] == "rev-parse" and args[1].endswith("^{tree}"):
+            return "t-" + args[1][: -len("^{tree}")]
+        return None
+
+    return git
+
+
+def test_with_no_admitted_commit_the_push_base_stands() -> None:
+    asked: list[tuple[str, str]] = []
+
+    def admitted(commit: str, tree: str) -> bool:
+        asked.append((commit, tree))
+        return False
+
+    assert trig.newest_verified_base(branch_git(["c3", "c2", "c1"]), "mb", admitted) is None
+    assert asked == [("c3", "t-c3"), ("c2", "t-c2"), ("c1", "t-c1")]
+
+
+def test_the_newest_admitted_commit_is_the_base_and_older_ones_are_not_read() -> None:
+    asked: list[str] = []
+
+    def admitted(commit: str, _tree: str) -> bool:
+        asked.append(commit)
+        return commit in ("c2", "c1")
+
+    got = trig.newest_verified_base(branch_git(["c3", "c2", "c1"]), "mb", admitted)
+    assert got == ("c2", "t-c2")
+    assert asked == ["c3", "c2"]
+
+
+def test_the_scan_walks_first_parent_commits_since_the_merge_base() -> None:
+    calls: list[list[str]] = []
+    trig.newest_verified_base(branch_git([], calls), "mb", lambda _c, _t: True, limit=7)
+    assert calls == [["rev-list", "--first-parent", "--max-count=7", "mb..HEAD"]]
+
+
+def test_a_branch_git_cannot_list_falls_back_to_the_push_base() -> None:
+    assert trig.newest_verified_base(lambda _args: None, "mb", lambda _c, _t: True) is None
+
+
+def test_a_commit_whose_tree_cannot_be_read_is_skipped() -> None:
+    def git(args: Sequence[str]) -> str | None:
+        if args[0] == "rev-list":
+            return "c2\nc1"
+        return None if args[1] == "c2^{tree}" else "t-c1"
+
+    assert trig.newest_verified_base(git, "mb", lambda _c, _t: True) == ("c1", "t-c1")

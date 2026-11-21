@@ -61,6 +61,7 @@ THE `go mod tidy -diff` OUTPUT IS CAPTURED MERGED, `2>&1`, and that is the twin'
 `head -20` IS A TRUNCATION, NOT A SUMMARY, and it is preserved: a module with 40 lines of diff shows 20 of them on both sides. Dropping the truncation would make the port noisier than its twin on exactly the tree where the gate fires.
 """
 
+import itertools
 import os
 import pathlib
 import shutil
@@ -68,7 +69,7 @@ import subprocess
 import sys
 import tempfile
 
-from rediacc_ci import log, paths
+from rediacc_ci import gitx, log, paths
 from rediacc_ci.controls import Controls
 from rediacc_ci.well_known import GO_DL_BASE
 
@@ -88,6 +89,43 @@ DIFF_EXCERPT_LINES = 20
 EXIT_SETUP_ERROR = 2
 
 
+class TrackedListingError(RuntimeError):
+    """The index could not be listed under a root that exists. Never an empty discovery."""
+
+
+def tracked_files(root: pathlib.Path | str) -> list[str]:
+    """Repo-relative `/` paths git TRACKS under `root`, submodules included.
+
+    DISCOVERY READS THE INDEX, NOT THE DISK. The walk entered `private/bin`, `packages/shared/dist` and `.ci/cache/pytest`, untracked build output, so which modules the gate knew about depended on what a previous build had left, and each run paid to read it (strace, PLAN-push-decoupling F3). `--cached --recurse-submodules` is what CI's checkout holds.
+
+    A root that is not itself a git toplevel RAISES rather than answering from an enclosing repository or from nothing: an empty listing read as "no module" is a green without a run. A test fixture is made discoverable with `stage`.
+    """
+    if not os.path.isdir(root):
+        return []
+    top = gitx.toplevel(root)
+    if top is None or os.path.realpath(str(top)) != os.path.realpath(str(root)):
+        raise TrackedListingError(
+            "%s is not a git work tree root, so there is no tracked listing to scan. "
+            "Run the gate from a checkout; a test fixture is staged with stage()." % root
+        )
+    result = gitx.git(["ls-files", "-z", "--cached", "--recurse-submodules"], root=root)
+    if not result.ok:
+        raise TrackedListingError(
+            "git ls-files failed under %s: %s" % (root, result.stderr.strip() or "no stderr")
+        )
+    return sorted({p for p in result.stdout.split("\0") if p})
+
+
+def stage(directory: pathlib.Path | str) -> None:
+    """Make a fixture directory a one-off repository whose index holds everything in it. No commit, no identity."""
+    for args in (["init", "-q"], ["add", "-A", "--", "."]):
+        result = gitx.git(args, root=directory)
+        if not result.ok:
+            raise TrackedListingError(
+                "git %s failed in %s: %s" % (args[0], directory, result.stderr)
+            )
+
+
 def find_modules(root: pathlib.Path) -> list[str]:
     """Every `go.mod` under `root` that replaces the renet worktree.
 
@@ -96,10 +134,15 @@ def find_modules(root: pathlib.Path) -> list[str]:
     A ZERO-LENGTH RESULT IS NOT AN ERROR HERE; it is the caller's refusal, so that a test can assert on the discovery and on the refusal separately.
     """
     found: list[str] = []
-    for dirpath, _dirnames, filenames in paths.walk_tree(root):
-        if MODULE_FILENAME not in filenames:
+    for rel in tracked_files(root):
+        if pathlib.PurePosixPath(rel).name != MODULE_FILENAME:
             continue
-        absolute = pathlib.Path(dirpath) / MODULE_FILENAME
+        directories = rel.split("/")[:-1]
+        if any(name in paths.PRUNED_DIR_NAMES for name in directories) or any(
+            pair in paths.PRUNED_DIR_PAIRS for pair in itertools.pairwise(directories)
+        ):
+            continue
+        absolute = pathlib.Path(root) / rel
         try:
             text = absolute.read_text(encoding="utf-8", errors="replace")
         except OSError:
@@ -152,7 +195,11 @@ def main(argv: list[str] | None = None) -> int:
         log.error("go is required to check module sync")
         return EXIT_SETUP_ERROR
 
-    modules = find_modules(root)
+    try:
+        modules = find_modules(root)
+    except TrackedListingError as exc:
+        log.error(str(exc))
+        return EXIT_SETUP_ERROR
 
     # ZERO INPUTS IS A FAILURE, NEVER A PASS. The twin's three lines say both things a reader needs: what a green would have meant, and the two ways the discovery could have gone stale.
     if not modules:
@@ -243,12 +290,14 @@ def selftest() -> int:
         # -- DISCOVERY, which needs no toolchain at all -------------------------
         empty = base / "empty"
         empty.mkdir()
+        stage(empty)
         ctl.check("DISCOVERY: a tree with no go.mod finds nothing", find_modules(empty), [])
 
         # A go.mod WITHOUT the replace directive is not a subject. This is the mirror that stops the discovery matching every Go module in the tree.
         unrelated = base / "unrelated"
         unrelated.mkdir()
         (unrelated / "go.mod").write_text("module example.com/x\n\ngo 1.21\n", encoding="utf-8")
+        stage(unrelated)
         ctl.check(
             "DISCOVERY MIRROR: a go.mod without the replace is not a subject",
             find_modules(unrelated),
@@ -257,6 +306,7 @@ def selftest() -> int:
 
         tidy_root = base / "tidy"
         _build_module(tidy_root, "mod", _TIDY_GOMOD)
+        stage(tidy_root)
         ctl.check(
             "DISCOVERY: the replacing go.mod is found", find_modules(tidy_root), ["./mod/go.mod"]
         )
@@ -264,6 +314,7 @@ def selftest() -> int:
         # node_modules is excluded as a SUBSTRING of the path, so a module vendored under one is invisible even though it replaces renet.
         vendored = base / "vendored"
         _build_module(vendored, "node_modules", _TIDY_GOMOD)
+        stage(vendored)
         ctl.check("DISCOVERY: a node_modules path is excluded", find_modules(vendored), [])
 
         # -- THE REFUSAL ------------------------------------------------------- Zero modules must be a FAILURE. A discovery gate that finds nothing and reports success is the exact defect this gate is written against.
@@ -301,6 +352,7 @@ def selftest() -> int:
             # THE PLANT: the same module with its `require` removed.
             untidy_root = base / "untidy"
             _build_module(untidy_root, "mod", _UNTIDY_GOMOD)
+            stage(untidy_root)
             planted_code, planted_out = tidy_diff(untidy_root / "mod")
             ctl.truthy("PLANT: go reports the untidy module non-zero", planted_code != 0)
             ctl.truthy("PLANT: go says something about it", planted_out != "")
@@ -310,6 +362,7 @@ def selftest() -> int:
             mixed_root = base / "mixed"
             _build_module(mixed_root, "a-tidy", _TIDY_GOMOD)
             _build_module(mixed_root, "b-untidy", _UNTIDY_GOMOD)
+            stage(mixed_root)
             ctl.check("PLANT: one bad module among good ones is caught", run(mixed_root), 1)
             ctl.check(
                 "PLANT: both modules were discovered",

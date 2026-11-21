@@ -7,7 +7,11 @@ import {
 } from '../../remote/vscode/index.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
-import { getExecutor } from '../../services/executor/executor-factory.js';
+import { setExitCode } from '../../services/core/request-context.js';
+import { pendingExitCode, runCommandJob } from '../../services/jobs/command-job.js';
+import { requireStepOutput } from '../../services/jobs/step-output.js';
+import { bindStepHandler, planStep } from '../../services/jobs/steps.js';
+import { deleteRepoImageByGuid } from '../../services/repo/orphan-repos.js';
 import type { PruneReport } from '../../services/repo/prune.js';
 import { getOutputFormat, handleError } from '../../utils/errors.js';
 import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
@@ -41,89 +45,50 @@ function isTableOutput(): boolean {
   return getOutputFormat() === 'table';
 }
 
-/** Phase 1: Run datastore prune via renet and render what it found/removed. */
-async function pruneDatastore(
-  machineName: string,
-  options: PruneOptions,
-  outcome: PruneOutcome
-): Promise<void> {
-  const params: Record<string, unknown> = {};
-  if (options.dryRun) params.dry_run = true;
-
-  outputService.info(t('commands.machine.prune.startingDatastore', { machine: machineName }));
-
-  const result = await getExecutor().execute({
-    functionName: 'repository_prune',
-    machineName,
-    params,
-    debug: options.debug,
-    captureOutput: true,
-  });
-
-  if (!result.success) {
-    outcome.failed = true;
-    renderLocalExecutionFailure(result, t('commands.machine.prune.datastoreFailed'));
-    return;
+/** The two phase outputs of one `machine_prune` job, split at its `{"prune_phase": ...}` marker lines. */
+export function splitPrunePhases(output: string | undefined): { datastore: string; units: string } {
+  const phases: Record<string, string[]> = { datastore: [], units: [] };
+  let current: string[] | undefined;
+  for (const line of (output ?? '').split('\n')) {
+    try {
+      const marker = (JSON.parse(line) as { prune_phase?: string } | null)?.prune_phase;
+      if (marker !== undefined) {
+        // Only the two known phases own lines; `constructor` and the like are not phases.
+        current = Object.hasOwn(phases, marker) ? phases[marker] : undefined;
+        continue;
+      }
+    } catch {
+      // Not a marker line.
+    }
+    current?.push(line);
   }
-
-  // renet emits the prunable-resources / result struct as JSON. Parse and render it so the operator can see what a real prune would remove (dry-run) or what was removed. Fall back gracefully if the output isn't the expected JSON (e.g. an older renet that ignores --output json).
-  let parsed: Record<string, unknown>;
-  try {
-    parsed = parseDatastorePruneOutput(result.stdout ?? '');
-  } catch {
-    // Report passthrough, not a parse: renet's diagnostics now arrive on stderr (data/diag channel split), so include both streams.
-    const raw = [result.stdout?.trim(), result.stderr?.trim()].filter(Boolean).join('\n');
-    outcome.datastore = raw;
-    if (raw && isTableOutput()) outputService.print(raw);
-    outputService.success(t('commands.machine.prune.datastoreCompleted'));
-    return;
-  }
-
-  outcome.datastore = parsed;
-  renderPruneOutcome(parsed, Boolean(options.dryRun));
+  return { datastore: phases.datastore.join('\n').trim(), units: phases.units.join('\n').trim() };
 }
 
-/**
- * Phase 2: sweep orphaned systemd units (loopback + per-network daemon units)
- * left behind by deleted repos.
- *
- * This is a different renet subsystem from phase 1. `repository_prune` only
- * looks at datastore artifacts, and its own stale-unit check is narrower still
- * (pre-refactor daemon units missing --repo-mount-path), so loopback units for
- * long-deleted repos accumulate forever without this.
- *
- * Scoped with units_only: the same renet command can also prune orphaned IPs
- * out of *live* networks, which is a separate and riskier decision that this
- * phase deliberately does not make.
- */
-async function pruneUnits(
-  machineName: string,
-  options: PruneOptions,
-  outcome: PruneOutcome
-): Promise<void> {
-  const params: Record<string, unknown> = { units_only: true };
-  if (options.dryRun) params.dry_run = true;
+/** What the last rendered job found, for the orphaned-repos and prune-unknown forms that print one document after their client-side phases. */
+let renderedPhases: { datastore?: unknown; units?: unknown } = {};
 
-  outputService.info(t('commands.machine.prune.startingUnits', { machine: machineName }));
-
-  const result = await getExecutor().execute({
-    functionName: 'network_prune',
-    machineName,
-    params,
-    debug: options.debug,
-    captureOutput: true,
-  });
-
-  if (!result.success) {
-    outcome.failed = true;
-    renderLocalExecutionFailure(result, t('commands.machine.prune.unitsFailed'));
-    return;
+/** Render both phases of a finished `machine_prune` job: the datastore result (a preview table on dry-run) and the unit report. */
+function renderPrunePhases(output: string | undefined, dryRun: boolean): void {
+  renderedPhases = {};
+  const text = requireStepOutput(output, 'machine prune');
+  if (text === undefined) return;
+  const phases = splitPrunePhases(text);
+  // renet prints the datastore phase as a JSON document even when nothing is prunable, so a blank phase is a lost read.
+  // The units phase is text and may legitimately print nothing, so it is not judged.
+  if (requireStepOutput(phases.datastore, 'machine prune datastore phase') === undefined) return;
+  try {
+    const parsed = parseDatastorePruneOutput(phases.datastore);
+    renderedPhases.datastore = parsed;
+    renderPruneOutcome(parsed, dryRun);
+  } catch {
+    // Report passthrough, not a parse: an older renet that ignores --output json prints text.
+    renderedPhases.datastore = phases.datastore;
+    if (phases.datastore && isTableOutput()) outputService.print(phases.datastore);
+    outputService.success(t('commands.machine.prune.datastoreCompleted'));
   }
-
-  // `renet prune` emits a human-readable report, not JSON, so pass it through rather than inventing a parse for a format that has no schema. Diagnostics arrive on stderr since the data/diag channel split, include both streams.
-  const raw = [result.stdout?.trim(), result.stderr?.trim()].filter(Boolean).join('\n');
-  outcome.units = raw;
-  if (raw && isTableOutput()) outputService.print(raw);
+  renderedPhases.units = phases.units;
+  if (phases.units && isTableOutput()) outputService.print(phases.units);
   outputService.success(t('commands.machine.prune.unitsCompleted'));
 }
 
@@ -150,7 +115,7 @@ function renderPruneOutcome(parsed: Record<string, unknown>, dryRun: boolean): v
 }
 
 /**
- * Delete a list of orphaned repo GUIDs from a machine.
+ * Delete a list of orphaned repo GUIDs from a machine, returning how many renet deleted.
  *
  * Each `repository_delete` is its own SSH session today, `localExecutorService`
  * has no sticky connection, but `quietSpinners: true` on calls 2..N hides
@@ -164,22 +129,25 @@ async function deleteOrphanedItems(
   orphaned: { guid: string }[],
   machineName: string,
   debug: boolean | undefined
-): Promise<void> {
+): Promise<number> {
   let firstCall = true;
+  let deleted = 0;
   for (const item of orphaned) {
     outputService.info(`Deleting ${item.guid.slice(0, 8)}…`);
-    const deleteResult = await getExecutor().execute({
-      functionName: 'repository_delete',
-      machineName,
-      params: { repository: item.guid },
+    const deleteResult = await deleteRepoImageByGuid(machineName, item.guid, {
       debug,
       quietSpinners: !firstCall,
     });
     firstCall = false;
-    if (!deleteResult.success) {
+    if (deleteResult.success) {
+      deleted += 1;
+    } else {
       outputService.error(`Failed to delete ${item.guid}: ${deleteResult.error}`);
+      // A failed delete leaves the image on the machine, so the run must not exit 0.
+      setExitCode(1);
     }
   }
+  return deleted;
 }
 
 /** Remove stale VS Code SSH config entries for repos no longer in config. */
@@ -305,12 +273,14 @@ async function pruneUnknownRepos(machineName: string, options: PruneOptions): Pr
     return;
   }
 
-  await deleteOrphanedItems(
+  const deleted = await deleteOrphanedItems(
     deletable.map((r) => ({ guid: r.name })),
     machineName,
     options.debug
   );
-  outputService.success(t('commands.machine.prune.unknownCompleted', { count: deletable.length }));
+  if (deleted > 0) {
+    outputService.success(t('commands.machine.prune.unknownCompleted', { count: deleted }));
+  }
 }
 
 /** Phase 2: Prune orphaned repos not in any config. */
@@ -333,7 +303,8 @@ async function pruneOrphanedRepos(
     sections: ['repositories'],
     debug: options.debug,
   });
-  const deployedGuids = getRepositories(listResult).map((r) => r.name);
+  const deployed = getRepositories(listResult);
+  const deployedGuids = deployed.map((r) => r.name);
 
   if (deployedGuids.length === 0) {
     outputService.info(t('commands.machine.prune.noReposFound'));
@@ -348,15 +319,23 @@ async function pruneOrphanedRepos(
   printPruneAnalysis(analysis, Boolean(options.dryRun));
   outcome.report = buildPruneReport(analysis, Boolean(options.dryRun));
 
-  if (!options.dryRun && analysis.orphaned.length > 0) {
-    await deleteOrphanedItems(analysis.orphaned, machineName, options.debug);
-    await cleanupSshArtifacts(machineName);
-
-    outputService.success(
-      t('commands.machine.prune.orphanedReposCompleted', {
-        count: analysis.orphaned.length,
-      })
+  // The mount-safety preflight the help text promises for both deletion paths: a mounted or running orphan is skipped unless --force-delete-mounted.
+  const orphanedGuids = new Set(analysis.orphaned.map((o) => o.guid));
+  const deletable = filterMountedReposForDeletion(
+    deployed.filter((r) => orphanedGuids.has(r.name)),
+    machineName,
+    options
+  );
+  if (!options.dryRun && deletable.length > 0) {
+    const deleted = await deleteOrphanedItems(
+      deletable.map((r) => ({ guid: r.name })),
+      machineName,
+      options.debug
     );
+    if (deleted > 0) {
+      await cleanupSshArtifacts(machineName);
+      outputService.success(t('commands.machine.prune.orphanedReposCompleted', { count: deleted }));
+    }
   }
 
   await purgeExpiredArchives(options.graceDays);
@@ -378,6 +357,70 @@ function buildPruneData(outcome: PruneOutcome, dryRun: boolean): Record<string, 
   };
 }
 
+bindStepHandler('renderPruneOutcome', ({ output, params }) => {
+  renderPrunePhases(output, params.dryRun === true);
+  // A plain prune prints its one document here; the orphan forms print theirs after their client-side phases.
+  if (!isTableOutput() && params.orphaned !== true) {
+    outputService.print(
+      buildPruneData({ failed: false, ...renderedPhases }, params.dryRun === true),
+      getOutputFormat()
+    );
+  }
+  return Promise.resolve();
+});
+
+const hasOrphanForm = (options: PruneOptions): boolean =>
+  options.orphanedRepos === true || options.pruneUnknown === true;
+
+/** Run the one `machine_prune` job. False when it did not finish successfully (still running, or failed and reported). */
+async function runPruneJob(machineName: string, options: PruneOptions): Promise<boolean> {
+  renderedPhases = {};
+  outputService.info(t('commands.machine.prune.startingDatastore', { machine: machineName }));
+  const job = await runCommandJob(
+    'machine prune',
+    {
+      functionName: 'machine_prune',
+      machineName,
+      params: options.dryRun ? { dry_run: true } : {},
+      debug: options.debug,
+      captureOutput: true,
+    },
+    [
+      planStep('renderPruneOutcome', {
+        dryRun: Boolean(options.dryRun),
+        orphaned: hasOrphanForm(options),
+      }),
+    ]
+  );
+  if (job.kind === 'pending') {
+    // The deletion sets of the two orphan forms are client-side phases after the job, so they wait for a finished job.
+    if (hasOrphanForm(options)) {
+      outputService.warn(t('commands.machine.prune.orphanFormsNeedFinishedJob'));
+    }
+    const code = pendingExitCode(job);
+    if (code !== undefined) setExitCode(code);
+    return false;
+  }
+  if (!job.result.success) {
+    renderLocalExecutionFailure(job.result, t('commands.machine.prune.datastoreFailed'));
+    return false;
+  }
+  return true;
+}
+
+async function handlePrune(machineName: string, options: PruneOptions): Promise<void> {
+  if (!(await runPruneJob(machineName, options))) return;
+  const outcome: PruneOutcome = {
+    failed: false,
+    datastore: renderedPhases.datastore,
+    units: renderedPhases.units,
+  };
+  if (options.orphanedRepos) await pruneOrphanedRepos(machineName, options, outcome);
+  if (options.pruneUnknown) await pruneUnknownRepos(machineName, options);
+  outputService.success(t('commands.machine.prune.completed'));
+  if (hasOrphanForm(options)) printPruneOutcome(outcome, Boolean(options.dryRun));
+}
+
 export function registerPruneCommand(machine: Command): void {
   machine
     .command('prune')
@@ -394,20 +437,7 @@ export function registerPruneCommand(machine: Command): void {
     .action(async (machineName: string, options: PruneOptions) => {
       try {
         await assertMachineExists(machineName);
-        const outcome: PruneOutcome = { failed: false };
-        await pruneDatastore(machineName, options, outcome);
-        await pruneUnits(machineName, options, outcome);
-
-        if (options.orphanedRepos) {
-          await pruneOrphanedRepos(machineName, options, outcome);
-        }
-
-        if (options.pruneUnknown) {
-          await pruneUnknownRepos(machineName, options);
-        }
-
-        outputService.success(t('commands.machine.prune.completed'));
-        printPruneOutcome(outcome, Boolean(options.dryRun));
+        await handlePrune(machineName, options);
       } catch (error) {
         handleError(error);
       }

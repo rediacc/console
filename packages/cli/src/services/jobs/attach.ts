@@ -16,7 +16,8 @@
  * | `-b` / `--background`   | 0 (ticket at once)      |
  */
 
-import { randomUUID } from 'node:crypto';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { createHash, randomUUID } from 'node:crypto';
 
 /** The attach window of the proxy, the web console and MCP (operator ruling, fourth round). */
 export const JOB_ATTACH_WINDOW_MS = 20_000;
@@ -127,10 +128,40 @@ export class RequestIdMinter {
 
 let processMinter: RequestIdMinter | undefined;
 
-/** The minter of this process's invocation (one `rdc` run is one invocation). */
+const servedMinter = new AsyncLocalStorage<RequestIdMinter>();
+
+/**
+ * The minter of this invocation: the one a served request brought (its body id, {@link withInvocationMinter}), else
+ * the process's (one `rdc` run is one invocation).
+ */
 export function invocationMinter(): RequestIdMinter {
+  const served = servedMinter.getStore();
+  if (served) return served;
   processMinter ??= new RequestIdMinter();
   return processMinter;
+}
+
+/**
+ * A guid for a record this invocation registers, or `undefined` outside a served request that brought a body id.
+ * It derives from the body id and `scope`, so a retried POST computes the guid its first attempt registered and can
+ * tell that record from one of the same name a fresh command or a different id wrote. The body id is the request's
+ * identity and nothing more: a caller reusing an id with the same `scope` is the retry, so `scope` names every field
+ * that makes it a different request.
+ */
+export function servedRecordGuid(scope: string): string | undefined {
+  const served = servedMinter.getStore();
+  if (!served) return undefined;
+  const h = createHash('sha256').update(`${served.invocationId}\0${scope}`).digest('hex');
+  const variant = ((Number.parseInt(h.charAt(16), 16) & 0x3) | 0x8).toString(16);
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-${variant}${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
+
+/**
+ * Run `fn` as an invocation of its own. Every id minted under it comes from `minter`, so two served requests in one
+ * process keep their ids apart and a retried request mints the ids the first one did. No minter leaves the process's.
+ */
+export function withInvocationMinter<T>(minter: RequestIdMinter | undefined, fn: () => T): T {
+  return minter ? servedMinter.run(minter, fn) : fn();
 }
 
 /** Test seam: start a fresh invocation (optionally with a fixed id). */

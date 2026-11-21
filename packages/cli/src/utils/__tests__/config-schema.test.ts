@@ -347,15 +347,21 @@ describe('config-schema', () => {
       ).toBe(false);
     });
 
-    it('accepts a hosted-service destination with a credential bag', () => {
+    it('accepts a hosted-service destination naming a registered store by target', () => {
       const parsed = BackupDestinationSchema.safeParse({
         kind: 'hosted-service',
         name: 'rediacc-backups',
-        endpoint: 'https://s3.example.com',
-        vaultContent: { accessKeyId: 'AK', secretAccessKey: 'SK' },
+        target: 'offsite-r2',
       });
       expect(parsed.success).toBe(true);
       expect(parsed.success && parsed.data.kind).toBe('hosted-service');
+    });
+
+    it.each(['endpoint', 'vaultContent'])('refuses the removed `%s` field', (field) => {
+      expect(
+        BackupDestinationSchema.safeParse({ kind: 'hosted-service', name: 'd', [field]: 'x' })
+          .success
+      ).toBe(false);
     });
 
     it('accepts a hosted-service destination with no endpoint (Rediacc-hosted)', () => {

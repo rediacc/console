@@ -57,15 +57,17 @@ import tempfile
 import time
 import tomllib
 import xml.etree.ElementTree as ET
+from collections.abc import Mapping
 
 # THE HOP, WRITTEN BY HAND EXACTLY ONCE. This file is a script, so it cannot
 # import the module that would put its own package on sys.path until its package
 # is on sys.path. Everything after this line goes through rediacc_ci.paths.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from rediacc_ci import core_lease, log, paths, proc
+from rediacc_ci import core_lease, gitx, log, paths, proc, pytest_impact
 from rediacc_ci.controls import Controls
 from rediacc_ci.core import xml_trusted
+from rediacc_ci.quality import pytest_slow_ratchet
 
 # See the module docstring for why this is a constant and floor 2 is not.
 MIN_TESTS = 150
@@ -85,6 +87,8 @@ def shard_min_tests(of: int) -> int:
 # ported module itself, plus `test_twin_parity` driving the bash twin, plus the same parity case driving the port. Measured immediately after: 1879s against a 2400s kill timer -- 78% of it, where the previous baseline was 381s.
 #
 # RAISING THE KILL TIMER IS NOT THE FIX, and must not be mistaken for one. It stops a spurious kill reporting as a gate failure; it does nothing about a 31-minute gate. The real options are to re-tier the claude-hooks parity case into its own lane, or to split that harness so no single subject is billed three times. Both are larger than this line and are tracked as findings.
+#
+# THAT THREE-TIMES BILLING IS GONE, re-checked 2026-11-18 (PLAN-ciquick-cpu W7). The bash harness was retired and `git ls-files` names no `test-claude-hooks.sh`; test_twin_parity.py registers no hook subject. What remains of test_hooks_delegates.py's cost (1,987 test-s in the 2026-11-17 junit) is its delegated guard suites, each run once: test-block_vm_unverified_push.py alone took 275 cpu-s run by itself, a dispatcher subprocess per case, re-run per mutant control. The one repeat this file still makes is the slow ratchet's serial re-time, and `still_open` re-runs only a test the first re-time left open.
 #
 # 3600 -> 1080 THE SAME DAY, because 3600 COULD NOT FIRE. This gate runs as the `Python package tests` step of `quality-security` in `ci-quality.yml`, and that job declares `timeout-minutes: 20` -- 1200s. An in-script kill timer above its own job's ceiling is dead code in CI: GitHub cancels the job first, and a cancelled job's only clue is `The operation was canceled.` with no
 # verdict, no KILLED line, and no named cause. That is the exact chain `check_job_timeout_headroom.py` was written for, one level down, where that gate cannot see it -- it reads workflow ceilings, never in-script timers.
@@ -110,12 +114,12 @@ def shard_min_tests(of: int) -> int:
 # THIS NUMBER BOUNDS ONE LEG, NOT THE CORPUS. The 1800 -> 600 paragraph above said the unsharded invocation "inherits whatever the corpus measures on the day it is run". It did not: until 2026-09-30 the whole-corpus path read this same constant, so `npm run check:ci-pytest` with no `--shard` gave the ENTIRE corpus a one-leg budget.
 # Measured 2026-09-30 on this 24-core host at `-n 8 --dist loadgroup`, load average 7-27 from concurrent sessions: 19,487 items, 7,335 test-seconds, 1014.06s wall, 90% of the progress bar at 775s. 7,335 / 8 workers is 917s of pure work, so no packing fits 840s: two runs that day ended "did not finish within 840s" with no verdict.
 # The floor is throughput, not one pinned fixture: the 294.65s guards fixture the old `-n 8` cap cited is 233s of test time now, and the largest module is test_core_devbox.py at 1,006 test-seconds spread over all eight workers (its stub farm starts a Python interpreter per stubbed call).
-# So the whole-corpus run gets `whole_corpus_timeout_s()` instead: this leg budget times the committed manifest's leg count. The legs are balanced by measured duration, so N legs' budget is the model of the whole, and it moves with this constant rather than drifting from it. 840 x 5 = 4200s, 4.1x the measured 1014s, with room for a host capping `-n` below 8.
+# So the whole-corpus run gets `whole_corpus_timeout_s()` instead: this leg budget times the committed manifest's leg count. The legs are balanced by measured duration, so N legs' budget is the model of the whole, and it moves with this constant rather than drifting from it. 840 x 6 = 5040s, 5.0x the measured 1014s, with room for a host capping `-n` below 8.
 # CI never takes that path (ci-quality.yml passes `--shard` on every leg), which is why the whole-corpus bound is a derivation and not a second declared timer: `check:ci-inner-timeout-reachable` compares declared timers against the job ceiling, and no job ceiling applies to a run CI does not make.
 RUN_TIMEOUT_S = int(os.environ.get("PYTEST_RUN_TIMEOUT_S") or 840)
 
 # The `of` of `.ci/config/shards/quality-pytest.json`, pinned by a selftest control against the committed manifest so the two cannot drift apart silently.
-WHOLE_CORPUS_LEGS = 5
+WHOLE_CORPUS_LEGS = 6
 QUALITY_PYTEST_MANIFEST = ".ci/config/shards/quality-pytest.json"
 
 
@@ -336,8 +340,7 @@ def junit_finding_keys(junit: pathlib.Path) -> list[str]:
         return []
     keys: set[str] = set()
     for case in root.iter("testcase"):
-        name = (case.get("name") or "").split("@", 1)[0]
-        node = "%s::%s" % (case.get("classname") or "", name)
+        node = pytest_slow_ratchet.node_of(case)
         kind = None
         if case.find("failure") is not None or case.find("error") is not None:
             kind = "pytest-fail"
@@ -357,6 +360,59 @@ def junit_finding_keys(junit: pathlib.Path) -> list[str]:
 def emit_junit_findings(junit: pathlib.Path) -> None:
     for key in junit_finding_keys(junit):
         log.emit_finding(key)
+
+
+# The plugin that writes each test's phase durations beside the junit, so the slow ratchet judges a test on its own time rather than on the module fixture it was first to request (`pytest_phase_timing`'s docstring).
+PHASE_PLUGIN = "rediacc_ci.quality.pytest_phase_timing"
+
+
+def phase_args(junit: pathlib.Path) -> list[str]:
+    """The pytest arguments that load the phase plugin and point it at `junit`'s phase file."""
+    return ["-p", PHASE_PLUGIN, "--phase-timing", str(pytest_slow_ratchet.phases_path(junit))]
+
+
+# Serial re-runs of the tests the parallel run judged slow; the ratchet judges a candidate on its fastest re-time, so it fails only when every re-time is over the threshold (`pytest_slow_ratchet.read_timing` states why the parallel run gets no vote).
+SLOW_CONFIRM_RUNS = 2
+
+
+def still_open(confirm: pathlib.Path, asked: list[str], root: pathlib.Path) -> list[str]:
+    """The node ids of `asked` a further re-time could still decide: those `confirm` read over the threshold, and those it holds no sample for. A test it read at or under the threshold is decided, because the ratchet judges a re-timed test on its FASTEST re-time and no later reading can be faster than the minimum; re-running it would cost a serial run of the test and change nothing (PLAN-ciquick-cpu W7: 38 of 40 candidates on 2026-11-17 were under 10 s alone). Read through the ratchet's own `read_durations`, so the phase file beside `confirm` is honoured exactly as the verdict honours it."""
+    timed = {
+        nodeid
+        for node in pytest_slow_ratchet.read_durations([confirm])
+        if (nodeid := pytest_slow_ratchet.nodeid_of(node, root)) is not None
+    }
+    over = set(pytest_slow_ratchet.confirm_candidates(confirm, root))
+    return [n for n in asked if n in over or n not in timed]
+
+
+def slow_ratchet(junit: pathlib.Path, pytest_bin: str, root: pathlib.Path) -> int:
+    """Run the slow-test ratchet over the junit this run just wrote: 0 clean, 1 a test over 10 s that `pytest-slow-allow.json` does not list, 2 no verdict (no test case in the junit). Anything but 0 fails the gate, so a passing run that wrote no readable junit cannot go green past it.
+
+    An unlisted test over the threshold in the parallel run is re-timed in up to `SLOW_CONFIRM_RUNS` serial runs first, and judged on its fastest re-time. Each re-run after the first takes only the tests `still_open` names, since a re-time at or under the threshold already decides a test whatever a later one reads. The re-runs write their junits to a temp directory, never the tree; a re-run that writes none adds no sample, so the parallel time stands."""
+    nodeids = pytest_slow_ratchet.confirm_candidates(junit, root)
+    with tempfile.TemporaryDirectory(prefix="pytest-slow-confirm-") as scratch:
+        confirms: list[pathlib.Path] = []
+        if nodeids:
+            print(
+                "info: pytest-slow: re-timing %d test(s) over %g s in up to %d serial run(s)"
+                % (len(nodeids), pytest_slow_ratchet.THRESHOLD_S, SLOW_CONFIRM_RUNS)
+            )
+        pending = nodeids
+        for run in range(1, SLOW_CONFIRM_RUNS + 1 if nodeids else 1):
+            if not pending:
+                break
+            confirm = pathlib.Path(scratch) / ("slow-confirm-%d.xml" % run)
+            run_pytest(
+                pytest_bin,
+                root,
+                ["-n", "0", "--junitxml", str(confirm), *phase_args(confirm), *pending],
+            )
+            confirms.append(confirm)
+            pending = still_open(confirm, pending, root)
+        return pytest_slow_ratchet.main(
+            ["--junit", str(junit), *(arg for j in confirms for arg in ("--confirm", str(j)))]
+        )
 
 
 def verdict(
@@ -1078,6 +1134,21 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
     c.check("HANG: and it reports the timeout rather than pretending", blocked.timed_out, True)
     c.check("HANG: its stdout is a string, never None", isinstance(blocked.stdout, str), True)
 
+    # -- B5 (PLAN-ciquick-cpu): impact locally, the whole suite in CI
+    c.check("B5: --full asks for the whole suite", wants_full(["--full"], {}), "--full")
+    c.check("B5: CI=true asks for the whole suite", wants_full([], {"CI": "true"}), "CI=true")
+    c.check(
+        "CONTROL: a local run with neither may use an impact selection", wants_full([], {}), None
+    )
+    c.check("CONTROL: CI=false is not CI", wants_full([], {"CI": "false"}), None)
+    c.check("B5: --full is a known flag, never refused", unknown_args(["--full"]), [])
+    c.check("B5: the impact floor is two thirds of the smoke corpus", impact_floor(300), 200)
+    c.check(
+        "CONTROL: the impact floor is never 0, so an empty selection cannot pass 0 >= 0",
+        impact_floor(0),
+        1,
+    )
+
     return c.report()
 
 
@@ -1163,12 +1234,21 @@ def shard_file_relpaths(ids: list[str]) -> list[str]:
 USAGE = """\
 check:ci-pytest -- run the Python test corpus and refuse a partial pass.
 
-  check_pytest.py              judge the whole suite
+  check_pytest.py              judge the test files the change set since the last
+                                push can reach (pytest_impact.py), or the whole
+                                suite when that answer is unknown; under CI=true
+                                always the whole suite
+  check_pytest.py --full       judge the whole suite
+  check_pytest.py --base <ref> select by the change set since <ref>'s merge-base
+                                instead of since the last push
   check_pytest.py --shard-manifest <path> --shard i/N
                                 judge only that leg's files, from a committed
                                 shard manifest (both flags together, or neither)
   check_pytest.py --selftest   run this gate's own controls and exit
   check_pytest.py --help       this text
+
+Any other argument (a test path, a pytest option) is refused: a named test runs
+as `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q <files>`.
 
 Environment:
   PYTEST_RUN_TIMEOUT_S   kill timer, for a leg or the whole suite alike when
@@ -1187,6 +1267,104 @@ def wants_help(argv: list[str]) -> bool:
     The obvious control -- `c.check(main(["--help"]), EXIT_OK)` -- is a trap, and it caught me: with the early return planted away, that call falls through and runs the ENTIRE suite, so the plant produces a thirty-minute hang instead of a red. A control must fail fast or it is not usable as a control.
     """
     return "--help" in argv or "-h" in argv
+
+
+FLAGS_ALONE = ("--help", "-h", "--selftest", "--full")
+
+# --------------------------------------------------------------------------- B5 (agent/plans/PLAN-ciquick-cpu.md): impact locally, the whole suite in CI.
+#
+# A local unsharded run judges only the test files the change set can reach (`pytest_impact.select_for_tree`); `--full`, `CI=true`, or any `--shard` leg judges the whole suite. CI passes `--shard` on every leg and sets `CI=true`, so it is the full-suite backstop by two independent routes. Whatever ran, the scope lands in SCOPE_RELPATH and in one `pytest-scope:` line, so the receipt and its reader can tell an impact green from a full one.
+SCOPE_RELPATH = pathlib.PurePosixPath(".ci/cache/quality-pytest/scope.json")
+
+
+def wants_full(argv: list[str], env: Mapping[str, str] | None = None) -> str | None:
+    """Why this run must judge the whole suite, or None when an impact selection may be used."""
+    source: Mapping[str, str] = os.environ if env is None else env
+    if "--full" in argv:
+        return "--full"
+    ci = source.get("CI") or ""
+    if ci.lower() in ("true", "1"):
+        return "CI=%s" % ci
+    return None
+
+
+def impact_floor(smoke_corpus: int) -> int:
+    """Floor 1 for an impact run: two thirds of the smoke floor's own test functions, never below 1. The smoke files are in every impact selection, so a selection that collapsed below this has lost the floor it is built on; the same two-thirds ratio MIN_TESTS holds against the whole corpus."""
+    return max(1, smoke_corpus * 2 // 3)
+
+
+def write_scope(root: pathlib.Path, record: dict) -> None:
+    """The scope of this run, for the receipt. Written to the `.ci/cache` scratch root like the junit beside it. Only a GREEN run reaches here (every failure returns first), so `head` and `python` name the last commit this suite was green at (only when the tree held no uncommitted edits), which `last_green_base` reads as the next round's impact base."""
+    target = root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    head = gitx.git(["rev-parse", "HEAD"], root=root)
+    # A run over uncommitted edits proved the working tree, not HEAD, so it names no green commit (the base stays the previous one).
+    dirty = gitx.git(["status", "--porcelain", "--untracked-files=normal"], root=root)
+    clean = dirty.returncode == 0 and not dirty.stdout.strip()
+    record = dict(
+        record,
+        python=sys.version,
+        head=head.stdout.strip() if head.returncode == 0 and clean else None,
+    )
+    target.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8")
+    print(
+        "pytest-scope: %s files=%s collected=%s map=%s"
+        % (
+            record["pytestScope"],
+            record.get("selectedFiles", "all"),
+            record.get("collected"),
+            record.get("mapDigest") or "-",
+        )
+    )
+
+
+def last_green_base(root: pathlib.Path) -> str | None:
+    """The commit of the last GREEN run (`write_scope`'s `head`), as the impact base, so a round re-judges only what changed since the suite last passed rather than the whole unpushed batch. Sound by induction: a green full run proves every test at its head, and a green impact run over base B proves every test the B..head diff reaches while the rest were proven at B. None, so the push base stands, when there is no record, the Python that ran it differs (a new interpreter is a new suite), or its head is not an ancestor of HEAD (a rebase or another branch)."""
+    try:
+        record = json.loads(
+            (root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name).read_text(
+                encoding="utf-8"
+            )
+        )
+    except (OSError, ValueError):
+        return None
+    head = record.get("head") if isinstance(record, dict) else None
+    if not isinstance(head, str) or not head or record.get("python") != sys.version:
+        return None
+    if gitx.git(["merge-base", "--is-ancestor", head, "HEAD"], root=root).returncode != 0:
+        return None
+    return head
+
+
+def select_impact(root: pathlib.Path, base: str | None = None):
+    """The impact selection for the real tree, against the push base or `--base <ref>`. A seam, so a test drives main() without a repository."""
+    return pytest_impact.select_for_tree(root, base)
+
+
+def parse_base(argv: list[str]) -> str | None:
+    """`--base <ref>`: select by the change set since that ref's merge-base instead of the push base, for a detached tree or a scratch clone with no push ref of its own."""
+    for i, arg in enumerate(argv):
+        if arg == "--base" and i + 1 < len(argv):
+            return argv[i + 1]
+    return None
+
+
+FLAGS_WITH_VALUE = ("--shard-manifest", "--shard", "--base")
+
+
+def unknown_args(argv: list[str]) -> list[str]:
+    """The arguments this gate does not read. A test path used to be dropped without a word, so `npm run check:ci-pytest -- <file>` ran the WHOLE suite and its verdict passed for a run of the named file; any such argument is now refused before anything runs."""
+    out, skip = [], False
+    for arg in argv:
+        if skip:
+            skip = False
+        elif arg in FLAGS_WITH_VALUE:
+            skip = True
+        elif arg not in FLAGS_ALONE:
+            out.append(arg)
+    if skip:
+        out.append("%s (needs a value)" % argv[-1])
+    return out
 
 
 def help_precedes_resolution() -> bool:
@@ -1228,7 +1406,22 @@ def main(argv: list[str]) -> int:
         print(USAGE % (RUN_TIMEOUT_S, whole_corpus_timeout_s()))
         return EXIT_OK
 
+    extra = unknown_args(argv)
+    if extra:
+        print(
+            "%s✗%s check:ci-pytest judges the whole suite or one --shard leg and takes no test\n"
+            "  paths or pytest options; refused: %s\n"
+            "  A named test runs as: PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q <files>"
+            % (RED, NC, " ".join(extra)),
+            file=sys.stderr,
+        )
+        return EXIT_FAIL
+
     root = paths.repo_root()
+
+    # Once the arguments are accepted, a scope record is this run's or nothing (a usage refusal above judged no suite and leaves the previous record, which still describes that earlier run): a red or killed run, a bad shard manifest, a failed control and an unavailable pytest included, must not leave the receipt reading the previous green's scope. `--selftest` records no scope and judges no suite, so it leaves the last run's record alone.
+    if "--selftest" not in argv:
+        (root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name).unlink(missing_ok=True)
 
     manifest_arg, shard_spec_arg = parse_shard_args(argv)
     if (manifest_arg is None) != (shard_spec_arg is None):
@@ -1285,10 +1478,26 @@ def main(argv: list[str]) -> int:
         (root / ".ci" / "cache" / "quality-pytest").mkdir(parents=True, exist_ok=True)
         # A run that dies before pytest writes its junit (the timeout, a crash) must emit no finding: a previous run's file left here would name its failures as this run's.
         (root / ".ci" / "cache" / "quality-pytest" / junit_path.name).unlink(missing_ok=True)
+        (
+            root
+            / ".ci"
+            / "cache"
+            / "quality-pytest"
+            / pytest_slow_ratchet.phases_path(junit_path).name
+        ).unlink(missing_ok=True)
         returncode, out = run_pytest(
             pytest_bin,
             root,
-            ["-n", str(jobs()), "--dist", "loadgroup", "--junitxml", str(junit_path), *relpaths],
+            [
+                "-n",
+                str(jobs()),
+                "--dist",
+                "loadgroup",
+                "--junitxml",
+                str(junit_path),
+                *phase_args(junit_path),
+                *relpaths,
+            ],
         )
         collected, passed = parse_counts(out)
         contract_skips = parse_contract_skips(out)
@@ -1310,6 +1519,18 @@ def main(argv: list[str]) -> int:
             print("\n%s✗%s %s" % (RED, NC, problem), file=sys.stderr)
             emit_junit_findings(junit_path)
             return EXIT_FAIL
+        if slow_ratchet(junit_path, pytest_bin, root) != 0:
+            return EXIT_FAIL
+        write_scope(
+            root,
+            {
+                "pytestScope": "full",
+                "reason": "--shard %d/%d" % (index, of),
+                "selectedFiles": len(files),
+                "collected": collected,
+                "mapDigest": None,
+            },
+        )
         print(
             "%s✓%s %d test(s) collected and passed (shard %d/%d, corpus %d, floor %d)"
             % (GREEN, NC, collected or 0, index, of, corpus, leg_min_tests)
@@ -1340,16 +1561,45 @@ def main(argv: list[str]) -> int:
             return EXIT_FAIL
     print("info: corpus %d across %d root(s) (floor %d)" % (corpus, len(per_root), MIN_TESTS))
 
+    full_reason = wants_full(argv)
+    selection = None
+    if full_reason is None:
+        base = parse_base(argv)
+        if base is None:
+            base = last_green_base(root)
+            if base is not None:
+                print(
+                    "pytest-impact: base = the last green commit %s (scope.json), not the push base"
+                    % base[:12]
+                )
+        selection = select_impact(root, base)
+        print(selection.line())
+        if selection.scope != "impact":
+            full_reason = "pytest-impact: %s" % selection.reason
+    if selection is not None and selection.scope == "impact":
+        return run_impact(pytest_bin, root, selection)
+
     # T1.6: the parent directory is created here rather than left to pytest's junitxml plugin -- some releases refuse to write into a missing directory, and a gate that will not `mkdir -p` its own output path is a worse failure mode than the run it is judging.
     junit_path = junit_xml_path(root)
     # A literal join, so check:ci-gate-tree-writes resolves it to the `.ci/cache` scratch root; junit_xml_path's selftest pins junit_path under this same directory.
     (root / ".ci" / "cache" / "quality-pytest").mkdir(parents=True, exist_ok=True)
     # A run that writes no junit (a timeout, a crash) emits no finding: a junit left by an earlier run would name its failures as this run's, so the file is removed first.
     (root / ".ci" / "cache" / "quality-pytest" / junit_path.name).unlink(missing_ok=True)
+    (
+        root / ".ci" / "cache" / "quality-pytest" / pytest_slow_ratchet.phases_path(junit_path).name
+    ).unlink(missing_ok=True)
     returncode, out = run_pytest(
         pytest_bin,
         root,
-        ["-n", str(jobs()), "--dist", "loadgroup", "--junitxml", str(junit_path)],
+        [
+            "-n",
+            str(jobs()),
+            "--dist",
+            "loadgroup",
+            "--junitxml",
+            str(junit_path),
+            *phase_args(junit_path),
+        ],
         timeout_s=whole_corpus_timeout_s(),
     )
     collected, passed = parse_counts(out)
@@ -1373,9 +1623,101 @@ def main(argv: list[str]) -> int:
         emit_junit_findings(junit_path)
         return EXIT_FAIL
 
+    if slow_ratchet(junit_path, pytest_bin, root) != 0:
+        return EXIT_FAIL
+    write_scope(
+        root,
+        {
+            "pytestScope": "full",
+            "reason": full_reason,
+            "collected": collected,
+            "mapDigest": selection.digest if selection is not None else None,
+        },
+    )
     print(
         "%s✓%s %d test(s) collected and passed (corpus %d, floor %d)"
         % (GREEN, NC, collected or 0, corpus, MIN_TESTS)
+    )
+    return EXIT_OK
+
+
+def run_impact(pytest_bin: str, root: pathlib.Path, selection) -> int:
+    """Judge an impact selection with the same three floors as a full run, scaled to it: the corpus is the selected files' own test functions, collection must reach it, and floor 1 is `impact_floor` of the smoke files inside it."""
+    relpaths = list(selection.files)
+    files = [root / rp for rp in relpaths]
+    missing = [rp for rp, f in zip(relpaths, files, strict=True) if not f.is_file()]
+    if missing:
+        print(
+            "%s✗%s the impact selection names %s, which is not on disk" % (RED, NC, missing[0]),
+            file=sys.stderr,
+        )
+        return EXIT_FAIL
+    corpus = corpus_test_count_files(files)
+    smoke_set = set(selection.smoke_files)
+    smoke = [root / f for f in relpaths if f in smoke_set]
+    floor = impact_floor(corpus_test_count_files(smoke))
+    print(
+        "info: impact: %d of %d file(s), %d test function(s) on disk (floor %d)"
+        % (len(files), selection.total, corpus, floor)
+    )
+    junit_path = junit_xml_path(root)
+    (root / ".ci" / "cache" / "quality-pytest").mkdir(parents=True, exist_ok=True)
+    # The same stale-junit rule as the full run: a run that writes no junit emits no finding.
+    (root / ".ci" / "cache" / "quality-pytest" / junit_path.name).unlink(missing_ok=True)
+    (
+        root / ".ci" / "cache" / "quality-pytest" / pytest_slow_ratchet.phases_path(junit_path).name
+    ).unlink(missing_ok=True)
+    returncode, out = run_pytest(
+        pytest_bin,
+        root,
+        [
+            "-n",
+            str(jobs()),
+            "--dist",
+            "loadgroup",
+            "--junitxml",
+            str(junit_path),
+            *phase_args(junit_path),
+            *relpaths,
+        ],
+        timeout_s=whole_corpus_timeout_s(),
+    )
+    collected, passed = parse_counts(out)
+    contract_skips = parse_contract_skips(out)
+    if contract_skips:
+        print(
+            "info: %d test(s) skipped under a proxy's declared cannot-run contract" % contract_skips
+        )
+    problem = verdict(
+        corpus=corpus,
+        collected=collected,
+        passed=passed,
+        returncode=returncode,
+        contract_skips=contract_skips,
+        min_tests=floor,
+        timeout_s=whole_corpus_timeout_s(),
+    )
+    if problem:
+        print(out, file=sys.stderr)
+        print("\n%s✗%s %s" % (RED, NC, problem), file=sys.stderr)
+        emit_junit_findings(junit_path)
+        return EXIT_FAIL
+    if slow_ratchet(junit_path, pytest_bin, root) != 0:
+        return EXIT_FAIL
+    write_scope(
+        root,
+        {
+            "pytestScope": "impact",
+            "reason": selection.reason,
+            "selectedFiles": len(files),
+            "totalFiles": selection.total,
+            "collected": collected,
+            "mapDigest": selection.digest,
+        },
+    )
+    print(
+        "%s✓%s %d test(s) collected and passed (impact: %d of %d file(s), corpus %d, floor %d)"
+        % (GREEN, NC, collected or 0, len(files), selection.total, corpus, floor)
     )
     return EXIT_OK
 

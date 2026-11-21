@@ -1,4 +1,4 @@
-"""`./run.sh worktree`: create, list, remove, switch and prune console worktrees.
+"""`./run.sh worktree`: create, list, remove, switch and prune console worktrees; `lease` lives in `worktree_lease.py`.
 
 PORT OF `scripts/dev/worktree.sh`, under Rule T (PLAN-retire-bash-oracles): the commands, messages, streams and exit codes match the script wherever the script was right, and differ on purpose in the places below. Each difference has a test in `tests/test_dev_worktree.py` that fails on the bash.
 
@@ -44,6 +44,7 @@ import time
 from pathlib import Path
 
 from rediacc_ci import log, paths
+from rediacc_ci.dev import landing, landing_promote, worktree_lease
 
 BASE_BRANCH = "main"
 TMUX_PREFIX = "console"
@@ -107,6 +108,14 @@ SUBCOMMAND_HELP = {
     "remove": REMOVE_HELP,
     "switch": SWITCH_HELP,
     "prune": PRUNE_HELP,
+    "lease": worktree_lease.LEASE_HELP,
+    "pin": worktree_lease.PIN_HELP,
+    "land": worktree_lease.LAND_HELP,
+    "landing": landing.LANDING_HELP + "\n" + landing_promote.PROMOTE_HELP,
+    "leases": worktree_lease.LEASES_HELP,
+    "gc": worktree_lease.GC_HELP,
+    "lease-hook": "The WorktreeCreate hook: reads the harness JSON on stdin, prints the tree path.\n",
+    "gc-hook": "The WorktreeRemove hook: reads the harness JSON on stdin, exits non-zero on a kept tree.\n",
 }
 
 MAIN_HELP = """\
@@ -118,6 +127,12 @@ Commands:
   remove <name>     Remove a specific worktree by name
   switch <branch>   Switch current repo to branch and sync submodules
   prune             Cleanup of worktrees with merged PRs
+  lease [options]   Make one detached tree for a writer under .claude/worktrees
+  pin               Move this lease tree's pin to its HEAD (the post-commit hook runs it)
+  land <id>         Print the commands that land a lease's commits, submodules first (read-only)
+  landing [--promote]  Make or reuse the landing tree; --promote moves the development branch in
+  leases [--json]   List every lease with owner, base, dirty count and unlanded commits (read-only)
+  gc [options]      List lease trees and pins as DELETE or KEEP; --write deletes what passes
 
 Every command accepts --help.
 
@@ -881,6 +896,14 @@ COMMANDS = {
     "remove": cmd_remove,
     "switch": cmd_switch,
     "prune": cmd_prune,
+    "lease": worktree_lease.cmd_lease,
+    "pin": worktree_lease.cmd_pin,
+    "land": worktree_lease.cmd_land,
+    "landing": landing.cmd_landing,
+    "leases": worktree_lease.cmd_leases,
+    "gc": worktree_lease.cmd_gc,
+    "lease-hook": worktree_lease.cmd_lease_hook,
+    "gc-hook": worktree_lease.cmd_gc_hook,
 }
 
 

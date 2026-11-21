@@ -120,7 +120,7 @@ After moving to Rediacc on Hetzner:
 
 | Field | After |
 |---|---|
-| Vendors | (1) Rediacc OÜ, software licence; (2) Hetzner, IaaS |
+| Vendors | (1) [Rediacc](/en/legal-information), software licence; (2) Hetzner, IaaS |
 | Tier | (1) Non-critical (no data plane); (2) Critical (data plane, but customer-controlled) |
 | Data processed | (1) None; (2) Encrypted volumes, customer holds keys |
 | Sub-processors | (1) None for self-hosted; (2) Hetzner-internal only, listed in their DPA |

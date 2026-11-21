@@ -5,31 +5,48 @@
  * NOTICE_MAX_TICKETS, in parallel, inside NOTICE_BUDGET_MS, one status read
  * each, and only tickets not checked in the last NOTICE_THROTTLE_MS. postAction
  * prints one stderr line per ticket that finished and acknowledges it, so each
- * ticket is announced once (a ticket still owing a step is marked announced and
- * gets only the pending line afterwards). With no tickets the check makes no machine call.
+ * ticket is announced once (a ticket still owing a step gets the pending line
+ * with it, is marked announced, and prints nothing afterwards). With no tickets
+ * the check makes no machine call.
  *
  * Steps (section 18): in an interactive text run the notice runs the steps a
  * finished ticket owes, for up to NOTICE_STEPS_BUDGET_MS after the command's
  * own output. Under `-o json`, `-q` or MCP (which runs `rdc` with both) it
  * runs nothing and makes no machine call: it prints `steps pending: rdc job
- * wait <id>` on stderr for each finished ticket that still owes a step. A
- * ticket that owes a step stays unacknowledged, so `rdc job list` keeps
- * showing it until the steps ran.
+ * wait <id> (drop them: rdc job dismiss <id>)` on stderr once for each
+ * finished ticket that still owes a step. A ticket that owes a step stays
+ * unacknowledged, so `rdc job list` keeps showing it until the steps ran, it
+ * is dismissed, or it expires by age.
  */
 
 import { t } from '../../i18n/index.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
 import { writeStderr } from '../core/request-context.js';
 import { formatAge } from './duration.js';
-import { liveStepRunnerDeps, runTicketSteps, type StepRunnerDeps } from './run-job.js';
+import {
+  abandonedLine,
+  liveStepRunnerDeps,
+  runTicketSteps,
+  type StepRunnerDeps,
+} from './run-job.js';
 import { pendingStepNames } from './steps.js';
-import { isTerminalTicketState, type Ticket, TicketStore } from './ticket-store.js';
+import {
+  type ExpiredReason,
+  isTerminalTicketState,
+  type Ticket,
+  TicketStore,
+} from './ticket-store.js';
 
 export const NOTICE_MAX_TICKETS = 5;
 const NOTICE_BUDGET_MS = 2_000;
 const NOTICE_THROTTLE_MS = 60_000;
 /** How long the notice may spend starting steps after the command's own output. */
 const NOTICE_STEPS_BUDGET_MS = 20_000;
+
+/** A ticket still `starting` after this long is resolved through `job list --request-id`. */
+const STARTING_CHECK_AFTER_MS = 10 * 60_000;
+/** A ticket that owes something for this long is given up on: nothing resolved it in a week. */
+const TICKET_EXPIRE_AFTER_MS = 7 * 24 * 3_600_000;
 
 /** What one status read learned about a ticket. */
 export interface TicketObservation {
@@ -48,8 +65,15 @@ export interface NoticeDeps {
   now?: () => number;
   /** The step runner; built live only when a finished ticket owes a step. */
   steps?: StepRunnerDeps;
+  /**
+   * Resolve a ticket stuck at `starting` through `renet job list --request-id`: the job id,
+   * null when renet answered that no job has that request id, undefined when it could not be asked.
+   */
+  resolveStarting?(ticket: Ticket): Promise<string | null | undefined>;
   /** Whether this is an interactive run (steps run only then). Defaults to stderr being a TTY. */
   interactive?: boolean;
+  /** Whether a ticket's repository is still in the config: false drops the ticket, undefined (could not tell) keeps it. Absent, nothing is dropped. */
+  repoExists?(repo: string): Promise<boolean | undefined>;
 }
 
 /**
@@ -85,12 +109,48 @@ export function shouldRunNotice(params: NoticeParams): boolean {
   return recordedMode === 'full';
 }
 
+function ageMs(ticket: Ticket, now: number): number | undefined {
+  const from = Date.parse(ticket.finishedAt ?? ticket.startedAt ?? '');
+  return Number.isNaN(from) ? undefined : now - from;
+}
+
+function startingTooLong(ticket: Ticket, now: number): boolean {
+  if (ticket.state !== 'starting') return false;
+  // A starting ticket whose time cannot be read is asked about too: it could otherwise never come due.
+  const age = ageMs(ticket, now);
+  return age === undefined || age >= STARTING_CHECK_AFTER_MS;
+}
+
 function dueForCheck(ticket: Ticket, now: number): boolean {
-  if (!ticket.jobId || isTerminalTicketState(ticket.state) || ticket.state === 'starting') {
-    return false;
-  }
+  if (isTerminalTicketState(ticket.state)) return false;
+  if (ticket.state === 'starting' && !startingTooLong(ticket, now)) return false;
+  if (!ticket.jobId && ticket.state !== 'starting') return false;
   const last = ticket.lastCheckedAt ? Date.parse(ticket.lastCheckedAt) : 0;
   return now - last >= NOTICE_THROTTLE_MS;
+}
+
+function expire(
+  deps: Pick<NoticeDeps, 'store' | 'write'>,
+  ticket: Ticket,
+  reason: ExpiredReason
+): void {
+  deps.store.append('expired', ticket.requestId, { reason });
+  deps.write(abandonedLine(ticket.jobId ?? ticket.requestId, reason));
+}
+
+/** Resolve a ticket whose start was never confirmed. */
+async function resolveStartingTicket(deps: NoticeDeps, ticket: Ticket, now: number): Promise<void> {
+  const answer = await deps.resolveStarting?.(ticket).catch(() => undefined);
+  if (typeof answer === 'string') {
+    deps.store.append('started', ticket.requestId, { jobId: answer });
+  } else if (answer === null) {
+    expire(deps, ticket, 'never-started');
+  } else if ((ageMs(ticket, now) ?? 0) >= TICKET_EXPIRE_AFTER_MS) {
+    expire(deps, ticket, 'age');
+  } else {
+    // Could not tell: note the attempt so the next command does not retry within the throttle.
+    deps.store.append('seen', ticket.requestId);
+  }
 }
 
 /** The preAction half. Never rejects: a notice must not break the command it rides on. */
@@ -104,8 +164,12 @@ export async function checkPendingTickets(deps: NoticeDeps): Promise<void> {
     if (due.length === 0) return;
 
     const checks = due.map(async (ticket) => {
+      if (!ticket.jobId) {
+        await resolveStartingTicket(deps, ticket, now);
+        return;
+      }
       const seen = await deps.observe(ticket).catch(() => undefined);
-      if (!seen || !ticket.jobId) return;
+      if (!seen) return;
       if (isTerminalTicketState(seen.state)) {
         deps.store.append('finished', ticket.requestId, { ...seen });
       } else {
@@ -128,6 +192,22 @@ export async function checkPendingTickets(deps: NoticeDeps): Promise<void> {
   }
 }
 
+/**
+ * Give up on finished tickets that owe something for over a week. No machine call, so it runs in
+ * `pending-only` mode too. Never rejects.
+ */
+function expireOldTickets(deps: Pick<NoticeDeps, 'store' | 'write' | 'now'>): void {
+  try {
+    const now = (deps.now ?? Date.now)();
+    for (const ticket of deps.store.pending()) {
+      if (!(ticket.jobId && isTerminalTicketState(ticket.state))) continue;
+      if ((ageMs(ticket, now) ?? 0) >= TICKET_EXPIRE_AFTER_MS) expire(deps, ticket, 'age');
+    }
+  } catch {
+    // swallowed on purpose
+  }
+}
+
 function finishedTickets(store: TicketStore): Ticket[] {
   return store
     .pending()
@@ -140,18 +220,34 @@ function pendingLine(ticket: Ticket): string {
 }
 
 /**
+ * The finished tickets that still have something to print or to acknowledge: a ticket already
+ * shown that still owes a step has neither, so it never takes the place of a newer one.
+ */
+function unannouncedOrSettled(store: TicketStore): Ticket[] {
+  return store
+    .pending()
+    .filter((ticket) => ticket.jobId && isTerminalTicketState(ticket.state))
+    .filter((ticket) => !ticket.announced || pendingStepNames(ticket).length === 0)
+    .slice(0, NOTICE_MAX_TICKETS);
+}
+
+/**
  * The postAction half: print once per newly finished ticket, then acknowledge
  * it. A ticket that still owes a step is not acknowledged: it gets the pending
- * line, and the next run (or `rdc job wait`) picks it up.
+ * line once, naming `rdc job wait` and `rdc job dismiss`, and is marked
+ * announced. Later runs print nothing for it (the same three lines on every
+ * command of a session, 2026-11-20); an interactive run, `rdc job wait` or
+ * `rdc job dismiss` settles it, `rdc job list` keeps showing it, and it
+ * expires by age after a week.
  */
 export function printFinishedNotices(deps: Pick<NoticeDeps, 'store' | 'write' | 'now'>): void {
   try {
     const now = (deps.now ?? Date.now)();
-    for (const ticket of finishedTickets(deps.store)) {
+    for (const ticket of unannouncedOrSettled(deps.store)) {
       if (!ticket.announced) deps.write(formatNotice(ticket, now));
       if (pendingStepNames(ticket).length > 0) {
         deps.write(pendingLine(ticket));
-        if (!ticket.announced) deps.store.append('announced', ticket.requestId);
+        deps.store.append('announced', ticket.requestId);
         continue;
       }
       deps.store.append('acknowledged', ticket.requestId);
@@ -162,11 +258,45 @@ export function printFinishedNotices(deps: Pick<NoticeDeps, 'store' | 'write' | 
   }
 }
 
-/** The `pending-only` half: no machine call and no step, only the pending line on stderr. */
+/**
+ * Acknowledge the finished tickets whose repository left the config. Their steps have nothing left to act on, since each one works on the repository's config entry (settleRepoDelete refuses outright without one), so the ticket used to print `steps pending: rdc job wait <id>` on every later command forever (a deleted fork on bench, 2026-11-05). Never rejects.
+ */
+async function dropOrphanedTickets(deps: Pick<NoticeDeps, 'store' | 'repoExists'>): Promise<void> {
+  const repoExists = deps.repoExists;
+  if (!repoExists) return;
+  try {
+    const owing = deps.store
+      .pending()
+      .filter(
+        (tk) => tk.repo && isTerminalTicketState(tk.state) && pendingStepNames(tk).length > 0
+      );
+    for (const ticket of owing) {
+      const exists = await repoExists(ticket.repo as string).catch(() => undefined);
+      if (exists === false) deps.store.append('acknowledged', ticket.requestId);
+    }
+  } catch {
+    // swallowed on purpose
+  }
+}
+
+/** The live repository check: a config that cannot be read answers undefined, so nothing is dropped on a guess. */
+export async function liveRepoExists(repo: string): Promise<boolean | undefined> {
+  try {
+    const { configService } = await import('../config/config-resources.js');
+    if (!(await configService.getCurrent())) return undefined;
+    return (await configService.getRepository(repo)) !== undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The `pending-only` half: no machine call and no step, only the pending line on stderr, once per ticket. */
 function printPendingSteps(deps: Pick<NoticeDeps, 'store' | 'write'>): void {
   try {
-    for (const ticket of finishedTickets(deps.store)) {
-      if (pendingStepNames(ticket).length > 0) deps.write(pendingLine(ticket));
+    for (const ticket of unannouncedOrSettled(deps.store)) {
+      if (ticket.announced || pendingStepNames(ticket).length === 0) continue;
+      deps.write(pendingLine(ticket));
+      deps.store.append('announced', ticket.requestId);
     }
   } catch {
     // swallowed on purpose
@@ -232,10 +362,13 @@ export function startNoticeCheck(deps: NoticeDeps): void {
   active = { deps, check: checkPendingTickets(deps) };
 }
 
-function livePendingDeps(): Pick<NoticeDeps, 'store' | 'write'> {
+type PendingDeps = Pick<NoticeDeps, 'store' | 'write' | 'repoExists' | 'now'>;
+
+function livePendingDeps(): PendingDeps {
   return {
     store: new TicketStore(getEffectiveConfigName()),
     write: (line) => writeStderr(`${line}\n`),
+    repoExists: liveRepoExists,
   };
 }
 
@@ -245,7 +378,7 @@ function livePendingDeps(): Pick<NoticeDeps, 'store' | 'write'> {
  * from the store alone; any other run does nothing.
  */
 export async function finishNotice(
-  pendingDeps: () => Pick<NoticeDeps, 'store' | 'write'> = livePendingDeps
+  pendingDeps: () => PendingDeps = livePendingDeps
 ): Promise<void> {
   const current = active;
   const mode = recordedMode;
@@ -254,13 +387,18 @@ export async function finishNotice(
   if (!current) {
     if (mode !== 'pending-only') return;
     try {
-      printPendingSteps(pendingDeps());
+      const deps = pendingDeps();
+      await dropOrphanedTickets(deps);
+      expireOldTickets(deps);
+      printPendingSteps(deps);
     } catch {
       // a config name the store rejects never breaks the command
     }
     return;
   }
   await current.check;
+  await dropOrphanedTickets(current.deps);
+  expireOldTickets(current.deps);
   if (current.deps.interactive ?? Boolean(process.stderr.isTTY)) {
     await runNoticeSteps(current.deps);
   }

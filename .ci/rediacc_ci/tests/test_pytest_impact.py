@@ -1,0 +1,643 @@
+"""pytest_impact: the map, the selection, the smoke floor and every FULL fallback (PLAN-ciquick-cpu W4.1).
+
+Every fallback has a test that makes it fire, and the selection has a control that proves a leaf edit selects only its importers plus the smoke floor: a module that always answered FULL would pass every fallback test and still be useless, and one that never did would pass the control.
+"""
+
+import pathlib
+import subprocess
+
+import pytest
+
+from rediacc_ci import pytest_impact as pi
+
+ROOTS = [".ci", ".claude/hooks/stop", ".claude"]
+TEST_ROOTS = [".ci/rediacc_ci/tests", ".claude/rediacc_hooks/tests"]
+
+# A small tree in the repo's own shape: a leaf module, a module importing it, two tests that import one each, a test that names a guard script by a string literal, a smoke test, and a conftest chain.
+TREE = {
+    ".ci/rediacc_ci/__init__.py": "",
+    ".ci/rediacc_ci/leaf.py": "X = 1\n",
+    ".ci/rediacc_ci/mid.py": "from rediacc_ci import leaf\n",
+    ".ci/rediacc_ci/other.py": "Y = 2\n",
+    ".ci/rediacc_ci/quality/__init__.py": "",
+    ".ci/rediacc_ci/quality/rel.py": "from . import sib\nfrom ..leaf import X\n",
+    ".ci/rediacc_ci/quality/sib.py": "Z = 3\n",
+    ".ci/rediacc_ci/tests/__init__.py": "",
+    ".ci/rediacc_ci/tests/conftest.py": "import pytest\n",
+    ".ci/rediacc_ci/tests/test_mid.py": "from rediacc_ci import mid\n\ndef test_a():\n    assert mid\n",
+    ".ci/rediacc_ci/tests/test_other.py": "from rediacc_ci import other\n\ndef test_b():\n    assert other\n",
+    ".ci/rediacc_ci/tests/test_rel.py": "from rediacc_ci.quality import rel\n\ndef test_r():\n    assert rel\n",
+    ".ci/rediacc_ci/tests/test_smoke.py": "def test_s():\n    assert True\n",
+    ".claude/rediacc_hooks/__init__.py": "",
+    ".claude/rediacc_hooks/guards/__init__.py": "",
+    ".claude/rediacc_hooks/guards/block_thing_push.py": "print('guard')\n",
+    ".claude/rediacc_hooks/tests/__init__.py": "",
+    ".claude/rediacc_hooks/tests/test_guard.py": (
+        '"""Mentions .claude/rediacc_hooks/guards/block_other_doc.py only in prose."""\n'
+        "GUARD = 'guards/block_thing_push.py'\n\n"
+        "def test_g():\n    assert GUARD\n"
+    ),
+    ".claude/rediacc_hooks/guards/block_other_doc.py": "print('other')\n",
+    "conftest.py": "",
+}
+# Fillers so the leaf control (3 files) sits under the 40% ceiling and a two-module edit (4 files) sits over it.
+for _i in range(4):
+    TREE[".ci/rediacc_ci/tests/test_filler%d.py" % _i] = "def test_f():\n    assert True\n"
+TESTS = sorted(p for p in TREE if pi.is_test_file(p, TEST_ROOTS))
+SMOKE = [".ci/rediacc_ci/tests/test_smoke.py"]
+
+
+def build(tree=None):
+    tree = dict(TREE if tree is None else tree)
+    return pi.build_map(
+        pathlib.Path("/nonexistent"),
+        sorted(p for p in tree if p.endswith(".py")),
+        ROOTS,
+        TEST_ROOTS,
+        read=tree.__getitem__,
+    )
+
+
+def policy(smoke=None, reads=None):
+    return {"smoke": {"files": list(SMOKE if smoke is None else smoke)}, "reads": dict(reads or {})}
+
+
+def run(changed, impact_map=None, pol=None, tree=None):
+    tree = TREE if tree is None else tree
+    return pi.select(
+        changed,
+        build(tree) if impact_map is None else impact_map,
+        policy() if pol is None else pol,
+        existing=frozenset(tree),
+        test_roots=TEST_ROOTS,
+        digest="d" * 64,
+    )
+
+
+# --------------------------------------------------------------------------- the map
+
+
+def test_the_closure_follows_imports_transitively_and_holds_the_conftest_chain():
+    m = build()
+    closure = m["tests"][".ci/rediacc_ci/tests/test_mid.py"]["closure"]
+    assert ".ci/rediacc_ci/mid.py" in closure
+    assert ".ci/rediacc_ci/leaf.py" in closure, "the transitive import was not followed"
+    assert ".ci/rediacc_ci/tests/conftest.py" in closure
+    assert "conftest.py" in closure
+    assert ".ci/rediacc_ci/other.py" not in closure, (
+        "CONTROL: an unimported module joined the closure"
+    )
+
+
+def test_relative_imports_resolve_both_levels():
+    closure = build()["tests"][".ci/rediacc_ci/tests/test_rel.py"]["closure"]
+    assert ".ci/rediacc_ci/quality/sib.py" in closure
+    assert ".ci/rediacc_ci/leaf.py" in closure
+
+
+def test_a_third_party_import_is_not_unresolved_but_a_missing_local_one_is():
+    tree = dict(TREE)
+    tree[".ci/rediacc_ci/tests/test_mid.py"] = (
+        "import pytest\nimport yaml\nfrom rediacc_ci import mid\n"
+    )
+    assert all(not e["unresolved"] for e in build(tree)["tests"].values())
+    tree[".ci/rediacc_ci/tests/test_mid.py"] = (
+        "from rediacc_ci import gone_module\nimport rediacc_ci.nothere\n"
+    )
+    unresolved = build(tree)["tests"][".ci/rediacc_ci/tests/test_mid.py"]["unresolved"]
+    assert any("rediacc_ci.nothere" in u for u in unresolved), unresolved
+
+
+def test_docstrings_are_not_literals():
+    lits = build()["tests"][".claude/rediacc_hooks/tests/test_guard.py"]["literals"]
+    assert "guards/block_thing_push.py" in lits
+    assert not any("block_other_doc" in lit for lit in lits), lits
+
+
+# --------------------------------------------------------------------------- selection: the control
+
+
+def test_a_leaf_edit_selects_only_its_importers_plus_smoke():
+    sel = run([".ci/rediacc_ci/leaf.py"])
+    assert sel.scope == "impact", sel.line()
+    assert sel.files == sorted(
+        [".ci/rediacc_ci/tests/test_mid.py", ".ci/rediacc_ci/tests/test_rel.py", *SMOKE]
+    ), sel.files
+    assert ".ci/rediacc_ci/tests/test_other.py" not in sel.files
+    assert sel.line().startswith("pytest-impact: IMPACT 3 of 9")
+
+
+def test_a_guard_named_by_a_literal_selects_the_test_that_names_it():
+    sel = run([".claude/rediacc_hooks/guards/block_thing_push.py"])
+    assert sel.scope == "impact", sel.line()
+    assert ".claude/rediacc_hooks/tests/test_guard.py" in sel.files
+
+
+def test_a_changed_test_file_is_selected():
+    sel = run([".ci/rediacc_ci/tests/test_other.py"])
+    assert sel.scope == "impact"
+    assert ".ci/rediacc_ci/tests/test_other.py" in sel.files
+
+
+def test_the_reads_table_covers_a_data_file():
+    pol = policy(reads={".ci/rediacc_ci/tests/test_other.py": [".ci/policy/thing-*.json"]})
+    tree = dict(TREE, **{".ci/policy/thing-a.json": "{}"})
+    sel = run([".ci/policy/thing-a.json"], pol=pol, tree=tree)
+    assert sel.scope == "impact", sel.line()
+    assert sel.why[".ci/rediacc_ci/tests/test_other.py"].endswith("(policy)")
+
+
+# W4.3 (operator ruling 2026-11-18): a file outside .ci/, .claude/ and *.py is judged like any other, through the traced `reads` table, instead of being skipped.
+DOC_TREE = dict(TREE, **{"docs/playbook.md": "# p\n", "docs/other.md": "# o\n"})
+DOC_READS = {
+    ".ci/rediacc_ci/tests/test_other.py": ["docs/playbook.md"],
+    ".ci/rediacc_ci/tests/test_filler1.py": ["docs/playbook.md", "docs/other.md"],
+}
+
+
+def test_a_docs_only_diff_selects_exactly_its_traced_readers_plus_smoke():
+    sel = run(["docs/playbook.md"], pol=policy(reads=DOC_READS), tree=DOC_TREE)
+    assert sel.scope == "impact", sel.line()
+    assert sel.files == sorted(
+        [
+            ".ci/rediacc_ci/tests/test_other.py",
+            ".ci/rediacc_ci/tests/test_filler1.py",
+            *SMOKE,
+        ]
+    ), sel.files
+    assert sel.why[".ci/rediacc_ci/tests/test_other.py"] == "reads docs/playbook.md (policy)"
+
+
+def test_a_docs_diff_read_by_one_test_selects_only_that_test():
+    sel = run(["docs/other.md"], pol=policy(reads=DOC_READS), tree=DOC_TREE)
+    assert sel.scope == "impact", sel.line()
+    assert sel.files == sorted([".ci/rediacc_ci/tests/test_filler1.py", *SMOKE]), sel.files
+
+
+def test_an_untraced_file_outside_ci_and_claude_runs_full():
+    """The documented fallback: a file no closure, literal or reads entry covers is FULL wherever it lives, so a new doc no trace has seen cannot narrow the run to the smoke floor."""
+    tree = dict(DOC_TREE, **{"docs/brand-new.md": "# n\n"})
+    sel = run(["docs/brand-new.md"], pol=policy(reads=DOC_READS), tree=tree)
+    assert sel.scope == "full", sel.line()
+    assert "docs/brand-new.md changed and no test imports it" in sel.reason, sel.line()
+
+
+def test_plant_the_old_scope_filter_and_the_docs_diff_reaches_no_reader(monkeypatch):
+    """PLANT CONTROL: put the pre-W4.3 filter back (a file outside .ci/, .claude/ and *.py skipped) and the docs-only diff must lose its readers. Proves the docs tests above fail on the old behaviour rather than passing for any select()."""
+    real_is_test_file = pi.is_test_file
+
+    def old_filter(rel, roots):
+        if rel.split("/", 1)[0] not in (".ci", ".claude") and not rel.endswith(".py"):
+            return True  # skipped as if it were a test file not in the map
+        return real_is_test_file(rel, roots)
+
+    monkeypatch.setattr(pi, "is_test_file", old_filter)
+    sel = run(["docs/playbook.md"], pol=policy(reads=DOC_READS), tree=DOC_TREE)
+    assert sel.files == SMOKE, "the planted scope filter still selected readers: %s" % sel.files
+
+
+@pytest.mark.parametrize(
+    "reads",
+    [
+        DOC_READS,
+        {".ci/rediacc_ci/tests/test_*.py": ["docs/*.md"]},
+        {".ci/rediacc_ci/tests/test_other.py": ["docs/**"], "*/test_mid.py": ["docs/other.md"]},
+        {},
+    ],
+)
+def test_reads_by_test_agrees_with_reads_cover(reads):
+    folded = pi.reads_by_test(reads, TESTS)
+    for test in TESTS:
+        for rel in ("docs/playbook.md", "docs/other.md", ".ci/rediacc_ci/leaf.py"):
+            got = any(pi.fnmatch.fnmatchcase(rel, g) for g in folded.get(test, ()))
+            assert got == pi.reads_cover(reads, test, rel), (reads, test, rel)
+
+
+# --------------------------------------------------------------------------- every FULL fallback
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        ".ci/rediacc_ci/tests/conftest.py",
+        "conftest.py",
+        "pyproject.toml",
+        "uv.lock",
+        "pytest.ini",
+        "setup.cfg",
+        "tox.ini",
+        ".ci/rediacc_ci/check_pytest.py",
+        ".ci/rediacc_ci/pytest_impact.py",
+        ".ci/policy/pytest-impact.json",
+    ],
+)
+def test_full_when_pytest_config_changed(path):
+    sel = run([path])
+    assert sel.scope == "full", sel.line()
+    assert path in sel.reason, sel.line()
+    assert sel.line() == "pytest-impact: FULL (%s changed)" % path
+
+
+def test_full_on_an_unresolved_import():
+    tree = dict(TREE)
+    tree[".ci/rediacc_ci/mid.py"] = (
+        "from rediacc_ci import leaf\nimport rediacc_ci.deleted_module\n"
+    )
+    sel = run([".ci/rediacc_ci/other.py"], tree=tree)
+    assert sel.scope == "full", sel.line()
+    assert "unresolved import" in sel.reason, sel.line()
+
+
+def test_full_on_a_changed_file_no_test_covers():
+    tree = dict(TREE, **{".ci/rediacc_ci/orphan_mod.py": "Q = 1\n"})
+    sel = run([".ci/rediacc_ci/orphan_mod.py"], tree=tree)
+    assert sel.scope == "full", sel.line()
+    assert "no test imports it" in sel.reason, sel.line()
+
+
+def test_full_on_an_uncovered_data_file_under_claude():
+    tree = dict(TREE, **{".claude/settings-fixture.json": "{}"})
+    sel = run([".claude/settings-fixture.json"], tree=tree)
+    assert sel.scope == "full", sel.line()
+
+
+def test_a_docstring_mention_does_not_cover_a_file():
+    sel = run([".claude/rediacc_hooks/guards/block_other_doc.py"])
+    assert sel.scope == "full", "a prose mention covered a file: %s" % sel.line()
+
+
+def test_full_above_forty_percent():
+    sel = run([".ci/rediacc_ci/leaf.py", ".ci/rediacc_ci/other.py"])
+    assert sel.scope == "full", sel.line()
+    assert "above 40%" in sel.reason, sel.line()
+
+
+def test_full_on_a_missing_map():
+    sel = pi.select(
+        [".ci/rediacc_ci/leaf.py"], None, policy(), existing=frozenset(TREE), test_roots=TEST_ROOTS
+    )
+    assert sel.scope == "full"
+    assert sel.reason == "missing map"
+
+
+def test_full_on_an_empty_map():
+    sel = run(
+        [".ci/rediacc_ci/leaf.py"], impact_map={"schema": pi.MAP_SCHEMA, "tests": {}, "errors": []}
+    )
+    assert sel.scope == "full"
+    assert "no test files" in sel.reason
+
+
+def test_full_on_a_module_that_does_not_parse():
+    tree = dict(TREE, **{".ci/rediacc_ci/mid.py": "def broken(:\n"})
+    sel = run([".ci/rediacc_ci/other.py"], tree=tree)
+    assert sel.scope == "full", sel.line()
+    assert "could not parse" in sel.reason, sel.line()
+
+
+def test_full_on_a_missing_policy():
+    sel = pi.select(
+        [".ci/rediacc_ci/leaf.py"], build(), None, existing=frozenset(TREE), test_roots=TEST_ROOTS
+    )
+    assert sel.scope == "full"
+    assert pi.POLICY_RELPATH in sel.reason
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "not json",
+        "[]",
+        '{"reads": {}}',
+        '{"smoke": {"files": []}, "reads": {}}',
+        '{"smoke": {"files": ["a"]}, "reads": []}',
+    ],
+)
+def test_a_malformed_policy_is_refused(text):
+    data, problem = pi.load_policy(text)
+    assert data is None
+    assert problem
+
+
+def test_a_wellformed_policy_loads():
+    data, problem = pi.load_policy('{"smoke": {"files": ["a.py"]}, "reads": {"x": ["y"]}}')
+    assert problem is None
+    assert data is not None
+    assert data["smoke"]["files"] == ["a.py"]
+
+
+def test_full_when_a_smoke_file_is_missing():
+    sel = run([".ci/rediacc_ci/leaf.py"], pol=policy(smoke=[".ci/rediacc_ci/tests/test_gone.py"]))
+    assert sel.scope == "full"
+    assert "smoke floor" in sel.reason
+
+
+def test_full_when_no_push_base_resolves():
+    sel = run(None)
+    assert sel.scope == "full"
+    assert "push base" in sel.reason
+
+
+# --------------------------------------------------------------------------- literal coverage
+
+
+@pytest.mark.parametrize(
+    ("literal", "rel", "want"),
+    [
+        (".claude/hooks/stop/wl_git.py", ".claude/hooks/stop/wl_git.py", True),
+        ("./.claude/hooks/stop/wl_git.py", ".claude/hooks/stop/wl_git.py", True),
+        ("stop/wl_git.py", ".claude/hooks/stop/wl_git.py", True),
+        ("wl_git.py", ".claude/hooks/stop/wl_git.py", True),
+        ("op/wl_git.py", ".claude/hooks/stop/wl_git.py", False),
+        (
+            "block_vm_unverified_push",
+            ".claude/rediacc_hooks/guards/block_vm_unverified_push.py",
+            True,
+        ),
+        ("terminal", ".claude/skills/rdc/terminal.md", False),
+        ("wl_x", ".claude/hooks/stop/wl_x.py", False),
+        ("test-*.py", ".claude/hooks/stop/test-adhoc-watch.py", True),
+        ("*.py", ".claude/hooks/stop/test-adhoc-watch.py", False),
+        (".ci/policy/*.json", ".ci/policy/carry-exempt.json", True),
+        (".ci/policy", ".ci/policy/carry-exempt.json", True),
+        (".ci/rediacc_ci/tests", ".ci/rediacc_ci/tests/fixtures/x.json", False),
+        ("*", ".ci/policy/carry-exempt.json", False),
+    ],
+)
+def test_literal_covers_and_its_index_agree(literal, rel, want):
+    files = [rel, ".ci/policy/other.json", ".ci/rediacc_ci/tests/test_a.py"]
+    dirs = pi.tracked_dirs_of(files, TEST_ROOTS)
+    assert pi.literal_covers(literal, rel, dirs) is want
+    assert pi.LiteralIndex([literal]).covers(rel, dirs) is want
+
+
+def test_a_directory_with_too_many_files_covers_nothing():
+    files = ["big/dir/f%d.json" % i for i in range(pi.MAX_DIR_FILES + 1)]
+    dirs = pi.tracked_dirs_of(files)
+    assert "big/dir" not in dirs
+    assert not pi.literal_covers("big/dir", files[0], dirs)
+    assert "big/dir" in pi.tracked_dirs_of(files[: pi.MAX_DIR_FILES]), (
+        "CONTROL: a small directory was dropped too"
+    )
+
+
+def test_literal_tokens_split_a_command_line():
+    toks = pi.literal_tokens("python3 `.claude/hooks/stop/worklist.py` --roundlog x.")
+    assert ".claude/hooks/stop/worklist.py" in toks
+    assert "x" not in toks
+
+
+# --------------------------------------------------------------------------- push base
+
+
+def fake_git(refs: dict[str, str], abbrev: dict[str, str], bases: dict[str, str]):
+    def git(args):
+        if args[:3] == ["rev-parse", "--verify", "--quiet"]:
+            return refs.get(args[3].removesuffix("^{commit}"))
+        if args[:2] == ["rev-parse", "--abbrev-ref"]:
+            return abbrev.get(args[2])
+        if args[:2] == ["merge-base", "HEAD"]:
+            return bases.get(args[2])
+        return None
+
+    return git
+
+
+def test_push_base_prefers_push_then_skips_a_foreign_upstream():
+    git = fake_git(
+        {"@{push}": "a", "@{upstream}": "b", "origin/main": "c"},
+        {"@{push}": "origin/1104-1", "@{upstream}": "origin/0930-1"},
+        {"@{push}": "mb-push", "@{upstream}": "mb-up", "origin/main": "mb-main"},
+    )
+    assert pi.resolve_push_base(git, "1104-1") == "mb-push"
+    foreign = fake_git(
+        {"@{push}": "a", "@{upstream}": "b", "origin/main": "c"},
+        {"@{push}": "origin/0930-1", "@{upstream}": "origin/0930-1"},
+        {"@{push}": "mb-push", "@{upstream}": "mb-up", "origin/main": "mb-main"},
+    )
+    assert pi.resolve_push_base(foreign, "1104-1") == "mb-main"
+
+
+def test_push_base_is_none_when_nothing_resolves():
+    assert pi.resolve_push_base(fake_git({}, {}, {}), "1104-1") is None
+
+
+# --------------------------------------------------------------------------- the smoke floor
+
+
+JUNIT = """<testsuites><testsuite>
+<testcase classname=".ci.rediacc_ci.tests.test_mid" name="a" time="0.2"/>
+<testcase classname=".ci.rediacc_ci.tests.test_mid.TestK" name="b" time="0.1"/>
+<testcase classname=".ci.rediacc_ci.tests.test_other" name="c" time="5.0"/>
+<testcase classname=".ci.rediacc_ci.tests.test_rel" name="d" time="0.3"/>
+<testcase classname=".ci.rediacc_ci.tests.test_smoke" name="e" time="0.01"/>
+<testcase classname="unknown.module" name="f" time="1.0"/>
+</testsuite></testsuites>"""
+
+
+def test_junit_times_map_classnames_to_files():
+    times = pi.junit_file_times(JUNIT, TESTS)
+    assert times[".ci/rediacc_ci/tests/test_mid.py"][0] == 2
+    assert times[".ci/rediacc_ci/tests/test_other.py"][2] == 5.0
+    assert len(times) == 4
+
+
+def test_derive_smoke_covers_units_with_fast_files_only():
+    m = build()
+    files, unreached = pi.derive_smoke(m, pi.junit_file_times(JUNIT, TESTS), TEST_ROOTS)
+    assert ".ci/rediacc_ci/tests/test_other.py" not in files, "a 5 s test joined the smoke floor"
+    assert ".ci/rediacc_ci/other" in unreached, (
+        "the slow file's only unit must be reported unreached"
+    )
+    assert ".ci/rediacc_ci/mid" not in unreached
+    assert ".ci/rediacc_ci/leaf" not in unreached
+    assert files, "CONTROL: nothing was chosen at all"
+
+
+def test_unit_of():
+    assert pi.unit_of(".ci/rediacc_ci/quality/x.py", TEST_ROOTS) == ".ci/rediacc_ci/quality"
+    assert pi.unit_of(".ci/rediacc_ci/gitx.py", TEST_ROOTS) == ".ci/rediacc_ci/gitx"
+    assert pi.unit_of(".claude/hooks/stop/wl_git.py", TEST_ROOTS) == ".claude/hooks/stop"
+    assert pi.unit_of(".ci/rediacc_ci/tests/helpers.py", TEST_ROOTS) is None
+    assert pi.unit_of(".ci/rediacc_ci/__init__.py", TEST_ROOTS) is None
+
+
+def test_the_committed_policy_loads_and_names_real_test_files():
+    root = pathlib.Path(__file__).resolve().parents[3]
+    data, problem = pi.load_policy((root / pi.POLICY_RELPATH).read_text(encoding="utf-8"))
+    assert problem is None, problem
+    assert data is not None
+    for rel in data["smoke"]["files"]:
+        assert (root / rel).is_file(), "smoke floor names a missing file: %s" % rel
+        assert pi.is_test_file(rel, pi.testpath_roots(root)), rel
+
+
+def _git(root: pathlib.Path, *args: str) -> None:
+    subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True)
+
+
+def test_change_set_diffs_against_a_named_base(tmp_path):
+    _git(tmp_path, "init", "-q")
+    _git(tmp_path, "config", "user.email", "t@example.invalid")
+    _git(tmp_path, "config", "user.name", "t")
+    (tmp_path / "a.py").write_text("A = 1\n", encoding="utf-8")
+    _git(tmp_path, "add", "a.py")
+    _git(tmp_path, "commit", "-qm", "a")
+    (tmp_path / "a.py").write_text("A = 2\n", encoding="utf-8")
+    (tmp_path / "new.py").write_text("", encoding="utf-8")
+    assert pi.change_set(tmp_path, "HEAD") == ["a.py", "new.py"]
+    # A push base that DOES resolve, so a fallback to it would answer with a list rather than None.
+    _git(tmp_path, "update-ref", "refs/remotes/origin/main", "HEAD")
+    assert pi.change_set(tmp_path) == ["a.py", "new.py"], "CONTROL: the push base did not resolve"
+    assert pi.change_set(tmp_path, "no-such-ref") is None, "an unresolvable base fell back"
+
+
+def test_a_base_that_reads_as_an_option_is_not_a_ref(tmp_path):
+    _git(tmp_path, "init", "-q")
+    _git(tmp_path, "config", "user.email", "t@example.invalid")
+    _git(tmp_path, "config", "user.name", "t")
+    (tmp_path / "a.py").write_text("A = 1\n", encoding="utf-8")
+    _git(tmp_path, "add", "a.py")
+    _git(tmp_path, "commit", "-qm", "a")
+    _git(tmp_path, "update-ref", "refs/remotes/origin/main", "HEAD")
+    assert pi.change_set(tmp_path, "--all") is None
+    assert pi.change_set(tmp_path, "-x") is None
+
+
+def test_an_option_shaped_base_runs_no_command_at_all(tmp_path, monkeypatch):
+    """Finding 95e0a4da.2: `merge-base HEAD -x` fails on its own, so the None above cannot show the guard. What only the guard does is spawn nothing. Control: a real ref does spawn commands."""
+    _git(tmp_path, "init", "-q")
+    _git(tmp_path, "config", "user.email", "t@example.invalid")
+    _git(tmp_path, "config", "user.name", "t")
+    (tmp_path / "a.py").write_text("A = 1\n", encoding="utf-8")
+    _git(tmp_path, "add", "a.py")
+    _git(tmp_path, "commit", "-qm", "a")
+    calls: list[list[str]] = []
+    real = pi.gitx.git
+
+    def spy(args, **kwargs):
+        calls.append(list(args))
+        return real(args, **kwargs)
+
+    monkeypatch.setattr(pi.gitx, "git", spy)
+    assert pi.change_set(tmp_path, "-x") is None
+    assert calls == []
+    assert pi.change_set(tmp_path, "HEAD") is not None
+    assert calls, "CONTROL: a real base spawned no command, so the spy sees nothing"
+
+
+def test_narrow_and_non_glob_literals_do_not_change_the_verdict():
+    """Finding b857eede.1: only glob-shaped literals that cover a changed file reach `broad_globs`; the others must leave the selection as it was."""
+    base = run([".ci/rediacc_ci/leaf.py"])
+    tree = dict(TREE)
+    tree[".ci/rediacc_ci/tests/test_other.py"] = (
+        "LITS = ['*.nomatch', 'plain_word_here', 'zz/y*']\n\n"
+        "from rediacc_ci import other\n\ndef test_b():\n    assert other and LITS\n"
+    )
+    got = run([".ci/rediacc_ci/leaf.py"], tree=tree)
+    assert (got.scope, got.files) == (base.scope, base.files), got.line()
+
+
+def test_a_glob_that_matches_the_tree_covers_nothing():
+    files = [".ci/policy/f%d.json" % i for i in range(pi.MAX_DIR_FILES + 1)] + [".ci/policy/x.lock"]
+    dirs = pi.tracked_dirs_of(files)
+    broad = pi.broad_globs(["*?", "***", "x.loc*", ".ci/policy/f1*.json"], files, dirs)
+    assert "*?" in broad
+    assert "***" in broad
+    assert "x.loc*" not in broad, "CONTROL: a narrow glob was dropped"
+    assert ".ci/policy/f1*.json" not in broad, "CONTROL: a glob under the ceiling was dropped"
+    assert not pi.LiteralIndex(["*?"], broad).covers(".ci/policy/x.lock", dirs)
+    assert pi.LiteralIndex(["x.loc*"], broad).covers(".ci/policy/x.lock", dirs)
+
+
+def test_a_broad_glob_literal_does_not_hide_an_uncovered_change():
+    tree = dict(TREE, **{".ci/zz_data.txt": "x"})
+    tree[".ci/rediacc_ci/tests/test_other.py"] = (
+        "PATTERN = '*?'\n\ndef test_b():\n    assert PATTERN\n"
+    )
+    # Pad the tree so `*?` matches more files than the ceiling, as it does in the real one.
+    for i in range(pi.MAX_DIR_FILES + 1):
+        tree[".ci/pad/f%d.txt" % i] = ""
+    sel = run([".ci/zz_data.txt"], tree=tree)
+    assert sel.scope == "full", sel.line()
+
+
+def test_the_facts_cache_reparses_only_an_edited_module(monkeypatch):
+    cache: dict = {}
+    first = pi.build_map(
+        pathlib.Path("/nonexistent"),
+        sorted(p for p in TREE if p.endswith(".py")),
+        ROOTS,
+        TEST_ROOTS,
+        read=TREE.__getitem__,
+        facts_cache=cache,
+    )
+    assert cache, "the first build left the cache empty"
+    real = pi.module_facts
+    parsed: list[str] = []
+
+    def counting(rel, *a, **k):
+        parsed.append(rel)
+        return real(rel, *a, **k)
+
+    monkeypatch.setattr(pi, "module_facts", counting)
+    edited = dict(TREE)
+    edited[".ci/rediacc_ci/mid.py"] = "from rediacc_ci import leaf, other\n"
+    second = pi.build_map(
+        pathlib.Path("/nonexistent"),
+        sorted(p for p in edited if p.endswith(".py")),
+        ROOTS,
+        TEST_ROOTS,
+        read=edited.__getitem__,
+        facts_cache=cache,
+    )
+    assert parsed == [".ci/rediacc_ci/mid.py"], parsed
+    # The edit is seen, not served stale: test_mid now reaches other.py.
+    assert (
+        ".ci/rediacc_ci/other.py" in second["tests"][".ci/rediacc_ci/tests/test_mid.py"]["closure"]
+    )
+    assert (
+        ".ci/rediacc_ci/other.py"
+        not in first["tests"][".ci/rediacc_ci/tests/test_mid.py"]["closure"]
+    )
+
+
+def test_the_selection_names_its_smoke_files_even_when_a_change_reached_one():
+    """Finding 755fd65e.1: `why` carries the import reason of a smoke file a change reaches, so the smoke set is its own field."""
+    sel = run([".ci/rediacc_ci/leaf.py"], pol=policy(smoke=[".ci/rediacc_ci/tests/test_mid.py"]))
+    assert sel.scope == "impact"
+    assert sel.smoke_files == [".ci/rediacc_ci/tests/test_mid.py"]
+    assert sel.why[".ci/rediacc_ci/tests/test_mid.py"] != "smoke"
+
+
+def test_a_helper_every_test_imports_names_no_file():
+    """The root conftest pulls a test-root helper into every closure; its literal `constants.sh` used to make every test cover that file (one pin bump selected all 949 files, 2026-11-20). Only the real reader from the `reads` table is selected now."""
+    tree = dict(TREE)
+    tree["conftest.py"] = "from rediacc_ci.tests import differ\n"
+    tree[".ci/rediacc_ci/tests/differ.py"] = "CONSTANTS = '.ci/config/constants.sh'\n"
+    tree[".ci/config/constants.sh"] = "X=1\n"
+    built = build(tree)
+    assert ".ci/rediacc_ci/tests/differ.py" in built["sharedLiteralModules"]
+    reader = ".ci/rediacc_ci/tests/test_mid.py"
+    sel = run(
+        [".ci/config/constants.sh"],
+        impact_map=built,
+        pol=policy(reads={reader: [".ci/config/constants.sh"]}),
+        tree=tree,
+    )
+    assert sel.scope == "impact", sel.reason
+    assert sorted(sel.files) == sorted([*SMOKE, reader])
+
+
+def test_a_helper_few_tests_import_still_covers_by_literal():
+    tree = dict(TREE)
+    tree[".ci/rediacc_ci/tests/differ.py"] = "CONSTANTS = '.ci/config/constants.sh'\n"
+    tree[".ci/rediacc_ci/tests/test_mid.py"] = (
+        "from rediacc_ci.tests import differ\n\ndef test_a():\n    assert differ\n"
+    )
+    tree[".ci/config/constants.sh"] = "X=1\n"
+    built = build(tree)
+    assert ".ci/rediacc_ci/tests/differ.py" not in built["sharedLiteralModules"]
+    sel = run([".ci/config/constants.sh"], impact_map=built, tree=tree)
+    assert sel.scope == "impact", sel.reason
+    assert ".ci/rediacc_ci/tests/test_mid.py" in sel.files

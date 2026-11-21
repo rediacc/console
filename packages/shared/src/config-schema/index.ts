@@ -18,6 +18,7 @@ export * from './coverage.js';
 export * from './migrations/index.js';
 export * from './normalize.js';
 export * from './payload.js';
+export * from './repo-names.js';
 export * from './schemas.js';
 export * from './sensitivity.js';
 export * from './state-schema.js';

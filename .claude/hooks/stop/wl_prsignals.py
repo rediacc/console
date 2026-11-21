@@ -53,7 +53,7 @@ ATTEMPTS_LINE = re.compile(r"^attempts:[ \t]*([0-9]+)", re.MULTILINE)
 CLASS_LINE = re.compile(r"^class:[ \t]*(\S*)", re.MULTILINE)
 
 PRREVIEW = "python3 .claude/hooks/stop/wl_prreview.py"
-RERUN = "gh workflow run claude-review.yml --ref %s -f pr_number=%s"
+RERUN = "gh workflow run ops-claude-review.yml --ref %s -f pr_number=%s"
 BRANCH_PLACEHOLDER = "<this PR's branch>"
 CLIP = 100
 

@@ -35,6 +35,8 @@ ORDER = 56
 
 # The verdict line. With it gone every lost box and every broken queue is committed, which is the incident this guard exists for.
 DEFECT = ("    if lost or queue_new:", "    if False:")
+# Planted, the bound trees are the session root alone, so a commit typed in the sibling bound tree goes unjudged again (box LT11).
+TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 PLAN_RX = re.compile(r"^agent/(?:plans/(?:_done/|_removed/)?)?PLAN-[^/]+\.md$")
 QUEUE_REL = "agent/plans/QUEUE.md"
@@ -512,11 +514,13 @@ def run(ev):
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
     base = ev.field("cwd") or root
     lost, queue_new = [], set()
+    # Either bound tree is this checkout (box LT11): a plan commit typed in the landing tree is judged against that tree's own plans.
+    trees = commit_policy.bound_trees(root)
     try:
         created = commit_policy.created_dirs(cmd, base)
         for commit in commits:
-            repo = commit_policy.run_repo(commit, base, created)
-            if not repo or not commit_policy.is_inside(repo, root):
+            repo = commit_policy.run_repo(commit, base, created, root)
+            if not repo or not commit_policy.is_ours(repo, root, trees):
                 continue
             paths = commit_policy.judged_paths(commit, cmd, repo, base)
             plan_paths = [p for p in paths if PLAN_RX.match(p)]

@@ -45,7 +45,7 @@ MIN_MARGIN = float(os.environ.get("WORKLIST_AGENT_HINT_MIN_MARGIN", "1"))
 REFRESH_MIN = int(os.environ.get("WORKLIST_AGENT_HINT_REFRESH_MIN", "720"))
 MAX_PER_SESSION = int(os.environ.get("WORKLIST_AGENT_HINT_MAX_PER_SESSION", "3"))
 
-# ---- tokenisation ----------------------------------------------------------- A path-ish token: anything carrying a `/` or a `.` inside it. These are the high-value terms and they sit verbatim in the descriptions already (`./run.sh`, `scripts/dev/deploy-bench.sh`, `bench.rediacc.com`).
+# ---- tokenisation ----------------------------------------------------------- A path-ish token: anything carrying a `/` or a `.` inside it. These are the high-value terms and they sit verbatim in the descriptions already (`./run.sh`, `scripts/ops/secret-rename.py`, `bench-eu.rediacc.cloud`).
 PATH_RE = re.compile(r"[A-Za-z0-9_-]*(?:[./][A-Za-z0-9_-]+)+")
 # `{2,}` = three characters minimum, and it is deliberate and measured. A
 # four-character minimum silently discards `ops`, `rdc`, `k3s`, among the most discriminative tokens this repo has; admitting three-character words took the
@@ -59,7 +59,7 @@ WORD_RE = re.compile(r"[A-Za-z][A-Za-z0-9_-]{2,}")
 #
 # DUMB AND DETERMINISTIC ON PURPOSE: no stemmer library, no lexicon, no network. One suffix, longest match first, and if that match would leave too short a stem the word is left ALONE rather than falling through to a shorter suffix -- the fall-through is what turns `fixes` into `fixe`.
 #
-# Applied inside tokenize(), so the corpus and the haystack fold through the SAME code and cannot desynchronise. Word terms only: a path term matches verbatim, and folding `deploy-bench.sh` would be nonsense.
+# Applied inside tokenize(), so the corpus and the haystack fold through the SAME code and cannot desynchronise. Word terms only: a path term matches verbatim, and folding `secret-rename.py` would be nonsense.
 _FOLD_SUFFIXES = ("ment", "ing", "ed", "s")
 # A stem shorter than this is not a word, it is a fragment: `ops` -> `op`, `vms` -> `vm`, `k3s` -> `k3` are exactly the discriminative tokens section 3.2 went out of its way to admit, and stripping them would undo that.
 _FOLD_MIN_STEM = 4

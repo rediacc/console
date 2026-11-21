@@ -161,7 +161,10 @@ vi.mock('../license-recovery.js', () => ({
   refreshRepoIdentityFor: vi.fn(),
   resolveLicenseFailure: vi.fn(),
 }));
-vi.mock('../../telemetry/telemetry.js', () => ({ isTelemetryDisabled: () => true }));
+vi.mock('../../telemetry/telemetry.js', () => ({
+  isTelemetryDisabled: () => true,
+  telemetryService: { annotateCommand: vi.fn() },
+}));
 vi.mock('../../telemetry/otlp-credentials.js', () => ({ fetchOtlpCredentials: vi.fn() }));
 vi.mock('../../core/audit.js', () => ({ auditService: { recordOperation: vi.fn() } }));
 

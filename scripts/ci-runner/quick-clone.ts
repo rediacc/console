@@ -9,6 +9,8 @@
  *
  * WHAT IT NEVER DOES. It reads the live tree and writes one file there, `.ci/cache/prepush-receipt.json` (plus the runner's archive and events beside it). It moves no live branch and touches no live working tree file. It judges HEAD, so an uncommitted edit changes nothing.
  *
+ * A PINNED RUN, `--commit <sha>` (agent/plans/PLAN-push-decoupling.md D1.1), judges a named ancestor of the live HEAD instead of HEAD: the clone resets to that commit, the runner writes `.ci/cache/pinned-receipt.json`, and the whole receipt it archives as `.ci/cache/receipts/<tree>.json` is the copy `block_unverified_push.read_receipt` reads first. A pinned run never writes `.ci/cache/prepush-receipt.json`, so a receipt for a newer tree stays where the push guard reads it. A sha that is not an ancestor of HEAD is refused before the lock or the clone is touched, and a lease is refused as before.
+ *
  * DEPENDENCIES ARE A HARD-LINK COPY (`cp -al`), NOT A SYMLINK TO THE LIVE `node_modules`. A symlinked root makes `@rediacc/shared` resolve through `node_modules/@rediacc/shared -> ../../packages/shared` to the LIVE working tree (Node resolves real paths), so the run would judge dirty source while the receipt names HEAD. And a gate that runs `npm ci` in a linked directory (check:ci-account-portal does, in private/account) would empty the live one through the link. In a hard-link copy the relative workspace links resolve inside the clone, an `npm ci` only unlinks the clone's names, and a live `npm install` mid-run leaves the clone's inodes alone. Only the live hidden lockfile matching the HEAD lockfile admits the copy; anything else is a real `npm ci` in the clone. A toolchain cache that is read-only in practice is the one thing linked, and that link is spelled `ln -sfn`.
  *
  * NEVER A GREEN WITHOUT A JUDGED RECEIPT. A clone that cannot be set up falls back to the shared checkout with one loud line. Whichever tree ran, exit 0 needs a whole receipt written by this run, naming the judged tree, with `exitCode` 0 and an empty `failed`.
@@ -21,9 +23,16 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { isEntryPoint } from '../lib/entry-point.js';
+import { coveredByCarried, parseCarried } from './report.js';
 
 const RECEIPT_REL = path.join('.ci', 'cache', 'prepush-receipt.json');
+/** Where a pinned run's runner writes its receipt. Removed before each pinned run, so the runner never advances an earlier pinned receipt and always leaves a whole one to archive. */
+const PINNED_RECEIPT_REL = path.join('.ci', 'cache', 'pinned-receipt.json');
+/** The runner's per-tree archive beside both receipts (run.ts archiveReceipt), read first by the push guard. */
+const ARCHIVE_REL = path.join('.ci', 'cache', 'receipts');
 const RUNNER_REL = path.join('scripts', 'ci-runner', 'run.ts');
+/** The exit of an `--advance-only` run that found no record-only step to take: run.ts returns it, and this wrapper and wl_review.py read it as a refusal, not a red. */
+export const ADVANCE_REFUSED_EXIT = 4;
 /** Set for the runner in the clone: nested `ci:quick` stays where it is. */
 const IN_CLONE_ENV = 'CI_QUICK_IN_CLONE';
 /** Set for the runner when nothing may carry: a clone made this run holds no build output, so a carried prerequisite would leave its dependents with nothing to read, and `--no-carry` asks for every gate to be judged again. */
@@ -32,48 +41,166 @@ export const NO_CARRY_ENV = 'CI_QUICK_NO_CARRY';
 const LOCK_WAIT_MS = 90 * 60_000;
 const LOCK_POLL_MS = 2_000;
 /** Linked with `ln -sfn` when the live tree has them: pinned tool installs, far too big to copy and addressed by version. */
-const LINKED_CACHES = ['.ci/cache/toolchain', '.ci/cache/bin', '.venv'];
+const LINKED_CACHES = ['.ci/cache/toolchain', '.ci/cache/bin', '.ci/cache/registry', '.venv'];
 /** Copied once, when the clone has none: seeds its own measurement history. */
 const SEEDED_FILES = ['.ci/cache/gate-durations.json'];
 /**
- * Ignored build output a gate reads and no gate in its lane builds, hard-link copied when the live directory moves. The go build behind `private/renet/bin` is a prerequisite only of slow gates, while check:ci-no-rclone-embedded refuses an empty scan and check:ci-proxy-ops-host-check exits 77 without the binary, and check:ci-proxy-image-smoke stages `private/bin` (all measured in clone runs). The live tree's own run reads this same output, so the clone is no staler than it. A gate that rebuilds one replaces the clone's name, not the shared inode.
+ * Ignored build output a gate reads and no gate in its lane builds, re-seeded when the live directory moves: hard-link copied by default, or copied for real where an entry sets `link: false` (the renet embed assets). The go build behind `private/renet/bin` is a prerequisite only of slow gates, while check:ci-no-rclone-embedded refuses an empty scan and check:ci-proxy-ops-host-check exits 77 without the binary, and check:ci-proxy-image-smoke stages `private/bin` (all measured in clone runs). The live tree's own run reads this same output, so the clone is no staler than it. A hard-linked entry relies on a rebuild replacing the clone's name, not the shared inode; an entry whose rebuild may rewrite in place is copied instead.
  */
-const SEEDED_BUILDS = ['private/renet/bin', 'private/bin'];
+export interface SeededBuild {
+  path: string;
+  /** Hard links by default; `false` seeds a real copy, for output a rebuild may rewrite in place (a rewrite through a shared inode would reach the live tree). */
+  link?: boolean;
+}
+const SEEDED_BUILDS: readonly SeededBuild[] = [
+  // Hard-linked: the go build and the stage step behind these write a new file and replace the name, which leaves the shared inode alone.
+  { path: 'private/renet/bin' },
+  { path: 'private/bin' },
+  // The staged renet embed assets (rsync, zot, k3s ...): gitignored, built by `./build.sh embed_assets`, read by check:ci-embed-asset-versions. A kept clone held its first copy for weeks after the pins moved, so the gate judged stale versions the live tree no longer had.
+  // A real copy: a rebuild of the assets may rewrite a file in place, and through a hard link that write would corrupt the live tree's copy.
+  { path: 'private/renet/pkg/embed/assets', link: false },
+];
 /** Flags a whole-lane run in the clone keeps; every other flag names a narrowed or hand-made run. */
 const PASS_THROUGH_FLAGS = new Set(['--verbose', '--merge-output']);
 const PASS_THROUGH_VALUE_FLAGS = new Set(['--jobs', '--gate-timeout']);
 
 export type Route =
-  | { kind: 'clone'; pass: string[]; noCarry: boolean }
-  | { kind: 'here'; why: string; pass: string[] };
+  | { kind: 'clone'; pass: string[]; noCarry: boolean; commit?: string; advanceOnly?: boolean }
+  | { kind: 'here'; why: string; pass: string[] }
+  | { kind: 'refused'; why: string };
 
-/** Where this invocation runs. Only a plain whole-lane run goes to the clone: CI has no second tree to protect, and `--list`, `--only`, `--narrow` and a hand-given `--receipt-out` each already say what they want judged. */
-export function routeOf(args: readonly string[], env: NodeJS.ProcessEnv): Route {
-  if (env[IN_CLONE_ENV] === '1')
-    return { kind: 'here', why: 'already inside the kept clone', pass: [...args] };
-  if (env.CI === 'true' || env.GITHUB_ACTIONS === 'true')
-    return { kind: 'here', why: 'CI checks out one clean tree already', pass: [...args] };
-  if (args.includes('--here')) {
+/** A checkout's git directory and common directory, read from its files with no subprocess. */
+function gitDirsOf(tree: string): { gitDir: string; common: string } | undefined {
+  const dotgit = path.join(tree, '.git');
+  try {
+    let gitDir: string;
+    if (fs.statSync(dotgit).isDirectory()) gitDir = fs.realpathSync(dotgit);
+    else {
+      const text = fs.readFileSync(dotgit, 'utf8').trim();
+      if (!text.startsWith('gitdir:')) return undefined;
+      gitDir = fs.realpathSync(path.resolve(tree, text.slice('gitdir:'.length).trim()));
+    }
+    const commondir = path.join(gitDir, 'commondir');
+    if (!fs.existsSync(commondir)) return { gitDir, common: gitDir };
+    const common = fs.readFileSync(commondir, 'utf8').trim();
+    return { gitDir, common: fs.realpathSync(path.resolve(gitDir, common)) };
+  } catch {
+    return undefined;
+  }
+}
+
+/** The checkout holding `tree` when `tree` is its lease, `<main>/.claude/worktrees/<id>`. The twin of `lease_main` in .claude/hooks/stop/wl_core.py: position and git's word together. */
+export function leaseMainOf(tree: string): string | undefined {
+  const holder = path.dirname(tree);
+  if (path.basename(path.dirname(holder)) !== '.claude') return undefined;
+  if (!fs.statSync(path.join(tree, '.git'), { throwIfNoEntry: false })?.isFile()) return undefined;
+  const mine = gitDirsOf(tree);
+  if (mine === undefined || mine.gitDir === mine.common) return undefined;
+  const admin = path.dirname(mine.gitDir);
+  if (path.dirname(admin) !== mine.common || path.basename(admin) !== path.basename(holder))
+    return undefined;
+  const main = path.dirname(path.dirname(holder));
+  return gitDirsOf(main)?.common === mine.common ? main : undefined;
+}
+
+/** Where this invocation runs. A lease runs nothing here, whatever the flags: `cloneDirFor` keys on the checkout path, so each lease would make a kept clone, and the receipt the push guards read comes from the main checkout at landing. Only a plain whole-lane run goes to the clone: CI has no second tree to protect, and `--list`, `--only`, `--narrow` and a hand-given `--receipt-out` each already say what they want judged. */
+export function routeOf(args: readonly string[], env: NodeJS.ProcessEnv, live: string): Route {
+  const main = leaseMainOf(live);
+  if (main !== undefined) {
     return {
-      kind: 'here',
-      why: '--here asked for this checkout',
-      pass: args.filter((arg) => arg !== '--here'),
+      kind: 'refused',
+      why: `${live} is a lease of ${main}, and full gates run only in the main checkout at landing, where the push guards read their receipt. Land the commits, then run npm run ci:quick in ${main}. npm run ci -- --narrow and named tests stay allowed in a lease.`,
     };
   }
+  const pinned = commitArg(args);
+  if (pinned !== undefined) {
+    if ('why' in pinned) return { kind: 'refused', why: pinned.why };
+    const inner = routeOf(pinned.rest, env, live);
+    if (inner.kind !== 'clone')
+      return {
+        kind: 'refused',
+        why: `--commit judges a pinned commit in the kept clone only, and this run would not use the clone (${inner.why})`,
+      };
+    if (inner.advanceOnly === true)
+      return {
+        kind: 'refused',
+        why: '--advance-only carries the receipt to HEAD, and --commit judges another commit; give one of them',
+      };
+    return { ...inner, commit: pinned.commit };
+  }
+  // --advance-only reads the record-only readers in the kept clone at HEAD and never runs in the shared checkout, so every route that would land here is a refusal instead. That includes the in-clone marker below: CI_QUICK_IN_CLONE is an inherited environment variable, not proof that this cwd is the kept clone, and the wrapper's own advance-only call hands `--advance-only` straight to the runner inside the clone, never through this route.
+  const here = (why: string, pass: string[]): Route =>
+    args.includes('--advance-only')
+      ? {
+          kind: 'refused',
+          why: `--advance-only runs only in the kept clone, and this run would use the shared checkout (${why})`,
+        }
+      : { kind: 'here', why, pass };
+  if (env[IN_CLONE_ENV] === '1') return here('already inside the kept clone', [...args]);
+  if (env.CI === 'true' || env.GITHUB_ACTIONS === 'true')
+    return here('CI checks out one clean tree already', [...args]);
+  if (args.includes('--here'))
+    return here(
+      '--here asked for this checkout',
+      args.filter((arg) => arg !== '--here')
+    );
   const noCarry = args.includes('--no-carry');
-  const pass = args.filter((arg) => arg !== '--no-carry');
+  const advanceOnly = args.includes('--advance-only');
+  const pass = args.filter((arg) => arg !== '--no-carry' && arg !== '--advance-only');
   for (let i = 0; i < pass.length; i++) {
     if (PASS_THROUGH_FLAGS.has(pass[i])) continue;
     if (PASS_THROUGH_VALUE_FLAGS.has(pass[i])) {
       i++;
       continue;
     }
-    return { kind: 'here', why: `${pass[i]} is not a whole-lane run`, pass: [...args] };
+    return here(`${pass[i]} is not a whole-lane run`, [...args]);
   }
-  return { kind: 'clone', pass, noCarry };
+  return advanceOnly
+    ? { kind: 'clone', pass, noCarry, advanceOnly }
+    : { kind: 'clone', pass, noCarry };
 }
 
-/** The kept clone of `live`. Per checkout, outside every tracked tree. */
+/** `--commit <sha>` or `--commit=<sha>` taken out of `args`; undefined when the flag is absent. */
+function commitArg(
+  args: readonly string[]
+): { commit: string; rest: string[] } | { why: string } | undefined {
+  const rest: string[] = [];
+  let commit: string | undefined;
+  let seen = 0;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--commit' || arg.startsWith('--commit=')) {
+      seen++;
+      commit = arg === '--commit' ? args[++i] : arg.slice('--commit='.length);
+      continue;
+    }
+    rest.push(arg);
+  }
+  if (seen === 0) return undefined;
+  if (seen > 1) return { why: '--commit names one commit, and it was given more than once' };
+  if (commit === undefined || commit === '' || commit.startsWith('-'))
+    return { why: '--commit needs a commit: npm run ci:quick -- --commit <sha>' };
+  return { commit, rest };
+}
+
+/** The full sha `spec` names in `live` when it is HEAD or an ancestor of it, else why not. Read before the lock and the clone, so a refusal touches neither. */
+export function pinnedCommit(live: string, spec: string): { sha: string } | { why: string } {
+  const sha = shTry('git', ['rev-parse', '--verify', '--quiet', `${spec}^{commit}`], live);
+  if (sha === undefined || sha === '')
+    return { why: `--commit ${spec} names no commit in ${live}` };
+  const ancestor = spawnSync('git', ['merge-base', '--is-ancestor', sha, 'HEAD'], {
+    cwd: live,
+    env: gitEnv(),
+    stdio: 'ignore',
+  });
+  if (ancestor.status !== 0)
+    return {
+      why: `--commit ${spec} (${sha.slice(0, 12)}) is not an ancestor of HEAD in ${live}; a pinned run judges a commit the branch tip already contains`,
+    };
+  return { sha };
+}
+
+/** The kept clone of `live`, outside every tracked tree. One per tree path, keyed by the sha256 of its real path, so the main checkout and the landing tree beside it never share a clean clone, and each writes its receipt into its own `.ci/cache` for the push guards to read there (PLAN-two-track-merge-dev LT6). */
 export function cloneDirFor(live: string, env: NodeJS.ProcessEnv): string {
   if (env.CI_QUICK_CLONE_DIR) return path.resolve(env.CI_QUICK_CLONE_DIR);
   const base = env.XDG_CACHE_HOME || path.join(env.HOME || os.homedir(), '.cache');
@@ -272,6 +399,39 @@ export function lockDifference(lockText: string, hiddenText: string): string | u
   return undefined;
 }
 
+/**
+ * Does each package the hidden lockfile names sit on disk at the version the hidden lockfile records? Undefined means yes, or nothing to judge; a string names the first difference.
+ *
+ * The hidden lockfile alone cannot answer, because `npm install --package-lock-only` rewrites it without touching node_modules (measured under npm 11.21.0: after a wrangler bump the hidden lock read 4.157.0 while node_modules/wrangler/package.json stayed 4.156.2). `lockDifference` then reports a match, and the stale files get hard-linked into every clone. A package whose directory holds no package.json is a difference too, unless it is optional or a peer: a lockfile-only rewrite can add a nested package to both lockfiles and leave node_modules without it, and `lockDifference` compares the two lockfiles only, never the disk. An unparseable package.json is not judged.
+ */
+export function installedDifference(projectDir: string, hiddenText: string): string | undefined {
+  const hidden =
+    (JSON.parse(hiddenText) as { packages?: Record<string, HiddenPackage> }).packages ?? {};
+  for (const [key, entry] of Object.entries(hidden)) {
+    if (entry.link === true || entry.version === undefined || !key.startsWith('node_modules/'))
+      continue;
+    let onDisk: string | undefined;
+    try {
+      onDisk = (
+        JSON.parse(fs.readFileSync(path.join(projectDir, key, 'package.json'), 'utf8')) as {
+          version?: string;
+        }
+      ).version;
+    } catch (error) {
+      if (
+        (error as NodeJS.ErrnoException).code === 'ENOENT' &&
+        entry.optional !== true &&
+        entry.peer !== true
+      )
+        return `${key} is in the hidden lockfile but not on disk`;
+      continue;
+    }
+    if (onDisk !== undefined && onDisk !== entry.version)
+      return `${key} is on disk at ${onDisk}, its hidden lockfile says ${entry.version}`;
+  }
+  return undefined;
+}
+
 /** Every `<dir>/node_modules` the live tree holds for a tracked `<dir>/package.json` at `commit`, grouped under the lockfile directory that owns it. A workspace member without its own lockfile belongs to the nearest ancestor with one. */
 export function dependencyGroups(
   tracked: readonly string[],
@@ -328,6 +488,30 @@ function trackedAt(clone: string, commit: string): string[] {
   return out;
 }
 
+/** What `cp` says when a source entry vanished between its directory read and its link: usually a concurrent tool's temp file (`node_modules/.vitest-cache/.tmp-*`). The text cannot tell that from an entry missing for another reason, so both are retried, and a persistent one is thrown after the last attempt. */
+const VANISHED_RE = /cannot stat|No such file or directory/;
+export const LINK_ATTEMPTS = 3;
+
+/**
+ * `cp -al source dest`, again from scratch when a source entry vanished mid-copy: a concurrent vitest writes and deletes temp files under `node_modules/.vitest-cache`, and one that disappears after `cp` listed it fails the whole copy (a writer lease was refused this way on 2026-11-15). The partial `dest` is removed before each retry; any other failure, and a missing-entry error on the last attempt, is thrown as it is. Returns the attempt that succeeded.
+ */
+export function linkTreeRetrying(
+  source: string,
+  dest: string,
+  io: { copy: (source: string, dest: string) => void; remove: (dest: string) => void },
+  attempts = LINK_ATTEMPTS
+): number {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      io.copy(source, dest);
+      return attempt;
+    } catch (err) {
+      if (attempt >= attempts || !VANISHED_RE.test((err as Error).message)) throw err;
+      io.remove(dest);
+    }
+  }
+}
+
 /**
  * Dependencies for every lockfile directory the live tree has installed. The live install is hard-link copied when its hidden lockfile matches the lockfile at HEAD, and left alone when the clone already holds that exact install; a difference gets a real `npm ci` in the clone. Returns one line per group that changed.
  */
@@ -352,7 +536,8 @@ export function syncDependencies(
     const lockText = fs.readFileSync(path.join(clone, dir, 'package-lock.json'), 'utf8');
     const hiddenPath = path.join(live, dir, 'node_modules', '.package-lock.json');
     const hiddenText = fs.existsSync(hiddenPath) ? fs.readFileSync(hiddenPath, 'utf8') : '{}';
-    const difference = lockDifference(lockText, hiddenText);
+    const difference =
+      lockDifference(lockText, hiddenText) ?? installedDifference(path.join(live, dir), hiddenText);
     const digest = createHash('sha256')
       .update(difference === undefined ? `link\n${hiddenText}` : `install\n${lockText}`)
       .digest('hex');
@@ -361,11 +546,10 @@ export function syncDependencies(
     for (const m of members) cloneFs.remove(path.join(clone, m, 'node_modules'));
     if (difference === undefined) {
       for (const m of members)
-        sh(
-          'cp',
-          ['-al', path.join(live, m, 'node_modules'), path.join(clone, m, 'node_modules')],
-          live
-        );
+        linkTreeRetrying(path.join(live, m, 'node_modules'), path.join(clone, m, 'node_modules'), {
+          copy: (source, dest) => void sh('cp', ['-al', source, dest], live),
+          remove: (dest) => cloneFs.remove(dest),
+        });
       notes.push(`${dir}: hard-linked ${members.length} node_modules from the live install`);
     } else {
       seams.install(path.join(clone, dir));
@@ -405,14 +589,19 @@ function syncCaches(clone: string, live: string): void {
   }
 }
 
-/** Name, size and mtime of a directory's top level: what a rebuild moves. Recorded apart from the copy, because a file in the copy is the same inode as the live one, so an in-place write there would compare equal to itself. */
-function fingerprint(dir: string): string {
+/** Path, size and mtime of every entry under a directory (stat only, no content read): what a rebuild moves. Each directory contributes its own relative name, so an added or removed empty subdirectory moves it too. A rebuild that rewrites a file in place leaves the parent directory's mtime alone, so a top-level listing would miss it. Recorded apart from the copy, because a file in the copy is the same inode as the live one, so an in-place write there would compare equal to itself. */
+export function fingerprint(dir: string, prefix = ''): string {
   return fs
     .readdirSync(dir)
     .sort((x, y) => Number(x > y) - Number(x < y))
     .map((name) => {
-      const stat = fs.lstatSync(path.join(dir, name));
-      return `${name}:${stat.size}:${stat.mtimeMs}`;
+      const full = path.join(dir, name);
+      const stat = fs.lstatSync(full);
+      if (stat.isDirectory()) {
+        const inner = fingerprint(full, `${prefix}${name}/`);
+        return inner === '' ? `${prefix}${name}/` : `${prefix}${name}/\n${inner}`;
+      }
+      return `${prefix}${name}:${stat.size}:${stat.mtimeMs}`;
     })
     .join('\n');
 }
@@ -421,7 +610,7 @@ function fingerprint(dir: string): string {
 export function syncBuilds(
   clone: string,
   live: string,
-  builds: readonly string[] = SEEDED_BUILDS
+  builds: readonly SeededBuild[] = SEEDED_BUILDS
 ): void {
   const recordPath = `${clone}.builds.json`;
   let record: Record<string, string> = {};
@@ -430,7 +619,7 @@ export function syncBuilds(
   } catch {
     record = {};
   }
-  for (const build of builds) {
+  for (const { path: build, link = true } of builds) {
     const source = path.join(live, build);
     if (!fs.existsSync(source)) continue;
     const dest = path.join(clone, build);
@@ -438,7 +627,7 @@ export function syncBuilds(
     if (fs.existsSync(dest) && record[build] === seen) continue;
     cloneFs.remove(dest);
     cloneFs.ensureDir(path.dirname(dest));
-    sh('cp', ['-al', source, dest], live);
+    sh('cp', [link ? '-al' : '-a', source, dest], live);
     record[build] = seen;
   }
   cloneFs.putState(recordPath, `${JSON.stringify(record, null, 2)}\n`);
@@ -464,12 +653,14 @@ export interface PrepareInput {
   live: string;
   clone: string;
   seams?: DepsSeams;
+  /** A pinned run's full sha, an ancestor of the live HEAD (`pinnedCommit`); absent, the clone takes the live HEAD. */
+  commit?: string;
 }
 
-/** Makes or refreshes the clone at the live HEAD: full history, the live view of origin, the same branch name, submodules at the gitlinks, dependencies, an empty `git status`. Throws with the reason on anything it cannot do. */
-export function prepareClone({ live, clone, seams }: PrepareInput): Prepared {
-  const head = sh('git', ['rev-parse', 'HEAD'], live);
-  const tree = sh('git', ['rev-parse', 'HEAD^{tree}'], live);
+/** Makes or refreshes the clone at the live HEAD, or at `commit` for a pinned run: full history, the live view of origin, the same branch name, submodules at the gitlinks, dependencies, an empty `git status`. Throws with the reason on anything it cannot do. */
+export function prepareClone({ live, clone, seams, commit }: PrepareInput): Prepared {
+  const head = commit ?? sh('git', ['rev-parse', 'HEAD'], live);
+  const tree = sh('git', ['rev-parse', `${head}^{tree}`], live);
   const branch = sh('git', ['branch', '--show-current'], live);
   const relToLive = path.relative(fs.realpathSync(live), clone);
   if (!relToLive.startsWith('..') && !path.isAbsolute(relToLive))
@@ -532,7 +723,9 @@ export function prepareClone({ live, clone, seams }: PrepareInput): Prepared {
       `the clone is not clean after setup: ${porcelain.split('\n').slice(0, 3).join(' | ')}`
     );
   if (sh('git', ['rev-parse', 'HEAD^{tree}'], clone) !== tree)
-    throw new Error('the clone did not reach the tree of the live HEAD');
+    throw new Error(
+      `the clone did not reach the tree of ${commit === undefined ? 'the live HEAD' : `the pinned commit ${commit.slice(0, 12)}`}`
+    );
   return { clone, head, tree, branch, fresh, notes };
 }
 
@@ -607,6 +800,7 @@ export interface ReceiptShape {
   exitCode?: number;
   failed?: string[];
   blocked?: string[];
+  findings?: Record<string, string[] | null>;
   gates?: Record<string, { verdict?: string; carriedFrom?: unknown } | undefined>;
   advances?: { to?: string; gates?: Record<string, number> }[];
 }
@@ -630,6 +824,51 @@ export function unjudged(
   if (vouchedTree(receipt) !== tree)
     return `the receipt vouches for ${vouchedTree(receipt) || 'no tree'}, this run judged ${tree}`;
   return undefined;
+}
+
+/** HEAD's committed carried-reds.json in `live`, the copy the push guard reads (never the working tree's, never the judged clone's); undefined when HEAD holds none or git cannot answer, which `carriedOnly` reads as nothing carried. */
+export function headCarriedText(live: string): string | undefined {
+  return shTry('git', ['show', 'HEAD:.ci/config/carried-reds.json'], live);
+}
+
+/** carried-reds.json text without the entries whose reason is under the push guard's bar (block_unverified_push REASON_MIN 80, STAR_REASON_MIN 160 for `*`): the guard reads such an entry as carrying nothing. Unparseable text passes through for parseCarried to reject. */
+function withReasonBar(text: string | undefined): string | undefined {
+  if (text === undefined) return undefined;
+  try {
+    const doc = JSON.parse(text) as { carried?: unknown };
+    if (!Array.isArray(doc.carried)) return text;
+    doc.carried = doc.carried.filter((e) => {
+      const entry = e as { findings?: unknown; reason?: unknown };
+      const reason = typeof entry.reason === 'string' ? entry.reason : '';
+      return reason.length >= (entry.findings === '*' ? 160 : 80);
+    });
+    return JSON.stringify(doc);
+  } catch {
+    return text;
+  }
+}
+
+/** Whether a RED receipt is red only on gates `.ci/config/carried-reds.json` carries, the way the push guard reads it (block_unverified_push.carried_verdict): something failed and every failed gate is carried whole (`*`) or on exactly the keys the receipt recorded for it. Such a run is not green, and its exit stays 1, but it may still be carried forward to HEAD, because the push guard would admit it there (#68452957). Pure. */
+export function carriedOnly(
+  receipt: ReceiptShape | undefined,
+  carriedText: string | undefined
+): boolean {
+  if (receipt === undefined || receipt.whole !== true) return false;
+  const failed = receipt.failed ?? [];
+  // A gate that could not run here (`blocked`) is admitted by the guard as it is, so it does not decide this either.
+  if (failed.length === 0) return false;
+  const carried = parseCarried(withReasonBar(carriedText));
+  // A carried gate that is not red is stale, and so is a carried key the gate no longer prints: the guard refuses both.
+  if (carried.some((c) => !failed.includes(c.gate))) return false;
+  return failed.every((id) => {
+    const keys = receipt.findings?.[id] ?? null;
+    if (!coveredByCarried(id, keys, carried)) return false;
+    const entry = carried.find((c) => c.gate === id);
+    return (
+      entry?.findings === '*' ||
+      (keys !== null && new Set(keys).size === new Set(entry?.findings).size)
+    );
+  });
 }
 
 /** The exit of a whole-lane run: the runner's own when it failed, and otherwise what the receipt it left says. An advance over a red receipt used to exit 0 (#ea5e31cd). */
@@ -670,9 +909,10 @@ export function summaryLines(input: {
       const from = receipt?.gates?.[id]?.carriedFrom;
       return from !== undefined && from !== null;
     });
+    // The runner never carries a red (run.ts decideCarry), but a receipt written before that rule did: a red naming a carried verdict is most likely such an old receipt, so say that and how to clear it rather than blaming the runner.
     if (carriedRed.length > 0)
       lines.push(
-        `ci:quick: carried, not re-judged, because their inputs have not changed: ${carriedRed.join(', ')}. If the cause lay outside the tree, re-judge with: npm run ci:quick -- --no-carry\n`
+        `ci:quick: STALE RECEIPT: these reds name a carried verdict, which the current runner never writes (it re-judges every red), so the receipt most likely predates that rule: ${carriedRed.join(', ')}. An old receipt can trigger this; clear it by judging every gate fresh with: npm run ci:quick -- --no-carry. If a fresh run writes the same shape again, the runner itself is broken.\n`
       );
     lines.push(
       'ci:quick: repair in this checkout with the narrow set, which judges the working tree and writes no receipt:\n  npm run ci -- --narrow\n'
@@ -681,7 +921,64 @@ export function summaryLines(input: {
   return lines;
 }
 
-function readReceipt(file: string): { receipt?: ReceiptShape; mtimeMs: number } {
+export type Follow =
+  | { kind: 'done' }
+  | { kind: 'skip'; why: string }
+  | { kind: 'follow'; why: string };
+
+/** Whether a clone run is followed by a pass at the live HEAD (agent/plans/PLAN-push-decoupling.md D1.2). Only a green first run is followed, or one red only on gates carried-reds.json carries (`firstCarriedOnly`, judged as the push guard judges it): any other red one is repaired before anything is brought forward. A pinned run is followed even when its tree equals HEAD's, because it never writes the latest receipt the push guard reads (the follow pass carries it there). A latest receipt that is whole, green and already vouches for HEAD's tree is a newer receipt, left alone. Pure, so the selftest drives every branch. */
+export function followOf(input: {
+  pinned: boolean;
+  judgedTree: string;
+  liveTree: string | undefined;
+  firstExit: number;
+  /** The first run is red only on carried gates (`carriedOnly`): followed like a green one, because the push guard admits it. */
+  firstCarriedOnly?: boolean;
+  latest: ReceiptShape | undefined;
+}): Follow {
+  const { pinned, judgedTree, liveTree, firstExit, firstCarriedOnly, latest } = input;
+  if (!pinned && liveTree === judgedTree) return { kind: 'done' };
+  if (liveTree === undefined || liveTree === '')
+    return { kind: 'skip', why: 'HEAD^{tree} is unreadable in the checkout' };
+  if (firstExit !== 0 && firstCarriedOnly !== true)
+    return {
+      kind: 'skip',
+      why: `the run over tree ${judgedTree.slice(0, 12)} is not green, so nothing is carried to HEAD tree ${liveTree.slice(0, 12)}`,
+    };
+  if (
+    latest?.whole === true &&
+    latest.exitCode === 0 &&
+    (latest.failed ?? []).length === 0 &&
+    vouchedTree(latest) === liveTree
+  )
+    return {
+      kind: 'skip',
+      why: `${RECEIPT_REL} already vouches for HEAD tree ${liveTree.slice(0, 12)} and is left alone`,
+    };
+  return {
+    kind: 'follow',
+    why: pinned
+      ? `the pinned tree ${judgedTree.slice(0, 12)} is behind HEAD tree ${liveTree.slice(0, 12)}`
+      : `HEAD moved during the run, from tree ${judgedTree.slice(0, 12)} to ${liveTree.slice(0, 12)}`,
+  };
+}
+
+/** Why the per-tree archive does not hold a whole receipt for `tree`, or undefined when it does. The same admission test `block_unverified_push.read_receipt` applies to the copy, plus one more: with `writtenAfter` (when this run began), an archive an earlier run left is no evidence about this one, so a failed archive write cannot exit 0 on a stale copy. */
+export function unarchived(live: string, tree: string, writtenAfter?: number): string | undefined {
+  const file = path.join(live, ARCHIVE_REL, `${tree}.json`);
+  const { receipt, mtimeMs } = readReceipt(file);
+  if (receipt === undefined) return `no archived receipt at ${file}`;
+  if (writtenAfter !== undefined && mtimeMs < writtenAfter)
+    return `the archived receipt ${file} predates this run`;
+  if (receipt.headTree !== tree) return `${file} names tree ${receipt.headTree ?? 'none'}`;
+  if (receipt.whole !== true) return `${file} is not whole`;
+  return undefined;
+}
+
+function readReceipt(file: string): {
+  receipt?: ReceiptShape;
+  mtimeMs: number;
+} {
   try {
     return {
       receipt: JSON.parse(fs.readFileSync(file, 'utf8')) as ReceiptShape,
@@ -728,7 +1025,8 @@ export interface QuickSeams {
   prepare: (input: PrepareInput) => Prepared;
   /** Runs `run.ts <args>` in `cwd`, returning its exit code. */
   runner: (cwd: string, args: string[], env: NodeJS.ProcessEnv) => Promise<number>;
-  acquire: (lockPath: string) => Promise<boolean>;
+  /** `waitMs` 0 asks once and does not wait (`--advance-only`). */
+  acquire: (lockPath: string, waitMs?: number) => Promise<boolean>;
   now: () => number;
 }
 
@@ -746,11 +1044,23 @@ async function selftestThenLane(
 /** Whichever tree ran, the end of a whole-lane run is the same: judge what it left. */
 function finishWhole(
   seams: QuickSeams,
-  input: { runnerExit: number; startedAt: number; setupMs: number; tree: string; where: string }
+  input: {
+    runnerExit: number;
+    startedAt: number;
+    setupMs: number;
+    tree: string;
+    where: string;
+    /** Where the runner was told to write; the live checkout's own receipt when absent. */
+    receiptPath?: string;
+    /** A pinned run must also leave the whole receipt in the per-tree archive the push guard reads first. */
+    archived?: boolean;
+  }
 ): number {
-  const receiptPath = path.join(seams.live, RECEIPT_REL);
+  const receiptPath = input.receiptPath ?? path.join(seams.live, RECEIPT_REL);
   const { receipt, mtimeMs } = readReceipt(receiptPath);
-  const why = unjudged(receipt, mtimeMs, input.startedAt, input.tree);
+  let why = unjudged(receipt, mtimeMs, input.startedAt, input.tree);
+  if (why === undefined && input.archived === true)
+    why = unarchived(seams.live, input.tree, input.startedAt);
   let exit = wholeExit(input.runnerExit, receipt);
   if (why !== undefined) {
     seams.log(`ci:quick: NO JUDGED RECEIPT at ${receiptPath}: ${why}\n`);
@@ -769,7 +1079,11 @@ function finishWhole(
 
 export async function quickMain(args: readonly string[], seams: QuickSeams): Promise<number> {
   const startedAt = seams.now();
-  const route = routeOf(args, seams.env);
+  const route = routeOf(args, seams.env, seams.live);
+  if (route.kind === 'refused') {
+    seams.log(`ci:quick: REFUSED: ${route.why}\n`);
+    return 1;
+  }
   const lane = ['--quick', ...route.pass];
   if (route.kind === 'here') {
     const whole = route.pass.length === 0;
@@ -785,20 +1099,75 @@ export async function quickMain(args: readonly string[], seams: QuickSeams): Pro
     });
   }
 
+  // A PINNED RUN is resolved before the lock and the clone: a sha that is not an ancestor of HEAD touches neither.
+  let commit: string | undefined;
+  if (route.commit !== undefined) {
+    const pin = pinnedCommit(seams.live, route.commit);
+    if ('why' in pin) {
+      seams.log(`ci:quick: REFUSED: ${pin.why}\n`);
+      return 1;
+    }
+    commit = pin.sha;
+  }
   const clone = cloneDirFor(seams.live, seams.env);
-  const receiptPath = path.join(seams.live, RECEIPT_REL);
+  const receiptPath = path.join(
+    seams.live,
+    commit === undefined ? RECEIPT_REL : PINNED_RECEIPT_REL
+  );
   const lockPath = `${clone}.lock`;
   let prepared: Prepared | undefined;
   let why = '';
   let locked = false;
   try {
-    locked = await seams.acquire(lockPath);
-    if (locked) prepared = seams.prepare({ live: seams.live, clone });
+    locked = await seams.acquire(lockPath, route.advanceOnly === true ? 0 : undefined);
+    if (locked) prepared = seams.prepare({ live: seams.live, clone, commit });
     else why = `another session held ${lockPath} past the wait`;
   } catch (err) {
     why = (err as Error).message;
   }
   try {
+    // AN ADVANCE ONLY (`--advance-only`, agent/plans/PLAN-push-decoupling.md R3): the readers of a record-only commit in the clone at HEAD, or nothing. It never falls back, never waits for the clone (a ci:quick holding it follows HEAD itself), and never runs the lane.
+    if (route.advanceOnly === true) {
+      if (!locked) {
+        seams.log(
+          `ci:quick: ADVANCE NOT TAKEN: another ci:quick run holds ${lockPath}, and its follow pass brings the receipt to HEAD\n`
+        );
+        return ADVANCE_REFUSED_EXIT;
+      }
+      if (prepared === undefined) {
+        seams.log(
+          `ci:quick: ADVANCE NOT TAKEN: the kept clone could not be set up at HEAD: ${why}\n`
+        );
+        return 1;
+      }
+      const latestPath = path.join(seams.live, RECEIPT_REL);
+      const advanced = await selftestThenLane(
+        seams,
+        prepared.clone,
+        [...lane, '--advance-only', '--receipt-out', latestPath],
+        cloneEnv(seams.env, seams.live, prepared.clone, route.noCarry)
+      );
+      if (advanced === ADVANCE_REFUSED_EXIT) {
+        seams.log(
+          `ci:quick: ADVANCE REFUSED at tree ${prepared.tree.slice(0, 12)}: the runner's line above says why; nothing else ran\n`
+        );
+        return ADVANCE_REFUSED_EXIT;
+      }
+      return finishWhole(seams, {
+        runnerExit: advanced,
+        startedAt,
+        setupMs: 0,
+        tree: prepared.tree,
+        where: `the kept clean clone ${prepared.clone} (advance only)`,
+      });
+    }
+    if (prepared === undefined && commit !== undefined) {
+      // No fallback for a pinned run: the shared checkout holds HEAD, not the pinned commit.
+      seams.log(
+        `ci:quick: REFUSED: the kept clone could not be set up at the pinned commit ${commit.slice(0, 12)}, and the shared checkout holds HEAD, so nothing judges it: ${why}\n`
+      );
+      return 1;
+    }
     if (prepared === undefined) {
       seams.log(
         `ci:quick: !!! FALLBACK TO THE SHARED CHECKOUT, nothing will carry and tree writers are dropped: the clean clone could not be set up: ${why}\n`
@@ -814,8 +1183,10 @@ export async function quickMain(args: readonly string[], seams: QuickSeams): Pro
     }
     const setupMs = seams.now() - startedAt;
     seams.log(
-      `ci:quick: judging HEAD ${prepared.head.slice(0, 12)} tree ${prepared.tree.slice(0, 12)} on ${prepared.branch || '(detached)'} in the kept clean clone ${prepared.clone}; uncommitted edits in ${seams.live} are NOT judged; receipt: ${receiptPath}\n`
+      `ci:quick: judging ${commit === undefined ? 'HEAD' : 'the pinned commit'} ${prepared.head.slice(0, 12)} tree ${prepared.tree.slice(0, 12)} on ${prepared.branch || '(detached)'} in the kept clean clone ${prepared.clone}; uncommitted edits in ${seams.live} are NOT judged; receipt: ${commit === undefined ? receiptPath : `${path.join(seams.live, ARCHIVE_REL, `${prepared.tree}.json`)} (written through ${receiptPath}; ${RECEIPT_REL} is left alone)`}\n`
     );
+    // tree-write: safe the pinned run deletes only its own receipt under the ignored .ci/cache, so a stale one cannot stand in and the runner judges the pinned tree whole
+    if (commit !== undefined) fs.rmSync(receiptPath, { force: true });
     for (const note of prepared.notes) seams.log(`ci:quick: ${note}\n`);
     const env = cloneEnv(seams.env, seams.live, prepared.clone, prepared.fresh || route.noCarry);
     const exit = await selftestThenLane(
@@ -824,18 +1195,70 @@ export async function quickMain(args: readonly string[], seams: QuickSeams): Pro
       [...lane, '--receipt-out', receiptPath],
       env
     );
-    const moved = shTry('git', ['rev-parse', 'HEAD^{tree}'], seams.live);
-    if (moved !== prepared.tree)
-      seams.log(
-        `ci:quick: HEAD moved in ${seams.live} during this run: the receipt judges tree ${prepared.tree.slice(0, 12)}, HEAD is now ${(moved ?? '?').slice(0, 12)}, so the push guard will ask for another run\n`
-      );
-    return finishWhole(seams, {
+    const first = finishWhole(seams, {
       runnerExit: exit,
       startedAt,
       setupMs,
       tree: prepared.tree,
-      where: `the kept clean clone ${prepared.clone}`,
+      where: `the kept clean clone ${prepared.clone}${commit === undefined ? '' : ` at the pinned commit ${commit.slice(0, 12)}`}`,
+      receiptPath,
+      archived: commit !== undefined,
     });
+    // THE FOLLOW PASS (agent/plans/PLAN-push-decoupling.md D1.2): HEAD moved during the run, or the run judged a pinned ancestor, so the receipt the push guard reads does not speak for HEAD yet. One more pass in the clone at HEAD takes the runner's own advance (record-only movement: the readers alone, one `advances` step) or its carry (every gate whose input hash a held receipt judged), and runs only what is left.
+    const latestPath = path.join(seams.live, RECEIPT_REL);
+    const liveTree = shTry('git', ['rev-parse', 'HEAD^{tree}'], seams.live);
+    const follow = followOf({
+      pinned: commit !== undefined,
+      judgedTree: prepared.tree,
+      liveTree,
+      firstExit: first,
+      firstCarriedOnly:
+        first !== 0 && carriedOnly(readReceipt(receiptPath).receipt, headCarriedText(seams.live)),
+      latest: readReceipt(latestPath).receipt,
+    });
+    if (follow.kind === 'done') return first;
+    if (follow.kind === 'skip') {
+      seams.log(`ci:quick: no follow pass: ${follow.why}\n`);
+      return first;
+    }
+    const followAt = seams.now();
+    seams.log(
+      `ci:quick: FOLLOW PASS: ${follow.why}; judging HEAD tree ${(liveTree ?? '?').slice(0, 12)} with the carry and advance pass from the receipt for tree ${prepared.tree.slice(0, 12)}\n`
+    );
+    let next: Prepared;
+    try {
+      next = seams.prepare({ live: seams.live, clone });
+    } catch (err) {
+      seams.log(
+        `ci:quick: the follow pass could not set up the clone at HEAD, so the push guard will ask for another run: ${(err as Error).message}\n`
+      );
+      return first === 0 ? 1 : first;
+    }
+    for (const note of next.notes) seams.log(`ci:quick: ${note}\n`);
+    const followExit = await selftestThenLane(
+      seams,
+      next.clone,
+      [
+        ...lane,
+        '--receipt-out',
+        latestPath,
+        ...(commit === undefined ? [] : ['--advance-from', receiptPath]),
+      ],
+      cloneEnv(seams.env, seams.live, next.clone, next.fresh || route.noCarry)
+    );
+    const second = finishWhole(seams, {
+      runnerExit: followExit,
+      startedAt: followAt,
+      setupMs: 0,
+      tree: next.tree,
+      where: `the kept clean clone ${next.clone} (follow pass)`,
+    });
+    const after = shTry('git', ['rev-parse', 'HEAD^{tree}'], seams.live);
+    if (after !== next.tree)
+      seams.log(
+        `ci:quick: HEAD moved again in ${seams.live} during the follow pass: the receipt speaks for tree ${next.tree.slice(0, 12)}, HEAD is now ${(after ?? '?').slice(0, 12)}, so the push guard will ask for another run\n`
+      );
+    return first !== 0 ? first : second;
   } finally {
     if (locked) fs.rmSync(lockPath, { force: true });
   }
@@ -857,10 +1280,14 @@ function realSeams(): QuickSeams {
         cwd,
         env
       ),
-    acquire: (lockPath) =>
-      acquireLock(lockPath, (line) => {
-        process.stdout.write(line);
-      }),
+    acquire: (lockPath, waitMs) =>
+      acquireLock(
+        lockPath,
+        (line) => {
+          process.stdout.write(line);
+        },
+        waitMs
+      ),
     now: () => Date.now(),
   };
 }
@@ -875,6 +1302,82 @@ export async function quickCloneSelftest(
     assertions++;
     if (!ok) failures.push(message);
   };
+  // linkTreeRetrying: a vanished source entry is retried after removing the partial copy; any other failure is not (2026-11-15 lease refusal).
+  {
+    const calls: string[] = [];
+    const vanish = new Error(
+      "cp -al a b exited 1: cp: cannot stat 'a/.vitest-cache/.tmp-1': No such file or directory"
+    );
+    let left = 1;
+    const won = linkTreeRetrying(path.join(tmpDir, 'a'), path.join(tmpDir, 'b'), {
+      copy: () => {
+        calls.push('copy');
+        if (left-- > 0) throw vanish;
+      },
+      remove: () => void calls.push('remove'),
+    });
+    check(
+      won === 2 && calls.join(',') === 'copy,remove,copy',
+      `a vanished entry must retry after removing the partial copy, got attempt ${won}, calls ${calls.join(',')}`
+    );
+    let other = '';
+    try {
+      linkTreeRetrying(path.join(tmpDir, 'a'), path.join(tmpDir, 'b'), {
+        copy: () => {
+          throw new Error('cp -al a b exited 1: cp: cannot create hard link: Permission denied');
+        },
+        remove: () => void calls.push('remove-other'),
+      });
+    } catch (err) {
+      other = (err as Error).message;
+    }
+    check(
+      other.includes('Permission denied') && !calls.includes('remove-other'),
+      `CONTROL: a failure that is not a vanished entry must throw at once, got ${other || 'no error'}`
+    );
+    // A missing-entry error that is not a concurrent tool's temp file is retried too: the text cannot tell them apart (VANISHED_RE).
+    let missingCopies = 0;
+    try {
+      linkTreeRetrying(
+        path.join(tmpDir, 'a'),
+        path.join(tmpDir, 'b'),
+        {
+          copy: () => {
+            missingCopies++;
+            throw new Error('cp -al a b exited 1: cp: cannot stat a: No such file or directory');
+          },
+          remove: () => undefined,
+        },
+        3
+      );
+    } catch {
+      // Expected: thrown after the last attempt.
+    }
+    check(
+      missingCopies === 3,
+      `a missing source is retried up to the attempt limit, got ${missingCopies} copies`
+    );
+    let last = '';
+    try {
+      linkTreeRetrying(
+        path.join(tmpDir, 'a'),
+        path.join(tmpDir, 'b'),
+        {
+          copy: () => {
+            throw vanish;
+          },
+          remove: () => undefined,
+        },
+        2
+      );
+    } catch (err) {
+      last = (err as Error).message;
+    }
+    check(
+      last.includes('cannot stat'),
+      `a vanish on the last attempt must be thrown, got ${last || 'no error'}`
+    );
+  }
   // tree-write: safe the only caller passes os.tmpdir(), so every fixture repository lives outside the checkout
   const root = fs.mkdtempSync(path.join(tmpDir, 'quick-clone-'));
   const git = (cwd: string, ...args: string[]): string =>
@@ -896,25 +1399,52 @@ export async function quickCloneSelftest(
     fs.writeFileSync(file, text);
   };
   try {
+    // cloneDirFor, one kept clone per tree path (PLAN-two-track-merge-dev LT6): the main checkout and the landing tree beside it never share a clean clone, even under one basename, and one tree reached through a symlink keeps its clone.
+    {
+      const trees = path.join(root, 'clone-dir-for');
+      const env = { HOME: trees } as NodeJS.ProcessEnv;
+      const one = path.join(trees, 'a', 'console');
+      const two = path.join(trees, 'b', 'console');
+      const landing = path.join(trees, 'a', 'console-landing');
+      for (const dir of [one, two, landing]) fs.mkdirSync(dir, { recursive: true });
+      const alias = path.join(trees, 'alias');
+      fs.symlinkSync(one, alias);
+      const dirs = [one, two, landing].map((tree) => cloneDirFor(tree, env));
+      check(
+        new Set(dirs).size === 3,
+        `three tree paths must get three clone dirs, got ${JSON.stringify(dirs)}`
+      );
+      check(
+        cloneDirFor(alias, env) === dirs[0],
+        `CONTROL: one tree through a symlink must keep its clone dir, got ${cloneDirFor(alias, env)} and ${dirs[0]}`
+      );
+      const under = path.join(trees, '.cache', 'rediacc', 'ci-quick-clones') + path.sep;
+      check(
+        dirs.every((dir) => dir.startsWith(under)),
+        `every clone dir must sit under the cache's ci-quick-clones, got ${JSON.stringify(dirs)}`
+      );
+    }
     // ROUTING: a plain run goes to the clone, and only a plain run does.
+    const routeAt = (args: readonly string[], env: NodeJS.ProcessEnv): Route =>
+      routeOf(args, env, root);
     const plain = {} as NodeJS.ProcessEnv;
-    check(routeOf([], plain).kind === 'clone', 'a plain ci:quick must route to the clone');
+    check(routeAt([], plain).kind === 'clone', 'a plain ci:quick must route to the clone');
     check(
-      routeOf(['--jobs', '4', '--verbose'], plain).kind === 'clone',
+      routeAt(['--jobs', '4', '--verbose'], plain).kind === 'clone',
       'a flag that keeps the lane whole must still route to the clone'
     );
     for (const flag of ['--list', '--only', '--narrow', '--receipt-out', '--here'])
-      check(routeOf([flag], plain).kind === 'here', `${flag} must stay in this checkout`);
+      check(routeAt([flag], plain).kind === 'here', `${flag} must stay in this checkout`);
     check(
-      routeOf(['--here'], plain).pass.length === 0,
+      (routeAt(['--here'], plain) as { pass: string[] }).pass.length === 0,
       "--here is this wrapper's flag and must not reach the runner, which refuses an unknown one"
     );
     check(
-      routeOf([], { CI: 'true' } as NodeJS.ProcessEnv).kind === 'here',
+      routeAt([], { CI: 'true' } as NodeJS.ProcessEnv).kind === 'here',
       'CI must not make a second tree'
     );
     check(
-      routeOf([], { [IN_CLONE_ENV]: '1' } as NodeJS.ProcessEnv).kind === 'here',
+      routeAt([], { [IN_CLONE_ENV]: '1' } as NodeJS.ProcessEnv).kind === 'here',
       'a run inside the clone must not recurse'
     );
 
@@ -944,14 +1474,14 @@ export async function quickCloneSelftest(
     );
     check(moved.GIT_DIR === undefined, 'GIT_DIR would aim every git call at the live repository');
     check(moved[NO_CARRY_ENV] === '1', 'a fresh clone must tell the runner it holds no outputs');
-    const askedFresh = routeOf(['--no-carry', '--verbose'], plain);
+    const askedFresh = routeAt(['--no-carry', '--verbose'], plain);
     check(
       askedFresh.kind === 'clone' && askedFresh.noCarry && askedFresh.pass.join() === '--verbose',
       "--no-carry is this wrapper's flag: it must stay in the clone and not reach the runner"
     );
     check(
-      routeOf(['--verbose'], plain).kind === 'clone' &&
-        (routeOf([], plain) as { noCarry: boolean }).noCarry === false,
+      routeAt(['--verbose'], plain).kind === 'clone' &&
+        (routeAt([], plain) as { noCarry: boolean }).noCarry === false,
       'CONTROL: a plain run keeps the carry'
     );
 
@@ -977,6 +1507,41 @@ export async function quickCloneSelftest(
     check(
       lockDifference(lockOf('1.0.0'), '{}') !== undefined,
       'an empty install must not match the lockfile'
+    );
+    // THE DISK MATCH: the hidden lockfile can name a package node_modules does not hold.
+    const diskRoot = path.join(root, 'disk-match');
+    write(path.join(diskRoot, 'node_modules', 'a', 'package.json'), '{"version":"1.0.0"}\n');
+    const hiddenDisk = (extra: Record<string, HiddenPackage>): string =>
+      JSON.stringify({ packages: { 'node_modules/a': { version: '1.0.0' }, ...extra } });
+    check(
+      installedDifference(diskRoot, hiddenDisk({})) === undefined,
+      'a hidden lockfile matching the disk must match'
+    );
+    check(
+      installedDifference(
+        diskRoot,
+        hiddenDisk({ 'node_modules/a/node_modules/n': { version: '1.0.0' } })
+      ) !== undefined,
+      'a nested package the hidden lockfile names and the disk lacks must not match'
+    );
+    check(
+      installedDifference(
+        diskRoot,
+        hiddenDisk({ 'node_modules/o': { version: '1.0.0', optional: true } })
+      ) === undefined,
+      'CONTROL: an optional package absent from disk is legitimate'
+    );
+    check(
+      installedDifference(
+        diskRoot,
+        hiddenDisk({ 'node_modules/p': { version: '1.0.0', peer: true } })
+      ) === undefined,
+      'CONTROL: a peer package absent from disk is legitimate'
+    );
+    check(
+      installedDifference(diskRoot, hiddenDisk({ 'node_modules/p': { version: '1.0.0' } })) !==
+        undefined,
+      'CONTROL: the same package, neither optional nor peer, absent from disk must not match'
     );
     const groups = dependencyGroups(
       [
@@ -1027,9 +1592,12 @@ export async function quickCloneSelftest(
     git(live, 'checkout', '-q', '-b', 'topic');
     // A live install, holding the lockfile's version and a workspace link: `@x/shared` must resolve inside the clone.
     write(path.join(live, 'node_modules', 'dep', 'index.js'), 'dep\n');
+    write(path.join(live, 'node_modules', 'dep', 'package.json'), '{"version":"1.0.0"}\n');
     write(
       path.join(live, 'node_modules', '.package-lock.json'),
-      JSON.stringify({ packages: { 'node_modules/dep': { version: '1.0.0' } } })
+      JSON.stringify({
+        packages: { 'node_modules/dep': { version: '1.0.0' } },
+      })
     );
     fs.mkdirSync(path.join(live, 'node_modules', '@x'), { recursive: true });
     fs.symlinkSync('../../packages/shared', path.join(live, 'node_modules', '@x', 'shared'));
@@ -1115,7 +1683,9 @@ export async function quickCloneSelftest(
     // A KEPT CLONE: a new commit arrives, the gate's leftovers go, the build output stays.
     write(path.join(clone, 'stray.txt'), 'a gate left this\n');
     write(path.join(clone, '.ci', 'cache', 'build-output'), 'kept\n');
-    fs.mkdirSync(path.join(clone, 'node_modules', '.cache'), { recursive: true });
+    fs.mkdirSync(path.join(clone, 'node_modules', '.cache'), {
+      recursive: true,
+    });
     write(path.join(clone, 'kept.txt'), 'a gate rewrote this\n');
     write(path.join(live, 'second.txt'), 'second\n');
     git(live, 'add', 'second.txt');
@@ -1139,7 +1709,9 @@ export async function quickCloneSelftest(
     // A MOVED LOCKFILE gets a real install in the clone, never the live node_modules.
     write(
       path.join(live, 'package-lock.json'),
-      JSON.stringify({ packages: { 'node_modules/dep': { version: '2.0.0' } } })
+      JSON.stringify({
+        packages: { 'node_modules/dep': { version: '2.0.0' } },
+      })
     );
     git(live, 'add', 'package-lock.json');
     git(live, 'commit', '-q', '-m', 'bump', '--', 'package-lock.json');
@@ -1158,8 +1730,28 @@ export async function quickCloneSelftest(
       `a lockfile the live install does not hold must install in the clone, got ${installed.join()}`
     );
 
+    // A HIDDEN LOCKFILE THAT MOVED WITHOUT ITS PACKAGES (`npm install --package-lock-only` rewrites it and leaves node_modules): the lock and the hidden lock agree, the files do not, and the clone must install.
+    write(path.join(live, 'node_modules', 'dep', 'package.json'), '{"version":"1.0.0"}\n');
+    write(
+      path.join(live, 'node_modules', '.package-lock.json'),
+      JSON.stringify({ packages: { 'node_modules/dep': { version: '2.0.0' } } })
+    );
+    const stale: string[] = [];
+    prepareClone({ live, clone, seams: { install: (dir) => void stale.push(dir) } });
+    check(
+      stale.length === 1 && stale[0] === clone,
+      `a hidden lockfile ahead of the installed package must install in the clone, got ${stale.join()}`
+    );
+    write(path.join(live, 'node_modules', 'dep', 'package.json'), '{"version":"2.0.0"}\n');
+    const matching: string[] = [];
+    prepareClone({ live, clone, seams: { install: (dir) => void matching.push(dir) } });
+    check(
+      matching.length === 0,
+      `CONTROL: a package on disk at the hidden lockfile's version must be linked, got ${matching.join()}`
+    );
+
     // A SEEDED BUILD: copied once, kept while the stamp holds, and never a shared name.
-    const buildSpec = ['out/bin'];
+    const buildSpec: SeededBuild[] = [{ path: 'out/bin' }];
     const buildLive = path.join(root, 'build-live');
     const buildClone = path.join(root, 'build-clone');
     write(path.join(buildLive, 'out', 'bin', 'tool'), 'v1\n');
@@ -1187,6 +1779,69 @@ export async function quickCloneSelftest(
     check(
       fs.readFileSync(path.join(buildClone, 'out', 'bin', 'tool'), 'utf8') === 'v1\n',
       'a moved live output must refresh the copy'
+    );
+
+    // EMBED ASSETS: a clone holding stale staged assets is refreshed from the live copy, in place-rewritten nested files included; a live tree with none leaves the clone as it is.
+    check(
+      SEEDED_BUILDS.some((b) => b.path === 'private/renet/pkg/embed/assets' && b.link === false),
+      'the renet embed assets must be a seeded real copy, never hard links'
+    );
+    const assetSpec: SeededBuild[] = [{ path: 'private/renet/pkg/embed/assets', link: false }];
+    const assetLive = path.join(root, 'asset-live');
+    const assetClone = path.join(root, 'asset-clone');
+    const assetFile = (tree: string): string =>
+      path.join(tree, assetSpec[0].path, 'amd64', 'base', 'rsync');
+    write(assetFile(assetClone), 'rsync 3.5.1\n');
+    fs.mkdirSync(assetLive, { recursive: true });
+    syncBuilds(assetClone, assetLive, assetSpec);
+    check(
+      fs.readFileSync(assetFile(assetClone), 'utf8') === 'rsync 3.5.1\n',
+      'CONTROL: a live tree without embed assets must leave the clone untouched'
+    );
+    write(assetFile(assetLive), 'rsync 3.5.2\n');
+    syncBuilds(assetClone, assetLive, assetSpec);
+    check(
+      fs.readFileSync(assetFile(assetClone), 'utf8') === 'rsync 3.5.2\n',
+      'stale embed assets in the clone must be refreshed from the live tree'
+    );
+    // A fresh inode, as a rebuild that replaces the name writes it: only the nested directory's mtime moves, never the top level's.
+    fs.rmSync(assetFile(assetLive));
+    write(assetFile(assetLive), 'rsync 3.5.3 replaced\n');
+    syncBuilds(assetClone, assetLive, assetSpec);
+    check(
+      fs.readFileSync(assetFile(assetClone), 'utf8') === 'rsync 3.5.3 replaced\n',
+      'a nested asset replaced under an unmoved top level must refresh the clone'
+    );
+    // The same inode rewritten in place: size and mtime move, so the fingerprint does, and the copy shares no inode with the live file.
+    const beforeInPlace = fingerprint(path.join(assetLive, assetSpec[0].path));
+    fs.writeFileSync(assetFile(assetLive), 'rsync 3.5.4 in place, longer\n');
+    check(
+      fingerprint(path.join(assetLive, assetSpec[0].path)) !== beforeInPlace,
+      'a same-inode in-place rewrite must move the fingerprint'
+    );
+    syncBuilds(assetClone, assetLive, assetSpec);
+    check(
+      fs.readFileSync(assetFile(assetClone), 'utf8') === 'rsync 3.5.4 in place, longer\n',
+      'an in-place rewrite of a live asset must refresh the clone'
+    );
+    fs.writeFileSync(assetFile(assetClone), 'clobbered in the clone\n');
+    check(
+      fs.readFileSync(assetFile(assetLive), 'utf8') === 'rsync 3.5.4 in place, longer\n',
+      'an in-place write to the clone copy must leave the live asset unchanged'
+    );
+    // An empty directory moves the fingerprint.
+    const emptyBefore = fingerprint(path.join(assetLive, assetSpec[0].path));
+    fs.mkdirSync(path.join(assetLive, assetSpec[0].path, 'empty-dir'));
+    check(
+      fingerprint(path.join(assetLive, assetSpec[0].path)) !== emptyBefore,
+      'an added empty subdirectory must move the fingerprint'
+    );
+    // An empty directory nested in an empty directory: the old listing returned '' for both shapes.
+    const nestedBefore = fingerprint(path.join(assetLive, assetSpec[0].path));
+    fs.mkdirSync(path.join(assetLive, assetSpec[0].path, 'empty-dir', 'deeper'));
+    check(
+      fingerprint(path.join(assetLive, assetSpec[0].path)) !== nestedBefore,
+      'an empty subdirectory added inside an empty directory must move the fingerprint'
     );
 
     // THE CLONE MAY NOT BE THE CHECKOUT IT JUDGES, or sit inside it: its setup discards tracked edits.
@@ -1239,7 +1894,12 @@ export async function quickCloneSelftest(
     check(await acquireLock(lockPath, note, 0, 1), "a dead holder's lock must be taken over");
 
     // THE VERDICT: exit 0 needs a judged, green receipt.
-    const green: ReceiptShape = { whole: true, headTree: 'T', exitCode: 0, failed: [] };
+    const green: ReceiptShape = {
+      whole: true,
+      headTree: 'T',
+      exitCode: 0,
+      failed: [],
+    };
     check(wholeExit(0, green) === 0, 'CONTROL: a green run over a green receipt exits 0');
     check(
       wholeExit(0, { ...green, exitCode: 1, failed: ['g'] }) === 1,
@@ -1261,13 +1921,24 @@ export async function quickCloneSelftest(
       'a receipt advanced to this tree is judged'
     );
 
+    const linkedTree = (main: string, rel: string): string => {
+      const tree = path.join(main, rel);
+      git(main, 'worktree', 'add', '-q', '--detach', tree);
+      return tree;
+    };
+
     // THE ORCHESTRATOR, routing and fallback, through its seams.
     const drive = async (over: {
       prepare?: (input: PrepareInput) => Prepared;
       receipt?: ReceiptShape;
       args?: string[];
       env?: NodeJS.ProcessEnv;
-    }): Promise<{ exit: number; calls: { cwd: string; args: string[] }[]; log: string }> => {
+      lease?: boolean;
+    }): Promise<{
+      exit: number;
+      calls: { cwd: string; args: string[] }[];
+      log: string;
+    }> => {
       const scratch = fs.mkdtempSync(path.join(root, 'drive-'));
       git(root, 'init', '-q', '-b', 'main', scratch);
       write(path.join(scratch, 'a.txt'), 'a\n');
@@ -1276,8 +1947,9 @@ export async function quickCloneSelftest(
       const tree = git(scratch, 'rev-parse', 'HEAD^{tree}');
       const calls: { cwd: string; args: string[] }[] = [];
       let log = '';
+      const live = over.lease === true ? linkedTree(scratch, '.claude/worktrees/x') : scratch;
       const exit = await quickMain(over.args ?? [], {
-        live: scratch,
+        live,
         env: { HOME: root, ...over.env } as NodeJS.ProcessEnv,
         log: (text) => {
           log += text;
@@ -1297,7 +1969,10 @@ export async function quickCloneSelftest(
           if (over.receipt !== undefined && runArgs[0] === '--quick')
             write(
               path.join(scratch, RECEIPT_REL),
-              JSON.stringify({ ...over.receipt, headTree: over.receipt.headTree ?? tree })
+              JSON.stringify({
+                ...over.receipt,
+                headTree: over.receipt.headTree ?? tree,
+              })
             );
           return Promise.resolve(0);
         },
@@ -1306,7 +1981,12 @@ export async function quickCloneSelftest(
       });
       return { exit, calls, log };
     };
-    const greenAtTree = { whole: true, exitCode: 0, failed: [], gates: {} } as ReceiptShape;
+    const greenAtTree = {
+      whole: true,
+      exitCode: 0,
+      failed: [],
+      gates: {},
+    } as ReceiptShape;
     const routed = await drive({ receipt: greenAtTree });
     check(routed.exit === 0, `a green clone run must exit 0, got ${routed.exit}: ${routed.log}`);
     check(
@@ -1366,21 +2046,490 @@ export async function quickCloneSelftest(
       },
     });
     check(
-      /carried, not re-judged[^\n]*check:old\.[^\n]*--no-carry/.test(carriedRedRun.log) &&
-        !/carried, not re-judged[^\n]*check:new/.test(carriedRedRun.log),
-      `a red that only carried must be named as carried, with the way to judge it again: ${carriedRedRun.log}`
+      carriedRedRun.exit === 1 &&
+        /STALE RECEIPT[^\n]*: check:old\.[^\n]*An old receipt[^\n]*--no-carry/.test(
+          carriedRedRun.log
+        ) &&
+        !/STALE RECEIPT[^\n]*check:new/.test(carriedRedRun.log),
+      `a red receipt entry with carriedFrom set is read as a receipt from before the never-carry rule and must be named as such, with the fresh run: ${carriedRedRun.log}`
     );
     const redFresh = await drive({
       receipt: { ...greenAtTree, exitCode: 1, failed: ['check:new'] },
     });
     check(
-      !redFresh.log.includes('carried, not re-judged'),
-      'CONTROL: a red judged this run must not be called carried'
+      !redFresh.log.includes('STALE RECEIPT') && !redFresh.log.includes('carried, not re-judged'),
+      'CONTROL: a red judged this run is not called a stale receipt'
     );
     const listed = await drive({ args: ['--list'] });
     check(
       listed.exit === 0 && listed.calls[1]?.args.join(' ') === '--quick --list',
       `--list must run in this checkout with no receipt required: ${JSON.stringify(listed.calls)}`
+    );
+
+    // A LEASE: refused before any lock or clone, with the real prepareClone behind the seam so a regression would really make the directory.
+    const clonesUnder = (name: string): string =>
+      path.join(root, name, 'rediacc', 'ci-quick-clones');
+    const cacheEnv = (name: string): NodeJS.ProcessEnv =>
+      ({ XDG_CACHE_HOME: path.join(root, name) }) as NodeJS.ProcessEnv;
+    for (const args of [[], ['--here'], ['--list'], ['--no-carry']]) {
+      const leased = await drive({
+        lease: true,
+        args,
+        prepare: prepareClone,
+        env: cacheEnv('lease-cache'),
+      });
+      const shown = `[${args.join(' ')}]`;
+      check(leased.exit === 1, `a lease ${shown} must exit 1, got ${leased.exit}: ${leased.log}`);
+      check(
+        leased.log.includes('REFUSED') && leased.log.includes('main checkout at landing'),
+        `a lease ${shown} must say why it is refused: ${leased.log}`
+      );
+      check(leased.calls.length === 0, `a lease ${shown} must run no gate`);
+    }
+    check(
+      !fs.existsSync(path.join(root, 'lease-cache')),
+      'a lease must create nothing under ci-quick-clones'
+    );
+    const leasedInCi = await drive({
+      lease: true,
+      env: { CI: 'true' } as NodeJS.ProcessEnv,
+    });
+    check(
+      leasedInCi.exit === 1 && leasedInCi.calls.length === 0,
+      'CI=true must not open a lease to the lane'
+    );
+    const mainRun = await drive({
+      prepare: prepareClone,
+      env: cacheEnv('main-cache'),
+      receipt: greenAtTree,
+    });
+    check(
+      mainRun.calls.length === 2 &&
+        mainRun.calls.every((c) => c.cwd.startsWith(clonesUnder('main-cache'))) &&
+        fs.readdirSync(clonesUnder('main-cache')).length > 0,
+      `CONTROL: the main checkout must still route to a real clone, got ${JSON.stringify(mainRun.calls)}: ${mainRun.log}`
+    );
+
+    // THE FOLLOW PASS (agent/plans/PLAN-push-decoupling.md R2): a pinned run, or a run whose HEAD moved, is followed by one pass at HEAD that hands the runner the receipt to advance from. The fake runner writes what a real one would: a whole receipt at the tree its clone holds, archived per tree, or an advanced one when told where to advance from.
+    const driveFollow = async (over: {
+      pin?: boolean;
+      moveDuringLane?: boolean;
+      latestAtHead?: boolean;
+      redFirst?: boolean;
+      freshFollow?: boolean;
+    }): Promise<{
+      exit: number;
+      calls: { cwd: string; args: string[]; env: NodeJS.ProcessEnv }[];
+      prepared: (string | undefined)[];
+      log: string;
+      latest: string | undefined;
+      liveTree: string;
+      pinTree: string;
+      dir: string;
+    }> => {
+      const dir = fs.mkdtempSync(path.join(root, 'follow-'));
+      git(root, 'init', '-q', '-b', 'main', dir);
+      write(path.join(dir, 'a.txt'), 'a\n');
+      git(dir, 'add', '-A');
+      git(dir, 'commit', '-q', '-m', 'a');
+      const pinSha = git(dir, 'rev-parse', 'HEAD');
+      const pinTree = git(dir, 'rev-parse', 'HEAD^{tree}');
+      write(path.join(dir, 'b.txt'), 'b\n');
+      git(dir, 'add', '-A');
+      git(dir, 'commit', '-q', '-m', 'b');
+      const latestFile = path.join(dir, RECEIPT_REL);
+      if (over.latestAtHead === true)
+        write(
+          latestFile,
+          JSON.stringify({
+            whole: true,
+            exitCode: 0,
+            failed: [],
+            headTree: git(dir, 'rev-parse', 'HEAD^{tree}'),
+          })
+        );
+      const calls: { cwd: string; args: string[]; env: NodeJS.ProcessEnv }[] = [];
+      const prepared: (string | undefined)[] = [];
+      let current = '';
+      let lanes = 0;
+      let log = '';
+      const exit = await quickMain(over.pin === true ? ['--commit', pinSha.slice(0, 10)] : [], {
+        live: dir,
+        env: {
+          HOME: root,
+          CI_QUICK_CLONE_DIR: path.join(dir, '..', `${path.basename(dir)}-clone`),
+        },
+        log: (text) => {
+          log += text;
+        },
+        prepare: (input) => {
+          prepared.push(input.commit);
+          const at = input.commit ?? git(dir, 'rev-parse', 'HEAD');
+          current = git(dir, 'rev-parse', `${at}^{tree}`);
+          return {
+            clone: input.clone,
+            head: at,
+            tree: current,
+            branch: 'main',
+            fresh: over.freshFollow === true && prepared.length === 2,
+            notes: over.freshFollow === true && prepared.length === 2 ? ['FOLLOWNOTE'] : [],
+          };
+        },
+        runner: (cwd, runArgs, runEnv) => {
+          calls.push({ cwd, args: runArgs, env: runEnv });
+          if (runArgs[0] !== '--quick') return Promise.resolve(0);
+          lanes++;
+          const out = runArgs[runArgs.indexOf('--receipt-out') + 1];
+          const from = runArgs.includes('--advance-from')
+            ? runArgs[runArgs.indexOf('--advance-from') + 1]
+            : undefined;
+          const red = over.redFirst === true && lanes === 1;
+          const receipt: ReceiptShape = {
+            whole: true,
+            exitCode: red ? 1 : 0,
+            failed: red ? ['check:red'] : [],
+            headTree: current,
+            advances: [],
+          };
+          if (from !== undefined) {
+            const base = JSON.parse(fs.readFileSync(from, 'utf8')) as ReceiptShape;
+            write(out, JSON.stringify({ ...base, advances: [{ to: current }] }));
+          } else {
+            write(out, JSON.stringify(receipt));
+            write(
+              path.join(path.dirname(out), 'receipts', `${current}.json`),
+              JSON.stringify(receipt)
+            );
+          }
+          if (over.moveDuringLane === true && lanes === 1) {
+            write(path.join(dir, 'c.txt'), 'c\n');
+            git(dir, 'add', '-A');
+            git(dir, 'commit', '-q', '-m', 'c');
+          }
+          return Promise.resolve(red ? 1 : 0);
+        },
+        acquire: () => Promise.resolve(true),
+        now: () => Date.now() - 1000,
+      });
+      return {
+        exit,
+        calls,
+        prepared,
+        log,
+        latest: fs.existsSync(latestFile) ? fs.readFileSync(latestFile, 'utf8') : undefined,
+        liveTree: git(dir, 'rev-parse', 'HEAD^{tree}'),
+        pinTree,
+        dir,
+      };
+    };
+    const lanesOf = (calls: { args: string[] }[]): string[][] =>
+      calls.filter((c) => c.args[0] === '--quick').map((c) => c.args);
+    const pinnedFollow = await driveFollow({ pin: true });
+    const pinnedLanes = lanesOf(pinnedFollow.calls);
+    check(
+      pinnedFollow.exit === 0 &&
+        pinnedLanes.length === 2 &&
+        pinnedLanes[0].includes(path.join(pinnedFollow.dir, PINNED_RECEIPT_REL)) &&
+        pinnedLanes[1].includes(path.join(pinnedFollow.dir, RECEIPT_REL)) &&
+        pinnedLanes[1][pinnedLanes[1].indexOf('--advance-from') + 1] ===
+          path.join(pinnedFollow.dir, PINNED_RECEIPT_REL),
+      `a pinned run must follow with a pass at HEAD that advances from the pinned receipt, got ${JSON.stringify(pinnedLanes)}: ${pinnedFollow.log}`
+    );
+    check(
+      pinnedFollow.prepared.length === 2 &&
+        pinnedFollow.prepared[0] !== undefined &&
+        pinnedFollow.prepared[1] === undefined,
+      `the follow pass must prepare the clone at HEAD, not at the pin, got ${JSON.stringify(pinnedFollow.prepared)}`
+    );
+    const pinnedLatest = JSON.parse(pinnedFollow.latest ?? '{}') as ReceiptShape;
+    check(
+      pinnedLatest.headTree === pinnedFollow.pinTree &&
+        vouchedTree(pinnedLatest) === pinnedFollow.liveTree &&
+        pinnedFollow.log.includes('FOLLOW PASS'),
+      `the receipt the push guard reads must vouch for HEAD through the pinned receipt, got ${pinnedFollow.latest}: ${pinnedFollow.log}`
+    );
+    const freshFollow = await driveFollow({ pin: true, freshFollow: true });
+    const freshLanes = freshFollow.calls.filter((c) => c.args[0] === '--quick');
+    check(
+      freshLanes.length === 2 &&
+        freshLanes[1].env[NO_CARRY_ENV] === '1' &&
+        freshFollow.log.includes('ci:quick: FOLLOWNOTE'),
+      `a fresh follow-pass clone must run with the carry off and its setup notes logged: ${freshFollow.log}`
+    );
+    check(
+      pinnedFollow.calls.filter((c) => c.args[0] === '--quick')[1].env[NO_CARRY_ENV] !== '1' &&
+        !pinnedFollow.log.includes('FOLLOWNOTE'),
+      'CONTROL: a follow-pass clone that is not fresh keeps the carry on'
+    );
+    const pinnedNewer = await driveFollow({ pin: true, latestAtHead: true });
+    check(
+      lanesOf(pinnedNewer.calls).length === 1 &&
+        pinnedNewer.log.includes('already vouches for HEAD') &&
+        pinnedNewer.exit === 0,
+      `CONTROL: a latest receipt that already vouches for HEAD is a newer one and is left alone: ${pinnedNewer.log}`
+    );
+    const pinnedRed = await driveFollow({ pin: true, redFirst: true });
+    check(
+      lanesOf(pinnedRed.calls).length === 1 &&
+        pinnedRed.exit === 1 &&
+        pinnedRed.latest === undefined,
+      `a red pinned run must not be carried to HEAD: ${pinnedRed.log}`
+    );
+    const movedFollow = await driveFollow({ moveDuringLane: true });
+    const movedLanes = lanesOf(movedFollow.calls);
+    check(
+      movedFollow.exit === 0 &&
+        movedLanes.length === 2 &&
+        movedLanes.every((args) => !args.includes('--advance-from')) &&
+        vouchedTree(JSON.parse(movedFollow.latest ?? '{}') as ReceiptShape) ===
+          movedFollow.liveTree,
+      `a run whose HEAD moved must follow at the new HEAD, advancing from the receipt it just wrote, got ${JSON.stringify(movedLanes)}: ${movedFollow.log}`
+    );
+    const stillFollow = await driveFollow({});
+    check(
+      lanesOf(stillFollow.calls).length === 1 && !stillFollow.log.includes('FOLLOW PASS'),
+      `CONTROL: a run whose HEAD held still takes no follow pass: ${stillFollow.log}`
+    );
+    check(
+      followOf({ pinned: false, judgedTree: 'T', liveTree: 'T', firstExit: 0, latest: undefined })
+        .kind === 'done' &&
+        followOf({
+          pinned: true,
+          judgedTree: 'T',
+          liveTree: undefined,
+          firstExit: 0,
+          latest: undefined,
+        }).kind === 'skip' &&
+        followOf({
+          pinned: true,
+          judgedTree: 'T',
+          liveTree: 'U',
+          firstExit: 0,
+          latest: { whole: true, exitCode: 1, failed: ['g'], headTree: 'U' },
+        }).kind === 'follow',
+      'followOf: a still HEAD is done, an unreadable HEAD is skipped, and a red receipt at HEAD is no newer receipt to leave alone'
+    );
+    const doc = (
+      ...entries: { gate: string; findings: string[] | '*'; reason?: string }[]
+    ): string =>
+      JSON.stringify({
+        version: 2,
+        carried: entries.map((e) => ({ reason: 'r'.repeat(e.findings === '*' ? 160 : 80), ...e })),
+      });
+    const redOn = (
+      failed: string[],
+      findings: Record<string, string[] | null> = {}
+    ): ReceiptShape => ({
+      whole: true,
+      exitCode: 1,
+      failed,
+      findings,
+    });
+    const star = { gate: 'a', findings: '*' as const };
+    const keyed = { gate: 'b', findings: ['k1', 'k2'] };
+    check(
+      carriedOnly(redOn(['a']), doc(star)) &&
+        carriedOnly(redOn(['a', 'b'], { b: ['k1', 'k2'] }), doc(star, keyed)) &&
+        !carriedOnly(redOn(['a', 'c']), doc(star)) &&
+        carriedOnly({ ...redOn(['a']), blocked: ['x'] }, doc(star)) &&
+        !carriedOnly(redOn(['b'], { b: ['k1', 'k9'] }), doc(keyed)) &&
+        !carriedOnly(redOn(['b'], { b: ['k1'] }), doc(keyed)) &&
+        !carriedOnly(redOn(['b']), doc(keyed)) &&
+        !carriedOnly(redOn(['a']), doc(star, keyed)) &&
+        !carriedOnly({ whole: true, exitCode: 0, failed: [] }, doc(star)) &&
+        !carriedOnly(redOn(['a']), undefined) &&
+        !carriedOnly(redOn(['a']), doc({ ...star, reason: 'r'.repeat(159) })),
+      'carriedOnly mirrors the push guard: red only on gates carried whole or on exactly their recorded keys; a gate that could not run does not count against it; an uncarried gate, a new or stale key, a keyless red, a stale carried gate, a green receipt, a missing file or an entry under the reason bar is not'
+    );
+    {
+      const repo = fs.mkdtempSync(path.join(root, 'head-carried-'));
+      const g = (...args: string[]): string => sh('git', args, repo);
+      g('init', '-q', '-b', 'main');
+      g('config', 'user.email', 'fixture@example.invalid');
+      g('config', 'user.name', 'fixture');
+      g('config', 'commit.gpgsign', 'false');
+      write(path.join(repo, 'a.txt'), 'a\n');
+      g('add', '-A');
+      g('commit', '-q', '-m', 'base');
+      const none = headCarriedText(repo);
+      write(path.join(repo, '.ci', 'config', 'carried-reds.json'), '{"uncommitted":true}');
+      const dirtyOnly = headCarriedText(repo);
+      g('add', '-f', '--', '.ci/config/carried-reds.json');
+      g('commit', '-q', '-m', 'carried');
+      write(path.join(repo, '.ci', 'config', 'carried-reds.json'), '{"edited":true}');
+      check(
+        none === undefined &&
+          dirtyOnly === undefined &&
+          headCarriedText(repo) === '{"uncommitted":true}',
+        "headCarriedText reads HEAD's committed carried-reds.json only: none at HEAD and a working-tree-only copy read as undefined, and a later working-tree edit is ignored"
+      );
+    }
+    check(
+      followOf({
+        pinned: false,
+        judgedTree: 'T',
+        liveTree: 'U',
+        firstExit: 1,
+        firstCarriedOnly: true,
+        latest: undefined,
+      }).kind === 'follow' &&
+        followOf({ pinned: false, judgedTree: 'T', liveTree: 'U', firstExit: 1, latest: undefined })
+          .kind === 'skip',
+      'followOf: a first run red only on carried gates is followed like a green one (#68452957), and any other red first run is still skipped'
+    );
+    check(
+      followOf({ pinned: true, judgedTree: 'T', liveTree: 'T', firstExit: 0, latest: undefined })
+        .kind === 'follow',
+      'followOf: a pinned run at HEAD still follows, because a pinned run never writes the latest receipt'
+    );
+    const staleArchive = fs.mkdtempSync(path.join(root, 'stale-archive-'));
+    write(
+      path.join(staleArchive, ARCHIVE_REL, 'T.json'),
+      JSON.stringify({ whole: true, headTree: 'T' })
+    );
+    check(
+      unarchived(staleArchive, 'T', Date.now() + 60_000)?.includes('predates this run') === true &&
+        unarchived(staleArchive, 'T', 0) === undefined &&
+        unarchived(staleArchive, 'T') === undefined,
+      'unarchived: an archive older than the run is refused, and CONTROL: a fresh or unbounded read admits it'
+    );
+
+    // AN ADVANCE ONLY (agent/plans/PLAN-push-decoupling.md R3): the runner is told `--advance-only` in the clone at HEAD, its refusal exits ADVANCE_REFUSED_EXIT with nothing else run, and a held clone is not waited for.
+    const driveAdvance = async (over: {
+      runnerExit: number;
+      locked?: boolean;
+      args?: string[];
+    }): Promise<{
+      exit: number;
+      calls: string[][];
+      waits: (number | undefined)[];
+      log: string;
+    }> => {
+      const dir = fs.mkdtempSync(path.join(root, 'advance-'));
+      git(root, 'init', '-q', '-b', 'main', dir);
+      write(path.join(dir, 'a.txt'), 'a\n');
+      git(dir, 'add', '-A');
+      git(dir, 'commit', '-q', '-m', 'a');
+      const tree = git(dir, 'rev-parse', 'HEAD^{tree}');
+      const calls: string[][] = [];
+      const waits: (number | undefined)[] = [];
+      let log = '';
+      const exit = await quickMain(over.args ?? ['--advance-only'], {
+        live: dir,
+        env: { HOME: root, CI_QUICK_CLONE_DIR: `${dir}-clone` },
+        log: (text) => {
+          log += text;
+        },
+        prepare: (input) => ({
+          clone: input.clone,
+          head: 'H',
+          tree,
+          branch: 'main',
+          fresh: false,
+          notes: [],
+        }),
+        runner: (_cwd, runArgs) => {
+          calls.push(runArgs);
+          if (runArgs[0] !== '--quick') return Promise.resolve(0);
+          if (over.runnerExit === 0)
+            write(
+              path.join(dir, RECEIPT_REL),
+              JSON.stringify({
+                whole: true,
+                exitCode: 0,
+                failed: [],
+                headTree: 'OLD',
+                advances: [{ to: tree }],
+              })
+            );
+          return Promise.resolve(over.runnerExit);
+        },
+        acquire: (_lock, waitMs) => {
+          waits.push(waitMs);
+          return Promise.resolve(over.locked !== true);
+        },
+        now: () => Date.now() - 1000,
+      });
+      return { exit, calls, waits, log };
+    };
+    const advanceOk = await driveAdvance({ runnerExit: 0 });
+    const advanceLane = advanceOk.calls.find((c) => c[0] === '--quick') ?? [];
+    check(
+      advanceOk.exit === 0 &&
+        advanceLane.includes('--advance-only') &&
+        advanceLane.includes('--receipt-out') &&
+        advanceOk.waits.join() === '0',
+      `--advance-only must hand the runner --advance-only in the clone without waiting for its lock, got ${JSON.stringify(advanceOk.calls)} waits ${JSON.stringify(advanceOk.waits)}: ${advanceOk.log}`
+    );
+    const advanceRefused = await driveAdvance({ runnerExit: ADVANCE_REFUSED_EXIT });
+    check(
+      advanceRefused.exit === ADVANCE_REFUSED_EXIT &&
+        advanceRefused.log.includes('ADVANCE REFUSED') &&
+        !advanceRefused.log.includes('NO JUDGED RECEIPT') &&
+        advanceRefused.calls.filter((c) => c[0] === '--quick').length === 1,
+      `a refused advance must exit ${ADVANCE_REFUSED_EXIT}, say so, and run nothing more: ${advanceRefused.log}`
+    );
+    const advanceHeld = await driveAdvance({ runnerExit: 0, locked: true });
+    check(
+      advanceHeld.exit === ADVANCE_REFUSED_EXIT &&
+        advanceHeld.calls.length === 0 &&
+        advanceHeld.log.includes('ADVANCE NOT TAKEN') &&
+        !advanceHeld.log.includes('FALLBACK'),
+      `a held clone must not be waited for, nor fall back to the shared checkout: ${advanceHeld.log}`
+    );
+    const advancePinned = await driveAdvance({
+      runnerExit: 0,
+      args: ['--advance-only', '--commit', 'HEAD'],
+    });
+    check(
+      advancePinned.exit === 1 &&
+        advancePinned.calls.length === 0 &&
+        advancePinned.log.includes('REFUSED'),
+      `--advance-only with --commit must be refused: ${advancePinned.log}`
+    );
+    check(
+      routeAt(['--advance-only'], {}).kind === 'clone' &&
+        routeAt(['--here'], {}).kind === 'here' &&
+        routeAt(['--advance-only', '--here'], {}).kind === 'refused' &&
+        routeAt(['--advance-only', '--only', 'x'], {}).kind === 'refused' &&
+        routeAt(['--advance-only'], { CI: 'true' }).kind === 'refused' &&
+        routeAt(['--advance-only'], { [IN_CLONE_ENV]: '1' }).kind === 'refused' &&
+        routeAt([], { [IN_CLONE_ENV]: '1' }).kind === 'here',
+      'CONTROL: --advance-only alone routes to the clone, --here alone stays here, and --advance-only never routes to the shared checkout'
+    );
+
+    // WHAT IS A LEASE: the position and git's word, each alone is not enough.
+    const leaseFixture = fs.mkdtempSync(path.join(root, 'lease-'));
+    git(root, 'init', '-q', '-b', 'main', leaseFixture);
+    write(path.join(leaseFixture, 'a.txt'), 'a\n');
+    git(leaseFixture, 'add', '-A');
+    git(leaseFixture, 'commit', '-q', '-m', 'a');
+    const leaseTree = linkedTree(leaseFixture, '.claude/worktrees/y');
+    check(
+      routeOf([], plain, leaseTree).kind === 'refused' && leaseMainOf(leaseTree) === leaseFixture,
+      'a linked tree under .claude/worktrees is a lease of its main checkout'
+    );
+    check(routeOf([], plain, leaseFixture).kind === 'clone', 'CONTROL: the main checkout is none');
+    check(
+      routeOf([], plain, linkedTree(leaseFixture, '.worktrees/0128-1')).kind === 'clone',
+      "an operator's .worktrees tree keeps its route"
+    );
+    const standalone = path.join(leaseFixture, '.claude', 'worktrees', 'z');
+    git(root, 'init', '-q', '-b', 'main', standalone);
+    check(leaseMainOf(standalone) === undefined, 'a plain repository there has no shared store');
+    const elsewhere = fs.mkdtempSync(path.join(root, 'other-'));
+    git(root, 'init', '-q', '-b', 'main', elsewhere);
+    write(path.join(elsewhere, 'a.txt'), 'a\n');
+    git(elsewhere, 'add', '-A');
+    git(elsewhere, 'commit', '-q', '-m', 'a');
+    check(
+      leaseMainOf(
+        linkedTree(
+          elsewhere,
+          path.relative(elsewhere, path.join(leaseFixture, '.claude/worktrees/w'))
+        )
+      ) === undefined,
+      'CONTROL: a tree at the right position from another repository is no lease of it'
     );
   } catch (err) {
     failures.push(`threw: ${(err as Error).stack ?? String(err)}`);

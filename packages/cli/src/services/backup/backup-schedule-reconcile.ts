@@ -14,6 +14,7 @@ import type { ScheduleUnitSpec } from './backup-schedule-targets.js';
 import {
   alertUnitName,
   cronToOnCalendar,
+  EXPECT_ACCOUNT_SERVER_FLAG,
   generateAlertServiceUnit,
   generateServiceUnit,
   generateTimerUnit,
@@ -39,6 +40,8 @@ interface RemoteUnitFile {
   path: string;
   exists: boolean;
   sha256: string | null;
+  /** Octal permission bits as `stat -c %a` prints them; null when unread (older state, failed stat). */
+  mode?: string | null;
 }
 
 export interface RemoteUnitState {
@@ -90,7 +93,7 @@ function isActiveState(value: string | undefined): boolean {
   return value !== undefined && ACTIVE_STATES.has(value);
 }
 
-export function isEnabledState(value: string | undefined): boolean {
+function isEnabledState(value: string | undefined): boolean {
   return value !== undefined && ENABLED_STATES.has(value);
 }
 
@@ -170,6 +173,18 @@ async function hashRemoteFiles(sftp: SFTPClient, paths: string[]): Promise<Map<s
   return hashes;
 }
 
+async function statRemoteModes(sftp: SFTPClient, paths: string[]): Promise<Map<string, string>> {
+  const modes = new Map<string, string>();
+  if (paths.length === 0) return modes;
+  const quoted = paths.map((p) => `'${p.replaceAll("'", "'\\''")}'`).join(' ');
+  const { stdout } = await captureStdout(sftp, `sudo stat -c '%a %n' ${quoted}`);
+  for (const line of stdout.split('\n')) {
+    const match = /^([0-7]{3,4}) (.+)$/.exec(line);
+    if (match) modes.set(match[2], match[1]);
+  }
+  return modes;
+}
+
 async function querySystemdStates(
   sftp: SFTPClient,
   strategyNames: Iterable<string>
@@ -188,12 +203,14 @@ async function querySystemdStates(
 
 function makeRemoteUnitFile(
   filePath: string | undefined,
-  hashes: Map<string, string>
+  hashes: Map<string, string>,
+  modes: Map<string, string>
 ): RemoteUnitFile {
   return {
     path: filePath ?? '',
     exists: filePath !== undefined,
     sha256: filePath ? (hashes.get(filePath) ?? null) : null,
+    mode: filePath ? (modes.get(filePath) ?? null) : null,
   };
 }
 
@@ -218,6 +235,7 @@ export async function readRemoteState(
   }
 
   const hashes = await hashRemoteFiles(sftp, paths);
+  const modes = await statRemoteModes(sftp, paths);
   const systemdStates = await querySystemdStates(sftp, allStrategies);
 
   const result = new Map<string, RemoteUnitState>();
@@ -227,9 +245,9 @@ export async function readRemoteState(
     const adhocRec = systemdStates.get(`rediacc-backup-${name}-adhoc.service`) ?? {};
     const timerRec = systemdStates.get(`rediacc-backup-${name}.timer`) ?? {};
     result.set(name, {
-      serviceFile: makeRemoteUnitFile(entry.service, hashes),
-      timerFile: makeRemoteUnitFile(entry.timer, hashes),
-      envFile: makeRemoteUnitFile(entry.env, hashes),
+      serviceFile: makeRemoteUnitFile(entry.service, hashes, modes),
+      timerFile: makeRemoteUnitFile(entry.timer, hashes, modes),
+      envFile: makeRemoteUnitFile(entry.env, hashes, modes),
       isActiveService: isActiveState(serviceRec.ActiveState),
       isActiveAdhoc: isActiveState(adhocRec.ActiveState),
       isEnabledTimer: isEnabledState(timerRec.UnitFileState),
@@ -265,6 +283,38 @@ export async function resolveMachineCpuCount(sftp: SFTPClient): Promise<number> 
   return n;
 }
 
+/**
+ * The account-server origin to write into a unit, or undefined when the machine's renet predates `--expect-account-server`.
+ *
+ * Why a probe: the flag reaches every scheduled snapshot, and an older renet dies at cobra's flag parse at 03:00, so a backup silently never runs. A renet held in place (a development build, REDIACC_NO_PROVISION=1) can be older than this CLI, and a version string cannot say it (a development build is 0.0.0-dev), so the installed binary is asked: its own `backup snapshot --help` lists the flag or does not. A renet whose help runs and lacks the flag gets a unit without it and a warning. A probe that fails (a non-zero exit) refuses the reconcile instead: it says nothing about the flag either way, and dropping the flag on it would turn the licence check off for a reason nobody can see.
+ */
+export async function accountServerForRenet(
+  sftp: SFTPClient,
+  remoteRenetPath: string,
+  accountServer: string | undefined
+): Promise<string | undefined> {
+  if (!accountServer) return undefined;
+  let out = '';
+  const exitCode = await sftp.execStreaming(`${remoteRenetPath} backup snapshot --help 2>&1`, {
+    onStdout: (data) => {
+      out += data;
+    },
+    onStderr: (data) => {
+      out += data;
+    },
+  });
+  if (exitCode !== 0) {
+    throw new Error(
+      `Could not ask renet at ${remoteRenetPath} whether it takes ${EXPECT_ACCOUNT_SERVER_FLAG} (backup snapshot --help exit ${exitCode}, output "${out.trim()}"); the unit is not written without the licence check.`
+    );
+  }
+  if (out.includes(EXPECT_ACCOUNT_SERVER_FLAG)) return accountServer;
+  outputService.warn(
+    `renet at ${remoteRenetPath} does not list ${EXPECT_ACCOUNT_SERVER_FLAG}; the unit is written without it. Update renet on the machine to hold scheduled backups to the config's account server.`
+  );
+  return undefined;
+}
+
 // --------------------------------------------------------------------------- Phase B, Compute desired units ---------------------------------------------------------------------------
 
 /**
@@ -280,7 +330,9 @@ export async function resolveMachineCpuCount(sftp: SFTPClient): Promise<number> 
 export function computeDesiredUnits(
   specs: ScheduleUnitSpec[],
   remoteRenetPath: string,
-  cpuCount?: number
+  cpuCount?: number,
+  accountServer?: string,
+  renetHasStoreFlag = false
 ): Map<string, DesiredUnit> {
   const result = new Map<string, DesiredUnit>();
   const add = (unit: DesiredUnit): void => {
@@ -307,7 +359,9 @@ export function computeDesiredUnits(
       spec.scope,
       cpuCount,
       spec.schedule,
-      spec.run
+      spec.run,
+      accountServer,
+      renetHasStoreFlag
     );
     const timerContent = generateTimerUnit(
       spec.unitName,
@@ -327,7 +381,8 @@ export function computeDesiredUnits(
         spec.datastore.path,
         remoteRenetPath,
         spec.scope,
-        'snapshot'
+        'snapshot',
+        accountServer
       ),
       timerContent: '',
       envFileContent: '',
@@ -353,7 +408,8 @@ export function computeDesiredUnits(
         spec.datastore.path,
         remoteRenetPath,
         spec.scope,
-        'verify'
+        'verify',
+        accountServer
       ),
       timerContent: '',
       envFileContent: '',
@@ -374,6 +430,8 @@ function envDrifted(
   }
   return remoteEnvExists;
 }
+
+const UNIT_FILE_MODE = '644';
 
 function classifyDesired(unit: DesiredUnit, remote: RemoteUnitState | undefined): StrategyDiff {
   const desiredServiceHash = sha256Hex(unit.serviceContent);
@@ -396,8 +454,18 @@ function classifyDesired(unit: DesiredUnit, remote: RemoteUnitState | undefined)
   }
 
   const changed: ChangedFile[] = [];
-  if (remote.serviceFile.sha256 !== desiredServiceHash) changed.push('service');
-  if (hasTimer && remote.timerFile.sha256 !== desiredTimerHash) changed.push('timer');
+  // A unit whose content matches but whose mode drifted from 0644 (a 0600 file under the default umask) is rewritten: the write stages the file at the intended mode.
+  const unitModeDrifted = (file: RemoteUnitFile): boolean =>
+    file.exists && file.mode != null && file.mode !== UNIT_FILE_MODE;
+  if (remote.serviceFile.sha256 !== desiredServiceHash || unitModeDrifted(remote.serviceFile)) {
+    changed.push('service');
+  }
+  if (
+    hasTimer &&
+    (remote.timerFile.sha256 !== desiredTimerHash || unitModeDrifted(remote.timerFile))
+  ) {
+    changed.push('timer');
+  }
   if (envDrifted(desiredEnvHash, remote.envFile.exists, remote.envFile.sha256)) {
     changed.push('env');
   }

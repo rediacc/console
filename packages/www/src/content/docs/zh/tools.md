@@ -8,8 +8,8 @@ tags:
 subcategory: cli-tools
 order: 9
 language: zh
-sourceHash: "3c5f1e7f8063438b"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "87078fbf0b283224"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 # 工具
@@ -246,7 +246,7 @@ rdc update --status
 #### 发布通道
 
 ```bash
-rdc update --channel edge      # 连续部署的生产更新
-rdc update --channel stable    # 从 edge 经过 7 天稳定期后提升（默认）
+rdc update --channel edge      # 连续部署的生产更新（默认）
+rdc update --channel stable    # 从 edge 经过 7 天稳定期后提升
 rdc update --status            # 显示当前通道和版本信息
 ```

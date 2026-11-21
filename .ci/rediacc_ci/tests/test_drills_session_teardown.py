@@ -171,6 +171,8 @@ def test_only_i2_runs_v12_then_i2(tmp_path: pathlib.Path) -> None:
         seen.append("I2 forks=%d" % len(check.guids))
         check.check("I2", "stub I2", True)
 
+    # `--only` merges into the FAILED receipt of the same tree and refuses without one (vm_check._only_refusal).
+    harness.plant_failed_archive(tmp_path)
     _rc, out, receipt = _main(tmp_path, world, ["--only", "I2"], {**harness.STUB_EXTRA, "I2": stub})
     assert receipt == {}, "a --only run writes no receipt.json"
     assert seen == ["I2 forks=2"]

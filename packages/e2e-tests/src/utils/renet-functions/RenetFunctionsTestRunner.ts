@@ -53,6 +53,7 @@ import { SystemCheckMethods } from './methods/SystemCheckMethods';
 import { getOpsManager, OpsManager } from './OpsManager';
 import { formatExecutionLog } from './outputRedaction';
 import { buildPasswordVault } from './passwordVault';
+import { peerKnownHostParams, peerKnownHosts } from './peerKnownHosts';
 import { feedStdin } from './stdinFeed';
 import { buildTokenVault } from './tokenVault';
 import type { ExecResult, RunnerConfig, TestFunctionOptions, VMTarget } from './types';
@@ -559,7 +560,7 @@ export class RenetFunctionsTestRunner {
     }
 
     // Always use user@host format for consistency
-    const sshCmd = `ssh ${sshOpts} ${user}@${host} "${command.replaceAll('"', '\\"')}"`;
+    const sshCmd = `ssh ${sshOpts} ${user}@${host} "${this.sshExecutor.escapeForSSH(command)}"`;
 
     // Log the command being executed
     log(`\n[SSH ${host}] ${command}`);
@@ -756,16 +757,35 @@ export class RenetFunctionsTestRunner {
   private buildCrossVMFlags(opts: TestFunctionOptions): string {
     const crossVM = CROSS_VM_FUNCTIONS.has(opts.function);
     const identity = ` --ssh-key ${this.sshKeyPath()}`;
-    let flags = '';
-    if (opts.sourceMachine) {
-      flags += ` --source-machine ${opts.sourceMachine}`;
-      if (crossVM) flags += ` --source-user ${this.sshUser()}${identity}`;
-    }
-    if (opts.destMachine) {
-      flags += ` --dest-machine ${opts.destMachine}`;
-      if (crossVM) flags += ` --dest-user ${this.sshUser()}${identity}`;
-    }
-    return flags;
+    const side = (
+      prefix: 'source' | 'dest',
+      pinFlag: string,
+      machine?: string,
+      record?: string
+    ): string => {
+      if (!machine) return '';
+      const named = ` --${prefix}-machine ${machine}`;
+      if (!crossVM) return named;
+      const pin = record ? ` --${pinFlag} ${record}` : '';
+      return `${named} --${prefix}-user ${this.sshUser()}${identity}${pin}`;
+    };
+    return (
+      side('source', 'src-known-hosts', opts.sourceMachine, opts.sourceKnownHosts) +
+      side('dest', 'dest-known-hosts', opts.destMachine, opts.destKnownHosts)
+    );
+  }
+
+  /** A cross-VM verb refuses a peer with no recorded key, so scan the ones this call names from the machine that connects to them. */
+  private async withPeerKnownHosts(opts: TestFunctionOptions): Promise<TestFunctionOptions> {
+    if (!CROSS_VM_FUNCTIONS.has(opts.function)) return opts;
+    const run = (command: string, timeout?: number) => this.executeViaBridge(command, timeout);
+    return {
+      ...opts,
+      sourceKnownHosts: opts.sourceMachine
+        ? await peerKnownHosts(run, opts.sourceMachine)
+        : undefined,
+      destKnownHosts: opts.destMachine ? await peerKnownHosts(run, opts.destMachine) : undefined,
+    };
   }
 
   /**
@@ -902,7 +922,16 @@ export class RenetFunctionsTestRunner {
     if (opts.reportOnly) flags += ` --report-only`;
     // machine_converge_runtime: derived from the renet ParamDef registry as a boolean flag.
     if (opts.dryRun) flags += ` --dry-run`;
-    return flags + this.buildDockerPruneFlags(opts);
+    return flags + this.buildRepairFlags(opts) + this.buildDockerPruneFlags(opts);
+  }
+
+  /** repository_repair and proxy_acme_fix flags. */
+  private buildRepairFlags(opts: TestFunctionOptions): string {
+    let flags = '';
+    if (opts.allowClasses) flags += ` --allow-classes ${opts.allowClasses}`;
+    if (opts.inWindow) flags += ` --in-window`;
+    if (opts.restart) flags += ` --restart`;
+    return flags;
   }
 
   /** repository_docker_prune: plain boolean flags. */
@@ -938,6 +967,10 @@ export class RenetFunctionsTestRunner {
         opts.timeout
       );
     }
+    return this.withPeerKnownHosts(opts).then((withKeys) => this.runFunctionOnce(withKeys));
+  }
+
+  private runFunctionOnce(opts: TestFunctionOptions): Promise<ExecResult> {
     let cmd = `sudo -n renet functions once --test-mode --debug --function ${opts.function}`;
 
     cmd += this.buildCommonFlags(opts);
@@ -1076,6 +1109,15 @@ export class RenetFunctionsTestRunner {
     return JSON.stringify(vault);
   }
 
+  /** The vault form of withPeerKnownHosts: a literal `dest_machine` / `source_machine` carries its record as a param. */
+  private async withPeerKnownHostParams(functionName: string, vaultJSON: string): Promise<string> {
+    if (!CROSS_VM_FUNCTIONS.has(functionName)) return vaultJSON;
+    const vault = JSON.parse(vaultJSON) as { params?: Record<string, unknown> };
+    const run = (command: string, timeout?: number) => this.executeViaBridge(command, timeout);
+    vault.params = await peerKnownHostParams(run, vault.params ?? {});
+    return JSON.stringify(vault);
+  }
+
   /**
    * Upload vault JSON to the target VM over stdin (it can hold repository credentials, so it never
    * rides in the logged command text) and run the function against it.
@@ -1087,7 +1129,10 @@ export class RenetFunctionsTestRunner {
     buildVaultJSON: () => string,
     timeout?: number
   ): Promise<ExecResult> {
-    const vaultJSON = this.withCrossVMSSHKey(functionName, buildVaultJSON());
+    const vaultJSON = await this.withPeerKnownHostParams(
+      functionName,
+      this.withCrossVMSSHKey(functionName, buildVaultJSON())
+    );
     const vaultPath = `/tmp/e2e-vault-${Date.now()}.json`;
     const uploadResult = await this.executeViaBridge(`umask 077 && cat > ${vaultPath}`, timeout, {
       stdin: vaultJSON,
@@ -1337,13 +1382,16 @@ export class RenetFunctionsTestRunner {
     this.repositoryMethods.repositoryRm(name, datastorePath, networkId);
   repositoryMount = (name: string, password?: string, datastorePath?: string, networkId?: string) =>
     this.repositoryMethods.repositoryMount(name, password, datastorePath, networkId);
-  repositoryUnmount = (name: string, datastorePath?: string, networkId?: string) =>
+  repositoryUnmount = (name: string, datastorePath: string | undefined, networkId: string) =>
     this.repositoryMethods.repositoryUnmount(name, datastorePath, networkId);
   repositoryUp = (name: string, datastorePath?: string, networkId?: string) =>
     this.repositoryMethods.repositoryUp(name, datastorePath, networkId);
   repositoryDown = (name: string, datastorePath?: string, networkId?: string) =>
     this.repositoryMethods.repositoryDown(name, datastorePath, networkId);
   repositoryList = (datastorePath?: string) => this.repositoryMethods.repositoryList(datastorePath);
+  repositoryFsck = (datastorePath?: string) => this.repositoryMethods.repositoryFsck(datastorePath);
+  machinePruneDryRun = (datastorePath?: string) =>
+    this.repositoryMethods.machinePruneDryRun(datastorePath);
   repositoryResize = (name: string, newSize: string, password?: string, datastorePath?: string) =>
     this.repositoryMethods.repositoryResize(name, newSize, password, datastorePath);
   repositoryInfo = (name: string, datastorePath?: string) =>
@@ -1363,6 +1411,12 @@ export class RenetFunctionsTestRunner {
   repositoryTrim = (opts?: RepositoryTrimOptions) => this.repositoryMethods.repositoryTrim(opts);
   repositoryDockerPrune = (opts?: RepositoryDockerPruneOptions) =>
     this.repositoryMethods.repositoryDockerPrune(opts);
+  repositoryRepair = (
+    name: string,
+    opts?: { allowClasses?: string; inWindow?: boolean; dryRun?: boolean; datastorePath?: string }
+  ) => this.repositoryMethods.repositoryRepair(name, opts);
+  proxyAcmeFix = (opts?: { dryRun?: boolean; restart?: boolean }) =>
+    this.repositoryMethods.proxyAcmeFix(opts);
   repositoryLogs = (
     name: string,
     opts?: { container?: string; lines?: string; datastorePath?: string }

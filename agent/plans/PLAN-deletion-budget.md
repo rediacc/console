@@ -1,5 +1,6 @@
 # PLAN: a per-PR deletion budget (deletions >= 0.33 x additions over all tracked lines), per-PR coverage, and a mutation-judged prune of the pytest corpus, bash-twin parity tests and duplicate tests and gates
 Status: draft -- operator /ask 2026-10-04, three rounds plus the coverage addition, all binding; round two overrides round one wherever they conflict; postponed by the operator the same day
+Updated: 2026-11-05 -- reread by d778be9d: still queued, no box changed
 Owner: d778be9d
 First-Seen: 2026-10-04
 Depends-On: no-dep -- builds only on shipped modules (plan_gate, wl_prscope, wl_prsignals, review_table, shrink_only, check_pytest, differential.py, mutate-check.sh, the shape index). The file overlaps with live plans are listed under Concurrency and not as prerequisites, because a Depends-On edge would pull those plans into this PR's plan set (`plan_gate.pr_plan_set`, `.claude/rediacc_hooks/plan_gate.py:216`)
@@ -359,6 +360,7 @@ DB29 waits for the operator.
   
   Queued via `npm run check:ci-plan-record -- --update`. Proof: `npm run check:ci-plan-record` rc 0. Control: with the plan file absent, the gate reports the entry as dangling.
 - [ ] DB24 Overhead and cost refresh after the first green CI run with `--line-map` on the DB21 head. It records each leg's minutes with and without the map (from the `unit-durations` artifacts of that run and the preceding green run) in the D12 section of `docs/agent-reference/ci-gates.md`. It then refreshes `.ci/config/lane-durations.json` and `.ci/config/gate-costs.json` via `PYTHONPATH=.ci python3 -m rediacc_ci.ci.budget_report --refresh`, and runs `--rebalance quality-pytest --write`. Only if a leg still exceeds 15 minutes does it grow to four legs (`.ci/config/shards/quality-pytest.json` `"of": 4`, `.github/workflows/ci-quality.yml:2363` `shard: [1, 2, 3, 4]`). Proof: `PYTHONPATH=.ci python3 -m rediacc_ci.ci.budget_report --check && npm run check:ci-lane-budget && npm run check:ci-shard-manifest-coverage` rc 0. Control: a hand-added stale unit id reds `check:ci-lane-budget`.
+  (corrected 2026-11-11, R2) GitHub-only: CI parity -- the minutes with and without --line-map come from the unit-durations artifacts of a green GitHub CI run on the DB21 head.
 - [ ] DB25 Coverage wiring on every PR, per D12:
   - `.ci/rediacc_ci/check_pytest.py:1043` (`--line-map <dir>` beside `parse_shard_args`, loading DB8's plugin and installing the `.pth` hook);
   - `.github/workflows/ci-quality.yml:2363` (the legs pass `--line-map reports/line-map/` and upload `line-map-quality-pytest-s<N>-<sha>`);

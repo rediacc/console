@@ -23,11 +23,6 @@ vi.mock('../config/config-resources.js', () => ({
   },
 }));
 
-// Mock machine-status used by getWithVaultStatus
-vi.mock('../machine/machine-status.js', () => ({
-  fetchMachineStatus: vi.fn().mockResolvedValue({ containers: [], services: [] }),
-}));
-
 vi.mock('../renet/renet-execution.js', () => ({
   readSSHKey: vi.fn().mockResolvedValue('FAKE_PRIVATE_KEY'),
 }));
@@ -35,19 +30,6 @@ vi.mock('../renet/renet-execution.js', () => ({
 const { LocalStateProvider } = await import('../state.js');
 
 describe('LocalStateProvider', () => {
-  describe('machines.getWithVaultStatus', () => {
-    it('should return machine status data', async () => {
-      const provider = new LocalStateProvider();
-
-      const result = await provider.machines.getWithVaultStatus({
-        teamName: 'team',
-        machineName: 'machine',
-      });
-      expect(result).toMatchObject({ machineName: 'machine' });
-      expect(result?.vaultStatus).toBeDefined();
-    });
-  });
-
   describe('vaults.getConnectionVaults — per-repo secrets', () => {
     function setupMachineWithRepo(repoConfig: Record<string, unknown>) {
       mockGetLocalConfig.mockResolvedValue({

@@ -10,7 +10,7 @@ tags:
 subcategory: ai-agents
 order: 51
 language: tr
-sourceHash: "36ba86893c3817ac"
+sourceHash: "fa5406e6f4dcdd08"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -132,6 +132,12 @@ Başarısız komutlar, kurtarma ipuçlarıyla yapılandırılmış hatalar dönd
 | `next.options[]` | `array` | Somut eylemler; her biri kullanıcının seçebileceği bir alternatiftir |
 | `next.options[].description` | `string` | Bu seçeneğin insan tarafından okunabilir açıklaması |
 | `next.options[].run` | `string` | Tam CLI komutu. Kullanıcıya olduğu gibi iletin |
+
+### Hata ipucu ve geri bildirim seçeneği
+
+Başarısız bir komuttan sonra (kullanım hatası dışındaki sıfırdan farklı her çıkış) `rdc`, stderr'e `Unexpected? rdc feedback report --last` yazdırır. JSON çıktısında aynı yönlendirme, `rdc feedback report --last` komutunu çalıştıran bir seçenek olarak `next.options[]` içine eklenir; `next` içermeyen bir hataya, hatanın beklenmedik olup olmadığını soran bir özetle birlikte bir `next` eklenir. İpucu; kullanım hatalarında, başarısız olan `rdc feedback` komutlarında ve `rdc serve` tarafından karşılanan isteklerde yer almaz. `REDIACC_FEEDBACK_HINT=0` onu kapatır.
+
+report komutu, gönderilecek içeriği olduğu gibi yazdırır. `--yes` olmadan bir ajan bu önizlemeyi ve göndermek için gereken komutu alır; `--yes` verilene ya da bir kişi onaylayana kadar hiçbir şey gönderilmez.
 
 ### Yeniden Denenebilir Hatalar
 

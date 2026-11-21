@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: ja
-sourceHash: "4769afb97c2b885d"
-sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
+sourceHash: "a98cadc0afd3474b"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # サービス
@@ -29,14 +29,33 @@ Rediaccfileは2つの場所で検出されます：
 
 ### ライフサイクル関数
 
-Rediaccfileは最大2つの関数を含みます：
+renetは次のRediaccfile関数を実行します：
 
 | 関数 | 実行タイミング | 目的 | エラー動作 |
 |----------|-------------|---------|----------------|
 | `up()` | 開始時 | サービスの開始（例：`renet compose -- up -d`） | ルートの失敗は**クリティカル**（すべて停止）。サブディレクトリの失敗は**非クリティカル**（ログに記録し、続行） |
 | `down()` | 停止時 | サービスの停止（例：`renet compose -- down`） | **ベストエフォート** - 失敗はログに記録されますが、すべてのRediaccfileが常に試行されます |
+| `health()` | `rdc repo health`、`rdc machine health`、デプロイのヘルスゲート | リポジトリ自身の状態を報告：終了コード `0` は正常、`1` は警告、`2` はエラー | すべてのRediaccfileの `health()` が実行され、最も悪いレベルが採用されます。終了コード `75` はまだウォームアップ中（警告）を意味します。それ以外の終了コード、シグナル、タイムアウトはエラーです（デプロイのヘルスゲートはタイムアウトを「まだウォームアップ中」と読み、再試行します。[タイムアウトとシャットダウンの順序](#timeouts-and-shutdown-order)を参照）。どのRediaccfileも `health()` を定義していないリポジトリは**チェックなし**と報告され、正常とは見なされません |
+| `repair()` | `rdc repo repair`、および `health()` が正常でないリポジトリに対する `rdc machine repair` | 同じファイルの `health()` が報告した問題を修復 | そのファイルの `health()` が正常でなく、宣言されたクラスが許可されている場合にのみ実行されます（下記参照）。`health()` が終了コード `75`（まだウォームアップ中）で終わった場合は警告として扱われるため、`repair()` は起動中のリポジトリには手を出さないようにしてください。その後 `health()` が再度実行されます。失敗またはタイムアウトした `repair()` はエラーです |
 
-両方の関数はオプションです。関数が定義されていない場合、サイレントにスキップされます。
+すべての関数はオプションです。関数が定義されていない場合、サイレントにスキップされます。
+
+#### 修復クラスの宣言
+
+`repair()` には `REDIACC_HEALTH_LEVEL`（`warning` または `error`。同じファイルの `health()` が報告したレベル）と `REDIACC_HEALTH_OUTPUT`（その `health()` の出力の末尾）が渡されます。コメント行で、その関数がどれだけ安全かを宣言します：
+
+```bash
+# rediacc:repair class=auto-safe
+# rediacc:repair class=auto-with-backup window=only
+```
+
+| クラス | 実行するもの |
+|---|---|
+| `auto-safe` | `rdc machine repair` と `rdc repo repair` が自動的に実行します |
+| `auto-with-backup` | `--with-backup` を付けた場合にのみ、リポジトリのスナップショットが成功した後で実行されます |
+| `operator-only` | 自動では実行されません。`rdc repo repair` は先に確認し（または `--yes` を受け付け）、`rdc machine repair` は実行しません |
+
+宣言のない `repair()` は `operator-only` として扱われるため、リポジトリ自身が安全だと示さない限り、どのツールもそのコードを無人で実行しません。`window=only` は2つ目の条件を加えます。関数はマシンのメンテナンスウィンドウ内（[モニタリング](/ja/docs/monitoring#repair)）か、`--window-override` を付けた場合にのみ実行されます。複数の行でクラスが宣言されている場合は、最も制限の厳しいものが採用されます。
 
 ### 実行順序
 
@@ -57,11 +76,78 @@ Rediaccfile関数の実行時、以下の環境変数が利用可能です：
 
 `{SERVICE}_IP`変数は`.rediacc.json`のスロットマッピングから自動生成され、Rediaccfile関数が実行される前にエクスポートされます。命名規則では、サービス名を大文字に変換し、ハイフンをアンダースコアに置き換え、`_IP`を付加します。例えば、スロット`0`の`listmonk-app`というサービスは`LISTMONK_APP_IP=127.0.11.2`になります。
 
-> **警告：Rediaccfile内で`sudo docker`を使用しないでください。** `sudo`コマンドは環境変数をリセットするため、`DOCKER_HOST`が失われ、Dockerコマンドがリポジトリの隔離デーモンではなくシステムデーモンを対象にします。これによりコンテナの隔離が壊れ、ポート競合が発生する可能性があります。Rediaccは`-E`なしの`sudo docker`を検出すると実行をブロックします。
+> **警告：Rediaccfile内で`sudo docker`を使用しないでください。** `sudo`コマンドは環境変数をリセットするため、`DOCKER_HOST`が失われ、Dockerコマンドがリポジトリの隔離デーモンではなくシステムデーモンを対象にします。これによりコンテナの隔離が壊れ、ポート競合が発生する可能性があります。Rediaccは`sudo docker`を検出すると実行をブロックします。
 >
-> Rediaccfile内では`renet compose`を使用してください。`DOCKER_HOST`を自動的に処理し、ルート検出用のネットワーキングラベルを注入し、サービスネットワーキングを設定します。リバースプロキシ経由でサービスを公開する方法の詳細については、[ネットワーキング](/ja/docs/networking)を参照してください。Dockerを直接呼び出す場合は、`sudo`なしで`docker`を使用してください。Rediaccfile関数は既に十分な権限で実行されます。sudoを使用する必要がある場合は、環境変数を保持するために`sudo -E docker`を使用してください。
+> Rediaccfile内では`renet compose`を使用してください。`DOCKER_HOST`を自動的に処理し、ルート検出用のネットワーキングラベルを注入し、サービスネットワーキングを設定します。リバースプロキシ経由でサービスを公開する方法の詳細については、[ネットワーキング](/ja/docs/networking)を参照してください。Dockerを直接呼び出す場合は、`sudo`なしで`docker`を使用してください。Rediaccfile関数は、rootではなくユニバーサルユーザーとしてリポジトリのDockerデーモンに接続します（[権限](/ja/docs/services#privileges)を参照）。
 >
 > `renet`はリモートロー・レベルツールです。ワークステーションから通常のユーザー作業フローを行う場合は、`rdc repo up`や`rdc repo down`などの`rdc`コマンドを優先してください。[rdc vs renet](/ja/docs/rdc-vs-renet)を参照してください。
+
+### 権限
+
+`up()`と`down()`は、読み書きできる場所を制限するサンドボックスの中で、rootではなくユニバーサルユーザー（`rediacc`）として実行されます。環境は継承ではなく関数ごとに組み立てられるため、上記の変数、リポジトリの`REDIACC_SECRET_*`の値、最小限の`PATH`だけを持ちます。`sudo`はどのティアでも使えません。サンドボックスが`no_new_privs`を設定するので、`sudo`を使うRediaccfileの行は失敗し、`sudo`を外す必要があります。Landlockのないマシンは、`up()`と`down()`を制限なしで実行せず、実行を拒否します。
+
+デフォルトを超える権限が必要な行は、サンドボックスが返すエラーで失敗します。ジャーナルとCLIは、該当するRediaccfileの行をグラントのコマンドとともに表示します。
+
+| Rediaccfileの処理 | 見えるもの | 対処 |
+|---|---|---|
+| `sudo x` | `sudo: The "no new privileges" flag is set` | `sudo`を外す。そのステップはrootが不要か、グラントが必要 |
+| `chown 5050 ...`、またはコンテナが所有するディレクトリへの`rm -rf` | `Operation not permitted`または`Permission denied` | ステップを使い捨てコンテナで実行する（rootになるのはコンテナ内で、リポジトリのDockerデーモンはリポジトリ自身のルート外へのバインドを拒否します）：`renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| マウント内の`.env`などのファイルへの書き込み | 動作する。ファイルの所有者はユニバーサルユーザー | 不要 |
+| `/etc/rediacc/*`、`/proc/kcore`、ブロックデバイスの読み取り | `Permission denied` | パスのグラントを依頼する |
+| ファイルシークレットを直接読み取る | `Permission denied` | composeの`secrets:`、またはenvモードのシークレットを使う |
+| デバイスのグラントなしで`nvidia-smi` | デバイスが見つからない | デバイスをグラントする。[GPU](/ja/docs/gpu)を参照 |
+| `sysctl -w` | `Permission denied` | 管理者としてマシンに一度だけ設定する |
+
+#### グラントを依頼する
+
+グラントは、`up()`と`down()`が到達できる範囲を広げます。グラントを与えられるのはオペレーターだけで、リポジトリの外から行います。
+
+```bash
+rdc repo permission grant <repo-ref> --path /srv/data:rw
+rdc repo permission grant <repo-ref> --root
+rdc repo permission show <repo-ref>
+rdc repo permission revoke <repo-ref> --path /srv/data
+```
+
+`--path`はLandlockのルールを1つ追加します。`:rw`を付けない限り読み取り専用です。マシンは、別のリポジトリ、データストア、`/etc/rediacc`に届くパスを拒否します。`--root`は権限を落とさず、関数をrootとして実行し、コールドバックアップはそのようなリポジトリを拒否します。エージェントが起動する前にオペレーターが`REDIACC_ALLOW_GRAND_REPO`を設定していない限り、エージェントは`--root`を与えられません。フォークは新しいネットワークIDを持ち、グラントなしで始まります。再利用されたネットワークIDで見つかったグラントは破棄されます。
+
+Rediaccfileは、必要なものをコメント行で宣言できます。これはあくまで依頼です。
+
+```bash
+# rediacc:needs root
+# rediacc:needs path=/srv/data
+# rediacc:needs device=nvidia.com/gpu=all
+```
+
+`up()`は宣言をグラントと照合します。グラントがない場合、`up()`はどの行も実行される前に拒否され、メッセージに正確なグラントのコマンドが表示されます。`down()`は宣言を確認しないため、リポジトリ内で編集したコメントによってオペレーターの`repo down`が止められることはありません。グラントが本当に必要な`down()`は、そのステップ自身で失敗します。`machine converge`は、拒否される状態に再起動する代わりに、そのようなリポジトリを`needs_lifecycle_grant`としてスキップします。
+
+### タイムアウトとシャットダウンの順序
+
+リポジトリのコンテナは、その `down()` が実行されて終了するまで停止しません。対象は、リポジトリの Docker ユニットに対する `systemctl stop` と `restart`、`machine converge`、`repo down --unmount`、ユニットの書き換え、ホストのシャットダウンです。例外は、Docker デーモンまたはホストのクラッシュ、停電、ホストのシャットダウン時でも `systemctl stop` や `restart` の際でも、タイムアウトを超えた `down()` です。その `down()` は終了され、停止は後述のとおり続行されます。
+
+各 Docker ユニットは、デーモンにシグナルを送る前に停止フックを実行します。フックは、このデーモンの起動で renet がすでに実行済みでない限り、稼働中のデーモンに対して `down()` を実行し、デーモンが応答しない場合やリポジトリに Rediaccfile がない場合は実行しません。ホストのシャットダウンでは、まず Docker ユニットが停止して各々が `down()` を並列実行し、その後クリーンアップ用ユニットが、自動起動の有無にかかわらずマウント中のすべてのリポジトリをアンマウントします。ユニットの停止猶予は 17 分で、再起動ジョブの 30 分の上限に収まります。このフックの中で `down()` がタイムアウトすると、そのプロセスグループには SIGTERM が送られ、10 秒後に SIGKILL が送られ(`FunctionKillGrace`、`pkg/orchestration/procgroup.go`)、警告がログに記録され、フックは終了コード 0 で終わるため、systemd は停止を続けます。したがってタイムアウトした `down()` が `systemctl stop` や再起動を遅らせるのは最大でタイムアウト+10 秒(上限で 15 分 10 秒)で、停止はユニットの `TimeoutStopSec`(17 分)に収まります。停止を拒否するのは、`repo down --unmount` のような renet 自身の経路だけです。
+
+`up()` と `down()` の既定値はそれぞれ 10 分で、`RENET_UP_TIMEOUT` と `RENET_DOWN_TIMEOUT`、または `--up-timeout` と `--down-timeout` で設定します。タイムアウトすると、プロセスグループに SIGTERM が送られ、10 秒後に SIGKILL が送られます。`repo down --unmount` や converge による再起動のように先に `down()` が必要な操作は、`down()` がタイムアウトした場合にコンテナを動かしたままにし、`--force` を付けると続行します。Rediaccfile はコメント行で上限を引き上げられます。
+
+```bash
+# rediacc:timeout up=20m down=15m backup=120s health=60s repair=10m
+```
+
+| キー | 既定値 | 上限 |
+|---|---|---|
+| `up` | 10 分 | 60 分 |
+| `down` | 10 分 | 15 分 |
+| `backup` | 30 秒 | 300 秒 |
+| `health` | 30 秒 | 300 秒 |
+| `repair` | 5 分 | 30 分 |
+
+`health()` にも同じ制限があります。既定値は `RENET_HEALTH_TIMEOUT` で設定し、タイムアウトするとプロセスグループにSIGTERMが送られ、10秒後にSIGKILLが送られます。デプロイのヘルスゲートは、タイムアウトした `health()` をまだウォームアップ中と見なして再試行します。`rdc repo health` と `rdc machine health` はこれをエラーとして報告します。`repair()` も `RENET_REPAIR_TIMEOUT` で同じ仕組みに従い、タイムアウトした `repair()` は失敗として扱われます。
+
+ディレクティブは制限を引き上げるだけで、上限を超える値は上限に切り詰められます。そのためリポジトリ側から `down()` を短くして強制終了させることはできません。未知のキーは警告を出して無視されます。
+
+リポジトリのデーモンでは Docker の `live-restore` を無効のままにします。有効にすればデーモンの再起動後もコンテナは残りますが、コンテナの shim はユニットの cgroup を共有していて一緒に終了するため、復元後のデーモンは再接続できず、計画停止の間もコンテナがマウントを保持し続けてしまいます。
+
+renet が管理するリポジトリごとの RAM ボリューム(`# rediacc:ram size=6G`、ホストの RAM はオペレーターが割り当てます)は設計段階で、まだ実装されていません。
 
 ### 例
 

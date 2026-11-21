@@ -56,6 +56,7 @@ Both are the same substitution and neither changes a claim.
 
 import json
 import os
+import pathlib
 import re
 import shutil
 
@@ -1036,50 +1037,100 @@ ADVANCE_POLICY = json.dumps(
 )
 
 
-def test_record_commit_over_a_red_receipt_runs_the_lane(gate):
-    """#ea5e31cd: an advance never touches `failed` or `exitCode`, so a record-only commit over a red receipt printed a green and exited 0 while the receipt it left stayed red. An advance that exits 1 instead can never clear a red from an outside cause, so a red receipt is not advanced: the lane judges the gate again, red when it is still red and green once it is not."""
+RED_ADVANCE_POLICY = json.dumps(
+    {
+        "records": [
+            {
+                "glob": "agent/reviews/**",
+                "readers": [{"id": "fast:reader", "evidence": "fixture"}],
+            },
+            {
+                "glob": "agent/redrec/**",
+                "readers": [{"id": "fast:red", "evidence": "fixture"}],
+            },
+        ]
+    }
+)
+
+
+def test_a_red_receipt_advances_only_past_records_its_reds_do_not_read(gate):
+    """A red receipt and a record-only commit (operator ruling 2026-11-16). #ea5e31cd stands: an advance never touches `failed` or `exitCode`, so it exits 1 over a red receipt and never reads as green. What changed is that the lane is no longer re-run for a record the red gate does not read: the readers of the touched record run, the step is appended, and the receipt stays red on the gate it was red on. A second run at the same HEAD is a whole run, which is how a red from an outside cause clears. CONTROL: a commit to a record the red gate DOES read is not advanced, and the lane judges that gate again."""
     gates = [spec("fast:red", '[ -z "$MAKE_RED" ]'), spec("fast:reader", "true")]
     with harness.temp_dir() as work:
         repo = _fixture_repo(
             gate,
             work,
             gates,
-            {".ci/policy/record-paths.json": ADVANCE_POLICY, "agent/reviews/a.md": "a\n"},
+            {
+                ".ci/policy/record-paths.json": RED_ADVANCE_POLICY,
+                "agent/reviews/a.md": "a\n",
+                "agent/redrec/a.md": "a\n",
+            },
         )
         receipt_path = work / "receipt.json"
         red = {"MAKE_RED": "1"}
-        r = _quick(
-            gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path), extra_env=red
-        )
-        gate.assert_exit(1, r, "the whole run is red")
-        (repo / "agent" / "reviews" / "b.md").write_text("b\n", encoding="utf-8")
-        _git(gate, repo, "add", "-A")
-        _git(gate, repo, "commit", "-q", "-m", "chore(reviews): record")
-        r = _quick(
-            gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path), extra_env=red
-        )
-        gate.assert_not_contains(r.out, "ADVANCE", "a red receipt is not advanced")
-        gate.assert_exit(1, r, "a gate still red keeps the run red")
+
+        def quick(env=None):
+            return _quick(
+                gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path), extra_env=env
+            )
+
+        def commit(rel):
+            (repo / rel).write_text("b\n", encoding="utf-8")
+            _git(gate, repo, "add", "-A")
+            _git(gate, repo, "commit", "-q", "-m", "chore(records): record")
+
+        gate.assert_exit(1, quick(red), "the whole run is red")
+        whole_tree = _receipt(gate, receipt_path).get("headTree")
+
+        commit("agent/reviews/b.md")
+        r = quick(red)
+        gate.assert_contains(r.out, "ADVANCE", "a record the red gate does not read advances")
+        gate.assert_contains(r.out, "still RED", "and the run says the receipt stays red")
+        gate.assert_exit(1, r, "an advance over a red receipt exits non-zero")
+        rc = _receipt(gate, receipt_path)
+        gate.assert_eq(rc.get("failed"), ["fast:red"], "the failed list still names the red gate")
+        gate.assert_eq(rc.get("headTree"), whole_tree, "and still describes the tree it judged")
+        steps = rc.get("advances") or []
         gate.assert_eq(
-            _receipt(gate, receipt_path).get("failed"), ["fast:red"], "and the receipt names it"
+            [sorted(s.get("gates") or {}) for s in steps],
+            [["fast:reader"]],
+            "one step, which ran the touched record's reader and not the red gate",
         )
-        (repo / "agent" / "reviews" / "c.md").write_text("c\n", encoding="utf-8")
-        _git(gate, repo, "add", "-A")
-        _git(gate, repo, "commit", "-q", "-m", "chore(reviews): record")
-        r = _quick(gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path))
-        gate.assert_exit(0, r, "the outside cause has gone, so the same red clears")
+
+        r = quick()
+        gate.assert_not_contains(r.out, "ADVANCE", "a second run at the same HEAD is a whole run")
+        gate.assert_exit(0, r, "the outside cause has gone, so the whole run clears the red")
         gate.assert_eq(_receipt(gate, receipt_path).get("failed"), [], "and the receipt is green")
-        gate.log_pass("a record-only commit over a red receipt judged the gate again")
+
+        # CONTROL: the red gate reads the record the commit touches, so the lane runs.
+        gate.assert_exit(1, quick(red), "the whole run is red again")
+        commit("agent/redrec/b.md")
+        r = quick(red)
+        gate.assert_not_contains(
+            r.out, "--quick ADVANCE", "a record the red gate reads is not advanced"
+        )
+        gate.assert_contains(r.out, "red on fast:red", "and the run names the red reader")
+        gate.assert_exit(1, r, "the lane judged it again and it is still red")
+        rc = _receipt(gate, receipt_path)
+        gate.assert_eq(rc.get("advances"), [], "the whole run starts an empty chain")
+        gate.assert_eq(rc.get("failed"), ["fast:red"], "and names the gate at the new tree")
+        gate.log_pass(
+            "a red receipt advanced past a record its red gate does not read, stayed red, "
+            "cleared on a whole re-run, and ran the lane for a record the red gate reads"
+        )
 
 
 QUICK_CLONE_REL = "scripts/ci-runner/quick-clone.ts"
 
 
-def _clone_fixture(gate, work):
-    """A fixture whose one gate reads a file the live tree holds uncommitted, with an install the kept clone can copy: `quick-clone.ts` starts the runner through `<clone>/node_modules/.bin/tsx`, so the clone must get one the way it gets every dependency."""
+def _clone_fixture(gate, work, gates: list[dict] | None = None):
+    """A fixture whose one gate reads a file the live tree holds uncommitted, with an install the kept clone can copy: `quick-clone.ts` starts the runner through `<clone>/node_modules/.bin/tsx`, so the clone must get one the way it gets every dependency. `gates` replaces that one gate when a case needs its own."""
     tsx = require_runner(gate)
-    gates = [spec("fast:sees-head", "[ ! -e dirty.marker ]")]
-    lock = '{"packages": {"node_modules/dep": {"version": "1.0.0"}}}\n'
+    if gates is None:
+        gates = [spec("fast:sees-head", "[ ! -e dirty.marker ]")]
+    dep_version = "1.0.0"
+    lock = json.dumps({"packages": {"node_modules/dep": {"version": dep_version}}}) + "\n"
     repo = _fixture_repo(
         gate,
         work,
@@ -1095,6 +1146,11 @@ def _clone_fixture(gate, work):
     bin_dir.mkdir(parents=True)
     os.symlink(tsx, bin_dir / "tsx")
     (repo / "node_modules" / ".package-lock.json").write_text(lock, encoding="utf-8")
+    # The kept clone also checks each package the hidden lockfile names is on disk at that version (quick-clone.ts installedDifference), so the one locked package exists.
+    (repo / "node_modules" / "dep").mkdir()
+    (repo / "node_modules" / "dep" / "package.json").write_text(
+        json.dumps({"name": "dep", "version": dep_version}) + "\n", encoding="utf-8"
+    )
     (repo / "dirty.marker").write_text("not committed\n", encoding="utf-8")
     # THE RUNNER'S OWN SELFTEST STAYS OUT OF THIS FIXTURE: it drives real hung gates and a real checkout's state, and `check:ci-runner-selftest` runs it for real. A stub answers `--selftest` and hands every other call to the real runner's copy, so these cases still judge a real lane in a real clone; the stub is committed because the clone runs HEAD.
     runner_dir = repo / "scripts" / "ci-runner"
@@ -1183,6 +1239,76 @@ def test_quick_clone_judges_head_and_leaves_the_live_tree_alone(gate):
         gate.log_pass("the clone judged HEAD, the second run carried, and --here went red")
 
 
+def test_quick_clone_carries_from_a_receipt_two_runs_back(gate):
+    """PLAN-ciquick-cpu A1 through the real entry: green at y.txt=good, red at y.txt=bad, then y.txt=good again beside an unrelated edit. The newest receipt never judged that inputHash, so only the archived receipt two runs back can carry the gate, and the run must not execute it.
+
+    A pure `planCarry` case already lives in run.ts's selftest; this one proves the WIRING (loadPriorReceipts on the real destination, the archive writeReceipt keeps, the clone that makes the run disposable). CONTROL: a y.txt no receipt judged runs the gate.
+    """
+    gates = [
+        spec(
+            "fast:reads-y",
+            'echo reads-y >> "$MARK"; grep -q good y.txt',
+            paths=["y.txt"],
+            pathsOrigin="declared",
+        )
+    ]
+    with harness.temp_dir() as work:
+        repo = _clone_fixture(gate, work, gates)
+        mark = work / "ran.log"
+        receipt_path = repo / ".ci" / "cache" / "prepush-receipt.json"
+
+        def commit(files: dict, msg: str) -> str:
+            for rel, text in files.items():
+                (repo / rel).write_text(text, encoding="utf-8")
+            _git(gate, repo, "add", "--", *files)
+            _git(gate, repo, "commit", "-q", "-m", msg, "--", *files)
+            return _git(gate, repo, "rev-parse", "HEAD^{tree}")
+
+        def runs_of_gate() -> int:
+            return mark.read_text(encoding="utf-8").split().count("reads-y") if mark.exists() else 0
+
+        t1 = commit({"y.txt": "good\n"}, "y good")
+        r = _quick_clone(gate, repo, work)
+        gate.assert_exit(0, r, "run 1 is green at y.txt=good")
+        gate.assert_eq(runs_of_gate(), 1, "run 1 executed the gate")
+        gate.assert_eq(
+            (repo / ".ci" / "cache" / "receipts" / ("%s.json" % t1)).is_file(),
+            True,
+            "run 1 is archived under its tree",
+        )
+
+        commit({"y.txt": "bad\n"}, "y bad")
+        r = _quick_clone(gate, repo, work)
+        gate.assert_exit(1, r, "run 2 is red at y.txt=bad")
+        gate.assert_eq(runs_of_gate(), 2, "run 2 executed the gate")
+
+        t3 = commit(
+            {"y.txt": "good\n", "z.txt": "unrelated\n"},
+            "y good again, plus a file the gate does not read",
+        )
+        gate.assert_eq(t3 != t1, True, "run 3 judges a tree no receipt names")
+        r = _quick_clone(gate, repo, work)
+        gate.assert_exit(0, r, "run 3 is green")
+        gate.assert_eq(runs_of_gate(), 2, "run 3 did not execute the gate: it carried")
+        gate.assert_contains(r.out, "ci:quick: carried 1, ran ", "the run reports the carry")
+        carried = _receipt(gate, receipt_path).get("gates", {}).get("fast:reads-y", {})
+        gate.assert_eq(
+            (carried.get("carriedFrom") or {}).get("headTree"),
+            t1,
+            "the carry names the receipt two runs back as its origin, not the red one",
+        )
+
+        # CONTROL: an inputHash no receipt judged carries from none of them.
+        commit({"y.txt": "good, reworded\n"}, "y changed")
+        r = _quick_clone(gate, repo, work)
+        gate.assert_exit(0, r, "the control run is green")
+        gate.assert_eq(runs_of_gate(), 3, "CONTROL: a changed y.txt runs the gate")
+        gate.log_pass(
+            "a restored input carried from the archived receipt two runs back, past a red one, "
+            "and a changed input ran"
+        )
+
+
 def test_quick_clone_falls_back_loudly_and_needs_a_receipt(gate):
     """A clone that cannot be set up runs in this checkout, says why in one line, and judges what that run left, so the fallback never exits 0 on a tree that went red."""
     with harness.temp_dir() as work:
@@ -1204,6 +1330,139 @@ def test_quick_clone_falls_back_loudly_and_needs_a_receipt(gate):
         )
         gate.log_pass(
             "the fallback said why, went red on the red tree, and passed on the clean one"
+        )
+
+
+def test_quick_clone_pins_an_ancestor_and_archives_its_receipt(gate):
+    """`ci:quick --commit <sha>` judges a named ancestor of HEAD in the kept clone (agent/plans/PLAN-push-decoupling.md R1, D1.1).
+
+    The pinned run archives its whole receipt as `.ci/cache/receipts/<its tree>.json`, the copy `block_unverified_push.read_receipt` reads first, and leaves a newer `prepush-receipt.json` byte for byte. A sha that is not an ancestor of HEAD, or names no commit, is refused before the clone directory exists. A lease is still refused with `--commit`. CONTROL: the plain run at HEAD before the pin writes `prepush-receipt.json`, so the untouched file is a receipt that was there to overwrite.
+    """
+    with harness.temp_dir() as work:
+        repo = _clone_fixture(gate, work)
+        (repo / "dirty.marker").unlink()
+        pinned_sha = _git(gate, repo, "rev-parse", "HEAD")
+        pinned_tree = _git(gate, repo, "rev-parse", "HEAD^{tree}")
+        (repo / "lib" / "later.sh").write_text("echo later\n", encoding="utf-8")
+        _git(gate, repo, "add", "-A", "lib")
+        _git(gate, repo, "commit", "-q", "-m", "feat: a later commit")
+        head_tree = _git(gate, repo, "rev-parse", "HEAD^{tree}")
+        cache = repo / ".ci" / "cache"
+        latest = cache / "prepush-receipt.json"
+        archive = cache / "receipts" / ("%s.json" % pinned_tree)
+
+        r = _quick_clone(gate, repo, work)
+        gate.assert_exit(0, r, "CONTROL: the plain run at HEAD passes")
+        gate.assert_eq(_receipt(gate, latest).get("headTree"), head_tree, "and names HEAD's tree")
+        before = latest.read_bytes()
+        gate.assertions += 1
+        if archive.exists():
+            gate.log_fail("no run has judged the pinned tree yet, but %s exists" % archive)
+
+        r = _quick_clone(gate, repo, work, "--commit", pinned_sha[:12])
+        gate.assert_exit(0, r, "the pinned ancestor is judged and passes")
+        gate.assert_contains(r.out, "judging the pinned commit", "the run names what it judges")
+        rc = _receipt(gate, archive)
+        gate.assert_eq(rc.get("headTree"), pinned_tree, "the archive copy names the pinned tree")
+        gate.assert_eq(rc.get("whole"), True, "and is whole, so the push guard admits it")
+        gate.assert_eq(rc.get("head"), pinned_sha, "and names the pinned commit")
+        gate.assert_eq(latest.read_bytes(), before, "the newer prepush-receipt.json is left alone")
+
+        clone = work / "kept" / "refused"
+        side = _git(gate, repo, "commit-tree", pinned_tree, "-p", "HEAD~2", "-m", "side")
+        for spec, why in ((side, "is not an ancestor of HEAD"), ("0" * 40, "names no commit")):
+            r = _quick_clone(gate, repo, work, "--commit", spec, clone=clone)
+            gate.assert_exit(1, r, "a pin that is not an ancestor of HEAD is refused")
+            gate.assert_contains(r.out, "REFUSED", "the refusal is loud")
+            gate.assert_contains(r.out, why, "and says why")
+            gate.assertions += 1
+            if clone.exists() or pathlib.Path("%s.lock" % clone).exists():
+                gate.log_fail("a refused pin touched the clone or its lock at %s" % clone)
+        gate.assert_eq(latest.read_bytes(), before, "a refused pin writes no receipt")
+
+        lease = repo / ".claude" / "worktrees" / "x"
+        _git(gate, repo, "worktree", "add", "-q", "--detach", os.fspath(lease))
+        lease_clone = work / "kept" / "lease"
+        r = _quick_entry(gate, lease, work, QUICK_CLONE_REL, ("--commit", pinned_sha), lease_clone)
+        gate.assert_exit(1, r, "a lease is refused with --commit too")
+        gate.assert_contains(r.out, "is a lease of", "and the refusal names the lease")
+        gate.assertions += 1
+        if lease_clone.exists():
+            gate.log_fail("a lease's pinned run made a clone at %s" % lease_clone)
+        gate.log_pass(
+            "the pinned ancestor archived its whole receipt and left the newer one alone; a "
+            "non-ancestor, an unknown sha and a lease were refused before any clone"
+        )
+
+
+def test_quick_clone_follows_a_pinned_run_to_head(gate):
+    """A pinned run behind HEAD is followed by one pass at HEAD (agent/plans/PLAN-push-decoupling.md R2, D1.2).
+
+    With only a record commit between the pin and HEAD, the follow pass advances the pinned receipt: `prepush-receipt.json` keeps the pinned `headTree` and gains one `advances` step ending at HEAD's tree. With a code commit between them, the follow pass is no advance and judges HEAD in the clone, so the receipt names HEAD's tree with an empty chain. Either way the pinned tree's archive copy stays.
+    """
+    with harness.temp_dir() as work:
+        repo = _clone_fixture(gate, work)
+        (repo / "dirty.marker").unlink()
+        policy = {
+            "records": [
+                {
+                    "glob": "agent/reviews/**",
+                    "readers": [{"id": "fast:sees-head", "evidence": "fixture"}],
+                }
+            ]
+        }
+        (repo / ".ci" / "policy").mkdir(parents=True)
+        (repo / ".ci" / "policy" / "record-paths.json").write_text(
+            json.dumps(policy), encoding="utf-8"
+        )
+        (repo / "agent" / "reviews").mkdir(parents=True)
+        (repo / "agent" / "reviews" / "a.md").write_text("a\n", encoding="utf-8")
+        _git(gate, repo, "add", "-A", ".ci/policy", "agent")
+        _git(gate, repo, "commit", "-q", "-m", "chore: the record policy")
+        pinned_sha = _git(gate, repo, "rev-parse", "HEAD")
+        pinned_tree = _git(gate, repo, "rev-parse", "HEAD^{tree}")
+        (repo / "agent" / "reviews" / "b.md").write_text("b\n", encoding="utf-8")
+        _git(gate, repo, "add", "-A", "agent")
+        _git(gate, repo, "commit", "-q", "-m", "chore(reviews): record")
+        head_tree = _git(gate, repo, "rev-parse", "HEAD^{tree}")
+        latest = repo / ".ci" / "cache" / "prepush-receipt.json"
+
+        r = _quick_clone(gate, repo, work, "--commit", pinned_sha)
+        gate.assert_exit(0, r, "the pinned run and its follow pass pass")
+        gate.assert_contains(r.out, "FOLLOW PASS", "the run says it follows HEAD")
+        gate.assert_contains(r.out, "ADVANCE", "and the follow pass is an advance")
+        rc = _receipt(gate, latest)
+        gate.assert_eq(rc.get("headTree"), pinned_tree, "the advanced receipt starts at the pin")
+        gate.assert_eq(
+            [s.get("to") for s in rc.get("advances") or []],
+            [head_tree],
+            "one step, ending at HEAD's tree",
+        )
+        gate.assert_eq(
+            _receipt(gate, repo / ".ci" / "cache" / "receipts" / ("%s.json" % pinned_tree)).get(
+                "headTree"
+            ),
+            pinned_tree,
+            "the pinned tree's archive copy stays",
+        )
+
+        # A code commit between the pin and HEAD: the follow pass judges HEAD.
+        (repo / "lib" / "later.sh").write_text("echo later\n", encoding="utf-8")
+        _git(gate, repo, "add", "-A", "lib")
+        _git(gate, repo, "commit", "-q", "-m", "feat: code after the pin")
+        code_tree = _git(gate, repo, "rev-parse", "HEAD^{tree}")
+        r = _quick_clone(gate, repo, work, "--commit", "HEAD~1")
+        gate.assert_exit(0, r, "the pinned run and its follow pass pass")
+        gate.assert_contains(r.out, "FOLLOW PASS", "the run follows HEAD again")
+        gate.assert_contains(
+            r.out, "outside the record set", "and says why the follow pass is no advance"
+        )
+        rc = _receipt(gate, latest)
+        gate.assert_eq(rc.get("headTree"), code_tree, "the follow pass judged HEAD's tree")
+        gate.assert_eq(rc.get("advances"), [], "with an empty chain")
+        gate.log_pass(
+            "a record commit after the pin advanced the pinned receipt to HEAD, and a code "
+            "commit after it made the follow pass judge HEAD"
         )
 
 
@@ -1294,4 +1553,61 @@ def test_quick_advances_across_a_record_only_commit(gate):
         gate.log_pass(
             "a record-only commit advanced the receipt through its reader alone, a second one "
             "chained, and a code commit and a rename out of code each ran the whole lane again"
+        )
+
+
+def test_advance_only_refuses_instead_of_running_the_lane(gate):
+    """`run.ts --quick --advance-only` takes the record-only advance or nothing (agent/plans/PLAN-push-decoupling.md R3).
+
+    `worklist.py --review-commit` starts it after its commit, so a commit that is not record-only must cost no lane: the run exits 4 (ADVANCE_REFUSED_EXIT), prints why, runs no gate and leaves the receipt byte for byte. CONTROL: a record-only commit over the same receipt advances with the reader alone and exits 0.
+    """
+    gates = [
+        spec("fast:reader", 'echo reader >> "$MARK"'),
+        spec("fast:other", 'echo other >> "$MARK"'),
+    ]
+    with harness.temp_dir() as work:
+        repo = _fixture_repo(
+            gate,
+            work,
+            gates,
+            {".ci/policy/record-paths.json": ADVANCE_POLICY, "agent/reviews/a.md": "a\n"},
+        )
+        receipt_path = work / "receipt.json"
+        out = os.fspath(receipt_path)
+        gate.assert_exit(0, _quick(gate, repo, work, "--quick", "--receipt-out", out), "whole run")
+        ran = work / "ran.log"
+
+        (repo / "lib" / "untouched_leaf.sh").write_text("echo code\n", encoding="utf-8")
+        _git(gate, repo, "commit", "-q", "-am", "fix: code")
+        before = receipt_path.read_bytes()
+        ran.unlink()
+        r = _quick(gate, repo, work, "--quick", "--advance-only", "--receipt-out", out)
+        gate.assert_exit(4, r, "a code commit is refused with ADVANCE_REFUSED_EXIT")
+        gate.assert_contains(r.out, "--advance-only REFUSED", "the refusal is printed")
+        gate.assert_contains(r.out, "outside the record set", "with the reason")
+        gate.assertions += 1
+        if ran.exists():
+            gate.log_fail("a refused advance ran gates: %s" % ran.read_text(encoding="utf-8"))
+        gate.assert_eq(receipt_path.read_bytes(), before, "the receipt is left byte for byte")
+
+        r = _quick(gate, repo, work, "--quick", "--advance-only", "--only", "fast:reader")
+        gate.assert_exit(4, r, "--advance-only with a narrowing flag runs nothing")
+
+        # CONTROL: a whole run at the code commit, then a record-only commit, advances.
+        gate.assert_exit(0, _quick(gate, repo, work, "--quick", "--receipt-out", out), "re-run")
+        (repo / "agent" / "reviews" / "b.md").write_text("b\n", encoding="utf-8")
+        _git(gate, repo, "add", "-A")
+        _git(gate, repo, "commit", "-q", "-m", "chore(reviews): record")
+        ran.unlink()
+        r = _quick(gate, repo, work, "--quick", "--advance-only", "--receipt-out", out)
+        gate.assert_exit(0, r, "a record-only commit advances")
+        gate.assert_eq(ran.read_text(encoding="utf-8").split(), ["reader"], "the reader alone ran")
+        gate.assert_eq(
+            [s.get("to") for s in _receipt(gate, receipt_path).get("advances") or []],
+            [_git(gate, repo, "rev-parse", "HEAD^{tree}")],
+            "one step to HEAD's tree",
+        )
+        gate.log_pass(
+            "--advance-only refused a code commit with exit 4 and no gate run, and advanced a "
+            "record-only one through its reader"
         )

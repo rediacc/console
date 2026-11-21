@@ -25,7 +25,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
     getRepository: () => Promise.resolve({}),
   },
 }));
-const out = vi.hoisted(() => ({ info: vi.fn(), success: vi.fn(), warn: vi.fn() }));
+const out = vi.hoisted(() => ({ info: vi.fn(), report: vi.fn(), success: vi.fn(), warn: vi.fn() }));
 vi.mock('../../services/core/output.js', () => ({ outputService: out }));
 
 const { applyBackupStrategyOptions } = await import('../backup-strategy.js');
@@ -63,7 +63,7 @@ describe('the estimate gate', () => {
 
   it('prints the cost and cap lines before it saves', async () => {
     await applyBackupStrategyOptions('s', { rpo: '15m' }, deps());
-    const printed = out.info.mock.calls.map((c) => c[0]);
+    const printed = out.report.mock.calls.map((c) => c[0]);
     expect(printed).toEqual(expect.arrayContaining(measured.lines));
     expect(lastUpdate()).toMatchObject({ rpo: '15m' });
   });

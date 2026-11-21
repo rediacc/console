@@ -2,6 +2,8 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { parseCapturedJson } from '../services/executor/renet-output.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
+import { optStr } from '../services/jobs/steps-support.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
@@ -44,12 +46,20 @@ async function handleGpuVerb(verb: GpuVerb, ref: string, options: GpuOptions): P
   const params: Record<string, unknown> = { device: options.device };
   if (verb === 'grant' && options.exclusive) params.exclusive = true;
 
-  const result = await executeRepoFunction(
+  // Mirroring the grants into the config is the job's step, so a ticket handed back early records nothing half-done.
+  await executeRepoFunction(
     `repository_gpu_${verb}`,
     repoKey,
     machineName,
     params,
-    { debug: options.debug, captureOutput: true },
+    {
+      debug: options.debug,
+      captureOutput: true,
+      job: {
+        verb: `repo gpu ${verb}`,
+        steps: [planStep('mirrorGpuGrants', { repo: repoKey, verb, device: options.device })],
+      },
+    },
     {
       starting: VERB_TEXT[verb].starting({
         device: options.device,
@@ -63,12 +73,19 @@ async function handleGpuVerb(verb: GpuVerb, ref: string, options: GpuOptions): P
       failed: VERB_TEXT[verb].failed(),
     }
   );
-  if (!result.success) return;
-
-  const current = (await configService.getRepository(repoKey))?.gpuDevices ?? [];
-  const names = grantedNames(result.stdout) ?? mirrorAfter(current, verb, options.device);
-  await configService.setRepositoryGpuDevices(repoKey, names);
 }
+
+bindStepHandler('mirrorGpuGrants', async ({ output, params }) => {
+  const repoKey = optStr(params, 'repo');
+  const device = optStr(params, 'device');
+  const verb = optStr(params, 'verb');
+  if (!repoKey || !device || (verb !== 'grant' && verb !== 'revoke')) {
+    throw new Error('step param "repo", "verb" or "device" is missing');
+  }
+  const current = (await configService.getRepository(repoKey))?.gpuDevices ?? [];
+  const names = grantedNames(output) ?? mirrorAfter(current, verb, device);
+  await configService.setRepositoryGpuDevices(repoKey, names);
+});
 
 /** Each verb's text, as literal keys so the orphan-key gate sees every one. */
 const VERB_TEXT = {

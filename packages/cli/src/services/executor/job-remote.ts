@@ -18,8 +18,10 @@
  */
 
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
+import { z } from 'zod';
 import type { SFTPClient } from '../../remote/sftp/index.js';
-import { formatStepDuration, getActiveLabel, getDoneText } from '../../utils/timeline.js';
+import { getOutputFormat } from '../../utils/errors.js';
+import { formatStepDoneLine, getActiveLabel } from '../../utils/timeline.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { writeStderr, writeStdout } from '../core/request-context.js';
@@ -33,11 +35,10 @@ import {
   buildJobLogsCommand,
   buildJobStatusCommand,
   createEventLineReader,
+  extractJsonObject,
   isRenetFlagUnsupported,
-  type JobGcResult,
   JobLogCursor,
   type JobStatus,
-  parseJobGcResult,
   parseJobList,
   parseJobStatus,
   renetOlderThanCliMessage,
@@ -201,6 +202,23 @@ export async function cancelJob(conn: JobConnection, jobId: string): Promise<Job
     `cancel job ${jobId}`
   );
   return parseJobStatus(stdout);
+}
+
+/** What `renet job gc --json` prints. */
+const JobGcResultSchema = z.object({
+  removed: z.array(z.string()).nullable().default([]),
+  count: z.number(),
+});
+
+interface JobGcResult {
+  removed: string[];
+  count: number;
+}
+
+/** Parse `renet job gc --json` output. */
+function parseJobGcResult(stdout: string): JobGcResult {
+  const parsed = JobGcResultSchema.parse(JSON.parse(extractJsonObject(stdout)));
+  return { removed: parsed.removed ?? [], count: parsed.count };
 }
 
 /** Remove finished jobs and their logs. Running jobs are never collected. */
@@ -469,6 +487,23 @@ export function renderJobEvent(event: RenetEvent): void {
 }
 
 /**
+ * The `--debug` renderer: every log line, whatever its level, reaches STDERR (renderJobEvent keeps error and warning only), and steps and renet's output lines follow stdout in text mode but move to stderr under `-o json`, where stdout belongs to the one envelope.
+ */
+export function renderJobEventDebug(event: RenetEvent): void {
+  if (event.type === 'log') {
+    if (event.msg) writeStderr(`${event.msg}\n`);
+    return;
+  }
+  const line = jobEventLine(event);
+  if (!line) return;
+  if (line.stream === 'err' || getOutputFormat() === 'json') {
+    writeStderr(line.text);
+    return;
+  }
+  writeStdout(line.text);
+}
+
+/**
  * The renderer for a job whose output IS the answer (`repo exec`, `repo logs`:
  * `passthroughOutput`). The inner process's lines go to stdout with renet's
  * relay prefix stripped and its logrus lines dropped, exactly as the
@@ -526,7 +561,7 @@ function stepDoneLine(event: RenetEvent): EventLine | null {
   if (!event.name || event.duration_ms == null) return null;
   return {
     stream: 'out',
-    text: `\r✔ ${getDoneText(event.name, event.detail)} (${formatStepDuration(event.duration_ms)})\n`,
+    text: formatStepDoneLine(event.name, event.duration_ms, event.detail),
   };
 }
 
@@ -548,7 +583,11 @@ function outputLine(event: RenetEvent): EventLine | null {
 // --- plumbing ----------------------------------------------------------------
 
 /** Run a one-shot `renet job` subcommand and return its stdout. */
-async function runJobCommand(conn: JobConnection, command: string, what: string): Promise<string> {
+export async function runJobCommand(
+  conn: JobConnection,
+  command: string,
+  what: string
+): Promise<string> {
   const sftp = await conn.lease.ensure();
   const { exitCode, stdout, stderr } = await execCapture(sftp, command);
 

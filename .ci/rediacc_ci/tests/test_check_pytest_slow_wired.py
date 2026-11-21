@@ -1,0 +1,380 @@
+"""`check_pytest.main()` fails a passing run that holds a test over 10 s the allowlist does not list.
+
+Wired in `check_pytest.slow_ratchet`, called after the verdict on the full, sharded and impact paths. The fixture junit is written the way pytest writes it (a recorded `time`), so no test here sleeps 11 s.
+
+THE PLANTED DEFECT: make `slow_ratchet` return 0 unconditionally (the wiring disabled) and every 11 s case reds (the full, the shard and the impact path each have one), and so does the no-junit case, because it goes green too; the 2 s control and the listed case stay green either way, so they cannot be what makes those pass.
+"""
+
+import json
+import pathlib
+import types
+
+import pytest
+
+from rediacc_ci import check_pytest, log
+from rediacc_ci.policy_paths import policy_path
+
+SLOW = "slow.module::test_sleeps_eleven"
+
+
+@pytest.fixture
+def gate(tmp_path: pathlib.Path, monkeypatch):
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.pytest.ini_options]\ntestpaths = ["t"]\n', encoding="utf-8"
+    )
+    (tmp_path / "t").mkdir()
+    (tmp_path / "t" / "test_one.py").write_text("def test_one():\n    pass\n", encoding="utf-8")
+    monkeypatch.setattr(check_pytest.paths, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(check_pytest, "resolve_pytest", lambda _root: "pytest")
+    monkeypatch.setattr(check_pytest, "selftest", lambda *_a, **_k: True)
+    monkeypatch.setattr(check_pytest, "verdict", lambda **_k: None)
+    emitted: list[str] = []
+    monkeypatch.setattr(log, "emit_finding", lambda key, *_a, **_k: emitted.append(key))
+    allow = policy_path("pytest-slow-allow.json", tmp_path)
+    allow.parent.mkdir(parents=True, exist_ok=True)
+    allow.write_text(json.dumps({"entries": []}), encoding="utf-8")
+    return tmp_path, monkeypatch, emitted, allow
+
+
+def _run_writing(
+    gate, node: str, seconds: float, *, shard: bool = False, impact: bool = False
+) -> int:
+    root, monkeypatch, _emitted, _allow = gate
+    classname, name = node.split("::")
+    junit = check_pytest.junit_xml_path(root, shard_index=1 if shard else None)
+
+    def writes(*_a, **_k):
+        junit.write_text(
+            '<?xml version="1.0"?><testsuites><testsuite name="pytest">'
+            '<testcase classname="%s" name="%s" time="%s"/></testsuite></testsuites>'
+            % (classname, name, seconds),
+            encoding="utf-8",
+        )
+        return 0, "1 passed\n"
+
+    monkeypatch.setattr(check_pytest, "run_pytest", writes)
+    if impact:
+        selection = types.SimpleNamespace(
+            files=["t/test_one.py"], total=1, why={}, smoke_files=[], reason="fixture", digest="d"
+        )
+        return check_pytest.run_impact("pytest", root, selection)
+    if shard:
+        (root / "shard.json").write_text(
+            json.dumps(
+                {
+                    "lane": "quality-pytest",
+                    "of": 1,
+                    "legs": [{"index": 1, "ids": ["pytest:t/test_one.py"]}],
+                }
+            ),
+            encoding="utf-8",
+        )
+        return check_pytest.main(["--shard-manifest", "shard.json", "--shard", "1/1"])
+    return check_pytest.main([])
+
+
+def test_a_passing_run_with_an_eleven_second_test_fails_the_gate(gate) -> None:
+    assert _run_writing(gate, SLOW, 11.0) == check_pytest.EXIT_FAIL
+    assert gate[2] == ["pytest-slow:%s" % SLOW]
+
+
+def test_control_a_two_second_test_passes(gate) -> None:
+    assert _run_writing(gate, SLOW, 2.0) == check_pytest.EXIT_OK
+    assert gate[2] == []
+
+
+def test_control_an_allowlisted_slow_test_passes(gate) -> None:
+    gate[3].write_text(
+        json.dumps({"entries": [{"test": SLOW, "reason": "fixture: cannot be made fast"}]}),
+        encoding="utf-8",
+    )
+    assert _run_writing(gate, SLOW, 11.0) == check_pytest.EXIT_OK
+    assert gate[2] == []
+
+
+def test_a_run_that_wrote_no_junit_cannot_go_green_past_the_ratchet(gate) -> None:
+    _root, monkeypatch, _emitted, _allow = gate
+    monkeypatch.setattr(check_pytest, "run_pytest", lambda *_a, **_k: (0, "1 passed\n"))
+    assert check_pytest.main([]) == check_pytest.EXIT_FAIL
+
+
+def test_a_sharded_leg_with_an_eleven_second_test_fails_the_gate(gate) -> None:
+    assert _run_writing(gate, SLOW, 11.0, shard=True) == check_pytest.EXIT_FAIL
+    assert gate[2] == ["pytest-slow:%s" % SLOW]
+
+
+def test_control_a_sharded_leg_with_a_two_second_test_passes(gate) -> None:
+    assert _run_writing(gate, SLOW, 2.0, shard=True) == check_pytest.EXIT_OK
+
+
+def test_an_impact_run_with_an_eleven_second_test_fails_the_gate(gate) -> None:
+    assert _run_writing(gate, SLOW, 11.0, impact=True) == check_pytest.EXIT_FAIL
+    assert gate[2] == ["pytest-slow:%s" % SLOW]
+
+
+def test_control_an_impact_run_with_a_two_second_test_passes(gate) -> None:
+    assert _run_writing(gate, SLOW, 2.0, impact=True) == check_pytest.EXIT_OK
+
+
+# A node whose file exists in the fixture (`t/test_one.py`), so the gate can re-time it.
+ON_DISK = "t.test_one::test_one"
+
+
+def _run_retimed(gate, parallel: float, serial: float) -> tuple[int, list[list[str]]]:
+    """The full run writes `parallel` for ON_DISK; each serial re-run writes `serial` to the junit it was handed. Returns the exit code and every run's argv."""
+    _root, monkeypatch, _emitted, _allow = gate
+    calls: list[list[str]] = []
+
+    def writes(_bin, _cwd, args=None, **_k):
+        args = list(args or [])
+        calls.append(args)
+        junit = pathlib.Path(args[args.index("--junitxml") + 1])
+        seconds = serial if "slow-confirm" in junit.name else parallel
+        junit.write_text(
+            '<?xml version="1.0"?><testsuites><testsuite name="pytest">'
+            '<testcase classname="t.test_one" name="test_one" time="%s"/></testsuite></testsuites>'
+            % seconds,
+            encoding="utf-8",
+        )
+        return 0, "1 passed\n"
+
+    monkeypatch.setattr(check_pytest, "run_pytest", writes)
+    return check_pytest.main([]), calls
+
+
+def test_a_test_slow_only_in_the_parallel_run_passes_on_its_serial_re_times(gate) -> None:
+    """THE BEHAVIOUR: 11 s under the parallel run, 2 s in its serial re-time. Before the re-timing the parallel 11 s alone failed the gate. One re-time, not SLOW_CONFIRM_RUNS: 2 s already decides a test judged on its fastest re-time (PLAN-ciquick-cpu W7)."""
+    rc, calls = _run_retimed(gate, 11.0, 2.0)
+    assert rc == check_pytest.EXIT_OK
+    assert gate[2] == []
+    confirms = calls[1:]
+    assert len(confirms) == 1, "a re-time under the threshold was re-run, which can change nothing"
+    for args in confirms:
+        assert args[:2] == ["-n", "0"], "a re-time must be serial, or it measures contention again"
+        assert args[-1] == "t/test_one.py::test_one"
+
+
+TWO = "t.test_two::test_two"
+
+
+def _run_two(gate, serials: list[dict[str, float]]) -> tuple[int, list[list[str]]]:
+    """Two candidates, ON_DISK and TWO, both 11 s in the parallel run; the n-th serial re-time writes `serials[n]` (`{node: seconds}`, a node left out is a re-time that recorded no sample for it)."""
+    root, monkeypatch, _emitted, _allow = gate
+    (root / "t" / "test_two.py").write_text("def test_two():\n    pass\n", encoding="utf-8")
+    calls: list[list[str]] = []
+    retimes = iter(serials)
+
+    def writes(_bin, _cwd, args=None, **_k):
+        args = list(args or [])
+        calls.append(args)
+        junit = pathlib.Path(args[args.index("--junitxml") + 1])
+        times = next(retimes) if "slow-confirm" in junit.name else {ON_DISK: 11.0, TWO: 11.0}
+        cases = "".join(
+            '<testcase classname="%s" name="%s" time="%s"/>' % (*node.split("::"), s)
+            for node, s in times.items()
+        )
+        junit.write_text(
+            '<?xml version="1.0"?><testsuites><testsuite name="pytest">%s</testsuite></testsuites>'
+            % cases,
+            encoding="utf-8",
+        )
+        return 0, "2 passed\n"
+
+    monkeypatch.setattr(check_pytest, "run_pytest", writes)
+    return check_pytest.main([]), calls
+
+
+def test_the_second_re_time_takes_only_the_test_the_first_left_over_the_threshold(gate) -> None:
+    rc, calls = _run_two(gate, [{ON_DISK: 2.0, TWO: 12.0}, {TWO: 3.0}])
+    assert rc == check_pytest.EXIT_OK
+    assert len(calls) == 1 + check_pytest.SLOW_CONFIRM_RUNS
+    assert calls[1][-2:] == ["t/test_one.py::test_one", "t/test_two.py::test_two"]
+    assert calls[2][-1] == "t/test_two.py::test_two"
+    assert "t/test_one.py::test_one" not in calls[2], "a decided test was re-timed again"
+
+
+def test_control_a_test_slow_in_both_re_times_still_fails_after_the_narrowing(gate) -> None:
+    rc, calls = _run_two(gate, [{ON_DISK: 2.0, TWO: 12.0}, {TWO: 11.5}])
+    assert rc == check_pytest.EXIT_FAIL
+    assert gate[2] == ["pytest-slow:%s" % TWO]
+    assert len(calls) == 1 + check_pytest.SLOW_CONFIRM_RUNS
+
+
+def test_a_test_the_first_re_time_did_not_record_is_re_timed_again(gate) -> None:
+    """No sample is not a fast sample: a re-run that lost a test must not let the narrowing drop it, or the parallel 11 s would be its only reading by accident."""
+    rc, calls = _run_two(gate, [{ON_DISK: 2.0}, {TWO: 3.0}])
+    assert rc == check_pytest.EXIT_OK
+    assert calls[2][-1] == "t/test_two.py::test_two"
+    assert "t/test_one.py::test_one" not in calls[2]
+
+
+def test_still_open_keeps_the_slow_and_the_unrecorded(gate) -> None:
+    root, _mp, _emitted, _allow = gate
+    (root / "t" / "test_two.py").write_text("def test_two():\n    pass\n", encoding="utf-8")
+    (root / "t" / "test_three.py").write_text("def test_three():\n    pass\n", encoding="utf-8")
+    confirm = root / "confirm.xml"
+    confirm.write_text(
+        '<?xml version="1.0"?><testsuites><testsuite name="pytest">'
+        '<testcase classname="t.test_one" name="test_one" time="2.0"/>'
+        '<testcase classname="t.test_two" name="test_two" time="10.5"/>'
+        "</testsuite></testsuites>",
+        encoding="utf-8",
+    )
+    asked = ["t/test_one.py::test_one", "t/test_two.py::test_two", "t/test_three.py::test_three"]
+    assert check_pytest.still_open(confirm, asked, root) == [
+        "t/test_two.py::test_two",
+        "t/test_three.py::test_three",
+    ]
+
+
+def test_control_still_open_on_a_test_exactly_at_the_threshold_is_decided(gate) -> None:
+    """`over_threshold` is strictly greater, so a re-time AT the threshold already passes the test; still_open must agree or it re-runs a decided test."""
+    root, _mp, _emitted, _allow = gate
+    confirm = root / "confirm.xml"
+    confirm.write_text(
+        '<?xml version="1.0"?><testsuites><testsuite name="pytest">'
+        '<testcase classname="t.test_one" name="test_one" time="%s"/>'
+        "</testsuite></testsuites>" % check_pytest.pytest_slow_ratchet.THRESHOLD_S,
+        encoding="utf-8",
+    )
+    assert check_pytest.still_open(confirm, ["t/test_one.py::test_one"], root) == []
+
+
+def test_control_a_test_slow_in_its_serial_re_times_too_still_fails(gate) -> None:
+    rc, calls = _run_retimed(gate, 11.0, 11.5)
+    assert rc == check_pytest.EXIT_FAIL
+    assert gate[2] == ["pytest-slow:%s" % ON_DISK]
+    assert len(calls) == 1 + check_pytest.SLOW_CONFIRM_RUNS
+
+
+def _run_phased(
+    gate, shared: float, *, shard: bool = False, impact: bool = False
+) -> tuple[int, list[list[str]]]:
+    """Every run writes 11 s for ON_DISK to its junit and, where the run was handed `--phase-timing`, a phase file whose setup holds `shared` s of module-fixture setup."""
+    _root, monkeypatch, _emitted, _allow = gate
+    calls: list[list[str]] = []
+
+    def writes(_bin, _cwd, args=None, **_k):
+        args = list(args or [])
+        calls.append(args)
+        junit = pathlib.Path(args[args.index("--junitxml") + 1])
+        junit.write_text(
+            '<?xml version="1.0"?><testsuites><testsuite name="pytest">'
+            '<testcase classname="t.test_one" name="test_one" time="11.0"/></testsuite></testsuites>',
+            encoding="utf-8",
+        )
+        if "--phase-timing" in args:
+            phases = {"setup": shared + 0.5, "call": 10.5 - shared, "shared_setup": shared}
+            pathlib.Path(args[args.index("--phase-timing") + 1]).write_text(
+                json.dumps({"version": 1, "tests": {ON_DISK: phases}}), encoding="utf-8"
+            )
+        return 0, "1 passed\n"
+
+    monkeypatch.setattr(check_pytest, "run_pytest", writes)
+    if impact:
+        selection = types.SimpleNamespace(
+            files=["t/test_one.py"], total=1, why={}, smoke_files=[], reason="fixture", digest="d"
+        )
+        return check_pytest.run_impact("pytest", _root, selection), calls
+    if shard:
+        (_root / "shard.json").write_text(
+            json.dumps(
+                {
+                    "lane": "quality-pytest",
+                    "of": 1,
+                    "legs": [{"index": 1, "ids": ["pytest:t/test_one.py"]}],
+                }
+            ),
+            encoding="utf-8",
+        )
+        return check_pytest.main(["--shard-manifest", "shard.json", "--shard", "1/1"]), calls
+    return check_pytest.main([]), calls
+
+
+@pytest.mark.parametrize("path", ["full", "shard", "impact"])
+def test_every_run_loads_the_phase_plugin_beside_its_own_junit(gate, path) -> None:
+    """Finding 7d7ecd77.2: the shard and impact runs load it too; dropping `phase_args` from either reds its case."""
+    _rc, calls = _run_phased(gate, 0.0, shard=path == "shard", impact=path == "impact")
+    assert len(calls) == 1 + check_pytest.SLOW_CONFIRM_RUNS
+    for args in calls:
+        assert args[args.index("-p") + 1] == check_pytest.PHASE_PLUGIN
+        junit = pathlib.Path(args[args.index("--junitxml") + 1])
+        assert args[args.index("--phase-timing") + 1] == str(
+            check_pytest.pytest_slow_ratchet.phases_path(junit)
+        )
+
+
+def test_a_test_slow_only_by_its_module_fixture_passes_without_a_re_time(gate) -> None:
+    """THE BEHAVIOUR: junit reads 11 s, 9 s of it module-fixture setup; the test's own 2 s is not a candidate."""
+    rc, calls = _run_phased(gate, 9.0)
+    assert rc == check_pytest.EXIT_OK
+    assert gate[2] == []
+    assert len(calls) == 1
+
+
+def test_control_a_test_slow_in_its_own_call_still_fails(gate) -> None:
+    rc, _calls = _run_phased(gate, 0.0)
+    assert rc == check_pytest.EXIT_FAIL
+    assert gate[2] == ["pytest-slow:%s" % ON_DISK]
+
+
+def test_a_stale_phase_file_from_an_earlier_run_is_removed_before_the_run(gate) -> None:
+    """A run that writes no phase file must not be judged on the last run's: the gate removes it first, so the 11 s junit time is judged and fails. No serial re-time runs here, so the parallel run alone decides; left in place, the stale file would read the test as 2 s and pass it."""
+    root, monkeypatch, _emitted, _allow = gate
+    monkeypatch.setattr(check_pytest, "SLOW_CONFIRM_RUNS", 0)
+    junit = check_pytest.junit_xml_path(root)
+    junit.parent.mkdir(parents=True, exist_ok=True)
+    stale = {"setup": 9.5, "call": 1.5, "shared_setup": 9.0}
+    check_pytest.pytest_slow_ratchet.phases_path(junit).write_text(
+        json.dumps({"version": 1, "tests": {ON_DISK: stale}}), encoding="utf-8"
+    )
+    rc, _calls = _run_retimed(gate, 11.0, 11.0)
+    assert rc == check_pytest.EXIT_FAIL
+    assert not check_pytest.pytest_slow_ratchet.phases_path(junit).exists()
+
+
+def test_control_a_fast_parallel_run_re_times_nothing(gate) -> None:
+    rc, calls = _run_retimed(gate, 2.0, 11.0)
+    assert rc == check_pytest.EXIT_OK
+    assert len(calls) == 1
+
+
+def _run_retimed_phased(gate, parallel: float, serials: list[float]) -> tuple[int, list[list[str]]]:
+    """The full-run path as `ci:quick` drives it: every run writes its junit and the phase file beside it, the parallel run `parallel` s of own call for ON_DISK and the n-th serial re-time `serials[n]`."""
+    _root, monkeypatch, _emitted, _allow = gate
+    calls: list[list[str]] = []
+    retimes = iter(serials)
+
+    def writes(_bin, _cwd, args=None, **_k):
+        args = list(args or [])
+        calls.append(args)
+        junit = pathlib.Path(args[args.index("--junitxml") + 1])
+        own = next(retimes) if "slow-confirm" in junit.name else parallel
+        junit.write_text(
+            '<?xml version="1.0"?><testsuites><testsuite name="pytest">'
+            '<testcase classname="t.test_one" name="test_one" time="%s"/></testsuite></testsuites>'
+            % own,
+            encoding="utf-8",
+        )
+        phases = {"setup": 0.0, "call": own, "teardown": 0.0, "shared_setup": 0.0}
+        pathlib.Path(args[args.index("--phase-timing") + 1]).write_text(
+            json.dumps({"version": 1, "tests": {ON_DISK: phases}}), encoding="utf-8"
+        )
+        return 0, "1 passed\n"
+
+    monkeypatch.setattr(check_pytest, "run_pytest", writes)
+    return check_pytest.main([]), calls
+
+
+def test_one_re_time_slowed_by_the_machine_does_not_fail_a_fast_test(gate) -> None:
+    """THE BEHAVIOUR (ciquick-23, 2026-11-18): own call 33.5 s in the parallel run, 12.3 s and 5.4 s in the two serial re-times. The median of all three runs was the slower re-time, 12.3 s, and failed the gate on one re-time the gates running beside it had slowed; the fastest re-time, 5.4 s, is the test's own cost."""
+    rc, calls = _run_retimed_phased(gate, 33.5, [12.3, 5.4])
+    assert len(calls) == 1 + check_pytest.SLOW_CONFIRM_RUNS
+    assert rc == check_pytest.EXIT_OK
+    assert gate[2] == []
+
+
+def test_control_a_call_slow_in_every_re_time_still_fails(gate) -> None:
+    rc, _calls = _run_retimed_phased(gate, 33.5, [12.3, 10.6])
+    assert rc == check_pytest.EXIT_FAIL
+    assert gate[2] == ["pytest-slow:%s" % ON_DISK]

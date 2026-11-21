@@ -31,9 +31,12 @@ def copy_loader(root: pathlib.Path) -> None:
 def docker_less_path(farm: pathlib.Path) -> str:
     """A PATH with every tool of the host's `PATH` and no `docker`, for the case that claims docker is missing entirely.
 
-    Prepending a fixture bin dir that merely lacks `docker` leaves the host's real one reachable behind it, so the case ran whatever this host's docker printed and read 127 only on a host that had none. Every executable the host exposes is linked into `farm` except `docker` (and its `docker-*` plugins), so the subject still finds bash, env, grep and python3, and nothing else changes."""
+    Prepending a fixture bin dir that merely lacks `docker` leaves the host's real one reachable behind it, so the case ran whatever this host's docker printed and read 127 only on a host that had none. Every executable the host exposes outside `/mnt/` is linked into `farm` except `docker` (and its `docker-*` plugins), so the subject still finds bash, env, grep and python3, and nothing else changes."""
     farm.mkdir(parents=True, exist_ok=True)
     for directory in os.environ.get("PATH", "").split(os.pathsep):
+        # `/mnt/...` is a WSL developer's Windows drive mount behind 9p: thousands of names the subjects never resolve, and listing them cost the docker-missing cases 49-67 s each. Skipped before the is_dir() probe, itself a 9p round trip.
+        if directory.startswith("/mnt/"):
+            continue
         base = pathlib.Path(directory or ".")
         if not base.is_dir():
             continue
@@ -45,3 +48,24 @@ def docker_less_path(farm: pathlib.Path) -> str:
             if not link.exists() and not link.is_symlink() and os.access(entry, os.X_OK):
                 link.symlink_to(entry)
     return str(farm)
+
+
+def path_farm_without(
+    farm: pathlib.Path, omit: tuple[str, ...], directories=("/usr/bin", "/bin")
+) -> int:
+    """Fill `farm` with a symlink per binary in `directories`, minus the names in `omit`, and return the count.
+
+    The first directory wins a name. A DANGLING symlink in a directory (a runner's `/usr/bin/grub-ntldr-img`) answers False to `exists()`, so the skip tests `is_symlink()` as well, or the second directory plants the same name again and `symlink_to` raises FileExistsError.
+    """
+    linked = 0
+    for directory in directories:
+        source = pathlib.Path(directory)
+        if not source.is_dir():
+            continue
+        for entry in source.iterdir():
+            target = farm / entry.name
+            if entry.name in omit or target.is_symlink() or target.exists():
+                continue
+            target.symlink_to(entry)
+            linked += 1
+    return linked

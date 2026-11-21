@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: de
-sourceHash: "c1a20432472d9452"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "02a3f195c73de031"
+sourceCommit: "ddf4affc88b6a49d8b23351f99d04e19870444f3"
 translatedFrom: en
 ---
 
@@ -123,7 +123,7 @@ Nach dem Wechsel zu Rediacc auf Hetzner:
 
 | Feld | Nachher |
 |---|---|
-| Anbieter | (1) Rediacc OÜ, Softwarelizenz; (2) Hetzner, IaaS |
+| Anbieter | (1) [Rediacc](/de/legal-information), Softwarelizenz; (2) Hetzner, IaaS |
 | Tier | (1) Nicht kritisch (keine Datenebene); (2) Kritisch (Datenebene, aber kundenkontrolliert) |
 | Verarbeitete Daten | (1) Keine; (2) Verschlüsselte Volumes, Kunde hält Schlüssel |
 | Unterauftragsverarbeiter | (1) Keine für Self-Hosted; (2) Nur Hetzner-intern, im Hetzner-AVV aufgelistet |

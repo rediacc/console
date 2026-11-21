@@ -9,8 +9,8 @@ tags:
 subcategory: workloads
 order: 5
 language: zh
-sourceHash: "4769afb97c2b885d"
-sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
+sourceHash: "a98cadc0afd3474b"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # 服务
@@ -29,14 +29,33 @@ Rediaccfile 在两个位置被发现：
 
 ### 生命周期函数
 
-一个 Rediaccfile 最多包含两个函数：
+renet 会运行 Rediaccfile 中的以下函数：
 
 | 函数 | 运行时机 | 用途 | 错误行为 |
 |------|----------|------|----------|
 | `up()` | 启动时 | 启动服务（例如 `renet compose -- up -d`） | 根 Rediaccfile 失败是**关键性的**（停止所有操作）。子目录失败是**非关键性的**（记录日志，继续下一个） |
 | `down()` | 停止时 | 停止服务（例如 `renet compose -- down`） | **尽力而为** -- 失败会被记录，但所有 Rediaccfile 都会被执行 |
+| `health()` | 运行 `rdc repo health`、`rdc machine health` 以及部署的健康关卡时 | 报告仓库自身的健康状况：退出码 `0` 正常，`1` 警告，`2` 错误 | 每个 Rediaccfile 的 `health()` 都会运行，取最差的级别。退出码 `75` 表示仍在预热（警告）。任何其他退出码、信号或超时都算错误（部署健康关卡把超时视为仍在预热并重试，见[超时与关机顺序](#timeouts-and-shutdown-order)）。没有任何 Rediaccfile 定义 `health()` 的仓库会报告**无检查**，绝不会算作健康 |
+| `repair()` | 运行 `rdc repo repair`，以及对 `health()` 不正常的仓库运行 `rdc machine repair` 时 | 修复同一文件的 `health()` 所报告的问题 | 仅当其所在文件的 `health()` 不正常且所声明的类别被允许时才会运行（见下文）。以退出码 `75`（仍在预热）结束的 `health()` 算警告，因此 `repair()` 应放过仍在启动的仓库。之后 `health()` 会再次运行。失败或超时的 `repair()` 算错误 |
 
-两个函数都是可选的。如果某个函数未定义，它会被静默跳过。
+所有函数都是可选的。如果某个函数未定义，它会被静默跳过。
+
+#### 声明修复类别
+
+`repair()` 会收到 `REDIACC_HEALTH_LEVEL`（`warning` 或 `error`，即其所在文件的 `health()` 报告的级别）和 `REDIACC_HEALTH_OUTPUT`（该 `health()` 输出的末尾部分）。用一行注释声明这个函数有多安全：
+
+```bash
+# rediacc:repair class=auto-safe
+# rediacc:repair class=auto-with-backup window=only
+```
+
+| 类别 | 由谁运行 |
+|---|---|
+| `auto-safe` | `rdc machine repair` 和 `rdc repo repair` 会自行运行 |
+| `auto-with-backup` | 仅在使用 `--with-backup` 且仓库快照成功之后运行 |
+| `operator-only` | 绝不会自行运行。`rdc repo repair` 会先询问（或接受 `--yes`）；`rdc machine repair` 从不运行 |
+
+没有声明的 `repair()` 视为 `operator-only`，因此除非仓库自己表明安全，否则没有任何工具会在无人值守时运行仓库的代码。`window=only` 增加第二个条件：该函数只在机器的维护窗口内（[监控](/zh/docs/monitoring#repair)）运行，或在使用 `--window-override` 时运行。当多行声明了类别时，以最严格的为准。
 
 ### 执行顺序
 
@@ -57,11 +76,78 @@ Rediaccfile 在两个位置被发现：
 
 `{SERVICE}_IP` 变量从 `.rediacc.json` 中的槽位映射自动生成，在 Rediaccfile 函数运行前导出。命名规则是将服务名称转换为大写，连字符替换为下划线，然后追加 `_IP`。例如，`listmonk-app` 变为 `LISTMONK_APP_IP=127.0.11.2`。
 
-> **警告：请勿在 Rediaccfile 中使用 `sudo docker`。** `sudo` 命令会重置环境变量，导致 `DOCKER_HOST` 丢失，Docker 命令将指向系统守护进程而非仓库的隔离守护进程。这会破坏容器隔离并可能导致端口冲突。如果 Rediacc 检测到未带 `-E` 的 `sudo docker`，将阻止执行。
+> **警告：请勿在 Rediaccfile 中使用 `sudo docker`。** `sudo` 命令会重置环境变量，导致 `DOCKER_HOST` 丢失，Docker 命令将指向系统守护进程而非仓库的隔离守护进程。这会破坏容器隔离并可能导致端口冲突。如果 Rediacc 检测到 `sudo docker`，将阻止执行。
 >
-> 在 Rediaccfile 中请使用 `renet compose`，它会自动处理 `DOCKER_HOST`，注入路由发现所需的网络标签，并配置服务网络。有关服务如何通过反向代理暴露的详细信息，请参阅[网络](/zh/docs/networking)。如果直接调用 Docker，请使用不带 `sudo` 的 `docker`，Rediaccfile 函数已拥有充分权限。如果必须使用 sudo，请使用 `sudo -E docker` 来保留环境变量。
+> 在 Rediaccfile 中请使用 `renet compose`，它会自动处理 `DOCKER_HOST`，注入路由发现所需的网络标签，并配置服务网络。有关服务如何通过反向代理暴露的详细信息，请参阅[网络](/zh/docs/networking)。如果直接调用 Docker，请使用不带 `sudo` 的 `docker`，Rediaccfile 函数以通用用户身份（而非 root）访问仓库的 Docker 守护进程（参阅[权限](/zh/docs/services#privileges)）。
 >
 > `renet` 是远程低级别工具。对于从工作站执行的正常用户工作流，请优先使用 `rdc` 命令，如 `rdc repo up` 和 `rdc repo down`。参阅 [rdc vs renet](/zh/docs/rdc-vs-renet)。
+
+### 权限
+
+`up()` 和 `down()` 以通用用户（`rediacc`）而非 root 的身份运行，处于一个限制其读写位置的沙箱中。环境是为函数单独构建的，而不是继承而来，因此只包含上文的变量、仓库的 `REDIACC_SECRET_*` 值和一个最小的 `PATH`。任何层级下都不能使用 `sudo`：沙箱设置了 `no_new_privs`，所以使用 `sudo` 的 Rediaccfile 行会失败，必须去掉 `sudo`。没有 Landlock 的机器会拒绝 `up()` 和 `down()`，而不是在无约束的情况下运行它们。
+
+需要超出默认权限的行会以沙箱给出的错误失败，日志和 CLI 会打印对应的 Rediaccfile 行以及授权命令。
+
+| Rediaccfile 的操作 | 看到的结果 | 处理方式 |
+|---|---|---|
+| `sudo x` | `sudo: The "no new privileges" flag is set` | 去掉 `sudo`。该步骤要么不需要 root，要么需要授权 |
+| `chown 5050 ...`，或对容器所属目录执行 `rm -rf` | `Operation not permitted` 或 `Permission denied` | 在一次性容器中运行该步骤（仅在容器内是 root；仓库的 Docker 守护进程会拒绝仓库自身根目录之外的绑定）：`renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| 在挂载目录中写入 `.env` 或其他文件 | 正常；文件属于通用用户 | 无需处理 |
+| 读取 `/etc/rediacc/*`、`/proc/kcore` 或块设备 | `Permission denied` | 申请路径授权 |
+| 直接读取文件型密钥 | `Permission denied` | 使用 compose 的 `secrets:` 或 env 模式密钥 |
+| 没有设备授权就运行 `nvidia-smi` | 设备不存在 | 授予设备，参阅 [GPU](/zh/docs/gpu) |
+| `sysctl -w` | `Permission denied` | 由管理员在机器上设置一次 |
+
+#### 申请授权
+
+授权会扩大 `up()` 和 `down()` 可以访问的范围。只有运维人员能够授权，并且要在仓库之外操作：
+
+```bash
+rdc repo permission grant <repo-ref> --path /srv/data:rw
+rdc repo permission grant <repo-ref> --root
+rdc repo permission show <repo-ref>
+rdc repo permission revoke <repo-ref> --path /srv/data
+```
+
+`--path` 添加一条 Landlock 规则，除非带有 `:rw`，否则为只读；机器会拒绝触及其他仓库、数据存储或 `/etc/rediacc` 的路径。`--root` 以 root 身份运行函数且不降权，冷备份会拒绝这样的仓库。除非运维人员在代理启动之前设置了 `REDIACC_ALLOW_GRAND_REPO`，否则代理不能授予 `--root`。分叉有新的网络 ID，启动时没有授权，在被复用的网络 ID 下找到的授权会被丢弃。
+
+Rediaccfile 可以用注释行声明自己的需求，这只是一个请求：
+
+```bash
+# rediacc:needs root
+# rediacc:needs path=/srv/data
+# rediacc:needs device=nvidia.com/gpu=all
+```
+
+`up()` 会把声明与授权进行比对。授权缺失时，`up()` 在任何一行运行之前就会被拒绝，消息中会打印确切的授权命令。`down()` 从不检查声明，因此在仓库内修改注释无法阻止运维人员的 `repo down`；真正需要授权的 `down()` 会在自己的步骤中失败。`machine converge` 会把这样的仓库作为 `needs_lifecycle_grant` 跳过，而不是把它重启进拒绝状态。
+
+### 超时与关机顺序
+
+仓库的容器必须等到其 `down()` 运行并结束后才会停止。这适用于对仓库 Docker 单元执行的 `systemctl stop` 和 `restart`、`machine converge`、`repo down --unmount`、单元重写以及主机关机。例外情况是 Docker 守护进程或主机崩溃、断电,以及超过超时的 `down()`,无论发生在主机关机时还是 `systemctl stop` 或 `restart` 时。该 `down()` 会被终止,停止按下文所述继续。
+
+每个 Docker 单元在向守护进程发送信号之前会运行一个停止钩子。除非 renet 已在本次守护进程启动中运行过,钩子会对仍在运行的守护进程执行 `down()`;如果守护进程没有响应或仓库没有 Rediaccfile,则跳过。主机关机时,先停止各 Docker 单元,每个单元并行执行 `down()`,随后清扫单元会卸载所有已挂载的仓库,无论是否启用自动启动。单元的停止预算为 17 分钟,可以放进重启任务 30 分钟的上限内。如果 `down()` 在这个钩子中超时,其进程组会先收到 SIGTERM,10 秒后收到 SIGKILL(`FunctionKillGrace`,`pkg/orchestration/procgroup.go`),记录一条警告,钩子以 0 退出,systemd 因此继续停止。所以超时的 `down()` 最多让 `systemctl stop` 或重启延迟其超时时长加 10 秒(上限为 15 分 10 秒),停止仍受单元 17 分钟 `TimeoutStopSec` 的限制。拒绝停止只适用于 renet 自己的路径,例如 `repo down --unmount`。
+
+`up()` 和 `down()` 默认各有 10 分钟,可通过 `RENET_UP_TIMEOUT` 和 `RENET_DOWN_TIMEOUT` 或 `--up-timeout` 和 `--down-timeout` 设置。超时后,进程组先收到 SIGTERM,10 秒后收到 SIGKILL。需要先执行 `down()` 的操作(如 `repo down --unmount` 或 converge 重启)在 `down()` 超时时会让容器继续运行,加上 `--force` 则继续执行。Rediaccfile 可以用一行注释调高限制:
+
+```bash
+# rediacc:timeout up=20m down=15m backup=120s health=60s repair=10m
+```
+
+| 键 | 默认值 | 上限 |
+|---|---|---|
+| `up` | 10 分钟 | 60 分钟 |
+| `down` | 10 分钟 | 15 分钟 |
+| `backup` | 30 秒 | 300 秒 |
+| `health` | 30 秒 | 300 秒 |
+| `repair` | 5 分钟 | 30 分钟 |
+
+`health()` 同样有时间限制：默认值通过 `RENET_HEALTH_TIMEOUT` 设置，超时时其进程组会先收到 SIGTERM，10 秒后收到 SIGKILL。部署的健康关卡把超时的 `health()` 视为仍在预热并重试；`rdc repo health` 和 `rdc machine health` 则把它报告为错误。`repair()` 遵循同样的模型，使用 `RENET_REPAIR_TIMEOUT`，超时的 `repair()` 算作失败。
+
+该指令只能调高限制,并且会被截断到上限,因此仓库无法把 `down()` 缩短到被强制终止的程度。未知的键会被忽略并给出警告。
+
+仓库守护进程保持 Docker 的 `live-restore` 关闭。开启后容器可以在守护进程重启后存活,但容器 shim 与单元共用 cgroup,会随单元一起被终止,恢复后的守护进程无法重新接管,而且在计划内停止期间容器仍会占用挂载点。
+
+由 renet 管理的每仓库 RAM 卷(`# rediacc:ram size=6G`,主机内存由运维人员授予)目前只是设计,尚未实现。
 
 ### 示例
 

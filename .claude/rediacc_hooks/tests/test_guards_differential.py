@@ -201,10 +201,12 @@ FIXTURE_BUILDERS = {
 #
 # So each gets a synthetic world, built once per session like every other fixture here, and the harness hands it over rather than the guard being changed: `cwd` for the branch guard, and a `repo_root` plus a PATH tail made only of the fixture's own `bin/` for the toolchain guard. The guard's code path is untouched; only the world it looks at stops being this machine.
 #
+#   * `block_commit_of_live_writer_file` planted its session under the munged path of the checkout running pytest and ran there, so from a lease tree (whose `wl_core.project_root` is the main checkout) every case failed open and its DEFECT changed no answer (#d7056e06). It runs in its own `live-writer-world` repository.
 #   * `block_premature_ready` resolved a selector-less `gh pr ready` against `git -C . branch --show-current`, the PYTEST PROCESS's directory, whatever `cwd` the harness handed the event. Its goldens were frozen on a checkout with a branch; CI's `actions/checkout` of a pull_request is a DETACHED merge commit, where the same read prints nothing and the guard takes its "no current branch" refusal instead. Six records went red in CI only (run 37649744806, #6f901a98). The guard now falls back to `ev.cwd`, and the harness hands it `console-pr-checkout`.
 CWD_WORLDS = {
     "block_stale_pr_branch_date": "stale-branch-checkout",
     "block_premature_ready": "console-pr-checkout",
+    "block_commit_of_live_writer_file": "live-writer-world",
 }
 HOST_WORLDS = {"block_host_toolchain_run": "toolchain-host"}
 
@@ -344,7 +346,8 @@ def host_world(stem, work):
         module.__dict__["hookio"] = saved
 
 
-_FIXTURES = {}
+_FIXTURES: dict[tuple[str, str], str] = {}
+_BUILDER_TABLES: dict[tuple[tuple[str, typing.Any], ...], dict[str, typing.Any]] = {}
 
 
 def all_builders():
@@ -356,18 +359,22 @@ def all_builders():
     package at once: a shared table is a shared edit, and a shared edit is a
     collision.
     """
-    table = dict(FIXTURE_BUILDERS)
-    for stem in guards.stems():
-        for name, builder in getattr(guards.load(stem), "FIXTURES", {}).items():
-            if name in table and table[name] is not builder:
-                msg = (
-                    "fixture %r is declared by %s and by another module with a different "
-                    "builder; two worlds sharing a name would silently give one guard the "
-                    "other's tree" % (name, stem)
-                )
-                raise AssertionError(msg)
-            table[name] = builder
-    return table
+    # MEMOISED (PLAN-ciquick-cpu W8). `_resolve_fixtures` and `fixture_path` call this for every env value of every case, and each call globbed the guards directory and loaded every guard: 19,604 `guards.stems()` calls, 64 s of one 86 s item, measured under cProfile. The table cannot change once the module is imported except through `FIXTURE_BUILDERS` itself, so its (name, builder) pairs are the cache key, which also catches a builder replaced under an existing name; a raise is not cached.
+    key = tuple(FIXTURE_BUILDERS.items())
+    if key not in _BUILDER_TABLES:
+        table = dict(FIXTURE_BUILDERS)
+        for stem in guards.stems():
+            for name, builder in getattr(guards.load(stem), "FIXTURES", {}).items():
+                if name in table and table[name] is not builder:
+                    msg = (
+                        "fixture %r is declared by %s and by another module with a different "
+                        "builder; two worlds sharing a name would silently give one guard the "
+                        "other's tree" % (name, stem)
+                    )
+                    raise AssertionError(msg)
+                table[name] = builder
+        _BUILDER_TABLES[key] = table
+    return dict(_BUILDER_TABLES[key])
 
 
 @contextlib.contextmanager
@@ -663,6 +670,9 @@ PROCESS_TABLE_READERS = {
 SPREAD_STEMS = [stem for stem in guards.stems() if stem not in PROCESS_TABLE_READERS]
 
 
+_FIELDS: dict = {}
+
+
 def python_fields(stem, payload, extra, stubs, work, cwd=None):
     """One case's answer from the live port, exactly as the harness observes it.
 
@@ -676,6 +686,10 @@ def python_fields(stem, payload, extra, stubs, work, cwd=None):
     """
     env = case_env(stem, extra, stubs, work)
     cwd = cwd or case_cwd(stem, work)
+    # MEMOISED PER PROCESS (PLAN-ciquick-cpu W8). The golden comparison, `assert_discriminates` and `assert_defect_is_caught` each ran every case of a guard through the live port, so one case answered up to three times per worker. The key is everything a case's answer can depend on: the payload, the case env as built (its PATH names the stub directory, which `_stub_dir` keys on the stubs' content, and its fixture paths hang off `work`), the cwd the guard is given and the process's own cwd (`test_goldens_ignore_the_ambient_checkout` varies it). The process-table readers are never memoised: their answer is the live process table, which moves between two calls.
+    key = (stem, payload, tuple(sorted(env.items())), str(cwd), os.getcwd())
+    if stem not in PROCESS_TABLE_READERS and key in _FIELDS:
+        return dict(_FIELDS[key])
     saved = dict(os.environ)
     os.environ.clear()
     os.environ.update(env)
@@ -687,7 +701,10 @@ def python_fields(stem, payload, extra, stubs, work, cwd=None):
         os.environ.clear()
         os.environ.update(saved)
         time.tzset()
-    return {"rc": str(rc), "out": out, "err": err}
+    fields = {"rc": str(rc), "out": out, "err": err}
+    if stem not in PROCESS_TABLE_READERS:
+        _FIELDS[key] = fields
+    return dict(fields)
 
 
 def diff_fields(want, got):
@@ -1157,9 +1174,10 @@ def assert_defect_is_caught(tmp_path, fixture_work, stem):
     assert broken_src != source
     broken_path = tmp_path / ("broken_%s.py" % stem)
     broken_path.write_text(broken_src, encoding="utf-8")
+    # `__file__` stays the real guard's, because block_origin_clone and block_commit_of_live_writer_file load `../git/githooks.py` relative to it and would look beside the tmp copy and fail before the defect is judged; the code still compiles under the tmp name.
     namespace: dict[str, typing.Any] = {
         "__name__": "broken_%s" % stem,
-        "__file__": str(broken_path),
+        "__file__": str(module.__file__),
     }
     exec(compile(broken_src, str(broken_path), "exec"), namespace)
     # The broken copy reads the SAME frozen clock as the good one, or a clock-reading port would "change its answer" on today's date rather than on its planted defect, and this control would pass for the wrong reason.
@@ -1197,3 +1215,52 @@ def assert_defect_is_caught(tmp_path, fixture_work, stem):
         "%s answered identically with its declared defect planted, so this "
         "file's green does not depend on that branch being right" % stem
     )
+
+
+def test_all_builders_sees_a_builder_replaced_under_an_existing_name(monkeypatch):
+    """a20a16ab.2: the memo keys on (name, builder), so swapping the builder behind a name is not served from the old table. CONTROL: an unchanged table is served from the memo, counted by the guard loads it skips."""
+    name = "stale-branch-checkout"
+    all_builders()
+    loads = []
+    real_stems = guards.stems
+
+    def counting_stems():
+        loads.append(1)
+        return real_stems()
+
+    monkeypatch.setattr(guards, "stems", counting_stems)
+    all_builders()
+    assert loads == [], "an unchanged table was rebuilt instead of served from the memo"
+
+    def replacement(path):
+        return path
+
+    monkeypatch.setitem(FIXTURE_BUILDERS, name, replacement)
+    assert all_builders()[name] is replacement
+    assert loads, "a replaced builder was served from the memo, not rebuilt"
+
+
+def test_the_python_fields_memo_key_follows_stubs_and_work(tmp_path, fixture_work, monkeypatch):
+    """a20a16ab.1 and .3: `stubs` and `work` reach the memo key through the case env (the stub directory is keyed on the stubs' content, the fixture paths on `work`), so a case with other stubs or another work tree is a different key. CONTROL: the same inputs are served from the memo, counted by the guard runs they skip."""
+    stem = "block_stale_pr_branch_date"
+    payload = edge_payload(guards.load(stem), "gh pr create --draft --fill")
+    runs = []
+    real_run_one = dispatch.run_one
+
+    def counting_run_one(*args, **kwargs):
+        runs.append(1)
+        return real_run_one(*args, **kwargs)
+
+    monkeypatch.setattr(dispatch, "run_one", counting_run_one)
+    python_fields(stem, payload, {}, {}, fixture_work)
+    seen = len(runs)
+    python_fields(stem, payload, {}, {}, fixture_work)
+    assert len(runs) == seen, "the same inputs were run again instead of served from the memo"
+    python_fields(stem, payload, {}, {"gh": "#!/bin/sh\nexit 0\n"}, fixture_work)
+    assert len(runs) == seen + 1, "other stubs were served from the memo"
+    other_work = tmp_path / "other"
+    other_work.mkdir()
+    python_fields(stem, payload, {}, {}, other_work)
+    assert len(runs) == seen + 2, "another work tree was served from the memo"
+    python_fields(stem, payload, {"TZ": "Pacific/Kiritimati"}, {}, fixture_work)
+    assert len(runs) == seen + 3, "another env was served from the memo"

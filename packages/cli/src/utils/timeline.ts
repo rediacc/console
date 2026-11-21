@@ -38,6 +38,12 @@ const activeLabels: Record<string, string> = {
   filesystem_resize: 'Resizing filesystem',
   filesystem_expand: 'Expanding filesystem',
   sessions_end: 'Ending sessions',
+  network_floor: 'Reading used network IDs',
+  machine_connect: 'Opening machine connection',
+  step_claim: 'Claiming job steps',
+  backup_schedule: 'Reconciling backup schedule',
+  post_up: 'Running post-up tasks',
+  fork_up: 'Bringing fork up',
 };
 
 /** Labels shown when step completes (checkmark). */
@@ -74,6 +80,12 @@ const doneLabels: Record<string, string> = {
   filesystem_resize: 'Filesystem resized',
   filesystem_expand: 'Filesystem expanded',
   sessions_end: 'Sessions ended',
+  network_floor: 'Used network IDs read',
+  machine_connect: 'Machine connection opened',
+  step_claim: 'Job steps claimed',
+  backup_schedule: 'Backup schedule reconciled',
+  post_up: 'Post-up tasks done',
+  fork_up: 'Fork brought up',
 };
 
 /** A single rendered timeline step (CLI-side, renet-side, or orchestrated). */
@@ -137,8 +149,37 @@ export function getDoneLabel(name: string): string {
  * reported one. The parallel marker is not a detail and adds nothing.
  */
 export function getDoneText(name: string, detail?: string): string {
+  if (detail === STEP_FAILED_DETAIL) return getFailedLabel(name);
   const label = getDoneLabel(name);
   return detail && detail !== PARALLEL_STEP_DETAIL ? `${label}: ${detail}` : label;
+}
+
+/**
+ * The detail renet's StepTimer.Fail puts on a step that ended in failure
+ * (private/renet/pkg/output/steps.go StepFailedDetail): a compose run that
+ * failed must not read "Services started".
+ */
+export const STEP_FAILED_DETAIL = 'failed';
+
+/** Labels shown when a step ended in failure. */
+const failedLabels: Record<string, string> = {
+  compose_up: 'Service start failed',
+};
+
+/** Human label for a step that ended in failure. */
+function getFailedLabel(name: string): string {
+  return failedLabels[name] ?? `${getActiveLabel(name)} failed`;
+}
+
+/** A step's label in the end-of-command summary: the failed label for a failed step. */
+function stepSummaryLabel(step: { name: string; detail?: string }): string {
+  return step.detail === STEP_FAILED_DETAIL ? getFailedLabel(step.name) : getDoneLabel(step.name);
+}
+
+/** The live line for a finished step: a check mark, or a cross for a failed one. */
+export function formatStepDoneLine(name: string, durationMs: number, detail?: string): string {
+  const mark = detail === STEP_FAILED_DETAIL ? '✖' : '✔';
+  return `\r${mark} ${getDoneText(name, detail)} (${formatStepDuration(durationMs)})\n`;
 }
 
 /** A finished step's line text where parallel steps stay visible: a parallel step reads `Label (∥)`, any other detail follows as `Label: detail`. */
@@ -230,7 +271,7 @@ function buildBarRows(steps: TimelineStep[], wallMs: number): BarRow[] {
   for (const step of steps) {
     if (step.duration_ms / wallMs >= FOLD_THRESHOLD) {
       big.push({
-        label: getDoneLabel(step.name),
+        label: stepSummaryLabel(step),
         durationMs: step.duration_ms,
         parallel: step.detail === PARALLEL_STEP_DETAIL,
       });
@@ -306,7 +347,7 @@ export function buildTimingWaterfall(
     const len = Math.max(1, Math.round((step.duration_ms / wallMs) * WATERFALL_WIDTH));
     const glyph = step.detail === PARALLEL_STEP_DETAIL ? '░' : '▓';
     const bar = ' '.repeat(startCol) + glyph.repeat(Math.min(len, WATERFALL_WIDTH - startCol));
-    return `  ${padLabel(getDoneLabel(step.name), LABEL_WIDTH)} ${bar}`;
+    return `  ${padLabel(stepSummaryLabel(step), LABEL_WIDTH)} ${bar}`;
   });
   return `${waterfallAxis(wallMs)}\n${lines.join('\n')}`;
 }

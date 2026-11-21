@@ -14,6 +14,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import console_executor as ce
+from rediacc_ci.deploy import deploy_proxy
 
 if TYPE_CHECKING:
     import pathlib
@@ -117,8 +118,8 @@ def fake(tmp_path, monkeypatch):
     ("target", "region", "config"),
     [
         ("stable", "us", "wrangler.us.toml"),
-        ("edge", "asia", "wrangler.edge-asia.toml"),
-        ("bench", "eu", "wrangler.bench.toml"),
+        ("stable", "asia", "wrangler.asia.toml"),
+        ("bench", "eu", "wrangler.bench-eu.toml"),
     ],
 )
 def test_each_target_names_its_own_account_config_and_it_exists(target, region, config):
@@ -126,13 +127,67 @@ def test_each_target_names_its_own_account_config_and_it_exists(target, region, 
     assert (ROOT / "workers" / "account" / config).is_file()
 
 
-def test_bench_refuses_another_region_and_an_unknown_target_is_refused():
-    with pytest.raises(ce.RefusedError, match="bench refuses --region us"):
-        ce.resolve_target(ROOT, "bench", "us")
+@pytest.mark.parametrize(
+    ("region", "config"),
+    [
+        ("eu", "wrangler.bench-eu.toml"),
+        ("us", "wrangler.bench-us.toml"),
+        ("asia", "wrangler.bench-asia.toml"),
+    ],
+)
+def test_bench_resolves_each_regions_own_config(region, config):
+    assert ce.resolve_target(ROOT, "bench", region) == (region, config)
+    assert ce.resolve_target(ROOT, "bench", None)[0] == ce.BENCH_REGION
+    assert (ROOT / "workers" / "account" / config).is_file()
+
+
+def _regions_copy(tmp_path, deployable):
+    doc = json.loads((ROOT / "regions.json").read_text(encoding="utf-8"))
+    for row in doc["regions"]:
+        if row["id"] in deployable:
+            row["bench"]["deployable"] = deployable[row["id"]]
+    (tmp_path / "regions.json").write_text(json.dumps(doc), encoding="utf-8")
+    return tmp_path
+
+
+def test_a_bench_row_with_no_deployable_key_is_refused_saying_not_true(tmp_path):
+    """Review c750faee.1: an absent `deployable` is refused like a false one, and the text says `not true`, which is right for both."""
+    doc = json.loads((ROOT / "regions.json").read_text(encoding="utf-8"))
+    for row in doc["regions"]:
+        if row["id"] == "us":
+            row["bench"].pop("deployable", None)
+    (tmp_path / "regions.json").write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(ce.RefusedError, match=r"bench\.deployable is not true") as caught:
+        ce.resolve_target(tmp_path, "bench", "us")
+    assert "is false" not in str(caught.value)
+
+
+def test_bench_refuses_a_region_whose_bench_is_not_deployable_up_front(tmp_path):
+    """Review b7fd0615.3: a bench row with `deployable` false has no Worker yet, so the target is refused by name before wrangler is asked for it; the deployable regions still resolve."""
+    root = _regions_copy(tmp_path, {"eu": True, "us": False, "asia": True})
+    with pytest.raises(ce.RefusedError, match="--region us: its bench is not deployable yet"):
+        ce.resolve_target(root, "bench", "us")
+    assert ce.resolve_target(root, "bench", "asia") == ("asia", "wrangler.bench-asia.toml")
+    assert ce.resolve_target(root, "bench", None)[0] == ce.BENCH_REGION
+    assert ce.bench_region_ids(root) == ["asia", "eu", "us"]
+    assert ce.bench_region_ids(root, deployable_only=True) == ["asia", "eu"]
+
+
+def test_the_default_bench_region_is_the_regions_json_default_region():
+    """Review b7fd0615.5: `BENCH_REGION` (here and in deploy_proxy) is the home bench a bare `--target bench` means, and it must not drift from the region regions.json marks default."""
+    doc = json.loads((ROOT / "regions.json").read_text(encoding="utf-8"))
+    (home,) = [r["id"] for r in doc["regions"] if r.get("default") is True]
+    assert home == ce.BENCH_REGION
+    assert home == deploy_proxy.BENCH_REGION
+
+
+def test_bench_refuses_a_region_with_no_bench_and_an_unknown_target_is_refused():
+    with pytest.raises(ce.RefusedError, match="bench refuses --region mars"):
+        ce.resolve_target(ROOT, "bench", "mars")
     with pytest.raises(ce.RefusedError, match="not one of"):
         ce.resolve_target(ROOT, "production", "eu")
     with pytest.raises(ce.RefusedError, match="--region mars"):
-        ce.resolve_target(ROOT, "edge", "mars")
+        ce.resolve_target(ROOT, "stable", "mars")
 
 
 def test_secret_names_reads_past_a_banner_and_refuses_other_shapes():
@@ -147,7 +202,7 @@ def test_secret_names_reads_past_a_banner_and_refuses_other_shapes():
 
 
 def test_enable_puts_the_value_on_stdin_never_on_argv_and_reads_it_back(fake, tmp_path):
-    assert ce.main(["--enable", "--target", "edge", "--region", "us"]) == 0
+    assert ce.main(["--enable", "--target", "stable", "--region", "us"]) == 0
     log = calls(fake)
     put = log[0]
     assert put["argv"] == [
@@ -157,9 +212,9 @@ def test_enable_puts_the_value_on_stdin_never_on_argv_and_reads_it_back(fake, tm
         "put",
         "EXECUTOR_MODE",
         "--name",
-        "edge-rediacc-account-us",
+        "account-us",
         "--config",
-        "wrangler.edge-us.toml",
+        "wrangler.us.toml",
     ]
     assert put["stdin"] == "proxy"
     assert put["cwd"] == "account"
@@ -190,7 +245,7 @@ def test_enable_whose_put_fails_stops_before_the_read_back(fake, monkeypatch):
 def test_missing_credentials_refuse_before_any_wrangler_call(fake, monkeypatch):
     monkeypatch.delenv("CLOUDFLARE_API_TOKEN")
     monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-proxy")
-    assert ce.main(["--enable", "--target", "edge", "--region", "eu"]) == 1
+    assert ce.main(["--enable", "--target", "stable", "--region", "eu"]) == 1
     assert calls(fake) == []
 
 
@@ -211,7 +266,7 @@ def test_missing_credentials_reexec_under_the_profile_when_unbound(fake, monkeyp
         "rediacc_ci.core.bws_env",
         "exec",
         "--profile",
-        "deploy-proxy-bench",
+        "deploy-proxy-bench-eu",
         "--",
         seen[0][7],
     ]
@@ -237,9 +292,9 @@ def test_reexec_carries_the_callers_own_region_argv(fake, monkeypatch):
 
 def test_a_profile_list_with_spaces_still_reports_the_profile_bound(fake, monkeypatch):
     monkeypatch.delenv("CLOUDFLARE_API_TOKEN")
-    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-proxy, deploy-proxy-bench")
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-proxy, deploy-proxy-bench-eu")
     monkeypatch.setattr(ce.subprocess, "run", lambda *_a, **_k: pytest.fail("re-exec"))
-    assert ce.profile_bound("deploy-proxy-bench")
+    assert ce.profile_bound("deploy-proxy-bench-eu")
     assert ce.main(["--enable", "--target", "bench"]) == 1
     assert calls(fake) == []
 
@@ -249,7 +304,7 @@ def test_a_profile_list_with_spaces_still_reports_the_profile_bound(fake, monkey
 
 def test_disable_deletes_the_secret_with_no_stdin_and_confirms_it_is_gone(fake, tmp_path):
     (tmp_path / "store.json").write_text(json.dumps(["EXECUTOR_MODE", "OTHER"]))
-    assert ce.main(["--disable", "--target", "edge", "--region", "eu"]) == 0
+    assert ce.main(["--disable", "--target", "stable", "--region", "eu"]) == 0
     log = calls(fake)
     assert log[0]["argv"][:5] == ["--no-install", "wrangler", "secret", "delete", "EXECUTOR_MODE"]
     assert log[0]["stdin"] == ""
@@ -280,13 +335,13 @@ def test_bench_disable_names_the_bench_worker(fake):
     assert ce.main(["--disable", "--target", "bench"]) == 0
     assert calls(fake)[0]["argv"][5:9] == [
         "--name",
-        "rediacc-account-bench",
+        "account-bench",
         "--config",
-        "wrangler.bench.toml",
+        "wrangler.bench-eu.toml",
     ]
 
 
 def test_enable_and_disable_are_mutually_exclusive_and_one_is_required(fake):
-    assert ce.main(["--enable", "--disable", "--target", "edge", "--region", "eu"]) == 2
-    assert ce.main(["--target", "edge", "--region", "eu"]) == 2
+    assert ce.main(["--enable", "--disable", "--target", "stable", "--region", "eu"]) == 2
+    assert ce.main(["--target", "stable", "--region", "eu"]) == 2
     assert calls(fake) == []

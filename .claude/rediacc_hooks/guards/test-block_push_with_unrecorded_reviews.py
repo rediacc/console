@@ -96,8 +96,16 @@ def fake(findings, verdict=None):
     return reviewer
 
 
-HIGH = [{"severity": "high", "file": "f.py", "line": 1, "claim": "breaks on the empty path"}]
-LOW = [{"severity": "low", "file": "f.py", "line": 1, "claim": "naming"}]
+HIGH = [
+    {
+        "severity": "high",
+        "file": "f.py",
+        "line": 1,
+        "claim": "breaks on the empty path",
+        "class": "other",
+    }
+]
+LOW = [{"severity": "low", "file": "f.py", "line": 1, "claim": "naming", "class": "other"}]
 
 
 def record(rv, repo, sha):
@@ -291,13 +299,13 @@ def _outside_defect(src: str, *names: str) -> str:
     )
 
 
-def defect_runner():
+def defect_runner(name="DEFECT"):
     _syspath.on_sys_path(str(HERE.parents[2]))
     hookio = importlib.import_module("rediacc_hooks.hookio")
     good = importlib.import_module("rediacc_hooks.guards." + STEM)
-    old, new = good.DEFECT
+    old, new = getattr(good, name)
     src = pathlib.Path(str(good.__file__)).read_text(encoding="utf-8")
-    if old not in _outside_defect(src):
+    if old not in _outside_defect(src, "DEFECT", "TWO_TREE_DEFECT"):
         raise SystemExit("the DEFECT no longer applies to the guard outside its own declaration")
     ns: dict[str, typing.Any] = {"__name__": "broken_" + STEM, "__file__": good.__file__}
     exec(compile(src.replace(old, new), str(good.__file__), "exec"), ns)
@@ -342,6 +350,104 @@ def run_all(base, rv, runner, quiet=False):
     return fails
 
 
+# ---- two trees (box LT12 of agent/plans/PLAN-two-track-merge-dev.md) ----------------------
+# The main checkout on DEV_BRANCH and a linked worktree, the landing tree, on BRANCH, with the landing record in the common git dir. Each tree's branch carries one commit past `origin/main`, and a review, when a case gives one, is written and committed in that branch's OWN tree. A push typed in the other tree is judged there; with no record it stays a sibling repository's and passes, as before.
+DEV_BRANCH = "0930-2"
+RECORD_NAME = "rediacc-landing.json"
+
+
+def two_trees(base, record=True, landing_reviewed=False):
+    """`(main, landing)` for one two-tree case."""
+    main, sha = make_repo(base, "main")
+    landing = base / "landing"
+    git(main, "checkout", "-q", "-b", DEV_BRANCH, "main")
+    (main / "dev.py").write_text("c = 3\n", encoding="utf-8")
+    git(main, "add", "dev.py")
+    git(main, "commit", "-q", "-m", "fix(x): z")
+    git(main, "worktree", "add", "-q", str(landing), BRANCH)
+    if landing_reviewed:
+        world_clean(_load_reviewer(), landing, sha)
+    if record:
+        common = pathlib.Path(git(main, "rev-parse", "--path-format=absolute", "--git-common-dir"))
+        (common / RECORD_NAME).write_text(
+            json.dumps({"path": os.path.realpath(landing), "branch": BRANCH}), encoding="utf-8"
+        )
+    return main, landing
+
+
+TWO_TREE_CASES = [
+    # (name, world kwargs, root "main"/"landing", command, refusal needle or None, flips under TWO_TREE_DEFECT)
+    (
+        "main root: the landing tree's unreviewed push",
+        {},
+        "main",
+        "git -C {landing} push origin %s" % BRANCH,
+        "UNREVIEWED console",
+        True,
+    ),
+    (
+        "main root: the landing push reviewed in its own tree",
+        {"landing_reviewed": True},
+        "main",
+        "git -C {landing} push origin %s" % BRANCH,
+        None,
+        False,
+    ),
+    (
+        "landing root: the main checkout's unreviewed push",
+        {},
+        "landing",
+        "git -C {main} push origin %s" % DEV_BRANCH,
+        "UNREVIEWED console",
+        False,
+    ),
+    (
+        "landing root: its own unreviewed push",
+        {},
+        "landing",
+        "git push origin %s" % BRANCH,
+        "UNREVIEWED console",
+        False,
+    ),
+    (
+        "no record: the sibling tree's push is not judged",
+        {"record": False},
+        "main",
+        "git -C {landing} push origin %s" % BRANCH,
+        None,
+        False,
+    ),
+]
+
+
+def run_two_trees(base, runner, flips_only=False):
+    """Failures over TWO_TREE_CASES; with `flips_only`, only the flipping cases run, and each must MOVE."""
+    fails = 0
+    for n, (name, kw, at, cmd, want, flips) in enumerate(TWO_TREE_CASES):
+        if flips_only and not flips:
+            continue
+        case_dir = base / ("two%02d" % n)
+        case_dir.mkdir()
+        main, landing = two_trees(case_dir, **kw)
+        root = main if at == "main" else landing
+        rc, text = runner(root, cmd.format(main=main, landing=landing))
+        blocked = rc != 0
+        ok = (not blocked) if want is None else (blocked and want in text)
+        if flips_only:
+            ok = not ok
+        fails += not ok
+        if not flips_only:
+            print(
+                "%-58s want=%-8s %s"
+                % (
+                    "two trees: " + name,
+                    "allowed" if want is None else "BLOCKED",
+                    "ok" if ok else "*** FAIL *** " + text[:300],
+                )
+            )
+    return fails
+
+
 def main():
     scratch = tempfile.mkdtemp(prefix="push-reviews-")
     old_tmp = os.environ.get("TMPDIR")
@@ -363,6 +469,17 @@ def main():
             % (planted, "" if planted else "  *** the suite cannot fail ***")
         )
         fails += planted == 0
+        two_dir = pathlib.Path(scratch, "two")
+        two_dir.mkdir()
+        fails += run_two_trees(two_dir, via_dispatch)
+        two_planted = pathlib.Path(scratch, "two-planted")
+        two_planted.mkdir()
+        unmoved = run_two_trees(two_planted, defect_runner("TWO_TREE_DEFECT"), flips_only=True)
+        print(
+            "TWO_TREE_DEFECT planted: %s"
+            % ("every flipping case moved" if not unmoved else "%d case(s) did not move" % unmoved)
+        )
+        fails += unmoved
     finally:
         if old_tmp is None:
             os.environ.pop("TMPDIR", None)

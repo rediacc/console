@@ -19,6 +19,7 @@ DELIBERATE DELTAS FROM THE BASH (Rule T), each with a test in `test_catalog_life
   * The Rediaccfile is sourced in a child shell, not into the test process. Sourcing it into the runner leaked every function and variable one template defined into the next template's run.
   * `docker compose ps --format json` is read in both shapes compose has shipped: one object per line, and a single JSON array. The bash fed the array to `jq .Name`, which failed.
   * `jq` is no longer a dependency.
+  * The suite refuses to start, within seconds, on a host that has no licensed repo session (`precondition_failure`): the bash discovered it one template at a time. A host that has one proceeds as before.
   * A missing value after an option is a named error rather than `$2: unbound variable`.
   * A timed-out `up()` or `down()` takes its whole process group down, not just the shell, so a half-started compose project does not outlive its timeout.
 """
@@ -659,6 +660,33 @@ class Suite:
 
     # ------------------------------------------------------------------ main
 
+    def precondition_failure(self) -> str | None:
+        """Why this host cannot run a Rediaccfile, or None when it can.
+
+        Every `up()` calls `renet compose`, which reads REDIACC_NETWORK_ID, and the Rediaccfiles keep generated secrets under REDIACC_WORKING_DIR. Both come from a licensed repo's session. Checking the environment takes no time, where discovering the gap through the first failing template took 413 s and the suite then went on to the next one.
+        """
+        fix = "run it from a licensed repo's shell: `rdc term <repo>` (exports REDIACC_NETWORK_ID and REDIACC_WORKING_DIR), then repeat this command"
+        if shutil.which("renet") is None:
+            return "`renet` is not on PATH; %s" % fix
+        raw = os.environ.get("REDIACC_NETWORK_ID", "")
+        if not re.fullmatch(r"[0-9]+", raw) or int(raw) == 0:
+            return "REDIACC_NETWORK_ID is not a valid non-zero network id (got %r); %s" % (raw, fix)
+        working = os.environ.get("REDIACC_WORKING_DIR", "")
+        if not working or not pathlib.Path(working).is_dir():
+            return "REDIACC_WORKING_DIR is not an existing directory (got %r); %s" % (working, fix)
+        root = self.templates_dir.resolve()
+        resolved = pathlib.Path(working).resolve()
+        if resolved == root or root in resolved.parents:
+            return (
+                "REDIACC_WORKING_DIR (%s) is inside the template source tree %s, where generated secrets would land; %s"
+                % (
+                    working,
+                    root,
+                    fix,
+                )
+            )
+        return None
+
     def run(self, argv: list[str]) -> int:
         try:
             if not self.parse_args(argv):
@@ -666,6 +694,10 @@ class Suite:
         except UsageError as exc:
             if str(exc) != "unknown option":
                 self.log_error(str(exc))
+            return 1
+        refusal = self.precondition_failure()
+        if refusal is not None:
+            self.log_error("Refusing to start: %s" % refusal)
             return 1
         self.log_info("Starting template tests")
         self.log_info("Templates directory: %s" % self.templates_dir)

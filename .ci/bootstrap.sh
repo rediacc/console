@@ -124,15 +124,43 @@ AWS_CACHE_BIN="$AWS_DIR/bin/aws"
 # directory per version, a single static binary in it.
 AGG_DIR="$ROOT/.ci/cache/toolchain/agg/${AGG_VERSION}"
 AGG_CACHE_BIN="$AGG_DIR/agg"
+# The pinned cosign (sigstore): the signed-checksum pins (scripts/pins/signed-release.ts) need
+# it. One directory per version, a single static binary in it.
+COSIGN_DIR="$ROOT/.ci/cache/toolchain/cosign/${COSIGN_VERSION}"
+COSIGN_CACHE_BIN="$COSIGN_DIR/cosign"
 
 # The wrapper's inputs: uv's real pytest and the interpreter of the same tool
 # environment (the pinned Python, so core_lease.py runs on what pytest runs on),
 # and the lease module itself. Absolute, because a session runs the wrapper from
 # any directory. The marker line is how a wrapper is told from uv's symlink: only
 # a file carrying it is ever removed or overwritten here.
-REAL_PYTEST="$TOOL_DIR/pytest/bin/pytest"
-REAL_PYTHON="$TOOL_DIR/pytest/bin/python"
-LEASE_PY="$ROOT/.ci/rediacc_ci/core_lease.py"
+#
+# A lease tree's .ci/cache/toolchain is a symlink to the main checkout's, so the
+# wrapper written here is the SAME file every tree runs. Its paths are therefore
+# rooted at the checkout that physically owns the toolchain, not at a lease's
+# $ROOT: a bootstrap inside a lease used to write the lease's own path into the
+# shared wrapper, and pytest broke everywhere once that lease was collected
+# (2026-11-11, `pytest wrapper: .../worktrees/agent-.../pytest is missing`).
+# When the owner cannot be derived (no `readlink -f`, or a shared cache outside
+# any checkout's .ci/cache), the paths fall back to $ROOT (c473373f.1).
+TOOL_OWNER_ROOT="$ROOT"
+if [ -d "$ROOT/.ci/cache/toolchain" ]; then
+    # The owner is the checkout three levels above the physical toolchain directory, and only when
+    # that guess holds (it names a .ci/cache/toolchain of its own). A `readlink` without `-f` (BSD
+    # before 12.3) prints nothing, and a shared cache outside any checkout's .ci/cache breaks the
+    # climb: both leave $ROOT as the owner instead of climbing to `/` or to a directory that
+    # does not hold the toolchain.
+    tool_real="$(readlink -f "$ROOT/.ci/cache/toolchain" 2>/dev/null || true)"
+    if [ -n "$tool_real" ]; then
+        owner_guess="$(CDPATH='' cd -- "$tool_real/../../.." 2>/dev/null && pwd -P || true)"
+        if [ -n "$owner_guess" ] && [ -d "$owner_guess/.ci/cache/toolchain" ]; then
+            TOOL_OWNER_ROOT="$owner_guess"
+        fi
+    fi
+fi
+REAL_PYTEST="$TOOL_OWNER_ROOT/.ci/cache/toolchain/uv-tools/pytest/bin/pytest"
+REAL_PYTHON="$TOOL_OWNER_ROOT/.ci/cache/toolchain/uv-tools/pytest/bin/python"
+LEASE_PY="$TOOL_OWNER_ROOT/.ci/rediacc_ci/core_lease.py"
 WRAPPER_MARK="# rediacc core-lease pytest wrapper"
 
 # The platform, derived. Same two-axis mapping .ci/scripts/lib/toolchain.sh uses
@@ -517,6 +545,60 @@ install_agg() {
     printf '%s' "$AGG_CACHE_BIN"
 }
 
+# The cache rung at the pin: the only place a bootstrap install writes cosign.
+resolve_cosign_pinned() {
+    if [ -x "$COSIGN_CACHE_BIN" ] &&
+        [ "$(toolchain_probe_version cosign "$COSIGN_CACHE_BIN" 2>/dev/null)" = "$COSIGN_VERSION" ]; then
+        printf '%s' "$COSIGN_CACHE_BIN"
+        return 0
+    fi
+    return 1
+}
+
+# The sigstore release binary for this platform, verified against its sha256 in toolchain.env
+# BEFORE it is made executable, staged beside its final path and renamed into place.
+install_cosign() {
+    local arch sha_var want url tmp got
+    case "$(uname -s):$(uname -m)" in
+        Linux:x86_64 | Linux:amd64) arch=amd64 ;;
+        Linux:aarch64 | Linux:arm64) arch=arm64 ;;
+        *)
+            echo "bootstrap: no pinned cosign build for $(uname -s) $(uname -m)" >&2
+            return 1
+            ;;
+    esac
+    sha_var="COSIGN_SHA256_LINUX_$(printf '%s' "$arch" | tr '[:lower:]' '[:upper:]')"
+    want="${!sha_var:-}"
+    [ -n "$want" ] || {
+        echo "bootstrap: no checksum for this platform -- define ${sha_var} in .devcontainer/toolchain.env rather than downloading unverified" >&2
+        return 1
+    }
+    url="https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-${arch}"
+    mkdir -p "$COSIGN_DIR" || return 1
+    tmp="$(mktemp -d "$COSIGN_DIR/.stage.XXXXXX")" || return 1
+    trap 'rm -rf -- "$tmp"; trap - RETURN' RETURN
+    echo "bootstrap: downloading cosign ${COSIGN_VERSION} (cosign-linux-${arch})" >&2
+    curl -fsSL --max-time 600 --retry 3 --retry-delay 5 -o "$tmp/cosign" "$url" || {
+        echo "${RED}bootstrap${NC}: could not download cosign from $url" >&2
+        return 1
+    }
+    got="$(sha256_of "$tmp/cosign")" || return 1
+    [ "$got" = "$want" ] || {
+        echo "${RED}bootstrap${NC}: cosign checksum MISMATCH -- refusing to install" >&2
+        echo "  expected $want" >&2
+        echo "  actual   $got" >&2
+        return 1
+    }
+    chmod +x "$tmp/cosign" || return 1
+    mv -f "$tmp/cosign" "$COSIGN_CACHE_BIN" || return 1
+    got="$(toolchain_probe_version cosign "$COSIGN_CACHE_BIN" 2>/dev/null)"
+    [ "$got" = "$COSIGN_VERSION" ] || {
+        echo "${RED}bootstrap${NC}: $COSIGN_CACHE_BIN reports '${got:-none}', not ${COSIGN_VERSION}" >&2
+        return 1
+    }
+    printf '%s' "$COSIGN_CACHE_BIN"
+}
+
 install_uv() {
     local triple sfx sha_var want url tmp got
     read -r triple sfx < <(uv_target) || return 1
@@ -866,8 +948,16 @@ case "${1:-install}" in
                 echo "${GREEN}ok${NC}   agg ${AGG_VERSION} installed at $agg_bin"
             fi
             exit 0
+        elif [ "${2:-}" = cosign ]; then
+            if cosign_bin="$(resolve_cosign_pinned)"; then
+                echo "${GREEN}ok${NC}   cosign ${COSIGN_VERSION} already at $cosign_bin"
+            else
+                cosign_bin="$(install_cosign)" || exit 1
+                echo "${GREEN}ok${NC}   cosign ${COSIGN_VERSION} installed at $cosign_bin"
+            fi
+            exit 0
         elif [ -n "${2:-}" ]; then
-            echo "usage: bootstrap.sh install [aws|agg]" >&2
+            echo "usage: bootstrap.sh install [aws|agg|cosign]" >&2
             exit 2
         fi
         # No `| ""` arm: ${1:-install} substitutes the default for an EMPTY

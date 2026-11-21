@@ -15,7 +15,7 @@
  * pairing code defends against link tampering and relay-side swaps, not a compromised origin.
  */
 
-import { timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import type { CekHandoffBlob } from '@rediacc/shared/config-crypto';
 import {
   fromBase64,
@@ -138,6 +138,8 @@ export async function startRelayHandoff(apiUrl: string, loginToken: string): Pro
     body: {
       purpose: 'config-handoff',
       keyHash: await handoffKeyHash(spki),
+      // The page checks the link's nonce against this before the user unlocks anything.
+      nonceHash: createHash('sha256').update(nonce, 'utf8').digest('base64url'),
       pollVerifier: await handoffPollVerifier(pollSecretRaw),
     },
   });

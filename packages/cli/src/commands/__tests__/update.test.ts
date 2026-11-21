@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
-  WK_EDGE_ORIGIN,
+  WK_ACCOUNT_DEFAULT_ORIGIN,
   WK_RELEASES_ORIGIN,
   WK_SITE_ORIGIN,
 } from '@rediacc/shared/config/well-known.generated';
@@ -72,7 +72,7 @@ describe('handleChannelSwitch', () => {
         version: 1,
         encryption: { mode: 'plaintext' },
         account: {
-          accountServer: WK_EDGE_ORIGIN,
+          accountServer: WK_ACCOUNT_DEFAULT_ORIGIN,
           e2ePublicKey: 'MEIwBQYDK2VwAzkA...',
           releasesUrl: WK_RELEASES_ORIGIN,
         },
@@ -83,7 +83,7 @@ describe('handleChannelSwitch', () => {
 
     const account = readConfig().account as Record<string, unknown>;
     expect(account).toMatchObject({
-      accountServer: WK_EDGE_ORIGIN,
+      accountServer: WK_ACCOUNT_DEFAULT_ORIGIN,
       e2ePublicKey: 'MEIwBQYDK2VwAzkA...',
       releasesUrl: WK_RELEASES_ORIGIN,
       updateChannel: 'stable',

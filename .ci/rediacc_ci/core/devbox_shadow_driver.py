@@ -46,14 +46,14 @@ THE CORPUS IS BUILT IN PYTHON FOR BOTH SIDES and handed to bash as NUL-separated
 THE STUB-FARM SCENARIOS, and what each one would catch
 -----------------------------------------------------------------------------
   identity           devbox_worktree, mount_root (relative `--git-common-dir`), branch, slug_basename, slug (with and without `DEVBOX_SLUG`, including one that sanitises away), container_name, all four `devbox_docker` answers including both sudo arms, the two bind lists, `_devbox_bind_if_present` present/absent/arity, and `devbox_url` explicit, defaulted, through sudo, and SURVIVING a failing `docker ps` because the death of twin defect 7 does not cross a command substitution.
-  identity-worktree  a LINKED worktree: mount_root answers the MAIN checkout from an absolute common dir, and build_image finds no Dockerfile there, nor uid_image a derive recipe.
+  identity-worktree  a LINKED worktree: mount_root answers the MAIN checkout from an absolute common dir, and uid_image finds no derive recipe there.
   identity-detached  a detached HEAD in a directory whose name needs the basename fallback, under `LC_ALL=C`, plus `devbox_up` against a drifted container that must NOT be rehosted because the branch is empty.
   identity-utf8      the same fixture under `LC_ALL=C.utf8`: the fallback hostname changes with the locale (twin defect 10), and a `\\u` escape in a logged label encodes rather than printing `\\u00FC`.
   identity-gone      a worktree directory that does not exist: the literal-path fallback, the state file that cannot be written, and a port block from the allocator.
   state              devbox_state_write at every arity and with `REDIACC_GATE_LANE`, devbox_state_get over present, missing, empty, duplicate, `=`-bearing, unterminated and regex-shaped keys (twin defect 11), and devbox_base_port from the record, from an empty record, and from the allocator with a busy first block.
   docker-query       container_id, container_running, slug_active, slug_conflicts (twin defect 3), router_hosts and missing_binds over every answer shape the daemon can give, including a failing `docker ps` (twin defect 7).
   proxy              network_ensure, proxy_running, proxy_ensure through every exit (already running, leftover started, leftover that will not start, run failure, a late answer, the 30-round timeout, a failing network, a failing `sleep`) and proxy_stop.
-  image              image_present, image_digest (including a failing inspect that printed something), ensure_image through pull, force, the private-registry fallback, a failing build, a failing derive and unreadable base ids, build_image, and the run image's four: base_user_ids over every passwd shape, uid_image over every id shape, run_image through the match and derive arms, and ensure_uid_image skipping, reusing, building, failing and through sudo.
+  image              image_present, image_digest (including a failing inspect that printed something), ensure_image through pull, force, a failed pull (an error, no local build), a failing derive and unreadable base ids, and the run image's four: base_user_ids over every passwd shape, uid_image over every id shape, run_image through the match and derive arms, and ensure_uid_image skipping, reusing, building, failing and through sudo.
   lifecycle          devbox_stop, devbox_remove (the state file really goes), devbox_logs and devbox_shell, each with and without a container and with a failing daemon.
   exec               devbox_exec's one-argument and many-argument shapes, zero arguments (twin defect 5), forwarded environment, sudo, and its status; then the three probes and devbox_doctor, including the not-running identity probe that passes (twin defect 2).
   exec-quote         devbox_exec over a corpus of argv built to exercise every `printf %q` rule: the backslash set, `~` and `#` by position, ANSI-C quoting, the empty word, non-UTF-8 bytes.
@@ -847,6 +847,13 @@ class Rules:
     def mounts(self, out, cid=CID, **kw):
         return rule(*self.d, "inspect", "-f", "{{range .Mounts}}*", cid, out=out, **kw)
 
+    def runner_env(self, out=None, cid=CID, **kw):
+        """The container's environment as `Devbox.image_drift` asks for it: carrying the pin by default, so an existing container reads as current."""
+        carried = (
+            "PATH=/usr/bin\nCI_RUNNER_IMAGE=%s\n" % devbox.DEVBOX_IMAGE if out is None else out
+        )
+        return rule(*self.d, "inspect", "-f", "{{range .Config.Env}}*", cid, out=carried, **kw)
+
     def proxy(self, value, **kw):
         return self.running(value, cid=PROXY, **kw)
 
@@ -931,6 +938,7 @@ ALL_MOUNTS = "".join(
         "/home/vscode/.config/gh",
         "/home/vscode/.claude.json",
         devbox.DEVBOX_CORE_LEASE_DEST,
+        "{HOME}/.cache/rediacc/ci-quick-clones",
     )
 )
 
@@ -946,6 +954,7 @@ def create_rules(
         d.running(running_after, after=after),
         d.labels(route_labels(SLUG)),
         d.mounts(ALL_MOUNTS),
+        d.runner_env(),
         rule(
             *d.d,
             "image",
@@ -1060,7 +1069,6 @@ def worktree_steps() -> list[Step]:
         Step("basename", "devbox_slug_basename"),
         Step("name", "devbox_container_name"),
         Step("url", "devbox_url"),
-        Step("build-no-dockerfile", "devbox_build_image"),
         Step("uid-image-no-recipe", "devbox_uid_image", rules=DOCKER.base_answers()),
     ]
 
@@ -1374,8 +1382,6 @@ def image_steps() -> list[Step]:
             rules=[d.derived_absent(), rule(*build, rc=1, err="derive failed\n"), *base],
         ),
         Step("ensure-ids-fail", "devbox_ensure_image", rules=[d.base_ids(out="", rc=125)]),
-        Step("build", "devbox_build_image"),
-        Step("build-fails", "devbox_build_image", rules=[rule("docker", "build", rc=2)]),
         # THE RUN IMAGE. The four functions, each through every arm it has.
         Step("base-ids", "devbox_base_user_ids", rules=base),
         Step(
@@ -1712,6 +1718,7 @@ def up_existing_steps() -> list[Step]:
         d.ps_self(CID + "\n"),
         d.labels(route_labels("old-name")),
         d.mounts(ALL_MOUNTS),
+        d.runner_env(),
         *settled,
     ]
     record = b"base_port=17010\nslug=old-name\n"
@@ -1721,6 +1728,7 @@ def up_existing_steps() -> list[Step]:
         d.ps_self(CID + "\n", after=after_run),
         d.labels(route_labels("old-name"), before=removed),
         d.mounts(ALL_MOUNTS),
+        d.runner_env(),
         *settled,
         *d.base_answers(),
         rule("getent", "group", "docker", out="docker:x:999:vscode\n"),
@@ -1734,6 +1742,7 @@ def up_existing_steps() -> list[Step]:
             rules=[
                 d.ps_self(CID + "\n"),
                 d.mounts(ALL_MOUNTS),
+                d.runner_env(),
                 *settled,
             ],
         ),
@@ -1762,6 +1771,7 @@ def up_existing_steps() -> list[Step]:
                 d.ps_self(CID + "\n", after=after_run),
                 d.mounts("/usr/local/bin/devbox-entrypoint.sh\n", before=removed),
                 d.mounts(ALL_MOUNTS),
+                d.runner_env(),
                 *settled,
                 *d.base_answers(),
                 rule("getent", "group", "docker", out="docker:x:999:vscode\n"),
@@ -1775,6 +1785,7 @@ def up_existing_steps() -> list[Step]:
             rules=[
                 d.ps_self(CID + "\n"),
                 d.mounts(ALL_MOUNTS),
+                d.runner_env(),
                 d.running("false\n", before=started),
                 *settled,
             ],
@@ -1786,6 +1797,7 @@ def up_existing_steps() -> list[Step]:
                 d.ps_self(CID + "\n"),
                 d.labels(route_labels(SLUG)),
                 d.mounts(ALL_MOUNTS),
+                d.runner_env(),
                 d.running("false\n"),
             ],
         ),
@@ -1796,12 +1808,55 @@ def up_existing_steps() -> list[Step]:
                 d.ps_self(CID + "\n"),
                 d.labels(route_labels(SLUG)),
                 d.mounts(ALL_MOUNTS),
+                d.runner_env(),
                 d.running("false\n"),
                 rule("docker", "start", CID, rc=1, err="Error: cannot start\n"),
             ],
         ),
         Step(
             "remove-fails", "devbox_up", rules=[*drifted, rule("docker", "rm", rc=1, err="busy\n")]
+        ),
+    ]
+
+
+def image_drift_steps() -> list[Step]:
+    """PORT-ONLY arms of `devbox_up` over an existing, fully bound container: one on the old floating tag (no `CI_RUNNER_IMAGE`) and one carrying the pin.
+
+    Not a registered scenario: the retired twin has no image check, so there is no transcript to compare. `test_core_devbox.py` registers it for the length of one test.
+    """
+    d = DOCKER
+    removed = ("docker", "rm")
+    settled = [d.running("true\n"), d.labels(route_labels(SLUG)), d.proxy("true\n")]
+    record = b"base_port=17010\nslug=%s\n" % SLUG.encode()
+    old_image = d.runner_env("PATH=/usr/bin\n")
+    return [
+        Step(
+            "image-drift-rehost",
+            "devbox_up",
+            state=record,
+            rules=[
+                d.ps_self(CID + "\n", before=removed),
+                d.ps_self(CID + "\n", after=d.run_pattern()),
+                d.mounts(ALL_MOUNTS),
+                old_image,
+                *settled,
+                *d.base_answers(),
+                rule("getent", "group", "docker", out="docker:x:999:vscode\n"),
+                rule("stat", out="993\n"),
+            ],
+        ),
+        Step(
+            "image-drift-no-rehost",
+            "devbox_up",
+            ("false", "--no-rehost"),
+            state=record,
+            rules=[d.ps_self(CID + "\n"), d.mounts(ALL_MOUNTS), old_image, *settled],
+        ),
+        Step(
+            "image-current",
+            "devbox_up",
+            state=record,
+            rules=[d.ps_self(CID + "\n"), d.mounts(ALL_MOUNTS), d.runner_env(), *settled],
         ),
     ]
 

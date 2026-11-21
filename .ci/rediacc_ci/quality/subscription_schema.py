@@ -64,6 +64,9 @@ RENET_REL = "private/renet"
 # The generator, named identically in the three places the twin names it: the invocation, the MISSING hint and the STALE hint. One constant, because a reader copies whichever of the three they happen to be looking at.
 GENERATOR = "packages/shared/scripts/generate-subscription-schema.ts"
 
+# The command a reader runs to turn this gate green. The gate compares the BIOME-FORMATTED generator output (`format_through_stdin`), so the generator alone leaves the committed file unformatted and the gate red; the remedy is the generator and then the same formatter on the committed file.
+REMEDY = "npx tsx %s && npx biome format --write %s" % (GENERATOR, SCHEMA_REL)
+
 # The five Go tests that assert the two languages agree. A single `-run` alternation, exactly as the twin passes it.
 GO_TEST_RUN = (
     "TestGoTypesMatchTypeScriptSchema|TestGoConstantsMatchTypeScriptSchema|"
@@ -206,7 +209,7 @@ def main(argv: list[str] | None = None) -> int:
 
         if not schema_file.is_file():
             log.error("Subscription schema is MISSING at %s" % schema_file)
-            log.error("  regenerate with: npx tsx %s" % GENERATOR)
+            log.error("  regenerate with: %s" % REMEDY)
             return 1
 
         if files_differ(schema_file, formatted):
@@ -215,7 +218,7 @@ def main(argv: list[str] | None = None) -> int:
             log.error("")
             print_diff(schema_file, formatted)
             log.error("")
-            log.error("  regenerate and commit: npx tsx %s" % GENERATOR)
+            log.error("  regenerate and commit: %s" % REMEDY)
             return 1
 
     log.info("Subscription schema is up-to-date")
@@ -239,7 +242,7 @@ def main(argv: list[str] | None = None) -> int:
         log.error(
             "  1. Update Go types in private/renet/pkg/subscription/types.go to match TypeScript"
         )
-        log.error("  2. Run: npx tsx %s" % GENERATOR)
+        log.error("  2. Run: %s" % REMEDY)
         log.error(
             "  3. Run: cd private/renet && go test ./pkg/subscription/... "
             "-run TestGoTypesMatchTypeScriptSchema -v"

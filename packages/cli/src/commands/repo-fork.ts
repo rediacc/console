@@ -11,6 +11,13 @@
  * - The license identity refresh, the DNS, certificate and URL steps and the
  *   backup-unit re-render ride the job's ticket (PLAN-detached-jobs J4), so a
  *   ticket handed back early records nothing before the fork exists.
+ * - The backup-unit re-render is planned only when the fork moves a unit (a
+ *   strategy names its family); a fork of a repository whose units name exact
+ *   tags touches no schedule, and never provisions renet or refreshes the
+ *   machine's licences for one.
+ * - Every phase is timed into the timeline: the network-ID floor read, the
+ *   machine connection, the key deploy, the job's own steps, and each ticket
+ *   step with its claim, so "Total:" is accounted for line by line.
  * - "Total:" is printed once, at the true end, as wall time since entry.
  */
 
@@ -18,6 +25,7 @@ import { randomUUID } from 'node:crypto';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { validateTag } from '../services/addressing/ref-parser.js';
+import { repoChangeMovesSchedule } from '../services/backup/backup-schedule-repo-change.js';
 import { reconcileBackupSchedules } from '../services/backup/repo-change-hook.js';
 import { configService } from '../services/config/config-resources.js';
 import {
@@ -27,8 +35,8 @@ import {
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
-import { localExecutorService } from '../services/executor/local-executor.js';
 import type { ExecuteOptions } from '../services/executor/types.js';
+import { servedRecordGuid } from '../services/jobs/attach.js';
 import {
   type CommandJobOutcome,
   pendingExitCode,
@@ -56,11 +64,16 @@ import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { recordTimelineStep, type TimelineStep } from '../utils/timeline.js';
 import { assertMachineExists } from './_validate.js';
 import { ensureDns, postRepoUpTasks } from './repo-batch-utils.js';
-import { createForkEventHandler, finishTimeline } from './repo-fork-timeline.js';
+import {
+  createForkEventHandler,
+  finishTimeline,
+  recordTicketStepTimings,
+  startIdentityRefresh,
+} from './repo-fork-timeline.js';
 
 const DEFAULT_VERB = 'repo fork';
 
-interface ForkActionOptions {
+export interface ForkActionOptions {
   machine: string;
   /**
    * The datastore's cluster backref, set when the parent ref resolves to a
@@ -143,19 +156,36 @@ async function registerFork(
   tagName: string,
   machineName: string,
   parentConfig: NonNullable<Awaited<ReturnType<typeof configService.getRepository>>>,
-  immutable = false
-): Promise<{ repositoryGuid: string; networkId: number }> {
+  immutable: boolean,
+  timeline: TimelineStep[]
+): Promise<{ repositoryGuid: string; networkId: number; reattached?: true }> {
   const existing = await configService.getRepository(forkKey);
+  // A POST retried with the same body id, machine and immutability finds the row its first attempt registered (the guid derives from all three): attach to it, so the fork job dedupes on the request id instead of the retry failing as a duplicate. The same id asking for another machine or immutability is a different request, and a row with no network ID cannot run a fork, so both meet the duplicate error.
+  const servedGuid = servedRecordGuid(`fork:${forkKey}@${machineName}:${String(immutable)}`);
+  const existingNetworkId = existing?.networkId ?? 0;
+  if (
+    existing?.repositoryGuid === servedGuid &&
+    servedGuid !== undefined &&
+    existingNetworkId > 0
+  ) {
+    return {
+      repositoryGuid: servedGuid,
+      networkId: existingNetworkId,
+      reattached: true,
+    };
+  }
   if (existing) {
     // Exit 2 (INVALID_ARGUMENTS): the requested fork tag is already taken.
     throw new ValidationError(t('commands.repo.fork.alreadyExists', { name: forkKey }));
   }
 
-  const repositoryGuid = randomUUID();
+  const repositoryGuid = servedGuid ?? randomUUID();
   // D3(a): the floor is the fork machine's used set, so a lagging counter skips IDs other devices placed there.
-  const networkId = await configService.allocateNetworkId({
-    floor: await targetFloor({ machine: machineName }),
-  });
+  // The floor read is a whole `network_used` session on the machine (connect, renet check, verify), so it is timed.
+  const floor = await recordTimelineStep(timeline, 'network_floor', () =>
+    targetFloor({ machine: machineName })
+  );
+  const networkId = await configService.allocateNetworkId({ floor });
   const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
 
   await configService.addRepository(forkKey, {
@@ -202,6 +232,8 @@ export interface ForkPlan {
   lease: MachineConnectionLease;
   /** Filled when the repo key deploy starts; read by the rollback paths. */
   keyState: ForkKeyState;
+  /** Phases timed before the orchestration started (the network-ID floor read, the machine connection). */
+  timeline: TimelineStep[];
   /**
    * Mount path of the datastore the PARENT is recorded on (#74), undefined for a
    * repo on a machine's implicit default.
@@ -262,28 +294,6 @@ function forkLegOptions(
     deferIdentityRefresh: true,
     onEvent: createForkEventHandler(renetSteps),
   };
-}
-
-/**
- * Fire the deferred license-identity refresh. Runs concurrent with the up
- * portion (legacy leg) or the post-up tasks (compound leg). Warn-only: a
- * failed refresh never fails the fork.
- */
-function startIdentityRefresh(
-  steps: TimelineStep[],
-  options: ForkActionOptions,
-  forkParams: Record<string, unknown>
-): Promise<void> {
-  return recordTimelineStep(
-    steps,
-    'identity_refresh',
-    () => localExecutorService.refreshIdentityFor('repository_fork', options.machine, forkParams),
-    { parallel: true }
-  ).catch((error: unknown) => {
-    outputService.warn(
-      `License identity refresh failed (non-fatal): ${error instanceof Error ? error.message : String(error)}`
-    );
-  });
 }
 
 /** Legacy second leg: mount + up after a plain fork. */
@@ -366,13 +376,15 @@ function retryForkUpOnConflict(
 /**
  * The fork job's ticket steps (PLAN-detached-jobs J4). On failure the registration is rolled back unless the stream
  * showed the image was made (the rollbackFork handler reads the markers). On success: the identity refresh, the legacy
- * up leg as a successor job for `--checkpoint --up`, the DNS, certificate and URL steps after an up, and the backup-unit
- * re-render (G4: a family-scoped strategy covers the new fork, so the machine's units move with it).
+ * up leg as a successor job for `--checkpoint --up`, the DNS, certificate and URL steps after an up, and, only when
+ * `reconcileSchedule`, the backup-unit re-render (G4: a family-scoped strategy covers the new fork, so the machine's
+ * units move with it; a fork no strategy names by family moves nothing and plans no re-render).
  */
 function forkSteps(
   plan: ForkPlan,
   forkParams: Record<string, unknown>,
-  legacyUp: boolean
+  legacyUp: boolean,
+  reconcileSchedule: boolean
 ): PlannedStep[] {
   const { options, forkKey } = plan;
   return [
@@ -397,7 +409,9 @@ function forkSteps(
     ...(options.up
       ? [planStep('postRepoUpTasks', { repo: forkKey, machine: options.machine })]
       : []),
-    planStep('reconcileBackupSchedules', { machine: options.machine }),
+    ...(reconcileSchedule
+      ? [planStep('reconcileBackupSchedules', { machine: options.machine })]
+      : []),
     ...(options.extraSteps ?? []),
   ];
 }
@@ -405,7 +419,7 @@ function forkSteps(
 /** Orchestrate the fork job (+ optional up) over a shared machine connection lease. */
 async function orchestrateFork(plan: ForkPlan): Promise<void> {
   const { options, forkKey } = plan;
-  const orchestrated: TimelineStep[] = [];
+  const orchestrated: TimelineStep[] = plan.timeline;
   const renetSteps: TimelineStep[] = [];
 
   // DNS records need only names, fire the HTTP call before any SSH work.
@@ -424,14 +438,24 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
   // One compound `renet repository fork --up`. `--checkpoint` keeps restore-on-first-up semantics through the separate up leg, a successor step. A renet without `job` is refused before any of this runs, and every renet with `job` has fork --up.
   const compound = Boolean(options.up && !options.checkpoint);
   const forkParams = buildForkParams(plan, compound);
+  // A config read, no SSH: the re-render is planned only when the fork moves a unit.
+  const reconcileSchedule = await repoChangeMovesSchedule(options.machine, plan.repositoryGuid);
   const outcome = await executeForkLeg(
     plan,
     forkParams,
     renetSteps,
-    forkSteps(plan, forkParams, Boolean(options.up && !compound))
+    forkSteps(plan, forkParams, Boolean(options.up && !compound), reconcileSchedule)
   );
+  recordTicketStepTimings(orchestrated, outcome.steps);
   if (outcome.kind === 'pending') {
     if (dnsPromise !== undefined) await Promise.allSettled([dnsPromise]);
+    // The network-ID retry (retryForkUpOnConflict) is a client second leg: it reads the refusal from the job's stderr and writes a new ID to the config, neither of which a ticket step can do while the client is away. It does not run here, so say where a refusal leaves the fork.
+    if (options.up) {
+      outputService.info(
+        `A network ID refusal at the up phase is not retried in the background: the fork "${forkKey}" stays registered once its image exists. ` +
+          `Retry with: rdc repo up ${forkKey} -m ${options.machine}`
+      );
+    }
     const code = pendingExitCode(outcome);
     if (code !== undefined) setExitCode(code);
     return;
@@ -456,8 +480,12 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
       steps: orchestrated,
     }),
   ]);
+  if (reconcileSchedule) {
+    await recordTimelineStep(orchestrated, 'backup_schedule', () =>
+      reconcileBackupSchedules(options.machine)
+    );
+  }
   finishTimeline(plan, orchestrated, renetSteps, [result, retried]);
-  await reconcileBackupSchedules(options.machine);
   for (const step of options.extraSteps ?? []) {
     const handler = await resolveStepHandler(step.name);
     await handler({ jobId: '', machine: options.machine, params: step.params, state: 'succeeded' });
@@ -500,6 +528,7 @@ export async function handleForkAction(
   // Rollback must only ever remove the row THIS invocation registered, a catch-all rollback would delete a pre-existing fork's config row (credential included) when registerFork fails with "already exists".
   let forkGuid: string | undefined;
   const keyState: ForkKeyState = {};
+  const timeline: TimelineStep[] = [];
   try {
     // Refuse the reserved birth tag `base` (exit 2) and enforce the fork-tag label grammar before any config mutation; `latest` stays reserved as the grand pointer that a fork must not clobber (#495).
     validateTag(tagName);
@@ -513,21 +542,25 @@ export async function handleForkAction(
 
     await assertMachineExists(options.machine);
 
-    const { repositoryGuid, networkId } = await registerFork(
+    const { repositoryGuid, networkId, reattached } = await registerFork(
       parent,
       forkKey,
       tagName,
       options.machine,
       parentConfig,
-      options.immutable
+      options.immutable === true,
+      timeline
     );
-    forkGuid = repositoryGuid;
+    // A reattached row is the first attempt's, so this invocation's failure must not roll it back.
+    if (!reattached) forkGuid = repositoryGuid;
 
     // Resolved BEFORE the lease: it is a config read, and anything between acquire() and the try/finally below escapes the release on a throw.
     const datastoreMount = await recordedDatastoreMount(parent);
 
     // Outer lease: every SSH consumer below (key deploy, fork/up legs, identity refresh, cert sync, service URLs) shares this pooled connection; the last release closes it.
-    const lease = await machineConnections.acquire(options.machine);
+    const lease = await recordTimelineStep(timeline, 'machine_connect', () =>
+      machineConnections.acquire(options.machine)
+    );
     try {
       await orchestrateFork({
         parent,
@@ -539,6 +572,7 @@ export async function handleForkAction(
         options,
         lease,
         keyState,
+        timeline,
         ...(datastoreMount !== undefined && { datastoreMount }),
       });
     } finally {

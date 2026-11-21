@@ -20,6 +20,7 @@ THE REST OF THIS FILE IS THE EXTRACTOR, which is where a prose linter actually l
 
 import ast
 import contextlib
+import io
 import json
 import os
 import pathlib
@@ -1591,3 +1592,165 @@ def test_a_quote_key_is_skipped_only_in_the_exception_list():
         assert why is None, path
         assert [ln.lineno for ln in lines] == [1], path
     assert "quote" not in ps.JSON_SKIP_KEYS
+
+
+def _cache_rules(pattern):
+    return ps.load_rules(
+        json.dumps(
+            {
+                "globals": {"scopes": ["markdown"], "max_line_length": 384, "include": ["*.md"]},
+                "rules": [
+                    {
+                        "id": "R2",
+                        "title": "no I",
+                        "description": "d",
+                        "severity": "error",
+                        "scopes": ["all"],
+                        "patterns": [pattern],
+                    }
+                ],
+            }
+        )
+    )
+
+
+def _cache_run(root, globals_, rules):
+    with contextlib.redirect_stdout(io.StringIO()):
+        return ps.run_check(str(root), globals_, rules, ["a.md"], as_json=True)
+
+
+def test_the_cache_never_hides_an_edit_that_adds_a_finding(tmp_path):
+    g, r = _cache_rules("\\bI\\b")
+    (tmp_path / "a.md").write_text("A clean line.\n")
+    assert _cache_run(tmp_path, g, r) == 0
+    assert (tmp_path / str(ps.CACHE_RELPATH)).is_file(), "the run must leave a cache to be warm"
+    (tmp_path / "a.md").write_text("I think so.\n")
+    assert _cache_run(tmp_path, g, r) == 1, (
+        "CONTENT: a warm cache must not keep the old clean verdict"
+    )
+
+
+def test_the_cache_is_keyed_on_the_rules_it_was_handed(tmp_path):
+    (tmp_path / "a.md").write_text("I think so.\n")
+    g, r = _cache_rules("\\bI\\b")
+    assert _cache_run(tmp_path, g, r) == 1
+    g2, r2 = _cache_rules("\\bzzz\\b")
+    assert _cache_run(tmp_path, g2, r2) == 0, (
+        "RULES: changed rules must re-lint, not reuse the old finding"
+    )
+
+
+def test_an_unchanged_file_is_answered_from_the_cache(tmp_path, monkeypatch):
+    g, r = _cache_rules("\\bI\\b")
+    (tmp_path / "a.md").write_text("I think so.\n")
+    assert _cache_run(tmp_path, g, r) == 1
+
+    def must_not_lint(*_a, **_k):
+        raise AssertionError("a cache hit linted the file again")
+
+    monkeypatch.setattr(ps, "lint_text", must_not_lint)
+    assert _cache_run(tmp_path, g, r) == 1, "HIT: the stored finding is reused"
+
+
+def test_a_targeted_run_keeps_the_other_cache_entries(tmp_path):
+    g, r = _cache_rules("\\bI\\b")
+    for name in ("a.md", "b.md"):
+        (tmp_path / name).write_text("A clean line.\n")
+    with contextlib.redirect_stdout(io.StringIO()):
+        assert ps.run_check(str(tmp_path), g, r, ["a.md"], as_json=True) == 0
+        assert ps.run_check(str(tmp_path), g, r, ["b.md"], as_json=True) == 0
+    cached = json.loads((tmp_path / str(ps.CACHE_RELPATH)).read_text())["files"]
+    assert set(cached) == {"a.md", "b.md"}, "a targeted run must merge, not evict"
+
+
+@pytest.mark.parametrize(
+    ("field", "damage"),
+    [
+        ("findings", "not a list of findings"),
+        ("findings", [[1, 2, 3, 4, 5]]),
+        ("findings", [["1", "R2", "I", "I think so.", "error"]]),
+        ("lines", "one"),
+        ("lines", -1),
+        ("note", ["a", "list"]),
+    ],
+)
+def test_a_damaged_cache_entry_is_a_miss(tmp_path, field, damage):
+    g, r = _cache_rules("\\bI\\b")
+    (tmp_path / "a.md").write_text("I think so.\n")
+    assert _cache_run(tmp_path, g, r) == 1
+    path = tmp_path / str(ps.CACHE_RELPATH)
+    doc = json.loads(path.read_text())
+    doc["files"]["a.md"][field] = damage
+    path.write_text(json.dumps(doc))
+    assert _cache_run(tmp_path, g, r) == 1, "the damaged entry is re-linted, not trusted or fatal"
+    assert json.loads(path.read_text())["files"]["a.md"][field] != damage, (
+        "the re-lint rewrites the entry"
+    )
+
+
+@pytest.mark.parametrize("field", ["lines", "note", "findings"])
+def test_a_cache_entry_missing_a_field_is_a_miss(tmp_path, field):
+    g, r = _cache_rules("\\bI\\b")
+    (tmp_path / "a.md").write_text("I think so.\n")
+    assert _cache_run(tmp_path, g, r) == 1
+    path = tmp_path / str(ps.CACHE_RELPATH)
+    doc = json.loads(path.read_text())
+    del doc["files"]["a.md"][field]
+    path.write_text(json.dumps(doc))
+    assert _cache_run(tmp_path, g, r) == 1
+
+
+def test_a_non_dict_cache_entry_is_a_miss(tmp_path):
+    g, r = _cache_rules("\\bI\\b")
+    (tmp_path / "a.md").write_text("I think so.\n")
+    assert _cache_run(tmp_path, g, r) == 1
+    path = tmp_path / str(ps.CACHE_RELPATH)
+    doc = json.loads(path.read_text())
+    doc["files"]["a.md"] = ["not", "a", "dict"]
+    path.write_text(json.dumps(doc))
+    assert _cache_run(tmp_path, g, r) == 1
+
+
+def test_a_full_sweep_drops_a_deleted_file_from_the_cache(tmp_path):
+    root = tmp_path / "repo"
+    root.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "main", str(root)], check=True)
+    for name in ("a.md", "b.md"):
+        (root / name).write_text("A clean line.\n")
+    subprocess.run(["git", "-C", str(root), "add", "-A"], check=True)
+    g, r = _cache_rules("\\bI\\b")
+    with contextlib.redirect_stdout(io.StringIO()):
+        ps.run_check(str(root), g, r, [], as_json=True)
+    cached = json.loads((root / str(ps.CACHE_RELPATH)).read_text())["files"]
+    assert {"a.md", "b.md"} <= set(cached), cached
+    subprocess.run(["git", "-C", str(root), "rm", "-q", "-f", "b.md"], check=True)
+    with contextlib.redirect_stdout(io.StringIO()):
+        ps.run_check(str(root), g, r, [], as_json=True)
+    cached = json.loads((root / str(ps.CACHE_RELPATH)).read_text())["files"]
+    assert "b.md" not in cached, cached
+    assert "a.md" in cached, cached
+
+
+def test_move_a_stub_planted_with_the_cache_warm_rekeys_the_findings(tmp_path):
+    """MOVE (PLAN-two-track-merge-dev S1): ident is recomputed every run, never read from the cache, so a stub planted after the cache warmed still keys the moved plan's frozen debt on its old path."""
+    root = tmp_path
+    (root / ".ci" / "config").mkdir(parents=True)
+    old_rel = "agent/plans/PLAN-warm-move.md"
+    new_rel = "agent/plans/_done/PLAN-warm-move.md"
+    text = "# PLAN: warm move\nStatus: done\n\nDid you run it? Then your change is ready.\n"
+    (root / old_rel).parent.mkdir(parents=True)
+    (root / old_rel).write_text(text, encoding="utf-8")
+    assert ps.run_check(root, GLOBALS, RULES, [old_rel], write_baseline=True, accept_new=True) == 0
+    (root / new_rel).parent.mkdir(parents=True)
+    (root / old_rel).rename(root / new_rel)
+    with contextlib.redirect_stdout(io.StringIO()):
+        assert ps.run_check(root, GLOBALS, RULES, [new_rel], as_json=True) == 1, (
+            "no stub yet: the moved text is new debt"
+        )
+    cached = json.loads((root / str(ps.CACHE_RELPATH)).read_text())["files"]
+    assert new_rel in cached, "the cache must be warm for the moved path before the stub lands"
+    (root / old_rel).write_text(pl.stub_text(old_rel, new_rel, "warm move"), encoding="utf-8")
+    with contextlib.redirect_stdout(io.StringIO()):
+        assert ps.run_check(root, GLOBALS, RULES, [new_rel, old_rel], as_json=True) == 0, (
+            "with the cache warm, the planted stub must still re-key the findings to the old path"
+        )

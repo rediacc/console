@@ -129,6 +129,16 @@ describe('front door', () => {
     expect(durable.pins).toEqual([]);
   });
 
+  // #a0bd852b: `rdc --proxy <url>` with a login token got a 401 that named neither the scope it lacked nor the verb that mints one.
+  it('names the proxy:exec scope and `rdc subscription proxy-token` in the 401', async () => {
+    const response = await worker.fetch(call('rdt_login_token'), env(issuer()));
+
+    expect(response.status).toBe(401);
+    const { error } = (await response.json()) as { error: string };
+    expect(error).toContain('proxy:exec');
+    expect(error).toContain('rdc subscription proxy-token');
+  });
+
   it('answers 401 for no bearer and never asks the issuer', async () => {
     const i = issuer();
     const response = await worker.fetch(call(), env(i));

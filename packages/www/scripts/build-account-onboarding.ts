@@ -36,6 +36,8 @@ interface ManifestStep {
   shortProse: string;
   prose?: Record<string, string>;
   command?: string;
+  /** A widget step renders its own control in the portal and carries no command. */
+  widget?: 'install-tabs';
   optional?: boolean;
 }
 
@@ -156,8 +158,10 @@ function buildStoryboardStep(step: ManifestStep) {
     );
   }
 
-  const command = scene.card?.commandFull?.trim();
-  if (!command) {
+  // A widget step (the install tabs) is rendered by the portal, so the storyboard's
+  // commandFull is not required and not emitted: the generated command is empty.
+  const command = step.widget ? '' : scene.card?.commandFull?.trim();
+  if (command === undefined || (!step.widget && !command)) {
     throw new Error(
       `Step "${step.id}" references "${step.tutorial}" markerIndex ${step.markerIndex} but the scene has no card.commandFull`
     );
@@ -192,6 +196,7 @@ function buildStoryboardStep(step: ManifestStep) {
     id: step.id,
     titleKey: step.titleKey,
     docsPath: step.docsPath,
+    ...(step.widget ? { widget: step.widget } : {}),
     command,
     optional: step.optional ?? false,
     prose,

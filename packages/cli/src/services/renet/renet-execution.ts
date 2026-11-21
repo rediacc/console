@@ -3,7 +3,7 @@
  * Extracted from local-executor.ts for reuse across the CLI's executors.
  */
 
-import { execFileSync, execSync, spawn } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import * as fsSync from 'node:fs';
 import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS, PROCESS_DEFAULTS } from '@rediacc/shared/config';
@@ -11,29 +11,30 @@ import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import type { RenetFunctionName } from '@rediacc/shared/renet-contract/data/functions.generated';
 import { FUNCTION_REQUIREMENTS } from '@rediacc/shared/renet-contract/data/functions.generated';
 import type { SFTPClient } from '../../remote/sftp/index.js';
-import type { MachineConfig } from '../../types/index.js';
+import { EXIT_CODES, type MachineConfig } from '../../types/index.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
+import { askConfirm } from '../../utils/prompt.js';
 import { reportStateWriteRefused } from '../config/state-write-failure.js';
 import { isSEA } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
+import type { ExtraMachine } from '../executor/types.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { isSetupVerifiedFresh, recordSetupVerified } from './provision-state.js';
 import {
-  accountKeyId,
-  bakedAccountKey,
-  CLEAN_BUILD_MARKER,
-  cleanBuildDirName,
-  cleanBuildEnv,
-  cleanBuildFiles,
-  cleanBuildMarker,
-  cleanBuildRoot,
-  copyEmbeddedAssets,
-  isCompleteCleanBuild,
-  pinCommittedEbpfObjects,
-  pruneOtherCleanBuilds,
-  RENET_BUILD_DIR,
-} from './renet-clean-build-fs.js';
+  assertRenetSourceClean,
+  gitOut,
+  renetSourceState,
+  selectRenetUploadBinary,
+} from './renet-clean-build.js';
 import type { RenetDrift } from './renet-inspect.js';
 import { renetProvisioner } from './renet-provisioner.js';
+import {
+  inExecutor,
+  mayOfferReplacement,
+  type RenetHold,
+  renetHold,
+  renetMayUpload,
+} from './renet-upload-decision.js';
 import { buildRepositories, type RepoEntryConfig } from './renet-vault-sections.js';
 
 // The SSH key helpers moved to services/machine/ssh-key.ts so the connection pool can read a team key without importing renet. Re-exported here: this module is where the rest of the CLI has always imported them from.
@@ -98,7 +99,8 @@ function resolveRenetPath(configuredPath: string): string {
  *   restart `rediacc-router` (unless opted out).
  *
  * Required at every call site: a default is how every read-only verb once came
- * to replace the production binary.
+ * to replace the production binary. An executor gets `'read-only'` whatever it
+ * asks for: {@link inExecutor}.
  */
 export type RenetAccess = 'read-only' | 'provision';
 
@@ -114,223 +116,22 @@ export interface RenetAcquireResult {
 /** Hosts already warned about drift in this process (one line per host). */
 const driftWarned = new Set<string>();
 
-/** Maximum dirty paths named in the refusal. */
-const DIRTY_PATHS_SHOWN = 10;
-
-/**
- * Refuse to upload a renet binary built from a dirty source tree, unless
- * REDIACC_ALLOW_DIRTY_RENET=1. A binary outside a git work tree (a release
- * binary on PATH) is allowed. Untracked files count: Go compiles untracked .go
- * files, and `bin/` is gitignored so the binary itself never shows up.
- *
- * A tree already dirty when provisioning starts never reaches this guard:
- * {@link selectRenetUploadBinary} swaps in a build of the committed HEAD. The guard
- * catches a tree that turned dirty after that choice, and binds callers that pass
- * the working-tree binary directly.
- */
-export function assertRenetSourceClean(localBinaryPath: string, machine: MachineConfig): void {
-  if (process.env.REDIACC_ALLOW_DIRTY_RENET === '1') return;
-  const state = renetSourceState(localBinaryPath);
-  if (state === null || state.dirty.length === 0) return;
-  const { top, dirty } = state;
-  const shown = dirty.slice(0, DIRTY_PATHS_SHOWN).map((line) => `  ${line}`);
-  if (dirty.length > DIRTY_PATHS_SHOWN) {
-    shown.push(`  ... and ${dirty.length - DIRTY_PATHS_SHOWN} more`);
-  }
-  throw new Error(
-    `Refusing to upload renet to ${machine.ip}: the binary was built from a dirty tree at ${top}.\n` +
-      `${shown.join('\n')}\n` +
-      'Commit the renet change first, or set REDIACC_ALLOW_DIRTY_RENET=1 to upload it anyway.'
-  );
-}
-
-/**
- * The git work tree a local renet binary sits in and its `status --porcelain` lines, or null for
- * a binary outside any git work tree (a release binary on PATH).
- */
-export function renetSourceState(localBinaryPath: string): { top: string; dirty: string[] } | null {
-  let top: string;
-  try {
-    top = gitOut(['rev-parse', '--show-toplevel'], path.dirname(localBinaryPath));
-  } catch {
-    return null;
-  }
-  if (!top) return null;
-  const porcelain = gitOut(['status', '--porcelain'], top);
-  return { top, dirty: porcelain.split('\n').filter((line) => line.trim() !== '') };
-}
-
-function gitOut(args: string[], cwd: string): string {
-  return execFileSync('git', ['-C', cwd, ...args], {
-    encoding: 'utf-8',
-    stdio: ['ignore', 'pipe', 'ignore'],
-  }).trim();
-}
-
-/** The renet binary a provisioning call hands to the provisioner. */
-export interface RenetUploadSelection {
-  /** Host binary; the provisioner picks `renet-linux-<arch>` beside it for a foreign arch. */
-  localBinaryPath: string;
-  /** The committed renet HEAD this binary was built from instead of a dirty tree; null otherwise. */
-  cleanCommit: string | null;
-  /** Uncommitted paths left out of that build. */
-  excludedPaths: number;
-  /** Whether the dirty-tree upload guard applies (only to the working-tree binary). */
-  guarded: boolean;
-}
-
-/** Process seams of the clean build; tests replace them, production uses the real tools. */
-export interface RenetCleanBuildDeps {
-  git: (args: string[], cwd: string) => string;
-  /** Run renet's own `./build.sh dev` in `cwd`; build output goes to stderr. */
-  build: (cwd: string, env: NodeJS.ProcessEnv) => Promise<void>;
-  /** `go version -m <binary>` output. */
-  goVersionM: (binary: string) => string;
-}
-
-const realCleanBuildDeps: RenetCleanBuildDeps = {
-  git: gitOut,
-  build: (cwd, env) =>
-    new Promise((resolve, reject) => {
-      // stdout is the CLI command's; build progress goes to stderr.
-      // build.sh resolves against the child's cwd: a cwd-joined path would be resolved against cwd a second time when cwd is relative.
-      const child = spawn('bash', ['build.sh', 'dev'], {
-        cwd,
-        env,
-        stdio: ['ignore', 2, 2],
-      });
-      child.on('error', reject);
-      child.on('close', (code) =>
-        code === 0 ? resolve() : reject(new Error(`bash build.sh dev exited ${code} in ${cwd}`))
-      );
-    }),
-  goVersionM: (binary) =>
-    execFileSync('go', ['version', '-m', binary], {
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    }),
-};
-
-/**
- * Pick the renet binary to upload. A dirty renet working tree no longer blocks the upload: the
- * binary is built from the committed HEAD in a scratch clone and THAT is uploaded, so another
- * session's uncommitted edits in private/renet cannot stop a production `rdc repo up` (2026-10-23,
- * the hostinger observability stack). REDIACC_ALLOW_DIRTY_RENET=1 still uploads the working-tree
- * build as it is.
- */
-export async function selectRenetUploadBinary(
-  localBinaryPath: string,
-  deps: RenetCleanBuildDeps = realCleanBuildDeps
-): Promise<RenetUploadSelection> {
-  const asIs: RenetUploadSelection = {
-    localBinaryPath,
-    cleanCommit: null,
-    excludedPaths: 0,
-    guarded: true,
-  };
-  if (process.env.REDIACC_ALLOW_DIRTY_RENET === '1') return asIs;
-  const state = renetSourceState(localBinaryPath);
-  if (state === null || state.dirty.length === 0) return asIs;
-  const commit = deps.git(['rev-parse', 'HEAD'], state.top);
-  outputService.info(
-    `renet working tree ${state.top} has ${state.dirty.length} uncommitted path(s); using a build of committed HEAD ${commit.slice(0, 12)} (local edits not included; REDIACC_ALLOW_DIRTY_RENET=1 uploads the working-tree build)`
-  );
-  const built = await buildRenetAtCommit(state.top, commit, deps);
-  return {
-    localBinaryPath: built,
-    cleanCommit: commit,
-    excludedPaths: state.dirty.length,
-    guarded: false,
-  };
-}
-
-/**
- * Build renet at `commit` with renet's own `./build.sh dev`, in a `git clone --shared` of `top`
- * (no worktree, nothing written to the source checkout), and return the host binary of the result.
- * There is one licensed build, in the clone's `bin/`, and it must bake the licence public key the
- * working tree supplies ({@link cleanBuildEnv}); without one this refuses before build.sh runs.
- * Cached per commit and key under {@link cleanBuildRoot}; other commits' builds are pruned.
- *
- * The clone has its own `.git` directory, so Go stamps `vcs.revision=<commit>`; the stamp and a
- * clean clone are verified before the build is accepted. The gitignored embedded assets are copied
- * from the working tree; build.sh's receipt check restages them if HEAD's lockfile differs.
- */
-export async function buildRenetAtCommit(
-  top: string,
-  commit: string,
-  deps: RenetCleanBuildDeps = realCleanBuildDeps
-): Promise<string> {
-  const root = cleanBuildRoot(top, deps);
-  const ext = process.platform === 'win32' ? '.exe' : '';
-  const finalDir = path.join(root, cleanBuildDirName(commit));
-  const hostBinary = path.join(finalDir, `renet${ext}`);
-  const buildEnv = cleanBuildEnv(top);
-  const key = buildEnv.ACCOUNT_ED25519_PUBLIC_KEY ?? '';
-  if (!key) {
-    throw new Error(
-      'renet needs ACCOUNT_ED25519_PUBLIC_KEY (the production account public key) and none was found in the environment or the public-key cache. Run ./run.sh setup, then retry.'
-    );
-  }
-  const keyId = accountKeyId(key);
-  if (isCompleteCleanBuild(finalDir, commit, ext, keyId)) return hostBinary;
-
-  fsSync.mkdirSync(root, { recursive: true });
-  const work = path.join(root, `work-${commit.slice(0, 12)}-${process.pid}`);
-  const stage = path.join(root, `stage-${commit.slice(0, 12)}-${process.pid}`);
-  fsSync.rmSync(work, { recursive: true, force: true });
-  fsSync.rmSync(stage, { recursive: true, force: true });
-  try {
-    deps.git(['clone', '--quiet', '--shared', '--no-checkout', top, work], root);
-    deps.git(['-c', 'advice.detachedHead=false', 'switch', '--quiet', '--detach', commit], work);
-    copyEmbeddedAssets(top, work);
-    pinCommittedEbpfObjects(work);
-
-    outputService.info(`Building renet ${commit.slice(0, 12)} from a clean clone...`);
-    await deps.build(work, buildEnv);
-
-    const left = deps.git(['status', '--porcelain'], work);
-    if (left) {
-      throw new Error(
-        `The clean renet build of ${commit.slice(0, 12)} changed tracked files in its clone, so its stamp would be modified:\n${left}`
-      );
-    }
-    fsSync.mkdirSync(stage);
-    for (const name of cleanBuildFiles(ext)) {
-      const built = path.join(work, RENET_BUILD_DIR, name);
-      const info = deps.goVersionM(built);
-      if (bakedAccountKey(info) !== key) {
-        throw new Error(
-          `The clean renet build ${built} does not bake the account public key it was built with (key id ${keyId})`
-        );
-      }
-      if (!info.includes(`vcs.revision=${commit}`) || !info.includes('vcs.modified=false')) {
-        throw new Error(
-          `The clean renet build ${built} does not carry vcs.revision=${commit} with vcs.modified=false`
-        );
-      }
-      fsSync.renameSync(built, path.join(stage, name));
-    }
-    fsSync.writeFileSync(path.join(stage, CLEAN_BUILD_MARKER), cleanBuildMarker(commit, keyId));
-    // A leftover directory (a cached build missing a binary, or one baked with another key) would make the rename fail with ENOTEMPTY on every run; a rename only ever publishes a whole directory, so what is there is stale.
-    if (!isCompleteCleanBuild(finalDir, commit, ext, keyId)) {
-      fsSync.rmSync(finalDir, { recursive: true, force: true });
-    }
-    try {
-      fsSync.renameSync(stage, finalDir);
-    } catch (err) {
-      // A concurrent process finished the same commit first; its build is as good as ours.
-      if (!isCompleteCleanBuild(finalDir, commit, ext, keyId)) throw err;
-    }
-    pruneOtherCleanBuilds(root, commit);
-  } finally {
-    fsSync.rmSync(work, { recursive: true, force: true });
-    fsSync.rmSync(stage, { recursive: true, force: true });
-  }
-  return hostBinary;
-}
-
 function shortHash(hash: string | null): string {
   return hash ? hash.slice(0, 12) : STATUS_DEFAULTS.UNKNOWN_PLACEHOLDER;
+}
+
+/** The last sentence of the drift warning: who may replace the remote renet, and how. */
+function driftRemedy(machineName: string, executor: boolean, held: RenetHold): string {
+  if (executor) {
+    return `An executor never replaces it: run 'rdc machine setup ${machineName}' without --proxy to update it.`;
+  }
+  if (held === 'env') {
+    return `REDIACC_NO_PROVISION=1 holds it: run 'rdc machine setup ${machineName}' to update it.`;
+  }
+  if (held === 'dev') {
+    return `A development build does not replace it as a side effect: run 'rdc machine setup ${machineName}' to update it.`;
+  }
+  return `Run 'rdc machine setup ${machineName}' or any mutating command to update it.`;
 }
 
 async function acquireReadOnly(
@@ -338,14 +139,23 @@ async function acquireReadOnly(
   machineName: string,
   sshPrivateKey: string,
   localBinaryPath: string | undefined,
-  sftp?: SFTPClient
+  sftp?: SFTPClient,
+  held: RenetHold = null
 ): Promise<RenetAcquireResult> {
+  const executor = inExecutor();
   const inspected = await renetProvisioner.inspect(
     sftpConfigForMachine(machine, sshPrivateKey),
-    { localBinaryPath },
+    { localBinaryPath, ...(executor && { fresh: true }) },
     sftp
   );
   if (inspected.drift === 'missing' || inspected.remotePath === null) {
+    if (executor) {
+      throw new CliExitError(
+        'RENET_NOT_ON_MACHINE',
+        `renet is not installed on ${machineName}, and an executor never installs it. Run 'rdc machine setup ${machineName}' without --proxy to provision it.`,
+        { exitCode: EXIT_CODES.STATE_MISMATCH }
+      );
+    }
     throw new Error(
       `renet is not installed on ${machineName}; run 'rdc machine setup ${machineName}' to provision it`
     );
@@ -357,11 +167,60 @@ async function acquireReadOnly(
       outputService.warn(
         `renet on ${machineName} differs from this CLI (remote v${inspected.remoteVersion ?? STATUS_DEFAULTS.UNKNOWN_PLACEHOLDER} ${shortHash(inspected.remoteHash)}, ` +
           `local v${inspected.localVersion} ${shortHash(inspected.localHash)}); running the remote binary as-is. ` +
-          `Run 'rdc machine setup ${machineName}' or any mutating command to update it.`
+          driftRemedy(machineName, executor, held)
       );
     }
   }
   return { remotePath: inspected.remotePath, uploaded: false, drift: inspected.drift };
+}
+
+/** Answers already given this process, per host: a verb that connects twice asks once. */
+const replacementAnswers = new Map<string, boolean>();
+
+/** The renet source commit behind a local binary, or null when it sits outside a git work tree. */
+function localRenetCommit(localBinaryPath: string | undefined): string | null {
+  if (localBinaryPath === undefined) return null;
+  try {
+    const state = renetSourceState(localBinaryPath);
+    return state === null ? null : gitOut(['rev-parse', 'HEAD'], state.top);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Ask whether a development build may replace the machine's renet, naming the remote build and the local
+ * commit. No question when nothing differs or renet is absent (the read-only path reports that).
+ */
+async function confirmReplacement(
+  machine: MachineConfig,
+  machineName: string,
+  sshPrivateKey: string,
+  localBinaryPath: string | undefined,
+  sftp?: SFTPClient
+): Promise<boolean> {
+  const hostKey = `${machine.ip}:${machine.port ?? DEFAULTS.SSH.PORT}`;
+  const known = replacementAnswers.get(hostKey);
+  if (known !== undefined) return known;
+  const inspected = await renetProvisioner.inspect(
+    sftpConfigForMachine(machine, sshPrivateKey),
+    { localBinaryPath },
+    sftp
+  );
+  if (
+    inspected.drift === 'none' ||
+    inspected.drift === 'missing' ||
+    inspected.remotePath === null
+  ) {
+    return false;
+  }
+  const commit = localRenetCommit(localBinaryPath);
+  const answer = await askConfirm(
+    `renet on ${machineName} is v${inspected.remoteVersion ?? STATUS_DEFAULTS.UNKNOWN_PLACEHOLDER} build ${shortHash(inspected.remoteHash)}; this development build has renet commit ${commit === null ? STATUS_DEFAULTS.UNKNOWN_PLACEHOLDER : commit.slice(0, 12)} (build ${shortHash(inspected.localHash)}). Replace the remote renet with it?`,
+    false
+  );
+  replacementAnswers.set(hostKey, answer);
+  return answer;
 }
 
 /**
@@ -380,6 +239,8 @@ export async function acquireRemoteRenet(
     deferRouterRefresh?: boolean;
     /** Name used in operator-facing messages; defaults to the machine IP. */
     machineName?: string;
+    /** `rdc machine setup` itself: provisions even under REDIACC_NO_PROVISION=1 ({@link renetHold}). */
+    explicitSetup?: boolean;
   },
   sftp?: SFTPClient
 ): Promise<RenetAcquireResult> {
@@ -389,8 +250,19 @@ export async function acquireRemoteRenet(
   }
   const machineName = options.machineName ?? machine.ip;
 
-  if (access === 'read-only') {
-    return acquireReadOnly(machine, machineName, sshPrivateKey, localBinaryPath, sftp);
+  const held = options.explicitSetup === true ? null : renetHold();
+  let mayUpload = renetMayUpload(access, options.explicitSetup);
+  if (!mayUpload && mayOfferReplacement(access, options.explicitSetup)) {
+    mayUpload = await confirmReplacement(
+      machine,
+      machineName,
+      sshPrivateKey,
+      localBinaryPath,
+      sftp
+    );
+  }
+  if (!mayUpload) {
+    return acquireReadOnly(machine, machineName, sshPrivateKey, localBinaryPath, sftp, held);
   }
 
   // After a binary update an active rediacc-router is re-installed from the new binary (`renet proxy install`, which re-renders its unit) and restarted, so it runs the new code under the new unit text; see RenetProvisionerService.restartRunningServices. A machine whose router is not running is left alone. Opt out via skipRouterRestart=true or
@@ -418,7 +290,11 @@ export async function acquireRemoteRenet(
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
 
   if (!result.success) {
-    throw new Error(result.error ?? PROCESS_DEFAULTS.RENET_PROVISION_ERROR);
+    const message = result.error ?? PROCESS_DEFAULTS.RENET_PROVISION_ERROR;
+    if (result.code) {
+      throw new CliExitError(result.code, message, { exitCode: EXIT_CODES.STATE_MISMATCH });
+    }
+    throw new Error(message);
   }
 
   if (result.action === 'uploaded') {
@@ -528,16 +404,13 @@ interface BuildLocalVaultOptions {
   sshPublicKey: string;
   sshKnownHosts: string;
   params: Record<string, unknown>;
-  extraMachines?: Record<string, { ip: string; port?: number; user: string; datastore?: string }>;
+  extraMachines?: Record<string, ExtraMachine>;
   repositoryCredentials?: Record<string, string>;
   repositoryConfigs?: Record<string, RepoEntryConfig>;
 }
 
 function buildExtraMachines(
-  machines:
-    | Record<string, { ip: string; port?: number; user: string; datastore?: string }>
-    | undefined,
-  sshKnownHosts: string,
+  machines: Record<string, ExtraMachine> | undefined,
   sshPrivateKey: string,
   sshPublicKey: string
 ): Record<string, unknown> {
@@ -549,7 +422,7 @@ function buildExtraMachines(
       user: cfg.user,
       port: cfg.port ?? DEFAULTS.SSH.PORT,
       datastore: cfg.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
-      known_hosts: sshKnownHosts,
+      known_hosts: cfg.knownHosts ?? '',
       ssh: {
         private_key: sshPrivateKey,
         public_key: sshPublicKey,
@@ -565,7 +438,6 @@ function buildExtraMachines(
 export function buildLocalVault(opts: BuildLocalVaultOptions): string {
   const extraMachines = buildExtraMachines(
     opts.extraMachines,
-    opts.sshKnownHosts,
     opts.sshPrivateKey,
     opts.sshPublicKey
   );

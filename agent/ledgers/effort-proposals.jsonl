@@ -19,3 +19,65 @@
 {"at": "2026-10-24T05:30:16Z", "epoch": 82, "fraction": 0.851, "id": "ep-605e93f3", "kind": "tuner-request", "session": "d778be9d"}
 {"at": "2026-10-24T09:29:25Z", "epoch": 83, "fraction": 0.859, "id": "ep-3b63d2fa", "kind": "tuner-request", "session": "d778be9d"}
 {"at": "2026-10-24T13:08:03Z", "epoch": 84, "fraction": 0.877, "id": "ep-7645d4ff", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-24T19:14:18Z", "epoch": 85, "fraction": 0.892, "id": "ep-d6a84b90", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-25T01:33:00Z", "epoch": 86, "fraction": 0.852, "id": "ep-eeba6610", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-25T13:10:48Z", "epoch": 87, "fraction": 0.869, "id": "ep-a02f8d1e", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-26T04:34:39Z", "epoch": 88, "fraction": 0.908, "id": "ep-924210ab", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-26T15:57:54Z", "epoch": 89, "fraction": 0.896, "id": "ep-001ca947", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-27T02:41:09Z", "epoch": 90, "fraction": 0.869, "id": "ep-ac146557", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-27T12:24:58Z", "epoch": 91, "fraction": 0.861, "id": "ep-74b54182", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-28T04:27:29Z", "epoch": 92, "fraction": 0.916, "id": "ep-ea6dbbff", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-28T10:19:57Z", "epoch": 93, "fraction": 0.926, "id": "ep-1abe9c63", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-28T14:12:49Z", "epoch": 94, "fraction": 0.862, "id": "ep-53c52ebf", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-28T19:57:47Z", "epoch": 95, "fraction": 0.934, "id": "ep-a3f86d66", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-29T07:32:14Z", "epoch": 96, "fraction": 0.853, "id": "ep-d791b302", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-29T12:51:07Z", "epoch": 97, "fraction": 0.915, "id": "ep-cd8be1f9", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-29T18:37:42Z", "epoch": 98, "fraction": 0.85, "id": "ep-2d8d9e56", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-30T01:38:04Z", "epoch": 99, "fraction": 0.88, "id": "ep-ffaf5cff", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-30T09:28:29Z", "epoch": 100, "fraction": 0.861, "id": "ep-5fd77cdd", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-30T18:20:42Z", "epoch": 101, "fraction": 0.857, "id": "ep-e6af14f9", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-31T00:36:00Z", "epoch": 102, "fraction": 0.895, "id": "ep-c5e3381a", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-10-31T09:41:47Z", "epoch": 103, "fraction": 0.855, "id": "ep-9ff3cbb0", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-04T11:02:38Z", "epoch": 1, "fraction": 0.853, "id": "ep-89302e90", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-04T14:18:43Z", "epoch": 2, "fraction": 0.86, "id": "ep-3542cbb7", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-04T19:41:19Z", "epoch": 3, "fraction": 0.855, "id": "ep-c887d3a5", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-05T20:01:57Z", "epoch": 5, "fraction": 0.91, "id": "ep-2f75626c", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-05T23:26:25Z", "epoch": 6, "fraction": 0.864, "id": "ep-434ac0d5", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-06T05:33:38Z", "epoch": 7, "fraction": 0.885, "id": "ep-7bab549a", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-06T14:09:43Z", "epoch": 8, "fraction": 0.856, "id": "ep-be315f24", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-06T14:23:19Z", "direction": "promote", "from": {"advise": "smart", "block": "high"}, "id": "ep-25713c0e", "key": "bg-orphan", "kind": "applied", "run": "e8", "session": "d778be9d", "to": {"advise": "smart", "block": "smart"}}
+{"at": "2026-11-06T14:23:19Z", "direction": "promote", "from": {"advise": "smart", "block": "high"}, "id": "ep-6808db80", "key": "bigpieces", "kind": "applied", "run": "e8", "session": "d778be9d", "to": {"advise": "smart", "block": "smart"}}
+{"at": "2026-11-06T14:23:19Z", "direction": "promote", "from": {"advise": "smart"}, "id": "ep-bb1a2563", "key": "claim-check", "kind": "applied", "run": "e8", "session": "d778be9d", "to": {"advise": "low"}}
+{"at": "2026-11-06T14:23:19Z", "direction": "promote", "from": {"advise": "smart", "block": "high"}, "id": "ep-32a00f92", "key": "out-of-sync", "kind": "applied", "run": "e8", "session": "d778be9d", "to": {"advise": "smart", "block": "smart"}}
+{"at": "2026-11-06T14:23:19Z", "direction": "promote", "from": {"advise": "smart"}, "id": "ep-6f16fe3e", "key": "reg-capped", "kind": "applied", "run": "e8", "session": "d778be9d", "to": {"advise": "low"}}
+{"at": "2026-11-06T14:23:19Z", "direction": "promote", "from": {"advise": "smart"}, "id": "ep-2c9c2e30", "key": "reg-flood", "kind": "applied", "run": "e8", "session": "d778be9d", "to": {"advise": "low"}}
+{"at": "2026-11-06T14:23:19Z", "direction": "promote", "from": {"advise": "smart"}, "id": "ep-8a7adb98", "key": "reg-settled", "kind": "applied", "run": "e8", "session": "d778be9d", "to": {"advise": "low"}}
+{"at": "2026-11-06T14:23:19Z", "direction": "promote", "from": {"advise": "smart", "block": "high"}, "id": "ep-6f59567e", "key": "submodule", "kind": "applied", "run": "e8", "session": "d778be9d", "to": {"advise": "smart", "block": "smart"}}
+{"at": "2026-11-06T14:23:19Z", "direction": "promote", "from": {"advise": "smart"}, "id": "ep-a1b0036d", "key": "sweep-ungrounded", "kind": "applied", "run": "e8", "session": "d778be9d", "to": {"advise": "low"}}
+{"at": "2026-11-06T14:23:19Z", "from": {"advise": "low", "block": "low"}, "id": "ep-3fd45ea5", "ids": ["eo-f5c470ec", "eo-a90fd65f", "eo-f839d387", "eo-18ee6d54", "eo-79f1e507", "eo-bc8bc913", "eo-f25187cf", "eo-6a651a46", "eo-6cbfee0e", "eo-103661a5", "eo-d87e9bc3", "eo-e1790bf4"], "key": "open-items", "kind": "demotion-pending", "reason": "blocked 14 time(s), 2/14 led to work (11 paperwork, 0 overruled, 1 expired)", "run": "e8", "session": "d778be9d", "to": {"advise": "low", "block": "smart"}}
+{"at": "2026-11-06T14:23:19Z", "from": {"advise": "low", "block": "smart"}, "id": "ep-7612ae9f", "ids": ["eo-61032a9f", "eo-ec1f0ac5", "eo-7a91451a", "eo-71a4d165", "eo-78d212e1", "eo-4de51484"], "key": "plan-fidelity", "kind": "demotion-pending", "reason": "blocked 6 time(s), 1/6 led to work (0 paperwork, 4 overruled, 1 expired)", "run": "e8", "session": "d778be9d", "to": {"advise": "low", "block": "high"}}
+{"at": "2026-11-06T14:23:19Z", "from": {"advise": "low", "block": "smart"}, "id": "ep-1c796323", "ids": ["eo-ffd26543", "eo-5e54638c", "eo-e6fc1279", "eo-8a9643cd", "eo-18310dcb", "eo-5fbc4791", "eo-9bc57e1a", "eo-3eb12d11", "eo-ba9eba50", "eo-971a0a63", "eo-0099cd7b", "eo-a6807a36"], "key": "roster-unleased", "kind": "demotion-pending", "reason": "blocked 40 time(s), 2/40 led to work (27 paperwork, 0 overruled, 11 expired)", "run": "e8", "session": "d778be9d", "to": {"advise": "low", "block": "high"}}
+{"at": "2026-11-06T14:23:19Z", "from": {"advise": "low", "block": "smart"}, "id": "ep-72d6ddbc", "ids": ["eo-6939aea4", "eo-e98d8f99", "eo-50fb11fc", "eo-c01cf35e", "eo-69be2077", "eo-55ffad4c", "eo-1e7c57dd", "eo-6a180fe4", "eo-e88bd2e8", "eo-4ede2dc4", "eo-f64a806f", "eo-cd68352f"], "key": "scheduled-red", "kind": "demotion-pending", "reason": "blocked 198 time(s), 9/198 led to work (135 paperwork, 18 overruled, 36 expired)", "run": "e8", "session": "d778be9d", "to": {"advise": "low", "block": "high"}}
+{"at": "2026-11-06T14:25:58Z", "decision": "reject", "id": "ep-bb22dfdd", "key": "plan-fidelity", "kind": "answer", "note": "operator ASKED:2026-11-06T14:25Z answered 'You decide'; kept: 6 rows is too small a sample", "run": "e8", "session": "d778be9d", "to": {"advise": "low", "block": "high"}}
+{"at": "2026-11-06T14:26:07Z", "decision": "accept", "id": "ep-0c7065ba", "key": "scheduled-red", "kind": "answer", "note": "operator ASKED:2026-11-06T14:26Z answered 'You decide'; applied on evidence (run e8)", "run": "e8", "session": "d778be9d", "to": {"advise": "low", "block": "high"}}
+{"at": "2026-11-06T14:26:09Z", "decision": "accept", "id": "ep-177e3660", "key": "roster-unleased", "kind": "answer", "note": "operator ASKED:2026-11-06T14:26Z answered 'You decide'; applied on evidence (run e8)", "run": "e8", "session": "d778be9d", "to": {"advise": "low", "block": "high"}}
+{"at": "2026-11-06T14:26:11Z", "decision": "accept", "id": "ep-ea632aea", "key": "open-items", "kind": "answer", "note": "operator ASKED:2026-11-06T14:26Z answered 'You decide'; applied on evidence (run e8)", "run": "e8", "session": "d778be9d", "to": {"advise": "low", "block": "smart"}}
+{"at": "2026-11-06T19:41:13Z", "epoch": 9, "fraction": 0.855, "id": "ep-2dbcab6d", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-06T23:37:41Z", "epoch": 10, "fraction": 0.858, "id": "ep-973fc32f", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-07T04:28:32Z", "epoch": 11, "fraction": 0.865, "id": "ep-2bc951c9", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-07T09:56:08Z", "epoch": 12, "fraction": 0.865, "id": "ep-a1b0f9bc", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-07T13:16:20Z", "epoch": 13, "fraction": 0.853, "id": "ep-2042eeff", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-07T17:30:24Z", "epoch": 14, "fraction": 0.864, "id": "ep-a9f4536e", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-08T18:03:59Z", "epoch": 15, "fraction": 0.855, "id": "ep-df6a7d83", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-09T00:16:31Z", "epoch": 16, "fraction": 0.859, "id": "ep-29e98744", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-09T08:45:30Z", "epoch": 17, "fraction": 0.853, "id": "ep-51ef4104", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-09T19:54:35Z", "epoch": 18, "fraction": 0.978, "id": "ep-0a6fb201", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-10T03:31:56Z", "epoch": 19, "fraction": 0.85, "id": "ep-a4aa08c3", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-10T07:25:05Z", "epoch": 20, "fraction": 0.85, "id": "ep-9c9b3e27", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-10T15:48:29Z", "epoch": 21, "fraction": 0.86, "id": "ep-aab4507d", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-10T22:57:02Z", "epoch": 22, "fraction": 0.852, "id": "ep-4d1df5ae", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-11T08:12:20Z", "epoch": 23, "fraction": 0.852, "id": "ep-5334a1f2", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-11T14:56:16Z", "epoch": 24, "fraction": 0.854, "id": "ep-0195fd29", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-11T22:20:33Z", "epoch": 25, "fraction": 0.851, "id": "ep-e23b58f5", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-12T07:46:14Z", "epoch": 26, "fraction": 0.901, "id": "ep-848923c0", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-12T13:21:27Z", "epoch": 27, "fraction": 0.957, "id": "ep-8053c067", "kind": "tuner-request", "session": "d778be9d"}

@@ -49,23 +49,28 @@ const LEDGER: Record<string, string[]> = {
   'commands/subscription-actions.ts::resolveSubscriptionCommandContext::resolveMachineContext': [
     'provision',
   ],
-  'commands/subscription-actions.ts::executeMachineStatus::resolveMachineContext': ['read-only'],
+  'commands/subscription-actions.ts::<module>::resolveMachineContext': ['read-only'],
+  'commands/subscription-actions.ts::executeMachineRefresh::resolveMachineContext': ['provision'],
   'commands/term.ts::connectTerminal::acquireRemoteRenet': ['read-only'],
   'commands/vscode-browser.ts::prepareBrowserConnection::acquireRemoteRenet': ['read-only'],
   'commands/vscode.ts::prepareRemote::acquireRemoteRenet': ['read-only'],
   'services/backup/backup-schedule.ts::preDeployProvisioning::acquireRemoteRenet': ['provision'],
+  // A command-kind job (section 14): the access comes from COMMAND_KIND_ACCESS, pinned by command-kind-session.test.ts.
+  'services/executor/command-kind-session.ts::runCommandKindSession::acquireRemoteRenet': [
+    '<forwarded>',
+  ],
   'services/executor/job-remote.ts::connectForJobs::acquireRemoteRenet': ['<forwarded>'],
   // Forwarded from renetAccessFor(functionName): RENET_FUNCTION_ACCESS decides, pinned by renet-function-access.test.ts.
-  'services/executor/local-executor.ts::provisionFn::acquireRemoteRenet': ['<forwarded>'],
+  'services/executor/local-executor-provision.ts::provisionFn::acquireRemoteRenet': ['<forwarded>'],
   // `rdc job wait` and the finished-while-away notice: they follow a job and read its status, which an observer must never do by replacing the machine's binary.
   'services/jobs/remote-deps.ts::withConnection::connectForJobs': ['read-only'],
   // `renet job claim` writes a step marker into the spool of a job the machine's own renet already ran, so that renet has `job claim`; an observer (the notice, `job wait`) claiming steps must not provision.
   'services/jobs/run-job.ts::liveClaimExec::connectForJobs': ['read-only'],
-  'services/machine/machine-status.ts::fetchMachineStatus::acquireRemoteRenet': ['read-only'],
-  'services/machine/machine-status.ts::fetchRepoLicenseDetail::acquireRemoteRenet': ['read-only'],
-  'services/provision/infra-provision.ts::pushInfraConfig::acquireRemoteRenet': ['provision'],
   'services/renet/machine-bootstrap.ts::bootstrapMachine::acquireRemoteRenet': ['provision'],
-  'services/serve/server.ts::createServeApp::connectForJobs': ['read-only'],
+  // The serve job routes moved out of server.ts; the ledger had not followed (found by J17, pre-existing).
+  'services/serve/job-routes.ts::pollOnce::connectForJobs': ['read-only'],
+  'services/serve/job-routes.ts::registerJobRoutes::connectForJobs': ['read-only'],
+  'services/tofu/provision.ts::runProvisionSetupJob::acquireRemoteRenet': ['provision'],
 };
 
 function walk(dir: string, out: string[] = []): string[] {

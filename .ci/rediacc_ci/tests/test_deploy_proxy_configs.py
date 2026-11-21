@@ -1,10 +1,12 @@
-"""`rediacc_ci.deploy.proxy_configs`: six proxy configs generated from one template, bench and dev held to the same refusals (agent/plans/PLAN-proxy-cd-six-targets.md box K1).
+"""`rediacc_ci.deploy.proxy_configs`: three proxy configs generated from one template, bench and dev held to the same refusals (agent/plans/PLAN-proxy-cd-six-targets.md box K1).
 
 CONTROL FIRST. The real tree must pass `--check`, and every unplanted config must carry no refusal, so a refusal on a plant is the plant's doing. Each plant changes ONE thing in a copy of a real config and must be refused by name. The real files are never written: the stale-file case runs `--check` over a copy of the tree under `tmp_path`.
 """
 
 from __future__ import annotations
 
+import json
+import re
 import shutil
 import subprocess
 import sys
@@ -16,10 +18,10 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import proxy_configs as pc
 from rediacc_ci.well_known import (
+    BENCH_RETIRING_ORIGIN,
     PROXY_ASIA_HOST,
-    PROXY_EDGE_ASIA_HOST,
-    PROXY_EDGE_EU_HOST,
-    PROXY_EDGE_US_HOST,
+    PROXY_BENCH_HOST,
+    PROXY_BENCH_RETIRING_HOST,
     PROXY_EU_HOST,
     PROXY_US_HOST,
 )
@@ -77,7 +79,7 @@ def test_the_cli_check_exits_zero_on_the_real_tree() -> None:
         check=False,
     )
     assert proc.returncode == 0, proc.stderr
-    assert "8 proxy configs hold" in proc.stdout
+    assert "7 proxy configs hold" in proc.stdout
 
 
 @pytest.mark.parametrize("key", sorted(TARGETS))
@@ -85,39 +87,21 @@ def test_every_unplanted_config_carries_no_refusal(key: str) -> None:
     assert refusals(real(key), key) == []
 
 
-def test_eight_targets_and_six_generated() -> None:
+def test_seven_targets_and_five_generated() -> None:
     assert sorted(TARGETS) == sorted(
-        ["eu", "us", "asia", "edge-eu", "edge-us", "edge-asia", "bench", "dev"]
+        ["eu", "us", "asia", "bench-eu", "bench-us", "bench-asia", "dev"]
     )
     assert sorted(t.key for t in TARGETS.values() if t.generated) == sorted(
-        ["eu", "us", "asia", "edge-eu", "edge-us", "edge-asia"]
+        ["eu", "us", "asia", "bench-us", "bench-asia"]
     )
 
 
 @pytest.mark.parametrize(
     ("key", "name", "route", "account"),
     [
-        ("eu", "rediacc-proxy-eu", PROXY_EU_HOST, "rediacc-account-eu"),
-        ("us", "rediacc-proxy-us", PROXY_US_HOST, "rediacc-account-us"),
-        ("asia", "rediacc-proxy-asia", PROXY_ASIA_HOST, "rediacc-account-asia"),
-        (
-            "edge-eu",
-            "edge-rediacc-proxy-eu",
-            PROXY_EDGE_EU_HOST,
-            "edge-rediacc-account-eu",
-        ),
-        (
-            "edge-us",
-            "edge-rediacc-proxy-us",
-            PROXY_EDGE_US_HOST,
-            "edge-rediacc-account-us",
-        ),
-        (
-            "edge-asia",
-            "edge-rediacc-proxy-asia",
-            PROXY_EDGE_ASIA_HOST,
-            "edge-rediacc-account-asia",
-        ),
+        ("eu", "proxy-eu", PROXY_EU_HOST, "account-eu"),
+        ("us", "proxy-us", PROXY_US_HOST, "account-us"),
+        ("asia", "proxy-asia", PROXY_ASIA_HOST, "account-asia"),
     ],
 )
 def test_generated_targets_name_their_own_worker_route_and_account(
@@ -127,9 +111,8 @@ def test_generated_targets_name_their_own_worker_route_and_account(
     assert target.name == name
     assert target.routes == (route,)
     assert {s for _, s, _ in target.services} == {account}
-    assert dict(target.variables)["ENVIRONMENT"] == (
-        "edge" if key.startswith("edge-") else "production"
-    )
+    # The shared Workers keep ENVIRONMENT=edge, the CLI's update channel, like the account Workers.
+    assert dict(target.variables)["ENVIRONMENT"] == "edge"
 
 
 def test_no_proxy_config_or_template_names_executor_token() -> None:
@@ -143,24 +126,22 @@ def test_no_proxy_config_or_template_names_executor_token() -> None:
 def test_an_eu_account_service_in_the_us_config_is_refused() -> None:
     text = plant(
         real("us"),
-        'binding = "ACCOUNT"\nservice = "rediacc-account-us"',
-        'binding = "ACCOUNT"\nservice = "rediacc-account-eu"',
+        'binding = "ACCOUNT"\nservice = "account-us"',
+        'binding = "ACCOUNT"\nservice = "account-eu"',
     )
     out = refusals(text, "us")
-    assert any(
-        "ACCOUNT service 'rediacc-account-eu' names eu, which is not us" in r for r in out
-    ), out
+    assert any("ACCOUNT service 'account-eu' names eu, which is not us" in r for r in out), out
 
 
-def test_an_edge_service_in_a_stable_config_is_refused() -> None:
+def test_a_prefixed_service_in_a_shared_config_is_refused() -> None:
     text = plant(
         real("eu"),
-        'binding = "ISSUER"\nservice = "rediacc-account-eu"',
-        'binding = "ISSUER"\nservice = "edge-rediacc-account-eu"',
+        'binding = "ISSUER"\nservice = "account-eu"',
+        'binding = "ISSUER"\nservice = "stable-account-eu"',
     )
     out = refusals(text, "eu")
     assert any(
-        "ISSUER service 'edge-rediacc-account-eu' names edge, which is not eu" in r for r in out
+        "ISSUER service 'stable-account-eu' names stable, which is not eu" in r for r in out
     ), out
 
 
@@ -170,9 +151,9 @@ def test_a_proxy_eu_route_in_asia_is_refused() -> None:
     assert any(f"route '{PROXY_EU_HOST}' names eu, which is not asia" in r for r in out), out
 
 
-def test_environment_production_in_an_edge_config_is_refused() -> None:
-    text = plant(real("edge-us"), 'ENVIRONMENT = "edge"', 'ENVIRONMENT = "production"')
-    out = refusals(text, "edge-us")
+def test_environment_production_in_a_shared_config_is_refused() -> None:
+    text = plant(real("us"), 'ENVIRONMENT = "edge"', 'ENVIRONMENT = "production"')
+    out = refusals(text, "us")
     assert "vars.ENVIRONMENT is 'production', not 'edge'" in out, out
 
 
@@ -201,11 +182,11 @@ def test_max_instances_on_the_durable_entry_is_refused() -> None:
 
 def test_instance_type_on_the_durable_entry_is_refused() -> None:
     text = plant(
-        real("bench"),
+        real("bench-eu"),
         'scheduling_policy = "durable_object"\n',
         'scheduling_policy = "durable_object"\ninstance_type = "basic"\n',
     )
-    out = refusals(text, "bench")
+    out = refusals(text, "bench-eu")
     assert any("OrgExecutor sets instance_type" in r for r in out), out
 
 
@@ -229,10 +210,64 @@ def test_a_non_decimal_cap_is_refused() -> None:
 
 def test_an_executor_backend_var_is_refused() -> None:
     text = plant(
-        real("edge-eu"), 'EXECUTOR_CAP = "25"', 'EXECUTOR_BACKEND = "durable"\nEXECUTOR_CAP = "25"'
+        real("eu"), 'EXECUTOR_CAP = "25"', 'EXECUTOR_BACKEND = "durable"\nEXECUTOR_CAP = "25"'
     )
-    out = refusals(text, "edge-eu")
-    assert "vars.EXECUTOR_BACKEND is not one a edge-eu config may carry" in out, out
+    out = refusals(text, "eu")
+    assert "vars.EXECUTOR_BACKEND is not one a eu config may carry" in out, out
+
+
+# --- the bench-only reachability drill var (PLAN-org-executor-connect-timeout-relocate E15) ---
+
+
+def test_the_committed_bench_config_carries_the_drill_var_and_passes() -> None:
+    text = real("bench-eu")
+    assert tomllib.loads(text)["vars"]["EGRESS_DRILL_PROBE"] == "192.0.2.10:22=72.61.137.225:22"
+    assert refusals(text, "bench-eu") == []
+
+
+@pytest.mark.parametrize("key", ["us", "eu"])
+def test_the_drill_var_in_a_rendered_non_bench_config_is_refused(key: str) -> None:
+    template = (PROXY / pc.TEMPLATE).read_text(encoding="utf-8")
+    rendered = pc.render(template, TARGETS[key])
+    assert refusals(rendered, key) == [], "control: the rendered %s config passes" % key
+    text = plant(
+        rendered, "[vars]\n", '[vars]\nEGRESS_DRILL_PROBE = "192.0.2.10:22=72.61.137.225:22"\n'
+    )
+    out = refusals(text, key)
+    assert "vars.EGRESS_DRILL_PROBE is not one a %s config may carry" % key in out, out
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["", "192.0.2.10:22", "192.0.2.10:22=", "192.0.2.10:ssh=72.61.137.225:22", "a:22=b:70000"],
+)
+def test_a_malformed_drill_var_on_bench_is_refused(value: str) -> None:
+    text = plant(
+        real("bench-eu"),
+        'EGRESS_DRILL_PROBE = "192.0.2.10:22=72.61.137.225:22"',
+        'EGRESS_DRILL_PROBE = "%s"' % value,
+    )
+    out = refusals(text, "bench-eu")
+    assert any(
+        "vars.EGRESS_DRILL_PROBE is" in line and "not <host:port>" in line for line in out
+    ), out
+
+
+def test_a_bracketed_ipv6_drill_var_on_bench_passes() -> None:
+    text = plant(
+        real("bench-eu"),
+        'EGRESS_DRILL_PROBE = "192.0.2.10:22=72.61.137.225:22"',
+        'EGRESS_DRILL_PROBE = "[2001:db8::1]:22=[2001:db8::2]:2222"',
+    )
+    assert refusals(text, "bench-eu") == []
+
+
+def test_the_drill_var_in_the_dev_config_is_refused() -> None:
+    text = plant(
+        real("dev"), "[vars]\n", '[vars]\nEGRESS_DRILL_PROBE = "192.0.2.10:22=72.61.137.225:22"\n'
+    )
+    out = refusals(text, "dev")
+    assert "vars.EGRESS_DRILL_PROBE is not one a dev config may carry" in out, out
 
 
 def test_a_missing_v2_migration_is_refused() -> None:
@@ -284,24 +319,24 @@ def test_a_wrong_durable_image_is_refused() -> None:
 
 def test_a_legacy_entry_beside_the_durable_one_is_refused() -> None:
     text = plant(
-        real("bench"),
+        real("bench-eu"),
         '[[containers]]\nclass_name = "OrgExecutor"',
         '[[containers]]\nclass_name = "ExecutorContainer"\nimage = "./Dockerfile"\n'
         'image_build_context = "../.."\ninstance_type = "basic"\nmax_instances = 25\n\n'
         '[[containers]]\nclass_name = "OrgExecutor"',
     )
-    out = refusals(text, "bench")
+    out = refusals(text, "bench-eu")
     assert any("[[containers]] is ['ExecutorContainer', 'OrgExecutor']" in r for r in out), out
 
 
 def test_the_legacy_binding_is_refused() -> None:
     text = plant(
-        real("bench"),
+        real("bench-eu"),
         '[[durable_objects.bindings]]\nname = "ORG_EXECUTOR"',
         '[[durable_objects.bindings]]\nname = "EXECUTOR"\nclass_name = "ExecutorContainer"\n\n'
         '[[durable_objects.bindings]]\nname = "ORG_EXECUTOR"',
     )
-    out = refusals(text, "bench")
+    out = refusals(text, "bench-eu")
     assert any("[[durable_objects.bindings]] is" in r for r in out), out
 
 
@@ -314,22 +349,22 @@ def test_a_missing_v3_migration_is_refused() -> None:
 
 
 def test_an_env_table_is_refused() -> None:
-    text = real("eu") + '\n[env.x]\nname = "rediacc-proxy-x"\n'
+    text = real("eu") + '\n[env.x]\nname = "proxy-x"\n'
     out = refusals(text, "eu")
     assert any("[env.*] table" in r for r in out), out
 
 
 def test_an_account_id_key_is_refused() -> None:
-    text = 'account_id = "0123456789abcdef"\n' + real("bench")
-    out = refusals(text, "bench")
+    text = 'account_id = "0123456789abcdef"\n' + real("bench-eu")
+    out = refusals(text, "bench-eu")
     assert "top-level key 'account_id' is not one a proxy config may carry" in out, out
 
 
 def test_executor_token_in_bench_is_refused() -> None:
-    text = plant(real("bench"), "[vars]\n", '[vars]\nEXECUTOR_TOKEN = "rdt_x"\n')
-    out = refusals(text, "bench")
+    text = plant(real("bench-eu"), "[vars]\n", '[vars]\nEXECUTOR_TOKEN = "rdt_x"\n')
+    out = refusals(text, "bench-eu")
     assert any("names EXECUTOR_TOKEN" in r for r in out), out
-    assert "vars.EXECUTOR_TOKEN is not one a bench config may carry" in out, out
+    assert "vars.EXECUTOR_TOKEN is not one a bench-eu config may carry" in out, out
 
 
 def test_a_missing_issuer_binding_is_refused() -> None:
@@ -349,11 +384,9 @@ def test_a_wrong_entrypoint_is_refused() -> None:
 
 
 def test_a_production_word_in_the_bench_name_is_refused() -> None:
-    text = plant(real("bench"), 'name = "rediacc-proxy-bench"', 'name = "rediacc-proxy-bench-prod"')
-    out = refusals(text, "bench")
-    assert any(
-        "name 'rediacc-proxy-bench-prod' names prod, which is not bench" in r for r in out
-    ), out
+    text = plant(real("bench-eu"), 'name = "proxy-bench"', 'name = "proxy-bench-prod"')
+    out = refusals(text, "bench-eu")
+    assert any("name 'proxy-bench-prod' names prod, which is not bench" in r for r in out), out
 
 
 def test_a_stale_generated_file_is_refused(tmp_path: pathlib.Path) -> None:
@@ -371,9 +404,9 @@ def test_a_stale_generated_file_is_refused(tmp_path: pathlib.Path) -> None:
 
 def test_generate_repairs_a_stale_file(tmp_path: pathlib.Path) -> None:
     root = copy_tree(tmp_path)
-    path = root.joinpath(*pc.PROXY_REL) / "wrangler.edge-asia.toml"
+    path = root.joinpath(*pc.PROXY_REL) / "wrangler.asia.toml"
     path.write_text("stale\n", encoding="utf-8")
-    assert pc.write(root) == ["wrangler.edge-asia.toml"]
+    assert pc.write(root) == ["wrangler.asia.toml"]
     assert pc.check(root) == []
 
 
@@ -394,20 +427,57 @@ def test_an_account_config_bound_to_another_regions_proxy_is_refused(
     path.write_text(
         plant(
             path.read_text(encoding="utf-8"),
-            'service = "rediacc-proxy-us"',
-            'service = "rediacc-proxy-eu"',
+            'service = "proxy-us"',
+            'service = "proxy-eu"',
         ),
         encoding="utf-8",
     )
     out = pc.check(root)
     assert any(
-        "workers/account/wrangler.us.toml: the EXECUTOR service binding is ['rediacc-proxy-eu']"
-        in r
+        "workers/account/wrangler.us.toml: the EXECUTOR service binding is ['proxy-eu']" in r
         for r in out
     ), out
-    assert any("EXECUTOR service 'rediacc-proxy-eu' names eu, which is not us" in r for r in out), (
+    assert any("EXECUTOR service 'proxy-eu' names eu, which is not us" in r for r in out), out
+
+
+def test_a_regions_license_signer_binding_is_judged_by_its_own_name(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The bench config binds `signer-bench-eu` and passes; another region's signer in the us config is refused (controls in both directions)."""
+    assert pc.check(ROOT) == []
+    root = copy_tree(tmp_path)
+    path = root.joinpath(*pc.ACCOUNT_REL) / "wrangler.us.toml"
+    path.write_text(
+        plant(path.read_text(encoding="utf-8"), 'service = "signer-us"', 'service = "signer-eu"'),
+        encoding="utf-8",
+    )
+    out = pc.check(root)
+    assert any("LICENSE_SIGNER service 'signer-eu' names eu, which is not us" in r for r in out), (
         out
     )
+
+
+def test_the_bench_config_binds_only_the_bench_signer_of_its_own_region(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review e882aaa3.1: `signer-bench-us` in the REGION eu bench config is refused, as is an unknown bench signer."""
+    root = copy_tree(tmp_path)
+    path = root.joinpath(*pc.ACCOUNT_REL) / "wrangler.bench-eu.toml"
+    text = path.read_text(encoding="utf-8")
+    path.write_text(
+        plant(text, 'service = "signer-bench-eu"', 'service = "signer-bench-us"'), encoding="utf-8"
+    )
+    out = pc.check(root)
+    assert any(
+        "LICENSE_SIGNER service 'signer-bench-us' names us, which is not bench" in r for r in out
+    ), out
+    path.write_text(
+        plant(text, 'service = "signer-bench-eu"', 'service = "signer-bench-zz"'), encoding="utf-8"
+    )
+    out = pc.check(root)
+    assert any(
+        "LICENSE_SIGNER service 'signer-bench-zz' is not the signer of bench" in r for r in out
+    ), out
 
 
 def test_a_well_known_host_disagreeing_with_regions_json_is_refused(tmp_path: pathlib.Path) -> None:
@@ -415,12 +485,200 @@ def test_a_well_known_host_disagreeing_with_regions_json_is_refused(tmp_path: pa
     path = root / pc.REGIONS_REL
     path.write_text(
         path.read_text(encoding="utf-8").replace(
-            f'"domain": "{US_DOMAIN}"', '"domain": "usa.rediacc.com"'
+            f'"domain": "{US_DOMAIN}"', '"domain": "usa.rediacc.cloud"'
         ),
         encoding="utf-8",
     )
     out = pc.check(root)
     assert any(
-        f"the us production proxy host is '{PROXY_US_HOST}', not 'proxy.usa.rediacc.com'" in r
+        f"the us proxy host is '{PROXY_US_HOST}', not 'proxy.usa.rediacc.cloud'" in r for r in out
+    ), out
+
+
+# --- the regional benches (PLAN-multi-region-bench.md box W2) ---------------------------------------------
+
+
+def _bench_row(rid: str) -> dict:
+    return next(r for r in REGIONS if r["id"] == rid)
+
+
+@pytest.mark.parametrize("rid", ["us", "asia"])
+def test_a_regional_bench_target_is_read_from_the_regions_bench_object(rid: str) -> None:
+    bench = _bench_row(rid)["bench"]
+    target = TARGETS["bench-" + rid]
+    assert target.generated
+    assert target.name == bench["proxyWorkerName"]
+    assert target.routes == (bench["proxyHost"],)
+    assert target.account_url == "https://" + bench["host"]
+    assert dict(target.variables) == {
+        "ACCOUNT_URL": "https://" + bench["host"],
+        "REGION": rid,
+        "ENVIRONMENT": "bench",
+    }
+    assert {s for _, s, _ in target.services} == {bench["workerName"]}
+    # Control: the home bench stays the hand-written one, with the drill var allowed.
+    assert not TARGETS["bench-eu"].generated
+    assert TARGETS["bench-eu"].optional_variables == pc.BENCH_OPTIONAL_VARS
+    assert target.optional_variables == frozenset()
+
+
+@pytest.mark.parametrize("rid", ["us", "asia"])
+def test_a_regional_bench_toml_that_disagrees_with_regions_json_is_refused(rid: str) -> None:
+    key = "bench-" + rid
+    assert refusals(real(key), key) == [], "control: the committed %s passes" % key
+    host = _bench_row(rid)["bench"]["proxyHost"]
+    text = plant(real(key), host, host.replace("bench-", "bench-x"))
+    out = refusals(text, key)
+    assert any("routes are" in r for r in out), out
+    text = plant(real(key), 'REGION = "%s"' % rid, 'REGION = "eu"')
+    assert any("vars.REGION is 'eu'" in r for r in refusals(text, key))
+
+
+def test_the_us_bench_binding_an_eu_account_is_refused_by_name() -> None:
+    text = plant(
+        real("bench-us"),
+        'binding = "ACCOUNT"\nservice = "account-bench-us"',
+        'binding = "ACCOUNT"\nservice = "account-bench"',
+    )
+    out = refusals(text, "bench-us")
+    assert any("the ACCOUNT service binding is" in r for r in out), out
+
+
+def test_a_stale_generated_regional_bench_is_refused(tmp_path: pathlib.Path) -> None:
+    assert pc.check(ROOT) == []
+    root = copy_tree(tmp_path)
+    path = root.joinpath(*pc.PROXY_REL) / "wrangler.bench-asia.toml"
+    path.write_text(path.read_text(encoding="utf-8") + "# hand edit\n", encoding="utf-8")
+    out = pc.check(root)
+    assert any("wrangler.bench-asia.toml is stale" in r for r in out), out
+
+
+def test_a_regional_bench_toml_with_no_bench_object_is_no_known_target(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = copy_tree(tmp_path)
+    doc = json.loads((root / pc.REGIONS_REL).read_text(encoding="utf-8"))
+    del next(r for r in doc["regions"] if r["id"] == "us")["bench"]
+    (root / pc.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
+    out = pc.check(root)
+    assert any("wrangler.bench-us.toml is no known proxy target" in r for r in out), out
+
+
+def test_the_home_bench_object_must_agree_with_well_known(tmp_path: pathlib.Path) -> None:
+    root = copy_tree(tmp_path)
+    doc = json.loads((root / pc.REGIONS_REL).read_text(encoding="utf-8"))
+    next(r for r in doc["regions"] if r["id"] == "eu")["bench"]["host"] = (
+        BENCH_RETIRING_ORIGIN.removeprefix("https://")
+    )
+    (root / pc.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
+    out = pc.check(root)
+    assert any("WK_BENCH_ORIGIN is" in r for r in out), out
+
+
+def test_the_home_region_must_carry_a_bench_object(tmp_path: pathlib.Path) -> None:
+    root = copy_tree(tmp_path)
+    doc = json.loads((root / pc.REGIONS_REL).read_text(encoding="utf-8"))
+    del next(r for r in doc["regions"] if r["id"] == "eu")["bench"]
+    (root / pc.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
+    out = pc.check(root)
+    assert any("carries no bench object" in r for r in out), out
+
+
+@pytest.mark.parametrize("rid", ["us", "asia"])
+def test_a_regional_bench_account_serving_another_region_is_refused(
+    tmp_path: pathlib.Path, rid: str
+) -> None:
+    root = copy_tree(tmp_path)
+    path = root.joinpath(*pc.ACCOUNT_REL) / ("wrangler.bench-%s.toml" % rid)
+    path.write_text(
+        plant(path.read_text(encoding="utf-8"), 'REGION = "%s"' % rid, 'REGION = "eu"'),
+        encoding="utf-8",
+    )
+    out = pc.check(root)
+    assert any("[vars] REGION is 'eu', not '%s'" % rid in r for r in out), out
+
+
+def test_a_placeholder_database_id_is_allowed_only_while_the_bench_is_not_deployable(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Hermetic: every committed bench is deployable with a real id, so the placeholder state is planted on a copy of the us bench. Control: the committed tree passes. Flipping either side alone is refused."""
+    assert pc.check(ROOT) == []
+    root = copy_tree(tmp_path)
+    toml = root.joinpath(*pc.ACCOUNT_REL) / "wrangler.bench-us.toml"
+    real_toml = toml.read_text(encoding="utf-8")
+    placeholder = re.sub(
+        r'(binding = "DB"[^\n]*\n(?:[^\n]*\n)*?database_id = )"[^"]*"',
+        r'\1"%s"' % pc.PLACEHOLDER_D1_ID,
+        real_toml,
+        count=1,
+    )
+    assert placeholder != real_toml, "fixture drift: no DB database_id to plant"
+    doc = json.loads((root / pc.REGIONS_REL).read_text(encoding="utf-8"))
+    us = next(r for r in doc["regions"] if r["id"] == "us")["bench"]
+
+    def check(text: str, deployable: bool) -> list[str]:
+        toml.write_text(text, encoding="utf-8")
+        us["deployable"] = deployable
+        (root / pc.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
+        return pc.check(root)
+
+    out = check(placeholder, True)
+    assert any("marked deployable but its DB database_id" in r for r in out), out
+    assert not any(
+        "deployable but" in r or "not deployable" in r for r in check(placeholder, False)
+    )
+    out = check(real_toml, False)
+    assert any(
+        "wrangler.bench-us.toml: the bench is marked not deployable but its DB database_id" in r
         for r in out
     ), out
+
+
+# --- the eu bench serves its renamed and its pre-ruling proxy host side by side (PLAN-multi-region-bench M1) ---
+
+
+def test_the_eu_bench_routes_name_the_new_host_first_then_the_retiring_one() -> None:
+    assert TARGETS["bench-eu"].routes == (PROXY_BENCH_HOST, PROXY_BENCH_RETIRING_HOST)
+    assert refusals(real("bench-eu"), "bench-eu") == []
+
+
+def test_an_eu_bench_config_that_dropped_the_new_route_is_refused() -> None:
+    text = plant(
+        real("bench-eu"),
+        '  { pattern = "%s", custom_domain = true },\n' % PROXY_BENCH_HOST,
+        "",
+    )
+    out = refusals(text, "bench-eu")
+    assert any(r.startswith("routes are [%r]" % PROXY_BENCH_RETIRING_HOST) for r in out), out
+
+
+def test_an_eu_bench_config_that_dropped_the_retiring_route_is_refused_until_the_table_empties() -> (
+    None
+):
+    text = plant(
+        real("bench-eu"),
+        ',\n  { pattern = "%s", custom_domain = true }' % PROXY_BENCH_RETIRING_HOST,
+        "",
+    )
+    out = refusals(text, "bench-eu")
+    assert any(r.startswith("routes are [%r]" % PROXY_BENCH_HOST) for r in out), out
+
+
+def test_a_regional_bench_without_a_retiring_host_keeps_exactly_one_route() -> None:
+    assert TARGETS["bench-us"].routes == (_bench_row("us")["bench"]["proxyHost"],)
+
+
+# --- review 03a46e1f.2: the ownership set of a bench target ---
+
+
+@pytest.mark.parametrize("key", [k for k in TARGETS if k.startswith("bench-")])
+def test_a_bench_target_owns_the_bench_token_and_its_own_region(key: str) -> None:
+    """A bench Worker is named for its region (`proxy-bench-us`), so that region's token is its own and the other regions' tokens are foreign."""
+    region = key.removeprefix("bench-")
+    assert TARGETS[key].own_tokens == frozenset({"bench", region})
+    assert refusals(real(key), key) == []
+    other = next(r for r in sorted(ALL_REGIONS) if r != region)
+    name = TARGETS[key].name
+    text = plant(real(key), 'name = "%s"' % name, 'name = "%s-%s"' % (name, other))
+    out = refusals(text, key)
+    assert any("names %s, which is not %s" % (other, key) in r for r in out), out

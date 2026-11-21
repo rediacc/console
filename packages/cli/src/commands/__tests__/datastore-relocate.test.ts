@@ -14,7 +14,8 @@
  * that already had the record.
  */
 import { Command } from 'commander';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installJobDeps } from './job-deps.js';
 
 vi.mock('../../i18n/index.js', () => ({
   t: (key: string, params?: Record<string, unknown>) =>
@@ -112,8 +113,23 @@ function dispatched(): { fn: string; machine: string; params: Record<string, unk
   }));
 }
 
+let restoreJobDeps: () => void;
+const stepWarnings: string[] = [];
+
+/** The relocation's later phases run as the first job's step, so a refusal there is a failed command (exit code 1) whose reason the step reports, not a throw out of the command body. */
+async function runRefusedAttach(reason: RegExp): Promise<void> {
+  await runAttach('tier1', 'machine-b');
+  expect(process.exitCode).toBe(1);
+  expect(stepWarnings.join('\n')).toMatch(reason);
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  stepWarnings.length = 0;
+  restoreJobDeps = installJobDeps(
+    (options) => mockExecute(options),
+    (line) => stepWarnings.push(line)
+  );
   mockGetDatastore.mockResolvedValue({ name: 'tier1' });
   mockListDatastoreState.mockResolvedValue({ tier1: { attachedTo: 'machine-a' } });
   mockSetDatastoreState.mockResolvedValue(undefined);
@@ -123,6 +139,12 @@ beforeEach(() => {
       stdout: functionName === 'datastore_list' ? JSON.stringify([CEPH_RECORD]) : '',
     })
   );
+});
+
+afterEach(() => {
+  restoreJobDeps();
+  vi.restoreAllMocks();
+  process.exitCode = 0;
 });
 
 describe('datastore attach — cross-machine relocation', () => {
@@ -148,7 +170,7 @@ describe('datastore attach — cross-machine relocation', () => {
           })
     );
 
-    await expect(runAttach('tier1', 'machine-b')).rejects.toThrow(/datastore_adopt/);
+    await runRefusedAttach(/datastore_adopt/);
 
     expect(dispatched().map((d) => d.fn)).not.toContain('datastore_detach');
   });
@@ -176,7 +198,7 @@ describe('datastore attach — cross-machine relocation', () => {
       })
     );
 
-    await expect(runAttach('tier1', 'machine-b')).rejects.toThrow(/cannot reach them/);
+    await runRefusedAttach(/cannot reach them/);
 
     // The whole point: a refusal that arrives after the detach would have taken the datastore offline to tell the operator it could not be moved.
     expect(dispatched().map((d) => d.fn)).toEqual(['datastore_list']);
@@ -213,6 +235,13 @@ describe('datastore attach — relocation from a DETACHED state', () => {
 
     await runAttach('tier1', 'machine-b');
 
+    // The plain attach records the new holder and carries the last one, since the state entry is replaced whole and `lastHolder` is never cleared.
+    expect(mockSetDatastoreState).toHaveBeenCalledTimes(1);
+    expect(mockSetDatastoreState).toHaveBeenCalledWith(
+      'tier1',
+      expect.objectContaining({ attachedTo: 'machine-b', mounted: true, lastHolder: 'machine-b' })
+    );
+
     // machine-b already has the row; re-reading and re-adopting it would be two
     // pointless round trips on the common re-attach-where-it-was path.
     expect(dispatched().map((d) => d.fn)).toEqual(['datastore_attach']);
@@ -229,7 +258,7 @@ describe('datastore attach — relocation from a DETACHED state', () => {
       })
     );
 
-    await expect(runAttach('tier1', 'machine-b')).rejects.toThrow(/cannot reach them/);
+    await runRefusedAttach(/cannot reach them/);
 
     expect(dispatched().map((d) => d.fn)).toEqual(['datastore_list']);
   });
@@ -245,7 +274,7 @@ describe('datastore attach — relocation from a DETACHED state', () => {
           })
     );
 
-    await expect(runAttach('tier1', 'machine-b')).rejects.toThrow(/datastore_adopt/);
+    await runRefusedAttach(/datastore_adopt/);
 
     const fns = dispatched().map((d) => d.fn);
     expect(fns).not.toContain('datastore_attach');

@@ -43,7 +43,7 @@ const scopeMap = require('./scope-map.cjs');
 // migration-test is deliberately absent, mirroring scope-map's JOB_SURFACES: it is unconditional (edge case 26), never planned, never reconciled. ---------------------------------------------------------------------------
 const EXPECTED_JOB_NAMES = {
   unit: ['Tests + Infra / Unit'],
-  e2e_workers: ['Tests + Infra / E2E Workers'],
+  e2e_workers: ['Tests + Infra / E2E Workers', 'Tests + Infra / E2E Full Integration'],
   e2e_ceph: ['Tests + Infra / E2E Ceph'],
   e2e_ceph_workers: ['Tests + Infra / E2E Ceph Workers'],
   e2e_k8s: ['Tests + Infra / E2E K8s'],

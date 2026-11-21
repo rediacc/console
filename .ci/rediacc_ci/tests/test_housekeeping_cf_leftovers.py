@@ -18,11 +18,28 @@ TOKEN = "tok-SECRET-123"
 ACCOUNT_HOST = urlsplit(ACCOUNT_DEFAULT_ORIGIN).hostname
 
 
-def fake_api(scripts, d1, routes, domains=(), calls=None):
-    def get(path, token):
+def fake_api(scripts, d1, routes, domains=(), calls=None, extra=None):
+    """A read-only fake. `extra` maps a class to its items: `buckets` ((name, jurisdiction) pairs), `queues`, `containers`, `namespaces`, `pages`, and `bindings` (script -> binding list)."""
+    extra = extra or {}
+
+    def get(path, token, jurisdiction=None):
         if calls is not None:
             calls.append((path, token))
         base = path.split("?")[0]
+        if base.endswith("/settings"):
+            script = base.split("/")[-2]
+            bindings = (extra.get("bindings") or {}).get(script, [])
+            return {"success": True, "result": {"bindings": bindings}}
+        if base.endswith("/r2/buckets"):
+            jur = jurisdiction or "default"
+            res = [{"name": n} for n, j in extra.get("buckets", ()) if j == jur]
+            return {"success": True, "result": {"buckets": res}, "result_info": {}}
+        if base.endswith("/containers/applications"):
+            return {
+                "success": True,
+                "result": list(extra.get("containers", ())),
+                "result_info": {"total_pages": 1},
+            }
         if base.endswith("/workers/scripts"):
             res = [{"id": s} for s in scripts]
         elif base.endswith("/d1/database"):
@@ -33,6 +50,12 @@ def fake_api(scripts, d1, routes, domains=(), calls=None):
             res = list(routes)
         elif base.endswith("/workers/domains"):
             res = list(domains)
+        elif base.endswith("/queues"):
+            res = list(extra.get("queues", ()))
+        elif base.endswith("/durable_objects/namespaces"):
+            res = list(extra.get("namespaces", ()))
+        elif base.endswith("/pages/projects"):
+            res = list(extra.get("pages", ()))
         else:
             raise cfl.CfError("unexpected " + path)
         return {"success": True, "result": res, "result_info": {"total_pages": 1}}
@@ -40,8 +63,8 @@ def fake_api(scripts, d1, routes, domains=(), calls=None):
     return get
 
 
-CONFIGURED = "rediacc-account-eu"  # workers/account/wrangler.eu.toml
-BOUND_DB = "edge-account-db-eu"  # workers/account/wrangler.edge-eu.toml
+CONFIGURED = "account-eu"  # workers/account/wrangler.eu.toml
+BOUND_DB = "account-bench"  # workers/account/wrangler.bench-eu.toml
 
 
 def run(scripts, d1, routes, domains=()):
@@ -58,8 +81,40 @@ def test_unknown_script_listed_configured_and_pr_not():
 
 
 def test_unbound_bench_and_edge_databases_listed_bound_and_other_not():
-    found = run([], [BOUND_DB, "old-bench", "edge-forgotten", "account-db-pr-5"], [])
+    found = run([], [BOUND_DB, "old-bench", "edge-forgotten", "account-pr-5"], [])
     assert kinds(found) == {("d1", "old-bench"), ("d1", "edge-forgotten")}
+
+
+def test_unbound_jurisdictional_bench_databases_are_listed():
+    found = run([], ["old-bench-j", "control-bench-eu-j", "account-pr-5"], [])
+    assert kinds(found) == {("d1", "old-bench-j"), ("d1", "control-bench-eu-j")}
+
+
+def test_the_bound_jurisdictional_bench_database_is_not_a_leftover(tmp_path):
+    (tmp_path / "workers" / "account").mkdir(parents=True)
+    (tmp_path / "workers" / "account" / "wrangler.test.toml").write_text(
+        'name = "account-test"\n[[d1_databases]]\nbinding = "DB"\n'
+        'database_name = "account-bench-j"\n'
+    )
+    found = cfl.find_leftovers(
+        tmp_path,
+        "acct",
+        TOKEN,
+        fake_api(["account-test"], ["account-bench-j", "stray-bench-j"], []),
+    )
+    assert kinds(found) == {("d1", "stray-bench-j")}
+
+
+def test_a_bound_edge_database_is_not_a_leftover(tmp_path):
+    """No checked-in config binds an edge-* database any more, so a scratch root binds one: the exclusion for the edge-* pattern is proven apart from the bench one."""
+    (tmp_path / "workers" / "account").mkdir(parents=True)
+    (tmp_path / "workers" / "account" / "wrangler.test.toml").write_text(
+        'name = "account-test"\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "edge-bound"\n'
+    )
+    found = cfl.find_leftovers(
+        tmp_path, "acct", TOKEN, fake_api(["account-test"], ["edge-bound", "edge-stray"], [])
+    )
+    assert kinds(found) == {("d1", "edge-stray")}
 
 
 def test_dangling_route_and_scriptless_route_listed():
@@ -101,7 +156,7 @@ def test_unreadable_listing_is_an_error_not_an_empty_report(monkeypatch, capsys)
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", TOKEN)
     monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
 
-    def get(path, _token):
+    def get(path, _token, **_kw):
         raise cfl.CfError("GET %s: denied" % path)
 
     assert cfl.main([], get=get) == 1
@@ -123,6 +178,11 @@ def test_only_get_listings_are_requested():
         or "/d1/database" in p
         or p.startswith("/zones")
         or "/workers/domains" in p
+        or "/r2/buckets" in p
+        or "/queues" in p
+        or "/containers/applications" in p
+        or "/durable_objects/namespaces" in p
+        or "/pages/projects" in p
         for p, _ in calls
     )
 
@@ -153,18 +213,28 @@ def test_no_config_is_an_error(tmp_path):
         cfl.configured(tmp_path)
 
 
+def test_a_tree_holding_only_a_template_is_no_config(tmp_path):
+    (tmp_path / "workers" / "w").mkdir(parents=True)
+    (tmp_path / "workers" / "w" / "wrangler.template.toml").write_text('name = "@@NAME@@"\n')
+    with pytest.raises(cfl.CfError):
+        cfl.configured(tmp_path)
+
+
 def test_report_states_how_many_items_were_scanned(monkeypatch, capsys):
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", TOKEN)
     monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
     cfl.main(
         [], get=fake_api([CONFIGURED, "pr-1"], [BOUND_DB], [{"pattern": "p", "script": CONFIGURED}])
     )
-    assert "scanned 2 scripts, 1 d1, 1 routes, 0 domains" in capsys.readouterr().out
+    assert (
+        "scanned 2 scripts, 1 d1, 1 routes, 0 domains, 0 buckets, 0 queues, 0 containers, 0 do, 0 pages"
+        in capsys.readouterr().out
+    )
 
 
 class _Resp:
-    def __init__(self, body: bytes, fail_read: bool = False):
-        self.body, self.fail_read = body, fail_read
+    def __init__(self, body: bytes, fail_read: bool = False, status: int = 200):
+        self.body, self.fail_read, self.status = body, fail_read, status
 
     def __enter__(self):
         return self
@@ -225,6 +295,184 @@ def test_fetch_maps_every_unreadable_answer_to_cf_error(monkeypatch):
         assert label
 
 
+def test_an_empty_2xx_delete_answer_is_success(monkeypatch):
+    """A Worker custom-domain DELETE answers 200 with an empty body (live 2026-11-13: the first cf_retire run stopped on it)."""
+    _patch_urlopen(monkeypatch, lambda: _Resp(b""))
+    assert cfl.request("DELETE", "/accounts/a/workers/domains/d", TOKEN)["success"] is True
+
+
+@pytest.mark.parametrize("status", [200, 201, 204, 299])
+def test_an_empty_delete_answer_is_success_across_the_2xx_range(monkeypatch, status):
+    _patch_urlopen(monkeypatch, lambda: _Resp(b"", status=status))
+    assert cfl.request("DELETE", "/accounts/a/workers/domains/d", TOKEN)["success"] is True
+
+
+@pytest.mark.parametrize("status", [199, 300, 302])
+def test_an_empty_delete_answer_outside_2xx_is_not_success(monkeypatch, status):
+    """b28631e8.2: the 200 <= status < 300 gate, not just the default 200."""
+    _patch_urlopen(monkeypatch, lambda: _Resp(b"", status=status))
+    with pytest.raises(cfl.CfError, match="non-JSON"):
+        cfl.request("DELETE", "/accounts/a/workers/domains/d", TOKEN)
+
+
+def test_an_empty_get_answer_is_not_success(monkeypatch):
+    _patch_urlopen(monkeypatch, lambda: _Resp(b"", status=200))
+    with pytest.raises(cfl.CfError, match="non-JSON"):
+        cfl.request("GET", "/p", TOKEN)
+
+
+@pytest.mark.parametrize("status", [429, 500, 502, 503, 504])
+def test_each_retryable_status_is_retried_then_succeeds(monkeypatch, status):
+    """e4e6087d.2: removing any one of RETRY_STATUSES turns its case red."""
+    calls = {"n": 0}
+
+    def flaky():
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise urllib.error.HTTPError(
+                "u", status, "x", email.message.Message(), io.BytesIO(b"<html>x</html>")
+            )
+        return _Resp(b'{"success": true, "result": null}')
+
+    _patch_urlopen(monkeypatch, flaky)
+    monkeypatch.setattr(cfl.time, "sleep", lambda _s: None)
+    assert cfl.request("GET", "/p", TOKEN)["success"] is True
+    assert calls["n"] == 2
+
+
+def test_control_an_empty_2xx_delete_elsewhere_is_still_a_failure(monkeypatch):
+    """Review b28631e8.1: the empty-body rule is the custom-domain path's only."""
+    _patch_urlopen(monkeypatch, lambda: _Resp(b""))
+    with pytest.raises(cfl.CfError, match="non-JSON"):
+        cfl.request("DELETE", "/accounts/a/r2/buckets/b", TOKEN)
+
+
+def test_control_an_empty_delete_without_a_status_is_not_success(monkeypatch):
+    """Review b28631e8.3, 9900887b.2: a response that carries no status is a CfError, not a 2xx and not a crash."""
+
+    class NoStatus:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+        def read(self):
+            return b""
+
+    _patch_urlopen(monkeypatch, NoStatus)
+    with pytest.raises(cfl.CfError, match="no HTTP status"):
+        cfl.request("DELETE", "/accounts/a/workers/domains/d", TOKEN)
+
+
+def _http(code: int, body: bytes = b"<html>x</html>"):
+    return urllib.error.HTTPError("u", code, "x", email.message.Message(), io.BytesIO(body))
+
+
+def test_a_persistent_429_raises_after_the_last_attempt(monkeypatch):
+    """Review e4e6087d.1: three pauses, four calls, then the error."""
+    calls = {"n": 0}
+
+    def throttled():
+        calls["n"] += 1
+        raise _http(429)
+
+    _patch_urlopen(monkeypatch, throttled)
+    monkeypatch.setattr(cfl.time, "sleep", lambda _s: None)
+    with pytest.raises(cfl.CfError) as err:
+        cfl.request("GET", "/r2/x", TOKEN)
+    assert err.value.status == 429
+    assert calls["n"] == len(cfl.RETRY_PAUSES_S) + 1
+
+
+def test_a_persistent_5xx_raises_after_the_last_attempt(monkeypatch):
+    calls = {"n": 0}
+
+    def broken():
+        calls["n"] += 1
+        raise _http(503)
+
+    _patch_urlopen(monkeypatch, broken)
+    monkeypatch.setattr(cfl.time, "sleep", lambda _s: None)
+    with pytest.raises(cfl.CfError) as err:
+        cfl.request("DELETE", "/r2/x", TOKEN)
+    assert err.value.status == 503
+    assert calls["n"] == len(cfl.RETRY_PAUSES_S) + 1
+
+
+def test_a_delete_that_404s_after_a_5xx_retry_is_already_deleted(monkeypatch):
+    """Review e4e6087d.3: the first attempt may have taken effect before the gateway answered."""
+    answers = iter([_http(502), _http(404, b'{"success": false, "errors": []}')])
+
+    def behaviour():
+        raise next(answers)
+
+    _patch_urlopen(monkeypatch, behaviour)
+    monkeypatch.setattr(cfl.time, "sleep", lambda _s: None)
+    assert cfl.request("DELETE", "/r2/x", TOKEN)["success"] is True
+
+
+def test_control_a_404_is_an_error_without_a_prior_5xx_or_after_a_429_or_on_a_get(monkeypatch):
+    for first in (None, 429):
+        answers = iter(([_http(first)] if first else []) + [_http(404, b'{"success": false}')])
+
+        def behaviour(answers=answers):
+            raise next(answers)
+
+        _patch_urlopen(monkeypatch, behaviour)
+        monkeypatch.setattr(cfl.time, "sleep", lambda _s: None)
+        with pytest.raises(cfl.CfError):
+            cfl.request("DELETE", "/r2/x", TOKEN)
+    answers = iter([_http(502), _http(404, b'{"success": false}')])
+
+    def get_behaviour():
+        raise next(answers)
+
+    _patch_urlopen(monkeypatch, get_behaviour)
+    with pytest.raises(cfl.CfError):
+        cfl.request("GET", "/r2/x", TOKEN)
+
+
+def test_a_429_is_retried_then_succeeds(monkeypatch):
+    """Live 2026-11-13: an R2 object DELETE during a 16-wide bucket emptying got a non-JSON throttle answer and stopped the run."""
+    calls = {"n": 0}
+
+    def flaky():
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise urllib.error.HTTPError(
+                "u", 429, "slow", email.message.Message(), io.BytesIO(b"<html>rate</html>")
+            )
+        return _Resp(b'{"success": true, "result": null}')
+
+    _patch_urlopen(monkeypatch, flaky)
+    monkeypatch.setattr(cfl.time, "sleep", lambda _s: None)
+    assert cfl.request("DELETE", "/r2/x", TOKEN)["success"] is True
+    assert calls["n"] == 2
+
+
+def test_control_a_403_is_not_retried(monkeypatch):
+    calls = {"n": 0}
+
+    def refused():
+        calls["n"] += 1
+        raise urllib.error.HTTPError(
+            "u", 403, "no", email.message.Message(), io.BytesIO(b'{"success": false, "errors": []}')
+        )
+
+    _patch_urlopen(monkeypatch, refused)
+    monkeypatch.setattr(cfl.time, "sleep", lambda _s: None)
+    with pytest.raises(cfl.CfError):
+        cfl.request("DELETE", "/r2/x", TOKEN)
+    assert calls["n"] == 1
+
+
+def test_control_an_empty_get_answer_is_still_a_cf_error(monkeypatch):
+    _patch_urlopen(monkeypatch, lambda: _Resp(b""))
+    with pytest.raises(cfl.CfError, match="non-JSON"):
+        cfl.fetch("/p", TOKEN)
+
+
 def test_a_malformed_wrangler_toml_is_a_cf_error_not_a_traceback(tmp_path):
     (tmp_path / "workers" / "x").mkdir(parents=True)
     (tmp_path / "workers" / "x" / "wrangler.toml").write_text("name = ")
@@ -236,7 +484,7 @@ def test_zones_are_listed_for_this_account_only():
     calls: list = []
     base = fake_api([CONFIGURED], [], [], calls=calls)
 
-    def get(path, token):
+    def get(path, token, jurisdiction=None):
         if path.startswith("/zones?"):
             calls.append((path, token))
             return {
@@ -249,7 +497,207 @@ def test_zones_are_listed_for_this_account_only():
             }
         if "/zones/z2/" in path:
             raise AssertionError("another account's zone was read")
-        return base(path, token)
+        return base(path, token, jurisdiction)
 
     cfl.find_leftovers(ROOT, "acct", TOKEN, get)
     assert any("account.id=acct" in p for p, _ in calls)
+
+
+# --- the classes PLAN-product-domain-rename L11 needs seen ---------------------------------------
+
+
+def rows(found):
+    return {(k, n): d for k, n, d in found}
+
+
+def test_buckets_of_both_jurisdictions_are_listed_and_configured_ones_not():
+    """An eu bucket is seen only through the jurisdiction header, so a default-only listing would miss it."""
+    found = run_extra(buckets=[("old-bucket", "default"), ("old-eu", "eu"), ("configs-eu", "eu")])
+    got = rows(found)
+    assert ("bucket", "old-bucket") in got
+    assert ("bucket", "old-eu") in got
+    assert "jurisdiction eu" in got[("bucket", "old-eu")]
+    assert ("bucket", "configs-eu") not in got
+
+
+def test_a_leftover_names_its_id_references_and_bindings():
+    found = run_extra(
+        buckets=[("rediacc-public-data", "default")],
+        bindings={CONFIGURED: [{"type": "r2_bucket", "bucket_name": "rediacc-public-data"}]},
+    )
+    detail = rows(found)[("bucket", "rediacc-public-data")]
+    assert "referenced: .ci/config/" in detail
+    assert "bound: r2 binding of %s" % CONFIGURED in detail
+
+
+def test_queues_containers_namespaces_and_pages_are_listed():
+    found = run_extra(
+        queues=[
+            {"queue_id": "q1", "queue_name": "old-queue", "consumers": [{"script": "w-old"}]},
+            {"queue_id": "q2", "queue_name": "backup-replicate-eu"},
+        ],
+        namespaces=[
+            {"id": "ns-old", "name": "w-old_Exec", "script": "w-old", "class": "Exec"},
+            {"id": "ns-live", "name": "%s_X" % CONFIGURED, "script": CONFIGURED, "class": "X"},
+        ],
+        containers=[
+            {"id": "c1", "name": "w-old-exec", "durable_objects": {"namespace_id": "ns-old"}},
+            {"id": "c2", "name": "gone-exec", "durable_objects": {"namespace_id": "ns-gone"}},
+            {"id": "c3", "name": "live-x", "durable_objects": {"namespace_id": "ns-live"}},
+        ],
+        pages=[{"id": "p1", "name": "oldsite", "domains": ["oldsite.pages.dev"]}],
+    )
+    got = rows(found)
+    assert ("queue", "old-queue") in got
+    assert "consumer w-old" in got[("queue", "old-queue")]
+    assert ("queue", "backup-replicate-eu") not in got
+    assert ("do", "w-old_Exec") in got
+    assert ("do", "%s_X" % CONFIGURED) not in got
+    assert ("container", "w-old-exec") in got
+    assert ("container", "gone-exec") in got
+    assert "exists no more" in got[("container", "gone-exec")]
+    assert ("container", "live-x") not in got
+    assert ("pages", "oldsite") in got
+    assert "id p1" in got[("pages", "oldsite")]
+
+
+def test_a_script_leftover_names_its_custom_domain():
+    found = run(["stray-worker"], [], [], [{"hostname": "old.example", "service": "stray-worker"}])
+    assert "custom domain old.example" in rows(found)[("script", "stray-worker")]
+
+
+def test_the_retired_terms_record_is_no_reference():
+    texts = cfl.reference_texts(ROOT)
+    assert ".ci/config/retired-terms.json" not in texts
+    assert any(rel.startswith("workers/") for rel in texts)
+    assert cfl.referenced_by("x-y", {"a": "x-y-z", "b": "(x-y)"}) == ["b"]
+
+
+def run_extra(**extra):
+    return cfl.find_leftovers(ROOT, "acct", TOKEN, fake_api([CONFIGURED], [], [], extra=extra))
+
+
+def _throttle(retry_after=None):
+    headers = email.message.Message()
+    if retry_after is not None:
+        headers["Retry-After"] = retry_after
+    return urllib.error.HTTPError("u", 429, "slow", headers, io.BytesIO(b"<html>rate</html>"))
+
+
+def test_retry_after_is_honoured_on_a_429(monkeypatch):
+    """A Retry-After of 40 s outweighs the 4 s first step: the pause is at least 40 s, and no more than the jitter allows."""
+    calls = {"n": 0}
+
+    def flaky():
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise _throttle("40")
+        return _Resp(b'{"success": true, "result": null}')
+
+    _patch_urlopen(monkeypatch, flaky)
+    pauses: list = []
+    monkeypatch.setattr(cfl.time, "sleep", pauses.append)
+    assert cfl.request("DELETE", "/r2/x", TOKEN)["success"] is True
+    assert len(pauses) == 1
+    assert 40.0 <= pauses[0] <= 40.0 * (1 + cfl.JITTER_FRACTION)
+
+
+def test_a_429_without_retry_after_backs_off_longer_than_a_5xx(monkeypatch):
+    pauses: list = []
+    monkeypatch.setattr(cfl.time, "sleep", pauses.append)
+    for status in (429, 503):
+        calls = {"n": 0}
+
+        def flaky(status=status, calls=calls):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise urllib.error.HTTPError(
+                    "u", status, "x", email.message.Message(), io.BytesIO(b"<html>")
+                )
+            return _Resp(b'{"success": true, "result": null}')
+
+        _patch_urlopen(monkeypatch, flaky)
+        cfl.request("DELETE", "/r2/x", TOKEN)
+    throttle, server = pauses
+    assert throttle >= cfl.RETRY_PAUSES_S[0] * cfl.THROTTLE_FACTOR
+    assert server == cfl.RETRY_PAUSES_S[0]
+
+
+def test_retry_after_is_capped_and_a_bad_value_is_ignored():
+    assert cfl.retry_after_s("5") == 5.0
+    assert cfl.retry_after_s("99999") == cfl.RETRY_AFTER_CAP_S
+    assert cfl.retry_after_s("Wed, 21 Oct 2026 07:28:00 GMT") is None
+    assert cfl.retry_after_s(None) is None
+
+
+def test_a_retry_after_that_is_not_finite_is_ignored():
+    """Review 358dc107.3: nan and inf parse as floats and are no wait."""
+    assert cfl.retry_after_s("nan") is None
+    assert cfl.retry_after_s("inf") is None
+    assert cfl.retry_after_s("-3") == 0.0
+
+
+def test_pages_listing_without_total_pages_is_an_error_not_a_partial_count():
+    """Review 49117485.6."""
+
+    def page(items, info):
+        return lambda _path, _token: {"success": True, "result": items, "result_info": info}
+
+    with pytest.raises(cfl.CfError, match="total_pages"):
+        cfl.listing_by_page("/p", TOKEN, page([{"name": "a"}], {}))
+    assert cfl.listing_by_page("/p", TOKEN, page([], {})) == []
+    seen: list = []
+
+    def counted(path, _token):
+        seen.append(path)
+        n = int(path.rsplit("=", 1)[1])
+        return {
+            "success": True,
+            "result": [{"n": n}],
+            "result_info": {"total_count": 25, "per_page": 10},
+        }
+
+    assert [i["n"] for i in cfl.listing_by_page("/p", TOKEN, counted)] == [1, 2, 3]
+
+
+def test_containers_listing_without_paging_metadata_is_an_error_not_a_truncation():
+    """Review 9900887b.1: items with no page count are refused; an empty listing is the control."""
+    with pytest.raises(cfl.CfError, match="total_pages"):
+        cfl.followed("/c", TOKEN, lambda _p, _t: {"success": True, "result": [{"id": 1}]})
+    assert cfl.followed("/c", TOKEN, lambda _p, _t: {"success": True, "result": []}) == []
+    counted = {
+        "success": True,
+        "result": [{"id": 1}],
+        "result_info": {"total_count": 5, "per_page": 10},
+    }
+    assert cfl.followed("/c", TOKEN, lambda _p, _t: counted) == [{"id": 1}]
+
+
+def test_containers_follow_pages_counted_from_total_count_and_per_page():
+    """Review d2516ba8.1: with no total_pages, ceil(total_count / per_page) pages are read; the one-page case above is the control."""
+    seen: list = []
+
+    def get(path, _token):
+        seen.append(path)
+        n = int(path.rsplit("=", 1)[1]) if "page=" in path else 1
+        return {
+            "success": True,
+            "result": [{"id": n}],
+            "result_info": {"total_count": 25, "per_page": 10},
+        }
+
+    assert [c["id"] for c in cfl.followed("/c", TOKEN, get)] == [1, 2, 3]
+    assert seen == ["/c", "/c?page=2", "/c?page=3"]
+
+
+def test_containers_follow_every_page_the_listing_reports():
+    """Review 49117485.5."""
+    seen: list = []
+
+    def get(path, _token):
+        seen.append(path)
+        n = int(path.rsplit("=", 1)[1]) if "page=" in path else 1
+        return {"success": True, "result": [{"id": n}], "result_info": {"total_pages": 3}}
+
+    assert [c["id"] for c in cfl.followed("/c", TOKEN, get)] == [1, 2, 3]
+    assert seen == ["/c", "/c?page=2", "/c?page=3"]

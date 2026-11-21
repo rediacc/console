@@ -1,157 +1,29 @@
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import type { SFTPClient } from '../remote/sftp/index.js';
+import { replicateDestinations } from '../services/backup/backup-replication.js';
 import { hasAccountToken, pushStrategyRetention } from '../services/backup/backup-retention.js';
+import {
+  HOME_STORE,
+  readStoreStatuses,
+  type StatusTargets,
+} from '../services/backup/backup-store-pick.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import { writeStderr, writeStdout } from '../services/core/request-context.js';
+import { setExitCode, writeStdout } from '../services/core/request-context.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
+import { str } from '../services/jobs/steps-support.js';
 import { machineConnections } from '../services/machine/machine-connection.js';
 import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-execution.js';
 import { handleError } from '../utils/errors.js';
-
-/** Resolve which strategy names to trigger. */
-function resolveStrategyNames(
-  strategyFilter: string | undefined,
-  boundNames: string[],
-  allStrategyNames: string[]
-): string[] {
-  if (strategyFilter) return [strategyFilter];
-  if (boundNames.length > 0) return boundNames;
-  return allStrategyNames;
-}
-
-/** Trigger a deployed systemd backup service. */
-async function triggerDeployedUnit(
-  sftp: SFTPClient,
-  serviceName: string,
-  debug?: boolean
-): Promise<void> {
-  outputService.info(`Triggering ${serviceName}...`);
-  const exitCode = await sftp.execStreaming(`sudo systemctl start ${serviceName}`, {
-    onStdout: (data) => {
-      if (debug) writeStdout(data);
-    },
-    onStderr: (data) => {
-      writeStderr(data);
-    },
-  });
-  if (exitCode === 0) {
-    outputService.success(`Triggered ${serviceName}`);
-  } else {
-    outputService.warn(`Failed to trigger ${serviceName} (exit ${exitCode})`);
-  }
-}
-
-/**
- * The unit names a strategy runs as on a machine: the base unit, one per datastore (`.ds.`) and one per
- * repository with its own cadence (`.repo.`), as `backup schedule` renders them. A strategy that is not
- * bound to the machine, or whose units cannot be resolved, falls back to its bare name.
- */
-async function strategyUnitNames(machineName: string, strategyName: string): Promise<string[]> {
-  const { expectedScheduleUnits } = await import('../services/backup/backup-schedule.js');
-  let units: string[] = [];
-  try {
-    units = (await expectedScheduleUnits(machineName))
-      .filter((u) => u.strategyName === strategyName)
-      .map((u) => u.unitName);
-  } catch {
-    units = [];
-  }
-  return units.length > 0 ? units : [strategyName];
-}
-
-/** Whether `rediacc-backup-<unit>.service` is installed on the machine. */
-async function isUnitDeployed(sftp: SFTPClient, unit: string): Promise<boolean> {
-  let checkOutput = '';
-  await sftp.execStreaming(`systemctl cat rediacc-backup-${unit}.service 2>/dev/null`, {
-    onStdout: (data) => {
-      checkOutput += data;
-    },
-    onStderr: () => {},
-  });
-  return checkOutput.length > 0;
-}
-
-/** Run an ad-hoc backup via systemd-run when no deployed unit exists. */
-async function triggerAdhocBackup(
-  sftp: SFTPClient,
-  machineName: string,
-  name: string,
-  config: import('../types/index.js').BackupStrategyConfig,
-  remoteRenetPath: string,
-  debug?: boolean
-): Promise<void> {
-  outputService.info(`No deployed unit for "${name}", running ad-hoc...`);
-  const { buildStrategyCommandsForMachine, sanitizeBackupOutput } = await import(
-    '../services/backup/backup-schedule.js'
-  );
-  const commands = await buildStrategyCommandsForMachine(
-    machineName,
-    name,
-    config,
-    remoteRenetPath
-  );
-  if (commands.length === 0) {
-    outputService.warn(`Backup strategy "${name}" covers no repository on ${machineName}`);
-    return;
-  }
-
-  const adhocUnit = `rediacc-backup-${name}-adhoc`;
-  await clearFinishedAdhocUnit(sftp, adhocUnit, name);
-  const { buildAdhocSystemdRun } = await import(
-    '../services/backup/backup-schedule-unit-generator.js'
-  );
-  const systemdRunCmd = buildAdhocSystemdRun(adhocUnit, commands, config.cpuLimit);
-
-  if (debug) {
-    outputService.info(`Running: ${sanitizeBackupOutput(systemdRunCmd)}`);
-  }
-
-  const exitCode = await sftp.execStreaming(systemdRunCmd, {
-    onStdout: (data) => {
-      if (debug) writeStdout(data);
-    },
-    onStderr: (data) => {
-      writeStderr(data);
-    },
-  });
-
-  if (exitCode === 0) {
-    outputService.success(`Ad-hoc backup started: ${adhocUnit}.service`);
-  } else {
-    throw new Error(`Failed to start ad-hoc backup for "${name}" (exit ${exitCode})`);
-  }
-}
-
-/** SubStates of a unit that has finished (or was never loaded): only these are safe to stop and clear. */
-const FINISHED_SUBSTATES = new Set(['', 'dead', 'exited', 'failed']);
-
-/**
- * An ad-hoc unit lingers after it exits (`--remain-after-exit`), and systemd-run refuses a name that is
- * still loaded. Refuse unless it has finished (any transitional state such as auto-restart or reload counts
- * as running); otherwise stop it and clear its failed state so the next run can reuse the name.
- */
-async function clearFinishedAdhocUnit(sftp: SFTPClient, unit: string, name: string): Promise<void> {
-  let subState = '';
-  await sftp.execStreaming(
-    `systemctl show -p SubState --value ${unit}.service 2>/dev/null || true`,
-    {
-      onStdout: (data) => {
-        subState += data;
-      },
-      onStderr: () => {},
-    }
-  );
-  if (!FINISHED_SUBSTATES.has(subState.trim())) {
-    throw new Error(
-      `An ad-hoc backup for "${name}" is still running (${unit}.service). Wait for it, or cancel it with: rdc backup cancel ${name}`
-    );
-  }
-  await sftp.execStreaming(
-    `sudo systemctl stop ${unit}.service 2>/dev/null; sudo systemctl reset-failed ${unit}.service 2>/dev/null; true`,
-    { onStdout: () => {}, onStderr: () => {} }
-  );
-}
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import {
+  deployedStrategyUnits,
+  resolveStrategyNames,
+  stageAdhocUnit,
+  strategyUnitNames,
+  UNIT_PREFIX,
+} from './backup-ops-unit-stage.js';
 
 /**
  * Declare each strategy's retention on the lineages it covers, filling only lineages that have no
@@ -230,47 +102,66 @@ async function runBackupNow(
 
   const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
   const sftp = lease.sftp;
+  const units: string[] = [];
 
   try {
     for (const { name, config } of strategies) {
-      const deployed: string[] = [];
-      for (const unit of await strategyUnitNames(machineName, name)) {
-        if (await isUnitDeployed(sftp, unit)) deployed.push(unit);
-      }
-      if (deployed.length === 0) {
-        await triggerAdhocBackup(sftp, machineName, name, config, remoteRenetPath, debug);
+      const deployed = await deployedStrategyUnits(
+        sftp,
+        name,
+        await strategyUnitNames(machineName, name)
+      );
+      if (deployed.length > 0) {
+        units.push(...deployed.map((unit) => `${UNIT_PREFIX}${unit}`));
         continue;
       }
-      for (const unit of deployed) {
-        await triggerDeployedUnit(sftp, `rediacc-backup-${unit}.service`, debug);
-      }
+      const adhoc = await stageAdhocUnit(sftp, machineName, name, config, remoteRenetPath, debug);
+      if (adhoc) units.push(adhoc);
     }
   } finally {
     lease.release();
   }
+
+  if (units.length > 0) await startBackupUnits(machineName, units, debug);
 }
 
-/** Try to cancel a single systemd unit if active. Returns true if cancelled. */
-async function tryCancelUnit(sftp: SFTPClient, unit: string, debug?: boolean): Promise<boolean> {
-  // Only a running unit is worth stopping, a failed one has already exited, so `systemctl stop` on it would be a no-op reported as a cancellation.
-  const state = await readServiceState(sftp, unit);
-  if (state !== 'active' && state !== 'activating') return false;
-  outputService.info(t('commands.backup.cancel.cancelling', { name: unit }));
-  const exitCode = await sftp.execStreaming(`sudo systemctl stop ${unit}`, {
-    onStdout: (data) => {
-      if (debug) writeStdout(data);
+/**
+ * Start every unit as ONE `backup-unit` job: renet runs `systemctl start` inside the job, so the backup outlives this
+ * client, the spool holds its start and exit code, and a run past the attach window returns its ticket.
+ */
+async function startBackupUnits(
+  machineName: string,
+  units: string[],
+  debug?: boolean
+): Promise<void> {
+  outputService.info(`Starting ${units.map((u) => `${u}.service`).join(', ')}...`);
+  const outcome = await runCommandJob(
+    'backup run',
+    {
+      functionName: 'backup-unit',
+      machineName,
+      commandKind: { name: 'backup-unit', args: { units } },
+      debug,
     },
-    onStderr: (data) => {
-      writeStderr(data);
-    },
-  });
-  if (exitCode === 0) {
-    outputService.success(t('commands.backup.cancel.cancelled', { name: unit }));
-    return true;
+    []
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
   }
-  return false;
+  if (outcome.result.success) {
+    outputService.success(`Backup finished: ${units.join(', ')}`);
+    return;
+  }
+  renderLocalExecutionFailure(outcome.result, `Backup failed on ${machineName}`);
 }
 
+/**
+ * `backup cancel`: ONE `backup-cancel` job stops every scheduled unit of the strategies (base, `.ds.`, `.repo.`) and
+ * their ad-hoc units. renet stops only the units systemd has loaded and prints `cancelled <unit>.service` for each one
+ * that was running, which is where the per-strategy messages come from.
+ */
 async function cancelBackup(
   machineName: string,
   strategyFilter?: string,
@@ -289,93 +180,203 @@ async function cancelBackup(
     throw new Error(`No backup strategies bound to "${machineName}"`);
   }
 
-  const sshPrivateKey =
-    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+  const unitsOf = new Map<string, string[]>();
+  for (const name of toCheck) {
+    const unitNames = new Set([name, ...(await strategyUnitNames(machineName, name))]);
+    unitsOf.set(name, [
+      ...[...unitNames].map((u) => `rediacc-backup-${u}`),
+      `rediacc-backup-${name}-adhoc`,
+    ]);
+  }
+  const units = [...new Set([...unitsOf.values()].flat())];
 
-  const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
-
-  try {
-    for (const name of toCheck) {
-      await cancelStrategyUnits(lease.sftp, machineName, name, debug);
+  const outcome = await runCommandJob(
+    'backup cancel',
+    {
+      functionName: 'backup-cancel',
+      machineName,
+      commandKind: { name: 'backup-cancel', args: { units } },
+      debug,
+      captureOutput: true,
+    },
+    []
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  if (!outcome.result.success) {
+    renderLocalExecutionFailure(outcome.result, `Cancelling the backups failed on ${machineName}`);
+    return;
+  }
+  const stopped = new Set(
+    (outcome.result.stdout ?? '')
+      .split('\n')
+      .map((line) => /^cancelled (.+)\.service$/.exec(line.trim())?.[1])
+      .filter((u): u is string => u !== undefined)
+  );
+  for (const [name, names] of unitsOf) {
+    const cancelled = names.filter((u) => stopped.has(u));
+    for (const unit of cancelled) {
+      outputService.success(t('commands.backup.cancel.cancelled', { name: `${unit}.service` }));
     }
-  } finally {
-    lease.release();
-  }
-}
-
-/** Try to cancel every scheduled unit of a strategy (base, `.ds.`, `.repo.`) and its ad-hoc unit. */
-async function cancelStrategyUnits(
-  sftp: SFTPClient,
-  machineName: string,
-  name: string,
-  debug?: boolean
-): Promise<void> {
-  const unitNames = new Set([name, ...(await strategyUnitNames(machineName, name))]);
-  const units = [
-    ...[...unitNames].map((u) => `rediacc-backup-${u}.service`),
-    `rediacc-backup-${name}-adhoc.service`,
-  ];
-  let cancelled = false;
-  for (const unit of units) {
-    if (await tryCancelUnit(sftp, unit, debug)) cancelled = true;
-  }
-  if (!cancelled) {
-    outputService.info(t('commands.backup.cancel.notRunning', { name }));
+    if (cancelled.length === 0) {
+      outputService.info(t('commands.backup.cancel.notRunning', { name }));
+    }
   }
 }
 
 /**
- * Read a backup unit's systemd state.
- *
- * Returns the state verbatim rather than a boolean. Collapsing it to
- * active-or-not made a FAILED unit render exactly like a healthy idle one, which
- * is how a backup stayed broken for six days while this command kept reporting
- * "idle", the string systemd hands back already said `failed`, and the old code
- * threw it away one line later.
+ * The destination stores of each strategy and what each store reports for the machine's repositories: the data
+ * behind the per-store rows. Read before the job so the step renders what was planned; a listing that cannot be read
+ * leaves its columns `-`, never a failed status.
  */
-async function readServiceState(sftp: SFTPClient, serviceName: string): Promise<string> {
-  let statusText = '';
-  await sftp.execStreaming(`systemctl is-active ${serviceName} 2>/dev/null || true`, {
-    onStdout: (data) => {
-      statusText += data;
-    },
-    onStderr: () => {},
-  });
-  return statusText.trim();
+async function readStatusTargets(
+  machineName: string,
+  strategies: string[]
+): Promise<StatusTargets> {
+  const byStrategy: Record<string, string[]> = {};
+  const replicas: Record<string, Record<string, string>> = {};
+  try {
+    const bound = await configService.listBackupStrategies();
+    for (const name of new Set(strategies)) {
+      const destinations = bound[name]?.destinations ?? [];
+      const enabled = destinations.filter((d) => d.enabled !== false);
+      byStrategy[name] = [...new Set(enabled.map((d) => d.target ?? HOME_STORE))];
+      // A replicate destination's row shows its copy lag against the store it copies from.
+      const copies = replicateDestinations({ destinations: enabled }, true).filter((d) => d.from);
+      if (copies.length > 0) {
+        replicas[name] = Object.fromEntries(
+          copies.map((d) => [d.target ?? HOME_STORE, d.from as string])
+        );
+      }
+    }
+  } catch {
+    // An unreadable strategy list leaves the store columns `-`; the status itself still prints.
+  }
+  const lineages = new Set<string>();
+  try {
+    for (const { config } of await configService.listRepositories()) {
+      if (
+        config.placement &&
+        'machine' in config.placement &&
+        (config.placement as { machine: string }).machine === machineName
+      ) {
+        lineages.add(config.grandGuid ?? config.repositoryGuid);
+      }
+    }
+  } catch {
+    // An unreadable repository list leaves the per-store listing empty.
+  }
+  return { byStrategy, replicas, stores: await readStoreStatuses([...lineages]) };
 }
 
 /**
  * `backup status`: one row per scheduled unit (base, `.ds.`, `.repo.`) with timer presence, last run
  * and result, next run and a missed-run verdict, then the recent journal of a named strategy's units.
  */
-async function showBackupStatus(machineName: string, strategyFilter?: string): Promise<void> {
-  const { reportBackupScheduleStatus } = await import('../services/backup/backup-schedule.js');
-  await reportBackupScheduleStatus(machineName, strategyFilter);
+async function showBackupStatus(
+  machineName: string,
+  strategyFilter?: string,
+  debug?: boolean
+): Promise<void> {
+  const { expectedStatusUnits, renderBackupScheduleStatus } = await import(
+    '../services/backup/backup-schedule.js'
+  );
+  const expected = await expectedStatusUnits(machineName, strategyFilter);
+  if (expected.length === 0) {
+    // Nothing is bound: no unit to read, so no job.
+    renderBackupScheduleStatus(machineName, expected, '');
+    return;
+  }
+
+  // One read job (`systemctl show` of every unit's timer and service); the table is its step, so a ticket handed back early prints nothing half-done.
+  const units = [...new Set(expected.map((u) => `rediacc-backup-${u.unitName}`))];
+  const outcome = await runCommandJob(
+    'backup status',
+    {
+      functionName: 'backup-status',
+      machineName,
+      commandKind: { name: 'backup-status', args: { units } },
+      debug,
+      captureOutput: true,
+    },
+    // The step renders the unit list the job read, not a recomputation from a config that may have changed since.
+    [
+      planStep('renderBackupStatus', {
+        machine: machineName,
+        expected: JSON.stringify(expected),
+        targets: JSON.stringify(
+          await readStatusTargets(
+            machineName,
+            expected.map((u) => u.strategyName)
+          )
+        ),
+      }),
+    ]
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  if (!outcome.result.success) {
+    renderLocalExecutionFailure(
+      outcome.result,
+      `Reading the backup units failed on ${machineName}`
+    );
+    return;
+  }
   if (!strategyFilter) return;
 
-  const localConfig = await configService.getLocalConfig();
-  const machine = localConfig.machines[machineName];
-  if (!machine) {
-    throw new Error(`Machine "${machineName}" not found`);
+  // The recent journal of the strategy's units is a read job of its own (`backup-journal`), after the table's job.
+  const journal = await runCommandJob(
+    'backup status',
+    {
+      functionName: 'backup-journal',
+      machineName,
+      commandKind: { name: 'backup-journal', args: { strategy: strategyFilter } },
+      debug,
+      captureOutput: true,
+    },
+    []
+  );
+  if (journal.kind === 'pending') {
+    const code = pendingExitCode(journal);
+    if (code !== undefined) setExitCode(code);
+    return;
   }
-  const sshPrivateKey =
-    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
-  try {
-    outputService.info(`\nRecent logs (${strategyFilter}):`);
-    await lease.sftp.execStreaming(
-      `journalctl -u 'rediacc-backup-${strategyFilter}.service' -u 'rediacc-backup-${strategyFilter}.*.service' --no-pager -n 20 2>/dev/null || echo "(no logs)"`,
-      {
-        onStdout: (data) => {
-          writeStdout(data);
-        },
-        onStderr: () => {},
-      }
+  if (!journal.result.success) {
+    renderLocalExecutionFailure(
+      journal.result,
+      `Reading the backup journal failed on ${machineName}`
     );
-  } finally {
-    lease.release();
+    return;
   }
+  outputService.info(`\nRecent logs (${strategyFilter}):`);
+  const lines = (journal.result.stdout ?? '').trim();
+  writeStdout(`${lines || '(no logs)'}\n`);
 }
+
+bindStepHandler('seedStrategyRetention', async ({ machine, params }) => {
+  const strategies = typeof params.strategies === 'string' ? params.strategies : '';
+  await seedStrategyRetention(strategies ? strategies.split(',') : [], machine);
+});
+
+bindStepHandler('renderBackupStatus', async ({ machine, output, params }) => {
+  const { renderBackupScheduleStatus } = await import('../services/backup/backup-schedule.js');
+  // The job's own plan always sets `expected`; its absence is a corrupt step, not a schedule with no units.
+  const expected: unknown = JSON.parse(str(params, 'expected'));
+  if (!Array.isArray(expected)) throw new Error('step param "expected" is not a JSON array');
+  const targets = typeof params.targets === 'string' ? params.targets : undefined;
+  renderBackupScheduleStatus(
+    machine,
+    expected,
+    output ?? '',
+    targets === undefined ? undefined : (JSON.parse(targets) as StatusTargets)
+  );
+});
 
 /** Register the machine-scoped backup ops: schedule, run, status, cancel. */
 export function registerBackupOpsCommands(backup: Command): void {
@@ -391,17 +392,29 @@ export function registerBackupOpsCommands(backup: Command): void {
       try {
         const machineName = options.machine;
         const { pushBackupSchedule } = await import('../services/backup/backup-schedule.js');
-        await pushBackupSchedule(machineName, {
+        const bound = (await configService.getLocalConfig()).machines[machineName];
+        const strategies = bound?.backupStrategies ?? [];
+        // Retention seeding and the DR nudge (enabling backups without config-storage enrollment leaves the repo credentials host-local, spec/02 dec 14) follow the apply job as its steps.
+        const steps = [
+          planStep('seedStrategyRetention', {
+            strategies: strategies.join(','),
+            machine: machineName,
+          }),
+          planStep('warnIfConfigStorageUnenrolled', {}),
+        ];
+        const result = await pushBackupSchedule(machineName, {
           debug: options.debug,
           dryRun: options.dryRun,
           force: options.force,
           resetFailed: options.resetFailed,
+          steps: options.dryRun ? [] : steps,
         });
-        if (!options.dryRun) {
+        if (result === 'applied' || result === 'unchanged') {
           outputService.success(t('commands.backup.schedule.success', { machine: machineName }));
-          const bound = (await configService.getLocalConfig()).machines[machineName];
-          await seedStrategyRetention(bound?.backupStrategies ?? [], machineName);
-          // DR nudge: enabling backups without config-storage enrollment leaves the repo credentials (LUKS passphrases) host-local (spec/02 dec 14).
+        }
+        if (result === 'unchanged') {
+          // No job ran, so the steps the job would have carried run here.
+          await seedStrategyRetention(strategies, machineName);
           const { warnIfConfigStorageUnenrolled } = await import('../services/backup/dr-nudge.js');
           await warnIfConfigStorageUnenrolled();
         }
@@ -432,7 +445,7 @@ export function registerBackupOpsCommands(backup: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (strategy: string | undefined, options) => {
       try {
-        await showBackupStatus(options.machine, strategy);
+        await showBackupStatus(options.machine, strategy, options.debug);
       } catch (error) {
         handleError(error);
       }

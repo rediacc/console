@@ -31,16 +31,25 @@ export class NetworkIdUndiscoverableError extends ValidationError {
   }
 }
 
+/** The machine answered and holds the repo, but its state mirror records no ID (not a fork): reconcile cannot fill it either. */
+export class NetworkIdNotRecordedError extends ValidationError {
+  constructor(repository: string, machine: string) {
+    super(t('errors.repo.networkIdNotRecorded', { repository, machine }));
+  }
+}
+
 type NetworkIdDiscovery =
   | { kind: 'found'; networkId: number }
   | { kind: 'absent'; listedIds: number[] }
+  /** Present on the machine with no ID recorded: a never-up fork (renet allocates on its first up) or a repo whose mirror lost it. */
+  | { kind: 'present-without-id'; isFork: boolean }
   | { kind: 'unknown' };
 
 /**
  * Ask the machine for a repo's network ID through the presence probe's own
  * `repository_list` call. `found` carries renet's persisted ID; `absent` is a
  * definite "this datastore has no such repo"; `unknown` covers an unreachable
- * machine, a failed listing, and a present repo whose mirror records no ID.
+ * machine and a failed listing; a present repo whose mirror records no ID is `present-without-id`.
  */
 async function discoverNetworkId(input: {
   repoGuid: string;
@@ -53,7 +62,7 @@ async function discoverNetworkId(input: {
   if (probe === undefined) return { kind: 'unknown' };
   if (!probe.present) return { kind: 'absent', listedIds: probe.listedIds };
   return probe.networkId === undefined
-    ? { kind: 'unknown' }
+    ? { kind: 'present-without-id', isFork: probe.isFork === true }
     : { kind: 'found', networkId: probe.networkId };
 }
 
@@ -149,6 +158,10 @@ export async function resolveMissingNetworkId(input: {
   if (found.kind === 'found') return found.networkId;
   if (found.kind === 'unknown') {
     throw new NetworkIdUndiscoverableError(input.repository, target.machine);
+  }
+  // A never-up fork carries no ID on the machine by design: renet allocates it in the first job.
+  if (found.kind === 'present-without-id' && !found.isFork) {
+    throw new NetworkIdNotRecordedError(input.repository, target.machine);
   }
   return NETWORK_ID_AUTO;
 }

@@ -105,7 +105,7 @@ from rediacc_ci.well_known import RELEASES_BUCKET, RELEASES_ORIGIN
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.simulate_promotion"
 
-# `BUCKET="rediacc-releases"` (twin :51) and the public host (twin :202, :213),
+# `BUCKET="releases"` (twin :51) and the public host (twin :202, :213),
 # both hard-coded in the twin.
 BUCKET = RELEASES_BUCKET
 PUBLIC_HOST = RELEASES_ORIGIN
@@ -465,7 +465,9 @@ def _purge(purge_urls: list[str], zone: str) -> None:
 
 
 def main(argv: list[str]) -> int:
-    del argv  # the twin takes no argv; every input is an environment variable
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
 
     root = repo_root()
     try:

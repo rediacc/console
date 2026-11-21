@@ -3,7 +3,7 @@
 
 The first job of every CI run: validate the app token, decide whether the push came from a bot, initialise the private submodules, mint the three image tags, resolve the next version from the tag list, and ask the registry which of the three images already exist. Everything downstream reads its outputs, so a wrong answer here is a wrong answer everywhere.
 
-LIVE. `.github/workflows/ci.yml` and `cd-v2.yml` run this module. `.ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py` drives its tag-fetch block, `fetch_latest_tag`, directly.
+LIVE. `.github/workflows/ci.yml` and `cd-release-edge.yml` run this module. `.ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py` drives its tag-fetch block, `fetch_latest_tag`, directly.
 
 Ledger: `.ci/shadow/w7p6-initialize.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-initialize --assert --k 5`).
 
@@ -207,9 +207,7 @@ def bash_exec_failure(line: int, command: str, err: OSError, *, searched: bool) 
     return code
 
 
-def run_inherit(
-    argv: list[str], line: int, *, searched: bool = False, quiet_err: bool = False
-) -> int:
+def run_inherit(argv: list[str], line: int, *, searched: bool = False) -> int:
     """A plain command: both streams inherited, status returned.
 
     STDOUT IS FLUSHED FIRST, every time. The child writes to the same descriptor this process buffers, and Python block-buffers a redirected stdout where bash
@@ -220,11 +218,20 @@ def run_inherit(
     try:
         return subprocess.run(
             argv,
-            stderr=subprocess.DEVNULL if quiet_err else None,
             check=False,
         ).returncode
     except OSError as err:
         return bash_exec_failure(line, argv[0], err, searched=searched)
+
+
+def run_capture_err(argv: list[str], line: int, *, searched: bool = False) -> tuple[int, bytes]:
+    """`run_inherit` with git's stderr held back as BYTES instead of inherited, so the caller can redact it before it reaches the log. stdout stays inherited and is flushed first, for the reason `run_inherit` gives."""
+    sys.stdout.flush()
+    try:
+        proc = subprocess.run(argv, stderr=subprocess.PIPE, check=False)
+    except OSError as err:
+        return bash_exec_failure(line, argv[0], err, searched=searched), b""
+    return proc.returncode, proc.stderr
 
 
 def run_capture(argv: list[str], line: int) -> tuple[int, str]:
@@ -570,14 +577,17 @@ def run(check_only: str, output_file: str) -> int:
     if os.path.isfile(SUBMODULE_SENTINEL):
         log.info("Submodules already initialized")
     else:
-        status = run_inherit(
+        status, git_err = run_capture_err(
             ["git", "submodule", "update", "--init", "--recursive", "private/"],
             GIT_SUBMODULE_LINE,
             searched=True,
-            quiet_err=True,
         )
         if status != 0:
             log.error("Failed to initialize submodules")
+            # Intentional change against the retired twin (Rule T), which sent git's stderr to null: a gitlink whose commit was never pushed, an auth failure and a network error were all one invisible line. git echoes the remote in its errors and the insteadOf rewrite carries the token, so the text is redacted before it is shown.
+            sys.stderr.flush()
+            sys.stderr.buffer.write(redact(git_err, os.environ.get("GITHUB_PAT", "")))
+            sys.stderr.buffer.flush()
             return 1
         if not os.path.isfile(SUBMODULE_SENTINEL):
             log.error("Submodule initialization incomplete")

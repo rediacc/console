@@ -94,7 +94,7 @@ def _copy(
     proxy = root / "workers" / "proxy"
     proxy.mkdir(parents=True)
     (proxy / EU).write_text(CONTAINERS % 2, encoding="utf-8")
-    (proxy / "wrangler.bench.toml").write_text(CONTAINERS % 2, encoding="utf-8")
+    (proxy / "wrangler.bench-eu.toml").write_text(CONTAINERS % 2, encoding="utf-8")
     if dev:
         (proxy / "wrangler.dev.toml").write_text(CONTAINERS % 2, encoding="utf-8")
     for name, value in (extra or {}).items():
@@ -123,7 +123,7 @@ def test_the_glob_sees_every_config_in_the_real_tree() -> None:
     configs = [
         c for c in sorted(PROXY.glob("wrangler*.toml")) if c.name != "wrangler.template.toml"
     ]
-    assert PROXY / "wrangler.bench.toml" in configs
+    assert PROXY / "wrangler.bench-eu.toml" in configs
     assert f"in {len(configs)} config(s)" in _run().stdout
 
 
@@ -238,11 +238,11 @@ def test_the_selftest_passes_on_its_own() -> None:
     assert "FAIL" not in proc.stderr
 
 
-# ---- the bench config (workers/proxy/wrangler.bench.toml): the same budget; what it names is check:ci-proxy-configs' ----
+# ---- the bench config (workers/proxy/wrangler.bench-eu.toml): the same budget; what it names is check:ci-proxy-configs' ----
 
 
 def _bench(root: pathlib.Path) -> pathlib.Path:
-    return root / "workers" / "proxy" / "wrangler.bench.toml"
+    return root / "workers" / "proxy" / "wrangler.bench-eu.toml"
 
 
 def test_a_planted_bench_executor_cap_of_twenty_six_fails(tmp_path: pathlib.Path) -> None:
@@ -250,7 +250,7 @@ def test_a_planted_bench_executor_cap_of_twenty_six_fails(tmp_path: pathlib.Path
     _replace(_bench(root), 'EXECUTOR_CAP = "2"\n', 'EXECUTOR_CAP = "26"\n')
     proc = _run("--root", str(root))
     assert proc.returncode == 1, proc.stdout + proc.stderr
-    assert "workers/proxy/wrangler.bench.toml:" in proc.stderr
+    assert "workers/proxy/wrangler.bench-eu.toml:" in proc.stderr
     assert 'EXECUTOR_CAP = "26" is over the budget of 25' in proc.stderr
     assert "workers/proxy/wrangler.eu.toml:" not in proc.stderr, "the eu config is unplanted"
 
@@ -262,7 +262,7 @@ def test_a_default_policy_entry_in_bench_fails(tmp_path: pathlib.Path) -> None:
     proc = _run("--root", str(root))
     assert proc.returncode == 1
     assert (
-        "workers/proxy/wrangler.bench.toml: [[containers]] ExecutorContainer uses the default "
+        "workers/proxy/wrangler.bench-eu.toml: [[containers]] ExecutorContainer uses the default "
         "scheduling policy" in proc.stderr
     )
 
@@ -272,7 +272,7 @@ def test_a_missing_bench_config_is_no_verdict(tmp_path: pathlib.Path) -> None:
     _bench(root).unlink()
     proc = _run("--root", str(root))
     assert proc.returncode == 2
-    assert "wrangler.bench.toml is missing" in proc.stderr
+    assert "wrangler.bench-eu.toml is missing" in proc.stderr
 
 
 def test_a_missing_eu_config_is_no_verdict(tmp_path: pathlib.Path) -> None:
@@ -305,7 +305,7 @@ def test_zero_bench_containers_is_no_verdict(tmp_path: pathlib.Path) -> None:
     )
     proc = _run("--root", str(root))
     assert proc.returncode == 2, proc.stdout + proc.stderr
-    assert "wrangler.bench.toml declares zero [[containers]] entries" in proc.stderr
+    assert "wrangler.bench-eu.toml declares zero [[containers]] entries" in proc.stderr
 
 
 # ---- the glob and the deployable set: at most 7 configs, at most 175 instances, 25 per config ----
@@ -525,7 +525,7 @@ def test_a_deployable_set_over_twenty_one_hundred_dollars_fails(tmp_path: pathli
     """Seven durable targets at $281.05 are $1,967.35 and pass; an eighth is also an eighth config, so the dollar line is planted through the set limit alone by pricing seven at full cap and heavy at the budget plus one more config the count refuses."""
     extra = {f"wrangler.t{i}.toml": 1 for i in range(5)}
     root = _copy(tmp_path, extra)
-    for name in (EU, "wrangler.bench.toml", *extra):
+    for name in (EU, "wrangler.bench-eu.toml", *extra):
         (root / "workers" / "proxy" / name).write_text(DURABLE, encoding="utf-8")
     proc = _run("--root", str(root))
     assert proc.returncode == 0, proc.stderr

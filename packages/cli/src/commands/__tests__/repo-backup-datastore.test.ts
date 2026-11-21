@@ -39,6 +39,11 @@ vi.mock('../../services/config/config-resources.js', () => ({
   },
 }));
 
+// The licence step before `repository_up` is pinned in job-tails-deploy.test.ts; here only the datastore each side declares is under test.
+vi.mock('../../services/repo-migrate-license.js', () => ({
+  ensureTargetRepoLicense: vi.fn().mockResolvedValue(undefined),
+}));
+
 const mockExecute = vi.hoisted(() => vi.fn());
 vi.mock('../../services/executor/executor-factory.js', () => ({
   getExecutor: () => ({ execute: mockExecute }),

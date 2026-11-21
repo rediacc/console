@@ -21,5 +21,17 @@
   "review_epoch": "2026-10-02T07:09:03Z",
   "$review_epoch": "Commits authored before this instant are never reviewed, so a branch's older history is not back-reviewed on the day the hook landed. Author date, not committer date, so a rebase does not move old commits past it.",
   "retention_days": 14,
-  "$retention_days": "Review directories whose branch merged more than this many days ago are due for --prune-reviews. The one home of this number."
+  "$retention_days": "Review directories whose branch merged more than this many days ago are due for --prune-reviews. The one home of this number.",
+  "review_skip_globs": [
+    "agent/plans/QUEUE.md",
+    "agent/*/STATE.md",
+    "agent/ledgers/census-*.jsonl",
+    "agent/ledgers/hint-*.jsonl",
+    "agent/ledgers/live-proof.jsonl",
+    "agent/ledgers/plan-*.jsonl",
+    "agent/ledgers/stop-hook-*.jsonl",
+    "agent/ledgers/turbo-*.jsonl",
+    ".ci/config/plan-boxes.json"
+  ],
+  "$review_skip_globs": "The reviewer's own skip list (PLAN-experience-feedback P5). Added to every glob of .ci/policy/record-paths.json, which wl_review.py reads at runtime (that file is never edited for the reviewer: it covers only part of the records). The ledgers are listed by family, not as agent/ledgers/**, because check:ci-record-paths reads a config glob that reaches agent/ledgers/effort-*.jsonl as an undeclared reader (the effort ledgers are already in the record set). A matching path leaves the reviewed diff and the stat, and a commit touching only such paths records `skipped (record-only)` with no model call."
 }

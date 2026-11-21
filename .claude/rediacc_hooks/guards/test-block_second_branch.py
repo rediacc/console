@@ -16,6 +16,11 @@ import subprocess
 import sys
 import tempfile
 
+import _hookpath
+
+from rediacc_hooks import commit_policy as CP
+from rediacc_hooks.guards import _backup_push as BP
+
 HERE = pathlib.Path(__file__).resolve().parent
 DISPATCH = str(HERE.parent / "dispatch.py")
 STEM = "block_second_branch"
@@ -95,6 +100,25 @@ MAIN_MERGED_PRESENT = make_repo("main", extra=("0923-1",))
 git(MAIN_MERGED_PRESENT, "update-ref", "refs/remotes/origin/0923-1", "0923-1")
 # Merged, its remote branch deleted and pruned: the local branch alone is no longer live.
 MAIN_MERGED_DELETED = make_repo("main", extra=("0923-1",))
+
+
+# LT3 OF PLAN-two-track-merge-dev, TWO TREES (operator ruling ASKED:2026-11-20T17:47Z). A main checkout and its landing tree, a real linked tree at the fixed sibling `<main>-landing`, holding the PR branch `0923-1`; the landing record binds them (`commit_policy.write_landing_record`, the writer the landing verb calls). `record=False` is the same two trees with no record: today's rule, one live branch per repository, the control the binding is measured against. `dev` checks out the development branch in the main checkout.
+def two_trees(record=True, dev=None):
+    main = pathlib.Path(tempfile.mkdtemp(prefix="console-", dir=RUN_TMP)).resolve()
+    make_repo("main", extra=("0923-1",), at=main)
+    landing = pathlib.Path(str(main) + "-landing")
+    git(main, "worktree", "add", "-q", str(landing), "0923-1")
+    if record:
+        CP.write_landing_record(str(main), str(landing), "0923-1")
+    if dev:
+        git(main, "checkout", "-q", "-b", dev)
+    return main, landing
+
+
+TWO_DEV, TWO_LANDING = two_trees()
+TWO_DEV_ON, TWO_LANDING_ON = two_trees(dev=NEXT)
+TWO_NOREC, _ = two_trees(record=False)
+THIRD = "%s-2" % TODAY
 
 CASES = [
     # (name, command, root, gh-stub, expect_blocked) ---- fire ------------------------------
@@ -213,6 +237,76 @@ CASES = [
         False,
     ),
     ("an empty command", "", FEATURE, GH_EMPTY, False),
+    # ---- LT3: two trees, one live branch each -----------------------------------------------
+    (
+        "LT3 the development branch cut here, landing holds the PR",
+        "git checkout -b %s" % NEXT,
+        TWO_DEV,
+        GH_EMPTY,
+        False,
+    ),
+    (
+        "LT3 control: the same cut with no landing record",
+        "git checkout -b %s" % NEXT,
+        TWO_NOREC,
+        GH_EMPTY,
+        True,
+    ),
+    ("LT3 the PR branch created here", "git checkout -B 0923-1", TWO_DEV, GH_EMPTY, True),
+    ("LT3 the PR branch forced here", "git branch -f 0923-1 HEAD", TWO_DEV, GH_EMPTY, True),
+    (
+        "LT3 control: the PR branch forced with no record",
+        "git branch -f 0923-1 HEAD",
+        TWO_NOREC,
+        GH_EMPTY,
+        False,
+    ),
+    (
+        "LT3 a third branch beside the development one",
+        "git checkout -b %s" % THIRD,
+        TWO_DEV_ON,
+        GH_EMPTY,
+        True,
+    ),
+    (
+        "LT3 a third branch in the landing tree",
+        "git checkout -b %s" % NEXT,
+        TWO_LANDING,
+        GH_EMPTY,
+        True,
+    ),
+    ("LT3 a push to a third name", "git push origin HEAD:%s" % THIRD, TWO_DEV_ON, GH_EMPTY, True),
+    (
+        "LT3 a push to the PR branch's name from here",
+        "git push origin HEAD:0923-1",
+        TWO_DEV_ON,
+        GH_EMPTY,
+        True,
+    ),
+    (
+        "LT3 pushing the development branch",
+        "git push -u origin %s" % NEXT,
+        TWO_DEV_ON,
+        GH_EMPTY,
+        False,
+    ),
+    (
+        "LT3 pushing the PR branch from the landing tree",
+        "git push origin 0923-1",
+        TWO_LANDING_ON,
+        GH_EMPTY,
+        False,
+    ),
+]
+
+# BOX G5 OF PLAN-local-first-delivery: the shared backup-ref cases (`_backup_push.CASES`) in a feature checkout, where every remote BRANCH other than the live one is refused. A destination outside `refs/heads/` names no branch (`commit_policy.push_destinations`), so a backup-only push the predicate does not admit was allowed before G5 and still is; what this guard must keep refusing is the case naming `refs/heads/`, mixed or not.
+BACKUP_WORLDS = {
+    True: BP.plant(make_repo("0923-1")),
+    False: BP.plant(make_repo("0923-1"), pinned=False),
+}
+CASES += [
+    (label, command, BACKUP_WORLDS[pinned], GH_EMPTY, not admitted and "refs/heads/" in command)
+    for label, command, pinned, admitted in BP.CASES
 ]
 
 BROKEN_RUNNER = (
@@ -235,14 +329,14 @@ BROKEN_RUNNER = (
 )
 
 
-def run(command, root, gh, broken=False):
+def run(command, root, gh, broken=False, pair=None):
     env = dict(os.environ, CLAUDE_PROJECT_DIR=str(root), PATH="%s:%s" % (gh, os.environ["PATH"]))
     payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
     if broken:
         argv = [
             sys.executable,
             "-c",
-            BROKEN_RUNNER % (str(HERE.parents[1]), str(GUARD), DEFECT, str(GUARD)),
+            BROKEN_RUNNER % (str(HERE.parents[1]), str(GUARD), pair or DEFECT, str(GUARD)),
         ]
     else:
         argv = [sys.executable, DISPATCH, STEM]
@@ -397,6 +491,33 @@ if flipped:
 else:
     print("*** FAIL *** DEFECT control: with %r planted, every fire case still refused" % (DEFECT,))
     fails += 1
+
+# LT3's own arm: the landing-bound branch typed anywhere but the landing tree. Planted out, the PR-branch rows flip to allowed (the branch exists, so nothing else refuses them), and every other two-tree row keeps its answer.
+LANDING_DEFECT = ("if bound:", "if False:")
+LT3_ARM = [c for c in CASES if c[0].startswith("LT3 the PR branch")]
+flipped = [
+    n
+    for n, command, root, gh, want in LT3_ARM
+    if not run(command, root, gh, True, LANDING_DEFECT)[0]
+]
+moved = [
+    n
+    for n, command, root, gh, want in CASES
+    if n.startswith("LT3")
+    and n not in {c[0] for c in LT3_ARM}
+    and run(command, root, gh, True, LANDING_DEFECT)[0] != want
+]
+if len(flipped) != len(LT3_ARM) or not LT3_ARM or moved:
+    print(
+        "*** FAIL *** LANDING DEFECT control: %d of %d arm rows flipped, other rows moved: %r"
+        % (len(flipped), len(LT3_ARM), moved)
+    )
+    fails += 1
+else:
+    print(
+        "LANDING DEFECT control: planted %r; all %d arm rows flipped to allowed"
+        % (LANDING_DEFECT[0], len(flipped))
+    )
 
 # ---- the git-level twin (.claude/rediacc_hooks/git/reference-transaction), local facts only ----
 # M6 at the git layer: a previous branch whose upstream is still on origin is live, so a new cut is refused; once the remote branch is deleted and pruned (`[gone]`) the cut is allowed. The layer has no `gh`, so it cannot see a merge; the remote branch's deletion is the one signal it reads.

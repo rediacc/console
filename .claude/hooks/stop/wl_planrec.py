@@ -155,6 +155,8 @@ PROSE_SECTIONS = ("Why", "Outcome", "Lessons")
 #: legitimate prose in this tree; `<FILL:` appears nowhere else and so cannot
 #: produce a false red.
 PLACEHOLDER_RE = re.compile(r"<FILL:[^>]*>")
+#: The emphasis marks a box body is stripped of before it is compared or signed, compiled once: `open_boxes` and `done_boxes` run it on every box line of every plan they are asked about.
+EMPHASIS_RE = re.compile(r"[*_`]+")
 UNRESOLVED = "[unresolved]"
 
 
@@ -264,6 +266,10 @@ class RecordError(Exception):
     """A refusal with a reason a session can act on. Never a traceback."""
 
 
+class BoundError(RecordError):
+    """The plan is still held by something (`wl_planbind.bindings`); the text lists every binding and the commands that release it."""
+
+
 # --------------------------------------------------------------------------- git, with a return code. `wl_core._git` collapses "failed" and "succeeded with no output" into the same empty string, which is exactly wrong for `merge-base --is-ancestor`, whose success output IS empty.
 
 
@@ -288,6 +294,92 @@ def _git_raw(root, *args) -> str:
         return r.stdout if r.returncode == 0 else ""
     except (OSError, subprocess.SubprocessError):
         return ""
+
+
+_DONE_SUCCESSOR: dict[tuple[str, str], Any] = {}
+#: How far back the successor map looks for a landed copy (its `<base>..HEAD` window).
+DONE_SUCCESSOR_WINDOW = 3000
+
+
+def _done_successor(root, token: str) -> str:
+    """The landed copy of a commit a rebase-merge rewrote, through the review records' Patch-Id (rediacc_ci.review.successor), or "". Built once per (root, HEAD) and only when a `done=` sha is gone, so a tree whose ticks all resolve pays nothing and a process that moves HEAD gets a fresh map (review 94f2e23a.2). The window is the first-parent chain, HEAD~N..HEAD with N at most DONE_SUCCESSOR_WINDOW: deterministic in a multi-root history, and the root it excludes is never a branch's rebased tick (review 94f2e23a.3)."""
+    head = _git_out(root, "rev-parse", "--verify", "--quiet", "HEAD")
+    key = (str(root), head)
+    if key not in _DONE_SUCCESSOR:
+        import wl_gh
+
+        su = wl_gh.import_ci("rediacc_ci.review.successor")
+        count = int(_git_out(root, "rev-list", "--count", "--first-parent", "HEAD") or 0)
+        depth = min(DONE_SUCCESSOR_WINDOW, count - 1)
+        base = (
+            _git_out(root, "rev-parse", "--verify", "--quiet", "HEAD~%d" % depth)
+            if depth > 0
+            else ""
+        )
+        if len(_DONE_SUCCESSOR) >= 8:
+            _DONE_SUCCESSOR.clear()  # one map per (root, HEAD); a long process keeps at most a handful (review f9d4291d.2)
+        _DONE_SUCCESSOR[key] = su.lazy_successor_of(root, base, sys.modules[__name__])
+    return _DONE_SUCCESSOR[key](token) or ""
+
+
+def done_label(done: str, landed: str) -> str:
+    """How R4 names the commit it checked: the record's `done=` itself, or `<done> (landed as <sha12>)` after the successor map carried it (review 94f2e23a.4)."""
+    return done if landed.startswith(done) else "%s (landed as %s)" % (done, landed[:12])
+
+
+def resolve_done(root, token: str) -> tuple[bool, str, str]:
+    """(ok, full sha, why) for a compacted record's `done=` (RB7, PLAN-two-track-merge-dev). A sha that resolves is itself; one a rebase-merge rewrote (RB6: `no such commit` on main) is carried to its landed copy by the successor map; otherwise (False, "", the resolve refusal)."""
+    ok, why = resolve(root, "commit", token)
+    if ok:
+        return True, why, ""
+    try:
+        landed = _done_successor(root, token)
+    except Exception as exc:
+        return (
+            False,
+            "",
+            "%s; the successor map could not be built (%s)" % (why, type(exc).__name__),
+        )
+    if landed:
+        return True, landed, "carried from %s by the successor map" % token
+    return False, "", why
+
+
+def _on_origin_main(root, sha: str) -> bool:
+    """True when `sha` is an ancestor of origin/main, or when this clone has no origin/main to judge against (a fixture, a fresh repo). Fails closed (review 334616cb.1): the ref counts as absent only on git's clean "no such ref" answer (`show-ref --verify --quiet` exit 1); a timeout, an OSError or any other exit refuses."""
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(root), "show-ref", "--verify", "--quiet", "refs/remotes/origin/main"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if r.returncode == 1:
+        return True
+    if r.returncode != 0:
+        return False
+    return _git_ok(root, "merge-base", "--is-ancestor", sha, "refs/remotes/origin/main")
+
+
+def _live_ref(root) -> str | None:
+    """The ref a commit pointer must be reachable from besides origin/main (PLAN-two-track-merge-dev RB5). HEAD in a checkout on a branch, or in the main checkout on a detached HEAD (a rebase in progress). In a linked worktree on a detached HEAD (a lease) the lease's own commits are ancestors of its HEAD but get new shas when the lead cherry-picks them, so HEAD never counts there: the main worktree's branch does, and when that cannot be named (the main worktree is detached too, or git cannot say) the answer is None and only origin/main counts. Fails closed: a linked worktree is never judged by its own HEAD."""
+    if _git_ok(root, "symbolic-ref", "-q", "HEAD"):
+        return "HEAD"
+    dirs = _git_out(root, "rev-parse", "--git-dir", "--git-common-dir").splitlines()
+    if len(dirs) != 2:
+        return None
+    base = pathlib.Path(str(root))
+    git_dir, common = ((base / d).resolve() for d in dirs)
+    if git_dir == common:
+        return "HEAD"
+    first_block = _git_out(root, "worktree", "list", "--porcelain").split("\n\n", 1)[0]
+    for line in first_block.splitlines():
+        if line.startswith("branch "):
+            return line.split(" ", 1)[1]
+    return None
 
 
 def _git_ok(root, *args) -> bool:
@@ -377,11 +469,19 @@ def refuse_unresolved_citations(root, text, what):
         if dead:
             bad.append("%s citation `%s` %s" % (kind, token, why))
     if bad:
+        hints = []
+        if any(b.startswith(("fileline ", "plan ")) for b in bad):
+            hints.append(
+                "Write the full repo-relative path (`scripts/ci-runner/run.ts:352`, not `run.ts:352`)."
+            )
+        if any(not b.startswith(("fileline ", "plan ")) for b in bad):
+            hints.append(
+                "Cite a sha HEAD reaches: a lease's own commit is gone once its tree is collected, so cite the landed sha."
+            )
         raise RecordError(
             "%s carries %d citation(s) that do not resolve, so check:ci-plan-citations would "
-            "red the plan they are written into:\n  %s\n\nWrite the full repo-relative path "
-            "(`scripts/ci-runner/run.ts:352`, not `run.ts:352`)."
-            % (what, len(bad), "\n  ".join(bad))
+            "red the plan they are written into:\n  %s\n\n%s"
+            % (what, len(bad), "\n  ".join(bad), "\n".join(hints))
         )
 
 
@@ -503,18 +603,18 @@ def resolve(root, kind, token):
         if not got:
             return False, "no such commit"
         # PRESENCE IS THE WRONG QUESTION FOR A COMMIT (finding #27a05a50). A rebase leaves the rewritten commit in the local object store as an orphan, so `rev-parse` alone records a pointer a fresh checkout cannot resolve. Twin of check_plan_citations.commit_is_reachable (same rule, the read side, commit cd8b0cdc8); restated here, not imported, because this directory must not import from `.ci/`.
-        # origin/main counts as well: main is never rewritten, so a commit CD pushed there survives every rebase-merge (same rule as check_plan_citations.commit_is_reachable, 2026-10-08).
-        if not any(
-            _git_ok(root, "merge-base", "--is-ancestor", got, ref)
-            for ref in ("HEAD", "refs/remotes/origin/main")
-        ):
+        # origin/main counts as well: main is never rewritten, so a commit CD pushed there survives every rebase-merge (the rule check_plan_citations.commit_is_reachable reads, 2026-10-08). Inside a lease the write side is stricter than that gate: HEAD is replaced by the main worktree's branch (_live_ref, RB5).
+        live = _live_ref(root)
+        refs = [r for r in (live, "refs/remotes/origin/main") if r is not None]
+        if not any(_git_ok(root, "merge-base", "--is-ancestor", got, ref) for ref in refs):
             has_main = bool(
                 _git_out(root, "rev-parse", "--verify", "--quiet", "refs/remotes/origin/main")
             )
+            where = live or "the live branch (this lease's main worktree names none)"
             return False, (
-                "%s exists in this clone but is not an ancestor of %s (a rebase rewrote it), "
+                "%s exists in this clone but is not an ancestor of %s (a rebase rewrote it, or it is a lease commit not yet landed), "
                 "so a fresh checkout will not have it"
-                % (got[:40], "HEAD or origin/main" if has_main else "HEAD")
+                % (got[:40], "%s or origin/main" % where if has_main else where)
             )
         return True, got[:40]
     if kind == "ancestor":
@@ -793,7 +893,7 @@ def parse_boxes(body):
             {
                 "line": line,
                 "mark": mark,
-                "body": re.sub(r"[*_`]+", "", task).strip(),
+                "body": EMPHASIS_RE.sub("", task).strip(),
                 "sig": ann.group(1),
                 "done": ann.group(2),
             }
@@ -881,8 +981,13 @@ def ledger_at(root, commit, ledger_rel=LEDGER_REL):
         return None
 
 
+def plan_identity(rel):
+    """The basename for a path in a plan folder, else the path itself (so an unrelated file never pairs)."""
+    return "plan:" + rel.rsplit("/", 1)[-1] if plan_folder(rel) else rel
+
+
 def attested_at(ledger, rel, sig):
-    """Does this ledger document attest `sig` as DONE for plan `rel`?"""
+    """Does this ledger document attest `sig` as DONE for plan `rel`, under that exact path? A proof under another path counts only through a stub (`check_plan_record.py` R4)."""
     if not isinstance(ledger, dict):
         return False
     entry = (ledger.get("plans") or {}).get(rel)
@@ -891,15 +996,140 @@ def attested_at(ledger, rel, sig):
     return sig in (entry.get("done_sigs") or [])
 
 
+def attested_by_identity(ledger, rel, sig):
+    """`attested_at` for the plan under any folder: `check:ci-plan-folders --move` relocates a finished plan into `_done/`, and the move must not read as the tick.
+
+    A row under `rel` itself decides alone; the other folders' rows are read only when there is none (the ledgers from before the move). `merge_ledger` replaces one row and leaves a stale pre-move row beside the new one, so ORing every row of the basename read a box reopened after the move as still attested by the row the move left behind (review f142ed91.1).
+    """
+    if not isinstance(ledger, dict):
+        return False
+    if isinstance((ledger.get("plans") or {}).get(rel), dict):
+        return attested_at(ledger, rel, sig)
+    return any(sig in done for done in _identity_index(ledger).get(plan_identity(rel), ()))
+
+
+# One index per ledger document: plan identity -> the `done_sigs` values of its dict rows. `done_commit` asks about every judged box against every commit's ledger, and re-deriving each row's identity per ask made the plan-implementation gate quadratic in (boxes x commits x plans): 380 s for one test on 2026-11-16. The entry holds the document itself, so an id() is never reused for another document while its index lives.
+_IDENTITY_INDEX: dict[int, tuple[dict, dict[str, list], tuple]] = {}
+_IDENTITY_INDEX_MAX = 4096
+
+
+def _fingerprint(plans):
+    """What the index was built from: each row's key, object and `done_sigs` list, so a row replaced, added or dropped, or its `done_sigs` reassigned, after indexing is seen (review 8cc0b5f9.1). The index holds the `done_sigs` lists themselves, so a list changed in place already shows through. Cheap ids only; the plan identity per row is what the index saves."""
+    return tuple(
+        (k, id(v), id(v.get("done_sigs")) if isinstance(v, dict) else 0) for k, v in plans.items()
+    )
+
+
+def _identity_index(ledger):
+    plans = ledger.get("plans") or {}
+    fp = _fingerprint(plans)
+    cached = _IDENTITY_INDEX.get(id(ledger))
+    if cached is not None and cached[0] is ledger and cached[2] == fp:
+        return cached[1]
+    index: dict[str, list] = {}
+    for r, v in plans.items():
+        if isinstance(v, dict):
+            # The list itself, not a copy: an empty one appended to in place must still show through (review 56d48380.1). A missing or non-list value indexes as a fresh empty list, and assigning a list later changes the fingerprint.
+            sigs = v.get("done_sigs")
+            index.setdefault(plan_identity(r), []).append(sigs if isinstance(sigs, list) else [])
+    if len(_IDENTITY_INDEX) >= _IDENTITY_INDEX_MAX:
+        _IDENTITY_INDEX.clear()
+    _IDENTITY_INDEX[id(ledger)] = (ledger, index, fp)
+    return index
+
+
 def done_commit(history, rel, sig):
     """The commit that ticked `sig` for `rel` and kept it ticked: the first commit of the LATEST unbroken run of ledgers in `history` (oldest first) that attest it, or "" when the newest ledger does not.
 
     A box can be ticked, reopened and ticked again. The FIRST attesting commit then names the stale original tick: on 2026-10-07 PLAN-ci-consolidation T1, ticked when the plan was written (2553ca19a), reopened (43a2e6b9c) and re-ticked after a fresh investigation (a2e639712), read to check:ci-plan-implementation P-A4 as investigated after its implementation.
     """
-    start = ""
-    for commit, doc in history:
-        start = (start or commit) if attested_at(doc, rel, sig) else ""
-    return start
+    return _done_index(history, rel).get(sig, "")
+
+
+# One index per (history, plan): sig -> the first commit of its latest unbroken attesting run. check:ci-plan-implementation asks done_commit about ~2,700 boxes against a ~950-version history, and one history walk per box was 409 s of its 511 s on 2026-11-20 (profile); one walk per plan answers every box of it.
+_DONE_INDEX: dict[tuple[int, str], tuple[list, tuple, dict[str, str]]] = {}
+_DONE_INDEX_MAX = 1024
+
+
+def _attested_sigs(doc, rel, ident=None):
+    """Every sig `doc` attests as done for `rel`, by attested_by_identity's rule: a row under `rel` itself decides alone; otherwise the rows of every folder the plan's identity has. `ident`, when given, is `doc`'s identity index built by the caller for this walk."""
+    if not isinstance(doc, dict):
+        return set()
+    plans = doc.get("plans") or {}
+    entry = plans.get(rel)
+    if isinstance(entry, dict):
+        return set(entry.get("done_sigs") or [])
+    out = set()
+    for done in (ident if ident is not None else _identity_index(doc)).get(plan_identity(rel), ()):
+        out.update(done)
+    return out
+
+
+def _walk_identity(doc) -> dict[str, list]:
+    """`doc`'s identity index, built directly: inside one history walk nothing mutates, so the fingerprint `_identity_index` re-checks on every call (its cost was 12 s of check:ci-plan-implementation, 56,340 calls on 2026-11-20) is not needed."""
+    index: dict[str, list] = {}
+    if not isinstance(doc, dict):
+        return index
+    for r, v in (doc.get("plans") or {}).items():
+        if isinstance(v, dict):
+            sigs = v.get("done_sigs")
+            index.setdefault(plan_identity(r), []).append(sigs if isinstance(sigs, list) else [])
+    return index
+
+
+#: Per history object, each document's identity index, shared by every plan's walk over that history (keyed and checked like _DONE_INDEX).
+_HISTORY_IDENT: dict[int, tuple[list, tuple, list, tuple]] = {}
+
+
+def _plans_shape(doc) -> tuple[int, int]:
+    """O(1) per document: the identity and length of its `plans` map, so a replaced map, or rows added or removed in unequal numbers, rebuild the shared indexes (review eb55be31.1); the indexed `done_sigs` lists are the document's own, so an in-place append shows through. NOT caught: a row replaced under the same key, or a delete plus an add that keeps the length (review 60010896.1). The premise that makes this enough: history documents come from `ledger_history`, parsed from git, and no caller edits them; a check that is complete per key costs O(plans) per document again, the 12 s this memo removed."""
+    plans = doc.get("plans") if isinstance(doc, dict) else None
+    return (id(plans), len(plans) if isinstance(plans, dict) else -1)
+
+
+def _history_identities(history, entries) -> list:
+    shapes = tuple(_plans_shape(doc) for _commit, doc in entries)
+    cached = _HISTORY_IDENT.get(id(history))
+    if (
+        cached is not None
+        and cached[0] is history
+        and len(cached[1]) == len(entries)
+        and all(a is b for a, b in zip(cached[1], entries, strict=True))
+        and cached[3] == shapes
+    ):
+        return cached[2]
+    if len(_HISTORY_IDENT) >= 64:
+        _HISTORY_IDENT.clear()
+    idents = [_walk_identity(doc) for _commit, doc in entries]
+    _HISTORY_IDENT[id(history)] = (history, entries, idents, shapes)
+    return idents
+
+
+def _done_index(history, rel):
+    """sig -> done commit for every box of `rel`, from one walk over `history` (oldest first), memoized per history object and the identity of each of its entries, so a history extended, shortened or with an entry replaced in place is walked again."""
+    key = (id(history), rel)
+    # The entries themselves, held alive, compared by identity: a bare id() could be reused by a new object once a replaced entry is freed.
+    entries = tuple(history)
+    cached = _DONE_INDEX.get(key)
+    if (
+        cached is not None
+        and cached[0] is history
+        and len(cached[1]) == len(entries)
+        and all(a is b for a, b in zip(cached[1], entries, strict=True))
+    ):
+        return cached[2]
+    running: dict[str, str] = {}
+    idents = _history_identities(history, entries)
+    for (commit, doc), ident in zip(entries, idents, strict=True):
+        now = _attested_sigs(doc, rel, ident)
+        for sig in [s for s in running if s not in now]:
+            del running[sig]
+        for sig in now:
+            running.setdefault(sig, commit)
+    if len(_DONE_INDEX) >= _DONE_INDEX_MAX:
+        _DONE_INDEX.clear()
+    _DONE_INDEX[key] = (history, entries, dict(running))
+    return _DONE_INDEX[key][2]
 
 
 # --------------------------------------------------------------------------- derive(): everything the record can compute about itself.
@@ -959,7 +1189,7 @@ def derive(root, rel, text=None, history=None):
         m = BOX_LINE_RE.match(raw)
         if not m:
             continue
-        body = re.sub(r"[*_`]+", "", m.group(2)).strip()
+        body = EMPHASIS_RE.sub("", m.group(2)).strip()
         # DEDUPED ON THE PARSER'S OWN KEY, because `plan_tasks` dedupes on it too. Without this a plan that writes the same box twice yields two annotated lines here while `plan_boxes` still resolves one, so the record's `Boxes: N attested` trailer and the ledger's counts disagree -- and the ledger is what `check_plan_boxes.py`'s A0 compares against.
         key = PFID._norm(body)[:120]
         if key in seen:
@@ -976,6 +1206,12 @@ def derive(root, rel, text=None, history=None):
         if mark == "x":
             c = done_commit(history, rel, s)
             done = sha9(c) if c else "abandoned"
+            if c and not _on_origin_main(root, c):
+                # RB7 (PLAN-two-track-merge-dev): a branch commit is rewritten by the rebase-merge, so `done=<it>` would read `no such commit` on main (RB6's live test). Refused here, so a plan is compacted only once its ticks are on main.
+                problems.append(
+                    "box %r is done at %s, a commit not on origin/main: the PR's rebase-merge rewrites it, so done=%s would read `no such commit` on main. Compact this plan after the PR merges."
+                    % (body[:60], c[:12], sha9(c))
+                )
             if not c and current is not None and attested_at(current, rel, s):
                 # Cannot happen with a walk that includes HEAD's ledger commit, and is reported rather than assumed away: it would mean the history walk is blind, which is the vacuity shape this repo refuses to pass through silently.
                 problems.append(
@@ -1389,6 +1625,10 @@ def write_atomic(path, text):
         raise
 
 
+#: Heading of the section `plan_lifecycle.TOMBSTONE_SECTION` names. Restated rather than imported: the hook modules do not load `.ci/`.
+TOMBSTONE_SECTION = "## Expired plans"
+
+
 def refresh_index(root, plan_records, plan_box_census):
     """Rewrite `agent/INDEX.md` after a verb changed a plan's bytes; True when it changed.
 
@@ -1409,6 +1649,10 @@ def refresh_index(root, plan_records, plan_box_census):
         got = path.read_text(encoding="utf-8")
     except OSError:
         got = ""
+    # THE TOMBSTONE SECTION IS OWNED BY THE PLAN SWEEP AND HAS NO DISK STATE TO RENDER FROM, so it is carried over from the file, as check_plan_record's R8 does. Without this every plan verb deleted the expired-plan rows, and only the rows something still cited went red.
+    at = got.find("\n" + TOMBSTONE_SECTION + "\n")
+    if want and at != -1:
+        want = want.rstrip("\n") + "\n" + got[at:]
     if not want or got == want:
         return False
     write_atomic(path, want)
@@ -1541,7 +1785,6 @@ def ask_why(plan_text):
             [
                 exe,
                 "-p",
-                prompt,
                 "--output-format",
                 "json",
                 "--json-schema",
@@ -1551,6 +1794,8 @@ def ask_why(plan_text):
                 "--max-budget-usd",
                 wl_judge.JUDGE_BUDGET_USD,
             ],
+            # The prompt goes on stdin: on argv a large one fails with E2BIG ("[Errno 7] Argument list too long").
+            input_text=prompt,
             timeout=wl_judge.JUDGE_TIMEOUT_S,
             env=env,
         )
@@ -1725,6 +1970,13 @@ def compact(root, rel, me, why="author", park=False, now=None):
             "dirty file would leave the text in no commit and no working tree. Commit or "
             "revert the path first (never `git checkout`: that discards work)." % rel
         )
+
+    # BOUND PLANS ARE NEVER COMPACTED, parked or not (agent/plans/PLAN-plan-compaction-bindings.md, CB2; operator ruling 2026-10-03). `wl_planbind.bindings` is the one decision; this path asks it after the argument and dirty-path refusals and before anything is derived, so a held plan answers with every binding rather than with a box count.
+    import wl_planbind as PB
+
+    found = PB.bindings(root, rel)
+    if found:
+        raise BoundError(PB.render(rel, found))
 
     d = derive(root, rel, text)
     if d.get("problems"):
@@ -2090,7 +2342,7 @@ def open_boxes(text):
         m = BOX_LINE_RE.match(raw)
         if not m or m.group(1).lower() == "x":
             continue
-        body = re.sub(r"[*_`]+", "", m.group(2)).strip()
+        body = EMPHASIS_RE.sub("", m.group(2)).strip()
         if body[:300] not in open_t:
             continue
         out.append((i, raw, body, box_sig(body)))
@@ -2108,7 +2360,7 @@ def done_boxes(text):
         m = BOX_LINE_RE.match(raw)
         if not m or m.group(1).lower() != "x":
             continue
-        body = re.sub(r"[*_`]+", "", m.group(2)).strip()
+        body = EMPHASIS_RE.sub("", m.group(2)).strip()
         if body[:300] not in done_t:
             continue
         out.append((i, raw, body, box_sig(body)))
@@ -2136,7 +2388,7 @@ def select_box(boxes, selector, kind="OPEN"):
         hits = [b for b in boxes if b[3].startswith(low)]
     if not hits:
         # The box body is stored with `*`, `_` and backticks stripped (`open_boxes`), so the selector is stripped the same way. A quoted `wl_planqueue.py` read as "wlplanqueue.py" in the box and never matched, and 14 of 22 text ticks failed on one plan (2026-10-04).
-        want = re.sub(r"[*_`]+", "", low)
+        want = EMPHASIS_RE.sub("", low)
         hits = [b for b in boxes if want and want in b[2].lower()]
     if not hits:
         raise RecordError(
@@ -2249,6 +2501,9 @@ INVESTIGATION_REL = ("agent", "ledgers", "plan-investigation.jsonl")
 #:            from unrewarded diligence into the cheapest way to close a box.
 #:   partial  some of it exists; `note` says which part, and the box stays open.
 INV_VERDICTS = ("absent", "present", "partial")
+
+#: What a `partial` box still OWES, required on a live partial row (`--owed`, agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.1, D1). Every kind but `code` names work no local edit can supply -- a live system, a CI run, a push, the operator -- so the stop-gate judge reads such a box as not local work (`wl_checks._batch_box_facts`). A free-text note cannot be read mechanically, which is why this is a field. Rows written before it carry none and count as `code`.
+INV_OWED = ("live", "ci", "post-push", "operator", "code")
 
 #: TWO POINTERS OF TWO DISTINCT KINDS. One pointer is a citation; two of different kinds is a triangulation, and the asymmetry is cheap -- a `fileline` plus a `commit` costs one file read and one `rev-parse`. Two of the SAME kind is refused because the cheapest way to satisfy a pointer count is to cite the same artifact twice.
 INV_MIN_POINTERS = 2
@@ -2477,7 +2732,9 @@ def _retro_commits(root, pointers):
     return out
 
 
-def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now=None, retro=False):
+def plan_investigate(
+    root, rel, selector, verdict, pointer_tokens, note, me, now=None, retro=False, owed=None
+):
     """(row, resolved) for one investigation. Raises RecordError. WRITES NOTHING.
 
     `retro=True` IS THE HONEST LATE RECORD, and it is the only door for a box that was ticked without an investigation. It reaches ONLY a box that is already `[x]` (an open box is refused: it can still be investigated before the work, which is the whole point), requires a `commit:` pointer to the implementing commit that is an ancestor of HEAD, and a note of at least
@@ -2493,6 +2750,7 @@ def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now
          calls, and the whole row is refused if any one fails, naming which.
       4. at least INV_MIN_POINTERS pointers of at least INV_MIN_KINDS kinds.
       5. the note clears INV_NOTE_MIN characters.
+      6. a live `partial` names what it still owes (`owed`, one of INV_OWED); any other verdict names none.
 
     `head` is `git rev-parse HEAD` at write time, and it is what makes the record an ASSERTION ABOUT A TREE rather than a story: Clause 1 in plan_tick requires the tick's own cited commit to descend from it, which an investigation written after the implementation cannot satisfy.
     """
@@ -2508,6 +2766,21 @@ def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now
             "whole gate optional in one command. The door for a box that cannot be worked now "
             "is `worklist.py --add` or `worklist.py --defer`, both of which keep it VISIBLE."
             % (verdict, ", ".join(INV_VERDICTS))
+        )
+    owed_kind = str(owed or "").strip().lower()
+    if owed_kind and owed_kind not in INV_OWED:
+        raise RecordError("--owed %r is not one of %s" % (owed, ", ".join(INV_OWED)))
+    if owed_kind and v != "partial":
+        raise RecordError(
+            "--owed belongs to a `partial` verdict: a box that is %s owes nothing a kind can name"
+            % v
+        )
+    if v == "partial" and not retro and not owed_kind:
+        raise RecordError(
+            "a `partial` verdict needs --owed <%s>: say what the open part still owes. Every kind "
+            "but `code` names work no local edit supplies (a live system, a CI run, a push, the "
+            "operator), and the stop-gate judge reads the box that way; `code` keeps it local work."
+            % "|".join(INV_OWED)
         )
     text = p.read_text(encoding="utf-8", errors="replace")
     if is_record(text):
@@ -2589,11 +2862,13 @@ def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now
         "box": body[:200],
         "verdict": v,
         "head": head[:40],
-        "br": C.git_branch(root) or "",
+        "br": C.git_branch(S.own_tree(root)) or "",
         "pointers": [[k, t] for k, t in pointers],
         "resolved": [[k, ok, d] for k, ok, d in resolved],
         "note": n[:600],
     }
+    if owed_kind:
+        row["owed"] = owed_kind
     if retro:
         # PROVENANCE IN THE ROW. `head` stays the live HEAD, because that IS when this was written; `retro` says the ordering P-A4 checks never happened, and the gate prints it instead of judging it.
         row["retro"] = True

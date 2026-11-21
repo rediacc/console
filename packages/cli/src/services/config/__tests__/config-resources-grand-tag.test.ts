@@ -36,7 +36,10 @@ import { resolveRepoKey } from '../config-resources-resolve.js';
 const GRAND_GUID = '11111111-1111-4111-8111-111111111111';
 const FORK_GUID = '22222222-2222-4222-8222-222222222222';
 
-function config(tags: Record<string, { repositoryGuid: string; grandGuid?: string }>): RdcConfig {
+function config(
+  tags: Record<string, { repositoryGuid: string; grandGuid?: string }>,
+  grand = 'prod'
+): RdcConfig {
   const built: RdcConfig = {
     schemaVersion: 3,
     id: '00000000-0000-4000-8000-0000000000dd',
@@ -44,7 +47,7 @@ function config(tags: Record<string, { repositoryGuid: string; grandGuid?: strin
     credentials: { ssh: { privateKey: 'KEY' } },
     resources: {
       machines: { m1: { ip: '10.1.1.1', user: 'root', port: 22 } },
-      repositories: { shop: { grand: 'prod', placement: { machine: 'm1' }, tags } },
+      repositories: { shop: { grand, placement: { machine: 'm1' }, tags } },
     },
     encryption: { mode: 'plaintext' },
   };
@@ -93,6 +96,27 @@ describe('a bare ref on a family whose grand tag is not latest', () => {
     await expect(
       scoped(GRAND_AND_FORK, () => configService.resolveDestructiveTarget('shop'))
     ).rejects.toBeInstanceOf(AmbiguousRepoTargetError);
+  });
+});
+
+// The grand pointer survives the forgotten grand and names a fork, as vm:check met it.
+const FORKS_ONLY = config({ trial: { repositoryGuid: FORK_GUID, grandGuid: GRAND_GUID } }, 'trial');
+
+describe('getLiveGrand', () => {
+  it('returns the grand of a live family', async () => {
+    const repo = await scoped(GRAND_AND_FORK, () => configService.getLiveGrand('shop'));
+    expect(repo?.repositoryGuid).toBe(GRAND_GUID);
+  });
+
+  it('finds nothing for a family holding only forks of an absent grand, where getRepository lands on a fork', async () => {
+    await scoped(FORKS_ONLY, async () => {
+      expect(await configService.getLiveGrand('shop')).toBeUndefined();
+      expect((await configService.getRepository('shop'))?.repositoryGuid).toBe(FORK_GUID);
+    });
+  });
+
+  it('finds nothing for an unknown family', async () => {
+    expect(await scoped(GRAND_AND_FORK, () => configService.getLiveGrand('cart'))).toBeUndefined();
   });
 });
 

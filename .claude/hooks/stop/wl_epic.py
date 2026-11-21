@@ -288,6 +288,9 @@ def unknown_cited(epics, cited):
 # THE BACKLOG HEADING IS A CONTRACT, not a label. scripts/gates/check-pr-epic-block.ts refuses a snapshot or PR body without a line matching `### Open system backlog (<N>)` whose N equals the entries listed under it; change it in both places or the gate goes red.
 BACKLOG_TITLE = "Open system backlog"
 BACKLOG_NONE = "_none_"
+# Characters the rendered block may take before the backlog stops: GitHub caps a PR body at 65,536, and the body also carries its Plan: lines and intro around the block.
+BLOCK_BUDGET = 56000
+BACKLOG_MORE = "_+%d more open item(s) not listed here (the PR body limit); the full list: `worklist.py --list --open`_"
 BACKLOG_FRAME = (
     "_Every open worklist item outside this PR's epics: the repository's improvement queue,"
     " shown on every PR so it stays visible. Not this PR's work._"
@@ -354,8 +357,15 @@ def render(fold, pr_epics, heading="###"):
     lines.append("")
     if not backlog:
         lines.append(BACKLOG_NONE)
-    for r in backlog:
+    # The block rides a GitHub PR body, capped at 65,536 characters: past BLOCK_BUDGET the backlog stops and names how many it left out, so the gate's contract (body block == this file) stays satisfiable (2026-11-11: 313 open items rendered 66,965 bytes).
+    size = sum(len(x) + 1 for x in lines)
+    for n, r in enumerate(backlog):
         where = home.get(r["id"]) or []
         tag = "(epic %s) " % ", ".join("`%s`" % e for e in where) if where else ""
-        lines.append(_item_line(r, r["id"], tag))
+        line = _item_line(r, r["id"], tag)
+        if size + len(line) + 1 > BLOCK_BUDGET:
+            lines.append(BACKLOG_MORE % (len(backlog) - n))
+            break
+        lines.append(line)
+        size += len(line) + 1
     return "\n".join(lines).rstrip() + "\n"

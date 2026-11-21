@@ -29,6 +29,27 @@ export interface ExecOutcome {
   cpuMs?: number;
   /** Set when the runner killed the gate at its limit (gate-timeout.ts): the limit in ms. `code` is null and stderr carries a TIMED OUT line. */
   timedOutMs?: number;
+  /** The nice value the gate launched at: NONCRITICAL_NICE when it was marked non-critical (`critical === false`) on a wrapped spawn, 0 otherwise (a critical gate, a run with ranking off, an unwrapped spawn). PLAN-two-track-merge-dev D3. */
+  niceness?: number;
+}
+
+/** D3 (PLAN-two-track-merge-dev): a gate off the critical path launches at this nice value, so under CFS a critical single-thread gate gets about nine times its share on a saturated machine (weight 1024 against 110). Only CPU share moves: the selected set, the grants and every verdict stay the same. */
+export const NONCRITICAL_NICE = 10;
+
+/** The command and argv one gate is spawned with. A non-critical gate (`critical === false`) on a wrapped spawn is prefixed with `nice -n NONCRITICAL_NICE`; nice execs bash, so the pid, the process group and the wrapper are the same as without it. `critical` undefined (no ranking) keeps base priority. */
+export function gateSpawnArgv(
+  run: string,
+  wrapped: boolean,
+  critical: boolean | undefined
+): { cmd: string; args: string[]; niceness: number } {
+  const inner = wrapped ? ['-c', RUSAGE_WRAPPER, 'bash', run] : ['-c', run];
+  if (wrapped && critical === false)
+    return {
+      cmd: 'nice',
+      args: ['-n', String(NONCRITICAL_NICE), 'bash', ...inner],
+      niceness: NONCRITICAL_NICE,
+    };
+  return { cmd: 'bash', args: inner, niceness: 0 };
 }
 
 /**
@@ -101,6 +122,8 @@ export interface ExecOptions {
   mergeOutput: boolean;
   /** The pool's grant for this launch; see `Grant`. */
   grant?: Grant;
+  /** Whether the gate is on the run's critical path (the rank's pinned set); false launches it niced, undefined keeps base priority. See `gateSpawnArgv`. */
+  critical?: boolean;
   /**
    * When set, a forkless /proc tree sampler is attached to every gate spawn and
    * writes `<profileDir>/<gate-id>.jsonl`. This is the ONLY place a CI gate's
@@ -224,17 +247,14 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
     // Windows-native (Git Bash) keeps the bare spawn and reports wall time only: its `times` reports nothing useful for native children.
     const wrapped = process.platform !== 'win32';
     // `detached` makes the outer shell a process-group (and session) leader, so `kill(-pid)` reaches every process of the gate and none of the runner's (see LIVE). Not on Windows-native, where there are no process groups to address.
-    const child = spawn(
-      'bash',
-      wrapped ? ['-c', RUSAGE_WRAPPER, 'bash', spec.run] : ['-c', spec.run],
-      {
-        cwd: opts.cwd,
-        env: gateEnv(spec, opts.grant),
-        // fd 3 (the `times` report) and fd 4 (the runner-death watch, never written) are opened on every platform so the spawn has one shape; unwrapped, nothing uses them.
-        stdio: ['ignore', 'pipe', 'pipe', 'pipe', 'pipe'],
-        detached: wrapped,
-      }
-    );
+    const argv = gateSpawnArgv(spec.run, wrapped, opts.critical);
+    const child = spawn(argv.cmd, argv.args, {
+      cwd: opts.cwd,
+      env: gateEnv(spec, opts.grant),
+      // fd 3 (the `times` report) and fd 4 (the runner-death watch, never written) are opened on every platform so the spawn has one shape; unwrapped, nothing uses them.
+      stdio: ['ignore', 'pipe', 'pipe', 'pipe', 'pipe'],
+      detached: wrapped,
+    });
     const pgid = wrapped ? child.pid : undefined;
     if (pgid !== undefined) LIVE.set(pgid, { id: spec.id, started, pgid });
     const rusage: string[] = [];
@@ -357,6 +377,7 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
         stderr,
         ms: Date.now() - started,
         cpuMs: wrapped ? parseTimes(rusage.join('')) : undefined,
+        niceness: argv.niceness,
       });
     };
 

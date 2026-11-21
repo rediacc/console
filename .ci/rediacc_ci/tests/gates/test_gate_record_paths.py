@@ -10,8 +10,11 @@ WHAT THIS ADDS TO THE GATE'S OWN `--selftest`. Those controls plant into scratch
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
+
+import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
@@ -147,3 +150,316 @@ def test_the_guard_reads_globs_and_the_policy_exactly_as_this_gate_does(monkeypa
         for r in records
     ] == guard["records"]
     assert len(records) == len(guard["records"]) >= 3
+
+
+# ---------------------------------------------------------------- code, not prose (the plan records, 2026-11-16)
+
+PLAN_RECORD = "agent/plans/**/*.md"
+#: The six records a plan commit touches: the plan files, the generated index of them, the box table, and the three plan ledgers.
+PLAN_RECORDS = (
+    PLAN_RECORD,
+    "agent/INDEX.md",
+    ".ci/config/plan-boxes.json",
+    "agent/ledgers/plan-investigation.jsonl",
+    "agent/ledgers/plan-box-progress.jsonl",
+    "agent/ledgers/live-proof.jsonl",
+)
+#: THE MEASURED READER SET of those six records, derived on 2026-11-16 by the fixed derivation and classified by hand (the exemptions and their reasons are in the policy). This is what a plan-only commit re-runs instead of the lane. A gate joining or leaving it is a decision, so it is written down here as well as in the policy: the gate itself only proves the policy equals the derivation, and would stay green if both lost a reader together.
+#: 2026-11-18 (PLAN-push-decoupling F1): 36 -> 58. The declared tier reads each gate's own lock entry, so the `names: ['**']` gates (they list every file name, and a new plan file changes that list) and the gates that list `agent` or `.ci/config` joined; check:ci-parity was a notReader on a manifest.ts reason and now reads through its `names`.
+PLAN_READERS = frozenset(
+    {
+        "check:ci-account-env-retired",
+        "check:ci-actionlint",
+        "check:ci-agent-hint-liveness",
+        "check:ci-agent-session-archival",
+        "check:ci-allowlist-key-matching",
+        "check:ci-cli-contract",
+        "check:ci-commit-citations",
+        "check:ci-container-build-context",
+        "check:ci-dead-python",
+        "check:ci-dead-service-methods",
+        "check:ci-decision-ids",
+        "check:ci-doc-region-parity",
+        "check:ci-dockerfile-mirror-resilience",
+        "check:ci-durable-paths-tracked",
+        "check:ci-fetch-integrity",
+        "check:ci-fetch-retry",
+        "check:ci-gate-bind",
+        "check:ci-gate-reachability-coverage",
+        "check:ci-gate-test-real-file-plants",
+        "check:ci-generated-artifacts",
+        "check:ci-gh-retry-reads",
+        "check:ci-git-history-depth",
+        "check:ci-hint-corpus",
+        "check:ci-i18n-cli-key-usage",
+        "check:ci-i18n-value-types",
+        "check:ci-inner-timeout-reachable",
+        "check:ci-jq-boolean-default",
+        "check:ci-literal-sources",
+        "check:ci-merge-method-prose",
+        "check:ci-no-inline-python",
+        "check:ci-parity",
+        "check:ci-plan-bindings",
+        "check:ci-plan-boxes",
+        "check:ci-plan-citations",
+        "check:ci-plan-deps",
+        "check:ci-plan-feedback",
+        "check:ci-plan-folders",
+        "check:ci-plan-housekeeping",
+        "check:ci-plan-implementation",
+        "check:ci-plan-live-proof",
+        "check:ci-plan-record",
+        "check:ci-portal-sitekey-guard",
+        "check:ci-prose-style",
+        "check:ci-python-gate-deps",
+        "check:ci-retired-commands",
+        "check:ci-retired-terms",
+        "check:ci-review-resolutions",
+        "check:ci-schema-call-sites",
+        "check:ci-scope-mirrors",
+        "check:ci-script-exec-bit",
+        "check:ci-shape-duplication",
+        "check:ci-shell-commands",
+        "check:ci-shell-format",
+        "check:ci-source-rules",
+        "check:ci-tracked-sidecars",
+        "check:ci-trap-registry",
+        "check:ci-tree-shape",
+        "check:ci-typecheck-scope-coverage",
+        "check:ci-worklist-env-registry",
+        "check:cli-examples",
+    }
+)
+#: The gates whose subject is the plan files. Each must be derived for the plan glob itself, whatever else moves.
+PLAN_FAMILY = frozenset(
+    {
+        "check:ci-plan-bindings",
+        "check:ci-plan-boxes",
+        "check:ci-plan-citations",
+        "check:ci-plan-deps",
+        "check:ci-plan-folders",
+        "check:ci-plan-housekeeping",
+        "check:ci-plan-implementation",
+        "check:ci-plan-live-proof",
+        "check:ci-plan-record",
+        "check:ci-decision-ids",
+        "check:ci-commit-citations",
+        "check:cli-examples",
+        "check:ci-prose-style",
+        "check:ci-doc-region-parity",
+        "check:ci-scope-mirrors",
+        "check:ci-retired-terms",
+        "check:ci-tree-shape",
+        "check:ci-generated-artifacts",
+        "check:ci-dead-python",
+    }
+)
+
+
+def _load_gate(monkeypatch):
+    """The gate module, loaded by file as the parity test above loads it."""
+    monkeypatch.setitem(sys.modules, "_cipath", type(sys)("_cipath"))
+    spec = importlib.util.spec_from_file_location("check_record_paths", GATE)
+    assert spec is not None
+    assert spec.loader is not None
+    gate = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gate)
+    return gate
+
+
+def _reads_plans(gate, root, leaf_name, source):
+    """Whether one scratch leaf holding `source` is derived as a reader of the plan record."""
+    (root / leaf_name).write_text(source, encoding="utf-8")
+    records = gate.parse_policy(
+        {
+            "version": 1,
+            "records": [
+                {
+                    "glob": PLAN_RECORD,
+                    "except": [],
+                    "probes": ["agent/plans/PLAN-x.md"],
+                    "readers": [],
+                }
+            ],
+        }
+    )
+    gates = [{"id": "check:probe", "gate": True, "leaves": [leaf_name]}]
+    return "check:probe" in gate.derive_readers(gates, records, root)[0][PLAN_RECORD]
+
+
+def test_a_path_in_code_is_a_citation(monkeypatch, tmp_path):
+    """The firing halves: a whole-literal path, a path joined from literal segments, and a template literal."""
+    gate = _load_gate(monkeypatch)
+    assert _reads_plans(gate, tmp_path, "opens.py", 'F = open("agent/plans/x.md")\n')
+    assert _reads_plans(gate, tmp_path, "joins.py", 'D = ROOT / "agent" / "plans"\n')
+    assert _reads_plans(gate, tmp_path, "tpl.ts", "const p = `${root}/agent/plans/${n}.md`;\n")
+
+
+def test_a_path_in_prose_is_not_a_citation(monkeypatch, tmp_path):
+    """The silent halves, each a firing source with the path moved into prose. Before the fix every one of these made its gate a reader, which is how 168 gates came to read the plan set."""
+    gate = _load_gate(monkeypatch)
+    # CONTROL FIRST: the instrument fires in this very tree, so a silence below is the rule's.
+    assert _reads_plans(gate, tmp_path, "control.py", 'F = open("agent/plans/x.md")\n')
+    docstring = '"""WHY (agent/plans/PLAN-x.md): like open("agent/plans/x.md")."""\nX = 1\n'
+    assert not _reads_plans(gate, tmp_path, "docstring.py", docstring)
+    comment = 'X = 1  # see "agent/plans/x.md"\n# "agent/plans/"\n'
+    assert not _reads_plans(gate, tmp_path, "comment.py", comment)
+    message = 'MSG = "the design is in agent/plans/PLAN-x.md (part 5)"\n'
+    assert not _reads_plans(gate, tmp_path, "message.py", message)
+    jsdoc = "/**\n * WHY: 'agent/plans/PLAN-x.md'.\n */\nexport const x = 1;\n"
+    assert not _reads_plans(gate, tmp_path, "jsdoc.ts", jsdoc)
+
+
+def test_an_exclusion_key_in_a_config_is_not_a_scope(monkeypatch, tmp_path):
+    """.ci/config/pins.json lists `agent/**` under `literalExclude`; read as a scope it made eleven pin gates readers. The same glob under an inclusion key still counts."""
+    gate = _load_gate(monkeypatch)
+    cfg = tmp_path / ".cfg"
+    cfg.mkdir()
+    (cfg / "out.json").write_text('{"literalExclude": [{"glob": "agent/**"}]}', encoding="utf-8")
+    (cfg / "in.json").write_text('{"literalInclude": [{"glob": "agent/**"}]}', encoding="utf-8")
+    assert _reads_plans(gate, tmp_path, "includes.py", 'C = ".cfg/in.json"\n')
+    assert not _reads_plans(gate, tmp_path, "excludes.py", 'C = ".cfg/out.json"\n')
+    # The real file, so the rule is pinned to the case it was written for and not only to a fixture shaped like it.
+    pins = json.loads(paths.from_root(".ci", "config", "pins.json").read_text(encoding="utf-8"))
+    assert any(e.get("glob") == "agent/**" for e in pins["literalExclude"]), "pins.json moved"
+    assert "agent/**" not in gate._json_globs({"literalExclude": pins["literalExclude"]})
+    assert "agent/**" in gate._json_globs({"scope": pins["literalExclude"]})
+
+
+@pytest.fixture(scope="module")
+def real_derivation():
+    """The real-tree derivation, run once for the module: a full scan of the tracked tree is the test's whole cost, and fixture setup is shared time the slow-test ratchet does not charge to a test."""
+    # The patch is import-time only: the gate imports `_cipath` once at module top, so undoing the stub when the context exits does not touch `derive_readers`.
+    with pytest.MonkeyPatch.context() as mp:
+        gate = _load_gate(mp)
+    records = gate.parse_policy(json.loads(POLICY.read_text(encoding="utf-8")))
+    lock = json.loads(LOCK.read_text(encoding="utf-8"))
+    derived, scanned, _read = gate.derive_readers(lock, records, ROOT)
+    return records, derived, scanned
+
+
+def test_the_plan_records_have_exactly_the_measured_readers(real_derivation):
+    """The real tree: the derived reader set of the six plan records, less the exemptions the policy names, is PLAN_READERS exactly. Red before the fix, when the derivation flagged 168 gates for the plan glob alone."""
+    records, derived, scanned = real_derivation
+    by_glob = {r["glob"]: r for r in records}
+    assert set(PLAN_RECORDS) <= set(by_glob), sorted(set(PLAN_RECORDS) - set(by_glob))
+    assert scanned >= 200, scanned
+    readers = set()
+    declared = set()
+    for glob in PLAN_RECORDS:
+        readers |= set(derived[glob]) - set(by_glob[glob]["notReaders"])
+        declared |= set(by_glob[glob]["readers"])
+    assert readers == PLAN_READERS, (sorted(readers - PLAN_READERS), sorted(PLAN_READERS - readers))
+    assert declared == PLAN_READERS, sorted(declared ^ PLAN_READERS)
+    missing = PLAN_FAMILY - set(derived[PLAN_RECORD])
+    assert not missing, "plan gates the derivation no longer sees: %s" % sorted(missing)
+    # check:ci-pytest re-runs the reader gates from its real-tree tests and costs about 1750 s. It is not derived, so it is not a reader and needs no exemption; if it ever is derived, that is a decision to take here, not a line to add quietly.
+    assert all("check:ci-pytest" not in derived[glob] for glob in PLAN_RECORDS)
+
+
+def test_the_plan_text_records_stay_under_review():
+    """A plan and the index of plans advance a receipt and are still reviewed per commit (`"review": "keep"`, read by wl_review.skip_globs); the ledgers and the box table are records the reviewer skips."""
+    doc = json.loads(POLICY.read_text(encoding="utf-8"))
+    kept = {r["glob"] for r in doc["records"] if r.get("review") == "keep"}
+    assert kept == {PLAN_RECORD, "agent/INDEX.md"}, sorted(kept)
+    # Not a bare agent/plans/**: a non-.md file there (a .tsv inventory, a .patch attachment) is judged by check:ci-language-policy, which scans every tracked path, so it must void the receipt.
+    globs = {r["glob"] for r in doc["records"]}
+    assert "agent/plans/**" not in globs
+    assert not any(g.endswith("STATE.md") for g in globs), "STATE.md is not a record path"
+
+
+# ---------------------------------------------------------------- a carried verdict over a touched record
+
+CARRY_CHILD = """
+import json, pathlib, subprocess, sys
+from rediacc_hooks.guards import block_unverified_push as G
+
+def world(base, record_path, refresh):
+    root = G._repo_v2_carried(base, "ok")
+    def git(*args):
+        return subprocess.run(["git", *args], cwd=str(root), check=True, capture_output=True, env=G._env()).stdout.decode().strip()
+    receipt_path = root / ".ci" / "cache" / "prepush-receipt.json"
+    body = json.loads(receipt_path.read_text(encoding="utf-8"))
+    policy = root / G.RECORD_POLICY_REL
+    policy.parent.mkdir(parents=True, exist_ok=True)
+    reader = [{"id": G.V2_FX, "evidence": "fixture:1"}]
+    policy.write_text(json.dumps({"version": 1, "records": [
+        {"glob": "src/rec/**", "except": [], "readers": reader},
+        {"glob": "agent/reviews/**", "except": [], "readers": reader},
+    ]}), encoding="utf-8")
+    git("add", "-A", "--", G.RECORD_POLICY_REL)
+    git("commit", "-q", "-m", "the policy")
+    start = git("rev-parse", "HEAD^{tree}")
+    body["headTree"] = start
+    target = root / record_path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("{}\\n", encoding="utf-8")
+    git("add", "-A", "--", record_path)
+    git("commit", "-q", "-m", "a record-only commit")
+    end = git("rev-parse", "HEAD^{tree}")
+    body["advances"] = [{"from": start, "to": end, "paths": [record_path], "gates": {G.V2_FX: 0}, "finishedAt": "2026-11-16T00:00:00Z"}]
+    carried = body["gates"][G.V2_FX].get("carriedFrom") is not None
+    if refresh:
+        body["gates"][G.V2_FX] = dict(body["gates"][G.V2_FX], **{k: (end if v == "$to" else v) for k, v in json.loads(sys.argv[2]).items()})
+    receipt_path.write_text(json.dumps(body), encoding="utf-8")
+    return {"carried": carried, "inputs": body["gates"][G.V2_FX]["inputs"]["globs"], "refusal": G.receipt_refusal(str(root), end, G.read_receipt(str(root), end))}
+
+base = pathlib.Path(sys.argv[1])
+print(json.dumps({
+    "outside": world(base / "outside", "agent/reviews/main/clean.jsonl", False),
+    "inside": world(base / "inside", "src/rec/x.jsonl", False),
+    "refreshed": world(base / "refreshed", "src/rec/x.jsonl", True),
+}))
+"""
+
+
+RUNNER = paths.from_root("scripts", "ci-runner", "run.ts")
+TS_VALUES = {"null": None, "'ok'": "ok", "0": 0, "to": "$to"}
+
+
+def runner_refresh_fields() -> dict[str, object]:
+    """The fields scripts/ci-runner/run.ts `refreshCarried` writes over a refreshed entry, read from its source (`$to` is the step's end tree), so the world below is the runner's own output shape and not a copy of it."""
+    text = RUNNER.read_text(encoding="utf-8")
+    start = text.index("function refreshCarried(")
+    block = re.search(r"out\[id\] = \{\s*\.\.\.entry,(.*?)\};", text[start:], re.DOTALL)
+    assert block, "refreshCarried no longer writes `out[id] = { ...entry, ... }`"
+    fields: dict[str, object] = {}
+    for line in block.group(1).split(","):
+        if line.strip():
+            key, _, value = line.partition(":")
+            assert value.strip() in TS_VALUES, (
+                "refreshCarried field %r has an unmapped value" % line
+            )
+            fields[key.strip()] = TS_VALUES[value.strip()]
+    return fields
+
+
+def test_the_runner_refresh_fields_are_read_from_its_source():
+    """Review ba4dba67.2: the guard test below uses what refreshCarried writes; this pins that read, so a runner change that adds or drops a field reaches the world."""
+    assert runner_refresh_fields() == {
+        "inputHash": None,
+        "verdict": "ok",
+        "exitCode": 0,
+        "findings": None,
+        "judgedTree": "$to",
+        "carriedFrom": None,
+    }
+
+
+def test_the_guard_refuses_a_carried_verdict_over_a_touched_record_until_it_is_refreshed(tmp_path):
+    """Found 2026-11-16 while checking that the push guard admits a plan-only advance. block_unverified_push recomputes every CARRIED gate entry's filesHash at the pushed tree, so a receipt that carries a gate whose inputs cover the touched record is refused although the step re-ran that gate green. check:ci-plan-bindings is carried in 12 of the last 40 real receipts and its inputs cover agent/plans/**. The runner now rewrites such an entry as a verdict of the step's tree (scripts/ci-runner/run.ts refreshCarried, pinned by its selftest), and this pins the guard's side of that contract: refused as carried, admitted as refreshed."""
+    proc = subprocess.run(
+        [sys.executable, "-c", CARRY_CHILD, str(tmp_path), json.dumps(runner_refresh_fields())],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=dict(os.environ, PYTHONPATH=str(HOOKS), GIT_CONFIG_GLOBAL=os.devnull),
+    )
+    assert proc.returncode == 0, proc.stderr
+    worlds = json.loads(proc.stdout)
+    assert all(w["carried"] for w in worlds.values()), worlds
+    assert all(w["inputs"] == ["src/**"] for w in worlds.values()), worlds
+    # CONTROL: the record lies outside the carried gate's inputs, so the same receipt and step are admitted. The refusal below is therefore about the carried inputs and not about the chain.
+    assert worlds["outside"]["refusal"] is None, worlds["outside"]
+    assert "filesHash differs" in (worlds["inside"]["refusal"] or ""), worlds["inside"]
+    assert worlds["refreshed"]["refusal"] is None, worlds["refreshed"]

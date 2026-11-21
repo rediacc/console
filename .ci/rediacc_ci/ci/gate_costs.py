@@ -22,7 +22,7 @@ Per gate, each figure is the MEDIAN over the captures in which the gate passed a
 
 TWO KINDS OF GATE, BECAUSE `--quick` IS TWO LANES. A capture runs every fast gate, and a slow gate (`slow: true` in the lock, or one whose `needs` reach a slow gate: run.ts's own fixpoint, `sampled_gate_ids`) ONLY when the captured commit's diff touches it (run.ts `quickDiffAdmit`). So a slow gate is DIFF-SAMPLED: present in one capture, absent from the next ones, with nothing wrong. MEASURED 2026-10-07: capture 37294996911 reads `--quick (286 fast gate(s) + 3 diff-selected slow; 66 deferred)`; check:ci-format-scope entered the file from capture 37192382851 (whose diff touched it), and when that capture left the window every PR went red with "no capture measured it (absent in the newest)", the second such red after check:ci-proxy-rdc-update (a33693828). Therefore: a diff-sampled gate absent from EVERY capture in the window is not a finding, and `--refresh` CARRIES its last figures forward (named in `carried`, stamped with when they were measured) rather than dropping them; a diff-sampled gate the captures ran is held to every rule a fast gate is. Both sets are printed by name on every green.
 
-`--check` exits 1 on: a gate in the file that the manifest (`scripts/ci-runner/gates.lock.json`) no longer has (either kind); a FAST gate the fresh captures ran that the file has in neither `gates` nor `unmeasured` (registered after the last refresh); a committed fast gate no fresh capture measured, or a committed diff-sampled gate a fresh capture ran and could not measure; cpu_s drifting more than `DRIFT_THRESHOLD` where either side is at least `MIN_DRIFT_CPU_S`; eff_cores drifting the same way where neither side is capped (the same floor applies, since the width of a sub-second gate is noise); a changed runner core count; zero usable captures. It exits `NO_BASELINE` (3) and prints a notice when the file does not exist yet. Nothing was compared, and its one caller, `rediacc_ci.ci.freshness --check` (`.ci/config/freshness.json`, run per PR as `check:ci-budget-freshness` and nightly by housekeeping.yml's budget-check job), fails on it; that registry also refuses the missing file before this check runs. The first real file comes from `--refresh` after the first nightly capture, never from invented numbers.
+`--check` exits 1 on: a gate in the file that the manifest (`scripts/ci-runner/gates.lock.json`) no longer has (either kind); a FAST gate the fresh captures ran that the file has in neither `gates` nor `unmeasured` (registered after the last refresh); a committed fast gate no fresh capture measured, or a committed diff-sampled gate a fresh capture ran and could not measure; cpu_s drifting more than `DRIFT_THRESHOLD` where either side is at least `MIN_DRIFT_CPU_S`; eff_cores drifting the same way where neither side is capped (the same floor applies, since the width of a sub-second gate is noise); a changed runner core count; zero usable captures. It exits `NO_BASELINE` (3) and prints a notice when the file does not exist yet. Nothing was compared, and its one caller, `rediacc_ci.ci.freshness --check` (`.ci/config/freshness.json`, run per PR as `check:ci-budget-freshness` and nightly by ops-housekeeping.yml's budget-check job), fails on it; that registry also refuses the missing file before this check runs. The first real file comes from `--refresh` after the first nightly capture, never from invented numbers.
 
 The Actions API reads reuse budget_report's `fetch_runs`/`fetch_artifacts`/`download_artifact_zip` (retrying, ghx-backed, a failed call raises rather than reading as empty).
 """
@@ -51,12 +51,14 @@ from rediacc_ci.core import ghx
 
 GATE_COSTS_REL_PATH = ".ci/config/gate-costs.json"
 GATES_LOCK_REL_PATH = budget_report.GATES_LOCK_REL_PATH
-CAPTURE_WORKFLOW = "housekeeping.yml"
+CAPTURE_WORKFLOW = "ops-housekeeping.yml"
+# The file names the capture workflow has had, newest first. A rename lands on a branch before main: GitHub lists runs by the default branch's file name and answers 404 for the new one until the merge, so the predecessor is read too (2d47c02363 renamed housekeeping.yml; ci:quick on 2655e28b23 failed `check:ci-budget-freshness` on that 404). A name GitHub answers 404 for is passed over; every name answering 404 is still a failure.
+CAPTURE_WORKFLOW_NAMES = (CAPTURE_WORKFLOW, "housekeeping.yml")
 CAPTURE_EVENTS = ("schedule", "workflow_dispatch")
 CAPTURE_RUNNER = "ubuntu-latest"
 ARTIFACT_PREFIX = "gate-costs-"
 # How many captures the medians span, and how many runs per event are listed to find them (a housekeeping run whose capture job failed carries no artifact).
-# THREE BECAUSE THE REPOSITORY KEEPS ARTIFACTS 3 DAYS (operator ruling 2026-10-07, "Keep 3 days"; recorded in .ci/config/actions-retention.json and enforced on every `retention-days:` by check:ci-workflows). GitHub caps each upload there whatever the workflow asks for: gate-costs-c277f2ab asked for 30 and expired three days after its 2026-10-05 capture. One nightly capture per day leaves at most three alive, so a window of five was two captures that never existed, and the medians quietly spanned three. housekeeping.yml's slow-gate rotation is 3-way for the same reason. test_sample_captures_fits_the_recorded_retention holds this at or under the record.
+# THREE BECAUSE THE REPOSITORY KEEPS ARTIFACTS 3 DAYS (operator ruling 2026-10-07, "Keep 3 days"; recorded in .ci/config/actions-retention.json and enforced on every `retention-days:` by check:ci-workflows). GitHub caps each upload there whatever the workflow asks for: gate-costs-c277f2ab asked for 30 and expired three days after its 2026-10-05 capture. One nightly capture per day leaves at most three alive, so a window of five was two captures that never existed, and the medians quietly spanned three. ops-housekeeping.yml's slow-gate rotation is 3-way for the same reason. test_sample_captures_fits_the_recorded_retention holds this at or under the record.
 SAMPLE_CAPTURES = 3
 RUNS_LISTED = 15
 # The same 25% budget_report.py's --check applies to lane-durations.json.
@@ -72,7 +74,7 @@ DEFAULT_COMMENT = [
     "PLAN-ci-quick-cpu-scheduling 2.5: per-gate CPU baseline for ci:quick's scheduler.",
     "Written ONLY by `PYTHONPATH=.ci python3 -m rediacc_ci.ci.gate_costs --refresh`, from the",
     "medians of the newest `gate-costs-<sha>` artifacts (up to 3; the repository keeps artifacts 3 days, so",
-    "source.runs lists the ones actually used and a figure may rest on one) of housekeeping.yml's gate-costs-capture",
+    "source.runs lists the ones actually used and a figure may rest on one) of ops-housekeeping.yml's gate-costs-capture",
     "job (run.ts --quick --jobs 1, serial and uncontended). Checked nightly by `gate_costs --check`.",
     "cpu_s/wall_s in seconds; eff_cores = cpu_s / wall_s; capped = eff_cores >= 0.9 x source.cores",
     "(the gate filled the runner, so its width is not portable); rank 1 = the largest cpu_s.",
@@ -222,19 +224,40 @@ def collect_captures(
 ) -> tuple[list[Capture], list[dict[str, Any]], list[str]]:
     """The newest `limit` gate-costs captures across the capture workflow's scheduled and dispatched runs: (captures newest first, their run records, warnings). A run with no live `gate-costs-` artifact (its capture job failed, timed out or was cancelled) is passed over; so is a run or artifact GitHub answers 404 for (deleted after the list named it), named on stderr; an artifact that will not parse is warned about and passed over. Zero captures is still the caller's failure."""
     runs: dict[Any, dict[str, Any]] = {}
-    for event in CAPTURE_EVENTS:
-        for run in list_runs(
-            repo, CAPTURE_WORKFLOW, event, budget_report.DEFAULT_BRANCH, "completed", RUNS_LISTED
-        ):
-            runs.setdefault(run.get("id"), run)
+    answered = 0
+    missing: ghx.GhError | None = None
+    for name in CAPTURE_WORKFLOW_NAMES:
+        try:
+            for event in CAPTURE_EVENTS:
+                for run in list_runs(
+                    repo, name, event, budget_report.DEFAULT_BRANCH, "completed", RUNS_LISTED
+                ):
+                    runs.setdefault(run.get("id"), run)
+        except ghx.GhError as exc:
+            if not _is_not_found(exc):
+                raise
+            print(
+                "gate_costs: GitHub knows no workflow %s yet (404); passed over." % name,
+                file=sys.stderr,
+            )
+            missing = exc
+            continue
+        answered += 1
+    if not answered and missing is not None:
+        raise missing
     # A PR's own branch may carry the capture fix main lacks (2026-10-19: main's nightly capture outlived its 12m bound for three nights and the fix, 65a2b37ee, sat on the PR that this very check kept red).
     # A capture DISPATCHED on the PR head comes from the workflow and gate code that branch ships, which is no new trust: this check itself runs from the PR tree, so the PR could already rewrite it. It is read beside main's, never instead of it.
     head = _head_branch()
     if head and head != budget_report.DEFAULT_BRANCH:
-        for run in list_runs(
-            repo, CAPTURE_WORKFLOW, "workflow_dispatch", head, "completed", RUNS_LISTED
-        ):
-            runs.setdefault(run.get("id"), run)
+        for name in CAPTURE_WORKFLOW_NAMES:
+            try:
+                for run in list_runs(
+                    repo, name, "workflow_dispatch", head, "completed", RUNS_LISTED
+                ):
+                    runs.setdefault(run.get("id"), run)
+            except ghx.GhError as exc:
+                if not _is_not_found(exc):
+                    raise
     ordered = sorted(runs.values(), key=lambda r: r.get("created_at") or "", reverse=True)
     captures: list[Capture] = []
     sources: list[dict[str, Any]] = []

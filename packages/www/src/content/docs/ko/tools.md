@@ -8,8 +8,8 @@ tags:
 subcategory: cli-tools
 order: 9
 language: ko
-sourceHash: "3c5f1e7f8063438b"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "87078fbf0b283224"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 # 도구
@@ -246,7 +246,7 @@ rdc update --status
 #### 릴리스 채널
 
 ```bash
-rdc update --channel edge      # 지속적으로 배포되는 프로덕션 업데이트
-rdc update --channel stable    # 7일 soak 후 edge에서 승격됨 (기본값)
+rdc update --channel edge      # 지속적으로 배포되는 프로덕션 업데이트 (기본값)
+rdc update --channel stable    # 7일 soak 후 edge에서 승격됨
 rdc update --status            # 현재 채널 및 버전 정보 표시
 ```

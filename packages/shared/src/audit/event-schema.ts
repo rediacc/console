@@ -20,18 +20,22 @@ const machineEventTypes = [
   'cli.machine.health',
   'cli.machine.id',
   'cli.machine.list',
-  // Emitted by `machine prune` (packages/cli/src/commands/machine/prune.ts), which prunes orphaned network units on the machine.
-  'cli.network_prune',
-  // Emitted by the network-id discovery read (packages/cli/src/services/config/network-id-discovery.ts), renet's read-only `network_used` function.
-  'cli.network_used',
   'cli.machine.match',
   'cli.machine.mismatch',
   'cli.machine.ping',
+  // The audit event of the renet function `machine_prune` (`rdc machine prune`), which check:ci-audit-coverage requires.
+  'cli.machine.prune',
   'cli.machine.provision',
   'cli.machine.query',
   'cli.machine.repos',
   'cli.machine.services',
   'cli.machine.ssh_test',
+  // Emitted by `machine prune` (packages/cli/src/commands/machine/prune.ts), which prunes orphaned network units on the machine.
+  'cli.network_prune',
+  // Emitted by the network-id discovery read (packages/cli/src/services/config/network-id-discovery.ts), renet's read-only `network_used` function.
+  'cli.network_used',
+  // Emitted by `machine repair` (packages/cli/src/commands/machine/repair.ts) for the ACME anchor fix and its Traefik restart; renet's `proxy_acme_fix` takes the fall-through name.
+  'cli.proxy_acme_fix',
 ] as const;
 
 const repoEventTypes = [
@@ -51,7 +55,12 @@ const repoEventTypes = [
   'cli.repo.down_all',
   'cli.repo.expand',
   'cli.repo.fork',
+  'cli.repo.fsck',
+  'cli.repo.gc',
   'cli.repo.guid',
+  // `repo health` (repo-health.ts) and `repo repair` / `machine repair` (repo-repair.ts, machine/repair.ts) dispatch repository_health and repository_repair.
+  'cli.repo.health',
+  'cli.repo.limits_set',
   'cli.repo.list',
   'cli.repo.log',
   'cli.repo.merge',
@@ -63,6 +72,7 @@ const repoEventTypes = [
   'cli.repo.policy_set',
   'cli.repo.promote',
   'cli.repo.prune',
+  'cli.repo.repair',
   'cli.repo.resize',
   'cli.repo.status',
   'cli.repo.template_apply',
@@ -85,6 +95,8 @@ const backupEventTypes = [
   // `backup_restore` is the chunk-store restore verb. It is deliberately TierNone while `backup_pull` is TierRepoLicenseFull, but the tier says nothing about auditability: it mutates a repo, so it records like the rest.
   'cli.backup.restore',
   'cli.backup.restore_path',
+  // `backup snapshot` (the chunk-store snapshot verb): it writes a snapshot into the store, so it records.
+  'cli.backup.snapshot',
 ] as const;
 
 // Every datastore verb `packages/cli/src/commands/datastore.ts` dispatches. It goes through a `dispatch(functionName, …)` helper rather than a `functionName: '…'` literal, so check_audit_coverage.py — which greps for the literal — cannot see most of them: it only ever flagged `fork` and `volumes_close`. The rest were emitting event types absent from this union, which makes
@@ -108,8 +120,13 @@ const datastoreEventTypes = [
   'cli.datastore.volumes_open',
 ] as const;
 
-// `repo logs` / `repo exec` (repo-container.ts, new in P4). Dotted, like every other group — the fall-through would have produced `cli.container_exec`.
-const containerEventTypes = ['cli.container.exec', 'cli.container.logs'] as const;
+// `repo logs` / `repo exec` and the container listing they resolve names from (repo-container.ts, new in P4), and the container restart `machine repair` issues. Dotted, like every other group — the fall-through would have produced `cli.container_exec`.
+const containerEventTypes = [
+  'cli.container.exec',
+  'cli.container.list',
+  'cli.container.logs',
+  'cli.container.restart',
+] as const;
 
 const explicitEventTypes = ['cli.sync.upload', 'cli.sync.download', 'cli.term.session'] as const;
 
@@ -119,6 +136,7 @@ const explicitEventTypes = ['cli.sync.upload', 'cli.sync.download', 'cli.term.se
 const clusterEventTypes = [
   'cli.ceph_client_config_export',
   'cli.ceph_health',
+  'cli.ceph_install_prerequisites',
   'cli.cluster_create',
   'cli.cluster_destroy',
   'cli.cluster_evict',
@@ -126,10 +144,12 @@ const clusterEventTypes = [
   'cli.cluster_join',
   'cli.cluster_migrate',
   'cli.cluster_scale',
+  'cli.kube_delete',
   'cli.kube_health',
   'cli.kube_namespace_create',
   'cli.kube_namespace_delete',
   'cli.kube_namespace_fork',
+  'cli.setup',
 ] as const;
 
 export const MACHINE_OP_EVENT_TYPES = [
@@ -170,6 +190,9 @@ const baseData = z.object({
   // Set by the executor (rdc serve) only: the command path that ran (`repo up`) and whether the contract marks it destructive. The CLI's own emitter omits both.
   commandPath: z.string().min(1).max(200).optional(),
   destructive: z.boolean().optional(),
+  // Set by the executor for a command that ran as a job: the job and how its record ended (`started` when the request handed the ticket back before the job finished, else its terminal state). A job's start and its terminal state are two events of one job id.
+  jobId: z.string().min(1).max(100).optional(),
+  outcome: z.enum(['started', 'succeeded', 'failed', 'cancelled']).optional(),
 });
 
 /**

@@ -1,26 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { DEFAULTS } from '@rediacc/shared/config';
 import type { Placement } from '@rediacc/shared/config-schema';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
-import { accountServerFetch } from '../services/account/account-client.js';
-import { issueFreeRepoLicense, resolveLicenseAuthority } from '../services/account/free-license.js';
-import { issueRepoLicense } from '../services/account/license.js';
-import { DEFAULT_DATASTORE, measureRepoSizeGb } from '../services/account/license-machine.js';
-import { authorizeSubscriptionViaDeviceCode } from '../services/account/subscription-device-auth.js';
 import { parseRef } from '../services/addressing/ref-parser.js';
+import { pickStores } from '../services/backup/backup-store-pick.js';
 import { warnIfConfigStorageUnenrolled } from '../services/backup/dr-nudge.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { targetFloor } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
-import {
-  resolveRestoreLicenseContext,
-  restoreLicenseAlreadyInstalled,
-} from '../services/executor/repo-license-context.js';
 import { runCommandJob } from '../services/jobs/command-job.js';
 import { type PlannedStep, planStep } from '../services/jobs/steps.js';
-import { machineConnections } from '../services/machine/machine-connection.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
@@ -32,15 +22,22 @@ import { registerBackupImageCommands } from './backup-image.js';
 import { registerBackupOpsCommands } from './backup-ops.js';
 import { registerBackupPurge } from './backup-purge.js';
 import {
+  chunkSnapshotResolver,
   resolveSnapshotAt,
   runChunkRestore,
   settleRestore,
   streamScopeFor,
 } from './backup-restore-chunk.js';
+import { ensureRestorePullLicense } from './backup-restore-license.js';
 import { assertRestorePathFlags, isPathRoute, runRestorePath } from './backup-restore-path.js';
-import { type BackupManifestsResponse, registerBackupStorageCommands } from './backup-storage.js';
+import {
+  lineageHasSnapshots,
+  restoreFromStores,
+  sourceImageOnMachine,
+} from './backup-restore-route.js';
+import { registerBackupStorageCommands } from './backup-storage.js';
 import { registerBackupStrategyCommands } from './backup-strategy.js';
-import { fetchBackupList, renderBackupList, type TaggedBackupEntry } from './repo-backup-list.js';
+import { listBackups } from './repo-backup-list.js';
 
 /** `backup list [artifact-ref]`, list backup artifacts on a machine. */
 function registerBackupList(backup: Command): void {
@@ -81,13 +78,7 @@ function registerBackupList(backup: Command): void {
           // ONE call, and no hot/cold probe. renet enumerates the datastore now, which is what makes an artifact left by `repo push` at the root
           // visible; the old pair of probes only ever looked where SCHEDULED
           // runs write, so a real copy reported an empty table. The per-entry subdirectory comes back on the entry itself.
-          const entries = await fetchBackupList(baseParams, { machine, debug: options.debug });
-          const tagged: TaggedBackupEntry[] = entries.map((e) => ({ ...e, mode: e.path ?? '' }));
-
-          const filtered = ref
-            ? tagged.filter((e) => e.name === ref.name || e.name.startsWith(ref.name))
-            : tagged;
-          await renderBackupList(filtered);
+          await listBackups(baseParams, { machine, debug: options.debug }, ref?.name);
         } catch (error) {
           handleError(error);
         }
@@ -100,6 +91,8 @@ export interface RestoreOptions {
   machine?: string;
   datastore?: string;
   at?: string;
+  /** The backup store to read from (`--from <storeId>`); never falls back when given. */
+  from?: string;
   path?: string;
   to?: string;
   anyStream?: boolean;
@@ -161,6 +154,7 @@ function registerBackupRestore(backup: Command): void {
     .option('-m, --machine <name>', t('options.machine'))
     .option('--datastore <name>', t('commands.backup.restore.optionDatastore'))
     .option('--at <time>', t('commands.backup.restore.optionAt'))
+    .option('--from <storeId>', t('commands.backup.restore.optionFrom'))
     .option('--any-stream', t('commands.backup.restore.optionAnyStream'))
     .option('--no-seed', t('commands.backup.restore.optionNoSeed'))
     .option('--allow-unopenable', t('commands.backup.restore.optionAllowUnopenable'))
@@ -181,22 +175,31 @@ function registerBackupRestore(backup: Command): void {
           await restorePathRoute(artifactRef, { ...options, path: options.path, at: options.at });
           return;
         }
-        const { ref, targetName, source } = await resolveRestoreTarget(artifactRef, options);
+        const { ref, targetName, source, sourceKey } = await resolveRestoreTarget(
+          artifactRef,
+          options
+        );
 
         const targetMachine = await resolveRestoreMachine(options);
         const resolved = await resolveRemoteName(ref.place);
         const from = resolved.type === 'cluster' ? ref.place : resolved.name;
         const sourceType = 'machine';
+        const lineage = source.grandGuid ?? source.repositoryGuid;
 
-        // No `--at`: a repo with a chunk-store lineage has no artifact on a machine to pull (the pull dies on a missing repositories/<guid>), so the restore means "the newest snapshot", exactly `--at <now>`. A repo with no manifests keeps the pull of its `repo push` artifact.
         const restoreAt =
           options.at ??
-          ((await lineageHasSnapshots(source.grandGuid ?? source.repositoryGuid, artifactRef))
-            ? new Date().toISOString()
-            : undefined);
+          (await defaultRestoreAt({
+            lineage,
+            name: artifactRef,
+            place: resolved.type === 'cluster' ? undefined : from,
+            source,
+          }));
         // Only a snapshot restore has seeds to skip; refuse before the target is registered rather than ignore the flag.
         if (options.seed === false && !restoreAt) {
           throw new ValidationError(t('commands.backup.restore.noSeedNeedsSnapshot'));
+        }
+        if (options.from !== undefined && !restoreAt) {
+          throw new ValidationError(t('commands.backup.restore.fromNeedsSnapshot'));
         }
         // Salvage is a chunk-store behaviour: the pull route has no chunks to lose.
         if (options.salvage && !restoreAt) {
@@ -212,18 +215,35 @@ function registerBackupRestore(backup: Command): void {
 
         // Refuse a bad target name before allocateNetworkId persists anything.
         assertResourceName(targetName);
-        const networkId = await configService.allocateNetworkId({
-          floor: await targetFloor({ machine: targetMachine }),
-        });
-        const lineage = source.grandGuid ?? source.repositoryGuid;
-        await configService.addRepository(compositeKey(targetName, 'latest'), {
-          ...restoredIdentity(lineage),
-          tag: 'latest',
-          // The image bytes are the source's ciphertext, so the restored repo unlocks with the source's passphrase whatever GUID it lands under. Inherit, exactly as `repo fork` does; under a fresh GUID this is a NEW credential map entry (the map is keyed by GUID), not a second claim on the source's slot.
-          credential: source.credential,
-          networkId,
-          placement,
-        });
+        // The snapshot is chosen BEFORE the target is registered: the stream probe and the index lookup are where a chunk restore is refused, and a refusal after the registration left a config entry with no image behind it (live 2026-11-05). The probe runs here; the index lookup runs per store inside restoreFromStores, before that store's attempt registers the target.
+        const chunk = restoreAt
+          ? {
+              resolve: await chunkSnapshotResolver({
+                lineage,
+                at: restoreAt,
+                anyStream: options.anyStream ?? false,
+                source: { repoName: sourceKey, machine: from },
+                debug: options.debug,
+              }),
+            }
+          : undefined;
+        // Ranked before the target is registered, like the snapshot: a refused ranking leaves nothing to roll back.
+        const storePick = chunk ? await pickStores(lineage, options.from) : undefined;
+        // One registration per chunk attempt, after its store resolved the snapshot: a failed attempt's rollback step removes it, and the next store registers it again.
+        const registerTarget = async (): Promise<void> => {
+          const networkId = await configService.allocateNetworkId({
+            floor: await targetFloor({ machine: targetMachine }),
+          });
+          await configService.addRepository(compositeKey(targetName, 'latest'), {
+            ...restoredIdentity(lineage),
+            tag: 'latest',
+            // The image bytes are the source's ciphertext, so the restored repo unlocks with the source's passphrase whatever GUID it lands under. Inherit, exactly as `repo fork` does; under a fresh GUID this is a NEW credential map entry (the map is keyed by GUID), not a second claim on the source's slot.
+            credential: source.credential,
+            networkId,
+            placement,
+          });
+        };
+        if (!chunk) await registerTarget();
 
         // DR nudge: a restore into a config with no config-storage enrollment cannot recover the repo credential (the LUKS passphrase) on a fresh host, warn, never block (spec/02 decision 14).
         await warnIfConfigStorageUnenrolled();
@@ -232,20 +252,28 @@ function registerBackupRestore(backup: Command): void {
         // two verbs that mean the same thing.
         // The run record, the stats report, the registration rollback, the unit re-render (G4) and the `--up` deploy ride the job's ticket (PLAN-detached-jobs J4), so a backgrounded restore records nothing until it finishes and deploys only a restore that succeeded.
         const after = restoreTailSteps(targetName, targetMachine, datastore, options);
-        if (restoreAt) {
-          await runChunkRestore({
-            targetName,
-            targetMachine,
-            datastore,
-            lineage,
-            at: restoreAt,
-            anyStream: options.anyStream ?? false,
-            noSeed: options.seed === false,
-            allowUnopenable: options.allowUnopenable,
-            salvage: options.salvage,
-            source: { repoName: ref.name, machine: from },
-            debug: options.debug,
-            after,
+        if (chunk && storePick) {
+          await restoreFromStores({
+            pick: storePick,
+            resolve: chunk.resolve,
+            attempt: async (store, snapshotId, deferIf) => {
+              // Registered only once the store resolved a snapshot; a later attempt follows the previous one's rollback.
+              await registerTarget();
+              return runChunkRestore({
+                targetName,
+                targetMachine,
+                datastore,
+                lineage,
+                snapshotId,
+                noSeed: options.seed === false,
+                allowUnopenable: options.allowUnopenable,
+                salvage: options.salvage,
+                store,
+                deferIf,
+                debug: options.debug,
+                after: restoreTailSteps(targetName, targetMachine, datastore, options),
+              });
+            },
           });
         } else {
           await runRestorePull({
@@ -305,20 +333,19 @@ async function restorePathRoute(
     at: options.at,
     path: options.path,
     to: options.to,
+    from: options.from,
     debug: options.debug,
-    resolveSnapshot: async (lineage, at) =>
-      resolveSnapshotAt(
-        lineage,
+    resolveSnapshot: async (lineage, at) => {
+      // The source machine's stream is probed once; each store tried resolves the time inside itself.
+      const scope = await streamScopeFor({
         at,
-        await streamScopeFor({
-          at,
-          anyStream: options.anyStream ?? false,
-          source: { repoName: repoKey, machine: sourceMachine },
-          debug: options.debug,
-        }),
-        // A path is read from the snapshot's listing, so a time with no listing falls back to the nearest one that has it.
-        { indexed: true }
-      ),
+        anyStream: options.anyStream ?? false,
+        source: { repoName: repoKey, machine: sourceMachine },
+        debug: options.debug,
+      });
+      // A path is read from the snapshot's listing, so a time with no listing falls back to the nearest one that has it.
+      return (store) => resolveSnapshotAt(lineage, at, scope, { indexed: true, store });
+    },
   });
 }
 
@@ -359,6 +386,8 @@ async function resolveRestoreTarget(
   ref: ReturnType<typeof parseRef> & { place: string };
   targetName: string;
   source: NonNullable<Awaited<ReturnType<typeof configService.getRepository>>>;
+  /** The source's config key with its tag: `name:tag` for a fork, the bare name for a grand. */
+  sourceKey: string;
 }> {
   const ref = parseRef(artifactRef);
   if (!ref.place) {
@@ -375,11 +404,13 @@ async function resolveRestoreTarget(
 
   // The artifact carries its source repo's identity; the pushed copy on <place>
   // is that repo under its GUID (06 §6.5). Look it up to learn the GUID we pull, then register the restored name as a fresh live record.
-  const source = await configService.getRepository(ref.name);
+  // The TAG is part of the source: a bare name resolves to the family's grand, so `observability:lab@m` pulled and probed the GRAND's GUID on a machine that only holds the lab fork's pushed image.
+  const sourceKey = ref.tag ? `${ref.name}:${ref.tag}` : ref.name;
+  const source = await configService.getRepository(sourceKey);
   if (!source) {
-    throw new ValidationError(t('commands.backup.restore.sourceUnknown', { name: ref.name }));
+    throw new ValidationError(t('commands.backup.restore.sourceUnknown', { name: sourceKey }));
   }
-  return { ref: { ...ref, place: ref.place }, targetName, source };
+  return { ref: { ...ref, place: ref.place }, targetName, source, sourceKey };
 }
 
 /**
@@ -444,95 +475,6 @@ async function runRestorePull(args: {
 }
 
 /**
- * Install the licence the pull's destination needs, BEFORE `backup_pull` runs.
- *
- * Every restore mints a fresh GUID (restoredIdentity), and `backup_pull` is
- * full-tier: renet validates the licence for the DESTINATION GUID, which no
- * machine holds yet. The executor's recovery cannot answer that refusal: for
- * a non-provisioning verb it runs the image-scanning batch refresh, and the
- * destination has no image until the pull lands it. So the licence is issued
- * here, for the minted GUID on the target machine, the way `repo create`'s
- * pre-flight issues one for a repo that does not exist yet: no identity proofs
- * (renet's later scans add them), and the same context and skip probe the
- * `--at` route's pre-flight uses for the same restored record.
- *
- * The requested size is the source image's, measured on the source machine:
- * that is what will arrive. A cluster source names no machine to measure on,
- * so it requests the floor; renet still enforces the licence's limit against
- * the staged image before committing it.
- */
-async function ensureRestorePullLicense(args: {
-  targetName: string;
-  targetMachine: string;
-  source: { machine: string; guid: string; placement?: Placement } | undefined;
-}): Promise<void> {
-  const renet = DEFAULTS.CONTEXT.RENET_BINARY;
-  const lease = await machineConnections.acquire(args.targetMachine);
-  try {
-    const base = await resolveRestoreLicenseContext(
-      args.targetMachine,
-      { repository: args.targetName },
-      lease.sftp,
-      { remoteRenetPath: renet, required: true }
-    );
-    if (!base) throw new Error(t('errors.subscription.activationFailed'));
-    if (await restoreLicenseAlreadyInstalled(base, lease.machine, renet, lease.sftp)) return;
-
-    const requestedSizeGb = args.source ? await sourceImageSizeGb(args.source) : 1;
-    const params = { ...base, requestedSizeGb };
-    const authority = await resolveLicenseAuthority(() =>
-      authorizeSubscriptionViaDeviceCode(undefined, {
-        interactive: process.stdin.isTTY && process.stdout.isTTY,
-        announceIntro: true,
-      })
-    );
-    if (authority === 'free') {
-      await issueFreeRepoLicense(lease.machine, lease.sshPrivateKey, params, renet, lease.sftp);
-      return;
-    }
-    if (!(await issueRepoLicense(lease.machine, lease.sshPrivateKey, params, renet, lease.sftp))) {
-      throw new Error(t('errors.subscription.activationFailed'));
-    }
-  } finally {
-    lease.release();
-  }
-}
-
-/** The source image's size in GB on its machine (the floor, with a warning, when it cannot be measured). */
-async function sourceImageSizeGb(source: {
-  machine: string;
-  guid: string;
-  placement?: Placement;
-}): Promise<number> {
-  let lease: Awaited<ReturnType<typeof machineConnections.acquire>>;
-  try {
-    lease = await machineConnections.acquire(source.machine);
-  } catch {
-    outputService.warn(
-      `Could not reach ${source.machine} to size the source image; requesting the 1 GB floor.`
-    );
-    return 1;
-  }
-  try {
-    const placed =
-      source.placement && 'datastore' in source.placement
-        ? namedDatastoreMount(source.placement.datastore)
-        : undefined;
-    return await measureRepoSizeGb(lease.sftp, source.guid, [
-      placed,
-      lease.machine.datastore ?? DEFAULT_DATASTORE,
-    ]);
-  } catch {
-    outputService.warn(
-      `Could not measure the source image on ${source.machine}; requesting the 1 GB floor.`
-    );
-    return 1;
-  } finally {
-    lease.release();
-  }
-}
-
-/**
  * The steps every restore route plans after its record: the stats report, the registration
  * rollback on failure, the backup-unit re-render (G4: the restore registered a new repository on
  * the target machine) and, with `--up`, the deploy.
@@ -565,27 +507,31 @@ function restoreTailSteps(
 }
 
 /**
- * Whether the account index holds any snapshot of the lineage. An unreachable
- * index or an unreadable answer is "no": the caller then takes the pull route,
- * which is what restore did before the chunk store existed. That fallback is
- * said out loud, since on a chunk-store repo the pull has nothing to fetch.
+ * The restore point when `--at` is absent: undefined takes the pull route, a time the chunk route.
+ *
+ * A machine place that holds the source's image (the artifact `repo push --to <machine>` leaves)
+ * is pulled, since that image is what the ref names. Only a place WITHOUT the image falls through
+ * to the snapshot index, where a lineage with snapshots restores the newest one (`--at <now>`);
+ * the pull would die there on a missing repositories/<guid>. A place that cannot be asked keeps
+ * the index decision, as before the probe existed.
  */
-async function lineageHasSnapshots(lineage: string, name: string): Promise<boolean> {
-  try {
-    const result = await accountServerFetch<BackupManifestsResponse>(
-      // Whether any row exists: one is enough, and the listing is capped per page.
-      `/account/api/v1/backups/manifests?lineage=${encodeURIComponent(lineage)}&limit=1`
-    );
-    return result.manifests.length > 0; // a malformed answer throws into the catch
-  } catch (error) {
-    outputService.warn(
-      t('commands.backup.restore.snapshotIndexUnreadable', {
-        name,
-        reason: error instanceof Error ? error.message : String(error),
-      })
-    );
-    return false;
+async function defaultRestoreAt(args: {
+  lineage: string;
+  name: string;
+  place: string | undefined;
+  source: NonNullable<Awaited<ReturnType<typeof configService.getRepository>>>;
+}): Promise<string | undefined> {
+  if (args.place) {
+    const held = await sourceImageOnMachine({
+      machine: args.place,
+      guid: args.source.repositoryGuid,
+      placement: args.source.placement,
+    });
+    if (held) return undefined;
   }
+  return (await lineageHasSnapshots(args.lineage, args.name))
+    ? new Date().toISOString()
+    : undefined;
 }
 
 export { resolveSnapshotAt, type StreamScope } from './backup-restore-chunk.js';

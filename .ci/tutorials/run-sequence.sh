@@ -105,17 +105,17 @@ if [[ -n "${TUTORIAL_SHARD:-}" ]]; then
     fi
     # T2.9 (PLAN-ci-time-budget, spec W L10): contiguous chunks sized by MEASURED
     # duration, not by count. The per-tutorial p90s are lane-durations.json's
-    # `tutorial:<slug>` units, and every shard also pays about 4.1 min outside the
+    # `tutorial:<slug>` units, and every shard also pays about 5.6 min outside the
     # tutorials (runner setup, ops up, the second worker).
     # scripts/gates/check-lane-budget.ts prices the slices from exactly those numbers (`--table` shows them beside measured p90s), and `--rebalance ops-tutorials` searches every contiguous split.
-    # (7 2 2 4 1 2) over 6 shards is its best on the 2026-10-14 refresh (worst leg 10.82 min). The 5-shard (7 2 5 2 2) estimated 12.4 and 12.2 min on legs 3 and 4 there, and an exhaustive search found no 5-shard split under 12.
+    # (7 2 2 4 1 1 1) over 7 shards is its best on the 2026-11-14 refresh (worst leg 11.28 min), the 7th shard added by operator ruling #d7502b7d (ASKED:2026-11-14T12:54Z) once that refresh put the fixed cost at 5.62 min and the 6-shard (7 2 2 4 1 2) at 12.4 min on leg 6 (tutorial:delta-transfer alone 5.6 min).
     # Regenerate with `npx tsx scripts/gates/check-lane-budget.ts --rebalance ops-tutorials --write` rather than editing the sizes by hand.
     # The sizes apply only while the sequence has exactly the tutorial count they
     # sum to AND shard_of matches; anything else (a tutorial added, removed or
     # reordered by editing the docs, or a different TUTORIAL_SHARD width) falls
     # back to the ceil(total/N) equal-count split rather than silently mis-slicing
     # a changed sequence.
-    MEASURED_SHARD_SIZES=(7 2 2 4 1 2)
+    MEASURED_SHARD_SIZES=(7 2 2 4 1 1 1)
     measured_total=0
     for _sz in "${MEASURED_SHARD_SIZES[@]}"; do
         measured_total=$((measured_total + _sz))

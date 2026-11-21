@@ -11,7 +11,7 @@ tags:
 subcategory: ai-agents
 order: 51
 language: es
-sourceHash: "36ba86893c3817ac"
+sourceHash: "fa5406e6f4dcdd08"
 sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
 ---
 
@@ -133,6 +133,12 @@ Esquema:
 | `next.options[]` | `array` | Acciones concretas; cada una es una alternativa que el usuario puede elegir |
 | `next.options[].description` | `string` | Explicación legible por humanos de esta opción |
 | `next.options[].run` | `string` | Comando CLI exacto. Transmítalo literalmente al usuario |
+
+### Aviso de fallo y opción de comentarios
+
+Tras un comando fallido (cualquier salida distinta de cero salvo un error de uso), `rdc` imprime `Unexpected? rdc feedback report --last` en stderr. En la salida JSON se añade el mismo aviso a `next.options[]` como una opción que ejecuta `rdc feedback report --last`; un error sin `next` recibe uno, con un resumen que pregunta si el fallo era inesperado. El aviso no aparece en errores de uso, en comandos `rdc feedback` que fallan ni en solicitudes atendidas por `rdc serve`. `REDIACC_FEEDBACK_HINT=0` lo desactiva.
+
+El comando report imprime exactamente lo que se enviaría. Sin `--yes`, un agente recibe esa vista previa y el comando para enviarla; no se envía nada hasta que se pasa `--yes` o una persona lo confirma.
 
 ### Errores reintentables
 

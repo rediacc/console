@@ -8,7 +8,10 @@ Three layers: `settle_by_effort` alone, `run_judge` through a canned `claude` th
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import stat
+import sys
 import types
 
 import pytest
@@ -33,6 +36,38 @@ REPORT_ONLY = {
     "next_action": "List every open item by id.",
     "basis": "out-of-sync",
 }
+
+
+# The live effort.json moves with every tuner run (35afbb54e made `no-remaining` and `out-of-sync` block at smart), so nothing here reads it: the report keys advise at smart and block at high in this pinned table, which is the shape the judge's settle logic exists for.
+PINNED = {
+    "checks": {
+        "no-remaining": {"block": "high", "advise": "smart"},
+        "out-of-sync": {"block": "high", "advise": "smart"},
+    }
+}
+
+
+@pytest.fixture(autouse=True)
+def pinned_table(monkeypatch):
+    """In-process `wl_effort.load()` answers PINNED (the subprocess layer gets the same table through `pinned_hook`)."""
+    monkeypatch.setattr(J.wl_effort, "load", lambda *_args: (PINNED, ""))
+
+
+def pinned_hook(fix):
+    """Point `fix` at a copy of the Stop hook whose effort.json (at the copy's parents[2] / config) is PINNED."""
+    hooks = fix.base / "hooks"
+    shutil.copytree(wlfix.STOP_DIR, hooks / "stop", ignore=shutil.ignore_patterns("__pycache__"))
+    shutil.copytree(
+        wlfix.STOP_DIR.parent / "context",
+        hooks / "context",
+        ignore=shutil.ignore_patterns("__pycache__", "state"),
+    )
+    # wl_proc finds .ci/rediacc_ci/proc.py, and wl_prscope the rediacc_hooks package, at the copy's parents[2].
+    (fix.base / ".ci").symlink_to(wlfix.STOP_DIR.parents[2] / ".ci")
+    (fix.base / "rediacc_hooks").symlink_to(wlfix.STOP_DIR.parents[1] / "rediacc_hooks")
+    (fix.base / "config").mkdir()
+    (fix.base / "config" / "effort.json").write_text(json.dumps(PINNED), encoding="utf-8")
+    fix.hook = hooks / "stop" / "worklist.py"
 
 
 # ---- settle_by_effort ---------------------------------------------------------------------------
@@ -110,12 +145,13 @@ def judge(tmp_path, monkeypatch):
     script = bindir / "claude"
     script.write_text(
         "#!/usr/bin/env python3\nimport json, sys\n"
-        "open(%r, 'w').write(json.dumps(sys.argv[1:]))\n"
+        "a = sys.argv[1:]; p = sys.stdin.read()  # the real CLI reads the prompt from stdin\n"
+        "open(%r, 'w').write(json.dumps({'argv': a, 'stdin': p}))\n"
         "print(open(%r).read())\n" % (str(seen), str(reply)),
         encoding="utf-8",
     )
     script.chmod(script.stat().st_mode | stat.S_IEXEC)
-    monkeypatch.setenv("PATH", "%s:/usr/bin:/bin" % bindir)
+    monkeypatch.setenv("PATH", "%s:%s:/usr/bin:/bin" % (bindir, os.path.dirname(sys.executable)))
     monkeypatch.setenv("TMPDIR", str(tmp_path))
 
     def answer(out):
@@ -123,9 +159,12 @@ def judge(tmp_path, monkeypatch):
 
     def argv():
         got = json.loads(seen.read_text(encoding="utf-8"))
-        return got[got.index("-p") + 1], json.loads(got[got.index("--json-schema") + 1])
+        return got["stdin"], json.loads(got["argv"][got["argv"].index("--json-schema") + 1])
 
-    return types.SimpleNamespace(answer=answer, argv=argv)
+    def raw():
+        return json.loads(seen.read_text(encoding="utf-8"))
+
+    return types.SimpleNamespace(answer=answer, argv=argv, raw=raw)
 
 
 def ask(level):
@@ -151,6 +190,17 @@ def test_run_judge_at_smart_asks_the_basis_and_settles(judge):
     assert verdict["effort_advised"][0][0] == "out-of-sync"
 
 
+def test_run_judge_sends_the_prompt_on_stdin_and_never_on_argv(judge):
+    """The regression 28fe750138 fixed: a prompt on argv fails with E2BIG once it is long."""
+    judge.answer(dict(REPORT_ONLY))
+    _verdict, err = ask("smart")
+    assert err is None, err
+    got = judge.raw()
+    assert "BASIS." in got["stdin"]
+    assert not any("BASIS." in a for a in got["argv"]), got["argv"]
+    assert max(len(a) for a in got["argv"]) < len(got["stdin"])
+
+
 def test_run_judge_at_high_asks_no_basis_and_blocks(judge):
     judge.answer(dict(REPORT_ONLY))
     verdict, err = ask("high")
@@ -166,6 +216,7 @@ def test_run_judge_at_high_asks_no_basis_and_blocks(judge):
 
 def one_writer_world(fix, level):
     """One live leased writer, nothing else open: the stop reaches the judge, which answers REPORT_ONLY."""
+    pinned_hook(fix)
     fix.settings(effort=level)
     fix.brief_now()
     fix.hand_now()

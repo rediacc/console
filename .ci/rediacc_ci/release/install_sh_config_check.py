@@ -3,15 +3,17 @@
 
 Unit test for `install.sh`'s `write_install_config` function.
 
-Covers the five scenarios the worker rewrite can land us in when a user runs `curl -fsSL https://<preview>.rediacc.com/install.sh | bash`:
+Covers the six scenarios the worker rewrite can land us in when a user runs `curl -fsSL https://<preview>.rediacc.com/install.sh | bash`:
 
-  worker_full                    both rewritten, server unreachable
+  worker_full                    both rewritten, server unreachable (a 404 path on the mock)
   worker_channel_only            only CHANNEL rewritten (fail-safe path)
   worker_server_only             only SERVER_URL rewritten
   worker_none                    neither rewritten; no rediacc.json written
   worker_full_with_server_info   both rewritten + reachable server-info
                                  returning a different updateChannel
                                  (regression guard: baked channel must win)
+  worker_custom_releases         only REDIACC_RELEASES_URL set; the config
+                                 must still be written with releasesUrl
 
 REGISTERED CI GATE: `check:ci-install-sh-config`, step "install.sh config tests" in `.github/workflows/ci-quality.yml`, job `quality-static`.
 
@@ -64,7 +66,7 @@ import tempfile
 import time
 
 from rediacc_ci import paths, runtmp
-from rediacc_ci.well_known import EDGE_ORIGIN, SITE_ORIGIN
+from rediacc_ci.well_known import SITE_ORIGIN
 
 INSTALL_SH_REL = "packages/www/public/install.sh"
 
@@ -148,6 +150,7 @@ def run_case(
     expect_file: str,
     expect_channel: str,
     expect_account: str,
+    releases_url: str = "",
 ) -> None:
     tmp_home = pathlib.Path(tempfile.mkdtemp(dir=runtmp.shared("install-sh-config-")))
     config_file = tmp_home / ".config" / "rediacc" / "rediacc.json"
@@ -156,7 +159,7 @@ def run_case(
     env["HOME"] = str(tmp_home)
     env["XDG_CONFIG_HOME"] = str(tmp_home / ".config")
     # install.sh reads these at top level, then write_install_config uses the CHANNEL/SERVER_URL globals that result.
-    if channel and channel != "stable":
+    if channel:
         env["REDIACC_CHANNEL"] = channel
     else:
         env.pop("REDIACC_CHANNEL", None)
@@ -164,7 +167,10 @@ def run_case(
         env["REDIACC_SERVER_URL"] = server_url
     else:
         env.pop("REDIACC_SERVER_URL", None)
-    env.pop("REDIACC_RELEASES_URL", None)
+    if releases_url:
+        env["REDIACC_RELEASES_URL"] = releases_url
+    else:
+        env.pop("REDIACC_RELEASES_URL", None)
     env["REDIACC_INSTALL_SH_SOURCE_ONLY"] = "1"
 
     completed = subprocess.run(
@@ -203,6 +209,17 @@ def run_case(
                 got_channel = substituted(probe)
             else:
                 got_account = substituted(probe)
+
+        if releases_url:
+            probe = read_account_field(config_file, "releasesUrl")
+            sys.stderr.write(probe.stderr)
+            sys.stderr.flush()
+            if probe.returncode != 0:
+                raise SilentExitError(probe.returncode)
+            if substituted(probe) != releases_url:
+                tally.fail(
+                    "%s: expected releasesUrl=%s, got %s" % (name, releases_url, substituted(probe))
+                )
 
         if got_channel == expect_channel and got_account == expect_account:
             tally.ok("%s: channel=%s accountServer=%s" % (name, got_channel, got_account))
@@ -275,32 +292,42 @@ def main(_argv: list[str]) -> int:
     try:
         server.wait()
         cases = (
-            # worker_full: both rewrites landed -- ideal case
+            # worker_full: both rewrites landed, server-info unreachable. SERVER_URL is a path on the MOCK that holds no server-info (a 404, which `curl -f` fails on exactly as it does for an unreachable host), never SITE_ORIGIN: a non-empty SERVER_URL makes install.sh curl `<SERVER_URL>/account/api/v1/.well-known/server-info`, and the live origin there made this gate's verdict depend on the network (and call production). The mock's own server-info (`updateChannel: stable`) is kept for worker_full_with_server_info, the case that needs a reachable one.
             (
                 "worker_full",
                 "edge",
-                EDGE_ORIGIN,
+                server.url + "/absent",
                 "yes",
                 "edge",
-                EDGE_ORIGIN,
+                server.url + "/absent",
             ),
             # worker_channel_only: fail-safe recovery path (the gap we closed)
-            ("worker_channel_only", "edge", "", "yes", "edge", SITE_ORIGIN),
-            # worker_none: neither rewrite landed -- install.sh can't infer origin, leaves no config so rdc update falls back to default stable.
-            ("worker_none", "stable", "", "no", "", ""),
+            ("worker_channel_only", "stable", "", "yes", "stable", SITE_ORIGIN),
+            # worker_none: neither rewrite landed -- install.sh can't infer origin, leaves no config so rdc update uses its own defaults (edge channel, production releases URL).
+            ("worker_none", "", "", "no", "", ""),
             # worker_server_only: SERVER_URL rewritten but CHANNEL not.
             (
                 "worker_server_only",
-                "stable",
+                "",
                 "https://unreachable-server.invalid",
                 "yes",
-                "stable",
+                "edge",
                 "https://unreachable-server.invalid",
             ),
-            # worker_full_with_server_info: both baked + a real server-info responding with `updateChannel: stable`. The baked edge channel must NOT be overridden.
+            # worker_full_with_server_info: both baked + a real server-info responding with `updateChannel: stable`. The baked channel (edge) must NOT be overridden.
             ("worker_full_with_server_info", "edge", server.url, "yes", "edge", server.url),
+            # worker_custom_releases: no rewrite, but a custom releases URL. The CLI reads it only from the config, so it must be written (regression: update flow tested production).
+            (
+                "worker_custom_releases",
+                "",
+                "",
+                "yes",
+                "edge",
+                SITE_ORIGIN,
+                "http://127.0.0.1:1",
+            ),
         )
-        for name, channel, server_url, expect_file, expect_channel, expect_account in cases:
+        for name, channel, server_url, expect_file, expect_channel, expect_account, *rest in cases:
             run_case(
                 tally,
                 install_sh,
@@ -310,6 +337,7 @@ def main(_argv: list[str]) -> int:
                 expect_file,
                 expect_channel,
                 expect_account,
+                *rest,
             )
     except SilentExitError as exit_request:
         return exit_request.code

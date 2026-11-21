@@ -929,17 +929,18 @@ def identity_path(root, rel):
             return current
 
 
-def lint_text(path, text, rules, globals_, scope=None):
+def lint_text(path, text, rules, globals_, scope=None, lines=None, note=None):
     """Findings for one document. Returns `(findings, note)`.
 
-    `note` is not None when extraction could not be trusted, and the caller must treat it as UNCHECKED rather than folding it into a pass.
+    `note` is not None when extraction could not be trusted, and the caller must treat it as UNCHECKED rather than folding it into a pass. A caller that already ran `extract` passes its `lines` and `note`, so a file is extracted once.
     """
     markers = tuple(globals_.get("ignore_markers") or DEFAULT_MARKERS)
     max_len = globals_.get("max_line_length")
     if scope is None:
         scope = SCOPE_BY_SUFFIX.get(pathlib.Path(path).suffix, "markdown")
     rules = rules_for_path(path, rules, globals_)
-    lines, note = extract(path, text, markers)
+    if lines is None:
+        lines, note = extract(path, text, markers)
     findings = []
     for line in lines:
         for rule, snippet in lint_line(line, rules, scope, max_len):
@@ -1394,6 +1395,78 @@ def _shape(globals_, rules, files, prose_lines):
     )
 
 
+# THE PER-FILE CACHE (PLAN-two-track-merge-dev S1). A file's findings depend only on its path, its text, the rules and globals, and this linter's own source, so a file whose text hash and context hash match its entry reuses the stored line count, note and findings. identity_path, exemptions, the per-suffix floors and the baseline comparison are recomputed every run; --write-baseline and --drain reuse no cached finding (every file is linted fresh), though a targeted run still reads the cache to merge its fresh entries into the rest.
+CACHE_RELPATH = pathlib.PurePosixPath(".ci/cache/prose-style/files-v1.json")
+
+
+def _rule_fingerprint(rule):
+    """Every slot of a loaded rule, compiled patterns read back as their source, so two rule sets hash alike only when they lint alike."""
+    out = []
+    for name in sorted(Rule.__slots__):
+        value = getattr(rule, name, None)
+        if isinstance(value, (list, tuple)):
+            value = [getattr(v, "pattern", v) for v in value]
+        out.append((name, getattr(value, "pattern", value)))
+    return out
+
+
+def cache_context(globals_, rules):
+    """The hash every entry is keyed under: the rules run_check was handed (a caller may lint with rules no file holds), the globals, and the source of this module and the check entry."""
+    h = hashlib.sha256(b"prose-style-cache-v1\0")
+    h.update(
+        json.dumps([_rule_fingerprint(r) for r in rules], sort_keys=True, default=str).encode()
+    )
+    ci = pathlib.Path(__file__).resolve().parents[2]
+    for rel in ("rediacc_ci/quality/prose_style.py", "scripts/quality/check_prose_style.py"):
+        source = ci / rel
+        h.update(rel.encode() + b"\0" + (source.read_bytes() if source.is_file() else b"missing"))
+    h.update(json.dumps(globals_, sort_keys=True, default=str).encode())
+    return h.hexdigest()
+
+
+def load_cache(root, context):
+    try:
+        doc = json.loads((pathlib.Path(root) / CACHE_RELPATH).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if (
+        not isinstance(doc, dict)
+        or doc.get("context") != context
+        or not isinstance(doc.get("files"), dict)
+    ):
+        return {}
+    return doc["files"]
+
+
+def save_cache(root, context, files):
+    target = pathlib.Path(root) / CACHE_RELPATH
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        tmp = target.with_suffix(".tmp")
+        tmp.write_text(json.dumps({"context": context, "files": files}), encoding="utf-8")
+        tmp.replace(target)
+    except OSError as exc:
+        log.info("prose-style cache not written (%s); the next run is cold" % exc)
+
+
+def _cache_entry_ok(entry):
+    """A stored entry is reused only when every field has the shape run_check wrote; anything else is a miss and the file is linted again."""
+    if not {"lines", "note", "findings"} <= entry.keys():
+        return False
+    lines, note, found = entry["lines"], entry["note"], entry["findings"]
+    if type(lines) is not int or lines < 0 or not (note is None or isinstance(note, str)):
+        return False
+    if not isinstance(found, list):
+        return False
+    return all(
+        isinstance(f, list)
+        and len(f) == 5
+        and type(f[0]) is int
+        and all(isinstance(v, str) for v in f[1:])
+        for f in found
+    )
+
+
 def run_check(
     root,
     globals_,
@@ -1437,7 +1510,7 @@ def run_check(
         return 1
 
     exempts = exemptions(globals_)
-    findings = []
+    findings: list[Finding] = []
     notes = []
     exempted = {}
     prose_lines = 0
@@ -1446,6 +1519,10 @@ def run_check(
     per_suffix_lines = collections.Counter()
     per_suffix_files = collections.Counter()
     per_suffix_noted = collections.Counter()
+    context = cache_context(globals_, rules)
+    cold = write_baseline or drain
+    cache = {} if cold else load_cache(root, context)
+    fresh = {}
     for rel in files:
         full = pathlib.Path(root) / rel
         try:
@@ -1453,16 +1530,30 @@ def run_check(
         except OSError as exc:
             notes.append("%s could not be read (%s), so it went UNCHECKED" % (rel, exc))
             continue
-        markers = tuple(globals_.get("ignore_markers") or DEFAULT_MARKERS)
-        lines, note = extract(rel, text, markers)
-        prose_lines += len(lines)
+        digest = hashlib.sha256(text.encode("utf-8", "surrogatepass")).hexdigest()
+        hit = cache.get(rel)
+        got = None
+        if isinstance(hit, dict) and hit.get("sha") == digest and _cache_entry_ok(hit):
+            n_lines, note = hit["lines"], hit["note"]
+            got = [Finding(rel, *f) for f in hit["findings"]]
+        if got is None:
+            markers = tuple(globals_.get("ignore_markers") or DEFAULT_MARKERS)
+            lines, note = extract(rel, text, markers)
+            n_lines = len(lines)
+            got, _ = lint_text(rel, text, rules, globals_, lines=lines, note=note)
+        fresh[rel] = {
+            "sha": digest,
+            "lines": n_lines,
+            "note": note,
+            "findings": [[f.lineno, f.rule, f.snippet, f.text, f.severity] for f in got],
+        }
+        prose_lines += n_lines
         suffix = pathlib.Path(rel).suffix
         per_suffix_files[suffix] += 1
-        per_suffix_lines[suffix] += len(lines)
+        per_suffix_lines[suffix] += n_lines
         if note:
             notes.append(note)
             per_suffix_noted[suffix] += 1
-        got, _ = lint_text(rel, text, rules, globals_)
         stable = identity_path(root, rel)
         if stable != rel:
             for finding in got:
@@ -1474,6 +1565,9 @@ def run_check(
                 exempted.setdefault(reason, []).append((rel, len(got)))
             continue
         findings.extend(got)
+
+    # A full sweep saves exactly what it saw (a deleted file leaves the cache); a run on named files merges into what is there.
+    save_cache(root, context, fresh if not targets else {**load_cache(root, context), **fresh})
 
     if prose_lines == 0:
         log.error(

@@ -14,7 +14,10 @@ prose above. In Python the same chain is `run_out(..., want_rc=True)` returning
 None, which is why `git_out` is called with `want_rc` set rather than with the default: the default turns a git FAILURE into an empty string, and an empty string here would fall through to the next test instead of allowing the merge. Confusing those two is how a fail-open guard becomes a fail-closed one.
 """
 
-from rediacc_hooks import hookio, shellscan
+import subprocess
+import time
+
+from rediacc_hooks import commit_policy, hookio, shellscan, syspath
 from rediacc_hooks.wellknown import GH_REPO, RENET_REPO
 
 CHAIN = "pre-bash"
@@ -42,6 +45,67 @@ EDGE_CASES = [
     ("the verb inside quoted prose", "echo 'run gh pr merge when green'"),
 ]
 
+# THE PR'S OWN TREE (agent/plans/PLAN-two-track-merge-dev.md, box LT12). With a landing record the merged PR's head is read from `gh pr view` (its `headRefName`), not from the session root's HEAD: a merge typed in the development tree merges the landing tree's branch, and judging the development branch there refused on the wrong commits and let the landing tree's unpushed ones be orphaned. Planted, the head is the root's branch again.
+TWO_TREE_DEFECT = ("head = _pr_head(root, runs)", 'head = ""')
+GH_TIMEOUT = "20"
+GH_READ_ATTEMPTS = 2
+GH_READ_PAUSE_S = 2
+
+
+def _pr_head(root, runs):
+    """The merged PR's `headRefName` from `gh pr view`, "" when gh cannot answer."""
+    sel, repo = "", None
+    for r in runs:
+        parsed = shellscan.gh_args(r.argv)
+        if parsed.on("help"):
+            continue
+        sel = parsed.operands[0] if parsed.operands else ""
+        repo = parsed.last("repo")
+        break
+    view = ["timeout", GH_TIMEOUT, "gh", "pr", "view", *([sel] if sel else [])]
+    view += [*(["--repo", repo] if repo else []), "--json", "headRefName", "--jq", ".headRefName"]
+    try:
+        retry = syspath.import_from_ci("rediacc_ci.core.gh_retry")
+    except ImportError:
+        return ""
+
+    def once():
+        try:
+            done = subprocess.run(view, cwd=root, capture_output=True, text=True, check=False)
+        except (OSError, ValueError):
+            return 127, "", "gh could not run"
+        return done.returncode, done.stdout, done.stderr
+
+    # A transient 5xx is retried within the hook's budget (two attempts, one 2 s pause); a 4xx or a timeout answers at once.
+    rc, out, _err = retry.retry_transient(
+        once,
+        lambda r: None if r[0] == 0 else (r[2] or "failed"),
+        attempts=GH_READ_ATTEMPTS,
+        sleep=lambda _scheduled: time.sleep(GH_READ_PAUSE_S),
+    )
+    return out.strip() if rc == 0 else ""
+
+
+def _judged_branch(root, runs):
+    """`(tree, branch)` whose unpushed commits the merge would strand.
+
+    No landing record: the session root and its checked-out branch, as before the record existed. With one: the PR's head branch, in the tree the record binds it to (the landing tree for the record's branch, else whichever bound tree has it checked out, else the root). gh failing keeps the root's own reading.
+    """
+    branch = hookio.git_out(["symbolic-ref", "--short", "-q", "HEAD"], cwd=root, want_rc=True)
+    trees = commit_policy.bound_trees(root)
+    if len(trees) < 2:
+        return root, branch
+    head = _pr_head(root, runs)
+    if not head:
+        return root, branch
+    record = commit_policy.landing_record(root)
+    if record and head == record["branch"]:
+        return record["path"], head
+    for tree in trees:
+        if commit_policy.current_branch(tree, foreign=True) == head:
+            return tree, head
+    return root, head
+
 
 def run(ev):
     cmd = ev.raw("tool_input", "command")
@@ -57,13 +121,6 @@ def run(ev):
     # `cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0`. Reproduced as the
     # cwd every git call below is given, rather than by changing this process's directory: a chained dispatcher runs several guards in one interpreter (see `dispatch.run_chain`), and a guard that chdir'd would move the ones after it.
     root = ev.project_dir
-
-    branch = hookio.git_out(["symbolic-ref", "--short", "-q", "HEAD"], cwd=root, want_rc=True)
-    if branch is None or branch == "":
-        return hookio.ALLOW
-    # On `main` there is no feature branch to strand, and /pr-merge deliberately ends there.
-    if branch == "main":
-        return hookio.ALLOW
 
     # `--repo <other>` means the merge targets a DIFFERENT repository, so this checkout's unpushed state is irrelevant to it. Only judge a merge that could delete THIS branch.
     # The repo is each merge's OWN flag, in every spelling gh accepts (`shellscan.gh_args`). Measured 2026-10-07: the text match read `--repo` alone and anywhere on the line, so `gh pr merge 42 -R rediacc/renet` was refused and `gh pr view 1 --repo rediacc/renet && gh pr merge 42` was let through on the view's flag. Only a command the walk finds no merge in keeps the
@@ -88,21 +145,29 @@ def run(ev):
         if not (repo_arg == "" or hookio.case_glob(repo_arg, "*/console")):
             return hookio.ALLOW
 
+    # The branch is judged only once the merge is known to be this repository's, so a merge of another repository's PR never pays for the `gh pr view` the landing record adds.
+    tree, branch = _judged_branch(root, runs)
+    if branch is None or branch == "":
+        return hookio.ALLOW
+    # On `main` there is no feature branch to strand, and /pr-merge deliberately ends there.
+    if branch == "main":
+        return hookio.ALLOW
+
     remote = hookio.git_out(
         ["rev-parse", "-q", "--verify", "refs/remotes/origin/%s" % branch],
-        cwd=root,
+        cwd=tree,
         want_rc=True,
     )
     if remote is None or remote == "":
         return hookio.ALLOW
 
     ahead = hookio.git_out(
-        ["rev-list", "--count", "origin/%s..HEAD" % branch], cwd=root, want_rc=True
+        ["rev-list", "--count", "origin/%s..%s" % (branch, branch)], cwd=tree, want_rc=True
     )
     if ahead is None or ahead in {"", "0"}:
         return hookio.ALLOW
 
-    log = hookio.git_out(["log", "--oneline", "origin/%s..HEAD" % branch], cwd=root)
+    log = hookio.git_out(["log", "--oneline", "origin/%s..%s" % (branch, branch)], cwd=tree)
     # `| sed 's/^/ /' | head -10`. sed indents every line INCLUDING an empty trailing one, which is why the substitution runs over records rather than over the joined text.
     indented = hookio.sed_sub(r"^", "    ", log)
     lines = indented.split("\n")[:10]

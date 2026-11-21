@@ -32,6 +32,7 @@ import {
   READ_TIMEOUT,
   WRITE_TIMEOUT,
 } from '../../config/command-metadata.js';
+import { JOB_ATTACH_WINDOW_MS } from '../../services/jobs/attach.js';
 
 // The MCP SDK pulls zod from the hoisted root copy (zod@3.25.76, both v3 and v4 subpaths are bundled there) while this workspace imports zod from its own packages/cli/node_modules/zod@4.4.3. Even though both v4/core trees export a structurally-identical $ZodType interface, TS treats them as distinct nominal types because they live at different file paths. Using the SDK's own
 // ZodRawShapeCompat alias keeps the registerTool() call site type-clean.
@@ -46,6 +47,25 @@ export interface ToolDef {
   timeoutMs?: number;
   /** Field name in args that contains the repository name. Used for grand repo guard in MCP. */
   repoArgField?: string;
+  /**
+   * The attach window of the child `rdc` (PLAN-detached-jobs J8b): a machine job that finishes inside it returns
+   * its result, a longer one returns the ticket with `next: "job_status"`. Absent for a tool that starts no job.
+   */
+  attachWindowMs?: number;
+}
+
+/** What a windowed tool's description tells the model about the job it may start. */
+const ATTACH_WINDOW_NOTE = `Returns the result, or a job id when the run outlasts about ${JOB_ATTACH_WINDOW_MS / 1000} s (follow it with job_status or job_logs).`;
+
+/** The optional `background` field of a windowed tool: start the job and return its ticket at once (the child runs `rdc --background`, which a `--proxy` executor honours). */
+const BACKGROUND_FIELD = z
+  .boolean()
+  .optional()
+  .describe('Start the job and return its job id at once instead of waiting for it.');
+
+/** Does a command run as a machine job the MCP child attaches to for the window? One predicate, shared with the executor. */
+export function hasAttachWindow(cmd: Pick<ContractCommand, 'plane' | 'detachable'>): boolean {
+  return cmd.plane === 'machine' && cmd.detachable;
 }
 
 /**
@@ -227,10 +247,15 @@ export function buildToolsFromContract(): ToolDef[] {
     const schema = deriveSchema(cmd.positionals, options, mcp.requiredArgs);
     const commandFn = buildCommandFactory(cmd.path, cmd.positionals, options, mcp.appendArgs);
 
+    const windowed = hasAttachWindow(cmd);
+    const baseDescription = mcp.descriptionOverride ?? cmd.label;
     tools.push({
       name: cmd.pathKey.replaceAll(' ', '_'),
-      description: mcp.descriptionOverride ?? cmd.label,
-      schema,
+      description: windowed
+        ? `${baseDescription.replace(/\.$/, '')}. ${ATTACH_WINDOW_NOTE}`
+        : baseDescription,
+      ...(windowed ? { attachWindowMs: JOB_ATTACH_WINDOW_MS } : {}),
+      schema: windowed ? { ...schema, background: BACKGROUND_FIELD } : schema,
       command: commandFn,
       isDestructive: mcp.destructive,
       isIdempotent: mcp.idempotent,

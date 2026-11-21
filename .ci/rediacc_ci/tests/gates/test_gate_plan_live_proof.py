@@ -13,7 +13,9 @@ import sys
 import wl_plandeps as D
 
 from rediacc_ci import controls, paths
+from rediacc_ci.proof import vm_tier
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.tests.test_proof_vm_tier import make as make_vm
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_plan_live_proof.py")
 MAP = paths.from_root(".ci", "config", "proof-tiers.json")
@@ -57,12 +59,13 @@ def _git(root: pathlib.Path, *args: str, when: str = BEFORE, committed: str | No
 def _boxes(root: pathlib.Path) -> None:
     """Regenerate the fixture's plan-boxes.json from its plan files, through the same box parser the gate reads."""
     plans = {}
-    for path in sorted((root / "agent" / "plans").glob("PLAN-*.md")):
+    for path in sorted((root / "agent" / "plans").rglob("PLAN-*.md")):
         text = path.read_text(encoding="utf-8")
         boxes = D.plan_boxes(text)
-        plans["agent/plans/%s" % path.name] = {
+        folder = path.parent.relative_to(root).as_posix()
+        plans["%s/%s" % (folder, path.name)] = {
             "status": D.parse_header(text).status,
-            "folder": "agent/plans",
+            "folder": folder,
             "open_sigs": sorted(b.sig for b in boxes if not b.done),
             "done_sigs": sorted(b.sig for b in boxes if b.done),
         }
@@ -130,7 +133,9 @@ def _gate(root: pathlib.Path, map_path: pathlib.Path, *argv: str) -> harness.Run
     )
 
 
-def _gate_on_base(root: pathlib.Path, map_path: pathlib.Path, base: str) -> harness.RunResult:
+def _gate_on_base(
+    root: pathlib.Path, map_path: pathlib.Path, base: str, *argv: str
+) -> harness.RunResult:
     return harness.run(
         [
             sys.executable,
@@ -141,6 +146,7 @@ def _gate_on_base(root: pathlib.Path, map_path: pathlib.Path, base: str) -> harn
             base,
             "--proof-map",
             str(map_path),
+            *argv,
         ],
         cwd=paths.repo_root(),
     )
@@ -268,6 +274,75 @@ def test_a_rebased_tick_keeps_its_author_date(gate, tmp_path):
     gate.log_pass("a rebased tick is judged by its author date")
 
 
+def test_a_move_to_done_is_not_the_tick(gate, tmp_path):
+    """A box ticked on the baseline day and moved to `_done/` after it stays exempt: the tick is the commit that closed the box, whatever folder the plan sits in later. Keyed on the path, the move read as a post-baseline tick and fired LP4."""
+    root = _seed(tmp_path)
+    _tick_lp(root)
+    _commit(root, "tick the LP box", ON_DAY)
+    plan = root / "agent" / "plans" / "PLAN-acct.md"
+    text = plan.read_text(encoding="utf-8").replace("Status: in-progress", "Status: done")
+    plan.unlink()
+    _write(root, "agent/plans/_done/PLAN-acct.md", text)
+    _commit(root, "close the plan", AFTER)
+    result = _gate(root, _map(tmp_path))
+    gate.assert_contains(result.out, "1 LP box(es) among them, 0 bound", "the tick stays exempt")
+    gate.assert_eq("LP4" in result.err, False, "the move is not a tick: %r" % result)
+    gate.assert_contains(result.err, "LP6 agent/plans/_done/PLAN-acct.md", "the finish is judged")
+    gate.log_pass("a _done move keeps the box's own ticking commit")
+
+
+def _two_box_plan(tmp_path: pathlib.Path, lp_ticked: bool) -> pathlib.Path:
+    """`main` at one commit: the account plan with its LP box (ticked when `lp_ticked`) and a second box T2 still open, so the plan is unfinished at the base, beside the docs-only plan that keeps one plan live after the close. A `work` branch is checked out on top."""
+    root = tmp_path / "tree"
+    root.mkdir()
+    _git(root, "init", "-q", "-b", "main")
+    text = _plan("acct") + "- [ ] T2 the rest\n"
+    if lp_ticked:
+        text = text.replace("- [ ] LP-bench", "- [x] LP-bench")
+    _write(root, "agent/plans/PLAN-acct.md", text)
+    _write(
+        root, "agent/plans/PLAN-docs.md", _plan("docs", owns="docs/fixture/**", line=None, box="")
+    )
+    _commit(root, "seed", AFTER)
+    _git(root, "checkout", "-q", "-b", "work")
+    return root
+
+
+def _finish(root: pathlib.Path) -> None:
+    """Tick every open box of the account plan and move it to `_done/` with a done Status."""
+    plan = root / "agent" / "plans" / "PLAN-acct.md"
+    text = (
+        plan.read_text(encoding="utf-8")
+        .replace("Status: in-progress", "Status: done")
+        .replace("- [ ] ", "- [x] ")
+    )
+    plan.unlink()
+    _write(root, "agent/plans/_done/PLAN-acct.md", text)
+    _commit(root, "tick the rest and close the plan", AFTER)
+
+
+def test_a_box_ticked_before_the_base_is_not_rejudged_at_the_finish(gate, tmp_path):
+    """An LP box ticked on an earlier branch, already in done_sigs at the merge-base, was judged by LP4/LP5 there. A plan that finishes on this branch because another box was open at the base does not re-judge that receipt: walking only base..HEAD, the box read as ticked by the first branch commit, and a rule landed later failed it."""
+    root = _two_box_plan(tmp_path, lp_ticked=True)
+    _finish(root)
+    result = _gate(root, _map(tmp_path))
+    gate.assert_eq("LP6" in result.err, False, "the pre-base tick is not re-judged: %r" % result)
+    gate.assert_exit(0, result, "the plan finishes over a box ticked before the base")
+    gate.log_pass("a box ticked before the base is not re-judged at the finish")
+
+
+def test_a_box_ticked_on_the_branch_at_the_finish_is_still_judged(gate, tmp_path):
+    """CONTROL: the same finish with the LP box still open at the base. The tick is this branch's, so LP6 judges it and finds no receipt."""
+    root = _two_box_plan(tmp_path, lp_ticked=False)
+    _finish(root)
+    result = _gate(root, _map(tmp_path))
+    gate.assert_exit(1, result, "a branch tick with no receipt row")
+    gate.assert_contains(
+        result.err, "LP6 agent/plans/_done/PLAN-acct.md", "the finish is judged on the branch"
+    )
+    gate.log_pass("a box ticked on the branch is still judged at the finish")
+
+
 def test_no_merge_base_is_lp7_not_a_skip(gate, tmp_path):
     """LP4 to LP6 judge transitions against a merge-base. When none can be computed they judge nothing, so the run must be red: a green here would mean every tick on the branch went unchecked."""
     result = _gate_on_base(_seed(tmp_path), _map(tmp_path), "no-such-ref")
@@ -292,3 +367,309 @@ def test_zero_live_plans_cannot_run(gate, tmp_path):
     gate.assert_exit(77, result, "zero parsed plans is CANNOT RUN, never green")
     gate.assert_contains(result.err, "CANNOT RUN", "and says so")
     gate.log_pass("an empty corpus cannot run")
+
+
+# --------------------------------------------------------------------------- --owed, the recorder's `_done/` door
+
+DONE_REL = "agent/plans/_done/PLAN-acct.md"
+MOVED_LINE = "(moved 2026-11-02 to agent/plans/PLAN-docs.md) LP-bench\n"
+
+
+def _owed(root: pathlib.Path, map_path: pathlib.Path, base: str = "main") -> harness.RunResult:
+    return _gate_on_base(root, map_path, base, "--owed", DONE_REL)
+
+
+def _finish_box_moved_out(root: pathlib.Path) -> None:
+    """Tick T1 and move the account plan to `_done/` with a done Status, its LP box carried out as a plain line: the shape PLAN-hostinger-upgrade-followups closed in."""
+    plan = root / "agent" / "plans" / "PLAN-acct.md"
+    text = (
+        plan.read_text(encoding="utf-8")
+        .replace("Status: in-progress", "Status: done")
+        .replace("- [ ] T1", "- [x] T1")
+        .replace(LP_BOX, MOVED_LINE)
+    )
+    plan.unlink()
+    _write(root, DONE_REL, text)
+    _commit(root, "close the plan with its LP box moved out", AFTER)
+
+
+def test_owed_names_the_target_a_plan_finished_on_the_branch_still_owes(gate, tmp_path):
+    root = _seed(tmp_path)
+    _finish_box_moved_out(root)
+    map_path = _map(tmp_path)
+    result = _owed(root, map_path)
+    gate.assert_exit(0, result, "the plan finished on the branch with no receipt")
+    gate.assert_contains(result.out, "owed %s bench" % DONE_REL, "one owed line per target")
+    verdict = _gate(root, map_path)
+    gate.assert_exit(1, verdict, "the gate agrees")
+    gate.assert_contains(verdict.err, "LP6 %s" % DONE_REL, "LP6 names the plan")
+    gate.assert_contains(verdict.err, "byte-identical", "LP6 names the door")
+    gate.log_pass("--owed names the owed target and the gate fires LP6 on the same plan")
+
+
+def test_owed_is_silent_for_a_plan_finished_at_the_base(gate, tmp_path):
+    """CONTROL: the same `_done/` plan, finished on `main` before the branch began, is not this branch's finish, so nothing is owed here."""
+    root = tmp_path / "tree"
+    root.mkdir()
+    _git(root, "init", "-q", "-b", "main")
+    text = (
+        _plan("acct")
+        .replace("Status: in-progress", "Status: done")
+        .replace("- [ ] T1", "- [x] T1")
+        .replace(LP_BOX, MOVED_LINE)
+    )
+    _write(root, DONE_REL, text)
+    _write(
+        root, "agent/plans/PLAN-docs.md", _plan("docs", owns="docs/fixture/**", line=None, box="")
+    )
+    _commit(root, "seed", AFTER)
+    _git(root, "checkout", "-q", "-b", "work")
+    _write(root, "docs/fixture/x.md", "x\n")
+    _commit(root, "an unrelated change", AFTER)
+    result = _owed(root, _map(tmp_path))
+    gate.assert_exit(1, result, "a finish at the base owes nothing on this branch")
+    gate.assert_eq("owed " in result.out, False, "no owed line: %r" % result)
+    gate.log_pass("--owed is 1 for a plan finished at the base")
+
+
+def test_a_box_moved_back_and_ticked_with_no_row_is_lp4_and_lp6(gate, tmp_path):
+    """CONTROL: restoring the box and ticking it is not a receipt. The tick is judged by LP4 and the finish still owes."""
+    root = _seed(tmp_path)
+    _finish_box_moved_out(root)
+    done = root / DONE_REL
+    done.write_text(
+        done.read_text(encoding="utf-8").replace(
+            MOVED_LINE, LP_BOX.replace("- [ ] LP-bench", "- [x] LP-bench")
+        ),
+        encoding="utf-8",
+    )
+    _commit(root, "move the LP box back and tick it", AFTER)
+    map_path = _map(tmp_path)
+    verdict = _gate(root, map_path)
+    gate.assert_exit(1, verdict, "a restored tick with no row")
+    gate.assert_contains(verdict.err, "LP4 %s" % DONE_REL, "the tick is LP4")
+    gate.assert_contains(verdict.err, "LP6 %s" % DONE_REL, "the finish still owes")
+    owed = _owed(root, map_path)
+    gate.assert_exit(0, owed, "still owed")
+    gate.log_pass("a restored, ticked box with no row is LP4 plus LP6")
+
+
+def test_owed_with_no_merge_base_cannot_run(gate, tmp_path):
+    """CONTROL: with no merge-base `--owed` cannot judge, and an empty answer there would read as nothing owed, so it is 77."""
+    root = _seed(tmp_path)
+    _finish_box_moved_out(root)
+    result = _owed(root, _map(tmp_path), base="no-such-ref")
+    gate.assert_exit(77, result, "no merge-base is CANNOT RUN")
+    gate.assert_contains(result.err, "no merge-base", "and names why")
+    gate.log_pass("--owed with no merge-base is 77")
+
+
+# --------------------------------------------------------------------------- waived VM ladders (`live_proof record --vm-waived`)
+
+WAIVED_ID = "lp-0123456789ab"
+ASKED = "ASKED:2026-11-10T13:38Z"
+
+
+def _rev(root: pathlib.Path, ref: str) -> str:
+    return _git(root, "rev-parse", ref).strip()
+
+
+def _waived_tree(tmp_path: pathlib.Path) -> tuple[pathlib.Path, str, str]:
+    """The seed with one committed ledger row recorded at the work head with its VM ladder waived; (root, head, tree) of that row."""
+    root = _seed(tmp_path)
+    _write(root, ".gitignore", ".ci/cache/\n")
+    _commit(root, "ignore the cache", BEFORE)
+    head, tree = _rev(root, "HEAD"), _rev(root, "HEAD^{tree}")
+    row = {
+        "id": WAIVED_ID,
+        "status": "VERIFIED",
+        "plan": "agent/plans/PLAN-acct.md",
+        "target": "bench",
+        "head": head,
+        "tree": tree,
+        "surfaces": ["account"],
+        "check": {"id": "account-smoke", "rc": 0},
+        "ladder": {"vm": None, "waived": ASKED, "head_tree": tree},
+    }
+    _write(root, "agent/ledgers/live-proof.jsonl", json.dumps(row) + "\n")
+    _commit(root, "the waived receipt", BEFORE)
+    return root, head, tree
+
+
+def _vm_receipt(root: pathlib.Path, tree: str, head: str, **over: object) -> None:
+    """A schema-3 VM receipt that ran the account phase, archived the way vm:check archives it."""
+    receipt = make_vm(
+        tree=tree,
+        head=head,
+        phases={
+            "renet": {"required": False, "ran": False},
+            "account": {"required": True, "ran": True},
+        },
+        trigger={"base": "origin/main", "via": "@{push}", "hits": ["x"], "sides": ["account"]},
+        runId="vmc-confirm-1",
+    )
+    receipt.update(over)
+    assert vm_tier.validate(receipt) == [], vm_tier.validate(receipt)
+    vm_tier.write(root, receipt)
+
+
+def test_a_waived_row_with_no_vm_receipt_is_printed_owed_every_run(gate, tmp_path):
+    root, _head, tree = _waived_tree(tmp_path)
+    result = _gate(root, _map(tmp_path))
+    gate.assert_exit(0, result, "an owed confirmation is advisory, never a finding")
+    gate.assert_contains(
+        result.out, "OWED-VM %s agent/plans/PLAN-acct.md bench" % WAIVED_ID, "named"
+    )
+    gate.assert_contains(result.out, "waived (%s) at tree %s" % (ASKED, tree[:12]), "with tree")
+    gate.assert_contains(
+        result.out,
+        "waived VM ladders: 1 row(s), 0 confirmed, 1 owed (0 VERIFIED vm:check receipt(s)",
+        "the count says nothing was read",
+    )
+    gate.log_pass("an unconfirmed waived row is OWED-VM")
+
+
+def test_a_verified_receipt_of_the_rows_tree_confirms_it(gate, tmp_path):
+    root, head, tree = _waived_tree(tmp_path)
+    _vm_receipt(root, tree, head, status="FAILED", reason={"class": "step-failed"})
+    control = _gate(root, _map(tmp_path))
+    gate.assert_contains(control.out, "OWED-VM %s" % WAIVED_ID, "a FAILED receipt confirms nothing")
+    _vm_receipt(root, tree, head)
+    result = _gate(root, _map(tmp_path))
+    gate.assert_exit(0, result, "green")
+    gate.assert_eq("OWED-VM" in result.out, False, "no longer owed: %s" % result.out)
+    gate.assert_contains(result.out, "CONFIRMED-VM %s" % WAIVED_ID, "confirmed")
+    gate.assert_contains(result.out, "by VERIFIED vm:check vmc-confirm-1", "names the run")
+    gate.assert_contains(result.out, "1 row(s), 1 confirmed, 0 owed (1 VERIFIED", "counted")
+    gate.log_pass("a VERIFIED receipt of the tree confirms a waived row")
+
+
+def test_a_verified_receipt_on_a_descendant_confirms_it_and_an_ancestor_does_not(gate, tmp_path):
+    root, _head, _tree = _waived_tree(tmp_path)
+    seed = _rev(root, "main")
+    _vm_receipt(root, _rev(root, "main^{tree}"), seed)
+    control = _gate(root, _map(tmp_path))
+    gate.assert_contains(control.out, "OWED-VM %s" % WAIVED_ID, "an ancestor's receipt stays owed")
+    _write(root, "docs/fixture/later.md", "later\n")
+    _commit(root, "a later commit", BEFORE)
+    _vm_receipt(root, _rev(root, "HEAD^{tree}"), _rev(root, "HEAD"))
+    result = _gate(root, _map(tmp_path))
+    gate.assert_eq("OWED-VM" in result.out, False, "a descendant confirms: %s" % result.out)
+    gate.assert_contains(result.out, "CONFIRMED-VM %s" % WAIVED_ID, "confirmed")
+    gate.log_pass("a descendant's VERIFIED receipt confirms; an ancestor's does not")
+
+
+def _lp_sig() -> str:
+    return next(b.sig for b in D.plan_boxes(_plan("acct")) if b.body.startswith("LP-bench"))
+
+
+def _ticked_on_waived_row(tmp_path: pathlib.Path, waived: str) -> harness.RunResult:
+    """The LP box ticked after the baseline on a matching row whose waived ladder carries `waived`."""
+    tmp_path.mkdir()
+    root = _seed(tmp_path)
+    head, tree = _rev(root, "HEAD"), _rev(root, "HEAD^{tree}")
+    row = {
+        "id": WAIVED_ID,
+        "status": "VERIFIED",
+        "dirty": False,
+        "plan": "agent/plans/PLAN-acct.md",
+        "box": _lp_sig(),
+        "target": "bench",
+        "head": head,
+        "tree": tree,
+        "surfaces": ["account"],
+        "check": {"id": "account-smoke", "args": [], "rc": 0},
+        "ladder": {"vm": None, "waived": waived, "head_tree": tree},
+    }
+    _write(root, "agent/ledgers/live-proof.jsonl", json.dumps(row) + "\n")
+    _tick_lp(root)
+    _commit(root, "tick the LP box on a waived receipt", AFTER)
+    return _gate(root, _map(tmp_path))
+
+
+def test_lp5_names_a_malformed_waiver_on_a_ticked_receipt(gate, tmp_path):
+    """A waived row is judged like any receipt; the hand-trimmed fixture row is LP5 for other reasons too, so the claim is only that the ladder reason appears for the bad token and not for the good one."""
+    good = _ticked_on_waived_row(tmp_path / "good", ASKED)
+    gate.assert_exit(1, good, "the trimmed fixture row is LP5 on its other fields")
+    gate.assert_eq("ladder.waived" in good.err, False, "a well-formed waiver: %s" % good.err)
+    bad = _ticked_on_waived_row(tmp_path / "bad", "ASKED:today")
+    gate.assert_exit(1, bad, "red")
+    gate.assert_contains(
+        bad.err, "ladder.waived 'ASKED:today' is not ASKED:<YYYY-MM-DDTHH:MM>Z", "LP5 names it"
+    )
+    gate.log_pass("LP5 judges a waived ladder's shape")
+
+
+# --------------------------------------------------------------------------- LP8, a box that waits on GitHub (PLAN-local-first-delivery L2)
+
+GH_WAIT = "- [ ] T2 the edge check after the merge\n"
+GH_WHY = " -- only the CD pipeline deploys the edge channel"
+
+
+def _gh_tree(tmp_path: pathlib.Path, box: str) -> pathlib.Path:
+    """The seeded tree plus a docs-only plan carrying `box`, committed on the work branch."""
+    root = _seed(tmp_path)
+    _write(root, "agent/plans/PLAN-gh.md", _plan("gh", owns="docs/gh/**", line=None, box=box))
+    _commit(root, "a plan with a GitHub wait", AFTER)
+    return root
+
+
+def test_an_untagged_after_the_merge_box_is_lp8(gate, tmp_path):
+    """CONTROL: before LP8 the gate printed nothing for this box and exited 0 under --lp8-enforce too."""
+    root = _gh_tree(tmp_path, GH_WAIT)
+    result = _gate(root, _map(tmp_path), "--lp8-enforce")
+    gate.assert_exit(1, result, "an untagged GitHub wait is red when LP8 is enforced")
+    gate.assert_contains(result.err, "LP8 agent/plans/PLAN-gh.md: box T2", "LP8 names the box")
+    gate.assert_contains(result.err, "'after the merge'", "and the phrase it matched")
+    gate.log_pass("an untagged after-the-merge box is LP8")
+
+
+def test_lp8_is_enforced_by_default(gate, tmp_path):
+    root = _gh_tree(tmp_path, GH_WAIT)
+    result = _gate(root, _map(tmp_path))
+    gate.assert_exit(1, result, "LP8_ENFORCED is True since PLAN-local-first-delivery L4 landed")
+    gate.assert_contains(result.err, "LP8 agent/plans/PLAN-gh.md: box T2", "named as a finding")
+    gate.assert_contains(result.out, "github waits (LP8, enforced", "the summary names the mode")
+    gate.log_pass("an untagged GitHub wait reds the gate without --lp8-enforce")
+
+
+def test_the_same_box_tagged_in_a_corrected_line_passes(gate, tmp_path):
+    box = GH_WAIT + "  (corrected 2026-11-12, R2) GitHub-only: CD" + GH_WHY + ")\n"
+    result = _gate(_gh_tree(tmp_path, box), _map(tmp_path), "--lp8-enforce")
+    gate.assert_exit(0, result, "a valid GitHub-only tag clears the wait")
+    gate.assert_contains(result.out, "github waits (LP8, enforced): 0", "and LP8 counted none")
+    gate.log_pass("a GitHub-only tag in a (corrected ...) line passes")
+
+
+def test_a_local_route_correction_passes(gate, tmp_path):
+    box = GH_WAIT + "  (corrected 2026-11-12, R2) Local-route: deploy-bench" + GH_WHY + "\n"
+    result = _gate(_gh_tree(tmp_path, box), _map(tmp_path), "--lp8-enforce")
+    gate.assert_exit(0, result, "a Local-route naming a runner of the map clears the wait")
+    gate.log_pass("a Local-route correction passes")
+
+
+def test_a_why_under_twenty_characters_is_lp8(gate, tmp_path):
+    box = GH_WAIT + "  (corrected 2026-11-12) GitHub-only: CD -- edge only\n"
+    result = _gate(_gh_tree(tmp_path, box), _map(tmp_path), "--lp8-enforce")
+    gate.assert_exit(1, result, "a short why does not clear the wait")
+    gate.assert_contains(result.err, "under 20 characters", "LP8 says why")
+    gate.log_pass("a why under 20 characters is LP8")
+
+
+def test_a_ticked_box_is_not_judged(gate, tmp_path):
+    root = _gh_tree(tmp_path, GH_WAIT.replace("- [ ]", "- [x]"))
+    result = _gate(root, _map(tmp_path), "--lp8-enforce")
+    gate.assert_exit(0, result, "a ticked box is history")
+    gate.assert_not_contains(result.err, "LP8", "and LP8 is silent")
+    gate.log_pass("a ticked box is not judged")
+
+
+def test_a_map_without_github_waits_is_lp7(gate, tmp_path):
+    raw = json.loads(_map(tmp_path).read_text(encoding="utf-8"))
+    del raw["tiers"]["live"]["github_waits"]
+    bare = tmp_path / "map-no-waits.json"
+    bare.write_text(json.dumps(raw), encoding="utf-8")
+    result = _gate(_seed(tmp_path), bare)
+    gate.assert_exit(1, result, "an empty phrase list makes LP8 judge nothing")
+    gate.assert_contains(result.err, "github_waits", "LP7 names the field")
+    gate.log_pass("a map with no github_waits is LP7")

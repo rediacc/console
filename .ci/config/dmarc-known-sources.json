@@ -1,0 +1,90 @@
+{
+  "$comment": [
+    "The rulings the ops-health `dmarc` check (rediacc_ci.ops.dmarc_reports) judges DMARC aggregate and TLS-RPT reports against.",
+    "ours: the senders that are ours; ours failing DMARC is red.",
+    "rulings: sources the operator has ruled on, each with its verdict and the date of the ruling. old-provider: a retired mail provider DNS no longer authorizes, so its failures are expected (p=reject blocks them); spoof: a ruled spoofer. For both, failing is silent, PASSING is red (DNS authorizes a source it should not), and a volume jump is red (see volume).",
+    "A source matches an entry by `cidrs` (the source IP inside one), or by `rdns_suffixes` (its forward-confirmed reverse name equal to or ending in `.<suffix>`). A ruling with `domains` matches only reports for those domains.",
+    "volume: a ruled source sending more than max_per_day messages on one report day is red; once trailing_days of history exist, so is at least ratio_min_count messages at ratio times its trailing daily average.",
+    "acknowledged_through: domain -> YYYY-MM-DD. Every red but a new source and a malformed report, in a report whose date range ended on or before that day, is acknowledged (fixed or accepted).",
+    "A string may name a WK_-prefixed key of .ci/config/well-known.env wrapped in dollar and braces (the operator mailbox below is one); load_known composes it at read time, and a reference to any other key is refused.",
+    "mailboxes[].kind: `dmarc` (default) holds DMARC and TLS-RPT reports; `server-reports` holds server mail judged by the `server_reports` section (operator ruling 2026-11-18).",
+    "server_reports.senders: the From addresses allowed per shape (ses-event, postfix-summary, sns-confirm); any other sender or shape is red. reserved_domains (with their subdomains) and reserved_tlds are the test domains whose SES delays and Transient bounces are benign; a Complaint, a non-Transient bounce, ContentRejected, or any real recipient domain is red. postfix: a daily summary is red when its rejected, deferred or bounced count is ABOVE the limit. Defaults picked 2026-11-18: 200 rejects (background noise on a public MX), 50 deferrals, 5 bounces; tune after the first live pass.",
+    "A NEW failing source turns the check red; ask the operator, then add a ruling here (docs/agent-reference/local-env.md, DMARC reports)."
+  ],
+  "version": 1,
+  "target": {
+    "config": "eu-bench",
+    "repo": "mail@hostinger",
+    "container": "mail-server"
+  },
+  "mailboxes": [
+    { "user": "${WK_OPERATOR_EMAIL}", "mailbox": "DMARC" },
+    { "user": "muhammed@rediacc.io", "mailbox": "DMARC" },
+    { "user": "muhammed@rediacc.io", "mailbox": "Server-Reports", "kind": "server-reports" }
+  ],
+  "server_reports": {
+    "senders": [
+      { "from": "no-reply@sns.amazonaws.com", "shapes": ["ses-event", "sns-confirm"] },
+      { "from": "mailserver-report@mail.rediacc.io", "shapes": ["postfix-summary"] }
+    ],
+    "reserved_domains": ["example.com", "example.org", "example.net", "localhost"],
+    "reserved_tlds": ["test", "invalid", "example", "localhost"],
+    "postfix": { "max_rejected": 200, "max_deferred": 50, "max_bounced": 5 }
+  },
+  "ours": [
+    {
+      "name": "hostinger mail server",
+      "cidrs": ["72.61.137.225/32", "2a02:4780:c:e9b5::1/128"]
+    },
+    {
+      "name": "Amazon SES (eu-central-1, us-east-1)",
+      "cidrs": [
+        "69.169.224.0/20",
+        "23.249.208.0/20",
+        "23.251.224.0/19",
+        "54.240.0.0/18",
+        "54.240.64.0/19",
+        "54.240.96.0/19",
+        "76.223.128.0/19",
+        "76.223.176.0/20",
+        "199.127.232.0/22",
+        "199.255.192.0/22",
+        "206.55.144.0/20",
+        "216.221.160.0/19"
+      ],
+      "rdns_suffixes": ["amazonses.com"]
+    }
+  ],
+  "rulings": [
+    {
+      "name": "Microsoft 365, the old ${WK_APEX_DOMAIN} provider",
+      "verdict": "old-provider",
+      "ruled": "2026-11-16",
+      "domains": ["${WK_APEX_DOMAIN}"],
+      "cidrs": [
+        "40.92.0.0/15",
+        "40.107.0.0/16",
+        "52.100.0.0/14",
+        "104.47.0.0/17",
+        "2a01:111:f400::/48",
+        "2a01:111:f403::/48"
+      ],
+      "rdns_suffixes": ["outlook.com"]
+    },
+    {
+      "name": "Zoho EU, the old ${WK_INFRA_DOMAIN} provider",
+      "verdict": "old-provider",
+      "ruled": "2026-11-16",
+      "domains": ["${WK_INFRA_DOMAIN}"],
+      "cidrs": ["185.20.208.0/22", "89.36.170.0/24"],
+      "rdns_suffixes": ["zoho.eu", "zohomail.eu"]
+    }
+  ],
+  "volume": {
+    "max_per_day": 20,
+    "ratio": 5,
+    "ratio_min_count": 5,
+    "trailing_days": 14
+  },
+  "acknowledged_through": {}
+}

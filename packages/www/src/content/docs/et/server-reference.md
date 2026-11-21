@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: et
-sourceHash: "a64de9af83bd943a"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "5858f8461b70efa2"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # Serveri viide
@@ -195,15 +195,20 @@ Saada varukoopiad teisele masinale. Tükksalvestuse hetktõmmised tehakse käsug
 ```bash
 # Lükka kaugmasinale (SSH + rsync)
 renet backup push --name {uuid} --network-id {id} --target machine \
-  --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup
+  --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup \
+  --dest-known-hosts {known-hosts-base64}
 
 # Tõmba kaugelt
 renet backup pull --name {uuid} --network-id {id} --source machine \
-  --src-host {host} --src-user {user} --src-path /mnt/rediacc --src {uuid}.backup
+  --src-host {host} --src-user {user} --src-path /mnt/rediacc --src {uuid}.backup \
+  --src-known-hosts {known-hosts-base64}
 
 # Loetle kaugvarukoopiad
-renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc
+renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc \
+  --src-known-hosts {known-hosts-base64}
 ```
+
+`{known-hosts-base64}` on teise masina `known_hosts` kirje base64-kodeeringus (näiteks `ssh-keyscan -t ed25519 {host} | base64 -w0`).
 
 > Enamik kasutajaid peaks kasutama hoopis `rdc repo push/pull`. `rdc`-käsud käsitsevad mandaate ja masina lahendamist automaatselt.
 

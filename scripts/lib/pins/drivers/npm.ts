@@ -89,6 +89,7 @@ import {
   predictManifests,
   sourceManifests,
 } from './pin-manifests.js';
+import { followers, followWrites } from './pin-site-follow.js';
 
 // ---- the plan check-deps answers ------------------------------------------------------------
 
@@ -169,7 +170,7 @@ function npmLine(version: string, args: string[]): string {
 }
 
 /** A command that runs one of this module's helper verbs under the interpreter this process uses. */
-const helperLine = (verb: 'guard' | 'sync', steps: InstallStep[]): string =>
+const helperLine = (verb: 'guard' | 'sync' | 'follow', steps: InstallStep[]): string =>
   [
     q(process.execPath),
     ...process.execArgv.map(q),
@@ -349,6 +350,17 @@ export function stepsOf(
         writes: [repoPathOf(ctx, path.join(ctx.root, lock))],
       });
   }
+  // The other version sites of a registry pin whose package moved follow it (worklist #43aebb3a).
+  const dragged = followers(ctx.reg, new Set(names(moved)));
+  if (dragged.length > 0)
+    out.push({
+      label: `registry pin sites follow: ${dragged.map((e) => e.id).join(', ')}`,
+      run: helperLine('follow', moved),
+      cwd: '.',
+      writes: followWrites(dragged).map((p) =>
+        repoPathOf(ctx, path.join(ctx.root, p.repo, p.file))
+      ),
+    });
   return { writes, steps: out, notes };
 }
 
@@ -1100,6 +1112,8 @@ function importersOf(pkg: string, dirs: string[]): string[] {
         '**/.cache/**',
         '**/.build_cache/**',
         '**/.ci/cache/**',
+        // Lease trees hold whole checkouts of this repository; relative to `cwd`, so a session whose own root is a lease still reads itself.
+        '.claude/worktrees/**',
       ],
     }).sort((a, b) => Number(a > b) - Number(a < b)))
       if (!isOutput(f) && re.test(fs.readFileSync(path.join(d, f), 'utf8')))

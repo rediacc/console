@@ -46,18 +46,24 @@ OK_GLYPH = "  ✓ "
 BAD_GLYPH = "  ✗ "
 
 PORT_RE = re.compile(r"127\.0\.0\.1:\d+")
+# The frozen twin ran `worker_full` against SITE_ORIGIN (a live curl); the port runs it against the mock. The one line that differs is masked on both sides.
+WORKER_FULL_RE = re.compile(r"(worker_full: channel=edge accountServer=)\S+")
 
 # Mutation anchors, each asserted present before it is used.
 SERVER_DEFAULT = 'local account_server="${SERVER_URL:-' + SITE_ORIGIN + '}"'
-EARLY_RETURN = '    if [[ -z "${SERVER_URL:-}" && "${CHANNEL:-$default_channel}" == "$default_channel" ]]; then'
+EARLY_RETURN = (
+    '    if [[ -z "${SERVER_URL:-}" && "${CHANNEL:-$default_channel}" == "$default_channel"'
+    ' && "${RELEASES_URL:-$default_releases}" == "$default_releases" ]]; then'
+)
 CHMOD_ABSENT = '        chmod 600 "$config_file"\n    fi'
 BAKED_CHANNEL_GUARD = 'if [[ -z "${REDIACC_CHANNEL:-}" && "$CHANNEL" == "$default_channel" ]]; then'
 MINIMAL_CONFIG = 'local account_json="{\\"accountServer\\":\\"$account_server\\",\\"updateChannel\\":\\"$CHANNEL\\""'
 
 
 def norm(text: str) -> str:
-    """Mask the kernel-assigned mock port, and the interpreter-version lines of a CPython traceback (`differential.mask_python_traceback`: the `-c` source echo and the caret ruler, which 3.14 draws and the runner's 3.12 does not). Nothing else is normalized."""
-    return diff.mask_python_traceback(PORT_RE.sub("127.0.0.1:PORT", text))
+    """Mask the kernel-assigned mock port, the `worker_full` accountServer value (the twin names the live origin, the port the mock; `test_worker_full_hands_the_mock_as_its_account_server` pins the port side), and the interpreter-version lines of a CPython traceback (`differential.mask_python_traceback`: the `-c` source echo and the caret ruler, which 3.14 draws and the runner's 3.12 does not). Nothing else is normalized."""
+    text = WORKER_FULL_RE.sub(r"\1<server>", PORT_RE.sub("127.0.0.1:PORT", text))
+    return diff.mask_python_traceback(text)
 
 
 def build_fixture(tmp_path: pathlib.Path) -> pathlib.Path:
@@ -121,8 +127,17 @@ def _twin(fixture: pathlib.Path) -> subprocess.CompletedProcess[str]:
         done = _run(TWIN, fixture)
         return done.returncode, done.stdout, done.stderr
 
+    def port() -> tuple[int, str, str]:
+        # The port seam: a re-record from the port after the twin is gone (`regolden --source port`).
+        done = _run(PORT, fixture)
+        return done.returncode, done.stdout, done.stderr
+
     rc, out, err = diff.twin_call(
-        str(TWIN.relative_to(ROOT)), ["install.sh mutation=%s" % body], go, work=(str(fixture),)
+        str(TWIN.relative_to(ROOT)),
+        ["install.sh mutation=%s" % body],
+        go,
+        port=port,
+        work=(str(fixture),),
     )
     return subprocess.CompletedProcess([str(TWIN)], rc, out, err)
 
@@ -179,10 +194,19 @@ def test_real_tree_agrees() -> None:
     old = _twin(ROOT)
     new = _run(PORT, ROOT)
     assert old.returncode == 0, old.stderr
-    assert old.stdout.count(OK_GLYPH) == 5
-    assert old.stdout.endswith("\nPassed: 5\nFailed: 0\n")
+    assert old.stdout.count(OK_GLYPH) == 6
+    assert old.stdout.endswith("\nPassed: 6\nFailed: 0\n")
     assert old.stderr == ""
     assert_same(old, new)
+
+
+def test_worker_full_hands_the_mock_as_its_account_server() -> None:
+    """Finding 84023613.2: the differential masks this value on both sides, so the port's own value is pinned here, the loopback mock and nothing else."""
+    new = _run(PORT, ROOT)
+    assert new.returncode == 0, new.stderr
+    assert re.search(
+        r"worker_full: channel=edge accountServer=http://127\.0\.0\.1:\d+/absent\n", new.stdout
+    ), new.stdout
 
 
 def test_unmutated_fixture_is_the_same_run(tmp_path: pathlib.Path) -> None:
@@ -204,7 +228,12 @@ def test_a_wrong_default_account_server_is_caught(tmp_path: pathlib.Path) -> Non
     assert old.stderr == (
         BAD_GLYPH
         + (
-            "worker_channel_only: got channel=edge accountServer=https://V1.invalid; "
+            "worker_channel_only: got channel=stable accountServer=https://V1.invalid; "
+            "expected channel=stable accountServer=" + SITE_ORIGIN + "\n"
+        )
+        + BAD_GLYPH
+        + (
+            "worker_custom_releases: got channel=edge accountServer=https://V1.invalid; "
             "expected channel=edge accountServer=" + SITE_ORIGIN + "\n"
         )
     )
@@ -216,9 +245,9 @@ def test_a_wrong_config_mode_is_caught_on_every_writing_case(tmp_path: pathlib.P
     mutate(fixture, CHMOD_ABSENT, '        chmod 640 "$config_file"\n    fi')
     old, new = run_both(fixture)
     assert old.returncode == 1
-    assert old.stderr.count("expected mode 600, got 640") == 4
+    assert old.stderr.count("expected mode 600, got 640") == 5
     # The mode failure does not suppress the channel PASS lines: the twin's `run_case` keeps going after a mode mismatch (:110-112).
-    assert old.stdout.count(OK_GLYPH) == 5
+    assert old.stdout.count(OK_GLYPH) == 6
     assert_same(old, new)
 
 
@@ -231,8 +260,15 @@ def test_a_config_that_is_never_written_is_caught(tmp_path: pathlib.Path) -> Non
     )
     old, new = run_both(fixture)
     assert old.returncode == 1
-    assert old.stderr == (
-        BAD_GLYPH + "worker_server_only: expected rediacc.json, but none was written\n"
+    # Every case on the edge default now returns early, so the mutated early return fires for all four.
+    assert old.stderr == "".join(
+        BAD_GLYPH + "%s: expected rediacc.json, but none was written\n" % name
+        for name in (
+            "worker_full",
+            "worker_server_only",
+            "worker_full_with_server_info",
+            "worker_custom_releases",
+        )
     )
     assert_same(old, new)
 
@@ -339,3 +375,40 @@ def test_planted_defect_is_caught_by_this_differential(tmp_path: pathlib.Path) -
 
     good_old, good_new = run_both(fixture)
     assert_same(good_old, good_new)
+
+
+def test_no_case_calls_a_host_other_than_the_mock(tmp_path: pathlib.Path) -> None:
+    """CONTROL for `worker_full` handing install.sh the live SITE_ORIGIN as SERVER_URL.
+
+    A `curl` shim first on PATH logs each URL it is asked for and delegates to the real curl. Every URL must be the loopback mock; the live origin in the log is the defect.
+    """
+    log = tmp_path / "curl.log"
+    shim_dir = tmp_path / "shim"
+    shim_dir.mkdir()
+    real = shutil.which("curl")
+    assert real, "curl is required by install.sh itself"
+    shim = shim_dir / "curl"
+    shim.write_text(
+        '#!/bin/bash\nprintf \'%%s\\n\' "$*" >> "%s"\nexec "%s" "$@"\n' % (log, real),
+        encoding="utf-8",
+    )
+    shim.chmod(0o755)
+    env = {
+        "PATH": "%s:%s" % (shim_dir, os.environ.get("PATH", "")),
+        "HOME": os.environ.get("HOME", ""),
+        "TMPDIR": diff.BASE_ENV["TMPDIR"],
+        "LC_ALL": "C",
+        "PYTHONPATH": str(ROOT / ".ci"),
+        "PYTHONDONTWRITEBYTECODE": "1",
+    }
+    done = subprocess.run(
+        ["python3", str(PORT)], env=env, capture_output=True, text=True, check=False, timeout=180
+    )
+    assert done.returncode == 0, done.stderr
+    calls = [ln for ln in log.read_text(encoding="utf-8").splitlines() if "server-info" in ln]
+    assert len(calls) >= 2, (
+        "the shim saw no server-info calls, so this control proves nothing: %r" % calls
+    )
+    # worker_server_only names `.invalid` on purpose (RFC 6761: never resolves, so never reaches a live host).
+    stray = [ln for ln in calls if "http://127.0.0.1:" not in ln and ".invalid/" not in ln]
+    assert not stray, "install.sh called a non-mock host: %r" % stray

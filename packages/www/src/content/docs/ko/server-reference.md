@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 3
 language: ko
-sourceHash: "a64de9af83bd943a"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "5858f8461b70efa2"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # 서버 레퍼런스
@@ -195,15 +195,20 @@ renet daemon logs   --network-id {id}    # 데몬 로그
 ```bash
 # 원격 머신으로 푸시 (SSH + rsync)
 renet backup push --name {uuid} --network-id {id} --target machine \
-  --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup
+  --dest-host {host} --dest-user {user} --dest-path /mnt/rediacc --dest {uuid}.backup \
+  --dest-known-hosts {known-hosts-base64}
 
 # 원격에서 풀
 renet backup pull --name {uuid} --network-id {id} --source machine \
-  --src-host {host} --src-user {user} --src-path /mnt/rediacc --src {uuid}.backup
+  --src-host {host} --src-user {user} --src-path /mnt/rediacc --src {uuid}.backup \
+  --src-known-hosts {known-hosts-base64}
 
 # 원격 백업 목록
-renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc
+renet backup list --source machine --src-host {host} --src-user {user} --src-path /mnt/rediacc \
+  --src-known-hosts {known-hosts-base64}
 ```
+
+`{known-hosts-base64}`는 상대 머신의 `known_hosts` 레코드를 base64로 인코딩한 값입니다(예: `ssh-keyscan -t ed25519 {host} | base64 -w0`).
 
 > 대부분의 사용자는 `rdc repo push/pull`을 사용해야 합니다. `rdc` 명령은 자격 증명과 머신 확인을 자동으로 처리합니다.
 

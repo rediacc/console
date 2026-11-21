@@ -573,3 +573,169 @@ def test_delta_a_grep_that_excludes_the_real_provider_spec_owes_no_proof(
     )
     assert new.out.code == 0, new.out.err
     assert "Real-provider" not in new.out.out + new.out.err
+
+
+# --- install_system_deps: a mirror outage must not stall the lane (run 43043942649) ---
+
+
+class _Fake:
+    """Records calls; `dry` is the dry-run stdout, `installed` the dpkg-known packages, `apt` the real install-deps result."""
+
+    def __init__(self, dry: str, installed: set[str], apt: object = 0) -> None:
+        self.dry, self.installed, self.apt = dry, installed, apt
+        self.calls: list[list[str]] = []
+
+    def __call__(self, argv: list[str], **_kw: typing.Any) -> subprocess.CompletedProcess[str]:
+        self.calls.append(argv)
+        if argv[0] == "dpkg-query":
+            ok = argv[-1] in self.installed
+            return subprocess.CompletedProcess(
+                argv, 0 if ok else 1, "install ok installed" if ok else "", ""
+            )
+        if "--dry-run" in argv:
+            return subprocess.CompletedProcess(
+                argv, 1 if "Missing system dependencies" in self.dry else 0, self.dry, ""
+            )
+        if isinstance(self.apt, BaseException):
+            raise self.apt
+        return subprocess.CompletedProcess(argv, int(typing.cast("int", self.apt)), "", "")
+
+
+DRY = "Missing system dependencies (3):\n  libnss3\n  libatk1.0-0\n  libgbm1\n"
+ALL_PRESENT = "All system dependencies are installed.\n"
+
+
+def test_dry_run_packages_parse() -> None:
+    assert account_e2e.dry_run_packages(DRY) == ["libnss3", "libatk1.0-0", "libgbm1"]
+    assert account_e2e.dry_run_packages("nothing to do\n") == []
+    assert account_e2e.dry_run_packages(ALL_PRESENT) == []
+
+
+@pytest.mark.parametrize("bad", ["--allow-downgrades", "-o", "libnss3 (2.0)", "LibNSS3"])
+def test_dry_run_packages_refuses_a_listed_line_that_is_not_a_package_name(bad: str) -> None:
+    """Reviews b7e661a3.1 and 5d45445a.1: such a line never becomes an argv token, and is not silently dropped either."""
+    out = f"Missing system dependencies (2):\n  libnss3\n  {bad}\n  libgbm1\n"
+    with pytest.raises(account_e2e.RefusedError, match="not a package name"):
+        account_e2e.dry_run_packages(out)
+
+
+def test_system_deps_present_skips_apt() -> None:
+    fake = _Fake(DRY, {"libnss3", "libatk1.0-0", "libgbm1"})
+    assert account_e2e.install_system_deps("chromium", ".", fake) is False
+    assert not any(c[0] == "npx" and "--dry-run" not in c for c in fake.calls)
+
+
+def test_system_deps_missing_runs_apt_bounded() -> None:
+    # control: the skip is conditional, a missing package still reaches apt
+    fake = _Fake(DRY, {"libnss3"})
+    assert account_e2e.install_system_deps("chromium", ".", fake) is True
+    assert any(c[0] == "npx" and "--dry-run" not in c for c in fake.calls)
+
+
+def test_system_deps_timeout_fails_by_name() -> None:
+    fake = _Fake(DRY, set(), apt=subprocess.TimeoutExpired("npx", 120))
+    fell_back: list[int] = []
+    with pytest.raises(
+        account_e2e.RefusedError, match=r"install-deps chromium.*timed out after 120s"
+    ):
+        account_e2e.install_system_deps(
+            "chromium", ".", fake, sleep=lambda _s: None, fallback=lambda: fell_back.append(1)
+        )
+    assert fell_back == [1]
+    assert sum(1 for c in fake.calls if c[0] == "npx" and "--dry-run" not in c) == 3
+
+
+def test_system_deps_apt_failure_fails_by_name() -> None:
+    fake = _Fake(DRY, set(), apt=100)
+    with pytest.raises(account_e2e.RefusedError, match=r"install-deps chromium.*exited 100"):
+        account_e2e.install_system_deps("chromium", ".", fake, sleep=lambda _s: None)
+
+
+def test_a_dry_run_that_prints_no_apt_line_is_refused_not_skipped() -> None:
+    fake = _Fake("Playwright changed its output\n", set())
+    with pytest.raises(
+        account_e2e.RefusedError, match="printed no `Missing system dependencies` list"
+    ):
+        account_e2e.install_system_deps("chromium", ".", fake)
+    assert not any(c[0] == "npx" and "--dry-run" not in c for c in fake.calls)
+
+
+def test_a_dry_run_that_fails_is_refused_by_name() -> None:
+    def failing(argv: list[str], **_kw: typing.Any) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(argv, 3, "", "boom")
+
+    with pytest.raises(account_e2e.RefusedError, match=r"--dry-run chromium failed \(rc=3\): boom"):
+        account_e2e.install_system_deps("chromium", ".", failing)
+
+
+def test_a_dry_run_that_times_out_is_refused_by_name() -> None:
+    def hanging(argv: list[str], **_kw: typing.Any) -> subprocess.CompletedProcess[str]:
+        raise subprocess.TimeoutExpired(argv, 120)
+
+    with pytest.raises(account_e2e.RefusedError, match=r"--dry-run chromium timed out"):
+        account_e2e.install_system_deps("chromium", ".", hanging)
+
+
+def test_a_dry_run_with_empty_stdout_is_refused_too() -> None:
+    """e099399f.1: nothing printed is as unreadable as an unrecognised line, so the gate stops instead of skipping apt."""
+    fake = _Fake("", set())
+    with pytest.raises(
+        account_e2e.RefusedError, match="printed no `Missing system dependencies` list"
+    ):
+        account_e2e.install_system_deps("chromium", ".", fake)
+
+
+def test_playwright_165_all_present_dry_run_skips_apt() -> None:
+    """The 1.65 shape (rc=0, no package list) is a clean skip; the 1.64-era apt-get line parse read it as unreadable."""
+    fake = _Fake(ALL_PRESENT, set())
+    assert account_e2e.install_system_deps("chromium", ".", fake) is False
+    assert not any(c[0] == "npx" and "--dry-run" not in c for c in fake.calls)
+
+
+def test_playwright_165_missing_list_with_rc1_reaches_apt() -> None:
+    """Run 43360983417: rc=1 plus a `Missing system dependencies` list on stdout was refused as a failed dry run."""
+    fake = _Fake(DRY, set())
+    assert account_e2e.install_system_deps("chromium", ".", fake) is True
+
+
+def test_a_dry_run_rc1_with_no_list_is_still_refused_and_shows_stdout() -> None:
+    def failing(argv: list[str], **_kw: typing.Any) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(argv, 1, "unsupported platform\n", "")
+
+    with pytest.raises(account_e2e.RefusedError, match=r"failed \(rc=1\): unsupported platform"):
+        account_e2e.install_system_deps("chromium", ".", failing)
+
+
+def test_a_dry_run_failure_with_whitespace_only_stderr_shows_stdout() -> None:
+    """Review b7e661a3.2: a stderr of "\\n" is no diagnostic, so stdout is shown."""
+
+    def failing(argv: list[str], **_kw: typing.Any) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(argv, 1, "unsupported platform\n", "\n")
+
+    with pytest.raises(account_e2e.RefusedError, match=r"failed \(rc=1\): unsupported platform"):
+        account_e2e.install_system_deps("chromium", ".", failing)
+
+
+def test_backend_env_opens_test_mode_and_closes_the_terms_gate(monkeypatch) -> None:
+    """6325a494.1: the e2e users never accept the Terms, so the backend gets TERMS_GATE=false beside TEST_MODE=true."""
+    seen: dict[str, typing.Any] = {}
+
+    class StopHereError(Exception):
+        pass
+
+    def fake_popen(*_args: typing.Any, **kwargs: typing.Any) -> typing.NoReturn:
+        seen.update(kwargs["env"])
+        raise StopHereError
+
+    monkeypatch.setattr(account_e2e.subprocess, "Popen", fake_popen)
+    monkeypatch.setenv("ACCOUNT_X25519_PRIVATE_KEY", "xpriv")
+    monkeypatch.setenv("ACCOUNT_X25519_PUBLIC_KEY", "xpub")
+    monkeypatch.setenv("TERMS_GATE", "true")
+    run = account_e2e.Run.__new__(account_e2e.Run)
+    run.api_port = "3001"
+    run.e2e_port = "5173"
+    run.account_dir = pathlib.Path()
+    with pytest.raises(StopHereError):
+        run.start_backend("")
+    assert seen["TEST_MODE"] == "true"
+    assert seen["TERMS_GATE"] == "false"
