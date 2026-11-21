@@ -1472,6 +1472,15 @@
       "CI",
       "EXTERNAL_CALLERS_FILE"
     ],
+    ".ci/rediacc_ci/setup/aws_cli.py": [
+      "AWS_CONFIG_FILE",
+      "EXPORT_ENV",
+      "GITHUB_ENV",
+      "GITHUB_OUTPUT",
+      "RUNNER_ARCH",
+      "RUNNER_OS",
+      "RUNNER_TEMP"
+    ],
     ".ci/rediacc_ci/spikes/do_policy_spike.py": [
       "CLOUDFLARE_API_TOKEN",
       "REDIACC_BWS_PROFILES",
@@ -2713,6 +2722,26 @@
     ],
     ".claude/rediacc_hooks/tests/test_wl_review_check.py": [
       "PATH"
+    ],
+    ".github/actions/app-token/perms.py": [
+      "GITHUB_OUTPUT",
+      "PRESET"
+    ],
+    ".github/actions/bws-scrub/scrub.py": [
+      "GITHUB_ENV",
+      "NAMES"
+    ],
+    ".github/actions/bws-secrets/prewarm.py": [
+      "GITHUB_OUTPUT"
+    ],
+    ".github/actions/bws-secrets/resolve.py": [
+      "GITHUB_OUTPUT",
+      "MAP",
+      "REQUESTED"
+    ],
+    ".github/actions/free-disk-space/free_disk_space.py": [
+      "RUNNER_TEMP",
+      "THRESHOLD_GB"
     ],
     "conftest.py": [
       "TREE_SNAPSHOT"
