@@ -17,7 +17,7 @@ THE DECISION, for an Agent or Task call (the rules are `wl_planconc.spawn_verdic
      line is disjoint, and ALLOWED with a stderr note when it declares nothing (decision D4). An `Owns:` line that does not
      parse reads as nothing declared, and every refusal or note built on that says the line was not read and why.
 
-The writer cap still applies first: `block_agent_cap` is ORDER 3 and `block_focus_spawn` ORDER 4 on the same chain.
+The writer cap still applies first: `block_agent_cap` is ORDER 3 on the same chain.
 
 SAME-MESSAGE SPAWNS (#105d59a7, the lease plan's W13). A sibling started by the same message has no meta and no Stop event yet, so the roster cannot list it: on 2026-11-04 three writers passed this guard with real Owns overlaps. Each admitted writer spawn therefore appends a claim (`wl_planconc.claim_gate`), and L above includes the unexpired claims of every session whose agent has not appeared. Read, decide and append sit inside one flock, so either hook order is safe. The cap is decided here too, because a count read at ORDER 3 and a claim appended at ORDER 5 would leave two racing spawns both under it: this session's live writers plus its claims must stay under `wl_roster.writer_cap`. As the last guard of the chain that can REFUSE, nothing behind it can refuse a spawn it claimed: the one guard behind it, `warn_writer_brief` (ORDER 6, PLAN-experience-feedback P1/P4), never exits 2, and its own suite asserts rc 0 on every case.
 
@@ -41,7 +41,7 @@ from rediacc_hooks import hookio, syspath
 
 CHAIN = "pre-agent"
 OWN_SUITE = True
-ORDER = 5
+ORDER = 4
 
 # The mutex refusal, planted away: the differential's mutex EDGE_CASE must then stop speaking.
 DEFECT = ("return _refuse(event, verdict, kind, MUTEX_EXITS)", "return hookio.ALLOW")

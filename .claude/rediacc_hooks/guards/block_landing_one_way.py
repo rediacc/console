@@ -19,7 +19,7 @@ import subprocess
 from rediacc_hooks import commit_policy, hookio, shellscan
 
 CHAIN = "pre-bash"
-ORDER = 72
+ORDER = 71
 
 # The verdict itself. With it gone every act in the landing tree goes through.
 DEFECT = ("    if reason:\n        ev.warn_raw", "    if False:\n        ev.warn_raw")

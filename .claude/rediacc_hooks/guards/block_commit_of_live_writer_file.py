@@ -32,7 +32,7 @@ from rediacc_hooks import commit_policy, hookio, syspath
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 59
+ORDER = 58
 
 # The overlap test itself. With it never matching, a live writer's file rides a commit again, which is the 252e5e1d1 shape.
 DEFECT = (

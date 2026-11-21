@@ -21,7 +21,7 @@ from rediacc_hooks import hookio, shellscan, syspath
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 69
+ORDER = 68
 
 # The incident's own check: with it forced off, the 2026-11-10 `... & true` arm passes again whenever no other command shares the line.
 DEFECT = ('backgrounded = "&" in ops', "backgrounded = False")

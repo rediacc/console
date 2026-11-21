@@ -38,8 +38,8 @@ from rediacc_hooks.guards import block_vm_unverified_push as VM
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-# After every other refusing push guard, so its ledger line is written only for a command the rest admitted. The vm-check (63) and backup (64) ledgers are written before this slot; see the report that added it for the renumbering that would put this guard ahead of them.
-ORDER = 66
+# After every other refusing push guard, so its ledger line is written only for a command the rest admitted. The vm-check (62) and backup (63) ledgers are written before this slot; see the report that added it for the renumbering that would put this guard ahead of them.
+ORDER = 65
 
 # The touched test, inverted: planted, every range reads as selecting nothing and passes without a receipt.
 DEFECT = ('if not required["packages"]:', "if True:")

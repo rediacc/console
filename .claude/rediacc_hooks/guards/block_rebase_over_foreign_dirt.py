@@ -25,7 +25,7 @@ import subprocess
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
 
 CHAIN = "pre-bash"
-ORDER = 60
+ORDER = 59
 
 # The exemption decides everything this guard allows on a dirty tree. Planting `True` there exempts every path, so a peer's modified file stops refusing the rebase that would carry it.
 DEFECT = (

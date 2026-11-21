@@ -15,7 +15,7 @@ import subprocess
 from rediacc_hooks import commit_policy, hookio, pr_freeze, shellscan, syspath
 
 CHAIN = "pre-bash"
-ORDER = 71
+ORDER = 70
 # The mutation check: with the verdict arm disabled every frozen commit is admitted, and the guard test's refusal cases go red.
 DEFECT = (
     "    if not ok:\n        ev.warn_raw(BLOCKED % reason)",

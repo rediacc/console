@@ -31,7 +31,7 @@ from rediacc_hooks.guards import block_worktree_add as programs
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 67
+ORDER = 66
 
 # The mirror host is `githooks.MIRROR_HOST`, the one place it is typed; loaded BY FILE like `block_push_to_protected_branch` does.
 _GITHOOKS_SPEC = importlib.util.spec_from_file_location(

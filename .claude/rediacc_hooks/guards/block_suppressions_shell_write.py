@@ -33,7 +33,7 @@ from rediacc_hooks import hookio, shellscan, syspath
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 58
+ORDER = 57
 
 # Planting `False` here drops shape 1, the redirect: `cat > a.py <<EOF` with a marker in the body goes through, and the redirect cases flip.
 DEFECT = ("if language is not None:", "if False:")

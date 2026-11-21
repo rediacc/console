@@ -31,7 +31,7 @@ from rediacc_hooks.guards import block_live_proof_ledger_write as EDIT
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 65
+ORDER = 64
 
 # The landing test is the whole guard: with it gone no word is ever the ledger.
 DEFECT = ("    if not word:\n        return False", "    if True:\n        return False")

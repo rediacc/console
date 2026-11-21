@@ -16,7 +16,7 @@ WRAPPERS ARE UNWRAPPED. `./run.sh devbox exec -- ...`, `bws_env exec ... -- ...`
 
 WHAT IT DOES NOT SEE: a publish verb assembled at run time, `gh api` POSTs to the releases endpoint, a path into `.ci/cache/release/` spelled through a glob or a symlink the word does not resolve through, and a program that builds the path from parts. The release record and the R2 sentinel are what a release leaves behind, so a release this guard missed is still visible after the fact.
 
-ORDER 62, ahead of `block_vm_unverified_push` (63) and `block_backup_unverified_push` (64). Both write a ledger line once they admit an escaped push, on the claim that every refusing guard ran first; with this guard behind them a command that escapes a push AND runs a refused publish verb left a ledger line for a push that never ran.
+ORDER 61, ahead of `block_vm_unverified_push` (62) and `block_backup_unverified_push` (63). Both write a ledger line once they admit an escaped push, on the claim that every refusing guard ran first; with this guard behind them a command that escapes a push AND runs a refused publish verb left a ledger line for a push that never ran.
 
 THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`); it is judged by `test-block_unasked_release.py` beside it, which also plants DEFECT and every MUTANT.
 """
@@ -33,7 +33,7 @@ from rediacc_hooks.wellknown import IMAGE_REGISTRY
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 62
+ORDER = 61
 
 # Planted, no finding is ever refused: every publish verb, every unproven ASKED and every write into the release clone passes.
 DEFECT = ("    if refusals:\n", "    if False:\n")

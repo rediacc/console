@@ -44,8 +44,8 @@ from rediacc_hooks.guards import block_unverified_push as PUSH
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-# The second-last pre-bash slot: the ledger line is the admission record, so it is written only after every other guard but block_backup_unverified_push (64) has let the command through.
-ORDER = 63
+# The second-last pre-bash slot: the ledger line is the admission record, so it is written only after every other guard but block_backup_unverified_push (63) has let the command through.
+ORDER = 62
 
 # The touched test, inverted: planted, every push reads as untouched and passes without a receipt.
 DEFECT = ("if not hits:", "if True:")

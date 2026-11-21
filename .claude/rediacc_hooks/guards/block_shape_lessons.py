@@ -16,7 +16,7 @@ _MODULE = "trapguard_shapes"
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 70
+ORDER = 69
 
 # Without the refusal arm, a loaded pre:refuse shape (and the warn arm, which shares the match) admits silently.
 DEFECT = ("hit = shapes.side_match(shape.pre, cmd)", 'hit = ""')

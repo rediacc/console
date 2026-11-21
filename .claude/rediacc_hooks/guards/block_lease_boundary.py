@@ -27,7 +27,7 @@ from rediacc_hooks import commit_policy, hookio, shellscan
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 68
+ORDER = 67
 
 # The verdict itself. With it gone every act in a lease goes through.
 DEFECT = ("if reason:", "if False:")

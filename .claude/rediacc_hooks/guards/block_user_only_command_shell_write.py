@@ -29,7 +29,7 @@ from rediacc_hooks import hookio, model_invocation, shellscan
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 61
+ORDER = 60
 
 # The target test every shape goes through. With it answering no, every redirect, tee, sed -i, copy and interpreter write into a command directory passes.
 DEFECT = ("    if not word:\n        return False", "    if True:\n        return False")
