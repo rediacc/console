@@ -410,7 +410,7 @@ def set_settings(text: str, updates: dict[str, str], note: str | None = None) ->
 
 
 def solo_plans(text: str) -> set[str]:
-    """The Promoted and Generated entries whose note ends with ` -- solo`: such a plan runs alone in its PR under turbo."""
+    """The Promoted and Generated entries whose note ends with ` -- solo`. Every plan rides its own PR, so the marker is shown in the In-flight block and decides nothing."""
     block = (generated_text(text) or "").split(NOT_QUEUED_HEADING, 1)[0]
     return {
         m.group(1)
@@ -1296,8 +1296,8 @@ def with_inflight(text: str, body: str) -> str:
     return text + sep + section.rstrip("\n") + "\n"
 
 
-def _plan_source(rel, loop, body, named) -> str:
-    """How `rel` joined the live PR's plan set: the `Plan:` line, a turbo batch claim, an `Operational-Reason:` addition, a prerequisite, or the queue head standing in for a body with no `Plan:` line."""
+def _plan_source(rel, loop, body) -> str:
+    """How `rel` joined the live PR's plan set: the `Plan:` line, an `Operational-Reason:` addition, a prerequisite, or the queue head standing in for a body with no `Plan:` line."""
     import wl_prscope as P
 
     plan_gate, _cp = P._hooks_pkg()
@@ -1310,8 +1310,6 @@ def _plan_source(rel, loop, body, named) -> str:
         return "the queue head, standing in while the PR body names no `Plan:` line"
     if rel == listed[0]:
         return "the PR body's `Plan:` line"
-    if rel in named:
-        return "a turbo batch claim on the `Plan:` line"
     if plan_gate.has_operational_reason(body):
         return "added to the `Plan:` line under `Operational-Reason:`"
     return "the PR body's `Plan:` line"
@@ -1345,7 +1343,7 @@ def _branch_epic_commits(root, kind) -> dict[str, int]:
 
 
 def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=None) -> InFlight:
-    """The `InFlight` for the checkout at `root`, from the same readers the Stop hook acts on: `wl_prscope.loop_state` (the PR, its plan set via `plan_gate.pr_plan_set`, the next plan), `plan_gate.turbo_named` and the PR body for each plan's source, the focus events and leases of the store's fold, `wl_epic.load_epics` with the branch's `PR-TASK:` trailers.
+    """The `InFlight` for the checkout at `root`, from the same readers the Stop hook acts on: `wl_prscope.loop_state` (the PR, its plan set via `plan_gate.pr_plan_set`, the next plan), the PR body for each plan's source, the focus events and leases of the store's fold, `wl_epic.load_epics` with the branch's `PR-TASK:` trailers.
     `fold` and `loop` are the stop's own when it has them; `writers` is the live writer ids, None when not counted."""
     import wl_ci
     import wl_epic
@@ -1360,7 +1358,7 @@ def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=No
         fold = S.load(worklist, sync=False)
     if loop is None:
         # The loop belongs to the tree this session runs in (a landing session maps its store to the main checkout, so the mapped root would read the development tree's role).
-        loop = P.loop_state(S.own_tree(root), worklist, session_id, settings=settings)
+        loop = P.loop_state(S.own_tree(root), worklist, session_id)
     focus = []
     for owner, ev in sorted((fold.phase or {}).items()):
         if not isinstance(ev, dict) or ev.get("mode") not in wl_standdown.PHASE_MODES:
@@ -1387,22 +1385,12 @@ def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=No
                 ),
                 None,
             )
-    named = plan_gate.turbo_named(str(root), loop.branch) if loop.branch else []
 
     def plan_line(rel, source):
         opened, done, why = plan_gate.open_boxes(str(root), rel)
         return PlanLine(rel, source, done, -1 if why else opened + done)
 
-    lines = [plan_line(rel, _plan_source(rel, loop, body, named)) for rel in loop.plans]
-    if loop.kind in (P.LIVE, P.UNREADABLE):
-        for rel in [*named, *loop.turbo_picks]:
-            if rel not in loop.plans and all(p.rel != rel for p in lines):
-                lines.append(
-                    plan_line(
-                        rel,
-                        "a turbo pick named by the Stop hook, joining the `Plan:` line on the next push",
-                    )
-                )
+    lines = [plan_line(rel, _plan_source(rel, loop, body)) for rel in loop.plans]
     in_set = {p.rel for p in lines}
     # An epic is in flight on this branch when a commit here carries its `PR-TASK:` trailer or one of its items is leased; an epic whose only open items wait unleased is queued work, not this branch's.
     open_ids = {r["id"] for r in fold.items if r.get("state") in (" ", ">", "?")}
@@ -1442,12 +1430,7 @@ def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=No
         else:
             why = "the deepest unfinished prerequisite of the first open queue entry"
         if loop.kind == P.LIVE:
-            when = (
-                "a turbo pick joins this PR when a writer slot frees under plan_concurrency %d"
-                % settings.plan_concurrency
-                if settings.turbo
-                else "starts on the next branch after PR #%d merges" % loop.pr
-            )
+            when = "starts on the next branch after PR #%d merges" % loop.pr
         elif loop.kind == P.NO_PR:
             when = (
                 "starts when this branch's PR binds it on its first push"

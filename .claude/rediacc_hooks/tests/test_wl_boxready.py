@@ -15,14 +15,13 @@ import subprocess
 import pytest
 
 from rediacc_hooks import plan_gate, syspath
-from rediacc_hooks.tests.test_plan_gate import _t, _turbo_root
+from rediacc_hooks.tests.test_plan_gate import _plan_root, _t
 
 syspath.on_sys_path(plan_gate.STOP_DIR)
 B = importlib.import_module("wl_boxready")
 D = importlib.import_module("wl_plandeps")
 E = importlib.import_module("wl_effort")
 
-FIVE = "```stop-hook\neffort: high\nturbo: on\nbatch_size: 3\nplan_concurrency: 5\n```\n"
 TICKED = "    (ticked) 2026-11-09T08:00:00Z by d778be9d: commit:abc1234567 the evidence line\n"
 
 
@@ -50,7 +49,7 @@ ENT = _plan(
 
 
 def _root(tmp_path, plans, promoted):
-    return _turbo_root(tmp_path, plans, promoted, FIVE)
+    return _plan_root(tmp_path, plans, promoted)
 
 
 def _ids(ready):
@@ -185,7 +184,7 @@ def test_a_live_only_prerequisite_does_not_hold_writer_boxes(tmp_path):
     assert B.ready_boxes(root3)[0] == []
 
 
-def test_turbo_off_reads_the_given_plan_set_only(tmp_path):
+def test_the_given_plan_set_is_read_only(tmp_path):
     root = _root(tmp_path, {"ent": ENT, "b": _plan("- [ ] B1 [writer] b\n")}, ["ent", "b"])
     got = B.ready_boxes(root, plans=(_t("b"),))[0]
     assert _ids(got) == [("PLAN-b.md", "B1")]
@@ -199,7 +198,6 @@ def _text(root, **kw):
         "free": 3,
         "cap": 25,
         "phase": False,
-        "turbo_picks": (),
         "plans": None,
         "live_plans": (),
         "items": (),
@@ -222,7 +220,7 @@ def test_the_block_names_boxes_and_the_spawn_command(tmp_path):
 
 @pytest.mark.parametrize(
     "kw",
-    [{"free": 0}, {"free": -2}, {"phase": True}, {"free": 1, "turbo_picks": ("PLAN-x.md",)}],
+    [{"free": 0}, {"free": -2}, {"phase": True}],
 )
 def test_the_block_stands_down(tmp_path, kw):
     root = _root(tmp_path, {"ent": ENT}, ["ent"])
@@ -232,18 +230,6 @@ def test_the_block_stands_down(tmp_path, kw):
 def test_the_block_is_silent_with_no_ready_box(tmp_path):
     root = _root(tmp_path, {"l": LIVE_ONLY}, ["l"])
     assert _text(root) == ""
-
-
-def test_a_turbo_pick_takes_its_slot_and_its_boxes_but_never_silences_the_rest(tmp_path):
-    """The real run of 2026-11-09 after the ceiling fix: TURBO NEXT named one plan while 21 slots were free. The picked plan's boxes leave the list and its slot is spent; the other ready boxes are still named."""
-    other = _plan("- [ ] B1 [writer] b_one with an underscore\n")
-    root = _root(tmp_path, {"ent": ENT, "b": other}, ["ent", "b"])
-    text = _text(root, free=21, turbo_picks=(_t("ent"),))
-    assert "20 free writer slot(s)" in text
-    assert "PLAN-ent.md#" not in text
-    assert "/writers-now PLAN-b.md" in text
-    # The row is the raw box line: an underscore survives (the parsed body strips it).
-    assert "B1 [writer] b_one with an underscore" in text
 
 
 def test_the_effort_table_owns_the_key_and_the_hook_produces_it():
@@ -260,7 +246,7 @@ def test_the_pr_loop_profile_keeps_the_key():
         n.value
         for n in ast.walk(tree)
         if isinstance(n, ast.Assign)
-        and any(getattr(t, "id", "") == "TURBO_KEEPS" for t in n.targets)
+        and any(getattr(t, "id", "") == "IDLE_KEEPS" for t in n.targets)
     )
     assert "idle-capacity" in ast.unparse(keeps)
 

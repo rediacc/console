@@ -6,11 +6,7 @@ ONE READER EACH. The PR is read once, through `wl_ci.pr_link` (the read focus mo
 
 KINDS. `live` (an MMDD-N branch with an OPEN PR), `no-pr` (such a branch, no PR yet, or only closed ones), `merged` (its newest PR MERGED, none open), `on-main` (main, no live branch), `off-loop` (any other branch, detached HEAD, a submodule, or not a git checkout), `unreadable` (the PR read failed; the plans fall back to the queue head's set, so item scope survives a gh outage).
 
-TURBO (agent/plans/PLAN-stop-hook-turbo.md D5/D8). With `turbo: on` in agent/plans/QUEUE.md `## Settings`, `turbo_picks` names the queued plans to start now on free writer slots (`plan_gate.next_turbo`: queue order, held, finished and in-set plans skipped, prerequisites first, concurrency-compatible with the live writers' plans, solo entries alone). The live writers are the caller's to supply (`live`, or `with_turbo` after the roster is known): without them no plan is named, since a pick that ignores a busy writer could start a plan the spawn guard then refuses. With turbo off every field below is what it was, byte for byte.
-
-LOCAL-FIRST (agent/plans/PLAN-turbo-local-first.md D1). Under turbo with `turbo_push: batch-end` (the default) the batch is worked and verified locally and the PR opens once, when it completes. A `no-pr` branch therefore carries the batch's plan set as if its PR were live, read from the body `with_plan_line("", <queue head>, turbo_named(<branch>))` (the same `Plan:` line `plan_gate.batch_body` prints for `gh pr create`): `plans`, `prereqs`, `finished` and the turbo picks are computed exactly as for a live PR, and `local_batch` is True. With turbo off or `turbo_push: pr` a `no-pr` branch keeps an empty plan set.
-
-TWO TREES (agent/plans/PLAN-two-track-merge-dev.md LT5). With a landing record (`commit_policy.landing_record`, LT1: `{path, branch}` in the common git dir) the checkout is one of two trees, each holding its own live MMDD-N branch. The tree at the record's path is `landing`: it works the open PR's babysit and merge loop, so the queue is not read there (no queue head, no next plan, no next branch, turbo off), and its item scope is the items added on its own branch plus the items that carry no branch. Every other tree of the repository is `development`: it works the queue and the draft PR, the record's branch never counts as a second live branch on `main`, and the items added on the landing branch are out of its scope. `tree_parks` names the checks each tree reports instead of blocking on. Without a record `role` is "", nothing is excluded or parked, and every other field is what it was.
+TWO TREES (agent/plans/PLAN-two-track-merge-dev.md LT5). With a landing record (`commit_policy.landing_record`, LT1: `{path, branch}` in the common git dir) the checkout is one of two trees, each holding its own live MMDD-N branch. The tree at the record's path is `landing`: it works the open PR's babysit and merge loop, so the queue is not read there (no queue head, no next plan, no next branch), and its item scope is the items added on its own branch plus the items that carry no branch. Every other tree of the repository is `development`: it works the queue and the draft PR, the record's branch never counts as a second live branch on `main`, and the items added on the landing branch are out of its scope. `tree_parks` names the checks each tree reports instead of blocking on. Without a record `role` is "", nothing is excluded or parked, and every other field is what it was.
 
 THE LANDING STATE MACHINE (agent/plans/PLAN-simple-two-tree-loop.md D1, box B2). In the landing tree `landing_loop` reads one of seven states from the world on every stop -- L-CI (the PR's checks in flight), L-FIX (a required check red), L-REVIEW (CI Complete SUCCESS, boxes or reviews still open), L-MERGE (all clear), L-RELEASE (merged, the release at the merged sha in flight), L-HOTFIX (that release red on main), L-IDLE (no open PR, or a merged PR whose release is green) -- and names one step; L-IDLE blocks on nothing. The PR is read on the record's branch, so a detached HEAD on origin/main during a hotfix still finds the merged PR. The release is Console CI and CD - Release to Edge at the merged sha (`read_release`, gh run list). The development tree reads the same release (`landing_released`): a merged landing PR with a green release is its cue to promote. No event stores the state, so a restart resumes where the world is.
 
@@ -44,7 +40,7 @@ def _hooks_pkg():
 LANDING = "landing"
 DEVELOPMENT = "development"
 # The checks a tree reports instead of blocking on (`tree_parks`): the queue's arms in the landing tree, the PR's babysit arms in the development tree. wl_checks holds `ci-red` before its block budget is spent (wl_ci.ci_trouble `hold`) and moves the others to the advisory queue under their own key.
-LANDING_PARKS = frozenset({"turbo-next", "idle-capacity", "queue-slot"})
+LANDING_PARKS = frozenset({"idle-capacity", "queue-slot"})
 DEVELOPMENT_PARKS = frozenset({"ci-red", "pr-review", "pr-finish"})
 TREE_PARK_NOTE = (
     "Reported, not blocking: the %s tree parks `%s` (agent/plans/PLAN-two-track-merge-dev.md LT5)."
@@ -80,15 +76,6 @@ class LoopState:
     stale_promoted: str = ""
     next_branch: str = ""
     reason: str = ""
-    turbo: bool = False
-    batch_size: int = 1
-    writer_cap: int = 4
-    turbo_picks: tuple[str, ...] = ()
-    turbo_more: bool = False
-    finished: int = 0
-    turbo_push: str = "batch-end"
-    backup_push_h: int = 4
-    local_batch: bool = False
     role: str = ""
     landing_branch: str = ""
     foreign_items: frozenset[str] = frozenset()
@@ -133,50 +120,6 @@ def next_queued(root, exclude=()):
         pick = next((m for m in members if m not in skip), rel)
         return pick, "; ".join(problems)
     return "", ""
-
-
-def turbo_picks(root, state, live_plans, writers):
-    """(picks, more): the plans `state`'s turbo loop names now, `plan_gate.next_turbo` over `writer_cap - writers` free slots with the PR's plan set excluded, and whether any queued plan is eligible at all (for one slot when none is free), which is what decides that the batch has nothing left to take. ((), False) with turbo off or off the loop. `writers` also reaches `next_turbo`, which holds an exclusive plan back while any writer is live, planless ones included (#1e3ac977)."""
-    if not state.turbo or state.kind == OFF_LOOP:
-        return (), False
-    slots = int(state.writer_cap) - int(writers or 0)
-    plan_gate, _cp = _hooks_pkg()
-    in_set = state.plans if state.kind in (LIVE, UNREADABLE) or state.local_batch else ()
-    picks = (
-        plan_gate.next_turbo(str(root), live_plans or (), slots, in_set=in_set, writers=writers)
-        if slots > 0
-        else []
-    )
-    # `more` asks whether the queue still holds an eligible plan, so it ignores the plan_concurrency ceiling: a full ceiling is a reason to wait, not proof that the batch has nothing left to take (review 3619cbe0).
-    more = bool(picks) or bool(
-        plan_gate.next_turbo(
-            str(root), live_plans or (), 1, in_set=in_set, ceiling=False, writers=writers
-        )
-    )
-    return tuple(picks), more
-
-
-def with_turbo(state, root, live_plans, writers):
-    """`state` with its turbo picks filled from the live writers (`live_plans`: the plans they serve; `writers`: how many there are). `state` itself when turbo is off."""
-    if state is None or not state.turbo:
-        return state
-    picks, more = turbo_picks(root, state, live_plans, writers)
-    return dataclasses.replace(state, turbo_picks=picks, turbo_more=more)
-
-
-def record_named(root, state):
-    """Record `state`'s turbo picks as named for its branch (`plan_gate.record_turbo_named`), so the next push appends them to the PR's `Plan:` line."""
-    if state is None or not state.turbo or not state.turbo_picks or not state.branch:
-        return
-    plan_gate, _cp = _hooks_pkg()
-    plan_gate.record_turbo_named(str(root), state.branch, state.turbo_picks)
-
-
-def batch_ready(state, finished_all):
-    """True when the PR may be offered for merge, or under `local_batch` pushed and opened, as far as the batch goes (agent/plans/PLAN-stop-hook-turbo.md D8, PLAN-turbo-local-first.md D2): always with turbo off; under turbo, every plan of the set finished (`finished_all`, the caller's box read) and either `batch_size` of them finished or no queued plan left to take."""
-    if state is None or not state.turbo:
-        return True
-    return bool(finished_all) and (state.finished >= state.batch_size or not state.turbo_more)
 
 
 def landing_record(commit_policy, top):
@@ -506,29 +449,19 @@ def loop_state(
     today=None,
     epics=None,
     gh=True,
-    settings=None,
-    live=None,
     landing=_READ,
     branches=None,
 ):
-    """The `LoopState` for the checkout at `root`. `today` (MMDD) and `epics` (rel -> item ids) are the test seams; `gh=False` skips the next-branch name's PR-head read. `settings` is the stop's `wl_planqueue.Settings` (read from `root` when None); `live` is `(live_plans, writers)` for the turbo picks, None leaving them empty for `with_turbo` to fill. `landing` (the record, or None) and `branches` (item id -> branch) are the two-tree seams: by default the record is read through commit_policy, and the branches from the worklist's add events only when a record exists."""
+    """The `LoopState` for the checkout at `root`. `today` (MMDD) and `epics` (rel -> item ids) are the test seams; `gh=False` skips the next-branch name's PR-head read. `landing` (the record, or None) and `branches` (item id -> branch) are the two-tree seams: by default the record is read through commit_policy, and the branches from the worklist's add events only when a record exists."""
     import wl_ci
 
     plan_gate, commit_policy = _hooks_pkg()
     top = _console_top(commit_policy, root)
     if not top:
         return LoopState(OFF_LOOP, reason="not a console checkout")
-    if settings is None:
-        settings, _problems = plan_gate.settings_at(top)
     record = landing_record(commit_policy, top) if landing is _READ else landing
     role = tree_role(record, top)
     landing_branch = str((record or {}).get("branch") or "")
-    # The queue belongs to the development tree, so the landing tree runs no turbo batch.
-    turbo = bool(settings.turbo) and role != LANDING
-    batch = plan_gate.batch_size(settings)
-    cap = int(settings.writer_cap)
-    turbo_push = str(getattr(settings, "turbo_push", "batch-end"))
-    backup_h = int(getattr(settings, "backup_push_h", 4))
     branch = commit_policy.current_branch(top)
     tree: dict = {}
     if role:
@@ -554,21 +487,15 @@ def loop_state(
         plans: tuple[str, ...] = ()
         prereqs: tuple[str, ...] = ()
         notes = [reason] if reason else []
-        finished = 0
-        local = kind == NO_PR and turbo and turbo_push == "batch-end"
-        if local:
-            body = plan_gate.with_plan_line("", head, plan_gate.turbo_named(top, branch))
-        if kind in (LIVE, UNREADABLE) or local:
+        if kind in (LIVE, UNREADABLE):
             plans, problems = plan_gate.pr_plan_set(top, body)
             notes.extend(problems)
             own = set(plan_gate.body_plans(body) if body else ()) or {head}
             prereqs = tuple(p for p in plans if p not in own)
-            if turbo:
-                finished = sum(1 for p in plans if p in own and _open_count(plan_gate, top, p) == 0)
         nxt, problem = next_queued(top, exclude=plans) if role != LANDING else ("", "")
         if problem:
             notes.append("next plan %s: %s" % (nxt, problem))
-        state = LoopState(
+        return LoopState(
             kind,
             branch=branch,
             pr=pr,
@@ -580,18 +507,8 @@ def loop_state(
             stale_promoted=stale,
             next_branch=next_branch,
             reason="; ".join(notes),
-            turbo=turbo,
-            batch_size=batch,
-            writer_cap=cap,
-            finished=finished,
-            turbo_push=turbo_push,
-            backup_push_h=backup_h,
-            local_batch=local,
             **tree,
         )
-        if live is not None:
-            state = with_turbo(state, top, live[0], live[1])
-        return state
 
     def branch_name():
         if role == LANDING:
@@ -665,7 +582,6 @@ __all__ = [
     "TREE_PARK_NOTE",
     "LandingStep",
     "LoopState",
-    "batch_ready",
     "epic_items",
     "foreign_items",
     "item_branches",
@@ -679,11 +595,8 @@ __all__ = [
     "merged_sha",
     "next_queued",
     "read_release",
-    "record_named",
     "release_verdict",
     "tree_parks",
     "tree_role",
-    "turbo_picks",
     "with_tree_scope",
-    "with_turbo",
 ]

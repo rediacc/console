@@ -2386,8 +2386,6 @@ PRIORITY_LADDER = (
                 "plan-unimplemented",
                 # The loop after a merge: the next branch, plan and PR do not exist yet (Design 7).
                 "loop-next",
-                # Turbo (agent/plans/PLAN-stop-hook-turbo.md D5): a free writer slot and an eligible queued plan on the live PR.
-                "turbo-next",
                 # Free writer slots and ready `[writer]` boxes (agent/plans/PLAN-idle-writer-capacity.md D5): idle capacity beside asked-for work is the mission stalling, the failure of 2026-11-09.
                 "idle-capacity",
                 "defer-expired",
@@ -3074,21 +3072,6 @@ def wisdom_due(root, session_id, state_doc, now=None):
         return ""
 
 
-def _focus_refused_count(worklist, me8, since):
-    """Writer spawns block_focus_spawn refused since `since`, from its `.focusrefused-<me8>.jsonl` ledger."""
-    n = 0
-    with contextlib.suppress(OSError):
-        for line in (
-            worklist.with_suffix(".focusrefused-%s.jsonl" % me8)
-            .read_text(encoding="utf-8")
-            .splitlines()
-        ):
-            with contextlib.suppress(ValueError, AttributeError):
-                if str(json.loads(line).get("at") or "") >= str(since or ""):
-                    n += 1
-    return n
-
-
 def loop_governs(state):
     """True when the one-plan-per-PR loop scopes this stop (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4): any loop state but `off-loop` that has something to work, a PR plan set, a queue head or a next plan. A checkout with neither a PR plan nor anything in agent/plans/QUEUE.md has no loop to scope or continue (on main after the last queued plan merged, or a project that never queued one), so it keeps the full battery."""
     if state is None or state.kind == wl_prscope.OFF_LOOP:
@@ -3136,33 +3119,7 @@ def pr_scope_line(state, root, me8, queued_n, stood):
         "stood": M.PR_SCOPE_STOOD % wl_standdown.parked_line(stood, 6) if stood else "",
         "me": me8,
     }
-    if not state.turbo:
-        return M.N_PR_SCOPE % fields
-    # UNDER TURBO the line says what turbo does with the queue, never "One plan per PR": a solo plan in the set keeps the PR to itself, else the picks the free writer slots take (`state.turbo_picks`, filled by wl_prscope.with_turbo), else that none is eligible.
-    # On a branch with no PR yet the plan set is empty: the plan the first push binds is `next_plan`, and it can also arrive as a turbo pick. Both count, so a solo head never reads as a plan that joins (live defect, 2026-10-07).
-    bound = (state.next_plan,) if state.kind == wl_prscope.NO_PR and state.next_plan else ()
-    solos = _solo_plans(root)
-    solo = sorted({p for p in (*(state.plans or ()), *bound, *state.turbo_picks) if p in solos})
-    if solo:
-        turbo = M.PR_SCOPE_TURBO_SOLO % _base(solo[0])
-    elif state.turbo_picks:
-        turbo = M.PR_SCOPE_TURBO_PICKS % ", ".join(_base(p) for p in state.turbo_picks)
-    else:
-        turbo = M.PR_SCOPE_TURBO_NONE
-    return M.N_PR_SCOPE_TURBO % dict(
-        fields, turbo=turbo, batch=int(state.batch_size), cap=int(state.writer_cap)
-    )
-
-
-def _solo_plans(root):
-    """The ` -- solo` entries of agent/plans/QUEUE.md (wl_planqueue.solo_plans); an unreadable queue has none, so the line falls back to the picks rather than claiming a solo it cannot see."""
-    import wl_planqueue
-
-    try:
-        text = (pathlib.Path(root) / wl_planqueue.QUEUE_REL).read_text(encoding="utf-8")
-    except OSError:
-        return set()
-    return wl_planqueue.solo_plans(text)
+    return M.N_PR_SCOPE % fields
 
 
 def ci_arming(root, session_id, focus_ref, state):
@@ -3182,130 +3139,6 @@ def ci_arming(root, session_id, focus_ref, state):
 def _first_box_text(root, rel):
     got = wl_planenforce.first_box(root, rel)
     return "%s  %s" % (got[0], got[1][:120]) if got else M.LOOP_NEXT_NO_BOX
-
-
-def turbo_push_mode(state):
-    """`state.turbo_push` ("batch-end" or "pr"), read defensively: a LoopState that predates the field, or any other value, reads as "pr", today's behaviour (agent/plans/PLAN-turbo-local-first.md)."""
-    mode = getattr(state, "turbo_push", "pr")
-    return mode if mode in ("batch-end", "pr") else "pr"
-
-
-def local_batch(state):
-    """True when `state` is a turbo batch filling on a no-PR branch (agent/plans/PLAN-turbo-local-first.md D1): turbo on, `turbo_push: batch-end`, and wl_prscope's `local_batch` set."""
-    return bool(
-        state is not None
-        and getattr(state, "turbo", False)
-        and getattr(state, "local_batch", False)
-        and turbo_push_mode(state) == "batch-end"
-    )
-
-
-def _open_in_set(state, root):
-    """The batch plans that still carry an open box, each with its count, "none" when every plan is finished, or "no plans in the set" for an empty set. "Batch 3/3 finished" alone read as complete while two turbo-named plans were still open (2026-10-08)."""
-    if not state.plans:
-        return "no plans in the set"
-    plan_gate = wl_prscope._hooks_pkg()[0]
-    parts = []
-    for rel in state.plans:
-        open_n, _done, why = plan_gate.open_boxes(root, rel)
-        if why:
-            parts.append("%s (unreadable)" % rel.rsplit("/", 1)[-1])
-        elif open_n:
-            parts.append("%s (%d open)" % (rel.rsplit("/", 1)[-1], open_n))
-    return ", ".join(parts) or "none"
-
-
-def _set_finished(state, root):
-    """True when the set is non-empty and none of its plans has an open box.
-
-    Read through plan_gate.open_boxes, which follows a `Moved-To:` stub, so a plan moved to `_done/` is judged by its real text; wl_planenforce.first_box reads the stub and saw nothing open. An empty set is NOT finished, and neither is a plan whose boxes cannot be read: either would otherwise order a push for a batch of nothing, or one that block_turbo_early_push then refuses.
-    """
-    if not state.plans:
-        return False
-    plan_gate = wl_prscope._hooks_pkg()[0]
-    for rel in state.plans:
-        open_n, _done, why = plan_gate.open_boxes(root, rel)
-        if why or open_n:
-            return False
-    return True
-
-
-def local_batch_open(state, root):
-    """True while a local batch is still filling (D2/D4/D6): `local_batch` and not `wl_prscope.batch_ready`. Unpushed commits and no PR are the intended state then."""
-    return local_batch(state) and not wl_prscope.batch_ready(state, _set_finished(state, root))
-
-
-def live_batch_ready(state, finished_all):
-    """`wl_prscope.batch_ready` for a LIVE PR. Under `turbo_push: batch-end` the PR opened with its batch complete and turbo-next is silent on it (D3), so its batch is closed: every plan of the set finished is the whole condition. Without this a queue that gained an eligible plan after the PR opened (`turbo_more`) would hold the merge forever with nothing left to name."""
-    if (
-        state is not None
-        and getattr(state, "turbo", False)
-        and turbo_push_mode(state) == "batch-end"
-    ):
-        return bool(finished_all)
-    return wl_prscope.batch_ready(state, finished_all)
-
-
-# The three classes `_batch_box_facts` gives an open box of the batch (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.2).
-BOX_NON_WRITER = "non-writer"
-BOX_LOCAL = "local"
-BOX_OWED_PREFIX = "owed:"
-
-
-def _batch_box_facts(state, root):
-    """[(plan basename, box id, sig, class)] for every open box of `state.plans`, in plan order.
-
-    The class is `non-writer` when the box's tag names work no writer does or waits for the merge (`wl_boxready.non_writer`, `post_merge`); `owed:<kind>` when the newest investigation row for (plan, sig) is `partial` with an `owed` other than `code` (`wl_planrec.INV_OWED`); `owed:<kind>` also when `worklist.py --box-audit` reads the box `live-owed` (`wl_judge.live_owed_boxes`, lesson a6d0391f), the kind being its unproved halves; `local` otherwise, which includes an untagged box with no row and no landed work, and an old partial row written before `owed` existed whose box the audit does not read live-owed (D1). A plan is read through `plan_gate`'s Moved-To follow, the same read `_set_finished` makes; a plan that cannot be read adds no row."""
-    import wl_planrec as R
-
-    plan_gate = wl_prscope._hooks_pkg()[0]
-    rows = R.read_investigations(root)
-    live_owed = None
-    out = []
-    for rel in state.plans or ():
-        text, read = plan_gate._plan_text(str(root), rel, "")
-        if not text:
-            continue
-        for _i, raw, body, sig in R.open_boxes(text):
-            if wl_boxready.non_writer(raw) or wl_boxready.post_merge(raw):
-                cls = BOX_NON_WRITER
-            else:
-                row = R.investigation_for(root, rel, sig, rows) or R.investigation_for(
-                    root, read, sig, rows
-                )
-                owed = str((row or {}).get("owed") or "")
-                if row and row.get("verdict") == "partial" and owed and owed != "code":
-                    cls = BOX_OWED_PREFIX + owed
-                else:
-                    cls = BOX_LOCAL
-            if cls == BOX_LOCAL:
-                # The row alone misses a box box-audit reads live-owed (an old partial row with no `owed`, an Accept naming a CI run id): lesson a6d0391f, wl_judge.live_owed_boxes.
-                if live_owed is None:
-                    live_owed = wl_judge.live_owed_boxes(root)
-                kind = live_owed.get((_base(rel), sig)) or live_owed.get((_base(read), sig))
-                if kind:
-                    cls = BOX_OWED_PREFIX + kind
-            box_id = (body.split() or [sig])[0]
-            out.append((_base(rel), box_id, sig, cls))
-    return out
-
-
-def _judge_local_batch(state, root):
-    """The judge's `local_batch` argument (agent/plans/PLAN-turbo-local-first.md D6): `{"finished", "batch", "open", "local", "rows"}` while a local batch fills, else None. `rows` is `_batch_box_facts`, `open` its length and `local` how many of them are local work (R20261110.2), so the judge is told which boxes a local action could advance instead of being told that some could. A failed read is None, today's prompt; a failed box read keeps the batch facts and drops the box ones."""
-    try:
-        if not local_batch_open(state, root):
-            return None
-        got = {"finished": int(state.finished), "batch": int(state.batch_size)}
-    except Exception:
-        return None
-    try:
-        rows = _batch_box_facts(state, root)
-    except Exception:
-        return got
-    got["rows"] = rows
-    got["open"] = len(rows)
-    got["local"] = sum(1 for r in rows if r[3] == BOX_LOCAL)
-    return got
 
 
 def _judge_receipt_run(root):
@@ -3406,10 +3239,8 @@ def _remaining_recs(fold, session_id, open_items, deferred_recs, in_flight_recs)
     return out + [r for r in (*deferred_recs, *in_flight_recs) if id(r) not in seen]
 
 
-def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
-    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked / unreadable. With a landing record the landing tree never reaches here (its stop names the D1 state machine's step, `landing_next_text`), and `M.loop_next_variant` picks the development tree's arms: its draft opens with --draft, and its finish waits on an open landing PR as an advisory (agent/plans/PLAN-two-track-merge-dev.md LT15). Once the landing PR is merged and its release green, the development tree's arm is promote (agent/plans/PLAN-simple-two-tree-loop.md D3), blocking only while no [writer] box of the branch's plans is open. Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count.
-
-    A no-PR local batch (agent/plans/PLAN-turbo-local-first.md D2, `local_batch`) never gets "Open it": while the batch fills it is the N_TURBO_LOCAL advisory, and once it is ready the V_LOOP_NEXT_BATCH_OPEN block names the verify-push-open sequence, `me` filling its `--batch-body` line."""
+def loop_next_text(state, root, state_doc, pr_finish_fired):
+    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked / unreadable. With a landing record the landing tree never reaches here (its stop names the D1 state machine's step, `landing_next_text`), and `M.loop_next_variant` picks the development tree's arms: its draft opens with --draft, and its finish waits on an open landing PR as an advisory (agent/plans/PLAN-two-track-merge-dev.md LT15). Once the landing PR is merged and its release green, the development tree's arm is promote (agent/plans/PLAN-simple-two-tree-loop.md D3), blocking only while no [writer] box of the branch's plans is open. Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count."""
     kind, branch = state.kind, state.branch
     if kind != wl_prscope.UNREADABLE:
         state_doc.pop("loopnext", None)
@@ -3437,9 +3268,8 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
         "plans": ", ".join(_base(p) for p in state.plans),
         "delete": "",
         "ahead": 0,
-        "turbo": M.LOOP_NEXT_TURBO % ", ".join(_base(p) for p in state.turbo_picks)
-        if state.turbo and state.turbo_picks
-        else "",
+        # The two merged-arm templates still carry a `%(turbo)s` slot until worklist_messages drops it (agent/plans/PLAN-simple-two-tree-loop.md B5); it renders empty.
+        "turbo": "",
     }
     if kind == wl_prscope.MERGED:
         if not nxt:
@@ -3452,16 +3282,6 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
     if kind == wl_prscope.NO_PR:
         ahead = C._git(root, "rev-list", "--count", "origin/main..HEAD")
         fields["ahead"] = int(ahead) if str(ahead or "").strip().isdigit() else 0
-        if local_batch(state):
-            fields["finished"] = int(state.finished)
-            fields["batch"] = int(state.batch_size)
-            fields["me"] = me
-            if fields["ahead"] > 0:
-                if not wl_prscope.batch_ready(state, _set_finished(state, root)):
-                    # Only the advisory renders the open boxes, so only this branch pays the plan reads.
-                    fields["open"] = _open_in_set(state, root)
-                    return M.N_TURBO_LOCAL % fields, False
-                return M.V_LOOP_NEXT_BATCH_OPEN % fields, True
         if fields["ahead"] > 0:
             return M.loop_next_variant(role, False, landing_open, M.ARM_OPEN) % fields, True
         if not nxt:
@@ -3471,9 +3291,6 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
         if pr_finish_fired or not state.plans:
             return "", False
         if any(wl_planenforce.first_box(root, rel) for rel in state.plans):
-            return "", False
-        # Under turbo the merge waits for the batch (D8): `batch_size` plans finished, or nothing eligible left to take. Under batch-end the batch closed when the PR opened (live_batch_ready).
-        if not live_batch_ready(state, True):
             return "", False
         text = M.loop_next_variant(role, False, landing_open, M.ARM_FINISH)
         # The development tree's draft while the landing PR is open: the merge is the landing tree's loop (LT5), so the wait rides the advisory queue and never blocks.
@@ -3568,45 +3385,16 @@ def landing_next_text(state, own, worklist, session_id, state_doc, cistate, cide
     return step.text, step.blocks
 
 
-# The keys whose block outranks the turbo arm (agent/plans/PLAN-stop-hook-turbo.md D5: "bug, red-CI and hook-integrity blocks outrank the turbo arm, so fixes come first"). Any `always` violation outranks it too: that tier is the hook's integrity and evidence verdicts.
-# `pr-finish` and `loop-next` are the merge offer: once the batch is ready a new plan would reopen the set the merge waits on.
-TURBO_OUTRANKED_BY = frozenset({"ci-red", "pr-review", "commit-review", "pr-finish", "loop-next"})
-# The turbo arm blocks under the PR-loop profile; wl_standdown.PR_LOOP's keep-list predates it, so the keep is added here, beside the arm. The cap wait and focus mode still park it: with no free slot, or in a wind-down, nothing new starts.
-TURBO_KEEPS = frozenset({"turbo-next", "idle-capacity"})
-# A lost commit is not hygiene, so no stand-down profile parks this (agent/plans/PLAN-worktree-lease.md Design 7). wl_standdown is sealed, and its keep-lists predate leases, so the keep sits here as TURBO_KEEPS does.
+# The keys whose block outranks the idle-capacity arm: bug, red-CI and hook-integrity blocks come first, so fixes do. Any `always` violation outranks it too: that tier is the hook's integrity and evidence verdicts. `pr-finish` and `loop-next` are the merge offer: a box started then would reopen the set the merge waits on.
+IDLE_OUTRANKED_BY = frozenset({"ci-red", "pr-review", "commit-review", "pr-finish", "loop-next"})
+# The idle-capacity arm blocks under the PR-loop profile; wl_standdown.PR_LOOP's keep-list predates it, so the keep is added here, beside the arm. The cap wait and focus mode still park it: with no free slot, or in a wind-down, nothing new starts.
+IDLE_KEEPS = frozenset({"idle-capacity"})
+# A lost commit is not hygiene, so no stand-down profile parks this (agent/plans/PLAN-worktree-lease.md Design 7). wl_standdown is sealed, and its keep-lists predate leases, so the keep sits here as IDLE_KEEPS does.
 WORKTREE_KEEPS = frozenset({"worktree-unlanded"})
 # A merged landing branch the development tree still builds on (wl_stack, agent/plans/PLAN-two-track-merge-dev.md LT19) is a FLOOR key, so no stand-down profile parks it either: waiting on writers or winding a PR down does not promote. wl_standdown is sealed, so the keep sits here as WORKTREE_KEEPS does.
 LANDING_KEEPS = frozenset({"landing-stack"})
 # The same design keeps the lease report out of a phase's advisory batching.
 WORKTREE_REPORT = "worktree-orphan"
-# The keys a turbo batch that is still building locally stands down (operator ruling 2026-10-13: turbo is for local implementation, so a red on the open PR does not hold a stop until the prompted plans are complete). Each is reported on every stop instead, and blocks again the moment `turbo_build_parks` is empty.
-TURBO_BUILD_PARKS = frozenset({"ci-red"})
-
-
-def _set_unreadable(state, root):
-    """True when the plan set proves nothing about open work: it is empty, or a plan's boxes cannot be read. `_set_finished` is False for both, which is right for a merge offer and wrong for a stand-down: an unknown set must not park a check."""
-    if not state.plans:
-        return True
-    plan_gate = wl_prscope._hooks_pkg()[0]
-    return any(plan_gate.open_boxes(root, rel)[2] for rel in state.plans)
-
-
-def turbo_build_parks(state, root, on_loop, focus):
-    """TURBO_BUILD_PARKS while a turbo batch is building locally, else the empty set (operator ruling 2026-10-13).
-
-    Building means: the loop governs, turbo is on, `turbo_push` is `batch-end`, and the batch is not complete. Complete is `live_batch_ready` over `_set_finished`, the predicate the pr-finish merge offer uses, so the red blocks again on the stop that would offer the merge. `turbo_push: pr` works its batch on the open PR, whose CI is then the batch's own verification, so nothing is parked there.
-
-    FOCUS GOVERNS: `--phase babysit|merge` declares the PR is being landed, so an active focus parks nothing and wl_standdown.FOCUS keeps `ci-red` as before.
-
-    AN UNKNOWN SET PARKS NOTHING (`_set_unreadable`): the stand-down needs a readable set with an open box, never the mere absence of a finished one.
-    """
-    if focus or not on_loop or state is None or not getattr(state, "turbo", False):
-        return frozenset()
-    if turbo_push_mode(state) != "batch-end":
-        return frozenset()
-    if live_batch_ready(state, _set_finished(state, root)) or _set_unreadable(state, root):
-        return frozenset()
-    return TURBO_BUILD_PARKS
 
 
 def park_tree_keys(violations, parks, role, advise):
@@ -3622,42 +3410,11 @@ def park_tree_keys(violations, parks, role, advise):
     return kept
 
 
-def turbo_next_text(state, root, writers):
-    """The turbo arm's text for this stop, "" when nothing is named (agent/plans/PLAN-stop-hook-turbo.md D8): turbo on, picks for free writer slots, and either a live PR under `turbo_push: pr` or a no-PR local batch (agent/plans/PLAN-turbo-local-first.md D1/D3). A live PR under `batch-end` is silent: its batch closed when the PR opened, so no plan joins it during its CI cycle. Each pick is numbered by the slot it takes after the `writers` already live."""
-    if not state.turbo or not state.turbo_picks:
-        return ""
-    local = state.kind == wl_prscope.NO_PR and local_batch(state)
-    if not local and (state.kind != wl_prscope.LIVE or turbo_push_mode(state) == "batch-end"):
-        return ""
-    cap = int(state.writer_cap)
-    lines = [
-        M.TURBO_NEXT_PICK % (rel, int(writers) + i + 1, cap, _first_box_text(root, rel))
-        for i, rel in enumerate(state.turbo_picks)
-    ]
-    if local:
-        return M.V_TURBO_NEXT_LOCAL % {
-            "branch": state.branch,
-            "free": max(0, cap - int(writers)),
-            "cap": cap,
-            "picks": "\n".join(lines),
-            "finished": state.finished,
-            "batch": state.batch_size,
-        }
-    return M.V_TURBO_NEXT % {
-        "pr": state.pr,
-        "free": max(0, cap - int(writers)),
-        "cap": cap,
-        "picks": "\n".join(lines),
-        "finished": state.finished,
-        "batch": state.batch_size,
-    }
-
-
-def focus_ended_line(sd, why, refused):
-    """The one-line parked summary (M.N_FOCUS_ENDED): top 6 parked keys by stops parked, then "+N more" (wl_standdown.parked_line), capped at 300 characters."""
+def focus_ended_line(sd, why):
+    """The one-line parked summary (M.N_FOCUS_ENDED): top 6 parked keys by stops parked, then "+N more" (wl_standdown.parked_line), capped at 300 characters. The refused-spawn count is 0: its only writer, block_focus_spawn, is deleted (agent/plans/PLAN-simple-two-tree-loop.md B1), and the template's clause goes with B10's phase removal."""
     names = wl_standdown.parked_line(sd.get("parked"), 6)
     what = "%s PR #%s since %s" % (sd.get("mode") or "?", sd.get("pr") or "?", sd.get("focus_at"))
-    return (M.N_FOCUS_ENDED % (why, what, names, int(sd.get("adv_held") or 0), refused))[:300]
+    return (M.N_FOCUS_ENDED % (why, what, names, int(sd.get("adv_held") or 0), 0))[:300]
 
 
 def focus_advisory_filter(focus, state_doc):
@@ -3752,7 +3509,7 @@ def focus_resolve(root, worklist, session_id, me8, fold, state_doc):
                 if newest.get("mode") == wl_standdown.BUILD
                 else "replaced by a new focus"
             )
-        ended = focus_ended_line(sd, why, _focus_refused_count(worklist, me8, sd.get("focus_at")))
+        ended = focus_ended_line(sd, why)
         outq_add(worklist, session_id, state_doc, "focus-ended", ended, 0, sticky=True)
         state_doc.pop("standdown", None)
         S.save_state(worklist, session_id, state_doc)
@@ -3807,7 +3564,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     root = C.project_root(C.project_start(event))
     # The session's own checkout: `root` of the landing tree is the main checkout (LT14), so the branch, role and PR reads below start here.
     own = own_tree(event)
-    # THE SWITCHBOARD (agent/plans/PLAN-stop-hook-turbo.md D3), read ONCE per stop from the event's own root, so a fixture project reads its own QUEUE.md and never the operator's: judge, cadence, agent hint, writer cap and turbo all come from here.
+    # THE SWITCHBOARD (agent/plans/QUEUE.md `## Settings`), read ONCE per stop from the event's own root, so a fixture project reads its own QUEUE.md and never the operator's: judge, cadence, agent hint and writer cap all come from here.
     _cfg, _cfg_problems = wl_planqueue.settings_for(root)
     _writer_cap = wl_roster.writer_cap(root)
     # THE EFFORT LEVEL (agent/plans/PLAN-stop-hook-effort.md), active for every outq_add of this stop; each violation is weighed against it once, below, before the stand-down profiles.
@@ -4028,19 +3785,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 _roster = wl_roster.roster(
                     event, fold, session_id, state_doc=state_doc, cwd=event.get("cwd")
                 )
-    # THE TURBO PICKS (agent/plans/PLAN-stop-hook-turbo.md D5), filled once the roster knows the live writers and the plans they serve. A roster that could not be computed, or is blind, names no plan: a pick that ignores a busy writer could start a plan the spawn guard then refuses. A pick read that raises says so as a hook bug in the turbo arm below.
-    _turbo_err = ""
-    if _loop is not None and _loop.turbo and _roster is not None and not _roster.get("blind"):
-        try:
-            _loop = wl_prscope.with_turbo(
-                _loop,
-                root,
-                sorted((_roster.get("plan_holders") or {}).keys()),
-                len(_roster.get("writers") or ()),
-            )
-        except Exception as exc:
-            _turbo_err = "%s: %s" % (type(exc).__name__, str(exc)[:160])
-    # THE IN-FLIGHT BLOCK of agent/plans/QUEUE.md (operator order 2026-10-06), refreshed from this stop's own loop state, fold and roster once the turbo picks are known. Runtime state, written only when it changed and never compared by a gate; a failure must never wedge a stop.
+    # THE IN-FLIGHT BLOCK of agent/plans/QUEUE.md (operator order 2026-10-06), refreshed from this stop's own loop state, fold and roster. Runtime state, written only when it changed and never compared by a gate; a failure must never wedge a stop.
     with contextlib.suppress(Exception):
         if _loop is not None:
             wl_planqueue.refresh_inflight(
@@ -5330,11 +5075,6 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
 
     ci_report = ""
-    # A TURBO BATCH BUILDING LOCALLY STANDS THE RED DOWN (operator ruling 2026-10-13), decided before the CI read so a stood-down stop does not spend the red's block budget (wl_ci.ci_trouble `hold`). A predicate that raises parks nothing: the red blocks as it did before the ruling.
-    _turbo_parks: frozenset = frozenset()
-    with contextlib.suppress(Exception):
-        _turbo_parks = turbo_build_parks(_loop, root, _on_loop, _focus)
-    _turbo_stood: set[str] = set()
     # THE TREE'S OWN PARKS (agent/plans/PLAN-two-track-merge-dev.md LT5): the development tree reports its draft PR's red and the landing tree its queue arms; the other parked keys move to the advisory queue in `park_tree_keys`, after the effort level and ahead of the roster suppression and the stand-down.
     _tree_parks: frozenset = frozenset()
     with contextlib.suppress(Exception):
@@ -5348,7 +5088,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             (last_msg or "") + "\n" + "\n".join(deferred),
             ref=_ci_ref,
             owned=_ci_owned,
-            hold="ci-red" in _turbo_parks or "ci-red" in _tree_parks,
+            hold="ci-red" in _tree_parks,
         )
     except Exception as exc:
         cistate, cidetail = "unreadable", "%s: %s" % (type(exc).__name__, str(exc)[:120])
@@ -5389,16 +5129,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         _histkind, _hist = wl_histfirst.apply_verdict(root, _rows, None)
         if _histkind == "fire":
             _txt = "%s\n\n%s" % (_txt, _hist)
-        if cistate == "trouble" and "ci-red" in _turbo_parks:
-            # Reported, not blocked on: one line on every stop while the red stands (ci_report rides each block's extras and the allow queue at refresh_min=0), and the key joins this stop's stood-down set for the N_PR_SCOPE line.
-            _turbo_stood.add("ci-red")
-            ci_report = M.CI_NOTE_TURBO_HELD % (
-                _pr,
-                len(cidetail["hard"]),
-                wl_ci.ci_rows_line(cidetail["hard"]),
-                _open_in_set(_loop, root),
-            )
-        elif cistate == "trouble" and "ci-red" in _tree_parks:
+        if cistate == "trouble" and "ci-red" in _tree_parks:
             # The development tree's draft PR: one report line on every stop while the red stands, never a block (wl_prscope.DRAFT_CI_NOTE).
             ci_report = wl_prscope.DRAFT_CI_NOTE % (
                 _pr,
@@ -5471,33 +5202,6 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
     except Exception:
         pass
-    #   backup-push     a no-PR local batch whose oldest unpushed commit is older than `backup_push_h` hours (agent/plans/PLAN-turbo-local-first.md D4).
-    # While a local batch fills, receipt-behind is silent: no push is due until the batch completes (D4).
-    try:
-        _lb_open = local_batch_open(_loop, root)
-    except Exception:
-        _lb_open = False
-    try:
-        _bp = (
-            wl_loopspeed.backup_push_due(
-                root, int(getattr(_loop, "backup_push_h", 0) or 0), branch=_loop.branch
-            )
-            if _loop is not None and local_batch(_loop)
-            else None
-        )
-        if _bp:
-            outq_add(
-                worklist,
-                session_id,
-                state_doc,
-                "backup-push",
-                M.N_BACKUP_PUSH % _bp,
-                1,
-                refresh_min=60,
-                on_change=False,
-            )
-    except Exception:
-        pass
     #   backup-lag      the branch is more than 50 commits or 6 h ahead of its live backup ref (`backup_ref status --cached`, advise level only).
     try:
         _bl = backup_lag(root)
@@ -5547,7 +5251,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception:
         pass
     try:
-        _rb = None if _lb_open else wl_loopspeed.receipt_behind(root)
+        _rb = wl_loopspeed.receipt_behind(root)
         if _rb:
             outq_add(
                 worklist,
@@ -5753,11 +5457,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         # The branch is read LOCALLY. `agent_branch` is not bound until the unread-reports surface several hundred lines below, and referencing it here raised UnboundLocalError -- caught by the fail-closed arm, which turned the whole check into a HOOK BUG banner on the proving case. That is the arm working; it is not a reason to leave it reachable.
         _prf_branch = C.git_branch(own) or ""
         _prf_log = wl_roundlog.roundlog_path(projects_dir, _prf_branch) if projects_dir else None
-        # Under turbo the finish line is offered only once the batch is ready (agent/plans/PLAN-stop-hook-turbo.md D8): every plan of the set finished and `batch_size` of them done, or no queued plan left to take. Turbo off: always.
-        _prf_batch = (
-            _loop is None or not _loop.turbo or live_batch_ready(_loop, _set_finished(_loop, root))
-        )
-        if _prf_batch and _prf_num and _prf_branch and _prf_log is not None and _prf_log.is_file():
+        if _prf_num and _prf_branch and _prf_log is not None and _prf_log.is_file():
             _prf_green = cistate == "ok"
             _prf_ready = not (_prf_info or {}).get("draft")
             _prf_rev = _rv is not None and not wl_review.push_refusals(_rv)
@@ -5855,7 +5555,6 @@ def run_stop(event, event_ok, worklist, hook_file):
                     root,
                     state_doc,
                     any(k == "pr-finish" for k, _a, _t in violations),
-                    me=me8,
                 )
             if _ln_text and _ln_block and not live_bg and cistate != "pending":
                 vadd("loop-next", False, _ln_text)
@@ -5871,35 +5570,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 "THIS IS A HOOK BUG: the loop-next check failed: %s: %s"
                 % (type(exc).__name__, str(exc)[:120]),
             )
-    # ---- TURBO NEXT (agent/plans/PLAN-stop-hook-turbo.md D5/D8): turbo on, a live PR, a free writer slot and an eligible queued plan. Names at most the free-slot count of plans, records them for refresh_pr_body (a plan joins the PR when the hook names it), and blocks; a bug, a red CI or a hook-integrity block outranks it, and then the text rides the advisory queue instead.
-    _tn_text = ""
-    if _on_loop and _loop is not None and _loop.turbo:
-        try:
-            if _turbo_err:
-                raise RuntimeError(_turbo_err)
-            _tn_text = turbo_next_text(_loop, root, len((_roster or {}).get("writers") or ()))
-            _tn_outranked = any(
-                k in TURBO_OUTRANKED_BY or a or str(t).startswith("THIS IS A HOOK BUG")
-                for k, a, t in violations
-            )
-            if _tn_text:
-                wl_prscope.record_named(root, _loop)
-            if _tn_text and not _tn_outranked:
-                vadd("turbo-next", False, _tn_text)
-                outq_drop(state_doc, "turbo-next")
-            elif _tn_text:
-                outq_add(worklist, session_id, state_doc, "turbo-next", _tn_text, 0, refresh_min=0)
-            else:
-                outq_drop(state_doc, "turbo-next")
-        except Exception as exc:
-            # Under the loop's own fail-closed key: the turbo arm is the live PR's half of the loop, and `loop-next` is the key the invariant tier pins for "a loop check raised" (.claude/hooks/stop/test-always-tier.py).
-            vadd(
-                "loop-next",
-                True,
-                "THIS IS A HOOK BUG: the turbo-next check failed: %s: %s"
-                % (type(exc).__name__, str(exc)[:120]),
-            )
-    # ---- IDLE CAPACITY (agent/plans/PLAN-idle-writer-capacity.md D5, operator rulings R1-R3 of 2026-11-09): free writer slots and ready `[writer]` boxes meet. Names the boxes and the `/writers-now` line, never spawns. Stands down in a babysit or merge phase; the plans TURBO NEXT named this stop are left out and take their slots; outranked like TURBO NEXT, it rides the advisory queue. With turbo off it reads only the PR's plan set, one plan per PR. The subject latch keeps an unchanged set from holding every stop: it surfaces again after 30 minutes or when the set changes.
+    # ---- IDLE CAPACITY (agent/plans/PLAN-idle-writer-capacity.md D5, operator rulings R1-R3 of 2026-11-09): free writer slots and ready `[writer]` boxes meet. Names the boxes and the `/writers-now` line, never spawns. Stands down in a babysit or merge phase; outranked (IDLE_OUTRANKED_BY), it rides the advisory queue. It reads only the PR's plan set, one plan per PR. The subject latch keeps an unchanged set from holding every stop: it surfaces again after 30 minutes or when the set changes.
     if _on_loop and _loop is not None and _roster is not None and not _roster.get("blind"):
         try:
             _ic_text = wl_boxready.idle_capacity_text(
@@ -5907,14 +5578,13 @@ def run_stop(event, event_ok, worklist, hook_file):
                 free=int(_writer_cap) - len(_roster.get("writers") or ()),
                 cap=int(_writer_cap),
                 phase=bool(_focus),
-                turbo_picks=tuple(_loop.turbo_picks or ()) if _tn_text else (),
-                plans=None if _loop.turbo else tuple(_loop.plans or ()),
+                plans=tuple(_loop.plans or ()),
                 live_plans=sorted((_roster.get("plan_holders") or {}).keys()),
                 items=fold.items,
                 me8=me8,
             )
             _ic_outranked = any(
-                k in TURBO_OUTRANKED_BY or a or str(t).startswith("THIS IS A HOOK BUG")
+                k in IDLE_OUTRANKED_BY or a or str(t).startswith("THIS IS A HOOK BUG")
                 for k, a, t in violations
             )
             _ic_subject = re.findall(r"PLAN-[\w.-]+\.md#[0-9a-f]{8}", _ic_text)
@@ -6556,14 +6226,13 @@ def run_stop(event, event_ok, worklist, hook_file):
     if _profile is not None:
 
         def _keeps(v):
-            if _profile is wl_standdown.PR_LOOP and v[0] in TURBO_KEEPS:
+            if _profile is wl_standdown.PR_LOOP and v[0] in IDLE_KEEPS:
                 return True
             if v[0] in WORKTREE_KEEPS or v[0] in LANDING_KEEPS:
                 return True
             return wl_standdown.keeps(_profile, v[0], v[1], _compaction_due)
 
-        # `_turbo_stood` holds the keys a building turbo batch stood down before they became violations (TURBO_BUILD_PARKS); they are counted with the profile's own drops.
-        _dropped = sorted({v[0] for v in violations if not _keeps(v)} | _turbo_stood)
+        _dropped = sorted({v[0] for v in violations if not _keeps(v)})
         violations = [v for v in violations if _keeps(v)]
         if _compaction_due:
             _cnote = (
@@ -7110,7 +6779,6 @@ def run_stop(event, event_ok, worklist, hook_file):
                 fixset_instance=(
                     (str(root), list(reg_ids)) if reg_fixset_provenance == "diff-tree" else None
                 ),
-                local_batch=_judge_local_batch(_loop, root),
                 with_riders=_riders,
                 closed=wl_judge.closed_items(fold, lambda o: C.owned_by_me(o, session_id)),
                 effort_level=_cfg.effort,

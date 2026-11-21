@@ -3,8 +3,6 @@
 THE LINK. A PR names its plan with one `Plan: agent/plans/PLAN-<slug>.md` line in its body. `.claude/hooks/post-bash/refresh_pr_body.py` writes that line from the head of the plan queue (`agent/plans/QUEUE.md`, read by `queue`: its hand-ordered `## Promoted` list first, then the `## Generated` one `wl_planqueue` renders) on the first push that finds the body without one, and never rewrites it after that: the link is set once and is then the PR's own, so a queue edit mid-PR cannot re-point a PR at another plan. A multi-plan PR, or a PR that
 merges with open boxes, carries an `Operational-Reason:` line instead, and that line alone admits it.
 
-TURBO (agent/plans/PLAN-stop-hook-turbo.md D5/D6). With `turbo: on` in agent/plans/QUEUE.md `## Settings` (read by `settings_at`, the one parser `wl_planqueue.settings`), the PR keeps taking plans: `next_turbo` names the queued plans to start on free writer slots, `record_turbo_named` keeps what the Stop hook named, and `refresh_pr_body` appends those to the existing `Plan:` line (`with_plan_line`'s append mode) without rewriting an entry. The merge gate then admits a body naming any number of plans when turbo is on at the merged rev and every named plan, and every unfinished prerequisite, is ticked. With turbo off every rule above holds byte for byte.
-
 THE ONE BOX PARSER. Boxes are counted by `wl_planfile.plan_boxes` (the Stop hook's parser, which `check_plan_boxes.py` and `.ci/config/plan-boxes.json` also use), cross-checked against `wl_planfile.raw_box_counts`, its dumber line count: the larger open count wins, so a parser that stops seeing a box cannot turn an open plan into a finished one. A plan with no
 boxes at all proves nothing and is refused rather than read as finished.
 
@@ -117,38 +115,11 @@ def has_operational_reason(body: str) -> bool:
     return bool(OPERATIONAL_REASON.search(own_text(body)))
 
 
-def with_plan_line(body: str, plan: str, append: tuple[str, ...] | list[str] = ()) -> str:
-    """`body` with `Plan: <plan>` as its first line, unchanged when it already names a plan or `plan` is "".
-
-    `append` is the turbo mode (agent/plans/PLAN-stop-hook-turbo.md D5): the plans the Stop hook named for this PR. A body that already names plans gains each missing one at the end of its first own `Plan:` line (a line inside a generated block is not the body's own); a body that names none is written `Plan: <plan>, <appended...>`. A plan the body names already is never written twice and an existing entry is never rewritten. An empty `append` is the write-once link, byte for byte."""
-    have = body_plans(body)
-    if not append:
-        if not plan or have:
-            return body
-        return "Plan: %s\n\n%s" % (plan, body) if body.strip() else "Plan: %s\n" % plan
-    if not have:
-        wanted = []
-        for rel in (plan, *append):
-            if rel and rel not in wanted:
-                wanted.append(rel)
-        if not wanted:
-            return body
-        line = "Plan: %s" % ", ".join(wanted)
-        return "%s\n\n%s" % (line, body) if body.strip() else "%s\n" % line
-    missing = []
-    for rel in append:
-        if rel and rel not in have and rel not in missing:
-            missing.append(rel)
-    if not missing:
+def with_plan_line(body: str, plan: str) -> str:
+    """`body` with `Plan: <plan>` as its first line, unchanged when it already names a plan or `plan` is "": the write-once link. A PR carries one plan, so nothing is ever appended to an existing `Plan:` line."""
+    if not plan or body_plans(body):
         return body
-    generated = [m.span() for m in GENERATED_BLOCK.finditer(body)]
-    for m in PLAN_LINE.finditer(body):
-        if any(lo <= m.start() < hi for lo, hi in generated):
-            continue
-        cut = m.end(1)
-        sep = ", " if m.group(1).strip() else ""
-        return body[:cut] + sep + ", ".join(missing) + body[cut:]
-    return body
+    return "Plan: %s\n\n%s" % (plan, body) if body.strip() else "Plan: %s\n" % plan
 
 
 def _read(root: str, rel: str, rev: str) -> str | None:
@@ -169,7 +140,7 @@ def _planqueue():
 
 
 def settings_at(root: str, rev: str = ""):
-    """(Settings, problems) of agent/plans/QUEUE.md's `## Settings` block at `rev` ("" = the working tree), parsed by `wl_planqueue.settings` (agent/plans/PLAN-stop-hook-turbo.md D2), so the hook, the guards and CI read one switchboard through one parser. A file that does not exist is all defaults; one that exists but cannot be read is all defaults and a problem; a rev that cannot be read is all defaults and a problem; a parser that will not import is all defaults and a problem. Every default is the fail-safe one: effort high, turbo off, batch 1."""
+    """(Settings, problems) of agent/plans/QUEUE.md's `## Settings` block at `rev` ("" = the working tree), parsed by `wl_planqueue.settings`, so the hook, the guards and CI read one switchboard through one parser. A file that does not exist is all defaults; one that exists but cannot be read is all defaults and a problem; a rev that cannot be read is all defaults and a problem; a parser that will not import is all defaults and a problem. Every default is the fail-safe one: effort high."""
     try:
         pq = _planqueue()
     except ImportError as exc:
@@ -191,29 +162,14 @@ def _default_settings():
 
     return types.SimpleNamespace(
         effort="high",
-        turbo=False,
-        turbo_push="batch-end",
-        batch_size=1,
-        plan_concurrency=1,
         writer_cap=4,
         commit_remind_min=15,
-        backup_push_h=4,
         cadence=True,
         agent_hint=True,
         agent_pushback=True,
         judge="full",
         notes={},
     )
-
-
-def plan_concurrency(settings) -> int:
-    """How many unfinished plans may be in flight at once under turbo: QUEUE.md `plan_concurrency:` (operator 2026-10-04: "batch_size: 3 is for plan concurrency? Maybe we need a new field"), 1 with turbo off. `batch_size` stays the merge minimum; this is the parallelism ceiling `next_turbo` fills up to."""
-    return max(1, int(getattr(settings, "plan_concurrency", 1))) if settings.turbo else 1
-
-
-def batch_size(settings) -> int:
-    """The effective batch size: `batch_size` under turbo, 1 otherwise (agent/plans/PLAN-stop-hook-turbo.md D2). The one place it is computed."""
-    return max(1, int(settings.batch_size)) if settings.turbo else 1
 
 
 def _plan_text(root: str, rel: str, rev: str) -> tuple[str | None, str]:
@@ -340,7 +296,7 @@ def _base(rel: str) -> str:
     return str(rel).rsplit("/", 1)[-1]
 
 
-# WRITER-STARTABLE (#faedaaf9). A box only the lead or the operator can do (a production query, a deploy, an operator's own walk, a commit in a sibling repo outside the console PR) names that in its first words, `T4 Lead: ...` / `Operator: ...`, or anywhere as `lead-only` / `operator-only`; a plan whose remaining work is all of that kind says so once in its header, `Writers: none -- <reason>`. A turbo pick is a writer slot, so a plan with no open box a writer can do is no pick.
+# WRITER-STARTABLE (#faedaaf9). A box only the lead or the operator can do (a production query, a deploy, an operator's own walk, a commit in a sibling repo outside the console PR) names that in its first words, `T4 Lead: ...` / `Operator: ...`, or anywhere as `lead-only` / `operator-only`; a plan whose remaining work is all of that kind says so once in its header, `Writers: none -- <reason>`. `writer_startable` reads both, so a plan whose open boxes are all of that kind starts no writer.
 # THE BRACKET TAGS COUNT TOO (agent/plans/PLAN-idle-writer-capacity.md D1-D2): a box tagged `[live]`, `[operator window]`, `[hostinger rollout]`, `[fleet]` and the like, or waiting for the merge (`post-merge` in its tag, or a `Depends on:` clause naming a merge), is no writer's either. The tag grammar is `wl_boxready`'s, read here rather than copied. An untagged box stays startable, so an older plan with code boxes and no tags is still counted and picked.
 _LEAD_BOX = re.compile(
     r"^\s*[-*+]\s+\[[ ?>]\]\s+(?:\*\*)?(?:\S+\s+)?(?:lead|operator):|\b(?:lead|operator)-only\b",
@@ -365,195 +321,10 @@ def writer_startable(text: str) -> bool:
     return any(not _LEAD_BOX.search(ln) and br.startable(ln) for ln in opened)
 
 
-def next_turbo(
-    root: str,
-    live_plans,
-    open_slots: int,
-    rev: str = "",
-    in_set=(),
-    ceiling: bool = True,
-    writers: int = 0,
-) -> list[str]:
-    """The plans the turbo loop names to start now (agent/plans/PLAN-stop-hook-turbo.md D5), at most `open_slots` of them, [] when turbo is off at `rev`.
-
-    Walked in `queue` order (Promoted, then Generated). An entry is eligible when it exists, has an open box, is not held (`wl_planenforce.plan_held`, the rule P-A1 keeps off the clock), is not in `in_set` (the PR's plan set), is not served by a live writer already, is not picked already, and has an open box a writer can do (`writer_startable`). The pick is the entry's deepest unfinished prerequisite when it has one (the first member of its `pr_plan_set`, as `wl_prscope.next_queued` does), and an entry with a held prerequisite is skipped, since nothing of it can start. Each pick must pass `wl_planconc.spawn_verdict` against `live_plans` (the plans live writers serve, paths or basenames) plus the picks before it, so an exclusive plan is never paired with a live writer's plan and two picks never claim one file.
-
-    A ` -- solo` entry (D11) is eligible only for an empty PR with no pick before it, and then it is the only pick; a PR whose plan set holds a solo plan takes no further plan.
-
-    THE PICK ITSELF MUST BE STARTABLE (#1e3ac977: on 2026-10-23 the hook named the exclusive, dep-blocked PLAN-backup-program while two writers were live). The chain drops a prerequisite that is in `in_set`, already picked or served by a live writer, so the pick's own `pr_plan_set` closure is read again: any member other than the pick is a prerequisite still unfinished, and the pick waits for it. An exclusive pick is skipped while `writers` (the live writer count) is above zero, because `spawn_verdict` weighs only the plans live writers serve and a writer serving no plan left the exclusive plan free."""
-    slots = int(open_slots or 0)
-    if slots <= 0:
-        return []
-    settings, _problems = settings_at(root, rev)
-    if not settings.turbo:
-        return []
-    text = _read(root, QUEUE_REL, rev)
-    if text is None:
-        return []
-    try:
-        pq = _planqueue()
-        import wl_planconc
-        import wl_planenforce
-    except ImportError:
-        return []
-    solos = pq.solo_plans(text)
-    taken = {str(p) for p in in_set or ()}
-    if taken & solos:
-        return []
-    live = {_base(p) for p in live_plans or ()}
-    # THE PARALLELISM CEILING (`plan_concurrency`): the PR's own unfinished plans and the plans live writers serve already count against it, so a free writer slot is not by itself a reason to open another plan.
-    if ceiling:
-        # Only an in-set plan with an open box a writer can start before the merge holds a place (agent/plans/PLAN-idle-writer-capacity.md D2): on 2026-11-09 five in-set plans with live-only boxes took all five places for hours.
-        inflight = {
-            _base(p)
-            for p in taken
-            if open_boxes(root, p, rev)[0] > 0 and writer_startable(_read(root, p, rev) or "")
-        } | live
-        slots = min(slots, plan_concurrency(settings) - len(inflight))
-        if slots <= 0:
-            return []
-    picks: list[str] = []
-
-    def held(rel: str) -> bool:
-        return wl_planenforce.plan_held(_read(root, rel, rev) or "")
-
-    def compatible(rel: str) -> bool:
-        busy = {b: ["live"] for b in live | {_base(p) for p in picks}}
-        try:
-            verdict = wl_planconc.spawn_verdict(
-                {_base(rel)}, busy, lambda b: wl_planconc.plan_x(root, b)
-            )
-        except Exception:
-            return False
-        return verdict.allow
-
-    for rel in pq.ordered(text):
-        if len(picks) >= slots:
-            break
-        if rel in taken or rel in picks or _read(root, rel, rev) is None:
-            continue
-        opened, _done, why = open_boxes(root, rel, rev)
-        if why or opened <= 0:
-            continue
-        members, problems = pr_plan_set(root, "Plan: %s" % rel, rev)
-        if problems:
-            continue
-        chain = [m for m in members if m not in taken and m not in picks]
-        if not chain or any(held(m) for m in chain):
-            continue
-        pick = chain[0]
-        if pick != rel:
-            own, own_problems = pr_plan_set(root, "Plan: %s" % pick, rev)
-            if own_problems or any(m != pick for m in own):
-                continue
-        elif any(m != pick for m in members):
-            # The chain lost an unfinished prerequisite to `taken`, `picks` or a live writer: it is being worked, not finished.
-            continue
-        if not writer_startable(_read(root, pick, rev) or ""):
-            continue
-        if int(writers or 0) > 0 and wl_planconc.plan_x(root, _base(pick)).exclusive:
-            continue
-        if _base(pick) in live:
-            # A live writer already serves it: it is started, not a plan to start.
-            continue
-        solo = rel in solos or pick in solos
-        if solo and (taken or picks):
-            continue
-        if not compatible(pick):
-            continue
-        picks.append(pick)
-        if solo:
-            break
-    return picks
-
-
-TURBO_NAMED_SUFFIX = ".turbo-named.json"
-
-
-def _named_path(root: str) -> pathlib.Path:
-    """The record of the plans the Stop hook named under turbo, beside the worklist store (`wl_core.worklist_for`), so it is per checkout and never committed."""
-    syspath.on_sys_path(STOP_DIR)
-    import wl_core
-
-    return wl_core.worklist_for(root).with_suffix(TURBO_NAMED_SUFFIX)
-
-
-def record_turbo_named(root: str, branch: str, plans) -> None:
-    """Add `plans` to the turbo names recorded for `branch` (D5: a plan joins the PR when the hook names it; `refresh_pr_body` appends the record to the body's `Plan:` line on the next push). Written atomically; a failure is silent, since the hook names the plan again on the next stop."""
-    import json
-
-    if not branch or not plans:
-        return
-    try:
-        path = _named_path(root)
-        try:
-            doc = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            doc = {}
-        if not isinstance(doc, dict):
-            doc = {}
-        have = [p for p in doc.get(branch) or [] if isinstance(p, str)]
-        for rel in plans:
-            if rel and rel not in have:
-                have.append(rel)
-        doc[branch] = have
-        tmp = path.with_suffix(path.suffix + ".tmp")
-        tmp.write_text(json.dumps(doc, sort_keys=True) + "\n", encoding="utf-8")
-        os.replace(tmp, path)
-    except Exception:
-        pass
-
-
-def turbo_named(root: str, branch: str) -> list[str]:
-    """The plans the Stop hook named under turbo for `branch`, in naming order; [] when none or unreadable."""
-    import json
-
-    try:
-        doc = json.loads(_named_path(root).read_text(encoding="utf-8"))
-    except Exception:
-        return []
-    got = doc.get(branch) if isinstance(doc, dict) else None
-    out: list[str] = []
-    for p in got or []:
-        if not (isinstance(p, str) and PLAN_PATH.match(p)):
-            continue
-        # A plan named before it moved is recorded at its old path, which is now a `Status: moved` stub; it is read at the `Moved-To:` it points at, so a pick never lists one plan twice (PR #601's `Plan:` line gained the two stubs of plans it already named under _done/, 2026-10-21).
-        rel = _moved_to(root, p) or p
-        if rel not in out:
-            out.append(rel)
-    return out
-
-
-def _moved_to(root: str, rel: str) -> str:
-    """The `Moved-To:` path of a moved-plan stub at `rel`, or "" when `rel` is no such stub, cannot be read, or points at a target that is not a file the hook can stat (a missing path, or one under a directory it cannot traverse)."""
-    try:
-        head = (pathlib.Path(root) / rel).read_text(encoding="utf-8").splitlines()[:6]
-    except (OSError, UnicodeDecodeError):
-        return ""
-    if not any(line.strip() == "Status: moved" for line in head):
-        return ""
-    for line in head:
-        if line.startswith("Moved-To:"):
-            target = line[len("Moved-To:") :].strip()
-            # A stub whose target is gone keeps its own path: a pick never points at a file that is not there.
-            if not PLAN_PATH.match(target):
-                return ""
-            try:
-                return target if (pathlib.Path(root) / target).is_file() else ""
-            except OSError:
-                return ""
-    return ""
-
-
-def batch_body(root: str, branch: str) -> str:
-    """The PR body for opening `branch`'s PR once its turbo batch completes (agent/plans/PLAN-turbo-local-first.md D2): a `Plan:` line naming the queue head plus every plan the Stop hook named for `branch`, for `gh pr create --body-file`. The full line is written at creation because `refresh_pr_body` runs only on a push and P-A1 reads the body at the `opened` event. "" when neither a queue head nor a named plan exists."""
-    return with_plan_line("", queue_head(root), turbo_named(root, branch))
-
-
 def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
-    """ "" when the PR may merge on its plans, else the reason it may not (agent/plans/PLAN-stop-hook-turbo.md D6).
+    """ "" when the PR may merge on its plans, else the reason it may not.
 
-    Admitted: the body carries an `Operational-Reason:` line; or it names exactly one plan (`Plan: agent/plans/PLAN-<slug>.md`) whose boxes are all ticked at `rev` ("" = the working tree under `root`); or, with `turbo: on` in agent/plans/QUEUE.md AT `rev` (the merge lands that copy, so a working-tree flip admits nothing), it names any number of plans and every one of them has its boxes ticked. Every unfinished prerequisite in the plan set's closure is checked too. No minimum batch is enforced here.
+    Admitted: the body carries an `Operational-Reason:` line; or it names exactly one plan (`Plan: agent/plans/PLAN-<slug>.md`) whose boxes are all ticked at `rev` ("" = the working tree under `root`). A body naming more than one plan without an `Operational-Reason:` line is refused: a plan rides exactly one PR, and a PR carries one plan (agent/plans/PLAN-simple-two-tree-loop.md ruling 4). Every unfinished prerequisite in the plan set's closure is checked too.
     """
     if not isinstance(pr_body, str):
         return "the PR body could not be read, so its plan cannot be checked"
@@ -563,15 +334,13 @@ def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
     if not plans:
         return "the PR body names no plan (`Plan: agent/plans/PLAN-<slug>.md`) and carries no `Operational-Reason:` line"
     if len(plans) > 1:
-        settings, _problems = settings_at(root, rev)
-        if not settings.turbo:
-            return (
-                "the PR body names %d plans (%s); a multi-plan PR records an `Operational-Reason:` line"
-                % (
-                    len(plans),
-                    ", ".join(plans),
-                )
+        return (
+            "the PR body names %d plans (%s); a multi-plan PR records an `Operational-Reason:` line"
+            % (
+                len(plans),
+                ", ".join(plans),
             )
+        )
     for rel in plans:
         if not PLAN_PATH.match(rel) or os.path.isabs(rel) or ".." in rel.split("/"):
             return "the `Plan:` line names `%s`, not agent/plans/PLAN-<slug>.md" % rel
@@ -611,15 +380,10 @@ def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
 
 __all__ = [
     "QUEUE_REL",
-    "TURBO_NAMED_SUFFIX",
-    "batch_body",
-    "batch_size",
     "body_plans",
     "exists_at",
     "has_operational_reason",
-    "next_turbo",
     "open_boxes",
-    "plan_concurrency",
     "plan_merge_refusal",
     "pr_plan_set",
     "pushed_tip",
@@ -627,9 +391,7 @@ __all__ = [
     "queue_at",
     "queue_head",
     "queue_head_at",
-    "record_turbo_named",
     "settings_at",
-    "turbo_named",
     "with_plan_line",
     "writer_startable",
 ]

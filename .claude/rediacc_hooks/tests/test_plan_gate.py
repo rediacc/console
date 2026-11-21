@@ -653,15 +653,14 @@ def test_an_unresolvable_dependency_is_a_problem_naming_its_path(tmp_path):
     assert "PLAN-zz.md" in plan_gate.plan_merge_refusal(root, body)
 
 
-# ---------------------------------------------------------------- turbo (agent/plans/PLAN-stop-hook-turbo.md T4, T5, T7)
+# ---------------------------------------------------------------- the plan fixtures (shared with test_plan_gate_ceiling and test_wl_boxready)
 
-TURBO_ON = "```stop-hook\neffort: high\nturbo: on\nbatch_size: 2\nplan_concurrency: 9\n```\n"
-TURBO_OFF = "```stop-hook\neffort: high\nturbo: off\n```\n"
+SETTINGS = "```stop-hook\neffort: high\n```\n"
 
 
 def _xplan(opened=1, done=0, depends="", status="approved", conc="parallel", owns=""):
     """A plan carrying the X fields `wl_planconc.spawn_verdict` reads; `owns` defaults to a folder of its own."""
-    dep = depends or "no-dep -- a standalone plan in the turbo fixture"
+    dep = depends or "no-dep -- a standalone plan in the plan fixture"
     boxes = "".join("- [x] D%d a ticked box sits here\n" % i for i in range(done))
     boxes += "".join("- [ ] O%d an open box sits here\n" % i for i in range(opened))
     return (
@@ -670,7 +669,7 @@ def _xplan(opened=1, done=0, depends="", status="approved", conc="parallel", own
     )
 
 
-def _turbo_root(tmp_path, plans: dict[str, str], promoted: list[str], settings: str = TURBO_ON):
+def _plan_root(tmp_path, plans: dict[str, str], promoted: list[str], settings: str = SETTINGS):
     """A plan tree with `plans` (name -> text, `{name}` in Owns replaced), a QUEUE.md whose Settings block is `settings` and whose Promoted list is `promoted` (entries may carry ` -- solo`)."""
     folder = tmp_path / "agent" / "plans"
     folder.mkdir(parents=True)
@@ -691,467 +690,55 @@ def _t(name):
 
 
 def test_settings_at_reads_the_working_tree_and_defaults_without_a_file(tmp_path):
-    root = _turbo_root(tmp_path, {"a": _xplan()}, ["a"])
+    root = _plan_root(tmp_path, {"a": _xplan()}, ["a"], "```stop-hook\neffort: low\n```\n")
     got, problems = plan_gate.settings_at(root)
-    assert got.turbo is True
-    assert plan_gate.batch_size(got) == 2
+    assert got.effort == "low"
     assert problems == []
     empty, problems = plan_gate.settings_at(str(tmp_path / "nowhere"))
-    assert empty.turbo is False
-    assert plan_gate.batch_size(empty) == 1
+    assert empty.effort == plan_gate._planqueue().Settings().effort
     assert problems == []
 
 
 def test_settings_at_a_non_utf8_queue_falls_back_to_defaults(tmp_path):
     """A QUEUE.md that is not valid UTF-8 falls back to defaults and is reported as a problem; it once raised UnicodeDecodeError through every caller, and then read as silently absent."""
     (tmp_path / "agent" / "plans").mkdir(parents=True)
-    (tmp_path / "agent" / "plans" / "QUEUE.md").write_bytes(b"## Settings\n\xff\xfe turbo: on\n")
+    (tmp_path / "agent" / "plans" / "QUEUE.md").write_bytes(b"## Settings\n\xff\xfe effort: low\n")
     got, problems = plan_gate.settings_at(str(tmp_path))
-    assert got.turbo is False
+    assert got.effort == plan_gate._planqueue().Settings().effort
     assert any("unreadable" in p for p in problems), problems
-
-
-def test_batch_size_is_one_with_turbo_off(tmp_path):
-    root = _turbo_root(
-        tmp_path,
-        {"a": _xplan()},
-        ["a"],
-        "```stop-hook\neffort: high\nturbo: off\nbatch_size: 5\n```\n",
-    )
-    assert plan_gate.batch_size(plan_gate.settings_at(root)[0]) == 1
-
-
-def test_next_turbo_names_queue_order_up_to_the_open_slots(tmp_path):
-    root = _turbo_root(tmp_path, {"a": _xplan(), "b": _xplan(), "c": _xplan()}, ["a", "b", "c"])
-    assert plan_gate.next_turbo(root, (), 2) == [_t("a"), _t("b")]
-    assert plan_gate.next_turbo(root, (), 5) == [_t("a"), _t("b"), _t("c")]
-    assert plan_gate.next_turbo(root, (), 0) == []
-
-
-def test_next_turbo_stops_at_plan_concurrency_counting_the_prs_unfinished_plans_and_live_writers(
-    tmp_path,
-):
-    """`plan_concurrency` is the parallelism ceiling (operator 2026-10-04), apart from `batch_size`: the PR's own unfinished plans and the plans live writers serve count against it."""
-    three = "```stop-hook\neffort: high\nturbo: on\nbatch_size: 2\nplan_concurrency: 3\n```\n"
-    plans = {n: _xplan() for n in "abcde"}
-    root = _turbo_root(tmp_path, plans, list("abcde"), three)
-    assert plan_gate.plan_concurrency(plan_gate.settings_at(root)[0]) == 3
-    assert plan_gate.next_turbo(root, (), 10) == [_t("a"), _t("b"), _t("c")]
-    # one unfinished plan in the PR and one live writer's plan leave a single place
-    assert plan_gate.next_turbo(root, ("PLAN-d.md",), 10, in_set=(_t("e"),)) == [_t("a")]
-    # a finished plan in the PR does not count
-    root2 = _turbo_root(
-        tmp_path / "f", {**plans, "e": _xplan(opened=0, done=1)}, list("abcde"), three
-    )
-    assert plan_gate.next_turbo(root2, (), 10, in_set=(_t("e"),)) == [_t("a"), _t("b"), _t("c")]
-    # CONTROL: without the key the default is 1, so an empty PR takes one plan
-    root3 = _turbo_root(
-        tmp_path / "g", plans, list("abcde"), "```stop-hook\neffort: high\nturbo: on\n```\n"
-    )
-    assert plan_gate.next_turbo(root3, (), 10) == [_t("a")]
-
-
-def test_next_turbo_is_empty_with_turbo_off(tmp_path):
-    root = _turbo_root(tmp_path, {"a": _xplan(), "b": _xplan()}, ["a", "b"], TURBO_OFF)
-    assert plan_gate.next_turbo(root, (), 4) == []
-
-
-def test_next_turbo_skips_a_plan_with_no_open_box_a_writer_can_do(tmp_path):
-    """#faedaaf9: a turbo pick is a writer slot, so a plan whose open boxes are all the lead's or the operator's is no pick."""
-    lead = _xplan(opened=0) + "- [ ] T4 Lead: run the production query, then deploy eu\n"
-    oponly = _xplan(opened=0) + "- [ ] Revoke the backup credential (operator-only)\n"
-    header = _xplan().replace(
-        "Owner: d778be9d\n", "Owner: d778be9d\nWriters: none -- sibling repos\n"
-    )
-    mixed = lead + "- [ ] T5 a box a writer can do\n"
-    plans = {"l": lead, "o": oponly, "h": header, "m": mixed, "b": _xplan()}
-    root = _turbo_root(tmp_path, plans, ["l", "o", "h", "m", "b"])
-    assert plan_gate.next_turbo(root, (), 4) == [_t("m"), _t("b")]
-    # CONTROL: the same plans unmarked are all picked, so the markers and nothing else skip them
-    plain = {n: _xplan() for n in plans}
-    root2 = _turbo_root(tmp_path / "plain", plain, ["l", "o", "h", "m", "b"])
-    assert plan_gate.next_turbo(root2, (), 4)[:2] == [_t("l"), _t("o")]
-    assert plan_gate.writer_startable(plain["l"]) is True
-    assert plan_gate.writer_startable(lead) is False
-    assert plan_gate.writer_startable(oponly) is False
-    assert plan_gate.writer_startable(header) is False
-    assert plan_gate.writer_startable(mixed) is True
-    # a word merely containing "lead" is no marker
-    assert (
-        plan_gate.writer_startable(_xplan(opened=0) + "- [ ] T6 Leading zeros: parse them\n")
-        is True
-    )
-
-
-def test_next_turbo_skips_a_held_plan(tmp_path):
-    root = _turbo_root(tmp_path, {"h": _xplan(status="held"), "b": _xplan()}, ["h", "b"])
-    assert plan_gate.next_turbo(root, (), 4) == [_t("b")]
-
-
-def test_next_turbo_skips_a_finished_plan(tmp_path):
-    root = _turbo_root(tmp_path, {"f": _xplan(opened=0, done=2), "b": _xplan()}, ["f", "b"])
-    assert plan_gate.next_turbo(root, (), 4) == [_t("b")]
-
-
-def test_next_turbo_skips_a_plan_already_in_the_pr_set(tmp_path):
-    root = _turbo_root(tmp_path, {"a": _xplan(), "b": _xplan()}, ["a", "b"])
-    assert plan_gate.next_turbo(root, (), 4, in_set=(_t("a"),)) == [_t("b")]
-
-
-def test_next_turbo_picks_the_prerequisite_first(tmp_path):
-    root = _turbo_root(tmp_path, {"a": _xplan(depends="PLAN-p.md"), "p": _xplan()}, ["a"])
-    assert plan_gate.next_turbo(root, (), 4) == [_t("p")]
-    # The prerequisite already rides the PR: the dependent waits for it, nothing else is named (#1e3ac977; this line once asserted `[_t("a")]` under the same comment).
-    assert plan_gate.next_turbo(root, (), 4, in_set=(_t("p"),)) == []
-    # Picked or served by a live writer is the same wait.
-    assert plan_gate.next_turbo(root, ("PLAN-p.md",), 4) == []
-
-
-def test_next_turbo_skips_a_pick_whose_own_prerequisite_is_unfinished(tmp_path):
-    """#1e3ac977, the dependency arm: a depends on p, p on q, and q rides the PR. The chain drops q and would name p, which cannot start before q finishes."""
-    plans = {"a": _xplan(depends="PLAN-p.md"), "p": _xplan(depends="PLAN-q.md"), "q": _xplan()}
-    root = _turbo_root(tmp_path, {**plans, "b": _xplan()}, ["a", "b"])
-    assert plan_gate.next_turbo(root, (), 4, in_set=(_t("q"),)) == [_t("b")]
-    # CONTROL: q finished, so p is free and is the pick ahead of b.
-    done = {**plans, "q": _xplan(opened=0, done=1), "b": _xplan()}
-    root2 = _turbo_root(tmp_path / "done", done, ["a", "b"])
-    assert plan_gate.next_turbo(root2, (), 4, in_set=(_t("q"),)) == [_t("p"), _t("b")]
-    # CONTROL: nothing rides the PR, so the deepest prerequisite q is the pick, as before.
-    assert plan_gate.next_turbo(root, (), 1) == [_t("q")]
-
-
-def test_next_turbo_names_a_solo_plan_only_for_an_empty_pr(tmp_path):
-    root = _turbo_root(tmp_path, {"s": _xplan(), "b": _xplan()}, ["s -- solo", "b"])
-    # An empty PR: the solo plan is the only pick, and nothing joins it.
-    assert plan_gate.next_turbo(root, (), 4) == [_t("s")]
-    # A PR that already carries a plan never takes the solo one.
-    assert plan_gate.next_turbo(root, (), 4, in_set=(_t("x"),)) == [_t("b")]
-    # A PR carrying the solo plan takes no further plan.
-    assert plan_gate.next_turbo(root, (), 4, in_set=(_t("s"),)) == []
-
-
-def test_next_turbo_never_pairs_an_exclusive_plan_with_a_live_writers_plan(tmp_path):
-    root = _turbo_root(
-        tmp_path,
-        {
-            "e": _xplan(conc="exclusive -- regenerates every golden"),
-            "b": _xplan(),
-            "live": _xplan(),
-        },
-        ["e", "b"],
-    )
-    assert plan_gate.next_turbo(root, ("PLAN-live.md",), 3, in_set=(_t("live"),)) == [_t("b")]
-    # Control: with no live writer the exclusive plan is the pick. It is a mutex over ITS files (711841c55, operator ruling 2026-10-28), so the disjoint b joins it.
-    assert plan_gate.next_turbo(root, (), 3) == [_t("e"), _t("b")]
-    # And a b whose Owns overlap e's does not.
-    overlap = _turbo_root(
-        tmp_path / "overlap",
-        {
-            "e": _xplan(conc="exclusive -- regenerates every golden"),
-            "b": _xplan(owns="docs/e/golden/**"),
-            "live": _xplan(),
-        },
-        ["e", "b"],
-    )
-    assert plan_gate.next_turbo(overlap, (), 3) == [_t("e")]
-
-
-def test_next_turbo_holds_an_exclusive_plan_while_a_planless_writer_runs(tmp_path):
-    """#1e3ac977, the concurrency arm: two live writers serving no plan leave `live_plans` empty, so `spawn_verdict` alone admitted the exclusive plan. `writers` holds it back, and it does not hold back the parallel plans behind it."""
-    root = _turbo_root(
-        tmp_path,
-        {"e": _xplan(conc="exclusive -- one program across renet"), "b": _xplan(), "c": _xplan()},
-        ["e", "b", "c"],
-    )
-    assert plan_gate.next_turbo(root, (), 3, writers=2) == [_t("b"), _t("c")]
-    assert plan_gate.next_turbo(root, (), 1, ceiling=False, writers=2) == [_t("b")]
-    # CONTROL: the same queue with no writer live names the exclusive plan first; b and c, whose Owns it does not claim, join it (711841c55, the overlap rule).
-    assert plan_gate.next_turbo(root, (), 3, writers=0) == [_t("e"), _t("b"), _t("c")]
-
-
-def test_next_turbo_never_names_two_plans_claiming_one_file(tmp_path):
-    root = _turbo_root(
-        tmp_path,
-        {"a": _xplan(owns="docs/shared/**"), "b": _xplan(owns="docs/shared/x.md"), "c": _xplan()},
-        ["a", "b", "c"],
-    )
-    assert plan_gate.next_turbo(root, (), 3) == [_t("a"), _t("c")]
-
-
-def _git_root(tmp_path, queue_text):
-    """A git checkout whose committed QUEUE.md is `queue_text`, holding two finished plans."""
-    folder = tmp_path / "agent" / "plans"
-    folder.mkdir(parents=True)
-    for name in ("a", "b"):
-        (folder / ("PLAN-%s.md" % name)).write_text(
-            _xplan(opened=0, done=2).replace("{name}", name), encoding="utf-8"
-        )
-    (folder / "QUEUE.md").write_text(queue_text, encoding="utf-8")
-    env = {
-        "PATH": "/usr/bin:/bin",
-        "HOME": str(tmp_path),
-        "GIT_CONFIG_NOSYSTEM": "1",
-        "GIT_AUTHOR_NAME": "t",
-        "GIT_AUTHOR_EMAIL": "t@t",
-        "GIT_COMMITTER_NAME": "t",
-        "GIT_COMMITTER_EMAIL": "t@t",
-    }
-    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True, env=env)
-    subprocess.run(["git", "-C", str(tmp_path), "add", "-A"], check=True, env=env)
-    subprocess.run(["git", "-C", str(tmp_path), "commit", "-qm", "seed"], check=True, env=env)
-    return str(tmp_path)
 
 
 TWO = "Plan: agent/plans/PLAN-a.md, agent/plans/PLAN-b.md"
 
 
-def test_turbo_admits_any_count_of_ticked_plans(tmp_path):
-    root = _turbo_root(
-        tmp_path,
-        {
-            "a": _xplan(opened=0, done=2),
-            "b": _xplan(opened=0, done=1),
-            "c": _xplan(opened=0, done=1),
-        },
-        ["a"],
-    )
-    assert plan_gate.plan_merge_refusal(root, TWO) == ""
-    assert plan_gate.plan_merge_refusal(root, TWO + ", agent/plans/PLAN-c.md") == ""
-
-
-def test_turbo_refuses_when_the_second_named_plan_is_open(tmp_path):
-    root = _turbo_root(
-        tmp_path, {"a": _xplan(opened=0, done=2), "b": _xplan(opened=1, done=1)}, ["a"]
-    )
-    got = plan_gate.plan_merge_refusal(root, TWO)
-    assert "PLAN-b.md" in got, got
-    assert "open box" in got, got
-
-
-def test_turbo_checks_every_named_plans_prerequisite(tmp_path):
-    root = _turbo_root(
-        tmp_path,
-        {
-            "a": _xplan(opened=0, done=2),
-            "b": _xplan(opened=0, done=1, depends="PLAN-p.md"),
-            "p": _xplan(),
-        },
-        ["a"],
-    )
-    got = plan_gate.plan_merge_refusal(root, TWO)
-    assert "PLAN-p.md" in got, got
-    assert "prerequisite" in got, got
-
-
-def test_turbo_on_in_the_tree_but_off_at_the_rev_is_refused(tmp_path):
-    root = _git_root(tmp_path, "# Plan queue\n\n## Settings\n\n%s\n## Promoted\n\n" % TURBO_OFF)
-    queue = pathlib.Path(root) / "agent" / "plans" / "QUEUE.md"
-    queue.write_text(
-        "# Plan queue\n\n## Settings\n\n%s\n## Promoted\n\n" % TURBO_ON, encoding="utf-8"
-    )
-    assert plan_gate.plan_merge_refusal(root, TWO) == ""
-    assert "names 2 plans" in plan_gate.plan_merge_refusal(root, TWO, "HEAD")
-
-
-def test_turbo_off_still_refuses_a_multi_plan_body_and_a_reason_still_admits(tmp_path):
-    root = _turbo_root(
-        tmp_path, {"a": _xplan(opened=0, done=2), "b": _xplan(opened=1)}, ["a"], TURBO_OFF
+def test_a_multi_plan_body_is_refused_with_every_plan_ticked(tmp_path):
+    """A plan rides exactly one PR and a PR carries one plan (agent/plans/PLAN-simple-two-tree-loop.md ruling 4), so two ticked plans on one `Plan:` line are refused whatever QUEUE.md says. The control: the same ticked plan alone merges."""
+    root = _plan_root(
+        tmp_path, {"a": _xplan(opened=0, done=2), "b": _xplan(opened=0, done=1)}, ["a"]
     )
     assert "names 2 plans" in plan_gate.plan_merge_refusal(root, TWO)
+    assert plan_gate.plan_merge_refusal(root, "Plan: %s" % _t("a")) == ""
+
+
+def test_a_multi_plan_body_with_an_operational_reason_still_merges(tmp_path):
+    root = _plan_root(tmp_path, {"a": _xplan(opened=0, done=2), "b": _xplan(opened=1)}, ["a"])
     assert plan_gate.plan_merge_refusal(root, TWO + "\nOperational-Reason: one PR") == ""
 
 
-def test_with_plan_line_append_adds_without_duplicating_or_rewriting():
-    body = "- **Plan:** `agent/plans/PLAN-a.md`\n\nWork."
-    got = plan_gate.with_plan_line(
-        body, "agent/plans/PLAN-q.md", append=[_t("b"), _t("a"), _t("b")]
-    )
-    assert got == "- **Plan:** `agent/plans/PLAN-a.md`, agent/plans/PLAN-b.md\n\nWork.", got
-    assert plan_gate.body_plans(got) == [_t("a"), _t("b")]
-    # Idempotent: a second push with the same names changes nothing.
-    assert plan_gate.with_plan_line(got, "agent/plans/PLAN-q.md", append=[_t("b")]) == got
-    # A body with no plan gets the queue head and the named plans on one line.
-    assert plan_gate.with_plan_line(
-        "Work.", _t("q"), append=[_t("b")]
-    ) == "Plan: %s, %s\n\nWork." % (_t("q"), _t("b"))
-    # A `Plan:` line inside a generated block is not the body's own, so it is never extended.
-    gen = "<!-- worklist-epics:begin -->\nPlan: agent/plans/PLAN-z.md\n<!-- worklist-epics:end -->\nPlan: agent/plans/PLAN-a.md\n"
-    assert plan_gate.with_plan_line(gen, "", append=[_t("b")]) == gen.replace(
-        "Plan: agent/plans/PLAN-a.md", "Plan: agent/plans/PLAN-a.md, agent/plans/PLAN-b.md"
-    )
-
-
-def test_with_plan_line_without_append_is_the_write_once_link():
-    once = plan_gate.with_plan_line("Body text.", _t("a"), append=())
-    assert once == plan_gate.with_plan_line("Body text.", _t("a"))
-    assert plan_gate.with_plan_line(once, _t("b"), append=()) == once
-
-
-def test_turbo_named_round_trip(tmp_path, monkeypatch):
-    monkeypatch.setenv("TMPDIR", str(tmp_path))
-    root = str(tmp_path / "repo")
-    pathlib.Path(root).mkdir()
-    assert plan_gate.turbo_named(root, "1004-1") == []
-    plan_gate.record_turbo_named(root, "1004-1", [_t("a"), _t("b")])
-    plan_gate.record_turbo_named(root, "1004-1", [_t("b"), _t("c")])
-    plan_gate.record_turbo_named(root, "1004-2", [_t("z")])
-    assert plan_gate.turbo_named(root, "1004-1") == [_t("a"), _t("b"), _t("c")]
-    assert plan_gate.turbo_named(root, "1004-2") == [_t("z")]
-
-
-def test_turbo_named_reads_a_moved_plan_at_its_new_path_once(tmp_path, monkeypatch):
-    """A plan named before it moved is recorded at its old path; the stub there points at _done/, and the pick lists the plan once, at the new path."""
-    monkeypatch.setenv("TMPDIR", str(tmp_path))
-    root = tmp_path / "repo"
-    plans = root / "agent" / "plans"
-    (plans / "_done").mkdir(parents=True)
-    (plans / "PLAN-moved.md").write_text(
-        "# PLAN: moved (moved)\nStatus: moved\nMoved-To: agent/plans/_done/PLAN-moved.md\n",
-        encoding="utf-8",
-    )
-    (plans / "_done" / "PLAN-moved.md").write_text(
-        "# PLAN: moved\nStatus: done\n", encoding="utf-8"
-    )
-    plan_gate.record_turbo_named(
-        str(root),
-        "1004-1",
-        ["agent/plans/_done/PLAN-moved.md", "agent/plans/PLAN-moved.md", _t("b")],
-    )
-    assert plan_gate.turbo_named(str(root), "1004-1") == [
-        "agent/plans/_done/PLAN-moved.md",
-        _t("b"),
-    ]
-
-
-def test_a_moved_stub_whose_target_is_gone_or_unreadable_keeps_its_path(tmp_path, monkeypatch):
-    monkeypatch.setenv("TMPDIR", str(tmp_path))
-    root = tmp_path / "repo"
-    plans = root / "agent" / "plans"
-    plans.mkdir(parents=True)
-    (plans / "PLAN-orphan.md").write_text(
-        "# PLAN: orphan (moved)\nStatus: moved\nMoved-To: agent/plans/_done/PLAN-orphan.md\n",
-        encoding="utf-8",
-    )
-    (plans / "PLAN-binary.md").write_bytes(b"\xff\xfe not utf-8\n")
-    plan_gate.record_turbo_named(
-        str(root), "1004-1", ["agent/plans/PLAN-orphan.md", "agent/plans/PLAN-binary.md"]
-    )
-    assert plan_gate.turbo_named(str(root), "1004-1") == [
-        "agent/plans/PLAN-orphan.md",
-        "agent/plans/PLAN-binary.md",
-    ]
-
-
-def test_a_moved_stub_whose_target_cannot_be_stated_keeps_its_path(tmp_path, monkeypatch):
-    monkeypatch.setenv("TMPDIR", str(tmp_path))
-    root = tmp_path / "repo"
-    plans = root / "agent" / "plans"
-    plans.mkdir(parents=True)
-    (plans / "PLAN-locked.md").write_text(
-        "# PLAN: locked (moved)\nStatus: moved\nMoved-To: agent/plans/_done/PLAN-locked.md\n",
-        encoding="utf-8",
-    )
-    real_is_file = pathlib.Path.is_file
-
-    def denied(self, *args, **kwargs):
-        if self.name == "PLAN-locked.md" and "_done" in self.parts:
-            raise PermissionError(13, "Permission denied")
-        return real_is_file(self, *args, **kwargs)
-
-    monkeypatch.setattr(pathlib.Path, "is_file", denied)
-    plan_gate.record_turbo_named(str(root), "1004-1", ["agent/plans/PLAN-locked.md"])
-    assert plan_gate.turbo_named(str(root), "1004-1") == ["agent/plans/PLAN-locked.md"]
-
-
-def test_a_stub_without_moved_status_is_read_as_itself(tmp_path, monkeypatch):
-    monkeypatch.setenv("TMPDIR", str(tmp_path))
-    root = tmp_path / "repo"
-    plans = root / "agent" / "plans"
-    plans.mkdir(parents=True)
-    (plans / "PLAN-live.md").write_text(
-        "# PLAN: live\nStatus: in-progress\nMoved-To: agent/plans/_done/PLAN-live.md\n",
-        encoding="utf-8",
-    )
-    plan_gate.record_turbo_named(str(root), "1004-1", ["agent/plans/PLAN-live.md"])
-    assert plan_gate.turbo_named(str(root), "1004-1") == ["agent/plans/PLAN-live.md"]
-
-
-def _refresh_turbo(tmp_path, monkeypatch, body, settings, present=None):
-    if present is None:
-        present = ("agent/plans/PLAN-a.md", _t("b"), _t("c"))
-    queue = "## Settings\n\n%s\n## Promoted\n\n1. agent/plans/PLAN-a.md\n" % settings
-    env, work = pbd._world(tmp_path, _tip_table(_patch_table(body), queue=queue, present=present))
-    plans = work / "repo" / "agent" / "plans"
-    plans.mkdir(parents=True)
-    (plans / "PLAN-a.md").write_text(OPEN, encoding="utf-8")
-    (plans / "QUEUE.md").write_text(
-        "## Settings\n\n%s\n## Promoted\n\n1. agent/plans/PLAN-a.md\n" % settings, encoding="utf-8"
-    )
-    monkeypatch.setenv("TMPDIR", env["TMPDIR"])
-    plan_gate.record_turbo_named(str(work / "repo"), pbd.BRANCH, [_t("b"), _t("c")])
-    proc = subprocess.run(
-        ["python3", str(pbd.SUBJECTS["refresh-pr-body"])],
-        input=json.dumps({"tool_input": {"command": "git push"}}).encode(),
-        capture_output=True,
-        check=False,
-        env=env,
-        cwd=str(work),
-        timeout=120,
-    )
-    assert proc.returncode == 0, proc.stderr
-    return (work / "record.txt").read_text(encoding="utf-8")
-
-
-def test_refresh_under_turbo_appends_the_named_plans(tmp_path, monkeypatch):
-    body = _refresh_turbo(tmp_path, monkeypatch, "Plan: agent/plans/PLAN-x.md\n\nWork.", TURBO_ON)
-    assert body.startswith("Plan: agent/plans/PLAN-x.md, %s, %s\n\nWork." % (_t("b"), _t("c"))), (
-        body
-    )
-
-
-def test_refresh_with_turbo_off_ignores_the_named_plans(tmp_path, monkeypatch):
-    body = _refresh_turbo(tmp_path, monkeypatch, "Plan: agent/plans/PLAN-x.md\n\nWork.", TURBO_OFF)
-    assert body.startswith("Plan: agent/plans/PLAN-x.md\n\nWork."), body
-    assert "PLAN-b" not in body
-
-
-def test_refresh_under_turbo_drops_a_named_plan_the_tip_lacks(tmp_path, monkeypatch):
-    """PLAN-b is carried at the tip, PLAN-c was named locally and is not pushed."""
-    body = _refresh_turbo(
-        tmp_path,
-        monkeypatch,
-        "Plan: agent/plans/PLAN-x.md\n\nWork.",
-        TURBO_ON,
-        present=("agent/plans/PLAN-a.md", _t("b")),
-    )
-    assert body.startswith("Plan: agent/plans/PLAN-x.md, %s\n\nWork." % _t("b")), body
-    assert "PLAN-c" not in body
-
-
-def test_refresh_under_turbo_with_an_unreadable_tip_appends_nothing(tmp_path, monkeypatch):
-    env, work = pbd._world(
-        tmp_path, _tip_table(_patch_table("Plan: agent/plans/PLAN-x.md\n\nWork."), readable=False)
-    )
-    plans = work / "repo" / "agent" / "plans"
-    plans.mkdir(parents=True)
-    (plans / "QUEUE.md").write_text(
-        "## Settings\n\n%s\n## Promoted\n\n1. agent/plans/PLAN-a.md\n" % TURBO_ON, encoding="utf-8"
-    )
-    monkeypatch.setenv("TMPDIR", env["TMPDIR"])
-    plan_gate.record_turbo_named(str(work / "repo"), pbd.BRANCH, [_t("b")])
-    proc = subprocess.run(
-        ["python3", str(pbd.SUBJECTS["refresh-pr-body"])],
-        input=json.dumps({"tool_input": {"command": "git push"}}).encode(),
-        capture_output=True,
-        check=False,
-        env=env,
-        cwd=str(work),
-        timeout=120,
-    )
-    assert proc.returncode == 0, proc.stderr
-    body = (work / "record.txt").read_text(encoding="utf-8")
-    assert body.startswith("Plan: agent/plans/PLAN-x.md\n\nWork."), body
-    assert "PLAN-b" not in body
+def test_the_fail_safe_settings_carry_no_batch_keys():
+    """The stand-in for an unimportable wl_planqueue carries only the keys something still reads; the batch loop's keys went with it (agent/plans/PLAN-simple-two-tree-loop.md B4)."""
+    got = vars(plan_gate._default_settings())
+    assert got["effort"] == "high"
+    assert set(got) == {
+        "effort",
+        "writer_cap",
+        "commit_remind_min",
+        "cadence",
+        "agent_hint",
+        "agent_pushback",
+        "judge",
+        "notes",
+    }, sorted(got)
 
 
 # ---------------------------------------------------------------- the tip-aware readers, against a real origin
@@ -1219,34 +806,3 @@ def test_tip_readers_see_the_pushed_tip_and_queue_head_still_sees_the_working_tr
     # The Stop hook's readers are the working tree's, unchanged.
     assert plan_gate.queue_head(root) == "agent/plans/PLAN-local.md"
     assert plan_gate.queue(root)[0] == "agent/plans/PLAN-local.md"
-
-
-# ---- LF-W1 of agent/plans/PLAN-turbo-local-first.md: the batch body and the local-first defaults ----
-
-
-def test_batch_body_names_the_queue_head_and_every_named_plan(tmp_path, monkeypatch):
-    monkeypatch.setenv("TMPDIR", str(tmp_path / "tmp"))
-    (tmp_path / "tmp").mkdir()
-    root = _turbo_root(tmp_path, {n: _xplan() for n in "abc"}, ["a", "b", "c"])
-    # CONTROL: nothing named yet is the head alone, the write-once link.
-    assert plan_gate.batch_body(root, "1008-1") == "Plan: %s\n" % _t("a")
-    plan_gate.record_turbo_named(root, "1008-1", [_t("c"), _t("a")])
-    plan_gate.record_turbo_named(root, "1008-2", [_t("b")])
-    body = plan_gate.batch_body(root, "1008-1")
-    assert body == "Plan: %s, %s\n" % (_t("a"), _t("c"))
-    assert plan_gate.body_plans(body) == [_t("a"), _t("c")]
-    # Another branch's record stays out of this branch's body.
-    assert plan_gate.body_plans(plan_gate.batch_body(root, "1008-2")) == [_t("a"), _t("b")]
-    # No head and nothing named is no body at all.
-    (tmp_path / "agent" / "plans" / "QUEUE.md").write_text("# Plan queue\n", encoding="utf-8")
-    assert plan_gate.batch_body(root, "1008-9") == ""
-
-
-def test_the_fail_safe_settings_carry_the_local_first_defaults():
-    got = plan_gate._default_settings()
-    assert (got.turbo_push, got.backup_push_h) == ("batch-end", 4)
-    pq = plan_gate._planqueue()
-    assert (got.turbo_push, got.backup_push_h) == (
-        pq.Settings().turbo_push,
-        pq.Settings().backup_push_h,
-    )

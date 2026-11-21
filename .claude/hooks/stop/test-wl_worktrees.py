@@ -200,24 +200,21 @@ out = {
 print(json.dumps({k: str(v) for k, v in out.items()}))
 """
 
-# The two guards read CLAUDE_PROJECT_DIR, else show-toplevel. `_acts` and `_pushes` are the first calls handed the root, so the capture reads what their ledger lines would join to.
+# The guard reads CLAUDE_PROJECT_DIR, else show-toplevel. `_pushes` is the first call handed the root, so the capture reads what its ledger lines would join to. (Its twin, the batch loop's early-push guard, was deleted with that loop: agent/plans/PLAN-simple-two-tree-loop.md B4.)
 GUARD_ROOTS = """
 import json, os, sys
 sys.path.insert(0, sys.argv[1])
 from rediacc_hooks import hookio
 from rediacc_hooks.guards import block_backup_unverified_push as B
-from rediacc_hooks.guards import block_turbo_early_push as P
 seen = {}
 def capture(name):
     def fn(cmd, root, base):
         seen[name] = str(root)
         return []
     return fn
-P._acts = capture("turbo")
 B._pushes = capture("backup")
 env = {"CLAUDE_PROJECT_DIR": sys.argv[2]} if sys.argv[2] else {}
 payload = json.dumps({"tool_input": {"command": "git status"}, "cwd": os.getcwd()})
-P.run(hookio.Event(payload, env=env))
 B.run(hookio.Event(payload, env=env))
 print(json.dumps(seen))
 """
@@ -269,15 +266,13 @@ def control_guards(tmp, main, lease):
     code, out, err = pyrun(tmp, lease, GUARD_ROOTS, claude, main)
     if check("guards: read with the variable set (%s)" % err[-200:], code, 0):
         seen = json.loads(out)
-        check("block_turbo_early_push: the variable gives main", seen.get("turbo"), str(main))
         check(
             "block_backup_unverified_push: the variable gives main", seen.get("backup"), str(main)
         )
-    # Why W5 has to confirm the variable: without it these two read the lease itself.
+    # Why W5 has to confirm the variable: without it the guard reads the lease itself.
     code, out, err = pyrun(tmp, lease, GUARD_ROOTS, claude, "")
     if check("guards: read with the variable unset (%s)" % err[-200:], code, 0):
         seen = json.loads(out)
-        check("block_turbo_early_push: no variable reads the lease", seen.get("turbo"), str(lease))
         check(
             "block_backup_unverified_push: no variable reads the lease",
             seen.get("backup"),
