@@ -2438,6 +2438,9 @@
       "WORKLIST_TEAMMATE_FRESH_MIN",
       "WORKLIST_TEAMMATE_TAIL_BYTES"
     ],
+    ".claude/hooks/stop/wl_longred.py": [
+      "TMPDIR"
+    ],
     ".claude/hooks/stop/wl_planbox.py": [
       "TMPDIR"
     ],
