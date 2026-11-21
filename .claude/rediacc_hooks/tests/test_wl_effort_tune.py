@@ -125,7 +125,7 @@ def test_t3_the_planted_demotion_and_promotion_and_nothing_on_the_floor(proj):
     assert (dem["direction"], dem["from"], dem["to"]) == (
         "demote",
         {"block": "high", "advise": "smart"},
-        {"block": "ultra", "advise": "smart"},
+        {"block": "high", "advise": "high"},
     )
     assert (pro["direction"], pro["to"]) == ("promote", {"block": "smart", "advise": "smart"})
     assert dem["ids"][0] == "eo-00000001"
@@ -150,12 +150,10 @@ def test_t3_the_replay_names_the_emissions_that_change(proj):
     by_key: dict[str, set] = {}
     for r in moved:
         by_key.setdefault(r[3], set()).add((r[4], r[5], r[6]))
-    assert by_key == {
-        DEMOTE_KEY: {("high", "block", "advise")},
-        PROMOTE_KEY: {("smart", "advise", "block")},
-    }
-    assert len(moved) == 18
-    assert moved[0][:4] == (ME, 1, 1, DEMOTE_KEY)
+    # The demotion moves no row recorded at `high`: with `ultra` gone (agent/plans/PLAN-simple-two-tree-loop.md B5) a key that blocks at the top level still blocks there, and demoting it only quiets its advise level below.
+    assert by_key == {PROMOTE_KEY: {("smart", "advise", "block")}}
+    assert len(moved) == 8
+    assert {r[3] for r in moved} == {PROMOTE_KEY}
 
 
 def test_t3_the_window_drops_old_rows():
@@ -190,8 +188,8 @@ def test_t4_a_fixture_run_writes_the_patch_and_the_evidence(proj):
     doc = T.run(proj, ME, 1, now=NOW)
     out = T.run_dir(proj, ME, 1)
     patch = (out / "effort.json.patch").read_text(encoding="utf-8")
-    assert '-      "block": "high",' in patch
-    assert '+      "block": "ultra",' in patch
+    assert '-      "advise": "smart"' in patch
+    assert '+      "advise": "high"' in patch
     evidence = (out / "evidence.md").read_text(encoding="utf-8")
     assert "| %s | 10 (w1 p9 o0 e0) 0.10 |" % DEMOTE_KEY in evidence
     assert "demote %s" % DEMOTE_KEY in evidence
@@ -339,7 +337,7 @@ def test_t5_promotions_apply_with_a_report_and_demotions_wait_for_one_ask(proj):
     assert any(line.startswith("effort-tune: promoted %s" % PROMOTE_KEY) for line in report)
     [question] = payload["questions"]
     assert question["options"][0]["label"] == "Demote %s" % DEMOTE_KEY
-    assert '+      "block": "ultra",' in question["options"][0]["preview"]
+    assert '+      "advise": "high"' in question["options"][0]["preview"]
     assert json.loads((out / "ask.json").read_text(encoding="utf-8")) == payload
     assert T.tuned_problems(table) == []
 
@@ -379,7 +377,7 @@ def test_t5_an_accepted_answer_applies_and_is_never_asked_again(proj):
     line = T.answer(proj, ME, DEMOTE_KEY, "accept", "operator said yes", now=NOW)
     assert "accept of the demotion of %s" % DEMOTE_KEY in line
     table = table_of(proj)
-    assert table["checks"][DEMOTE_KEY] == {"block": "ultra", "advise": "smart"}
+    assert table["checks"][DEMOTE_KEY] == {"block": "high", "advise": "high"}
     assert table["tuned"][DEMOTE_KEY]["direction"] == "demote"
     # The same evidence a second time asks nothing.
     E._CACHE.clear()
@@ -484,7 +482,7 @@ def test_t5_tuned_rows_need_their_stamps():
 def test_t5_a_demoted_key_quiet_before_a_miss_is_promoted_back(proj):
     table = table_of(proj)
     before = dict(table["checks"][DEMOTE_KEY])
-    table["checks"][DEMOTE_KEY] = {"block": "ultra", "advise": "smart"}
+    table["checks"][DEMOTE_KEY] = {"block": "high", "advise": "high"}
     table["tuned"] = {
         DEMOTE_KEY: {
             "direction": "demote",

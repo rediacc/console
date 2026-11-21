@@ -2,7 +2,7 @@
 
 Operator order, 2026-09-24: "the stop hook should not be invoked (or should skip the order) when writer slots are full! There could be exceptions like 2% compaction etc." With every writer slot verified live and nothing this session could start, the work orders (the judge, the quiet ladder, report shape, hygiene) stand down and the stop allows with one line naming the writers. Only wl_standdown.CAP_WAIT's keeps still block.
 
-EVERY EXCEPTION CASE HAS ITS ALLOW TWIN, differing by one planted fact: a fifth open item, a dead fourth writer, the late context band with a missing STATE.md, an expired DEFAULT. The allow case is the incident itself: four live writers, three queue leases 95 minutes old, and a judge that would have said "continue".
+EVERY EXCEPTION CASE HAS ITS ALLOW TWIN, differing by one planted fact: a fifth open item, a dead fourth writer, the late context band with a missing STATE.md, an expired DEFAULT. The allow case is the incident itself: a full cap of live writers (W1..W4 and the `pad` fillers), three queue leases 95 minutes old, and a judge that would have said "continue".
 """
 
 from __future__ import annotations
@@ -16,12 +16,14 @@ from rediacc_hooks import syspath
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_judge_fixset_scope import capturing_judge
 from rediacc_hooks.tests.test_wl_roster import (
+    CAP,
     W1,
     W2,
     W3,
     W4,
     linked,
     mk_sub,
+    pad,
     plant_lease,
     stamp,
     until,
@@ -42,9 +44,10 @@ def band_env(fix, band: int) -> dict:
 
 
 def saturated(fix, live: int = 4, queued: int = 3, queue_age_min: float = 95) -> None:
-    """`live` leased writers (of W1..W4) plus `queued` queue leases, the incident's shape."""
+    """`live` leased writers (of W1..W4) plus `queued` queue leases, the incident's shape. `pad` fills the other CAP - 4 slots of the fixed cap of 25 with older live writers, so four of W1..W4 still fill it."""
     fix.brief_now()
     fix.hand_now()
+    pad(fix)
     for i, aid in enumerate((W1, W2, W3, W4)):
         if i >= live:
             continue  # a free slot: no agent, no lease (a lease on a finished agent is c4's case)
@@ -81,7 +84,7 @@ def test_c1_saturated_plus_queued_allows_and_the_judge_is_never_called(wl):
     capturing_judge(wl, CONTINUE)
     got = stop(wl)
     assert got.decision == "allow", wl.why("c1", "allow", got, "CAP-SATURATED WAIT")
-    assert "CAP-SATURATED WAIT: 4/4 writer slots live" in got.out, got.out[:800]
+    assert "CAP-SATURATED WAIT: %d/%d writer slots live" % (CAP, CAP) in got.out, got.out[:800]
     assert "3 item(s) queued" in got.out, got.out[:800]
     for needle in ("GONE QUIET", "Do the next action", "QUEUED WORK AND A FREE WRITER SLOT"):
         assert needle not in got.out, "c1: %r still pushed: %s" % (needle, got.out[:800])
@@ -154,7 +157,7 @@ def test_c5_an_expired_default_still_executes(wl):
 
 
 def test_c7_queue_leases_renew_only_while_the_cap_is_full(wl):
-    """A queue lease near expiry is renewed at 4/4 and left alone at 3/4 (where queue-slot names it)."""
+    """A queue lease near expiry is renewed at a full cap and left alone one below it (where queue-slot names it)."""
     saturated(wl, queued=0)
     with wl.events.open("a", encoding="utf-8") as fh:
         for ev in (
@@ -182,7 +185,7 @@ def test_c7_queue_leases_renew_only_while_the_cap_is_full(wl):
     stop(wl)
     leases = [e for e in all_events(wl) if e.get("id") == "qx"]
     renewed = [e for e in leases if e.get("ev") == "lease" and "auto-renew" in e.get("note", "")]
-    assert renewed, "c7: the queue lease was not renewed at 4/4: %s" % leases
+    assert renewed, "c7: the queue lease was not renewed at a full cap: %s" % leases
     assert renewed[-1]["until"] > until(100), renewed[-1]
 
 
@@ -266,10 +269,10 @@ def test_c9_every_kept_key_has_a_producer():
     assert not missing, "keep-list keys with no producer: %s" % missing
 
 
-def test_c10_the_verdict_counts_four_live_writers(wl):
+def test_c10_the_verdict_counts_a_full_cap_of_live_writers(wl):
     saturated(wl)
     v = verdict(wl)
-    assert len(v["writers"]) == 4, v["writers"]
+    assert len(v["writers"]) == CAP, v["writers"]
 
 
 # ---- mutation controls: each exception removed in a PRIVATE COPY makes its case stop detecting it ----
@@ -407,7 +410,7 @@ def test_c11_every_queued_item_held_is_a_concurrency_saturated_wait(wl):
     capturing_judge(wl, CONTINUE)
     got = stop(wl)
     assert got.decision == "allow", wl.why("c11", "allow", got, "CONCURRENCY-SATURATED WAIT")
-    assert "CONCURRENCY-SATURATED WAIT: 1/4 writer slots live" in got.out, got.out[:900]
+    assert "CONCURRENCY-SATURATED WAIT: 1/%d writer slots live" % CAP in got.out, got.out[:900]
     assert "all 2 queued item(s) are held by a live plan (PLAN-e.md)" in got.out, got.out[:900]
     assert "QUEUED WORK AND A FREE WRITER SLOT" not in got.out, got.out[:900]
     assert not (wl.base / "prompt.txt").exists(), "c11: the judge was consulted in the wait"

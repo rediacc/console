@@ -60,6 +60,11 @@ def stamp(minutes):
     return t.strftime("%Y-%m-%dT%H:%MZ")
 
 
+# wl_roster.WRITER_CAP, restated, and planless live writers that hold slots of it without claiming a file.
+CAP = 25
+FILL = tuple("idle writer %d, no plan" % i for i in range(CAP))
+
+
 def world(plans, writers=(), finished=(), items=(), leases=(), cap=None, editors=()):
     """A fresh fixture. `plans` maps a name to its X lines (without Priority); `writers`/`finished`/`editors` are first prompts of this session's live/finished/live-and-editing general-purpose agents (an editor's last record is an in-flight Edit call); `items` are (id, owner, text); `leases` are (id, owner, worker, minutes ahead)."""
     if BASE.exists():
@@ -70,6 +75,7 @@ def world(plans, writers=(), finished=(), items=(), leases=(), cap=None, editors
     (BASE / "tmp").mkdir()
     (BASE / "store").mkdir()
     if cap is not None:
+        # A `writer_cap:` line, which moves nothing: the cap is wl_roster.WRITER_CAP (agent/plans/PLAN-simple-two-tree-loop.md ruling 11).
         (proj / "agent" / "plans" / "QUEUE.md").write_text(
             "# Plan queue\n\n## Settings\n\n```stop-hook\nwriter_cap: %d\n```\n\n## Promoted\n"
             % cap,
@@ -706,31 +712,31 @@ SEQUENCES: list[tuple[str, dict[str, typing.Any], list[str], list[tuple[dict, in
         ],
     ),
     (
-        "c1 a cap of 1 refuses the second same-message writer",
-        {"plans": {"p": PAR_A, "q": PAR_C}, "cap": 1},
+        "c1 one slot left refuses the second same-message writer",
+        {"plans": {"p": PAR_A, "q": PAR_C}, "writers": FILL[: CAP - 1], "cap": 1},
         CHAIN_ARGV,
         [
             (payload("Plan: PLAN-p.md"), 0, []),
-            (payload("Plan: PLAN-q.md"), 2, ["writer_cap 1", "1 same-message"]),
+            (payload("Plan: PLAN-q.md"), 2, ["writer_cap %d" % CAP, "1 same-message"]),
         ],
     ),
     (
         "c1b a planless writer counts toward the cap too",
-        {"plans": {}, "cap": 1},
+        {"plans": {}, "writers": FILL[: CAP - 1]},
         CHAIN_ARGV,
         [
             (payload("fix a typo"), 0, ["declares no `Owns:` line"]),
-            (payload("fix a typo"), 2, ["writer_cap 1"]),
+            (payload("fix a typo"), 2, ["writer_cap %d" % CAP]),
         ],
     ),
     (
-        "c2 a cap of 2 admits the second and refuses the third",
-        {"plans": {"p": PAR_A, "q": PAR_C, "z": PAR_Z}, "cap": 2},
+        "c2 two slots left admit the second and refuse the third",
+        {"plans": {"p": PAR_A, "q": PAR_C, "z": PAR_Z}, "writers": FILL[: CAP - 2]},
         CHAIN_ARGV,
         [
             (payload("Plan: PLAN-p.md"), 0, []),
             (payload("Plan: PLAN-q.md"), 0, []),
-            (payload("Plan: PLAN-z.md"), 2, ["writer_cap 2", "2 same-message"]),
+            (payload("Plan: PLAN-z.md"), 2, ["writer_cap %d" % CAP, "2 same-message"]),
         ],
     ),
     (

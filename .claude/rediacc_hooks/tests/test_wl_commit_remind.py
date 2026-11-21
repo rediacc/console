@@ -209,20 +209,31 @@ def test_clean_tree_owes_nothing_however_old_the_last_commit(tmp_path):
     assert U.evaluate(root, tr, {}, now=NOW, minutes=15) is None
 
 
-def test_threshold_comes_from_the_queue_settings(tmp_path):
+def test_threshold_is_the_fixed_constant_and_a_queue_line_does_not_move_it(tmp_path):
+    """agent/plans/PLAN-simple-two-tree-loop.md ruling 11: commit_remind_min is 15 in wl_checks.py, and the post-tool member reads the same constant through `remind_min`. A `commit_remind_min:` line in QUEUE.md is refused by the settings parser and moves nothing."""
+    wl_checks = wlfix.import_wl("wl_checks")
+    assert wl_checks.COMMIT_REMIND_MIN == 15
     root = make_repo(tmp_path, commit_age_min=20)
     (root / "a.txt").write_text("x\n")
     tr = write_transcript(tmp_path / "t.jsonl", [edit_line(root / "a.txt")])
-    # No QUEUE.md: the default (15) applies, so a 20-minute-old commit fires.
+    # No QUEUE.md: the constant (15) applies, so a 20-minute-old commit fires.
     assert U.evaluate(root, tr, {}, now=NOW) is not None
     queue = root / wl_planqueue.QUEUE_REL
     queue.parent.mkdir(parents=True)
     queue.write_text(
-        wl_planqueue.set_settings("# Plan queue\n\n## Promoted\n", {"commit_remind_min": "45"}),
+        "# Plan queue\n\n## Settings\n\n```stop-hook\neffort: high\ncommit_remind_min: 45\n```\n\n"
+        "## Promoted\n",
         encoding="utf-8",
     )
-    assert U.remind_min(root) == 45
-    assert U.evaluate(root, tr, {}, now=NOW) is None
+    assert U.remind_min(root) == 15
+    assert U.evaluate(root, tr, {}, now=NOW) is not None
+    assert any("commit_remind_min" in p for p in wl_planqueue.settings_for(root)[1])
+    # CONTROL: the threshold is read, so an explicit larger one is silent on the same tree.
+    assert U.evaluate(root, tr, {}, now=NOW, minutes=45) is None
+    # The Stop hook passes the same constant, not a settings field.
+    src = (wlfix.STOP_DIR / "wl_checks.py").read_text(encoding="utf-8")
+    assert "minutes=COMMIT_REMIND_MIN," in src
+    assert "commit_remind_min" not in src.replace("COMMIT_REMIND_MIN", "")
 
 
 def test_oldest_age_and_listing_in_the_rendered_text(tmp_path):
@@ -391,7 +402,6 @@ def init_real_repo(proj, commit_age_min):
 
 def test_a_full_stop_run_carries_the_reminder_and_still_allows(wl):
     init_real_repo(wl.proj, commit_age_min=60)
-    wl.settings(commit_remind_min=15)
     (wl.proj / "work.txt").write_text("edited\n")
     wl.append_transcript(
         json.loads(edit_line(wl.proj / "work.txt", ts="2026-10-06T10:00:00Z")),
@@ -408,7 +418,6 @@ def test_a_full_stop_run_carries_the_reminder_and_still_allows(wl):
 
 def test_the_inverse_stop_run_is_silent_when_the_commit_is_recent(wl):
     init_real_repo(wl.proj, commit_age_min=1)
-    wl.settings(commit_remind_min=15)
     (wl.proj / "work.txt").write_text("edited\n")
     wl.append_transcript(json.loads(edit_line(wl.proj / "work.txt")))
     wl.say("done for now")

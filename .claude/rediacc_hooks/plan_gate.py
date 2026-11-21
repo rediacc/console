@@ -162,8 +162,6 @@ def _default_settings():
 
     return types.SimpleNamespace(
         effort="high",
-        writer_cap=4,
-        commit_remind_min=15,
         cadence=True,
         agent_hint=True,
         agent_pushback=True,

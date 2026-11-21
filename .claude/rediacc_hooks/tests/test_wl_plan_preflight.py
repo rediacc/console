@@ -566,8 +566,6 @@ def test_the_written_message_names_the_ledger_beside_the_plan_and_renders():
         "V_LOOP_NEXT_MERGED",
         "V_LOOP_NEXT_ON_MAIN",
         "V_LOOP_NEXT_NO_PR_WORK",
-        "V_TURBO_NEXT",
-        "V_TURBO_NEXT_LOCAL",
     ],
 )
 def test_every_message_that_starts_a_plan_orders_the_preflight_first(name):
@@ -580,7 +578,7 @@ def test_every_message_that_starts_a_plan_orders_the_preflight_first(name):
 
 def test_control_a_message_that_starts_no_plan_names_no_preflight():
     messages = import_wl("worklist_messages")
-    assert "--plan-preflight" not in messages.N_TURBO_LOCAL
+    assert "--plan-preflight" not in messages.V_LOOP_NEXT_MERGE_WAIT
     assert "--plan-preflight" not in messages.V_LOOP_NEXT_MERGE
 
 

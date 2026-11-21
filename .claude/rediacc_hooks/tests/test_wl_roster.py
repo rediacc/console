@@ -24,6 +24,7 @@ import pytest
 from rediacc_hooks.tests import wlfix
 
 ROSTER_PY = wlfix.STOP_DIR / "wl_roster.py"
+R = wlfix.import_wl("wl_roster")
 GUARD_PY = wlfix.STOP_DIR.parents[1] / "rediacc_hooks" / "guards" / "block_agent_cap.py"
 
 # The subprocess that computes one verdict. It folds the fixture store exactly as the Stop hook does and prints the verdict as JSON.
@@ -311,6 +312,17 @@ W1, W2, W3, W4, W5 = (
     "a1000000000000005",
 )
 P1, P2 = "a2000000000000001", "a2000000000000002"
+# The cap is fixed in code at 25 (agent/plans/PLAN-simple-two-tree-loop.md ruling 11). These worlds were written when four writers filled it, so `pad` plants the other CAP - 4 as OLDER leased writers mid tool call: "W1..W4" still fill the cap, W5 is still the newest and so the excess, and no filler is silent or owes a status.
+CAP = R.WRITER_CAP
+FILL = CAP - 4
+
+
+def pad(fix, n: int = FILL) -> tuple[str, ...]:
+    ids = tuple("a9%015d" % (i + 1) for i in range(n))
+    for i, aid in enumerate(ids):
+        mk_sub(fix, aid, "general-purpose", 60 + i)
+        plant_lease(fix, "pad%02d" % i, aid)
+    return ids
 
 
 def honest_world(fix) -> None:
@@ -414,6 +426,7 @@ def plant_shell_wait(fix, aid: str, shell_id: str, running: bool = True) -> None
 
 def test_r3d_an_agent_waiting_on_its_own_running_shell_is_live_and_fills_a_slot(wl):
     """The 2026-09-24 flicker: the babysitter ended its turn waiting on receipt shell bp0oujd2w, the event listed only the shell, and the roster called it finished while a queued item read a free slot."""
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3)):
         mk_sub(wl, aid, "general-purpose", 10 - i)
         plant_lease(wl, "cap%d" % i, aid)
@@ -535,16 +548,18 @@ def test_r9c_the_roster_line_reads_a_workflow_by_its_agents_too(wl):
 
 
 def test_r4_five_leased_writers_exceed_the_cap_and_the_newest_is_the_excess(wl):
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3, W4, W5)):
         mk_sub(wl, aid, "general-purpose", 10 - i)
         plant_lease(wl, "cap%d" % i, aid)
     v = verdict(wl)
-    assert len(v["writers"]) == 5, v["writers"]
+    assert len(v["writers"]) == CAP + 1, v["writers"]
     assert v["over_cap"] == [W5], v["over_cap"]
     assert v["state"] == "DISHONEST"
 
 
 def test_r4b_four_writers_and_two_plan_agents_are_within_the_cap(wl):
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3, W4)):
         mk_sub(wl, aid, "general-purpose", 10 - i)
         plant_lease(wl, "cap%d" % i, aid)
@@ -557,6 +572,7 @@ def test_r4b_four_writers_and_two_plan_agents_are_within_the_cap(wl):
 
 def test_r4q_a_queued_item_is_covered_only_while_the_cap_is_full(wl):
     """`worker:queue` holds writer work the cap forbids starting; it must never park work behind a cap that is not full."""
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3, W4)):
         mk_sub(wl, aid, "general-purpose", 10 - i)
         plant_lease(wl, "cap%d" % i, aid)
@@ -568,6 +584,7 @@ def test_r4q_a_queued_item_is_covered_only_while_the_cap_is_full(wl):
 
 def test_r4q3_a_queued_item_never_owes_a_status(wl):
     """`queue` has no transcript and cannot report, so an old queue lease must not raise WORKER STATUS DUE (2026-09-24: it blocked a stop with no remedy)."""
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3, W4)):
         mk_sub(wl, aid, "general-purpose", 10 - i)
         plant_lease(wl, "cap%d" % i, aid)
@@ -590,6 +607,7 @@ def test_r4q2_a_queued_item_with_a_free_slot_is_a_defect(wl):
 
 
 def test_r4c_a_depth_two_writer_child_counts_toward_the_cap(wl):
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3, W4)):
         mk_sub(wl, aid, "general-purpose", 10 - i)
         plant_lease(wl, "cap%d" % i, aid)
@@ -678,6 +696,7 @@ def test_r5d_a_quiet_transcript_with_nothing_in_flight_is_silent_and_a_long_tool
 
 
 def test_r6_no_environment_variable_moves_the_cap_or_the_ping(wl):
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3, W4, W5)):
         mk_sub(wl, aid, "general-purpose", 30 - i, last="text")
         plant_lease(wl, "cap%d" % i, aid, lease_age_min=21)
@@ -698,20 +717,52 @@ def test_r6_no_environment_variable_moves_the_cap_or_the_ping(wl):
     assert len(v["status_due"]) == 5, v["status_due"]
 
 
-def test_r6c_writer_cap_is_the_queue_settings_line_and_defaults_to_four(wl):
-    """D12: `writer_cap:` in QUEUE.md moves the cap; with the block absent or the value bad it is 4. The env hatch stays inert."""
-    for i, aid in enumerate((W1, W2, W3)):
+def test_r6c_writer_cap_is_fixed_at_25_and_a_queue_line_moves_nothing(wl):
+    """agent/plans/PLAN-simple-two-tree-loop.md B5: the cap is WRITER_CAP, 25, whatever QUEUE.md says. A `writer_cap: 4` line is refused by the settings parser by name and leaves the cap where it is; the env hatch stays inert. CONTROL: a mutant that restores the QUEUE.md read turns this case red (`test_r6c_control_a_queue_reading_mutant_goes_red`)."""
+    for i, aid in enumerate((W1, W2, W3, W4, W5)):
         mk_sub(wl, aid, "general-purpose", 30 - i, last="text")
         plant_lease(wl, "cap%d" % i, aid, lease_age_min=5)
-    assert verdict(wl)["writer_cap"] == 4
-    assert verdict(wl)["over_cap"] == []
-    wl.settings(writer_cap=2)
-    v = verdict(wl, {"WORKLIST_WRITER_CAP": "99"})
-    assert v["writer_cap"] == 2, v["writer_cap"]
-    assert v["over_cap"] == [W3], v["over_cap"]
     queue = wl.proj / "agent" / "plans" / "QUEUE.md"
-    queue.write_text(queue.read_text(encoding="utf-8").replace("writer_cap: 2", "writer_cap: lots"))
-    assert verdict(wl)["writer_cap"] == 4
+    queue.write_text(
+        "# Plan queue\n\n## Settings\n\n```stop-hook\neffort: high\nwriter_cap: 4\n```\n\n"
+        "## Promoted\n",
+        encoding="utf-8",
+    )
+    v = verdict(wl, {"WORKLIST_WRITER_CAP": "4"})
+    assert v["writer_cap"] == 25, v["writer_cap"]
+    assert v["over_cap"] == [], v["over_cap"]
+    planqueue = wlfix.import_wl("wl_planqueue")
+    problems = planqueue.settings_for(wl.proj)[1]
+    assert any("'writer_cap' is not a setting" in p and "`writer_cap: 4`" in p for p in problems)
+
+
+def test_r6c_control_a_queue_reading_mutant_goes_red(wl, tmp_path):
+    """The mutant: `writer_cap` reads `writer_cap:` from the QUEUE.md fence again. Run against the same world as r6c, it reports a cap of 4 and four writers over it, so r6c's assertions would fail on it."""
+    mutant = tmp_path / "mutant_stop"
+    shutil.copytree(wlfix.STOP_DIR, mutant, ignore=shutil.ignore_patterns("__pycache__"))
+    src = (mutant / "wl_roster.py").read_text(encoding="utf-8")
+    real = "    del root\n    return WRITER_CAP\n"
+    assert src.count(real) == 1, "the mutation site moved; update the mutant"
+    reader = (
+        "    import pathlib, re\n"
+        "    q = pathlib.Path(root) / 'agent' / 'plans' / 'QUEUE.md'\n"
+        "    m = re.search(r'(?m)^writer_cap: *([0-9]+)', q.read_text()) if q.is_file() else None\n"
+        "    return int(m.group(1)) if m else WRITER_CAP\n"
+    )
+    (mutant / "wl_roster.py").write_text(src.replace(real, reader), encoding="utf-8")
+    for i, aid in enumerate((W1, W2, W3, W4, W5)):
+        mk_sub(wl, aid, "general-purpose", 30 - i, last="text")
+        plant_lease(wl, "cap%d" % i, aid, lease_age_min=5)
+    (wl.proj / "agent" / "plans" / "QUEUE.md").write_text(
+        "# Plan queue\n\n## Settings\n\n```stop-hook\neffort: high\nwriter_cap: 4\n```\n\n"
+        "## Promoted\n",
+        encoding="utf-8",
+    )
+    v = verdict(wl, stop_dir=mutant)
+    assert v["writer_cap"] == 4, v["writer_cap"]
+    assert v["over_cap"] == [W5], v["over_cap"]
+    # CONTROL: the real module on the same world is the r6c reading.
+    assert verdict(wl)["writer_cap"] == 25
 
 
 def test_r6b_the_sealed_modules_read_no_environment_and_the_limits_are_literals():
@@ -725,7 +776,7 @@ def test_r6b_the_sealed_modules_read_no_environment_and_the_limits_are_literals(
     for stmt in ast.parse(ROSTER_PY.read_text(encoding="utf-8")).body:
         if isinstance(stmt, ast.Assign) and isinstance(stmt.targets[0], ast.Name):
             consts[stmt.targets[0].id] = stmt.value
-    for name, want in (("DEFAULT_WRITER_CAP", 4), ("STATUS_PING_MIN", 20)):
+    for name, want in (("WRITER_CAP", 25), ("STATUS_PING_MIN", 20)):
         node = consts.get(name)
         shown = ast.unparse(node) if node is not None else "absent"
         assert isinstance(node, ast.Constant), "%s is %s" % (name, shown)
@@ -789,7 +840,7 @@ def test_s1_an_honest_roster_allows_with_the_roster_and_without_the_old_pushes(w
     stop_world(wl)
     got = overdue(wl)
     assert got.decision == "allow", wl.why("s1", "allow", got, "ROSTER HONEST")
-    assert "ROSTER HONEST: 3 writer(s)/4, 1 reader(s)" in got.out, got.out[:600]
+    assert "ROSTER HONEST: 3 writer(s)/%d, 1 reader(s)" % CAP in got.out, got.out[:600]
     for needle in ("PURE BACKGROUND WAIT", "IN-FLIGHT WORK", "NOTHING HAS MOVED"):
         assert needle not in got.out, "s1: %r still pushed: %s" % (needle, got.out[:600])
     # POSITIVE CONTROL, one planted fact: release one lease and the same stop blocks, naming the writer.
@@ -805,6 +856,7 @@ def test_s1_an_honest_roster_allows_with_the_roster_and_without_the_old_pushes(w
 def test_s2_five_writers_block_on_the_cap_and_no_variable_lifts_it(wl):
     wl.brief_now()
     wl.hand_now()
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3, W4, W5)):
         mk_sub(wl, aid, "general-purpose", 30 - i, last="text")
         plant_lease(wl, "cap%d" % i, aid, lease_age_min=21)
@@ -823,7 +875,9 @@ def test_s2_five_writers_block_on_the_cap_and_no_variable_lifts_it(wl):
         got = wl.run(extra)
         label = "s2 (%s)" % ("hatches" if extra else "plain")
         assert got.decision == "block", wl.why(label, "block", got, "CAP")
-        assert "PARALLEL-WRITER CAP EXCEEDED: 5 writer agent(s)" in got.out, got.out[:600]
+        assert "PARALLEL-WRITER CAP EXCEEDED: %d writer agent(s)" % (CAP + 1) in got.out, got.out[
+            :600
+        ]
         for aid in (W1, W2, W3, W4, W5):
             assert aid in got.out, "%s: the cap block does not name %s" % (label, aid)
         assert "TaskStop %s" % W5 in got.out, "%s: the newest writer is not the excess" % label
@@ -834,6 +888,7 @@ def test_s2_five_writers_block_on_the_cap_and_no_variable_lifts_it(wl):
 def test_s2b_four_writers_and_two_readers_draw_no_cap_block(wl):
     wl.brief_now()
     wl.hand_now()
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3, W4)):
         mk_sub(wl, aid, "general-purpose", 0)
         plant_lease(wl, "cap%d" % i, aid)
@@ -958,6 +1013,7 @@ def lastevent_file(fix):
 
 def waiting_since_the_event(fix) -> str:
     """Three live writers, plus W4: listed running when the last Stop event was written, and since then ended its turn to wait on shell `bshell09`, which that event never saw. Returns an open item id to lease."""
+    pad(fix)
     for i, aid in enumerate((W1, W2, W3)):
         mk_sub(fix, aid, "general-purpose", 1)
         plant_lease(fix, "cap%d" % i, aid)
@@ -1014,7 +1070,7 @@ def test_q1b_control_a_shell_already_reported_back_frees_the_slot(wl):
     os.utime(tx, (st.st_atime, st.st_mtime))
     got = wl.cli("--lease", wlfix.ME, item, "+30", "worker:queue", "held for the cap")
     assert got.rc != 0, got.out[:300]
-    assert "3 of 4 writer slots are busy" in got.err, got.err[:400]
+    assert "%d of %d writer slots are busy" % (CAP - 1, CAP) in got.err, got.err[:400]
     assert "spawn that writer first" in got.err, got.err[:400]
 
 
@@ -1043,7 +1099,7 @@ def test_q1c_a_shell_whose_stream_ended_frees_the_slot_without_a_notification(wl
         finally:
             shutil.rmtree(planted, ignore_errors=True)
         assert got.rc != 0, (marker, got.out[:300])
-        assert "3 of 4 writer slots are busy" in got.err, got.err[:400]
+        assert "%d of %d writer slots are busy" % (CAP - 1, CAP) in got.err, got.err[:400]
 
 
 def test_q1d_control_a_stream_still_growing_keeps_the_agent_waiting(wl):
@@ -1250,6 +1306,7 @@ def plant_queued(fix, item_id: str, text: str, age_min: float, expired: bool = F
 
 def blocked_queue_world(fix, blocker_open: bool = True, expired: bool = False) -> None:
     """3 live writers (1 free slot), an open blocker item, and two queued items: the OLDER one declares BLOCKED_BY the blocker (#bea10927 on 2026-09-24, waiting on A3's golden files)."""
+    pad(fix)
     for i, aid in enumerate((W1, W2, W3)):
         mk_sub(fix, aid, "general-purpose", 10 - i)
         plant_lease(fix, "cap%d" % i, aid)

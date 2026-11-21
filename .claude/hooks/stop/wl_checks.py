@@ -87,6 +87,18 @@ except Exception:
 # Heading, any level, so "## Remaining" and "### Remaining work" both count.
 REMAINING_HEADING = re.compile(r"^[ \t]{0,3}#{1,4}[ \t]*Remaining\b", re.MULTILINE | re.IGNORECASE)
 
+# Minutes without a commit, with this session's own edits still uncommitted, before the commit reminder speaks (agent/plans/PLAN-fast-loop.md Part 2). A reminder, never a block. Fixed in code (agent/plans/PLAN-simple-two-tree-loop.md ruling 11); the post-tool member reads it through `wl_uncommitted.remind_min`.
+COMMIT_REMIND_MIN = 15
+
+
+def cadence_on(settings) -> bool:
+    """True when the cadence gate may pause a stop. Env `WORKLIST_CADENCE` set to `on` or `off` overrides (the test seam, the twin of WORKLIST_JUDGE: the fixtures run with it `off`); any other value is ignored and the effort level's bundle decides. The fence takes no `cadence:` line (agent/plans/PLAN-simple-two-tree-loop.md B5)."""
+    seam = os.environ.get("WORKLIST_CADENCE", "")
+    if seam in ("on", "off"):
+        return seam == "on"
+    return bool(settings.cadence)
+
+
 # Consecutive stops that may move nothing before the hook demands a planning or investigation agent. Three is the operator's number, not a guess.
 STUCK_ROUNDS = int(os.environ.get("WORKLIST_STUCK_ROUNDS", "3"))
 # How recently the in-flight item must have been refreshed for the session to count as SUPERVISING a long background job rather than having forgotten it.
@@ -3268,8 +3280,6 @@ def loop_next_text(state, root, state_doc, pr_finish_fired):
         "plans": ", ".join(_base(p) for p in state.plans),
         "delete": "",
         "ahead": 0,
-        # The two merged-arm templates still carry a `%(turbo)s` slot until worklist_messages drops it (agent/plans/PLAN-simple-two-tree-loop.md B5); it renders empty.
-        "turbo": "",
     }
     if kind == wl_prscope.MERGED:
         if not nxt:
@@ -3564,7 +3574,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     root = C.project_root(C.project_start(event))
     # The session's own checkout: `root` of the landing tree is the main checkout (LT14), so the branch, role and PR reads below start here.
     own = own_tree(event)
-    # THE SWITCHBOARD (agent/plans/QUEUE.md `## Settings`), read ONCE per stop from the event's own root, so a fixture project reads its own QUEUE.md and never the operator's: judge, cadence, agent hint and writer cap all come from here.
+    # THE SWITCHBOARD (agent/plans/QUEUE.md `## Settings`), read ONCE per stop from the event's own root, so a fixture project reads its own QUEUE.md and never the operator's: the effort level and the judge, cadence and agent hint it resolves come from here. The writer cap is wl_roster.WRITER_CAP and the commit reminder COMMIT_REMIND_MIN, both fixed in code.
     _cfg, _cfg_problems = wl_planqueue.settings_for(root)
     _writer_cap = wl_roster.writer_cap(root)
     # THE EFFORT LEVEL (agent/plans/PLAN-stop-hook-effort.md), active for every outq_add of this stop; each violation is weighed against it once, below, before the stand-down profiles.
@@ -5178,7 +5188,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 _txt,
             )
     # ---- THE LOOP-SPEED ADVISORIES (agent/plans/PLAN-fast-loop.md Parts 2-4; operator 2026-10-06: every one is ADVISORY, never a block). Each rides `outq_add` (the allow-report queue), so none can hold a stop, and each sits in `wl_standdown.FOCUS_ADVISORY_KEYS` so focus mode releases it. The facts come from state this stop already read (the session's own transcript, local git, and the CI state read above): no new GitHub call. Each is wrapped like every sibling detector, so a broken read is silence.
-    #   commit-remind   this session's own still-dirty files and no commit for `commit_remind_min` minutes.
+    #   commit-remind   this session's own still-dirty files and no commit for COMMIT_REMIND_MIN (15) minutes.
     #   receipt-behind  the pre-push receipt is N code commits behind HEAD while commits are unpushed.
     #   ci-hold         the PR's run on the pushed head is in progress and not red, and commits are local only.
     try:
@@ -5186,7 +5196,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             root,
             event.get("transcript_path"),
             state_doc,
-            minutes=int(_cfg.commit_remind_min),
+            minutes=COMMIT_REMIND_MIN,
         )
         S.save_state(worklist, session_id, state_doc)
         if _uc_facts:
@@ -6329,7 +6339,7 @@ def run_stop(event, event_ok, worklist, hook_file):
 
     # ---- THE CADENCE GATE. One report turn between hook demands. ----------- Sits immediately before the block so every check has already been computed: a paused stop still KNOWS everything, it just does not spend the operator's turn demanding it again.
     cad = state_doc.setdefault("cadence", {})
-    cad_off = not _cfg.cadence
+    cad_off = not cadence_on(_cfg)
     always_now = any(a for _k, a, _t in violations)
     # (F) THE MISSION TIER DEFEATS THE PAUSE, exactly as the always tier does, and this is the operator's sentence made executable: "There should be list of 'has to show with this order' until we check all of them, we should not be able to say 'but this stop is YOURS'."
     #

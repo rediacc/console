@@ -1,7 +1,7 @@
 {
   "$why": [
-    "The Stop hook's one effort dial (agent/plans/PLAN-stop-hook-effort.md). agent/plans/QUEUE.md `## Settings` names a level, `effort: quiet|low|smart|high|ultra`, each a superset of the one before; this file says what each level turns on.",
-    "`bundles` gives each level its switch values. Settings resolve as effort, then this bundle, then an explicit key in the QUEUE.md fence, which wins (`wl_planqueue.settings`).",
+    "The Stop hook's one effort dial (agent/plans/PLAN-stop-hook-effort.md). agent/plans/QUEUE.md `## Settings` names a level, `effort: quiet|low|smart|high`, each a superset of the one before; this file says what each level turns on. `effort` is the only setting (agent/plans/PLAN-simple-two-tree-loop.md B5).",
+    "`bundles` gives each level its switch values: cadence, judge, agent_hint and agent_pushback. They resolve from the level alone; the QUEUE.md fence takes no override line (`wl_planqueue.settings`). writer_cap (25, wl_roster.WRITER_CAP) and commit_remind_min (15, wl_checks.COMMIT_REMIND_MIN) are fixed in code.",
     "`checks` gives every Stop-hook check key exactly once. A blocking key (a `vadd` in wl_checks.py) carries `block` and `advise`: it blocks at `block` and above, rides the advisory queue from `advise` up to the level below `block`, and is off below `advise`. An advisory-only key (an `outq_add`) carries `advise` alone. A FLOOR key is the string `floor`: it blocks at every level, and the set is the literal in .claude/hooks/stop/wl_floor.py, not this file.",
     "Kept honest by the effort-table rule of `npm run check:ci-plan-record`: every key the hook can produce appears once, no unknown key, every FLOOR key is `floor` and nothing else is, and `block` is never below `advise`.",
     "`tuned` stamps every key the effort tuner changed (agent/plans/PLAN-stop-hook-effort-tuning.md, .claude/hooks/stop/wl_effort_tune.py): `direction`, the `from` entry, `tuned_at`, `review_after` and the outcome rows it rests on. Promotions are applied by the tuner with a report line; demotions only through the operator's answer to one batched /ask. A FLOOR key never appears here, and the effort-table rule refuses one that does."
@@ -10,70 +10,28 @@
     "quiet",
     "low",
     "smart",
-    "high",
-    "ultra"
+    "high"
   ],
   "bundles": {
     "quiet": {
-      "turbo": false,
-      "turbo_push": "batch-end",
-      "batch_size": 1,
-      "plan_concurrency": 1,
-      "writer_cap": 4,
-      "commit_remind_min": 15,
-      "backup_push_h": 4,
       "cadence": true,
       "judge": "off",
       "agent_hint": false,
       "agent_pushback": false
     },
     "low": {
-      "turbo": false,
-      "turbo_push": "batch-end",
-      "batch_size": 1,
-      "plan_concurrency": 1,
-      "writer_cap": 4,
-      "commit_remind_min": 15,
-      "backup_push_h": 4,
       "cadence": true,
       "judge": "off",
       "agent_hint": false,
       "agent_pushback": false
     },
     "smart": {
-      "turbo": false,
-      "turbo_push": "batch-end",
-      "batch_size": 1,
-      "plan_concurrency": 1,
-      "writer_cap": 4,
-      "commit_remind_min": 15,
-      "backup_push_h": 4,
       "cadence": true,
       "judge": "core",
       "agent_hint": true,
       "agent_pushback": true
     },
     "high": {
-      "turbo": false,
-      "turbo_push": "batch-end",
-      "batch_size": 1,
-      "plan_concurrency": 1,
-      "writer_cap": 4,
-      "commit_remind_min": 15,
-      "backup_push_h": 4,
-      "cadence": true,
-      "judge": "full",
-      "agent_hint": true,
-      "agent_pushback": true
-    },
-    "ultra": {
-      "turbo": true,
-      "turbo_push": "batch-end",
-      "batch_size": 3,
-      "plan_concurrency": 5,
-      "writer_cap": 15,
-      "commit_remind_min": 15,
-      "backup_push_h": 4,
       "cadence": true,
       "judge": "full",
       "agent_hint": true,

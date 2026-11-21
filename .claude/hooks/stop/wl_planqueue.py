@@ -92,38 +92,25 @@ def ordered(text: str) -> list[str]:
 
 
 # ------------------------------------------------------------ the settings block
-# agent/plans/PLAN-stop-hook-turbo.md D1/D2: `## Settings` above `## Promoted` holds ONE fenced block, info string `stop-hook`, of `key: value` lines with an optional ` -- <note>`. It is the single switchboard for the Stop hook; a reader that doubts anything falls back to the fail-safe value of the key.
+# agent/plans/PLAN-stop-hook-turbo.md D1/D2: `## Settings` above `## Promoted` holds ONE fenced block, info string `stop-hook`, of `key: value` lines with an optional ` -- <note>`. It is the single switchboard for the Stop hook; a reader that doubts anything falls back to the fail-safe value.
 #
-# agent/plans/PLAN-stop-hook-effort.md: the block names ONE `effort` level, and every other value resolves as effort -> that level's bundle in .claude/config/effort.json (`wl_effort.bundle`) -> an explicit line in the fence, which wins. A missing or bad `effort:` line is `high` (wl_effort.FAILSAFE): every check, as before the dial existed. There is no off switch; `effort: quiet` keeps only the FLOOR (wl_floor).
+# agent/plans/PLAN-simple-two-tree-loop.md B5 (ruling 11): the block takes ONE key, `effort`, and refuses every other line by name with the line to delete. The level's bundle in .claude/config/effort.json (`wl_effort.bundle`) decides judge, cadence, agent_hint and agent_pushback, and nothing in the fence overrides them. writer_cap (wl_roster.WRITER_CAP) and commit_remind_min (wl_checks.COMMIT_REMIND_MIN) are fixed in code. A missing or bad `effort:` line is `high` (wl_effort.FAILSAFE): every check. There is no off switch; `effort: quiet` keeps only the FLOOR (wl_floor).
 
 SETTINGS_HEADING = "## Settings"
 SETTINGS_FENCE = "stop-hook"
 EFFORT_KEY = "effort"
-BOOL_KEYS = ("turbo", "cadence", "agent_hint", "agent_pushback")
-INT_KEYS = ("batch_size", "plan_concurrency", "writer_cap", "commit_remind_min", "backup_push_h")
-# Integer keys for which 0 is a value (it turns the feature off) rather than a typo.
-ZERO_OK_KEYS = ("backup_push_h",)
-# Keys whose value is one word from a fixed set (agent/plans/PLAN-turbo-local-first.md LF-W1; the effort plan's levels and judge modes).
+# The bundle switches typed as on|off when a bundle value is checked (`resolve`). Never fence keys.
+BOOL_KEYS = ("cadence", "agent_hint", "agent_pushback")
+# Keys whose value is one word from a fixed set: the effort levels, and the judge modes a bundle may name.
 CHOICE_KEYS = {
     EFFORT_KEY: wl_effort.LEVELS,
-    "turbo_push": ("batch-end", "pr"),
     "judge": wl_effort.JUDGE_MODES,
 }
-# The fence keys, in the render order of a new block and of the in-flight mode line: the level, then the switches a level's bundle sets that the operator overrides in practice. A literal tuple: check:ci-scope-mirrors reads it as the oracle of CLAUDE.md's `pr.queue-switches` list.
-SETTINGS_KEYS = (
-    "effort",
-    "turbo",
-    "turbo_push",
-    "batch_size",
-    "plan_concurrency",
-    "writer_cap",
-    "commit_remind_min",
-    "backup_push_h",
-    "judge",
-)
-# Bundle switches that are no longer fence keys of their own and survive only as an explicit override line: the level decides them.
-OVERRIDE_ONLY_KEYS = ("cadence", "agent_hint", "agent_pushback")
-KNOWN_KEYS = SETTINGS_KEYS + OVERRIDE_ONLY_KEYS
+# The fence keys. A literal tuple: check:ci-scope-mirrors reads it as the oracle of CLAUDE.md's `pr.queue-switches` list.
+SETTINGS_KEYS = ("effort",)
+# The switches the level resolves and the fence never names, in the render order of the in-flight mode line after `effort`.
+BUNDLE_KEYS = ("judge", "cadence", "agent_hint", "agent_pushback")
+KNOWN_KEYS = SETTINGS_KEYS + BUNDLE_KEYS
 NOTE_SEP = " -- "
 _FIELD_NOTE = re.compile(r"[ \t]--[ \t]")
 _SOLO = re.compile(r"[ \t]--[ \t]+solo[ \t]*$")
@@ -131,19 +118,9 @@ _SOLO = re.compile(r"[ \t]--[ \t]+solo[ \t]*$")
 
 @dataclasses.dataclass(frozen=True)
 class Settings:
-    """The effective switches, resolved from the effort level, its bundle and the fence's overrides. `notes` maps a key to the note after ` -- ` on its line. The field defaults are the `high` bundle, the fail-safe level."""
+    """The effective switches, resolved from the effort level and its bundle. `notes` maps `effort` to the note after ` -- ` on its line. The field defaults are the `high` bundle, the fail-safe level."""
 
     effort: str = wl_effort.FAILSAFE
-    turbo: bool = False
-    # Under turbo, when the batch is pushed (agent/plans/PLAN-turbo-local-first.md): `batch-end` holds every commit locally until the batch completes, then pushes and opens the PR once; `pr` is the earlier behaviour, a PR open while the batch fills. Read only when turbo is on.
-    turbo_push: str = "batch-end"
-    batch_size: int = 1
-    plan_concurrency: int = 1
-    writer_cap: int = 4
-    # Minutes without a commit, with this session's own edits still uncommitted, before the commit reminder speaks (PLAN-fast-loop.md Part 2). A reminder, never a block.
-    commit_remind_min: int = 15
-    # Hours the oldest unpushed commit may age before the hook advises a backup push with no PR (PLAN-turbo-local-first.md D4); 0 turns the advisory off.
-    backup_push_h: int = 4
     # `off`, `core` (the judge without riders: no regression sweep, deferral audit, settle or admission sections) or `full`.
     judge: str = "full"
     cadence: bool = True
@@ -155,18 +132,18 @@ class Settings:
 _DEFAULTS = Settings()
 
 
+def refusal(key: str, line: str) -> str:
+    """The refusal of a fence line naming anything but `effort`: the key by name and the line to delete."""
+    return "%r is not a setting (effort is the only one); delete the line `%s`" % (key, line)
+
+
 def _value(key: str, raw: str):
-    """The typed value of `raw` for `key`; ValueError names what was expected."""
+    """The typed value of `raw` for `key` (`effort`, or a bundle switch); ValueError names what was expected."""
     raw = raw.strip()
     if key in BOOL_KEYS:
         if raw not in ("on", "off"):
             raise ValueError("%s: expected on|off, got %r" % (key, raw))
         return raw == "on"
-    if key in INT_KEYS:
-        floor = 0 if key in ZERO_OK_KEYS else 1
-        if not re.fullmatch(r"[0-9]+", raw) or int(raw) < floor:
-            raise ValueError("%s: expected an integer >= %d, got %r" % (key, floor, raw))
-        return int(raw)
     if key in CHOICE_KEYS:
         if raw not in CHOICE_KEYS[key]:
             raise ValueError("%s: expected %s, got %r" % (key, "|".join(CHOICE_KEYS[key]), raw))
@@ -174,15 +151,15 @@ def _value(key: str, raw: str):
     raise ValueError("unknown key %r (known: %s)" % (key, ", ".join(KNOWN_KEYS)))
 
 
-def resolve(level: str, overrides: dict) -> tuple[Settings, list[str]]:
-    """(settings, problems) for `level` with `overrides` ({key: typed value}) on top of its bundle. A bundle value that does not type-check is dropped with a problem, so the field keeps the fail-safe default."""
+def resolve(level: str) -> tuple[Settings, list[str]]:
+    """(settings, problems) for `level`, from its bundle alone. A bundle value that does not type-check is dropped with a problem, so the field keeps the fail-safe default."""
     problems: list[str] = []
     table, why = wl_effort.load()
     if why:
         problems.append(why)
     values: dict = {}
     for key, raw in wl_effort.bundle(level, table).items():
-        if key not in KNOWN_KEYS or key == EFFORT_KEY:
+        if key not in BUNDLE_KEYS:
             problems.append("%s: bundle %s sets unknown key %r" % (wl_effort.TABLE_REL, level, key))
             continue
         shown = ("on" if raw else "off") if isinstance(raw, bool) else str(raw)
@@ -190,7 +167,6 @@ def resolve(level: str, overrides: dict) -> tuple[Settings, list[str]]:
             values[key] = _value(key, shown)
         except ValueError as exc:
             problems.append("%s: bundle %s: %s" % (wl_effort.TABLE_REL, level, exc))
-    values.update(overrides)
     values[EFFORT_KEY] = level
     return dataclasses.replace(_DEFAULTS, **values), problems
 
@@ -266,7 +242,7 @@ def _scan(text: str):
 
 
 def _parse(text: str) -> tuple[Settings, list[str], set[str]]:
-    """(settings, problems, the keys the block set validly)."""
+    """(settings, problems, the keys the block set validly). A line naming any key but `effort` is a problem naming the key and the line to delete, and changes nothing."""
     block, problems = _scan(text)
     problems = list(problems)
     found: dict[str, list[tuple[str, str | None]]] = {}
@@ -277,13 +253,14 @@ def _parse(text: str) -> tuple[Settings, list[str], set[str]]:
                 if line.strip():
                     problems.append("not a `key: value` line: %r" % line.strip())
                 continue
+            if row[0] not in SETTINGS_KEYS:
+                problems.append(refusal(row[0], line.strip()))
+                continue
             found.setdefault(row[0], []).append((row[1], row[2]))
     values: dict = {}
     notes: dict = {}
     for key, rows in found.items():
-        if key not in KNOWN_KEYS:
-            problems.append("unknown key %r (known: %s)" % (key, ", ".join(KNOWN_KEYS)))
-        elif len(rows) > 1:
+        if len(rows) > 1:
             problems.append("%s: set %d times; the default is used" % (key, len(rows)))
         else:
             try:
@@ -293,21 +270,19 @@ def _parse(text: str) -> tuple[Settings, list[str], set[str]]:
                 continue
             if rows[0][1]:
                 notes[key] = rows[0][1]
-    effort_set = EFFORT_KEY in values
-    level = values.pop(EFFORT_KEY, wl_effort.FAILSAFE)
-    got, resolved = resolve(level, values)
-    present = set(values) | ({EFFORT_KEY} if effort_set else set())
-    return dataclasses.replace(got, notes=notes), problems + resolved, present
+    level = values.get(EFFORT_KEY, wl_effort.FAILSAFE)
+    got, resolved = resolve(level)
+    return dataclasses.replace(got, notes=notes), problems + resolved, set(values)
 
 
 def settings(text: str) -> tuple[Settings, list[str]]:
-    """The effective settings of a QUEUE.md text and the problems found. A missing section is all defaults and no problem; a bad key or value falls back to that key's default and the rest still parse."""
+    """The effective settings of a QUEUE.md text and the problems found. A missing section is all defaults and no problem; a bad `effort:` value is `high`, and a line naming any other key is refused by name."""
     got, problems, _set = _parse(text)
     return got, ["%s: %s" % (QUEUE_REL, p) for p in problems]
 
 
 def sources(text: str) -> dict[str, str]:
-    """Per key, where its value came from: `QUEUE.md` when the block sets it validly, `effort <level>` when the level's bundle does, else `default`."""
+    """Per key, where its value came from: `QUEUE.md` when the block sets `effort` validly, `effort <level>` when the level's bundle sets a switch, else `default`."""
     got, _problems, present = _parse(text)
     bundled = wl_effort.bundle(got.effort)
     return {
@@ -352,13 +327,13 @@ def _line(key: str, value, note: str | None) -> str:
 
 
 def set_settings(text: str, updates: dict[str, str], note: str | None = None) -> str:
-    """`text` with `updates` ({key: raw value}) written into the settings fence. Only the fence's lines change: an updated key's line is replaced (later duplicates of it dropped), a key the block lacks is appended, every other byte stays. An EMPTY value removes the key's line, so the level's bundle decides it again. An absent section is created above `## Promoted` with the `effort` line and the updated keys.
+    """`text` with `updates` ({key: raw value}) written into the settings fence. `effort` is the only key. Only the fence's lines change: the `effort` line is replaced (later duplicates of it dropped) or appended, every other byte stays. An EMPTY value removes the line, so the fail-safe level `high` decides. An absent section is created above `## Promoted` with the `effort` line.
 
-    `note` is attached to every updated key. Without it, an updated key keeps its note when its value is unchanged and loses it when the value changes (a stale reason is worse than none). ValueError, nothing written, for an unknown key, a bad value, a multi-line note, or a structurally broken block (section below Promoted, a second or unclosed fence)."""
+    `note` is attached to the updated line. Without it, the line keeps its note when its value is unchanged and loses it when the value changes (a stale reason is worse than none). ValueError, nothing written, for any key but `effort` (refused by name), a bad value, a multi-line note, or a structurally broken block (section below Promoted, a second or unclosed fence)."""
+    for key in updates:
+        if key not in SETTINGS_KEYS:
+            raise ValueError("%r is not a setting (effort is the only one)" % key)
     drop = {k for k, v in updates.items() if not str(v).strip()}
-    for key in drop:
-        if key not in KNOWN_KEYS:
-            raise ValueError("unknown key %r (known: %s)" % (key, ", ".join(KNOWN_KEYS)))
     typed = {k: _value(k, v) for k, v in updates.items() if k not in drop}
     if note is not None:
         note = note.strip()
@@ -380,7 +355,7 @@ def set_settings(text: str, updates: dict[str, str], note: str | None = None) ->
         merged.setdefault(EFFORT_KEY, wl_effort.FAILSAFE)
         lines = [
             _line(k, merged[k], note_for(k) if k in typed else None)
-            for k in KNOWN_KEYS
+            for k in SETTINGS_KEYS
             if k in merged
         ]
         section = "%s\n\n```%s\n%s\n```\n\n" % (SETTINGS_HEADING, SETTINGS_FENCE, "\n".join(lines))
@@ -403,7 +378,7 @@ def set_settings(text: str, updates: dict[str, str], note: str | None = None) ->
         out.append(line)
     out.extend(
         _line(key, typed[key], note_for(key)) + "\n"
-        for key in KNOWN_KEYS
+        for key in SETTINGS_KEYS
         if key in typed and key not in done
     )
     return text[: block[0]] + "".join(out) + text[block[1] :]
@@ -712,7 +687,7 @@ def problems(root, update: bool = False) -> list[str]:
 
 # ------------------------------------------------------------ the Promoted progress block
 # Operator order 2026-10-08 (worklist #1420d4b8): the `## Promoted` section shows the general progress of all its plans and a completed/all box ratio per plan, and the Stop hook keeps it current. The block sits directly under the `## Promoted` heading, between PROGRESS_BEGIN and PROGRESS_END: one overall line, then one table row per numbered entry carrying that entry's own number, its
-# done/total box ratio and its state. Every count is read from the plan files by `rediacc_hooks.plan_gate.open_boxes`, the merge gate's rule (parser count against raw line count, a `Moved-To:` stub followed); an entry whose file is gone is looked for under `agent/plans/_done/`, the rule `block_turbo_early_push` uses. `.ci/config/plan-boxes.json` is the committed second reading of the same boxes and
+# done/total box ratio and its state. Every count is read from the plan files by `rediacc_hooks.plan_gate.open_boxes`, the merge gate's rule (parser count against raw line count, a `Moved-To:` stub followed); an entry whose file is gone is looked for under `agent/plans/_done/`. `.ci/config/plan-boxes.json` is the committed second reading of the same boxes and
 # check:ci-plan-boxes holds it equal to the files, so the block cannot disagree with the registry without one of the two gates going red.
 #
 # A LEDGER, NOT RUNTIME STATE. Its inputs are tracked files, so a clean CI checkout reproduces it: `want` renders it and `problems` (check:ci-plan-record RQ) compares it, so a hand edit or a missed render is a finding. It self-heals locally: `refresh` (the plan verbs, through `wl_planrec.refresh_index`) and `refresh_inflight` (every Stop-hook run, `--queue-set` and `--phase`) both re-render it.
@@ -1113,7 +1088,7 @@ def _onoff(value: bool) -> str:
 
 
 def mode_line(settings: Settings) -> str:
-    """`- Mode: effort smart; turbo off; batch_size 3; ...`, every key of `KNOWN_KEYS` in order, as resolved."""
+    """`- Mode: effort smart; judge core; cadence on; ...`, every key of `KNOWN_KEYS` in order, as resolved."""
     parts = []
     for key in KNOWN_KEYS:
         value = getattr(settings, key)
@@ -1264,7 +1239,7 @@ def render_inflight(inf: InFlight) -> str:
             "- Writers: %d live of writer_cap %d (session %s)%s"
             % (
                 len(ids),
-                inf.settings.writer_cap,
+                importlib.import_module("wl_roster").WRITER_CAP,
                 inf.session or "?",
                 ": %s." % _more(ids) if ids else ".",
             )

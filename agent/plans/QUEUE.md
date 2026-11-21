@@ -12,41 +12,21 @@ Entry format: `1. agent/plans/PLAN-<slug>.md`, optionally followed by ` -- <note
 
 ## Settings
 
-The switchboard for the Stop hook, read by `.claude/hooks/stop/wl_planqueue.py` (`settings`). One fenced block, `key: value` per line, an optional ` -- <note>` carrying the operator's reason. It names one `effort` level (agent/plans/PLAN-stop-hook-effort.md); every other value resolves as that level's bundle in `.claude/config/effort.json`, then an explicit line here, which wins. A missing or bad `effort:` line is `high`, every check as before the dial existed, and any other bad line falls back to the level's value; `npm run check:ci-plan-record` names the problem. Change it with `worklist.py --queue-set <me> key=value ... [--note "<text>"]` (`key=` drops an override), then commit this file.
+The switchboard for the Stop hook, read by `.claude/hooks/stop/wl_planqueue.py` (`settings`). One fenced block holding one line, `effort: <level>`, with an optional ` -- <note>` carrying the operator's reason. `effort` is the only setting (agent/plans/PLAN-simple-two-tree-loop.md ruling 11): its bundle in `.claude/config/effort.json` decides the judge, the cadence, the specialist-agent hint and the agent pushback, and any other line is refused by name with the line to delete. A missing or bad `effort:` line is `high`, every check; `npm run check:ci-plan-record` names the problem. Change it with `worklist.py --queue-set <me> effort=<level> [--note "<text>"]`, then commit this file.
 
 The levels, each a superset of the one before:
 
 - `quiet`: the FLOOR only (`.claude/hooks/stop/wl_floor.py`: the hook cannot see, a broken watch, CI red or unreadable, a dead or over-cap writer, an unread report, a wait with no wake-up timer, STATE.md when compaction is due). No judge. There is no off switch; this is the quietest the hook gets.
-- `low`: plus the mission: open items, the PR's plan, its finish line, its reviews, the turbo and loop orders.
+- `low`: plus the mission: open items, the PR's plan, its finish line, its reviews, the loop orders.
 - `smart`: plus owed work and record integrity; `no-remaining` and `out-of-sync` only advise; the judge runs without riders.
 - `high`: every check, the full judge with its riders.
-- `ultra`: `high` plus the throughput bundle (turbo on, writer_cap 15, plan_concurrency 5, batch_size 3).
 
 `.claude/config/effort.json` gives every check its threshold (`{"block": <level>, "advise": <level>}`, or `floor`); moving a check between levels is an edit there, which the effort-table rule of `npm run check:ci-plan-record` keeps complete.
 
-The overrides (each level's bundle value in brackets for `high`):
-
-- `turbo` (off): `off` keeps one plan per PR. `on` hands each free writer slot the next eligible queued plan, which joins the live PR's `Plan:` line, and keeps going until turbo is switched off.
-- `turbo_push` (batch-end): under turbo, when the push and the PR happen. `batch-end` verifies the batch locally and pushes once when it completes, so the branch has no PR and no CI run until then. `pr` keeps the earlier behaviour: the PR opens at the first push and the batch joins it.
-- `batch_size` (1): under turbo, the minimum number of finished plans before the PR is offered for merge. The merge itself never refuses a shorter PR.
-- `plan_concurrency` (1): under turbo, the most unfinished plans in flight at once. The PR's own unfinished plans and the plans live writers serve count against it, so a free writer slot opens a new plan only below this ceiling.
-- `writer_cap` (4): the most writer agents live at once. A spawn beyond it is refused (`block_agent_cap`), and the Stop hook blocks on a roster above it.
-- `commit_remind_min` (15): minutes without a commit, while this session's own edits are still uncommitted, before the Stop hook and the post-tool hook remind it to commit the verified unit. A reminder, never a block (agent/plans/PLAN-fast-loop.md Part 2).
-- `backup_push_h` (4): under `turbo_push: batch-end`, the age in hours of the oldest unpushed commit that makes the hook advise a backup push (`git push -u origin <branch>`, no PR, so no CI run). `0` turns the advice off.
-- `judge` (full): `off`, `core` (the LLM judge answers whether stopping is honest, with no regression sweep, proof, deferral audit, settle or admission riders) or `full`. The env var `WORKLIST_JUDGE=on|off` overrides it, for tests.
-- `cadence`, `agent_hint`, `agent_pushback` (on): not fence keys of their own any more; the level decides them, and a line here still overrides. `cadence` lets a stop through after a demand when the session has reported something new; `agent_hint` names a specialist agent that matches the open work; `agent_pushback` blocks a stop that declares work out of reach and names the agent that fits.
-
-A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
+Fixed in code, not settable: the writer cap is 25 (`wl_roster.WRITER_CAP`; a spawn beyond it is refused by `block_agent_cap`, the Stop hook blocks on a roster above it, and the lease verb caps the trees on disk with it), and the commit reminder speaks after 15 minutes without a commit while this session's own edits are uncommitted (`wl_checks.COMMIT_REMIND_MIN`, a reminder, never a block).
 
 ```stop-hook
 effort: quiet
-turbo: on
-batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
-plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
-writer_cap: 25 -- operator 2026-10-23: parallel writers on all Promoted plans
-commit_remind_min: 15 -- operator 2026-10-06: PLAN-fast-loop Part 2 default
-turbo_push: batch-end -- operator 2026-10-08: turbo completes plans locally, one push per batch
-backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 ```
 
 ## In flight

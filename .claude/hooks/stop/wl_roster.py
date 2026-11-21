@@ -37,18 +37,14 @@ import wl_leasehelp as LH
 
 # ---- the sealed constants ---------------------------------------------------
 
-# The operator's number, now the `writer_cap:` line of agent/plans/QUEUE.md (default 4 when the block is missing or malformed). A writer beyond it is refused at spawn (guards/block_agent_cap.py) and blocked at Stop (`roster-cap`).
-DEFAULT_WRITER_CAP = 4
+# The operator's number, fixed in code (agent/plans/PLAN-simple-two-tree-loop.md ruling 11): no QUEUE.md line, no variable. A writer beyond it is refused at spawn (guards/block_agent_cap.py) and blocked at Stop (`roster-cap`), and the lease verb caps the trees on disk with it (.ci/rediacc_ci/dev/worktree_lease.py).
+WRITER_CAP = 25
 
 
 def writer_cap(root) -> int:
-    """The writer cap in force at `root`: QUEUE.md's `writer_cap:`, else 4. Any read trouble keeps the default."""
-    try:
-        import wl_planqueue
-
-        return int(wl_planqueue.settings_for(root)[0].writer_cap)
-    except Exception:
-        return DEFAULT_WRITER_CAP
+    """The writer cap in force at `root`: always WRITER_CAP. `root` stays in the signature for the guards and the lease verb that call it; nothing under it is read."""
+    del root
+    return WRITER_CAP
 
 
 # The operator's number. A leased worker whose newest evidence (a transcript write, a tool call in flight, a lease, a --status, its own SendMessage or SubagentStop) is this old is `roster-silent`. Evidence counts as status since 2026-09-24 (operator ruling "Evidence counts as status"), so the separate `roster-status` ping is merged into it.
@@ -82,7 +78,7 @@ def cap_saturated_wait(verdict, open_items, actionable_tasks):
     """
     if not verdict or verdict.get("blind") or open_items or actionable_tasks:
         return False
-    cap = verdict.get("writer_cap", DEFAULT_WRITER_CAP)
+    cap = verdict.get("writer_cap", WRITER_CAP)
     return len(verdict.get("writers") or ()) >= cap or concurrency_saturated(verdict)
 
 

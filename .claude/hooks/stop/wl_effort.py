@@ -2,7 +2,7 @@
 
 THE ASK (operator 2026-10-14): one `effort` instead of a hook switch, a focus verb, turbo and four more booleans, with "a modifiable list, to move some of the checks/tasks between the options instead of that complex switchings". agent/plans/QUEUE.md `## Settings` names the level; `.claude/config/effort.json` is the modifiable list.
 
-THE LEVELS, each a superset of the one before: `quiet` (the FLOOR only), `low` (plus the mission: open items, the PR's plan, its finish line, reviews, the turbo and loop orders), `smart` (plus owed work and record integrity; `no-remaining` and `out-of-sync` start advise-only, and the table's `tuned` section names any the tuner has moved since; the judge runs without riders), `high` (every check, the full judge), `ultra` (high plus the throughput bundle).
+THE LEVELS, each a superset of the one before: `quiet` (the FLOOR only), `low` (plus the mission: open items, the PR's plan, its finish line, reviews, the loop orders), `smart` (plus owed work and record integrity; `no-remaining` and `out-of-sync` start advise-only, and the table's `tuned` section names any the tuner has moved since; the judge runs without riders), `high` (every check, the full judge). There is no level above `high` (agent/plans/PLAN-simple-two-tree-loop.md B5 dropped `ultra` with the throughput knobs).
 
 ONE VERDICT PER KEY AND LEVEL, `verdict(key, level)`: `block`, `advise` (the check rides the advisory queue instead of holding the stop) or `off`. A FLOOR key (`wl_floor`) blocks at every level and is never read from the table. An unreadable table, or a key the table does not list, BLOCKS: the dial can only quiet the hook on purpose, the same rule `stop_hook: off` followed, and the effort-table rule of `npm run check:ci-plan-record` keeps the table complete so the second case does not ship.
 
@@ -19,7 +19,7 @@ import pathlib
 
 import wl_floor
 
-LEVELS = ("quiet", "low", "smart", "high", "ultra")
+LEVELS = ("quiet", "low", "smart", "high")
 # The level a missing or unparseable `effort:` line resolves to: every check, today's judge, no throughput change. A broken line must never be what quiets the hook.
 FAILSAFE = "high"
 FLOOR_MARK = "floor"
@@ -27,15 +27,8 @@ BLOCK, ADVISE, OFF = "block", "advise", "off"
 TABLE_PATH = pathlib.Path(__file__).resolve().parents[2] / "config" / "effort.json"
 TABLE_REL = ".claude/config/effort.json"
 
-# The switch values a bundle may set, with their type: the fence keys a level resolves (wl_planqueue.Settings).
+# The switch values a bundle sets, with their type: the Settings fields a level resolves (wl_planqueue.Settings). The level alone decides them; the QUEUE.md fence takes `effort` and nothing else (agent/plans/PLAN-simple-two-tree-loop.md B5).
 BUNDLE_TYPES = {
-    "turbo": bool,
-    "turbo_push": str,
-    "batch_size": int,
-    "plan_concurrency": int,
-    "writer_cap": int,
-    "commit_remind_min": int,
-    "backup_push_h": int,
     "cadence": bool,
     "agent_hint": bool,
     "agent_pushback": bool,

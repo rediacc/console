@@ -1,6 +1,6 @@
 """wl_uncommitted: the commit reminder's engine (agent/plans/PLAN-fast-loop.md, Part 2).
 
-WHAT IT ANSWERS. "Does this session hold edited files that are still uncommitted, and has the branch gone `commit_remind_min` minutes without a commit?" The answer feeds two advisories that share this one engine and one piece of state: the Stop hook's `commit-remind` line and the PostToolUse member `.claude/hooks/post-tool/commit_remind.py`. Neither blocks (operator ruling 2026-10-06: a reminder, never a wall).
+WHAT IT ANSWERS. "Does this session hold edited files that are still uncommitted, and has the branch gone `wl_checks.COMMIT_REMIND_MIN` minutes without a commit?" The answer feeds two advisories that share this one engine and one piece of state: the Stop hook's `commit-remind` line and the PostToolUse member `.claude/hooks/post-tool/commit_remind.py`. Neither blocks (operator ruling 2026-10-06: a reminder, never a wall).
 
 WHY THE TRANSCRIPT. The worktree is shared, so `git status` alone cannot say whose a dirty file is: a peer session's edit looks the same. The session's own transcript names every file its own Edit, Write, MultiEdit and NotebookEdit calls touched, so the dirty set is intersected with that list and a peer's path never counts.
 
@@ -193,10 +193,11 @@ def own_dirty(root, state_doc, now=None):
 
 
 def remind_min(root):
-    """`commit_remind_min` of the root's QUEUE.md `## Settings` (default 15)."""
-    import wl_planqueue
+    """`wl_checks.COMMIT_REMIND_MIN`, the one constant the Stop hook passes as `minutes` too (agent/plans/PLAN-simple-two-tree-loop.md ruling 11: fixed in code, no QUEUE.md line). `root` is not read."""
+    del root
+    import wl_checks
 
-    return int(wl_planqueue.settings_for(root)[0].commit_remind_min)
+    return int(wl_checks.COMMIT_REMIND_MIN)
 
 
 def evaluate(root, transcript_path, state_doc, now=None, minutes=None):

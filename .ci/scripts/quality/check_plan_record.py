@@ -1694,8 +1694,8 @@ def selftest_effort():
     )
     planted(
         "RE: a bundle switch of the wrong type reds",
-        lambda t: t["bundles"]["smart"].__setitem__("turbo", "on"),
-        "bundles.smart.turbo: expected bool",
+        lambda t: t["bundles"]["smart"].__setitem__("cadence", "on"),
+        "bundles.smart.cadence: expected bool",
     )
     return bad
 
@@ -2320,8 +2320,8 @@ def selftest():
             PQ.problems(root) != [],
             "a stale section was accepted",
         )
-        # RQ-SETTINGS: a clean block is silent, `turbo: onn` is a finding, and `--update` keeps the block byte for byte.
-        with_block = PQ.set_settings(fresh, {"turbo": "on"})
+        # RQ-SETTINGS: a clean block is silent, `effort: highh` is a finding, and `--update` keeps the block byte for byte.
+        with_block = PQ.set_settings(fresh, {"effort": "high"})
         ck("RQ-SETTINGS CONTROL: a block is created above Promoted", "```stop-hook" in with_block)
         R.write_atomic(queue_path, with_block)
         ck(
@@ -2329,21 +2329,21 @@ def selftest():
             PQ.settings_for(root)[1] == [],
             f"got {PQ.settings_for(root)[1]}",
         )
-        bad_block = with_block.replace("turbo: on", "turbo: onn", 1)
+        bad_block = with_block.replace("effort: high", "effort: highh", 1)
         ck(
             "RQ-SETTINGS CONTROL: the perturbation actually changes the file",
             bad_block != with_block,
         )
         R.write_atomic(queue_path, bad_block)
         ck(
-            "RQ-SETTINGS: `turbo: onn` is reported",
+            "RQ-SETTINGS: `effort: highh` is reported",
             PQ.settings_for(root)[1] != [],
             "a malformed value was accepted",
         )
         PQ.problems(root, update=True)
         ck(
             "RQ-SETTINGS CONTROL: --update keeps the block byte for byte",
-            "turbo: onn" in queue_path.read_text(encoding="utf-8"),
+            "effort: highh" in queue_path.read_text(encoding="utf-8"),
             f"{queue_path.read_text(encoding='utf-8')[:200]!r}",
         )
         # RQ-MOVED, red first: the same entry is silent while its plan is live, and a finding once the file is a moved stub. The live half comes first so a moved_problems that fired on everything cannot pass.

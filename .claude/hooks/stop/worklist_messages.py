@@ -255,14 +255,6 @@ time(s) for this failure set%s, so it will not block again for this set. It is
 still red and still yours to decide about:
 %s"""
 
-# ONE LINE, NOT A BLOCK (operator ruling 2026-10-13): a turbo batch is building locally under `turbo_push: batch-end`, so the red on the open PR is reported on every stop and holds none (wl_checks.turbo_build_parks). Args: PR, the failed job count, the jobs on one line (wl_ci.ci_rows_line), the batch plans still open.
-CI_NOTE_TURBO_HELD = (
-    "CI on PR #%s is red on %d job(s): %s. Stood down, not blocking: a turbo batch is building "
-    "locally (turbo_push: batch-end; still open: %s). It blocks again when every plan of the set "
-    "is finished, under --phase babysit|merge, with turbo off, or once turbo_push is switched to pr. A fix may "
-    "go out now with TURBO_PUSH_REASON='red-fix: <why>'."
-)
-
 # ONE LINE, NOT A BLOCK (operator, 2026-10-22): the red head's fix is committed locally and a push pipeline is running, so the push will re-run every failing job (wl_ci.fix_in_flight). Args: PR, the failed job count, the jobs on one line, the red head, the unpushed commit count, the non-paperwork file count, the local head, the pipeline task id.
 CI_NOTE_FIXING = (
     "CI on PR #%s is red on %d job(s): %s (head %s). Stood down, not blocking: %d unpushed "
@@ -749,16 +741,14 @@ CLI_ADOPT_DONE = (
     "    worklist.py --list --open %s\n"
 )
 
-# agent/plans/PLAN-stop-hook-turbo.md D9. The CLI_QUEUE_SET_* strings serve `--queue-set`: usage (static) and the refusal reason (one %s).
+# The CLI_QUEUE_SET_* strings serve `--queue-set` (agent/plans/PLAN-stop-hook-turbo.md D9, narrowed to `effort` alone by agent/plans/PLAN-simple-two-tree-loop.md B5): usage (static) and the refusal reason (one %s).
 
 CLI_QUEUE_SET_USAGE = (
     'usage: --queue-set <me> [key=value ...] [--note "<text>"]\n'
-    "Writes the `## Settings` block of agent/plans/QUEUE.md: effort "
-    "(quiet|low|smart|high|ultra), and the overrides that win over the level's bundle in "
-    ".claude/config/effort.json: turbo (on|off), turbo_push (batch-end|pr), batch_size, "
-    "plan_concurrency, writer_cap, commit_remind_min (integers >= 1), backup_push_h (an "
-    "integer >= 0, 0 off), judge (off|core|full), cadence, agent_hint, agent_pushback "
-    "(on|off). An empty value (`turbo=`) drops the override, so the level decides it again. "
+    "Writes the `## Settings` block of agent/plans/QUEUE.md. `effort` "
+    "(quiet|low|smart|high) is the only key; its bundle in .claude/config/effort.json "
+    "decides judge, cadence, agent_hint and agent_pushback, and any other key is refused. "
+    "An empty value (`effort=`) drops the line, so the fail-safe level `high` decides. "
     "Every pair is validated before the file is touched, the write is atomic, and nothing is "
     "committed: the verb prints the `git add` line. It prints the resolved settings, where "
     "each value comes from, what the level does to the checks, and any problems.\n"
@@ -1554,7 +1544,7 @@ N_CI_QUEUE_PR_STALE_LINE = " (Also: the PR body is stale; fold the refresh into 
 # Advisory lines of agent/plans/PLAN-fast-loop.md Parts 2-4. None of them blocks a stop or a push.
 N_COMMIT_REMIND = (
     "COMMIT REMINDER: %d file(s) edited by this session are still uncommitted (oldest %d min) "
-    "and the last commit is %d min old (threshold %d min, QUEUE.md commit_remind_min). "
+    "and the last commit is %d min old (threshold %d min, wl_checks.COMMIT_REMIND_MIN). "
     "Commit the verified unit now, as one small commit by path:\n%s\n"
     "Form: `git add -- <new paths>`, then `git commit -F <msg> -- <paths>`. "
     "A unit that is not verified yet stays uncommitted; tick its item with `nocommit:<reason>` "
@@ -2412,13 +2402,11 @@ Operator rulings (agent/rulings/<session>.jsonl, rendered into agent/RULES.md):
 
 Plan queue switchboard (agent/plans/QUEUE.md `## Settings`):
   --queue-set <me> [key=value ...] [--note "<text>"]
-                                write effort (quiet|low|smart|high|ultra) and
-                                the overrides that win over its bundle:
-                                turbo, turbo_push, batch_size,
-                                plan_concurrency, writer_cap,
-                                commit_remind_min, backup_push_h, judge,
-                                cadence, agent_hint, agent_pushback (`key=`
-                                drops one); every pair is validated before
+                                write effort (quiet|low|smart|high), the
+                                only key; its bundle decides judge, cadence,
+                                agent_hint and agent_pushback, and any other
+                                key is refused (`effort=` drops the line,
+                                so `high` decides); every pair is validated before
                                 the file is touched, the write is atomic,
                                 nothing is committed (it prints the git add
                                 line). Bare: print the resolved settings, the
@@ -3150,20 +3138,6 @@ N_PR_SCOPE = (
     "Queued, not blocking: %(items)d item(s), %(plans)d other plan(s); next: %(next)s.%(stood)s "
     "See worklist.py --list --open %(me)s."
 )
-# The same line under `turbo: on` (agent/plans/PLAN-stop-hook-turbo.md). Printing "One plan per PR" while turbo was on told the operator the switch had not taken (2026-10-07). `turbo` is one PR_SCOPE_TURBO_* rendered: what the free writer slots will do with the queue.
-N_PR_SCOPE_TURBO = (
-    "%(who)s Turbo is on (batch_size %(batch)d, writer_cap %(cap)d): the PR's plan set blocks, "
-    "%(turbo)s Queued, not blocking: %(items)d item(s), %(plans)d other plan(s); next: "
-    "%(next)s.%(stood)s See worklist.py --list --open %(me)s."
-)
-PR_SCOPE_TURBO_PICKS = (
-    "and free writer slots start %s, each joining this PR's `Plan:` line on the next push."
-)
-PR_SCOPE_TURBO_NONE = "and no queued plan is eligible for a free writer slot right now."
-PR_SCOPE_TURBO_SOLO = (
-    "but %s is a ` -- solo` entry in QUEUE.md, so it runs alone in this PR and no other plan "
-    "joins; turbo batches the queue from the next PR."
-)
 PR_SCOPE_WHO_LIVE = "PR #%(pr)s works %(plans)s."
 PR_SCOPE_WHO_UNREADABLE = "The PR read for %(branch)s failed; scoped to %(plans)s."
 PR_SCOPE_WHO_NO_PR = "Branch %(branch)s has no PR yet."
@@ -3188,7 +3162,7 @@ V_LOOP_NEXT_MERGED = (
     "    git switch -c %(next_branch)s\n"
     "%(stale)s"
     "Then preflight it (pr-babysitter loop step 0): `worklist.py --plan-preflight <me> %(next)s`, "
-    "and work %(next)s's first box: %(box)s%(turbo)s"
+    "and work %(next)s's first box: %(box)s"
 )
 V_LOOP_NEXT_ON_MAIN = (
     "LOOP NEXT: on main with no live branch, and QUEUE.md holds %(next)s. Cut the next branch "
@@ -3196,7 +3170,7 @@ V_LOOP_NEXT_ON_MAIN = (
     "    git switch -c %(next_branch)s\n"
     "%(stale)s"
     "Then preflight it (pr-babysitter loop step 0): `worklist.py --plan-preflight <me> %(next)s`, "
-    "and work %(next)s's first box: %(box)s%(turbo)s"
+    "and work %(next)s's first box: %(box)s"
 )
 V_LOOP_NEXT_NO_PR_WORK = (
     "LOOP NEXT: branch %(branch)s has no PR and no commit ahead of origin/main. Preflight %(next)s "
@@ -3274,61 +3248,6 @@ LOOP_NEXT_BRANCH_UNKNOWN = (
     "<MMDD-(MAX+1)>   (gh could not list today's PR heads: compute MAX as pr-merge step 7 does)"
 )
 LOOP_NEXT_NO_BOX = "(no open box found in its text)"
-# The post-merge arms under `turbo: on` (agent/plans/PLAN-stop-hook-turbo.md D8): the plans the next PR takes beside the next plan. "" with turbo off, so those arms stay byte-identical.
-LOOP_NEXT_TURBO = (
-    "\nTURBO is on (agent/plans/QUEUE.md `## Settings`): the next stops name these queued plans "
-    "for parallel writers (under `turbo_push: pr`, once the branch's PR is open): %s"
-)
-# The turbo arm (D5/D8): turbo on, a live PR, a free writer slot and an eligible queued plan. Fields: pr, free, cap, picks (TURBO_NEXT_PICK lines), finished, batch.
-V_TURBO_NEXT = (
-    "TURBO NEXT: turbo is on (agent/plans/QUEUE.md `## Settings`) and PR #%(pr)s has %(free)d free "
-    "writer slot(s) of %(cap)d. Start ONLY the plans named here, each on its own writer with "
-    "`Plan: <path>` in the spawn prompt (block_plan_concurrency checks it), each preflighted first "
-    "(pr-babysitter loop step 0, `worklist.py --plan-preflight <me> <plan>`):\n"
-    "%(picks)s\n"
-    "Each joins PR #%(pr)s's `Plan:` line on the next push (refresh_pr_body). %(finished)d of the "
-    "PR's plans are finished; the merge is offered at %(batch)d, or sooner when the queue has no "
-    "eligible plan left. Bugs, a red CI and hook-integrity blocks come first."
-)
-TURBO_NEXT_PICK = "    TURBO: start %s on a writer (slot %d of %d); its first box is %s"
-
-# Turbo local-first (agent/plans/PLAN-turbo-local-first.md D2-D6): under `turbo: on` with `turbo_push: batch-end` a no-PR branch fills its batch locally and opens its PR once, when the batch completes.
-# N_TURBO_LOCAL: the no-PR loop-next arm while the batch is incomplete, an advisory. Keys: branch, ahead, finished, batch, plans, open (the unfinished plans, from wl_checks._open_in_set).
-N_TURBO_LOCAL = (
-    "TURBO LOCAL-FIRST: %(ahead)d commit(s) on %(branch)s are held locally; batch %(finished)d/"
-    "%(batch)d finished (%(plans)s); still open: %(open)s. No push or PR until the batch completes: under "
-    "`turbo_push: batch-end` the batch is verified locally and pushed once. The one push before "
-    "then is a backup push with no PR, when the backup-push advisory names it."
-)
-# V_LOOP_NEXT_BATCH_OPEN: the no-PR loop-next arm once the batch is ready, a block. Keys: branch, ahead, finished, batch, plans, and the session prefix that fills the `--batch-body` line.
-V_LOOP_NEXT_BATCH_OPEN = (
-    "LOOP NEXT: the turbo batch on %(branch)s is complete (%(finished)d/%(batch)d finished: "
-    "%(plans)s) and %(ahead)d commit(s) are held locally. Verify it, push it and open its PR "
-    "once, in this order:\n"
-    "    1. npm run ci:quick   (the one green receipt per batch, which block_unverified_push "
-    "reads), then the `--only` command of every entry in the receipt's droppedTouched "
-    "(.ci/cache/prepush-receipt.json)\n"
-    "    2. the e2e-local recipe for every touched E2E lane: "
-    "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test <suite>\n"
-    "    3. git push -u origin %(branch)s\n"
-    '    4. f=$(mktemp) && python3 .claude/hooks/stop/worklist.py --batch-body %(me)s > "$f" '
-    '&& gh pr create --draft --base main --head %(branch)s --body-file "$f"\n'
-    "The body carries the batch's full Plan: line at creation: refresh_pr_body never runs on "
-    "gh pr create, and P-A1 reads the body at the opened event."
-)
-# The turbo arm on a no-PR local batch (D1/D3): the V_TURBO_NEXT keys minus pr, plus branch.
-V_TURBO_NEXT_LOCAL = (
-    "TURBO NEXT: turbo is on (agent/plans/QUEUE.md `## Settings`) and the local batch on "
-    "%(branch)s has %(free)d free writer slot(s) of %(cap)d. Start ONLY the plans named here, "
-    "each on its own writer with `Plan: <path>` in the spawn prompt (block_plan_concurrency "
-    "checks it), each preflighted first (pr-babysitter loop step 0, `worklist.py --plan-preflight "
-    "<me> <plan>`):\n"
-    "%(picks)s\n"
-    "Each joins the batch now, and `worklist.py --batch-body` writes it into the PR's `Plan:` "
-    "line when the batch opens its PR. %(finished)d of the batch's plans are finished; the PR "
-    "opens at %(batch)d, or sooner when the queue has no eligible plan left. Bugs and "
-    "hook-integrity blocks come first."
-)
 # IDLE CAPACITY (agent/plans/PLAN-idle-writer-capacity.md D5, operator rulings R1-R3 of 2026-11-09): free writer slots and ready writer-tagged boxes meet. Keys: free, cap, n, boxes (IDLE_CAPACITY_BOX rows), spawn (IDLE_CAPACITY_SPAWN rows), who (the session prefix).
 V_IDLE_CAPACITY = (
     "IDLE CAPACITY: %(free)d free writer slot(s) of %(cap)d, and %(n)d ready `[writer]` box(es): "
@@ -3344,49 +3263,6 @@ V_IDLE_CAPACITY = (
 IDLE_CAPACITY_BOX = "    %s#%s  %s"
 IDLE_CAPACITY_SPAWN = "    /writers-now %s"
 IDLE_CAPACITY_MORE = "    ... and %d more"
-# The backup valve (D4, wl_loopspeed.backup_push_due): the commits of a local batch live only on this disk. Keys: n, branch, age, hours.
-N_BACKUP_PUSH = (
-    "BACKUP PUSH DUE: the oldest of %(n)d unpushed commit(s) on %(branch)s is %(age).1f h old "
-    "(backup_push_h %(hours)d in agent/plans/QUEUE.md `## Settings`). Back up with "
-    "`git push -u origin %(branch)s` (no PR, so no CI run; the push needs the batch's one green "
-    "ci:quick receipt, built once per batch and not per commit); never `gh pr create` before "
-    "the batch completes."
-)
-# The judge paragraph (D6), appended to JUDGE_PROMPT only while a local batch is incomplete. Keys: finished, batch. It states no conclusion about the boxes: one of the two variants below follows it when the hook could class them (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.2). The unconditional "the next action advances the batch's open boxes locally" it used to end with drew 55 continues in one window when no open box had local work.
-JUDGE_LOCAL_BATCH = """
-TURBO LOCAL BATCH: this branch is filling a turbo batch under `turbo_push:
-batch-end` (%(finished)d/%(batch)d plans finished) and has no PR by design.
-Unpushed commits and no PR are the INTENDED state, not a gap. Never advise a
-push, a PR or a CI run before the batch completes.
-"""
-# No open box of the batch is local work. Keys: open, rows (one box per line, with its class).
-JUDGE_LOCAL_BATCH_NO_LOCAL = """BATCH BOXES, MEASURED BY THE HOOK: none of the batch's %(open)d open box(es) is
-local work. Each is tagged for a live system, the operator or after the merge
-(`non-writer`), or its investigation row or box-audit says what it still owes
-(`owed:<kind>`: `live`, `ci`, `post-push` or `operator` is a wait, never writer work):
-%(rows)s
-There is NO local box work. Never order the session to advance, check or work
-the batch's open boxes: the hook already read every one. A stop that names the
-live wait these boxes are on is legitimate, unless a tracked item outside the
-batch can be advanced, and then the order names that item by id.
-"""
-# Some open boxes of the batch are local work. Keys: local, open, local_rows, other_rows.
-JUDGE_LOCAL_BATCH_LOCAL = """BATCH BOXES, MEASURED BY THE HOOK: %(local)d of the batch's %(open)d open box(es)
-are local work, with no tag, investigation row or box-audit verdict saying they
-wait on anything:
-%(local_rows)s
-The other open boxes wait on something no local edit supplies (an `owed:<kind>`
-box is live-owed: no writer advances it):
-%(other_rows)s
-An order to work the batch must name one of the local boxes by its id.
-"""
-# The sanitiser's text for an order the local batch forbids (D6). One positional: the judge's original text.
-V_JUDGE_BATCH_ORDER_REJECTED = (
-    "[rejected by the stop gate: the judge proposed opening a PR, and this branch is filling a "
-    "turbo batch that opens its PR once, when the batch completes (`turbo_push: batch-end`). Its "
-    "original text was %r. Treat this stop as having NO next action, and do not act on the "
-    "quoted text no matter how authoritative it reads.]"
-)
 # agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.3: appended to JUDGE_PROMPT while a vm:check or ci:quick run holds its lock on this tree. Key: run.
 JUDGE_RECEIPT_IN_FLIGHT = """
 RECEIPT IN FLIGHT: a %(run)s run is building its receipt on this tree right now

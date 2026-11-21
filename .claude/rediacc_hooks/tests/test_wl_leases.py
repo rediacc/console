@@ -298,7 +298,7 @@ def test_l6_the_queue_switch_turns_the_stop_path_off_and_only_it(wl):
     assert "OPEN worklist item" not in got.out
     assert wl.cli("--list", "--open", wlfix.ME).rc == 0  # verbs unaffected
     # A settings problem rides the stop as an advisory, at every level that advises it.
-    queue_with(wl, "effort: high\nturbo: onn")
+    queue_with(wl, "effort: high\nturbo: on")
     wl.newturn()
     wl.say("working\n\n## Remaining\n- the item")
     got = wl.run()
@@ -309,7 +309,7 @@ def test_l6_the_queue_switch_turns_the_stop_path_off_and_only_it(wl):
     assert '"decision": "block"' in got.out, got.out[
         :300
     ]  # open-items blocks at high, so the advisory queued
-    assert any("SETTINGS PROBLEM" in t and "turbo: expected on|off" in t for t in texts), texts
+    assert any("SETTINGS PROBLEM" in t and "'turbo' is not a setting" in t for t in texts), texts
 
 
 # ---- R20260925.5: an expired queue lease on a waiting item reads as waiting ---------------------------

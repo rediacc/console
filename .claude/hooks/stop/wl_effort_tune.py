@@ -47,7 +47,7 @@ RUN_DIR = "effort-tune"
 
 _ROW_ID = re.compile(r"\beo-[0-9a-f]{8}\b")
 _COUNT = re.compile(r"\b\d+\s*/\s*\d+\b|\bn\s*=\s*\d+\b|\b\d+\s+of\s+\d+\b")
-_SPEC = re.compile(r"^(block|advise|off)@(quiet|low|smart|high|ultra)$")
+_SPEC = re.compile(r"^(block|advise|off)@(quiet|low|smart|high)$")
 
 
 def _now():
@@ -103,9 +103,9 @@ def _step(level, by):
 
 
 def demote(entry):
-    """One step quieter: a blocking key blocks one level later (then advises one level later at ultra); an advisory-only key advises one level later."""
+    """One step quieter: a blocking key blocks one level later; one already blocking only at the top level (`high`, the last of wl_effort.LEVELS) advises one level later instead; an advisory-only key advises one level later."""
     new = dict(entry)
-    if "block" in new and new["block"] != "ultra":
+    if "block" in new and new["block"] != wl_effort.LEVELS[-1]:
         new["block"] = _step(new["block"], 1)
     else:
         new["advise"] = _step(new["advise"], 1)

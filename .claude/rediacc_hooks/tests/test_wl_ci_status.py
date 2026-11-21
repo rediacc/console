@@ -707,36 +707,6 @@ FINISHED = "2026-11-07T04:49:45.449Z"
 FINISHED_EPOCH = datetime.datetime(2026, 11, 7, 4, 49, 45, tzinfo=datetime.UTC).timestamp()
 
 
-# ---- G4: the two messages ---------------------------------------------------------------------
-
-
-def test_batch_end_message_drops_the_whole_lane_step_and_renumbers():
-    text = M.V_LOOP_NEXT_BATCH_OPEN % {
-        "branch": "1108-1",
-        "finished": 3,
-        "batch": 3,
-        "plans": "a, b, c",
-        "ahead": 7,
-        "me": "abc12345",
-    }
-    assert "npm run ci   " not in text, text
-    assert "incremental carry" not in text, text
-    steps = re.findall(r"^\s+(\d+)\. (.*)$", text, flags=re.MULTILINE)
-    assert [n for n, _ in steps] == ["1", "2", "3", "4"], text
-    assert steps[0][1].startswith("npm run ci:quick"), steps
-    assert "one green receipt per batch" in steps[0][1], steps
-    assert steps[2][1] == "git push -u origin 1108-1", steps
-    assert "--batch-body abc12345" in steps[3][1], steps
-
-
-def test_backup_push_message_uses_the_one_receipt_per_batch_wording():
-    text = M.N_BACKUP_PUSH % {"n": 2, "branch": "topic", "age": 5.0, "hours": 4}
-    assert "one green ci:quick receipt" in text, text
-    assert "per batch" in text, text
-    assert "git push -u origin topic" in text, text
-    assert "never `gh pr create`" in text, text
-
-
 # ---- G5: the advisory --------------------------------------------------------------------------
 
 

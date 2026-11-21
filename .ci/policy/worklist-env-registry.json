@@ -1,7 +1,7 @@
 {
   "$why": [
     "Every WORKLIST_* environment name this repository reads, in one place, so that a name nobody reads and a read nobody registered are both findings.",
-    "THE DEFECT: a typo'd name reads as UNSET. For a flag that defaults to `on` -- WORKLIST_FOCUS until 2026-10-14 (removed by agent/plans/PLAN-stop-hook-effort.md), and until 2026-10-04 WORKLIST_AGENT_HINT, WORKLIST_AGENT_PUSHBACK and WORKLIST_CADENCE, which moved to agent/plans/QUEUE.md -- that is the FAIL-OPEN direction: the author believes they switched something off and it is still running. Nothing in the tree said so before 2026-09-09.",
+    "THE DEFECT: a typo'd name reads as UNSET. For a flag that defaults to `on` -- WORKLIST_FOCUS until 2026-10-14 (removed by agent/plans/PLAN-stop-hook-effort.md), and until 2026-10-04 WORKLIST_AGENT_HINT, WORKLIST_AGENT_PUSHBACK and WORKLIST_CADENCE, which moved to agent/plans/QUEUE.md (WORKLIST_CADENCE came back on 2026-11-21 as an on|off test seam only, beside WORKLIST_JUDGE) -- that is the FAIL-OPEN direction: the author believes they switched something off and it is still running. Nothing in the tree said so before 2026-09-09.",
     "Measured 2026-09-09 against the bash corpus that has since been ported to pytest: 133 live names across 60 tracked files at 183 read sites. The plan box said 134, which is the GREP answer; one of those, WORKLIST_EMAIL, appeared only in a comment describing a name that no longer existed, which is why this scanner counts READS rather than greps.",
     "Enforced by check:ci-worklist-env-registry, both directions. The name set and each name's default spellings are DERIVED from the code by the gate and pinned here, so this file cannot drift into being a description of what somebody once intended. `kind`, `class` and `why` are the authored fields, and the gate checks each against the derived shape or its allowed set.",
     "`class` (harness or gate-seam) is the field `.ci/config/env-manifest.json` is rendered from: every WORKLIST_* member of its shard lists is generated from this file, which makes this file the one authored home of a WORKLIST_* name. `foreign_reads` holds the names read only where this scan cannot look (a TypeScript gate), each with its reader and a reason, and the gate proves the reader still names it. Register a name with `npm run env:register -- <module> <NAME> --class <c> --kind <k> --default <spelling>... [--why <w>]`, which writes this file, re-renders the manifest and runs the three registry gates."
@@ -9,9 +9,9 @@
   "$gate": ".ci/rediacc_ci/quality/worklist_env_registry.py",
   "sealed_modules": {
     ".claude/hooks/stop/wl_roster.py": {
-      "why": "the parallel-writer roster's limits are the operator's (4 writers by default and a `writer_cap:` line in agent/plans/QUEUE.md, a 20-minute status ping, 2026-09-24, 'no escape hatches'), so no variable may retune them and a registered knob would be exactly the hatch that was ruled out",
+      "why": "the parallel-writer roster's limits are the operator's (25 writers, fixed in code by agent/plans/PLAN-simple-two-tree-loop.md ruling 11 with no QUEUE.md line, a 20-minute status ping, 2026-09-24, 'no escape hatches'), so no variable may retune them and a registered knob would be exactly the hatch that was ruled out",
       "literals": {
-        "DEFAULT_WRITER_CAP": 4,
+        "WRITER_CAP": 25,
         "STATUS_PING_MIN": 20
       }
     },
@@ -212,6 +212,14 @@
       "defaults": [
         "'20'"
       ]
+    },
+    "WORKLIST_CADENCE": {
+      "kind": "handle",
+      "class": "harness",
+      "defaults": [
+        "''"
+      ],
+      "why": "test seam only, the twin of WORKLIST_JUDGE: the cadence is decided by the effort level's bundle (the QUEUE.md fence takes effort alone, agent/plans/PLAN-simple-two-tree-loop.md B5), and env on or off overrides it (wl_checks.cadence_on) so the fixtures run with it off. Any other value is ignored."
     },
     "WORKLIST_CADENCE_MAX": {
       "kind": "tuning",

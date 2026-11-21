@@ -1,6 +1,6 @@
 """The effort level through the real Stop hook (agent/plans/PLAN-stop-hook-effort.md boxes E3 and E4).
 
-E3: one key of each family is driven through all five levels, and the FLOOR blocks at `quiet`. The table verdicts are read from .claude/config/effort.json through `wl_effort`; the stops run `worklist.py` with a Stop event, as the harness does, against a fixture project whose QUEUE.md names the level.
+E3: one key of each family is driven through all four levels (`ultra` left with agent/plans/PLAN-simple-two-tree-loop.md B5), and the FLOOR blocks at `quiet`. The table verdicts are read from .claude/config/effort.json through `wl_effort`; the stops run `worklist.py` with a Stop event, as the harness does, against a fixture project whose QUEUE.md names the level.
 
 E4: `--focus` is gone (an unknown verb, exit 2), `--phase` replaces it, and a phase only parks work.
 """
@@ -16,7 +16,7 @@ from rediacc_hooks.tests import wlfix
 
 E = wlfix.import_wl("wl_effort")
 FLOOR = wlfix.import_wl("wl_floor")
-LEVELS = ("quiet", "low", "smart", "high", "ultra")
+LEVELS = ("quiet", "low", "smart", "high")
 
 
 @pytest.fixture
@@ -48,14 +48,14 @@ def untuned_table():
     return table
 
 
-# (family, key, verdict at quiet, low, smart, high, ultra)
+# (family, key, verdict at quiet, low, smart, high)
 FAMILIES = [
-    ("floor", "ci-red", ("block",) * 5),
-    ("mission", "open-items", ("off", "block", "block", "block", "block")),
-    ("owed", "bg-report", ("off", "advise", "block", "block", "block")),
-    ("integrity", "completion", ("off", "advise", "block", "block", "block")),
-    ("advise-at-smart", "no-remaining", ("off", "off", "advise", "block", "block")),
-    ("hygiene", "plan-drift", ("off", "off", "advise", "block", "block")),
+    ("floor", "ci-red", ("block",) * 4),
+    ("mission", "open-items", ("off", "block", "block", "block")),
+    ("owed", "bg-report", ("off", "advise", "block", "block")),
+    ("integrity", "completion", ("off", "advise", "block", "block")),
+    ("advise-at-smart", "no-remaining", ("off", "off", "advise", "block")),
+    ("hygiene", "plan-drift", ("off", "off", "advise", "block")),
 ]
 
 
@@ -69,7 +69,7 @@ def test_one_key_per_family_through_every_level(family, key, want):
 
 
 def test_the_floor_blocks_at_quiet_whatever_the_table_says():
-    planted = {"checks": {k: {"block": "ultra", "advise": "ultra"} for k in FLOOR.FLOOR}}
+    planted = {"checks": {k: {"block": "high", "advise": "high"} for k in FLOOR.FLOOR}}
     for key in FLOOR.FLOOR:
         assert E.verdict(key, "quiet", planted) == "block", key
     # STATE.md joins the floor only while compaction is due.
@@ -84,14 +84,8 @@ def test_an_unreadable_table_or_an_unlisted_key_blocks():
 
 
 def test_advisory_keys_follow_their_advise_level():
-    assert [E.advises("agent-hint", lv) for lv in LEVELS] == [False, False, True, True, True]
-    assert [E.advises("ci-report:pr-review", lv) for lv in LEVELS] == [
-        False,
-        True,
-        True,
-        True,
-        True,
-    ]
+    assert [E.advises("agent-hint", lv) for lv in LEVELS] == [False, False, True, True]
+    assert [E.advises("ci-report:pr-review", lv) for lv in LEVELS] == [False, True, True, True]
     assert E.advises("unread-reports", "quiet") is True  # a FLOOR key advises at every level too
     assert E.advises("agent-hint", None) is True  # no stop in progress: everything passes
 
@@ -103,7 +97,7 @@ def test_advisory_keys_follow_their_advise_level():
 REPORT_KEYS = ("no-remaining", "agent-state")
 
 
-def test_e3_one_world_through_all_five_levels(world):
+def test_e3_one_world_through_all_four_levels(world):
     """An open item and a message with no `## Remaining`: `open-items` (mission), `no-remaining` and `agent-state` fire, and each level blocks on exactly its share as the real table gives it. A fresh world per level, so every level judges the same first stop."""
     seen = {}
     for level in LEVELS:

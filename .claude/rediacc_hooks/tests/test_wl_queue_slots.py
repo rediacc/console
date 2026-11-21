@@ -24,6 +24,7 @@ from rediacc_hooks.tests.test_wl_roster import (
     W4,
     backdate,
     mk_sub,
+    pad,
     plant_lease,
     plant_shell_wait,
     subagents_dir,
@@ -32,8 +33,10 @@ from rediacc_hooks.tests.test_wl_roster import (
 
 
 def three_writers(fix) -> None:
+    """Three of W1..W4 plus the `pad` fillers: one slot of the fixed cap of 25 stays free."""
     fix.brief_now()
     fix.hand_now()
+    pad(fix)
     for i, aid in enumerate((W1, W2, W3)):
         mk_sub(fix, aid, "general-purpose", 1)
         plant_lease(fix, "cap%d" % i, aid)

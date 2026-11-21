@@ -45,7 +45,7 @@ PR_BRANCH = "1120-1"
 DEV_BRANCH = "1120-2"
 OWN = "agent/plans/PLAN-own.md"
 NEXT = "agent/plans/PLAN-next.md"
-LEVELS = ("quiet", "low", "smart", "high", "ultra")
+LEVELS = ("quiet", "low", "smart", "high")
 
 GH_SHIM = """#!/bin/bash
 for a in "$@"; do

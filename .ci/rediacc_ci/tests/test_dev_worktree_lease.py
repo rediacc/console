@@ -35,6 +35,8 @@ EMPTY_LOCK = {
 }
 # Every lease commit of a fixture carries both trailers `land` demands; this one serves no plan box (PLAN-tick-tracking T2).
 TRAILERS = "PR-TASK: 1f877343\nPlan-Box: none -- fixture commit that serves no plan box\n"
+# wl_roster.WRITER_CAP, restated: the lease verb caps the trees on disk with it.
+WRITER_CAP = 25
 BUILD_JS = (
     "const fs = require('fs');\n"
     "fs.mkdirSync('dist', { recursive: true });\n"
@@ -364,19 +366,30 @@ def test_lease_refuses_a_bad_argument_before_any_git(tmp_path, args):
     assert list(missing.iterdir()) == []
 
 
-def test_lease_writer_cap_refuses_the_second_tree(repo):
+def fill_to(repo, n):
+    """`n` plain directories in the holder: `trees_on_disk` counts every directory, so they hold slots of the fixed cap (wl_roster.WRITER_CAP, 25) without a git tree each."""
+    holder = repo.root / spike.HOLDER
+    for i in range(n):
+        (holder / ("filler-%02d" % i)).mkdir(parents=True, exist_ok=True)
+
+
+def test_lease_writer_cap_refuses_the_tree_past_the_cap(repo):
+    # A `writer_cap: 1` line moves nothing: the cap is fixed in code (agent/plans/PLAN-simple-two-tree-loop.md ruling 11).
     spike.write(
         repo.root / "agent" / "plans" / "QUEUE.md",
         "## Settings\n\n```stop-hook\nwriter_cap: 1 -- fixture\n```\n",
     )
+    fill_to(repo, WRITER_CAP - 1)
     first = run_lease(repo.root, "--name", "one")
     assert first.returncode == 0, first.stderr
     second = run_lease(repo.root, "--name", "two")
     assert second.returncode == 1
-    assert "writer_cap 1" in second.stderr
+    assert "%d tree(s) on disk at writer_cap %d" % (WRITER_CAP, WRITER_CAP) in second.stderr
     assert "./run.sh worktree gc" in second.stderr
     assert second.stdout == ""
-    assert holder_names(repo) == ["one"]
+    names = holder_names(repo)
+    assert "one" in names
+    assert "two" not in names
 
 
 def test_lease_generated_ids_count_up_and_exclude_lines_land_once(repo):
@@ -504,14 +517,11 @@ def test_lease_hook_prints_the_tree_and_records_the_agent(repo):
 
 
 def test_lease_hook_over_the_cap_exits_non_zero_with_the_message(repo):
-    spike.write(
-        repo.root / "agent" / "plans" / "QUEUE.md",
-        "## Settings\n\n```stop-hook\nwriter_cap: 1 -- fixture\n```\n",
-    )
     make_tree(repo, "first")
+    fill_to(repo, WRITER_CAP - 1)
     done = run_worktree_hook(repo.root, "lease-hook", {"name": "agent-b", "session_id": "abcd1234"})
     assert done.returncode != 0
-    assert "writer_cap 1" in done.stderr
+    assert "writer_cap %d" % WRITER_CAP in done.stderr
     assert done.stdout == ""
 
 
@@ -1326,7 +1336,6 @@ def test_land_unknown_lease_and_bad_arguments_exit_1(landing):
 # One real tree per keep rule, with a clean control deleted in the same run, so a rule that stopped reading anything cannot pass. The hook modules read the fixture's own worklist and transcripts, which `gc_env` points them at.
 
 GC_SESSION = "feedface99"
-CAP_40 = "## Settings\n\n```stop-hook\nwriter_cap: 40 -- fixture\n```\n"
 WORKLIST = paths.CI_DIR.parent / ".claude" / "hooks" / "stop" / "worklist.py"
 IN_FLIGHT = {
     "type": "assistant",
@@ -1518,7 +1527,6 @@ KEPT_RULES = [
 def kept(tmp_path_factory):
     repo = make_repo(tmp_path_factory.mktemp("kept").resolve())
     root = repo.root
-    spike.write(root / "agent" / "plans" / "QUEUE.md", CAP_40)
     plant_session(root)
     names = ("clean", "dirty", "dirtysub", "untracked", "unlanded", "unlandedsub", "writer")
     trees = {name: make_tree(repo, name) for name in (*names, "item", "cwd")}
@@ -1672,7 +1680,6 @@ def test_gc_ignored_file_does_not_keep_a_tree_and_the_summary_says_so(gc_repo):
 
 def test_gc_pin_of_a_removed_tree_goes_when_landed_and_stays_when_unlanded(gc_repo):
     repo = gc_repo
-    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
     landed_tree, unlanded_tree = make_tree(repo, "pl"), make_tree(repo, "pu")
     landed = gc_commit(landed_tree, "landed.txt")
     land(repo, landed)
@@ -1697,7 +1704,6 @@ def test_gc_pin_of_a_removed_tree_goes_when_landed_and_stays_when_unlanded(gc_re
 
 def test_gc_pin_with_no_record_and_no_tree_is_judged_the_same(gc_repo):
     repo = gc_repo
-    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
     a_tree, b_tree = make_tree(repo, "pa"), make_tree(repo, "pb")
     landed = gc_commit(a_tree, "landed.txt")
     land(repo, landed)
@@ -1897,7 +1903,6 @@ def test_gc_a_record_with_no_readable_time_stays_in_a_sweep(gc_repo):
 
 def test_gc_owner_nothing_can_vouch_for_keeps_the_tree_and_a_cli_owner_does_not(gc_repo):
     repo = gc_repo
-    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
     assert run_lease(repo.root, "--name", "gh", "--owner", "ghost123").returncode == 0
     assert run_lease(repo.root, "--name", "op", "--owner", lease.DEFAULT_OWNER).returncode == 0
     age_record(repo.root, "gh")
@@ -1920,7 +1925,6 @@ def test_gc_directory_with_no_record_may_be_a_lease_being_made(gc_repo):
 
 def test_gc_unreadable_record_and_broken_git_file_keep_the_tree(gc_repo):
     repo = gc_repo
-    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
     bad_record, bad_git = make_tree(repo, "br"), make_tree(repo, "bg")
     (repo.root / ".git" / lease.RECORD_DIR / "br.json").write_text("{not json", encoding="utf-8")
     (bad_git / ".git").write_text("gitdir: /no/such/place\n", encoding="utf-8")
@@ -1943,7 +1947,6 @@ def test_gc_record_naming_another_path_is_never_followed(gc_repo):
 
 def test_gc_id_narrows_the_run_and_exits_1_when_that_lease_was_kept(gc_repo):
     repo = gc_repo
-    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
     clean, dirty = make_tree(repo, "ca"), make_tree(repo, "db")
     spike.write(dirty / "code.txt", "edited\n")
 
@@ -2042,7 +2045,6 @@ def test_leases_json_names_owner_base_dirty_and_unlanded_per_repo(gc_repo):
 
 def test_leases_text_has_one_line_per_lease_and_says_when_the_tree_is_gone(gc_repo):
     repo = gc_repo
-    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
     assert run_verb(repo.root, "leases").stdout == "no leases\n"
     tree = make_tree(repo, "lt")
     held = gc_commit(tree, "held.txt")
@@ -2200,7 +2202,6 @@ def test_leases_never_runs_git_in_a_path_its_record_names(gc_repo, monkeypatch):
 def test_gc_removed_tree_named_by_a_live_item_is_kept_though_its_commits_landed(gc_repo):
     """Review 0bc06f7c.5: a landed-commit check does not know that an open item still names the lease."""
     repo = gc_repo
-    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
     tree = make_tree(repo, "gi")
     land(repo, gc_commit(tree, "landed.txt"))
     plant_leased_item(repo.root, "gc fixture holds the tree named gi")

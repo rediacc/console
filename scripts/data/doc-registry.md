@@ -508,7 +508,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_boxready.py | (none) | via .claude/rediacc_hooks/tests/test_plan_gate_ceiling.py | py |
 | .claude/hooks/stop/wl_bravedefault.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_checklist.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
-| .claude/hooks/stop/wl_checks.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
+| .claude/hooks/stop/wl_checks.py | (none) | via .claude/hooks/post-tool/commit_remind.py | py |
 | .claude/hooks/stop/wl_ci.py | (none) | via .claude/hooks/post-bash/cancel_old_ci.py | py |
 | .claude/hooks/stop/wl_civerdict.py | (none) | via .claude/hooks/post-bash/arm_ci_watch.py | py |
 | .claude/hooks/stop/wl_claimcheck.py | (none) | via .claude/hooks/stop/test-completion-evidence.py | py |
@@ -2694,6 +2694,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `WORKLIST_BRAVE_TTL_MIN` | harness | - |
 | `WORKLIST_BRIEF_STALE_MIN` | harness | - |
 | `WORKLIST_BULK_FILE_THRESHOLD` | harness | - |
+| `WORKLIST_CADENCE` | harness | - |
 | `WORKLIST_CADENCE_MAX` | harness | - |
 | `WORKLIST_CI_CACHE_FINAL_S` | harness | - |
 | `WORKLIST_CI_CACHE_LIVE_S` | harness | - |

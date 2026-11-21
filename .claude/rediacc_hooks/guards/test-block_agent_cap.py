@@ -8,7 +8,6 @@ LOAD-BEARING, NOT OPTIONAL. The guard declares `OWN_SUITE = True` (it was never 
 IT DRIVES THE LIVE GUARD THROUGH THE DISPATCHER against a real fixture on disk: a projects store with subagent metas and transcripts (`CLAUDE_CONFIG_DIR`), a project root (`CLAUDE_PROJECT_DIR`) and a worklist directory (`TMPDIR`) where the last Stop event is written. The fixture lives in ONE pid-stamped directory that is removed on exit.
 """
 
-import importlib.util
 import json
 import os
 import pathlib
@@ -22,6 +21,9 @@ import time
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 SID = "cafe0000-1111-2222-3333-444444444444"
 BASE = pathlib.Path(tempfile.gettempdir()) / ("agentcap-%d" % os.getpid())
+# wl_roster.WRITER_CAP, restated: the guard reads it, and the cases below are built on it.
+CAP = 25
+AT_CAP = "cap is %d" % CAP
 
 
 def munged(path):
@@ -36,21 +38,12 @@ def world(writers=0, readers=0, finished=0, lastevent=None, custom_ro=False, age
     (proj / ".git").mkdir(parents=True)
     (BASE / "tmp").mkdir()
     if cap is not None:
-        # The cap is the fixture QUEUE.md's `writer_cap:` line, written by the verb's own writer.
-        spec = importlib.util.spec_from_file_location(
-            "rediacc_hooks_syspath", pathlib.Path(DISPATCH).resolve().parent / "syspath.py"
-        )
-        if spec is None or spec.loader is None:
-            raise SystemExit("%s: .claude/rediacc_hooks/syspath.py is missing" % __file__)
-        syspath = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(syspath)
-        syspath.on_sys_path(pathlib.Path(DISPATCH).resolve().parents[1] / "hooks" / "stop")
-        wl_planqueue = importlib.import_module("wl_planqueue")
-
-        queue = proj / wl_planqueue.QUEUE_REL
+        # A `writer_cap:` line in the fixture QUEUE.md. The cap is fixed in code at CAP (agent/plans/PLAN-simple-two-tree-loop.md ruling 11), so the line must move nothing.
+        queue = proj / "agent" / "plans" / "QUEUE.md"
         queue.parent.mkdir(parents=True)
         queue.write_text(
-            wl_planqueue.set_settings("# Plan queue\n\n## Promoted\n", {"writer_cap": str(cap)}),
+            "# Plan queue\n\n## Settings\n\n```stop-hook\neffort: high\nwriter_cap: %d\n```\n\n"
+            "## Promoted\n" % cap,
             encoding="utf-8",
         )
     sub = BASE / "claude" / "projects" / munged(proj.resolve()) / SID / "subagents"
@@ -122,55 +115,61 @@ def spawn(proj, kind, session=SID, tool="Agent"):
 
 # (name, world kwargs, spawn kwargs, want_rc, stderr needle or "" for silence)
 CASES = [
-    ("a fifth writer is refused", {"writers": 4}, {"kind": "general-purpose"}, 2, "cap is 4"),
+    ("a writer past the cap is refused", {"writers": CAP}, {"kind": "general-purpose"}, 2, AT_CAP),
     (
         "the refusal names every live writer",
-        {"writers": 4},
+        {"writers": CAP},
         {"kind": "gate-author"},
         2,
-        "a0000000000000004",
+        "a%016d" % CAP,
     ),
-    ("a fourth writer is allowed", {"writers": 3}, {"kind": "general-purpose"}, 0, ""),
-    ("an Explore spawn at the cap is allowed", {"writers": 4}, {"kind": "Explore"}, 0, ""),
-    ("a Plan spawn at the cap is allowed", {"writers": 5}, {"kind": "Plan"}, 0, ""),
+    (
+        "the last writer under the cap is allowed",
+        {"writers": CAP - 1},
+        {"kind": "general-purpose"},
+        0,
+        "",
+    ),
+    ("an Explore spawn at the cap is allowed", {"writers": CAP}, {"kind": "Explore"}, 0, ""),
+    ("a Plan spawn at the cap is allowed", {"writers": CAP + 1}, {"kind": "Plan"}, 0, ""),
     (
         "readers do not count toward the cap",
-        {"writers": 3, "readers": 3},
+        {"writers": CAP - 1, "readers": 3},
         {"kind": "general-purpose"},
         0,
         "",
     ),
     (
         "a finished writer does not count",
-        {"writers": 3, "finished": 2},
+        {"writers": CAP - 1, "finished": 2},
         {"kind": "general-purpose"},
         0,
         "",
     ),
     (
         "the last Stop event's writers count even when their transcripts are old",
-        {"writers": 4, "lastevent": True, "age_min": 90},
+        {"writers": CAP, "lastevent": True, "age_min": 90},
         {"kind": "general-purpose"},
         2,
-        "cap is 4",
+        AT_CAP,
     ),
     (
         "without an event, old transcripts are not counted as live",
-        {"writers": 4, "age_min": 90},
+        {"writers": CAP, "age_min": 90},
         {"kind": "general-purpose"},
         0,
         "",
     ),
     (
         "a custom agent with no edit tool is a reader",
-        {"writers": 4, "custom_ro": True},
+        {"writers": CAP, "custom_ro": True},
         {"kind": "looker"},
         0,
         "",
     ),
     (
         "an uncountable session is allowed, and says so",
-        {"writers": 4},
+        {"writers": CAP},
         {"kind": "general-purpose", "session": "zzzz9999"},
         0,
         "could not count",
@@ -183,32 +182,25 @@ CASES = [
         "",
     ),
     (
-        "writer_cap: 2 refuses the third writer",
+        "a writer_cap: 2 line moves nothing: the third writer is allowed",
         {"writers": 2, "cap": 2},
         {"kind": "general-purpose"},
+        0,
+        "",
+    ),
+    (
+        "a writer_cap: 40 line moves nothing: a writer past 25 is refused",
+        {"writers": CAP, "cap": 40},
+        {"kind": "general-purpose"},
         2,
-        "cap is 2",
-    ),
-    (
-        "writer_cap: 2 allows the second writer",
-        {"writers": 1, "cap": 2},
-        {"kind": "general-purpose"},
-        0,
-        "",
-    ),
-    (
-        "writer_cap: 6 allows a fifth writer",
-        {"writers": 4, "cap": 6},
-        {"kind": "general-purpose"},
-        0,
-        "",
+        AT_CAP,
     ),
     (
         "the Task tool name is guarded too",
-        {"writers": 4},
+        {"writers": CAP},
         {"kind": "general-purpose", "tool": "Task"},
         2,
-        "cap is 4",
+        AT_CAP,
     ),
 ]
 

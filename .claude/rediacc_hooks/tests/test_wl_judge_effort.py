@@ -84,9 +84,8 @@ def test_smart_reads_a_report_only_continue_as_stop_and_hands_back_the_order():
     assert "List every open item by id." in text
 
 
-@pytest.mark.parametrize("level", ["high", "ultra"])
-def test_high_and_ultra_keep_the_block(level):
-    got = J.settle_by_effort(dict(REPORT_ONLY), level)
+def test_high_keeps_the_block():
+    got = J.settle_by_effort(dict(REPORT_ONLY), "high")
     assert got["verdict"] == "continue", got
     assert "effort_advised" not in got
 
