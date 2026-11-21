@@ -1,20 +1,23 @@
-## SESSION d778be9d 2026-11-21T10:09:14Z
+## SESSION d778be9d 2026-11-21T12:49:39Z
 
-# STATE d778be9d (2026-11-21 afternoon, two trees, simple-loop plan in progress)
+# STATE d778be9d (2026-11-21 ~12:50Z, hibernating)
 
 ## Big pieces
-- PR #605 (landing tree /home/developer/console-landing, 1104-1): second batch pushed (console 7199cbc9d); CI run 44884489459 red on 5 jobs. Fixed locally on 1104-1 (not pushed yet): pytest-slow allowlist 3e21f51f8, e2e 22-01 mail count (account 0c14596, gitlink 8e39d11f4); ops-health l1vm keys re-scanned (machine scan-keys ops-worker rc 0). Lane budget: OPERATOR RULING (#898579d3) speed up opensuse first, no caps; writer a0c1a57a7b1c4f232 (#7266fa25) in a 1121-1 lease, its commits get cherry-picked onto 1104-1 in the landing tree. Then ci:quick + vm:check in the landing tree, push (renet/account/console from landing, absolute -C paths), CI watch.
-- PLAN-simple-two-tree-loop (approved 2026-11-21, rulings verbatim in the plan, commit 8c0f9e43b): B1 partial (test_wl_focus deletion owed to B10), B2 done, B3 done, B4 partial (settings residue to B5, phase residue to B10), B6 done. Next serial: B5 (writer a1141315a6c05d296, #27871b0c) -> B10 -> B7; B8 after B4; B9 depends on PLAN-pr-loop-single-source; B0/B11 lead.
-- Development branch 1121-1 (main checkout), not pushed; no draft PR (ruling).
+- PR #605 (landing tree /home/developer/console-landing, 1104-1): pushed console 3bb555a74, account 0c14596. Carries pytest-slow allowlist, e2e 22-01 mail count, VM bake for PR heads (9b963603c, adaea48a3, PR-scoped namespace 83d63c6a5, test type fix 88ff868a5), carries for lane-budget (#898579d3) and embed-asset (samba outage, b0ee19338). CI on 3bb555a74 not yet read: the watch was stopped for hibernation.
+- PLAN-simple-two-tree-loop (dev branch 1121-1): B1 partial, B2 B3 B5 B6 done, B4 partial; next B10 then B7, B8; B9 waits on PLAN-pr-loop-single-source.
+- PLAN-pr-loop-single-source (1121-1): W1 (d94ad90c7), W2 (37b38e5bb), W3a (b652071f5), W3b (7cd9b9c0f) landed and ticked; next W4 (sig e8317ff8, hook text), then J0, L1-L3 (lead).
+- PLAN-release-path-protection-2027 committed (c85298e90), not before 2027-05-01.
 
 ## Next action
-1. Commit the pending B4 investigation row and review records (worklist.py --review-commit d778be9d) on 1121-1.
-2. When the opensuse writer reports: spot-check, cherry-pick its commits into /home/developer/console-landing (fix(ci)/perf(ci) subjects only; the landing freeze admits fix work), renet commit first then gitlink; run ci:quick there (dockerhub-read bws profile) and vm:check -- --changed (backup drills first if the renet/account pointers move), push, ci-trace --wait --ref 1104-1.
-3. When B5 reports: land on 1121-1, apply its outside patch (QUEUE.md Settings fence/prose is the lead's), rerun suites and env/effort gates, tick, then start B10.
+1. On wake: `python3 .ci/scripts/ci/ci-trace.py --wait --ref 1104-1` (background) for PR 605 on 3bb555a74; check that ci-vm-bake ran on the PR (pull_request) and published pr-605-<key> images; fix reds in the landing tree (fix(ci)/test subjects only), reviews, then merge per the landing routine.
+2. Start W4 of PLAN-pr-loop-single-source (Owns in the plan box, sig e8317ff8), then B10 of PLAN-simple-two-tree-loop.
+3. Fold the four machine-load boxes into PLAN-ciquick-cpu (#b095886f, operator ruling 2026-11-21): L0 diagnose the 11-21 landing run, L1 load-aware gate admission, L2 vm:check holds core-lease tokens, L3 machine-wide lock for check:deps/account-server/build:www.
+4. Scheduled-workflow freshness check, no notification, self-fixing (#5eb28959).
 
 ## Owed ticks
-- PLAN-simple-two-tree-loop B1 15296114 (partial), B4 c098ad09 (partial); PLAN-two-track-merge-dev LT9 c98e504a, LT10 c4f705ea (superseded by B0); R1 e6856157 and R2 d6b55389 live clauses (stale devcontainer image #c276a9df).
+- #23d7f955 and #e9c304da: done on the landing branch only (9b963603c, 83d63c6a5); tick when the tick verb reads the landing branch or after promote (tick-verb gap tracked).
+- PLAN-simple-two-tree-loop B1 15296114, B4 c098ad09 partial; PLAN-two-track-merge-dev LT9/LT10 superseded by B0.
 
 ## Overnight / decisions
-- Fix flow (Fable-reviewed, operator approved): dev supervises a lease on the landing tip, landing lands it once; never copy dev commits up.
-- bump-none promote gap tracked; lane-budget deadlock recorded.
+- Operator 2026-11-21: one PR per plan; handover when dev plans are code-complete and only after a green release; no dev draft PR; CI lessons feed local checks; outages ask after 24h; 72h wall clock; stuck checks go to dev; fix flow via a landing-based lease; speed up opensuse by fixing the VM bake; machine-load boxes into PLAN-ciquick-cpu; Actions-gap check self-fixing; effort tuning kept; bake package and environments left as is until the 2027 plan.
+- Findings tracked: backup-check trigger too broad (#b1a14849), tick verb not landing-aware, poll-loop pile-up (#c70a8812), Stop hook misses finished agents with live shells (#2d1d25f3).
