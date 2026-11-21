@@ -495,7 +495,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ci-quick-cpu-scheduling.md` | active | 78 | 3 | 2 | 10605 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-vm-image-followups.md` | approved | 25 | 2 | 0 | 3248 |
-| `agent/plans/PLAN-ciquick-cpu.md` | approved | 143 | 11 | 13 | 23202 |
+| `agent/plans/PLAN-ciquick-cpu.md` | approved | 152 | 15 | 13 | 26122 |
 | `agent/plans/PLAN-ciquick-green-then-batch.md` | approved | 33 | 1 | 6 | 7384 |
 | `agent/plans/PLAN-ciquick-reds-1023-1.md` | executing | 48 | 1 | 11 | 11076 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5260 |
