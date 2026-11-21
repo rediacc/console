@@ -639,10 +639,13 @@ jobs:
     # freshness step (runs, jobs and artifacts). A called workflow can never
     # exceed its caller, so the caller must carry both or GitHub fails the run
     # at startup with no job and no log (run 37184675916, 2026-10-04).
+    # packages: read is quality-content's: that job runs inside the private
+    # ghcr.io devcontainer image (PLAN-two-track-merge-dev R2).
     permissions:
       contents: read
       pull-requests: read
       actions: read
+      packages: read
     needs: [initialize]
     if: needs.initialize.outputs.is_bot != 'true' && needs.initialize.outputs.full_suite == 'true'
     uses: ./.github/workflows/ci-quality.yml

@@ -44,6 +44,17 @@ inputs:
       packages/shared/dist on purpose, and a stale dist fails open.
     required: false
     default: 'false'
+  node-from-image:
+    description: >
+      'true' in a job that runs inside the pinned devcontainer image (a
+      `container:` region scripts/gate-bind.ts emits from the image pin,
+      CONTAINER_LANES). setup-node is skipped, and the node
+      on PATH is asserted to be the image's own ($NVM_DIR/current/bin/node)
+      with npm at the pinned NPM_VERSION, so the salt's `pinned:<image>` term
+      names the toolchain the gates really run on. check:ci-gate-bind refuses
+      this input on a job that is not a container lane.
+    required: false
+    default: 'false'
 
 runs:
   using: composite
@@ -72,9 +83,41 @@ runs:
     - uses: ./.github/actions/profiler
 
     # Node plus the pinned npm 11. Node alone would install with its bundled npm.
-    - uses: ./.github/actions/setup-node-npm
+    - if: inputs.node-from-image != 'true'
+      uses: ./.github/actions/setup-node-npm
       with:
         node-version: ${{ inputs.node-version }}
+
+    # THE IMAGE'S NODE, ASSERTED RATHER THAN ASSUMED (PLAN-two-track-merge-dev
+    # R2). Skipping setup-node is only safe where the image supplies node, so
+    # this refuses unless: CI_RUNNER_IMAGE is a digest reference (the job's
+    # container region sets it), NVM_DIR names the image's nvm, the node on
+    # PATH resolves to the image's $NVM_DIR/current/bin/node, and npm is the
+    # pinned NPM_VERSION. The versions are printed every run, so the lane's
+    # log shows what the salt's image term stands for.
+    - id: node
+      shell: bash
+      env:
+        FROM_IMAGE: ${{ inputs.node-from-image }}
+        NODE_MAJOR: ${{ inputs.node-version }}
+      run: |
+        if [[ "$FROM_IMAGE" != "true" ]]; then
+          echo "key=node${NODE_MAJOR}" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        [[ "${CI_RUNNER_IMAGE:-}" =~ ^[^[:space:]@]+@sha256:[0-9a-f]{64}$ ]] || { echo "::error::node-from-image needs CI_RUNNER_IMAGE=<image>@sha256:<digest> from the job's image-container region, got '${CI_RUNNER_IMAGE:-}'. Run npx tsx scripts/gate-bind.ts --write."; exit 1; }
+        [[ -n "${NVM_DIR:-}" && -x "$NVM_DIR/current/bin/node" ]] || { echo "::error::node-from-image: NVM_DIR='${NVM_DIR:-}' has no current/bin/node, so this job is not inside the devcontainer image"; exit 1; }
+        on_path="$(command -v node || :)"
+        [[ -n "$on_path" && "$(readlink -f "$on_path")" == "$(readlink -f "$NVM_DIR/current/bin/node")" ]] || { echo "::error::node on PATH is '${on_path}', not the image's $NVM_DIR/current/bin/node"; exit 1; }
+        node_v="$(node --version)"
+        image_v="$("$NVM_DIR/current/bin/node" --version)"
+        [[ "$node_v" == "$image_v" ]] || { echo "::error::node --version is $node_v, the image's node is $image_v"; exit 1; }
+        [[ "$node_v" == "v${NODE_MAJOR}."* ]] || { echo "::error::the image's node is $node_v, not major ${NODE_MAJOR}"; exit 1; }
+        pin="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pin npm)"
+        npm_v="$(npm --version)"
+        [[ -n "$pin" && "$npm_v" == "$pin" ]] || { echo "::error::the image's npm is ${npm_v}, the pinned NPM_VERSION is '${pin}'. Rebuild the image and bump its digest pin (PLAN-two-track-merge-dev R1)."; exit 1; }
+        echo "image toolchain: ${CI_RUNNER_IMAGE} node ${node_v} npm ${npm_v} $(python3 --version)"
+        echo "key=img-node${node_v}" >> "$GITHUB_OUTPUT"
 
     - id: cache-root
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -82,7 +125,7 @@ runs:
         path: |
           node_modules
           packages/*/node_modules
-        key: nm-${{ runner.os }}-${{ runner.arch }}-node${{ inputs.node-version }}-nat${{ inputs.natives }}-${{ hashFiles('package-lock.json') }}
+        key: nm-${{ runner.os }}-${{ runner.arch }}-${{ steps.node.outputs.key }}-nat${{ inputs.natives }}-${{ hashFiles('package-lock.json') }}
 
     - id: cache-account
       if: inputs.account == 'true'
@@ -92,7 +135,7 @@ runs:
           private/account/node_modules
           private/account/web/node_modules
           private/account/e2e/node_modules
-        key: nma-${{ runner.os }}-${{ runner.arch }}-node${{ inputs.node-version }}-${{ hashFiles('private/account/package-lock.json', 'private/account/web/package-lock.json', 'private/account/e2e/package-lock.json') }}
+        key: nma-${{ runner.os }}-${{ runner.arch }}-${{ steps.node.outputs.key }}-${{ hashFiles('private/account/package-lock.json', 'private/account/web/package-lock.json', 'private/account/e2e/package-lock.json') }}
 
     # Miss paths. Split so a root hit plus an account miss installs only the
     # account trees (and vice versa) instead of redoing both.
