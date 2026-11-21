@@ -5,7 +5,8 @@
 
 Every case runs the real Stop hook, copied with its effort table into a fixture, over two real trees of one repository: the main checkout on the development branch and a linked landing tree on the PR branch, bound by a landing record in the common git dir. A gh shim answers the PR read per branch, and origin is redirected (`url.<bare>.insteadOf`) to a local bare repository, so the stack's fetch of origin/main reads a planted main.
 
-LT15: `wl_checks.loop_next_text` picks the merged, no-PR-ahead and finish arms through `worklist_messages.loop_next_variant`: the landing tree's merge promotes, the development tree's commits open a draft, its finished draft waits on an open landing PR without blocking, and with no landing PR open the merge is offered.
+LT15: `wl_checks.loop_next_text` picks the no-PR-ahead and finish arms through `worklist_messages.loop_next_variant`: the development tree's commits open a draft, its finished draft waits on an open landing PR without blocking, and with no landing PR open the merge is offered.
+B2 (agent/plans/PLAN-simple-two-tree-loop.md D1): the landing tree's stop names its state machine's step instead (`wl_checks.landing_next_text`): after the merge it watches the release (L-RELEASE), a red Console CI on main is a hotfix (L-HOTFIX), and a green release blocks once with the `cd-done` notice and then idles; the development tree names promote once that release is green.
 LT19: the `landing-stack` FLOOR check blocks the development stop at every effort level while the landing branch is merged and unpromoted; `landing-behind` is advisory; a landing tree's own stop and a checkout with no record read nothing.
 
 Each fire case has a control without the record, and each wiring is run once more against a mutant of the hook copy that must turn its checks red.
@@ -59,6 +60,9 @@ for a in "$@"; do
 done
 case "$*" in
     *"pr list"*) echo '[]'; exit 0 ;;
+    *"pr view"*mergeCommit*) cat "%(base)s/pr-view.json" 2>/dev/null || echo '{}'; exit 0 ;;
+    *"run list"*"--workflow ci.yml"*) cat "%(base)s/run-ci.json" 2>/dev/null || echo '[]'; exit 0 ;;
+    *"run list"*"--workflow cd-release-edge.yml"*) cat "%(base)s/run-edge.json" 2>/dev/null || echo '[]'; exit 0 ;;
     *actions/jobs/*) cat "%(base)s/ci-job.json"; exit 0 ;;
 esac
 echo '{}'
@@ -194,6 +198,26 @@ class World:
         for sidecar in self.fix.base.rglob("*.prlink-*"):
             sidecar.unlink()
 
+    def release(self, sha="", ci="", edge=""):
+        """Plant the merged PR's merge commit and the main runs of Console CI and the edge deploy at it ("" leaves a workflow with no run)."""
+        base = self.fix.base
+        (base / "pr-view.json").write_text(
+            json.dumps({"mergeCommit": {"oid": sha}} if sha else {}), encoding="utf-8"
+        )
+        for name, conclusion in (("run-ci.json", ci), ("run-edge.json", edge)):
+            rows = []
+            if conclusion:
+                rows.append(
+                    {
+                        "databaseId": 4242,
+                        "headSha": sha,
+                        "status": "completed",
+                        "conclusion": conclusion,
+                        "createdAt": "2026-11-20T10:05:00Z",
+                    }
+                )
+            (base / name).write_text(json.dumps(rows), encoding="utf-8")
+
     def effort(self, level):
         self.fix.settings(effort=level)
 
@@ -246,6 +270,10 @@ DRAFT = "turbo does not count it while the landing PR is open"
 OPEN_IT = "has no PR. Open it:"
 WAIT = "never run /pr-merge here"
 MERGE = "The finish condition is the merge: run /pr-merge"
+RELEASE = "LANDING L-RELEASE:"
+HOTFIX = "LANDING L-HOTFIX:"
+IDLE = "LANDING L-IDLE:"
+CD_DONE = "CD DONE:"
 
 
 def loopnext_cases(tmp, tag, mutate=None):
@@ -253,19 +281,34 @@ def loopnext_cases(tmp, tag, mutate=None):
     w = World(tmp, "loopnext-%s" % tag, mutate)
     out = []
 
-    # The landing tree after its PR merged: promotion, not the branch cut.
+    # The landing tree after its PR merged: the release watch, not the branch cut (B2, D1 L-RELEASE).
     w.prs({PR_BRANCH: [node("MERGED", "Plan: %s\n" % OWN, 7)]})
+    w.release("feedface0001")
     w.bind()
     got = w.stop(w.landing)
-    out.append(("landing merged: the promotion blocks", w.blocked(got, PROMOTE), True))
+    out.append(("landing merged: the release watch blocks", w.blocked(got, RELEASE), True))
     out.append(("landing merged: no branch cut", TODAY_MERGED in got.out, False))
+    out.append(("landing merged, release pending: no cd-done", CD_DONE in got.out, False))
+    # Console CI red on main at the merged sha: the hotfix (D1 L-HOTFIX).
+    w.release("feedface0001", ci="failure", edge="success")
+    got = w.stop(w.landing)
+    out.append(("landing merged, main red: the hotfix blocks", w.blocked(got, HOTFIX), True))
+    # The release green: one blocking stop carries the cd-done notice, then the tree idles.
+    w.release("feedface0001", ci="success", edge="success")
+    got = w.stop(w.landing)
+    out.append(("landing released: the cd-done notice blocks once", w.blocked(got, CD_DONE), True))
+    got = w.stop(w.landing)
+    out.append(("landing released: the next stop idles unblocked", w.blocked(got, IDLE), False))
+    out.append(("landing released: the next stop names no cd-done", CD_DONE in got.out, False))
+    # The development tree reads the same green release and names promote.
+    got = w.stop(w.fix.proj)
+    out.append(("development, landing released: promote is named", CD_DONE in got.out, True))
+    w.release("feedface0001", ci="success")
+    got = w.stop(w.fix.proj)
     out.append(
-        (
-            "landing merged: the stop names the LANDING MERGED message for the development session",
-            "LANDING MERGED:" in got.out,
-            True,
-        )
+        ("CONTROL development, edge deploy pending: no promote notice", CD_DONE in got.out, False)
     )
+    w.release("feedface0001", ci="success", edge="success")
     w.bind(False)
     got = w.stop(w.landing)
     out.append(
@@ -273,11 +316,7 @@ def loopnext_cases(tmp, tag, mutate=None):
     )
     out.append(("CONTROL landing merged, no record: no promotion", PROMOTE in got.out, False))
     out.append(
-        (
-            "CONTROL landing merged, no record: no cross-session message",
-            "LANDING MERGED:" in got.out,
-            False,
-        )
+        ("CONTROL landing merged, no record: no landing step", "LANDING L-" in got.out, False)
     )
 
     # The development tree with a commit and no PR while the landing PR is open: its draft.
@@ -324,7 +363,10 @@ def loopnext_cases(tmp, tag, mutate=None):
 STACK_MERGED = "LANDING MERGED (blocks at every effort level)"
 STACK_BEHIND = "LANDING AHEAD"
 KEY_OF = {
-    **dict.fromkeys((PROMOTE, TODAY_MERGED, DRAFT, OPEN_IT, WAIT, MERGE), "loop-next"),
+    **dict.fromkeys(
+        (PROMOTE, TODAY_MERGED, DRAFT, OPEN_IT, WAIT, MERGE, RELEASE, HOTFIX, IDLE, CD_DONE),
+        "loop-next",
+    ),
     STACK_MERGED: "landing-stack",
     STACK_BEHIND: "landing-behind",
 }
@@ -381,15 +423,31 @@ def stack_cases(tmp, tag, mutate=None):
 CHECKS_REL = "hooks/stop/wl_checks.py"
 MUTANTS = (
     (
-        "the merged arm ignores the role",
+        "the landing tree runs the queue loop's arms",
         loopnext_cases,
         [
             (
                 CHECKS_REL,
-                "M.loop_next_variant(role, True, landing_open, M.ARM_MERGED)",
-                "M.V_LOOP_NEXT_MERGED",
+                '_landing_tree = getattr(_loop, "role", "") == wl_prscope.LANDING',
+                "_landing_tree = False",
             )
         ],
+    ),
+    (
+        "the release reads green without the edge deploy",
+        loopnext_cases,
+        [
+            (
+                "hooks/stop/wl_prscope.py",
+                "    pend = [n for n, v, _r in verdicts if v != CI_GREEN]",
+                "    pend = [n for n, v, _r in verdicts[:1] if v != CI_GREEN]",
+            )
+        ],
+    ),
+    (
+        "the cd-done notice is never latched",
+        loopnext_cases,
+        [(CHECKS_REL, '        state_doc["landing"] = {"cd_done": step.sha}\n', "")],
     ),
     (
         "the no-PR arm ignores the role",

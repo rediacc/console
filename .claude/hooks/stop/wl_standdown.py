@@ -1,6 +1,6 @@
 """wl_standdown: the Stop hook's stand-down profiles, the keep-lists that decide which checks still block while the session is told to wait.
 
-THREE STATES STAND THE BATTERY DOWN, and all share one mechanism. A KEEP-list rather than a drop-list, deliberately: a check added later stands down by default, which is what "should not be invoked" means, and it matches `check_tier`'s rule that an unknown key is hygiene.
+FOUR STATES STAND THE BATTERY DOWN, and all share one mechanism. A KEEP-list rather than a drop-list, deliberately: a check added later stands down by default, which is what "should not be invoked" means, and it matches `check_tier`'s rule that an unknown key is hygiene.
 
   CAP_WAIT  every writer slot is verified live and nothing this session could start (operator 2026-09-24: "the stop hook should not be invoked (or should skip the order) when writer slots are full! There could be exceptions like 2% compaction etc."; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). `wl_roster.cap_saturated_wait` decides it, because it needs the writer cap (`wl_roster.writer_cap`, QUEUE.md `writer_cap:`).
   FOCUS     the session declared a PR wind-down with `worklist.py --phase <me> babysit|merge` (operator 2026-09-25, spec Y: "Finish, don't start"; agent/plans/PLAN-stop-hook-focus-mode.md; the verb was `--focus` until agent/plans/PLAN-stop-hook-effort.md made it a phase). A phase only parks work and never adds a block. What stays is what protects the PR: CI red, a dead watch, unread reports, STATE.md near compaction and hook integrity.
@@ -9,7 +9,9 @@ THE EFFORT LEVEL RUNS FIRST (wl_effort, agent/plans/PLAN-stop-hook-effort.md): i
 
   PR_LOOP   the checkout is on the one-plan-per-PR loop (`wl_prscope.loop_state`, kind other than off-loop; operator ruling 2026-10-03, agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4). The hook blocks only on the live PR's plan set, its CI and reviews, the items on that set's epics and the loop's own duties; every other check is parked and named in one queued line.
 
-FOCUS governs over CAP_WAIT, and both over PR_LOOP: each is a narrower declaration. FOCUS is the operator's explicit one, and its judge skip already covers the cap wait's.
+  LANDING_TREE  the stop runs in the landing tree (agent/plans/PLAN-simple-two-tree-loop.md B2). The phase-driven wind-down reads the tree role instead: the landing tree's job is to land the one PR, so it keeps FOCUS's PR protection plus the loop's duties (the landing state machine's step rides `loop-next`) and parks the checks that start new work.
+
+`profile_for` picks one: LANDING_TREE by the tree role first; FOCUS over CAP_WAIT, and both over PR_LOOP, since each is a narrower declaration. FOCUS is the operator's explicit one, and its judge skip already covers the cap wait's. In the development tree a phase selects nothing: that tree always builds.
 
 A TURBO BATCH BUILDING LOCALLY narrows PR_LOOP by one check, the red CI (operator ruling 2026-10-13). That set and its predicate live in wl_checks beside the turbo arm (`TURBO_BUILD_PARKS`, `turbo_build_parks`), as `TURBO_KEEPS` does, because the predicate reads the queue settings and the plan boxes and this module reads nothing. FOCUS governs there too: an active focus parks nothing of it.
 
@@ -109,19 +111,26 @@ _FOCUS_ONLY = frozenset(
     }
 )
 
-# The PR loop's own additions (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4): the scoped open list and the checks that read it, the PR plan's own pushes, and the post-merge continuation.
-_PR_LOOP_ONLY = frozenset(
+# The loop's duties both loop profiles keep (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4): the scoped open list, the loop's next step (in the landing tree, the state machine's step), and an expired DEFAULT.
+_LOOP_DUTIES = frozenset(
     {
         "open-items",
-        "idle-stall",
-        "unblocked-claim",
-        "plan-unimplemented",
-        "plan-adopted",
         "loop-next",
         # Session hygiene, not plan scope (2026-10-24): twelve hung wait loops a sub-agent armed lived for hours while every stop printed "Stood down: bg-orphan x158". The shells are this session's own process tree on every PR, so the loop keeps the check. FOCUS and CAP_WAIT still park it, as their plans' hygiene tables list it.
         "bg-orphan",
     }
 ) | {_DEFER_EXPIRED}
+# The checks that start or adopt plan work: the development tree's PR loop keeps them, the landing tree ("finish, don't start") parks them.
+_BUILD_ONLY = frozenset(
+    {
+        "idle-stall",
+        "unblocked-claim",
+        "plan-unimplemented",
+        "plan-adopted",
+    }
+)
+# The PR loop's own additions: the loop's duties, the PR plan's own pushes and the build checks.
+_PR_LOOP_ONLY = _LOOP_DUTIES | _BUILD_ONLY
 
 CAP_WAIT = Profile(
     "cap-wait", CORE | _CAP_WAIT_ONLY, PREFIXES, frozenset({_PR_FINISH}), COMPACTION_KEYS
@@ -135,7 +144,29 @@ PR_LOOP = Profile(
     frozenset(),
     frozenset(),
 )
-PROFILES = (CAP_WAIT, FOCUS, PR_LOOP)
+# THE LANDING TREE (agent/plans/PLAN-simple-two-tree-loop.md B2): the wind-down FOCUS declared by a phase is now the landing tree's standing profile, read from the tree role. It keeps what protects the PR and the loop's duties (the landing state machine's step rides `loop-next`), and parks what starts new work. STATE.md freshness is a loop duty, as in PR_LOOP.
+LANDING_TREE = Profile(
+    "landing",
+    CORE | _FOCUS_ONLY | _LOOP_DUTIES | COMPACTION_KEYS | {_PR_FINISH},
+    PREFIXES,
+    frozenset(),
+    frozenset(),
+)
+PROFILES = (CAP_WAIT, FOCUS, PR_LOOP, LANDING_TREE)
+# The tree roles of wl_prscope, repeated here because this module imports nothing.
+ROLE_LANDING = "landing"
+ROLE_DEVELOPMENT = "development"
+
+
+def profile_for(role, focus, cap_wait, on_loop):
+    """The stand-down profile of one stop, None for the full battery. The tree role decides first (agent/plans/PLAN-simple-two-tree-loop.md B2): the landing tree always stands down to LANDING_TREE, and the development tree never to FOCUS, since it always builds. A phase (`focus`) still selects FOCUS in a checkout with no landing record until B10 deletes `--phase`. Then the cap wait, then the PR loop."""
+    if role == ROLE_LANDING:
+        return LANDING_TREE
+    if focus and role != ROLE_DEVELOPMENT:
+        return FOCUS
+    if cap_wait:
+        return CAP_WAIT
+    return PR_LOOP if on_loop else None
 
 
 def keeps(profile, key, always, compaction_due):

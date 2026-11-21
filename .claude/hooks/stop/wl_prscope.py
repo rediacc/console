@@ -12,9 +12,11 @@ LOCAL-FIRST (agent/plans/PLAN-turbo-local-first.md D1). Under turbo with `turbo_
 
 TWO TREES (agent/plans/PLAN-two-track-merge-dev.md LT5). With a landing record (`commit_policy.landing_record`, LT1: `{path, branch}` in the common git dir) the checkout is one of two trees, each holding its own live MMDD-N branch. The tree at the record's path is `landing`: it works the open PR's babysit and merge loop, so the queue is not read there (no queue head, no next plan, no next branch, turbo off), and its item scope is the items added on its own branch plus the items that carry no branch. Every other tree of the repository is `development`: it works the queue and the draft PR, the record's branch never counts as a second live branch on `main`, and the items added on the landing branch are out of its scope. `tree_parks` names the checks each tree reports instead of blocking on. Without a record `role` is "", nothing is excluded or parked, and every other field is what it was.
 
+THE LANDING STATE MACHINE (agent/plans/PLAN-simple-two-tree-loop.md D1, box B2). In the landing tree `landing_loop` reads one of seven states from the world on every stop -- L-CI (the PR's checks in flight), L-FIX (a required check red), L-REVIEW (CI Complete SUCCESS, boxes or reviews still open), L-MERGE (all clear), L-RELEASE (merged, the release at the merged sha in flight), L-HOTFIX (that release red on main), L-IDLE (no open PR, or a merged PR whose release is green) -- and names one step; L-IDLE blocks on nothing. The PR is read on the record's branch, so a detached HEAD on origin/main during a hotfix still finds the merged PR. The release is Console CI and CD - Release to Edge at the merged sha (`read_release`, gh run list). The development tree reads the same release (`landing_released`): a merged landing PR with a green release is its cue to promote. No event stores the state, so a restart resumes where the world is.
+
 `today` is the MMDD the next branch is named for. It defaults to LOCAL time, the clock `block_second_branch` names branches with, so the name printed here is the one that guard admits.
 
-Reads no environment variable of its own; gh is reached through `wl_ci` and `commit_policy`.
+Reads no environment variable of its own; gh is reached through `wl_ci`, `commit_policy` and, for the merge and release reads, `wl_gh.call`.
 """
 
 from __future__ import annotations
@@ -49,8 +51,7 @@ TREE_PARK_NOTE = (
 )
 DRAFT_CI_NOTE = (
     "CI on PR #%s is red on %d job(s): %s. Reported, not blocking: this is the development "
-    "tree's draft PR, and the landing tree's stop babysits the PR being landed. It blocks here "
-    "under --phase babysit|merge."
+    "tree's draft PR, and the landing tree's stop babysits the PR being landed."
 )
 # `loop_state`'s `landing` default: read the record through commit_policy.
 _READ = object()
@@ -66,7 +67,7 @@ KINDS = (LIVE, NO_PR, MERGED, ON_MAIN, OFF_LOOP, UNREADABLE)
 
 @dataclasses.dataclass(frozen=True)
 class LoopState:
-    """Where the loop stands. `plans` is ordered prerequisites first; `prereqs` names the members that are not the PR's own `Plan:` plans; `stale_promoted` is the queue head's path when it has no open box left (a finished Promoted entry nobody removed), else "". `role` is `landing`, `development` or "" (no landing record), `landing_branch` the record's branch, `foreign_items` the item ids outside this tree's scope (see TWO TREES), and `landing_open` True in the development tree while the landing branch's PR is open."""
+    """Where the loop stands. `plans` is ordered prerequisites first; `prereqs` names the members that are not the PR's own `Plan:` plans; `stale_promoted` is the queue head's path when it has no open box left (a finished Promoted entry nobody removed), else "". `role` is `landing`, `development` or "" (no landing record), `landing_branch` the record's branch, `foreign_items` the item ids outside this tree's scope (see TWO TREES), `landing_open` True in the development tree while the landing branch's PR is open, and `landing_released` the landing PR's number in the development tree once that PR is merged and its release is fully green (D3: the cue to promote), else 0."""
 
     kind: str
     branch: str = ""
@@ -92,6 +93,7 @@ class LoopState:
     landing_branch: str = ""
     foreign_items: frozenset[str] = frozenset()
     landing_open: bool = False
+    landing_released: int = 0
 
 
 def _plan_epics(rel):
@@ -226,22 +228,261 @@ def with_tree_scope(in_scope, state):
     return lambda rec: rec["id"] not in foreign and in_scope(rec)
 
 
-def tree_parks(state, focus=None):
-    """The check keys this tree reports instead of blocking on: LANDING_PARKS in the landing tree, DEVELOPMENT_PARKS in the development tree, none without a record. An active focus (`--phase babysit|merge`) parks nothing: it declares the PR this session's to land, in whichever tree it runs."""
+def tree_parks(state):
+    """The check keys this tree reports instead of blocking on: LANDING_PARKS in the landing tree, DEVELOPMENT_PARKS in the development tree, none without a record. The tree role alone decides (agent/plans/PLAN-simple-two-tree-loop.md B2): a `--phase` declaration no longer overrides it, since the landing tree is the one that lands the PR."""
     role = getattr(state, "role", "") if state is not None else ""
-    if focus or not role:
+    if not role:
         return frozenset()
     return LANDING_PARKS if role == LANDING else DEVELOPMENT_PARKS
 
 
+# ---- THE LANDING STATE MACHINE (agent/plans/PLAN-simple-two-tree-loop.md D1, box B2) ----
+# The landing tree's stop reads one state from the world (the landing PR, its checks, the merge, main's workflow runs) and names the one next step. No event stores the state, so a restart resumes where the world is.
+L_CI = "L-CI"
+L_FIX = "L-FIX"
+L_REVIEW = "L-REVIEW"
+L_MERGE = "L-MERGE"
+L_RELEASE = "L-RELEASE"
+L_HOTFIX = "L-HOTFIX"
+L_IDLE = "L-IDLE"
+LANDING_STATES = (L_CI, L_FIX, L_REVIEW, L_MERGE, L_RELEASE, L_HOTFIX, L_IDLE)
+# The PR head's CI verdict, as `landing_step` reads it: CI Complete SUCCESS, a required check red, anything else (in flight, not registered yet, or unreadable).
+CI_GREEN = "green"
+CI_RED = "red"
+CI_PENDING = "pending"
+# The two workflows whose runs at the merged sha make the release (D3): Console CI on main and the edge deploy.
+RELEASE_WORKFLOWS = (("Console CI", "ci.yml"), ("CD - Release to Edge", "cd-release-edge.yml"))
+RUN_RED = frozenset({"failure", "timed_out", "cancelled", "startup_failure", "action_required"})
+# How many recent main runs of each workflow are read: the merged sha's run and any hotfix run after it sit in the newest few.
+RELEASE_RUNS = 20
+
+LANDING_STEP_TEXT = {
+    L_CI: (
+        "LANDING %(state)s: PR #%(pr)s's checks are in flight on its head. Watch them through the "
+        "ci-watch skill (one `ci-trace.py --wait --until-final` shell), never a hand-rolled gh loop."
+    ),
+    L_FIX: (
+        "LANDING %(state)s: a required check of PR #%(pr)s is red%(detail)s. Diagnose it through "
+        "the ci-watch skill, fix it in this tree (the freeze admits `fix` commits, and a writer's "
+        "brief carries `focus-fix:#<id>` for an item with `pr:%(pr)s`), push, and stop. The "
+        "long-red rules (agent/plans/PLAN-simple-two-tree-loop.md D4) run here."
+    ),
+    L_REVIEW: (
+        "LANDING %(state)s: CI Complete is SUCCESS on PR #%(pr)s's head. Clear what the merge "
+        "still waits on: per-commit reviews clean (`worklist.py --review-run <me>`, "
+        "`wl_review.py --check` rc 0), the PR review answered with wl_prreview.py, its threads "
+        "resolved, and every plan box ticked%(detail)s. The open live boxes (bench, hostinger, VM) "
+        "run in this tree before the merge."
+    ),
+    L_MERGE: (
+        "LANDING %(state)s: every box of PR #%(pr)s's plan set is ticked, CI Complete is SUCCESS "
+        "and the reviews are clean. Merge it, submodule PRs first, then the console PR:\n"
+        "    gh pr merge %(pr)s --rebase --auto"
+    ),
+    L_RELEASE: (
+        "LANDING %(state)s: PR #%(pr)s merged at %(sha)s. Watch the release at that sha through "
+        "the ci-watch skill: Console CI on main and CD - Release to Edge%(detail)s. A main-only "
+        "red there is a hotfix in this tree; a green release is the development session's cue to "
+        "promote."
+    ),
+    L_HOTFIX: (
+        "LANDING %(state)s: PR #%(pr)s merged at %(sha)s and the release is red on main"
+        "%(detail)s. Hotfix in this tree on main:\n"
+        "    git switch --detach origin/main\n"
+        "then a commit whose subject ends in `[hotfix]`, with a `Hotfix-Evidence:` trailer naming "
+        "the red run and at most 5 files. The operator pushes main "
+        "(`! COMMIT_POLICY_OK=1 git push origin main`); the stop then watches the release again."
+    ),
+    L_IDLE: (
+        "LANDING %(state)s: no landing PR is open%(detail)s. Nothing blocks; the next PR opens when "
+        "the development session promotes (`./run.sh worktree landing --promote`)."
+    ),
+}
+LANDING_UNREADABLE = (
+    "LANDING: the landing state could not be read (%s). Reported, not blocking: the next stop "
+    "reads again."
+)
+
+
+@dataclasses.dataclass(frozen=True)
+class LandingStep:
+    """One landing stop's reading: `state` is one of LANDING_STATES ("" when the world could not be read), `text` the one step it names, `blocks` False only for L-IDLE and an unreadable world. `release` is True when the merged PR's release is fully green (L-IDLE after a merge), which is when the development session is told `cd-done`."""
+
+    state: str
+    text: str
+    blocks: bool
+    pr: int = 0
+    sha: str = ""
+    release: bool = False
+
+
+def _run_verdict(run):
+    """`green`, `red` or `pending` for one `gh run list` row."""
+    if str(run.get("status") or "").lower() != "completed":
+        return CI_PENDING
+    conclusion = str(run.get("conclusion") or "").lower()
+    if conclusion == "success":
+        return CI_GREEN
+    return CI_RED if conclusion in RUN_RED else CI_PENDING
+
+
+def release_verdict(runs_by_workflow, sha):
+    """(verdict, detail) of the release at merged `sha`: `green` when every RELEASE_WORKFLOWS run reads success, `red` when any reads red, else `pending`. `runs_by_workflow` maps a workflow name to its main runs, newest first. A run of that workflow created after the merged sha's run (a hotfix on main) supersedes it, so a fixed main reads green again; without a run at `sha` or after it the workflow is pending."""
+    verdicts = []
+    for name, _file in RELEASE_WORKFLOWS:
+        runs = [r for r in (runs_by_workflow.get(name) or []) if isinstance(r, dict)]
+        at = [r for r in runs if str(r.get("headSha") or "") == sha]
+        if not at:
+            verdicts.append((name, CI_PENDING, None))
+            continue
+        merged_at = str(at[-1].get("createdAt") or "")
+        newest = runs[0] if str(runs[0].get("createdAt") or "") >= merged_at else at[0]
+        verdicts.append((name, _run_verdict(newest), newest))
+    reds = [(n, r) for n, v, r in verdicts if v == CI_RED]
+    if reds:
+        detail = ", ".join(
+            "%s run %s (%s)" % (n, r.get("databaseId") or "?", r.get("conclusion") or "red")
+            for n, r in reds
+        )
+        return CI_RED, detail
+    pend = [n for n, v, _r in verdicts if v != CI_GREEN]
+    if pend:
+        return CI_PENDING, "still waiting on " + ", ".join(pend)
+    return CI_GREEN, ""
+
+
+def _gh_call(argv, cwd):
+    import wl_gh
+
+    return wl_gh.call(argv, cwd=cwd)
+
+
+def read_release(top, sha, gh=None):
+    """(verdict, detail, error) of the release at `sha`, read through `gh` (`wl_gh.call`'s shape: argv -> (data, error)); error is "" on a good read."""
+    call = gh or _gh_call
+    runs = {}
+    for name, wf in RELEASE_WORKFLOWS:
+        data, err = call(
+            [
+                "run",
+                "list",
+                "--branch",
+                "main",
+                "--workflow",
+                wf,
+                "--limit",
+                str(RELEASE_RUNS),
+                "--json",
+                "databaseId,headSha,status,conclusion,createdAt",
+            ],
+            str(top),
+        )
+        if err or not isinstance(data, list):
+            return "", "", err or "`gh run list --workflow %s` answered no list" % wf
+        runs[name] = data
+    verdict, detail = release_verdict(runs, sha)
+    return verdict, detail, ""
+
+
+def merged_sha(top, pr, gh=None):
+    """(sha, error): the commit main carries for merged PR `pr` (`mergeCommit.oid`; for a rebase merge, the last rebased commit)."""
+    call = gh or _gh_call
+    data, err = call(["pr", "view", str(pr), "--json", "mergeCommit"], str(top))
+    if err:
+        return "", err
+    oid = str(((data or {}).get("mergeCommit") or {}).get("oid") or "")
+    return (oid, "") if oid else ("", "PR #%s carries no mergeCommit" % pr)
+
+
+def landing_step(pr_state, pr, ci, boxes_open, reviews_clean, release="", sha="", detail=""):
+    """The D1 state and its step, from facts already read. `pr_state` is the landing PR's state (OPEN, MERGED, or "" for none); `ci` CI_GREEN / CI_RED / CI_PENDING for its head; `boxes_open` the plan set's open box count (-1 unreadable); `reviews_clean` True when no per-commit or PR review finding holds the merge; `release` the merged sha's release verdict. Pure: every gh read happens before it."""
+
+    def step(state, blocks=True, release_green=False, more=""):
+        fields = {"state": state, "pr": pr, "sha": (sha or "?")[:12], "detail": more}
+        return LandingStep(state, LANDING_STEP_TEXT[state] % fields, blocks, pr, sha, release_green)
+
+    if pr_state == "OPEN":
+        if ci == CI_RED:
+            return step(L_FIX, more=": %s" % detail if detail else "")
+        if ci != CI_GREEN:
+            return step(L_CI)
+        if boxes_open != 0 or not reviews_clean:
+            more = " (%d open box(es))" % boxes_open if boxes_open > 0 else ""
+            return step(L_REVIEW, more=more)
+        return step(L_MERGE)
+    if pr_state == "MERGED":
+        if release == CI_RED:
+            return step(L_HOTFIX, more=": %s" % detail if detail else "")
+        if release != CI_GREEN:
+            return step(L_RELEASE, more=" (%s)" % detail if detail else "")
+        return step(
+            L_IDLE,
+            blocks=False,
+            release_green=True,
+            more=" (PR #%s merged and its release at %s is green)" % (pr, (sha or "?")[:12]),
+        )
+    return step(L_IDLE, blocks=False)
+
+
+def landing_pr(nodes):
+    """(state, number, body) of the landing branch's PR from `wl_ci.pr_link` nodes: an OPEN one first, else the newest MERGED, else ("", 0, "")."""
+    by_state: dict[str, dict] = {}
+    for n in nodes or ():
+        by_state.setdefault(str(n.get("state") or "").upper(), n)
+    for st in ("OPEN", "MERGED"):
+        if st in by_state:
+            n = by_state[st]
+            return st, int(n.get("number") or 0), str(n.get("body") or "")
+    return "", 0, ""
+
+
+def landing_loop(top, nodes, ci, reviews_clean, boxes_open=None, gh=None, ci_detail=""):
+    """The LandingStep for the landing tree at `top`. `nodes` are the landing branch's PR nodes (`wl_ci.pr_link`, read on the record's branch so a detached hotfix HEAD still finds the merged PR); `ci` the stop's own verdict for the open PR's head; `boxes_open` the plan set's open box count, None to read it from the PR body's plan set; `gh` the `wl_gh.call` seam for the merge and release reads. Never raises: a failed read is an unreadable, non-blocking step."""
+    try:
+        pr_state, pr, body = landing_pr(nodes)
+        if pr_state == "OPEN":
+            if boxes_open is None:
+                plan_gate, _cp = _hooks_pkg()
+                plans, _problems = plan_gate.pr_plan_set(str(top), body)
+                counts = [_open_count(plan_gate, top, rel) for rel in plans]
+                boxes_open = -1 if any(c < 0 for c in counts) else sum(counts)
+            return landing_step(pr_state, pr, ci, boxes_open, reviews_clean, detail=ci_detail)
+        if pr_state == "MERGED":
+            sha, err = merged_sha(top, pr, gh)
+            if err:
+                return LandingStep("", LANDING_UNREADABLE % err, False, pr)
+            verdict, detail, err = read_release(top, sha, gh)
+            if err:
+                return LandingStep("", LANDING_UNREADABLE % err, False, pr, sha)
+            return landing_step(pr_state, pr, ci, 0, True, verdict, sha, detail)
+        return landing_step("", 0, ci, 0, True)
+    except Exception as exc:
+        return LandingStep("", LANDING_UNREADABLE % ("%s: %s" % (type(exc).__name__, exc)), False)
+
+
 def landing_pr_open(wl_ci, top, worklist, session_id, landing_branch):
     """True when the landing branch's PR is open, read through the same `wl_ci.pr_link` as the tree's own PR; a failed read or no branch answers False (the development tree then reads today's finish text)."""
+    return landing_pr(_landing_nodes(wl_ci, top, worklist, session_id, landing_branch))[0] == "OPEN"
+
+
+def _landing_nodes(wl_ci, top, worklist, session_id, landing_branch):
+    """The landing branch's PR nodes through `wl_ci.pr_link`, [] on a failed read or no branch."""
     if not landing_branch:
-        return False
+        return []
     nodes, err = wl_ci.pr_link(top, worklist, session_id, landing_branch)
+    return [] if err else list(nodes or [])
+
+
+def landing_released(top, nodes, gh=None):
+    """The landing PR's number once it is MERGED (and none is open) and its release at the merged sha is fully green (D3), else 0. Read from the development tree, which promotes; a failed read answers 0, so promote is never named on a guess."""
+    state, pr, _body = landing_pr(nodes)
+    if state != "MERGED":
+        return 0
+    sha, err = merged_sha(top, pr, gh)
     if err:
-        return False
-    return any(str(n.get("state") or "").upper() == "OPEN" for n in nodes)
+        return 0
+    verdict, _detail, err = read_release(top, sha, gh)
+    return pr if not err and verdict == CI_GREEN else 0
 
 
 def _console_top(commit_policy, root):
@@ -286,15 +527,17 @@ def loop_state(
     if role:
         if branches is None:
             branches = item_branches(worklist, top)
+        nodes = (
+            _landing_nodes(wl_ci, top, worklist, session_id, landing_branch)
+            if role == DEVELOPMENT and gh
+            else []
+        )
         tree = {
             "role": role,
             "landing_branch": landing_branch,
             "foreign_items": foreign_items(role, branch, landing_branch, branches),
-            "landing_open": bool(
-                role == DEVELOPMENT
-                and gh
-                and landing_pr_open(wl_ci, top, worklist, session_id, landing_branch)
-            ),
+            "landing_open": landing_pr(nodes)[0] == "OPEN",
+            "landing_released": landing_released(top, nodes) if nodes else 0,
         }
     head = plan_gate.queue_head(top) if role != LANDING else ""
     stale = head if head and _open_count(plan_gate, top, head) == 0 else ""
@@ -394,23 +637,43 @@ def loop_state(
 
 
 __all__ = [
+    "CI_GREEN",
+    "CI_PENDING",
+    "CI_RED",
     "DEVELOPMENT",
     "DEVELOPMENT_PARKS",
     "DRAFT_CI_NOTE",
     "KINDS",
     "LANDING",
     "LANDING_PARKS",
+    "LANDING_STATES",
+    "LANDING_STEP_TEXT",
+    "L_CI",
+    "L_FIX",
+    "L_HOTFIX",
+    "L_IDLE",
+    "L_MERGE",
+    "L_RELEASE",
+    "L_REVIEW",
     "TREE_PARK_NOTE",
+    "LandingStep",
     "LoopState",
     "batch_ready",
     "epic_items",
     "foreign_items",
     "item_branches",
+    "landing_loop",
+    "landing_pr",
     "landing_pr_open",
     "landing_record",
+    "landing_released",
+    "landing_step",
     "loop_state",
+    "merged_sha",
     "next_queued",
+    "read_release",
     "record_named",
+    "release_verdict",
     "tree_parks",
     "tree_role",
     "turbo_picks",

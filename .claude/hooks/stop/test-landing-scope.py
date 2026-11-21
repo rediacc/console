@@ -10,6 +10,7 @@ A landing stop sees only the PR branch's items and no queue; a development stop 
 
 import dataclasses
 import importlib.util
+import inspect
 import os
 import pathlib
 import subprocess
@@ -307,10 +308,11 @@ def control_scope_and_parks(wl_prscope, wl_checks):
         wl_prscope.DEVELOPMENT_PARKS,
     )
     check("CONTROL no record parks nothing", wl_prscope.tree_parks(bare), frozenset())
+    # B2 (agent/plans/PLAN-simple-two-tree-loop.md): the tree role alone decides; a phase no longer overrides it, so tree_parks takes the state and nothing else.
     check(
-        "CONTROL a focus parks nothing",
-        wl_prscope.tree_parks(dev, {"mode": "babysit"}),
-        frozenset(),
+        "tree_parks reads no focus argument",
+        list(inspect.signature(wl_prscope.tree_parks).parameters),
+        ["state"],
     )
     check("development parks ci-red", "ci-red" in wl_prscope.DEVELOPMENT_PARKS, True)
     check("landing parks turbo-next", "turbo-next" in wl_prscope.LANDING_PARKS, True)

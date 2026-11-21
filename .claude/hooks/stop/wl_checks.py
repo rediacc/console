@@ -3093,7 +3093,7 @@ def loop_governs(state):
     """True when the one-plan-per-PR loop scopes this stop (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4): any loop state but `off-loop` that has something to work, a PR plan set, a queue head or a next plan. A checkout with neither a PR plan nor anything in agent/plans/QUEUE.md has no loop to scope or continue (on main after the last queued plan merged, or a project that never queued one), so it keeps the full battery."""
     if state is None or state.kind == wl_prscope.OFF_LOOP:
         return False
-    # The landing tree reads no queue, so after its PR merged it holds none of the three; promotion is its next step (agent/plans/PLAN-two-track-merge-dev.md LT15).
+    # The landing tree reads no queue, so after its PR merged it holds none of the three; the release watch and a hotfix are its next steps (agent/plans/PLAN-simple-two-tree-loop.md D1), named by `landing_next_text` on or off the loop.
     if state.kind == wl_prscope.MERGED and getattr(state, "role", "") == wl_prscope.LANDING:
         return True
     return bool(state.plans or state.queue_head or state.next_plan)
@@ -3407,20 +3407,26 @@ def _remaining_recs(fold, session_id, open_items, deferred_recs, in_flight_recs)
 
 
 def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
-    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked / unreadable. With a landing record `M.loop_next_variant` picks the merged, no-PR-ahead and finish arms: the landing tree's merge promotes, the development tree's draft opens with --draft, and its finish waits on an open landing PR as an advisory (agent/plans/PLAN-two-track-merge-dev.md LT15). Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count.
+    """(text, blocking): the loop-next message for this stop, or ("", False) (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7): merged / on-main / no-pr / live with every box ticked / unreadable. With a landing record the landing tree never reaches here (its stop names the D1 state machine's step, `landing_next_text`), and `M.loop_next_variant` picks the development tree's arms: its draft opens with --draft, and its finish waits on an open landing PR as an advisory (agent/plans/PLAN-two-track-merge-dev.md LT15). Once the landing PR is merged and its release green, the development tree's arm is promote (agent/plans/PLAN-simple-two-tree-loop.md D3), blocking only while no [writer] box of the branch's plans is open. Never fires on an empty queue. The unreadable arm counts its stops per error signature in `state_doc["loopnext"]` and stops blocking after wl_ci.CI_MAX_BLOCKS of them (the text then rides the advisory queue); any other arm resets the count.
 
     A no-PR local batch (agent/plans/PLAN-turbo-local-first.md D2, `local_batch`) never gets "Open it": while the batch fills it is the N_TURBO_LOCAL advisory, and once it is ready the V_LOOP_NEXT_BATCH_OPEN block names the verify-push-open sequence, `me` filling its `--batch-body` line."""
     kind, branch = state.kind, state.branch
     if kind != wl_prscope.UNREADABLE:
         state_doc.pop("loopnext", None)
     stale = M.LOOP_NEXT_STALE % state.stale_promoted if state.stale_promoted else ""
-    # THE TWO-TREE ARMS (agent/plans/PLAN-two-track-merge-dev.md LT15): `role` is the record's reading of the session's own tree ("" without a record), `landing_open` the landing PR's state as the development tree reads it.
+    # THE TWO-TREE ARMS (agent/plans/PLAN-two-track-merge-dev.md LT15): `role` is the record's reading of the session's own tree ("" without a record), `landing_open` the landing PR's state as the development tree reads it. The landing tree never reaches here: its stop names the state machine's step (`landing_next_text`).
     role = getattr(state, "role", "") or ""
     landing_open = bool(getattr(state, "landing_open", False))
+    # THE DEVELOPMENT TREE'S PROMOTE (agent/plans/PLAN-simple-two-tree-loop.md D3, box B2): once the landing PR is merged and its release is fully green, promote is the next step, in whichever loop state this branch is. It blocks only while no [writer] box of the branch's plans is open, since promote runs at a commit boundary and never under a running writer; until then it advises.
+    released = int(getattr(state, "landing_released", 0) or 0)
+    if role == wl_prscope.DEVELOPMENT and released:
+        notice = wl_stack.notify_line(own_tree(), "cd-done", pr=released)
+        if notice:
+            pending = branch_writer_boxes(root)
+            if pending:
+                return notice + DEV_PROMOTE_WAIT % ", ".join(pending), False
+            return notice, True
     nxt = state.next_plan
-    if kind == wl_prscope.MERGED and role == wl_prscope.LANDING and not nxt:
-        # The landing tree reads no queue; the next plan is the main checkout's queue head, which is the development tree's.
-        nxt = wl_prscope.next_queued(root, exclude=state.plans)[0]
     fields = {
         "pr": state.pr,
         "branch": branch,
@@ -3440,17 +3446,7 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
             return "", False
         if C._git(root, "rev-parse", "--verify", "-q", "refs/remotes/origin/%s" % branch):
             fields["delete"] = M.LOOP_NEXT_DELETE % branch
-        text = M.loop_next_variant(role, True, landing_open, M.ARM_MERGED) % fields
-        # The landing tree's merge is the development session's cue to promote (operator ruling ASKED:2026-11-20T18:46Z): the stop names the cross-session message to send, beside the development stop's own block.
-        notice = (
-            wl_stack.notify_line(own_tree(), "merged", pr=state.pr) if role == "landing" else ""
-        )
-        if notice:
-            text += (
-                "\nSend the development session this message (SendMessage to its session):\n"
-                + notice
-            )
-        return text, True
+        return M.loop_next_variant(role, True, landing_open, M.ARM_MERGED) % fields, True
     if kind == wl_prscope.ON_MAIN:
         return (M.V_LOOP_NEXT_ON_MAIN % fields, True) if nxt else ("", False)
     if kind == wl_prscope.NO_PR:
@@ -3495,6 +3491,81 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
         )
         return text, n <= wl_ci.CI_MAX_BLOCKS
     return "", False
+
+
+# The development tree's promote while a [writer] box of its branch's plans is still open: the notice rides the advisory queue until the writers finish.
+DEV_PROMOTE_WAIT = (
+    "\nNot yet: [writer] box(es) of this branch's plans are still open (%s). Promote at the commit "
+    "boundary after the last one is ticked; ./run.sh worktree landing --promote refuses earlier."
+)
+PLAN_BOX_TRAILER = re.compile(r"(PLAN-[A-Za-z0-9._-]+?\.md)#[0-9a-f]{8}")
+OPEN_WRITER_BOX = re.compile(r"^\s*- \[ \] (\S+) \[writer\]")
+
+
+def branch_writer_boxes(root):
+    """The open `[writer]` boxes (`PLAN-x.md:B3`) of every plan the `Plan-Box:` trailers of this branch's commits ahead of origin/main name, the code-complete premise of promote (agent/plans/PLAN-simple-two-tree-loop.md D3). A plan file that cannot be read is skipped."""
+    log = (
+        C._git(root, "log", "--format=%(trailers:key=Plan-Box,valueonly)", "origin/main..HEAD")
+        or ""
+    )
+    out = []
+    for name in sorted(set(PLAN_BOX_TRAILER.findall(str(log)))):
+        try:
+            text = (pathlib.Path(root) / "agent" / "plans" / name).read_text(encoding="utf-8")
+        except OSError:
+            continue
+        out.extend(
+            "%s:%s" % (name, m.group(1)) for m in map(OPEN_WRITER_BOX.match, text.splitlines()) if m
+        )
+    return out
+
+
+def ci_verdict(cistate, cidetail):
+    """The landing PR head's CI as the state machine reads it (wl_prscope.CI_GREEN / CI_RED / CI_PENDING), from this stop's own `wl_ci.ci_trouble` answer: `ok` is CI Complete SUCCESS, a blocking failure (`trouble`, `fixing`, `watched`, `cancelled`) is red, a soft or carried red is green only when `wl_ci.ci_gate` reads CI Complete green, and anything else is pending."""
+    if cistate == "ok":
+        return wl_prscope.CI_GREEN
+    if cistate in ("trouble", "fixing", "watched", "cancelled"):
+        return wl_prscope.CI_RED
+    if cistate in ("soft", "carried") and isinstance(cidetail, dict):
+        info = cidetail.get("info")
+        with contextlib.suppress(Exception):
+            if isinstance(info, dict) and wl_ci.ci_gate(info)["verdict"] == "green":
+                return wl_prscope.CI_GREEN
+    return wl_prscope.CI_PENDING
+
+
+# The keys whose findings hold the merge in L-REVIEW (D1): per-commit reviews and the PR review.
+REVIEW_KEYS = frozenset({"commit-review", "commit-review-malformed", "pr-review"})
+
+
+def landing_next_text(state, own, worklist, session_id, state_doc, cistate, cidetail, violations):
+    """(text, blocking): the landing tree's one step for this stop (agent/plans/PLAN-simple-two-tree-loop.md D1, box B2), `wl_prscope.landing_loop` over the landing branch's PR read on the record's branch, this stop's CI verdict and its review findings. L-IDLE blocks on nothing, except once per merged sha whose release just read green: that stop blocks with the `cd-done` notice to send the development session (latched in `state_doc["landing"]`)."""
+    branch = getattr(state, "landing_branch", "") or getattr(state, "branch", "")
+    nodes, err = wl_ci.pr_link(own, worklist, session_id, branch)
+    if err:
+        return wl_prscope.LANDING_UNREADABLE % err, False
+    detail = ""
+    if isinstance(cidetail, dict):
+        detail = ", ".join(str(r.get("name") or "?") for r in cidetail.get("hard") or [])[:200]
+    step = wl_prscope.landing_loop(
+        own,
+        nodes,
+        ci_verdict(cistate, cidetail),
+        not any(str(k).split(":", 1)[0] in REVIEW_KEYS for k, _a, _t in violations),
+        ci_detail=detail,
+    )
+    latch = state_doc.get("landing") if isinstance(state_doc.get("landing"), dict) else {}
+    if step.release and step.sha and latch.get("cd_done") != step.sha:
+        notice = wl_stack.notify_line(own, "cd-done", pr=step.pr, sha=step.sha)
+        state_doc["landing"] = {"cd_done": step.sha}
+        if notice:
+            return (
+                step.text
+                + "\nSend the development session this message (SendMessage to its session):\n"
+                + notice,
+                True,
+            )
+    return step.text, step.blocks
 
 
 # The keys whose block outranks the turbo arm (agent/plans/PLAN-stop-hook-turbo.md D5: "bug, red-CI and hook-integrity blocks outrank the turbo arm, so fixes come first"). Any `always` violation outranks it too: that tier is the hook's integrity and evidence verdicts.
@@ -3852,6 +3923,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception as exc:
         _loop_err = "%s: %s" % (type(exc).__name__, str(exc)[:160])
     _on_loop = loop_governs(_loop)
+    # THE TREE ROLE GOVERNS THE PHASE (agent/plans/PLAN-simple-two-tree-loop.md B2): the development tree always builds, so a `--phase babysit|merge` declared there winds nothing down; the landing tree stands down by its role (wl_standdown.profile_for).
+    if getattr(_loop, "role", "") == wl_prscope.DEVELOPMENT:
+        _focus = None
     _scope_ids = _loop.epic_items if _loop is not None else frozenset()
     # The PR's plan set while the loop governs, () otherwise: the scope of plan-adopted, plan-tasks and plan-unimplemented below.
     _loop_plans: tuple[str, ...] = _loop.plans if _loop is not None and _on_loop else ()
@@ -5264,7 +5338,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # THE TREE'S OWN PARKS (agent/plans/PLAN-two-track-merge-dev.md LT5): the development tree reports its draft PR's red and the landing tree its queue arms; the other parked keys move to the advisory queue in `park_tree_keys`, after the effort level and ahead of the roster suppression and the stand-down.
     _tree_parks: frozenset = frozenset()
     with contextlib.suppress(Exception):
-        _tree_parks = wl_prscope.tree_parks(_loop, _focus)
+        _tree_parks = wl_prscope.tree_parks(_loop)
     try:
         cistate, cidetail = wl_ci.ci_trouble(
             root,
@@ -5752,11 +5826,22 @@ def run_stop(event, event_ok, worklist, hook_file):
     # ---- LOOP NEXT (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7, operator addition 2026-10-03): after the PR's plan is finished and the PR merged, the turn is held until the next branch, plan and PR exist. One arm per loop state, each naming the exact commands; silent on an empty queue. After the CI read, so `pr-finish` above already decided this stop.
     # A BACKGROUND TASK OF THIS SESSION DOWNGRADES IT to an advisory (a pr-merge watch or a `ci-trace --wait` is the step being waited on), and the unreadable arm is bounded like ci-red.
     # SO DOES A PENDING RUN ON THE HEAD: /pr-merge needs CI Complete SUCCESS, so while the run is in progress there is nothing to merge yet, and blocking every stop only forces a no-op. Found 2026-10-06 on PR #597: the push hook's detached `ci-trace --wait --until-final` watch is not a background task of this session, so `live_bg` stayed false and the merge order blocked each stop of the wait.
-    if _on_loop:
+    # THE LANDING TREE (agent/plans/PLAN-simple-two-tree-loop.md D1, box B2) names its state machine's one step under the same key, on or off the loop: a detached HEAD on origin/main during a hotfix is still the landing tree's job.
+    _landing_tree = getattr(_loop, "role", "") == wl_prscope.LANDING
+    if _landing_tree or _on_loop:
         try:
-            _ln_text, _ln_block = loop_next_text(
-                _loop, root, state_doc, any(k == "pr-finish" for k, _a, _t in violations), me=me8
-            )
+            if _landing_tree:
+                _ln_text, _ln_block = landing_next_text(
+                    _loop, own, worklist, session_id, state_doc, cistate, cidetail, violations
+                )
+            else:
+                _ln_text, _ln_block = loop_next_text(
+                    _loop,
+                    root,
+                    state_doc,
+                    any(k == "pr-finish" for k, _a, _t in violations),
+                    me=me8,
+                )
             if _ln_text and _ln_block and not live_bg and cistate != "pending":
                 vadd("loop-next", False, _ln_text)
                 outq_drop(state_doc, "loop-next")
@@ -6273,7 +6358,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         _deflect_fired, _deflect_text = False, ""
     if _deflect_fired:
         vadd("deflected-finding", False, M.V_DEFLECTED_FINDING % _deflect_text)
-    # BACKGROUND SHELL HYGIENE (wl_bgsweep.findings): undeclared orphans, plus the declared shells no declaration excuses -- pure wait loops past BGSWEEP_AGE_MIN, duplicate waiters on one target, and shells a finished sub-agent left running. Kept by the PR loop's stand-down (wl_standdown._PR_LOOP_ONLY): hygiene of this session's own process tree is not plan scope.
+    # BACKGROUND SHELL HYGIENE (wl_bgsweep.findings): undeclared orphans, plus the declared shells no declaration excuses -- pure wait loops past BGSWEEP_AGE_MIN, duplicate waiters on one target, and shells a finished sub-agent left running. Kept by the PR loop's and the landing tree's stand-down (wl_standdown._LOOP_DUTIES): hygiene of this session's own process tree is not plan scope.
     try:
         _bg_find = wl_bgsweep.findings(
             live_ids={str(b.get("id")) for b in live_bg},
@@ -6448,14 +6533,9 @@ def run_stop(event, event_ok, worklist, hook_file):
     # ---- THE STAND-DOWN, a stricter second pass after the HONEST one: the cap-saturated wait (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 6) or focus mode (agent/plans/PLAN-stop-hook-focus-mode.md section 4), whose keep-lists live in wl_standdown. FOCUS governs when both hold: it is the operator's declaration, and its judge skip covers the cap wait's. The STATE.md demand
     # survives only when compaction is imminent (the late band, ~2% before auto-compact) and the document is not current.
     # THE PR LOOP (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4) is the third profile, applied when neither narrower declaration holds: the live PR's plan set, its CI and reviews, its epic's items and the loop's duties block; everything else is parked and named in the N_PR_SCOPE line.
-    _profile = (
-        wl_standdown.FOCUS
-        if _focus
-        else wl_standdown.CAP_WAIT
-        if _in_cap_wait
-        else wl_standdown.PR_LOOP
-        if _on_loop
-        else None
+    # THE LANDING TREE (agent/plans/PLAN-simple-two-tree-loop.md B2) stands down by its tree role rather than a phase: wl_standdown.profile_for picks LANDING_TREE there, and never FOCUS in the development tree, which always builds.
+    _profile = wl_standdown.profile_for(
+        getattr(_loop, "role", ""), bool(_focus), _in_cap_wait, _on_loop
     )
     _pr_scope_stood: dict[str, int] = {}
     if _profile is not None:
@@ -6471,14 +6551,16 @@ def run_stop(event, event_ok, worklist, hook_file):
         _dropped = sorted({v[0] for v in violations if not _keeps(v)} | _turbo_stood)
         violations = [v for v in violations if _keeps(v)]
         if _compaction_due:
-            _cnote = M.N_FOCUS_COMPACTION if _focus else M.N_CAP_WAIT_COMPACTION
+            _cnote = (
+                M.N_FOCUS_COMPACTION if _profile is wl_standdown.FOCUS else M.N_CAP_WAIT_COMPACTION
+            )
             violations = [
                 (k, a, t + "\n" + _cnote) if k in _profile.compaction_keys else (k, a, t)
                 for k, a, t in violations
             ]
         if bgwait_due and not any(k == "bg-report" for k, _a, _t in violations):
             bgwait_due = False  # stood down, not delivered
-        if _profile is wl_standdown.PR_LOOP:
+        if _profile in (wl_standdown.PR_LOOP, wl_standdown.LANDING_TREE):
             state_doc.pop("capwait", None)
             _ps = state_doc.get("prscope")
             if not isinstance(_ps, dict) or not isinstance(_ps.get("parked"), dict):
@@ -6488,7 +6570,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 _pr_scope_stood[_base_key] = _ps["parked"][_base_key]
             _ps["parked_now"] = len(_dropped)
             state_doc["prscope"] = _ps
-        elif _focus:
+        elif _profile is wl_standdown.FOCUS:
             state_doc.pop("capwait", None)
             _sd = state_doc.get("standdown")
             if not isinstance(_sd, dict) or _sd.get("focus_at") != _focus.get("at"):

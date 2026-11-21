@@ -241,10 +241,10 @@ def _development_path(root) -> str:
     return ""
 
 
-def notify_line(root, event: str, pr: int | None = None) -> str:
+def notify_line(root, event: str, pr: int | None = None, sha: str = "") -> str:
     """The cross-session message the landing session sends the development session, "" with no valid record or an unknown event.
 
-    WHEN. `push`: after each `git push` of the landing branch from the landing tree exits 0 (the post-bash side). `merged`: once `gh pr merge` of the landing PR reads MERGED (/pr-merge, after the merge is confirmed). The sending itself is wired by a later box; this is the text.
+    WHEN. `push`: after each `git push` of the landing branch from the landing tree exits 0 (the post-bash side). `merged`: once `gh pr merge` of the landing PR reads MERGED (/pr-merge, after the merge is confirmed). `cd-done`: once the release at the merged sha (`sha`) is fully green, Console CI on main and the edge deploy both SUCCESS (agent/plans/PLAN-simple-two-tree-loop.md D1 L-RELEASE to L-IDLE): the landing stop names it once per merged sha, and promote is the development session's next step once every plan on its branch is code-complete (D3). The sending itself is the landing session's SendMessage; this is the text.
     """
     try:
         cp = _hooks_pkg()
@@ -268,5 +268,14 @@ def notify_line(root, event: str, pr: int | None = None) -> str:
             "LANDING MERGED: the landing branch %s (%s) rebase-merged into main. In the development tree (%s), "
             "promotion runs before anything else (its Stop hook blocks until it does):\n"
             "  %s" % (landing, number, where, PROMOTE_COMMAND)
+        )
+    if event == "cd-done":
+        number = "PR #%d" % pr if pr else "its PR"
+        at = " at %s" % sha[:12] if sha else ""
+        return (
+            "CD DONE: the landing branch %s (%s) is merged and its release%s is green (Console CI on main "
+            "and CD - Release to Edge). In the development tree (%s), once every [writer] box of the plans "
+            "on its branch is ticked, promote at a commit boundary:\n"
+            "  %s" % (landing, number, at, where, PROMOTE_COMMAND)
         )
     return ""
