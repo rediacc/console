@@ -2,7 +2,7 @@
 
 R20261110.1  `--plan-investigate ... partial` requires `--owed <kind>` and stores it on the row, so what a partial box still owes is a field and not a free-text note.
 
-The judge's local-batch paragraph (R20261110.2: JUDGE_LOCAL_BATCH, `local_batch_boxes`, `settle_batch_no_local`, `live_owed_boxes`) left with the turbo batch it described (agent/plans/PLAN-simple-two-tree-loop.md B4, B5); `test_the_local_batch_judge_surface_is_gone` keeps it gone. Every case has its inverse, differing by one planted fact.
+The judge's local-batch paragraph (R20261110.2: JUDGE_LOCAL_BATCH, `local_batch_boxes`, `settle_batch_no_local`, `live_owed_boxes`) left with the local batch it described (agent/plans/PLAN-simple-two-tree-loop.md B4, B5); `test_the_local_batch_judge_surface_is_gone` keeps it gone. Every case has its inverse, differing by one planted fact.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ NOTE = "the parser half of this box is in the tree; the rest is a live step on t
 
 
 def test_the_local_batch_judge_surface_is_gone():
-    """B5: no caller passes `local_batch` since B4 deleted the turbo batch, so the parameter, its paragraph, its settle and its sanitiser arm are deleted with it."""
+    """B5: no caller passes `local_batch` since B4 deleted the local batch, so the parameter, its paragraph, its settle and its sanitiser arm are deleted with it."""
     params = inspect.signature(J.run_judge).parameters
     assert "local_batch" not in params
     assert "receipt_run" in params  # CONTROL: the sibling paragraph the same block carried stays

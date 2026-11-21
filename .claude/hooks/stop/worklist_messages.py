@@ -741,7 +741,7 @@ CLI_ADOPT_DONE = (
     "    worklist.py --list --open %s\n"
 )
 
-# The CLI_QUEUE_SET_* strings serve `--queue-set` (agent/plans/PLAN-stop-hook-turbo.md D9, narrowed to `effort` alone by agent/plans/PLAN-simple-two-tree-loop.md B5): usage (static) and the refusal reason (one %s).
+# The CLI_QUEUE_SET_* strings serve `--queue-set` (`effort` alone since agent/plans/PLAN-simple-two-tree-loop.md B5): usage (static) and the refusal reason (one %s).
 
 CLI_QUEUE_SET_USAGE = (
     'usage: --queue-set <me> [key=value ...] [--note "<text>"]\n'
@@ -3208,14 +3208,13 @@ V_LOOP_NEXT_MERGE_WAIT = (
     "branch rebased on the landing branch (`git rebase <landing branch>`), and never run /pr-merge "
     "here."
 )
-# The development tree with commits and no PR: the draft rides beside the landing PR.
-V_LOOP_NEXT_NO_PR_DRAFT = (
+# The development tree with commits and no PR: it opens none (PLAN-simple-two-tree-loop ruling 6, one PR and no draft), backs its commits up and keeps building; promote opens the next PR once the release is green.
+V_LOOP_NEXT_NO_PR_BACKUP = (
     "LOOP NEXT: branch %(branch)s carries %(ahead)d commit(s) ahead of origin/main and has no PR. "
-    "Open its draft (turbo does not count it while the landing PR is open):\n"
+    "The development tree opens none: GitHub CI runs once, on the landing PR, and promote "
+    "opens the next PR once the release is green. Back the commits up and keep building:\n"
     "    npm run ci:quick   (the receipt block_unverified_push reads)\n"
-    "    git push -u origin %(branch)s\n"
-    "    gh pr create --draft --base main --head %(branch)s\n"
-    "refresh_pr_body writes the Plan: line from the queue head on the first push."
+    "    git push -u origin %(branch)s"
 )
 ARM_MERGED = "merged"
 ARM_FINISH = "finish"
@@ -3227,7 +3226,7 @@ def loop_next_variant(role, merged, landing_open, arm=ARM_FINISH):
     if merged:
         return V_LOOP_NEXT_PROMOTE if role == "landing" else V_LOOP_NEXT_MERGED
     if arm == ARM_OPEN:
-        return V_LOOP_NEXT_NO_PR_DRAFT if role == "development" else V_LOOP_NEXT_NO_PR_OPEN
+        return V_LOOP_NEXT_NO_PR_BACKUP if role == "development" else V_LOOP_NEXT_NO_PR_OPEN
     if role == "development" and landing_open:
         return V_LOOP_NEXT_MERGE_WAIT
     return V_LOOP_NEXT_MERGE

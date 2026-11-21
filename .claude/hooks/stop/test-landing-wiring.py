@@ -266,7 +266,7 @@ class World:
 # ---- LT15: the loop-next arms ------------------------------------------------
 PROMOTE = "worktree landing --promote"
 TODAY_MERGED = "git switch main && git pull --ff-only"
-DRAFT = "turbo does not count it while the landing PR is open"
+DRAFT = "The development tree opens none"
 OPEN_IT = "has no PR. Open it:"
 WAIT = "never run /pr-merge here"
 MERGE = "The finish condition is the merge: run /pr-merge"
@@ -319,18 +319,18 @@ def loopnext_cases(tmp, tag, mutate=None):
         ("CONTROL landing merged, no record: no landing step", "LANDING L-" in got.out, False)
     )
 
-    # The development tree with a commit and no PR while the landing PR is open: its draft.
+    # The development tree with a commit and no PR while the landing PR is open: a backup push, no PR.
     w.commit(w.fix.proj, "d.txt")
     w.prs({PR_BRANCH: [node("OPEN", "Plan: %s\n" % OWN, 7)]})
     w.bind()
     got = w.stop(w.fix.proj)
-    out.append(("development no PR: the draft text blocks", w.blocked(got, DRAFT), True))
+    out.append(("development no PR: the backup text blocks", w.blocked(got, DRAFT), True))
     w.bind(False)
     got = w.stop(w.fix.proj)
     out.append(
         ("CONTROL development no PR, no record: today's text", w.blocked(got, OPEN_IT), True)
     )
-    out.append(("CONTROL development no PR, no record: no draft note", DRAFT in got.out, False))
+    out.append(("CONTROL development no PR, no record: no backup note", DRAFT in got.out, False))
 
     # The development tree's finished draft: it waits on the open landing PR and never blocks on it.
     w.prs(

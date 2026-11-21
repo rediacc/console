@@ -3035,7 +3035,7 @@ def _promote_cli(argv):
 
 
 def _queue_set_cli(argv):
-    """`--queue-set <me> [key=value ...] [--note "<text>"]`: the one writer of `agent/plans/QUEUE.md` `## Settings` (agent/plans/PLAN-stop-hook-turbo.md D9).
+    """`--queue-set <me> [key=value ...] [--note "<text>"]`: the one writer of `agent/plans/QUEUE.md` `## Settings` (`effort` alone, agent/plans/PLAN-simple-two-tree-loop.md B5).
 
     Every pair is validated BEFORE the file is touched, so one bad pair refuses the whole call and leaves the bytes as they were; the write is atomic; the verb never commits and ends by printing the `git add` line. With no pair it prints the effective settings, where each value came from, and the problems found.
     """
