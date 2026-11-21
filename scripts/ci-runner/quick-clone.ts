@@ -41,7 +41,7 @@ export const NO_CARRY_ENV = 'CI_QUICK_NO_CARRY';
 const LOCK_WAIT_MS = 90 * 60_000;
 const LOCK_POLL_MS = 2_000;
 /** Linked with `ln -sfn` when the live tree has them: pinned tool installs, far too big to copy and addressed by version. */
-const LINKED_CACHES = ['.ci/cache/toolchain', '.ci/cache/bin', '.venv'];
+const LINKED_CACHES = ['.ci/cache/toolchain', '.ci/cache/bin', '.ci/cache/registry', '.venv'];
 /** Copied once, when the clone has none: seeds its own measurement history. */
 const SEEDED_FILES = ['.ci/cache/gate-durations.json'];
 /**

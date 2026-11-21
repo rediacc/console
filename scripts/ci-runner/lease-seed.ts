@@ -13,7 +13,7 @@ import { isEntryPoint } from '../lib/entry-point.js';
 import { assertNoSelfLoop, syncBuilds, syncDependencies } from './quick-clone.js';
 
 /** Far too big to copy and addressed by version, as in quick-clone. Spelled `ln -sfn`: a plain `ln -s` onto an existing link plants a self-loop. */
-const LINKED_CACHES = ['.ci/cache/toolchain', '.ci/cache/bin', '.venv'];
+const LINKED_CACHES = ['.ci/cache/toolchain', '.ci/cache/bin', '.ci/cache/registry', '.venv'];
 /** The workspace packages other packages import from `dist`: without it their tests cannot load in a lease (measured 2026-11-04: 19 CLI test files, on `@rediacc/provisioning`). */
 const BUILT_PACKAGES = ['packages/shared', 'packages/provisioning', 'packages/json'];
 const E2E = 'packages/e2e-tests';

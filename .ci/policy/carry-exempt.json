@@ -101,7 +101,7 @@
     },
     {
       "id": "check:ci-docker-image-freshness",
-      "reason": "Asks hub.docker.com for each pinned image's tags and push times (check-docker-image-freshness.ts:298,336) and judges them against Date.now() (:965), so a new upstream push or the calendar flips it at an identical tree.",
+      "reason": "Asks hub.docker.com for each pinned image's tags and push times (through scripts/lib/docker-hub.ts:233 createHubReader) and judges them against Date.now() (check-docker-image-freshness.ts:952), so a new upstream push or the calendar flips it at an identical tree.",
       "kind": "network"
     },
     {
