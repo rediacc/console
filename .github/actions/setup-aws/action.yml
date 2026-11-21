@@ -28,19 +28,7 @@ runs:
     # or an installer swap can never restore the previous install.
     - id: pin
       shell: bash
-      run: |
-        version="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pin aws)"
-        [[ -n "$version" ]] || { echo "::error::AWSCLI_VERSION is not pinned in .devcontainer/toolchain.env"; exit 1; }
-        case "${RUNNER_OS}-${RUNNER_ARCH}" in
-          Linux-X64) sha_key=AWSCLI_SHA256_LINUX_X86_64 ;;
-          Linux-ARM64) sha_key=AWSCLI_SHA256_LINUX_AARCH64 ;;
-          macOS-*) sha_key=AWSCLI_SHA256_DARWIN ;;
-          *) echo "::error::no pinned aws CLI installer for ${RUNNER_OS}-${RUNNER_ARCH}"; exit 1 ;;
-        esac
-        sha="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain value "$sha_key")"
-        [[ -n "$sha" ]] || { echo "::error::${sha_key} is not pinned in .devcontainer/toolchain.env"; exit 1; }
-        echo "version=${version}" >> "$GITHUB_OUTPUT"
-        echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+      run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.aws_cli pin
 
     - id: cache
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -54,22 +42,4 @@ runs:
       shell: bash
       env:
         EXPORT_ENV: ${{ inputs.export-env }}
-      run: |
-        bash .ci/bootstrap.sh install aws
-        aws_bin="$(bash .ci/bootstrap.sh which aws --pin)"
-        [[ -x "$aws_bin" ]] || { echo "::error::the pinned aws CLI is not executable at ${aws_bin}"; exit 1; }
-        echo "aws-bin=${aws_bin}" >> "$GITHUB_OUTPUT"
-        if [[ "$EXPORT_ENV" == "true" ]]; then
-          echo "AWS_BIN=${aws_bin}" >> "$GITHUB_ENV"
-          # R2 rejects aws CLI v2's default flexible checksums on multipart uploads (InvalidPart), so every later step asks for them only where required; rediacc_ci.core.awscli.R2_CHECKSUM_ENV sets the same pair for Python callers.
-          echo "AWS_REQUEST_CHECKSUM_CALCULATION=when_required" >> "$GITHUB_ENV"
-          echo "AWS_RESPONSE_CHECKSUM_VALIDATION=when_required" >> "$GITHUB_ENV"
-          # The classic S3 transfer client (.ci/config/aws-cli.cfg header says why), written outside the checkout so a sparse cone without .ci/config still gets it.
-          # A config the runner or job already names is kept, as rediacc_ci.core.awscli.r2_env keeps it (review c06b2082.3).
-          if [[ -z "${AWS_CONFIG_FILE:-}" ]]; then
-            printf '[default]\ns3 =\n  preferred_transfer_client = classic\n' > "${RUNNER_TEMP}/aws-cli.cfg"
-            echo "AWS_CONFIG_FILE=${RUNNER_TEMP}/aws-cli.cfg" >> "$GITHUB_ENV"
-          else
-            echo "::notice::AWS_CONFIG_FILE is already set (${AWS_CONFIG_FILE}); kept as is, so its preferred_transfer_client decides and the classic client is not enforced"
-          fi
-        fi
+      run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.aws_cli install

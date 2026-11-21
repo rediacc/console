@@ -41,33 +41,12 @@ runs:
       shell: bash
       env:
         THRESHOLD_GB: ${{ inputs.threshold_gb }}
-      run: |
-        echo "=== Disk usage before cleanup ==="
-        df -h / || true
-        avail_gb="$(df -BG --output=avail / | tail -n1 | tr -dc '0-9')"
-        echo "Free space on /: ${avail_gb}GB (threshold: ${THRESHOLD_GB}GB)"
-        if [ -n "$avail_gb" ] && [ "$avail_gb" -lt "$THRESHOLD_GB" ]; then
-          echo "Below threshold; starting background cleanup"
-          (
-            sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
-            docker system prune -af 2>/dev/null || true
-          ) &
-          echo $! > "${RUNNER_TEMP}/free-disk-space.pid"
-        else
-          echo "At or above threshold; skipping cleanup"
-        fi
+        FREE_DISK_SPACE: ${{ github.action_path }}/free_disk_space.py
+      run: python3 "$FREE_DISK_SPACE" start
 
     - name: Free Disk Space (wait)
       if: inputs.mode == 'wait'
       shell: bash
-      run: |
-        pidfile="${RUNNER_TEMP}/free-disk-space.pid"
-        if [ -f "$pidfile" ]; then
-          pid="$(cat "$pidfile")"
-          while kill -0 "$pid" 2>/dev/null; do sleep 1; done
-          rm -f "$pidfile"
-        else
-          echo "No cleanup was started (free space was already above threshold); nothing to wait for"
-        fi
-        echo "=== Disk usage after cleanup ==="
-        df -h / || true
+      env:
+        FREE_DISK_SPACE: ${{ github.action_path }}/free_disk_space.py
+      run: python3 "$FREE_DISK_SPACE" wait

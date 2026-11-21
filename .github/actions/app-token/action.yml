@@ -48,57 +48,10 @@ runs:
     - name: Resolve permissions from preset
       id: perms
       shell: bash
-      run: |
-        preset="$(echo "${{ inputs.preset }}" | tr '[:upper:]' '[:lower:]' | xargs)"
-        case "$preset" in
-          readonly)
-            echo "perm-contents=read" >> "$GITHUB_OUTPUT"
-            ;;
-          pr-read)
-            echo "perm-contents=read" >> "$GITHUB_OUTPUT"
-            echo "perm-pull-requests=read" >> "$GITHUB_OUTPUT"
-            ;;
-          # NOTE: the old `ci` and `push` presets were deleted, not merely
-          # unused, and for the same reason: both handed contents:write to
-          # PR-triggered jobs, and this App bypasses the main-branch ruleset.
-          # `push` existed solely so ci-quality.yml's `quality-branch` could
-          # rebase and republish the PR branch; that job now only REPORTS that a
-          # rebase is needed (.ci/scripts/quality/check_branch.py) and runs on
-          # the default contents:read token. `preset: ci` and `preset: push` now
-          # fail loudly here rather than silently over-scoping.
-          cd)
-            echo "perm-contents=write" >> "$GITHUB_OUTPUT"
-            echo "perm-pull-requests=write" >> "$GITHUB_OUTPUT"
-            echo "perm-actions=write" >> "$GITHUB_OUTPUT"
-            # workflows:write, added 2026-09-06, ONLY on cd and only after the
-            # App installation was granted it. Without it the 'Tag & GitHub
-            # Release' step's `git push origin v<X>` is rejected outright:
-            #   refusing to allow a GitHub App to create or update workflow
-            #   <file> without workflows permission
-            # whenever the tagged commit range touches .github/workflows. The
-            # release then half-completes: edge deploys and the R2 artifacts
-            # publish, but no git tag and no GitHub Release exist. Seen twice,
-            # runs 34019022671 (v1.3.11) and 34003183456 (v1.3.8); v1.3.11 went
-            # untagged for a day because of it.
-            #
-            # ORDER MATTERS AND IS NOT REVERSIBLE HERE: create-github-app-token
-            # FAILS the mint when asked for a permission the installation does
-            # not hold, so this line breaks every CD run if the grant is ever
-            # withdrawn. It is deliberately not on `housekeeping`, which never
-            # pushes a tag.
-            echo "perm-workflows=write" >> "$GITHUB_OUTPUT"
-            ;;
-          housekeeping)
-            echo "perm-contents=write" >> "$GITHUB_OUTPUT"
-            echo "perm-packages=write" >> "$GITHUB_OUTPUT"
-            echo "perm-actions=write" >> "$GITHUB_OUTPUT"
-            echo "perm-deployments=write" >> "$GITHUB_OUTPUT"
-            ;;
-          *)
-            echo "::error::Unknown preset: $preset"
-            exit 1
-            ;;
-        esac
+      env:
+        PRESET: ${{ inputs.preset }}
+        APP_TOKEN_PERMS: ${{ github.action_path }}/perms.py
+      run: python3 "$APP_TOKEN_PERMS"
 
     - name: Generate token
       id: token

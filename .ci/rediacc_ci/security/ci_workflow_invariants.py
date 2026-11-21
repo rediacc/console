@@ -501,12 +501,29 @@ def _cd_arm(run: str) -> str:
     return "\n".join(ln for ln in match.group(1).splitlines() if not ln.strip().startswith("#"))
 
 
-def _preset_findings(action_doc: object) -> list[tuple[str, str]]:
+def _script_cd_grants_workflows(script: str) -> bool:
+    """True when the `cd` entry of perms.py's PRESETS table lists `("workflows", "write")`."""
+    match = re.search(r'^\s*"cd":\s*\[(.*?)^\s*\],', script, re.MULTILINE | re.DOTALL)
+    if match is None:
+        return False
+    body = "\n".join(ln for ln in match.group(1).splitlines() if not ln.strip().startswith("#"))
+    return re.search(r'\(\s*"workflows"\s*,\s*"write"\s*\)', body) is not None
+
+
+def _preset_findings(action_doc: object, perms_script: str = "") -> list[tuple[str, str]]:
+    """The cd preset must grant workflows:write. The perms step is either the inline `cd)` arm or a call of the sibling perms.py (the cap on inline `run:` logic moved it there), whose text arrives as `perms_script`."""
     runs = action_doc.get("runs") if isinstance(action_doc, dict) else None
     steps = _steps(runs)
     perms = [s for s in steps if _text(s.get("id")) == "perms"]
-    if not perms or "perm-workflows=write" not in _cd_arm(_text(perms[0].get("run"))):
-        return [("cd-preset-no-workflows", "the `cd)` arm of step `perms`")]
+    run_text = _text(perms[0].get("run")) if perms else ""
+    if perms and "perms.py" in _text(perms[0].get("env")) + run_text:
+        granted = _script_cd_grants_workflows(perms_script)
+        where = "the `cd` entry of perms.py (step `perms`)"
+    else:
+        granted = bool(perms) and "perm-workflows=write" in _cd_arm(run_text)
+        where = "the `cd)` arm of step `perms`"
+    if not granted:
+        return [("cd-preset-no-workflows", where)]
     mint = [s for s in steps if "create-github-app-token" in _text(s.get("uses"))]
     with_map = mint[0].get("with") if mint else None
     passed = _text(with_map.get("permission-workflows")) if isinstance(with_map, dict) else ""
@@ -518,13 +535,13 @@ def _preset_findings(action_doc: object) -> list[tuple[str, str]]:
 
 
 def analyse_release(
-    ci_doc: object, cd_doc: object, action_doc: object
+    ci_doc: object, cd_doc: object, action_doc: object, perms_script: str = ""
 ) -> tuple[list[tuple[str, str]], dict[str, object]]:
     """The release-order phase over three parsed documents: (findings, shape). Pure; the selftest drives it with literal dicts."""
     findings = _sentinel_findings(ci_doc) + _tag_findings(cd_doc)
     findings += _permission_findings(cd_doc)
     push_findings, pushes = _push_findings(cd_doc)
-    findings += push_findings + _preset_findings(action_doc)
+    findings += push_findings + _preset_findings(action_doc, perms_script)
     jobs = cd_doc.get("jobs") if isinstance(cd_doc, dict) else None
     tags = version_tag_steps(cd_doc)
     shape: dict[str, object] = {
@@ -1237,7 +1254,9 @@ def _preflight_phase(ci_file: str, cd_file: str, hk_file: str) -> tuple[list[str
     return [], ["cd-preflight holds: " + "; ".join(shape)]
 
 
-def _release_phase(ci_file: str, cd_file: str, action_file: str) -> tuple[list[str], list[str]]:
+def _release_phase(
+    ci_file: str, cd_file: str, action_file: str, perms_file: str = ""
+) -> tuple[list[str], list[str]]:
     """(errors, info lines). Missing or unparseable inputs are errors: unread is never fine."""
     files = {"ci": ci_file, "cd": cd_file, "action": action_file}
     docs = {}
@@ -1250,7 +1269,11 @@ def _release_phase(ci_file: str, cd_file: str, action_file: str) -> tuple[list[s
             docs[key] = load_workflow(path)
         except SetupExitError as exc:
             return ["INVARIANT-FAIL: release-order: %s" % exc.message.strip()], []
-    findings, shape = analyse_release(docs["ci"], docs["cd"], docs["action"])
+    perms_script = ""
+    if perms_file and os.path.isfile(perms_file):
+        with open(perms_file, encoding="utf-8") as handle:
+            perms_script = handle.read()
+    findings, shape = analyse_release(docs["ci"], docs["cd"], docs["action"], perms_script)
     errors = [m for k, n in findings if (m := release_message_for(k, n, files)) is not None]
     if errors:
         return errors, []
@@ -2221,6 +2244,9 @@ def main(argv: list[str]) -> int:
     action_file = os.environ.get("APP_TOKEN_ACTION_FILE") or os.path.join(
         root_dir, ".github", "actions", "app-token", "action.yml"
     )
+    perms_file = os.environ.get("APP_TOKEN_PERMS_FILE") or os.path.join(
+        root_dir, ".github", "actions", "app-token", "perms.py"
+    )
     hk_file = os.environ.get("HOUSEKEEPING_WORKFLOW_FILE") or os.path.join(
         root_dir, ".github", "workflows", "ops-housekeeping.yml"
     )
@@ -2265,7 +2291,9 @@ def main(argv: list[str]) -> int:
 
     release_info: list[str] = []
     if release_phase:
-        release_errors, release_info = _release_phase(workflow_file, cd_file, action_file)
+        release_errors, release_info = _release_phase(
+            workflow_file, cd_file, action_file, perms_file
+        )
         preflight_errors, preflight_info = _preflight_phase(workflow_file, cd_file, hk_file)
         upstream_errors, upstream_info = _upstream_gate_phase(workflow_file, quality_file)
         pins_errors, pins_info = _pins_soaked_phase(pins_file)

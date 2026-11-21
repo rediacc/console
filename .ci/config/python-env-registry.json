@@ -1265,6 +1265,7 @@
     ".ci/rediacc_ci/quality/workflows.py": [
       "INLINE_MAX_LOGIC",
       "REDIACC_CI_ROOT",
+      "WORKFLOW_ACTIONS_DIR",
       "WORKFLOW_DIR",
       "WORKFLOW_INLINE_ONLY"
     ],
@@ -1447,6 +1448,7 @@
     ],
     ".ci/rediacc_ci/security/ci_workflow_invariants.py": [
       "APP_TOKEN_ACTION_FILE",
+      "APP_TOKEN_PERMS_FILE",
       "CD_WORKFLOW_FILE",
       "HOUSEKEEPING_WORKFLOW_FILE",
       "PINS_SOAKED_WORKFLOW_FILE",

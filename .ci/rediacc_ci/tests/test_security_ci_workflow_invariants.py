@@ -998,15 +998,35 @@ def test_dropping_permission_workflows_from_the_real_action_is_refused(
     assert "INVARIANT-FAIL: cd-preset:" in proc.stderr
 
 
-def test_dropping_the_cd_arms_workflows_line_from_the_real_action_is_refused(
+REAL_PERMS = ROOT / ".github/actions/app-token/perms.py"
+
+
+def test_dropping_the_cd_presets_workflows_grant_from_the_real_perms_script_is_refused(
     tmp_path: pathlib.Path,
 ) -> None:
-    text = cut_once(
-        REAL_ACTION.read_text(encoding="utf-8"),
-        '            echo "perm-workflows=write" >> "$GITHUB_OUTPUT"\n',
-        "",
+    """The cd preset lives in perms.py since the inline-run cap moved it out of action.yml; dropping its `workflows: write` entry must still be red."""
+    text = cut_once(REAL_PERMS.read_text(encoding="utf-8"), '        ("workflows", "write"),\n', "")
+    proc = run_real(tmp_path, APP_TOKEN_PERMS_FILE=text)
+    assert proc.returncode == 1, proc.stderr
+    assert "INVARIANT-FAIL: cd-preset:" in proc.stderr
+    assert "perms.py" in proc.stderr or "cd" in proc.stderr
+    # CONTROL: the unmutated script through the same seam is green, so the red above is the mutation and not the seam.
+    clean_dir = tmp_path / "clean"
+    clean_dir.mkdir()
+    clean = run_real(clean_dir, APP_TOKEN_PERMS_FILE=REAL_PERMS.read_text(encoding="utf-8"))
+    assert clean.returncode == 0, clean.stderr
+
+
+def test_a_workflows_grant_on_another_preset_does_not_satisfy_the_cd_check(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Moving the grant from `cd` to `housekeeping` keeps the string in the file and must still be red."""
+    source = REAL_PERMS.read_text(encoding="utf-8")
+    moved = cut_once(source, '        ("workflows", "write"),\n', "").replace(
+        '        ("deployments", "write"),\n',
+        '        ("deployments", "write"),\n        ("workflows", "write"),\n',
     )
-    proc = run_real(tmp_path, APP_TOKEN_ACTION_FILE=text)
+    proc = run_real(tmp_path, APP_TOKEN_PERMS_FILE=moved)
     assert proc.returncode == 1, proc.stderr
     assert "INVARIANT-FAIL: cd-preset:" in proc.stderr
 
