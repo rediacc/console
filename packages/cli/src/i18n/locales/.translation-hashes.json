@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 2991,
-    "sourceCommit": "5728c1f5e43afea1329a59b7951de2ec5196edf1"
+    "sourceCommit": "b24e6bfed6da8b1342831fc5c7067ef598edc879"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1022,7 +1022,7 @@
     "commands.job.status.description": "5d6357bd",
     "commands.job.status.examples.basic": "f1860a58",
     "commands.job.steps.abandoned": "b22d8614",
-    "commands.job.steps.pending": "54935b83",
+    "commands.job.steps.pending": "414a1eb1",
     "commands.job.steps.pendingForConfig": "1f112a30",
     "commands.job.steps.reason.age": "3f5f58b6",
     "commands.job.steps.reason.dismissed": "a8825f40",
