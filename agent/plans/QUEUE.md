@@ -83,7 +83,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 2007 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 2009 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
@@ -92,15 +92,15 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 6 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic fe958571, no plan, 15 commit(s) on the branch, 0 open item(s): nginx2root and PHP 2026-11-19 security patching (hostinger + templates)
   - epic 422370f4, no plan, 5 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:af00ca54ba118755a.
-- Leased items: 12: #0e9506a2 (worker:be39zjfwp, d778be9d), #116b1a79 (worker:bb16p240t, d778be9d), #28b00eb3 (worker:bph9m0bev, d778be9d), #3d38c1c9 (worker:queue, d778be9d), #3e7dcac6 (worker:queue, d778be9d), #45585ba5 (worker:b2j93ucwq, d778be9d), #68452957 (worker:queue, d778be9d), #90129fe7 (worker:af00ca54ba118755a, d778be9d), #914d4daa (worker:af00ca54ba118755a, d778be9d), #a1ecc191 (worker:bjgcdk4yc, d778be9d), #ab9c68b1 (worker:be39zjfwp, d778be9d), #fbe192ca (worker:be39zjfwp, d778be9d).
+- Writers: 3 live of writer_cap 25 (session d778be9d): worker:afc7fe5955735df4d, worker:a555813ef0c33670c, worker:a50e487388cb9318a.
+- Leased items: 13: #0e9506a2 (worker:be39zjfwp, d778be9d), #116b1a79 (worker:bb16p240t, d778be9d), #28b00eb3 (worker:bph9m0bev, d778be9d), #2ee709be (worker:a50e487388cb9318a, d778be9d), #3d38c1c9 (worker:queue, d778be9d), #3e7dcac6 (worker:queue, d778be9d), #45585ba5 (worker:b2j93ucwq, d778be9d), #58300256 (worker:a555813ef0c33670c, d778be9d), #68452957 (worker:queue, d778be9d), #7e391402 (worker:afc7fe5955735df4d, d778be9d), #a1ecc191 (worker:bjgcdk4yc, d778be9d), #ab9c68b1 (worker:be39zjfwp, d778be9d), and 1 more.
 - Next plan: agent/plans/PLAN-sandbox-tenant-separation.md, Promoted entry 15; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 29 of 86 plans done, 1316 of 1602 boxes done (82%).
+Promoted: 29 of 86 plans done, 1317 of 1602 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -189,7 +189,7 @@ Promoted: 29 of 86 plans done, 1316 of 1602 boxes done (82%).
 | 83 | PLAN-email-sender-separation.md | 11/18 | 7 open |
 | 84 | PLAN-pr-loop-single-source.md | 0/9 | 9 open |
 | 85 | PLAN-two-track-merge-dev.md | 35/44 | 9 open |
-| 86 | PLAN-simple-two-tree-loop.md | 0/12 | 12 open |
+| 86 | PLAN-simple-two-tree-loop.md | 1/12 | 11 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue

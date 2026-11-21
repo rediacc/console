@@ -3819,8 +3819,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 12,
-      "done": 0,
+      "open": 11,
+      "done": 1,
       "open_sigs": [
         "15296114",
         "2dd5384d",
@@ -3830,12 +3830,13 @@
         "bf34b200",
         "c098ad09",
         "c2cbd57c",
-        "c8338630",
         "e4290fc9",
         "f43faf26",
         "ff714a5c"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "c8338630"
+      ]
     },
     "agent/plans/PLAN-site-entry-points.md": {
       "status": "approved",
