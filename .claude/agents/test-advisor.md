@@ -1,6 +1,6 @@
 ---
 name: test-advisor
-description: Decides WHERE a landed fix's regression test belongs among this repo's six CI surfaces, whether one is worth writing, and what proves it runs. Use when a fix has landed and the question is "should this be gated, and with what", especially when the obvious answer (a check-*.ts) is the wrong instrument because the defect only appears against a real machine.
+description: Decides WHERE a landed fix's regression test belongs among this repo's six CI surfaces, whether one is worth writing, and what proves it runs. Use for a regression test, "where does the test go", "gate or test", which CI surface owns a fix, or what stops a bug coming back. Use when a fix has landed and the question is "should this be gated, and with what", especially when the obvious answer (a check-*.ts) is the wrong instrument because the defect only appears against a real machine.
 tools: Bash, Read, Grep, Glob, SendMessage
 model: haiku
 ---
