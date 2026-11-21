@@ -326,25 +326,36 @@ def merged_plan_prs(root: str) -> tuple[list[tuple[int, list[str]]] | None, str]
     """([(number, plans)], "") for the repository's merged PRs (the newest MERGED_PR_LIMIT), each with the plans its body's own `Plan:` lines name; (None, why) when gh cannot answer. One `gh pr list` call."""
     import json
     import subprocess
+    import time
 
     try:
-        proc = subprocess.run(
-            [
-                "gh",
-                "pr",
-                "list",
-                "--state",
-                "merged",
-                "--limit",
-                str(MERGED_PR_LIMIT),
-                "--json",
-                "number,body",
-            ],
-            cwd=root,
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
+        retry = syspath.import_from_ci("rediacc_ci.core.gh_retry")
+    except ImportError as exc:
+        return None, "gh_retry could not be imported (%s)" % str(exc)[:120]
+    argv = [
+        "gh",
+        "pr",
+        "list",
+        "--state",
+        "merged",
+        "--limit",
+        str(MERGED_PR_LIMIT),
+        "--json",
+        "number,body",
+    ]
+
+    def once() -> subprocess.CompletedProcess:
+        return subprocess.run(
+            argv, cwd=root, capture_output=True, text=True, timeout=30, check=False
+        )
+
+    try:
+        # A transient 5xx is retried once after a 2 s pause; a 4xx answers at once, and a spawn failure raises past the retry.
+        proc = retry.retry_transient(
+            once,
+            lambda done: None if done.returncode == 0 else (done.stderr or done.stdout or "failed"),
+            attempts=2,
+            sleep=lambda _scheduled: time.sleep(2),
         )
     except (OSError, subprocess.SubprocessError) as exc:
         return None, "gh could not run: %s" % exc

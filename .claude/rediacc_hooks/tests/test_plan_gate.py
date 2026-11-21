@@ -9,6 +9,7 @@ import os
 import pathlib
 import re
 import subprocess
+import time
 
 import pytest
 
@@ -794,6 +795,46 @@ def test_merged_plan_prs_parses_each_body_through_the_plan_line_reader(tmp_path,
     got, err = _REAL_MERGED(str(tmp_path))
     assert got is None, got
     assert "down" in err, err
+
+
+def _counting_gh(tmp_path, first_failure: str):
+    """A gh stub that counts its calls in `calls` and fails the first one with `first_failure` on stderr; later calls print an empty list. Returns the counter file."""
+    calls = tmp_path / "calls"
+    calls.write_text("", encoding="utf-8")
+    stub = tmp_path / "bin" / "gh"
+    stub.parent.mkdir()
+    stub.write_text(
+        "#!/bin/sh\necho x >> '%s'\n"
+        "if [ \"$(wc -l < '%s')\" -le 1 ]; then echo '%s' >&2; exit 1; fi\n"
+        "echo '[]'\n" % (calls, calls, first_failure),
+        encoding="utf-8",
+    )
+    stub.chmod(0o755)
+    return calls
+
+
+def test_merged_plan_prs_retries_one_transient_failure_and_answers(tmp_path, monkeypatch):
+    calls = _counting_gh(tmp_path, "HTTP 502: Bad Gateway")
+    naps = []
+    monkeypatch.setattr(time, "sleep", naps.append)
+    monkeypatch.setenv("PATH", "%s:%s" % (tmp_path / "bin", os.environ.get("PATH", "")))
+    got, err = _REAL_MERGED(str(tmp_path))
+    assert (got, err) == ([], ""), (got, err)
+    assert len(calls.read_text(encoding="utf-8").splitlines()) == 2, "one retry after the 502"
+    assert naps == [2], naps
+
+
+def test_merged_plan_prs_does_not_retry_a_client_error(tmp_path, monkeypatch):
+    """Control for the retry above: a 4xx is final, so the call count stays at one and nothing sleeps."""
+    calls = _counting_gh(tmp_path, "HTTP 404: Not Found")
+    naps = []
+    monkeypatch.setattr(time, "sleep", naps.append)
+    monkeypatch.setenv("PATH", "%s:%s" % (tmp_path / "bin", os.environ.get("PATH", "")))
+    got, err = _REAL_MERGED(str(tmp_path))
+    assert got is None, got
+    assert "404" in err, err
+    assert len(calls.read_text(encoding="utf-8").splitlines()) == 1
+    assert naps == [], naps
 
 
 def test_the_fail_safe_settings_carry_no_batch_keys():
