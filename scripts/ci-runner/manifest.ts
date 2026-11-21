@@ -1948,7 +1948,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-guard-mutations',
     run: 'npm run check:ci-guard-mutations',
-    slow: true, // 25.4s measured
+    slow: true, // 557 s measured 2026-11-21 for the hook arm alone (90 declaring guards, 136 plants, 160 suite runs); the CLI arm adds its own vitest runs
     gate: true,
     needs: ['build:packages'],
     // NO WIDTH DECLARED (PF5, 2026-10-05): `weight: 2` retired for the measured cpu/wall. Each mutant runs `vitest run` on ONE test file, so a worker knob would buy nothing.
