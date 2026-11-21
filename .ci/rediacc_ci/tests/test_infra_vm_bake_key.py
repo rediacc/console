@@ -13,16 +13,13 @@ The three verdicts the box asks for, each with its control:
 
 from __future__ import annotations
 
+import pathlib
 import shutil
-from typing import TYPE_CHECKING
 
 import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.infra import vm_bake_key as vbk
-
-if TYPE_CHECKING:
-    import pathlib
 
 REAL_RENET = paths.repo_root() / "private" / "renet"
 
@@ -213,6 +210,26 @@ def test_control_touching_an_included_path_changes_the_key(renet: pathlib.Path, 
         path.write_text("package pkgset\n", encoding="utf-8")
     else:
         _append(path, "\n// touched by test_infra_vm_bake_key\n" if rel.endswith(".go") else "\n")
+    assert _key(renet) != before
+
+
+def test_the_bake_driver_is_a_key_source() -> None:
+    assert [p.name for p in vbk.KEY_SOURCES] == ["vm_bake_key.py", "vm_bake_image.py"]
+    assert all(p.is_file() for p in vbk.KEY_SOURCES)
+
+
+def test_a_change_to_the_bake_driver_changes_the_key(
+    renet: pathlib.Path, tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Pull-request heads publish under the key, so a head that changes how `build` runs the
+    # image build must not share main's tag. The sources are copies: the live modules stay put.
+    srcs = tmp_path / "srcs"
+    srcs.mkdir()
+    copies = tuple(shutil.copy2(p, srcs / p.name) for p in vbk.KEY_SOURCES)
+    monkeypatch.setattr(vbk, "KEY_SOURCES", tuple(srcs / pathlib.Path(c).name for c in copies))
+    before = _key(renet)
+    assert _key(renet) == before
+    _append(srcs / "vm_bake_image.py", "\n# touched by test_infra_vm_bake_key\n")
     assert _key(renet) != before
 
 

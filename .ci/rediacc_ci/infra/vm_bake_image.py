@@ -6,6 +6,9 @@ One private GHCR package, `ghcr.io/rediacc/ci-vm-bake`, holds every baked image 
 Subcommands, one per workflow step, so each `run:` stays one line:
 
   install-oras   download the pinned oras release, verify its sha256, put it on GITHUB_PATH.
+  plan           (ci-vm-bake.yml) probe every named distro and output the ones whose tag is
+                 missing as a JSON list, the bake matrix, so a run whose keys all exist stops
+                 before it builds renet. Any probe error fails the step, as in probe.
   probe          (ci-vm-bake.yml) compute the key and report whether the tag already exists.
                  A registry "not found" is a miss; any other oras failure is an error, so a
                  broken login cannot pass for a missing image and trigger a pointless rebake.
@@ -24,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import os
 import pathlib
 import platform
@@ -158,6 +162,23 @@ def tag_exists(ref: str, run: RunFn = _run) -> bool:
         "oras manifest fetch %s failed (rc=%d): %s"
         % (ref, res.returncode, (res.stderr or "").strip())
     )
+
+
+def missing_distros(
+    distros: Sequence[str],
+    key_for: Callable[[str], str],
+    exists: Callable[[str], bool] | None = None,
+) -> list[str]:
+    """The distros whose key has no tag yet, in the given order; a probe error propagates."""
+    probe = exists or tag_exists
+    out: list[str] = []
+    for distro in distros:
+        ref = image_ref(key_for(distro))
+        present = probe(ref)
+        print("%s %s" % (ref, "exists" if present else "is missing"), flush=True)
+        if not present:
+            out.append(distro)
+    return out
 
 
 # --- build -------------------------------------------------------------------
@@ -296,6 +317,8 @@ def _parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("install-oras")
     p.add_argument("--dest", type=pathlib.Path, default=_default_oras_dir())
+    p = sub.add_parser("plan")
+    p.add_argument("--distro", action="append", required=True)
     p = sub.add_parser("probe")
     p.add_argument("--distro", required=True)
     p = sub.add_parser("build")
@@ -350,6 +373,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             if path_file:
                 with open(path_file, "a", encoding="utf-8") as handle:
                     handle.write("%s\n" % args.dest)
+            return 0
+        if args.cmd == "plan":
+            missing = missing_distros(args.distro, _key)
+            _emit(
+                "output", {"missing": json.dumps(missing), "bake": "true" if missing else "false"}
+            )
             return 0
         if args.cmd == "probe":
             key = _key(args.distro)

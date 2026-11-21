@@ -171,6 +171,65 @@ def test_cli_fetch_failed_oras_install_is_a_miss(
     assert run.calls == []
 
 
+# --- plan --------------------------------------------------------------------
+
+
+def _key_for(distro: str) -> str:
+    return "vm-bake-v1-%s-2026-11-08e81f4c97c76189" % distro
+
+
+def test_plan_lists_only_the_distros_without_a_tag() -> None:
+    present = {vbi.image_ref(_key_for("debian-13"))}
+    missing = vbi.missing_distros(
+        ["ubuntu-24.04", "debian-13", "fedora-43"], _key_for, lambda ref: ref in present
+    )
+    assert missing == ["ubuntu-24.04", "fedora-43"]
+
+
+def test_plan_probe_error_propagates_rather_than_reading_as_a_miss() -> None:
+    def broken(_ref: str) -> bool:
+        raise vbi.BakeImageError("oras manifest fetch failed (rc=1): unauthorized")
+
+    with pytest.raises(vbi.BakeImageError, match="unauthorized"):
+        vbi.missing_distros(["debian-13"], _key_for, broken)
+
+
+@pytest.mark.parametrize(
+    ("present", "missing", "bake"),
+    [
+        ({"debian-13", "fedora-43"}, "[]", "false"),
+        ({"debian-13"}, '["fedora-43"]', "true"),
+    ],
+)
+def test_cli_plan_emits_the_bake_matrix(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: pathlib.Path,
+    present: set[str],
+    missing: str,
+    bake: str,
+) -> None:
+    out = tmp_path / "out"
+    out.touch()
+    monkeypatch.setenv("GITHUB_OUTPUT", str(out))
+    monkeypatch.setattr(vbi, "_key", _key_for)
+    refs = {vbi.image_ref(_key_for(d)) for d in present}
+    monkeypatch.setattr(vbi, "tag_exists", lambda ref: ref in refs)
+    assert vbi.main(["plan", "--distro", "debian-13", "--distro", "fedora-43"]) == 0
+    assert out.read_text() == "missing=%s\nbake=%s\n" % (missing, bake)
+
+
+def test_cli_plan_fails_on_a_probe_error(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def broken(_ref: str) -> bool:
+        raise vbi.BakeImageError("unauthorized")
+
+    monkeypatch.setattr(vbi, "_key", _key_for)
+    monkeypatch.setattr(vbi, "tag_exists", broken)
+    assert vbi.main(["plan", "--distro", "debian-13"]) == 1
+    assert "unauthorized" in capsys.readouterr().err
+
+
 # --- build and publish -------------------------------------------------------
 
 

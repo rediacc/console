@@ -529,8 +529,10 @@ jobs:
       # this tree's bake key from ghcr.io/rediacc/ci-vm-bake into its own
       # disks dir. A hit exports REDIACC_OPS_DISKS_PATH, BAKED_IMAGE_KEY and
       # RENET_SETUP_OFFLINE=1, which the harness and the renet it spawns
-      # inherit. Any miss (no package for the key, as on a PR that changes a
-      # key input, or a failed pull) leaves hit != 'true' and the stock steps
+      # inherit. Any miss (no package for the key yet, as on the first run of
+      # a PR head whose key input changed, before ci-vm-bake.yml's
+      # pull_request bake of that head publishes it, or a failed pull) leaves
+      # hit != 'true' and the stock steps
       # below run exactly as before. Skipped on shard 2 (stock-image), on the
       # nightly schedule (all 40 legs on stock) and with VM_BAKE=off.
       # The fetch installs its pinned oras itself and exits 0 on every miss,
@@ -814,8 +816,10 @@ jobs:
       # this tree's bake key from ghcr.io/rediacc/ci-vm-bake into its own
       # disks dir. A hit exports REDIACC_OPS_DISKS_PATH, BAKED_IMAGE_KEY and
       # RENET_SETUP_OFFLINE=1, which the harness and the renet it spawns
-      # inherit. Any miss (no package for the key, as on a PR that changes a
-      # key input, or a failed pull) leaves hit != 'true' and the stock steps
+      # inherit. Any miss (no package for the key yet, as on the first run of
+      # a PR head whose key input changed, before ci-vm-bake.yml's
+      # pull_request bake of that head publishes it, or a failed pull) leaves
+      # hit != 'true' and the stock steps
       # below run exactly as before. Skipped on the
       # nightly schedule (every leg on stock) and with VM_BAKE=off.
       # The fetch installs its pinned oras itself and exits 0 on every miss,

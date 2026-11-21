@@ -22,7 +22,9 @@ WHAT IS HASHED. The files that decide what `renet ops image build` leaves on the
   * embed-assets.lock.json, the pinned embedded binaries, and the three NVIDIA signing keys
     under cmd/renet/gpu_keys/ (EXTRA_FILES), which the GPU install trusts and so decide
     what a `--install-nvidia-driver` setup does;
-  * this module's own bytes and the v1 salt, so a change to the rules rebakes.
+  * this module's own bytes, the bake driver vm_bake_image.py (its `build` decides the
+    flags the image is built with) and the v1 salt, so a change to the rules or the driver
+    rebakes.
 
 Test files (`*_test.go`) are never hashed: they do not reach the image.
 
@@ -125,6 +127,12 @@ EXTRA_FILES = (
     "cmd/renet/gpu_keys/3A8B5622.pub",
     "cmd/renet/gpu_keys/CDF6BA43.pub",
     "cmd/renet/gpu_keys/F796ECB0.pub",
+)
+
+# The console-side code that decides the image besides renet: this module (the key rules) and the bake driver, whose `build` passes the flags `renet ops image build` runs with. Pull-request heads publish under the key too (ci-vm-bake.yml), so a head that changes how the image is built must not land on the tag main computes from the same renet inputs.
+KEY_SOURCES = (
+    pathlib.Path(__file__),
+    pathlib.Path(__file__).with_name("vm_bake_image.py"),
 )
 
 KEY_RE = re.compile(r"^vm-bake-v1-[a-z0-9][a-z0-9.-]*-\d{4}-\d{2}-[0-9a-f]{16}$")
@@ -388,7 +396,7 @@ def known_distros(root: pathlib.Path) -> set[str]:
 
 
 def digest(root: pathlib.Path) -> str:
-    """sha256[:16] over the salt, this module's bytes and every hashed file (path and content)."""
+    """sha256[:16] over the salt, KEY_SOURCES and every hashed file (path and content)."""
     problems = findings(root)
     if problems:
         raise BakeKeyError(
@@ -397,8 +405,9 @@ def digest(root: pathlib.Path) -> str:
         )
     h = hashlib.sha256()
     h.update(SALT.encode() + b"\0")
-    self_bytes = pathlib.Path(__file__).read_bytes()
-    h.update(b"vm_bake_key.py\0%d\0" % len(self_bytes) + self_bytes)
+    for src in KEY_SOURCES:
+        data = src.read_bytes()
+        h.update(src.name.encode() + b"\0%d\0" % len(data) + data)
     for f in hashed_files(root):
         data = f.read_bytes()
         h.update(f.relative_to(root).as_posix().encode() + b"\0%d\0" % len(data) + data)

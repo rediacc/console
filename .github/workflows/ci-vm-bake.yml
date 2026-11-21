@@ -1,12 +1,27 @@
 name: CI - VM Bake
 
 # Pre-baked E2E VM images (agent/plans/PLAN-ci-prebaked-vm-images.md, box B4).
-# One leg per distro computes the bake key (rediacc_ci.infra.vm_bake_key), stops
-# at the probe when ghcr.io/rediacc/ci-vm-bake already holds that tag, and
-# otherwise runs `renet ops image build --bake-key` and pushes the image under
-# the key. ct-tests.yml's E2E Workers legs pull it by the same key and fall back
-# to the stock image on a miss. Main only: pull requests read the package and
-# never write it.
+# The plan job computes each distro's bake key (rediacc_ci.infra.vm_bake_key)
+# and lists the ones ghcr.io/rediacc/ci-vm-bake has no tag for; only those get
+# a bake leg, which runs `renet ops image build --bake-key` and pushes the image
+# under the key. ct-tests.yml's E2E Workers legs pull it by the same key and
+# fall back to the stock image on a miss.
+#
+# Pull requests bake too. The key is a content hash of what shapes the image
+# (the renet install path, the key rules and the bake driver), so a PR head
+# whose install path differs from main's needs its own image, and only a run
+# on that head can make it: a main bake can never match it. The pull_request
+# checkout is the same merge ref Console CI's E2E legs check out, so both
+# compute the same key. The first CI run on a new key still runs stock (the
+# bake takes about 20 minutes and the legs do not wait); every later run on
+# that key boots the baked image. A fork PR gets no packages: write token, so
+# its plan job is skipped.
+#
+# The schedule is daily: the key carries the month, and the old monthly
+# '0 2 1 * *' run was missed on 2026-11-01 (no scheduled or push run of any
+# workflow in this repository fired between 2026-10-31 and 2026-11-17), which
+# left every leg on the stock image for the month. A run whose keys all exist
+# ends at the plan job, so a daily run costs one short job.
 
 on:
   push:
@@ -16,9 +31,12 @@ on:
       - .ci/rediacc_ci/infra/vm_bake_key.py
       - .ci/rediacc_ci/infra/vm_bake_image.py
       - .github/workflows/ci-vm-bake.yml
+  # No paths filter: the month in the key rolls over without a file change,
+  # so any push to a PR head may need a new image, and the plan job is cheap.
+  pull_request:
+    types: [opened, synchronize, reopened]
   schedule:
-    # The key carries the month, so the 1st needs a fresh set.
-    - cron: '0 2 1 * *'
+    - cron: '17 3 * * *'
   workflow_dispatch:
 
 # Every job below declares its own permissions, so this workflow-level default
@@ -31,15 +49,63 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Which distros have no image for this tree's key. Probe errors (a broken
+  # login, a registry outage) fail the job rather than reading as a miss, so a
+  # credential problem cannot trigger five pointless bakes.
+  plan:
+    name: VM Bake (plan)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Reads the private package; the renet submodule comes through the App token.
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      missing: ${{ steps.plan.outputs.missing }}
+      bake: ${{ steps.plan.outputs.bake }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Init renet submodule
+        run: git submodule update --init --depth 1 private/renet
+      - name: Login to GHCR
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Install oras
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.vm_bake_image install-oras
+      - name: Probe every distro's bake key
+        id: plan
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.vm_bake_image plan --distro ubuntu-24.04 --distro debian-13 --distro fedora-43 --distro opensuse-16.0 --distro oracle-10
+
   # The ONE renet build of this run (agent/plans/PLAN-free-license.md R2, F2):
   # a licence-enforcing dev build baking the production public key, uploaded as
-  # renet-test-linux-amd64-<sha> for the five bake legs, which install it through
-  # .github/actions/renet-test-binary instead of building it five times. It
-  # builds even when every leg's probe ends early: the probe needs the renet
-  # sources only, and gating this job on five probes would cost a second
-  # checkout per leg.
+  # renet-test-linux-amd64-<sha> for the bake legs, which install it through
+  # .github/actions/renet-test-binary instead of building it once per leg. It
+  # runs only when the plan job found a distro to bake.
   build-renet:
     name: Build (Renet)
+    needs: [plan]
+    if: needs.plan.outputs.bake == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # Checkout, with the renet submodule on the readonly-preset App token, and
@@ -116,7 +182,7 @@ jobs:
 
   bake:
     name: VM Bake (${{ matrix.os-image }})
-    needs: [build-renet]
+    needs: [plan, build-renet]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # packages: write pushes the baked image to ghcr.io/rediacc/ci-vm-bake with
@@ -130,12 +196,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os-image:
-          - ubuntu-24.04
-          - debian-13
-          - fedora-43
-          - opensuse-16.0
-          - oracle-10
+        os-image: ${{ fromJSON(needs.plan.outputs.missing) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -176,7 +237,8 @@ jobs:
           password: ${{ github.token }}
       - name: Install oras
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.vm_bake_image install-oras
-      # The early exit: a key that already has a package ends the leg here.
+      # The race guard: a concurrent run that published this key since the plan
+      # job looked ends the leg here.
       - name: Probe the bake key
         id: probe
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.vm_bake_image probe --distro "${{ matrix.os-image }}"
