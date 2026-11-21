@@ -15,15 +15,15 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2727,
- "files": 668,
+ "count": 2658,
+ "files": 665,
  "by_rule": {
-  "R1": 1485,
-  "R11": 139,
+  "R1": 1423,
+  "R11": 136,
   "R14": 1,
   "R18": 12,
   "R19": 55,
-  "R2": 602,
+  "R2": 598,
   "R7": 433
  },
  "findings": {
@@ -1201,56 +1201,6 @@
     "ef1ba580099144b0"
    ]
   },
-  ".claude/agents/pr-babysitter.md": {
-   "R1": [
-    "0928fa77826c4c34",
-    "0affd2f61926bb0f",
-    "17d348f565c58f21",
-    "1c2bcb2d30d20c27",
-    "1d04460b279372d2",
-    "1d4aeb22ed36ea92",
-    "1e4bc9c5745dd3a0",
-    "2b1ccf1ed6fca539",
-    "30ca4ce38244e5bc",
-    "3ebad631f84c97fa",
-    "40d8faa18dca3eb4",
-    "42ff21c83765283a",
-    "5bab28e5911064de",
-    "6960380d5ec37038",
-    "79e354006fb12854",
-    "7cd3df0ba7591e12",
-    "7dd6467bbefb3d45",
-    "7ff15dba064801a0",
-    "84781f869f498559",
-    "8d4f735187adbc8e",
-    "8faae96d8c27f0d4",
-    "919e12e5f3827e96",
-    "93f861b6ac07a4e1",
-    "9980cca646a6ba7a",
-    "9c7b08f82343f7c9",
-    "a396dfbedbfdaf45",
-    "a8d732c4253836f9",
-    "b2d1bc11e9f86448",
-    "be9dd21e6977a7b6",
-    "c1efd3732d1e2c72",
-    "cbac3dfe38d20936",
-    "cbb12e7188885f75",
-    "ce0fd7bc356d58bd",
-    "d47a4ec3dcdb9731",
-    "dd3508002d26e5a4",
-    "e1bf4f00a58ef7fe",
-    "eabc19bcc225771b",
-    "f909c2a5fb1c7485",
-    "fcc2082cc9800793"
-   ],
-   "R11": [
-    "8bf4e2a74b372ddb"
-   ],
-   "R2": [
-    "082af21c0070e4d6",
-    "562b3557d2b95e02"
-   ]
-  },
   ".claude/agents/test-advisor.md": {
    "R1": [
     "15561d5dcabe8b9d",
@@ -1303,47 +1253,6 @@
   ".claude/commands/handoff.md": {
    "R1": [
     "bc3eb2f21c7ac194"
-   ]
-  },
-  ".claude/commands/pr-babysit.md": {
-   "R1": [
-    "12b7ac609acf5e23",
-    "33bc0e7271527723",
-    "3658916a9f2cee5f",
-    "3f2b071dfbecaa0b",
-    "5e6bda587c07e910",
-    "7aa697a5dd5b2f3d",
-    "99edc574de5348fe",
-    "a4c3f424a307fb0e",
-    "ad0ef73e0ec83f52",
-    "c265d6c277b3589a",
-    "c46a664eacc38abd",
-    "cb9b416f5f278e7f",
-    "dae8110df37c4969",
-    "e630af43a72af438",
-    "ec33029790d0ed19",
-    "ef97818e99ee649d",
-    "f85781195413ef1e"
-   ],
-   "R2": [
-    "fd2e25a671e03898"
-   ]
-  },
-  ".claude/commands/pr-merge.md": {
-   "R1": [
-    "0c724f799be1e4e6",
-    "0f64577679602af0",
-    "5c71dcb3f1a209de",
-    "abca684229274a70",
-    "afdea05da4477b19",
-    "bec23196c6afbef7"
-   ],
-   "R11": [
-    "4da2a8979712696a",
-    "f6cf16d1c49ecd9a"
-   ],
-   "R2": [
-    "4c3ecd4fae5e593d"
    ]
   },
   ".claude/commands/standing-orders.md": {
