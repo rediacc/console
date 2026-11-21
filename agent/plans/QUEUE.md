@@ -34,7 +34,7 @@ effort: quiet
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: effort quiet; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
+- Mode: effort quiet; judge off; cadence on; agent_hint off; agent_pushback off.
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
 - Branch: 1121-1, no PR yet.
 - Landing tree: branch 1104-1, PR #605 open.
@@ -58,7 +58,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 2033 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 2042 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
@@ -67,15 +67,15 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 6 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic fe958571, no plan, 15 commit(s) on the branch, 0 open item(s): nginx2root and PHP 2026-11-19 security patching (hostinger + templates)
   - epic 422370f4, no plan, 5 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a435a3498138a7408, worker:a1141315a6c05d296.
-- Leased items: 13: #0e9506a2 (worker:be39zjfwp, d778be9d), #116b1a79 (worker:bb16p240t, d778be9d), #2426b245 (worker:a435a3498138a7408, d778be9d), #27871b0c (worker:a1141315a6c05d296, d778be9d), #28b00eb3 (worker:bph9m0bev, d778be9d), #3d38c1c9 (worker:queue, d778be9d), #3e7dcac6 (worker:queue, d778be9d), #45585ba5 (worker:b2j93ucwq, d778be9d), #68452957 (worker:queue, d778be9d), #70da2f28 (worker:a435a3498138a7408, d778be9d), #a1ecc191 (worker:bjgcdk4yc, d778be9d), #ab9c68b1 (worker:be39zjfwp, d778be9d), and 1 more.
+- Writers: 0 live of writer_cap 25 (session d778be9d).
+- Leased items: 10: #0e9506a2 (worker:be39zjfwp, d778be9d), #116b1a79 (worker:bb16p240t, d778be9d), #28b00eb3 (worker:bph9m0bev, d778be9d), #3d38c1c9 (worker:queue, d778be9d), #3e7dcac6 (worker:queue, d778be9d), #45585ba5 (worker:b2j93ucwq, d778be9d), #68452957 (worker:queue, d778be9d), #a1ecc191 (worker:bjgcdk4yc, d778be9d), #ab9c68b1 (worker:be39zjfwp, d778be9d), #fbe192ca (worker:be39zjfwp, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 29 of 86 plans done, 1319 of 1602 boxes done (82%).
+Promoted: 29 of 86 plans done, 1324 of 1602 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -162,9 +162,9 @@ Promoted: 29 of 86 plans done, 1319 of 1602 boxes done (82%).
 | 81 | PLAN-rdc-feedback.md | 18/21 | 3 open |
 | 82 | PLAN-account-sidebar-redesign.md | 12/15 | 3 open |
 | 83 | PLAN-email-sender-separation.md | 11/18 | 7 open |
-| 84 | PLAN-pr-loop-single-source.md | 0/9 | 9 open |
+| 84 | PLAN-pr-loop-single-source.md | 4/9 | 5 open |
 | 85 | PLAN-two-track-merge-dev.md | 35/44 | 9 open |
-| 86 | PLAN-simple-two-tree-loop.md | 3/12 | 9 open |
+| 86 | PLAN-simple-two-tree-loop.md | 4/12 | 8 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
@@ -300,10 +300,11 @@ Promoted: 29 of 86 plans done, 1319 of 1602 boxes done (82%).
 41. agent/plans/PLAN-family-loop-migrate.md -- P3, proposed, not started, dep-blocked
 42. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
 43. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-44. agent/plans/PLAN-renet-i18n-baseline-drain.md -- P3, proposed, not started
-45. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
-46. agent/plans/PLAN-vscode-browser-exposure.md -- P3, proposed, not started
-47. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, not started, dep-blocked
+44. agent/plans/PLAN-release-path-protection-2027.md -- P3, approved, not started
+45. agent/plans/PLAN-renet-i18n-baseline-drain.md -- P3, proposed, not started
+46. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
+47. agent/plans/PLAN-vscode-browser-exposure.md -- P3, proposed, not started
+48. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, not started, dep-blocked
 
 ### Not queued
 
