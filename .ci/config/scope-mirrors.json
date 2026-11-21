@@ -1,8 +1,8 @@
 {
   "canonical": "CLAUDE.md",
   "floors": {
-    "clauses": 9,
-    "mirror_checks": 25
+    "clauses": 14,
+    "mirror_checks": 27
   },
   "quote_sources": [
     {
@@ -49,10 +49,6 @@
       "mirrors": [
         {
           "path": ".claude/output-styles/standing-orders.md",
-          "mode": "terms"
-        },
-        {
-          "path": ".claude/commands/pr-babysit.md",
           "mode": "terms"
         },
         {
@@ -117,10 +113,6 @@
       ],
       "mirrors": [
         {
-          "path": ".claude/commands/pr-babysit.md",
-          "mode": "terms"
-        },
-        {
           "path": ".claude/commands/pr-merge.md",
           "mode": "terms"
         },
@@ -152,10 +144,6 @@
       "mirrors": [
         {
           "path": ".claude/skills/pr-epics/SKILL.md",
-          "mode": "terms"
-        },
-        {
-          "path": ".claude/commands/pr-babysit.md",
           "mode": "terms"
         },
         {
@@ -220,6 +208,93 @@
         "rule": "equal-backticked"
       },
       "mirrors": []
+    },
+    "pr.sibling-repos": {
+      "canonical": ".claude/agents/pr-babysitter.md",
+      "sha": "c2505d83418e",
+      "atoms": [
+        "sibling repos under private/ that are not submodules",
+        "discovered every run, never hardcoded"
+      ],
+      "sentinels": [
+        "discovered every run, never hardcoded"
+      ],
+      "mirrors": [
+        {
+          "path": ".claude/commands/pr-merge.md",
+          "mode": "ref"
+        }
+      ]
+    },
+    "pr.consumed-names": {
+      "canonical": ".claude/agents/pr-babysitter.md",
+      "sha": "17c3558073a2",
+      "atoms": [
+        "MAX+1 over the names already consumed by PR heads",
+        "git fetch origin --prune"
+      ],
+      "sentinels": [
+        "MAX+1 over the names already consumed by PR heads"
+      ],
+      "mirrors": [
+        {
+          "path": ".claude/commands/pr-merge.md",
+          "mode": "ref"
+        }
+      ]
+    },
+    "pr.submodule-branch-name": {
+      "canonical": ".claude/agents/pr-babysitter.md",
+      "sha": "1d0babff57bd",
+      "atoms": [
+        "named exactly like the console branch",
+        "Submodule Branches"
+      ],
+      "sentinels": [
+        "named exactly like the console branch"
+      ],
+      "mirrors": [
+        {
+          "path": ".claude/commands/pr-merge.md",
+          "mode": "ref"
+        }
+      ]
+    },
+    "pr.finish-sequence": {
+      "canonical": ".claude/agents/pr-babysitter.md",
+      "sha": "4d406c62567e",
+      "atoms": [
+        "The finish sequence, in order",
+        "gh pr ready",
+        "wl_review.py --check"
+      ],
+      "sentinels": [
+        "The finish sequence, in order"
+      ],
+      "mirrors": [
+        {
+          "path": ".claude/commands/pr-merge.md",
+          "mode": "ref"
+        }
+      ]
+    },
+    "pr.review-answer": {
+      "canonical": ".claude/commands/pr-merge.md",
+      "sha": "8dda3d47e460",
+      "atoms": [
+        "The PR review is waited on, then answered",
+        "wl_prreview.py --wait",
+        "Review Complete"
+      ],
+      "sentinels": [
+        "The PR review is waited on, then answered"
+      ],
+      "mirrors": [
+        {
+          "path": ".claude/agents/pr-babysitter.md",
+          "mode": "ref"
+        }
+      ]
     }
   }
 }
