@@ -3839,23 +3839,23 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 5,
+      "open": 5,
+      "done": 7,
       "open_sigs": [
         "445f8e25",
         "58d2b8d1",
         "bf34b200",
         "c098ad09",
-        "e4290fc9",
-        "f43faf26",
-        "ff714a5c"
+        "e4290fc9"
       ],
       "done_sigs": [
         "15296114",
         "2dd5384d",
         "4e173224",
         "c2cbd57c",
-        "c8338630"
+        "c8338630",
+        "f43faf26",
+        "ff714a5c"
       ]
     },
     "agent/plans/PLAN-site-entry-points.md": {
