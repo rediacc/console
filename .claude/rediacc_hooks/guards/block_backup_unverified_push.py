@@ -212,7 +212,12 @@ def _pushes(cmd, root, base):
         _, _, args = commit_policy.git_split(run.argv)
         if VM._skipped(args):
             continue
-        repo = commit_policy.scoped_repo(run, base, root, created, cmd) or root
+        repo = (
+            commit_policy.scoped_repo(
+                run, base, root, created, cmd, trees=commit_policy.bound_trees(root)
+            )
+            or root
+        )  # bound trees passed (box LT11): a push in a landing-tree submodule is that submodule's, not this checkout's
         if pathlib.Path(repo).resolve() != pathlib.Path(root).resolve():
             continue
         line = " ".join(["git", "push", *args])

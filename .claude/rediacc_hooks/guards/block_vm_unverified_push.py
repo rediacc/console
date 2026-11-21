@@ -545,7 +545,13 @@ def _push_tree(run, base, root, created, cmd):
         store = commit_policy.common_dir(root)
         if top and store and commit_policy.common_dir(top) == store:
             return root if pathlib.Path(top).resolve() == pathlib.Path(root).resolve() else top
-    repo = commit_policy.scoped_repo(run, base, root, created, cmd) or root
+    # The bound trees are passed (box LT11), as commit_policy._creation_repo does: without them a push in a submodule of the landing tree resolved to this checkout and was judged against this checkout's receipt (2026-11-21, `git -C <landing>/private/renet push origin 1104-1` refused while the landing tree's own receipt was VERIFIED for the pushed tree).
+    repo = (
+        commit_policy.scoped_repo(
+            run, base, root, created, cmd, trees=commit_policy.bound_trees(root)
+        )
+        or root
+    )
     if pathlib.Path(repo).resolve() != pathlib.Path(root).resolve():
         # A submodule (its pointer push carries the range) or another repository.
         return ""
