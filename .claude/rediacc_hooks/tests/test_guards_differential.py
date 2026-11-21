@@ -207,6 +207,7 @@ CWD_WORLDS = {
     "block_stale_pr_branch_date": "stale-branch-checkout",
     "block_premature_ready": "console-pr-checkout",
     "block_commit_of_live_writer_file": "live-writer-world",
+    "block_second_open_pr": "console-pr-checkout",
 }
 HOST_WORLDS = {"block_host_toolchain_run": "toolchain-host"}
 

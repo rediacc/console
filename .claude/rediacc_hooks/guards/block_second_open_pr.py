@@ -433,7 +433,8 @@ def _ready_refusal(ev, run_, cwd):
 
 def run(ev):
     cmd = ev.field("tool_input", "command")
-    cwd = ev.field("cwd")
+    # The payload's own cwd wins; the dispatcher's (`ev.cwd`) stands in when it carries none, so a harness can hand the guard a world (`CWD_WORLDS`) instead of the process directory.
+    cwd = ev.field("cwd") or ev.cwd
     if cmd == "":
         return hookio.ALLOW
 
