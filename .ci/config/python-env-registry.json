@@ -2693,6 +2693,9 @@
     ".claude/rediacc_hooks/tests/test_hooks_procs.py": [
       "REDIACC_TIMEOUT_BIN"
     ],
+    ".claude/rediacc_hooks/tests/test_plan_gate.py": [
+      "PATH"
+    ],
     ".claude/rediacc_hooks/tests/test_post_bash_differential.py": [
       "PATH"
     ],
