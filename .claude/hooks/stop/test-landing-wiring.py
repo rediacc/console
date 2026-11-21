@@ -387,7 +387,6 @@ def stack_cases(tmp, tag, mutate=None):
     w.bind()
     # The release at the merged sha still in flight: reported, never blocked on (agent/plans/PLAN-simple-two-tree-loop.md D3).
     w.release("feedface0001", ci="success")
-    w.effort("quiet")
     got = w.stop(w.fix.proj)
     out.append(("merged landing, release pending: no block", w.blocked(got, STACK_MERGED), False))
     out.append(("merged landing, release pending: reported", STACK_PENDING in got.out, True))
