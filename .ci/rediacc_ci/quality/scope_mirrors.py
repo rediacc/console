@@ -3,24 +3,25 @@ r"""check:ci-scope-mirrors: CLAUDE.md's PR-scope rules and their hand-written mi
 WHY THIS EXISTS (agent/plans/PLAN-scope-mirrors.md). CLAUDE.md is the one place the PR-scope rules are written down, and at least seven other files restate them in their own words: the output style, the pr-epics skill, /pr-babysit, /pr-merge, the pr-babysitter agent, the `MESSAGE` of `block_settled_questions.py` and the QUEUE.md header. Those copies are what an agent actually reads mid-task. Commit 8ed69711c copied one sentence into
 six places by hand; earlier changes missed copies, and nothing checked that the copies agree.
 
-THE CONTRACT (plan D1). The canonical text stays CLAUDE.md prose, wrapped inline:
+THE CONTRACT (plan D1). The canonical text is prose in a CANONICAL FILE, wrapped inline. That file is CLAUDE.md unless the clause names another one (agent/plans/PLAN-pr-loop-single-source.md D2: a loop-only clause is canonical in the agent file or pr-merge.md, and its other places point there):
 
     <!-- scope: pr.push-cadence -->Pushes happen at an epic milestone ... commits.<!-- /scope -->
 
   * Open `<!-- scope: <id>[ -- <note>] -->`, close `<!-- /scope -->`.
-  * Ids match `^pr\.[a-z0-9-]{3,40}$`. A comment that starts `scope` but carries a malformed id is a FINDING (C1 in CLAUDE.md, C10 in a mirror), never ignored.
-  * In CLAUDE.md the close is REQUIRED, every registered id is opened exactly once, and spans do not nest.
+  * Ids match `^pr\.[a-z0-9-]{3,40}$`. A comment that starts `scope` but carries a malformed id is a FINDING (C1 in a canonical file, C10 anywhere else), never ignored.
+  * In a canonical file the close is REQUIRED for each clause canonical there, each such id is opened exactly once in that file, and nothing opens inside an open canonical span. A canonical file may also hold registered MIRROR anchors of other clauses; those follow the mirror rules below, and a close that ends neither a canonical span nor a pending mirror is a stray close. Any other anchor in a canonical file (an unknown id, or a clause canonical in a different file and not registered as a mirror here) is C1.
   * In a mirror the close is optional. With no close the span runs to the end of its BLOCK (a paragraph, a list item, a heading or a table row). With a close it runs to that close, which may cross list items but not a blank line; a later open in another block ends an earlier closeless span at the end of its own block, so one close never stretches an unrelated anchor.
   * An anchor inside a backtick code span or a fenced block is prose, not an anchor, so a document that DESCRIBES the syntax does not trip the gate (TRAPS `detector-matches-its-own-prose`).
 
 THE REGISTRY, `.ci/config/scope-mirrors.json` (plan D3):
 
     {
-      "canonical": "CLAUDE.md",                         optional, this default
+      "canonical": "CLAUDE.md",                         optional, this default; the file a clause without its own key is canonical in
       "floors": {"clauses": 9, "mirror_checks": 25},    REQUIRED, each >= 1
       "quote_sources": [{"path": "...", "where": "py:MESSAGE"}],
       "clauses": {
         "pr.<id>": {
+          "canonical": "<path>",          optional; a C9 corpus file, else C0; the registry default when absent
           "sha": "<sha256[:12] of the normalized canonical span>",
           "atoms": ["...", ...],          each a normalized substring of the span
           "sentinels": ["...", ...],      distinctive atoms the C9 sweep looks for
@@ -35,21 +36,22 @@ THE REGISTRY, `.ci/config/scope-mirrors.json` (plan D3):
   `where` missing means inline anchors in a markdown mirror; EVERY anchor of that id in that file is a span and each is judged. `frontmatter:<key>` reads a YAML front-matter key, where a comment would land inside the string. `py:<CONST>` reads a module-level string constant through `ast`, never by import. A `quote_sources` entry with no `where` quotes the whole file. The floors live in the
   registry so the first registry can list only the mirrors not blocked by other writers; a floor below 1 is refused, because a floor of 0 is a floor that cannot fail.
 
-NORMALIZATION (plan D4), in this order: strip HTML comments, drop `**` and `__`, drop backticks keeping their contents, fold smart quotes, dashes and the ellipsis character to ASCII, collapse whitespace, casefold. Modes: `verbatim` (the normalized canonical span is a substring of the normalized mirror span), `terms` (every atom is), `ref` (the span names CLAUDE.md or another registered mirror path
-instead of restating; the success line counts these so the exemption stays visible).
+  A clause's `canonical` must be one of the C9 corpus files (`CORPUS_GLOBS`), so the file that holds the rule is also one the sweep reads; a path outside it, or a missing one, is C0 and the clause is not judged. A clause never lists its own canonical path as a mirror (C0). C2, C3, C5, C6 and C8 judge against the clause's OWN canonical span, `--repin` pins that span, and a C9 message points at that file.
+
+NORMALIZATION (plan D4), in this order: strip HTML comments, drop `**` and `__`, drop backticks keeping their contents, fold smart quotes, dashes and the ellipsis character to ASCII, collapse whitespace, casefold. Modes: `verbatim` (the normalized canonical span is a substring of the normalized mirror span), `terms` (every atom is), `ref` (the span names the clause's canonical path, or the path of another mirror of the SAME clause, instead of restating; a pointer at some unrelated file is red, and the success line counts these so the exemption stays visible).
 
 CHECKS (plan D5). Only C5, C6, C7 and C9 are baselinable.
 
   C0  floors and registry shape; every clause has a mirror or an oracle; zero corpus files is a failure
-  C1  canonical anchors: each id opened and closed exactly once, no unknown id, no nesting, no stray close
+  C1  canonical anchors, read once per canonical file: each clause canonical there opened and closed exactly once, no unknown id, no clause anchored outside its own canonical file, no nesting, no stray close
   C2  pin: sha(canonical span) == registry sha, else the mirrors are listed with the repin command
   C3  every atom and sentinel is a substring of its canonical span; a `terms` mirror needs >= 1 atom
   C4  a mirror or quote source that cannot be located (file, anchor, front-matter key, constant) is red, never skipped
   C5  verbatim; C6 terms and ref
-  C7  every double-quoted fragment of a quote source, split on `...`, `[...]` and the ellipsis character, trailing `.,;:` stripped, is a substring of normalized CLAUDE.md outside its gen-docs regions; a source with zero fragments is red
+  C7  every double-quoted fragment of a quote source, split on `...`, `[...]` and the ellipsis character, trailing `.,;:` stripped, is a substring of the normalized registry-default canonical file (CLAUDE.md) outside its gen-docs regions; a source with zero fragments is red
   C8  code oracle: `all-in-span` (every constant value is in the span) or `equal-backticked` (the backticked snake_case tokens of the span equal the constant's set)
   C9  a sentinel in a corpus block that carries no registered span or anchor for that clause
-  C10 an anchor in a mirror whose (path, id) pair is not registered, or whose id is malformed
+  C10 an anchor in a file that is no clause's canonical file, whose (path, id) pair is not registered as a mirror, or whose id is malformed
 
   While a clause is red on C2 its C5/C6 are not judged: the C2 message lists the mirrors, and judging them against an unpinned canonical would bury the one action that matters (re-read them, then repin).
 
@@ -363,13 +365,26 @@ class Span:
     end: int = -1
 
 
-def canonical_spans(text: str, path: str = DEFAULT_CANONICAL) -> tuple[dict[str, Span], list[str]]:
-    """The strict CLAUDE.md reading: spans by id, plus every C1 problem as `<line>: <what>`."""
+def canonical_spans(
+    text: str, path: str = DEFAULT_CANONICAL, mirror_ids: frozenset[str] | set[str] = frozenset()
+) -> tuple[dict[str, Span], list[str]]:
+    """The strict reading of one canonical file: spans by id, plus every C1 problem as `<line>: <what>`.
+
+    `mirror_ids` are the clauses registered as markdown mirrors OF THIS FILE. Their anchors follow the mirror rules (close optional, a closeless span ends with its block), so a canonical file can also carry mirrors of clauses canonical elsewhere. A close pairs with the open canonical span first, then with a pending mirror open the way `mirror_spans` pairs it; a close that ends neither is stray. Every other open is read as canonical, and the caller decides whether its id belongs in this file.
+    """
     spans: dict[str, Span] = {}
     problems: list[str] = []
     opened: Marker | None = None
     seen: dict[str, int] = {}
-    for mk in parse_anchors(text):
+    blocks = md_blocks(text)
+    pending: list[int] = []  # block index of each pending mirror open, as mirror_spans tracks them
+    for mk in parse_anchors(text, blocks):
+        bi = block_index(blocks, mk.start)
+        group = blocks[bi].group if bi >= 0 else -1
+        if mk.kind == "close":
+            pending = [p for p in pending if p >= 0 and blocks[p].group == group]
+        elif mk.kind == "open":
+            pending = [p for p in pending if p == bi]
         if mk.kind == "malformed":
             problems.append(
                 "%d: malformed scope anchor %r; ids match %s" % (mk.line, mk.clause, ID_RE.pattern)
@@ -381,6 +396,9 @@ def canonical_spans(text: str, path: str = DEFAULT_CANONICAL) -> tuple[dict[str,
                     % (mk.line, mk.clause, opened.clause, opened.line)
                 )
                 continue
+            if mk.clause in mirror_ids:
+                pending.append(bi)
+                continue
             if mk.clause in seen:
                 problems.append(
                     "%d: %s is opened again (first at line %d); each clause is anchored once"
@@ -389,8 +407,12 @@ def canonical_spans(text: str, path: str = DEFAULT_CANONICAL) -> tuple[dict[str,
             seen.setdefault(mk.clause, mk.line)
             opened = mk
         elif opened is None:
-            problems.append("%d: a <!-- /scope --> closes nothing" % mk.line)
+            if pending:
+                pending = []
+            else:
+                problems.append("%d: a <!-- /scope --> closes nothing" % mk.line)
         else:
+            pending = []
             if opened.clause not in spans:
                 spans[opened.clause] = Span(
                     path,
@@ -403,8 +425,8 @@ def canonical_spans(text: str, path: str = DEFAULT_CANONICAL) -> tuple[dict[str,
             opened = None
     if opened is not None:
         problems.append(
-            "%d: %s is never closed; the close is required in CLAUDE.md"
-            % (opened.line, opened.clause)
+            "%d: %s is never closed; the close is required in its canonical file %s"
+            % (opened.line, opened.clause, path)
         )
     return spans, problems
 
@@ -656,6 +678,123 @@ def _shape_problems(clause: str, spec: object) -> list[str]:
     return out
 
 
+@dataclasses.dataclass
+class Reading:
+    """The canonical side of the registry: every canonical file read once, each clause's own span."""
+
+    default_rel: str
+    canon_of: dict[str, str]  # clause -> its canonical file, when readable
+    spans: dict[str, Span]  # clause -> its span, read from canon_of[clause] only
+    texts: dict[str, str]  # canonical file -> its text
+    unreadable: list[str]  # clauses whose `canonical` is refused (C0); never judged
+    findings: list[Finding]  # C0 and C1, in file order
+    fatal: bool = False  # the registry-default canonical file is missing
+
+
+def canonical_reading(root: pathlib.Path, registry: dict, corpus: list[str]) -> Reading:
+    """C0 for each refused clause `canonical`, then C1 once per canonical file (plan D2 of PLAN-pr-loop-single-source).
+
+    A clause's `canonical` must be a C9 corpus file, and the clause never lists that file as its own mirror. Each canonical file is read with `canonical_spans`, told which ids are registered mirrors of it; every other anchor there must be a clause canonical in THAT file, opened once and closed.
+    """
+    default_rel = str(registry.get("canonical") or DEFAULT_CANONICAL)
+    clauses = registry.get("clauses")
+    if not isinstance(clauses, dict):
+        clauses = {}
+    out = Reading(default_rel, {}, {}, {}, [], [])
+
+    def add(code: str, path: str, line: int, clause: str, message: str) -> None:
+        out.findings.append(Finding(code, path, line, clause, message))
+
+    corpus_set = set(corpus)
+    for cid, spec in clauses.items():
+        if not isinstance(spec, dict) or "canonical" not in spec:
+            out.canon_of[cid] = default_rel
+            continue
+        rel = spec["canonical"]
+        if not isinstance(rel, str) or not rel.strip():
+            problem = "%s.canonical must be a non-empty path, got %r" % (cid, rel)
+        elif rel not in corpus_set:
+            problem = (
+                "%s.canonical %r is not a C9 corpus file (%s); a rule's home must be a file the sweep reads, so name one of those or drop the key"
+                % (cid, rel, ", ".join(g for g, _ in CORPUS_GLOBS))
+            )
+        else:
+            problem = ""
+            own = [
+                m.get("path")
+                for m in spec.get("mirrors") or []
+                if isinstance(m, dict) and m.get("path") == rel and not m.get("where")
+            ]
+            if own:
+                problem = (
+                    "%s lists its own canonical file %s as a mirror; the canonical span is the source, so drop that mirror"
+                    % (cid, rel)
+                )
+        if problem:
+            add("C0", REGISTRY_REL, 0, cid if ID_RE.match(str(cid)) else "-", problem)
+            out.unreadable.append(cid)
+            continue
+        out.canon_of[cid] = rel
+
+    if not (root / default_rel).is_file():
+        add("C0", default_rel, 0, "-", "the canonical file is missing; nothing can be compared")
+        out.fatal = True
+        return out
+
+    for rel in sorted({default_rel, *out.canon_of.values()}):
+        path = root / rel
+        if not path.is_file():
+            continue  # unreachable for a clause key (corpus files exist); the default is checked above
+        text = path.read_text(encoding="utf-8")
+        out.texts[rel] = text
+        mirror_ids = {
+            cid
+            for cid, spec in clauses.items()
+            if isinstance(spec, dict)
+            and isinstance(spec.get("mirrors"), list)
+            and any(
+                isinstance(m, dict) and m.get("path") == rel and not m.get("where")
+                for m in spec["mirrors"]
+            )
+        }
+        file_spans, problems = canonical_spans(text, rel, mirror_ids)
+        for p in problems:
+            lno, _, what = p.partition(": ")
+            add("C1", rel, int(lno), "-", what + ". Fix the anchor in %s." % rel)
+        for cid, cspan in file_spans.items():
+            if cid not in clauses:
+                add(
+                    "C1",
+                    rel,
+                    cspan.line,
+                    cid,
+                    "anchors an id the registry does not know; register it in %s or remove the anchor"
+                    % REGISTRY_REL,
+                )
+            elif out.canon_of.get(cid) != rel:
+                home = out.canon_of.get(cid)
+                add(
+                    "C1",
+                    rel,
+                    cspan.line,
+                    cid,
+                    "is anchored here, but its canonical file is %s; a clause is anchored once, in its own canonical file. Remove this anchor, or register %s as a mirror of %s"
+                    % (home or "refused (see C0)", rel, cid),
+                )
+            else:
+                out.spans[cid] = cspan
+    for cid, rel in out.canon_of.items():
+        if cid not in out.spans:
+            add(
+                "C1",
+                rel,
+                0,
+                cid,
+                "has no closed <!-- scope: %s --> ... <!-- /scope --> span in %s" % (cid, rel),
+            )
+    return out
+
+
 def check(
     root: pathlib.Path, shape: Shape | None = None, repinning: frozenset[str] = frozenset()
 ) -> list[Finding]:
@@ -741,43 +880,22 @@ def check(
                 "%d mirror checks registered, floor is %d" % (mirror_total, shape.floor_mirrors),
             )
 
-    # -- C1 canonical anchors --------------------------------------------------
-    canon_rel = str(registry.get("canonical") or DEFAULT_CANONICAL)
-    canon_path = root / canon_rel
-    if not canon_path.is_file():
-        add("C0", canon_rel, 0, "-", "the canonical file is missing; nothing can be compared")
+    # -- C1 canonical anchors, once per canonical file -------------------------
+    corpus = corpus_files(root)
+    reading = canonical_reading(root, registry, corpus)
+    findings.extend(reading.findings)
+    if reading.fatal:
         return findings
-    canon_text = canon_path.read_text(encoding="utf-8")
-    spans, problems = canonical_spans(canon_text, canon_rel)
-    for p in problems:
-        lno, _, what = p.partition(": ")
-        add("C1", canon_rel, int(lno), "-", what + ". Fix the anchor in %s." % canon_rel)
-    for cid, cspan in spans.items():
-        if cid not in clauses:
-            add(
-                "C1",
-                canon_rel,
-                cspan.line,
-                cid,
-                "anchors an id the registry does not know; register it in %s or remove the anchor"
-                % REGISTRY_REL,
-            )
-    for cid in clauses:
-        if cid not in spans:
-            add(
-                "C1",
-                canon_rel,
-                0,
-                cid,
-                "has no closed <!-- scope: %s --> ... <!-- /scope --> span in %s"
-                % (cid, canon_rel),
-            )
+    for cid in reading.unreadable:
+        valid.pop(cid, None)
+    default_rel = reading.default_rel
+    canon_of = reading.canon_of
+    spans = reading.spans
 
     # -- per clause: C3, C4, C2, C5/C6, C8 --------------------------------------
-    all_mirror_paths = {m["path"] for spec in valid.values() for m in spec.get("mirrors", [])}
     coverage: dict[str, dict[str, list[tuple[int, int]]]] = {}
     for cid, cspan in spans.items():
-        coverage.setdefault(canon_rel, {}).setdefault(cid, []).append((cspan.start, cspan.end))
+        coverage.setdefault(cspan.path, {}).setdefault(cid, []).append((cspan.start, cspan.end))
     for cid, spec in valid.items():
         atoms = list(spec.get("atoms", []))
         located: list[tuple[dict, list[Span]]] = []
@@ -803,6 +921,7 @@ def check(
         span = spans.get(cid)
         if span is None:
             continue
+        canon_rel = span.path
         norm_span = normalize(span.raw)
         for key in ("atoms", "sentinels"):
             for atom in spec.get(key, []):
@@ -873,8 +992,11 @@ def check(
                                 ms.raw,
                             )
                     elif m["mode"] == "ref":
+                        # The clause's OWN canonical, or another mirror of this same clause: a pointer at an unrelated file points at no source of this rule.
                         names = {normalize(canon_rel)} | {
-                            normalize(p) for p in all_mirror_paths if p != ms.path
+                            normalize(o["path"])
+                            for o in spec.get("mirrors", [])
+                            if o["path"] != ms.path
                         }
                         if not any(nm in norm_ms for nm in names):
                             add(
@@ -882,8 +1004,8 @@ def check(
                                 ms.path,
                                 ms.line,
                                 cid,
-                                "ref mirror names neither %s nor another registered mirror; point at the source instead of restating it"
-                                % canon_rel,
+                                "ref mirror names neither %s, where %s is canonical, nor another mirror of %s; point at the source instead of restating it"
+                                % (canon_rel, cid, cid),
                                 ms.raw,
                             )
         oracle = spec.get("oracle")
@@ -937,7 +1059,7 @@ def check(
                     )
 
     # -- C7 quotes ---------------------------------------------------------------
-    canon_quotable = normalize(strip_gen_docs(canon_text))
+    canon_quotable = normalize(strip_gen_docs(reading.texts[default_rel]))
     sources = registry.get("quote_sources", [])
     if not isinstance(sources, list):
         add("C0", REGISTRY_REL, 0, "-", "quote_sources must be a list")
@@ -987,12 +1109,11 @@ def check(
                     line + (folded.count("\n", 0, at) if at >= 0 else 0),
                     "quote",
                     "quotes %s as %r, which it does not say; quote it exactly, or mark the cut with '...'"
-                    % (canon_rel, frag),
+                    % (default_rel, frag),
                     frag,
                 )
 
     # -- C9 unregistered restatement, C10 orphan anchor --------------------------
-    corpus = corpus_files(root)
     shape.corpus_files = len(corpus)
     if not corpus:
         add(
@@ -1016,7 +1137,8 @@ def check(
         text = (root / rel).read_text(encoding="utf-8")
         blocks = md_blocks(text)
         markers = parse_anchors(text, blocks)
-        if rel != canon_rel:
+        # A canonical file's anchors were all read by C1 (`canonical_spans` with its mirror ids), so C10 judges only the other files.
+        if rel not in reading.texts:
             for mk in markers:
                 if mk.kind == "malformed":
                     add(
@@ -1061,7 +1183,7 @@ def check(
                     b.line_start,
                     cid,
                     "restates %s (sentinel %r) with no registered span; register it as a mirror in %s and anchor it, or point at %s instead"
-                    % (cid, hit[0], REGISTRY_REL, canon_rel),
+                    % (cid, hit[0], REGISTRY_REL, canon_of.get(cid, default_rel)),
                     raw,
                 )
     return findings
@@ -1154,10 +1276,8 @@ def repin(root: pathlib.Path, target: str) -> int:
             file=sys.stderr,
         )
         return 2
-    canon_rel = str(registry.get("canonical") or DEFAULT_CANONICAL)
-    canon_path = root / canon_rel
-    canon_text = canon_path.read_text(encoding="utf-8") if canon_path.is_file() else ""
-    spans, _ = canonical_spans(canon_text, canon_rel)
+    reading = canonical_reading(root, registry, corpus_files(root))
+    spans = reading.spans
     baseline = set(load_baseline(root) or [])
     findings = check(root, None, frozenset(ids))
     blocking = [
@@ -1170,7 +1290,9 @@ def repin(root: pathlib.Path, target: str) -> int:
     missing = [i for i in ids if i not in spans]
     for i in missing:
         print(
-            CROSS + " repin refused: %s has no canonical span in %s (C1)" % (i, canon_rel),
+            CROSS
+            + " repin refused: %s has no canonical span in %s (C1)"
+            % (i, reading.canon_of.get(i, "its refused canonical file (C0)")),
             file=sys.stderr,
         )
     for f in blocking:
@@ -1274,6 +1396,19 @@ An anchor is written as `<!-- scope: pr.code-span-demo -->`, which is prose here
 FIX_SO = """# Standing orders
 
 - Cadence: <!-- scope: pr.push-cadence -->Pushes happen at an epic milestone, at least every 2 hours of committed work, and before a stop that leaves unpushed commits.<!-- /scope -->
+- Finish: <!-- scope: pr.finish-demo -->the finish sequence is step 8 of .claude/agents/demo-loop.md.
+"""
+
+# A SECOND canonical file (plan D2 of PLAN-pr-loop-single-source): canonical for pr.finish-demo, and also a terms mirror of pr.push-cadence, so the mixed reading runs in every control.
+FIX_LOOP = """---
+name: demo-loop
+description: a loop agent.
+---
+
+# Loop
+
+- Cadence: <!-- scope: pr.push-cadence -->push at an epic milestone, every 2 hours, and never leave unpushed commits.
+- Step 8: <!-- scope: pr.finish-demo -->mark the PR ready, answer the PR review, then end the babysit phase.<!-- /scope --> Then stop.
 """
 
 FIX_SKILL = """---
@@ -1319,18 +1454,21 @@ AGENT = ".claude/agents/demo.md"
 GUARD = ".claude/rediacc_hooks/guards/demo_guard.py"
 QUEUE_PY = ".claude/hooks/stop/demo_queue.py"
 CMD = ".claude/commands/demo-cmd.md"
+LOOP = ".claude/agents/demo-loop.md"
 
 
 def fixture_registry() -> dict:
-    """The selftest's registry, pinned to FIX_CANON by the module's own sha."""
+    """The selftest's registry, pinned to FIX_CANON and FIX_LOOP by the module's own sha."""
     spans, _ = canonical_spans(FIX_CANON)
+    loop_spans, _ = canonical_spans(FIX_LOOP, LOOP, {"pr.push-cadence"})
+    spans.update(loop_spans)
 
     def pin(clause: str) -> str:
         return span_sha(spans[clause].raw) if clause in spans else ""
 
     return {
         "canonical": "CLAUDE.md",
-        "floors": {"clauses": 3, "mirror_checks": 5},
+        "floors": {"clauses": 4, "mirror_checks": 7},
         "quote_sources": [{"path": GUARD, "where": "py:MESSAGE"}],
         "clauses": {
             "pr.push-cadence": {
@@ -1342,7 +1480,15 @@ def fixture_registry() -> dict:
                     {"path": SKILL, "mode": "terms"},
                     {"path": AGENT, "mode": "terms", "where": "frontmatter:description"},
                     {"path": GUARD, "mode": "terms", "where": "py:MESSAGE"},
+                    {"path": LOOP, "mode": "terms"},
                 ],
+            },
+            "pr.finish-demo": {
+                "canonical": LOOP,
+                "sha": pin("pr.finish-demo"),
+                "atoms": ["mark the PR ready", "answer the PR review"],
+                "sentinels": ["answer the PR review"],
+                "mirrors": [{"path": SO, "mode": "ref"}],
             },
             "pr.vm-reasons": {
                 "sha": pin("pr.vm-reasons"),
@@ -1386,6 +1532,7 @@ def build_fixture(root: pathlib.Path, baseline: list[str] | None = None) -> path
         GUARD: FIX_GUARD,
         QUEUE_PY: FIX_QUEUE,
         CMD: FIX_CMD,
+        LOOP: FIX_LOOP,
         REGISTRY_REL: json.dumps(fixture_registry(), indent=2) + "\n",
     }
     for rel, text in files.items():
@@ -1412,7 +1559,7 @@ def _quiet(fn, *args) -> int:
 
 def selftest(verbose: bool = True) -> int:
     """Control-first: one clean fixture, then one planted defect per check, each built with `plant`."""
-    ctl = Controls("scope-mirrors", floor=45, verbose=verbose)
+    ctl = Controls("scope-mirrors", floor=81, verbose=verbose)
     with tempfile.TemporaryDirectory() as tmp:
         base = pathlib.Path(tmp)
         made = [0]
@@ -1490,18 +1637,18 @@ def selftest(verbose: bool = True) -> int:
         red, _, stale, shape = judge(root)
         ctl.check("CLEAN fixture has zero findings", [f.render() for f in red], [])
         ctl.check("CLEAN fixture has no stale ids", stale, [])
-        ctl.check("CLEAN shape counts the clauses", shape.clauses, 3)
-        ctl.check("CLEAN shape counts the mirror checks", shape.mirror_checks, 5)
-        ctl.check("CLEAN shape counts the ref span", shape.modes["ref"], 1)
+        ctl.check("CLEAN shape counts the clauses", shape.clauses, 4)
+        ctl.check("CLEAN shape counts the mirror checks", shape.mirror_checks, 7)
+        ctl.check("CLEAN shape counts the ref spans", shape.modes["ref"], 2)
         ctl.check("CLEAN shape counts the quote fragments", shape.quotes, 4)
         ctl.truthy("CLEAN shape swept corpus files", shape.corpus_files >= 5)
 
         # -- C0 floors and registry shape -----------------------------------
         root = fresh()
-        _mutate(root, REGISTRY_REL, '"clauses": 3', '"clauses": 4')
+        _mutate(root, REGISTRY_REL, '"clauses": 4', '"clauses": 5')
         ctl.truthy("C0 fires when the clause floor is not met", _hits(_red(root), "C0"))
         root = fresh()
-        _mutate(root, REGISTRY_REL, '"mirror_checks": 5', '"mirror_checks": 0')
+        _mutate(root, REGISTRY_REL, '"mirror_checks": 7', '"mirror_checks": 0')
         ctl.truthy("C0 refuses a floor of 0", _hits(_red(root), "C0"))
         root = fresh()
         _mutate(root, REGISTRY_REL, '"rule": "equal-backticked"', '"rule": "nonsense"')
@@ -1645,6 +1792,152 @@ def selftest(verbose: bool = True) -> int:
         _mutate(root, CMD, "<!-- scope: pr.vm-reasons -->", "<!-- scope: pr.X -->")
         ctl.truthy("C10 fires on a malformed mirror id", _hits(_red(root), "C10", CMD))
 
+        # -- per-clause canonical (plan D2 of PLAN-pr-loop-single-source) ----
+        root = fresh()
+        reg = load_registry(root)[0] or {}
+        reading = canonical_reading(root, reg, corpus_files(root))
+        ctl.check(
+            "CANON a clause canonical in a second corpus file passes, read from that file",
+            (reading.spans["pr.finish-demo"].path if "pr.finish-demo" in reading.spans else "")
+            + " "
+            + str([f.render() for f in reading.findings]),
+            LOOP + " []",
+        )
+        root = fresh()
+        _mutate(root, LOOP, "then end the babysit phase.", "then end the phase.")
+        found = _red(root)
+        ctl.check(
+            "CANON C2 pins the clause's own canonical span",
+            sorted({(f.check, f.path, f.clause) for f in found}),
+            [("C2", LOOP, "pr.finish-demo")],
+        )
+        root = fresh()
+        _mutate(root, LOOP, "Then stop.", "<!-- scope: pr.finish-demo -->Again.<!-- /scope -->")
+        ctl.truthy(
+            "CANON C1 fires on the clause opened twice in its own canonical file",
+            any(f.check == "C1" and f.path == LOOP and "again" in f.message for f in _red(root)),
+        )
+        root = fresh()
+        _mutate(
+            root,
+            "CLAUDE.md",
+            "Pushes are backups.",
+            "<!-- scope: pr.finish-demo -->Answer the PR review.<!-- /scope -->",
+        )
+        ctl.truthy(
+            "CANON C1 fires on a clause anchored outside its canonical file",
+            _hits(_red(root), "C1", "CLAUDE.md"),
+        )
+        root = fresh()
+        _mutate(root, LOOP, "<!-- scope: pr.finish-demo -->", "")
+        _mutate(root, LOOP, "phase.<!-- /scope -->", "phase.")
+        ctl.truthy(
+            "CANON C1 fires when the second file loses the clause's span",
+            any(
+                f.check == "C1" and f.path == LOOP and "no closed" in f.message for f in _red(root)
+            ),
+        )
+        root = fresh()
+        _write(root, "docs/elsewhere.md", FIX_LOOP)
+        _mutate(root, REGISTRY_REL, '"canonical": "%s"' % LOOP, '"canonical": "docs/elsewhere.md"')
+        found = _red(root)
+        ctl.truthy(
+            "CANON C0 fires on a canonical outside the corpus, though the file exists",
+            any(f.check == "C0" and "not a C9 corpus file" in f.message for f in found),
+        )
+        root = fresh()
+        _mutate(
+            root,
+            REGISTRY_REL,
+            '"mirrors": [\n        {\n          "path": "%s",\n          "mode": "ref"' % SO,
+            '"mirrors": [\n        {\n          "path": "%s",\n          "mode": "ref"' % LOOP,
+        )
+        ctl.truthy(
+            "CANON C0 fires on a clause listing its own canonical file as a mirror",
+            any(f.check == "C0" and "its own canonical" in f.message for f in _red(root)),
+        )
+        root = fresh()
+        _mutate(root, SO, "step 8 of .claude/agents/demo-loop.md", "step 8 of CLAUDE.md")
+        found = _red(root)
+        ctl.check(
+            "CANON C6 fires on a ref naming only CLAUDE.md for a clause canonical elsewhere",
+            sorted({(f.check, f.path) for f in found}),
+            [("C6", SO)],
+        )
+        root = fresh()
+        _mutate(root, SO, "step 8 of .claude/agents/demo-loop.md", "step 8 of %s" % SKILL)
+        ctl.truthy(
+            "CANON C6 fires on a ref naming a mirror of a DIFFERENT clause",
+            _hits(_red(root), "C6", SO),
+        )
+        root = fresh()
+        _mutate(root, REGISTRY_REL, '"mark the PR ready",', '"mark the PR ready", "every 2 hours",')
+        ctl.truthy(
+            "CANON C3 judges an atom against the clause's own span, not its file",
+            any(f.check == "C3" and f.clause == "pr.finish-demo" for f in _red(root)),
+        )
+        root = fresh()
+        _mutate(
+            root,
+            LOOP,
+            "never leave unpushed commits.",
+            "never leave unpushed commits.<!-- /scope -->",
+        )
+        ctl.check(
+            "CANON a closed mirror in a canonical file is silent",
+            [f.render() for f in _red(root)],
+            [],
+        )
+        root = fresh()
+        _mutate(root, LOOP, "Then stop.", "Then stop.<!-- /scope -->")
+        ctl.truthy(
+            "CANON C1 fires on a stray close in a second canonical file",
+            any(
+                f.check == "C1" and f.path == LOOP and "closes nothing" in f.message
+                for f in _red(root)
+            ),
+        )
+        root = fresh()
+        _mutate(
+            root,
+            LOOP,
+            "answer the PR review,",
+            "answer <!-- scope: pr.push-cadence -->the PR review,",
+        )
+        ctl.truthy(
+            "CANON C1 fires on a mirror anchor inside a canonical span",
+            any(
+                f.check == "C1" and f.path == LOOP and "do not nest" in f.message
+                for f in _red(root)
+            ),
+        )
+        root = fresh()
+        _mutate(root, LOOP, "Then stop.", "Then stop.\n\nAlways answer the PR review first.")
+        ctl.truthy(
+            "CANON C9 sweeps a second canonical file outside the clause's span",
+            any(f.check == "C9" and f.path == LOOP for f in _red(root)),
+        )
+        root = fresh()
+        _mutate(root, LOOP, "<!-- scope: pr.finish-demo -->", "<!-- scope: pr.Finish -->")
+        found = _red(root)
+        ctl.check(
+            "CANON a malformed anchor in a canonical file is C1, not C10",
+            (_hits(found, "C1", LOOP) > 0, _hits(found, "C10", LOOP)),
+            (True, 0),
+        )
+        root = fresh()
+        _mutate(root, LOOP, "then end the babysit phase.", "then end the babysit phase at once.")
+        rc = _quiet(repin, root, "pr.finish-demo")
+        pinned = (load_registry(root)[0] or {})["clauses"]["pr.finish-demo"].get("sha")
+        want = span_sha(
+            canonical_spans(_read(root, LOOP), LOOP, {"pr.push-cadence"})[0]["pr.finish-demo"].raw
+        )
+        ctl.check(
+            "CANON --repin pins the clause's own canonical span",
+            (rc, pinned == want, [f.render() for f in _red(root)]),
+            (0, True, []),
+        )
+
         # -- baseline -------------------------------------------------------
         root = fresh()
         _mutate(root, SKILL, "never stop with unpushed commits", "never stop with open work")
@@ -1759,10 +2052,13 @@ __all__ = [
     "MISSING",
     "REGISTRY_REL",
     "Finding",
+    "Reading",
     "Shape",
+    "canonical_reading",
     "canonical_spans",
     "check",
     "constant_values",
+    "corpus_files",
     "frontmatter_span",
     "judge",
     "load_baseline",

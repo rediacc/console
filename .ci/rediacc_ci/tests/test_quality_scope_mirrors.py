@@ -227,3 +227,75 @@ def test_an_empty_repin_target_is_refused_and_writes_nothing() -> None:
         before = reg.read_bytes()
         assert sm.main(["--repin", ""], root=root) == 2
         assert reg.read_bytes() == before
+
+
+# --------------------------------------------------------------------------- per-clause canonical (PLAN-pr-loop-single-source D2)
+
+MIXED = (
+    "- <!-- scope: pr.mirror-one -->a closeless mirror item.\n"
+    "- <!-- scope: pr.home -->the canonical text.<!-- /scope --> tail.\n"
+)
+
+
+def test_a_canonical_file_may_carry_a_closeless_mirror() -> None:
+    spans, problems = sm.canonical_spans(MIXED, "a.md", {"pr.mirror-one"})
+    assert problems == []
+    assert {k: sm.normalize(v.raw) for k, v in spans.items()} == {"pr.home": "the canonical text."}
+
+
+def test_without_its_mirror_ids_the_same_file_is_red() -> None:
+    # The negative direction: the closeless mirror is read as canonical and never closes.
+    _, problems = sm.canonical_spans(MIXED, "a.md")
+    assert problems, "a closeless anchor in the strict reading must be a problem"
+
+
+def test_a_closed_mirror_in_a_canonical_file_consumes_its_close() -> None:
+    text = (
+        "<!-- scope: pr.mirror-one -->x<!-- /scope -->\n\n<!-- scope: pr.home -->y<!-- /scope -->\n"
+    )
+    spans, problems = sm.canonical_spans(text, "a.md", {"pr.mirror-one"})
+    assert problems == []
+    assert sorted(spans) == ["pr.home"]
+
+
+def test_a_close_past_the_mirror_blank_line_is_stray() -> None:
+    text = "<!-- scope: pr.mirror-one -->x\n\ny<!-- /scope -->\n"
+    _, problems = sm.canonical_spans(text, "a.md", {"pr.mirror-one"})
+    assert any("closes nothing" in p for p in problems)
+
+
+def test_a_mirror_open_inside_a_canonical_span_nests() -> None:
+    text = "<!-- scope: pr.home -->a <!-- scope: pr.mirror-one -->b<!-- /scope -->\n"
+    _, problems = sm.canonical_spans(text, "a.md", {"pr.mirror-one"})
+    assert any("do not nest" in p for p in problems)
+
+
+def _tree(tmp: str, canonical: str) -> tuple[pathlib.Path, dict]:
+    """CLAUDE.md plus the same canonical span in a corpus file and in a non-corpus file."""
+    root = pathlib.Path(tmp)
+    (root / ".claude" / "agents").mkdir(parents=True)
+    (root / "docs").mkdir()
+    (root / "CLAUDE.md").write_text("# Rules\n", encoding="utf-8")
+    for rel in (".claude/agents/loop.md", "docs/loop.md"):
+        (root / rel).write_text(
+            "<!-- scope: pr.home -->the canonical text.<!-- /scope -->\n", encoding="utf-8"
+        )
+    return root, {"clauses": {"pr.home": {"canonical": canonical, "mirrors": []}}}
+
+
+def test_canonical_reading_reads_a_clause_from_its_own_corpus_file() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root, reg = _tree(tmp, ".claude/agents/loop.md")
+        reading = sm.canonical_reading(root, reg, sm.corpus_files(root))
+        assert [f.render() for f in reading.findings] == []
+        assert reading.spans["pr.home"].path == ".claude/agents/loop.md"
+        assert reading.unreadable == []
+
+
+def test_canonical_reading_refuses_a_file_outside_the_corpus() -> None:
+    with tempfile.TemporaryDirectory() as tmp:
+        root, reg = _tree(tmp, "docs/loop.md")
+        reading = sm.canonical_reading(root, reg, sm.corpus_files(root))
+        assert [(f.check, f.clause) for f in reading.findings] == [("C0", "pr.home")]
+        assert reading.unreadable == ["pr.home"]
+        assert "pr.home" not in reading.spans
