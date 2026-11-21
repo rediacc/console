@@ -3814,6 +3814,29 @@
         "b86ddfc4"
       ]
     },
+    "agent/plans/PLAN-simple-two-tree-loop.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 12,
+      "done": 0,
+      "open_sigs": [
+        "15296114",
+        "2dd5384d",
+        "445f8e25",
+        "4e173224",
+        "58d2b8d1",
+        "bf34b200",
+        "c098ad09",
+        "c2cbd57c",
+        "c8338630",
+        "e4290fc9",
+        "f43faf26",
+        "ff714a5c"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-site-entry-points.md": {
       "status": "approved",
       "owner": "d778be9d",
