@@ -423,7 +423,12 @@ def test_cli_plan_off_main_and_off_a_pr_fails_before_any_probe(
     monkeypatch.setenv("GITHUB_REF", "refs/heads/1104-1")
     monkeypatch.setattr(vbi, "_key", _key_for)
     probed: list[str] = []
-    monkeypatch.setattr(vbi, "tag_exists", lambda ref: probed.append(ref) or False)
+
+    def probe(ref: str) -> bool:
+        probed.append(ref)
+        return False
+
+    monkeypatch.setattr(vbi, "tag_exists", probe)
     assert vbi.main(["plan", "--distro", "debian-13"]) == 1
     assert "may not publish" in capsys.readouterr().err
     assert probed == []
