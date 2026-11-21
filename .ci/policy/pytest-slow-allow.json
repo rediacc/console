@@ -111,8 +111,8 @@
       "reason": "baseline 2026-11-17: 35.6 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".ci.rediacc_ci.tests.gates.test_gate_gh_retry_shell::test_wiring_a_dead_twin_makes_its_reads_findings",
-      "reason": "baseline 2026-11-17: 23.6 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
+      "test": ".ci.rediacc_ci.tests.test_enterprise_lab::test_the_real_crypto_helper_wraps_unwraps_seals_and_reads_the_contract",
+      "reason": "measured 2026-11-21: 10.3 s in the ci:quick full run on c45d6ebf5 under 18 workers (the real crypto helper through tsx); drop the entry once the test runs under 10 s"
     },
     {
       "test": ".ci.rediacc_ci.tests.gates.test_gate_incremental_receipt::test_defhash_and_fileshash_equal_ts",
