@@ -90,7 +90,8 @@ Core-s is the sum of per-gate `cpuMs` in the receipt plus the runner's own CPU (
 - [ ] W2.2 [writer] Trace the 349 whole-tree gates in the clone and write their `paths`; gates over 30% of the tree or reading `.git` stay whole-tree with a named reason. Accept: whole-tree count ≤ 80 in gates.lock.json, and `npm run ci` green on an unchanged tree.
 
 ### W3 honesty gate -- .ci/scripts/quality/check_gate_paths_honest.py, its manifest row through W2's lock regeneration, .ci/rediacc_ci/tests/test_gate_paths_honest.py
-- [ ] W3.1 [writer] Trace mode and sparse-clone mode, diff-scoped in quick, with the rotation flag (A3). Accept: the undeclared-read fixture fails both modes; the declared fixture passes.
+- [x] W3.1 [writer] Trace mode and sparse-clone mode, diff-scoped in quick, with the rotation flag (A3). Accept: the undeclared-read fixture fails both modes; the declared fixture passes.
+    (ticked) 2026-11-21T14:12:34Z by d778be9d: present: scripts/ci-runner/trace-honest.ts:9 (commit bf3461577); trace-honest --selftest 66/66 rc 0
 
 ### W4 pytest impact -- .ci/rediacc_ci/pytest_impact.py, .ci/rediacc_ci/check_pytest.py, .ci/policy/pytest-smoke.json, .ci/policy/pytest-impact.json, .ci/rediacc_ci/tests/test_pytest_impact.py
 - [x] W4.1 [writer] The map, selection, smoke floor and every B4 fallback, each with a test. Accept: one test per fallback reason, and a control where a leaf-module edit selects only its importers plus smoke.
