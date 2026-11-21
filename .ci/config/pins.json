@@ -841,7 +841,7 @@
           "role": "sha256:amd64",
           "arg": "BW_SHA256_AMD64",
           "expect": 1,
-          "asset": "bw-linux-{version}.zip"
+          "asset": "bw-bit-linux-{version}.zip"
         },
         {
           "repo": ".",
@@ -849,7 +849,7 @@
           "role": "sha256:arm64",
           "arg": "BW_SHA256_ARM64",
           "expect": 1,
-          "asset": "bw-linux-arm64-{version}.zip"
+          "asset": "bw-bit-linux-arm64-{version}.zip"
         }
       ],
       "derive": [],

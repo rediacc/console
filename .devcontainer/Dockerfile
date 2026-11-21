@@ -586,16 +586,17 @@ RUN ARCH=$(dpkg --print-architecture) \
 #
 # THE DIGESTS ARE THE `digest` FIELD ON EACH RELEASE ASSET. Bitwarden publishes no
 # .sha256 sidecar files and no GPG/cosign signatures, and the docs' talk of
-# "checksum files" means the sha256 GitHub renders beside each asset. Re-read both
-# with, for version V:
+# "checksum files" means the sha256 GitHub renders beside each asset. From 2026.11.0 the
+# build pinned here (the unprefixed `bw-linux-` of earlier releases, beside `bw-oss-linux-`)
+# is published as `bw-bit-linux-`. Re-read both with, for version V:
 #   curl -s https://api.github.com/repos/bitwarden/clients/releases/tags/cli-v$V \
-#     | jq -r '.assets[]|select(.name|test("bw-linux(-arm64)?-"))|"\(.name) \(.digest)"'
+#     | jq -r '.assets[]|select(.name|test("bw-bit-linux(-arm64)?-"))|"\(.name) \(.digest)"'
 # scripts/gates/check-devcontainer-pin-freshness.ts watches this pin and rewrites all
 # three ARGs together; the CLI lives in a MONOREPO, so that gate filters tags by
 # the `cli-v` prefix rather than trusting /releases/latest.
-ARG BW_VERSION=2026.10.1
-ARG BW_SHA256_AMD64=eb09c3715291c21cf744819b873a255c1247b1b8b45bae138621a644ec7ad8f5
-ARG BW_SHA256_ARM64=79ecb3293fb259660961c949d3e32fdab8682b2bcff0f6764ce38a411ca1ac5d
+ARG BW_VERSION=2026.11.0
+ARG BW_SHA256_AMD64=bfc7643cbc20f970bf04b994f96489703fcf77217a2384f1743e43848363b0ba
+ARG BW_SHA256_ARM64=39e8336376739bbe5306471df0667793757ef1e243df3846461f66be9166e9d8
 RUN ARCH=$(dpkg --print-architecture) \
     && case "$ARCH" in \
     amd64) BW_ASSET="bw-linux-${BW_VERSION}.zip";       BW_SHA="${BW_SHA256_AMD64}" ;; \
