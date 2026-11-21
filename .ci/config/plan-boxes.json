@@ -2598,20 +2598,20 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 4,
+      "open": 4,
+      "done": 5,
       "open_sigs": [
         "0f7f1b9f",
         "1f6b75da",
         "273b8bc6",
-        "8b6469f1",
-        "e8317ff8"
+        "8b6469f1"
       ],
       "done_sigs": [
         "0b57955a",
         "1552b333",
         "4d6d1c4c",
-        "8c643c1c"
+        "8c643c1c",
+        "e8317ff8"
       ]
     },
     "agent/plans/PLAN-pr-path-ephemeral-credentials.md": {
