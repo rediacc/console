@@ -1,27 +1,22 @@
 """wl_standdown: the Stop hook's stand-down profiles, the keep-lists that decide which checks still block while the session is told to wait.
 
-FOUR STATES STAND THE BATTERY DOWN, and all share one mechanism. A KEEP-list rather than a drop-list, deliberately: a check added later stands down by default, which is what "should not be invoked" means, and it matches `check_tier`'s rule that an unknown key is hygiene.
+THREE STATES STAND THE BATTERY DOWN, and all share one mechanism. A KEEP-list rather than a drop-list, deliberately: a check added later stands down by default, which is what "should not be invoked" means, and it matches `check_tier`'s rule that an unknown key is hygiene.
 
   CAP_WAIT  every writer slot is verified live and nothing this session could start (operator 2026-09-24: "the stop hook should not be invoked (or should skip the order) when writer slots are full! There could be exceptions like 2% compaction etc."; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). `wl_roster.cap_saturated_wait` decides it, because it needs the writer cap (`wl_roster.writer_cap`, QUEUE.md `writer_cap:`).
-  FOCUS     the session declared a PR wind-down with `worklist.py --phase <me> babysit|merge` (operator 2026-09-25, spec Y: "Finish, don't start"; agent/plans/PLAN-stop-hook-focus-mode.md; the verb was `--focus` until agent/plans/PLAN-stop-hook-effort.md made it a phase). A phase only parks work and never adds a block. What stays is what protects the PR: CI red, a dead watch, unread reports, STATE.md near compaction and hook integrity.
 
 THE EFFORT LEVEL RUNS FIRST (wl_effort, agent/plans/PLAN-stop-hook-effort.md): it turns each check into a block, an advisory or nothing, and these profiles then park what remains. The FLOOR that blocks at every level lives in wl_floor, beside CORE, and is sealed the same way.
 
   PR_LOOP   the checkout is on the one-plan-per-PR loop (`wl_prscope.loop_state`, kind other than off-loop; operator ruling 2026-10-03, agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4). The hook blocks only on the live PR's plan set, its CI and reviews, the items on that set's epics and the loop's own duties; every other check is parked and named in one queued line.
 
-  LANDING_TREE  the stop runs in the landing tree (agent/plans/PLAN-simple-two-tree-loop.md B2). The phase-driven wind-down reads the tree role instead: the landing tree's job is to land the one PR, so it keeps FOCUS's PR protection plus the loop's duties (the landing state machine's step rides `loop-next`) and parks the checks that start new work.
+  LANDING_TREE  the stop runs in the landing tree (agent/plans/PLAN-simple-two-tree-loop.md B2). The landing tree's job is to land the one PR, so it keeps the PR protection (_PR_GUARD) plus the loop's duties (the landing state machine's step rides `loop-next`) and parks the checks that start new work.
 
-`profile_for` picks one: LANDING_TREE by the tree role first; FOCUS over CAP_WAIT, and both over PR_LOOP, since each is a narrower declaration. FOCUS is the operator's explicit one, and its judge skip already covers the cap wait's. In the development tree a phase selects nothing: that tree always builds.
+`profile_for` picks one: LANDING_TREE by the tree role first, then CAP_WAIT over PR_LOOP, the narrower declaration. The development tree always builds. The phase verb and its FOCUS profile were deleted with agent/plans/PLAN-simple-two-tree-loop.md B10; the tree role replaced them.
 
-A TURBO BATCH BUILDING LOCALLY narrows PR_LOOP by one check, the red CI (operator ruling 2026-10-13). That set and its predicate live in wl_checks beside the turbo arm (`TURBO_BUILD_PARKS`, `turbo_build_parks`), as `TURBO_KEEPS` does, because the predicate reads the queue settings and the plan boxes and this module reads nothing. FOCUS governs there too: an active focus parks nothing of it.
+SEALED. `.ci/policy/worklist-env-registry.json` lists this file under `sealed_modules`: it reads no environment variable and imports only the standard library, and `FOCUS_PR_TTL_S` is pinned as a literal. A knob that retuned a keep-list would be exactly the escape hatch the roster rules out.
 
-SEALED. `.ci/policy/worklist-env-registry.json` lists this file under `sealed_modules`: it reads no environment variable and imports only the standard library, and `FOCUS_BATCH_MIN` / `FOCUS_MAX_HOURS` are pinned as literals. A knob that retuned a keep-list would be exactly the escape hatch the roster rules out.
-
-EACH KEY LITERAL APPEARS EXACTLY ONCE IN THIS FILE, so every mutation control that removes one line (`mutated_hook` asserts the count is 1) is unambiguous, and the producer scan in test_wl_cap_wait.py c9 / test_wl_focus.py f13 stays meaningful. `pr-finish` is kept by several profiles in different tiers, so it is named once through `_PR_FINISH`; `defer-expired` likewise through `_DEFER_EXPIRED`.
+EACH KEY LITERAL APPEARS EXACTLY ONCE IN THIS FILE, so every mutation control that removes one line (`mutated_hook` asserts the count is 1) is unambiguous, and the producer scan in test_wl_cap_wait.py c9 stays meaningful. `pr-finish` is kept by several profiles in different tiers, so it is named once through `_PR_FINISH`; `defer-expired` likewise through `_DEFER_EXPIRED`.
 """
 
-import datetime
-import re
 from typing import NamedTuple
 
 
@@ -35,7 +30,7 @@ class Profile(NamedTuple):
     compaction_keys: frozenset  # kept only when compaction is imminent
 
 
-# The pr-babysit finish line. FOCUS keeps it outright; CAP_WAIT keeps only its always-tier HOOK BUG branch (finding 3 of the focus plan: a blind finish line must say so even in a cap wait).
+# The pr-babysit finish line. PR_LOOP and LANDING_TREE keep it outright; CAP_WAIT keeps only its always-tier HOOK BUG branch (a blind finish line must say so even in a cap wait).
 _PR_FINISH = "pr-finish"
 
 # Shared by both profiles: what the lead CAN and MUST act on even while told to wait.
@@ -96,8 +91,8 @@ _CAP_WAIT_ONLY = frozenset(
         "undefaulted",
     }
 )
-# Focus's own additions: the checks that protect the PR itself.
-_FOCUS_ONLY = frozenset(
+# The checks that protect the PR itself, kept by both loop profiles.
+_PR_GUARD = frozenset(
     {
         "ci-red",
         "ci-unreadable",
@@ -105,8 +100,7 @@ _FOCUS_ONLY = frozenset(
         "pr-stale",
         "diverged",
         "bg-report",
-        "focus-pr-items",
-        # Review Complete is a required check again (operator ruling 2026-10-03): an unanswered PR review or a failed review run holds the merge, so it blocks during a PR wind-down too.
+        # Review Complete is a required check again (operator ruling 2026-10-03): an unanswered PR review or a failed review run holds the merge, so it blocks in the landing tree too.
         "pr-review",
     }
 )
@@ -116,7 +110,7 @@ _LOOP_DUTIES = frozenset(
     {
         "open-items",
         "loop-next",
-        # Session hygiene, not plan scope (2026-10-24): twelve hung wait loops a sub-agent armed lived for hours while every stop printed "Stood down: bg-orphan x158". The shells are this session's own process tree on every PR, so the loop keeps the check. FOCUS and CAP_WAIT still park it, as their plans' hygiene tables list it.
+        # Session hygiene, not plan scope (2026-10-24): twelve hung wait loops a sub-agent armed lived for hours while every stop printed "Stood down: bg-orphan x158". The shells are this session's own process tree on every PR, so the loop keeps the check. CAP_WAIT still parks it, as its plan's hygiene table lists it.
         "bg-orphan",
     }
 ) | {_DEFER_EXPIRED}
@@ -135,35 +129,32 @@ _PR_LOOP_ONLY = _LOOP_DUTIES | _BUILD_ONLY
 CAP_WAIT = Profile(
     "cap-wait", CORE | _CAP_WAIT_ONLY, PREFIXES, frozenset({_PR_FINISH}), COMPACTION_KEYS
 )
-FOCUS = Profile("focus", CORE | _FOCUS_ONLY | {_PR_FINISH}, PREFIXES, frozenset(), COMPACTION_KEYS)
 # STATE.md freshness is a loop duty at every band (ruling 1d), so the compaction keys are full keeps here rather than late-band ones.
 PR_LOOP = Profile(
     "pr-loop",
-    CORE | _FOCUS_ONLY | _PR_LOOP_ONLY | COMPACTION_KEYS | {_PR_FINISH},
+    CORE | _PR_GUARD | _PR_LOOP_ONLY | COMPACTION_KEYS | {_PR_FINISH},
     PREFIXES,
     frozenset(),
     frozenset(),
 )
-# THE LANDING TREE (agent/plans/PLAN-simple-two-tree-loop.md B2): the wind-down FOCUS declared by a phase is now the landing tree's standing profile, read from the tree role. It keeps what protects the PR and the loop's duties (the landing state machine's step rides `loop-next`), and parks what starts new work. STATE.md freshness is a loop duty, as in PR_LOOP.
+# THE LANDING TREE (agent/plans/PLAN-simple-two-tree-loop.md B2): the landing tree's standing profile, read from the tree role. It keeps what protects the PR and the loop's duties (the landing state machine's step rides `loop-next`), and parks what starts new work. STATE.md freshness is a loop duty, as in PR_LOOP.
 LANDING_TREE = Profile(
     "landing",
-    CORE | _FOCUS_ONLY | _LOOP_DUTIES | COMPACTION_KEYS | {_PR_FINISH},
+    CORE | _PR_GUARD | _LOOP_DUTIES | COMPACTION_KEYS | {_PR_FINISH},
     PREFIXES,
     frozenset(),
     frozenset(),
 )
-PROFILES = (CAP_WAIT, FOCUS, PR_LOOP, LANDING_TREE)
+PROFILES = (CAP_WAIT, PR_LOOP, LANDING_TREE)
 # The tree roles of wl_prscope, repeated here because this module imports nothing.
 ROLE_LANDING = "landing"
 ROLE_DEVELOPMENT = "development"
 
 
-def profile_for(role, focus, cap_wait, on_loop):
-    """The stand-down profile of one stop, None for the full battery. The tree role decides first (agent/plans/PLAN-simple-two-tree-loop.md B2): the landing tree always stands down to LANDING_TREE, and the development tree never to FOCUS, since it always builds. A phase (`focus`) still selects FOCUS in a checkout with no landing record until B10 deletes `--phase`. Then the cap wait, then the PR loop."""
+def profile_for(role, cap_wait, on_loop):
+    """The stand-down profile of one stop, None for the full battery. The tree role decides first (agent/plans/PLAN-simple-two-tree-loop.md B2): the landing tree always stands down to LANDING_TREE. Then the cap wait, then the PR loop."""
     if role == ROLE_LANDING:
         return LANDING_TREE
-    if focus and role != ROLE_DEVELOPMENT:
-        return FOCUS
     if cap_wait:
         return CAP_WAIT
     return PR_LOOP if on_loop else None
@@ -180,7 +171,7 @@ def keeps(profile, key, always, compaction_due):
 
 
 def parked_line(counts, cap=6):
-    """The parked keys in one phrase: the top `cap` by stops parked (`key xN`), then "+N more"; "nothing" when none. Shared by focus mode's end summary and the PR loop's queued line."""
+    """The parked keys in one phrase: the top `cap` by stops parked (`key xN`), then "+N more"; "nothing" when none. The PR loop's queued line."""
     counts = counts if isinstance(counts, dict) else {}
     ranked = sorted(counts.items(), key=lambda kv: (-int(kv[1] or 0), kv[0]))
     names = ", ".join("%s x%d" % (k, int(n or 0)) for k, n in ranked[:cap]) or "nothing"
@@ -189,93 +180,5 @@ def parked_line(counts, cap=6):
     return names
 
 
-# ---- the wind-down phases (`--phase babysit|merge`; `build` is the default and parks nothing) ----
-
-PHASE_MODES = ("babysit", "merge")
-# The phase every session is in until it declares a wind-down, and the value `--phase <me> build` writes to end one.
-BUILD = "build"
-# Advisories outside FOCUS_ADVISORY_KEYS are held and released as one digest at most this often.
-FOCUS_BATCH_MIN = 30
-# A focus older than this ends on its own (`why: expired`); re-issuing the verb renews it.
-FOCUS_MAX_HOURS = 24
-# The merged/closed read is cached this long per session.
+# The one PR read (wl_ci.pr_link) is cached this long per branch.
 FOCUS_PR_TTL_S = 180
-# Advisories released in full on every focused stop: they are about the PR or owed to someone else. `focus-pr-unreadable` (the merged/closed read went blind) is added to the plan's list: holding the one note that says focus may never end on its own would defeat it.
-FOCUS_ADVISORY_KEYS = frozenset(
-    {"ci-queue", "ci-report", "unread-reports", "ladder", "focus-ended", "focus-pr-unreadable"}
-) | frozenset({"commit-remind", "receipt-behind", "ci-hold"})
-# The second set above is the loop-speed reminders (agent/plans/PLAN-fast-loop.md Parts 2-4). None blocks, and a focused PR wind-down is exactly when a commit or a held push is owed. They are NOT in CORE.
-# A spawn declares babysit/merge fix work with `focus-fix:#<item-id>`.
-FOCUS_FIX_RE = re.compile(r"\bfocus-fix:#?([0-9a-f]{6,})\b")
-
-
-def advisory_kept(key):
-    """True when an advisory queue key is released in full on every focused stop (its base, before any `:<subject>`, is in FOCUS_ADVISORY_KEYS)."""
-    return str(key).split(":", 1)[0] in FOCUS_ADVISORY_KEYS
-
-
-def active_phase(focus_map, owned):
-    """The newest phase event over every owner key `owned(key)` accepts, or None when there is none or it is `build`.
-
-    `focus_map` is `Fold.phase` ({owner8: event}); `owned` is `lambda o: C.owned_by_me(o, session_id)`, so a proven lineage edge carries focus across compaction. An event without an owner never applies (the fold drops it too): `owned_by_me(None, ...)` is True, and an untagged focus would bind every session.
-    """
-    best = None
-    for owner, ev in (focus_map or {}).items():
-        if not owner or not isinstance(ev, dict) or not owned(owner):
-            continue
-        if best is None or (str(ev.get("at") or ""), int(ev.get("ns") or 0)) >= (
-            str(best.get("at") or ""),
-            int(best.get("ns") or 0),
-        ):
-            best = ev
-    if best is None or best.get("mode") not in PHASE_MODES:
-        return None
-    return best
-
-
-def pr_token(focus):
-    """`pr:<n>` for the focus's PR, or "" while the PR is not known yet."""
-    pr = (focus or {}).get("pr")
-    return "pr:%s" % pr if pr not in (None, "", 0) else ""
-
-
-def pr_linked(text, focus):
-    """True when an item's text carries the focus PR's `pr:<n>` token (as a whole token: pr:54 is not pr:543)."""
-    tok = pr_token(focus)
-    if not tok:
-        return False
-    if isinstance(text, dict):
-        text = text.get("text") or text.get("line") or ""
-    return re.search(r"(?<![\w:])%s(?![0-9])" % re.escape(tok), str(text or "")) is not None
-
-
-def _parse(stamp):
-    try:
-        dt = datetime.datetime.fromisoformat(str(stamp))
-    except ValueError:
-        return None
-    return dt if dt.tzinfo else dt.replace(tzinfo=datetime.UTC)
-
-
-def age_hours(focus, now=None):
-    """Hours since the focus event was written, or None when its stamp does not parse."""
-    at = _parse((focus or {}).get("at") or "")
-    if at is None:
-        return None
-    now = now or datetime.datetime.now(datetime.UTC)
-    return (now - at).total_seconds() / 3600.0
-
-
-def expired(focus, now=None):
-    """True when the focus is older than FOCUS_MAX_HOURS."""
-    h = age_hours(focus, now)
-    return h is not None and h >= FOCUS_MAX_HOURS
-
-
-def batch_due(sd, now=None):
-    """True when the held advisories are due as one digest: the last release is FOCUS_BATCH_MIN old. The hook seeds `batch_at` when focus starts, so an unseeded doc holds rather than releasing everything on the first stop."""
-    at = _parse((sd or {}).get("batch_at") or "")
-    if at is None:
-        return False
-    now = now or datetime.datetime.now(datetime.UTC)
-    return (now - at).total_seconds() >= FOCUS_BATCH_MIN * 60

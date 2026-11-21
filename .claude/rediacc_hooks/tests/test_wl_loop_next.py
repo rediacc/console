@@ -1,6 +1,6 @@
 """loop-next: after the PR merges, the Stop hook holds the turn until the next branch, plan and PR exist (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7, box SC9; operator addition 2026-10-03).
 
-Every case drives the real hook against a fixture checkout and the shared gh shim of test_wl_focus, so `wl_prscope.loop_state` resolves the state from a real git branch and a planted PR read. Each fire case has a control that differs by one planted fact; the mutation control deletes the `merged` arm in a PRIVATE COPY of the hook.
+Every case drives the real hook against a fixture checkout and the shared gh shim of prloop_world, so `wl_prscope.loop_state` resolves the state from a real git branch and a planted PR read. Each fire case has a control that differs by one planted fact; the mutation control deletes the `merged` arm in a PRIVATE COPY of the hook.
 
 The next branch name is `commit_policy.next_branch_name` on today's local date, the clock `block_second_branch` names branches with; the hook does not take a frozen clock, so the expected name is computed here from the same date and the fixture's own branches.
 """
@@ -10,7 +10,7 @@ from __future__ import annotations
 import datetime
 import json
 
-from rediacc_hooks.tests import test_wl_focus as F
+from rediacc_hooks.tests import prloop_world as F
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_cap_wait import mutated_hook
 from rediacc_hooks.tests.test_wl_ci_status import ci_job, ci_running, write_exec

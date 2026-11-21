@@ -2318,11 +2318,6 @@ Query:
 
 Session state:
   --brief <me> <text...>        publish what you are changing right now
-  --phase <me> babysit|merge [--pr <n>] [--branch <b>]
-                                a PR wind-down: finish, don't start (plan,
-                                queue and hygiene pushes park, writer spawns
-                                are refused); `--phase <me> build` ends it,
-                                `--phase <me>` prints the state
   --state <me>                  rewrite agent/<me>/STATE.md (body on stdin)
   --loop <me> <next> <count> <what...>   declare a scheduled loop
 
@@ -3111,27 +3106,6 @@ N_CAP_WAIT_COMPACTION = (
     "(Kept although every writer slot is full: the context is in its last band before auto-compact, "
     "and the recovery document must be current before it is summarised.)"
 )
-# THE WIND-DOWN PHASE (agent/plans/PLAN-stop-hook-focus-mode.md; `--phase` since agent/plans/PLAN-stop-hook-effort.md). The allow line of a stop in a babysit or merge phase: mode, PR, since, parked checks, held advisories, and the session prefix for the build command.
-N_FOCUS = (
-    "PHASE %s (PR #%s since %s): %d check(s) parked, %d advisory(ies) held; CI red, dead "
-    "watches, unread reports, STATE.md near compaction and hook integrity still block. Ends on "
-    "--phase %s build or when the PR merges."
-)
-# The one-line parked summary on the stop that detects the end: why, the parked keys (top 6 then "+N more"), held advisories, refused spawns.
-N_FOCUS_ENDED = (
-    "PHASE ENDED (%s): parked for %s: %s; %d advisory(ies) held, draining from this stop; %d "
-    "writer spawn(s) refused. The full battery applies from this stop."
-)
-# Appended to a STATE.md demand focus KEPT because compaction is imminent.
-N_FOCUS_COMPACTION = (
-    "(Kept although a wind-down phase is on: the context is in its last band before auto-compact, and "
-    "the recovery document must be current before it is summarised.)"
-)
-# Advisory: the merged/closed read failed, so focus continues (the 24-hour cap bounds it).
-N_FOCUS_PR_UNREADABLE = (
-    "phase: could not read whether PR #%s on %s merged (%s); the phase continues until the PR "
-    "reads merged, --phase <me> build, or the %d-hour cap."
-)
 # THE ONE-PLAN-PER-PR LOOP (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4 and 7). N_PR_SCOPE is the one queued line every stop on the loop carries, on blocks and allows alike, because a reader with no memory of the ruling learns it from this line: who (one PR_SCOPE_WHO_* rendered), the queued item count, the other queued plan count, the next plan, the stood-down checks (PR_SCOPE_STOOD or ""), the session prefix.
 N_PR_SCOPE = (
     "%(who)s One plan per PR: only this PR's plan, its prerequisites and the loop's duties block. "
@@ -3314,41 +3288,6 @@ N_SETTINGS_PROBLEM = (
     "SETTINGS PROBLEM: agent/plans/QUEUE.md `## Settings` resolved to effort %s with these problems, "
     "each falling back to its fail-safe value (`npm run check:ci-plan-record` names them too):\n%s"
 )
-
-# The PostCompact line: a compacted session must know that writer spawns are refused.
-CTX_POSTCOMPACT_FOCUS = (
-    "PHASE %s IS ON (PR #%s on %s since %s): finish, don't start. Writer spawns are refused "
-    "except declared focus-fix work (`focus-fix:#<id>` naming an item carrying pr:%s). End it "
-    "with `.claude/hooks/stop/worklist.py --phase %s build`."
-)
-
-CLI_PHASE_USAGE = (
-    "usage: worklist.py --phase <me> babysit|merge [--pr <n>] [--branch <b>]\n"
-    "       worklist.py --phase <me> build\n"
-    "       worklist.py --phase <me>\n"
-    "\n"
-    "The session's phase (agent/plans/PLAN-stop-hook-effort.md). `build`, the default, parks\n"
-    "nothing. `babysit` and `merge` are a PR wind-down: finish, don't start. Running writers\n"
-    "and in-flight items finish; new writer spawns are refused except declared fix work\n"
-    "(`focus-fix:#<id>` in the spawn, naming an open item carrying pr:<n>). The Stop hook\n"
-    "parks plan, queue and hygiene pushes and keeps CI red, dead watches, unread reports,\n"
-    "STATE.md near compaction and hook integrity. A phase only parks; it never adds a block.\n"
-    "A wind-down ends on `build`, when the PR merges or closes, or after 24 hours. The branch\n"
-    "defaults to the checkout's and may not be main or a detached HEAD.\n"
-)
-CLI_PHASE_ON = (
-    "phase %s for %s: PR #%s on %s. Writer spawns are refused except `focus-fix:#<id>` "
-    "work naming an item that carries pr:%s; plan, queue and hygiene pushes park until "
-    "`--phase %s build` or the PR merges."
-)
-CLI_PHASE_PR_UNKNOWN = (
-    "phase: no open PR found for %s (%s); recorded with no PR number. The Stop hook fills it "
-    "in from the CI read once the PR exists."
-)
-CLI_PHASE_ENDED = "phase build for %s (the %s phase on PR #%s, since %s, ended)."
-CLI_PHASE_BUILD = "phase: build for %s; no wind-down to end."
-CLI_PHASE_STATUS = "phase: %s, PR #%s on %s since %s; %d check(s) parked so far."
-CLI_PHASE_REFUSED = "phase: %s"
 
 N_ROSTER_HONEST = (
     "ROSTER HONEST: %d writer(s)/%d, %d reader(s), next status due %s. Every item in flight is "

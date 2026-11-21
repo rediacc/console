@@ -373,10 +373,6 @@ def test_234_the_pr_review_nudge_names_draft_and_answer_on_an_unanswered_summary
     assert block == "", block
     assert "wl_prreview.py --draft" in note, note
     assert calls == [543], "the memo did not hold inside the TTL: %s" % calls
-    # Focus mode blocks too: `pr-review` is on wl_standdown._FOCUS_ONLY (Review Complete is required, operator ruling 2026-10-03).
-    block, note, _ = checks.prreview_nudge({}, PRR_INFO, check, focus=True, now=1000.0)
-    assert "wl_prreview.py --answer" in block, block
-    assert "pr-review" in wlfix.import_wl("wl_standdown")._FOCUS_ONLY
 
 
 def test_234b_a_failed_review_run_yields_the_investigate_line():

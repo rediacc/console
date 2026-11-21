@@ -91,10 +91,6 @@
       "block": "low",
       "advise": "low"
     },
-    "focus-pr-items": {
-      "block": "low",
-      "advise": "low"
-    },
     "defer-expired": {
       "block": "smart",
       "advise": "low"
@@ -337,12 +333,6 @@
       "advise": "low"
     },
     "ci-hold": {
-      "advise": "low"
-    },
-    "focus-ended": {
-      "advise": "low"
-    },
-    "focus-pr-unreadable": {
       "advise": "low"
     },
     "prscope-broken": {

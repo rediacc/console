@@ -383,7 +383,6 @@ def test_receipt_behind_and_ci_hold_ride_the_allow_queue_only():
         assert 'vadd("%s"' % key not in source
         assert re.search(r'"%s",\s*M\.%s %%' % (key, text), source), key
     for key in ("receipt-behind", "ci-hold"):
-        assert wl_standdown.advisory_kept(key)
         assert key not in wl_standdown.CORE
 
 

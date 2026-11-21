@@ -468,7 +468,6 @@ def drive_l1(fix) -> L1Drive:
         ("--list", "--list --open @WHO@", "l1-list-item"),
         ("--state", "--state @WHO@", "STATE.md section written"),
         ("--loop", "--loop @WHO@ 2099-01-01T00:00:00Z 1 l1-label", "loop declared"),
-        ("--phase", "--phase @WHO@ babysit --branch l1-pr-branch --pr 1", "phase babysit for"),
         ("--brief", "--brief @WHO@ l1-brief-text", "brief recorded"),
         ("--intent", "--intent @WHO@ l1-intent-text --for 30", "intent recorded"),
         ("--reap", "--reap @WHO@ l1task9", "reaped 1 task"),

@@ -1032,7 +1032,7 @@ def control_effort_table(tmp):
         check("the rule reds with %s removed" % key, judged(str(path)), 1)
 
 
-# The gh shim of test_wl_focus.py, whose imports reach pytest: this file runs under a bare python3.
+# The gh shim of rediacc_hooks/tests/prloop_world.py, whose imports reach pytest: this file runs under a bare python3.
 GH_SHIM = """#!/bin/bash
 for a in "$@"; do
     case "$a" in
@@ -1304,13 +1304,6 @@ def control_real_hook(tmp):
     inside = {**json.loads(fix.event()), "cwd": str(lease)}
     got = hook_stop(fix, env, json.dumps(inside))
     check("a stop from inside the lease is not this block", needle in got.out, False)
-
-    phase = ("--phase", wlfix.ME, "babysit", "--branch", "pub", "--pr", "543")
-    check("the phase is declared", fix.cli(*phase).rc, 0)
-    got = hook_stop(fix, env)
-    check("a babysit phase keeps the block", got.decision, "block")
-    check("a babysit phase keeps the text", needle in got.out, True)
-    check("the phase ends", fix.cli("--phase", wlfix.ME, "build").rc, 0)
 
     write_record(fix.proj, "w1", owner="cafe1234", agent="wa1")
     got = hook_stop(fix, env)

@@ -5,7 +5,7 @@
 
 Auto-discovered by TAILED in .claude/rediacc_hooks/tests/test_hooks_delegates.py.
 
-A fixture repository holds a committed copy of these hooks, a development branch in its main checkout and a linked sibling tree, `console-landing`, on the landing branch. The landing record (`rediacc-landing.json` in the common git dir, the file commit_policy.write_landing_record writes) binds the sibling. With the record, a session rooted in the sibling resolves the main checkout's worklist path, store and STATE.md, its transcripts read live from the sibling's own project directory, and a phase it writes is what pr_freeze reads for the main checkout. Without the record every answer is the sibling's own, exactly as before the box. Two mutants (wl_core.project_root and worklist.py's twin each without the landing redirect) turn the mapping controls red.
+A fixture repository holds a committed copy of these hooks, a development branch in its main checkout and a linked sibling tree, `console-landing`, on the landing branch. The landing record (`rediacc-landing.json` in the common git dir, the file commit_policy.write_landing_record writes) binds the sibling. With the record, a session rooted in the sibling resolves the main checkout's worklist path, store and STATE.md, its transcripts read live from the sibling's own project directory. Without the record every answer is the sibling's own, exactly as before the box. Two mutants (wl_core.project_root and worklist.py's twin each without the landing redirect) turn the mapping controls red.
 """
 
 import ast
@@ -363,10 +363,6 @@ def run():
     check("no record: projects_dir is the main directory", t0.get("dir"), str(main_proj))
     check("no record: a teammate under the sibling is not seen", t0.get("fresh"), None)
 
-    done = worklist(tmp, main, main, "--phase", ME, "merge", "--pr", "7", CLAUDE_PROJECT_DIR=main)
-    check("no record: --phase from main defaults to main's HEAD", DEV_BRANCH in done.stdout, True)
-    worklist(tmp, main, main, "--phase", ME, "build", CLAUDE_PROJECT_DIR=main)
-
     # ---- the record binds the sibling
     bind(main, landing)
     p_main = paths(tmp, stop, main)
@@ -416,23 +412,6 @@ def run():
             str(land_proj / (SID + ".jsonl")),
         )
 
-    # A phase written from the sibling, with no --branch: the sibling's own HEAD.
-    done = worklist(
-        tmp, landing, landing, "--phase", ME, "babysit", "--pr", "7", CLAUDE_PROJECT_DIR=landing
-    )
-    check(
-        "record: --phase from the sibling names its own branch", LANDING_BRANCH in done.stdout, True
-    )
-    worklist(tmp, landing, landing, "--phase", ME, "build", CLAUDE_PROJECT_DIR=landing)
-    # From the development tree the default is the record's branch, not main's HEAD.
-    done = worklist(tmp, main, main, "--phase", ME, "merge", "--pr", "7", CLAUDE_PROJECT_DIR=main)
-    check(
-        "record: --phase from main defaults to the landing branch",
-        LANDING_BRANCH in done.stdout and DEV_BRANCH not in done.stdout,
-        True,
-    )
-    worklist(tmp, main, main, "--phase", ME, "build", CLAUDE_PROJECT_DIR=main)
-
     # ---- follow-ups: each store-root read of a landing session
     beef = land_proj / "beef0000-0000-4000-8000-000000000000.jsonl"
     beef.write_text("{}\n", encoding="utf-8")
@@ -466,10 +445,6 @@ def run():
     f1 = followups(tmp, stop, main)
     check("record: main reads its own branch", f1.get("store_branch"), DEV_BRANCH)
     check("record: main's own_tree is main", f1.get("own_tree"), str(main))
-    worklist(
-        tmp, landing, landing, "--phase", ME, "babysit", "--pr", "7", CLAUDE_PROJECT_DIR=landing
-    )
-    worklist(tmp, landing, landing, "--phase", ME, "build", CLAUDE_PROJECT_DIR=landing)
     unbind(main)
     f2 = followups(tmp, stop, landing)
     check("no record: the sibling's own_tree is its root", f2.get("own_tree"), str(landing))

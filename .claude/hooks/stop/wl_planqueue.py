@@ -992,11 +992,11 @@ def moved_problems(root) -> list[str]:
 
 
 # ------------------------------------------------------------ the in-flight block
-# Operator order 2026-10-06: "agent/plans/QUEUE.md should show the plans for the current 'working on it' ... valid for focus, turbo and other modes as well." `## In flight` sits between `## Settings` and `## Promoted` and answers what the loop is doing NOW: the effective switches, every active focus, the live branch and its PR, the PR's plan set with box progress and how
+# Operator order 2026-10-06: "agent/plans/QUEUE.md should show the plans for the current 'working on it' ... valid for focus, turbo and other modes as well." `## In flight` sits between `## Settings` and `## Promoted` and answers what the loop is doing NOW: the effective switches, the live branch and its PR, the PR's plan set with box progress and how
 # each plan got there, the branch's work that belongs to no plan in that set, live writers and leased items, and the next plan with the reason it is next.
 #
-# RUNTIME STATE, NOT A LEDGER. Its inputs (the PR, the focus events, the roster, the leases) live outside the tracked tree, so a clean CI checkout cannot reproduce it, and it is never compared: `render` copies every byte outside the generated block, so `problems` and `--update` neither read nor rewrite this one (`test_inflight_block_is_never_compared_by_the_queue_gate` in .claude/rediacc_hooks/tests/test_wl_queue_settings.py proves both). `refresh_inflight` is its only writer: the Stop hook
-# (`wl_checks.run_stop`) and the verbs that change a mode (`worklist.py --queue-set`, `--phase`) call it, and a merge or a branch cut is picked up by the stop that follows it. The block carries no clock, so a stop that changed nothing writes nothing. A stop renders its own session's writers; leases and focus events are read for every session.
+# RUNTIME STATE, NOT A LEDGER. Its inputs (the PR, the roster, the leases) live outside the tracked tree, so a clean CI checkout cannot reproduce it, and it is never compared: `render` copies every byte outside the generated block, so `problems` and `--update` neither read nor rewrite this one (`test_inflight_block_is_never_compared_by_the_queue_gate` in .claude/rediacc_hooks/tests/test_wl_queue_settings.py proves both). `refresh_inflight` is its only writer: the Stop hook
+# (`wl_checks.run_stop`) and the verb that changes a mode (`worklist.py --queue-set`) calls it, and a merge or a branch cut is picked up by the stop that follows it. The block carries no clock, so a stop that changed nothing writes nothing. A stop renders its own session's writers; leases are read for every session.
 
 INFLIGHT_HEADING = "## In flight"
 INF_BEGIN = "<!-- queue:inflight:begin -->"
@@ -1005,12 +1005,11 @@ _INF_BLOCK = re.compile(
     r"(?ms)^%s[ \t]*$\n?(.*?)^%s[ \t]*$" % (re.escape(INF_BEGIN), re.escape(INF_END))
 )
 INFLIGHT_INTRO = (
-    "What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. "
+    "What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set`. "
     "It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit."
 )
 # The labels the mode line is read back by (`inflight_mode`).
 MODE_LABEL = "- Mode: "
-FOCUS_LABEL = "- Phase: "
 _LIST_MAX = 12
 
 
@@ -1036,16 +1035,6 @@ class EpicLine:
 
 
 @dataclasses.dataclass(frozen=True)
-class FocusLine:
-    owner: str
-    mode: str
-    pr: str
-    branch: str
-    at: str
-    expired: bool = False
-
-
-@dataclasses.dataclass(frozen=True)
 class TreeLine:
     """One tree of a landing record: its role, the branch checked out there, and its PR (`pr` 0 when it has none, `state` the PR's state when it has one)."""
 
@@ -1060,7 +1049,6 @@ class InFlight:
     """Everything the block shows. `writers` is None when the live writers could not be counted."""
 
     settings: Settings = dataclasses.field(default_factory=Settings)
-    focus: tuple[FocusLine, ...] = ()
     kind: str = ""
     branch: str = ""
     pr: int = 0
@@ -1171,25 +1159,6 @@ def landing_trees(root, worklist, session_id, pr_read=None) -> tuple[TreeLine, .
 def render_inflight(inf: InFlight) -> str:
     """The lines between the in-flight markers."""
     out = [mode_line(inf.settings)]
-    if inf.focus:
-        out.append(
-            FOCUS_LABEL
-            + "; ".join(
-                "%s on PR #%s (branch %s, session %s, since %s%s)"
-                % (
-                    f.mode,
-                    f.pr or "?",
-                    f.branch or "?",
-                    f.owner,
-                    f.at or "?",
-                    ", past its 24-hour limit" if f.expired else "",
-                )
-                for f in inf.focus
-            )
-            + "."
-        )
-    else:
-        out.append(FOCUS_LABEL + "build.")
     import wl_prscope as P
 
     if inf.kind == P.LIVE:
@@ -1318,12 +1287,11 @@ def _branch_epic_commits(root, kind) -> dict[str, int]:
 
 
 def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=None) -> InFlight:
-    """The `InFlight` for the checkout at `root`, from the same readers the Stop hook acts on: `wl_prscope.loop_state` (the PR, its plan set via `plan_gate.pr_plan_set`, the next plan), the PR body for each plan's source, the focus events and leases of the store's fold, `wl_epic.load_epics` with the branch's `PR-TASK:` trailers.
+    """The `InFlight` for the checkout at `root`, from the same readers the Stop hook acts on: `wl_prscope.loop_state` (the PR, its plan set via `plan_gate.pr_plan_set`, the next plan), the PR body for each plan's source, the leases of the store's fold, `wl_epic.load_epics` with the branch's `PR-TASK:` trailers.
     `fold` and `loop` are the stop's own when it has them; `writers` is the live writer ids, None when not counted."""
     import wl_ci
     import wl_epic
     import wl_prscope as P
-    import wl_standdown
     import wl_store as S
 
     root = pathlib.Path(root)
@@ -1334,20 +1302,6 @@ def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=No
     if loop is None:
         # The loop belongs to the tree this session runs in (a landing session maps its store to the main checkout, so the mapped root would read the development tree's role).
         loop = P.loop_state(S.own_tree(root), worklist, session_id)
-    focus = []
-    for owner, ev in sorted((fold.phase or {}).items()):
-        if not isinstance(ev, dict) or ev.get("mode") not in wl_standdown.PHASE_MODES:
-            continue
-        focus.append(
-            FocusLine(
-                str(owner)[:8],
-                str(ev.get("mode")),
-                str(ev.get("pr") or ""),
-                str(ev.get("branch") or ""),
-                str(ev.get("at") or ""),
-                bool(wl_standdown.expired(ev)),
-            )
-        )
     body = None
     if loop.kind == P.LIVE and loop.branch:
         nodes, err = wl_ci.pr_link(str(root), worklist, session_id, loop.branch)
@@ -1416,7 +1370,6 @@ def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=No
             when = "starts on branch %s" % (loop.next_branch or "<next MMDD-N>")
     return InFlight(
         settings=settings,
-        focus=tuple(focus),
         kind=loop.kind,
         branch=loop.branch,
         pr=loop.pr,

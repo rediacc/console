@@ -339,7 +339,7 @@ def _plan_hold(fold, item_id, session_id):
 
 
 def _refresh_inflight(sid):
-    """Re-render agent/plans/QUEUE.md's in-flight block after a verb changed a mode (`--queue-set`, `--phase`). The writers are the PreToolUse guard's estimate, since a verb has no Stop event. Runtime state only: a failure is one stderr line, never the verb's exit code."""
+    """Re-render agent/plans/QUEUE.md's in-flight block after a verb changed a mode (`--queue-set`). The writers are the PreToolUse guard's estimate, since a verb has no Stop event. Runtime state only: a failure is one stderr line, never the verb's exit code."""
     try:
         import wl_planqueue as PQ
         import wl_roster
@@ -358,93 +358,6 @@ def _refresh_inflight(sid):
             "in-flight block of agent/plans/QUEUE.md not refreshed: %s: %s\n"
             % (type(exc).__name__, exc)
         )
-
-
-def _phase_cli(argv):
-    """`worklist.py --phase <me> babysit|merge [--pr <n>] [--branch <b>]`, `--phase <me> build`, or `--phase <me>` for the state (agent/plans/PLAN-stop-hook-effort.md; the wind-down itself is agent/plans/PLAN-stop-hook-focus-mode.md section 1)."""
-    import wl_standdown
-
-    me = argv[0] if argv else ""
-    if not C.PREFIX_RE.match(me or "") or len(argv) > 6:
-        _die2(M.CLI_PHASE_USAGE)
-    _identity_or_die(me, _die2)
-    root = C.project_root(C.project_start())
-    wl = C.worklist_for(C.project_start())
-    fold = S.load(wl, sync=False)
-    sid = C.resolve_session_id() or me
-    cur = wl_standdown.active_phase(fold.phase, lambda o: C.owned_by_me(o, sid))
-    if len(argv) == 1:
-        if cur is None:
-            print(M.CLI_PHASE_BUILD % me)
-            return
-        parked = (S.load_state(wl, sid).get("standdown") or {}).get("parked") or {}
-        print(
-            M.CLI_PHASE_STATUS
-            % (cur.get("mode"), cur.get("pr") or "?", cur.get("branch"), cur.get("at"), len(parked))
-        )
-        return
-    mode = argv[1]
-    if mode == wl_standdown.BUILD:
-        if len(argv) != 2:
-            _die2(M.CLI_PHASE_USAGE)
-        if cur is None:
-            print(M.CLI_PHASE_BUILD % me)
-            return
-        S.phase_event(
-            wl,
-            me,
-            me,
-            wl_standdown.BUILD,
-            branch=cur.get("branch"),
-            pr=cur.get("pr"),
-            why="operator",
-        )
-        print(M.CLI_PHASE_ENDED % (me, cur.get("mode"), cur.get("pr") or "?", cur.get("at")))
-        _refresh_inflight(sid)
-        return
-    if mode not in wl_standdown.PHASE_MODES:
-        _die2(M.CLI_PHASE_USAGE)
-    pr, branch, i = None, "", 2
-    while i < len(argv):
-        if argv[i] == "--pr" and i + 1 < len(argv) and argv[i + 1].lstrip("#").isdigit():
-            pr = int(argv[i + 1].lstrip("#"))
-        elif argv[i] == "--branch" and i + 1 < len(argv) and argv[i + 1].strip():
-            branch = argv[i + 1].strip()
-        else:
-            _die2(M.CLI_PHASE_USAGE)
-        i += 2
-    # The raw ref, not C.git_branch's slug: this names the PR's head ref on GitHub. Read from the session's own checkout, never from `root`: the landing tree's root is the main checkout, whose HEAD is the development branch. A development-tree session winding down names the landing PR's branch, the one PR a babysit or merge phase can mean while a landing record binds a tree (agent/plans/PLAN-two-track-merge-dev.md, box LT14).
-    if not branch:
-        tree = C.checkout_root(C.project_start())
-        rec = C.landing_record(tree)
-        if rec is not None and os.path.realpath(str(tree)) != os.path.realpath(rec["path"]):
-            branch = rec["branch"]
-        else:
-            branch = C._git(tree, "symbolic-ref", "--short", "-q", "HEAD") or ""
-    if not branch or branch in ("main", "master", "HEAD"):
-        _die2(
-            M.CLI_PHASE_REFUSED
-            % (
-                "a %s phase needs a PR branch, and %s is not one (pass --branch <pr-head-ref>)"
-                % (mode, branch or "a detached HEAD")
-            )
-        )
-    note = ""
-    if pr is None:
-        import wl_gh
-
-        data, err = wl_gh.call(
-            ["pr", "list", "--head", branch, "--state", "open", "--json", "number"], cwd=root
-        )
-        if not err and isinstance(data, list) and data and isinstance(data[0], dict):
-            pr = data[0].get("number")
-        else:
-            note = M.CLI_PHASE_PR_UNKNOWN % (branch, err or "gh returned no open PR")
-    S.phase_event(wl, me, me, mode, branch=branch, pr=pr, why="operator")
-    if note:
-        print(note)
-    print(M.CLI_PHASE_ON % (mode, me, pr or "?", branch, pr or "<n>", me))
-    _refresh_inflight(sid)
 
 
 # Bounded wait for the Stop payload. Long enough for a slow writer, short enough that a missing payload fails the hook instead of stalling the session.
@@ -2219,17 +2132,11 @@ def _item_cli(argv, worklist):
                         "session. Release that lease first"
                         % (", ".join("#" + r["id"] for r in _holders), wl_roster.HOLD_MAX)
                     )
-            import wl_standdown
-
             _qsid = C.resolve_session_id() or me
-            # FOCUS MODE (agent/plans/PLAN-stop-hook-focus-mode.md section 1): starting the work is exactly what focus forbids, so the free-slot refusal would leave work refused at spawn with nowhere to park. The spawn guard's own message says to park it here.
-            _focused = (
-                wl_standdown.active_phase(fold.phase, lambda o: C.owned_by_me(o, _qsid)) is not None
-            )
             busy = wl_roster.live_writers_estimate(os.getcwd(), me)
             _writer_cap = wl_roster.writer_cap(C.project_root(C.project_start()))
             # HELD BY A LIVE PLAN (agent/plans/PLAN-plan-priority-concurrency.md section 5b, T9): the spawn guard refuses this item's writer while a live exclusive plan runs, or a live plan owns the same files, and its refusal text says to queue the work here. So a free slot does not refuse the lease then: the note is stamped HELD_BY:<plan>, and queue-slot names the item once the holder finishes.
-            if not _hold and not _focused and (busy is None or len(busy) < _writer_cap):
+            if not _hold and (busy is None or len(busy) < _writer_cap):
                 _held_by, _held_why = _plan_hold(fold, item_id, _qsid)
                 if _held_by:
                     print(
@@ -2237,12 +2144,7 @@ def _item_cli(argv, worklist):
                         "finishes." % (_held_why, item_id, ", ".join(_held_by)),
                         file=sys.stderr,
                     )
-            if (
-                not _hold
-                and not _focused
-                and not _held_by
-                and (busy is None or len(busy) < _writer_cap)
-            ):
+            if not _hold and not _held_by and (busy is None or len(busy) < _writer_cap):
                 # A slot held for a writer about to be spawned is taken by SPAWNING that writer, or by the one bounded HOLD_FOR reservation above; an unmarked queue lease with a free slot is still refused.
                 die(
                     "#%s stays OPEN (not leased): worker:queue is only for writer work the cap forbids starting, and %s of %d "
@@ -3670,9 +3572,6 @@ def main():
                 ", covering " + ", ".join(covers) if covers else "",
             )
         )
-        return
-    if sys.argv[1:2] == ["--phase"]:
-        _phase_cli(sys.argv[2:])
         return
     if sys.argv[1:2] == ["--brief"]:
         # Same class as --loop above, same fix.

@@ -368,9 +368,8 @@ def test_evaluation_leaves_the_worktree_and_index_byte_identical(tmp_path):
 # ---- advisory, never blocking -------------------------------------------------
 
 
-def test_the_keys_are_focus_advisories_and_not_core_or_cap_wait():
+def test_the_keys_are_advisories_and_not_core():
     for key in ("commit-remind", "receipt-behind", "ci-hold"):
-        assert wl_standdown.advisory_kept(key), key
         assert key not in wl_standdown.CORE, "%s must not be a blocking core key" % key
 
 

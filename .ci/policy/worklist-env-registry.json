@@ -20,10 +20,9 @@
     },
     ".claude/hooks/stop/wl_standdown.py": {
       "literals": {
-        "FOCUS_BATCH_MIN": 30,
-        "FOCUS_MAX_HOURS": 24
+        "FOCUS_PR_TTL_S": 180
       },
-      "why": "the stand-down keep-lists (the cap-saturated wait and focus mode) decide which checks still block while the session is told to wait; a variable that retuned a list or the focus batch and expiry limits would be exactly the escape hatch the roster rules out"
+      "why": "the stand-down keep-lists (the cap-saturated wait, the PR loop and the landing tree) decide which checks still block while the session is told to wait; a variable that retuned a list or the PR-read cache would be exactly the escape hatch the roster rules out"
     },
     ".claude/hooks/stop/wl_floor.py": {
       "why": "the Stop hook's FLOOR, the checks that block at every effort level (agent/plans/PLAN-stop-hook-effort.md); a variable that shrank it would be the off switch the effort dial replaced, so the set is a literal here and .claude/config/effort.json may only mark its keys `floor`"

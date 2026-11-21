@@ -508,7 +508,9 @@ def test_l8c_inverse_an_expired_peer_lease_holds_nothing(wl):
 
 def test_l8m_without_the_held_branch_l8_is_refused_again(wl):
     held, _free = held_world(wl)
-    stop = private_stop(wl, "worklist.py", "                and not _held_by\n", "")
+    stop = private_stop(
+        wl, "worklist.py", "if not _hold and not _held_by and (busy", "if not _hold and (busy"
+    )
     wl.hook = stop / "worklist.py"
     got = wl.cli("--lease", wlfix.ME, held, "+60", "worker:queue")
     assert got.rc != 0, "l8m: l8 does not depend on the held branch: %s" % got.err[:400]

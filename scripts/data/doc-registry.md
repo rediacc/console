@@ -750,7 +750,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/lifecycle.py | PostCompact, PostToolUse, SessionStart | settings.json | py |
 | .claude/rediacc_hooks/model_invocation.py | (none) | via .claude/rediacc_hooks/guards/block_user_only_command.py | py |
 | .claude/rediacc_hooks/plan_gate.py | (none) | via .claude/hooks/post-bash/refresh_pr_body.py | py |
-| .claude/rediacc_hooks/pr_freeze.py | (none) | via .claude/hooks/stop/test-landing-store.py | py |
+| .claude/rediacc_hooks/pr_freeze.py | (none) | via .claude/rediacc_hooks/git/githooks.py | py |
 | .claude/rediacc_hooks/proc.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
 | .claude/rediacc_hooks/run_tests.py | (none) | via .claude/rediacc_hooks/hookio.py | py |
 | .claude/rediacc_hooks/runningscript.py | (none) | via .claude/rediacc_hooks/guards/block_bash_write_to_running_script.py | py |
@@ -764,6 +764,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/hookblocks.py | (none) | via .claude/rediacc_hooks/tests/test_hooks_fixtures.py | py |
 | .claude/rediacc_hooks/tests/hookcases.py | (none) | via .claude/rediacc_hooks/guards/block_long_sleep.py | py |
 | .claude/rediacc_hooks/tests/hooklabels.py | (none) | via .claude/rediacc_hooks/tests/hookblocks.py | py |
+| .claude/rediacc_hooks/tests/prloop_world.py | (none) | via .claude/hooks/stop/test-wl_worktrees.py | py |
 | .claude/rediacc_hooks/tests/regolden.py | (none) | via .claude/rediacc_hooks/tests/goldenio.py | py |
 | .claude/rediacc_hooks/tests/test_backup_push_predicate.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_bash_semantics.py | (none) | via pytest (testpaths) | py |
@@ -849,7 +850,6 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_wl_event_store.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_feedback_triage.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_first_touch.py | (none) | via pytest (testpaths) | py |
-| .claude/rediacc_hooks/tests/test_wl_focus.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_gh.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_guide_and_deferrals.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_wl_hints.py | (none) | via pytest (testpaths) | py |

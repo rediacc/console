@@ -2031,17 +2031,6 @@ def handle_post_compact(event):
             guided_slice(_fold, sid, None, (sid or "")[:8], root)
             or "  (nothing open, in flight or deferred)",
         )
-        # FOCUS MODE survives compaction in the store; the compacted session must know that writer spawns are refused.
-        _pc_focus = wl_standdown.active_phase(_fold.phase, lambda o: C.owned_by_me(o, sid))
-        if _pc_focus:
-            msg += "\n\n" + M.CTX_POSTCOMPACT_FOCUS % (
-                _pc_focus.get("mode"),
-                _pc_focus.get("pr") or "?",
-                _pc_focus.get("branch"),
-                _pc_focus.get("at"),
-                _pc_focus.get("pr") or "<n>",
-                (sid or "")[:8],
-            )
     # AFTER the briefing, on BOTH arms. Own section first is the point: a compacted session reads top-down, and the block it must act on is its own. On the missing arm this is the whole state content there is -- before sections, that arm returned none at all, so a compacted session sharing a checkout was told to reconstruct from nothing while a peer's section sat in the file
     # unread.
     if peers:
@@ -2268,14 +2257,13 @@ def prreview_runner(root, budget_s=PRREVIEW_BUDGET_S, call_timeout_s=PRREVIEW_CA
     return wl_gh.runner(root, timeout=call_timeout_s, budget_s=budget_s)
 
 
-def prreview_nudge(state_doc, info, check, runner=None, focus=False, now=None):
+def prreview_nudge(state_doc, info, check, runner=None, now=None):
     """(block_text, note_text, once_text) for the PR-level review on a head whose CI is GREEN. Each "" when there is nothing to say; `once_text` is a one-shot note (the unreadable one), the other note recurs while its condition stands.
 
     `check` is wl_prreview.check_state (a fake in tests), called as `check(pr, runner)` and memoised in `state_doc["prreview"]` per head for PRREVIEW_TTL_S. rc 1 (an unanswered summary or an unresolved finding thread) yields V_PR_REVIEW_UNANSWERED; a `failed-run` Review Complete token yields V_PR_REVIEW_FAILED_RUN; both join into one text. rc 2 yields N_PR_REVIEW_UNREADABLE once per head and nothing else.
 
-    BOUNDED LIKE ci-red: the same finding blocks at most wl_ci.CI_MAX_BLOCKS stops per signature (head, rc, token, summary, unresolved threads), then rides the advisory queue on every stop. Focus mode keeps it blocking: `pr-review` is on wl_standdown._FOCUS_ONLY, because Review Complete is a required check and an unanswered review holds the merge (operator ruling 2026-10-03).
+    BOUNDED LIKE ci-red: the same finding blocks at most wl_ci.CI_MAX_BLOCKS stops per signature (head, rc, token, summary, unresolved threads), then rides the advisory queue on every stop. The loop profiles keep it blocking: `pr-review` is on wl_standdown._PR_GUARD, because Review Complete is a required check and an unanswered review holds the merge (operator ruling 2026-10-03).
     """
-    del focus  # kept for callers; focus mode blocks like any other stop (wl_standdown._FOCUS_ONLY)
     pr, head = (info or {}).get("pr"), str((info or {}).get("sha") or "")
     if not pr or not head:
         return "", "", ""
@@ -2390,8 +2378,6 @@ PRIORITY_LADDER = (
                 "open-items",
                 # An owned open item quiet past the resolve rung with nobody on it, which no other check names this stop (wl_storestatus, agent/plans/PLAN-stop-hook-store-status.md D2): the one-shot ladder has stopped naming it, and it is still work in hand.
                 "wl-stale",
-                # In focus mode, the open items carrying the focus PR's `pr:<n>`: the babysit loop's own fix work (wl_standdown).
-                "focus-pr-items",
                 # A plan this session ADOPTED (its Owner line says so) with boxes nothing tracks: the adoption is the statement that it is being executed.
                 "plan-adopted",
                 # The PR's plan set (its `Plan:` plans and their unfinished prerequisites) has an open box: the thing this branch exists for is not done (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 5). See wl_planenforce.
@@ -3134,10 +3120,8 @@ def pr_scope_line(state, root, me8, queued_n, stood):
     return M.N_PR_SCOPE % fields
 
 
-def ci_arming(root, session_id, focus_ref, state):
-    """(ref, owned) for the PR reads: focus's branch, else the explicit WORKLIST_PUBLISH_REF override, else the `live` loop state's branch (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4). `owned` is True for focus, and for the live branch when the PR's own plan names this session as Owner."""
-    if focus_ref:
-        return focus_ref, True
+def ci_arming(root, session_id, state):
+    """(ref, owned) for the PR reads: the explicit WORKLIST_PUBLISH_REF override, else the `live` loop state's branch (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4). `owned` is True for focus, and for the live branch when the PR's own plan names this session as Owner."""
     env_ref = os.environ.get("WORKLIST_PUBLISH_REF", "")
     if env_ref:
         return env_ref, False
@@ -3400,14 +3384,12 @@ def landing_next_text(state, own, worklist, session_id, state_doc, cistate, cide
 
 # The keys whose block outranks the idle-capacity arm: bug, red-CI and hook-integrity blocks come first, so fixes do. Any `always` violation outranks it too: that tier is the hook's integrity and evidence verdicts. `pr-finish` and `loop-next` are the merge offer: a box started then would reopen the set the merge waits on.
 IDLE_OUTRANKED_BY = frozenset({"ci-red", "pr-review", "commit-review", "pr-finish", "loop-next"})
-# The idle-capacity arm blocks under the PR-loop profile; wl_standdown.PR_LOOP's keep-list predates it, so the keep is added here, beside the arm. The cap wait and focus mode still park it: with no free slot, or in a wind-down, nothing new starts.
+# The idle-capacity arm blocks under the PR-loop profile; wl_standdown.PR_LOOP's keep-list predates it, so the keep is added here, beside the arm. The cap wait still parks it: with no free slot nothing new starts.
 IDLE_KEEPS = frozenset({"idle-capacity"})
 # A lost commit is not hygiene, so no stand-down profile parks this (agent/plans/PLAN-worktree-lease.md Design 7). wl_standdown is sealed, and its keep-lists predate leases, so the keep sits here as IDLE_KEEPS does.
 WORKTREE_KEEPS = frozenset({"worktree-unlanded"})
 # A merged landing branch the development tree still builds on (wl_stack, agent/plans/PLAN-two-track-merge-dev.md LT19) is a FLOOR key, so no stand-down profile parks it either: waiting on writers or winding a PR down does not promote. wl_standdown is sealed, so the keep sits here as WORKTREE_KEEPS does.
 LANDING_KEEPS = frozenset({"landing-stack"})
-# The same design keeps the lease report out of a phase's advisory batching.
-WORKTREE_REPORT = "worktree-orphan"
 
 
 def park_tree_keys(violations, parks, role, advise):
@@ -3421,112 +3403,6 @@ def park_tree_keys(violations, parks, role, advise):
             continue
         kept.append((key, always, text))
     return kept
-
-
-def focus_ended_line(sd, why):
-    """The one-line parked summary (M.N_FOCUS_ENDED): top 6 parked keys by stops parked, then "+N more" (wl_standdown.parked_line), capped at 300 characters. The refused-spawn count is 0: its only writer, block_focus_spawn, is deleted (agent/plans/PLAN-simple-two-tree-loop.md B1), and the template's clause goes with B10's phase removal."""
-    names = wl_standdown.parked_line(sd.get("parked"), 6)
-    what = "%s PR #%s since %s" % (sd.get("mode") or "?", sd.get("pr") or "?", sd.get("focus_at"))
-    return (M.N_FOCUS_ENDED % (why, what, names, int(sd.get("adv_held") or 0), 0))[:300]
-
-
-def focus_advisory_filter(focus, state_doc):
-    """The `only=` predicate for this stop's advisory release: None (everything) outside focus or when the batch is due, else the PR's own advisory keys."""
-    if not focus or wl_standdown.batch_due(state_doc.get("standdown")):
-        return None
-    return _focus_advisory_kept
-
-
-def _focus_advisory_kept(key):
-    """wl_standdown's released keys plus the lease report."""
-    return wl_standdown.advisory_kept(key) or str(key).split(":", 1)[0] == WORKTREE_REPORT
-
-
-def focus_advisory_bookkeeping(worklist, session_id, focus, state_doc):
-    """After a focused release: restamp `batch_at` when the batch was due, and count what is still held. Persists."""
-    sd = state_doc.get("standdown")
-    if not focus or not isinstance(sd, dict):
-        return
-    if wl_standdown.batch_due(sd):
-        sd["batch_at"] = C.stamp_now()
-    sd["adv_held"] = sum(
-        1 for e in _outq(state_doc)["items"] if not _focus_advisory_kept(_outq_display_key(e))
-    )
-    S.save_state(worklist, session_id, state_doc)
-
-
-def focus_resolve(root, worklist, session_id, me8, fold, state_doc):
-    """(focus, ended): this stop's active focus event or None, and the parked summary line or "".
-
-    Ends an expired or finished focus, and queues the summary when a focus that was on at the last stop is not the one on now. The summary is a priority-0 sticky entry, so the allow drain delivers it; the block path appends it in full and forgets the entry, because a block's digest shows only 150 characters of it.
-    """
-
-    def owned(o):
-        return C.owned_by_me(o, session_id)
-
-    focus = None
-    why = ""
-    with contextlib.suppress(Exception):
-        focus = wl_standdown.active_phase(fold.phase, owned)
-    if focus:
-        if wl_standdown.expired(focus):
-            why = "expired"
-        else:
-            try:
-                why, err = wl_ci.focus_pr_end(root, worklist, session_id, focus)
-            except Exception as exc:
-                why, err = "", "%s: %s" % (type(exc).__name__, str(exc)[:120])
-            if err:
-                outq_add(
-                    worklist,
-                    session_id,
-                    state_doc,
-                    "focus-pr-unreadable",
-                    M.N_FOCUS_PR_UNREADABLE
-                    % (
-                        focus.get("pr") or "?",
-                        focus.get("branch"),
-                        str(err)[:120],
-                        wl_standdown.FOCUS_MAX_HOURS,
-                    ),
-                    1,
-                )
-        if why:
-            with contextlib.suppress(Exception):
-                S.phase_event(
-                    worklist,
-                    me8,
-                    focus.get("o") or me8,
-                    wl_standdown.BUILD,
-                    branch=focus.get("branch"),
-                    pr=focus.get("pr"),
-                    why=why,
-                )
-            focus = None
-    ended = ""
-    sd = state_doc.get("standdown")
-    if (
-        isinstance(sd, dict)
-        and sd.get("focus_at")
-        and (not focus or sd.get("focus_at") != focus.get("at"))
-    ):
-        if not why:
-            # Ended by the verb (or replaced by a newer on-event): the newest owned event says why.
-            newest: dict[str, Any] = max(
-                (e for o, e in (fold.phase or {}).items() if o and owned(o)),
-                key=S.event_order,
-                default={},
-            )
-            why = (
-                str(newest.get("why") or "operator")
-                if newest.get("mode") == wl_standdown.BUILD
-                else "replaced by a new focus"
-            )
-        ended = focus_ended_line(sd, why)
-        outq_add(worklist, session_id, state_doc, "focus-ended", ended, 0, sticky=True)
-        state_doc.pop("standdown", None)
-        S.save_state(worklist, session_id, state_doc)
-    return focus, ended
 
 
 GITHUB_STATUS_MODULE = "rediacc_ci.ci.github_status"
@@ -3624,9 +3500,6 @@ def run_stop(event, event_ok, worklist, hook_file):
             sticky=True,
         )
 
-    # ---- FOCUS MODE (agent/plans/PLAN-stop-hook-focus-mode.md section 3), resolved before classification: a PR wind-down the session declared with `--phase`. Expiry first, then the cheap merged/closed read; an end writes the `off` event, and this stop then runs the full battery. The parked summary is queued on the stop that sees the end, whoever ended it.
-    _focus, _focus_ended = focus_resolve(root, worklist, session_id, me8, fold, state_doc)
-
     lines = fold.lines()
     # v14 gap 4: computed HERE (it used to sit below) so classification can tolerate an expired lease whose worker the OS still shows RUNNING: a full CI battery legitimately outlives the 120-minute lease cap, and the v13 night cost three manual renewals for a watcher that was verifiably alive the whole time. A worker the OS cannot see keeps failing closed.
     live_bg = [b for b in (event.get("background_tasks") or []) if b.get("status") == "running"]
@@ -3693,9 +3566,6 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception as exc:
         _loop_err = "%s: %s" % (type(exc).__name__, str(exc)[:160])
     _on_loop = loop_governs(_loop)
-    # THE TREE ROLE GOVERNS THE PHASE (agent/plans/PLAN-simple-two-tree-loop.md B2): the development tree always builds, so a `--phase babysit|merge` declared there winds nothing down; the landing tree stands down by its role (wl_standdown.profile_for).
-    if getattr(_loop, "role", "") == wl_prscope.DEVELOPMENT:
-        _focus = None
     _scope_ids = _loop.epic_items if _loop is not None else frozenset()
     # The PR's plan set while the loop governs, () otherwise: the scope of plan-adopted, plan-tasks and plan-unimplemented below.
     _loop_plans: tuple[str, ...] = _loop.plans if _loop is not None and _on_loop else ()
@@ -4119,8 +3989,8 @@ def run_stop(event, event_ok, worklist, hook_file):
             else C.actionable_tasks(session_id, event.get("transcript_path"))
         )
         _in_cap_wait = wl_roster.cap_saturated_wait(_roster, open_items, _cap_tasks)
-    # EITHER STAND-DOWN skips every paid judge call and counts as supervision for the stuck detector: focus mode is the operator's declared wind-down, and its orders are the PR's own checks (agent/plans/PLAN-stop-hook-focus-mode.md section 4).
-    _in_standdown = _in_cap_wait or bool(_focus)
+    # THE CAP-SATURATED WAIT skips every paid judge call and counts as supervision for the stuck detector.
+    _in_standdown = _in_cap_wait
 
     # STUCK DETECTION. Runs before the others so the count advances on every stop, including the ones where something else already fired: a session blocked three times running on the same check has also moved nothing.
     # SUPERVISED = a live background task AND an in-flight item the session is still
@@ -4558,15 +4428,6 @@ def run_stop(event, event_ok, worklist, hook_file):
             False,
             M.V_OPEN_ITEMS % (len(open_items), "\n".join(_oi_lines)),
         )
-    # FOCUS MODE: the PR's own fix work (items carrying the focus's `pr:<n>`) still blocks; `open-items` above is still produced and the FOCUS profile parks it, so the rest is counted and named on exit.
-    if _focus:
-        _pr_open = [i for i in open_items if wl_standdown.pr_linked(i, _focus)]
-        if _pr_open:
-            vadd(
-                "focus-pr-items",
-                False,
-                M.V_OPEN_ITEMS % (len(_pr_open), "\n".join("    " + i for i in _pr_open)),
-            )
     # ---- v21 THE IDLE-STALL GATE, in the ALWAYS tier, directly beside the rotating `open-items` it backstops. It must not be rotated or paused: the whole failure is that `open-items` CAN be, so a copy of it in the same tier would buy nothing. Wrapped, because a stall detector that crashes a stop is worse than one that is absent -- on any exception the ordinary `open-items` block
     # above still stands.
     try:
@@ -4865,8 +4726,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 )
                 break
             _pf_text = wl_planfile.render_all(_pf_rows, _pf_unread)
-            # Not produced in focus mode: plan boxes park until the PR is done.
-            if _pf_text and not _focus:
+            if _pf_text:
                 outq_add(worklist, session_id, state_doc, "plan-tasks", _pf_text, 2)
             elif not _pf_text:
                 # The state it described has moved on. Without this a queued "29 open box(es), 0 ticked" kept being delivered stops after every box of that plan was ticked (2026-10-05), the way plan-pr-open and loop-next already drop theirs.
@@ -4875,20 +4735,18 @@ def run_stop(event, event_ok, worklist, hook_file):
         pass
 
     # ---- THE NEXT PLAN (wl_backlog), read off agent/plans/QUEUE.md: Promoted first, then Generated (operator ruling 3, 2026-10-03). The loop state already computed it with the reader the merge gate and P-A1 share; off the loop it is computed here. ADVISORY, never a vadd: the loop's own post-merge push is `loop-next`.
-    # SKIPPED IN FOCUS MODE: the wind-down spends nothing on what comes after the PR.
     # ONE NEXT PLAN AT A TIME: a queued nomination of any other plan (an older stop's, or the retired per-session ranking's) is dropped before this stop's is added, so the queue never enumerates plans the loop is not starting next.
     _bl_key = ""
     try:
-        if not _focus:
-            _bl_candidate, _bl_reason, _bl_stats = wl_backlog.next_plan(
-                root,
-                nxt=_loop.next_plan if _loop is not None and _on_loop else None,
-                exclude=_loop.plans if _loop is not None else (),
-            )
-            _bl_text = wl_backlog.render(_bl_candidate, _bl_reason, _bl_stats)
-            if _bl_text:
-                _bl_key = "plan-backlog:%s" % (_bl_candidate or _bl_stats).get("rel")
-                outq_add(worklist, session_id, state_doc, _bl_key, _bl_text, 2)
+        _bl_candidate, _bl_reason, _bl_stats = wl_backlog.next_plan(
+            root,
+            nxt=_loop.next_plan if _loop is not None and _on_loop else None,
+            exclude=_loop.plans if _loop is not None else (),
+        )
+        _bl_text = wl_backlog.render(_bl_candidate, _bl_reason, _bl_stats)
+        if _bl_text:
+            _bl_key = "plan-backlog:%s" % (_bl_candidate or _bl_stats).get("rel")
+            outq_add(worklist, session_id, state_doc, _bl_key, _bl_text, 2)
     except Exception:
         pass
     _blq = _outq(state_doc)
@@ -4925,7 +4783,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
         if _pe_state == wl_planenforce.BLOCK and _pe_text:
             vadd("plan-unimplemented", False, M.V_PLAN_UNIMPLEMENTED % {"body": _pe_text})
-        elif _pe_state == wl_planenforce.ADVISORY and _pe_text and not _focus:
+        elif _pe_state == wl_planenforce.ADVISORY and _pe_text:
             outq_add(worklist, session_id, state_doc, "plan-pr-open", _pe_text, 2)
         if _pe_state != wl_planenforce.ADVISORY:
             # The advisory copy describes a stop that had live work; once the verdict is a block or silence it is stale.
@@ -5002,10 +4860,8 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception:
         qstate, qdetail = "unknown", None
     queue_note = ""
-    # FOCUS MODE ARMS BOTH PR READS from the focus's own branch: `--phase` declared the PR this session's (agent/plans/PLAN-stop-hook-focus-mode.md section 3).
-    _focus_ref = str((_focus or {}).get("branch") or "") or None
-    # THE LIVE PR ARMS THEM TOO (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4): on a `live` loop state the PR's branch is the ref when neither focus nor the explicit WORKLIST_PUBLISH_REF override names one. `owned` lifts ci_trouble's multi-session skip only when the PR's own plan names this session as Owner, so a peer's PR keeps the skip.
-    _ci_ref, _ci_owned = ci_arming(root, session_id, _focus_ref, _loop)
+    # THE LIVE PR ARMS THEM TOO (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4): on a `live` loop state the PR's branch is the ref when the explicit WORKLIST_PUBLISH_REF override names none. `owned` lifts ci_trouble's multi-session skip only when the PR's own plan names this session as Owner, so a peer's PR keeps the skip.
+    _ci_ref, _ci_owned = ci_arming(root, session_id, _loop)
     fstate, fdetail = wl_ci.pr_body_freshness(root, ref=_ci_ref)
     pr_stale_folded = False
     if fstate == "stale":
@@ -5105,23 +4961,6 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
     except Exception as exc:
         cistate, cidetail = "unreadable", "%s: %s" % (type(exc).__name__, str(exc)[:120])
-    # FILL IN THE FOCUS PR NUMBER once the CI read knows it: the spawn guard matches fix work on `pr:<n>`, so the store needs it. Same `at`, so neither the 24-hour cap nor the parked ledger restarts.
-    if _focus and not _focus.get("pr") and isinstance(cidetail, dict):
-        with contextlib.suppress(Exception):
-            _ci_info = cidetail.get("info") if "info" in cidetail else cidetail
-            _ci_pr = _ci_info.get("pr") if isinstance(_ci_info, dict) else None
-            if _ci_pr:
-                S.phase_event(
-                    worklist,
-                    me8,
-                    _focus.get("o") or me8,
-                    _focus.get("mode"),
-                    branch=_focus.get("branch"),
-                    pr=_ci_pr,
-                    why="pr-resolved",
-                    at=_focus.get("at"),
-                )
-                _focus = dict(_focus, pr=int(_ci_pr))
     if cistate == "unreadable":
         vadd("ci-unreadable", True, M.V_CI_UNREADABLE % cidetail)
     elif cistate == "cancelled":
@@ -5437,7 +5276,6 @@ def run_stop(event, event_ok, worklist, hook_file):
                 cidetail,
                 wl_prreview.check_state,
                 runner=prreview_runner(root),
-                focus=bool(_focus),
             )
             S.save_state(worklist, session_id, state_doc)
         except Exception as exc:
@@ -5449,7 +5287,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         if _prr_block:
             vadd("pr-review", False, _prr_block)
         if _prr_note:
-            # Under the `ci-report` base so focus mode releases it in full (wl_standdown.FOCUS_ADVISORY_KEYS); class 0 and refresh_min=0 because it is recomputed from the live PR on every stop.
+            # Under the `ci-report` base; class 0 and refresh_min=0 because it is recomputed from the live PR on every stop.
             outq_add(
                 worklist, session_id, state_doc, "ci-report:pr-review", _prr_note, 0, refresh_min=0
             )
@@ -5611,7 +5449,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 root,
                 free=int(_writer_cap) - len(_roster.get("writers") or ()),
                 cap=int(_writer_cap),
-                phase=bool(_focus),
+                phase=False,
                 plans=tuple(_loop.plans or ()),
                 live_plans=sorted((_roster.get("plan_holders") or {}).keys()),
                 items=fold.items,
@@ -6249,13 +6087,11 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
             guide = _honest + ("\n\n" + guide if guide else "")
             guide_empty = False
-    # ---- THE STAND-DOWN, a stricter second pass after the HONEST one: the cap-saturated wait (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 6) or focus mode (agent/plans/PLAN-stop-hook-focus-mode.md section 4), whose keep-lists live in wl_standdown. FOCUS governs when both hold: it is the operator's declaration, and its judge skip covers the cap wait's. The STATE.md demand
+    # ---- THE STAND-DOWN, a stricter second pass after the HONEST one: the cap-saturated wait (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 6), whose keep-list lives in wl_standdown. The STATE.md demand
     # survives only when compaction is imminent (the late band, ~2% before auto-compact) and the document is not current.
     # THE PR LOOP (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4) is the third profile, applied when neither narrower declaration holds: the live PR's plan set, its CI and reviews, its epic's items and the loop's duties block; everything else is parked and named in the N_PR_SCOPE line.
-    # THE LANDING TREE (agent/plans/PLAN-simple-two-tree-loop.md B2) stands down by its tree role rather than a phase: wl_standdown.profile_for picks LANDING_TREE there, and never FOCUS in the development tree, which always builds.
-    _profile = wl_standdown.profile_for(
-        getattr(_loop, "role", ""), bool(_focus), _in_cap_wait, _on_loop
-    )
+    # THE LANDING TREE (agent/plans/PLAN-simple-two-tree-loop.md B2) stands down by its tree role: wl_standdown.profile_for picks LANDING_TREE there.
+    _profile = wl_standdown.profile_for(getattr(_loop, "role", ""), _in_cap_wait, _on_loop)
     _pr_scope_stood: dict[str, int] = {}
     if _profile is not None:
 
@@ -6269,9 +6105,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         _dropped = sorted({v[0] for v in violations if not _keeps(v)})
         violations = [v for v in violations if _keeps(v)]
         if _compaction_due:
-            _cnote = (
-                M.N_FOCUS_COMPACTION if _profile is wl_standdown.FOCUS else M.N_CAP_WAIT_COMPACTION
-            )
+            _cnote = M.N_CAP_WAIT_COMPACTION
             violations = [
                 (k, a, t + "\n" + _cnote) if k in _profile.compaction_keys else (k, a, t)
                 for k, a, t in violations
@@ -6288,22 +6122,6 @@ def run_stop(event, event_ok, worklist, hook_file):
                 _pr_scope_stood[_base_key] = _ps["parked"][_base_key]
             _ps["parked_now"] = len(_dropped)
             state_doc["prscope"] = _ps
-        elif _profile is wl_standdown.FOCUS:
-            state_doc.pop("capwait", None)
-            _sd = state_doc.get("standdown")
-            if not isinstance(_sd, dict) or _sd.get("focus_at") != _focus.get("at"):
-                # A new focus: the batch clock starts now, so the first stop holds rather than releasing everything.
-                _sd = {"focus_at": _focus.get("at"), "parked": {}, "adv_held": 0}
-                _sd["batch_at"] = C.stamp_now()
-            _sd["mode"], _sd["pr"] = _focus.get("mode"), _focus.get("pr")
-            _parked = _sd.setdefault("parked", {})
-            for _base in {str(k).split(":", 1)[0] for k in _dropped}:
-                _parked[_base] = int(_parked.get(_base) or 0) + 1
-            _sd["parked_now"] = len(_dropped)
-            state_doc["standdown"] = _sd
-            if not violations:
-                # N_FOCUS replaces the guide on a focused allow; it is rendered after the drain, which is what knows how many advisories are held.
-                guide, guide_empty = "", True
         else:
             state_doc["capwait"] = {
                 "at": C.stamp_now(),
@@ -6462,20 +6280,12 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
         # THE ADVISORY QUEUE WAS STARVED BY A PRODUCTIVE SESSION: `outq_drain` runs on the allow path only, and measured 2026-09-17, ten parsed plan boxes went unseen across roughly twenty consecutive blocked stops. The digest (operator ruling 2026-09-24, "One quoted + others named") names up to OUTQ_DIGEST_MAX sections on every block and delivers the one-line ones outright; a
         # multi-line body stays queued for a clean stop, so the focused violation above is never displaced by a wall. The two CI notes are skipped because they already ride `extras` in full.
-        if _focus_ended:
-            # The parked summary in full, ahead of the digest, which would cap it at 150 characters.
-            extras += "\n\n" + _focus_ended
-            outq_forget(state_doc, "focus-ended", _focus_ended)
-            S.save_state(worklist, session_id, state_doc)
-        # FOCUS MODE BATCHES THE REST: only the PR's own advisories are named until the batch comes due (wl_standdown.FOCUS_BATCH_MIN), then everything once.
         _digest, _ = outq_digest(
             worklist,
             session_id,
             state_doc,
             skip=("ci-queue", "ci-report"),
-            only=focus_advisory_filter(_focus, state_doc),
         )
-        focus_advisory_bookkeeping(worklist, session_id, _focus, state_doc)
         if _digest:
             extras += "\n\n" + _digest
         onboard_marker = onboard.load_marker(session_id) if onboard else {}
@@ -6525,8 +6335,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         with contextlib.suppress(Exception):  # an advisory must never wedge a stop
             _hl = state_doc.setdefault("hints", {})
             _hage = C.stamp_age_min(_hl.get("block_at") or "")
-            # Not in focus mode: the wind-down spends no tokens on advice.
-            if not _focus and (_hage is None or _hage >= BLOCK_HINT_MIN):
+            if _hage is None or _hage >= BLOCK_HINT_MIN:
                 _hents = wl_hints.load_corpus(wl_hints.hints_path(root))[0]
                 _hpick = wl_hints.hint_pick(wl_hints.rotation(root, _hents), _hl)
                 if _hpick:
@@ -6599,7 +6408,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     for k in [k for k in audit_cache if k not in fold.by_id]:
         del audit_cache[k]  # its item is gone; a banked verdict for it is litter
     audit_batch = []
-    # The deferral audit rides the judge call, which a cap-saturated wait and focus mode skip, and is one of the riders a `judge: core` level (effort smart) leaves off.
+    # The deferral audit rides the judge call, which a cap-saturated wait skips, and is one of the riders a `judge: core` level (effort smart) leaves off.
     _riders = wl_judge.riders(_cfg)
     if _riders and not _in_standdown:
         for r in sorted(
@@ -7245,15 +7054,13 @@ def run_stop(event, event_ok, worklist, hook_file):
         outq_add(worklist, session_id, state_doc, "handoff", _handoff, 1, refresh_min=60)
     # The specialist-agent hint, LAST of the producers and lowest priority of them, on the ALLOW PATH ONLY and deliberately: a blocked session already has something more urgent being said to it every stop. The trade is that a session which never reaches a clean stop is never hinted, which is acceptable for exactly the same reason.
     with contextlib.suppress(Exception):  # an advisory must never wedge a stop
-        # Not in focus mode: a hint would spend the session's hint budget on a line the batch holds.
-        if not _focus:
-            agent_hint_queue(
-                worklist,
-                session_id,
-                state_doc,
-                (last_msg or "") + "\n" + "\n".join(remaining_lines),
-                settings=_cfg,
-            )
+        agent_hint_queue(
+            worklist,
+            session_id,
+            state_doc,
+            (last_msg or "") + "\n" + "\n".join(remaining_lines),
+            settings=_cfg,
+        )
     # THE BEHAVIORAL-HINT QUEUE PRODUCERS, matching agent_hint_queue's own placement exactly: BEFORE outq_drain, so anything queued here has the SAME chance to drain on THIS stop that every other producer gets, rather than only ever being seen on the next one -- a corpus error queued after the drain call would otherwise sit until a LATER, possibly genuinely-silent stop, and single-handedly break that stop's silence. These two are ordinary queue items and are NOT gated on other content already firing; only the hint LINE ITSELF, picked below, carries that gate.
     hint_entries, hint_errs = [], []
     with contextlib.suppress(Exception):  # an advisory must never wedge a stop
@@ -7292,42 +7099,16 @@ def run_stop(event, event_ok, worklist, hook_file):
                 refresh_min=24 * 60,
             )
     # UP TO OUTQ_PER_STOP sections per stop, highest priority first and randomized inside a priority class. The "+N more" tail is MANDATORY for the reason spelled out at the guide's own truncation: a silent cap reads as "that is everything", and there is no knob left to widen it for one turn.
-    # FOCUS MODE releases only the PR's own advisories in full; the rest is held and delivered one line each when the batch comes due (agent/plans/PLAN-stop-hook-focus-mode.md section 6).
-    _drain_only = wl_standdown.advisory_kept if _focus else None
-    texts, remaining = outq_drain(worklist, session_id, state_doc, OUTQ_PER_STOP, only=_drain_only)
+    texts, remaining = outq_drain(worklist, session_id, state_doc, OUTQ_PER_STOP)
     parts.extend(texts)
-    if _focus:
-        if wl_standdown.batch_due(state_doc.get("standdown")):
-            _batch, _ = outq_digest(
-                worklist,
-                session_id,
-                state_doc,
-                only=lambda k: not wl_standdown.advisory_kept(k),
-            )
-            if _batch:
-                parts.append(_batch)
-        focus_advisory_bookkeeping(worklist, session_id, _focus, state_doc)
-        _fsd = state_doc.get("standdown") or {}
-        parts.insert(
-            0,
-            M.N_FOCUS
-            % (
-                _focus.get("mode"),
-                _focus.get("pr") or "?",
-                _focus.get("at"),
-                int(_fsd.get("parked_now") or 0),
-                int(_fsd.get("adv_held") or 0),
-                me8,
-            ),
-        )
-    elif remaining:
+    if remaining:
         parts.append(M.N_OUTQ_MORE % remaining)
     # THE ROTATING BEHAVIORAL HINT, LAST. Normally gated on parts already being non-empty: it rides an output the stop was already going to produce, so it is not usually the reason one exists.
     #
     # wl_popup.should_pop() is the one deliberate exception (PLAN-popup-reminder.md): a ~20% independent roll that lets this same hint fire on an otherwise-silent stop too, "out of the blue" by design.
     #
     # Checked here, not inside wl_hints, because "did anything else fire this stop, or did the roll" is exactly what this one condition already answers -- a second check inside the module would just ask the same question twice and could drift from this one.
-    if not _focus and (parts or wl_popup.should_pop()):
+    if parts or wl_popup.should_pop():
         with contextlib.suppress(Exception):  # an advisory must never wedge a stop
             ledger = state_doc.setdefault("hints", {})
             # An entry a live, tested enforcer carries has left rotation (PLAN-experience-feedback.md P7).

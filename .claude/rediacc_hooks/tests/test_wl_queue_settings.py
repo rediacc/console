@@ -588,18 +588,11 @@ def test_inflight_names_the_level_its_switches_and_the_fixed_writer_cap():
     )
 
 
-def test_inflight_focus_on_names_mode_pr_branch_and_owner():
-    focus = (PQ.FocusLine("d778be9d", "merge", "612", "1006-2", "2026-10-06T09:00:00Z"),)
-    text = rendered(inflight(pr=612, focus=focus))
-    assert_mode_matches(text, PQ.Settings())
-    assert (
-        "- Phase: merge on PR #612 (branch 1006-2, session d778be9d, since 2026-10-06T09:00:00Z)."
-        in text
-    )
-    # The inverse differs by the one planted fact.
-    assert "- Phase: build." in rendered(inflight(pr=612))
-    expired = (dataclasses.replace(focus[0], expired=True),)
-    assert "past its 24-hour limit" in rendered(inflight(pr=612, focus=expired))
+def test_inflight_carries_no_phase_line():
+    """The phase verb is gone (agent/plans/PLAN-simple-two-tree-loop.md B10), so the block names no wind-down."""
+    text = rendered(inflight(pr=612))
+    assert "- Phase:" not in text
+    assert "- Branch: 1006-2, PR #612 open." in text
 
 
 def test_inflight_no_pr_names_the_queue_head_the_first_push_binds():

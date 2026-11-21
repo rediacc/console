@@ -1009,29 +1009,6 @@ def _read_events(worklist, root=None):
     return out
 
 
-# A phase or lineage event line, matched on the raw text so a reader that needs only those two kinds never parses the whole log.
-_PHASE_LINE = re.compile(r'"ev":\s*"(?:phase|lineage)"')
-
-
-def phase_fold(worklist, root=None):
-    """A Fold carrying only the `phase` and `lineage` events: the light read of a guard that needs only those two kinds (guards/block_turbo_early_push.py) and must not pay for a full fold of the log. Same files and same order as _read_events; lines of any other kind are never parsed."""
-    out = []
-    texts = _store_texts(root)
-    legacy = events_path(worklist)
-    if legacy.exists():
-        text = _read_text(legacy)
-        if text is not None:
-            texts.append(text)
-    for text in texts:
-        out.extend(
-            _parse_events("\n".join(ln for ln in text.splitlines() if _PHASE_LINE.search(ln)))
-        )
-    out.sort(key=event_order)
-    phase: dict[Any, Any] = {}
-    _records, _md, _cli, _h, lineage = _fold_events(out, phase=phase)
-    return Fold([], "", lineage, phase=phase)
-
-
 def item_key(owner, text):
     """Identity of a markdown line: owner + text, EXCLUDING the state byte, so an in-place tick keeps its stamps while a text edit resets them."""
     return hashlib.sha1(
@@ -1106,14 +1083,12 @@ def brief_line(rec):
     return line
 
 
-def _fold_events(events, statuses=None, phase=None):
+def _fold_events(events, statuses=None):
     """(records, md_keys, cli_ids, last_md_hash, lineage). Chronological single pass; a later event wins, which is exactly the right answer for the one real conflict (a CLI tick vs a later deliberate markdown re-open).
 
     `lineage` is the list of proven compaction edges, in order. It is a LIST and not a fold-to-latest: a session can compact more than once, and the chain a276391d -> 74de73ca -> ... is only resolvable if every hop survives.
 
-    `statuses`, when a dict is passed, receives the `status` events (`worklist.py --status`) folded per WORKER rather than per item: {worker: {"last": <newest event>, "reset_at": <at of the newest event that was not silent>}}. An out-parameter rather than a sixth return value, so the existing five-way unpacks stay exactly as they are.
-
-    `phase`, when a dict is passed, receives the newest `phase` event per OWNER (`worklist.py --phase`, agent/plans/PLAN-stop-hook-effort.md): {owner8: event}. An event with no owner is dropped, because `owned_by_me(None, ...)` is True and an untagged phase would bind every session."""
+    `statuses`, when a dict is passed, receives the `status` events (`worklist.py --status`) folded per WORKER rather than per item: {worker: {"last": <newest event>, "reset_at": <at of the newest event that was not silent>}}. An out-parameter rather than a sixth return value, so the existing five-way unpacks stay exactly as they are."""
     records, md_keys, cli_ids = {}, set(), set()
     lineage = []
     last_md_hash = ""
@@ -1174,9 +1149,7 @@ def _fold_events(events, statuses=None, phase=None):
                     slot["reset_at"] = at
             continue
         elif kind == "phase":
-            # THE SESSION PHASE (wl_standdown). About the SESSION, not an item: it never stamps a record. Chronological, so the latest event per owner wins.
-            if phase is not None and ev.get("o"):
-                phase[str(ev["o"])[:8]] = dict(ev)
+            # A session phase from the deleted `--phase` verb (agent/plans/PLAN-simple-two-tree-loop.md B10). The log is append-only, so old ones stay; they never stamp a record and nothing reads them.
             continue
         elif kind == "add":
             rid = ev.get("id")
@@ -1283,15 +1256,13 @@ class Fold:
     line (rendered legacy shape), first/upd stamps, origin, until/worker.
     """
 
-    def __init__(self, items, md_hash, lineage=(), statuses=None, phase=None):
+    def __init__(self, items, md_hash, lineage=(), statuses=None):
         self.items = items
         self.md_hash = md_hash
         self.lineage = list(lineage)
         self.by_id = {r["id"]: r for r in items}
         # {worker: {"last", "reset_at"}} from `status` events; see _fold_events.
         self.statuses = dict(statuses or {})
-        # {owner8: newest phase event}; see _fold_events and wl_standdown.active_phase.
-        self.phase = dict(phase or {})
 
     def aliases_of(self, session_id):
         """Every id proven to be the same conversation as `session_id`.
@@ -1334,14 +1305,10 @@ def load(worklist, sync=True):
     md_hash = hashlib.sha1(md_bytes).hexdigest()[:16]
 
     statuses_box: list[dict[Any, Any]] = [{}]
-    phase_box: list[dict[Any, Any]] = [{}]
 
     def build(events):
         statuses_box[0] = {}
-        phase_box[0] = {}
-        records, md_keys, cli_ids, last_h, lin = _fold_events(
-            events, statuses=statuses_box[0], phase=phase_box[0]
-        )
+        records, md_keys, cli_ids, last_h, lin = _fold_events(events, statuses=statuses_box[0])
         return records, md_keys, cli_ids, last_h, lin
 
     def diff(records, md_keys, parsed, at):
@@ -1420,7 +1387,7 @@ def load(worklist, sync=True):
         rec["line"] = _render_line(rec)
         items.append(rec)
     items.sort(key=lambda r: (r.get("first", ""), r["id"]))
-    fold = Fold(items, md_hash, lineage, statuses=statuses_box[0], phase=phase_box[0])
+    fold = Fold(items, md_hash, lineage, statuses=statuses_box[0])
     # BIND ONCE, HERE, and only for the identity this process actually resolved to. Every ownership question downstream goes through wl_core.owned_by_me, so binding at the single load point is what makes the compaction fix impossible to roll out half-applied. A process with no resolvable identity binds nothing and behaves exactly as it did before lineage existed.
     me = C.resolve_session_id()
     if me:
@@ -1525,31 +1492,6 @@ def status_event(worklist, by, worker, size, mtime, inflight="", silent=False):
                 "mtime": float(mtime),
                 "inflight": str(inflight or ""),
                 "silent": bool(silent),
-            }
-        ],
-    )
-
-
-def phase_event(worklist, by, owner, mode, branch="", pr=None, why="operator", at=None):
-    """Record a phase switch for `owner`: `babysit` or `merge` winds a PR down, `build` ends that (agent/plans/PLAN-stop-hook-effort.md; the wind-down rules are agent/plans/PLAN-stop-hook-focus-mode.md section 1).
-
-    `branch` is the PR's head ref, deliberately NOT `br`: append_events stamps `br` with the checkout branch at write time, and writing `build` from `main` after a merge must not rewrite which PR the phase was on. `owner` must be non-empty (see _fold_events). `at` is passed only by the hook's PR-number fill-in (`why: pr-resolved`), which must neither renew the 24-hour cap nor read as a new phase.
-    """
-    owner = str(owner or "")[:8]
-    if not owner:
-        raise ValueError("a phase event needs an owner")
-    append_events(
-        worklist,
-        [
-            {
-                "ev": "phase",
-                "at": at or C.stamp_now(),
-                "by": str(by or owner)[:8],
-                "o": owner,
-                "mode": str(mode),
-                "branch": str(branch or ""),
-                "pr": int(pr) if pr not in (None, "") else None,
-                "why": str(why or "operator"),
             }
         ],
     )

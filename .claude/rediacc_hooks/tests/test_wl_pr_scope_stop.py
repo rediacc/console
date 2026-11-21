@@ -15,7 +15,7 @@ import shlex
 import subprocess
 import sys
 
-from rediacc_hooks.tests import test_wl_focus as F
+from rediacc_hooks.tests import prloop_world as F
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_cap_wait import mutated_hook
 from rediacc_hooks.tests.test_wl_roster import plant_item, stamp, write_plan
@@ -190,7 +190,7 @@ def test_classify_scope_guide_lists_in_scope_items_only(wl):
 
 # ---- SC5 / SC6: the PR_LOOP profile through the real hook (Design 4 and 5) ------------------------------------
 #
-# A fixture checkout on the MMDD-N branch 1003-1 whose one PR read (wl_ci.pr_link) answers from the shared gh shim of test_wl_focus, so `wl_prscope.loop_state` resolves a real `live` state: the PR body's `Plan:` line names the PR plan, and QUEUE.md holds it and one queued plan. Every fire case has a control that differs by one planted fact; the mutation controls run a PRIVATE COPY of the hook with one line removed.
+# A fixture checkout on the MMDD-N branch 1003-1 whose one PR read (wl_ci.pr_link) answers from the shared gh shim of prloop_world, so `wl_prscope.loop_state` resolves a real `live` state: the PR body's `Plan:` line names the PR plan, and QUEUE.md holds it and one queued plan. Every fire case has a control that differs by one planted fact; the mutation controls run a PRIVATE COPY of the hook with one line removed.
 
 
 BRANCH = "1003-1"
@@ -484,15 +484,6 @@ def test_sc5_control_off_the_loop_runs_todays_battery(wl):
     assert PR_SCOPE not in got.out, got.out[:1500]
 
 
-def test_sc5_control_focus_on_still_uses_the_focus_profile(wl):
-    own = loop_world(wl)
-    plant_item(wl, "aaaa0001", "(deadbeef) the PR plan's own item")
-    epic_for(wl, own.rsplit("/", 1)[-1], "aaaa0001")
-    F.focus_on(wl)
-    got = run_stop(wl)
-    assert "open-items" not in keys_of(wl, got), "FOCUS parks open-items: %s" % reason(got)[:1500]
-
-
 def test_sc5_m1_without_open_items_in_the_keep_list_the_epic_item_stands_down(wl):
     own = loop_world(wl)
     plant_item(wl, "aaaa0001", "(deadbeef) the PR plan's own item")
@@ -640,19 +631,8 @@ def test_inflight_a_live_pr_with_a_plan_line_shows_the_pr_and_its_plan(wl):
         "- Next plan: agent/plans/PLAN-queued-next.md, Promoted entry 2; starts on the next branch after PR #543 merges."
         in body
     ), body
-    assert "- Phase: build." in body
+    assert "- Phase:" not in body
     assert mode_ok(wl), body
-
-
-def test_inflight_focus_on_is_shown_and_off_again_after_focus_off(wl):
-    loop_world(wl)
-    F.focus_on(wl, mode="merge")
-    body = inflight_of(wl)
-    assert "- Phase: merge on PR #543 (branch pub, session %s" % wlfix.ME[:8] in body, body
-    run_stop(wl)
-    assert "- Phase: merge on PR #543" in inflight_of(wl)
-    F.focus_off(wl)
-    assert "- Phase: build." in inflight_of(wl)
 
 
 def test_inflight_no_pr_names_the_queue_head_the_first_push_binds(wl):
