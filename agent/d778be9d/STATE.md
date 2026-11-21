@@ -1,19 +1,19 @@
-## SESSION d778be9d 2026-11-20T21:44:02Z
+## SESSION d778be9d 2026-11-21T01:49:24Z
 
-# STATE d778be9d (2026-11-20 21:45Z, operator AWAY since 21:42Z)
+# STATE d778be9d (2026-11-21 ~02:10Z, operator AWAY)
 
 ## Next action
-1. #02389657 #4889018a when the running ci:quick (d3ab59d4, void: its reds ci:ci-pr-task-trailers and ci-review-resolutions are fixed in d8811543d a3114345f cc9b734a2) ends: commit review records, run ci:quick on HEAD, then push (TURBO_PUSH_REASON='red-fix: ...'; console then submodules), then release us/asia: RELEASE_ASKED=ASKED:2026-11-20T17:17Z npm run release:local -- --channel edge --workers-only --regions us,asia --branch-release. Then send "go" to the hostinger CVE session (#3d75dbfa; uds:/run/user/1000/cc-socks/4135920.sock).
-2. Next push batch (VM trigger paths, needs `npm run vm:check -- --changed`): land RF-A agent-af7a06fb403f1d1d4 (account), RF-P renet 2b1c4450, H1 renet 0c53467d (#d10eb861), H3 c14a41fce eeea4ae04 (#695daf36, agent-a9e8e90fa53705203), H1b auto-grow (#879a0b3f). Then hostinger: machine setup (#3fb926f3), job dismiss of 3 stale tickets, mautic probe (H1 report commands).
-3. Writers live: H1b af431697429b07fb6, H2 aee98409c532659d6 (#c21c78d4), J1 aa7385a2acfc78f48 (#75de5915), J3 a9b59754c94d51acd (#9725e222). Blog post sentences (peer's post) depend on H1b, J1, J3 landing as worded.
+1. #4889018a ci:quick is running on HEAD (log /tmp/m/ciquick-$(cat /tmp/m/cq-head).log, under `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile dockerhub-read -- npm run ci:quick`). vm:check VERIFIED (tree 0a53db708ac6, no trigger change since). If green (only carried ops-health): commit STATE.md, then push submodules first (`git -C private/renet push origin 1104-1`, `git -C private/account push origin 1104-1`), then the console, each with TURBO_PUSH_REASON='red-fix: PR 605 second batch ...'. Then watch CI (`.ci/scripts/ci/ci-trace.py --wait --ref 1104-1`, background). CI on bc15e97ef was red on lane durations (fixed 30ef78966), external dependency freshness and Go: check after the push.
+2. After the push: hostinger machine setup for the new renet (#3fb926f3; `./rdc.sh --config eu-bench machine setup hostinger`, never schedule/bind via eu-bench), then `./rdc.sh --config eu-bench job dismiss j18e9d571387a5f57-f357bb66 j18e9870c5f4555b7-f0eb4666 j18e97c60b9f0bdc0-595bd8d1`, fork check (H2 item #c21c78d4 text), re-up erpnext:cve-test fork (#d10eb861).
+3. Open follow-ups: #7001e5e1 CI Docker Hub username; #afe591e3 submodule review trigger; #f0ec2956 real-provider flake; #fd9bd5d1 release refused line; #38dd34cf template image upgrades (22 held to 2026-12-18, operator may veto); LT9 switch-over and LT10 live proof (PLAN-two-track-merge-dev).
 
 ## Big pieces
-- PR #605 on 1104-1 (~220 unpushed commits): landing-tree plan LT1-LT8, LT11-LT19 ticked; LT9 switch-over, LT10 live proof open.
+- PR #605 (1104-1): first batch pushed bc15e97ef and released us/asia edge (record release-records/v3.0.1/edge/run-20261120T235244Z-f40975a9.json); second batch (~70 commits: renet fork labels/auto-grow/policy flag, 62 account review fixes, H2/H3 CLI, J1/J3b templates and pins, Java4Shell commits of session 98cec5a6, pin bumps, Docker Hub cache) waits on this ci:quick.
 
 ## Overnight
-- Landed today (selection): LT wave, review fixes (RF-C RV RF-G), GR gate fixes, H4 narrow scope f81277ff8, LT16b, guard fixes aed056bab 030abed0a, record-path readers a3114345f, landing --status cc9b734a2, epic ledger d8811543d.
-- Decided (rule 2): H3 and renet fixes held for a vm:check push; blog claims made true rather than edited (H1b/J1/J3).
-- Parked [?]: none new.
+- Landed: LT1-LT8, LT11-LT19 (ticked 199aa53cd), H1-H4, J1, J3b, RF-A/C/G/P, RV, GR, Docker Hub cache bd4330ba7.
+- Decided (rule 2): 22 outdated template images held to 2026-12-18 (veto: delete those lines in .ci/policy/.pins-upgrade-blocklist); auto-grow stays opt-in; bench us/asia redeployed to apply root grants.
+- Parked [?]: none.
 
 ## Owed ticks
-- 4a4bd934.2 review mark needs #e2b... verb fix (tracked); LT9/LT10 after the push.
+- 4a4bd934.2 review mark (#review-mark verb gap tracked); LT9/LT10.
