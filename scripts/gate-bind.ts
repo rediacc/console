@@ -202,11 +202,9 @@ export function planExtract(
     const got = rb === null ? 'nothing' : `${rb.id} / "${rb.step}" / ${rb.run}`;
     return { error: `${reg.file}: header re-derives ${got}, not ${id} / "${reg.step}"` };
   }
-  // THE WRITE MODE NOW RUNS THE VERIFIER'S OWN CHECK. Everything above proves the header re-derives the right id, step and run; NONE of it proved the lane can provide what the file needs, which is precisely what the verifier asserts a moment later. So --extract happily wrote headers that gate-bind then rejected, and on 2026-09-06 two of them reddened check:ci-gate-bind mid-wave
-  // and had to be stripped by hand. A tool whose write mode does not run its own verify is how a green plan produces a red tree.
+  // THE WRITE MODE NOW RUNS THE VERIFIER'S OWN CHECK. Everything above proves the header re-derives the right id, step and run; NONE of it proved the lane can provide what the file needs, which is precisely what the verifier asserts a moment later. So --extract happily wrote headers that gate-bind then rejected, and on 2026-09-06 two of them reddened check:ci-gate-bind mid-wave and had to be stripped by hand. A tool whose write mode does not run its own verify is how a green plan produces a red tree.
   //
-  // Refusing HERE turns that into a named refusal the caller can act on, which is the difference between "this gate cannot be declared, and here is why" and a broken tree someone else has to diagnose. The two known causes are a genuine lane mismatch (the editorconfig gate needs submodules its lane does not check out) and a false positive in inferredNeeds (its npx probe has no
-  // command position check, so it matches a parameter expansion). Both deserve a refusal rather than a write.
+  // Refusing HERE turns that into a named refusal the caller can act on, which is the difference between "this gate cannot be declared, and here is why" and a broken tree someone else has to diagnose. The two known causes are a genuine lane mismatch (the editorconfig gate needs submodules its lane does not check out) and a false positive in inferredNeeds (its npx probe has no command position check, so it matches a parameter expansion). Both deserve a refusal rather than a write.
   const extractLane = caps.get(reg.job);
   if (extractLane === undefined) {
     return { error: `${reg.file}: lane '${reg.job}' is not a job of ${WORKFLOW}` };
@@ -296,8 +294,7 @@ export function bind(file: string, source: string): Bound | null {
     ...(h.emit === false ? { emit: false } : {}),
     needs,
     ...(h.lane === undefined ? {} : { lane: h.lane }),
-    // CARRIED FROM THE HEADER, and the omission of these two lines is what a real-tree plant caught after twelve selftest controls had all passed: `emitStep` handled env and `when` correctly, `Bound` declared them, and NOTHING copied them across, so a gate declaring `env-PROBE_TOKEN` bound to a step with no env and `gate-bind --dry-run` reported `already matches`. A selftest that
-    // calls `emitStep` directly cannot see this, which is exactly the specialist's rule about a green that only proves the helper functions work.
+    // CARRIED FROM THE HEADER, and the omission of these two lines is what a real-tree plant caught after twelve selftest controls had all passed: `emitStep` handled env and `when` correctly, `Bound` declared them, and NOTHING copied them across, so a gate declaring `env-PROBE_TOKEN` bound to a step with no env and `gate-bind --dry-run` reported `already matches`. A selftest that calls `emitStep` directly cannot see this, which is exactly the specialist's rule about a green that only proves the helper functions work.
     ...(h.env === undefined ? {} : { env: h.env }),
     ...(h.when === undefined ? {} : { when: h.when }),
   };
@@ -439,8 +436,7 @@ const ACQUIRE: Record<string, string[]> = {
     '          for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done',
     '          python3 -c "import yaml; print(\'PyYAML\', yaml.__version__)"',
   ],
-  // NO VERIFY LINE HERE, and the asymmetry with python-yaml above is deliberate.
-  // The PyYAML pair prints a version because a library's presence is otherwise invisible until a gate crashes importing it. mypy is a TOOL, and check:ci-toolchain-pins A8 refuses a workflow that invokes a gated tool directly; the gate resolves `python3 -m mypy` itself and refuses unless it answers AT THE PIN, which is a stronger check than an echoed version.
+  // NO VERIFY LINE HERE, and the asymmetry with python-yaml above is deliberate. The PyYAML pair prints a version because a library's presence is otherwise invisible until a gate crashes importing it. mypy is a TOOL, and check:ci-toolchain-pins A8 refuses a workflow that invokes a gated tool directly; the gate resolves `python3 -m mypy` itself and refuses unless it answers AT THE PIN, which is a stronger check than an echoed version.
   'python-mypy': [
     '          for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "mypy==${MYPY_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done',
   ],
@@ -745,8 +741,7 @@ export function usesLocalBin(run: string): boolean {
 export function emitStep(b: Emitting, guard = 'setup', stepId?: string): string[] {
   const cmd = usesLocalBin(b.run) ? `npm run ${b.id}` : b.run;
   const acquire = b.needs.flatMap((n) => ACQUIRE[n] ?? []);
-  // `when` IS ANDED ON, NEVER SUBSTITUTED. The standard guard is what stops a gate running after setup failed; a field that could replace it would let a gate opt out of the ordering contract, which is invariant 11 through a side door. Parenthesised so a `when` containing `||` cannot bind looser than the `&&` and swallow the guard -- `a && b || c` is `(a && b) || c`, which would
-  // run the step on a failed setup.
+  // `when` IS ANDED ON, NEVER SUBSTITUTED. The standard guard is what stops a gate running after setup failed; a field that could replace it would let a gate opt out of the ordering contract, which is invariant 11 through a side door. Parenthesised so a `when` containing `||` cannot bind looser than the `&&` and swallow the guard -- `a && b || c` is `(a && b) || c`, which would run the step on a failed setup.
   const cond =
     `!cancelled() && steps.${guard}.outcome == 'success'` + (b.when ? ` && (${b.when})` : '');
   // `id:` ONLY when sharded (`stepId` passed), so every unsharded step's YAML stays byte-identical to before D4 -- an added id on a step nothing reads it from is a diff with no reader, which is how a generator trains people to stop reading its diffs at all.
@@ -900,8 +895,7 @@ export function rewriteRegions(
           : {
               ...b,
               when: b.when ? `(${b.when}) && matrix.shard == ${leg}` : `matrix.shard == ${leg}`,
-              // T-SCHED B2 D4, second clause. The eventual receipt step counts in LOCK IDS (`check-quality-complete.ts:226` compares against `declaredShard.ids.length`), but it can only see `steps.<id>.outcome`, one outcome per EMITTED STEP -- which is coarser than one per lock id the moment two ids ever share a step (D1's whole reason for merging them). This map is what lets the
-              // receipt step translate "this step ran" back into "these lock ids ran", correct today (always exactly `[b.id]`, since no auto-emitted gate currently shares a step with another) and correct if that ever changes, without the receipt script itself needing to know which case it is in.
+              // T-SCHED B2 D4, second clause. The eventual receipt step counts in LOCK IDS (`check-quality-complete.ts:226` compares against `declaredShard.ids.length`), but it can only see `steps.<id>.outcome`, one outcome per EMITTED STEP -- which is coarser than one per lock id the moment two ids ever share a step (D1's whole reason for merging them). This map is what lets the receipt step translate "this step ran" back into "these lock ids ran", correct today (always exactly `[b.id]`, since no auto-emitted gate currently shares a step with another) and correct if that ever changes, without the receipt script itself needing to know which case it is in.
             };
       if (leg !== undefined) shardedEntries.push(b);
       out.push(...emitStep(step, guard, leg === undefined ? undefined : gateStepId(b.id)));
@@ -1137,7 +1131,9 @@ export function rewriteContainerRegions(
     }
     const anchor = open !== -1 ? open : stripped.findIndex((l) => /^ {4}steps:\s*$/.test(l));
     if (anchor === -1) {
-      findings.push(`container lane '${job}' has no \`    steps:\` line to place its region before`);
+      findings.push(
+        `container lane '${job}' has no \`    steps:\` line to place its region before`
+      );
       out.push(...body);
       continue;
     }
@@ -1161,7 +1157,8 @@ export function containerLaneProblems(workflow: string, lanes: readonly string[]
   const problems: string[] = [];
   const ranges = jobRanges(lines);
   // ANTI-VACUITY: a workflow whose jobs this parser cannot see would pass every check below by having nothing to check.
-  if (ranges.size === 0) return [`${WORKFLOW}: no job found under \`jobs:\`, so no container lane could be checked`];
+  if (ranges.size === 0)
+    return [`${WORKFLOW}: no job found under \`jobs:\`, so no container lane could be checked`];
   for (const lane of lanes) {
     if (!ranges.has(lane)) problems.push(`container lane '${lane}' is not a job of ${WORKFLOW}`);
   }
@@ -1368,11 +1365,7 @@ export function insertHeader(
       }
     }
   }
-  // A JS/TS FILE NEVER TAKES THE `#` FALLBACK. `#` is a comment in Python and shell and
-  // a SYNTAX ERROR in TypeScript, and the fallback reached eight scripts that open with
-  // `#!/usr/bin/env node`: the block-comment branch wanted `/**` on line 0, the shebang
-  // is on line 0, so each was written with `# ` and stopped parsing. They are all
-  // `tsx`-invoked gates, so the breakage was total and immediate.
+  // A JS/TS FILE NEVER TAKES THE `#` FALLBACK. `#` is a comment in Python and shell and a SYNTAX ERROR in TypeScript, and the fallback reached eight scripts that open with `#!/usr/bin/env node`: the block-comment branch wanted `/**` on line 0, the shebang is on line 0, so each was written with `# ` and stopped parsing. They are all `tsx`-invoked gates, so the breakage was total and immediate.
   const js = /\.(ts|js|cjs|mjs)$/.test(file);
   const after = lines[0]?.startsWith('#!') ? 1 : 0;
   if (js) {
@@ -1387,12 +1380,7 @@ export function insertHeader(
         ].join('\n');
       }
     }
-    // NO DOUBLE BLANK. The separator below used to be unconditional, so a file
-    // that ALREADY had a blank line at the insertion point got two, and
-    // `biome format` (which IS check:format) reds on that. It hit the one
-    // subject with no leading block comment during the 2026-09-06 header wave
-    // and had to be fixed by hand. A binder that writes a format-gate red is a
-    // write mode failing its own verify, the same shape as planExtract above.
+    // NO DOUBLE BLANK. The separator below used to be unconditional, so a file that ALREADY had a blank line at the insertion point got two, and `biome format` (which IS check:format) reds on that. It hit the one subject with no leading block comment during the 2026-09-06 header wave and had to be fixed by hand. A binder that writes a format-gate red is a write mode failing its own verify, the same shape as planExtract above.
     return [
       ...lines.slice(0, after),
       ...body.map((l) => `// ${l}`),
@@ -1400,8 +1388,7 @@ export function insertHeader(
       ...lines.slice(after),
     ].join('\n');
   }
-  // The normal path for .sh, and the fallback for anything else that takes `#`.
-  // Same guard as the `//` branch above, for the same reason.
+  // The normal path for .sh, and the fallback for anything else that takes `#`. Same guard as the `//` branch above, for the same reason.
   return [
     ...lines.slice(0, after),
     ...body.map((l) => `# ${l}`),
@@ -1472,8 +1459,7 @@ function selftest(endToEnd = false): number {
       `${py}\ngit ls-files --recurse-submodules`
     )?.needs.includes('submodules') === true
   );
-  // Both controls below are regressions, found by wiring ONE gate through this binder.
-  // Each mis-inference is silent: it does not fail, it moves the gate to a fatter lane.
+  // Both controls below are regressions, found by wiring ONE gate through this binder. Each mis-inference is silent: it does not fail, it moves the gate to a fatter lane.
   ck(
     'CONTROL: private/account named in PROSE infers nothing (a comment is not code)',
     !bind(
@@ -1636,10 +1622,7 @@ function selftest(endToEnd = false): number {
       return typeof next === 'string' && next.includes('# ---- gate ----');
     })()
   );
-  // THIS CONTROL WAS INVERTED ON 2026-09-06 AND THE INVERSION IS THE POINT. It used to
-  // assert that a gate-test is OUT of scope, which was true and was also the reason all
-  // 148 of their headers were unread. W2.3 gave every one of them a `kind: shared-step`
-  // declaration, so they are subjects now and this asserts the new truth.
+  // THIS CONTROL WAS INVERTED ON 2026-09-06 AND THE INVERSION IS THE POINT. It used to assert that a gate-test is OUT of scope, which was true and was also the reason all 148 of their headers were unread. W2.3 gave every one of them a `kind: shared-step` declaration, so they are subjects now and this asserts the new truth.
   ck(
     'a gate-test IS in scope: it declares kind shared-step, so its header is read like any other',
     !NOT_SUBJECT.test('.ci/scripts/test/gates/test-regions-sync.sh')
@@ -1689,8 +1672,7 @@ function selftest(endToEnd = false): number {
     regionAfterSetup(['  a:', '    steps:', '      - id: setup', ''].join('\n'), 'a')
   );
 
-  // Invariant 11, both directions. ONE gate pinned to a setup-less lane used to make
-  // `--write` refuse for the whole repository, advising a region that must never exist.
+  // Invariant 11, both directions. ONE gate pinned to a setup-less lane used to make `--write` refuse for the whole repository, advising a region that must never exist.
   const LANES = [
     '  with-setup:',
     '    steps:',
@@ -1708,10 +1690,7 @@ function selftest(endToEnd = false): number {
   );
   ck('CONTROL: a job that is not in the workflow cannot emit', !laneCanEmit(LANES, 'absent'));
 
-  // LOCAL-BIN SUBSTITUTION, both directions. The one-directional version of this
-  // -- "tsx becomes npm run" -- was already true and still let `knip` through,
-  // which is exactly the shape a control that only checks the positive case
-  // cannot see.
+  // LOCAL-BIN SUBSTITUTION, both directions. The one-directional version of this -- "tsx becomes npm run" -- was already true and still let `knip` through, which is exactly the shape a control that only checks the positive case cannot see.
   ck('tsx is a node_modules/.bin command', usesLocalBin('tsx scripts/x.ts'));
   ck('knip is one too, even mid-command after &&', usesLocalBin('./a.sh --install && knip --x'));
   ck('knip alone, with no arguments, is still one', usesLocalBin('knip'));
@@ -1739,10 +1718,7 @@ function selftest(endToEnd = false): number {
     }).includes('        run: npm run lint:unused')
   );
 
-  // The guard step is a PER-LANE fact. quality-www-build's gates hang on
-  // `steps.build-www.outcome`, not setup, because they read the dist/ that step
-  // produces; emitting them under the setup guard would run them against a missing
-  // dist/ whenever the build failed.
+  // The guard step is a PER-LANE fact. quality-www-build's gates hang on `steps.build-www.outcome`, not setup, because they read the dist/ that step produces; emitting them under the setup guard would run them against a missing dist/ whenever the build failed.
   ck(
     'the emitted guard defaults to setup, which is what all but one region-bearing lane wants',
     emitStep({ file: 'x.py', id: 'check:ci-x', run: 'x.py', kind: 'step', step: 'X', needs: [] })
@@ -1767,10 +1743,7 @@ function selftest(endToEnd = false): number {
     regionGuard('      # >>> gate-bind (generated by scripts/gate-bind.ts --write)') === 'setup'
   );
 
-  // ACQUIRABLE needs, both directions. `python-yaml` is installed BY the emitted step
-  // (the ACQUIRE table above), so demanding a lane already provide it made two gates
-  // unplaceable while the workflow was already installing PyYAML for them. An unknown
-  // need must still refuse, or a typo in a header places a gate anywhere.
+  // ACQUIRABLE needs, both directions. `python-yaml` is installed BY the emitted step (the ACQUIRE table above), so demanding a lane already provide it made two gates unplaceable while the workflow was already installing PyYAML for them. An unknown need must still refuse, or a typo in a header places a gate anywhere.
   ck(
     'an ACQUIRABLE need does not block placement, because the step installs it',
     satisfies(
@@ -1859,10 +1832,7 @@ function selftest(endToEnd = false): number {
   ck('CONTROL: it does NOT find it in a different job', !stepInJob(wf, 'other', 'Gate binding'));
   ck('CONTROL: a step that is not there is not found', !stepInJob(wf, 'quality-code', 'Nope'));
 
-  // --- kind discriminant (parser v2) ---------------------------------------------
-  // These controls exist because the drain hit the same wall 143 times: a gate-test
-  // cannot own the one shared step every gate-test rides, so under v1 it could not
-  // declare at all. What must hold now is that it CAN declare and STILL not be emitted.
+  // --- kind discriminant (parser v2) --------------------------------------------- These controls exist because the drain hit the same wall 143 times: a gate-test cannot own the one shared step every gate-test rides, so under v1 it could not declare at all. What must hold now is that it CAN declare and STILL not be emitted.
   const sharedStep = [
     '# ---- gate ----',
     '# kind: shared-step',
@@ -1938,10 +1908,7 @@ function selftest(endToEnd = false): number {
     jobsWithStep(TWO_JOBS, 'Nope').length === 0
   );
 
-  // `emit: false` -- a gate that OWNS a hand-written step a region must not take over.
-  // 18 gates in quality-code run BETWEEN `Setup workspace` and `- id: setup`, so their
-  // steps carry no setup guard; emitting them would move them below it and silence
-  // exactly the gates that explain a broken setup.
+  // `emit: false` -- a gate that OWNS a hand-written step a region must not take over. 18 gates in quality-code run BETWEEN `Setup workspace` and `- id: setup`, so their steps carry no setup guard; emitting them would move them below it and silence exactly the gates that explain a broken setup.
   const handWritten = [
     '# ---- gate ----',
     '# step: Toolchain pins',
@@ -2056,9 +2023,7 @@ function selftest(endToEnd = false): number {
     rewriteRegions(rw.text, new Map([['quality-static', [b2]]])).text === rw.text
   );
 
-  // --- the strip guard (box A2) -------------------------------------------------
-  // A REFUSAL NOBODY HAS WATCHED FIRE IS NOT A REFUSAL. Each of these drives
-  // `classifyDrops` directly, which is why it was extracted out of `main`.
+  // --- the strip guard (box A2) ------------------------------------------------- A REFUSAL NOBODY HAS WATCHED FIRE IS NOT A REFUSAL. Each of these drives `classifyDrops` directly, which is why it was extracted out of `main`.
   const DROP = ['quality-static: Check X'];
   const MANIFEST_WITH = "  { id: 'check:x', step: 'Check X' },";
   const none = new Set<string>();
@@ -2711,23 +2676,26 @@ type Check = (label: string, ok: boolean, detail?: unknown) => void;
 function selftestContainer(ck: Check): void {
   const digest = `sha256:${'b'.repeat(64)}`;
   const pinText = JSON.stringify({ image: 'devcontainer', digest, stage: 'full' });
-  const pin = readImagePin(pinText, 'ghcr.io/rediacc');
+  const pin = readImagePin(pinText, WK_IMAGE_REGISTRY);
   ck(
     'the pin reads as <registry>/<image>@<digest>, the devbox CI_RUNNER_IMAGE form',
-    'ref' in pin && pin.ref === `ghcr.io/rediacc/devcontainer@${digest}`,
+    'ref' in pin && pin.ref === `${WK_IMAGE_REGISTRY}/devcontainer@${digest}`,
     pin
   );
   for (const [label, doc] of [
     ['a tag in the image', { image: 'devcontainer:latest', digest, stage: 'full' }],
     ['a short digest', { image: 'devcontainer', digest: 'sha256:abc', stage: 'full' }],
-    ['a registry host in the image', { image: 'ghcr.io/x', digest, stage: 'full' }],
+    ['a registry host in the image', { image: 'quay.io/x', digest, stage: 'full' }],
     ['no stage', { image: 'devcontainer', digest }],
   ] as const) {
-    ck(`CONTROL: the pin reader refuses ${label}`, 'error' in readImagePin(JSON.stringify(doc), 'r'));
+    ck(
+      `CONTROL: the pin reader refuses ${label}`,
+      'error' in readImagePin(JSON.stringify(doc), 'r')
+    );
   }
   ck('CONTROL: the pin reader refuses non-JSON', 'error' in readImagePin('{', 'r'));
 
-  const ref = `ghcr.io/rediacc/devcontainer@${digest}`;
+  const ref = `${WK_IMAGE_REGISTRY}/devcontainer@${digest}`;
   const job = (name: string, opts: { perms?: string[]; runsOn?: string; nfi?: boolean } = {}) => [
     `  ${name}:`,
     `    name: ${name}`,
@@ -2745,7 +2713,10 @@ function selftestContainer(ck: Check): void {
   const wf = (...jobs: string[][]) =>
     ['name: X', 'permissions: {}', 'jobs:', ...jobs.flat(), ''].join('\n');
 
-  const bare = wf(job('lane-a', { perms: ['contents: read', 'packages: read'], nfi: true }), job('lane-b'));
+  const bare = wf(
+    job('lane-a', { perms: ['contents: read', 'packages: read'], nfi: true }),
+    job('lane-b')
+  );
   const first = rewriteContainerRegions(bare, ['lane-a'], ref);
   const regionAt = first.text.indexOf('    # >>> image-container');
   ck(
@@ -2760,14 +2731,16 @@ function selftestContainer(ck: Check): void {
   );
   ck(
     'CONTROL: an unlisted lane gets no region',
-    (first.text.split('# >>> image-container').length - 1) === 1
+    first.text.split('# >>> image-container').length - 1 === 1
   );
   const again = rewriteContainerRegions(first.text, ['lane-a'], ref);
   ck('CONTROL: a fresh region rewrites to the identical text', again.text === first.text);
   const moved = rewriteContainerRegions(first.text, ['lane-a'], ref.replace('bbbb', 'cccc'));
   ck(
     'a stale digest in the region is rewritten from the pin',
-    moved.text !== first.text && moved.text.includes('cccc') && !moved.text.includes(`image: ${ref}`)
+    moved.text !== first.text &&
+      moved.text.includes('cccc') &&
+      !moved.text.includes(`image: ${ref}`)
   );
   const dropped = rewriteContainerRegions(first.text, [], ref);
   ck(
@@ -2967,8 +2940,7 @@ function main(argv: string[]): void {
   const write = argv.includes('--write') || dryRun;
   // `--dry-run --fail-on-drift` is the FRESHNESS check the plain run never was: it passed on 2026-09-28 while the committed quality-code shard manifest and six ci-quality.yml regions no longer matched what `--write` emits, and only CI's shard-receipt aggregator ("ran 16 gate(s) but the plan gives it 18") caught the drift, after the push.
   const failOnDriftFlag = argv.includes('--fail-on-drift');
-  // `--generated-root <dir>` READS AND WRITES THE GENERATED FILES (the workflow and the shard manifests) under <dir> instead of the tree, while every INPUT (headers, lock, manifest.ts, package.json) still comes from the tree. It exists so the selftest can prove the freshness check both ways on a scratch copy -- a stale region fails, a fresh one passes -- without ever writing the real workflow.
-  // Refused outside `--write`/`--dry-run`: the binding check judges the real workflow or nothing.
+  // `--generated-root <dir>` READS AND WRITES THE GENERATED FILES (the workflow and the shard manifests) under <dir> instead of the tree, while every INPUT (headers, lock, manifest.ts, package.json) still comes from the tree. It exists so the selftest can prove the freshness check both ways on a scratch copy -- a stale region fails, a fresh one passes -- without ever writing the real workflow. Refused outside `--write`/`--dry-run`: the binding check judges the real workflow or nothing.
   const genAt = argv.indexOf('--generated-root');
   const genRoot = genAt >= 0 ? path.resolve(argv[genAt + 1] ?? '') : ROOT;
   if (genAt >= 0 && (argv[genAt + 1] === undefined || !write)) {
@@ -2983,8 +2955,7 @@ function main(argv: string[]): void {
     );
     process.exit(1);
   };
-  // `--lane <job>` STAGES THE CUTOVER ONE LANE AT A TIME, and without it the cutover
-  // cannot be staged at all.
+  // `--lane <job>` STAGES THE CUTOVER ONE LANE AT A TIME, and without it the cutover cannot be staged at all.
   //
   // `--write` rewrites EVERY region from the full declared set. Today 167 declared gates would be emitted while their hand-written copies still exist, so a write meant to convert one lane silently duplicates 46 steps in three others. That is not a hypothetical: it happened twice while this tool was being built, and both times the region bodies had to be restored from `git show HEAD:`.
   //
@@ -3069,8 +3040,7 @@ function main(argv: string[]): void {
       );
       process.exit(1);
     }
-    // A GATE WITH NO STEP OF ITS OWN CANNOT DECLARE ONE. 132 gate-tests share the single step 'Quality-gate unit tests' and 10 i18n checks share 'i18n': they are sub-gates of one aggregate command, not steps. Emitting a header for each would write the same step name N times into a lane. This is the ceiling on what --extract can ever cover, and it is better stated here than
-    // discovered per gate.
+    // A GATE WITH NO STEP OF ITS OWN CANNOT DECLARE ONE. 132 gate-tests share the single step 'Quality-gate unit tests' and 10 i18n checks share 'i18n': they are sub-gates of one aggregate command, not steps. Emitting a header for each would write the same step name N times into a lane. This is the ceiling on what --extract can ever cover, and it is better stated here than discovered per gate.
     const sharers = (
       manifestText.match(
         new RegExp(`step: '${reg.step.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`, 'g')
@@ -3148,8 +3118,7 @@ function main(argv: string[]): void {
     process.exit(1);
   }
 
-  // A MALFORMED HEADER REFUSES EVERY MODE, NOT JUST THE VERIFY ONE. This list was collected here and then only ever folded into `problems`, which is reached AFTER the `write` branch returns -- so `--write` and `--dry-run` both ran to completion with a voided declaration in the tree and said nothing. Found 2026-09-06 by two agents who planted `---- /gate ----` in a gate-test,
-  // watched `--dry-run` exit 0 without naming the file, and correctly concluded their headers were unread. They were half right: the tree really was out of scope, and this is the OTHER half.
+  // A MALFORMED HEADER REFUSES EVERY MODE, NOT JUST THE VERIFY ONE. This list was collected here and then only ever folded into `problems`, which is reached AFTER the `write` branch returns -- so `--write` and `--dry-run` both ran to completion with a voided declaration in the tree and said nothing. Found 2026-09-06 by two agents who planted `---- /gate ----` in a gate-test, watched `--dry-run` exit 0 without naming the file, and correctly concluded their headers were unread. They were half right: the tree really was out of scope, and this is the OTHER half.
   //
   // Refusing a `--write` matters more than refusing a report. A voided declaration is a gate this binder cannot see, so the region it would have emitted is written WITHOUT it, and `--write` owns whole regions: the gate does not become unregistered, it disappears.
   if (malformed.length > 0) {
@@ -3165,8 +3134,7 @@ function main(argv: string[]): void {
   if (write) {
     const byLane = new Map<string, Emitting[]>();
     const handRegistered: string[] = [];
-    // ONLY `kind: step` IS EMITTED. A shared-step gate rides a hand-written step it does not own, and a `test` or `local-only` gate has no step at all; emitting any of them would write one duplicate copy of the shared step per gate into a region. HELD OUT BY THEIR OWN DECLARATION, and NAMED. `emit: false` means the gate owns a hand-written step a region must not take over; not saying so
-    // would make "declared and deliberately not emitted" look identical to "declared and forgotten", which is the exact confusion the import guard above exists to end.
+    // ONLY `kind: step` IS EMITTED. A shared-step gate rides a hand-written step it does not own, and a `test` or `local-only` gate has no step at all; emitting any of them would write one duplicate copy of the shared step per gate into a region. HELD OUT BY THEIR OWN DECLARATION, and NAMED. `emit: false` means the gate owns a hand-written step a region must not take over; not saying so would make "declared and deliberately not emitted" look identical to "declared and forgotten", which is the exact confusion the import guard above exists to end.
     const declaredHoldouts = declared.filter((b) => b.kind === 'step' && b.emit === false);
     if (declaredHoldouts.length > 0) {
       console.log(
@@ -3235,8 +3203,7 @@ function main(argv: string[]): void {
         for (const id of assigned.replicated) console.log(`    ${id}`);
       }
       shardMap.set(job, assigned.legs);
-      // WHY THE LEGS ARE WHAT THEY ARE, every run: kept (and by how little a re-plan would gain) or replaced (and what was wrong with the committed plan).
-      // The findings go to stderr, so `--check` (which runs this as a child with stdout ignored) names what broke the committed plan, not just the file.
+      // WHY THE LEGS ARE WHAT THEY ARE, every run: kept (and by how little a re-plan would gain) or replaced (and what was wrong with the committed plan). The findings go to stderr, so `--check` (which runs this as a child with stdout ignored) names what broke the committed plan, not just the file.
       console.log(`shard plan ${job}: ${assigned.sticky.reason}`);
       for (const f of assigned.sticky.findings) console.error(`  shard plan: ${f}`);
       // T2.10. THE COMMITTED MANIFEST A CI LEG AND `npm run ci -- --lane/--shard` BOTH READ, written from the SAME `assigned.legs` the `matrix.shard` conjunct above comes from, so the two can never name different plans. `--dry-run` reports what would change without writing, same as the workflow rewrite below.
@@ -3306,8 +3273,7 @@ function main(argv: string[]): void {
       `container lanes: ${contained.lanes.length} of ${CONTAINER_LANES.length} written (${contained.lanes.join(', ') || 'none'}) from ${pin.ref}`
     );
     const text = contained.text;
-    // REFUSE TO SILENTLY DELETE A STEP THE MANIFEST STILL POINTS AT. A step inside the region that no declared gate emits is either stale (fine to drop) or a gate someone hand-added in the wrong place (NOT fine -- dropping it stops that gate running in CI). The manifest is the arbiter: if it names the step, the removal is a regression and this refuses rather than reporting a tidy
-    // "rewrote N region(s)". Keyed by the JOB the gate was PLACED in, which is byLane's key -- not b.lane, which is the optional header override and is undefined for most gates. Keying on it made every emitted step look like an unexplained removal. THE RECEIPT STEPS COUNT AS EMITTED, and leaving them out made a sharded lane unwritable a second time. `rewriteRegions` emits them
+    // REFUSE TO SILENTLY DELETE A STEP THE MANIFEST STILL POINTS AT. A step inside the region that no declared gate emits is either stale (fine to drop) or a gate someone hand-added in the wrong place (NOT fine -- dropping it stops that gate running in CI). The manifest is the arbiter: if it names the step, the removal is a regression and this refuses rather than reporting a tidy "rewrote N region(s)". Keyed by the JOB the gate was PLACED in, which is byLane's key -- not b.lane, which is the optional header override and is undefined for most gates. Keying on it made every emitted step look like an unexplained removal. THE RECEIPT STEPS COUNT AS EMITTED, and leaving them out made a sharded lane unwritable a second time. `rewriteRegions` emits them
     // from the same `shardMap` it conjuncts with, so on the next `--write` they are stripped and re-emitted exactly like any other region step -- but they belong to no declared gate, so the set below did not know they were coming back. The strip guard therefore refused every re-run with "2 step(s) would be REMOVED ... and re-emitted by nothing", found on the first lane ever
     // populated into `SHARD_COUNTS`: D4 built the steps, and nothing re-ran the writer over a lane that had them.
     const emitted = new Set([
@@ -3316,8 +3282,7 @@ function main(argv: string[]): void {
         .filter((lane) => (shardMap.get(lane)?.size ?? 0) > 0)
         .flatMap((lane) => RECEIPT_STEP_NAMES.map((step) => `${lane}: ${step}`)),
     ]);
-    // THE STRIP GUARD (box A2). The refusal below catches a drop the MANIFEST still names, which is the loudest case. It is not the only harmful one, and the gap has a receipt: strip `DOCKERHUB_TOKEN` from `.github/workflows/ci-quality.yml:1159` in a scratch copy and run the whole battery -- NOTHING reds. A step can carry `env:`, `if:`, a `with:` block or a secret that no manifest
-    // entry mentions, and dropping it was reported as a tidy `rewrote N region(s)`.
+    // THE STRIP GUARD (box A2). The refusal below catches a drop the MANIFEST still names, which is the loudest case. It is not the only harmful one, and the gap has a receipt: strip `DOCKERHUB_TOKEN` from `.github/workflows/ci-quality.yml:1159` in a scratch copy and run the whole battery -- NOTHING reds. A step can carry `env:`, `if:`, a `with:` block or a secret that no manifest entry mentions, and dropping it was reported as a tidy `rewrote N region(s)`.
     //
     // So `--write` now refuses on ANY drop the rewrite cannot re-emit, whatever the reason, and `--allow-drop <step>` is the single typed escape. The two refusals stay SEPARATE rather than merged: a manifest-claimed drop is a regression and says so,
     // while an unexplained drop may be legitimate cleanup that simply has to be named.
@@ -3350,11 +3315,9 @@ function main(argv: string[]): void {
     }
     // EVERY LANE WITH GATES MUST HAVE A REGION. Emitting into a file that has none would silently drop the step and report success -- the vacuity shape again. THE REGION IS THE OPT-IN, which is what makes a STAGED cutover expressible.
     //
-    // This used to refuse outright unless EVERY lane holding a declared gate had a region. That sounds protective and is not: 46 gates across five lanes declare headers while still being hand-registered, so `--write` refused repo-wide and no lane could go first. All-or-nothing across five lanes, each with its own step-ordering constraints, is the opposite of the one-lane pilot a
-    // cutover needs.
+    // This used to refuse outright unless EVERY lane holding a declared gate had a region. That sounds protective and is not: 46 gates across five lanes declare headers while still being hand-registered, so `--write` refused repo-wide and no lane could go first. All-or-nothing across five lanes, each with its own step-ordering constraints, is the opposite of the one-lane pilot a cutover needs.
     //
-    // A lane with no region does not emit, and its gates keep running from their hand-written steps -- a state the verify path already checks per gate, since `stepInJob` demands the step exist whether a region wrote it or not. What the old refusal actually guarded, a region silently losing its steps, is caught anyway: delete a region and check:ci-parity reds on a manifest entry
-    // naming a step that is no longer in the file.
+    // A lane with no region does not emit, and its gates keep running from their hand-written steps -- a state the verify path already checks per gate, since `stepInJob` demands the step exist whether a region wrote it or not. What the old refusal actually guarded, a region silently losing its steps, is caught anyway: delete a region and check:ci-parity reds on a manifest entry naming a step that is no longer in the file.
     const notYet = [...scoped.keys()].filter((j) => !lanes.includes(j));
     if (notYet.length > 0) {
       console.log(
@@ -3404,8 +3367,7 @@ function main(argv: string[]): void {
     const runsScriptDirectly =
       lockEntry !== undefined &&
       !lockEntry.run.startsWith('npm run ') &&
-      // `.py` TOO, and for the W7 P4 reason. A gate registered as a bare path with no package.json key keeps that shape when its path is repointed at a Python port; keying on `.sh` alone meant the checks below -- run must match the header's derived run, and no package.json key may exist -- silently stopped applying to a gate the moment it was ported. Same class as the `paths:`
-      // glob that stops selecting its own gate once the leaf is a `.py`.
+      // `.py` TOO, and for the W7 P4 reason. A gate registered as a bare path with no package.json key keeps that shape when its path is repointed at a Python port; keying on `.sh` alone meant the checks below -- run must match the header's derived run, and no package.json key may exist -- silently stopped applying to a gate the moment it was ported. Same class as the `paths:` glob that stops selecting its own gate once the leaf is a `.py`.
       (lockEntry.run.endsWith('.sh') || lockEntry.run.endsWith('.py'));
     if (runsScriptDirectly) {
       if (lockEntry.run !== b.run) {
