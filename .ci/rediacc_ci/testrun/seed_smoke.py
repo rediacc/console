@@ -9,6 +9,7 @@ Deliberate differences from the twin (Rule T), each with a test that fails on th
   3. The wrangler config was written to the fixed `/tmp/wrangler-seed.toml` and removed only on success, so a failed seed left it behind and two runs on one host shared it. It is a private temporary directory removed on every path.
   4. Without `$GITHUB_OUTPUT` the twin failed AFTER seeding with a redirection error. The `SMOKE_TEST_TOKEN=` line goes to stdout instead, so a local run reports the token it just seeded.
   5. The token is announced with `::add-mask::` first. It is a bearer token with a license scope and a step output is not masked on its own.
+  6. The twin seeds no Terms of Service acceptance, so every license route answers 403 TERMS_ACCEPTANCE_REQUIRED for the seeded user (`requireCurrentTerms`, private/account/src/middleware/terms.ts:97-111). `terms_sql` appends one `terms_acceptances` row for the Terms version in force, read from `.ci/config/legal-documents.json` (the manifest the Worker reads) so a Terms bump needs no edit here.
 """
 
 import datetime
@@ -83,6 +84,41 @@ VALUES ('${token_id}', 'Smoke Test Token', '${token_hash}', '${sub_id}', '${team
 def seed_sql(d: dict[str, str]) -> str:
     """The single-batch seed, text-identical to the twin's `--command` argument."""
     return SEED_SQL.substitute(d)
+
+
+TERMS_MARKER = "-- smoke-terms-acceptance"
+TERMS_NOTICE = "Seeded by the PR preview smoke test: the preview user holds the Terms in force."
+
+TERMS_SQL = string.Template(
+    """
+-- smoke-terms-acceptance
+INSERT OR IGNORE INTO terms_acceptances (id, subject_kind, subject_id, document, version, text_sha256, method, notice_locale, notice_text, notice_sha256, accepted_at)
+VALUES ('${terms_id}', 'user', '${user_id}', 'terms-of-service', '${terms_version}', '${terms_sha256}', 'web-checkbox', 'en', '${terms_notice}', '${notice_sha256}', '${now}');
+"""
+)
+
+
+def terms_in_force(today: str) -> dict[str, str]:
+    """The Terms version in force on `today` (YYYY-MM-DD), as the Worker's `termsAt` picks it (packages/shared/src/legal/index.ts:63): the newest version whose effective date has passed, else the oldest."""
+    manifest = paths.repo_root() / ".ci" / "config" / "legal-documents.json"
+    versions = json.loads(manifest.read_text(encoding="utf-8"))["documents"]["terms-of-service"][
+        "versions"
+    ]
+    in_force = [v for v in versions if v["effective"] <= today]
+    return in_force[-1] if in_force else versions[0]
+
+
+def terms_sql(d: dict[str, str]) -> str:
+    """The acceptance row for the seeded user: the one delta from the twin's batch."""
+    v = terms_in_force(d["now"][:10])
+    return TERMS_SQL.substitute(
+        d,
+        terms_id=d["user_id"].replace("user", "terms"),
+        terms_version=v["version"],
+        terms_sha256=v["sha256"],
+        terms_notice=TERMS_NOTICE,
+        notice_sha256=sha256_hex(TERMS_NOTICE),
+    )
 
 
 def wrangler_config(pr: str, db_name: str, db_uuid: str) -> str:
@@ -176,7 +212,7 @@ def main(argv: list[str]) -> int:
                 "--config",
                 str(config),
                 "--command",
-                seed_sql(d),
+                seed_sql(d) + terms_sql(d),
             ],
             cwd=worker_dir,
             stdin=subprocess.DEVNULL,

@@ -62,7 +62,10 @@ def normalised(outcome: ts.Outcome, directory: pathlib.Path) -> list[dict[str, t
     calls = []
     for original in outcome.calls:
         call = dict(original)
-        masked = [as_twin_name(ts.mask(a, directory)) for a in original["argv"]]
+        masked = [
+            as_twin_name(ts.mask(a, directory)).split("\n" + seed_smoke.TERMS_MARKER)[0]
+            for a in original["argv"]
+        ]
         call["argv"] = ["<CONFIG>" if a.endswith("wrangler-seed.toml") else a for a in masked]
         if isinstance(call.get("config"), str):
             call["config"] = as_twin_name(call["config"])
@@ -111,6 +114,30 @@ def test_derive_is_the_twins_token_shape() -> None:
     assert d["token"] == "rdt_smoke_7_" + seed_smoke.sha256_hex("k")[:32]
     assert d["token_hash"] == seed_smoke.sha256_hex(d["token"])
     assert d["email_hash"] == seed_smoke.sha256_hex("smoketest-pr7@rediacc.io")
+
+
+def test_delta_terms_acceptance_row_names_the_version_in_force() -> None:
+    d = seed_smoke.derive("7", "k", "2026-11-21T10:00:00.000Z")
+    sql = seed_smoke.terms_sql(d)
+    assert "INSERT OR IGNORE INTO terms_acceptances" in sql
+    assert "'smoke-user-pr-7'" in sql
+    assert "'smoke-terms-pr-7'" in sql
+    assert "'2026-11-11'" in sql
+    assert "f4e7d87cb789c0b60443f2f96a5b1170b542cd8c6a57b0c1b6446c845e3a7502" in sql
+    # Before the second version took effect, the first one is the one in force.
+    assert seed_smoke.terms_in_force("2026-06-01")["version"] == "2026-03-15"
+
+
+def test_delta_port_seeds_terms_after_the_twins_batch(tmp_path: pathlib.Path) -> None:
+    (tmp_path / "py").mkdir()
+    env = ts.py_env({**env_for(tmp_path / "py"), "FAKE_OUT_NPX": NEW_LISTING})
+    new = ts.run_side(ts.py_cmd(MODULE), tmp_path / "py", ("npx",), env)
+    assert new.code == 0
+    command = new.calls[1]["argv"][-1]
+    assert seed_smoke.TERMS_MARKER in command
+    assert command.index("INSERT OR IGNORE INTO api_tokens") < command.index(
+        seed_smoke.TERMS_MARKER
+    )
 
 
 # ---- intentional deltas --------------------------------------------------------------------------------------------------
