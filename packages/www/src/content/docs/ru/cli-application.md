@@ -7,7 +7,7 @@ order: 2
 language: ru
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ru/cli.json
-sourceHash: "c1e954732aaff197"
+sourceHash: "eb79cb5438f07b61"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1922,6 +1922,7 @@ rdc repo policy set [ref] [options]
 | `--max-quota <size>` | {{t:cli.commands.repo.policy.set.maxQuotaOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--grow-threshold <percent>` | {{t:cli.commands.repo.policy.set.growThresholdOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--grow-step <step>` | {{t:cli.commands.repo.policy.set.growStepOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--grow-when-free-bytes <size>` | {{t:cli.commands.repo.policy.set.growWhenFreeBytesOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--auto-trim <bool>` | {{t:cli.commands.repo.policy.set.autoTrimOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--trim-interval <hours>` | {{t:cli.commands.repo.policy.set.trimIntervalOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--memory-max <size>` | {{t:cli.commands.repo.policy.set.memoryMaxOption}} | {{t:cli.docs.optionLabels.no}} | - |
