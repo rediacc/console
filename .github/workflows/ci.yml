@@ -1576,8 +1576,6 @@ jobs:
     # step below writes it to $GITHUB_STEP_SUMMARY. Cloudflare-side publish and
     # cleanup are untouched -- the operator's ask was to stop publishing them on
     # the GitHub side only.
-    outputs:
-      ed25519_public_key: ${{ steps.preview-secrets.outputs.ed25519_public_key }}
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
@@ -1750,7 +1748,6 @@ jobs:
           AWS_SES_FROM: ${{ env.BWS_AWS_SES_FROM }}
           AWS_SES_CONFIGURATION_SET: ${{ env.BWS_AWS_SES_CONFIGURATION_SET }}
         run: |
-          echo "ed25519_public_key=${ACCOUNT_ED25519_PUBLIC_KEY}" >> "$GITHUB_OUTPUT"
           PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_preview_worker_secrets
       - name: Blank the step-scoped signing key(s) for the rest of the job
         if: always()
@@ -1819,6 +1816,7 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
             CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
@@ -1856,7 +1854,9 @@ jobs:
         env:
           PREVIEW_URL: https://pr-${{ env.PR_NUMBER }}.rediacc.workers.dev
           SMOKE_TEST_TOKEN: ${{ steps.seed.outputs.SMOKE_TEST_TOKEN }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ needs.deploy-preview.outputs.ed25519_public_key }}
+          # Read in this job, not taken from a deploy-preview job output: the bws-secrets action masks the value,
+          # and the runner drops a job output that carries a masked string (the step output came through empty).
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
 
   # ============================================================================
   # VALIDATE INSTALL METHODS - Full pre-publish validation on all 6 platforms
