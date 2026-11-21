@@ -599,8 +599,8 @@ ARG BW_SHA256_AMD64=bfc7643cbc20f970bf04b994f96489703fcf77217a2384f1743e43848363
 ARG BW_SHA256_ARM64=39e8336376739bbe5306471df0667793757ef1e243df3846461f66be9166e9d8
 RUN ARCH=$(dpkg --print-architecture) \
     && case "$ARCH" in \
-    amd64) BW_ASSET="bw-linux-${BW_VERSION}.zip";       BW_SHA="${BW_SHA256_AMD64}" ;; \
-    arm64) BW_ASSET="bw-linux-arm64-${BW_VERSION}.zip"; BW_SHA="${BW_SHA256_ARM64}" ;; \
+    amd64) BW_ASSET="bw-bit-linux-${BW_VERSION}.zip";       BW_SHA="${BW_SHA256_AMD64}" ;; \
+    arm64) BW_ASSET="bw-bit-linux-arm64-${BW_VERSION}.zip"; BW_SHA="${BW_SHA256_ARM64}" ;; \
     *) echo "unsupported arch for bw: $ARCH" >&2; exit 1 ;; \
     esac \
     && curl -fsSL $CURL_RETRY -o /tmp/bw.zip \
