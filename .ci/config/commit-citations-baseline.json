@@ -265,10 +265,6 @@
       "path": ".claude/rediacc_hooks/git/githooks.py",
       "sha": "84cfe4e55"
     },
-    "8fd1fcd3021350cb": {
-      "path": ".claude/rediacc_hooks/tests/test_wl_loop_next.py",
-      "sha": "d6a6e18b5"
-    },
     "94f1325b2ed1eded": {
       "path": "scripts/ci-runner/manifest.ts",
       "sha": "94934de41"
