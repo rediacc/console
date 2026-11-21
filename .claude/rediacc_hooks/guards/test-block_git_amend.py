@@ -27,6 +27,19 @@ CASES = [
     ("sh heredoc still blocked", "sh <<EOF\n" + A + "\nEOF", True),
     ("cat heredoc is DOCS, allowed", "cat > R.md <<'EOF'\nnever run " + A + "\nEOF", False),
     ("tee heredoc is DOCS, allowed", "tee R.md <<'EOF'\nnever run " + A + "\nEOF", False),
+    # The lift (`shellscan.lifted_commands`) is what sees these; the stripped view alone never did, so each goes green if the lift is dropped.
+    (
+        "unquoted heredoc substitution amends",
+        "cat > R.md <<EOF\n$(" + A + " --no-edit)\nEOF",
+        True,
+    ),
+    (
+        "quoted heredoc substitution is data, allowed",
+        "cat > R.md <<'EOF'\n$(" + A + " --no-edit)\nEOF",
+        False,
+    ),
+    ("env prefix does not hide an amend", "FOO=bar " + A + " --no-edit", True),
+    ("quoted command word is still git", '"git" commit --' + "amend --no-edit", True),
     ("ordinary commit allowed", "git commit -m 'fix: x'", False),
     ("unrelated command allowed", "ls -la", False),
     # `<<-` strips leading TABS from the terminator, so bash closes the heredoc at the tab-indented delimiter and the NEXT line is ordinary shell. The scanner used to compare the raw line, never matched, and swallowed the rest of the command to EOF -- a real amend rode through. Reported on #552, reproduced, fixed.

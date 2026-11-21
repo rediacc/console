@@ -84,6 +84,18 @@ CASES = [
         REFUSED,
     ),
     (
+        "CONTROL: grepping the docs for the trailer authors no message (the verb gate)",
+        "grep -rn '%s' docs/" % TRAILER,
+        False,
+        "",
+    ),
+    (
+        "CONTROL: a log audit naming the trailer authors no message (the verb gate)",
+        "git log --oneline --grep='%s' | head -5" % TRAILER,
+        False,
+        "",
+    ),
+    (
         "CONTROL: a gh body file this command writes is not a commit",
         "printf 'prose\\n' > body.md; gh pr create --title t --body-file body.md",
         False,
