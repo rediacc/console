@@ -56,15 +56,15 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 <!-- queue:inflight:begin -->
 - Mode: effort quiet; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
-- Branch: 1104-1, PR #605 open.
-- Plans on the PR (6):
-  - agent/plans/PLAN-backup-program.md -- 186 of 192 boxes ticked, the PR body's `Plan:` line
-  - agent/plans/PLAN-backup-restore-path.md -- 8 of 10 boxes ticked, the PR body's `Plan:` line
-  - agent/plans/PLAN-stop-hook-retro-20261110.md -- 8 of 8 boxes ticked, the PR body's `Plan:` line
-  - agent/plans/_done/PLAN-submodule-branch-coordination-guard.md -- 5 of 8 boxes ticked, the PR body's `Plan:` line
-  - agent/plans/PLAN-proxy-cd-six-targets.md -- 27 of 31 boxes ticked, the PR body's `Plan:` line
-  - agent/plans/PLAN-repo-docker-storage-prune.md -- 14 of 14 boxes ticked, the PR body's `Plan:` line
-- Work outside the PR's plans (25 epic(s)):
+- Branch: 1121-1, no PR yet.
+- Landing tree: branch 1104-1, PR #605 open.
+- Development tree: branch 1121-1, no PR yet.
+- Plans on the PR (4):
+  - agent/plans/PLAN-ciquick-cpu.md -- 13 of 24 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-program.md -- 186 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-plane-shared-bucket-hardening.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-renet-executor-tiered-license-check.md -- 3 of 4 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+- Work outside the PR's plans (26 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 30 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 48 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
@@ -82,23 +82,24 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1936 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1991 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
   - epic 2255f2d2, no plan, 2 commit(s) on the branch, 0 open item(s): Convert stale GitHub issues (console, renet, account) into plan files
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 6 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
-  - epic fe958571, no plan, 1 commit(s) on the branch, 0 open item(s): nginx2root and PHP 2026-11-19 security patching (hostinger + templates)
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:abc1b277518502af3.
-- Leased items: 11: #0e9506a2 (worker:be39zjfwp, d778be9d), #116b1a79 (worker:bb16p240t, d778be9d), #28b00eb3 (worker:bph9m0bev, d778be9d), #3d38c1c9 (worker:queue, d778be9d), #3e7dcac6 (worker:queue, d778be9d), #45585ba5 (worker:b2j93ucwq, d778be9d), #68452957 (worker:queue, d778be9d), #a1ecc191 (worker:bjgcdk4yc, d778be9d), #ab9c68b1 (worker:be39zjfwp, d778be9d), #cd9c1545 (worker:abc1b277518502af3, d778be9d), #fbe192ca (worker:be39zjfwp, d778be9d).
-- Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
+  - epic fe958571, no plan, 15 commit(s) on the branch, 0 open item(s): nginx2root and PHP 2026-11-19 security patching (hostinger + templates)
+  - epic 422370f4, no plan, 5 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
+- Writers: 3 live of writer_cap 25 (session d778be9d): worker:a2ae4b1869d8f09e7, worker:a2197ecd4f44772c8, worker:adc0de51034a83247.
+- Leased items: 14: #0e9506a2 (worker:be39zjfwp, d778be9d), #116b1a79 (worker:bb16p240t, d778be9d), #11b5bce3 (worker:a2ae4b1869d8f09e7, d778be9d), #28b00eb3 (worker:bph9m0bev, d778be9d), #3d38c1c9 (worker:queue, d778be9d), #3e7dcac6 (worker:queue, d778be9d), #45585ba5 (worker:b2j93ucwq, d778be9d), #4e60000d (worker:a2197ecd4f44772c8, d778be9d), #68452957 (worker:queue, d778be9d), #688c7385 (worker:adc0de51034a83247, d778be9d), #a1ecc191 (worker:bjgcdk4yc, d778be9d), #ab9c68b1 (worker:be39zjfwp, d778be9d), and 2 more.
+- Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 3; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 29 of 85 plans done, 1315 of 1590 boxes done (82%).
+Promoted: 29 of 85 plans done, 1316 of 1590 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -186,7 +187,7 @@ Promoted: 29 of 85 plans done, 1315 of 1590 boxes done (82%).
 | 82 | PLAN-account-sidebar-redesign.md | 12/15 | 3 open |
 | 83 | PLAN-email-sender-separation.md | 11/18 | 7 open |
 | 84 | PLAN-pr-loop-single-source.md | 0/9 | 9 open |
-| 85 | PLAN-two-track-merge-dev.md | 34/44 | 10 open |
+| 85 | PLAN-two-track-merge-dev.md | 35/44 | 9 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue

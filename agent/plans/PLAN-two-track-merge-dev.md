@@ -203,10 +203,11 @@ Inventory (sonnet Explore, 2026-11-20): review records, finding fixes, investiga
   Depends on: RB1.
   Accept: the RB1 test file gains a planted merged-parent fixture whose block text names `/branch-rebase` and the RB4 commands, and a control where the PR is still open (no block); `npm run -s check:ci-hooks-resolvable` rc 0.
     (ticked) 2026-11-20T12:26:56Z by d778be9d: commit:a54889467 behind_block (.claude/hooks/stop/wl_rebase.py:228) appended to worktree-unlanded after a merge; python3 .claude/hooks/stop/test-rebase-consistency.py rc 0, 26 controls: the merged-parent fixture's block names /branch-rebase main and the RB4 commands, the open-PR control blocks nothing; npm run -s check:ci-hooks-resolvable rc 0
-- [ ] RB3 [writer] Widen `behind_base_refusal` (.claude/rediacc_hooks/guards/block_unverified_push.py:822-905) to judge lease branches as well as MMDD-N branches, with the base read as in RB1.
+- [x] RB3 [writer] Widen `behind_base_refusal` (.claude/rediacc_hooks/guards/block_unverified_push.py:822-905) to judge lease branches as well as MMDD-N branches, with the base read as in RB1.
   Owns: .claude/rediacc_hooks/guards/block_unverified_push.py, .claude/rediacc_hooks/guards/test-block_unverified_push.py
   Depends on: RB1.
   Accept: `python3 .claude/rediacc_hooks/guards/test-block_unverified_push.py` rc 0 with a lease-branch case refused when behind and admitted at the base; a `DEFECT` tuple that drops lease branches turns the suite red under `npm run -s check:ci-guard-mutations` (rc 0).
+    (ticked) 2026-11-21T04:38:49Z by d778be9d: commit:d8c9ac142 landed on 1121-1: behind_base_refusal judges every branch a push from a lease names, base via wl_rebase.base_branch (cut_from while origin has it, else main); test-block_unverified_push.py rc 0 (334 cases, 18 new lease cases); plant on the real file rc 1 (7 LEASE cases); MUTANTS lease-branch-dropped admits both refused pushes. check:ci-guard-mutations rc 0 but never reads hook guard MUTANTS (#de875def), so the mutant is proven by the suite and the plant
 - [x] RB4 [writer] Post-rebase proof: a verb that runs `--git verify-rebase` and `python3 .claude/hooks/stop/wl_review.py --check` after a rebase and names every dev commit with no review record (which the successor map cannot carry) and every commit whose patch-id changed (conflict-resolved), before the push.
   Owns: .claude/hooks/stop/wl_rebase.py, .claude/hooks/stop/test-rebase-consistency.py
   Depends on: RB1.
