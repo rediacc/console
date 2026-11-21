@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-20T20:30:27.155Z",
+  "generatedAt": "2026-11-21T10:20:58.079Z",
   "legs": [
     {
       "index": 1,
@@ -486,14 +486,15 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_focus.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_guide_and_deferrals.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_fixset_scope.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_landing_loop.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_lessons.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_messaging_removed.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_deps.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_planbox.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_planrec_prompt_stdin.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_report_queue.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_review_two_trees.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_reviewclass.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_turbo_ci_red.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_waiter_controls.py"
       ]
     },
@@ -530,6 +531,8 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_watchdog_binary_exec_guard.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_watchdog_schedule_exemption.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_watchdog_supersession.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_composite_actions.py",
+        "pytest:.ci/rediacc_ci/tests/test_action_scripts.py",
         "pytest:.ci/rediacc_ci/tests/test_bench_lock_users.py",
         "pytest:.ci/rediacc_ci/tests/test_bootstrap_ruff_resolver.py",
         "pytest:.ci/rediacc_ci/tests/test_build_buildx_push_web.py",
@@ -626,6 +629,7 @@
         "pytest:.ci/rediacc_ci/tests/test_security_dependency_inventory.py",
         "pytest:.ci/rediacc_ci/tests/test_security_shellcheck.py",
         "pytest:.ci/rediacc_ci/tests/test_setup_account_bws.py",
+        "pytest:.ci/rediacc_ci/tests/test_setup_aws_cli.py",
         "pytest:.ci/rediacc_ci/tests/test_setup_build_packages.py",
         "pytest:.ci/rediacc_ci/tests/test_shape_probe_agreement.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_linux_packages.py",
@@ -652,6 +656,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_effort.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_liveproof.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_lkg.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_longred.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_models.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_outcomes.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_priority.py",
@@ -806,7 +811,6 @@
         "pytest:.ci/rediacc_ci/tests/test_version_bump.py",
         "pytest:.ci/rediacc_ci/tests/test_version_resolve_version.py",
         "pytest:.claude/rediacc_hooks/tests/test_block_origin_clone_path_words.py",
-        "pytest:.claude/rediacc_hooks/tests/test_block_turbo_early_push_merge_phase.py",
         "pytest:.claude/rediacc_hooks/tests/test_gh_flag_spellings.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_gen_docs.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_pr_freeze.py",
