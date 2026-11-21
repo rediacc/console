@@ -1352,6 +1352,10 @@
         {
           "id": "check:ci-env-manifest",
           "reason": "It imports worklist_env_registry only for its registry loader; the agent/ the derivation finds there is a selftest fixture's `exclusions` key, and the '*n' it finds in .ci/config/python-env-registry.json is an opaque env-read key (the shellscan.py entry for a computed variable name), not a file glob. It reads no plan file, ledger or .ci/config/plan-boxes.json."
+        },
+        {
+          "id": "check:ci-prose-duplication",
+          "reason": "Its only citation of this record is scope_mirrors.CORPUS_GLOBS (agent/plans/QUEUE.md), which it imports for normalize, md_blocks, parse_anchors and mirror_spans; it never calls corpus_files, and its verdict reads only its fixed family (CLAUDE.md, .claude/commands/pr-babysit.md, .claude/agents/pr-babysitter.md, .claude/commands/pr-merge.md) and .ci/config/scope-mirrors.json."
         }
       ]
     },

@@ -5969,6 +5969,29 @@
     }
   },
   {
+    "id": "check:ci-prose-duplication",
+    "run": "npm run check:ci-prose-duplication",
+    "gate": true,
+    "paths": [
+      ".ci/**",
+      ".claude/agents/pr-babysitter.md",
+      ".claude/commands/pr-babysit.md",
+      ".claude/commands/pr-merge.md",
+      "CLAUDE.md",
+      "package.json"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_prose_duplication.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "PR loop docs carry no duplicated passage"
+    }
+  },
+  {
     "id": "check:ci-e2e-case-blind",
     "run": "npm run check:ci-e2e-case-blind",
     "gate": true,

@@ -5717,6 +5717,28 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // CLAUDE.md, /pr-babysit, the pr-babysitter agent and /pr-merge are what an agent reads to drive the PR loop; agent/plans/PLAN-pr-loop-single-source.md measured the launcher repeating 231 words of /pr-merge and 152 of the agent file word for word. A shared run of 25+ normalized words outside code, gen-docs regions and registered scope spans is red. `paths` covers every input the gate reads: the four family files, package.json, and `.ci/**`, which holds the entry script, the module, scope_mirrors.py it reuses, the scope-mirrors registry that decides which spans are registered, and the controls runner. A narrower `.ci` list would drop the gate from --changed when the registry moves, which is exactly when a span can change from excluded to compared.
+    id: 'check:ci-prose-duplication',
+    run: 'npm run check:ci-prose-duplication',
+    gate: true,
+    paths: [
+      '.ci/**',
+      '.claude/agents/pr-babysitter.md',
+      '.claude/commands/pr-babysit.md',
+      '.claude/commands/pr-merge.md',
+      'CLAUDE.md',
+      'package.json',
+    ],
+    pathsOrigin: 'declared',
+    leaves: ['.ci/scripts/quality/check_prose_duplication.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'PR loop docs carry no duplicated passage',
+    },
+  },
+  {
     id: 'check:ci-e2e-case-blind',
     run: 'npm run check:ci-e2e-case-blind',
     gate: true,

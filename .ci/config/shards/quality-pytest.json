@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-21T10:20:58.079Z",
+  "generatedAt": "2026-11-21T11:28:17.507Z",
   "legs": [
     {
       "index": 1,
@@ -282,6 +282,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_plan_implementation.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_plan_lifecycle.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_profiler_coverage.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_prose_duplication.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_record_paths_declared.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_release_key_canonical.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_release_state.py",
@@ -522,6 +523,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_plant_proofs.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_positional_detector.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_preview_worker_reaping.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_prose_duplication.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_releaseversion_build_version.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_resprofile.py",
