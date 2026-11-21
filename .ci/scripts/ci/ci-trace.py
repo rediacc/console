@@ -208,51 +208,21 @@ def _run_snapshot(root, run_id):
     """(status, conclusion, jobs, workflow) for ONE run id, or (None, None, err, "").
 
     Reads per-JOB conclusions, not the run-level conclusion alone: a run whose status is `completed` can still carry a failed job, and the run-level field is the same coarse signal ci_classify refuses to treat as a verdict.
+
+    The run object and its jobs come through the REST reader `--jobs` uses (ci_diagnose.run_info and run_jobs: 50-job pages, each read retried on a 5xx by gh_retry). The old `gh run view --json jobs` asked GitHub for one 100-job page, and on run 44938534372 (237 jobs) that page answered HTTP 502 on every attempt, four times on 2026-11-21, while `--jobs` read the same run.
     """
-
-    def _view():
-        return subprocess.run(
-            [
-                "gh",
-                "run",
-                "view",
-                str(run_id),
-                "--repo",
-                _repo(),
-                "--json",
-                "status,conclusion,jobs,workflowName",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=60,
-            check=False,
-            cwd=str(root),
-        )
-
-    try:
-        # A 5xx or dropped connection is retried with gh_retry's backoff; a 4xx or a timeout reads unreadable at once (live 2026-10-06: run 37507913738 gave "HTTP 502" twice).
-        out = _GH_RETRY.retry_transient(
-            _view, lambda r: None if r.returncode == 0 else (r.stderr or "failed")
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        return None, None, "could not read run %s: %s" % (run_id, exc), ""
-    if out.returncode != 0:
-        return (
-            None,
-            None,
-            "gh exited %d for run %s: %s"
-            % (
-                out.returncode,
-                run_id,
-                (out.stderr or "").strip()[:200],
-            ),
-            "",
-        )
-    try:
-        d = json.loads(out.stdout)
-    except Exception:
-        return None, None, "unparseable run payload for %s" % run_id, ""
-    return d.get("status"), d.get("conclusion"), d.get("jobs") or [], d.get("workflowName") or ""
+    fetch = _fetcher(root)
+    run, err = D.run_info(fetch, run_id)
+    if run is None:
+        return None, None, "could not read run %s: %s" % (run_id, err), ""
+    jobs, err = D.run_jobs(fetch, run_id)
+    if err:
+        return None, None, "could not read the jobs of run %s: %s" % (run_id, err), ""
+    # The rollup shape downstream (_jobs_as_contexts) reads camel-case names; the REST rows spell them id / html_url.
+    for j in jobs:
+        j.setdefault("databaseId", j.get("id"))
+        j.setdefault("url", j.get("html_url") or "")
+    return run.get("status"), run.get("conclusion"), jobs, run.get("name") or ""
 
 
 def _jobs_as_contexts(jobs):
@@ -369,6 +339,11 @@ def _trace_run(root, run_id, wait, timeout, as_json, expect_workflow=""):
             if not wait or read_failures >= MAX_READ_FAILURES:
                 _no_verdict(err)
                 return EXIT_NO_VERDICT
+            if not as_json:
+                print(
+                    "  run %s unreadable (%s); retry %d of %d in %ds"
+                    % (run_id, err[:120], read_failures, MAX_READ_FAILURES - 1, POLL_SECONDS)
+                )
             time.sleep(POLL_SECONDS)
             continue
         read_failures = 0

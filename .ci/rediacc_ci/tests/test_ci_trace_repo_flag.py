@@ -24,7 +24,9 @@ def ct():
 
 class _Done:
     returncode = 0
-    stdout = json.dumps({"status": "completed", "conclusion": "success", "jobs": []})
+    stdout = json.dumps(
+        {"id": 7, "status": "completed", "conclusion": "success", "total_count": 0, "jobs": []}
+    )
     stderr = ""
 
 
@@ -42,13 +44,24 @@ def _record_gh(ct, monkeypatch):
     return calls
 
 
+def _run_reads(calls):
+    """The `gh api repos/<repo>/actions/runs/7...` calls, as (repo, path) pairs."""
+    reads = []
+    for c in calls:
+        if c[:2] == ["gh", "api"] and "/actions/runs/7" in c[2]:
+            _, repo_and_path = c[2].split("repos/", 1)
+            owner, name, path = repo_and_path.split("/", 2)
+            reads.append(("%s/%s" % (owner, name), path))
+    return reads
+
+
 def test_repo_flag_targets_run_view_and_fetcher(ct, monkeypatch, tmp_path):
     calls = _record_gh(ct, monkeypatch)
     monkeypatch.chdir(tmp_path)
     ct.main(["--repo", ACCOUNT_REPO, "--run", "7"])
-    view = [c for c in calls if c[:3] == ["gh", "run", "view"]]
-    assert view
-    assert view[0][view[0].index("--repo") + 1] == ACCOUNT_REPO
+    reads = _run_reads(calls)
+    assert reads
+    assert {repo for repo, _ in reads} == {ACCOUNT_REPO}
     assert ct._fetcher(tmp_path).repo == ACCOUNT_REPO
 
 
@@ -69,8 +82,9 @@ def test_default_is_the_console_repo(ct, monkeypatch, tmp_path):
     calls = _record_gh(ct, monkeypatch)
     monkeypatch.chdir(tmp_path)
     ct.main(["--run", "7"])
-    view = [c for c in calls if c[:3] == ["gh", "run", "view"]]
-    assert view[0][view[0].index("--repo") + 1] == ct.GH_REPO
+    reads = _run_reads(calls)
+    assert reads
+    assert {repo for repo, _ in reads} == {ct.GH_REPO}
     assert ct._fetcher(tmp_path).repo == ct.GH_REPO
     assert ct.GH_REPO != ACCOUNT_REPO
 

@@ -361,40 +361,108 @@ class _P:
 
 
 def _snapshot(ct, monkeypatch, replies):
+    """_run_snapshot with `gh api` faked: `replies(path, n)` answers the n-th read of that path."""
     calls: list = []
     naps: list = []
+    seen: dict = {}
 
     def fake_run(argv, **_kw):
-        calls.append(argv)
-        return replies[min(len(calls), len(replies)) - 1]
+        path = "actions/" + argv[2].split("/actions/", 1)[1]
+        calls.append(path)
+        seen[path] = seen.get(path, 0) + 1
+        return replies(path, seen[path])
 
-    monkeypatch.setattr(ct.subprocess, "run", fake_run)
+    monkeypatch.setattr(ct.D.subprocess, "run", fake_run)
     monkeypatch.setattr(ct._GH_RETRY.time, "sleep", naps.append)
     return ct._run_snapshot(ct.REPO_ROOT, 1), calls, naps
 
 
+def _run_obj(status="completed", conclusion="success"):
+    return json.dumps({"id": 1, "status": status, "conclusion": conclusion, "name": "W"})
+
+
+def _jobs_page(first, count, total):
+    jobs = [
+        {
+            "id": first + i,
+            "name": "j%d" % (first + i),
+            "status": "completed",
+            "conclusion": "success",
+        }
+        for i in range(count)
+    ]
+    return json.dumps({"total_count": total, "jobs": jobs})
+
+
 def test_run_snapshot_retries_a_502_then_reads_the_run(ct, monkeypatch):
-    ok = json.dumps(
-        {"status": "completed", "conclusion": "success", "jobs": [], "workflowName": "W"}
-    )
-    snap, calls, naps = _snapshot(
-        ct, monkeypatch, [_P(1, err="HTTP 502: Server Error"), _P(0, out=ok)]
-    )
+    def replies(path, n):
+        if path == "actions/runs/1":
+            return _P(1, err="HTTP 502: Server Error") if n == 1 else _P(0, out=_run_obj())
+        return _P(0, out=_jobs_page(0, 2, 2))
+
+    snap, _calls, naps = _snapshot(ct, monkeypatch, replies)
     assert snap[0] == "completed"
-    assert len(calls) == 2
+    assert snap[3] == "W"
+    assert [j["name"] for j in snap[2]] == ["j0", "j1"]
     assert naps == [5.0]
 
 
 def test_run_snapshot_persistent_502_is_still_unreadable(ct, monkeypatch):
-    snap, calls, naps = _snapshot(ct, monkeypatch, [_P(1, err="HTTP 502: Server Error")])
+    """CONTROL: a 502 that never clears is unreadable (no-verdict upstream) after the bounded retries."""
+    snap, calls, naps = _snapshot(
+        ct, monkeypatch, lambda _p, _n: _P(1, err="HTTP 502: Server Error")
+    )
     assert snap[0] is None
     assert "HTTP 502" in snap[2]
     assert len(calls) == 3
     assert naps == [5.0, 15.0]
 
 
+def test_run_snapshot_pages_a_run_of_more_than_100_jobs(ct, monkeypatch):
+    """237 jobs: no read asks for 100 per page (GitHub 502s that page on a large run), and every job is returned."""
+    size = ct.D.JOBS_PAGE_SIZE
+    assert size < 100
+
+    def replies(path, _n):
+        if path == "actions/runs/1":
+            return _P(0, out=_run_obj())
+        assert "per_page=%d" % size in path, path
+        page = int(path.rsplit("page=", 1)[1])
+        first = (page - 1) * size
+        return _P(0, out=_jobs_page(first, min(size, 237 - first), 237))
+
+    snap, calls, _naps = _snapshot(ct, monkeypatch, replies)
+    assert len(snap[2]) == 237
+    assert not any("per_page=100" in c for c in calls)
+    assert snap[2][0]["databaseId"] == 0
+
+
+def test_run_snapshot_page_502_then_success_yields_the_run(ct, monkeypatch):
+    def replies(path, n):
+        if path == "actions/runs/1":
+            return _P(0, out=_run_obj())
+        return _P(1, err="HTTP 502: Server Error") if n == 1 else _P(0, out=_jobs_page(0, 1, 1))
+
+    snap, _calls, _naps = _snapshot(ct, monkeypatch, replies)
+    assert snap[0] == "completed"
+    assert len(snap[2]) == 1
+
+
+def test_wait_announces_each_unreadable_poll_then_gives_no_verdict(ct, monkeypatch):
+    """CONTROL: --wait absorbs a bounded run of unreadable polls with one notice each, then ends no-verdict rc 2."""
+    monkeypatch.setattr(
+        ct, "_run_snapshot", lambda _r, _i: (None, None, "HTTP 502: Server Error", "")
+    )
+    monkeypatch.setattr(ct, "POLL_SECONDS", 0)
+    monkeypatch.setattr(ct.time, "sleep", lambda _s: None)
+    rc, out, err = _capture(ct._trace_run, ct.REPO_ROOT, 1, True, 60, False)
+    assert rc == ct.EXIT_NO_VERDICT
+    assert out.count("retry") == ct.MAX_READ_FAILURES - 1
+    assert "no-verdict" in err
+
+
 def test_run_snapshot_404_is_one_call_and_no_pause(ct, monkeypatch):
-    snap, calls, naps = _snapshot(ct, monkeypatch, [_P(1, err="HTTP 404: Not Found")])
+    snap, calls, naps = _snapshot(ct, monkeypatch, lambda _p, _n: _P(1, err="HTTP 404: Not Found"))
     assert snap[0] is None
     assert len(calls) == 1
     assert naps == []
