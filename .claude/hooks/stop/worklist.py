@@ -1041,8 +1041,9 @@ def _review_cli(argv):
     def asked_ok(text):
         return CK._asked_in_transcript(text, _lead_transcript(me))
 
+    # The records' tree is the one the command was typed in (worklist #edb41f10): the landing tree's PR branch keeps its records there, while the store above still resolves to the main checkout.
     rc, text = RV.verb(
-        argv[0], me, argv[2:], pathlib.Path(C.project_root(start)), items, asked_ok=asked_ok
+        argv[0], me, argv[2:], RV.review_root(C.project_root(start)), items, asked_ok=asked_ok
     )
     print(text, file=sys.stderr if rc else sys.stdout)
     sys.exit(rc)

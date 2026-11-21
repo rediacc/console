@@ -1031,14 +1031,75 @@ def acquire_slot(cfg, sleep=time.sleep, clock=time.monotonic):
 # --------------------------------------------------------------------------- coverage (section 3.1)
 
 
+_POLICY: list = []
+
+
+def _policy():
+    """This hook tree's own `commit_policy` (the landing-record reader), loaded once by file; None when it cannot be loaded. Read from the file's tree, not from a judged root: a fixture repository carries no `.claude/`."""
+    if not _POLICY:
+        try:
+            _POLICY.append(_load_commit_policy(CONSOLE_ROOT))
+        except Exception:
+            _POLICY.append(None)
+    return _POLICY[0]
+
+
+def review_root(project, cwd=None):
+    """The tree whose review records a review verb typed in `cwd` (default: the process's cwd) acts on: the bound tree `cwd` lies in, else `project`.
+
+    TWO TREES, TWO RECORD DIRECTORIES (worklist #edb41f10, measured 2026-11-21). The landing tree holds the PR branch and the main checkout the development branch, and each branch's records live in its own tree's `agent/reviews/<branch>/`. The worklist store resolves to the main checkout from either tree, and the review verbs once resolved there too: `--review-commit` typed in the landing tree committed the development branch's records in the main checkout and left the landing record uncommitted. With no landing record, or a `cwd` in neither bound tree, the answer is `project`, the reading before the binding existed.
+    """
+    policy = _policy()
+    try:
+        where = cwd or os.getcwd()
+    except OSError:
+        return pathlib.Path(project)
+    if policy is None:
+        return pathlib.Path(project)
+    try:
+        return pathlib.Path(policy.command_tree(str(project), str(where)))
+    except Exception:
+        return pathlib.Path(project)
+
+
+def landing_base(repo, branch, tip="HEAD"):
+    """`merge-base(<landing branch>, <tip>)` for a branch stacked on the landing tree's PR branch, else "".
+
+    A STACKED DEVELOPMENT BRANCH DOES NOT OWN ITS BASE'S COMMITS (worklist #688c7385, measured 2026-11-21). The development branch is cut from the PR branch, so `merge-base(origin/main, tip)..tip` walked every PR-branch commit too: after the stacked cut four commits reviewed on 1104-1 were reviewed again into agent/reviews/1121-1/. The landing record (`commit_policy.tree_binding`, a submodule reading its superproject's) names the PR branch; its local ref, else `origin/<branch>`, is the base. "" with no valid record, on the record's own branch, or when neither ref resolves.
+    """
+    policy = _policy()
+    if policy is None or not branch:
+        return ""
+    try:
+        record, _role = policy.tree_binding(str(repo))
+    except Exception:
+        return ""
+    if record is None or record["branch"] == branch:
+        return ""
+    for ref in ("refs/heads/%s" % record["branch"], "refs/remotes/origin/%s" % record["branch"]):
+        if git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % ref):
+            return git_out(repo, "merge-base", ref, tip)
+    return ""
+
+
 def base_range(repo, branch, tip="HEAD"):
-    """The branch's own commits: `origin/main..<tip>` on main (a hotfix), else `merge-base(origin/main, <tip>)..<tip>`. "" when origin/main is unknown. `tip` is HEAD unless the branch is judged at its pushed ref (check_state)."""
+    """The branch's own commits: `origin/main..<tip>` on main (a hotfix), else `merge-base(origin/main, <tip>)..<tip>`, or `landing_base..<tip>` when that is newer (a development branch stacked on the landing tree's PR branch). "" when origin/main is unknown. `tip` is HEAD unless the branch is judged at its pushed ref (check_state)."""
     if not git_out(repo, "rev-parse", "-q", "--verify", "origin/main^{commit}"):
         return ""
     if branch == "main":
         return "origin/main..%s" % tip
     base = git_out(repo, "merge-base", "origin/main", tip)
-    return "%s..%s" % (base, tip) if base else ""
+    if not base:
+        return ""
+    # The landing base counts only when it descends from main's: once the PR branch merges (rebased onto main, new shas), its old ref meets the development branch below origin/main and the main base stands.
+    stacked = landing_base(repo, branch, tip)
+    if (
+        stacked
+        and stacked != base
+        and git(repo, "merge-base", "--is-ancestor", base, stacked)[0] == 0
+    ):
+        base = stacked
+    return "%s..%s" % (base, tip)
 
 
 def branch_commits(repo, rng, limit):
@@ -3641,6 +3702,33 @@ def _token_names_anchored(
     return False
 
 
+def mark_target(root, branch, finding_id):
+    """(root, branch) of the record a mark of `finding_id` writes: the landing tree and its branch when the reviewed commit belongs to the landing branch, else (`root`, `branch`).
+
+    A COMMIT OF THE LANDING BRANCH IS THAT BRANCH'S, WHEREVER THE MARK IS TYPED (worklist #edb41f10, measured 2026-11-21). From the main checkout (1121-1), `--review-mark ... c1237c39.1 fixed 47ce53c34` marked the duplicate record in agent/reviews/1121-1/ while the record the PR merges on, agent/reviews/1104-1/c1237c39...md, kept 4 open findings. With a landing record and `branch` not the record's own, a finding the landing tree's `agent/reviews/<landing branch>/` holds, whose reviewed commit is an ancestor of the landing tree's HEAD in its repository (a submodule's too), is marked there, and the change rides the landing branch's next commit. With no record, on the landing branch itself, or for a commit only the development branch holds, nothing moves.
+    """
+    policy = _policy()
+    if policy is None or not branch:
+        return root, branch
+    try:
+        record = policy.landing_record(str(root))
+    except Exception:
+        return root, branch
+    if record is None or record["branch"] == branch:
+        return root, branch
+    landing = pathlib.Path(record["path"])
+    if landing.resolve() == pathlib.Path(root).resolve():
+        return root, branch
+    try:
+        _path, review, _f = find_finding(landing, record["branch"], finding_id)
+    except ValueError:
+        return root, branch
+    repo = repo_from_label(landing, review.repo)
+    if git(repo, "merge-base", "--is-ancestor", review.sha, "HEAD")[0] != 0:
+        return root, branch
+    return landing, record["branch"]
+
+
 def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_ok=None):
     """Close one finding. Returns the path written; raises ValueError naming the failed check.
 
@@ -4135,16 +4223,24 @@ def verb(name, me, args, root, items_loader, branch=None, asked_ok=None):
         if not branch:
             return 1, "refused: HEAD is on no branch, so no review directory applies"
         items = items_loader() if args[1] == "waived" else None
+        where, owner = mark_target(root, branch, args[0])
+        moved = (
+            ""
+            if owner == branch
+            else " (the reviewed commit is the landing branch %s's: its record is marked in %s)"
+            % (owner, where)
+        )
         try:
             path = mark(
-                root, branch, args[0], args[1], args[2:], me, items=items, asked_ok=asked_ok
+                where, owner, args[0], args[1], args[2:], me, items=items, asked_ok=asked_ok
             )
         except ValueError as exc:
-            return 1, "refused: %s" % exc
-        return 0, "marked %s %s in %s; the change rides the next commit (or --review-commit)" % (
+            return 1, "refused: %s%s" % (exc, moved)
+        return 0, "marked %s %s in %s; the change rides the next commit (or --review-commit)%s" % (
             args[0],
             args[1],
             path,
+            moved,
         )
     if name == "--review-commit":
         if not branch:
@@ -4325,7 +4421,8 @@ def main(argv):
     if not argv or argv[0] in ("-h", "--help"):
         sys.stdout.write(USAGE)
         return 0 if argv else 2
-    root = pathlib.Path(_opt(argv, "--root", str(CONSOLE_ROOT)))
+    # No --root: the bound tree the command was typed in (review_root), so --check and --status typed in the landing tree judge the PR branch's records there.
+    root = pathlib.Path(_opt(argv, "--root", "")) if "--root" in argv else review_root(CONSOLE_ROOT)
     if argv[0] == "--run" and len(argv) >= 2:
         branch = _opt(argv, "--branch") or current_branch(root)
         if not branch:
