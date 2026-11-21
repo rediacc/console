@@ -377,6 +377,7 @@ KEY_OF = {
     ),
     HO_OPEN: "handover-open",
     HO_LAND: "handover-land",
+    HO_LESSON: "handover-lesson",
     STACK_MERGED: "landing-stack",
     STACK_BEHIND: "landing-behind",
     STACK_PENDING: "landing-behind",
