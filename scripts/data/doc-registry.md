@@ -534,7 +534,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_liveness.py | (none) | via .claude/hooks/stop/test-landing-store.py | py |
 | .claude/hooks/stop/wl_liveproof.py | (none) | via .claude/hooks/stop/test-wl_worktrees.py | py |
 | .claude/hooks/stop/wl_lkg.py | (none) | via .claude/hooks/stop/worklist.py | py |
-| .claude/hooks/stop/wl_longred.py | (none) | via .claude/hooks/stop/wl_ci.py | py |
+| .claude/hooks/stop/wl_longred.py | (none) | via .claude/hooks/stop/test-ci-carried.py | py |
 | .claude/hooks/stop/wl_loopspeed.py | (none) | via .claude/hooks/post-bash/loop_speed_note.py | py |
 | .claude/hooks/stop/wl_models.py | (none) | via .claude/hooks/stop/wl_judge.py | py |
 | .claude/hooks/stop/wl_opshealth.py | (none) | via .claude/hooks/stop/test-opshealth.py | py |

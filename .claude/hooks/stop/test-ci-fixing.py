@@ -23,6 +23,9 @@ import wl_ci as W
 
 _SCRATCH = tempfile.mkdtemp(prefix="ci-fixing-")
 atexit.register(shutil.rmtree, _SCRATCH, True)
+# ONE PRIVATE TMPDIR: wl_ci records a landing-rounds row through wl_longred, whose flock sidecar lives under `$TMPDIR/claude-worklist/.judge` (read at call time), and test_hooks_delegates fails a standalone suite that leaves an entry in the shared one.
+os.environ["TMPDIR"] = _SCRATCH
+tempfile.tempdir = _SCRATCH
 os.environ["XDG_CACHE_HOME"] = _SCRATCH
 
 _CI = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci"
