@@ -2960,3 +2960,129 @@ def test_gc_superseded_by_retracts_a_ledger_write_that_fails_partway(gc_repo, mo
         )
     assert ledger.read_text() == ""
     assert tree.exists()
+
+
+def test_gc_superseded_by_accepts_twelve_character_prefixes_of_both_shas(gc_repo):
+    """The ids `leases` prints are 12 characters, so a pair typed from that listing names the commit."""
+    tree, sha, landed = superseded_fixture(gc_repo, "pre1")
+    done = run_gc(
+        gc_repo.root, "--write", "--id", "pre1", "--superseded-by", "%s=%s" % (sha[:12], landed[:12]),
+        "--reason", "same test fix landed as the named commit",
+    )  # fmt: skip
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert not tree.exists()
+
+
+def test_gc_superseded_by_does_not_call_a_refused_pair_unnamed(gc_repo):
+    """A pair refused for its paths already has a problem line; a second line saying the same commit is not named hid the real reason."""
+    tree, sha, _landed = superseded_fixture(gc_repo, "pre2")
+    unrelated = committed(gc_repo.root, "unrelated2.txt")
+    done = run_gc(
+        gc_repo.root, "--write", "--id", "pre2", "--superseded-by", "%s=%s" % (sha[:12], unrelated),
+        "--reason", "same test fix landed as the named commit",
+    )  # fmt: skip
+    assert done.returncode == 1
+    assert "does not change dup.txt" in done.stderr
+    assert "is not named" not in done.stderr
+    assert tree.exists()
+
+
+def test_gc_pick_unlanded_refuses_an_ambiguous_prefix_by_name_and_an_unknown_one():
+    flat = [(".", "ab12" + "0" * 36), (".", "ab34" + "0" * 36), (".", "cd56" + "0" * 36)]
+    hit, why = lease._pick_unlanded(flat, "AB12", "L")
+    assert hit == flat[0], why
+    assert lease._pick_unlanded(flat, "cd", "L")[0] == flat[2]
+    hit, why = lease._pick_unlanded(flat, "ab", "L")
+    assert hit is None
+    assert "ambiguous" in why
+    assert "ab12" in why
+    assert "ab34" in why
+    hit, why = lease._pick_unlanded(flat, "ff", "L")
+    assert hit is None
+    assert "names no unlanded commit" in why
+
+
+def test_gc_drop_removes_the_tree_and_records_the_sha_subject_reason_and_time(gc_repo):
+    """A commit replaced by a different design has no landed twin, so --superseded-by refuses it and --drop gives it up on the record."""
+    tree, sha, _landed = superseded_fixture(gc_repo, "drop1")
+    unrelated = committed(gc_repo.root, "other-design.txt")
+    refused = run_gc(
+        gc_repo.root, "--write", "--id", "drop1", "--superseded-by", "%s=%s" % (sha[:12], unrelated),
+        "--reason", "replaced by another design entirely",
+    )  # fmt: skip
+    assert refused.returncode == 1
+    assert tree.exists()
+    reason = "replaced by another design that already landed"
+    done = run_gc(
+        gc_repo.root, "--write", "--id", "drop1", "--drop", sha[:12], "--reason", reason,
+    )  # fmt: skip
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert not tree.exists()
+    assert "DROP" in done.stdout
+    assert reason in done.stdout
+    ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
+    rows = [json.loads(ln) for ln in ledger.read_text().splitlines() if ln]
+    assert len(rows) == 1
+    assert rows[0]["sha"] == sha
+    assert rows[0]["subject"] == "feat: dup variant"
+    assert rows[0]["reason"] == reason
+    assert rows[0]["dropped"] is True
+    assert rows[0]["at"].endswith("Z")
+
+
+def test_control_gc_drop_refuses_a_missing_reason_a_sweep_and_an_unnamed_commit(gc_repo):
+    tree, sha, _landed = superseded_fixture(gc_repo, "drop2")
+    plain = run_gc(gc_repo.root, "--write", "--id", "drop2")
+    assert plain.returncode == 1
+    assert tree.exists()
+    short = run_gc(gc_repo.root, "--write", "--id", "drop2", "--drop", sha, "--reason", "no")
+    assert short.returncode == 1
+    assert "at least 20 characters" in short.stderr
+    bare = run_gc(gc_repo.root, "--write", "--id", "drop2", "--drop", sha)
+    assert bare.returncode == 1
+    assert "at least 20 characters" in bare.stderr
+    reason = "replaced by another design entirely"
+    sweep = run_gc(gc_repo.root, "--write", "--drop", sha, "--reason", reason)
+    assert sweep.returncode == 1
+    assert "needs --write and --id" in sweep.stderr
+    listing = run_gc(gc_repo.root, "--id", "drop2", "--drop", sha, "--reason", reason)
+    assert listing.returncode == 1
+    assert "needs --write" in listing.stderr
+    gc_commit(tree, "second-drop.txt")
+    partial = run_gc(gc_repo.root, "--write", "--id", "drop2", "--drop", sha, "--reason", reason)
+    assert partial.returncode == 1
+    assert "is not named" in partial.stderr
+    assert tree.exists()
+    ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
+    assert not ledger.exists() or sha not in ledger.read_text()
+
+
+def test_gc_drop_names_every_unlanded_commit_when_mixed_with_superseded_by(gc_repo):
+    tree, sha, landed = superseded_fixture(gc_repo, "drop3")
+    extra = gc_commit(tree, "second-mix.txt")
+    done = run_gc(
+        gc_repo.root, "--write", "--id", "drop3", "--superseded-by", "%s=%s" % (sha, landed),
+        "--drop", extra, "--reason", "first landed as named, second replaced by a new design",
+    )  # fmt: skip
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert not tree.exists()
+    assert "DROP" in done.stdout
+    assert "WAIVE" in done.stdout
+
+
+def test_gc_discard_dirty_names_the_rules_that_still_keep_the_tree(repo):
+    """--discard-dirty waives rule 3's uncommitted paths only; a tree kept by another rule says which, so a kept tree is never a bare '1 kept'."""
+    made = run_lease(repo.root, "--name", "dirty-note", "--owner", "cli")
+    assert made.returncode == 0, made.stderr
+    tree = pathlib.Path(made.stdout.strip())
+    committed(tree, "unlanded-note.txt")
+    spike.write(tree / "scratch.txt", "work\n")
+    done = run_gc(
+        repo.root, "--write", "--id", "dirty-note", "--discard-dirty",
+        "already landed elsewhere, checked",
+    )  # fmt: skip
+    assert done.returncode == 1
+    note = [ln for ln in done.stdout.splitlines() if ln.strip().startswith("NOTE")]
+    assert len(note) == 1, done.stdout
+    assert "waives only rule 3" in note[0]
+    assert "kept by rule 4" in note[0]
