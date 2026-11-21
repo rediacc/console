@@ -3419,7 +3419,7 @@ def loop_next_text(state, root, state_doc, pr_finish_fired, me="<me>"):
     landing_open = bool(getattr(state, "landing_open", False))
     # THE DEVELOPMENT TREE'S PROMOTE (agent/plans/PLAN-simple-two-tree-loop.md D3, box B2): once the landing PR is merged and its release is fully green, promote is the next step, in whichever loop state this branch is. It blocks only while no [writer] box of the branch's plans is open, since promote runs at a commit boundary and never under a running writer; until then it advises.
     released = int(getattr(state, "landing_released", 0) or 0)
-    if role == wl_prscope.DEVELOPMENT and released:
+    if role == wl_prscope.DEVELOPMENT and released > 0:
         notice = wl_stack.notify_line(own_tree(), "cd-done", pr=released)
         if notice:
             pending = branch_writer_boxes(root)
@@ -5815,7 +5815,21 @@ def run_stop(event, event_ok, worklist, hook_file):
             % (type(exc).__name__, str(exc)[:120]),
         )
     # ---- THE LANDING STACK (agent/plans/PLAN-two-track-merge-dev.md LT19, wl_stack): read from the session's own tree, never the mapped root, since the landing tree's root is the main checkout. A landing branch already merged while the record still names it blocks at every effort level (`landing-stack`, wl_floor.FLOOR) once its release is green (`landing_released`, agent/plans/PLAN-simple-two-tree-loop.md D3): promotion runs before anything else is built on it. Until then the merged branch rides the advisory queue, since the development tree never waits on landing. A landing branch ahead of the development branch is advisory (`landing-behind`). No record, or the landing tree itself, reads nothing; the readers never raise.
-    _ls_released = bool(getattr(_loop, "landing_released", 0))
+    _ls_value = int(getattr(_loop, "landing_released", 0) or 0)
+    _ls_released = _ls_value > 0
+    if _ls_value == wl_prscope.UNREADABLE_RELEASE:
+        # Review a77a0f9e.1: a failed release read is named, never folded into "pending".
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "landing-release-unreadable",
+            "LANDING RELEASE UNREADABLE: the landing PR merged, but gh could not read its merged sha or the release at it, so promotion cannot be judged; rerun `.ci/scripts/ci/ci-trace.py --runs --ref main` to read it.",
+            1,
+            refresh_min=0,
+        )
+    else:
+        outq_drop(state_doc, "landing-release-unreadable")
     _ls_block = wl_stack.stack_block(own, released=_ls_released)
     if _ls_block:
         vadd("landing-stack", False, _ls_block)

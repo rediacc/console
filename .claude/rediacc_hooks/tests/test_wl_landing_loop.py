@@ -248,6 +248,14 @@ def test_control_landing_released_red_main():
     assert P.landing_released(pathlib.Path("."), [node("MERGED", number=12)], gh) == 0
 
 
+def test_landing_released_unreadable_is_not_pending():
+    # Review a77a0f9e.1: a gh outage after the merge reads UNREADABLE_RELEASE, never 0 ("pending") and never a PR number ("released").
+    gh = FakeGh(ci=[run(SHA, "success")], edge=[run(SHA, "success")], down=True)
+    value = P.landing_released(pathlib.Path("."), [node("MERGED", number=12)], gh)
+    assert value == P.UNREADABLE_RELEASE
+    assert value < 0
+
+
 def test_control_landing_released_open_pr_reads_nothing():
     gh = FakeGh(ci=[run(SHA, "success")], edge=[run(SHA, "success")])
     assert P.landing_released(pathlib.Path("."), [node("OPEN", number=12)], gh) == 0
@@ -255,7 +263,10 @@ def test_control_landing_released_open_pr_reads_nothing():
 
 
 def test_control_landing_released_gh_down():
-    assert P.landing_released(pathlib.Path("."), [node("MERGED")], FakeGh(down=True)) == 0
+    assert (
+        P.landing_released(pathlib.Path("."), [node("MERGED")], FakeGh(down=True))
+        == P.UNREADABLE_RELEASE
+    )
 
 
 # ---- the tree role decides the parks and the stand-down --------------------------------------

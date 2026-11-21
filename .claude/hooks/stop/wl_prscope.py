@@ -473,6 +473,10 @@ def _landing_nodes(wl_ci, top, worklist, session_id, landing_branch):
     return [] if err else list(nodes or [])
 
 
+# `landing_released` when the merged sha or its release could not be read from gh (negative, so `> 0` stays "released").
+UNREADABLE_RELEASE = -1
+
+
 def landing_released(top, nodes, gh=None):
     """The landing PR's number once it is MERGED (and none is open) and its release at the merged sha is fully green (D3), else 0. Read from the development tree, which promotes; a failed read answers 0, so promote is never named on a guess."""
     state, pr, _body = landing_pr(nodes)
@@ -480,9 +484,12 @@ def landing_released(top, nodes, gh=None):
         return 0
     sha, err = merged_sha(top, pr, gh)
     if err:
-        return 0
+        return UNREADABLE_RELEASE
     verdict, _detail, err = read_release(top, sha, gh)
-    return pr if not err and verdict == CI_GREEN else 0
+    if err:
+        # An unreadable release is not a pending one (review a77a0f9e.1): the caller names it instead of reading it as "not released yet".
+        return UNREADABLE_RELEASE
+    return pr if verdict == CI_GREEN else 0
 
 
 def _console_top(commit_policy, root):
