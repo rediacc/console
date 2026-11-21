@@ -1014,7 +1014,7 @@ _PHASE_LINE = re.compile(r'"ev":\s*"(?:phase|lineage)"')
 
 
 def phase_fold(worklist, root=None):
-    """A Fold carrying only the `phase` and `lineage` events: the spawn guard's read (guards/block_focus_spawn.py), which runs on every Agent call and must not pay for a full fold of the log. Same files and same order as _read_events; lines of any other kind are never parsed."""
+    """A Fold carrying only the `phase` and `lineage` events: the light read of a guard that needs only those two kinds (guards/block_turbo_early_push.py) and must not pay for a full fold of the log. Same files and same order as _read_events; lines of any other kind are never parsed."""
     out = []
     texts = _store_texts(root)
     legacy = events_path(worklist)

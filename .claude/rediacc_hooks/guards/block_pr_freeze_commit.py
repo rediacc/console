@@ -1,4 +1,4 @@
-"""Refuse, before the command runs, a commit the PR freeze would refuse at commit-msg (PLAN-two-track-merge-dev F2, the pre-bash twin of F1).
+"""Refuse, before the command runs, a commit the PR freeze would refuse at commit-msg (PLAN-two-track-merge-dev F2, the pre-bash twin of F1; keyed on the landing tree's role since PLAN-simple-two-tree-loop B1).
 
 The verdict is `pr_freeze.check`'s, the same call git/githooks.py makes at commit-msg, so the two cannot disagree; this guard only answers earlier, before `git add` or a message file is spent. The message is read the way block_untagged_commit reads it (`-m` values, a `-F -` heredoc or here-string, `-F <file>` off disk), and the paths are the pathspecs the commit names. A relative `-F` file is looked up beside the tool call's cwd and the repo root. A commit in another repository (a `cd` or `-C` elsewhere), or one whose message cannot be seen or read (an unreadable `-F` file is skipped), is left to the commit-msg hook, which stays the authority: this guard only answers earlier where it can see the whole message.
 
@@ -6,8 +6,8 @@ ORDER is the end of the pre-bash chain: the registry admits no tie, and a positi
 """
 
 import contextlib
-import datetime
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -22,34 +22,38 @@ DEFECT = (
     "    if False:\n        ev.warn_raw(BLOCKED % reason)",
 )
 
-# ---- the differential's world: a repository on branch 1120-1 and a store whose babysit phase names it ----
-# The guard reads the branch of CLAUDE_PROJECT_DIR and the phase from the worklist store (wl_store, through pr_freeze.check), so under the harness's default CLAUDE_PROJECT_DIR (the live checkout) its answer was whatever phase the real branch was in. CLAUDE_PROJECT_DIR is the one variable this guard reads itself (the repository whose branch it judges); WORKLIST_STORE_DIR and TMPDIR are read by pr_freeze or wl_store / wl_core, never by this guard; the token builds the world.
+# ---- the differential's world: a main checkout on 1120-2 and a linked landing tree on 1120-1, bound by a landing record, with a `gh` stub answering PR 605 open ----
+# The guard reads the tree role of CLAUDE_PROJECT_DIR (commit_policy.tree_binding, through pr_freeze.check) and the landing branch's open PR (`gh pr list`), so under the harness's default CLAUDE_PROJECT_DIR (the live checkout) and the real gh its answer was whatever the live trees and GitHub said. CLAUDE_PROJECT_DIR is the one variable this guard reads itself (the repository it judges); PATH reaches the gh stub, and WORKLIST_STORE_DIR and TMPDIR are read by pr_freeze or wl_store / wl_core, never by this guard; the token builds the world.
 _FREEZE_BRANCH = "1120-1"
-_FREEZE_OWNER = "d778be9d"
+_DEV_BRANCH = "1120-2"
+_GH_STUB = "#!/bin/sh\necho '[{\"number\": 605}]'\n"
 
 
 def _freeze_world(target):
-    """`target`/repo on `_FREEZE_BRANCH` with one commit and a record-paths policy, `target`/store holding a fresh babysit phase for PR 605 on that branch, and an empty `target`/tmp."""
-    root = pathlib.Path(target)
-    repo = root / "repo"
-    subprocess.run(["git", "init", "-q", "-b", _FREEZE_BRANCH, str(repo)], check=True)
+    """`target`/main on `_DEV_BRANCH` with one commit holding a record-paths policy, `target`/landing a linked tree of it on `_FREEZE_BRANCH` bound by the landing record, `target`/bin/gh a stub answering PR 605 open, and an empty `target`/store and `target`/tmp."""
+    root = pathlib.Path(os.path.realpath(target))
+    main = root / "main"
     ident = ["-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid"]
-    subprocess.run(
-        ["git", "-C", str(repo), *ident, "commit", "-q", "--allow-empty", "-m", "base"], check=True
-    )
+    subprocess.run(["git", "init", "-q", "-b", _DEV_BRANCH, str(main)], check=True)
     policy = syspath.import_from_ci("rediacc_ci.policy_paths").policy_path(
-        "record-paths.json", repo
+        "record-paths.json", main
     )
     policy.parent.mkdir(parents=True, exist_ok=True)
     policy.write_text(
         json.dumps({"version": 1, "records": [{"glob": "agent/reviews/**", "except": []}]}) + "\n",
         encoding="utf-8",
     )
+    subprocess.run(["git", "-C", str(main), "add", "."], check=True)
+    subprocess.run(["git", "-C", str(main), *ident, "commit", "-q", "-m", "base"], check=True)
+    landing = root / "landing"
+    worktree_add = ["git", "-C", str(main), "worktree", "add", "-q", "-b", _FREEZE_BRANCH]
+    subprocess.run([*worktree_add, str(landing)], check=True)
+    commit_policy.write_landing_record(str(main), str(landing), _FREEZE_BRANCH)
+    (root / "bin").mkdir(parents=True, exist_ok=True)
+    hookio.write_world_file(root / "bin" / "gh", _GH_STUB)
+    (root / "bin" / "gh").chmod(0o755)
     (root / "store").mkdir(parents=True, exist_ok=True)
     (root / "tmp").mkdir(parents=True, exist_ok=True)
-    now = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-    phase = {"ev": "phase", "at": now, "by": _FREEZE_OWNER, "o": _FREEZE_OWNER, "mode": "babysit", "branch": _FREEZE_BRANCH, "br": _FREEZE_BRANCH, "pr": 605, "why": "fixture", "ns": 1}  # fmt: skip
-    hookio.write_world_file(root / "store" / ("%s.jsonl" % _FREEZE_OWNER), json.dumps(phase) + "\n")
     return root
 
 
@@ -59,7 +63,8 @@ ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
     (
         "frozen",
         {
-            "CLAUDE_PROJECT_DIR": "{FIXTURE:pr-freeze-world}/repo",
+            "CLAUDE_PROJECT_DIR": "{FIXTURE:pr-freeze-world}/landing",
+            "PATH": "{FIXTURE:pr-freeze-world}/bin:/usr/bin:/bin:/usr/local/bin",
             "WORKLIST_STORE_DIR": "{FIXTURE:pr-freeze-world}/store",
             "TMPDIR": "{FIXTURE:pr-freeze-world}/tmp",
         },
@@ -148,7 +153,7 @@ def run(ev):
     if not re.sub(r"\s", "", msg):
         return hookio.ALLOW
     branch = hookio.git_out(["-C", root, "branch", "--show-current"], want_rc=True)
-    # A failed read (None) or a detached HEAD (empty) names no branch, so no phase can freeze it; the commit-msg hook stays the authority.
+    # A failed read (None) or a detached HEAD (empty) is left to the commit-msg hook, which skips it too: a detached landing tree is the hotfix on origin/main after the merge (no open PR), and a detached lease is judged when its commits land.
     if branch is None or not branch.strip():
         return hookio.ALLOW
     paths = _paths(cmd, root)
