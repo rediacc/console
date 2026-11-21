@@ -1,6 +1,6 @@
 """The PR freeze (PLAN-simple-two-tree-loop B1, after PLAN-two-track-merge-dev F1): the landing tree takes fix work only while its PR is open.
 
-The freeze binds to the TREE ROLE, not to a session or a phase, because a git hook has no session id and the tree a session runs in is its job: it is active when `commit_policy.tree_role` of the committing repository is landing (a submodule tree inside the landing tree included) and the landing record's branch has an open PR. The development tree is never frozen. A commit in the frozen tree is admitted when one of these holds:
+The freeze binds to the TREE ROLE, not to a session or a phase, because a git hook has no session id and the tree a session runs in is its job: it is active when the role `commit_policy.tree_binding` gives the committing repository (the `tree_role` reading) is landing (a submodule tree inside the landing tree included) and the landing record's branch has an open PR. The development tree is never frozen. A commit in the frozen tree is admitted when one of these holds:
 
   1. its Conventional Commits type is fix, style or test;
   2. it is chore(reviews), chore(state), chore(plan) or chore(plans);
@@ -198,7 +198,7 @@ def landing_tree(repo) -> str:
 
 
 def open_pr(cwd, branch: str) -> tuple[int | None, str]:
-    """(number, error): the open PR whose head is `branch`, read with `gh pr list` in `cwd`; (None, "") when none is open, (None, <why>) when gh cannot answer. An answer that cannot be read is never "no PR"."""
+    """(number, error): the open PR whose head is `branch` (the lowest number when several are), read with `gh pr list` in `cwd`; (None, "") when none is open, (None, <why>) when gh cannot answer. An answer that cannot be read is never "no PR"."""
     try:
         r = subprocess.run(
             [
