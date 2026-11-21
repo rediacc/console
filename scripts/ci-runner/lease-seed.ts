@@ -102,6 +102,23 @@ export function seedReceipt(lease: string, live: string): string {
   return `${RECEIPT}: copied from the main checkout for --narrow`;
 }
 
+/** Public keys only (the account Ed25519 and X25519 public halves), the offline answer `resolve_renet_account_key` reads before Bitwarden. Without it a renet build in a seeded tree depends on a Bitwarden read, which a drill leg's environment cannot always make (2026-11-21: backup drill leg f in the landing tree, "renet needs ACCOUNT_ED25519_PUBLIC_KEY ... not in the public-key cache, and not readable from Bitwarden"). */
+const PUBLIC_KEYS = 'private/account/.cache/public-keys.env';
+
+export function seedPublicKeys(lease: string, live: string): string {
+  const source = path.join(live, PUBLIC_KEYS);
+  if (!fs.existsSync(source))
+    return `${PUBLIC_KEYS}: none in the main checkout, a renet build reads Bitwarden`;
+  const dest = path.join(lease, PUBLIC_KEYS);
+  if (!fs.existsSync(path.join(lease, 'private', 'account')))
+    return `${PUBLIC_KEYS}: no private/account in this tree`;
+  // tree-write: safe a directory inside the lease tree, which is ignored and never the live tree
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  // tree-write: safe a path inside the lease tree, which is ignored and never the live tree
+  fs.copyFileSync(source, dest);
+  return `${PUBLIC_KEYS}: copied from the main checkout`;
+}
+
 export function seedLease(lease: string, live: string, commit: string): string[] {
   try {
     const notes = syncDependencies(lease, live, commit);
@@ -110,6 +127,7 @@ export function seedLease(lease: string, live: string, commit: string): string[]
     for (const pkg of BUILT_PACKAGES) notes.push(seedDist(lease, live, pkg));
     copyEnvFiles(lease, live);
     notes.push(seedReceipt(lease, live));
+    notes.push(seedPublicKeys(lease, live));
     assertNoSelfLoop(live);
     assertNoSelfLoop(lease);
     return notes;
