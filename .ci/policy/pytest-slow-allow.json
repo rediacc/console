@@ -311,10 +311,6 @@
       "reason": "baseline 2026-11-17: 11.8 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".ci.rediacc_ci.tests.test_core_toolchain::test_compare_agrees_with_sort_v_over_the_whole_corpus",
-      "reason": "baseline 2026-11-17: 19.6 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".ci.rediacc_ci.tests.test_dev_worktree_lease::test_pin_commit_moves_it_and_main_and_another_lease_see_it",
       "reason": "baseline 2026-11-17: 16.5 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
@@ -555,18 +551,6 @@
       "reason": "baseline 2026-11-17: 18.6 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".ci.rediacc_ci.tests.test_security_dependency_inventory::test_the_real_repository_inventories_in_json_format",
-      "reason": "baseline 2026-11-17: 10.3 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.test_security_dependency_inventory::test_the_real_repository_inventories_in_table_format",
-      "reason": "baseline 2026-11-17: 12.1 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.test_security_shellcheck::test_the_real_repository_passes_with_the_real_shellcheck",
-      "reason": "baseline 2026-11-17: 21.7 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".ci.rediacc_ci.tests.test_sibling_agreement::test_every_region_kind_the_linter_sees_is_also_seen_by_the_reflow",
       "reason": "baseline 2026-11-17: 110.0 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
@@ -643,10 +627,6 @@
       "reason": "baseline 2026-11-17: 22.4 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[../rediacc_hooks/guards/test-block_commit_on_main.py]",
-      "reason": "baseline 2026-11-17: 13.9 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[../rediacc_hooks/guards/test-block_destructive_git_restore.py]",
       "reason": "baseline 2026-11-17: 35.4 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
@@ -689,10 +669,6 @@
     {
       "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[../rediacc_hooks/guards/test-block_push_with_unrecorded_reviews.py]",
       "reason": "baseline 2026-11-17: 22.8 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[../rediacc_hooks/guards/test-block_raw_ci_read.py]",
-      "reason": "baseline 2026-11-17: 10.7 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
       "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[../rediacc_hooks/guards/test-block_renet_untested_push.py]",
@@ -743,24 +719,12 @@
       "reason": "baseline 2026-11-17: 80.7 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[../rediacc_hooks/guards/test-warn_writer_brief.py]",
-      "reason": "baseline 2026-11-17: 11.0 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[context/test-context-bands.py]",
       "reason": "baseline 2026-11-17: 29.7 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
       "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[stop/test-wl_worktrees.py]",
       "reason": "baseline 2026-11-17: 70.6 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".claude.rediacc_hooks.tests.test_hooks_fixtures::test_block_worktree_add_judges_a_script_by_its_text",
-      "reason": "baseline 2026-11-17: 20.9 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".claude.rediacc_hooks.tests.test_hooks_fixtures::test_remote_drift_and_the_round_log_guards",
-      "reason": "baseline 2026-11-17: 13.7 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
       "test": ".claude.rediacc_hooks.tests.test_project_dir_containment::test_a_suite_launched_with_a_project_dir_leaves_that_project_untouched",
@@ -859,10 +823,6 @@
       "reason": "baseline 2026-11-17: 15.5 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".claude.rediacc_hooks.tests.test_wl_effort::test_e3_one_world_through_all_five_levels",
-      "reason": "baseline 2026-11-17: 12.3 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".claude.rediacc_hooks.tests.test_wl_effort_tune::test_t4_the_stop_hook_asks_exactly_once_per_context",
       "reason": "baseline 2026-11-17: 10.7 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
@@ -881,6 +841,10 @@
     {
       "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[../rediacc_hooks/guards/test-block_landing_one_way.py]",
       "reason": "2026-11-21: 10.6 s in the ci:quick full run; the suite builds a bare origin, a main checkout and a linked landing tree in real git and judges each row through the dispatcher, plus its planted-DEFECT run; drop the entry once it runs under 10 s"
+    },
+    {
+      "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[stop/test-landing-store.py]",
+      "reason": "measured 2026-11-21: 10.9 s in PR 605 CI run 44884489459 (Quality / Pytest 4/6, CI runner); the landing-store control suite builds real two-tree repositories; drop the entry once it runs under 10 s"
     }
   ]
 }
