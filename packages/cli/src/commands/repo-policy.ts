@@ -422,10 +422,7 @@ export function registerRepoPolicyCommand(repo: Command): void {
     .option('--max-quota <size>', t('commands.repo.policy.set.maxQuotaOption'))
     .option('--grow-threshold <percent>', t('commands.repo.policy.set.growThresholdOption'))
     .option('--grow-step <step>', t('commands.repo.policy.set.growStepOption'))
-    .option(
-      '--grow-when-free-bytes <size>',
-      t('commands.repo.policy.set.growWhenFreeBytesOption')
-    )
+    .option('--grow-when-free-bytes <size>', t('commands.repo.policy.set.growWhenFreeBytesOption'))
     .addOption(
       new Option('--auto-trim <bool>', t('commands.repo.policy.set.autoTrimOption')).choices([
         'true',

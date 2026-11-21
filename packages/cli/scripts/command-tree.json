@@ -3883,6 +3883,12 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--grow-when-free-bytes <size>",
+                  "descriptionKey": "commands.repo.policy.set.growWhenFreeBytesOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--auto-trim <bool>",
                   "descriptionKey": "commands.repo.policy.set.autoTrimOption",
                   "mandatory": false,

@@ -21,7 +21,7 @@ import type { ChildProcess } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 
 /** How long a channel may stay open after the command reported its exit. */
-export const EXIT_GRACE_MS = 2_000;
+const EXIT_GRACE_MS = 2_000;
 
 /** A fresh marker per call, so no output of the command can forge one. */
 export function newExitMarker(): string {
