@@ -401,12 +401,12 @@ def stack_cases(tmp, tag, mutate=None):
                 True,
             )
         )
-    w.effort("quiet")
+    w.effort("low")
     got = w.stop(w.landing)
     out.append(
         (
             "merged landing: the landing tree's own stop reads no stack",
-            STACK_MERGED in got.out,
+            "LANDING MERGED" in got.out,
             False,
         )
     )
@@ -505,7 +505,10 @@ MUTANTS = (
     (
         "the stack is read from the mapped root",
         stack_cases,
-        [(CHECKS_REL, "wl_stack.stack_block(own, ", "wl_stack.stack_block(root, ")],
+        [
+            (CHECKS_REL, "wl_stack.stack_block(own, ", "wl_stack.stack_block(root, "),
+            (CHECKS_REL, "wl_stack.stack_report(own, ", "wl_stack.stack_report(root, "),
+        ],
     ),
     (
         "the merged block ignores the release",
