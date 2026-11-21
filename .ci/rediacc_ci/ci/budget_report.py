@@ -152,9 +152,12 @@ MIN_VARIANT_RUNS = 3
 VARIANT_OUTLIER_RUN_FACTOR = 1.5
 # HOW A LEG'S WHOLE-JOB p90 IS TAKEN (`job_p90_minutes`, the number check-lane-budget.ts holds against the 12-minute budget; operator ruling ASKED:2026-11-21T14:38Z "Fix the gate's math").
 # MEASURED 2026-11-21: E2E Workers (opensuse-16.0, 9/11) ran 9.1, 9.8, 8.6, 19.0 (run 44698709463) and 8.3 minutes, and legs 8/11, 9/11 and 11/11 refreshed to p90s of 13.4 to 14.4 from 8 sampled runs. The linear-interpolation p90 (`_percentile`) of n samples sits at rank 0.9 * (n - 1), between the two slowest, so at 5 to 8 samples one slow runner carries 60 to 30 percent of the gap to the max, and one run in eight priced a leg that ran under 10 minutes seven times out of eight.
-# THE RULE, stated rather than an outlier filter: the NEAREST-RANK p90, the ceil(0.9 * n)-th smallest sample, which is a value a run really took with at least 90 percent of the sample at or under it. At n >= 10 it sets aside exactly the slowest floor(n / 10) samples and nothing else; below 10 it IS the max. So a committed p90 moves only on `JOB_P90_MIN_SAMPLES` sampled runs (fewer keeps the committed value, named, the `refreshed_on_evidence` rule), a name new to the table is written from any count at that strict max, and a leg slow in more than one run in ten stays over budget.
+# THE RULE has two parts, both stated in every refresh's output. (1) The NEAREST-RANK p90, the ceil(0.9 * n)-th smallest sample, a value a run really took with at least 90 percent of the sample at or under it: at n >= `JOB_P90_MIN_SAMPLES` it sets aside exactly the slowest floor(n / 10) samples and nothing else.
+# (2) Below that floor the nearest rank IS the max, and a 10-sample floor alone is not reachable here: the 14-day window held 8 completed PR runs on 2026-11-21 (ci-trace.py --runs on 1104-1, every PR run in the repo), so a refresh with that floor kept every committed p90, the outlier-made ones included. So below the floor the slowest sample is set aside when it is over `JOB_P90_OUTLIER_FACTOR` times the median of the others, one sample at most and only from `MIN_VARIANT_RUNS` samples (a majority to be an outlier against), the run-level rule `VARIANT_OUTLIER_RUN_FACTOR` already applies to variant prices.
+# A committed p90 moves on `MIN_VARIANT_RUNS` runs (`refreshed_on_evidence`), a name new to the table is written from any count, and a leg slow in two runs of eight, or at 13 minutes in most runs, stays over budget: the second slow run is the max, and a slow median is never an outlier.
 JOB_P90_MIN_SAMPLES = 10
-# How many completed PR-full runs the refresh reads for `job_p90_minutes` alone, so the floor above is reachable: a leg succeeds in only some PR runs (2026-11-21: 8 of the 10 the refresh sampled), so a 10-run window could never put 10 samples under one leg. The other tables keep the `limit` sample (`--refresh-limit`), which is also what `--check` reads, so a check after a refresh still judges the sample the refresh wrote; `--check` never reads job p90s, so `compute_for_check` does not widen. Bounded: at most this many runs' job pages, about 4 pages per run.
+JOB_P90_OUTLIER_FACTOR = 1.5
+# How many completed PR-full runs the refresh reads for `job_p90_minutes` alone, so the rank floor above is reachable when the PR cadence allows: a leg succeeds in only some PR runs, so a 10-run window could never put 10 samples under one leg. The 14-day window caps it first (8 runs on 2026-11-21). The other tables keep the `limit` sample (`--refresh-limit`), which is also what `--check` reads, so a check after a refresh still judges the sample the refresh wrote; `--check` never reads job p90s, so `compute_for_check` does not widen. Bounded: at most this many runs' job pages, about 4 pages per run.
 JOB_P90_SAMPLE_LIMIT = 20
 # Half a minute of leg wall: check-lane-budget.ts `REBALANCE_ADVISORY_MIN` (0.5 minutes), read from that file by test_the_materiality_floor_is_the_lane_budget_gates_own_advisory_threshold so the two cannot part.
 MATERIAL_LEG_MS = 30_000
@@ -232,21 +235,33 @@ def stats(values: Sequence[float | None]) -> dict[str, float] | None:
 
 
 def job_p90(values: Sequence[float | None]) -> float | None:
-    """The nearest-rank p90 of a whole-job wall sample, MINUTES, rounded as `stats` rounds; None for an empty sample. See `JOB_P90_MIN_SAMPLES` for why it is not `_percentile`. The rank is integer arithmetic, since a float ceil of 0.9 * 70 reads the 64th value."""
-    ordered = sorted(v for v in values if v is not None)
-    if not ordered:
-        return None
-    rank = (9 * len(ordered) + 9) // 10
-    return round(ordered[rank - 1], 1)
+    """A whole-job wall sample's p90, MINUTES, rounded as `stats` rounds; None for an empty sample. `job_p90_stats` holds the rule."""
+    s = job_p90_stats(values)
+    return None if s is None else s["p90"]
 
 
 def job_p90_stats(values: Sequence[float | None]) -> dict[str, float] | None:
-    """`{"p90", "max", "n"}` for one name's job walls, the evidence the refresh prints beside a p90 that set a slow sample aside; None when empty."""
-    clean = [v for v in values if v is not None]
-    p90 = job_p90(clean)
-    if p90 is None:
+    """`{"p90", "max", "n", "set_aside"}` for one name's job walls; None when empty. See `JOB_P90_MIN_SAMPLES` for the two-part rule and why it is not `_percentile`.
+
+    At n >= `JOB_P90_MIN_SAMPLES` the nearest-rank p90, which sets aside the slowest floor(n / 10). Below it, the max of the sample after setting aside the slowest sample when it is over `JOB_P90_OUTLIER_FACTOR` times the median of the others (from `MIN_VARIANT_RUNS` samples, one at most). The rank is integer arithmetic, since a float ceil of 0.9 * 70 reads the 64th value. `set_aside` counts the samples above the p90's rank that the rule left out, which the refresh prints."""
+    ordered = sorted(v for v in values if v is not None)
+    if not ordered:
         return None
-    return {"p90": p90, "max": round(max(clean), 1), "n": len(clean)}
+    n = len(ordered)
+    if n >= JOB_P90_MIN_SAMPLES:
+        rank = (9 * n + 9) // 10
+    elif n >= MIN_VARIANT_RUNS and ordered[-1] > JOB_P90_OUTLIER_FACTOR * statistics.median(
+        ordered[:-1]
+    ):
+        rank = n - 1
+    else:
+        rank = n
+    return {
+        "p90": round(ordered[rank - 1], 1),
+        "max": round(ordered[-1], 1),
+        "n": n,
+        "set_aside": n - rank,
+    }
 
 
 def _ran(job: dict[str, Any]) -> bool:
@@ -1868,7 +1883,7 @@ def compute_lane_durations(
             measured_runs["jobs"][lane] = len(lane_runs)
 
     # T3.1: check 2's own gap -- a whole-job p90 (success-only wall time, MINUTES) by Actions API DISPLAY NAME (e.g. "Tests + Infra / E2E K8s Ceph"), for every job seen in the same PR-full sample `jobs_minutes` above already walks. `check-lane-budget.ts` reads it by display name (`displayNamePattern`, one pattern per call site), so this writes the number under the one name `--refresh` can derive without re-parsing `ci.yml` a second time.
-    # Over the WIDE sample, by the nearest-rank p90 (`job_p90`, `JOB_P90_MIN_SAMPLES`).
+    # Over the WIDE sample, by `job_p90_stats` (`JOB_P90_MIN_SAMPLES` states the rule).
     job_wall_by_name: dict[str, list[float]] = {}
     job_runs_by_name: dict[str, set[int]] = {}
     for run_index, run_jobs in enumerate(wide_jobs_by_run):
@@ -2115,7 +2130,7 @@ def prefer_todays_leg(
 ) -> tuple[dict[str, float], dict[str, list[str]]]:
     """`(job_p90_minutes, job_p90_plans)` with each MIXED leg measured on today's leg alone.
 
-    The p90 is `job_p90`'s nearest rank. `counts` (sampled runs per name) and `evidence` (`job_p90_stats` per name), when given, are rewritten for every name priced on a subset here, so the refresh's `JOB_P90_MIN_SAMPLES` floor counts the samples the written p90 came from, not the whole window's.
+    The p90 is `job_p90_stats`'. `counts` (sampled runs per name) and `evidence` (`job_p90_stats` per name), when given, are rewritten for every name priced on a subset here, so the refresh's evidence floor counts the samples the written p90 came from, not the whole window's.
 
     A display name names a position, and a sample of a leg's earlier contents says nothing about the leg that ships now.
     When some of a name's traced samples ran today's leg and others ran a retired one, the p90 is taken over today's samples only and the plan entry names today's hash alone.
@@ -2539,7 +2554,7 @@ def refreshed_on_evidence(
     runs: Mapping[str, int],
     min_runs: int = MIN_DRIFT_RUNS,
 ) -> tuple[dict[str, float], list[str]]:
-    """`(the entries a refresh writes, the ids it kept on a thin sample)` for `jobs`, `job_p90_minutes` and `gate_step_p90_seconds`: `refreshed_units`' rule, counted in `runs` (how many sampled runs measured each id; absent is zero). An entry the table already holds moves only on `min_runs` runs (`MIN_DRIFT_RUNS` unless the caller asks for more), either direction; an id new to the table is written from one. `job_p90_minutes` asks for `JOB_P90_MIN_SAMPLES` (10; `MIN_VARIANT_RUNS` until 2026-11-21): check-lane-budget.ts judges each leg on it, and below 10 samples its nearest-rank p90 is the sample max, so one slow runner would set the leg's verdict.
+    """`(the entries a refresh writes, the ids it kept on a thin sample)` for `jobs`, `job_p90_minutes` and `gate_step_p90_seconds`: `refreshed_units`' rule, counted in `runs` (how many sampled runs measured each id; absent is zero). An entry the table already holds moves only on `min_runs` runs (`MIN_DRIFT_RUNS` unless the caller asks for more), either direction; an id new to the table is written from one. `job_p90_minutes` asks for `MIN_VARIANT_RUNS`: check-lane-budget.ts judges each leg on it, and `job_p90_stats` needs that many samples before its outlier rule has a majority to judge against.
 
     WHY. These three were rewritten from any sample, one run included. MEASURED 2026-11-07: the 14-day pull_request window held one Console CI run (41769535457, a 23-commit PR), and recomputed on it the refresh writes check:ci-plan-live-proof's step at 3.0 s over a committed 69.3 s and Quality / Branch at 3.5 m over 10.3 m. check-gate-manifest.ts judges `slow` on that step and check-lane-budget.ts judges every job on these p90s, so one runner's numbers set a tier and a lane verdict.
     """
@@ -2756,19 +2771,23 @@ def refresh_lane_durations(
     existing_p90 = existing.get("job_p90_minutes", {})
     p90_runs = evidence.get("job_p90_minutes") or {}
     updated["job_p90_minutes"], kept_on_thin["job_p90_minutes"] = refreshed_on_evidence(
-        existing_p90, computed["job_p90_minutes"], p90_runs, JOB_P90_MIN_SAMPLES
+        existing_p90, computed["job_p90_minutes"], p90_runs, MIN_VARIANT_RUNS
     )
     # The rule, every refresh, and each leg whose p90 is under the budget only because the rule set a slower sample aside: an outlier rule that prints nothing is how a real slowdown would hide.
     wide_runs = computed.get("job_p90_sampled_runs")
     print(
-        "budget_report --refresh: job_p90_minutes is the nearest-rank p90 over %s (the newest up to %d); "
-        "at n >= %d it sets aside the slowest floor(n/10) sample(s), and an entry the table holds "
-        "moves on no fewer than %d sampled run(s), since below that the p90 is the sample max."
+        "budget_report --refresh: job_p90_minutes is the nearest-rank p90 over %s (the newest up to %d): "
+        "at n >= %d it sets aside the slowest floor(n/10) sample(s); below %d it is the max after setting "
+        "aside the slowest sample when it is over %gx the median of the others (one at most, from %d "
+        "samples); an entry the table holds moves on no fewer than %d sampled run(s)."
         % (
             "%d run(s)" % len(wide_runs) if isinstance(wide_runs, list) else "the sample",
             JOB_P90_SAMPLE_LIMIT,
             JOB_P90_MIN_SAMPLES,
             JOB_P90_MIN_SAMPLES,
+            JOB_P90_OUTLIER_FACTOR,
+            MIN_VARIANT_RUNS,
+            MIN_VARIANT_RUNS,
         ),
         file=sys.stderr,
     )
@@ -2777,7 +2796,7 @@ def refresh_lane_durations(
         s = p90_evidence.get(name)
         if not s or updated["job_p90_minutes"].get(name) != s["p90"]:
             continue
-        if s["max"] > PER_LEG_BUDGET_MINUTES >= s["p90"]:
+        if s.get("set_aside") and s["max"] > PER_LEG_BUDGET_MINUTES >= s["p90"]:
             print(
                 "budget_report --refresh: job_p90_minutes %s = %.1f from %d sample(s), the slowest %d set "
                 "aside (max %.1f, over the %gm budget)."
@@ -2785,7 +2804,7 @@ def refresh_lane_durations(
                     name,
                     s["p90"],
                     s["n"],
-                    int(s["n"]) // 10,
+                    s["set_aside"],
                     s["max"],
                     PER_LEG_BUDGET_MINUTES,
                 ),
@@ -2803,7 +2822,7 @@ def refresh_lane_durations(
     rewritten = [
         name
         for name in computed["job_p90_minutes"]
-        if name not in existing_p90 or p90_runs.get(name, 0) >= JOB_P90_MIN_SAMPLES
+        if name not in existing_p90 or p90_runs.get(name, 0) >= MIN_VARIANT_RUNS
     ]
     plans = merged_job_p90_plans(
         existing.get("job_p90_plans") or {},
@@ -2827,10 +2846,8 @@ def refresh_lane_durations(
                 % (
                     len(ids),
                     table_key,
-                    JOB_P90_MIN_SAMPLES
-                    if table_key == "job_p90_minutes"
-                    else MIN_VARIANT_RUNS
-                    if table_key == "variantCosts"
+                    MIN_VARIANT_RUNS
+                    if table_key in ("variantCosts", "job_p90_minutes")
                     else MIN_DRIFT_RUNS,
                     ", ".join(ids[:3]),
                     ", ..." if len(ids) > 3 else "",

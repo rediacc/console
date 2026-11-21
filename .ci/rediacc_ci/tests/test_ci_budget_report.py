@@ -567,12 +567,11 @@ def _fake_compute(**overrides):
         "missing_artifact_lanes": [],
     }
     base.update(overrides)
-    # Every entry a fake measures carries enough runs for its section's keep rule (`JOB_P90_MIN_SAMPLES` for `job_p90_minutes`, `MIN_VARIANT_RUNS` for the rest, the stricter of `variantCosts`' and the others') unless the test says otherwise, so a test about merging or drift is not silently turned into a test about thin samples.
+    # Every entry a fake measures carries enough runs for the strictest keep rule (`MIN_VARIANT_RUNS`, which `variantCosts` and `job_p90_minutes` use) unless the test says otherwise, so a test about merging or drift is not silently turned into a test about thin samples.
     if "measured_runs" not in overrides:
         base["measured_runs"] = {
             section: dict.fromkeys(
-                cast("dict[str, Any]", base.get(section) or {}),
-                br.JOB_P90_MIN_SAMPLES if section == "job_p90_minutes" else br.MIN_VARIANT_RUNS,
+                cast("dict[str, Any]", base.get(section) or {}), br.MIN_VARIANT_RUNS
             )
             for section in ("jobs", "job_p90_minutes", "gate_step_p90_seconds", "variant_costs")
         }
@@ -2292,7 +2291,7 @@ def test_a_one_run_refresh_keeps_every_committed_job_and_gate_step_and_names_the
     assert "10 sampled run(s)" not in captured.out
     assert (
         "2 job_p90_minutes entr(ies) measured by fewer than %d sampled run(s) KEEP"
-        % br.JOB_P90_MIN_SAMPLES
+        % br.MIN_VARIANT_RUNS
         in captured.err
     )
     assert "2 gate_step_p90_seconds entr(ies)" in captured.err
@@ -2300,10 +2299,10 @@ def test_a_one_run_refresh_keeps_every_committed_job_and_gate_step_and_names_the
 
 
 def test_a_refresh_on_enough_runs_rewrites_the_same_entries(tmp_path):
-    """CONTROL: the identical measurement with enough runs behind every entry moves them all (two for `jobs` and gate steps, `JOB_P90_MIN_SAMPLES` for `job_p90_minutes`), so the keep rule is the evidence count and nothing else."""
+    """CONTROL: the identical measurement with enough runs behind every entry moves them all (two for `jobs` and gate steps, `MIN_VARIANT_RUNS` for `job_p90_minutes`), so the keep rule is the evidence count and nothing else."""
     path = _fixture_tree(tmp_path, {})
     path.write_text(json.dumps(_the_11_03_table()))
-    floor = br.JOB_P90_MIN_SAMPLES
+    floor = br.MIN_VARIANT_RUNS
     two = {
         "jobs": {"test-e2e-workers": 2},
         "job_p90_minutes": {"Quality / Branch": floor, "Build (Renet) / Renet (Full)": floor},
@@ -2323,16 +2322,16 @@ def test_a_refresh_on_enough_runs_rewrites_the_same_entries(tmp_path):
 
 
 def test_a_job_p90_priced_below_the_sample_floor_keeps_its_committed_value(tmp_path, capsys):
-    """A committed job p90 moves only on `JOB_P90_MIN_SAMPLES` runs (3 from 2026-11-14, 10 from 2026-11-21), so one run short of the floor, where the nearest-rank p90 is still the sample max, cannot reprice a leg; `jobs` and gate steps still move on `MIN_DRIFT_RUNS` (the CONTROL that the stricter rule is scoped)."""
+    """2026-11-14: a committed job p90 moves only on `MIN_VARIANT_RUNS` runs, so one run short of it cannot reprice a leg (with two runs there is no majority for the outlier rule to judge against); `jobs` and gate steps still move on `MIN_DRIFT_RUNS` (the CONTROL that the stricter rule is scoped)."""
     path = _fixture_tree(tmp_path, {})
     path.write_text(json.dumps(_the_11_03_table()))
-    short = br.JOB_P90_MIN_SAMPLES - 1
+    short = br.MIN_VARIANT_RUNS - 1
     runs = {
         "jobs": {"test-e2e-workers": br.MIN_DRIFT_RUNS},
         "job_p90_minutes": {"Quality / Branch": short, "Build (Renet) / Renet (Full)": short},
         "gate_step_p90_seconds": {"check:ci-plan-live-proof": 2, "check:ci-max-lines": 2},
     }
-    assert br.MIN_DRIFT_RUNS == 2 < br.MIN_VARIANT_RUNS < br.JOB_P90_MIN_SAMPLES
+    assert br.MIN_DRIFT_RUNS == 2 < br.MIN_VARIANT_RUNS
     assert (
         br.refresh_lane_durations(path, limit=10, compute=_one_run_night(measured_runs=runs)) == 0
     )
@@ -2342,7 +2341,7 @@ def test_a_job_p90_priced_below_the_sample_floor_keeps_its_committed_value(tmp_p
     assert data["jobs"] == {"test-e2e-workers": 2.2}
     assert data["gate_step_p90_seconds"].get("check:ci-plan-live-proof") == 3.0
     assert (
-        "job_p90_minutes entr(ies) measured by fewer than 10 sampled run(s) KEEP"
+        "job_p90_minutes entr(ies) measured by fewer than 3 sampled run(s) KEEP"
         in capsys.readouterr().err
     )
 
@@ -3621,7 +3620,7 @@ def test_prefer_todays_leg_prices_a_mixed_leg_on_today_s_samples_only():
     assert p90["Q / X (4/4)"] == br.job_p90([6.2, 4.9, 4.9]) == 6.2
     assert plans["Q / X (4/4)"] == ["today4"]
     assert counts == {"Q / X (4/4)": 3, "Q / X (3/4)": 1}
-    assert evidence == {"Q / X (4/4)": {"p90": 6.2, "max": 6.2, "n": 3}}
+    assert evidence == {"Q / X (4/4)": {"p90": 6.2, "max": 6.2, "n": 3, "set_aside": 0}}
     # CONTROL: a leg none of whose samples ran today's leg keeps its p90 and its retired hash, so check-lane-budget.ts still sets it aside and prints it.
     assert p90["Q / X (3/4)"] == 12.6
     assert plans["Q / X (3/4)"] == ["old3"]
@@ -4180,15 +4179,25 @@ def test_job_p90_keeps_a_lane_consistently_over_budget_over_budget():
     p90 = br.job_p90(eleven)
     assert p90 is not None
     assert p90 > br.PER_LEG_BUDGET_MINUTES
+    # And below the rank floor, where the outlier rule applies: 13 m in six of eight runs is the median, never an outlier.
+    eight = br.job_p90([9.0, 9.5] + [13.0] * 6)
+    assert eight is not None
+    assert eight > br.PER_LEG_BUDGET_MINUTES
     twenty = br.job_p90([9.0] * 6 + [13.0] * 14)
     assert twenty is not None
     assert twenty > br.PER_LEG_BUDGET_MINUTES
 
 
-def test_job_p90_below_the_sample_floor_is_the_max_and_empty_is_none():
-    """Under `JOB_P90_MIN_SAMPLES` the nearest-rank p90 is the slowest sample (the strict side), so a thin sample never prices a leg below a run it saw; nothing measured is None, never a zero."""
+def test_job_p90_below_the_rank_floor_sets_aside_one_named_outlier_and_no_more():
+    """FIRES-if-unfixed, on the live sample: the 14-day window held 8 PR runs on 2026-11-21, so the rank rule alone (which is the max below `JOB_P90_MIN_SAMPLES`) priced opensuse 9/11 at its one 19 m run. Below the floor the slowest sample is set aside only when it is over `JOB_P90_OUTLIER_FACTOR` times the median of the others, and one sample at most.
+    CONTROLS: a second slow run stays and sets the p90 (two in eight is no tail); a slowest sample under the factor stays; under `MIN_VARIANT_RUNS` samples there is no majority to be an outlier against."""
     assert br.JOB_P90_MIN_SAMPLES == 10
-    assert br.job_p90([8.0] * 8 + [19.0]) == 19.0
+    assert br.JOB_P90_OUTLIER_FACTOR == 1.5
+    assert br.job_p90(_OPENSUSE_9_OF_11) == 9.8
+    assert br.job_p90_stats(_OPENSUSE_9_OF_11) == {"p90": 9.8, "max": 18.9, "n": 5, "set_aside": 1}
+    assert br.job_p90([8.0] * 6 + [19.0, 19.0]) == 19.0
+    assert br.job_p90([8.0] * 7 + [11.9]) == 11.9
+    assert br.job_p90([8.0, 19.0]) == 19.0
     assert br.job_p90([]) is None
     assert br.job_p90([None, None]) is None
     # The rank is integer arithmetic: 0.9 * 70 is 63.00000000000001 in floating point, and a ceil of it would read the 64th value.
@@ -4239,27 +4248,28 @@ def test_compute_lane_durations_prices_job_p90_on_the_wide_window(tmp_path, monk
     assert asked == [10]
 
 
-def _job_p90_compute(value: float, runs: int, max_minutes: float | None = None):
+def _job_p90_compute(value: float, runs: int, max_minutes: float | None = None, set_aside: int = 0):
     name = "Tests + Infra / E2E Workers (opensuse-16.0, 9/11)"
+    stats = {"p90": value, "max": max_minutes or value, "n": runs, "set_aside": set_aside}
     return name, _fake_compute(
         job_p90_minutes={name: value},
         measured_runs={"job_p90_minutes": {name: runs}},
-        job_p90_stats={name: {"p90": value, "max": max_minutes or value, "n": runs}},
+        job_p90_stats={name: stats},
     )
 
 
 def test_a_committed_job_p90_moves_only_on_the_sample_floor(tmp_path, capsys):
-    """A committed job p90 is rewritten on `JOB_P90_MIN_SAMPLES` runs and kept, named, on fewer. CONTROL: a name new to the table is written from one run, since no row is an UNCHECKED leg."""
+    """A committed job p90 is rewritten on `MIN_VARIANT_RUNS` runs (the floor the outlier rule needs a majority for) and kept, named, on fewer. CONTROL: a name new to the table is written from one run, since no row is an UNCHECKED leg."""
     path = tmp_path / "lane-durations.json"
-    name, thin = _job_p90_compute(9.8, br.JOB_P90_MIN_SAMPLES - 1)
+    name, thin = _job_p90_compute(9.8, br.MIN_VARIANT_RUNS - 1)
     committed = {"refreshed_at": None, "concurrency": 20, "job_p90_minutes": {name: 16.8}}
     path.write_text(json.dumps(committed))
     assert br.refresh_lane_durations(path, limit=10, compute=thin) == 0
     assert json.loads(path.read_text())["job_p90_minutes"][name] == 16.8
     err = capsys.readouterr().err
-    assert "1 job_p90_minutes entr(ies) measured by fewer than 10 sampled run(s) KEEP" in err
+    assert "1 job_p90_minutes entr(ies) measured by fewer than 3 sampled run(s) KEEP" in err
     path.write_text(json.dumps(committed))
-    _, enough = _job_p90_compute(9.8, br.JOB_P90_MIN_SAMPLES)
+    _, enough = _job_p90_compute(9.8, br.MIN_VARIANT_RUNS)
     assert br.refresh_lane_durations(path, limit=10, compute=enough) == 0
     assert json.loads(path.read_text())["job_p90_minutes"][name] == 9.8
     path.write_text(json.dumps({"refreshed_at": None, "concurrency": 20}))
@@ -4272,13 +4282,13 @@ def test_a_refresh_names_the_p90_rule_and_each_over_budget_tail_it_set_aside(tmp
     """The outlier rule is stated, never silent: the refresh prints the estimator and its floor, and names every leg whose p90 sits under the budget while a set-aside sample sat over it. CONTROL: a leg whose max is within budget is not named."""
     path = tmp_path / "lane-durations.json"
     path.write_text(json.dumps({"refreshed_at": None, "concurrency": 20}))
-    name, compute = _job_p90_compute(9.8, 11, max_minutes=18.95)
+    name, compute = _job_p90_compute(9.8, 8, max_minutes=18.95, set_aside=1)
     assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
     err = capsys.readouterr().err
     assert "nearest-rank p90" in err
-    assert "fewer than 10 sampled run(s)" in err
-    assert "%s = 9.8 from 11 sample(s), the slowest 1 set aside (max 18.9" % name in err
+    assert "over 1.5x the median of the others" in err
+    assert "%s = 9.8 from 8 sample(s), the slowest 1 set aside (max 18.9" % name in err
     path.write_text(json.dumps({"refreshed_at": None, "concurrency": 20}))
-    _, calm = _job_p90_compute(9.8, 11, max_minutes=10.4)
+    _, calm = _job_p90_compute(9.8, 11, max_minutes=10.4, set_aside=1)
     assert br.refresh_lane_durations(path, limit=10, compute=calm) == 0
     assert "set aside (max" not in capsys.readouterr().err
