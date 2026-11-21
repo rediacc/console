@@ -1,26 +1,20 @@
-## SESSION d778be9d 2026-11-21T04:06:07Z
+## SESSION d778be9d 2026-11-21T10:09:14Z
 
-# STATE d778be9d (2026-11-21, two trees live)
+# STATE d778be9d (2026-11-21 afternoon, two trees, simple-loop plan in progress)
 
 ## Big pieces
-- PR #605 (1104-1, landing tree /home/developer/console-landing): second push waits on the landing ci:quick (bg bjzgqfycx, log /tmp/m/ciquick-landing-<head>.log, dockerhub-read). Expected reds: ops-health (carried), lane-budget ([?] #898579d3). Babysit and /pr-merge of #605 run in the landing tree.
-- PLAN-two-track-merge-dev: LT9 c98e504a live (b7d654a93), owes the draft PR run id; LT10 c4f705ea next; R0 3385a609, R1 e6856157, R2 d6b55389, R3 a2ae6f1c, R4 8bb8cb57, RB3 e884ca17, A3 daa4350c, M1 72dbfdc2 open.
-- Development branch 1121-1 here, stacked on 1104-1 (renet/account/elite on 1121-1); peer commit e23e8655c landed.
-
-## Delegated (leases of 1121-1)
-- a2ae4b1869d8f09e7 RB3 e884ca17 (#11b5bce3); a2197ecd4f44772c8 R1 e6856157 (#4e60000d); adc0de51034a83247 review verbs tree-aware (#edb41f10, #688c7385: duplicate reviews of 1104-1 commits under 1121-1 are diverging, e.g. 20a8cedf 2 vs 3 findings); ac150e184c13670d9 repository_policy.go i18n (#22be2cf3)
+- PR #605 (landing tree /home/developer/console-landing, 1104-1): second batch pushed (console 7199cbc9d); CI run 44884489459 red on 5 jobs. Fixed locally on 1104-1 (not pushed yet): pytest-slow allowlist 3e21f51f8, e2e 22-01 mail count (account 0c14596, gitlink 8e39d11f4); ops-health l1vm keys re-scanned (machine scan-keys ops-worker rc 0). Lane budget: OPERATOR RULING (#898579d3) speed up opensuse first, no caps; writer a0c1a57a7b1c4f232 (#7266fa25) in a 1121-1 lease, its commits get cherry-picked onto 1104-1 in the landing tree. Then ci:quick + vm:check in the landing tree, push (renet/account/console from landing, absolute -C paths), CI watch.
+- PLAN-simple-two-tree-loop (approved 2026-11-21, rulings verbatim in the plan, commit 8c0f9e43b): B1 partial (test_wl_focus deletion owed to B10), B2 done, B3 done, B4 partial (settings residue to B5, phase residue to B10), B6 done. Next serial: B5 (writer a1141315a6c05d296, #27871b0c) -> B10 -> B7; B8 after B4; B9 depends on PLAN-pr-loop-single-source; B0/B11 lead.
+- Development branch 1121-1 (main checkout), not pushed; no draft PR (ruling).
 
 ## Next action
-1. Start a review-findings writer on 1121-1 for c1237c39's 4 open findings and the advisory backlog, files disjoint from the four leases.
-2. Landing ci:quick verdict: push from the landing tree, renet then account then console (`git -C private/<s> push origin 1104-1`), TURBO_PUSH_REASON='red-fix: PR 605 second batch'; ci-trace --wait --ref 1104-1 in the background.
-3. Land writer reports into 1121-1 (submodules first, gitlink), ci:quick here, push 1121-1, open its DRAFT PR (turbo-exempt): run id ticks LT9; the dev push plus draft run beside #605 with both receipts' trees ticks LT10.
-4. R0 as a temporary step in the draft PR; R2 -> R3 -> R4 in order; A3 after R1.
+1. Commit the pending B4 investigation row and review records (worklist.py --review-commit d778be9d) on 1121-1.
+2. When the opensuse writer reports: spot-check, cherry-pick its commits into /home/developer/console-landing (fix(ci)/perf(ci) subjects only; the landing freeze admits fix work), renet commit first then gitlink; run ci:quick there (dockerhub-read bws profile) and vm:check -- --changed (backup drills first if the renet/account pointers move), push, ci-trace --wait --ref 1104-1.
+3. When B5 reports: land on 1121-1, apply its outside patch (QUEUE.md Settings fence/prose is the lead's), rerun suites and env/effort gates, tick, then start B10.
 
 ## Owed ticks
-- live-owed (box audit): PLAN-ciquick-cpu 51ceeb4f M2; PLAN-enterprise-isolation a8892e0c, 0a6e5712, f4b49503, 0fbd62dc, cc583290; PLAN-proxy-cd-six-targets abe9b4eb C7; PLAN-health-checks-local 85f55665 C2; PLAN-production-key-only 6a1ca4a4; PLAN-backup-program 0a237b2e, 575e0098 (+1 more in `worklist.py --box-audit d778be9d --live-owed`). Each needs its live run (bench/hostinger/VM) and --plan-tick with the landed sha.
-- LT9 c98e504a, LT10 c4f705ea after the draft PR run.
+- PLAN-simple-two-tree-loop B1 15296114 (partial), B4 c098ad09 (partial); PLAN-two-track-merge-dev LT9 c98e504a, LT10 c4f705ea (superseded by B0); R1 e6856157 and R2 d6b55389 live clauses (stale devcontainer image #c276a9df).
 
 ## Overnight / decisions
-- Lane budget: sharding rejected as gaming the gate; default re-measure, then cut opensuse fixed cost.
-- hostinger renet installed (machine status rc 0); the "not installed" message is a local-probe failure misreported (#826949d8).
-- Template images held to 2026-12-18 (veto via .ci/policy/.pins-upgrade-blocklist).
+- Fix flow (Fable-reviewed, operator approved): dev supervises a lease on the landing tip, landing lands it once; never copy dev commits up.
+- bump-none promote gap tracked; lane-budget deadlock recorded.
