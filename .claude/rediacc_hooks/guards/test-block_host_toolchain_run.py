@@ -438,6 +438,40 @@ for tool in ALL_TOOLS:
         (0, run(f"{tool} --version", with_shim), f"CONTROL: {tool} present on PATH is left alone")
     )
 
+# --------------------------------------------------------------------------- THE HOST-BUILT TOOLCHAIN ARM, ON A FIXTURE THAT NEEDS NO REAL DEVBOX AND NO REAL .venv.
+#
+# The submodule cases above run only when a devbox is up and the private/ trees exist, so on a runner with neither the `if hostbound:` branch was never reached and dropping it changed no verdict (check:ci-guard-mutations, DEFECT, 2026-11-21). Here the devbox is a shim `docker` that lists one container and succeeds at `exec`, so the ONLY thing standing between a missing `go` and the refusal is the host-built check; the directory is a temp one holding a `.venv`, named relative to the repo root because the guard resolves a token under that root.
+_FAKE_DOCKER_DIR = tempfile.mkdtemp(dir=RUN_TMP)
+with open(os.path.join(_FAKE_DOCKER_DIR, "docker"), "w", encoding="utf-8") as fh:
+    fh.write('#!/bin/sh\nif [ "$1" = ps ]; then echo fixture-box; fi\nexit 0\n')
+os.chmod(os.path.join(_FAKE_DOCKER_DIR, "docker"), 0o700)
+_HB_PATH = "%s:%s" % (_FAKE_DOCKER_DIR, _path_without("go", REAL))
+# INSIDE THE REPO ROOT, NOT UNDER /tmp: the guard walks the token's ancestors as STRINGS, so a `..` path climbs through the real checkout's parents and finds a `node_modules` there (measured: the plain control read as host-built). Under the root the walk stops at the root. The `.tmp` suffix is matched by the existing gitignore rule, and atexit removes it.
+_HB_ROOT = os.path.join(REPO, ".hostguard-fixture.%d.tmp" % os.getpid())
+atexit.register(shutil.rmtree, _HB_ROOT, ignore_errors=True)
+_HB_BUILT = os.path.join(_HB_ROOT, "built")
+_HB_PLAIN = os.path.join(_HB_ROOT, "plain")
+os.makedirs(os.path.join(_HB_BUILT, ".venv"))
+os.makedirs(_HB_PLAIN)
+cases.append(
+    (
+        2,
+        run("go build %s" % os.path.relpath(_HB_PLAIN, REPO), _HB_PATH),
+        "host-built arm, CONTROL: a directory with no .venv is routed into the devbox",
+    )
+)
+_hb = run_full("go build %s" % os.path.relpath(_HB_BUILT, REPO), _HB_PATH)
+cases.append(
+    (0, _hb.returncode, "host-built arm: a directory owning a .venv is NOT routed into the devbox")
+)
+cases.append(
+    (
+        True,
+        "HOST-BUILT toolchain" in _hb.stderr,
+        "host-built arm: the note says why the devbox is not the answer",
+    )
+)
+
 # --------------------------------------------------------------------------- aws, bw, bws -- the three the tables did not cover until 2026-09-23.
 #
 # THE INCIDENT. A session ran `.ci/scripts/release/assert-edge-tag-exists.sh` on the HOST, read `Required command 'aws' is not available`, and began evaluating an `awscli` install on the host. The devbox has carried aws-cli 2.36.40 the whole time.
