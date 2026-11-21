@@ -54,7 +54,7 @@ PUSH_ANCHOR = "<!-- scope: pr.push-cadence -->"
 # The atom T2 and T9 drop from the trailers mirror's push-cadence span.
 PUSH_ATOM = "every 2 hours"
 
-# The gate runs its 65 selftest controls first, then the real tree; well under a minute measured 2026-10-08.
+# The gate runs its 81 selftest controls first, then the real tree; well under a minute measured 2026-10-08.
 GATE_TIMEOUT = 300
 
 
