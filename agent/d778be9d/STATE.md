@@ -1,19 +1,26 @@
-## SESSION d778be9d 2026-11-21T01:49:24Z
+## SESSION d778be9d 2026-11-21T04:06:07Z
 
-# STATE d778be9d (2026-11-21 ~02:10Z, operator AWAY)
-
-## Next action
-1. #4889018a ci:quick is running on HEAD (log /tmp/m/ciquick-$(cat /tmp/m/cq-head).log, under `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile dockerhub-read -- npm run ci:quick`). vm:check VERIFIED (tree 0a53db708ac6, no trigger change since). If green (only carried ops-health): commit STATE.md, then push submodules first (`git -C private/renet push origin 1104-1`, `git -C private/account push origin 1104-1`), then the console, each with TURBO_PUSH_REASON='red-fix: PR 605 second batch ...'. Then watch CI (`.ci/scripts/ci/ci-trace.py --wait --ref 1104-1`, background). CI on bc15e97ef was red on lane durations (fixed 30ef78966), external dependency freshness and Go: check after the push.
-2. After the push: hostinger machine setup for the new renet (#3fb926f3; `./rdc.sh --config eu-bench machine setup hostinger`, never schedule/bind via eu-bench), then `./rdc.sh --config eu-bench job dismiss j18e9d571387a5f57-f357bb66 j18e9870c5f4555b7-f0eb4666 j18e97c60b9f0bdc0-595bd8d1`, fork check (H2 item #c21c78d4 text), re-up erpnext:cve-test fork (#d10eb861).
-3. Open follow-ups: #7001e5e1 CI Docker Hub username; #afe591e3 submodule review trigger; #f0ec2956 real-provider flake; #fd9bd5d1 release refused line; #38dd34cf template image upgrades (22 held to 2026-12-18, operator may veto); LT9 switch-over and LT10 live proof (PLAN-two-track-merge-dev).
+# STATE d778be9d (2026-11-21, two trees live)
 
 ## Big pieces
-- PR #605 (1104-1): first batch pushed bc15e97ef and released us/asia edge (record release-records/v3.0.1/edge/run-20261120T235244Z-f40975a9.json); second batch (~70 commits: renet fork labels/auto-grow/policy flag, 62 account review fixes, H2/H3 CLI, J1/J3b templates and pins, Java4Shell commits of session 98cec5a6, pin bumps, Docker Hub cache) waits on this ci:quick.
+- PR #605 (1104-1, landing tree /home/developer/console-landing): second push waits on the landing ci:quick (bg bjzgqfycx, log /tmp/m/ciquick-landing-<head>.log, dockerhub-read). Expected reds: ops-health (carried), lane-budget ([?] #898579d3). Babysit and /pr-merge of #605 run in the landing tree.
+- PLAN-two-track-merge-dev: LT9 c98e504a live (b7d654a93), owes the draft PR run id; LT10 c4f705ea next; R0 3385a609, R1 e6856157, R2 d6b55389, R3 a2ae6f1c, R4 8bb8cb57, RB3 e884ca17, A3 daa4350c, M1 72dbfdc2 open.
+- Development branch 1121-1 here, stacked on 1104-1 (renet/account/elite on 1121-1); peer commit e23e8655c landed.
 
-## Overnight
-- Landed: LT1-LT8, LT11-LT19 (ticked 199aa53cd), H1-H4, J1, J3b, RF-A/C/G/P, RV, GR, Docker Hub cache bd4330ba7.
-- Decided (rule 2): 22 outdated template images held to 2026-12-18 (veto: delete those lines in .ci/policy/.pins-upgrade-blocklist); auto-grow stays opt-in; bench us/asia redeployed to apply root grants.
-- Parked [?]: none.
+## Delegated (leases of 1121-1)
+- a2ae4b1869d8f09e7 RB3 e884ca17 (#11b5bce3); a2197ecd4f44772c8 R1 e6856157 (#4e60000d); adc0de51034a83247 review verbs tree-aware (#edb41f10, #688c7385: duplicate reviews of 1104-1 commits under 1121-1 are diverging, e.g. 20a8cedf 2 vs 3 findings); ac150e184c13670d9 repository_policy.go i18n (#22be2cf3)
+
+## Next action
+1. Start a review-findings writer on 1121-1 for c1237c39's 4 open findings and the advisory backlog, files disjoint from the four leases.
+2. Landing ci:quick verdict: push from the landing tree, renet then account then console (`git -C private/<s> push origin 1104-1`), TURBO_PUSH_REASON='red-fix: PR 605 second batch'; ci-trace --wait --ref 1104-1 in the background.
+3. Land writer reports into 1121-1 (submodules first, gitlink), ci:quick here, push 1121-1, open its DRAFT PR (turbo-exempt): run id ticks LT9; the dev push plus draft run beside #605 with both receipts' trees ticks LT10.
+4. R0 as a temporary step in the draft PR; R2 -> R3 -> R4 in order; A3 after R1.
 
 ## Owed ticks
-- 4a4bd934.2 review mark (#review-mark verb gap tracked); LT9/LT10.
+- live-owed (box audit): PLAN-ciquick-cpu 51ceeb4f M2; PLAN-enterprise-isolation a8892e0c, 0a6e5712, f4b49503, 0fbd62dc, cc583290; PLAN-proxy-cd-six-targets abe9b4eb C7; PLAN-health-checks-local 85f55665 C2; PLAN-production-key-only 6a1ca4a4; PLAN-backup-program 0a237b2e, 575e0098 (+1 more in `worklist.py --box-audit d778be9d --live-owed`). Each needs its live run (bench/hostinger/VM) and --plan-tick with the landed sha.
+- LT9 c98e504a, LT10 c4f705ea after the draft PR run.
+
+## Overnight / decisions
+- Lane budget: sharding rejected as gaming the gate; default re-measure, then cut opensuse fixed cost.
+- hostinger renet installed (machine status rc 0); the "not installed" message is a local-probe failure misreported (#826949d8).
+- Template images held to 2026-12-18 (veto via .ci/policy/.pins-upgrade-blocklist).
