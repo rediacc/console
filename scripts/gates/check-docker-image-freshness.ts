@@ -89,6 +89,10 @@ import {
   writeBaselineVerdict,
 } from '../lib/shrink-only-baseline.js';
 
+/** Vacuity floors: a scan that finds no pin or no image file is not seeing the tree, and its green would mean nothing. */
+const MIN_IMAGE_PINS = 1;
+const MIN_IMAGE_FILES = 1;
+
 // The seam: DOCKER_FRESHNESS_ROOT stands a fixture git tree (its Dockerfiles and its baseline) in for the console, so the remedy test can plant a newly stale pin without writing to this tree.
 const ROOT = process.env.DOCKER_FRESHNESS_ROOT || path.resolve(import.meta.dirname, '..', '..');
 const BASELINE = path.join(ROOT, 'scripts/data/docker-image-freshness-baseline.json');
@@ -930,7 +934,7 @@ async function main(): Promise<void> {
   for (const f of imageFiles.filter((x) => /(^|\/)Dockerfile[^/]*$/.test(x)))
     pins.push(...parsePins(readFileSync(path.join(ROOT, f), 'utf8'), f));
 
-  if (pins.length === 0) {
+  if (pins.length < MIN_IMAGE_PINS) {
     console.error(
       '✗ zero image pins found. The gate is not seeing the tree; its green would mean nothing.'
     );
@@ -983,7 +987,7 @@ async function main(): Promise<void> {
   }
 
   // THE DIGEST AGREES WITH THE TAG, over every tracked Dockerfile and compose file.
-  if (imageFiles.length === 0) {
+  if (imageFiles.length < MIN_IMAGE_FILES) {
     console.error(
       '✗ zero tracked Dockerfiles or compose files. The digest scan is not seeing the tree; its green would mean nothing.'
     );
