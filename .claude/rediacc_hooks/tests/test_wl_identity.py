@@ -411,12 +411,19 @@ def drive_l1(fix) -> L1Drive:
         )
     )
     mkitem("l1-list-item")  # the --list row asserts on the TEXT, not the id
+    # --handover-answer needs a handover to answer (wl_handover, PLAN-simple-two-tree-loop B7).
+    _ho = re.search(
+        r"handover #([0-9a-f]{8})",
+        both(l1run(fix, "--handover", wlfix.ME, "lesson", "l1-ho-check", "l1-ho-evidence")),
+    )
+    i_handover = _ho.group(1) if _ho else ""
     for name, value in (
         ("i_tick", i_tick),
         ("i_defer", i_defer),
         ("i_update", i_update),
         ("i_lease", i_lease),
         ("i_reopen", i_reopen),
+        ("i_handover", i_handover),
     ):
         assert value, "FIXTURE BROKEN: %s was never created, so its row proves nothing" % name
     inv_rel, inv_selector = plant_investigate_target(fix)
@@ -468,6 +475,12 @@ def drive_l1(fix) -> L1Drive:
         ("--list", "--list --open @WHO@", "l1-list-item"),
         ("--state", "--state @WHO@", "STATE.md section written"),
         ("--loop", "--loop @WHO@ 2099-01-01T00:00:00Z 1 l1-label", "loop declared"),
+        ("--handover", "--handover @WHO@ lesson l1-table-check l1-table-evidence", "handover #"),
+        (
+            "--handover-answer",
+            "--handover-answer @WHO@ %s done" % i_handover,
+            "answered: done",
+        ),
         ("--brief", "--brief @WHO@ l1-brief-text", "brief recorded"),
         ("--intent", "--intent @WHO@ l1-intent-text --for 30", "intent recorded"),
         ("--reap", "--reap @WHO@ l1task9", "reaped 1 task"),

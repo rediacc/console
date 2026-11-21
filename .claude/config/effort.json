@@ -516,6 +516,20 @@
     "worktree-unlanded": {
       "block": "low",
       "advise": "low"
+    },
+    "handover-open": {
+      "block": "low",
+      "advise": "low"
+    },
+    "handover-land": {
+      "block": "low",
+      "advise": "low"
+    },
+    "handover-lesson": {
+      "advise": "low"
+    },
+    "handover-bug": {
+      "advise": "smart"
     }
   },
   "tuned": {

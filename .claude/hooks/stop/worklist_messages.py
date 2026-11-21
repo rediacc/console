@@ -2318,6 +2318,12 @@ Query:
 
 Session state:
   --brief <me> <text...>        publish what you are changing right now
+  --handover <me> stuck|churn|lesson <check> <evidence...>
+                                the landing tree hands a failure to the
+                                development tree (prints the handover id)
+  --handover-answer <me> <id> lease:<lease-id>|keep|change|undo|done
+                                answer a handover; lease:<id> hands the
+                                landing of that lease to the landing tree
   --state <me>                  rewrite agent/<me>/STATE.md (body on stdin)
   --loop <me> <next> <count> <what...>   declare a scheduled loop
 
@@ -3288,6 +3294,23 @@ N_SETTINGS_PROBLEM = (
     "SETTINGS PROBLEM: agent/plans/QUEUE.md `## Settings` resolved to effort %s with these problems, "
     "each falling back to its fail-safe value (`npm run check:ci-plan-record` names them too):\n%s"
 )
+
+# The handover verbs (agent/plans/PLAN-simple-two-tree-loop.md D5, wl_handover).
+CLI_HANDOVER_USAGE = (
+    "usage: worklist.py --handover <me> stuck|churn|lesson <check> <evidence...>\n"
+    "From the landing session: hands a failure to the development tree. `stuck` (a check that\n"
+    "survived 3 fixes aimed at it) and `churn` (fixes that broke green checks) block the\n"
+    "development stop until answered; `lesson` (a CI-only failure the local quick checks could\n"
+    "catch) only advises there.\n"
+)
+CLI_HANDOVER_ANSWER_USAGE = (
+    "usage: worklist.py --handover-answer <me> <id> lease:<lease-id>|keep|change|undo|done\n"
+    "From the development session: `lease:<id>` names the lease cut with `./run.sh worktree lease\n"
+    "--tree landing` that carries the fix, and the landing stop then blocks until it is landed;\n"
+    "keep, change, undo and done close the handover for both trees.\n"
+)
+CLI_HANDOVER_DONE = "handover #%s recorded (%s on %s); the development tree's stop now names it."
+CLI_HANDOVER_ANSWERED = "handover #%s answered: %s."
 
 N_ROSTER_HONEST = (
     "ROSTER HONEST: %d writer(s)/%d, %d reader(s), next status due %s. Every item in flight is "

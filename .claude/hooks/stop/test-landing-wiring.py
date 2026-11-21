@@ -5,8 +5,9 @@
 
 Every case runs the real Stop hook, copied with its effort table into a fixture, over two real trees of one repository: the main checkout on the development branch and a linked landing tree on the PR branch, bound by a landing record in the common git dir. A gh shim answers the PR read per branch, and origin is redirected (`url.<bare>.insteadOf`) to a local bare repository, so the stack's fetch of origin/main reads a planted main.
 
-LT15: `wl_checks.loop_next_text` picks the no-PR-ahead and finish arms through `worklist_messages.loop_next_variant`: the development tree's commits open a draft, its finished draft waits on an open landing PR without blocking, and with no landing PR open the merge is offered.
+LT15: `wl_checks.loop_next_text` picks the no-PR-ahead and finish arms through `worklist_messages.loop_next_variant`: the development tree's commits with no PR name the backup push and open none, its finished branch waits on an open landing PR without blocking, and with no landing PR open the merge is offered.
 B2 (agent/plans/PLAN-simple-two-tree-loop.md D1): the landing tree's stop names its state machine's step instead (`wl_checks.landing_next_text`): after the merge it watches the release (L-RELEASE), a red Console CI on main is a hotfix (L-HOTFIX), and a green release blocks once with the `cd-done` notice and then idles; the development tree names promote once that release is green.
+B7 (D5): the handover contract by tree role: an open stuck handover blocks the development stop and not the landing one, an answer naming a lease moves the block to the landing stop, `done` clears both, a lesson only advises, and a checkout with no record reads none.
 LT19: the `landing-stack` FLOOR check blocks the development stop at every effort level while the landing branch is merged and unpromoted; `landing-behind` is advisory; a landing tree's own stop and a checkout with no record read nothing.
 
 Each fire case has a control without the record, and each wiring is run once more against a mutant of the hook copy that must turn its checks red.
@@ -363,15 +364,64 @@ def loopnext_cases(tmp, tag, mutate=None):
 STACK_MERGED = "LANDING MERGED (blocks at every effort level)"
 STACK_BEHIND = "LANDING AHEAD"
 STACK_PENDING = "LANDING MERGED, RELEASE PENDING"
+# B7: the handover verdicts' first words (wl_handover).
+HO_OPEN = "FROM THE LANDING TREE"
+HO_LAND = "ANSWERED WITH LEASE"
+HO_LESSON = "HANDOVER LESSON"
+
+
 KEY_OF = {
     **dict.fromkeys(
         (PROMOTE, TODAY_MERGED, DRAFT, OPEN_IT, WAIT, MERGE, RELEASE, HOTFIX, IDLE, CD_DONE),
         "loop-next",
     ),
+    HO_OPEN: "handover-open",
+    HO_LAND: "handover-land",
     STACK_MERGED: "landing-stack",
     STACK_BEHIND: "landing-behind",
     STACK_PENDING: "landing-behind",
 }
+
+
+# ---- B7: the handover contract -------------------------------------------------
+
+
+def handover_cases(tmp, tag, mutate=None):
+    """[(label, got, want)] for the handover verdicts of each tree (wl_handover)."""
+    out = []
+    w = World(tmp, "handover-%s" % tag, mutate)
+    w.prs({PR_BRANCH: [node("OPEN", "Plan: %s\n" % OWN, 7)]})
+    w.bind()
+    made = w.fix.cli("--handover", wlfix.ME, "stuck", "Quality / Pytest (3/3)", "rounds 4 5 6")
+    out.append(("handover: the verb records it", made.rc, 0))
+    hid = made.out.split("#", 1)[1][:8] if "#" in made.out else "?"
+    got = w.stop(w.fix.proj)
+    out.append(("handover stuck: the development stop blocks", w.blocked(got, HO_OPEN), True))
+    got = w.stop(w.landing)
+    out.append(("handover stuck: the landing stop does not", HO_OPEN in got.out, False))
+
+    w.fix.cli("--handover-answer", wlfix.ME, hid, "lease:fix-ci-1")
+    got = w.stop(w.landing)
+    out.append(
+        ("handover lease: the landing stop blocks on landing it", w.blocked(got, HO_LAND), True)
+    )
+    got = w.stop(w.fix.proj)
+    out.append(("handover lease: the development stop is free of it", HO_OPEN in got.out, False))
+
+    w.fix.cli("--handover-answer", wlfix.ME, hid, "done")
+    got = w.stop(w.landing)
+    out.append(("handover done: the landing stop is free of it", HO_LAND in got.out, False))
+
+    w.fix.cli("--handover", wlfix.ME, "lesson", "Quality / Static", "a CI-only failure")
+    got = w.stop(w.fix.proj)
+    out.append(("handover lesson: named on the development stop", HO_LESSON in got.out, True))
+    out.append(("handover lesson: never a block", w.blocked(got, HO_LESSON), False))
+
+    w.fix.cli("--handover", wlfix.ME, "churn", "Quality / Static", "two regressions in four rounds")
+    w.bind(False)
+    got = w.stop(w.fix.proj)
+    out.append(("CONTROL handover, no record: no role reads none", HO_OPEN in got.out, False))
+    return out
 
 
 def stack_cases(tmp, tag, mutate=None):
@@ -430,6 +480,17 @@ def stack_cases(tmp, tag, mutate=None):
 
 CHECKS_REL = "hooks/stop/wl_checks.py"
 MUTANTS = (
+    (
+        "a blocking handover only advises",
+        handover_cases,
+        [
+            (
+                CHECKS_REL,
+                '                    vadd("handover-open", False, _ho_text)\n',
+                "                    pass\n",
+            )
+        ],
+    ),
     (
         "the landing tree runs the queue loop's arms",
         loopnext_cases,
@@ -531,7 +592,9 @@ MUTANTS = (
 
 def main():
     tmp = pathlib.Path(runtmp.run_dir("landing-wiring-")).resolve()
-    for label, got, want in loopnext_cases(tmp, "real") + stack_cases(tmp, "real"):
+    for label, got, want in (
+        loopnext_cases(tmp, "real") + stack_cases(tmp, "real") + handover_cases(tmp, "real")
+    ):
         T.check(label, got, want)
     for n, (label, runner, mutate) in enumerate(MUTANTS):
         wrong = [c[0] for c in runner(tmp, "mutant%d" % n, mutate) if c[1] != c[2]]

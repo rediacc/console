@@ -2416,6 +2416,9 @@ PRIORITY_LADDER = (
                 # A foreign checklist whose owner is not live: the operator is owed one ownership question (wl_checklist._owner_question).
                 "cl-owner",
                 "unread-reports",
+                # The other tree waits on this one (wl_handover, agent/plans/PLAN-simple-two-tree-loop.md D5): an unanswered stuck or churn handover, or an answered lease the landing tree has not landed.
+                "handover-open",
+                "handover-land",
                 "agent-pushback",
                 "giveup-claim",
                 # NB `ladder-ping` is an outq advisory, not a vadd key, so it is deliberately absent: test-always-tier.py fails on a ladder entry that no check can ever produce.
@@ -5225,6 +5228,45 @@ def run_stop(event, event_ok, worklist, hook_file):
             state_doc,
             "scheduled-stale-bug",
             "THIS IS A HOOK BUG: the scheduled-freshness check failed: %s: %s"
+            % (type(exc).__name__, str(exc)[:160]),
+            1,
+            refresh_min=60,
+        )
+    # ---- THE HANDOVER CONTRACT (agent/plans/PLAN-simple-two-tree-loop.md D5, box B7). One `handover` event kind in the store both trees share, addressed by tree role: the development tree is blocked by an unanswered stuck or churn handover and advised by a lesson one; the landing tree is blocked by an answer that names a lease until that lease is landed or a
+    # `done` answer closes it. A checkout with no landing record has no role and reads nothing here.
+    try:
+        import wl_handover
+
+        _ho_role = getattr(_loop, "role", "") or ""
+        if _ho_role in (wl_handover.ROLE_LANDING, wl_handover.ROLE_DEVELOPMENT):
+            for _ho_key, _ho_blocks, _ho_text in wl_handover.stop_findings(
+                wl_handover.fold(worklist),
+                _ho_role,
+                landed=lambda _lid: wl_handover.lease_landed(root, _lid),
+                me8=me8,
+            ):
+                # The keys are literals, so the effort table and the ladder see each producer.
+                if _ho_key == wl_handover.KEY_OPEN:
+                    vadd("handover-open", False, _ho_text)
+                elif _ho_key == wl_handover.KEY_LAND:
+                    vadd("handover-land", False, _ho_text)
+                elif not _ho_blocks:
+                    outq_add(
+                        worklist,
+                        session_id,
+                        state_doc,
+                        "handover-lesson",
+                        _ho_text,
+                        1,
+                        refresh_min=360,
+                    )
+    except Exception as exc:
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "handover-bug",
+            "THIS IS A HOOK BUG: the handover check failed: %s: %s"
             % (type(exc).__name__, str(exc)[:160]),
             1,
             refresh_min=60,

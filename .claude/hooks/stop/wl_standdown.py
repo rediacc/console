@@ -46,6 +46,9 @@ CORE = frozenset(
         "agent-bootstrap",
         # Owed to a party that cannot see this session's silence.
         "unread-reports",
+        # The other tree waits on this one (wl_handover): an unanswered stuck or churn handover in the development tree, an answered lease the landing tree has not landed.
+        "handover-open",
+        "handover-land",
         # Ledger honesty: one-turn exits that start nothing.
         "completion",
         "found-not-fixed",

@@ -360,6 +360,42 @@ def _refresh_inflight(sid):
         )
 
 
+def _handover_cli(argv):
+    """`worklist.py --handover <me> stuck|churn|lesson <check> <evidence...>`: the landing session hands a failure to the development tree (agent/plans/PLAN-simple-two-tree-loop.md D5). Prints the handover id."""
+    import wl_handover as H
+
+    if len(argv) < 4 or not C.PREFIX_RE.match(argv[0]) or argv[1] not in H.KINDS:
+        _die2(M.CLI_HANDOVER_USAGE)
+    me = argv[0]
+    _identity_or_die(me, _die2)
+    wl = C.worklist_for(C.project_start())
+    try:
+        payload = H.open_event(me, argv[1], argv[2], " ".join(argv[3:]))
+    except ValueError as exc:
+        _die2("%s\n%s" % (exc, M.CLI_HANDOVER_USAGE))
+    H.write(wl, payload)
+    print(M.CLI_HANDOVER_DONE % (payload["id"], payload["kind"], payload["check"]))
+
+
+def _handover_answer_cli(argv):
+    """`worklist.py --handover-answer <me> <id> lease:<lease-id>|keep|change|undo|done`: the answer to a handover; `lease:<id>` moves the block to the landing tree, the rest close it."""
+    import wl_handover as H
+
+    if len(argv) != 3 or not C.PREFIX_RE.match(argv[0]) or not H.ID_RE.match(argv[1]):
+        _die2(M.CLI_HANDOVER_ANSWER_USAGE)
+    me, hid, answer = argv
+    _identity_or_die(me, _die2)
+    wl = C.worklist_for(C.project_start())
+    if hid not in H.fold(wl):
+        _die2("no handover #%s in the store\n%s" % (hid, M.CLI_HANDOVER_ANSWER_USAGE))
+    try:
+        payload = H.answer_event(me, hid, answer)
+    except ValueError as exc:
+        _die2("%s\n%s" % (exc, M.CLI_HANDOVER_ANSWER_USAGE))
+    H.write(wl, payload)
+    print(M.CLI_HANDOVER_ANSWERED % (hid, answer))
+
+
 # Bounded wait for the Stop payload. Long enough for a slow writer, short enough that a missing payload fails the hook instead of stalling the session.
 STDIN_WAIT_SECONDS = 10.0
 
@@ -3572,6 +3608,12 @@ def main():
                 ", covering " + ", ".join(covers) if covers else "",
             )
         )
+        return
+    if sys.argv[1:2] == ["--handover"]:
+        _handover_cli(sys.argv[2:])
+        return
+    if sys.argv[1:2] == ["--handover-answer"]:
+        _handover_answer_cli(sys.argv[2:])
         return
     if sys.argv[1:2] == ["--brief"]:
         # Same class as --loop above, same fix.
