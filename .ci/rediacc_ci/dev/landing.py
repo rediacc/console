@@ -34,7 +34,9 @@ fast-forwards it. The last stdout line is the tree's absolute path.
 
 Refused: main, a branch the main checkout holds, another MMDD-N branch checked
 out in the main checkout, a second path, and a dirty tree. The main checkout
-must be off the PR branch, since git holds one branch in one tree.
+must be off the PR branch, since git holds one branch in one tree. A landing
+tree sitting on main or a detached HEAD after the merge is not refreshed: the
+exit is --promote.
 """
 
 
@@ -182,8 +184,21 @@ def _guard_path(root, path):
     return True
 
 
-def _reuse(path, branch):
+def _refuse_on_main(path):
+    """Refuse while the landing tree sits on main or a detached HEAD (a hotfix after the merge, PLAN-simple-two-tree-loop ruling 10): it is not refreshed there, and the exit is promote."""
     held = spike.out(path, "symbolic-ref", "-q", "--short", "HEAD")
+    if held in ("", lease.BASE_BRANCH):
+        message = (
+            "the landing tree %s sits on %s (the merge is done, a hotfix may run there), so it "
+            "is not refreshed: the exit is `./run.sh worktree landing --promote` from the main "
+            "checkout once the release is green" % (path, held or "a detached HEAD")
+        )
+        raise LandingRefusedError(message)
+    return held
+
+
+def _reuse(path, branch):
+    held = _refuse_on_main(path)
     if held != branch:
         message = "the landing tree is on %r, not the open PR's %s: git -C %s switch %s" % (
             held,
@@ -348,6 +363,9 @@ def make_landing(root, *, gh=run_gh, seed=None, next_name=None, today=None):
         raise LandingRefusedError(str(exc)) from exc
     path = landing_path(root)
     exists = _guard_path(root, path)
+    if exists:
+        # Read before the PR lookup: after the merge no PR is open, and the refusal names promote rather than the missing PR.
+        _refuse_on_main(path)
     branch = choose_branch(root, gh)
     if exists:
         _reuse(path, branch)

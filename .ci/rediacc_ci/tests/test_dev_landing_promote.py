@@ -72,8 +72,8 @@ class Two:
         self.landing_sub_head = tip(self.landing_sub)
 
 
-def build_two(base_dir, *, picks=2, dev_conflict=False, absorb_dev=False):
-    """The two-tree promotion fixture. `picks` landing commits reach origin/main; `dev_conflict` makes the first development commit collide with main's unrelated commit; `absorb_dev` puts the first development commit's change on main inside a larger commit, so the rebase drops it as empty."""
+def build_two(base_dir, *, picks=2, dev_conflict=False, absorb_dev=False, dev_work=True):
+    """The two-tree promotion fixture. `picks` landing commits reach origin/main; `dev_conflict` makes the first development commit collide with main's unrelated commit; `absorb_dev` puts the first development commit's change on main inside a larger commit, so the rebase drops it as empty; `dev_work=False` leaves the development branch at the landing tip, with no commit of its own."""
     sub_origin = base_dir / "sub.git"
     spike.must(base_dir, "init", "-q", "--bare", "-b", "main", str(sub_origin))
     seed = base_dir / "sub-seed"
@@ -93,12 +93,14 @@ def build_two(base_dir, *, picks=2, dev_conflict=False, absorb_dev=False):
     landing_shas = [commit(main, "l1.txt"), commit(main, "l2.txt")]
     spike.must(main, "push", "-q", "origin", LANDING)
     spike.must(main, "switch", "-q", "-c", DEV)
-    commit(main, "other.txt" if dev_conflict else "d1.txt", "dev side\n", "D1")
-    # The development branch's submodule commit sits on the development name in the main checkout's submodule tree, pushed nowhere.
-    spike.must(main / SUB, "switch", "-q", "-c", DEV)
-    sub_link = commit(main / SUB, "s1.txt")
-    spike.must(main, "add", "--", SUB)
-    commit(main, "d2.txt", None, "D2")
+    sub_link = None
+    if dev_work:
+        commit(main, "other.txt" if dev_conflict else "d1.txt", "dev side\n", "D1")
+        # The development branch's submodule commit sits on the development name in the main checkout's submodule tree, pushed nowhere.
+        spike.must(main / SUB, "switch", "-q", "-c", DEV)
+        sub_link = commit(main / SUB, "s1.txt")
+        spike.must(main, "add", "--", SUB)
+        commit(main, "d2.txt", None, "D2")
     landing = base_dir / "console-landing"
     spike.must(main, "worktree", "add", "-q", str(landing), LANDING)
     spike.must(landing, "-c", "protocol.file.allow=always", "submodule", "update", "-q", "--init")
@@ -123,14 +125,31 @@ def two(tmp_path):
     return build_two(tmp_path.resolve())
 
 
-def fake_gh(state="MERGED", pr=None, fail=False):
+MERGED_SHA = "f" * 40
+GREEN = {"status": "completed", "conclusion": "success"}
+
+
+def fake_gh(state="MERGED", pr=None, fail=False, runs=None, merged=MERGED_SHA):
+    """gh answers for promotion. `runs` maps a workflow file to the run list gh prints for it at the merged sha (newest first); both release workflows default to one green run."""
     pr = {"number": 42, "isDraft": True} if pr is None else pr
+    lists = {"ci.yml": [GREEN], "cd-release-edge.yml": [GREEN], **(runs or {})}
 
     def gh(args, _cwd):
-        if fail or args[:2] != ["pr", "view"]:
+        if fail:
             return 1, ""
-        if args[2] == LANDING and args[4] == "state":
-            return 0, json.dumps({"state": state})
+        if args[:2] == ["run", "list"]:
+            workflow = args[args.index("--workflow") + 1]
+            assert args[args.index("--commit") + 1] == merged
+            rows = lists.get(workflow)
+            if rows is None:
+                return 1, ""
+            return 0, json.dumps(
+                [{"databaseId": 900 + i, "headSha": merged, **r} for i, r in enumerate(rows)]
+            )
+        if args[:2] != ["pr", "view"]:
+            return 1, ""
+        if args[2] == LANDING and args[4] == "state,mergeCommit":
+            return 0, json.dumps({"state": state, "mergeCommit": {"oid": merged}})
         if args[2] == DEV and args[4] == "number,isDraft":
             return 0, json.dumps(pr)
         return 1, ""
@@ -352,6 +371,105 @@ def test_promote_a_failed_submodule_switch_names_what_is_left(two, monkeypatch):
     assert "git -C %s switch --no-track -C %s %s" % (two.landing_sub, DEV, two.sub_link) in text
     assert "git -C %s switch --no-track -c %s %s" % (two.main, NEXT, DEV) in text, text
     assert record_of(two.main) == {"path": str(two.landing), "branch": DEV}
+
+
+# ---- the D3 premises (PLAN-simple-two-tree-loop B3) ---------------------------
+
+
+RED = {"status": "completed", "conclusion": "failure"}
+PENDING = {"status": "in_progress", "conclusion": ""}
+
+
+@pytest.mark.parametrize(
+    ("runs", "why"),
+    [
+        ({"ci.yml": [RED]}, "Console CI on main .* is failure"),
+        ({"cd-release-edge.yml": [PENDING]}, "the edge release .* is in_progress"),
+        ({"cd-release-edge.yml": []}, "has no cd-release-edge.yml run"),
+        # The newest run decides: an older green run under a newer red one is still red.
+        ({"ci.yml": [RED, GREEN]}, "Console CI on main .* is failure"),
+        ({"ci.yml": None}, "gh could not list the ci.yml runs"),
+    ],
+)
+def test_promote_refuses_a_release_that_is_not_fully_green(two, runs, why):
+    with pytest.raises(promote_mod.PromoteRefusedError, match=why):
+        run_promote(two.main, gh=fake_gh(runs=runs))
+    untouched(two)
+
+
+def test_promote_control_a_rerun_turned_green_is_admitted(two):
+    assert run_promote(two.main, gh=fake_gh(runs={"ci.yml": [GREEN, RED]})) == "gh pr ready 42"
+
+
+def test_promote_refuses_a_merged_pr_gh_names_no_merge_commit_for(two):
+    with pytest.raises(promote_mod.PromoteRefusedError, match="no merge commit"):
+        run_promote(two.main, gh=fake_gh(merged=""))
+    untouched(two)
+
+
+PLAN = "PLAN-fixture.md"
+WRITER_SIG = "aaaa1111"
+
+
+def plan_commit(two, boxes):
+    """A development commit adding agent/plans/PLAN-fixture.md with `boxes` and a Plan-Box trailer naming it; the fixture's tip moves with it."""
+    rel = "agent/plans/%s" % PLAN
+    body = "# PLAN: fixture\nStatus: approved\n\n## Tasks\n\n%s\n" % "\n".join(boxes)
+    spike.write(two.main / rel, body)
+    spike.must(two.main, "add", "--", rel)
+    message = "feat: plan work\n\nPlan-Box: %s#%s clauses=all" % (PLAN, WRITER_SIG)
+    spike.must(two.main, "commit", "--no-gpg-sign", "-q", "-m", message)
+    two.dev_tip = tip(two.main)
+
+
+def test_promote_refuses_a_plan_with_an_open_writer_box(two):
+    plan_commit(
+        two,
+        [
+            "- [x] W1 [writer] The first writer box, done.",
+            "- [ ] W2 [writer] The second writer box, still open.",
+            "- [ ] V1 [live] The live run, open.",
+        ],
+    )
+    with pytest.raises(promote_mod.PromoteRefusedError, match="not code-complete: 1 open"):
+        run_promote(two.main)
+    untouched(two)
+
+
+def test_promote_control_a_plan_with_only_a_live_box_open_is_admitted(two):
+    plan_commit(
+        two,
+        [
+            "- [x] W1 [writer] The first writer box, done.",
+            "- [x] W2 [writer] The second writer box, done.",
+            "- [ ] V1 [live] The live run, open for the landing tree.",
+            "- [ ] L1 [lead] The lead's measurement, open.",
+        ],
+    )
+    assert run_promote(two.main) == "gh pr ready 42"
+    assert spike.out(two.landing, "symbolic-ref", "--short", "HEAD") == DEV
+
+
+def test_promote_refuses_a_named_plan_the_checkout_lacks(two):
+    commit(two.main, "d3.txt", None, "feat: d3\n\nPlan-Box: PLAN-absent.md#bbbb2222 clauses=all")
+    two.dev_tip = tip(two.main)
+    with pytest.raises(promote_mod.PromoteRefusedError, match=r"PLAN-absent\.md"):
+        run_promote(two.main)
+    untouched(two)
+
+
+def test_promote_with_no_development_commits_idles(tmp_path, capfd):
+    two = build_two(tmp_path.resolve(), dev_work=False)
+    # The release premise is never read: a red main would refuse if it were.
+    assert run_promote(two.main, gh=fake_gh(runs={"ci.yml": [RED]})) is None
+    assert "the landing tree idles and no PR is opened" in capfd.readouterr().err
+    untouched(two)
+
+
+def test_promote_cmd_idle_exits_zero_with_nothing_on_stdout(monkeypatch, capfd):
+    monkeypatch.setattr(promote_mod, "promote", lambda _root: None)
+    assert promote_mod.cmd_promote([]) == 0
+    assert capfd.readouterr().out == ""
 
 
 def test_promote_cmd_rejects_an_argument(capfd):

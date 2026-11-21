@@ -4,10 +4,13 @@ Order, each step refusing before anything moves where it can:
 
 1. The landing record binds a tree and a branch, the main checkout holds another `MMDD-N` branch (the development branch), and both trees are clean, each submodule tree checked out in the landing tree included.
 2. The landing PR is MERGED (gh answers; anything else is a refusal), and every landing commit has a patch-equivalent on origin/main.
-3. The development branch rebases onto origin/main. The landing copies drop as absorbed, and the RB4 proof (`wl_rebase.rebase_proof`, with `wl_review.uncovered` as the commits no review record covers) must name no commit missing; a conflict aborts the rebase and a missing commit puts the branch back at its old tip. Every CHANGED and UNREVIEWED commit the proof names is printed, since the rebase gave them new shas.
-4. Each submodule tree of the landing tree is checked against the rebased branch's gitlink: the commit is fetched when absent (from the main checkout's submodule tree, then from its origin), and a branch of the development name there must sit at or behind the gitlink. A refusal puts the development branch back at its old tip.
-5. The main checkout detaches, the landing tree switches to the development branch, the record is rewritten to bind it, and each of those submodule trees switches to the development name at its gitlink (created when absent).
-6. The next `MMDD-N` is cut at the promoted branch's head in the main checkout, so it starts stacked on the new landing branch (operator ruling ASKED:2026-11-20T18:46Z), and `gh pr ready <draft>` is printed.
+3. The development branch holds commits origin/main lacks; with none the landing tree idles, nothing moves and the verb exits 0 (PLAN-simple-two-tree-loop D3).
+4. The release at the merged sha is fully green: the newest Console CI run (`ci.yml`) and the newest edge release run (`cd-release-edge.yml`) at that sha both completed with SUCCESS, read through gh.
+5. Every plan a `Plan-Box:` trailer of those development commits names is code-complete: no open `[writer]` box (lead and live boxes may stay open for the landing tree to finish). A named plan that cannot be read refuses.
+6. The development branch rebases onto origin/main. The landing copies drop as absorbed, and the RB4 proof (`wl_rebase.rebase_proof`, with `wl_review.uncovered` as the commits no review record covers) must name no commit missing; a conflict aborts the rebase and a missing commit puts the branch back at its old tip. Every CHANGED and UNREVIEWED commit the proof names is printed, since the rebase gave them new shas.
+7. Each submodule tree of the landing tree is checked against the rebased branch's gitlink: the commit is fetched when absent (from the main checkout's submodule tree, then from its origin), and a branch of the development name there must sit at or behind the gitlink. A refusal puts the development branch back at its old tip.
+8. The main checkout detaches, the landing tree switches to the development branch, the record is rewritten to bind it, and each of those submodule trees switches to the development name at its gitlink (created when absent).
+9. The next `MMDD-N` is cut at the promoted branch's head in the main checkout, so it starts stacked on the new landing branch (operator ruling ASKED:2026-11-20T18:46Z), and `gh pr ready <draft>` is printed.
 
 Only the printed `gh pr ready` line is data on stdout; everything else goes to stderr.
 """
@@ -26,6 +29,9 @@ from rediacc_ci.dev import worktree_lease as lease
 from rediacc_ci.dev import worktree_spike as spike
 
 REMOTE = "origin"
+# The two workflows whose runs at the merged sha make the release fully green (PLAN-simple-two-tree-loop D3).
+RELEASE_WORKFLOWS = (("ci.yml", "Console CI on main"), ("cd-release-edge.yml", "the edge release"))
+IDLE_TEXT = "no development commits ahead of %s, so the landing tree idles and no PR is opened"
 BASE = "main"
 UPSTREAM = "%s/%s" % (REMOTE, BASE)
 GH_TIMEOUT = 60
@@ -34,14 +40,19 @@ SHOWN = 3
 PROMOTE_HELP = """\
 Usage: ./run.sh worktree landing --promote
 
-After the landing PR merged: rebase the development branch onto origin/main
+After the landing PR merged and its release at the merged sha went fully
+green (Console CI on main and the edge release), with every plan the
+development commits' Plan-Box trailers name code-complete (no open [writer]
+box): rebase the development branch onto origin/main
 (the landing commits drop as absorbed), move it into the landing tree with its
 submodule trees, rewrite the landing record, cut the next MMDD-N at the promoted
 branch's head in the main checkout (stacked on the new landing branch), and
 print `gh pr ready <draft>`. The commits the rebase left without a review record
-are named. Refused: a dirty tree in either checkout or in a landing submodule
-tree, a landing PR that is not MERGED, a landing commit missing from origin/main,
-a rebase conflict, a rebase that loses a development commit, and a landing
+are named. With no development commits ahead of origin/main the landing tree
+idles: nothing moves and the verb exits 0. Refused: a dirty tree in either checkout or in a landing submodule
+tree, a landing PR that is not MERGED, a release at the merged sha that is not
+fully green, a named plan with an open [writer] box, a landing commit missing
+from origin/main, a rebase conflict, a rebase that loses a development commit, and a landing
 submodule tree that cannot take the gitlink.
 """
 
@@ -118,7 +129,7 @@ def _submodule_trees(tree):
 
 
 def _premises(main, gh):
-    """`(landing path, landing branch, development branch)`, refusing before anything moves."""
+    """`(landing path, landing branch, development branch, merged sha)`, refusing before anything moves."""
     policy = spike.load_commit_policy()
     record, problem = policy.read_landing_record(str(main))
     if record is None:
@@ -147,14 +158,111 @@ def _premises(main, gh):
         if rows:
             message = "%s is dirty: %s" % (tree, " | ".join(rows[:SHOWN]))
             raise PromoteRefusedError(message)
-    state = _gh_json(gh, ["pr", "view", landing_branch, "--json", "state"], main)
+    state = _gh_json(gh, ["pr", "view", landing_branch, "--json", "state,mergeCommit"], main)
     if state is None:
         message = "gh could not say the state of the landing PR on %s" % landing_branch
         raise PromoteRefusedError(message)
     if state.get("state") != "MERGED":
         message = "the landing PR on %s is %s, not MERGED" % (landing_branch, state.get("state"))
         raise PromoteRefusedError(message)
-    return landing, landing_branch, dev
+    merged = (state.get("mergeCommit") or {}).get("oid") or ""
+    if not merged:
+        message = "gh names no merge commit for the landing PR on %s" % landing_branch
+        raise PromoteRefusedError(message)
+    return landing, landing_branch, dev, merged
+
+
+def _gh_rows(gh, args, cwd):
+    """The parsed list gh printed, or None when gh failed or printed no list."""
+    rc, text = gh(args, cwd)
+    if rc != 0:
+        return None
+    try:
+        data = json.loads(text or "")
+    except ValueError:
+        return None
+    return data if isinstance(data, list) else None
+
+
+def _release_green(main, gh, sha):
+    """Refuse unless the newest run of each RELEASE_WORKFLOWS entry at `sha` completed with SUCCESS (D3: the next PR is taken only after the release is fully green)."""
+    for workflow, label in RELEASE_WORKFLOWS:
+        args = [
+            "run",
+            "list",
+            "--workflow",
+            workflow,
+            "--commit",
+            sha,
+            "--limit",
+            "20",
+            "--json",
+            "databaseId,status,conclusion,headSha",
+        ]
+        rows = _gh_rows(gh, args, main)
+        if rows is None:
+            message = "gh could not list the %s runs at the merged sha %s" % (workflow, sha[:12])
+            raise PromoteRefusedError(message)
+        runs = [r for r in rows if isinstance(r, dict) and r.get("headSha", sha) == sha]
+        if not runs:
+            message = "%s has no %s run at the merged sha %s, so the release is not green yet" % (
+                label,
+                workflow,
+                sha[:12],
+            )
+            raise PromoteRefusedError(message)
+        # gh lists the newest run first; a rerun keeps its id and reports its newest attempt.
+        newest = runs[0]
+        status, conclusion = newest.get("status"), newest.get("conclusion")
+        if status != "completed" or conclusion != "success":
+            message = "%s (%s run %s) at the merged sha %s is %s, not completed with SUCCESS" % (
+                label,
+                workflow,
+                newest.get("databaseId"),
+                sha[:12],
+                conclusion if status == "completed" else status,
+            )
+            raise PromoteRefusedError(message)
+
+
+def _dev_commits(main, dev):
+    """The development commits with no patch-equivalent on origin/main, oldest first."""
+    marks = _must(main, "cherry", UPSTREAM, "refs/heads/%s" % dev).splitlines()
+    return [line.split()[1] for line in marks if line.startswith("+ ")]
+
+
+def _code_complete(main, shas):
+    """Refuse when a plan a `Plan-Box:` trailer of `shas` names still has an open `[writer]` box, or cannot be read. The plan is read in the main checkout, which holds the development branch and is clean (the premises)."""
+    planbox = lease._hook_module("wl_planbox")
+    planrec = lease._hook_module("wl_planrec")
+    boxready = lease._hook_module("wl_boxready")
+    plans = []
+    for sha in shas:
+        message = _must(main, "show", "-s", "--format=%B", sha)
+        for box in planbox.parse_plan_box(message).boxes:
+            if box.plan not in plans:
+                plans.append(box.plan)
+    for plan in plans:
+        try:
+            found = planbox.resolve_plan(str(main), plan)
+        except planbox.PlanBoxError as exc:
+            raise PromoteRefusedError(str(exc)) from exc
+        if found is None:
+            message = "the development commits name %s, which the main checkout does not hold" % (
+                plan
+            )
+            raise PromoteRefusedError(message)
+        rel, text = found
+        open_writers = [
+            body for _i, raw, body, _sig in planrec.open_boxes(text) if boxready.writer_tagged(raw)
+        ]
+        if open_writers:
+            message = "%s is not code-complete: %d open [writer] box(es), first: %s" % (
+                rel,
+                len(open_writers),
+                open_writers[0][:120],
+            )
+            raise PromoteRefusedError(message)
 
 
 def _fetch_and_check(main, landing_branch):
@@ -270,19 +378,25 @@ def _moved_already(landing, dev, rest):
 
 
 def promote(root, *, gh=run_gh, today=None, next_name=None):
-    """Run the promotion and return the `gh pr ready` line. Raises `PromoteRefusedError`."""
+    """Run the promotion and return the `gh pr ready` line, or None when the development branch holds nothing ahead of origin/main (the landing tree idles). Raises `PromoteRefusedError`."""
     try:
         main = lease._main_checkout(root)
     except lease.LeaseRefusedError as exc:
         raise PromoteRefusedError(str(exc)) from exc
-    landing, landing_branch, dev = _premises(main, gh)
+    landing, landing_branch, dev, merged = _premises(main, gh)
+    _fetch_and_check(main, landing_branch)
+    shas = _dev_commits(main, dev)
+    if not shas:
+        log.info(IDLE_TEXT % UPSTREAM)
+        return None
+    _release_green(main, gh, merged)
+    _code_complete(main, shas)
     # The name is read before anything moves, so a gh that cannot answer refuses with both trees untouched.
     try:
         cut = (next_name or _default_next_name)(main, today or _today())
     except (OSError, RuntimeError) as exc:
         message = "the next branch name could not be read: %s" % exc
         raise PromoteRefusedError(message) from exc
-    _fetch_and_check(main, landing_branch)
     old, proof = _rebase(main, dev)
     log.info(
         "%s onto %s: %d carried, %d absorbed (the landing copies), %d changed, %d unreviewed"
@@ -363,6 +477,8 @@ def cmd_promote(args):
     except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
         log.error("refused: %s" % exc)
         return 1
+    if line is None:
+        return 0
     sys.stdout.write(line + "\n")
     sys.stdout.flush()
     return 0

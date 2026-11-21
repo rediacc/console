@@ -170,6 +170,25 @@ def test_failed_switch_over_gives_the_branch_back(repo):
     assert not (repo.parent / "console-landing").exists()
 
 
+@pytest.mark.parametrize("where", ["main", "--detach"])
+def test_reuse_on_main_after_the_merge_names_promote(repo, where):
+    # The landing tree may sit on main for a hotfix after the merge (PLAN-simple-two-tree-loop ruling 10); with no open PR the refusal names promote, not the missing PR.
+    path = pathlib.Path(landing.make_landing(repo, gh=gh_for(PR), seed=Seeded()))
+    git(repo, "switch", "-q", "-c", "0202-1")
+    git(path, "switch", "-q", *(["--detach", "origin/main"] if where == "--detach" else ["main"]))
+    for gh in (gh_for(), gh_for(PR)):
+        with pytest.raises(landing.LandingRefusedError, match="worktree landing --promote"):
+            landing.make_landing(repo, gh=gh, seed=Seeded())
+
+
+def test_reuse_control_off_the_pr_branch_names_the_switch(repo):
+    path = pathlib.Path(landing.make_landing(repo, gh=gh_for(PR), seed=Seeded()))
+    git(path, "switch", "-q", "-c", "0303-1")
+    with pytest.raises(landing.LandingRefusedError, match="switch %s" % PR) as raised:
+        landing.make_landing(repo, gh=gh_for(PR), seed=Seeded())
+    assert "--promote" not in str(raised.value)
+
+
 def test_refuses_a_second_path(repo):
     other = repo.parent / "elsewhere"
     git(repo, "worktree", "add", "-q", "--detach", str(other))
