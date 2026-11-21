@@ -72,8 +72,10 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { type ControlCase, summarizeControls } from '../lib/controls.js';
+import { createHubReader, hubReader } from '../lib/docker-hub.js';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { driverFor, type PinDriver, registerDrivers } from '../lib/pins/driver.js';
+import { hubDeps } from '../lib/pins/drivers/docker.js';
 import { realDrivers } from '../lib/pins/drivers/table.js';
 import { FAMILY_GATES } from '../lib/pins/family-gates.js';
 import { loadRegistry, type PinEntry, type PinRegistry } from '../lib/pins/registry.js';
@@ -800,6 +802,51 @@ async function selftest(): Promise<number> {
         !(await caseFor[m]()),
         'the case still caught the defect with its property disabled'
       );
+    // THE DOCKER HUB READ PATH. Production docker pins read through the shared reader (scripts/lib/docker-hub.ts, whose own controls run in check:ci-docker-image-freshness). Both directions: an answer reaches the driver, and a 429 reaches it as NotCompared.
+    const hubUrl = 'https://hub.test/v2/repositories/library/node/tags/26-slim';
+    const fakeFetch =
+      (status: number, sent: string[]): typeof fetch =>
+      async (input) => {
+        sent.push(String(input));
+        return new Response(status === 200 ? '{"digest":"x"}' : '', { status });
+      };
+    const okSent: string[] = [];
+    const okDeps = hubDeps(root, () =>
+      createHubReader({
+        origin: 'https://hub.test',
+        fetch: fakeFetch(200, okSent),
+        cacheDir: null,
+        credentials: null,
+      })
+    );
+    const answered = (await okDeps.json(hubUrl, 'node')) as { digest?: string };
+    add(
+      'read path: a docker pin reads Docker Hub through the shared reader, and its answer reaches the driver',
+      answered.digest === 'x' && okSent.join() === hubUrl,
+      okSent.join()
+    );
+    const limitedDeps = hubDeps(root, () =>
+      createHubReader({
+        origin: 'https://hub.test',
+        fetch: fakeFetch(429, []),
+        cacheDir: null,
+        credentials: null,
+        waitBudgetMs: 0,
+      })
+    );
+    const refused = await limitedDeps.json(hubUrl, 'node').then(
+      () => 'answered',
+      (e: Error) => `${e.name}: ${e.message}`
+    );
+    add(
+      'read path (control): a 429 reaches the driver as NotCompared naming the 429, so the pin reads not compared, never current',
+      refused.includes('HTTP 429') && refused !== 'answered',
+      refused
+    );
+    add(
+      'read path: a plan reads its digest past the cache (jsonFresh is wired)',
+      typeof okDeps.jsonFresh === 'function'
+    );
   } finally {
     for (const r of roots) fs.rmSync(r, { recursive: true, force: true });
   }
@@ -816,6 +863,9 @@ async function main(): Promise<number> {
   console.log(
     `  unpinned app template image(s), no version to compare (${unpinned.length}): ${unpinned.map(({ img, why }) => `${img.file}:${img.line} ${img.ref} (${why})`).join('; ') || 'none'}`
   );
+  console.log(`  ${hubReader().summary()}`);
+  const note = hubReader().credentialNote();
+  if (note) console.log(`  ! ${note}`);
   for (const l of r.err) console.error(l);
   return r.rc;
 }

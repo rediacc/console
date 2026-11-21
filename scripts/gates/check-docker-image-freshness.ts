@@ -25,11 +25,13 @@ import { spawnSync } from 'node:child_process';
  * cannot be listed is a FAILURE, never a silent pass, and a run that resolves zero
  * images fails too.
  *
- * REGISTRY AUTH AND RATE LIMITS. Docker Hub rate limits anonymous pulls and tag listings
- * per IP, which on a busy CI day makes an unauthenticated gate flaky. Set DOCKERHUB_TOKEN
- * (or DOCKERHUB_USERNAME + DOCKERHUB_PASSWORD) and this authenticates; without it the run
- * still works but is subject to the anonymous limit, and a limit response is reported as
- * unknown rather than pretended to be a pass. mcr.microsoft.com is anonymous and NOT rate
+ * REGISTRY AUTH AND RATE LIMITS. Docker Hub rate limits API reads per IP (measured
+ * 2026-11-21: 180 per window anonymous, 600 with a token). Every read goes through the shared
+ * reader in scripts/lib/docker-hub.ts, which check:ci-pin-freshness uses too: DOCKERHUB_USERNAME
+ * with DOCKERHUB_TOKEN (or DOCKERHUB_PASSWORD) is exchanged once for a Hub JWT, answers are
+ * cached under .ci/cache/registry/ for six hours and fetched once per URL across parallel gates,
+ * and a 429 is waited out only within a bounded budget. A limit response is reported as unknown
+ * rather than pretended to be a pass, and the last line names how many requests the run sent. mcr.microsoft.com is anonymous and NOT rate
  * limited, so images served from there never need credentials.
  *
  * THE FIX LINE. A newly stale pin names `npm run pins -- bump <id> --major --reason "<why>"`,
@@ -68,7 +70,14 @@ import process from 'node:process';
 import { WK_IMAGE_REGISTRY } from '../../packages/shared/src/config/well-known.generated.js';
 import { emitFinding } from '../ci-runner/findings.js';
 import { errorLines, GREEN, NC, RED, YELLOW } from '../lib/console.js';
-import { HUB_DEFAULT_BASE, hubRepo, hubTagUrl, parseTagDigest } from '../lib/docker-hub.js';
+import {
+  HUB_DEFAULT_BASE,
+  hubReader,
+  hubRepo,
+  hubTagUrl,
+  parseTagDigest,
+} from '../lib/docker-hub.js';
+import { hubReaderCases } from '../lib/docker-hub-selftest.js';
 import { loadRegistry, type PinEntry, siteRegex } from '../lib/pins/registry.js';
 import { bumpRemedy } from '../lib/pins/remedy.js';
 import { iso, soakClearsAt } from '../lib/pins/soak.js';
@@ -285,27 +294,6 @@ export function staleEvidence(tag: string, tags: TagInfo[], now: number, win: nu
   return soaked ? newer.slice(1) : newer;
 }
 
-// No repo parameter: Docker Hub login is account-wide, not per-repository. The repo argument this used to take was never read, and this config's policy is to delete an unused parameter rather than underscore it. Memoised for the same reason there is no repo parameter: login is account-wide, so the per-image call site was paying one extra login round-trip PER IMAGE for a value that
-// cannot differ between them. Anonymous runs never noticed; a credentialled CI run did.
-let hubTokenOnce: Promise<string | null> | undefined;
-function hubToken(): Promise<string | null> {
-  hubTokenOnce ??= (async () => {
-    const explicit = process.env.DOCKERHUB_TOKEN;
-    if (explicit) return explicit;
-    const user = process.env.DOCKERHUB_USERNAME;
-    const pass = process.env.DOCKERHUB_PASSWORD;
-    if (!user || !pass) return null;
-    const r = await fetch('https://hub.docker.com/v2/users/login', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ username: user, password: pass }),
-    });
-    if (!r.ok) return null;
-    return ((await r.json()) as { token?: string }).token ?? null;
-  })();
-  return hubTokenOnce;
-}
-
 /** Why a listing failed, so "unknown" can name its own cause instead of guessing. */
 const lastFailure = new Map<string, string>();
 
@@ -313,41 +301,27 @@ const HUB_BASE = process.env.DOCKER_HUB_API_BASE;
 
 /**
  * One Docker Hub API read, parsed JSON, or null with its cause recorded in `lastFailure` under
- * `key`.
+ * `key`. The read goes through the shared reader (scripts/lib/docker-hub.ts `hubReader`), which
+ * check:ci-pin-freshness uses too: one exchanged token, one cache, one fetch per URL across both
+ * gates, and a 429 waited out only within a bounded budget before it is reported as unknown.
  *
- * A REJECTED CREDENTIAL MUST NOT BE WORSE THAN NO CREDENTIAL.
- *
- * Measured on CI run 32200906643: the job received DOCKERHUB_TOKEN (the step env shows it masked), every one of the five images failed to list, and the same gate had listed them anonymously in earlier runs of this branch. So the token was being rejected and sending it unconditionally turned a working anonymous path into a total failure.
- *
- * A token still buys the higher rate limit when it is valid, so it is tried FIRST. On a 401 or 403 the request is retried without it; anything else, 429 included, stays a failure, because a rate limit is genuinely unknown and unknown is never a pass.
+ * A REJECTED CREDENTIAL MUST NOT BE WORSE THAN NO CREDENTIAL. Measured on CI run 32200906643:
+ * the job received DOCKERHUB_TOKEN, every image failed to list, and the same gate had listed them
+ * anonymously before. The shared reader keeps that rule (a refused token is dropped and the read
+ * retried anonymously); a 429 is never retried that way, because a rate limit is genuinely
+ * unknown and unknown is never a pass.
  */
-async function hubGetJson(url: string, key: string): Promise<unknown | null> {
-  const token = HUB_BASE ? null : await hubToken();
-  const attempts: { label: string; headers: Record<string, string> }[] = token
-    ? [
-        { label: 'token', headers: { Authorization: `Bearer ${token}` } },
-        { label: 'anonymous after the token was rejected', headers: {} },
-      ]
-    : [{ label: 'anonymous', headers: {} }];
-
-  let why = 'no attempt made';
-  for (const attempt of attempts) {
-    try {
-      const r = await fetch(url, { headers: attempt.headers });
-      if (r.ok) {
-        const j: unknown = await r.json();
-        lastFailure.delete(key);
-        return j;
-      }
-      why = `HTTP ${r.status} (${attempt.label})`;
-      // Only a rejected credential is worth retrying without it.
-      if (r.status !== 401 && r.status !== 403) break;
-    } catch (e) {
-      why = `${(e as Error).name} (${attempt.label})`;
-      break;
-    }
+async function hubGetJson(
+  url: string,
+  key: string,
+  opts: { maxAgeMs?: number } = {}
+): Promise<unknown | null> {
+  const r = await hubReader().read(url, opts);
+  if (r.ok) {
+    lastFailure.delete(key);
+    return r.json;
   }
-  lastFailure.set(key, why);
+  lastFailure.set(key, r.why);
   return null;
 }
 
@@ -416,10 +390,20 @@ export async function listHubTags(
   return out;
 }
 
-/** The index digest Docker Hub serves for `<image>:<tag>`, or a null digest with the cause. */
-async function hubTagDigest(repo: string, tag: string): Promise<TagAnswer> {
+/**
+ * The index digest Docker Hub serves for `<image>:<tag>`, or a null digest with the cause.
+ *
+ * A CACHED ANSWER MAY ONLY AGREE. The shared reader serves a tag answer up to six hours old, so a
+ * re-push inside that time would read as a mismatch that no longer holds, or a bump made from a
+ * live read would disagree with the cached one. So an answer that agrees with none of the digests
+ * the tree pins for this tag is read again from the network before it can become a finding.
+ */
+async function hubTagDigest(repo: string, tag: string, pinned: Set<string>): Promise<TagAnswer> {
   const key = `${repo}:${tag}`;
-  const j = await hubGetJson(hubTagUrl(HUB_BASE || HUB_DEFAULT_BASE, repo, tag), key);
+  const url = hubTagUrl(HUB_BASE || HUB_DEFAULT_BASE, repo, tag);
+  let j = await hubGetJson(url, key);
+  if (j !== null && !pinned.has(parseTagDigest(j) ?? ''))
+    j = await hubGetJson(url, key, { maxAgeMs: 0 });
   if (j === null) return { digest: null, why: lastFailure.get(key) ?? 'the lookup failed' };
   const digest = parseTagDigest(j);
   if (digest === null)
@@ -919,6 +903,9 @@ async function selftest(): Promise<{ bad: number; total: number }> {
       unj.unjudged.every((u) => u.includes('untagged, agreement not checkable'))
   );
 
+  // The shared Docker Hub read path both Hub-reading gates use (scripts/lib/docker-hub-selftest.ts).
+  for (const c of await hubReaderCases()) check(`read path: ${c.label}`, c.ok);
+
   return { bad, total };
 }
 
@@ -1008,7 +995,10 @@ async function main(): Promise<void> {
   for (const r of refs) {
     const repo = hubRepo(r.image);
     if (r.tag === null || repo === null || answers.has(`${r.image}:${r.tag}`)) continue;
-    answers.set(`${r.image}:${r.tag}`, await hubTagDigest(repo, r.tag));
+    const pinned = new Set(
+      refs.filter((x) => x.image === r.image && x.tag === r.tag).map((x) => x.digest)
+    );
+    answers.set(`${r.image}:${r.tag}`, await hubTagDigest(repo, r.tag, pinned));
   }
   const digests = digestFindings(
     refs,
@@ -1038,8 +1028,16 @@ async function main(): Promise<void> {
       `\n${RED}✗${NC} ${unknown.length} image(s) could NOT be checked. Unknown is not a pass:`
     );
     for (const u of unknown) console.error(`    ${u}`);
-    console.error('\nDocker Hub rate limits anonymous listings. Set DOCKERHUB_TOKEN (or');
-    console.error('DOCKERHUB_USERNAME + DOCKERHUB_PASSWORD) so this cannot go vacuous in CI.');
+    console.error(
+      '\nDocker Hub rate limits reads per IP (anonymous 180, a token 600, per window). Set'
+    );
+    console.error('DOCKERHUB_USERNAME with DOCKERHUB_TOKEN (or DOCKERHUB_PASSWORD), e.g. through');
+    console.error(
+      '`PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile dockerhub-read -- <command>`.'
+    );
+    console.error(hubReader().summary());
+    const note = hubReader().credentialNote();
+    if (note) console.error(note);
     process.exit(1);
   }
   if (digests.findings.length > 0) process.exit(1);
@@ -1142,6 +1140,9 @@ async function main(): Promise<void> {
       `${stale.length} known-stale and baselined. No NEW staleness. ${pins.length} literal image:tag FROM line(s) (variable-image FROMs carry no pin), each claimed by a docker leaf. ` +
       `${refs.length} digest-pinned reference(s) in ${imageFiles.length} tracked Dockerfile/compose file(s): ${digests.agreed} agree with Docker Hub, ${digests.deferred.length} re-pushed inside the release-age window (deferred), ${digests.unjudged.length} listed unjudged.`
   );
+  console.log(`  ${hubReader().summary()}`);
+  const note = hubReader().credentialNote();
+  if (note) console.log(`  ${YELLOW}!${NC} ${note}`);
 }
 
 main().catch((e) => {

@@ -55,9 +55,24 @@
  * evidence a re-pushed `26.04` cannot give. The age it gives is never more than the truth; a line whose oldest
  * tag fell past the listed pages only reads younger, and a line with no dated tag reads null
  * (undatable, which the gate fails closed on).
+ *
+ * ONE READ PATH. In production every Docker Hub read goes through the shared reader of
+ * scripts/lib/docker-hub.ts (`hubDeps`), the one check:ci-docker-image-freshness uses: an exchanged
+ * token, a six-hour cache under .ci/cache/registry/ shared across gates and runs, one fetch per URL
+ * (several pins of one image list the same URL), and a bounded 429 wait. A read that cannot answer
+ * throws NotCompared, so the pin reads `not compared`, never current. `plan()` writes a digest, so
+ * its digest read asks the network (`jsonFresh`) instead of trusting a cached answer.
  */
-import { HUB_DEFAULT_BASE, hubRepo, hubTagUrl, parseTagDigest } from '../../docker-hub.js';
+import {
+  HUB_DEFAULT_BASE,
+  type HubReader,
+  hubReader,
+  hubRepo,
+  hubTagUrl,
+  parseTagDigest,
+} from '../../docker-hub.js';
 import { isWithinFreshnessWindow } from '../../release-age.js';
+import { NotCompared } from '../../upstream.js';
 import type { DriverContext, Inspection, PinDriver, PinPlan, PlanStep } from '../driver.js';
 import { leafCurrent, PlanRefused, planLeafSites } from '../driver.js';
 import { type PinEntry, siteMatches } from '../registry.js';
@@ -185,8 +200,27 @@ async function redigestRelease(
   };
 }
 
+/** Deps whose Docker Hub reads can be told to skip the cache (a plan about to write). */
+export type HubDeps = Deps & { jsonFresh?: Deps['json'] };
+
+/** `json` from a shared Hub reader: the parsed answer, or NotCompared carrying the reader's cause. */
+function readerJson(reader: () => HubReader, maxAgeMs?: number): Deps['json'] {
+  return async (url) => {
+    const r = await reader().read(url, maxAgeMs === undefined ? {} : { maxAgeMs });
+    if (r.ok) return r.json;
+    const u = new URL(url);
+    const unreachable = r.status === null || r.status === 429 || r.status >= 500;
+    throw new NotCompared(r.why, u.host, `GET ${u.host}${u.pathname}`, 0, r.status, unreachable);
+  };
+}
+
+/** The production deps: `realDeps`, with every Docker Hub read through the shared reader. */
+export function hubDeps(root: string, reader: () => HubReader = hubReader): HubDeps {
+  return { ...realDeps(root), json: readerJson(reader), jsonFresh: readerJson(reader, 0) };
+}
+
 export function dockerDriver(
-  depsFor: (root: string) => Deps = realDeps,
+  depsFor: (root: string) => HubDeps = hubDeps,
   mutant?: T8Mutant
 ): PinDriver {
   return {
@@ -283,7 +317,8 @@ export function dockerDriver(
         if (repo === null) throw new PlanRefused(`${refusal} (${image} is not a Docker Hub image)`);
         let answer: unknown;
         try {
-          answer = await depsFor(ctx.root).json(hubTagUrl(HUB_DEFAULT_BASE, repo, tag), image);
+          const d = depsFor(ctx.root);
+          answer = await (d.jsonFresh ?? d.json)(hubTagUrl(HUB_DEFAULT_BASE, repo, tag), image);
         } catch (err) {
           throw new PlanRefused(`${refusal} (${(err as Error).message})`);
         }
