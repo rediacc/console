@@ -5369,6 +5369,27 @@ def run_stop(event, event_ok, worklist, hook_file):
             1,
             refresh_min=60,
         )
+    # ---- SCHEDULED-RUN FRESHNESS (operator ruling 2026-11-21, worklist #5eb28959). A red run needs a run: when GitHub stops firing a cron (Actions disabled, a workflow auto-disabled after 60 days, the account's billing) no run exists and the check above stays silent. refresh_freshness reads main's scheduled workflows under its own one-hour TTL and caches the
+    # document for SessionStart; the advisory names each stale workflow, its cause and the fix. Advisory only: no claim, since the fix is one `gh workflow enable` any session can run. No origin or no scheduled workflow on main means zero calls.
+    try:
+        _fr_text = wl_schedred.freshness_advisory(
+            wl_schedred.refresh_freshness(root, worklist), me8
+        )
+        if _fr_text:
+            outq_add(
+                worklist, session_id, state_doc, "scheduled-stale", _fr_text, 2, refresh_min=360
+            )
+    except Exception as exc:
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "scheduled-stale-bug",
+            "THIS IS A HOOK BUG: the scheduled-freshness check failed: %s: %s"
+            % (type(exc).__name__, str(exc)[:160]),
+            1,
+            refresh_min=60,
+        )
     # ---- OPS HEALTH (agent/plans/PLAN-health-checks-local.md L3, D-local). The machines the operator's rdc config names, the local probes and the off-box alerter, read from the shared .ci/cache/ops-health/state.json; a check past its TTL spawns ONE detached refresher and this stop never waits for it. Ownership is wl_schedred's claim, so one session is blocked and every other one gets an advisory.
     #   block   a red this session claimed (`ops-health-red`), or the off-box alerter's last cron older than its limit (`ops-health-offbox-stale`).
     #   advise  a red a peer owns (`ops-health-peer`); a cache that cannot be parsed or a check that answered rc 2 (`ops-health-unreadable`, also the key of a raise here, which never blocks).

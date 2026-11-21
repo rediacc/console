@@ -728,6 +728,14 @@ def test_session_start_line_reads_the_cache_only(tmp_path, gh, monkeypatch):
 # --------------------------------------------------------------------------- the Stop hook wiring
 
 
+def fresh_routes(gh):
+    """The two reads the Stop hook's freshness check adds beside a refresh (wl_checks SCHEDULED-RUN FRESHNESS): the repo's Actions switch and the workflow registry. Appended after `serve`, whose needles match neither."""
+    gh.route("actions/permissions", {"enabled": True})
+    gh.route(
+        "actions/workflows?per_page=100", {"total_count": len(REGISTRY), "workflows": REGISTRY}
+    )
+
+
 def _stop_world(fix):
     """The fixture project as a real repo with a github origin, a scheduled ci.yml and a gh shim answering one red."""
     fix.setup()
@@ -735,6 +743,7 @@ def _stop_world(fix):
     make_repo(fix.proj, workflows={"ci.yml": CI_YML})
     shim = Gh(fix.base)
     serve(shim, [run(RED_RUN)], jobs=[{"name": "Quality / Pytest (3/3)", "conclusion": "failure"}])
+    fresh_routes(shim)
     env = {"PATH": "%s%s%s" % (shim.bindir, os.pathsep, fix.env.get("PATH", ""))}
     return shim, env
 
@@ -1045,6 +1054,7 @@ def _stop_world_main_red(fix):
     make_repo(fix.proj, workflows={"ci.yml": CI_YML})
     shim = Gh(fix.base)
     serve_main_red(shim)
+    fresh_routes(shim)
     env = {
         "PATH": "%s%s%s" % (shim.bindir, os.pathsep, fix.env.get("PATH", "")),
         "XDG_CACHE_HOME": str(fix.base / "xdg"),
@@ -1330,3 +1340,41 @@ def test_session_start_shows_the_cached_freshness_with_zero_calls(tmp_path, gh, 
     # Control: the same row fresh says nothing.
     GH.cache_write(SR.freshness_path(wlp), dict(doc, rows=[dict(stale_row, verdict="fresh")]))
     assert SR.session_start_line(wlp) == ""
+
+
+def _stop_world_fresh(fix, hk_age_s):
+    """A Stop world whose scheduled runs on main are all green, Console CI 5 h ago and Housekeeping `hk_age_s` ago, so only the freshness check can speak."""
+    fix.setup()
+    fix.brief_now()
+    make_repo(fix.proj)
+    shim = Gh(fix.base)
+    serve(
+        shim,
+        [
+            run(GREEN_RUN, conclusion="success", created=iso_ago(5 * 3600)),
+            run(2, file="housekeeping.yml", conclusion="success", created=iso_ago(hk_age_s)),
+        ],
+    )
+    fresh_routes(shim)
+    env = {"PATH": "%s%s%s" % (shim.bindir, os.pathsep, fix.env.get("PATH", ""))}
+    return shim, env
+
+
+def test_the_stop_names_a_scheduled_workflow_github_stopped_firing(wl):
+    """Review 10b4ed2b.1: refresh_freshness ran only from the manual --freshness path, so a cron GitHub stopped firing reached no session. The Stop hook now reads it and queues the advisory."""
+    shim, env = _stop_world_fresh(wl, 49 * 3600)
+    got = wl.run(env)
+    assert "SCHEDULED WORKFLOWS NOT FIRING" in got.out, got.out[:2500]
+    assert "STALE: Housekeeping (housekeeping.yml), cron 0 3 * * *" in got.out
+    assert "worklist.py --add deadbeef 'sched-stale:housekeeping" in got.out
+    assert "SCHEDULED RED" not in got.out, "both runs are green; only freshness speaks"
+    assert shim.calls("actions/workflows?per_page=100"), "the freshness read really ran"
+    assert SR.read_freshness(wl.wl) is not None, "the stop caches the document for SessionStart"
+
+
+def test_the_stop_is_silent_when_every_scheduled_workflow_fired(wl):
+    shim, env = _stop_world_fresh(wl, 20 * 3600)
+    got = wl.check_quiet("SCHEDULED WORKFLOWS NOT FIRING", result=wl.run(env))
+    assert "SCHEDULED-RUN FRESHNESS" not in got.out
+    assert "scheduled-freshness check failed" not in got.out
+    assert shim.calls("actions/workflows?per_page=100"), "the read ran and judged both fresh"

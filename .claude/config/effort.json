@@ -429,6 +429,12 @@
     "scheduled-red-peer": {
       "advise": "smart"
     },
+    "scheduled-stale": {
+      "advise": "low"
+    },
+    "scheduled-stale-bug": {
+      "advise": "smart"
+    },
     "ops-health-peer": {
       "advise": "smart"
     },
