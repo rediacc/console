@@ -2845,6 +2845,169 @@ def both_tree_behind_cases():
 
 both_tree_behind_cases()
 
+
+# --- lease branches against the lease's base (PLAN-two-track-merge-dev RB3) -------------------------------
+# A bare origin, a main checkout on the live branch, and a lease below its `.claude/worktrees/` cut detached at the live tip with the record the lease verb writes (`cut_from` names the live branch). A mover clone moves the live branch on origin after the cut, so the lease is behind its base while it still contains main.
+def lease_branch_cases():
+    """RB3: a push typed in a lease tree is judged against RB1's base, the branch the lease was cut from while origin carries it, else main."""
+    lb = pathlib.Path(os.path.realpath(tempfile.mkdtemp(dir=RUN_TMP)))
+    origin_git = lb / "origin.git"
+    main = lb / "console"
+    mover_tree = lb / "mover"
+    live = "1121-9"
+    subprocess.run(
+        ["git", "init", "-q", "--bare", "-b", "main", str(origin_git)],
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(["git", "init", "-q", "-b", "main", str(main)], check=True, capture_output=True)
+    g(main, "config", "user.email", "p@example.invalid")
+    g(main, "config", "user.name", "p")
+    g(main, "remote", "add", "origin", str(origin_git))
+    (main / "base.txt").write_text("base\n", encoding="utf-8")
+    GM._write_fixture_lock(main)
+    g(main, "add", "-A")
+    g(main, "commit", "-qm", "base")
+    g(main, "push", "-q", "origin", "main")
+    g(main, "checkout", "-qb", live)
+    (main / "live.txt").write_text("live\n", encoding="utf-8")
+    g(main, "add", "--", "live.txt")
+    g(main, "commit", "-qm", "live work")
+    g(main, "push", "-q", "origin", live)
+    tip = g(main, "rev-parse", "HEAD")
+    lease = main / ".claude" / "worktrees" / "lease-rb3"
+    g(main, "worktree", "add", "-q", "--detach", str(lease), tip)
+    records = main / ".git" / GM.LEASE_RECORD_DIR
+    records.mkdir(parents=True, exist_ok=True)
+    record = {"id": "lease-rb3", "path": str(lease), "cut_from": live, "base": {".": tip}}
+    (records / "lease-rb3.json").write_text(json.dumps(record), encoding="utf-8")
+    g(lease, "config", "user.email", "w@example.invalid")
+    g(lease, "config", "user.name", "w")
+    (lease / "lease.txt").write_text("lease\n", encoding="utf-8")
+    g(lease, "add", "--", "lease.txt")
+    g(lease, "commit", "-qm", "lease work")
+    got = GM.lease_of(str(lease))
+    cases.append(
+        (
+            True,
+            got is not None and got[0] == "lease-rb3" and (got[1] or {}).get("cut_from") == live,
+            "LEASE: lease_of reads the lease tree's record",
+        )
+    )
+    cases.append((None, GM.lease_of(str(main)), "LEASE CONTROL: the main checkout is no lease"))
+    # The live branch moves on origin after the cut.
+    subprocess.run(
+        ["git", "clone", "-q", "-b", live, str(origin_git), str(mover_tree)],
+        check=True,
+        capture_output=True,
+    )
+    g(mover_tree, "config", "user.email", "q@example.invalid")
+    g(mover_tree, "config", "user.name", "q")
+    (mover_tree / "moved.txt").write_text("moved\n", encoding="utf-8")
+    g(mover_tree, "add", "-A")
+    g(mover_tree, "commit", "-qm", "live branch moves")
+    g(mover_tree, "push", "-q", "origin", live)
+    cases.append(
+        (
+            (live, ""),
+            GM.lease_base(str(lease), record),
+            "LEASE: the base is the branch the lease was cut from while origin carries it",
+        )
+    )
+    plant_green(lease)
+    to_live = "git push origin HEAD:%s" % live
+    rc, err = drive_tree(main, lease, to_live)
+    cases.append((2, rc, "LEASE: a lease behind the branch it was cut from is refused"))
+    cases.append(
+        (
+            True,
+            "lease lease-rb3" in err and "1 commit(s) behind origin/%s" % live in err,
+            "LEASE: the refusal names the lease and counts it behind its own base",
+        )
+    )
+    cases.append(
+        (
+            True,
+            "/branch-rebase %s" % live in err
+            and "rebase-proof <that snapshot> origin/%s" % live in err,
+            "LEASE: the recipe and the proof name the lease's base, not main",
+        )
+    )
+    cases.append(
+        (
+            0,
+            drive_tree(main, lease, to_live, mutant="lease-branch-dropped")[0],
+            "LEASE MUTANT lease-branch-dropped: judged against main alone, the trailing lease is admitted",
+        )
+    )
+    # A branch of any name pushed from a lease is judged, not only MMDD-N.
+    scratch = "git push origin HEAD:scratch-rb3"
+    cases.append(
+        (
+            2,
+            drive_tree(main, lease, scratch)[0],
+            "LEASE: a non-MMDD-N branch pushed from a lease is judged too",
+        )
+    )
+    cases.append(
+        (
+            0,
+            drive_tree(main, lease, scratch, mutant="lease-branch-dropped")[0],
+            "LEASE MUTANT lease-branch-dropped: the non-MMDD-N lease branch goes unjudged",
+        )
+    )
+    # CONTROL: the same lease rebased onto its base is admitted.
+    g(lease, "fetch", "-q", "origin", live)
+    g(lease, "rebase", "-q", "FETCH_HEAD")
+    plant_green(lease)
+    rc, err = drive_tree(main, lease, to_live)
+    cases.append((0, rc, "LEASE CONTROL: the lease at its base is admitted"))
+    cases.append((False, "REBASE LOCALLY" in err, "LEASE CONTROL: and prints no recipe"))
+    # Once the live branch is merged and deleted on origin, the base is main.
+    g(mover_tree, "push", "-q", "origin", "--delete", live)
+    cases.append(
+        (
+            (GM.BASE, ""),
+            GM.lease_base(str(lease), record),
+            "LEASE: once origin no longer carries the cut-from branch, the base is main",
+        )
+    )
+    cases.append(
+        (
+            0,
+            drive_tree(main, lease, to_live)[0],
+            "LEASE CONTROL: after the merge, the lease containing main is admitted",
+        )
+    )
+    g(mover_tree, "checkout", "-q", "-b", "m2", "origin/main")
+    (mover_tree / "main-moved.txt").write_text("m\n", encoding="utf-8")
+    g(mover_tree, "add", "-A")
+    g(mover_tree, "commit", "-qm", "main moves")
+    g(mover_tree, "push", "-q", "origin", "HEAD:main")
+    rc, err = drive_tree(main, lease, to_live)
+    cases.append((2, rc, "LEASE: after the merge, a lease behind main is refused"))
+    cases.append((True, "behind origin/main" in err, "LEASE: and names origin/main as its base"))
+    # A lease tree with no record is judged against main.
+    (records / "lease-rb3.json").unlink()
+    cases.append(
+        (
+            True,
+            GM.lease_of(str(lease)) == ("lease-rb3", None)
+            and GM.lease_base(str(lease), None) == (GM.BASE, ""),
+            "LEASE: a lease without a record is judged against main",
+        )
+    )
+    # CANNOT JUDGE: origin unreachable, so whether it still carries the cut-from branch is unknown; warn and allow.
+    (records / "lease-rb3.json").write_text(json.dumps(record), encoding="utf-8")
+    g(lease, "remote", "set-url", "origin", str(lb / "gone.git"))
+    rc, err = drive_tree(main, lease, to_live)
+    cases.append((0, rc, "LEASE: an unreachable origin cannot judge and allows"))
+    cases.append((True, "cannot judge whether lease lease-rb3" in err, "LEASE: and says so"))
+    shutil.rmtree(lb, ignore_errors=True)
+
+
+lease_branch_cases()
+
 shutil.rmtree(d, ignore_errors=True)
 
 bad = 0

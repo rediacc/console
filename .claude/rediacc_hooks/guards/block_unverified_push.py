@@ -19,6 +19,8 @@ A COMMIT THAT ONLY SHRINKS .ci/config/carried-reds.json ADVANCES TOO (agent/plan
 
 A LIVE BRANCH BEHIND origin/main IS REFUSED TOO (operator finding 2026-10-03). PR #592's first CI run went red only on Quality / Branch because main had moved three commits after 1003-1 was cut, and the push clone's origin/main was stale. Once the receipt allows, `behind_base_refusal` fetches origin/main itself (a stale ref would pass the ancestry test vacuously) and refuses an MMDD-N push to origin that does not contain it, printing the REBASE LOCALLY recipe CI prints. A fetch that fails or times out cannot judge, says so and allows. The refusal says whether the missing base commits are behind or ABSORBED, copies of this branch's own commits left by a rebase-merged parent (`base_split`, the split RB1's lease reader draws).
 
+A LEASE'S PUSH IS JUDGED AGAINST THE LEASE'S BASE (PLAN-two-track-merge-dev RB3). A push typed in a lease tree, which `block_lease_boundary` and the git-level `pre-push` refuse first, is still judged here for every branch it names, of any name, against RB1's base (`lease_base`: the branch the lease record says it was cut from while origin carries it, else main), so a lease that trails its live branch is refused as behind it rather than read against main.
+
 EACH TREE IS JUDGED BY ITS OWN RECEIPT (PLAN-two-track-merge-dev LT6). A push typed in a linked tree of this repository, such as the landing tree that holds the PR branch beside this checkout, reads that tree's HEAD, branch and `.ci/cache/prepush-receipt.json` (`push_tree`); it used to return ALLOW because its toplevel was not CLAUDE_PROJECT_DIR. A push in another repository (another git common directory: a submodule, a scratch repository) is still not this guard's.
 
 =============================================================================
@@ -64,6 +66,8 @@ MUTANTS = {
     ),
     # LT7: every base commit the branch lacks reads behind, so a rebase-merged parent is no longer read absorbed.
     "absorbed-read-behind": ("    return plus, minus\n", "    return plus + minus, 0\n"),
+    # RB3: a push typed in a lease tree is judged as a live-branch push again, so a lease behind the branch it was cut from is admitted.
+    "lease-branch-dropped": ("    if lease is not None:\n", "    if False:\n"),
 }
 
 PUSH_AT_COMMAND_POS = hookio.rx(
@@ -836,8 +840,8 @@ def _push_remote(args):
     return operands[0] if operands else ""
 
 
-def live_pushes(cmd, root):
-    """`[(sha, branch)]` for every push in `cmd` that publishes an MMDD-N branch to origin.
+def live_pushes(cmd, root, any_branch=False):
+    """`[(sha, branch)]` for every push in `cmd` that publishes an MMDD-N branch to origin, or with `any_branch` every branch of any name (a lease's push, `behind_base_refusal`).
 
     A push naming no refspec (`git push`, `git push origin`) and a `HEAD` destination send the checked-out branch. A source that does not resolve is skipped: git itself refuses that push, so there is no commit to judge. The remote must be spelled `origin` (or left out); a mirror or a URL is another guard's business.
     """
@@ -856,7 +860,7 @@ def live_pushes(cmd, root):
             dests = [("HEAD", current)]
         for src, named in dests:
             dst = current if named == "HEAD" else named
-            if not commit_policy.BRANCH_SHAPE.match(dst or ""):
+            if not (dst if any_branch else commit_policy.BRANCH_SHAPE.match(dst or "")):
                 continue
             sha = hookio.git_out(
                 ["-C", root, "rev-parse", "-q", "--verify", "%s^{commit}" % (src or "HEAD")],
@@ -867,21 +871,74 @@ def live_pushes(cmd, root):
     return out
 
 
-def behind_base_refusal(ev, root, cmd):
-    """A refusal when a pushed live branch does not contain origin/main, else None.
+#: The lease verb's record directory under the main checkout's git dir, one `<id>.json` per lease (.ci/rediacc_ci/dev/worktree_lease.py RECORD_DIR, read the same way by .claude/hooks/stop/wl_worktrees.py `read_records`).
+LEASE_RECORD_DIR = "rediacc-worktrees"
 
-    WHY. PR #592's first CI run (run 37110619739) went red only on Quality / Branch, "Check whether the branch is behind its base": main had moved three commits after 1003-1 was cut, and the local ci:quick ran in a push clone whose origin/main was stale. The CI gate (.ci/rediacc_ci/quality/branch.py) fetches the base itself before judging, so this does too: a stale `refs/remotes/origin/main` would make the ancestry test pass vacuously.
 
-    A FAILED OR TIMED-OUT FETCH CANNOT JUDGE, and says so and allows: a base check must never become a push outage, the same fail-open-on-a-broken-environment line the receipt arm draws.
+def lease_of(root):
+    """`(lease id, record)` when `root` sits in a lease tree (`commit_policy.lease_root`), `record` None when no readable record names that tree; None when `root` is no lease."""
+    lease = commit_policy.lease_root(root)
+    if not lease:
+        return None
+    main = lease.partition(commit_policy.LEASE_HOLDER)[0]
+    for path in sorted(pathlib.Path(main, ".git", LEASE_RECORD_DIR).glob("*.json")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, ValueError):
+            continue
+        if isinstance(record, dict) and os.path.realpath(str(record.get("path") or "")) == lease:
+            return str(record.get("id") or path.stem), record
+    return lease.rsplit("/", 1)[-1], None
 
-    BOTH TREES, ONE BASE (PLAN-two-track-merge-dev LT7, serving RB3). `root` is the tree the push was typed in (`push_tree`), so the PR branch pushed from the landing tree and the development branch pushed from this checkout are each read from their own HEAD; both are MMDD-N, so both are judged against origin/main. Once the PR branch is rebase-merged, the development branch still holds the PR's original commits while main holds their copies: `base_split` reads that ABSORBED rather than behind, and the refusal names which kind it is above CI's recipe and RB4's proof.
+
+def _rb1_base_branch():
+    """`wl_rebase.base_branch`, RB1's base rule, through a scoped insert of the stop-hook directory (the shape `_policy_rel` uses), so the rule is written down once."""
+    inserted = syspath.on_sys_path(syspath.STOP_DIR)
+    try:
+        import wl_rebase
+    finally:
+        if inserted and str(syspath.STOP_DIR) in sys.path:
+            sys.path.remove(str(syspath.STOP_DIR))
+    return wl_rebase.base_branch
+
+
+def _remote_has(root, branch):
+    """True when origin carries `branch`, False when it does not, or the reason git could not say."""
+    try:
+        got = subprocess.run(
+            ["git", "-C", root, "ls-remote", "--heads", BASE_REMOTE, "refs/heads/%s" % branch],
+            capture_output=True,
+            text=True,
+            timeout=FETCH_TIMEOUT,
+            check=False,
+            env=dict(os.environ, GIT_TERMINAL_PROMPT="0"),
+        )
+    except subprocess.TimeoutExpired:
+        return "ls-remote timed out after %ds" % FETCH_TIMEOUT
+    except OSError as exc:
+        return str(exc)
+    if got.returncode != 0:
+        return got.stderr.strip() or "ls-remote exit %d" % got.returncode
+    return bool(got.stdout.strip())
+
+
+def lease_base(root, record):
+    """`(base branch, "")` for a lease push, or `("", why)` when origin cannot be read (PLAN-two-track-merge-dev RB3).
+
+    THE BASE IS RB1's (.claude/hooks/stop/wl_rebase.py `base_branch`): the branch the lease was cut from (its record's `cut_from`) while origin still carries it, so the PR branch while its PR is open and the development branch a dev lease trails; `main` when the record names none. A `cut_from` origin no longer carries (the PR branch deleted by its rebase-merge) judges against `main`, where its commits now live.
     """
-    if hookio.git_out(["-C", root, "remote", "get-url", BASE_REMOTE], want_rc=True) is None:
-        return None
-    judged = live_pushes(cmd, root)
-    if not judged:
-        return None
-    base_ref = "%s/%s" % (BASE_REMOTE, BASE)
+    cut = str((record or {}).get("cut_from") or "")
+    has = _remote_has(root, cut) if cut else False
+    if not isinstance(has, bool):
+        return "", has
+    base = _rb1_base_branch()(has, cut, record)
+    if base == cut and not has:
+        base = BASE
+    return base, ""
+
+
+def _fetch_base(root, branch):
+    """ "" when origin's `branch` was fetched into its remote-tracking ref, else why not."""
     try:
         fetched = subprocess.run(
             [
@@ -890,7 +947,7 @@ def behind_base_refusal(ev, root, cmd):
                 root,
                 "fetch",
                 BASE_REMOTE,
-                "+refs/heads/%s:refs/remotes/%s" % (BASE, base_ref),
+                "+refs/heads/%s:refs/remotes/%s/%s" % (branch, BASE_REMOTE, branch),
                 "--quiet",
             ],
             capture_output=True,
@@ -899,23 +956,64 @@ def behind_base_refusal(ev, root, cmd):
             check=False,
             env=dict(os.environ, GIT_TERMINAL_PROMPT="0"),
         )
-        failure = (
-            ""
-            if fetched.returncode == 0
-            else (fetched.stderr.strip() or "exit %d" % fetched.returncode)
-        )
     except subprocess.TimeoutExpired:
-        failure = "timed out after %ds" % FETCH_TIMEOUT
+        return "timed out after %ds" % FETCH_TIMEOUT
     except OSError as exc:
-        failure = str(exc)
-    if failure:
-        ev.warn("NOTE: cannot judge whether this push is behind %s: fetching it failed" % base_ref)
-        ev.warn("  (%s)." % failure.splitlines()[-1])
-        ev.warn(
-            "  Allowed. CI's Quality / Branch step still checks it, and a red there costs a round."
-        )
+        return str(exc)
+    return (
+        ""
+        if fetched.returncode == 0
+        else (fetched.stderr.strip() or "exit %d" % fetched.returncode)
+    )
+
+
+def behind_base_refusal(ev, root, cmd):
+    """A refusal when a pushed live branch does not contain origin/main, else None.
+
+    WHY. PR #592's first CI run (run 37110619739) went red only on Quality / Branch, "Check whether the branch is behind its base": main had moved three commits after 1003-1 was cut, and the local ci:quick ran in a push clone whose origin/main was stale. The CI gate (.ci/rediacc_ci/quality/branch.py) fetches the base itself before judging, so this does too: a stale `refs/remotes/origin/main` would make the ancestry test pass vacuously.
+
+    A FAILED OR TIMED-OUT FETCH CANNOT JUDGE, and says so and allows: a base check must never become a push outage, the same fail-open-on-a-broken-environment line the receipt arm draws.
+
+    BOTH TREES, ONE BASE (PLAN-two-track-merge-dev LT7, serving RB3). `root` is the tree the push was typed in (`push_tree`), so the PR branch pushed from the landing tree and the development branch pushed from this checkout are each read from their own HEAD; both are MMDD-N, so both are judged against origin/main. Once the PR branch is rebase-merged, the development branch still holds the PR's original commits while main holds their copies: `base_split` reads that ABSORBED rather than behind, and the refusal names which kind it is above CI's recipe and RB4's proof.
+
+    LEASE BRANCHES (PLAN-two-track-merge-dev RB3). A push typed in a lease tree (`lease_of`) judges every branch it names, MMDD-N or not, against the lease's base as RB1 reads it (`lease_base`), never against main alone: a lease cut from the live branch is behind when that branch moved on origin after the cut, however current it is with main. A stacked development branch is no lease and keeps the origin/main judgement, which its stacked PR-branch commits pass by containing main. Origin unable to say whether it still carries the lease's `cut_from` cannot judge, says so and allows, like a failed fetch.
+    """
+    if hookio.git_out(["-C", root, "remote", "get-url", BASE_REMOTE], want_rc=True) is None:
         return None
-    for sha, branch in judged:
+    judged = [(sha, branch, BASE) for sha, branch in live_pushes(cmd, root)]
+    lease = lease_of(root)
+    if lease is not None:
+        lease_pushed = live_pushes(cmd, root, any_branch=True)
+        base, why = lease_base(root, lease[1]) if lease_pushed else (BASE, "")
+        if why:
+            ev.warn(
+                "NOTE: cannot judge whether lease %s's push is behind its base: origin could not"
+                " say whether it still carries `%s`" % (lease[0], (lease[1] or {}).get("cut_from"))
+            )
+            ev.warn("  (%s)." % why.splitlines()[-1])
+            ev.warn(
+                "  Allowed. The lease's landing still replays its commits onto the live branch."
+            )
+            return None
+        judged = [(sha, "%s (lease %s)" % (branch, lease[0]), base) for sha, branch in lease_pushed]
+    if not judged:
+        return None
+    fetched = {}
+    for base in sorted({b for _sha, _branch, b in judged}):
+        failure = _fetch_base(root, base)
+        if failure:
+            ev.warn(
+                "NOTE: cannot judge whether this push is behind %s/%s: fetching it failed"
+                % (BASE_REMOTE, base)
+            )
+            ev.warn("  (%s)." % failure.splitlines()[-1])
+            ev.warn(
+                "  Allowed. CI's Quality / Branch step still checks it, and a red there costs a round."
+            )
+            return None
+        fetched[base] = "%s/%s" % (BASE_REMOTE, base)
+    for sha, branch, base in judged:
+        base_ref = fetched[base]
         if (
             hookio.git_out(["-C", root, "merge-base", "--is-ancestor", base_ref, sha], want_rc=True)
             is not None
@@ -957,10 +1055,10 @@ def behind_base_refusal(ev, root, cmd):
             "  Recent commits on %s not in this branch:\n%s\n%s\n%s"
             % (
                 head,
-                BASE,
+                base,
                 "\n".join("    %s" % line for line in recent.splitlines()),
-                "\n".join(rebase_recipe(BASE, branch)),
-                "\n".join(REBASE_PROOF),
+                "\n".join(rebase_recipe(base, branch)),
+                "\n".join(line.replace("origin/%s" % BASE, base_ref) for line in REBASE_PROOF),
             )
         )
     return None
