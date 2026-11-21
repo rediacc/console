@@ -3,7 +3,8 @@
 The gate's `selftest()` plants each D6 control into a fixture tree. This file pins the helpers every verdict stands on, each in both directions (what must fire and what must not), because a helper that quietly widens or narrows moves every verdict at once:
 
   * `extract`: one normalization (`scope_mirrors.normalize`), markdown structure dropped, and every excluded region a run BREAK, never a join;
-  * `registered_ids` and `scope_ranges`: a registered span is excluded, an unregistered anchor is not;
+  * `registered_ids` and `scope_ranges`: a registered span's words stay in the corpus tagged with its clause, an unregistered anchor's words are untagged;
+  * the exemption: only a word pair registered under ONE clause on both sides is skipped, so a canonical span still meets unregistered copies and other clauses' spans;
   * `shared_runs`: maximal runs only, the threshold inclusive at 25 and exclusive at 24.
 """
 
@@ -106,18 +107,28 @@ def test_registered_ids_reads_default_and_per_clause_canonical() -> None:
     assert pd.registered_ids(REG, "m.md") == (set(), {"pr.fix-rule"})
 
 
-def test_a_registered_mirror_span_is_excluded() -> None:
-    assert words("x\n\n- <!-- scope: pr.fix-rule -->hidden\n\ny\n", "m.md") == ["x", "y"]
+def tagged(text: str, path: str) -> list[tuple[str, frozenset[str]]]:
+    return [(w.text, w.clauses) for w in pd.extract(text, path, REG).words]
 
 
-def test_an_unregistered_anchor_is_prose() -> None:
-    assert words("- <!-- scope: pr.unknown-rule -->shown\n", "m.md") == ["shown"]
-    assert words("- <!-- scope: pr.fix-rule -->shown\n", "other.md") == ["shown"]
+def test_a_registered_mirror_span_stays_in_the_corpus_tagged() -> None:
+    # The span's words are kept, so they are compared against unregistered text elsewhere; the tag only exempts them from the same clause's registered copies.
+    assert tagged("x\n\n- <!-- scope: pr.fix-rule -->kept\n\ny\n", "m.md") == [
+        ("x", frozenset()),
+        ("kept", frozenset({"pr.fix-rule"})),
+        ("y", frozenset()),
+    ]
+
+
+def test_an_unregistered_anchor_is_untagged_prose() -> None:
+    assert tagged("- <!-- scope: pr.unknown-rule -->shown\n", "m.md") == [("shown", frozenset())]
+    assert tagged("- <!-- scope: pr.fix-rule -->shown\n", "other.md") == [("shown", frozenset())]
 
 
 def test_a_canonical_span_runs_to_its_close_across_blocks() -> None:
     text = "<!-- scope: pr.moved-rule -->one\n\ntwo<!-- /scope -->\n\nthree\n"
-    assert words(text, "a.md") == ["three"]
+    moved = frozenset({"pr.moved-rule"})
+    assert tagged(text, "a.md") == [("one", moved), ("two", moved), ("three", frozenset())]
     _, count = pd.scope_ranges(text, "a.md", REG)
     assert count == 1
 
@@ -140,6 +151,40 @@ def test_runs_are_maximal_and_located() -> None:
 def test_a_break_in_either_file_splits_the_run() -> None:
     assert pd.shared_runs(ext("a", seq(40)), ext("b", seq(40), segment_at=20)) == []
     assert pd.shared_runs(ext("a", seq(40), segment_at=20), ext("b", seq(40))) == []
+
+
+def tag(e: pd.Extract, clause: str, lo: int = 0, hi: int | None = None) -> pd.Extract:
+    hi = len(e.words) if hi is None else hi
+    e.words = [
+        pd.Word(w.text, w.line, w.segment, frozenset({clause}) if lo <= k < hi else w.clauses)
+        for k, w in enumerate(e.words)
+    ]
+    return e
+
+
+def test_a_pair_registered_under_one_clause_is_exempt() -> None:
+    assert pd.shared_runs(tag(ext("a", seq(40)), "pr.x"), tag(ext("b", seq(40)), "pr.x")) == []
+
+
+def test_a_registered_span_against_unregistered_text_is_compared() -> None:
+    runs = pd.shared_runs(tag(ext("a", seq(40)), "pr.x"), ext("b", seq(40)))
+    assert [len(r.words) for r in runs] == [40]
+
+
+def test_spans_of_different_clauses_are_compared() -> None:
+    runs = pd.shared_runs(tag(ext("a", seq(40)), "pr.x"), tag(ext("b", seq(40)), "pr.y"))
+    assert [len(r.words) for r in runs] == [40]
+
+
+def test_an_exempt_stretch_splits_the_run_and_the_rest_is_judged() -> None:
+    # Words 0-9 registered on both sides under one clause; 10-39 unregistered: one 30-word run, located at word 10.
+    a = tag(ext("a", seq(40)), "pr.x", 0, 10)
+    b = tag(ext("b", seq(40)), "pr.x", 0, 10)
+    assert [(len(r.words), r.line_a, r.line_b) for r in pd.shared_runs(a, b)] == [(30, 11, 11)]
+    # The same split leaving 24 words on each side of the exempt stretch reports nothing.
+    a = tag(ext("a", seq(49)), "pr.x", 24, 25)
+    b = tag(ext("b", seq(49)), "pr.x", 24, 25)
+    assert pd.shared_runs(a, b) == []
 
 
 def test_a_passage_repeated_in_one_file_is_reported_per_copy() -> None:

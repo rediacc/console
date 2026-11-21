@@ -11,8 +11,11 @@ fence) is dropped, so a list rewritten as a paragraph still matches.
 EXCLUDED TEXT IS A RUN BREAK, never a join: a run cannot continue across it.
 
   * gen-docs regions (`scope_mirrors.GEN_DOCS_RE`): generated, and identical by construction where two files render the same table;
-  * fenced and indented code (`scope_mirrors.md_blocks`, kind `fence`): commands and config examples, not restatements;
-  * registered scope spans, canonical and mirror: check:ci-scope-mirrors judges those copies. A span counts as registered when `.ci/config/scope-mirrors.json` names its (path, clause): the clause's `canonical` file (the clause key, else the registry key, else CLAUDE.md), where the span runs from the open to the next close, or a `mirrors` entry with no `where`, where the span follows `scope_mirrors.mirror_spans`. Text under an anchor the registry does NOT name is compared like any other prose (and is red on C10 there).
+  * fenced and indented code (`scope_mirrors.md_blocks`, kind `fence`): commands and config examples, not restatements.
+
+REGISTERED SCOPE SPANS ARE EXEMPT ONLY FROM EACH OTHER. check:ci-scope-mirrors judges the registered copies of a clause (its canonical span and its declared mirror spans), so a shared run is dropped where BOTH words sit in registered spans of the same clause, and nowhere else. The span's words stay in the corpus: a canonical span copied into unregistered text elsewhere is red, and so is the same text under a span of a different clause. Excluding the spans outright was a blind spot
+(measured on the landed tree 2026-11-21: the agent file's `pr.sibling-repos` paragraph appended to the launcher stayed green). A span counts as registered when `.ci/config/scope-mirrors.json` names its (path, clause): the clause's `canonical` file (the clause key, else the registry key, else CLAUDE.md), where the span runs from the open to the next close, or a `mirrors` entry with no `where`, where the span follows `scope_mirrors.mirror_spans`.
+Text under an anchor the registry does NOT name is plain prose (and is red on C10 there).
 
 Front matter is INCLUDED: the skill loader shows the `description` key on every invocation.
 
@@ -78,6 +81,7 @@ class Word:
     text: str  # normalized
     line: int
     segment: int  # words of different segments never join one run
+    clauses: frozenset[str] = frozenset()  # registered scope spans this word sits in
 
 
 @dataclasses.dataclass
@@ -113,10 +117,10 @@ def registered_ids(registry: dict, path: str) -> tuple[set[str], set[str]]:
     return canonical, mirrored
 
 
-def scope_ranges(text: str, path: str, registry: dict) -> tuple[list[tuple[int, int]], int]:
-    """(offsets of every REGISTERED scope span in `text`, anchors included; how many spans). An unregistered anchor yields nothing."""
+def scope_ranges(text: str, path: str, registry: dict) -> tuple[list[tuple[int, int, str]], int]:
+    """((start, end, clause) of every REGISTERED scope span in `text`; how many spans). An unregistered anchor yields nothing."""
     canonical, mirrored = registered_ids(registry, path)
-    ranges: list[tuple[int, int]] = []
+    ranges: list[tuple[int, int, str]] = []
     count = 0
     markers = sm.parse_anchors(text)
     # Where a closed canonical span starts, so the mirror reading does not count it twice.
@@ -127,25 +131,20 @@ def scope_ranges(text: str, path: str, registry: dict) -> tuple[list[tuple[int, 
         close = next((m for m in markers[i + 1 :] if m.kind == "close"), None)
         # A canonical span with no close is red on C1 in scope-mirrors; here it falls back to the mirror reading below.
         if close is not None:
-            ranges.append((mk.start, close.end))
+            ranges.append((mk.end, close.start, mk.clause))
             strict.add(mk.end)
             count += 1
     for span in sm.mirror_spans(text, path):
         if span.start in strict:
             continue
         if span.clause in mirrored or span.clause in canonical:
-            ranges.append((span.start, span.end))
+            ranges.append((span.start, span.end, span.clause))
             count += 1
-    ranges.extend(
-        (mk.start, mk.end)
-        for mk in markers
-        if mk.kind == "open" and (mk.clause in canonical or mk.clause in mirrored)
-    )
     return ranges, count
 
 
 def extract(text: str, path: str, registry: dict) -> Extract:
-    """The normalized words of `text` with excluded regions turned into segment breaks."""
+    """The normalized words of `text`: excluded regions become segment breaks, and each word carries the registered spans it sits in."""
     out = Extract(path, [])
     excluded: list[tuple[int, int]] = []
     for m in sm.GEN_DOCS_RE.finditer(text):
@@ -156,7 +155,6 @@ def extract(text: str, path: str, registry: dict) -> Extract:
             excluded.append((block.start, block.end))
             out.code += 1
     scopes, out.spans = scope_ranges(text, path, registry)
-    excluded.extend(scopes)
     # HTML comments are not prose (normalize drops them); blank them so a comment's words never count.
     work = text
     for m in sm.COMMENT_RE.finditer(text):
@@ -176,7 +174,9 @@ def extract(text: str, path: str, registry: dict) -> Extract:
             token = sm.normalize(m.group(0))
             if not token or STRUCTURE_RE.match(token):
                 continue
-            out.words.append(Word(token, sm.line_of(text, m.start()), seg))
+            at = m.start()
+            inside = frozenset(c for a, b, c in scopes if a <= at < b)
+            out.words.append(Word(token, sm.line_of(text, at), seg, inside))
     return out
 
 
@@ -207,7 +207,10 @@ class Run:
 
 
 def shared_runs(a: Extract, b: Extract, threshold: int | None = None) -> list[Run]:
-    """Every MAXIMAL run of at least `threshold` (default `THRESHOLD`) words that `a` and `b` share, inside one segment of each."""
+    """Every MAXIMAL run of at least `threshold` (default `THRESHOLD`) words that `a` and `b` share, inside one segment of each.
+
+    A word pair where both sides sit in registered spans of the same clause is not a shared word: scope-mirrors judges that copy. Such a pair splits a run, so the registered copy is exempt and any unregistered stretch around it is still compared.
+    """
     if threshold is None:
         threshold = THRESHOLD
     if threshold < 1:
@@ -216,6 +219,16 @@ def shared_runs(a: Extract, b: Extract, threshold: int | None = None) -> list[Ru
 
     def gram_ok(words: list[Word], i: int) -> bool:
         return i + threshold <= len(words) and words[i].segment == words[i + threshold - 1].segment
+
+    def same(i: int, j: int, i0: int, j0: int) -> bool:
+        """Text-equal and in the same segments as the run's first pair (i0, j0)."""
+        return (
+            0 <= i < len(aw)
+            and 0 <= j < len(bw)
+            and aw[i].text == bw[j].text
+            and aw[i].segment == aw[i0].segment
+            and bw[j].segment == bw[j0].segment
+        )
 
     index: dict[tuple[str, ...], list[int]] = {}
     for i in range(len(aw)):
@@ -226,27 +239,28 @@ def shared_runs(a: Extract, b: Extract, threshold: int | None = None) -> list[Ru
         if not gram_ok(bw, j):
             continue
         for i in index.get(tuple(w.text for w in bw[j : j + threshold]), []):
-            # Maximal only: a match whose predecessor also matches is the tail of a run already reported.
-            if (
-                i > 0
-                and j > 0
-                and aw[i - 1].text == bw[j - 1].text
-                and aw[i - 1].segment == aw[i].segment
-                and bw[j - 1].segment == bw[j].segment
-            ):
+            # Maximal only: a match whose predecessor also matches is the tail of a text run already taken.
+            if same(i - 1, j - 1, i, j):
                 continue
             n = threshold
-            while (
-                i + n < len(aw)
-                and j + n < len(bw)
-                and aw[i + n].text == bw[j + n].text
-                and aw[i + n].segment == aw[i].segment
-                and bw[j + n].segment == bw[j].segment
-            ):
+            while same(i + n, j + n, i, j):
                 n += 1
-            runs.append(
-                Run(a.path, aw[i].line, b.path, bw[j].line, [w.text for w in aw[i : i + n]])
-            )
+            # Split the text run at every pair both registered under one clause; keep the stretches that remain.
+            start = 0
+            for k in range(n + 1):
+                exempt = k < n and bool(aw[i + k].clauses & bw[j + k].clauses)
+                if k == n or exempt:
+                    if k - start >= threshold:
+                        runs.append(
+                            Run(
+                                a.path,
+                                aw[i + start].line,
+                                b.path,
+                                bw[j + start].line,
+                                [w.text for w in aw[i + start : i + k]],
+                            )
+                        )
+                    start = k + 1
     return runs
 
 
@@ -297,7 +311,10 @@ def report(root: pathlib.Path, family: tuple[str, ...] = FAMILY) -> int:
         return 2
     exs = verdict.extracts
     pairs = len(exs) * (len(exs) - 1) // 2
-    shape = "%d files (%s), %d pairs, %d words, excluded %d gen-docs, %d code, %d scope spans" % (
+    shape = (
+        "%d files (%s), %d pairs, %d words, excluded %d gen-docs, %d code; "
+        "%d registered scope spans exempt only from their own clause's copies"
+    ) % (
         len(exs),
         ", ".join(e.path for e in exs),
         pairs,
@@ -323,7 +340,7 @@ def report(root: pathlib.Path, family: tuple[str, ...] = FAMILY) -> int:
 
 # --------------------------------------------------------------------------- selftest
 
-FIX_LAUNCHER, FIX_AGENT, FIX_MERGE = FAMILY[1], FAMILY[2], FAMILY[3]
+CLAUDE_MD, FIX_LAUNCHER, FIX_AGENT, FIX_MERGE = FAMILY
 
 # Thirty words no fixture file carries until a control plants them.
 PASSAGE = (
@@ -393,7 +410,7 @@ def _words(n: int, stem: str = "w") -> str:
 
 def selftest(verbose: bool = True) -> int:
     """Control-first: the clean fixture, then each D6 control planted with `plant`, in both directions."""
-    ctl = Controls("prose-duplication", floor=24, verbose=verbose)
+    ctl = Controls("prose-duplication", floor=30, verbose=verbose)
     with tempfile.TemporaryDirectory() as tmp:
         base = pathlib.Path(tmp)
         made = [0]
@@ -502,7 +519,41 @@ def selftest(verbose: bool = True) -> int:
         _mutate(root, "CLAUDE.md", "papa.<!-- /scope -->", "papa " + PASSAGE + "<!-- /scope -->")
         _mutate(root, FIX_AGENT, "oscar papa.\n", "oscar papa " + PASSAGE + "\n")
         ctl.check(
-            "the passage inside a registered scope span in both files is green", red(root), []
+            "the passage inside registered spans of one clause in both files is green",
+            red(root),
+            [],
+        )
+        _append(root, FIX_LAUNCHER, "\n" + PASSAGE + "\n")
+        found = pair(red(root))
+        ctl.check(
+            "a canonical span copied into unregistered text elsewhere is red, naming both",
+            (CLAUDE_MD, FIX_LAUNCHER) in found and (FIX_LAUNCHER, FIX_AGENT) in found,
+            True,
+        )
+        ctl.check(
+            "and the registered pair (canonical and its mirror) stays exempt",
+            (CLAUDE_MD, FIX_AGENT) in found,
+            False,
+        )
+
+        root = fresh()
+        _mutate(
+            root,
+            "CLAUDE.md",
+            "papa.<!-- /scope -->",
+            "papa " + PASSAGE + "<!-- /scope -->\n\n" + _words(30, "tail"),
+        )
+        _mutate(
+            root,
+            FIX_AGENT,
+            "oscar papa.\n",
+            "oscar papa " + PASSAGE + "\n" + _words(30, "tail") + "\n",
+        )
+        found = red(root)
+        ctl.check(
+            "a registered pair splits a run: the unregistered 30-word stretch beside it is red alone",
+            [(r.path_a, r.path_b, len(r.words)) for r in found],
+            [(CLAUDE_MD, FIX_AGENT, 30)],
         )
 
         root = fresh()
@@ -534,7 +585,27 @@ def selftest(verbose: bool = True) -> int:
         root = fresh(moved)
         _append(root, FIX_AGENT, "\n<!-- scope: pr.agent-rule -->" + PASSAGE + "<!-- /scope -->\n")
         _append(root, FIX_MERGE, "\n<!-- scope: pr.agent-rule -->" + PASSAGE + "\n")
-        ctl.check("a clause canonical in the agent file excludes its span there", red(root), [])
+        ctl.check(
+            "a clause canonical in the agent file is exempt against its registered mirror copy",
+            red(root),
+            [],
+        )
+        root = fresh(moved)
+        _append(root, FIX_AGENT, "\n<!-- scope: pr.agent-rule -->" + PASSAGE + "<!-- /scope -->\n")
+        _append(root, FIX_MERGE, "\n- <!-- scope: pr.fix-rule -->" + PASSAGE + "\n")
+        ctl.check(
+            "the same text under a span of a DIFFERENT clause is red",
+            pair(red(root)),
+            [(FIX_AGENT, FIX_MERGE)],
+        )
+        root = fresh(moved)
+        _append(root, FIX_AGENT, "\n<!-- scope: pr.agent-rule -->" + PASSAGE + "<!-- /scope -->\n")
+        _append(root, FIX_LAUNCHER, "\n" + PASSAGE + "\n")
+        ctl.check(
+            "the agent's canonical span appended to the launcher unregistered is red (the T2 shape)",
+            pair(red(root)),
+            [(FIX_LAUNCHER, FIX_AGENT)],
+        )
         root = fresh()
         _append(root, FIX_AGENT, "\n<!-- scope: pr.agent-rule -->" + PASSAGE + "<!-- /scope -->\n")
         _append(root, FIX_MERGE, "\n" + PASSAGE + "\n")

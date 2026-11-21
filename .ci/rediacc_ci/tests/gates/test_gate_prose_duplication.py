@@ -4,7 +4,7 @@ WHAT IT GUARDS. The gate's own selftest proves its controls fire on a toy fixtur
 
 EVERY PLANT GOES INTO A COPY under a temp root, passed with `--root`; no tracked file is written (`check:ci-gate-test-real-file-plants`). Each plant is built with `rediacc_ci.controls.plant` or reads its passage from the copy by anchor, so a moved anchor reads as a broken CONTROL rather than as a gate that stayed green.
 
-BOTH DIRECTIONS (plan D6, live-tree red control). T1 is the untouched copy and must be green with a non-trivial shape. T2 appends the agent file's `pr.sibling-repos` paragraph, anchor removed, to the launcher copy and requires rc 1 naming both files: the paragraph is excluded where it is registered, and red the moment it is copied out unregistered. T3 and T4 are the refusals: an empty root and a missing family file are rc 2, never a pass.
+BOTH DIRECTIONS (plan D6, live-tree red control). T1 is the untouched copy and must be green with a non-trivial shape. T2 appends the agent file's `pr.sibling-repos` paragraph, anchor removed, to the launcher copy and requires rc 1 naming both files: the paragraph is excluded where it is registered, and red the moment it is copied out unregistered. T5 is T2's silent twin: the same paragraph planted inside /pr-merge's registered `pr.sibling-repos` ref span (a declared mirror of the same clause) must stay green, because scope-mirrors judges that copy. Together they pin the rule: a registered span is exempt only from its own clause's registered copies, never from unregistered text. T3 and T4 are the refusals: an empty root and a missing family file are rc 2, never a pass.
 """
 
 import os
@@ -146,3 +146,28 @@ def test_t4_a_missing_family_file_is_a_refusal(gate):
         gate.assert_exit(2, result, "T4: a missing family file is rc 2")
         gate.assert_contains(result.err, PR_MERGE, "T4: the refusal names the missing file")
         gate.log_pass("T4: missing family file refused")
+
+
+def test_t5_the_same_paragraph_inside_the_registered_pr_merge_span_stays_green(gate):
+    with harness.temp_dir() as tmp:
+        root = build_root(gate, tmp)
+        passage = sibling_paragraph(gate, root)
+        merge = root / PR_MERGE
+        text = merge.read_text(encoding="utf-8")
+        if text.count(SIBLING_OPEN) != 1:
+            gate.log_fail(
+                "%s carries %d %s anchors; the registered pointer copy T5 plants into is gone"
+                % (PR_MERGE, text.count(SIBLING_OPEN), SIBLING_OPEN)
+            )
+        merge.write_text(
+            plant(text, SIBLING_OPEN, SIBLING_OPEN + passage + " ", 1), encoding="utf-8"
+        )
+        result = run_gate(root)
+        gate.assert_exit(
+            0,
+            result,
+            "T5: the paragraph inside the registered pr.sibling-repos mirror span of %s is green"
+            % PR_MERGE,
+        )
+        gate.assert_eq(findings(result), [], "T5: no finding names the registered copy")
+        gate.log_pass("T5: a registered mirror copy of the same clause stays exempt")
