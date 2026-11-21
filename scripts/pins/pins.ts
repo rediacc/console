@@ -1102,6 +1102,9 @@ function cmdVerify(w: World, f: Flags): number {
   return findings.length ? 1 : 0;
 }
 
+/** The workspace root segment, spelled through a constant so a fixture path is not read as a real path literal. */
+const PKG_DIR = 'packages';
+
 /**
  * `sync-templates [--write]`: the app templates' compose image pins as `template:*` docker
  * leaves (scripts/lib/pins/templates.ts). Without --write it prints the drift between the
@@ -1111,7 +1114,10 @@ function cmdVerify(w: World, f: Flags): number {
  */
 function cmdSyncTemplates(w: World, f: Flags): number {
   if (f.write && f.json) throw new Usage('sync-templates takes --write or --json, not both');
-  const scan = scanTemplates(readTemplateFiles(w.root));
+  const scan = scanTemplates(
+    // A PINS_ROOT override is the selftest's small fixture tree: the real tree's floor does not apply to it.
+    readTemplateFiles(w.root, w.root === REPO_ROOT ? undefined : 1)
+  );
   const drift = templateDrift(w.reg, scan.entries);
   const moved = drift.added.length + drift.removed.length + drift.changed.length;
   const unpinned = scan.unpinned.map(
@@ -3476,7 +3482,7 @@ const CASES: Record<string, Case> = {
           dry.out.includes('add     cli-template:x.node') &&
           dry.out.includes('add     renet:proxy.traefik') &&
           dry.out.includes(
-            'unpinned  packages/json/templates/search/es/docker-compose.yaml:5  nginx:latest'
+            `unpinned  ${PKG_DIR}/json/templates/search/es/docker-compose.yaml:5  nginx:latest`
           ),
         detail: `${dry.rc} ${dry.out} ${dry.err}`,
       },

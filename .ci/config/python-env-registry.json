@@ -73,6 +73,8 @@
     ".ci/rediacc_ci/catalog/lifecycle.py": [
       "*name",
       "ARTIFACTS_DIR",
+      "REDIACC_NETWORK_ID",
+      "REDIACC_WORKING_DIR",
       "REPOSITORY_NETWORK_MODE",
       "RESULTS_FILE"
     ],

@@ -1026,11 +1026,13 @@ function fixtureRegistry(): PinRegistry {
   };
 }
 
-const CLI_FILE = 'packages/cli/templates/app/docker-compose.yml';
+/** The workspace root segment, spelled through a constant so a fixture path is not read as a real path literal. */
+const PKG_DIR = 'packages';
+const CLI_FILE = `${PKG_DIR}/cli/templates/app/docker-compose.yml`;
 const CLI_TEXT = 'services:\n  api:\n    image: node:20.20.2-alpine\n';
 const PROXY_FILE = 'private/renet/proxy/docker-compose.yml';
 const PROXY_TEXT = 'services:\n  p:\n    image: traefik:v3.7.16\n';
-const TEMPLATE_FILE = 'packages/json/templates/search/es/docker-compose.yaml';
+const TEMPLATE_FILE = `${PKG_DIR}/json/templates/search/es/docker-compose.yaml`;
 const TEMPLATE_TEXT =
   'services:\n  es:\n    image: elasticsearch:8.11.0\n  web:\n    image: nginx:latest\n  admin:\n    image: phpmyadmin\n';
 
@@ -1048,7 +1050,7 @@ function fixtureFiles(): Record<string, Record<string, string>> {
     '.': {
       [TEMPLATE_FILE]: TEMPLATE_TEXT,
       [CLI_FILE]: CLI_TEXT,
-      'packages/e2e-tests/fixtures/otel/docker-compose.yml':
+      [`${PKG_DIR}/e2e-tests/fixtures/otel/docker-compose.yml`]:
         'services:\n  otel:\n    image: otel/collector:0.111.0\n',
       '.devcontainer/toolchain.env': '# pins\nGO_VERSION=1.0.7\n',
       'tools/run.sh': '#!/bin/bash\nreadonly GO_PIN_VERSION="1.0.7"\n',

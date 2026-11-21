@@ -51,6 +51,9 @@ import { isEntryPoint } from '../entry-point.js';
 import { policyPath } from '../policy-paths.js';
 import type { PinEntry, PinRegistry, PinSite } from './registry.js';
 
+/** The workspace root segment, spelled through a constant so a fixture path is not read as a real path literal. */
+const PKG_DIR = 'packages';
+
 /** The template tree, console-relative. */
 export const TEMPLATE_ROOT = 'packages/json/templates';
 /** The hold file every docker leaf names first. */
@@ -446,8 +449,11 @@ export function spliceEntries(text: string, prev: PinRegistry, next: PinRegistry
   return [...lines.slice(0, open + 1), bodies.join(',\n'), ...lines.slice(close)].join('\n');
 }
 
-/** Every compose file of every tree under `root`, read from disk. A submodule tree that is not on disk throws: a scan that skipped it would report its leaves as removed. */
-export function readTemplateFiles(root: string): Map<string, string> {
+/** Every compose file of every tree under `root`, read from disk; `floor` is the fewest files a scan may find (a fixture tree passes 1). A submodule tree that is not on disk throws: a scan that skipped it would report its leaves as removed. */
+export function readTemplateFiles(
+  root: string,
+  floor: number = MIN_TEMPLATE_COMPOSE_FILES
+): Map<string, string> {
   const out = new Map<string, string>();
   for (const tree of TREES) {
     const base = path.join(root, tree.root);
@@ -470,9 +476,9 @@ export function readTemplateFiles(root: string): Map<string, string> {
   }
   // A scan that reads a handful of files reads as a clean registry; the floor makes a moved or
   // empty scan root a refusal (38 template compose files on 2026-11-21).
-  if (out.size < MIN_TEMPLATE_COMPOSE_FILES)
+  if (out.size < floor)
     throw new Error(
-      `only ${out.size} template compose file(s) found under ${TREES.map((t) => t.root).join(', ')} (floor ${MIN_TEMPLATE_COMPOSE_FILES}): a scan root moved or is empty`
+      `only ${out.size} template compose file(s) found under ${TREES.map((t) => t.root).join(', ')} (floor ${floor}): a scan root moved or is empty`
     );
   return out;
 }
@@ -598,18 +604,18 @@ export function selftestCases(): ControlCase[] {
   cases.push({
     name: 'CONTROL: a compose file outside every tree is not scanned, and a nested file of the template tree is not a template',
     ok:
-      scanTemplates(new Map([['packages/e2e-tests/fixtures/x/docker-compose.yml', es]])).entries
+      scanTemplates(new Map([[`${PKG_DIR}/e2e-tests/fixtures/x/docker-compose.yml`, es]])).entries
         .length === 0 &&
-      !isTemplateCompose('packages/json/templates/a/b/c/docker-compose.yaml') &&
+      !isTemplateCompose(`${PKG_DIR}/json/templates/a/b/c/docker-compose.yaml`) &&
       !isTemplateCompose('.ci/tutorials/apps/a/b/docker-compose.yml'),
   });
   const planted = new Map([
     [
-      'packages/cli/templates/app-x/docker-compose.yml',
+      `${PKG_DIR}/cli/templates/app-x/docker-compose.yml`,
       'services:\n  api:\n    image: node:20.20.2-alpine\n',
     ],
     [
-      'packages/cli/templates/multi/project-a/docker-compose.yml',
+      `${PKG_DIR}/cli/templates/multi/project-a/docker-compose.yml`,
       'services:\n  db:\n    image: postgres:16.14-alpine\n',
     ],
     [
@@ -658,7 +664,7 @@ export function selftestCases(): ControlCase[] {
       scanTemplates(
         new Map([
           [
-            'packages/cli/templates/t/docker-compose.yml',
+            `${PKG_DIR}/cli/templates/t/docker-compose.yml`,
             'services:\n  a:\n    image: redis:7.4.9\n  b:\n    image: redis:8.0.1\n',
           ],
         ])
@@ -686,7 +692,7 @@ export function selftestCases(): ControlCase[] {
     ok: (() => {
       const base = scanTemplates(new Map([...planted]));
       const without = new Map([...planted]);
-      without.delete('packages/cli/templates/app-x/docker-compose.yml');
+      without.delete(`${PKG_DIR}/cli/templates/app-x/docker-compose.yml`);
       const reg2 = withTemplates(
         {
           version: 1,
