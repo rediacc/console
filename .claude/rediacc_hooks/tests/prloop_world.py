@@ -64,6 +64,8 @@ def world(fix, ci: bool = False, red: bool = False) -> None:
         fix.git("add", "-A")
         fix.git("commit", "-qm", "base")
         head = fix.git("rev-parse", "HEAD").stdout.strip()
+        if not head:
+            raise RuntimeError("the fixture's base commit did not resolve a HEAD sha")
         fix.git("update-ref", "refs/remotes/origin/pub", head)
     fix.brief_now()
     fix.hand_now()
