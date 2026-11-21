@@ -1078,6 +1078,11 @@
       "GL_ROOT",
       "REDIACC_CI_ROOT"
     ],
+    ".ci/rediacc_ci/quality/guard_mutant_site.py": [
+      "GUARD_MUTANT_LOG",
+      "GUARD_MUTANT_SOURCE",
+      "GUARD_MUTANT_TARGET"
+    ],
     ".ci/rediacc_ci/quality/hook_exec_baseline.py": [
       "HOOK_EXEC_COUNTER_DIR",
       "REDIACC_CI_ROOT"
