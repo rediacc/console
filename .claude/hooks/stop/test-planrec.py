@@ -1447,11 +1447,11 @@ control(
     "a selector quoting a backticked path matches the box, whose body is stored with backticks and underscores stripped",
     R.select_box(
         R.open_boxes(
-            "## Tasks\n- [ ] T4 `.claude/rediacc_hooks/plan_gate.py`: settings_at and next_turbo\n"
+            "## Tasks\n- [ ] T4 `.claude/rediacc_hooks/plan_gate.py`: settings_at and pr_plan_set\n"
         ),
         "T4 `.claude/rediacc_hooks/plan_gate.py`",
     )[2],
-    "T4 .claude/rediacchooks/plangate.py: settingsat and nextturbo",
+    "T4 .claude/rediacchooks/plangate.py: settingsat and prplanset",
 )
 raises(
     "a plan with NO open boxes says so rather than reporting no match",

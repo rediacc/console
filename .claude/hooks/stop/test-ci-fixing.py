@@ -74,7 +74,7 @@ def repo_with(*unpushed, branch=BRANCH, root="red"):
 
 
 # ---- 1. the PR #601 shape: a code fix on top of the red head, ci:quick running ----------------------
-repo, tip = repo_with("packages/cli/src/a.ts", "agent/ledgers/turbo-push-reasons.jsonl")
+repo, tip = repo_with("packages/cli/src/a.ts", "agent/ledgers/landing-rounds.jsonl")
 got = W.fix_in_flight(repo, BRANCH, tip, PIPELINE)
 check("the #601 shape stands down", bool(got), True)
 check("... counting both unpushed commits", (got or {}).get("commits"), 2)
@@ -88,7 +88,7 @@ check(
     W.fix_in_flight(repo0, BRANCH, tip0, PIPELINE),
     None,
 )
-repo, tip = repo_with("agent/d778be9d/STATE.md", "agent/ledgers/turbo-push-reasons.jsonl")
+repo, tip = repo_with("agent/d778be9d/STATE.md", "agent/ledgers/landing-rounds.jsonl")
 check("control: paperwork only is not a fix", W.fix_in_flight(repo, BRANCH, tip, PIPELINE), None)
 repo, tip = repo_with("packages/cli/src/a.ts")
 check("control: no background task", W.fix_in_flight(repo, BRANCH, tip, []), None)
@@ -122,10 +122,10 @@ check(
 # ---- 3. the other pipeline shapes count -------------------------------------------------------------
 for cmd in (
     "npx tsx scripts/ci-runner/run.ts --only check:ci-security-audit",
-    "TURBO_PUSH_REASON='red-fix: x' git push origin 1020-1",
+    "VM_CHECK_PUSH_REASON='red-fix: x' git push origin 1020-1",
     "npm run vm:check -- --changed",
     "cd /x && npm run ci:quick",
-    "TURBO_PUSH_REASON='red-fix: a b' git push origin 1020-1",
+    "VM_CHECK_PUSH_REASON='red-fix: a b' git push origin 1020-1",
     "git push",
     "git -C /x push origin HEAD:refs/heads/1020-1",
     "cd /x\nnpm run ci:quick > out 2>&1",

@@ -1,7 +1,7 @@
 """No test writes the project `CLAUDE_PROJECT_DIR` names, whatever the launching environment says (worklist #04a74a81).
 
 THE DEFECT. Claude Code exports `CLAUDE_PROJECT_DIR`, and `wl_core.project_start` takes it as the project root ahead of every other rung. `wlfix.Fixture.python` pinned its fixture root with `setdefault` on an environment that still carried the inherited value, so a suite launched from a live session sent `--queue-set`, `--hint-propose` and the retro verbs to the REAL checkout. Measured
-2026-10-09 in a scratch clone: `agent/plans/QUEUE.md`'s settings block came back as `turbo: on -- operator test` / `batch_size: 4`, two `agent/ledgers/*.jsonl` gained rows, and 201 hook tests failed. Unset, the same run was clean, which is why CI never saw it.
+2026-10-09 in a scratch clone: `agent/plans/QUEUE.md`'s settings block came back rewritten with a test fixture's switch values, two `agent/ledgers/*.jsonl` gained rows, and 201 hook tests failed. Unset, the same run was clean, which is why CI never saw it.
 
 THE CONTROL IS A NESTED RUN, because the outer run cannot be its own witness: the root conftest drops the variable before this module is imported, so in-process it is absent whether or not the scrub works. The child pytest is launched WITH the variable aimed at a sentinel tree (a git repo holding copies of the files the leak rewrote) and runs (a) tests measured writing through the leak and (b) the probe
 below, which only the child can make non-vacuous. The sentinel must come back byte-identical and the child must pass.
