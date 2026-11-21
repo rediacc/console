@@ -5,7 +5,7 @@ six places by hand; earlier changes missed copies, and nothing checked that the 
 
 THE CONTRACT (plan D1). The canonical text stays CLAUDE.md prose, wrapped inline:
 
-    <!-- scope: pr.turbo-batch-end -->Under `turbo: on` ... fires.<!-- /scope -->
+    <!-- scope: pr.push-cadence -->Pushes happen at an epic milestone ... commits.<!-- /scope -->
 
   * Open `<!-- scope: <id>[ -- <note>] -->`, close `<!-- /scope -->`.
   * Ids match `^pr\.[a-z0-9-]{3,40}$`. A comment that starts `scope` but carries a malformed id is a FINDING (C1 in CLAUDE.md, C10 in a mirror), never ignored.
@@ -1260,8 +1260,8 @@ FIX_CANON = """# Fixture rules
 ## Session defaults
 
 - **Pushing.** <!-- scope: pr.push-cadence -->Pushes happen at an epic milestone, at least every 2 hours of committed work, and before a stop that leaves unpushed commits.<!-- /scope --> Pushes are backups.
-- **Turbo.** <!-- scope: pr.turbo-kinds -->Under `turbo: on` an early push needs `TURBO_PUSH_REASON` naming `ci-cd`, `red-fix`, `deadline` or `backup`.<!-- /scope -->
-- **Switches.** Every switch of the hook (<!-- scope: pr.queue-switches -->`stop_hook`, `turbo`, `batch_size`<!-- /scope -->) lives in the queue.
+- **VM push.** <!-- scope: pr.vm-reasons -->A VM-path push with no receipt needs `VM_CHECK_PUSH_REASON` naming `ci-cd`, `red-fix`, `deadline` or `backup`.<!-- /scope -->
+- **Switches.** Every switch of the hook (<!-- scope: pr.queue-switches -->`stop_hook`, `effort`, `judge`<!-- /scope -->) lives in the queue.
 - **Findings.** Ask for the big-bang, not for permission to patch one thing. Put the whole cluster (root cause, siblings, tests) into a single plan and ask to run it.
 
 An anchor is written as `<!-- scope: pr.code-span-demo -->`, which is prose here.
@@ -1306,11 +1306,11 @@ hours of committed work, and before a stop that leaves unpushed commits").
 """
 '''
 
-FIX_QUEUE = 'SETTINGS_KEYS = ("stop_hook", "turbo", "batch_size")\n'
+FIX_QUEUE = 'SETTINGS_KEYS = ("stop_hook", "effort", "judge")\n'
 
 FIX_CMD = """# Demo command
 
-<!-- scope: pr.turbo-kinds -->The early-push reasons are listed in CLAUDE.md and not restated here.
+<!-- scope: pr.vm-reasons -->The VM push reasons are listed in CLAUDE.md and not restated here.
 """
 
 SO = ".claude/output-styles/so.md"
@@ -1344,10 +1344,10 @@ def fixture_registry() -> dict:
                     {"path": GUARD, "mode": "terms", "where": "py:MESSAGE"},
                 ],
             },
-            "pr.turbo-kinds": {
-                "sha": pin("pr.turbo-kinds"),
-                "atoms": ["`turbo: on`", "`TURBO_PUSH_REASON`"],
-                "sentinels": ["TURBO_PUSH_REASON"],
+            "pr.vm-reasons": {
+                "sha": pin("pr.vm-reasons"),
+                "atoms": ["VM-path push", "`VM_CHECK_PUSH_REASON`"],
+                "sentinels": ["VM_CHECK_PUSH_REASON"],
                 "oracle": {"path": GUARD, "const": "KINDS", "rule": "all-in-span"},
                 "mirrors": [{"path": CMD, "mode": "ref"}],
             },
@@ -1479,7 +1479,7 @@ def selftest(verbose: bool = True) -> int:
         ctl.check(
             "py_constant reads a tuple",
             py_constant(FIX_QUEUE, "SETTINGS_KEYS")[0],
-            ("stop_hook", "turbo", "batch_size"),
+            ("stop_hook", "effort", "judge"),
         )
         ctl.truthy(
             "py_constant reports a missing name", py_constant(FIX_QUEUE, "NOPE")[0] is MISSING
@@ -1625,7 +1625,7 @@ def selftest(verbose: bool = True) -> int:
         _mutate(root, GUARD, '"backup")', '"backup", "late")')
         ctl.truthy("C8 all-in-span fires on a value the span lacks", _hits(_red(root), "C8"))
         root = fresh()
-        _mutate(root, QUEUE_PY, '"batch_size")', '"batch_size", "judge")')
+        _mutate(root, QUEUE_PY, '"judge")', '"judge", "cadence")')
         ctl.truthy("C8 equal-backticked fires on a key the span lacks", _hits(_red(root), "C8"))
 
         # -- C9 and C10 -----------------------------------------------------
@@ -1642,7 +1642,7 @@ def selftest(verbose: bool = True) -> int:
         ctl.truthy("C10 fires on an unregistered anchor", _hits(found, "C10", "new.md"))
         ctl.check("an anchored restatement is C10, not C9", _hits(found, "C9", "new.md"), 0)
         root = fresh()
-        _mutate(root, CMD, "<!-- scope: pr.turbo-kinds -->", "<!-- scope: pr.X -->")
+        _mutate(root, CMD, "<!-- scope: pr.vm-reasons -->", "<!-- scope: pr.X -->")
         ctl.truthy("C10 fires on a malformed mirror id", _hits(_red(root), "C10", CMD))
 
         # -- baseline -------------------------------------------------------

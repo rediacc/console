@@ -1,8 +1,8 @@
 {
   "canonical": "CLAUDE.md",
   "floors": {
-    "clauses": 10,
-    "mirror_checks": 31
+    "clauses": 9,
+    "mirror_checks": 25
   },
   "quote_sources": [
     {
@@ -34,50 +34,6 @@
           "path": ".claude/rediacc_hooks/guards/block_settled_questions.py",
           "mode": "terms",
           "where": "py:MESSAGE"
-        }
-      ]
-    },
-    "pr.turbo-batch-end": {
-      "sha": "7c100d0d55bf",
-      "atoms": [
-        "`turbo: on`",
-        "`turbo_push: batch-end`",
-        "`backup_push_h`",
-        "`TURBO_PUSH_REASON"
-      ],
-      "sentinels": [
-        "turbo_push: batch-end` (the default)"
-      ],
-      "oracle": {
-        "path": ".claude/rediacc_hooks/guards/block_turbo_early_push.py",
-        "const": "KINDS",
-        "rule": "all-in-span"
-      },
-      "mirrors": [
-        {
-          "path": ".claude/output-styles/standing-orders.md",
-          "mode": "verbatim"
-        },
-        {
-          "path": ".claude/skills/pr-epics/trailers.md",
-          "mode": "verbatim"
-        },
-        {
-          "path": ".claude/commands/pr-merge.md",
-          "mode": "terms"
-        },
-        {
-          "path": ".claude/agents/pr-babysitter.md",
-          "mode": "terms"
-        },
-        {
-          "path": ".claude/rediacc_hooks/guards/block_settled_questions.py",
-          "mode": "terms",
-          "where": "py:MESSAGE"
-        },
-        {
-          "path": "agent/plans/QUEUE.md",
-          "mode": "terms"
         }
       ]
     },
@@ -154,12 +110,10 @@
     "pr.one-plan-per-pr": {
       "sha": "15d3a891ac1e",
       "atoms": [
-        "one plan per PR",
-        "`turbo: on`"
+        "one plan per PR"
       ],
       "sentinels": [
-        "works one plan per PR",
-        "one plan per PR, or"
+        "works one plan per PR"
       ],
       "mirrors": [
         {

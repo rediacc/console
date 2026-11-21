@@ -36,7 +36,7 @@ def test_normalize_runs_the_d4_order() -> None:
 
 def test_normalize_keeps_what_is_not_markup() -> None:
     # A single `*` or `_` is content (snake_case keys, list bullets), and must survive.
-    assert sm.normalize("`turbo_push: batch-end` * x") == "turbo_push: batch-end * x"
+    assert sm.normalize("`commit_remind_min: 15` * x") == "commit_remind_min: 15 * x"
     assert sm.normalize("Plan:") != sm.normalize("Plan")
 
 

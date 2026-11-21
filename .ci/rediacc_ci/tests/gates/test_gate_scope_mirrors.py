@@ -4,7 +4,7 @@ WHAT IT GUARDS. CLAUDE.md's PR-scope clauses are anchored and pinned; seven othe
 
 EVERY PLANT GOES INTO A COPY under a temp root, passed with `--root`; no tracked file is written (`check:ci-gate-test-real-file-plants`). The copy carries what the gate reads: the canonical file, the C9 corpus directories, the oracle and quote-source modules and the two `.ci/config` files. Each plant is built with `rediacc_ci.controls.plant`, which raises when the needle is absent, so a drifted anchor reads as a broken CONTROL rather than as a gate that stayed green.
 
-BOTH DIRECTIONS. T1 is the untouched copy and must be green with each count EQUAL to the floor the success line prints. T2 replays the 8ed69711c miss and asserts the UNTOUCHED mirrors stay silent; T3 asserts a changed canonical reports C2 and no C5/C6; T5 asserts a correctly marked cut is silent; T8 asserts an anchored restatement is C10 and not C9; T9 and T10 assert the write paths refuse and then admit.
+BOTH DIRECTIONS. T1 is the untouched copy and must be green with each count EQUAL to the floor the success line prints. T2 replays the shape of the 8ed69711c miss (one mirror drops an atom of a clause) and asserts the UNTOUCHED mirrors stay silent; T3 asserts a changed canonical reports C2 and no C5/C6; T5 asserts a correctly marked cut is silent; T8 asserts an anchored restatement is C10 and not C9; T9 and T10 assert the write paths refuse and then admit.
 
 THE FLOORS ARE READ, NEVER TYPED: T1 parses `N clauses (floor F)` and `M mirror checks (floor G)` from the one success line, so the floors live in the registry and nowhere else, and requires N == F and M == G, so a floor can be neither lowered nor left behind a new clause.
 """
@@ -35,7 +35,6 @@ COPY = (
     ".claude/skills",
     "agent/plans/QUEUE.md",
     ".claude/rediacc_hooks/guards/block_settled_questions.py",
-    ".claude/rediacc_hooks/guards/block_turbo_early_push.py",
     ".claude/hooks/stop/wl_planqueue.py",
     REGISTRY_REL,
     BASELINE_REL,
@@ -47,11 +46,13 @@ BABYSITTER = ".claude/agents/pr-babysitter.md"
 PR_MERGE = ".claude/commands/pr-merge.md"
 SKILL = ".claude/skills/pr-epics/SKILL.md"
 GUARD = ".claude/rediacc_hooks/guards/block_settled_questions.py"
-KINDS_SRC = ".claude/rediacc_hooks/guards/block_turbo_early_push.py"
+QUEUE_PY = ".claude/hooks/stop/wl_planqueue.py"
 HANDOFF = ".claude/commands/handoff.md"
 
 SHAPE_RE = re.compile(r"(\d+) clauses \(floor (\d+)\), (\d+) mirror checks \(floor (\d+)\)")
-TURBO_ANCHOR = "<!-- scope: pr.turbo-batch-end -->"
+PUSH_ANCHOR = "<!-- scope: pr.push-cadence -->"
+# The atom T2 and T9 drop from the trailers mirror's push-cadence span.
+PUSH_ATOM = "every 2 hours"
 
 # The gate runs its 65 selftest controls first, then the real tree; well under a minute measured 2026-10-08.
 GATE_TIMEOUT = 300
@@ -124,11 +125,17 @@ def line_of(root: pathlib.Path, rel: str, starts: str) -> str:
     return ""
 
 
-def turbo_sentence(root: pathlib.Path) -> str:
-    """The anchored turbo sentence of the trailers mirror, anchor excluded, to the end of its list item."""
-    line = line_of(root, TRAILERS, "- **Pushing is separate**")
-    at = line.find(TURBO_ANCHOR)
-    return line[at + len(TURBO_ANCHOR) :] if at >= 0 else ""
+def push_line(root: pathlib.Path) -> str:
+    """The trailers mirror's list item that carries the push-cadence anchor."""
+    return line_of(root, TRAILERS, "- **Pushing is separate**")
+
+
+def drift_trailers(gate, root: pathlib.Path) -> None:
+    """Drop PUSH_ATOM from the trailers mirror's push-cadence span, the one-mirror drift T2 and T9 replay."""
+    line = push_line(root)
+    if PUSH_ANCHOR not in line or PUSH_ATOM not in line:
+        gate.log_fail("the trailers mirror no longer carries the anchored push cadence: %r" % line)
+    mutate(root, TRAILERS, line, line.replace(PUSH_ATOM, "every few hours"), 1)
 
 
 def test_t1_untouched_copy_is_green_at_or_above_the_floors(gate):
@@ -168,23 +175,17 @@ def test_t2_the_8ed69711c_miss_names_only_the_drifted_mirror(gate):
     gate = Proving(gate)
     with harness.temp_dir() as tmp:
         root = build_root(gate, tmp)
-        sentence = turbo_sentence(root)
-        if "TURBO_PUSH_REASON" not in sentence:
-            gate.log_fail(
-                "T2: the trailers mirror no longer carries the anchored turbo sentence: %r"
-                % sentence
-            )
-        mutate(root, TRAILERS, TURBO_ANCHOR + sentence, TURBO_ANCHOR, 1)
+        drift_trailers(gate, root)
         result = run_gate(root)
-        gate.assert_exit(1, result, "T2: a mirror missing the turbo sentence is red")
+        gate.assert_exit(1, result, "T2: a mirror missing an atom of its clause is red")
         found = findings(result)
-        hits = [f for f in found if TRAILERS in f and "pr.turbo-batch-end" in f]
+        hits = [f for f in found if TRAILERS in f and "pr.push-cadence" in f]
         gate.assert_eq(
             bool(hits),
             True,
-            "T2: a finding names %s and pr.turbo-batch-end; got %r" % (TRAILERS, found),
+            "T2: a finding names %s and pr.push-cadence; got %r" % (TRAILERS, found),
         )
-        for quiet in (STANDING, BABYSITTER, PR_MERGE):
+        for quiet in (STANDING, GUARD, BABYSITTER, PR_MERGE):
             gate.assert_eq(
                 [f for f in found if quiet in f],
                 [],
@@ -293,15 +294,15 @@ def test_t7_a_new_oracle_value_is_c8(gate):
     gate = Proving(gate)
     with harness.temp_dir() as tmp:
         root = build_root(gate, tmp)
-        mutate(root, KINDS_SRC, '"deadline", "backup")', '"deadline", "backup", "late")', 1)
+        mutate(root, QUEUE_PY, "SETTINGS_KEYS = (", 'SETTINGS_KEYS = (\n    "late",', 1)
         result = run_gate(root)
-        gate.assert_exit(1, result, "T7: a KINDS value the canonical lacks is red")
+        gate.assert_exit(1, result, "T7: a SETTINGS_KEYS value the canonical lacks is red")
         gate.assert_eq(
             bool(
                 [
                     f
                     for f in findings(result)
-                    if " C8 " in f and "pr.turbo-batch-end" in f and "late" in f
+                    if " C8 " in f and "pr.queue-switches" in f and "late" in f
                 ]
             ),
             True,
@@ -311,7 +312,7 @@ def test_t7_a_new_oracle_value_is_c8(gate):
 
 def test_t8_unregistered_restatement_is_c9_and_an_anchor_makes_it_c10(gate):
     gate = Proving(gate)
-    para = "\n\nUnder `turbo_push: batch-end` (the default) the batch is pushed once.\n"
+    para = "\n\nPush every 2 hours of committed work, whatever else happens.\n"
     with harness.temp_dir() as tmp:
         root = build_root(gate, tmp)
         path = root / HANDOFF
@@ -328,7 +329,8 @@ def test_t8_unregistered_restatement_is_c9_and_an_anchor_makes_it_c10(gate):
         root = build_root(gate, tmp)
         path = root / HANDOFF
         path.write_text(
-            path.read_text(encoding="utf-8") + para.replace("Under", TURBO_ANCHOR + "Under"),
+            path.read_text(encoding="utf-8")
+            + para.replace("Push every", PUSH_ANCHOR + "Push every"),
             encoding="utf-8",
         )
         result = run_gate(root)
@@ -351,16 +353,16 @@ def test_t9_repin_refuses_while_a_mirror_drifts_and_admits_after(gate):
     with harness.temp_dir() as tmp:
         root = build_root(gate, tmp)
         clean = (root / TRAILERS).read_text(encoding="utf-8")
-        mutate(root, TRAILERS, TURBO_ANCHOR + turbo_sentence(root), TURBO_ANCHOR, 1)
+        drift_trailers(gate, root)
         before = (root / REGISTRY_REL).read_bytes()
-        result = run_gate(root, "--repin", "pr.turbo-batch-end")
+        result = run_gate(root, "--repin", "pr.push-cadence")
         gate.assert_exit(1, result, "T9: --repin refuses while the trailers mirror drifts")
         gate.assert_contains(result.err, "no --force", "T9: the refusal says there is no override")
         gate.assert_eq(
             (root / REGISTRY_REL).read_bytes() == before, True, "T9: a refused repin writes nothing"
         )
         (root / TRAILERS).write_text(clean, encoding="utf-8")
-        result = run_gate(root, "--repin", "pr.turbo-batch-end")
+        result = run_gate(root, "--repin", "pr.push-cadence")
         gate.assert_exit(0, result, "T9: --repin is admitted once the mirror is restored")
 
 
