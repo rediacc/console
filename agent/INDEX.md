@@ -630,7 +630,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
 | `agent/plans/PLAN-signer-bench-stop-binding-reattach.md` | executing | 37 | 0 | 3 | 6287 |
-| `agent/plans/PLAN-simple-two-tree-loop.md` | approved | 181 | 9 | 3 | 38171 |
+| `agent/plans/PLAN-simple-two-tree-loop.md` | approved | 181 | 9 | 3 | 37985 |
 | `agent/plans/PLAN-site-entry-points.md` | approved | 159 | 4 | 7 | 22682 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
 | `agent/plans/PLAN-snapshot-read-io-cap.md` | approved | 262 | 1 | 15 | 38148 |
@@ -646,7 +646,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-retro-20261101.md` | ready | 182 | 0 | 4 | 18248 |
 | `agent/plans/PLAN-stop-hook-retro-20261110.md` | ready | 234 | 0 | 8 | 27053 |
 | `agent/plans/PLAN-stop-hook-retro-20261117.md` | ready | 218 | 9 | 0 | 26866 |
-| `agent/plans/PLAN-stop-hook-store-status.md` | approved | 204 | 6 | 3 | 25573 |
+| `agent/plans/PLAN-stop-hook-store-status.md` | approved | 204 | 6 | 3 | 25563 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
 | `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |
@@ -661,7 +661,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-token-ip-rebind.md` | draft | 426 | 0 | 11 | 41950 |
 | `agent/plans/PLAN-tutorial-recorder-licence.md` | proposed | 64 | 10 | 0 | 12703 |
 | `agent/plans/PLAN-tutorial-rerecord.md` | proposed | 62 | 7 | 0 | 11254 |
-| `agent/plans/PLAN-two-track-merge-dev.md` | approved | 356 | 9 | 35 | 73945 |
+| `agent/plans/PLAN-two-track-merge-dev.md` | approved | 356 | 9 | 35 | 73953 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
 | `agent/plans/PLAN-vmcheck-incremental.md` | approved | 24 | 1 | 2 | 3682 |
 | `agent/plans/PLAN-vscode-browser-exposure.md` | proposed | 61 | 9 | 0 | 10932 |

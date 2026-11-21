@@ -77,7 +77,7 @@ The table has one row per owned open, in-flight or deferred item:
 The columns are id, state, worker with its live and verified state (`live`, `suspect`, `gone`, `queue`, `lead` or `-`), minutes since the last update, freshness class, and the latest note.
 
 - The table is capped at 40 rows. A cut table ends with a `+N more: worklist.py --status <me>` tail, so the cut is never silent.
-- An allow with no owned open, in-flight or deferred item stays silent, as v18 ruled (.claude/hooks/stop/wl_checks.py:7351-7354).
+- An allow with no owned open, in-flight or deferred item stays silent, as v18 ruled (.claude/hooks/stop/wl_checks.py).
 
 The block `reason` does not get the table, so the model's context does not pay for it. It gets two things:
 

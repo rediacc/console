@@ -59,12 +59,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Branch: 1121-1, no PR yet.
 - Landing tree: branch 1104-1, PR #605 open.
 - Development tree: branch 1121-1, no PR yet.
-- Plans on the PR (5):
-  - agent/plans/PLAN-ciquick-cpu.md -- 13 of 24 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-backup-program.md -- 186 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-backup-plane-shared-bucket-hardening.md -- 6 of 7 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-renet-executor-tiered-license-check.md -- 3 of 4 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-cloudflare-proxy.md -- 28 of 29 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+- Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (26 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 30 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
@@ -83,7 +78,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 2022 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 2033 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
@@ -92,9 +87,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 6 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic fe958571, no plan, 15 commit(s) on the branch, 0 open item(s): nginx2root and PHP 2026-11-19 security patching (hostinger + templates)
   - epic 422370f4, no plan, 5 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a9720adc0ee54c607, worker:a93bdd0f620aae5fc.
-- Leased items: 12: #073c50c5 (worker:a9720adc0ee54c607, d778be9d), #0e9506a2 (worker:be39zjfwp, d778be9d), #116b1a79 (worker:bb16p240t, d778be9d), #28b00eb3 (worker:bph9m0bev, d778be9d), #3d38c1c9 (worker:queue, d778be9d), #3e7dcac6 (worker:queue, d778be9d), #45585ba5 (worker:b2j93ucwq, d778be9d), #68452957 (worker:queue, d778be9d), #8593baa5 (worker:a9720adc0ee54c607, d778be9d), #a1ecc191 (worker:bjgcdk4yc, d778be9d), #ab9c68b1 (worker:be39zjfwp, d778be9d), #fbe192ca (worker:be39zjfwp, d778be9d).
-- Next plan: agent/plans/PLAN-sandbox-tenant-separation.md, Promoted entry 15; starts after this branch's PR merges.
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a435a3498138a7408, worker:a1141315a6c05d296.
+- Leased items: 13: #0e9506a2 (worker:be39zjfwp, d778be9d), #116b1a79 (worker:bb16p240t, d778be9d), #2426b245 (worker:a435a3498138a7408, d778be9d), #27871b0c (worker:a1141315a6c05d296, d778be9d), #28b00eb3 (worker:bph9m0bev, d778be9d), #3d38c1c9 (worker:queue, d778be9d), #3e7dcac6 (worker:queue, d778be9d), #45585ba5 (worker:b2j93ucwq, d778be9d), #68452957 (worker:queue, d778be9d), #70da2f28 (worker:a435a3498138a7408, d778be9d), #a1ecc191 (worker:bjgcdk4yc, d778be9d), #ab9c68b1 (worker:be39zjfwp, d778be9d), and 1 more.
+- Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted

@@ -29,15 +29,15 @@ Operator, 2026-11-21, after the loop investigation recorded on #90129fe7: "APPRO
 ## Context (verified 2026-11-21 against the main checkout at 61859d5e1; a writer re-reads a line before relying on it)
 
 1. Settings are parsed once, in .claude/hooks/stop/wl_planqueue.py:103-148 (`INT_KEYS` at :103, `ZERO_OK_KEYS`, `CHOICE_KEYS` with turbo_push and judge). Each effort level's bundle sets the same keys through `BUNDLE_TYPES` in .claude/hooks/stop/wl_effort.py:31-43, and .claude/config/effort.json carries five levels with `ultra` last.
-2. Turbo readers: wl_checks.py:3153, :3298, :3461, :3573, :3581; wl_prscope.py:177, :280; plan_gate.py:214-216 (`plan_concurrency` and `batch_size` both gated on `settings.turbo`). turbo_push: wl_checks.py:3188 and block_turbo_early_push.py:599-636. The plan_concurrency text sits at wl_planqueue.py:1446-1447.
-3. CORRECTION to the brief: `block_plan_concurrency.py` and `wl_planconc.py` are NOT the plan_concurrency knob. They are the per-plan `Owns:`/`Concurrency:` file-overlap guard of PLAN-plan-priority-concurrency (block_plan_concurrency.py:1-15, wl_planconc.py:1-14), which CLAUDE.md rule 4 depends on. Both stay. Only the `plan_concurrency` setting and its readers go.
-4. writer_cap: wl_roster.py:40-48 (`DEFAULT_WRITER_CAP = 4`, then QUEUE.md). The lease verb reads the same function (.ci/rediacc_ci/dev/worktree_lease.py:197), so fixing it in wl_roster fixes the lease tree cap too. commit_remind_min is read at wl_checks.py:5384 and by .claude/hooks/post-tool/commit_remind.py.
-5. Phases: the verb at worklist.py:363, the stand-down at wl_standdown.py:163. pr_freeze.py:1-11 keys the freeze on the newest unexpired `babysit|merge` phase event of the branch, and its one escape is `worklist.py --phase <me> build` (pr_freeze.py:45).
-6. Parking: `tree_parks` (wl_prscope.py:228-233) returns nothing while a focus phase is active, so a phase overrides the tree role today.
-7. The loop-next arm and its notify: wl_checks.py:3444-3452, `wl_stack.notify_line` at :244.
-8. Promote: `_premises` (.ci/rediacc_ci/dev/landing_promote.py:120-160) checks only that the landing PR is MERGED and that every landing commit has a patch-equivalent on origin/main (:154). Nothing reads the release state.
-9. Lease on the landing tip: `TREES` and `--tree` at worktree_lease.py:41-50, `tree_tip` at :127-132.
-10. Scope-mirror regions keyed on the deleted knobs: `pr.turbo-batch-end`, `pr.turbo-kinds`, `pr.one-plan-per-pr` (scope_mirrors.py:1263, :1349).
+2. Turbo readers: wl_checks.py; wl_prscope.py; plan_gate.py (`plan_concurrency` and `batch_size` both gated on `settings.turbo`). turbo_push: wl_checks.py and block_turbo_early_push.py. The plan_concurrency text sits at wl_planqueue.py.
+3. CORRECTION to the brief: `block_plan_concurrency.py` and `wl_planconc.py` are NOT the plan_concurrency knob. They are the per-plan `Owns:`/`Concurrency:` file-overlap guard of PLAN-plan-priority-concurrency (block_plan_concurrency.py, wl_planconc.py), which CLAUDE.md rule 4 depends on. Both stay. Only the `plan_concurrency` setting and its readers go.
+4. writer_cap: wl_roster.py (`DEFAULT_WRITER_CAP = 4`, then QUEUE.md). The lease verb reads the same function (.ci/rediacc_ci/dev/worktree_lease.py), so fixing it in wl_roster fixes the lease tree cap too. commit_remind_min is read at wl_checks.py and by .claude/hooks/post-tool/commit_remind.py.
+5. Phases: the verb at worklist.py, the stand-down at wl_standdown.py. pr_freeze.py keys the freeze on the newest unexpired `babysit|merge` phase event of the branch, and its one escape is `worklist.py --phase <me> build` (pr_freeze.py).
+6. Parking: `tree_parks` (wl_prscope.py) returns nothing while a focus phase is active, so a phase overrides the tree role today.
+7. The loop-next arm and its notify: wl_checks.py, `wl_stack.notify_line`.
+8. Promote: `_premises` (.ci/rediacc_ci/dev/landing_promote.py) checks only that the landing PR is MERGED and that every landing commit has a patch-equivalent on origin/main. Nothing reads the release state.
+9. Lease on the landing tip: `TREES` and `--tree` at worktree_lease.py, `tree_tip`.
+10. Scope-mirror regions keyed on the deleted knobs: `pr.turbo-batch-end`, `pr.turbo-kinds`, `pr.one-plan-per-pr` (scope_mirrors.py).
 11. PLAN-pr-loop-single-source.md (9 open boxes) owns pr-babysit.md, pr-babysitter.md, pr-merge.md and scope_mirrors.py. B9 waits for it, and B4's scope_mirrors edit is refused by block_plan_concurrency while one of its writers holds the file.
 12. Blast radius (files, tests in brackets): turbo 105 (26), `--phase` 42 (13), writer_cap 68 (10), plan_concurrency 56 (10), turbo_push 34 (10), batch_size 30 (13), block_turbo_early_push 26 (5), TURBO_PUSH_REASON 24 (7), backup_push_h 24 (6), block_focus_spawn 19 (2), commit_remind_min 14 (2). CLAUDE.md rule 1 and .claude/output-styles/standing-orders.md mention turbo and phases.
 
