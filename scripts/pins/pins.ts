@@ -111,6 +111,7 @@ import {
   viewOf,
 } from '../lib/pins/status.js';
 import {
+  fixtureFloor,
   readTemplateFiles,
   scanTemplates,
   spliceEntries,
@@ -1115,8 +1116,8 @@ const PKG_DIR = 'packages';
 function cmdSyncTemplates(w: World, f: Flags): number {
   if (f.write && f.json) throw new Usage('sync-templates takes --write or --json, not both');
   const scan = scanTemplates(
-    // A PINS_ROOT override is the selftest's small fixture tree: the real tree's floor does not apply to it.
-    readTemplateFiles(w.root, w.root === REPO_ROOT ? undefined : 1)
+    // A PINS_ROOT override is a small fixture tree: the real tree's floor of 30 does not apply, but it may not hold fewer files than its registry cites.
+    readTemplateFiles(w.root, w.root === REPO_ROOT ? undefined : fixtureFloor(w.reg))
   );
   const drift = templateDrift(w.reg, scan.entries);
   const moved = drift.added.length + drift.removed.length + drift.changed.length;
@@ -3472,6 +3473,14 @@ const CASES: Record<string, Case> = {
     fs.cpSync(root, copy, { recursive: true });
     const again = await runCli(['sync-templates'], { PINS_ROOT: copy });
     const stray = await runCli(['verify', '--write'], env);
+    // A fixture tree that lost a compose file its registry cites is refused, and --write leaves pins.json as it was.
+    const lost = fs.mkdtempSync(path.join(os.tmpdir(), 'pins-templates-'));
+    FIXTURE_ROOTS.push(lost);
+    fs.cpSync(root, lost, { recursive: true });
+    fs.rmSync(path.join(lost, 'packages/cli/templates/x'), { recursive: true });
+    const lostBefore = fs.readFileSync(path.join(lost, '.ci/config/pins.json'), 'utf8');
+    const refused = await runCli(['sync-templates', '--write'], { PINS_ROOT: lost });
+    const lostAfter = fs.readFileSync(path.join(lost, '.ci/config/pins.json'), 'utf8');
     const keptOthers = bare.entries.every((e) => after.includes(JSON.stringify(e.id)));
     return [
       {
@@ -3497,6 +3506,15 @@ const CASES: Record<string, Case> = {
           again.rc === 0 &&
           again.out.includes('3 template image pin(s) in sync'),
         detail: `${wrote.rc} ${wrote.out} ${wrote.err} | ${again.rc} ${again.out}`,
+      },
+      {
+        name: 'sync-templates: a fixture tree with fewer compose files than its registry cites is refused and pins.json is untouched (the in-sync copy above is the silent control)',
+        ok:
+          refused.rc !== 0 &&
+          refused.err.includes('floor 3') &&
+          lostAfter === lostBefore &&
+          again.rc === 0,
+        detail: `${refused.rc} ${refused.out} ${refused.err}`,
       },
       {
         name: 'sync-templates: --write on any other verb is a usage error',
