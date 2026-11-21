@@ -103,7 +103,7 @@ def module_names(root: pathlib.Path, run: str) -> set[str]:
 
 
 def action_names(root: pathlib.Path, uses: object) -> set[str]:
-    """$GITHUB_ENV names a LOCAL composite action writes (`uses: ./.github/actions/<x>`): one hop into the `>> $GITHUB_ENV` lines of its action.yml run steps; unlike a run block, an action's run text is not followed further into scripts or modules. A malformed action.yml (bytes that are not UTF-8, a scalar document, a scalar `runs`, a non-list `steps`) provides nothing rather than crashing the gate. Added 2026-10-19 when every R2 job gained `./.github/actions/setup-aws`, which exports AWS_BIN, and this gate reported ci.yml validate-promote as using AWS_BIN with no provider."""
+    """$GITHUB_ENV names a LOCAL composite action writes (`uses: ./.github/actions/<x>`): one hop into the `>> $GITHUB_ENV` lines of its action.yml run steps, plus the `python3 -m rediacc_ci.<mod>` modules those steps invoke (setup-aws writes AWS_BIN from `rediacc_ci.setup.aws_cli`); scripts named in an action are not followed. A malformed action.yml (bytes that are not UTF-8, a scalar document, a scalar `runs`, a non-list `steps`) provides nothing rather than crashing the gate. Added 2026-10-19 when every R2 job gained `./.github/actions/setup-aws`, which exports AWS_BIN, and this gate reported ci.yml validate-promote as using AWS_BIN with no provider."""
     if not isinstance(uses, str) or not uses.startswith("./"):
         return set()
     base = root / uses.removeprefix("./")
@@ -118,6 +118,7 @@ def action_names(root: pathlib.Path, uses: object) -> set[str]:
         for st in steps if isinstance(steps, list) else []:
             if isinstance(st, dict) and isinstance(st.get("run"), str):
                 out |= set(GHENV.findall(st["run"]))
+                out |= module_names(root, st["run"])
         return out
     return set()
 
@@ -365,8 +366,8 @@ def main() -> int:
         f"✓ workflow env provision: {len(per_job)} job(s), "
         f"{len(anywhere)} provisioned name(s); every use has a provider in its own job"
     )
-    print("  Blind spot: a name provisioned by a COMPOSITE ACTION's own steps is not")
-    print("  resolved, so this under-reports rather than inventing findings.")
+    print("  Blind spot: a composite action's python module is followed one hop; a script")
+    print("  an action calls is not, so this under-reports rather than inventing findings.")
     return 0
 
 

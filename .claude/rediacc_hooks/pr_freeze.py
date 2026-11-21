@@ -23,6 +23,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 
 HERE = pathlib.Path(__file__).resolve().parent
 
@@ -199,30 +200,50 @@ def landing_tree(repo) -> str:
 
 def open_pr(cwd, branch: str) -> tuple[int | None, str]:
     """(number, error): the open PR whose head is `branch` (the lowest number when several are), read with `gh pr list` in `cwd`; (None, "") when none is open, (None, <why>) when gh cannot answer. An answer that cannot be read is never "no PR"."""
+    argv = [
+        "gh",
+        "pr",
+        "list",
+        "--head",
+        branch,
+        "--state",
+        "open",
+        "--json",
+        "number",
+        "--limit",
+        "5",
+    ]
+    env = {k: v for k, v in os.environ.items() if k not in commit_policy().REPO_ENV}
     try:
-        r = subprocess.run(
-            [
-                "gh",
-                "pr",
-                "list",
-                "--head",
-                branch,
-                "--state",
-                "open",
-                "--json",
-                "number",
-                "--limit",
-                "5",
-            ],
-            cwd=str(cwd),
-            capture_output=True,
-            text=True,
-            timeout=GH_TIMEOUT_S,
-            check=False,
-            env={k: v for k, v in os.environ.items() if k not in commit_policy().REPO_ENV},
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        return None, "gh could not run (%s: %s)" % (type(exc).__name__, str(exc)[:120])
+        retry = syspath.import_from_ci("rediacc_ci.core.gh_retry")
+    except ImportError as exc:
+        return None, "gh_retry could not be imported (%s)" % str(exc)[:120]
+
+    def once() -> subprocess.CompletedProcess:
+        try:
+            return subprocess.run(
+                argv,
+                cwd=str(cwd),
+                capture_output=True,
+                text=True,
+                timeout=GH_TIMEOUT_S,
+                check=False,
+                env=env,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            return subprocess.CompletedProcess(
+                argv, 127, "", "gh could not run (%s: %s)" % (type(exc).__name__, str(exc)[:120])
+            )
+
+    # A transient 5xx is retried within the hook's budget (two attempts, one 2 s pause); a 4xx or a spawn failure answers at once.
+    r = retry.retry_transient(
+        once,
+        lambda done: None if done.returncode == 0 else (done.stderr or done.stdout or "failed"),
+        attempts=2,
+        sleep=lambda _scheduled: time.sleep(2),
+    )
+    if r.returncode == 127 and r.stderr.startswith("gh could not run"):
+        return None, r.stderr
     if r.returncode != 0:
         return None, "gh pr list exited %d: %s" % (
             r.returncode,

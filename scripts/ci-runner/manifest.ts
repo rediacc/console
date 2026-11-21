@@ -5701,7 +5701,6 @@ export const GATES: readonly GateSpec[] = [
       '.claude/hooks/stop/wl_planqueue.py',
       '.claude/output-styles/**',
       '.claude/rediacc_hooks/guards/block_settled_questions.py',
-      '.claude/rediacc_hooks/guards/block_turbo_early_push.py',
       '.claude/skills/**',
       '.npmrc',
       'CLAUDE.md',
