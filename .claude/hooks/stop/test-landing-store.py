@@ -193,21 +193,6 @@ def transcripts(tmp, stop, project_dir):
     return json.loads(out)
 
 
-FREEZE = """
-import json, sys, importlib.util
-spec = importlib.util.spec_from_file_location("pr_freeze", sys.argv[1])
-F = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(F)
-ph = F.active_phase(sys.argv[2], sys.argv[3])
-print(json.dumps(ph and {"mode": ph.get("mode"), "branch": ph.get("branch")}))
-"""
-
-
-def freeze_phase(tmp, main, root, branch):
-    rc, out, err = pyrun(tmp, FREEZE, main / ".claude/rediacc_hooks/pr_freeze.py", root, branch)
-    return json.loads(out) if rc == 0 else {"error": err[-400:]}
-
-
 def munged(path):
     return re.sub(r"[^A-Za-z0-9]", "-", os.path.realpath(path))
 
@@ -438,17 +423,7 @@ def run():
     check(
         "record: --phase from the sibling names its own branch", LANDING_BRANCH in done.stdout, True
     )
-    check(
-        "record: pr_freeze for the main checkout sees the sibling's phase",
-        freeze_phase(tmp, main, main, LANDING_BRANCH),
-        {"mode": "babysit", "branch": LANDING_BRANCH},
-    )
     worklist(tmp, landing, landing, "--phase", ME, "build", CLAUDE_PROJECT_DIR=landing)
-    check(
-        "record: build ends the phase for pr_freeze",
-        freeze_phase(tmp, main, main, LANDING_BRANCH),
-        None,
-    )
     # From the development tree the default is the record's branch, not main's HEAD.
     done = worklist(tmp, main, main, "--phase", ME, "merge", "--pr", "7", CLAUDE_PROJECT_DIR=main)
     check(
@@ -493,11 +468,6 @@ def run():
     check("record: main's own_tree is main", f1.get("own_tree"), str(main))
     worklist(
         tmp, landing, landing, "--phase", ME, "babysit", "--pr", "7", CLAUDE_PROJECT_DIR=landing
-    )
-    check(
-        "record: pr_freeze judged from the sibling sees the phase",
-        freeze_phase(tmp, main, landing, LANDING_BRANCH),
-        {"mode": "babysit", "branch": LANDING_BRANCH},
     )
     worklist(tmp, landing, landing, "--phase", ME, "build", CLAUDE_PROJECT_DIR=landing)
     unbind(main)

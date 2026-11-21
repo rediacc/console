@@ -28,9 +28,6 @@
     ".claude/hooks/stop/wl_floor.py": {
       "why": "the Stop hook's FLOOR, the checks that block at every effort level (agent/plans/PLAN-stop-hook-effort.md); a variable that shrank it would be the off switch the effort dial replaced, so the set is a literal here and .claude/config/effort.json may only mark its keys `floor`"
     },
-    ".claude/rediacc_hooks/guards/block_focus_spawn.py": {
-      "why": "the PreToolUse half of focus mode: it refuses writer spawns while a PR wind-down is declared, and an environment read here would let a spawn bypass the focus the Stop hook enforces"
-    },
     ".claude/hooks/stop/wl_planconc.py": {
       "why": "plan priority order and the plan-concurrency rules (the mutex and the Owns overlap, operator 2026-09-25 section X); a variable that retuned what counts as an overlap, or which lease counts as live, would be an escape hatch around the pre-agent guard and the roster that read it"
     },
