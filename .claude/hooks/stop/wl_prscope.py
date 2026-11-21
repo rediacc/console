@@ -21,6 +21,7 @@ import dataclasses
 import datetime
 import importlib.util
 import pathlib
+from typing import Any
 
 
 def _hooks_pkg():
@@ -271,7 +272,7 @@ def _run_verdict(run):
 
 def release_verdict(runs_by_workflow, sha):
     """(verdict, detail) of the release at merged `sha`: `green` when every RELEASE_WORKFLOWS run reads success, `red` when any reads red, else `pending`. `runs_by_workflow` maps a workflow name to its main runs, newest first. A run of that workflow created after the merged sha's run (a hotfix on main) supersedes it, so a fixed main reads green again; without a run at `sha` or after it the workflow is pending."""
-    verdicts = []
+    verdicts: list[tuple[str, str, dict[str, Any] | None]] = []
     for name, _file in RELEASE_WORKFLOWS:
         runs = [r for r in (runs_by_workflow.get(name) or []) if isinstance(r, dict)]
         at = [r for r in runs if str(r.get("headSha") or "") == sha]
@@ -281,7 +282,7 @@ def release_verdict(runs_by_workflow, sha):
         merged_at = str(at[-1].get("createdAt") or "")
         newest = runs[0] if str(runs[0].get("createdAt") or "") >= merged_at else at[0]
         verdicts.append((name, _run_verdict(newest), newest))
-    reds = [(n, r) for n, v, r in verdicts if v == CI_RED]
+    reds = [(n, r) for n, v, r in verdicts if v == CI_RED and r is not None]
     if reds:
         detail = ", ".join(
             "%s run %s (%s)" % (n, r.get("databaseId") or "?", r.get("conclusion") or "red")

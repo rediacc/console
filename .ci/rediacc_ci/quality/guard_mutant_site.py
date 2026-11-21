@@ -40,7 +40,7 @@ def install_redirect() -> bool:
             os.close(fd)
         return compile(text, self.path, "exec", dont_inherit=True)
 
-    machinery.SourceFileLoader.get_code = get_code
+    type.__setattr__(machinery.SourceFileLoader, "get_code", get_code)
     return True
 
 

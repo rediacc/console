@@ -3325,7 +3325,7 @@ def branch_writer_boxes(root):
         C._git(root, "log", "--format=%(trailers:key=Plan-Box,valueonly)", "origin/main..HEAD")
         or ""
     )
-    out = []
+    out: list[str] = []
     for name in sorted(set(PLAN_BOX_TRAILER.findall(str(log)))):
         try:
             text = (pathlib.Path(root) / "agent" / "plans" / name).read_text(encoding="utf-8")

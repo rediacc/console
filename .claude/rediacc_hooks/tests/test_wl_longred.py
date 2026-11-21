@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import datetime
 import json
+from typing import Any
 
 import pytest
 import wl_longred as L
@@ -201,7 +202,9 @@ def test_two_regressing_fixes_in_four_rounds_consult_the_development_session():
     v = L.verdict(_churn_rows(2), now=at(4))
     assert v.kind == "churn", v
     assert v.rounds == [2, 3]
-    assert L.handover_trigger(v)["kind"] == "churn"
+    trigger = L.handover_trigger(v)
+    assert trigger is not None
+    assert trigger["kind"] == "churn"
     assert "keep, change or undo" in L.render(v)
 
 
@@ -244,7 +247,7 @@ def test_control_a_green_latest_round_is_no_verdict_at_any_age():
 
 
 def test_round_kind_push_rerun_watchdog_and_already_recorded():
-    prev = {"heads": "h1", "ids": {"Quality / Static": 1, "E2E Workers (1/8)": 2}}
+    prev: dict[str, Any] = {"heads": "h1", "ids": {"Quality / Static": 1, "E2E Workers (1/8)": 2}}
     assert L.round_kind(None, "h1", {}, e2e_retryable) == "push"
     assert L.round_kind(prev, "h2", prev["ids"], e2e_retryable) == "push"
     assert L.round_kind(prev, "h1", dict(prev["ids"]), e2e_retryable) is None

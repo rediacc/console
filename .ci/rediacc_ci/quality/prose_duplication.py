@@ -493,7 +493,7 @@ def selftest(verbose: bool = True) -> int:
             for i, w in enumerate(words)
         )
         _append(root, FIX_LAUNCHER, "\n" + PASSAGE + "\n")
-        _append(root, FIX_AGENT, "\n" + rewrapped.replace(" the ", "\nthe ", 2) + "\n")
+        _append(root, FIX_AGENT, "\n" + plant(rewrapped, " the ", "\nthe ", 2) + "\n")
         ctl.check(
             "the passage rewrapped with ** and backticks is still red",
             pair(red(root)),
@@ -524,15 +524,15 @@ def selftest(verbose: bool = True) -> int:
             [],
         )
         _append(root, FIX_LAUNCHER, "\n" + PASSAGE + "\n")
-        found = pair(red(root))
+        found_pairs = pair(red(root))
         ctl.check(
             "a canonical span copied into unregistered text elsewhere is red, naming both",
-            (CLAUDE_MD, FIX_LAUNCHER) in found and (FIX_LAUNCHER, FIX_AGENT) in found,
+            (CLAUDE_MD, FIX_LAUNCHER) in found_pairs and (FIX_LAUNCHER, FIX_AGENT) in found_pairs,
             True,
         )
         ctl.check(
             "and the registered pair (canonical and its mirror) stays exempt",
-            (CLAUDE_MD, FIX_AGENT) in found,
+            (CLAUDE_MD, FIX_AGENT) in found_pairs,
             False,
         )
 

@@ -329,7 +329,7 @@ def _wall(rows, latest, now):
 def stuck_rounds(rows: list[dict[str, Any]], check: str) -> list[int]:
     """The rounds whose fix_target named `check` and in which `check` was still red. A fix aimed at another check does not count."""
     return [
-        r.get("round")
+        int(r.get("round") or 0)
         for r in rows
         if r.get("kind") == "push"
         and check in (r.get("fix_target") or [])
@@ -354,7 +354,7 @@ def _stuck(rows, latest):
 def churn_rounds(rows: list[dict[str, Any]]) -> list[int]:
     """The pushes among the last CHURN_WINDOW rounds that turned a previously green check red. A rerun or watchdog retry that flips a check is a flake, not a fix's regression."""
     return [
-        r.get("round")
+        int(r.get("round") or 0)
         for r in rows[-CHURN_WINDOW:]
         if r.get("kind") == "push" and ((r.get("delta") or {}).get("regressed") or [])
     ]

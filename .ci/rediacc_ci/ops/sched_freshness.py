@@ -40,7 +40,7 @@ VERDICTS = ("fresh", "stale", "disabled", "waiting", "unregistered", "bad-cron",
 # The verdicts that ask the session to act; `unreadable` is reported separately as blindness.
 ACTIONABLE = ("stale", "disabled", "unregistered", "bad-cron")
 
-_FIELDS = (
+_FIELDS: tuple[tuple[str, int, int, dict[str, int]], ...] = (
     ("minute", 0, 59, {}),
     ("hour", 0, 23, {}),
     ("day of month", 1, 31, {}),
@@ -62,7 +62,7 @@ _FIELDS = (
 # --------------------------------------------------------------------------- cron
 
 
-def _value(token: str, low: int, high: int, names: dict, what: str) -> int:
+def _value(token: str, low: int, high: int, names: dict[str, int], what: str) -> int:
     v = names.get(token.lower()) if names else None
     if v is None:
         if not token.isdigit():
@@ -191,7 +191,7 @@ def _stamp(epoch: float) -> str:
 
 def judge_one(wf: dict, registry: dict | None, last: dict | None, now: float) -> dict:
     """One verdict row. `wf` is {file, name, crons, dispatchable}; `registry` the workflow's registry entry or None when GitHub does not list it; `last` the newest scheduled run ({id, created_at}) or None, or {"error": why} when its read failed."""
-    row = {
+    row: dict[str, Any] = {
         "file": wf.get("file") or "?",
         "stem": str(wf.get("file") or "?").rsplit(".", 1)[0],
         "name": wf.get("name") or wf.get("file") or "?",
@@ -312,14 +312,14 @@ def read(call: Call, slug: str, workflows: list[dict], now: float) -> dict:
         for run in page.get("workflow_runs") or []:
             if run.get("event") not in (None, "schedule"):
                 continue
-            f = _file_of(run)
-            if f not in newest or str(run.get("created_at") or "") > str(
-                newest[f].get("created_at") or ""
+            ran = _file_of(run)
+            if ran not in newest or str(run.get("created_at") or "") > str(
+                newest[ran].get("created_at") or ""
             ):
-                newest[f] = run
+                newest[ran] = run
         last_runs: dict[str, dict | None] = {}
         for wf in workflows:
-            f = wf.get("file")
+            f = str(wf.get("file") or "")
             if f in newest:
                 last_runs[f] = newest[f]
                 continue

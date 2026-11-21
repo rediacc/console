@@ -262,7 +262,7 @@ def open_pr(cwd, branch: str) -> tuple[int | None, str]:
     ]
     if rows and not numbers:
         return None, "gh pr list rows carry no number: %r" % rows[:2]
-    return (min(numbers) if numbers else None), ""
+    return (min(n for n in numbers if isinstance(n, int)) if numbers else None), ""
 
 
 def open_items(root) -> dict:
