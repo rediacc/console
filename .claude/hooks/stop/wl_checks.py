@@ -3436,16 +3436,6 @@ def outq_drop(state_doc, key):
     q["items"] = [e for e in q["items"] if _outq_display_key(e) != key]
 
 
-def outq_forget(state_doc, key, text):
-    """Drop the queued sticky entry `key` whose text is `text`: the caller delivered it in full."""
-    q = _outq(state_doc)
-    q["items"] = [
-        e
-        for e in q["items"]
-        if not (_outq_display_key(e) == key and str(e.get("text") or "") == text)
-    ]
-
-
 def run_stop(event, event_ok, worklist, hook_file):
     """The full stop battery. Gathers EVERY static violation, then emits ONE block (five independent blocking checks would cost five turns to clear, which is the "stuck in a loop" the old MAX_BLOCKS existed to paper over), then consults the judge on stops where work remains, then allows with a report."""
     session_id = event.get("session_id", "")
