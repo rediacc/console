@@ -3819,13 +3819,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 1,
+      "open": 9,
+      "done": 3,
       "open_sigs": [
         "15296114",
-        "2dd5384d",
         "445f8e25",
-        "4e173224",
         "58d2b8d1",
         "bf34b200",
         "c098ad09",
@@ -3835,6 +3833,8 @@
         "ff714a5c"
       ],
       "done_sigs": [
+        "2dd5384d",
+        "4e173224",
         "c8338630"
       ]
     },
