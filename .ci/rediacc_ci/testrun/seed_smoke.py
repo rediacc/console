@@ -37,7 +37,7 @@ def derive(pr: str, jwt_secret: str, now: str) -> dict[str, str]:
     email = f"smoketest-pr{pr}@rediacc.io"
     token = f"rdt_smoke_{pr}_{sha256_hex(jwt_secret)[:32]}"
     return {
-        "db_name": f"account-db-pr-{pr}",
+        "db_name": f"account-pr-{pr}",
         "now": now,
         "user_id": f"smoke-user-pr-{pr}",
         "org_id": f"smoke-org-pr-{pr}",

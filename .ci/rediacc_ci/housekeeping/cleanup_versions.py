@@ -770,8 +770,8 @@ _PR_ENV_RE = re.compile(r"^pr-([0-9]+)$")
 # `select(.name | test("^pr-[0-9]+$"))` (Phase 6). jq's `test` is a SEARCH with whatever anchors the pattern carries, which is why this is `.search` and not `.match`; the anchors are in the pattern.
 _PR_NAME_RE = re.compile(r"^pr-[0-9]+$")
 
-# `select(.name | test("^account-db-pr-[0-9]+$"))` (Phase 7).
-_D1_NAME_RE = re.compile(r"^account-db-pr-[0-9]+$")
+# `select(.name | test("^account-db-pr-[0-9]+$"))` (Phase 7), widened: `deploy_www` names a preview database `account-pr-<n>` since 2026-11-08 (it was `account-db-pr-<n>` before), and the orphans of the old name still exist, so the sweep matches both and captures the PR number of either.
+_D1_NAME_RE = re.compile(r"^account(?:-db)?-pr-([0-9]+)$")
 
 # `select(.name | test("^rediacc-console-pr-[0-9]+$"))` (Phase 7b).
 _TURNSTILE_NAME_RE = re.compile(r"^rediacc-console-pr-[0-9]+$")
@@ -2373,9 +2373,9 @@ class Housekeeping:
         for db_entry in pr_databases:
             db_name = jq_text(db_entry.get("name"))
             db_uuid = jq_text(db_entry.get("uuid"))
-            # `${db_name#account-db-pr-}`.
-            prefix = "account-db-pr-"
-            pr_number = db_name.removeprefix(prefix)
+            # `${db_name#account-db-pr-}`, for either spelling of the name.
+            name_match = _D1_NAME_RE.search(db_name)
+            pr_number = name_match.group(1) if name_match else db_name
 
             pr_state = self.pr_states.read(RELEASE_REPO, pr_number, "D1 database " + db_name)
             if pr_state is None:

@@ -2839,6 +2839,43 @@ def _port_only(phase: str, *, argv: tuple[str, ...] = (), fixture: dict) -> tupl
         return _run("python", phase, argv, fixture, dict(R2_ENV), base)
 
 
+def test_delta_phase_7_sweeps_both_the_current_and_the_pre_rename_database_name() -> None:
+    """`deploy_www` names a preview database `account-pr-<n>` since 2026-11-08; the twin only knew `account-db-pr-<n>`, and orphans of that name still exist. The port sweeps both and reads the PR number out of either (the twin-compared cases above keep the old name, which the twin's golden is keyed on)."""
+    fixture = {
+        "gh": [
+            rule("pr", "view", "7", json_body={"state": "OPEN"}),
+            rule("pr", "view", "3", json_body={"state": "CLOSED"}),
+            rule("pr", "view", "4", json_body={"state": "CLOSED"}),
+        ],
+        "curl": [
+            rule("-X DELETE", "d1/database/uuid-", json_body={"success": True}),
+            rule(
+                "d1/database?per_page=100",
+                json_body={
+                    "success": True,
+                    "result": [
+                        {"name": "account-db-pr-3", "uuid": "uuid-3"},
+                        {"name": "account-pr-4", "uuid": "uuid-4"},
+                        {"name": "account-pr-7", "uuid": "uuid-7"},
+                        {"name": "account-pr-staging", "uuid": "uuid-s"},
+                        {"name": "account-db-production", "uuid": "uuid-p"},
+                    ],
+                },
+            ),
+        ],
+    }
+    with tempfile.TemporaryDirectory() as td:
+        base = pathlib.Path(td) / "python"
+        base.mkdir(parents=True)
+        result = _run("python", "cleanup_d1_databases", (), fixture, cf_env(), base)
+    err = result[2].decode()
+    assert "Deleted D1 database: account-db-pr-3 (PR #3 state: CLOSED)" in err
+    assert "Deleted D1 database: account-pr-4 (PR #4 state: CLOSED)" in err
+    assert "account-pr-staging" not in err
+    assert "Deleted D1 database: account-pr-7" not in err
+    assert "D1 databases: deleted 2 of 3 (1 open PRs, skipped)" in err
+
+
 def test_phase_8e_reports_a_failed_upload_listing_instead_of_calling_it_idle() -> None:
     """A 403 on `list-multipart-uploads` used to read as `[]` and print "no ongoing multipart uploads"."""
     result = _port_only(

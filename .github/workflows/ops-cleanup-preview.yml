@@ -100,7 +100,7 @@ jobs:
 
       - name: Cleanup preview D1 database
         run: |
-          DB_NAME="account-db-pr-${{ github.event.pull_request.number }}"
+          DB_NAME="account-pr-${{ github.event.pull_request.number }}"
           npx --no-install wrangler d1 delete "$DB_NAME" --skip-confirmation 2>/dev/null \
             && echo "Deleted D1 database: $DB_NAME" \
             || echo "D1 database $DB_NAME not found (already deleted or never created)"

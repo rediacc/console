@@ -113,7 +113,7 @@ PRODUCTION_CONFIG = "wrangler.toml"
 PREVIEW_CONFIG = "wrangler.preview.toml"
 
 # `PR_NUM="${ARG_NAME#pr-}"` and `DB_NAME="account-db-pr-${PR_NUM}"`
-# (twin :64-65). The prefix strip is a `#` expansion, so it removes `pr-` only when the name actually starts with it (fact 3 in the module docstring).
+# (twin :64-65; the port names it `account-pr-<n>` since 2026-11-08). The prefix strip is a `#` expansion, so it removes `pr-` only when the name actually starts with it (fact 3 in the module docstring).
 NAME_PREFIX = "pr-"
 DB_NAME_TEMPLATE = "account-pr-%s"
 

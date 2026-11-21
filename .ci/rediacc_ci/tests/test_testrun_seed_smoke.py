@@ -22,6 +22,12 @@ MODULE = "rediacc_ci.testrun.seed_smoke"
 LISTING = json.dumps(
     [{"name": "other", "uuid": "x"}, {"name": "account-db-pr-12", "uuid": "uuid-12"}]
 )
+# INTENTIONAL DELTA: the twin looks up `account-db-pr-<n>`, but `deploy_www` creates the preview database as `account-pr-<n>` (since 2026-11-08), so the port seeds that name. The twin's side keeps the old listing (its golden is keyed on it); the port's listing carries the new name, and `as_twin_name` maps the port's answer back for the comparison.
+NEW_LISTING = LISTING.replace("account-db-pr-", "account-pr-")
+
+
+def as_twin_name(text: str) -> str:
+    return text.replace("account-pr-", "account-db-pr-")
 
 
 def env_for(tmp_path: pathlib.Path, **extra: str) -> dict[str, str]:
@@ -42,7 +48,7 @@ def both(tmp_path: pathlib.Path, **extra: str) -> tuple[ts.Outcome, ts.Outcome, 
         directory.mkdir()
         env = env_for(directory, **extra)
         if side == "py":
-            env = ts.py_env(env)
+            env = ts.py_env({**env, "FAKE_OUT_NPX": extra.get("FAKE_OUT_NPX", NEW_LISTING)})
         gh = directory / "gh_output"
         if side == "bash":
             outcome = ts.twin_run(TWIN, runner, directory, ("npx",), env, files=(gh,))
@@ -56,8 +62,10 @@ def normalised(outcome: ts.Outcome, directory: pathlib.Path) -> list[dict[str, t
     calls = []
     for original in outcome.calls:
         call = dict(original)
-        masked = [ts.mask(a, directory) for a in original["argv"]]
+        masked = [as_twin_name(ts.mask(a, directory)) for a in original["argv"]]
         call["argv"] = ["<CONFIG>" if a.endswith("wrangler-seed.toml") else a for a in masked]
+        if isinstance(call.get("config"), str):
+            call["config"] = as_twin_name(call["config"])
         calls.append(call)
     return calls
 
@@ -69,18 +77,19 @@ def test_both_sides_seed_the_same_rows_and_token(tmp_path: pathlib.Path) -> None
     assert normalised(old, tmp_path / "bash") == normalised(new, tmp_path / "py")
     assert old_gh == new_gh
     assert old_gh.startswith("SMOKE_TEST_TOKEN=rdt_smoke_12_")
-    assert old.calls[1]["config"] == new.calls[1]["config"]
+    assert old.calls[1]["config"] == as_twin_name(new.calls[1]["config"])
     assert 'database_id = "uuid-12"' in new.calls[1]["config"]
-    assert ts.mask(old.out, tmp_path / "bash") == ts.mask(new.out, tmp_path / "py").replace(
-        "::add-mask::" + old_gh.split("=", 1)[1].strip() + "\n", ""
-    )
+    assert 'database_name = "account-pr-12"' in new.calls[1]["config"]
+    assert ts.mask(old.out, tmp_path / "bash") == as_twin_name(
+        ts.mask(new.out, tmp_path / "py")
+    ).replace("::add-mask::" + old_gh.split("=", 1)[1].strip() + "\n", "")
 
 
 def test_missing_database_fails_the_same_way(tmp_path: pathlib.Path) -> None:
     old, new, _, _ = both(tmp_path, FAKE_OUT_NPX="[]")
     assert (old.code, new.code) == (1, 1)
     assert "Database account-db-pr-12 not found" in old.err
-    assert "Database account-db-pr-12 not found" in new.err
+    assert "Database account-pr-12 not found" in new.err
     assert len(old.calls) == len(new.calls) == 1
 
 
@@ -121,10 +130,16 @@ def test_delta_unset_jwt_secret_is_refused(tmp_path: pathlib.Path) -> None:
 def test_delta_failed_list_names_the_failure_not_a_missing_database(
     tmp_path: pathlib.Path,
 ) -> None:
-    env = env_for(tmp_path, FAKE_RC_NPX="1", FAKE_RCWHEN_NPX="list", FAKE_ERR_NPX="npx canceled")
+    env = env_for(
+        tmp_path,
+        FAKE_OUT_NPX=NEW_LISTING,
+        FAKE_RC_NPX="1",
+        FAKE_RCWHEN_NPX="list",
+        FAKE_ERR_NPX="npx canceled",
+    )
     new = ts.run_side(ts.py_cmd(MODULE), tmp_path, ("npx",), ts.py_env(env))
     assert new.code == 1
-    assert "Database account-db-pr-12 not found" not in new.err
+    assert "Database account-pr-12 not found" not in new.err
     assert "wrangler d1 list failed (rc 1): npx canceled" in new.err
 
 
