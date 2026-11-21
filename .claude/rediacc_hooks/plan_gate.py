@@ -1,7 +1,7 @@
 """The plan gate (box L2 of agent/plans/PLAN-plan-per-pr-loop.md): a console PR merges when its one plan has every box ticked, or when its body says why it merges otherwise.
 
 THE LINK. A PR names its plan with one `Plan: agent/plans/PLAN-<slug>.md` line in its body. `.claude/hooks/post-bash/refresh_pr_body.py` writes that line from the head of the plan queue (`agent/plans/QUEUE.md`, read by `queue`: its hand-ordered `## Promoted` list first, then the `## Generated` one `wl_planqueue` renders) on the first push that finds the body without one, and never rewrites it after that: the link is set once and is then the PR's own, so a queue edit mid-PR cannot re-point a PR at another plan. A multi-plan PR, or a PR that
-merges with open boxes, carries an `Operational-Reason:` line instead, and that line alone admits it.
+merges with open boxes, never merges: since agent/plans/PLAN-simple-two-tree-loop.md B8 the `Operational-Reason:` line admits no open box, and a plan an earlier merged PR already named is refused (one PR per plan).
 
 THE ONE BOX PARSER. Boxes are counted by `wl_planfile.plan_boxes` (the Stop hook's parser, which `check_plan_boxes.py` and `.ci/config/plan-boxes.json` also use), cross-checked against `wl_planfile.raw_box_counts`, its dumber line count: the larger open count wins, so a parser that stops seeing a box cannot turn an open plan into a finished one. A plan with no
 boxes at all proves nothing and is refused rather than read as finished.
@@ -319,19 +319,64 @@ def writer_startable(text: str) -> bool:
     return any(not _LEAD_BOX.search(ln) and br.startable(ln) for ln in opened)
 
 
-def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
+MERGED_PR_LIMIT = 200
+
+
+def merged_plan_prs(root: str) -> tuple[list[tuple[int, list[str]]] | None, str]:
+    """([(number, plans)], "") for the repository's merged PRs (the newest MERGED_PR_LIMIT), each with the plans its body's own `Plan:` lines name; (None, why) when gh cannot answer. One `gh pr list` call."""
+    import json
+    import subprocess
+
+    try:
+        proc = subprocess.run(
+            [
+                "gh",
+                "pr",
+                "list",
+                "--state",
+                "merged",
+                "--limit",
+                str(MERGED_PR_LIMIT),
+                "--json",
+                "number,body",
+            ],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return None, "gh could not run: %s" % exc
+    if proc.returncode != 0:
+        return None, (proc.stderr or "").strip()[:200] or "gh exited %d" % proc.returncode
+    try:
+        rows = json.loads(proc.stdout or "[]")
+    except ValueError:
+        return None, "gh answered something that is not JSON"
+    if not isinstance(rows, list):
+        return None, "gh answered something that is not a list"
+    return [
+        (int(row.get("number") or 0), body_plans(row["body"]))
+        for row in rows
+        if isinstance(row, dict) and isinstance(row.get("body"), str)
+    ], ""
+
+
+def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "", merged=None) -> str:
     """ "" when the PR may merge on its plans, else the reason it may not.
 
-    Admitted: the body carries an `Operational-Reason:` line; or it names exactly one plan (`Plan: agent/plans/PLAN-<slug>.md`) whose boxes are all ticked at `rev` ("" = the working tree under `root`). A body naming more than one plan without an `Operational-Reason:` line is refused: a plan rides exactly one PR, and a PR carries one plan (agent/plans/PLAN-simple-two-tree-loop.md ruling 4). Every unfinished prerequisite in the plan set's closure is checked too.
+    ONE PR PER PLAN (agent/plans/PLAN-simple-two-tree-loop.md ruling 4, box B8): every plan the body names must have every box ticked at `rev` ("" = the working tree under `root`), and no earlier merged PR's `Plan:` line may have named it already. `merged` is that list, [(number, plans)] as `merged_plan_prs` returns it; None reads it from gh, and an unreadable answer refuses (the gate fails closed). A body naming more than one plan is refused unless it carries an `Operational-Reason:` line (the operator-added plans of the plan set); that line no longer admits an open box, and keeps only its fast-forward fallback role (.claude/commands/pr-merge.md step 3), which also admits a body that names no plan at all. Every unfinished prerequisite in the plan set's closure is checked too.
     """
     if not isinstance(pr_body, str):
         return "the PR body could not be read, so its plan cannot be checked"
-    if has_operational_reason(pr_body):
-        return ""
+    reason = has_operational_reason(pr_body)
     plans = body_plans(pr_body)
     if not plans:
+        if reason:
+            return ""
         return "the PR body names no plan (`Plan: agent/plans/PLAN-<slug>.md`) and carries no `Operational-Reason:` line"
-    if len(plans) > 1:
+    if len(plans) > 1 and not reason:
         return (
             "the PR body names %d plans (%s); a multi-plan PR records an `Operational-Reason:` line"
             % (
@@ -342,13 +387,26 @@ def plan_merge_refusal(root: str, pr_body: str | None, rev: str = "") -> str:
     for rel in plans:
         if not PLAN_PATH.match(rel) or os.path.isabs(rel) or ".." in rel.split("/"):
             return "the `Plan:` line names `%s`, not agent/plans/PLAN-<slug>.md" % rel
+    if merged is None:
+        merged, err = merged_plan_prs(root)
+        if merged is None:
+            return (
+                "the merged PRs could not be read, so one PR per plan cannot be checked: %s" % err
+            )
+    for rel in plans:
+        earlier = sorted(n for n, named in merged if rel in named)
+        if earlier:
+            return "`%s` already rode PR #%d; a plan rides exactly one PR (ruling 4)" % (
+                rel,
+                earlier[-1],
+            )
     for rel in plans:
         opened, done, why = open_boxes(root, rel, rev)
         if why:
             return why
         if opened:
             return (
-                "`%s` has %d open box(es) of %d, and the PR body carries no `Operational-Reason:` line"
+                "`%s` has %d open box(es) of %d; the merge gate requires every box ticked, and `Operational-Reason:` admits none"
                 % (
                     rel,
                     opened,

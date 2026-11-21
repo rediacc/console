@@ -5,6 +5,7 @@ The two guards that call `plan_merge_refusal` have their own suites beside them 
 
 import importlib
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -38,6 +39,15 @@ Prose naming agent/plans/PLAN-prose.md is not an entry.
 2. agent/plans/PLAN-a.md -- P2, approved
 <!-- queue:generated:end -->
 """
+
+
+_REAL_MERGED = plan_gate.merged_plan_prs
+
+
+@pytest.fixture(autouse=True)
+def _no_merged_prs(monkeypatch):
+    """No case reaches GitHub: the merged-PR list is empty unless a case plants one (B8)."""
+    monkeypatch.setattr(plan_gate, "merged_plan_prs", lambda _root: ([], ""))
 
 
 @pytest.fixture
@@ -98,7 +108,8 @@ def test_the_seeded_queue_names_existing_plans():
     ("body", "want"),
     [
         ("Plan: agent/plans/PLAN-a.md", "open box"),
-        ("Plan: agent/plans/PLAN-a.md\nOperational-Reason: M7 runs after merge", ""),
+        ("Plan: agent/plans/PLAN-a.md\nOperational-Reason: M7 runs after merge", "open box"),
+        ("Operational-Reason: GitHub cannot rebase this PR", ""),
         ("Plan: agent/plans/PLAN-b.md", ""),
         ("- **Plan:** `agent/plans/PLAN-b.md`", ""),
         ("Plan: agent/plans/PLAN-moved.md", ""),
@@ -122,7 +133,7 @@ def test_the_seeded_queue_names_existing_plans():
     ],
 )
 def test_plan_merge_refusal(root, body, want):
-    got = plan_gate.plan_merge_refusal(root, body)
+    got = plan_gate.plan_merge_refusal(root, body, merged=[])
     if want:
         assert want in got, got
     else:
@@ -716,13 +727,73 @@ def test_a_multi_plan_body_is_refused_with_every_plan_ticked(tmp_path):
     root = _plan_root(
         tmp_path, {"a": _xplan(opened=0, done=2), "b": _xplan(opened=0, done=1)}, ["a"]
     )
-    assert "names 2 plans" in plan_gate.plan_merge_refusal(root, TWO)
-    assert plan_gate.plan_merge_refusal(root, "Plan: %s" % _t("a")) == ""
+    assert "names 2 plans" in plan_gate.plan_merge_refusal(root, TWO, merged=[])
+    assert plan_gate.plan_merge_refusal(root, "Plan: %s" % _t("a"), merged=[]) == ""
 
 
-def test_a_multi_plan_body_with_an_operational_reason_still_merges(tmp_path):
+def test_an_operational_reason_admits_no_open_box_on_any_named_plan(tmp_path):
+    """B8 (Open question 1): `Operational-Reason:` keeps only its fast-forward fallback role; every box of every named plan must be ticked. The control: both plans ticked merge."""
     root = _plan_root(tmp_path, {"a": _xplan(opened=0, done=2), "b": _xplan(opened=1)}, ["a"])
-    assert plan_gate.plan_merge_refusal(root, TWO + "\nOperational-Reason: one PR") == ""
+    got = plan_gate.plan_merge_refusal(root, TWO + "\nOperational-Reason: one PR", merged=[])
+    assert "open box" in got, got
+    assert "PLAN-b" in got, got
+    done = _plan_root(
+        tmp_path / "done", {"a": _xplan(opened=0, done=2), "b": _xplan(opened=0, done=1)}, ["a"]
+    )
+    assert plan_gate.plan_merge_refusal(done, TWO + "\nOperational-Reason: one PR", merged=[]) == ""
+
+
+def test_a_plan_an_earlier_merged_pr_named_is_refused(root):
+    """B8: a plan rides exactly one PR. PLAN-b is fully ticked; a merged PR #601 already named it, so a second PR naming it is refused. The control: the same body with no such merged PR merges."""
+    body = "Plan: agent/plans/PLAN-b.md"
+    got = plan_gate.plan_merge_refusal(root, body, merged=[(601, ["agent/plans/PLAN-b.md"])])
+    assert "already rode PR #601" in got, got
+    assert plan_gate.plan_merge_refusal(root, body, merged=[(600, ["agent/plans/PLAN-a.md"])]) == ""
+    assert plan_gate.plan_merge_refusal(root, body, merged=[]) == ""
+
+
+def test_the_merged_prs_are_read_from_gh_and_an_unreadable_answer_refuses(root, monkeypatch):
+    calls = []
+
+    def fake(r):
+        calls.append(r)
+        return [(601, ["agent/plans/PLAN-b.md"])], ""
+
+    monkeypatch.setattr(plan_gate, "merged_plan_prs", fake)
+    assert "already rode PR #601" in plan_gate.plan_merge_refusal(
+        root, "Plan: agent/plans/PLAN-b.md"
+    )
+    assert calls == [root], "with no list passed the gate reads gh itself"
+    monkeypatch.setattr(plan_gate, "merged_plan_prs", lambda _r: (None, "gh: could not connect"))
+    got = plan_gate.plan_merge_refusal(root, "Plan: agent/plans/PLAN-b.md")
+    assert "could not be read" in got, got
+    assert "could not connect" in got, got
+
+
+def test_merged_plan_prs_parses_each_body_through_the_plan_line_reader(tmp_path, monkeypatch):
+    answer = tmp_path / "merged.json"
+    answer.write_text(
+        json.dumps(
+            [
+                {"number": 601, "body": "Plan: agent/plans/PLAN-b.md\nmore"},
+                {"number": 600, "body": "no plan"},
+            ]
+        ),
+        encoding="utf-8",
+    )
+    stub = tmp_path / "bin" / "gh"
+    stub.parent.mkdir()
+    stub.write_text("#!/bin/sh\ncat '%s'\n" % answer, encoding="utf-8")
+    stub.chmod(0o755)
+    monkeypatch.setenv("PATH", "%s:%s" % (stub.parent, os.environ.get("PATH", "")))
+    got, err = _REAL_MERGED(str(tmp_path))
+    assert err == "", err
+    assert got == [(601, ["agent/plans/PLAN-b.md"]), (600, [])], got
+    # Control: a gh that fails is an unreadable list, never an empty one.
+    stub.write_text("#!/bin/sh\necho 'gh: down' >&2\nexit 1\n", encoding="utf-8")
+    got, err = _REAL_MERGED(str(tmp_path))
+    assert got is None, got
+    assert "down" in err, err
 
 
 def test_the_fail_safe_settings_carry_no_batch_keys():

@@ -485,11 +485,12 @@ CASES = [
         True,
         fx(body="Plan: %s" % PLAN_OPEN),
     ),
+    # PLAN-simple-two-tree-loop B8: `Operational-Reason:` admits no open box any more.
     (
-        "L2 open boxes with an Operational-Reason",
+        "L2 open boxes with an Operational-Reason are still refused",
         "git push origin 0914-1:%s" % MAIN,
         LIVE,
-        False,
+        True,
         fx(body="Plan: %s\nOperational-Reason: the remaining box is M7's live run" % PLAN_OPEN),
     ),
     (

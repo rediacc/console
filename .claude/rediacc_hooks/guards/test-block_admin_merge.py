@@ -128,10 +128,17 @@ MERGE = "gh pr merge 7 --repo %s --rebase --auto" % GH_REPO
 CASES = [
     # (name, command, FX_BODY or None for an unreadable body, expected verdict)
     ("open boxes and no Operational-Reason", MERGE, "Plan: %s" % PLAN_OPEN, "plan"),
+    # PLAN-simple-two-tree-loop B8: `Operational-Reason:` admits no open box any more; it keeps only the fast-forward fallback role.
     (
-        "open boxes with an Operational-Reason",
+        "open boxes with an Operational-Reason are still refused",
         MERGE,
         "Plan: %s\nOperational-Reason: the last box is a live run after merge" % PLAN_OPEN,
+        "plan",
+    ),
+    (
+        "every box ticked with an Operational-Reason",
+        MERGE,
+        "Plan: %s\nOperational-Reason: GitHub cannot rebase this PR" % PLAN_DONE,
         "past",
     ),
     ("every box ticked", MERGE, "Prose first.\n\n**Plan:** `%s`" % PLAN_DONE, "past"),
@@ -145,10 +152,10 @@ CASES = [
         "plan",
     ),
     (
-        "two plans with an Operational-Reason",
+        "two plans with an Operational-Reason, one with an open box",
         MERGE,
         "Plan: %s, %s\nOperational-Reason: #591 finishes as-is" % (PLAN_DONE, PLAN_OPEN),
-        "past",
+        "plan",
     ),
     (
         "two ticked plans are refused: a plan rides one PR",
