@@ -120,12 +120,7 @@ def choose_branch(root, gh):
             % branch
         )
         raise LandingRefusedError(message)
-    if current and current != branch and shape.match(current):
-        message = (
-            "the main checkout is on the development branch %s while the open PR is on %s: "
-            "switch the main checkout to %s, or land %s first" % (current, branch, branch, branch)
-        )
-        raise LandingRefusedError(message)
+    # The main checkout on another MMDD-N branch is the two-tree shape itself (the development branch, stacked on the PR's): it is returned, never refused.
     if current == branch and not prs:
         # No open PR, so the landing branch is the main checkout's own (review finding 2623001e.4): the advice names what to cut, not the branch already held.
         message = (
@@ -134,12 +129,7 @@ def choose_branch(root, gh):
             "branch) in the main checkout first" % branch
         )
         raise LandingRefusedError(message)
-    if current == branch:
-        message = (
-            "the main checkout holds %s and git keeps one branch in one tree: "
-            "switch the main checkout to the development branch first" % branch
-        )
-        raise LandingRefusedError(message)
+    # current == branch with an open PR: the first switch-over, which make_landing runs (`_switch_over`).
     return branch
 
 
@@ -255,7 +245,8 @@ def _add_sub(store, tree, branch, sha):
     if _has_ref(store, "refs/heads/%s" % branch):
         spike.must(store, "worktree", "add", *lock, str(tree), branch)
     else:
-        spike.must(store, "worktree", "add", *lock, "-b", branch, str(tree), sha)
+        # A submodule the PR does not touch has no branch of that name, and creating one would add a live branch it never pushes (and the git-level hook, run from the module store, refuses it as a cut off main): its tree sits detached at the gitlink, as a lease's does.
+        spike.must(store, "worktree", "add", *lock, "--detach", str(tree), sha)
 
 
 def _rollback(root, repo, path):
@@ -302,7 +293,54 @@ def _create(root, path, branch, seed):
         raise LandingRefusedError(message) from exc
 
 
-def make_landing(root, *, gh=run_gh, seed=None):
+def _switch_over(root, path, branch, seed, next_name, today):
+    """The first switch-over: the main checkout holds the open PR's `branch`, so it hands that branch to a new landing tree and cuts the next MMDD-N here, stacked on it (operator ruling ASKED:2026-11-20T18:46Z).
+
+    Order matters to the git-level hooks: the main checkout and its submodule trees detach, the landing tree is made on `branch` and the record written, then the console cuts first (a submodule branch carries the console's name) at `branch`'s tip, which `reference-transaction` admits as the stacked cut, then each submodule tree that held `branch` cuts at its own HEAD.
+    """
+    try:
+        cut = (next_name or landing_promote._default_next_name)(
+            root, today or landing_promote._today()
+        )
+    except (OSError, RuntimeError) as exc:
+        message = "the next branch name could not be read, so nothing moved: %s" % exc
+        raise LandingRefusedError(message) from exc
+    subs = [
+        sub
+        for sub in landing_promote._submodule_trees(root).values()
+        if spike.out(sub, "symbolic-ref", "-q", "--short", "HEAD") == branch
+    ]
+    for tree in (*subs, root):
+        spike.must(tree, "switch", "--quiet", "--detach")
+    try:
+        _create(root, path, branch, seed)
+    except LandingRefusedError:
+        for tree in (root, *subs):
+            spike.git(tree, "switch", "--quiet", branch)
+        raise
+    done = spike.git(root, "switch", "--quiet", "--no-track", "-c", cut, "refs/heads/%s" % branch)
+    if done.returncode != 0:
+        message = (
+            "the landing tree %s holds %s, but the development branch %s could not be cut here "
+            "(the main checkout is detached at its tip): %s"
+            % (path, branch, cut, done.stderr.strip())
+        )
+        raise LandingRefusedError(message)
+    for sub in subs:
+        made = spike.git(sub, "switch", "--quiet", "--no-track", "-c", cut)
+        if made.returncode != 0:
+            message = "the submodule tree %s could not cut %s at its HEAD: %s" % (
+                sub,
+                cut,
+                made.stderr.strip(),
+            )
+            raise LandingRefusedError(message)
+    log.info(
+        "landing tree %s holds %s; the main checkout holds %s, stacked on it" % (path, branch, cut)
+    )
+
+
+def make_landing(root, *, gh=run_gh, seed=None, next_name=None, today=None):
     """Make or reuse the landing tree and return its absolute path. Raises `LandingRefusedError`."""
     try:
         root = lease._main_checkout(root)
@@ -313,6 +351,8 @@ def make_landing(root, *, gh=run_gh, seed=None):
     branch = choose_branch(root, gh)
     if exists:
         _reuse(path, branch)
+    elif spike.out(root, "symbolic-ref", "-q", "--short", "HEAD") == branch:
+        _switch_over(root, path, branch, seed or lease._run_seed, next_name, today)
     else:
         _create(root, path, branch, seed or lease._run_seed)
     return str(path)

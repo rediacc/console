@@ -351,13 +351,29 @@ def reference_transaction(argv: list[str], stdin: str) -> int:
                 "creating branch `%s` while `%s` is live. One live branch per tree: continue\n"
                 "on it (`git switch %s`)." % (name, others[0], others[0])
             )
+        # The development branch is cut STACKED on the landing branch (operator ruling ASKED:2026-11-20T18:46Z), so with a record binding the other tree a creation at that branch's tip is the sanctioned cut, from a detached HEAD or not.
+        if bound is not None and _stacked_on(stdin, name, bound["branch"]):
+            continue
         current = cp.current_branch(repo)
         if current != "main":
             return _refuse(
-                "creating branch `%s` from `%s`. A new branch is cut from `main`."
+                "creating branch `%s` from `%s`. A new branch is cut from `main`, or stacked on\n"
+                "the landing branch's tip once a landing record binds it."
                 % (name, current or "(detached)")
             )
     return 0
+
+
+def _stacked_on(stdin: str, name: str, landing_branch: str) -> bool:
+    """True when the transaction creates `name` at the current tip of `refs/heads/<landing_branch>`."""
+    tip = cp.git(["rev-parse", "--verify", "--quiet", "refs/heads/%s" % landing_branch])
+    if not tip:
+        return False
+    for line in stdin.split("\n"):
+        fields = line.split()
+        if len(fields) == 3 and fields[2] == "refs/heads/%s" % name:
+            return fields[1] == tip.strip()
+    return False
 
 
 # --------------------------------------------------------------------------- pre-push ---------------------------------------------------------------------------

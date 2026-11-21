@@ -169,7 +169,9 @@ def _judge_local(ev, creation, console_top, console_branch, today):
     if current != "main":
         return _refuse(
             ev,
-            "creating `%s` from `%s`. A new branch is cut from `main`."
+            "creating `%s` from `%s`. A new branch is cut from `main`; the development branch "
+            "stacked on the landing branch is cut by `./run.sh worktree landing` (the first "
+            "switch-over) or `./run.sh worktree landing --promote` (after a merge)."
             % (creation.name, current or "(detached)"),
         )
     try:

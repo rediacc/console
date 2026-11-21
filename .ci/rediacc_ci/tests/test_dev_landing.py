@@ -81,11 +81,23 @@ def test_create_makes_tree_on_the_pr_branch(repo):
 
 
 def test_submodule_tree_is_on_the_branch_name(repo):
+    git(repo, "submodule", "update", "-q", "--init")
+    git(repo / SUB, "branch", PR)
     path = pathlib.Path(landing.make_landing(repo, gh=gh_for(PR), seed=Seeded()))
     sub = path / SUB
     assert spike.out(sub, "symbolic-ref", "--short", "HEAD") == PR
     gitlink = spike.out(repo, "rev-parse", "%s:%s" % (PR, SUB))
     assert spike.out(sub, "rev-parse", "HEAD") == gitlink
+
+
+def test_a_submodule_without_the_branch_sits_detached_at_its_gitlink(repo):
+    # Creating the PR's branch in a submodule the PR does not touch made a live branch nothing pushes, and the git-level hook refused it (2026-11-21, private/homebrew-tap).
+    path = pathlib.Path(landing.make_landing(repo, gh=gh_for(PR), seed=Seeded()))
+    sub = path / SUB
+    assert spike.out(sub, "symbolic-ref", "-q", "--short", "HEAD") == ""
+    gitlink = spike.out(repo, "rev-parse", "%s:%s" % (PR, SUB))
+    assert spike.out(sub, "rev-parse", "HEAD") == gitlink
+    assert spike.out(repo / ".git" / "modules" / SUB, "branch", "--list", PR) == ""
 
 
 def test_record_written(repo):
@@ -115,17 +127,47 @@ def test_refuses_main(repo):
     assert not (repo.parent / "console-landing").exists()
 
 
-def test_refuses_the_development_branch(repo):
+def test_a_development_branch_here_is_the_two_tree_shape(repo):
+    # The main checkout on another MMDD-N branch is the shape the switch-over leaves, so a refresh from it must work (it was refused before 2026-11-21).
     git(repo, "switch", "-q", "-c", "0202-1")
-    with pytest.raises(landing.LandingRefusedError, match="development branch 0202-1"):
-        landing.make_landing(repo, gh=gh_for(PR), seed=Seeded())
-    assert not (repo.parent / "console-landing").exists()
+    path = pathlib.Path(landing.make_landing(repo, gh=gh_for(PR), seed=Seeded()))
+    assert spike.out(path, "symbolic-ref", "--short", "HEAD") == PR
+    assert spike.out(repo, "symbolic-ref", "--short", "HEAD") == "0202-1"
 
 
-def test_refuses_the_branch_the_main_checkout_holds(repo):
+def test_first_switch_over_cuts_the_development_branch_stacked(repo):
     git(repo, "switch", "-q", PR)
-    with pytest.raises(landing.LandingRefusedError, match="switch the main checkout"):
-        landing.make_landing(repo, gh=gh_for(PR), seed=Seeded())
+    sub = repo / SUB
+    git(repo, "submodule", "update", "-q", "--init")
+    git(sub, "switch", "-q", "-c", PR)
+    tip = spike.out(repo, "rev-parse", PR)
+    path = pathlib.Path(
+        landing.make_landing(
+            repo, gh=gh_for(PR), seed=Seeded(), next_name=lambda _r, _t: "0202-1", today="0202"
+        )
+    )
+    assert spike.out(path, "symbolic-ref", "--short", "HEAD") == PR
+    assert spike.out(path / SUB, "symbolic-ref", "--short", "HEAD") == PR
+    assert spike.out(repo, "symbolic-ref", "--short", "HEAD") == "0202-1"
+    assert spike.out(repo, "rev-parse", "HEAD") == tip
+    assert spike.out(sub, "symbolic-ref", "--short", "HEAD") == "0202-1"
+    record = json.loads((repo / ".git" / "rediacc-landing.json").read_text(encoding="utf-8"))
+    assert record["branch"] == PR
+
+
+def test_failed_switch_over_gives_the_branch_back(repo):
+    git(repo, "switch", "-q", PR)
+
+    def broken(_path, _root, _tip):
+        message = "seed broke"
+        raise RuntimeError(message)
+
+    with pytest.raises(landing.LandingRefusedError, match="seed broke"):
+        landing.make_landing(
+            repo, gh=gh_for(PR), seed=broken, next_name=lambda _r, _t: "0202-1", today="0202"
+        )
+    assert spike.out(repo, "symbolic-ref", "--short", "HEAD") == PR
+    assert not (repo.parent / "console-landing").exists()
 
 
 def test_refuses_a_second_path(repo):
@@ -219,7 +261,9 @@ DEV = "0101-2"
 
 
 def _two_tree_submodules(repo):
-    """The landing tree made, then the development branch cut in the main checkout and its submodule: one module store holding both names."""
+    """The landing tree made for a submodule that carries the PR's branch, then the development branch cut in the main checkout and its submodule: one module store holding both names."""
+    git(repo, "submodule", "update", "-q", "--init")
+    git(repo / SUB, "branch", PR)
     path = pathlib.Path(landing.make_landing(repo, gh=gh_for(PR), seed=Seeded()))
     git(repo, "switch", "-q", "-c", DEV)
     git(repo / SUB, "switch", "-q", "-c", DEV)
