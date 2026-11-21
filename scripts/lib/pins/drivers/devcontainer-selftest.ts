@@ -115,7 +115,9 @@ async function build(mutant: DevcontainerMutant | null): Promise<ControlCase[]> 
       r.refused
     );
     const partial = await plan('devcontainer:bw', v, {
-      [list]: [release(`cli-v${v}`, '2026-10-01T00:00:00Z', { [`bw-bit-linux-${v}.zip`]: hex('a') })],
+      [list]: [
+        release(`cli-v${v}`, '2026-10-01T00:00:00Z', { [`bw-bit-linux-${v}.zip`]: hex('a') }),
+      ],
     });
     add(
       'bw: a release with no digest for one hashed asset is refused, not moved with a stale hash',
