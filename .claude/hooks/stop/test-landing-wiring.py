@@ -362,6 +362,7 @@ def loopnext_cases(tmp, tag, mutate=None):
 # ---- LT19: the landing stack -------------------------------------------------
 STACK_MERGED = "LANDING MERGED (blocks at every effort level)"
 STACK_BEHIND = "LANDING AHEAD"
+STACK_PENDING = "LANDING MERGED, RELEASE PENDING"
 KEY_OF = {
     **dict.fromkeys(
         (PROMOTE, TODAY_MERGED, DRAFT, OPEN_IT, WAIT, MERGE, RELEASE, HOTFIX, IDLE, CD_DONE),
@@ -369,6 +370,7 @@ KEY_OF = {
     ),
     STACK_MERGED: "landing-stack",
     STACK_BEHIND: "landing-behind",
+    STACK_PENDING: "landing-behind",
 }
 
 
@@ -383,6 +385,13 @@ def stack_cases(tmp, tag, mutate=None):
     w.git(w.fix.proj, "push", "-q", "origin", "%s:refs/heads/main" % copy)
     w.prs({PR_BRANCH: [node("MERGED", "Plan: %s\n" % OWN, 7)]})
     w.bind()
+    # The release at the merged sha still in flight: reported, never blocked on (agent/plans/PLAN-simple-two-tree-loop.md D3).
+    w.release("feedface0001", ci="success")
+    w.effort("quiet")
+    got = w.stop(w.fix.proj)
+    out.append(("merged landing, release pending: no block", w.blocked(got, STACK_MERGED), False))
+    out.append(("merged landing, release pending: reported", STACK_PENDING in got.out, True))
+    w.release("feedface0001", ci="success", edge="success")
     for level in LEVELS:
         w.effort(level)
         got = w.stop(w.fix.proj)
@@ -497,7 +506,18 @@ MUTANTS = (
     (
         "the stack is read from the mapped root",
         stack_cases,
-        [(CHECKS_REL, "wl_stack.stack_block(own)", "wl_stack.stack_block(root)")],
+        [(CHECKS_REL, "wl_stack.stack_block(own, ", "wl_stack.stack_block(root, ")],
+    ),
+    (
+        "the merged block ignores the release",
+        stack_cases,
+        [
+            (
+                CHECKS_REL,
+                "stack_block(own, released=_ls_released)",
+                "stack_block(own, released=True)",
+            )
+        ],
     ),
     (
         "the behind report is never queued",

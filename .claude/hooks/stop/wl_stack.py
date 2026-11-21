@@ -7,7 +7,7 @@ Operator ruling ASKED:2026-11-20T18:46Z: the development branch is STACKED on th
   none     no valid landing record, `root` is the landing tree itself, or the development tree holds no branch of its own (detached, `main`, or the record's branch).
   current  the landing tip is an ancestor of the development branch.
   behind   the landing branch holds commits the development branch lacks: report `git rebase <landing branch>`.
-  merged   the landing branch is on origin/main (every commit of it patch-equivalent to one there, or, when it holds none of its own, its PR reads MERGED), and the record still names it: promotion has not run. BLOCKS at every effort level.
+  merged   the landing branch is on origin/main (every commit of it patch-equivalent to one there, or, when it holds none of its own, its PR reads MERGED), and the record still names it: promotion has not run. BLOCKS at every effort level once the merged PR's release is green (`released`); while the release is still in flight or red it is reported, not blocked on (agent/plans/PLAN-simple-two-tree-loop.md D3: promote's premise is a fully green release, and the development tree never waits on landing).
 
 A promoted tree is quiet by construction: promotion rewrites the record to the branch it moved into landing, so the merged branch is no longer the one judged.
 
@@ -212,8 +212,20 @@ def _behind_text(st: StackState) -> str:
     )
 
 
-def stack_block(root, **kw) -> str:
-    """The FLOOR stop text while the landing branch is merged and promotion has not run, else "". Never raises."""
+def _release_pending_text(st: StackState) -> str:
+    return (
+        "LANDING MERGED, RELEASE PENDING: the landing branch %s is on %s/main (%s), and the release at the "
+        "merged sha is not green yet. Keep building; promotion (%s) runs once Console CI on main and the "
+        "edge deploy are both SUCCESS, and this stop blocks on it then.\n"
+        "(.claude/hooks/stop/wl_stack.py, agent/plans/PLAN-simple-two-tree-loop.md D3)"
+        % (st.landing, REMOTE, st.how, st.command)
+    )
+
+
+def stack_block(root, released=True, **kw) -> str:
+    """The FLOOR stop text while the landing branch is merged, its release is green (`released`, the development tree's `wl_prscope.LoopState.landing_released`) and promotion has not run, else "". Never raises."""
+    if not released:
+        return ""
     try:
         st = stack_state(root, **kw)
     except Exception:
@@ -221,12 +233,14 @@ def stack_block(root, **kw) -> str:
     return _merged_text(st) if st.state == MERGED else ""
 
 
-def stack_report(root, **kw) -> str:
-    """The advisory text while the landing branch is ahead of the development branch, else "". Never raises."""
+def stack_report(root, released=True, **kw) -> str:
+    """The advisory text while the landing branch is ahead of the development branch, or merged while its release is not green yet (`released` False), else "". Never raises."""
     try:
         st = stack_state(root, **kw)
     except Exception:
         return ""
+    if st.state == MERGED and not released:
+        return _release_pending_text(st)
     return _behind_text(st) if st.state == BEHIND else ""
 
 

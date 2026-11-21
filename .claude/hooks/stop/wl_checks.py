@@ -5814,11 +5814,12 @@ def run_stop(event, event_ok, worklist, hook_file):
             "THIS IS A HOOK BUG: the pr-babysit finish-line check failed: %s: %s"
             % (type(exc).__name__, str(exc)[:120]),
         )
-    # ---- THE LANDING STACK (agent/plans/PLAN-two-track-merge-dev.md LT19, wl_stack): read from the session's own tree, never the mapped root, since the landing tree's root is the main checkout. A landing branch already merged while the record still names it blocks at every effort level (`landing-stack`, wl_floor.FLOOR): promotion runs before anything else is built on it. A landing branch ahead of the development branch is advisory (`landing-behind`). No record, or the landing tree itself, reads nothing; the readers never raise.
-    _ls_block = wl_stack.stack_block(own)
+    # ---- THE LANDING STACK (agent/plans/PLAN-two-track-merge-dev.md LT19, wl_stack): read from the session's own tree, never the mapped root, since the landing tree's root is the main checkout. A landing branch already merged while the record still names it blocks at every effort level (`landing-stack`, wl_floor.FLOOR) once its release is green (`landing_released`, agent/plans/PLAN-simple-two-tree-loop.md D3): promotion runs before anything else is built on it. Until then the merged branch rides the advisory queue, since the development tree never waits on landing. A landing branch ahead of the development branch is advisory (`landing-behind`). No record, or the landing tree itself, reads nothing; the readers never raise.
+    _ls_released = bool(getattr(_loop, "landing_released", 0))
+    _ls_block = wl_stack.stack_block(own, released=_ls_released)
     if _ls_block:
         vadd("landing-stack", False, _ls_block)
-    _ls_report = "" if _ls_block else wl_stack.stack_report(own, fetch=False)
+    _ls_report = "" if _ls_block else wl_stack.stack_report(own, released=_ls_released, fetch=False)
     if _ls_report:
         outq_add(worklist, session_id, state_doc, "landing-behind", _ls_report, 1, refresh_min=0)
     else:
