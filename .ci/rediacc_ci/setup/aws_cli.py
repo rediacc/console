@@ -98,7 +98,9 @@ def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     verbs = {"pin": run_pin, "install": run_install}
     if len(args) != 1 or args[0] not in verbs:
-        print("usage: python3 -m rediacc_ci.setup.aws_cli pin|install", file=sys.stderr)
+        print(
+            "usage: PYTHONPATH=.ci python3 -m rediacc_ci.setup.aws_cli pin|install", file=sys.stderr
+        )
         return 2
     try:
         verbs[args[0]]()

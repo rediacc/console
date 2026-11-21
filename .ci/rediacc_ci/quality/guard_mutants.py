@@ -123,7 +123,9 @@ def scan(guards_dir: str) -> list[dict]:
 
 def main(argv: list[str]) -> int:
     if len(argv) != 1:
-        sys.stderr.write("usage: python3 -m rediacc_ci.quality.guard_mutants <guards-dir>\n")
+        sys.stderr.write(
+            "usage: PYTHONPATH=.ci python3 -m rediacc_ci.quality.guard_mutants <guards-dir>\n"
+        )
         return 2
     if not pathlib.Path(argv[0]).is_dir():
         sys.stderr.write("guard_mutants: %s is not a directory\n" % argv[0])
