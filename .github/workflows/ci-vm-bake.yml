@@ -17,6 +17,18 @@ name: CI - VM Bake
 # that key boots the baked image. A fork PR gets no packages: write token, so
 # its plan job is skipped.
 #
+# A pull request bakes into its own tag namespace and never into main's.
+# vm_bake_image derives the namespace from GITHUB_EVENT_NAME and GITHUB_REF,
+# not from an input: a push, schedule or dispatch on main publishes and reads
+# `<key>`; a pull_request run publishes only `pr-<number>-<key>` and reads that
+# before `<key>`; any other run (a dispatch on a branch) publishes nothing and
+# its plan job fails. ct-tests.yml's fetch applies the same rule, so a main
+# leg never boots an image a PR head built and one PR never boots another's.
+# The key alone could not keep them apart: it hashes the renet install path,
+# vm_bake_key.py and vm_bake_image.py, not this workflow or the composite
+# actions the bake leg runs, so a PR head that changes those would otherwise
+# publish under the very tag main computes.
+#
 # The schedule is daily: the key carries the month, and the old monthly
 # '0 2 1 * *' run was missed on 2026-11-01 (no scheduled or push run of any
 # workflow in this repository fired between 2026-10-31 and 2026-11-17), which
@@ -33,6 +45,8 @@ on:
       - .github/workflows/ci-vm-bake.yml
   # No paths filter: the month in the key rolls over without a file change,
   # so any push to a PR head may need a new image, and the plan job is cheap.
+  # The write scope this trigger brings is confined to the PR's own
+  # pr-<number>- namespace (header above), which no main run reads.
   pull_request:
     types: [opened, synchronize, reopened]
   schedule:
@@ -193,7 +207,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # packages: write pushes the baked image to ghcr.io/rediacc/ci-vm-bake with
-    # github.token. The first push (run 36670172753) created the package PUBLIC,
+    # github.token: under `<key>` on main, under `pr-<number>-<key>` on a pull
+    # request (vm_bake_image.scope_from_env). The first push (run 36670172753) created the package PUBLIC,
     # inheriting this public repository's visibility; the operator set it private
     # on 2026-09-30 (ruling D1) through the package settings page, the only place
     # that changes it, since no API sets package visibility.

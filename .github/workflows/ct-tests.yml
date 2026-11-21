@@ -540,6 +540,10 @@ jobs:
       # ghcr.io/rediacc/ci-vm-bake is private: without this login every pull
       # answers "unauthorized", a miss, and the leg silently runs stock forever.
       # oras reads the docker credential store the action writes.
+      # The fetch reads the namespaces GITHUB_EVENT_NAME and GITHUB_REF allow
+      # (vm_bake_image.scope_from_env): a pull_request run reads its own
+      # pr-<number>- tag, then main's; every other run reads main's tag only,
+      # so a main run never boots an image a pull-request head published.
       - name: Login to GHCR for the baked image
         if: matrix.stock-image != '1' && github.event_name != 'schedule' && env.VM_BAKE != 'off'
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
@@ -827,6 +831,10 @@ jobs:
       # ghcr.io/rediacc/ci-vm-bake is private: without this login every pull
       # answers "unauthorized", a miss, and the leg silently runs stock forever.
       # oras reads the docker credential store the action writes.
+      # The fetch reads the namespaces GITHUB_EVENT_NAME and GITHUB_REF allow
+      # (vm_bake_image.scope_from_env): a pull_request run reads its own
+      # pr-<number>- tag, then main's; every other run reads main's tag only,
+      # so a main run never boots an image a pull-request head published.
       - name: Login to GHCR for the baked image
         if: github.event_name != 'schedule' && env.VM_BAKE != 'off'
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
