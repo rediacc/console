@@ -1161,3 +1161,172 @@ def test_failed_jobs_refuses_a_short_page_below_the_total(monkeypatch):
     names, err = SR._failed_jobs(".", "o", "r", 7)
     assert names == []
     assert "short at 1 of 141" in err
+
+
+# --------------------------------------------------------------------------- freshness (operator ruling 2026-11-21, worklist #5eb28959)
+
+
+def iso_ago(seconds):
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - seconds))
+
+
+REGISTRY = [
+    {
+        "id": 100,
+        "path": ".github/workflows/ci.yml",
+        "state": "active",
+        "created_at": "2025-01-01T00:00:00Z",
+    },
+    {
+        "id": 101,
+        "path": ".github/workflows/housekeeping.yml",
+        "state": "active",
+        "created_at": "2025-01-01T00:00:00Z",
+    },
+]
+
+
+def serve_fresh(gh, runs, enabled=True):
+    """Routes for one freshness read: the permissions read, the per-workflow fallback, the scheduled runs page, then the registry (most specific first)."""
+    gh.reset()
+    gh.route("actions/permissions", {"enabled": enabled})
+    gh.route("/runs?event=schedule&per_page=1", {"workflow_runs": []})
+    gh.route("actions/runs?event=schedule", {"workflow_runs": runs})
+    gh.route(
+        "actions/workflows?per_page=100", {"total_count": len(REGISTRY), "workflows": REGISTRY}
+    )
+
+
+def test_freshness_discovery_reads_main_not_the_working_tree(tmp_path):
+    root = make_repo(tmp_path / "r")
+    # The branch moves housekeeping to weekly and adds a scheduled workflow main does not have.
+    wdir = root / ".github" / "workflows"
+    (wdir / "housekeeping.yml").write_text(
+        HK_YML.replace("0 3 * * *", "0 3 * * 0"), encoding="utf-8"
+    )
+    (wdir / "branch-only.yml").write_text(
+        HK_YML.replace("Housekeeping", "Branch Only"), encoding="utf-8"
+    )
+    got, source = SR.main_scheduled_workflows(root)
+    assert source == "origin/main"
+    assert [(w["file"], w["crons"], w["dispatchable"]) for w in got] == [
+        ("ci.yml", ["0 1 * * *"], True),
+        ("housekeeping.yml", ["0 3 * * *"], False),
+    ]
+    # Control: with no origin/main ref the working tree stands in, and the source says so.
+    bare = make_repo(tmp_path / "b", origin=False)
+    (bare / ".github" / "workflows" / "housekeeping.yml").write_text(
+        HK_YML.replace("0 3 * * *", "0 3 * * 0"), encoding="utf-8"
+    )
+    got, source = SR.main_scheduled_workflows(bare)
+    assert source.startswith("working tree")
+    assert {w["file"]: w["crons"] for w in got}["housekeeping.yml"] == ["0 3 * * 0"]
+
+
+def test_freshness_with_no_origin_or_no_schedule_makes_zero_calls(tmp_path, gh):
+    bare = make_repo(tmp_path / "b", origin=False)
+    assert SR.refresh_freshness(bare, tmp_path / "wl.md", force=True)["state"] == "unset"
+    plain = make_repo(tmp_path / "p", workflows={"plain.yml": PLAIN_YML})
+    doc = SR.refresh_freshness(plain, tmp_path / "wl.md", force=True)
+    assert (doc["state"], doc["rows"]) == ("ok", [])
+    assert gh.calls() == []
+    # Control: a scheduled workflow on main makes the read.
+    serve_fresh(gh, [])
+    SR.refresh_freshness(make_repo(tmp_path / "r"), tmp_path / "wl.md", force=True)
+    assert gh.calls("actions/workflows?per_page=100")
+
+
+def test_freshness_fresh_is_silent_and_cached(repo, tmp_path, gh):
+    wlp = tmp_path / "wl.md"
+    serve_fresh(
+        gh,
+        [
+            run(1, created=iso_ago(5 * 3600)),
+            run(2, file="housekeeping.yml", created=iso_ago(20 * 3600)),
+        ],
+    )
+    doc = SR.refresh_freshness(repo, wlp)
+    assert doc["state"] == "ok"
+    assert doc["discovered"] == 2
+    assert {r["file"]: r["verdict"] for r in doc["rows"]} == {
+        "ci.yml": "fresh",
+        "housekeeping.yml": "fresh",
+    }
+    assert SR.freshness_advisory(doc) == ""
+    page = "actions/runs?event=schedule"
+    assert len(gh.calls(page)) == 1
+    SR.refresh_freshness(repo, wlp)
+    assert len(gh.calls(page)) == 1, "inside the TTL every session reads the cache"
+    SR.refresh_freshness(repo, wlp, force=True)
+    assert len(gh.calls(page)) == 2
+
+
+def test_freshness_49h_stale_names_the_workflow_and_the_fix(repo, tmp_path, gh):
+    serve_fresh(
+        gh,
+        [
+            run(1, created=iso_ago(5 * 3600)),
+            run(2, file="housekeeping.yml", created=iso_ago(49 * 3600)),
+        ],
+    )
+    doc = SR.refresh_freshness(repo, tmp_path / "wl.md", force=True)
+    text = SR.freshness_advisory(doc, "deadbeef")
+    assert "STALE: Housekeeping (housekeeping.yml), cron 0 3 * * *" in text, text
+    assert "gh workflow enable housekeeping.yml --repo fake/repo" in text
+    # HK_YML declares no workflow_dispatch, so no dispatch line; ci.yml is fresh and unnamed.
+    assert "gh workflow run" not in text
+    assert "Console CI" not in text
+    assert "worklist.py --add deadbeef 'sched-stale:housekeeping" in text
+    assert gh.calls("actions/permissions"), "an actionable row reads the repo's Actions switch"
+    # Control: 47 h is inside the window, so the same read is silent.
+    serve_fresh(
+        gh,
+        [
+            run(1, created=iso_ago(5 * 3600)),
+            run(2, file="housekeeping.yml", created=iso_ago(47 * 3600)),
+        ],
+    )
+    assert SR.freshness_advisory(SR.refresh_freshness(repo, tmp_path / "wl.md", force=True)) == ""
+
+
+def test_freshness_unreadable_is_named_not_fresh(repo, tmp_path, gh):
+    gh.reset()
+    gh.route("actions/workflows?per_page=100", rc=1, err="gh: Not Found (HTTP 404)")
+    doc = SR.refresh_freshness(repo, tmp_path / "wl.md", force=True)
+    assert doc["state"] == "unreadable"
+    assert "UNCHECKED, not fine" in SR.freshness_advisory(doc)
+
+
+def test_session_start_shows_the_cached_freshness_with_zero_calls(tmp_path, gh, monkeypatch):
+    monkeypatch.setenv("WORKLIST_STORE_DIR", str(tmp_path / "store"))
+    wlp = tmp_path / "wl.md"
+    wlp.write_text("", encoding="utf-8")
+    stale_row = {
+        "file": "housekeeping.yml",
+        "stem": "housekeeping",
+        "name": "Housekeeping",
+        "crons": ["0 3 * * *"],
+        "dispatchable": True,
+        "state": "active",
+        "verdict": "stale",
+        "last_run_at": iso_ago(3 * 86400),
+        "last_run_id": 7,
+        "age_s": 3 * 86400,
+        "window_s": 48 * 3600,
+        "why": "",
+    }
+    doc = {
+        "state": "ok",
+        "error": "",
+        "at": time.time(),
+        "slug": "fake/repo",
+        "rows": [stale_row],
+        "actions_enabled": True,
+    }
+    GH.cache_write(SR.freshness_path(wlp), doc)
+    line = SR.session_start_line(wlp)
+    assert "STALE: Housekeeping (housekeeping.yml)" in line, line
+    assert gh.calls() == [], "SessionStart makes zero gh calls"
+    # Control: the same row fresh says nothing.
+    GH.cache_write(SR.freshness_path(wlp), dict(doc, rows=[dict(stale_row, verdict="fresh")]))
+    assert SR.session_start_line(wlp) == ""
