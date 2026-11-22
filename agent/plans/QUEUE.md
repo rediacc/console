@@ -39,11 +39,12 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Landing tree: branch 1104-1, PR #605 merged.
 - Development tree: branch 1121-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
-- Work outside the PR's plans (3 epic(s)):
+- Work outside the PR's plans (4 epic(s)):
   - epic 79b7e92e, no plan, 223 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
-- Writers: 3 live of writer_cap 25 (session ace763dd): worker:a7f345f3ce67fa836, worker:aa2d0491a03e29325, worker:a18f81e60e6140fc4.
+  - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
+- Writers: 3 live of writer_cap 25 (session ace763dd): worker:a7f345f3ce67fa836, worker:a18f81e60e6140fc4, worker:aa2d0491a03e29325.
 - Leased items: 8: #1abea6ac (worker:a7f345f3ce67fa836, ace763dd), #3b82cf28 (worker:bs2zwmetr, ace763dd), #47ce3621 (worker:bs2zwmetr, ace763dd), #572f74b2 (worker:aa2d0491a03e29325, ace763dd), #73b32419 (worker:bs2zwmetr, ace763dd), #95ffeb93 (worker:a18f81e60e6140fc4, ace763dd), #ce9966d1 (worker:bs2zwmetr, ace763dd), #dc17bd4d (worker:a7f345f3ce67fa836, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
@@ -51,7 +52,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 17 of 77 plans done, 1239 of 1562 boxes done (79%).
+Promoted: 17 of 77 plans done, 1240 of 1562 boxes done (79%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -131,7 +132,7 @@ Promoted: 17 of 77 plans done, 1239 of 1562 boxes done (79%).
 | 74 | PLAN-preview-signer.md | 12/37 | 25 open |
 | 75 | PLAN-weekly-lessons.md | 1/8 | 7 open |
 | 76 | PLAN-tooling-speed.md | 0/8 | 8 open |
-| 77 | PLAN-tooling-code-reduction.md | 0/11 | 11 open |
+| 77 | PLAN-tooling-code-reduction.md | 1/11 | 10 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue

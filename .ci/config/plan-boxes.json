@@ -4131,8 +4131,8 @@
       "owner": "fee07197",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 0,
+      "open": 10,
+      "done": 1,
       "open_sigs": [
         "36d35046",
         "4c29250e",
@@ -4143,10 +4143,11 @@
         "9c185837",
         "bd8a600b",
         "c288a491",
-        "de852acf",
-        "efd17a89"
+        "de852acf"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "efd17a89"
+      ]
     },
     "agent/plans/PLAN-tooling-speed.md": {
       "status": "approved",
