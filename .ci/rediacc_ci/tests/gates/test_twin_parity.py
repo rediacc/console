@@ -689,16 +689,25 @@ def test_port_and_twin_agree(gate, tmp_path, name, module_path, twin, twin_timeo
     record_parity(name, twin, module_path, agreed=True)
 
 
+# What one nested pytest of the basetemp race test may cost; a run past it is a
+# verdict (rc NESTED_TIMED_OUT), never a TimeoutExpired traceback.
+NESTED_PYTEST_TIMEOUT = 120
+NESTED_TIMED_OUT = -1
+
+
 def _run_nested(argv, root, cwd):
-    return subprocess.run(
-        argv,
-        cwd=cwd,
-        env={**os.environ, "PYTEST_DEBUG_TEMPROOT": str(root)},
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=120,
-    ).returncode
+    try:
+        return subprocess.run(
+            argv,
+            cwd=cwd,
+            env={**os.environ, "PYTEST_DEBUG_TEMPROOT": str(root)},
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=NESTED_PYTEST_TIMEOUT,
+        ).returncode
+    except subprocess.TimeoutExpired:
+        return NESTED_TIMED_OUT
 
 
 def _two_nested_runs(tmp_path, own_basetemp):
