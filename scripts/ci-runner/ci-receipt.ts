@@ -1,0 +1,1012 @@
+#!/usr/bin/env tsx
+/**
+ * SIGNED CI RECEIPTS (agent/plans/PLAN-two-track-merge-dev.md D6, box R3): a container CI lane writes which of its gates PASSED at which inputHash, the workflow attests the file, and a local verb downloads, verifies and stores the verified ones as carry priors. A gate CI already judged green at the exact inputs a local run would hash then carries instead of re-running.
+ *
+ *   npx tsx scripts/ci-runner/ci-receipt.ts --selftest
+ *   npx tsx scripts/ci-runner/ci-receipt.ts write --lane quality-content --out <file>   (in CI, last steps of the lane)
+ *   npm run ci-receipt -- fetch [--branch <b> ...] [--limit <n>]                        (local)
+ *   npm run ci-receipt -- verify <file>                                                   (local: the verifier on one file)
+ *
+ * WRITE. Inside the lane's container, after its gates, `computeGateHashes` runs for the lane's lock ids at the checked-out tree with the runner's own options (run.ts `incrementalPlan`), so a hash here equals the hash a local run in the same image computes. A gate is receipted only when its inputHash is non-null AND its step is known to have PASSED. A workflow step without an `id:` has no entry in the `steps` context, so the outcome is read from the job's shape instead: the receipt step runs under `if: success()`, which holds only when no earlier step failed, and an earlier step whose condition is the standard guard (or absent) therefore ran and passed. A step with any further conjunct (a label hold, `inputs.media_quality`) may have been SKIPPED, so its gates are left out. That over-omits on purpose: a gate absent from a receipt only re-runs locally, while a gate present in error would carry a verdict nothing judged. ciOnly gates are left out too, since the local runner never judges them as ok.
+ *
+ * FETCH. Recent completed `ci.yml` runs on the named branches (default: the current branch and main) are listed through `gh`, each run's `ci-receipt-*` artifact is downloaded, and every file is verified with `gh attestation verify <file> --repo rediacc/console --signer-workflow rediacc/console/.github/workflows/ci-quality.yml --source-digest <sha>` before anything is written. A verified file is stored content-addressed as `.ci/cache/ci-receipts/<sha256>.json`, byte for byte, and a prior the runner reads is written beside the local archive as `.ci/cache/receipts/ci-<tree>.json`. An unverifiable file is never stored. A run whose download failed for any reason other than "no such artifact" is UNCHECKED, and any unchecked run, refused file, or a fetch that stored nothing exits 1.
+ *
+ * THE PRIOR, and why it needs no runner change. run.ts `loadPriorReceipts` reads every `*.json` under `.ci/cache/receipts/`, and `planCarry` keys the archive by each receipt's `headTree`. The prior names itself `ci-<tree>` there, so (a) it never collides with a local receipt for the same tree, (b) a gate carried from it records `carriedFrom.headTree: "ci-<tree>"`, which is exactly the file name the push guard reads back (block_unverified_push.py `_carried_refusal`, R4), and (c) the unchanged inputHash rule decides. Its `finishedAt` is empty, so it sorts after every local receipt: a local red at the same inputs outvotes a CI green, and the outcome ledger (`gate_ledger.receipt_rows`) and the scheduler replay (learned-selftest T7) both skip it, since neither a timing nor a local run is in it. Its gates are `ok` with findings `[]`, because only passes are receipted.
+ *
+ * THE VERIFIER SEAM. `Verifier` takes a file and the source digest it must have been built from and answers ok or the failing field. `ghAttestationVerifier` is the real one; the selftest passes stubs. The push guard runs the same command with the same `ATTESTATION_SPEC` (`CI_ATTESTATION_SPEC` there; its suite pins the two equal) on every carried entry whose origin is a CI prior, so a receipt edited after the fetch, or one signed by another workflow, is refused at the push and not only at the fetch.
+ *
+ * THREAT MODEL (D6). This protects against self-deception: a stale, edited or misattributed verdict. It does not protect against a malicious workflow on a branch, since a pull_request run executes the branch's own workflow file; this writer lives under scripts/ci-runner/**, which is in every inputHash through GLOBAL_INPUTS.
+ */
+import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import process from 'node:process';
+import { isEntryPoint } from '../lib/entry-point.js';
+import { REPO_ROOT } from '../lib/repo-root.js';
+import {
+  computeGateHashes,
+  exemptIdsOf,
+  type GateHash,
+  type LockEntry,
+  type PriorGate,
+  type PriorReceipt,
+  planCarry,
+  SCHEMA,
+  saltHash,
+  scriptsMapOf,
+} from './input-hash.js';
+import { leafClosure } from './quick-select.js';
+
+export const CI_RECEIPT_SCHEMA = 1;
+/** Who may have signed a receipt. The push guard holds the same two strings as `CI_ATTESTATION_SPEC`. */
+export const ATTESTATION_SPEC = {
+  repo: 'rediacc/console',
+  signerWorkflow: 'rediacc/console/.github/workflows/ci-quality.yml',
+} as const;
+export const QUALITY_WORKFLOW = '.github/workflows/ci-quality.yml';
+/** The run list fetch reads: ci-quality.yml is a reusable workflow, so its artifacts belong to the calling ci.yml run. */
+export const CALLER_WORKFLOW = 'ci.yml';
+export const RECEIPT_STEP = 'Write CI receipt';
+export const ARTIFACT_PREFIX = 'ci-receipt-';
+export const CI_PRIOR_PREFIX = 'ci-';
+export const RAW_DIR_REL = path.join('.ci', 'cache', 'ci-receipts');
+export const PRIOR_DIR_REL = path.join('.ci', 'cache', 'receipts');
+const STANDARD_GUARDS = new Set([
+  "${{ !cancelled() && steps.setup.outcome == 'success' }}",
+  "!cancelled() && steps.setup.outcome == 'success'",
+]);
+const SUCCESS_GUARDS = new Set(['success()', '${{ success() }}']);
+const SHA_RE = /^[0-9a-f]{40}$/;
+const TREE_RE = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
+
+export interface CiReceiptGate {
+  inputHash: string;
+  verdict: 'pass';
+}
+
+export interface CiReceipt {
+  schema: number;
+  repo: string;
+  run: { id: string; attempt: string };
+  lane: string;
+  sha: string;
+  tree: string;
+  salt: string;
+  gates: Record<string, CiReceiptGate>;
+  omitted: Record<string, string>;
+}
+
+export type VerifyResult = { ok: true } | { ok: false; field: string; detail: string };
+/** The seam: `file` must carry an attestation for its exact bytes, built from `sourceDigest` by the signer workflow. */
+export type Verifier = (file: string, sourceDigest: string) => VerifyResult;
+
+export type StepOutcome = 'success' | 'skipped' | 'failure' | 'unknown';
+
+interface WorkflowStep {
+  name: string | null;
+  cond: string | null;
+}
+
+function unquote(v: string): string {
+  const t = v.trim();
+  if ((t.startsWith("'") && t.endsWith("'")) || (t.startsWith('"') && t.endsWith('"')))
+    return t.slice(1, -1);
+  return t;
+}
+
+/** The steps of one job, in order, with each step's `name:` and `if:` (null when absent; `<block>` for a block scalar, which is never read as a known guard). Null when the job or its `steps:` is absent. */
+export function jobSteps(workflow: string, job: string): WorkflowStep[] | null {
+  const lines = workflow.split('\n');
+  const start = lines.findIndex((l) => l === `  ${job}:`);
+  if (start === -1) return null;
+  const next = lines.findIndex((l, i) => i > start && /^ {0,2}[A-Za-z0-9_-]+:\s*$/.test(l));
+  const end = next === -1 ? lines.length : next;
+  const stepsAt = lines.findIndex((l, i) => i > start && i < end && l === '    steps:');
+  if (stepsAt === -1) return null;
+  const steps: WorkflowStep[] = [];
+  let cur: WorkflowStep | null = null;
+  for (let i = stepsAt + 1; i < end; i++) {
+    const line = lines[i];
+    const dash = /^ {6}- (.*)$/.exec(line);
+    let body: string | null = null;
+    if (dash) {
+      cur = { name: null, cond: null };
+      steps.push(cur);
+      body = dash[1];
+    } else if (cur && /^ {8}\S/.test(line)) {
+      body = line.slice(8);
+    }
+    if (cur === null || body === null) continue;
+    const kv = /^(name|if):\s*(.*)$/.exec(body);
+    if (!kv) continue;
+    const value = /^[|>][-+]?\s*$/.test(kv[2]) ? '<block>' : unquote(kv[2]);
+    if (kv[1] === 'name') cur.name = value;
+    else cur.cond = value;
+  }
+  return steps;
+}
+
+/**
+ * What the receipt step can know about each earlier step, by name: `success` for a step that ran under the standard guard (or no condition) before a receipt step guarded by `success()`, `unknown` for anything else. An error when the job has no single receipt step or it is not guarded by `success()`, because then "every earlier step passed" is not what reaching it means.
+ */
+export function laneOutcomes(
+  steps: readonly WorkflowStep[]
+): { outcomes: Map<string, StepOutcome> } | { error: string } {
+  const at = steps.flatMap((s, i) => (s.name === RECEIPT_STEP ? [i] : []));
+  if (at.length !== 1)
+    return {
+      error: `the job has ${at.length} step(s) named "${RECEIPT_STEP}", expected exactly one`,
+    };
+  const cond = steps[at[0]].cond;
+  if (cond === null || !SUCCESS_GUARDS.has(cond))
+    return {
+      error: `"${RECEIPT_STEP}" must run under \`if: success()\`, got ${JSON.stringify(cond)}: only then does reaching it mean no earlier step failed`,
+    };
+  const outcomes = new Map<string, StepOutcome>();
+  const seen = new Set<string>();
+  for (const s of steps.slice(0, at[0])) {
+    if (s.name === null) continue;
+    const known = s.cond === null || STANDARD_GUARDS.has(s.cond);
+    outcomes.set(s.name, seen.has(s.name) ? 'unknown' : known ? 'success' : 'unknown');
+    seen.add(s.name);
+  }
+  return { outcomes };
+}
+
+interface CiStep {
+  kind?: string;
+  workflow?: string;
+  job?: string;
+  step?: string;
+}
+
+/** Lock ids whose CI step is in `lane` of the quality workflow, `gate: true`, not ciOnly. */
+export function laneIds(lock: Record<string, LockEntry>, lane: string): string[] {
+  return Object.values(lock)
+    .filter((e) => {
+      const ci = e.ci as CiStep | undefined;
+      return (
+        e.gate === true &&
+        e.ciOnly === undefined &&
+        ci?.kind === 'step' &&
+        ci.workflow === QUALITY_WORKFLOW &&
+        ci.job === lane &&
+        typeof ci.step === 'string'
+      );
+    })
+    .map((e) => e.id)
+    .sort();
+}
+
+/** The receipt, pure. Only a gate whose step passed and whose inputHash is non-null is written; every other lane gate is named in `omitted` with why. */
+export function buildCiReceipt(input: {
+  repo: string;
+  run: { id: string; attempt: string };
+  lane: string;
+  sha: string;
+  tree: string;
+  salt: string;
+  lock: Record<string, LockEntry>;
+  outcomes: ReadonlyMap<string, StepOutcome>;
+  hashes: ReadonlyMap<string, GateHash>;
+}): CiReceipt {
+  const gates: Record<string, CiReceiptGate> = {};
+  const omitted: Record<string, string> = {};
+  for (const id of laneIds(input.lock, input.lane)) {
+    const step = (input.lock[id].ci as CiStep).step as string;
+    const outcome = input.outcomes.get(step);
+    if (outcome !== 'success') {
+      omitted[id] =
+        outcome === undefined ? 'step not found before the receipt step' : `step ${outcome}`;
+      continue;
+    }
+    const h = input.hashes.get(id);
+    if (h === undefined || h.inputHash === null) {
+      omitted[id] = `no inputHash (${h?.reason ?? 'not hashed'})`;
+      continue;
+    }
+    gates[id] = { inputHash: h.inputHash, verdict: 'pass' };
+  }
+  return {
+    schema: CI_RECEIPT_SCHEMA,
+    repo: input.repo,
+    run: input.run,
+    lane: input.lane,
+    sha: input.sha,
+    tree: input.tree,
+    salt: input.salt,
+    gates,
+    omitted,
+  };
+}
+
+/** The receipt's shape, or the first field that is wrong. Run on bytes BEFORE they are verified or stored. */
+export function parseCiReceipt(
+  bytes: Buffer
+): { receipt: CiReceipt } | { field: string; detail: string } {
+  let doc: unknown;
+  try {
+    doc = JSON.parse(bytes.toString('utf8'));
+  } catch (e) {
+    return { field: 'json', detail: (e as Error).message };
+  }
+  const r = doc as Partial<CiReceipt> | null;
+  if (r === null || typeof r !== 'object' || Array.isArray(r))
+    return { field: 'json', detail: 'not an object' };
+  if (r.schema !== CI_RECEIPT_SCHEMA)
+    return {
+      field: 'schema',
+      detail: `expected ${CI_RECEIPT_SCHEMA}, got ${JSON.stringify(r.schema)}`,
+    };
+  if (r.repo !== ATTESTATION_SPEC.repo)
+    return {
+      field: 'repo',
+      detail: `expected ${ATTESTATION_SPEC.repo}, got ${JSON.stringify(r.repo)}`,
+    };
+  if (typeof r.sha !== 'string' || !SHA_RE.test(r.sha))
+    return { field: 'sha', detail: 'not a 40-hex commit' };
+  if (typeof r.tree !== 'string' || !TREE_RE.test(r.tree))
+    return { field: 'tree', detail: 'not a tree hash' };
+  if (typeof r.salt !== 'string' || r.salt === '') return { field: 'salt', detail: 'empty' };
+  if (typeof r.lane !== 'string' || r.lane === '') return { field: 'lane', detail: 'empty' };
+  if (r.gates === null || typeof r.gates !== 'object' || Array.isArray(r.gates))
+    return { field: 'gates', detail: 'not a map' };
+  for (const [id, g] of Object.entries(r.gates)) {
+    if (g?.verdict !== 'pass' || typeof g.inputHash !== 'string' || g.inputHash === '')
+      return { field: 'gates', detail: `${id} is not {inputHash, verdict: "pass"}` };
+  }
+  return { receipt: r as CiReceipt };
+}
+
+const sha256 = (b: Buffer): string => createHash('sha256').update(b).digest('hex');
+
+export const priorNameOf = (tree: string): string => `${CI_PRIOR_PREFIX}${tree}`;
+
+interface CiPrior extends PriorReceipt {
+  origin: 'ci';
+  tree: string;
+  repo: string;
+  ciReceipts: Array<{
+    lane: string;
+    run: { id: string; attempt: string };
+    path: string;
+    sha256: string;
+  }>;
+  gates: Record<string, PriorGate & { lane: string }>;
+}
+
+/** The runner-readable prior for `receipts` (one per lane, all at one tree), pure. */
+export function priorOf(
+  entries: ReadonlyArray<{ receipt: CiReceipt; path: string; sha256: string }>
+): CiPrior {
+  const first = entries[0].receipt;
+  const gates: CiPrior['gates'] = {};
+  for (const { receipt } of entries) {
+    for (const [id, g] of Object.entries(receipt.gates)) {
+      gates[id] = {
+        inputHash: g.inputHash,
+        verdict: 'ok',
+        exitCode: 0,
+        findings: [],
+        judgedTree: receipt.tree,
+        carriedFrom: null,
+        lane: receipt.lane,
+      };
+    }
+  }
+  return {
+    schema: SCHEMA,
+    whole: true,
+    origin: 'ci',
+    headTree: priorNameOf(first.tree),
+    tree: first.tree,
+    head: first.sha,
+    finishedAt: '',
+    repo: first.repo,
+    saltHash: first.salt,
+    ciReceipts: entries.map((e) => ({
+      lane: e.receipt.lane,
+      run: e.receipt.run,
+      path: e.path,
+      sha256: e.sha256,
+    })),
+    gates,
+  };
+}
+
+/**
+ * Verifies the file's bytes and, only on success, stores them content-addressed under `<root>/.ci/cache/ci-receipts/` and merges the receipt into `<root>/.ci/cache/receipts/ci-<tree>.json` (the same lane is replaced, other lanes at the same tree and salt are kept). The bytes are copied to a private file first and THAT file is verified, so what is stored is exactly what was verified.
+ */
+export function storeVerified(
+  root: string,
+  file: string,
+  verify: Verifier
+):
+  | { stored: true; prior: string; receipt: CiReceipt }
+  | { stored: false; field: string; detail: string } {
+  const bytes = fs.readFileSync(file);
+  const parsed = parseCiReceipt(bytes);
+  if (!('receipt' in parsed)) return { stored: false, ...parsed };
+  const receipt = parsed.receipt;
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-receipt-verify-'));
+  let verdict: VerifyResult;
+  try {
+    const copy = path.join(tmp, path.basename(file));
+    fs.writeFileSync(copy, bytes);
+    verdict = verify(copy, receipt.sha);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+  if (!verdict.ok) return { stored: false, field: verdict.field, detail: verdict.detail };
+  const digest = sha256(bytes);
+  const rawRel = path.join(RAW_DIR_REL, `${digest}.json`);
+  fs.mkdirSync(path.join(root, RAW_DIR_REL), { recursive: true });
+  fs.writeFileSync(path.join(root, rawRel), bytes);
+  const priorPath = path.join(root, PRIOR_DIR_REL, `${priorNameOf(receipt.tree)}.json`);
+  const kept: Array<{ receipt: CiReceipt; path: string; sha256: string }> = [];
+  try {
+    const old = JSON.parse(fs.readFileSync(priorPath, 'utf8')) as CiPrior;
+    if (old.saltHash === receipt.salt) {
+      for (const e of Array.isArray(old.ciReceipts) ? old.ciReceipts : []) {
+        if (e.lane === receipt.lane) continue;
+        const b = fs.readFileSync(path.join(root, e.path));
+        const p = parseCiReceipt(b);
+        if ('receipt' in p && sha256(b) === e.sha256)
+          kept.push({ receipt: p.receipt, path: e.path, sha256: e.sha256 });
+      }
+    }
+  } catch {
+    // no prior yet, or an unreadable one: this receipt starts it
+  }
+  kept.push({ receipt, path: rawRel, sha256: digest });
+  fs.mkdirSync(path.dirname(priorPath), { recursive: true });
+  fs.writeFileSync(priorPath, `${JSON.stringify(priorOf(kept), null, 2)}\n`);
+  return { stored: true, prior: priorPath, receipt };
+}
+
+/** The real verifier: `gh attestation verify` with D6's flags. A missing gh is a refusal with the install line, never a pass. */
+export const ghAttestationVerifier: Verifier = (file, sourceDigest) => {
+  if (!SHA_RE.test(sourceDigest)) return { ok: false, field: 'sha', detail: 'not a 40-hex commit' };
+  const r = spawnSync(
+    'gh',
+    [
+      'attestation',
+      'verify',
+      file,
+      '--repo',
+      ATTESTATION_SPEC.repo,
+      '--signer-workflow',
+      ATTESTATION_SPEC.signerWorkflow,
+      '--source-digest',
+      sourceDigest,
+      '--format',
+      'json',
+    ],
+    { encoding: 'utf8', timeout: 120_000 }
+  );
+  if (r.error) {
+    const missing = (r.error as NodeJS.ErrnoException).code === 'ENOENT';
+    return {
+      ok: false,
+      field: 'attestation',
+      detail: missing
+        ? 'gh is not installed (https://cli.github.com, then gh auth login)'
+        : r.error.message,
+    };
+  }
+  if (r.status !== 0) {
+    const tail = `${r.stderr ?? ''}`.trim().split('\n').slice(-3).join(' | ');
+    return {
+      ok: false,
+      field: 'attestation',
+      detail: `gh attestation verify exited ${r.status}: ${tail}`,
+    };
+  }
+  return { ok: true };
+};
+
+function git(root: string, args: string[]): string {
+  return execFileSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 1 << 28 }).trim();
+}
+
+function argValue(args: string[], flag: string): string | undefined {
+  const i = args.indexOf(flag);
+  return i === -1 ? undefined : args[i + 1];
+}
+
+/** The runner's own hash options (run.ts `incrementalPlan`), so a hash here is the hash a local run computes. */
+function laneHashes(
+  root: string,
+  tree: string,
+  lock: Record<string, LockEntry>
+): Map<string, GateHash> {
+  const pkg = JSON.parse(git(root, ['show', `${tree}:package.json`])) as {
+    scripts?: Record<string, string>;
+  };
+  const scripts = pkg.scripts ?? {};
+  let exemptText: string | null = null;
+  try {
+    exemptText = git(root, ['show', `${tree}:${path.join('.ci', 'policy', 'carry-exempt.json')}`]);
+  } catch {
+    exemptText = null;
+  }
+  return computeGateHashes(root, tree, lock, {
+    exempt: exemptIdsOf(exemptText),
+    scriptsOf: (id) => scriptsMapOf(String(lock[id]?.run ?? ''), scripts),
+    leafFilesOf: (id) => {
+      const leaves = lock[id]?.leaves;
+      const closure = leafClosure(root, Array.isArray(leaves) ? (leaves as string[]) : []);
+      return { files: [...closure.files], capped: closure.capped };
+    },
+  });
+}
+
+function write(args: string[]): number {
+  const lane = argValue(args, '--lane');
+  const out = argValue(args, '--out');
+  if (!lane || !out) {
+    process.stderr.write('ci-receipt write: --lane <job> and --out <file> are required\n');
+    return 2;
+  }
+  const root = REPO_ROOT;
+  const sha = git(root, ['rev-parse', 'HEAD']);
+  const tree = git(root, ['rev-parse', 'HEAD^{tree}']);
+  const ghSha = process.env.GITHUB_SHA ?? '';
+  if (process.env.GITHUB_ACTIONS === 'true' && ghSha !== sha) {
+    process.stderr.write(
+      `ci-receipt write: HEAD is ${sha} but GITHUB_SHA is ${ghSha}; the attestation's source digest would not describe the tree hashed here\n`
+    );
+    return 1;
+  }
+  const lock: Record<string, LockEntry> = {};
+  for (const e of JSON.parse(
+    git(root, ['show', `${tree}:scripts/ci-runner/gates.lock.json`])
+  ) as LockEntry[])
+    lock[e.id] = e;
+  const steps = jobSteps(git(root, ['show', `${tree}:${QUALITY_WORKFLOW}`]), lane);
+  if (steps === null) {
+    process.stderr.write(`ci-receipt write: ${QUALITY_WORKFLOW} has no job ${lane} with steps\n`);
+    return 1;
+  }
+  const lo = laneOutcomes(steps);
+  if ('error' in lo) {
+    process.stderr.write(`ci-receipt write: ${lane}: ${lo.error}\n`);
+    return 1;
+  }
+  const receipt = buildCiReceipt({
+    repo: process.env.GITHUB_REPOSITORY ?? '',
+    run: { id: process.env.GITHUB_RUN_ID ?? '', attempt: process.env.GITHUB_RUN_ATTEMPT ?? '' },
+    lane,
+    sha,
+    tree,
+    salt: saltHash(root, tree),
+    lock,
+    outcomes: lo.outcomes,
+    hashes: laneHashes(root, tree, lock),
+  });
+  const total = laneIds(lock, lane).length;
+  const passed = Object.keys(receipt.gates).length;
+  if (passed === 0) {
+    process.stderr.write(
+      `ci-receipt write: ${lane}: 0 of ${total} lane gate(s) receipted; the writer is not seeing the lane, so an empty receipt would mean nothing. Omitted: ${JSON.stringify(receipt.omitted)}\n`
+    );
+    return 1;
+  }
+  fs.writeFileSync(out, `${JSON.stringify(receipt, null, 2)}\n`);
+  const why = new Map<string, number>();
+  for (const w of Object.values(receipt.omitted)) {
+    const k = w.replace(/\(.*\)/, '').trim();
+    why.set(k, (why.get(k) ?? 0) + 1);
+  }
+  process.stdout.write(
+    `ci-receipt write: ${lane}: ${passed} of ${total} lane gate(s) receipted as pass, ${total - passed} omitted (${[...why].map(([k, n]) => `${n} ${k}`).join(', ') || 'none'}); tree ${tree}, sha ${sha}, salt ${receipt.salt.slice(0, 12)} -> ${out}\n`
+  );
+  return 0;
+}
+
+function gh(args: string[]): { status: number; stdout: string; stderr: string } {
+  const r = spawnSync('gh', args, { encoding: 'utf8', timeout: 180_000, maxBuffer: 1 << 26 });
+  if (r.error) return { status: 127, stdout: '', stderr: r.error.message };
+  return { status: r.status ?? 1, stdout: r.stdout ?? '', stderr: r.stderr ?? '' };
+}
+
+function fetchVerb(args: string[]): number {
+  const probe = gh(['--version']);
+  if (probe.status !== 0) {
+    process.stderr.write(
+      `ci-receipt fetch: gh is not usable (${probe.stderr.trim()}). Install https://cli.github.com and run gh auth login; without it no receipt can be verified.\n`
+    );
+    return 1;
+  }
+  const limit = Number(argValue(args, '--limit') ?? '5');
+  const branches: string[] = [];
+  args.forEach((a, i) => {
+    if (a === '--branch' && args[i + 1]) branches.push(args[i + 1]);
+  });
+  if (branches.length === 0) {
+    const cur = git(REPO_ROOT, ['rev-parse', '--abbrev-ref', 'HEAD']);
+    if (cur !== 'HEAD') branches.push(cur);
+    branches.push('main');
+  }
+  let listed = 0;
+  let stored = 0;
+  let noArtifact = 0;
+  const refused: string[] = [];
+  const unchecked: string[] = [];
+  for (const branch of [...new Set(branches)]) {
+    const list = gh([
+      'run',
+      'list',
+      '--repo',
+      ATTESTATION_SPEC.repo,
+      '--workflow',
+      CALLER_WORKFLOW,
+      '--branch',
+      branch,
+      '--status',
+      'completed',
+      '--limit',
+      String(limit),
+      '--json',
+      'databaseId,headSha',
+    ]);
+    if (list.status !== 0) {
+      unchecked.push(`branch ${branch}: gh run list exited ${list.status}: ${list.stderr.trim()}`);
+      continue;
+    }
+    const runs = JSON.parse(list.stdout) as Array<{ databaseId: number; headSha: string }>;
+    for (const run of runs) {
+      listed++;
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-receipt-dl-'));
+      try {
+        const dl = gh([
+          'run',
+          'download',
+          String(run.databaseId),
+          '--repo',
+          ATTESTATION_SPEC.repo,
+          '--pattern',
+          `${ARTIFACT_PREFIX}*`,
+          '--dir',
+          dir,
+        ]);
+        if (dl.status !== 0) {
+          if (/no (valid )?artifacts? (found|matches)/i.test(dl.stderr)) noArtifact++;
+          else
+            unchecked.push(
+              `run ${run.databaseId}: gh run download exited ${dl.status}: ${dl.stderr.trim()}`
+            );
+          continue;
+        }
+        const files = fs
+          .readdirSync(dir, { recursive: true, withFileTypes: true })
+          .filter((d) => d.isFile() && d.name.endsWith('.json'))
+          .map((d) => path.join(d.parentPath, d.name));
+        if (files.length === 0) {
+          unchecked.push(`run ${run.databaseId}: the download held no .json file`);
+          continue;
+        }
+        for (const f of files) {
+          const r = storeVerified(REPO_ROOT, f, ghAttestationVerifier);
+          if (r.stored) {
+            stored++;
+            process.stdout.write(
+              `  run ${run.databaseId} ${r.receipt.lane}: ${Object.keys(r.receipt.gates).length} gate(s) at tree ${r.receipt.tree} -> ${path.relative(REPO_ROOT, r.prior)}\n`
+            );
+          } else
+            refused.push(
+              `run ${run.databaseId} ${path.basename(f)}: NOT STORED (field ${r.field}): ${r.detail}`
+            );
+        }
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
+    }
+  }
+  for (const r of refused) process.stderr.write(`ci-receipt fetch: ${r}\n`);
+  for (const u of unchecked) process.stderr.write(`ci-receipt fetch: UNCHECKED ${u}\n`);
+  process.stdout.write(
+    `ci-receipt fetch: ${listed} run(s) listed on ${new Set(branches).size} branch(es), ${stored} receipt(s) verified and stored, ${noArtifact} run(s) without a receipt artifact, ${refused.length} refused, ${unchecked.length} unchecked\n`
+  );
+  if (refused.length > 0 || unchecked.length > 0) return 1;
+  if (stored === 0) {
+    process.stderr.write(
+      'ci-receipt fetch: no CI receipt was verified and stored, so nothing can carry from CI\n'
+    );
+    return 1;
+  }
+  return 0;
+}
+
+function verifyVerb(args: string[]): number {
+  const file = args[0];
+  if (!file) {
+    process.stderr.write('ci-receipt verify: <file> is required\n');
+    return 2;
+  }
+  const parsed = parseCiReceipt(fs.readFileSync(file));
+  if (!('receipt' in parsed)) {
+    process.stderr.write(`ci-receipt verify: ${file}: field ${parsed.field}: ${parsed.detail}\n`);
+    return 1;
+  }
+  const v = ghAttestationVerifier(file, parsed.receipt.sha);
+  if (!v.ok) {
+    process.stderr.write(`ci-receipt verify: ${file}: REFUSED (field ${v.field}): ${v.detail}\n`);
+    return 1;
+  }
+  process.stdout.write(
+    `ci-receipt verify: ${file}: verified (signer ${ATTESTATION_SPEC.signerWorkflow}, source ${parsed.receipt.sha}, ${Object.keys(parsed.receipt.gates).length} gate(s))\n`
+  );
+  return 0;
+}
+
+// ---------------------------------------------------------------------------------------- selftest
+
+/** The one line a mutant neutralizes: storing must depend on the verifier's answer. */
+export const STORE_GUARD_LINE =
+  '  if (!verdict.ok) return { stored: false, field: verdict.field, detail: verdict.detail };';
+
+function fixtureHash(id: string, inputHash: string | null, reason: string | null = null): GateHash {
+  return {
+    id,
+    inputHash,
+    defHash: 'd',
+    filesHash: 'f',
+    inputs: { globs: [], files: [], scripts: [] },
+    reason,
+    artifactHash: null,
+    exemptKind: null,
+  };
+}
+
+/** The cases that need nothing but this module: run by `--selftest`, and by the mutant copy under `--selftest-core`. Returns the failure messages. */
+function coreCases(): { failures: string[]; count: number } {
+  const failures: string[] = [];
+  let count = 0;
+  const check = (ok: boolean, msg: string): void => {
+    count++;
+    if (!ok) failures.push(msg);
+  };
+  const wf = [
+    'jobs:',
+    '  lane:',
+    '    runs-on: x',
+    '    steps:',
+    '      - id: setup',
+    '        uses: ./.github/actions/setup-workspace',
+    '      - name: Plain gate',
+    "        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}",
+    '        run: npm run check:a',
+    '      - name: Held gate',
+    "        if: ${{ !cancelled() && steps.setup.outcome == 'success' && (inputs.media_quality != 'skip') }}",
+    '        run: npm run check:b',
+    '      - name: Bare gate',
+    '        run: npm run check:c',
+    `      - name: ${RECEIPT_STEP}`,
+    '        if: success()',
+    '        run: x',
+    '      - name: After gate',
+    '        run: npm run check:d',
+    '  other:',
+    '    steps:',
+    '      - name: Plain gate',
+    '        run: y',
+  ].join('\n');
+  const steps = jobSteps(wf, 'lane');
+  check(
+    steps !== null && steps.length === 6,
+    `jobSteps reads the lane's 6 steps and stops at the next job, got ${JSON.stringify(steps)}`
+  );
+  const lo = steps ? laneOutcomes(steps) : { error: 'no steps' };
+  const oc = 'outcomes' in lo ? lo.outcomes : new Map<string, StepOutcome>();
+  check(
+    oc.get('Plain gate') === 'success',
+    'a standard-guard step before a success() receipt step reads as passed'
+  );
+  check(oc.get('Bare gate') === 'success', 'CONTROL: a step with no condition reads as passed');
+  check(
+    oc.get('Held gate') === 'unknown',
+    'a step with an extra conjunct may have been skipped, so it reads unknown'
+  );
+  check(!oc.has('After gate'), 'a step after the receipt step has not run and is not read');
+  const noGuard = laneOutcomes(jobSteps(wf.replace('        if: success()\n', ''), 'lane') ?? []);
+  check(
+    'error' in noGuard,
+    'a receipt step without `if: success()` is refused, since reaching it then proves nothing'
+  );
+  const twice = laneOutcomes(
+    jobSteps(wf.replace('      - name: After gate', `      - name: ${RECEIPT_STEP}`), 'lane') ?? []
+  );
+  check('error' in twice, 'two receipt steps in one job are refused');
+  check(
+    jobSteps(wf, 'absent') === null,
+    'an absent job reads as null, never as a job with no steps'
+  );
+
+  const ci = (job: string, step: string): Record<string, unknown> => ({
+    ci: { kind: 'step', workflow: QUALITY_WORKFLOW, job, step },
+  });
+  const lock: Record<string, LockEntry> = {
+    'check:a': { id: 'check:a', run: 'npm run check:a', gate: true, ...ci('lane', 'Plain gate') },
+    'check:b': { id: 'check:b', run: 'npm run check:b', gate: true, ...ci('lane', 'Held gate') },
+    'check:c': { id: 'check:c', run: 'npm run check:c', gate: true, ...ci('lane', 'Bare gate') },
+    'check:nohash': { id: 'check:nohash', run: 'x', gate: true, ...ci('lane', 'Plain gate') },
+    'check:skip': { id: 'check:skip', run: 'x', gate: true, ...ci('lane', 'Skipped gate') },
+    'check:fail': { id: 'check:fail', run: 'x', gate: true, ...ci('lane', 'Failed gate') },
+    'check:cionly': {
+      id: 'check:cionly',
+      run: 'x',
+      gate: true,
+      ciOnly: 'r',
+      ...ci('lane', 'Plain gate'),
+    },
+    'check:elsewhere': {
+      id: 'check:elsewhere',
+      run: 'x',
+      gate: true,
+      ...ci('other', 'Plain gate'),
+    },
+    'build:x': { id: 'build:x', run: 'x', gate: false, ...ci('lane', 'Plain gate') },
+  };
+  const outcomes = new Map<string, StepOutcome>([
+    ...oc,
+    ['Skipped gate', 'skipped'],
+    ['Failed gate', 'failure'],
+  ]);
+  const hashes = new Map<string, GateHash>(
+    [
+      'check:a',
+      'check:b',
+      'check:c',
+      'check:skip',
+      'check:fail',
+      'check:cionly',
+      'check:elsewhere',
+      'build:x',
+    ].map((id) => [id, fixtureHash(id, `h-${id}`)])
+  );
+  hashes.set('check:nohash', fixtureHash('check:nohash', null, 'env'));
+  const tree = 'a'.repeat(40);
+  const sha = 'b'.repeat(40);
+  const receipt = buildCiReceipt({
+    repo: ATTESTATION_SPEC.repo,
+    run: { id: '1', attempt: '1' },
+    lane: 'lane',
+    sha,
+    tree,
+    salt: 'salt-1',
+    lock,
+    outcomes,
+    hashes,
+  });
+  const ids = Object.keys(receipt.gates).sort((a, b) => Number(a > b) - Number(a < b));
+  check(
+    JSON.stringify(ids) === JSON.stringify(['check:a', 'check:c']),
+    `only passed gates with a non-null inputHash are written, got ${ids.join(',')}`
+  );
+  check(
+    Object.values(receipt.gates).every((g) => g.verdict === 'pass'),
+    'every written verdict is pass'
+  );
+  check(
+    'check:a' in receipt.gates && receipt.gates['check:a'].inputHash === 'h-check:a',
+    'CONTROL: a passed gate carries its own inputHash'
+  );
+  check(
+    receipt.omitted['check:skip'] === 'step skipped',
+    'a gate whose step was skipped is absent, and named in omitted'
+  );
+  check(receipt.omitted['check:fail'] === 'step failure', 'a gate whose step failed is absent');
+  check(
+    receipt.omitted['check:b'] === 'step unknown',
+    'a gate behind a conditional step is absent'
+  );
+  check(
+    String(receipt.omitted['check:nohash']).startsWith('no inputHash'),
+    'a gate with a null inputHash is absent'
+  );
+  check(
+    !('check:cionly' in receipt.gates) && !('check:cionly' in receipt.omitted),
+    'a ciOnly gate is not a lane gate here'
+  );
+  check(
+    !('check:elsewhere' in receipt.gates) && !('build:x' in receipt.gates),
+    "another job's gate and a gate: false entry are never written"
+  );
+
+  // Storage: a stub verifier that knows which digests carry an attestation, and from which workflow.
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-receipt-st-'));
+  try {
+    const bytes = Buffer.from(`${JSON.stringify(receipt, null, 2)}\n`);
+    const file = path.join(root, 'in.json');
+    fs.writeFileSync(file, bytes);
+    const attested = new Map<string, string>([[sha256(bytes), ATTESTATION_SPEC.signerWorkflow]]);
+    const stub: Verifier = (f, digest) => {
+      const signer = attested.get(sha256(fs.readFileSync(f)));
+      if (signer === undefined)
+        return { ok: false, field: 'attestation', detail: 'no attestation for these bytes' };
+      if (signer !== ATTESTATION_SPEC.signerWorkflow)
+        return { ok: false, field: 'attestation', detail: `signed by ${signer}` };
+      return digest === sha
+        ? { ok: true }
+        : { ok: false, field: 'attestation', detail: 'source digest differs' };
+    };
+    const listing = (): string[] =>
+      [RAW_DIR_REL, PRIOR_DIR_REL].flatMap((d) => {
+        try {
+          return fs.readdirSync(path.join(root, d)).map((n) => path.join(d, n));
+        } catch {
+          return [];
+        }
+      });
+    const failing: Verifier = () => ({
+      ok: false,
+      field: 'attestation',
+      detail: 'stub: always fails',
+    });
+    const r0 = storeVerified(root, file, failing);
+    check(
+      !r0.stored && r0.field === 'attestation',
+      'an unverifiable file is refused with the field named'
+    );
+    check(
+      listing().length === 0,
+      `an unverifiable file is never stored, found ${listing().join(',')}`
+    );
+    const altered = path.join(root, 'altered.json');
+    fs.writeFileSync(
+      altered,
+      Buffer.from(bytes.toString('utf8').replace('h-check:a', 'h-check:A'))
+    );
+    check(
+      !storeVerified(root, altered, stub).stored && listing().length === 0,
+      'a byte-altered receipt is not verified and not stored'
+    );
+    const r1 = storeVerified(root, file, stub);
+    check(r1.stored, `CONTROL: an attested receipt is stored, got ${JSON.stringify(r1)}`);
+    const priorFile = path.join(root, PRIOR_DIR_REL, `${CI_PRIOR_PREFIX}${tree}.json`);
+    const raw = path.join(root, RAW_DIR_REL, `${sha256(bytes)}.json`);
+    check(
+      fs.existsSync(raw) && fs.readFileSync(raw).equals(bytes),
+      'the stored raw file is byte-identical and named by its sha256'
+    );
+    const prior = JSON.parse(fs.readFileSync(priorFile, 'utf8')) as CiPrior;
+    check(
+      prior.headTree === `ci-${tree}` && prior.origin === 'ci' && prior.finishedAt === '',
+      'the prior names itself ci-<tree>, says origin ci and carries an empty finishedAt'
+    );
+    // The runner's rule, unchanged: the prior carries a gate at the same inputHash and salt, and only then.
+    const current = new Map<string, GateHash>([
+      ['check:a', fixtureHash('check:a', 'h-check:a')],
+      ['check:c', fixtureHash('check:c', 'h-other')],
+    ]);
+    const plan = planCarry([prior], current, ['check:a', 'check:c'], 'salt-1');
+    check(
+      plan.carry.get('check:a')?.carriedFrom?.headTree === `ci-${tree}`,
+      'planCarry carries a gate from the CI prior, origin ci-<tree>'
+    );
+    check(plan.run.includes('check:c'), 'CONTROL: a gate whose inputHash moved re-runs');
+    check(
+      planCarry([prior], current, ['check:a'], 'salt-2').carry.size === 0,
+      'CONTROL: another salt (another image) carries nothing'
+    );
+    const local: PriorReceipt = {
+      schema: SCHEMA,
+      whole: true,
+      headTree: tree,
+      head: sha,
+      finishedAt: '2026-11-22T00:00:00Z',
+      saltHash: 'salt-1',
+      gates: {
+        'check:a': {
+          inputHash: 'h-check:a',
+          verdict: 'fail',
+          exitCode: 1,
+          findings: ['x'],
+          judgedTree: tree,
+          carriedFrom: null,
+        },
+      },
+    };
+    check(
+      planCarry([local, prior], current, ['check:a'], 'salt-1').rejudged.includes('check:a'),
+      'a local red at the same inputs outvotes the CI green, which sorts last'
+    );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+  return { failures, count };
+}
+
+/** Runs a copy of this file with STORE_GUARD_LINE neutralized; its core cases must fail. */
+function mutantRed(): { ok: boolean; detail: string } {
+  const self = import.meta.filename;
+  const src = fs.readFileSync(self, 'utf8');
+  const occurrences = src.split(STORE_GUARD_LINE).length - 1;
+  // Twice: once in the code, once in the constant naming it.
+  if (occurrences !== 2)
+    return {
+      ok: false,
+      detail: `the store guard line occurs ${occurrences} time(s), expected 2 (code and constant)`,
+    };
+  const at = src.indexOf(STORE_GUARD_LINE);
+  const dir = path.dirname(self);
+  const mutated = (
+    src.slice(0, at) +
+    '  if (false) return { stored: false, field: verdict.field, detail: verdict.detail };' +
+    src.slice(at + STORE_GUARD_LINE.length)
+  ).replace(/from '(\.{1,2}\/[^']+)'/g, (_m, rel: string) => `from '${path.resolve(dir, rel)}'`);
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-receipt-mutant-'));
+  try {
+    const copy = path.join(tmp, 'ci-receipt.ts');
+    fs.writeFileSync(copy, mutated);
+    const tsx = path.join(REPO_ROOT, 'node_modules', '.bin', 'tsx');
+    const r = spawnSync(tsx, [copy, '--selftest-core'], { encoding: 'utf8', timeout: 120_000 });
+    const out = `${r.stdout ?? ''}${r.stderr ?? ''}`;
+    if (r.error) return { ok: false, detail: `the mutant could not start: ${r.error.message}` };
+    const red = r.status === 1 && out.includes('never stored');
+    return { ok: red, detail: `exit ${r.status}: ${out.trim().split('\n').slice(-2).join(' | ')}` };
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+function selftest(core: boolean): number {
+  const { failures, count } = coreCases();
+  let total = count;
+  if (!core) {
+    // The loader pin: run.ts reads every *.json under receipts/ beside the destination, which is where the prior is written.
+    const runSrc = fs.readFileSync(path.join(REPO_ROOT, 'scripts', 'ci-runner', 'run.ts'), 'utf8');
+    total++;
+    if (
+      !/const dir = path\.join\(path\.dirname\(dest\), 'receipts'\);[\s\S]{0,200}\.filter\(\(n\) => n\.endsWith\('\.json'\)\)/.test(
+        runSrc
+      )
+    )
+      failures.push(
+        'run.ts loadPriorReceipts no longer reads every *.json under receipts/, so a ci-<tree>.json prior would not be loaded'
+      );
+    // The real workflow: the lane's steps parse, so the writer is not blind on the tree it will run against.
+    const real = jobSteps(
+      fs.readFileSync(path.join(REPO_ROOT, QUALITY_WORKFLOW), 'utf8'),
+      'quality-content'
+    );
+    total++;
+    if (real === null || real.filter((s) => s.name !== null).length < 10)
+      failures.push(
+        `the real quality-content job parses to ${real?.length ?? 0} step(s); the writer would be reading nothing`
+      );
+    const m = mutantRed();
+    total++;
+    if (!m.ok)
+      failures.push(
+        `MUTANT CONTROL: storing without the verifier's answer must turn the core cases red, got ${m.detail}`
+      );
+  }
+  for (const f of failures) process.stderr.write(`  FAIL ${f}\n`);
+  if (failures.length > 0) {
+    process.stderr.write(`ci-receipt selftest: ${failures.length} of ${total} case(s) failed\n`);
+    return 1;
+  }
+  process.stdout.write(
+    `ci-receipt selftest: ${total} case(s) passed${core ? ' (core)' : ', mutant control red as required'}\n`
+  );
+  return 0;
+}
+
+export function main(argv: string[]): number {
+  const [verb, ...rest] = argv;
+  if (verb === '--selftest') return selftest(false);
+  if (verb === '--selftest-core') return selftest(true);
+  if (verb === 'write') return write(rest);
+  if (verb === 'fetch') return fetchVerb(rest);
+  if (verb === 'verify') return verifyVerb(rest);
+  process.stderr.write(
+    'usage: ci-receipt.ts --selftest | write --lane <job> --out <file> | fetch [--branch <b>] [--limit <n>] | verify <file>\n'
+  );
+  return 2;
+}
+
+if (isEntryPoint(import.meta.filename)) process.exit(main(process.argv.slice(2)));

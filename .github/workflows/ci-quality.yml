@@ -1721,10 +1721,13 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && inputs.media_quality != 'skip' }}
         run: npm run check:ci-tutorial-parity
 
-
-
-
-
+      # The signed CI receipt's writer (PLAN-two-track-merge-dev R3) proves it can
+      # fail before this lane trusts it: its controls cover which gates a receipt
+      # may name, that an unverifiable file is never stored, and a mutant of the
+      # store that must turn them red.
+      - name: CI receipt writer selftest
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npx tsx scripts/ci-runner/ci-receipt.ts --selftest
 
       # The external gates of this job ask hosts outside the repository:
       # check:deps the npm registry, External links every linked host, and
