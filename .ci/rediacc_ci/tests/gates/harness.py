@@ -23,6 +23,7 @@ import shutil
 import signal
 import stat
 import subprocess
+import sys
 import tempfile
 from typing import Any
 
@@ -203,6 +204,14 @@ def require_python_module(interpreter: str, module: str, fix: str) -> None:
             "%s cannot import %r, so this case could not run at all -- which is a "
             "FAILURE and not a pass. Fix: %s" % (interpreter, module, fix)
         )
+
+
+def nested_pytest_argv(basetemp: os.PathLike[str] | str, *args: str) -> list[str]:
+    """argv for a pytest that a test or a gate port spawns from inside a pytest run.
+
+    ALWAYS an own `--basetemp`. Without one every nested run uses the shared default root `/tmp/pytest-of-<user>`; under pytest-xdist several nested runs then race on its numbered-dir cleanup and on the `pytest-current` symlink, and one dies with `FileNotFoundError` on `os.unlink(.../pytest-current)`. An explicit `--basetemp` never touches that root.
+    """
+    return [sys.executable, "-m", "pytest", f"--basetemp={basetemp}", *args]
 
 
 def _child_tmpdir() -> str:

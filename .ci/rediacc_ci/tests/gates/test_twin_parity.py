@@ -28,6 +28,7 @@ THE CONTROL COUNTS COME FROM A LEDGER, not from parsing pytest's output. The por
 ANTI-VACUITY. Discovering zero ported modules is a FAILURE, not an empty parametrize that reports green having compared nothing. `test_the_registry_is_not_empty` is that refusal, and it prints the shape so a collapse is visible rather than silent.
 """
 
+import concurrent.futures
 import datetime
 import hashlib
 import importlib
@@ -178,7 +179,7 @@ def run_port(module_path: pathlib.Path, ledger: pathlib.Path, timeout: int):
     argument for comparing verdicts rather than trusting a green. The nested run therefore shares the outer run's cache directory, which is gitignored and per-worktree already.
     """
     proc = subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", str(module_path)],
+        harness.nested_pytest_argv(ledger.parent / "nested-basetemp", "-q", str(module_path)),
         capture_output=True,
         text=True,
         check=False,
@@ -686,3 +687,51 @@ def test_port_and_twin_agree(gate, tmp_path, name, module_path, twin, twin_timeo
     # Reached only when every refusal above declined to fire, so `agreed=True` is
     # the verdict this run actually produced rather than an assumption about it.
     record_parity(name, twin, module_path, agreed=True)
+
+
+def _run_nested(argv, root, cwd):
+    return subprocess.run(
+        argv,
+        cwd=cwd,
+        env={**os.environ, "PYTEST_DEBUG_TEMPROOT": str(root)},
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=120,
+    ).returncode
+
+
+def _two_nested_runs(tmp_path, own_basetemp):
+    """Run two nested pytests at once with a scratch temp root; return (rcs, shared pytest-current paths)."""
+    root = tmp_path / "temproot"
+    root.mkdir()
+    jobs = []
+    for n in range(2):
+        work = tmp_path / ("work%d" % n)
+        work.mkdir()
+        (work / "pytest.ini").write_text("[pytest]\n", encoding="utf-8")
+        (work / "test_one.py").write_text(
+            "def test_one(tmp_path):\n    assert tmp_path.is_dir()\n", encoding="utf-8"
+        )
+        if own_basetemp:
+            argv = harness.nested_pytest_argv(work / "bt", "-q", "-p", "no:cacheprovider")
+        else:
+            argv = [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"]
+        jobs.append((argv, root, work))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        rcs = list(pool.map(lambda job: _run_nested(*job), jobs))
+    return rcs, list(root.glob("pytest-of-*/pytest-current"))
+
+
+def test_nested_pytest_with_own_basetemp_never_touches_the_shared_root(tmp_path):
+    rcs, shared = _two_nested_runs(tmp_path, own_basetemp=True)
+    assert rcs == [0, 0]
+    assert shared == [], "a nested pytest used the shared pytest-of-<user> root"
+
+
+def test_control_nested_pytest_without_basetemp_uses_the_shared_root(tmp_path):
+    """CONTROL: the old spawn form does land in the shared root, which is what the race is made of."""
+    _rcs, shared = _two_nested_runs(tmp_path, own_basetemp=False)
+    assert shared, (
+        "the old spawn form no longer touches the shared root; the test above proves nothing"
+    )

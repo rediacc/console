@@ -572,7 +572,16 @@ def test_t6_three_reraised_finished_items_yield_one_rule_and_its_test(tmp_path):
     test = tmp_path / "test_rule.py"
     test.write_text(rule["test"], encoding="utf-8")
     got = subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", str(test)],
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            f"--basetemp={tmp_path.parent / (tmp_path.name + '-basetemp')}",
+            "-q",
+            "-p",
+            "no:cacheprovider",
+            str(test),
+        ],
         capture_output=True,
         text=True,
         check=False,

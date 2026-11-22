@@ -14,6 +14,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.quality import pytest_phase_timing as plugin
 from rediacc_ci.quality import pytest_slow_ratchet as ratchet
+from rediacc_ci.tests.gates import harness
 
 SUITE = """import time
 
@@ -148,7 +149,14 @@ def test_without_the_option_the_plugin_writes_nothing(tmp_path):
     (tmp_path / "test_one.py").write_text("def test_one():\n    pass\n", encoding="utf-8")
     env = dict(os.environ, PYTHONPATH=str(paths.repo_root() / ".ci"))
     proc = subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "-p", plugin.__name__],
+        harness.nested_pytest_argv(
+            tmp_path.parent / (tmp_path.name + "-basetemp"),
+            "-q",
+            "-p",
+            "no:cacheprovider",
+            "-p",
+            plugin.__name__,
+        ),
         cwd=tmp_path,
         env=env,
         capture_output=True,
