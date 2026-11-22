@@ -236,6 +236,18 @@ def _release_green(main, gh, sha):
             raise PromoteRefusedError(message)
 
 
+def _release_sha(main, merged):
+    """The sha whose release must be green: the tip of origin/main when it contains `merged`, else `merged`.
+
+    A hotfix pushed on top of the merge (2026-11-22: the edge release at the merge failed on R2 InvalidRegionName,
+    the hotfix aa829a19d released green) makes the merge's own release red for ever, though main's tip, which the
+    promotion rebases onto, released green with the merge in it."""
+    tip = spike.out(main, "rev-parse", "--verify", "%s^{commit}" % UPSTREAM)
+    if tip and spike.git(main, "merge-base", "--is-ancestor", merged, tip).returncode == 0:
+        return tip
+    return merged
+
+
 def _dev_commits(main, dev):
     """The development commits with no patch-equivalent on origin/main, oldest first."""
     marks = _must(main, "cherry", UPSTREAM, "refs/heads/%s" % dev).splitlines()
@@ -402,7 +414,7 @@ def promote(root, *, gh=run_gh, today=None, next_name=None):
     if not shas:
         log.info(IDLE_TEXT % UPSTREAM)
         return None
-    _release_green(main, gh, merged)
+    _release_green(main, gh, _release_sha(main, merged))
     _code_complete(main, shas)
     # The name is read before anything moves, so a gh that cannot answer refuses with both trees untouched.
     try:

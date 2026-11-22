@@ -662,3 +662,14 @@ def test_gc_control_an_unbound_linked_tree_stays_rule_1(tmp_path):
     row = base.row_of(done.stdout, "console-landing")
     assert "rule 1" in row, done.stdout
     assert "landing: " not in row, done.stdout
+
+
+def test_the_release_is_judged_at_the_main_tip_when_it_contains_the_merge(two):
+    """A hotfix on top of the merge: the merge's own release stays red, main's tip released green with it inside."""
+    tip = spike.must(two.main, "rev-parse", "origin/main")
+    assert promote_mod._release_sha(two.main, tip) == tip
+    # A development commit main does not contain is judged as itself, as is an unknown sha.
+    dev_tip = spike.must(two.main, "rev-parse", DEV)
+    assert promote_mod._release_sha(two.main, dev_tip) == dev_tip
+    # Control: a sha main does not contain is judged as itself.
+    assert promote_mod._release_sha(two.main, MERGED_SHA) == MERGED_SHA
