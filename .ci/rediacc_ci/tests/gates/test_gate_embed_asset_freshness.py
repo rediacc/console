@@ -330,7 +330,8 @@ def samba_in_code(source: str) -> bool:
     start = body.find("/**")
     if start != -1 and body[:start].strip() in ("", "#!/usr/bin/env node"):
         end = body.find("*/", start)
-        body = body[end + 2 :] if end != -1 else ""
+        # An unterminated header is not a header: the whole file stays in scope, so the scan fails closed.
+        body = body[end + 2 :] if end != -1 else body
     return "samba.org" in body
 
 
@@ -347,6 +348,12 @@ def test_the_samba_scan_controls(gate):
         samba_in_code(header + "const T = `\n * download.samba.org\n`;\n"),
         True,
         "a template literal line starting with * is caught",
+    )
+    unterminated = (
+        "#!/usr/bin/env node\n/**\n * no close\nconst U = 'https://download.samba.org/';\n"
+    )
+    gate.assert_eq(
+        samba_in_code(unterminated), True, "an unterminated header leaves the whole file scanned"
     )
     gate.log_pass("the samba scan catches code and passes the header")
 
