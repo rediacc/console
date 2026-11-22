@@ -1049,17 +1049,21 @@ def behind_base_refusal(ev, root, cmd):
                 if split[1]
                 else "",
             )
-        return (
-            "%s"
-            "  CI's Quality / Branch step refuses exactly this, after a ~15-minute round.\n"
-            "  Recent commits on %s not in this branch:\n%s\n%s\n%s"
-            % (
-                head,
-                base,
-                "\n".join("    %s" % line for line in recent.splitlines()),
-                "\n".join(rebase_recipe(base, branch)),
-                "\n".join(line.replace("origin/%s" % BASE, base_ref) for line in REBASE_PROOF),
-            )
+        # A lease push is labelled "<branch> (lease <id>)": the label is for the message, the bare ref name is for the recipe.
+        bare = branch.split(" (lease ", 1)[0]
+        ci_line = (
+            "  The landing would replay the lease's commits onto %s, so this is judged against it (CI's Quality / Branch step judges only origin/%s).\n"
+            % (base, BASE)
+            if bare != branch
+            else "  CI's Quality / Branch step refuses exactly this, after a ~15-minute round.\n"
+        )
+        return "%s%s  Recent commits on %s not in this branch:\n%s\n%s\n%s" % (
+            head,
+            ci_line,
+            base,
+            "\n".join("    %s" % line for line in recent.splitlines()),
+            "\n".join(rebase_recipe(base, bare)),
+            "\n".join(line.replace("origin/%s" % BASE, base_ref) for line in REBASE_PROOF),
         )
     return None
 

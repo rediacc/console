@@ -2935,6 +2935,20 @@ def lease_branch_cases():
     )
     cases.append(
         (
+            True,
+            "(branch: %s)" % live in err and "(branch: %s (lease" % live not in err,
+            "LEASE: the recipe names the pushed branch, not the decorated label",
+        )
+    )
+    cases.append(
+        (
+            True,
+            "CI's Quality / Branch step refuses exactly this" not in err,
+            "LEASE: the refusal does not claim CI judges the lease against its own base",
+        )
+    )
+    cases.append(
+        (
             0,
             drive_tree(main, lease, to_live, mutant="lease-branch-dropped")[0],
             "LEASE MUTANT lease-branch-dropped: judged against main alone, the trailing lease is admitted",
