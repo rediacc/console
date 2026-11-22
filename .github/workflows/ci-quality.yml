@@ -1763,8 +1763,8 @@ jobs:
       # under success(), so reaching it means no earlier step failed: the writer
       # receipts a gate only when its step ran under the standard guard and its
       # inputHash, computed here in the pinned image, is non-null. The file leaves
-      # this job UNSIGNED, under a name outside `ci-receipt-*` so `npm run
-      # ci-receipt -- fetch` never downloads it; quality-content-receipt signs it.
+      # this job UNSIGNED, under a name outside `ci-receipt-*` so `ci-receipt.ts
+      # fetch` never downloads it; quality-content-receipt signs it.
       - name: Write CI receipt
         if: success()
         run: npx tsx scripts/ci-runner/ci-receipt.ts write --lane quality-content --out /tmp/ci-receipt-quality-content.json
@@ -1782,7 +1782,7 @@ jobs:
   # workflow holding id-token: write and attestations: write. It checks out
   # nothing and runs no repo code: it downloads the unsigned receipt
   # quality-content wrote, attests those exact bytes, and uploads them as
-  # `ci-receipt-quality-content`, the name `npm run ci-receipt -- fetch` reads.
+  # `ci-receipt-quality-content`, the name `ci-receipt.ts fetch` reads.
   # So a gate step in quality-content can never mint an OIDC token or sign
   # provenance, and an artifact under `ci-receipt-*` exists only once attested.
   # The signer identity is still this workflow file (the attestation's

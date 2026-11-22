@@ -4,8 +4,8 @@
  *
  *   npx tsx scripts/ci-runner/ci-receipt.ts --selftest
  *   npx tsx scripts/ci-runner/ci-receipt.ts write --lane quality-content --out <file>   (in CI, last steps of the lane)
- *   npm run ci-receipt -- fetch [--branch <b> ...] [--limit <n>]                        (local)
- *   npm run ci-receipt -- verify <file>                                                   (local: the verifier on one file)
+ *   npx tsx scripts/ci-runner/ci-receipt.ts fetch [--branch <b> ...] [--limit <n>]       (local)
+ *   npx tsx scripts/ci-runner/ci-receipt.ts verify <file>                                 (local: the verifier on one file)
  *
  * WRITE. Inside the lane's container, after its gates, `computeGateHashes` runs for the lane's lock ids at the checked-out tree with the runner's own options (run.ts `incrementalPlan`), so a hash here equals the hash a local run in the same image computes. A gate is receipted only when its inputHash is non-null AND its step is known to have PASSED. A workflow step without an `id:` has no entry in the `steps` context, so the outcome is read from the job's shape instead: the receipt step runs under `if: success()`, which holds only when no earlier step failed, and an earlier step whose condition is the standard guard (or absent) therefore ran and passed. A step with any further conjunct (a label hold, `inputs.media_quality`) may have been SKIPPED, so its gates are left out. That over-omits on purpose: a gate absent from a receipt only re-runs locally, while a gate present in error would carry a verdict nothing judged. ciOnly gates are left out too, since the local runner never judges them as ok.
  *
