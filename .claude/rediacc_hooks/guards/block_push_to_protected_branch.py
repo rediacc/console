@@ -72,10 +72,15 @@ import pathlib
 import re
 import subprocess
 import sys
+import time
 
-from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan
+from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
 from rediacc_hooks.guards import _backup_push
 from rediacc_hooks.wellknown import GH_REPO
+
+# The hook's own gh read budget (`_gh_json`), the same two attempts and 2 s pause every guard's retried read uses.
+GH_READ_ATTEMPTS = 2
+GH_READ_PAUSE_S = 2
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -256,18 +261,34 @@ def _dry_run_only(cmd, text_scan):
 
 
 def _gh_json(args):
-    """(decoded JSON, "") from `gh <args>`, or (None, why not): every gh read of the fallback goes through here."""
+    """(decoded JSON, "") from `gh <args>`, or (None, why not): every gh read of the fallback goes through here.
+
+    A transient 5xx is retried within the hook's budget (two attempts, one 2 s pause, `rediacc_ci.core.gh_retry.retry_transient`, as block_merge_with_unpushed does); a 4xx answers at once. A retry helper that cannot be imported is a refusal, never a one-shot read.
+    """
     try:
-        proc = subprocess.run(
-            ["gh", *args], capture_output=True, text=True, timeout=30, check=False
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        return None, "gh could not run (%s)" % exc
-    if proc.returncode != 0:
-        err = (proc.stderr or proc.stdout or "").strip().split("\n")[0][:160]
-        return None, "gh: %s" % (err or proc.returncode)
+        retry = syspath.import_from_ci("rediacc_ci.core.gh_retry")
+    except ImportError as exc:
+        return None, "gh_retry could not be imported (%s)" % str(exc)[:120]
+
+    def once():
+        try:
+            done = subprocess.run(
+                ["gh", *args], capture_output=True, text=True, timeout=30, check=False
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            return 127, "", "gh could not run (%s)" % exc
+        return done.returncode, done.stdout, done.stderr or done.stdout or ""
+
+    rc, out, err = retry.retry_transient(
+        once,
+        lambda r: None if r[0] == 0 else (r[2] or "failed"),
+        attempts=GH_READ_ATTEMPTS,
+        sleep=lambda _scheduled: time.sleep(GH_READ_PAUSE_S),
+    )
+    if rc != 0:
+        return None, "gh: %s" % (err.strip().split("\n")[0][:160] or rc)
     try:
-        return json.loads(proc.stdout), ""
+        return json.loads(out), ""
     except ValueError:
         return None, "gh returned no JSON"
 
