@@ -494,6 +494,10 @@ export const DECLARED_HAND_WRITTEN_LANES: Readonly<Record<string, string>> = {
     'hand-written steps by design: they install clang, prefer the archive mirror and run ' +
     'against the renet checkout, an ordering a generated region would not preserve; the ' +
     'manifest binds them by step name',
+  'quality-renet':
+    'split out of quality-go for the lane budget: checks out the renet submodule under an App ' +
+    'token and pins Go to renet\'s go.mod before the one hand-written `Run renet quality` step; ' +
+    'the manifest binds it by step name, and a region would not carry the checkout order',
   'quality-packages':
     'hand-written steps that interleave installs (agent-browser, OpenTofu) with the package ' +
     'test suites they serve, and upload artifacts; the manifest binds them by step name',

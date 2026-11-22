@@ -1080,6 +1080,21 @@ export function legPlanHash(ids: readonly string[]): string {
 }
 
 /**
+ * The one leg of a quality lane with no committed manifest: its step lock entries, in lock order. Its `legPlanHash` is what `job_p90_plans` names when it traces a whole-job p90 (a lane split re-packs this leg the way a rebalance re-packs a sharded one). Pure.
+ */
+export function shardOfOneLeg(
+  lock: readonly { id: string; ci: { kind: string; job?: string } }[],
+  lane: string
+): { index: number; ids: string[] }[] {
+  return [
+    {
+      index: 1,
+      ids: lock.filter((e) => e.ci.kind === 'step' && e.ci.job === lane).map((e) => e.id),
+    },
+  ];
+}
+
+/**
  * Whether a measured leg p90 describes the leg that ships today. A display name names a POSITION ("Quality / Pytest (3/3)"), so a rebalance leaves the name and its p90 in place while the leg it measured is gone: leg 3/3 read 12.9m on 2026-10-14 from runs of a plan two rebalances old. The answer is false only when `job_p90_plans` traced every sample behind the name and none ran today's leg; no entry, or no committed leg to compare, is true, so unknown stays on the strict side. A measurement set aside here is printed every run, and the next refresh measures the new leg. Pure.
  */
 export function measuredThisLeg(
@@ -2761,14 +2776,16 @@ async function main(): Promise<number> {
       );
       continue;
     }
-    const laneIds = lock.filter((e) => e.ci.kind === 'step' && e.ci.job === lane).map((e) => e.id);
+    const soloLeg = shardOfOneLeg(lock, lane);
+    const laneIds = soloLeg[0].ids;
     // A lane with zero lock entries and no manifest (quality-submodule-branches) has no units to price; it falls through to check 2's job-level set below rather than vanishing.
     if (laneIds.length === 0) continue;
     priced.add(lane);
     worstLegPerLane.push(
       Math.max(
         priceLeg(lane, 1, 1, laneIds, fixedMinutes, defaultUnitMs, parallel),
-        measuredLegFindings(lane, 1)
+        // The shard of one is a leg like any other, so a whole-job p90 measured before a lane split (job_p90_plans traced it to a leg that no longer ships) is set aside and printed, never judged as today's.
+        measuredLegFindings(lane, 1, soloLeg)
       )
     );
     findings.push(
@@ -3810,6 +3827,37 @@ async function selftest(): Promise<number> {
         measuredThisLeg('Q / Pytest (3/3)', ['pytest:a.py'], undefined) &&
         measuredThisLeg('Q / Pytest (3/3)', ['pytest:a.py'], {}) &&
         measuredThisLeg('Q / Pytest (3/3)', undefined, { 'Q / Pytest (3/3)': ['x'] }),
+    },
+    {
+      name: 'SETS ASIDE (shard of one): a whole-job p90 traced to the lane before a split moved a gate out is not judged as the lane today',
+      ok: (() => {
+        const before = [
+          { id: 'g:a', ci: { kind: 'step', job: 'q-go' } },
+          { id: 'g:heavy', ci: { kind: 'step', job: 'q-go' } },
+          { id: 'g:other', ci: { kind: 'step', job: 'q-code' } },
+        ];
+        const after = [before[0], { id: 'g:heavy', ci: { kind: 'step', job: 'q-new' } }, before[2]];
+        const traced = { 'Q / Go': [legPlanHash(shardOfOneLeg(before, 'q-go')[0].ids)] };
+        return (
+          shardOfOneLeg(before, 'q-go')[0].ids.join() === 'g:a,g:heavy' &&
+          !measuredThisLeg('Q / Go', shardOfOneLeg(after, 'q-go')[0].ids, traced)
+        );
+      })(),
+    },
+    {
+      name: 'COUNTS (shard of one): the same trace still judges an unsplit lane, and an untraced lane is judged as today',
+      ok: (() => {
+        const lock = [
+          { id: 'g:a', ci: { kind: 'step', job: 'q-go' } },
+          { id: 'g:heavy', ci: { kind: 'step', job: 'q-go' } },
+        ];
+        const ids = shardOfOneLeg(lock, 'q-go')[0].ids;
+        return (
+          measuredThisLeg('Q / Go', ids, { 'Q / Go': [legPlanHash(ids)] }) &&
+          measuredThisLeg('Q / Go', ids, {}) &&
+          shardOfOneLeg(lock, 'q-none')[0].ids.length === 0
+        );
+      })(),
     },
     {
       name: 'CONTROL (live): job_p90_plans traces at least one measured leg to a leg committed today, so the record is not setting every measurement aside',

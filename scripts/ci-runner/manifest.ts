@@ -8980,7 +8980,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-go',
+      job: 'quality-renet',
       step: 'Run renet quality',
     },
   },

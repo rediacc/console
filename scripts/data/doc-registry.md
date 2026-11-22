@@ -299,7 +299,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-release-bump-skip | test: .ci/rediacc_ci/tests/gates/test_gate_dispatch_release.py | yes | no |
 | check:ci-release-key-canonical | quality-security / Release key canonical | yes | no |
 | check:ci-release-signing-coverage | quality-security / Release signing coverage | yes | no |
-| check:ci-renet | quality-go / Run renet quality | yes | yes |
+| check:ci-renet | quality-renet / Run renet quality | yes | yes |
 | check:ci-renet-govulncheck | quality-go / Renet govulncheck | yes | yes |
 | check:ci-renet-test-map | quality-go / Renet test map and mapped Go tests | yes | yes |
 | check:ci-renet-tiers | local-only | yes | no |

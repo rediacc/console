@@ -40,6 +40,7 @@
     "3.0m / 45, gate-tests 0.8m - 0.7m fixed / 6, go 7.6m / 17, i18n 5.1m / 40, packages",
     "5.7m / 13, security 1.8m / 18, static 4.5m / 64, wiring 0.5m / 1, www-build 3.6m / 16.",
     "quality-account (2026-11-02, split out of quality-go) 4.0m / 6: the six gates' gate_step_p90_seconds sum to 176.6 s (account-server 145.9, account-backup 28.3, four near-zero) plus about 64 s of job setup and teardown read from the steps of run 41478109601 job 125398865593, 241 s x 1000 / 6, about 40000 ms. Re-derive it with the rest.",
+    "quality-renet (2026-11-22, split out of quality-go for its measured 12.6m p90, worklist #064f9dfc) 8.8m / 1: the one gate check:ci-renet at its gate_step_p90_seconds of 474.8 s, plus 52 s of job setup and teardown read from the steps of run 45029273736 job 137249302951 (Quality / Go), each step the new job keeps: Set up job 1, checkout 3, Bitwarden 1, app-token 3, the submodule checkout 12 (deep there, shallow here), setup-go 3, setup-workspace 26 (natives and package build there, defaults here), posts 2 + 0 + 1 + 0 + 0, Complete job 0. Install clang (46 s) is not in it. 526.8 s x 1000 / 1, rounded up to 527000 ms. Re-derive it with the rest.",
     "These quality figures are not refreshed by any tool yet: re-derive them by the recipe above",
     "when refreshed_at moves.",
     "quality-code has NO defaultUnitMs entry (removed 2026-10-14): gate-bind plans it on each",
@@ -49,6 +50,7 @@
     "'job_p90_plans' (written by --refresh): per measured leg display name, the leg contents",
     "its samples ran (leg_plan_hash, read at each sampled run's head commit). check-lane-budget",
     "sets aside, and prints, a measured leg p90 whose committed leg is not among them.",
+    "ONE HAND-TRACED ENTRY, 'Quality / Go' (2026-11-22, worklist #064f9dfc): --refresh traces only lanes with a committed shard manifest, and quality-go has none, so its 12.6m p90 kept judging the lane after check:ci-renet left it for quality-renet. 6c68a79da49a972a is legPlanHash over quality-go's 16 step lock entries at a528d556ba, unchanged since 5b16852119 (2026-11-07), so every sample behind the 2026-11-22 p90 ran it; the 15-entry lane after the split hashes 7aa1446bb12139dc. The next --refresh that re-measures 'Quality / Go' drops the entry (merged_job_p90_plans keeps no untraced plan for a re-measured name), which is the intended end of it.",
     "The SHARDED test lanes and quality-pytest (added 2026-09-30, T3.1 check 4) price a unit",
     "with no 'units' entry at the p90 of that lane's own measured unit p90s, rounded UP to",
     "100 ms, from the 2026-09-30T10:07:24Z refresh: quality-pytest 23385 ms over 526 files,",
@@ -1334,6 +1336,7 @@
     "quality-content": 4000,
     "quality-account": 40000,
     "quality-go": 26824,
+    "quality-renet": 527000,
     "quality-i18n": 7650,
     "quality-packages": 26308,
     "quality-security": 6000,
@@ -1794,6 +1797,9 @@
     ],
     "Quality / Code (4)": [
       "7df6f42b68c1dc3e"
+    ],
+    "Quality / Go": [
+      "6c68a79da49a972a"
     ],
     "Quality / Pytest (1/6)": [
       "0fc3f705d2e7da5b"

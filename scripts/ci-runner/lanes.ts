@@ -37,6 +37,7 @@ const LANE_ORDER = [
   'quality-www-build',
   'quality-account',
   'quality-go',
+  'quality-renet',
 ] as const;
 
 export interface LaneCapabilities {

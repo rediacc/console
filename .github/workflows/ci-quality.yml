@@ -2785,7 +2785,8 @@ jobs:
 
   # ============================================================================
   # L10 GO -- everything needing a Go toolchain and the renet/account submodules.
-  # Absorbs: renet, ebpf-objects. (The account gates moved to quality-account.)
+  # Absorbs: renet, ebpf-objects. (The account gates moved to quality-account,
+  # and `Run renet quality` moved to quality-renet.)
   # ============================================================================
   quality-go:
     name: Go
@@ -2870,10 +2871,6 @@ jobs:
           account: 'true'
           natives: 'true'
           build-packages: 'true'
-
-      - name: Run renet quality
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet quality
 
       # Its own step since 2026-10-21 (PLAN-plan-per-pr-loop R1 B): an advisory
       # published after the commit landed is drift, and the nightly soak waiver
@@ -3130,6 +3127,71 @@ jobs:
       - name: Run account integration tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_account test
+
+  # ============================================================================
+  # L10c RENET QUALITY -- `check:ci-renet`, renet's own quality stage (gofmt,
+  # goimports, golangci-lint over three GOOS passes, deadcode, i18n).
+  #
+  # SPLIT OUT OF quality-go, 2026-11-22, after check:ci-lane-budget measured
+  # Quality / Go at a p90 of 12.6m against the 12m leg budget. `Run renet
+  # quality` was the bulk of it: 371 s in run 45029273736 job 137249302951 and
+  # a 474.8 s step p90 (gate_step_p90_seconds), against 97.3 s for the next
+  # largest step (`Renet test map and mapped Go tests`). The budget is not
+  # raised; the work moves, the way quality-account left quality-go on
+  # 2026-11-02.
+  #
+  # WHAT THIS LANE NEEDS, and what it does not. The renet submodule, on the
+  # same readonly-preset App token the Go lane uses (no token is widened), and
+  # the Go toolchain pinned to renet's go.mod, because golangci-lint must
+  # decode that toolchain's export data (see the setup-go comment in
+  # quality-go). No clang: the BPF objects it type-checks are committed, and
+  # the steps that regenerate them stay in quality-go. No deep history: the
+  # stage reads `git ls-files` and nothing asks `git log`. setup-workspace runs
+  # with its defaults for the profiler and the `steps.setup` guard; the stage
+  # needs no natives and no package build.
+  # ============================================================================
+  quality-renet:
+    name: Renet
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: private/renet/go.mod
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+
+      - name: Run renet quality
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet quality
 
   # ============================================================================
   # L11 WIRING -- node, nothing else, and NEVER a shard.

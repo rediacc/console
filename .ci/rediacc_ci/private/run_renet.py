@@ -63,7 +63,7 @@ step: Run renet quality
 needs: none
 id: check:ci-renet
 run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet quality
-lane: quality-go
+lane: quality-renet
 ---- end gate ----
 """
 
