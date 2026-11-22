@@ -1682,6 +1682,8 @@ class Options:
     dry_run: bool = False
     # `--paths <p>[,...]` (only with `--dry-run`) evaluates the given console-relative paths instead of the diff, to ask what a change WOULD select.
     paths: tuple[str, ...] = ()
+    # `--commit <sha>` (agent/plans/PLAN-push-decoupling.md D1.4) runs from the kept ci:quick clone sitting at that ancestor of HEAD, with the clone's own builds and gateway record, and files the receipt archive under the pinned tree.
+    commit: str = ""
 
 
 def only_step_ids() -> frozenset[str]:
@@ -1709,7 +1711,13 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
     parser.add_argument("--only", default="")
     parser.add_argument("--dry-run", dest="dry_run", action="store_true")
     parser.add_argument("--paths", action="append", default=[])
+    parser.add_argument("--commit", default="")
     ns = parser.parse_args(rest)
+    ns.commit = ns.commit.strip()
+    if ns.commit and ns.dry_run:
+        parser.error("--commit pins a run; --dry-run reads the diff and judges nothing")
+    if ns.commit and ns.changed:
+        parser.error("--commit judges the whole pinned tree, so it does not combine with --changed")
     paths_ = tuple(p.strip() for chunk in ns.paths for p in chunk.split(",") if p.strip())
     if ns.paths and not paths_:
         parser.error("--paths needs at least one path")
@@ -1745,6 +1753,7 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
         only=only,
         dry_run=ns.dry_run,
         paths=paths_,
+        commit=ns.commit,
     )
 
 
@@ -1772,8 +1781,11 @@ class VmCheck:
         u1_fn: Callable[[VmCheck], None] = upgrade_converge.run,
         extra_fns: Mapping[str, Callable[[VmCheck], None]] | None = None,
         receipt_fn: Callable[[pathlib.Path, str], tuple[bool, str]] = backup_receipt_admits,
+        publish_root: pathlib.Path | None = None,
     ) -> None:
         self.root = root
+        # A pinned run: the main checkout whose `<tree>.json` archive the push guard reads. `root` is then the kept clone, so every build, script and gateway record is the clone's own.
+        self.publish_root = publish_root
         # Judges a `receipt` area leg (the backup-check receipt) for this run's tree; a test injects a stub.
         self.receipt_fn = receipt_fn
         self.opts = opts
@@ -3357,6 +3369,23 @@ class VmCheck:
         self.host.kill_suites()
         thread.join(timeout=30)
 
+    def _publish_pinned(self) -> None:
+        """Copy the clone's `<tree>.json` archive, and only that, into the main checkout's receipt folder, so the push guard finds it there while a newer tree's `receipt.json` stays untouched."""
+        if self.publish_root is None or not self.tree:
+            return
+        name = "%s.json" % self.tree
+        source = receipt_mod.receipt_dir(self.root) / name
+        target = receipt_mod.receipt_dir(self.publish_root) / name
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            partial = target.with_name(name + ".partial")
+            partial.write_bytes(source.read_bytes())
+            os.replace(partial, target)
+        except OSError as exc:
+            self.say("vm:check: the pinned receipt could not be filed at %s: %s" % (target, exc))
+            return
+        self.say("vm:check: pinned receipt filed at %s" % target)
+
     def _gateway_paths(self) -> tuple[pathlib.Path, pathlib.Path]:
         folder = receipt_mod.receipt_dir(self.root)
         return folder / GATEWAY_RECORD, folder / GATEWAY_LOG
@@ -4198,6 +4227,7 @@ class VmCheck:
             path = receipt_mod.write_run_record(self.root, record)
         elif self.tree and self.inputs:
             path = receipt_mod.write(self.root, self._receipt(status, reason))
+            self._publish_pinned()
         else:
             log.error("HEAD^{tree} or the inputs digest is unreadable, so no receipt was written")
             if status == receipt_mod.VERIFIED:
@@ -4289,6 +4319,7 @@ class VmCheck:
             "merged": [*(base.get("merged") or []), receipt_mod.merge_entry(run)],
         }
         path = receipt_mod.write(self.root, merged)
+        self._publish_pinned()
         self.say(
             "  --only %s merged into the FAILED receipt of tree %s (run %s): now %s%s"
             % (
@@ -4627,9 +4658,59 @@ def lease_refusal(root: pathlib.Path, argv: Sequence[str]) -> str | None:
     )
 
 
+def kept_clone_dir(live: pathlib.Path, environ: Mapping[str, str]) -> pathlib.Path:
+    """Where `ci:quick` keeps the clone of `live` (`cloneDirFor`, scripts/ci-runner/quick-clone.ts): `CI_QUICK_CLONE_DIR`, else `<cache>/rediacc/ci-quick-clones/<basename>-<sha8 of the real path>`."""
+    override = environ.get("CI_QUICK_CLONE_DIR")
+    if override:
+        return pathlib.Path(override).resolve()
+    base = environ.get("XDG_CACHE_HOME") or str(
+        pathlib.Path(environ.get("HOME") or "~").expanduser() / ".cache"
+    )
+    real = live.resolve()
+    key = hashlib.sha256(str(real).encode()).hexdigest()[:8]
+    return pathlib.Path(base) / "rediacc" / "ci-quick-clones" / ("%s-%s" % (real.name, key))
+
+
+def resolve_pin(
+    live: pathlib.Path, spec: str, environ: Mapping[str, str]
+) -> tuple[pathlib.Path, str] | str:
+    """`(clone, full sha)` for `--commit <spec>`, or why it cannot run. The commit must be HEAD or an ancestor of it in `live`, and the kept clone must already sit at it (`npm run ci:quick -- --commit <sha>` puts it there), so this run builds nothing but the clone's own tree."""
+    git = trigger.make_git(live)
+    sha = git(["rev-parse", "--verify", "--quiet", "%s^{commit}" % spec])
+    if not sha:
+        return "--commit %s names no commit in %s" % (spec, live)
+    if git(["merge-base", "--is-ancestor", sha, "HEAD"]) is None:
+        return "--commit %s (%s) is not an ancestor of HEAD in %s" % (spec, sha[:12], live)
+    clone = kept_clone_dir(live, environ)
+    at = trigger.make_git(clone)(["rev-parse", "HEAD"]) if clone.is_dir() else None
+    if at != sha:
+        return (
+            "the kept clone %s sits at %s, not at %s; run npm run ci:quick -- --commit %s first, which moves it there"
+            % (clone, at[:12] if at else "no commit", sha[:12], sha[:12])
+        )
+    return clone, sha
+
+
+def clone_environ(
+    environ: Mapping[str, str], live: pathlib.Path, clone: pathlib.Path
+) -> dict[str, str]:
+    """`environ` with every path naming the live tree rewritten to the clone and npm's own variables dropped (`cloneEnv`, quick-clone.ts), so no call quietly reads the live checkout."""
+    out: dict[str, str] = {}
+    named = re.compile(re.escape(str(live)) + r"(?=$|[/:])")
+    for key, value in environ.items():
+        if key.startswith("npm_") or key == "INIT_CWD":
+            continue
+        out[key] = named.sub(str(clone), value)
+    out["PWD"] = str(clone)
+    return out
+
+
 def main(
     argv: Sequence[str],
     *,
+    pin_fn: Callable[
+        [pathlib.Path, str, Mapping[str, str]], tuple[pathlib.Path, str] | str
+    ] = resolve_pin,
     root: pathlib.Path | None = None,
     host: Host | None = None,
     account: Account | None = None,
@@ -4656,10 +4737,27 @@ def main(
         return selftest(out)
     if opts.dry_run:
         return dry_run(root or paths.repo_root(), opts, out)
+    live = root or paths.repo_root()
+    run_root = live
+    publish_root: pathlib.Path | None = None
+    if opts.commit:
+        pin = pin_fn(live, opts.commit, os.environ if environ is None else environ)
+        if isinstance(pin, str):
+            log.error("%s: REFUSED: %s" % (NAME, pin))
+            return EXIT_FAILED
+        run_root, _sha = pin
+        publish_root = live
+        environ = clone_environ(os.environ if environ is None else environ, live, run_root)
     drill = lib.Drill("vmcheck", keep_work=opts.keep_work, stdout=out)
+    if opts.commit:
+        # The gateway record (`.account-state`), `run.sh account dev` and the gateway's environment are the clone's own; the main checkout's gateway is never read or restarted.
+        drill.root = run_root
+        drill.commit = _sha
+        drill._original_env = clone_environ(drill._original_env, live, run_root)
     drill.init()
     check = VmCheck(
-        root=root or paths.repo_root(),
+        root=run_root,
+        publish_root=publish_root,
         opts=opts,
         host=host or Host(),
         account=account or DrillAccount(drill),

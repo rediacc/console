@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import fcntl
+import hashlib
 import importlib.util
 import io
 import json
@@ -5457,3 +5458,160 @@ def test_plan_disk_need_arithmetic_for_basic_other_bridges_and_overrides() -> No
     assert vm_check.plan_disk_need(other_bridge, []) == int((8 + 16) * 0.25 * gib)
     env = {"VM_DSK": "10", "VM_CEPH_DISK_SIZE": "20", "VM_WORKERS": "11", "VM_CEPH_NODES": "21 22"}
     assert vm_check.plan_disk_need(env, []) == int((8 + 10 * 3 + 20 * 2) * 0.25 * gib)
+
+
+# --------------------------------------------------------------------------- --commit: a pinned run from the kept clone (PLAN-push-decoupling R5)
+
+
+def _pinned_run(
+    tmp_path: pathlib.Path,
+) -> tuple[int, str, World, pathlib.Path, pathlib.Path]:
+    live = tmp_path / "live"
+    clone = tmp_path / "clone"
+    live.mkdir()
+    clone.mkdir()
+    (live / ".account-state").write_text("gateway_port=4111\n")
+    world = World(clone)
+    out = io.StringIO()
+    environ = {
+        "HOME": str(tmp_path / "home"),
+        "PATH": "%s/node_modules/.bin:/usr/bin" % live,
+        "CLAUDE_PROJECT_DIR": str(live),
+        "npm_config_user_agent": "npm",
+        "VM_NET_BASE": NET,
+    }
+    rc = vm_check.main(
+        ["--commit", "abc1234", "--keep-work", "--wait", "0"],
+        pin_fn=lambda _live, _spec, _env: (clone, HEAD),
+        root=live,
+        host=world,
+        account=FakeAccount(),
+        lock=vm_check.Lock(tmp_path / "vm-check.lock"),
+        out=out,
+        environ=environ,
+        inputs_fn=lambda _root: DIGEST,
+        account_modified_fn=lambda _root: False,
+        dirty_fn=lambda _root, _surfaces: False,
+        renet_modified_fn=lambda _root: False,
+        account_digest_fn=lambda _root: ADIGEST,
+        u1_fn=stub_u1,
+        extra_fns=STUB_EXTRA,
+    )
+    return rc, out.getvalue(), world, live, clone
+
+
+def test_a_pinned_run_builds_and_reads_only_clone_paths_and_files_the_receipt_under_the_tree(
+    tmp_path: pathlib.Path,
+) -> None:
+    rc, out, world, live, clone = _pinned_run(tmp_path)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    # Every rdc call, the renet build check and the CLI build go through the clone's own files.
+    assert world.rdc_calls()
+    leaked = [c for c in world.calls if str(live) in " ".join(c)]
+    assert not leaked, leaked
+    for env in world.envs:
+        assert not [v for v in env.values() if str(live) in v]
+        assert not [k for k in env if k.startswith("npm_")]
+    # The receipt: the clone holds its own latest, the main checkout gets only the pinned tree's archive.
+    archive = live / receipt_mod.CACHE_DIR / ("%s.json" % TREE)
+    assert archive.is_file()
+    assert json.loads(archive.read_text())["tree"] == TREE
+    assert not (live / receipt_mod.CACHE_DIR / receipt_mod.LATEST).exists()
+    assert (clone / receipt_mod.CACHE_DIR / receipt_mod.LATEST).is_file()
+    # The main checkout's gateway record and state are untouched.
+    assert not (live / receipt_mod.CACHE_DIR / vm_check.GATEWAY_RECORD).exists()
+    assert (live / ".account-state").read_text() == "gateway_port=4111\n"
+
+
+def test_a_pin_that_cannot_run_is_refused_before_the_lock_or_the_fleet(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path)
+    out = io.StringIO()
+    rc = vm_check.main(
+        ["--commit", "abc1234", "--keep-work", "--wait", "0"],
+        pin_fn=lambda _live, _spec, _env: "the kept clone sits at nothing",
+        root=world.root,
+        host=world,
+        account=FakeAccount(),
+        lock=vm_check.Lock(tmp_path / "vm-check.lock"),
+        out=out,
+        environ={"HOME": str(tmp_path / "home"), "VM_NET_BASE": NET},
+    )
+    assert rc == vm_check.EXIT_FAILED
+    assert world.calls == []
+    assert lock_is_free(tmp_path)
+
+
+def test_a_lease_is_still_refused_with_or_without_a_pin(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    main_tree = tmp_path / "main"
+    fake = SimpleNamespace(lease_main=lambda _root: main_tree)
+    real = vm_check.importlib.import_module
+    monkeypatch.setattr(
+        vm_check.importlib, "import_module", lambda n: fake if n == "wl_core" else real(n)
+    )
+    for argv in (["--commit", "abc1234"], []):
+        refusal = vm_check.lease_refusal(tmp_path / "lease", argv)
+        assert refusal is not None
+        assert "is a lease of" in refusal
+    assert vm_check.lease_refusal(tmp_path / "lease", ["--dry-run"]) is None
+
+
+def test_the_fleet_lock_file_name_is_unchanged() -> None:
+    assert vm_check.LOCK_NAME == "rediacc-vm-check.lock"
+    assert vm_check.lock_path({"XDG_RUNTIME_DIR": "/nonexistent-dir"}).name in {
+        "rediacc-vm-check.lock",
+        "rediacc-vm-check-%d.lock" % os.getuid(),
+    }
+
+
+def test_commit_does_not_combine_with_dry_run_or_changed() -> None:
+    for extra in ("--dry-run", "--changed"):
+        with pytest.raises(SystemExit):
+            vm_check.parse_args(["--commit", "abc1234", extra], {})
+    assert vm_check.parse_args(["--commit", " abc1234 "], {}).commit == "abc1234"
+    assert vm_check.parse_args([], {}).commit == ""
+
+
+def test_kept_clone_dir_follows_the_ci_quick_formula(tmp_path: pathlib.Path) -> None:
+    live = tmp_path / "live"
+    live.mkdir()
+    key = hashlib.sha256(str(live.resolve()).encode()).hexdigest()[:8]
+    got = vm_check.kept_clone_dir(live, {"XDG_CACHE_HOME": str(tmp_path / "c")})
+    assert got == tmp_path / "c" / "rediacc" / "ci-quick-clones" / ("live-%s" % key)
+    assert vm_check.kept_clone_dir(live, {"CI_QUICK_CLONE_DIR": str(tmp_path / "x")}) == (
+        tmp_path / "x"
+    )
+
+
+def test_resolve_pin_refuses_a_clone_not_at_the_commit_and_a_non_ancestor(
+    tmp_path: pathlib.Path,
+) -> None:
+    def vcs(cwd: pathlib.Path, *args: str) -> str:
+        return subprocess.run(
+            ["git", "-C", str(cwd), "-c", "user.email=t@t", "-c", "user.name=t", *args],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+
+    live = tmp_path / "live"
+    live.mkdir()
+    vcs(live, "init", "-q")
+    for name in ("a", "b"):
+        (live / name).write_text(name)
+        vcs(live, "add", name)
+        vcs(live, "commit", "-q", "-m", name)
+    first = vcs(live, "rev-parse", "HEAD~1")
+    tip = vcs(live, "rev-parse", "HEAD")
+    clone = tmp_path / "clone"
+    subprocess.run(["git", "clone", "-q", str(live), str(clone)], check=True)
+    env = {"CI_QUICK_CLONE_DIR": str(clone)}
+    vcs(clone, "checkout", "-q", "--detach", first)
+    assert vm_check.resolve_pin(live, first, env) == (clone, first)
+    assert "sits at" in str(vm_check.resolve_pin(live, tip, env))
+    assert "names no commit" in str(vm_check.resolve_pin(live, "f" * 40, env))
+    vcs(live, "checkout", "-q", "--detach", first)
+    assert "not an ancestor" in str(vm_check.resolve_pin(live, tip, env))
