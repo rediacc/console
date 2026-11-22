@@ -22,4 +22,4 @@ Body-Sig: c25ee50a15bda339
 Anchor: in-diff
 Claim: The new pin 2fdfc650681f was computed on a scratch copy with the CLAUDE.md patch and mirror anchor removals applied, but this commit touches only scope-mirrors.json (STAT: 1 file changed), so on the committed tree the pinned span no longer matches the CLAUDE.md text and the scope-mirror gate will fail there.
 Class: other
-Resolution: open
+Resolution: not-a-bug | .ci/scripts/quality/check_scope_mirrors.py:1 exits 0 on the committed pins (run 2026-11-22) | ace763dd 2026-11-22T16:15:27Z

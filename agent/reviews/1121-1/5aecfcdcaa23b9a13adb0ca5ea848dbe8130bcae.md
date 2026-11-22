@@ -22,16 +22,16 @@ Body-Sig: cdc19c4cf2f63c29
 Anchor: in-diff
 Claim: The new comment says Box T1 sets PREVIEW_HAS_SIGNER=true in the smoke step's env, but this commit changes no workflow, so nothing sets the variable yet and the signer branch stays skipped until T1 lands.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 683dc2409c4a97a3cbd67165a4cf4f607cda2dce | ace763dd 2026-11-22T16:14:59Z
 
 ### 5aecfcdc.2 [low] .ci/scripts/test/smoke-test-preview.ts:49
 Anchor: in-diff
 Claim: PREVIEW_HAS_SIGNER now comes from the env with a strict `=== 'true'` check, so a value such as '1', 'True' or 'yes' silently disables the signature and payload checks with no warning.
 Class: other
-Resolution: open
+Resolution: fixed 683dc2409c4a97a3cbd67165a4cf4f607cda2dce | ace763dd 2026-11-22T16:14:59Z
 
 ### 5aecfcdc.3 [low] .ci/scripts/test/smoke-test-preview.ts:49
 Anchor: in-diff
 Claim: The env-driven flag changes which checks run, and the commit adds no test or assertion that exercises either the unset or 'true' path.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 683dc2409c4a97a3cbd67165a4cf4f607cda2dce | ace763dd 2026-11-22T16:14:59Z
