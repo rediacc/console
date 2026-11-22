@@ -41,6 +41,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 from typing import Any
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
@@ -68,6 +69,8 @@ MUTANTS = {
     "absorbed-read-behind": ("    return plus, minus\n", "    return plus + minus, 0\n"),
     # RB3: a push typed in a lease tree is judged as a live-branch push again, so a lease behind the branch it was cut from is admitted.
     "lease-branch-dropped": ("    if lease is not None:\n", "    if False:\n"),
+    # R4: the verification arm of a CI-receipt origin is off, so an origin whose bytes no attestation covers, or one signed by another workflow, is admitted. A MUTANTS entry rather than DEFECT: DEFECT is this guard's single slot and holds the confinement plant test_guards_differential depends on.
+    "ci-verification-off": ("        why = attested(data, sha, memo)\n", '        why = ""\n'),
 }
 
 PUSH_AT_COMMAND_POS = hookio.rx(
@@ -1812,6 +1815,135 @@ def _exempt_ids(doc):
     return {i["id"] for i in items}
 
 
+# --- attested receipts: the verifier seam (PLAN-two-track-merge-dev D6, R4) ---------------------
+# A gate carried from a SIGNED CI RECEIPT names its origin `ci-<tree>` (scripts/ci-runner/ci-receipt.ts writes that prior as .ci/cache/receipts/ci-<tree>.json beside the local archive). The prior is a convenience for the runner and is never believed here: the origin check reads the content-addressed receipt bytes the prior points at, re-verifies their attestation, and compares the carried entry against the attested gate. So a receipt edited after the fetch, one signed by another workflow, or a prior that names a gate no receipt holds is refused at the push, field named. Verification is memoized per sha256 of the bytes, so several hundred gates carried from one receipt cost one `gh` call.
+# THE SEAM. `attested(data, source_digest, memo, spec)` answers '' or why, through ATTESTATION_VERIFIER (a module attribute, so a suite stands a stub in). ORIGIN_READERS maps an origin kind to the reader that returns the comparable origin entry; the push-guard rule table (PLAN-tooling-code-reduction CR6, "a push needs receipt X") adds a receipt kind as one more reader and one more spec, and reuses `attested` unchanged.
+
+#: Who may have signed a CI receipt. scripts/ci-runner/ci-receipt.ts `ATTESTATION_SPEC` holds the same two strings, and test-block_unverified_push.py pins them equal.
+CI_ATTESTATION_SPEC = {
+    "repo": "rediacc/console",
+    "signer_workflow": "rediacc/console/.github/workflows/ci-quality.yml",
+}
+CI_ORIGIN_RE = re.compile(r"^ci-((?:[0-9a-f]{40}|[0-9a-f]{64}))$")
+CI_RAW_RE = re.compile(r"^\.ci/cache/ci-receipts/([0-9a-f]{64})\.json$")
+CI_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+
+
+def gh_attestation_verifier(data, source_digest, spec):
+    """'' when `gh attestation verify` accepts `data` as built from `source_digest` by `spec`'s signer workflow, else why. The bytes are written to a private file first, so what is verified is exactly what was read. A missing gh, a timeout or a network failure is a refusal, never a pass: an unchecked origin is not a verified one."""
+    if not CI_SHA_RE.match(source_digest or ""):
+        return "the receipt's sha is not a 40-hex commit"
+    with tempfile.TemporaryDirectory(prefix="ci-receipt-verify-") as tmp:
+        path = os.path.join(tmp, "receipt.json")
+        pathlib.Path(path).write_bytes(data)
+        argv = ["gh", "attestation", "verify", path, "--repo", spec["repo"]]
+        argv += ["--signer-workflow", spec["signer_workflow"], "--source-digest", source_digest]
+        try:
+            proc = subprocess.run(
+                [*argv, "--format", "json"],
+                capture_output=True,
+                text=True,
+                timeout=120,
+                check=False,
+            )
+        except FileNotFoundError:
+            return "gh is not installed (https://cli.github.com, then gh auth login)"
+        except subprocess.TimeoutExpired:
+            return "gh attestation verify did not answer within 120 s"
+        except OSError as exc:
+            return "gh attestation verify could not start: %s" % exc
+    if proc.returncode != 0:
+        tail = " | ".join((proc.stderr or "").strip().splitlines()[-3:])
+        return "gh attestation verify exited %d: %s" % (proc.returncode, tail)
+    return ""
+
+
+#: The verifier `attested` calls: (data, source_digest, spec) -> '' or why.
+ATTESTATION_VERIFIER = gh_attestation_verifier
+
+
+def attested(data, source_digest, memo, spec=None):
+    """'' when `data` carries an attestation from `spec` (CI_ATTESTATION_SPEC by default) for `source_digest`, else why. Memoized per sha256 of the bytes, digest and signer."""
+    spec = CI_ATTESTATION_SPEC if spec is None else spec
+    key = ("attested", hashlib.sha256(data).hexdigest(), source_digest, spec["signer_workflow"])
+    if key not in memo:
+        memo[key] = ATTESTATION_VERIFIER(data, source_digest, spec)
+    return memo[key]
+
+
+def _ci_raw(root, rel, memo):
+    key = ("ci-raw", rel)
+    if key not in memo:
+        try:
+            memo[key] = pathlib.Path(root, rel).read_bytes()
+        except OSError:
+            memo[key] = None
+    return memo[key]
+
+
+def ci_origin_gate(root, tree, gid, memo):
+    """(origin entry, '') for `gid` carried from the CI prior `ci-<tree>`, or (None, why naming the field). The entry is built from the ATTESTED receipt, never from the prior: `{inputHash, verdict: 'ok', findings: []}`, since only a pass is receipted and a pass is what the runner carries as ok."""
+    prior_key = ("ci-prior", tree)
+    if prior_key not in memo:
+        memo[prior_key] = _read_json("%s/%s/ci-%s.json" % (root, RECEIPT_ARCHIVE_REL, tree))
+    prior = memo[prior_key]
+    refs = prior.get("ciReceipts") if isinstance(prior, dict) else None
+    if not isinstance(refs, list) or not refs:
+        return None, "the CI prior ci-%s is missing or names no receipt (field ciReceipts)" % tree
+    for ref in refs:
+        rel = ref.get("path") if isinstance(ref, dict) else None
+        named = CI_RAW_RE.match(rel) if isinstance(rel, str) else None
+        if named is None:
+            return (
+                None,
+                "the CI prior ci-%s names %r, not a receipt under .ci/cache/ci-receipts/<sha256>.json (field ciReceipts.path)"
+                % (tree, rel),
+            )
+        data = _ci_raw(root, rel, memo)
+        if data is None:
+            return None, "the CI receipt %s is missing (field ciReceipts.path)" % rel
+        if hashlib.sha256(data).hexdigest() != named.group(1):
+            return (
+                None,
+                "the CI receipt %s does not hash to its own name, so its bytes changed after the fetch (field sha256)"
+                % rel,
+            )
+        try:
+            doc = json.loads(data.decode("utf-8"))
+        except (UnicodeDecodeError, ValueError):
+            doc = None
+        if not isinstance(doc, dict):
+            return None, "the CI receipt %s is not a JSON object (field json)" % rel
+        if doc.get("repo") != CI_ATTESTATION_SPEC["repo"]:
+            return None, "the CI receipt %s names repo %r (field repo)" % (rel, doc.get("repo"))
+        if doc.get("tree") != tree:
+            return None, "the CI receipt %s judged tree %r, not %s (field tree)" % (
+                rel,
+                doc.get("tree"),
+                tree,
+            )
+        gates = doc.get("gates")
+        gate = gates.get(gid) if isinstance(gates, dict) else None
+        if not isinstance(gate, dict):
+            continue
+        sha = doc.get("sha") if isinstance(doc.get("sha"), str) else ""
+        why = attested(data, sha, memo)
+        if why:
+            return None, "the CI receipt %s is not verified: %s (field attestation)" % (rel, why)
+        if gate.get("verdict") != "pass":
+            return (
+                None,
+                "the CI receipt %s judged it %r, and only a pass carries (field verdict)"
+                % (rel, gate.get("verdict")),
+            )
+        return {"inputHash": gate.get("inputHash"), "verdict": "ok", "findings": []}, ""
+    return None, "no CI receipt of the prior ci-%s holds it (field gates)" % tree
+
+
+#: Origin kind -> reader `(root, tree, gid, memo) -> (origin entry or None, why)`. A local origin (a bare tree hash) is read from the archive inline in `_carried_refusal`.
+ORIGIN_READERS = {"ci": ci_origin_gate}
+
+
 def _carried_refusal(root, tree, gid, entry, lock_entry, entries, exempt, memo=None):
     """Why one carried entry is not honoured, or ''. Names the gate and the field.
 
@@ -1865,19 +1997,25 @@ def _carried_refusal(root, tree, gid, entry, lock_entry, entries, exempt, memo=N
     if memo[key] != entry.get("filesHash"):
         return "%s: filesHash differs at the pushed tree (an input changed after the carry)" % gid
     origin = carried.get("headTree")
-    if not isinstance(origin, str) or not TREE_RE.match(origin):
-        return "%s: carriedFrom.headTree is not a tree hash (field carriedFrom)" % gid
-    origin_key = ("origin", origin)
-    if origin_key not in memo:
-        memo[origin_key] = _read_json("%s/.ci/cache/receipts/%s.json" % (root, origin))
-    origin_doc = memo[origin_key]
-    base = (origin_doc.get("gates") if isinstance(origin_doc, dict) else None) or {}
-    was = base.get(gid) if isinstance(base, dict) else None
-    if not isinstance(was, dict):
-        return "%s: the archived origin receipt for %s is missing or lacks it (carriedFrom)" % (
-            gid,
-            origin,
-        )
+    ci = CI_ORIGIN_RE.match(origin) if isinstance(origin, str) else None
+    if ci is not None:
+        was, why = ORIGIN_READERS["ci"](root, ci.group(1), gid, memo)
+        if why:
+            return "%s: %s" % (gid, why)
+    else:
+        if not isinstance(origin, str) or not TREE_RE.match(origin):
+            return "%s: carriedFrom.headTree is not a tree hash (field carriedFrom)" % gid
+        origin_key = ("origin", origin)
+        if origin_key not in memo:
+            memo[origin_key] = _read_json("%s/.ci/cache/receipts/%s.json" % (root, origin))
+        origin_doc = memo[origin_key]
+        base = (origin_doc.get("gates") if isinstance(origin_doc, dict) else None) or {}
+        was = base.get(gid) if isinstance(base, dict) else None
+        if not isinstance(was, dict):
+            return "%s: the archived origin receipt for %s is missing or lacks it (carriedFrom)" % (
+                gid,
+                origin,
+            )
     for field in ("inputHash", "verdict", "findings"):
         if was.get(field) != entry.get(field):
             return "%s: %s differs from the archived origin receipt %s" % (gid, field, origin)

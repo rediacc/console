@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import types
 from typing import Any
 
 # THIS HARNESS SITS BESIDE ITS GUARD, which is what .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file: `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions, and it is the only credit these four have because their block direction needs fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
@@ -2464,6 +2465,253 @@ test_v1_receipt_refused()
 test_v2_whole_tree_carry()
 test_v2_name_inputs()
 test_v2_helpers()
+
+
+# --- a gate carried from a SIGNED CI RECEIPT (PLAN-two-track-merge-dev R4) ---------------------
+# The v2 "ok" world, re-pointed: the pushed receipt carries check:fx from `ci-<tree A>`, the CI prior scripts/ci-runner/ci-receipt.ts writes, and the local archived origin is removed so only the CI arm can admit it. Driven IN-PROCESS through GM so the stub verifier stands in for gh, and so check:ci-guard-mutations, which swaps GM for a planted copy, sees these cases go red.
+CI_SIGNER = GM.CI_ATTESTATION_SPEC["signer_workflow"]
+
+
+def ci_world(name, verdict="pass"):
+    """(root, pushed tree, pushed receipt, raw bytes, raw rel path, attestation map). The map is the stub's view of GitHub: sha256 of the bytes -> (signer workflow, source digest)."""
+    root = v2_world(name, "ok")
+    cache = root / ".ci" / "cache"
+    pushed = json.loads((cache / "prepush-receipt.json").read_text(encoding="utf-8"))
+    entry = pushed["gates"][GM.V2_FX]
+    tree_a = entry["carriedFrom"]["headTree"]
+    sha_a = git_in(root, "rev-parse", "HEAD~1")
+    (cache / "receipts" / (tree_a + ".json")).unlink()
+    raw = {
+        "schema": 1,
+        "repo": GM.CI_ATTESTATION_SPEC["repo"],
+        "run": {"id": "1", "attempt": "1"},
+        "lane": "quality-content",
+        "sha": sha_a,
+        "tree": tree_a,
+        "salt": "fixture-salt",
+        "gates": {GM.V2_FX: {"inputHash": entry["inputHash"], "verdict": verdict}},
+        "omitted": {},
+    }
+    data = (json.dumps(raw, indent=2) + "\n").encode("utf-8")
+    rel = write_ci_raw(root, tree_a, data)
+    entry["carriedFrom"] = {"headTree": "ci-" + tree_a, "head": sha_a, "finishedAt": ""}
+    entry["findings"] = []
+    (cache / "prepush-receipt.json").write_text(json.dumps(pushed), encoding="utf-8")
+    attestations = {hashlib.sha256(data).hexdigest(): (CI_SIGNER, sha_a)}
+    return root, pushed["headTree"], pushed, data, rel, attestations
+
+
+def git_in(root, *a):
+    return subprocess.run(
+        ["git", *a], cwd=str(root), check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+
+def write_ci_raw(root, tree, data):
+    """Stores `data` content-addressed and (re)writes the prior `ci-<tree>.json` to point at it, as `ci-receipt fetch` does."""
+    digest = hashlib.sha256(data).hexdigest()
+    rel = ".ci/cache/ci-receipts/%s.json" % digest
+    (root / rel).parent.mkdir(parents=True, exist_ok=True)
+    (root / rel).write_bytes(data)
+    prior = {
+        "schema": 2,
+        "whole": True,
+        "origin": "ci",
+        "headTree": "ci-" + tree,
+        "tree": tree,
+        "ciReceipts": [{"lane": "quality-content", "path": rel, "sha256": digest}],
+        "gates": {},
+    }
+    (root / ".ci" / "cache" / "receipts" / ("ci-%s.json" % tree)).write_text(
+        json.dumps(prior), encoding="utf-8"
+    )
+    return rel
+
+
+def stub_verifier(attestations, calls):
+    def verify(data, digest, spec):
+        calls.append(digest)
+        known = attestations.get(hashlib.sha256(data).hexdigest())
+        if known is None:
+            return "stub: no attestation covers these bytes"
+        if known[0] != spec["signer_workflow"]:
+            return "stub: signed by %s" % known[0]
+        return "" if known[1] == digest else "stub: source digest differs"
+
+    return verify
+
+
+def judge(root, tree, receipt, attestations, module=None):
+    """`v2_verdict` with the stub verifier in place, on `module` (the guard by default)."""
+    mod = GM if module is None else module
+    calls = []
+    saved = mod.ATTESTATION_VERIFIER
+    mod.ATTESTATION_VERIFIER = stub_verifier(attestations, calls)
+    try:
+        return mod.v2_verdict(str(root), tree, receipt), calls
+    finally:
+        mod.ATTESTATION_VERIFIER = saved
+
+
+def planted(mutant):
+    """A module object running the guard's source with one MUTANTS entry planted, for the suite's own red-once control."""
+    src = GUARD.read_text(encoding="utf-8")
+    old, new = GM.MUTANTS[mutant]
+    mod = types.ModuleType("broken_" + mutant.replace("-", "_"))
+    mod.__file__ = str(GUARD)
+    exec(compile(src.replace(old, new), "broken", "exec"), mod.__dict__)
+    return mod
+
+
+def test_ci_receipt_origin():
+    root, tree, receipt, data, _rel, att = ci_world("ci-ok")
+    why, calls = judge(root, tree, receipt, att)
+    cases.append(("", why, "CI ORIGIN: a carry from a verified CI receipt is admitted"))
+    cases.append((1, len(calls), "CI ORIGIN: and the receipt was verified exactly once"))
+    memo = {}
+    stub_calls = []
+    saved = GM.ATTESTATION_VERIFIER
+    GM.ATTESTATION_VERIFIER = stub_verifier(att, stub_calls)
+    try:
+        first = GM.attested(data, receipt["gates"][GM.V2_FX]["carriedFrom"]["head"], memo)
+        second = GM.attested(data, receipt["gates"][GM.V2_FX]["carriedFrom"]["head"], memo)
+    finally:
+        GM.ATTESTATION_VERIFIER = saved
+    cases.append(
+        (
+            ("", "", 1),
+            (first, second, len(stub_calls)),
+            "CI ORIGIN: verification is memoized per sha256",
+        )
+    )
+
+    # Byte-altered in place: the file no longer hashes to its own name.
+    root2, tree2, receipt2, data2, rel2, att2 = ci_world("ci-altered-in-place")
+    (root2 / rel2).write_bytes(data2.replace(b'"attempt": "1"', b'"attempt": "2"'))
+    why, _ = judge(root2, tree2, receipt2, att2)
+    cases.append(
+        (
+            True,
+            "check:fx" in why and "field sha256" in why,
+            "CI ORIGIN: a byte-altered receipt is refused, field sha256 (got %r)" % why,
+        )
+    )
+
+    # Byte-altered and re-filed consistently under its new hash: only the attestation can tell.
+    root3, tree3, receipt3, data3, _rel3, att3 = ci_world("ci-altered-refiled")
+    tree_a = receipt3["gates"][GM.V2_FX]["carriedFrom"]["headTree"][3:]
+    write_ci_raw(root3, tree_a, data3.replace(b'"attempt": "1"', b'"attempt": "2"'))
+    why, _ = judge(root3, tree3, receipt3, att3)
+    cases.append(
+        (
+            True,
+            "field attestation" in why and "no attestation" in why,
+            "CI ORIGIN: a re-filed altered receipt is refused, field attestation (got %r)" % why,
+        )
+    )
+
+    # Signed by another workflow.
+    root4, tree4, receipt4, data4, _rel4, att4 = ci_world("ci-other-signer")
+    digest4 = hashlib.sha256(data4).hexdigest()
+    att4[digest4] = ("rediacc/console/.github/workflows/other.yml", att4[digest4][1])
+    why, _ = judge(root4, tree4, receipt4, att4)
+    cases.append(
+        (
+            True,
+            "field attestation" in why and "other.yml" in why,
+            "CI ORIGIN: a receipt signed by another workflow is refused (got %r)" % why,
+        )
+    )
+
+    # Attested, but the CI verdict is fail.
+    root5, tree5, receipt5, _data5, _rel5, att5 = ci_world("ci-fail", verdict="fail")
+    why, _ = judge(root5, tree5, receipt5, att5)
+    cases.append(
+        (
+            True,
+            "field verdict" in why,
+            "CI ORIGIN: a CI origin whose verdict is fail is refused (got %r)" % why,
+        )
+    )
+
+    # No prior at all, and a prior naming a gate no receipt holds.
+    root6, tree6, receipt6, _d6, _r6, att6 = ci_world("ci-no-prior")
+    (root6 / ".ci" / "cache" / "receipts" / ("ci-%s.json" % tree_of(receipt6))).unlink()
+    why, _ = judge(root6, tree6, receipt6, att6)
+    cases.append(
+        (True, "field ciReceipts" in why, "CI ORIGIN: a missing CI prior is refused (got %r)" % why)
+    )
+    root7, tree7, receipt7, data7, _r7, att7 = ci_world("ci-other-gate")
+    other = data7.replace(b'"check:fx"', b'"check:not-fx"')
+    write_ci_raw(root7, tree_of(receipt7), other)
+    att7[hashlib.sha256(other).hexdigest()] = att7[hashlib.sha256(data7).hexdigest()]
+    why, _ = judge(root7, tree7, receipt7, att7)
+    cases.append(
+        (
+            True,
+            "field gates" in why,
+            "CI ORIGIN: a carry no attested CI receipt holds is refused (got %r)" % why,
+        )
+    )
+
+    # The real verifier with no gh on PATH: unknown is a refusal, not a pass.
+    saved_path = os.environ.get("PATH", "")
+    os.environ["PATH"] = str(root)
+    try:
+        real = GM.gh_attestation_verifier(
+            data, receipt["gates"][GM.V2_FX]["carriedFrom"]["head"], GM.CI_ATTESTATION_SPEC
+        )
+    finally:
+        os.environ["PATH"] = saved_path
+    cases.append(
+        (
+            True,
+            "gh is not installed" in real,
+            "CI ORIGIN: the real verifier with no gh refuses with the install line (got %r)" % real,
+        )
+    )
+
+    # THE MUTANT, red once: with the verification arm off, the re-filed and the other-signer receipts are admitted.
+    broken = planted("ci-verification-off")
+    cases.append(
+        (
+            "",
+            judge(root3, tree3, receipt3, att3, broken)[0],
+            "CI MUTANT ci-verification-off: the re-filed altered receipt is admitted",
+        )
+    )
+    cases.append(
+        (
+            "",
+            judge(root4, tree4, receipt4, att4, broken)[0],
+            "CI MUTANT ci-verification-off: the other signer is admitted",
+        )
+    )
+    cases.append(
+        (
+            "",
+            judge(root, tree, receipt, att, broken)[0],
+            "CI MUTANT CONTROL: the verified world stays admitted",
+        )
+    )
+
+    # The writer and the guard name one signer: ci-receipt.ts ATTESTATION_SPEC holds both strings.
+    writer = (REPO / "scripts" / "ci-runner" / "ci-receipt.ts").read_text(encoding="utf-8")
+    cases.append(
+        (
+            True,
+            "repo: '%s'" % GM.CI_ATTESTATION_SPEC["repo"] in writer
+            and "signerWorkflow: '%s'" % CI_SIGNER in writer,
+            "CI ORIGIN: scripts/ci-runner/ci-receipt.ts ATTESTATION_SPEC names the guard's repo and signer",
+        )
+    )
+
+
+def tree_of(receipt):
+    return receipt["gates"][GM.V2_FX]["carriedFrom"]["headTree"][3:]
+
+
+test_ci_receipt_origin()
 
 
 def test_backup_refs():
