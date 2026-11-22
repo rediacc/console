@@ -642,7 +642,9 @@ jobs:
     # ci-quality.yml's quality-static and quality-code declare
     # pull-requests: read for the pulls endpoints they hit on github.token,
     # and quality-security declares actions: read for the CI time budget
-    # freshness step (runs, jobs and artifacts). A called workflow can never
+    # freshness step (runs, jobs and artifacts); quality-content declares it
+    # too, for its receipt writer's read of its own job step record through
+    # gh api. A called workflow can never
     # exceed its caller, so the caller must carry both or GitHub fails the run
     # at startup with no job and no log (run 37184675916, 2026-10-04).
     # packages: read is quality-content's: that job runs inside the private
