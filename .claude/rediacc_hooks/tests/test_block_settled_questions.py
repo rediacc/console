@@ -133,6 +133,13 @@ REFUSE = [
         "",
         "BLOCKED",
     ),
+    ("push timing: a comma straight after the action, a time word", "Push, now?", "", "BLOCKED"),
+    (
+        "push timing: a comma straight after the action, a condition",
+        "Should we push, once the review is in?",
+        "",
+        "BLOCKED",
+    ),
     ("permission: may I push", "May I push these to origin?", "", "BLOCKED"),
     ("permission: open the pr", "Should I open the PR?", "", "BLOCKED"),
 ]

@@ -144,6 +144,8 @@ PUSH_TIMING_AFTER = (
 )
 # THE CLAUSE BOUNDS THE AFTER SCAN. Measured false positive, 2026-11-21 (#073c50c5): an operator design question about the two-tree fix flow, "... the landing folder adds it to the PR and pushes, and development picks it up later when it needs it or at handover?", was refused as a timing ask, because `later` belonged to the next clause ("development picks it up later") and the time-word scan read to the sentence end. The time word, the alternative and the condition are read only up to the first comma that does not open an `or` alternative: "push now, or keep working?" and "push it, or wait?" still ask WHEN, while ", and development ... later" is another clause's time.
 CLAUSE_AFTER = r",(?! or(?![a-z]))"
+# A comma straight after the action that opens a bare time word or condition ("Push, now?", "Should we push, once the review is in?") is the action's own clause, not another one: the cut would otherwise leave it empty and the ask would pass (review 34af99b7.1). ", and development ... later" (another clause) does not match.
+CLAUSE_OWN_TIME = r"^\s*,(?=\s*(now|yet|first|later|already|today|tonight|once|until)([^a-z]|$))"
 # A CONDITION after the action ("... once the review is in", "... until ci is green"): a timing ask after a modal lead, but only a precondition of the mechanics after a mechanics lead.
 PUSH_TIMING_CONDITION = r"^[^.?!;]*?(^|[^a-z])(once|until)([^a-z]|$)"
 # A mechanics lead before the action: "how do/does/can/could/would/did ... push" asks how the push is done, so a CONDITION after it (a fork push once a branch is rebased) is part of the mechanics and stays quiet. It never silences a time word or an "or wait" alternative: "how do we push the batch now or later?" still asks WHEN (review ef6e61d0.1). `how should/shall` is not here: that one asks WHEN, and PUSH_TIMING_BEFORE refuses it.
@@ -549,7 +551,8 @@ def _push_timing(sentence, header_object):
     for m in re.finditer(PUSH_ACTION, sentence):
         before, after = sentence[: m.start()], sentence[m.end() :]
         # `clause` is `after` cut at the clause boundary (CLAUSE_AFTER): the time-word and condition rules read only the action's own clause.
-        clause = re.split(CLAUSE_AFTER, after, maxsplit=1)[0]
+        own = re.sub(CLAUSE_OWN_TIME, "", after, count=1)
+        clause = re.split(CLAUSE_AFTER, own, maxsplit=1)[0]
         # `timing_after` is what the time-word rule reads; `after` itself stays whole for the noun, named-command and push-to-main rules.
         timing_after = (
             re.sub(PUSH_OBJECT_MODIFIER, " ", clause)
