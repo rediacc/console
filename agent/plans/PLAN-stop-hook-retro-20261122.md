@@ -58,7 +58,7 @@ Total in range: 4 blocked stops, all answered within 11 s except the report mark
 
 ## 2. `wl_report.py --list --unread` disagrees with the Stop hook's count
 
-**What happened.** The 06:13:07 stop was blocked by `UNREAD SUB-AGENT REPORTS (28 on branch 1121-1)`, 10 rows shown and "18 older not shown" (12482224, ledger row unread-reports 06:13:07). The lead ran `--list --unread`, got 35 ids, and marked all 35 read (12510143, result "35" and "marked 35 report(s) read" at 12512751). Its own message says "I marked 35 as read, which may include a few the hook listing hadn't shown" (12526130).
+**What happened.** The 06:13:07 stop was blocked by `UNREAD SUB-AGENT REPORTS (28 on branch 1121-1)`, 10 rows shown and "18 older not shown" (12482224, ledger row unread-reports 06:13:07). The lead ran `--list --unread`, got 35 ids, and marked all 35 read (12510143, result "35" and "marked 35 report(s) read" at 12512751). Its own message records that 35 were marked read, "which may include a few the hook listing hadn't shown" (12526130).
 
 Measured against the index (`/home/developer/.claude/agent-reports/home_developer_console`):
 - Branch 1121-1 holds 84 index rows, 77 from session d778be9d and 7 from ace763dd.

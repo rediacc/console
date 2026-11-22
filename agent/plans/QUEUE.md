@@ -57,7 +57,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 2100 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 2108 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
@@ -66,8 +66,8 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 6 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic fe958571, no plan, 15 commit(s) on the branch, 0 open item(s): nginx2root and PHP 2026-11-19 security patching (hostinger + templates)
   - epic 422370f4, no plan, 5 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
-- Writers: 3 live of writer_cap 25 (session ace763dd): worker:ad4fe84082b1f619d, worker:a4278ed92859f26b4, worker:af7dc2429fb19536d.
-- Leased items: 11: #664e36ae (worker:aaa49d70869534c1f, d778be9d), #855d7340 (worker:b6jocj052, d778be9d), #876420de (worker:buv54eqe2, ace763dd), #8da3a559 (worker:b47of8xwj, ace763dd), #95ffeb93 (worker:b47of8xwj, ace763dd), #9be9bec1 (worker:af7dc2429fb19536d, ace763dd), #ab9c68b1 (worker:be39zjfwp, d778be9d), #b63f151f (worker:ab915bcf07b703610, ace763dd), #c276a9df (worker:bzcbi0ri0, d778be9d), #c489e0bf (worker:a4278ed92859f26b4, ace763dd), #fb93df1e (worker:ad4fe84082b1f619d, ace763dd).
+- Writers: 1 live of writer_cap 25 (session ace763dd): worker:ad4fe84082b1f619d.
+- Leased items: 7: #664e36ae (worker:aaa49d70869534c1f, d778be9d), #855d7340 (worker:b6jocj052, d778be9d), #8da3a559 (worker:lead, ace763dd), #95ffeb93 (worker:lead, ace763dd), #ab9c68b1 (worker:be39zjfwp, d778be9d), #c276a9df (worker:bzcbi0ri0, d778be9d), #fb93df1e (worker:ad4fe84082b1f619d, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
