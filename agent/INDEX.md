@@ -634,7 +634,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-retro-20261101.md` | done | 182 | 0 | 4 | 18323 |
 | `agent/plans/PLAN-stop-hook-retro-20261110.md` | done | 234 | 0 | 8 | 27128 |
 | `agent/plans/PLAN-stop-hook-retro-20261117.md` | ready | 218 | 9 | 0 | 26866 |
-| `agent/plans/PLAN-stop-hook-retro-20261122.md` | ready | 117 | 3 | 0 | 13650 |
+| `agent/plans/PLAN-stop-hook-retro-20261122.md` | ready | 117 | 3 | 0 | 13916 |
 | `agent/plans/PLAN-stop-hook-store-status.md` | approved | 204 | 6 | 3 | 25563 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
@@ -657,7 +657,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4758 |
 | `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3914 |
 | `agent/plans/PLAN-website-routing-and-mail.md` | executing | 145 | 5 | 15 | 27643 |
-| `agent/plans/PLAN-weekly-lessons.md` | approved | 64 | 7 | 1 | 8385 |
+| `agent/plans/PLAN-weekly-lessons.md` | approved | 64 | 7 | 1 | 8521 |
 | `agent/plans/PLAN-wire-account-vitest-ci.md` | compacted | 39 | 0 | 0 | 3063 |
 | `agent/plans/PLAN-wl-report-liveness-oracle.md` | compacted | 52 | 0 | 7 | 3665 |
 | `agent/plans/PLAN-worktree-lease.md` | approved | 357 | 1 | 15 | 59600 |

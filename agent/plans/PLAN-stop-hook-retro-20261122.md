@@ -30,7 +30,7 @@ Another timeline fact bears on the ranking. The 05:39:23 `roster-dead` block (of
 
 **Legitimate or already covered, not ranked:**
 - **wake-timer 05:43:52 (12051509):** first arm of the session, with one background task live and no timer. Correct. The lead armed within 11 s.
-- **wake-timer 08:50:07 (13758028) and 10:21:57 (not read):** the timer had exited and a CI watch was still running. The block was correct. Cost: one block and one tool call each. The only fix wanted is the one already filed as R20261117.5, third bullet, which blocks "with the fire time and the re-arm command". That bullet has not landed. The check at `.claude/hooks/stop/wl_checks.py:4298-4313` still reads `if live_bg and not _wakers`, and `V_WAKE_TIMER` (`worklist_messages.py:444`) still carries no fire time.
+- **wake-timer 08:50:07 (13758028) and 10:21:57 (not read):** the timer had exited and a CI watch was still running. The block was correct. Cost: one block and one tool call each. The only fix wanted is the one already filed as R20261117.5, third bullet, which blocks "with the fire time and the re-arm command". That bullet has not landed. The check at `.claude/hooks/stop/wl_checks.py:4298-4313` still reads `if live_bg and not _wakers`, and `V_WAKE_TIMER` (`.claude/hooks/stop/worklist_messages.py:444`) still carries no fire time.
 - **roster-dead 05:39:23:** #876420de was leased to `worker:a1562580d7c3224df`, which had finished. The lead re-leased within 5 s (11807365). Correct block. The cost is in friction 1.
 - **wisdom-due at 93% and 96% context:** these were queued advisories (08:15:02, 08:50:08) and never led a block.
 
@@ -49,8 +49,8 @@ Total in range: 4 blocked stops, all answered within 11 s except the report mark
 **What happened.** Item #876420de ("PR 605 landing ci:quick reds") was leased to `worker:a1562580d7c3224df`, a finished writer. The 05:39:23 stop was blocked with `LEASED TO A FINISHED WORKER` (11795587). From then on, every new background shell the lead started became the item's worker through a hand-typed re-lease. The 13 calls (14 `--lease` calls in total, 1 of them for another item) are at offsets 11807365, 12032495, 12140779, 12328519, 12466502, 12714715, 12918689, 13029630, 13115905, 13181218, 13264853, 13353317 and 13736844. The worker ids are shell ids (`b0ec6gznz`, `b379m9kso`, `b2zwbpfmg`, `b771kv4p0`, `bjica57ks`, `bszopyp4k`, `bhz92iik4`, `bzmls4q7m`, `b079kohxw`, `bm4f3vptz`, `b4mzw0cnk`, `b5n1gtcaw`, `b76zao0yr`) and not agent ids. After 05:39:23 no further roster-dead block fired. The re-leases kept the lease on a live shell, one every 5 to 30 minutes.
 
 **Root cause.**
-- The block text offers only `--tick` and `--lease <me> <id> release`, plus the words "re-lease it to a live worker". It gives no command for a live worker (`worklist_messages.py:3044-3052`, `V_ROSTER_DEAD`).
-- A durable remedy already exists. `worker:lead` is live "exactly while something of this session is running to wake the lead" (`wl_store.py:1577-1580`). The Stop hook adds it to `live_worker_ids` whenever a live background task or the wake timer covers the session (`wl_checks.py:3509-3515`, `wl_leasehelp.lead_covered`).
+- The block text offers only `--tick` and `--lease <me> <id> release`, plus the words "re-lease it to a live worker". It gives no command for a live worker (`.claude/hooks/stop/worklist_messages.py:3044-3052`, `V_ROSTER_DEAD`).
+- A durable remedy already exists. `worker:lead` is live "exactly while something of this session is running to wake the lead" (`.claude/hooks/stop/wl_store.py:1577-1580`). The Stop hook adds it to `live_worker_ids` whenever a live background task or the wake timer covers the session (`.claude/hooks/stop/wl_checks.py:3509-3515`, `wl_leasehelp.lead_covered`).
 - The lead's item waits on that session's own CI shell and the wake timer. A one-time lease to `worker:lead` would have covered every later shell with no further calls.
 - The message does not mention it, and the WORKLIST GUIDE line at 08:15:02 (13400562) shows `worker:b5n1gtcaw [confirmed]`, which reads as the form to copy.
 
@@ -63,11 +63,11 @@ Total in range: 4 blocked stops, all answered within 11 s except the report mark
 Measured against the index (`/home/developer/.claude/agent-reports/home_developer_console`):
 - Branch 1121-1 holds 84 index rows, 77 from session d778be9d and 7 from ace763dd.
 - The read ledger holds 70 `task-notification` marks and 7 `superseded` marks by d778be9d, and 42 `task-notification` marks plus the 35 manual marks (`via` unset) by ace763dd.
-- The claim that the reports were already read holds. The predecessor read 70 of them. That the restarted session sees them again is the accepted cost recorded at `wl_report.py:266`, so no change to marking is proposed.
+- The claim that the reports were already read holds. The predecessor read 70 of them. That the restarted session sees them again is the accepted cost recorded at `.claude/hooks/stop/wl_report.py:266`, so no change to marking is proposed.
 
 **Root cause.**
-- The hook calls `wl_report.unread(store, branch, reader, peer_live)` (`wl_report.py:292-325`). That function skips a foreign-and-stale report, a foreign-and-live report, a relay, and an interim wait that is still pending or superseded.
-- The CLI path (`wl_report.py:1491-1516`) filters the branch only, then `rejudge` and `relay`. It applies none of `_foreign_and_stale`, `_foreign_and_live` or the `interim` handling.
+- The hook calls `wl_report.unread(store, branch, reader, peer_live)` (`.claude/hooks/stop/wl_report.py:292-325`). That function skips a foreign-and-stale report, a foreign-and-live report, a relay, and an interim wait that is still pending or superseded.
+- The CLI path (`.claude/hooks/stop/wl_report.py:1491-1516`) filters the branch only, then `rejudge` and `relay`. It applies none of `_foreign_and_stale`, `_foreign_and_live` or the `interim` handling.
 - The in-code comment says "so the listing and the Stop hook agree on what is a report", and that is not true for those three filters.
 - The 7 extra ids were therefore reports the hook had chosen not to count, such as a peer's live report or a held interim wait. Marking them read removed them for good.
 
@@ -77,23 +77,23 @@ Measured against the index (`/home/developer/.claude/agent-reports/home_develope
 
 **What happened.** Blocks 12051509 (05:43:52) and 13758028 (08:50:07); ledger row wake-timer 10:21:57 (transcript text not read). The 08:50 block names 2 live background tasks and says "arm the session's timer", without saying that the timer started at 08:14:47 exited at 08:44:48.
 
-**Root cause.** `wl_checks.py:4298-4313` and `worklist_messages.py:444`, the same site named in R20261117.5.
+**Root cause.** `.claude/hooks/stop/wl_checks.py:4298-4313` and `.claude/hooks/stop/worklist_messages.py:444`, the same site named in R20261117.5.
 
-**Fix.** Covered by R20261117.5, third bullet ("blocks with the fire time and the re-arm command"). No new box is added. That box also cites the old line `wl_checks.py:4469`, which is now `:4298-4313`, so it should be edited when it lands. The re-count in R20261122.3 reuses this window's number (2 in-range blocks) as the baseline.
+**Fix.** Covered by R20261117.5, third bullet ("blocks with the fire time and the re-arm command"). No new box is added. That box also cites the old line `.claude/hooks/stop/wl_checks.py:4469`, which is now `:4298-4313`, so it should be edited when it lands. The re-count in R20261122.3 reuses this window's number (2 in-range blocks) as the baseline.
 
 ## Decisions
 
 - **Name `worker:lead` in the roster-dead block (friction 1).**
   - DEFAULT: add the remedy line only when `lead_covered` holds. Do not auto-release or auto-re-lease from the hook.
-  - WHY: `worker:lead` is the documented lease for work the lead waits on (`wl_store.py:1577`). The 13 hand re-leases added no information the hook lacked.
-  - HOW: pass the covered flag into the message renderer the same way `lead_covered` is already used at `wl_checks.py:3512`, then add one `%s` line to `V_ROSTER_DEAD`.
+  - WHY: `worker:lead` is the documented lease for work the lead waits on (`.claude/hooks/stop/wl_store.py:1577`). The 13 hand re-leases added no information the hook lacked.
+  - HOW: pass the covered flag into the message renderer the same way `lead_covered` is already used at `.claude/hooks/stop/wl_checks.py:3512`, then add one `%s` line to `V_ROSTER_DEAD`.
 - **Keep per-reader marks (friction 2).**
   - DEFAULT: do not carry marks across a restart, and do not widen `--read`.
-  - WHY: `wl_report.py:261-269` records that the re-surfacing is accepted on purpose and warns against a suppression mechanism. Only the CLI/hook disagreement is a defect.
+  - WHY: `.claude/hooks/stop/wl_report.py:261-269` records that the re-surfacing is accepted on purpose and warns against a suppression mechanism. Only the CLI/hook disagreement is a defect.
   - HOW: reuse `unread()`.
 - **Wake timer.**
   - DEFAULT: leave to R20261117.5. Do not make `wl_wake` re-arm itself.
-  - WHY: the exit is the wake-up (`wl_wake.py:6`), so a self-respawning timer would never exit and would never wake the session.
+  - WHY: the exit is the wake-up (`.claude/hooks/stop/wl_wake.py:6`), so a self-respawning timer would never exit and would never wake the session.
   - HOW: see R20261117.5.
 
 ## Sequencing
