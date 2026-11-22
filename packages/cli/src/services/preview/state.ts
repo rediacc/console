@@ -29,7 +29,7 @@ export function previewHostFor(name: string): string {
   return `https://${name}.rediacc.workers.dev`;
 }
 
-export function assertPreviewName(name: string): void {
+function assertPreviewName(name: string): void {
   if (!PREVIEW_NAME_PATTERN.test(name)) {
     throw new ValidationError(t('errors.preview.invalidName', { name }));
   }
