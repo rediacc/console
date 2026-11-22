@@ -45,8 +45,8 @@ const TEST_MACHINE_ID = 'a'.repeat(64); // deterministic 64-char hex
 const TEST_CLIENT_MACHINE_ID = 'b'.repeat(64);
 const TEST_REPO_GUID = '00000000-0000-4000-8000-000000000001';
 
-// A preview binds no LICENSE_SIGNER, so activate-repo cannot sign there and the signature and payload checks have nothing to verify. Box T1 of PLAN-preview-signer.md restores the signer and flips this to true.
-const PREVIEW_HAS_SIGNER = false;
+// A preview binds no LICENSE_SIGNER, so activate-repo cannot sign there and the signature and payload checks have nothing to verify. Box T1 of PLAN-preview-signer.md restores the signer and sets PREVIEW_HAS_SIGNER=true in the smoke step's env.
+const PREVIEW_HAS_SIGNER = process.env.PREVIEW_HAS_SIGNER === 'true';
 
 let passed = 0;
 let failed = 0;

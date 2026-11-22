@@ -483,6 +483,7 @@
       "PKG_SECTION",
       "PLATFORM",
       "POINTER_BUMP_ONLY",
+      "PREVIEW_HAS_SIGNER",
       "PREVIEW_URL",
       "PREVIEW_URL_OVERRIDE",
       "PROBE_GREP",
