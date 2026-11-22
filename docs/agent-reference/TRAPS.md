@@ -2086,7 +2086,7 @@ The CLI cannot carry the pointer itself: it is the shipped product and knows not
 Trap-Id: plan-closed-with-live-bindings
 Enforced-By: gate:check:ci-plan-bindings, file:.claude/hooks/stop/wl_planbind.py
 Residue: a binding written only in prose (a plan named without its file name, a box described in words) is not seen; a box signature binds only an item that names no other plan, because identical box lines in different plans share one signature.
-Documented-In: doc:agent/plans/PLAN-plan-compaction-bindings.md#Operator ruling (2026-10-03), condensed
+Documented-In: doc:agent/plans/_done/PLAN-plan-compaction-bindings.md#Operator ruling (2026-10-03), condensed
 
 On 2026-10-03 seven plans sat compacted in `_done/` with open boxes, and the worklist items that cited them reached the operator as "no live box: keep or drop?": the work had been closed by moving its document, not by finishing it. Compaction, `--move` and `--sweep` checked the plan's own status and nothing that pointed at it. `wl_planbind.bindings` now names every open box, open item, unfinished dependent and citing box, the three verbs refuse while it is non-empty, and the gate fails any closed plan that still has one.
 
