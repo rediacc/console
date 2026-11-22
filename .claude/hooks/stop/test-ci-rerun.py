@@ -23,6 +23,21 @@ import wl_ci as W
 _SCRATCH = tempfile.mkdtemp(prefix="ci-rerun-")
 atexit.register(shutil.rmtree, _SCRATCH, True)
 # ONE PRIVATE TMPDIR: wl_ci records a landing-rounds row through wl_longred, whose flock sidecar lives under `$TMPDIR/claude-worklist/.judge` (read at call time), and test_hooks_delegates fails a standalone suite that leaves an entry in the shared one.
+_PRIOR_ENV = {k: os.environ.get(k) for k in ("TMPDIR", "XDG_CACHE_HOME")}
+_PRIOR_TEMPDIR = tempfile.tempdir
+
+
+def _restore_env():
+    """Put the process back as it was, so an in-process importer of this suite keeps its own TMPDIR, tempdir and cache dir."""
+    tempfile.tempdir = _PRIOR_TEMPDIR
+    for key, value in _PRIOR_ENV.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+
+
+atexit.register(_restore_env)
 os.environ["TMPDIR"] = _SCRATCH
 tempfile.tempdir = _SCRATCH
 os.environ["XDG_CACHE_HOME"] = _SCRATCH
