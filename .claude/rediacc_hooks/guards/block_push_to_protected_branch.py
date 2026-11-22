@@ -148,6 +148,9 @@ PR_FIELDS = ("number", "state", "headRefOid", "body")
 SUB_PR_FIELDS = ("number", "state", "headRefName", "headRefOid", "mergeStateStatus")
 CONSOLE_PR_FIELDS = ("number", "state")
 SUB_URL = re.compile(r"^https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\.git)?/?$")
+ORIGIN_SSH_URL = re.compile(
+    r"^(?:ssh://)?git@github\.com[:/]([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\.git)?/?$"
+)
 THREADS_QUERY = (
     "query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name)"
     "{pullRequest(number:$number){reviewThreads(first:100){totalCount nodes{isResolved}}}}}"
@@ -482,8 +485,14 @@ def _pr_refusal(repo, branch, sha):
     return _ci_green(branch, pr.get("number"), sha)
 
 
+def _github_slug(url):
+    """The lower-cased `owner/name` of a github.com remote URL (https, `git@github.com:` or `ssh://git@github.com/`), "" for any other."""
+    match = SUB_URL.match(url) or ORIGIN_SSH_URL.match(url)
+    return ("%s/%s" % match.group(1, 2)).lower() if match else ""
+
+
 def _submodule_repo(repo, root):
-    """("<owner>/<name>", "") for the GitHub repository of the submodule a bound tree's `.gitmodules` registers at `repo`, else ("", why not). The owner must be the console's own, and the URL is read from `.gitmodules`, never from the submodule's remotes."""
+    """("<owner>/<name>", "") for the GitHub repository of the submodule a bound tree's `.gitmodules` registers at `repo`, else ("", why not). The owner must be the console's own, the URL is read from `.gitmodules`, and the submodule's `origin` (where the push lands) must name that same repository."""
     if not repo:
         return "", "the pushing repository cannot be read"
     tree = commit_policy.owning_tree(repo, commit_policy.bound_trees(root))
@@ -514,7 +523,16 @@ def _submodule_repo(repo, root):
                 url,
                 owner,
             )
-        return "%s/%s" % match.group(1, 2), ""
+        declared = "%s/%s" % match.group(1, 2)
+        # `git -C <sub> push origin` sends to the submodule's own `origin`, which `.gitmodules` does not decide: the repository the PR is read from must be the one the push lands in.
+        origin = commit_policy.git(["remote", "get-url", "origin"], cwd=repo, foreign=True)
+        landing = _github_slug(origin or "")
+        if landing != declared.lower():
+            return "", (
+                "the submodule `%s` pushes to origin `%s`, not to the `.gitmodules` repository `%s`"
+                % (rel, origin or "(no origin)", declared)
+            )
+        return declared, ""
     return "", "`.gitmodules` names no URL for the submodule `%s`" % rel
 
 

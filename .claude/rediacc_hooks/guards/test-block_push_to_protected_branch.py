@@ -234,6 +234,15 @@ body = os.environ.get("FX_BODY", "Operational-Reason: GitHub cannot rebase this 
 if mode == "down":
     sys.stderr.write("gh: could not connect\n")
     sys.exit(1)
+# FX_FLAKY=<n>: the first n `pr view` calls (counted in the file FX_COUNT) fail the way gh renders a 502; FX_THREADS_DOWN: the review-thread read alone fails.
+flaky = int(os.environ.get("FX_FLAKY", "0"))
+if flaky and a[:2] == ["pr", "view"]:
+    counter = os.environ["FX_COUNT"]
+    seen = int(open(counter).read()) if os.path.exists(counter) else 0
+    open(counter, "w").write(str(seen + 1))
+    if seen < flaky:
+        sys.stderr.write("gh: Server Error (HTTP 502)\n")
+        sys.exit(1)
 if a[:2] == ["pr", "view"]:
     repo = a[a.index("--repo") + 1] if "--repo" in a else ""
     if repo != "rediacc/console":
@@ -262,6 +271,9 @@ if a[:2] == ["pr", "view"]:
 if a[:2] == ["api", "graphql"]:
     query = " ".join(a)
     if "reviewThreads" in query:
+        if os.environ.get("FX_THREADS_DOWN"):
+            sys.stderr.write("gh: could not connect\n")
+            sys.exit(1)
         # FX_THREADS: one isResolved flag per thread ("1" resolved, "0" not); FX_THREADS_TOTAL a totalCount beyond the nodes returned.
         nodes = [{"isResolved": f == "1"} for f in os.environ.get("FX_THREADS", "1").split(",") if f]
         total = int(os.environ.get("FX_THREADS_TOTAL", len(nodes)))
@@ -754,6 +766,8 @@ for _label, _command, _pinned, _admitted in BP.CASES:
 def run(command, cwd, extra=None, argv=None):
     env = dict(os.environ)
     env.update(extra or {})
+    if env.get("FX_COUNT"):
+        pathlib.Path(env["FX_COUNT"]).unlink(missing_ok=True)
     if cwd is not None:
         env["CLAUDE_PROJECT_DIR"] = str(cwd)
     proc = subprocess.run(
@@ -1287,6 +1301,7 @@ SUB_MODULES = {
     "private/ahead": "https://github.com/rediacc/ahead.git",
     "private/behind": "https://github.com/rediacc/behind.git",
     "private/rogue": "https://github.com/someone/rogue.git",
+    "private/pivot": "https://github.com/rediacc/pivot.git",
 }
 SUB_C = _make_console(SUB_MODULES)
 SUB = _plant_sub(SUB_C, "private/sm")
@@ -1301,12 +1316,24 @@ SUB_BEHIND = _plant_sub(SUB_C, "private/behind", main_moved=True)
 SUB_BEHIND_SHA = _tip(SUB_BEHIND, "origin/%s" % BRANCH)
 SUB_ROGUE = _plant_sub(SUB_C, "private/rogue")
 SUB_ROGUE_SHA = _tip(SUB_ROGUE, "origin/%s" % BRANCH)
+SUB_PIVOT = _plant_sub(SUB_C, "private/pivot")
+SUB_PIVOT_SHA = _tip(SUB_PIVOT, "origin/%s" % BRANCH)
 SUB_STRAY = _plant_sub(SUB_C, "private/stray")
 SUB_STRAY_SHA = _tip(SUB_STRAY, "origin/%s" % BRANCH)
 # The landing tree's own submodule, typed from the main checkout's root (box LT11: either bound tree is this checkout).
 SUB_TT_M, SUB_TT_L = _two_tree(_make_console({"private/sm": SUB_MODULES["private/sm"]}))
 SUB_TT = _plant_sub(SUB_TT_L, "private/sm")
 SUB_TT_SHA = _tip(SUB_TT, "origin/%s" % BRANCH)
+# Each submodule's `origin` becomes its GitHub URL only now, after every fixture push: the guard reads `git remote get-url origin` and nothing here pushes again. `private/pivot` is registered as rediacc/pivot in `.gitmodules` but its origin is another repository.
+for _tree, _url in (
+    (SUB, SUB_MODULES["private/sm"]),
+    (SUB_AHEAD, SUB_MODULES["private/ahead"]),
+    (SUB_BEHIND, SUB_MODULES["private/behind"]),
+    (SUB_ROGUE, SUB_MODULES["private/rogue"]),
+    (SUB_TT, SUB_MODULES["private/sm"]),
+    (SUB_PIVOT, "https://github.com/rediacc/elsewhere.git"),
+):
+    _git(_tree, "remote", "set-url", "origin", _url)
 
 
 def sfx(**over):
@@ -1316,6 +1343,29 @@ def sfx(**over):
 
 
 _SM = "git -C private/sm push origin"
+# The two halves of `commit_policy.ff_fallback_refusal`, each disabled alone and the other left running for real: the tip half by making `pushed_live_branches` name a branch inside the call, the ancestor half by passing the sha as its own base.
+_FF_PREAMBLE = (
+    "_orig = commit_policy.ff_fallback_refusal\n"
+    "_plb = commit_policy.pushed_live_branches\n"
+    "def _ff(repo, remote, live, sha, base):\n"
+    "    %s\n"
+    "    try:\n"
+    "        return _orig(repo, remote, live, sha, %s)\n"
+    "    finally:\n"
+    "        commit_policy.pushed_live_branches = _plb\n"
+    "commit_policy.ff_fallback_refusal = _ff\n"
+)
+NO_TIP_HALF = _FF_PREAMBLE % ("commit_policy.pushed_live_branches = lambda *a: ['x']", "base")
+NO_ANCESTOR_HALF = _FF_PREAMBLE % ("pass", "sha")
+GH_OK = "import os\nos.environ['FX_GH'] = 'ok'\n"
+THREADS_OK = "import os\nos.environ.pop('FX_THREADS_DOWN')\n"
+IMPORT_PLANT = (
+    "from rediacc_hooks import syspath\n"
+    "def _boom(*a, **k):\n"
+    "    raise ImportError('planted')\n"
+    "syspath.import_from_ci = _boom\n"
+)
+_COUNTS = [str(pathlib.Path(RUN_TMP) / ("flaky-%d.count" % i)) for i in range(2)]
 # (name, command, root, extra env, expect_blocked, mutant). A mutant is `(preamble, [(old, new), ...])`: Python run before the guard loads, and replacements made in the guard's source, each `old` found exactly once. Under it a refused row must flip to allowed, which proves the row is refused by the condition it names and by nothing else; an admitted row must flip to refused under `REVERTED`, the guard with the submodule admission taken out.
 REVERTED = ("", [("sub_repo, why = _submodule_repo(repo, root)", "sub_repo, why = '', 'reverted'")])
 SUB_CASES: list[tuple[str, str, typing.Any, dict[str, str], bool, typing.Any]] = [
@@ -1384,10 +1434,7 @@ SUB_CASES: list[tuple[str, str, typing.Any, dict[str, str], bool, typing.Any]] =
         SUB_C,
         sfx(sub_repo="rediacc/ahead", sub_head=SUB_AHEAD_LOCAL),
         True,
-        (
-            "commit_policy.ff_fallback_refusal = lambda *a: ''\n",
-            [("if named not in pushed:", "if False:")],
-        ),
+        (NO_TIP_HALF, [("if named not in pushed:", "if False:")]),
     ),
     (
         "sub control: origin/main is not an ancestor",
@@ -1395,7 +1442,7 @@ SUB_CASES: list[tuple[str, str, typing.Any, dict[str, str], bool, typing.Any]] =
         SUB_C,
         sfx(sub_repo="rediacc/behind", sub_head=SUB_BEHIND_SHA),
         True,
-        ("commit_policy.ff_fallback_refusal = lambda *a: ''\n", []),
+        (NO_ANCESTOR_HALF, []),
     ),
     (
         "sub control: the submodule PR is merged",
@@ -1491,6 +1538,47 @@ SUB_CASES: list[tuple[str, str, typing.Any, dict[str, str], bool, typing.Any]] =
         SUB_C,
         sfx(gh="down"),
         True,
+        (GH_OK, []),
+    ),
+    (
+        "sub control: the review threads cannot be read",
+        "%s %s:%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(threads_down="1"),
+        True,
+        (THREADS_OK, []),
+    ),
+    (
+        "sub control: origin is not the .gitmodules repository",
+        "git -C private/pivot push origin %s:%s" % (BRANCH, MAIN),
+        SUB_C,
+        sfx(sub_repo="rediacc/pivot", sub_head=SUB_PIVOT_SHA),
+        True,
+        ("", [("if landing != declared.lower():", "if False:")]),
+    ),
+    # THE RETRY of `_gh_json` (9932c723.1): a transient 5xx inside the budget is retried, one past it is refused naming the failure, and a retry helper that cannot be imported is a refusal.
+    (
+        "sub retry: a 502 then success is admitted",
+        "%s %s:%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(flaky="1", count=_COUNTS[0]),
+        False,
+        ("", [("GH_READ_ATTEMPTS = 2", "GH_READ_ATTEMPTS = 1")]),
+    ),
+    (
+        "sub retry control: a 502 past the budget is refused",
+        "%s %s:%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(flaky="3", count=_COUNTS[1]),
+        True,
+        ("", [("GH_READ_ATTEMPTS = 2", "GH_READ_ATTEMPTS = 4")]),
+    ),
+    (
+        "sub retry control: gh_retry cannot be imported",
+        "%s %s:%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(),
+        True,
         None,
     ),
     (
@@ -1516,9 +1604,17 @@ SUB_CASES: list[tuple[str, str, typing.Any, dict[str, str], bool, typing.Any]] =
         SUB_C,
         sfx(),
         True,
-        None,
+        ("", [("if named is None and not SHA.match(src):", "if False:")]),
     ),
 ]
+# Text a refusal must carry, by row name; and the rows driven through a planted guard (the plant is the refusal's cause, so the unplanted run is the control that must be admitted).
+NEEDS = {
+    "sub retry control: a 502 past the budget is refused": "HTTP 502",
+    "sub retry control: gh_retry cannot be imported": "gh_retry could not be imported",
+}
+PLANTED = {"sub retry control: gh_retry cannot be imported": (IMPORT_PLANT, [])}
+# The table's size, stated once: a dropped row changes the count and fails below instead of passing silently.
+SUB_EXPECTED = (6, 22)
 
 
 def _mutant_argv(preamble, pairs):
@@ -1551,11 +1647,21 @@ def _mutant_argv(preamble, pairs):
     ]
 
 
+sub_run = [0, 0]
 for name, command, root, extra, want, mutant in SUB_CASES:
-    got, err = run(command, root, extra)
+    sub_run[want] += 1
+    planted = PLANTED.get(name)
+    got, err = run(command, root, extra, argv=_mutant_argv(*planted) if planted else None)
     blocked += got
     ok = got == want
     flip = ""
+    if ok and name in NEEDS and NEEDS[name] not in err:
+        ok = False
+        err = "missing %r in: %s" % (NEEDS[name], err)
+    if ok and planted:
+        control, _cerr = run(command, root, extra)
+        ok = control != want
+        flip = " (unplanted control admits it)" if ok else " (UNPLANTED CONTROL ALSO REFUSES IT)"
     if ok and mutant is not None:
         flipped, ferr = run(command, root, extra, argv=_mutant_argv(*mutant))
         ok = flipped != want
@@ -1575,6 +1681,18 @@ for name, command, root, extra, want, mutant in SUB_CASES:
     )
     if not ok and err:
         print("    stderr: %s" % err.strip().splitlines()[-3:])
+
+if tuple(sub_run) == SUB_EXPECTED and len(SUB_CASES) == sum(SUB_EXPECTED):
+    print(
+        "submodule rows: %d (%d allowed, %d refused), all run"
+        % (len(SUB_CASES), sub_run[0], sub_run[1])
+    )
+else:
+    print(
+        "*** FAIL *** submodule rows: %d run (allowed, refused) = %r, the suite declares %r"
+        % (len(SUB_CASES), tuple(sub_run), SUB_EXPECTED)
+    )
+    fails += 1
 
 # A count, not a concatenation: the case lists carry different tuple shapes.
 TOTAL = (
