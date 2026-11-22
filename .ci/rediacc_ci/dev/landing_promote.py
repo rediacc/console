@@ -28,6 +28,7 @@ from rediacc_ci import log, paths
 from rediacc_ci.core import gh_retry
 from rediacc_ci.dev import worktree_lease as lease
 from rediacc_ci.dev import worktree_spike as spike
+from rediacc_ci.policy_paths import policy_path
 
 REMOTE = "origin"
 # The two workflows whose runs at the merged sha make the release fully green (PLAN-simple-two-tree-loop D3).
@@ -108,15 +109,9 @@ LOCAL_ONLY = frozenset({".claude/settings.local.json"})
 
 
 def _record_globs(tree):
-    """The record set (.ci/policy/record-paths.json) plus the hook ledgers: files the hooks of every session rewrite
-    after each commit, so a checkout is never clean of them at the instant promote looks. The rebase's autostash
-    carries them across; nothing else is exempt."""
+    """The record set (.ci/policy/record-paths.json) plus the hook ledgers: files the hooks of every session rewrite after each commit, so a checkout is never clean of them at the instant promote looks. The rebase's autostash carries them across; nothing else is exempt."""
     try:
-        data = json.loads(
-            (pathlib.Path(tree) / ".ci" / "policy" / "record-paths.json").read_text(
-                encoding="utf-8"
-            )
-        )
+        data = json.loads(policy_path("record-paths.json", tree).read_text(encoding="utf-8"))
         rows = [(r["glob"], tuple(r.get("except") or ())) for r in data.get("records", [])]
     except (OSError, ValueError, KeyError, TypeError):
         rows = []
@@ -275,9 +270,7 @@ def _release_green(main, gh, sha):
 def _release_sha(main, merged):
     """The sha whose release must be green: the tip of origin/main when it contains `merged`, else `merged`.
 
-    A hotfix pushed on top of the merge (2026-11-22: the edge release at the merge failed on R2 InvalidRegionName,
-    the hotfix aa829a19d released green) makes the merge's own release red for ever, though main's tip, which the
-    promotion rebases onto, released green with the merge in it."""
+    A hotfix pushed on top of the merge (2026-11-22: the edge release at the merge failed on R2 InvalidRegionName, the hotfix aa829a19d released green) makes the merge's own release red for ever, though main's tip, which the promotion rebases onto, released green with the merge in it."""
     tip = spike.out(main, "rev-parse", "--verify", "%s^{commit}" % UPSTREAM)
     if tip and spike.git(main, "merge-base", "--is-ancestor", merged, tip).returncode == 0:
         return tip
