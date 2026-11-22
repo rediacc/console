@@ -186,10 +186,11 @@ First close the loopback-DNS hole: a `connect` to port 53 counts as network what
   Owns: scripts/ci-runner/ci-receipt.ts, scripts/ci-runner/input-hash.ts, .github/workflows/ci-quality.yml, .ci/rediacc_ci/ci/gate_ledger.py
   Depends on: R2.
   Accept: `npx tsx scripts/ci-runner/ci-receipt.ts --selftest` rc 0 with controls (only `pass` verdicts with a non-null inputHash are written; a gate whose step was skipped is absent; an unverifiable file is never stored, with a stub verifier returning failure, and a mutant storing unverified files is red); live: one PR run's receipt verifies with `gh attestation verify` locally (output quoted), and after `ci-receipt fetch` a ci:quick run on the same tree carries at least one gate from the `ci` origin.
-- [ ] R4 [writer] Push guard: in `_carried_refusal` (.claude/rediacc_hooks/guards/block_unverified_push.py:1643) an origin whose file is a `ci-` receipt is re-verified through the same verifier seam (memoized per sha256); an unverifiable origin is refused with the field named; a `DEFECT` tuple disables the verification arm.
+- [x] R4 [writer] Push guard: in `_carried_refusal` (.claude/rediacc_hooks/guards/block_unverified_push.py:1643) an origin whose file is a `ci-` receipt is re-verified through the same verifier seam (memoized per sha256); an unverifiable origin is refused with the field named; a `DEFECT` tuple disables the verification arm.
   Owns: .claude/rediacc_hooks/guards/block_unverified_push.py, .claude/rediacc_hooks/guards/test-block_unverified_push.py
   Depends on: R3.
   Accept: `python3 .claude/rediacc_hooks/guards/test-block_unverified_push.py` rc 0 with cases for a verified CI origin admitted, a byte-altered receipt refused, a receipt signed by another workflow refused (stub verifier), and a CI origin with verdict `fail` refused; `npm run -s check:ci-guard-mutations` rc 0, with the DEFECT turning the suite red.
+    (ticked) 2026-11-22T19:47:34Z by ace763dd: commit:3a4355bdc4 fileline:.claude/rediacc_hooks/guards/block_unverified_push.py:1 -- carried ci- origins re-verified through the attested() seam; guard suite 350 cases 0 failures. DEPS-WAIVED: R4 names only R3 work landed in 68d8179a08
 
 ### Rebase consistency (operator /ask 2026-11-20: build now, first wave)
 
