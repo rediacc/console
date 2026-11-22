@@ -9640,6 +9640,7 @@
   },
   {
     "id": "check:ci-embed-asset-freshness",
+    "slow": true,
     "env": {
       "GITHUB_TOKEN": "${{ github.token }}"
     },

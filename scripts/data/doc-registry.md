@@ -122,7 +122,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-editorconfig | quality-static / EditorConfig | yes | yes |
 | check:ci-em-dash-surfaces | quality-i18n / i18n | yes | no |
 | check:ci-embed-arch-parity | quality-go / Check embed arch parity | yes | no |
-| check:ci-embed-asset-freshness | quality-go / Check embed-asset upstream freshness | yes | no |
+| check:ci-embed-asset-freshness | quality-go / Check embed-asset upstream freshness | yes | yes |
 | check:ci-embed-asset-versions | quality-go / Check embedded asset versions match their pins | yes | no |
 | check:ci-embed-credits | quality-go / Check embed credits consistency | yes | no |
 | check:ci-enumeration-vacuity | quality-code / Enumeration vacuity | yes | no |
