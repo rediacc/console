@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-22T14:06:08.132Z",
+  "generatedAt": "2026-11-22T17:04:20.963Z",
   "legs": [
     {
       "index": 1,
@@ -223,6 +223,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_arg_refusal.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_channel_snapshot.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_console_executor.py",
+        "pytest:.ci/rediacc_ci/tests/test_deploy_preview_name.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_set_account_worker_secrets.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_simulate_promotion.py",
