@@ -101,7 +101,7 @@ STREAM_RE = re.compile(r"\bvm=(\S+)\s*$")
 
 # SIGNATURES: (id, category, pattern, label, minimum seconds or 0). Operator rows are checked first, then infra rows, then code rows, so a test that failed BECAUSE a mirror was down reads as infra and an upstream gate whose token was refused reads as the operator's. Order inside a category matters too: a Bitwarden 503 must not read as a registry 503.
 SIGNATURES = (
-    # OPERATOR-ONLY rows (agent/plans/PLAN-simple-two-tree-loop.md D4). A 401 is a refused credential, never a rate limit: `429 Too Many Requests` stays on the registry-refused row below, and a 403 stays there too, since registries answer 403 for a throttled anonymous pull.
+    # OPERATOR-ONLY rows (agent/plans/PLAN-simple-two-tree-loop.md D4). A 401 is a refused credential, never a rate limit: a bare `429 Too Many Requests` stays on the registry-refused row below (a 429 whose body says `exceeded your current quota` is a billing refusal and reads operator-only on the billing row, which is checked first), and a 403 stays there too, since registries answer 403 for a throttled anonymous pull.
     (
         "auth-401",
         "operator",

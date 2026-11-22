@@ -157,7 +157,7 @@ VARIANT_OUTLIER_RUN_FACTOR = 1.5
 # A committed p90 moves on `MIN_VARIANT_RUNS` runs (`refreshed_on_evidence`), a name new to the table is written from any count, and a leg slow in two runs of eight, or at 13 minutes in most runs, stays over budget: the second slow run is the max, and a slow median is never an outlier.
 JOB_P90_MIN_SAMPLES = 10
 JOB_P90_OUTLIER_FACTOR = 1.5
-# How many completed PR-full runs the refresh reads for `job_p90_minutes` alone, so the rank floor above is reachable when the PR cadence allows: a leg succeeds in only some PR runs, so a 10-run window could never put 10 samples under one leg. The 14-day window caps it first (8 runs on 2026-11-21). The other tables keep the `limit` sample (`--refresh-limit`), which is also what `--check` reads, so a check after a refresh still judges the sample the refresh wrote; `--check` never reads job p90s, so `compute_for_check` does not widen. Bounded: at most this many runs' job pages, about 4 pages per run.
+# How many completed PR-full runs the refresh reads for `job_p90_minutes` alone, so the rank floor above is reachable when the PR cadence allows: a leg succeeds in only some PR runs, so a 10-run window puts 10 samples under a leg only when that leg succeeds in every one of them, and any failed or skipped run leaves it short. The 14-day window caps it first (8 runs on 2026-11-21). The other tables keep the `limit` sample (`--refresh-limit`), which is also what `--check` reads, so a check after a refresh still judges the sample the refresh wrote; `--check` never reads job p90s, so `compute_for_check` does not widen. Bounded: at most this many runs' job pages, about 4 pages per run.
 JOB_P90_SAMPLE_LIMIT = 20
 # Half a minute of leg wall: check-lane-budget.ts `REBALANCE_ADVISORY_MIN` (0.5 minutes), read from that file by test_the_materiality_floor_is_the_lane_budget_gates_own_advisory_threshold so the two cannot part.
 MATERIAL_LEG_MS = 30_000
@@ -2130,7 +2130,7 @@ def prefer_todays_leg(
 ) -> tuple[dict[str, float], dict[str, list[str]]]:
     """`(job_p90_minutes, job_p90_plans)` with each MIXED leg measured on today's leg alone.
 
-    The p90 is `job_p90_stats`'. `counts` (sampled runs per name) and `evidence` (`job_p90_stats` per name), when given, are rewritten for every name priced on a subset here, so the refresh's evidence floor counts the samples the written p90 came from, not the whole window's.
+    The p90 is the `job_p90_stats` value. `counts` (sampled runs per name) and `evidence` (`job_p90_stats` per name), when given, are rewritten for every name priced on a subset here, so the refresh's evidence floor counts the samples the written p90 came from, not the whole window's.
 
     A display name names a position, and a sample of a leg's earlier contents says nothing about the leg that ships now.
     When some of a name's traced samples ran today's leg and others ran a retired one, the p90 is taken over today's samples only and the plan entry names today's hash alone.
