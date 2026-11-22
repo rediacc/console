@@ -2700,8 +2700,9 @@ def test_ci_receipt_origin():
     cases.append(
         (
             True,
-            "repo: '%s'" % GM.CI_ATTESTATION_SPEC["repo"] in writer
-            and "signerWorkflow: '%s'" % CI_SIGNER in writer,
+            "repo: WK_GH_REPO," in writer
+            and "signerWorkflow: `${WK_GH_REPO}%s`" % CI_SIGNER[len(GM.GH_REPO) :] in writer
+            and CI_SIGNER.startswith(GM.GH_REPO + "/"),
             "CI ORIGIN: scripts/ci-runner/ci-receipt.ts ATTESTATION_SPEC names the guard's repo and signer",
         )
     )
