@@ -34,7 +34,7 @@ def stub(value):
 
 
 def worktree_check_cases():
-    """Review 90118fb6.2: `worktree_check` routes an unlanded lease to the note of the first hold that applies (vm:check, ci:quick, release:local, then the unpushed green receipt) and blocks only when none does."""
+    """Review 90118fb6.2: `worktree_check` routes an unlanded lease to the note of the first hold that applies (vm:check, release:local, then the unpushed green receipt) and blocks only when none does."""
     import types
     from unittest import mock
 
@@ -43,7 +43,7 @@ def worktree_check_cases():
 
     got = {"unlanded": [{"id": "lease1"}], "cache": {}}
 
-    def drive(vm, ciq, rel, rcpt):
+    def drive(vm, rel, rcpt):
         notes, blocks = [], []
 
         def queue(_wl, _sid, _state, _key, text, _prio, **_kw):
@@ -57,7 +57,6 @@ def worktree_check_cases():
             mock.patch.object(wl_worktrees, "report_lines", stub("")),
             mock.patch.object(wl_worktrees, "unlanded_lines", stub("lease1")),
             mock.patch.object(wl_checks, "vm_check_running", stub(vm)),
-            mock.patch.object(wl_checks, "ci_quick_running", stub(ciq)),
             mock.patch.object(wl_checks, "release_local_running", stub(rel)),
             mock.patch.object(wl_checks, "green_receipt_on_unpushed_head", stub(rcpt)),
             mock.patch.object(wl_checks, "outq_add", queue),
@@ -73,29 +72,27 @@ def worktree_check_cases():
             )
         return notes, blocks
 
-    notes, blocks = drive(False, False, True, False)
+    notes, blocks = drive(False, True, False)
     check("a running release:local reports the lease and blocks nothing", blocks, [])
     check("...with the release note", notes, [M.N_WORKTREE_RELEASE % "lease1"])
-    notes, blocks = drive(False, False, True, True)
+    notes, blocks = drive(False, True, True)
     check("release:local outranks the unpushed receipt", notes, [M.N_WORKTREE_RELEASE % "lease1"])
     check("...and still blocks nothing", blocks, [])
-    notes, blocks = drive(False, False, False, True)
+    notes, blocks = drive(False, False, True)
     check(
         "control: the receipt hold applies once release:local is gone",
         notes,
         [M.N_WORKTREE_RECEIPT % "lease1"],
     )
     check("...and still blocks nothing", blocks, [])
-    notes, blocks = drive(False, True, True, False)
-    check("ci:quick outranks release:local", notes, [M.N_WORKTREE_CIQUICK % "lease1"])
-    notes, blocks = drive(True, True, True, True)
+    notes, blocks = drive(True, True, True)
     check(
-        "vm:check outranks ci:quick, release:local and the receipt",
+        "vm:check outranks release:local and the receipt",
         notes,
         [M.N_WORKTREE_VMCHECK % "lease1"],
     )
     check("...and blocks nothing", blocks, [])
-    notes, blocks = drive(False, False, False, False)
+    notes, blocks = drive(False, False, False)
     check("control: with no hold the unlanded lease blocks", blocks, ["worktree-unlanded"])
     check("...and queues no hold note", notes, [])
 

@@ -11,7 +11,6 @@ Auto-discovered by TAILED in .claude/rediacc_hooks/tests/test_hooks_delegates.py
 """
 
 import ast
-import datetime
 import importlib.util
 import json
 import os
@@ -1118,13 +1117,9 @@ def control_real_hook(tmp):
 
     runtime = fix.base / "xdg"
     runtime.mkdir(mode=0o700)
-    # A private ci:quick clone path too, for the same reason: a real ci:quick on this machine holds its own clone lock.
-    ciq_clone = fix.base / "ciq" / "clone"
-    ciq_clone.parent.mkdir()
     env = {
         "CLAUDE_CONFIG_DIR": str(config),
         "XDG_RUNTIME_DIR": str(runtime),
-        "CI_QUICK_CLONE_DIR": str(ciq_clone),
     }
 
     got = hook_stop(fix, env)
@@ -1191,109 +1186,6 @@ def control_real_hook(tmp):
     check("a free fleet lock blocks again", got.decision, "block")
     check("a free fleet lock names the lease again", needle in got.out, True)
 
-    # A running ci:quick (#b872c325): landing moves HEAD and voids the receipt it writes, so its clone lock holds the landing the way the fleet lock does. The marker is `<clone>.lock`, `{"pid", "at"}` written by quick-clone.ts acquireLock; only a live pid whose argv names the script counts.
-    ciq_lock = pathlib.Path(str(ciq_clone) + ".lock")
-    held_text = "held for the running ci:quick"
-    dead = subprocess.Popen([sys.executable, "-c", "pass"])
-    dead.wait(timeout=30)
-    for label, owner in (
-        ("a stale marker (its pid is gone)", json.dumps({"pid": dead.pid, "at": "x"})),
-        ("a marker whose pid is not ci:quick", json.dumps({"pid": os.getpid(), "at": "x"})),
-        ("a malformed marker", "{not json"),
-    ):
-        ciq_lock.write_text(owner, encoding="utf-8")
-        got = hook_stop(fix, env)
-        check("%s still blocks" % label, got.decision, "block")
-        check("%s is not reported as held" % label, held_text in got.out, False)
-    ciq_lock.unlink()
-    # The stand-in writes the owner the way acquireLock does, `at` from `new Date().toISOString()` shifted by argv[2] seconds, from the cwd it is started in.
-    ciq_stand_in = (
-        "import datetime, json, os, sys\n"
-        "at = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=int(sys.argv[2]))\n"
-        "stamp = at.strftime('%Y-%m-%dT%H:%M:%S.000Z')\n"
-        "open(sys.argv[1], 'x').write(json.dumps({'pid': os.getpid(), 'at': stamp}))\n"
-        "print('held', flush=True)\n"
-        "sys.stdin.read()\n"
-        "os.remove(sys.argv[1])\n"
-    )
-
-    ciq_script = fix.base / "standins" / "scripts" / "ci-runner" / "quick-clone.ts"
-    ciq_script.parent.mkdir(parents=True)
-    ciq_script.write_text(ciq_stand_in, encoding="utf-8")
-
-    def ciq_stop(age_s, cwd):
-        """One Stop while a ci:quick stand-in, its lock `age_s` old and its cwd `cwd`, holds the marker."""
-        holder = subprocess.Popen(
-            [sys.executable, str(ciq_script), str(ciq_lock), str(age_s)],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            text=True,
-            cwd=str(cwd),
-        )
-        stand_in_in, stand_in_out = holder.stdin, holder.stdout
-        if stand_in_in is None or stand_in_out is None:
-            holder.kill()
-            holder.wait(timeout=30)
-            for pipe in (stand_in_in, stand_in_out):
-                if pipe is not None:
-                    pipe.close()
-            raise SystemExit("the ci:quick stand-in was started without its stdin/stdout pipes")
-        try:
-            check("the ci:quick stand-in holds the marker", stand_in_out.readline().strip(), "held")
-            return hook_stop(fix, env)
-        finally:
-            stand_in_in.close()
-            stand_in_out.close()
-            holder.wait(timeout=30)
-
-    # The design review of 581e1fe96: a live matching pid is not enough. A lock older than twice quick-clone.ts's LOCK_WAIT_MS (3 h) is not a run worth holding for, and a ci:quick whose cwd is another checkout is not this checkout's run.
-    got = ciq_stop(4 * 3600, fix.proj)
-    check("a ci:quick lock older than twice the wait still blocks", got.decision, "block")
-    check("an old ci:quick lock is not reported as held", held_text in got.out, False)
-    foreign = fix.base / "another-checkout"
-    foreign.mkdir()
-    got = ciq_stop(0, foreign)
-    check("a ci:quick of another checkout still blocks", got.decision, "block")
-    check("a foreign ci:quick is not reported as held", held_text in got.out, False)
-
-    got = ciq_stop(0, fix.proj)
-    check("a running ci:quick lifts the block", got.decision, "allow")
-    check("a running ci:quick reports the hold", held_text in got.out, True)
-    check("the hold names the lease", "    w1 (" in got.out, True)
-    check("the run ended and removed its marker", ciq_lock.exists(), False)
-    got = hook_stop(fix, env)
-    check("a free ci:quick marker blocks again", got.decision, "block")
-    check("a free ci:quick marker names the lease again", needle in got.out, True)
-
-    # The age cap mirrors quick-clone.ts's LOCK_WAIT_MS; a change on either side alone fails here.
-    ts_text = (_REAL.parents[3] / "scripts/ci-runner/quick-clone.ts").read_text(encoding="utf-8")
-    ts_wait = re.search(r"^const LOCK_WAIT_MS = ([0-9_ *]+);$", ts_text, re.MULTILINE)
-    checks_tree = ast.parse((SOURCE / "hooks/stop/wl_checks.py").read_text(encoding="utf-8"))
-    py_wait = next(
-        (
-            node.value
-            for node in checks_tree.body
-            if isinstance(node, ast.Assign)
-            and any(getattr(t, "id", "") == "CI_QUICK_LOCK_WAIT_S" for t in node.targets)
-        ),
-        None,
-    )
-
-    def _product(text):
-        out = 1
-        for part in text.replace("_", "").split("*"):
-            out *= int(part.strip())
-        return out
-
-    check("quick-clone.ts still declares LOCK_WAIT_MS", ts_wait is not None, True)
-    check("wl_checks still declares CI_QUICK_LOCK_WAIT_S", py_wait is not None, True)
-    if ts_wait is not None and py_wait is not None:
-        check(
-            "CI_QUICK_LOCK_WAIT_S is quick-clone.ts's LOCK_WAIT_MS in seconds",
-            _product(ast.unparse(py_wait)) * 1000,
-            _product(ts_wait.group(1)),
-        )
-
     fix.bg = json.dumps(
         [{"id": "wa1", "type": "subagent", "status": "running", "description": "w"}]
     )
@@ -1313,52 +1205,16 @@ def control_real_hook(tmp):
 
 
 def control_probes(tmp):
-    """The lock-owner readers, called directly over a fake /proc: the argv must be an interpreter run of the script (a `tail` or `grep` that carries the path is not one), an `Infinity` pid reads False, and a host with no /proc reads False (reviews a90d9cb2.1, d640b348.1 to .3)."""
+    """The vm:check lock-owner reader, called directly over a fake /proc: the argv must be an interpreter run of the script (a `tail` or `grep` that carries the path is not one) and an `Infinity` pid reads False (reviews a90d9cb2.1, d640b348.1 to .3)."""
     _by_file("paths").on_sys_path(SOURCE / "hooks/stop")
     import wl_checks
 
     fake = tmp / "fakeproc"
-    root = tmp / "probe-root"
-    root.mkdir()
     pid = 4242
     (fake / str(pid)).mkdir(parents=True)
-    (fake / str(pid) / "cwd").symlink_to(root)
-    stamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-    lock = tmp / "probe.lock"
 
     def argv_is(*words):
         (fake / str(pid) / "cmdline").write_bytes(b"\0".join(w.encode() for w in words) + b"\0")
-
-    def ciq(raw=None, proc=str(fake)):
-        lock.write_text(raw or json.dumps({"pid": pid, "at": stamp}), encoding="utf-8")
-        return wl_checks.ci_quick_running(str(root), path=str(lock), proc=proc)
-
-    script = "scripts/ci-runner/quick-clone.ts"
-    argv_is("node", "--require", "p.cjs", script)
-    check("ci:quick: an interpreter run of the script holds", ciq(), True)
-    argv_is("grep", script)
-    check("ci:quick: a grep naming the script is not a run", ciq(), False)
-    argv_is("node", "xci-runner/quick-clone.ts")
-    check("ci:quick: a word that only ends with the path is not the script", ciq(), False)
-    argv_is("node", "xscripts/ci-runner/quick-clone.ts")
-    check("ci:quick: a directory glued before the path is not the script", ciq(), False)
-    argv_is("tsx", script)
-    check("ci:quick: the tsx launcher holds", ciq(), True)
-    argv_is("bun", "run", script)
-    check("ci:quick: bun run names the script after the subcommand", ciq(), True)
-    argv_is("deno", "run", "--allow-all", script)
-    check("ci:quick: deno run holds", ciq(), True)
-    argv_is("python3", "-", script)
-    check("ci:quick: a stdin program with the path as an argument is not a run", ciq(), False)
-    argv_is("python3", "tools/lint.py", script)
-    check("ci:quick: a script that only takes the path as an argument is not a run", ciq(), False)
-    argv_is("node", script)
-    check(
-        "ci:quick: pid Infinity reads False, not a raise",
-        ciq('{"pid": Infinity, "at": "x"}'),
-        False,
-    )
-    check("ci:quick: a host with no /proc reads False", ciq(proc=str(tmp / "no-proc")), False)
 
     vm = "rediacc_ci.drills.vm_check"
     holder = wl_checks.vm_check_holder

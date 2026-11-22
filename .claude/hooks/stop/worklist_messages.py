@@ -2173,7 +2173,7 @@ in for work the session could be doing beside it. Both point the same way: the
 verdict follows what the session CAN DO, not what it happens to be watching. The
 common shape is an item deferred on "wait for CI/PR to land" -- writing the code
 and leaving it unpushed is almost always available, and unpushed work cannot
-disturb a run in flight, except while a vm:check or ci:quick run is building a
+disturb a run in flight, except while a vm:check run is building a
 receipt on this tree (RECEIPT IN FLIGHT below, when the hook sees one).
 
 Challenge every blocker that is not about the human. Ask: could the session
@@ -3242,12 +3242,12 @@ V_IDLE_CAPACITY = (
 IDLE_CAPACITY_BOX = "    %s#%s  %s"
 IDLE_CAPACITY_SPAWN = "    /writers-now %s"
 IDLE_CAPACITY_MORE = "    ... and %d more"
-# agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.3: appended to JUDGE_PROMPT while a vm:check or ci:quick run holds its lock on this tree. Key: run.
+# agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.3: appended to JUDGE_PROMPT while a vm:check run holds its lock on this tree. Key: run.
 JUDGE_RECEIPT_IN_FLIGHT = """
 RECEIPT IN FLIGHT: a %(run)s run is building its receipt on this tree right now
 (the hook read its lock). A commit or an edit in the main checkout voids the
 receipt this run is producing: vm:check rebuilds the CLI from the live tree on
-each rdc call, and a ci:quick receipt is keyed on the tree. Local work during
+each rdc call. Local work during
 the run means a writer in a lease tree. Never order a main-checkout edit,
 commit, land or cherry-pick while it runs; "the run is building its receipt"
 is a legitimate reason to hold those.
@@ -3360,15 +3360,10 @@ N_WORKTREE_RELEASE = (
     "once it ends:\n%s"
 )
 
-N_WORKTREE_CIQUICK = (
-    "UNLANDED LEASE, held for the running ci:quick (its clone lock names a live run): landing "
-    "now moves HEAD, and the receipt the push guard keys on HEAD^{tree} would vouch for the old "
-    "tree. Land these once it ends:\n%s"
-)
-
 N_WORKTREE_RECEIPT = (
-    "UNLANDED LEASE, held for the push: the pre-push receipt passed for exactly HEAD and HEAD is "
-    "not on its upstream yet, so landing now would move HEAD and void the receipt the push needs. "
+    "UNLANDED LEASE, held for the push: the pre-push receipt passed for HEAD's tree (directly or "
+    "through its record-only advances) and HEAD is not on its upstream yet, so landing now would "
+    "change that tree and void the receipt the push needs. "
     "Land these once the push is out:\n%s"
 )
 

@@ -2640,7 +2640,7 @@ RUNNER_VALUE_OPTS = frozenset(
 )
 
 
-# The launchers that take a `run` subcommand before the script. The repo itself launches the two scripts through `tsx <script>` (package.json `ci:quick`) and `python3 -m rediacc_ci.drills.vm_check` (`vm:check`), and a lock records the interpreter's own pid, so these two are for a direct run.
+# The launchers that take a `run` subcommand before the script. The repo launches vm:check through `python3 -m rediacc_ci.drills.vm_check`, and a lock records the interpreter's own pid, so these two are for a direct run.
 RUNNER_SUBCOMMAND_RUN = frozenset(("bun", "deno"))
 
 
@@ -2709,88 +2709,78 @@ def vm_check_running(path=None):
         os.close(fd)
 
 
-# The argv word that names a ci:quick run: `npm run ci:quick` runs `tsx scripts/ci-runner/quick-clone.ts`, and the pid `acquireLock` writes is the node process whose argv carries that script path as its own word (measured 2026-11-06 under tsx: `node --require .../preflight.cjs --import .../loader.mjs <script>`).
-# The whole repo-relative path, so a leading directory glued on (`xscripts/ci-runner/quick-clone.ts`) is no match: `argv_runs` accepts the word itself or one ending with `/` plus this (review 2dc5d5a9.1).
-CI_QUICK_ARGV = "scripts/ci-runner/quick-clone.ts"
-
-
-def ci_quick_lock_path(root, environ=None):
-    """The pid lock `npm run ci:quick` holds for its whole run on the checkout `root`: `<clone>.lock` beside the kept clone, where `scripts/ci-runner/quick-clone.ts` cloneDirFor puts it (`CI_QUICK_CLONE_DIR`, else `${XDG_CACHE_HOME:-~/.cache}/rediacc/ci-quick-clones/<basename>-<sha8 of the real path>`)."""
-    env = os.environ if environ is None else environ
-    override = env.get("CI_QUICK_CLONE_DIR") or ""
-    if override:
-        return os.path.abspath(override) + ".lock"
-    base = env.get("XDG_CACHE_HOME") or os.path.join(
-        env.get("HOME") or os.path.expanduser("~"), ".cache"
-    )
-    real = os.path.realpath(root)
-    key = hashlib.sha256(real.encode("utf-8")).hexdigest()[:8]
-    return os.path.join(
-        base, "rediacc", "ci-quick-clones", "%s-%s.lock" % (os.path.basename(real), key)
-    )
-
-
-# `LOCK_WAIT_MS` in scripts/ci-runner/quick-clone.ts (90 minutes): how long a second ci:quick waits for the lock. A lock older than twice that is not a run in progress worth holding a landing for, whatever its pid says (design review of 581e1fe96). test-wl_worktrees.py fails if this copy and the TypeScript constant part.
-CI_QUICK_LOCK_WAIT_S = 90 * 60
-CI_QUICK_MAX_AGE_S = 2 * CI_QUICK_LOCK_WAIT_S
-CI_QUICK_SCRIPT = "scripts/ci-runner/quick-clone.ts"
-
-
-def _lock_age_s(at, now):
-    """Seconds since the ISO-8601 `at` `acquireLock` writes (`new Date().toISOString()`), None when it is missing or does not parse."""
-    try:
-        stamp = datetime.datetime.fromisoformat(str(at))
-    except (TypeError, ValueError):
-        return None
-    if stamp.tzinfo is None:
-        return None
-    return now - stamp.timestamp()
-
-
-def _same_checkout(pid, words, root, proc):
-    """Is the ci:quick at `pid` this checkout's? Its cwd is `root` (npm runs the script in the package root, and quick-clone.ts never changes directory), or the script word resolved against that cwd is `<root>/scripts/ci-runner/quick-clone.ts`. A reused pid running another checkout's ci:quick answers neither."""
+def _same_checkout(pid, root, proc):
+    """Is the process at `pid` running in this checkout? Its cwd is `root` (npm and `python3 -m` run in the package root). A reused pid running in another checkout answers False."""
     try:
         cwd = os.path.realpath(os.path.join(proc, str(pid), "cwd"))
     except OSError:
         return False
-    real_root = os.path.realpath(root)
-    if cwd == real_root:
-        return True
-    want = os.path.join(real_root, CI_QUICK_SCRIPT)
-    return any(
-        argv_runs([words[0], w], (CI_QUICK_ARGV,))
-        and os.path.realpath(os.path.join(cwd, w)) == want
-        for w in words[1:]
-    )
+    return cwd == os.path.realpath(root)
+
+
+RECEIPT_ARCHIVE_REL = os.path.join(".ci", "cache", "receipts")
+_TREE_RE = re.compile(r"^[0-9a-f]{40}([0-9a-f]{24})?$")
+
+
+def _git_out(root, *args):
+    """Stripped stdout of `git -C root <args>`, None when git fails or cannot be run."""
+    try:
+        got = subprocess.run(
+            ["git", "-C", str(root), *args],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=20,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return got.stdout.strip()
+
+
+def _receipt_vouches_for_tree(receipt, tree):
+    """True when the receipt's `headTree` is `tree`, or the receipt's `advances` reach `tree` from it: steps are read in order and a step counts when its `from` is a tree already reached, the shape `block_unverified_push.advance_chain` walks. Only the reachability is read here; the push guard still verifies every step when the push is made."""
+    if not isinstance(receipt, dict) or not isinstance(receipt.get("headTree"), str):
+        return False
+    reached = {receipt["headTree"]}
+    steps = receipt.get("advances")
+    for step in steps if isinstance(steps, list) else []:
+        if (
+            isinstance(step, dict)
+            and step.get("from") in reached
+            and isinstance(step.get("to"), str)
+        ):
+            reached.add(step["to"])
+    return tree in reached
 
 
 def green_receipt_on_unpushed_head(root, receipt_path=None):
-    """True only when the pre-push receipt passed (`exitCode` 0) for exactly the commit HEAD names, and HEAD is not yet on its upstream: the push that receipt buys is still owed, and landing a lease now would move HEAD and void it. A missing or malformed receipt, a red one, a receipt for another commit, a HEAD git cannot read, or a HEAD its upstream already contains reads False, so a blind reading never stands the unlanded-lease block down."""
-    path = pathlib.Path(
+    """True only when a green pre-push receipt (`exitCode` 0) judged the tree HEAD names, and HEAD is not yet on its upstream: the push that receipt buys is still owed, and landing a lease now would move HEAD and void it. The receipt is read per tree, the way the push guard reads it: the archive copy `.ci/cache/receipts/<HEAD^{tree}>.json` first (only when it names that tree and is a whole run), then the latest file, and it speaks for HEAD when its `headTree` is HEAD's tree or its `advances` chain reaches it, so a record-only commit after a green run still reads as a receipt. A missing or malformed receipt, a red one, a receipt for another tree, a HEAD git cannot read, or a HEAD its upstream already contains reads False, so a blind reading never stands the unlanded-lease block down."""
+    tree = _git_out(root, "rev-parse", "HEAD^{tree}")
+    if not tree or not _TREE_RE.match(tree):
+        return False
+    latest = pathlib.Path(
         receipt_path or pathlib.Path(root) / ".ci" / "cache" / "prepush-receipt.json"
     )
-    try:
-        receipt = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return False
+    archive = pathlib.Path(root) / RECEIPT_ARCHIVE_REL / ("%s.json" % tree)
+    receipt = None
+    for path in (archive, latest):
+        try:
+            doc = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if path == archive and not (
+            isinstance(doc, dict) and doc.get("headTree") == tree and doc.get("whole") is True
+        ):
+            return False
+        receipt = doc
+        break
     # `type(...) is int`: JSON `false` and `0.0` compare equal to 0 but are not an exit code a run wrote.
     if (
         not isinstance(receipt, dict)
         or type(receipt.get("exitCode")) is not int
         or receipt["exitCode"] != 0
+        or not _receipt_vouches_for_tree(receipt, tree)
     ):
-        return False
-    try:
-        head = subprocess.run(
-            ["git", "-C", str(root), "rev-parse", "HEAD"],
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=20,
-        ).stdout.strip()
-    except (OSError, subprocess.SubprocessError):
-        return False
-    if not head or receipt.get("head") != head:
         return False
     try:
         pushed = subprocess.run(
@@ -2803,24 +2793,6 @@ def green_receipt_on_unpushed_head(root, receipt_path=None):
         return False
     # rc 0: the upstream holds HEAD (pushed); rc 1: it does not; anything else (no upstream) is a doubt.
     return pushed.returncode == 1
-
-
-def ci_quick_running(root, path=None, proc="/proc", now=None):
-    """True only when the ci:quick lock of `root` exists and names a live pid whose argv is a ci:quick run of THIS checkout, taken within CI_QUICK_MAX_AGE_S (`acquireLock` writes `{"pid", "at"}` with one `wx` create and removes the file in its `finally`). A missing file, a malformed owner, a dead pid (the stale file a killed run leaves), a pid reused by another program, a ci:quick of another checkout, or an `at` that is missing, unparseable or older than twice the lock wait reads False, so a blind reading never stands the unlanded-lease block down."""
-    path = path or ci_quick_lock_path(root)
-    try:
-        owner = json.loads(pathlib.Path(path).read_bytes().decode("utf-8", "replace"))
-        pid = int(owner.get("pid"))
-        argv = pathlib.Path(proc, str(pid), "cmdline").read_bytes().split(b"\0")
-    except (ValueError, TypeError, AttributeError, OSError, OverflowError):
-        return False
-    age = _lock_age_s(owner.get("at"), time.time() if now is None else now)
-    if age is None or age > CI_QUICK_MAX_AGE_S:
-        return False
-    words = [a.decode("utf-8", "replace") for a in argv]
-    if pid <= 0 or not argv_runs(words, (CI_QUICK_ARGV,)):
-        return False
-    return _same_checkout(pid, words, root, proc)
 
 
 def release_local_running(root, proc="/proc"):
@@ -2838,7 +2810,7 @@ def release_local_running(root, proc="/proc"):
             ]
         except OSError:
             continue
-        if "rediacc_ci.release.local" in words and _same_checkout(int(pid), words, root, proc):
+        if "rediacc_ci.release.local" in words and _same_checkout(int(pid), root, proc):
             return True
     return False
 
@@ -2873,16 +2845,6 @@ def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd, m
             M.N_WORKTREE_VMCHECK % wl_worktrees.unlanded_lines(got),
             3,
         )
-    elif got["unlanded"] and ci_quick_running(root):
-        # Landing a lease moves HEAD, and the receipt a running ci:quick writes vouches for the tree it started on, the one the push guard keys on HEAD^{tree}: landing now voids the run (#b872c325). The lease waits for it: reported, not blocked.
-        outq_add(
-            worklist,
-            session_id,
-            state_doc,
-            "worktree-orphan",
-            M.N_WORKTREE_CIQUICK % wl_worktrees.unlanded_lines(got),
-            3,
-        )
     elif got["unlanded"] and release_local_running(root):
         # Any running release:local of this checkout (`release_local_running` matches the module, so a --branch-release run counts too) ships HEAD, and refuses unless HEAD is the pushed tip (the pushed branch head for --branch-release) with receipts on HEAD^{tree}: landing now makes the release refuse. The lease waits for it: reported, not blocked.
         outq_add(
@@ -2894,7 +2856,7 @@ def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd, m
             3,
         )
     elif got["unlanded"] and green_receipt_on_unpushed_head(root):
-        # A passing ci:quick receipt for exactly HEAD, not yet pushed: landing now moves HEAD and voids the receipt the push needs, another full run. The lease waits for the push: reported, not blocked.
+        # A passing ci:quick receipt for HEAD's tree (read through its advances), not yet pushed: landing now changes that tree and voids the receipt the push needs, another full run. The lease waits for the push: reported, not blocked.
         outq_add(
             worklist,
             session_id,
@@ -3140,13 +3102,11 @@ def _first_box_text(root, rel):
     return "%s  %s" % (got[0], got[1][:120]) if got else M.LOOP_NEXT_NO_BOX
 
 
-def _judge_receipt_run(root):
-    """The judge's `receipt_run` (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.3): "vm:check" while a vm:check run holds the fleet lock, "ci:quick" while this checkout's ci:quick lock names a live run, else None. The same two readings that hold the unlanded-lease block; a failed read is None."""
+def _judge_receipt_run():
+    """The judge's `receipt_run` (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.3): "vm:check" while a vm:check run holds the fleet lock, else None. The same reading that holds the unlanded-lease block; a failed read is None. A ci:quick run never holds: it judges a pinned clone and its receipt advances to the tree after a record-only commit."""
     try:
         if vm_check_running():
             return "vm:check"
-        if ci_quick_running(root):
-            return "ci:quick"
     except Exception:
         pass
     return None
@@ -6706,7 +6666,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 with_riders=_riders,
                 closed=wl_judge.closed_items(fold, lambda o: C.owned_by_me(o, session_id)),
                 effort_level=_cfg.effort,
-                receipt_run=_judge_receipt_run(root),
+                receipt_run=_judge_receipt_run(),
                 facts=_judge_facts(
                     me8,
                     _remaining_recs(fold, session_id, open_items, deferred_recs, in_flight_recs),
