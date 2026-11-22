@@ -298,8 +298,15 @@ export interface JobP90Seed {
   minutes: number;
   derivation: string;
 }
-// Every seed so far is now measured in job_p90_minutes (the 2026-11-15 refresh); a new call site with no measured run adds one here with its derivation and ruling.
-export const JOB_P90_SEEDS: readonly JobP90Seed[] = [];
+// The 2026-11-15 refresh measured every earlier seed; a new call site with no measured run adds one here with its derivation and ruling.
+export const JOB_P90_SEEDS: readonly JobP90Seed[] = [
+  {
+    label: 'Quality / Content receipt',
+    minutes: 0.4,
+    derivation:
+      'box #a2ae6f1c (PLAN-two-track-merge-dev R3; the signer split of review f1c7c026, worklist #064f9dfc) moved the attest and upload of the CI receipt out of quality-content into quality-content-receipt, which checks out nothing and runs three action steps on one small file. Each priced at the worst measured duration of the same action on ubuntu-latest in ci.yml push runs 45038672967 and 45046811704 (Actions jobs API steps): Set up job 3 s (Stage Artifacts job 137288685117; 1 to 3 s across Quality / Go, Initialize, Stage Artifacts), download-artifact of a small file 3 s (Stage Artifacts "Download www build" 3 s; "Download CLI npm tarball" and "Download json build" 0 to 1 s), attest-build-provenance 12 s (Stage Artifacts "Attest staging release artifact", 11 s and 12 s over a whole dist tree; 2 s for "Attest staging repos artifact"), upload-artifact of a small file 2 s ("Upload CLI manifest for the CD artifact-version assertion" 1 to 2 s; the Tests + Infra / Renet (go) uploads 1 to 2 s), Complete job 0 s: 20 s = 0.34m, rounded up to 0.4',
+  },
+];
 
 /** The samples check 2 judges one call site by: its measured display names, or, when it has none, the seeds its pattern matches. */
 export function samplesWithSeeds(
