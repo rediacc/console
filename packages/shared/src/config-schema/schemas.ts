@@ -726,6 +726,7 @@ const CONFIG_KEY_ORDER_V3 = [
   'id',
   'version',
   'account',
+  'preview',
   'defaults',
   'credentials',
   'resources',

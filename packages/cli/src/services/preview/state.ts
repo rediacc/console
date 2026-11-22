@@ -15,11 +15,11 @@ import {
   type RdcConfig,
 } from '@rediacc/shared/config-schema';
 import { getConfigDir } from '@rediacc/shared/paths';
-import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import { ValidationError } from '../../utils/errors.js';
 import { previewTokenFile } from '../account/account-pointer.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
+import { updateConfigAtPointer } from '../config/synced-write.js';
 
 export type { PreviewOverlay };
 export type PreviewTouchedServer = NonNullable<PreviewOverlay['touched']>[string];
@@ -71,7 +71,7 @@ export async function enterPreview(
 ): Promise<PreviewOverlay> {
   assertPreviewName(overlay.name);
   const preview = PreviewOverlaySchema.parse(overlay);
-  await configFileStorage.update(configName, (config) => {
+  await updateConfigAtPointer(configName, '/preview', (config) => {
     if (config.preview) {
       throw new ValidationError(t('errors.preview.alreadyActive', { name: config.preview.name }));
     }
@@ -90,7 +90,7 @@ export async function recordPreviewTouch(
   configName = getEffectiveConfigName()
 ): Promise<boolean> {
   let added = false;
-  await configFileStorage.update(configName, (config) => {
+  await updateConfigAtPointer(configName, '/preview', (config) => {
     const preview = config.preview;
     if (!preview || preview.touched?.[machine]) return config;
     added = true;
@@ -107,7 +107,7 @@ export async function clearPreviewTouch(
   machine: string,
   configName = getEffectiveConfigName()
 ): Promise<void> {
-  await configFileStorage.update(configName, (config) => {
+  await updateConfigAtPointer(configName, '/preview', (config) => {
     const preview = config.preview;
     if (!preview?.touched?.[machine]) return config;
     const touched = { ...preview.touched };
@@ -129,7 +129,7 @@ export async function leavePreview(
   configDir = getConfigDir()
 ): Promise<PreviewOverlay | undefined> {
   let removed: PreviewOverlay | undefined;
-  await configFileStorage.update(configName, (config) => {
+  await updateConfigAtPointer(configName, '/preview', (config) => {
     const preview = config.preview;
     if (!preview) return config;
     const pending = Object.keys(preview.touched ?? {});
