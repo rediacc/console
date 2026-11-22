@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-21T16:02:17.897Z",
+  "generatedAt": "2026-11-22T14:06:08.132Z",
   "legs": [
     {
       "index": 1,
@@ -373,6 +373,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_inline.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_sudo_preserve_env.py",
         "pytest:.ci/rediacc_ci/tests/proof/test_proof_areas.py",
+        "pytest:.ci/rediacc_ci/tests/test_bootstrap_pytest_env_pins.py",
         "pytest:.ci/rediacc_ci/tests/test_build_canonicalise_gpg_key.py",
         "pytest:.ci/rediacc_ci/tests/test_build_cli_musl.py",
         "pytest:.ci/rediacc_ci/tests/test_canonical_sys_path_hop.py",
