@@ -1369,6 +1369,12 @@ _ORDER_FILE = re.compile(
 )
 
 
+# An order that only asks for the table, phrased as one: "list every open item with its state", "under the Remaining heading".
+_STATUS_ORDER_RE = re.compile(
+    r"(?i)\b(?:list|enumerate|restate|report|name)\b[^.]{0,60}\b(?:open items?|items?|ids?|states?)\b|\bRemaining (?:heading|section)\b"
+)
+
+
 def settle_status_demand(out, open_ids=None):
     """`out` with a `continue` that only demands a status table read as `stop`, its text kept as `status_demand` (wl_checks queues it under `judge-status-demand`); anything else unchanged.
 
@@ -1377,7 +1383,13 @@ def settle_status_demand(out, open_ids=None):
         return out
     reason = str(out.get("reason") or "")
     action = str(out.get("next_action") or "")
-    if not (_STATUS_RE.search(reason) or _STATUS_RE.search(action)):
+    # The ORDER decides: a status-shaped reason alone never downgrades a real work order such as "Finish the migration";
+    # only an order that itself asks for a status table, or no order at all beside a status-shaped reason, reads as one (review 3660ae77.1).
+    if not (
+        _STATUS_RE.search(action)
+        or _STATUS_ORDER_RE.search(action)
+        or (not action.strip() and _STATUS_RE.search(reason))
+    ):
         return out
     if _ORDER_FILE.search(action) or _ORDER_VERB.search(action):
         return out

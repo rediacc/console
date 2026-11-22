@@ -498,6 +498,14 @@ def test_an_order_naming_a_closed_or_unknown_item_is_still_a_status_demand():
     assert J.settle_status_demand(dict(out), None)["verdict"] == "continue"
 
 
+def test_a_status_shaped_reason_does_not_downgrade_a_real_work_order():
+    """Review 3660ae77.1: the reason says "restate ... by id", but the order is work, so the continue stands."""
+    out = dict(STATUS_DEMAND, next_action="Finish the migration.")
+    assert J.settle_status_demand(dict(out), OPEN) == out
+    # With no order at all, the status-shaped reason alone still reads as a status demand.
+    assert J.settle_status_demand(dict(STATUS_DEMAND, next_action=""), OPEN)["verdict"] == "stop"
+
+
 def test_control_a_continue_of_another_shape_and_a_stop_are_untouched():
     other = {
         "verdict": "continue",
