@@ -361,7 +361,7 @@ def loopnext_cases(tmp, tag, mutate=None):
 
 
 # ---- LT19: the landing stack -------------------------------------------------
-STACK_MERGED = "LANDING MERGED (blocks at every effort level)"
+STACK_MERGED = "LANDING MERGED (blocks from effort low; an advisory at quiet)"
 STACK_BEHIND = "LANDING AHEAD"
 STACK_PENDING = "LANDING MERGED, RELEASE PENDING"
 # B7: the handover verdicts' first words (wl_handover).

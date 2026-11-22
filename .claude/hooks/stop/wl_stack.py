@@ -193,7 +193,7 @@ def _merged_text(st: StackState) -> str:
             % REMOTE
         )
     return (
-        "LANDING MERGED (blocks at every effort level): the landing branch %s is on %s/main (%s), "
+        "LANDING MERGED (blocks from effort low; an advisory at quiet): the landing branch %s is on %s/main (%s), "
         "and this tree's development branch %s %s. Promotion runs here before anything else:\n"
         "  %s\n"
         "A development branch built on a merged landing branch would carry the merged PR's commits a second time.\n"
