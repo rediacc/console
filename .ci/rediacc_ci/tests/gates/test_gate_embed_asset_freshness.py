@@ -341,10 +341,13 @@ def test_the_rsync_release_alone_failing_is_red(gate, tmp_path):
     source = (paths.repo_root() / "scripts" / "gates" / "check-embed-asset-freshness.ts").read_text(
         encoding="utf-8"
     )
+    code = "\n".join(
+        line for line in source.splitlines() if not line.strip().startswith(("*", "//", "/*"))
+    )
     gate.assert_not_contains(
-        source,
-        "://download.samba.org",
-        "no hard-coded samba URL bypasses the stub (the header names the host in prose only)",
+        code,
+        "samba.org",
+        "no samba host in the gate's code bypasses the stub (comments may name it)",
     )
     gate.assert_exit(1, result, "the rsync release not answering fails closed")
     gate.assert_contains(result.err, "1 embed-asset pin(s) were NOT compared", "one finding")
