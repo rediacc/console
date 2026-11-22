@@ -26,6 +26,7 @@ from rediacc_ci import gitx, paths
 from rediacc_ci.ci import budget_report, gate_model
 from rediacc_ci.ci import gate_ledger as L
 from rediacc_ci.core import jsonl_append
+from rediacc_ci.well_known import GH_REPO
 
 CLEAN = hashlib.sha256(b"").hexdigest()[:16]
 GLOBALS = ["**/package-lock.json", "scripts/ci-runner/**"]
@@ -633,7 +634,7 @@ def _ci_receipt(
 ) -> dict[str, Any]:
     return {
         "schema": 1,
-        "repo": "rediacc/console",
+        "repo": GH_REPO,
         "run": {"id": run_id, "attempt": attempt},
         "lane": lane,
         "sha": sha_,
