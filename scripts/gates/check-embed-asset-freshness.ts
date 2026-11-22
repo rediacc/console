@@ -94,12 +94,7 @@ import { fixtureEntry } from '../lib/embed-pin-upgrade.js';
 import { bumpRemedy } from '../lib/pins/remedy.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
-import {
-  githubAsker,
-  NotCompared,
-  PinTally,
-  UnreadableListing,
-} from '../lib/upstream.js';
+import { githubAsker, NotCompared, PinTally, UnreadableListing } from '../lib/upstream.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
