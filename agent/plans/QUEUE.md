@@ -39,11 +39,12 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Landing tree: branch 1104-1, PR #605 merged.
 - Development tree: branch 1121-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
-- Work outside the PR's plans (2 epic(s)):
-  - epic 79b7e92e, no plan, 210 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+- Work outside the PR's plans (3 epic(s)):
+  - epic 79b7e92e, no plan, 211 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
-- Writers: 3 live of writer_cap 25 (session ace763dd): worker:a85eb54f4293493aa, worker:a7f345f3ce67fa836, worker:ac15f6a57b8e3e72d.
-- Leased items: 13: #1abea6ac (worker:a7f345f3ce67fa836, ace763dd), #3b82cf28 (worker:bs2zwmetr, ace763dd), #47ce3621 (worker:bs2zwmetr, ace763dd), #572f74b2 (worker:a85eb54f4293493aa, ace763dd), #664e36ae (worker:aaa49d70869534c1f, d778be9d), #73b32419 (worker:bs2zwmetr, ace763dd), #855d7340 (worker:b6jocj052, d778be9d), #95ffeb93 (worker:bs2zwmetr, ace763dd), #ab9c68b1 (worker:be39zjfwp, d778be9d), #c276a9df (worker:bzcbi0ri0, d778be9d), #ce9966d1 (worker:bs2zwmetr, ace763dd), #dc17bd4d (worker:a7f345f3ce67fa836, ace763dd), and 1 more.
+  - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
+- Writers: 0 live of writer_cap 25 (session fee07197).
+- Leased items: 12: #1abea6ac (worker:a7f345f3ce67fa836, ace763dd), #3b82cf28 (worker:bs2zwmetr, ace763dd), #47ce3621 (worker:bs2zwmetr, ace763dd), #572f74b2 (worker:a85eb54f4293493aa, ace763dd), #664e36ae (worker:aaa49d70869534c1f, d778be9d), #73b32419 (worker:bs2zwmetr, ace763dd), #855d7340 (worker:b6jocj052, d778be9d), #95ffeb93 (worker:bs2zwmetr, ace763dd), #ab9c68b1 (worker:be39zjfwp, d778be9d), #c276a9df (worker:bzcbi0ri0, d778be9d), #ce9966d1 (worker:bs2zwmetr, ace763dd), #dc17bd4d (worker:a7f345f3ce67fa836, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 

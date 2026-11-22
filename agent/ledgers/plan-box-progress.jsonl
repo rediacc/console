@@ -87,3 +87,4 @@
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-enterprise-isolation.md","sig":"2878e08d","clause":"all","state":"live-owed","ref":"released #a94e7870","at":"2026-11-15T21:32:16Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-backup-program.md","sig":"0a237b2e","clause":"all","state":"live-owed","ref":"released #fbe192ca","at":"2026-11-19T11:49:12Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-proxy-cd-six-targets.md","sig":"abe9b4eb","clause":"C7","state":"live-owed","ref":"released #0e9506a2","at":"2026-11-19T11:49:14Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-simple-two-tree-loop.md","sig":"c8338630","clause":"all","state":"landed","ref":"d2cad835b3432145c52e192e64b2c1f51bbdc030","at":"2026-11-21T08:33:52Z"}

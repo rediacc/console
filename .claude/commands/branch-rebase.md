@@ -1,7 +1,7 @@
 ---
 description: Rebase the current branch (console + every submodule that has a matching branch) onto its base branch, submodule-first, resolving the gitlink conflicts that plain `git rebase` gets wrong. Rebase and verify, then republish only through step 5's guarded lease push - merges nothing, lands nothing, opens no PR. Use to refresh a long-running branch onto a moved main before or during a PR.
 argument-hint: "[base]  (optional; defaults to main. A feature branch is legal: see below)"
-allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(git log:*), Bash(git rev-parse:*), Bash(git rev-list:*), Bash(git ls-tree:*), Bash(git remote:*), Bash(gh pr list:*)
+allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(git log:*), Bash(git rev-parse:*), Bash(git rev-list:*), Bash(git ls-tree:*), Bash(git remote:*), Bash(gh pr list:*), Bash(./run.sh worktree landing --status)
 ---
 
 ## Current state
