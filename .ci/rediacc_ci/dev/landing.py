@@ -189,7 +189,7 @@ def _refuse_on_main(path):
     held = spike.out(path, "symbolic-ref", "-q", "--short", "HEAD")
     if held in ("", lease.BASE_BRANCH):
         message = (
-            "the landing tree %s sits on %s (the merge is done, a hotfix may run there), so it "
+            "the landing tree %s sits on %s (after a merge a hotfix may run there), so it "
             "is not refreshed: the exit is `./run.sh worktree landing --promote` from the main "
             "checkout once the release is green" % (path, held or "a detached HEAD")
         )
@@ -308,6 +308,25 @@ def _create(root, path, branch, seed):
         raise LandingRefusedError(message) from exc
 
 
+def _give_back(trees, branch):
+    """Switch each of `trees` back to `branch` and return the trees where that failed (named, never silent)."""
+    stuck = []
+    for tree in trees:
+        back = spike.git(tree, "switch", "--quiet", branch)
+        if back.returncode != 0:
+            log.warn("could not switch %s back to %s: %s" % (tree, branch, back.stderr.strip()))
+            stuck.append(str(tree))
+    return stuck
+
+
+def _undo_landing(root, path, branch):
+    """Remove a landing tree this run made, its submodule trees and its record."""
+    tip, _local = _tip_of(root, branch)
+    held = lease.gitlinks_at(root, tip) if tip else []
+    _rollback(root, spike.Repo(root, [sub for sub, _ in held]), path)
+    (root / ".git" / "rediacc-landing.json").unlink(missing_ok=True)
+
+
 def _switch_over(root, path, branch, seed, next_name, today):
     """The first switch-over: the main checkout holds the open PR's `branch`, so it hands that branch to a new landing tree and cuts the next MMDD-N here, stacked on it (operator ruling ASKED:2026-11-20T18:46Z).
 
@@ -325,29 +344,44 @@ def _switch_over(root, path, branch, seed, next_name, today):
         for sub in landing_promote._submodule_trees(root).values()
         if spike.out(sub, "symbolic-ref", "-q", "--short", "HEAD") == branch
     ]
-    for tree in (*subs, root):
-        spike.must(tree, "switch", "--quiet", "--detach")
+    detached = []
+    try:
+        for tree in (*subs, root):
+            spike.must(tree, "switch", "--quiet", "--detach")
+            detached.append(tree)
+    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
+        _give_back(detached, branch)
+        message = "the main checkout could not be detached, so nothing moved: %s" % exc
+        raise LandingRefusedError(message) from exc
     try:
         _create(root, path, branch, seed)
     except LandingRefusedError:
-        for tree in (root, *subs):
-            spike.git(tree, "switch", "--quiet", branch)
+        _give_back([root, *subs], branch)
         raise
     done = spike.git(root, "switch", "--quiet", "--no-track", "-c", cut, "refs/heads/%s" % branch)
     if done.returncode != 0:
+        # The landing tree and its record exist and hold `branch`, so the main checkout cannot switch back until they are gone: undo both, then give the branch back, so a rerun starts from the first-switch shape instead of taking the reuse branch over a detached main checkout.
+        _undo_landing(root, path, branch)
+        stuck = _give_back([root, *subs], branch)
         message = (
-            "the landing tree %s holds %s, but the development branch %s could not be cut here "
-            "(the main checkout is detached at its tip): %s"
-            % (path, branch, cut, done.stderr.strip())
+            "the development branch %s could not be cut here, so the landing tree %s was removed%s: %s"
+            % (
+                cut,
+                path,
+                (" and %s stays detached" % ", ".join(stuck))
+                if stuck
+                else " and the branch was given back",
+                done.stderr.strip(),
+            )
         )
         raise LandingRefusedError(message)
     for sub in subs:
         made = spike.git(sub, "switch", "--quiet", "--no-track", "-c", cut)
         if made.returncode != 0:
-            message = "the submodule tree %s could not cut %s at its HEAD: %s" % (
-                sub,
-                cut,
-                made.stderr.strip(),
+            message = (
+                "the submodule tree %s could not cut %s at its HEAD (run `git -C %s switch "
+                "--no-track -c %s` there once the cause is fixed): %s"
+                % (sub, cut, sub, cut, made.stderr.strip())
             )
             raise LandingRefusedError(message)
     log.info(

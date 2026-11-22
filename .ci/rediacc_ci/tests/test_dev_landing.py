@@ -170,6 +170,70 @@ def test_failed_switch_over_gives_the_branch_back(repo):
     assert not (repo.parent / "console-landing").exists()
 
 
+def _failing_switch(monkeypatch, *needles):
+    """Make `spike.git` fail a `switch` whose argv holds every needle, and leave other calls alone."""
+    real = spike.git
+
+    def fake(cwd, *args):
+        if "switch" in args and all(n in args for n in needles):
+            return subprocess.CompletedProcess(args, 1, "", "forced failure")
+        return real(cwd, *args)
+
+    monkeypatch.setattr(spike, "git", fake)
+
+
+def test_failed_console_cut_removes_the_landing_tree_and_gives_the_branch_back(repo, monkeypatch):
+    git(repo, "switch", "-q", PR)
+    _failing_switch(monkeypatch, "-c", "0202-1")
+    with pytest.raises(landing.LandingRefusedError, match="could not be cut here"):
+        landing.make_landing(
+            repo, gh=gh_for(PR), seed=Seeded(), next_name=lambda _r, _t: "0202-1", today="0202"
+        )
+    monkeypatch.undo()
+    assert spike.out(repo, "symbolic-ref", "--short", "HEAD") == PR
+    assert not (repo.parent / "console-landing").exists()
+    assert not (repo / ".git" / "rediacc-landing.json").exists()
+
+
+def test_failed_submodule_cut_names_the_recovery_command(repo, monkeypatch):
+    git(repo, "switch", "-q", PR)
+    git(repo, "submodule", "update", "-q", "--init")
+    git(repo / SUB, "switch", "-q", "-c", PR)
+    real = spike.git
+
+    def fake(cwd, *args):
+        if "switch" in args and "-c" in args and pathlib.Path(cwd) == repo / SUB:
+            return subprocess.CompletedProcess(args, 1, "", "forced failure")
+        return real(cwd, *args)
+
+    monkeypatch.setattr(spike, "git", fake)
+    with pytest.raises(landing.LandingRefusedError, match="switch --no-track -c 0202-1"):
+        landing.make_landing(
+            repo, gh=gh_for(PR), seed=Seeded(), next_name=lambda _r, _t: "0202-1", today="0202"
+        )
+
+
+def test_failed_detach_gives_back_the_trees_already_detached(repo, monkeypatch):
+    git(repo, "switch", "-q", PR)
+    git(repo, "submodule", "update", "-q", "--init")
+    git(repo / SUB, "switch", "-q", "-c", PR)
+    real = spike.must
+
+    def fake(cwd, *args):
+        if "--detach" in args and pathlib.Path(cwd) == repo:
+            message = "forced failure"
+            raise RuntimeError(message)
+        return real(cwd, *args)
+
+    monkeypatch.setattr(spike, "must", fake)
+    with pytest.raises(landing.LandingRefusedError, match="could not be detached"):
+        landing.make_landing(
+            repo, gh=gh_for(PR), seed=Seeded(), next_name=lambda _r, _t: "0202-1", today="0202"
+        )
+    monkeypatch.undo()
+    assert spike.out(repo / SUB, "symbolic-ref", "--short", "HEAD") == PR
+
+
 @pytest.mark.parametrize("where", ["main", "--detach"])
 def test_reuse_on_main_after_the_merge_names_promote(repo, where):
     # The landing tree may sit on main for a hotfix after the merge (PLAN-simple-two-tree-loop ruling 10); with no open PR the refusal names promote, not the missing PR.

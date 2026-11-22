@@ -203,7 +203,7 @@ def _release_green(main, gh, sha):
         if rows is None:
             message = "gh could not list the %s runs at the merged sha %s" % (workflow, sha[:12])
             raise PromoteRefusedError(message)
-        runs = [r for r in rows if isinstance(r, dict) and r.get("headSha", sha) == sha]
+        runs = [r for r in rows if isinstance(r, dict) and r.get("headSha") == sha]
         if not runs:
             message = "%s has no %s run at the merged sha %s, so the release is not green yet" % (
                 label,
