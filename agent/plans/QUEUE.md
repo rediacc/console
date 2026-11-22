@@ -26,7 +26,7 @@ The levels, each a superset of the one before:
 Fixed in code, not settable: the writer cap is 25 (`wl_roster.WRITER_CAP`; a spawn beyond it is refused by `block_agent_cap`, the Stop hook blocks on a roster above it, and the lease verb caps the trees on disk with it), and the commit reminder speaks after 15 minutes without a commit while this session's own edits are uncommitted (`wl_checks.COMMIT_REMIND_MIN`, a reminder, never a block).
 
 ```stop-hook
-effort: smart
+effort: quiet
 ```
 
 ## In flight
@@ -34,16 +34,16 @@ effort: smart
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: effort smart; judge core; cadence on; agent_hint on; agent_pushback on.
+- Mode: effort quiet; judge off; cadence on; agent_hint off; agent_pushback off.
 - Branch: 1121-1, no PR yet.
 - Landing tree: branch 1104-1, PR #605 merged.
 - Development tree: branch 1121-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (2 epic(s)):
-  - epic 79b7e92e, no plan, 197 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 199 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
-- Writers: 3 live of writer_cap 25 (session ace763dd): worker:aa5062614d910ebc3, worker:ab25e6e6272fe76c1, worker:a2930fe9692533d28.
-- Leased items: 10: #3b82cf28 (worker:bb04halmr, ace763dd), #47ce3621 (worker:bb04halmr, ace763dd), #664e36ae (worker:aaa49d70869534c1f, d778be9d), #73b32419 (worker:bb04halmr, ace763dd), #855d7340 (worker:b6jocj052, d778be9d), #95ffeb93 (worker:bb04halmr, ace763dd), #ab9c68b1 (worker:be39zjfwp, d778be9d), #adb7ebb9 (worker:aa5062614d910ebc3, ace763dd), #c276a9df (worker:bzcbi0ri0, d778be9d), #dfbc7a9f (worker:ab25e6e6272fe76c1, ace763dd).
+- Writers: 1 live of writer_cap 25 (session ace763dd): worker:aa5062614d910ebc3.
+- Leased items: 11: #3b82cf28 (worker:bp0y34x29, ace763dd), #47ce3621 (worker:bp0y34x29, ace763dd), #664e36ae (worker:aaa49d70869534c1f, d778be9d), #73b32419 (worker:bp0y34x29, ace763dd), #855d7340 (worker:b6jocj052, d778be9d), #95ffeb93 (worker:bp0y34x29, ace763dd), #ab9c68b1 (worker:be39zjfwp, d778be9d), #adb7ebb9 (worker:aa5062614d910ebc3, ace763dd), #c276a9df (worker:bzcbi0ri0, d778be9d), #ce9966d1 (worker:bp0y34x29, ace763dd), #dfbc7a9f (worker:ab25e6e6272fe76c1, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
