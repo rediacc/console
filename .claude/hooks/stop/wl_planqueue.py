@@ -92,7 +92,7 @@ def ordered(text: str) -> list[str]:
 
 
 # ------------------------------------------------------------ the settings block
-# agent/plans/PLAN-stop-hook-turbo.md D1/D2: `## Settings` above `## Promoted` holds ONE fenced block, info string `stop-hook`, of `key: value` lines with an optional ` -- <note>`. It is the single switchboard for the Stop hook; a reader that doubts anything falls back to the fail-safe value.
+# `## Settings` above `## Promoted` holds ONE fenced block, info string `stop-hook`, of `key: value` lines with an optional ` -- <note>`. It is the single switchboard for the Stop hook; a reader that doubts anything falls back to the fail-safe value.
 #
 # agent/plans/PLAN-simple-two-tree-loop.md B5 (ruling 11): the block takes ONE key, `effort`, and refuses every other line by name with the line to delete. The level's bundle in .claude/config/effort.json (`wl_effort.bundle`) decides judge, cadence, agent_hint and agent_pushback, and nothing in the fence overrides them. writer_cap (wl_roster.WRITER_CAP) and commit_remind_min (wl_checks.COMMIT_REMIND_MIN) are fixed in code. A missing or bad `effort:` line is `high` (wl_effort.FAILSAFE): every check. There is no off switch; `effort: quiet` keeps only the FLOOR (wl_floor).
 
@@ -992,7 +992,7 @@ def moved_problems(root) -> list[str]:
 
 
 # ------------------------------------------------------------ the in-flight block
-# Operator order 2026-10-06: "agent/plans/QUEUE.md should show the plans for the current 'working on it' ... valid for focus, turbo and other modes as well." `## In flight` sits between `## Settings` and `## Promoted` and answers what the loop is doing NOW: the effective switches, the live branch and its PR, the PR's plan set with box progress and how
+# Operator order 2026-10-06: "agent/plans/QUEUE.md should show the plans for the current 'working on it' ..." `## In flight` sits between `## Settings` and `## Promoted` and answers what the loop is doing NOW: the effective switches, the live branch and its PR, the PR's plan set with box progress and how
 # each plan got there, the branch's work that belongs to no plan in that set, live writers and leased items, and the next plan with the reason it is next.
 #
 # RUNTIME STATE, NOT A LEDGER. Its inputs (the PR, the roster, the leases) live outside the tracked tree, so a clean CI checkout cannot reproduce it, and it is never compared: `render` copies every byte outside the generated block, so `problems` and `--update` neither read nor rewrite this one (`test_inflight_block_is_never_compared_by_the_queue_gate` in .claude/rediacc_hooks/tests/test_wl_queue_settings.py proves both). `refresh_inflight` is its only writer: the Stop hook
