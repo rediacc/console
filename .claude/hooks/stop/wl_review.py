@@ -1039,7 +1039,12 @@ def _policy():
     if not _POLICY:
         try:
             _POLICY.append(_load_commit_policy(CONSOLE_ROOT))
-        except Exception:
+        except Exception as exc:
+            # Loud, not silent: without commit_policy `review_root` answers the main checkout and `base_range` walks the PR-branch commits again.
+            sys.stderr.write(
+                "wl_review: commit_policy could not be loaded (%s: %s); review verbs act on the main checkout\n"
+                % (type(exc).__name__, str(exc)[:160])
+            )
             _POLICY.append(None)
     return _POLICY[0]
 
@@ -1091,7 +1096,7 @@ def base_range(repo, branch, tip="HEAD"):
     base = git_out(repo, "merge-base", "origin/main", tip)
     if not base:
         return ""
-    # The landing base counts only when it descends from main's: once the PR branch merges (rebased onto main, new shas), its old ref meets the development branch below origin/main and the main base stands.
+    # The landing base counts only when it descends from main's: a stacked base that does not sit above main's merge-base (an old PR ref left below origin/main after the PR merged) is dropped, and the main base stands; one that descends from main's base is used.
     stacked = landing_base(repo, branch, tip)
     if (
         stacked
@@ -3712,7 +3717,11 @@ def mark_target(root, branch, finding_id):
         return root, branch
     try:
         record = policy.landing_record(str(root))
-    except Exception:
+    except Exception as exc:
+        sys.stderr.write(
+            "wl_review: the landing record could not be read (%s: %s); the mark is written in %s\n"
+            % (type(exc).__name__, str(exc)[:160], root)
+        )
         return root, branch
     if record is None or record["branch"] == branch:
         return root, branch
@@ -4235,7 +4244,13 @@ def verb(name, me, args, root, items_loader, branch=None, asked_ok=None):
                 where, owner, args[0], args[1], args[2:], me, items=items, asked_ok=asked_ok
             )
         except ValueError as exc:
-            return 1, "refused: %s%s" % (exc, moved)
+            return 1, "refused: %s%s" % (
+                exc,
+                ""
+                if owner == branch
+                else " (the finding belongs to the landing branch %s's record in %s; nothing was written there)"
+                % (owner, where),
+            )
         return 0, "marked %s %s in %s; the change rides the next commit (or --review-commit)%s" % (
             args[0],
             args[1],

@@ -236,6 +236,20 @@ def test_wl_review_check_default_root_follows_the_cwd(tmp_path, monkeypatch, cap
     assert "per-commit reviews for %s: refused (uncommitted)" % DEV in out, out
 
 
+def test_wl_review_status_default_root_follows_the_cwd(tmp_path, monkeypatch, capsys):
+    """de5378f8.5: `--status` with no --root reads the bound tree the command was typed in, as `--check` does."""
+    main, landing, _land, _dev = _landing_with_pending(tmp_path)
+    monkeypatch.setattr(R, "CONSOLE_ROOT", main)
+    monkeypatch.chdir(landing)
+    assert R.main(["--status"]) == 0
+    out = capsys.readouterr().out
+    assert "per-commit reviews for %s:" % PR in out, out
+    monkeypatch.chdir(main)
+    assert R.main(["--status"]) == 0
+    out = capsys.readouterr().out
+    assert "per-commit reviews for %s:" % DEV in out, out
+
+
 # ---- #edb41f10, the mark: a landing-branch commit's finding is marked in the landing tree's record
 
 
@@ -418,3 +432,27 @@ def test_prreview_answer_checks_ancestry_in_the_landing_tree_when_typed_there(
 def test_prreview_answer_control_stays_in_the_main_checkout_when_typed_there(tmp_path, monkeypatch):
     main, landing, _a, _b = _trees(tmp_path)
     assert _answer_root(tmp_path, monkeypatch, main, landing) == main
+
+
+def test_a_refused_landing_mark_says_nothing_was_written(tmp_path):
+    """de5378f8.1: a refusal on a finding routed to the landing record must not claim the record was marked."""
+    main, landing, a, _b = _trees(tmp_path)
+    _land_path, fid = _finding_record(landing, PR, a, "a.txt")
+    rc, text = _mark(main, main, fid, "waived")
+    assert rc == 1, text
+    assert "nothing was written there" in text, text
+    assert "its record is marked in" not in text, text
+
+
+def test_an_unreadable_landing_record_is_said_on_stderr(tmp_path, monkeypatch, capsys):
+    """de5378f8.3: mark_target names a broken landing record on stderr instead of falling back silently."""
+    main, _landing, _a, _b = _trees(tmp_path)
+
+    class Broken:
+        @staticmethod
+        def landing_record(_root):
+            raise RuntimeError("boom")
+
+    monkeypatch.setattr(R, "_policy", lambda: Broken)
+    assert R.mark_target(main, DEV, "deadbeef.1") == (main, DEV)
+    assert "the landing record could not be read (RuntimeError: boom)" in capsys.readouterr().err
