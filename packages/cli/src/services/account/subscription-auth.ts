@@ -24,13 +24,18 @@ export function normalizeServerUrl(serverUrl: string): string {
 /**
  * Get the subscription token file path for a config.
  * Always per-config: `api-token-{name}.json` (default config included, so
- * `api-token-rediacc.json`). Defaults to the effective config name.
+ * `api-token-rediacc.json`). Defaults to the effective config name. While the
+ * config is on a preview, the preview's own `api-token-{name}.preview-{preview}.json`,
+ * so the real token is neither read nor overwritten (PLAN-preview-signer.md D8).
  */
 export function getSubscriptionTokenFile(
   configName = getEffectiveConfigName(),
   configDir = getConfigDir()
 ): string {
-  return join(configDir, `api-token-${configName}.json`);
+  return (
+    readAccountPointer(configName, configDir).tokenFile ??
+    join(configDir, `api-token-${configName}.json`)
+  );
 }
 
 /** A server URL that names something: an empty or blank value (`REDIACC_ACCOUNT_SERVER=`) counts as unset. */

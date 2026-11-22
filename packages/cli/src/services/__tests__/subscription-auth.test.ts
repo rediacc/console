@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -175,6 +175,31 @@ describe('subscription-auth', () => {
 
     it('honours an explicit configName argument', () => {
       expect(getSubscriptionTokenFile('bench')).toBe(join(configDir, 'api-token-bench.json'));
+    });
+
+    it('returns the preview token file while the config is on a preview, and the server the preview host', () => {
+      const name = 'pv-amber-river-stone';
+      writeFileSync(
+        join(configDir, 'customer.json'),
+        JSON.stringify({
+          schemaVersion: 3,
+          id: '00000000-0000-4000-8000-000000000000',
+          version: 1,
+          encryption: { mode: 'plaintext' },
+          account: { accountServer: 'https://eu.rediacc.cloud' },
+          preview: { name, host: `https://${name}.rediacc.workers.dev`, channel: name },
+        })
+      );
+      process.env.REDIACC_CONFIG = 'customer';
+      expect(getSubscriptionTokenFile()).toBe(
+        join(configDir, `api-token-customer.preview-${name}.json`)
+      );
+      expect(getSubscriptionServerUrl()).toBe(`https://${name}.rediacc.workers.dev`);
+
+      saveStoredSubscriptionToken({ token: 'rdt_preview', serverUrl: 'https://x.example.com' });
+      const state = getSubscriptionTokenState();
+      expect(state.kind === 'ready' && state.token.token).toBe('rdt_preview');
+      expect(existsSync(join(configDir, 'api-token-customer.json'))).toBe(false);
     });
   });
 

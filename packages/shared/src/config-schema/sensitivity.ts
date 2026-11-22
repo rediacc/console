@@ -370,6 +370,21 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // ── Local binary override ──────────────────────────────────────────────── renetPath is a user-set filesystem override (e.g. /opt/bin/renet). It is not a secret — marking it public lets `config show` surface the actual value so scripts and tests can verify which binary is in use. A user who embeds their home directory ("/home/alice/bin/renet") accepts that the path surfaces
   // like any other resource path they chose.
   '/renetPath': { kind: 'public' },
+
+  // ── Preview overlay (PLAN-preview-signer.md D8) ─────────────────────────── This device's switch to a PR preview: device-local (DEVICE_LOCAL_POINTERS), so never synced and never committed. The name is the preview's unguessable address (ruling 7), so it and the host and channel derived from it are identifiers, redacted from agents.
+  '/preview/name': { kind: 'identifier', commit: false },
+  '/preview/host': { kind: 'identifier', commit: false },
+  '/preview/channel': { kind: 'identifier', commit: false },
+  '/preview/enteredAt': { kind: 'public' },
+  '/preview/formatChange/formats': { kind: 'public' },
+  '/preview/formatChange/reason': { kind: 'public' },
+  '/preview/previous/cliVersion': { kind: 'public' },
+  '/preview/previous/cliSha256': { kind: 'public' },
+  '/preview/previous/updateChannel': { kind: 'public' },
+  '/preview/touched/*/slot': { kind: 'public' },
+  '/preview/touched/*/version': { kind: 'public' },
+  '/preview/touched/*/sha256': { kind: 'public' },
+  '/preview/touched/*/touchedAt': { kind: 'public' },
 };
 
 /**
@@ -399,6 +414,9 @@ export const SENSITIVITY_REGISTRY: Map<PointerTemplate, Required<SensitivityMeta
  * - `/encryption`: this file's at-rest mode and its per-field ciphertexts; the push carries the
  *   decrypted values instead.
  * - `/renetPath`: a filesystem override for this device's renet binary.
+ * - `/preview`: this device's switch to a PR preview (PLAN-preview-signer.md D8). The preview CLI
+ *   binary, its token file and the renet slots it records belong to this device; another device
+ *   pulling the config stays on the real server.
  * - `/credentials/masterPasswordVerifier`: meaningful only to this file's at-rest mode (F4).
  * - `/account/accountServer`, `/account/e2ePublicKey`: the login of this device (operator ruling
  *   2026-09-25, "Logout is per device"). `rdc subscription login` writes both and `logout` clears
@@ -415,6 +433,7 @@ export const DEVICE_LOCAL_POINTERS = [
   '/remote',
   '/encryption',
   '/renetPath',
+  '/preview',
   '/credentials/masterPasswordVerifier',
   '/account/accountServer',
   '/account/e2ePublicKey',

@@ -69,7 +69,7 @@ const CARRIED_SECTIONS = [
   'policy',
   'state',
 ] as const;
-const HOST_LOCAL_SECTIONS = ['encryption', 'remote', 'renetPath'] as const;
+const HOST_LOCAL_SECTIONS = ['encryption', 'remote', 'renetPath', 'preview'] as const;
 
 /**
  * A config populating EVERY resource family (schema-validated below, so a
@@ -93,6 +93,22 @@ function allFamiliesConfig(): RdcConfig {
       storageKeyId: 'key-1',
     },
     renetPath: '/opt/bin/renet',
+    preview: {
+      name: 'pv-amber-river-stone',
+      host: 'https://pv-amber-river-stone.rediacc.workers.dev',
+      enteredAt: '2026-11-22T15:30:00.000Z',
+      channel: 'pv-amber-river-stone',
+      formatChange: { formats: ['vault'], reason: 'vault schema 4' },
+      previous: { cliVersion: '0.9.4', cliSha256: 'a'.repeat(64), updateChannel: 'stable' },
+      touched: {
+        vm1: {
+          slot: '/usr/lib/rediacc/renet/0.9.4',
+          version: '0.9.4',
+          sha256: 'b'.repeat(64),
+          touchedAt: '2026-11-22T15:31:00.000Z',
+        },
+      },
+    },
     state: { datastores: { ds1: { mounted: true } } },
     policy: { version: 1, defaults: { commands: { allow: ['repo *'] } } },
     access: {
@@ -278,6 +294,7 @@ describe('resource families round trip', () => {
     // Device-local sections must NOT be resurrected from the blob: a pulled config must never overwrite this device's store pointer or at-rest settings with another device's.
     expect(rebuilt.remote).toBeUndefined();
     expect(rebuilt.renetPath).toBeUndefined();
+    expect(rebuilt.preview).toBeUndefined();
     expect(rebuilt.encryption).toEqual({ mode: 'plaintext' });
   });
 
@@ -294,7 +311,11 @@ describe('resource families round trip', () => {
     expect(before).toContain('/infra/certEmail');
     // Host-local sections contribute NO committed pointers even when present.
     const hostLocal = before.filter(
-      (p) => p.startsWith('/remote/') || p.startsWith('/state/') || p === '/renetPath'
+      (p) =>
+        p.startsWith('/remote/') ||
+        p.startsWith('/state/') ||
+        p.startsWith('/preview/') ||
+        p === '/renetPath'
     );
     expect(hostLocal).toEqual([]);
   });
