@@ -7,7 +7,7 @@
  *   npx tsx scripts/ci-runner/ci-receipt.ts fetch [--branch <b> ...] [--limit <n>]       (local)
  *   npx tsx scripts/ci-runner/ci-receipt.ts verify <file>                                 (local: the verifier on one file)
  *
- * WRITE. Inside the lane's container, after its gates, `computeGateHashes` runs for the lane's lock ids at the checked-out tree with the runner's own options (run.ts `incrementalPlan`), so a hash here equals the hash a local run in the same image computes. A gate is receipted only when its inputHash is non-null AND its step is known to have PASSED. A workflow step without an `id:` has no entry in the `steps` context, so the outcome is read from the job's shape instead: the receipt step runs under `if: success()`, which holds only when no earlier step failed, and an earlier step whose condition is the standard guard (or absent) therefore ran and passed. A step with any further conjunct (a label hold, `inputs.media_quality`) may have been SKIPPED, so its gates are left out. That over-omits on purpose: a gate absent from a receipt only re-runs locally, while a gate present in error would carry a verdict nothing judged. ciOnly gates are left out too, since the local runner never judges them as ok.
+ * WRITE. Inside the lane's container, after its gates, `computeGateHashes` runs for the lane's lock ids at the checked-out tree with the runner's own options (run.ts `incrementalPlan`), so a hash here equals the hash a local run in the same image computes. A gate is receipted only when its inputHash is non-null AND its step is known to have PASSED. A workflow step without an `id:` has no entry in the `steps` context, so the outcome is read from the job's own record instead: the writer reads `repos/<repo>/actions/jobs/<job.check_run_id>` through `gh api` on github.token (the lane holds `actions: read` for it) and takes each earlier step's conclusion by name. The receipt step runs under the standard guard, never `success()`, so no failed step can skip it, a drift step's included: the drift waiver reads a skipped step as passed, and test_release_nightly_drift_waiver.py holds every step after a drift step to `!cancelled()`. A failed or skipped gate is omitted and the rest of the lane is still receipted. A step whose record is missing, not yet completed, or whose name is not unique reads `unknown` and is omitted. The record must name this run and attempt and show the receipt step itself in progress, or the writer exits 1, since a record read from any other job is not this lane's outcome; a record it could not read at all is UNCHECKED and exits 1 too. That over-omits on purpose: a gate absent from a receipt only re-runs locally, while a gate present in error would carry a verdict nothing judged. ciOnly gates are left out too, since the local runner never judges them as ok.
  *
  * FETCH. Recent completed `ci.yml` runs on the named branches (default: the current branch and main) are listed through `gh`, each run's `ci-receipt-*` artifact is downloaded, and every file is verified with `gh attestation verify <file> --repo rediacc/console --signer-workflow rediacc/console/.github/workflows/ci-quality.yml --source-digest <sha>` before anything is written. A verified file is stored content-addressed as `.ci/cache/ci-receipts/<sha256>.json`, byte for byte, and a prior the runner reads is written beside the local archive as `.ci/cache/receipts/ci-<tree>.json`. An unverifiable file is never stored. A run whose download failed for any reason other than "no such artifact" is UNCHECKED, and any unchecked run, refused file, or a fetch that stored nothing exits 1.
  *
@@ -63,7 +63,6 @@ const STANDARD_GUARDS = new Set([
   "${{ !cancelled() && steps.setup.outcome == 'success' }}",
   "!cancelled() && steps.setup.outcome == 'success'",
 ]);
-const SUCCESS_GUARDS = new Set(['success()', '${{ success() }}']);
 const SHA_RE = /^[0-9a-f]{40}$/;
 const TREE_RE = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 
@@ -93,6 +92,54 @@ export type StepOutcome = 'success' | 'skipped' | 'failure' | 'unknown';
 interface WorkflowStep {
   name: string | null;
   cond: string | null;
+}
+
+/** One step as the jobs API records it while the job runs. */
+export interface JobRunStep {
+  name: string;
+  status: string;
+  conclusion: string | null;
+}
+
+/** The jobs API record of the job the writer runs in. */
+export interface JobRun {
+  runId: string;
+  attempt: string;
+  steps: JobRunStep[];
+}
+
+/** `GET repos/<repo>/actions/jobs/<id>` parsed, or the first field that is wrong. */
+export function parseJobRun(text: string): JobRun | { error: string } {
+  let v: unknown;
+  try {
+    v = JSON.parse(text);
+  } catch (e) {
+    return { error: `the job record is not JSON (${(e as Error).message})` };
+  }
+  if (typeof v !== 'object' || v === null || Array.isArray(v))
+    return { error: 'the job record is not an object' };
+  const o = v as Record<string, unknown>;
+  if (!Array.isArray(o.steps)) return { error: 'the job record has no steps array' };
+  const steps: JobRunStep[] = [];
+  for (const s of o.steps as unknown[]) {
+    const r = (typeof s === 'object' && s !== null ? s : {}) as Record<string, unknown>;
+    if (
+      typeof r.name !== 'string' ||
+      typeof r.status !== 'string' ||
+      !(r.conclusion === null || typeof r.conclusion === 'string')
+    )
+      return { error: `a recorded step lacks name, status or conclusion: ${JSON.stringify(s)}` };
+    steps.push({ name: r.name, status: r.status, conclusion: r.conclusion as string | null });
+  }
+  return { runId: String(o.run_id ?? ''), attempt: String(o.run_attempt ?? ''), steps };
+}
+
+/** A recorded step's outcome: its conclusion once completed, `unknown` while it runs or for a conclusion that is neither a pass, a skip nor a failure. */
+function recordedOutcome(s: JobRunStep): StepOutcome {
+  if (s.status !== 'completed') return 'unknown';
+  return s.conclusion === 'success' || s.conclusion === 'skipped' || s.conclusion === 'failure'
+    ? s.conclusion
+    : 'unknown';
 }
 
 function unquote(v: string): string {
@@ -204,10 +251,11 @@ export function signingJobs(workflow: string): string[] {
 }
 
 /**
- * What the receipt step can know about each earlier step, by name: `success` for a step that ran under the standard guard (or no condition) before a receipt step guarded by `success()`, `unknown` for anything else. An error when the job has no single receipt step or it is not guarded by `success()`, because then "every earlier step passed" is not what reaching it means.
+ * What the receipt step knows about each earlier workflow step, by name: the conclusion the job's own record (`run`) gives it, or `unknown` when the record has no completed entry of that name, more than one, or the workflow names two steps alike. An error when the job has no single receipt step, when that step is not under the standard guard (under `success()` any failed step, a drift step's included, skips it, and the drift waiver reads the skip as a pass), or when the record does not show that receipt step in progress, since then the record is not this job's, read while it runs.
  */
 export function laneOutcomes(
-  steps: readonly WorkflowStep[]
+  steps: readonly WorkflowStep[],
+  run: JobRun
 ): { outcomes: Map<string, StepOutcome> } | { error: string } {
   const at = steps.flatMap((s, i) => (s.name === RECEIPT_STEP ? [i] : []));
   if (at.length !== 1)
@@ -215,16 +263,23 @@ export function laneOutcomes(
       error: `the job has ${at.length} step(s) named "${RECEIPT_STEP}", expected exactly one`,
     };
   const cond = steps[at[0]].cond;
-  if (cond === null || !SUCCESS_GUARDS.has(cond))
+  if (cond === null || !STANDARD_GUARDS.has(cond))
     return {
-      error: `"${RECEIPT_STEP}" must run under \`if: success()\`, got ${JSON.stringify(cond)}: only then does reaching it mean no earlier step failed`,
+      error: `"${RECEIPT_STEP}" must run under the standard guard ${JSON.stringify([...STANDARD_GUARDS][0])}, got ${JSON.stringify(cond)}: under success() a failed step, a drift step's included, skips it, and the drift waiver reads that skip as a pass`,
     };
+  const self = run.steps.filter((s) => s.name === RECEIPT_STEP);
+  if (self.length !== 1 || self[0].status !== 'in_progress')
+    return {
+      error: `the job record shows ${self.length} "${RECEIPT_STEP}" step(s) (${self.map((s) => s.status).join(', ') || 'none'}), expected exactly one in_progress: a record that is not this job's, read while it runs, says nothing about this lane`,
+    };
+  const recorded = new Map<string, JobRunStep[]>();
+  for (const s of run.steps) recorded.set(s.name, [...(recorded.get(s.name) ?? []), s]);
   const outcomes = new Map<string, StepOutcome>();
   const seen = new Set<string>();
   for (const s of steps.slice(0, at[0])) {
     if (s.name === null) continue;
-    const known = s.cond === null || STANDARD_GUARDS.has(s.cond);
-    outcomes.set(s.name, seen.has(s.name) ? 'unknown' : known ? 'success' : 'unknown');
+    const r = recorded.get(s.name) ?? [];
+    outcomes.set(s.name, seen.has(s.name) || r.length !== 1 ? 'unknown' : recordedOutcome(r[0]));
     seen.add(s.name);
   }
   return { outcomes };
@@ -518,6 +573,32 @@ function laneHashes(
   });
 }
 
+/**
+ * The job record the writer judges outcomes from. In Actions it is always read live, `gh api repos/<GITHUB_REPOSITORY>/actions/jobs/<RECEIPT_JOB_ID>` with the token in GH_TOKEN (env, never argv); `--steps <file>` (a saved record) serves a local dry run only and is refused in Actions, where it would let a receipt name outcomes nothing observed.
+ */
+function readJobRun(args: string[]): JobRun | { error: string } {
+  if (args.includes('--steps')) {
+    const file = argValue(args, '--steps');
+    if (process.env.GITHUB_ACTIONS === 'true')
+      return { error: '--steps is refused in Actions; the record is read live from the jobs API' };
+    if (file === undefined || !fs.existsSync(file))
+      return { error: `--steps ${file ?? '(no value)'} does not name a file` };
+    return parseJobRun(fs.readFileSync(file, 'utf8'));
+  }
+  const repo = process.env.GITHUB_REPOSITORY ?? '';
+  const id = process.env.RECEIPT_JOB_ID ?? '';
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo) || !/^\d+$/.test(id))
+    return {
+      error: `GITHUB_REPOSITORY=${JSON.stringify(repo)} and RECEIPT_JOB_ID=${JSON.stringify(id)} must name this job (the step sets RECEIPT_JOB_ID from job.check_run_id); outside Actions pass --steps <saved job record>`,
+    };
+  const r = gh(['api', `repos/${repo}/actions/jobs/${id}`]);
+  if (r.status !== 0)
+    return {
+      error: `gh api repos/${repo}/actions/jobs/${id} exited ${r.status}: ${r.stderr.trim().slice(0, 300) || 'no stderr'}${r.status === 127 ? ' (gh is missing from the image)' : ''}`,
+    };
+  return parseJobRun(r.stdout);
+}
+
 function write(args: string[]): number {
   const lane = argValue(args, '--lane');
   const out = argValue(args, '--out');
@@ -545,14 +626,34 @@ function write(args: string[]): number {
     process.stderr.write(`ci-receipt write: ${QUALITY_WORKFLOW} has no job ${lane} with steps\n`);
     return 1;
   }
-  const lo = laneOutcomes(steps);
+  const run = {
+    id: process.env.GITHUB_RUN_ID ?? '',
+    attempt: process.env.GITHUB_RUN_ATTEMPT ?? '',
+  };
+  const jobRun = readJobRun(args);
+  if ('error' in jobRun) {
+    process.stderr.write(
+      `ci-receipt write: ${lane}: the job's own step record is UNCHECKED (${jobRun.error}); without it no step is known to have passed, so no receipt is written\n`
+    );
+    return 1;
+  }
+  if (
+    process.env.GITHUB_ACTIONS === 'true' &&
+    (jobRun.runId !== run.id || jobRun.attempt !== run.attempt)
+  ) {
+    process.stderr.write(
+      `ci-receipt write: ${lane}: the job record names run ${jobRun.runId} attempt ${jobRun.attempt}, but this is run ${run.id} attempt ${run.attempt}; another job's outcomes are not this lane's\n`
+    );
+    return 1;
+  }
+  const lo = laneOutcomes(steps, jobRun);
   if ('error' in lo) {
     process.stderr.write(`ci-receipt write: ${lane}: ${lo.error}\n`);
     return 1;
   }
   const receipt = buildCiReceipt({
     repo: process.env.GITHUB_REPOSITORY ?? '',
-    run: { id: process.env.GITHUB_RUN_ID ?? '', attempt: process.env.GITHUB_RUN_ATTEMPT ?? '' },
+    run,
     lane,
     sha,
     tree,
@@ -760,7 +861,7 @@ function coreCases(): { failures: string[]; count: number } {
     '      - name: Bare gate',
     '        run: npm run check:c',
     `      - name: ${RECEIPT_STEP}`,
-    '        if: success()',
+    "        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}",
     '        run: x',
     '      - name: After gate',
     '        run: npm run check:d',
@@ -774,27 +875,110 @@ function coreCases(): { failures: string[]; count: number } {
     steps !== null && steps.length === 6,
     `jobSteps reads the lane's 6 steps and stops at the next job, got ${JSON.stringify(steps)}`
   );
-  const lo = steps ? laneOutcomes(steps) : { error: 'no steps' };
+  // The job record as the jobs API returns it while the receipt step runs. The Held gate has no entry, so it reads unknown.
+  const done = (name: string, conclusion: string): JobRunStep => ({
+    name,
+    status: 'completed',
+    conclusion,
+  });
+  const self: JobRunStep = { name: RECEIPT_STEP, status: 'in_progress', conclusion: null };
+  const record = (...extra: JobRunStep[]): JobRun => ({
+    runId: '1',
+    attempt: '1',
+    steps: [
+      done('Set up job', 'success'),
+      ...extra,
+      self,
+      { name: 'After gate', status: 'pending', conclusion: null },
+    ],
+  });
+  const runRecord = record(done('Plain gate', 'success'), done('Bare gate', 'success'));
+  const lo = steps ? laneOutcomes(steps, runRecord) : { error: 'no steps' };
   const oc = 'outcomes' in lo ? lo.outcomes : new Map<string, StepOutcome>();
   check(
     oc.get('Plain gate') === 'success',
-    'a standard-guard step before a success() receipt step reads as passed'
+    `a step the job record shows completed with success reads as passed, got ${JSON.stringify('error' in lo ? lo.error : oc.get('Plain gate'))}`
   );
-  check(oc.get('Bare gate') === 'success', 'CONTROL: a step with no condition reads as passed');
+  check(
+    oc.get('Bare gate') === 'success',
+    'CONTROL: a step with no condition reads its record too'
+  );
   check(
     oc.get('Held gate') === 'unknown',
-    'a step with an extra conjunct may have been skipped, so it reads unknown'
+    'a step the job record does not name reads unknown, never passed'
   );
   check(!oc.has('After gate'), 'a step after the receipt step has not run and is not read');
-  const noGuard = laneOutcomes(jobSteps(wf.replace('        if: success()\n', ''), 'lane') ?? []);
+  const judged = (...extra: JobRunStep[]): Map<string, StepOutcome> => {
+    const r = steps ? laneOutcomes(steps, record(...extra)) : { error: 'no steps' };
+    return 'outcomes' in r ? r.outcomes : new Map<string, StepOutcome>();
+  };
   check(
-    'error' in noGuard,
-    'a receipt step without `if: success()` is refused, since reaching it then proves nothing'
+    judged(done('Held gate', 'success')).get('Held gate') === 'success',
+    'a step with an extra conjunct that the record shows passed reads as passed'
+  );
+  check(
+    judged(done('Plain gate', 'failure')).get('Plain gate') === 'failure' &&
+      judged(done('Plain gate', 'skipped')).get('Plain gate') === 'skipped',
+    'a failed or skipped step reads as recorded, so a drift failure before the receipt omits only its own gate'
+  );
+  check(
+    judged({ name: 'Plain gate', status: 'in_progress', conclusion: null }).get('Plain gate') ===
+      'unknown' && judged(done('Plain gate', 'cancelled')).get('Plain gate') === 'unknown',
+    'a step not yet completed, or concluded neither pass, skip nor failure, reads unknown'
+  );
+  check(
+    judged(done('Plain gate', 'success'), done('Plain gate', 'success')).get('Plain gate') ===
+      'unknown',
+    'a name the record carries twice reads unknown, since it cannot say which step passed'
+  );
+  const receiptGuard =
+    "        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}\n        run: x";
+  const underSuccess = laneOutcomes(
+    jobSteps(wf.replace(receiptGuard, '        if: success()\n        run: x'), 'lane') ?? [],
+    runRecord
+  );
+  check(
+    'error' in underSuccess && underSuccess.error.includes('standard guard'),
+    'a receipt step under `if: success()` is refused, since a drift failure would skip it into a pass the waiver reads'
+  );
+  const noGuard = laneOutcomes(
+    jobSteps(wf.replace(receiptGuard, '        run: x'), 'lane') ?? [],
+    runRecord
+  );
+  check('error' in noGuard, 'a receipt step with no condition is refused');
+  const notThisJob = laneOutcomes(steps ?? [], {
+    ...runRecord,
+    steps: runRecord.steps.filter((s) => s !== self),
+  });
+  check(
+    'error' in notThisJob,
+    'a record without the receipt step in progress is refused: it is not this job, read while it runs'
   );
   const twice = laneOutcomes(
-    jobSteps(wf.replace('      - name: After gate', `      - name: ${RECEIPT_STEP}`), 'lane') ?? []
+    jobSteps(wf.replace('      - name: After gate', `      - name: ${RECEIPT_STEP}`), 'lane') ?? [],
+    runRecord
   );
   check('error' in twice, 'two receipt steps in one job are refused');
+  const parsed = parseJobRun(
+    JSON.stringify({
+      run_id: 7,
+      run_attempt: 2,
+      steps: [{ name: 'a', status: 'completed', conclusion: 'success' }],
+    })
+  );
+  check(
+    !('error' in parsed) &&
+      parsed.runId === '7' &&
+      parsed.attempt === '2' &&
+      parsed.steps.length === 1,
+    'parseJobRun reads the run, the attempt and each step'
+  );
+  check(
+    'error' in parseJobRun('{"run_id": 7}') &&
+      'error' in parseJobRun('not json') &&
+      'error' in parseJobRun('{"steps": [{"name": "a"}]}'),
+    'CONTROL: a record with no steps array, no JSON, or a step lacking its status is refused'
+  );
   check(
     jobSteps(wf, 'absent') === null,
     'an absent job reads as null, never as a job with no steps'
@@ -1143,6 +1327,26 @@ function selftest(core: boolean): number {
     if (real === null || real.filter((s) => s.name !== null).length < 10)
       failures.push(
         `the real quality-content job parses to ${real?.length ?? 0} step(s); the writer would be reading nothing`
+      );
+    // The real receipt step: under the standard guard, so the writer accepts it, and wired to read its own job record.
+    total++;
+    const realLo = laneOutcomes(real ?? [], {
+      runId: '1',
+      attempt: '1',
+      steps: [{ name: RECEIPT_STEP, status: 'in_progress', conclusion: null }],
+    });
+    const contentBody = (
+      jobBody(fs.readFileSync(path.join(REPO_ROOT, QUALITY_WORKFLOW), 'utf8'), 'quality-content') ??
+      []
+    ).map((l) => l.trim());
+    const wired = [
+      'actions: read',
+      'RECEIPT_JOB_ID: ${{ job.check_run_id }}',
+      'GH_TOKEN: ${{ github.token }}',
+    ].filter((l) => !contentBody.includes(l));
+    if ('error' in realLo || wired.length > 0)
+      failures.push(
+        `the real quality-content receipt step: ${'error' in realLo ? realLo.error : 'accepted'}; missing from the job: ${wired.join(' | ') || 'none'}`
       );
     // The real signer split: the gate lane holds no signing permission; one job signs, runs no repo code, and is the only producer of ARTIFACT_PREFIX.
     const wfText = fs.readFileSync(path.join(REPO_ROOT, QUALITY_WORKFLOW), 'utf8');
