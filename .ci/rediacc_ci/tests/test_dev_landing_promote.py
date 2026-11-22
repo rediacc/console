@@ -688,3 +688,19 @@ def test_record_paths_and_hook_ledgers_are_not_dirt():
     # Controls: an excepted record and a code file still count as dirt.
     assert not promote_mod._is_record("agent/worklist/epics.jsonl", globs)
     assert not promote_mod._is_record(".ci/rediacc_ci/dev/landing.py", globs)
+
+
+def test_a_staged_rename_is_judged_by_its_new_path():
+    """Review 912adb6a.1: `R  old -> new` must match the record globs on the new path."""
+    globs = [("agent/ledgers/*.jsonl", ())]
+    assert (
+        promote_mod._porcelain_path("R  agent/ledgers/a.jsonl -> agent/ledgers/b.jsonl")
+        == "agent/ledgers/b.jsonl"
+    )
+    assert promote_mod._is_record(
+        promote_mod._porcelain_path("R  x.py -> agent/ledgers/b.jsonl"), globs
+    )
+    # Control: a rename onto a code path still counts as dirt.
+    assert not promote_mod._is_record(
+        promote_mod._porcelain_path("R  agent/ledgers/a.jsonl -> src/a.py"), globs
+    )

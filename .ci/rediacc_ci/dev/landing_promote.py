@@ -132,6 +132,11 @@ def _is_record(path, globs):
     return False
 
 
+def _porcelain_path(line):
+    """The path a porcelain row names: its last field, and for a rename (`R  old -> new`) the new path."""
+    return line.split(None, 1)[-1].split(" -> ")[-1]
+
+
 def _dirty(tree):
     # Tracked changes only (operator ruling ASKED:2026-11-22T18:55Z): untracked files of other work always sit in the
     # main checkout, and git itself refuses a rebase or switch that would overwrite one, so none is lost.
@@ -143,8 +148,8 @@ def _dirty(tree):
         line
         for line in text.splitlines()
         if line
-        and line.split(None, 1)[-1] not in LOCAL_ONLY
-        and not _is_record(line.split(None, 1)[-1], globs)
+        and _porcelain_path(line) not in LOCAL_ONLY
+        and not _is_record(_porcelain_path(line), globs)
     ]
 
 
