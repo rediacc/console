@@ -164,6 +164,11 @@ ALLOWED_EMAIL_DOMAINS = \""""
 # bakes in channel pr-N. A CLI installed from a preview would then self-update
 # off the wrong channel. See private/account/src/types/env.ts.
 ENVIRONMENT = "preview"
+# A preview binds no licence signer (PLAN-preview-signer, Context 11): PR-written code must never
+# reach a signer holding the production key. This flag, admitted under ENVIRONMENT = "preview"
+# alone, lets the account Worker serve without LICENSE_SIGNER; every signing route answers
+# 503 SIGNER_NOT_CONFIGURED (private/account src/types/env.ts SIGNERLESS_PREVIEW).
+SIGNERLESS_PREVIEW = "true"
 
 # A preview has no OTLP destination, and Cloudflare must store nothing from it
 # (persist = false), so logs and traces are off. Mirrors wrangler.toml.
@@ -206,15 +211,6 @@ service = "account-bench"
 # the pepper and the Turnstile secret, /api/enterprise-lookup answers 503 unavailable.
 [[kv_namespaces]]
 binding = "ENTERPRISE_LOOKUP"
-
-# The account Worker refuses to serve with a licence private key set and requires this binding
-# (private/account src/entry/cloudflare.ts requireSignerOnly). The preview signs through the bench
-# signer and holds no key; signer-bench-eu is deployed first (rediacc_ci.deploy.deploy_signer).
-[[services]]
-binding = "LICENSE_SIGNER"
-service = "signer-bench-eu"
-entrypoint = "LicenseSigner"
-props = { tier = "shared", region = "eu" }
 """
 )
 

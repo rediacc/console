@@ -12,7 +12,7 @@ interface Env extends LookupEnv {
   ASSETS: Fetcher;
   // Only bound in PR previews (deploy-www.sh mints account-db-pr-N and injects the binding via wrangler.preview.toml). On www.rediacc.com, /account/api/* is served by the regional workers, so DB is absent here and the branch below 410s.
   DB?: D1Database;
-  // Service binding to the EU regional account worker. Used to forward the public marketing endpoints (contact submit, newsletter subscribe) so the forms on www.rediacc.com can reach a DB-bound backend without cross-origin CORS. Bound in workers/www/wrangler.toml (the one www config, www.rediacc.com). PR previews bind it too, to account-bench (rediacc_ci.deploy.deploy_www PREVIEW_TOML), next to their own env.DB, an ENTERPRISE_LOOKUP namespace and a LICENSE_SIGNER binding.
+  // Service binding to the EU regional account worker. Used to forward the public marketing endpoints (contact submit, newsletter subscribe) so the forms on www.rediacc.com can reach a DB-bound backend without cross-origin CORS. Bound in workers/www/wrangler.toml (the one www config, www.rediacc.com). PR previews bind it too, to account-bench (rediacc_ci.deploy.deploy_www PREVIEW_TOML), next to their own env.DB and an ENTERPRISE_LOOKUP namespace. A preview binds no LICENSE_SIGNER: its SIGNERLESS_PREVIEW = "true" var lets envSchema admit the env, and every signing route answers 503 SIGNER_NOT_CONFIGURED.
   ACCOUNT?: Fetcher;
   [key: string]: unknown;
 }

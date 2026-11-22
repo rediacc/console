@@ -254,8 +254,29 @@ def _run(
         TWIN_REL,
         parts,
         lambda: _run_live(root, side, *args, drop=drop, drop_env=drop_env, **extra),
+        port=lambda: _port_as_golden(root, *args, drop=drop, drop_env=drop_env, **extra),
         work=(root,),
     )
+
+
+def _port_as_golden(
+    root: pathlib.Path,
+    *args: str,
+    drop: str = "",
+    drop_env: tuple[str, ...] = (),
+    **extra: str,
+):
+    """The re-record seam of a Rule-T change (`regolden --source port`): the port's answer in the golden's spelling, exactly the mapping `_agree` applies to the live port side. The port's fake D1 state is restored afterwards, so the live port run that follows starts from the fixture's state."""
+    state = root / "new-d1.json"
+    saved = state.read_text(encoding="utf-8")
+    try:
+        proc, calls, config = _run_live(root, "new", *args, drop=drop, drop_env=drop_env, **extra)
+    finally:
+        state.write_text(saved, encoding="utf-8")
+    proc = subprocess.CompletedProcess(
+        proc.args, proc.returncode, as_twin(_golden(proc.stdout)), as_twin(_golden(proc.stderr))
+    )
+    return proc, _mask_preview_pepper(_golden(calls)), _golden(config)
 
 
 def _run_live(
@@ -837,19 +858,33 @@ def test_strip_newlines_removes_both_bytes_anywhere_in_the_token() -> None:
 
 def test_the_generated_toml_ends_with_exactly_one_newline() -> None:
     body = port.preview_toml("pr-1", "db", "u")
-    assert body.endswith('props = { tier = "shared", region = "eu" }\n')
+    assert body.endswith('[[kv_namespaces]]\nbinding = "ENTERPRISE_LOOKUP"\n')
     assert not body.endswith("\n\n")
 
 
-def test_a_preview_signs_through_the_bench_signer_and_holds_no_key() -> None:
-    """Since PLAN-enterprise-isolation S3 the account Worker refuses a private key and needs LICENSE_SIGNER; the preview binds signer-bench-eu."""
+def test_a_preview_binds_no_signer_and_declares_itself_signerless() -> None:
+    """PLAN-preview-signer Context 11: PR-written preview code must never reach a signer holding the production key, so the preview binds no LICENSE_SIGNER and holds no key. SIGNERLESS_PREVIEW = "true" next to ENVIRONMENT = "preview" is what lets the account Worker serve without one (private/account src/types/env.ts)."""
     body = port.preview_toml("pr-1", "db", "u")
-    assert (
-        '[[services]]\nbinding = "LICENSE_SIGNER"\nservice = "signer-bench-eu"\nentrypoint = "LicenseSigner"\n'
-        in body
-    )
-    assert 'props = { tier = "shared", region = "eu" }' in body
+    # The comments name the binding to say why it is absent; the settings must not.
+    settings = "\n".join(line for line in body.splitlines() if not line.startswith("#"))
+    assert "LICENSE_SIGNER" not in settings
+    assert "signer-bench" not in settings
+    assert "LicenseSigner" not in settings
     assert "ED25519_PRIVATE_KEY" not in body
+    vars_table = body.split("[vars]\n", 1)[1].split("\n[", 1)[0]
+    assert 'ENVIRONMENT = "preview"\n' in vars_table
+    assert 'SIGNERLESS_PREVIEW = "true"\n' in vars_table
+
+
+def test_bench_still_binds_the_signer_and_sets_no_signerless_flag() -> None:
+    """The control for the test above: the bench account Worker keeps its LICENSE_SIGNER binding, and no checked-in Worker config carries the signerless flag, so only the generated preview does."""
+    workers = ROOT / "workers"
+    bench = (workers / "account" / "wrangler.bench-eu.toml").read_text(encoding="utf-8")
+    assert 'binding = "LICENSE_SIGNER"' in bench
+    configs = sorted(workers.glob("*/wrangler*.toml"))
+    assert configs, "no Worker configs found: wrong root"
+    for config in configs:
+        assert "SIGNERLESS_PREVIEW" not in config.read_text(encoding="utf-8"), config
 
 
 def test_a_preview_worker_persists_no_logs_or_traces() -> None:
