@@ -324,6 +324,33 @@ def selftest() -> int:
                 % label,
                 action_names(pathlib.Path(td), "./.github/actions/bad") == set(),
             )
+    # CONTROL on the composite-action MODULE hop (review 2ea839a9.1): a local action whose run step invokes a module that writes `$GITHUB_ENV` provides that name, and the same action without the module call does not.
+    with tempfile.TemporaryDirectory() as td:
+        fx = pathlib.Path(td)
+        (fx / ".ci" / "rediacc_ci" / "x").mkdir(parents=True)
+        (fx / ".ci" / "rediacc_ci" / "x" / "writer.py").write_text(
+            'import os\nopen(os.environ["GITHUB_ENV"], "a").write("ACTION_MODULE_NAME=1\\n")\n',
+            encoding="utf-8",
+        )
+        for label, body in (
+            ("calls", "PYTHONPATH=.ci python3 -m rediacc_ci.x.writer"),
+            ("silent", "echo nothing"),
+        ):
+            (fx / ".github" / "actions" / label).mkdir(parents=True)
+            (fx / ".github" / "actions" / label / "action.yml").write_text(
+                yaml.safe_dump(
+                    {"runs": {"using": "composite", "steps": [{"shell": "bash", "run": body}]}}
+                ),
+                encoding="utf-8",
+            )
+        check(
+            "CONTROL: a local action running a $GITHUB_ENV-writing module provides its name",
+            "ACTION_MODULE_NAME" in action_names(fx, "./.github/actions/calls"),
+        )
+        check(
+            "PLANT: the same action without the module call provides nothing",
+            "ACTION_MODULE_NAME" not in action_names(fx, "./.github/actions/silent"),
+        )
     # CONTROL on the MODULE half, which is the one the nine jobs now go through: the path form above survives only because the `.sh` file is still on disk, unreferenced, so it would keep passing after the module resolver had gone quiet.
     check(
         "CONTROL: the module hop finds $RENET_BINARY through the cut-over spelling",

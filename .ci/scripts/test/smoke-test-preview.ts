@@ -45,8 +45,13 @@ const TEST_MACHINE_ID = 'a'.repeat(64); // deterministic 64-char hex
 const TEST_CLIENT_MACHINE_ID = 'b'.repeat(64);
 const TEST_REPO_GUID = '00000000-0000-4000-8000-000000000001';
 
-// A preview binds no LICENSE_SIGNER, so activate-repo cannot sign there and the signature and payload checks have nothing to verify. Box T1 of PLAN-preview-signer.md restores the signer and sets PREVIEW_HAS_SIGNER=true in the smoke step's env.
-const PREVIEW_HAS_SIGNER = process.env.PREVIEW_HAS_SIGNER === 'true';
+// A preview binds no LICENSE_SIGNER, so activate-repo cannot sign there and the signature and payload checks have nothing to verify. Nothing sets PREVIEW_HAS_SIGNER until box T1 of PLAN-preview-signer.md restores the signer and sets it to true in the smoke step env, so the signer branch stays skipped until then. Any value but unset, empty, `true` or `false` is refused: a typo such as `1` or `True` must not silently turn the signature and payload checks off.
+const SIGNER_FLAG = process.env.PREVIEW_HAS_SIGNER ?? '';
+if (!['', 'true', 'false'].includes(SIGNER_FLAG)) {
+  console.error(`PREVIEW_HAS_SIGNER must be unset, "true" or "false", got "${SIGNER_FLAG}"`);
+  process.exit(1);
+}
+const PREVIEW_HAS_SIGNER = SIGNER_FLAG === 'true';
 
 let passed = 0;
 let failed = 0;
