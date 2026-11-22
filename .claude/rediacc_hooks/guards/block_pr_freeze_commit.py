@@ -153,7 +153,7 @@ def run(ev):
     if not re.sub(r"\s", "", msg):
         return hookio.ALLOW
     branch = hookio.git_out(["-C", root, "branch", "--show-current"], want_rc=True)
-    # A failed read (None) or a detached HEAD (empty) is left to the commit-msg hook, which skips it too: a detached landing tree is the hotfix on origin/main after the merge (no open PR), and a detached lease is judged when its commits land.
+    # A failed read (None) or a detached HEAD (empty) is not judged here: pr_freeze.check freezes by the landing record, not by this branch, so the skip is this guard's own choice, and the commit-msg hook skips it too. A detached landing tree is the hotfix on origin/main after the merge (no open PR), and a detached lease is judged when its commits land.
     if branch is None or not branch.strip():
         return hookio.ALLOW
     paths = _paths(cmd, root)
