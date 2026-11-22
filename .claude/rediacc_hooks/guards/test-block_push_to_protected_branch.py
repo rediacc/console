@@ -1293,6 +1293,8 @@ SUB = _plant_sub(SUB_C, "private/sm")
 SUB_SHA = _tip(SUB, "origin/%s" % BRANCH)
 _git(SUB, "push", "-q", "origin", "%s:refs/heads/feature-x" % BRANCH)
 _git(SUB, "fetch", "-q", "origin")
+# A local branch too: without it `feature-x` resolves to nothing, and the non-MMDD control would be refused for that instead of for its shape.
+_git(SUB, "branch", "-q", "feature-x", "origin/feature-x")
 SUB_AHEAD = _plant_sub(SUB_C, "private/ahead", unpushed=True)
 SUB_AHEAD_LOCAL = _tip(SUB_AHEAD, BRANCH)
 SUB_BEHIND = _plant_sub(SUB_C, "private/behind", main_moved=True)
