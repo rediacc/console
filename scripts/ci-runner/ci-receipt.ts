@@ -50,6 +50,12 @@ export const QUALITY_WORKFLOW = '.github/workflows/ci-quality.yml';
 export const CALLER_WORKFLOW = 'ci.yml';
 export const RECEIPT_STEP = 'Write CI receipt';
 export const ARTIFACT_PREFIX = 'ci-receipt-';
+/** The one job in QUALITY_WORKFLOW allowed to hold id-token or attestations at write: it checks out nothing, attests the unsigned receipt and uploads it under ARTIFACT_PREFIX. */
+export const SIGNER_JOB = 'quality-content-receipt';
+/** What quality-content uploads before signing. Deliberately outside ARTIFACT_PREFIX, so fetch never downloads an unattested file. */
+export const UNSIGNED_ARTIFACT = 'unsigned-receipt-quality-content';
+const SIGNING_PERMISSIONS = new Set(['id-token', 'attestations']);
+const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 export const CI_PRIOR_PREFIX = 'ci-';
 export const RAW_DIR_REL = path.join('.ci', 'cache', 'ci-receipts');
 export const PRIOR_DIR_REL = path.join('.ci', 'cache', 'receipts');
@@ -126,6 +132,61 @@ export function jobSteps(workflow: string, job: string): WorkflowStep[] | null {
     else cur.cond = value;
   }
   return steps;
+}
+
+/** The body lines of one top-level job (the lines after `  <job>:` up to the next job or top-level key), or null when absent. */
+export function jobBody(workflow: string, job: string): string[] | null {
+  const lines = workflow.split('\n');
+  const start = lines.findIndex((l) => l === `  ${job}:`);
+  if (start === -1) return null;
+  const next = lines.findIndex((l, i) => i > start && /^ {0,2}[A-Za-z0-9_-]+:\s*$/.test(l));
+  return lines.slice(start + 1, next === -1 ? lines.length : next);
+}
+
+/**
+ * Every job whose own `permissions:` grants `id-token` or `attestations` at write, `write-all` included, plus `<workflow>` when the top-level block does (a top-level grant reaches every job without one of its own). Sorted. A job that inherits silently is not named: QUALITY_WORKFLOW sets `permissions: {}` at the top, and that is checked separately.
+ */
+export function signingJobs(workflow: string): string[] {
+  const lines = workflow.split('\n');
+  const found = new Set<string>();
+  const grants = (block: string[], indent: number, inline: string): boolean => {
+    if (/^write-all\b/.test(inline.trim())) return true;
+    const pad = ' '.repeat(indent);
+    for (const l of block) {
+      const kv = new RegExp(`^${pad}([a-z-]+):\\s*([a-z-]+)`).exec(l);
+      if (kv && SIGNING_PERMISSIONS.has(kv[1]) && kv[2] === 'write') return true;
+    }
+    return false;
+  };
+  const blockAfter = (from: number, indent: number): string[] => {
+    const out: string[] = [];
+    for (let i = from + 1; i < lines.length; i++) {
+      const l = lines[i];
+      if (l.trim() === '' || l.trim().startsWith('#')) continue;
+      if (!l.startsWith(' '.repeat(indent))) break;
+      out.push(l);
+    }
+    return out;
+  };
+  lines.forEach((l, i) => {
+    const top = /^permissions:\s*(.*)$/.exec(l);
+    if (top && grants(blockAfter(i, 2), 2, top[1])) found.add('<workflow>');
+  });
+  const jobsAt = lines.indexOf('jobs:');
+  if (jobsAt === -1) return [...found].sort(byCodeUnit);
+  let job: string | null = null;
+  for (let i = jobsAt + 1; i < lines.length; i++) {
+    const l = lines[i];
+    if (/^\S/.test(l)) break;
+    const head = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(l);
+    if (head) {
+      job = head[1];
+      continue;
+    }
+    const perm = /^ {4}permissions:\s*(.*)$/.exec(l);
+    if (job !== null && perm && grants(blockAfter(i, 6), 6, perm[1])) found.add(job);
+  }
+  return [...found].sort(byCodeUnit);
 }
 
 /**
@@ -917,6 +978,63 @@ function coreCases(): { failures: string[]; count: number } {
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
+  // The signer split: only SIGNER_JOB may mint an OIDC token or sign. Both directions.
+  const permWf = (jobPerms: string): string =>
+    [
+      'permissions: {}',
+      'jobs:',
+      '  gates:',
+      '    permissions:',
+      '      contents: read',
+      jobPerms,
+      '    steps:',
+      '      - run: x',
+      '  sign:',
+      '    permissions:',
+      '      id-token: write',
+      '      attestations: write',
+      '    steps:',
+      '      - uses: a',
+    ].join('\n');
+  check(
+    JSON.stringify(signingJobs(permWf('      packages: read'))) === '["sign"]',
+    'signingJobs names only the job granting id-token/attestations write'
+  );
+  check(
+    JSON.stringify(signingJobs(permWf('      id-token: write'))) === '["gates","sign"]',
+    'signingJobs fires on a gate job that also grants id-token: write'
+  );
+  check(
+    JSON.stringify(signingJobs(permWf('      attestations: write'))) === '["gates","sign"]',
+    'signingJobs fires on a gate job that also grants attestations: write'
+  );
+  check(
+    JSON.stringify(signingJobs(permWf('      attestations: read'))) === '["sign"]',
+    'signingJobs does not fire on attestations: read'
+  );
+  check(
+    JSON.stringify(
+      signingJobs(
+        permWf('').replace(
+          '    permissions:\n      contents: read\n',
+          '    permissions: write-all\n'
+        )
+      )
+    ) === '["gates","sign"]',
+    'signingJobs fires on permissions: write-all'
+  );
+  check(
+    JSON.stringify(
+      signingJobs(
+        permWf('      packages: read').replace('permissions: {}', 'permissions:\n  id-token: write')
+      )
+    ) === '["<workflow>","sign"]',
+    'signingJobs fires on a top-level id-token: write'
+  );
+  check(
+    !UNSIGNED_ARTIFACT.startsWith(ARTIFACT_PREFIX),
+    `UNSIGNED_ARTIFACT ${UNSIGNED_ARTIFACT} must stay outside the fetch pattern ${ARTIFACT_PREFIX}*`
+  );
   return { failures, count };
 }
 
@@ -977,6 +1095,32 @@ function selftest(core: boolean): number {
     if (real === null || real.filter((s) => s.name !== null).length < 10)
       failures.push(
         `the real quality-content job parses to ${real?.length ?? 0} step(s); the writer would be reading nothing`
+      );
+    // The real signer split: the gate lane holds no signing permission; one job signs, runs no repo code, and is the only producer of ARTIFACT_PREFIX.
+    const wfText = fs.readFileSync(path.join(REPO_ROOT, QUALITY_WORKFLOW), 'utf8');
+    total++;
+    const signers = signingJobs(wfText);
+    if (JSON.stringify(signers) !== JSON.stringify([SIGNER_JOB]))
+      failures.push(
+        `${QUALITY_WORKFLOW}: jobs granting id-token/attestations write are [${signers.join(', ')}], expected exactly [${SIGNER_JOB}]. A gate job holding either can mint an OIDC token or sign provenance from checked-out repo code; move the signing step into ${SIGNER_JOB}.`
+      );
+    total++;
+    const body = jobBody(wfText, SIGNER_JOB) ?? [];
+    const repoCode = body.filter((l) => /^\s+(- )?(run:|uses: (actions\/checkout|\.\/))/.test(l));
+    if (body.length < 5 || repoCode.length > 0)
+      failures.push(
+        `${SIGNER_JOB} must exist and run no repo code (no run:, no checkout, no local action); found ${body.length} line(s), offending: ${repoCode.map((l) => l.trim()).join(' | ') || 'none'}`
+      );
+    total++;
+    const producers = (wfText.match(new RegExp(`^\\s+name: ${ARTIFACT_PREFIX}`, 'gm')) ?? [])
+      .length;
+    const signerProduces = body.some((l) => l.trim().startsWith(`name: ${ARTIFACT_PREFIX}`));
+    const unsignedUp = (jobBody(wfText, 'quality-content') ?? []).some(
+      (l) => l.trim() === `name: ${UNSIGNED_ARTIFACT}`
+    );
+    if (producers !== 1 || !signerProduces || !unsignedUp)
+      failures.push(
+        `artifact wiring: ${producers} upload(s) named ${ARTIFACT_PREFIX}* (expected 1, in ${SIGNER_JOB}: ${signerProduces}); quality-content uploads ${UNSIGNED_ARTIFACT}: ${unsignedUp}`
       );
     const m = mutantRed();
     total++;

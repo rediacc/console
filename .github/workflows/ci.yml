@@ -652,7 +652,7 @@ jobs:
       pull-requests: read
       actions: read
       packages: read
-      # quality-content attests its CI receipt (PLAN-two-track-merge-dev R3): a called workflow holds no more than its caller.
+      # quality-content-receipt alone attests the CI receipt (PLAN-two-track-merge-dev R3); every other ci-quality.yml job declares neither, which ci-receipt.ts --selftest asserts. A called workflow holds no more than its caller.
       id-token: write
       attestations: write
     needs: [initialize]
