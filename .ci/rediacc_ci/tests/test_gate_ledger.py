@@ -621,6 +621,181 @@ def test_fold_ci_is_idempotent_and_unknown_is_a_failure(tmp_path: pathlib.Path) 
     assert "3 UNCHECKED" in out[-1], out[-1]
 
 
+# ---------------------------------------------------------------------------- CI receipts (PLAN-two-track-merge-dev R3)
+
+RSHA = "a" * 40
+RTREE = "b" * 40
+RSALT = "s" * 64
+
+
+def _ci_receipt(
+    lane: str, gates: dict[str, str], *, run_id: str = "9", attempt: str = "2", sha_: str = RSHA
+) -> dict[str, Any]:
+    return {
+        "schema": 1,
+        "repo": "rediacc/console",
+        "run": {"id": run_id, "attempt": attempt},
+        "lane": lane,
+        "sha": sha_,
+        "tree": RTREE,
+        "salt": RSALT,
+        "gates": {g: {"inputHash": ih, "verdict": "pass"} for g, ih in gates.items()},
+        "omitted": {},
+    }
+
+
+def _store_ci_receipt(root: pathlib.Path, doc: dict[str, Any]) -> pathlib.Path:
+    """The file exactly as `ci-receipt fetch` stores a verified one: `<sha256 of the bytes>.json`."""
+    raw = (json.dumps(doc, indent=2) + "\n").encode("utf-8")
+    d = root.joinpath(*L.CI_RECEIPTS_REL)
+    d.mkdir(parents=True, exist_ok=True)
+    p = d / (hashlib.sha256(raw).hexdigest() + ".json")
+    p.write_bytes(raw)
+    return p
+
+
+def _receipt_ci_rows(
+    receipts: list[dict[str, Any]] | None, head: str = RSHA
+) -> list[dict[str, Any]]:
+    return L.ci_rows(
+        {"id": 9, "run_attempt": 2, "head_sha": head, "event": "pull_request", "head_branch": "b"},
+        [_job("Q / J", [("Solo", "success"), ("Other", "success"), ("Red", "failure")])],
+        steps={"x:solo": ("j", "Solo"), "x:other": ("j", "Other"), "x:red": ("j", "Red")},
+        tests={},
+        patterns={"j": re.compile(r"Q / J")},
+        log_lines=lambda _j: [],
+        category_of=lambda _j, _l: None,
+        tree_of=lambda _s: "T",
+        receipts=receipts,
+    )
+
+
+def test_ci_rows_key_a_receipted_gate_on_its_input_hash() -> None:
+    rc = _ci_receipt("j", {"x:solo": "IH-solo", "x:red": "IH-red"})
+    rows = _receipt_ci_rows([rc])
+    assert all(L.validate(r) is None for r in rows)
+    runs = {r["id"]: r for r in rows if r["t"] == "run"}
+    assert set(runs) == {"ci-9-2-1", "ci-9-2-1-r"}, runs
+    sib = runs["ci-9-2-1-r"]
+    assert (sib["tree"], sib["salt"], sib["src"], sib["ci"]["run"]) == (RTREE, RSALT, "ci-step", 9)
+    assert runs["ci-9-2-1"]["salt"] is None, "the job's own run stays tree-keyed with salt null"
+    g = {r["gate"]: r for r in rows if r["t"] == "g"}
+    assert (
+        g["x:solo"]["run"],
+        g["x:solo"]["key"],
+        g["x:solo"]["key_kind"],
+        g["x:solo"]["attr"],
+    ) == (
+        "ci-9-2-1-r",
+        "IH-solo",
+        "input",
+        "own",
+    )
+    assert (g["x:other"]["run"], g["x:other"]["key_kind"]) == ("ci-9-2-1", "tree"), (
+        "a gate the receipt omits keeps the tree key"
+    )
+    assert (g["x:red"]["run"], g["x:red"]["outcome"], g["x:red"]["key_kind"]) == (
+        "ci-9-2-1",
+        "fail",
+        "tree",
+    ), "a receipted gate whose step FAILED in this job is never written as a receipt pass"
+    ends = [r["run"] for r in rows if r["t"] == "end"]
+    assert sorted(ends) == ["ci-9-2-1", "ci-9-2-1-r"]
+    assert sum(1 for r in rows if r["t"] == "g" and r["gate"] == "x:solo") == 1
+
+
+def test_control_ci_rows_without_a_receipt_key_every_gate_on_the_tree() -> None:
+    for receipts in (None, [_ci_receipt("other-lane", {"x:solo": "IH"})]):
+        rows = _receipt_ci_rows(receipts)
+        assert [r["id"] for r in rows if r["t"] == "run"] == ["ci-9-2-1"]
+        assert {r["key_kind"] for r in rows if r["t"] == "g"} == {"tree"}
+    rows = _receipt_ci_rows([_ci_receipt("j", {"x:solo": "IH"})], head="c" * 40)
+    assert {r["key_kind"] for r in rows if r["t"] == "g"} == {"tree"}, (
+        "a receipt built from another commit than the run's head must not key it"
+    )
+
+
+def test_load_ci_receipts_reads_only_what_still_hashes_to_its_name(tmp_path: pathlib.Path) -> None:
+    good = _store_ci_receipt(tmp_path, _ci_receipt("j", {"x:solo": "IH"}))
+    edited = _store_ci_receipt(tmp_path, _ci_receipt("j", {"x:solo": "IH2"}, run_id="10"))
+    edited.write_bytes(edited.read_bytes().replace(b"IH2", b"IH3"))
+    _store_ci_receipt(tmp_path, {"schema": 2, "run": {"id": "11"}, "lane": "j", "gates": {}})
+    by_run, shape = L.load_ci_receipts([tmp_path, tmp_path])
+    assert shape == {"read": 1, "refused": 2, "dirs": 1}, shape
+    assert list(by_run) == [("9", "2")]
+    assert by_run[("9", "2")][0]["gates"]["x:solo"]["inputHash"] == "IH"
+    assert good.exists()
+
+
+def test_fold_ci_reads_the_stored_receipt_not_the_prior(tmp_path: pathlib.Path) -> None:
+    """The prior `ci-receipt fetch` writes has `finishedAt: ""`, which `receipt_rows` skips; fold-ci reads the stored receipt itself. Without the receipt read the gate lands tree-keyed, which is the control."""
+    root = paths.repo_root()
+    patterns = budget_report.lane_display_patterns(root)
+    picked = None
+    for gid, (job_id, step) in sorted(L.lock_ci(root)[0].items()):
+        pat = patterns.get(job_id)
+        name = re.sub(r"\\(.)", r"\1", pat.pattern[1:-1]) if pat else ""
+        if pat and pat.fullmatch(name):
+            picked = (gid, job_id, step, name)
+            break
+    assert picked, "no lock gate maps to a plainly named CI job; the fixture cannot be built"
+    gid, job_id, step, name = picked
+    runs = [
+        {
+            "id": 9,
+            "run_attempt": 2,
+            "head_sha": RSHA,
+            "event": "pull_request",
+            "created_at": "2026-11-22T00:00:00Z",
+            "head_branch": "b",
+        }
+    ]
+    jobs = [_job(name, [(step, "success")])]
+    store = tmp_path / "store"
+    _store_ci_receipt(store, _ci_receipt(job_id, {gid: "IH-" + gid}))
+    prior_dir = store.joinpath(*L.RECEIPTS_REL)
+    prior_dir.mkdir(parents=True)
+    (prior_dir / ("ci-" + RTREE + ".json")).write_text(
+        json.dumps({"schema": 2, "headTree": "ci-" + RTREE, "finishedAt": "", "gates": {}})
+    )
+    assert (
+        L.receipt_rows(
+            json.loads((prior_dir / ("ci-" + RTREE + ".json")).read_text()),
+            base_tree=None,
+            changed=None,
+            lock_sha=None,
+        )
+        == []
+    ), "the prior is skipped by receipt_rows; this test is about the path that is not"
+
+    def fold(d: pathlib.Path, roots: list[pathlib.Path]) -> tuple[list[dict[str, Any]], str]:
+        out: list[str] = []
+        rc = L.fold_ci(
+            d,
+            root,
+            repo="o/r",
+            logs=False,
+            fetch_runs=lambda *_a, **_k: runs,
+            fetch_jobs=lambda *_a: jobs,
+            out=out.append,
+            receipt_roots=roots,
+        )
+        assert rc == 0, out
+        return [r for r in L.read_rows(d)[0] if r["t"] == "g" and r["gate"] == gid], out[-1]
+
+    with_receipt, line = fold(tmp_path / "a", [store])
+    assert [(r["key"], r["key_kind"], r["outcome"]) for r in with_receipt] == [
+        ("IH-" + gid, "input", "pass")
+    ], with_receipt
+    assert (
+        "1 verified CI receipt(s) read (0 refused), 1 gate row(s) keyed on a receipt inputHash"
+        in line
+    ), line
+    control, line = fold(tmp_path / "b", [tmp_path / "empty"])
+    assert [r["key_kind"] for r in control] == ["commit"], control
+    assert "0 verified CI receipt(s) read" in line, line
+
+
 def _fold_runs(n: int) -> list[dict[str, Any]]:
     return [
         {

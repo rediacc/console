@@ -18,6 +18,8 @@ ROWS (v1), each one JSON object with `t`:
 `src` is one of SOURCES and `outcome` one of OUTCOMES. `at` is the run's START (ISO-8601 UTC); `t0_ms` is the gate's own start offset inside the run, because a clock-driven red is about when the GATE ran, not when the run began (the 2026-10-08 replay has a run that started at 23:48 UTC and ran the gate that went red at 00:00:31). `base_tree` is the tree of the previous run of the same checkout and `changed` the paths between it and `tree`, capped at CHANGED_PATHS_MAX with `changed_n` the uncapped count. `classes` is what the writer derived at write time; the model recomputes classes from `changed` against the CURRENT lock, so they never go stale. `whole` is the receipt's own `whole` (no narrowing flag), which cold start counts. `ci` is null locally and `{run, attempt, job, job_id, event, category}` for a CI job.
 
 THE INPUT KEY (`input_key`): `inputHash` when the receipt has one (kind `input`); else, for a gate that DECLARES paths, sha(defHash, filesHash, salt) (kind `paths`); else the head tree (kind `tree`), or tree plus dirty digest outside a clean checkout (kind `tree+dirty`). `filesHash` alone is NOT a key for a path-less gate: in the 10-08 replay a version gate went green, red, red, red, green with one unchanged filesHash, because the fix was in a file its globs do not name. CARRIED VERDICTS ARE NEVER WRITTEN: a carried gate did not run.
+
+CI RECEIPTS (PLAN-two-track-merge-dev R3). A CI job's step rows are keyed on the head tree, because a step outcome names no inputs. When `ci-receipt fetch` has stored a verified receipt for the run attempt (`.ci/cache/ci-receipts/<sha256>.json`, under any worktree of this checkout), `fold-ci` reads THAT file, not the `ci-<tree>` prior beside the local receipts: the prior's `finishedAt` is empty, so `receipt_rows` skips it, and it has lost the run id that ties a verdict to one CI job. Each gate the receipt names, whose step passed in that job at the receipt's own commit, is written to a sibling run `<job run id>-r` carrying the receipt's tree and salt, keyed on its `inputHash` (kind `input`, attr `own`): the same (key, salt) a local run at the same inputs writes, so the model sees one gate judged at one input on both sides. The sibling run keeps the job's own run tree-keyed with salt null, so a gate the receipt omits keeps comparing with the other CI runs of that job. A stored file whose bytes no longer hash to its name is not read.
 """
 
 from __future__ import annotations
@@ -55,6 +57,10 @@ LOCK_NAME = "ledger.lock"
 FOLD_LOCK_NAME = "fold.lock"
 SEEN_NAME = "seen.idx"
 RECEIPTS_REL = (".ci", "cache", "receipts")
+# Where `ci-receipt fetch` stores each VERIFIED CI receipt, content-addressed (scripts/ci-runner/ci-receipt.ts RAW_DIR_REL).
+CI_RECEIPTS_REL = (".ci", "cache", "ci-receipts")
+CI_RECEIPT_SCHEMA = 1
+CI_RECEIPT_RUN_SUFFIX = "-r"
 LOCK_REL = "scripts/ci-runner/gates.lock.json"
 
 SOURCES = ("prepush", "quick", "ci-step", "ci-nightly", "probe", "backfill")
@@ -730,6 +736,55 @@ def lock_ci(root: pathlib.Path) -> tuple[dict[str, tuple[str, str]], dict[str, s
     return steps, tests
 
 
+def load_ci_receipts(
+    roots: Iterable[pathlib.Path],
+) -> tuple[dict[tuple[str, str], list[dict[str, Any]]], dict[str, int]]:
+    """({(run id, attempt): [receipt, ...]}, shape) from every root's CI_RECEIPTS_REL. A file is read only when its bytes still hash to its `<sha256>.json` name (what `ci-receipt fetch` verified and stored) and it has the receipt's shape; anything else is counted, never folded."""
+    by_run: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    seen: set[str] = set()
+    dirs: set[str] = set()
+    shape = {"read": 0, "refused": 0, "dirs": 0}
+    for r in roots:
+        cdir = pathlib.Path(r).joinpath(*CI_RECEIPTS_REL)
+        if not cdir.is_dir() or str(cdir.resolve()) in dirs:
+            continue
+        dirs.add(str(cdir.resolve()))
+        shape["dirs"] += 1
+        for p in sorted(cdir.glob("*.json")):
+            try:
+                raw = p.read_bytes()
+            except OSError:
+                shape["refused"] += 1
+                continue
+            digest = hashlib.sha256(raw).hexdigest()
+            if digest != p.stem:
+                shape["refused"] += 1
+                continue
+            if digest in seen:
+                continue
+            seen.add(digest)
+            try:
+                doc = json.loads(raw.decode("utf-8"))
+            except (UnicodeDecodeError, ValueError):
+                shape["refused"] += 1
+                continue
+            run = doc.get("run") if isinstance(doc, dict) else None
+            if (
+                not isinstance(doc, dict)
+                or doc.get("schema") != CI_RECEIPT_SCHEMA
+                or not isinstance(doc.get("gates"), dict)
+                or not isinstance(run, dict)
+                or not str(run.get("id") or "")
+                or not isinstance(doc.get("lane"), str)
+            ):
+                shape["refused"] += 1
+                continue
+            key = (str(run.get("id")), str(run.get("attempt") or "1"))
+            by_run.setdefault(key, []).append(doc)
+            shape["read"] += 1
+    return by_run, shape
+
+
 def _span_ms(obj: dict[str, Any]) -> int | None:
     a, b = epoch(obj.get("started_at")), epoch(obj.get("completed_at"))
     return int((b - a) * 1000) if a is not None and b is not None else None
@@ -747,10 +802,13 @@ def ci_rows(
     tree_of: Callable[[str], str | None],
     pytest_hosts: set[str] | frozenset[str] = frozenset(),
     leg_tests: Callable[[str], set[str] | None] | None = None,
+    receipts: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Rows for one CI run attempt: one ledger run per JOB that hosts a gate step, its g rows, and its end row.
 
     A (job, step) pair named by ONE gate gives an `own` row; one shared by several gives each a weak `shared-step` row, because the step's outcome is the sum of all of them. A `ci.kind: test` gate takes its outcome from the pytest step's `pytest-fail:` finding keys (attr `test`): green when its module has none, red when it has one.
+
+    `receipts` are the verified CI receipts of THIS run attempt (`load_ci_receipts`). A gate one of them names, in a job of its lane, at the receipt's own commit, whose step passed, is written to the sibling run `<rid>-r` keyed on the receipt's `inputHash` instead (see the module docstring, CI RECEIPTS).
     """
     occupancy: dict[tuple[str, str], int] = {}
     for js in steps.values():
@@ -789,40 +847,81 @@ def ci_rows(
         category = category_of(job, lines) if failed else None
         rid = "ci-%s-%s-%s" % (run.get("id"), attempt, job.get("id"))
         at = epoch(job.get("started_at")) or epoch(run.get("run_started_at")) or 0.0
-        out.append(
-            {
-                "t": "run",
-                "v": SCHEMA,
-                "id": rid,
-                "src": src,
-                "at": iso(at),
-                "branch": run.get("head_branch"),
-                "head": head,
-                "tree": tree,
-                "salt": None,
-                "clean": True,
-                "whole": False,
-                "base_tree": None,
-                "changed": [],
-                "changed_n": 0,
-                "lock_sha": None,
-                "classes": None,
-                "ci": {
-                    "run": run.get("id"),
-                    "attempt": attempt,
-                    "job": name,
-                    "job_id": job.get("id"),
-                    "event": event,
-                    "category": category,
-                },
-            }
-        )
+        jrun: dict[str, Any] = {
+            "t": "run",
+            "v": SCHEMA,
+            "id": rid,
+            "src": src,
+            "at": iso(at),
+            "branch": run.get("head_branch"),
+            "head": head,
+            "tree": tree,
+            "salt": None,
+            "clean": True,
+            "whole": False,
+            "base_tree": None,
+            "changed": [],
+            "changed_n": 0,
+            "lock_sha": None,
+            "classes": None,
+            "ci": {
+                "run": run.get("id"),
+                "attempt": attempt,
+                "job": name,
+                "job_id": job.get("id"),
+                "event": event,
+                "category": category,
+            },
+        }
+        out.append(jrun)
         keys = finding_keys(lines or [])
+        carried = [
+            rc
+            for rc in receipts or []
+            if rc.get("lane") in job_ids and str(rc.get("sha") or "") == head and head
+        ]
+        rrun: dict[str, Any] | None = None
+        rrows: list[dict[str, Any]] = []
         for gid, st, js in hosted:
             outcome = STEP_OUTCOMES.get(str((st or {}).get("conclusion")))
             if outcome is None:
                 continue
             s_at = epoch((st or {}).get("started_at"))
+            rgate = next(
+                (
+                    (rc, rc["gates"][gid])
+                    for rc in carried
+                    if isinstance(rc["gates"].get(gid), dict)
+                    and rc["gates"][gid].get("verdict") == "pass"
+                    and rc["gates"][gid].get("inputHash")
+                ),
+                None,
+            )
+            if rgate is not None and outcome == "pass" and gid not in pytest_hosts:
+                rc, rg = rgate
+                if rrun is None:
+                    rrun = {
+                        **jrun,
+                        "id": rid + CI_RECEIPT_RUN_SUFFIX,
+                        "tree": str(rc.get("tree") or "") or tree,
+                        "salt": str(rc.get("salt") or "") or None,
+                    }
+                rrows.append(
+                    {
+                        "t": "g",
+                        "v": SCHEMA,
+                        "run": rrun["id"],
+                        "gate": gid,
+                        "outcome": "pass",
+                        "wall_ms": _span_ms(st or {}),
+                        "t0_ms": int((s_at - at) * 1000) if s_at is not None and at else None,
+                        "key": str(rg["inputHash"]),
+                        "key_kind": "input",
+                        "findings": None,
+                        "attr": "own",
+                    }
+                )
+                continue
             out.append(
                 {
                     "t": "g",
@@ -866,16 +965,17 @@ def ci_rows(
                         "attr": "test",
                     }
                 )
-        out.append(
-            {
-                "t": "end",
-                "v": SCHEMA,
-                "run": rid,
-                "wall_ms": _span_ms(job),
-                "exit": 0 if job.get("conclusion") == "success" else 1,
-                "cut": job.get("conclusion") == "cancelled",
-            }
-        )
+        end = {
+            "t": "end",
+            "v": SCHEMA,
+            "run": rid,
+            "wall_ms": _span_ms(job),
+            "exit": 0 if job.get("conclusion") == "success" else 1,
+            "cut": job.get("conclusion") == "cancelled",
+        }
+        out.append(end)
+        if rrun is not None:
+            out.extend([rrun, *rrows, {**end, "run": rrun["id"]}])
     return out
 
 
@@ -944,15 +1044,19 @@ def fold_ci(
     deadline_s: float = CI_FOLD_DEADLINE_S,
     progress: Callable[[str], None] | None = None,
     clock: Callable[[], float] = time.monotonic,
+    receipt_roots: Iterable[pathlib.Path] | None = None,
 ) -> int:
     """Fold completed CI runs into the ledger, idempotently (`ci:<run>:<attempt>` in seen.idx). Exit 1 when any read failed: an unread run is UNCHECKED, never folded as clean.
 
-    Runs already in seen.idx are skipped BEFORE any read. Only the `max_unseen` NEWEST unseen runs are read (older ones are counted, not UNCHECKED: the next fold takes them), their job lists are fetched by a `workers` pool, and one progress line per run goes to stderr. A run whose read is not done when `deadline_s` passes is UNCHECKED and named, so the fold ends instead of hanging."""
+    Runs already in seen.idx are skipped BEFORE any read. Only the `max_unseen` NEWEST unseen runs are read (older ones are counted, not UNCHECKED: the next fold takes them), their job lists are fetched by a `workers` pool, and one progress line per run goes to stderr. A run whose read is not done when `deadline_s` passes is UNCHECKED and named, so the fold ends instead of hanging. The verified CI receipts under `receipt_roots` (default: every worktree of `root`) key the gates they name on their inputHash (`ci_rows`, module docstring CI RECEIPTS)."""
     fetch_runs = fetch_runs or budget_report.fetch_runs
     fetch_jobs = fetch_jobs or budget_report.fetch_jobs
     steps, tests = lock_ci(root)
     hosts = pytest_hosts(root, tests, steps)
     legs = shard_legs(root)
+    ci_receipts, receipt_shape = load_ci_receipts(
+        worktree_roots(root) if receipt_roots is None else receipt_roots
+    )
     if not steps:
         log.error(
             "gate_ledger fold-ci: the lock maps 0 gates to CI steps; nothing could be attributed"
@@ -999,7 +1103,7 @@ def fold_ci(
             unchecked.append("runs(%s): %s" % (event, _why(exc)))
     runs = list({r.get("id"): r for r in runs}.values())
     ensure_dir(d)
-    folded = rows_n = already = 0
+    folded = rows_n = already = input_n = 0
     skipped_old = 0
     say = progress or (lambda m: print(m, file=sys.stderr, flush=True))
     t0 = clock()
@@ -1054,7 +1158,11 @@ def fold_ci(
                     tree_of=tree_of,
                     pytest_hosts=hosts,
                     leg_tests=legs,
+                    receipts=ci_receipts.get(
+                        (str(run.get("id")), str(run.get("run_attempt") or 1))
+                    ),
                 )
+                input_n += sum(1 for r in rows if r.get("key_kind") == "input")
                 rows_n += append_rows(d, rows)
                 mark_seen(d, [sk])
                 seen.add(sk)
@@ -1067,8 +1175,19 @@ def fold_ci(
             pool.shutdown()
     rotate(d)
     out(
-        "gate_ledger fold-ci: %d run(s) listed over %s, %d folded (%d row(s)), %d already folded, %d older unseen deferred, %d UNCHECKED"
-        % (len(runs), "/".join(CI_EVENTS), folded, rows_n, already, skipped_old, len(unchecked))
+        "gate_ledger fold-ci: %d run(s) listed over %s, %d folded (%d row(s)), %d already folded, %d older unseen deferred, %d UNCHECKED; %d verified CI receipt(s) read (%d refused), %d gate row(s) keyed on a receipt inputHash"
+        % (
+            len(runs),
+            "/".join(CI_EVENTS),
+            folded,
+            rows_n,
+            already,
+            skipped_old,
+            len(unchecked),
+            receipt_shape["read"],
+            receipt_shape["refused"],
+            input_n,
+        )
     )
     for u in unchecked:
         log.error("gate_ledger fold-ci: unchecked %s" % u)
