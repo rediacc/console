@@ -19,6 +19,7 @@ import pytest
 from rediacc_hooks.tests import wlfix
 
 R = wlfix.import_wl("wl_review")
+P = wlfix.import_wl("wl_prreview")
 
 HERE = pathlib.Path(__file__).resolve().parent
 WORKLIST = HERE.parents[1] / "hooks" / "stop" / "worklist.py"
@@ -334,3 +335,45 @@ def test_worklist_review_mark_from_dev_marks_the_landing_record(tmp_path):
     assert got.returncode == 0, got.stdout + got.stderr
     assert _resolution(land_path, fid) == "not-a-bug"
     assert _resolution(dup_path, fid) == "open"
+
+
+# ---- #9be9bec1: wl_prreview acts on the cwd's bound tree, from either copy of the script
+
+
+def _fake_gh(tmp_path, monkeypatch):
+    """A `gh` on PATH that prints the directory it ran in, so the tree a call reached is read off its stdout."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    gh = bin_dir / "gh"
+    gh.write_text("#!/bin/sh\npwd -P\n", encoding="utf-8")
+    gh.chmod(0o755)
+    monkeypatch.setenv("PATH", "%s%s%s" % (bin_dir, os.pathsep, os.environ["PATH"]))
+
+
+def test_prreview_gh_runs_in_the_landing_tree_when_typed_there(tmp_path, monkeypatch):
+    """The 2026-11-22 run: the development copy of the script, the shell in the landing tree."""
+    main, landing, _a, _b = _trees(tmp_path)
+    _fake_gh(tmp_path, monkeypatch)
+    monkeypatch.setattr(P, "CONSOLE_ROOT", main)
+    monkeypatch.chdir(landing)
+    assert P.command_root() == landing
+    assert P.run_gh(["pr", "view"]) == (0, "%s\n" % landing, "")
+
+
+def test_prreview_gh_runs_in_the_main_checkout_when_typed_there(tmp_path, monkeypatch):
+    """CONTROL: the same copy with the shell in the main checkout stays there, and so does the landing copy typed in the main checkout."""
+    main, landing, _a, _b = _trees(tmp_path)
+    _fake_gh(tmp_path, monkeypatch)
+    monkeypatch.chdir(main)
+    monkeypatch.setattr(P, "CONSOLE_ROOT", main)
+    assert P.run_gh(["pr", "view"]) == (0, "%s\n" % main, "")
+    monkeypatch.setattr(P, "CONSOLE_ROOT", landing)
+    assert P.run_gh(["pr", "view"]) == (0, "%s\n" % main, "")
+
+
+def test_prreview_control_without_a_record_gh_stays_in_the_file_tree(tmp_path, monkeypatch):
+    main, landing, _a, _b = _trees(tmp_path, record=False)
+    _fake_gh(tmp_path, monkeypatch)
+    monkeypatch.setattr(P, "CONSOLE_ROOT", main)
+    monkeypatch.chdir(landing)
+    assert P.run_gh(["pr", "view"]) == (0, "%s\n" % main, "")
