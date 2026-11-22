@@ -2638,6 +2638,30 @@
       ],
       "done_sigs": []
     },
+    "agent/plans/PLAN-preview-signer.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 13,
+      "done": 0,
+      "open_sigs": [
+        "2ecf2128",
+        "3e1e6f13",
+        "3fdc8639",
+        "5385f4d6",
+        "58df5bf2",
+        "6fd6c40b",
+        "8804eaa9",
+        "9b3cd128",
+        "a42915fc",
+        "b3422170",
+        "d19eccab",
+        "f1bc8774",
+        "f9763990"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-printf-echo-pipefail-sweep.md": {
       "status": "compacted",
       "owner": "d778be9d",

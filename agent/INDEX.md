@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 270 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 271 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -577,6 +577,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-portal-analytics.md` | proposed | 62 | 10 | 0 | 13797 |
 | `agent/plans/PLAN-pr-loop-single-source.md` | approved | 186 | 4 | 5 | 31945 |
 | `agent/plans/PLAN-pr-path-ephemeral-credentials.md` | proposed | 76 | 13 | 0 | 18781 |
+| `agent/plans/PLAN-preview-signer.md` | approved | 127 | 13 | 0 | 21583 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-product-domain-rename.md` | executing | 226 | 4 | 24 | 45792 |
 | `agent/plans/PLAN-production-key-only.md` | approved | 349 | 3 | 14 | 51686 |
@@ -735,7 +736,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-w7p5a-real-run-dispatch.md` | done | 818 | 0 | 10 | 107465 |
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 
-270 plan(s), 208 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+271 plan(s), 209 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 
