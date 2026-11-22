@@ -520,3 +520,11 @@ def test_member_does_not_clobber_the_stop_hooks_own_state_fields(member_env):
     state = S.load_state(worklist, p["session_id"])
     assert state["stop_owned"] == "keep me"
     assert "a.txt" in state["uc_files"]
+
+
+def test_remind_min_does_not_import_the_stop_battery():
+    """196fda72.1: the post-tool member's read stays cheap, so wl_uncommitted holds the constant and never imports wl_checks; wl_checks takes its value from it."""
+    source = (STOP_DIR / "wl_uncommitted.py").read_text(encoding="utf-8")
+    assert "import wl_checks" not in source
+    checks = importlib.import_module("wl_checks")
+    assert checks.COMMIT_REMIND_MIN == U.COMMIT_REMIND_MIN == 15

@@ -192,12 +192,14 @@ def own_dirty(root, state_doc, now=None):
     return _dirty_match(state_doc.get("uc_files") or {}, cached.get("dirty") or []), ct
 
 
-def remind_min(root):
-    """`wl_checks.COMMIT_REMIND_MIN`, the one constant the Stop hook passes as `minutes` too (agent/plans/PLAN-simple-two-tree-loop.md ruling 11: fixed in code, no QUEUE.md line). `root` is not read."""
-    del root
-    import wl_checks
+# Minutes without a commit before the reminder speaks. Held HERE, in the small module, so the PostToolUse member reads it without importing the whole Stop battery (wl_checks, over 6000 lines) on every Edit or Write; `wl_checks.COMMIT_REMIND_MIN` is this value (review 196fda72.1).
+COMMIT_REMIND_MIN = 15
 
-    return int(wl_checks.COMMIT_REMIND_MIN)
+
+def remind_min(root):
+    """`COMMIT_REMIND_MIN`, the one constant the Stop hook passes as `minutes` too (agent/plans/PLAN-simple-two-tree-loop.md ruling 11: fixed in code, no QUEUE.md line). `root` is not read."""
+    del root
+    return COMMIT_REMIND_MIN
 
 
 def evaluate(root, transcript_path, state_doc, now=None, minutes=None):
