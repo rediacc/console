@@ -105,3 +105,22 @@ def test_a_missing_git_binary_answers_true_not_a_crash(monkeypatch: pytest.Monke
     monkeypatch.setattr(renet_changed.subprocess, "run", no_git)
     assert renet_changed.decide("push", "1" * 40, "") is True
     assert renet_changed.decide("pull_request", "", "1" * 40) is True
+
+
+def test_push_to_the_default_branch_is_false_even_with_a_renet_change(repo: pathlib.Path) -> None:
+    base = _commit(repo, "a.txt", "1")
+    _commit(repo, "private/renet/x", "2")
+    assert renet_changed.decide("push", base, "", "refs/heads/main", "main") is False
+
+
+def test_push_to_another_branch_still_diffs(repo: pathlib.Path) -> None:
+    base = _commit(repo, "a.txt", "1")
+    _commit(repo, "private/renet/x", "2")
+    assert renet_changed.decide("push", base, "", "refs/heads/0101-1", "main") is True
+
+
+def test_an_unset_ref_or_default_branch_still_diffs(repo: pathlib.Path) -> None:
+    base = _commit(repo, "a.txt", "1")
+    _commit(repo, "private/renet/x", "2")
+    assert renet_changed.decide("push", base, "", "refs/heads/main", "") is True
+    assert renet_changed.decide("push", base, "", "", "main") is True

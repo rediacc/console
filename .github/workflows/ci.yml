@@ -348,7 +348,8 @@ jobs:
       # gitlink moved: on a push, between the pushed range's base and HEAD; on a pull
       # request, between the merge base with the PR base and HEAD. 'true' on a hit and
       # on anything it cannot decide (no base, unreachable base): fail open, the same
-      # direction as the scope engine. Every other event gets 'false' and the jobs follow
+      # direction as the scope engine. A push to the default branch gets 'false' (its PR CI
+      # already tested the tree; the nightly covers main). Every other event gets 'false' and the jobs follow
       # `full_suite` as before. A gitlink diff needs no submodule checkout, only the two
       # commits (fetch-depth 0).
       - name: Decide whether private/renet changed
@@ -357,19 +358,24 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           BEFORE_SHA: ${{ github.event.before }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          REF: ${{ github.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.renet_changed
 
       # J6 (PLAN-backup-program): suite 26 (test-e2e-backup-browse-at) used to run only under
       # `full_suite`. rediacc_ci.ci.backup_changed decides whether a backup path moved (the
       # `backup` area of the proof tier map: its renet globs and its suite files),
       # over the same range as the step above. Fail open like it: 'true' on anything it cannot
-      # decide, 'false' on every other event.
+      # decide, 'false' on every other event and on a push to the default branch (the nightly
+      # ct-backup-nightly.yml runs suite 26 against main).
       - name: Decide whether a backup path changed
         id: backup-push
         env:
           EVENT_NAME: ${{ github.event_name }}
           BEFORE_SHA: ${{ github.event.before }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          REF: ${{ github.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.backup_changed
 
       # Run consolidated initialization script

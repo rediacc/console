@@ -144,3 +144,38 @@ def test_main_writes_the_output_file(
     monkeypatch.setenv("GITHUB_OUTPUT", str(out))
     assert backup_changed.main() == 0
     assert out.read_text() == "changed=true\n"
+
+
+def test_push_to_the_default_branch_is_false_even_with_a_backup_path(repo: pathlib.Path) -> None:
+    base = _commit(repo, "a.txt", "1")
+    _commit(repo, BACKUP_GO, "2")
+    assert backup_changed.decide("push", base, "", "refs/heads/main", "main") is False
+
+
+def test_push_to_another_branch_still_diffs(repo: pathlib.Path) -> None:
+    base = _commit(repo, "a.txt", "1")
+    _commit(repo, BACKUP_GO, "2")
+    assert backup_changed.decide("push", base, "", "refs/heads/0101-1", "main") is True
+    assert backup_changed.decide("push", base, "", "refs/tags/main", "main") is True
+
+
+def test_an_unset_ref_or_default_branch_still_diffs(repo: pathlib.Path) -> None:
+    base = _commit(repo, "a.txt", "1")
+    _commit(repo, BACKUP_GO, "2")
+    assert backup_changed.decide("push", base, "", "refs/heads/main", "") is True
+    assert backup_changed.decide("push", base, "", "", "main") is True
+
+
+def test_main_reads_ref_and_default_branch_from_the_environment(
+    repo: pathlib.Path, monkeypatch: pytest.MonkeyPatch, tmp_path_factory: pytest.TempPathFactory
+) -> None:
+    base = _commit(repo, "a.txt", "1")
+    _commit(repo, BACKUP_GO, "2")
+    out = tmp_path_factory.mktemp("out") / "gh_output"
+    monkeypatch.setenv("EVENT_NAME", "push")
+    monkeypatch.setenv("BEFORE_SHA", base)
+    monkeypatch.setenv("REF", "refs/heads/main")
+    monkeypatch.setenv("DEFAULT_BRANCH", "main")
+    monkeypatch.setenv("GITHUB_OUTPUT", str(out))
+    assert backup_changed.main() == 0
+    assert out.read_text() == "changed=false\n"
