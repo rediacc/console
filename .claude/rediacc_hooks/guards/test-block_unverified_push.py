@@ -33,7 +33,7 @@ if _SYSPATH is None or _SYSPATH.loader is None:
 syspath = importlib.util.module_from_spec(_SYSPATH)
 _SYSPATH.loader.exec_module(syspath)
 syspath.on_sys_path(syspath.CLAUDE_DIR)
-GM = importlib.import_module("rediacc_hooks.guards.block_unverified_push")
+GM: Any = importlib.import_module("rediacc_hooks.guards.block_unverified_push")
 
 # `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop (test_canonical_sys_path_hop.py freezes those): a pid-stamped run directory, removed at exit and swept by the next run when this one was killed before `atexit` could fire, which is how /tmp hit its inode cap on 2026-09-24.
 _RUNTMP = importlib.util.spec_from_file_location(
@@ -2544,7 +2544,7 @@ def stub_verifier(attestations, calls):
 def judge(root, tree, receipt, attestations, module=None):
     """`v2_verdict` with the stub verifier in place, on `module` (the guard by default)."""
     mod = GM if module is None else module
-    calls = []
+    calls: list[Any] = []
     saved = mod.ATTESTATION_VERIFIER
     mod.ATTESTATION_VERIFIER = stub_verifier(attestations, calls)
     try:
@@ -2568,8 +2568,8 @@ def test_ci_receipt_origin():
     why, calls = judge(root, tree, receipt, att)
     cases.append(("", why, "CI ORIGIN: a carry from a verified CI receipt is admitted"))
     cases.append((1, len(calls), "CI ORIGIN: and the receipt was verified exactly once"))
-    memo = {}
-    stub_calls = []
+    memo: dict[Any, Any] = {}
+    stub_calls: list[Any] = []
     saved = GM.ATTESTATION_VERIFIER
     GM.ATTESTATION_VERIFIER = stub_verifier(att, stub_calls)
     try:

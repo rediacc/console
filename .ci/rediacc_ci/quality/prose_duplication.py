@@ -341,6 +341,7 @@ def report(root: pathlib.Path, family: tuple[str, ...] = FAMILY) -> int:
 # --------------------------------------------------------------------------- selftest
 
 # The selftest fixtures cover the first four files; a wider family adds files the selftest does not plant in, and must not stop this module from loading.
+_BEYOND_FIXTURES: list[str]
 CLAUDE_MD, FIX_LAUNCHER, FIX_AGENT, FIX_MERGE, *_BEYOND_FIXTURES = FAMILY
 
 # Thirty words no fixture file carries until a control plants them.

@@ -332,14 +332,19 @@ def selftest() -> int:
             'import os\nopen(os.environ["GITHUB_ENV"], "a").write("ACTION_MODULE_NAME=1\\n")\n',
             encoding="utf-8",
         )
-        for label, body in (
+        for label, run_script in (
             ("calls", "PYTHONPATH=.ci python3 -m rediacc_ci.x.writer"),
             ("silent", "echo nothing"),
         ):
             (fx / ".github" / "actions" / label).mkdir(parents=True)
             (fx / ".github" / "actions" / label / "action.yml").write_text(
                 yaml.safe_dump(
-                    {"runs": {"using": "composite", "steps": [{"shell": "bash", "run": body}]}}
+                    {
+                        "runs": {
+                            "using": "composite",
+                            "steps": [{"shell": "bash", "run": run_script}],
+                        }
+                    }
                 ),
                 encoding="utf-8",
             )
