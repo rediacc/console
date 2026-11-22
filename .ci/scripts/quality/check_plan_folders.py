@@ -21,6 +21,8 @@ TEN FINDINGS, EACH WITH A PLANTED CONTROL:
 
 F10 REPLACES F3 FOR A BOUND PLAN, AND IS AS FATAL AS F3 WAS. F3 names `--sweep --write` as the fix, and the sweep refuses a bound plan (`wl_planbind`, PLAN-plan-compaction-bindings CB3), so an F3 on a bound plan demanded a deletion the binding rule forbids. F10 names the bindings and their fixes instead. It is fatal with no baseline because `check:ci-plan-bindings` already reds, with no baseline, on every terminal plan a live binding holds: a tree where F10 fires is a tree that gate has already failed, so F10 cannot turn a green tree red. An open box that `wl_planbind` RELEASES (re-homed under a resolving `Ruling:`, or dropped by a closed operator ruling) does not bind; the sweep deletes such a plan and prints each released box with the note that released it, so a deleted `- [ ]` is never silent.
 
+F2 IS HELD, NOT FATAL, FOR A FINISHED PLAN IN agent/plans/ THAT SOMETHING BINDS. F2's fix there is `--move` into _done/ or _removed/, and the mover refuses a bound plan through the same `_binding_refusal`; the other exit, an unfinished `Status:`, is what check:ci-plan-record's RF refuses over an all-ticked plan. Measured 2026-11-22: a peer session's open items bound 17 such plans, and no `Status:` passed both gates. Such a plan prints as an `F2-held` advisory naming each binding on every run, the success line counts it, and the moment its bindings clear it is a fatal F2 again. Holding F2 opens no hole: check:ci-plan-bindings reds, with no baseline, on every finished plan a live binding holds (measured 2026-11-22: the same 17, and nothing else), so the tree stays red until the bindings are released, by the gate whose fix that is. A live plan in a terminal folder keeps F2 fatal, bound or not. The refusal's `--plan-revive` exit is printed only for a compacted or parked record, the only thing that verb accepts.
+
 F1 IS FATAL SINCE THE MIGRATION LANDED. It spent exactly one stage as an advisory, because a gate cannot red on the day it arrives over a tree where all 103 plans still sit at the legacy path: that is the shape that gets suppressed within a day, which is the failure docs/agent-reference/suppressions.md exists to prevent. The 103 moved in S4, so the escape hatch that made the
 advisory possible is gone rather than left behind switched off -- a flag whose only job is finished is a suppression waiting for a reader who does not know why it is there.
 
@@ -491,6 +493,43 @@ def selftest() -> int:
         {"F3"},
     )
 
+    # B8. F2 on a finished plan in agent/plans/ that the mover refuses is held, not fatal (2026-11-22: 17 all-ticked plans bound by a peer's open items had no `Status:` both F2 and RF accept). The twin with nothing binding stays F2, and the reverse direction stays F2 even when bound.
+    root_rel = "agent/plans/PLAN-closed.md"
+    root_f2 = PL.finding_f2(_plans([(root_rel, CLEAN_DONE)]))
+    kept, held = _hold_unmovable(nowhere, root_f2, {root_rel: CLEAN_DONE}, [open_item])
+    tally.check(
+        "B8 a finished plan an open item binds is F2-held naming the item, not F2",
+        (_codes(kept), _codes(held), "#aa11bb22" in (held[0].message if held else "")),
+        (set(), {"F2-held"}, True),
+    )
+    tally.check(
+        "B9 the same plan with nothing binding stays a fatal F2",
+        tuple(map(_codes, _hold_unmovable(nowhere, root_f2, {root_rel: CLEAN_DONE}, []))),
+        ({"F2"}, set()),
+    )
+    reverse_f2 = PL.finding_f2(_plans([(done_rel, live_in_done)]))
+    tally.check(
+        "B10 a live plan in _done/ stays F2 even while bound",
+        tuple(
+            map(_codes, _hold_unmovable(nowhere, reverse_f2, {done_rel: live_in_done}, [open_item]))
+        ),
+        ({"F2"}, set()),
+    )
+
+    # B11. `--plan-revive` accepts only a compacted or parked record, so the refusal offers it only there.
+    record_text = plant(CLEAN_DONE, "Status: done", "Status: compacted")
+    plain_refusal = _binding_refusal(nowhere, bound_rel, bound_texts, [open_item])
+    record_refusal = _binding_refusal(nowhere, bound_rel, {bound_rel: record_text}, [open_item])
+    tally.check(
+        "B11 a plain plan's refusal drops the revive exit, a record's keeps it",
+        (
+            "#aa11bb22" in plain_refusal,
+            "--plan-revive" in plain_refusal,
+            "--plan-revive <me> PLAN-closed.md" in record_refusal,
+        ),
+        (True, False, True),
+    )
+
     return 0 if tally.report() else 1
 
 
@@ -503,11 +542,42 @@ def _planbind():
     return importlib.import_module("wl_planbind")
 
 
+#: The line `wl_planbind.render` closes every refusal with. `worklist.py --plan-revive` refuses anything that is not a compacted or parked record ("is not a record (its Status is not compacted or parked)"), so on a plain plan the line names an exit that does not open.
+REVIVE_HINT_PREFIX = "  work still wanted: worklist.py --plan-revive "
+
+
+def _is_record(text: str) -> bool:
+    """`wl_planrec.is_record`, the predicate `--plan-revive` itself refuses on, imported by name at call time like `_planbind`."""
+    paths.on_sys_path(paths.hooks_stop_dir())
+    return bool(importlib.import_module("wl_planrec").is_record(text))
+
+
+def _honest_refusal(refusal: str, plan_text: str) -> str:
+    """`refusal` without the `--plan-revive` exit unless the plan is a record that verb accepts."""
+    if not refusal or _is_record(plan_text):
+        return refusal
+    return "\n".join(
+        line for line in refusal.splitlines() if not line.startswith(REVIVE_HINT_PREFIX)
+    )
+
+
 def _binding_refusal(root: pathlib.Path, rel: str, texts=None, items=None) -> str:
-    """The refusal text naming every binding of `rel`, or "" when nothing holds it. `texts` and `items` replace the tree reads (the selftest's door)."""
+    """The refusal text naming every binding of `rel`, or "" when nothing holds it. `texts` and `items` replace the tree reads (the selftest's door). The `--plan-revive` exit is kept only for a record (`_honest_refusal`)."""
     pb = _planbind()
     index_text = None if texts is None else ""
-    return pb.render(rel, pb.bindings(root, rel, texts=texts, items=items, index_text=index_text))
+    refusal = pb.render(
+        rel, pb.bindings(root, rel, texts=texts, items=items, index_text=index_text)
+    )
+    if not refusal:
+        return ""
+    if texts is not None:
+        plan_text = texts.get(rel, "")
+    else:
+        try:
+            plan_text = (root / rel).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            plan_text = ""
+    return _honest_refusal(refusal, plan_text)
 
 
 def _split_bound(root: pathlib.Path, rels: list[str], texts=None, items=None):
@@ -557,6 +627,32 @@ def _hold_bound(
     return out
 
 
+def _hold_unmovable(root: pathlib.Path, found: list[PL.Finding], texts=None, items=None):
+    """(found, held): every F2 on a FINISHED plan still in agent/plans/ that something binds, taken out of `found` into `held`.
+
+    F2's fix for that plan is `--move` into its terminal folder, and `move()` refuses a bound plan through this same `_binding_refusal`; the plan's other exit, an unfinished `Status:`, is what check:ci-plan-record's RF refuses over an all-ticked plan. So while a binding stands (an open item of a session that may not be ticked here, most often) no `Status:` passes both gates, and a fatal F2 there demands what the mover forbids. The held plan is never silent: `run()` prints each one with its bindings on every run, and once they clear the same plan is a fatal F2 again. The reverse direction (a live plan in a terminal folder) keeps F2 fatal: its move is out of a terminal folder, not into one."""
+    kept: list[PL.Finding] = []
+    held: list[PL.Finding] = []
+    for finding in found:
+        unmovable = finding.code == "F2" and PL.folder_of(finding.rel) == PL.PLANS_DIR
+        refusal = _binding_refusal(root, finding.rel, texts, items) if unmovable else ""
+        if not refusal:
+            kept.append(finding)
+            continue
+        held.append(
+            PL.Finding(
+                "F2-held",
+                finding.rel,
+                "%s is finished and belongs in a terminal folder, but `--move` refuses it while "
+                "the bindings below stand, so F2 is held rather than fatal. It becomes F2 again "
+                "the moment they clear; then run `check_plan_folders.py --move %s`. "
+                "check:ci-plan-bindings stays red on it until then.\n%s"
+                % (finding.rel, finding.rel, refusal),
+            )
+        )
+    return kept, held
+
+
 def _released_boxes(text: str) -> list[str]:
     """Each open box of a plan the sweep is about to delete, with the indented note lines under it (where a re-home or a `dropped by ruling #<id>` is written). The binding decision released every one of them, or the plan would not be due; printing them keeps a deleted `- [ ]` visible in the sweep's own output."""
     paths.on_sys_path(paths.hooks_stop_dir())
@@ -587,17 +683,23 @@ def run(root: pathlib.Path, config: dict) -> int:
         blob_resolves=PL.blob_resolves(root, {t.blob for t in stones}),
     )
     found = _hold_bound(root, found, int(config["terminal_days"]))
+    found, held = _hold_unmovable(root, found)
+    for advisory in held:
+        print("ℹ %s %s" % (advisory.code, advisory.message))
     for finding in found:
         print("✗ %s %s" % (finding.code, finding.message), file=sys.stderr)
     if found:
         return 1
     print(
-        "✓ plan folders: %d plan(s) and %d stub(s) across %s, %d tombstone(s)"
+        "✓ plan folders: %d plan(s) and %d stub(s) across %s, %d tombstone(s), "
+        "%d finished plan(s) held in %s/ by a binding"
         % (
             len([p for p in plans if not PL.is_stub(p)]),
             len([p for p in plans if PL.is_stub(p)]),
             ", ".join(PL.PLAN_DIRS),
             len(stones),
+            len(held),
+            PL.PLANS_DIR,
         )
     )
     print(

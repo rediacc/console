@@ -214,6 +214,84 @@ def test_a_finished_plan_in_the_active_folder_is_fatal(gate, tmp_path):
     gate.log_pass("F2 fires on a folder that disagrees with the status")
 
 
+_HELD_REL = "agent/plans/PLAN-held.md"
+_HELD = "# PLAN: held\nStatus: done -- every box ticked\nFirst-Seen: 2026-10-01\n\n- [x] a box\n"
+
+
+def _store_item(root: pathlib.Path, iid: str, text: str, state: str = " ") -> None:
+    """A committed worklist store holding one item `iid`, added open and then set to `state`."""
+    events = [
+        {
+            "ev": "add",
+            "id": iid,
+            "at": "2026-10-01T00:00:00Z",
+            "by": "d00d0000",
+            "s": " ",
+            "o": "d00d0000",
+            "t": "(d00d0000) %s" % text,
+            "ns": 1,
+        }
+    ]
+    if state != " ":
+        events.append(
+            {
+                "ev": "state",
+                "id": iid,
+                "at": "2026-10-01T00:01:00Z",
+                "by": "d00d0000",
+                "s": state,
+                "note": "evidence",
+                "ns": 2,
+            }
+        )
+    _write(root, "agent/worklist/d00d0000.jsonl", "".join(json.dumps(e) + "\n" for e in events))
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "store item")
+
+
+def test_a_finished_plan_an_open_item_binds_is_held_not_f2(gate, tmp_path):
+    """The 2026-11-22 contradiction, control first. F2 demands `--move` into _done/, and `--move` refuses a plan an open item binds, so a peer's open item left 17 all-ticked plans with no `Status:` both gates accept. The twin with no item stays fatal F2; the held plan exits 0 and is still printed, naming the item; ticking the item makes F2 fatal again."""
+    control = _seed(tmp_path / "control", {_HELD_REL: _HELD})
+    result = _gate(control)
+    gate.assert_exit(1, result, "the control: an unbound finished plan in agent/plans/ is F2")
+    gate.assert_contains(result.err, "F2 %s" % _HELD_REL, "the control names the file")
+
+    root = _seed(tmp_path / "bound", {_HELD_REL: _HELD})
+    _store_item(root, "82ec5326", "LP-bench proof for PLAN-held.md")
+    moved = _gate(root, "--move", _HELD_REL)
+    gate.assert_exit(1, moved, "the mover refuses the bound plan, so F2's fix is unavailable")
+    held = _gate(root)
+    gate.assert_exit(0, held, "a gate never demands a move the mover refuses")
+    gate.assert_not_contains(held.err, "F2 %s" % _HELD_REL, "the held plan is not a finding")
+    gate.assert_contains(held.out, "F2-held %s" % _HELD_REL, "the held plan stays visible")
+    gate.assert_contains(held.out, "#82ec5326", "the advisory names the binding item")
+    gate.assert_contains(held.out, "1 finished plan(s) held", "the success line counts it")
+
+    _store_item(root, "82ec5326", "LP-bench proof for PLAN-held.md", state="x")
+    cleared = _gate(root)
+    gate.assert_exit(1, cleared, "once the binding clears, F2 is fatal again")
+    gate.assert_contains(cleared.err, "F2 %s" % _HELD_REL, "and names the file")
+    gate.log_pass("F2 holds exactly while the mover's own binding check refuses the move")
+
+
+def test_the_move_refusal_offers_plan_revive_only_for_a_record(gate, tmp_path):
+    """`worklist.py --plan-revive` refuses anything but a compacted or parked record, so the refusal of a plain plan must not offer it. The twin, a compacted record, keeps the line. A record belongs in agent/plans/ (it compacts in place), so the twin sits in _done/: that is the one place the mover reaches a record's bindings."""
+    record_rel = "agent/plans/_done/PLAN-rec.md"
+    record = "# PLAN: rec\nStatus: compacted\nFirst-Seen: 2026-10-01\n\n## Boxes\n"
+    root = _seed(tmp_path, {_HELD_REL: _HELD, record_rel: record})
+    _store_item(root, "82ec5326", "proof for PLAN-held.md and PLAN-rec.md")
+    plain = _gate(root, "--move", _HELD_REL)
+    gate.assert_exit(1, plain, "the bound plain plan is refused")
+    gate.assert_contains(plain.err, "PLAN-held.md is bound by 1 thing(s)", "the refusal names it")
+    gate.assert_not_contains(plain.err, "--plan-revive", "a plain plan is never sent to revive")
+    rec = _gate(root, "--move", record_rel)
+    gate.assert_exit(1, rec, "the bound record is refused")
+    gate.assert_contains(
+        rec.err, "--plan-revive <me> PLAN-rec.md", "a record keeps the revive exit"
+    )
+    gate.log_pass("the revive exit appears only where --plan-revive accepts the plan")
+
+
 def test_a_terminal_plan_past_its_retention_is_fatal(gate, tmp_path):
     root = _seed(
         tmp_path,
