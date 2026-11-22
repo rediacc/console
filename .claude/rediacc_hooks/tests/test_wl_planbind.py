@@ -301,8 +301,11 @@ def test_render_lists_every_binding_and_the_next_commands():
     text = plan(boxes=("[ ] T1 open work here",))
     found = run({TARGET: text}, [item("aa11bb22", " ", "finish PLAN-x.md")])
     out = B.render(TARGET, found)
-    for needle in ("#aa11bb22", "open box", "--tick", "--plan-revive"):
+    for needle in ("#aa11bb22", "open box", "--tick"):
         assert needle in out
+    # --plan-revive accepts only compacted or parked records, so a plain plan is never sent there.
+    assert "--plan-revive" not in out
+    assert "--plan-revive" in B.render(TARGET, found, record=True)
     assert B.render(TARGET, []) == ""
 
 
@@ -373,7 +376,8 @@ def test_compact_refuses_while_an_open_item_cites_the_plan(tmp_path, park):
     with pytest.raises(R.BoundError) as exc:
         R.compact(root, TARGET, "deadbeef", why="auto", park=park)
     assert "#aa11bb22" in str(exc.value)
-    assert "--plan-revive" in str(exc.value)
+    # compact refuses a live plan, which --plan-revive would refuse in turn: the hint must not appear.
+    assert "--plan-revive" not in str(exc.value)
 
 
 def test_compact_proceeds_once_the_item_is_ticked(tmp_path):

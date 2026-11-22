@@ -312,8 +312,10 @@ def bindings(
     return out
 
 
-def render(rel: str, found: list[Binding]) -> str:
-    """The refusal text for a non-empty list: every binding, then the commands that release it. "" for an empty list."""
+def render(rel: str, found: list[Binding], record: bool = False) -> str:
+    """The refusal text for a non-empty list: every binding, then the commands that release it. "" for an empty list.
+
+    The `--plan-revive` exit is offered only when `record` is true: that verb accepts compacted or parked records alone, so naming it for a plain plan sends the reader to a refusal."""
     if not found:
         return ""
     base = rel.rsplit("/", 1)[-1]
@@ -338,5 +340,6 @@ def render(rel: str, found: list[Binding]) -> str:
         lines.append("  dependent: finish that plan, or drop this plan from its `Depends-On:`")
     if KIND_CITING_BOX in kinds:
         lines.append("  citing-box: tick that box, or move its citation to the plan that took over")
-    lines.append("  work still wanted: worklist.py --plan-revive <me> %s" % base)
+    if record:
+        lines.append("  work still wanted: worklist.py --plan-revive <me> %s" % base)
     return "\n".join(lines)

@@ -543,7 +543,6 @@ def _planbind():
 
 
 #: The line `wl_planbind.render` closes every refusal with. `worklist.py --plan-revive` refuses anything that is not a compacted or parked record ("is not a record (its Status is not compacted or parked)"), so on a plain plan the line names an exit that does not open.
-REVIVE_HINT_PREFIX = "  work still wanted: worklist.py --plan-revive "
 
 
 def _is_record(text: str) -> bool:
@@ -552,24 +551,10 @@ def _is_record(text: str) -> bool:
     return bool(importlib.import_module("wl_planrec").is_record(text))
 
 
-def _honest_refusal(refusal: str, plan_text: str) -> str:
-    """`refusal` without the `--plan-revive` exit unless the plan is a record that verb accepts."""
-    if not refusal or _is_record(plan_text):
-        return refusal
-    return "\n".join(
-        line for line in refusal.splitlines() if not line.startswith(REVIVE_HINT_PREFIX)
-    )
-
-
 def _binding_refusal(root: pathlib.Path, rel: str, texts=None, items=None) -> str:
-    """The refusal text naming every binding of `rel`, or "" when nothing holds it. `texts` and `items` replace the tree reads (the selftest's door). The `--plan-revive` exit is kept only for a record (`_honest_refusal`)."""
+    """The refusal text naming every binding of `rel`, or "" when nothing holds it. `texts` and `items` replace the tree reads (the selftest's door). The `--plan-revive` exit appears only for a record (`wl_planbind.render(record=...)`)."""
     pb = _planbind()
     index_text = None if texts is None else ""
-    refusal = pb.render(
-        rel, pb.bindings(root, rel, texts=texts, items=items, index_text=index_text)
-    )
-    if not refusal:
-        return ""
     if texts is not None:
         plan_text = texts.get(rel, "")
     else:
@@ -577,7 +562,11 @@ def _binding_refusal(root: pathlib.Path, rel: str, texts=None, items=None) -> st
             plan_text = (root / rel).read_text(encoding="utf-8", errors="replace")
         except OSError:
             plan_text = ""
-    return _honest_refusal(refusal, plan_text)
+    return pb.render(
+        rel,
+        pb.bindings(root, rel, texts=texts, items=items, index_text=index_text),
+        record=_is_record(plan_text),
+    )
 
 
 def _split_bound(root: pathlib.Path, rels: list[str], texts=None, items=None):
