@@ -711,7 +711,7 @@ def _run_nested(argv, root, cwd):
 
 
 def _two_nested_runs(tmp_path, own_basetemp):
-    """Run two nested pytests at once with a scratch temp root; return (rcs, shared pytest-current paths)."""
+    """Run two nested pytests at once with a scratch temp root; return (rcs, every path they left under that root)."""
     root = tmp_path / "temproot"
     root.mkdir()
     jobs = []
@@ -729,13 +729,19 @@ def _two_nested_runs(tmp_path, own_basetemp):
         jobs.append((argv, root, work))
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         rcs = list(pool.map(lambda job: _run_nested(*job), jobs))
-    return rcs, list(root.glob("pytest-of-*/pytest-current"))
+    return rcs, sorted(root.rglob("*"))
+
+
+def test_a_nested_run_past_its_timeout_is_a_verdict_not_a_traceback(tmp_path, monkeypatch):
+    monkeypatch.setitem(globals(), "NESTED_PYTEST_TIMEOUT", 0.2)
+    argv = [sys.executable, "-c", "import time; time.sleep(30)"]
+    assert _run_nested(argv, tmp_path, tmp_path) == NESTED_TIMED_OUT
 
 
 def test_nested_pytest_with_own_basetemp_never_touches_the_shared_root(tmp_path):
     rcs, shared = _two_nested_runs(tmp_path, own_basetemp=True)
     assert rcs == [0, 0]
-    assert shared == [], "a nested pytest used the shared pytest-of-<user> root"
+    assert shared == [], "a nested pytest wrote under the shared pytest-of-<user> root"
 
 
 def test_control_nested_pytest_without_basetemp_uses_the_shared_root(tmp_path):

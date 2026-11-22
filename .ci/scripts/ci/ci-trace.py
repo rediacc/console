@@ -226,7 +226,7 @@ def _run_snapshot(root, run_id):
 
 
 def _jobs_as_contexts(jobs):
-    """`gh run view --json jobs` rows in the rollup's CheckRun shape, so ONE green rule (wl_ci.ci_gate) judges both reads."""
+    """REST job rows (`_run_snapshot`, from `D.run_jobs`, with `databaseId` and `url` filled from `id` and `html_url`) in the rollup's CheckRun shape, so ONE green rule (wl_ci.ci_gate) judges both reads."""
     return [
         {
             "__typename": "CheckRun",

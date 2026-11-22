@@ -122,8 +122,10 @@ def test_delta_terms_acceptance_row_names_the_version_in_force() -> None:
     assert "INSERT OR IGNORE INTO terms_acceptances" in sql
     assert "'smoke-user-pr-7'" in sql
     assert "'smoke-terms-pr-7'" in sql
-    assert "'2026-11-11'" in sql
-    assert "f4e7d87cb789c0b60443f2f96a5b1170b542cd8c6a57b0c1b6446c845e3a7502" in sql
+    # Read from the manifest, so the next Terms bump moves the expectation with the seed.
+    in_force = seed_smoke.terms_in_force("2026-11-21")
+    assert "'%s'" % in_force["version"] in sql
+    assert in_force["sha256"] in sql
     # Before the second version took effect, the first one is the one in force.
     assert seed_smoke.terms_in_force("2026-06-01")["version"] == "2026-03-15"
 

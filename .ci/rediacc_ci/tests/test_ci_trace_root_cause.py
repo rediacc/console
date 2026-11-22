@@ -418,6 +418,21 @@ def test_run_snapshot_persistent_502_is_still_unreadable(ct, monkeypatch):
     assert naps == [5.0, 15.0]
 
 
+def test_run_snapshot_persistent_jobs_502_is_unreadable_not_green(ct, monkeypatch):
+    """CONTROL: the run reads, the jobs page keeps answering 502: the snapshot names the jobs read and carries no status."""
+
+    def replies(path, _n):
+        if path == "actions/runs/1":
+            return _P(0, out=_run_obj())
+        return _P(1, err="HTTP 502: Server Error")
+
+    snap, _calls, _naps = _snapshot(ct, monkeypatch, replies)
+    assert snap[0] is None
+    assert snap[1] is None
+    assert "could not read the jobs of run 1" in snap[2]
+    assert "HTTP 502" in snap[2]
+
+
 def test_run_snapshot_pages_a_run_of_more_than_100_jobs(ct, monkeypatch):
     """237 jobs: no read asks for 100 per page (GitHub 502s that page on a large run), and every job is returned."""
     size = ct.D.JOBS_PAGE_SIZE

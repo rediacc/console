@@ -1009,7 +1009,7 @@ def test_dropping_the_cd_presets_workflows_grant_from_the_real_perms_script_is_r
     proc = run_real(tmp_path, APP_TOKEN_PERMS_FILE=text)
     assert proc.returncode == 1, proc.stderr
     assert "INVARIANT-FAIL: cd-preset:" in proc.stderr
-    assert "perms.py" in proc.stderr or "cd" in proc.stderr
+    assert "Restore `perm-workflows=write` and `permission-workflows`" in proc.stderr
     # CONTROL: the unmutated script through the same seam is green, so the red above is the mutation and not the seam.
     clean_dir = tmp_path / "clean"
     clean_dir.mkdir()
