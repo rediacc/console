@@ -40,11 +40,11 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Development tree: branch 1121-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (3 epic(s)):
-  - epic 79b7e92e, no plan, 222 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 223 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
-- Writers: 0 live of writer_cap 25 (session fee07197).
-- Leased items: 8: #1abea6ac (worker:a7f345f3ce67fa836, ace763dd), #3b82cf28 (worker:bs2zwmetr, ace763dd), #47ce3621 (worker:bs2zwmetr, ace763dd), #572f74b2 (worker:aa2d0491a03e29325, ace763dd), #73b32419 (worker:bs2zwmetr, ace763dd), #95ffeb93 (worker:bs2zwmetr, ace763dd), #ce9966d1 (worker:bs2zwmetr, ace763dd), #dc17bd4d (worker:a7f345f3ce67fa836, ace763dd).
+- Writers: 3 live of writer_cap 25 (session ace763dd): worker:a7f345f3ce67fa836, worker:aa2d0491a03e29325, worker:a18f81e60e6140fc4.
+- Leased items: 8: #1abea6ac (worker:a7f345f3ce67fa836, ace763dd), #3b82cf28 (worker:bs2zwmetr, ace763dd), #47ce3621 (worker:bs2zwmetr, ace763dd), #572f74b2 (worker:aa2d0491a03e29325, ace763dd), #73b32419 (worker:bs2zwmetr, ace763dd), #95ffeb93 (worker:a18f81e60e6140fc4, ace763dd), #ce9966d1 (worker:bs2zwmetr, ace763dd), #dc17bd4d (worker:a7f345f3ce67fa836, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
@@ -220,48 +220,47 @@ Promoted: 17 of 77 plans done, 1239 of 1562 boxes done (79%).
 3. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
 4. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (3 of 5 boxes ticked)
 5. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (2 of 10 boxes ticked)
-6. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-7. agent/plans/PLAN-rmcp-writeback.md -- P0, approved, not started
-8. agent/plans/PLAN-backup-schedule-origin-guard.md -- P1, proposed, not started
-9. agent/plans/PLAN-console-private.md -- P1, proposed, not started
-10. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-11. agent/plans/PLAN-nightly-green.md -- P1, proposed, not started
-12. agent/plans/PLAN-release-credits-compliance.md -- P1, proposed, not started
-13. agent/plans/PLAN-rmcp-executor-hardening.md -- P1, approved, not started, dep-blocked
-14. agent/plans/PLAN-rmcp-orphan-recovery.md -- P1, approved, not started, dep-blocked
-15. agent/plans/PLAN-rmcp-policy-record.md -- P1, approved, not started
-16. agent/plans/PLAN-rmcp-decide.md -- P1, approved, not started, dep-blocked
-17. agent/plans/PLAN-rmcp-agent-grants.md -- P1, approved, not started, dep-blocked
-18. agent/plans/PLAN-rmcp-config-edit-removal.md -- P1, approved, not started, dep-blocked
-19. agent/plans/PLAN-rmcp-local-mcp.md -- P1, approved, not started, dep-blocked
-20. agent/plans/PLAN-rmcp-remote-worker.md -- P1, approved, not started, dep-blocked
-21. agent/plans/PLAN-rmcp-docs.md -- P1, approved, not started, dep-blocked
-22. agent/plans/PLAN-stop-hook-retro-20261117.md -- P1, ready, not started
-23. agent/plans/PLAN-terms-region-notice.md -- P1, proposed, not started
-24. agent/plans/PLAN-canary-on-clusters.md -- P2, proposed, not started
-25. agent/plans/PLAN-cluster-crosssite-transport.md -- P2, proposed, not started
-26. agent/plans/PLAN-cluster-live-proofs.md -- P2, proposed, not started
-27. agent/plans/PLAN-csi-staging-redesign.md -- P2, proposed, not started
-28. agent/plans/PLAN-datastore-migrate-correctness.md -- P2, proposed, not started
-29. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
-30. agent/plans/PLAN-ghcr-registry-cleanup.md -- P2, proposed, not started
-31. agent/plans/PLAN-kubelet-cgroup-rediacc-slice.md -- P2, proposed, not started
-32. agent/plans/PLAN-multicluster-local-suite.md -- P2, proposed, not started, dep-blocked
-33. agent/plans/PLAN-portal-analytics.md -- P2, proposed, not started
-34. agent/plans/PLAN-pr-path-ephemeral-credentials.md -- P2, proposed, not started
-35. agent/plans/PLAN-reggate-debt-collection.md -- P2, proposed, not started
-36. agent/plans/PLAN-retire-nightlies-and-mentions.md -- P2, proposed, not started
-37. agent/plans/PLAN-stop-hook-retro-20261122.md -- P2, ready, not started
-38. agent/plans/PLAN-tutorial-recorder-licence.md -- P2, proposed, not started
-39. agent/plans/PLAN-www-funnel-truthfulness.md -- P2, proposed, not started
-40. agent/plans/PLAN-cncf-conformance.md -- P3, approved, not started
-41. agent/plans/PLAN-elite-to-onprem-rename.md -- P3, proposed, not started, dep-blocked
-42. agent/plans/PLAN-family-loop-migrate.md -- P3, proposed, not started, dep-blocked
-43. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
-44. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-45. agent/plans/PLAN-release-path-protection-2027.md -- P3, approved, not started
-46. agent/plans/PLAN-renet-i18n-baseline-drain.md -- P3, proposed, not started
-47. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
-48. agent/plans/PLAN-vscode-browser-exposure.md -- P3, proposed, not started
-49. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, not started, dep-blocked
+6. agent/plans/PLAN-rmcp-writeback.md -- P0, approved, not started
+7. agent/plans/PLAN-backup-schedule-origin-guard.md -- P1, proposed, not started
+8. agent/plans/PLAN-console-private.md -- P1, proposed, not started
+9. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
+10. agent/plans/PLAN-nightly-green.md -- P1, proposed, not started
+11. agent/plans/PLAN-release-credits-compliance.md -- P1, proposed, not started
+12. agent/plans/PLAN-rmcp-executor-hardening.md -- P1, approved, not started, dep-blocked
+13. agent/plans/PLAN-rmcp-orphan-recovery.md -- P1, approved, not started, dep-blocked
+14. agent/plans/PLAN-rmcp-policy-record.md -- P1, approved, not started
+15. agent/plans/PLAN-rmcp-decide.md -- P1, approved, not started, dep-blocked
+16. agent/plans/PLAN-rmcp-agent-grants.md -- P1, approved, not started, dep-blocked
+17. agent/plans/PLAN-rmcp-config-edit-removal.md -- P1, approved, not started, dep-blocked
+18. agent/plans/PLAN-rmcp-local-mcp.md -- P1, approved, not started, dep-blocked
+19. agent/plans/PLAN-rmcp-remote-worker.md -- P1, approved, not started, dep-blocked
+20. agent/plans/PLAN-rmcp-docs.md -- P1, approved, not started, dep-blocked
+21. agent/plans/PLAN-stop-hook-retro-20261117.md -- P1, ready, not started
+22. agent/plans/PLAN-terms-region-notice.md -- P1, proposed, not started
+23. agent/plans/PLAN-canary-on-clusters.md -- P2, proposed, not started
+24. agent/plans/PLAN-cluster-crosssite-transport.md -- P2, proposed, not started
+25. agent/plans/PLAN-cluster-live-proofs.md -- P2, proposed, not started
+26. agent/plans/PLAN-csi-staging-redesign.md -- P2, proposed, not started
+27. agent/plans/PLAN-datastore-migrate-correctness.md -- P2, proposed, not started
+28. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
+29. agent/plans/PLAN-ghcr-registry-cleanup.md -- P2, proposed, not started
+30. agent/plans/PLAN-kubelet-cgroup-rediacc-slice.md -- P2, proposed, not started
+31. agent/plans/PLAN-multicluster-local-suite.md -- P2, proposed, not started, dep-blocked
+32. agent/plans/PLAN-portal-analytics.md -- P2, proposed, not started
+33. agent/plans/PLAN-pr-path-ephemeral-credentials.md -- P2, proposed, not started
+34. agent/plans/PLAN-reggate-debt-collection.md -- P2, proposed, not started
+35. agent/plans/PLAN-retire-nightlies-and-mentions.md -- P2, proposed, not started
+36. agent/plans/PLAN-stop-hook-retro-20261122.md -- P2, ready, not started
+37. agent/plans/PLAN-tutorial-recorder-licence.md -- P2, proposed, not started
+38. agent/plans/PLAN-www-funnel-truthfulness.md -- P2, proposed, not started
+39. agent/plans/PLAN-cncf-conformance.md -- P3, approved, not started
+40. agent/plans/PLAN-elite-to-onprem-rename.md -- P3, proposed, not started, dep-blocked
+41. agent/plans/PLAN-family-loop-migrate.md -- P3, proposed, not started, dep-blocked
+42. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
+43. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+44. agent/plans/PLAN-release-path-protection-2027.md -- P3, approved, not started
+45. agent/plans/PLAN-renet-i18n-baseline-drain.md -- P3, proposed, not started
+46. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
+47. agent/plans/PLAN-vscode-browser-exposure.md -- P3, proposed, not started
+48. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, not started, dep-blocked
 <!-- queue:generated:end -->
