@@ -1,8 +1,9 @@
 """The judge is handed the facts its checklist used to make it read for (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.4, .5, .7).
 
-  R20261110.4  MISSING IDS is a set difference against the message, and WAKE TIMER comes from a live wl_wake lock. At 20:36:18 and 08:20:57 the judge objected that a message said only "wake timer is armed", while the hook's own lock held the fire time.
+  R20261110.4  WAKE TIMER comes from a live wl_wake lock. At 20:36:18 and 08:20:57 the judge objected that a message said only "wake timer is armed", while the hook's own lock held the fire time.
   R20261110.5  ITEM WORKERS names every worker a remaining item was leased to, with its agent type and report title. At 23:20:25 the judge demanded a Plan agent for K1.7's root cause, which diagnosis agent ab68f85bb599acb4a had already returned.
   R20261110.7  A content-free continue ("Duplicate call ignored." / "Ignore.", 21:21:06) reads as stop and is reported as the `judge-contentless` advisory.
+  J1 (agent/plans/PLAN-stop-hook-store-status.md D5)  The missing-ids fact is gone: the judge reads STORE FRESHNESS and CHANGES SINCE LAST STOP, computed from the store, and a continue that only demands a status table reads as stop and is reported as `judge-status-demand`.
 
 Every case has its inverse, and the last two drive the real Stop hook.
 """
@@ -81,32 +82,80 @@ def plant_wake(pid):
     )
 
 
-def facts(message, recs=RECS, reports=(), read_only=frozenset({"Plan", "Explore"})):
+def facts(
+    _message="",
+    recs=RECS,
+    reports=(),
+    read_only=frozenset({"Plan", "Explore"}),
+    rows=(),
+    changes=(),
+    first=False,
+):
+    """`_judge_facts` over RECS; the message is no input any more (J1), and the leading argument only keeps the call sites reading as before."""
     return CK._judge_facts(
-        ME, message, recs, ["7"], "/nonexistent", reports=list(reports), read_only=read_only
+        ME,
+        recs,
+        ["7"],
+        "/nonexistent",
+        reports=list(reports),
+        read_only=read_only,
+        store_rows=list(rows),
+        store_changes=list(changes),
+        store_first=first,
     )
 
 
-# ---- R20261110.4: MISSING IDS ---------------------------------------------------------------------
+# ---- J1: the store status, not the message ---------------------------------------------------------
+
+
+def row(rid, cls, age=5, why=""):
+    return {"id": rid, "cls": cls, "age": age, "why": why}
+
+
+STALE_WHY = "quiet 130m with no live verified worker and no blocker"
+ROWS = [
+    row("a1a1a1a1", "stale", 130, STALE_WHY),
+    row("b2b2b2b2", "live"),
+    row("c3c3c3c3", "moved"),
+]
 
 
 @pytest.mark.usefixtures("tmpdir_root")
-def test_missing_ids_is_the_set_difference_against_the_message():
+def test_no_fact_reads_the_message_for_ids():
     got = facts(MSG_0820)
     assert got["tracked"] == ["a1a1a1a1", "b2b2b2b2", "c3c3c3c3", "7"]
-    assert got["missing_ids"] == ["c3c3c3c3", "7"]
+    assert "missing_ids" not in got
+    # The same facts whatever the message names: nothing here is a reading of it.
+    assert facts("") == facts(MSG_0820 + "\n- #c3c3c3c3 parked\n- task #7 pending")
 
 
 @pytest.mark.usefixtures("tmpdir_root")
-def test_inverse_a_message_naming_every_id_misses_none():
-    got = facts(MSG_0820 + "\n- #c3c3c3c3 parked\n- task #7 pending")
-    assert got["missing_ids"] == []
+def test_freshness_counts_the_classes_and_lists_the_stale_rows():
+    got = facts(rows=ROWS)["freshness"]
+    assert got == {
+        "counts": {"stale": 1, "live": 1, "moved": 1},
+        "open": 3,
+        "stale": [("a1a1a1a1", 130, STALE_WHY)],
+    }
 
 
 @pytest.mark.usefixtures("tmpdir_root")
-def test_a_bare_id_counts_and_a_longer_hex_run_does_not():
-    got = facts("a1a1a1a1 b2b2b2b2ff #c3c3c3c3 7")
-    assert got["missing_ids"] == ["b2b2b2b2"]
+def test_inverse_no_stale_row_lists_none():
+    assert facts(rows=ROWS[1:])["freshness"]["stale"] == []
+
+
+@pytest.mark.usefixtures("tmpdir_root")
+def test_changes_are_capped_with_the_overflow_counted():
+    ss = wlfix.import_wl("wl_storestatus")
+    many = [
+        {"id": "%08x" % n, "kind": "note", "detail": "d%d" % n} for n in range(ss.CHANGES_CAP + 3)
+    ]
+    got = facts(changes=many)["changes"]
+    assert len(got["rows"]) == ss.CHANGES_CAP
+    assert got["more"] == 3
+    assert got["first"] is False
+    assert facts(changes=many[:2])["changes"]["more"] == 0
+    assert facts(first=True)["changes"]["first"] is True
 
 
 # ---- R20261110.4: WAKE TIMER ----------------------------------------------------------------------
@@ -193,7 +242,7 @@ def test_the_report_index_is_read_from_the_store_by_default(tmp_path, monkeypatc
     monkeypatch.setenv("WORKLIST_REPORTS_DIR", str(store))
     rec, row = k17("general-purpose")
     (store / "index.jsonl").write_text(json.dumps(dict(row, ev="report")) + "\n", "utf-8")
-    got = CK._judge_facts(ME, "", [rec], [], str(tmp_path), read_only=frozenset({"Plan"}))
+    got = CK._judge_facts(ME, [rec], [], str(tmp_path), read_only=frozenset({"Plan"}))
     assert got["item_workers"]["k17k17k1"][0]["title"] == row["title"]
 
 
@@ -268,9 +317,7 @@ def test_the_0820_prompt_says_the_schedule_check_passed(waker, judge):
     assert err is None, err
     prompt = judge.prompt()
     assert "WAKE TIMER: armed, fires at 2026-11-10T08:50Z" in prompt
-    assert "MISSING IDS (tracked ids the message never names): #7" in prompt
     assert "WAKE TIMER armed with a fire time, this check\n    PASSES" in prompt
-    assert "never claim an omission it does not list" in prompt
     assert verdict["verdict"] == "stop"
 
 
@@ -294,6 +341,39 @@ def test_the_k17_worker_reaches_the_prompt(judge):
     prompt = judge.prompt()
     assert "#k17k17k1: past worker %s (general-purpose, writer) report:" % K17_WORKER in prompt
     assert "names a Plan or writer worker is already\n    delegated" in prompt
+
+
+@pytest.mark.usefixtures("tmpdir_root")
+def test_the_prompt_reads_store_freshness_and_never_asks_for_ids(judge):
+    judge.answer(dict(STOP))
+    changed = [{"id": "c3c3c3c3", "kind": "ticked", "detail": "landed"}]
+    _verdict, err = ask(MSG_0820, facts(MSG_0820, rows=ROWS, changes=changed))
+    assert err is None, err
+    prompt = judge.prompt()
+    assert "STORE FRESHNESS (the hook's verdict on every open item): 3 open (" in prompt
+    assert "#a1a1a1a1 130m: %s" % STALE_WHY in prompt
+    assert "CHANGES SINCE LAST STOP: \n    #c3c3c3c3 ticked (landed)" in prompt
+    assert "Never ask the\n    message to list, restate or table items" in prompt
+    assert "MISSING IDS" not in prompt
+    assert "by id" not in prompt
+
+
+@pytest.mark.usefixtures("tmpdir_root")
+def test_inverse_a_quiet_store_reads_none_stale_and_no_changes(judge):
+    judge.answer(dict(STOP))
+    _verdict, err = ask(MSG_0820, facts(MSG_0820, rows=ROWS[1:]))
+    assert err is None, err
+    prompt = judge.prompt()
+    assert "2 open (1 live, 1 moved); none stale" in prompt
+    assert "CHANGES SINCE LAST STOP: none" in prompt
+
+
+@pytest.mark.usefixtures("tmpdir_root")
+def test_a_first_stop_says_no_snapshot(judge):
+    judge.answer(dict(STOP))
+    _verdict, err = ask(MSG_0820, facts(MSG_0820, first=True))
+    assert err is None, err
+    assert "CHANGES SINCE LAST STOP: no snapshot yet" in judge.prompt()
 
 
 def test_control_without_facts_the_prompt_has_no_section(judge):
@@ -374,6 +454,86 @@ def test_run_judge_reads_the_2121_verdict_as_stop(judge):
     assert verdict["contentless"]
 
 
+# ---- J1: a continue that demands a status table ------------------------------------------------
+
+STATUS_DEMAND = {
+    "verdict": "continue",
+    "reason": "the message omits open items by id; restate the status table",
+    "next_action": "List every open item with its state under the Remaining heading.",
+}
+OPEN = ["a1a1a1a1", "b2b2b2b2"]
+
+
+def test_a_status_table_continue_reads_as_stop_with_an_advisory():
+    got = J.settle_status_demand(dict(STATUS_DEMAND), OPEN)
+    assert got["verdict"] == "stop", got
+    assert got["next_action"] == ""
+    assert "status table the hook renders" in got["reason"]
+    assert "JUDGE STATUS DEMAND" in got["status_demand"]
+    assert "restate the status table" in got["status_demand"]
+
+
+@pytest.mark.parametrize(
+    "order",
+    [
+        "Fix the failing assertion in wl_storestatus.py, then restate nothing.",
+        "Run `pytest -q tests/x` and restate the result.",
+        "Tick it with worklist.py --tick and the evidence.",
+    ],
+)
+def test_control_a_continue_ordering_a_named_file_or_verb_stands(order):
+    out = dict(STATUS_DEMAND, next_action=order)
+    assert J.settle_status_demand(dict(out), OPEN) == out
+
+
+def test_control_a_continue_ordering_work_on_an_open_item_stands():
+    out = dict(STATUS_DEMAND, next_action="Finish #a1a1a1a1 before restating anything.")
+    assert J.settle_status_demand(dict(out), OPEN) == out
+
+
+def test_an_order_naming_a_closed_or_unknown_item_is_still_a_status_demand():
+    out = dict(STATUS_DEMAND, next_action="Restate #deadbeef in the table.")
+    assert J.settle_status_demand(dict(out), OPEN)["verdict"] == "stop"
+    # With no open ids known, any id counts as one: the rule fails toward letting it stand.
+    assert J.settle_status_demand(dict(out), None)["verdict"] == "continue"
+
+
+def test_control_a_continue_of_another_shape_and_a_stop_are_untouched():
+    other = {
+        "verdict": "continue",
+        "reason": "The drill failed and nothing fixed it.",
+        "next_action": "Find the cause of the failed drill leg.",
+    }
+    assert J.settle_status_demand(dict(other), OPEN) == other
+    stop = dict(STATUS_DEMAND, verdict="stop")
+    assert J.settle_status_demand(dict(stop), OPEN) == stop
+
+
+def test_the_tuner_counts_the_judges_shape():
+    tune = wlfix.import_wl("wl_effort_tune")
+    assert tune._STATUS is J.STATUS_SHAPE
+    shape = next(s for s in tune.JUDGE_SHAPES if s["shape"] == "status-table")
+    assert "out-of-sync" not in shape["where"]
+
+
+def test_run_judge_reads_a_status_demand_as_stop_at_high(judge):
+    """The rule sits in the settle chain at every effort level, high included."""
+    judge.answer(dict(STATUS_DEMAND))
+    verdict, err = J.run_judge(
+        ["- [>] (deadbeef) the drill"],
+        1,
+        "Waiting.",
+        0,
+        "none declared",
+        with_riders=False,
+        effort_level="high",
+        facts={"tracked": OPEN},
+    )
+    assert err is None, err
+    assert verdict["verdict"] == "stop", verdict
+    assert verdict["status_demand"]
+
+
 # ---- the real Stop hook: facts reach the prompt, a contentless continue is an advisory ---------
 
 
@@ -421,7 +581,9 @@ def test_the_stop_hook_hands_the_judge_its_facts_and_queues_a_contentless_contin
     argv = json.loads(seen.read_text(encoding="utf-8"))
     prompt = argv[argv.index("-p") + 1]
     assert "MEASURED FACTS," in prompt
-    assert "MISSING IDS (tracked ids the message never names): #jw01abcd" in prompt
+    assert "STORE FRESHNESS (the hook's verdict on every open item): 1 open (" in prompt
+    assert "CHANGES SINCE LAST STOP: " in prompt
+    assert "MISSING IDS" not in prompt
     assert "#jw01abcd: current worker a1111111111111111" in prompt
     # Queued, then drained onto this allow's report or kept for the next one.
     shown = got.out + "".join(queued(wl).values())
@@ -441,3 +603,11 @@ def test_inverse_the_stop_hook_blocks_on_a_substantive_continue(wl):
     assert got.decision == "block", got.out[:800]
     assert "judge says continue" in got.out, got.out[:800]
     assert "judge-contentless" not in queued(wl)
+
+
+def test_the_stop_hook_queues_a_status_demand_instead_of_blocking(wl):
+    hook_world(wl, dict(STATUS_DEMAND))
+    got = wl.runj()
+    assert "judge says continue" not in got.out, got.out[:800]
+    shown = got.out + "".join(queued(wl).values())
+    assert "JUDGE STATUS DEMAND" in shown, got.out[:1500]

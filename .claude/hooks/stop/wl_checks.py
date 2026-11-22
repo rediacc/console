@@ -3156,22 +3156,47 @@ def _judge_receipt_run(root):
 _PSEUDO_WORKERS = frozenset({"queue", wl_leasehelp.LEAD_WORKER})
 
 
-def _item_id_named(item_id, message):
-    """True when `message` names `item_id`, with or without its `#`."""
-    return bool(re.search(r"(?<![0-9a-zA-Z])#?%s(?![0-9a-zA-Z])" % re.escape(item_id), message))
+def _judge_facts(
+    me8,
+    recs,
+    task_ids,
+    root,
+    reports=None,
+    read_only=None,
+    store_rows=(),
+    store_changes=(),
+    store_first=False,
+):
+    """The judge's `facts` (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.4, .5; agent/plans/PLAN-stop-hook-store-status.md J1, D5): what the checklist asked the model to find by reading, measured here. Nothing here reads the message: the store is the status channel, so no fact asks the message to repeat an id.
 
-
-def _judge_facts(me8, message, recs, task_ids, root, reports=None, read_only=None):
-    """The judge's `facts` (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.4, .5): what the checklist asked the model to find by reading, measured here.
-
-    tracked       the ids of `recs` (the remaining items' records) and `task_ids` (the harness tasks).
-    missing_ids   the tracked ids `message` never names.
+    tracked       the ids of `recs` (the remaining items' records) and `task_ids` (the harness tasks); `settle_status_demand` reads them as the open items an order may name.
+    freshness     the store status verdict (`store_rows`, wl_storestatus.freshness): {"counts": {class: n}, "open": n, "stale": [(id, age, why)]}, the stale and orphaned rows in the order the table shows them.
+    changes       {"first": bool, "rows": [(id, kind, detail)], "more": n}: the change rows since the last stop (`store_changes`, wl_storestatus.changes) cut at wl_storestatus.CHANGES_CAP; `first` when no snapshot existed (`store_first`).
     wake_until    the fire time (epoch) of this session's wake timer, only while its lock names a live wl_wake process (wl_wake.read_lock, is_waker_pid).
     item_workers  {item id: [{id, current, type, kind, title}]}: every worker each item was leased to (the store's `lease_workers`, then `worker`), with the agent type and title of its newest report-index row (`reports`, wl_report.read_index) and `kind` "Plan", "read-only" or "writer" by type (`read_only`, wl_roster.read_only_types); the queue and lead placeholders are left out.
     """
-    message = message or ""
     tracked = [str(r.get("id")) for r in recs if r.get("id")] + [str(t) for t in task_ids]
-    missing = [i for i in tracked if not _item_id_named(i, message)]
+    counts: dict[str, int] = {}
+    for row in store_rows or ():
+        counts[row["cls"]] = counts.get(row["cls"], 0) + 1
+    freshness = {
+        "counts": counts,
+        "open": len(store_rows or ()),
+        "stale": [
+            (r["id"], int(r.get("age") or 0), str(r.get("why") or r["cls"]))
+            for r in store_rows or ()
+            if r["cls"] in wl_storestatus.BLOCKING_CLASSES
+        ],
+    }
+    change_rows = list(store_changes or ())
+    changes = {
+        "first": bool(store_first),
+        "rows": [
+            (str(r["id"]), str(r["kind"]), str(r.get("detail") or ""))
+            for r in change_rows[: wl_storestatus.CHANGES_CAP]
+        ],
+        "more": max(0, len(change_rows) - wl_storestatus.CHANGES_CAP),
+    }
     wake_until = None
     with contextlib.suppress(Exception):
         lock = wl_wake.read_lock(me8)
@@ -3218,7 +3243,8 @@ def _judge_facts(me8, message, recs, task_ids, root, reports=None, read_only=Non
             workers[str(rec.get("id"))] = rows
     return {
         "tracked": tracked,
-        "missing_ids": missing,
+        "freshness": freshness,
+        "changes": changes,
         "wake_until": wake_until,
         "item_workers": workers,
     }
@@ -6683,10 +6709,12 @@ def run_stop(event, event_ok, worklist, hook_file):
                 receipt_run=_judge_receipt_run(root),
                 facts=_judge_facts(
                     me8,
-                    last_msg,
                     _remaining_recs(fold, session_id, open_items, deferred_recs, in_flight_recs),
                     [i for i, _sub, _st in tasks],
                     root,
+                    store_rows=_ss_rows,
+                    store_changes=_ss_changes,
+                    store_first=_ss_first,
                 ),
             )
         if err is not None:
@@ -6713,6 +6741,16 @@ def run_stop(event, event_ok, worklist, hook_file):
         if verdict.get("contentless"):
             outq_add(
                 worklist, session_id, state_doc, "judge-contentless", str(verdict["contentless"]), 2
+            )
+        # A continue that only demands a status table (wl_judge.settle_status_demand, agent/plans/PLAN-stop-hook-store-status.md D5) is read as stop and reported, never blocked on: the hook renders the table from the store.
+        if verdict.get("status_demand"):
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "judge-status-demand",
+                str(verdict["status_demand"]),
+                2,
             )
         # DEFER-SETTLE VERDICT: banks, corroborates, and acts only through wl_defersettle's own evidence-gated tick. It cannot block, so it runs before any path below that can exit.
         if settle_batch:

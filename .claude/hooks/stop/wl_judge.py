@@ -71,7 +71,7 @@ JUDGE_SCHEMA = {
         "reason": {"type": "string", "maxLength": 300},
         "next_action": {"type": "string", "maxLength": 200},
         # What a `continue` rests on (JUDGE_BASIS below): required only on a stop whose effort level makes a report key advise-only, so an ordinary call's schema keeps its three required fields.
-        "basis": {"type": "string", "enum": ["work", "no-remaining", "out-of-sync"]},
+        "basis": {"type": "string", "enum": ["work", "no-remaining"]},
         # v7: OPTIONAL at the top level (verified: --json-schema accepts a conditionally-required object and returns cleanly with it omitted, so ONE schema, no variants), but its own properties are all required. On a fix-signal stop a missing or malformed object is a judge error and fails closed, same as an invalid verdict. v11: the admission object, same optional-at-top-level
         # shape as regression_gate above and for the same reason. UNLIKE regression_gate, a missing or malformed object here NEVER fails closed: this detector's only consequence is a tracked item, and a session blocked by a phantom regret learns to phrase things evasively, which costs more than the detection is worth. See wl_admit.py.
         "admission": {
@@ -894,7 +894,7 @@ def run_judge(
 
     `receipt_run` is `"vm:check"` or `"ci:quick"` while such a run is building a receipt on this tree (wl_checks.vm_check_running, ci_quick_running), else None: the prompt carries M.JUDGE_RECEIPT_IN_FLIGHT and the sanitiser rewrites a main-checkout commit, edit, land or cherry-pick order (RECEIPT_ORDERS, R20261110.3).
 
-    `facts` is what the hook measured for the checklist (wl_checks._judge_facts, R20261110.4 and .5): `missing_ids`, `tracked`, `wake_until` and `item_workers`, rendered as M.JUDGE_FACTS (`render_facts`). A continue whose order and reason carry nothing at all is read as stop first (`settle_contentless`, R20261110.7).
+    `facts` is what the hook measured for the checklist (wl_checks._judge_facts, R20261110.4 and .5): `tracked`, `freshness`, `changes`, `wake_until` and `item_workers`, rendered as M.JUDGE_FACTS (`render_facts`). A continue whose order and reason carry nothing at all is read as stop first (`settle_contentless`, R20261110.7), and one that only demands a status table next (`settle_status_demand`, agent/plans/PLAN-stop-hook-store-status.md D5).
 
     `transcript` is the lead's transcript path: an outstanding sweep or proof demand it already answers is discharged before the prompt is built (wl_classsweep.discharge_if_evidenced, wl_proofcheck.discharge_if_evidenced).
 
@@ -1120,6 +1120,7 @@ def run_judge(
     if not fired:
         out = settle_contentless(out)
         out = settle_wait_only_continue(out)
+        out = settle_status_demand(out, (facts or {}).get("tracked"))
         out = settle_closed_reraise(out, [c[0] for c in closed or ()])
         out = settle_by_effort(out, effort_level, receipt_run=receipt_run)
     return sanitize_next_action(out, receipt_run=receipt_run), None
@@ -1139,9 +1140,37 @@ def _stamp(epoch):
         return None
 
 
+def _render_freshness(fresh):
+    """The STORE FRESHNESS value: the class counts, then one line per stale or orphaned item."""
+    fresh = fresh or {}
+    counts = fresh.get("counts") or {}
+    total = int(fresh.get("open") or 0)
+    if not total:
+        return "no open, in-flight or deferred item is owned by this session"
+    head = "%d open (%s)" % (total, ", ".join("%d %s" % (n, k) for k, n in counts.items()))
+    stale = fresh.get("stale") or ()
+    if not stale:
+        return head + "; none stale"
+    return head + "".join("\n    #%s %dm: %s" % (i, age, why) for i, age, why in stale)
+
+
+def _render_changes(changes):
+    """The CHANGES SINCE LAST STOP value: none, no snapshot yet, or one line per changed item with the `+N more` count."""
+    changes = changes or {}
+    if changes.get("first"):
+        return "no snapshot yet (first stop of this session id)"
+    rows = changes.get("rows") or ()
+    if not rows:
+        return "none"
+    out = "".join(
+        "\n    #%s %s%s" % (i, kind, " (%s)" % detail if detail else "") for i, kind, detail in rows
+    )
+    more = int(changes.get("more") or 0)
+    return out + ("\n    +%d more" % more if more else "")
+
+
 def render_facts(facts):
     """M.JUDGE_FACTS for `facts` (see run_judge)."""
-    missing = list(facts.get("missing_ids") or ())
     until = _stamp(facts.get("wake_until")) if facts.get("wake_until") else None
     rows = [
         "  #%s: %s %s (%s%s)%s"
@@ -1157,9 +1186,8 @@ def render_facts(facts):
         for w in workers
     ]
     return M.JUDGE_FACTS % {
-        "missing": ", ".join("#" + i for i in missing)
-        if missing
-        else "none: the message names every tracked id",
+        "freshness": _render_freshness(facts.get("freshness")),
+        "changes": _render_changes(facts.get("changes")),
         "wake": "armed, fires at %s" % until if until else "none armed",
         "workers": "\n".join(rows) or "  (no remaining item has had a worker)",
     }
@@ -1258,12 +1286,12 @@ def settle_closed_reraise(out, closed_ids):
     return out
 
 
-# ---- THE JUDGE OBEYS THE EFFORT TABLE (operator ruling 2026-10-14T09:27Z, agent/plans/PLAN-stop-hook-effort-tuning.md). At effort smart .claude/config/effort.json makes `no-remaining` and `out-of-sync` advise-only, and the judge still blocked on exactly those demands ("the message omits open items by id", "no loop schedule"): a second door to a block the table
+# ---- THE JUDGE OBEYS THE EFFORT TABLE (operator ruling 2026-10-14T09:27Z, agent/plans/PLAN-stop-hook-effort-tuning.md). At effort smart .claude/config/effort.json made `no-remaining` and `out-of-sync` advise-only, and the judge still blocked on exactly those demands ("the message omits open items by id", "no loop schedule"): a second door to a block the table
 # had closed. The judge now names what its `continue` rests on, and a continue resting only on a report key that does not block at this level is read as stop, its order queued under that key's own threshold (wl_checks hands `effort_advised` to outq_add, which drops it where the key is off). A continue resting on `work`, a rule's order, or a level where the key blocks stands.
-REPORT_BASES = ("no-remaining", "out-of-sync")
+# `out-of-sync` left the bases with the missing-ids fact (agent/plans/PLAN-stop-hook-store-status.md J1): the store is the status channel, and a continue that demands the list is read as stop by settle_status_demand at every level.
+REPORT_BASES = ("no-remaining",)
 JUDGE_BASIS = (
-    "\nBASIS. Fill `basis` with what a `continue` rests on: `out-of-sync` when the only gap is "
-    "that the message omits open tracked items by id, so the report disagrees with the tracked list; "
+    "\nBASIS. Fill `basis` with what a `continue` rests on: "
     "`no-remaining` when the only gap is the report's form (no '## Remaining' section, no schedule, "
     "a missing label or designation); `work` when any gap is work the session can still start or "
     "finish, including a report gap that comes with such work. With `stop`, fill `work`.\n"
@@ -1322,6 +1350,46 @@ def settle_wait_only_continue(out):
     out["reason"] = (
         "%s [read as stop: the judge said continue, but its only action was to wait (%s)]"
         % (out.get("reason", ""), (out.get("next_action") or "")[:80])
+    )[:400]
+    out["next_action"] = ""
+    return out
+
+
+# ---- A CONTINUE THAT DEMANDS A STATUS TABLE (agent/plans/PLAN-stop-hook-store-status.md D5). The hook renders the store's table for the operator and hands the judge STORE FRESHNESS, so an order to list, restate or table items asks the message to copy what the hook already holds. The checklist no longer asks for it; this is the backstop against prompt drift, because the judge
+# still sees the remaining list. The shape is the tuner's status-table shape (wl_effort_tune counts it through this constant). A continue of that shape whose order names a file, a command or verb, or an open item stands: that is work.
+STATUS_SHAPE = r"(?i)\b(?:## Remaining|status table|the (?:message|status|report|table) omits|by id|loop schedule|restate)"
+_STATUS_RE = re.compile(STATUS_SHAPE)
+# A verb in an order: a CLI flag (`--tick`), a backticked command, or a command word that runs something.
+_ORDER_VERB = re.compile(
+    r"(?<![\w-])--[a-z][\w-]+|`[^`]+`|\b(?:npm|npx|pytest|python3?|git|gh|worklist\.py|rdc)\b",
+    re.IGNORECASE,
+)
+_ORDER_FILE = re.compile(
+    r"[\w.-]+/[\w./-]+|\b[\w-]+\.(?:py|ts|js|json|md|go|sh|ya?ml|toml)\b", re.IGNORECASE
+)
+
+
+def settle_status_demand(out, open_ids=None):
+    """`out` with a `continue` that only demands a status table read as `stop`, its text kept as `status_demand` (wl_checks queues it under `judge-status-demand`); anything else unchanged.
+
+    It fires when the reason or the order matches STATUS_SHAPE and the order names no file, no verb (a flag, a backticked command, a command word) and no open item (`open_ids`, the facts' `tracked`; with none given, any `#<hex>` counts as one, so the rule fails toward letting the continue stand)."""
+    if out.get("verdict") != "continue":
+        return out
+    reason = str(out.get("reason") or "")
+    action = str(out.get("next_action") or "")
+    if not (_STATUS_RE.search(reason) or _STATUS_RE.search(action)):
+        return out
+    if _ORDER_FILE.search(action) or _ORDER_VERB.search(action):
+        return out
+    refs = set(_ITEM_REF.findall(action))
+    if refs and (open_ids is None or refs & {str(i) for i in open_ids}):
+        return out
+    out = dict(out)
+    out["verdict"] = "stop"
+    out["status_demand"] = M.N_JUDGE_STATUS_DEMAND % (reason[:200], action[:200])
+    out["reason"] = (
+        "%s [read as stop: the judge said continue, but its only order is a status table the hook renders from the store]"
+        % reason
     )[:400]
     out["next_action"] = ""
     return out

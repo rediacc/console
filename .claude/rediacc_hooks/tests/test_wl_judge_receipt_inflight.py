@@ -201,9 +201,9 @@ def test_control_no_receipt_run_rewrites_nothing():
 
 
 def test_settle_by_effort_hands_back_the_order_sanitized_for_the_receipt(monkeypatch):
-    table = {"checks": {"out-of-sync": {"block": "high", "advise": "smart"}}}
+    table = {"checks": {"no-remaining": {"block": "high", "advise": "smart"}}}
     monkeypatch.setattr(J.wl_effort, "load", lambda *_a: (table, ""))
-    out = dict(CONTINUE, basis="out-of-sync")
+    out = dict(CONTINUE, basis="no-remaining")
     got = J.settle_by_effort(out, "smart", table=table, receipt_run="vm:check")
     [(_key, text)] = got["effort_advised"]
     assert "rejected by the stop gate" in text

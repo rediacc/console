@@ -2211,10 +2211,10 @@ Fresh background leases (work genuinely in flight): %(leases)d
 Declared loop: %(loop)s
 
 Check these specifically, because they are how this session drifts:
-  - Does the message list EVERY open task by id? The operator sees the same list
-    in their app, so an omission is a report that disagrees with their view.
-    Use MISSING IDS under MEASURED FACTS below when it is there: an omission
-    exists only when it lists one, and never claim an omission it does not list.
+  - STORE FRESHNESS is the hook's verdict on every open item. Never ask the
+    message to list, restate or table items. A turn that only waited, says so in
+    one line and cites CHANGES SINCE LAST STOP, is a complete report. Judge only
+    whether real work remains undone.
   - Does it state the loop schedule, so the operator knows when work resumes?
     When MEASURED FACTS shows the WAKE TIMER armed with a fire time, this check
     PASSES: the hook holds the time, and the message need not repeat it.
@@ -3259,11 +3259,12 @@ V_JUDGE_RECEIPT_ORDER_REJECTED = (
     "%r. Treat this stop as having NO next action; local work during the run goes to a writer "
     "in a lease tree.]"
 )
-# R20261110.4 and .5: what the hook measured for the checklist, appended to JUDGE_PROMPT on every judge call from the Stop hook. Keys: missing, wake, workers.
+# R20261110.4 and .5, agent/plans/PLAN-stop-hook-store-status.md J1: what the hook measured for the checklist, appended to JUDGE_PROMPT on every judge call from the Stop hook. Keys: freshness, changes, wake, workers.
 JUDGE_FACTS = """
 MEASURED FACTS, computed by the hook from its own store, locks and report index.
 They are not readings of the message; trust them over any reading of it.
-  MISSING IDS (tracked ids the message never names): %(missing)s
+  STORE FRESHNESS (the hook's verdict on every open item): %(freshness)s
+  CHANGES SINCE LAST STOP: %(changes)s
   WAKE TIMER: %(wake)s
   ITEM WORKERS (every worker each remaining item was leased to):
 %(workers)s
@@ -3273,6 +3274,14 @@ N_JUDGE_CONTENTLESS = (
     "JUDGE CONTENTLESS: the stop-gate judge answered continue with reason %r and next action %r, "
     "which order nothing, so the stop was read as stop. Nothing to do unless it recurs; a run of "
     "these is a judge prompt defect for agent/plans."
+)
+
+# agent/plans/PLAN-stop-hook-store-status.md D5: the advisory a status-table judge continue becomes. Positionals: the reason, the next action.
+N_JUDGE_STATUS_DEMAND = (
+    "JUDGE STATUS DEMAND: the stop-gate judge answered continue with reason %r and next action %r, "
+    "which only ask for a status table the hook already renders from the store, so the stop was "
+    "read as stop. Nothing to do unless it recurs; a run of these is a judge prompt defect for "
+    "agent/plans."
 )
 
 # agent/plans/PLAN-stop-hook-effort.md E5. V_JUDGE_RELEASE_AGE_REJECTED: the window (minutes and the midnight round-up, or the config path) and the judge's original text. JUDGE_CLOSED_ITEMS: the session's recently closed items with their evidence, one %s.

@@ -410,6 +410,9 @@
     "judge-contentless": {
       "advise": "smart"
     },
+    "judge-status-demand": {
+      "advise": "smart"
+    },
     "scheduled-green": {
       "advise": "smart"
     },

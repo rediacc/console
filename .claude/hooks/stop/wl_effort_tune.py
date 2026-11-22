@@ -25,6 +25,7 @@ from typing import Any
 
 import wl_effort
 import wl_floor
+import wl_judge
 import wl_outcomes as O
 import wl_retro
 
@@ -397,7 +398,8 @@ def replay(rows, old, new):
 
 # ---- T6: judge-error shapes ---------------------------------------------------------------------
 
-_STATUS = r"(?i)\b(?:## Remaining|status table|the (?:message|status|report|table) omits|by id|loop schedule|restate)"
+# The status-table shape is the judge's (wl_judge.STATUS_SHAPE): settle_status_demand reads a continue of this shape as stop, and the tuner counts the same shape, so the two cannot drift.
+_STATUS = wl_judge.STATUS_SHAPE
 _RULE = r"(?i)\b(?:ask the operator|git (?:stash|checkout|restore|clean)|--no-verify|second branch|worktree add|commit permission)"
 JUDGE_SHAPES: tuple[dict[str, Any], ...] = (
     {
@@ -416,7 +418,7 @@ JUDGE_SHAPES: tuple[dict[str, Any], ...] = (
     {
         "shape": "status-table",
         "what": "a continue that demands a status table rather than work",
-        "where": "wl_judge: an ADVICE_RULES entry, or `basis: out-of-sync` in the judge prompt",
+        "where": "wl_judge: settle_status_demand, or an ADVICE_RULES entry",
         "source": "import re\n\n_STATUS = re.compile(%r)\n\n\ndef matches(reason, closed_ids=()):\n    del closed_ids\n    return bool(_STATUS.search(reason))\n"
         % _STATUS,
         "control": ("Fix the failing assertion in wl_x.py and rerun the suite.", ()),
