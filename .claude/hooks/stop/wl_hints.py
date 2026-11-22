@@ -275,6 +275,57 @@ def pending_proposals(root):
     return [r for r in rows if r["id"] not in taken]
 
 
+# Source keys are spelled many ways in the ledger (101 distinct keys over 217 rows when this table was written), and a lesson that returns under a second spelling must count as one recurrence (PLAN-weekly-lessons.md D6). Each key maps to the family it belongs to; a key absent here is its own family, so a new source is never dropped, only left ungrouped until it is added.
+SOURCE_FAMILIES = {
+    "judge": "judge",
+    "stop-judge": "judge",
+    "stop-gate-judge": "judge",
+    "judge-unavailable": "judge",
+    "judge-timeout": "judge",
+    "stop-judge-hibernate": "judge",
+    "review-findings": "review-findings",
+    "review-findings-block": "review-findings",
+    "review-block": "review-findings",
+    "review-open": "review-findings",
+    "vm-check": "vm-check",
+    "vmcheck": "vm-check",
+    "commit-review": "commit-review",
+    "commit-review-note": "commit-review",
+    "plan-tick": "plan-tick",
+    "plan-tick-clause1": "plan-tick",
+    "roster-cap": "roster",
+    "roster-concurrency": "roster",
+    "roster-unleased": "roster",
+    "roster-dead": "roster",
+    "lease-dead": "dead-lease",
+    "dead-lease": "dead-lease",
+}
+UNSOURCED_FAMILY = "unsourced"
+
+
+def source_family(source):
+    """The family one proposal `source` key belongs to: trimmed and lower-cased, looked up in SOURCE_FAMILIES, an empty key is `unsourced`, an unlisted key is its own family."""
+    key = str(source or "").strip().lower()
+    if not key:
+        return UNSOURCED_FAMILY
+    return SOURCE_FAMILIES.get(key, key)
+
+
+def cluster_counts(rows):
+    """{family: [proposal id, ...]} over proposal rows (each with its `id`), in row order, so a cluster lists every proposal it absorbs and a reviewer can split it."""
+    out: dict = {}
+    for r in rows:
+        out.setdefault(source_family(r.get("source")), []).append(r.get("id") or proposal_id(r))
+    return out
+
+
+def clusters(rows, minimum=3):
+    """The families holding at least `minimum` proposals (D1's cluster threshold), largest first, ties by name."""
+    counts = cluster_counts(rows)
+    keep = [(f, ids) for f, ids in counts.items() if len(ids) >= minimum]
+    return sorted(keep, key=lambda kv: (-len(kv[1]), kv[0]))
+
+
 def lessons_dir(me8, epoch):
     """The lesson-curator's output directory for one context epoch, repo-relative: agent/<me8>/lessons/e<epoch>/ (sibling of the effort tuner's agent/<me8>/effort-tune/e<epoch>/)."""
     return "agent/%s/lessons/e%s/" % (me8, epoch)

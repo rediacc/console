@@ -539,3 +539,40 @@ def test_hint_resolve_cli_accepts_file_and_shape_pointers_and_refuses_dead_ones(
         (ids[0], "file:notes/live.py:1"),
         (ids[1], "shape:shaped-trap"),
     ]
+
+
+# ---- source families (PLAN-weekly-lessons.md W2 / D6) ------------------------
+
+
+def test_source_family_merges_judge_spellings_and_leaves_others_apart():
+    h = _hints()
+    judge = {h.source_family(k) for k in ("judge", "stop-judge", "stop-gate-judge", " Judge ")}
+    assert judge == {"judge"}
+    # control: a distinct source is not swallowed into the judge family
+    assert h.source_family("unlanded-lease") == "unlanded-lease"
+    assert h.source_family("unlanded-lease") != h.source_family("judge")
+    assert h.source_family("") == "unsourced"
+    assert h.source_family("brand-new-key") == "brand-new-key"
+
+
+def test_cluster_counts_fold_spellings_into_one_cluster_with_a_threshold():
+    h = _hints()
+    rows = [
+        {"id": "a1", "source": "judge"},
+        {"id": "a2", "source": "stop-judge"},
+        {"id": "a3", "source": "stop-gate-judge"},
+        {"id": "b1", "source": "unlanded-lease"},
+        {"id": "b2", "source": "unlanded-lease"},
+        {"id": "c1", "source": "wake-timer"},
+    ]
+    assert h.cluster_counts(rows)["judge"] == ["a1", "a2", "a3"]
+    # fixture: the three spellings reach the threshold of 3 only once folded
+    assert h.clusters(rows) == [("judge", ["a1", "a2", "a3"])]
+    # control: with no folding table entry, split spellings would each stay under 3
+    assert all(len(ids) < 3 for k, ids in h.cluster_counts(rows).items() if k != "judge")
+
+
+def test_every_family_target_is_a_stable_fixed_point():
+    h = _hints()
+    for fam in set(h.SOURCE_FAMILIES.values()):
+        assert h.source_family(fam) == fam, fam
