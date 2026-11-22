@@ -40,10 +40,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Development tree: branch 1121-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (3 epic(s)):
-  - epic 79b7e92e, no plan, 212 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 215 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
-- Writers: 2 live of writer_cap 25 (session ace763dd): worker:a7f345f3ce67fa836, worker:aa2d0491a03e29325.
+- Writers: 0 live of writer_cap 25 (session fee07197).
 - Leased items: 8: #1abea6ac (worker:a7f345f3ce67fa836, ace763dd), #3b82cf28 (worker:bs2zwmetr, ace763dd), #47ce3621 (worker:bs2zwmetr, ace763dd), #572f74b2 (worker:aa2d0491a03e29325, ace763dd), #73b32419 (worker:bs2zwmetr, ace763dd), #95ffeb93 (worker:bs2zwmetr, ace763dd), #ce9966d1 (worker:bs2zwmetr, ace763dd), #dc17bd4d (worker:a7f345f3ce67fa836, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
