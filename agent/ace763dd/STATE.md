@@ -1,20 +1,19 @@
-## SESSION ace763dd 2026-11-22T20:24:35Z
+## SESSION ace763dd 2026-11-22T22:21:18Z
 
-# STATE ace763dd (2026-11-22 ~20:45Z, operator AWAY since 19:45Z)
+# STATE ace763dd (2026-11-22 ~22:30Z, operator AWAY since 19:45Z)
 
 ## Big pieces
-- PR 605 released (hotfix aa829a19d, CD edge 45050186727 green). Promotion of 1121-1 (#95ffeb93) refuses only on PLAN-two-track-merge-dev R3 (a2ae6f1c): its code is landed (68d8179a08, f1c7c026ef signer job, 9a0880d370 fold-ci, e7ce497970 flow-style perms, 4dc4e6a6f5 receipt-job p90 seed), its LIVE accept needs a pushed CI run producing a signed receipt (gh attestation verify) and a ci:quick carrying a ci- origin gate.
-- Promote fixes landed: baffab23a4 8ed43b4f88 e61402ba28 912adb6a83 e876c65d58. landing-stack off the FLOOR: 8635a43727 8c1dc6b741.
+- Backup push of 1121-1 (#3b82cf28) is the gate to everything: it gives R3 its live CI run, then R3 tick, then promotion.
+- ci:quick on the tip: 12 red. Code reds (enumeration-vacuity, trap-registry, prose-style, python-lint, policy-inventory, env-manifest, format, pytest x13) with writer a431f348acc128c20. Fixed by the lead: review-resolutions (9188db8307 + marks), plan-citations (2555b658ec + console-1a 9b7245680e), plan-bindings down from 17 to 3 (f7637824d6).
+- Left to CARRY in .ci/config/carried-reds.json (record path, keys from .ci/cache/prepush-receipt.json findings): check:ci-plan-bindings (3 finished plans cited by open live box 0e4aa275 of PLAN-multi-region-bench; rewording an open box changes its sig), check:ci-plan-implementation (A0 d19eccab retro row needs b69748d25e, an ancestor only after the rebase that promotion does), check:ci-ops-health (live machines red). check:ci-proxy-wrangler-dev-e2e cannot run here (BLOCKED, not red).
 
 ## Delegated
-- none live.
+- a431f348acc128c20: #3b82cf28 code reds; owns .ci/**, .claude/hooks/**, .claude/rediacc_hooks/**, scripts/**; accept each gate rc 0 + ci --narrow.
 
 ## Overnight
-- Landed today: see Big pieces, plus account fixture de2aa057f2, branch reds 9f67738fe1..ee7da255dc.
-- Parked [?] #064f9dfc: quality-go p90 12.6m over 12m; DEFAULT split renet quality into its own lane (writer); review f1c7c026.1 rides it.
-- Other ci:quick reds named by the writer: profiler-coverage (quality-content-receipt runs no local action; needs a named exemption), gh-retry-reads (block_unverified_push.py:1842 one-shot gh attestation verify), python-env-registry (test-block_unverified_push.py PATH read).
-- Blocked on operator: CL1 ToS acceptance; C8 eu-remote authenticator; GitLab force push (#29c1a78b).
+- Landed since 20:45Z: R3 leftovers 9a0880d370 e7ce497970 4dc4e6a6f5; three small reds 0786b8799e 6e76dbce2c a528d556ba; lane split 8a07b1367a; pre-push fixes 5817690a3c 60625ccafc e9cb3e87a8; types/literals d782221483 12c9fae77b d1be555deb 7d65990f66 50e161b6dd; rename fix 9188db8307.
+- Decided: #064f9dfc lane split ran (DEFAULT, safe either way); 30 migrated d778be9d items closed as superseded; gpu-device-grants Depends-On dropped (satisfied).
 
 ## Next action
-1. Fix the three ci:quick reds above (small), then the #064f9dfc lane split, then ci:quick and the backup push of 1121-1 (TURBO_PUSH_REASON backup); that push gives R3 its CI run: fetch the receipt, verify, run ci:quick carrying it, tick R3.
-2. Then ./run.sh worktree landing --promote (commit QUEUE.md and ledgers in the same call), tell console-1a, effort=smart, start the ciquick-cpu/tooling writers, A0 #ce9966d1, #73b32419 marks, runner tick batch.
+1. On a431f348acc128c20: land its commits, re-run ci:quick, copy the three gates' finding keys into carried-reds.json with reasons, commit, then TURBO_PUSH_REASON backup git push -u origin 1121-1.
+2. Watch that push's CI; npx tsx scripts/ci-runner/ci-receipt.ts fetch, verify, ci:quick carrying a ci- origin; tick R3 (a2ae6f1c); ./run.sh worktree landing --promote; tell console-1a; effort=smart; writers for ciquick-cpu/tooling plans; A0 row #ce9966d1; #73b32419 marks; runner tick batch.
