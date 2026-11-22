@@ -5,7 +5,7 @@ ONE ROW PER ROUND. Every push, rerun or watchdog retry on the landing PR whose r
 ONE VERDICT PER STOP, read from the rows alone, so a restart resumes where the ledger is. The rulings of 2026-11-21 (ruling 8) fix the thresholds:
 
   operator-only  a red ci_diagnose classed `operator-only` (HTTP 401, an expired secret, a billing refusal): ask at once; no retry fixes it.
-  outage-retry   every red of the latest round is an outside outage (GitHub 5xx, a registry refusal, no runner, an unreachable upstream): rerun after 10, 20, 40 and 80 minutes, then every 120.
+  outage-retry   every red of the latest round is an outside outage (GitHub 5xx, a registry refusal, no runner, an unreachable upstream, a bitwarden 5xx, a network failure, a package-mirror or package-install outage; `OUTAGE_SIGNATURES` is the list): rerun after 10, 20, 40 and 80 minutes, then every 120.
   outage-ask     outage rounds have run back to back for 24 h: ask the operator.
   wall-ask       72 h since the PR opened and still red: ask the operator, DEFAULT "keep fixing".
   stuck          one check red after 3 rounds whose fix_target named THAT check: hand it to the development session with the rows as evidence.
@@ -326,10 +326,18 @@ def _wall(rows, latest, now):
     )
 
 
+def _round_no(row: dict[str, Any]) -> int:
+    """The row's round as an int; a missing or non-numeric round reads as 0 instead of raising, so one damaged ledger row never breaks the verdict."""
+    try:
+        return int(row.get("round") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
 def stuck_rounds(rows: list[dict[str, Any]], check: str) -> list[int]:
     """The rounds whose fix_target named `check` and in which `check` was still red. A fix aimed at another check does not count."""
     return [
-        int(r.get("round") or 0)
+        _round_no(r)
         for r in rows
         if r.get("kind") == "push"
         and check in (r.get("fix_target") or [])
@@ -354,7 +362,7 @@ def _stuck(rows, latest):
 def churn_rounds(rows: list[dict[str, Any]]) -> list[int]:
     """The pushes among the last CHURN_WINDOW rounds that turned a previously green check red. A rerun or watchdog retry that flips a check is a flake, not a fix's regression."""
     return [
-        int(r.get("round") or 0)
+        _round_no(r)
         for r in rows[-CHURN_WINDOW:]
         if r.get("kind") == "push" and ((r.get("delta") or {}).get("regressed") or [])
     ]

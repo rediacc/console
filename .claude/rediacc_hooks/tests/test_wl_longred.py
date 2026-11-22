@@ -335,3 +335,16 @@ def test_the_verdict_reads_only_the_latest_prs_rows():
         r["pr"] = 1
     rows.append(row(1, at(5), [red("Quality / Static")], pr=2))
     assert L.verdict(rows, now=at(6)).kind == "none"
+
+
+def test_a_damaged_round_number_reads_as_zero_and_never_raises():
+    """5890f331.1: a missing, null or non-numeric `round` in a ledger row is 0, so one damaged row never breaks stuck_rounds or churn_rounds."""
+    bad = [
+        row(1, at(1), reds=[red("Quality / Static")], fix=["Quality / Static"]),
+        row(2, at(2), reds=[red("Quality / Static")], fix=["Quality / Static"], regressed=["A"]),
+        row(3, at(3), reds=[red("Quality / Static")], fix=["Quality / Static"], regressed=["A"]),
+    ]
+    bad[0]["round"] = None
+    bad[1]["round"] = "x"
+    assert L.stuck_rounds(bad, "Quality / Static") == [0, 0, 3]
+    assert L.churn_rounds(bad) == [0, 3]

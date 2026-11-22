@@ -3124,7 +3124,7 @@ def pr_scope_line(state, root, me8, queued_n, stood):
 
 
 def ci_arming(root, session_id, state):
-    """(ref, owned) for the PR reads: the explicit WORKLIST_PUBLISH_REF override, else the `live` loop state's branch (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4). `owned` is True for focus, and for the live branch when the PR's own plan names this session as Owner."""
+    """(ref, owned) for the PR reads: the explicit WORKLIST_PUBLISH_REF override, else the `live` loop state's branch (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4). `owned` is True for the live branch only when the PR's own plan names this session as Owner."""
     env_ref = os.environ.get("WORKLIST_PUBLISH_REF", "")
     if env_ref:
         return env_ref, False
@@ -5474,7 +5474,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 "THIS IS A HOOK BUG: the loop-next check failed: %s: %s"
                 % (type(exc).__name__, str(exc)[:120]),
             )
-    # ---- IDLE CAPACITY (agent/plans/PLAN-idle-writer-capacity.md D5, operator rulings R1-R3 of 2026-11-09): free writer slots and ready `[writer]` boxes meet. Names the boxes and the `/writers-now` line, never spawns. Stands down in a babysit or merge phase; outranked (IDLE_OUTRANKED_BY), it rides the advisory queue. It reads only the PR's plan set, one plan per PR. The subject latch keeps an unchanged set from holding every stop: it surfaces again after 30 minutes or when the set changes.
+    # ---- IDLE CAPACITY (agent/plans/PLAN-idle-writer-capacity.md D5, operator rulings R1-R3 of 2026-11-09): free writer slots and ready `[writer]` boxes meet. Names the boxes and the `/writers-now` line, never spawns. Runs in every phase (the call passes `phase=False`: a babysit or merge phase no longer stands it down); outranked (IDLE_OUTRANKED_BY), it rides the advisory queue. It reads only the PR's plan set, one plan per PR. The subject latch keeps an unchanged set from holding every stop: it surfaces again after 30 minutes or when the set changes.
     if _on_loop and _loop is not None and _roster is not None and not _roster.get("blind"):
         try:
             _ic_text = wl_boxready.idle_capacity_text(

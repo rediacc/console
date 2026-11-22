@@ -417,12 +417,12 @@ def _landing_nodes(wl_ci, top, worklist, session_id, landing_branch):
     return [] if err else list(nodes or [])
 
 
-# `landing_released` when the merged sha or its release could not be read from gh (negative, so `> 0` stays "released").
+# `landing_released` when the merged sha or its release could not be read from gh (negative, so `> 0` is False: it reads as not released, and callers test `== UNREADABLE_RELEASE` to name the unreadable case).
 UNREADABLE_RELEASE = -1
 
 
 def landing_released(top, nodes, gh=None):
-    """The landing PR's number once it is MERGED (and none is open) and its release at the merged sha is fully green (D3), else 0. Read from the development tree, which promotes; a failed read answers 0, so promote is never named on a guess."""
+    """The landing PR's number once it is MERGED (and none is open) and its release at the merged sha is fully green (D3), else 0. Read from the development tree, which promotes; a failed read answers `UNREADABLE_RELEASE` (-1), which is not `> 0`, so promote is never named on a guess and the caller can still tell it from 0."""
     state, pr, _body = landing_pr(nodes)
     if state != "MERGED":
         return 0

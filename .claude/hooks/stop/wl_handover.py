@@ -113,9 +113,9 @@ def fold(worklist, root=None, events: list[dict] | None = None) -> dict[str, dic
                 "answered_at": "",
                 "answered_by": "",
             }
-        elif "answer" in ev and hid in out and valid_answer(str(ev.get("answer") or "")):
+        elif "answer" in ev and hid in out and valid_answer(answer := str(ev.get("answer") or "")):
             out[hid].update(
-                answer=str(ev["answer"]),
+                answer=answer,
                 answered_at=str(ev.get("at") or ""),
                 answered_by=str(ev.get("by") or ""),
             )
@@ -178,7 +178,7 @@ def open_text(rec: dict, me8: str) -> str:
         else "landing fixes broke previously green checks"
     )
     act = (
-        "cut a lease on the landing tip (`./run.sh worktree lease --tree landing`), brief a writer with `Handover: #%s`, then answer `lease:<lease-id>`"
+        "cut a lease on the landing tip (`./run.sh worktree lease --tree landing`), brief a writer on the stuck check (a brief naming `Plan:` or `Owns:` for the landing fix; handover #%s is the record), then answer `lease:<lease-id>`"
         % rec["id"]
         if rec["kind"] == "stuck"
         else "decide keep, change or undo"

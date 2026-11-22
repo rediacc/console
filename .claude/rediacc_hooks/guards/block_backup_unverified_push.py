@@ -36,7 +36,7 @@ from rediacc_hooks.guards import block_vm_unverified_push as VM
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-# The last pre-bash slot: the ledger line is the admission record, so it is written only after every other guard has let the command through.
+# The last slot of the chain's push guards before `block_renet_untested_push` (ORDER 65) closes it: the ledger line is the admission record, so it is written only after every other guard has let the command through.
 ORDER = 63
 
 # The touched test, inverted: planted, every push reads as untouched and passes without a receipt.

@@ -50,7 +50,8 @@ def test_a_stuck_handover_blocks_the_development_stop_and_not_the_landing_stop()
     assert "HANDOVER #aaaa0001" in text
     assert "--handover-answer %s aaaa0001" % ME in text
     assert "worktree lease --tree landing" in text
-    assert "Handover: #aaaa0001" in text
+    assert "handover #aaaa0001 is the record" in text
+    assert "Handover: #" not in text
     # Control: the landing tree owes nothing for an unanswered handover.
     assert findings(events, H.ROLE_LANDING) == []
     # Control: a checkout with no role reads nothing.
