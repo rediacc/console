@@ -377,3 +377,44 @@ def test_prreview_control_without_a_record_gh_stays_in_the_file_tree(tmp_path, m
     monkeypatch.setattr(P, "CONSOLE_ROOT", main)
     monkeypatch.chdir(landing)
     assert P.run_gh(["pr", "view"]) == (0, "%s\n" % main, "")
+
+
+def _answer_root(tmp_path, monkeypatch, cwd, file_root):
+    """The tree `cmd_answer` hands to `validate` when no repo_root is passed, with the shell standing in `cwd` (review ff451161.1)."""
+    seen = {}
+
+    class _View:
+        summary = "summary present"
+        verdict = "findings"
+        summary_id = "1"
+        number = 605
+
+        def findings(self):
+            return [{"n": 1}]
+
+    def _validate(*args):
+        repo_root = args[2]
+        seen["root"] = repo_root
+        return ["stop here: the test reads only the tree"]
+
+    monkeypatch.setattr(P, "CONSOLE_ROOT", file_root)
+    monkeypatch.setattr(P, "read_view", lambda *_a: _View())
+    monkeypatch.setattr(P, "parse_dispositions", lambda *_a: (None, [], []))
+    monkeypatch.setattr(P, "validate", _validate)
+    answers = tmp_path / "answers.md"
+    answers.write_text("# answers\n", encoding="utf-8")
+    monkeypatch.chdir(cwd)
+    P.cmd_answer(605, answers, runner=None)
+    return seen.get("root")
+
+
+def test_prreview_answer_checks_ancestry_in_the_landing_tree_when_typed_there(
+    tmp_path, monkeypatch
+):
+    main, landing, _a, _b = _trees(tmp_path)
+    assert _answer_root(tmp_path, monkeypatch, landing, main) == landing
+
+
+def test_prreview_answer_control_stays_in_the_main_checkout_when_typed_there(tmp_path, monkeypatch):
+    main, landing, _a, _b = _trees(tmp_path)
+    assert _answer_root(tmp_path, monkeypatch, main, landing) == main
