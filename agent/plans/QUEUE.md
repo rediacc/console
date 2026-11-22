@@ -57,7 +57,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 2086 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 2091 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
@@ -66,15 +66,15 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 6 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic fe958571, no plan, 15 commit(s) on the branch, 0 open item(s): nginx2root and PHP 2026-11-19 security patching (hostinger + templates)
   - epic 422370f4, no plan, 5 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:aef0580067b82f6ad.
-- Leased items: 5: #51fb685e (worker:aef0580067b82f6ad, d778be9d), #664e36ae (worker:aaa49d70869534c1f, d778be9d), #8e42e148 (worker:aef0580067b82f6ad, d778be9d), #ab9c68b1 (worker:be39zjfwp, d778be9d), #c276a9df (worker:bzcbi0ri0, d778be9d).
+- Writers: 2 live of writer_cap 25 (session ace763dd): worker:aad3847e4830e625c, worker:a1562580d7c3224df.
+- Leased items: 6: #5ba0a1ce (worker:aad3847e4830e625c, ace763dd), #664e36ae (worker:aaa49d70869534c1f, d778be9d), #855d7340 (worker:b6jocj052, d778be9d), #876420de (worker:a1562580d7c3224df, ace763dd), #ab9c68b1 (worker:be39zjfwp, d778be9d), #c276a9df (worker:bzcbi0ri0, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 29 of 87 plans done, 1329 of 1619 boxes done (82%).
+Promoted: 29 of 87 plans done, 1329 of 1643 boxes done (80%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -164,7 +164,7 @@ Promoted: 29 of 87 plans done, 1329 of 1619 boxes done (82%).
 | 84 | PLAN-pr-loop-single-source.md | 5/9 | 4 open |
 | 85 | PLAN-two-track-merge-dev.md | 35/44 | 9 open |
 | 86 | PLAN-simple-two-tree-loop.md | 7/12 | 5 open |
-| 87 | PLAN-preview-signer.md | 0/13 | 13 open |
+| 87 | PLAN-preview-signer.md | 0/37 | 37 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
@@ -253,7 +253,7 @@ Promoted: 29 of 87 plans done, 1329 of 1619 boxes done (82%).
 84. agent/plans/PLAN-pr-loop-single-source.md -- operator 2026-11-20 request (#a70fd30e): one file per PR-loop rule, /pr-babysit a launcher over the agent file, scope-mirrors per-clause canonical with ref pointers, and the check:ci-prose-duplication drift gate; starts after PR #605 merges
 85. agent/plans/PLAN-two-track-merge-dev.md -- operator 2026-11-20 /ask approval (#688f35df, #527aa5b2): PR freeze guard, plan-implementation fact cache and core priority, prose-style cache, account-server traced inputs, signed CI receipts from one devcontainer image; dev track deferred; inline after PR #605 merges
 86. agent/plans/PLAN-simple-two-tree-loop.md -- operator 2026-11-21 ("APPROVED!", rulings on #90129fe7): one always-on two-tree loop (the landing tree babysits, merges, watches the release and hotfixes the one PR; the development tree always builds), turbo, phases and five queue knobs deleted, effort the only setting
-87. agent/plans/PLAN-preview-signer.md -- operator 2026-11-22 ruling ASKED:2026-11-22T04:23Z "Per-preview signer, as a plan" (#51fb685e): a short-lived delegated signer per PR preview so rdc works fully against a preview; removes the preview link to signer-bench-eu.
+87. agent/plans/PLAN-preview-signer.md -- operator 2026-11-22 rulings ASKED:2026-11-22T04:23Z, 05:06Z, 05:23Z (#51fb685e, #5ba0a1ce): preview channel; customers test a PR on their own machines via a random-word preview address; rdc preview use/leave switches account service, rdc and touched servers renet to the PR builds and back; per-preview delegated signer, 7-day licences; operator-created preview accounts.
 
 ## Generated
 
