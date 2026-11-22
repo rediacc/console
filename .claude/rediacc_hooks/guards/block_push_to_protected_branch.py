@@ -24,6 +24,13 @@ THE ONE ADMITTED DIRECT PUSH, box M2 of PLAN-plan-per-pr-loop (operator ruling 2
   (d) it is the head of the OPEN PR for `<b>` (`gh pr view <b>`), and CI Complete is SUCCESS on it, read through `.ci/scripts/ci/ci-trace.py --json --ref <b>`, the sanctioned tracer, never a raw check read;
   (e) the plan gate (box L2, `plan_gate.plan_merge_refusal`, shared with `block_admin_merge`): the PR body's `Plan: agent/plans/PLAN-<slug>.md` line names a plan whose boxes are all ticked in the commit being pushed (with `turbo: on` in agent/plans/QUEUE.md in that same commit, any number of plans, each with every box ticked, agent/plans/PLAN-stop-hook-turbo.md D6), or the body carries an `Operational-Reason:` line. A body that cannot be read, or that names no plan and gives no reason, is refused.
 
+THE SUBMODULE FALLBACK (operator ruling ASKED:2026-11-22T11:11Z, worklist #fb93df1e). On 2026-11-22 GitHub refused `gh pr merge --rebase` on rediacc/account#102 and rediacc/renet#121 ("This branch can't be rebased", mergeable_state clean), and the operator pushed each submodule's PR head to its `main` by hand. The same fallback is admitted in a submodule, exactly as narrow:
+
+  (a') the shape of (a), and the source of (b), in a repository that a bound tree's `.gitmodules` registers (the console checkout's `private/<sm>`, or the landing tree's), never a gitignored repository that merely sits inside one;
+  (c') the commit is the submodule's own `origin/<b>` and its `origin/main` is an ancestor (the same `commit_policy.ff_fallback_refusal`);
+  (d') the GitHub repository is the one the registered URL names, `https://github.com/<owner of the console>/<name>`, and its OPEN PR for `<b>` has `<b>` as `headRefName`, the commit as `headRefOid`, `mergeStateStatus` CLEAN and zero unresolved review threads (GraphQL `reviewThreads.isResolved`);
+  (e') the console PR for the same branch name is OPEN: the submodule lands first, inside the console PR's coordinated land. A submodule has no CI Complete and no plan, so neither is read.
+
 THE GITLAB MIRROR PUSH (operator ruling 2026-10-03, worklist #1cad85a1: "Allow the agent to push it"). Step 6b of `.claude/commands/pr-merge.md` copies GitHub's `main` to the self-hosted mirror after each merge. It is admitted only as:
 
   (f) one `git push` to the remote named `gitlab`, with exactly one refspec `main:main` or `refs/heads/main:refs/heads/main` and no flag but `--follow-tags`, -q and -v: no --force, --force-with-lease, `+`, --delete, --tags, --all or --mirror;
@@ -132,13 +139,21 @@ githooks = importlib.util.module_from_spec(_GITHOOKS_SPEC)
 _GITHOOKS_SPEC.loader.exec_module(githooks)
 # Every field of the `gh pr view` answer the fallback reads. A missing one is refused by name (65f2a27e.2: it used to read "PR #None").
 PR_FIELDS = ("number", "state", "headRefOid", "body")
+# The submodule fallback's reads (conditions d' and e'): its own PR, the console PR for the same branch, and the review threads, which `gh pr view` does not expose.
+SUB_PR_FIELDS = ("number", "state", "headRefName", "headRefOid", "mergeStateStatus")
+CONSOLE_PR_FIELDS = ("number", "state")
+SUB_URL = re.compile(r"^https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\.git)?/?$")
+THREADS_QUERY = (
+    "query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name)"
+    "{pullRequest(number:$number){reviewThreads(first:100){totalCount nodes{isResolved}}}}}"
+)
 
 MESSAGE = (
     "BLOCKED: this pushes straight to a PROTECTED branch (main). Direct pushes bypass code review and required status checks -- which is exactly what happened on 2026-09-22, when a script run through this tool's own Bash access (update-homebrew-tap.sh's update_submodule_pointer()) ran `git push origin HEAD:main` from the real working checkout, GitHub let it through as an admin bypass, and the branch's open PR auto-flipped to MERGED with red CI on its last several runs.\n"
     "\n"
     "Refused in every spelling: explicit (`git push origin main`, `HEAD:main`, `refs/heads/main`, `:main`, `--delete main`, `--all`, with or without `-C`/`-c` before `push`) or implicit (a bare `git push` / `git push origin` / `git push origin HEAD` while this checkout is ON main).\n"
     "\n"
-    "Land through the PR: `gh pr merge <n> --rebase --auto` (.claude/commands/pr-merge.md). The GitLab mirror push of step 6b (operator ruling 2026-10-03) is admitted as `git push gitlab refs/heads/main:refs/heads/main --follow-tags` (or `main:main`), nothing forced, from the console checkout, where `gitlab` is the console mirror and local `main` is exactly `origin/main`. The ONE admitted direct push to GitHub (operator ruling 2026-10-02) is the fast-forward fallback for a PR GitHub cannot rebase: `git push origin origin/<MMDD-N branch>:main` (or `<branch>:main`, or `<sha>:main`), one refspec, no force/lease/`+`/delete/tags, from the console checkout (on any branch: the PR is read from the source, not the checkout), where the commit is the branch's pushed tip AND its open PR's head, `origin/main` is its ancestor, CI Complete is SUCCESS on it (read through .ci/scripts/ci/ci-trace.py), and the PR body names its plan (`Plan: agent/plans/PLAN-<slug>.md`; several under `turbo: on` in agent/plans/QUEUE.md at that commit) with every box ticked, or carries an `Operational-Reason:` line."
+    "Land through the PR: `gh pr merge <n> --rebase --auto` (.claude/commands/pr-merge.md). The GitLab mirror push of step 6b (operator ruling 2026-10-03) is admitted as `git push gitlab refs/heads/main:refs/heads/main --follow-tags` (or `main:main`), nothing forced, from the console checkout, where `gitlab` is the console mirror and local `main` is exactly `origin/main`. The ONE admitted direct push to GitHub (operator ruling 2026-10-02) is the fast-forward fallback for a PR GitHub cannot rebase: `git push origin origin/<MMDD-N branch>:main` (or `<branch>:main`, or `<sha>:main`), one refspec, no force/lease/`+`/delete/tags, from the console checkout (on any branch: the PR is read from the source, not the checkout), where the commit is the branch's pushed tip AND its open PR's head, `origin/main` is its ancestor, CI Complete is SUCCESS on it (read through .ci/scripts/ci/ci-trace.py), and the PR body names its plan (`Plan: agent/plans/PLAN-<slug>.md`; several under `turbo: on` in agent/plans/QUEUE.md at that commit) with every box ticked, or carries an `Operational-Reason:` line. In a submodule the same push is admitted from its own directory (`git -C private/<sm> push origin <branch or sha>:main`) when the commit is its pushed tip and a fast-forward, the submodule PR for that branch is OPEN with that head, CLEAN and with no unresolved review thread, and the console PR for the same branch is OPEN."
 )
 
 EDGE_CASES = [
@@ -185,7 +200,7 @@ TWO_TREE_DEFECT = ("trees = commit_policy.bound_trees(root)", "trees = [root]")
 
 
 def _console_tree(repo, root):
-    """Whether `repo` is the toplevel of one of the bound trees itself (a submodule of one is not: it has no mirror and no fallback)."""
+    """Whether `repo` is the toplevel of one of the bound trees itself (a submodule of one is not: it has no mirror, and its fallback is `_submodule_repo`'s)."""
     trees = commit_policy.bound_trees(root)
     return bool(repo) and os.path.realpath(repo) in {os.path.realpath(t) for t in trees}
 
@@ -240,33 +255,34 @@ def _dry_run_only(cmd, text_scan):
     return all(_parsed(run).on("dry-run") for run in pushes)
 
 
-def _gh_pr(live):
-    """(pr dict, "") for the live branch's PR, or (None, why not)."""
+def _gh_json(args):
+    """(decoded JSON, "") from `gh <args>`, or (None, why not): every gh read of the fallback goes through here."""
     try:
         proc = subprocess.run(
-            ["gh", "pr", "view", live, "--repo", GH_REPO, "--json", "number,state,headRefOid,body"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
+            ["gh", *args], capture_output=True, text=True, timeout=30, check=False
         )
     except (OSError, subprocess.SubprocessError) as exc:
-        return None, "`gh pr view %s` could not run (%s)" % (live, exc)
+        return None, "gh could not run (%s)" % exc
     if proc.returncode != 0:
         err = (proc.stderr or proc.stdout or "").strip().split("\n")[0][:160]
-        return None, "no PR for `%s` could be read (gh: %s)" % (live, err or proc.returncode)
+        return None, "gh: %s" % (err or proc.returncode)
     try:
-        pr = json.loads(proc.stdout)
+        return json.loads(proc.stdout), ""
     except ValueError:
-        return None, "`gh pr view %s` returned no JSON" % live
+        return None, "gh returned no JSON"
+
+
+def _gh_pr(branch, repo=GH_REPO, fields=PR_FIELDS):
+    """(pr dict, "") for the PR of `branch` in the GitHub repository `repo`, carrying every one of `fields`, or (None, why not)."""
+    view = "gh pr view %s --repo %s" % (branch, repo)
+    pr, why = _gh_json(["pr", "view", branch, "--repo", repo, "--json", ",".join(fields)])
+    if why:
+        return None, "no PR for `%s` in %s could be read (%s)" % (branch, repo, why)
     if not isinstance(pr, dict):
-        return None, "`gh pr view %s` returned no PR" % live
-    missing = [f for f in PR_FIELDS if f not in pr or pr[f] is None]
+        return None, "`%s` returned no PR" % view
+    missing = [f for f in fields if f not in pr or pr[f] is None]
     if missing:
-        return None, "`gh pr view %s` answered without %s" % (
-            live,
-            ", ".join("`%s`" % f for f in missing),
-        )
+        return None, "`%s` answered without %s" % (view, ", ".join("`%s`" % f for f in missing))
     return pr, ""
 
 
@@ -364,8 +380,12 @@ def ff_fallback_refusal(ev, cmd, scan, text_scan):
         return "the refspec `%s` is not `<live branch or sha>:main`" % refspec
     root = ev.project_dir
     repo = commit_policy.run_repo(run, ev.field("cwd") or root)
+    # A registered submodule has the fallback too (conditions a' to e'), judged against its own GitHub repository; any other repository has none.
+    sub_repo = ""
     if not _console_tree(repo, root):
-        return "only the console checkout's own main has the fallback"
+        sub_repo, why = _submodule_repo(repo, root)
+        if why:
+            return why
     # THE BRANCH COMES FROM THE PUSHED SOURCE, NEVER FROM THE CHECKOUT (worklist #c1474aae). On 2026-10-08 the operator parked 1007-1's local commits onto a new branch 1008-1, and `git push origin origin/1007-1:main` was refused as "not the live branch 1008-1" although every condition held for PR #599's head 6779389a9. What moves `main` is the commit the refspec names, so that commit, and the PR whose head it is, are the whole question.
     named = _source_branch(src)
     if named is None and not SHA.match(src):
@@ -401,7 +421,11 @@ def ff_fallback_refusal(ev, cmd, scan, text_scan):
     # A sha names no branch, so every MMDD-N branch whose pushed tip it is gets asked for its open PR; the first that passes every remaining condition admits the push.
     reasons = []
     for branch in pushed:
-        why = _pr_refusal(repo, branch, sha)
+        why = (
+            _submodule_pr_refusal(sub_repo, branch, sha)
+            if sub_repo
+            else _pr_refusal(repo, branch, sha)
+        )
         if not why:
             return ""
         reasons.append(why)
@@ -435,6 +459,111 @@ def _pr_refusal(repo, branch, sha):
     if plan:
         return "PR #%s fails the plan gate: %s" % (pr.get("number"), plan)
     return _ci_green(branch, pr.get("number"), sha)
+
+
+def _submodule_repo(repo, root):
+    """("<owner>/<name>", "") for the GitHub repository of the submodule a bound tree's `.gitmodules` registers at `repo`, else ("", why not). The owner must be the console's own, and the URL is read from `.gitmodules`, never from the submodule's remotes."""
+    if not repo:
+        return "", "the pushing repository cannot be read"
+    tree = commit_policy.owning_tree(repo, commit_policy.bound_trees(root))
+    if tree is None or os.path.realpath(tree) == os.path.realpath(repo):
+        return "", (
+            "only the console checkout and the submodules its `.gitmodules` registers have the fallback"
+        )
+    rel = os.path.relpath(os.path.realpath(repo), os.path.realpath(tree))
+    listing = commit_policy.git(
+        ["config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$"],
+        cwd=tree,
+        foreign=True,
+    )
+    for line in (listing or "").splitlines():
+        key, _, path = line.partition(" ")
+        if os.path.normpath(path.strip()) != rel:
+            continue
+        url = commit_policy.git(
+            ["config", "-f", ".gitmodules", "--get", key[: -len(".path")] + ".url"],
+            cwd=tree,
+            foreign=True,
+        )
+        match = SUB_URL.match(url or "")
+        owner = GH_REPO.split("/")[0]
+        if not match or match.group(1) != owner or "%s/%s" % match.group(1, 2) == GH_REPO:
+            return "", "the submodule `%s` URL `%s` is not `https://github.com/%s/<name>`" % (
+                rel,
+                url,
+                owner,
+            )
+        return "%s/%s" % match.group(1, 2), ""
+    return "", "`.gitmodules` names no URL for the submodule `%s`" % rel
+
+
+def _unresolved_threads(gh_repo, number):
+    """ "" when PR `number` of `gh_repo` has zero unresolved review threads, else why not. A thread list that cannot be read whole is a refusal."""
+    owner, name = gh_repo.split("/", 1)
+    data, why = _gh_json(
+        [
+            "api",
+            "graphql",
+            "-f",
+            "query=" + THREADS_QUERY,
+            "-F",
+            "owner=" + owner,
+            "-F",
+            "name=" + name,
+            "-F",
+            "number=%s" % number,
+        ]
+    )
+    if why:
+        return "the review threads of %s#%s cannot be read (%s)" % (gh_repo, number, why)
+    try:
+        threads = data["data"]["repository"]["pullRequest"]["reviewThreads"]
+        nodes, total = threads["nodes"], threads["totalCount"]
+    except (KeyError, TypeError):
+        return "the review threads of %s#%s came back without `reviewThreads`" % (gh_repo, number)
+    if not isinstance(nodes, list) or total != len(nodes):
+        return "%s#%s has %s review thread(s) and they could not all be read" % (
+            gh_repo,
+            number,
+            total,
+        )
+    unresolved = sum(1 for node in nodes if not (node or {}).get("isResolved"))
+    if unresolved:
+        return "%s#%s has %d unresolved review thread(s)" % (gh_repo, number, unresolved)
+    return ""
+
+
+def _submodule_pr_refusal(gh_repo, branch, sha):
+    """ "" when `sha` is the head of the OPEN, CLEAN PR for `branch` in the submodule's `gh_repo` with no unresolved review thread, and the console PR for `branch` is OPEN, else why not (conditions d' and e')."""
+    pr, why = _gh_pr(branch, gh_repo, SUB_PR_FIELDS)
+    if pr is None:
+        return why
+    number = pr["number"]
+    if pr["state"] != "OPEN":
+        return "%s#%s for `%s` is %s, not open" % (gh_repo, number, branch, pr["state"])
+    if pr["headRefName"] != branch:
+        return "%s#%s heads `%s`, not `%s`" % (gh_repo, number, pr["headRefName"], branch)
+    if pr["headRefOid"] != sha:
+        return "`%s` is not the head of %s#%s (`%s`)" % (
+            sha[:12],
+            gh_repo,
+            number,
+            str(pr["headRefOid"])[:12],
+        )
+    if pr["mergeStateStatus"] != "CLEAN":
+        return "%s#%s merge state is %s, not CLEAN" % (gh_repo, number, pr["mergeStateStatus"])
+    why = _unresolved_threads(gh_repo, number)
+    if why:
+        return why
+    console, why = _gh_pr(branch, GH_REPO, CONSOLE_PR_FIELDS)
+    if console is None:
+        return "the console PR for the same branch cannot be read: %s" % why
+    if console["state"] != "OPEN":
+        return (
+            "the console PR #%s for `%s` is %s, not open; a submodule lands first, inside the console PR's land"
+            % (console["number"], branch, console["state"])
+        )
+    return ""
 
 
 def run(ev):

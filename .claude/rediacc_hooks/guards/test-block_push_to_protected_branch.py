@@ -235,10 +235,24 @@ if mode == "down":
     sys.stderr.write("gh: could not connect\n")
     sys.exit(1)
 if a[:2] == ["pr", "view"]:
+    repo = a[a.index("--repo") + 1] if "--repo" in a else ""
+    if repo != "rediacc/console":
+        # A submodule's PR (the submodule fallback): answered only for FX_SUB_REPO, so a guard asking the wrong repository reads no PR.
+        if os.environ.get("FX_SUB") == "nopr" or repo != os.environ.get("FX_SUB_REPO", "rediacc/sm"):
+            sys.stderr.write('no pull requests found for branch "%s"\n' % a[2])
+            sys.exit(1)
+        print(json.dumps({
+            "number": 3,
+            "state": os.environ.get("FX_SUB_STATE", "OPEN"),
+            "headRefName": os.environ.get("FX_SUB_REF", a[2]),
+            "headRefOid": os.environ.get("FX_SUB_HEAD", head),
+            "mergeStateStatus": os.environ.get("FX_SUB_MERGE", "CLEAN"),
+        }))
+        sys.exit(0)
     if mode == "nopr" or a[2] == os.environ.get("FX_NOPR_FOR"):
         sys.stderr.write('no pull requests found for branch "%s"\n' % a[2])
         sys.exit(1)
-    pr = {"number": 7, "state": "OPEN", "headRefOid": head, "body": body}
+    pr = {"number": 7, "state": os.environ.get("FX_STATE", "OPEN"), "headRefOid": head, "body": body}
     if mode == "nobody":
         del pr["body"]
     if mode == "nonumber":
@@ -247,6 +261,12 @@ if a[:2] == ["pr", "view"]:
     sys.exit(0)
 if a[:2] == ["api", "graphql"]:
     query = " ".join(a)
+    if "reviewThreads" in query:
+        # FX_THREADS: one isResolved flag per thread ("1" resolved, "0" not); FX_THREADS_TOTAL a totalCount beyond the nodes returned.
+        nodes = [{"isResolved": f == "1"} for f in os.environ.get("FX_THREADS", "1").split(",") if f]
+        total = int(os.environ.get("FX_THREADS_TOTAL", len(nodes)))
+        print(json.dumps({"data": {"repository": {"pullRequest": {"reviewThreads": {"totalCount": total, "nodes": nodes}}}}}))
+        sys.exit(0)
     if "pullRequests(" in query:
         if mode == "nopr":
             print(json.dumps({"data": {"repository": {"pullRequests": {"nodes": []}}}}))
@@ -1238,9 +1258,322 @@ for _label, _argv in (("defect", BROKEN_ARGV), ("helper", HELPER_ARGV)):
         )
         fails += 1
 
+
+# ---- the submodule fallback (operator ruling ASKED:2026-11-22T11:11Z, worklist #fb93df1e) ----
+# A console-shaped checkout whose `.gitmodules` registers submodules at `private/<name>`, each a live world (`_make_live`: a real bare origin, `origin/0914-1` one commit ahead of `origin/main`) moved into place. `private/stray` is a repository the `.gitmodules` does not register, and `private/rogue` is registered with a URL outside the console's owner.
+def _make_console(subs):
+    """A console checkout registering `subs` ({path: url}) in a committed `.gitmodules`, with a `BRANCH` branch for a landing tree to check out."""
+    c = pathlib.Path(os.path.realpath(tempfile.mkdtemp(prefix="console-", dir=RUN_TMP)))
+    _git(c, "init", "-q", "--initial-branch=%s" % MAIN)
+    for path, url in subs.items():
+        _git(c, "config", "-f", ".gitmodules", "submodule.%s.path" % path, path)
+        _git(c, "config", "-f", ".gitmodules", "submodule.%s.url" % path, url)
+    _git(c, "add", "--", ".gitmodules")
+    _git(c, "commit", "-q", "-m", "register the submodules")
+    _git(c, "branch", BRANCH)
+    return c
+
+
+def _plant_sub(tree, path, **kw):
+    """A live world moved to `tree/path`, the shape of a checked-out submodule."""
+    target = pathlib.Path(tree) / path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    os.rename(_make_live(**kw), target)
+    return target
+
+
+SUB_MODULES = {
+    "private/sm": "https://github.com/rediacc/sm.git",
+    "private/ahead": "https://github.com/rediacc/ahead.git",
+    "private/behind": "https://github.com/rediacc/behind.git",
+    "private/rogue": "https://github.com/someone/rogue.git",
+}
+SUB_C = _make_console(SUB_MODULES)
+SUB = _plant_sub(SUB_C, "private/sm")
+SUB_SHA = _tip(SUB, "origin/%s" % BRANCH)
+_git(SUB, "push", "-q", "origin", "%s:refs/heads/feature-x" % BRANCH)
+_git(SUB, "fetch", "-q", "origin")
+SUB_AHEAD = _plant_sub(SUB_C, "private/ahead", unpushed=True)
+SUB_AHEAD_LOCAL = _tip(SUB_AHEAD, BRANCH)
+SUB_BEHIND = _plant_sub(SUB_C, "private/behind", main_moved=True)
+SUB_BEHIND_SHA = _tip(SUB_BEHIND, "origin/%s" % BRANCH)
+SUB_ROGUE = _plant_sub(SUB_C, "private/rogue")
+SUB_ROGUE_SHA = _tip(SUB_ROGUE, "origin/%s" % BRANCH)
+SUB_STRAY = _plant_sub(SUB_C, "private/stray")
+SUB_STRAY_SHA = _tip(SUB_STRAY, "origin/%s" % BRANCH)
+# The landing tree's own submodule, typed from the main checkout's root (box LT11: either bound tree is this checkout).
+SUB_TT_M, SUB_TT_L = _two_tree(_make_console({"private/sm": SUB_MODULES["private/sm"]}))
+SUB_TT = _plant_sub(SUB_TT_L, "private/sm")
+SUB_TT_SHA = _tip(SUB_TT, "origin/%s" % BRANCH)
+
+
+def sfx(**over):
+    """A submodule case's environment: the stub on PATH and the submodule PR's head at `private/sm`'s pushed tip."""
+    over.setdefault("sub_head", SUB_SHA)
+    return fx(**over)
+
+
+_SM = "git -C private/sm push origin"
+# (name, command, root, extra env, expect_blocked, mutant). A mutant is `(preamble, [(old, new), ...])`: Python run before the guard loads, and replacements made in the guard's source, each `old` found exactly once. Under it a refused row must flip to allowed, which proves the row is refused by the condition it names and by nothing else.
+SUB_CASES: list[tuple[str, str, typing.Any, dict[str, str], bool, typing.Any]] = [
+    ("sub: ff of the branch name", "%s %s:%s" % (_SM, BRANCH, MAIN), SUB_C, sfx(), False, None),
+    ("sub: ff of the tip sha", "%s %s:%s" % (_SM, SUB_SHA, MAIN), SUB_C, sfx(), False, None),
+    (
+        "sub: ff of origin/<branch> after cd",
+        "cd private/sm && git push origin origin/%s:%s" % (BRANCH, MAIN),
+        SUB_C,
+        sfx(),
+        False,
+        None,
+    ),
+    (
+        "sub: refs spellings both sides",
+        "%s refs/remotes/origin/%s:refs/heads/%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(),
+        False,
+        None,
+    ),
+    (
+        "sub: the landing tree's submodule from the main root",
+        "git -C %s/private/sm push origin %s:%s" % (SUB_TT_L, BRANCH, MAIN),
+        SUB_TT_M,
+        sfx(sub_head=SUB_TT_SHA),
+        False,
+        None,
+    ),
+    # ---- refused controls, one per condition --------------------------------------------
+    (
+        "sub control: --force",
+        "git -C private/sm push --force origin %s:%s" % (BRANCH, MAIN),
+        SUB_C,
+        sfx(),
+        True,
+        ("", [("if flag not in FF_QUIET:", "if False:")]),
+    ),
+    (
+        "sub control: two refspecs",
+        "%s %s:%s %s" % (_SM, BRANCH, MAIN, BRANCH),
+        SUB_C,
+        sfx(),
+        True,
+        (
+            "",
+            [
+                (
+                    'if len(positionals) != 2:\n        return "the fallback names',
+                    'if len(positionals) < 2:\n        return "the fallback names',
+                ),
+                ("remote, refspec = positionals\n", "remote, refspec = positionals[:2]\n"),
+            ],
+        ),
+    ),
+    (
+        "sub control: the source is not the pushed tip",
+        "git -C private/ahead push origin %s:%s" % (BRANCH, MAIN),
+        SUB_C,
+        sfx(sub_repo="rediacc/ahead", sub_head=SUB_AHEAD_LOCAL),
+        True,
+        (
+            "commit_policy.ff_fallback_refusal = lambda *a: ''\n",
+            [("if named not in pushed:", "if False:")],
+        ),
+    ),
+    (
+        "sub control: origin/main is not an ancestor",
+        "git -C private/behind push origin %s:%s" % (BRANCH, MAIN),
+        SUB_C,
+        sfx(sub_repo="rediacc/behind", sub_head=SUB_BEHIND_SHA),
+        True,
+        ("commit_policy.ff_fallback_refusal = lambda *a: ''\n", []),
+    ),
+    (
+        "sub control: the submodule PR is merged",
+        "%s %s:%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(sub_state="MERGED"),
+        True,
+        ("", [('if pr["state"] != "OPEN":', "if False:")]),
+    ),
+    (
+        "sub control: the submodule PR is closed",
+        "%s %s:%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(sub_state="CLOSED"),
+        True,
+        ("", [('if pr["state"] != "OPEN":', "if False:")]),
+    ),
+    (
+        "sub control: the PR head differs",
+        "%s %s:%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(sub_head=SUB_AHEAD_LOCAL),
+        True,
+        ("", [('if pr["headRefOid"] != sha:', "if False:")]),
+    ),
+    (
+        "sub control: the PR heads another branch",
+        "%s %s:%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(sub_ref="0914-9"),
+        True,
+        ("", [('if pr["headRefName"] != branch:', "if False:")]),
+    ),
+    (
+        "sub control: the PR is not CLEAN",
+        "%s %s:%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(sub_merge="BLOCKED"),
+        True,
+        ("", [('if pr["mergeStateStatus"] != "CLEAN":', "if False:")]),
+    ),
+    (
+        "sub control: an unresolved review thread",
+        "%s %s:%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(threads="1,0,1"),
+        True,
+        ("", [("if unresolved:", "if False:")]),
+    ),
+    (
+        "sub control: more review threads than were read",
+        "%s %s:%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(threads_total="150"),
+        True,
+        ("", [("or total != len(nodes):", "or False:")]),
+    ),
+    (
+        "sub control: the console PR is not open",
+        "%s %s:%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(state="MERGED"),
+        True,
+        ("", [('if console["state"] != "OPEN":', "if False:")]),
+    ),
+    (
+        "sub control: a branch that is not MMDD-N",
+        "%s feature-x:%s" % (_SM, MAIN),
+        SUB_C,
+        sfx(),
+        True,
+        ("import re\ncommit_policy.BRANCH_SHAPE = re.compile(r'.')\n", []),
+    ),
+    (
+        "sub control: no submodule PR at all",
+        "%s %s:%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(sub="nopr"),
+        True,
+        (
+            "",
+            [
+                (
+                    "pr, why = _gh_pr(branch, gh_repo, SUB_PR_FIELDS)",
+                    "pr, why = {'number': 3, 'state': 'OPEN', 'headRefName': branch, 'headRefOid': sha, 'mergeStateStatus': 'CLEAN'}, ''",
+                )
+            ],
+        ),
+    ),
+    (
+        "sub control: gh is down",
+        "%s %s:%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(gh="down"),
+        True,
+        None,
+    ),
+    (
+        "sub control: a URL outside the console's owner",
+        "git -C private/rogue push origin %s:%s" % (BRANCH, MAIN),
+        SUB_C,
+        sfx(sub_repo="someone/rogue", sub_head=SUB_ROGUE_SHA),
+        True,
+        ("", [("if not match or match.group(1) != owner or", "if not match or")]),
+    ),
+    # Refused twice over (no `.gitmodules` entry, so no URL either), so no single mutant flips it.
+    (
+        "sub control: a repository the .gitmodules does not register",
+        "git -C private/stray push origin %s:%s" % (BRANCH, MAIN),
+        SUB_C,
+        sfx(sub_repo="rediacc/stray", sub_head=SUB_STRAY_SHA),
+        True,
+        None,
+    ),
+    (
+        "sub control: HEAD as the source",
+        "%s HEAD:%s" % (_SM, MAIN),
+        SUB_C,
+        sfx(),
+        True,
+        None,
+    ),
+]
+
+
+def _mutant_argv(preamble, pairs):
+    """A runner for the guard with `preamble` executed first and `pairs` replaced in its source, each `old` exactly once."""
+    return [
+        sys.executable,
+        "-c",
+        (
+            "import sys; sys.path.insert(0, %r)\n"
+            "from rediacc_hooks import commit_policy, hookio\n"
+            "%s"
+            "src = open(%r, encoding='utf-8').read()\n"
+            "for old, new in %r:\n"
+            "    assert src.count(old) == 1, 'the mutant no longer applies: %%r' %% old\n"
+            "    src = src.replace(old, new)\n"
+            "ns = {'__name__': 'broken', '__file__': %r}\n"
+            "exec(compile(src, 'broken', 'exec'), ns)\n"
+            "ev = hookio.Event(sys.stdin.read())\n"
+            "rc = ns['run'](ev)\n"
+            "sys.stderr.write(ev.result(rc)[2])\n"
+            "sys.exit(rc)\n"
+        )
+        % (
+            str(pathlib.Path(__file__).resolve().parents[2]),
+            preamble,
+            _GUARD_FILE,
+            pairs,
+            _GUARD_FILE,
+        ),
+    ]
+
+
+for name, command, root, extra, want, mutant in SUB_CASES:
+    got, err = run(command, root, extra)
+    blocked += got
+    ok = got == want
+    flip = ""
+    if ok and mutant is not None:
+        flipped, ferr = run(command, root, extra, argv=_mutant_argv(*mutant))
+        ok = flipped != want
+        flip = " (mutant flips it)" if ok else " (MUTANT DID NOT FLIP IT)"
+        if not ok:
+            err = ferr
+    fails += not ok
+    print(
+        "%-72s want=%-9s got=%-9s %s%s"
+        % (
+            name,
+            "BLOCKED" if want else "allowed",
+            "BLOCKED" if got else "allowed",
+            "ok" if ok else "*** FAIL ***",
+            flip,
+        )
+    )
+    if not ok and err:
+        print("    stderr: %s" % err.strip().splitlines()[-3:])
+
 # A count, not a concatenation: the case lists carry different tuple shapes.
 TOTAL = (
-    len(CASES) + len(GIT_CASES) + len(MIRROR_CASES) + len(REAL_MIRROR_CASES) + len(TWO_TREE_CASES)
+    len(CASES)
+    + len(GIT_CASES)
+    + len(MIRROR_CASES)
+    + len(REAL_MIRROR_CASES)
+    + len(TWO_TREE_CASES)
+    + len(SUB_CASES)
 )
 
 print()
