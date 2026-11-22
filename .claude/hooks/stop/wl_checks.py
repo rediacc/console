@@ -2754,7 +2754,9 @@ def _receipt_vouches_for_tree(receipt, tree):
 
 
 def green_receipt_on_unpushed_head(root, receipt_path=None):
-    """True only when a green pre-push receipt (`exitCode` 0) judged the tree HEAD names, and HEAD is not yet on its upstream: the push that receipt buys is still owed, and landing a lease now would move HEAD and void it. The receipt is read per tree, the way the push guard reads it: the archive copy `.ci/cache/receipts/<HEAD^{tree}>.json` first (only when it names that tree and is a whole run), then the latest file, and it speaks for HEAD when its `headTree` is HEAD's tree or its `advances` chain reaches it, so a record-only commit after a green run still reads as a receipt. A missing or malformed receipt, a red one, a receipt for another tree, a HEAD git cannot read, or a HEAD its upstream already contains reads False, so a blind reading never stands the unlanded-lease block down."""
+    """True only when a green pre-push receipt (`exitCode` 0) judged the tree HEAD names, and HEAD is not yet on its upstream: the push that receipt buys is still owed, and landing a lease now would move HEAD and void it.
+    The receipt is read per tree, the way the push guard reads it: the archive copy `.ci/cache/receipts/<HEAD^{tree}>.json` first (only when it names that tree and is a whole run), then the latest file, and it speaks for HEAD when its `headTree` is HEAD's tree or its `advances` chain reaches it, so a record-only commit after a green run still reads as a receipt.
+    A missing or malformed receipt, a red one, a receipt for another tree, a HEAD git cannot read, or a HEAD its upstream already contains reads False, so a blind reading never stands the unlanded-lease block down."""
     tree = _git_out(root, "rev-parse", "HEAD^{tree}")
     if not tree or not _TREE_RE.match(tree):
         return False
@@ -7134,7 +7136,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 session_id,
                 state_doc,
                 "hint-proposals",
-                wl_hints.pending_note(session_id, len(pending)),
+                wl_hints.pending_note(session_id, pending),
                 3,
                 refresh_min=wl_hints.PROPOSAL_REFRESH_MIN,
             )

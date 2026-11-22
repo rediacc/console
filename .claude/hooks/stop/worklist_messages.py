@@ -1443,6 +1443,11 @@ N_HINT_PROPOSALS_PENDING = (
     "HINTS/TRAPS diffs and gate/test/tool briefs under %(dir)s."
 )
 
+# THE CLUSTERS NAMED (PLAN-weekly-lessons.md D1, D6): a family of 3 or more pending proposals is one box of the weekly lessons plan, counted after source keys fold into families.
+N_HINT_CLUSTERS_READY = (
+    " %(k)d source family(ies) hold 3 or more of them, one weekly-lessons box each: %(families)s."
+)
+
 CLI_HINT_RESOLVE_USAGE = (
     "usage: worklist.py --hint-resolve <my-prefix> <proposal-id> <kind>:<token>\n"
     "  kind is one of: trap, guard, gate, hook, test, commit.\n"

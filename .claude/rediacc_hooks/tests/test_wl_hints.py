@@ -399,11 +399,25 @@ def test_proposal_id_is_derived_for_old_rows_and_written_for_new_ones(tmp_path):
 
 def test_pending_note_names_the_curator_and_its_run_directory():
     h = _hints()
-    note = h.pending_note("d778be9d-aaaa", 3)
+    rows = [
+        {"id": "a1", "source": "judge"},
+        {"id": "a2", "source": "stop-judge"},
+        {"id": "b1", "source": "wake-timer"},
+    ]
+    note = h.pending_note("d778be9d-aaaa", rows)
     assert note.startswith("3 hint proposal(s)"), note
     assert "lesson-curator" in note, note
     assert "agent/d778be9d/lessons/e" in note, note
     assert "--hint-resolve d778be9d <id> <kind>:<token>" in note, note
+    # control: no family reaches 3, so no cluster is named
+    assert "weekly-lessons box" not in note, note
+    rows.append({"id": "a3", "source": "stop-gate-judge"})
+    note = h.pending_note("d778be9d-aaaa", rows)
+    assert note.startswith("4 hint proposal(s)"), note
+    assert (
+        "1 source family(ies) hold 3 or more of them, one weekly-lessons box each: judge (3)."
+        in note
+    ), note
 
 
 def test_hint_resolve_cli_refuses_an_unknown_id_and_a_dead_pointer_then_records_a_live_one(wl):

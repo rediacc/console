@@ -331,8 +331,8 @@ def lessons_dir(me8, epoch):
     return "agent/%s/lessons/e%s/" % (me8, epoch)
 
 
-def pending_note(session_id, n):
-    """The advisory line for `n` pending proposals, naming this session's curator run and its output directory. The epoch comes from the context band state; any failure reading it names epoch 0 rather than dropping the line."""
+def pending_note(session_id, rows):
+    """The advisory line for the pending proposal `rows`, naming this session's curator run, its output directory, and the source families already at D1's cluster threshold (each one box of the weekly lessons plan). The epoch comes from the context band state; any failure reading it names epoch 0 rather than dropping the line."""
     me8 = S.agent_session_slug(session_id)
     epoch = 0
     try:
@@ -341,9 +341,16 @@ def pending_note(session_id, n):
         epoch = int(wl_retro.ctx().load_state(session_id).get("epoch") or 0)
     except Exception:
         epoch = 0
-    return M.N_HINT_PROPOSALS_PENDING % {
-        "n": n,
+    ready = clusters(rows)
+    note = M.N_HINT_PROPOSALS_PENDING % {
+        "n": len(rows),
         "me8": me8,
         "epoch": epoch,
         "dir": lessons_dir(me8, epoch),
     }
+    if ready:
+        note += M.N_HINT_CLUSTERS_READY % {
+            "k": len(ready),
+            "families": ", ".join("%s (%d)" % (fam, len(ids)) for fam, ids in ready),
+        }
+    return note
