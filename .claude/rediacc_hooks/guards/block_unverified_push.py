@@ -1829,6 +1829,18 @@ CI_RAW_RE = re.compile(r"^\.ci/cache/ci-receipts/([0-9a-f]{64})\.json$")
 CI_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 
+def _gh_retry():
+    """`rediacc_ci.core.gh_retry`, so the attestation read retries a transient 5xx and fails a 4xx at once. A scoped, removed sys.path insert, the shape `_policy_rel` uses: a hook cannot import rediacc_ci at module level."""
+    cipath = str(hookio.repo_root() / ".ci")
+    inserted = syspath.on_sys_path(cipath)
+    try:
+        from rediacc_ci.core import gh_retry
+    finally:
+        if inserted and cipath in sys.path:
+            sys.path.remove(cipath)
+    return gh_retry
+
+
 def gh_attestation_verifier(data, source_digest, spec):
     """'' when `gh attestation verify` accepts `data` as built from `source_digest` by `spec`'s signer workflow, else why. The bytes are written to a private file first, so what is verified is exactly what was read. A missing gh, a timeout or a network failure is a refusal, never a pass: an unchecked origin is not a verified one."""
     if not CI_SHA_RE.match(source_digest or ""):
@@ -1838,13 +1850,17 @@ def gh_attestation_verifier(data, source_digest, spec):
         pathlib.Path(path).write_bytes(data)
         argv = ["gh", "attestation", "verify", path, "--repo", spec["repo"]]
         argv += ["--signer-workflow", spec["signer_workflow"], "--source-digest", source_digest]
+        gh_retry = _gh_retry()
         try:
-            proc = subprocess.run(
-                [*argv, "--format", "json"],
-                capture_output=True,
-                text=True,
-                timeout=120,
-                check=False,
+            proc = gh_retry.retry_transient(
+                lambda: subprocess.run(
+                    [*argv, "--format", "json"],
+                    capture_output=True,
+                    text=True,
+                    timeout=120,
+                    check=False,
+                ),
+                lambda r: (r.stderr or "") if r.returncode != 0 else None,
             )
         except FileNotFoundError:
             return "gh is not installed (https://cli.github.com, then gh auth login)"
