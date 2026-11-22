@@ -285,6 +285,19 @@ def test_promote_refuses_a_dirty_tree_in_either_checkout(two, where):
     untouched(two)
 
 
+def test_promote_ignores_the_machine_local_settings_file(two):
+    """.claude/settings.local.json is never committed, so it alone does not make the main checkout dirty."""
+    spike.write(two.main / ".claude" / "settings.local.json", "{}\n")
+    assert run_promote(two.main) == "gh pr ready 42"
+
+
+def test_control_another_untracked_file_under_claude_still_refuses(two):
+    spike.write(two.main / ".claude" / "settings.json.bak", "{}\n")
+    with pytest.raises(promote_mod.PromoteRefusedError, match="is dirty"):
+        run_promote(two.main)
+    untouched(two)
+
+
 @pytest.mark.parametrize(
     ("gh", "why"),
     [(fake_gh(state="OPEN"), "is OPEN, not MERGED"), (fake_gh(fail=True), "gh could not say")],

@@ -101,9 +101,14 @@ def _default_next_name(root, today):
     return spike.load_commit_policy().next_branch_name(str(root), today, gh=True)
 
 
+# The machine-local Claude settings file is never committed (CLAUDE.md, /pr-merge precondition), so a
+# checkout carrying it is not dirty for promotion; counting it made promote unreachable in a working checkout.
+LOCAL_ONLY = frozenset({".claude/settings.local.json"})
+
+
 def _dirty(tree):
     text = spike.must(tree, "status", "--porcelain", "--untracked-files=all")
-    return [line for line in text.splitlines() if line]
+    return [line for line in text.splitlines() if line and line[3:] not in LOCAL_ONLY]
 
 
 def _must(tree, *args):
