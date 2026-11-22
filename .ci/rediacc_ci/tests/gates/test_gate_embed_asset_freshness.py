@@ -324,6 +324,33 @@ def test_an_unreachable_upstream_is_red(gate, tmp_path):
     gate.log_pass("unreachable upstreams are red after three attempts")
 
 
+def samba_in_code(source: str) -> bool:
+    """Whether samba.org appears anywhere after the file's leading header comment (template literals and inline comments included)."""
+    body = source
+    start = body.find("/**")
+    if start != -1 and body[:start].strip() in ("", "#!/usr/bin/env node"):
+        end = body.find("*/", start)
+        body = body[end + 2 :] if end != -1 else ""
+    return "samba.org" in body
+
+
+def test_the_samba_scan_controls(gate):
+    """Controls for samba_in_code: a host in a code line or a template literal is caught; a header-only mention is not."""
+    header = "#!/usr/bin/env node\n/**\n * download.samba.org is not asked.\n */\n"
+    gate.assert_eq(samba_in_code(header + "const A = 1;\n"), False, "a header-only mention passes")
+    gate.assert_eq(
+        samba_in_code(header + "const U = 'https://download.samba.org/pub/';\n"),
+        True,
+        "a code URL is caught",
+    )
+    gate.assert_eq(
+        samba_in_code(header + "const T = `\n * download.samba.org\n`;\n"),
+        True,
+        "a template literal line starting with * is caught",
+    )
+    gate.log_pass("the samba scan catches code and passes the header")
+
+
 def test_the_rsync_release_alone_failing_is_red(gate, tmp_path):
     """GitHub answering for the other pins does not make rsync optional; every request reaching the stub is a GitHub API route, and the gate source names no samba host that could bypass the stub."""
     require_submodule(gate)
@@ -341,13 +368,10 @@ def test_the_rsync_release_alone_failing_is_red(gate, tmp_path):
     source = (paths.repo_root() / "scripts" / "gates" / "check-embed-asset-freshness.ts").read_text(
         encoding="utf-8"
     )
-    code = "\n".join(
-        line for line in source.splitlines() if not line.strip().startswith(("*", "//", "/*"))
-    )
-    gate.assert_not_contains(
-        code,
-        "samba.org",
-        "no samba host in the gate's code bypasses the stub (comments may name it)",
+    gate.assert_eq(
+        samba_in_code(source),
+        False,
+        "no samba host in the gate's code bypasses the stub (the header comment may name it)",
     )
     gate.assert_exit(1, result, "the rsync release not answering fails closed")
     gate.assert_contains(result.err, "1 embed-asset pin(s) were NOT compared", "one finding")
