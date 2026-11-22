@@ -3639,8 +3639,8 @@
     "delegationCertRefused": "The server's licence cert is refused ({{code}}); ask the operator to run: rdc server licence",
     "preview": {
       "invalidName": "\"{{name}}\" is not a preview name. A preview name is pv- followed by three lowercase words, for example pv-amber-river-stone.",
-      "alreadyActive": "This config is already on preview {{name}}. Run rdc preview leave first.",
-      "serversPending": "Preview {{name}} still has {{count}} server(s) on its renet: {{machines}}. Switch them back with rdc preview leave before the preview is removed."
+      "alreadyActive": "This config is already on preview {{name}}. Leave that preview first.",
+      "serversPending": "Preview {{name}} still has {{count}} server(s) on its renet: {{machines}}. Switch them back before the preview is removed."
     }
   },
   "feedback": {

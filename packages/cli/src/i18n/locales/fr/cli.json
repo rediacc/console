@@ -3658,7 +3658,12 @@
       "holderOther": "un autre job",
       "orStopIt": "  Ou l'arrêter : rdc job cancel {{id}} -m {{machine}}"
     },
-    "delegationCertRefused": "Le certificat de licence du serveur est refusé ({{code}}) ; demandez à l'opérateur d'exécuter : rdc server licence"
+    "delegationCertRefused": "Le certificat de licence du serveur est refusé ({{code}}) ; demandez à l'opérateur d'exécuter : rdc server licence",
+    "preview": {
+      "invalidName": "« {{name}} » n'est pas un nom d'aperçu. Un nom d'aperçu est pv- suivi de trois mots en minuscules, par exemple pv-amber-river-stone.",
+      "alreadyActive": "Cette configuration utilise déjà l'aperçu {{name}}. Quittez d'abord cet aperçu.",
+      "serversPending": "L'aperçu {{name}} a encore {{count}} serveur(s) sur son renet : {{machines}}. Rebasculez-les avant de supprimer l'aperçu."
+    }
   },
   "feedback": {
     "ambiguousId": "Plusieurs rapports commencent par « {{id}} » ; indiquez davantage de caractères de l'identifiant.",

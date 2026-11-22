@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2991,
-    "sourceCommit": "b24e6bfed6da8b1342831fc5c7067ef598edc879"
+    "keyCount": 2994,
+    "sourceCommit": "3528937b650d81cd64c3014a6e1b031233e55f86"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2736,6 +2736,9 @@
     "errors.precondition.next.options.confirm.run": "6a71f0e6",
     "errors.precondition.next.options.rotate.description": "95245400",
     "errors.precondition.next.summary": "63f74cac",
+    "errors.preview.alreadyActive": "cf2b473d",
+    "errors.preview.invalidName": "4833f10a",
+    "errors.preview.serversPending": "d64a216a",
     "errors.proxy.timeout": "4ad7c44b",
     "errors.proxy.unreachable": "d485c7c8",
     "errors.regionRequired": "9144b403",

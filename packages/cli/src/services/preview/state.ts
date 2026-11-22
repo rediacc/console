@@ -56,7 +56,8 @@ export function readPreviewOverlay(
 }
 
 function withPreview(config: RdcConfig, preview: PreviewOverlay | undefined): RdcConfig {
-  const { preview: _old, ...rest } = config;
+  const rest: RdcConfig = { ...config };
+  delete rest.preview;
   return preview === undefined ? rest : { ...rest, preview };
 }
 
@@ -109,7 +110,8 @@ export async function clearPreviewTouch(
   await configFileStorage.update(configName, (config) => {
     const preview = config.preview;
     if (!preview?.touched?.[machine]) return config;
-    const { [machine]: _done, ...touched } = preview.touched;
+    const touched = { ...preview.touched };
+    delete touched[machine];
     return withPreview(config, {
       ...preview,
       touched: Object.keys(touched).length > 0 ? touched : undefined,

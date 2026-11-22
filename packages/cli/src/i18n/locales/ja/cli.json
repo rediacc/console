@@ -3658,7 +3658,12 @@
       "holderOther": "別のジョブ",
       "orStopIt": "  停止するには: rdc job cancel {{id}} -m {{machine}}"
     },
-    "delegationCertRefused": "サーバーのライセンス証明書が拒否されています ({{code}})。運用担当者に次のコマンドの実行を依頼してください: rdc server licence"
+    "delegationCertRefused": "サーバーのライセンス証明書が拒否されています ({{code}})。運用担当者に次のコマンドの実行を依頼してください: rdc server licence",
+    "preview": {
+      "invalidName": "「{{name}}」はプレビュー名ではありません。プレビュー名は pv- に小文字の単語3つが続く形式です。例: pv-amber-river-stone",
+      "alreadyActive": "この設定はすでにプレビュー {{name}} を使用しています。先にそのプレビューを終了してください。",
+      "serversPending": "プレビュー {{name}} の renet 上にサーバーが {{count}} 台残っています: {{machines}}。プレビューを削除する前に元に戻してください。"
+    }
   },
   "feedback": {
     "ambiguousId": "\"{{id}}\" で始まるレポートが複数あります。ID をもう少し長く指定してください。",

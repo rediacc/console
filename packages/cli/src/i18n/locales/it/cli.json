@@ -3658,7 +3658,12 @@
       "holderOther": "un altro job",
       "orStopIt": "  Oppure fermalo: rdc job cancel {{id}} -m {{machine}}"
     },
-    "delegationCertRefused": "Il certificato di licenza del server è rifiutato ({{code}}); chiedi all'operatore di eseguire: rdc server licence"
+    "delegationCertRefused": "Il certificato di licenza del server è rifiutato ({{code}}); chiedi all'operatore di eseguire: rdc server licence",
+    "preview": {
+      "invalidName": "«{{name}}» non è un nome di anteprima. Un nome di anteprima è pv- seguito da tre parole minuscole, ad esempio pv-amber-river-stone.",
+      "alreadyActive": "Questa configurazione usa già l'anteprima {{name}}. Esci prima da quell'anteprima.",
+      "serversPending": "L'anteprima {{name}} ha ancora {{count}} server sul proprio renet: {{machines}}. Riportali indietro prima di rimuovere l'anteprima."
+    }
   },
   "feedback": {
     "ambiguousId": "Più di una segnalazione inizia con \"{{id}}\"; indica una parte più lunga dell'ID.",

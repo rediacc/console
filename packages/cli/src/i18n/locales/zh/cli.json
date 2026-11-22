@@ -3658,7 +3658,12 @@
       "holderOther": "另一个作业",
       "orStopIt": "  或停止它:rdc job cancel {{id}} -m {{machine}}"
     },
-    "delegationCertRefused": "服务器的许可证书被拒绝 ({{code}})；请让运维人员运行：rdc server licence"
+    "delegationCertRefused": "服务器的许可证书被拒绝 ({{code}})；请让运维人员运行：rdc server licence",
+    "preview": {
+      "invalidName": "“{{name}}”不是预览名称。预览名称为 pv- 加三个小写单词，例如 pv-amber-river-stone。",
+      "alreadyActive": "此配置已在预览 {{name}} 上。请先退出该预览。",
+      "serversPending": "预览 {{name}} 的 renet 上仍有 {{count}} 台服务器：{{machines}}。请先将它们切回，再移除该预览。"
+    }
   },
   "feedback": {
     "ambiguousId": "有多份报告以 \"{{id}}\" 开头;请提供更长的 ID。",

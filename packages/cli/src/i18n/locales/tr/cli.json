@@ -3658,7 +3658,12 @@
       "holderOther": "başka bir iş",
       "orStopIt": "  Ya da durdurun: rdc job cancel {{id}} -m {{machine}}"
     },
-    "delegationCertRefused": "Sunucunun lisans sertifikası reddedildi ({{code}}); operatörden şunu çalıştırmasını isteyin: rdc server licence"
+    "delegationCertRefused": "Sunucunun lisans sertifikası reddedildi ({{code}}); operatörden şunu çalıştırmasını isteyin: rdc server licence",
+    "preview": {
+      "invalidName": "\"{{name}}\" bir önizleme adı değil. Önizleme adı, pv- ve ardından küçük harfli üç sözcükten oluşur, örneğin pv-amber-river-stone.",
+      "alreadyActive": "Bu yapılandırma zaten {{name}} önizlemesinde. Önce o önizlemeden çıkın.",
+      "serversPending": "{{name}} önizlemesinin renet'inde hâlâ {{count}} sunucu var: {{machines}}. Önizleme kaldırılmadan önce bunları geri alın."
+    }
   },
   "feedback": {
     "ambiguousId": "Birden fazla rapor \"{{id}}\" ile başlıyor; kimliğin daha fazlasını girin.",

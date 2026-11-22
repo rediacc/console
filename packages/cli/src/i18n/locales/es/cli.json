@@ -3658,7 +3658,12 @@
       "holderOther": "otro job",
       "orStopIt": "  O deténgalo: rdc job cancel {{id}} -m {{machine}}"
     },
-    "delegationCertRefused": "El certificado de licencia del servidor está rechazado ({{code}}); pida al operador que ejecute: rdc server licence"
+    "delegationCertRefused": "El certificado de licencia del servidor está rechazado ({{code}}); pida al operador que ejecute: rdc server licence",
+    "preview": {
+      "invalidName": "«{{name}}» no es un nombre de vista previa. Un nombre de vista previa es pv- seguido de tres palabras en minúsculas, por ejemplo pv-amber-river-stone.",
+      "alreadyActive": "Esta configuración ya usa la vista previa {{name}}. Salga primero de esa vista previa.",
+      "serversPending": "La vista previa {{name}} aún tiene {{count}} servidor(es) en su renet: {{machines}}. Vuelva a cambiarlos antes de eliminar la vista previa."
+    }
   },
   "feedback": {
     "ambiguousId": "Más de un informe empieza por \"{{id}}\"; indica más caracteres del ID.",

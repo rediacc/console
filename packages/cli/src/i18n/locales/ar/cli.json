@@ -3658,7 +3658,12 @@
       "holderOther": "مهمة أخرى",
       "orStopIt": "  أو أوقفها: rdc job cancel {{id}} -m {{machine}}"
     },
-    "delegationCertRefused": "شهادة ترخيص الخادم مرفوضة ({{code}})؛ اطلب من المشغّل تشغيل: rdc server licence"
+    "delegationCertRefused": "شهادة ترخيص الخادم مرفوضة ({{code}})؛ اطلب من المشغّل تشغيل: rdc server licence",
+    "preview": {
+      "invalidName": "«{{name}}» ليس اسم معاينة. اسم المعاينة هو pv- متبوعًا بثلاث كلمات بأحرف صغيرة، مثل pv-amber-river-stone.",
+      "alreadyActive": "هذا الإعداد يعمل بالفعل على المعاينة {{name}}. غادر تلك المعاينة أولًا.",
+      "serversPending": "لا يزال للمعاينة {{name}} عدد {{count}} من الخوادم على renet الخاص بها: {{machines}}. أعدها إلى وضعها السابق قبل إزالة المعاينة."
+    }
   },
   "feedback": {
     "ambiguousId": "يبدأ أكثر من تقرير بـ \"{{id}}\"؛ أدخل جزءًا أطول من المعرّف.",
