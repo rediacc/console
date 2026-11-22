@@ -3086,3 +3086,57 @@ def test_gc_discard_dirty_names_the_rules_that_still_keep_the_tree(repo):
     assert len(note) == 1, done.stdout
     assert "waives only rule 3" in note[0]
     assert "kept by rule 4" in note[0]
+
+
+# --- seedPublicKeys copies public keys only (review findings c29e799f.1 and c29e799f.2) ---
+
+SEED_KEYS = "private/account/.cache/public-keys.env"
+KEYS_SOURCE = (
+    "# rediacc public-key cache\n"
+    "ACCOUNT_ED25519_PUBLIC_KEY=pubA\n"
+    "ACCOUNT_X25519_PUBLIC_KEY=pubB\n"
+    "ACCOUNT_ED25519_PRIVATE_KEY=secret\n"
+    "BWS_ACCESS_TOKEN=token\n"
+)
+
+
+def _seed_public_keys(live: pathlib.Path, lease: pathlib.Path) -> str:
+    code = (
+        "import { seedPublicKeys } from './scripts/ci-runner/lease-seed.ts';"
+        "process.stdout.write(seedPublicKeys(process.argv[1], process.argv[2]));"
+    )
+    root = pathlib.Path(__file__).resolve().parents[3]
+    done = subprocess.run(
+        ["npx", "tsx", "-e", code, str(lease), str(live)],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=120,
+    )
+    assert done.returncode == 0, done.stderr
+    return done.stdout
+
+
+def test_seed_public_keys_copies_the_public_lines_and_drops_the_rest(tmp_path):
+    live, lease = tmp_path / "live", tmp_path / "lease"
+    (live / pathlib.Path(SEED_KEYS).parent).mkdir(parents=True)
+    (live / SEED_KEYS).write_text(KEYS_SOURCE, encoding="utf-8")
+    (lease / "private" / "account").mkdir(parents=True)
+    assert "copied from the main checkout" in _seed_public_keys(live, lease)
+    copied = (lease / SEED_KEYS).read_text(encoding="utf-8")
+    assert "ACCOUNT_ED25519_PUBLIC_KEY=pubA" in copied
+    assert "ACCOUNT_X25519_PUBLIC_KEY=pubB" in copied
+    assert "secret" not in copied
+    assert "BWS_ACCESS_TOKEN" not in copied
+
+
+def test_seed_public_keys_controls(tmp_path):
+    """CONTROLS: no source file, and no private/account in the lease, each say so and copy nothing."""
+    live, lease = tmp_path / "live", tmp_path / "lease"
+    lease.mkdir()
+    assert "none in the main checkout" in _seed_public_keys(live, lease)
+    (live / pathlib.Path(SEED_KEYS).parent).mkdir(parents=True)
+    (live / SEED_KEYS).write_text(KEYS_SOURCE, encoding="utf-8")
+    assert "no private/account in this tree" in _seed_public_keys(live, lease)
+    assert not (lease / SEED_KEYS).exists()

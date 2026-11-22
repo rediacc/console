@@ -40,7 +40,7 @@ export const NO_CARRY_ENV = 'CI_QUICK_NO_CARRY';
 /** How long a second session waits for the clone before it runs in the shared checkout instead. */
 const LOCK_WAIT_MS = 90 * 60_000;
 const LOCK_POLL_MS = 2_000;
-/** Linked with `ln -sfn` when the live tree has them: pinned tool installs, far too big to copy and addressed by version. */
+/** Linked with `ln -sfn` when the live tree has them: pinned tool installs, far too big to copy and addressed by version, plus `.ci/cache/registry` (Docker Hub tag listings, which change upstream and are shared so every tree reads one listing). */
 const LINKED_CACHES = ['.ci/cache/toolchain', '.ci/cache/bin', '.ci/cache/registry', '.venv'];
 /** Copied once, when the clone has none: seeds its own measurement history. */
 const SEEDED_FILES = ['.ci/cache/gate-durations.json'];

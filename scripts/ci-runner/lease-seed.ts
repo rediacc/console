@@ -12,7 +12,7 @@ import process from 'node:process';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { assertNoSelfLoop, syncBuilds, syncDependencies } from './quick-clone.js';
 
-/** Far too big to copy and addressed by version, as in quick-clone. Spelled `ln -sfn`: a plain `ln -s` onto an existing link plants a self-loop. */
+/** Far too big to copy: pinned tool installs addressed by version, as in quick-clone, plus `.ci/cache/registry`, the one entry that is NOT addressed by version (Docker Hub tag listings whose answers change upstream), linked so every tree reads the single listing the freshness gate refreshes and re-reads on a mismatch. Spelled `ln -sfn`: a plain `ln -s` onto an existing link plants a self-loop. */
 const LINKED_CACHES = ['.ci/cache/toolchain', '.ci/cache/bin', '.ci/cache/registry', '.venv'];
 /** The workspace packages other packages import from `dist`: without it their tests cannot load in a lease (measured 2026-11-04: 19 CLI test files, on `@rediacc/provisioning`). */
 const BUILT_PACKAGES = ['packages/shared', 'packages/provisioning', 'packages/json'];
@@ -102,7 +102,7 @@ export function seedReceipt(lease: string, live: string): string {
   return `${RECEIPT}: copied from the main checkout for --narrow`;
 }
 
-/** Public keys only (the account Ed25519 and X25519 public halves), the offline answer `resolve_renet_account_key` reads before Bitwarden. Without it a renet build in a seeded tree depends on a Bitwarden read, which a drill leg's environment cannot always make (2026-11-21: backup drill leg f in the landing tree, "renet needs ACCOUNT_ED25519_PUBLIC_KEY ... not in the public-key cache, and not readable from Bitwarden"). */
+/** Public keys only (the account Ed25519 and X25519 public halves: comment lines and `ACCOUNT_*_PUBLIC_KEY=` lines are kept, any other line is dropped, so the copy holds nothing secret whatever the source file grows), the offline answer `resolve_renet_account_key` reads before Bitwarden. Without it a renet build in a seeded tree depends on a Bitwarden read, which a drill leg's environment cannot always make (2026-11-21: backup drill leg f in the landing tree, "renet needs ACCOUNT_ED25519_PUBLIC_KEY ... not in the public-key cache, and not readable from Bitwarden"). */
 const PUBLIC_KEYS = 'private/account/.cache/public-keys.env';
 
 export function seedPublicKeys(lease: string, live: string): string {
@@ -112,11 +112,19 @@ export function seedPublicKeys(lease: string, live: string): string {
   const dest = path.join(lease, PUBLIC_KEYS);
   if (!fs.existsSync(path.join(lease, 'private', 'account')))
     return `${PUBLIC_KEYS}: no private/account in this tree`;
+  const kept = publicKeyLines(fs.readFileSync(source, 'utf8'));
   // tree-write: safe a directory inside the lease tree, which is ignored and never the live tree
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   // tree-write: safe a path inside the lease tree, which is ignored and never the live tree
-  fs.copyFileSync(source, dest);
+  fs.writeFileSync(dest, kept.join('\n') + '\n');
   return `${PUBLIC_KEYS}: copied from the main checkout`;
+}
+
+/** The lines of a public-key cache that may travel: comments and `ACCOUNT_*_PUBLIC_KEY=` assignments. */
+export function publicKeyLines(text: string): string[] {
+  return text
+    .split('\n')
+    .filter((line) => line.startsWith('#') || /^ACCOUNT_[A-Z0-9_]*_PUBLIC_KEY=/.test(line));
 }
 
 export function seedLease(lease: string, live: string, commit: string): string[] {

@@ -111,6 +111,7 @@ import {
   viewOf,
 } from '../lib/pins/status.js';
 import {
+  citedFiles,
   fixtureFloor,
   readTemplateFiles,
   scanTemplates,
@@ -1117,7 +1118,9 @@ function cmdSyncTemplates(w: World, f: Flags): number {
   if (f.write && f.json) throw new Usage('sync-templates takes --write or --json, not both');
   const scan = scanTemplates(
     // A PINS_ROOT override is a small fixture tree: the real tree's floor of 30 does not apply, but it may not hold fewer files than its registry cites.
-    readTemplateFiles(w.root, w.root === REPO_ROOT ? undefined : fixtureFloor(w.reg))
+    w.root === REPO_ROOT
+      ? readTemplateFiles(w.root)
+      : readTemplateFiles(w.root, fixtureFloor(w.reg), citedFiles(w.reg))
   );
   const drift = templateDrift(w.reg, scan.entries);
   const moved = drift.added.length + drift.removed.length + drift.changed.length;

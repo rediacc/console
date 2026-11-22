@@ -94,7 +94,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { availableParallelism, tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { refuse, refused } from '../lib/controls';
 
@@ -422,6 +422,7 @@ export type RunVerdict =
   | 'caught'
   | 'undetected'
   | 'unreached'
+  | 'broken'
   | 'pristine-red'
   | 'timeout';
 
@@ -430,11 +431,28 @@ export type RunVerdict =
  *
  * `loads === 0` is checked BEFORE the exit code in both directions: a green run that never loaded the copy is not evidence the suite is blind, and a red one is not evidence it caught anything.
  */
-export function runVerdict(kind: 'pristine' | 'plant', run: SuiteRun): RunVerdict {
+export function runVerdict(
+  kind: 'pristine' | 'plant',
+  run: SuiteRun,
+  guardBase?: string
+): RunVerdict {
   if (run.timedOut) return 'timeout';
   if (run.loads === 0) return 'unreached';
   if (kind === 'pristine') return run.rc === 0 ? 'green' : 'pristine-red';
-  return run.rc === 0 ? 'undetected' : 'caught';
+  if (run.rc === 0) return 'undetected';
+  return plantNeverRan(run.tail, guardBase) ? 'broken' : 'caught';
+}
+
+/**
+ * Whether a red run of a plant is the plant failing to compile or raising while the guard module loaded, which no suite assertion caught: a `SyntaxError` family error, or a module-level frame (`File "<guard>", line N, in <module>`) of the guard in the traceback. Pure.
+ *
+ * A red run read as 'caught' would credit the suite for a plant that never reached an assertion, so the gate would go green on a plant the suite is blind to.
+ */
+export function plantNeverRan(tail: string, guardBase?: string): boolean {
+  if (/\b(?:SyntaxError|IndentationError|TabError)\b/.test(tail)) return true;
+  if (guardBase === undefined) return false;
+  const escaped = guardBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`File "[^"]*${escaped}", line \\d+, in <module>`).test(tail);
 }
 
 interface Job {
@@ -681,7 +699,7 @@ async function runHookArm(opts: { planOnly: boolean }): Promise<HookReport> {
     }
     for (const i of plantJobs.get(g.stem) ?? []) {
       const r = results[i];
-      const v = runVerdict('plant', r);
+      const v = runVerdict('plant', r, basename(g.file));
       parts.push(`${jobs[i].label} ${v === 'caught' ? 'red' : v.toUpperCase()}`);
       if (v === 'caught' || pv !== 'green') continue;
       bad = true;
@@ -694,7 +712,9 @@ async function runHookArm(opts: { planOnly: boolean }): Promise<HookReport> {
         fix:
           v === 'undetected'
             ? `add a case to ${g.suite} that the planted line flips, so deleting the guarded line turns the suite red. Do not weaken or drop the declaration.`
-            : `rerun python3 .claude/rediacc_hooks/guards/${g.suite}; last output:\n${indentTail(r.tail)}`,
+            : v === 'broken'
+              ? `the planted copy does not compile or raises while ${g.file} loads, so the red run proves nothing about ${g.suite}; fix the declaration so the plant changes only the guarded behaviour. Last output:\n${indentTail(r.tail)}`
+              : `rerun python3 .claude/rediacc_hooks/guards/${g.suite}; last output:\n${indentTail(r.tail)}`,
       });
     }
     const skipped = g.plants.filter((pl) => plantStatus(pl) !== 'ok').length;
@@ -906,6 +926,24 @@ async function hookSelftest(): Promise<Control[]> {
     timedOut,
     seconds: 0,
     tail: '',
+  });
+  const redTail = (tail: string): SuiteRun => ({ ...r(1, 3), tail });
+  controls.push({
+    name: 'verdict: a red plant whose output is a SyntaxError or a module-level frame of the guard is BROKEN, never caught; a red plant with an assertion failure is caught',
+    ok:
+      runVerdict('plant', redTail('  File "x.py", line 3\nSyntaxError: invalid syntax')) ===
+        'broken' &&
+      runVerdict(
+        'plant',
+        redTail('Traceback:\n  File "/g/block_x.py", line 9, in <module>\nNameError: x'),
+        'block_x.py'
+      ) === 'broken' &&
+      runVerdict('plant', redTail('FAIL case 3: expected deny'), 'block_x.py') === 'caught' &&
+      runVerdict(
+        'plant',
+        redTail('  File "/g/block_x.py", line 9, in run\nAssertionError'),
+        'block_x.py'
+      ) === 'caught',
   });
   controls.push({
     name: 'verdict: plant red with loads is caught; green with loads is UNDETECTED; no loads is UNREACHED either way',

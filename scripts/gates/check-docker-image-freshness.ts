@@ -402,12 +402,19 @@ export async function listHubTags(
  * live read would disagree with the cached one. So an answer that agrees with none of the digests
  * the tree pins for this tag is read again from the network before it can become a finding.
  */
+export async function readAgreeing(
+  read: (opts?: { maxAgeMs: number }) => Promise<unknown | null>,
+  pinned: Set<string>
+): Promise<unknown | null> {
+  const first = await read();
+  if (first !== null && !pinned.has(parseTagDigest(first) ?? '')) return read({ maxAgeMs: 0 });
+  return first;
+}
+
 async function hubTagDigest(repo: string, tag: string, pinned: Set<string>): Promise<TagAnswer> {
   const key = `${repo}:${tag}`;
   const url = hubTagUrl(HUB_BASE || HUB_DEFAULT_BASE, repo, tag);
-  let j = await hubGetJson(url, key);
-  if (j !== null && !pinned.has(parseTagDigest(j) ?? ''))
-    j = await hubGetJson(url, key, { maxAgeMs: 0 });
+  const j = await readAgreeing((opts) => hubGetJson(url, key, opts), pinned);
   if (j === null) return { digest: null, why: lastFailure.get(key) ?? 'the lookup failed' };
   const digest = parseTagDigest(j);
   if (digest === null)
@@ -906,6 +913,34 @@ async function selftest(): Promise<{ bad: number; total: number }> {
       unj.unjudged.length === 2 &&
       unj.unjudged.every((u) => u.includes('untagged, agreement not checkable'))
   );
+
+  // A cached tag answer that agrees with no pinned digest is read again live; one that agrees, or none, is not.
+  {
+    const d1 = `sha256:${'1'.repeat(64)}`;
+    const d2 = `sha256:${'2'.repeat(64)}`;
+    const reads: Array<number | undefined> = [];
+    const reader = (answers: unknown[]) => async (opts?: { maxAgeMs: number }) => {
+      reads.push(opts?.maxAgeMs);
+      return answers[Math.min(reads.length - 1, answers.length - 1)] ?? null;
+    };
+    const agreeing = await readAgreeing(reader([{ digest: d1 }]), new Set([d1]));
+    check(
+      'a cached answer that agrees with a pinned digest is not read again',
+      reads.length === 1 && (agreeing as { digest: string }).digest === d1
+    );
+    reads.length = 0;
+    const live = await readAgreeing(reader([{ digest: d2 }, { digest: d1 }]), new Set([d1]));
+    check(
+      'CONTROL: a cached answer that agrees with no pinned digest is read again with maxAgeMs 0',
+      reads.length === 2 && reads[1] === 0 && (live as { digest: string }).digest === d1
+    );
+    reads.length = 0;
+    const none = await readAgreeing(reader([null]), new Set([d1]));
+    check(
+      'an unreadable first answer stays unreadable, with no second read',
+      reads.length === 1 && none === null
+    );
+  }
 
   // The shared Docker Hub read path both Hub-reading gates use (scripts/lib/docker-hub-selftest.ts).
   for (const c of await hubReaderCases()) check(`read path: ${c.label}`, c.ok);
