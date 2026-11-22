@@ -790,7 +790,7 @@ function fetchVerb(args: string[]): number {
   if (refused.length > 0 || unchecked.length > 0) return 1;
   if (stored === 0) {
     process.stderr.write(
-      'ci-receipt fetch: no CI receipt was verified and stored, so nothing can carry from CI\n'
+      'ci-receipt fetch: VACUOUS: no CI receipt was verified and stored, so nothing can carry from CI\n'
     );
     return 1;
   }
