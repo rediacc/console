@@ -130,11 +130,12 @@ Order: remedy 1 with the locks, then remedy 3, then remedy 4.
     Accept: `python3 .claude/hooks/stop/test-review-mark.py` exits 0 with two new cases: after a green whole receipt the verb's commit leaves a receipt the push guard admits at the new tree, with no hand re-run; with no green receipt the verb commits and starts nothing.
     (ticked) 2026-11-18T14:20:37Z by d778be9d: commit:de7b06c272 -- landed as de7b06c272 (+546cdc5836 test isolation repair); pytest on the 33 touched test files 497 passed rc 0. DEPS-WAIVED: the Depends-On prerequisite does not gate this box's code, which landed and passed its tests
     Note (2026-11-19): R3 declares `Depends on: none.`, so the DEPS-WAIVED text on R1 to R3 is boilerplate and names no real prerequisite for R3. The ticks of this wave cite one shared pytest run over 33 files; each box's own Accept command was not recorded separately.
-- [ ] R4 [writer] The Stop hook compares trees through `advances`, and the receipt-in-flight hold no longer fires for ci:quick (D1.3)
+- [x] R4 [writer] The Stop hook compares trees through `advances`, and the receipt-in-flight hold no longer fires for ci:quick (D1.3)
     Owns: .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/wl_judge.py, .claude/hooks/stop/worklist_messages.py, .claude/hooks/stop/test-release-hold.py, .claude/hooks/stop/test-wl_worktrees.py
     Depends on: R2.
     Needs: none
     Accept: `python3 .claude/hooks/stop/test-release-hold.py` and `python3 .claude/hooks/stop/test-wl_worktrees.py` exit 0 with new cases: a record-only commit after a green receipt still reads as a green receipt on an unpushed head; a code commit does not; a landing order is kept while ci:quick runs and still rewritten while vm:check runs.
+    (ticked) 2026-11-22T16:53:07Z by ace763dd: commit:aff2b777c fileline:.claude/hooks/stop/wl_checks.py:2756 -- tree comparison through headTree and advances, ci:quick hold removed, vm:check hold kept; .claude/rediacc_hooks/tests/test_wl_receipt_hold.py and test_wl_judge*.py 158 passed, test-release-hold.py FAILURES 0. DEPS-WAIVED: R4 names only R2 (ticked) in its Depends on line
 - [ ] R5 [writer] `vm:check --commit <sha>` runs from the kept clone with its own renet build, CLI build and gateway record, under the shared fleet lock (D1.4, D1.5)
     Owns: .ci/rediacc_ci/drills/vm_check.py, .ci/rediacc_ci/tests/test_drills_vm_check.py, .ci/rediacc_ci/tests/test_vm_check_list_evidence.py
     Depends on: L1.

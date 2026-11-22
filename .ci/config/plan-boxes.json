@@ -2719,12 +2719,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 17,
+      "open": 5,
+      "done": 18,
       "open_sigs": [
         "42df7aae",
         "8a962af3",
-        "96885146",
         "974ce45c",
         "c9342fbd",
         "e613a81c"
@@ -2743,6 +2742,7 @@
         "6d2451be",
         "8096acb7",
         "907e373d",
+        "96885146",
         "d26a392f",
         "dbd3b053",
         "f4bd2ebc",

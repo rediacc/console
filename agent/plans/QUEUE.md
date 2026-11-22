@@ -40,17 +40,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Development tree: branch 1121-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (2 epic(s)):
-  - epic 79b7e92e, no plan, 177 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 191 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
-- Writers: 2 live of writer_cap 25 (session ace763dd): worker:a5c83ef9f30895c56, worker:aa54d51578cb384c8.
-- Leased items: 12: #3b82cf28 (worker:bhx27g2di, ace763dd), #47ce3621 (worker:acbc4d4cf168716ca, ace763dd), #664e36ae (worker:aaa49d70869534c1f, d778be9d), #7a807c05 (worker:acbc4d4cf168716ca, ace763dd), #855d7340 (worker:b6jocj052, d778be9d), #8c7e16e2 (worker:acbc4d4cf168716ca, ace763dd), #8da3a559 (worker:bhx27g2di, ace763dd), #95ffeb93 (worker:b556265tb, ace763dd), #9c3dff3e (worker:a5c83ef9f30895c56, ace763dd), #ab9c68b1 (worker:be39zjfwp, d778be9d), #c276a9df (worker:bzcbi0ri0, d778be9d), #ff619fa3 (worker:acbc4d4cf168716ca, ace763dd).
+- Writers: 3 live of writer_cap 25 (session ace763dd): worker:ab1543ae5f306ff71, worker:a0a51140ab0fa5d94, worker:adc996edded861f0d.
+- Leased items: 11: #3b82cf28 (worker:bfxe3mlg3, ace763dd), #47ce3621 (worker:bfxe3mlg3, ace763dd), #5fd26ea3 (worker:a0a51140ab0fa5d94, ace763dd), #664e36ae (worker:aaa49d70869534c1f, d778be9d), #73b32419 (worker:bfxe3mlg3, ace763dd), #855d7340 (worker:b6jocj052, d778be9d), #8da3a559 (worker:adc996edded861f0d, ace763dd), #95ffeb93 (worker:bfxe3mlg3, ace763dd), #ab9c68b1 (worker:be39zjfwp, d778be9d), #c276a9df (worker:bzcbi0ri0, d778be9d), #ff619fa3 (worker:ab1543ae5f306ff71, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 16 of 75 plans done, 1235 of 1533 boxes done (80%).
+Promoted: 16 of 75 plans done, 1236 of 1533 boxes done (80%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -119,7 +119,7 @@ Promoted: 16 of 75 plans done, 1235 of 1533 boxes done (80%).
 | 63 | PLAN-root-api-token.md | 9/15 | 6 open |
 | 64 | PLAN-site-entry-points.md | 7/11 | 4 open |
 | 65 | PLAN-root-grants.md | 8/19 | 11 open |
-| 66 | PLAN-push-decoupling.md | 17/23 | 6 open |
+| 66 | PLAN-push-decoupling.md | 18/23 | 5 open |
 | 67 | PLAN-stop-hook-store-status.md | 3/9 | 6 open |
 | 68 | PLAN-rdc-feedback.md | 18/21 | 3 open |
 | 69 | PLAN-account-sidebar-redesign.md | 12/15 | 3 open |
