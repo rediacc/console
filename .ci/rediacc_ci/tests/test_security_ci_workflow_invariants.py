@@ -40,8 +40,10 @@ import sys
 import typing
 
 import pytest
+import yaml
 
 from rediacc_ci import paths, workflows
+from rediacc_ci.core import toolchain
 from rediacc_ci.quality import workflows as quality_workflows
 from rediacc_ci.security import ci_workflow_invariants
 from rediacc_ci.tests import differential, frozen
@@ -2880,3 +2882,112 @@ def test_local_order_holds_on_the_real_entry() -> None:
     assert errors == []
     (line,) = info
     assert "tag unit tag-create, tag-record, tag-push" in line
+
+
+# --- the `node` step of .github/actions/setup-workspace (review findings 6359c982.2, 6359c982.3, 4c11fd21.2) ---
+NODE_IMAGE_DIGEST = "ab" * 32
+NODE_IMAGE = "ghcr.io/example/runner@sha256:" + NODE_IMAGE_DIGEST
+
+
+def _node_step_script() -> str:
+    action = ROOT / ".github" / "actions" / "setup-workspace" / "action.yml"
+    steps = yaml.safe_load(action.read_text(encoding="utf-8"))["runs"]["steps"]
+    return next(st["run"] for st in steps if st.get("id") == "node")
+
+
+def _node_stub(path: pathlib.Path, body: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("#!/bin/sh\n" + body + "\n", encoding="utf-8")
+    path.chmod(0o755)
+
+
+def _run_node_step(tmp_path: pathlib.Path, **over: str) -> tuple[subprocess.CompletedProcess, str]:
+    """Run the step. `over` replaces any of: FROM_IMAGE, NODE_MAJOR, CI_RUNNER_IMAGE, NODE_V, NPM_V, ON_NVM (0 puts node elsewhere), NO_REPO (any value runs outside the repository, so the pin read fails)."""
+    nvm = tmp_path / "nvm"
+    _node_stub(nvm / "current" / "bin" / "node", 'echo "${NODE_V}"')
+    elsewhere = tmp_path / "other" / "node"
+    _node_stub(elsewhere, 'echo "${NODE_V}"')
+    on_path = nvm / "current" / "bin" if over.get("ON_NVM", "1") == "1" else elsewhere.parent
+    _node_stub(tmp_path / "bin" / "npm", 'echo "${NPM_V}"')
+    out = tmp_path / "github_output"
+    env = {
+        **os.environ,
+        "PATH": "%s:%s:%s" % (tmp_path / "bin", on_path, os.environ["PATH"]),
+        "FROM_IMAGE": over.get("FROM_IMAGE", "true"),
+        "NODE_MAJOR": over.get("NODE_MAJOR", "22"),
+        "CI_RUNNER_IMAGE": over.get("CI_RUNNER_IMAGE", NODE_IMAGE),
+        "NVM_DIR": str(nvm),
+        "NODE_V": over.get("NODE_V", "v22.3.0"),
+        "NPM_V": over.get("NPM_V", toolchain.pin_for("npm")),
+        "GITHUB_OUTPUT": str(out),
+    }
+    done = subprocess.run(
+        ["bash", "-c", _node_step_script()],
+        cwd=tmp_path if over.get("NO_REPO") else ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return done, out.read_text(encoding="utf-8") if out.exists() else ""
+
+
+def test_a_host_lane_keys_on_the_node_major_alone(tmp_path: pathlib.Path) -> None:
+    done, out = _run_node_step(tmp_path, FROM_IMAGE="false", CI_RUNNER_IMAGE="")
+    assert done.returncode == 0, done.stderr
+    assert out == "key=node22\n"
+
+
+def test_the_image_lane_keys_on_node_npm_and_the_image_digest(tmp_path: pathlib.Path) -> None:
+    done, out = _run_node_step(tmp_path)
+    assert done.returncode == 0, done.stderr
+    assert out == "key=img-node%s-npm%s-%s\n" % (
+        "v22.3.0",
+        toolchain.pin_for("npm"),
+        NODE_IMAGE_DIGEST[:12],
+    )
+
+
+def test_a_rebuilt_image_with_the_same_node_patch_gets_a_new_key(tmp_path: pathlib.Path) -> None:
+    _done, first = _run_node_step(tmp_path)
+    other = "ghcr.io/example/runner@sha256:" + "cd" * 32
+    _done, second = _run_node_step(tmp_path, CI_RUNNER_IMAGE=other)
+    assert first != second
+
+
+@pytest.mark.parametrize("image", ["", "ghcr.io/example/runner:latest", "x@sha256:abc"])
+def test_a_reference_that_is_not_a_digest_is_refused(tmp_path: pathlib.Path, image: str) -> None:
+    done, out = _run_node_step(tmp_path, CI_RUNNER_IMAGE=image)
+    assert done.returncode == 1
+    assert "::error::node-from-image needs CI_RUNNER_IMAGE" in done.stdout
+    assert out == ""
+
+
+def test_a_node_that_is_not_the_images_is_refused(tmp_path: pathlib.Path) -> None:
+    done, out = _run_node_step(tmp_path, ON_NVM="0")
+    assert done.returncode == 1
+    assert "not the image's" in done.stdout
+    assert out == ""
+
+
+def test_a_node_of_another_major_is_refused(tmp_path: pathlib.Path) -> None:
+    done, out = _run_node_step(tmp_path, NODE_V="v20.1.0")
+    assert done.returncode == 1
+    assert "not major 22" in done.stdout
+    assert out == ""
+
+
+def test_an_npm_that_is_not_the_pinned_one_is_refused(tmp_path: pathlib.Path) -> None:
+    done, out = _run_node_step(tmp_path, NPM_V="0.0.1")
+    assert done.returncode == 1
+    assert "the pinned NPM_VERSION is" in done.stdout
+    assert out == ""
+
+
+def test_an_unreadable_npm_pin_is_an_error_annotation_not_a_silent_exit(
+    tmp_path: pathlib.Path,
+) -> None:
+    done, out = _run_node_step(tmp_path, NO_REPO="1")
+    assert done.returncode == 1
+    assert "::error::the npm pin could not be read" in done.stdout
+    assert out == ""

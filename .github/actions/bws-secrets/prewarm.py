@@ -15,7 +15,7 @@ EVERY FAILURE HERE IS A SKIP (a `::warning::` and exit 0), except a checksum mis
 
 On success, or when the binary is already present, `binary=<path>` is appended to GITHUB_OUTPUT; every skip leaves it unset.
 
-Bumping the sm-action pin is a FOUR-place change: CHECKSUMS below, the `uses:` line in action.yml, the org action allowlist (see the action.yml header), and nothing else; the version and URL follow from version.json.
+Bumping the sm-action pin is a THREE-place change: CHECKSUMS below, the `uses:` line in action.yml, and the org action allowlist (see the action.yml header); the version and URL follow from version.json.
 """
 
 import hashlib

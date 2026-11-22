@@ -94,8 +94,12 @@ runs:
     # container region sets it), NVM_DIR names the image's nvm, the node on
     # PATH resolves to the image's $NVM_DIR/current/bin/node, and npm is the
     # pinned NPM_VERSION. The versions are printed every run, so the lane's
-    # log shows what the salt's image term stands for. Eight logic lines, the
-    # inline-run cap check:ci-workflows applies to workflow files.
+    # log shows what the salt's image term stands for. The key carries node,
+    # npm and the first 12 digest characters, so a rebuilt image with the same
+    # node patch starts a fresh node_modules cache. Eight logic lines, the
+    # inline-run cap check:ci-workflows applies to workflow and action files
+    # alike (step_targets reads both). Run under test by
+    # test_security_ci_workflow_invariants.py.
     - id: node
       shell: bash
       env:
@@ -105,11 +109,11 @@ runs:
         if [[ "$FROM_IMAGE" != "true" ]]; then echo "key=node${NODE_MAJOR}" >> "$GITHUB_OUTPUT"; exit 0; fi
         [[ "${CI_RUNNER_IMAGE:-}" =~ ^[^[:space:]@]+@sha256:[0-9a-f]{64}$ ]] || { echo "::error::node-from-image needs CI_RUNNER_IMAGE=<image>@sha256:<digest> from the job's image-container region, got '${CI_RUNNER_IMAGE:-}'. Run npx tsx scripts/gate-bind.ts --write."; exit 1; }
         [[ -x "${NVM_DIR:-/nonexistent}/current/bin/node" && "$(readlink -f "$(command -v node)")" == "$(readlink -f "$NVM_DIR/current/bin/node")" ]] || { echo "::error::node on PATH is '$(command -v node)', not the image's ${NVM_DIR:-<NVM_DIR unset>}/current/bin/node, so this job is not running on the devcontainer image's node"; exit 1; }
-        node_v="$(node --version)"; npm_v="$(npm --version)"; pin="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pin npm)"
+        node_v="$(node --version)"; npm_v="$(npm --version)"; pin="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.toolchain pin npm)" || { echo "::error::the npm pin could not be read from .devcontainer/toolchain.env"; exit 1; }
         [[ "$node_v" == "v${NODE_MAJOR}."* ]] || { echo "::error::the image's node is $node_v, not major ${NODE_MAJOR}"; exit 1; }
         [[ -n "$pin" && "$npm_v" == "$pin" ]] || { echo "::error::the image's npm is ${npm_v}, the pinned NPM_VERSION is '${pin}'. Rebuild the image and bump its digest pin (PLAN-two-track-merge-dev R1)."; exit 1; }
         echo "image toolchain: ${CI_RUNNER_IMAGE} node ${node_v} npm ${npm_v} $(python3 --version)"
-        echo "key=img-node${node_v}" >> "$GITHUB_OUTPUT"
+        digest="${CI_RUNNER_IMAGE##*@sha256:}"; echo "key=img-node${node_v}-npm${npm_v}-${digest:0:12}" >> "$GITHUB_OUTPUT"
 
     - id: cache-root
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
