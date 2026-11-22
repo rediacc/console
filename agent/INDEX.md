@@ -495,7 +495,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ci-quick-cpu-scheduling.md` | active | 79 | 2 | 3 | 10894 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-vm-image-followups.md` | approved | 25 | 2 | 0 | 3248 |
-| `agent/plans/PLAN-ciquick-cpu.md` | approved | 198 | 22 | 16 | 35415 |
+| `agent/plans/PLAN-ciquick-cpu.md` | approved | 198 | 22 | 16 | 35476 |
 | `agent/plans/PLAN-ciquick-green-then-batch.md` | approved | 34 | 0 | 7 | 7626 |
 | `agent/plans/PLAN-ciquick-reds-1023-1.md` | executing | 48 | 1 | 11 | 11076 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5260 |
@@ -646,8 +646,8 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-tick-tracking.md` | approved | 269 | 2 | 13 | 37957 |
 | `agent/plans/PLAN-token-ip-rebind.md` | done | 426 | 0 | 11 | 42025 |
-| `agent/plans/PLAN-tooling-code-reduction.md` | approved | 101 | 10 | 1 | 23156 |
-| `agent/plans/PLAN-tooling-speed.md` | approved | 90 | 8 | 0 | 15499 |
+| `agent/plans/PLAN-tooling-code-reduction.md` | approved | 101 | 10 | 1 | 23239 |
+| `agent/plans/PLAN-tooling-speed.md` | approved | 90 | 8 | 0 | 15654 |
 | `agent/plans/PLAN-tutorial-recorder-licence.md` | proposed | 64 | 10 | 0 | 12703 |
 | `agent/plans/PLAN-tutorial-rerecord.md` | proposed | 62 | 7 | 0 | 11254 |
 | `agent/plans/PLAN-two-track-merge-dev.md` | approved | 359 | 6 | 38 | 74640 |
