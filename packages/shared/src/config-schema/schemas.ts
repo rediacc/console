@@ -471,6 +471,47 @@ const AccountSchema = z.object({
   region: z.string().optional(),
 });
 
+/**
+ * A preview name: `pv-` and three lowercase words (PLAN-preview-signer.md D5). It is both the preview
+ * host `https://<name>.rediacc.workers.dev` and the CLI release channel `cli/<name>/`.
+ */
+export const PREVIEW_NAME_PATTERN = /^pv-[a-z]+-[a-z]+-[a-z]+$/;
+
+/** One server the preview CLI replaced renet on: the pre-preview slot, kept pinned until `leave` switches it back. */
+const PreviewTouchedServerSchema = z.object({
+  slot: z.string(),
+  version: z.string(),
+  sha256: z.string(),
+  touchedAt: z.string(),
+});
+
+/**
+ * The preview overlay (PLAN-preview-signer.md D8). While it exists, the account pointer answers the
+ * preview's host, channel and token file; the `account` section stays byte-identical, and removing
+ * this block puts the real server, key and token back in force by construction.
+ */
+export const PreviewOverlaySchema = z.object({
+  name: z.string().regex(PREVIEW_NAME_PATTERN),
+  host: z.string(),
+  enteredAt: z.string(),
+  channel: z.string(),
+  /** The PR's on-disk format warning (D12), copied from server-info's `previewBuild.formatChange`. */
+  formatChange: z
+    .object({
+      formats: z.array(z.string()),
+      reason: z.string(),
+    })
+    .optional(),
+  /** The CLI before `use`: what `leave` reinstalls. */
+  previous: z.object({
+    cliVersion: z.string(),
+    cliSha256: z.string(),
+    updateChannel: z.string().optional(),
+  }),
+  /** Machine name -> its pre-preview renet slot (D9). */
+  touched: z.record(resourceName, PreviewTouchedServerSchema).optional(),
+});
+
 const DefaultsSchema = z.object({
   language: z.string().optional(),
   universalUser: z.string().optional(),
@@ -581,6 +622,8 @@ export const RdcConfigSchema = z
     infra: InfraTopSchema.optional(),
     encryption: EncryptionSchema.optional(),
     remote: RemoteConfigSchema.optional(),
+    /** The preview this device is switched to (PLAN-preview-signer.md D8); absent when not in a preview. */
+    preview: PreviewOverlaySchema.optional(),
     renetPath: z.string().optional(),
     state: StateSchema.optional(),
     /**
@@ -617,6 +660,7 @@ type ClusterPool = z.infer<typeof ClusterPoolSchema>;
 type ClusterKvm = z.infer<typeof ClusterKvmSchema>;
 export type ClusterPoolRole = ClusterPool['role'];
 type RemoteConfig = z.infer<typeof RemoteConfigSchema>;
+type PreviewOverlay = z.infer<typeof PreviewOverlaySchema>;
 type EncryptedBlob = z.infer<typeof EncryptedBlobSchema>;
 type EncryptionState = z.infer<typeof EncryptionSchema>;
 
@@ -633,6 +677,7 @@ export type {
   InfraConfig,
   MachineConfig,
   Placement,
+  PreviewOverlay,
   RdcConfig,
   RdcState,
   RemoteConfig,

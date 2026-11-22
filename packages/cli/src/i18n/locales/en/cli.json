@@ -3636,7 +3636,12 @@
       "belowFloor": "{{engine}} {{version}} at {{path}} is older than the minimum {{floor}}. Install the pinned OpenTofu with: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU is set to {{path}}, which does not run as OpenTofu or Terraform. Fix or unset it, or install the pinned OpenTofu with: rdc tools install tofu"
     },
-    "delegationCertRefused": "The server's licence cert is refused ({{code}}); ask the operator to run: rdc server licence"
+    "delegationCertRefused": "The server's licence cert is refused ({{code}}); ask the operator to run: rdc server licence",
+    "preview": {
+      "invalidName": "\"{{name}}\" is not a preview name. A preview name is pv- followed by three lowercase words, for example pv-amber-river-stone.",
+      "alreadyActive": "This config is already on preview {{name}}. Run rdc preview leave first.",
+      "serversPending": "Preview {{name}} still has {{count}} server(s) on its renet: {{machines}}. Switch them back with rdc preview leave before the preview is removed."
+    }
   },
   "feedback": {
     "ambiguousId": "More than one report starts with \"{{id}}\"; give more of the id.",
