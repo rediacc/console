@@ -1636,7 +1636,9 @@ NEEDS = {
     "sub retry control: a 502 past the budget is refused": "HTTP 502",
     "sub retry control: gh_retry cannot be imported": "gh_retry could not be imported",
 }
-PLANTED = {"sub retry control: gh_retry cannot be imported": (IMPORT_PLANT, [])}
+PLANTED: dict[str, tuple[str, list[tuple[str, str]]]] = {
+    "sub retry control: gh_retry cannot be imported": (IMPORT_PLANT, [])
+}
 # The table's size, stated once: a dropped row changes the count and fails below instead of passing silently.
 SUB_EXPECTED = (6, 23)
 

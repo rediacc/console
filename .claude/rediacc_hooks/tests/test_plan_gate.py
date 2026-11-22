@@ -815,7 +815,7 @@ def _counting_gh(tmp_path, first_failure: str):
 
 def test_merged_plan_prs_retries_one_transient_failure_and_answers(tmp_path, monkeypatch):
     calls = _counting_gh(tmp_path, "HTTP 502: Bad Gateway")
-    naps = []
+    naps: list[float] = []
     monkeypatch.setattr(time, "sleep", naps.append)
     monkeypatch.setenv("PATH", "%s:%s" % (tmp_path / "bin", os.environ.get("PATH", "")))
     got, err = _REAL_MERGED(str(tmp_path))
@@ -827,7 +827,7 @@ def test_merged_plan_prs_retries_one_transient_failure_and_answers(tmp_path, mon
 def test_merged_plan_prs_does_not_retry_a_client_error(tmp_path, monkeypatch):
     """Control for the retry above: a 4xx is final, so the call count stays at one and nothing sleeps."""
     calls = _counting_gh(tmp_path, "HTTP 404: Not Found")
-    naps = []
+    naps: list[float] = []
     monkeypatch.setattr(time, "sleep", naps.append)
     monkeypatch.setenv("PATH", "%s:%s" % (tmp_path / "bin", os.environ.get("PATH", "")))
     got, err = _REAL_MERGED(str(tmp_path))
