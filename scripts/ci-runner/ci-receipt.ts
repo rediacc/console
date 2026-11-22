@@ -144,19 +144,33 @@ export function jobBody(workflow: string, job: string): string[] | null {
 }
 
 /**
- * Every job whose own `permissions:` grants `id-token` or `attestations` at write, `write-all` included, plus `<workflow>` when the top-level block does (a top-level grant reaches every job without one of its own). Sorted. A job that inherits silently is not named: QUALITY_WORKFLOW sets `permissions: {}` at the top, and that is checked separately.
+ * Every job whose own `permissions:` grants `id-token` or `attestations` at write, `write-all` included, plus `<workflow>` when the top-level block does (a top-level grant reaches every job without one of its own). Block style, flow style (`permissions: {id-token: write}`) and quoted scalars are the same grant. Sorted. A job that inherits silently is not named: QUALITY_WORKFLOW sets `permissions: {}` at the top, and that is checked separately.
  */
 export function signingJobs(workflow: string): string[] {
   const lines = workflow.split('\n');
   const found = new Set<string>();
+  // One `key: value` pair, either scalar single- or double-quoted, trailing comment dropped.
+  const pair = (text: string): [string, string] | null => {
+    const kv = /^\s*(['"]?)([A-Za-z-]+)\1\s*:\s*(['"]?)([A-Za-z-]+)\3\s*(?:#.*)?$/.exec(text);
+    return kv ? [kv[2], kv[4]] : null;
+  };
+  const signs = (kv: [string, string] | null): boolean =>
+    kv !== null && SIGNING_PERMISSIONS.has(kv[0]) && kv[1] === 'write';
   const grants = (block: string[], indent: number, inline: string): boolean => {
-    if (/^write-all\b/.test(inline.trim())) return true;
+    const value = inline.replace(/\s+#.*$/, '').trim();
+    if (unquote(value) === 'write-all') return true;
+    if (unquote(value) === 'read-all') return false;
+    // Flow style, `permissions: {id-token: write, contents: read}`: the same grant on one line. A part that does not parse as `key: value` is read as a grant, like any other shape below.
+    const flow = /^\{(.*)\}$/.exec(value);
+    if (flow)
+      return flow[1]
+        .split(',')
+        .filter((part) => part.trim() !== '')
+        .some((part) => pair(part) === null || signs(pair(part)));
+    // Any other inline value (an expression, a flow map spread over lines) cannot be read here, so it is named: a false name fails the signer check loudly, while a missed grant would let a job that runs code sign.
+    if (value !== '') return true;
     const pad = ' '.repeat(indent);
-    for (const l of block) {
-      const kv = new RegExp(`^${pad}([a-z-]+):\\s*([a-z-]+)`).exec(l);
-      if (kv && SIGNING_PERMISSIONS.has(kv[1]) && kv[2] === 'write') return true;
-    }
-    return false;
+    return block.some((l) => l.startsWith(pad) && !l.startsWith(`${pad} `) && signs(pair(l)));
   };
   const blockAfter = (from: number, indent: number): string[] => {
     const out: string[] = [];
@@ -1022,6 +1036,40 @@ function coreCases(): { failures: string[]; count: number } {
       )
     ) === '["gates","sign"]',
     'signingJobs fires on permissions: write-all'
+  );
+  // Review f1c7c026.2: a job's permissions in flow style, or with quoted scalars, are the same grant as the block form.
+  const inlinePerms = (inline: string): string[] =>
+    signingJobs(
+      permWf('').replace('    permissions:\n      contents: read\n', `    permissions: ${inline}\n`)
+    );
+  for (const [inline, want] of [
+    ['{id-token: write}', '["gates","sign"]'],
+    ['{ contents: read, attestations: write }', '["gates","sign"]'],
+    ['{"id-token": "write"}', '["gates","sign"]'],
+    ["{'attestations': 'write'}  # signer", '["gates","sign"]'],
+    ["'write-all'", '["gates","sign"]'],
+    ['write-all # every scope', '["gates","sign"]'],
+    ['{id-token: read, contents: write}', '["sign"]'],
+    ['{}', '["sign"]'],
+    ['read-all', '["sign"]'],
+    ['{id-token: write', '["gates","sign"]'],
+    ['${{ fromJSON(vars.PERMS) }}', '["gates","sign"]'],
+    ['{contents: read, nested: {a: b}}', '["gates","sign"]'],
+  ] as const) {
+    const got = JSON.stringify(inlinePerms(inline));
+    check(got === want, `signingJobs on job permissions: ${inline} -> ${got}, want ${want}`);
+  }
+  check(
+    JSON.stringify(
+      signingJobs(
+        permWf('      packages: read').replace('permissions: {}', 'permissions: {id-token: write}')
+      )
+    ) === '["<workflow>","sign"]',
+    'signingJobs fires on a top-level flow-style id-token: write'
+  );
+  check(
+    JSON.stringify(signingJobs(permWf('      \'id-token\': "write"'))) === '["gates","sign"]',
+    'signingJobs fires on a block-style grant with quoted key and value'
   );
   check(
     JSON.stringify(
