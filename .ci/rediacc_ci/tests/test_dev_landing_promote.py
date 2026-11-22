@@ -291,6 +291,18 @@ def test_promote_ignores_the_machine_local_settings_file(two):
     assert run_promote(two.main) == "gh pr ready 42"
 
 
+def test_the_settings_file_is_ignored_when_it_is_the_first_dirty_row(two):
+    """A tracked, modified settings.local.json sorts first; the stripped porcelain output must not defeat the exemption."""
+    target = two.main / ".claude" / "settings.local.json"
+    spike.write(target, "{}\n")
+    spike.must(two.main, "add", "-f", "--", ".claude/settings.local.json")
+    spike.must(
+        two.main, "commit", "-qm", "track local settings", "--", ".claude/settings.local.json"
+    )
+    spike.write(target, '{"changed": true}\n')
+    assert run_promote(two.main) == "gh pr ready 42"
+
+
 def test_control_another_untracked_file_under_claude_still_refuses(two):
     spike.write(two.main / ".claude" / "settings.json.bak", "{}\n")
     with pytest.raises(promote_mod.PromoteRefusedError, match="is dirty"):

@@ -108,7 +108,11 @@ LOCAL_ONLY = frozenset({".claude/settings.local.json"})
 
 def _dirty(tree):
     text = spike.must(tree, "status", "--porcelain", "--untracked-files=all")
-    return [line for line in text.splitlines() if line and line[3:] not in LOCAL_ONLY]
+    # The path is the last field: spike.must strips the output, so the first porcelain line loses its
+    # leading status space and a fixed `line[3:]` slice would cut into the path.
+    return [
+        line for line in text.splitlines() if line and line.split(None, 1)[-1] not in LOCAL_ONLY
+    ]
 
 
 def _must(tree, *args):
@@ -294,7 +298,9 @@ def _fetch_and_check(main, landing_branch):
 def _rebase(main, dev):
     """Rebase `dev` (checked out in `main`) onto origin/main and return `(old tip, proof)`."""
     old = _must(main, "rev-parse", "--verify", "refs/heads/%s^{commit}" % dev)
-    done = spike.git(main, "-c", "rebase.autoStash=false", "rebase", "--quiet", UPSTREAM)
+    # The preflight already refused every dirty path but LOCAL_ONLY, so autostash can carry only the machine-local
+    # settings file, which is tracked in this repo and never committed; without it git refuses the rebase outright.
+    done = spike.git(main, "-c", "rebase.autoStash=true", "rebase", "--quiet", UPSTREAM)
     if done.returncode != 0:
         spike.git(main, "rebase", "--abort")
         first = ((done.stderr or done.stdout).strip().splitlines() or ["no output"])[0]
