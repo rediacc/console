@@ -1328,7 +1328,7 @@ SUB_STRAY_SHA = _tip(SUB_STRAY, "origin/%s" % BRANCH)
 SUB_TT_M, SUB_TT_L = _two_tree(_make_console({"private/sm": SUB_MODULES["private/sm"]}))
 SUB_TT = _plant_sub(SUB_TT_L, "private/sm")
 SUB_TT_SHA = _tip(SUB_TT, "origin/%s" % BRANCH)
-# Each submodule's `origin` becomes its GitHub URL only now, after every fixture push: the guard reads `git remote get-url origin` and nothing here pushes again. `private/pivot` is registered as rediacc/pivot in `.gitmodules` but its origin is another repository.
+# Each submodule's `origin` becomes its GitHub URL only now, after every fixture push: the guard reads `git remote get-url --push --all origin` (every URL a push reaches) and nothing here pushes again. `private/pivot` is registered as rediacc/pivot in `.gitmodules` but its origin is another repository.
 for _tree, _url in (
     (SUB, SUB_MODULES["private/sm"]),
     (SUB_AHEAD, SUB_MODULES["private/ahead"]),

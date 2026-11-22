@@ -491,6 +491,11 @@ def _github_slug(url):
     return ("%s/%s" % match.group(1, 2)).lower() if match else ""
 
 
+def _redact_url(url):
+    """`url` without any `user:token@` credentials, so a refusal that names an origin never echoes a secret embedded in it (review 0a034214.2)."""
+    return re.sub(r"^([a-z][a-z0-9+.-]*://)[^/@]*@", r"\1", url, flags=re.IGNORECASE)
+
+
 def _submodule_repo(repo, root):
     """("<owner>/<name>", "") for the GitHub repository of the submodule a bound tree's `.gitmodules` registers at `repo`, else ("", why not). The owner must be the console's own, the URL is read from `.gitmodules`, and the submodule's `origin` (where the push lands) must name that same repository."""
     if not repo:
@@ -535,7 +540,7 @@ def _submodule_repo(repo, root):
         if not urls or stray:
             return "", (
                 "the submodule `%s` pushes to origin `%s`, not to the `.gitmodules` repository `%s`"
-                % (rel, ", ".join(stray or urls) or "(no origin)", declared)
+                % (rel, ", ".join(_redact_url(u) for u in stray or urls) or "(no origin)", declared)
             )
         return declared, ""
     return "", "`.gitmodules` names no URL for the submodule `%s`" % rel

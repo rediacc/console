@@ -7,6 +7,7 @@ PATH is manipulated per case rather than mocked, so "the host lacks it" is a fac
 """
 
 import atexit
+import glob
 import importlib.util
 import json
 import os
@@ -447,6 +448,14 @@ with open(os.path.join(_FAKE_DOCKER_DIR, "docker"), "w", encoding="utf-8") as fh
 os.chmod(os.path.join(_FAKE_DOCKER_DIR, "docker"), 0o700)
 _HB_PATH = "%s:%s" % (_FAKE_DOCKER_DIR, _path_without("go", REAL))
 # INSIDE THE REPO ROOT, NOT UNDER /tmp: the guard walks the token's ancestors as STRINGS, so a `..` path climbs through the real checkout's parents and finds a `node_modules` there (measured: the plain control read as host-built). Under the root the walk stops at the root. The `.tmp` suffix is matched by the existing gitignore rule, and atexit removes it.
+# A run killed by a signal skips atexit and leaves its directory behind: every directory whose pid is no longer alive is swept at the next start (review 3d240dbf.1).
+for _stale in glob.glob(os.path.join(REPO, ".hostguard-fixture.*.tmp")):
+    try:
+        os.kill(int(_stale.rsplit(".", 2)[-2]), 0)
+    except ProcessLookupError:
+        shutil.rmtree(_stale, ignore_errors=True)
+    except (ValueError, PermissionError):
+        pass
 _HB_ROOT = os.path.join(REPO, ".hostguard-fixture.%d.tmp" % os.getpid())
 atexit.register(shutil.rmtree, _HB_ROOT, ignore_errors=True)
 _HB_BUILT = os.path.join(_HB_ROOT, "built")
