@@ -742,16 +742,16 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 2,
+      "open": 2,
+      "done": 3,
       "open_sigs": [
-        "b9881aa7",
         "d6b2b5e0",
         "d90da415"
       ],
       "done_sigs": [
         "7abf229b",
-        "8db61653"
+        "8db61653",
+        "b9881aa7"
       ]
     },
     "agent/plans/PLAN-ci-trace-no-pr-branch.md": {
@@ -822,18 +822,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 6,
-      "open_sigs": [
-        "fd445926"
-      ],
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
       "done_sigs": [
         "077a2336",
         "378b8de3",
         "cac02478",
         "d67360df",
         "d7b25ec9",
-        "d8663881"
+        "d8663881",
+        "fd445926"
       ]
     },
     "agent/plans/PLAN-ciquick-reds-1023-1.md": {

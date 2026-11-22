@@ -492,11 +492,11 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-chunk-store-browse-engine.md` | compacted | 56 | 0 | 0 | 5233 |
 | `agent/plans/PLAN-chunk-store-browse-server.md` | compacted | 48 | 0 | 0 | 4913 |
 | `agent/plans/PLAN-chunkstore-restore.md` | compacted | 55 | 0 | 0 | 4230 |
-| `agent/plans/PLAN-ci-quick-cpu-scheduling.md` | active | 78 | 3 | 2 | 10605 |
+| `agent/plans/PLAN-ci-quick-cpu-scheduling.md` | active | 79 | 2 | 3 | 10894 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-vm-image-followups.md` | approved | 25 | 2 | 0 | 3248 |
 | `agent/plans/PLAN-ciquick-cpu.md` | approved | 155 | 12 | 16 | 26657 |
-| `agent/plans/PLAN-ciquick-green-then-batch.md` | approved | 33 | 1 | 6 | 7384 |
+| `agent/plans/PLAN-ciquick-green-then-batch.md` | approved | 34 | 0 | 7 | 7626 |
 | `agent/plans/PLAN-ciquick-reds-1023-1.md` | executing | 48 | 1 | 11 | 11076 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5260 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |

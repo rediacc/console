@@ -40,17 +40,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Development tree: branch 1121-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (2 epic(s)):
-  - epic 79b7e92e, no plan, 199 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 201 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
-- Writers: 1 live of writer_cap 25 (session ace763dd): worker:aa5062614d910ebc3.
-- Leased items: 11: #3b82cf28 (worker:bp0y34x29, ace763dd), #47ce3621 (worker:bp0y34x29, ace763dd), #664e36ae (worker:aaa49d70869534c1f, d778be9d), #73b32419 (worker:bp0y34x29, ace763dd), #855d7340 (worker:b6jocj052, d778be9d), #95ffeb93 (worker:bp0y34x29, ace763dd), #ab9c68b1 (worker:be39zjfwp, d778be9d), #adb7ebb9 (worker:aa5062614d910ebc3, ace763dd), #c276a9df (worker:bzcbi0ri0, d778be9d), #ce9966d1 (worker:bp0y34x29, ace763dd), #dfbc7a9f (worker:ab25e6e6272fe76c1, ace763dd).
+- Writers: 0 live of writer_cap 25 (session fee07197).
+- Leased items: 10: #3b82cf28 (worker:bp0y34x29, ace763dd), #47ce3621 (worker:bp0y34x29, ace763dd), #664e36ae (worker:aaa49d70869534c1f, d778be9d), #73b32419 (worker:bp0y34x29, ace763dd), #855d7340 (worker:b6jocj052, d778be9d), #95ffeb93 (worker:bp0y34x29, ace763dd), #ab9c68b1 (worker:be39zjfwp, d778be9d), #adb7ebb9 (worker:aa5062614d910ebc3, ace763dd), #c276a9df (worker:bzcbi0ri0, d778be9d), #ce9966d1 (worker:bp0y34x29, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 16 of 75 plans done, 1236 of 1533 boxes done (80%).
+Promoted: 17 of 75 plans done, 1237 of 1533 boxes done (80%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -102,7 +102,7 @@ Promoted: 16 of 75 plans done, 1236 of 1533 boxes done (80%).
 | 46 | PLAN-enterprise-isolation.md | 26/34 | 8 open |
 | 47 | PLAN-renet-restart-cycle-defects.md | 6/7 | 1 open |
 | 48 | PLAN-stop-hook-retro-20261101.md | 4/4 | done |
-| 49 | PLAN-ciquick-green-then-batch.md | 6/7 | 1 open |
+| 49 | PLAN-ciquick-green-then-batch.md | 7/7 | done |
 | 50 | PLAN-vmcheck-incremental.md | 2/3 | 1 open |
 | 51 | PLAN-ci-vm-image-followups.md | 0/2 | 2 open |
 | 52 | PLAN-d1-scaling.md | 19/31 | 12 open |
@@ -213,7 +213,7 @@ Promoted: 16 of 75 plans done, 1236 of 1533 boxes done (80%).
 1. agent/plans/PLAN-agent-tree-lifecycle.md -- P1, mostly-done, in progress (6 of 7 boxes ticked)
 2. agent/plans/PLAN-haiku-model-routing.md -- P1, executing, in progress (11 of 20 boxes ticked)
 3. agent/plans/PLAN-stop-hook-refactor-enforcement.md -- P1, executing, in progress (16 of 17 boxes ticked)
-4. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
+4. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (3 of 5 boxes ticked)
 5. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (2 of 10 boxes ticked)
 6. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
 7. agent/plans/PLAN-rmcp-writeback.md -- P0, approved, not started
