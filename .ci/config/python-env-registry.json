@@ -95,8 +95,10 @@
     ".ci/rediacc_ci/ci/backup_changed.py": [
       "BASE_SHA",
       "BEFORE_SHA",
+      "DEFAULT_BRANCH",
       "EVENT_NAME",
-      "GITHUB_OUTPUT"
+      "GITHUB_OUTPUT",
+      "REF"
     ],
     ".ci/rediacc_ci/ci/cancel_older_runs.py": [
       "GH_TOKEN",
@@ -181,8 +183,10 @@
     ".ci/rediacc_ci/ci/renet_changed.py": [
       "BASE_SHA",
       "BEFORE_SHA",
+      "DEFAULT_BRANCH",
       "EVENT_NAME",
-      "GITHUB_OUTPUT"
+      "GITHUB_OUTPUT",
+      "REF"
     ],
     ".ci/rediacc_ci/ci/scope_reconcile_shadow.py": [
       "GITHUB_REPOSITORY",
@@ -609,10 +613,12 @@
       "HOME"
     ],
     ".ci/rediacc_ci/drills/vm_check.py": [
+      "CI_QUICK_CLONE_DIR",
       "CLAUDE_CODE_SESSION_ID",
       "HOME",
       "REDIACC_VM_DISK_DIR",
-      "VM_IMAGE"
+      "VM_IMAGE",
+      "XDG_CACHE_HOME"
     ],
     ".ci/rediacc_ci/enterprise/cli.py": [
       "CF_MANAGEMENT_TOKEN"
@@ -2302,6 +2308,12 @@
       "TMPDIR",
       "WORKLIST_PROFILE",
       "_WL_SITEPROFILE"
+    ],
+    ".claude/hooks/stop/test-ci-carried.py": [
+      "*k"
+    ],
+    ".claude/hooks/stop/test-ci-rerun.py": [
+      "*k"
     ],
     ".claude/hooks/stop/test-judge-schema.py": [
       "REDIACC_CI_ROOT",
