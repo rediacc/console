@@ -652,6 +652,9 @@ jobs:
       pull-requests: read
       actions: read
       packages: read
+      # quality-content attests its CI receipt (PLAN-two-track-merge-dev R3): a called workflow holds no more than its caller.
+      id-token: write
+      attestations: write
     needs: [initialize]
     if: needs.initialize.outputs.is_bot != 'true' && needs.initialize.outputs.full_suite == 'true'
     uses: ./.github/workflows/ci-quality.yml
