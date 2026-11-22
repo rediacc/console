@@ -493,7 +493,8 @@ def _github_slug(url):
 
 def _redact_url(url):
     """`url` without any `user:token@` credentials, so a refusal that names an origin never echoes a secret embedded in it (review 0a034214.2)."""
-    return re.sub(r"^([a-z][a-z0-9+.-]*://)[^/@]*@", r"\1", url, flags=re.IGNORECASE)
+    # Greedy up to the LAST `@` before the first `/`: a credential may itself contain `@` (review 5def89ce.1).
+    return re.sub(r"^([a-z][a-z0-9+.-]*://)[^/]*@", r"\1", url, flags=re.IGNORECASE)
 
 
 def _submodule_repo(repo, root):

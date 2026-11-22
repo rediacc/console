@@ -1320,6 +1320,8 @@ SUB_ROGUE = _plant_sub(SUB_C, "private/rogue")
 SUB_ROGUE_SHA = _tip(SUB_ROGUE, "origin/%s" % BRANCH)
 SUB_PIVOT = _plant_sub(SUB_C, "private/pivot")
 SUB_PIVOT_SHA = _tip(SUB_PIVOT, "origin/%s" % BRANCH)
+# The pushurl carries a credential whose secret itself contains `@`: the refusal must echo none of it (reviews 0a034214.2, 5def89ce.1).
+PUSHURL_MARK = "s3cr@t-p4ss"
 SUB_PUSHURL = _plant_sub(SUB_C, "private/pushurl")
 SUB_PUSHURL_SHA = _tip(SUB_PUSHURL, "origin/%s" % BRANCH)
 SUB_STRAY = _plant_sub(SUB_C, "private/stray")
@@ -1341,7 +1343,12 @@ for _tree, _url in (
     _git(_tree, "remote", "set-url", "origin", _url)
 # The fetch URL matches `.gitmodules` but a push goes to `remote.origin.pushurl` (review 0a034214.1).
 _git(
-    SUB_PUSHURL, "remote", "set-url", "--push", "origin", "https://github.com/rediacc/elsewhere.git"
+    SUB_PUSHURL,
+    "remote",
+    "set-url",
+    "--push",
+    "origin",
+    "https://bot:" + PUSHURL_MARK + "@github.com/rediacc/elsewhere.git",
 )
 
 
@@ -1685,6 +1692,9 @@ for name, command, root, extra, want, mutant in SUB_CASES:
     if ok and name in NEEDS and NEEDS[name] not in err:
         ok = False
         err = "missing %r in: %s" % (NEEDS[name], err)
+    if ok and ("s3cr" in err or "t-p4ss" in err):
+        ok = False
+        err = "the refusal echoes the pushurl secret: %s" % err
     if ok and planted:
         control, _cerr = run(command, root, extra)
         ok = control != want
