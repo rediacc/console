@@ -268,6 +268,7 @@ class World:
         self.text = cmd
         self._common = None
         self._origins = None
+        self._worktrees = None
 
     def common(self):
         if self._common is None:
@@ -295,16 +296,35 @@ class World:
             self._origins = found
         return self._origins
 
+    def worktrees(self):
+        """Every registered worktree of this repository (the landing tree at its sibling path, the leases), the checkout itself first."""
+        if self._worktrees is None:
+            listed = (
+                commit_policy.git(["worktree", "list", "--porcelain"], cwd=self.root, foreign=True)
+                or ""
+            )
+            roots = [self.root]
+            roots.extend(
+                line[len("worktree ") :]
+                for line in listed.splitlines()
+                if line.startswith("worktree ")
+            )
+            self._worktrees = roots
+        return self._worktrees
+
     def is_place_of_ours(self, real):
-        """Is the resolved path this checkout, its git directory, or a path in them?"""
+        """Is the resolved path this checkout, one of its registered worktrees, its git directory, or a path in them?"""
         common = self.common()
         if common and commit_policy.is_inside(real, common):
             return True
-        if not commit_policy.is_inside(real, self.root):
-            return False
-        rel = os.path.relpath(real, os.path.realpath(self.root))
-        first = rel.split(os.sep, 1)[0]
-        return rel == "." or first in ALWAYS_OURS or os.path.exists(os.path.join(self.root, first))
+        for root in self.worktrees():
+            if not commit_policy.is_inside(real, root):
+                continue
+            rel = os.path.relpath(real, os.path.realpath(root))
+            first = rel.split(os.sep, 1)[0]
+            if rel == "." or first in ALWAYS_OURS or os.path.exists(os.path.join(root, first)):
+                return True
+        return False
 
     def is_source_of_ours(self, real):
         """Does a clone SOURCE name this checkout or its git directory? A place test is too wide for a source: from a run standing below the root (a package directory, a lease under `.claude/worktrees/`) every bare word resolves under an existing top-level entry, so `fetch` read as a source was "ours" (#11ad5926). git clones only a source that exists, so a source must exist, apart from a path under `.git` and an absent submodule directory (`private/<name>`). A bare absent `private` is not one: it is a plain directory of the superproject, never a repository, so git clones nothing from it (review c804bc45.2)."""

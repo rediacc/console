@@ -613,6 +613,41 @@ if kept:
     failures.append("defect refused an allowed row")
     print("*** FAIL *** the planted copy refused %r" % kept[:3])
 
+# A registered worktree at a sibling path (the landing tree) and its submodules are this checkout's own: a fetch there is admitted, while
+# an unregistered clone of the same origin beside it stays refused. Run against a scratch project whose worktree is really registered.
+WT_MAIN = _repo("wt-main", origin=CONSOLE)
+WT_SIBLING = str(TMP / "wt-sibling")
+_git("worktree", "add", "-q", "--detach", WT_SIBLING, cwd=WT_MAIN)
+pathlib.Path(WT_SIBLING, "private", "elite").mkdir(parents=True)
+WT_ENV = dict(ENV, CLAUDE_PROJECT_DIR=WT_MAIN)
+for _name, _want, _cmd in (
+    ("a fetch in a registered sibling worktree", False, "git -C %s fetch origin main" % WT_SIBLING),
+    (
+        "a fetch in a submodule of a registered sibling worktree",
+        False,
+        "git -C %s/private/elite fetch origin main" % WT_SIBLING,
+    ),
+    (
+        "CONTROL: an unregistered clone beside a registered worktree",
+        True,
+        "git -C %s fetch origin" % OLD_CLONE,
+    ),
+):
+    _proc = subprocess.run(
+        [sys.executable, DISPATCH, STEM],
+        input=_payload(_cmd, WT_MAIN),
+        capture_output=True,
+        text=True,
+        check=False,
+        env=WT_ENV,
+        cwd=ROOT,
+    )
+    if (_proc.returncode == 2) != _want:
+        failures.append(_name)
+        print("*** FAIL *** %s: rc=%d %s" % (_name, _proc.returncode, _proc.stderr[-300:]))
+    else:
+        print("PASS  %s" % _name)
+
 if failures:
     print("\n%d FAILED: %s" % (len(failures), ", ".join(failures[:25])))
     sys.exit(1)
