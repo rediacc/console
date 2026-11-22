@@ -1,4 +1,4 @@
-"""The QUEUE.md settings block: reader, writer, solo marker, the `--queue-set` verb and the RQ-SETTINGS finding (agent/plans/PLAN-stop-hook-turbo.md boxes T1, T3, T15, T23), the effort level that resolves into it (agent/plans/PLAN-stop-hook-effort.md box E2), and its shrink to `effort` alone (agent/plans/PLAN-simple-two-tree-loop.md B5).
+"""The QUEUE.md settings block: reader, writer, solo marker, the `--queue-set` verb and the RQ-SETTINGS finding, the effort level that resolves into it (agent/plans/PLAN-stop-hook-effort.md box E2), and its shrink to `effort` alone (agent/plans/PLAN-simple-two-tree-loop.md B5).
 
 The parser tests drive `wl_planqueue` directly; the verb tests drive the real CLI through `wlfix`; the gate test runs `check_plan_record.py` against a fixture root. Every FIRE has an inverse that differs by one planted fact.
 """
