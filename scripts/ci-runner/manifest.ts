@@ -9117,7 +9117,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-embed-asset-freshness',
-    slow: true, // 30.4 s measured in CI 2026-11-22: it queries every embedded asset's upstream (GitHub, samba.org, ...), so its cost is network-bound
+    slow: true, // 30.4 s measured in CI 2026-11-22: it queries every embedded asset's upstream release feed, so its cost is network-bound
     env: {
       GITHUB_TOKEN: '${{ github.token }}',
     },
