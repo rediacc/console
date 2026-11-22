@@ -1696,7 +1696,13 @@ def _resolve_superseded(world, lease_id, pairs, reason, drops=()):
         if sha in named:
             problems.append("unlanded commit %s is named twice" % sha[:SHA_SHOWN])
             continue
-        subject = (_quiet(world.root / key, "log", "-1", "--format=%s", sha) or "").strip()
+        shown = _quiet(world.root / key, "log", "-1", "--format=%s", sha)
+        if shown is None:
+            problems.append(
+                "git log could not read commit %s, so its subject is unknown" % sha[:SHA_SHOWN]
+            )
+            continue
+        subject = shown.strip()
         named.add(sha)
         rows.append(
             {
@@ -1828,7 +1834,10 @@ def run_gc(root, *, write=False, only="", discard_dirty="", superseded=(), reaso
         world = _read_world(root)
         live = _read_live(root, named=bool(only))
         recorded = []
-        flag = "--superseded-by" if superseded else "--drop"
+        flag = (
+            "/".join(f for f, given in (("--superseded-by", superseded), ("--drop", drop)) if given)
+            or "--drop"
+        )
         if (superseded or drop) and not write:
             log.error("%s records a waiver, so it needs --write" % flag)
             return 1, []
