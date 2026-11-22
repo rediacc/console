@@ -525,12 +525,16 @@ def _submodule_repo(repo, root):
             )
         declared = "%s/%s" % match.group(1, 2)
         # `git -C <sub> push origin` sends to the submodule's own `origin`, which `.gitmodules` does not decide: the repository the PR is read from must be the one the push lands in.
-        origin = commit_policy.git(["remote", "get-url", "origin"], cwd=repo, foreign=True)
-        landing = _github_slug(origin or "")
-        if landing != declared.lower():
+        # `--push --all` names every URL a push to origin reaches: `remote.origin.pushurl` when set (the fetch URL alone would let a pushurl elsewhere through, review 0a034214.1), else the fetch URL.
+        pushed_to = commit_policy.git(
+            ["remote", "get-url", "--push", "--all", "origin"], cwd=repo, foreign=True
+        )
+        urls = [u.strip() for u in (pushed_to or "").splitlines() if u.strip()]
+        stray = [u for u in urls if _github_slug(u) != declared.lower()]
+        if not urls or stray:
             return "", (
                 "the submodule `%s` pushes to origin `%s`, not to the `.gitmodules` repository `%s`"
-                % (rel, origin or "(no origin)", declared)
+                % (rel, ", ".join(stray or urls) or "(no origin)", declared)
             )
         return declared, ""
     return "", "`.gitmodules` names no URL for the submodule `%s`" % rel

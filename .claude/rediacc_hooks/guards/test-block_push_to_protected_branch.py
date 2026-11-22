@@ -1302,6 +1302,7 @@ SUB_MODULES = {
     "private/behind": "https://github.com/rediacc/behind.git",
     "private/rogue": "https://github.com/someone/rogue.git",
     "private/pivot": "https://github.com/rediacc/pivot.git",
+    "private/pushurl": "https://github.com/rediacc/pushurl.git",
 }
 SUB_C = _make_console(SUB_MODULES)
 SUB = _plant_sub(SUB_C, "private/sm")
@@ -1318,6 +1319,8 @@ SUB_ROGUE = _plant_sub(SUB_C, "private/rogue")
 SUB_ROGUE_SHA = _tip(SUB_ROGUE, "origin/%s" % BRANCH)
 SUB_PIVOT = _plant_sub(SUB_C, "private/pivot")
 SUB_PIVOT_SHA = _tip(SUB_PIVOT, "origin/%s" % BRANCH)
+SUB_PUSHURL = _plant_sub(SUB_C, "private/pushurl")
+SUB_PUSHURL_SHA = _tip(SUB_PUSHURL, "origin/%s" % BRANCH)
 SUB_STRAY = _plant_sub(SUB_C, "private/stray")
 SUB_STRAY_SHA = _tip(SUB_STRAY, "origin/%s" % BRANCH)
 # The landing tree's own submodule, typed from the main checkout's root (box LT11: either bound tree is this checkout).
@@ -1332,8 +1335,13 @@ for _tree, _url in (
     (SUB_ROGUE, SUB_MODULES["private/rogue"]),
     (SUB_TT, SUB_MODULES["private/sm"]),
     (SUB_PIVOT, "https://github.com/rediacc/elsewhere.git"),
+    (SUB_PUSHURL, SUB_MODULES["private/pushurl"]),
 ):
     _git(_tree, "remote", "set-url", "origin", _url)
+# The fetch URL matches `.gitmodules` but a push goes to `remote.origin.pushurl` (review 0a034214.1).
+_git(
+    SUB_PUSHURL, "remote", "set-url", "--push", "origin", "https://github.com/rediacc/elsewhere.git"
+)
 
 
 def sfx(**over):
@@ -1554,7 +1562,23 @@ SUB_CASES: list[tuple[str, str, typing.Any, dict[str, str], bool, typing.Any]] =
         SUB_C,
         sfx(sub_repo="rediacc/pivot", sub_head=SUB_PIVOT_SHA),
         True,
-        ("", [("if landing != declared.lower():", "if False:")]),
+        ("", [("if not urls or stray:", "if False:")]),
+    ),
+    (
+        "sub control: origin pushes to a pushurl outside the .gitmodules repository",
+        "git -C private/pushurl push origin %s:%s" % (BRANCH, MAIN),
+        SUB_C,
+        sfx(sub_repo="rediacc/pushurl", sub_head=SUB_PUSHURL_SHA),
+        True,
+        (
+            "",
+            [
+                (
+                    '["remote", "get-url", "--push", "--all", "origin"]',
+                    '["remote", "get-url", "origin"]',
+                )
+            ],
+        ),
     ),
     # THE RETRY of `_gh_json` (9932c723.1): a transient 5xx inside the budget is retried, one past it is refused naming the failure, and a retry helper that cannot be imported is a refusal.
     (
@@ -1614,7 +1638,7 @@ NEEDS = {
 }
 PLANTED = {"sub retry control: gh_retry cannot be imported": (IMPORT_PLANT, [])}
 # The table's size, stated once: a dropped row changes the count and fails below instead of passing silently.
-SUB_EXPECTED = (6, 22)
+SUB_EXPECTED = (6, 23)
 
 
 def _mutant_argv(preamble, pairs):
