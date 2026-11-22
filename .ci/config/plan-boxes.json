@@ -4175,6 +4175,20 @@
       ],
       "done_sigs": []
     },
+    "agent/plans/PLAN-stop-hook-retro-20261122.md": {
+      "status": "ready",
+      "owner": "ace763dd",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 3,
+      "done": 0,
+      "open_sigs": [
+        "4df47096",
+        "5829ee2c",
+        "7b3f3966"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-stop-hook-store-status.md": {
       "status": "approved",
       "owner": "d778be9d",
