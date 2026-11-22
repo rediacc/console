@@ -28,6 +28,7 @@ import typing
 import _hookpath
 
 from rediacc_hooks.guards import _backup_push as BP
+from rediacc_hooks.wellknown import GH_REPO
 
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 
@@ -245,7 +246,7 @@ if flaky and a[:2] == ["pr", "view"]:
         sys.exit(1)
 if a[:2] == ["pr", "view"]:
     repo = a[a.index("--repo") + 1] if "--repo" in a else ""
-    if repo != "rediacc/console":
+    if repo != "__GH_REPO__":
         # A submodule's PR (the submodule fallback): answered only for FX_SUB_REPO, so a guard asking the wrong repository reads no PR.
         if os.environ.get("FX_SUB") == "nopr" or repo != os.environ.get("FX_SUB_REPO", "rediacc/sm"):
             sys.stderr.write('no pull requests found for branch "%s"\n' % a[2])
@@ -317,7 +318,7 @@ if a[:2] == ["api", "graphql"]:
 print("[]")
 """
 STUB_DIR = pathlib.Path(tempfile.mkdtemp(prefix="stub-", dir=RUN_TMP))
-(STUB_DIR / "gh").write_text(GH_STUB, encoding="utf-8")
+(STUB_DIR / "gh").write_text(GH_STUB.replace("__GH_REPO__", GH_REPO), encoding="utf-8")
 (STUB_DIR / "gh").chmod(0o755)
 
 

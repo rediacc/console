@@ -76,7 +76,7 @@ import time
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
 from rediacc_hooks.guards import _backup_push
-from rediacc_hooks.wellknown import GH_REPO
+from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO
 
 # The hook's own gh read budget (`_gh_json`), the same two attempts and 2 s pause every guard's retried read uses.
 GH_READ_ATTEMPTS = 2
@@ -518,9 +518,10 @@ def _submodule_repo(repo, root):
         match = SUB_URL.match(url or "")
         owner = GH_REPO.split("/")[0]
         if not match or match.group(1) != owner or "%s/%s" % match.group(1, 2) == GH_REPO:
-            return "", "the submodule `%s` URL `%s` is not `https://github.com/%s/<name>`" % (
+            return "", "the submodule `%s` URL `%s` is not `%s/%s/<name>`" % (
                 rel,
                 url,
+                GH_ORIGIN,
                 owner,
             )
         declared = "%s/%s" % match.group(1, 2)
