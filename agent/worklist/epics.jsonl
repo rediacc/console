@@ -138,3 +138,5 @@
 {"at":"2026-11-20T10:03:13Z","by":"6c87d631","id":"5c2856d0","title":"remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)","covers":[],"order":null,"plan":"agent/plans/PLAN-rmcp-writeback.md"}
 {"at":"2026-11-20T20:18:41Z","by":"98cec5a6","id":"fe958571","title":"nginx2root and PHP 2026-11-19 security patching (hostinger + templates)","covers":[],"order":null}
 {"at":"2026-11-20T21:38:24Z","by":"98cec5a6","id":"422370f4","title":"Java4Shell CVE-2026-114938 triage (hostinger + templates)","covers":[],"order":null}
+{"at":"2026-11-22T18:04:15Z","by":"fee07197","id":"29d3123a","title":"Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane","covers":[],"order":null,"plan":"agent/plans/PLAN-tooling-speed.md"}
+{"at":"2026-11-22T18:04:15Z","by":"fee07197","id":"dfaac428","title":"Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger","covers":[],"order":null,"plan":"agent/plans/PLAN-tooling-code-reduction.md"}

@@ -40,21 +40,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Development tree: branch 1121-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (2 epic(s)):
-  - epic 79b7e92e, no plan, 201 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 210 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
-- Writers: 0 live of writer_cap 25 (session fee07197).
-- Leased items: 10: #3b82cf28 (worker:bp0y34x29, ace763dd), #47ce3621 (worker:bp0y34x29, ace763dd), #664e36ae (worker:aaa49d70869534c1f, d778be9d), #73b32419 (worker:bp0y34x29, ace763dd), #855d7340 (worker:b6jocj052, d778be9d), #95ffeb93 (worker:bp0y34x29, ace763dd), #ab9c68b1 (worker:be39zjfwp, d778be9d), #adb7ebb9 (worker:aa5062614d910ebc3, ace763dd), #c276a9df (worker:bzcbi0ri0, d778be9d), #ce9966d1 (worker:bp0y34x29, ace763dd).
+- Writers: 3 live of writer_cap 25 (session ace763dd): worker:a85eb54f4293493aa, worker:a7f345f3ce67fa836, worker:ac15f6a57b8e3e72d.
+- Leased items: 13: #1abea6ac (worker:a7f345f3ce67fa836, ace763dd), #3b82cf28 (worker:bs2zwmetr, ace763dd), #47ce3621 (worker:bs2zwmetr, ace763dd), #572f74b2 (worker:a85eb54f4293493aa, ace763dd), #664e36ae (worker:aaa49d70869534c1f, d778be9d), #73b32419 (worker:bs2zwmetr, ace763dd), #855d7340 (worker:b6jocj052, d778be9d), #95ffeb93 (worker:bs2zwmetr, ace763dd), #ab9c68b1 (worker:be39zjfwp, d778be9d), #c276a9df (worker:bzcbi0ri0, d778be9d), #ce9966d1 (worker:bs2zwmetr, ace763dd), #dc17bd4d (worker:a7f345f3ce67fa836, ace763dd), and 1 more.
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 17 of 75 plans done, 1237 of 1533 boxes done (80%).
+Promoted: 17 of 77 plans done, 1237 of 1562 boxes done (79%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
-| 1 | PLAN-ciquick-cpu.md | 16/28 | 12 open |
+| 1 | PLAN-ciquick-cpu.md | 16/38 | 22 open |
 | 2 | PLAN-backup-program.md | 186/192 | 6 open |
 | 3 | PLAN-cloudflare-proxy.md | 28/29 | 1 open |
 | 4 | PLAN-telemetry-export.md | 19/19 | done |
@@ -129,6 +129,8 @@ Promoted: 17 of 75 plans done, 1237 of 1533 boxes done (80%).
 | 73 | PLAN-simple-two-tree-loop.md | 7/12 | 5 open |
 | 74 | PLAN-preview-signer.md | 12/37 | 25 open |
 | 75 | PLAN-weekly-lessons.md | 1/8 | 7 open |
+| 76 | PLAN-tooling-speed.md | 0/8 | 8 open |
+| 77 | PLAN-tooling-code-reduction.md | 0/11 | 11 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
@@ -206,6 +208,8 @@ Promoted: 17 of 75 plans done, 1237 of 1533 boxes done (80%).
 73. agent/plans/PLAN-simple-two-tree-loop.md -- operator 2026-11-21 ("APPROVED!", rulings on #90129fe7): one always-on two-tree loop (the landing tree babysits, merges, watches the release and hotfixes the one PR; the development tree always builds), turbo, phases and five queue knobs deleted, effort the only setting
 74. agent/plans/PLAN-preview-signer.md -- operator 2026-11-22 rulings ASKED:2026-11-22T04:23Z, 05:06Z, 05:23Z (#51fb685e, #5ba0a1ce): preview channel; customers test a PR on their own machines via a random-word preview address; rdc preview use/leave switches account service, rdc and touched servers renet to the PR builds and back; per-preview delegated signer, 7-day licences; operator-created preview accounts.
 75. agent/plans/PLAN-weekly-lessons.md -- operator 2026-11-22 ("yes let's make a plan about it", after "maybe we should have a weekly plan to address the issues? The plan should be enforced by stop hook and should be added to queue.md?"): 217 hint proposals, 0 resolved; a weekly curator-made PLAN-lessons-<date>.md, one code-fix box per recurring family, enforced by a lessons-weekly Stop hook check at smart, proposals resolved as boxes land.
+76. agent/plans/PLAN-tooling-speed.md -- operator /ask 2026-11-22 (#bc8eb843): two tooling plans, speed first; Stop hook reads once, run_stop registry, profiler fixes, in-process lifecycle members, watchdog repeat-failure rule, wrangler-dev-e2e CI lane
+77. agent/plans/PLAN-tooling-code-reduction.md -- operator /ask 2026-11-22 (#bc8eb843): migration scaffolding removal, one declaration per gate (first), one env registry, gate tables, hook write analyser and rule tables, guard fire ledger and retirement report; replaces PLAN-deletion-budget.md
 
 ## Generated
 
