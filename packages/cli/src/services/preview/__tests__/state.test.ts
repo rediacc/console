@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { WK_ACCOUNT_DEFAULT_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../core/output.js', () => ({
@@ -28,7 +29,7 @@ const CONFIG = 'customer';
 const NAME = 'pv-amber-river-stone';
 const REAL_ACCOUNT = {
   userEmail: 'ops@example.com',
-  accountServer: 'https://eu.rediacc.cloud',
+  accountServer: WK_ACCOUNT_DEFAULT_ORIGIN,
   e2ePublicKey: 'MCowBQYDK2VuAyEAexamplekeyexamplekeyexamplekeyexamplekey=',
   updateChannel: 'stable',
   releasesUrl: 'https://releases.example.com/cli',

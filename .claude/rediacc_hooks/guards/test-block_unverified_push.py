@@ -2613,7 +2613,7 @@ def test_ci_receipt_origin():
     # Signed by another workflow.
     root4, tree4, receipt4, data4, _rel4, att4 = ci_world("ci-other-signer")
     digest4 = hashlib.sha256(data4).hexdigest()
-    att4[digest4] = ("rediacc/console/.github/workflows/other.yml", att4[digest4][1])
+    att4[digest4] = (GM.GH_REPO + "/.github/workflows/other.yml", att4[digest4][1])
     why, _ = judge(root4, tree4, receipt4, att4)
     cases.append(
         (

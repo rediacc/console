@@ -186,7 +186,7 @@ describe('subscription-auth', () => {
           id: '00000000-0000-4000-8000-000000000000',
           version: 1,
           encryption: { mode: 'plaintext' },
-          account: { accountServer: 'https://eu.rediacc.cloud' },
+          account: { accountServer: WK_ACCOUNT_DEFAULT_ORIGIN },
           preview: { name, host: `https://${name}.rediacc.workers.dev`, channel: name },
         })
       );

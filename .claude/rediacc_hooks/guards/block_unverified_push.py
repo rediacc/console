@@ -46,6 +46,7 @@ from typing import Any
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
 from rediacc_hooks.guards import _backup_push
+from rediacc_hooks.wellknown import GH_REPO
 
 CHAIN = "pre-bash"
 # Re-keyed from 39 to 40 on 2026-09-22 to make room for block_push_to_protected_branch.py at 39: "this branch may not be pushed to at all" is checked before "is this tree gate-verified".
@@ -1821,8 +1822,8 @@ def _exempt_ids(doc):
 
 #: Who may have signed a CI receipt. scripts/ci-runner/ci-receipt.ts `ATTESTATION_SPEC` holds the same two strings, and test-block_unverified_push.py pins them equal.
 CI_ATTESTATION_SPEC = {
-    "repo": "rediacc/console",
-    "signer_workflow": "rediacc/console/.github/workflows/ci-quality.yml",
+    "repo": GH_REPO,
+    "signer_workflow": GH_REPO + "/.github/workflows/ci-quality.yml",
 }
 CI_ORIGIN_RE = re.compile(r"^ci-((?:[0-9a-f]{40}|[0-9a-f]{64}))$")
 CI_RAW_RE = re.compile(r"^\.ci/cache/ci-receipts/([0-9a-f]{64})\.json$")

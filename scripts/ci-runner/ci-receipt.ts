@@ -23,6 +23,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { WK_GH_REPO } from '@rediacc/shared/config/well-known.generated';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { REPO_ROOT } from '../lib/repo-root.js';
 import {
@@ -42,8 +43,8 @@ import { leafClosure } from './quick-select.js';
 export const CI_RECEIPT_SCHEMA = 1;
 /** Who may have signed a receipt. The push guard holds the same two strings as `CI_ATTESTATION_SPEC`. */
 export const ATTESTATION_SPEC = {
-  repo: 'rediacc/console',
-  signerWorkflow: 'rediacc/console/.github/workflows/ci-quality.yml',
+  repo: WK_GH_REPO,
+  signerWorkflow: `${WK_GH_REPO}/.github/workflows/ci-quality.yml`,
 } as const;
 export const QUALITY_WORKFLOW = '.github/workflows/ci-quality.yml';
 /** The run list fetch reads: ci-quality.yml is a reusable workflow, so its artifacts belong to the calling ci.yml run. */
