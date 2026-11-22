@@ -1316,17 +1316,25 @@ def sfx(**over):
 
 
 _SM = "git -C private/sm push origin"
-# (name, command, root, extra env, expect_blocked, mutant). A mutant is `(preamble, [(old, new), ...])`: Python run before the guard loads, and replacements made in the guard's source, each `old` found exactly once. Under it a refused row must flip to allowed, which proves the row is refused by the condition it names and by nothing else.
+# (name, command, root, extra env, expect_blocked, mutant). A mutant is `(preamble, [(old, new), ...])`: Python run before the guard loads, and replacements made in the guard's source, each `old` found exactly once. Under it a refused row must flip to allowed, which proves the row is refused by the condition it names and by nothing else; an admitted row must flip to refused under `REVERTED`, the guard with the submodule admission taken out.
+REVERTED = ("", [("sub_repo, why = _submodule_repo(repo, root)", "sub_repo, why = '', 'reverted'")])
 SUB_CASES: list[tuple[str, str, typing.Any, dict[str, str], bool, typing.Any]] = [
-    ("sub: ff of the branch name", "%s %s:%s" % (_SM, BRANCH, MAIN), SUB_C, sfx(), False, None),
-    ("sub: ff of the tip sha", "%s %s:%s" % (_SM, SUB_SHA, MAIN), SUB_C, sfx(), False, None),
+    (
+        "sub: ff of the branch name",
+        "%s %s:%s" % (_SM, BRANCH, MAIN),
+        SUB_C,
+        sfx(),
+        False,
+        REVERTED,
+    ),
+    ("sub: ff of the tip sha", "%s %s:%s" % (_SM, SUB_SHA, MAIN), SUB_C, sfx(), False, REVERTED),
     (
         "sub: ff of origin/<branch> after cd",
         "cd private/sm && git push origin origin/%s:%s" % (BRANCH, MAIN),
         SUB_C,
         sfx(),
         False,
-        None,
+        REVERTED,
     ),
     (
         "sub: refs spellings both sides",
@@ -1334,7 +1342,7 @@ SUB_CASES: list[tuple[str, str, typing.Any, dict[str, str], bool, typing.Any]] =
         SUB_C,
         sfx(),
         False,
-        None,
+        REVERTED,
     ),
     (
         "sub: the landing tree's submodule from the main root",
@@ -1342,7 +1350,7 @@ SUB_CASES: list[tuple[str, str, typing.Any, dict[str, str], bool, typing.Any]] =
         SUB_TT_M,
         sfx(sub_head=SUB_TT_SHA),
         False,
-        None,
+        REVERTED,
     ),
     # ---- refused controls, one per condition --------------------------------------------
     (

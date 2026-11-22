@@ -101,6 +101,10 @@ For each submodule that has an **open PR on this branch** (the list above):
 branch** -- `delete_branch_on_merge` is `true` on all five repos (`gh api repos/rediacc/<r> --jq '.delete_branch_on_merge, .allow_squash_merge, .allow_rebase_merge'`). This line once claimed the setting was FALSE on submodules and that keeping the branch preserved a gate fallback; both were invented, and believing merged branch names stay visible is what let `0826-1` be picked twice on 2026-08-26. The gate does not need the ref: `check-submodule-branches.sh` finds merged work with `gh pr list --head <branch> --state merged`.
 - The new submodule `main` HEAD is captured: `gh api repos/rediacc/<r>/commits/main --jq .sha`. This is the **rebased tip commit**, a new SHA even for a single-commit PR (rebase always creates new commit objects), tree-identical to the branch tip but not the same object.
 
+**A submodule PR GitHub cannot rebase** (`GraphQL: This branch can't be rebased`, as rediacc/account#102 and rediacc/renet#121 were on 2026-11-22) that is a pure fast-forward lands by the session's own push, `git -C private/<sm> push origin <branch-tip-sha>:main`, never `--merge` or `--squash`.
+`block_push_to_protected_branch` admits it only as one refspec with nothing forced, from a submodule the `.gitmodules` registers, when the sha is that submodule's `origin/<branch>` with `origin/main` as its ancestor, its PR in `rediacc/<sm>` is OPEN with that head, `mergeStateStatus` CLEAN and no unresolved review thread, and the console PR for the same branch is OPEN (operator ruling ASKED:2026-11-22T11:11Z).
+No rebase happened, so the pointer in step 2 is the branch tip itself.
+
 ### 2. Update console submodule pointers to the merged commits
 A rebase means the branch-tip commits are **not literally on** the submodule's `main` (new SHAs from the replay), so the pointer moves. For each merged submodule:
 - `git -C private/<sm> fetch origin main`
