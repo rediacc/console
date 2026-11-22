@@ -371,3 +371,11 @@ def test_branch_writer_boxes_names_an_open_writer_box(tmp_path):
 def test_control_branch_writer_boxes_ticked_and_lead_only(tmp_path):
     repo = _branch_with_plan(tmp_path, "- [x] B1 [writer] a writer box is ticked\n")
     assert CHECKS.branch_writer_boxes(repo) == []
+
+
+def test_branch_writer_boxes_is_none_when_the_log_read_fails(tmp_path):
+    """69e02bd5.3: a failed log read (no origin/main here) is None, not an empty list that reads as no open writer box."""
+    repo = tmp_path / "plain"
+    repo.mkdir()
+    _git(repo, "init", "-q")
+    assert CHECKS.branch_writer_boxes(repo) is None

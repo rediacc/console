@@ -87,8 +87,8 @@ except Exception:
 # Heading, any level, so "## Remaining" and "### Remaining work" both count.
 REMAINING_HEADING = re.compile(r"^[ \t]{0,3}#{1,4}[ \t]*Remaining\b", re.MULTILINE | re.IGNORECASE)
 
-# Minutes without a commit, with this session's own edits still uncommitted, before the commit reminder speaks (agent/plans/PLAN-fast-loop.md Part 2). A reminder, never a block. Fixed in code (agent/plans/PLAN-simple-two-tree-loop.md ruling 11); the post-tool member reads it through `wl_uncommitted.remind_min`.
-COMMIT_REMIND_MIN = 15
+# Minutes without a commit, with this session's own edits still uncommitted, before the commit reminder speaks (agent/plans/PLAN-fast-loop.md Part 2). A reminder, never a block. Fixed in code (agent/plans/PLAN-simple-two-tree-loop.md ruling 11); the value is defined in `wl_uncommitted` (the post-tool member reads it through `wl_uncommitted.remind_min` without importing this module).
+COMMIT_REMIND_MIN = wl_uncommitted.COMMIT_REMIND_MIN
 
 
 def cadence_on(settings) -> bool:
@@ -3256,6 +3256,8 @@ def loop_next_text(state, root, state_doc, pr_finish_fired):
         notice = wl_stack.notify_line(own_tree(), "cd-done", pr=released)
         if notice:
             pending = branch_writer_boxes(root)
+            if pending is None:
+                return notice + DEV_PROMOTE_UNREADABLE, False
             if pending:
                 return notice + DEV_PROMOTE_WAIT % ", ".join(pending), False
             return notice, True
@@ -3315,16 +3317,37 @@ DEV_PROMOTE_WAIT = (
     "\nNot yet: [writer] box(es) of this branch's plans are still open (%s). Promote at the commit "
     "boundary after the last one is ticked; ./run.sh worktree landing --promote refuses earlier."
 )
+# The branch's commits could not be read, so whether a [writer] box is open is unknown: advise, never block, and never read it as "none open".
+DEV_PROMOTE_UNREADABLE = (
+    "\nNot yet checked: the log of this branch's commits could not be read, so whether a [writer] box of this branch's "
+    "plans is still open is unknown. Re-run it, then promote at the commit boundary."
+)
 PLAN_BOX_TRAILER = re.compile(r"(PLAN-[A-Za-z0-9._-]+?\.md)#[0-9a-f]{8}")
 OPEN_WRITER_BOX = re.compile(r"^\s*- \[ \] (\S+) \[writer\]")
 
 
 def branch_writer_boxes(root):
-    """The open `[writer]` boxes (`PLAN-x.md:B3`) of every plan the `Plan-Box:` trailers of this branch's commits ahead of origin/main name, the code-complete premise of promote (agent/plans/PLAN-simple-two-tree-loop.md D3). A plan file that cannot be read is skipped."""
-    log = (
-        C._git(root, "log", "--format=%(trailers:key=Plan-Box,valueonly)", "origin/main..HEAD")
-        or ""
-    )
+    """The open `[writer]` boxes (`PLAN-x.md:B3`) of every plan the `Plan-Box:` trailers of this branch's commits ahead of origin/main name, the code-complete premise of promote (agent/plans/PLAN-simple-two-tree-loop.md D3), or None when the log read itself failed (an unreadable branch is not an empty one: review 69e02bd5.3). A plan file that cannot be read is skipped."""
+    try:
+        done = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(root),
+                "log",
+                "--format=%(trailers:key=Plan-Box,valueonly)",
+                "origin/main..HEAD",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if done.returncode != 0:
+        return None
+    log = done.stdout
     out: list[str] = []
     for name in sorted(set(PLAN_BOX_TRAILER.findall(str(log)))):
         try:

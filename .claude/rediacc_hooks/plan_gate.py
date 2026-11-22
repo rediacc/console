@@ -1,7 +1,6 @@
 """The plan gate (box L2 of agent/plans/PLAN-plan-per-pr-loop.md): a console PR merges when its one plan has every box ticked, or when its body says why it merges otherwise.
 
-THE LINK. A PR names its plan with one `Plan: agent/plans/PLAN-<slug>.md` line in its body. `.claude/hooks/post-bash/refresh_pr_body.py` writes that line from the head of the plan queue (`agent/plans/QUEUE.md`, read by `queue`: its hand-ordered `## Promoted` list first, then the `## Generated` one `wl_planqueue` renders) on the first push that finds the body without one, and never rewrites it after that: the link is set once and is then the PR's own, so a queue edit mid-PR cannot re-point a PR at another plan. A multi-plan PR, or a PR that
-merges with open boxes, never merges: since agent/plans/PLAN-simple-two-tree-loop.md B8 the `Operational-Reason:` line admits no open box, and a plan an earlier merged PR already named is refused (one PR per plan).
+THE LINK. A PR names its plan with one `Plan: agent/plans/PLAN-<slug>.md` line in its body. `.claude/hooks/post-bash/refresh_pr_body.py` writes that line from the head of the plan queue (`agent/plans/QUEUE.md`, read by `queue`: its hand-ordered `## Promoted` list first, then the `## Generated` one `wl_planqueue` renders) on the first push that finds the body without one, and never rewrites it after that: the link is set once and is then the PR's own, so a queue edit mid-PR cannot re-point a PR at another plan. A multi-plan PR merges only when its body carries an `Operational-Reason:` line and every box of every named plan is ticked, and a PR with an open box never merges: since agent/plans/PLAN-simple-two-tree-loop.md B8 the `Operational-Reason:` line admits no open box, and a plan an earlier merged PR already named is refused (one PR per plan).
 
 THE ONE BOX PARSER. Boxes are counted by `wl_planfile.plan_boxes` (the Stop hook's parser, which `check_plan_boxes.py` and `.ci/config/plan-boxes.json` also use), cross-checked against `wl_planfile.raw_box_counts`, its dumber line count: the larger open count wins, so a parser that stops seeing a box cannot turn an open plan into a finished one. A plan with no
 boxes at all proves nothing and is refused rather than read as finished.
@@ -319,11 +318,11 @@ def writer_startable(text: str) -> bool:
     return any(not _LEAD_BOX.search(ln) and br.startable(ln) for ln in opened)
 
 
-MERGED_PR_LIMIT = 200
+MERGED_PR_LIMIT = 1000
 
 
 def merged_plan_prs(root: str) -> tuple[list[tuple[int, list[str]]] | None, str]:
-    """([(number, plans)], "") for the repository's merged PRs (the newest MERGED_PR_LIMIT), each with the plans its body's own `Plan:` lines name; (None, why) when gh cannot answer. One `gh pr list` call."""
+    """([(number, plans)], "") for the repository's merged PRs (the newest MERGED_PR_LIMIT), each with the plans its body's own `Plan:` lines name; (None, why) when gh cannot answer, or when the list reached MERGED_PR_LIMIT (an older PR could be cut off, so the one-PR-per-plan check refuses instead of admitting a plan unseen). One `gh pr list` call, plus one retry after a 2 s pause on a transient 5xx."""
     import json
     import subprocess
     import time
@@ -367,6 +366,12 @@ def merged_plan_prs(root: str) -> tuple[list[tuple[int, list[str]]] | None, str]
         return None, "gh answered something that is not JSON"
     if not isinstance(rows, list):
         return None, "gh answered something that is not a list"
+    if len(rows) >= MERGED_PR_LIMIT:
+        return (
+            None,
+            "gh listed %d merged PRs, the cap, so an older PR naming a plan may be cut off"
+            % len(rows),
+        )
     return [
         (int(row.get("number") or 0), body_plans(row["body"]))
         for row in rows

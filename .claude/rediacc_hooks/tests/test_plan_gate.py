@@ -821,7 +821,8 @@ def test_merged_plan_prs_retries_one_transient_failure_and_answers(tmp_path, mon
     got, err = _REAL_MERGED(str(tmp_path))
     assert (got, err) == ([], ""), (got, err)
     assert len(calls.read_text(encoding="utf-8").splitlines()) == 2, "one retry after the 502"
-    assert naps == [2], naps
+    # time.sleep is patched process-wide, so a stray thread's short naps land here too: only the 2 s retry pause counts.
+    assert [n for n in naps if n == 2] == [2], naps
 
 
 def test_merged_plan_prs_does_not_retry_a_client_error(tmp_path, monkeypatch):
@@ -834,7 +835,7 @@ def test_merged_plan_prs_does_not_retry_a_client_error(tmp_path, monkeypatch):
     assert got is None, got
     assert "404" in err, err
     assert len(calls.read_text(encoding="utf-8").splitlines()) == 1
-    assert naps == [], naps
+    assert [n for n in naps if n == 2] == [], naps
 
 
 def test_the_fail_safe_settings_carry_no_batch_keys():
@@ -916,3 +917,38 @@ def test_tip_readers_see_the_pushed_tip_and_queue_head_still_sees_the_working_tr
     # The Stop hook's readers are the working tree's, unchanged.
     assert plan_gate.queue_head(root) == "agent/plans/PLAN-local.md"
     assert plan_gate.queue(root)[0] == "agent/plans/PLAN-local.md"
+
+
+def test_merged_plan_prs_refuses_when_gh_cannot_be_spawned(tmp_path, monkeypatch):
+    """b3375d46.3: a spawn failure raises past the retry and answers at once with the reason, never an empty list."""
+    monkeypatch.setenv("PATH", str(tmp_path))
+    got, err = _REAL_MERGED(str(tmp_path))
+    assert got is None, got
+    assert err.startswith("gh could not run"), err
+
+
+def test_merged_plan_prs_refuses_when_gh_retry_cannot_be_imported(tmp_path, monkeypatch):
+    """b3375d46.2: an unimportable retry helper is an unreadable list, not an empty one."""
+
+    def broken(_name):
+        raise ImportError("no such module")
+
+    monkeypatch.setattr(plan_gate.syspath, "import_from_ci", broken)
+    got, err = _REAL_MERGED(str(tmp_path))
+    assert got is None, got
+    assert "gh_retry could not be imported" in err, err
+
+
+def test_merged_plan_prs_refuses_a_list_that_reached_the_cap(tmp_path, monkeypatch):
+    """6ad869fc.2: a list as long as the cap may have cut an older PR off, so it is unreadable rather than complete."""
+    monkeypatch.setattr(plan_gate, "MERGED_PR_LIMIT", 2)
+    stub = tmp_path / "bin" / "gh"
+    stub.parent.mkdir()
+    stub.write_text(
+        '#!/bin/sh\necho \'[{"number":2,"body":"x"},{"number":1,"body":"y"}]\'\n', encoding="utf-8"
+    )
+    stub.chmod(0o755)
+    monkeypatch.setenv("PATH", "%s:%s" % (stub.parent, os.environ.get("PATH", "")))
+    got, err = _REAL_MERGED(str(tmp_path))
+    assert got is None, got
+    assert "the cap" in err, err
