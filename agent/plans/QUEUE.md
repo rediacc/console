@@ -74,7 +74,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 29 of 87 plans done, 1329 of 1643 boxes done (80%).
+Promoted: 29 of 87 plans done, 1341 of 1643 boxes done (81%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -164,7 +164,7 @@ Promoted: 29 of 87 plans done, 1329 of 1643 boxes done (80%).
 | 84 | PLAN-pr-loop-single-source.md | 5/9 | 4 open |
 | 85 | PLAN-two-track-merge-dev.md | 35/44 | 9 open |
 | 86 | PLAN-simple-two-tree-loop.md | 7/12 | 5 open |
-| 87 | PLAN-preview-signer.md | 0/37 | 37 open |
+| 87 | PLAN-preview-signer.md | 12/37 | 25 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
