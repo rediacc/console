@@ -325,7 +325,7 @@ def test_an_unreachable_upstream_is_red(gate, tmp_path):
 
 
 def samba_in_code(source: str) -> bool:
-    """Whether samba.org appears anywhere after the file's leading header comment (template literals and inline comments included)."""
+    """Whether samba.org appears anywhere after the file's leading header comment (template literals and inline comments included); with no closing */ the whole file is scanned, header included."""
     body = source
     start = body.find("/**")
     if start != -1 and body[:start].strip() in ("", "#!/usr/bin/env node"):
