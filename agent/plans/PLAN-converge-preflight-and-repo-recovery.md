@@ -1,6 +1,6 @@
 # PLAN: converge checks each repo against the Docker API gate before it restarts it, and hostinger's mail, observability and nextcloud come back
 
-Status: executing -- operator decisions ASKED:2026-10-24T17:45Z (order, preflight scope, mail cert export, host metrics exporter, Collabora without capabilities); worklist #d0928775, PR-TASK 9f92c43e.
+Status: done -- 2026-11-22, every box ticked and merged to main with PR 605 (was: executing -- operator decisions ASKED:2026-10-24T17:45Z (order, preflight scope, mail cert export, host metrics exporter, Collabora without capabilities); worklist #d0928775, PR-TASK 9f92c43e.)
 Depends-On: no-dep -- builds on PLAN-renet-runtime-converge (R1, C1 landed) and the gate of PLAN-dockerd-api-privilege-gate (done)
 Priority: P0 -- production incident on hostinger 2026-10-24: three repos down (mail and observability with zero containers, nextcloud half-built)
 Owner: d778be9d

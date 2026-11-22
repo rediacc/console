@@ -1,6 +1,6 @@
 # PLAN: one regional console executor serves many organizations, with each org held to its own container, its own issued token, its own grants and its own audit trail
 
-Status: approved -- operator ruling 2026-10-26 ~05:30Z "Plan multi-org now, same branch" (worklist item #1741253b, lead session d778be9d, branch 1023-1). The Decisions section lists the defaults taken without asking; each is open to operator veto.
+Status: done -- 2026-11-22, every box ticked and merged to main with PR 605 (was: approved -- operator ruling 2026-10-26 ~05:30Z "Plan multi-org now, same branch" (worklist item #1741253b, lead session d778be9d, branch 1023-1). The Decisions section lists the defaults taken without asking; each is open to operator veto.)
 Priority: P1 -- today the console works only for the one org whose ROOT_EMAIL owner the region's issuer mints for (private/account/src/services/executor-issuer.service.ts:118-129). Every paying org in a region other than that one gets the coded 503 from the org gate (private/account/src/routes/console.ts:111-142), so the paid console is unusable for customers.
 First-Seen: 2026-10-26
 Owner: d778be9d

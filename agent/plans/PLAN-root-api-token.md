@@ -291,10 +291,12 @@ Unchanged. login_bench keeps the password and TOTP path, and root_login has no b
 
 ### Live queue: production eu, in order, after the PR merges and CD's edge deploy is green
 
-- [ ] LP0 [live] The deploy reached production: the migration was applied by deploy_account and the route answers.
+- [x] LP0 [live] The deploy reached production: the migration was applied by deploy_account and the route answers.
   - Accept: `curl -s -o /dev/null -w '%{http_code}' -X POST https://eu.rediacc.cloud/account/api/v1/admin/root-token/session` prints 401, and `curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer rdr_0' https://eu.rediacc.cloud/account/api/v1/admin/stats` prints 401.
-- [ ] OP1 [live] THE ONE OPERATOR STEP. The operator signs in at https://eu.rediacc.cloud/account/admin/root-tokens, steps up with TOTP, mints one token (name `agent-root-eu`, 90 days) and pastes the value into the Bitwarden entry ROOT_API_TOKEN. No agent sees the value until it reads it from bws.
+    (ticked) 2026-11-22T15:48:54Z by ace763dd: present: private/account/src/middleware/root-auth.ts:48 readRootBearer refuses the bad bearer; curl eu root-token session POST 401 and admin stats 401 (2026-11-22)
+- [x] OP1 [live] THE ONE OPERATOR STEP. The operator signs in at https://eu.rediacc.cloud/account/admin/root-tokens, steps up with TOTP, mints one token (name `agent-root-eu`, 90 days) and pastes the value into the Bitwarden entry ROOT_API_TOKEN. No agent sees the value until it reads it from bws.
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_login --target stable --region eu --check` rc 0.
+    (ticked) 2026-11-22T15:47:10Z by ace763dd: present: root_login --target stable --region eu --check rc 0 (root login values ok)
 - [ ] LP1 [live] Stable eu: the first bind, a session and one read-only admin call.
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_login --target stable --region eu --probe stats` rc 0, printing `ip rebound`, `root session opened (stable eu, token, ...)` and `GET /admin/stats 200`.
 - [ ] LP2 [live] The audit trail of LP1 is readable as root (U4).

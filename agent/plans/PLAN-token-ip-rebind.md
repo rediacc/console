@@ -1,6 +1,6 @@
 # PLAN: a CLI login token can be moved to a new IP after a TOTP check (`Token is bound to a different IP address`)
 
-Status: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (59ba0c756) and the operator asked for parallel turbo
+Status: done -- 2026-11-22, every box ticked and merged to main with PR 605 (was: draft -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (59ba0c756) and the operator asked for parallel turbo)
 Owner: d778be9d
 First-Seen: 2026-09-25
 Depends-On: no-dep -- PLAN-config-handoff-relay-only.md is finished (all 11 boxes ticked); it shares config-remote*.ts, the cli.json locales and account-security.md; that plan's console commit has landed, so no box waits on it

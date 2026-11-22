@@ -1,6 +1,6 @@
 # PLAN: an executor connect that never completes gets a named, retryable error, and an org whose executor keeps hitting it moves to a new Durable Object id
 
-Status: executing
+Status: done -- 2026-11-22, every box ticked and merged to main with PR 605 (was: executing)
 Owner: d778be9d
 Updated: 2026-10-28
 Depends-On: PLAN-executor-durable-object-policy.md#L0, PLAN-executor-durable-object-policy.md#L2 -- relocation is built on the `durable` backend only. L0 puts bench on `durable`, which E9 (the Live-Proof run) needs. L2 puts edge-us on `durable`, which the E10 extra accept needs. The code boxes E1-E8 need only that plan's code boxes, and those are all ticked (S1, A1, W1-W4, K1, D1, G1, G2, X1)

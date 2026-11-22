@@ -309,9 +309,12 @@ Order:
 
 ### Live: production edge (standing ruling ASKED:2026-11-16T05:39Z)
 
-- [ ] LE0 [live] The edge Workers serve the route in all three regions. Accept: `for r in eu us asia; do curl -s -o /dev/null -w '%{http_code}\n' -X POST https://$r.rediacc.cloud/account/api/v1/admin/root-grants/plan; done` prints 401 three times.
-- [ ] OP-us [operator] The operator signs in at https://us.rediacc.cloud/account/admin/root-tokens, steps up with TOTP, mints `agent-root-us` and pastes it into the Bitwarden entry ROOT_API_TOKEN_US. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_login --target edge --region us --check` rc 0.
-- [ ] OP-asia [operator] The same at https://asia.rediacc.cloud/account/admin/root-tokens into ROOT_API_TOKEN_ASIA. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_login --target edge --region asia --check` rc 0.
+- [x] LE0 [live] The edge Workers serve the route in all three regions. Accept: `for r in eu us asia; do curl -s -o /dev/null -w '%{http_code}\n' -X POST https://$r.rediacc.cloud/account/api/v1/admin/root-grants/plan; done` prints 401 three times.
+    (ticked) 2026-11-22T15:48:55Z by ace763dd: present: private/account/src/services/root-grants.service.ts:50 serves the root-grants plan route; curl POST eu, us, asia answered 401 x3 (2026-11-22)
+- [x] OP-us [operator] The operator signs in at https://us.rediacc.cloud/account/admin/root-tokens, steps up with TOTP, mints `agent-root-us` and pastes it into the Bitwarden entry ROOT_API_TOKEN_US. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_login --target edge --region us --check` rc 0.
+    (ticked) 2026-11-22T15:47:15Z by ace763dd: present: root_login --target edge --region us --check rc 0
+- [x] OP-asia [operator] The same at https://asia.rediacc.cloud/account/admin/root-tokens into ROOT_API_TOKEN_ASIA. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_login --target edge --region asia --check` rc 0.
+    (ticked) 2026-11-22T15:47:18Z by ace763dd: present: root_login --target edge --region asia --check rc 0
 - [ ] LA-eu [live] Apply on edge eu, after PLAN-root-api-token OP1 and LP0, with the bookmark quoted in the tick. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_grants --target edge-eu --apply` rc 0 printing `BOOKMARK account-eu` and `partner.org_create`, then `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_grants --target edge-eu` rc 0.
 - [ ] LA-us [live] Apply on edge us, after OP-us, with the bookmark quoted in the tick. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_grants --target edge-us --apply` rc 0 printing `BOOKMARK account-us` and `subscription.raise`, then `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_grants --target edge-us` rc 0 with only the `AMBER operator: config_store.missing` line.
 - [ ] LA-asia [live] Apply on edge asia, after OP-asia, with the bookmark quoted in the tick. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_grants --target edge-asia --apply` rc 0 printing `BOOKMARK account-asia` and `subscription.raise`, then `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_grants --target edge-asia` rc 0.

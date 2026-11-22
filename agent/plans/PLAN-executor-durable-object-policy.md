@@ -1,6 +1,6 @@
 # PLAN: the console executor leaves the frozen @cloudflare/containers `Container` class for the `durable_object` scheduling policy, with per-org instance sizing and the 25-per-target cap enforced in code, before 2026-12-31
 
-Status: approved -- operator ruling ASKED:2026-10-26T15:26Z "Per-org, raise the cap (Recommended)": one executor container per org stays, the cap is raised (worklist #9638ab6b), and this migration plan follows (worklist #54cc96a6, lead session d778be9d, branch 1023-1). The Decisions section lists the defaults taken without asking; each is open to operator veto.
+Status: done -- 2026-11-22, every box ticked and merged to main with PR 605 (was: approved -- operator ruling ASKED:2026-10-26T15:26Z "Per-org, raise the cap (Recommended)": one executor container per org stays, the cap is raised (worklist #9638ab6b), and this migration plan follows (worklist #54cc96a6, lead session d778be9d, branch 1023-1). The Decisions section lists the defaults taken without asking; each is open to operator veto.)
 Priority: P1 -- Cloudflare stops updating the `Container` class after 2026-12-31 (Context item 1), and the proxy's per-org egress identity, sleep timer and start path all sit inside that class (workers/proxy/src/index.ts:117-164). Leaving it after the freeze means running an unpatched base class under a paid customer path.
 First-Seen: 2026-10-26
 Owner: d778be9d

@@ -1,6 +1,6 @@
 # PLAN: Stop-hook retro, 2026-11-01 (band late, covers early #b4940dfa; lead session 45048a90)
 
-Status: ready
+Status: done -- 2026-11-22, every box ticked and merged to main with PR 605 (was: ready)
 Depends-On: no-dep -- no box waits on another plan
 Priority: P2 -- refusal wording that cost calls, no wrong block
 Concurrency: parallel -- touches only the stop hook's refusal text

@@ -1,6 +1,6 @@
 # PLAN: the source address ranges allowed for an executor's SSH key are declared in the rdc config, and rdc writes them into the machine's authorized_keys
 
-Status: executing
+Status: done -- 2026-11-22, every box ticked and merged to main with PR 605 (was: executing)
 Depends-On: PLAN-executor-durable-object-policy.md#L0 -- only for X2, whose end-to-end proof needs bench on the `durable` backend (deployed 2026-10-28, version 628b1496). V1, S1, R1, A1, C1, I1, D1 and X1 depend on nothing outside this plan.
 Owner: d778be9d
 Updated: 2026-10-28

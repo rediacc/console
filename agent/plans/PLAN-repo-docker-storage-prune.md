@@ -1,6 +1,6 @@
 # PLAN: `rdc repo prune` -- classify and reclaim a repository's Docker storage, orphan overlay2 directories included, and stop the leak at its source
 
-Status: executing
+Status: done -- 2026-11-22, every box ticked and merged to main with PR 605 (was: executing)
 Depends-On: no-dep -- builds on `repository trim` and `prune.DockerReclaim` (rediacc/renet#76), which have landed
 Owner: d778be9d
 Updated: 2026-10-28

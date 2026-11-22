@@ -1,5 +1,5 @@
 # PLAN: a docker pin bump moves the image digest along with the tag
-Status: executing
+Status: done -- 2026-11-22, every box ticked and merged to main with PR 605 (was: executing)
 Owner: d778be9d
 Updated: 2026-10-30
 Epic: 9f92c43e (worklist #d4b2a051)

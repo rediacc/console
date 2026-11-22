@@ -1,6 +1,6 @@
 # PLAN: telemetry export: account Workers and the executor proxy deliver to otlp.rediacc.io, per region and channel, with a delivery check that catches a silent sender
 
-Status: approved -- operator /ask 2026-10-23: "Approve both", design "Accept all defaults (Recommended)", "Commit as usual (Recommended)", and no operator steps (see Operator rulings)
+Status: done -- 2026-11-22, every box ticked and merged to main with PR 605 (was: approved -- operator /ask 2026-10-23: "Approve both", design "Accept all defaults (Recommended)", "Commit as usual (Recommended)", and no operator steps (see Operator rulings))
 Depends-On: no-dep -- the account, Workers-config and ops boxes need no other plan; the proxy box T15 names its prerequisite box in PLAN-cloudflare-proxy.md on the box itself, so the account work is not held behind the proxy's Phase 2
 Owner: d778be9d
 First-Seen: 2026-10-23

@@ -1,5 +1,5 @@
 # PLAN: a stopped bench signer keeps its caller's binding, and the signer proofs never leave bench signing down
-Status: executing
+Status: done -- 2026-11-22, every box ticked and merged to main with PR 605 (was: executing)
 Owner: d778be9d
 Updated: 2026-11-12
 Priority: P1 -- each run of `enterprise proof signer --bench` (V1) or region-loss (V2) leaves bench signing down (SIGNER_UNAVAILABLE) until a full deploy_bench, measured 2026-11-12

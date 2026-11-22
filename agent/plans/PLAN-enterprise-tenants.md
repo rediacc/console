@@ -256,7 +256,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Accept: `(cd packages/cli && npx vitest run src/commands/__tests__/onprem)` rc 0, and `npm run check:ci-cli-contract` rc 0.
   (corrected 2026-11-12T11:58Z) Superseded by C7 (R5): the verb is `rdc server`, so onprem.ts and services/onprem/** are never created. Do not run C1; tick it as superseded when C7 ticks. Its shared Owns (command-planes.ts, i18n) pass to C7.
     (ticked) 2026-11-12T14:30:29Z by d778be9d: superseded by C7 (correction 2026-11-12T11:58Z): commit:6c48953db0 rdc server install|status|upgrade|backup|licence, server vitest rc=0, cli-contract rc=0
-- [ ] C2 [writer] Public docs: an "Install with rdc" section in on-premise.md.
+- [x] C2 [writer] Public docs: an "Install with rdc" section in on-premise.md.
   - Owns: packages/www/src/content/docs/en/on-premise.md.
   - Accept: `npm run -s check:ci-prose-style` rc 0.
   (corrected 2026-11-12T11:58Z) The section documents `rdc server install|status|upgrade|backup|licence`, the prompts, the three TLS methods, the free tier and its upgrade, and saving the recovery bundle. It runs after C7.
@@ -266,6 +266,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
       - updates: CLI, renet, template VERSION, image, and air-gapped via a new bundle.
       Runs after C11.
   (corrected 2026-11-14T17:30Z, review e005cba4.1) C2 runs after C11, as the 12:55Z correction above says, because it documents C11's air-gapped flow; the Wave 3 order moves C2 from 3b to 3c, after C11.
+    (ticked) 2026-11-22T15:48:28Z by ace763dd: present: packages/www/src/content/docs/en/on-premise.md:15 Install with rdc section; check:ci-prose-style rc 0
 - [x] C3 [writer] Only if Q7 is ruled yes: an HTTP-01 resolver when `CF_DNS_API_TOKEN` is empty.
   - Owns: private/renet/pkg/proxy/infra.go, private/renet/pkg/proxy/infra_test.go.
   - Accept: `(cd private/renet && go test ./pkg/proxy/...)` rc 0.
@@ -350,9 +351,10 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
 - Live: CL1, CL2, CL3 after C8. C1 is not run.
 - (corrected 2026-11-12T12:55Z) 3a += C12. 3b = C7, C9, C10 (disjoint), then C2. 3c = C11. Live: CL1, CL2, CL3, then CL4, CL5 after C8.
 - (corrected 2026-11-14T17:30Z, review e005cba4.1) C2 moves from 3b to 3c, after C11: 3b = C7, C9, C10; 3c = C11, then C2.
-- [ ] G3 [writer] Wave-3 Owns are disjoint per writer wave.
+- [x] G3 [writer] Wave-3 Owns are disjoint per writer wave.
   - Owns: none.
   - Accept: `grep -c "Owns:" agent/plans/PLAN-enterprise-tenants.md` is unchanged by any 3a/3b box, and the plan-concurrency check rc 0.
+    (ticked) 2026-11-22T15:47:05Z by ace763dd: invariant: Owns: count 22 unchanged since 5fd17671f; test-block_plan_concurrency.py rc 0 (47 cases)
 
 - [x] C9 [writer] elite template v2: versioned, local-first images, health check that works offline.
   - Add a `VERSION` file (integer), which lands in the repo, so an install can be read back with repo cat.

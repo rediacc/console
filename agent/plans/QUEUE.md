@@ -36,226 +36,176 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 <!-- queue:inflight:begin -->
 - Mode: effort smart; judge core; cadence on; agent_hint on; agent_pushback on.
 - Branch: 1121-1, no PR yet.
-- Landing tree: branch 1104-1, PR #605 open.
+- Landing tree: branch 1104-1, PR #605 merged.
 - Development tree: branch 1121-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
-- Work outside the PR's plans (26 epic(s)):
-  - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 30 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
-  - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
-  - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 48 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
-  - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1372 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
-  - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
-  - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
-  - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
-  - epic 92df2f69, plan agent/plans/PLAN-free-license.md, outside the set, 8 commit(s) on the branch, 0 open item(s): free license ladder F6
-  - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 56 commit(s) on the branch, 0 open item(s): guided detached worktree leases
-  - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 19 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
-  - epic fbb27b45, plan agent/plans/PLAN-product-domain-rename.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Product moves to rediacc.cloud and names drop their prefixes
-  - epic 5eb69cff, plan agent/plans/PLAN-website-routing-and-mail.md, outside the set, 14 commit(s) on the branch, 0 open item(s): Website routing, company lookup and product mail on .cloud
-  - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 77 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
-  - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
-  - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
-  - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
-  - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 2122 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-  - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
-  - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
-  - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
-  - epic 2255f2d2, no plan, 2 commit(s) on the branch, 0 open item(s): Convert stale GitHub issues (console, renet, account) into plan files
-  - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 6 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
-  - epic fe958571, no plan, 15 commit(s) on the branch, 0 open item(s): nginx2root and PHP 2026-11-19 security patching (hostinger + templates)
-  - epic 422370f4, no plan, 5 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
-- Writers: 1 live of writer_cap 25 (session ace763dd): worker:ae77cd065c4db4f24.
-- Leased items: 7: #3b82cf28 (worker:b7ww24433, ace763dd), #664e36ae (worker:aaa49d70869534c1f, d778be9d), #855d7340 (worker:b6jocj052, d778be9d), #8da3a559 (worker:bkelq9gbu, ace763dd), #95ffeb93 (worker:bkelq9gbu, ace763dd), #ab9c68b1 (worker:be39zjfwp, d778be9d), #c276a9df (worker:bzcbi0ri0, d778be9d).
+- Work outside the PR's plans (2 epic(s)):
+  - epic 79b7e92e, no plan, 177 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
+- Writers: 2 live of writer_cap 25 (session ace763dd): worker:a5c83ef9f30895c56, worker:aa54d51578cb384c8.
+- Leased items: 12: #3b82cf28 (worker:bhx27g2di, ace763dd), #47ce3621 (worker:acbc4d4cf168716ca, ace763dd), #664e36ae (worker:aaa49d70869534c1f, d778be9d), #7a807c05 (worker:acbc4d4cf168716ca, ace763dd), #855d7340 (worker:b6jocj052, d778be9d), #8c7e16e2 (worker:acbc4d4cf168716ca, ace763dd), #8da3a559 (worker:bhx27g2di, ace763dd), #95ffeb93 (worker:b556265tb, ace763dd), #9c3dff3e (worker:a5c83ef9f30895c56, ace763dd), #ab9c68b1 (worker:be39zjfwp, d778be9d), #c276a9df (worker:bzcbi0ri0, d778be9d), #ff619fa3 (worker:acbc4d4cf168716ca, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 29 of 88 plans done, 1341 of 1651 boxes done (81%).
+Promoted: 16 of 75 plans done, 1235 of 1533 boxes done (80%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
-| 1 | PLAN-ciquick-cpu.md | 14/28 | 14 open |
+| 1 | PLAN-ciquick-cpu.md | 16/28 | 12 open |
 | 2 | PLAN-backup-program.md | 186/192 | 6 open |
 | 3 | PLAN-cloudflare-proxy.md | 28/29 | 1 open |
-| 4 | PLAN-sync-remote-file-ownership.md | 7/7 | done |
-| 5 | PLAN-telemetry-export.md | 19/19 | done |
-| 6 | PLAN-renet-bridge-leftovers.md | 16/16 | done |
-| 7 | PLAN-token-ip-rebind.md | 11/11 | done |
-| 8 | PLAN-stop-hook-one-plan-scope.md | 14/14 | done |
-| 9 | PLAN-plan-preflight.md | 8/8 | done |
-| 10 | PLAN-renet-run-docker-sock-isolation.md | 4/4 | done |
-| 11 | PLAN-config-networkid-discovery.md | 8/8 | done |
-| 12 | PLAN-renet-fetch-retries.md | 3/3 | done |
-| 13 | PLAN-cloudflare-spend-guard.md | 10/10 | done |
-| 14 | PLAN-renet-runtime-converge.md | 5/5 | done |
-| 15 | PLAN-sandbox-tenant-separation.md | 7/8 | 1 open |
-| 16 | PLAN-converge-preflight-and-repo-recovery.md | 19/19 | done |
-| 17 | PLAN-gpu-device-grants.md | 13/14 | 1 open |
-| 18 | PLAN-proxy-cd-six-targets.md | 27/31 | 4 open |
-| 19 | PLAN-console-executor-multi-org.md | 18/18 | done |
-| 20 | PLAN-executor-durable-object-policy.md | 18/18 | done |
-| 21 | PLAN-local-release.md | 14/14 | done |
-| 22 | PLAN-tested-on-bench.md | 16/20 | 4 open |
-| 23 | PLAN-org-executor-connect-timeout-relocate.md | 17/17 | done |
-| 24 | PLAN-backup-restore-path.md | 8/10 | 2 open |
-| 25 | PLAN-ssh-key-source-ranges.md | 11/11 | done |
-| 26 | PLAN-repo-docker-storage-prune.md | 14/14 | done |
-| 27 | PLAN-production-key-only.md | 14/17 | 3 open |
-| 28 | PLAN-detached-jobs.md | 33/41 | 8 open |
-| 29 | PLAN-snapshot-read-io-cap.md | 15/16 | 1 open |
-| 30 | PLAN-backup-meter-orphaned-chunks.md | 8/8 | done |
-| 31 | PLAN-backup-local-image.md | 11/14 | 3 open |
-| 32 | PLAN-backup-plane-shared-bucket-hardening.md | 6/7 | 1 open |
-| 33 | PLAN-jobs-backup-real-machine-tests.md | 10/11 | 1 open |
-| 34 | PLAN-cli-tofu-toolchain.md | 10/10 | done |
-| 35 | PLAN-backup-download-from-store.md | 8/9 | 1 open |
-| 36 | PLAN-settings-set-verb.md | 4/4 | done |
-| 37 | PLAN-free-license.md | 11/13 | 2 open |
-| 38 | PLAN-backup-integrity.md | 49/56 | 7 open |
-| 39 | PLAN-backup-critical-tier.md | 48/51 | 3 open |
-| 40 | PLAN-rediaccfile-unprivileged.md | 18/23 | 5 open |
-| 41 | PLAN-worktree-lease.md | 15/16 | 1 open |
-| 42 | PLAN-tick-tracking.md | 13/15 | 2 open |
-| 43 | PLAN-renet-down-before-kill.md | 13/15 | 2 open |
-| 44 | PLAN-repo-resource-limits.md | 10/13 | 3 open |
-| 45 | PLAN-health-checks-local.md | 64/81 | 17 open |
-| 46 | PLAN-backup-multi-target.md | 18/21 | 3 open |
-| 47 | PLAN-ciquick-reds-1023-1.md | 11/12 | 1 open |
-| 48 | PLAN-docker-pin-digest.md | 9/9 | done |
-| 49 | PLAN-renet-executor-tiered-license-check.md | 3/4 | 1 open |
-| 50 | PLAN-scope-bws-signing-key-to-consuming-step.md | 8/10 | 2 open |
-| 51 | PLAN-split-cli-files-over-512-line-budget.md | 7/7 | done |
-| 52 | PLAN-renet-docker-running-semantics.md | 13/15 | 2 open |
-| 53 | PLAN-product-domain-rename.md | 24/28 | 4 open |
-| 54 | PLAN-website-routing-and-mail.md | 15/20 | 5 open |
-| 55 | PLAN-enterprise-isolation.md | 26/34 | 8 open |
-| 56 | PLAN-renet-restart-cycle-defects.md | 6/7 | 1 open |
-| 57 | PLAN-drop-free-license-ip-prefix-hash.md | 6/6 | done |
-| 58 | PLAN-stop-hook-retro-20261101.md | 4/4 | done |
-| 59 | PLAN-plan-compaction-bindings.md | 7/7 | done |
-| 60 | PLAN-ciquick-green-then-batch.md | 6/7 | 1 open |
-| 61 | PLAN-vmcheck-incremental.md | 2/3 | 1 open |
-| 62 | PLAN-ci-vm-image-followups.md | 0/2 | 2 open |
-| 63 | PLAN-idle-writer-capacity.md | 5/5 | done |
-| 64 | PLAN-d1-scaling.md | 19/31 | 12 open |
-| 65 | PLAN-experience-feedback.md | 12/16 | 4 open |
-| 66 | PLAN-local-first-delivery.md | 14/15 | 1 open |
-| 67 | PLAN-terms-acceptance.md | 25/25 | done |
-| 68 | PLAN-account-notices.md | 16/17 | 1 open |
-| 69 | PLAN-enterprise-tenants.md | 24/47 | 23 open |
-| 70 | PLAN-licence-expiry-notices.md | 6/7 | 1 open |
-| 71 | PLAN-onprem-relicence-inbox.md | 10/13 | 3 open |
-| 72 | PLAN-signer-bench-stop-binding-reattach.md | 3/3 | done |
-| 73 | PLAN-d1-eu-jurisdiction.md | 3/22 | 19 open |
-| 74 | PLAN-hostinger-to-bench.md | 12/22 | 10 open |
-| 75 | PLAN-multi-region-bench.md | 13/23 | 10 open |
-| 76 | PLAN-root-api-token.md | 7/15 | 8 open |
-| 77 | PLAN-site-entry-points.md | 7/11 | 4 open |
-| 78 | PLAN-root-grants.md | 5/19 | 14 open |
-| 79 | PLAN-push-decoupling.md | 17/23 | 6 open |
-| 80 | PLAN-stop-hook-store-status.md | 3/9 | 6 open |
-| 81 | PLAN-rdc-feedback.md | 18/21 | 3 open |
-| 82 | PLAN-account-sidebar-redesign.md | 12/15 | 3 open |
-| 83 | PLAN-email-sender-separation.md | 11/18 | 7 open |
-| 84 | PLAN-pr-loop-single-source.md | 5/9 | 4 open |
-| 85 | PLAN-two-track-merge-dev.md | 35/44 | 9 open |
-| 86 | PLAN-simple-two-tree-loop.md | 7/12 | 5 open |
-| 87 | PLAN-preview-signer.md | 12/37 | 25 open |
-| 88 | PLAN-weekly-lessons.md | 0/8 | 8 open |
+| 4 | PLAN-telemetry-export.md | 19/19 | done |
+| 5 | PLAN-token-ip-rebind.md | 11/11 | done |
+| 6 | PLAN-cloudflare-spend-guard.md | 10/10 | done |
+| 7 | PLAN-sandbox-tenant-separation.md | 7/8 | 1 open |
+| 8 | PLAN-converge-preflight-and-repo-recovery.md | 19/19 | done |
+| 9 | PLAN-gpu-device-grants.md | 13/14 | 1 open |
+| 10 | PLAN-proxy-cd-six-targets.md | 27/31 | 4 open |
+| 11 | PLAN-console-executor-multi-org.md | 18/18 | done |
+| 12 | PLAN-executor-durable-object-policy.md | 18/18 | done |
+| 13 | PLAN-local-release.md | 14/14 | done |
+| 14 | PLAN-tested-on-bench.md | 16/20 | 4 open |
+| 15 | PLAN-org-executor-connect-timeout-relocate.md | 17/17 | done |
+| 16 | PLAN-backup-restore-path.md | 8/10 | 2 open |
+| 17 | PLAN-ssh-key-source-ranges.md | 11/11 | done |
+| 18 | PLAN-repo-docker-storage-prune.md | 14/14 | done |
+| 19 | PLAN-production-key-only.md | 14/17 | 3 open |
+| 20 | PLAN-detached-jobs.md | 33/41 | 8 open |
+| 21 | PLAN-snapshot-read-io-cap.md | 15/16 | 1 open |
+| 22 | PLAN-backup-meter-orphaned-chunks.md | 8/8 | done |
+| 23 | PLAN-backup-local-image.md | 11/14 | 3 open |
+| 24 | PLAN-backup-plane-shared-bucket-hardening.md | 6/7 | 1 open |
+| 25 | PLAN-jobs-backup-real-machine-tests.md | 10/11 | 1 open |
+| 26 | PLAN-backup-download-from-store.md | 8/9 | 1 open |
+| 27 | PLAN-settings-set-verb.md | 4/4 | done |
+| 28 | PLAN-free-license.md | 11/13 | 2 open |
+| 29 | PLAN-backup-integrity.md | 49/56 | 7 open |
+| 30 | PLAN-backup-critical-tier.md | 48/51 | 3 open |
+| 31 | PLAN-rediaccfile-unprivileged.md | 18/23 | 5 open |
+| 32 | PLAN-worktree-lease.md | 15/16 | 1 open |
+| 33 | PLAN-tick-tracking.md | 13/15 | 2 open |
+| 34 | PLAN-renet-down-before-kill.md | 13/15 | 2 open |
+| 35 | PLAN-repo-resource-limits.md | 10/13 | 3 open |
+| 36 | PLAN-health-checks-local.md | 64/81 | 17 open |
+| 37 | PLAN-backup-multi-target.md | 18/21 | 3 open |
+| 38 | PLAN-ciquick-reds-1023-1.md | 11/12 | 1 open |
+| 39 | PLAN-docker-pin-digest.md | 9/9 | done |
+| 40 | PLAN-renet-executor-tiered-license-check.md | 3/4 | 1 open |
+| 41 | PLAN-scope-bws-signing-key-to-consuming-step.md | 8/10 | 2 open |
+| 42 | PLAN-split-cli-files-over-512-line-budget.md | 7/7 | done |
+| 43 | PLAN-renet-docker-running-semantics.md | 13/15 | 2 open |
+| 44 | PLAN-product-domain-rename.md | 24/28 | 4 open |
+| 45 | PLAN-website-routing-and-mail.md | 15/20 | 5 open |
+| 46 | PLAN-enterprise-isolation.md | 26/34 | 8 open |
+| 47 | PLAN-renet-restart-cycle-defects.md | 6/7 | 1 open |
+| 48 | PLAN-stop-hook-retro-20261101.md | 4/4 | done |
+| 49 | PLAN-ciquick-green-then-batch.md | 6/7 | 1 open |
+| 50 | PLAN-vmcheck-incremental.md | 2/3 | 1 open |
+| 51 | PLAN-ci-vm-image-followups.md | 0/2 | 2 open |
+| 52 | PLAN-d1-scaling.md | 19/31 | 12 open |
+| 53 | PLAN-experience-feedback.md | 12/16 | 4 open |
+| 54 | PLAN-local-first-delivery.md | 14/15 | 1 open |
+| 55 | PLAN-account-notices.md | 16/17 | 1 open |
+| 56 | PLAN-enterprise-tenants.md | 26/47 | 21 open |
+| 57 | PLAN-licence-expiry-notices.md | 6/7 | 1 open |
+| 58 | PLAN-onprem-relicence-inbox.md | 10/13 | 3 open |
+| 59 | PLAN-signer-bench-stop-binding-reattach.md | 3/3 | done |
+| 60 | PLAN-d1-eu-jurisdiction.md | 3/22 | 19 open |
+| 61 | PLAN-hostinger-to-bench.md | 12/22 | 10 open |
+| 62 | PLAN-multi-region-bench.md | 13/23 | 10 open |
+| 63 | PLAN-root-api-token.md | 9/15 | 6 open |
+| 64 | PLAN-site-entry-points.md | 7/11 | 4 open |
+| 65 | PLAN-root-grants.md | 8/19 | 11 open |
+| 66 | PLAN-push-decoupling.md | 17/23 | 6 open |
+| 67 | PLAN-stop-hook-store-status.md | 3/9 | 6 open |
+| 68 | PLAN-rdc-feedback.md | 18/21 | 3 open |
+| 69 | PLAN-account-sidebar-redesign.md | 12/15 | 3 open |
+| 70 | PLAN-email-sender-separation.md | 11/18 | 7 open |
+| 71 | PLAN-pr-loop-single-source.md | 7/9 | 2 open |
+| 72 | PLAN-two-track-merge-dev.md | 35/44 | 9 open |
+| 73 | PLAN-simple-two-tree-loop.md | 7/12 | 5 open |
+| 74 | PLAN-preview-signer.md | 12/37 | 25 open |
+| 75 | PLAN-weekly-lessons.md | 1/8 | 7 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
 2. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
 3. agent/plans/PLAN-cloudflare-proxy.md -- operator 2026-10-23 ("move agent/plans/PLAN-cloudflare-proxy.md promoted but investigate to update it"; /ask: "Keep it and finish Phase 2", B5 "A mint command", console "Wire it after Phase 2"): rdc --proxy through the Cloudflare Worker and Container deployed on eu 2026-09-24; P1; Depends-On none; the plan was refreshed against the code the same day and its proven boxes ticked
-4. agent/plans/PLAN-sync-remote-file-ownership.md -- operator 2026-10-23 (plan prompt /tmp/prompt-sync-remote-file-ownership.md): rdc repo sync upload --remote-file leaves the parent directories it creates root:root; fix through a skeleton rsync of only the missing segments so they get the universal user and existing directories are never re-owned; P1; Depends-On none; approved by operator /ask 2026-10-23 ("Approve both", "Commit as usual")
-5. agent/plans/PLAN-telemetry-export.md -- operator 2026-10-23 (plan prompt /tmp/prompt-telemetry-export-plan.md; /ask: "Approve both", "Accept all defaults", no operator steps): the account Workers and the executor proxy export traces and logs to otlp.rediacc.io through Cloudflare's native OTLP destinations, per region and channel, with a scheduled delivery check; P2; Depends-On none (its proxy box T15 waits on PLAN-cloudflare-proxy.md#P2a)
-6. agent/plans/PLAN-renet-bridge-leftovers.md -- operator 2026-10-23 (plan prompt /tmp/prompt-bridge-leftovers.md; /ask: "Commit as usual"): the broken renet ops self-test (bridge once plus three unregistered function names), 65 dead and 20 renamed bridge.* keys, stale renet and console docs, the 12 www policy translations naming the middleware and web app, and the bridge-functions wording; P2; approved with Q1 "(b) Also rename the harness", Q3 "Historical banner", Q4 "Change it" (/ask 2026-10-23)
-7. agent/plans/PLAN-token-ip-rebind.md -- pulled in as an unfinished prerequisite of PLAN-config-sync-hardening.md (Depends-On), 2026-10-23
-8. agent/plans/PLAN-stop-hook-one-plan-scope.md -- operator 2026-10-23 ("Pick some new close to finish plans ... promote them"): 14/15, the last box SC13b is evidence from a real run after this PR merges
-9. agent/plans/PLAN-plan-preflight.md -- operator 2026-10-23 (more writers in parallel wanted, so those plans are promoted as well): promoted for a parallel wave, each plan validated against the tree first
-10. agent/plans/PLAN-renet-run-docker-sock-isolation.md -- operator 2026-10-23 (more writers in parallel wanted, so those plans are promoted as well): promoted for a parallel wave, each plan validated against the tree first
-11. agent/plans/PLAN-config-networkid-discovery.md -- operator /ask 2026-10-23 rewrite of the superseded plan (ruling #0c1cbd0d), validated against the tree
-12. agent/plans/PLAN-renet-fetch-retries.md -- operator /ask 2026-10-23 rewrite of the superseded plan (ruling #0c1cbd0d), validated against the tree
-13. agent/plans/PLAN-cloudflare-spend-guard.md -- operator /ask 2026-10-23 ("One spend-guard plan, all of it"): usage alerts, observability sampling after measurement, R2 lifecycle on release prefixes, weekly usage report, sampling gate, leftovers report
-14. agent/plans/PLAN-renet-runtime-converge.md -- operator 2026-10-24: asked whether hostinger repos need down/up after the layout change, then ordered autonomous continuation; worklist #d0928775
-15. agent/plans/PLAN-sandbox-tenant-separation.md -- live QA on .11 2026-10-24: cross-repo docker socket access, unisolated first sandbox compose, foreign mounts, delete leaks; P1 security, fix this session
-16. agent/plans/PLAN-converge-preflight-and-repo-recovery.md -- operator 2026-10-24 (ASKED:2026-10-24T17:45Z after the hostinger converge took down mail, observability and nextcloud): converge preflight with compose/gate parity, per-repo cert export for mail, a machine-level host metrics exporter for observability, Collabora without capabilities, then vm:check, deploy and recovery; P0; Depends-On none
-17. agent/plans/PLAN-gpu-device-grants.md -- operator 2026-10-24 (ASKED:2026-10-24T18:05Z): CDI inventory and per-repo device grants for NVIDIA and AMD GPUs, tested on the local WSL RTX 3060 and a fake-device drill; P2; Depends-On PLAN-converge-preflight-and-repo-recovery.md
-18. agent/plans/PLAN-proxy-cd-six-targets.md -- operator order 2026-10-25T18:10Z (retire the console mock, CD deploys a proxy and executor per target) with the rulings of 18:18Z and 19:08Z
-19. agent/plans/PLAN-console-executor-multi-org.md -- operator /ask 2026-10-26 ~05:30Z ("Plan multi-org now, same branch"): one regional executor serves many orgs, one container per org, per-org issued tokens, an entitlement gate in place of the one-org console gate; code boxes wait on six-targets P1 and M1
-20. agent/plans/PLAN-executor-durable-object-policy.md -- operator /ask ASKED:2026-10-26T15:26Z ("Per-org, raise the cap"): move the proxy executor off the @cloudflare/containers Container class, frozen after 2026-12-31, to the durable_object scheduling policy; a bench spike first proves per-instance outbound interception, then a coordinator-enforced cap of 25, per-org sizing and a phased forward-only rollout by 2026-12-15
-21. agent/plans/PLAN-local-release.md -- operator ruling ASKED:2026-10-27T06:37Z: with no customers yet, a release may be published from the local machine when local verification is green; one comprehensive change, release:local edge and stable, gated on the ci:quick and vm:check receipts, CD publish path deleted
-22. agent/plans/PLAN-tested-on-bench.md -- operator request 2026-10-27, four questions answered same day
-23. agent/plans/PLAN-org-executor-connect-timeout-relocate.md -- finding #a150016d (edge-us org B's executor never reaches its machine; org C on a new Durable Object passes); operator ASKED:2026-10-28T06:55Z "Ride this PR now"
-24. agent/plans/PLAN-backup-restore-path.md -- box N4b of PLAN-backup-program.md; operator ASKED 2026-10-28 "Plan it, ride this PR"; the sealed table of contents gains per-file extents, chunkstore a partial fetch, renet a restore-path verb
-25. agent/plans/PLAN-ssh-key-source-ranges.md -- operator ASKED 2026-10-28T11:31Z "make it rdc config based ... define IPv4 on rediacc config too, with IPv6"; the executor key's allowed source ranges live in the rdc config and rdc writes the authorized_keys from=; unblocks bench L0
-26. agent/plans/PLAN-repo-docker-storage-prune.md -- operator ASKED 2026-10-28T11:21Z "do not cleanup directly! Maybe we need to improve the prune command/support of rdc"; rdc repo prune classifies and reclaims a repository's Docker storage and the reset stops leaking layers; hostinger gets the dry run only until the operator approves
-27. agent/plans/PLAN-production-key-only.md -- operator 2026-10-29 "make the production key primary and get rid of the development key ... promote the new plan at QUEUE.md and start in parallel"; one account keypair for every build, gateway and bench, the six ACCOUNT_*_DEV bws entries parked as __<NAME>, renet builds fail closed without a key
-28. agent/plans/PLAN-detached-jobs.md -- operator 2026-10-29 ASKED (all four Recommended) + "Remember we must promote all the new plans!": long verbs always run as machine jobs, proxy returns the ticket and the client polls, a ticket store per config, MCP returns the ticket
-29. agent/plans/PLAN-snapshot-read-io-cap.md -- operator 2026-10-29 "Remember we must promote all the new plans!"; hostinger snapshot read/hash phase hit load 11.41 under the 100 Mbps upload cap; a read token bucket and hash worker count bound it before the bulk seed resumes
-30. agent/plans/PLAN-backup-meter-orphaned-chunks.md -- operator 2026-10-29 "Remember we must promote all the new plans!"; 6.58 GB of chunks a killed run uploaded are in R2 but not in backup usage; bill them at commit, reconcile verb, repair hostinger
-31. agent/plans/PLAN-backup-local-image.md -- operator 2026-10-29 ASKED (all four Recommended) + the operator asking whether the new plans were being promoted: rdc backup download/upload of the encrypted repo image to a local path or external drive, in-place weekly update, fresh snapshot per run, prune fixes
-32. agent/plans/PLAN-backup-plane-shared-bucket-hardening.md -- operator 2026-10-29 ASKED (Implement all, promote): size-bounded presigned uploads, the unused R2 JWT minter removed, a per-bucket R2 token with a scope probe
-33. agent/plans/PLAN-jobs-backup-real-machine-tests.md -- operator 2026-10-29 "make a new plan for the missing tests": real-machine e2e for jobs and backup, the two gates that cannot fail on them, the expired-session account pin, drill legs p and q
-34. agent/plans/PLAN-cli-tofu-toolchain.md -- operator 2026-10-29 ASKED (Install command + doctor, Pin provider hashes, PATH-only fallback): rdc tools install tofu with baked checksums, doctor Tools section, provider lock hashes, shared plugin cache
-35. agent/plans/PLAN-backup-download-from-store.md -- operator 2026-10-29 "Go: implement": rdc backup download --store from the R2 chunk store with no machine, a backup:restore token scope, renet backup fetch-image, darwin and windows hole punching
-36. agent/plans/PLAN-settings-set-verb.md -- operator /ask 2026-10-30 "Yes, plan it": npm run settings -- set|get|list over a tunables registry, one source per value (the R2 ceiling lived in three places), starting with the spend-guard ceilings
-37. agent/plans/PLAN-free-license.md -- operator /ask 2026-10-30 (rulings R1-R13): licensing always enforced incl. CI (production key in CI, one shared renet artifact), FREE plan (48 h, 3 GB, 8 per IP per 72 h per server, 3 per machine, unlimited renewal, no backups), COMMUNITY licenses again
-38. agent/plans/PLAN-backup-integrity.md -- operator /ask 2026-11-01: all integrity fixes land in #602
-39. agent/plans/PLAN-backup-critical-tier.md -- operator /ask 2026-11-01: critical-system backups land in #602
-40. agent/plans/PLAN-rediaccfile-unprivileged.md -- operator /ask 2026-11-03: up() and down() run as the universal user with explicit grants, fixed in #602, tested on hostinger
-41. agent/plans/PLAN-worktree-lease.md -- operator order 2026-11-04: promote the new plan and continue until the full worktree solution
-42. agent/plans/PLAN-tick-tracking.md -- operator order 2026-11-05 ("let's plan for tick. make it promoted after planning."): a Plan-Box trailer on writer commits, worktree land prints the investigate and tick lines with the landed sha, code and live halves tracked per clause in a sibling ledger without touching a box line, worklist.py --box-audit, report capture keeps only lead-bound sends, a blocking plan-box-owed check, and a live-owed state on release; P1; Depends-On none; epic 1d805023
-43. agent/plans/PLAN-renet-down-before-kill.md -- operator task 2026-11-05 ("make renet run Rediaccfile down() before Docker repo containers are killed"; plan first, then implement; hostinger modification and testing allowed): an ExecStop stop hook running down() on every docker unit stop, a rediacc-repo-shutdown unit ordered after the docker units, no restart on a stop-side-only unit change, down() before every planned restart path, bounded up()/down() with a raise-only Rediaccfile directive, and a dev-VM marker drill across restart, unit rewrite, converge and reboot; P1; Depends-On none (shares files with PLAN-rediaccfile-unprivileged); epic f65726d5
-44. agent/plans/PLAN-repo-resource-limits.md -- operator follow-up 2026-11-05 ("per-repo resource limits, and a renet-managed RAM volume"; "the new plan should be promoted and implemented on a new sub-agent via worktree"; hostinger testing without asking): memory.max, memory.high, cpu.max and io.max on each repo's cgroup as an operator grant, applied live and inherited by forks, OOM kills confined to one container of the capped repo, up()/down() moved into the repo cgroup, and a tmpfs RAM volume at <mount>/.ram unmounted only after down() and dockerd stop; P1; Depends-On PLAN-renet-down-before-kill.md (RAM-volume half only); epic 53c31db2
-45. agent/plans/PLAN-health-checks-local.md -- operator order 2026-11-06 ("promote the new plan when it finishes"): scheduled health pings move to the Stop hook, CI gates and one off-box Cloudflare alerter mailing OPS_ALERT_EMAILS via SES; hostinger health fails on warnings; nightly split into a daily drift job and a weekly fleet; backup-perf harness fixed with a 2 GiB variant; demo-stackoverflow archives move to data.rediacc.com
-46. agent/plans/PLAN-backup-multi-target.md -- operator ruling ASKED:2026-11-07T12:26Z ("Approve and queue"): several backup destinations in one account (one config, one licence, one bill), R1 renet account-server check first, then the store registry, per-destination snapshots, restore --from and a bench proof.
-47. agent/plans/PLAN-ciquick-reds-1023-1.md -- operator 2026-11-08 ("close to finish: code done, proof missing. promote them and finish in the background"): only live, pipeline and post-merge proof boxes remain
-48. agent/plans/PLAN-docker-pin-digest.md -- operator 2026-11-08 ("close to finish: code done, proof missing. promote them and finish in the background"): only live, pipeline and post-merge proof boxes remain
-49. agent/plans/PLAN-renet-executor-tiered-license-check.md -- operator 2026-11-08 ("close to finish: code done, proof missing. promote them and finish in the background"): only live, pipeline and post-merge proof boxes remain
-50. agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md -- operator 2026-11-08 ("close to finish: code done, proof missing. promote them and finish in the background"): only live, pipeline and post-merge proof boxes remain
-51. agent/plans/PLAN-split-cli-files-over-512-line-budget.md -- operator 2026-11-08 ("close to finish: code done, proof missing. promote them and finish in the background"): only live, pipeline and post-merge proof boxes remain
-52. agent/plans/PLAN-renet-docker-running-semantics.md -- operator 2026-11-08 ("close to finish: code done, proof missing. promote them and finish in the background"): only live, pipeline and post-merge proof boxes remain
-53. agent/plans/PLAN-product-domain-rename.md -- operator 2026-11-08 ("let us also promote the three tiers plans" then /writers-now): approves the 2026-11-05 tiers design for execution
-54. agent/plans/PLAN-website-routing-and-mail.md -- operator 2026-11-08 ("let us also promote the three tiers plans" then /writers-now): approves the 2026-11-05 tiers design for execution
-55. agent/plans/PLAN-enterprise-isolation.md -- operator 2026-11-08 ("let us also promote the three tiers plans" then /writers-now): approves the 2026-11-05 tiers design for execution
-56. agent/plans/PLAN-renet-restart-cycle-defects.md -- operator 2026-11-08 ("promote from the Generated review"): code done, only hostinger L1 is open
-57. agent/plans/PLAN-drop-free-license-ip-prefix-hash.md -- operator 2026-11-08 ("promote from the Generated review"): code merged in #602, the bench proof is open
-58. agent/plans/PLAN-stop-hook-retro-20261101.md -- operator 2026-11-08 ("promote from the Generated review")
-59. agent/plans/PLAN-plan-compaction-bindings.md -- operator 2026-11-08 ("promote from the Generated review"): refresh its Current state section against the tree first; 8 _done plans have open boxes now, not 7
-60. agent/plans/PLAN-ciquick-green-then-batch.md -- operator /ask ASKED:2026-11-08T19:20Z ("Green first, then batch (Recommended)")
-61. agent/plans/PLAN-vmcheck-incremental.md -- operator /ask ASKED:2026-11-08T19:20Z ("Green first, then batch (Recommended)"), the vm:check half
-62. agent/plans/PLAN-ci-vm-image-followups.md -- lead packaging 2026-11-09 (CB5 of PLAN-plan-compaction-bindings): the B5 live check and B7 measurement ruling #c3a46b36 moved out of PLAN-ci-prebaked-vm-images
-63. agent/plans/PLAN-idle-writer-capacity.md -- operator rulings ASKED 2026-11-09 via AskUserQuestion (R1 ceiling fix and IDLE CAPACITY block, R2 name boxes and the spawn command, R3 `[writer]` tag only, R4 per-box Depends-on): writer slots sat idle while writer-ready boxes waited
-64. agent/plans/PLAN-d1-scaling.md -- operator rulings 2026-11-09T12:12Z and 12:39Z on the D1 scaling review (Q1-Q8)
-65. agent/plans/PLAN-experience-feedback.md -- operator rulings ASKED:2026-11-10T06:24Z ("One plan, run now in parallel"; retire a lesson once a guard, gate, test, CI check or tool fix enforces it): the ledger audit found experience recorded but never fed back (0 of 125 hint proposals promoted, a retro gate silencing long sessions, 6,465 review findings recurring by class); epic #562ef6c3; P1
-66. agent/plans/PLAN-local-first-delivery.md -- operator 2026-11-11T09:0xZ: "Queue the new plan now to prompted and start implementing"
-67. agent/plans/PLAN-terms-acceptance.md -- operator 2026-11-11 "don't forget to promote the plan"; rulings R1-R4 ASKED 2026-11-11
-68. agent/plans/PLAN-account-notices.md -- operator 2026-11-12: "Please promote the new plans after planning finishes. Then start to implement them"; rulings ASKED 2026-11-12T05:57Z and 06:01Z
-69. agent/plans/PLAN-enterprise-tenants.md -- operator 2026-11-12: "employ a parallel agent to complete the gaps in agent/plans/PLAN-enterprise-isolation.md ASAP"; rulings ASKED 2026-11-12T11:3xZ
-70. agent/plans/PLAN-licence-expiry-notices.md -- operator 2026-11-12: "do we have any mechanism to notify sales team and the client for delegation cert exprie dates"; sales inbox sales@rediacc.com, "new plan, start now"
-71. agent/plans/PLAN-onprem-relicence-inbox.md -- operator rulings ASKED:2026-11-12T16:30Z, 16:56Z, 19:34Z ("C + banner for all box members"): SSH inbox relicence, strict freshness, boot quarantine; R1-R11 and D1 landed, L1 and LP-hostinger open; P1
-72. agent/plans/PLAN-signer-bench-stop-binding-reattach.md -- finding 2026-11-12 proof signer --bench: a signer stop by delete breaks the caller binding and leaves bench signing down; triage PLAN+SUBAGENT on #ffca9706; P1
-73. agent/plans/PLAN-d1-eu-jurisdiction.md -- operator rulings 2026-11-13 ("Migrate now (Recommended)" ASKED:2026-11-13T07:11Z; "we should also have eu jurisdiction for all bench objects"; window "NOW"): the production eu account D1 reports jurisdiction None, so EU residency rests on a best-effort hint; bench rehearses first; epic #5eb69cff; P0
-74. agent/plans/PLAN-hostinger-to-bench.md -- operator ruling 2026-11-13 (move hostinger to bench on a path that needs no operator present): eu-remote stops agents at the operator authenticator on every IP change; hostinger re-homes to eu-bench with a reset guard, pinned allowlist entries and a credential escrow; rediacc-backups-eu deletion waits on C7; P0
-75. agent/plans/PLAN-multi-region-bench.md -- operator ruling ASKED:2026-11-13T13:55Z (always-on us and asia benches, us/asia objects copy production placement, all three hosts named bench-<region>.rediacc.cloud with the eu bench migrated off bench.rediacc.cloud): one bench per production region for region proofs and Cloudflare regional-incident rehearsal; cost $0.00 idle, $0.18 typical, $2.44 heavy per month
-76. agent/plans/PLAN-root-api-token.md -- operator ruling ASKED:2026-11-15T17:07Z ("Root API token (Recommended)": agents act as root on stable/edge through a root-scoped, IP-bound, expiring token with a TOTP session; no captcha bypass; one portal mint by the operator)
-77. agent/plans/PLAN-site-entry-points.md -- operator /ask ASKED:2026-11-17T09:06Z ("Site fixes now, private later"): portal onboarding docs links on www (they 404 on the portal host), a Downloads link under the home video ("Link under the video", ASKED:2026-11-17T08:46Z), and Linux/macOS + Windows install tabs in the portal ("Tabs, no detection")
-78. agent/plans/PLAN-root-grants.md -- operator /ask 2026-11-17 ("Need a better and consistent solution. Maybe we should use the same code with names to IDs, mapping."; "Rediacc, registered"; "Yes: ops tool + ops-health check"): the root email gets user panels, console, admin and partner/sales in every region through one names-to-ids reconcile
-79. agent/plans/PLAN-push-decoupling.md -- operator /ask 2026-11-18 ("1 Pinned receipts + locks, 3 Needs: tag, 4 W2.5/W2.6 + W4 + vm per-leg"; not 2, not 5): land work while a receipt builds, lock the shared fleet and bench, route boxes by Needs:.
-80. agent/plans/PLAN-stop-hook-store-status.md -- operator plan request 2026-11-18: the Stop hook judges the worklist store, not message prose; `worklist.py --status`, a store freshness check replaces the roster/MISSING IDS rule.
-81. agent/plans/PLAN-rdc-feedback.md -- operator /ask 2026-11-18 rulings 1-12: `rdc feedback report|list`, D1 intake with daily limits and fingerprint dedup, AI triage with Haiku screening, critical asks with a 6 h window, PLAN-feedback-<slug> generation, Feedback: plan linkage.
-82. agent/plans/PLAN-account-sidebar-redesign.md -- operator 2026-11-19 handoff and /ask answers: one mode's links behind a workspace switcher, one Ctrl+K palette for everyone, confirmed sign-out (P2 first), the seven offer labels in 13 locales plus a raw-key CI gate, both Machines pages kept, a root-grants bench test partner and an automated bench walk-through.
-83. agent/plans/PLAN-email-sender-separation.md -- operator 2026-11-19 /ask answers: customer and contact mail from contact@ with Reply-To and [Contact], system mail from alerts@ with [System], urgent alerts instant and the rest in a daily digest, shared mailboxes contact@rediacc.com and alerts@rediacc.io on the hostinger docker-mailserver with Sieve copy lists and loopback-only ManageSieve.
-84. agent/plans/PLAN-pr-loop-single-source.md -- operator 2026-11-20 request (#a70fd30e): one file per PR-loop rule, /pr-babysit a launcher over the agent file, scope-mirrors per-clause canonical with ref pointers, and the check:ci-prose-duplication drift gate; starts after PR #605 merges
-85. agent/plans/PLAN-two-track-merge-dev.md -- operator 2026-11-20 /ask approval (#688f35df, #527aa5b2): PR freeze guard, plan-implementation fact cache and core priority, prose-style cache, account-server traced inputs, signed CI receipts from one devcontainer image; dev track deferred; inline after PR #605 merges
-86. agent/plans/PLAN-simple-two-tree-loop.md -- operator 2026-11-21 ("APPROVED!", rulings on #90129fe7): one always-on two-tree loop (the landing tree babysits, merges, watches the release and hotfixes the one PR; the development tree always builds), turbo, phases and five queue knobs deleted, effort the only setting
-87. agent/plans/PLAN-preview-signer.md -- operator 2026-11-22 rulings ASKED:2026-11-22T04:23Z, 05:06Z, 05:23Z (#51fb685e, #5ba0a1ce): preview channel; customers test a PR on their own machines via a random-word preview address; rdc preview use/leave switches account service, rdc and touched servers renet to the PR builds and back; per-preview delegated signer, 7-day licences; operator-created preview accounts.
-88. agent/plans/PLAN-weekly-lessons.md -- operator 2026-11-22 ("yes let's make a plan about it", after "maybe we should have a weekly plan to address the issues? The plan should be enforced by stop hook and should be added to queue.md?"): 217 hint proposals, 0 resolved; a weekly curator-made PLAN-lessons-<date>.md, one code-fix box per recurring family, enforced by a lessons-weekly Stop hook check at smart, proposals resolved as boxes land.
+4. agent/plans/PLAN-telemetry-export.md -- operator 2026-10-23 (plan prompt /tmp/prompt-telemetry-export-plan.md; /ask: "Approve both", "Accept all defaults", no operator steps): the account Workers and the executor proxy export traces and logs to otlp.rediacc.io through Cloudflare's native OTLP destinations, per region and channel, with a scheduled delivery check; P2; Depends-On none (its proxy box T15 waits on PLAN-cloudflare-proxy.md#P2a)
+5. agent/plans/PLAN-token-ip-rebind.md -- pulled in as an unfinished prerequisite of PLAN-config-sync-hardening.md (Depends-On), 2026-10-23
+6. agent/plans/PLAN-cloudflare-spend-guard.md -- operator /ask 2026-10-23 ("One spend-guard plan, all of it"): usage alerts, observability sampling after measurement, R2 lifecycle on release prefixes, weekly usage report, sampling gate, leftovers report
+7. agent/plans/PLAN-sandbox-tenant-separation.md -- live QA on .11 2026-10-24: cross-repo docker socket access, unisolated first sandbox compose, foreign mounts, delete leaks; P1 security, fix this session
+8. agent/plans/PLAN-converge-preflight-and-repo-recovery.md -- operator 2026-10-24 (ASKED:2026-10-24T17:45Z after the hostinger converge took down mail, observability and nextcloud): converge preflight with compose/gate parity, per-repo cert export for mail, a machine-level host metrics exporter for observability, Collabora without capabilities, then vm:check, deploy and recovery; P0; Depends-On none
+9. agent/plans/PLAN-gpu-device-grants.md -- operator 2026-10-24 (ASKED:2026-10-24T18:05Z): CDI inventory and per-repo device grants for NVIDIA and AMD GPUs, tested on the local WSL RTX 3060 and a fake-device drill; P2; Depends-On PLAN-converge-preflight-and-repo-recovery.md
+10. agent/plans/PLAN-proxy-cd-six-targets.md -- operator order 2026-10-25T18:10Z (retire the console mock, CD deploys a proxy and executor per target) with the rulings of 18:18Z and 19:08Z
+11. agent/plans/PLAN-console-executor-multi-org.md -- operator /ask 2026-10-26 ~05:30Z ("Plan multi-org now, same branch"): one regional executor serves many orgs, one container per org, per-org issued tokens, an entitlement gate in place of the one-org console gate; code boxes wait on six-targets P1 and M1
+12. agent/plans/PLAN-executor-durable-object-policy.md -- operator /ask ASKED:2026-10-26T15:26Z ("Per-org, raise the cap"): move the proxy executor off the @cloudflare/containers Container class, frozen after 2026-12-31, to the durable_object scheduling policy; a bench spike first proves per-instance outbound interception, then a coordinator-enforced cap of 25, per-org sizing and a phased forward-only rollout by 2026-12-15
+13. agent/plans/PLAN-local-release.md -- operator ruling ASKED:2026-10-27T06:37Z: with no customers yet, a release may be published from the local machine when local verification is green; one comprehensive change, release:local edge and stable, gated on the ci:quick and vm:check receipts, CD publish path deleted
+14. agent/plans/PLAN-tested-on-bench.md -- operator request 2026-10-27, four questions answered same day
+15. agent/plans/PLAN-org-executor-connect-timeout-relocate.md -- finding #a150016d (edge-us org B's executor never reaches its machine; org C on a new Durable Object passes); operator ASKED:2026-10-28T06:55Z "Ride this PR now"
+16. agent/plans/PLAN-backup-restore-path.md -- box N4b of PLAN-backup-program.md; operator ASKED 2026-10-28 "Plan it, ride this PR"; the sealed table of contents gains per-file extents, chunkstore a partial fetch, renet a restore-path verb
+17. agent/plans/PLAN-ssh-key-source-ranges.md -- operator ASKED 2026-10-28T11:31Z "make it rdc config based ... define IPv4 on rediacc config too, with IPv6"; the executor key's allowed source ranges live in the rdc config and rdc writes the authorized_keys from=; unblocks bench L0
+18. agent/plans/PLAN-repo-docker-storage-prune.md -- operator ASKED 2026-10-28T11:21Z "do not cleanup directly! Maybe we need to improve the prune command/support of rdc"; rdc repo prune classifies and reclaims a repository's Docker storage and the reset stops leaking layers; hostinger gets the dry run only until the operator approves
+19. agent/plans/PLAN-production-key-only.md -- operator 2026-10-29 "make the production key primary and get rid of the development key ... promote the new plan at QUEUE.md and start in parallel"; one account keypair for every build, gateway and bench, the six ACCOUNT_*_DEV bws entries parked as __<NAME>, renet builds fail closed without a key
+20. agent/plans/PLAN-detached-jobs.md -- operator 2026-10-29 ASKED (all four Recommended) + "Remember we must promote all the new plans!": long verbs always run as machine jobs, proxy returns the ticket and the client polls, a ticket store per config, MCP returns the ticket
+21. agent/plans/PLAN-snapshot-read-io-cap.md -- operator 2026-10-29 "Remember we must promote all the new plans!"; hostinger snapshot read/hash phase hit load 11.41 under the 100 Mbps upload cap; a read token bucket and hash worker count bound it before the bulk seed resumes
+22. agent/plans/PLAN-backup-meter-orphaned-chunks.md -- operator 2026-10-29 "Remember we must promote all the new plans!"; 6.58 GB of chunks a killed run uploaded are in R2 but not in backup usage; bill them at commit, reconcile verb, repair hostinger
+23. agent/plans/PLAN-backup-local-image.md -- operator 2026-10-29 ASKED (all four Recommended) + the operator asking whether the new plans were being promoted: rdc backup download/upload of the encrypted repo image to a local path or external drive, in-place weekly update, fresh snapshot per run, prune fixes
+24. agent/plans/PLAN-backup-plane-shared-bucket-hardening.md -- operator 2026-10-29 ASKED (Implement all, promote): size-bounded presigned uploads, the unused R2 JWT minter removed, a per-bucket R2 token with a scope probe
+25. agent/plans/PLAN-jobs-backup-real-machine-tests.md -- operator 2026-10-29 "make a new plan for the missing tests": real-machine e2e for jobs and backup, the two gates that cannot fail on them, the expired-session account pin, drill legs p and q
+26. agent/plans/PLAN-backup-download-from-store.md -- operator 2026-10-29 "Go: implement": rdc backup download --store from the R2 chunk store with no machine, a backup:restore token scope, renet backup fetch-image, darwin and windows hole punching
+27. agent/plans/PLAN-settings-set-verb.md -- operator /ask 2026-10-30 "Yes, plan it": npm run settings -- set|get|list over a tunables registry, one source per value (the R2 ceiling lived in three places), starting with the spend-guard ceilings
+28. agent/plans/PLAN-free-license.md -- operator /ask 2026-10-30 (rulings R1-R13): licensing always enforced incl. CI (production key in CI, one shared renet artifact), FREE plan (48 h, 3 GB, 8 per IP per 72 h per server, 3 per machine, unlimited renewal, no backups), COMMUNITY licenses again
+29. agent/plans/PLAN-backup-integrity.md -- operator /ask 2026-11-01: all integrity fixes land in #602
+30. agent/plans/PLAN-backup-critical-tier.md -- operator /ask 2026-11-01: critical-system backups land in #602
+31. agent/plans/PLAN-rediaccfile-unprivileged.md -- operator /ask 2026-11-03: up() and down() run as the universal user with explicit grants, fixed in #602, tested on hostinger
+32. agent/plans/PLAN-worktree-lease.md -- operator order 2026-11-04: promote the new plan and continue until the full worktree solution
+33. agent/plans/PLAN-tick-tracking.md -- operator order 2026-11-05 ("let's plan for tick. make it promoted after planning."): a Plan-Box trailer on writer commits, worktree land prints the investigate and tick lines with the landed sha, code and live halves tracked per clause in a sibling ledger without touching a box line, worklist.py --box-audit, report capture keeps only lead-bound sends, a blocking plan-box-owed check, and a live-owed state on release; P1; Depends-On none; epic 1d805023
+34. agent/plans/PLAN-renet-down-before-kill.md -- operator task 2026-11-05 ("make renet run Rediaccfile down() before Docker repo containers are killed"; plan first, then implement; hostinger modification and testing allowed): an ExecStop stop hook running down() on every docker unit stop, a rediacc-repo-shutdown unit ordered after the docker units, no restart on a stop-side-only unit change, down() before every planned restart path, bounded up()/down() with a raise-only Rediaccfile directive, and a dev-VM marker drill across restart, unit rewrite, converge and reboot; P1; Depends-On none (shares files with PLAN-rediaccfile-unprivileged); epic f65726d5
+35. agent/plans/PLAN-repo-resource-limits.md -- operator follow-up 2026-11-05 ("per-repo resource limits, and a renet-managed RAM volume"; "the new plan should be promoted and implemented on a new sub-agent via worktree"; hostinger testing without asking): memory.max, memory.high, cpu.max and io.max on each repo's cgroup as an operator grant, applied live and inherited by forks, OOM kills confined to one container of the capped repo, up()/down() moved into the repo cgroup, and a tmpfs RAM volume at <mount>/.ram unmounted only after down() and dockerd stop; P1; Depends-On PLAN-renet-down-before-kill.md (RAM-volume half only); epic 53c31db2
+36. agent/plans/PLAN-health-checks-local.md -- operator order 2026-11-06 ("promote the new plan when it finishes"): scheduled health pings move to the Stop hook, CI gates and one off-box Cloudflare alerter mailing OPS_ALERT_EMAILS via SES; hostinger health fails on warnings; nightly split into a daily drift job and a weekly fleet; backup-perf harness fixed with a 2 GiB variant; demo-stackoverflow archives move to data.rediacc.com
+37. agent/plans/PLAN-backup-multi-target.md -- operator ruling ASKED:2026-11-07T12:26Z ("Approve and queue"): several backup destinations in one account (one config, one licence, one bill), R1 renet account-server check first, then the store registry, per-destination snapshots, restore --from and a bench proof.
+38. agent/plans/PLAN-ciquick-reds-1023-1.md -- operator 2026-11-08 ("close to finish: code done, proof missing. promote them and finish in the background"): only live, pipeline and post-merge proof boxes remain
+39. agent/plans/PLAN-docker-pin-digest.md -- operator 2026-11-08 ("close to finish: code done, proof missing. promote them and finish in the background"): only live, pipeline and post-merge proof boxes remain
+40. agent/plans/PLAN-renet-executor-tiered-license-check.md -- operator 2026-11-08 ("close to finish: code done, proof missing. promote them and finish in the background"): only live, pipeline and post-merge proof boxes remain
+41. agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md -- operator 2026-11-08 ("close to finish: code done, proof missing. promote them and finish in the background"): only live, pipeline and post-merge proof boxes remain
+42. agent/plans/PLAN-split-cli-files-over-512-line-budget.md -- operator 2026-11-08 ("close to finish: code done, proof missing. promote them and finish in the background"): only live, pipeline and post-merge proof boxes remain
+43. agent/plans/PLAN-renet-docker-running-semantics.md -- operator 2026-11-08 ("close to finish: code done, proof missing. promote them and finish in the background"): only live, pipeline and post-merge proof boxes remain
+44. agent/plans/PLAN-product-domain-rename.md -- operator 2026-11-08 ("let us also promote the three tiers plans" then /writers-now): approves the 2026-11-05 tiers design for execution
+45. agent/plans/PLAN-website-routing-and-mail.md -- operator 2026-11-08 ("let us also promote the three tiers plans" then /writers-now): approves the 2026-11-05 tiers design for execution
+46. agent/plans/PLAN-enterprise-isolation.md -- operator 2026-11-08 ("let us also promote the three tiers plans" then /writers-now): approves the 2026-11-05 tiers design for execution
+47. agent/plans/PLAN-renet-restart-cycle-defects.md -- operator 2026-11-08 ("promote from the Generated review"): code done, only hostinger L1 is open
+48. agent/plans/PLAN-stop-hook-retro-20261101.md -- operator 2026-11-08 ("promote from the Generated review")
+49. agent/plans/PLAN-ciquick-green-then-batch.md -- operator /ask ASKED:2026-11-08T19:20Z ("Green first, then batch (Recommended)")
+50. agent/plans/PLAN-vmcheck-incremental.md -- operator /ask ASKED:2026-11-08T19:20Z ("Green first, then batch (Recommended)"), the vm:check half
+51. agent/plans/PLAN-ci-vm-image-followups.md -- lead packaging 2026-11-09 (CB5 of PLAN-plan-compaction-bindings): the B5 live check and B7 measurement ruling #c3a46b36 moved out of PLAN-ci-prebaked-vm-images
+52. agent/plans/PLAN-d1-scaling.md -- operator rulings 2026-11-09T12:12Z and 12:39Z on the D1 scaling review (Q1-Q8)
+53. agent/plans/PLAN-experience-feedback.md -- operator rulings ASKED:2026-11-10T06:24Z ("One plan, run now in parallel"; retire a lesson once a guard, gate, test, CI check or tool fix enforces it): the ledger audit found experience recorded but never fed back (0 of 125 hint proposals promoted, a retro gate silencing long sessions, 6,465 review findings recurring by class); epic #562ef6c3; P1
+54. agent/plans/PLAN-local-first-delivery.md -- operator 2026-11-11T09:0xZ: "Queue the new plan now to prompted and start implementing"
+55. agent/plans/PLAN-account-notices.md -- operator 2026-11-12: "Please promote the new plans after planning finishes. Then start to implement them"; rulings ASKED 2026-11-12T05:57Z and 06:01Z
+56. agent/plans/PLAN-enterprise-tenants.md -- operator 2026-11-12: "employ a parallel agent to complete the gaps in agent/plans/PLAN-enterprise-isolation.md ASAP"; rulings ASKED 2026-11-12T11:3xZ
+57. agent/plans/PLAN-licence-expiry-notices.md -- operator 2026-11-12: "do we have any mechanism to notify sales team and the client for delegation cert exprie dates"; sales inbox sales@rediacc.com, "new plan, start now"
+58. agent/plans/PLAN-onprem-relicence-inbox.md -- operator rulings ASKED:2026-11-12T16:30Z, 16:56Z, 19:34Z ("C + banner for all box members"): SSH inbox relicence, strict freshness, boot quarantine; R1-R11 and D1 landed, L1 and LP-hostinger open; P1
+59. agent/plans/PLAN-signer-bench-stop-binding-reattach.md -- finding 2026-11-12 proof signer --bench: a signer stop by delete breaks the caller binding and leaves bench signing down; triage PLAN+SUBAGENT on #ffca9706; P1
+60. agent/plans/PLAN-d1-eu-jurisdiction.md -- operator rulings 2026-11-13 ("Migrate now (Recommended)" ASKED:2026-11-13T07:11Z; "we should also have eu jurisdiction for all bench objects"; window "NOW"): the production eu account D1 reports jurisdiction None, so EU residency rests on a best-effort hint; bench rehearses first; epic #5eb69cff; P0
+61. agent/plans/PLAN-hostinger-to-bench.md -- operator ruling 2026-11-13 (move hostinger to bench on a path that needs no operator present): eu-remote stops agents at the operator authenticator on every IP change; hostinger re-homes to eu-bench with a reset guard, pinned allowlist entries and a credential escrow; rediacc-backups-eu deletion waits on C7; P0
+62. agent/plans/PLAN-multi-region-bench.md -- operator ruling ASKED:2026-11-13T13:55Z (always-on us and asia benches, us/asia objects copy production placement, all three hosts named bench-<region>.rediacc.cloud with the eu bench migrated off bench.rediacc.cloud): one bench per production region for region proofs and Cloudflare regional-incident rehearsal; cost $0.00 idle, $0.18 typical, $2.44 heavy per month
+63. agent/plans/PLAN-root-api-token.md -- operator ruling ASKED:2026-11-15T17:07Z ("Root API token (Recommended)": agents act as root on stable/edge through a root-scoped, IP-bound, expiring token with a TOTP session; no captcha bypass; one portal mint by the operator)
+64. agent/plans/PLAN-site-entry-points.md -- operator /ask ASKED:2026-11-17T09:06Z ("Site fixes now, private later"): portal onboarding docs links on www (they 404 on the portal host), a Downloads link under the home video ("Link under the video", ASKED:2026-11-17T08:46Z), and Linux/macOS + Windows install tabs in the portal ("Tabs, no detection")
+65. agent/plans/PLAN-root-grants.md -- operator /ask 2026-11-17 ("Need a better and consistent solution. Maybe we should use the same code with names to IDs, mapping."; "Rediacc, registered"; "Yes: ops tool + ops-health check"): the root email gets user panels, console, admin and partner/sales in every region through one names-to-ids reconcile
+66. agent/plans/PLAN-push-decoupling.md -- operator /ask 2026-11-18 ("1 Pinned receipts + locks, 3 Needs: tag, 4 W2.5/W2.6 + W4 + vm per-leg"; not 2, not 5): land work while a receipt builds, lock the shared fleet and bench, route boxes by Needs:.
+67. agent/plans/PLAN-stop-hook-store-status.md -- operator plan request 2026-11-18: the Stop hook judges the worklist store, not message prose; `worklist.py --status`, a store freshness check replaces the roster/MISSING IDS rule.
+68. agent/plans/PLAN-rdc-feedback.md -- operator /ask 2026-11-18 rulings 1-12: `rdc feedback report|list`, D1 intake with daily limits and fingerprint dedup, AI triage with Haiku screening, critical asks with a 6 h window, PLAN-feedback-<slug> generation, Feedback: plan linkage.
+69. agent/plans/PLAN-account-sidebar-redesign.md -- operator 2026-11-19 handoff and /ask answers: one mode's links behind a workspace switcher, one Ctrl+K palette for everyone, confirmed sign-out (P2 first), the seven offer labels in 13 locales plus a raw-key CI gate, both Machines pages kept, a root-grants bench test partner and an automated bench walk-through.
+70. agent/plans/PLAN-email-sender-separation.md -- operator 2026-11-19 /ask answers: customer and contact mail from contact@ with Reply-To and [Contact], system mail from alerts@ with [System], urgent alerts instant and the rest in a daily digest, shared mailboxes contact@rediacc.com and alerts@rediacc.io on the hostinger docker-mailserver with Sieve copy lists and loopback-only ManageSieve.
+71. agent/plans/PLAN-pr-loop-single-source.md -- operator 2026-11-20 request (#a70fd30e): one file per PR-loop rule, /pr-babysit a launcher over the agent file, scope-mirrors per-clause canonical with ref pointers, and the check:ci-prose-duplication drift gate; starts after PR #605 merges
+72. agent/plans/PLAN-two-track-merge-dev.md -- operator 2026-11-20 /ask approval (#688f35df, #527aa5b2): PR freeze guard, plan-implementation fact cache and core priority, prose-style cache, account-server traced inputs, signed CI receipts from one devcontainer image; dev track deferred; inline after PR #605 merges
+73. agent/plans/PLAN-simple-two-tree-loop.md -- operator 2026-11-21 ("APPROVED!", rulings on #90129fe7): one always-on two-tree loop (the landing tree babysits, merges, watches the release and hotfixes the one PR; the development tree always builds), turbo, phases and five queue knobs deleted, effort the only setting
+74. agent/plans/PLAN-preview-signer.md -- operator 2026-11-22 rulings ASKED:2026-11-22T04:23Z, 05:06Z, 05:23Z (#51fb685e, #5ba0a1ce): preview channel; customers test a PR on their own machines via a random-word preview address; rdc preview use/leave switches account service, rdc and touched servers renet to the PR builds and back; per-preview delegated signer, 7-day licences; operator-created preview accounts.
+75. agent/plans/PLAN-weekly-lessons.md -- operator 2026-11-22 ("yes let's make a plan about it", after "maybe we should have a weekly plan to address the issues? The plan should be enforced by stop hook and should be added to queue.md?"): 217 hint proposals, 0 resolved; a weekly curator-made PLAN-lessons-<date>.md, one code-fix box per recurring family, enforced by a lessons-weekly Stop hook check at smart, proposals resolved as boxes land.
 
 ## Generated
 
@@ -309,10 +259,4 @@ Promoted: 29 of 88 plans done, 1341 of 1651 boxes done (81%).
 47. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
 48. agent/plans/PLAN-vscode-browser-exposure.md -- P3, proposed, not started
 49. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, not started, dep-blocked
-
-### Not queued
-
-- agent/plans/PLAN-config-mirror-reseal.md -- all boxes ticked: close it
-- agent/plans/PLAN-docker-sock-listener-preflight-detect.md -- all boxes ticked: close it
-- agent/plans/PLAN-stop-hook-retro-20261110.md -- all boxes ticked: close it
 <!-- queue:generated:end -->

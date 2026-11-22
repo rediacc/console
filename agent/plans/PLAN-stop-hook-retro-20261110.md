@@ -1,6 +1,6 @@
 # PLAN: Stop-hook retro, 2026-11-10 (band early, lead session d778be9d, tracking #cb6c78eb)
 
-Status: ready
+Status: done -- 2026-11-22, every box ticked and merged to main with PR 605 (was: ready)
 Depends-On: no-dep -- no box waits on another plan
 Priority: P1 -- at 2026-11-10T09:01Z the operator turned the stop-gate judge off because "it pings too often"
 Concurrency: parallel -- R20261110.1 to .5 all edit worklist_messages.py and wl_judge.py, so run them on one writer; .6 and .7 are independent

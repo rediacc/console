@@ -1,6 +1,6 @@
 # PLAN: publish a release from the local machine (`npm run release:local -- --channel edge|stable [--dry-run]`)
 
-Status: approved -- operator ruling ASKED:2026-10-27T06:37Z, promoted in the commit that adds this file
+Status: done -- 2026-11-22, every box ticked and merged to main with PR 605 (was: approved -- operator ruling ASKED:2026-10-27T06:37Z, promoted in the commit that adds this file)
 Depends-On: no-dep -- W1 starts now; L1 waits for the 1023-1 merge so HEAD equals origin/main, which is not a plan
 Priority: P1 -- operator ruling; the R1 clean break needs a released CLI that sends x-config-envelope before the account Worker reaches eu stable
 Concurrency: parallel -- inside the waves under Order; Owns per box are disjoint within a wave, and W3 lands as one clean break

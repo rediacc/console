@@ -1,6 +1,6 @@
 # PLAN: Cloudflare spend guard: usage-billing notifications, measured observability sampling, R2 lifecycle backstops, a weekly usage report and a sampling gate
 
-Status: approved -- operator /ask 2026-10-23: "One spend-guard plan, all of it"
+Status: done -- 2026-11-22, every box ticked and merged to main with PR 605 (was: approved -- operator /ask 2026-10-23: "One spend-guard plan, all of it")
 Depends-On: no-dep -- the notification, lifecycle, report and leftover boxes need no other plan; the sampling box T2 names its prerequisite box in PLAN-telemetry-export.md on the box itself, so the rest is not held behind the telemetry rollout
 Owner: d778be9d
 First-Seen: 2026-10-23

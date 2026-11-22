@@ -1,5 +1,5 @@
 # PLAN: the 14 packages/cli files over the 512-line budget are split by responsibility
-Status: executing
+Status: done -- 2026-11-22, every box ticked and merged to main with PR 605 (was: executing)
 Depends-On: no-dep -- pure refactors inside packages/cli
 Owner: d778be9d
 Updated: 2026-10-31
