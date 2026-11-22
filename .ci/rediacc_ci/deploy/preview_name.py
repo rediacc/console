@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
 """The one derivation of a preview's public name from its PR number.
 
 `pv-<word>-<word>-<word>`: three words from `.ci/config/preview-words.txt` (2048 words, 11 bits each, 33 bits per name) chosen by HMAC-SHA256 keyed with `PREVIEW_NAME_KEY` over the decimal PR number. Nothing is stored: deploy, cleanup, the R2 channel and the sweep all call this module, and the operator runs it to look up a PR's address. Without the key a name cannot be recovered from a PR number.
 
-    python3 -m rediacc_ci.deploy.preview_name --pr 123
-    python3 -m rediacc_ci.deploy.preview_name --match pv-a-b-c-signer --open-prs 12 15 20
+    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.preview_name --pr 123
+    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.preview_name --match pv-a-b-c-signer --open-prs 12 15 20
 
 `--match` exit codes: 0 the worker belongs to one of the open PRs (the PR number is printed), 1 it has the preview shape but no open PR derives it (the sweep deletes it), 2 it does not have the preview shape (the sweep never touches it).
 
