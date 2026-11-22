@@ -2053,9 +2053,29 @@ def compute_lane_durations(
     }
 
 
-# WHICH PLAN A MEASURED LEG RAN. `job_p90_minutes` is keyed by display name, and "Quality / Pytest (3/3)" names a position, not a set of tests: a rebalance that moves files out of leg 3 leaves the name and its p90 in place while the leg it measured no longer ships. `job_p90_plans` records, per display name of a leg of a lane with a committed shard manifest, the leg contents its sampled jobs ran, read from each run's own head commit (narrowed to today's leg alone when `prefer_todays_leg` prices the name on today's samples), so check-lane-budget.ts can tell a measurement of today's leg from one of a leg that has since been re-packed (2026-10-14: leg 3/3 measured 12.9m under a plan two rebalances old).
+# WHICH PLAN A MEASURED LEG RAN. `job_p90_minutes` is keyed by display name, and "Quality / Pytest (3/3)" names a position, not a set of tests: a rebalance that moves files out of leg 3 leaves the name and its p90 in place while the leg it measured no longer ships. `job_p90_plans` records, per display name of a measured leg, the leg contents its sampled jobs ran (for a lane with a committed shard manifest, the leg's unit ids there; for a lane with none, its one leg, the lane's step lock entries in lock order, `lock_leg_ids`, which is `shardOfOneLeg` in check-lane-budget.ts, so a lane split re-packs it the way a rebalance re-packs a sharded leg), read from each run's own head commit (narrowed to today's leg alone when `prefer_todays_leg` prices the name on today's samples), so check-lane-budget.ts can tell a measurement of today's leg from one of a leg that has since been re-packed (2026-10-14: leg 3/3 measured 12.9m under a plan two rebalances old).
 _LEG_INDEX_RE = re.compile(r"(?:\(|, )(\d+)(?:/(\d+))?\)$")
 SHARDS_DIR_REL = ".ci/config/shards"
+
+
+def lock_leg_ids(lock_text: str | None, lane: str) -> list[str] | None:
+    """The one leg of a lane with no shard manifest: the ids of `gates.lock.json`'s entries whose `ci` is a step of `lane`, in lock order, which is what `shardOfOneLeg` in scripts/gates/check-lane-budget.ts hashes. None when the lock text is absent, does not parse, or is not a list: unknown, never an empty leg."""
+    if lock_text is None:
+        return None
+    try:
+        data = json.loads(lock_text)
+    except ValueError:
+        return None
+    if not isinstance(data, list):
+        return None
+    ids: list[str] = []
+    for entry in data:
+        ci = entry.get("ci") if isinstance(entry, dict) else None
+        if isinstance(ci, dict) and ci.get("kind") == "step" and ci.get("job") == lane:
+            gate_id = entry.get("id")
+            if isinstance(gate_id, str):
+                ids.append(gate_id)
+    return ids
 
 
 def leg_plan_hash(ids: Sequence[str]) -> str:
@@ -2081,7 +2101,7 @@ def job_p90_plans(
     patterns: Mapping[str, re.Pattern[str]],
     show: Callable[[str, str], str | None],
 ) -> dict[str, list[str]]:
-    """`{display name: sorted leg_plan_hash values}` for every leg of a manifest lane that a sampled job measured; `traced_leg_samples` holds the rule. A name with an untraced sample gets no entry."""
+    """`{display name: sorted leg_plan_hash values}` for every leg a sampled job measured, of a manifest lane or of a lane with none; `traced_leg_samples` holds the rule. A name with an untraced sample gets no entry."""
     samples, untraced = traced_leg_samples(pr_runs, pr_jobs_by_run, patterns, show)
     return plans_from_samples(samples, untraced)
 
@@ -2100,13 +2120,20 @@ def plans_from_samples(
 def today_leg_hashes(
     tree_root: Path, patterns: Mapping[str, re.Pattern[str]]
 ) -> dict[str, tuple[int | None, dict[int, str]]]:
-    """`{lane: (leg count, {leg index: leg_plan_hash})}` from the shard manifests in the working tree, the legs that ship today. A lane with no readable manifest is absent."""
+    """`{lane: (leg count, {leg index: leg_plan_hash})}` for the legs that ship today, from the working tree: a lane's shard manifest, or for a lane with none its one leg from the lock (`lock_leg_ids`), entered as `(None, {1: hash})` so no leg-count rule reads it. A lane with neither a readable manifest nor a step lock entry is absent."""
     out: dict[str, tuple[int | None, dict[int, str]]] = {}
+    try:
+        lock_text: str | None = (tree_root / GATES_LOCK_REL_PATH).read_text(encoding="utf-8")
+    except OSError:
+        lock_text = None
     for lane in patterns:
         path = tree_root / SHARDS_DIR_REL / ("%s.json" % lane)
         try:
             manifest = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
+            solo = lock_leg_ids(lock_text, lane)
+            if solo:
+                out[lane] = (None, {1: leg_plan_hash(solo)})
             continue
         legs = {
             lg["index"]: leg_plan_hash(lg.get("ids") or [])
@@ -2181,11 +2208,13 @@ def _record_subset(
 def _is_today(
     name: str, leg_hash: str, lane_today: tuple[int | None, Mapping[int, str]] | None
 ) -> bool:
-    """Whether `leg_hash` is the hash of the leg `name` names in its own lane's manifest of today (`lane_today`, None when the lane has none)."""
-    leg = _LEG_INDEX_RE.search(name)
-    if leg is None or lane_today is None:
+    """Whether `leg_hash` is the hash of the leg `name` names in its own lane's plan of today (`lane_today`, None when the lane has none). A name with no leg index is a lane's one job, leg 1; `traced_leg_samples` traces such a name only for a lane with no manifest."""
+    if lane_today is None:
         return False
+    leg = _LEG_INDEX_RE.search(name)
     of, legs = lane_today
+    if leg is None:
+        return legs.get(1) == leg_hash
     of_in = leg.group(2)
     if of_in is not None and of is not None and int(of_in) != of:
         return False
@@ -2198,12 +2227,15 @@ def traced_leg_samples(
     patterns: Mapping[str, re.Pattern[str]],
     show: Callable[[str, str], str | None],
 ) -> tuple[dict[str, list[tuple[str, float]]], set[str]]:
-    """`({display name: [(leg_plan_hash, wall minutes)]}, untraced names)` for every leg of a manifest lane that a sampled job measured, over exactly the jobs `job_wall_minutes` counts. `show(sha, rel)` reads a file at a commit.
+    """`({display name: [(leg_plan_hash, wall minutes)]}, untraced names)` for every leg a sampled job measured, over exactly the jobs `job_wall_minutes` counts. `show(sha, rel)` reads a file at a commit.
 
-    A name ANY of whose samples cannot be traced (no head_sha, no manifest at that commit, a leg count or index the manifest does not hold) gets NO entry, and the gate counts a name with no entry against today's leg. Unknown is the strict direction here, never the lenient one."""
+    A leg-indexed name is traced through its lane's shard manifest at the sample's commit. A name with no leg index is its lane's one job: when the lane has no manifest at that commit, its leg is the lane's step lock entries there (`lock_leg_ids`), hashed the same way, so after a lane split the pre-split whole-job p90 is traced to a leg that no longer ships (2026-11-22: "Quality / Go" measured 12.6m on 16 gates still judged the 15-gate lane until a hand entry set it aside).
+
+    A name ANY of whose samples cannot be traced (no head_sha, no manifest at that commit for an indexed name, a manifest there for an unindexed one, a leg count or index the manifest does not hold, a lock that cannot be read or names no step of the lane) gets NO entry, and the gate counts a name with no entry against today's leg. Unknown is the strict direction here, never the lenient one."""
     out: dict[str, list[tuple[str, float]]] = {}
     untraced: set[str] = set()
     manifests: dict[tuple[str, str], dict[str, Any] | None] = {}
+    locks: dict[str, str | None] = {}
     for run, jobs in zip(pr_runs, pr_jobs_by_run, strict=False):
         sha = run.get("head_sha")
         for job in jobs:
@@ -2215,7 +2247,7 @@ def traced_leg_samples(
             if lane is None:
                 continue
             leg = _LEG_INDEX_RE.search(name)
-            if leg is None or not isinstance(sha, str):
+            if not isinstance(sha, str):
                 untraced.add(name)
                 continue
             key = (sha, lane)
@@ -2226,6 +2258,16 @@ def traced_leg_samples(
                 except ValueError:
                     manifests[key] = None
             manifest = manifests[key]
+            if leg is None:
+                # A lane's one job. With a manifest at that commit the name should have carried its leg, so it cannot be matched; with none, its leg is the lane's step lock entries there.
+                if sha not in locks:
+                    locks[sha] = show(sha, GATES_LOCK_REL_PATH)
+                solo = lock_leg_ids(locks[sha], lane) if manifest is None else None
+                if not solo:
+                    untraced.add(name)
+                    continue
+                out.setdefault(name, []).append((leg_plan_hash(solo), wall))
+                continue
             if manifest is None:
                 # No usable manifest at that commit (the lane was not sharded there, git could not show the file, or it does not parse), so this sample cannot be matched to today's leg. The name is untraced, as the docstring says.
                 untraced.add(name)

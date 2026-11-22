@@ -15,7 +15,7 @@ import re
 import threading
 import time
 import zipfile
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
@@ -23,6 +23,9 @@ from rediacc_ci import paths
 from rediacc_ci.ci import budget_report as br
 from rediacc_ci.testrun import e2e as e2e_run
 from rediacc_ci.well_known import GH_REPO
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 # --------------------------------------------------------------------------- parse_workflow_jobs: has_matrix ---------------------------------------------------------------------------
 
@@ -3492,6 +3495,100 @@ def test_job_p90_plans_drops_a_name_with_one_sample_from_a_commit_with_no_manife
         runs[:1], jobs[:1], _PLAN_PATTERNS, lambda sha, rel: files.get((sha, rel))
     )
     assert plans == {"Q / X (1/2)": [br.leg_plan_hash(["a"])]}
+
+
+def _lock(*entries: tuple[str, str]) -> str:
+    """A gates.lock.json text: `(id, ci.job)` pairs as step entries, in order, plus one non-step entry of the same job that is not part of its leg."""
+    return json.dumps(
+        [{"id": gid, "ci": {"kind": "step", "job": job, "step": gid}} for gid, job in entries]
+        + [{"id": "check:local", "ci": {"kind": "local-only", "job": "lane-x"}}]
+    )
+
+
+_LOCK_REL = "scripts/ci-runner/gates.lock.json"
+
+
+def test_lock_leg_ids_is_the_lanes_step_entries_in_lock_order():
+    """`shardOfOneLeg` in check-lane-budget.ts: step entries of the lane, lock order, nothing else. Unreadable is None, never an empty leg."""
+    text = _lock(("g:b", "lane-x"), ("g:other", "lane-y"), ("g:a", "lane-x"))
+    assert br.lock_leg_ids(text, "lane-x") == ["g:b", "g:a"]
+    assert br.lock_leg_ids(text, "lane-z") == []
+    assert br.lock_leg_ids(None, "lane-x") is None
+    assert br.lock_leg_ids("not json", "lane-x") is None
+    assert br.lock_leg_ids("{}", "lane-x") is None
+
+
+def test_job_p90_plans_traces_a_manifestless_lane_by_its_lock_leg_across_a_split():
+    """2026-11-22: "Quality / Go" lost check:ci-renet to a new lane, and its whole-job p90 was traced nowhere because quality-go has no shard manifest. Each sample now records the lane's lock leg at its own commit, so a pre-split and a post-split sample name two legs."""
+    runs = [{"id": 1, "head_sha": "before"}, {"id": 2, "head_sha": "after"}]
+    jobs = [[_plan_job("Q / X", 12.0)], [_plan_job("Q / X", 7.0)]]
+    files = {
+        ("before", _LOCK_REL): _lock(("g:a", "lane-x"), ("g:heavy", "lane-x")),
+        ("after", _LOCK_REL): _lock(("g:a", "lane-x"), ("g:heavy", "lane-y")),
+    }
+    plans = br.job_p90_plans(runs, jobs, _PLAN_PATTERNS, lambda sha, rel: files.get((sha, rel)))
+    assert plans == {
+        "Q / X": sorted([br.leg_plan_hash(["g:a", "g:heavy"]), br.leg_plan_hash(["g:a"])])
+    }
+
+
+def _shower(files: dict[tuple[str, str], str]) -> Callable[[str, str], str | None]:
+    """`show(sha, rel)` over a fixed `{(sha, rel): text}` map."""
+    return lambda sha, rel: files.get((sha, rel))
+
+
+def test_job_p90_plans_leaves_an_unindexed_name_untraced_when_it_cannot_read_its_leg():
+    """The strict side for the shard of one: no lock at the commit, a lock naming no step of the lane, or a manifest at the commit (a sharded lane's job must carry its leg) all leave the name untraced."""
+    runs = [{"id": 1, "head_sha": "a"}]
+    jobs = [[_plan_job("Q / X")]]
+    cases: list[dict[tuple[str, str], str]] = [
+        {},
+        {("a", _LOCK_REL): _lock(("g:a", "lane-y"))},
+        {
+            ("a", _LOCK_REL): _lock(("g:a", "lane-x")),
+            ("a", ".ci/config/shards/lane-x.json"): _manifest(1, [["g:a"]]),
+        },
+    ]
+    for files in cases:
+        plans = br.job_p90_plans(runs, jobs, _PLAN_PATTERNS, _shower(files))
+        assert plans == {}, files
+    # CONTROL: the same sample with a readable lock leg and no manifest is traced.
+    files = {("a", _LOCK_REL): _lock(("g:a", "lane-x"))}
+    plans = br.job_p90_plans(runs, jobs, _PLAN_PATTERNS, lambda sha, rel: files.get((sha, rel)))
+    assert plans == {"Q / X": [br.leg_plan_hash(["g:a"])]}
+
+
+def test_today_leg_hashes_takes_a_manifestless_lane_s_leg_from_the_lock(tmp_path):
+    lock = tmp_path / _LOCK_REL
+    lock.parent.mkdir(parents=True)
+    lock.write_text(_lock(("g:a", "lane-x"), ("g:b", "lane-x")), encoding="utf-8")
+    patterns = {**_PLAN_PATTERNS, "lane-y": re.compile(r"^Q / Y$")}
+    assert br.today_leg_hashes(tmp_path, patterns) == {
+        "lane-x": (None, {1: br.leg_plan_hash(["g:a", "g:b"])})
+    }
+    # CONTROL: a committed manifest wins over the lock, as it does in check-lane-budget.ts.
+    shard = tmp_path / ".ci/config/shards/lane-x.json"
+    shard.parent.mkdir(parents=True)
+    shard.write_text(_manifest(2, [["u:1"], ["u:2"]]), encoding="utf-8")
+    assert br.today_leg_hashes(tmp_path, patterns) == {
+        "lane-x": (2, {1: br.leg_plan_hash(["u:1"]), 2: br.leg_plan_hash(["u:2"])})
+    }
+
+
+def test_prefer_todays_leg_prices_a_split_lane_on_its_post_split_samples():
+    """After a split, the unindexed name with enough samples of today's lock leg is priced on those alone; with one, it records only the pre-split hash and the gate sets it aside, which is what the 2026-11-22 hand entry did by hand."""
+    today = {"lane-x": (None, {1: "after"})}
+    samples = {"Q / X": [("before", 12.6), ("after", 7.0), ("after", 7.5), ("after", 6.8)]}
+    p90, plans = br.prefer_todays_leg({"Q / X": 12.6}, samples, set(), today, _PLAN_PATTERNS)
+    assert p90 == {"Q / X": br.job_p90([7.0, 7.5, 6.8])}
+    assert plans == {"Q / X": ["after"]}
+    thin = {"Q / X": [("before", 12.6), ("before", 12.1), ("after", 7.0)]}
+    p90, plans = br.prefer_todays_leg({"Q / X": 12.6}, thin, set(), today, _PLAN_PATTERNS)
+    assert plans == {"Q / X": ["before"]}
+    # CONTROL: a name every sample of which ran today's leg keeps its p90 and names today's hash.
+    same = {"Q / X": [("after", 7.0), ("after", 7.4)]}
+    p90, plans = br.prefer_todays_leg({"Q / X": 7.4}, same, set(), today, _PLAN_PATTERNS)
+    assert (p90, plans) == ({"Q / X": 7.4}, {"Q / X": ["after"]})
 
 
 def test_merged_job_p90_plans_replaces_a_remeasured_name_and_keeps_the_rest():
