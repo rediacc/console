@@ -448,10 +448,11 @@ def check_inline_run_blocks(
                     block.step or "<unnamed>",
                     block.count,
                 )
-        actual[name] = violations
-        full_label[name] = full
+        # Keyed by the full path: a workflow `ci.yml` and an action file `.github/actions/ci.yml` share a short label.
+        actual[full] = violations
+        full_label[full] = full
         if lines_out:
-            detail[name] = lines_out
+            detail[full] = lines_out
 
     # Anti-vacuity: no workflows parsed means the layout moved and this gate is asserting nothing. Fail loudly rather than report a clean run. Actions alone do not count: the workflow directory is the one that must be seen.
     if not any(full.startswith(workflow_dir + "/") for _n, full, _p in targets):

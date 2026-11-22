@@ -362,3 +362,12 @@ def test_the_call_budget():
     F.read(gh, SLUG, [DAILY], NOW)
     assert len(gh.calls) == 3
     assert gh.count("actions/permissions") == 1
+
+
+@pytest.mark.parametrize(
+    ("expr", "dom_any", "dow_any"),
+    [("0 0 */2 * 1", True, False), ("0 0 1 * */2", False, True), ("0 0 1 * 1", False, False)],
+)
+def test_a_day_field_starting_with_a_star_is_unrestricted(expr, dom_any, dow_any):
+    spec = F.parse_cron(expr)
+    assert (spec["dom_any"], spec["dow_any"]) == (dom_any, dow_any)

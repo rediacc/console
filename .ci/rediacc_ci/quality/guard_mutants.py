@@ -53,14 +53,25 @@ def read_declarations(src: str) -> dict:
     tree = ast.parse(src)
     cut: list[tuple[int, int]] = []
     found: dict = {}
-    for node in tree.body:
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and target.id in DECLARATIONS:
-                    cut.append((node.lineno, node.end_lineno or node.lineno))
-                    found[target.id] = node
     plants: list[dict] = []
     errors: list[str] = []
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            targets = node.targets
+        elif isinstance(node, ast.AnnAssign) and node.value is not None:
+            targets = [node.target]
+        else:
+            continue
+        for target in targets:
+            if isinstance(target, ast.Name) and target.id in DECLARATIONS:
+                cut.append((node.lineno, node.end_lineno or node.lineno))
+                if target.id in found:
+                    errors.append(
+                        "%s is declared twice (line %d and line %d); only one declaration is read"
+                        % (target.id, found[target.id].lineno, node.lineno)
+                    )
+                    continue
+                found[target.id] = node
 
     def add(label: str, pair: tuple[str, str] | None) -> None:
         if pair is None:

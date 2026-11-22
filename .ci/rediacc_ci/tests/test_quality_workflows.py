@@ -11,6 +11,7 @@ import pathlib
 import pytest
 
 from rediacc_ci.quality import workflows as mod
+from rediacc_ci.quality.guard_mutants import read_declarations
 from rediacc_ci.tests import differential as diff
 
 BANNED_GREPS = [
@@ -235,3 +236,45 @@ def test_a_wrapped_python_call_without_slurp_is_not_a_finding():
 def test_a_comment_still_resets_the_join():
     """Unchanged behaviour, asserted because the depth counter is reset in the same arm and a reset that forgot one of the two would leak a bracket across a comment."""
     assert mod.slurp_jq_offenders('gh api x --slurp \\\n# a comment\n    --jq ".[]"\n') == []
+
+
+def test_a_workflow_and_an_action_sharing_a_short_label_are_judged_apart(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A fat `ci.yml` workflow must not be hidden by a thin `.github/actions/ci.yml` read after it: both have the short label `ci.yml`."""
+    monkeypatch.delenv(mod.ACTIONS_DIR_ENV, raising=False)
+    fat = "".join("          echo %d\n" % i for i in range(30))
+    wf = tmp_path / ".github" / "workflows"
+    act = tmp_path / mod.DEFAULT_ACTIONS_DIR
+    wf.mkdir(parents=True)
+    act.mkdir(parents=True)
+    (wf / "ci.yml").write_text(
+        "jobs:\n  a:\n    steps:\n      - name: fat\n        run: |\n" + fat, encoding="utf-8"
+    )
+    (act / "ci.yml").write_text(
+        "runs:\n  steps:\n    - shell: bash\n      run: echo hi\n", encoding="utf-8"
+    )
+    errors = mod.Errors()
+    mod.check_inline_run_blocks(errors, tmp_path, ".github/workflows", 8)
+    assert errors.count == 1
+
+
+# --- guard_mutants.read_declarations (review findings 224eea76.1 and 224eea76.3) ---
+
+
+def test_an_annotated_defect_is_read():
+    out = read_declarations('DEFECT: tuple[str, str] = ("aaa", "bbb")\nx = "aaa"\n')
+    assert out["errors"] == []
+    assert [p["label"] for p in out["plants"]] == ["DEFECT"]
+    assert out["plants"][0]["spans"]
+
+
+def test_a_plain_defect_is_still_read():
+    out = read_declarations('DEFECT = ("aaa", "bbb")\n')
+    assert out["errors"] == []
+    assert [p["label"] for p in out["plants"]] == ["DEFECT"]
+
+
+def test_a_second_declaration_is_an_error():
+    out = read_declarations('DEFECT = ("aaa", "bbb")\nDEFECT = ("ccc", "ddd")\n')
+    assert any("declared twice" in e for e in out["errors"])

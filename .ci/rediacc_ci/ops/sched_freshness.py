@@ -114,8 +114,8 @@ def parse_cron(expr: str) -> dict:
         "dom": sets[2],
         "month": sets[3],
         "dow": dow,
-        "dom_any": parts[2] == "*",
-        "dow_any": parts[4] == "*",
+        "dom_any": parts[2].startswith("*"),
+        "dow_any": parts[4].startswith("*"),
     }
 
 
@@ -125,7 +125,7 @@ def _day_matches(spec: dict, day: datetime.date) -> bool:
     dom_ok = day.day in spec["dom"]
     # date.weekday() is Monday=0; cron is Sunday=0.
     dow_ok = (day.weekday() + 1) % 7 in spec["dow"]
-    # Vixie cron: with both day fields restricted, EITHER matching fires the job.
+    # Vixie cron flags a day field starting with `*` (`*/2` included) as unrestricted. With both day fields restricted, EITHER matching fires the job.
     if not spec["dom_any"] and not spec["dow_any"]:
         return dom_ok or dow_ok
     return dom_ok and dow_ok

@@ -723,7 +723,7 @@ def canonical_reading(root: pathlib.Path, registry: dict, corpus: list[str]) -> 
             own = [
                 m.get("path")
                 for m in spec.get("mirrors") or []
-                if isinstance(m, dict) and m.get("path") == rel and not m.get("where")
+                if isinstance(m, dict) and m.get("path") == rel
             ]
             if own:
                 problem = (
