@@ -673,3 +673,18 @@ def test_the_release_is_judged_at_the_main_tip_when_it_contains_the_merge(two):
     assert promote_mod._release_sha(two.main, dev_tip) == dev_tip
     # Control: a sha main does not contain is judged as itself.
     assert promote_mod._release_sha(two.main, MERGED_SHA) == MERGED_SHA
+
+
+def test_record_paths_and_hook_ledgers_are_not_dirt():
+    globs = [
+        ("agent/reviews/**", ()),
+        ("agent/plans/**/*.md", ()),
+        ("agent/worklist/*.jsonl", ("agent/worklist/epics.jsonl",)),
+    ]
+    globs = [*globs, ("agent/ledgers/*.jsonl", ())]
+    assert promote_mod._is_record("agent/plans/QUEUE.md", globs)
+    assert promote_mod._is_record("agent/reviews/1121-1/clean.jsonl", globs)
+    assert promote_mod._is_record("agent/ledgers/ops-health.jsonl", globs)
+    # Controls: an excepted record and a code file still count as dirt.
+    assert not promote_mod._is_record("agent/worklist/epics.jsonl", globs)
+    assert not promote_mod._is_record(".ci/rediacc_ci/dev/landing.py", globs)

@@ -18,6 +18,7 @@ Only the printed `gh pr ready` line is data on stdout; everything else goes to s
 from __future__ import annotations
 
 import datetime
+import fnmatch
 import json
 import pathlib
 import subprocess
@@ -106,14 +107,44 @@ def _default_next_name(root, today):
 LOCAL_ONLY = frozenset({".claude/settings.local.json"})
 
 
+def _record_globs(tree):
+    """The record set (.ci/policy/record-paths.json) plus the hook ledgers: files the hooks of every session rewrite
+    after each commit, so a checkout is never clean of them at the instant promote looks. The rebase's autostash
+    carries them across; nothing else is exempt."""
+    try:
+        data = json.loads(
+            (pathlib.Path(tree) / ".ci" / "policy" / "record-paths.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        rows = [(r["glob"], tuple(r.get("except") or ())) for r in data.get("records", [])]
+    except (OSError, ValueError, KeyError, TypeError):
+        rows = []
+    return [*rows, ("agent/ledgers/*.jsonl", ())]
+
+
+def _is_record(path, globs):
+    for glob, excepts in globs:
+        if path in excepts:
+            continue
+        if fnmatch.fnmatchcase(path, glob) or fnmatch.fnmatchcase(path, glob.replace("**/", "")):
+            return True
+    return False
+
+
 def _dirty(tree):
     # Tracked changes only (operator ruling ASKED:2026-11-22T18:55Z): untracked files of other work always sit in the
     # main checkout, and git itself refuses a rebase or switch that would overwrite one, so none is lost.
     text = spike.must(tree, "status", "--porcelain", "--untracked-files=no")
     # The path is the last field: spike.must strips the output, so the first porcelain line loses its
     # leading status space and a fixed `line[3:]` slice would cut into the path.
+    globs = _record_globs(tree)
     return [
-        line for line in text.splitlines() if line and line.split(None, 1)[-1] not in LOCAL_ONLY
+        line
+        for line in text.splitlines()
+        if line
+        and line.split(None, 1)[-1] not in LOCAL_ONLY
+        and not _is_record(line.split(None, 1)[-1], globs)
     ]
 
 

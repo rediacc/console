@@ -1394,7 +1394,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/policy/hook-exec-baseline.json` | .ci/policy | code: `.ci/rediacc_ci/quality/hook_exec_baseline.py` | no -- hardcoded in `.ci/rediacc_ci/quality/hook_exec_baseline.py` |
 | `.ci/policy/pytest-impact.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
 | `.ci/policy/pytest-slow-allow.json` | .ci/policy | code: `.ci/rediacc_ci/quality/pytest_slow_ratchet.py` | no -- hardcoded in `.ci/rediacc_ci/quality/pytest_slow_ratchet.py` |
-| `.ci/policy/record-paths.json` | .ci/policy | code: `.ci/rediacc_ci/policy_paths.py` | no -- hardcoded in `.ci/rediacc_ci/policy_paths.py` |
+| `.ci/policy/record-paths.json` | .ci/policy | code: `.ci/rediacc_ci/dev/landing_promote.py` | no -- hardcoded in `.ci/rediacc_ci/dev/landing_promote.py` |
 | `.ci/policy/tree-shape.json` | .ci/policy | code: `.ci/rediacc_ci/quality/tree_shape.py` | no -- hardcoded in `.ci/rediacc_ci/quality/tree_shape.py` |
 | `.ci/policy/worklist-env-registry.json` | .ci/policy | code: `.ci/rediacc_ci/quality/worklist_env_registry.py` | no -- hardcoded in `.ci/rediacc_ci/quality/worklist_env_registry.py` |
 
