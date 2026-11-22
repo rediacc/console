@@ -472,6 +472,9 @@ export const HOST_LANE = 'quality-wiring';
  * where the next reader finds it.
  */
 export const DECLARED_HAND_WRITTEN_LANES: Readonly<Record<string, string>> = {
+  'quality-content-receipt':
+    'the receipt signer: no checkout and no repo code, only the download, attest and upload of the ' +
+    'quality-content receipt, so it holds no gate and has no setup step',
   'quality-branch': 'no `- id: setup`, so invariant 11 forbids a region here outright',
   'quality-submodule-branches': 'no `- id: setup`, so invariant 11 forbids a region here',
   [HOST_LANE]:
