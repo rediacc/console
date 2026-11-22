@@ -1,7 +1,7 @@
 # PLAN: GPUs reach a repository only through a machine-level CDI inventory and a per-repository device grant
 
 Status: approved -- operator ASKED:2026-10-24T18:05Z (design (i)+(ii): machine-level GPU inventory and CDI specs plus per-repository device grants); worklist #98e7f50f, PR-TASK 9f92c43e. Starts after PLAN-converge-preflight-and-repo-recovery, whose converge preflight classifies a repository's GPU requests and reads the grants this plan adds (box P1).
-Depends-On: PLAN-converge-preflight-and-repo-recovery.md
+Depends-On: no-dep -- PLAN-converge-preflight-and-repo-recovery.md finished (every box ticked); its output is in the tree
 Owner: d778be9d
 Updated: 2026-10-24
 First-Seen: 2026-10-24

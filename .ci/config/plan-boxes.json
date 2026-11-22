@@ -314,25 +314,6 @@
         "fcfb17fb"
       ]
     },
-    "agent/plans/PLAN-backup-meter-orphaned-chunks.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 8,
-      "open_sigs": [],
-      "done_sigs": [
-        "11388dba",
-        "564c2d2d",
-        "566ed3a4",
-        "b45ef8a8",
-        "b4fd892f",
-        "d36ccec3",
-        "ef318b56",
-        "fd8547ed"
-      ]
-    },
     "agent/plans/PLAN-backup-multi-target.md": {
       "status": "approved",
       "owner": "d778be9d",
@@ -937,27 +918,6 @@
         "f60157da"
       ]
     },
-    "agent/plans/PLAN-cloudflare-spend-guard.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 10,
-      "open_sigs": [],
-      "done_sigs": [
-        "08bf72af",
-        "0b3782d7",
-        "323dafd9",
-        "37f7849e",
-        "614c11d9",
-        "7d4b4cf0",
-        "81dda855",
-        "953e7cdf",
-        "b00bc9df",
-        "d951622b"
-      ]
-    },
     "agent/plans/PLAN-cluster-crosssite-transport.md": {
       "status": "proposed",
       "owner": "e0f36861",
@@ -1130,36 +1090,6 @@
         "a443e632",
         "a984dd31",
         "f7d91e90"
-      ]
-    },
-    "agent/plans/PLAN-converge-preflight-and-repo-recovery.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 19,
-      "open_sigs": [],
-      "done_sigs": [
-        "1b27a3ae",
-        "1d51cecc",
-        "28a11bd0",
-        "4440feb5",
-        "5b93fe0a",
-        "5f1af841",
-        "5fe0b109",
-        "61092d42",
-        "6395a951",
-        "6d49473a",
-        "7692f2db",
-        "8277cf58",
-        "9cbf1906",
-        "a97866e0",
-        "abbd7b20",
-        "b46df911",
-        "d61fcd63",
-        "ec8aabe0",
-        "fcb61e61"
       ]
     },
     "agent/plans/PLAN-csi-staging-redesign.md": {
@@ -1358,26 +1288,6 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-docker-pin-digest.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 9,
-      "open_sigs": [],
-      "done_sigs": [
-        "11388dba",
-        "199f79e5",
-        "4e304e0a",
-        "613db632",
-        "827ecc2d",
-        "8547e1d0",
-        "94f47ede",
-        "9933d672",
-        "c1f1de21"
-      ]
     },
     "agent/plans/PLAN-duplication-angle.md": {
       "status": "compacted",
@@ -2179,31 +2089,6 @@
         "fe1a59af"
       ]
     },
-    "agent/plans/PLAN-local-release.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 14,
-      "open_sigs": [],
-      "done_sigs": [
-        "0b081d62",
-        "0b718b77",
-        "2869d358",
-        "2a1a6a3e",
-        "33d25482",
-        "578be002",
-        "57ba8ee2",
-        "5f05df46",
-        "65539bb7",
-        "7522f126",
-        "cb4b552c",
-        "d12c9338",
-        "d20d0201",
-        "fd2a3231"
-      ]
-    },
     "agent/plans/PLAN-localize-cheat-sheet-rendering.md": {
       "status": "compacted",
       "owner": "97604f47",
@@ -2335,34 +2220,6 @@
         "b9869455",
         "d2fc213f",
         "f96c33f6"
-      ]
-    },
-    "agent/plans/PLAN-org-executor-connect-timeout-relocate.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 17,
-      "open_sigs": [],
-      "done_sigs": [
-        "00927901",
-        "021e12ec",
-        "172f7b67",
-        "304a978e",
-        "432e07dc",
-        "56256a98",
-        "7692f2db",
-        "7c5d2b99",
-        "8659204a",
-        "88f1dbcd",
-        "aab703f5",
-        "b00bc9df",
-        "bf0dac1e",
-        "e3357b5a",
-        "e4ba2374",
-        "f721be84",
-        "fcedcc15"
       ]
     },
     "agent/plans/PLAN-partner-sales-track.md": {
@@ -3043,31 +2900,6 @@
         "ab52c8f5"
       ]
     },
-    "agent/plans/PLAN-repo-docker-storage-prune.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 14,
-      "open_sigs": [],
-      "done_sigs": [
-        "0f938263",
-        "29961a0f",
-        "319e401a",
-        "6430ef63",
-        "72ea8088",
-        "73ea9ce4",
-        "7692f2db",
-        "99b77b08",
-        "b00bc9df",
-        "b853022c",
-        "cc94874d",
-        "d1839d57",
-        "d77a6282",
-        "d866721c"
-      ]
-    },
     "agent/plans/PLAN-repo-resource-limits.md": {
       "status": "approved",
       "owner": "d778be9d",
@@ -3593,21 +3425,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-settings-set-verb.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 4,
-      "open_sigs": [],
-      "done_sigs": [
-        "078f1ed4",
-        "5537ebd2",
-        "9c1373a2",
-        "a81690de"
-      ]
-    },
     "agent/plans/PLAN-shell-command-gate-regex-fix.md": {
       "status": "compacted",
       "owner": "f4da5c2e",
@@ -3727,46 +3544,6 @@
         "ef318b56"
       ]
     },
-    "agent/plans/PLAN-split-cli-files-over-512-line-budget.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 7,
-      "open_sigs": [],
-      "done_sigs": [
-        "11388dba",
-        "426da0f8",
-        "5d3f37ce",
-        "b8ea74a1",
-        "cf5a3321",
-        "da8d7bc9",
-        "ef318b56"
-      ]
-    },
-    "agent/plans/PLAN-ssh-key-source-ranges.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 11,
-      "open_sigs": [],
-      "done_sigs": [
-        "1d4d78e1",
-        "25c164cb",
-        "38d70bfe",
-        "4b71c828",
-        "5dedfb94",
-        "7692f2db",
-        "83df7d0e",
-        "966f84cd",
-        "b00bc9df",
-        "cfd016f3",
-        "fde13b60"
-      ]
-    },
     "agent/plans/PLAN-ssr-nav-locale.md": {
       "status": "compacted",
       "owner": "e6500e92",
@@ -3855,40 +3632,6 @@
         "d54e3a5b"
       ]
     },
-    "agent/plans/PLAN-stop-hook-retro-20261101.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 4,
-      "open_sigs": [],
-      "done_sigs": [
-        "7e9b923d",
-        "9ebeab9c",
-        "a8063221",
-        "fa7056ab"
-      ]
-    },
-    "agent/plans/PLAN-stop-hook-retro-20261110.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 8,
-      "open_sigs": [],
-      "done_sigs": [
-        "05745435",
-        "3d7ed0f7",
-        "657da0bd",
-        "7b8d3749",
-        "90cc6ba0",
-        "a44ad929",
-        "b31f4e0a",
-        "fc4fa3b6"
-      ]
-    },
     "agent/plans/PLAN-stop-hook-retro-20261117.md": {
       "status": "ready",
       "owner": "d778be9d",
@@ -3973,36 +3716,6 @@
       "done": 0,
       "open_sigs": [],
       "done_sigs": []
-    },
-    "agent/plans/PLAN-telemetry-export.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 19,
-      "open_sigs": [],
-      "done_sigs": [
-        "0b907951",
-        "1b706dae",
-        "29778d67",
-        "32531c67",
-        "50b4e6c7",
-        "539c554f",
-        "60ec1797",
-        "7ccd27a0",
-        "84368fdf",
-        "9b40e7bf",
-        "9f3351f1",
-        "b00bc9df",
-        "b5c07118",
-        "c1ebf2b2",
-        "df51e619",
-        "e3f0064c",
-        "e5ddcfb1",
-        "f163dee7",
-        "f4d97e1f"
-      ]
     },
     "agent/plans/PLAN-terms-region-notice.md": {
       "status": "proposed",
@@ -4102,28 +3815,6 @@
         "debe2a97",
         "e135e1b5",
         "f3b5dbf9"
-      ]
-    },
-    "agent/plans/PLAN-token-ip-rebind.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 0,
-      "done": 11,
-      "open_sigs": [],
-      "done_sigs": [
-        "08d66672",
-        "4cfbac1a",
-        "6f3b5d55",
-        "83f46a00",
-        "8513c37d",
-        "adec66b8",
-        "b00bc9df",
-        "b2765c61",
-        "ccc8658a",
-        "dc10d40d",
-        "e473cbe9"
       ]
     },
     "agent/plans/PLAN-tooling-code-reduction.md": {
@@ -4593,6 +4284,25 @@
         "e644e195"
       ]
     },
+    "agent/plans/_done/PLAN-backup-meter-orphaned-chunks.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-22",
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
+      "done_sigs": [
+        "11388dba",
+        "564c2d2d",
+        "566ed3a4",
+        "b45ef8a8",
+        "b4fd892f",
+        "d36ccec3",
+        "ef318b56",
+        "fd8547ed"
+      ]
+    },
     "agent/plans/_done/PLAN-backup-presign-bucket-require-and-wrangler-vars.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -4762,6 +4472,27 @@
         "ec030c09"
       ]
     },
+    "agent/plans/_done/PLAN-cloudflare-spend-guard.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-22",
+      "open": 0,
+      "done": 10,
+      "open_sigs": [],
+      "done_sigs": [
+        "08bf72af",
+        "0b3782d7",
+        "323dafd9",
+        "37f7849e",
+        "614c11d9",
+        "7d4b4cf0",
+        "81dda855",
+        "953e7cdf",
+        "b00bc9df",
+        "d951622b"
+      ]
+    },
     "agent/plans/_done/PLAN-config-handoff-relay-only.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -4922,6 +4653,36 @@
         "e8152c55"
       ]
     },
+    "agent/plans/_done/PLAN-converge-preflight-and-repo-recovery.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-22",
+      "open": 0,
+      "done": 19,
+      "open_sigs": [],
+      "done_sigs": [
+        "1b27a3ae",
+        "1d51cecc",
+        "28a11bd0",
+        "4440feb5",
+        "5b93fe0a",
+        "5f1af841",
+        "5fe0b109",
+        "61092d42",
+        "6395a951",
+        "6d49473a",
+        "7692f2db",
+        "8277cf58",
+        "9cbf1906",
+        "a97866e0",
+        "abbd7b20",
+        "b46df911",
+        "d61fcd63",
+        "ec8aabe0",
+        "fcb61e61"
+      ]
+    },
     "agent/plans/_done/PLAN-deferred-findings-block-merge.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -4948,6 +4709,26 @@
         "bdf14dbb",
         "df739172",
         "e79aa82e"
+      ]
+    },
+    "agent/plans/_done/PLAN-docker-pin-digest.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-22",
+      "open": 0,
+      "done": 9,
+      "open_sigs": [],
+      "done_sigs": [
+        "11388dba",
+        "199f79e5",
+        "4e304e0a",
+        "613db632",
+        "827ecc2d",
+        "8547e1d0",
+        "94f47ede",
+        "9933d672",
+        "c1f1de21"
       ]
     },
     "agent/plans/_done/PLAN-docker-sock-listener-preflight-detect.md": {
@@ -5197,6 +4978,59 @@
         "c39f24c1",
         "c5fee6fc",
         "f2666cc1"
+      ]
+    },
+    "agent/plans/_done/PLAN-local-release.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-22",
+      "open": 0,
+      "done": 14,
+      "open_sigs": [],
+      "done_sigs": [
+        "0b081d62",
+        "0b718b77",
+        "2869d358",
+        "2a1a6a3e",
+        "33d25482",
+        "578be002",
+        "57ba8ee2",
+        "5f05df46",
+        "65539bb7",
+        "7522f126",
+        "cb4b552c",
+        "d12c9338",
+        "d20d0201",
+        "fd2a3231"
+      ]
+    },
+    "agent/plans/_done/PLAN-org-executor-connect-timeout-relocate.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-22",
+      "open": 0,
+      "done": 17,
+      "open_sigs": [],
+      "done_sigs": [
+        "00927901",
+        "021e12ec",
+        "172f7b67",
+        "304a978e",
+        "432e07dc",
+        "56256a98",
+        "7692f2db",
+        "7c5d2b99",
+        "8659204a",
+        "88f1dbcd",
+        "aab703f5",
+        "b00bc9df",
+        "bf0dac1e",
+        "e3357b5a",
+        "e4ba2374",
+        "f721be84",
+        "fcedcc15"
       ]
     },
     "agent/plans/_done/PLAN-per-flavor-renet-binary-paths.md": {
@@ -5612,6 +5446,31 @@
         "d2157a79"
       ]
     },
+    "agent/plans/_done/PLAN-repo-docker-storage-prune.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-22",
+      "open": 0,
+      "done": 14,
+      "open_sigs": [],
+      "done_sigs": [
+        "0f938263",
+        "29961a0f",
+        "319e401a",
+        "6430ef63",
+        "72ea8088",
+        "73ea9ce4",
+        "7692f2db",
+        "99b77b08",
+        "b00bc9df",
+        "b853022c",
+        "cc94874d",
+        "d1839d57",
+        "d77a6282",
+        "d866721c"
+      ]
+    },
     "agent/plans/_done/PLAN-retire-bash-oracles.A0.md": {
       "status": "done",
       "owner": "unowned",
@@ -5748,6 +5607,21 @@
         "feb3060c"
       ]
     },
+    "agent/plans/_done/PLAN-settings-set-verb.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-22",
+      "open": 0,
+      "done": 4,
+      "open_sigs": [],
+      "done_sigs": [
+        "078f1ed4",
+        "5537ebd2",
+        "9c1373a2",
+        "a81690de"
+      ]
+    },
     "agent/plans/_done/PLAN-shell-sandbox-readonly-view.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -5764,6 +5638,46 @@
         "ce1f9881",
         "fdd7c9d0",
         "fe8a544f"
+      ]
+    },
+    "agent/plans/_done/PLAN-split-cli-files-over-512-line-budget.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-22",
+      "open": 0,
+      "done": 7,
+      "open_sigs": [],
+      "done_sigs": [
+        "11388dba",
+        "426da0f8",
+        "5d3f37ce",
+        "b8ea74a1",
+        "cf5a3321",
+        "da8d7bc9",
+        "ef318b56"
+      ]
+    },
+    "agent/plans/_done/PLAN-ssh-key-source-ranges.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-22",
+      "open": 0,
+      "done": 11,
+      "open_sigs": [],
+      "done_sigs": [
+        "1d4d78e1",
+        "25c164cb",
+        "38d70bfe",
+        "4b71c828",
+        "5dedfb94",
+        "7692f2db",
+        "83df7d0e",
+        "966f84cd",
+        "b00bc9df",
+        "cfd016f3",
+        "fde13b60"
       ]
     },
     "agent/plans/_done/PLAN-stop-hook-effort-tuning.md": {
@@ -5901,6 +5815,40 @@
         "bfc9b7cd"
       ]
     },
+    "agent/plans/_done/PLAN-stop-hook-retro-20261101.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-22",
+      "open": 0,
+      "done": 4,
+      "open_sigs": [],
+      "done_sigs": [
+        "7e9b923d",
+        "9ebeab9c",
+        "a8063221",
+        "fa7056ab"
+      ]
+    },
+    "agent/plans/_done/PLAN-stop-hook-retro-20261110.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-22",
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
+      "done_sigs": [
+        "05745435",
+        "3d7ed0f7",
+        "657da0bd",
+        "7b8d3749",
+        "90cc6ba0",
+        "a44ad929",
+        "b31f4e0a",
+        "fc4fa3b6"
+      ]
+    },
     "agent/plans/_done/PLAN-stop-hook-rulings-campaign.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -6002,6 +5950,36 @@
         "e959d800"
       ]
     },
+    "agent/plans/_done/PLAN-telemetry-export.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-22",
+      "open": 0,
+      "done": 19,
+      "open_sigs": [],
+      "done_sigs": [
+        "0b907951",
+        "1b706dae",
+        "29778d67",
+        "32531c67",
+        "50b4e6c7",
+        "539c554f",
+        "60ec1797",
+        "7ccd27a0",
+        "84368fdf",
+        "9b40e7bf",
+        "9f3351f1",
+        "b00bc9df",
+        "b5c07118",
+        "c1ebf2b2",
+        "df51e619",
+        "e3f0064c",
+        "e5ddcfb1",
+        "f163dee7",
+        "f4d97e1f"
+      ]
+    },
     "agent/plans/_done/PLAN-terms-acceptance.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -6036,6 +6014,28 @@
         "f8baf81f",
         "fce2ee8b",
         "fdf13952"
+      ]
+    },
+    "agent/plans/_done/PLAN-token-ip-rebind.md": {
+      "status": "done",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-22",
+      "open": 0,
+      "done": 11,
+      "open_sigs": [],
+      "done_sigs": [
+        "08d66672",
+        "4cfbac1a",
+        "6f3b5d55",
+        "83f46a00",
+        "8513c37d",
+        "adec66b8",
+        "b00bc9df",
+        "b2765c61",
+        "ccc8658a",
+        "dc10d40d",
+        "e473cbe9"
       ]
     },
     "agent/plans/_done/PLAN-tooling-transformation.md": {
