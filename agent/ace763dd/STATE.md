@@ -1,17 +1,13 @@
-## SESSION ace763dd 2026-11-22T15:07:37Z
+## SESSION ace763dd 2026-11-22T15:53:53Z
 
-# STATE ace763dd (2026-11-22 ~15:10Z; continues d778be9d)
+# STATE ace763dd (2026-11-22 ~16:20Z)
 
 ## Big pieces
-- PR #605 (landing /home/developer/console-landing, 1104-1): submodules merged (elite #18 by rebase; account #102 and renet #121 by the operator's FF pushes 11:10Z). Head de1ce1105 carries the elite pointer bump, rsync freshness from GitHub releases (ba24ec5e7, samba.org was down), format/seed fixes. PR body has an Operational-Reason line (15 open post-merge/live boxes + the "can't be rebased" refusal). Run 45029273736: 203 success, 3 timeout-cancels on slow runners (Unit 1/2, E2E K8s Ceph, Multinode); `gh run rerun --failed` issued, watch bmz2e447e. NEXT: on green, `wl_prreview.py --wait --pr 605` (run the dev copy from the landing tree or pass --pr: the landing copy predates the cwd fix), then `git push origin 1104-1:main` (guarded FF fallback; GitHub refuses --rebase at 4138 commits), then the /pr-merge release watch (Console CI on main + CD edge), gitlab mirror, promotion.
-- Dev 1121-1 (#3b82cf28): landing fixes taken (twins of lane-durations, rsync, format/seed, pins, deps, slow marker), dev-own reds fixed (python-types, literal-sources, citations, plan-boxes, env registry, shard place), npm bump c5d824d16 + account 33ff71f. Remaining reds need the merge: review-resolutions 6359c982.1, T1 0226e1bd7 citation, two no-PR trailer gates. Then ci:quick and `git push -u origin 1121-1`.
-- #8da3a559: after the merge, pin the devcontainer digest main CI publishes (.ci/config/devcontainer-image.json, gate-bind --write), mark 6359c982.1 fixed.
-
-## Landed today on dev (operator asks)
-- Submodule FF fallback in block_push_to_protected_branch (7146f0f1b..f6af87b48, df7725313; CLAUDE.md e955366dd), operator ruling ASKED:2026-11-22T11:11Z.
-- PLAN-weekly-lessons (e9312d766, QUEUE Promoted 88); effort smart (aaaefebad); retro plan 20261122 (5ae76352d).
-- Fixes: clone guard admits registered worktrees (724bb1e7d), wl_prreview cwd (ff451161b), bootstrap PyYAML (c8cc53303, 10f068a74), guard-mutations timer (17032c90b).
+- PR #605 MERGED 15:30:20Z (git push origin 1104-1:main, 1afbc7a24..de1ce1105; plan gate needed the body to drop Plan lines of plans that rode PRs #602/#603 and the superseded submodule-guard plan). Release decision bump-major. main CI run 45038672967 was cancelled by the watchdog budget (Renet Full 20m, slow runners); `gh run rerun --failed` issued, watch b556265tb. NEXT: on green, find the CD - Release to Edge run (`ci-trace.py --runs --ref main --workflow "CD - Release to Edge"`) and watch it by id; then landing tree to origin/main (`git -C /home/developer/console-landing switch --detach origin/main` + submodule update), gitlab mirror (`git push gitlab refs/heads/main:refs/heads/main --follow-tags`), then promote dev (`./run.sh worktree landing --promote`).
+- After the release: #8da3a559 pin the devcontainer digest main CI pushed (.ci/config/devcontainer-image.json, gate-bind --write, mark 6359c982.1 fixed); resume hostinger runner (21 boxes need the released renet); fleet runner vm:check half after gates.
+- writers-now round #47ce3621 (survey /tmp/writers-now/1121-1-20261122T1512Z.md): landed W2 4a8a3956a, N1 70f51a2a1, R5 9387f6ba6. 12 PRESENT ticks applied in 6 plans but UNCOMMITTED (msg /tmp/m/tick1.msg): the commit is refused until the post-merge RF plan closes (#8c7e16e2, queued behind CL-A writer) clear check:ci-plan-record. Running: review writers A (a4298ca5a90ee33c7) and B (a5c83ef9f30895c56), CL-A (ae08ac415f036051c). H1 C1 reported partial: lease commit 87fadbcb3 + patch /tmp/c1-unowned-7KqRzG.patch for 4 unowned files (land both, run shared config-schema + subscription-auth + state tests). Evidence files /tmp/writers-now/1121-1-20261122T1512Z-evidence-{bench,hostinger,prod,vm}.md hold runner TICK lines for the next tick batch (root-api-token 54dd021e 8acf0556 8313cd76 651984b3; root-grants cded8305; enterprise a8892e0c 502fb3f5; email-sender 1b2ea7aa).
+- Dev 1121-1 backup push (#3b82cf28): waits on promotion after the release.
 
 ## Next action
-1. bmz2e447e lands: on green read Review Complete, then FF push main, release watch.
-2. After the merge: #8da3a559 digest pin; promote dev; ci:quick; backup push.
+1. b556265tb: main green -> CD edge watch -> landing to main -> gitlab mirror -> promote.
+2. Land H1 (87fadbcb3 + patch); land review writers and CL-A as they report; commit ticks once plan-record is clean.
