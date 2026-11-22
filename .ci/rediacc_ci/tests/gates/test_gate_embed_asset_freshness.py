@@ -333,6 +333,11 @@ def test_the_rsync_release_alone_failing_is_red(gate, tmp_path):
     with stub_upstream(script) as stub:
         result = run_gate_over_http(tmp_path, stub.base)
         gate.assert_eq(stub.asked(route), 3, "a 5xx is asked three times and no more")
+        # Every upstream points at this one stub, so a samba-style read would arrive as `/pub/rsync/...`; only GitHub API routes may appear.
+        foreign = sorted(
+            {seen for _verb, seen, _auth in stub.requests if not seen.startswith("/repos/")}
+        )
+        gate.assert_eq(foreign, [], "no route outside the GitHub API is asked")
     gate.assert_exit(1, result, "the rsync release not answering fails closed")
     gate.assert_contains(result.err, "1 embed-asset pin(s) were NOT compared", "one finding")
     gate.assert_contains(
