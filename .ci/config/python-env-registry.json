@@ -2647,6 +2647,9 @@
     ".claude/rediacc_hooks/guards/test-block_second_open_pr.py": [
       "PATH"
     ],
+    ".claude/rediacc_hooks/guards/test-block_unverified_push.py": [
+      "PATH"
+    ],
     ".claude/rediacc_hooks/guards/test-two-tree-scope.py": [
       "PATH"
     ],
