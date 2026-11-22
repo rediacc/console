@@ -442,14 +442,17 @@ def stack_cases(tmp, tag, mutate=None):
     out.append(("merged landing, release pending: no block", w.blocked(got, STACK_MERGED), False))
     out.append(("merged landing, release pending: reported", STACK_PENDING in got.out, True))
     w.release("feedface0001", ci="success", edge="success")
+    # Not on the FLOOR (operator ruling 2026-11-22: "effort: quiet" must let the stop through): quiet stands it down to an
+    # advisory, every other level blocks.
     for level in LEVELS:
         w.effort(level)
         got = w.stop(w.fix.proj)
         out.append(
             (
-                "merged landing at %s: the development stop blocks" % level,
+                "merged landing at %s: the development stop %s"
+                % (level, "stands down" if level == "quiet" else "blocks"),
                 w.blocked(got, STACK_MERGED),
-                True,
+                level != "quiet",
             )
         )
     w.effort("low")
@@ -553,14 +556,13 @@ MUTANTS = (
         ],
     ),
     (
-        "landing-stack is not on the FLOOR",
+        "landing-stack blocks from low, not only from smart",
         stack_cases,
         [
-            ("hooks/stop/wl_floor.py", '        "landing-stack",\n', ""),
             (
                 "config/effort.json",
-                '"landing-stack": "floor",',
-                '"landing-stack": {"block": "smart", "advise": "low"},',
+                '"landing-stack": {\n      "block": "low",',
+                '"landing-stack": {\n      "block": "smart",',
             ),
         ],
     ),

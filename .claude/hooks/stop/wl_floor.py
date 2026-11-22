@@ -20,7 +20,6 @@ FLOOR = frozenset(
         "roster-cap",
         "unread-reports",
         "wake-timer",
-        "landing-stack",
     }
 )
 

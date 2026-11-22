@@ -522,7 +522,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_effort_tune.py | (none) | via .claude/hooks/stop/test-wl_worktrees.py | py |
 | .claude/hooks/stop/wl_epic.py | (none) | via .claude/hooks/stop/test-epic-budget.py | py |
 | .claude/hooks/stop/wl_feedback_triage.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
-| .claude/hooks/stop/wl_floor.py | (none) | via .claude/hooks/stop/test-landing-wiring.py | py |
+| .claude/hooks/stop/wl_floor.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_gh.py | (none) | via .claude/hooks/post-bash/arm_ci_watch.py | py |
 | .claude/hooks/stop/wl_git.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_handover.py | (none) | via .claude/hooks/stop/test-landing-wiring.py | py |
