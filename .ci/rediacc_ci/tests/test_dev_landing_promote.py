@@ -233,7 +233,9 @@ def test_promote_refuses_a_landing_submodule_branch_the_gitlink_lacks(two):
 
 
 def test_promote_refuses_a_dirty_landing_submodule_tree(two):
-    spike.write(two.landing_sub / "scratch.txt", "work\n")
+    # A modified tracked file in the submodule tree refuses; untracked files no longer count (ASKED:2026-11-22T18:55Z).
+    tracked = spike.must(two.landing_sub, "ls-files").splitlines()[0]
+    spike.write(two.landing_sub / tracked, "changed\n")
     with pytest.raises(promote_mod.PromoteRefusedError, match="submodule tree sub of the landing"):
         run_promote(two.main)
     untouched(two)
@@ -279,10 +281,19 @@ def test_promote_without_a_pr_number_names_the_branch(two):
 
 @pytest.mark.parametrize("where", ["main", "landing"])
 def test_promote_refuses_a_dirty_tree_in_either_checkout(two, where):
-    spike.write(getattr(two, where) / "scratch.txt", "work\n")
+    # A modified TRACKED file refuses; untracked files no longer count (operator ruling ASKED:2026-11-22T18:55Z).
+    tree = getattr(two, where)
+    tracked = spike.must(tree, "ls-files").splitlines()[0]
+    spike.write(tree / tracked, "changed\n")
     with pytest.raises(promote_mod.PromoteRefusedError, match="is dirty"):
         run_promote(two.main)
     untouched(two)
+
+
+def test_an_untracked_file_of_other_work_does_not_block_promotion(two):
+    spike.write(two.main / "agent" / "other-session" / "notes.md", "theirs\n")
+    assert run_promote(two.main) == "gh pr ready 42"
+    assert (two.main / "agent" / "other-session" / "notes.md").read_text() == "theirs\n"
 
 
 def test_promote_ignores_the_machine_local_settings_file(two):
@@ -301,13 +312,6 @@ def test_the_settings_file_is_ignored_when_it_is_the_first_dirty_row(two):
     )
     spike.write(target, '{"changed": true}\n')
     assert run_promote(two.main) == "gh pr ready 42"
-
-
-def test_control_another_untracked_file_under_claude_still_refuses(two):
-    spike.write(two.main / ".claude" / "settings.json.bak", "{}\n")
-    with pytest.raises(promote_mod.PromoteRefusedError, match="is dirty"):
-        run_promote(two.main)
-    untouched(two)
 
 
 @pytest.mark.parametrize(

@@ -107,7 +107,9 @@ LOCAL_ONLY = frozenset({".claude/settings.local.json"})
 
 
 def _dirty(tree):
-    text = spike.must(tree, "status", "--porcelain", "--untracked-files=all")
+    # Tracked changes only (operator ruling ASKED:2026-11-22T18:55Z): untracked files of other work always sit in the
+    # main checkout, and git itself refuses a rebase or switch that would overwrite one, so none is lost.
+    text = spike.must(tree, "status", "--porcelain", "--untracked-files=no")
     # The path is the last field: spike.must strips the output, so the first porcelain line loses its
     # leading status space and a fixed `line[3:]` slice would cut into the path.
     return [
