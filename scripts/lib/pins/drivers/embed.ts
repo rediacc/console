@@ -47,12 +47,7 @@ import {
 } from '../driver.js';
 import { entriesFor, idName, type PinEntry, type RepoPath } from '../registry.js';
 import { checkSites, isHeld, versionValues } from './toolchain-plan.js';
-import {
-  compareVersions,
-  gh,
-  githubReleases,
-  type Upstream,
-} from './toolchain-upstream.js';
+import { compareVersions, gh, githubReleases, type Upstream } from './toolchain-upstream.js';
 
 /** Selftest mutants of this driver. Each disables one refusal, and the selftest proves its case goes red. */
 export const EMBED_MUTANTS = [
