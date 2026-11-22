@@ -187,6 +187,11 @@ R2_CHECKSUM_ENV = {
 }
 
 
+# The region names R2 accepts, and the variables the aws CLI reads a region from.
+R2_REGIONS = frozenset({"auto", "wnam", "enam", "weur", "eeur", "apac", "oc"})
+R2_REGION_KEYS = ("AWS_REGION", "AWS_DEFAULT_REGION")
+
+
 # The repo's aws CLI configuration: the classic S3 transfer client, which the runner image's aws used while R2 syncs passed (see the file's own header).
 CONFIG_FILE = pathlib.Path(__file__).resolve().parents[2] / "config" / "aws-cli.cfg"
 
@@ -197,6 +202,11 @@ def r2_env(env: Mapping[str, str] | None = None) -> dict[str, str]:
     for key, value in R2_CHECKSUM_ENV.items():
         out.setdefault(key, value)
     out.setdefault("AWS_CONFIG_FILE", str(CONFIG_FILE))
+    # R2 accepts only its own location hints; a runner's AWS region (GitHub's ubuntu image exports us-west-2) is refused with
+    # InvalidRegionName (CD - Release to Edge run 45044147058, Stage executor artifacts, 2026-11-22), so an R2 call never inherits one.
+    for key in R2_REGION_KEYS:
+        if out.get(key, "") not in R2_REGIONS:
+            out[key] = "auto"
     return out
 
 

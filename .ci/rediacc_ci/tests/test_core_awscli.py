@@ -287,3 +287,12 @@ def test_the_clones_own_valid_cache_wins_over_a_borrowed_one(
     _fake(awscli.cache_binary(PIN, main))
     own = _fake(awscli.cache_binary(PIN, clone))
     assert awscli.resolve(root=clone) == str(own)
+
+
+def test_an_r2_call_never_inherits_the_runners_aws_region():
+    """CD run 45044147058: GitHub's runner exports us-west-2, and R2 refused it with InvalidRegionName."""
+    env = awscli.r2_env({"AWS_DEFAULT_REGION": "us-west-2", "AWS_REGION": "us-east-1"})
+    assert env["AWS_DEFAULT_REGION"] == "auto"
+    assert env["AWS_REGION"] == "auto"
+    # Control: an R2 location hint the caller chose is kept.
+    assert awscli.r2_env({"AWS_DEFAULT_REGION": "weur"})["AWS_DEFAULT_REGION"] == "weur"
