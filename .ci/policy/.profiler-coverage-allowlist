@@ -117,3 +117,6 @@ cd-release-stable.yml:verify-stable
 #
 # ops-watchdog-monitor.yml
 ops-watchdog-monitor.yml:monitor
+
+# BLOCKER: quality-content-receipt is the signer job; by design it runs no repo code and no local action (scripts/ci-runner/ci-receipt.ts --selftest enforces this), since a ./.github/actions/profiler step would run tree-controlled code inside the one job holding id-token/attestations. It only downloads the unsigned receipt and attests it, so there is no workload to profile.
+ci-quality.yml:quality-content-receipt
