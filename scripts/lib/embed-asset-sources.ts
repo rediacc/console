@@ -22,19 +22,16 @@ export interface EmbedAssetSource {
   /** Dockerfile ARG base, lowercased (matches parseDockerfileVersions keys). */
   base: string;
   display: string;
-  kind: 'github' | 'rsync-index';
-  /** owner/repo for github sources. */
-  repo?: string;
+  /** owner/repo of the GitHub project whose releases are the upstream. */
+  repo: string;
 }
 
 function toSource(e: PinEntry): EmbedAssetSource {
   const base = idName(e);
-  if (e.source.type === 'rsync-index')
-    return { id: e.id, base, display: e.name, kind: 'rsync-index' };
   if (e.source.type === 'github-release' && e.source.repo)
-    return { id: e.id, base, display: e.name, kind: 'github', repo: e.source.repo };
+    return { id: e.id, base, display: e.name, repo: e.source.repo };
   throw new Error(
-    `.ci/config/pins.json ${e.id}: the embed driver reads a github-release or rsync-index source, not ${e.source.type}`
+    `.ci/config/pins.json ${e.id}: the embed driver reads a github-release source, not ${e.source.type}`
   );
 }
 

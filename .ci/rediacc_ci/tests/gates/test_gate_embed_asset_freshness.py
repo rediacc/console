@@ -4,7 +4,7 @@ Integration test for `scripts/gates/check-embed-asset-freshness.ts`.
 
 Drives the gate through `EMBED_FRESHNESS_FIXTURE` (a JSON map of base -> latest version/date used instead of the network), so it runs offline and deterministically. Proves: it passes when nothing is behind, FIRES on a stale pin, DEFERS a just-released version (the shared soak), and FAILS CLOSED when a source was not compared.
 
-FAIL CLOSED (operator ruling 2026-10-13, "Everything fails closed, nightly included"), control first against a stub HTTP server (`upstream_stub.py`) that `EMBED_UPSTREAM_BASE` stands in for BOTH hosts the gate asks, api.github.com and download.samba.org: every upstream served is green and the token never reaches the stub; a port nothing listens on is RED after three attempts, with each pin, the host and path, the error code and the words "UPSTREAM REACHABILITY FAILURE"; the rsync index alone failing is RED; the tags fallback failing is RED; a failure that clears inside the retry budget is green; an answer that cannot be used is RED; a held pin is not asked and is counted. The one request whose failure is NOT a finding, the HEAD for the rsync tarball's date, is pinned in both directions: it cannot turn a current pin red, and it cannot turn a stale pin green.
+FAIL CLOSED (operator ruling 2026-10-13, "Everything fails closed, nightly included"), control first against a stub HTTP server (`upstream_stub.py`) that `EMBED_UPSTREAM_BASE` stands in for the one host the gate asks, api.github.com (rsync is read from its RsyncProject/rsync releases, never from download.samba.org): every upstream served is green and the token never reaches the stub; a port nothing listens on is RED after three attempts, with each pin, the host and path, the error code and the words "UPSTREAM REACHABILITY FAILURE"; the rsync release alone failing is RED; the tags fallback failing is RED; a failure that clears inside the retry budget is green; an answer that cannot be used is RED; a held pin is not asked and is counted. rsync is pinned in three directions: a newer release past the soak is RED, one inside the soak is deferred and green, and the pinned version equal to the latest is green.
 
 THE FIXTURE MAP IS DERIVED FROM THE SUBJECT'S OWN SOURCE LIST, not retyped. The twin hand-lists seven component keys in four separate heredocs; a component added upstream leaves all four short, and the gate's "not in fixture" branch used to turn the new component into a could-not-check that FAILED SOFT -- so the twin kept passing while covering one component less. (Since 2026-10-13 that branch is red.) Here the
 keys are obtained by IMPORTING `EMBED_ASSET_SOURCES`, the same module the gate imports, and reading `.base` off each entry. That is behaviour rather than a regex over the source: a list that moves to another file, or changes shape, breaks this loudly instead of matching nothing and quietly producing an empty map.
@@ -16,6 +16,7 @@ THE SUBMODULE-ABSENT PATH IS A REFUSAL HERE, NOT A SILENT `exit 0`; see the same
 
 import datetime
 import json
+import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
@@ -35,7 +36,7 @@ DOCKERFILE = paths.from_root("private", "renet", "Dockerfile")
 PROBE = (
     "import { EMBED_ASSET_SOURCES } from './scripts/lib/embed-asset-sources.ts';\n"
     "process.stdout.write(JSON.stringify(EMBED_ASSET_SOURCES.map((s) => "
-    "({ base: s.base, display: s.display, kind: s.kind, repo: s.repo ?? null }))));"
+    "({ base: s.base, display: s.display, repo: s.repo }))));"
 )
 
 # The gate keys its upstream map on the `base` of each source it knows about. Importing the list costs one tsx start-up, so it is paid once per pytest process rather than once per case. A ONE-SLOT DICT rather than a rebound module global: the value is memoised, not reassigned, so no `global` statement is needed.
@@ -56,7 +57,7 @@ def require_submodule(gate) -> None:
 
 
 def sources(gate) -> list[dict]:
-    """The gate's own source list: base, display, kind and repo of each embedded asset."""
+    """The gate's own source list: base, display and repo of each embedded asset."""
     if "value" in _BASES:
         return _BASES["value"]
     for path in (VALIDATOR, SOURCES):
@@ -199,10 +200,9 @@ def test_a_source_absent_from_the_fixture_is_red(gate, tmp_path):
 
 # ---- fail closed, over real HTTP ------------------------------------------------------
 #
-# EMBED_UPSTREAM_BASE points the gate at a stub that serves both hosts: the GitHub API under /repos/ and the rsync index under /pub/rsync/src/. Every source answers version 0.0.1, older than any real pin, unless a case says otherwise.
+# EMBED_UPSTREAM_BASE points the gate at a stub that serves the GitHub API under /repos/. Every source answers version 0.0.1, older than any real pin, unless a case says otherwise.
 
 LONG_AGO = "2020-01-01T00:00:00Z"
-RSYNC_INDEX = "/pub/rsync/src/"
 # The one project that tags without cutting releases, so its /releases/latest answers 404 and the gate reads its tag list.
 TAGS_ONLY = "criu"
 
@@ -215,28 +215,15 @@ def tags_route(src: dict) -> str:
     return "/repos/%s/tags" % src["repo"]
 
 
-def rsync_tarball(version: str) -> str:
-    return "%srsync-%s.tar.gz" % (RSYNC_INDEX, version)
-
-
-def rsync_index(version: str) -> tuple:
-    return ok(b'<a href="rsync-%s.tar.gz">rsync-%s.tar.gz</a>' % ((version.encode(),) * 2))
-
-
 def by_base(gate, base: str) -> dict:
     return next(src for src in sources(gate) if src["base"] == base)
 
 
 def current_script(gate) -> dict[str, list[tuple]]:
-    """A stub script in which every upstream reports 0.0.1: releases for most, the tag list and its commit for TAGS_ONLY, the Samba index and its tarball for rsync."""
+    """A stub script in which every upstream reports 0.0.1: releases for most, the tag list and its commit for TAGS_ONLY."""
     script: dict[str, list[tuple]] = {}
     for src in sources(gate):
-        if src["kind"] != "github":
-            script[RSYNC_INDEX] = [rsync_index("0.0.1")]
-            script[rsync_tarball("0.0.1")] = [
-                ok(b"", last_modified="Wed, 01 Jan 2020 00:00:00 GMT")
-            ]
-        elif src["base"] == TAGS_ONLY:
+        if src["base"] == TAGS_ONLY:
             script[tags_route(src)] = [ok([{"name": "v0.0.1"}, {"name": "v0.0.1-rc1"}])]
             script["/repos/%s/commits/v0.0.1" % src["repo"]] = [
                 ok({"commit": {"committer": {"date": LONG_AGO}}})
@@ -282,8 +269,9 @@ def test_control_every_upstream_served_over_http_is_green(gate, tmp_path):
         )
         gate.assert_eq(stub.asked(latest_route(criu)), 1, "a 404 on releases/latest is not retried")
         gate.assert_eq(stub.asked(tags_route(criu)), 1, "the tag list is the fallback")
-        gate.assert_eq(stub.asked(RSYNC_INDEX), 1, "the rsync index is asked")
-        gate.assert_eq(stub.asked(rsync_tarball("0.0.1"), "HEAD"), 1, "the tarball date is asked")
+        gate.assert_eq(
+            stub.asked(latest_route(by_base(gate, "rsync"))), 1, "the rsync release is asked"
+        )
         gate.assert_eq(stub.tokens_seen(), 0, "the token is not sent to a seam")
     gate.log_pass("the stub upstreams, answering, are green")
 
@@ -321,8 +309,8 @@ def test_an_unreachable_upstream_is_red(gate, tmp_path):
     gate.assert_contains(
         result.err,
         "GET 127.0.0.1:%d%s -> network error ECONNREFUSED, after 3 attempt(s)"
-        % (port, RSYNC_INDEX),
-        "the rsync index is a finding too",
+        % (port, latest_route(by_base(gate, "rsync"))),
+        "the rsync release is a finding too",
     )
     gate.assert_contains(result.err, "zot (pinned ", "a finding names its pin")
     gate.assert_contains(
@@ -336,21 +324,22 @@ def test_an_unreachable_upstream_is_red(gate, tmp_path):
     gate.log_pass("unreachable upstreams are red after three attempts")
 
 
-def test_the_rsync_index_alone_failing_is_red(gate, tmp_path):
-    """The second host. GitHub answering does not make the Samba index optional."""
+def test_the_rsync_release_alone_failing_is_red(gate, tmp_path):
+    """GitHub answering for the other pins does not make rsync optional, and no host but api.github.com is asked."""
     require_submodule(gate)
     script = current_script(gate)
-    script[RSYNC_INDEX] = [status(503)]
+    route = latest_route(by_base(gate, "rsync"))
+    script[route] = [status(503)]
     with stub_upstream(script) as stub:
         result = run_gate_over_http(tmp_path, stub.base)
-        gate.assert_eq(stub.asked(RSYNC_INDEX), 3, "a 5xx is asked three times and no more")
-    gate.assert_exit(1, result, "the rsync index not answering fails closed")
+        gate.assert_eq(stub.asked(route), 3, "a 5xx is asked three times and no more")
+    gate.assert_exit(1, result, "the rsync release not answering fails closed")
     gate.assert_contains(result.err, "1 embed-asset pin(s) were NOT compared", "one finding")
     gate.assert_contains(
-        result.err, "%s -> HTTP 503, after 3 attempt(s)" % RSYNC_INDEX, "path, status and attempts"
+        result.err, "%s -> HTTP 503, after 3 attempt(s)" % route, "path, status and attempts"
     )
     gate.assert_contains(result.err, "rsync (pinned ", "the finding names the pin")
-    gate.log_pass("the rsync index failing is red by itself")
+    gate.log_pass("the rsync release failing is red by itself")
 
 
 def test_the_tags_fallback_failing_is_red(gate, tmp_path):
@@ -376,12 +365,13 @@ def test_a_transient_failure_then_success_is_green(gate, tmp_path):
     script = current_script(gate)
     zot = by_base(gate, "zot")
     script[latest_route(zot)].insert(0, status(503))
-    script[RSYNC_INDEX].insert(0, (429, {"retry-after": "1"}, {}))
+    rsync_route = latest_route(by_base(gate, "rsync"))
+    script[rsync_route].insert(0, (429, {"retry-after": "1"}, {}))
     count = len(sources(gate))
     with stub_upstream(script) as stub:
         result = run_gate_over_http(tmp_path, stub.base)
         gate.assert_eq(stub.asked(latest_route(zot)), 2, "the 503 is asked again once")
-        gate.assert_eq(stub.asked(RSYNC_INDEX), 2, "the 429 is asked again once")
+        gate.assert_eq(stub.asked(rsync_route), 2, "the 429 is asked again once")
     gate.assert_exit(0, result, "a failure that clears inside the retry budget passes")
     gate.assert_contains(result.err, "attempt 1 of 3 failed (HTTP 503)", "the retry is visible")
     gate.assert_contains(
@@ -395,41 +385,60 @@ def test_an_answer_that_cannot_be_used_is_red(gate, tmp_path):
     script = current_script(gate)
     zot = by_base(gate, "zot")
     script[latest_route(zot)] = [ok({"message": "a release with no tag"})]
-    script[RSYNC_INDEX] = [ok(b"<html>an index with no tarball</html>")]
+    script[latest_route(by_base(gate, "rsync"))] = [ok({"message": "a release with no tag"})]
     with stub_upstream(script) as stub:
         result = run_gate_over_http(tmp_path, stub.base)
     gate.assert_exit(1, result, "an answer the gate cannot read would pass forever if soft")
     gate.assert_contains(result.err, "cannot use", "the error says the answer is unusable")
     gate.assert_contains(result.err, "no tag_name in release", "the release is named")
-    gate.assert_contains(result.err, "no rsync tarballs found in index", "the index is named")
+    gate.assert_contains(
+        result.err,
+        "rsync (RsyncProject/rsync): no tag_name in release",
+        "the rsync release is named too",
+    )
     gate.assert_not_contains(
         result.err, "NOT compared", "an unusable answer is not a network failure"
     )
     gate.log_pass("an answer that cannot be used is red")
 
 
-def test_the_rsync_date_request_failing_cannot_change_a_verdict_to_green(gate, tmp_path):
-    """The one request whose failure is not a finding. CONTROL: with rsync current, the HEAD failing leaves the gate green and says so. THE DIRECTION THAT MATTERS: with rsync stale, the HEAD failing leaves it RED (no date means no soak)."""
-    require_submodule(gate)
+def rsync_release_script(gate, version: str, published_at: str) -> dict[str, list[tuple]]:
     script = current_script(gate)
-    script[rsync_tarball("0.0.1")] = [status(503)]
-    with stub_upstream(script) as stub:
-        current = run_gate_over_http(tmp_path, stub.base)
-        gate.assert_eq(stub.asked(rsync_tarball("0.0.1"), "HEAD"), 3, "the HEAD is retried")
-    gate.assert_exit(0, current, "a current rsync with no date is still current")
-    gate.assert_contains(current.out, "no publish date for 0.0.1", "the failure is printed")
-    gate.assert_contains(current.out, "judged without the soak", "and what it means")
+    script[latest_route(by_base(gate, "rsync"))] = [
+        ok({"tag_name": "v%s" % version, "published_at": published_at})
+    ]
+    return script
 
-    stale = current_script(gate)
-    stale[RSYNC_INDEX] = [rsync_index("9999.0.0")]
-    stale[rsync_tarball("9999.0.0")] = [status(503)]
-    with stub_upstream(stale) as stub:
-        behind = run_gate_over_http(tmp_path, stub.base)
-    gate.assert_exit(
-        1, behind, "a stale rsync with no date is reported, not deferred and not skipped"
+
+def pinned_rsync() -> str:
+    match = re.search(
+        r"^ARG RSYNC_VERSION=(\S+)", DOCKERFILE.read_text(encoding="utf-8"), re.MULTILINE
     )
+    assert match, "no ARG RSYNC_VERSION in the Dockerfile"
+    return match.group(1)
+
+
+def test_rsync_is_judged_on_its_github_release_and_soak(gate, tmp_path):
+    """Three directions on the rsync release: past the soak is RED, inside it is deferred and green, equal to the pin is green. The red case names the newer version, so the greens are not a gate that stopped looking."""
+    require_submodule(gate)
+    with stub_upstream(rsync_release_script(gate, "9999.0.0", LONG_AGO)) as stub:
+        behind = run_gate_over_http(tmp_path, stub.base)
+    gate.assert_exit(1, behind, "a newer rsync release past the soak is red")
+    gate.assert_contains(behind.err, "rsync: pinned ", "the finding names rsync")
     gate.assert_contains(behind.err, "upstream 9999.0.0", "the finding names the newer version")
-    gate.log_pass("the rsync date request failing never produces a green that hides a stale pin")
+
+    fresh_at = (datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(hours=1)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    with stub_upstream(rsync_release_script(gate, "9999.0.0", fresh_at)) as stub:
+        soaking = run_gate_over_http(tmp_path, stub.base)
+    gate.assert_exit(0, soaking, "a newer rsync release inside the soak is deferred, not red")
+    gate.assert_contains(soaking.out, "rsync: 9999.0.0 just released", "the deferral is printed")
+
+    with stub_upstream(rsync_release_script(gate, pinned_rsync(), LONG_AGO)) as stub:
+        same = run_gate_over_http(tmp_path, stub.base)
+    gate.assert_exit(0, same, "the pinned version equal to the latest release is green")
+    gate.log_pass("rsync is red past the soak, deferred inside it, and green when current")
 
 
 def test_a_held_pin_is_not_asked_and_is_counted(gate, tmp_path):

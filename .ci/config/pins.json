@@ -297,7 +297,8 @@
       "name": "rsync",
       "driver": "embed",
       "source": {
-        "type": "rsync-index"
+        "type": "github-release",
+        "repo": "RsyncProject/rsync"
       },
       "safety": {
         "mode": "release-age",

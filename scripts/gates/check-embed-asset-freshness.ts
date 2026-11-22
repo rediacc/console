@@ -32,25 +32,22 @@
  *    every external gate, in scripts/lib/upstream.ts. The pins are asked
  *    concurrently.
  *  - AN ANSWER THAT CANNOT BE USED IS RED TOO: a release with no tag, a tag
- *    list with no stable version, an rsync index with no tarball. The gate has
+ *    list with no stable version. The gate has
  *    stopped seeing that upstream.
  *  - A SOURCE WITH NO `ARG <BASE>_VERSION` IN THE DOCKERFILE IS RED on a check
  *    run: nothing was compared for it.
  *
  * UPSTREAMS ASKED, all of them:
- *  1. api.github.com `GET /repos/<owner>/<repo>/releases/latest`, for the six
- *     GitHub sources in scripts/lib/embed-asset-sources.ts.
+ *  1. api.github.com `GET /repos/<owner>/<repo>/releases/latest`, for the seven
+ *     GitHub sources in scripts/lib/embed-asset-sources.ts (rsync included, read
+ *     from RsyncProject/rsync with its release `published_at` as the soak date:
+ *     download.samba.org is not asked, because its outage on 2026-11-22 blocked a
+ *     pull request for a third party's downtime).
  *  2. api.github.com `GET /repos/<owner>/<repo>/tags`, then
  *     `GET /repos/<owner>/<repo>/commits/<tag>` for the tag's date, when (1)
  *     answers 404: a project that tags without cutting releases (CRIU). A 404
  *     on (1) is that documented fallback and is not a finding by itself; any
  *     failure of the two follow-up requests is.
- *  3. download.samba.org `GET /pub/rsync/src/`, the rsync source index.
- *  4. download.samba.org `HEAD /pub/rsync/src/rsync-<v>.tar.gz`, for the
- *     tarball's Last-Modified. This one request is NOT a finding when it fails:
- *     the version comparison has already happened, a missing date means no soak,
- *     and no soak makes a newer rsync red sooner, never green. The failure is
- *     printed with its host.
  *
  * HARD ON EVERY CADENCE. The step runs `npm run check:ci-embed-asset-freshness`
  * directly, with no wrapper, so an exit 1 is red on a pull
@@ -98,7 +95,6 @@ import { bumpRemedy } from '../lib/pins/remedy.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import {
-  askUpstream,
   githubAsker,
   NotCompared,
   PinTally,
@@ -111,9 +107,8 @@ const DOCKERFILE = path.join(CONSOLE_ROOT, 'private/renet/Dockerfile');
 // Test seam: EMBED_BLOCKLIST_FILE points at a fixture blocklist so the gate test can prove the BLOCKER-reason validation fires without mutating the real, tracked .embed-assets-upgrade-blocklist.
 const BLOCKLIST =
   process.env.EMBED_BLOCKLIST_FILE || policyPath('.embed-assets-upgrade-blocklist', CONSOLE_ROOT);
-// Test seam: EMBED_UPSTREAM_BASE stands ONE base in for both hosts this gate asks, so its test can serve them from a stub HTTP server and an offline run can be driven by hand: the GitHub API is read at `<base>/repos/...` and the rsync index at `<base>/pub/rsync/src/`. The token is never sent to it.
+// Test seam: EMBED_UPSTREAM_BASE stands in for the GitHub API, so its test can serve it from a stub HTTP server and an offline run can be driven by hand: the API is read at `<base>/repos/...`. The token is never sent to it.
 const UPSTREAM_OVERRIDE = process.env.EMBED_UPSTREAM_BASE;
-const RSYNC_INDEX = `${UPSTREAM_OVERRIDE || 'https://download.samba.org'}/pub/rsync/src/`;
 const USER_AGENT = 'rediacc-embed-asset-freshness';
 
 interface Latest {
@@ -145,11 +140,6 @@ function isNewer(latest: string, pinned: string): boolean {
 
 /** One GitHub REST call for a pin, with the shared retry. The token goes to api.github.com and to nothing the seam points at. */
 const githubJson = githubAsker(USER_AGENT, UPSTREAM_OVERRIDE);
-
-/** A plain GET of a text resource, with the shared retry and no token. */
-async function fetchText(url: string, who: string): Promise<string> {
-  return (await askUpstream({ url, headers: { 'User-Agent': USER_AGENT }, who })).body;
-}
 
 /**
  * Test seam: EMBED_FRESHNESS_FIXTURE points at a JSON map
@@ -191,38 +181,6 @@ async function latestTag(repo: string, who: string): Promise<Latest> {
   return { version: newest, publishedAt: date ? new Date(date) : null };
 }
 
-/** The newest rsync in the Samba source index, dated by its tarball's Last-Modified. */
-async function latestRsync(who: string): Promise<Latest> {
-  const html = await fetchText(RSYNC_INDEX, who);
-  const versions = [...html.matchAll(/rsync-(\d+\.\d+\.\d+)\.tar\.gz/g)].map((m) => m[1]);
-  if (versions.length === 0) throw new UnreadableListing('no rsync tarballs found in index');
-  versions.sort((a, b) => (isNewer(a, b) ? 1 : -1));
-  const newestRsync = versions[versions.length - 1];
-
-  // Same reasoning as the tag path: the Samba index has no publish column that can be trusted, so take the tarball's Last-Modified header. rsync would otherwise be the second component with no soak.
-  let rsyncPublished: Date | null = null;
-  try {
-    const head = await askUpstream({
-      url: `${RSYNC_INDEX}rsync-${newestRsync}.tar.gz`,
-      headers: { 'User-Agent': USER_AGENT },
-      who,
-      method: 'HEAD',
-    });
-    const lastModified = head.headers.get('last-modified');
-    if (lastModified) {
-      const parsed = new Date(lastModified);
-      if (!Number.isNaN(parsed.getTime())) rsyncPublished = parsed;
-    }
-  } catch (err) {
-    if (!(err instanceof NotCompared)) throw err;
-    // NOT a finding, and not a skipped comparison: the version above is already known. A null date means no soak, so a newer rsync is reported at once; this failure can only make the gate redder.
-    console.log(
-      `${YELLOW}? ${who}: no publish date for ${newestRsync} (${err.message}); judged without the soak${NC}`
-    );
-  }
-  return { version: newestRsync, publishedAt: rsyncPublished };
-}
-
 /** Latest stable release for a source. Throws NotCompared when upstream's answer was not obtained and UnreadableListing when it cannot be used. */
 async function latestFor(src: Source): Promise<Latest> {
   const fixture = loadFixture();
@@ -234,7 +192,6 @@ async function latestFor(src: Source): Promise<Latest> {
       publishedAt: hit.publishedAt ? new Date(hit.publishedAt) : null,
     };
   }
-  if (src.kind !== 'github') return latestRsync(src.display);
   // /releases/latest excludes prereleases and drafts: the stable line this gate tracks.
   let rel: { tag_name?: string; published_at?: string } | null;
   try {
@@ -242,7 +199,7 @@ async function latestFor(src: Source): Promise<Latest> {
   } catch (err) {
     // Projects that tag but never cut GitHub "releases" (e.g. CRIU) 404 on /releases/latest: fall back to the tags list and take the highest stable vX.Y.Z. Every other failure is a pin that was not compared.
     if (!(err instanceof NotCompared && err.status === 404)) throw err;
-    return latestTag(src.repo ?? '', src.display);
+    return latestTag(src.repo, src.display);
   }
   if (!rel?.tag_name) throw new UnreadableListing('no tag_name in release');
   return {
@@ -303,14 +260,14 @@ async function main(): Promise<void> {
       continue;
     }
     if ('err' in answer) {
-      const source = `${src.display} (${src.repo ?? 'rsync index'})`;
+      const source = `${src.display} (${src.repo})`;
       tally.failed(`${src.display} (pinned ${pinned})`, source, answer.err);
       continue;
     }
     tally.compared++;
     const latest = answer.value;
     if (!isNewer(latest.version, pinned)) continue;
-    // FAIL-OPEN on a missing publish date (git tags, the rsync index): unlike the npm-dep gate it is flagged, because a dateless source must still surface a stale pin. With a date, apply the shared soak.
+    // FAIL-OPEN on a missing publish date (git tags): unlike the npm-dep gate it is flagged, because a dateless source must still surface a stale pin. With a date, apply the shared soak.
     if (
       latest.publishedAt !== null &&
       isWithinFreshnessWindow(latest.publishedAt.getTime(), nowMs, minReleaseAgeMs)

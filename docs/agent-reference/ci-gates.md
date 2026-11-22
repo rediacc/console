@@ -365,14 +365,12 @@ What each gate asks, and what a definite answer means:
 |---|---|---|
 | `check:ci-real-provider-pins` | api.github.com `GET /repos/<repo>/releases`, for bitwarden/clients and dani-garcia/vaultwarden | a listing with no stable release under the tag prefix |
 | `check:ci-devcontainer-pins` | api.github.com `GET /repos/<repo>/releases`, for each repository in `scripts/lib/devcontainer-pin-sources.ts` | the same |
-| `check:ci-embed-asset-freshness` | api.github.com `GET /repos/<repo>/releases/latest` for each GitHub source in `scripts/lib/embed-asset-sources.ts`, and on a 404 (a project that tags without releasing, CRIU) `GET /repos/<repo>/tags` then `GET /repos/<repo>/commits/<tag>`; download.samba.org `GET /pub/rsync/src/` and `HEAD /pub/rsync/src/rsync-<v>.tar.gz` | an index with no tarball |
+| `check:ci-embed-asset-freshness` | api.github.com `GET /repos/<repo>/releases/latest` for each GitHub source in `scripts/lib/embed-asset-sources.ts`, and on a 404 (a project that tags without releasing, CRIU) `GET /repos/<repo>/tags` then `GET /repos/<repo>/commits/<tag>` (rsync is one of them, read from `RsyncProject/rsync`; download.samba.org is not asked) | a release with no tag |
 | `check:actions` | api.github.com `GET /repos/<owner>/<repo>/releases/latest`, for every action pinned under `.github` | a 404 (no published release) or a pin with no version comment |
 | `check:ci-external-links` | every linked host, `HEAD` then `GET` | a 4xx after the GET fallback is a BROKEN link; only no answer, a 5xx, a 408 or a 429 is an outage. Once 20 links in a row went unanswered with no host answering at all, the rest are not asked and the run says so |
 | `check:ci-dkim-notify` | 1.1.1.1 then 8.8.8.8, TXT for the active selector and MX for the three MAIL FROM names | NXDOMAIN or NODATA is a missing record, a DNS finding |
 | `check:ci-go-deps` | the module proxy through `go list -u -m -json all`, and `POST api.osv.dev/v1/query` for each candidate | a `go list` failure that is not network-shaped stays the toolchain probe failure; an OSV that cannot be asked is red, where it used to be a warning and an unscreened demand |
 | `check:deps` | the npm registry | a registry that does not answer is a `DepsProbeError`, red, worded as its own message rather than the shared sentence |
-
-One request is not a finding when it fails: the `HEAD` for the rsync tarball's date. The version comparison has already happened by then, a missing date means no soak, and no soak can only report a newer rsync sooner. The gate prints the failure with its host.
 
 **The nightly goes red on an upstream blip, on purpose.** Nothing in the tree fixes that red: the failed job is re-run once the host answers (`gh run rerun <run-id> --failed`), and a green re-run attempt clears the scheduled red.
 `ci-trace.py --why` and the Stop hook's scheduled-red block name it `infra-likely`, signature `upstream-unreachable`, so it is not read as an unknown or as a defect on main; a confirmed stale pin reads `code-likely`, `pin-stale`, and its fix is the bump the message prints.

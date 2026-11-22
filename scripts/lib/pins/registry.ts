@@ -63,7 +63,6 @@ export const SOURCE_TYPES = [
   'obs-repomd',
   'quay-tags',
   'dockerhub',
-  'rsync-index',
   'none',
 ] as const;
 export type SourceType = (typeof SOURCE_TYPES)[number];

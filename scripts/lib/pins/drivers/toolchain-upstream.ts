@@ -302,28 +302,3 @@ export async function goModuleVersions(
   }
   return out;
 }
-
-/** The newest `limit` rsync tarballs in the Samba source index, each dated by its Last-Modified. */
-export async function rsyncVersions(
-  up: Upstream,
-  who: string,
-  current: string | null,
-  limit = 5
-): Promise<Dated[]> {
-  const index = 'https://download.samba.org/pub/rsync/src/';
-  const html = await up.text(index, who);
-  const found = [
-    ...new Set([...html.matchAll(/rsync-(\d+\.\d+\.\d+)\.tar\.gz/g)].map((m) => m[1])),
-  ];
-  if (found.length === 0) throw new UnreadableListing('no rsync tarballs found in the index');
-  const out: Dated[] = [];
-  for (const c of newerThan(byNewest(found.map((version) => ({ version }))), current).slice(
-    0,
-    limit
-  ))
-    out.push({
-      version: c.version,
-      publishedMs: await up.lastModified(`${index}rsync-${c.version}.tar.gz`, who),
-    });
-  return out;
-}

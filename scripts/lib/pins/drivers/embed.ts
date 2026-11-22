@@ -51,7 +51,6 @@ import {
   compareVersions,
   gh,
   githubReleases,
-  rsyncVersions,
   type Upstream,
 } from './toolchain-upstream.js';
 
@@ -103,15 +102,11 @@ export function createEmbedDriver(up: Upstream, mutant: EmbedMutant | null = nul
     const current = leafCurrent(entry, ctx);
     const who = entry.name;
     const dated =
-      entry.source.type === 'rsync-index'
-        ? await rsyncVersions(up, who, current)
-        : entry.source.type === 'github-release' && entry.source.repo
-          ? await githubReleases(up, entry.source.repo, entry.source.tagPrefix ?? 'v', who, current)
-          : null;
+      entry.source.type === 'github-release' && entry.source.repo
+        ? await githubReleases(up, entry.source.repo, entry.source.tagPrefix ?? 'v', who, current)
+        : null;
     if (dated === null)
-      throw new Error(
-        `the embed driver reads a github-release or rsync-index source, not ${entry.source.type}`
-      );
+      throw new Error(`the embed driver reads a github-release source, not ${entry.source.type}`);
     const newer = dated
       .filter((r) => current === null || compareVersions(r.version, current) > 0)
       .map((r): Release => ({ version: r.version, publishedMs: r.publishedMs }));
