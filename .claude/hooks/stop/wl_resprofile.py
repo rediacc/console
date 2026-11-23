@@ -59,6 +59,10 @@ _TMP_SLUG = re.compile(r"^(tmp|var-tmp)-|pytest-of-")
 # Raw day folders older than this are pruned by fold(). Two weeks is enough to bisect a regression; the ROLLUP and RANK.md are kept forever and are what anyone actually reads.
 RAW_RETENTION_DAYS = 14
 EWMA_ALPHA = 0.3
+# A Bash tool call's id: `<pid>-<start ns>`, exported once by bash_env.sh and inherited by every process the call starts.
+CALL_ID = re.compile(r"^\d+-\d+$")
+# Days whose per-id counts stay in the rollup (the percentiles of older days are kept, the ids dropped).
+CALL_IDS_DAYS = 2
 _T0 = time.monotonic()
 _PSI0: dict[str, int] = {}
 # install() has armed this process. Module state, not the environment: a child inherits the environment, never this.
@@ -181,6 +185,12 @@ def store_paths() -> tuple[Path, Path] | None:
     return d / "exit.jsonl", stats_root() / "rollup.json"
 
 
+def _call_field() -> dict[str, str]:
+    """{"call": <id>} when this process descends from a profiled Bash tool call, else nothing: a malformed value is left out rather than recorded."""
+    call = os.environ.get("BASHCOV_CALL", "")
+    return {"call": call} if CALL_ID.match(call) else {}
+
+
 def record(argv: list[str] | None = None) -> dict | None:
     """The tier-0 record for THIS process, or None when out of scope / switched off."""
     if os.environ.get("WORKLIST_PROFILE") == "off":
@@ -209,6 +219,7 @@ def record(argv: list[str] | None = None) -> dict | None:
         "v": 1,
         "t": int(time.time() * 1000),
         "shape": shape_key(argv),
+        **_call_field(),
         "wall_ms": int((time.monotonic() - _T0) * 1000),
         "cpu_ms": int((rs.ru_utime + rs.ru_stime) * 1000),
         "child_cpu_ms": int((rc.ru_utime + rc.ru_stime) * 1000),
@@ -285,6 +296,70 @@ def fold(paths: tuple[Path, Path] | None = None) -> dict | None:
         return None
 
 
+def _read_new(path: Path, cursors: dict) -> tuple[bytes, int]:
+    """The bytes of `path` past its stored cursor and the length of their complete-line prefix; the cursor moves to the end of that prefix."""
+    start = int(cursors.get(str(path), 0))
+    try:
+        with open(path, "rb") as fh:
+            size = os.fstat(fh.fileno()).st_size
+            if start > size:
+                start = 0  # the stream was replaced under the cursor: fold it from the top
+            fh.seek(start)
+            data = fh.read(size - start)
+    except OSError:
+        data = b""
+    end = data.rfind(b"\n") + 1
+    cursors[str(path)] = start + end
+    return data, end
+
+
+def _fold_calls(roll: dict, t0: Path, cursors: dict, exit_rows: list[dict]) -> None:
+    """Per-call process counts: every row of one Bash tool call carries the same `call` id (bash_env.sh exports it once), so a call's process count is the number of rows with its id.
+
+    Rows from exit.jsonl (python processes) and its sibling bash.jsonl (the supervisor's shells) are counted together. A row without a usable id is UNKEYED: counted per day and in `unkeyed_rows`, never merged into a call and never dropped. The per-id counts are kept for the last CALL_IDS_DAYS days only, so a call whose rows span two folds still adds up; the percentiles are recomputed from them each fold.
+    """
+    rows = list(exit_rows)
+    data, end = _read_new(t0.parent / "bash.jsonl", cursors)
+    for ln in data[:end].decode("utf-8", "replace").splitlines():
+        try:
+            row = json.loads(ln)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and row.get("shape") and not row.get("fixture"):
+            rows.append(row)
+    ids = roll.setdefault("call_ids", {})
+    per_call = roll.setdefault("per_call", {})
+    for row in rows:
+        t = row.get("t")
+        day = (
+            time.strftime("%Y-%m-%d", time.gmtime(t / 1000))
+            if isinstance(t, int)
+            else t0.parent.name
+        )
+        call = row.get("call")
+        if isinstance(call, str) and CALL_ID.match(call):
+            slot = ids.setdefault(day, {})
+            slot[call] = int(slot.get(call, 0)) + 1
+        else:
+            ent = per_call.setdefault(day, {})
+            ent["unkeyed"] = int(ent.get("unkeyed", 0)) + 1
+            roll["unkeyed_rows"] = int(roll.get("unkeyed_rows", 0)) + 1
+    for day, slot in ids.items():
+        counts = sorted(slot.values())
+        ent = per_call.setdefault(day, {})
+        ent.update(calls=len(counts), p50=_pct(counts, 50), p90=_pct(counts, 90), max=counts[-1])
+    for old in sorted(ids)[:-CALL_IDS_DAYS]:
+        del ids[old]
+    for old in sorted(per_call)[:-DAYS_KEEP]:
+        del per_call[old]
+
+
+def _pct(sorted_counts: list[int], pct: int) -> int:
+    """Nearest-rank percentile of an ascending list."""
+    rank = -(-len(sorted_counts) * pct // 100)
+    return sorted_counts[max(rank, 1) - 1]
+
+
 def _stop_process() -> bool:
     """True when this process is worklist.py running a Stop (its `_RUN["stop"]` flag)."""
     run = getattr(sys.modules.get("__main__"), "_RUN", None)
@@ -302,19 +377,9 @@ def _fold_locked(roll: dict, t0: Path, t1: Path) -> dict | None:
         lines_done = int(roll["cursor"][str(t0)])
         with contextlib.suppress(OSError), open(t0, "rb") as fh:
             cursors[str(t0)] = sum(len(next(fh, b"")) for _ in range(lines_done))
-    start = int(cursors.get(str(t0), 0))
-    try:
-        with open(t0, "rb") as fh:
-            size = os.fstat(fh.fileno()).st_size
-            if start > size:
-                start = 0  # the stream was replaced under the cursor: fold it from the top
-            fh.seek(start)
-            data = fh.read(size - start)
-    except OSError:
-        data = b""
-    end = data.rfind(b"\n") + 1
-    cursors[str(t0)] = start + end
+    data, end = _read_new(t0, cursors)
     roll.pop("cursor", None)
+    exit_rows: list[dict] = []
     for ln in data[:end].decode("utf-8", "replace").splitlines():
         try:
             rec = json.loads(ln)
@@ -327,6 +392,7 @@ def _fold_locked(roll: dict, t0: Path, t1: Path) -> dict | None:
             n_fixture += 1
             continue
         n_lines += 1
+        exit_rows.append(rec)
         ent = shapes.setdefault(canonical_shape(rec["shape"]), {"n": 0})
         ent["n"] = int(ent.get("n", 0)) + 1
         if isinstance(rec.get("t"), int):
@@ -344,6 +410,7 @@ def _fold_locked(roll: dict, t0: Path, t1: Path) -> dict | None:
             slot = ent.setdefault(key, {"ewma": val, "recent": []})
             slot["ewma"] = round(slot["ewma"] * (1 - EWMA_ALPHA) + val * EWMA_ALPHA)
             slot["recent"] = ([*slot.get("recent", []), val])[-RECENT_KEEP:]
+    _fold_calls(roll, t0, cursors, exit_rows)
     roll["format"] = 1
     roll["pruned"] = prune_all_daily()
     roll["refreshed_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())

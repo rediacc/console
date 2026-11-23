@@ -414,3 +414,99 @@ def test_the_walk_runs_once_a_day(tmp_path):
 )
 def test_canonical_shape(shape, want):
     assert R.canonical_shape(shape) == want
+
+
+# ---- per-call process counts (PLAN-tooling-speed SP8) ----------------------------
+
+
+def fold_calls(tmp_path, monkeypatch, exit_rows, bash_rows=()):
+    monkeypatch.setenv("RESPROFILE_ROOT", str(tmp_path / "rp"))
+    day = tmp_path / "rp" / "2025-11-23"
+    day.mkdir(parents=True)
+    (day / "exit.jsonl").write_text(
+        "".join(json.dumps(r) + "\n" for r in exit_rows), encoding="utf-8"
+    )
+    (day / "bash.jsonl").write_text(
+        "".join(json.dumps({"src": "sup", "shape": "sh:-c", **r}) + "\n" for r in bash_rows),
+        encoding="utf-8",
+    )
+    return R.fold((day / "exit.jsonl", tmp_path / "rp" / "rollup.json"))
+
+
+def test_two_calls_report_their_own_process_counts(tmp_path, monkeypatch):
+    """A call of 3 processes and a call of 5 (python and shell rows alike) fold to 3 and 5, never one merged 8."""
+    a = [rec("py:a.py", DAY1, call="10-111")] * 2
+    b = [rec("py:b.py", DAY1, call="20-222")] * 3
+    roll = fold_calls(
+        tmp_path,
+        monkeypatch,
+        a + b,
+        [
+            {"call": "10-111", "t": DAY1},
+            {"call": "20-222", "t": DAY1},
+            {"call": "20-222", "t": DAY1},
+        ],
+    )
+    day = roll["per_call"]["2025-11-23"]
+    assert (day["calls"], day["max"], day["p50"], day["p90"]) == (2, 5, 3, 5)
+    assert day.get("unkeyed", 0) == 0
+    assert roll.get("unkeyed_rows", 0) == 0
+
+
+def test_rows_without_an_id_are_unkeyed_never_merged(tmp_path, monkeypatch):
+    """CONTROL: no id, no call. The rows are counted as unkeyed in the day and in the rollup summary."""
+    roll = fold_calls(
+        tmp_path,
+        monkeypatch,
+        [rec("py:a.py", DAY1)] * 3,
+        [{"pid": 1}] * 5 + [{"call": "not an id", "t": DAY1}],
+    )
+    day = roll["per_call"]["2025-11-23"]
+    assert day["unkeyed"] == 9
+    assert "calls" not in day
+    assert roll["unkeyed_rows"] == 9
+
+
+def test_a_call_split_across_two_folds_adds_up(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        R, "prune_all_daily", lambda: None
+    )  # a pytest temp slug is pruned by the first fold
+    fold_calls(tmp_path, monkeypatch, [rec("py:a.py", DAY1, call="10-111")] * 2)
+    exit_f = tmp_path / "rp" / "2025-11-23" / "exit.jsonl"
+    with exit_f.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(rec("py:a.py", DAY1, call="10-111")) + "\n")
+    roll = R.fold((exit_f, tmp_path / "rp" / "rollup.json"))
+    assert roll["per_call"]["2025-11-23"]["max"] == 3
+
+
+def test_a_python_row_carries_the_call_id_only_when_well_formed(monkeypatch):
+    monkeypatch.setenv("BASHCOV_CALL", "10-111")
+    assert R._call_field() == {"call": "10-111"}
+    monkeypatch.setenv("BASHCOV_CALL", "x; rm")
+    assert R._call_field() == {}
+    monkeypatch.delenv("BASHCOV_CALL")
+    assert R._call_field() == {}
+
+
+def test_bash_env_exports_one_call_id_to_the_whole_tree(tmp_path):
+    """The shell and its nested shell see the same `<pid>-<ns>` id; a malformed inherited value is replaced. Skipped when no supervisor is installed (the id rides the profiled branch)."""
+    sup = pathlib.Path.home() / ".local/share/rediacc/bin/bashcov-sup"
+    if not (sup.is_file() or pathlib.Path("/usr/local/bin/bashcov-sup").is_file()):
+        pytest.skip("no bashcov-sup on this machine")
+    env = child_env(tmp_path, BASH_ENV=str(PROFILE / "bash_env.sh"))
+    # The supervisor is found by absolute path under HOME: link it into the test's own home so its records land there.
+    link = tmp_path / "home" / ".local/share/rediacc/bin/bashcov-sup"
+    link.parent.mkdir(parents=True)
+    link.symlink_to(sup if sup.is_file() else "/usr/local/bin/bashcov-sup")
+    env["BASHCOV_CALL"] = "junk"
+    got = subprocess.run(
+        ["bash", "-c", 'echo "$BASHCOV_CALL"; bash -c \'echo "$BASHCOV_CALL"\''],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    first, second = got.stdout.split()
+    assert first == second
+    assert R.CALL_ID.match(first)

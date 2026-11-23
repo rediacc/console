@@ -135,6 +135,15 @@ elif [[ $- != *i* ]] && {
         __bashcov_shape='sh:-s'
     fi
     export BASHCOV_SHAPE="$__bashcov_shape"
+    # THE PER-CALL ID. One Bash tool call is one process tree, and bash.jsonl rows
+    # carried nothing that groups them (grouping by parent pid gave a max of 1630,
+    # not a per-call count). The first profiled shell of a call exports
+    # `<pid>-<start ns>`; every descendant inherits it, so wl_resprofile's fold
+    # counts one call's processes by id. A malformed inherited value is replaced.
+    [[ ${BASHCOV_CALL:-} =~ ^[0-9]+-[0-9]+$ ]] || {
+        __bashcov_t=${EPOCHREALTIME:-0}
+        export BASHCOV_CALL="$$-${__bashcov_t/./}000"
+    }
     __bashcov_f=''
     for __bashcov_c in a b e f k m n p t u v B C E H P T; do [[ $- == *$__bashcov_c* ]] && __bashcov_f+=$__bashcov_c; done
     ((__bashcov_x)) && __bashcov_f+=x

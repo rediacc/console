@@ -555,7 +555,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_reggate.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_renettests.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_report.py | SubagentStop | settings.json | py |
-| .claude/hooks/stop/wl_resprofile.py | (none) | via .claude/hooks/profile/py/sitecustomize.py | py |
+| .claude/hooks/stop/wl_resprofile.py | (none) | via .claude/hooks/profile/bash_env.sh | py |
 | .claude/hooks/stop/wl_ressample.py | (none) | via .claude/hooks/stop/wl_common.py | py |
 | .claude/hooks/stop/wl_retro.py | (none) | via .claude/hooks/context/ctx_budget.py | py |
 | .claude/hooks/stop/wl_review.py | (none) | via .claude/hooks/post-bash/review_commit.py | py |
