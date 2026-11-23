@@ -220,6 +220,8 @@ export interface PoolOptions {
   releaseWindowMs?: number;
   /** How often a pool with a held gate beside a running elastic gate re-reads the busy cores, ms (default RELEASE_POLL_MS). The selftest shortens it. */
   releasePollMs?: number;
+  /** Load-aware admission (LoadGate). Absent means the budget and the lease alone decide, as before it existed. */
+  load?: LoadGate;
 }
 
 /**
@@ -299,6 +301,61 @@ const RECLAIM_BUCKET_MS = 2_000;
 export const RECLAIM_HEADROOM = 1;
 export const BORROW_WALL_MS = 60_000;
 export const RECLAIM_POLL_MS = 2_000;
+
+/**
+ * LOAD-AWARE ADMISSION (PLAN-ciquick-cpu L1). The core lease counts only its own clients, so writers, builds and another tree's run raise the machine's load beyond it (2026-11-21: load 39 on 24 cores). While the 1-minute load average exceeds `cores x (1 + margin)` the pool starts no gate, for at most `maxWaitMs` from the first hold; past the bound it starts gates again and stays released until the load has fallen under the line once, so a machine that never calms costs one bounded wait, not one per gate.
+ */
+export interface LoadGate {
+  /** The 1-minute load average; undefined when the machine reports none, which never holds. A seam: the selftest passes a fake. */
+  read: () => number | undefined;
+  cores: number;
+  /** Fraction of `cores` the load may exceed before a start waits (default LOAD_MARGIN). */
+  margin?: number;
+  /** The bound on one wait, ms (default LOAD_WAIT_MAX_MS). */
+  maxWaitMs?: number;
+  /** How often a waiting pool re-reads the load, ms (default LOAD_POLL_MS). */
+  pollMs?: number;
+  /** The visible message; the pool prints it once at the start of a wait and once when the bound ends it. */
+  say?: (message: string) => void;
+}
+
+export const LOAD_MARGIN = 0.25;
+export const LOAD_WAIT_MAX_MS = 120_000;
+export const LOAD_POLL_MS = 2_000;
+
+/** Mutable state of one pool's load wait. */
+export interface LoadWaitState {
+  since?: number;
+  expired: boolean;
+}
+
+/** One reading's verdict: `wait` holds every start, `go` admits. Pure apart from `state` and `gate.say`. */
+export function loadVerdict(gate: LoadGate, state: LoadWaitState, now: number): 'go' | 'wait' {
+  const load = gate.read();
+  const margin = gate.margin ?? LOAD_MARGIN;
+  const limit = gate.cores * (1 + margin);
+  if (load === undefined || !(load > limit)) {
+    state.since = undefined;
+    state.expired = false;
+    return 'go';
+  }
+  if (state.expired) return 'go';
+  const maxWait = gate.maxWaitMs ?? LOAD_WAIT_MAX_MS;
+  if (state.since === undefined) {
+    state.since = now;
+    gate.say?.(
+      `ci-runner: load ${load.toFixed(1)} exceeds ${limit.toFixed(1)} (${gate.cores} cores + ${Math.round(margin * 100)}%); holding gate starts for up to ${Math.round(maxWait / 1000)} s`
+    );
+  }
+  if (now - state.since >= maxWait) {
+    state.expired = true;
+    gate.say?.(
+      `ci-runner: load ${load.toFixed(1)} still above ${limit.toFixed(1)} after ${Math.round(maxWait / 1000)} s; starting gates anyway`
+    );
+    return 'go';
+  }
+  return 'wait';
+}
 
 /** Idle core-ms the machine measured over [fromMs, toMs]; undefined when no reading covers it, which never reads as idle. */
 export type IdleReader = (fromMs: number, toMs: number) => number | undefined;
@@ -1322,6 +1379,7 @@ export async function runPool(
   });
 
   const grants = new Map<string, number>();
+  const loadState: LoadWaitState = { expired: false };
   const lease = opts.lease;
   const pollMs = opts.leasePollMs ?? LEASE_POLL_MS;
   // When each gate was first held by the lease: the start of its bounded hold (admit's leaseHeldSince).
@@ -1443,9 +1501,13 @@ export async function runPool(
     if (ready.length > 0 && releaseIdle(now) && lease !== undefined)
       await lease.reconcile(coresInUse());
 
+    const loadHeld =
+      opts.load !== undefined &&
+      ready.length > 0 &&
+      loadVerdict(opts.load, loadState, now) === 'wait';
     const pending = [...unstarted].map(candidate);
     const view =
-      lease !== undefined && sched === 'cores' && ready.length > 0
+      lease !== undefined && sched === 'cores' && ready.length > 0 && !loadHeld
         ? await lease.available(coresInUse())
         : undefined;
     const finite = (n: number | undefined): number | undefined =>
@@ -1453,7 +1515,9 @@ export async function runPool(
     for (const [id, span] of borrows)
       if (span.to !== undefined && span.to < now - RECLAIM_WINDOW_MS) borrows.delete(id);
     const reading = sched === 'cores' && ready.length > 0 ? opts.idleCoreMs : undefined;
-    const pass = admit(
+    const pass: Admission = loadHeld
+      ? { launch: [], held: [] }
+      : admit(
       ready.map((spec) => candidate(spec.id)),
       [...inFlight.values()],
       {
@@ -1474,7 +1538,7 @@ export async function runPool(
       },
       now
     );
-    let leaseWait = false;
+    let leaseWait = loadHeld;
     for (const [id, why] of pass.held) {
       if (why === 'lease') {
         holdForLease(id, now);
@@ -1485,7 +1549,13 @@ export async function runPool(
       if (!(await launch(mustGet(byId, gate.id), gate))) leaseWait = true;
     // Another run's release raises no event in this process, so a pool with a gate the lease holds re-reads it on a timer: by the earliest timed hold's end, and at least every pollMs.
     const nap = leaseWait
-      ? Math.max(1, Math.min(pollMs, (pass.wakeAt ?? Number.POSITIVE_INFINITY) - Date.now()))
+      ? Math.max(
+          1,
+          Math.min(
+            loadHeld ? (opts.load?.pollMs ?? LOAD_POLL_MS) : pollMs,
+            (pass.wakeAt ?? Number.POSITIVE_INFINITY) - Date.now()
+          )
+        )
       : undefined;
 
     if (running.size === 0 && unstarted.size > 0 && ready.length > 0) {

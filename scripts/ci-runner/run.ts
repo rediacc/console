@@ -124,6 +124,7 @@ import {
   DEFAULT_SCHED,
   type GateCost,
   type GateResult,
+  type LoadGate,
   type PoolLease,
   planAdmission,
   releasedGrant,
@@ -3609,6 +3610,61 @@ async function selftest(): Promise<number> {
       mine === 0,
       `the lone gate's tokens must be released when the pool drains, ${mine} held`
     );
+    // LOAD-AWARE ADMISSION (L1, pool.ts LoadGate): a fake load of 2C starts no gate while it lasts, prints the wait message once, and the bound ends the wait; a fake 0.5C starts the gates at once; a load that falls ends the wait early.
+    {
+      const loadRun = async (
+        read: () => number | undefined,
+        maxWaitMs: number
+      ): Promise<{ startedAt: number[]; said: string[]; ms: number; ok: boolean }> => {
+        const t1 = Date.now();
+        const startedAt: number[] = [];
+        const said: string[] = [];
+        const load: LoadGate = { read, cores: 4, maxWaitMs, pollMs: 10, say: (m) => said.push(m) };
+        const out = await runPool([syntheticSpec('selftest:load-a', 'true')], {
+          jobs: 4,
+          heavyLimit: 1,
+          failFast: false,
+          durations: new Map(),
+          sched: 'cores',
+          budget: { cores: 4, epsilon: 0, maxProcs: 8, memMb: 64 * 1024 },
+          load,
+          exec: async () => {
+            startedAt.push(Date.now() - t1);
+            return { code: 0, stdout: '', stderr: '', ms: 1 };
+          },
+        });
+        return { startedAt, said, ms: Date.now() - t1, ok: out.every((r) => r.status === 'ok') };
+      };
+      const high = await loadRun(() => 8, 150);
+      require_(
+        high.ok &&
+          high.startedAt.length === 1 &&
+          high.startedAt[0] >= 150 &&
+          high.said.length === 2 &&
+          /holding gate starts/.test(high.said[0]) &&
+          /starting gates anyway/.test(high.said[1]),
+        `a load of 2C must hold every start until the bound, print the wait message and the bound message once each, then start the gate, got ${JSON.stringify(high)}`
+      );
+      const calm = await loadRun(() => 2, 150);
+      require_(
+        calm.ok && calm.startedAt.length === 1 && calm.startedAt[0] < 100 && calm.said.length === 0,
+        `a load of 0.5C must start the gate at once and print nothing, got ${JSON.stringify(calm)}`
+      );
+      const t2 = Date.now();
+      const falling = await loadRun(() => (Date.now() - t2 < 60 ? 8 : 1), 5_000);
+      require_(
+        falling.ok &&
+          falling.startedAt[0] >= 50 &&
+          falling.startedAt[0] < 1_000 &&
+          falling.said.length === 1,
+        `a load that falls must end the wait before the bound, got ${JSON.stringify(falling)}`
+      );
+      const unread = await loadRun(() => undefined, 150);
+      require_(
+        unread.ok && unread.startedAt[0] < 100 && unread.said.length === 0,
+        `a machine that reports no load must never hold, got ${JSON.stringify(unread)}`
+      );
+    }
     // CORE RELEASE (W12, pool.ts releasedGrant): an elastic gate granted 18 of 24 cores whose workers drop to 4 busy gives cores back, and a queued 15-core gate starts BEFORE it ends; a gate whose workers stay busy keeps its grant, and so does one the reader cannot see.
     const releaseFailures = [...(await coreReleaseSelftest()), ...(await busySamplerSelftest())];
     require_(releaseFailures.length === 0, releaseFailures.join('\n'));
@@ -5437,6 +5493,15 @@ async function runGraph(
       idleCoreMs:
         opts.jobs === undefined && grantFromEnv() === undefined ? cpuSampler.idleCoreMs : undefined,
       busyCores: busySampler?.busyCores,
+      // Only a run sized to the machine waits on its load: a width someone chose, or a nested runner under a grant, is a ceiling the caller owns.
+      load:
+        opts.jobs === undefined && grantFromEnv() === undefined
+          ? {
+              read: () => os.loadavg()[0],
+              cores: Math.max(1, os.availableParallelism()),
+              say: (m) => process.stderr.write(`${m}\n`),
+            }
+          : undefined,
       exec: async (spec, grant: Grant) =>
         softenLocalWarn(
           spec,
