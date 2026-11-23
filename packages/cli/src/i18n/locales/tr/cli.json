@@ -3183,7 +3183,12 @@
           "licenceRenewal": "{{planCode}} {{date}} tarihinde yenilenir",
           "certExpiry": "{{track}} sertifikası {{number}} {{date}} tarihinde sona erer",
           "evalExpiry": "{{planCode}} deneme süresi {{date}} tarihinde biter",
-          "termsNotice": "{{version}} koşulları {{date}} tarihinde yürürlüğe girer"
+          "termsNotice": "{{version}} koşulları {{date}} tarihinde yürürlüğe girer",
+          "forensicsQuota": {
+            "warning": "Adli veri deposu {{quota}} GB içinde {{used}} GB dolu, {{locked}} GB kilitli.",
+            "levelCapped": "Kilitli pencere artık sığmadığı için adli veri toplama Basic düzeyine indi. {{quota}} GB içinde {{used}} GB kullanıldı, {{locked}} GB kilitli.",
+            "refused": "Basic düzeyindeki toplama bile sığmadığı için adli veri toplu gönderimleri reddediliyor. {{quota}} GB içinde {{used}} GB kullanıldı, {{locked}} GB kilitli."
+          }
         }
       }
     },

@@ -3183,7 +3183,12 @@
           "licenceRenewal": "{{planCode}} uueneb {{date}}",
           "certExpiry": "{{track}} sertifikaat {{number}} aegub {{date}}",
           "evalExpiry": "{{planCode}} prooviperiood lõpeb {{date}}",
-          "termsNotice": "Tingimused {{version}} jõustuvad {{date}}"
+          "termsNotice": "Tingimused {{version}} jõustuvad {{date}}",
+          "forensicsQuota": {
+            "warning": "Kohtuekspertiisi salvestus kasutab {{used}} GB kvoodist {{quota}} GB, millest {{locked}} GB on lukus.",
+            "levelCapped": "Kohtuekspertiisi jäädvustus langes tasemele Basic, sest lukustatud ajaaken ei mahu enam ära. Kasutusel {{used}} GB kvoodist {{quota}} GB, lukus {{locked}} GB.",
+            "refused": "Kohtuekspertiisi partiisid lükatakse tagasi, sest isegi Basic-jäädvustus ei mahu ära. Kasutusel {{used}} GB kvoodist {{quota}} GB, lukus {{locked}} GB."
+          }
         }
       }
     },

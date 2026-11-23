@@ -3183,7 +3183,12 @@
           "licenceRenewal": "{{planCode}} se renouvelle le {{date}}",
           "certExpiry": "Le certificat {{track}} {{number}} expire le {{date}}",
           "evalExpiry": "L'évaluation de {{planCode}} se termine le {{date}}",
-          "termsNotice": "Les conditions {{version}} entrent en vigueur le {{date}}"
+          "termsNotice": "Les conditions {{version}} entrent en vigueur le {{date}}",
+          "forensicsQuota": {
+            "warning": "Le stockage forensique utilise {{used}} Go sur {{quota}} Go, dont {{locked}} Go verrouillés.",
+            "levelCapped": "La capture forensique est passée en Basic, car la fenêtre verrouillée ne tient plus. {{used}} Go utilisés sur {{quota}} Go, {{locked}} Go verrouillés.",
+            "refused": "Les lots forensiques sont refusés, car même la capture Basic ne tient plus. {{used}} Go utilisés sur {{quota}} Go, {{locked}} Go verrouillés."
+          }
         }
       }
     },

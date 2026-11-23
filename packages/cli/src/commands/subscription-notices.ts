@@ -129,6 +129,30 @@ function licenceSummary(notice: NoticeWire, names: Map<string, RepoNameEntry>): 
   });
 }
 
+const FORENSICS_STATE_KEYS = {
+  warning: 'warning',
+  level_capped: 'levelCapped',
+  refused: 'refused',
+} as const;
+
+/** Bytes as decimal gigabytes with one fractional digit, the unit the quota is sold in. */
+function gb(value: unknown): string {
+  return typeof value === 'number' ? (value / 1e9).toFixed(1) : '-';
+}
+
+/** The state is the server's three-way enum; a state this CLI does not know prints as the bare kind. */
+function forensicsQuotaSummary(p: Record<string, unknown>): string {
+  const state = p.state;
+  if (state !== 'warning' && state !== 'level_capped' && state !== 'refused') {
+    return 'forensics_quota';
+  }
+  return t(`commands.subscription.notices.summary.forensicsQuota.${FORENSICS_STATE_KEYS[state]}`, {
+    used: gb(p.usedBytes),
+    quota: gb(p.quotaBytes),
+    locked: gb(p.lockedBytes),
+  });
+}
+
 /** The one line a table row carries for a notice. A kind this CLI does not know prints as its own name. */
 function summarize(notice: NoticeWire, names: Map<string, RepoNameEntry>): string {
   const p = notice.payload;
@@ -160,6 +184,8 @@ function summarize(notice: NoticeWire, names: Map<string, RepoNameEntry>): strin
         version: text(p.version),
         date: day(p.effective),
       });
+    case 'forensics_quota':
+      return forensicsQuotaSummary(p);
     default:
       return notice.kind;
   }

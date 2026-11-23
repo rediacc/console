@@ -2770,7 +2770,12 @@
           "licenceRenewal": "{{planCode}} renews on {{date}}",
           "certExpiry": "{{track}} certificate {{number}} expires on {{date}}",
           "evalExpiry": "{{planCode}} evaluation expires on {{date}}",
-          "termsNotice": "Terms {{version}} take effect on {{date}}"
+          "termsNotice": "Terms {{version}} take effect on {{date}}",
+          "forensicsQuota": {
+            "warning": "Forensics storage is at {{used}} GB of {{quota}} GB, with {{locked}} GB locked.",
+            "levelCapped": "Forensics capture dropped to Basic because the locked window no longer fits. Used {{used}} GB of {{quota}} GB, {{locked}} GB locked.",
+            "refused": "Forensics batches are refused because Basic capture does not fit either. Used {{used}} GB of {{quota}} GB, {{locked}} GB locked."
+          }
         }
       }
     },

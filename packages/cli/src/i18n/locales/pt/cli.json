@@ -3183,7 +3183,12 @@
           "licenceRenewal": "{{planCode}} renova em {{date}}",
           "certExpiry": "O certificado {{track}} {{number}} expira em {{date}}",
           "evalExpiry": "A avaliação de {{planCode}} termina em {{date}}",
-          "termsNotice": "Os termos {{version}} entram em vigor em {{date}}"
+          "termsNotice": "Os termos {{version}} entram em vigor em {{date}}",
+          "forensicsQuota": {
+            "warning": "O armazenamento forense usa {{used}} GB de {{quota}} GB, com {{locked}} GB bloqueados.",
+            "levelCapped": "A captura forense passou para Basic porque a janela bloqueada já não cabe. Usados {{used}} GB de {{quota}} GB, {{locked}} GB bloqueados.",
+            "refused": "Os lotes forenses são recusados porque nem a captura Basic cabe. Usados {{used}} GB de {{quota}} GB, {{locked}} GB bloqueados."
+          }
         }
       }
     },

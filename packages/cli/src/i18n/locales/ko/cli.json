@@ -3183,7 +3183,12 @@
           "licenceRenewal": "{{planCode}}은(는) {{date}}에 갱신됩니다",
           "certExpiry": "{{track}} 인증서 {{number}}은(는) {{date}}에 만료됩니다",
           "evalExpiry": "{{planCode}} 평가판이 {{date}}에 종료됩니다",
-          "termsNotice": "약관 {{version}}은(는) {{date}}부터 적용됩니다"
+          "termsNotice": "약관 {{version}}은(는) {{date}}부터 적용됩니다",
+          "forensicsQuota": {
+            "warning": "포렌식 저장소가 {{quota}} GB 중 {{used}} GB를 사용 중이며, {{locked}} GB는 잠겨 있습니다.",
+            "levelCapped": "잠긴 기간이 더 이상 들어가지 않아 포렌식 수집이 Basic으로 낮아졌습니다. {{quota}} GB 중 {{used}} GB 사용, {{locked}} GB 잠김.",
+            "refused": "Basic 수집조차 들어가지 않아 포렌식 배치를 거부하고 있습니다. {{quota}} GB 중 {{used}} GB 사용, {{locked}} GB 잠김."
+          }
         }
       }
     },

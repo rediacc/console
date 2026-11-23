@@ -3183,7 +3183,12 @@
           "licenceRenewal": "{{planCode}} verlängert sich am {{date}}",
           "certExpiry": "Das {{track}}-Zertifikat {{number}} läuft am {{date}} ab",
           "evalExpiry": "Die Testphase von {{planCode}} endet am {{date}}",
-          "termsNotice": "Die Bedingungen {{version}} gelten ab {{date}}"
+          "termsNotice": "Die Bedingungen {{version}} gelten ab {{date}}",
+          "forensicsQuota": {
+            "warning": "Der Forensik-Speicher belegt {{used}} GB von {{quota}} GB, davon sind {{locked}} GB gesperrt.",
+            "levelCapped": "Die Forensik-Erfassung wurde auf Basic zurückgestuft, weil das gesperrte Zeitfenster nicht mehr passt. Belegt: {{used}} GB von {{quota}} GB, {{locked}} GB gesperrt.",
+            "refused": "Forensik-Batches werden abgelehnt, weil auch die Basic-Erfassung nicht mehr passt. Belegt: {{used}} GB von {{quota}} GB, {{locked}} GB gesperrt."
+          }
         }
       }
     },

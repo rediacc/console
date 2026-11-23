@@ -237,6 +237,39 @@ describe('subscription notices', () => {
     expect(summaries[1]).toBe('brand_new_kind');
   });
 
+  it.each([
+    ['warning', 'warning'],
+    ['level_capped', 'levelCapped'],
+    ['refused', 'refused'],
+  ])('summarizes a forensics_quota notice in the %s state', async (state, key) => {
+    respondWith([
+      {
+        notices: [
+          notice('f1', 1, {
+            kind: 'forensics_quota',
+            payload: { state, usedBytes: 8.5e9, quotaBytes: 10e9, lockedBytes: 6e9 },
+          }),
+        ],
+        nextCursor: null,
+      },
+    ]);
+    await executeSubscriptionNotices();
+    expect(printedRows()[0].summary).toBe(
+      `commands.subscription.notices.summary.forensicsQuota.${key}:{"used":"8.5","quota":"10.0","locked":"6.0"}`
+    );
+  });
+
+  it('prints the bare kind for a forensics_quota notice with a state it does not know (control)', async () => {
+    respondWith([
+      {
+        notices: [notice('f2', 1, { kind: 'forensics_quota', payload: { state: 'novel' } })],
+        nextCursor: null,
+      },
+    ]);
+    await executeSubscriptionNotices();
+    expect(printedRows()[0].summary).toBe('forensics_quota');
+  });
+
   it('prints a line, not an empty table, when there are no notices', async () => {
     respondWith([{ notices: [], nextCursor: null }]);
     await executeSubscriptionNotices();

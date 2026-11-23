@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3167,
+    "keyCount": 3170,
     "sourceCommit": "8dfddee9b9f0f724fbb0ba9f6e59de47bb0e84f9"
   },
   "hashes": {
@@ -2412,6 +2412,9 @@
     "commands.subscription.notices.summary.backupHealth": "1d526fab",
     "commands.subscription.notices.summary.certExpiry": "48a22f6d",
     "commands.subscription.notices.summary.evalExpiry": "64a3c2fb",
+    "commands.subscription.notices.summary.forensicsQuota.levelCapped": "320dbd4f",
+    "commands.subscription.notices.summary.forensicsQuota.refused": "95ad9458",
+    "commands.subscription.notices.summary.forensicsQuota.warning": "114feffa",
     "commands.subscription.notices.summary.licenceRenewal": "56e38656",
     "commands.subscription.notices.summary.repoLicence": "e0671574",
     "commands.subscription.notices.summary.termsNotice": "0209528d",

@@ -3183,7 +3183,12 @@
           "licenceRenewal": "{{planCode}} si rinnova il {{date}}",
           "certExpiry": "Il certificato {{track}} {{number}} scade il {{date}}",
           "evalExpiry": "La prova di {{planCode}} termina il {{date}}",
-          "termsNotice": "I termini {{version}} entrano in vigore il {{date}}"
+          "termsNotice": "I termini {{version}} entrano in vigore il {{date}}",
+          "forensicsQuota": {
+            "warning": "L'archiviazione forense occupa {{used}} GB su {{quota}} GB, di cui {{locked}} GB bloccati.",
+            "levelCapped": "L'acquisizione forense è passata a Basic perché la finestra bloccata non entra più. Usati {{used}} GB su {{quota}} GB, {{locked}} GB bloccati.",
+            "refused": "I batch forensi vengono rifiutati perché nemmeno l'acquisizione Basic entra. Usati {{used}} GB su {{quota}} GB, {{locked}} GB bloccati."
+          }
         }
       }
     },
