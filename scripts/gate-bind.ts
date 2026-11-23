@@ -1577,6 +1577,16 @@ function selftest(endToEnd = false): number {
       !isNpmHop('npm run check:ci-a | tee log')
   );
   ck(
+    'CONTROL: an env value that runs code (command substitution, backticks) or a newline separator is not a hop (review 1e7d515b.1); ${VAR} expansion still is',
+    !isNpmHop('X="$(tsx evil.ts)" npm run check:ci-a') &&
+      !isNpmHop('X="`tsx evil.ts`" npm run check:ci-a') &&
+      !isNpmHop('X=$(tsx evil.ts) npm run check:ci-a') &&
+      !isNpmHop('tsx evil.ts\nnpm run check:ci-a') &&
+      !isNpmHop('X=1\nnpm run check:ci-a') &&
+      isNpmHop('X="${CI_RUNNER_CORES}" npm run check:ci-a') &&
+      isNpmHop("X='$(literal)' npm run check:ci-a")
+  );
+  ck(
     'CONTROL: a drifted compound lock run is a direct run and is refused against the header',
     registrationProblems(modB, { run: `${modB.run} && npm run check:ci-other` }, {}).some((p) =>
       p.includes('gates.lock.json runs')
