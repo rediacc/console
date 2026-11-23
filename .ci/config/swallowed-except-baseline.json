@@ -3,14 +3,12 @@
   "files": {
     ".claude/hooks/stop/wl_checklist.py": 1,
     ".claude/hooks/stop/wl_checks.py": 1,
-    ".claude/hooks/stop/wl_cli.py": 2,
     ".claude/hooks/stop/wl_lessons.py": 1,
     ".claude/hooks/stop/wl_lkg.py": 2,
     ".claude/hooks/stop/wl_planfile.py": 1,
     ".claude/hooks/stop/wl_reggate.py": 2,
     ".claude/hooks/stop/wl_ressample.py": 1,
     ".claude/hooks/stop/wl_roster.py": 3,
-    ".claude/hooks/stop/wl_ruling.py": 1,
-    ".claude/hooks/stop/worklist.py": 2
+    ".claude/hooks/stop/wl_ruling.py": 1
   }
 }

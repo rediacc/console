@@ -27,7 +27,6 @@ from __future__ import annotations
 
 import ast
 import dataclasses
-import importlib.util
 import json
 import os
 import pathlib
@@ -40,6 +39,7 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, controls_first, plant
+from rediacc_ci.quality import gate_args
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -484,14 +484,8 @@ def registered_calls(root: pathlib.Path) -> list[tuple[str, str, list[str]]]:
 
 
 def _gate_args_module():
-    """The shared parser itself, so a registered call is judged by the exact code that will judge it at run time."""
-    path = paths.repo_root() / QUALITY_REL / "_gate_args.py"
-    spec = importlib.util.spec_from_file_location("_gate_args_for_gate_argv", path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError("cannot load %s" % path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    """The shared parser itself, so a registered call is judged by the exact code that will judge it at run time: `.ci/scripts/quality/_gate_args.py` only re-exports `rediacc_ci.quality.gate_args`, so the package module is that code."""
+    return gate_args
 
 
 def call_problem(decl: Decl, argv: list[str]) -> str:
