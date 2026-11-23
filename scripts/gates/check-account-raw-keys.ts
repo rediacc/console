@@ -65,7 +65,7 @@ import { REPO_ROOT } from '../lib/repo-root.js';
 import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 import { catalogsFrom } from './check-account-i18n-key-usage.js';
 import { stripComments } from './check-translation-key-usage.js';
-import { finishWithControl } from './lib/run-control.js';
+import { foldedControl } from './lib/run-control.js';
 
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
 type Catalogs = Map<string, Set<string>>;
@@ -545,13 +545,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
   // `--selftest` adds the three-layer harness that used to be registered ahead of this gate (PLAN-tooling-code-reduction.md D4).
-  if (process.argv.includes('--selftest')) {
-    finishWithControl(
-      import('../__tests__/check-account-raw-keys.control.ts'),
-      'check-account-raw-keys.control.ts'
-    );
-    return;
-  }
+  if (foldedControl(() => import('../__tests__/check-account-raw-keys.control.ts'))) return;
 
   const webSrc = submodulePath('private/account/web/src');
   const localesDir = path.join(webSrc, 'i18n/locales');

@@ -40,7 +40,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { isEntryPoint } from '../lib/entry-point.js';
-import { finishWithControl } from './lib/run-control.js';
+import { foldedControl } from './lib/run-control.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');
@@ -402,9 +402,6 @@ const main = async (): Promise<number> => {
 // `--selftest` is the in-file cases, then the real-invocation harness that used to be registered beside this gate (PLAN-tooling-code-reduction.md D4); the harness starts un-awaited so this module finishes first.
 if (isEntryPoint(import.meta.filename)) {
   const rc = await main();
-  if (rc !== 0 || !process.argv.slice(2).includes('--selftest')) process.exit(rc);
-  finishWithControl(
-    import('../__tests__/check-docs-frontmatter.control.ts'),
-    'check-docs-frontmatter.control.ts'
-  );
+  if (rc !== 0 || !foldedControl(() => import('../__tests__/check-docs-frontmatter.control.ts')))
+    process.exit(rc);
 }

@@ -95,7 +95,7 @@ import { bumpRemedy } from '../lib/pins/remedy.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import { githubAsker, NotCompared, PinTally, UnreadableListing } from '../lib/upstream.js';
-import { finishWithControl } from './lib/run-control.js';
+import { foldedControl } from './lib/run-control.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
@@ -310,9 +310,7 @@ async function main(): Promise<void> {
 }
 
 // `--selftest` runs the github-token control harness, registered beside this gate until PLAN-tooling-code-reduction.md D4: the token reader it controls is what every request below authenticates with.
-if (process.argv.includes('--selftest')) {
-  finishWithControl(import('../__tests__/github-token.control.ts'), 'github-token.control.ts');
-} else {
+if (!foldedControl(() => import('../__tests__/github-token.control.ts'))) {
   main().catch((err) => {
     // An unexpected error in the gate itself must not silently pass. A network failure is already a finding per source above, so reaching here is a real bug.
     console.error(`${RED}✗ freshness gate crashed: ${(err as Error).message}${NC}`);

@@ -27,7 +27,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { isEntryPoint } from '../lib/entry-point.js';
-import { finishWithControl } from './lib/run-control.js';
+import { foldedControl } from './lib/run-control.js';
 
 // ANCHORED ON THIS FILE, not on cwd: the same gate would otherwise read a different translations directory depending on where it was started.
 const DIR = path.resolve(import.meta.dirname, '..', '..', 'packages/www/src/i18n/translations');
@@ -63,12 +63,10 @@ export function findCorruptions(
 }
 
 // `--selftest` runs the control harness that used to be registered beside this gate (PLAN-tooling-code-reduction.md D4).
-if (isEntryPoint(import.meta.filename) && process.argv.includes('--selftest')) {
-  finishWithControl(
-    import('../__tests__/check-locale-currency-integrity.control.ts'),
-    'check-locale-currency-integrity.control.ts'
-  );
-} else if (isEntryPoint(import.meta.filename)) {
+if (
+  isEntryPoint(import.meta.filename) &&
+  !foldedControl(() => import('../__tests__/check-locale-currency-integrity.control.ts'))
+) {
   const bad = findCorruptions();
   if (bad.length === 0) {
     console.log('✓ No currency amounts eaten by a $<digit> substitution.');
