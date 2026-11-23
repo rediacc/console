@@ -29,6 +29,7 @@ import sys
 import tempfile
 from collections.abc import Iterable
 
+import _gate_args
 import yaml
 
 REPO = pathlib.Path(__file__).resolve().parents[3]
@@ -622,4 +623,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_workflow_submodule_deps.py", sys.argv[1:], switches=())
     sys.exit(main())

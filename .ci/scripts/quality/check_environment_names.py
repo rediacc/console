@@ -29,6 +29,7 @@ import sys
 from pathlib import Path
 
 import _cipath
+import _gate_args
 from rediacc_ci import controls
 
 ROOT = Path(os.environ.get("ENV_NAMES_ROOT") or Path(__file__).resolve().parents[3])
@@ -211,4 +212,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_environment_names.py", sys.argv[1:], switches=())
     sys.exit(main())

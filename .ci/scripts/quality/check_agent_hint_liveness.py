@@ -30,6 +30,7 @@ import sys
 import tempfile
 
 import _cipath
+import _gate_args
 from rediacc_ci import paths
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
@@ -533,4 +534,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_agent_hint_liveness.py", sys.argv[1:], switches=())
     raise SystemExit(main())

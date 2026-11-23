@@ -40,6 +40,7 @@ import sys
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+import _gate_args
 import yaml
 
 if TYPE_CHECKING:
@@ -345,4 +346,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_ci_gate_prerequisites.py", sys.argv[1:], switches=())
     sys.exit(main())

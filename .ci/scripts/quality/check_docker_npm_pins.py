@@ -43,6 +43,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import _gate_args
+
 ROOT = Path(os.environ.get("DOCKER_NPM_PINS_ROOT") or Path(__file__).resolve().parents[3])
 EXCLUSIONS = ROOT / ".ci" / "config" / "docker-npm-pin-exclusions.json"
 MIN_REASON_CHARS = 40
@@ -406,4 +408,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_docker_npm_pins.py", sys.argv[1:], switches=())
     sys.exit(main())

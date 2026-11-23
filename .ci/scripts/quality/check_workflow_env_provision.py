@@ -44,6 +44,7 @@ import sys
 import tempfile
 
 import _cipath
+import _gate_args
 
 # Top-level, matching check_python_gate_deps.py and check_workflow_submodule_deps.py: the CI step that runs this installs the pinned PyYAML immediately before it, and a gate that quietly degrades when its parser is missing is the vacuity this tree has rules about. A bare ImportError traceback names the missing module, which is the right failure.
 import yaml
@@ -404,4 +405,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_workflow_env_provision.py", sys.argv[1:], switches=())
     sys.exit(main())

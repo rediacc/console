@@ -30,6 +30,8 @@ import shlex
 import sys
 import tempfile
 
+import _gate_args
+
 REPO = pathlib.Path(__file__).resolve().parents[3]
 TUTORIALS = REPO / ".ci" / "tutorials"
 TREE = REPO / "packages" / "cli" / "scripts" / "command-tree.json"
@@ -241,4 +243,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_tutorial_cli_validity.py", sys.argv[1:], switches=())
     sys.exit(main())

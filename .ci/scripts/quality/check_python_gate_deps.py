@@ -28,6 +28,7 @@ import sys
 import tempfile
 
 import _cipath
+import _gate_args
 import yaml
 from rediacc_ci import paths as ci_paths
 
@@ -424,4 +425,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_python_gate_deps.py", sys.argv[1:], switches=())
     sys.exit(main())

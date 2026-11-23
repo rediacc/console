@@ -23,6 +23,8 @@ import pathlib
 import subprocess
 import sys
 
+import _gate_args
+
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 HELPER = "retry_schema_exhaustion"
 MARKER = "--json-schema"
@@ -164,4 +166,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_schema_call_sites.py", sys.argv[1:], switches=())
     sys.exit(main())

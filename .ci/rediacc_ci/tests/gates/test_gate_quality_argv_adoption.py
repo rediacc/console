@@ -1,13 +1,10 @@
 """Every `.ci/scripts/quality/check_*.py` entry point refuses an argument it does not take, with exit 2.
 
-THE FAILURE THIS GUARDS. `npm run check:ci-record-paths -- --update` exited 0 having done nothing, and 138 sibling entry points read `sys.argv` the same way (and 18 more read none at all). `_gate_args.parse` is adopted in each of them; this file runs EVERY entry point, for real, with `--definitely-not-a-flag` and demands rc 2 naming the argument. It is the control the adoption itself cannot be: a script that lost its `_gate_args.parse` call in a merge, kept a hand-rolled parse, or gained a code path ahead of the parse would exit 0 or 1 here.
+THE FAILURE THIS GUARDS. `npm run check:ci-record-paths -- --update` exited 0 having done nothing, and 138 sibling entry points read `sys.argv` the same way (18 more read none at all and ignored everything). `_gate_args.parse` is adopted in each of them; this file runs EVERY entry point, for real, with `--definitely-not-a-flag` and demands rc 2. It is the control the adoption itself cannot be: a script that lost its `_gate_args.parse` call in a merge, kept a hand-rolled parse, or gained a code path ahead of the parse would exit 0 or 1 here.
 
-THE SET IS EVERY `check_*.py`, MINUS TWO NAMED EXEMPTIONS, not "the scripts that carry the call". A set derived from the call would silently shrink the day someone deleted the call, which is the exact failure to catch. So the target list is the directory, and what stays out is spelled below with its reason:
+THE SET IS THE DIRECTORY, not "the scripts that carry the call". A set derived from the call would shrink silently the day someone deleted the call, which is the exact failure to catch. So every `check_*.py` is run, and a script that does NOT carry the shared parse must be NAMED in REFUSES_ITSELF with how it refuses, or in FIXED_ELSEWHERE; the classification control fails on any script that is neither, and on a name listed there that now carries the call (the list only shrinks). A new entry point therefore has to either call `_gate_args.parse` or be named here with its reason.
 
-  * FIXED_ELSEWHERE: check_record_paths.py carries its own `parse_args` from commit 45da438dd0, which this tree's tip does not hold yet.
-  * PENDING: entry points whose batch has not landed. The set only shrinks, and a member that already carries the parse is refused.
-
-The entry points that already refused before this change (REFUSES_ITSELF: 7 hand-written, 11 argparse) are in the set and are only RUN, so the claim "every entry point refuses" is one assertion and not two.
+An adopted script must refuse in the shared format on stderr (`<gate>.py: unknown argument '<arg>' (accepted: ...)`) with nothing on stdout. A script that refuses on its own is only required to exit 2: three of them print a usage text that does not name the flag, and that is their message to keep.
 """
 
 import sys
@@ -21,65 +18,93 @@ QUALITY = paths.repo_root() / ".ci" / "scripts" / "quality"
 BOGUS = "--definitely-not-a-flag"
 CALL = "_gate_args.parse("
 
+# Entry points that refuse an unknown argument through their own code, with where. They are RUN below like every other script.
+REFUSES_ITSELF = {
+    "check_cli_contract": "`unknown = [a for a in args if a != NO_BUILD]`, rc 2",
+    "check_config_server_key_constant": "own argument check, rc 2",
+    "check_gh_retry_reads": "argparse in gh_retry_reads.main",
+    "check_hooks_resolvable": "argparse",
+    "check_i18n_value_types": "argparse",
+    "check_inline_python": "argparse",
+    "check_inline_suppressions": "inline_suppressions.argv_refusal",
+    "check_job_timeout_headroom": "argparse",
+    "check_lint_rule_liveness": "argparse",
+    "check_lint_scope_coverage": "argparse",
+    "check_model_invocable_commands": "argparse in model_invocable_commands.main",
+    "check_operator_rulings": "own argument check, rc 2",
+    "check_plan_bindings": "own argument check, rc 2",
+    "check_plan_feedback": "own argument check, rc 2",
+    "check_plan_live_proof": "argparse",
+    "check_prose_duplication": "`if args: print(USAGE); return 2`",
+    "check_python_types": "`unknown = [...]` over its two flags, rc 2",
+    "check_region_consistency": "`unknown = [a for a in args if a != '--live']`, rc 2",
+    "check_runner_advice": "argparse",
+    "check_scope_completeness": "argparse",
+    "check_scope_mirrors": "`if rest or ...: print(USAGE); return 2`",
+    "check_secret_reachability": "argparse",
+    "check_settings_registry": "own argument check, rc 2",
+    "check_silent_failure_patterns": "`unknown argument` refusal, rc 2",
+    "check_swallowed_failures": "`log.error('unknown argument')`, rc 2",
+    "check_worker_observability_budget": "own argument check, rc 2",
+}
+# Left out of the run on purpose, and named in the output.
 FIXED_ELSEWHERE = {
     "check_record_paths": "parse_args landed in 45da438dd0, which this tip does not hold yet",
 }
-# Shrink-only: each adoption batch deletes its scripts from this set, and the control below refuses a member that already carries the parse.
-PENDING = {
-    "check_agent_hint_liveness": "adoption batch not landed yet",
-    "check_agent_model_roster": "adoption batch not landed yet",
-    "check_ci_gate_prerequisites": "adoption batch not landed yet",
-    "check_docker_npm_pins": "adoption batch not landed yet",
-    "check_durable_paths_tracked": "adoption batch not landed yet",
-    "check_e2e_case_blind_assertions": "adoption batch not landed yet",
-    "check_environment_names": "adoption batch not landed yet",
-    "check_gate_reachability_coverage": "adoption batch not landed yet",
-    "check_hint_corpus": "adoption batch not landed yet",
-    "check_pr_head_ref_completeness": "adoption batch not landed yet",
-    "check_python_gate_deps": "adoption batch not landed yet",
-    "check_schema_call_sites": "adoption batch not landed yet",
-    "check_syncpack_sources": "adoption batch not landed yet",
-    "check_test_file_orphans": "adoption batch not landed yet",
-    "check_tutorial_cli_validity": "adoption batch not landed yet",
-    "check_tutorial_no_skips": "adoption batch not landed yet",
-    "check_workflow_env_provision": "adoption batch not landed yet",
-    "check_workflow_submodule_deps": "adoption batch not landed yet",
-}
+# Fewer than this and the scan is not seeing the tree.
 MIN_SCRIPTS = 174
+MIN_ADOPTED = 147
 
 
 def everything() -> list[str]:
     return sorted(p.stem for p in QUALITY.glob("check_*.py"))
 
 
+def carries_call(stem: str) -> bool:
+    return CALL in (QUALITY / (stem + ".py")).read_text()
+
+
 def targets() -> list[str]:
-    return [s for s in everything() if s not in FIXED_ELSEWHERE and s not in PENDING]
+    return [s for s in everything() if s not in FIXED_ELSEWHERE]
 
 
 def test_the_scan_sees_the_entry_points(gate):
     every = everything()
+    adopted = [s for s in every if carries_call(s)]
     gate.log_info(
-        "%d entry points, %d run here, %d carry the shared parse, %d pending, %d fixed elsewhere"
-        % (
-            len(every),
-            len(targets()),
-            sum(1 for s in every if CALL in (QUALITY / (s + ".py")).read_text()),
-            len(PENDING),
-            len(FIXED_ELSEWHERE),
-        )
+        "%d entry points: %d carry the shared parse, %d refuse on their own, %d fixed elsewhere"
+        % (len(every), len(adopted), len(REFUSES_ITSELF), len(FIXED_ELSEWHERE))
     )
-    if len(every) < MIN_SCRIPTS:
+    if len(every) < MIN_SCRIPTS or len(adopted) < MIN_ADOPTED:
         gate.log_fail(
-            "only %d check_*.py under %s, floor %d: the scan is not seeing the tree"
-            % (len(every), QUALITY, MIN_SCRIPTS)
+            "%d check_*.py (floor %d) and %d adopted (floor %d) under %s: the scan is not "
+            "seeing the tree, or an adoption was lost"
+            % (len(every), MIN_SCRIPTS, len(adopted), MIN_ADOPTED, QUALITY)
         )
-    for stem in list(PENDING) + list(FIXED_ELSEWHERE):
-        gate.assert_eq((QUALITY / (stem + ".py")).is_file(), True, "%s exists" % stem)
-    gate.assert_eq(sorted(set(PENDING) & set(FIXED_ELSEWHERE)), [], "an exemption is named once")
-    for stem in PENDING:
-        text = (QUALITY / (stem + ".py")).read_text()
-        gate.assert_eq(CALL in text, False, "%s is pending yet already carries the parse" % stem)
-    gate.log_pass("%d entry points enumerated, every exemption names a real file" % len(every))
+    gate.log_pass(
+        "%d entry points enumerated, %d carry the shared parse" % (len(every), len(adopted))
+    )
+
+
+def test_every_script_is_adopted_or_named(gate):
+    unnamed = [
+        s
+        for s in everything()
+        if not carries_call(s) and s not in REFUSES_ITSELF and s not in FIXED_ELSEWHERE
+    ]
+    gate.assert_eq(
+        unnamed,
+        [],
+        "these entry points neither call _gate_args.parse nor appear in REFUSES_ITSELF: add the "
+        "call (do not add the name)",
+    )
+    stale = [s for s in list(REFUSES_ITSELF) + list(FIXED_ELSEWHERE) if s not in everything()]
+    gate.assert_eq(stale, [], "every named exemption is a real script")
+    adopted_but_named = [s for s in REFUSES_ITSELF if carries_call(s)]
+    gate.assert_eq(
+        adopted_but_named, [], "a script that now carries the call leaves REFUSES_ITSELF"
+    )
+    gate.log_pass("every entry point is adopted or named, and no name is stale")
 
 
 @pytest.mark.parametrize("stem", targets())
@@ -87,7 +112,7 @@ def test_an_unknown_flag_exits_2_naming_it(gate, stem):
     script = QUALITY / (stem + ".py")
     result = harness.run([sys.executable, str(script), BOGUS], cwd=paths.repo_root(), timeout=120)
     gate.assert_exit_code(2, result.rc, "%s must refuse %s" % (stem, BOGUS))
-    if CALL in script.read_text():
+    if carries_call(stem):
         gate.assert_contains(result.combined, BOGUS, "%s names the argument it refused" % stem)
         gate.assert_contains(
             result.err,

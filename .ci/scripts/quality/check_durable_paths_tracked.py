@@ -24,6 +24,8 @@ import subprocess
 import sys
 import tempfile
 
+import _gate_args
+
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
 # One probe file per durable location. A directory ignored at any depth by a bare pattern (the `reports/` case) is caught by a probe INSIDE it, so each entry names a file, not a directory.
@@ -112,4 +114,5 @@ def main():
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_durable_paths_tracked.py", sys.argv[1:], switches=())
     sys.exit(main())

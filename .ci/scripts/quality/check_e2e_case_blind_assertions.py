@@ -37,6 +37,8 @@ import re
 import sys
 import tempfile
 
+import _gate_args
+
 REPO = pathlib.Path(__file__).resolve().parents[3]
 TESTS = REPO / "packages" / "e2e-tests" / "tests"
 HELPER = (
@@ -195,4 +197,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_e2e_case_blind_assertions.py", sys.argv[1:], switches=())
     sys.exit(main())

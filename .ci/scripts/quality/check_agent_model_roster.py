@@ -25,6 +25,7 @@ import sys
 import tempfile
 
 import _cipath
+import _gate_args
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 AGENTS_DIR = os.path.join(REPO_ROOT, ".claude", "agents")
@@ -226,4 +227,5 @@ def main():
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_agent_model_roster.py", sys.argv[1:], switches=())
     sys.exit(main())

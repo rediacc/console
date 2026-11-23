@@ -46,6 +46,8 @@ import subprocess
 import sys
 import tomllib
 
+import _gate_args
+
 REPO = pathlib.Path(__file__).resolve().parents[3]
 
 # Where test/control files live. Kept explicit rather than globbing the whole tree: node_modules and vendored fixtures are full of test-*.js that this gate has no business ruling on. THE ONE EDIT, per the driver contract: all three pytest roots land together rather than one per workstream. Six test files under .ci/rediacc_ci/tests and the shellscan differential under
@@ -539,4 +541,5 @@ def check_test_files():
 
 
 if __name__ == "__main__":
+    _gate_args.parse("check_test_file_orphans.py", sys.argv[1:], switches=())
     sys.exit(main())
