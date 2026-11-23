@@ -284,37 +284,22 @@ def _dev_commits(main, dev):
 
 
 def _code_complete(main, shas):
-    """Refuse when a plan a `Plan-Box:` trailer of `shas` names still has an open `[writer]` box, or cannot be read. The plan is read in the main checkout, which holds the development branch and is clean (the premises)."""
-    planbox = lease._hook_module("wl_planbox")
-    planrec = lease._hook_module("wl_planrec")
-    boxready = lease._hook_module("wl_boxready")
-    plans = []
-    for sha in shas:
-        message = _must(main, "show", "-s", "--format=%B", sha)
-        for box in planbox.parse_plan_box(message).boxes:
-            if box.plan not in plans:
-                plans.append(box.plan)
-    for plan in plans:
-        try:
-            found = planbox.resolve_plan(str(main), plan)
-        except planbox.PlanBoxError as exc:
-            raise PromoteRefusedError(str(exc)) from exc
-        if found is None:
-            message = "the development commits name %s, which the main checkout does not hold" % (
-                plan
-            )
-            raise PromoteRefusedError(message)
-        rel, text = found
-        open_writers = [
-            body for _i, raw, body, _sig in planrec.open_boxes(text) if boxready.writer_tagged(raw)
-        ]
-        if open_writers:
-            message = "%s is not code-complete: %d open [writer] box(es), first: %s" % (
-                rel,
-                len(open_writers),
-                open_writers[0][:120],
-            )
-            raise PromoteRefusedError(message)
+    """Refuse when a plan a `Plan-Box:` trailer of `shas` names still has an open `[writer]` box, or cannot be read. The plan is read in the main checkout, which holds the development branch and is clean (the premises).
+
+    The reading is `wl_stack.open_writer_boxes`, the one the Stop hook's landing-stack check asks too (agent/plans/PLAN-stop-hook-retro-20261123.md D1), so the hook never blocks a stop on a promotion this step refuses."""
+    stack = lease._hook_module("wl_stack")
+    try:
+        found = stack.open_writer_boxes(main, shas)
+    except stack.OpenBoxesError as exc:
+        raise PromoteRefusedError(str(exc)) from exc
+    if found:
+        rel, open_writers = found[0]
+        message = "%s is not code-complete: %d open [writer] box(es), first: %s" % (
+            rel,
+            len(open_writers),
+            open_writers[0][:120],
+        )
+        raise PromoteRefusedError(message)
 
 
 def _fetch_and_check(main, landing_branch):

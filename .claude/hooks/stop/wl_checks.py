@@ -5452,10 +5452,30 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
     else:
         outq_drop(state_doc, "landing-release-unreadable")
-    _ls_block = wl_stack.stack_block(own, released=_ls_released)
+    # PROMOTE WOULD REFUSE, SO THE STOP DOES NOT BLOCK (agent/plans/PLAN-stop-hook-retro-20261123.md D1, D2): an open [writer] box of a plan the development commits name, a live background task of this session in the main checkout, or promote's dirt none of which is this session's edit (`uc_files`, wl_uncommitted) turns the block into a `landing-stack` advisory naming why; dirt this session made keeps the block and is named in it.
+    try:
+        _ls_tasks = wl_stack.main_checkout_tasks(
+            own,
+            live_bg,
+            wl_roster.load_metas(wl_roster.session_subagents_dir(event.get("cwd"), session_id)),
+        )
+    except Exception:
+        _ls_tasks = []
+    _ls_own = [os.path.join(str(root), p) for p in (state_doc.get("uc_files") or {})]
+    _ls_block, _ls_held = wl_stack.stack_verdict(
+        own, released=_ls_released, own_paths=_ls_own, live_main_bg=_ls_tasks
+    )
     if _ls_block:
         vadd("landing-stack", False, _ls_block)
-    _ls_report = "" if _ls_block else wl_stack.stack_report(own, released=_ls_released, fetch=False)
+    if _ls_held:
+        outq_add(worklist, session_id, state_doc, "landing-stack", _ls_held, 1, refresh_min=0)
+    elif not _ls_block:
+        outq_drop(state_doc, "landing-stack")
+    _ls_report = (
+        ""
+        if _ls_block or _ls_held
+        else wl_stack.stack_report(own, released=_ls_released, fetch=False)
+    )
     if _ls_report:
         outq_add(worklist, session_id, state_doc, "landing-behind", _ls_report, 1, refresh_min=0)
     else:

@@ -13,13 +13,22 @@ A promoted tree is quiet by construction: promotion rewrites the record to the b
 
 The landing tip is the LOCAL branch, which every tree of the repository shares. A development branch rebased onto a landing commit that is not pushed yet is no hazard for the landing push: block_landing_one_way admits a pushed commit the landing branch's reflog shows was made there.
 
-`stack_block` and `stack_report` never raise: a reader failure answers "", because a git blip must not block a stop. The merged block is a FLOOR key (`landing-stack`, wl_floor.FLOOR); the behind report is advisory (`landing-behind`).
+`stack_block` and `stack_report` never raise: a reader failure answers "", because a git blip must not block a stop. The merged block is the `landing-stack` key (blocks from effort low, advises at quiet); the behind report is advisory (`landing-behind`).
+
+THE BLOCK ASKS WHETHER PROMOTE WOULD PROCEED (agent/plans/PLAN-stop-hook-retro-20261123.md friction 1, D1 and D2). Blocking a stop on a promotion that refuses for a reason the session cannot act on cost 70 stop turns in one window. `stack_verdict` returns `(block, advisory)`, at most one non-empty, while the merged branch's release is green:
+
+  code-complete  a plan a `Plan-Box:` trailer of the development commits names still holds an open `[writer]` box: promote refuses at its step 5, so the merged state is an advisory naming the plan and its first open box. `open_writer_boxes` is the ONE reader: landing_promote._code_complete raises on its answer, so the hook and the verb cannot disagree.
+  live run       a live background task of this session runs in the main checkout (`main_checkout_tasks`), which promote rebases: an advisory naming the tasks (the loop-next rule: a background task of this session downgrades it).
+  dirty tree     promote's tracked non-record dirt (landing_promote._dirty, through `_promote_dirt`, which never raises) in the main checkout, the landing tree or a landing submodule tree: when no dirty path is this session's own edit (`own_paths`, the `uc_files` union wl_uncommitted keeps), an advisory naming them; otherwise the block stands and names this session's own dirty paths, since committing them is a real action.
+
+A named plan that cannot be read keeps the block and names the reason: promote refuses on it too, and it is the session's to fix.
 """
 
 from __future__ import annotations
 
 import dataclasses
 import importlib.util
+import os
 import pathlib
 import subprocess
 
@@ -34,6 +43,29 @@ MERGED = "merged"
 
 BLOCK_KEY = "landing-stack"
 REPORT_KEY = "landing-behind"
+# How many dirty paths or tasks one line names before it counts the rest.
+SHOWN = 5
+
+
+class OpenBoxesError(RuntimeError):
+    """A commit message or a plan a `Plan-Box:` trailer names cannot be read: `open_writer_boxes` cannot answer."""
+
+
+class Verdict(tuple):
+    """`(block, advisory)` of `stack_verdict`: at most one of the two is non-empty."""
+
+    __slots__ = ()
+
+    def __new__(cls, block: str = "", advisory: str = ""):
+        return super().__new__(cls, (block, advisory))
+
+    @property
+    def block(self) -> str:
+        return self[0]
+
+    @property
+    def advisory(self) -> str:
+        return self[1]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -222,15 +254,195 @@ def _release_pending_text(st: StackState) -> str:
     )
 
 
-def stack_block(root, released=True, **kw) -> str:
-    """The FLOOR stop text while the landing branch is merged, its release is green (`released`, the development tree's `wl_prscope.LoopState.landing_released`) and promotion has not run, else "". Never raises."""
+def open_writer_boxes(root, shas) -> list[tuple[str, list[str]]]:
+    """`[(plan rel, [open [writer] box body, ...])]` for each plan a `Plan-Box:` trailer of the commits `shas` names that still holds an open `[writer]` box, in first-named order; [] when every named plan is code-complete. Messages and plans are read in `root` (the main checkout, which holds the development branch). Raises OpenBoxesError when a message or a named plan cannot be read. The ONE reader landing_promote._code_complete and `stack_verdict` share."""
+    import wl_boxready
+    import wl_planbox
+    import wl_planrec
+
+    plans: list[str] = []
+    for sha in shas:
+        rc, message = _git(root, "show", "-s", "--format=%B", sha)
+        if rc != 0:
+            raise OpenBoxesError("git could not read the message of %s" % str(sha)[:12])
+        for box in wl_planbox.parse_plan_box(message).boxes:
+            if box.plan not in plans:
+                plans.append(box.plan)
+    found_open: list[tuple[str, list[str]]] = []
+    for plan in plans:
+        try:
+            found = wl_planbox.resolve_plan(str(root), plan)
+        except wl_planbox.PlanBoxError as exc:
+            raise OpenBoxesError(str(exc)) from exc
+        if found is None:
+            raise OpenBoxesError(
+                "the development commits name %s, which the main checkout does not hold" % plan
+            )
+        rel, text = found
+        bodies = [
+            body
+            for _i, raw, body, _sig in wl_planrec.open_boxes(text)
+            if wl_boxready.writer_tagged(raw)
+        ]
+        if bodies:
+            found_open.append((rel, bodies))
+    return found_open
+
+
+def _dev_shas(root, main_ref: str, development: str) -> list[str] | None:
+    """The development commits with no patch-equivalent on `main_ref`, oldest first; None when git fails."""
+    rc, out = _git(root, "cherry", main_ref, "refs/heads/" + development)
+    if rc != 0:
+        return None
+    return [line.split()[1] for line in out.splitlines() if line.startswith("+ ")]
+
+
+def _promote_dirt(root, landing_path: str) -> list[str] | None:
+    """The absolute paths promote's dirty preflight refuses on (landing_promote._dirty: tracked, non-record, not machine-local) in the main checkout, the landing tree and each landing submodule tree; None when they cannot be read. Never raises."""
+    try:
+        hop = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
+        spec = importlib.util.spec_from_file_location("_rediacc_syspath", hop)
+        if spec is None or spec.loader is None:
+            return None
+        syspath = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(syspath)
+        lp = syspath.import_from_ci("rediacc_ci.dev.landing_promote")
+        main = pathlib.Path(_development_path(root) or root)
+        trees = [main]
+        if landing_path:
+            landing = pathlib.Path(landing_path)
+            trees.append(landing)
+            trees.extend(sub for _p, sub in sorted(lp._submodule_trees(landing).items()))
+        rows: list[str] = []
+        for tree in trees:
+            rows.extend(str(tree / lp._porcelain_path(line)) for line in lp._dirty(tree))
+        return rows
+    except Exception:
+        return None
+
+
+def _norm(path) -> str:
+    return os.path.normpath(str(pathlib.Path(path).resolve()))
+
+
+def _abs_set(root, paths) -> set[str]:
+    """`paths` (repo-relative to `root`, or absolute) as normalized absolute strings."""
+    out = set()
+    for p in paths or ():
+        path = pathlib.Path(p)
+        out.add(_norm(path if path.is_absolute() else pathlib.Path(root) / path))
+    return out
+
+
+def _named(items) -> str:
+    items = list(items)
+    shown = ", ".join(items[:SHOWN])
+    return shown + (" (+%d more)" % (len(items) - SHOWN) if len(items) > SHOWN else "")
+
+
+def main_checkout_tasks(root, live_bg, metas) -> list[str]:
+    """The descriptions of this session's live background tasks that run in the main checkout; [] when `root` (the session's own tree) is not the main checkout. A shell task runs in the session's tree; a subagent does when its meta (`metas`, wl_roster.load_metas) records no tree of its own. A teammate or a workflow, whose tree the event does not say, is not counted, so an unknown keeps the block. Never raises."""
+    try:
+        main = _development_path(root)
+        if not main or os.path.realpath(str(root)) != os.path.realpath(main):
+            return []
+        out = []
+        for b in live_bg or ():
+            kind = b.get("type")
+            tid = str(b.get("id") or "")
+            meta = (metas or {}).get(tid)
+            main_tree_agent = meta is not None and not meta.get("worktree")
+            if kind == "shell" or (kind == "subagent" and main_tree_agent):
+                out.append(str(b.get("description") or b.get("command") or tid or "?")[:80])
+        return out
+    except Exception:
+        return []
+
+
+def _code_complete_text(st: StackState, plans) -> str:
+    rel, bodies = plans[0]
+    more = (
+        " (and %d more plan(s) with an open [writer] box)" % (len(plans) - 1)
+        if len(plans) > 1
+        else ""
+    )
+    return (
+        "LANDING MERGED, PROMOTION WAITS ON CODE-COMPLETE: `%s` has %d open [writer] box(es), first: %s%s. "
+        "The landing branch %s is on %s/main (%s), and promote refuses until every [writer] box of the plans "
+        "the development commits name is ticked; then promote at a commit boundary:\n"
+        "  %s\n"
+        "(.claude/hooks/stop/wl_stack.py, agent/plans/PLAN-stop-hook-retro-20261123.md D1)"
+        % (rel, len(bodies), bodies[0][:120], more, st.landing, REMOTE, st.how, st.command)
+    )
+
+
+def _live_run_text(st: StackState, tasks, dirt) -> str:
+    also = " Promote's dirty preflight also names: %s." % _named(dirt) if dirt else ""
+    return (
+        "LANDING MERGED, PROMOTION WAITS ON A LIVE RUN: this session's background task(s) %s run in the main "
+        "checkout, which promote rebases.%s Once they finish, promote:\n"
+        "  %s\n"
+        "(.claude/hooks/stop/wl_stack.py, agent/plans/PLAN-stop-hook-retro-20261123.md D2)"
+        % (_named(tasks), also, st.command)
+    )
+
+
+def _peer_dirt_text(st: StackState, dirt) -> str:
+    return (
+        "LANDING MERGED, PROMOTION WAITS ON A PEER'S DIRTY TREE: promote refuses on tracked non-record changes, "
+        "and none of them is this session's edit: %s. Once their owner commits them, promote:\n"
+        "  %s\n"
+        "(.claude/hooks/stop/wl_stack.py, agent/plans/PLAN-stop-hook-retro-20261123.md D2)"
+        % (_named(dirt), st.command)
+    )
+
+
+def stack_verdict(root, released=True, own_paths=None, live_main_bg=None, **kw) -> Verdict:
+    """`(block, advisory)` while the landing branch is merged, its release is green (`released`, the development tree's `wl_prscope.LoopState.landing_released`) and promotion has not run; `("", "")` otherwise. `own_paths` is this session's edited-file union (repo-relative to `root`, or absolute); `live_main_bg` is this session's live background tasks in the main checkout (`main_checkout_tasks`'s list, or a bool). Never raises."""
     if not released:
-        return ""
+        return Verdict()
     try:
         st = stack_state(root, **kw)
     except Exception:
-        return ""
-    return _merged_text(st) if st.state == MERGED else ""
+        return Verdict()
+    if st.state != MERGED:
+        return Verdict()
+    notes = []
+    shas = _dev_shas(root, "refs/remotes/%s/main" % REMOTE, st.development)
+    if shas:
+        try:
+            plans = open_writer_boxes(root, shas)
+        except OpenBoxesError as exc:
+            plans = []
+            notes.append("Promote also refuses here: %s." % exc)
+        except Exception:
+            plans = []
+        if plans:
+            return Verdict(advisory=_code_complete_text(st, plans))
+    dirt = _promote_dirt(root, st.landing_path) or []
+    if live_main_bg:
+        tasks = live_main_bg if isinstance(live_main_bg, (list, tuple)) else ["a live task"]
+        return Verdict(advisory=_live_run_text(st, [str(t) for t in tasks], dirt))
+    if dirt:
+        own = _abs_set(root, own_paths)
+        mine = [p for p in dirt if _norm(p) in own]
+        if not mine:
+            return Verdict(advisory=_peer_dirt_text(st, dirt))
+        notes.append(
+            "Promote refuses first on this session's own dirty tracked path(s); commit them: %s."
+            % _named(mine)
+        )
+    text = _merged_text(st)
+    if notes:
+        text = "%s\n%s" % (text, "\n".join(notes))
+    return Verdict(block=text)
+
+
+def stack_block(root, released=True, own_paths=None, live_main_bg=None, **kw) -> str:
+    """The stop text of `stack_verdict`: "" when nothing is merged, or when promote waits on something the session cannot act on (an open [writer] box, a peer's dirt, a live main-checkout run). Never raises."""
+    return stack_verdict(
+        root, released=released, own_paths=own_paths, live_main_bg=live_main_bg, **kw
+    ).block
 
 
 def stack_report(root, released=True, **kw) -> str:

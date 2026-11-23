@@ -44,8 +44,35 @@ MUTANTS = [
     ),
     (
         "the behind report blocks",
-        '    return _merged_text(st) if st.state == MERGED else ""',
-        '    return _merged_text(st) if st.state in (MERGED, BEHIND) else ""',
+        "    if st.state != MERGED:\n        return Verdict()",
+        "    if st.state not in (MERGED, BEHIND):\n        return Verdict()",
+    ),
+    # PLAN-stop-hook-retro-20261123 R20261123.1 and .2: each downgrade arm, broken alone.
+    (
+        "the code-complete call dropped",
+        "            plans = open_writer_boxes(root, shas)\n",
+        "            plans = []\n",
+    ),
+    (
+        "an unreadable named plan silences the block",
+        '            notes.append("Promote also refuses here: %s." % exc)',
+        "            return Verdict()",
+    ),
+    (
+        "promote's dirt never read",
+        "    dirt = _promote_dirt(root, st.landing_path) or []",
+        "    dirt = []",
+    ),
+    (
+        "this session's own dirt read as a peer's",
+        "        mine = [p for p in dirt if _norm(p) in own]",
+        "        mine = []",
+    ),
+    ("a live main-checkout task ignored", "    if live_main_bg:\n", "    if False:\n"),
+    (
+        "a lease writer counted as a main-checkout task",
+        '            main_tree_agent = meta is not None and not meta.get("worktree")',
+        "            main_tree_agent = meta is not None",
     ),
     (
         "the landing tree judged as a development tree",
@@ -126,6 +153,23 @@ def load(text: str | None = None) -> types.ModuleType:
     sys.modules[name] = mod
     spec.loader.exec_module(mod)
     return mod
+
+
+def plan_commit(cwd, rel: str, boxes: list[str]) -> None:
+    """A development commit writing the plan at `rel` with `boxes` and a Plan-Box trailer naming it."""
+    path = pathlib.Path(cwd) / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "# PLAN: fixture\nStatus: approved\n\n## Tasks\n\n%s\n" % "\n".join(boxes),
+        encoding="utf-8",
+    )
+    sh(cwd, "add", rel)
+    sh(
+        cwd,
+        "commit",
+        "-qm",
+        "feat: plan work\n\nPlan-Box: %s#aaaa1111 clauses=all" % rel.rsplit("/", 1)[-1],
+    )
 
 
 def no_pr(_root, _branch) -> bool:
@@ -235,6 +279,135 @@ def controls(ws: types.ModuleType, cp) -> list[str]:
             "the rest of promotion" in ws.stack_block(main, pr_merged=no_pr),
         )
 
+        # CODE-COMPLETE (PLAN-stop-hook-retro-20261123 R20261123.1, D1): promote refuses on an open [writer] box of a plan the development commits name, so the stop does not block on it.
+        def verdict(root=main, **kw):
+            fn = getattr(ws, "stack_verdict", None)
+            if fn is None:
+                return ("<no stack_verdict>", "")
+            return tuple(fn(root, pr_merged=no_pr, **kw))
+
+        plan_rel = "agent/plans/PLAN-fixture.md"
+        done_boxes = [
+            "- [x] W1 [writer] The first writer box, done.",
+            "- [ ] V1 [live] The live run, open for the landing tree.",
+        ]
+        plan_commit(main, plan_rel, done_boxes)
+        block, advisory = verdict()
+        control(
+            "CODE-COMPLETE INVERSE: every writer box ticked, the block stands",
+            "  %s\n" % ws.PROMOTE_COMMAND in block and advisory == "",
+            (block, advisory),
+        )
+        plan_commit(
+            main, plan_rel, [*done_boxes, "- [ ] W2 [writer] The second writer box, still open."]
+        )
+        block, advisory = verdict()
+        control("CODE-COMPLETE: an open writer box blocks nothing", block == "", block)
+        control(
+            "CODE-COMPLETE: the advisory names the plan and its first open box",
+            "PROMOTION WAITS ON CODE-COMPLETE" in advisory
+            and "`%s` has 1 open [writer] box(es)" % plan_rel in advisory
+            and "W2 [writer] The second writer box" in advisory,
+            advisory,
+        )
+        control(
+            "CODE-COMPLETE: stack_block agrees", ws.stack_block(main, pr_merged=no_pr) == "", ""
+        )
+        plan_commit(main, plan_rel, done_boxes)
+
+        # DIRTY TREE OR LIVE RUN (R20261123.2, D2): promote refuses on tracked non-record dirt; a peer's dirt or a live main-checkout run downgrades, this session's own dirt blocks and is named.
+        peer_rel = "agent/plans/PLAN-x.md"
+        peer = main / peer_rel
+        peer.write_text("# PLAN: x\n", encoding="utf-8")
+        sh(main, "add", peer_rel)
+        sh(main, "commit", "-qm", "plan x")
+        peer.write_text("# PLAN: x\nedited by a peer\n", encoding="utf-8")
+        block, advisory = verdict(own_paths=[])
+        control("DIRT: a peer's dirty path blocks nothing", block == "", block)
+        control(
+            "DIRT: the advisory names the peer's dirty path",
+            "PROMOTION WAITS ON A PEER'S DIRTY TREE" in advisory and peer_rel in advisory,
+            advisory,
+        )
+        for label, own_paths in (("relative", [peer_rel]), ("absolute", [str(peer)])):
+            block, advisory = verdict(own_paths=own_paths)
+            control(
+                "DIRT: this session's own dirty path (%s) blocks and is named" % label,
+                "  %s\n" % ws.PROMOTE_COMMAND in block
+                and "this session's own dirty tracked path(s)" in block
+                and peer_rel in block
+                and advisory == "",
+                (block, advisory),
+            )
+        block, advisory = verdict(own_paths=[peer_rel], live_main_bg=["vm:check run"])
+        control(
+            "LIVE RUN: a live main-checkout task downgrades even this session's dirt",
+            block == "" and "vm:check run" in advisory and peer_rel in advisory,
+            (block, advisory),
+        )
+        peer.write_text("# PLAN: x\n", encoding="utf-8")
+        landing_base = landing / "base.txt"
+        landing_base.write_text("peer edit in the landing tree\n", encoding="utf-8")
+        block, advisory = verdict(own_paths=[])
+        control(
+            "DIRT: a peer's dirt in the landing tree downgrades",
+            block == "" and str(landing_base) in advisory,
+            (block, advisory),
+        )
+        block, advisory = verdict(own_paths=[str(landing_base)])
+        control(
+            "DIRT: this session's landing-tree edit blocks",
+            str(landing_base) in block and advisory == "",
+            (block, advisory),
+        )
+        landing_base.write_text("base.txt\n", encoding="utf-8")
+        block, advisory = verdict(own_paths=[], live_main_bg=["vm:check run"])
+        control(
+            "LIVE RUN: a clean tree with a live main-checkout task downgrades",
+            block == ""
+            and "PROMOTION WAITS ON A LIVE RUN" in advisory
+            and "vm:check run" in advisory,
+            (block, advisory),
+        )
+        block, advisory = verdict(own_paths=[], live_main_bg=[])
+        control(
+            "LIVE RUN INVERSE: no task and a clean tree, the block stands",
+            "  %s\n" % ws.PROMOTE_COMMAND in block and advisory == "",
+            (block, advisory),
+        )
+        tasks = getattr(ws, "main_checkout_tasks", lambda *_a: ["<no main_checkout_tasks>"])
+        live = [
+            {"id": "b1", "type": "shell", "description": "npm run vm:check"},
+            {"id": "a1", "type": "subagent", "description": "main-tree runner"},
+            {"id": "a2", "type": "subagent", "description": "lease writer"},
+            {"id": "t1", "type": "teammate", "description": "a teammate"},
+        ]
+        metas = {"a1": {"worktree": ""}, "a2": {"worktree": str(td / "lease")}}
+        got = tasks(main, live, metas)
+        control(
+            "LIVE RUN: a shell and a main-tree subagent run in the main checkout, a lease writer does not",
+            got == ["npm run vm:check", "main-tree runner"],
+            got,
+        )
+        got = tasks(landing, live, metas)
+        control("LIVE RUN: a session in another tree has no main-checkout task", got == [], got)
+
+        # An unreadable named plan: promote refuses on it too, so the block stands and says so.
+        sh(
+            main,
+            "commit",
+            "-q",
+            "--allow-empty",
+            "-m",
+            "feat: absent\n\nPlan-Box: PLAN-absent.md#bbbb2222 clauses=all",
+        )
+        block, advisory = verdict(own_paths=[])
+        control(
+            "CODE-COMPLETE: an unreadable named plan keeps the block and names it",
+            "PLAN-absent.md" in block and advisory == "",
+            (block, advisory),
+        )
+
         # Promotion: the development branch moves into the landing tree, the record names it, and the next development branch is cut stacked on it.
         sh(landing, "checkout", "-q", "--detach")
         sh(main, "checkout", "-q", "-b", NEXT)
@@ -267,7 +440,7 @@ def controls(ws: types.ModuleType, cp) -> list[str]:
             merged,
         )
         control("NOTIFY: an unknown event is silent", ws.notify_line(landing, "other") == "")
-    if ran[0] < 25:
+    if ran[0] < 40:
         fails.append("only %d controls ran" % ran[0])
     return fails
 

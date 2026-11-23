@@ -479,6 +479,35 @@ def test_promote_control_a_plan_with_only_a_live_box_open_is_admitted(two):
     assert spike.out(two.landing, "symbolic-ref", "--short", "HEAD") == DEV
 
 
+def test_the_hook_reader_names_the_box_promote_refuses_on(two):
+    """PLAN-stop-hook-retro-20261123 D1: the Stop hook's landing-stack check and step 5 read one answer."""
+    plan_commit(two, ["- [ ] W2 [writer] The second writer box, still open."])
+    shas = promote_mod._dev_commits(two.main, DEV)
+    found = lease._hook_module("wl_stack").open_writer_boxes(two.main, shas)
+    assert found == [("agent/plans/%s" % PLAN, ["W2 [writer] The second writer box, still open."])]
+    with pytest.raises(promote_mod.PromoteRefusedError, match="not code-complete: 1 open"):
+        run_promote(two.main)
+
+
+def test_code_complete_raises_on_the_shared_reader_answer(two, monkeypatch):
+    """Mutant guard: step 5 asks wl_stack.open_writer_boxes, so a box only that reader sees refuses."""
+    stack = lease._hook_module("wl_stack")
+    seen = []
+
+    def fake(_root, shas):
+        seen.append(list(shas))
+        return [("agent/plans/PLAN-shared.md", ["S1 [writer] Seen by the shared reader only."])]
+
+    monkeypatch.setattr(stack, "open_writer_boxes", fake)
+    with pytest.raises(
+        promote_mod.PromoteRefusedError, match=r"PLAN-shared\.md is not code-complete: 1 open"
+    ):
+        run_promote(two.main)
+    assert seen
+    assert seen[0]
+    untouched(two)
+
+
 def test_promote_refuses_a_named_plan_the_checkout_lacks(two):
     commit(two.main, "d3.txt", None, "feat: d3\n\nPlan-Box: PLAN-absent.md#bbbb2222 clauses=all")
     two.dev_tip = tip(two.main)
