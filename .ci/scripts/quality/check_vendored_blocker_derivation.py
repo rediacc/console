@@ -21,7 +21,9 @@ why: the golden corpus pins the vendored breakpoint validator as differing from
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import vendored_blocker_derivation
 
 if __name__ == "__main__":
+    _gate_args.parse("check_vendored_blocker_derivation.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(vendored_blocker_derivation.main(sys.argv[1:]))

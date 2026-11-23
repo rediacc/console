@@ -31,7 +31,9 @@ selftest: true
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import tracked_sidecars
 
 if __name__ == "__main__":
+    _gate_args.parse("check_tracked_sidecars.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(tracked_sidecars.main(sys.argv[1:]))

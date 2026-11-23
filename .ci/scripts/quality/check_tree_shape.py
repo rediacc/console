@@ -30,6 +30,7 @@ import pathlib
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci import controls, gitx, paths
 from rediacc_ci.controls import plant
 from rediacc_ci.quality import shrink_only
@@ -487,4 +488,9 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_tree_shape.py",
+        sys.argv[1:],
+        switches=("--selftest", "--write-baseline", "--first-seed"),
+    )
     sys.exit(main(sys.argv[1:]))

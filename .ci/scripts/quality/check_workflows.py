@@ -43,7 +43,11 @@ slow: true
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import workflows
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_workflows.py", sys.argv[1:], switches=("--selftest", "--refresh-retention")
+    )
     raise SystemExit(workflows.main(sys.argv[1:]))

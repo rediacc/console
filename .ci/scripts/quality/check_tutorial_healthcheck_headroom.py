@@ -43,6 +43,8 @@ import os
 import sys
 import tempfile
 
+import _gate_args
+
 try:
     import yaml
 except ImportError:  # pragma: no cover - environment problem, must be loud
@@ -229,4 +231,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_tutorial_healthcheck_headroom.py", sys.argv[1:], switches=("--selftest",)
+    )
     sys.exit(main())

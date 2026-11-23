@@ -30,7 +30,9 @@ why: every www build must pass github.token. Found and fixed by hand at two of
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import www_build_token
 
 if __name__ == "__main__":
+    _gate_args.parse("check_www_build_token.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(www_build_token.main(sys.argv[1:]))

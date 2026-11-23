@@ -40,19 +40,10 @@ PENDING = {
     "check_schema_call_sites": "adoption batch not landed yet",
     "check_syncpack_sources": "adoption batch not landed yet",
     "check_test_file_orphans": "adoption batch not landed yet",
-    "check_tracked_sidecars": "adoption batch not landed yet",
-    "check_trap_registry": "adoption batch not landed yet",
-    "check_tree_shape": "adoption batch not landed yet",
-    "check_turnstile_drift": "adoption batch not landed yet",
     "check_tutorial_cli_validity": "adoption batch not landed yet",
-    "check_tutorial_healthcheck_headroom": "adoption batch not landed yet",
     "check_tutorial_no_skips": "adoption batch not landed yet",
-    "check_vendored_blocker_derivation": "adoption batch not landed yet",
     "check_workflow_env_provision": "adoption batch not landed yet",
     "check_workflow_submodule_deps": "adoption batch not landed yet",
-    "check_workflows": "adoption batch not landed yet",
-    "check_worklist_env_registry": "adoption batch not landed yet",
-    "check_www_build_token": "adoption batch not landed yet",
 }
 MIN_SCRIPTS = 174
 

@@ -17,7 +17,9 @@ why: on 2026-09-24 Bitwarden's Turnstile secret had silently stopped matching th
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.deploy import turnstile_drift
 
 if __name__ == "__main__":
+    _gate_args.parse("check_turnstile_drift.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(turnstile_drift.main(sys.argv[1:]))

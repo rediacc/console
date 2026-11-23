@@ -85,7 +85,9 @@ why: TRAPS.md is a REGISTRY, not prose: every `## ` entry names the instrument
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import trap_registry
 
 if __name__ == "__main__":
+    _gate_args.parse("check_trap_registry.py", sys.argv[1:], switches=("--selftest", "--scan-only"))
     raise SystemExit(trap_registry.main(sys.argv[1:]))
