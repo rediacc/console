@@ -10,10 +10,10 @@
  * the machine: the registration of a volume that was never made must still leave the store.
  */
 
-import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
-import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { existsSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
+import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../utils/agent-guard.js', async (importOriginal) => ({
@@ -76,6 +76,7 @@ import {
   type ContainerExecutor,
   createFakeConfigStore,
   fakeRenet,
+  OPEN_POLICY,
   OWNER_TOKEN,
 } from './writeback-harness.js';
 
@@ -92,7 +93,6 @@ function storedConfig(): RdcConfig {
       repositories: {},
     },
     state: {},
-    policy: { version: 1, defaults: { commands: { allow: ['*'] }, allowGrandRepos: true } },
     encryption: { mode: 'plaintext' },
   } as unknown as RdcConfig;
 }
@@ -105,7 +105,7 @@ describe('WB11: a create job settled after the container disk was dropped still 
   });
 
   it('a create job that fails after a sleep wiped the ticket removes its registration from the store', async () => {
-    const store = await createFakeConfigStore(storedConfig());
+    const store = await createFakeConfigStore(storedConfig(), OPEN_POLICY);
     // The create job outlives its attach window: renet hands back a running ticket.
     const renet = fakeRenet(() => ({
       success: true,

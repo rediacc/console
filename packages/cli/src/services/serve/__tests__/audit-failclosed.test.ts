@@ -39,6 +39,7 @@ import {
   createFakeConfigStore,
   EXECUTOR_TOKEN,
   fakeRenet,
+  OPEN_POLICY,
   OWNER_TOKEN,
 } from './writeback-harness.js';
 
@@ -64,7 +65,6 @@ function storedConfig(): RdcConfig {
       },
     },
     state: { repos: { shop: { latest: { networkId: 2816 } } } },
-    policy: { version: 1, defaults: { commands: { allow: ['*'] }, allowGrandRepos: true } },
     encryption: { mode: 'plaintext' },
   } as unknown as RdcConfig;
 }
@@ -78,7 +78,7 @@ describe('WB8: audit fails closed for mutating commands', () => {
   });
 
   async function boot() {
-    const store = await createFakeConfigStore(storedConfig());
+    const store = await createFakeConfigStore(storedConfig(), OPEN_POLICY);
     const renet = fakeRenet(() => ({
       success: true,
       exitCode: 0,

@@ -29,6 +29,7 @@ await vi.hoisted(async () => {
   process.env.REDIACC_TELEMETRY_DISABLED = '1';
 });
 
+import { memoryPolicyHighWater } from '../../config/policy-record.js';
 import { ConfigChain, SessionConfigStore } from '../config-writeback.js';
 import {
   bootContainerExecutor,
@@ -38,6 +39,7 @@ import {
   EXECUTOR_TOKEN,
   type FakeConfigStore,
   fakeRenet,
+  OPEN_POLICY,
   OWNER_TOKEN,
   STORE_ID,
 } from './writeback-harness.js';
@@ -65,7 +67,6 @@ function storedConfig(): RdcConfig {
     version: 1,
     resources: { machines: {}, repositories },
     state: {},
-    policy: { version: 1, defaults: { commands: { allow: ['*'] }, allowGrandRepos: true } },
     encryption: { mode: 'plaintext' },
   } as unknown as RdcConfig;
 }
@@ -99,6 +100,8 @@ async function openDirect(store: FakeConfigStore): Promise<SessionConfigStore> {
     sessionId,
     cek: store.cek,
     target: { storeId: STORE_ID, configId: CONFIG_ID, teamId: null },
+    orgConfigId: CONFIG_ID,
+    policyHighWater: memoryPolicyHighWater(),
   });
 }
 
@@ -111,7 +114,7 @@ describe('WB2: one session writes one push at a time, on one chain', () => {
   });
 
   it('ten parallel dispatched writes make ten versions, no 409 and no spent token', async () => {
-    const store = await createFakeConfigStore(storedConfig());
+    const store = await createFakeConfigStore(storedConfig(), OPEN_POLICY);
     executor = await bootContainerExecutor(store, fakeRenet().executor);
     await executor.grantKey();
 
@@ -131,7 +134,7 @@ describe('WB2: one session writes one push at a time, on one chain', () => {
   });
 
   it('control: the same ten writes without the serialization collide on the version', async () => {
-    const store = await createFakeConfigStore(storedConfig());
+    const store = await createFakeConfigStore(storedConfig(), OPEN_POLICY);
     const session = await openDirect(store);
 
     // The write body the serialization wraps, called ten times at once.
@@ -141,7 +144,7 @@ describe('WB2: one session writes one push at a time, on one chain', () => {
   });
 
   it('the serialized write of the same session store does not collide', async () => {
-    const store = await createFakeConfigStore(storedConfig());
+    const store = await createFakeConfigStore(storedConfig(), OPEN_POLICY);
     const session = await openDirect(store);
 
     await Promise.all(NAMES.map((name) => session.write(archiveEdit(name))));

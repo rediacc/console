@@ -22,6 +22,7 @@ import { CLI_CONTRACT_VERSION } from '@rediacc/shared/cli-contract';
 import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
 import {
   cekHandoffEncrypt,
+  encryptPolicyRecord,
   exportAesKey,
   fromBase64,
   generateCek,
@@ -35,6 +36,7 @@ import {
   decryptConfigPullPayload,
   type RdcConfig,
 } from '@rediacc/shared/config-schema';
+import type { PolicyDocument } from '@rediacc/shared/policy';
 import type { ExecuteOptions, ExecuteResult, Executor } from '../../executor/types.js';
 import { AuthVerifier } from '../auth.js';
 import { createContainerConfigLoader, createExecutorGrantRecorder } from '../container-config.js';
@@ -127,8 +129,20 @@ export interface FakeConfigStore {
   exhausted: number;
 }
 
-/** A fake account server holding `initial`, encrypted under a fresh config key. */
-export async function createFakeConfigStore(seed: RdcConfig): Promise<FakeConfigStore> {
+/** A policy that lets every command through, grand repos included: the writeback tests exercise the push, not the policy. */
+export const OPEN_POLICY: PolicyDocument = {
+  version: 1,
+  defaults: { commands: { allow: ['*'] }, allowGrandRepos: true },
+};
+
+/**
+ * A fake account server holding `initial`, encrypted under a fresh config key, with `policy` (when
+ * given) as the config's policy record, served beside the blob on every pull.
+ */
+export async function createFakeConfigStore(
+  seed: RdcConfig,
+  policy?: PolicyDocument
+): Promise<FakeConfigStore> {
   // The document's id is the config id the envelope (and its AAD binding) carries.
   const initial = { ...seed, id: CONFIG_ID };
   const cek = await generateCek();
@@ -142,6 +156,15 @@ export async function createFakeConfigStore(seed: RdcConfig): Promise<FakeConfig
     sdkDerived,
     cek,
   });
+  const policyRecord = policy
+    ? await encryptPolicyRecord(policy, cek, {
+        storeId: STORE_ID,
+        configId: CONFIG_ID,
+        teamId: null,
+        version: 1,
+        cekGeneration: 1,
+      })
+    : null;
   let stored = {
     version: initial.version,
     encryptedBlob: first.encryptedBlob,
@@ -243,6 +266,8 @@ export async function createFakeConfigStore(seed: RdcConfig): Promise<FakeConfig
       configData: stored.encryptedBlob,
       envelope: stored.envelope,
       hmac: stored.hmac,
+      // The account server serves the policy record beside the config.
+      policy: policyRecord,
     });
   };
 

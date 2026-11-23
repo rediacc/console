@@ -74,6 +74,7 @@ import {
   type ContainerExecutor,
   createFakeConfigStore,
   fakeRenet,
+  OPEN_POLICY,
   OWNER_TOKEN,
 } from './writeback-harness.js';
 
@@ -90,7 +91,6 @@ function storedConfig(): RdcConfig {
       repositories: {},
     },
     state: {},
-    policy: { version: 1, defaults: { commands: { allow: ['*'] }, allowGrandRepos: true } },
     encryption: { mode: 'plaintext' },
   } as unknown as RdcConfig;
 }
@@ -103,7 +103,7 @@ describe('WB7: a job settled after an executor restart still writes back', () =>
   });
 
   it('a create job that fails after the restart removes its registration from the store', async () => {
-    const store = await createFakeConfigStore(storedConfig());
+    const store = await createFakeConfigStore(storedConfig(), OPEN_POLICY);
     // The create job outlives its attach window: renet hands back a running ticket.
     const renet = fakeRenet(() => ({
       success: true,

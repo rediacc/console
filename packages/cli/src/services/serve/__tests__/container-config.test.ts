@@ -23,6 +23,7 @@ import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
 import {
   cekHandoffEncrypt,
   ENVELOPE_VERSION,
+  encryptPolicyRecord,
   exportAesKey,
   fromBase64,
   generateCek,
@@ -36,6 +37,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { configFileStorage } from '../../../adapters/config-file-storage.js';
 import { createCli } from '../../../cli.js';
 import { configService } from '../../config/config-resources.js';
+import { boundEffectivePolicy } from '../../config/policy-record.js';
 import {
   createOutputState,
   DispatchExit,
@@ -173,11 +175,12 @@ const PRINCIPALS: Record<string, unknown> = {
 /**
  * The config that only ever exists encrypted, until the executor opens it.
  *
- * The optional policy document is the point of the deny test below: the RULES
- * ride inside the ciphertext, so if the executor cannot decrypt them it silently
- * falls back to the missing-document default and enforces nothing.
+ * The optional `forgedPolicy` is a policy field written INTO the config document,
+ * the way a member with push access could forge one; the real rules ride in the
+ * policy record beside the config (boot's second argument), and the forged
+ * field must decide nothing.
  */
-function secretConfig(policy?: PolicyDocument): RdcConfig {
+function secretConfig(forgedPolicy?: PolicyDocument): RdcConfig {
   const config: RdcConfig = {
     schemaVersion: 3,
     id: CONFIG_ID,
@@ -197,7 +200,7 @@ function secretConfig(policy?: PolicyDocument): RdcConfig {
     // A recorded network ID: a repo without one asks its machine first, and the fake executor is no machine.
     state: { repos: { demo: { latest: { networkId: 2816 } } } },
     encryption: { mode: 'plaintext' },
-    ...(policy === undefined ? {} : { policy }),
+    ...(forgedPolicy === undefined ? {} : { policy: forgedPolicy }),
   };
   return config;
 }
@@ -221,7 +224,16 @@ describe('container-tier config loading', () => {
   /** When set, the fake account server refuses to record grants. */
   let refuseGrants: boolean;
 
-  async function boot(config: RdcConfig): Promise<void> {
+  /**
+   * Boot the executor against `config`, with `policy` (when given) sealed as the
+   * config's policy record, which the fake pull serves beside the blob exactly as
+   * the account server does; null when there is none.
+   */
+  async function boot(
+    config: RdcConfig,
+    policy?: PolicyDocument,
+    sealedFor: string = CONFIG_ID
+  ): Promise<void> {
     cek = await generateCek();
     executed = [];
     resolvedAtExecution = [];
@@ -243,6 +255,16 @@ describe('container-tier config loading', () => {
       cek,
     });
     const sdkDerivedB64 = toBase64(await exportAesKey(sdkDerived));
+    const policyRecord =
+      policy === undefined
+        ? null
+        : await encryptPolicyRecord(policy, cek, {
+            storeId: 'store-1',
+            configId: sealedFor,
+            teamId: null,
+            version: 1,
+            cekGeneration: 1,
+          });
 
     /** The fake /configs/executor-grant. Mirrors the server: the grantor is the presented bearer's creator. */
     const recordGrantCall = (init?: RequestInit): Response => {
@@ -315,6 +337,7 @@ describe('container-tier config loading', () => {
           configData: payload.encryptedBlob,
           envelope: payload.envelope,
           hmac: payload.hmac,
+          policy: policyRecord,
         });
       }
 
@@ -535,15 +558,13 @@ describe('container-tier config loading', () => {
 
   // ── The rules must actually reach the executor ───────────────────────
 
-  it('enforces a deny rule that exists ONLY inside the encrypted config', async () => {
-    // The policy document rides in the ciphertext and nowhere else. The account server cannot read it, the wire does not carry it, and the executor has no local copy: the ONLY way this rule can bind is if the executor genuinely decrypted the config it was handed.
+  it('enforces a deny rule that exists ONLY inside the encrypted policy record', async () => {
+    // The policy rides in its own record, sealed under the CEK, and nowhere else. The account server cannot read it and the executor has no local copy: the ONLY way this rule can bind is if the executor genuinely opened the record it was handed.
     server.close();
-    await boot(
-      secretConfig({
-        version: 1,
-        defaults: { commands: { allow: ['*'], deny: [COMMAND_PATH] } },
-      })
-    );
+    await boot(secretConfig(), {
+      version: 1,
+      defaults: { commands: { allow: ['*'], deny: [COMMAND_PATH] } },
+    });
 
     await grantKey(OWNER_TOKEN);
     const response = await runCommand(OWNER_TOKEN);
@@ -553,22 +574,47 @@ describe('container-tier config loading', () => {
     expect(((await response.json()) as { error: string }).error).toMatch(/denies/);
     expect(executed).toHaveLength(0);
 
-    // And the rule really came out of the blob: policy reached authorize().
+    // And the rule really came out of the record: the policy bound to the config authorize() saw.
     expect(authorizedAgainst).toHaveLength(1);
-    expect(authorizedAgainst[0].policy).toEqual({
+    expect(boundEffectivePolicy(authorizedAgainst[0])?.org).toEqual({
       version: 1,
       defaults: { commands: { allow: ['*'], deny: [COMMAND_PATH] } },
     });
   });
 
+  it('a policy field forged into the config document decides nothing', async () => {
+    // A member who may push the config writes a deny-all policy into the document. The executor reads the policy from the record only, and there is none, so the owner is allowed by the missing-policy default.
+    server.close();
+    await boot(secretConfig({ version: 1, defaults: { commands: { allow: ['*'], deny: ['*'] } } }));
+
+    await grantKey(OWNER_TOKEN);
+    const response = await runCommand(OWNER_TOKEN);
+
+    expect(response.status).toBe(200);
+    await response.text();
+    expect(executed).toHaveLength(1);
+    expect(boundEffectivePolicy(authorizedAgainst[0])).toEqual({ locked: [], ignoredLocked: [] });
+  });
+
+  it('refuses the session when the policy record does not open for this config', async () => {
+    server.close();
+    // A record sealed for another config, served beside this one (a swapped record): the tag fails, and the executor runs nothing rather than falling back to the missing-policy default.
+    await boot(secretConfig(), { version: 1, defaults: { commands: { allow: ['*'] } } }, 'cfg-x');
+
+    await grantKey(OWNER_TOKEN);
+    const response = await runCommand(OWNER_TOKEN);
+
+    expect(response.status).not.toBe(200);
+    expect(((await response.json()) as { error: string }).error).toMatch(/policy record/i);
+    expect(executed).toHaveLength(0);
+  });
+
   it('still allows what the encrypted rules permit', async () => {
     server.close();
-    await boot(
-      secretConfig({
-        version: 1,
-        defaults: { commands: { allow: ['repo *'], deny: ['repo delete'] } },
-      })
-    );
+    await boot(secretConfig(), {
+      version: 1,
+      defaults: { commands: { allow: ['repo *'], deny: ['repo delete'] } },
+    });
 
     await grantKey(OWNER_TOKEN);
     const response = await runCommand(OWNER_TOKEN);

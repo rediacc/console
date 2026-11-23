@@ -33,6 +33,7 @@ import {
   type ContainerExecutor,
   createFakeConfigStore,
   fakeRenet,
+  OPEN_POLICY,
 } from './writeback-harness.js';
 
 function storedConfig(): RdcConfig {
@@ -57,7 +58,6 @@ function storedConfig(): RdcConfig {
       repositories: { a: repo(1, 'gone-host'), b: repo(2, 'gone-host') },
     },
     state: {},
-    policy: { version: 1, defaults: { commands: { allow: ['*'] }, allowGrandRepos: true } },
     encryption: { mode: 'plaintext' },
   } as unknown as RdcConfig;
 }
@@ -85,7 +85,7 @@ describe('WB3: conflict replay and chain exhaustion', () => {
   });
 
   it('a concurrent external push forces a replay, and both edits survive', async () => {
-    const store = await createFakeConfigStore(storedConfig());
+    const store = await createFakeConfigStore(storedConfig(), OPEN_POLICY);
     executor = await bootContainerExecutor(store, fakeRenet().executor);
     await executor.grantKey();
     let raced = false;
@@ -112,7 +112,7 @@ describe('WB3: conflict replay and chain exhaustion', () => {
   });
 
   it('a conflict on every replay surfaces CONFIG_CONFLICT', async () => {
-    const store = await createFakeConfigStore(storedConfig());
+    const store = await createFakeConfigStore(storedConfig(), OPEN_POLICY);
     executor = await bootContainerExecutor(store, fakeRenet().executor);
     await executor.grantKey();
     let racer = 0;
@@ -135,7 +135,7 @@ describe('WB3: conflict replay and chain exhaustion', () => {
   });
 
   it('a token at its third use is replaced by one fresh mint', async () => {
-    const store = await createFakeConfigStore(storedConfig());
+    const store = await createFakeConfigStore(storedConfig(), OPEN_POLICY);
     // No rotation: the executor keeps presenting one token until the store calls it spent.
     store.rotate = false;
     executor = await bootContainerExecutor(store, fakeRenet().executor);
@@ -156,7 +156,7 @@ describe('WB3: conflict replay and chain exhaustion', () => {
   });
 
   it('a second exhaustion fails the command before any host call', async () => {
-    const store = await createFakeConfigStore(storedConfig());
+    const store = await createFakeConfigStore(storedConfig(), OPEN_POLICY);
     store.rotate = false;
     const renet = fakeRenet();
     executor = await bootContainerExecutor(store, renet.executor);

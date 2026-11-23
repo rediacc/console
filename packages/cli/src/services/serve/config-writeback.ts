@@ -41,6 +41,13 @@ import {
   type PushPrior,
   type RdcConfig,
 } from '@rediacc/shared/config-schema';
+import type { EffectivePolicy } from '@rediacc/shared/policy';
+import {
+  bindEffectivePolicy,
+  loadEffectivePolicy,
+  type PolicyHighWater,
+  parsePolicyRecordField,
+} from '../config/policy-record.js';
 import {
   ConfigConflictError,
   ConfigWriteFailedError,
@@ -202,6 +209,8 @@ interface PulledEnvelope {
   sdk_derived: string;
   envelope: EncryptedConfigPayload['envelope'] & { commitments: { fckSalt: string } };
   hmac: string | null;
+  /** The config's policy record beside the blob (PLAN-rmcp-policy-record.md Design 3). */
+  policy?: unknown;
 }
 
 /** What a push needs to know of the stored envelope it replaces (PushPrior without the document). */
@@ -213,6 +222,10 @@ export interface SessionConfigStoreOptions {
   target: ConfigTarget;
   /** The session's granted config key. */
   cek: CryptoKey;
+  /** The store's org-level config, whose policy record is the org ceiling; null when it has none. */
+  orgConfigId: string | null;
+  /** The container's policy high-water marks: a record older than one already opened is refused. */
+  policyHighWater: PolicyHighWater;
 }
 
 /**
@@ -226,6 +239,8 @@ export class SessionConfigStore implements ConfigWriteback {
   private document!: RdcConfig;
   private storedVersion = 0;
   private stored!: StoredEnvelope;
+  /** The policy read from the records at the last pull; bound to every document this store serves. */
+  private effective!: EffectivePolicy;
 
   private constructor(private readonly options: SessionConfigStoreOptions) {}
 
@@ -409,6 +424,16 @@ export class SessionConfigStore implements ConfigWriteback {
         binding: { storeId: target.storeId, configId: target.configId, teamId: target.teamId },
       }
     );
+    // The policy comes from its records only (the config's own, beside the blob, and the org-level config's), never from a policy field in the document.
+    this.effective = await loadEffectivePolicy({
+      storeId: target.storeId,
+      config: { configId: target.configId, teamId: target.teamId },
+      ...('policy' in pulled ? { pulled: parsePolicyRecordField(pulled.policy) } : {}),
+      orgConfigId: this.options.orgConfigId,
+      fetchRecord: (configId, teamId) => this.fetchPolicyRecord(configId, teamId, op),
+      cek,
+      highWater: this.options.policyHighWater,
+    });
     const version = pulled.envelope.version;
     this.replace({ ...fullConfigToRdcConfig(decrypted), version }, version, {
       envelopeVersion: pulled.envelope.envelopeVersion,
@@ -417,12 +442,30 @@ export class SessionConfigStore implements ConfigWriteback {
     return undefined;
   }
 
-  /** Re-seat on the store's copy, and bind it so the next request scope around it saves here too. */
+  /** `GET /configs/:id/policy` on the chain: the record, or null when none is saved for that config. */
+  private async fetchPolicyRecord(configId: string, teamId: string | null, op: ChainOperation) {
+    const query = teamId ? `?teamId=${encodeURIComponent(teamId)}` : '';
+    const answer = await this.options.chain.request(
+      `/account/api/v1/configs/${encodeURIComponent(configId)}/policy${query}`,
+      {},
+      op
+    );
+    if (answer.status === 404 && answer.body.code === 'policy_not_found') return null;
+    if (answer.status >= 400) throw new Error(storeReason(answer, 'the policy record read'));
+    const { version, cekGeneration, blob } = answer.body;
+    return parsePolicyRecordField({ version, cekGeneration, blob });
+  }
+
+  /**
+   * Re-seat on the store's copy, and bind it so the next request scope around it saves here too and
+   * the authorizer reads the policy from the records.
+   */
   private replace(config: RdcConfig, version: number, stored: StoredEnvelope): void {
     this.document = config;
     this.storedVersion = version;
     this.stored = stored;
     bindConfigWriteback(config, this);
+    bindEffectivePolicy(config, this.effective);
   }
 
   /** A chain request (or a pull), its transport failures turned into a failed write. */

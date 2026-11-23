@@ -221,6 +221,7 @@ describe('config cache', () => {
           configData: payload.encryptedBlob,
           envelope: payload.envelope,
           hmac: payload.hmac,
+          policy: null,
         })
       );
     }) as unknown as typeof fetch;

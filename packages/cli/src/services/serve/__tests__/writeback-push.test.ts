@@ -33,6 +33,7 @@ import {
   type ContainerExecutor,
   createFakeConfigStore,
   fakeRenet,
+  OPEN_POLICY,
 } from './writeback-harness.js';
 
 const SHOP_GUID = '11111111-1111-4111-8111-111111111111';
@@ -65,8 +66,6 @@ function storedConfig(): RdcConfig {
       },
     },
     state: {},
-    // The executor refuses destructive and grand-repo commands unless the org's policy allows them.
-    policy: { version: 1, defaults: { commands: { allow: ['*'] }, allowGrandRepos: true } },
     encryption: { mode: 'plaintext' },
   } as unknown as RdcConfig;
 }
@@ -80,7 +79,7 @@ describe('WB1: a dispatched write is pushed back to config storage', () => {
   });
 
   it('one dispatched delete is one PUT with tombstones, and the next dispatch reads the pushed version', async () => {
-    const store = await createFakeConfigStore(storedConfig());
+    const store = await createFakeConfigStore(storedConfig(), OPEN_POLICY);
     const renet = fakeRenet();
     executor = await bootContainerExecutor(store, renet.executor);
     await executor.grantKey();
@@ -116,7 +115,7 @@ describe('WB1: a dispatched write is pushed back to config storage', () => {
   });
 
   it('control: a read-only chain refuses the push, and the command fails with the store unchanged', async () => {
-    const store = await createFakeConfigStore(storedConfig());
+    const store = await createFakeConfigStore(storedConfig(), OPEN_POLICY);
     const renet = fakeRenet();
     // The account server honours `write` only under a live grant; a chain minted read-only has its PUT refused.
     executor = await bootContainerExecutor(store, renet.executor);

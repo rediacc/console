@@ -7,18 +7,22 @@
  * caller's own /proc ancestry, which is fine for a laptop and meaningless
  * across a network: the client asserting "I am allowed" is not evidence.
  *
- * Here, authorization is data. The rules live inside the ENCRYPTED config, so
- * Rediacc cannot read them, and they are evaluated against a principal the
- * ACCOUNT SERVER resolved, not one the client claimed. The client-side prompts
- * remain, but they are UX; this is the enforcement.
+ * Here, authorization is data. The rules of a remote config live in their own
+ * ENCRYPTED policy record (PLAN-rmcp-policy-record.md), so Rediacc cannot read
+ * them and a member who may push the config cannot rewrite them; they are
+ * evaluated against a principal the ACCOUNT SERVER resolved, not one the client
+ * claimed. The client-side prompts remain, but they are UX; this is the
+ * enforcement.
  */
 
 import { CLI_CONTRACT, type ContractCommand, getCommand } from '@rediacc/shared/cli-contract';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import {
-  evaluatePolicy,
+  type EffectivePolicy,
+  evaluateEffectivePolicy,
   findStaleCommandGlobs,
   MISSING_POLICY_DEFAULT,
+  mergePolicies,
   type PolicyDecision,
   type PolicyDocument,
   PolicyDocumentSchema,
@@ -26,6 +30,7 @@ import {
 } from '@rediacc/shared/policy';
 import { parseRef } from '@rediacc/shared/ref';
 import { configService } from '../config/config-resources.js';
+import { boundEffectivePolicy } from '../config/policy-record.js';
 import {
   createOutputState,
   createRequestConfigScope,
@@ -45,7 +50,32 @@ export class PolicyDenied extends Error {
 }
 
 /**
- * The policy document stored in the config, if any.
+ * The policy a command is authorized against.
+ *
+ * A config the container loader opened carries the effective policy it read
+ * from the policy records (org ceiling, team narrowing), bound to the document;
+ * that is the only source for a remote config, so a `policy` field forged into
+ * a pushed config decides nothing. A remote config with no bound policy has no
+ * policy. A LOCAL-file config (no `remote` block) keeps its own `policy` field
+ * as the ceiling (D24).
+ */
+function effectivePolicyOf(config: RdcConfig): EffectivePolicy | undefined {
+  const bound = boundEffectivePolicy(config);
+  if (bound) {
+    for (const document of [bound.org, bound.team]) {
+      if (!document) continue;
+      const stale = findStaleCommandGlobs(document, LIVE_COMMANDS);
+      if (stale.deny.length > 0) throw new Error(staleDenyRefusal(stale.deny));
+    }
+    return bound.org || bound.team ? bound : undefined;
+  }
+  if (config.remote !== undefined) return undefined;
+  const document = readPolicyDocument(config);
+  return document ? mergePolicies(document) : undefined;
+}
+
+/**
+ * The policy document stored in a local-file config, if any.
  *
  * A malformed document is a hard error rather than a silent fall-through to the
  * default. Someone who wrote rules and got the shape wrong must hear about it;
@@ -107,9 +137,9 @@ export interface AuthorizeArgs {
  */
 export function authorize(args: AuthorizeArgs): PolicyDecision {
   const entry = getCommand(args.commandPath);
-  const document = readPolicyDocument(args.config);
+  const effective = effectivePolicyOf(args.config);
 
-  if (!document) return authorizeWithoutDocument(args);
+  if (!effective) return authorizeWithoutDocument(args);
 
   const context = {
     userEmail: args.principal.userEmail,
@@ -120,11 +150,14 @@ export function authorize(args: AuthorizeArgs): PolicyDecision {
     repoName: args.repoName,
     destructive: entry?.destructive ?? false,
   };
-  const decision = evaluatePolicy(document, context);
+  const decision = evaluateEffectivePolicy(effective, context);
   if (!decision.allowed) throw new PolicyDenied(decision);
 
   // Grand-ness is judged on its own so its refusal can name the way out, which the shared evaluator's reason does not.
-  if (args.isGrandRepo && !evaluatePolicy(document, { ...context, isGrandRepo: true }).allowed) {
+  if (
+    args.isGrandRepo &&
+    !evaluateEffectivePolicy(effective, { ...context, isGrandRepo: true }).allowed
+  ) {
     throw new PolicyDenied({ allowed: false, reason: grandRepoRefusal(args) });
   }
   return decision;

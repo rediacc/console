@@ -216,7 +216,12 @@ async function pollAndParse(machine: string, jobId: string, sinceLine: number, m
   const polled = await pollOnce(machine, jobId, sinceLine, maxLines);
   const body = JobPollResponseSchema.parse(polled);
   // The wire body does not carry the repo GUID; it stays server side, for rebuilding a ticket the executor lost.
-  return { body, status: body.status, repoGuid: polled.status.repoGuid, durationMs: Date.now() - started };
+  return {
+    body,
+    status: body.status,
+    repoGuid: polled.status.repoGuid,
+    durationMs: Date.now() - started,
+  };
 }
 
 /** One `renet job logs --with-status` exec, parsed into a poll body. */

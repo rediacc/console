@@ -29,6 +29,7 @@
  */
 
 import type { RdcConfig } from '@rediacc/shared/config-schema';
+import { memoryPolicyHighWater } from '../config/policy-record.js';
 import { deadlineFetch } from './account-fetch.js';
 import { AuthError } from './auth.js';
 import { ConfigChain, type ExecutorGrant, SessionConfigStore } from './config-writeback.js';
@@ -80,6 +81,8 @@ export function createContainerConfigLoader(
     `${sessionId}\u0000${teamId ?? ''}`;
   /** `${userId}\0${teamId}` -> the one config-token chain this container holds for that user and team. */
   const chains = new Map<string, ConfigChain>();
+  /** The newest version of each policy record this container opened: an older one is a replay. */
+  const policyHighWater = memoryPolicyHighWater();
 
   /** Drop cached configs whose session has gone. Nothing decrypted outlives its key. */
   const pruneDeadSessions = (): void => {
@@ -122,6 +125,8 @@ export function createContainerConfigLoader(
       sessionId,
       cek,
       target: { storeId: grant.storeId, ...target },
+      orgConfigId: grant.configs.find((entry) => entry.teamId === null)?.configId ?? null,
+      policyHighWater,
     });
   };
 
