@@ -126,7 +126,7 @@ process.stdout.write(JSON.stringify({
     JSON.stringify(plan('quality-security', 4)) === JSON.stringify(plan('quality-security', 4)),
   heavyFloors: { 'quality-code': heavyFloor('quality-code') },
   lintStepIds: stepIds('quality-code', 'Lint'),
-  sharedStepIds: stepIds('quality-i18n', 'i18n cross-locale'),
+  sharedStepIds: stepIds('quality-i18n', 'i18n'),
   // Map does not survive JSON.stringify (it serialises to `{}`), so pull out plain
   // values before this whole object is stringified once at the end.
   d2: (() => {
@@ -613,21 +613,21 @@ def test_step_merge_lowered_the_floor_enough_to_shard_code_at_four(gate):
 
 
 def test_a_step_shared_group_never_splits(gate):
-    """`check:ci-i18n-cross-locale` and its three siblings all carry `ci.step: 'i18n cross-locale'` -- one emitted step. A plan that put two of them on different legs would be unrealisable: gate-bind can attach exactly one conjunct to that one step. (The five `check:lint*` ids this test used to drive collapsed into one `check:lint` when biome replaced eslint, which left no shared step in `quality-code`.)"""
+    """The ids that carry `ci.step: 'i18n'` share one emitted step (CR4 retired the `i18n cross-locale` aggregate, so the remaining shared i18n group is the test subject). A plan that put two of them on different legs would be unrealisable: gate-bind can attach exactly one conjunct to that one step. (The five `check:lint*` ids this test used to drive collapsed into one `check:lint` when biome replaced eslint, which left no shared step in `quality-code`.)"""
     gate.log_test("ids sharing one emitted step land in the same shard")
     plan = probe(gate)["plans"]["i18n4"]
     ids = probe(gate)["sharedStepIds"]
     # The control: a group of one id cannot split, so a lock change that dissolves the group would turn this test into a pass over nothing.
     if len(ids) < 2:
         gate.log_fail(
-            "the 'i18n cross-locale' step carries %d id(s); the test needs a shared step" % len(ids)
+            "the shared 'i18n' step carries %d id(s); the test needs a shared step" % len(ids)
         )
     gate.assertions += 1
     homes = {_home_of(plan, gid) for gid in ids}
     if len(homes) != 1:
         gate.log_fail("the shared step's ids span shards %s; one `run:` cannot honour that" % homes)
     gate.assertions += 1
-    gate.log_pass("every id riding the 'i18n cross-locale' step lands in the same shard")
+    gate.log_pass("every id riding the shared 'i18n' step lands in the same shard")
 
 
 def test_two_heavies_in_one_mutex_group_shard_because_they_never_coexist(gate):
