@@ -2007,6 +2007,10 @@ class VmCheck:
         env.setdefault("REDIACC_NO_PROVISION", "0")
         return env
 
+    def cli_config_name(self) -> str:
+        """The config `child_env()` makes every `./rdc.sh` call read: the dev config once P4 minted, else the one P4 kept for its valid stored token. U1, U2 and K1 seed their throwaway configs from it (`upgrade_converge.seed_throwaway_config`)."""
+        return upgrade_converge.run_config_name(self.environ, self.dev_config)
+
     def drill_env(self) -> dict[str, str]:
         """The environment of an A1 suite or an A2 drill: this process's, never `child_env()`, with DRILL_ENV_SCRUB removed and `.ci` on PYTHONPATH by absolute path."""
         env = {k: v for k, v in self.environ.items() if k not in DRILL_ENV_SCRUB}

@@ -598,6 +598,8 @@ class _LiveK1:
             self.k1_9_skewed_restart()
             self.k1_10_mount_restart()
             self.k1_6_rollout()
+            if not self.restore_branch_renet():
+                return
             self.k1_8_job_timeout()
             self.resume_reconcile()
             self.k1_7_reboot()
@@ -977,21 +979,19 @@ class _LiveK1:
         )
 
     def _make_config(self, binary: pathlib.Path) -> bool:
-        """A copy of the dev config with `renetPath` on the main-pointer build, so the CLI's provision verifies that binary instead of replacing it. Created 0600 from the first byte: it carries the repo credentials."""
-        dev_json = self.config_path("dev")
-        try:
-            doc = json.loads(dev_json.read_text())
-        except (OSError, ValueError) as exc:
-            return self.check("K1.6 the dev config reads", False, evidence=type(exc).__name__)
-        doc["renetPath"] = str(binary)
-        doc["id"] = str(uuid.uuid4())
+        """A copy of the config this run's CLI calls read (`upgrade_converge.run_config_name`, which holds A and B), with its token file when that is the run's credential, and `renetPath` on the main-pointer build, so the CLI's provision verifies that binary instead of replacing it. Created 0600 from the first byte: it carries the repo credentials."""
         target = self.config_path(self.cfg)
-        fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        os.fchmod(fd, 0o600)
-        with os.fdopen(fd, "w") as handle:
-            handle.write(json.dumps(doc, indent=2) + "\n")
+        source = self.ctx.cli_config_name()
+        # Marked before the write, so a half-written pair (config without token) is still torn down.
         self.created_cfg = True
-        return True
+        failed = upgrade_converge.seed_throwaway_config(
+            target.parent, source, self.cfg, str(binary), carry_token=not self.ctx.token
+        )
+        return self.check(
+            "K1.6 the K1 config is seeded from the run's config %s" % source,
+            not failed,
+            evidence=failed,
+        )
 
     def k1_6_rollout(self) -> None:
         binary = self._main_binary()
@@ -1020,6 +1020,19 @@ class _LiveK1:
                 tick,
                 "reconcile rc=%d %s %s" % (tick.rc, why_pid, why_unit),
             )
+
+    def restore_branch_renet(self) -> bool:
+        """Put the branch renet back when K1.6 stopped after installing the main-pointer build, so K1.7 reboots the renet under test. Without it a K1.6 failure left the worker on the main-pointer renet and K1.7 recorded that build's reboot as two FAIL rows of its own (vmc-11230811-bb4659, 2026-11-23). False, with a FAIL row, when the restore itself fails: K1.7 then has no branch renet to judge."""
+        if not self.main_installed:
+            return True
+        setup = self.rdc("machine", "setup", self.ctx.machine, timeout=1800)
+        if setup.rc == 0:
+            self.main_installed = False
+        return self.check(
+            "K1.6 the branch renet is back on the worker before K1.7 after a failed rollout",
+            setup.rc == 0,
+            setup,
+        )
 
     # -- K1.7 and K1.8 ---------------------------------------------------------
 

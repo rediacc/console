@@ -682,8 +682,14 @@ def _live_u1(
         ssh_user, ssh_key, worker_ip = "u", "k", "1.2.3.4"
 
         def __init__(self) -> None:
-            self.environ: dict[str, str] = {}
+            self.environ: dict[str, str] = {"HOME": str(tmp_path / "home")}
             self.sweep_leftovers: list[str] = []
+            # VmCheck's state after P4: a minted token under the dev config by default.
+            self.token: str | None = "minted"
+            self.dev_config = True
+
+        def cli_config_name(self) -> str:
+            return u.run_config_name(self.environ, self.dev_config)
 
         def rdc(self, *args: str, **_kw: object) -> _Res:
             calls.append(("rdc", *args))
@@ -743,3 +749,107 @@ def test_the_refusal_row_runs_between_the_old_layout_rows_and_the_upgrade() -> N
         < src.index("_old_renet_refuses_a_job()")
         < src.index("self._upgrade()")
     )
+
+
+@pytest.mark.parametrize(
+    ("environ", "dev_config", "want"),
+    [
+        ({}, True, "dev"),
+        # Control: a minted token selects dev whatever REDIACC_CONFIG says (RDC_DEV=1 makes rdc.sh export it).
+        ({"REDIACC_CONFIG": "eu-bench"}, True, "dev"),
+        ({}, False, "rediacc"),
+        ({"REDIACC_CONFIG": "eu-bench"}, False, "eu-bench"),
+        ({"REDIACC_CONFIG": ""}, False, "rediacc"),
+    ],
+)
+def test_run_config_name_follows_rdc_sh(
+    environ: dict[str, str], dev_config: bool, want: str
+) -> None:
+    assert u.run_config_name(environ, dev_config) == want
+
+
+def _seed_dir(tmp_path: pathlib.Path) -> pathlib.Path:
+    base = tmp_path / "cfg"
+    base.mkdir()
+    (base / "dev.json").write_text('{"id": "a", "marker": "dev"}')
+    (base / "rediacc.json").write_text('{"id": "b", "marker": "default"}')
+    (base / "api-token-rediacc.json").write_text('{"token": "stored"}')
+    return base
+
+
+def test_seed_carries_the_stored_token_at_0600(tmp_path: pathlib.Path) -> None:
+    base = _seed_dir(tmp_path)
+    assert u.seed_throwaway_config(base, "rediacc", "u1-x", "/s/renet", carry_token=True) == ""
+    doc = json.loads((base / "u1-x.json").read_text())
+    assert doc["marker"] == "default"
+    assert doc["renetPath"] == "/s/renet"
+    assert doc["id"] not in ("a", "b")
+    token = base / "api-token-u1-x.json"
+    assert token.read_text() == '{"token": "stored"}'
+    for path in (base / "u1-x.json", token):
+        assert oct(path.stat().st_mode & 0o777) == "0o600"
+    assert set(u.config_files(base / "u1-x.json", "u1-x")) >= {base / "u1-x.json", token}
+
+
+def test_seed_without_carry_writes_no_token(tmp_path: pathlib.Path) -> None:
+    base = _seed_dir(tmp_path)
+    (base / "api-token-dev.json").write_text('{"token": "dev-file"}')
+    assert u.seed_throwaway_config(base, "dev", "u1-x", "/s/renet", carry_token=False) == ""
+    assert json.loads((base / "u1-x.json").read_text())["marker"] == "dev"
+    assert not (base / "api-token-u1-x.json").exists()
+
+
+@pytest.mark.parametrize(
+    ("source", "drop", "named"),
+    [
+        ("rediacc", "api-token-rediacc.json", "api-token-rediacc.json"),
+        ("missing", "", "missing.json"),
+    ],
+)
+def test_seed_refuses_without_writing_anything(
+    tmp_path: pathlib.Path, source: str, drop: str, named: str
+) -> None:
+    base = _seed_dir(tmp_path)
+    if drop:
+        (base / drop).unlink()
+    failed = u.seed_throwaway_config(base, source, "u1-x", "/s/renet", carry_token=True)
+    assert named in failed
+    assert not (base / "u1-x.json").exists()
+    assert not (base / "api-token-u1-x.json").exists()
+
+
+def test_seed_refuses_a_config_that_is_not_an_object(tmp_path: pathlib.Path) -> None:
+    base = _seed_dir(tmp_path)
+    (base / "rediacc.json").write_text("[]")
+    failed = u.seed_throwaway_config(base, "rediacc", "u1-x", "/s/renet", carry_token=False)
+    assert "not a JSON object" in failed
+
+
+def _u1_home(tmp_path: pathlib.Path, live: u._LiveU1) -> pathlib.Path:
+    live.tmp.mkdir(parents=True)
+    base = tmp_path / "home" / ".config" / "rediacc"
+    base.mkdir(parents=True)
+    (base / "dev.json").write_text('{"id": "a", "marker": "dev"}')
+    (base / "rediacc.json").write_text('{"id": "b", "marker": "default"}')
+    (base / "api-token-rediacc.json").write_text('{"token": "stored"}')
+    return base
+
+
+def test_u1_config_on_a_stored_token_is_the_default_config_with_its_token(
+    tmp_path: pathlib.Path,
+) -> None:
+    """vmc-11230811-bb4659: P4 kept the default config's stored token; U1 copied `dev`, which carries no token, and `repo create` fell through to the Free License terms refusal."""
+    live, rows, _calls = _live_u1(tmp_path, _Res(out='{"data": []}'), [])
+    live.ctx.token, live.ctx.dev_config = None, False
+    base = _u1_home(tmp_path, live)
+    assert live._make_config(), rows
+    assert json.loads((base / ("%s.json" % live.cfg)).read_text())["marker"] == "default"
+    assert (base / ("api-token-%s.json" % live.cfg)).read_text() == '{"token": "stored"}'
+
+
+def test_u1_config_on_a_minted_token_is_the_dev_config(tmp_path: pathlib.Path) -> None:
+    live, rows, _calls = _live_u1(tmp_path, _Res(out='{"data": []}'), [])
+    base = _u1_home(tmp_path, live)
+    assert live._make_config(), rows
+    assert json.loads((base / ("%s.json" % live.cfg)).read_text())["marker"] == "dev"
+    assert not (base / ("api-token-%s.json" % live.cfg)).exists()

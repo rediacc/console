@@ -23,7 +23,7 @@ from rediacc_ci.drills import lib, vm_ssh
 from rediacc_ci.well_known import DATASTORE_PATH, RUNTIME_DIR
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
 STEP = "U1"
 
@@ -437,38 +437,27 @@ class _LiveU1:
         self.symlink.symlink_to(target)
 
     def _make_config(self) -> bool:
-        """The throwaway config: a copy of the dev config this run already seeded (so it carries the gateway's address and E2E key), with `renetPath` pointed at the symlink. The symlink starts on the CURRENT binary: the CLI creates the repos through renet jobs, which the old binary cannot run."""
+        """The throwaway config: a copy of the config this run's CLI calls read (`run_config_name`: the dev config once P4 minted, else the default config whose stored token P4 kept), with its token file when that is the run's credential, and `renetPath` pointed at the symlink. The symlink starts on the CURRENT binary: the CLI creates the repos through renet jobs, which the old binary cannot run."""
         self._point_symlink(self.new_bin)
-        dev_json = self._config_path("dev")
         target = self._config_path(self.cfg)
-        if not dev_json.exists():
-            self.ctx.check(
-                STEP,
-                "the dev config exists to seed the U1 config from",
-                False,
-                evidence="no %s; P4 did not mint under the dev config" % dev_json,
-            )
-            return False
-        try:
-            doc = json.loads(dev_json.read_text())
-        except (OSError, ValueError) as exc:
-            self.ctx.check(
-                STEP,
-                "the dev config parses to seed the U1 config from",
-                False,
-                evidence="%s: %s" % (dev_json, exc),
-            )
-            return False
-        doc["renetPath"] = str(self.symlink)
-        # A fresh identity so the two configs are distinct universes on disk; the schema requires a valid UUID here, so set one rather than drop the field.
-        doc["id"] = str(uuid.uuid4())
-        # Created 0600 from the first byte: the copy carries the gateway E2E key, and write-then-chmod leaves a window where another local user can read it.
-        fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        # O_CREAT keeps the mode of a file left by an earlier run, so the mode is set on the open descriptor before the secret is written.
-        os.fchmod(fd, 0o600)
-        with os.fdopen(fd, "w") as handle:
-            handle.write(json.dumps(doc, indent=2) + "\n")
+        source = self.ctx.cli_config_name()
+        # Marked before the write, so a half-written pair (config without token) is still torn down.
         self.created_cfg = True
+        failed = seed_throwaway_config(
+            target.parent,
+            source,
+            self.cfg,
+            str(self.symlink),
+            carry_token=not self.ctx.token,
+        )
+        if failed:
+            self.ctx.check(
+                STEP,
+                "the U1 config is seeded from the run's config %s" % source,
+                False,
+                evidence=failed,
+            )
+            return False
         listed = self.crdc("machine", "list", "-o", "json")
         names = [str(m.get("name")) for m in _data_list(listed.out)] if listed.rc == 0 else []
         if self.ctx.machine not in names:
@@ -674,7 +663,7 @@ class _LiveU1:
         )
         if revert.rc != 0:
             left.append(
-                "worker not reverted to the dev-config renet (machine setup rc=%d: %s)"
+                "worker not reverted to the run's config renet (machine setup rc=%d: %s)"
                 % (revert.rc, _clip(revert.err[-400:] or revert.out[-400:]))
             )
         self._delete_config_files(left)
@@ -861,6 +850,61 @@ class OldLayoutBringUp:
             ):
                 return False
         return True
+
+
+DEFAULT_CLI_CONFIG = "rediacc"
+
+
+def run_config_name(environ: Mapping[str, str], dev_config: bool) -> str:
+    """The config every `./rdc.sh` call of the run reads, picked the way rdc.sh's `selected_config_name` picks it: `dev` once P4 minted on the dev gateway (RDC_DEV=1 selects it), else REDIACC_CONFIG, else `rediacc`.
+
+    P4 keeps the default config when that config's stored token is valid, so a throwaway config seeded from `dev` alone holds neither the run's repositories nor its credential: run vmc-11230811-bb4659 (2026-11-23) ran on a default config logged in to a production account server, and U1 and U2 met the Free License terms refusal while K1.6 read "is not in this config"."""
+    return "dev" if dev_config else (environ.get("REDIACC_CONFIG") or DEFAULT_CLI_CONFIG)
+
+
+def _write_private(path: pathlib.Path, text: str) -> None:
+    """Write `text` at mode 0600 from the first byte: a config copy carries the gateway E2E key and repo credentials, a token copy the token, and write-then-chmod leaves a window where another local user can read either."""
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    # O_CREAT keeps the mode of a file left by an earlier run, so the mode is set on the open descriptor before the secret is written.
+    os.fchmod(fd, 0o600)
+    with os.fdopen(fd, "w") as handle:
+        handle.write(text)
+
+
+def seed_throwaway_config(
+    config_dir: pathlib.Path,
+    source: str,
+    target: str,
+    renet_path: str,
+    *,
+    carry_token: bool,
+) -> str:
+    """Write `<target>.json` as a copy of `<source>.json` (the run's own config, `run_config_name`) with `renetPath` set and a fresh identity. Returns "" on success, else what failed.
+
+    `carry_token` is True when the run's credential is `<source>`'s stored token (P4 minted nothing): the CLI reads a stored token per config name (`api-token-<name>.json`), so the copy gets the token file too, and a missing one is a failure here rather than a later `repo create` that falls through to the Free License terms. A minted token travels in the child environment and needs no file. `config_files` names both copies for the teardown.
+    """
+    source_json = config_dir / ("%s.json" % source)
+    try:
+        doc = json.loads(source_json.read_text())
+    except (OSError, ValueError) as exc:
+        return "the run's config %s does not read: %s" % (source_json, exc)
+    if not isinstance(doc, dict):
+        return "the run's config %s is not a JSON object" % source_json
+    token_text = ""
+    if carry_token:
+        token_file = config_dir / ("api-token-%s.json" % source)
+        try:
+            token_text = token_file.read_text()
+        except OSError as exc:
+            return "the run holds no minted token and %s does not read: %s" % (token_file, exc)
+    doc["renetPath"] = renet_path
+    # A fresh identity so the two configs are distinct universes on disk; the schema requires a valid UUID here, so set one rather than drop the field.
+    doc["id"] = str(uuid.uuid4())
+    target_json = config_dir / ("%s.json" % target)
+    _write_private(target_json, json.dumps(doc, indent=2) + "\n")
+    if carry_token:
+        _write_private(config_files(target_json, target)[1], token_text)
+    return ""
 
 
 def config_files(path: pathlib.Path, name: str) -> tuple[pathlib.Path, ...]:
