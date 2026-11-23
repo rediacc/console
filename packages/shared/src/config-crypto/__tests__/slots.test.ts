@@ -3,6 +3,9 @@
  * machine secret format and normalization.
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   deriveMachineSecretSlotSecret,
@@ -221,5 +224,67 @@ describe('wrapCekForSlot / unwrapCekForSlot', () => {
 
     const wrapped = await wrapCekForSlot(cek, secret, generateServerSecret());
     await expect(unwrapCekForSlot(wrapped, secret, generateServerSecret())).rejects.toThrow();
+  });
+});
+
+/**
+ * K5 regression guard (D39): the slot method set is declared in four places that no type links, so
+ * a `password` method could come back in one of them unnoticed. Each site's method literals are read
+ * from its source and must be a subset of SLOT_METHODS, with at least one method found (a site whose
+ * shape the reader no longer recognises fails instead of passing empty).
+ */
+describe('no password method', () => {
+  const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../..');
+  const FORBIDDEN = ['pass', 'word'].join('');
+
+  /** The source files that declare slot methods, and what each declares. */
+  const SITES: { path: string; what: string }[] = [
+    {
+      path: 'packages/shared/src/config-crypto/slots.ts',
+      what: 'shared SLOT_METHODS and kdfParams',
+    },
+    { path: 'private/account/src/db/config-schema.ts', what: 'account config_key_slots enum' },
+    { path: 'private/account/src/dto/config.dto.ts', what: 'account slot DTOs' },
+    { path: 'private/account/web/src/lib/config-slots.ts', what: 'web slot builders' },
+  ];
+
+  const quoted = (list: string): string[] =>
+    [...list.matchAll(/'([a-z_-]+)'/g)].map((m) => m[1] as string);
+
+  /** Every method literal a source declares, in the shapes the four sites use. */
+  function methodLiterals(source: string): string[] {
+    const patterns = [
+      /SLOT_METHODS\s*=\s*\[([^\]]*)\]/g,
+      /text\('method',\s*\{\s*enum:\s*\[([^\]]*)\]/g,
+      /slotMethodSchema\s*=\s*z\.enum\(\[([^\]]*)\]/g,
+      /method:\s*z\.literal\(([^)]*)\)/g,
+      /method:\s*('[a-z_-]+')/g,
+    ];
+    const found: string[] = [];
+    for (const pattern of patterns) {
+      for (const match of source.matchAll(pattern)) found.push(...quoted(match[1] as string));
+    }
+    return found;
+  }
+
+  it.each(SITES)('$what ($path) declares only passkey and recovery', ({ path }) => {
+    const methods = methodLiterals(readFileSync(resolve(REPO, path), 'utf-8'));
+    expect(methods.length).toBeGreaterThan(0);
+    expect(methods.filter((m) => !(SLOT_METHODS as readonly string[]).includes(m))).toEqual([]);
+  });
+
+  it('the shared enum holds no password method', () => {
+    expect(SLOT_METHODS as readonly string[]).not.toContain(FORBIDDEN);
+  });
+
+  // The control: the method re-added in each site's own shape is caught by the same reader.
+  it.each([
+    "export const SLOT_METHODS = ['passkey', 'recovery', 'X'] as const;",
+    "method: text('method', { enum: ['passkey', 'X'] }).notNull(),",
+    "const slotMethodSchema = z.enum(['passkey', 'recovery', 'X']);",
+    "z.object({ method: z.literal('X'), algorithm: z.string() }),",
+    "return { method: 'X', kdfParams, wrappedCek };",
+  ])('re-adding the method is caught: %s', (template) => {
+    expect(methodLiterals(template.replace("'X'", `'${FORBIDDEN}'`))).toContain(FORBIDDEN);
   });
 });
