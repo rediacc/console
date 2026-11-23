@@ -12319,6 +12319,8 @@ export const GATES: readonly GateSpec[] = [
       step: 'Turnstile widget drift',
     },
   },
+  // >>> gen-gates: header-declared gates (npm run gen:gates -- --write; do not edit)
+  // <<< gen-gates
 ];
 
 /** The root workflow every CI run enters through. */

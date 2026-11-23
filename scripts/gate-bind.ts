@@ -31,7 +31,8 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-
+import { WK_IMAGE_REGISTRY } from '../packages/shared/src/config/well-known.generated.js';
+import { directRun } from './ci-runner/gate-spec.js';
 import {
   type LaneCapabilities,
   laneCapabilities,
@@ -55,15 +56,8 @@ import {
   parseShardManifest,
   shardManifestPath,
 } from './ci-runner/shard-manifest.js';
-import { WK_IMAGE_REGISTRY } from '../packages/shared/src/config/well-known.generated.js';
 import type { GateKind } from './lib/gate-header.js';
-import {
-  derivedId,
-  derivedRun,
-  headerError,
-  inferredNeeds,
-  parseGateHeader,
-} from './lib/gate-header.js';
+import { derivedId, headerError, inferredNeeds, parseGateHeader } from './lib/gate-header.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const WORKFLOW = '.github/workflows/ci-quality.yml';
@@ -123,7 +117,7 @@ const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf
  * not a verdict -- the reader cannot tell "your gates are mis-registered" from "a file
  * moved under me". Absent files are collected and REFUSED by name instead.
  */
-const trackedSubjects = (): { present: string[]; missing: string[] } => {
+export const trackedSubjects = (): { present: string[]; missing: string[] } => {
   const listed = execFileSync(
     'git',
     ['-C', ROOT, 'ls-files', '.ci/scripts', '.ci/rediacc_ci', 'scripts'],
@@ -258,6 +252,10 @@ export interface Bound {
   env?: Record<string, string>;
   /** An extra condition ANDed onto the standard guard. Never replaces it. */
   when?: string;
+  /**
+   * Declared by its header ALONE: no package.json key, so `npm run <id>` does not exist and the step runs `run` itself, with each node_modules/.bin command word spelled through `npx` (a workflow step's PATH has no node_modules/.bin). Set by `main` from package.json, never by the header.
+   */
+  direct?: true;
 }
 
 /** A gate a region actually writes: kind `step`, and therefore carrying one. */
@@ -288,7 +286,7 @@ export function bind(file: string, source: string): Bound | null {
   return {
     file,
     id: h.id ?? derivedId(file),
-    run: h.run ?? derivedRun(file, h.selftest === true),
+    run: h.run ?? directRun(file, h.selftest === true),
     kind: h.kind,
     ...(h.step === undefined ? {} : { step: h.step }),
     ...(h.emit === false ? { emit: false } : {}),
@@ -738,8 +736,20 @@ export function usesLocalBin(run: string): boolean {
   );
 }
 
+/** `run` with every node_modules/.bin command word spelled `npx <bin>`, for a header-declared gate that has no npm key to hop through. */
+export function npxLocalBins(run: string): string {
+  let out = run;
+  for (const bin of LOCAL_BIN_COMMANDS) {
+    out = out.replace(
+      new RegExp(`(^|&&\\s*|\\|\\|\\s*|;\\s*|\\|\\s*)${bin}(?=\\s|$)`, 'g'),
+      `$1npx ${bin}`
+    );
+  }
+  return out;
+}
+
 export function emitStep(b: Emitting, guard = 'setup', stepId?: string): string[] {
-  const cmd = usesLocalBin(b.run) ? `npm run ${b.id}` : b.run;
+  const cmd = !usesLocalBin(b.run) ? b.run : b.direct ? npxLocalBins(b.run) : `npm run ${b.id}`;
   const acquire = b.needs.flatMap((n) => ACQUIRE[n] ?? []);
   // `when` IS ANDED ON, NEVER SUBSTITUTED. The standard guard is what stops a gate running after setup failed; a field that could replace it would let a gate opt out of the ordering contract, which is invariant 11 through a side door. Parenthesised so a `when` containing `||` cannot bind looser than the `&&` and swallow the guard -- `a && b || c` is `(a && b) || c`, which would run the step on a failed setup.
   const cond =
@@ -1307,12 +1317,12 @@ export function headerLines(
   // second is `selftest: true`; the other two are genuinely per-gate, and inventing
   // derivation rules for them would encode five gates' habits as a convention.
   const wanted = r.run;
-  // `selftest: true` IS ONLY MEANINGFUL FOR .ts, because derivedRun branches on the flag only there. For a .sh or .py gate derivedRun(f, true) equals derivedRun(f), so the first arm always matched and every such header asserted a `--selftest` leg. Measured 2026-09-06 on the file this repo's briefs cite as the model: check-npmrc.sh carried `selftest: true` while containing ZERO
+  // `selftest: true` IS ONLY MEANINGFUL FOR .ts, because directRun branches on the flag only there. For a .sh or .py gate directRun(f, true) equals directRun(f), so the first arm always matched and every such header asserted a `--selftest` leg. Measured 2026-09-06 on the file this repo's briefs cite as the model: check-npmrc.sh carried `selftest: true` while containing ZERO
   // occurrences of --selftest. Roughly 30 headers claimed a leg that does not exist. Inert for binding, and a declaration that lies is worse than a missing one, because the next reader trusts it.
   const selftestIsReal = r.file.endsWith('.ts');
-  if (selftestIsReal && wanted !== '' && wanted === derivedRun(r.file, true)) {
+  if (selftestIsReal && wanted !== '' && wanted === directRun(r.file, true)) {
     out.push('selftest: true');
-  } else if (wanted !== '' && wanted !== derivedRun(r.file)) {
+  } else if (wanted !== '' && wanted !== directRun(r.file)) {
     out.push(`run: ${wanted}`);
   }
   if (pinLane) out.push(`lane: ${r.job}`);
@@ -1409,6 +1419,43 @@ export function insertHeader(
  * it worked was that a clean tree stayed green, which is the same output a loop that
  * collected nothing would produce.
  */
+/**
+ * How one declared gate's REGISTRATION disagrees with its header: the lock's direct `run`, or the package.json key it hops through. Exported so the selftest drives both shapes; `main` calls it once per declared gate.
+ */
+export function registrationProblems(
+  b: Bound,
+  lockEntry: { run: string } | undefined,
+  scripts: Readonly<Record<string, string>>
+): string[] {
+  const problems: string[] = [];
+  // A SCRIPT THE LOCK RUNS DIRECTLY IS REGISTERED DIFFERENTLY, AND ITS ABSENCE FROM package.json IS THE RULE RATHER THAN THE DEFECT. `test:install-script` and `test:write-once-guard` are registered as a bare path in `run` with no package.json key, so checking them against package.json would red them for a reason that has nothing to do with their headers. The lock's `run` is what they must agree with. THE PREDICATE IS "DOES THE LOCK RUN THIS SCRIPT DIRECTLY", not an id prefix. (The bash gate-test battery that first needed this is gone; the two entries above are the remaining members.)
+  const runsScriptDirectly =
+    lockEntry !== undefined &&
+    // ANY RUN THAT IS NOT AN npm HOP, not only one ending `.sh` or `.py`. That suffix test was the W7 P4 widening of a `.sh`-only one; a header-declared gate (`gen:gates`, PLAN-tooling-code-reduction.md D2) runs `PYTHONPATH=.ci python3 -m <module>` or `tsx <file> --selftest && tsx <file>`, ends in neither, and under the suffix test fell to the package.json branch below and was refused for lacking the very key D2 retires.
+    !lockEntry.run.startsWith('npm run ');
+  if (runsScriptDirectly) {
+    if (lockEntry.run !== b.run) {
+      problems.push(
+        `${b.file}: gates.lock.json runs "${lockEntry.run}" but its header derives "${b.run}"`
+      );
+    }
+    if (scripts[b.id] !== undefined) {
+      problems.push(
+        `${b.file}: runs directly from the lock, so it must have NO package.json script, but ` +
+          `'${b.id}' is registered there as "${scripts[b.id]}"`
+      );
+    }
+  } else if (scripts[b.id] === undefined) {
+    problems.push(`${b.file}: declares id '${b.id}', which package.json has no script for`);
+  } else if (scripts[b.id] !== b.run) {
+    problems.push(
+      `${b.file}: package.json runs "${scripts[b.id]}" but its header derives "${b.run}"`
+    );
+  }
+
+  return problems;
+}
+
 export function scanDeclarations(
   files: string[],
   readFile: (f: string) => string
@@ -1444,6 +1491,59 @@ function selftest(endToEnd = false): number {
     'id and run derive from the path',
     b?.id === 'check:ci-a-b' && b?.run === '.ci/scripts/quality/check_a_b.py',
     b
+  );
+  // HEADER-DECLARED GATES (agent/plans/PLAN-tooling-code-reduction.md D2): a module under .ci/rediacc_ci runs itself with no shim, its step runs `run` with no npm key to hop through, and its registration is the lock's direct run.
+  const mod = bind('.ci/rediacc_ci/quality/a_b.py', py);
+  ck(
+    'CONTROL: a .ci/rediacc_ci module header derives `PYTHONPATH=.ci python3 -m <module>`, not its bare path',
+    mod?.run === 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.a_b',
+    mod
+  );
+  const directTs: Emitting = {
+    file: 'scripts/gates/check-a.ts',
+    id: 'check:ci-a',
+    run: 'tsx scripts/gates/check-a.ts --selftest && tsx scripts/gates/check-a.ts',
+    kind: 'step',
+    step: 'A',
+    needs: [],
+    direct: true,
+  };
+  ck(
+    'CONTROL: a direct gate step spells each local bin through npx, since it has no npm key',
+    emitStep(directTs).at(-1)?.trim() ===
+      'run: npx tsx scripts/gates/check-a.ts --selftest && npx tsx scripts/gates/check-a.ts',
+    emitStep(directTs)
+  );
+  ck(
+    'CONTROL (silent): a keyed gate step still hops through `npm run <id>`',
+    emitStep({ ...directTs, direct: undefined })
+      .at(-1)
+      ?.trim() === 'run: npm run check:ci-a',
+    emitStep({ ...directTs, direct: undefined })
+  );
+  const modB = mod ?? directTs;
+  ck(
+    'CONTROL (silent): a direct run the lock records and package.json lacks is a clean registration',
+    registrationProblems(modB, { run: modB.run }, {}).length === 0,
+    registrationProblems(modB, { run: modB.run }, {})
+  );
+  ck(
+    'CONTROL: a direct run the lock records differently from the header is a named problem',
+    registrationProblems(modB, { run: `${modB.run} --other` }, {}).some((p) =>
+      p.includes('gates.lock.json runs')
+    )
+  );
+  ck(
+    'CONTROL: a direct gate that also keeps a package.json key is a named problem',
+    registrationProblems(modB, { run: modB.run }, { [modB.id]: modB.run }).some((p) =>
+      p.includes('NO package.json script')
+    )
+  );
+  ck(
+    'CONTROL: an npm-hop gate with no package.json key is a named problem',
+    registrationProblems(modB, { run: `npm run ${modB.id}` }, {}).some((p) =>
+      p.includes('package.json has no script')
+    )
   );
   ck(
     'CONTROL: --recurse-submodules=no infers no submodules need (it asks for none)',
@@ -3107,7 +3207,12 @@ function main(argv: string[]): void {
     process.exit(1);
   }
 
-  const { declared, malformed } = scanDeclarations(present, read);
+  const scanned = scanDeclarations(present, read);
+  const malformed = scanned.malformed;
+  // A header with no npm key is a header-declared gate (D2): its emitted step runs `run` itself, `npx`-spelled, since `npm run <id>` would exit 1 with nothing on either stream.
+  const declared: Bound[] = scanned.declared.map((b) =>
+    pkg.scripts[b.id] === undefined ? { ...b, direct: true as const } : b
+  );
 
   // ANTI-VACUITY. Until the drain lands, "no gate declares a header" is what a broken scan looks like and what a clean tree looks like, and they must not be the same.
   if (declared.length === 0) {
@@ -3362,32 +3467,7 @@ function main(argv: string[]): void {
 
   const problems: string[] = [];
   for (const b of declared) {
-    // A SCRIPT THE LOCK RUNS DIRECTLY IS REGISTERED DIFFERENTLY, AND ITS ABSENCE FROM package.json IS THE RULE RATHER THAN THE DEFECT. `test:install-script` and `test:write-once-guard` are registered as a bare path in `run` with no package.json key, so checking them against package.json would red them for a reason that has nothing to do with their headers. The lock's `run` is what they must agree with. THE PREDICATE IS "DOES THE LOCK RUN THIS SCRIPT DIRECTLY", not an id prefix. (The bash gate-test battery that first needed this is gone; the two entries above are the remaining members.)
-    const lockEntry = lockById.get(b.id);
-    const runsScriptDirectly =
-      lockEntry !== undefined &&
-      !lockEntry.run.startsWith('npm run ') &&
-      // `.py` TOO, and for the W7 P4 reason. A gate registered as a bare path with no package.json key keeps that shape when its path is repointed at a Python port; keying on `.sh` alone meant the checks below -- run must match the header's derived run, and no package.json key may exist -- silently stopped applying to a gate the moment it was ported. Same class as the `paths:` glob that stops selecting its own gate once the leaf is a `.py`.
-      (lockEntry.run.endsWith('.sh') || lockEntry.run.endsWith('.py'));
-    if (runsScriptDirectly) {
-      if (lockEntry.run !== b.run) {
-        problems.push(
-          `${b.file}: gates.lock.json runs "${lockEntry.run}" but its header derives "${b.run}"`
-        );
-      }
-      if (pkg.scripts[b.id] !== undefined) {
-        problems.push(
-          `${b.file}: is a gate-test, so it must have NO package.json script, but ` +
-            `'${b.id}' is registered there as "${pkg.scripts[b.id]}"`
-        );
-      }
-    } else if (pkg.scripts[b.id] === undefined) {
-      problems.push(`${b.file}: declares id '${b.id}', which package.json has no script for`);
-    } else if (pkg.scripts[b.id] !== b.run) {
-      problems.push(
-        `${b.file}: package.json runs "${pkg.scripts[b.id]}" but its header derives "${b.run}"`
-      );
-    }
+    problems.push(...registrationProblems(b, lockById.get(b.id), pkg.scripts));
 
     const entry = new RegExp(`id: '${b.id.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}'`).test(
       manifest

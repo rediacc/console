@@ -194,3 +194,81 @@ export type CiCoverage =
   | { kind: 'test'; test: string; blocker: string }
   /** Deliberately local-only. Requires a BLOCKER reason. */
   | { kind: 'local-only'; blocker: string };
+
+/**
+ * THE HEADER HALF OF THE GRAMMAR: how a `---- gate ----` block (parsed by `scripts/lib/gate-header.ts`) becomes a `GateSpec`, so a gate declared ONLY by its header needs no package.json key, no hand-written manifest entry, no workflow step and no lock line (agent/plans/PLAN-tooling-code-reduction.md D2). `gen:gates --write` (scripts/gen/gen-manifest.ts) serialises these into the manifest's `gen-gates` region and then regenerates the lock, the workflow regions, the shard manifests and the doc regions from that one source.
+ *
+ *   header field            spec field
+ *   `id:` (else derived)     id
+ *   `run:` (else directRun)  run, executed as written: no `npm run` hop
+ *   the file itself          leaves: [file]
+ *   `slow: true`             slow
+ *   `env-<KEY>:`             env
+ *   `when:`                  when
+ *   `kind:` + `step:`        ci: { kind: 'step', workflow, job, step } (`shared-step` rides a step it does not own)
+ *   `kind: test` + `test:`   ci: { kind: 'test', test, blocker }
+ *   `kind: local-only`       ci: { kind: 'local-only', blocker }
+ *   `lane:` (else placed)    ci.job
+ *
+ * Hand-only fields (`paths`, `reads`, `heavy`, `mutex`, `writesTree`, `cores`, `ciOnly`, `noProfile`, `needs` ordering edges) have no header spelling on purpose: a gate needing one stays a hand entry in manifest.ts, which is the "overrides" half of D2.
+ */
+
+/**
+ * The command a header-declared gate runs, executed DIRECTLY by the runner and by its workflow step.
+ *
+ * A module under `.ci/rediacc_ci/` runs as `PYTHONPATH=.ci python3 -m <module>`: nothing puts `.ci` on `sys.path` for a path invocation, which is the only reason the `.ci/scripts/quality/check_*.py` entry shims exist, and check:ci-parity's resolver maps `-m <module>` to the module's tracked file, so the leaf stays the file. Every other path keeps `derivedRun`'s form (`tsx <file>` with an optional `--selftest &&` leg, or the bare path of an executable script).
+ */
+export function directRun(file: string, selftest = false): string {
+  const mod = /^\.ci\/(rediacc_ci\/.+)\.py$/.exec(file);
+  if (mod !== null) return `PYTHONPATH=.ci python3 -m ${mod[1].replace(/\//g, '.')}`;
+  if (file.endsWith('.ts')) {
+    return selftest ? `tsx ${file} --selftest && tsx ${file}` : `tsx ${file}`;
+  }
+  return file;
+}
+
+/** A header reduced to the fields the spec reads; `scripts/lib/gate-header.ts` GateHeader satisfies it. */
+export interface HeaderFields {
+  kind: 'step' | 'shared-step' | 'test' | 'local-only';
+  step?: string;
+  run?: string;
+  selftest?: boolean;
+  slow?: boolean;
+  env?: Record<string, string>;
+  when?: string;
+  test?: string;
+  blocker?: string;
+}
+
+/** The manifest's BLOCKER convention: the reason reads `BLOCKER: ...`, prefixed here when the header wrote the bare reason. */
+const asBlocker = (raw: string): string => (raw.startsWith('BLOCKER:') ? raw : `BLOCKER: ${raw}`);
+
+/**
+ * The spec a header declares on its own. `id` is the resolved id (the header's `id:` or the derived one), `job` the lane placement resolved against the workflow, `workflow` the workflow file the step lives in.
+ */
+export function headerSpec(
+  file: string,
+  id: string,
+  h: HeaderFields,
+  job: string,
+  workflow: string
+): GateSpec {
+  let ci: CiCoverage;
+  if (h.kind === 'step' || h.kind === 'shared-step') {
+    ci = { kind: 'step', workflow, job, step: h.step ?? '' };
+  } else if (h.kind === 'test') {
+    ci = { kind: 'test', test: h.test ?? '', blocker: asBlocker(h.blocker ?? '') };
+  } else {
+    ci = { kind: 'local-only', blocker: asBlocker(h.blocker ?? '') };
+  }
+  return {
+    id,
+    ...(h.env === undefined ? {} : { env: { ...h.env } }),
+    run: h.run ?? directRun(file, h.selftest === true),
+    ...(h.slow === true ? { slow: true as const } : {}),
+    gate: true,
+    leaves: [file],
+    ...(h.when === undefined ? {} : { when: h.when }),
+    ci,
+  };
+}
