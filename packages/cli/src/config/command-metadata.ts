@@ -561,11 +561,12 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'config list': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
+  // `--reveal` prints decrypted secrets and the handler refuses it to an agent at run time (config.ts applyRevealGate), so the tool does not advertise it.
   'config show': {
-    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+    mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['reveal'] },
   },
   'config current': {
-    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+    mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['reveal'] },
   },
   // Same intent as the ASKED:2026-10-28T13:29Z ruling on `machine access set|push`: the config access writers declare the keys and source ranges every machine binding installs, so they change who may log in. `list` reads them and stays callable.
   'config access add': {
