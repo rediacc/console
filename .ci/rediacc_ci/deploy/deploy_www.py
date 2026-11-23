@@ -14,7 +14,7 @@ Deploys the www marketing Worker to Cloudflare. Two lanes, chosen by whether `--
     `wrangler.preview.toml` naming that database, apply the account migrations
     to it, deploy, and remove the generated config.
 
-NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (and `npm` on the install branch), `jq` and `sed` are the external tools, so the differential (`.ci/rediacc_ci/tests/test_deploy_deploy_www.py`) puts a RECORDING FAKE for `npx`/`npm` on a scratch PATH and points both sides at a fixture repo root through `$REDIACC_CI_ROOT`. `.ci/shadow/w7p5a-status.json` records this path as blocked
+NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (and `npm` on the install branch), `jq` and `sed` are the external tools, so the differential (`.ci/rediacc_ci/tests/test_deploy_deploy_www.py`) puts a RECORDING FAKE for `npx`/`npm` on a scratch PATH and points both sides at a fixture repo root through `$REDIACC_CI_ROOT`. the ledger (deleted in commit:936280cd35) records this path as blocked
 only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
 THE CALL LOG IS THE PRIMARY EVIDENCE, as it was for the promote ports. Almost
@@ -80,7 +80,7 @@ ONE DIVERGENCE, IN TEXT NOBODY PARSES
 An argument whose flag is not a valid shell identifier (`--foo.bar=x`) is
 `printf -v`'s own failure inside `common.sh:341`, exit 2, and bash names common.sh's path and line. This port prints `rediacc_ci.deploy.deploy_www: printf: ...` with the same status, on the same stream, following `deploy/deploy_account.py` and `autopilot/sweep_collect.py`.
 
-K=5 LEDGER: `.ci/shadow/w7p6-deploy-www.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

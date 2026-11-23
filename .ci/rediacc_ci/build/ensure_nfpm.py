@@ -82,10 +82,10 @@ Fixing either would change a live gate's and two workflows' behaviour, which is 
 -----------------------------------------------------------------------------
 ONE NAMED DIVERGENCE THAT IS NOT REPRODUCED
 -----------------------------------------------------------------------------
-When `constants.sh` sources cleanly but defines no `NFPM_VERSION`, the twin dies at `:54` with bash's own `line 54: NFPM_VERSION: unbound variable`, an internal diagnostic carrying the interpreter's path and line number. That is not a sentence a second language can produce, and `scripts/lib/shadow-gate.ts` files it as CHATTER on both sides (no `::error::`/`✗`/`ERROR:` marker), so
+When `constants.sh` sources cleanly but defines no `NFPM_VERSION`, the twin dies at `:54` with bash's own `line 54: NFPM_VERSION: unbound variable`, an internal diagnostic carrying the interpreter's path and line number. That is not a sentence a second language can produce, and the shadow gate (commit:bf054adcd4) files it as CHATTER on both sides (no `::error::`/`✗`/`ERROR:` marker), so
 it plays no part in any recorded verdict. The port exits 1 with the same empty stdout and does not forge the text. Pinned by `test_unpinned_version_exits_1_without_forging_bash_text`.
 
-K=5 LEDGER: `.ci/shadow/w7p6-ensure-nfpm.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

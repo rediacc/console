@@ -4,7 +4,7 @@
 Deploys the `app-postgres` template on the worker VM through the production `rdc` orchestration path and asserts that the `db` container's Docker healthcheck (`pg_isready -h localhost`, which traverses the eBPF connect4 rewrite `127.0.0.1 -> SERVICE_IP4`) converges to `healthy` inside a bounded window, then that the `app` container reached `running` on the strength of its
 `depends_on: db.condition: service_healthy`.
 
-THIS MODULE IS THE LIVE CALL SITE SINCE W7P4-W. `.github/workflows/ct-tests.yml`'s "Run compose healthcheck smoke test" step runs `PYTHONPATH=.ci python3 -m rediacc_ci.private.compose_healthcheck_smoke_test`, on the licence in `.ci/shadow/w7p4b-compose-healthcheck-smoke-test.observations.jsonl` (eleven clean trees at `--assert --k 5`). Neither file carries a `---- gate ----`
+THIS MODULE IS THE LIVE CALL SITE SINCE W7P4-W. `.github/workflows/ct-tests.yml`'s "Run compose healthcheck smoke test" step runs `PYTHONPATH=.ci python3 -m rediacc_ci.private.compose_healthcheck_smoke_test`, on the licence in the ledger (deleted in commit:936280cd35) (eleven clean trees at `--assert --k 5`). Neither file carries a `---- gate ----`
 header, because this is a private CT-lane step rather than a registered gate, so nothing in `package.json` or `scripts/ci-runner/manifest.ts` names either one.
 
 -----------------------------------------------------------------------------

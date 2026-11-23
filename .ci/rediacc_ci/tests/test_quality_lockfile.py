@@ -8,7 +8,7 @@ WHY A DIFFERENTIAL FOR THE DISCOVERY. `find . -name package-lock.json -not -path
 can fail for the right reason.
 
 The whole gate is what the committed shadow ledger
-`.ci/shadow/w7p2-lockfile.observations.jsonl` compares over five distinct trees;
+the ledger (deleted in commit:936280cd35) compares over five distinct trees;
 this file covers the seams that ledger cannot isolate.
 """
 
@@ -259,7 +259,7 @@ def test_a_lockfile_with_no_sibling_manifest_is_skipped_loudly(
 ) -> None:
     """SKIPPED, NOT SILENT, AND STILL EXIT 0.
 
-    The quality-security job checks out without submodules, so this state is legitimate. The twin warns twice -- once per lockfile and once in a summary -- and `scripts/lib/shadow-gate.ts` classifies a `⚠` line as a FINDING, so a port that downgraded either warning to chatter would show up as a mismatch.
+    The quality-security job checks out without submodules, so this state is legitimate. The twin warns twice -- once per lockfile and once in a summary -- and the shadow gate (commit:bf054adcd4) classifies a `⚠` line as a FINDING, so a port that downgraded either warning to chatter would show up as a mismatch.
     """
     root = tmp_path / "tree"
     _make(root, ["package-lock.json"])

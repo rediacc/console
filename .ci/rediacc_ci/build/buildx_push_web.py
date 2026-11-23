@@ -33,7 +33,7 @@ Two properties of `:?` that are easy to get wrong and are pinned:
     code. `require_cmd docker` (`:26`) runs BEFORE all five, so a machine with
     no docker hears about docker even when every variable is also missing.
 
-`$0` is the one thing that cannot agree between the two sides: bash prints the path it was invoked with and `sys.argv[0]` ends `.py`. The differential masks both to `<SELF>` and compares everything else byte-for-byte. `shadow-gate.ts` files the line as chatter on both sides -- no `✗`/`ERROR:`/`::error::` marker, and it does not match the `<path>:<line>:` finding shape either,
+`$0` is the one thing that cannot agree between the two sides: bash prints the path it was invoked with and `sys.argv[0]` ends `.py`. The differential masks both to `<SELF>` and compares everything else byte-for-byte. the shadow gate (commit:bf054adcd4) files the line as chatter on both sides -- no `✗`/`ERROR:`/`::error::` marker, and it does not match the `<path>:<line>:` finding shape either,
 because bash writes `: line 27:` with a space after the colon -- so it plays no part in any recorded ledger verdict.
 
 -----------------------------------------------------------------------------
@@ -71,7 +71,7 @@ ONE THING THAT IS NOT A DEFECT, stated so it is not "fixed" later
 -----------------------------------------------------------------------------
 `set -e` lets docker's exit status through unchanged: a build that fails with 17 exits 17, and the success line is not printed. That is the OPPOSITE of `build-www.sh`, which flattens npm's status to 1 (see `build_www`, defect 2). The two are inconsistent with each other and this one is the correct half, so it is kept exactly.
 
-K=5 LEDGER: `.ci/shadow/w7p6-buildx-push-web.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

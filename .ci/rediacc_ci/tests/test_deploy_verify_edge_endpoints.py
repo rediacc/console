@@ -24,7 +24,7 @@ let the next port "correct" one and diverge. They are FINDING 1 (a missing
 FINDING 3 IS THE ONE PLACE THE PORT IS DELIBERATELY NOT FAITHFUL, and it has its own case below with the mechanism spelled out: a fractional `EDGE_RETRY_SLEEP` makes the twin report `Smoke test passed` and exit 0 on a deployment that failed. Reproducing a silent pass in a second language is not a port, so the port answers correctly and this file asserts the DIVERGENCE rather than
 pretending it away.
 
-K=5 LEDGER: `.ci/shadow/w7p6-verify-edge-endpoints.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

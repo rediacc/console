@@ -1,7 +1,7 @@
 """`rediacc_ci.quality.setup_idempotency` against the awk and shell it replaces.
 
 WHAT THIS FILE COVERS. The function-body extractor (an awk one-liner whose exact stop condition matters), the two settle oracles that decide whether a tree delta belongs to `setup --check` or to a neighbouring gate, and the four assertions that read a file rather than running one. The whole gate, including the E and C subprocesses, is covered by
-`.ci/shadow/w7p2-setup-idempotency.observations.jsonl` over five distinct trees.
+the ledger (deleted in commit:936280cd35) over five distinct trees.
 """
 
 import pathlib

@@ -25,7 +25,7 @@ against a stale copy of the twin proves the port matches something nobody ships.
 `grep -A1` IS A LINE-WINDOW, NOT A FILTER, and reproducing it needs saying out loud. It emits the matching line AND the following one, so a flag whose `add_argument(` call wraps onto the next line is still seen. A port that scanned only matching lines would silently lose every wrapped call -- and the gate's own comment explains why the window exists rather than a whole-file grep:
 "a bare `grep -oE '\"--[a-z-]+\"'` over the whole script also matches internal subprocess flags the script shells out to (git's `--abbrev-ref`, gh's `--repo`), which are not the script's own CLI surface at all."
 
-`sort -u` UNDER `LC_ALL=C`, which `scripts/lib/shadow-gate.ts` pins for both
+`sort -u` UNDER `LC_ALL=C`, which the shadow gate (commit:bf054adcd4) pins for both
 sides. Python's `sorted()` on these ASCII strings is byte order, so the two agree;
 the pin is what makes that true rather than a coincidence of the developer's locale.
 

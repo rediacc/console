@@ -2,7 +2,7 @@
 
 THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/security/shfmt.sh` and the port over one scratch tree apiece and compared the exit code, both streams and the recorded argv of every tool call.
 
-The ledger `.ci/shadow/w7p6-shfmt.observations.jsonl` recorded that comparison over five distinct trees, every one of them EQUIVALENT; the row count is stated here from the file rather than carried forward.
+The ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees, every one of them EQUIVALENT; the row count is stated here from the file rather than carried forward.
 
 HOW THE CORPUS IS HELD STABLE. This gate prints `shfmt --version` and renders whatever diff the real formatter produces, so both the pin and the formatter's own rendering could have ended up frozen into a golden. Neither does.
 

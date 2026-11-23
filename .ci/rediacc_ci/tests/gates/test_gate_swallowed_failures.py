@@ -41,7 +41,7 @@ from rediacc_ci.tests.gates import harness
 
 # test_real_tree_is_clean, test_the_repaired_sites_stay_repaired and the added inertness control all read the real tree, but reads need no group. See the docstring.
 
-# THE SUBJECT IS THE PYTHON GATE NOW. It was `.ci/scripts/quality/check-swallowed-failures.sh` (blob `e7b12ba15c41569a88ea8065007e246ab948f2ee`), retired in W7P5-c once `.ci/shadow/w7p2-swallowed-failures.observations.jsonl` held K=5 -- 10 rows, 10 distinct tree ids, 4 distinct fingerprints, every verdict `EQUIVALENT`.
+# THE SUBJECT IS THE PYTHON GATE NOW. It was `.ci/scripts/quality/check-swallowed-failures.sh` (blob `e7b12ba15c41569a88ea8065007e246ab948f2ee`), retired in W7P5-c once the ledger (deleted in commit:936280cd35) held K=5 -- 10 rows, 10 distinct tree ids, 4 distinct fingerprints, every verdict `EQUIVALENT`.
 # The repoint was DRIVEN before the deletion rather than assumed: a seam-free real-tree run and a fixture whose single swallowed capture exits 1 were each run on both sides, stdout and stderr captured SEPARATELY, byte-identical on all four streams.
 GATE_REL = ".ci/scripts/quality/check_swallowed_failures.py"
 GATE = paths.from_root(*GATE_REL.split("/"))

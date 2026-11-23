@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Does `machine.run_setup` still reach every phase `phases.PHASES` declares, in that order?
 
-WHAT IS LEFT OF THE PORT CHECK, AND WHY. This gate was written across the bash-to-Python cutover with five clauses. Four of them compared against the bash `setup()` and the shadow ledger `.ci/shadow/e1-setup.observations.jsonl` (deleted by agent/plans/PLAN-tooling-code-reduction.md CR1; last present at commit:aa829a19dc), and both have been gone since the flip, so those clauses could only ever skip. What stays is the clause that catches the drift that actually happens:
+WHAT IS LEFT OF THE PORT CHECK, AND WHY. This gate was written across the bash-to-Python cutover with five clauses. Four of them compared against the bash `setup()` and the shadow ledger the ledger (deleted in commit:936280cd35) (deleted by agent/plans/PLAN-tooling-code-reduction.md CR1; last present at commit:aa829a19dc), and both have been gone since the flip, so those clauses could only ever skip. What stays is the clause that catches the drift that actually happens:
 
   A1  `phases.PHASE_KEYS` and the order of the same keys inside
       `machine.run_setup`'s SOURCE agree, in both directions and in order.

@@ -12,7 +12,7 @@ Sentinels are written LAST, after every gate has passed. A prefix that is non-em
 THE DUPLICATE THAT ALREADY EXISTS, NAMED RATHER THAN LEFT TO BE FOUND
 --------------------------------------------------------------------------
 `.ci/rediacc_ci/quality/release_state.py` ALREADY carries a port of the ASSERTION half of this library, inlined into one gate because that gate was ported (W7 P2) before the library was. REPOINTING IT IS NOT DONE HERE and is not this module's licence to grant: that gate has its own recorded shadow ledger
-(`.ci/shadow/w7p2-release-state.observations.jsonl`, K=5), and a body swap under
+(the ledger (deleted in commit:936280cd35), K=5), and a body swap under
 a ledger is a separate change with its own evidence. What the two hold, so that whoever collapses them knows exactly what moves:
 
   * SHARED, and byte-identical in their emitted lines: `pre_contract_floor`,

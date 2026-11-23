@@ -34,7 +34,7 @@ own `<script>: line 36: VERSION: tag-submodules.sh: VERSION must be set` and exi
 ruling as the `${VAR:?msg}` twins in `rediacc_ci.deploy`), so this port prints
 `rediacc_ci.release.tag_submodules: VERSION must be set` to stderr and exits 1. The exit code, the stream and the substance match; the wrapper's prefix does not. `:?` fires on set-but-EMPTY as well as unset, and so does this.
 
-K=5 LEDGER: `.ci/shadow/w7p6-tag-submodules.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

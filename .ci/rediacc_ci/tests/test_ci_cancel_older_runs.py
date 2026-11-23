@@ -1,6 +1,6 @@
 """`rediacc_ci.ci.cancel_older_runs`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/ci/cancel-older-runs.sh` and the port over the same fake `gh` and compared exit code, stdout, stderr and the recorded call log. The K=5 ledger `.ci/shadow/w7p6-cancel-older-runs.observations.jsonl` recorded that comparison, and `.ci/shadow/w7p4b-cancel-older-runs.observations.jsonl` holds ten more trees from the earlier
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/ci/cancel-older-runs.sh` and the port over the same fake `gh` and compared exit code, stdout, stderr and the recorded call log. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison, and the ledger (deleted in commit:936280cd35) holds ten more trees from the earlier
 pass. The twin has now been deleted and every case that executed it compares against `goldens/cancel-older-runs/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 THE FAKE `gh` IS RECORDING, AND THE CALL LOG IS THE POINT. This script's only effect on the world is the sequence of `gh api` calls it makes: the run lookup, the in-progress listing with its four query parameters, and one POST per older run to `force-cancel` and then to `cancel`. A recording of the streams alone would bless a port that cancelled the WRONG run, or that hit the
@@ -10,7 +10,7 @@ LOOP CASES LEAVE THROUGH THE CLEAN DOOR, NOT THROUGH THE TIMEOUT, AND THAT WAS
 LEARNED THE HARD WAY. The twin's loop had two exits: "no older CI runs in progress" and the timeout. Driving a cancellation round with `--timeout 1 --poll-interval 1` looks like it gives exactly one round -- iteration one sees
 elapsed 0, cancels, sleeps, iteration two sees elapsed >= 1 and gives up -- but
 `START_TIME=$(date +%s)` and the loop's `$(date +%s)` were two separate reads of
-a whole-second clock, so if a second boundary fell between them the FIRST iteration already saw elapsed 1 and the script gave up having done nothing. That is a real property of the twin (reproduced by the port, since it reads the same clock the same way) and it made a shadow-gate row record MISMATCH_FINDINGS purely on which side of a second the two runs landed.
+a whole-second clock, so if a second boundary fell between them the FIRST iteration already saw elapsed 1 and the script gave up having done nothing. That is a real property of the twin (reproduced by the port, since it reads the same clock the same way) and it made a shadow gate row record MISMATCH_FINDINGS purely on which side of a second the two runs landed.
 
 So every loop case here sets `FAKE_LIST_THEN_EMPTY=1` and a generous timeout:
 the first listing returns the fixture, every later one returns an empty array, and the loop leaves through the clean door after exactly one round. The timeout arm is exercised separately with `--timeout 0`, which is the one value that cannot race.

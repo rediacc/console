@@ -1,6 +1,6 @@
 """No OTLP/Pyroscope credential may be baked into a built artifact.
 
-Ported from `.ci/scripts/quality/check-no-otlp-creds.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-otlp-creds.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-no-otlp-creds.sh`, which W7 P5 batch A2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 WHAT THE TWIN ENFORCES, carried from its own header because the list IS the gate:
 
@@ -37,7 +37,7 @@ the improvement as NEW_SIDE_NOISY, correctly. It is reported as a twin finding i
 `go version -m` IS INVOKED, NOT REIMPLEMENTED. Parsing `.go.buildinfo` in Python would be a second implementation of a format the Go toolchain owns, and the two would drift the first time the format moved. The twin shells out; so does this. A MISSING `go` IS EXIT 2 AND A LOUD MESSAGE, which is the twin's behaviour and also the house rule: a missing tool is a failure with the fix in
 the message.
 
-STDERR PASSTHROUGH KEEPS ITS INDENT. On a `go version -m` failure the twin does `sed 's/^/ /' "$buildinfo_err" >&2` -- four spaces, raw, NOT through log_error. That matters to `scripts/lib/shadow-gate.ts`: an indented line under a finding is compared as part of that finding, so re-routing it through the logger would add a `✗ ` and change the finding text. It is printed the same way
+STDERR PASSTHROUGH KEEPS ITS INDENT. On a `go version -m` failure the twin does `sed 's/^/ /' "$buildinfo_err" >&2` -- four spaces, raw, NOT through log_error. That matters to the shadow gate (commit:bf054adcd4): an indented line under a finding is compared as part of that finding, so re-routing it through the logger would add a `✗ ` and change the finding text. It is printed the same way
 here.
 
 THE EMPTY-BUILDINFO CHECK IS `${buildinfo//[[:space:]]/}`, not `-z`. A Go binary
@@ -94,7 +94,7 @@ BASE64_LINE_RE = re.compile(r"^[A-Za-z0-9+/=]{20,}$")
 # of a literal apostrophe inside a single-quoted shell pattern.
 BASIC_LITERAL_RE = re.compile(r"[\"']Basic [A-Za-z0-9+/=]{20,}[\"']")
 
-# The em dash in NO_RENET_WARN is the TWIN'S BYTE, not authored prose, and the string is kept identical to what the retired twin printed (the committed ledger `.ci/shadow/w7p2-otlp-creds.observations.jsonl` records that stdout); no differential runs against it any more. It is written as an escape so this source file carries none. NO_RENET_HINT departs from the twin on purpose: it names the Python port of the deleted build-renet.sh.
+# The em dash in NO_RENET_WARN is the TWIN'S BYTE, not authored prose, and the string is kept identical to what the retired twin printed (the committed ledger the ledger (deleted in commit:936280cd35) records that stdout); no differential runs against it any more. It is written as an escape so this source file carries none. NO_RENET_HINT departs from the twin on purpose: it names the Python port of the deleted build-renet.sh.
 NO_RENET_WARN = (
     "no renet binaries found at private/renet/bin or private/bin \u2014 skipping renet checks"
 )

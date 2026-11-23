@@ -104,7 +104,7 @@ THE AWK BLOCK-SCALAR PARSER IS TRANSLATED, not shelled out. Its two subtleties a
 because the comparison is `ind <= envind`, and an off-by-one there silently
 changes which lines belong to the mapping.
 
-STREAMS. `log_error` is `✗ <msg>` on stderr; every `Line:` / `Fix:` / continuation line is a bare `echo` on stdout. That split is the reason `scripts/lib/shadow-gate.ts` sees one finding per violation rather than three.
+STREAMS. `log_error` is `✗ <msg>` on stderr; every `Line:` / `Fix:` / continuation line is a bare `echo` on stdout. That split is the reason the shadow gate (commit:bf054adcd4) sees one finding per violation rather than three.
 
 ---- gate ----
 lane: quality-code

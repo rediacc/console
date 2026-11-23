@@ -41,7 +41,7 @@ WHAT SOURCING constants.sh COSTS, reproduced because it fires before any argumen
 checkout with no toolchain.env, and so does this. The two `${VAR:?}` refusals
 further down constants.sh are NOT reproduced: they need a toolchain.env that exists but is incomplete, which nothing in this repository can produce, and a divergence nobody can reach is worse documented than implemented.
 
-K=5 LEDGER: `.ci/shadow/w7p6-update-homebrew-tap.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

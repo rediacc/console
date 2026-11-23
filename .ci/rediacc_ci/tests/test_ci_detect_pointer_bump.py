@@ -65,7 +65,7 @@ NEW_POINTER = "2222222222222222222222222222222222222222"
 
 # A MODEL of the three `gh api` calls this script makes.
 #
-# THE `call: ` PREFIX IS LOAD-BEARING FOR THE LEDGER, not decoration. `shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER before a `--finding-re` is consulted, and this script reports ONLY through `log_info`, which is `✓ `. Without a distinctly prefixed line from the fake, every ledger row would read VACUOUS_BOTH_EMPTY however the regex was written.
+# THE `call: ` PREFIX IS LOAD-BEARING FOR THE LEDGER, not decoration. the shadow gate (commit:bf054adcd4) classifies any line starting with `→ ` or `✓ ` as CHATTER before a `--finding-re` is consulted, and this script reports ONLY through `log_info`, which is `✓ `. Without a distinctly prefixed line from the fake, every ledger row would read VACUOUS_BOTH_EMPTY however the regex was written.
 FAKE_GH = r'''#!/usr/bin/python3
 """Recording fake for `gh api`. See the test module docstring."""
 import os

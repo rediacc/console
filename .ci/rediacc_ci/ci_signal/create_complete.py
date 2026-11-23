@@ -39,7 +39,7 @@ TWO DIVERGENCES, BOTH NAMED RATHER THAN HIDDEN:
      naming nothing at all. The differential asserts the exit code on both
      sides and the path only on the port's.
 
-K=5 LEDGER: `.ci/shadow/w7p6-create-complete.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

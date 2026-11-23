@@ -1,6 +1,6 @@
 """`rediacc_ci.ci.dispatch_watchdog`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/ci/dispatch-watchdog.sh` and the port through the same recording fake `gh` and compared exit code, stdout and stderr. The K=5 ledger `.ci/shadow/w7p6-dispatch-watchdog.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been deleted and every case that executed it compares against
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/ci/dispatch-watchdog.sh` and the port through the same recording fake `gh` and compared exit code, stdout and stderr. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees. The twin has now been deleted and every case that executed it compares against
 `goldens/dispatch-watchdog/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 THE FAKE `gh` IS NOT A CONVENIENCE: every path of this script either reads the GitHub API or DISPATCHES A WORKFLOW RUN, so there is no invocation a recording could safely let reach GitHub. The fake logs its own argv as `call: gh ...` on stderr -- which is why no separate call-log section is needed here, the calls ARE in the recorded stderr -- and answers from five environment
@@ -16,7 +16,7 @@ THE TWO SUBCOMMANDS ANSWER SEPARATELY because the twin treated their streams dif
 while `try_dispatch` captured `gh workflow run`'s two streams MERGED and hid
 them entirely on success. A single-answer fake would make those two facts indistinguishable.
 
-The `call:` line is also what made a shadow-gate ledger possible for this pair. `shadow-gate.ts` classifies `→ ` and `✓ ` as CHATTER before any `--finding-re` is consulted, and a successful dispatch reported ONLY through `log_info`, so no message-text regex could ever produce a finding on the happy path. The ledger was recorded with `--finding-re '^call: '`.
+The `call:` line is also what made a shadow gate ledger possible for this pair. the shadow gate (commit:bf054adcd4) classifies `→ ` and `✓ ` as CHATTER before any `--finding-re` is consulted, and a successful dispatch reported ONLY through `log_info`, so no message-text regex could ever produce a finding on the happy path. The ledger was recorded with `--finding-re '^call: '`.
 
 TWO KINDS OF CASE ARE NOT COMPARED BYTE FOR BYTE, and both say so in `DIVERGENT`. bash's `${VAR:?}` and `$2: unbound variable` name a LINE OF THE TWIN, which the port cannot and must not reproduce; those cases compare the status, the empty stdout and the reason instead. Defect C's octal reading is now decimal (Rule T), so `08` loses bash's `((: 08: value too great for base` line and `025` ends the chain; both are pinned by `test_delta_a_zero_padded_generation_is_decimal_and_the_cap_runs` against their recordings.
 

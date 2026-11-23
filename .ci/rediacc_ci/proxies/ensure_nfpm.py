@@ -34,7 +34,7 @@ THE PIN IS READ WITH BOTH STREAMS DISCARDED HERE, unlike in the subject
 '%s' "${NFPM_VERSION:-}" )`. A constants.sh that refuses (missing
 `.devcontainer/toolchain.env`) therefore says NOTHING here, and the proxy's own "could not read NFPM_VERSION" message is the only diagnostic. The subject inherits both streams instead. Reproduced as written, in both places.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-ensure-nfpm.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

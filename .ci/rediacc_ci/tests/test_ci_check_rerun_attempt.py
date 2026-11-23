@@ -6,7 +6,7 @@ log.
 WHILE BOTH COPIES EXISTED each case ran `.ci/scripts/ci/check-rerun-attempt.sh` beside the port over the same fake, comparing exit code, stdout, stderr, the call log and the `$GITHUB_ENV` file. Three of the five exits are bash's own diagnostics, carrying `<program>: line <N>:`, and only the program NAME was normalised away; the line numbers were compared. Those numbers are now
 frozen archaeology, pinned as constants on the port and asserted below against the port's own output rather than re-derived from a file that no longer exists.
 
-The K=5 ledger `.ci/shadow/w7p6-check-rerun-attempt.observations.jsonl` recorded the verdict over nine distinct trees (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-check-rerun-attempt --assert --k 5`) and licensed the port; W7 P5 retired the twin and the cases that executed it went with it.
+The K=5 ledger the ledger (deleted in commit:936280cd35) recorded the verdict over nine distinct trees and licensed the port; W7 P5 retired the twin and the cases that executed it went with it.
 """
 
 from __future__ import annotations

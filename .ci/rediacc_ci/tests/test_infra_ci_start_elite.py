@@ -16,8 +16,8 @@ ONE LINE IS NORMALIZED, and only one: ` load average (1m 5m 15m): ...`. Both sid
 
 THE TWIN IS A SHIM NOW (W11-C). Every `old` answer comes from `goldens/twins/infra.ci-start-elite.jsonl` through `differential.twin_run`: both streams (the load line masked), the docker/curl/run.sh call log and the written `.env`, as the original bash produced them on the fixture each case builds. The shim itself is held by `test_the_shim_*`.
 
-K=5 LEDGER: `.ci/shadow/w7p6-ci-start-elite.observations.jsonl`, recorded
-against a disposable git repo built outside this checkout (this checkout is never clean and `shadow-gate.ts --record` refuses a dirty tree). See that file's own recording notes in the wave report.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35), recorded
+against a disposable git repo built outside this checkout (this checkout is never clean and `the shadow gate (commit:bf054adcd4) --record` refuses a dirty tree). See that file's own recording notes in the wave report.
 """
 
 from __future__ import annotations

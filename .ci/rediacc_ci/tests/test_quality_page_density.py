@@ -5,7 +5,7 @@ identical on both sides of the comparison this file used to carry.
 
 THE SEAM IS PATH, populated with recording stubs for `npx`, `node` and `docker` (ruling 7's shape, as in `test_pr_sync_epic_block.py`). Each stub prints its own name, its argv and its cwd, so a divergence in ANY of the three things the launcher decides shows up as a text difference rather than as a silent pass.
 
-K=5 LEDGER: `.ci/shadow/w7p6-page-density.observations.jsonl` -- five distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (dirty tree; `--record` refuses one) with the same recording stubs on PATH, varying the branch across trees: REDIACC_SMOKE_NO_DOCKER=1, docker absent, two different
+K=5 LEDGER: the ledger (deleted in commit:936280cd35) -- five distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (dirty tree; `--record` refuses one) with the same recording stubs on PATH, varying the branch across trees: REDIACC_SMOKE_NO_DOCKER=1, docker absent, two different
 playwright versions, and a failing node.
 
 ON THE STRENGTH OF IT THE TWIN `.ci/scripts/quality/page-density.sh` was retired in W7 P5, and the cases that ran it went with it: the escape hatch, the docker-absent note, the derived image tag, `--ipc=host`, exit-code propagation from node, npx and the container, node's stderr reaching the caller, and the two 127 paths where bash's own `line NN:` prefix made agreement a

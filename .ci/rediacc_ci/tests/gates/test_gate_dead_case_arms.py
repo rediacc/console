@@ -22,7 +22,7 @@ from rediacc_ci.tests.gates import harness
 
 # The twin reads the real tree (`.ci/media` is scanned on every invocation, and the default CODE_DIRS greps `.ci/scripts`, `scripts` and `packages/www/scripts`), but reads need no group. See the module docstring.
 
-# THE SUBJECT IS THE PYTHON GATE NOW. It was `.ci/scripts/quality/check-dead-case-arms.sh` (blob `19c18e3f491528ad54c0e1fb8832f626b0eade9d`), retired in W7P5-c once `.ci/shadow/w7p2-dead-case-arms.observations.jsonl` held K=5 -- 5 rows, 5 distinct tree ids, 5 distinct fingerprints, every verdict `EQUIVALENT`. The repoint was DRIVEN before the deletion, not assumed: a clean
+# THE SUBJECT IS THE PYTHON GATE NOW. It was `.ci/scripts/quality/check-dead-case-arms.sh` (blob `19c18e3f491528ad54c0e1fb8832f626b0eade9d`), retired in W7P5-c once the ledger (deleted in commit:936280cd35) held K=5 -- 5 rows, 5 distinct tree ids, 5 distinct fingerprints, every verdict `EQUIVALENT`. The repoint was DRIVEN before the deletion, not assumed: a clean
 # real-tree run with no overrides and a fixture carrying one dead arm beside one live arm were each run on both sides, stdout and stderr captured SEPARATELY, byte-identical on all four streams, with the fixture genuinely exiting 1 and naming the dead arm so the comparison was not made over two silent runs.
 GATE = paths.from_root(".ci", "scripts", "quality", "check_dead_case_arms.py")
 

@@ -8,8 +8,8 @@ up from where each actually lives -- `.ci/scripts/infra/` for the twin, `.ci/red
 
 THE TWIN IS A SHIM NOW (W11-C). Every `old` answer comes from `goldens/twins/infra.ci-stop-elite.jsonl` through `differential.twin_run`: both streams and the docker call log, as the original bash produced them on the fixture each case builds.
 
-K=5 LEDGER: `.ci/shadow/w7p6-ci-stop-elite.observations.jsonl`, recorded
-against a disposable scratch git repo built outside this checkout (this checkout's own working tree is not clean; `shadow-gate.ts --record` refuses a dirty tree). See that file's own header for the exact recording commands.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35), recorded
+against a disposable scratch git repo built outside this checkout (this checkout's own working tree is not clean; `the shadow gate (commit:bf054adcd4) --record` refuses a dirty tree). See that file's own header for the exact recording commands.
 """
 
 from __future__ import annotations

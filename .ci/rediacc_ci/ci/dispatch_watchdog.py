@@ -5,7 +5,7 @@ Dispatches ONE generation of the chained watchdog monitor. The twin's header car
 
 LIVE CALLERS, not repointed: `.github/workflows/ci.yml` (CI Watchdog bootstrap, `--generation 1`) and `.github/workflows/ops-watchdog-monitor.yml` (chain handoff). The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
-Ledger: `.ci/shadow/w7p6-dispatch-watchdog.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-watchdog --assert --k 5`).
+Ledger: the ledger (deleted in commit:936280cd35).
 
 -----------------------------------------------------------------------------
 DEFECT C, FIXED AS A DELIBERATE DELTA (Rule T): THE GENERATION CAP WAS

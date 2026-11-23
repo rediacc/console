@@ -1,6 +1,6 @@
 """Differential: `rediacc_ci.deploy.sync_media_to_r2` against its twin `.ci/scripts/deploy/sync-media-to-r2.sh`.
 
-A RECORDING FAKE `aws` ON A SCRATCH PATH. Nothing here reaches Cloudflare R2: the fake logs its exact argv, answers from the environment, and the only real credential name in the file is an environment KEY, never a value. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a
+A RECORDING FAKE `aws` ON A SCRATCH PATH. Nothing here reaches Cloudflare R2: the fake logs its exact argv, answers from the environment, and the only real credential name in the file is an environment KEY, never a value. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a
 separate, achievable piece of work. This is that piece.
 
 THE CALL LOG IS COMPARED AS WELL AS THE TWO STREAMS, and for an UPLOAD script it is the half that matters. What gets printed is three `Syncing ...` lines and a three-line closing recipe, none of it derived from what moved; the entire observable effect is which local directory went to which prefix, with which headers. A port that dropped `--cache-control` would print identical
@@ -81,7 +81,7 @@ argv = sys.argv[1:]
 with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
     fh.write("aws\\t" + "\\t".join(argv) + "\\n")
 
-# THE LEDGER LINE. shadow-gate.ts classifies every line starting with an arrow
+# THE LEDGER LINE. the shadow gate (commit:bf054adcd4) classifies every line starting with an arrow
 # or a tick as CHATTER before any --finding-re is consulted, and this script
 # reports through nothing else, so a message-text regex can never produce a
 # finding and every ledger row would read VACUOUS_BOTH_EMPTY. Echoing argv under

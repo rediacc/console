@@ -3,7 +3,7 @@
 WHY A DIFFERENTIAL. A1's detector is a three-stage grep pipeline whose behaviour on a comment, on a line that READS the pin, and on a line that restates it is decided by grep's `-F`/`-v` semantics rather than by anything a reader could infer, and the twin's own comments record two false positives it produced. A6's detector is four chained greps with three exemptions, each added
 after a measured false positive with a run id attached. Both are run for real here.
 
-The whole gate is covered by `.ci/shadow/w7p2-toolchain-pins.observations.jsonl` over five distinct trees.
+The whole gate is covered by the ledger (deleted in commit:936280cd35) over five distinct trees.
 """
 
 import os

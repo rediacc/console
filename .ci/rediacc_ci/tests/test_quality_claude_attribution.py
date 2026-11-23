@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.claude_attribution` against the grep it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-claude-attribution.observations.jsonl` drives the whole gate over five distinct trees: attribution in the PR body, in a commit message, in a commit author, all three at once, and an empty commit list. What a ledger row cannot isolate is that the gate is ONE regular expression, written as a POSIX ERE and evaluated by
+WHAT IS WORTH TESTING HERE. The shadow ledger the ledger (deleted in commit:936280cd35) drives the whole gate over five distinct trees: attribution in the PR body, in a commit message, in a commit author, all three at once, and an empty commit list. What a ledger row cannot isolate is that the gate is ONE regular expression, written as a POSIX ERE and evaluated by
 `grep -iE`, and that this port evaluates it with Python's `re` instead.
 
 Those two engines are not the same engine. `[[:space:]]` is six characters;

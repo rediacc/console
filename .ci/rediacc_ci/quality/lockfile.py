@@ -1,6 +1,6 @@
 """Validate EVERY package-lock.json in the tree, and that CI installs with the npm that wrote them.
 
-Ported from `.ci/scripts/quality/check-lockfile.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-lockfile.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-lockfile.sh`, which W7 P5 batch C1 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 WHY THE TWIN WAS REWRITTEN, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 
@@ -65,14 +65,14 @@ THE DISCOVERY IS `find`, NOT `git ls-files`, and that is deliberate in the twin:
 defeated by environment drift -- it passed locally on bash 5 and failed in CI."
 
 A SILENT SKIP IS THE FAILURE MODE THIS GATE ALREADY SURVIVED ONCE. The quality-security job checks out WITHOUT submodules, so `private/account*` and `private/growth*` legitimately do not exist there, and a lockfile with no `package.json` beside it is skipped -- LOUDLY, as a warning, listed again in a second warning at the end. The twin's own comment names the precedent: "a silent
-skip is how test-embed-credits.sh went green while checking nothing (round 3, 0707 campaign)." Both warnings are carried, and `scripts/lib/shadow-gate.ts` classifies a `⚠` line as a FINDING, so a port that quietly downgraded either one to chatter would show up as a mismatch rather than as tidier output.
+skip is how test-embed-credits.sh went green while checking nothing (round 3, 0707 campaign)." Both warnings are carried, and the shadow gate (commit:bf054adcd4) classifies a `⚠` line as a FINDING, so a port that quietly downgraded either one to chatter would show up as a mismatch rather than as tidier output.
 
-A HARNESS DEFECT FOUND WHILE RECORDING THIS PAIR, 2026-09-06, and it belongs here rather than in a report nobody re-reads. The advice line the twin prints when the CANONICAL writer fails begins "The canonical writer cannot read this lockfile", and `scripts/lib/shadow-gate.ts`'s REFUSAL vocabulary carries the term `CANNOT READ` matched case-INSENSITIVELY. So an ordinary sentence of
+A HARNESS DEFECT FOUND WHILE RECORDING THIS PAIR, 2026-09-06, and it belongs here rather than in a report nobody re-reads. The advice line the twin prints when the CANONICAL writer fails begins "The canonical writer cannot read this lockfile", and the shadow gate (commit:bf054adcd4)'s REFUSAL vocabulary carries the term `CANNOT READ` matched case-INSENSITIVELY. So an ordinary sentence of
 English advice is read as a gate refusing to report a verdict, the comparison is SUSPENDED, and the row lands as ERROR_REFUSAL even though both sides produced byte-identical output. The measured row: tree ce6f9586c98b8c00d6c23e8df690a5bb805c85d9, exit 1 on both sides, finding count 4 on both sides, fingerprint a2f5ffa94ca75e9a on BOTH sides, onlyOld and onlyNew both empty. Nothing
 disagreed.
 
 That matters more than it sounds, because `assertEquivalent` disqualifies a tree id UNCONDITIONALLY once any row against it is non-EQUIVALENT, and the id is the content of both implementations -- so a FALSE refusal can never be cleared by re-running, only by changing code that had nothing wrong with it. The row was archived verbatim and removed from the ledger rather than left to
-poison the pair forever, and the recorded trees now exercise the CI-installer failure branch instead. The canonical-writer branch is still covered, by `--selftest` ("PLANT: the canonical writer failing to resolve reds") and by the pytest twin. Reported to the root driver; not fixed here, because `scripts/lib/shadow-gate.ts` is not this port's file.
+poison the pair forever, and the recorded trees now exercise the CI-installer failure branch instead. The canonical-writer branch is still covered, by `--selftest` ("PLANT: the canonical writer failing to resolve reds") and by the pytest twin. Reported to the root driver; not fixed here, because the shadow gate (commit:bf054adcd4) is not this port's file.
 
 ONE LOCKFILE, ONE FIRST FAILURE. The three per-lockfile properties run in order (supply chain, resolvable, canonical form) and the first failure ends that lockfile's checks: a lockfile npm cannot resolve has no meaningful rewrite to compare, and reporting both would bury the fix under a diff of the damage.
 

@@ -1,6 +1,6 @@
 """`rediacc_ci.release.resolve_backfill_commit` against the bytes its bash twin printed.
 
-THE TWIN HAS BEEN DELETED. `.ci/scripts/release/resolve-backfill-commit.sh` had no call site outside its own usage header; the K=5 ledger `.ci/shadow/w7p5a-resolve-backfill-commit.observations.jsonl` holds five rows of equivalence over five distinct trees, and `goldens/resolve-backfill-commit/` holds the twin's OWN recorded bytes, captured on its last day in the tree. Each
+THE TWIN HAS BEEN DELETED. `.ci/scripts/release/resolve-backfill-commit.sh` had no call site outside its own usage header; the K=5 ledger the ledger (deleted in commit:936280cd35) holds five rows of equivalence over five distinct trees, and `goldens/resolve-backfill-commit/` holds the twin's OWN recorded bytes, captured on its last day in the tree. Each
 golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 EVERY CASE HERE RUNS AGAINST A THROWAWAY GIT REPOSITORY BUILT IN `tmp_path`, not against this checkout's own history, and the recording was taken the same way. The twin never `cd`ed -- it ran `git rev-list` / `git cat-file` / `git merge-base` against whatever repo the caller's cwd belonged to -- so a fixture repo with a controlled tag, a controlled `origin/main` (a plain ref,

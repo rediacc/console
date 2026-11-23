@@ -1,7 +1,7 @@
 """`rediacc_ci.ci_signal.create_complete`, driven against the bytes its bash twin produced.
 
 WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/signal/create-complete.sh` and the port over the same arguments and compared the whole `(exit, stdout, stderr)` tuple plus the BYTES OF BOTH FILES the script writes; a port that logged the right line and wrote the wrong file would pass a stdout-only comparison. The K=5 ledger
-`.ci/shadow/w7p6-create-complete.observations.jsonl` recorded that comparison over five distinct trees, against a disposable scratch git repo outside this checkout. The twin has now been deleted, and every case compares against `goldens/create-complete/`, which holds the twin's OWN recorded bytes, captured on its last day in the tree; the provenance header carries its blob
+the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees, against a disposable scratch git repo outside this checkout. The twin has now been deleted, and every case compares against `goldens/create-complete/`, which holds the twin's OWN recorded bytes, captured on its last day in the tree; the provenance header carries its blob
 sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
 BYTE-IDENTICAL IS STILL THE ASSERTION. The twin's two messages are literal strings with no timestamp, pid or tmp path in them except the output path itself, which the case supplies. The recorded shape therefore carries a third section, `--- files ---`, holding the JSON of what landed in the output directory and in the decoy directory beside it. Two of the seven writing cases

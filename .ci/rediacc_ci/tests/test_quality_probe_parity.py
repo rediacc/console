@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.probe_parity`, driven directly.
 
-WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-probe-parity.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-probe-parity.observations.jsonl`, which licensed the port at K=5; the twin was retired in W7 P5 and the fixture
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-probe-parity.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, the ledger (deleted in commit:936280cd35), which licensed the port at K=5; the twin was retired in W7 P5 and the fixture
 cases were retired with it, because a specimen holding one implementation compares nothing.
 
 WHAT THAT CORPUS COVERED, so the shape of the argument survives the deletion. This gate is a SET COVERAGE question with two symmetrical ways to be wrong: forgive everything (report parity always) or forgive nothing (report every verb missing). The corpus therefore carried a clean pair, a gap, the exemption being honoured, the exemption NOT being over-applied, and both

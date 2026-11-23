@@ -45,7 +45,7 @@ with `npm query` (same answer, 31 ms against 1,056 ms, and no dependency on
 npm query's output schema). `resolve_workspace` does the same walk in Python;
 the FIRST match wins and the search stops, as `process.exit(0)` does there.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-unit-tests.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

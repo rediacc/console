@@ -42,7 +42,7 @@ below sets it too; `install.sh`'s `${VAR:-}` defaults exist precisely because of
 `local p; p="$(command -v "$t")" && ln -sf ...` DOES NOT ABORT under `set -e`
 when the tool is absent, because the assignment is not the last command of the `&&` list. So the no-jq shim is built best-effort and a missing `uuidgen` (this sandbox has none) simply leaves that name unshimmed. Reproduced with `shutil.which() is None -> skip`.
 
-THE `mktemp` NAMES ARE THE ONE THING THIS PORT CANNOT KEEP, and unlike its two sibling ports this twin DOES quote them: the two `cleanup_legacy_state` failure messages embed `$HOME`, which is a `mktemp -d` path. Those lines are normalized in the differential and masked to `<tmp>` by the shadow-gate ledger's own rule.
+THE `mktemp` NAMES ARE THE ONE THING THIS PORT CANNOT KEEP, and unlike its two sibling ports this twin DOES quote them: the two `cleanup_legacy_state` failure messages embed `$HOME`, which is a `mktemp -d` path. Those lines are normalized in the differential and masked to `<tmp>` by the shadow gate ledger's own rule.
 
 Exit: 0 when all fourteen cases pass, 1 at the first that does not (the twin's `log_fail` is an immediate `exit 1`).
 """

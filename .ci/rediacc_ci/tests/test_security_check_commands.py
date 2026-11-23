@@ -1,6 +1,6 @@
 """`rediacc_ci.security.check_commands`, driven against the bytes its bash twin produced.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/security/check-commands.sh` and the port over one fixture tree each and compared exit code, stdout and stderr. The K=5 ledger `.ci/shadow/w7p6-check-commands.observations.jsonl` recorded that comparison over five distinct trees, re-recorded on 2026-09-10 against the fixed pair.
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/security/check-commands.sh` and the port over one fixture tree each and compared exit code, stdout and stderr. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees, re-recorded on 2026-09-10 against the fixed pair.
 
 THE TWIN HAS NOW BEEN DELETED, and every case compares against `goldens/check-commands/`, which holds the twin's OWN recorded bytes, captured on its last day in the tree. Each provenance header carries the twin's blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 

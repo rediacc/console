@@ -1,6 +1,6 @@
 """The release signing key must reach nfpm as CANONICAL armor.
 
-Ported from `.ci/scripts/quality/check-release-key-canonical.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-release-key.observations.jsonl` asserted equivalence over five distinct trees. Its gate header registers it as step "Release key canonical", needs none, lane quality-security.
+Ported from `.ci/scripts/quality/check-release-key-canonical.sh`, which W7 P5 batch A2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees. Its gate header registers it as step "Release key canonical", needs none, lane quality-security.
 
 WHY THIS EXISTS, carried whole from the twin, dated incident included:
 
@@ -29,12 +29,12 @@ PORT NOTES.
 THE TALLY IS TRANSLITERATED, NOT REPLACED BY `rediacc_ci.controls.Controls`. The twin sources `.ci/scripts/lib/gate-controls.sh`, whose header records why that file exists: "Extracted 2026-09-06 after check:ci-shape-duplication caught the same ~5 lines at three copies (check-release-key-canonical, check-release-signing-coverage, check-staging-tag-guard) and was right to". The
 twin's own line for it is "One copy of the tally, shared. check:ci-shape-duplication caught this body at three copies and the extraction converted only ONE of them, which took the count to two and made the gate quiet at its own threshold of three. Doing a third of the work is how a gate gets silenced instead of satisfied."
 
-`Controls` prints `FAIL <label>: got <got!r>, wanted <want!r>`; gate-controls.sh prints ` FAIL <label> (got '<got>' want '<want>')`. Both are findings to `scripts/lib/shadow-gate.ts` and their TEXT differs, so a port using `Controls`
+`Controls` prints `FAIL <label>: got <got!r>, wanted <want!r>`; gate-controls.sh prints ` FAIL <label> (got '<got>' want '<want>')`. Both are findings to the shadow gate (commit:bf054adcd4) and their TEXT differs, so a port using `Controls`
 for the gate's own output would disagree with the twin on every failing control
 and the differential would read MISMATCH_FINDINGS for a port behaving correctly. `Controls` is used only for `--selftest`, where nothing compares text. This is the SECOND port to make that call (`rediacc_ci.quality.staging_tag_guard` was the first) and the duplication is real: the right home is a shared `rediacc_ci.gate_controls` byte-compatible with the bash file. It is not
 created here because this change owns three files per subject and none of them is a new shared module, and because `.ci/rediacc_ci/core/` is off limits to this writer.
 
-THE FLOOR MESSAGE IS A REFUSAL TO THE COMPARATOR, and that shapes what a differential can be recorded over. `gate_finish`'s short-battery line contains "the battery is not being executed as written", which `scripts/lib/shadow-gate.ts` matches as a REFUSAL and which suspends the comparison entirely. So do the three early exits: "nothing here was verified" (no gpg) and "so NOTHING
+THE FLOOR MESSAGE IS A REFUSAL TO THE COMPARATOR, and that shapes what a differential can be recorded over. `gate_finish`'s short-battery line contains "the battery is not being executed as written", which the shadow gate (commit:bf054adcd4) matches as a REFUSAL and which suspends the comparison entirely. So do the three early exits: "nothing here was verified" (no gpg) and "so NOTHING
 was verified" (key generation failed). Those states are real and are ported faithfully, but no ledger row can be recorded over them -- a refusal is not a verdict, and pretending otherwise is exactly the vacuity the comparator refuses.
 
 gpg IS DRIVEN, NEVER REIMPLEMENTED. Every control here is a claim about what gpg and the canonicaliser do to real bytes; a Python OpenPGP library would answer a different question and would make the gate certify itself. `python-gnupg` is not imported and no key parsing happens in this module.
@@ -52,7 +52,7 @@ THE TWO ARE ASYMMETRIC WHEN THE FILE IS ABSENT, and reproducing that asymmetry i
 The pipeline's second grep reads an EMPTY STDIN and dutifully counts zero; the direct grep never opens a stream and writes only a warning to stderr, so the twin's `$(...)` captures the empty string. The gate therefore reports `(got '0' want '1')` for the guard control and `(got '' want '1')` for the call control over the SAME missing file, and both of those strings are compared
 findings. A port that returned 0 for both would disagree on one line of a real recorded row. `guard_count_field` returns a number always; `call_count_field` returns "" for an absent file.
 
-ONE RESIDUAL DIVERGENCE, named rather than hidden: grep's own `ugrep: warning: <path>: No such file or directory` lands on the twin's stderr and this port writes nothing there. `scripts/lib/shadow-gate.ts` classifies that line as CHATTER (it carries no severity marker and its `.sh:` is not followed by a line number), and chatter is recorded but never compared, so it cannot change a
+ONE RESIDUAL DIVERGENCE, named rather than hidden: grep's own `ugrep: warning: <path>: No such file or directory` lands on the twin's stderr and this port writes nothing there. the shadow gate (commit:bf054adcd4) classifies that line as CHATTER (it carries no severity marker and its `.sh:` is not followed by a line number), and chatter is recorded but never compared, so it cannot change a
 verdict. It is still a difference in the bytes a human diffs.
 
 `grep -c '|| canon_rc=\\$?'` IS A BRE WITH AN ESCAPED DOLLAR, i.e. the literal

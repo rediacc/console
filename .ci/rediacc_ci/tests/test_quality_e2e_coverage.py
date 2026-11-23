@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.e2e_coverage` against the grep and sed pipelines it replaces.
 
-WHAT THE SHADOW LEDGER ALREADY PROVES, so that this file does not repeat it: `.ci/shadow/w7p2-e2e-coverage.observations.jsonl` drives both implementations end to end over five distinct committed trees, with a dead method dispatch, a dead raw dispatch, both at once, and a contract whose oracle array is gone. Exit codes and finding sets agree on all five.
+WHAT THE SHADOW LEDGER ALREADY PROVES, so that this file does not repeat it: the ledger (deleted in commit:936280cd35) drives both implementations end to end over five distinct committed trees, with a dead method dispatch, a dead raw dispatch, both at once, and a contract whose oracle array is gone. Exit codes and finding sets agree on all five.
 
 WHAT THE LEDGER CANNOT ISOLATE is the EXTRACTION, and that is what is here. The
 reverse half is three text pipelines: a bash `=~` state machine over the

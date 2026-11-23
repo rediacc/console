@@ -1,7 +1,7 @@
 """`rediacc_ci.quality.plan_housekeeping` against the sed and bash it replaces.
 
 WHAT THE SHADOW LEDGER ALREADY PROVES:
-`.ci/shadow/w7p2-plan-housekeeping.observations.jsonl` drives both implementations end to end over five distinct committed git trees, each built
+the ledger (deleted in commit:936280cd35) drives both implementations end to end over five distinct committed git trees, each built
 with per-file `GIT_COMMITTER_DATE` so the age instrument answers differently per
 plan: an over-age plan, a second one plus a plan in the warn band, an allowlist entry that suppresses nothing, an expired entry beside a thin BLOCKER and a dangling path, and a compacted record whose blob does not resolve.
 
@@ -30,7 +30,7 @@ import pytest
 from rediacc_ci import log, paths
 from rediacc_ci.quality import plan_housekeeping as hk
 
-# THE `TWIN` CONSTANT IS GONE. `.ci/scripts/quality/check-plan-housekeeping.sh` was retired in W7P5-c, blob `f985c1c71a9239eaa6eeda699b7d7235d839669b`, once `.ci/shadow/w7p2-plan-housekeeping.observations.jsonl` held K=5 over 5 distinct trees with 5 distinct fingerprints, every verdict `EQUIVALENT`. The sed programs below are unchanged: they were ALREADY frozen literals copied
+# THE `TWIN` CONSTANT IS GONE. `.ci/scripts/quality/check-plan-housekeeping.sh` was retired in W7P5-c, blob `f985c1c71a9239eaa6eeda699b7d7235d839669b`, once the ledger (deleted in commit:936280cd35) held K=5 over 5 distinct trees with 5 distinct fingerprints, every verdict `EQUIVALENT`. The sed programs below are unchanged: they were ALREADY frozen literals copied
 # out of the twin rather than read from it at test time, so they keep running the real `sed` against the port exactly as before. Only the two cases that OPENED the twin's source changed, each to the golden recorded at its own docstring.
 CONFIG = paths.CI_DIR.parent / ".ci" / "config" / "plan-lifecycle.json"
 
@@ -292,7 +292,7 @@ def test_age_days_reports_over_and_under_and_refuses_a_bad_date() -> None:
 def test_is_shallow_stayed_dead_and_was_never_imported() -> None:
     """A finding about the twin, frozen so it is not silently re-imported.
 
-    THE TWIN-SIDE HALF IS A GOLDEN NOW, NOT A READ. Until W7P5-c this case opened `check-plan-housekeeping.sh` and asserted `is_shallow()` was defined exactly once, meaning defined and never called. That twin was deleted in W7P5-c after `.ci/shadow/w7p2-plan-housekeeping.observations.jsonl` held K=5 (5 rows, 5 distinct trees, 5 distinct fingerprints, all `EQUIVALENT`), and the
+    THE TWIN-SIDE HALF IS A GOLDEN NOW, NOT A READ. Until W7P5-c this case opened `check-plan-housekeeping.sh` and asserted `is_shallow()` was defined exactly once, meaning defined and never called. That twin was deleted in W7P5-c after the ledger (deleted in commit:936280cd35) held K=5 (5 rows, 5 distinct trees, 5 distinct fingerprints, all `EQUIVALENT`), and the
     measurement below was taken from the live file immediately before deletion rather than remembered: at blob `f985c1c71a9239eaa6eeda699b7d7235d839669b` the string `is_shallow` occurred exactly ONCE in the whole file, at line 318, as the definition `is_shallow() {`. One occurrence is the whole claim: a definition with no caller.
     (The old docstring said `:275`; that citation had gone stale and the real line was 318, which is the kind of drift a frozen number records and a live read hides.)
 

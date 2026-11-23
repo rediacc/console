@@ -41,7 +41,7 @@ TWO OBSERVATIONS ABOUT THE TWIN, NEITHER OF THEM REPAIRED HERE (this wave's acce
      sixteenth key to the twin without touching that line, the test says so
      instead of the log quietly under-reporting.
 
-K=5 LEDGER: `.ci/shadow/w7p6-set-preview-worker-secrets.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

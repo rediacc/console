@@ -41,7 +41,7 @@ TWO DIVERGENCES, BOTH IN TEXT THAT ONLY A HUMAN READS:
      recomputes the sed pipeline from the twin file and fails if the two ever
      drift.
 
-K=5 LEDGER: `.ci/shadow/w7p6-cf-purge-urls.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

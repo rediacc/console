@@ -4,7 +4,7 @@ Starts the Elite on-premise Docker Compose stack through the operator entry poin
 
 LIVE CALLERS, one repointed at this module by W7P4-b and one still on the twin:
   * `.github/workflows/ci.yml` -- `run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_elite`,
-    licensed by `.ci/shadow/w7p4b-ci-start-elite.observations.jsonl` (seven rows,
+    licensed by the ledger (deleted in commit:936280cd35) (seven rows,
     `--assert --k 5` green). The recording fixture supplies `private/elite/run.sh`
     itself: the submodule is not part of a scratch tree, and what the ledger attests
     to is this script's contract WITH that entry point -- the argv it passes and the
@@ -20,7 +20,7 @@ WHAT MOVES AND WHAT DOES NOT. The orchestration moves to Python: the `.env` writ
     real bash and read its exported set back through `env -0`; that twin is
     deleted, its answers are frozen in `goldens/twins/infra.ci-env.jsonl`, and
     the cutover itself is licensed by
-    `.ci/shadow/w7p5c-ci-start-elite-cutover.observations.jsonl` (old side: this
+    the ledger (deleted in commit:936280cd35) (old side: this
     module as it was, sourcing the bash; new side: this module).
   * `private/elite/run.sh` is a submodule's operator entry point and is invoked
     as a subprocess, argument for argument.

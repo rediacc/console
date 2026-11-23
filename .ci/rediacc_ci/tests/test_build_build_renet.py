@@ -24,10 +24,10 @@ FOUR KINDS OF EVIDENCE ARE COMPARED, because no one of them is sufficient:
 THE FILESYSTEM'S SHARE: the recorded listing came off tmpfs, where a directory's size is its entry count times 20 (`60`, `80`) under a `total 8`; ext4, which is what GitHub's runner hands pytest, prints `4096` under a `total 16` and so pads every size in the column two wider. `diff.mask_ls_filesystem` removes exactly that (the `total` number, a DIRECTORY's size, the column padding) from both sides, and `test_the_ls_mask_hides_only_what_the_filesystem_owns` pins it in both directions. Twelve tests here failed on run 38389205702 for that reason alone.
 
 RECORDING FAKES WRITE TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. This script's stdout IS an artifact (the `ls` listing and the checksum file), and a fake that logged to stdout would corrupt the very output under comparison. The `FAKEBIN ` prefix
-is also what the K=5 ledger scopes `--finding-re` to, because `shadow-gate.ts`
+is also what the K=5 ledger scopes `--finding-re` to, because the shadow gate (commit:bf054adcd4)
 classifies every line starting `-> ` or `ok ` as CHATTER before any message regex runs, and this script reports almost entirely through those.
 
-K=5 LEDGER: `.ci/shadow/w7p6-build-renet-full.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

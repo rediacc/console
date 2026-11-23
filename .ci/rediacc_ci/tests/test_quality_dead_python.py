@@ -115,32 +115,11 @@ def test_prose_is_not_an_admission_route_on_the_real_tree():
     """
     assert dp.is_prose("agent/plans/PLAN-tooling-transformation.md")
     assert dp.is_prose("docs/agent-reference/ci-gates.md")
-    assert dp.is_prose(".ci/shadow/twin-parity.ledger.jsonl")
     assert not dp.is_prose("package.json")
     assert not dp.is_prose(".ci/media/r2.sh")
 
 
-def test_shadow_route_is_parsed_from_the_real_ledger():
-    """The route exists and reads the real files, whether or not it carries anyone today.
-
-    It carries ZERO on this tree, and that is a measurement rather than a bug: every port named as the new side of an EQUIVALENT record is ALSO registered, so the stronger route claims it first. The assertion is therefore about the parse, not about the count, and it is here so that the day a port lands unregistered the route is known to work.
-    """
-    root = paths.repo_root()
-    pyset = frozenset(f for f in dp.tracked_files(root) if f.endswith(".py"))
-    admitted, expired, records = dp.shadow_admissions(root, pyset)
-    assert records > 0
-    assert admitted, "no EQUIVALENT record names a live port; the parser or the ledger moved"
-
-    # `expired` IS NOT A FAILURE, AND ASSERTING IT EMPTY WAS A FINISH-LINE BUG.
-    #
-    # A route expires when the ledger's bash twin is GONE, which is not a defect: it is
-    # what a COMPLETED cutover looks like. This assertion read `expired == {}` and so held
-    # only while no port had finished, then went red on 2026-09-09 the moment E1 deleted `.ci/lib/setup.sh` -- reporting the programme's first successful bash deletion as a broken parser. That is the same shape E3 found in `test-run-sh.sh`, where an anti-vacuity floor of `n_legacy > 0` would have redded at the exact moment the migration it guarded succeeded.
-    #
-    # WHAT IS STILL WORTH ASSERTING is that an expired route never leaves a file unreachable: the shadow route is one of several, and `check:ci-dead-python` is the gate that judges reachability overall. So every expired port must still be reached, which is a claim about the ESTATE and not about how long a cutover has been running.
-    report = _real_scan(root)
-    for port, why in sorted(expired.items()):
-        assert port in report.routes, (
-            "%s expired out of the shadow route (%s) and no other route reaches it" % (port, why)
-        )
+def test_the_real_tree_has_no_unreached_python_file():
+    """The ledger route is gone, so reachability on the real tree is judged by the remaining routes alone."""
+    report = _real_scan(paths.repo_root())
     assert report.findings == [], report.findings

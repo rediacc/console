@@ -42,7 +42,7 @@ stdout and a gate whose own message arrives AFTER the child's output is a gate w
 with bare `cd`s; the port passes `cwd=` per call instead. Same effect, and it
 removes the class of bug where an early `return` leaves the process somewhere unexpected -- which matters more in a library that a test imports than in a script that exits.
 
-THE ONE SHAPE THE TWO SIDES' STDERR DIFFERS ON, stated rather than discovered later: a MISSING directory. `cd "$WEB_DIR"` under `set -e` prints bash's own `check-account-portal.sh: line 39: cd: /path: No such file or directory` and exits, while the port raises no such message and returns 1 at the same point. `scripts/lib/shadow-gate.ts` classifies that bash diagnostic as CHATTER --
+THE ONE SHAPE THE TWO SIDES' STDERR DIFFERS ON, stated rather than discovered later: a MISSING directory. `cd "$WEB_DIR"` under `set -e` prints bash's own `check-account-portal.sh: line 39: cd: /path: No such file or directory` and exits, while the port raises no such message and returns 1 at the same point. the shadow gate (commit:bf054adcd4) classifies that bash diagnostic as CHATTER --
 it carries no severity marker and does not match the grep-style finding shape -- so the FINDING SET and the EXIT CODE still agree, which is what equivalence is measured on. The message also names a script path and a line number that no port could reproduce. Named here so it is a decision and not a surprise.
 
 PHASE 1 IS AN INSTALL, NOT A CHECK, and it is the only phase that MUTATES the tree. `npm ci --ignore-scripts` runs whenever `private/account/web/node_modules` is absent, and there is no `log_error` around it: under `set -e` a failing `npm ci` kills the script with npm's own output and no gate message at all. Carried unchanged; a reader who sees this step go red is reading npm's
@@ -204,7 +204,7 @@ def main(argv: list[str] | None = None) -> int:
 # --------------------------------------------------------------------------- The selftest's stub toolchain ---------------------------------------------------------------------------
 #
 # THE STUBS ARE REAL EXECUTABLES ON A REAL PATH, not a monkeypatched `run`. A seam invented for the test would prove the seam works; putting `npx` and `npm` on PATH exercises the same `subprocess.run` the gate uses in anger, including the argv vectors, the working directories and the exit codes. That is also exactly how the committed ledger
-# `.ci/shadow/w7p2-account-portal.observations.jsonl` drives both sides, so the selftest and the differential agree about what "running the gate" means.
+# the ledger (deleted in commit:936280cd35) drives both sides, so the selftest and the differential agree about what "running the gate" means.
 
 _NPX_STUB = """#!/usr/bin/env bash
 # Stub npx. Exit codes come from the environment so one script serves every case.

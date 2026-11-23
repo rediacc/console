@@ -1,6 +1,6 @@
 """`rediacc_ci.housekeeping.cleanup_cf_preview`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/housekeeping/cleanup-cf-preview.sh` and the port over the same fixture, one after the other, and compared exit code, stdout, stderr and the HTTP request log. The K=5 ledger `.ci/shadow/w7p6-cleanup-cf-preview.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been deleted and every
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/housekeeping/cleanup-cf-preview.sh` and the port over the same fixture, one after the other, and compared exit code, stdout, stderr and the HTTP request log. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees. The twin has now been deleted and every
 case that executed it compares against `goldens/cleanup-cf-preview/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 A RECORDING FAKE `curl` ON A SCRATCH PATH, answering from the REQUEST SHAPE. Nothing here reaches Cloudflare. The fake routes on the URL -- a `/deployments/` segment is a delete, anything else is a listing -- and every case pins a fixture account id and token, so even a bypassed fake would not name a real account.

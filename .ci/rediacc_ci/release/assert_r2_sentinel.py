@@ -4,7 +4,7 @@ The post-upload assertion that a versioned R2 prefix is in a healthy sealed stat
 
 THE PORT LIVES IN `release/`, NOT `test/`, because the twin's directory names its CALLER (`cd-stage.yml`'s test lane) rather than its subject. Its nearest sibling is `reprobe_r2_sentinel`, which probes the same bucket through the same library, and the two belong next to each other.
 
-Ledger: `.ci/shadow/w7p4b-assert-r2-sentinel.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p4b-assert-r2-sentinel --assert --k 5`).
+Ledger: the ledger (deleted in commit:936280cd35).
 
 -----------------------------------------------------------------------------
 THE THIRD OUTCOME THE TWIN HAS AND NEVER PRINTS

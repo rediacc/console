@@ -69,7 +69,7 @@ ONE NAMED DIVERGENCE, not reproduced: jq reads a STREAM of JSON values and
 `json.loads` reads exactly one, so `{"a":1} {"b":2}` on the subject's stdout
 would make the twin evaluate the pair and this port report "not parseable JSON". Unreachable from a Go `json.Marshal`, which emits one document, and pinned as still-real by `test_proxies_ops_host_check.py::test_a_two_document_stream_is_the_one_named_ divergence`.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-ops-host-check.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

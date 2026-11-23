@@ -8,7 +8,7 @@ plan rather than the merge-base classify. None of that is restated here.
 THIS FILE IS WHAT CI RUNS, since W7P4-b on 2026-09-20. `.github/workflows/ci.yml`'s `Scope engine` step reads `run: OUTPUT_FILE="$GITHUB_OUTPUT" PYTHONPATH=.ci python3 -m rediacc_ci.ci.scope_shadow`, inside the `initialize` job every other job depends on, and the step below it still uploads
 `.ci/cache/scope-shadow/{scope-classify,scope-baseline,plan}.json`. The twin stays on disk, unregistered: it is the SUBJECT of `test_ci_scope_shadow.py`, whose every case drives it side by side with this file.
 
-The licence for the cutover is `.ci/shadow/w7p4b-scope-shadow.observations.jsonl` -- twelve rows, twelve distinct clean trees, twelve distinct finding sets, `shadow-gate --assert --k 5` holding -- recorded with a PASS-THROUGH `node` stub so the argv of all seven child invocations is inside the compared set, plus the emitted `$GITHUB_OUTPUT` and the written `plan.json`. See
+The licence for the cutover is the ledger (deleted in commit:936280cd35) -- twelve rows, twelve distinct clean trees, twelve distinct finding sets, `shadow gate --assert --k 5` holding -- recorded with a PASS-THROUGH `node` stub so the argv of all seven child invocations is inside the compared set, plus the emitted `$GITHUB_OUTPUT` and the written `plan.json`. See
 `test_w7p4b_ledgers.py` for what those rows are allowed to be read as saying.
 
 -----------------------------------------------------------------------------
@@ -80,7 +80,7 @@ ONE ORDERING DIFFERENCE THAT IS ARGUED, NOT ASSUMED
 `bounded node -e '<conditions>' plan.json | tee -a "$SUMMARY"` (:563-573) is the only place a node process's stdout is STREAMED through `tee` rather than redirected to a file first. `_conditions_block` collects that stdout and then writes it, so if node were to interleave a slow stdout with its own inherited stderr the two sides could order those bytes differently. It cannot here:
 the program is a single `process.stdout.write` of one JSON blob at the end, with no stderr on the success path. Stated because the general claim would be false.
 
-K=5 LEDGER: `.ci/shadow/w7p6-scope-shadow.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

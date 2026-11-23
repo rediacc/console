@@ -10,8 +10,8 @@ THE DOWNLOAD DIRECTORY IS A FIXED `/tmp/cd-artifact-check` IN BOTH IMPLEMENTATIO
 clears it is a real hazard in the twin, reported rather than corrected here;
 see the port's docstring. `XDIST_GROUP` below is the other half of the same fact: under `--dist loadgroup` this module must not be spread across workers, because the contested resource is a path on the host rather than anything a registry can see.
 
-K=5 LEDGER: `.ci/shadow/w7p6-assert-artifact-version.observations.jsonl`,
-recorded against a disposable scratch git repo built OUTSIDE this checkout (this repo's working tree is not clean and `shadow-gate.ts --record` refuses a dirty tree).
+K=5 LEDGER: the ledger (deleted in commit:936280cd35),
+recorded against a disposable scratch git repo built OUTSIDE this checkout (this repo's working tree is not clean and `the shadow gate (commit:bf054adcd4) --record` refuses a dirty tree).
 """
 
 from __future__ import annotations

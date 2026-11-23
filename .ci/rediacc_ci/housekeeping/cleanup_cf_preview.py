@@ -57,7 +57,7 @@ TWO DIVERGENCES, BOTH IN REFUSAL TEXT NOBODY PARSES:
      characters here. `rediacc_ci.log` formats the message as data on purpose
      (see its module docstring); the differential asserts both directions.
 
-K=5 LEDGER: `.ci/shadow/w7p6-cleanup-cf-preview.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.review_comments`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-review-comments.sh` over a specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-review-comments.observations.jsonl`. The twin has now been deleted and every case that
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-review-comments.sh` over a specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, the ledger (deleted in commit:936280cd35). The twin has now been deleted and every case that
 executed it compares against `goldens/review-comments/`, which holds the twin's OWN recorded output, captured from the tracked script on its last day in the tree. The provenance header of each golden carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed those bytes.
 
 THE STUB DISPATCHES ON `$2`, THE ENDPOINT, and that is a scar. `gh_json` calls `gh api <endpoint> --paginate`, so the endpoint is `$2`; the first version of this fixture keyed on `$3`, which is `--paginate`, and therefore failed EVERY call. Both implementations then failed identically, byte for byte, over six specimens, and the differential scored EQUIVALENT each time. What refused

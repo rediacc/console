@@ -30,7 +30,7 @@ one does. Driven in the differential: a port testing `"WORKER_NAME" in os.enviro
 THE SIBLING SCRIPTS ARE NOT THE SAME SCRIPT, and the differences are load bearing rather than cosmetic. Against `set-preview-worker-secrets.sh`: this one demands STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET too (thirteen guards, not eleven), carries the nine SELLER_* keys (twenty-four keys, not fifteen), takes its Worker name whole instead of composing `pr-<n>`, prints a DIFFERENT
 explanation under a failed guard, and ends with no log line at all. Each of those is pinned separately in the differential, because "the same file with a longer list" is exactly the assumption that would port it wrong.
 
-K=5 LEDGER: `.ci/shadow/w7p6-set-www-worker-secrets.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

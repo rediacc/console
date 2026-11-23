@@ -106,8 +106,8 @@ DEFAULT_MIN_DISTINCT = 8
 
 # Excluded by BASENAME, because both files carried planted sample lines that were instrument fixtures rather than label references. Both have since been retired, so the list matches nothing today and is kept because the twin's recorded output was produced with it in place.
 GREP_EXCLUDES = ("check-label-references.sh", "test-label-references.sh")
-# Recorded state, never code that consumes a label: the untracked build cache, and the shadow ledgers (observations of commands already run).
-RECORDED_PARTS = ("/.ci/cache/", "/.ci/shadow/")
+# Recorded state, never code that consumes a label: the untracked build cache.
+RECORDED_PARTS = ("/.ci/cache/",)
 
 # The token every planted sample must yield, ASSEMBLED rather than written.
 #

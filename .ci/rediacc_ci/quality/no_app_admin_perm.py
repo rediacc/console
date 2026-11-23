@@ -1,6 +1,6 @@
 """No workflow may ask the GitHub App for the `administration` permission.
 
-Ported from `.ci/scripts/quality/check-no-app-admin-perm.sh`, which W7 P5 batch E1 deleted once the ledger `.ci/shadow/w7p2-appadmin.observations.jsonl` held K=5 and the twin's bytes were recorded into `.ci/rediacc_ci/tests/goldens/app-admin-perm/`. Its gate header registers it as step "App admin permission", id `check:ci-app-admin-perm`, lane quality-code.
+Ported from `.ci/scripts/quality/check-no-app-admin-perm.sh`, which W7 P5 batch E1 deleted once the ledger the ledger (deleted in commit:936280cd35) held K=5 and the twin's bytes were recorded into `.ci/rediacc_ci/tests/goldens/app-admin-perm/`. Its gate header registers it as step "App admin permission", id `check:ci-app-admin-perm`, lane quality-code.
 
 WHY THIS EXISTS, carried from the twin because the rationale IS the gate:
 
@@ -27,7 +27,7 @@ WHY THIS EXISTS, carried from the twin because the rationale IS the gate:
 PORT NOTES.
 -----------------------------------------------------------------------------
 
-THE OUTPUT SHAPE IS `grep -rn`, AND IT IS REPRODUCED RATHER THAN IMPROVED. `<path>:<lineno>:<line>` with the directory argument's trailing slash collapsed, because that is what the twin prints and because `scripts/lib/shadow-gate.ts` recognises exactly that shape as a finding (`PATH_LINE`) with no marker on it. A port that printed `path (line N)` would have every one of its
+THE OUTPUT SHAPE IS `grep -rn`, AND IT IS REPRODUCED RATHER THAN IMPROVED. `<path>:<lineno>:<line>` with the directory argument's trailing slash collapsed, because that is what the twin prints and because the shadow gate (commit:bf054adcd4) recognises exactly that shape as a finding (`PATH_LINE`) with no marker on it. A port that printed `path (line N)` would have every one of its
 findings reclassified as chatter and would compare EQUIVALENT to the twin while agreeing about nothing.
 
 ORDER IS NOT PRESERVED, AND DOES NOT NEED TO BE. GNU grep walks with fts in readdir order, so `.github/workflows/sub/y.yml` can precede `.github/workflows/x.yml` (measured 2026-09-06 on GNU grep 3.12). This module walks sorted, which is stable across machines. The shadow comparator compares a MULTISET, so a different order is not a different finding set, and a stable order is worth
@@ -222,7 +222,7 @@ def selftest() -> int:
         1,
     )
 
-    # The finding text itself, asserted rather than assumed. This is the byte shape `shadow-gate.ts` classifies as a finding; get it wrong and every finding silently becomes chatter.
+    # The finding text itself, asserted rather than assumed. This is the byte shape the shadow gate (commit:bf054adcd4) classifies as a finding; get it wrong and every finding silently becomes chatter.
     with tempfile.TemporaryDirectory() as tmp:
         root = _tree(
             pathlib.Path(tmp),

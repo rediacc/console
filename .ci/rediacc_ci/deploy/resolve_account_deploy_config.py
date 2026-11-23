@@ -5,7 +5,7 @@ Picks the Worker name / domain / sandbox flag for one region of an account deplo
 REWORDED ON PURPOSE, NOT BYTE-IDENTICAL: the bash twin's missing-env-var
 message is `${VAR:?msg}`, which bash renders as
 `<script>: line N: VAR: <script-name>: VAR must be set` -- the line number is an artifact of bash's own diagnostics, not a fact worth reproducing. This port prints `rediacc_ci.deploy.resolve_account_deploy_config: VAR must be set` to stderr and exits
-1. `scripts/lib/shadow-gate.ts` rule 1 ("a port is allowed to reword; it is not
+1. the shadow gate (commit:bf054adcd4) rule 1 ("a port is allowed to reword; it is not
 allowed to change WHICH things it objects to") is what the ledger checks, via
 `--finding-re 'must be set|^(region|worker|domain|sandbox)='`, which extracts
 the SUBSTANCE both sides agree on (which variable is missing, or which values were resolved) and ignores the bash-diagnostic wrapper around it.

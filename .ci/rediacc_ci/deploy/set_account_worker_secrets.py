@@ -96,7 +96,7 @@ WHAT THE SIBLINGS' KNOWN DEFECTS DO HERE, checked one by one because this file i
     twin ends on the pipe into wrangler (:278). `SUCCESS_IS_SILENT` names that.
   * THE DOUBLED SCRIPT NAME IS HERE, three times over. Divergence A.
 
-K=5 LEDGER: `.ci/shadow/w7p6-set-account-worker-secrets.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

@@ -7,7 +7,7 @@ it was confirmed present in a first draft of the port (both `stdout`
 and `stderr` were passed `capture_output=True` for the edit call, silently
 eating gh's own URL line; fixed to inherit both, matching the twin).
 
-K=5 LEDGER: `.ci/shadow/w7p6-sync-epic-block.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

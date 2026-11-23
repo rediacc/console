@@ -3,7 +3,7 @@
 THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/private/run-account.sh` and the port over one fixture tree apiece and compared four channels: the exit code, stdout, stderr and the recorded argv of every `npm` call. Every case now compares against `goldens/run-account/`, which holds the twin's OWN recorded bytes; each golden's provenance header
 carries the blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
-THE LEDGER IS `.ci/shadow/w7p4b-run-account.observations.jsonl`, TEN rows over ten distinct trees, every one EQUIVALENT. The older `w7p6-run-account` file exists with five rows and is deliberately not the citation: the w7p4b rows are the ones whose recorded `old.cmd` names this bash path and whose `new.cmd` names the module spec that replaced it.
+THE LEDGER IS the ledger (deleted in commit:936280cd35), TEN rows over ten distinct trees, every one EQUIVALENT. The older `w7p6-run-account` file exists with five rows and is deliberately not the citation: the w7p4b rows are the ones whose recorded `old.cmd` names this bash path and whose `new.cmd` names the module spec that replaced it.
 
 NO REAL `npm` IS EVER INVOKED. `npm ci` in `private/account` is a full clean install of that submodule's dependency tree and `npm run test` is its whole vitest suite; a case that shelled out to either would take minutes, would need the network, and would SKIP on a checkout without the submodule, which is the exact failure the CI arm exists to prevent. `npm` is a recording fake on a
 scratch PATH: it appends its cwd and full argv to a log, writes canned bytes to BOTH streams, and exits with a status chosen per subcommand.

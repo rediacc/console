@@ -44,7 +44,7 @@ PATH_MINIMUM = ("find", "sort", "dirname", "cat", "env")
 
 # A recording fake shared by `npm` and `npx`: it appends its own argv to the call log under a distinct `call: ` prefix and then either succeeds quietly or fails with the status the fixture asked for.
 #
-# THE PREFIX IS LOAD-BEARING FOR THE LEDGER, not decoration. `shadow-gate.ts` classifies a line starting with `→ ` or `✓ ` as CHATTER before any `--finding-re` is consulted, so a script that reports through log-step lines can never produce a finding by message text alone. `call: ` is a shape no logger emits, and the ledger scopes its `--finding-re` to it.
+# THE PREFIX IS LOAD-BEARING FOR THE LEDGER, not decoration. the shadow gate (commit:bf054adcd4) classifies a line starting with `→ ` or `✓ ` as CHATTER before any `--finding-re` is consulted, so a script that reports through log-step lines can never produce a finding by message text alone. `call: ` is a shape no logger emits, and the ledger scopes its `--finding-re` to it.
 FAKE_TOOL = r'''#!/usr/bin/python3
 """Recording fake for `npm`/`npx`. See the test module docstring."""
 import os

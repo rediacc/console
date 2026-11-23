@@ -301,7 +301,7 @@ def test_now_defaults_to_the_wall_clock() -> None:
 
 # -- the lifecycle half, against a stub farm ---------------------------------
 #
-# The stub-farm harness, moved here from `.ci/rediacc_ci/core/service_shadow_driver.py` when agent/plans/PLAN-tooling-code-reduction.md CR1 deleted it (last at commit:aa829a19dc): the half that runs the port, without the bash side or the CLI.
+# The stub-farm harness, moved here from `the shadow driver` when agent/plans/PLAN-tooling-code-reduction.md CR1 deleted it (last at commit:aa829a19dc): the half that runs the port, without the bash side or the CLI.
 
 FROZEN_NOW = 1700003725
 COMPOSE_GLOB = "compose -p rediacc-service -f *"

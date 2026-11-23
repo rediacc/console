@@ -5,7 +5,7 @@ The first job of every CI run: validate the app token, decide whether the push c
 
 LIVE. `.github/workflows/ci.yml` and `cd-release-edge.yml` run this module. `.ci/rediacc_ci/tests/gates/test_gate_releaseversion_tag_fetch.py` drives its tag-fetch block, `fetch_latest_tag`, directly.
 
-Ledger: `.ci/shadow/w7p6-initialize.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-initialize --assert --k 5`).
+Ledger: the ledger (deleted in commit:936280cd35).
 
 -----------------------------------------------------------------------------
 EVERY SIBLING IS PYTHON, AND EVERY ONE BUT THE RELEASE DECIDER RUNS IN PROCESS

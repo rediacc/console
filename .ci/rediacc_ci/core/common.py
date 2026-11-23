@@ -116,7 +116,7 @@ THREE MORE DIVERGENCES THAT ARE DECISIONS RATHER THAN BUGS
 --------------------------------------------------------------------------
 WHAT IS DIFFERENTIALLY PROVED
 --------------------------------------------------------------------------
-`.ci/shadow/w7p5b-common.observations.jsonl` drives BOTH sides through a real caller shape: a script that sources `common.sh` (or imports this module) and then runs the same refuse-early sequence a quality gate runs in its opening lines -- `require_cmd`, `require_file`, `require_dir`, `require_var`, `require_input`, `parse_args`, `get_temp_dir`, `is_ci`. That is the sequence 208
+the ledger (deleted in commit:936280cd35) drives BOTH sides through a real caller shape: a script that sources `common.sh` (or imports this module) and then runs the same refuse-early sequence a quality gate runs in its opening lines -- `require_cmd`, `require_file`, `require_dir`, `require_var`, `require_input`, `parse_args`, `get_temp_dir`, `is_ci`. That is the sequence 208
 files actually execute, which is why the ledger is not a synthetic per-function harness.
 """
 

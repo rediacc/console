@@ -1,6 +1,6 @@
 """`rediacc_ci.docker.run_in_image` against the recorded bytes of the two twins it replaced.
 
-WHY A RECORDING AND NOT A LIVE DIFFERENTIAL. Both twins existed while the port was being made: `.ci/rediacc_ci/docker/shadow_driver.py` drove either side, and `.ci/shadow/w7p5c-run-in-web.observations.jsonl` and its render sibling each carried five EQUIVALENT rows over five distinct trees (all deleted by agent/plans/PLAN-tooling-code-reduction.md CR1; last at commit:aa829a19dc; the half that runs the port lives on below as the harness). That instrument stops being available the moment the twins are deleted, and deleting them is
+WHY A RECORDING AND NOT A LIVE DIFFERENTIAL. Both twins existed while the port was being made: `the shadow driver` drove either side, and the ledger (deleted in commit:936280cd35) and its render sibling each carried five EQUIVALENT rows over five distinct trees (all deleted by agent/plans/PLAN-tooling-code-reduction.md CR1; last at commit:aa829a19dc; the half that runs the port lives on below as the harness). That instrument stops being available the moment the twins are deleted, and deleting them is
 the whole point of the port, so on their last day in the tree each one was run over every scenario the differential drove it with and its exit code, stdout, stderr and external-call trace were written to `goldens/docker-run-in-image/`. Nothing here is a hand-written expectation.
 
 THE TWINS ARE RETRIEVABLE. Every golden opens with `# twin .ci/docker/run-in-<target>.sh blob <sha>`, the blob that file carried at recording time, so `git cat-file -p <sha>` prints the program that produced the recorded bytes.
@@ -8,7 +8,7 @@ THE TWINS ARE RETRIEVABLE. Every golden opens with `# twin .ci/docker/run-in-<ta
 WHAT IS NORMALIZED, AND IT IS EXACTLY THREE VALUES PLUS ONE REDUCTION THE DIFFERENTIAL ALREADY MADE (`reduce_stderr` below says which three scenarios and why).
 
   THE REPOSITORY ROOT. Both implementations derive it and then put it in the
-  mount, the working directory and the build context, so it is in almost every recorded line. A golden carrying this checkout's path is one that reds in every other clone. The LEDGER compared it verbatim, which is where that derivation is really checked; `shadow-gate.ts` masks it the same way for the same reason.
+  mount, the working directory and the build context, so it is in almost every recorded line. A golden carrying this checkout's path is one that reds in every other clone. The LEDGER compared it verbatim, which is where that derivation is really checked; the shadow gate (commit:bf054adcd4) masks it the same way for the same reason.
 
   THE SCRATCH DIRECTORY. The fakes live outside the repository under a name
   derived from the root, and `from-outside` runs in it on purpose, so it appears as a working directory. The differential folded it already, because the comparator masks every `/tmp` path.
@@ -53,7 +53,7 @@ SLUG = "docker-run-in-image"
 TARGETS = tuple(run_in_image.target_names())
 
 # --------------------------------------------------------------------------- The harness ---------------------------------------------------------------------------
-# Moved here from `.ci/rediacc_ci/docker/shadow_driver.py` when agent/plans/PLAN-tooling-code-reduction.md CR1 deleted it (last at commit:aa829a19dc): the half that runs the port, without the bash side, the observation printer or the CLI.
+# Moved here from `the shadow driver` when agent/plans/PLAN-tooling-code-reduction.md CR1 deleted it (last at commit:aa829a19dc): the half that runs the port, without the bash side, the observation printer or the CLI.
 
 # The recording fakes' channel back to the driver. The two sides run in different processes, and a shared append-only file is the one record both shapes produce identically.
 TRACE_ENV = "RII_TRACE"

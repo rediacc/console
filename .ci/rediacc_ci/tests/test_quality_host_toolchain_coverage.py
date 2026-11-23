@@ -3,7 +3,7 @@
 WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. Both extractors are five-stage shell pipelines -- `grep -oE | sed -E | tr | sed | sort -u` -- and three of those stages have edges a "sensible" rewrite loses: `grep -o` prints the MATCH rather than the line (which is why the `$` anchor in the following sed always fires), `tr ' '` splits on a space and on nothing else, and
 `sort -u` de-duplicates as well as ordering. A table of expected strings would be a table of what the port does, asserted against itself.
 
-The bash fragments below are lifted from `.ci/scripts/quality/check-host-toolchain-coverage.sh` lines 57-69 with the parameters substituted, and nothing else changed. They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-hosttoolchain.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot
+The bash fragments below are lifted from `.ci/scripts/quality/check-host-toolchain-coverage.sh` lines 57-69 with the parameters substituted, and nothing else changed. They are NOT the whole gate: the whole gate is what the committed shadow ledger the ledger (deleted in commit:936280cd35) compares over five distinct trees. This file covers the seams that ledger cannot
 isolate.
 """
 

@@ -58,7 +58,7 @@ DEFECT IN THE TWIN, REPRODUCED AND REPORTED RATHER THAN FIXED (the acceptance ru
   whose entire job is to be a loud no-op. `SHIFT2_UNDERFLOW_IS_SILENT_EXIT_1`
   below names it, `main()` reproduces it, and the differential pins it.
 
-K=5 LEDGER: `.ci/shadow/w7p6-assert-edge-tag-exists.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

@@ -5,7 +5,7 @@ Deploys ONE region of the account Worker to Cloudflare: apply the D1 migrations
 for that region's database, then `wrangler deploy` against that region's config.
 The region selects a wrangler config file by NAME (`wrangler.<region>.toml`: one shared Worker set per region, so there is no target to pick), and everything else the deploy needs -- the D1 database, the R2 bucket, the routes -- lives inside that file rather than in this script.
 
-NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (and `npm`, on the install branch) are the only external tools, so the differential (`.ci/rediacc_ci/tests/test_deploy_deploy_account.py`) puts RECORDING FAKES for both on a scratch PATH and points both sides at a fixture repo root. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and
+NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (and `npm`, on the install branch) are the only external tools, so the differential (`.ci/rediacc_ci/tests/test_deploy_deploy_account.py`) puts RECORDING FAKES for both on a scratch PATH and points both sides at a fixture repo root. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and
 says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
 THE DATABASE NAME IS READ WITH grep/head/sed, NOT WITH A TOML PARSER, and that is a reproduction rather than a preference. The twin's line 50 is
@@ -48,7 +48,7 @@ TWO MORE DIVERGENCES, ON PURPOSE: THE PORTAL CHECKS (2026-10-28, stable served a
 `:?` IS AN UNSET-OR-EMPTY TEST, so `--region=` refuses exactly as an absent
 `--region` does. Driven; a port testing only for presence would resolve `wrangler..toml` and report it missing instead.
 
-K=5 LEDGER: `.ci/shadow/w7p6-deploy-account.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

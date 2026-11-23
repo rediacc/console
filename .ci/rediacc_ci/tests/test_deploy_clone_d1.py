@@ -5,7 +5,7 @@ THE TWIN'S SIDE IS FROZEN (operator ruling D5, PLAN-retire-bash-oracles B3). Eve
 RECORDING FAKES FOR `npx` AND `sqlite3` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Those two are the only programs in this script that can reach anything outside the machine or open a database; every other tool it uses (`grep`, `sed`, `wc`, `du`, `cut`, `jq`, `mktemp`, `rm`, `cat`) is the real binary symlinked into the same scratch directory, because both sides call the same one and
 that is the point of calling them at all.
 
-`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece: no Cloudflare credential, no D1 database, nothing that leaves this host.
+the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece: no Cloudflare credential, no D1 database, nothing that leaves this host.
 
 THREE KINDS OF EVIDENCE, and the last two are what a stdout comparison alone would miss:
 
@@ -70,7 +70,7 @@ PATH_MINIMUM = (
 
 # A MODEL of `wrangler d1`, not wrangler.
 #
-# THE `call: ` PREFIX IS LOAD-BEARING FOR THE LEDGER, not decoration. `shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER before a `--finding-re` is ever consulted, and this script reports almost entirely through `log_step`/`log_info`, which are exactly those two glyphs. A finding regex over the message text could therefore never match anything and every
+# THE `call: ` PREFIX IS LOAD-BEARING FOR THE LEDGER, not decoration. the shadow gate (commit:bf054adcd4) classifies any line starting with `→ ` or `✓ ` as CHATTER before a `--finding-re` is ever consulted, and this script reports almost entirely through `log_step`/`log_info`, which are exactly those two glyphs. A finding regex over the message text could therefore never match anything and every
 # ledger row would read VACUOUS_BOTH_EMPTY. `call: ` is a shape no logger in this tree emits.
 FAKE_NPX = r'''#!/usr/bin/python3
 """Recording fake for `npx --no-install wrangler d1`. See the test module docstring."""

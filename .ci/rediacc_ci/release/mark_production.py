@@ -17,7 +17,7 @@ ONE LOGGER. The twin had two (`common.sh`'s stderr loggers, and a private `echo`
 THE ONE KNOWN DIVERGENCE, PINNED BY A TEST RATHER THAN HIDDEN. common.sh logs through `echo -e`, which interprets backslash escapes IN THE MESSAGE, and the error branches interpolate `gh`'s own output into the message. So a `gh` failure whose text contains a literal `\\n` prints a newline through the twin and two characters through this port. `rediacc_ci.log` formats the message as
 data on purpose (see its module docstring); the differential asserts the two disagree there, so nobody later "fixes" the Python to re-interpret escapes.
 
-K=5 LEDGER: `.ci/shadow/w7p6-mark-production.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

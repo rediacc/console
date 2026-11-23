@@ -4,7 +4,7 @@
 A thin wrapper: check that the `private/account` submodule is checked out, install its dependencies if nothing else has, and run one stage. It reimplements nothing that `private/account`'s own npm scripts do.
 
 THIS MODULE IS WHAT `check:ci-account-server` RUNS, since W7P4-W. `package.json` spells the gate `PYTHONPATH=.ci python3 -m rediacc_ci.private.run_account test`, `scripts/ci-runner/manifest.ts` names this file as the gate's `leaf`, and `.github/workflows/ci-quality.yml` runs the same module form. The licence is
-`.ci/shadow/w7p4b-run-account.observations.jsonl`, ten clean trees at `--assert --k 5`.
+the ledger (deleted in commit:936280cd35), ten clean trees at `--assert --k 5`.
 
 THE `---- gate ----` HEADER MOVED HERE when the twin was retired, the way `rediacc_ci.quality.staging_tag_guard` carries its own. `scripts/gate-bind.ts` resolves a gate by where its header lives, so one file claims `id: check:ci-account-server` and it is this one; the header's `run:` was already the module form, which is what the binder emits into the workflow.
 

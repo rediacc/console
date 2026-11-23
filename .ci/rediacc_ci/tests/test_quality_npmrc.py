@@ -3,7 +3,7 @@
 WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The interesting half of this gate is a four-stage shell pipeline -- `grep -E | tail -n1 | sed -E | tr -d` -- whose behaviour on the awkward inputs (a trailing comment, inner whitespace, a key that appears twice, an empty value) is decided by POSIX character classes and by sed's substitution order rather than by anything a
 reader could infer. A table of expected strings would be a table of what the PORT does, asserted against itself. Running the real pipeline under bash and comparing is the only form of this test that can fail for the right reason.
 
-The bash fragments below are lifted from `.ci/scripts/quality/check-npmrc.sh` lines 44-69 with the variables substituted, and nothing else changed. They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-npmrc.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot isolate.
+The bash fragments below are lifted from `.ci/scripts/quality/check-npmrc.sh` lines 44-69 with the variables substituted, and nothing else changed. They are NOT the whole gate: the whole gate is what the committed shadow ledger the ledger (deleted in commit:936280cd35) compares over five distinct trees. This file covers the seams that ledger cannot isolate.
 """
 
 import pathlib

@@ -45,7 +45,7 @@ PORT_REL = pathlib.PurePosixPath(".ci/rediacc_ci/build/build_cli.py")
 
 # The recording `npm`. `FAIL` names the script that must fail (`build:cli` or `build:bundle`), so a case can fail the bundle while the workspace build succeeds -- the two are separate `if`s in the twin and a port could easily collapse them.
 #
-# It reports on STDOUT with a `call: ` prefix rather than through a log-step helper, and that is not cosmetic: `scripts/lib/shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER before `--finding-re` is consulted, so a fake that reported like `common.sh` would make every ledger row read VACUOUS_BOTH_EMPTY. `call: ` is what the ledger's `--finding-re` scopes to.
+# It reports on STDOUT with a `call: ` prefix rather than through a log-step helper, and that is not cosmetic: the shadow gate (commit:bf054adcd4) classifies any line starting with `→ ` or `✓ ` as CHATTER before `--finding-re` is consulted, so a fake that reported like `common.sh` would make every ledger row read VACUOUS_BOTH_EMPTY. `call: ` is what the ledger's `--finding-re` scopes to.
 FAKE_NPM = """#!/usr/bin/env python3
 import os, pathlib, sys
 LOG = %(log)r

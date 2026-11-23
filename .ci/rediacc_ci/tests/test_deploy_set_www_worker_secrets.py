@@ -1,6 +1,6 @@
 """Differential: `rediacc_ci.deploy.set_www_worker_secrets` against its twin `.ci/scripts/deploy/set-www-worker-secrets.sh`.
 
-A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv AND the bytes on its stdin, and every case uses fixture values two characters long. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This
+A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv AND the bytes on its stdin, and every case uses fixture values two characters long. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This
 is that piece.
 
 THE DOCUMENT IS THE ONLY EVIDENCE ON THE HAPPY PATH, and that is what makes this script different from its preview sibling. The twin prints NOTHING of its own when it succeeds: there is no closing `log_info`, so stdout carries wrangler's line and stderr is empty. A port that sent an empty document, or the wrong Worker name, would produce byte-identical streams and exit 0. Every

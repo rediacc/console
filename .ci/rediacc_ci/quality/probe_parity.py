@@ -1,6 +1,6 @@
 r"""A capability probe must exercise the operations its CONSUMER depends on.
 
-Ported from `.ci/scripts/quality/check-probe-parity.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-probe-parity.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-probe-parity.sh`, which W7 P5 batch A2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 WHY THIS EXISTS, in the twin's own words, because the incident is the design:
 
@@ -61,7 +61,7 @@ THE EXEMPTION LIST IS PRINTED NOWHERE AND THAT IS CARRIED, NOT FIXED. The twin's
 `EXEMPT_VERBS=("unlink" "purge" "revoke")` is silent: a consumer verb it forgives
 never appears in any line of output, so a reader of a green run cannot see which operations were excused. The port keeps that behaviour because the differential compares finding sets and a new line would be a divergence; it is reported as a finding against the twin rather than repaired here.
 
-`sort -u` IS UNDER `LC_ALL=C`, which `scripts/lib/shadow-gate.ts` pins for both
+`sort -u` IS UNDER `LC_ALL=C`, which the shadow gate (commit:bf054adcd4) pins for both
 sides (`buildEnv`). Python's `sorted()` on `str` is code-point order, which agrees with C collation for the `[a-z]` alphabet these verbs are drawn from. The regexes admit nothing else, so the two orders cannot diverge here.
 
 THE `sed` COMMENT STRIP REPLACES ONLY THE FIRST MATCH PER LINE, which is what `s///` without `g` means, and the leftmost match of `[[:space:]]*#.*$` starts at

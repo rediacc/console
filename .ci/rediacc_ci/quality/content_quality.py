@@ -1,6 +1,6 @@
 """AI-slop patterns in markdown content, at two severities.
 
-Ported from `.ci/scripts/quality/check-content-quality.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-content-quality.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-content-quality.sh`, which W7 P5 batch C1 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 WHAT THE TWIN ENFORCES, carried over from its own header because the list is the gate and a paraphrase of it would be a different gate:
 
@@ -44,7 +44,7 @@ NOT UNDER A UTF-8 LOCALE. `${#p}` counts characters when the locale is UTF-8 and
 BYTES when it is C, so the em dash pattern (U+2014, one character, three bytes)
 is length 1 or length 3 depending on an environment variable. Both are <= 3, so
 the live pattern set classifies identically either way and nothing observable turns on it today. A future two-character non-ASCII pattern would be 2 under UTF-8 and 4 or 6 under C, and the twin would take a different branch on two machines. That is a defect in the twin, reported rather than repaired; the port
-follows the C-locale reading because `scripts/lib/shadow-gate.ts` pins LC_ALL=C
+follows the C-locale reading because the shadow gate (commit:bf054adcd4) pins LC_ALL=C
 and that is the behaviour the differential compares against.
 
 THE FAST PATH IS CASE SENSITIVE AND THE SLOW PATH IS NOT. `[[ "$line" == *"$p"* ]]`
@@ -288,7 +288,7 @@ class Report:
         else:
             log.warn("%s:%d" % (rel_file, lineno))
             self.warnings += 1
-        # NINE SPACES, matching the twin's `echo " Pattern: ..."`. The indent is not decoration: `scripts/lib/shadow-gate.ts` attaches an INDENTED unmarked line to the finding above it, so a port that un-indented these would emit two lines of chatter and one finding where the twin emits three findings.
+        # NINE SPACES, matching the twin's `echo " Pattern: ..."`. The indent is not decoration: the shadow gate (commit:bf054adcd4) attaches an INDENTED unmarked line to the finding above it, so a port that un-indented these would emit two lines of chatter and one finding where the twin emits three findings.
         print('         Pattern: "%s"' % pattern)
         print("         Line:    %s" % body)
 

@@ -13,7 +13,7 @@ and run from there. The port resolves it through `paths.repo_root()`, whose docu
 
 NOTHING ON DISK IS MUTATED: every fixture is a `shutil.copy2` under pytest's `tmp_path`.
 
-K=5 LEDGER: `.ci/shadow/w7p6-install-sh-config.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

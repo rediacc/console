@@ -10,7 +10,7 @@ written to disk months ago, silently.
     out="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.env export "$f")" || exit 1
     eval "$out"
 
-THE BASH SHIM IS GONE (W7P5-c). `scripts/lib/env-file.sh` wrapped exactly that call as a function; its last bash caller was `scripts/lib/well-known.sh`, which went with it when its three consumers moved to `.ci/config/well-known.generated.sh` (equivalence: `.ci/shadow/w7p5c-well-known-projection.observations.jsonl`). The ADOPTED-SITES check that used to re-run each adopted bash site's own `env_file_load` line went too: it needed the shim's function to exist, and its list was already empty: every adopted site (the bench deploy, `start-local-plane.sh`, `.ci/lib/account.sh`) had been ported to Python and reads the file through `rediacc_ci.core.env` directly. A bash site that comes back needs no list to be held to the rule, because CHECK A refuses its `set -a` wherever it is.
+THE BASH SHIM IS GONE (W7P5-c). `scripts/lib/env-file.sh` wrapped exactly that call as a function; its last bash caller was `scripts/lib/well-known.sh`, which went with it when its three consumers moved to `.ci/config/well-known.generated.sh` (equivalence: the ledger (deleted in commit:936280cd35)). The ADOPTED-SITES check that used to re-run each adopted bash site's own `env_file_load` line went too: it needed the shim's function to exist, and its list was already empty: every adopted site (the bench deploy, `start-local-plane.sh`, `.ci/lib/account.sh`) had been ported to Python and reads the file through `rediacc_ci.core.env` directly. A bash site that comes back needs no list to be held to the rule, because CHECK A refuses its `set -a` wherever it is.
 
 TWO CHECKS, because one of them can pass while the thing is broken:
 

@@ -3,7 +3,7 @@
 WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The two decisions this gate makes are made by git and by the shell, not by the gate: `[[ -e $root/$p ]]` and `git ls-files --error-unmatch -- "$p"`. The second one is the interesting one, because its answer for a DIRECTORY is not what a reader guesses -- it succeeds when the directory contains tracked files, which is why the
 obvious "read the index once and test membership" optimisation is wrong. Running the real command and comparing is the only form of this test that can fail for the right reason.
 
-The real closure list is 78 paths long and comes out of a CommonJS program, so this file drives `scan` on hand-built path lists instead. The whole gate over real closures is what the committed shadow ledger `.ci/shadow/w7p2-greenlight.observations.jsonl` compares over five distinct trees; this file covers the seams that ledger cannot isolate.
+The real closure list is 78 paths long and comes out of a CommonJS program, so this file drives `scan` on hand-built path lists instead. The whole gate over real closures is what the committed shadow ledger the ledger (deleted in commit:936280cd35) compares over five distinct trees; this file covers the seams that ledger cannot isolate.
 """
 
 import pathlib
@@ -114,7 +114,7 @@ def test_zero_paths_is_a_refusal_not_a_pass(repo: pathlib.Path) -> None:
 def test_the_untracked_case_prints_two_lines_and_the_missing_case_one(repo: pathlib.Path) -> None:
     """The output SHAPE is the contract, not an internal detail.
 
-    `scripts/lib/shadow-gate.ts` folds an indented line into the finding above it, so the second explanation line is part of the finding. A port that dropped it would change the finding set on every untracked path.
+    the shadow gate (commit:bf054adcd4) folds an indented line into the finding above it, so the second explanation line is part of the finding. A port that dropped it would change the finding set on every untracked path.
     """
     _rc, missing_lines, _n = glc.scan(repo, ["no-such-file.txt"])
     assert len(missing_lines) == 1

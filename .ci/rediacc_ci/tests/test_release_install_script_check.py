@@ -1,6 +1,6 @@
 """`rediacc_ci.release.install_script_check` against the bytes its bash twin printed.
 
-THE TWIN HAS BEEN DELETED. `.ci/scripts/test/test-install-script.sh` was the registered gate until this module took the registration; the K=5 ledger `.ci/shadow/w7p6-install-script.observations.jsonl` holds five rows of equivalence over five distinct trees, and `goldens/install-script/` holds the twin's OWN recorded bytes, captured on its last day in the tree. Each golden's
+THE TWIN HAS BEEN DELETED. `.ci/scripts/test/test-install-script.sh` was the registered gate until this module took the registration; the K=5 ledger the ledger (deleted in commit:936280cd35) holds five rows of equivalence over five distinct trees, and `goldens/install-script/` holds the twin's OWN recorded bytes, captured on its last day in the tree. Each golden's
 provenance header carries two blob shas, the twin's and the `install.sh` it ran against, so `git cat-file -p <sha>` still yields both programs.
 
 WHICH CASES ARE RECORDED AND WHICH ARE NOT. Every case driving a FIXTURE has a golden. The two cases that run against the LIVE checkout do not: freezing them would freeze a tracked file's content into a golden, and the tracked file is the SUBJECT, so the recording would go stale the first time somebody edited `install.sh` and would red the port for a change it did not make.
@@ -16,7 +16,7 @@ HOW THE TWO SIDES WERE POINTED AT A FIXTURE: the twin resolved `ROOT_DIR` from
 
 WHAT IS NORMALIZED, AND IT IS ONLY THIS: `mktemp` paths. Two of the twin's messages embed `$HOME`, which is a fresh `mktemp -d` per case, so the two sides cannot agree on those bytes. Nothing else is masked.
 
-K=5 LEDGER: `.ci/shadow/w7p6-install-script.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

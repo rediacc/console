@@ -25,7 +25,7 @@ WHY A BASELINE AND NOT THIRTY-THREE MORE EXEMPTIONS. 33 of those 36 files are ou
 three that are structurally required, each with a reason this file proves is still live.
 
 WHAT THE `_cipath` TRICK CANNOT DO, MEASURED RATHER THAN ASSUMED, because the next box to read this file will otherwise try it. `import _cipath` resolves only because a PATH invocation puts the script's own directory on `sys.path[0]`. Four of the baselined hops sit INSIDE a package and still run as scripts: `check_pytest.py`, the two under `rediacc_ci/setup/`, and
-`rediacc_hooks/dispatch.py` (`battery.py` and `setup/shadow_driver.py` made six until they were deleted, the first with the bash gate-test battery on 2026-10-09 and the second by agent/plans/PLAN-tooling-code-reduction.md CR1, last at commit:aa829a19dc). THREE of those four are also imported by their package name -- `setup/tools.py` and `setup/port_parity.py` by the suite, `dispatch.py` by two hook suites -- and a sibling shim is impossible for them: driven on a throwaway package, running
+`rediacc_hooks/dispatch.py` (`battery.py` and `the shadow driver` made six until they were deleted, the first with the bash gate-test battery on 2026-10-09 and the second by agent/plans/PLAN-tooling-code-reduction.md CR1, last at commit:aa829a19dc). THREE of those four are also imported by their package name -- `setup/tools.py` and `setup/port_parity.py` by the suite, `dispatch.py` by two hook suites -- and a sibling shim is impossible for them: driven on a throwaway package, running
 `pkg/sub/dualuse.py` as a script prints `__package__=None` and loads, while
 `from pkg.sub import dualuse` dies at `import _pkgpath`. The remaining one, `check_pytest.py`, COULD take a shim and would gain nothing, because the shim is itself a file containing the hop: one hop would become one shim. So none of the four is sitting there because nobody swept it.
 
@@ -522,10 +522,6 @@ NOT_A_PRINTED_COMMAND: dict[tuple[str, str], tuple[int, str]] = {
     (".ci/rediacc_ci/quality/rdc_native.py", "exec python3 -m rediacc_ci.native"): (
         2,
         "the generated `rdc` shim's body, a selftest fixture compared byte for byte",
-    ),
-    (".ci/rediacc_ci/quality/dead_python.py", "rediacc_ci.quality.orphan_mod"): (
-        0,
-        "a selftest fixture naming a module that exists only in the gate's scratch tree (already hop-spelled; kept out of the runnable cases)",
     ),
     (".ci/rediacc_ci/quality/dead_python.py", "rediacc_ci.testrun.orphan_run"): (
         0,

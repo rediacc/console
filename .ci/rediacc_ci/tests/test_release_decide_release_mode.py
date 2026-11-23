@@ -1,6 +1,6 @@
 """`rediacc_ci.release.decide_release_mode` against the bytes its bash twin printed.
 
-THE TWIN HAS BEEN DELETED. `.ci/scripts/release/decide-release-mode.sh` had no call site outside its own usage header; the K=5 ledger `.ci/shadow/w7p5a-decide-release-mode.observations.jsonl` holds five rows of equivalence over five distinct trees (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-decide-release-mode --assert --k 5` -> "equivalence holds over 5 distinct trees"),
+THE TWIN HAS BEEN DELETED. `.ci/scripts/release/decide-release-mode.sh` had no call site outside its own usage header; the K=5 ledger the ledger (deleted in commit:936280cd35) holds five rows of equivalence over five distinct trees (the shadow gate (commit:bf054adcd4) -> "equivalence holds over 5 distinct trees"),
 and `goldens/decide-release-mode/` holds the twin's OWN recorded bytes, captured on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 THE `$GITHUB_OUTPUT` FILE IS RECORDED TOO, under its own marker. It is this script's real product -- the two `::notice::` lines are commentary, the key=value pairs are what the workflow reads -- so a recording that held only the streams would freeze the commentary and drop the contract. Sibling of

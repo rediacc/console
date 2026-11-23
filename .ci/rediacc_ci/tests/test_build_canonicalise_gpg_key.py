@@ -10,9 +10,9 @@ itself canonical, regardless of which implementation produced it).
 
 USAGE-ERROR TEXT IS NOT COMPARED. See `canonicalise_gpg_key`'s own docstring:
 the twin's `${1:?msg}` diagnostic embeds bash's own script path and interpreter
-line number, which `scripts/lib/shadow-gate.ts` classifies as CHATTER (no `::error::`/`✗`/`ERROR:` marker, no `path:line` shape), and which this port does not attempt to reproduce. Exit code 1 is the ported behaviour.
+line number, which the shadow gate (commit:bf054adcd4) classifies as CHATTER (no `::error::`/`✗`/`ERROR:` marker, no `path:line` shape), and which this port does not attempt to reproduce. Exit code 1 is the ported behaviour.
 
-K=5 LEDGER: `.ci/shadow/w7p6-canonicalise-gpg-key.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

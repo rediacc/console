@@ -1,6 +1,6 @@
 """`.npmrc` supply-chain hardening, enforced in BOTH directions.
 
-Ported from `.ci/scripts/quality/check-npmrc.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-npmrc.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-npmrc.sh`, which W7 P5 batch C1 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 WHAT THE TWIN ENFORCES, carried over from its own header verbatim because the list IS the gate and a summary of it would be a different gate:
 
@@ -34,7 +34,7 @@ THE REQUIRED-KEY ORDER IS BASH'S HASH ORDER, MEASURED, NOT INVENTED. The twin
 iterates `"${!required[@]}"` over an associative array, and bash returns those
 keys in the order its hash table happens to hold them, which on GNU bash 5.3.9 was `allow-git`, `minimum-release-age`, `ignore-scripts` -- NOT the order they are written in the literal. `REQUIRED` below is a tuple in that measured order, with `minimum-release-age` removed when it moved to `.ci/config/release-age.json`.
 
-Why bother, when `scripts/lib/shadow-gate.ts` compares findings as an unordered multiset and would score either order EQUIVALENT: because a human diffing the two implementations' stderr side by side is the cheapest review this port will ever get, and an ordering difference is the kind of noise that makes a reviewer stop reading. It costs one tuple and a comment.
+Why bother, when the shadow gate (commit:bf054adcd4) compares findings as an unordered multiset and would score either order EQUIVALENT: because a human diffing the two implementations' stderr side by side is the cheapest review this port will ever get, and an ordering difference is the kind of noise that makes a reviewer stop reading. It costs one tuple and a comment.
 
 THE VALUE PIPELINE IS FOUR SHELL STAGES AND IS REPRODUCED STAGE BY STAGE, since each one has an edge that a "sensible" rewrite loses:
 

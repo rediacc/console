@@ -1,6 +1,6 @@
 """Differential: `rediacc_ci.deploy.simulate_promotion` against its twin `.ci/scripts/deploy/simulate-promotion.sh`.
 
-RECORDING FAKES FOR `aws`, `curl` AND `sleep` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2 or Cloudflare; every case pins a fixture endpoint, bucket and credential, and an on-disk directory stands in for the bucket. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity
+RECORDING FAKES FOR `aws`, `curl` AND `sleep` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2 or Cloudflare; every case pins a fixture endpoint, bucket and credential, and an on-disk directory stands in for the bucket. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity
 ledger is a separate, achievable piece of work. This is that piece.
 
 WHY `sleep` IS FAKED RATHER THAN WAITED ON, and why that is EVIDENCE rather than a shortcut. Both retry loops in the twin call `sleep` as an external program, and so does the port. Putting a recording fake on PATH turns the retry SCHEDULE into call-log lines, so `test_the_upload_retry_schedule_is_fifteen_thirty_forty_five_sixty` can assert `sleep 15`, `sleep 30`, `sleep 45`, `sleep

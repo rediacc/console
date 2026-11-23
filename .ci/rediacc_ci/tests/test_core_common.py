@@ -508,7 +508,7 @@ def test_planted_an_is_ci_that_accepts_one_would_disagree_with_the_twin():
 #
 # The port runs with a scripted `aws` first on PATH, and its rc, both streams and the argv the function builds are compared against the golden (`goldens/twins/lib.common.jsonl`, `stub-farm` keys).
 
-# The stub-farm harness, moved here from `.ci/rediacc_ci/core/common_stub_shadow_driver.py` when agent/plans/PLAN-tooling-code-reduction.md CR1 deleted it (last at commit:aa829a19dc): the half that runs the port, without the bash side or the CLI.
+# The stub-farm harness, moved here from `the shadow driver` when agent/plans/PLAN-tooling-code-reduction.md CR1 deleted it (last at commit:aa829a19dc): the half that runs the port, without the bash side or the CLI.
 
 
 @dataclasses.dataclass

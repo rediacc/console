@@ -4,7 +4,7 @@ WHY A DIFFERENTIAL ON THE PARSER. It is a fence-tracking state machine whose who
 fail
 for the right reason.
 
-The whole gate, including F6's planted controls (the gate prints their count), is covered by `.ci/shadow/w7p2-trap-registry.observations.jsonl` over five distinct trees.
+The whole gate, including F6's planted controls (the gate prints their count), is covered by the ledger (deleted in commit:936280cd35) over five distinct trees.
 
 THE TWIN IS RETIRED (PLAN-retire-bash-oracles B3). Its awk parser's answers, its floor and its two summary lines are frozen in `goldens/twins/quality.check-trap-registry.jsonl` through `differential.twin_call`; the extraction below runs only when that golden is re-frozen from a live twin (`regolden.py --source bash`).
 """

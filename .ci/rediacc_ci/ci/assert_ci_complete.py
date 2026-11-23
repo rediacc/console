@@ -5,7 +5,7 @@ The body of the `CI Complete` gate: fail unless every CI job reached an acceptab
 
 LIVE CALLER: `.github/workflows/ci.yml` runs `PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_ci_complete` in the `ci-complete` job, with one `RESULT_*` env var per job.
 
-Ledger: `.ci/shadow/w7p6-assert-ci-complete.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-ci-complete --assert --k 5`).
+Ledger: the ledger (deleted in commit:936280cd35).
 
 -----------------------------------------------------------------------------
 A HOLE IN THE TWIN, FIXED HERE AS A DELIBERATE DELTA (Rule T)

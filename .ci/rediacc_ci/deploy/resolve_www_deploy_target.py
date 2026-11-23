@@ -1,4 +1,4 @@
-"""Ported from `.ci/scripts/deploy/resolve-www-deploy-target.sh`, which W7 P5 batch B5 retired once `.ci/shadow/w7p5a-resolve-www-deploy-target.observations.jsonl` asserted equivalence over five distinct trees.
+"""Ported from `.ci/scripts/deploy/resolve-www-deploy-target.sh`, which W7 P5 batch B5 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 Picks the deploy-script name / Worker name / domain / sandbox flag for the www Worker and emits them as GitHub Actions step outputs. There is ONE www Worker (`www`, on www.rediacc.com, built from edge) and one script that deploys it, so the answer no longer depends on a target and the `TARGET` variable is not read. Pure computation, same shape as `rediacc_ci.deploy.resolve_account_deploy_config`: no network, no subprocess, one file write to `$GITHUB_OUTPUT`.
 

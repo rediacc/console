@@ -5,7 +5,7 @@ Sibling of `test_proxies_linux_packages.py`; see that file for why the two invoc
 TWO CASES DRIVE THE REAL WORKSPACES, one per registered gate, so a rename on either side reds here. The rest use a fixture root with a stub `node_modules/.bin/vitest` (the proxy requires it to EXIST and never invokes it) and a workspace whose script prints a canned vitest summary -- which is the only way to drive the mixed-summary defect, since a real suite cannot be asked to print
 `Tests 1 failed | 10 passed (11)` on demand.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-unit-tests.observations.jsonl`. Re-recorded
+K=5 LEDGER: the ledger (deleted in commit:936280cd35). Re-recorded
 2026-09-10 after the ANSI/wrong-token fix (5 rows, 5 distinct trees, 4 distinct finding sets): a clean suite, a COLOURED clean suite (the exact regression this fix closes), a mixed pass/fail suite, a vacuous workspace, and a missing vitest (77).
 """
 

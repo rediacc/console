@@ -1,6 +1,6 @@
 """GO_VERSION, NODE_VERSION and NODE_VERSION_MIN must agree across four files.
 
-Ported from `.ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-toolchain-sync.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-toolchain-env-dockerfile-sync.sh`, which W7 P5 batch C1 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS.
@@ -61,7 +61,7 @@ A `\\r` AT THE END OF A DOCKERFILE LINE would end up inside the value on both si
 
 THE FINAL FAILURE BANNER STARTS WITH A LOWERCASE `x`, NOT `✗`. That is the
 twin's text (`echo "${RED}x $fails toolchain-env/Dockerfile mismatch(es)${NC}"`),
-so `scripts/lib/shadow-gate.ts` classifies it as chatter rather than as a finding, while every `fail()` line above it IS a finding. Carried unchanged: the difference is invisible to a human and load-bearing for the comparator, and "fixing" the glyph would change which lines the ledger compares.
+so the shadow gate (commit:bf054adcd4) classifies it as chatter rather than as a finding, while every `fail()` line above it IS a finding. Carried unchanged: the difference is invisible to a human and load-bearing for the comparator, and "fixing" the glyph would change which lines the ledger compares.
 
 STREAMS. `fail()` writes to stderr, `pass()` and the banners to stdout. Nothing here uses `rediacc_ci.log`, because the twin sources no logger and its lines carry no glyph but the one typed into them.
 

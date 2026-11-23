@@ -1,7 +1,7 @@
 """`rediacc_ci.quality.profiler_coverage` against the awk and grep it replaces.
 
 WHAT THE SHADOW LEDGER ALREADY PROVES:
-`.ci/shadow/w7p2-profiler-coverage.observations.jsonl` drives both implementations end to end over five distinct committed trees: unprofiled Linux jobs, a stale allowlist entry, a malformed reference with a bad interval and a label mismatch, the fail-closed classification of an unknown label and an unresolvable expression, and a low-effort BLOCKER.
+the ledger (deleted in commit:936280cd35) drives both implementations end to end over five distinct committed trees: unprofiled Linux jobs, a stale allowlist entry, a malformed reference with a bad interval and a label mismatch, the fail-closed classification of an unknown label and an unresolvable expression, and a low-effort BLOCKER.
 
 WHAT THE LEDGER CANNOT ISOLATE is the EIGHT EXTRACTORS, and they are the whole gate. Each is a small awk state machine whose failure mode is silence: an extractor that stops matching under-reports coverage, and under-reported coverage reads exactly like a clean tree. The twin knows this, which is why it self-tests every extractor against a planted sample before it looks at the real
 tree; this file does the other half, comparing the PORT against the TWIN over the repository's own workflows.

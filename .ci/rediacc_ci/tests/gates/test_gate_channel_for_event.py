@@ -2,7 +2,7 @@
 
 Unit test for `rediacc_ci.ci.assert_channel_for_event`.
 
-THE SUBJECT IS THE PORT, NOT THE BASH SCRIPT. `.ci/scripts/ci/assert-channel-for-event.sh` was retired once its K=5 ledger (`.ci/shadow/w7p6-assert-channel-for-event.observations.jsonl`) held and its differential became the recordings under `goldens/assert-channel-for-event/`. The command below is the one the ledger licensed, spelled as the ledger spells it, and
+THE SUBJECT IS THE PORT, NOT THE BASH SCRIPT. `.ci/scripts/ci/assert-channel-for-event.sh` was retired once its K=5 ledger (the ledger (deleted in commit:936280cd35)) held and its differential became the recordings under `goldens/assert-channel-for-event/`. The command below is the one the ledger licensed, spelled as the ledger spells it, and
 `.github/workflows/ci.yml:295` runs the same one.
 
 WHAT THIS GUARDS, unchanged from the twin. The channel decides whether a run uploads to R2. A previous design resolved a `dryrun-<sha>` channel for non-publishing events and produced roughly 5 GB of orphan R2 bytes per trigger. This script is the assertion that stops that returning, so it is load-bearing for cost, not just for tidiness.

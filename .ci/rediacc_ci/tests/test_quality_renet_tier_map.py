@@ -14,7 +14,7 @@ WHY A SHELL ORACLE AND NOT A TABLE OF EXPECTED STRINGS. This gate's verdict is d
     the port only for a control. If the two ever disagree, phase 1 verifies a
     different set from the one phase 2 runs.
 
-They are NOT the whole gate: the whole gate was compared over five distinct trees by the committed shadow ledger `.ci/shadow/w7p2-renet-tiermap.observations.jsonl`, against a minimal Go package standing in for `pkg/functions`. That ledger licensed the port at K=5 and the bash twin `.ci/scripts/quality/check-renet-tier-map.sh` was retired in W7 P5; the cases here cover the
+They are NOT the whole gate: the whole gate was compared over five distinct trees by the committed shadow ledger the ledger (deleted in commit:936280cd35), against a minimal Go package standing in for `pkg/functions`. That ledger licensed the port at K=5 and the bash twin `.ci/scripts/quality/check-renet-tier-map.sh` was retired in W7 P5; the cases here cover the
 seams the ledger could not isolate and still run against the real shell and the real Go toolchain.
 """
 

@@ -1,6 +1,6 @@
 """Every path a greenlight closure names must exist on disk AND be tracked by git.
 
-Ported from `.ci/scripts/quality/check-greenlight-closures.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__`; the committed differential ledger under `.ci/shadow/` is what licensed the retirement.
+Ported from `.ci/scripts/quality/check-greenlight-closures.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__`; the committed differential ledger under the ledger directory (deleted in commit:936280cd35) is what licensed the retirement.
 
 WHY THE TWIN EXISTS, AND IT IS NOT THE OBVIOUS REASON. Carried over from its header, because the archaeology is the half of a gate that cannot be recovered
 from the code:
@@ -46,7 +46,7 @@ WHAT HAPPENS WHEN NODE IS ABSENT, and this is a defect being preserved. The twin
 writes `paths="$(node -e '...')" || return 2`, so a missing node makes `scan`
 return 2. But the main path calls it as `out="$(scan)" || { ...; exit 1; }`,
 which cannot distinguish 2 from 1: the header comment promises "exit 1 on any offender, 2 on setup error" and the setup error exits 1 anyway. The operator then reads "greenlight closure paths (see above)" with nothing above it. The port keeps the exit code identical, because the verdict is what a port must preserve, and ADDS one unmarked diagnostic line naming the missing binary
-and the fix. An unmarked, unindented line is chatter to `scripts/lib/shadow-gate.ts`, so it cannot change the compared finding set -- which is exactly why it is safe to add and why it is not a finding.
+and the fix. An unmarked, unindented line is chatter to the shadow gate (commit:bf054adcd4), so it cannot change the compared finding set -- which is exactly why it is safe to add and why it is not a finding.
 
 `(see above)` IS A LIE IN BOTH IMPLEMENTATIONS. `scan`'s offender lines are captured into `$out` by the command substitution, so they are printed AFTER the header that points at them, not above it. Preserved, because moving them changes the output a human diff is read against, and reported.
 
@@ -150,7 +150,7 @@ def is_tracked(root: pathlib.Path, rel: str) -> bool:
 def scan(root: pathlib.Path, path_list: list[str]) -> tuple[int, list[str], int]:
     """Judge `path_list` against `root`. Returns (exit code, lines, count).
 
-    `lines` are the offender lines the twin echoes, in the twin's order and with the twin's two-space indent, because that indent is what makes `scripts/lib/shadow-gate.ts` fold them into the finding above. The count is what the success message interpolates.
+    `lines` are the offender lines the twin echoes, in the twin's order and with the twin's two-space indent, because that indent is what makes the shadow gate (commit:bf054adcd4) fold them into the finding above. The count is what the success message interpolates.
 
     ZERO PATHS IS A FAILURE, NEVER A PASS. A closure set that shrank to nothing would otherwise read as "every declared path is fine", which is true and worthless.
     """
@@ -268,7 +268,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         path_list = closure_paths(root)
     except ScanError as exc:
-        # UNMARKED AND UNINDENTED, so `scripts/lib/shadow-gate.ts` reads it as chatter and the compared finding set is unchanged. This is the one line the port adds; see the port notes for the defect it names.
+        # UNMARKED AND UNINDENTED, so the shadow gate (commit:bf054adcd4) reads it as chatter and the compared finding set is unchanged. This is the one line the port adds; see the port notes for the defect it names.
         print(str(exc), file=sys.stderr)
         path_list = []
         code, lines, n = 1, ["  no closure paths found -- this check is blind"], 0

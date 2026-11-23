@@ -2,12 +2,12 @@
 
 W7P5-a (`agent/plans/PLAN-tooling-transformation.md` line 607): `deploy/` and
 `release/` carried zero Python and zero ledgers before this box. The K=5
-shadow-gate ledger proving equivalence across five distinct committed specimens lives at `.ci/shadow/w7p5a-resolve-account-deploy-config.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-resolve-account-deploy-config --assert --k 5` -> "equivalence holds over 5 distinct trees"); this file is the fast, permanent regression twin of that one-time proof, run against
+shadow gate ledger proving equivalence across five distinct committed specimens lives at the ledger (deleted in commit:936280cd35) (the shadow gate (commit:bf054adcd4) -> "equivalence holds over 5 distinct trees"); this file is the fast, permanent regression twin of that one-time proof, run against
 the REAL twin and REAL port in this tree rather than a throwaway fixture, since the script has no git-scanning surface for a fixture to vary.
 
 BOTH VALID PATHS ARE BYTE-IDENTICAL, deliberately, because the script is pure
 computation (no logging helper, no colour, no timestamp): four `key=value`
-lines to `$GITHUB_OUTPUT`, nothing to stdout or stderr. The missing-env-var path is NOT byte-identical on purpose -- see the port's module docstring -- so that case only asserts the exit code and that both messages name the missing variable, which is what the shadow-gate ledger's `--finding-re` actually compares.
+lines to `$GITHUB_OUTPUT`, nothing to stdout or stderr. The missing-env-var path is NOT byte-identical on purpose -- see the port's module docstring -- so that case only asserts the exit code and that both messages name the missing variable, which is what the shadow gate ledger's `--finding-re` actually compares.
 
 `/dev/stdout` IS NOT USED as `$GITHUB_OUTPUT` here. Both `bash >>` and Python's `open(...,"a")` fail with ENXIO ("No such device or address") when `$GITHUB_OUTPUT` names `/dev/stdout` and the process's fd 1 is an anonymous
 pipe rather than a tty -- which is exactly what `subprocess.run(capture_output=True)`

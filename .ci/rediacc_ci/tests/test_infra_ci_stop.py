@@ -1,6 +1,6 @@
 """`rediacc_ci.infra.ci_stop`, driven against the bytes and the docker calls its bash twin produced.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/infra/ci-stop.sh` and the port over the same throwaway tree and compared four things: the exit code, stdout, the recording docker's ARGV SEQUENCE and whether `.backend-state` survived. The K=5 ledger `.ci/shadow/w7p6-ci-stop.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/infra/ci-stop.sh` and the port over the same throwaway tree and compared four things: the exit code, stdout, the recording docker's ARGV SEQUENCE and whether `.backend-state` survived. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees. The twin has now been
 deleted and every case that executed it compares against `goldens/ci-stop/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
 THE CALL LOG IS THE EVIDENCE, and it is recorded beside the streams rather than instead of them. Two implementations can print identical text while calling different commands, and for a teardown script the commands ARE the behaviour: a port that printed "Force removing" and never ran `docker rm` would pass a stdout-only comparison and leave the container up. Each recorded

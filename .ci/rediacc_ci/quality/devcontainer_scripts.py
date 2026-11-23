@@ -53,7 +53,7 @@ EACH CONTROL CHECKS THAT ITS PLANT LANDED, and that is the half most gates skip.
 
 THE GATE EMITS NO SEVERITY MARKER AT ALL. `fail()` prints `FAIL <text>` with ONE space, which is not the `FAIL ` (two spaces) the repository's comparator knows, and `pass()` prints `ok `. So the differential for this pair is recorded with a `--finding-re`, stored on every ledger row so the rows can be re-run.
 
-THE EM DASH IN THE THREE `CONTROL IS VACUOUS` LINES is named by code point rather than typed, because this repository's authoring rule forbids the character and the differential compares finding TEXT. Same treatment as `scripts/lib/shadow-gate.ts` naming ESC with `String.fromCharCode(27)`.
+THE EM DASH IN THE THREE `CONTROL IS VACUOUS` LINES is named by code point rather than typed, because this repository's authoring rule forbids the character and the differential compares finding TEXT. Same treatment as the shadow gate (commit:bf054adcd4) naming ESC with `String.fromCharCode(27)`.
 
 UGREP WAS CHECKED HERE, NOT ASSUMED. `PRIMARY_OPS` alternates a `^`-anchored branch with a branch carrying a negated class (`curl [^|]*`), which is the shape `docs/agent-reference/TRAPS.md` records as returning silent false zeros from `grep -E`. Measured on this host, ugrep 7.8.4: `-E` and `-P` return the SAME five lines over a corpus containing one instance of each branch. The
 port's Python regex is compared against the real `grep -E` over every `.devcontainer/*.sh` in `tests/test_quality_devcontainer_scripts.py`, so a future ugrep that does diverge shows up as a test failure rather than as two gates quietly disagreeing.

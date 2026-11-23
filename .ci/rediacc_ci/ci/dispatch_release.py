@@ -7,7 +7,7 @@ none of it is restated here.
 
 LIVE CALLERS. This module IS the release decider CI runs; the bash twin is deleted. `--decide-only` runs once, as the child `rediacc_ci.ci.initialize.release_decision` starts in initialize step 6b (056fe87b6), and `.github/workflows/ci.yml`'s `finalize-release-sentinel` runs `python3 -m rediacc_ci.ci.dispatch_release --dispatch-only` after the seal, reading initialize's decision rather than deciding again. `check:ci-release-bump-skip`, `test_gate_dispatch_release.py` and `test_ci_initialize.py` drive this module; `test_ci_dispatch_release.py` holds it to the twin's frozen golden.
 
-Ledger: `.ci/shadow/w7p6-dispatch-release.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-release --assert --k 5`).
+Ledger: the ledger (deleted in commit:936280cd35).
 
 -----------------------------------------------------------------------------
 DEFECT A, FIXED (2026-10-07): THE TWIN'S `2>&1` MADE gh's STDERR INTO DATA

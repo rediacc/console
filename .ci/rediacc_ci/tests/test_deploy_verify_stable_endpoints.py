@@ -18,7 +18,7 @@ WHAT THIS FILE HAS TO PROVE THAT THE EDGE ONE DOES NOT, because the two scripts 
     because its identical probes sit inside `fetch_retry` predicates where
     `set -e` is suspended.
 
-K=5 LEDGER: `.ci/shadow/w7p6-verify-stable-endpoints.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

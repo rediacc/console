@@ -2,7 +2,7 @@
 
 THE BUILDER IS PYTHON NOW. This gate used to read the bash `build-linux-pkg.sh` with a `sed` BRE (the format list) and an eleven-line `awk` program (the per-format signing guard), and this file ran those two pipelines for real against the port's reimplementation of them, on every awkward input. When the bash builder was retired (PLAN-retire-bash-oracles B3) the gate was retargeted to its successor, `rediacc_ci.build.build_linux_pkg`, read through `ast`: the format list is the module's `FORMATS` tuple and the guard is a `raise` naming `RELEASE_SIGNING_REQUIRED` inside the format's own branch of `_report_unsigned`. The tables below are the same questions, one expected answer per awkward shape, and each shape is a property of the `ast` reading rather than of a shell pipeline.
 
-The tally the gate prints its verdict through came from `.ci/scripts/lib/gate-controls.sh`, which has since been retired, so that half is compared against `goldens/gate-controls-tally/` rather than against a live library. They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-signing-coverage.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot isolate.
+The tally the gate prints its verdict through came from `.ci/scripts/lib/gate-controls.sh`, which has since been retired, so that half is compared against `goldens/gate-controls-tally/` rather than against a live library. They are NOT the whole gate: the whole gate is what the committed shadow ledger the ledger (deleted in commit:936280cd35) compares over five distinct trees. This file covers the seams that ledger cannot isolate.
 """
 
 import contextlib

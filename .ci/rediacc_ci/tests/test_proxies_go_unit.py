@@ -5,7 +5,7 @@ Sibling of `test_proxies_linux_packages.py`; see that file for why the two invoc
 ONE CASE DRIVES THE REAL `private/renet` (57 packages, ~12 s per side with a warm build cache -- was 60 before the fifth exclusion alternative). The rest use a SYNTHETIC module with no external dependencies, because the real one is 947 MB and because the interesting branches -- an empty candidate set, an exclusion that swallows everything, a package excluded on nothing but a
 `testutil.` mention -- cannot be produced by asking the real tree nicely.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-go-unit.observations.jsonl`, re-recorded
+K=5 LEDGER: the ledger (deleted in commit:936280cd35), re-recorded
 2026-09-10 after the fifth (`Getuid`) exclusion alternative landed -- a real gap this time, not only a documentation fix: `pkg/storage` (and the `os.Getuid()`-gated `pkg/repository`, `pkg/filesystem`) used to sit in the
 non-root subset and hard-fail under `CI=true`.
 """

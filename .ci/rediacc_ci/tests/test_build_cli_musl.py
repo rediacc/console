@@ -8,13 +8,13 @@ THE CALL LOG IS THE EVIDENCE. Both sides produce the same three log lines on a s
 
 RECORDING FAKES LOG TO STDERR, NEVER STDOUT. This script's stdout is empty on every path except `--help`, and a fake writing to stdout would invent a difference that is the fake's, not the port's. They write to `$FAKE_CALL_LOG`
 instead, and the `FAKEBIN ` prefix is also what the K=5 ledger scopes
-`--finding-re` to: `shadow-gate.ts` classifies any line opening `-> ` or `ok ` as CHATTER before any message regex is consulted, and every one of this script's own lines is exactly that, so a ledger keyed on message text alone would record `VACUOUS_BOTH_EMPTY` on every row.
+`--finding-re` to: the shadow gate (commit:bf054adcd4) classifies any line opening `-> ` or `ok ` as CHATTER before any message regex is consulted, and every one of this script's own lines is exactly that, so a ledger keyed on message text alone would record `VACUOUS_BOTH_EMPTY` on every row.
 
-`rediacc_ci` IS VENDORED INTO THE FIXTURE rather than reached through an absolute `PYTHONPATH`: it proves the port's dependency set, and `scripts/lib/shadow-gate.ts --record` refuses a command string naming an absolute path outside the recorded tree.
+`rediacc_ci` IS VENDORED INTO THE FIXTURE rather than reached through an absolute `PYTHONPATH`: it proves the port's dependency set, and `the shadow gate (commit:bf054adcd4) --record` refuses a command string naming an absolute path outside the recorded tree.
 
 `$0` IS MASKED TO `<SELF>`. bash names the script in its `set -u` death and in its `--help` usage; `sys.argv[0]` ends `.py`. Nothing else is masked, and stdout and stderr are compared SEPARATELY.
 
-K=5 LEDGER: `.ci/shadow/w7p6-build-cli-musl.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations
@@ -531,7 +531,7 @@ def test_the_docker_argv_is_the_whole_point_of_the_script(tmp_path) -> None:
         cli_version="",
         release_build="",
     )
-    # The fake escapes newlines so a multi-line argument (the container script, which is the LAST one) survives a line-oriented call log; the expectation is escaped the same way rather than the log being made multi-line, because `shadow-gate.ts` reads findings line by line too.
+    # The fake escapes newlines so a multi-line argument (the container script, which is the LAST one) survives a line-oriented call log; the expectation is escaped the same way rather than the log being made multi-line, because the shadow gate (commit:bf054adcd4) reads findings line by line too.
     assert recorded == [
         "FAKEBIN docker",
         *(a.replace("\n", "\\n").replace(NEW_BUILD_LINE, OLD_BUILD_LINE) for a in expected[1:]),

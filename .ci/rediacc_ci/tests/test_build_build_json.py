@@ -1,6 +1,6 @@
 """`rediacc_ci.build.build_json`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/build/build-json.sh` and the port over the same throwaway root, one after the other, and compared exit code, stdout, stderr and the npm call log. The K=5 ledger `.ci/shadow/w7p6-build-json.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been deleted and every case that executed it
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/build/build-json.sh` and the port over the same throwaway root, one after the other, and compared exit code, stdout, stderr and the npm call log. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees. The twin has now been deleted and every case that executed it
 compares against `goldens/build-json/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 THE FIXTURE SHAPE AND ITS REASONS ARE `test_build_build_www.py`'s and are not restated: the port takes no root override so it is copied into a throwaway root; `npm` is a recording fake on a PATH that REPLACES the caller's rather than prepending to it; `rediacc_ci` is vendored so no absolute path outside the tree appears in any command string.

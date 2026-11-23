@@ -1,6 +1,6 @@
 r"""Every ROOT `scripts/` path reachable from non-quality CI code must classify FULL.
 
-Ported from `.ci/scripts/quality/check-scope-scripts-reachability.sh`, which W7 P5 batch G1 retired once `.ci/shadow/w7p2-scope-scripts-reachability.observations.jsonl` asserted equivalence over six distinct trees and the twin's own output was recorded as goldens.
+Ported from `.ci/scripts/quality/check-scope-scripts-reachability.sh`, which W7 P5 batch G1 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over six distinct trees and the twin's own output was recorded as goldens.
 
 WHY THIS EXISTS, in the twin's own words, because the failure is invisible:
 

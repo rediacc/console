@@ -35,7 +35,7 @@ TWO PLACES WHERE THE TWIN'S BYTES ARE NOT WHAT A READER EXPECTS
 class cannot appear anyway: `:73`'s own grep would not match it, which is the
 ZERO-scenarios refusal at `:76-81`.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-rdc-update.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

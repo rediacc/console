@@ -17,7 +17,7 @@ asserts both printed a well-formed one so the mask cannot hide its absence.
 THE `unhealthy` DEFECT IS PINNED HERE, NOT FIXED. `ci-start-account.sh:106` greps for the SUBSTRING `healthy`, which `unhealthy` contains, so a container docker has failed is announced as healthy. The port reproduces the match and `test_unhealthy_is_read_as_healthy` locks it in with the measurement of how reachable it is today. Fixing the twin changes a live CI step's pass/fail
 behaviour and is outside this port's file ownership.
 
-K=5 LEDGER: `.ci/shadow/w7p6-ci-start-account.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 
 THE TWIN IS RETIRED (PLAN-retire-bash-oracles B3). Every `_run("old", ...)` answers from `goldens/twins/infra.ci-start-account.jsonl` through `differential.twin_run`: both streams, the docker call log, the written `.env` and `$GITHUB_OUTPUT`, as the twin produced them on the fixture each case builds.
 """

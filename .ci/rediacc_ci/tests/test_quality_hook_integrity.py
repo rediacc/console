@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.hook_integrity` against the twin's own embedded readers.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-hook-integrity.observations.jsonl` drives the whole gate over five distinct trees: a guard on disk the inventory does not list, a baselined guard whose file is gone, a guard newly missing both directions, an empty scope list, and a harness folding an external count with no minimum. What a ledger row cannot isolate is
+WHAT IS WORTH TESTING HERE. The shadow ledger the ledger (deleted in commit:936280cd35) drives the whole gate over five distinct trees: a guard on disk the inventory does not list, a baselined guard whose file is gone, a guard newly missing both directions, an empty scope list, and a harness folding an external count with no minimum. What a ledger row cannot isolate is
 that this gate's three readers were ALREADY Python, embedded as heredocs, and every one of them has a documented history of narrowing silently:
 
   * `covmap` missed the pre-edit and pre-ask chains entirely for months, and

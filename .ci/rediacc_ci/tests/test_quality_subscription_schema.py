@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.subscription_schema` seams the shadow ledger cannot isolate.
 
-The whole gate is three phases of external tooling (npx tsx, npx biome, diff, go test) and is covered end to end by `.ci/shadow/w7p2-subscription-schema.observations.jsonl` over five distinct trees. What that ledger CANNOT isolate is the branch each phase takes when its tool is absent, because a fixture always supplies one. Those are here.
+The whole gate is three phases of external tooling (npx tsx, npx biome, diff, go test) and is covered end to end by the ledger (deleted in commit:936280cd35) over five distinct trees. What that ledger CANNOT isolate is the branch each phase takes when its tool is absent, because a fixture always supplies one. Those are here.
 """
 
 import pathlib

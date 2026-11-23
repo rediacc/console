@@ -5,7 +5,7 @@ Derive the Docker image tag from an explicit `--version`, from the git ref when 
 
 SOLE IMPLEMENTATION. `rediacc_ci.ci.set_image_tags` was the twin's one live caller and calls this module in-process, and the twin's observable behaviour is frozen in `.ci/rediacc_ci/tests/goldens/derive-image-tag/`.
 
-Ledger: `.ci/shadow/w7p6-derive-image-tag.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-derive-image-tag --assert --k 5`).
+Ledger: the ledger (deleted in commit:936280cd35).
 
 -----------------------------------------------------------------------------
 DEFECT A -- THE TWIN'S HELP TEXT DESCRIBED A BRANCH THAT DOES NOT EXIST ANY

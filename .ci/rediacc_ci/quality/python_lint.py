@@ -1,6 +1,6 @@
 r"""Lint every tracked Python file with ruff, under the repo's root pyproject.toml.
 
-Ported from `.ci/scripts/quality/check-python-lint.sh`, which W7P5-c DELETED on 2026-09-23 once its K=5 shadow ledger (`.ci/shadow/w7p2-python-lint.observations.jsonl`, 6 rows, 6 distinct trees, every one `EQUIVALENT`) licensed the retirement. The nine cases that used to execute it now compare against its own recorded bytes under
+Ported from `.ci/scripts/quality/check-python-lint.sh`, which W7P5-c DELETED on 2026-09-23 once its K=5 shadow ledger (the ledger (deleted in commit:936280cd35), 6 rows, 6 distinct trees, every one `EQUIVALENT`) licensed the retirement. The nine cases that used to execute it now compare against its own recorded bytes under
 `.ci/rediacc_ci/tests/goldens/python-lint/`, whose provenance headers carry blob `471b915b87984c59aeaca380951aa3dd5bd3b702`.
 
 WHY THIS EXISTS, in the twin's own words, because the incident is the design:

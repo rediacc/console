@@ -19,7 +19,7 @@ THREE KINDS OF EVIDENCE, AND ALL THREE ARE NEEDED:
 THE GLOB IS THE PART A TRANSCRIPTION GETS WRONG. Bash expands `packages/shared/*.tsbuildinfo` before `rm` runs and, with no match and no `nullglob`, hands the PATTERN to `rm` as a literal operand that `-f` then swallows. `test_no_tsbuildinfo_files_is_a_silent_no_op` drives exactly that, and `test_a_dotfile_tsbuildinfo_survives_both` drives the case where the two glob
 implementations could plausibly disagree and do not.
 
-THE LEDGER LINE. `shadow-gate.ts` classifies `→ ` and `✓ ` lines as CHATTER before `--finding-re` is consulted, and three of this script's four messages are exactly those, so the fake's `call: npm ...` on stdout is what the shadow ledger compares. See `.ci/shadow/w7p6-build-packages.observations.jsonl`.
+THE LEDGER LINE. the shadow gate (commit:bf054adcd4) classifies `→ ` and `✓ ` lines as CHATTER before `--finding-re` is consulted, and three of this script's four messages are exactly those, so the fake's `call: npm ...` on stdout is what the shadow ledger compares. See the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations
@@ -75,7 +75,7 @@ shown = [re.sub(r"^.*/(packages/shared/dist\\.build-)\\d+", r"<tree>/\\1<pid>", 
 with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
     fh.write("npm\\t" + "\\t".join(shown) + "\\n")
 
-# THE LEDGER LINE. A `→ `/`✓ ` line can never become a shadow-gate finding, so
+# THE LEDGER LINE. A `→ `/`✓ ` line can never become a shadow gate finding, so
 # the fake echoes its own argv under a prefix nothing classifies as chatter.
 sys.stdout.write("call: npm " + " ".join(shlex.quote(a) for a in shown) + "\\n")
 

@@ -60,7 +60,7 @@ DIVERGENCES THAT ARE DELIBERATE, all three in refusal text nobody parses:
 THE DEFECT THIS PORT PRESERVES, reported rather than fixed. On the FINAL attempt the twin still prints "retrying in 5s..." and still sleeps 5 seconds before giving up. The message is false at that point and the sleep is pure latency on the failure path (75s of a 15-attempt run's tail is not, but the last 5s are). It is preserved here because the acceptance rule for this wave is
 byte-equivalence with the live twin; fixing it means changing both files in one edit, which is a behaviour change to a live CI script and belongs to whoever owns the cutover.
 
-K=5 LEDGER: `.ci/shadow/w7p6-verify-ssh.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

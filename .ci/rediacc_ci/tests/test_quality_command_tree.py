@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.command_tree`, driven directly.
 
-WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-command-tree.sh` over a fixture whose `npm` and `npx` were shims, with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. The committed ledger (`.ci/shadow/w7p2-cmdtree.observations.jsonl`) recorded the same comparison over K distinct trees, one of which
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-command-tree.sh` over a fixture whose `npm` and `npx` were shims, with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. The committed ledger (the ledger (deleted in commit:936280cd35)) recorded the same comparison over K distinct trees, one of which
 exceeds the `head -40` cap, and licensed the port at K=5. The twin was retired in W7 P5 and the comparison cases went with it; what a fixture pair could say about the two implementations is in the ledger, and what remains here is the derivation the gate's anti-vacuity floor rests on plus the gate's own controls.
 """
 

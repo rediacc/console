@@ -5,7 +5,7 @@ Force-cancel the CI runs on this branch that started before this one. The twin's
 
 LIVE CALLER, not repointed. The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
-Ledger: `.ci/shadow/w7p6-cancel-older-runs.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-cancel-older-runs --assert --k 5`).
+Ledger: the ledger (deleted in commit:936280cd35).
 
 -----------------------------------------------------------------------------
 THE TWIN CAN ONLY FAIL FOR TWO REASONS, AND NEITHER IS "IT DID NOT CANCEL"

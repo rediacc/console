@@ -15,10 +15,10 @@ THREE KINDS OF EVIDENCE ARE COMPARED, because no one of them is sufficient:
 `ls -la` TIMESTAMPS ARE MASKED, AND ONLY THEY. The two sides run seconds apart, so `ls` prints a different mtime for files that are otherwise identical; the mask replaces the `<Mon> <day> <HH:MM>` field and leaves mode, link count, owner, group, size and name alone. Nothing else in the output is masked except `$0`.
 
 RECORDING FAKES WRITE TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. This script's stdout IS an artifact (the checksum listing), and a prior wave's fake that logged to stdout corrupted the very file its twin was writing. The `FAKEBIN ` prefix is
-also what the K=5 ledger scopes `--finding-re` to, because `shadow-gate.ts`
+also what the K=5 ledger scopes `--finding-re` to, because the shadow gate (commit:bf054adcd4)
 classifies every `-> `/`ok ` line as CHATTER before any message regex runs.
 
-K=5 LEDGER: `.ci/shadow/w7p6-extract-renet-from-image.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 
 ONE NAMED DIVERGENCE FROM THE GOLDEN (PLAN-local-release W1-E): the port cross-builds darwin and windows with `build_renet.ldflags(version, key)` and refuses to without `--version` and `ACCOUNT_ED25519_PUBLIC_KEY`, where the twin built them keyless. The port side therefore always runs with `--version TEST_VERSION` and a fixture key (`_run(..., keyed=True)`, the default), and `run_both` folds that one `go build` argument back to the twin's `-ldflags=-s -w` on both call logs before comparing. The key-and-version cases at the end drive the port alone.
 """

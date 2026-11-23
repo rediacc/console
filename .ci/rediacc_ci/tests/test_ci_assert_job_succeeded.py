@@ -4,8 +4,8 @@ The twin, `.ci/scripts/ci/assert-job-succeeded.sh`, is deleted (PLAN-retire-bash
 
 argv in, two streams and an exit code out; no subprocess, no file, no env beyond the colour decision, so both sides are driven directly and compared byte-for-byte. The only normalisation is the `$0` token in the usage line, which is the program's own name and therefore necessarily differs; `usage_tail` strips exactly that and nothing else.
 
-The K=5 ledger is `.ci/shadow/w7p6-assert-job-succeeded.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-job-succeeded --assert --k 5`).
+The K=5 ledger is the ledger (deleted in commit:936280cd35)
+(the shadow gate (commit:bf054adcd4)).
 """
 
 from __future__ import annotations

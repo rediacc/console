@@ -7,8 +7,8 @@ Both invocations run with `cwd` set to the SCRATCH repo (so `git tag -l` acts on
 THE ONE BASH-SEMANTICS CASE WORTH A DEDICATED TEST: a tag with more than three dotted components (`v1.2.3.4`) folds the fourth into PATCH re-joined with '.' via bash's `read` with too few variable names, rather than being dropped. If the port ever "simplified" this to a 3-way split, `test_extra_dotted_component` is the one that would catch it, and it is exercised for both
 directions (a component present, and PATCH bumped on top of it).
 
-K=5 LEDGER: `.ci/shadow/w7p6-resolve-version.observations.jsonl`, recorded
-against a disposable scratch git repo built OUTSIDE this checkout (this repo's own working tree is not clean; `shadow-gate.ts --record` refuses a dirty tree). See that file's own header for the exact recording commands.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35), recorded
+against a disposable scratch git repo built OUTSIDE this checkout (this repo's own working tree is not clean; `the shadow gate (commit:bf054adcd4) --record` refuses a dirty tree). See that file's own header for the exact recording commands.
 """
 
 from __future__ import annotations

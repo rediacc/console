@@ -3,7 +3,7 @@
 
 W7P6 wave 27. The bash twin stays the LIVE registered gate; this module is its VERIFIED-EQUIVALENT ALTERNATIVE, proved byte-for-byte on both streams by
 `.ci/rediacc_ci/tests/test_security_ci_workflow_invariants.py` and by the K=5
-shadow ledger `.ci/shadow/w7p6-check-ci-workflow-invariants.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
+shadow ledger the ledger (deleted in commit:936280cd35). Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
 NAMING. `check_` is dropped from the module name to match the closest sibling already in this package, `rediacc_ci.security.workflow_gates` (the port of `check-workflow-gates.sh`). `check_commands.py` and `rdc_sh_env_check.py` kept their prefixes; the package is not internally consistent, so the rule applied here is "match the nearest shape", not "match the package".
 

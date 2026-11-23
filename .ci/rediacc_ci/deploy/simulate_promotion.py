@@ -5,7 +5,7 @@ Simulates an edge-to-stable promotion into a throwaway `<channel>-promoted` R2 c
 
 NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST. `aws` and (through `cf_purge_urls`) `curl` are the two external tools that carry a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_simulate_promotion.py`) puts RECORDING FAKES
 for both on a scratch PATH, with an on-disk fixture standing in for the bucket.
-`.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
+the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
 THE CALL LOG IS THE PRIMARY EVIDENCE. The run prints six or seven `log_info` lines, none of them derived from what moved; the ENTIRE observable effect is the `aws` invocations, the exact `--key`/`--copy-source` pairs they carry, and the URL list handed to `cf-purge-urls.sh`.
 
@@ -85,7 +85,7 @@ bash's own refusal and names the bash FILE and a bash LINE NUMBER before the mes
 
 A `$GITHUB_ENV` THAT CANNOT BE APPENDED TO is the third, and it is the same shape: bash's redirection error against this port's own sentence, same stream, same status 1.
 
-K=5 LEDGER: `.ci/shadow/w7p6-simulate-promotion.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

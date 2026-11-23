@@ -1,6 +1,6 @@
 """`rediacc_ci.housekeeping.cleanup_github_deployments`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/housekeeping/cleanup-github-deployments.sh` and the port over the same fixture and compared exit code, stdout, stderr and the `gh` call log. The K=5 ledger `.ci/shadow/w7p6-cleanup-github-deployments.observations.jsonl` recorded that comparison over five distinct trees, in a disposable scratch repo outside this checkout.
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/housekeeping/cleanup-github-deployments.sh` and the port over the same fixture and compared exit code, stdout, stderr and the `gh` call log. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees, in a disposable scratch repo outside this checkout.
 The twin has now been deleted and every case that executed it compares against `goldens/cleanup-github-deployments/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 A RECORDING FAKE `gh`, written as Python, seam is PATH -- ruling 7's shape, as in `test_pr_sync_epic_block.py`. Nothing here reaches the network, and the real `gh` on this machine is never on the PATH handed to the subject. That is not merely tidy: this script's non-dry-run arm DELETES deployment records, and its `--repo` comes from the command line, so a case that leaked the

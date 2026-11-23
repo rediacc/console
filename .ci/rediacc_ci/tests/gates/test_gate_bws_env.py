@@ -2,7 +2,7 @@
 
 Both-ways test for `rediacc_ci.core.bws_env`, the shared Bitwarden fetcher local scripts use instead of reading `private/account/.env`.
 
-THE SUBJECT MOVED WHEN ITS BASH TWIN WENT. This file drove `.ci/lib/bws-env.sh` until that helper was retired: it had zero sourcers, its equivalence with the port is recorded over five distinct trees in `.ci/shadow/w7p5b-bws-env.observations.jsonl`, and the helper's own bytes are frozen under `goldens/bws-env/`. The assertions below are UNCHANGED, which is the point of naming
+THE SUBJECT MOVED WHEN ITS BASH TWIN WENT. This file drove `.ci/lib/bws-env.sh` until that helper was retired: it had zero sourcers, its equivalence with the port is recorded over five distinct trees in the ledger (deleted in commit:936280cd35), and the helper's own bytes are frozen under `goldens/bws-env/`. The assertions below are UNCHANGED, which is the point of naming
 them after behaviour rather than after an implementation: every refusal, every count and every "rc=" line is the same string it was when a shell printed it.
 
 WHY THIS CLASS NEEDS A TEST. Every failure mode of a credential fetcher is quiet by nature: an empty value exports cleanly, a missing token looks like a network blip, and a silent fallback to a local file makes a broken fetch work on the author's machine and nowhere else. So the cases here are mostly REFUSALS, and each is planted rather than described.

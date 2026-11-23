@@ -98,7 +98,7 @@ A prune that fails after the upload and purge have succeeded fails the run with 
 
 The twin is unchanged: the differential strips this delta's calls and its `Pruned`/`Prune` lines from the port's side (`test_deploy_upload_repos_to_r2.py`, `_without_prune`) and pins the delta in its own `test_prune_*` cases.
 
-K=5 LEDGER: `.ci/shadow/w7p6-upload-repos-to-r2.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

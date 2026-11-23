@@ -2,7 +2,7 @@
 
 WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. This gate's parser IS a Python heredoc inside the bash twin, so the two implementations can be run against the same input and compared for real rather than against a table of what the port happens to do. That is the strongest form this test can take, and it is available only because the twin already shelled out to python3.
 
-What this file does NOT cover, because the committed shadow ledger `.ci/shadow/w7p2-tracked-sidecars.observations.jsonl` covers it over five distinct trees: the whole gate, the `git ls-files` enumeration and the output shape. This file covers the seams that ledger cannot isolate.
+What this file does NOT cover, because the committed shadow ledger the ledger (deleted in commit:936280cd35) covers it over five distinct trees: the whole gate, the `git ls-files` enumeration and the output shape. This file covers the seams that ledger cannot isolate.
 """
 
 import subprocess

@@ -2,7 +2,7 @@
 
 WHY A DIFFERENTIAL. This gate is one 150-line awk program with four rules, a two-pass line folder and a 12-line lookahead window, and its own history is a version that died on all 42 files while printing "OK: no gate captures a probe...". Comparing the port against the real awk on the same input is the only form of this test that can fail for the right reason.
 
-The whole gate is covered by `.ci/shadow/w7p2-swallowed-failures.observations.jsonl` over five distinct trees.
+The whole gate is covered by the ledger (deleted in commit:936280cd35) over five distinct trees.
 """
 
 import json
@@ -14,7 +14,7 @@ import pytest
 from rediacc_ci.quality import swallowed_failures as mod
 
 # THE AWK PROGRAM IS A FROZEN LITERAL NOW, AND THE DIFFERENTIAL IS STILL LIVE.
-# It used to be sliced out of `.ci/scripts/quality/check-swallowed-failures.sh` at run time. That twin was retired in W7P5-c, blob `e7b12ba15c41569a88ea8065007e246ab948f2ee`, once `.ci/shadow/w7p2-swallowed-failures.observations.jsonl` held K=5 -- 10 rows, 10 distinct tree ids, 4 distinct fingerprints, every verdict `EQUIVALENT`.
+# It used to be sliced out of `.ci/scripts/quality/check-swallowed-failures.sh` at run time. That twin was retired in W7P5-c, blob `e7b12ba15c41569a88ea8065007e246ab948f2ee`, once the ledger (deleted in commit:936280cd35) held K=5 -- 10 rows, 10 distinct tree ids, 4 distinct fingerprints, every verdict `EQUIVALENT`.
 #
 # WHAT DID *NOT* CHANGE, and it is the point of freezing it this way rather than freezing the OUTPUTS: every case below still pipes real input through this real awk with a real `awk` binary and compares the port against what it prints. The subject of the comparison is unchanged; only its storage moved from a file on disk into this string.
 # Freezing the verdicts instead would have turned a differential into an assertion about remembered text, which is the one thing a differential exists not to be.

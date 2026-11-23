@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.label_inventory`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-label-inventory.sh` over a specimen with both streams captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the ledger `.ci/shadow/w7p2-label-inventory.observations.jsonl`, which holds over ten distinct trees. The twin has now been deleted and every case that
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-label-inventory.sh` over a specimen with both streams captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the ledger the ledger (deleted in commit:936280cd35), which holds over ten distinct trees. The twin has now been deleted and every case that
 executed it compares against `goldens/label-inventory/`, which holds the twin's OWN recorded output, captured from the tracked script on its last day in the tree. The provenance header of each golden carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed those bytes.
 
 EVERY CASE USES THE INJECTION SEAMS, so no case touches the network. That is the twin's own design (`LABEL_INVENTORY_LIVE_FILE`, `LABEL_INVENTORY_PROBE_FILE`, `LABEL_INVENTORY_LIVE_JSON_FILE`), and the PROBE seam is separate from the LIST seam on purpose: "the whole point of the re-read is that it can disagree with the list."

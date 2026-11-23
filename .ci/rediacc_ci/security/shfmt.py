@@ -3,7 +3,7 @@
 
 W7P6 wave 28, cut over since. THIS MODULE IS THE LIVE REGISTERED GATE (`check:ci-shell-format`, step "Shell format"); the bash twin was proved equivalent on both streams by
 `.ci/rediacc_ci/tests/test_security_shfmt.py` and by the K=5 shadow ledger
-`.ci/shadow/w7p6-shfmt.observations.jsonl`, then retired against `goldens/shfmt/`.
+the ledger (deleted in commit:936280cd35), then retired against `goldens/shfmt/`.
 
 WHAT IT DOES. Acquires shfmt AT THE PIN through `rediacc_ci.core.toolchain` (the already-landed port of `.ci/scripts/lib/toolchain.sh`), refuses to report a
 verdict if fewer than `${SHFMT_MIN_FILES:-187}` shell scripts are visible, then

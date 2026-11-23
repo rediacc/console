@@ -1,6 +1,6 @@
 """A script that INSTALLS a Go tool must be able to FIND it.
 
-Ported from `.ci/scripts/quality/check-go-tool-path.sh`, which W7 P5 batch B6 retired once `.ci/shadow/w7p2-gotoolpath.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-go-tool-path.sh`, which W7 P5 batch B6 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 WHY THE TWIN EXISTS, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 
@@ -51,7 +51,7 @@ numbers look like file line numbers and are not -- and it is REPORTED rather tha
 
 THE COLOUR IS UNCONDITIONAL IN THE TWIN, unlike every sibling gate. `pass` and `fail` here `printf` raw `\033[0;31m` and `\033[0;32m` with no `[ -t 1 ]` test, no `NO_COLOR` test and no `CI` test, so this gate writes escape sequences into every CI log and every pipe. check-git-op-conditionals.sh and check-host-toolchain-coverage.sh, written by the same hand, both gate their
 colour on `[ -t 1 ] && [ -z "${NO_COLOR:-}" ]`. Carried unchanged and reported;
-`scripts/lib/shadow-gate.ts` strips ANSI before comparing, so this costs the differential nothing and costs a human reading a log a little.
+the shadow gate (commit:bf054adcd4) strips ANSI before comparing, so this costs the differential nothing and costs a human reading a log a little.
 
 FINDINGS GO TO STDOUT IN THE TWIN. `fail()` has no `>&2`, so every finding, the floor refusal and the final `N finding(s).` line all land on stdout. That is the opposite of `rediacc_ci.log`'s rule (messages on stderr, stdout is data), so the port uses `print()` for exactly these lines and says so at each call site rather than silently moving a stream. A stream swap is precisely the
 2026-09-06 emit-advisory incident, and moving one during a port is how it would happen again.
@@ -155,7 +155,7 @@ def bare_invocations(body: str) -> list[str]:
 def scan_file(path: pathlib.Path, label: str) -> list[str]:
     """The twin's `scan_file`, as the lines it would print. Empty means clean.
 
-    Returned rather than printed so `main` owns every stream decision in one place and a test can assert on the decision without capturing anything. The first line is the finding header; the rest are its continuation, which is what `scripts/lib/shadow-gate.ts` folds into the same finding.
+    Returned rather than printed so `main` owns every stream decision in one place and a test can assert on the decision without capturing anything. The first line is the finding header; the rest are its continuation, which is what the shadow gate (commit:bf054adcd4) folds into the same finding.
 
     An unreadable file is NOT a finding. The twin's `cat "$f" 2>/dev/null ||
     return 0` swallows it, and a port that turned it into an error would report

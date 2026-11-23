@@ -1,6 +1,6 @@
 """The renet-generated TypeScript types are up to date.
 
-Ported from `.ci/scripts/quality/check-renet-types.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-renet-types.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-renet-types.sh`, which W7 P5 batch A2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 WHAT THE TWIN DOES. It builds `renet` from the `private/renet` submodule, regenerates the contract into a temporary directory, and compares each generated file against the committed copy in `packages/shared/src/renet-contract/data`, IGNORING the version line. A difference means the committed contract is stale: the CLI would then be typed against a renet that no longer exists.
 
@@ -225,7 +225,7 @@ def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
     THE PURE HALF ONLY, AND THAT IS A DECISION. The end-to-end path builds a Go binary, which needs a toolchain and tens of seconds, and a selftest that silently degrades when `go` is missing would be the vacuity this package exists to refuse. The comparison logic -- the part that decides the verdict -- is pure, so it is driven directly here, and the whole gate is proven end to end
-    by the committed shadow ledger `.ci/shadow/w7p2-renet-types.observations.jsonl` over five distinct trees.
+    by the committed shadow ledger the ledger (deleted in commit:936280cd35) over five distinct trees.
     """
     ctl = Controls("renet-types", floor=18, verbose=True)
 

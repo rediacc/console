@@ -13,7 +13,7 @@ Three calls, in this order, and the order is observable because it is the order 
 
 The third is written out separately in the twin rather than folded into the loop, and the twin says why: the on-prem server image lives at `ghcr.io/rediacc/server`, outside the `elite/` namespace the other two share. The port keeps the split for the same reason and because a reader comparing the two files should see the same shape.
 
-NOTHING HERE REACHES GHCR IN A TEST. `docker` is the only external tool involved and it is the one carrying the registry credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_promote_docker_to_stable_hotfix.py`) puts a RECORDING FAKE `docker` on a scratch PATH that logs its exact argv. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real
+NOTHING HERE REACHES GHCR IN A TEST. `docker` is the only external tool involved and it is the one carrying the registry credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_promote_docker_to_stable_hotfix.py`) puts a RECORDING FAKE `docker` on a scratch PATH that logs its exact argv. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real
 run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
 THE CALL LOG IS THE EVIDENCE, MORE THAN THE STREAMS. The three `Promoting ...` lines are printed BEFORE the call they announce and are derived from the loop index rather than from anything docker returns, so a port that promoted `ghcr.io/rediacc/renet:latest` would print byte-identical stdout, byte-identical stderr and exit 0. Only the recorded argv sees the difference, which is
@@ -28,7 +28,7 @@ ADVANCED and server:stable BEHIND, and the run says only what docker said. `NO_P
 
 NO ARGUMENTS, NO ENVIRONMENT. The twin parses neither, so `--dry-run` is silently ignored by both sides rather than refused; the differential drives that so the agreement is recorded rather than assumed.
 
-K=5 LEDGER: `.ci/shadow/w7p6-promote-docker-to-stable-hotfix.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

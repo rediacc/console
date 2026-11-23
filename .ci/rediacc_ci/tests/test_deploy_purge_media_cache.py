@@ -1,6 +1,6 @@
 """Differential: `rediacc_ci.deploy.purge_media_cache` against its twin `.ci/scripts/deploy/purge-media-cache.sh`.
 
-A RECORDING FAKE `curl` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv and answers from the environment, and the only real credential name in the file is an environment KEY, never a value. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a
+A RECORDING FAKE `curl` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv and answers from the environment, and the only real credential name in the file is an environment KEY, never a value. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a
 separate, achievable piece of work. This is that piece.
 
 THE REQUEST IS THE WHOLE CONTRACT, so the log is compared as well as the two streams. The zone id and the hostname are hard-coded in the twin and take no

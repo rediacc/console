@@ -1,13 +1,13 @@
 """`rediacc_ci.quality.staging_tag_guard`, driven directly against the bytes its bash twin printed.
 
 WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-staging-tag-guard.sh` over each fixture below -- pointed there with the twin's own `STAGING_GUARD_ROOT` seam, which is why the twin never had to be copied -- with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. The ledger
-`.ci/shadow/w7p2-stagingtag.observations.jsonl` recorded the same comparison over twelve distinct trees, three of which embed BOTH implementations so that the tree id really is the content the disqualification rule assumes it is. The twin has now been deleted, and every case that executed it compares against `goldens/staging-tag-guard/`, which holds the twin's OWN recorded output,
+the ledger (deleted in commit:936280cd35) recorded the same comparison over twelve distinct trees, three of which embed BOTH implementations so that the tree id really is the content the disqualification rule assumes it is. The twin has now been deleted, and every case that executed it compares against `goldens/staging-tag-guard/`, which holds the twin's OWN recorded output,
 captured from the tracked script on its last day in the tree. The provenance header of each golden carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed those bytes.
 
 STDOUT IS COMPARED BYTE FOR BYTE, and that is not the usual bar. This gate's output IS its tally: ` ok <label>` lines and a `✓ <subject>: N control(s) passed` verdict, all of it interpolated from the same subject string that appears in the FAILING verdict, where it carries a ✗ and is therefore a compared finding. The first draft of this port enriched that subject with a
 scanned-file count and the shadow differential refused all three trees with MISMATCH_FINDINGS; those tree ids stay disqualified. Comparing the recorded bytes here is what stops that returning.
 
-ONE THING IS FILTERED OUT OF THE PORT'S STDERR, and it is the same one the differential filtered: the `→` progress line the port emits and `shadow-gate.ts` reads as chatter. Everything else is compared verbatim, including the FAIL lines and the two closing advice lines the comparator reads as continuation findings. The colon case filters `grep:` as well, for the reason its own
+ONE THING IS FILTERED OUT OF THE PORT'S STDERR, and it is the same one the differential filtered: the `→` progress line the port emits and the shadow gate (commit:bf054adcd4) reads as chatter. Everything else is compared verbatim, including the FAIL lines and the two closing advice lines the comparator reads as continuation findings. The colon case filters `grep:` as well, for the reason its own
 docstring gives.
 """
 

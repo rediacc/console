@@ -1,6 +1,6 @@
 """Differential: `rediacc_ci.deploy.upload_repos_to_r2` against its twin `.ci/scripts/deploy/upload-repos-to-r2.sh`.
 
-RECORDING FAKES FOR `aws` AND `curl` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2 or Cloudflare, and nothing here reads or writes the real checkout: every case builds a throwaway tree holding the twin, the port, the purge script it calls and a `dist/` of its own, then runs both sides against it. `.ci/shadow/w7p5a-status.json` records this path as blocked only
+RECORDING FAKES FOR `aws` AND `curl` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2 or Cloudflare, and nothing here reads or writes the real checkout: every case builds a throwaway tree holding the twin, the port, the purge script it calls and a `dist/` of its own, then runs both sides against it. the ledger (deleted in commit:936280cd35) records this path as blocked only
 for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
 WHY THE FIXTURE HAS TO BE A WHOLE TREE AND NOT A tmp_path WITH A `dist/` IN IT. The twin's second act is `cd "$(get_repo_root)"`, which resolves `.ci/scripts/lib/../../..` from `common.sh`'s own location, NOT from the caller's cwd. Run the real twin from a fixture directory and it would walk back to this checkout and read the real `dist/`. The port derives its root the same way,

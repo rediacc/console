@@ -23,7 +23,7 @@ written for -- dropping a call site that is inside a YAML comment. The dead one 
 twice. And a port whose first act is to remove a line it judged useless is a port whose verdict nobody can check against the original. It is reported as a finding instead of silently repaired.
 
 THE MISSING LINES ARE NOT MARKED, AND THAT MATTERS TO THE COMPARATOR. The twin prints its findings as ` MISSING <file>:<line> builds www without GITHUB_TOKEN`
-with no severity glyph, so `scripts/lib/shadow-gate.ts` classifies them as chatter
+with no severity glyph, so the shadow gate (commit:bf054adcd4) classifies them as chatter
 and a differential over this gate reports VACUOUS_BOTH_EMPTY -- both sides exit 1
 with zero RECOGNISED findings. That is the comparator behaving correctly and
 saying so: its VACUOUS message names both causes, "plant one" and "the finding extractor does not recognise this gate's output (pass --finding-re)". The differential for this pair therefore runs with `--finding-re '^ *MISSING '`. The text is kept byte-identical to the twin's precisely so that ONE `--finding-re` serves both sides.
@@ -96,7 +96,7 @@ def find_sites(directory: pathlib.Path) -> list[tuple[pathlib.Path, int, str]]:
 
     Files are visited in sorted order so two runs over one directory produce the
     findings in the same order. The shell's glob is already sorted under LC_ALL=C,
-    which `scripts/lib/shadow-gate.ts` pins for exactly this reason.
+    which the shadow gate (commit:bf054adcd4) pins for exactly this reason.
     """
     out: list[tuple[pathlib.Path, int, str]] = []
     for path in sorted(directory.glob("*.yml")):

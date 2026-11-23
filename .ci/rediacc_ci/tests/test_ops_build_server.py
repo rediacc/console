@@ -1,6 +1,6 @@
 """`rediacc_ci.ops.build_server`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED this file ran `scripts/ops/build-server.sh` and the port over the same throwaway root, one after the other, and compared exit code, stdout, stderr, the fake-command call log and the staged tree. The K=5 ledger `.ci/shadow/w9p3-build-server.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been deleted and every case
+WHILE BOTH COPIES EXISTED this file ran `scripts/ops/build-server.sh` and the port over the same throwaway root, one after the other, and compared exit code, stdout, stderr, the fake-command call log and the staged tree. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees. The twin has now been deleted and every case
 compares against `goldens/build-server/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 STDOUT IS THE LEAST INFORMATIVE HALF HERE, and a comparison of the two streams alone would have been close to worthless. This script prints four progress lines and then invokes `npm`, `npx`, `cp`, `sort` and `docker buildx` with arguments that decide what lands in the image. So each golden carries two further sections:

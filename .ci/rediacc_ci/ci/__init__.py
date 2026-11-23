@@ -4,7 +4,7 @@
 `.ci/rediacc_ci/tests/gates/test_gate_profiler_report.py:57`, which drives panel.sh to test report.awk; neither is repointed here.
 
 `scope_reconcile_shadow` is a workflow step, not a registered quality gate: its own comment calls it "polarity depends on SCOPE_MODE", and its failure mode is an attested "could not verify a skip", not a code-quality finding. The bash twin is NOT deleted (W7 phase-6 decision, same as `quality/`): both copies live side by side until a differential ledger over K distinct trees
-exists, per `scripts/lib/shadow-gate.ts`. `ci.yml:1781` wires the bash twin by its literal path; neither this port nor its ledger repoints that step.
+exists, per the shadow gate (commit:bf054adcd4). `ci.yml:1781` wires the bash twin by its literal path; neither this port nor its ledger repoints that step.
 """
 
 __all__: list[str] = []

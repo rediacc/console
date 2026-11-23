@@ -16,7 +16,7 @@ LAYER 2 RUNS THE REAL DEV PATH, which is the point: it execs a PATH-shimmed `nod
 `node` must be on PATH or BOTH sides die at rc=1 with empty streams, which is
 itself asserted rather than skipped.
 
-K=5 LEDGER: `.ci/shadow/w7p6-rdc-sh-env.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

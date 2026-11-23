@@ -6,7 +6,7 @@ other half of.
 The split is not bureaucracy. A gate's logic is the part a PYTEST case wants to call directly, and a module that is only reachable by running a script is a module whose error paths are tested by nobody. Every port here exposes `main(argv) -> int` and a `selftest()`, both importable, so the same code is driven three ways: by the entry point in `.ci/scripts/quality/`, by its own
 `--selftest`, and by a test.
 
-THE BASH TWIN OUTLIVES ITS PORT UNTIL A LEDGER LICENSES THE RETIREMENT. Until a port has a committed differential ledger row over K distinct trees (`scripts/lib/shadow-gate.ts`, invariant 5), the evidence that it kept the twin's verdict does not exist, and deleting it would destroy the only thing the port can be compared against. Both files live side
+THE BASH TWIN OUTLIVES ITS PORT UNTIL A LEDGER LICENSES THE RETIREMENT. Until a port has a committed differential ledger row over K distinct trees (the shadow gate (commit:bf054adcd4), invariant 5), the evidence that it kept the twin's verdict does not exist, and deleting it would destroy the only thing the port can be compared against. Both files live side
 by side until the ledger says otherwise; W7 P5 then retires the twin, and the ledger stays as the licence record.
 
 WHAT EVERY PORT IN HERE PRESERVES, because these are the properties the tree's gates are judged on and a port that keeps the happy path and loses these has kept nothing:

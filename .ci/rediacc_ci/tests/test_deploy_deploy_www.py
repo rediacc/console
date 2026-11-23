@@ -1,6 +1,6 @@
 """Differential: `rediacc_ci.deploy.deploy_www` against its twin `.ci/scripts/deploy/deploy-www.sh`.
 
-A RECORDING FAKE FOR `npx`/`npm` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches Cloudflare; every case pins a fixture token, account and D1 state file, and the fake `npx` is a MODEL of `wrangler d1` rather than wrangler. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity
+A RECORDING FAKE FOR `npx`/`npm` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches Cloudflare; every case pins a fixture token, account and D1 state file, and the fake `npx` is a MODEL of `wrangler d1` rather than wrangler. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity
 ledger is a separate, achievable piece of work. This is that piece.
 
 THE CALL LOG AND THE GENERATED CONFIG ARE THE EVIDENCE. Everything the script prints goes through `log_step`/`log_info`, which any classifier reads as progress; the observable effect of a run is the ordered list of `npx wrangler` subcommands and the exact bytes of the `wrangler.preview.toml` the preview lane generates. The fake records both: every invocation as a `call: ` line in

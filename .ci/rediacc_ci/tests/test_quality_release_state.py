@@ -13,7 +13,7 @@ WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The library this port ca
     purpose; this file pins it so nobody "fixes" one side.
   * `${v:+N cli sentinels}${v:-none}` glues the count to the WHOLE version list.
 
-They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-release-state.observations.jsonl` compares over five distinct trees, against a stub `aws` committed inside each fixture. This file covers the seams that ledger cannot isolate.
+They are NOT the whole gate: the whole gate is what the committed shadow ledger the ledger (deleted in commit:936280cd35) compares over five distinct trees, against a stub `aws` committed inside each fixture. This file covers the seams that ledger cannot isolate.
 """
 
 import os

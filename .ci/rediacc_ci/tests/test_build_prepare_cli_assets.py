@@ -17,7 +17,7 @@ FAKES RECORD TO `$FAKE_CALL_LOG`, NEVER TO STDOUT, and never to the stdout of an
 
 `$0` IS MASKED TO `<SELF>`; nothing else is. Streams are compared separately.
 
-K=5 LEDGER: `.ci/shadow/w7p6-prepare-cli-assets.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

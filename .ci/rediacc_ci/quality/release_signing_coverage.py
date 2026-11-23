@@ -1,6 +1,6 @@
 """Every release package format is SIGNED, or is declared unsigned on purpose.
 
-Ported from `.ci/scripts/quality/check-release-signing-coverage.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-signing-coverage.observations.jsonl` asserted equivalence over five distinct trees. It read the bash builder `build-linux-pkg.sh` by `sed` and `awk`; that builder is retired too (PLAN-retire-bash-oracles B3), and the gate now reads its Python successor, `rediacc_ci.build.build_linux_pkg`, through `ast`: the same two questions, asked of the module that actually runs.
+Ported from `.ci/scripts/quality/check-release-signing-coverage.sh`, which W7 P5 batch C1 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees. It read the bash builder `build-linux-pkg.sh` by `sed` and `awk`; that builder is retired too (PLAN-retire-bash-oracles B3), and the gate now reads its Python successor, `rediacc_ci.build.build_linux_pkg`, through `ast`: the same two questions, asked of the module that actually runs.
 
 WHY THE TWIN EXISTS, carried over from its own header because the incident IS the specification. On 2026-09-05 a deb shipped UNSIGNED and green: the signing
 setup was guarded by `[[ -n "${RELEASE_GPG_PRIVATE_KEY:-}" ]]`, the org secret

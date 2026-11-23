@@ -164,7 +164,7 @@ PORT NOTES.
 THE EMBEDDED PYTHON HEREDOC BECOMES ORDINARY FUNCTIONS, and its exit-code contract becomes an exception. The twin runs a `python3 - <<'PY'` child and captures `drift_rc` separately so that a crash cannot read as agreement; here the same distinction is `DriftUnreadableError`, raised where that child exits 1, and the caller turns it into the identical message and exit. The shape of
 the guarantee is what matters: an unreadable comparison is never a clean tree.
 
-`length()` IN awk IS BYTES UNDER `LC_ALL=C`, which `scripts/lib/shadow-gate.ts`
+`length()` IN awk IS BYTES UNDER `LC_ALL=C`, which the shadow gate (commit:bf054adcd4)
 pins for both sides, while Python's `len()` counts CHARACTERS. Every description in this repo is ASCII, so the two agree today; a description with a non-ASCII character would be measured differently, and the port would under-report rather than over-report. Stated rather than silently normalised, because normalising it would make the port disagree with the twin on a real file.
 
 THE UNQUOTING ORDER IS OBSERVABLE AND IS PRESERVED. The twin strips the `- name:` prefix, then a surrounding pair of double quotes, then a surrounding pair of single quotes, and only THEN trailing whitespace. So `- name: "x" ` keeps its quotes: the `^"(.*)"$` anchor fails while the trailing spaces are still there. That is a bug in the twin and it is carried, because "fixing" it

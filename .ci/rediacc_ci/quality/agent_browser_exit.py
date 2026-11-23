@@ -1,6 +1,6 @@
 r"""`agent-browser open`'s exit status must never decide control flow.
 
-Ported from `.ci/scripts/quality/check-agent-browser-exit.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-agent-browser-exit.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-agent-browser-exit.sh`, which W7 P5 batch C1 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 THE TWIN'S OWN HEADER, carried over because the measurement IS the gate and a paraphrase of it would be a different gate:
 

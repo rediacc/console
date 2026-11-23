@@ -6,7 +6,7 @@ as a developer's offline run would be.
 
 MOST CASES DOWNLOAD NOTHING. Only `test_real_tree_agrees_byte_for_byte` fetches the pinned tarball. The rest run against a fixture root whose SUBJECT is a stub that prints a directory holding a fake `nfpm`, which is what lets the version-comparison branch be driven at all: the real subject can only be made to report a wrong version by shipping a wrong binary.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-ensure-nfpm.observations.jsonl` (5 rows, 5
+K=5 LEDGER: the ledger (deleted in commit:936280cd35) (5 rows, 5
 distinct trees, 5 distinct finding sets).
 """
 

@@ -7,7 +7,7 @@ BOTH DIRECTIONS, preserved from the twin: the five well-formed platform/arch key
 
 THE ONE HAZARD IS PRINTED, NOT RULED ON, exactly as in the bash twin: an input directory with no `.sha256` files makes the subject exit 0 with an empty `binaries` manifest, and fixing that means editing the subject, which this file does not own.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-cli-manifest.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

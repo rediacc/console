@@ -4,7 +4,7 @@ Sibling of `test_proxies_linux_packages.py`; see that file for why the two invoc
 
 ONE CASE DRIVES THE REAL SUBJECT (five scenarios, a Python fixture server per scenario, ~7 s on this host). The rest use a stub subject with the same dispatch SHAPE, which is the only way to drive the drift and zero-scenario branches: the real dispatch cannot be asked to grow an eighth arm.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-rdc-update.observations.jsonl` (5 rows, 5
+K=5 LEDGER: the ledger (deleted in commit:936280cd35) (5 rows, 5
 distinct trees, 5 distinct finding sets).
 """
 

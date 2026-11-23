@@ -2,7 +2,7 @@
 
 THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/private/run-renet.sh` and the port over one fixture tree apiece and compared four channels: the exit code, stdout, stderr and the recorded argv of the submodule stage. Every case now compares against `goldens/run-renet/`, which holds the twin's OWN recorded bytes; each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
-THE LEDGER IS `.ci/shadow/w7p4b-run-renet.observations.jsonl`, NINE rows over nine distinct trees, every one EQUIVALENT. The older `w7p6-run-renet` file exists with five rows and is deliberately not the citation: the w7p4b rows are the ones whose recorded `old.cmd` names this bash path and whose `new.cmd` names the module spec that replaced it, which is what makes the licence readable back.
+THE LEDGER IS the ledger (deleted in commit:936280cd35), NINE rows over nine distinct trees, every one EQUIVALENT. The older `w7p6-run-renet` file exists with five rows and is deliberately not the citation: the w7p4b rows are the ones whose recorded `old.cmd` names this bash path and whose `new.cmd` names the module spec that replaced it, which is what makes the licence readable back.
 
 THE REAL `private/renet/.ci/ci.sh` IS NEVER INVOKED. It is the submodule's whole CI: govulncheck, golangci-lint, deadcode and `go test ./...` under root. A suite that reached it would take many minutes, would need a Go toolchain and root, and would SKIP on a checkout without the submodule, and a skip here is exactly the failure `common.sh`'s CI arm exists to prevent.
  The fixture

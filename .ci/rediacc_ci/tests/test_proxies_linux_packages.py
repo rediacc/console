@@ -5,7 +5,7 @@ Sibling of `test_proxies_ensure_nfpm.py`; see that file for why the two invocati
 MOST CASES BUILD NO PACKAGES. Only `test_real_tree_agrees_byte_for_byte` runs the genuine `rediacc_ci.testrun.linux_packages --dry-run` (nfpm really builds four formats, build-pkg-repo.sh really generates APT/RPM/APK/Arch metadata, ~1 s on this host). The rest run against a fixture root whose SUBJECT is a stub with the same SHAPE -- `plan()` entries, `TEST: ` banners on stderr,
 `[DRY-RUN] Would` stub lines, a `Results:` summary -- which is the only way to drive the marker-rename defect at all: the real subject cannot be asked to rename its own stub text.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-linux-packages.observations.jsonl` (6 rows,
+K=5 LEDGER: the ledger (deleted in commit:936280cd35) (6 rows,
 6 distinct trees, 5 distinct finding sets), re-recorded on 2026-09-10 after the marker-corroboration fix; the pre-fix rows were DISCARDED rather than appended to, because they record a verdict the code no longer gives.
 """
 

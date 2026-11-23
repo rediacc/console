@@ -34,7 +34,7 @@ THE EXIT-STATUS BEHAVIOUR ON A NON-DICT, NON-LIST ROOT IS PRESERVED EXACTLY, and
     len(d.get('regions', d)) if isinstance(d,(dict,list)) else 0
 
 and a top-level JSON *list* satisfies the isinstance test, then dies on `.get` with an AttributeError. Under `set -e` the assignment carries that failure out and the script exits non-zero having printed a traceback and no verdict. The port reproduces the same expression rather than "fixing" it, because the fix is a behaviour change and this file's job is to keep the verdict. The
-traceback TEXT differs between the two -- it names different files -- but a crash is not a verdict on either side, and `scripts/lib/shadow-gate.ts` classifies neither as a finding.
+traceback TEXT differs between the two -- it names different files -- but a crash is not a verdict on either side, and the shadow gate (commit:bf054adcd4) classifies neither as a finding.
 
 THE DIFF PRINTED ON DIVERGENCE. The twin ends with `diff <(printf '%s\n' "$a") <(printf '%s\n' "$b") | head -20`. Both operands are ONE line -- `json.dumps` with no indent -- so the output is always the four-line normal-format hunk `1c1`, `< a`, `---`, `> b`, and `head -20` never truncates anything. The port emits those four lines literally rather than reaching for difflib, which
 produces a different format for the same fact. The `head -20` is carried as a cap anyway, so a future multi-line normalization cannot turn a divergence report into a screenful.

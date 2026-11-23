@@ -1,6 +1,6 @@
 """META-GATE: a validator that PASSES when given nothing is broken by definition.
 
-PORTED FROM `.ci/scripts/test/gates/test-gate-anti-vacuity.sh`, WHICH IS NOW RETIRED. The twin and this port agreed on every case over ten recorded runs in `.ci/shadow/twin-parity.ledger.jsonl` before the bash file was deleted, and nothing here reads or executes it any more.
+PORTED FROM `.ci/scripts/test/gates/test-gate-anti-vacuity.sh`, WHICH IS NOW RETIRED. The twin and this port agreed on every case over ten recorded runs in the ledger (deleted in commit:936280cd35) before the bash file was deleted, and nothing here reads or executes it any more.
 
 WHY THIS EXISTS. This repo accumulated about twelve quality gates that were green because they could not fail. Two root patterns, both reproducible by simply removing the input:
 

@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.content_quality` against the shell it replaces.
 
-WHAT IS WORTH TESTING HERE, and it is not "does it find the phrase". The shadow ledger `.ci/shadow/w7p2-content-quality.observations.jsonl` drives the whole gate end to end over five distinct trees. What a ledger row cannot isolate is the three pieces of shell that decide WHICH LINES ARE EVEN LOOKED AT, each of which can narrow silently and leave the gate green:
+WHAT IS WORTH TESTING HERE, and it is not "does it find the phrase". The shadow ledger the ledger (deleted in commit:936280cd35) drives the whole gate end to end over five distinct trees. What a ledger row cannot isolate is the three pieces of shell that decide WHICH LINES ARE EVEN LOOKED AT, each of which can narrow silently and leave the gate green:
 
   * the awk exemption program, five rules whose ORDER is the semantics
   * `${line// /}`, which deletes spaces and not whitespace, and therefore

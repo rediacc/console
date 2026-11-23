@@ -10,7 +10,7 @@ LIVE CALLER: the Initialize step (`rediacc_ci.ci.initialize`) runs `main` in pro
 
 INTENTIONAL DELTA (Rule T), the input lists. The twin hashed `.ci/scripts/build/build-renet.sh` into the renet tag, and `build-cli.sh`, `build-cli-musl.sh`, `build-cli-executables.sh` and `prepare-cli-assets.sh` into the web and rdc closure keys. Those scripts are deleted, and a `git rev-parse HEAD:<path>` of a deleted path is a hard refusal, so each entry now names the Python module that replaced it (`build_renet.py`, `build_cli.py`, `build_cli_musl.py`, `build_cli_executables.py`, `prepare_cli_assets.py`). The change moves the renet, web and rdc tags once, so every image is rebuilt once. `test_ci_generate_tag.py::test_the_input_lists_name_no_retired_script` fails on the old lists.
 
-Ledger: `.ci/shadow/w7p6-generate-tag.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-generate-tag --assert --k 5`).
+Ledger: the ledger (deleted in commit:936280cd35).
 
 -----------------------------------------------------------------------------
 DEFECT G: `--github-output` WITH $GITHUB_OUTPUT UNSET IS A SILENT NO-OP

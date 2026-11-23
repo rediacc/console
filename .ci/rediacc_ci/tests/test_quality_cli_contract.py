@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.cli_contract` against the diff logic it replaces.
 
-WHAT THE SHADOW LEDGER CANNOT REACH. `.ci/shadow/w7p2-cli-contract.observations.jsonl` drives the whole gate over five distinct trees with `npm` and `npx` shimmed, so the wiring, the exit codes and the finding text are already compared end to end. What it cannot isolate is the COMPARISON ITSELF: which lines the version filter drops, what an unterminated file does to it, and the
+WHAT THE SHADOW LEDGER CANNOT REACH. the ledger (deleted in commit:936280cd35) drives the whole gate over five distinct trees with `npm` and `npx` shimmed, so the wiring, the exit codes and the finding text are already compared end to end. What it cannot isolate is the COMPARISON ITSELF: which lines the version filter drops, what an unterminated file does to it, and the
 no-nullglob behaviour that makes an empty i18n directory report a locale whose name is a glob.
 
 The last of those is a DEFECT in the twin, carried deliberately. It is pinned here so that a future reader who "fixes" it discovers, from a red test, that they have changed the verdict rather than tidied the code.

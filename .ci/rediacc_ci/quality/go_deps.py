@@ -1,6 +1,6 @@
 """Go direct dependencies must be up to date across every Go submodule.
 
-Ported from `.ci/scripts/quality/check-go-deps.sh`, deleted in W7 phase 5 (batch c) once its K=5 shadow ledger (`.ci/shadow/w7p2-go-deps.observations.jsonl`) licensed the retirement; see `rediacc_ci.quality.__init__` for the general rule both copies lived under until then.
+Ported from `.ci/scripts/quality/check-go-deps.sh`, deleted in W7 phase 5 (batch c) once its K=5 shadow ledger (the ledger (deleted in commit:936280cd35)) licensed the retirement; see `rediacc_ci.quality.__init__` for the general rule both copies lived under until then.
 
 `.ci/scripts/lib/release-age.sh` and `.ci/scripts/lib/age-check.sh`, the twin's two sourced libraries, were deleted in the same change: `check-go-deps.sh` was the last real sourcer of each (verified `grep -rlP '^\\s*(source|\\.)\\s+.*<lib>\\.sh' .ci .claude scripts` before deletion), and their Python successors (`rediacc_ci.core.release_age`, `rediacc_ci.core.age`) are what this module's own
 `ReleaseAge` class and `check_entry_age` below already called.

@@ -99,7 +99,7 @@ A SEALED RERUN PUBLISHES THE SEALED CHECKSUMS. When the guard answers 10, `cli/v
 
 THE TRACKER NEVER PRUNES A PROMOTION CANDIDATE. On either release channel, a version that falls out of the 20-version window but is newer than stable (`check_soak_period.in_walk`, so `check_soak_period` may still select it) keeps its `cli/v<V>/` (and its snapshot) and stays in `cli/versions.json` after the window; with the stable manifest unreadable, nothing is pruned. Pruning such a version starved stable: its versioned prefix and snapshot were gone, so the promote could not select it. The rule first ran only with `SNAPSHOT_VERSION` set, which kept the twin comparison byte-identical on a run without one; that was the only reason, and `cli/versions.json` is shared by both channels, so a stable or snapshot-less edge run pruned the same candidates (#32c67de3). It is unconditional now, and the one call the twin comparison gains, a read of `cli/stable/manifest.json` before pruning, is declared in `test_the_retention_window_prunes_and_deletes`.
 
-K=5 LEDGER: `.ci/shadow/w7p6-upload-to-r2.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

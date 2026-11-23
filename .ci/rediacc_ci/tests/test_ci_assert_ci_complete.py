@@ -6,8 +6,8 @@ The twin reads ONLY `RESULT_*` env vars plus `POINTER_BUMP_ONLY`, so both sides 
 
 Every case compares stdout, stderr and the exit code byte-for-byte. Nothing is normalised, because this script never prints its own name.
 
-The K=5 ledger is `.ci/shadow/w7p6-assert-ci-complete.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-ci-complete --assert --k 5`).
+The K=5 ledger is the ledger (deleted in commit:936280cd35)
+(the shadow gate (commit:bf054adcd4)).
 """
 
 from __future__ import annotations

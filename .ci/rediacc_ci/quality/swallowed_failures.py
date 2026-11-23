@@ -114,13 +114,13 @@ TEXT, so a `(` inside a string keeps the folder swallowing lines. That is the tw
 `validate_blocker_quality` IS A THIN WRAPPER HERE. The rule (both banned-phrase lists, the 30-character floor) lives in `rediacc_ci.core.allowlist.validate_reason`, which the wrapper calls; it was once copied in from the retired `.ci/scripts/lib/blocker-validator.sh`. The wrapper keeps only the stream split.
 
 `ci_error` PRINTS `::error::<msg>` ON STDOUT UNDER CI=true AND `✗ <msg>` ON
-STDERR OTHERWISE. Both are reproduced, because `scripts/lib/shadow-gate.ts` strips either prefix to the same normalized finding and a port that always used one would still be equivalent, but a human reading a CI log would lose the annotation.
+STDERR OTHERWISE. Both are reproduced, because the shadow gate (commit:bf054adcd4) strips either prefix to the same normalized finding and a port that always used one would still be equivalent, but a human reading a CI log would lose the annotation.
 
 `find ... | sort` IS SORTED HERE, unlike the sibling gate, so the finding ORDER
 is stable across machines. `sorted()` under `LC_ALL=C` is byte order, which is
 what `sort` gives.
 
-STREAMS. The banner, the quoted source line under each finding and the advice block are bare `echo` on STDOUT; the finding identity lines are `log_error` on stderr. The twin's own comment about this split is in `shadow-gate.ts`: "the stderr half carries the `<path>:<line>: <var>: <reason>` identity, which is the half that decides equivalence, so the split costs precision rather
+STREAMS. The banner, the quoted source line under each finding and the advice block are bare `echo` on STDOUT; the finding identity lines are `log_error` on stderr. The twin's own comment about this split is in the shadow gate (commit:bf054adcd4): "the stderr half carries the `<path>:<line>: <var>: <reason>` identity, which is the half that decides equivalence, so the split costs precision rather
 than soundness."
 
 ---- gate ----
@@ -408,7 +408,7 @@ def scan_text(text: str, file: str) -> list[Row]:
 # COLLAPSED 2026-09-09. This module used to carry its own copy of both banned-phrase tables, the 30-character floor and all four message bodies, 150 lines transcribed from `.ci/scripts/lib/blocker-validator.sh`. Two things had already drifted in that copy and neither was visible from here:
 #
 # * the messages spelled the separator `--` where the bash twin this module ports prints U+2014, so the two disagreed byte for byte on every rejection
-#     from line 2 onward. It never reddened anything because `shadow-gate`
+#     from line 2 onward. It never reddened anything because `shadow gate`
 # classifies only the ci_error line as a FINDING and the rest as chatter. * the trim was `re.sub(r"^[ \t]*", ...)`, space and tab only, where the twin's
 #     `sed 's/^[[:space:]]*//'` under LC_ALL=C also eats \v \f \r. A reason led by
 # a carriage return normalised to a different length in the two.

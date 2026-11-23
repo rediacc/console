@@ -19,7 +19,7 @@ id: lint:unused
 run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers --install && knip --treat-config-hints-as-errors
 ---- end gate ----
 
-Ledger: `.ci/shadow/w7p4b-typecheck-workers.observations.jsonl` -- nine rows, nine distinct clean trees, nine distinct finding sets (`npx tsx scripts/lib/shadow-gate.ts --pair w7p4b-typecheck-workers --assert --k 5`). The older `w7p6-typecheck-workers` ledger is superseded and not cited: its rows reach both sides through a fixture that no longer exists.
+Ledger: the ledger (deleted in commit:936280cd35) -- nine rows, nine distinct clean trees, nine distinct finding sets. The older `w7p6-typecheck-workers` ledger is superseded and not cited: its rows reach both sides through a fixture that no longer exists.
 
 -----------------------------------------------------------------------------
 `find | sort` IS CALLED, NOT REIMPLEMENTED

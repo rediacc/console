@@ -7,10 +7,10 @@ alphabetically rather than in FK dependency order, import into the target, and v
 
 CALLERS. `deploy.test_d1_migrations` calls `main` in process for each region. The bash twin `clone-d1.sh` was frozen to `goldens/twins/deploy.clone-d1.jsonl` and deleted under operator ruling D5 (PLAN-retire-bash-oracles, unit W7).
 
-NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (wrangler) and `sqlite3` are the only two programs that could, and the differential (`.ci/rediacc_ci/tests/test_deploy_clone_d1.py`) puts a RECORDING FAKE for each on a scratch PATH. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger
+NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (wrangler) and `sqlite3` are the only two programs that could, and the differential (`.ci/rediacc_ci/tests/test_deploy_clone_d1.py`) puts a RECORDING FAKE for each on a scratch PATH. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger
 is a separate, achievable piece of work. This is that piece.
 
-Ledger: `.ci/shadow/w7p6-clone-d1.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-clone-d1 --assert --k 5`).
+Ledger: the ledger (deleted in commit:936280cd35).
 
 -----------------------------------------------------------------------------
 `grep`, `sed`, `wc`, `du`, `cut`, `jq` AND `mktemp` ARE CALLED, NOT REIMPLEMENTED

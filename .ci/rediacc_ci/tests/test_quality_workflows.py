@@ -3,7 +3,7 @@
 WHY A DIFFERENTIAL. Four of the five banned patterns are handed to `grep -n` as BASIC regular expressions, and one of them -- `script:[[:space:]]*|` -- depends on `|` being LITERAL in BRE. Read as ERE it would match every line. Two of the structural rules are awk state machines whose indentation arithmetic is 1-based and spaces-only. Running the real tools and comparing is the only
 form of this test that can fail for the right reason.
 
-The whole gate is covered by `.ci/shadow/w7p2-workflows.observations.jsonl` over five distinct trees.
+The whole gate is covered by the ledger (deleted in commit:936280cd35) over five distinct trees.
 """
 
 import pathlib

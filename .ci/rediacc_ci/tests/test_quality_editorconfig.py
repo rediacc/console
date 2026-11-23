@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.editorconfig` against the shell and the awk it replaced.
 
-WHAT IS WORTH TESTING HERE, and it is not "does it see a CRLF". The shadow ledger `.ci/shadow/w7p2-editorconfig.observations.jsonl` drove the whole gate over five distinct trees carrying all four violation classes, and licensed the port at K=5; the bash twin `.ci/scripts/quality/check-editorconfig.sh` was retired in W7 P5 on the strength of it. What a ledger row could not
+WHAT IS WORTH TESTING HERE, and it is not "does it see a CRLF". The shadow ledger the ledger (deleted in commit:936280cd35) drove the whole gate over five distinct trees carrying all four violation classes, and licensed the port at K=5; the bash twin `.ci/scripts/quality/check-editorconfig.sh` was retired in W7 P5 on the strength of it. What a ledger row could not
 isolate is the two pieces that decide WHICH FILES ARE EVEN LOOKED AT:
 
   * the awk binary classifier, whose bug the twin's own header documented (a

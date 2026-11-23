@@ -1,7 +1,7 @@
 """`rediacc_ci.review.standing_orders_brief`, driven directly against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED every case below ran the tracked `.claude/lib/standing-orders-brief.sh` and the tracked port over two identical fixture trees and compared exit code, stdout and stderr byte for byte after two normalizations. The K=5 ledger `.ci/shadow/w7p6-standing-orders-brief.observations.jsonl` recorded that verdict over five distinct trees (`npx tsx
-scripts/lib/shadow-gate.ts --pair w7p6-standing-orders-brief --assert --k 5` -> "equivalence holds over 5 distinct trees") and licensed the port. W7 P6 then deleted the twin, and the cases that executed it now compare against `goldens/standing-orders-brief/`, which holds the twin's OWN recorded output for each fixture, captured from the tracked script on its last day in the
+WHILE BOTH COPIES EXISTED every case below ran the tracked `.claude/lib/standing-orders-brief.sh` and the tracked port over two identical fixture trees and compared exit code, stdout and stderr byte for byte after two normalizations. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that verdict over five distinct trees (`npx tsx
+the shadow gate (commit:bf054adcd4) --pair w7p6-standing-orders-brief --assert --k 5` -> "equivalence holds over 5 distinct trees") and licensed the port. W7 P6 then deleted the twin, and the cases that executed it now compare against `goldens/standing-orders-brief/`, which holds the twin's OWN recorded output for each fixture, captured from the tracked script on its last day in the
 tree. Nothing here is a hand-written expectation.
 
 THE SEAM IS THE CURRENT DIRECTORY, not the subject's own location. The port reads `.claude/hooks/stop/worklist.py`, `agent/...` and a bare `pwd` relative to wherever it is RUN, so it never has to be copied into the fixture: each case builds a tree and runs the real tracked module with `cwd` set to it.

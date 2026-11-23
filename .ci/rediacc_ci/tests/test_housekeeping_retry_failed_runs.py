@@ -1,6 +1,6 @@
 """`rediacc_ci.housekeeping.retry_failed_runs`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/housekeeping/retry-failed-runs.sh` and the port over the same fixture, one after the other, and compared exit code, stdout, stderr and the `gh` call log. The K=5 ledger `.ci/shadow/w7p6-retry-failed-runs.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been deleted and every case
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/housekeeping/retry-failed-runs.sh` and the port over the same fixture, one after the other, and compared exit code, stdout, stderr and the `gh` call log. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees. The twin has now been deleted and every case
 that executed it compares against `goldens/retry-failed-runs/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 A RECORDING FAKE `gh` ON A PATH WITH NO REAL `gh` ON IT. The live effect of this script is `POST .../rerun-failed-jobs` against `rediacc/console`, and this

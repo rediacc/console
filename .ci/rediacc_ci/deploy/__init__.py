@@ -1,9 +1,9 @@
 """Python ports of `.ci/scripts/deploy/*.sh`, box W7P5-a.
 
-WHY THIS SUBPACKAGE EXISTS. `deploy/` held 27 bash scripts and zero Python before this box (`agent/plans/PLAN-tooling-transformation.md` line 607). These are workflow `run:` targets, not gates: nothing here carries a `---- gate ----` header, and `scripts/gate-bind.ts` does not read this package. The acceptance this box works to is a shadow-gate ledger
-(`.ci/shadow/*.observations.jsonl`)
+WHY THIS SUBPACKAGE EXISTS. `deploy/` held 27 bash scripts and zero Python before this box (`agent/plans/PLAN-tooling-transformation.md` line 607). These are workflow `run:` targets, not gates: nothing here carries a `---- gate ----` header, and `scripts/gate-bind.ts` does not read this package. The acceptance this box works to is a shadow gate ledger
+(the ledger (deleted in commit:936280cd35))
 asserting `equivalence holds` at K=5 against the bash twin, exactly as
-`.ci/rediacc_ci/quality/*` did for the 78 quality-gate ports, using the same `scripts/lib/shadow-gate.ts` comparator, an `--old`/`--new` pair rather than a registered `--pair` id.
+`.ci/rediacc_ci/quality/*` did for the 78 quality-gate ports, using the same the shadow gate (commit:bf054adcd4) comparator, an `--old`/`--new` pair rather than a registered `--pair` id.
 
 WORKFLOW CUTOVER IS DONE. `.github/workflows/**` runs each path in this package as `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.<name>`; the bash twins under `.ci/scripts/deploy/` are deleted (W7P4-W, then PLAN-retire-bash-oracles), except `upload-media-to-r2.sh`, an exec shim kept for the gitignored growth pipeline and `packages/www/scripts/publish-tutorial-video-to-r2.ts`, which `upload_media_to_r2` is the twin of. No manifest.ts entry follows from a module living here: these are `run:` targets, never
 gates.

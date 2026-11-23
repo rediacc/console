@@ -1,6 +1,6 @@
 """`rediacc_ci.setup` against the bash it replaces, at the seams the ledger cannot see.
 
-WHAT THIS IS NOT. It is not the proof that the port was faithful; that was the shadow ledger `.ci/shadow/e1-setup.observations.jsonl`, 116 to 120 observations over five distinct clean trees (deleted by agent/plans/PLAN-tooling-code-reduction.md CR1; last at commit:aa829a19dc). A differential over whole runs cannot isolate a helper, and a unit test over a helper cannot notice a phase that stopped running. This file covers the first half; `check:ci-setup-port-parity` covers the second.
+WHAT THIS IS NOT. It is not the proof that the port was faithful; that was the shadow ledger the ledger (deleted in commit:936280cd35), 116 to 120 observations over five distinct clean trees (deleted by agent/plans/PLAN-tooling-code-reduction.md CR1; last at commit:aa829a19dc). A differential over whole runs cannot isolate a helper, and a unit test over a helper cannot notice a phase that stopped running. This file covers the first half; `check:ci-setup-port-parity` covers the second.
 
 THE BASH IS GONE, AND SO ARE THE CASES THAT RAN IT. `.ci/lib/setup.sh` was deleted by `1ae84c3e3`; six differential cases (17 with their parameters) were left behind guarded by `skipif(not TWIN.is_file())`, which is permanently true. They were removed 2026-09-15 rather than left skipping, and the reasoning is worth keeping because the original choice was deliberate and still wrong:
 

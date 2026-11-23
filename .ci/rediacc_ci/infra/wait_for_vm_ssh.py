@@ -36,7 +36,7 @@ Fixing either means editing a live CI script, which is the cutover box's call, n
 A NOTE ON THE FAILURE LINE'S VOLATILITY, for whoever reads the differential. `load average (1m 5m 15m): ...` reports live kernel data, so two runs a second apart can legitimately differ. The differential masks that field rather than asserting on it, and asserts the SHAPE (the label, three fields or the literal `unavailable`, and a core count) instead. Asserting the numbers would
 produce a test that fails on a busy machine for no reason, which is how a test gets deleted.
 
-K=5 LEDGER: `.ci/shadow/w7p6-wait-for-vm-ssh.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

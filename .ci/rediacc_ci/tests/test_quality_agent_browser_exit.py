@@ -5,7 +5,7 @@ from reading it: an ERE with a POSIX character class (`-[a-z]*e`), five `case`
 patterns matched against the RAW line, a `while IFS= read -r` loop that silently
 drops a file's last line when it has no trailing newline, and a two-line `printf` whose second line is post-processed by `sed`. A table of expected strings would be a table of what the PORT does, asserted against itself.
 
-These are the seams the committed ledger cannot isolate. `.ci/shadow/w7p2-agent-browser-exit.observations.jsonl` compares the WHOLE gate over five distinct trees; it cannot say which of the five `case` arms rejected a line, because both sides simply printed nothing for it. This file takes each arm on its own.
+These are the seams the committed ledger cannot isolate. the ledger (deleted in commit:936280cd35) compares the WHOLE gate over five distinct trees; it cannot say which of the five `case` arms rejected a line, because both sides simply printed nothing for it. This file takes each arm on its own.
 
 THE FRAGMENTS BELOW ARE LIFTED FROM `.ci/scripts/quality/check-agent-browser-exit.sh` lines 31-49 with the variables substituted and nothing else changed. Where a fragment is a `case`, it is reproduced as a `case` rather than as an equivalent `if`, because the equivalence is the thing under test.
 """

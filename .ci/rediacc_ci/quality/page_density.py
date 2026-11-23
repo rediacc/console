@@ -2,7 +2,7 @@
 """Port of `.ci/scripts/quality/page-density.sh`.
 
 THE REGISTERED GATE IS `check:ci-page-density`, wired in `package.json` onto `python3 -m rediacc_ci.quality.page_density`, declared in `scripts/ci-runner/manifest.ts` with `gate: true`, `slow: true` and `leaves: ['.ci/rediacc_ci/quality/page_density.py']`, and run in CI as the step named "Page density" in job `quality-www-build` of `.github/workflows/ci-quality.yml`. THIS
-PORT IS THE CALL SITE: the bash twin `.ci/scripts/quality/page-density.sh` carried its own `# ---- gate ----` header (`step: Page density`, `needs: node`, `selftest: true`, `lane: quality-www-build`, `slow: true`) and agreed with this wiring until W7 P5 batch A2 retired it, on the strength of `.ci/shadow/w7p6-page-density.observations.jsonl` asserting equivalence over five
+PORT IS THE CALL SITE: the bash twin `.ci/scripts/quality/page-density.sh` carried its own `# ---- gate ----` header (`step: Page density`, `needs: node`, `selftest: true`, `lane: quality-www-build`, `slow: true`) and agreed with this wiring until W7 P5 batch A2 retired it, on the strength of the ledger (deleted in commit:936280cd35) asserting equivalence over five
 distinct trees. Every reference to that file below is archaeology, and the line numbers are the ones it carried.
 
 WHAT THE SCRIPT ACTUALLY IS: a launcher, not a gate. All the judging lives in `scripts/gates/check-page-density.ts`, which is TypeScript and is NOT being ported. What is ported is the decision of WHERE that gate runs -- inside the official Playwright container by default, directly against a local Chromium
@@ -38,7 +38,7 @@ else, so a version string with a leading space would keep it on both sides.
 
 `REPO_ROOT` is `paths.repo_root()`, which is `<file>/../../..` exactly as the twin's `SCRIPT_DIR/../../..` is, plus the package-wide `$REDIACC_CI_ROOT` override the twin has no equivalent for. That override is the only way the two roots can differ, and it exists so a harness can point the whole program at a fixture; see `paths.py`'s docstring.
 
-K=5 LEDGER: `.ci/shadow/w7p6-page-density.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 
 ---- gate ----
 step: Page density

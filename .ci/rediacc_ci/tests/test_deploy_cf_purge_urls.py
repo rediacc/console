@@ -1,6 +1,6 @@
 """Differential: `rediacc_ci.deploy.cf_purge_urls` against its twin `.ci/scripts/deploy/cf-purge-urls.sh`.
 
-A RECORDING FAKE `curl` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv, answers from the environment, and every case pins a fixture zone id and a fixture credential, so even a bypassed fake would not name a real zone. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the
+A RECORDING FAKE `curl` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv, answers from the environment, and every case pins a fixture zone id and a fixture credential, so even a bypassed fake would not name a real zone. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the
 mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
 THE REQUEST LOG IS COMPARED, NOT JUST THE STREAMS. The observable effect of this script is a set of POST bodies against a live CDN, and two implementations can print the same tally while purging different URLs, batching differently, or sending the credential in the wrong header. `test_the_request_shape_is_asserted_in_full` pins the literal argv of a purge -- method, URL, both

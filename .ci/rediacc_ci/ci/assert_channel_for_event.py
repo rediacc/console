@@ -5,7 +5,7 @@ Asserts the resolved R2 staging CHANNEL matches the GitHub event type. The twin'
 
 SOLE IMPLEMENTATION. `.github/workflows/ci.yml:295` runs this module, and so does `rediacc_ci.tests.gates.test_gate_channel_for_event`. The twin's observable behaviour is frozen in `.ci/rediacc_ci/tests/goldens/assert-channel-for-event/`, recorded from the tracked script on its last day in the tree.
 
-Ledger: `.ci/shadow/w7p6-assert-channel-for-event.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-channel-for-event --assert --k 5`).
+Ledger: the ledger (deleted in commit:936280cd35).
 
 -----------------------------------------------------------------------------
 THE UNKNOWN-EVENT ARM FAILS CLOSED, A DELIBERATE DELTA FROM THE TWIN

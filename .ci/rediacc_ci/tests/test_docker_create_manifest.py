@@ -1,6 +1,6 @@
 """`rediacc_ci.docker.create_manifest`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/docker/create-manifest.sh` and the port over the same throwaway tree and compared exit code, stdout, stderr and the `docker` call log. The K=5 ledger `.ci/shadow/w7p6-create-manifest.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been deleted and every case that executed it
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/docker/create-manifest.sh` and the port over the same throwaway tree and compared exit code, stdout, stderr and the `docker` call log. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees. The twin has now been deleted and every case that executed it
 compares against `goldens/create-manifest/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 A RECORDING FAKE `docker` ON A SCRATCH PATH, and the PATH is an explicit list of symlinks so that a tool nobody named is genuinely absent. That is not a formality here: an early probe for this port left `/usr/bin` on PATH and the real docker binary contacted `ghcr.io/token` before the twin printed its first line. Nothing in this file can reach a registry.

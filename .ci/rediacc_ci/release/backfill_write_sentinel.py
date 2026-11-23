@@ -1,4 +1,4 @@
-"""Ported from `.ci/scripts/release/backfill-write-sentinel.sh`, which W7 P5 batch B5 retired once `.ci/shadow/w7p5a-backfill-write-sentinel.observations.jsonl` asserted equivalence over five distinct trees.
+"""Ported from `.ci/scripts/release/backfill-write-sentinel.sh`, which W7 P5 batch B5 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 The only R2-mutating step of the backfill workflow, wrapped in a DRY_RUN preview so it stays trivially safe to re-run. `dry_run=true` prints the exact writer invocation and touches nothing; only an explicit `DRY_RUN=false` (already gated on a typed confirmation input upstream) reaches the writer, `rediacc_ci.deploy.write_release_sentinel`, which needs `aws` and live R2 credentials.
 

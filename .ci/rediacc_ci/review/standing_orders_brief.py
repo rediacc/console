@@ -71,7 +71,7 @@ def _agent_dir() -> pathlib.Path:
     return pathlib.Path(CWD_SEAM) / "agent"
 
 
-# `grep -o 'worker:[A-Za-z0-9._-]*'`. Explicit ASCII ranges, matching the twin's bracket expression under the C collation CI and the shadow-gate harness set.
+# `grep -o 'worker:[A-Za-z0-9._-]*'`. Explicit ASCII ranges, matching the twin's bracket expression under the C collation CI and the shadow gate harness set.
 WORKER_RE = re.compile(r"worker:[A-Za-z0-9._-]*")
 
 # `grep -c '^ - \['` and `grep -c '^ - \[?\]'`. In a BRE `\[` and `\]` are literal brackets and `?` is an ordinary character, so the second pattern is the literal text ` - [?]` anchored at the start of a line.

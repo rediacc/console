@@ -4,7 +4,7 @@
 A thin wrapper: check that the `private/renet` submodule is checked out, pin `GOTOOLCHAIN`, and hand one stage name to the submodule's own `private/renet/.ci/ci.sh`. It reimplements nothing that script does.
 
 THIS MODULE IS WHAT `check:ci-renet` RUNS, since W7P4-W. `package.json` spells the gate `PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet quality`, `scripts/ci-runner/manifest.ts` names this file as the gate's `leaf` and in its `paths`, and both `.github/workflows/ci-quality.yml` (quality) and `.github/workflows/ct-tests.yml` (test) run the module form. The licence is
-`.ci/shadow/w7p4b-run-renet.observations.jsonl`, nine clean trees at `--assert --k 5`.
+the ledger (deleted in commit:936280cd35), nine clean trees at `--assert --k 5`.
 
 THE `---- gate ----` HEADER MOVED HERE when the twin was retired, the way `rediacc_ci.quality.staging_tag_guard` carries its own. `scripts/gate-bind.ts` resolves a gate by where its header lives, so one file claims `id: check:ci-renet` and it is this one; the header's `run:` was already the module form, which is what the binder emits into the workflow.
 

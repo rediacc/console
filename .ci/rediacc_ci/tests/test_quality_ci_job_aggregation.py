@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.ci_job_aggregation` against the five awk programs it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-ci-job-aggregation.observations.jsonl` drives the whole gate over five distinct trees, one per failure class. What a ledger row cannot isolate is that the port re-implements FIVE awk programs plus a `tr`, and every one of them decides which jobs the gate believes exist. A reader that narrows by one rule reports a fully
+WHAT IS WORTH TESTING HERE. The shadow ledger the ledger (deleted in commit:936280cd35) drives the whole gate over five distinct trees, one per failure class. What a ledger row cannot isolate is that the port re-implements FIVE awk programs plus a `tr`, and every one of them decides which jobs the gate believes exist. A reader that narrows by one rule reports a fully
 wired workflow, which is the exact shape this gate exists to make impossible.
 
 Each program is run through the real awk on the same input and compared, and the inputs chosen are the ones where awk is surprising:
@@ -16,7 +16,7 @@ import subprocess
 from rediacc_ci.core import allowlist
 from rediacc_ci.quality import ci_job_aggregation as ja
 
-# The twin's EXEMPT_BLOCK, byte-for-byte, frozen here after `check-ci-job-aggregation.sh` and its gate test were retired in W7 P5 (the K=5 ledger under `.ci/shadow/` already licensed the equivalence). Captured from the tracked history the day the twin left, so this stays a comparison against what the twin actually said rather than a description of what the port currently does.
+# The twin's EXEMPT_BLOCK, byte-for-byte, frozen here after `check-ci-job-aggregation.sh` and its gate test were retired in W7 P5 (the K=5 ledger under the ledger directory (deleted in commit:936280cd35) already licensed the equivalence). Captured from the tracked history the day the twin left, so this stays a comparison against what the twin actually said rather than a description of what the port currently does.
 TWIN_EXEMPT_BLOCK = """
 # BLOCKER: this IS the aggregator; a job listed in its own needs is a self-edge and GitHub rejects the workflow at parse time, so the exemption is structural rather than a judgment call
 ci-complete

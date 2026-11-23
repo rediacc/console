@@ -28,7 +28,7 @@ texts differ only in that prefix.
 
 THE TWIN IS A SHIM NOW (W11-C). Every `old` answer comes from `goldens/twins/infra.ci-pull-images.jsonl` through `differential.twin_run`: both streams, the docker call log (with the bytes on docker's stdin) and the final `~/.docker/config.json`, as the original bash produced them. The shim itself is held by the `test_the_shim_*` cases.
 
-K=5 LEDGER: `.ci/shadow/w7p6-ci-pull-images.observations.jsonl`, recorded in a
+K=5 LEDGER: the ledger (deleted in commit:936280cd35), recorded in a
 disposable scratch git repository outside this checkout.
 """
 

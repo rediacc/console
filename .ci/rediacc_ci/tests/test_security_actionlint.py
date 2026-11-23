@@ -2,7 +2,7 @@
 
 THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/security/actionlint.sh` and the port over one scratch repository apiece and compared the exit code, both streams and the recorded argv of every tool call.
 
-The ledger `.ci/shadow/w7p6-actionlint.observations.jsonl` recorded that comparison over five distinct trees, every one of them EQUIVALENT; the row count is stated here from the file rather than carried forward from the sentence that used to claim it.
+The ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees, every one of them EQUIVALENT; the row count is stated here from the file rather than carried forward from the sentence that used to claim it.
 
 Every FIXTURE case now compares against `goldens/actionlint/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree; each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 

@@ -5,7 +5,7 @@ BOTH SIDES RUN IN THE REAL CHECKOUT, unlike the fixture-tree siblings in this di
 
 THE FAKE ECHOES ITS OWN ARGV into a call log, and the call log is compared as strictly as the streams are. Two implementations can print identical text while probing different buckets, keys or endpoints, and stdout here is one line long,
 so the streams alone are a weak claim. The same log is what the K=5 shadow
-ledger (`.ci/shadow/w7p6-reprobe-r2-sentinel.observations.jsonl`) turns into comparable findings: `shadow-gate.ts` classifies `✓ `-led lines as CHATTER before any `--finding-re` sees them, and the success path prints nothing else, so without a `call: ` line on stdout every row would read VACUOUS_BOTH_EMPTY.
+ledger (the ledger (deleted in commit:936280cd35)) turns into comparable findings: the shadow gate (commit:bf054adcd4) classifies `✓ `-led lines as CHATTER before any `--finding-re` sees them, and the success path prints nothing else, so without a `call: ` line on stdout every row would read VACUOUS_BOTH_EMPTY.
 
 THE THREE PROBE OUTCOMES ARE ALL DRIVEN, because the twin's two-way `if` folds three of them: sealed (`aws` exits 0), genuinely absent (a 404 in stderr) and COULD-NOT-TELL (any other failure, e.g. bad credentials). The last one is the interesting case and the one place the two sides are not byte-identical, for a reason that belongs to neither: see
 `test_unknown_probe_diverges_only_by_the_ log_error_marker` below.

@@ -11,7 +11,7 @@ THIS PORT IS WHAT RUNS NIGHTLY; THE BASH TWIN IS THE PARITY REFERENCE.
 `.github/workflows/ops-housekeeping.yml` runs `python3 -m rediacc_ci.housekeeping.cleanup_versions`. The bash twin `cleanup-versions.sh` is kept for the differential test below, which pins this port's behaviour against it.
 
     differential: `.ci/rediacc_ci/tests/test_housekeeping_cleanup_versions.py`
-    K=5 ledger:   `.ci/shadow/w7p6-cleanup-versions.observations.jsonl`
+    K=5 ledger:   the ledger (deleted in commit:936280cd35)
 
 -----------------------------------------------------------------------------
 THE SEAM THAT MAKES ONE PHASE DRIVABLE, AND WHY IT IS SHAPED LIKE THIS

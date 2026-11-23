@@ -67,7 +67,6 @@ MENTION_RE = re.compile(
 # Paths never scanned, each with its reason. Re-derived by clause 2.
 EXCLUDED = {
     "agent/": "plans, ledgers and worklists: the record of the migration itself",
-    ".ci/shadow/": "shadow-gate observation ledgers: recorded history, never edited",
     ".ci/rediacc_ci/tests/goldens/": "recorded bytes of deleted twins, compared, never edited",
     "packages/www/public/search-index": "generated from the docs corpus at build time",
     ".ci/rediacc_ci/quality/account_env_retired.py": "this gate: asserting a file has not come back requires naming it",

@@ -1,6 +1,6 @@
 r"""The config-migration runner, its file coverage, and its committed fixtures.
 
-Ported from `.ci/scripts/quality/check-config-migrations.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-config-migrations.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-config-migrations.sh`, which W7 P5 batch A2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 THE TWIN'S OWN HEADER, carried over because the list of catches IS the gate:
 
@@ -50,7 +50,7 @@ with its own interpreter diagnostic and CONTINUES:
     5: arithmetic syntax error in expression (error token is "5")
     survived, rc=0
 
-The port skips the coverage loop for the same input and prints nothing. The diagnostic carries a script path and a line number that no port could reproduce, and `scripts/lib/shadow-gate.ts` classifies it as CHATTER rather than a finding, so the two sides still agree on the verdict and on the finding set. The shape is also unreachable in valid TypeScript, where a duplicate `const`
+The port skips the coverage loop for the same input and prints nothing. The diagnostic carries a script path and a line number that no port could reproduce, and the shadow gate (commit:bf054adcd4) classifies it as CHATTER rather than a finding, so the two sides still agree on the verdict and on the finding set. The shape is also unreachable in valid TypeScript, where a duplicate `const`
 does not compile. Named as a divergence rather than hidden.
 
 `grep -oE '[0-9]+$'` TAKES THE TRAILING DIGITS OF THE FIRST GREP'S OUTPUT, not of
@@ -301,7 +301,7 @@ def selftest() -> int:
     BOTH DIRECTIONS FOR EVERY CONTROL. A gate with only positive plants will happily flag a correct tree, and the mirrors below are the half that proves it does not.
 
     THE ROUND-TRIP IS NOT DRIVEN HERE. It needs `npx`, `tsx` and a built `@rediacc/shared`, none of which a self-test may depend on: a control that cannot run on a fresh checkout is a control that gets deleted. The fixtures directory is left absent or empty in every case below, which takes the two WARNING paths, and the round-trip proper is covered by the committed ledger
-    `.ci/shadow/w7p2-config-migrations.observations.jsonl` against a stubbed npx.
+    the ledger (deleted in commit:936280cd35) against a stubbed npx.
     """
     ctl = Controls("config-migrations", floor=24, verbose=True)
 

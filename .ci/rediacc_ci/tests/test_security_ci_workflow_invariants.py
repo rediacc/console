@@ -1,6 +1,6 @@
 """`rediacc_ci.security.ci_workflow_invariants`, driven against the bytes its bash twin printed.
 
-THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/security/check-ci-workflow-invariants.sh` and the port over the same workflow and compared exit code, stdout and stderr byte for byte, with one exemption. The ledger `.ci/shadow/w7p6-check-ci-workflow-invariants.observations.jsonl` holds 5 rows of that comparison.
+THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/security/check-ci-workflow-invariants.sh` and the port over the same workflow and compared exit code, stdout and stderr byte for byte, with one exemption. The ledger the ledger (deleted in commit:936280cd35) holds 5 rows of that comparison.
 
 Byte equality was affordable because 103 of the twin's 224 lines were ALREADY Python inside a `python3 - <<'PY'` heredoc (`:66-168`), so anything short of it would have been a transcription error rather than a legitimate rewrite. Every fixture case now compares against `goldens/ci-workflow-invariants/`, which holds the twin's OWN recorded bytes, captured on its last day in the
 tree, and each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
@@ -338,7 +338,7 @@ def compare(tmp_path: pathlib.Path, name: str) -> tuple[int, str, str]:
 def assert_red(result: tuple[int, str, str], token: str) -> None:
     """Anti-vacuity for one recording: the twin really did fail, for the reason meant.
 
-    Two implementations that both print nothing and both exit 0 agree perfectly and prove nothing; `scripts/lib/shadow-gate.ts` calls that VACUOUS_BOTH_EMPTY and refuses it, and this is the same refusal against a recording.
+    Two implementations that both print nothing and both exit 0 agree perfectly and prove nothing; the shadow gate (commit:bf054adcd4) calls that VACUOUS_BOTH_EMPTY and refuses it, and this is the same refusal against a recording.
     """
     assert result[0] == 1, "expected the twin to fail, got exit %s\n%s" % (result[0], result[2])
     assert token in result[2], "expected %r in the recorded stderr, got:\n%s" % (token, result[2])

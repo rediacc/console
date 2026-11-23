@@ -28,7 +28,7 @@ must not "tidy" the filter, because the filter is what the differential pins.
 THE FAILURE THIS SCRIPT CANNOT REPORT, named because it is the vacuity class and a reader should not have to rediscover it: A TRANSPORT FAILURE IS A SILENT NON-ZERO. `curl -s` (no `-S`) suppresses curl's own error message, so an unreachable API produces the step line, no diagnostic whatsoever, and exit 6. The caller sees a failed step with no reason. Reproduced, not repaired:
 Repaired in the port as a Rule-T delta (2026-10-08): it logs `Purge failed: curl exited N` and keeps the exit status.
 
-K=5 LEDGER: `.ci/shadow/w7p6-purge-media-cache.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

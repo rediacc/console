@@ -15,7 +15,7 @@ two output streams are identically empty.
 
 TIME IS NOT PINNED, AND THE FIXTURES ARE BUILT AROUND THAT. The two sides run seconds apart and each calls `date -u +%s` for itself, so every fixture timestamp is placed FAR from a decision boundary (days, or half-hours where the twin prints hours). `test_the_two_sides_agree_on_ages_that_are_not_near_a_ boundary` is the control that this discipline is actually being followed.
 
-K=5 LEDGER: `.ci/shadow/w7p6-cleanup-versions.observations.jsonl`, recorded in a
+K=5 LEDGER: the ledger (deleted in commit:936280cd35), recorded in a
 disposable scratch git repository outside this checkout.
 """
 
@@ -97,7 +97,7 @@ if NAME == "curl" and "-K" in ARGV:
 
 with open(os.environ["FAKE_LOG"], "a", encoding="utf-8") as fh:
     fh.write(NAME + "\\t" + "\\t".join(ARGV) + "\\n")
-# The `call:` prefix is what the shadow-gate ledger scopes its --finding-re to.
+# The `call:` prefix is what the shadow gate ledger scopes its --finding-re to.
 # Without it every line this program prints is a log_step/log_info, which the
 # comparator classifies as CHATTER before any message regex can see it, and
 # every ledger row reads VACUOUS_BOTH_EMPTY.

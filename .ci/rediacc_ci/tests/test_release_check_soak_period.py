@@ -1,7 +1,7 @@
 """`rediacc_ci.release.check_soak_period`, driven directly.
 
 WHILE BOTH COPIES EXISTED every case below ran `.ci/scripts/release/check-soak-period.sh` over the same environment and compared its stdout, its stderr and its `$GITHUB_OUTPUT` bytes against the port's.
-The K=5 ledger `.ci/shadow/w7p5a-check-soak-period.observations.jsonl` recorded that verdict over five distinct trees (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-check-soak-period --assert --k 5`) and licensed the port; W7 P5 retired the twin and the cases that executed it went with it.
+The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that verdict over five distinct trees and licensed the port; W7 P5 retired the twin and the cases that executed it went with it.
 
 THE SILENT-ABORT CASE (`test_unparseable_date_aborts_silently`) IS THE ONE WORTH READING FIRST. It looks like a missing assertion rather than a real case: the subject exits 1 with EMPTY stdout, EMPTY stderr and an EMPTY `$GITHUB_OUTPUT`. That is not this test failing to check anything. It is the twin's own `set -e` behaviour (see the port's module docstring), measured directly
 against the real `date` binary while both copies existed, then reproduced by the port rather than "fixed" into a helpful error message the twin never printed.

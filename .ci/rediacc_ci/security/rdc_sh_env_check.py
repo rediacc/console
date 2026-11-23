@@ -44,7 +44,7 @@ THE EXPORT SET IS SORTED IN BYTE ORDER. The twin pipes through `sort -u`, whose
 collation follows the locale; this repo runs under `LANG=C.UTF-8` where that is
 byte order, and all three allowlisted names are pure ASCII with the underscore never adjacent to a decision. `sorted()` is therefore exact here, and `test_security_rdc_sh_env_check.py` pins it by running the real `sort -u` against the real `rdc.sh` rather than asserting the equivalence from the manual.
 
-THE ONE THING THIS PORT CANNOT KEEP is the shell's own `mktemp -d` name: both sides make their own fixture directory. Nothing in the twin's output quotes one on the green path, which is why the differential can compare bytes; the single red path that can (`cat "$FIX/run.err"`) is normalized in the differential and masked by the shadow-gate ledger's own `<tmp>` rule.
+THE ONE THING THIS PORT CANNOT KEEP is the shell's own `mktemp -d` name: both sides make their own fixture directory. Nothing in the twin's output quotes one on the green path, which is why the differential can compare bytes; the single red path that can (`cat "$FIX/run.err"`) is normalized in the differential and masked by the shadow gate ledger's own `<tmp>` rule.
 
 Exit: 0 when no check failed, 1 otherwise.
 """

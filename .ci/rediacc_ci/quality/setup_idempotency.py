@@ -103,7 +103,7 @@ stops at the first line whose first character is `}`. A body containing an
 indented `}` is unaffected; a body containing a column-0 `}` would be truncated,
 which is the twin's behaviour and is why every function in the subject files is written with its brace in column 0.
 
-`fail()` WRITES `FAIL ` WITH ONE SPACE, so `scripts/lib/shadow-gate.ts` does not recognise it through the `FAIL\s\s+` marker it carries for the `gate-controls.sh` tally. The differential for this pair is therefore recorded with an explicit `--finding-re`. Carried rather than "fixed": widening the marker would reclassify prose across the whole estate, and adding a second space here
+`fail()` WRITES `FAIL ` WITH ONE SPACE, so the shadow gate (commit:bf054adcd4) does not recognise it through the `FAIL\s\s+` marker it carries for the `gate-controls.sh` tally. The differential for this pair is therefore recorded with an explicit `--finding-re`. Carried rather than "fixed": widening the marker would reclassify prose across the whole estate, and adding a second space here
 would change the bytes of a gate CI already reads.
 
 `control()` RUNS ITS SUBJECT IN A SUBSHELL, so a `fail()` inside the mutated run increments a counter that is then discarded and prints into a captured string that is then discarded. That is deliberate: a control is asking "does this assertion REJECT the defect", and the assertion's own complaint about the defect is not a complaint about the tree. The Python version captures the

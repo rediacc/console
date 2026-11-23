@@ -1,6 +1,6 @@
 """A git-identity capture that reaches a conditional must be guarded first.
 
-Ported from `.ci/scripts/quality/check-git-op-conditionals.sh`, which W7 P5 batch G2 retired once `.ci/shadow/w7p2-gitop.observations.jsonl` asserted equivalence over five distinct trees and the twin's own embedded scanner was recorded as goldens.
+Ported from `.ci/scripts/quality/check-git-op-conditionals.sh`, which W7 P5 batch G2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees and the twin's own embedded scanner was recorded as goldens.
 
 WHY THE TWIN EXISTS, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 

@@ -1,4 +1,4 @@
-"""Ported from `.ci/scripts/release/check-soak-period.sh`, which W7 P5 batch B5 retired once `.ci/shadow/w7p5a-check-soak-period.observations.jsonl` asserted equivalence over five distinct trees.
+"""Ported from `.ci/scripts/release/check-soak-period.sh`, which W7 P5 batch B5 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 Selects the edge release to promote to stable and says whether it can be promoted. Emits `ready=true|false`, `path=force|nightly|soak` (which rule decided), `version=` / `date=` (the selected release, empty when none), `blocked=r2-channel-snapshot` when the selection cannot be promoted, and human-readable lines to stdout.
 

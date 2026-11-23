@@ -4,8 +4,8 @@ proxy is what the gate calls, unchanged by this port -- same as every other prox
 UNLIKE EVERY OTHER PROXY IN THIS PACKAGE, there is no synthetic fixture here: both sides run the REAL subject, which installs license fixtures under `/var/lib/rediacc/license` via `sudo -n` and takes ~16-40s. Only ONE test drives it (`test_real_tree_agrees_byte_for_byte`), same discipline as `test_proxies_ensure_nfpm.py`'s single network-touching case -- running the real battery
 twice per CI run is already the cost this proxy accepts, and a second real invocation buys nothing a fixture-driven test cannot check more cheaply. The counting logic (`_count`) is covered separately, against synthetic text, with no subprocess at all.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-license-e2e.observations.jsonl`, recorded
-against a disposable scratch git repo built OUTSIDE this checkout (this repo's own working tree is not clean; `shadow-gate.ts --record` refuses a dirty tree).
+K=5 LEDGER: the ledger (deleted in commit:936280cd35), recorded
+against a disposable scratch git repo built OUTSIDE this checkout (this repo's own working tree is not clean; `the shadow gate (commit:bf054adcd4) --record` refuses a dirty tree).
 """
 
 from __future__ import annotations

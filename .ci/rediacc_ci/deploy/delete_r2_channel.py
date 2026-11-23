@@ -26,7 +26,7 @@ FIRST, so a run missing both the binary and every variable names the binary.
 `:?` IS AN UNSET-OR-EMPTY TEST, not an unset test: `CHANNEL=` refuses exactly as
 an absent CHANNEL does. Reproduced, and driven in the differential, because a port testing `"CHANNEL" in os.environ` would sail past an empty one and then delete `s3://bucket/cli//`, which is every channel's parent prefix.
 
-K=5 LEDGER: `.ci/shadow/w7p6-delete-r2-channel.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

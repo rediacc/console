@@ -1,6 +1,6 @@
 r"""Every shell script INVOKED as `./path.sh` must be committed executable.
 
-Ported from `.ci/scripts/quality/check-script-exec-bit.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-script-exec-bit.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-script-exec-bit.sh`, which W7 P5 batch A2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 WHY THIS EXISTS, in the twin's own words, because the incident is the design:
 
@@ -211,7 +211,7 @@ def referenced_paths(hits: list[tuple[str, int, str]]) -> list[str]:
 
     A PURE FUNCTION over the grep output on purpose, so the selftest can drive the parent-reference control without building a git repository. `sort -u` in the
     twin; `sorted(set(...))` here, and both run under `LC_ALL=C`, which
-    `scripts/lib/shadow-gate.ts:buildEnv` pins for both sides.
+    `the shadow gate (commit:bf054adcd4):buildEnv` pins for both sides.
     """
     out: set[str] = set()
     for src, _number, text in hits:

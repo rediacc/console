@@ -2,7 +2,7 @@
 """Port of `.ci/scripts/security/dependency-inventory.sh`, and since PLAN-retire-bash-oracles B3 the LIVE tool.
 
 The operator runs it on demand for NIS2/CRA compliance evidence: `PYTHONPATH=.ci python3 -m rediacc_ci.security.dependency_inventory [--format json|table] [--output PATH]`. Nothing else invokes it. It was proved byte-for-byte on both streams by `.ci/rediacc_ci/tests/test_security_dependency_inventory.py` and by the K=5 shadow ledger
-`.ci/shadow/w7p6-dependency-inventory.observations.jsonl` (W7P6 wave 27); the bash twin's answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/security.dependency-inventory.jsonl` and the file is deleted.
+the ledger (deleted in commit:936280cd35) (W7P6 wave 27); the bash twin's answers are frozen in `.ci/rediacc_ci/tests/goldens/twins/security.dependency-inventory.jsonl` and the file is deleted.
 
 WHAT IT DOES. Enumerates every dependency across the four analyzed Rediacc packages (www, cli, account, renet) for the NIS2/CRA supply-chain SBOM. Each dependency is classified by level (direct vs transitive), tagged by type (dependencies/devDependencies/peer/optional for npm; direct/indirect for Go), and carries its full dependency chain(s) from the package root down.
 

@@ -1,6 +1,6 @@
 """Differential: `rediacc_ci.deploy.set_account_worker_secrets` against its twin `.ci/scripts/deploy/set-account-worker-secrets.sh`.
 
-A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv AND the bytes on its stdin, and every case uses fixture values two characters long. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This
+A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv AND the bytes on its stdin, and every case uses fixture values two characters long. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This
 is that piece.
 
 THE DOCUMENT IS THE ONLY EVIDENCE ON THE HAPPY PATH, exactly as for the www sibling: the twin prints nothing of its own when it succeeds. On THIS script that matters more, because this one DECIDES rather than marshals. A port that picked the edge bucket on stable, kept the ASIA region's SES credential instead of borrowing EU's, or shipped an endpoint without its jurisdiction label

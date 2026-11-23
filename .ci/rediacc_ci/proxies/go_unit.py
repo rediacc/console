@@ -53,7 +53,7 @@ The marker scan used to read EVERY `*_test.go` on disk, including files behind a
 
 The proxy also prints, for each package in `WATCHED`, whether it is in the subset and how many `Test` functions its default-build test files declare, so a package dropping out of the local run is a visible line rather than a missing one.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-go-unit.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations
