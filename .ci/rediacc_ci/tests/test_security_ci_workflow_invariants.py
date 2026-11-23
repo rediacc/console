@@ -674,8 +674,8 @@ def test_unconditional_ancestors_and_conditional_descendants_pass():
 #
 # CD run 37749637824 (v2.2.0): ci.yml sealed cli/v2.2.0/.released, cd-release-edge's post-publish install validation went red on a Rocky 9 DNF stall, and `tag-and-release`, the only job that created the git tag, was skipped. The pure cases below drive `analyse_release` over literal dicts in both directions; the subprocess cases drive the REAL files, including the real pre-fix cd-release-edge.yml.
 
-# The last commit whose cd-release-edge.yml carried the tag inside `tag-and-release`, behind validate-install-published and gated off on retry_mode. A full sha so it cannot become ambiguous.
-PRE_FIX_CD_COMMIT = "0e6af2d1cb918135c79c057ee9d29b5dfb276af1"
+# The last commit whose cd-release-edge.yml carried the tag inside `tag-and-release`, behind validate-install-published and gated off on retry_mode. A full sha so it cannot become ambiguous, and an origin/main sha so a fetch-depth 0 checkout can read it (0e6af2d1c, the same tree before the history rewrite, sits only on the gitlab remote).
+PRE_FIX_CD_COMMIT = "95dd35ae1ca75f23d3a4565178fb64426be70799"
 
 TAG_RUN = 'git -c user.name="$N" tag -a "v${VERSION}" -m "v${VERSION}" "$CI_SHA"\ngit push origin "v${VERSION}"\n'
 PERMS_RUN = (
@@ -958,20 +958,11 @@ REAL_ACTION = ROOT / ".github/actions/app-token/action.yml"
 def test_the_real_pre_fix_cd_workflow_is_refused(tmp_path: pathlib.Path) -> None:
     """THE HISTORICAL CONTROL: the cd-release-edge.yml that stranded v2.2.0's sentinel must be red, for both of its defects.
 
-    Skipped, loudly, when the commit is unreachable (a shallow clone): a missing object is not evidence of a working gate.
+    An unreachable commit FAILS through `git_blob`: a skipped historical control is a control that did not run.
     """
-    show = subprocess.run(
-        ["git", "show", "%s:.github/workflows/cd-v2.yml" % PRE_FIX_CD_COMMIT],
-        cwd=str(ROOT),
-        capture_output=True,
-        text=True,
-        check=False,
+    proc = run_real(
+        tmp_path, CD_WORKFLOW_FILE=git_blob(PRE_FIX_CD_COMMIT, ".github/workflows/cd-v2.yml")
     )
-    if show.returncode != 0:
-        pytest.skip(
-            "pre-fix commit %s unreachable here: %s" % (PRE_FIX_CD_COMMIT, show.stderr.strip())
-        )
-    proc = run_real(tmp_path, CD_WORKFLOW_FILE=show.stdout)
     assert proc.returncode == 1, proc.stderr
     assert (
         "sits in tag-and-release behind publish, deploy-marketing-edge, deploy-account-edge, smoke-test, validate-install-published"
@@ -2286,10 +2277,10 @@ def test_an_admitted_shape_in_another_case_is_refused_not_admitted(mutate) -> No
 
 # ---- the workflow-estate pins (2026-10-23; asked for by the Stop hook's regression judge) ----
 #
-# Two fixes landed that day that no check could catch. `pipe-no-pipefail` (commit 41437ea6f): ops-cf-usage-report.yml piped its report into `tee` under GitHub's implicit `bash -e {0}`, which has no pipefail, so a failing report passed green. `dispatch-write-off-default-branch` (commit f8d184807): ops-obs-ceph-autobump.yml's cd-token job could be dispatched from any branch. Each rule below is driven in both directions over literal documents, over the two pre-fix files read from git history, and over the real tree in the real invocation.
+# Two fixes landed that day that no check could catch. `pipe-no-pipefail` (commit 2f3035966): ops-cf-usage-report.yml piped its report into `tee` under GitHub's implicit `bash -e {0}`, which has no pipefail, so a failing report passed green. `dispatch-write-off-default-branch` (commit b0bf0b164): ops-obs-ceph-autobump.yml's cd-token job could be dispatched from any branch. Each rule below is driven in both directions over literal documents, over the two pre-fix files read from git history, and over the real tree in the real invocation.
 
-PIPEFAIL_FIX = "41437ea6fec97878060164859b01984c1108d32a"
-DISPATCH_FIX = "f8d184807ca93051f04bd554b68adfddd5dd81d5"
+PIPEFAIL_FIX = "2f30359664c23b47f446875a2f6d1050d04e604e"
+DISPATCH_FIX = "b0bf0b1649dcc9dae1f7ab8ff9da97e84f0a6f7a"
 GUARD = ci_workflow_invariants.DEFAULT_BRANCH_GUARD
 
 
