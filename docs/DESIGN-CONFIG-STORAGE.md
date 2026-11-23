@@ -7,9 +7,9 @@ A "rediacc" config storage provider lets teams sync CLI configuration files thro
 ## Goals
 
 1. **Client-held key**: the server stores blobs it cannot decrypt on its own (the precise claim is in [Security model](#security-model))
-2. **Passkey first**: passkeys (biometric) are the preferred unlock; master password and recovery code slots exist for devices and providers without PRF
+2. **Passkey first**: passkeys (biometric) are the preferred unlock; recovery code slots (and machine secrets, for headless boxes) exist for devices and providers without PRF
 3. **Team sharing**: Multiple team members access the same configs
-4. **Split-key security**: Neither client nor server alone can derive the encryption key (a master password slot is the exception, see the table below)
+4. **Split-key security**: Neither client nor server alone can derive the encryption key
 5. **Rotating tokens**: Stolen tokens self-invalidate on next legitimate use
 6. **Cross-platform**: Works on Windows, macOS, Linux via browser-based passkey flow
 
@@ -31,9 +31,8 @@ Confidentiality rests on one key, the CEK. The server holds the other two layers
 | Rollback | Serve an old version to a device that never saw a newer one (a freshly enrolled device, or one whose token file was lost) | Serve the CLI a version older than the high-water mark it recorded: the pull is refused |
 | Availability | Delete blobs, rows and history | - |
 | Portal code | Serve modified JavaScript that reads the CEK or a slot secret out of the browser | - |
-| Master password slot | Guess the password offline: it holds the slot's public KDF parameters (PBKDF2-SHA256, 600,000 iterations), the wrapped CEK and `serverSecret` | - |
 
-A passkey slot (PRF output) and a recovery code (160 random bits) are not guessable this way; a master password slot is as strong as the password.
+A passkey slot (PRF output), a recovery code and a machine secret (160 random bits each) are not guessable this way.
 
 The anti-downgrade and tombstone rules are enforced BY the server, against writers. They stop a member or an agent that does not know a value from deleting or silently dropping it; they are not a protection against the server itself.
 
@@ -404,7 +403,7 @@ CLI                           Account server                 Browser (any machin
  │                              │  terminal; the page compares │
  │                              │  it with code(H(key in link))│
  │                              │                              │
- │                              │  Passkey / password unlock:  │
+ │                              │  Passkey / recovery unlock:  │
  │                              │  PRF derives passkey_secret, │
  │                              │  user_x25519 key pair; the   │
  │                              │  CEK is created or unwrapped │
@@ -675,7 +674,7 @@ Config storage requires a passkey provider that supports the PRF extension. No f
 | Encryption key not stored anywhere | CEK unwrapped on the fly from `wrappedCEK` using split-key derived wrapping key |
 | Stolen token → limited damage | Rotating tokens (3 uses), 7-day lifetime, IP-bound on first use |
 | Stolen passkey alone → no access | Need `server_secret` too (split-key) |
-| Stolen DB → no access | CEK wrapped per slot; a master password slot is open to offline guessing by whoever holds the DB |
+| Stolen DB → no access | CEK wrapped per slot; every slot secret is high-entropy, so a stolen DB offers nothing to guess |
 | Binding and tamper detection | Envelope v3: both client layers authenticate (store, config, team, version, epoch, commitments digest) as AES-GCM AAD |
 | Rollback | CLI refuses a version below its high-water mark; a device that never saw a newer version is not protected |
 | Metadata | Commitment keys blinded per config; the server still sees ids, versions, epochs, sizes, field counts and value kinds |
@@ -952,7 +951,7 @@ Implements the same `StoreAdapter` interface as S3, Bitwarden, Git, etc. Registe
 
 ### CLI (Daily Operations)
 Shipped under `rdc config remote`:
-- `rdc config remote enable`: link this config to the store (`--master-password` enrolls against the master password's pre-provisioned password slot, with no browser). On a config that is already linked it enrolls this device again for the same store once the device can no longer open the config, and refuses while the enrollment still works. A re-enrollment replaces only the device-held credentials (slot secret, config token, wrapped CEK), keeps `storeId` and `configId`, pulls, and refreshes the cache; it never pushes or seeds. On Linux this is the path after every restart, because the kernel keyring that holds the slot secret is memory-only (see *Client-Side Secure Storage*).
+- `rdc config remote enable`: link this config to the store (`--machine-secret <id>` enrolls a headless box against a machine secret minted in the portal: the secret comes from `REDIACC_MACHINE_SECRET` or stdin, the API token carries the `config:enroll` scope, and no browser is involved; without it the command opens the portal handoff). On a config that is already linked it enrolls this device again for the same store once the device can no longer open the config, and refuses while the enrollment still works. A re-enrollment replaces only the device-held credentials (slot secret, config token, wrapped CEK), keeps `storeId` and `configId`, pulls, and refreshes the cache; it never pushes or seeds. On Linux this is the path after every restart, because the kernel keyring that holds the slot secret is memory-only (see *Client-Side Secure Storage*).
 - `rdc config remote disable`: disconnect and write the config back to disk. Server-only: it pulls the newest server copy first, so a disable from a stale cache cannot lose another device's writes.
 - `rdc config remote disable --local`: unlink on this device without the server, for a config whose store copy is gone or whose account left the store. It writes the cached copy without its `remote` pointer, host-local sections included, after a confirmation that newer server data is not fetched (`--yes` in a run with no terminal), and removes this device's token file and slot secret. It refuses, with the file untouched, when the file holds no cached copy or when a master-password cache cannot be opened. `disable` and `enable` name it only from the states where the server path cannot work.
 - `rdc config remote refresh`: download and decrypt the latest config
@@ -1000,7 +999,7 @@ This prevents a rogue server from substituting the handoff public key.
 
 | Attack | Result |
 |--------|--------|
-| DB dump stolen | D1 holds `sdkMaster` and `serverSecret` in the clear. The org passphrase is sealed `csk1.<kid>.` under the Worker's own `ACCOUNT_CONFIG_SERVER_KEY`, a Worker secret that is not in D1, so a dump alone does not expose it ([The layer-3 server key](#the-layer-3-server-key)); the CEK layer still needs a slot secret. A master password slot can be guessed offline from that data |
+| DB dump stolen | D1 holds `sdkMaster` and `serverSecret` in the clear. The org passphrase is sealed `csk1.<kid>.` under the Worker's own `ACCOUNT_CONFIG_SERVER_KEY`, a Worker secret that is not in D1, so a dump alone does not expose it ([The layer-3 server key](#the-layer-3-server-key)); the CEK layer still needs a slot secret. Every slot secret is high-entropy, so there is nothing to guess offline from that data |
 | Server memory inspected during request | Sees `clientEnc_CEK(serverKeyEnc_SDK(values))` — has SDK but CEK blocks access |
 | Removed member with CEK | Server access ends at removal (slots and config tokens deleted). A kept CEK plus a blob obtained elsewhere still needs that blob's `sdk_derived`; a CEK rotation closes the risk for later blobs |
 | Removed member with CEK + captured `sdk_derived` | Only decrypts configs from that specific time window — future configs use different derived keys they never received |
@@ -1013,7 +1012,7 @@ This prevents a rogue server from substituting the handoff public key.
 | Rogue server substitutes handoff key | Browser reads key from URL param, not server API; a server that also serves modified page code can defeat this |
 | E2E tunnel MITM | X25519 ECDH — requires server's private key to intercept |
 | Former employee | Token revoked, wrappedCEK deleted → no `server_secret` access → can't derive CEK |
-| Brute force attack | Passkey (PRF) and recovery code (160 bits) slots are not guessable; a master password slot is, offline, by anyone holding the server's data (PBKDF2-SHA256, 600,000 iterations) |
+| Brute force attack | Passkey (PRF) and recovery code (160 bits) slots are not guessable; a machine secret is 160 random bits too |
 | Member addition eavesdropping | CEK encrypted with new member's X25519 public key — server relays opaque blob |
 
 ## Accepted Risks
@@ -1025,7 +1024,6 @@ This prevents a rogue server from substituting the handoff public key.
 | `sdkMaster` rotation requires admin participation | Server can't rotate `sdkMaster` alone — the SDK layer is inside the CEK layer. An admin must pull configs (decrypt all 3 layers), server generates new `sdkMaster`, admin re-encrypts and pushes. Only needed if `sdkMaster` itself is compromised — for removed members, simply stop serving `sdk_derived` (no rotation needed). Time-windowed derivation limits captured key exposure to specific windows. |
 | The server serves the portal code | A server that ships modified JavaScript can read the CEK in the browser. Out of scope of the claim; closing it needs code the server does not serve (a signed extension or a native client). |
 | A device that never saw a newer version can be served an old one | The high-water mark only protects versions a device has seen. Freshness against a malicious server needs an external witness. |
-| A master password slot is guessable offline | The server holds its KDF parameters, wrapped CEK and `serverSecret`. PBKDF2-SHA256 at 600,000 iterations slows guessing; passkey or recovery code slots, or the require-passkey policy, avoid it. |
 | Metadata is visible | Config ids, teams, versions, epochs, blob sizes, field counts and value kinds stay in the plaintext envelope; names are blinded. |
 
 ## Implementation Order
@@ -1221,7 +1219,7 @@ Not from what the server stores or relays, provided the operator stays passive a
 
 - **At rest**: the CEK layer needs a slot secret, which never reaches the server. The server can remove layer 3 (it can recover the org passphrase) and layer 1 (it holds `sdkMaster`), which leaves the CEK layer.
 - **In transit**: CLI traffic carries only CEK-layer ciphertext; the slot secret stays in the OS keyring.
-- **Not covered**: an operator who serves modified portal JavaScript can read the CEK in the browser, and an operator holding the database can guess a master password slot offline. An operator can also withhold the newest version from a device that never saw it.
+- **Not covered**: an operator who serves modified portal JavaScript can read the CEK in the browser. An operator can also withhold the newest version from a device that never saw it.
 
 The full list of what the server can and cannot learn or do is in [Security model](#security-model).
 
