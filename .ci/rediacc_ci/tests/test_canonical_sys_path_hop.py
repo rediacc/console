@@ -97,16 +97,6 @@ EXEMPT: dict[str, str] = {
         "The exemption dies the day `.ci/scripts/ci/profiler/` stops holding "
         "path-invoked entry points."
     ),
-    ".ci/scripts/quality/check_fetch_retry.py": (
-        "BLOCKER: ruff's E402 EXEMPTS a `sys.path` mutation that precedes a "
-        "module-level import and exempts nothing else. Measured against ruff "
-        "0.16.1, the version check_python_lint.py pins: a bare insert then "
-        "`import json` is clean, the resolver call then `import json` is E402, and "
-        "so is any other statement. This file imports a SIBLING gate at module "
-        "level and the hop has to come first, so the canonical form would cost a "
-        "per-line waiver where the bare form costs nothing. The exemption dies the "
-        "day that import moves inside a function."
-    ),
     ".claude/rediacc_hooks/syspath.py": (
         "BLOCKER: this IS the canonical hop for code under `.claude`, the counterpart "
         "of `paths.on_sys_path` for files that cannot reach `rediacc_ci`: a guard or "
@@ -526,6 +516,55 @@ NOT_A_PRINTED_COMMAND: dict[tuple[str, str], tuple[int, str]] = {
     (".ci/rediacc_ci/quality/dead_python.py", "rediacc_ci.testrun.orphan_run"): (
         0,
         "a selftest fixture naming a module that exists only in the gate's scratch tree (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (".ci/rediacc_ci/quality/checkout_cone.py", "rediacc_ci.a.b"): (
+        0,
+        "a selftest fixture fed to the gate's own module regex, naming a module that exists only in the fixture (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (".ci/rediacc_ci/quality/checkout_cone.py", "rediacc_ci.sub.entry"): (
+        0,
+        "a selftest fixture fed to the gate's own module regex, naming a module that exists only in the fixture (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (".ci/rediacc_ci/quality/checkout_cone.py", "rediacc_ci.clean"): (
+        0,
+        "a selftest fixture fed to the gate's own module regex, naming a module that exists only in the fixture (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (".ci/rediacc_ci/quality/checkout_cone.py", "rediacc_ci.blind"): (
+        0,
+        "a selftest fixture fed to the gate's own module regex, naming a module that exists only in the fixture (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (".ci/rediacc_ci/quality/checkout_cone.py", "a backticked mention `python3 -m rediacc_ci.*`"): (
+        1,
+        "a selftest control string whose backticked mention the gate's regex must NOT read as a module",
+    ),
+    (".ci/rediacc_ci/quality/checkout_cone.py", "# runs `python3 -m rediacc_ci.*` here"): (
+        1,
+        "the comment text the control above feeds the gate's own module regex",
+    ),
+    (".ci/rediacc_ci/quality/inner_timeout_reachable.py", "rediacc_ci.missing.mod"): (
+        1,
+        "a selftest fixture fed to the gate's own step parser, naming modules that exist only in the fixture (one bare second command in the same workflow text)",
+    ),
+    (
+        ".ci/rediacc_ci/quality/inner_timeout_reachable.py",
+        "rediacc_ci.testrun.deep",
+    ): (
+        0,
+        "a selftest fixture fed to the gate's own step parser, naming a module that exists only in the fixture (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (
+        ".ci/rediacc_ci/quality/inner_timeout_reachable.py",
+        "python3 -m pytest && python3 -m rediacc_ci.a.b",
+    ): (
+        1,
+        "a selftest fixture fed to the gate's own step parser, naming modules that exist only in the fixture",
+    ),
+    (
+        ".ci/rediacc_ci/quality/inner_timeout_reachable.py",
+        "`python3 -m rediacc_ci.<x>` and `<path>.py` steps exist in",
+    ): (
+        1,
+        "the gate's own message naming the step shape it resolves, a sentence rather than a command to run",
     ),
 }
 

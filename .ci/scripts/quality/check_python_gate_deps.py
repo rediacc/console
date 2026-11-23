@@ -341,7 +341,7 @@ def run_controls() -> list[str]:
         # The positive halves alone would pass on a resolver that returned every name in the repository, so each subject also asserts that a module which is genuinely not on disk is still absent.
         resolver_subjects = (
             # file, spelling it must still write, module it must reach
-            ("check_gate_reachability_coverage.py", "paths.on_sys_path(HOOK_DIR)", "wl_reggate"),
+            ("check_hint_corpus.py", "paths.on_sys_path(HOOK_DIR)", "wl_hints"),
             ("check_plan_boxes.py", "paths.hooks_stop_dir(", "wl_planfid"),
         )
         for filename, spelling, reached in resolver_subjects:

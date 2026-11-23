@@ -7,7 +7,7 @@ THE PLANTED DEFECTS: the constant in another account source file, the constant e
 
 from __future__ import annotations
 
-import importlib.util
+import importlib
 import subprocess
 import sys
 import typing
@@ -25,14 +25,7 @@ HOME = "private/account/src/services/config-server-key.ts"
 
 
 def _load():
-    # The gate imports its sibling `_cipath` shim, which a script run finds beside itself; an in-process load needs the gate's directory on the path, or the file only passes when an earlier test happened to put it there.
-    paths.on_sys_path(GATE.parent)
-    spec = importlib.util.spec_from_file_location("check_config_server_key_constant", GATE)
-    assert spec is not None
-    assert spec.loader is not None
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+    return importlib.import_module("rediacc_ci.quality.config_server_key_constant")
 
 
 gate = _load()

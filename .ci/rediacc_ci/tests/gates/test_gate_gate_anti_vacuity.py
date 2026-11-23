@@ -310,8 +310,8 @@ def test_fetch_retry_reads_every_file_type(gate):
     python3 = harness.require_tool("python3", "install python3")
     program = (
         "import sys, os\n"
-        "sys.path.insert(0, os.path.join(sys.argv[1], '.ci/scripts/quality'))\n"
-        "import check_fetch_retry as G\n"
+        "sys.path.insert(0, os.path.join(sys.argv[1], '.ci'))\n"
+        "from rediacc_ci.quality import fetch_retry as G\n"
         "bare = 'curl -fsSL -o /tmp/x.tgz https://example.com/x.tgz'\n"
         "retried = 'curl -fsSL --retry 5 -o /tmp/x.tgz https://example.com/x.tgz'\n"
         "if len(G.logical_blocks(bare + chr(10), is_dockerfile=False)) == 0:\n"

@@ -1,4 +1,4 @@
-"""`.ci/scripts/quality/check_guard_mention_anchoring.py`: every alternative is probed, and an anchor counts only where it governs every alternative.
+"""`.ci/rediacc_ci/quality/guard_mention_anchoring.py`: every alternative is probed, and an anchor counts only where it governs every alternative.
 
 THE FINDING THIS FILE PINS (worklist #d53494b0, from the writer of 276a69db9). A draft block_worktree_add pattern `(rediacc_ci(\\.__main__)?[{S}]+worktree|rediacc_ci\\.dev\\.worktree|(^|[^A-Za-z0-9_])worktree\\.py)[{S}]+create` passed the gate at rc 0 while the guard refused `echo the docs say never to run rediacc_ci.dev.worktree create in this repo` at rc 2. Three things let it through: the instantiator rendered each alternation through its FIRST branch only,
 it rendered `[{S}]+` as a literal `x` so that branch's probe could not match anything, and the static tier's anchor test was a substring search for `(^|` that one alternative satisfied for all of them.
@@ -7,7 +7,7 @@ THE SECOND FINDING (worklist #ecb59527). A four-character floor in `probes_of` d
 three-way rule (anchored, worded and silent, or a declared FRAGMENTS entry that is not stale).
 """
 
-import importlib.util
+import importlib
 import pathlib
 import re
 import time
@@ -15,22 +15,9 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
-from rediacc_ci import paths
-
-SCRIPTS = paths.from_root(".ci", "scripts", "quality")
-
 
 def _load():
-    # The script's own `import _cipath` shim lives beside it.
-    paths.on_sys_path(SCRIPTS)
-    spec = importlib.util.spec_from_file_location(
-        "check_guard_mention_anchoring_under_test", SCRIPTS / "check_guard_mention_anchoring.py"
-    )
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return importlib.import_module("rediacc_ci.quality.guard_mention_anchoring")
 
 
 gma = _load()

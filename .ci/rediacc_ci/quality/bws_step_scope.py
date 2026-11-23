@@ -20,7 +20,7 @@ THE NAMES are `.ci/config/bws-step-scoped.json`, by Bitwarden NAME (the left-han
 
 A READ is `env.NAME`, `$NAME`, `${NAME}` or a quoted `'NAME'`/`"NAME"` inside an `environ` lookup, outside comments, anywhere in the step (its `env:`, `with:`, `if:` and `run:`). What a step reads IMPLICITLY from its process environment cannot be seen by any text scan, which is why (ii) refuses EVERY non-consumer step in the window rather than only the ones that mention the name.
 
-THE PARSE IS SHARED, NOT RE-TYPED. The `NAME > ENV` grammar is `check_bws_map.parse_requests`, loaded by path (`.ci/scripts/quality/check_bws_map.py` is an entry point, not a package module), because two parsers for one grammar is how a block comes to mean different things to two gates. Steps come from `rediacc_ci.workflows`, the tree's one YAML parser; each structural step is mapped to its line range by a line scan, and a disagreement
+THE PARSE IS SHARED, NOT RE-TYPED. The `NAME > ENV` grammar is `rediacc_ci.quality.bws_map.parse_requests`, imported from `rediacc_ci.quality.bws_map`, because two parsers for one grammar is how a block comes to mean different things to two gates. Steps come from `rediacc_ci.workflows`, the tree's one YAML parser; each structural step is mapped to its line range by a line scan, and a disagreement
 between the two counts is an instrument failure (exit 2), never a silent skip.
 
 ANTI-VACUITY. Zero windows is a failure. Fewer windows than `MIN_WINDOWS` is a failure (raise it when a job gains a scoped fetch; lower it only when a job is deleted). A config name that is not in `.ci/config/bws-secret-map.json`, or that no fetch requests, is a dead entry and a failure. A config reason that does not start with `BLOCKER:` or fails `rediacc_ci.core.allowlist.validate_reason` is a failure. The success line prints files, jobs, windows and consumers so a collapse is visible.
@@ -44,7 +44,7 @@ from __future__ import annotations
 
 import contextlib
 import functools
-import importlib.util
+import importlib
 import io
 import json
 import os
@@ -64,8 +64,7 @@ if TYPE_CHECKING:
 
 CONFIG_REL = ".ci/config/bws-step-scoped.json"
 MAP_REL = ".ci/config/bws-secret-map.json"
-BWS_MAP_GATE_REL = ".ci/scripts/quality/check_bws_map.py"
-BWS_MAP_MODULE = "check_bws_map_for_step_scope"
+BWS_MAP_MODULE = "rediacc_ci.quality.bws_map"
 FETCH_ACTION = "./.github/actions/bws-secrets"
 SCRUB_ACTION = "./.github/actions/bws-scrub"
 
@@ -118,20 +117,12 @@ class Report:
 
 @functools.cache
 def bws_map_gate() -> types.ModuleType:
-    """`.ci/scripts/quality/check_bws_map.py`, loaded by path once."""
-    path = paths.repo_root() / BWS_MAP_GATE_REL
-    # The entry point opens with `import _cipath`, which resolves from its own directory; a path LOAD does not put that directory on sys.path the way a path INVOCATION does.
-    paths.on_sys_path(path.parent)
-    spec = importlib.util.spec_from_file_location(BWS_MAP_MODULE, path)
-    if spec is None or spec.loader is None:
-        msg = "cannot load %s" % path
-        raise InstrumentError(msg)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    """`rediacc_ci.quality.bws_map`, the gate whose `parse_requests` this one reuses."""
+    module = importlib.import_module(BWS_MAP_MODULE)
     if not callable(getattr(module, "parse_requests", None)):
         msg = (
             "%s no longer defines parse_requests; this gate reuses it and cannot parse a fetch without it"
-            % path
+            % BWS_MAP_MODULE
         )
         raise InstrumentError(msg)
     return module

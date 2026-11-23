@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import json
 import sys
@@ -19,7 +20,15 @@ if TYPE_CHECKING:
 QUALITY = paths.from_root(".ci/scripts/quality")
 
 
+_IN_PACKAGE = {
+    "check_actions_allowlist": "rediacc_ci.quality.actions_allowlist",
+    "check_job_timeout_headroom": "rediacc_ci.quality.job_timeout_headroom",
+}
+
+
 def _load(name: str):
+    if name in _IN_PACKAGE:
+        return importlib.import_module(_IN_PACKAGE[name])
     hop = paths.on_sys_path(QUALITY)
     try:
         spec = importlib.util.spec_from_file_location(name, QUALITY / f"{name}.py")
