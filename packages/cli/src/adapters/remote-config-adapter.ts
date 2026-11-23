@@ -28,6 +28,7 @@ import {
   type PushPrior,
   pathsToCommit,
 } from '@rediacc/shared/config-schema';
+import type { EffectivePolicy } from '@rediacc/shared/policy';
 import { t } from '../i18n/index.js';
 import {
   ConfigServerError,
@@ -40,6 +41,11 @@ import {
   RemoteTokenRefreshError,
   refreshDeviceToken,
 } from '../services/config/device-token-refresh.js';
+import {
+  loadEffectivePolicy,
+  type PolicyHighWater,
+  parsePolicyRecordField,
+} from '../services/config/policy-record.js';
 import { outputService } from '../services/core/output.js';
 import type { RdcConfig, RemoteConfig } from '../types/index.js';
 import type { SecureStorage } from '../utils/secure-storage.js';
@@ -136,6 +142,7 @@ export class RemoteConfigAdapter {
 
     const pulled = await this.fetch<PulledEnvelope>(lease, this.configPath());
     const result = await this.open(lease, pulled.data);
+    if ('policy' in pulled.data) result.policy = parsePolicyRecordField(pulled.data.policy);
     const { envelope } = pulled.data;
 
     // The version is authentic (the AAD binds it), so it can be held against what this device saw.
@@ -165,6 +172,7 @@ export class RemoteConfigAdapter {
       envelopeVersion: envelope.envelopeVersion,
       fckSalt: envelope.commitments.fckSalt,
       ...(cekGeneration === undefined ? {} : { cekGeneration }),
+      ...(seen?.policyHighWater ? { policyHighWater: seen.policyHighWater } : {}),
     });
     if (envelope.envelopeVersion !== ENVELOPE_VERSION) {
       outputService.warn(
@@ -235,6 +243,71 @@ export class RemoteConfigAdapter {
       );
       return listed.data.configs ?? [];
     });
+  }
+
+  /**
+   * The effective policy of this config (PLAN-rmcp-policy-record.md Design 5): a pull, whose answer
+   * carries the config's own policy record, then the org-level config's record when this config
+   * belongs to a team, both opened under this device's CEK and held against the policy high-water
+   * marks in the token file. Never reads a `policy` field of the config document.
+   */
+  effectivePolicy(): Promise<EffectivePolicy> {
+    return this.tokenStorage.withLease(this.configName, async (lease) => {
+      const pulled = await this.pullLeased(lease);
+      const session = await this.fetchSession(lease);
+      const cek = await this.deriveCek(session.serverSecret, lease);
+      const orgConfigId = this.remote.teamId
+        ? ((
+            await this.fetch<{ configs?: RemoteConfigEntry[] }>(lease, '/account/api/v1/configs')
+          ).data.configs?.find((entry) => !entry.teamId)?.configId ?? null)
+        : this.remote.configId;
+      return loadEffectivePolicy({
+        storeId: this.remote.storeId,
+        config: { configId: this.remote.configId, teamId: this.remote.teamId ?? null },
+        ...(pulled.policy === undefined ? {} : { pulled: pulled.policy }),
+        orgConfigId,
+        fetchRecord: (configId, teamId) => this.fetchPolicyRecord(lease, configId, teamId),
+        cek,
+        highWater: this.policyHighWater(lease),
+      });
+    });
+  }
+
+  /** `GET /configs/:id/policy`: the record, or null when the server holds none for that config. */
+  private async fetchPolicyRecord(lease: TokenLease, configId: string, teamId: string | null) {
+    const path = `/account/api/v1/configs/${configId}/policy${teamId ? `?teamId=${teamId}` : ''}`;
+    try {
+      const answer = await this.fetch<Record<string, unknown>>(lease, path);
+      const { version, cekGeneration, blob } = answer.data;
+      return parsePolicyRecordField({ version, cekGeneration, blob });
+    } catch (error) {
+      if (
+        error instanceof ConfigServerError &&
+        error.status === 404 &&
+        error.code === 'policy_not_found'
+      ) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /** The policy high-water marks of this config's token file, raised under the lease. */
+  private policyHighWater(lease: TokenLease): PolicyHighWater {
+    return {
+      get: (key) => this.syncRecord(lease)?.policyHighWater?.[key],
+      raise: async (key, version) => {
+        const seen = this.syncRecord(lease);
+        if (!seen) {
+          throw new Error(
+            `No sync record for config "${this.configName}": a policy is read only after a pull.`
+          );
+        }
+        const marks = seen.policyHighWater ?? {};
+        if (version <= (marks[key] ?? 0)) return;
+        await lease.recordSync({ ...seen, policyHighWater: { ...marks, [key]: version } });
+      },
+    };
   }
 
   /** The pull path of this config (its team in the query when it has one). */
@@ -355,6 +428,9 @@ export class RemoteConfigAdapter {
         envelopeVersion: ENVELOPE_VERSION,
         fckSalt: encrypted.envelope.commitments.fckSalt,
         ...optionalFields({ cekGeneration: sealedGeneration ?? pushed.data.cekGeneration }),
+        ...(this.syncRecord(lease)?.policyHighWater
+          ? { policyHighWater: this.syncRecord(lease)?.policyHighWater }
+          : {}),
       });
       return { version: pushed.data.version };
     });

@@ -4,7 +4,7 @@
  * response shapes it opens.
  */
 
-import type { FieldCommitments, importAesKey } from '@rediacc/shared/config-crypto';
+import type { FieldCommitments, importAesKey, PolicyRecord } from '@rediacc/shared/config-crypto';
 import type { RdcConfig } from '../types/index.js';
 
 export interface PullResult {
@@ -14,6 +14,11 @@ export interface PullResult {
   version: number;
   /** SDK epoch used for encryption */
   sdkEpoch: number;
+  /**
+   * The config's own policy record as the pull carried it (null: none saved), still sealed; absent
+   * when the server answered without the field. services/config/policy-record.ts opens it.
+   */
+  policy?: PolicyRecord | null;
 }
 
 export interface PushResult {
@@ -67,6 +72,8 @@ export interface PulledEnvelope {
   sdk_derived: string;
   /** The store's current CEK generation (T10); recorded once the blob opens. */
   cekGeneration?: number;
+  /** The config's policy record beside the blob (PLAN-rmcp-policy-record.md Design 3). */
+  policy?: unknown;
 }
 
 /** Session crypto material from the server */

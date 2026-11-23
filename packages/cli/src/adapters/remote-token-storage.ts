@@ -34,6 +34,12 @@ export interface SyncRecord {
    * from an unreadable config. Absent until the first pull or push that learns it.
    */
   cekGeneration?: number;
+  /**
+   * The newest version of each policy record this device opened, by
+   * `<storeId>/<configId>/<teamId or empty>` (services/config/policy-record.ts): a lower version is a
+   * replayed policy and is refused.
+   */
+  policyHighWater?: Record<string, number>;
 }
 
 export interface TokenData {
