@@ -58,6 +58,8 @@ interface SessionEntry {
   cek?: CryptoKey;
   createdAt: number;
   lastUsedAt: number;
+  /** When the CEK arrived; orders a principal's live grants (newest wins in sessionFor). */
+  grantedAt?: number;
 }
 
 export interface SessionStoreOptions {
@@ -77,8 +79,8 @@ export interface SessionStoreOptions {
  */
 export class SessionStore {
   private readonly sessions = new Map<string, SessionEntry>();
-  /** (orgId, userId) -> the session they granted a key through. See sessionFor(). */
-  private readonly grantsByUser = new Map<string, string>();
+  /** (orgId, userId, teamId) -> every live session they granted a key through. See sessionFor(). */
+  private readonly grantsByUser = new Map<string, Set<string>>();
   private readonly ttlMs: number;
   private readonly now: () => number;
 
@@ -148,9 +150,13 @@ export class SessionStore {
     session.cek = await importAesKey(raw);
     session.ephemeralPrivateKey = undefined;
     session.lastUsedAt = this.now();
+    session.grantedAt = session.lastUsedAt;
 
-    // Index the grant so sessionFor() can find it. See that method for why the key is (orgId, userId): never org alone, never user alone.
-    this.grantsByUser.set(grantKey(session.orgId, session.principal.userId), sessionId);
+    // Index the grant so sessionFor() can find it. See that method for why the key is (orgId, userId, teamId): never org alone, never user alone. A second grant joins the first instead of replacing it.
+    const key = grantKeyOf(session);
+    const granted = this.grantsByUser.get(key) ?? new Set<string>();
+    granted.add(sessionId);
+    this.grantsByUser.set(key, granted);
   }
 
   /** The CEK for a session, or an error naming the fix if it has none yet. */
@@ -179,36 +185,40 @@ export class SessionStore {
    * answer "which session holds this user's key" is an incomplete store, so the
    * lookup lives here rather than being bolted on from outside.
    *
-   * KEYED BY (ORG, USER), NEVER BY ORG ALONE, and that is a security property,
-   * not a detail. Config-store membership is per user: someone who cannot
-   * decrypt the config on their own must not have it decrypted for them just
-   * because a colleague in the same org happens to have a live session. Matching
-   * on org alone would hand one member's key to another. The user id stays part
-   * of the key, and the org id keeps one user's sessions in two orgs apart.
+   * KEYED BY (ORG, USER, TEAM), NEVER BY ORG ALONE, and that is a security
+   * property, not a detail. Config-store membership is per user: someone who
+   * cannot decrypt the config on their own must not have it decrypted for them
+   * just because a colleague in the same org happens to have a live session.
+   * Matching on org alone would hand one member's key to another. The user id
+   * stays part of the key, the org id keeps one user's sessions in two orgs
+   * apart, and the team id keeps a user's grant under team A from serving a
+   * team-B request.
    *
-   * Sessions expire, so a hit is re-validated against the live map and a stale
-   * index entry is dropped rather than returned.
+   * Each key holds every live grant, so a second grant (another device, another
+   * client) never silently replaces the first; the most recently granted live
+   * session wins the lookup, and closing it falls back to the next one.
+   *
+   * Sessions expire, so each candidate is re-validated against the live map
+   * and a stale index entry is dropped rather than returned.
    */
   sessionFor(principal: SessionPrincipal): string | undefined {
-    const key = grantKey(principal.orgId, principal.userId);
-    const sessionId = this.grantsByUser.get(key);
-    if (!sessionId) return undefined;
+    this.evictExpired();
+    const key = grantKey(principal.orgId, principal.userId, principal.teamId);
+    const granted = this.grantsByUser.get(key);
+    if (!granted) return undefined;
 
-    const session = this.sessions.get(sessionId);
-    if (!session?.cek) {
-      this.grantsByUser.delete(key);
-      return undefined;
+    let newest: SessionEntry | undefined;
+    for (const sessionId of granted) {
+      const session = this.sessions.get(sessionId);
+      if (!session?.cek) {
+        granted.delete(sessionId);
+        continue;
+      }
+      if (!ownedBy(session, principal)) continue;
+      if (!newest || (session.grantedAt ?? 0) > (newest.grantedAt ?? 0)) newest = session;
     }
-    if (!ownedBy(session, principal)) return undefined;
-
-    // Expiry is enforced by require(), which also evicts.
-    try {
-      this.require(sessionId);
-    } catch {
-      this.grantsByUser.delete(key);
-      return undefined;
-    }
-    return sessionId;
+    if (granted.size === 0) this.grantsByUser.delete(key);
+    return newest?.id;
   }
 
   /**
@@ -274,17 +284,24 @@ export class SessionStore {
    */
   private forget(sessionId: string): void {
     const session = this.sessions.get(sessionId);
-    const key = session ? grantKey(session.orgId, session.principal.userId) : undefined;
-    if (key && this.grantsByUser.get(key) === sessionId) {
-      this.grantsByUser.delete(key);
+    if (session) {
+      const key = grantKeyOf(session);
+      const granted = this.grantsByUser.get(key);
+      granted?.delete(sessionId);
+      if (granted?.size === 0) this.grantsByUser.delete(key);
     }
     this.sessions.delete(sessionId);
   }
 }
 
-/** Grant-index key: one slot per (org, user), so a user's live sessions in two orgs stay independently reachable. Still never shared between users. */
-function grantKey(orgId: string, userId: string): string {
-  return `${orgId}\0${userId}`;
+/** Grant-index key: one slot per (org, user, team), so a user's live sessions in two orgs or two teams stay independently reachable. Still never shared between users. */
+function grantKey(orgId: string, userId: string, teamId: string | null): string {
+  return `${orgId}\0${userId}\0${teamId ?? ''}`;
+}
+
+/** The grant-index key of a session: its opener's org, user and team. */
+function grantKeyOf(session: SessionEntry): string {
+  return grantKey(session.orgId, session.principal.userId, session.principal.teamId);
 }
 
 /** A session belongs to the user AND the org that opened it; both must match, so another org's principal is refused as an unknown session. */
