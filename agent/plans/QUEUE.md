@@ -23,7 +23,7 @@ The levels, each a superset of the one before:
 
 `.claude/config/effort.json` gives every check its threshold (`{"block": <level>, "advise": <level>}`, or `floor`); moving a check between levels is an edit there, which the effort-table rule of `npm run check:ci-plan-record` keeps complete.
 
-Fixed in code, not settable: the writer cap is 25 (`wl_roster.WRITER_CAP`; a spawn beyond it is refused by `block_agent_cap`, the Stop hook blocks on a roster above it, and the lease verb caps the trees on disk with it), and the commit reminder speaks after 15 minutes without a commit while this session's own edits are uncommitted (`wl_checks.COMMIT_REMIND_MIN`, a reminder, never a block).
+No writer limit (operator ruling #3ca908ee, PLAN-unlimited-writers.md): no guard, Stop-hook check or lease-tool count caps live writers at any effort level; the harness concurrent-subagent ceiling is the only bound, and file ownership (`block_plan_concurrency`) still decides who edits what.
 
 ```stop-hook
 effort: high
@@ -41,21 +41,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (7 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
-  - epic 79b7e92e, no plan, 608 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 610 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 26 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 3 live of writer_cap 25 (session ace763dd): worker:a3edb3067830dd551, worker:af5b5acf4d30f2435, worker:ac53fee36e80cda86.
-- Leased items: 5: #3b82cf28 (worker:ae22165c142f59698, ace763dd), #55511864 (worker:a3edb3067830dd551, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #882e8fdc (worker:af5b5acf4d30f2435, ace763dd), #d24ae8a2 (worker:ac53fee36e80cda86, ace763dd).
+- Writers: 2 live of writer_cap 25 (session ace763dd): worker:a3edb3067830dd551, worker:af5b5acf4d30f2435.
+- Leased items: 4: #3b82cf28 (worker:ae22165c142f59698, ace763dd), #55511864 (worker:a3edb3067830dd551, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #882e8fdc (worker:af5b5acf4d30f2435, ace763dd).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 97 plans done, 1233 of 1867 boxes done (66%).
+Promoted: 10 of 97 plans done, 1237 of 1867 boxes done (66%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -155,7 +155,7 @@ Promoted: 10 of 97 plans done, 1233 of 1867 boxes done (66%).
 | 94 | PLAN-forensics-alerts-notices.md | 1/15 | 14 open |
 | 95 | PLAN-forensics-reports.md | 0/14 | 14 open |
 | 96 | PLAN-forensics-docs-legal.md | 0/13 | 13 open |
-| 97 | PLAN-unlimited-writers.md | 0/5 | 5 open |
+| 97 | PLAN-unlimited-writers.md | 4/5 | 1 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue

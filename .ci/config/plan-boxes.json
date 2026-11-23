@@ -4462,16 +4462,17 @@
       "owner": "ace763dd",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 0,
+      "open": 1,
+      "done": 4,
       "open_sigs": [
+        "8cc60e60"
+      ],
+      "done_sigs": [
         "115493b4",
         "5c82ef6c",
         "60694138",
-        "8cc60e60",
         "e985c6c0"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-vmcheck-incremental.md": {
       "status": "approved",

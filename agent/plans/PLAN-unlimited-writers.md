@@ -34,10 +34,14 @@ The writer cap (`wl_roster.WRITER_CAP = 25`, earlier `writer_cap: 4` in QUEUE.md
 
 ## Boxes
 
-- [ ] U1 [writer] Remove `WRITER_CAP`/`writer_cap` and every comparison in wl_roster, wl_planconc, wl_cli, wl_checks, wl_standdown, wl_boxready, wl_planqueue and worklist_messages; CAP-SATURATED and "writer slots" wording gone. Accept: `grep -rnE "WRITER_CAP|writer_cap|writer slots|CAP-SATURATED|CAP_WAIT" .claude/hooks .claude/rediacc_hooks` prints nothing outside comments citing this plan; every touched hook suite rc 0.
-- [ ] U2 [writer] Retire `block_agent_cap` (guard, tests, fixtures, settings.json wiring, generated hook docs) and drop the cap rule from `block_plan_concurrency`, keeping its overlap and exclusive rules. Accept: `test-block_plan_concurrency.py` rc 0 with a new case where 30 live writers do not refuse a disjoint spawn; `npx tsx scripts/gen/gen-docs.ts --write` leaves no diff after the commit; `npm run -s check:ci-guard-mutations` rc 0.
-- [ ] U3 [writer] Remove the lease tool's tree-count limit. Accept: `test_dev_worktree_lease.py` rc 0 with a case leasing past the old 25.
-- [ ] U4 [writer] Rewrite the CLAUDE.md, `.claude/commands/writers-now.md`, `.claude/commands/wisdom.md`, `.claude/skills/**` and docs/agent-reference lines that state a writer cap or slot budget. Accept: `grep -rniE "writer.?cap|writer slots|max 4 at a time" CLAUDE.md .claude/commands .claude/skills docs/agent-reference` prints nothing; `npm run -s check:ci-prose-style` shows no new finding.
+- [x] U1 [writer] Remove `WRITER_CAP`/`writer_cap` and every comparison in wl_roster, wl_planconc, wl_cli, wl_checks, wl_standdown, wl_boxready, wl_planqueue and worklist_messages; CAP-SATURATED and "writer slots" wording gone. Accept: `grep -rnE "WRITER_CAP|writer_cap|writer slots|CAP-SATURATED|CAP_WAIT" .claude/hooks .claude/rediacc_hooks` prints nothing outside comments citing this plan; every touched hook suite rc 0.
+    (ticked) 2026-11-23T18:24:26Z by ace763dd: commit:ba816c0e8c landed; guard differential 9139 passed rc=0, test-block_plan_concurrency rc=0, hook-integrity rc=0
+- [x] U2 [writer] Retire `block_agent_cap` (guard, tests, fixtures, settings.json wiring, generated hook docs) and drop the cap rule from `block_plan_concurrency`, keeping its overlap and exclusive rules. Accept: `test-block_plan_concurrency.py` rc 0 with a new case where 30 live writers do not refuse a disjoint spawn; `npx tsx scripts/gen/gen-docs.ts --write` leaves no diff after the commit; `npm run -s check:ci-guard-mutations` rc 0.
+    (ticked) 2026-11-23T18:24:27Z by ace763dd: commit:81766885e2 landed; guard differential 9139 passed rc=0, test-block_plan_concurrency rc=0, hook-integrity rc=0
+- [x] U3 [writer] Remove the lease tool's tree-count limit. Accept: `test_dev_worktree_lease.py` rc 0 with a case leasing past the old 25.
+    (ticked) 2026-11-23T18:24:28Z by ace763dd: commit:975ea89e1a landed; guard differential 9139 passed rc=0, test-block_plan_concurrency rc=0, hook-integrity rc=0
+- [x] U4 [writer] Rewrite the CLAUDE.md, `.claude/commands/writers-now.md`, `.claude/commands/wisdom.md`, `.claude/skills/**` and docs/agent-reference lines that state a writer cap or slot budget. Accept: `grep -rniE "writer.?cap|writer slots|max 4 at a time" CLAUDE.md .claude/commands .claude/skills docs/agent-reference` prints nothing; `npm run -s check:ci-prose-style` shows no new finding.
+    (ticked) 2026-11-23T18:24:29Z by ace763dd: commit:d1b39b5a07 landed; guard differential 9139 passed rc=0, test-block_plan_concurrency rc=0, hook-integrity rc=0
 - [ ] U5 [lead] One wave of more than 25 writers runs with no cap refusal from any guard or the Stop hook. Accept: the wave's spawn log quoted here with the writer count.
 
 ## Outcome
