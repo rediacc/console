@@ -3444,16 +3444,16 @@
       "owner": "ace763dd",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 6,
+      "open": 3,
+      "done": 7,
       "open_sigs": [
-        "0f7ddaf4",
         "538bfc58",
         "6e0c83e2",
         "e498feca"
       ],
       "done_sigs": [
         "055ee700",
+        "0f7ddaf4",
         "15383c8b",
         "18eba573",
         "9611b663",
@@ -3838,18 +3838,18 @@
       "owner": "fee07197",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 4,
+      "open": 2,
+      "done": 6,
       "open_sigs": [
         "89a8fc86",
-        "a04e3a1c",
-        "c46fc23d",
         "dcd4409b"
       ],
       "done_sigs": [
         "5c05a947",
         "6d93f7d7",
         "9673a986",
+        "a04e3a1c",
+        "c46fc23d",
         "f72a79ed"
       ]
     },

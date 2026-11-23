@@ -610,7 +610,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
 | `agent/plans/PLAN-signer-bench-stop-binding-reattach.md` | done | 37 | 0 | 3 | 6362 |
-| `agent/plans/PLAN-silent-failure-sweep.md` | approved | 216 | 4 | 6 | 27743 |
+| `agent/plans/PLAN-silent-failure-sweep.md` | approved | 217 | 3 | 7 | 28017 |
 | `agent/plans/PLAN-simple-two-tree-loop.md` | approved | 186 | 4 | 8 | 39535 |
 | `agent/plans/PLAN-site-entry-points.md` | approved | 159 | 4 | 7 | 22682 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
@@ -633,7 +633,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-tick-tracking.md` | approved | 269 | 2 | 13 | 37957 |
 | `agent/plans/PLAN-tooling-code-reduction.md` | approved | 105 | 6 | 5 | 24144 |
-| `agent/plans/PLAN-tooling-speed.md` | approved | 94 | 4 | 4 | 16720 |
+| `agent/plans/PLAN-tooling-speed.md` | approved | 96 | 2 | 6 | 17316 |
 | `agent/plans/PLAN-tutorial-recorder-licence.md` | proposed | 64 | 10 | 0 | 12703 |
 | `agent/plans/PLAN-tutorial-rerecord.md` | proposed | 62 | 7 | 0 | 11254 |
 | `agent/plans/PLAN-two-track-merge-dev.md` | approved | 359 | 6 | 38 | 74638 |

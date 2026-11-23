@@ -168,10 +168,11 @@ D7. **The class B gate.** check:ci-swallowed-failures gains a Python mode:
   Depends on: PLAN-tooling-speed.md SP2 and SP5.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_named_reads_git.py` rc 0, with per-site controls and a silent control per file; baseline rows deleted as in SF4.
     (ticked) 2026-11-23T10:02:17Z by ace763dd: commit:b9c7fd2d1a SF5 class B in wl_review/wl_schedred/wl_histfirst/wl_resprofile named or waived; test_wl_named_reads_git.py passed on the landed tree. DEPS-WAIVED: SP2 is in flight with writer W1 and SF5 changes no SP2 surface
-- [ ] SF6 [writer] Class B (D5) in worklist.py (7 sites). Once SP3 has moved the CLI verbs, each site is fixed in whichever of worklist.py or wl_cli.py now holds it.
+- [x] SF6 [writer] Class B (D5) in worklist.py (7 sites). Once SP3 has moved the CLI verbs, each site is fixed in whichever of worklist.py or wl_cli.py now holds it.
   Owns: .claude/hooks/stop/worklist.py, .claude/rediacc_hooks/tests/test_wl_named_reads_cli.py
   Depends on: PLAN-tooling-speed.md SP3.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_named_reads_cli.py` rc 0; baseline row deleted as in SF4.
+    (ticked) 2026-11-23T10:31:27Z by ace763dd: commit:daf9c7a53e SF6: the five remaining class B sites in worklist.py/wl_cli.py name their exception on stderr; test_wl_named_reads_cli.py 12 passed (red case + silent twin per site, plus a file scan); family 2685 passed rc 0
 - [x] SF7 [writer] Class B (D5, D6) in the two wl_stack.py handlers left after the lease fix, and in wl_bgsweep.py (2 sites, at `.claude/hooks/stop/wl_bgsweep.py:443` and `:531` at the tip).
   - `main_checkout_tasks` stops returning `[]` on a raise.
   - `notify_line` returns its reason, which SF3's landing text names.
