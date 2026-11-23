@@ -587,7 +587,7 @@ def test_a_path_inside_a_lease_means_the_same_plan_as_the_path_in_the_main_check
     lease = repo.root / ".claude" / "worktrees" / "lease-1"
     lease.parent.mkdir(parents=True)
     repo.git("worktree", "add", "--detach", str(lease))
-    wl = import_wl("worklist")
+    wl = import_wl("worklist").CLI
     assert wl._plan_rel(str(repo.root), str(lease / PLAN)) == PLAN
     assert wl._plan_rel(str(repo.root), str(repo.root / PLAN)) == PLAN
 
@@ -596,5 +596,5 @@ def test_control_a_plain_worktree_outside_the_lease_folder_keeps_its_own_path(re
     other = repo.root / "elsewhere" / "tree"
     other.parent.mkdir(parents=True)
     repo.git("worktree", "add", "--detach", str(other))
-    wl = import_wl("worklist")
+    wl = import_wl("worklist").CLI
     assert wl._plan_rel(str(repo.root), str(other / PLAN)) == "elsewhere/tree/" + PLAN

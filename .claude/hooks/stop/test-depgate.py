@@ -20,10 +20,12 @@ import wl_planenforce as E
 import wl_planfile as PF
 import wl_planorder as PO
 import wl_store as S
-import worklist as W
+import worklist
 import worklist_messages as M
 from wl_checks import dep_first_rows, guided_slice
 
+# The verbs live in wl_cli (PLAN-tooling-speed.md SP3); importing worklist binds it to the probed siblings.
+W = worklist.CLI
 _CI = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "rediacc_ci"
 
 

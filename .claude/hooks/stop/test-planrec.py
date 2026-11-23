@@ -40,7 +40,10 @@ import wl_planfid as P
 import wl_planfile as F
 import wl_planindex as PI
 import wl_planrec as R
-import worklist as _W
+import worklist
+
+# The verbs live in wl_cli (PLAN-tooling-speed.md SP3); importing worklist binds it to the probed siblings.
+_W = worklist.CLI
 
 HERE = pathlib.Path(__file__).resolve().parent
 

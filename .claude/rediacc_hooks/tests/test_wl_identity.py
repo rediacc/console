@@ -639,7 +639,10 @@ def test_185_anti_vacuity_the_verb_list_is_derived_from_the_source_not_typed_her
     driver recorded at runtime, not by grepping this file, which would pass on a case that never ran.
     """
     assert l1.covered, "the driver recorded no verbs at all, so this case has nothing to check"
-    src = (wlfix.STOP_DIR / "worklist.py").read_text(encoding="utf-8")
+    # The dispatch spans two files since PLAN-tooling-speed.md SP3: worklist.py keeps --help and --path, wl_cli.py every other verb.
+    src = "\n".join(
+        (wlfix.STOP_DIR / name).read_text(encoding="utf-8") for name in ("worklist.py", "wl_cli.py")
+    )
     verbs: set[str] = set()
     verbs.update(re.findall(r'sys\.argv\[1:2\] == \["(--[a-z-]+)"\]', src))
     verbs.update(re.findall(r'sys\.argv\[1\] == "(--[a-z-]+)"', src))

@@ -61,6 +61,7 @@ import wl_schedred
 import wl_shapedup
 import wl_stack
 import wl_standdown
+import wl_stopregistry as R
 import wl_store as S
 import wl_storestatus
 import wl_trapfires
@@ -1366,8 +1367,16 @@ def blocklog(worklist, me8, key, named=(), judge=None):
     """Append one row per BLOCKED stop to `.blocklog-<me8>.jsonl` beside the worklist: the key the block leads with, every other outstanding key it named, and the judge's flags when the judge blocked (agent/plans/PLAN-stop-hook-retro-20260924.md R.10).
 
     The retro counts blocks per key from this file instead of grepping a 222 MB transcript. One small O_APPEND line; a log that cannot be written never changes the block.
+
+    `ms` is each run_stop segment's duration so far in whole milliseconds (wl_stopregistry.durations, agent/plans/PLAN-tooling-speed.md D4), the open segment counted up to this row; a segment the stop never reached is absent.
     """
-    row = {"at": C.stamp_now(), "key": key, "named": list(named)[:40], "judge": judge or {}}
+    row = {
+        "at": C.stamp_now(),
+        "key": key,
+        "named": list(named)[:40],
+        "judge": judge or {},
+        "ms": R.durations(),
+    }
     with contextlib.suppress(OSError):
         fd = os.open(
             str(worklist.with_suffix(".blocklog-%s.jsonl" % me8)),
@@ -3493,6 +3502,8 @@ def outq_drop(state_doc, key):
 
 def run_stop(event, event_ok, worklist, hook_file):
     """The full stop battery. Gathers EVERY static violation, then emits ONE block (five independent blocking checks would cost five turns to clear, which is the "stuck in a loop" the old MAX_BLOCKS existed to paper over), then consults the judge on stops where work remains, then allows with a report."""
+    # THE STOP REGISTRY'S CLOCK (wl_stopregistry, agent/plans/PLAN-tooling-speed.md D4): every segment of this battery is timed, and a blocked stop's blocklog row carries the durations.
+    R.start("setup")
     session_id = event.get("session_id", "")
     me8 = (session_id or "unknown")[:8]
     # One stop's read failures at a time. The import-time row (wl_ruling) is a property of the process, so it survives the reset.
@@ -3801,6 +3812,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
         return "\n".join(lines)
 
+    R.begin("reggate-detect")
     # ---- v7: regression-gate detection (see wl_reggate). Never breaks gating.
     reg_marker = wl_reggate.reggate_path(worklist, session_id)
     reg_signals, reg_ids, reg_new_ticks, reg_sig, reg_head, reg_banked = [], [], [], "", "", []
@@ -3902,6 +3914,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         if reg_state is None:
             reg_state = {"head": "", "seen_ticks": [], "fixsets": {}, "gate_runs": {}}
 
+    R.begin("gather")
     # ---- gather EVERY static violation, then emit ONE block -----------------
     judged_ok = None
     verdict = None
@@ -3965,6 +3978,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     if msg_readable and REMAINING_HEADING.search(last_msg or ""):
         state_doc["last_report_sig"] = report_sig
 
+    R.begin("bg-wait")
     # ---- v15 PURE BACKGROUND WAIT (operator, 2026-07-31): "sometimes you only have background jobs and wait for them without any other pending task. The hook should respect that but have information about them,
     # with a 15 min timeout to have a report, since they may stuck."
     # The state: live background work, no open items, no expired deferral. In it, waiting is LEGITIMATE (the judge is told so below), and the hook's demand shrinks to a bounded 15-minute check-in whose facts the hook gathers ITSELF from each worker's output stream (mtime/size), because file growth is evidence no self-report can fake. Latched on fire, so the check-in costs one
@@ -4088,6 +4102,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         own_stamp=_own_stamp,
     )
 
+    R.begin("ladder-bookkeeping")
     # ---- v10: the liveness ladder. Bookkeeping runs on EVERY stop (blocked or allowed), and the state doc is saved before any emit below.
     ladder_pings, ladder_inv, ladder_res, ladder_gone, ladder_idle = [], [], [], [], []
     worker_rows, worker_verdicts = [], {}
@@ -4116,6 +4131,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         )
     else:
         _q["items"] = [e for e in _q["items"] if e.get("key") != "ladder"]
+    R.begin("store-status")
     # ---- THE STORE STATUS (agent/plans/PLAN-stop-hook-store-status.md S3, D3), computed ONCE from the fold, classification, roster and ladder this stop already holds: no second pass over history. The snapshot is written here, before the bookkeeping save, so a blocked stop and an allowed stop both advance it. A failure leaves the stop exactly as before.
     _ss_rows, _ss_changes, _ss_first = [], [], True
     _ss_failure = ""
@@ -4171,6 +4187,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         _ss_system = "%s\n\n%s" % (_ss_system, _ss_failure) if _ss_system else _ss_failure
     S.save_state(worklist, session_id, state_doc)
 
+    R.begin("guide")
     # ---- v11: the store-derived guide, present on EVERY full stop (allow and block alike), so the session reports from the store, not memory. Never breaks gating, and a broken guide SAYS SO rather than vanishing.
     try:
         guide = guided_slice(
@@ -4282,6 +4299,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             if fn is not None:
                 fn()
 
+    R.begin("roster")
     # ---- THE PARALLEL-WRITER ROSTER'S DEFECTS (wl_roster), in the ALWAYS tier: never rotated away, and they defeat the cadence pause (guard A). The cap and the 20-minute ping are checked in EVERY roster state; honesty only decides what is suppressed further down. Every remedy printed is an action the session completes alone.
     if _roster is not None:
         _rrows = wl_roster.defect_rows(_roster)
@@ -4360,6 +4378,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         merged=_loop is not None and _loop.kind in (wl_prscope.MERGED, wl_prscope.ON_MAIN),
     )
 
+    R.begin("wake-timer")
     # ---- THE WAKE-UP TIMER (wl_wake; operator 2026-10-03: "the stop hook should check the final step which is 'is stop hook wait triggered in the background?'"). Any background work still running and no timer among the live tasks: the stop would wait on tasks that, if they all hang, never re-invoke the session. INVARIANT, because a rotating or pausable key is exactly how
     # a session stops into that deadlock anyway, and in T_OWED beside bg-report: the work being waited on is the party owed a look.
     if live_bg and not _wakers:
@@ -4488,6 +4507,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             False,
             M.V_OPEN_ITEMS % (len(open_items), "\n".join(_oi_lines)),
         )
+    R.begin("idle-stall")
     # ---- v21 THE IDLE-STALL GATE, in the ALWAYS tier, directly beside the rotating `open-items` it backstops. It must not be rotated or paused: the whole failure is that `open-items` CAN be, so a copy of it in the same tier would buy nothing. Wrapped, because a stall detector that crashes a stop is worse than one that is absent -- on any exception the ordinary `open-items` block
     # above still stands.
     try:
@@ -4512,6 +4532,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             True,
             M.V_UNBLOCKED_CLAIM % (len(open_items), "\n".join("    " + c for c in _stall_claims)),
         )
+    R.begin("pending-ask")
     # ---- v23 THE PENDING-ASK GATE (wl_admit.pending_ask), ALWAYS tier, and directly beside idle-stall because it is the same failure through a different door: a stop that yields the operator's turn without needing to. The detector, its regexes and its state signature all live in wl_admit -- this file is ~5,000 lines and is what every stop-gate change has to be read against, so it
     # gets the call site and the key and nothing else.
     #
@@ -4527,6 +4548,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         _pa_fired, _pa_line = False, ""
     if _pa_fired:
         vadd("pending-ask", True, M.V_PENDING_ASK % (_pa_line, me8))
+    R.begin("sweep-moment")
     # ---- THE SWEEP PROMPT, and its whole value is WHEN it fires.
     #
     # Not on a stall (idle-stall owns that), not on every stop (a prompt that fires always is a prompt that gets skimmed). It fires at the one moment that is genuinely cheap: the queue is EMPTY, nothing is in flight, and something just left the open state -- i.e. work finished cleanly and the session is about to walk away with its context still warm.
@@ -4553,6 +4575,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             False,
             M.V_UNDEFAULTED % (len(undefaulted), "\n".join("    " + d[:150] for d in undefaulted)),
         )
+    R.begin("defer-expired")
     # ---- v10 AUTONOMY: a DEFAULT past its window is EXECUTED, not restated. The operator: "usually I went through the 'Recommended' action". So the recommendation IS the decision once the window closes; the block demands the execution (bounded per stop, so a migrated backlog drains as a queue rather than a wall). Fresh deferrals still just report.
     expired = [
         r
@@ -4591,6 +4614,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 me8,
             ),
         )
+    R.begin("defer-justify")
     # ---- v12 JUSTIFICATION: a [?] must earn its seat. New deferrals are gated at --defer; the markdown inbox and older sessions can still park one without a WHY/HOW, so those are demanded once aged -- bounded, the same drain shape as the expired queue. Expired items are excluded: they already carry the stronger execute-the-DEFAULT demand above.
     expired_ids = {r["id"] for r in expired}
     unjustified = [
@@ -4629,6 +4653,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 me8,
             ),
         )
+    R.begin("completion")
     # ---- I7: a completion claim must leave a RECORD (see wl_reggate) --------
     ev_ticks = [
         ev[:150]
@@ -4674,6 +4699,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 wl_reggate.save_reggate(reg_marker, reg_state)
         except Exception as exc:
             note_read_failure("reggate-task-status", exc)
+    R.begin("work-gate")
     # ---- THE WORK GATE. A brief goes stale when the WORLD moves, not when the clock does: a sentence that still describes what this session is doing is still true at 91 minutes, and demanding a rewrite of an accurate sentence is noise that
     # trains the reader to dismiss the check. Same contract the STATE.md check already runs on, and the same signature, so the two cannot disagree about whether anything happened.
     #
@@ -4709,6 +4735,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             ),
         )
 
+    R.begin("plan-drift")
     # ---- PLAN DRIFT. Binds the session to its own committed design record. Costs one glob plus the first 10 lines of each non-done plan, and only on a branch that HAS a plan directory: a project not using the convention pays the glob and nothing else. Rotating tier, not always: a stale plan is a real debt but never an integrity failure, and it must not outrank the checks that
     # stop work being abandoned. NOT gated on something_remains, and that was a real bug in the first cut. `something_remains` means open ITEMS, not an unfinished message, so gating on it meant a session that had ticked everything was never told its plan was stale -- which is precisely the moment it matters most: the work is finished and the committed record still says `executing`.
     # The exit is satisfiable either way (edit the plan, or set its Status), so this cannot become a nag with no way out.
@@ -4732,6 +4759,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             ),
         )
 
+    R.begin("plan-file")
     # ---- PLAN FILE vs WORKLIST (wl_planfile). The sibling of plan-drift above: that one asks "has the plan gone stale against the work", this one asks "are the plan's own checkbox TASKS tracked at all". Different questions, and neither implies the other -- a plan can be freshly rewritten and still have eighteen boxes nothing tracks, which is exactly what was measured on
     # agent/plans/PLAN-secret-namespace-migration.md on 2026-09-02.
     #
@@ -4798,6 +4826,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception as exc:
         note_read_failure("plan-tasks", exc)
 
+    R.begin("next-plan")
     # ---- THE NEXT PLAN (wl_backlog), read off agent/plans/QUEUE.md: Promoted first, then Generated (operator ruling 3, 2026-10-03). The loop state already computed it with the reader the merge gate and P-A1 share; off the loop it is computed here. ADVISORY, never a vadd: the loop's own post-merge push is `loop-next`.
     # ONE NEXT PLAN AT A TIME: a queued nomination of any other plan (an older stop's, or the retired per-session ranking's) is dropped before this stop's is added, so the queue never enumerates plans the loop is not starting next.
     _bl_key = ""
@@ -4820,6 +4849,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         if not str(e.get("key") or "").startswith("plan-backlog:") or e.get("key") == _bl_key
     ]
 
+    R.begin("plan-set")
     # ---- THE PR'S PLAN SET IS NOT FINISHED (wl_planenforce). The only BLOCKING plan push: `plan-tasks` asks whether a plan's boxes are TRACKED, `plan-backlog` names what comes NEXT, and this asks whether the PR's own plans are DONE. Scoped to the loop state's set, prerequisites first, with no ceiling (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 5); off the loop the scope is empty and it is silent.
     # A BACKGROUND TASK OF THIS SESSION TURNS IT INTO AN ADVISORY: a writer on the box or a `ci-trace --wait` is the work happening, and the box count of one plan is the exit.
     try:
@@ -4855,6 +4885,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception as exc:
         note_read_failure("plan-enforce", exc)
 
+    R.begin("landed-work")
     # ---- LANDED WORK ON AN OPEN BOX WITH NO INVESTIGATION ROW (agent/plans/PLAN-tick-tracking.md Design 6, box T10). A commit landed on the live branch names a still-open box, by trailer or by report TICK, and the box has no investigation row; held for wl_boxaudit.OWED_STOPS stops in a row it blocks with the audit line and the --plan-investigate command. Writing the row drops the key. The audit is cached per HEAD and ledger size.
     try:
         import wl_boxaudit
@@ -4918,6 +4949,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     else:
         # Pointers match again (pushed, or reverted): drop the window so the next genuine move fires at once rather than inheriting a stale one.
         vsig_clear("submodule")
+    R.begin("ci-queue")
     # ---- v13: CI-queue backpressure (operator, 2026-07-31). Computed before the freshness check because a saturated queue changes what that check should say. A slack-granter must fail toward pressure: any error here reads as "unknown", which is exactly today's behavior.
     try:
         qstate, qdetail = wl_ci.ci_queue_state(root, worklist, session_id)
@@ -5094,6 +5126,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 else "",
                 _txt,
             )
+    R.begin("loop-speed")
     # ---- THE LOOP-SPEED ADVISORIES (agent/plans/PLAN-fast-loop.md Parts 2-4; operator 2026-10-06: every one is ADVISORY, never a block). Each rides `outq_add` (the allow-report queue), so none can hold a stop, and each sits in `wl_standdown.FOCUS_ADVISORY_KEYS` so focus mode releases it. The facts come from state this stop already read (the session's own transcript, local git, and the CI state read above): no new GitHub call. Each is wrapped like every sibling detector, so a broken read is silence.
     #   commit-remind   this session's own still-dirty files and no commit for COMMIT_REMIND_MIN (15) minutes.
     #   receipt-behind  the pre-push receipt is N code commits behind HEAD while commits are unpushed.
@@ -5195,6 +5228,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
     except Exception as exc:
         note_read_failure("ci-hold", exc)
+    R.begin("sched-red")
     # ---- SCHEDULED WORKFLOWS ON MAIN (agent/plans/PLAN-scheduled-red-detector.md, A2). A nightly red reached only a human for five nights while it held the stable promotion, because every CI read here is scoped to the PR head and a scheduled run is on no PR. So this check is NOT gated on the publish ref and NOT on being the sole live session: ownership is settled by wl_schedred
     # instead (an item that tracks the red is its owner's, an O_EXCL claim picks one session when none exists), which is what lets every session look without two of them being blocked on one red. One shared cache under a TTL keeps the read cheap; no origin means zero calls, which keeps the fixtures offline.
     #   block  the untracked red this session claimed, or a tick of this session that closed a still-red run without evidence. `scheduled-red` sits in T_OWED (the party owed is the release pipeline, which cannot see this session stop) and in the always tier under I2.
@@ -5273,6 +5307,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             1,
             refresh_min=60,
         )
+    R.begin("sched-fresh")
     # ---- SCHEDULED-RUN FRESHNESS (operator ruling 2026-11-21, worklist #5eb28959). A red run needs a run: when GitHub stops firing a cron (Actions disabled, a workflow auto-disabled after 60 days, the account's billing) no run exists and the check above stays silent. refresh_freshness reads main's scheduled workflows under its own one-hour TTL and caches the
     # document for SessionStart; the advisory names each stale workflow, its cause and the fix. Advisory only: no claim, since the fix is one `gh workflow enable` any session can run. No origin or no scheduled workflow on main means zero calls.
     try:
@@ -5294,6 +5329,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             1,
             refresh_min=60,
         )
+    R.begin("handover")
     # ---- THE HANDOVER CONTRACT (agent/plans/PLAN-simple-two-tree-loop.md D5, box B7). One `handover` event kind in the store both trees share, addressed by tree role: the development tree is blocked by an unanswered stuck or churn handover and advised by a lesson one; the landing tree is blocked by an answer that names a lease until that lease is landed or a
     # `done` answer closes it. A checkout with no landing record has no role and reads nothing here.
     try:
@@ -5333,6 +5369,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             1,
             refresh_min=60,
         )
+    R.begin("ops-health")
     # ---- OPS HEALTH (agent/plans/PLAN-health-checks-local.md L3, D-local). The machines the operator's rdc config names, the local probes and the off-box alerter, read from the shared .ci/cache/ops-health/state.json; a check past its TTL spawns ONE detached refresher and this stop never waits for it. Ownership is wl_schedred's claim, so one session is blocked and every other one gets an advisory.
     #   block   a red this session claimed (`ops-health-red`), or the off-box alerter's last cron older than its limit (`ops-health-offbox-stale`).
     #   advise  a red a peer owns (`ops-health-peer`); a cache that cannot be parsed or a check that answered rc 2 (`ops-health-unreadable`, also the key of a raise here, which never blocks).
@@ -5369,6 +5406,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             1,
             refresh_min=60,
         )
+    R.begin("pr-review")
     # ---- THE PR-LEVEL CLAUDE REVIEW ON A GREEN HEAD (agent/plans/PLAN-github-pr-review-restore.md, box GR9). Only once ci_trouble reads the head green: before that the review has not run, and a red head has its own block. Review Complete is a required check (operator ruling 2026-10-03), so an unanswered summary or a failed review run is work this loop owns; the
     # bounded ceiling and the gh budget live in prreview_nudge and prreview_runner.
     if cistate == "ok" and isinstance(cidetail, dict):
@@ -5400,6 +5438,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             outq_add(
                 worklist, session_id, state_doc, "ci-report:pr-review", _prr_once, 1, sticky=True
             )
+    R.begin("pr-finish")
     # ---- v21: THE pr-babysit FINISH LINE, as the markdown checkboxes it is.
     #
     # THE OPERATOR'S OWN EXAMPLE for the priority ladder: "if there is an open-pr and if it's red we must continue to work until making it green. That should be determined by our markdown tasks. You know we already have empty/checked boxes."
@@ -5490,6 +5529,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             "THIS IS A HOOK BUG: the pr-babysit finish-line check failed: %s: %s"
             % (type(exc).__name__, str(exc)[:120]),
         )
+    R.begin("landing-stack")
     # ---- THE LANDING STACK (agent/plans/PLAN-two-track-merge-dev.md LT19, wl_stack): read from the session's own tree, never the mapped root, since the landing tree's root is the main checkout. A landing branch already merged while the record still names it blocks from effort low and advises at quiet (`landing-stack` in effort.json; off the FLOOR since 2026-11-22) once its release is green (`landing_released`, agent/plans/PLAN-simple-two-tree-loop.md D3): promotion runs before anything else is built on it. Until then the merged branch rides the advisory queue, since the development tree never waits on landing. A landing branch ahead of the development branch is advisory (`landing-behind`). No record, or the landing tree itself, reads nothing; the readers never raise.
     _ls_value = int(getattr(_loop, "landing_released", 0) or 0)
     _ls_released = _ls_value > 0
@@ -5545,6 +5585,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         outq_add(worklist, session_id, state_doc, "landing-behind", _ls_report, 1, refresh_min=0)
     else:
         outq_drop(state_doc, "landing-behind")
+    R.begin("loop-next")
     # ---- LOOP NEXT (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 7, operator addition 2026-10-03): after the PR's plan is finished and the PR merged, the turn is held until the next branch, plan and PR exist. One arm per loop state, each naming the exact commands; silent on an empty queue. After the CI read, so `pr-finish` above already decided this stop.
     # A BACKGROUND TASK OF THIS SESSION DOWNGRADES IT to an advisory (a pr-merge watch or a `ci-trace --wait` is the step being waited on), and the unreadable arm is bounded like ci-red.
     # SO DOES A PENDING RUN ON THE HEAD: /pr-merge needs CI Complete SUCCESS, so while the run is in progress there is nothing to merge yet, and blocking every stop only forces a no-op. Found 2026-10-06 on PR #597: the push hook's detached `ci-trace --wait --until-final` watch is not a background task of this session, so `live_bg` stayed false and the merge order blocked each stop of the wait.
@@ -5577,6 +5618,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 "THIS IS A HOOK BUG: the loop-next check failed: %s: %s"
                 % (type(exc).__name__, str(exc)[:120]),
             )
+    R.begin("idle-capacity")
     # ---- IDLE CAPACITY (agent/plans/PLAN-idle-writer-capacity.md D5, operator rulings R1-R3 of 2026-11-09): free writer slots and ready `[writer]` boxes meet. Names the boxes and the `/writers-now` line, never spawns. Runs in every phase (the call passes `phase=False`: a babysit or merge phase no longer stands it down); outranked (IDLE_OUTRANKED_BY), it rides the advisory queue. It reads only the PR's plan set, one plan per PR. The subject latch keeps an unchanged set from holding every stop: it surfaces again after 30 minutes or when the set changes.
     if _on_loop and _loop is not None and _roster is not None and not _roster.get("blind"):
         try:
@@ -5717,6 +5759,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 False,
                 M.V_AGENT_STILL_ABSENT % S.agent_session_slug(session_id),
             )
+    R.begin("big-pieces")
     # ---- THE BIG PIECES DRIFT (agent/plans/PLAN-stop-hook-rulings-campaign.md section 5). A well-shaped STATE.md carries `## Big pieces`; what it names is compared against the census's derived mark, so a section remembered across a rewrite rather than re-derived fires here. Rotating, idempotent per drift subject, and silent on any error.
     if something_remains and astate == "ok" and _atext:
         with contextlib.suppress(Exception):
@@ -5841,6 +5884,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     except Exception as exc:
         note_read_failure("phantom-identity", exc)
     # NO STOP-TIME DOCS-DRIFT CHECK since 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P1.3). It counted any commit under `.claude`, so hook work -- which the CI-overhaul design docs do not describe -- ordered edits to unrelated documents. The SessionStart block still reports DRIFTED or pending, which is where a fresh session reads the docs.
+    R.begin("checklist")
     # ---- v20: the /handoff checklist gate (agent/programs/<slug>/CHECKLIST.md) -------- WHY: /handoff wrote a design suite and INSTRUCTED, in prose, that the next session seed the worklist. Prose gates nothing, so a handoff whose PROMPT.md was ignored or compacted away dropped program work silently and nobody found out. CHECKLIST.md is the machine-readable half of the same
     # handoff: deliverables are FILE-VERIFIED (the tick is bookkeeping, the file is the truth) and waves are store-linked through the `cl:<slug>/<wN>` token, so both ends of the handoff are checkable rather than promised. See wl_checklist for the adjudication.
     try:
@@ -5922,6 +5966,7 @@ def run_stop(event, event_ok, worklist, hook_file):
                 mislabelled.append("#%s is in_progress but reads '%s'" % (tid, word))
             elif status == "pending" and word in ongoing_words:
                 mislabelled.append("#%s is pending but reads '%s'" % (tid, word))
+    R.begin("idle-detect")
     # ---- I6: static idle detection (v8; below the scan since v9) ------------ Disjoint from the stuck detector by geometry: stuck is active-but-futile and needs three stops; this is inactive-with-nothing-inbound, whose deadliest form produces NO further stops, so the counter never fires. Scoped to tasks: open [ ] items and undefaulted [?] already block above, and a worklist of
     # defaulted [?] is time-boxed autonomy, which may stop. Any live cron counts as a wake-up.
     idle_tasks = [
@@ -5931,6 +5976,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     ]
     if idle_tasks and not in_flight and not live_bg and not live_work_crons and not open_items:
         vadd("idle", False, M.V_IDLE % ", ".join("#" + i for i in idle_tasks[:8]))
+    R.begin("ladder-rungs")
     # ---- v10: the blocking ladder rungs. Rung 1 (ping) NEVER blocks; it rides the report below. Each blocking rung fired at most once per (item, stamp) -- see wl_liveness.ladder.
     facts = "\n".join("    " + w for w in worker_rows) or "    (no background tasks running)"
     if ladder_inv:
@@ -5960,9 +6006,11 @@ def run_stop(event, event_ok, worklist, hook_file):
             True,
             M.V_LADDER_RESOLVE % ("\n".join("    " + s for s in ladder_res), facts, me8),
         )
+    R.begin("store-freshness")
     # ---- THE STORE'S FRESHNESS VERDICT (agent/plans/PLAN-stop-hook-store-status.md D2): a stale or orphaned owned item that no check above names. It fires on every stop while the item stays stale, with no latch, because every exit is one the session completes alone.
     if wl_storestatus.blocking(_ss_rows):
         vadd("wl-stale", False, wl_storestatus.render_stale(_ss_rows, me8))
+    R.begin("ci-waiting")
     # ---- v12 CI-WAITING FORCE. The observed failure, three times in one night: the only thing in flight is a CI watch, the run is healthy, and the stop is a Remaining table while 30+ aged [?] sit untouched. When watching CI is ALL the in-flight work, waiting is not a valid stop: the aged backlog is demanded, oldest first, bounded per stop. Every named item has a single-turn solo
     # exit (do it and tick, execute its DEFAULT early, or re-justify with --defer, which resets its age below CI_FORCE_MIN_AGE), so pressure converts into action, never a deadlock.
     ci_watching, watch_desc = wl_ci.ci_watch_only(live_bg)
@@ -6100,6 +6148,7 @@ def run_stop(event, event_ok, worklist, hook_file):
         vadd("unstated", False, M.V_UNSTATED % ", ".join("#" + i for i in unstated))
     if mislabelled:
         vadd("mislabelled", False, M.V_MISLABELLED % "; ".join(mislabelled))
+    R.begin("plan-fidelity")
     # ---- v20 PLAN FIDELITY. Cheap when there is no approved plan (one bounded transcript scan, incremental after the first stop), and it spends a model call only when a plan EXISTS and the tracked items look coarse against it. A degraded run is QUEUED rather than blocked or dropped: the queue survives the block stops this session is likely to be having, so the note lands on the
     # first clean one instead of vanishing. The trade is that a session which never reaches a clean stop is told late, the same trade the agent hint already makes and for the same reason.
     # Paid (a model call); its verdict would be stood down in a cap-saturated wait anyway, so it is not bought.
@@ -6116,6 +6165,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     # DELIBERATELY NOT CHECKED: "no task is in_progress". A queue where everything is honestly parked is a legitimate state, and blocking on it would nag a session that is correctly waiting. The case that actually matters -- driving something while the operator's list still shows it pending -- is caught by the agreement check above, which fires when the message says "ongoing" and
     # the harness disagrees.
     # NOT CHECKED EITHER: an open task id the Remaining section omits. The `out-of-sync` check that demanded every id was retired (agent/plans/PLAN-stop-hook-store-status.md D6, box R1): the hook renders the item table from the store (wl_storestatus), so a copy in the message proves nothing the store does not.
+    R.begin("trapguard")
     # ---- TRAPGUARD RULE ERRORS (PLAN-trap-enforcement.md section 4.3.4), in the ALWAYS tier: the PostToolUse dispatcher skips a rule that raised, so the rule went silent on that call, and a guard failing silently is the exact trap that surface exists for. Not gated on remaining work -- the log is machine-wide and the failure is real whatever this session is doing.
     with contextlib.suppress(Exception):  # reading a ledger must never wedge a stop
         _tg_errors = wl_trapfires.errors_violation()
@@ -6144,6 +6194,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             M.V_NO_REMAINING,
         )
 
+    R.begin("admit")
     # ---- ADMISSION PREFILTER, ABOVE THE BLOCK EXIT (agent/plans/PLAN-stop-hook-continuity.md P0.4). wl_admit's docstring promises Tier R is appended "always, BEFORE any model call", and until 2026-09-24 that was false on every blocked stop: the prefilter sat after the block exit, so a busy session that admitted a mistake left no record at all. The regex pass is under 0.4 ms
     # with zero tokens; the model call stays on the judge path below. Recorded once per turn signature, so a turn that stays blocked across several stops is one row, not one per stop.
     admit_text = wl_admit.turn_text(event.get("transcript_path", "")) or last_msg
@@ -6158,6 +6209,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     _wisdom = wisdom_due(root, session_id, state_doc)
     if _wisdom:
         vadd("wisdom-due", True, _wisdom)
+    R.begin("effort")
     # ---- THE EFFORT LEVEL (agent/plans/PLAN-stop-hook-effort.md), applied ONCE, here, after every check has had its say and before the roster's honest suppression and the stand-down profiles: each violation blocks, rides the advisory queue in its place, or is dropped, by its threshold in .claude/config/effort.json. The FLOOR (wl_floor) blocks at every level, and STATE.md joins it while compaction is due.
     _compaction_due = astate in _COMPACTION_ASTATES and _ctx_late_band(session_id)
     # THE OUTCOME LEDGER (agent/plans/PLAN-stop-hook-effort-tuning.md T1): this stop's emissions get ids and earlier ones are classified into agent/ledgers/effort-outcomes.jsonl. Never raises.
@@ -6189,6 +6241,7 @@ def run_stop(event, event_ok, worklist, hook_file):
     violations = _effort_kept
     if bgwait_due and not any(k == "bg-report" for k, _a, _t in violations):
         bgwait_due = False  # turned down by the level, not delivered
+    R.begin("verdict")
     # ---- THE TREE'S PARKS (agent/plans/PLAN-two-track-merge-dev.md LT5, wl_prscope.tree_parks): a parked key's finding rides the advisory queue under its own key, the way the effort level moves one. An `always` finding (a check that raised) is never parked.
     violations = park_tree_keys(
         violations,
@@ -6550,6 +6603,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             }
         )
 
+    R.begin("judge")
     # ---- static checks clean. Ask a model whether stopping is honest. ------- v7: a fix-signal stop consults the judge even with an empty queue, because "I fixed it, all done" is exactly the stop the regression question exists for. v10: an identical world and message within the cache TTL reuses the last clean "stop" verdict instead of re-paying the call; fix signals always miss
     # (they change the world signature).
     #

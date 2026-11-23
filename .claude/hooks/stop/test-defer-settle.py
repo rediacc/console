@@ -24,7 +24,10 @@ import wl_defersettle as DS
 import wl_judge
 import wl_proc
 import wl_store
-import worklist as WL
+import worklist
+
+# The verbs live in wl_cli (PLAN-tooling-speed.md SP3); importing worklist binds it to the probed siblings.
+WL = worklist.CLI
 
 HERE = pathlib.Path(__file__).resolve().parent
 # ONE PRIVATE TMPDIR, removed at exit whatever happens: run_judge creates `$TMPDIR/claude-worklist/.judge`, and test_hooks_delegates fails any standalone suite that leaves an entry behind.

@@ -153,12 +153,12 @@ def test_t6_mutation_accepting_bare_evidence_flips_the_refusal(wl):
     wl.reg_repo()
     hooks = wl.base / "hooks"
     shutil.copytree(wlfix.STOP_DIR, hooks / "stop", ignore=shutil.ignore_patterns("__pycache__"))
-    path = hooks / "stop" / "worklist.py"
+    path = hooks / "stop" / "wl_cli.py"
     src = path.read_text(encoding="utf-8")
     old = "        bad = commit_ref_problem(root, rest, transcript)\n"
     assert src.count(old) == 1, "MUTATION FIXTURE BROKEN"
     path.write_text(src.replace(old, "        bad = None\n"), encoding="utf-8")
-    wl.hook = path
+    wl.hook = hooks / "stop" / "worklist.py"
     item = added(wl)
     got = wl.cli("--tick", wlfix.ME, item, "pytest rc=0, 12 passed")
     assert got.rc == 0, "the mutated hook still refused: %s" % got.err[:300]
