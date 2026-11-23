@@ -5,6 +5,8 @@
  * Used by account-server, renet, and CLI.
  */
 
+import type { ForensicsClaim } from '../forensics/claim.js';
+
 /**
  * Subscription plan codes.
  */
@@ -146,6 +148,12 @@ export interface RepoLicense {
   prevChainHash: string;
   issuedByEmail?: string;
   companyName?: string;
+  /**
+   * The forensics claim (PLAN-forensics-shipping D9), stamped at issue and renewal from
+   * the plan and the repo's forensics settings. Absent on blobs issued before it existed,
+   * which renet reads as disabled.
+   */
+  forensics?: ForensicsClaim;
 }
 
 export interface SignedRepoLicense {
