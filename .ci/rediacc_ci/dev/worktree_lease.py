@@ -68,7 +68,7 @@ class LeaseRefusedError(RuntimeError):
 
 @contextlib.contextmanager
 def _locked(records):
-    """One lease at a time through the cap and the name, so same-message spawns cannot both take the last slot."""
+    """One lease at a time through the name, so same-message spawns cannot both take one id."""
     records.mkdir(parents=True, exist_ok=True)
     with (records / ".lock").open("w", encoding="utf-8") as handle:
         fcntl.flock(handle, fcntl.LOCK_EX)
@@ -187,29 +187,19 @@ def _add_exclude_lines(git_dir):
 
 
 def _reserve(root, name, owner):
-    """Under the lock: the cap, the id, and the empty directory that holds the slot."""
+    """Under the lock: the id, and the empty directory that claims it. No count of trees on disk refuses a lease (agent/plans/PLAN-unlimited-writers.md); `gc` collects the landed ones."""
     holder = root / spike.HOLDER
     git_dir = root / ".git"
     records = git_dir / RECORD_DIR
     with _locked(records):
         holder.mkdir(parents=True, exist_ok=True)
         trees = trees_on_disk(holder)
-        cap = _hook_module("wl_roster").writer_cap(root)
-        if len(trees) >= cap:
-            message = (
-                "%d tree(s) on disk at writer_cap %d: land the finished ones, then ./run.sh worktree gc"
-                % (
-                    len(trees),
-                    cap,
-                )
-            )
-            raise LeaseRefusedError(message)
         lease_id = name or _next_id(owner, trees, records)
         path = holder / lease_id
         if os.path.lexists(path) or (records / ("%s.json" % lease_id)).exists():
             message = "lease %s already exists" % lease_id
             raise LeaseRefusedError(message)
-        # The directory comes last: no `try` covers this function, and an empty one left behind holds a slot `trees_on_disk` counts.
+        # The directory comes last: no `try` covers this function, and an empty one left behind holds an id `_next_id` skips.
         _add_exclude_lines(git_dir)
         path.mkdir()
     return lease_id, path

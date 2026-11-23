@@ -36,8 +36,8 @@ EMPTY_LOCK = {
 }
 # Every lease commit of a fixture carries both trailers `land` demands; this one serves no plan box (PLAN-tick-tracking T2).
 TRAILERS = "PR-TASK: 1f877343\nPlan-Box: none -- fixture commit that serves no plan box\n"
-# wl_roster.WRITER_CAP, restated: the lease verb caps the trees on disk with it.
-WRITER_CAP = 25
+# Past the old tree cap of 25, which agent/plans/PLAN-unlimited-writers.md removed: the lease verb now admits any number of trees.
+CROWD = 30
 BUILD_JS = (
     "const fs = require('fs');\n"
     "fs.mkdirSync('dist', { recursive: true });\n"
@@ -376,29 +376,23 @@ def test_lease_refuses_a_bad_argument_before_any_git(tmp_path, args):
 
 
 def fill_to(repo, n):
-    """`n` plain directories in the holder: `trees_on_disk` counts every directory, so they hold slots of the fixed cap (wl_roster.WRITER_CAP, 25) without a git tree each."""
+    """`n` plain directories in the holder: `trees_on_disk` counts every directory, so they stand in for trees without a git tree each."""
     holder = repo.root / spike.HOLDER
     for i in range(n):
         (holder / ("filler-%02d" % i)).mkdir(parents=True, exist_ok=True)
 
 
-def test_lease_writer_cap_refuses_the_tree_past_the_cap(repo):
-    # A `writer_cap: 1` line moves nothing: the cap is fixed in code (agent/plans/PLAN-simple-two-tree-loop.md ruling 11).
-    spike.write(
-        repo.root / "agent" / "plans" / "QUEUE.md",
-        "## Settings\n\n```stop-hook\nwriter_cap: 1 -- fixture\n```\n",
-    )
-    fill_to(repo, WRITER_CAP - 1)
+def test_lease_past_the_old_tree_cap_is_admitted(repo):
+    fill_to(repo, CROWD)
     first = run_lease(repo.root, "--name", "one")
     assert first.returncode == 0, first.stderr
     second = run_lease(repo.root, "--name", "two")
-    assert second.returncode == 1
-    assert "%d tree(s) on disk at writer_cap %d" % (WRITER_CAP, WRITER_CAP) in second.stderr
-    assert "./run.sh worktree gc" in second.stderr
-    assert second.stdout == ""
+    assert second.returncode == 0, second.stderr
+    assert pathlib.Path(second.stdout.strip().splitlines()[-1]) == repo.root / spike.HOLDER / "two"
     names = holder_names(repo)
     assert "one" in names
-    assert "two" not in names
+    assert "two" in names
+    assert len(names) == CROWD + 2, names
 
 
 def test_lease_generated_ids_count_up_and_exclude_lines_land_once(repo):
@@ -525,13 +519,14 @@ def test_lease_hook_prints_the_tree_and_records_the_agent(repo):
     assert (record["owner"], record["agent"]) == ("abcd1234", "a123")
 
 
-def test_lease_hook_over_the_cap_exits_non_zero_with_the_message(repo):
+def test_lease_hook_past_the_old_tree_cap_prints_the_tree(repo):
     make_tree(repo, "first")
-    fill_to(repo, WRITER_CAP - 1)
+    fill_to(repo, CROWD)
     done = run_worktree_hook(repo.root, "lease-hook", {"name": "agent-b", "session_id": "abcd1234"})
-    assert done.returncode != 0
-    assert "writer_cap %d" % WRITER_CAP in done.stderr
-    assert done.stdout == ""
+    assert done.returncode == 0, done.stderr
+    assert (
+        pathlib.Path(done.stdout.strip().splitlines()[-1]) == repo.root / spike.HOLDER / "agent-b"
+    )
 
 
 def test_gc_hook_on_a_dirty_tree_exits_non_zero_with_the_tree_intact(repo):
