@@ -27,7 +27,7 @@ import os
 import re
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import _cases, _writes
 from rediacc_hooks.guards import block_live_proof_ledger_write as EDIT
 
 __getattr__ = _cases.lazy("block_live_proof_ledger_shell_write", "EDGE_CASES", "LEDGER_REL")
@@ -42,7 +42,7 @@ DEFECT = ("    if not word:\n        return False", "    if True:\n        retur
 LEDGER_PATH = EDIT.LEDGER_PATH
 LEDGER_NAME = "live-proof.jsonl"
 INTERPRETERS = shellscan.INTERPRETER_NAMES
-_PATH_MAX = 4096
+_PATH_MAX = _writes.PATH_MAX
 _GLOB = frozenset("*?[")
 
 # Code that opens a file for writing, appends to one, replaces or removes one (the review-file guard's reading plus the append verbs this ledger is written with).
@@ -85,11 +85,7 @@ MESSAGE = (
 )
 
 
-def _base(where, cwd):
-    """The absolute directory a run in `where` (`shellscan.write_directory`'s answer) executes in, or None when the hook's own directory is not an absolute path."""
-    if not cwd or not os.path.isabs(str(cwd)):
-        return None
-    return os.path.join(str(cwd), str(where)) if where else str(cwd)
+_base = _writes.run_dir
 
 
 def _is_ledger(word, base=None):
@@ -111,8 +107,7 @@ def _is_ledger(word, base=None):
     return any(LEDGER_PATH.search(p.replace("\\", "/")) for p in landed)
 
 
-def _operands(argv):
-    return [a for a in argv if not (a.startswith("-") and len(a) > 1)]
+_operands = _writes.operands
 
 
 def _operand_write(run, name, argv, base):

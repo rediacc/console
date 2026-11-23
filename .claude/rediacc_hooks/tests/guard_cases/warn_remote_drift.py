@@ -1,29 +1,10 @@
 """The test tables of `warn_remote_drift`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
 
-import subprocess
+from rediacc_hooks.tests.guard_cases import _common
 
 
 def _fixture_git(cwd, *args):
-    """`git` for the fixture builder, with the ambient config shut out."""
-    subprocess.run(
-        ["git", *args],
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        env={
-            "PATH": "/usr/bin:/bin:/usr/local/bin",
-            "HOME": "/nonexistent",
-            "GIT_AUTHOR_NAME": "Fixture",
-            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
-            "GIT_COMMITTER_NAME": "Fixture",
-            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
-            "GIT_CONFIG_GLOBAL": "/dev/null",
-            "GIT_CONFIG_SYSTEM": "/dev/null",
-            # Pinned dates make every fixture commit id the same on every run, and the lease refusal names one of them.
-            "GIT_AUTHOR_DATE": "2026-08-31T12:00:00Z",
-            "GIT_COMMITTER_DATE": "2026-08-31T12:00:00Z",
-        },
-    )
+    _common.fixture_git(cwd, *args, date="2026-08-31T12:00:00Z")
 
 
 def _behind_tree(path):

@@ -1,28 +1,10 @@
 """The test tables of `block_rebase_over_foreign_dirt`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
 
-import subprocess
+from rediacc_hooks.tests.guard_cases import _common
 
 
 def _fixture_git(cwd, *args):
-    """`git` for the fixture builders, with the ambient config shut out."""
-    subprocess.run(
-        ["git", *args],
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        env={
-            "PATH": "/usr/bin:/bin:/usr/local/bin",
-            "HOME": "/nonexistent",
-            "GIT_AUTHOR_NAME": "Fixture",
-            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
-            "GIT_COMMITTER_NAME": "Fixture",
-            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
-            "GIT_AUTHOR_DATE": "2026-01-01T00:00:00+00:00",
-            "GIT_COMMITTER_DATE": "2026-01-01T00:00:00+00:00",
-            "GIT_CONFIG_GLOBAL": "/dev/null",
-            "GIT_CONFIG_SYSTEM": "/dev/null",
-        },
-    )
+    _common.fixture_git(cwd, *args, date="2026-01-01T00:00:00+00:00")
 
 
 # Every path the worlds below commit, so each world differs from the others only in what it then modifies.

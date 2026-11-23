@@ -26,7 +26,7 @@ import os
 import re
 
 from rediacc_hooks import hookio, model_invocation, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import _cases, _writes
 
 __getattr__ = _cases.lazy("block_user_only_command_shell_write", "EDGE_CASES", "_C", "_K")
 
@@ -41,21 +41,16 @@ DEFECT = ("    if not word:\n        return False", "    if True:\n        retur
 _PREFILTER = re.compile(
     r"%s|commands|skills|model-invocation-exceptions" % model_invocation.KEY_WORDS, re.IGNORECASE
 )
-WRITERS = ("echo", "printf", "cat")
+WRITERS = _writes.WRITERS
 INTERPRETERS = shellscan.INTERPRETER_NAMES
-WRITE_CODE = re.compile(
-    r"open\([^)]*,\s*(mode\s*=\s*)?['\"][^'\"]*[wax+]|write_text|write_bytes|\.write\(|writeFileSync"
-    r"|appendFileSync|os\.replace|os\.rename|shutil\.(copy|move)"
-)
+WRITE_CODE = _writes.WRITE_CODE
 # The first command or skill path an interpreter program names, for the message.
 # A match starts only at a word boundary: without the lookbehind every position of a long word was a start and the search was quadratic (2 MiB of `#` in a script read by path pinned the hook at 100% CPU, measured 3 s at 20,000 characters).
 _NAMED_PATH = re.compile(
     r"(?<![^\s'\"])[^\s'\"]*\.claude/(?:commands|skills)[^\s'\"]*", re.IGNORECASE
 )
-_SED_SUB = re.compile(
-    r"(?:^|[;\s{])s(?P<d>[^\w\s\\])(?P<pat>(?:\\.|(?!(?P=d)).)*)(?P=d)(?P<rep>(?:\\.|(?!(?P=d)).)*)(?P=d)"
-)
-_SED_TEXT = re.compile(r"(?:^|[;\s])(?:\d+|\$|/[^/]*/)?\s*[aic]\\?\s*(?P<text>[^;\n]*)")
+_SED_SUB = _writes.SED_SUB
+_SED_TEXT = _writes.SED_TEXT
 
 MESSAGE = (
     "BLOCKED: this command breaks the model-invocation rule for a slash command or skill file (%s).\n"
@@ -104,14 +99,10 @@ def _is_list(word, prefix="", base=None):
 
 # A WORD IS ALSO READ WHERE THE DISK PUTS IT (#816a7c93, as block_review_file_shell_write reads it). With `clink` a link to `.claude/commands/sub`, `cd clink && ... | tee x.md` and `echo ... > clink/x.md` wrote the key into a command file while no word, and no directory text the walk keeps, spells a command directory: the lexical reading allowed both (rc 0). `base` is the absolute directory the run executes in.
 # Read only for a word short enough to be a path: a heredoc body is not one, and resolving it would only spend system calls.
-_PATH_MAX = 4096
+_PATH_MAX = _writes.PATH_MAX
 
 
-def _base(here, cwd):
-    """The absolute directory a run in `here` (`shellscan.write_directory`'s answer) executes in, or None when the hook's own directory is not an absolute path."""
-    if not cwd or not os.path.isabs(str(cwd)):
-        return None
-    return os.path.join(str(cwd), str(here)) if here else str(cwd)
+_base = _writes.run_dir
 
 
 def _on_disk(word, base):
@@ -155,63 +146,34 @@ def _reaches_scope(cmd, cwd):
     return False
 
 
-_LITERAL = re.compile(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`([^`\n]*)`")
+_LITERAL = _writes.LITERAL
 
 
-def _literals(text):
-    """Every quoted string literal in `text` (single, double or backquoted), unescaped no further."""
-    for m in _LITERAL.finditer(text):
-        yield next(g for g in m.groups() if g is not None)
+_literals = _writes.literals
 
 
 def _code_writes_through_disk(code, base, program=None):
-    """Interpreter code that writes, through a link, into a command or skill directory or the exception list while its text spells none of them: `open('clink/x.md','w')` with `clink` a link into one (review 84fdeff8.2).
-
-    A literal that spells the directory or the list is the precise readings' to judge; this reading is for a path that reaches it only on disk. A Python `program` that parses is judged by its write TARGETS through `shellscan.python_writes_to`, so a literal bound to a name on one line and written on another is followed, and a link that is only read is not a write (review f25b1360.2). Other code is read line by line, with a name assigned from such a literal standing for it on a later line.
-    """
-
-    def through_link(value):
-        return (
+    """Interpreter code that writes, through a link, into a command or skill directory or the exception list while its text spells none of them: `open('clink/x.md','w')` with `clink` a link into one (review 84fdeff8.2). A literal that spells the directory or the list is the precise readings' to judge; `_writes.code_writes_through_disk` reads the rest."""
+    return _writes.code_writes_through_disk(
+        code,
+        lambda value: (
             isinstance(value, str)
             and not (
                 model_invocation.names_scope_dir(value) or model_invocation.is_exception_list(value)
             )
             and _in_scope_on_disk(value, base)
-        )
-
-    if program is not None:
-        verdict = shellscan.python_writes_to(program, through_link)
-        if verdict is not None:
-            return verdict
-    names = {
-        m.group(1)
-        for m in re.finditer(r"\b([A-Za-z_$][\w$]*)\s*=\s*([^\n=]*)", code)
-        if any(through_link(lit) for lit in _literals(m.group(2)))
-    }
-    for line in code.splitlines():
-        if not WRITE_CODE.search(line):
-            continue
-        if any(through_link(lit) for lit in _literals(line)):
-            return True
-        if any(re.search(r"(?<![\w$])%s(?![\w$])" % re.escape(n), line) for n in names):
-            return True
-    return False
+        ),
+        WRITE_CODE,
+        program,
+    )
 
 
-def _operands(argv):
-    """`run.argv` is the ARGUMENTS, without the command name."""
-    return [a for a in argv if not (a.startswith("-") and len(a) > 1)]
+_operands = _writes.operands
 
 
 def _run_operands(run, argv):
-    """`_operands`, with a `find -exec` run's `{}` read as what the find walks (#503f0ba8)."""
-    ops = _operands(argv)
-    if run.launch is None or run.launch.launcher != "find":
-        return ops
-    out: list[str] = []
-    for a in ops:
-        out.extend(run.launch.starts if "{}" in a else [a])
-    return out
+    """`_operands`, with a `find -exec` run's `{}` read as the starting points of the find that launched it (`_writes.find_starts`)."""
+    return _writes.find_starts(run, _operands(argv))
 
 
 def _lands(source, dest, into):

@@ -1,29 +1,8 @@
 """The test tables of `warn_hook_change`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards._cases.lazy`."""
 
-import subprocess
+from rediacc_hooks.tests.guard_cases import _common
 
-
-def _fixture_git(cwd, *args):
-    """`git` for the fixture builders below, with the ambient config shut out.
-
-    GIT_CONFIG_GLOBAL and GIT_CONFIG_SYSTEM are pointed at /dev/null for the same reason the shared fixtures in the differential do it: a host `commit.gpgsign` or a `core.hooksPath` would otherwise reach into a tree that is supposed to be a controlled world.
-    """
-    subprocess.run(
-        ["git", *args],
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        env={
-            "PATH": "/usr/bin:/bin:/usr/local/bin",
-            "HOME": "/nonexistent",
-            "GIT_AUTHOR_NAME": "Fixture",
-            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
-            "GIT_COMMITTER_NAME": "Fixture",
-            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
-            "GIT_CONFIG_GLOBAL": "/dev/null",
-            "GIT_CONFIG_SYSTEM": "/dev/null",
-        },
-    )
+_fixture_git = _common.fixture_git
 
 
 def _repo_with_staged(path, hook_files):

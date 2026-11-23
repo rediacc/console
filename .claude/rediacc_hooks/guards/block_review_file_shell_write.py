@@ -25,7 +25,7 @@ import shlex
 import types
 
 from rediacc_hooks import hookio, shellscan
-from rediacc_hooks.guards import _cases
+from rediacc_hooks.guards import _cases, _writes
 
 __getattr__ = _cases.lazy("block_review_file_shell_write", "EDGE_CASES", "R")
 
@@ -51,7 +51,7 @@ WRITE_CODE = re.compile(
 SHELL_CALL = re.compile(
     r"\b(system|popen|exec(Sync|File|FileSync)?|spawn(Sync)?|subprocess|check_output|check_call|getoutput|getstatusoutput|qx|Popen3?|Open3)\b|`"
 )
-_LITERAL = re.compile(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`([^`\n]*)`")
+_LITERAL = _writes.LITERAL
 # How deep a command handed to a shell from inside a program is followed; a program that runs a program that runs a shell is two.
 MAX_DEPTH = 4
 
@@ -83,14 +83,10 @@ def _is_review(word, cwd=None, base=None):
 
 # A WORD IS ALSO READ WHERE THE DISK PUTS IT (#816a7c93). With `lnk` a link to `agent/reviews/sub`, `cd lnk && tee x.md`, `echo x > lnk/x.md` and `cp /tmp/a lnk/` write review files while no word, and no directory text the walk keeps, spells the review directory: the lexical reading allowed all three (rc 0), logical `cd` or physical. `base` is the absolute directory the run executes in, and the word is resolved against it on disk.
 # Read only for a word short enough to be a path: a heredoc body or a commit message is not one, and resolving it would only spend system calls.
-_PATH_MAX = 4096
+_PATH_MAX = _writes.PATH_MAX
 
 
-def _base(where, cwd):
-    """The absolute directory a run in `where` (`shellscan.write_directory`'s answer) executes in, or None when the hook's own directory is not an absolute path."""
-    if not cwd or not os.path.isabs(str(cwd)):
-        return None
-    return os.path.join(str(cwd), str(where)) if where else str(cwd)
+_base = _writes.run_dir
 
 
 def _lands_in_reviews(word, base):
@@ -472,42 +468,21 @@ def _globs_reviews(cmd, cwd):
     return False
 
 
-def _literals(text):
-    """Every quoted string literal in `text` (single, double or backquoted), unescaped no further."""
-    for m in _LITERAL.finditer(text):
-        yield next(g for g in m.groups() if g is not None)
+_literals = _writes.literals
 
 
 def _code_writes_through_disk(code, base, program=None):
-    """Interpreter code that writes, through a link, to a path inside the review directory that its text never spells: `open('lnk/x.md','w')` with `lnk` a link into it (review 84fdeff8.1).
-
-    A literal that spells the directory is the precise readings' to judge (a read-only `os.open`, a URL); this reading is for a path that reaches it only on disk. A Python `program` that parses is judged by its write TARGETS through `shellscan.python_writes_to`, so a literal bound to a name on one line and written on another is followed, and a link that is only read is not a write (review f25b1360.1, .3). Other code is read line by line, with a name assigned from such a literal standing for it on a later line.
-    """
-
-    def through_link(value):
-        return (
+    """Interpreter code that writes, through a link, to a path inside the review directory that its text never spells: `open('lnk/x.md','w')` with `lnk` a link into it (review 84fdeff8.1). A literal that spells the directory is the precise readings' to judge; `_writes.code_writes_through_disk` reads the rest."""
+    return _writes.code_writes_through_disk(
+        code,
+        lambda value: (
             isinstance(value, str)
             and not REVIEW_WORD.search(value)
             and _lands_in_reviews(value, base)
-        )
-
-    if program is not None:
-        verdict = shellscan.python_writes_to(program, through_link)
-        if verdict is not None:
-            return verdict
-    names = {
-        m.group(1)
-        for m in re.finditer(r"\b([A-Za-z_$][\w$]*)\s*=\s*([^\n=]*)", code)
-        if any(through_link(lit) for lit in _literals(m.group(2)))
-    }
-    for line in code.splitlines():
-        if not WRITE_CODE.search(line):
-            continue
-        if any(through_link(lit) for lit in _literals(line)):
-            return True
-        if any(re.search(r"(?<![\w$])%s(?![\w$])" % re.escape(n), line) for n in names):
-            return True
-    return False
+        ),
+        WRITE_CODE,
+        program,
+    )
 
 
 _GLOB = frozenset("*?[")
@@ -625,8 +600,7 @@ def _without_ref_operands(run, argv):
     return out
 
 
-def _operands(argv):
-    return [a for a in argv if not (a.startswith("-") and len(a) > 1)]
+_operands = _writes.operands
 
 
 def _run_operands(run, argv):
