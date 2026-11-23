@@ -90,7 +90,19 @@ import {
   scriptsMapOf,
   WHOLE_TREE_GLOB,
 } from './input-hash';
-import { stepDurationsMs } from './lanes';
+import {
+  baselineCostsOf,
+  HEAVY_RSS_MB,
+  heavyOf,
+  type LaneCapabilities,
+  lanePricesFrom,
+  liveStepDurations,
+  measuredHeavyFindings,
+  readBaselineCosts,
+  type ShardInput,
+  shardPlan,
+  stepDurationsMs,
+} from './lanes';
 import { learnedSelftest } from './learned-selftest';
 import { grantFromEnv, leaseClientSelftest, openLease, type RunnerLease } from './lease-client';
 import { seedReceipt } from './lease-seed';
@@ -2125,6 +2137,172 @@ function listRows(specs: readonly GateSpec[], selected: ReadonlySet<string>): Li
 }
 
 /**
+ * W14: two fixture lanes priced only by a gate-costs-shaped baseline split into legs of equal cost, where pricing by count (no map) leaves one leg twice the other; a step p90 outranks the baseline for the same id; `heavy` follows the measurement where there is one and the declaration where there is not; and the real lock agrees with the real gate-costs.json. Returns the failures.
+ */
+function laneCostSelftest(): string[] {
+  const failures: string[] = [];
+  const cap = (job: string): LaneCapabilities => ({
+    job,
+    runsOn: 'ubuntu-latest',
+    timeoutMinutes: 30,
+    submodules: [],
+    node: true,
+    tools: [],
+  });
+  const caps = new Map([
+    ['lane-a', cap('lane-a')],
+    ['lane-b', cap('lane-b')],
+  ]);
+  const gate = (id: string, job: string, heavy?: boolean): ShardInput => ({
+    id,
+    ci: { kind: 'step', job, step: id },
+    ...(heavy === true ? { heavy } : {}),
+  });
+  const lock: ShardInput[] = [
+    gate('a1', 'lane-a'),
+    gate('a2', 'lane-a'),
+    gate('a3', 'lane-a'),
+    gate('a4', 'lane-a'),
+    gate('b1', 'lane-b'),
+    gate('b2', 'lane-b'),
+    gate('b3', 'lane-b'),
+    gate('b4', 'lane-b'),
+  ];
+  // Walls in seconds, the gate-costs.json shape: a1 alone costs what a2..a4 cost together, and so do b4 + b3 against b1 + b2. b4's baseline says 5 s, its step p90 50 s: the step wins.
+  const wall: Record<string, number> = {
+    a1: 60,
+    a2: 20,
+    a3: 20,
+    a4: 20,
+    b1: 30,
+    b2: 30,
+    b3: 10,
+    b4: 5,
+  };
+  const baseline = baselineCostsOf({
+    gates: Object.fromEntries(
+      Object.entries(wall).map(([id, w]) => [id, { cpu_s: w, wall_s: w, peak_rss_mb: 100 }])
+    ),
+  });
+  const prices = lanePricesFrom({ b4: 50_000 }, baseline);
+  if (prices.b4 !== 50_000 || prices.a1 !== 60_000)
+    failures.push(
+      `lanePricesFrom: the step p90 must outrank the baseline wall, got ${JSON.stringify(prices)}`
+    );
+  const legCosts = (
+    plan: ReturnType<typeof shardPlan>,
+    lane: string,
+    price: Readonly<Record<string, number>>
+  ): number[] => {
+    if ('error' in plan) return [];
+    const l = plan.lanes.find((x) => x.lane === lane);
+    return (l?.shards ?? []).map((sh) => sh.ids.reduce((n, id) => n + (price[id] ?? 0), 0));
+  };
+  const measured = shardPlan(lock, caps, { 'lane-a': 2, 'lane-b': 2 }, prices);
+  for (const lane of ['lane-a', 'lane-b']) {
+    const c = legCosts(measured, lane, prices);
+    if (c.length !== 2 || c[0] !== 60_000 || c[1] !== 60_000)
+      failures.push(
+        `${lane} priced by the baseline must split into two 60 s legs, got ${'error' in measured ? measured.error : JSON.stringify(c)}`
+      );
+  }
+  const counted = shardPlan(lock, caps, { 'lane-a': 2, 'lane-b': 2 });
+  const countedA = legCosts(counted, 'lane-a', prices);
+  if (countedA.length !== 2 || Math.max(...countedA) <= 60_000)
+    failures.push(
+      `CONTROL: lane-a priced by count must NOT balance its cost (the baseline is what balances it), got ${JSON.stringify(countedA)}`
+    );
+
+  // HEAVY: measured light and declared heavy is a finding; measured over the line and undeclared is one; an unmeasured declared heavy keeps its flag, in heavyOf and in the plan.
+  const hb = baselineCostsOf({
+    gates: {
+      light: { cpu_s: 1, wall_s: 1, peak_rss_mb: 700 },
+      big: { cpu_s: 1, wall_s: 1, peak_rss_mb: 5000 },
+      bigdecl: { cpu_s: 1, wall_s: 1, peak_rss_mb: 5000 },
+      norss: { cpu_s: 1, wall_s: 1 },
+    },
+  });
+  const hlock = [
+    { id: 'light', heavy: true },
+    { id: 'big' },
+    { id: 'bigdecl', heavy: true },
+    { id: 'norss', heavy: true },
+    { id: 'unmeasured', heavy: true },
+  ];
+  const hf = measuredHeavyFindings(hlock, hb);
+  if (
+    hf.length !== 2 ||
+    !hf.some((f) => f.startsWith('light: declared `heavy`') && f.includes('drop `heavy: true`')) ||
+    !hf.some((f) => f.startsWith('big: measured at 5000 MB') && f.includes('Add `heavy: true`'))
+  )
+    failures.push(
+      `measuredHeavyFindings: exactly light (drop) and big (add), got ${JSON.stringify(hf)}`
+    );
+  if (
+    heavyOf({ id: 'light', heavy: true }, hb) ||
+    !heavyOf({ id: 'big' }, hb) ||
+    !heavyOf({ id: 'unmeasured', heavy: true }, hb) ||
+    !heavyOf({ id: 'norss', heavy: true }, hb)
+  )
+    failures.push('heavyOf: the measurement decides where it exists, the declaration elsewhere');
+  const twoHeavy = shardPlan(
+    [
+      gate('u1', 'lane-a', true),
+      gate('u2', 'lane-a', true),
+      gate('u3', 'lane-a'),
+      gate('u4', 'lane-a'),
+    ],
+    caps,
+    { 'lane-a': 2 },
+    lanePricesFrom({}, baselineCostsOf({ gates: { u3: { cpu_s: 1, wall_s: 1, peak_rss_mb: 50 } } }))
+  );
+  const heavyLegs =
+    'error' in twoHeavy ? [] : (twoHeavy.lanes[0]?.shards ?? []).map((sh) => sh.heavy);
+  if (heavyLegs.join() !== '1,1')
+    failures.push(
+      `CONTROL: two unmeasured heavy gates keep their flag and land one per leg, got ${'error' in twoHeavy ? twoHeavy.error : JSON.stringify(heavyLegs)}`
+    );
+
+  // THE FILE WIRING, on a temp root rather than the real one (the selftest's declared paths hold gate-costs.json, not lane-durations.json): liveStepDurations prices a gate the step table lacks at its baseline wall, and keeps the step figure where both exist.
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-lanes-'));
+  try {
+    fs.mkdirSync(path.join(root, '.ci', 'config'), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, '.ci', 'config', 'lane-durations.json'),
+      JSON.stringify({ gate_step_p90_seconds: { both: 9 } })
+    );
+    fs.writeFileSync(
+      path.join(root, '.ci', 'config', 'gate-costs.json'),
+      JSON.stringify({
+        gates: { both: { cpu_s: 1, wall_s: 1 }, onlyBase: { cpu_s: 2, wall_s: 3 } },
+      })
+    );
+    const wired = liveStepDurations(root);
+    if (wired.both !== 9_000 || wired.onlyBase !== 3_000)
+      failures.push(
+        `liveStepDurations must take the step p90 first and the baseline wall for the rest, got ${JSON.stringify(wired)}`
+      );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+
+  // THE REAL TREE: gate-costs.json is read (an empty baseline would make the check below vacuous), and no declared `heavy` disagrees with a measurement.
+  const realBaseline = readBaselineCosts(REPO_ROOT);
+  const measuredCount = Object.keys(realBaseline).length;
+  if (measuredCount < 100)
+    failures.push(
+      `the real .ci/config/gate-costs.json yields ${measuredCount} measured gate(s); under 100 means the baseline is not being read and every lane falls back to the median`
+    );
+  const withRss = Object.values(realBaseline).filter((b) => b.rssMb !== undefined).length;
+  const heavyFindings = measuredHeavyFindings(GATES, realBaseline);
+  for (const f of heavyFindings) failures.push(`real lock: ${f}`);
+  process.stderr.write(
+    `ci-runner: baseline: ${measuredCount} gate(s) in gate-costs.json, ${withRss} with a peak RSS; heavy: ${GATES.filter((g) => g.heavy === true).length} declared, ${heavyFindings.length === 0 ? `every measured one agrees with the ${HEAVY_RSS_MB} MB line` : `${heavyFindings.length} disagree with the ${HEAVY_RSS_MB} MB line`}\n`
+  );
+  return failures;
+}
+
+/**
  * W13: a runPool or planAdmission call that names no rule runs `cores`. Three gates each measured at half a core (1 cpu-s over 2 s wall) on `jobs` 2: the core budget fits all three at once (1.5 <= 2), the slots rule only two. Returns the failures.
  */
 async function defaultSchedSelftest(): Promise<string[]> {
@@ -2974,6 +3152,9 @@ async function selftest(): Promise<number> {
   // W13 (PLAN-ciquick-cpu, carrying PLAN-ci-quick-cpu-scheduling P2): `cores` is the pool's OWN default, not only the runner's, so a caller that names no rule packs by measured width.
   const schedDefault = await defaultSchedSelftest();
   require_(schedDefault.length === 0, schedDefault.join('\n'));
+  // W14 (PLAN-ciquick-cpu, carrying PLAN-ci-quick-cpu-scheduling P4): lanes balance on the baseline cost, and `heavy` is the measurement wherever gate-costs.json has one, on fixtures and on the real lock.
+  const lanesCost = laneCostSelftest();
+  require_(lanesCost.length === 0, lanesCost.join('\n'));
 
   // THE INCREMENTAL RECEIPT (input-hash.ts and the carry in this file): INCREMENTAL-PROOF-1..3 and their controls.
   const inc = incrementalSelftest(os.tmpdir());

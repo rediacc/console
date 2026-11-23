@@ -587,7 +587,7 @@ function unitCost(unit: Unit, durations: Readonly<Record<string, number>> | unde
 }
 
 /**
- * THE CURRENCY, after the lock lost `weight` (operator ruling 2026-10-05). Two currencies never mix in one lane: milliseconds when a `durations` map prices the lane, otherwise a count (one per gate, or its declared `cores.min`). `withMeasuredFallback` is what keeps them apart. A map that prices SOME of a lane's units used to leave the rest at a count of 1 beside the others' 10,000 ms, so an unmeasured gate weighed nothing and LPT stacked them all in one shard; an unmeasured member now costs the MEDIAN measured member of the lane, a neutral guess in the same unit. A lane the map prices not at all (no id matches) stays in counts, byte-identical to no map.
+ * THE CURRENCY, after the lock lost `weight` (operator ruling 2026-10-05). Two currencies never mix in one lane: milliseconds when a `durations` map prices the lane, otherwise a count (one per gate, or its declared `cores.min`). `withMeasuredFallback` is what keeps them apart. A map that prices SOME of a lane's units used to leave the rest at a count of 1 beside the others' 10,000 ms, so an unmeasured gate weighed nothing and LPT stacked them all in one shard; an unmeasured member now costs the MEDIAN measured member of the lane, a neutral guess in the same unit. A lane the map prices not at all (no id matches) stays in counts, byte-identical to no map. The live map already prices a gate with no step p90 at its baseline wall (`lanePricesFrom`, W14), so the median now stands in only for a gate neither instrument measured.
  */
 function withMeasuredFallback(
   entries: readonly ShardInput[],
@@ -618,15 +618,109 @@ export function stepDurationsMs(laneDurations: unknown): Record<string, number> 
   return out;
 }
 
-/** `stepDurationsMs` over `<root>/.ci/config/lane-durations.json`, the LIVE measurement and nothing else; {} when the file cannot be read, which prices every lane by count. Only gate-bind's re-plan decision reads this directly; every other planner reads `measuredStepDurations`. */
-export function liveStepDurations(root: string): Record<string, number> {
+/**
+ * One gate's BASELINE COST from `.ci/config/gate-costs.json` (W14 of agent/plans/PLAN-ciquick-cpu.md, carrying PLAN-ci-quick-cpu-scheduling.md P4): the median of the nightly serial capture on a CI runner (`run.ts --quick --jobs 1`), so uncontended and in CI's own seconds. `rssMb` is absent when the capture recorded no peak.
+ */
+export interface BaselineCost {
+  cpuMs: number;
+  wallMs: number;
+  rssMb?: number;
+}
+
+/** The `gates` table of a parsed gate-costs.json as BaselineCost per id. An entry without a positive finite `wall_s` and a non-negative `cpu_s` is left out, never priced at zero. Pure. */
+export function baselineCostsOf(raw: unknown): Record<string, BaselineCost> {
+  const out: Record<string, BaselineCost> = {};
+  const gates = (raw as { gates?: Record<string, unknown> } | null)?.gates;
+  if (gates === null || typeof gates !== 'object') return out;
+  for (const [id, v] of Object.entries(gates)) {
+    const g = v as { cpu_s?: unknown; wall_s?: unknown; peak_rss_mb?: unknown } | null;
+    const wall = g?.wall_s;
+    const cpu = g?.cpu_s;
+    if (typeof wall !== 'number' || !Number.isFinite(wall) || wall <= 0) continue;
+    if (typeof cpu !== 'number' || !Number.isFinite(cpu) || cpu < 0) continue;
+    const rss = g?.peak_rss_mb;
+    out[id] = {
+      cpuMs: cpu * 1000,
+      wallMs: wall * 1000,
+      ...(typeof rss === 'number' && Number.isFinite(rss) && rss > 0 ? { rssMb: rss } : {}),
+    };
+  }
+  return out;
+}
+
+/** `baselineCostsOf` over `<root>/.ci/config/gate-costs.json`; {} when the file cannot be read, which leaves every gate to the step p90 and the lane median as before the baseline existed. */
+export function readBaselineCosts(root: string): Record<string, BaselineCost> {
   try {
-    return stepDurationsMs(
-      JSON.parse(readFileSync(path.join(root, '.ci', 'config', 'lane-durations.json'), 'utf-8'))
+    return baselineCostsOf(
+      JSON.parse(readFileSync(path.join(root, '.ci', 'config', 'gate-costs.json'), 'utf-8'))
     );
   } catch {
     return {};
   }
+}
+
+/**
+ * THE PRICE ORDER every planner shares (W14): the gate's measured CI step p90 (`stepDurationsMs`), else its baseline WALL from gate-costs.json, else nothing, and `shardPlan` then costs it at the lane median (`withMeasuredFallback`). Before W14 a gate with no step p90 went straight to the median: 12 of quality-code's 108 gates, 11 of them measured by the baseline all along.
+ *
+ * WALL, NOT `cpu_s`, although the superseded plan's 2.6 said cpu_s. A leg runs its gates one after another on one runner, so its length is the sum of their walls, the currency the step p90 is already in; cpu_s prices a 2.7-core build:cli at 2.7 times the seconds it holds the leg for. Pure.
+ */
+export function lanePricesFrom(
+  stepMs: Readonly<Record<string, number>>,
+  baseline: Readonly<Record<string, BaselineCost>>
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const [id, b] of Object.entries(baseline)) out[id] = b.wallMs;
+  for (const [id, ms] of Object.entries(stepMs)) out[id] = ms;
+  return out;
+}
+
+/**
+ * HEAVY, RETIRED WHERE IT IS MEASURED (W14). `heavy` was a hand judgement of a gate's resident memory ("at most one per shard", `--heavy-limit`); for a gate the baseline measures, the measurement decides instead. The line is the pool's own unmeasured-heavy assumption (pool.ts planAdmission budgets an unmeasured heavy gate at 4 GB): a gate measured at or above it is heavy, one below it is not. A gate the baseline does not measure keeps its declared flag.
+ */
+export const HEAVY_RSS_MB = 4096;
+
+/** Whether `entry` is heavy: its measured peak against HEAVY_RSS_MB when the baseline has one, else its declaration. Pure. */
+export function heavyOf(
+  entry: Pick<ShardInput, 'id' | 'heavy'>,
+  baseline: Readonly<Record<string, BaselineCost>>
+): boolean {
+  const rss = baseline[entry.id]?.rssMb;
+  return rss !== undefined ? rss >= HEAVY_RSS_MB : entry.heavy === true;
+}
+
+/**
+ * Every lock entry whose declared `heavy` disagrees with its measurement (heavyOf), with the edit that fixes it. The planners read the DECLARED flag, so this is what keeps them on the measured one: the runner selftest asserts it is empty on the real lock and gate-costs.json, so a refresh that moves a gate across the line names the flag to drop or add. Pure.
+ */
+export function measuredHeavyFindings(
+  lock: readonly Pick<ShardInput, 'id' | 'heavy'>[],
+  baseline: Readonly<Record<string, BaselineCost>>
+): string[] {
+  const out: string[] = [];
+  for (const e of lock) {
+    const rss = baseline[e.id]?.rssMb;
+    if (rss === undefined) continue;
+    const measured = rss >= HEAVY_RSS_MB;
+    if (measured === (e.heavy === true)) continue;
+    out.push(
+      measured
+        ? `${e.id}: measured at ${rss} MB peak RSS in .ci/config/gate-costs.json, at or above the ${HEAVY_RSS_MB} MB heavy line, but not declared \`heavy\`. Add \`heavy: true\` to its scripts/ci-runner/manifest.ts entry and regenerate gates.lock.json.`
+        : `${e.id}: declared \`heavy\`, but .ci/config/gate-costs.json measures its peak RSS at ${rss} MB, under the ${HEAVY_RSS_MB} MB heavy line. A measured gate's heaviness is its measurement: drop \`heavy: true\` from its scripts/ci-runner/manifest.ts entry and regenerate gates.lock.json.`
+    );
+  }
+  return out;
+}
+
+/** The LIVE lane prices: `stepDurationsMs` over `<root>/.ci/config/lane-durations.json`, with each gate it does not price at its baseline wall from gate-costs.json (`lanePricesFrom`); {} when neither file can be read, which prices every lane by count. Only gate-bind's re-plan decision reads this directly; every other planner reads `measuredStepDurations`, which overlays this. */
+export function liveStepDurations(root: string): Record<string, number> {
+  let step: Record<string, number> = {};
+  try {
+    step = stepDurationsMs(
+      JSON.parse(readFileSync(path.join(root, '.ci', 'config', 'lane-durations.json'), 'utf-8'))
+    );
+  } catch {
+    step = {};
+  }
+  return lanePricesFrom(step, readBaselineCosts(root));
 }
 
 /**
