@@ -2139,8 +2139,9 @@ def _annotated_running(ids, me):
             with contextlib.suppress(OSError):
                 st = os.stat(os.path.join(base, i + ".output"))
                 facts[i] = int((time.time() - st.st_mtime) / 60.0)
-    except Exception:
+    except Exception as exc:
         facts = {}
+        sys.stderr.write("worklist: output ages unavailable (%s: %s)\n" % (type(exc).__name__, exc))
 
     out = []
     for i in ids[:10]:
@@ -3056,8 +3057,11 @@ def main():
             doc = S.load_state(wl, prefix)
             doc["state_sig"] = S.state_items_sig(S.load(wl, sync=False), prefix)
             S.save_state(wl, prefix, doc)
-        except Exception:
-            pass
+        except Exception as exc:
+            sys.stderr.write(
+                "worklist: STATE.md written, but its state_sig could not be refreshed (%s: %s)\n"
+                % (type(exc).__name__, exc)
+            )
         print(
             "STATE.md section written for %s (%d chars)%s\n"
             "  sections kept: %s" % (prefix, len(body), replaced, ", ".join(kept_rows))

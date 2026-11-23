@@ -3444,21 +3444,21 @@
       "owner": "ace763dd",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 3,
+      "open": 4,
+      "done": 6,
       "open_sigs": [
         "0f7ddaf4",
-        "18eba573",
         "538bfc58",
         "6e0c83e2",
-        "9611b663",
-        "ce31990e",
         "e498feca"
       ],
       "done_sigs": [
         "055ee700",
         "15383c8b",
-        "cd67ca86"
+        "18eba573",
+        "9611b663",
+        "cd67ca86",
+        "ce31990e"
       ]
     },
     "agent/plans/PLAN-simple-two-tree-loop.md": {
@@ -3815,21 +3815,21 @@
       "owner": "fee07197",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 3,
+      "open": 6,
+      "done": 5,
       "open_sigs": [
         "36d35046",
         "4c29250e",
         "53e18fa0",
         "547ffb5a",
         "7e1402a9",
-        "bd8a600b",
-        "c288a491",
-        "de852acf"
+        "c288a491"
       ],
       "done_sigs": [
         "622da616",
         "9c185837",
+        "bd8a600b",
+        "de852acf",
         "efd17a89"
       ]
     },
@@ -3838,16 +3838,16 @@
       "owner": "fee07197",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 3,
+      "open": 4,
+      "done": 4,
       "open_sigs": [
-        "5c05a947",
         "89a8fc86",
         "a04e3a1c",
         "c46fc23d",
         "dcd4409b"
       ],
       "done_sigs": [
+        "5c05a947",
         "6d93f7d7",
         "9673a986",
         "f72a79ed"

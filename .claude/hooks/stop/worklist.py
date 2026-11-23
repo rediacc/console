@@ -119,8 +119,12 @@ for _name in (
 LKG: Any
 try:
     import wl_lkg as LKG
-except Exception:
+except Exception as _exc:
     LKG = None
+    sys.stderr.write(
+        "worklist.py: wl_lkg did not import (%s: %s); a crashed stop has no last-known-good fallback\n"
+        % (type(_exc).__name__, _exc)
+    )
 # The Stop payload exactly as read, so a crashed stop can be replayed against the snapshot; and whether this process is running the Stop path at all.
 _RUN = {"raw": "", "stop": False}
 
@@ -334,7 +338,11 @@ def _operation_standdown(event):
     """
     try:
         import wl_git
-    except Exception:
+    except Exception as exc:
+        sys.stderr.write(
+            "worklist.py: wl_git did not import (%s: %s); the half-replayed-tree stand-down did not run\n"
+            % (type(exc).__name__, exc)
+        )
         return
     for tree in _operation_trees(event):
         name = wl_git.operation_in_progress(tree)
@@ -405,7 +413,11 @@ def _read_event():
         # No real fd (pytest capture, a StringIO harness): a plain read cannot block on a pipe that does not exist.
         try:
             raw = sys.stdin.read()
-        except Exception:
+        except Exception as exc:
+            print(
+                "worklist.py: stdin could not be read (%s: %s)" % (type(exc).__name__, exc),
+                file=sys.stderr,
+            )
             return {}, False
     else:
         with contextlib.suppress(OSError, ValueError):
