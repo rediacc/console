@@ -79,8 +79,8 @@ def test_walkers_policy_inventory_fallback_walk_skips_the_lease(tree):
     assert "docs/real.py" in found
 
 
-def test_walkers_plan_deps_fallback_walk_skips_the_lease(tree, monkeypatch):
-    entry = load_entry(monkeypatch, "check_plan_deps")
+def test_walkers_plan_deps_fallback_walk_skips_the_lease(tree):
+    entry = importlib.import_module("rediacc_ci.quality.plan_deps")
     found = entry._repo_files(tree)
     assert not reports_marker(found)
     assert "docs/real.py" in found

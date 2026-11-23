@@ -42,8 +42,8 @@ REFUSES_ITSELF = {
 # Left out of the run on purpose, and named in the output.
 FIXED_ELSEWHERE: dict[str, str] = {}
 # Fewer than this and the scan is not seeing the tree.
-MIN_SCRIPTS = 174
-MIN_ADOPTED = 158
+MIN_SCRIPTS = 172
+MIN_ADOPTED = 156
 
 
 def everything() -> list[str]:

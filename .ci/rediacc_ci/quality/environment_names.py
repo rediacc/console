@@ -33,12 +33,11 @@ from rediacc_ci import controls
 REAL_ROOT = Path(__file__).resolve().parents[3]
 
 
-def _seam_root(env: dict[str, str]) -> Path | None:
+def _seam_root(raw: str | None) -> Path | None:
     """The `ENV_NAMES_ROOT` scratch tree, or None when the variable is unset or points outside the temp directory.
 
     The seam is a test hook for scratch trees. Honoured anywhere, any process setting it would make a plain gate run scan a tree of its own choosing and pass; outside the temp directory it is ignored with a note on stderr, so a plain run always scans the repository.
     """
-    raw = env.get("ENV_NAMES_ROOT")
     if not raw:
         return None
     root = Path(raw).resolve()
@@ -53,7 +52,7 @@ def _seam_root(env: dict[str, str]) -> Path | None:
     return None
 
 
-_SEAM = _seam_root(dict(os.environ))
+_SEAM = _seam_root(os.environ.get("ENV_NAMES_ROOT"))
 ROOT = _SEAM or REAL_ROOT
 WORKFLOWS = ROOT / ".github" / "workflows"
 # Measured 2026-09-04: 33 workflow files. The floor guards the enumeration, and this gate obeys the vacuity rule it shares with check:ci-enumeration-vacuity. ENV_NAMES_MIN lowers it only together with a scratch-tree ENV_NAMES_ROOT: on the repository the floor is always 20.

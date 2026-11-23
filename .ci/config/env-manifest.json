@@ -1133,6 +1133,7 @@
       "BACKUP_LARGE_REPO_SUITE",
       "BACKUP_STORAGE_SUITE",
       "BAKED_IMAGE_KEY",
+      "BASHCOV_CALL",
       "BENCH_LOCK_WAIT_S",
       "BP_ACCESS_EMAILS",
       "BP_ACTOR",
@@ -2681,6 +2682,9 @@
         "PLAN_CITATIONS_OBJECT_MIN",
         "PLAN_CITATIONS_ROOT"
       ],
+      ".ci/rediacc_ci/quality/plan_deps.py": [
+        "GITHUB_BASE_REF"
+      ],
       ".ci/rediacc_ci/quality/plan_housekeeping.py": [
         "*k",
         "CI",
@@ -2696,6 +2700,9 @@
         "PLAN_FOLDERS_MAIN",
         "PLAN_FOLDERS_MIN_PLANS",
         "PLAN_FOLDERS_ROOT"
+      ],
+      ".ci/rediacc_ci/quality/policy_inventory.py": [
+        "POLICY_INVENTORY_ROOT"
       ],
       ".ci/rediacc_ci/quality/pool_writer_safety.py": [
         "*name",
@@ -2721,6 +2728,9 @@
       ],
       ".ci/rediacc_ci/quality/prose_style.py": [
         "*off"
+      ],
+      ".ci/rediacc_ci/quality/python_control_plants.py": [
+        "PY_CONTROL_PLANTS_ROOT"
       ],
       ".ci/rediacc_ci/quality/python_lint.py": [
         "CI",
@@ -2775,6 +2785,9 @@
         "GITHUB_REPOSITORY",
         "PR_NUMBER"
       ],
+      ".ci/rediacc_ci/quality/resprofile.py": [
+        "RESPROFILE_ROOT"
+      ],
       ".ci/rediacc_ci/quality/retired_terms.py": [
         "WORKLIST_STORE_DIR"
       ],
@@ -2784,6 +2797,11 @@
         "GITHUB_TOKEN",
         "NO_COLOR",
         "PR_NUMBER"
+      ],
+      ".ci/rediacc_ci/quality/runner_advice.py": [
+        "RUNNER_ADVICE_ALLOWLIST",
+        "RUNNER_ADVICE_BASELINE",
+        "RUNNER_ADVICE_WORKFLOW_DIR"
       ],
       ".ci/rediacc_ci/quality/setup_idempotency.py": [
         "NO_COLOR"
@@ -2812,6 +2830,13 @@
         "SWALLOWED_PY_SCAN_ROOT",
         "SWALLOWED_SCAN_DIRS",
         "SWALLOWED_SCAN_ROOT"
+      ],
+      ".ci/rediacc_ci/quality/syncpack_sources.py": [
+        "SYNCPACK_SOURCES_MIN",
+        "SYNCPACK_SOURCES_ROOT"
+      ],
+      ".ci/rediacc_ci/quality/tmpfs_health.py": [
+        "TMPDIR"
       ],
       ".ci/rediacc_ci/quality/toolchain_env_dockerfile_sync.py": [
         "NO_COLOR",
@@ -3766,35 +3791,11 @@
       ".ci/scripts/quality/check_commit_citations.py": [
         "GITHUB_BASE_REF"
       ],
-      ".ci/scripts/quality/check_plan_deps.py": [
-        "GITHUB_BASE_REF"
-      ],
       ".ci/scripts/quality/check_plan_record.py": [
         "PLAN_RECORD_CENSUS_DAYS",
         "PLAN_RECORD_CENSUS_EVERY_RUN",
         "PLAN_RECORD_MIN_PLANS",
         "PLAN_RECORD_ROOT"
-      ],
-      ".ci/scripts/quality/check_policy_inventory.py": [
-        "POLICY_INVENTORY_ROOT"
-      ],
-      ".ci/scripts/quality/check_python_control_plants.py": [
-        "PY_CONTROL_PLANTS_ROOT"
-      ],
-      ".ci/scripts/quality/check_resprofile.py": [
-        "RESPROFILE_ROOT"
-      ],
-      ".ci/scripts/quality/check_runner_advice.py": [
-        "RUNNER_ADVICE_ALLOWLIST",
-        "RUNNER_ADVICE_BASELINE",
-        "RUNNER_ADVICE_WORKFLOW_DIR"
-      ],
-      ".ci/scripts/quality/check_syncpack_sources.py": [
-        "SYNCPACK_SOURCES_MIN",
-        "SYNCPACK_SOURCES_ROOT"
-      ],
-      ".ci/scripts/quality/check_tmpfs_health.py": [
-        "TMPDIR"
       ],
       ".claude/hooks/context/band-notice.py": [
         "CTX_BAND_DUMP"
@@ -4048,6 +4049,7 @@
         "WORKLIST_REPORT_TRANSCRIPT_MAX_BYTES"
       ],
       ".claude/hooks/stop/wl_resprofile.py": [
+        "BASHCOV_CALL",
         "RESPROFILE_ROOT",
         "TMPDIR",
         "WORKLIST_PROFILE"
@@ -4262,6 +4264,9 @@
       ],
       ".claude/rediacc_hooks/tests/test_project_dir_containment.py": [
         "CLAUDE_PROJECT_DIR"
+      ],
+      ".claude/rediacc_hooks/tests/test_resprofile_trust.py": [
+        "PATH"
       ],
       ".claude/rediacc_hooks/tests/test_settings_collapse.py": [
         "PATH"
