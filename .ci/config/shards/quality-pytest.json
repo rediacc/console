@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-23T07:54:51.278Z",
+  "generatedAt": "2026-11-23T08:08:59.003Z",
   "legs": [
     {
       "index": 1,
@@ -320,6 +320,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_shellscan_clone_identity.py",
         "pytest:.claude/rediacc_hooks/tests/test_shellscan_writes.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_agent_docs_and_focus.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_data_hotpath.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_epic_plan.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_identity.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_facts.py",
