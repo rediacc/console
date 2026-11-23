@@ -78,6 +78,7 @@ D7. **Source.** `feedbackReportSchema` gains `source: 'cli' | 'console'` with de
   Depends on: AF5, AF6.
   Accept: `npm run check:i18n` and `npm run check:ci-i18n-account-key-usage` rc 0.
 - [ ] AF8 [writer] Playwright spec: a Rediacc-origin failure shows the card and Send files a report, a user-origin failure shows none, Don't send records a decline, the owner override hides the card, and the card is operable by keyboard alone.
+  (corrected 2026-11-23, ruling C42) This spec runs against the scripted provider of PLAN-console-ai-providers.md#AP13 under TEST_MODE; no real provider key reaches CI.
   Owns: private/account/e2e/tests/27-console/27-3*-ai-feedback.test.ts
   Depends on: AF3, AF4, AF5.
   Accept: `(cd private/account/e2e && npx playwright test tests/27-console/27-30-ai-feedback.test.ts --project=chromium)` rc 0.

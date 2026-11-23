@@ -116,6 +116,7 @@ D13. **Accessibility.** `aria-live="polite"` announces each finished message onc
   Depends on: AI3, AI4, PLAN-console-audit-r2.md#AU1, PLAN-console-audit-r2.md#AU5.
   Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/approval-audit.test.ts)` rc 0, with a sensitive option value absent from every emitted event; `npm run check:ci-audit-coverage` rc 0.
 - [ ] AI13 [writer] Playwright keyboard and IME contract specs: Enter, Shift+Enter, Esc stop, a CDP composition that does not send, the approval card keyboard flow, jump-to-latest focus, and the simple-view switch.
+  (corrected 2026-11-23, ruling C42) This spec runs against the scripted provider of PLAN-console-ai-providers.md#AP13 under TEST_MODE; no real provider key reaches CI.
   Owns: private/account/e2e/tests/27-console/27-1*-ai-*.test.ts
   Depends on: AI7, AI8, AI9.
   Accept: `(cd private/account/e2e && npx playwright test tests/27-console/27-10-ai-keyboard.test.ts --project=chromium)` rc 0.

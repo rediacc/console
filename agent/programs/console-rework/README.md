@@ -6,7 +6,7 @@ Planned in session `9b22c347` on 2026-11-23, branch `1121-1`, from an external b
 
 ## Read order
 
-1. `02-decisions.md`: the operator rulings C1 to C41. Binding; cited by id.
+1. `02-decisions.md`: the operator rulings C1 to C42. Binding; cited by id.
 2. `01-verified-context.md`: the findings with `file:line` evidence, read against the tree on 2026-11-23. Each citation is a hypothesis a writer re-reads before relying on it.
 3. The plans, in the order below.
 

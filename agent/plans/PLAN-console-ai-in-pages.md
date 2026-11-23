@@ -78,6 +78,7 @@ D6. **Strings** live in an `aiPages` namespace in all 13 locales.
   Depends on: AX5, AX7.
   Accept: `npm run check:i18n` and `npm run check:ci-i18n-account-key-usage` rc 0.
 - [ ] AX9 [writer] Playwright spec: the bar on a machine page opens the chat with the machine chip, a routed failed `backup status` row shows a suggestion, Dismiss hides it across a reload, and a background task's result card appears after navigating away, all keyboard-operable.
+  (corrected 2026-11-23, ruling C42) This spec runs against the scripted provider of PLAN-console-ai-providers.md#AP13 under TEST_MODE; no real provider key reaches CI.
   Owns: private/account/e2e/tests/27-console/27-4*-ai-pages.test.ts
   Depends on: AX2, AX6, AX7.
   Accept: `(cd private/account/e2e && npx playwright test tests/27-console/27-40-ai-pages.test.ts --project=chromium)` rc 0.
