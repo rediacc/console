@@ -1204,7 +1204,7 @@ CONTROL_MANIFEST = """export const GATES = [
   },
   {
     id: 'check:ctl-direct',
-    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.ctl_direct',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.trap_registry',
     gate: true,
     leaves: ['sub/ctl-guard.sh'],
   },

@@ -260,3 +260,20 @@ def test_the_selftest_runs_as_a_process_and_is_not_trivially_small(gate):
             % (passes, MIN_CONTROLS)
         )
     gate.log_pass("%d controls ran, both directions on every rule and both exemptions" % passes)
+
+
+def test_the_root_override_outside_the_temp_directory_is_ignored(gate):
+    """A plain gate run always scans the repository: the variable set to a tree OUTSIDE the temp directory (an empty one inside the checkout) changes nothing and the real estate is still counted. CONTROL: an empty tree inside the temp directory still refuses, so the seam is live where it belongs."""
+    gate.log_test("SEAM BOUND: PY_CONTROL_PLANTS_ROOT outside the temp directory is ignored")
+    outside = paths.repo_root() / ".ci" / "cache" / "py-control-plants-empty-root"
+    outside.mkdir(parents=True, exist_ok=True)
+    result = _run(outside)
+    gate.assert_exit(0, result, "the override was ignored and the real tree is green")
+    modules, sites = _counts(result.combined)
+    if modules < MIN_MODULES or sites < MIN_SITES:
+        gate.log_fail("the real tree was not scanned: %d module(s), %d site(s)" % (modules, sites))
+    gate.assert_contains(result.combined, "is outside the temp directory", "says it ignored it")
+    with harness.temp_dir() as tmp:
+        refused = _run(pathlib.Path(tmp))
+        gate.assert_exit(1, refused, "CONTROL: an empty tree inside the temp directory refuses")
+    gate.log_pass("the seam is bounded to the temp directory")

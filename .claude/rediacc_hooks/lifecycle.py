@@ -16,6 +16,7 @@ loudly and the rest still run, which is the argument `dispatch.run_chain` makes 
 STDOUT IS MERGED, NOT CONCATENATED. Several lifecycle hooks answer with a JSON document carrying `hookSpecificOutput.additionalContext`, and two such documents written back to back parse as neither. `merge_stdout` folds them into one document and joins the contexts; plain text passes through verbatim when no member spoke JSON, which is every guard pattern.
 """
 
+import importlib.util
 import io
 import json
 import os
@@ -293,6 +294,17 @@ class _MemberTimeout(BaseException):
     """Raised by the alarm when an in-process member overruns its budget. A BaseException, so a member's own `except Exception` cannot swallow its deadline."""
 
 
+def _syspath():
+    """The canonical sys.path helper (`syspath.py`, stdlib-only), loaded by file because this module runs both as a script and as an import."""
+    helper = pathlib.Path(__file__).resolve().with_name("syspath.py")
+    spec = importlib.util.spec_from_file_location("_rediacc_syspath", helper)
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load %s" % helper)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def run_inprocess(argv, payload, env, cwd, budget):
     """(rc, stdout, stderr, raised) of one member called in this interpreter, as its own process would have given them.
 
@@ -320,7 +332,10 @@ def run_inprocess(argv, payload, env, cwd, budget):
     previous = signal.signal(signal.SIGALRM, on_alarm)
     try:
         sys.argv = argv[1:]
-        sys.path.insert(0, here)
+        # At the FRONT even when already present deeper: a sibling must not be shadowed by an earlier entry.
+        if here in sys.path:
+            sys.path.remove(here)
+        _syspath().on_sys_path(here)
         sys.stdin = io.TextIOWrapper(io.BytesIO((payload or "").encode("utf-8")), encoding="utf-8")
         sys.stdout, sys.stderr = out, err
         os.environ.clear()

@@ -156,7 +156,7 @@ BASELINE: dict[str, tuple[str, ...]] = {
     ".claude/hooks/stop/test-judge-schema.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/test-plan-status-parse.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/test-planindex.py": ("cac5257d3f9d",),
-    ".claude/hooks/stop/test-planrec.py": ("2af853e16b8e", "2af853e16b8e"),
+    ".claude/hooks/stop/test-planrec.py": ("eb9415193463", "eb9415193463"),
     ".claude/hooks/stop/test-reggate-ledger.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/test-teammate-idle.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/wl_planindex.py": ("cac5257d3f9d",),
@@ -512,6 +512,14 @@ NOT_A_PRINTED_COMMAND: dict[tuple[str, str], tuple[int, str]] = {
     (".ci/rediacc_ci/quality/rdc_native.py", "exec python3 -m rediacc_ci.native"): (
         2,
         "the generated `rdc` shim's body, a selftest fixture compared byte for byte",
+    ),
+    (".ci/rediacc_ci/quality/workflow_env_provision.py", "rediacc_ci.x.writer"): (
+        0,
+        "a selftest fixture written into a scratch composite action, naming a module that exists only in the fixture (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (".ci/rediacc_ci/quality/workflow_env_provision.py", "rediacc_ci.nowhere.at_all"): (
+        1,
+        "a selftest fixture fed to the gate's own module resolver, naming a module that resolves to nothing by design",
     ),
     (".ci/rediacc_ci/quality/dead_python.py", "rediacc_ci.testrun.orphan_run"): (
         0,

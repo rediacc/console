@@ -25,14 +25,39 @@ from __future__ import annotations
 import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 from rediacc_ci import controls
 
-ROOT = Path(os.environ.get("ENV_NAMES_ROOT") or Path(__file__).resolve().parents[3])
+REAL_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _seam_root(env: dict[str, str]) -> Path | None:
+    """The `ENV_NAMES_ROOT` scratch tree, or None when the variable is unset or points outside the temp directory.
+
+    The seam is a test hook for scratch trees. Honoured anywhere, any process setting it would make a plain gate run scan a tree of its own choosing and pass; outside the temp directory it is ignored with a note on stderr, so a plain run always scans the repository.
+    """
+    raw = env.get("ENV_NAMES_ROOT")
+    if not raw:
+        return None
+    root = Path(raw).resolve()
+    bases = {Path(tempfile.gettempdir()).resolve(), Path("/tmp").resolve()}
+    if any(root.is_relative_to(base) for base in bases):
+        return root
+    print(
+        "NOTE: ENV_NAMES_ROOT=%s is outside the temp directory, so it and ENV_NAMES_MIN are "
+        "ignored and the repository is scanned." % raw,
+        file=sys.stderr,
+    )
+    return None
+
+
+_SEAM = _seam_root(dict(os.environ))
+ROOT = _SEAM or REAL_ROOT
 WORKFLOWS = ROOT / ".github" / "workflows"
-# Measured 2026-09-04: 33 workflow files. The floor guards the enumeration, and this gate obeys the vacuity rule it shares with check:ci-enumeration-vacuity.
-MIN_WORKFLOWS = int(os.environ.get("ENV_NAMES_MIN", "20"))
+# Measured 2026-09-04: 33 workflow files. The floor guards the enumeration, and this gate obeys the vacuity rule it shares with check:ci-enumeration-vacuity. ENV_NAMES_MIN lowers it only together with a scratch-tree ENV_NAMES_ROOT: on the repository the floor is always 20.
+MIN_WORKFLOWS = int(os.environ.get("ENV_NAMES_MIN", "20")) if _SEAM else 20
 
 # The expressions that vary per PR or per branch. `inputs.*`, `matrix.*` and `vars.*` are deliberately absent: those are bounded by a choice list, a matrix or repo config, and the three live environment names in this repo are built from exactly those.
 UNBOUNDED = re.compile(
@@ -162,7 +187,8 @@ def main() -> int:
         return refusal
 
     files = sorted(WORKFLOWS.glob("*.yml"))
-    if len(files) < MIN_WORKFLOWS:
+    # A zero-file corpus is never green, whatever the floor says.
+    if not files or len(files) < MIN_WORKFLOWS:
         print(
             "VACUOUS: %d workflow file(s), floor %d. The enumeration lost the corpus; "
             "refusing a verdict." % (len(files), MIN_WORKFLOWS),

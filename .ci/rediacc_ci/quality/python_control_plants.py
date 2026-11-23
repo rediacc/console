@@ -383,8 +383,25 @@ def _root() -> pathlib.Path:
     """
     env = os.environ.get("PY_CONTROL_PLANTS_ROOT")
     if env:
-        return pathlib.Path(env)
+        override = pathlib.Path(env).resolve()
+        if _under_tmp(override):
+            return override
+        print(
+            "NOTE: PY_CONTROL_PLANTS_ROOT=%s is outside the temp directory, so it is ignored "
+            "and the repository is scanned. The override is a test seam for scratch trees only."
+            % env,
+            file=sys.stderr,
+        )
     return pathlib.Path(__file__).resolve().parents[2].parent
+
+
+def _under_tmp(path: pathlib.Path) -> bool:
+    """True when `path` lies inside the temp directory, the only place a scratch tree for a control lives.
+
+    The seam stays bounded to that: any process setting the variable to a tree of its own choosing would otherwise make a plain gate run scan that tree and pass.
+    """
+    bases = {pathlib.Path(tempfile.gettempdir()).resolve(), pathlib.Path("/tmp").resolve()}
+    return any(path.is_relative_to(base) for base in bases)
 
 
 def main(argv: list[str]) -> int:

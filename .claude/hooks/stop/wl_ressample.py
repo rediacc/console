@@ -28,6 +28,7 @@ SAFETY. Runs beside the thing it measures, so a bug here must cost samples, neve
 from __future__ import annotations
 
 import contextlib
+import importlib.util
 import json
 import os
 import sys
@@ -424,7 +425,13 @@ def fold_rollup() -> bool:
     THE FOLD MOVED HERE FROM THE STOP HOOK (agent/plans/PLAN-tooling-speed.md D3): the sampler starts for every gate of a local CI run, so the rollup is refreshed several times a day while no stop pays for it. Concurrent samplers serialize on the rollup lock, and the loser skips; it never raises, because a sampler bug must cost a fold, never the run.
     """
     try:
-        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        helper = Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
+        spec = importlib.util.spec_from_file_location("_rediacc_syspath", helper)
+        if spec is None or spec.loader is None:
+            raise ImportError("cannot load %s" % helper)
+        syspath = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(syspath)
+        syspath.on_sys_path(syspath.STOP_DIR)
         import wl_resprofile
 
         return wl_resprofile.fold() is not None
