@@ -38,6 +38,7 @@ import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
 import {
   buildConfigPushPayload,
   decryptConfigPullPayload,
+  envelopeConfigKeyWrap,
   type PushPrior,
   type RdcConfig,
 } from '@rediacc/shared/config-schema';
@@ -71,7 +72,7 @@ export interface ExecutorGrant {
   configs: { configId: string; teamId: string | null; version: number }[];
 }
 
-/** The config a session's commands run against, as the store addresses it (the v3 AAD binding). */
+/** The config a session's commands run against, as the store addresses it (the envelope AAD binding). */
 export interface ConfigTarget {
   storeId: string;
   configId: string;
@@ -215,6 +216,16 @@ interface PulledEnvelope {
 
 /** What a push needs to know of the stored envelope it replaces (PushPrior without the document). */
 type StoredEnvelope = Omit<PushPrior, 'base'>;
+
+/** The stored-envelope facts of a pulled or just-pushed envelope: version, salt and (v4) content-key wrap. */
+function storedEnvelopeOf(envelope: EncryptedConfigPayload['envelope']): StoredEnvelope {
+  const configKey = envelopeConfigKeyWrap(envelope);
+  return {
+    envelopeVersion: envelope.envelopeVersion,
+    fckSalt: envelope.commitments.fckSalt,
+    ...(configKey ? { configKey } : {}),
+  };
+}
 
 export interface SessionConfigStoreOptions {
   chain: ConfigChain;
@@ -362,12 +373,21 @@ export class SessionConfigStore implements ConfigWriteback {
     if (session.status >= 400) throw this.refusal(session);
     const sdkEpoch = Number(session.body.sdkEpoch);
     const sdkDerived = await importAesKey(fromBase64(String(session.body.sdk_derived)));
+    // The content key is wrapped under the store's generation, which only the /session answer names here; a write is never sealed under a guessed one.
+    const cekGeneration = session.body.cekGeneration;
+    if (typeof cekGeneration !== 'number' || !Number.isInteger(cekGeneration)) {
+      throw new ConfigWriteFailedError(
+        currentCommandName(),
+        'the store named no CEK generation in its /session answer, so the push cannot be sealed'
+      );
+    }
     const version = this.storedVersion + 1;
     const encrypted = await buildConfigPushPayload(next, {
       version,
       sdkEpoch,
       sdkDerived,
       cek,
+      cekGeneration,
       storeId: target.storeId,
       ...(target.teamId ? { teamId: target.teamId } : {}),
       prior: { ...this.stored, base },
@@ -383,6 +403,7 @@ export class SessionConfigStore implements ConfigWriteback {
             encryptedBlob: encrypted.encryptedBlob,
             sdkEpoch,
             envelope: encrypted.envelope,
+            cekGeneration,
           },
         },
         op
@@ -392,10 +413,7 @@ export class SessionConfigStore implements ConfigWriteback {
     if (answer.status === 409 && answer.body.code === undefined) return 'conflict';
     if (answer.status >= 400) throw this.refusal(answer);
     const stored = typeof answer.body.version === 'number' ? answer.body.version : version;
-    this.replace({ ...next, version: stored }, stored, {
-      envelopeVersion: encrypted.envelope.envelopeVersion,
-      fckSalt: encrypted.envelope.commitments.fckSalt,
-    });
+    this.replace({ ...next, version: stored }, stored, storedEnvelopeOf(encrypted.envelope));
     return this.document;
   }
 
@@ -415,7 +433,7 @@ export class SessionConfigStore implements ConfigWriteback {
     );
     if (answer.status >= 400) return storeReason(answer, 'the config pull');
     const pulled = answer.body as unknown as PulledEnvelope;
-    // The key is the SESSION's, never the executor's. The binding is the config the executor asked for: a blob the store serves for another store, config or team does not open (envelope v3 AAD).
+    // The key is the SESSION's, never the executor's. The binding is the config the executor asked for: a blob the store serves for another store, config or team does not open (the envelope AAD; a v4 content key opens only under its own wrap binding).
     const decrypted = await decryptConfigPullPayload(
       { envelope: pulled.envelope, encryptedBlob: pulled.configData, hmac: pulled.hmac },
       {
@@ -435,10 +453,11 @@ export class SessionConfigStore implements ConfigWriteback {
       highWater: this.options.policyHighWater,
     });
     const version = pulled.envelope.version;
-    this.replace({ ...fullConfigToRdcConfig(decrypted), version }, version, {
-      envelopeVersion: pulled.envelope.envelopeVersion,
-      fckSalt: pulled.envelope.commitments.fckSalt,
-    });
+    this.replace(
+      { ...fullConfigToRdcConfig(decrypted), version },
+      version,
+      storedEnvelopeOf(pulled.envelope)
+    );
     return undefined;
   }
 

@@ -50,7 +50,7 @@ export {
 } from './config-key.js';
 // Constants
 export {
-  CONFIG_KEY_ENVELOPE_VERSION,
+  BOUND_ENVELOPE_VERSION,
   ENVELOPE_FIELDS,
   ENVELOPE_VERSION,
   HKDF_INFO,

@@ -359,6 +359,7 @@ describe('a plain binding on a synced config (#e6dbacc1)', () => {
       sdkEpoch: 1,
       sdkDerived,
       cek,
+      cekGeneration: 1,
     });
     const pulled = fullConfigToRdcConfig(
       await decryptConfigPullPayload(payload, {

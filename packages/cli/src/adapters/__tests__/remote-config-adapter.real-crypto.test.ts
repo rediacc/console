@@ -162,6 +162,7 @@ async function provision(
     sdkEpoch: SDK_EPOCH,
     sdkDerived,
     cek,
+    cekGeneration: 1,
     teamId: teamId ?? undefined,
   });
 
@@ -186,6 +187,9 @@ async function provision(
         lastModified: '2026-01-01T00:00:00Z',
         sdkEpoch: SDK_EPOCH,
         commitments: payload.envelope.commitments,
+        wrappedConfigKey: payload.envelope.wrappedConfigKey,
+        configKeyVersion: payload.envelope.configKeyVersion,
+        cekGeneration: payload.envelope.cekGeneration,
       },
       hmac: payload.hmac,
       // The server's pull always returns the key of the epoch the blob was pushed in (configs.ts pull route).

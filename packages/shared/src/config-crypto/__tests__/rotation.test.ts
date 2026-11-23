@@ -31,8 +31,10 @@ import {
   randomBytes,
   sdkDerive,
   toBase64,
+  unwrapEnvelopeConfigKey,
 } from '../index.js';
 import type { CekHandoffBlob } from '../types.js';
+import { sealEnvelopeV3 } from './fixtures/envelope-v3.js';
 
 /** Every payload of this file lives in one store; a reader binds to the config it asked for. */
 const STORE_ID = 'store-1';
@@ -97,6 +99,7 @@ describe('CEK rotation', () => {
       sdkEpoch: pullEpoch,
       sdkDerived: sdkForPull,
       cek: oldCek,
+      cekGeneration: 1,
       teamId: 'team-1',
     });
 
@@ -110,12 +113,22 @@ describe('CEK rotation', () => {
       sdkDerivedForPush: sdkForPush,
       sdkEpoch: pushEpoch,
       version: 2,
+      newCekGeneration: 2,
       storeId: STORE_ID,
       configId: TEST_CONFIG.id,
       teamId: 'team-1',
     });
 
     expect(reencrypted.envelope.version).toBe(2);
+    // The content key is kept and rewrapped: same key version, the new CEK generation.
+    expect(reencrypted.envelope.envelopeVersion).toBe(4);
+    expect(reencrypted.envelope.configKeyVersion).toBe(pulled.envelope.configKeyVersion);
+    expect(reencrypted.envelope.cekGeneration).toBe(2);
+    expect(reencrypted.envelope.wrappedConfigKey).not.toBe(pulled.envelope.wrappedConfigKey);
+    const binding = readerBinding(reencrypted);
+    const keptKey = await unwrapEnvelopeConfigKey(reencrypted.envelope, newCek, binding);
+    const pulledKey = await unwrapEnvelopeConfigKey(pulled.envelope, oldCek, binding);
+    expect(toBase64(await exportAesKey(keptKey))).toBe(toBase64(await exportAesKey(pulledKey)));
     expect(reencrypted.envelope.sdkEpoch).toBe(pushEpoch);
     // Fresh FCK salt: the old envelope's commitment HMACs must be dead.
     expect(reencrypted.envelope.commitments.fckSalt).not.toBe(pulled.envelope.commitments.fckSalt);
@@ -183,5 +196,48 @@ describe('CEK rotation', () => {
     expect(memberView.clusters).toEqual(TEST_CONFIG.resources?.clusters);
     expect(memberView.backupStrategies).toEqual(TEST_CONFIG.resources?.backupStrategies);
     expect(memberView.deletedRepositories).toEqual(TEST_CONFIG.resources?.deletedRepositories);
+  });
+
+  it('reencryptConfig gives a stored v3 config a fresh content key at version 1', async () => {
+    const sdkMaster = generateSdkMaster();
+    const oldCek = await generateCek();
+    const newCek = await generateCek();
+    const sdk = await sdkDerive(sdkMaster, 5913166);
+    const pulled = await sealEnvelopeV3(
+      {
+        envelopeVersion: 3,
+        id: TEST_CONFIG.id,
+        version: 4,
+        sdkEpoch: 5913166,
+        teamId: 'team-1',
+        commitments: { alg: 'HMAC-SHA256', fckSalt: '', fields: {} },
+        machines: { prod: { ip: '10.0.0.1', user: 'rediacc' } },
+      },
+      sdk,
+      oldCek,
+      { storeId: STORE_ID, sdkEpoch: 5913166, commitEntries: [] }
+    );
+    const reencrypted = await reencryptConfig({
+      pulled,
+      oldCek,
+      newCek,
+      sdkDerivedForPull: sdk,
+      sdkDerivedForPush: sdk,
+      sdkEpoch: 5913166,
+      version: 5,
+      newCekGeneration: 3,
+      storeId: STORE_ID,
+      configId: TEST_CONFIG.id,
+      teamId: 'team-1',
+    });
+    expect(reencrypted.envelope.envelopeVersion).toBe(4);
+    expect(reencrypted.envelope.configKeyVersion).toBe(1);
+    expect(reencrypted.envelope.cekGeneration).toBe(3);
+    const view = await decryptConfigPullPayload(reencrypted, {
+      cek: newCek,
+      sdkDerived: sdk,
+      binding: readerBinding(reencrypted),
+    });
+    expect(view.machines).toEqual({ prod: { ip: '10.0.0.1', user: 'rediacc' } });
   });
 });

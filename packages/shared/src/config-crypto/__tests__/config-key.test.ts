@@ -27,6 +27,7 @@ import {
   wrapConfigKey,
 } from '../index.js';
 import type { EncryptedConfigPayload, FullConfig } from '../types.js';
+import { sealEnvelopeV3 } from './fixtures/envelope-v3.js';
 
 const bytesToHex = (data: Uint8Array): string =>
   Array.from(data, (b) => b.toString(16).padStart(2, '0')).join('');
@@ -46,7 +47,7 @@ const wrapBinding: ConfigKeyBinding = {
 };
 
 const fullConfig = (id: string, teamId?: string): FullConfig => ({
-  envelopeVersion: 3,
+  envelopeVersion: 4,
   id,
   version: 7,
   sdkEpoch: 5913166,
@@ -272,7 +273,7 @@ describe('envelope v4', () => {
   it('refuses a content key on a v3 envelope', async () => {
     const sdkKey = await generateAesKey();
     const cek = await generateCek();
-    const v3 = await selectiveEncrypt(fullConfig(CONFIG_A), sdkKey, cek, {
+    const v3 = await sealEnvelopeV3(fullConfig(CONFIG_A), sdkKey, cek, {
       storeId: STORE,
       sdkEpoch: 5913166,
       commitEntries: [],

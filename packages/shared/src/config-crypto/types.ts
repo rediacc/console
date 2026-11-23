@@ -7,10 +7,11 @@ import type { FieldCommitments } from './commitments.js';
 /**
  * Plaintext envelope — server can read these fields without decryption.
  *
- * Every client WRITES v3 and READS v2 for one release (operator ruling D2). v3 binds the blob to
- * `(storeId, configId, teamId, version, sdkEpoch, commitments)` through the AES-GCM AAD
+ * Every client WRITES v4 and READS v3, and v2 for one release (operator ruling D2). v3 binds the
+ * blob to `(storeId, configId, teamId, version, sdkEpoch, commitments)` through the AES-GCM AAD
  * (selective.ts `envelopeAad`), retires the blob HMAC, and keys the commitments by blinded pointers
- * (commitments.ts). The server refuses a v2 push.
+ * (commitments.ts). v4 seals the blob under a per-config content key wrapped under the CEK
+ * (config-key.ts) and adds `configKeyVersion` to the AAD. The server refuses any push but v4.
  *
  * Envelope v2 added per-field commitment HMACs so the server can enforce the
  * "knowledge-gates-capability" precondition on sensitive-field mutations
@@ -40,8 +41,8 @@ export interface ConfigEnvelope {
   /** Envelope v4 only: the CEK generation the content key is wrapped under. */
   cekGeneration?: number;
   /**
-   * Per-field commitment HMACs. Always present (v2 and v3). The server rejects any
-   * push that is not v3 with HTTP 400 `unsupported_envelope_version`.
+   * Per-field commitment HMACs. Always present (v2, v3 and v4). The server rejects any
+   * push that is not v4 with HTTP 400 `unsupported_envelope_version`.
    */
   commitments: FieldCommitments;
 }
@@ -49,7 +50,7 @@ export interface ConfigEnvelope {
 /**
  * What a reader expects a pulled blob to be sealed for, taken from its OWN pointer (the CLI's
  * `remote`, the portal's store and config choice, the executor's grant), never from the pull
- * response: the envelope v3 AAD is rebuilt from it, so a blob the server serves for another store,
+ * response: the envelope AAD (v3 and v4) is rebuilt from it, so a blob the server serves for another store,
  * config or team does not open.
  */
 export interface ConfigBinding {
@@ -98,7 +99,7 @@ export interface EncryptedConfigPayload {
   envelope: ConfigEnvelope;
   encryptedBlob: string; // base64(clientEnc_CEK(serverKeyEnc_SDK(sensitiveData)))
   /**
-   * Envelope v2 only: HMAC-SHA256 over encryptedBlob, keyed with the CEK. A v3 payload carries none
+   * Envelope v2 only: HMAC-SHA256 over encryptedBlob, keyed with the CEK. A v3 or v4 payload carries none
    * (the GCM tag under the AAD authenticates the blob AND its binding, which the HMAC never did).
    */
   hmac?: string | null;

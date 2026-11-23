@@ -1,5 +1,5 @@
 /**
- * Selective Encryption (envelope v3 and v4, reading v2 for one release).
+ * Selective Encryption (writing envelope v4; reading v4, v3, and v2 for one release).
  *
  * Separates config into a plaintext envelope (with per-field HMAC commitments) and an encrypted blob
  * carrying every other key of the `FullConfig` (config-schema/payload.ts decides what that is: the
@@ -9,8 +9,8 @@
  * never sees the blob's plaintext, and since v3 it no longer sees the document's pointer names
  * either: commitment keys are blinded (commitments.ts).
  *
- * ─── Binding (envelope v3) ─────────────────────────────────────────────────
- * Both AES-GCM layers authenticate `envelopeAad(binding, envelope)`:
+ * ─── Binding (envelope v3, read only) ──────────────────────────────────────
+ * Both AES-GCM layers of a v3 blob authenticate `envelopeAad(binding, envelope)`:
  *
  *   'rediacc-config-aad-v3' NUL canonical({
  *     v: 3, storeId, configId, teamId | null, version, sdkEpoch,
@@ -23,7 +23,7 @@
  * makes a client-side high-water mark meaningful. The v2 blob HMAC is retired: it authenticated the
  * blob bytes only, which the GCM tag already does, and it used the raw CEK as an HMAC key (F15).
  *
- * ─── Per-config content key (envelope v4, D56) ─────────────────────────────
+ * ─── Per-config content key (envelope v4, D56, what every client writes) ───
  * A v4 blob is sealed under the config's own content key (config-key.ts), which the envelope carries
  * wrapped under the CEK (`wrappedConfigKey`, `configKeyVersion`, `cekGeneration`). The blob AAD is
  * the v3 one under the domain 'rediacc-config-aad-v4' with `v: 4` and `configKeyVersion` added. The
@@ -45,7 +45,7 @@ import {
 } from './commitments.js';
 import { type ConfigContentKey, unwrapConfigKey, wrapConfigKey } from './config-key.js';
 import {
-  CONFIG_KEY_ENVELOPE_VERSION,
+  BOUND_ENVELOPE_VERSION,
   ENVELOPE_FIELDS,
   ENVELOPE_VERSION,
   LEGACY_ENVELOPE_VERSION,
@@ -119,11 +119,10 @@ export interface SelectiveEncryptOptions {
   /** What the server holds now; omitted for a first push (nothing to delete or migrate). */
   prior?: PriorEnvelope;
   /**
-   * The config's content key: present, the push is sealed as envelope v4 under it (the key unwrapped
-   * from the pulled envelope, or a fresh `generateConfigKey()` at version 1 for a config's first v4
-   * push). Absent, the push is envelope v3 under the CEK.
+   * The config's content key the push is sealed under (envelope v4): the key unwrapped from the
+   * pulled envelope, or a fresh `generateConfigKey()` at version 1 for a config's first v4 push.
    */
-  configKey?: ConfigContentKey;
+  configKey: ConfigContentKey;
 }
 
 function withDomain(domain: Uint8Array, body: Uint8Array): Uint8Array {
@@ -134,15 +133,16 @@ function withDomain(domain: Uint8Array, body: Uint8Array): Uint8Array {
 }
 
 /**
- * The additional authenticated data of an envelope v3 blob: the binding the reader expects plus the
- * envelope fields that decide what the blob means (version, epoch, commitment state).
+ * The additional authenticated data of an envelope v3 blob (read only): the binding the reader
+ * expects plus the envelope fields that decide what the blob means (version, epoch, commitment
+ * state).
  */
 export async function envelopeAad(
   binding: ConfigBinding,
   envelope: Pick<ConfigEnvelope, 'version' | 'sdkEpoch' | 'commitments'>
 ): Promise<Uint8Array> {
   const body = canonicalize({
-    v: ENVELOPE_VERSION,
+    v: BOUND_ENVELOPE_VERSION,
     storeId: binding.storeId,
     configId: binding.configId,
     teamId: binding.teamId ?? null,
@@ -161,7 +161,7 @@ export async function envelopeAadV4(
   }
 ): Promise<Uint8Array> {
   const body = canonicalize({
-    v: CONFIG_KEY_ENVELOPE_VERSION,
+    v: ENVELOPE_VERSION,
     storeId: binding.storeId,
     configId: binding.configId,
     teamId: binding.teamId ?? null,
@@ -199,7 +199,7 @@ function storedCommitmentKeys(
   pushRoot: CryptoKey
 ): CommitmentKeys {
   if (prior.envelopeVersion === LEGACY_ENVELOPE_VERSION) return { root: cek, blinded: false };
-  if (prior.envelopeVersion === ENVELOPE_VERSION) return { root: cek, blinded: true };
+  if (prior.envelopeVersion === BOUND_ENVELOPE_VERSION) return { root: cek, blinded: true };
   return { root: prior.configKey ?? pushRoot, blinded: true };
 }
 
@@ -240,15 +240,14 @@ async function priorBlocks(
   return out;
 }
 
-/** The plaintext envelope of `config`, sealed as `envelopeVersion`. */
+/** The plaintext envelope of `config`, sealed as envelope v4. */
 function envelopeOf(
   config: FullConfig,
-  envelopeVersion: 3 | 4,
   sdkEpoch: number,
   commitments: FieldCommitments
 ): ConfigEnvelope {
   const envelope: ConfigEnvelope = {
-    envelopeVersion,
+    envelopeVersion: ENVELOPE_VERSION,
     id: config.id,
     version: config.version,
     sdkEpoch,
@@ -275,8 +274,8 @@ function blobSections(config: FullConfig): ConfigSensitiveData {
 }
 
 /**
- * Encrypt a full config into an envelope + encrypted blob: v4 under `options.configKey` when given,
- * else v3 under the CEK.
+ * Encrypt a full config into an envelope v4 + encrypted blob, sealed under `options.configKey` with
+ * that key wrapped under `cek`.
  */
 export async function selectiveEncrypt(
   config: FullConfig,
@@ -285,7 +284,7 @@ export async function selectiveEncrypt(
   options: SelectiveEncryptOptions
 ): Promise<EncryptedConfigPayload> {
   const configKey = options.configKey;
-  const push: CommitmentKeys = { root: configKey ? configKey.key : cek, blinded: true };
+  const push: CommitmentKeys = { root: configKey.key, blinded: true };
   const fckSalt = options.fckSalt ?? generateFckSalt();
   const fck = await deriveFieldCommitmentKey(push.root, fckSalt);
   const blindingKey = await derivePointerBlindingKey(push.root, config.id);
@@ -297,33 +296,21 @@ export async function selectiveEncrypt(
   };
   const plaintext = JSON.stringify(blobSections(config));
 
-  let envelope: ConfigEnvelope;
-  let encryptedBlob: string;
-  if (configKey) {
-    envelope = envelopeOf(config, CONFIG_KEY_ENVELOPE_VERSION, options.sdkEpoch, commitments);
-    envelope.configKeyVersion = configKey.version;
-    envelope.cekGeneration = configKey.cekGeneration;
-    envelope.wrappedConfigKey = await wrapConfigKey(configKey.key, cek, {
-      ...binding,
-      configKeyVersion: configKey.version,
-      cekGeneration: configKey.cekGeneration,
-    });
-    const aad = await envelopeAadV4(binding, {
-      version: envelope.version,
-      sdkEpoch: envelope.sdkEpoch,
-      commitments,
-      configKeyVersion: configKey.version,
-    });
-    encryptedBlob = await configEncrypt(plaintext, sdkDerived, configKey.key, aad);
-  } else {
-    envelope = envelopeOf(config, ENVELOPE_VERSION, options.sdkEpoch, commitments);
-    encryptedBlob = await configEncrypt(
-      plaintext,
-      sdkDerived,
-      cek,
-      await envelopeAad(binding, envelope)
-    );
-  }
+  const envelope = envelopeOf(config, options.sdkEpoch, commitments);
+  envelope.configKeyVersion = configKey.version;
+  envelope.cekGeneration = configKey.cekGeneration;
+  envelope.wrappedConfigKey = await wrapConfigKey(configKey.key, cek, {
+    ...binding,
+    configKeyVersion: configKey.version,
+    cekGeneration: configKey.cekGeneration,
+  });
+  const aad = await envelopeAadV4(binding, {
+    version: envelope.version,
+    sdkEpoch: envelope.sdkEpoch,
+    commitments,
+    configKeyVersion: configKey.version,
+  });
+  const encryptedBlob = await configEncrypt(plaintext, sdkDerived, configKey.key, aad);
 
   // The push-only blocks go on AFTER the AAD: they are not commitment state, and the server drops them.
   if (options.prior) {
@@ -408,9 +395,9 @@ export async function selectiveDecryptWithConfigKey(
   binding: ConfigBinding
 ): Promise<FullConfig> {
   const version = payload.envelope.envelopeVersion as number;
-  if (version !== CONFIG_KEY_ENVELOPE_VERSION) {
+  if (version !== ENVELOPE_VERSION) {
     throw new Error(
-      `A content key opens only envelope v${CONFIG_KEY_ENVELOPE_VERSION} (got v${String(version)}).`
+      `A content key opens only envelope v${ENVELOPE_VERSION} (got v${String(version)}).`
     );
   }
   const { configKeyVersion } = v4Fields(payload.envelope);
@@ -429,9 +416,9 @@ export async function selectiveDecryptWithConfigKey(
  *
  * A v4 envelope opens through its content key, unwrapped with `cek` under the reader's own
  * `binding`; a v3 envelope opens under `cek` and `binding` directly; a v2 envelope, read for one
- * release (ruling D2), opens under its blob HMAC and carries no binding. The caller decides what a v2
- * read may do (the CLI warns, and refuses one after it has seen v3 for the config). Any other
- * version is refused.
+ * release (ruling D2), opens under its blob HMAC and carries no binding. The caller decides what an
+ * older read may do (the CLI warns, and refuses an envelope version lower than one it has recorded
+ * for the config). Any other version is refused.
  *
  * @throws ConfigIntegrityError when the blob is not the one sealed for `binding` and this envelope,
  *   or not sealed under `cek` (or, in v4, under the content key `cek` wraps).
@@ -443,12 +430,12 @@ export async function selectiveDecrypt(
   binding: ConfigBinding
 ): Promise<FullConfig> {
   const version = payload.envelope.envelopeVersion as number;
-  if (version === CONFIG_KEY_ENVELOPE_VERSION) {
+  if (version === ENVELOPE_VERSION) {
     const configKey = await unwrapEnvelopeConfigKey(payload.envelope, cek, binding);
     return selectiveDecryptWithConfigKey(payload, configKey, sdkDerived, binding);
   }
   let sensitiveJson: string;
-  if (version === ENVELOPE_VERSION) {
+  if (version === BOUND_ENVELOPE_VERSION) {
     const aad = await envelopeAad(binding, payload.envelope);
     sensitiveJson = await configDecrypt(payload.encryptedBlob, cek, sdkDerived, aad);
   } else if (version === LEGACY_ENVELOPE_VERSION) {
@@ -458,11 +445,11 @@ export async function selectiveDecrypt(
       (await hmacVerify(payload.encryptedBlob, cek, payload.hmac));
     if (!hmacValid) throw new ConfigIntegrityError();
     sensitiveJson = await configDecrypt(payload.encryptedBlob, cek, sdkDerived);
-  } else if (typeof version === 'number' && version > CONFIG_KEY_ENVELOPE_VERSION) {
+  } else if (typeof version === 'number' && version > ENVELOPE_VERSION) {
     throw new ConfigEnvelopeTooNewError(version);
   } else {
     throw new Error(
-      `Unsupported envelope version: ${String((payload.envelope as { envelopeVersion?: unknown }).envelopeVersion)}. This client reads envelope v${LEGACY_ENVELOPE_VERSION} to v${CONFIG_KEY_ENVELOPE_VERSION}.`
+      `Unsupported envelope version: ${String((payload.envelope as { envelopeVersion?: unknown }).envelopeVersion)}. This client reads envelope v${LEGACY_ENVELOPE_VERSION} to v${ENVELOPE_VERSION}.`
     );
   }
   return mergeDecrypted(payload, sensitiveJson, binding);

@@ -164,6 +164,7 @@ async function provision(secret: string, teamId: string | null = TEAM_ID) {
       sdkEpoch: SDK_EPOCH,
       sdkDerived: await importAesKey(rawSdk),
       cek,
+      cekGeneration: 1,
       teamId: teamId ?? undefined,
     }
   );
@@ -194,6 +195,9 @@ async function provision(secret: string, teamId: string | null = TEAM_ID) {
         lastModified: '2026-01-01T00:00:00Z',
         sdkEpoch: SDK_EPOCH,
         commitments: payload.envelope.commitments,
+        wrappedConfigKey: payload.envelope.wrappedConfigKey,
+        configKeyVersion: payload.envelope.configKeyVersion,
+        cekGeneration: payload.envelope.cekGeneration,
       },
       hmac: payload.hmac,
       sdk_derived: toBase64(rawSdk),

@@ -36,7 +36,10 @@ vi.mock('../../services/config/config-server-client.js', () => ({
 }));
 
 vi.mock('@rediacc/shared/config-crypto', () => ({
-  ENVELOPE_VERSION: 3,
+  ENVELOPE_VERSION: 4,
+  generateConfigKey: vi.fn(() => Promise.resolve({})),
+  unwrapConfigKey: vi.fn(() => Promise.resolve({})),
+  unwrapEnvelopeConfigKey: vi.fn(() => Promise.resolve({})),
   derivePointerBlindingKey: vi.fn(() => Promise.resolve({})),
   blindPointer: vi.fn((_key: unknown, pointer: string) => Promise.resolve(`blind:${pointer}`)),
   selectiveDecrypt: mockSelectiveDecrypt,
@@ -75,14 +78,20 @@ const REMOTE: RemoteConfig = {
 
 const CONFIG_NAME = 'test-config';
 
-/** What the (mocked) sealing step returns: a v3 envelope with its commitment salt. */
+/** What the (mocked) sealing step returns: a v4 envelope with its commitment salt and content-key wrap. */
 const SEALED_ENVELOPE = {
-  envelopeVersion: 3,
+  envelopeVersion: 4,
   id: 'cfg-id',
   version: 6,
   sdkEpoch: 10,
   commitments: { alg: 'HMAC-SHA256', fckSalt: 'fresh-salt', fields: {} },
+  wrappedConfigKey: 'wrapped-key',
+  configKeyVersion: 1,
+  cekGeneration: 1,
 };
+
+/** The content-key wrap a sync record keeps of SEALED_ENVELOPE. */
+const SEALED_WRAP = { wrappedConfigKey: 'wrapped-key', configKeyVersion: 1, cekGeneration: 1 };
 
 /** A pull response body: the blob plus the session material it carries. */
 function pullBody() {
@@ -412,7 +421,7 @@ describe('RemoteConfigAdapter', () => {
     it('should encrypt and call PUT endpoint', async () => {
       // Session
       mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 10 },
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 10, cekGeneration: 1 },
       });
 
       // Encrypt result
@@ -456,7 +465,7 @@ describe('RemoteConfigAdapter', () => {
 
     it('should persist rotated tokens during push', async () => {
       mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1 },
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1, cekGeneration: 1 },
         newServerToken: 'tok_push_rotated',
       });
 
@@ -485,7 +494,7 @@ describe('RemoteConfigAdapter', () => {
       const { ConfigServerError } = await import('../../services/config/config-server-client.js');
       // Session succeeds; the PUT then conflicts.
       mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1 },
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1, cekGeneration: 1 },
       });
       mockSelectiveEncrypt.mockResolvedValue({ encryptedBlob: 'e', envelope: SEALED_ENVELOPE });
       mockConfigServerFetch.mockRejectedValueOnce(
@@ -563,7 +572,7 @@ describe('RemoteConfigAdapter', () => {
   describe('testConnection', () => {
     it('should return true on success', async () => {
       mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1 },
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1, cekGeneration: 1 },
       });
 
       const result = await adapter.testConnection();
@@ -586,18 +595,23 @@ describe('RemoteConfigAdapter', () => {
   });
   // ─── envelope v3: high-water mark, v2 read, tombstones (T8/T9) ──────────
 
-  describe('envelope v3 guards', () => {
+  describe('envelope guards', () => {
     const BINDING = 'store-001/config-001/team-001';
-    const seen = (highWater: number, envelopeVersion: 2 | 3 = 3) => ({
+    const seen = (highWater: number, envelopeVersion: 2 | 3 | 4 = 3) => ({
       binding: BINDING,
       highWater,
       envelopeVersion,
       fckSalt: 'stored-salt',
     });
-    const pulledAt = (version: number, envelopeVersion: 2 | 3 = 3) => ({
+    const pulledAt = (version: number, envelopeVersion: 2 | 3 | 4 = 3) => ({
       data: {
         ...pullBody(),
-        envelope: { ...pullBody().envelope, version, envelopeVersion },
+        envelope: {
+          ...pullBody().envelope,
+          version,
+          envelopeVersion,
+          ...(envelopeVersion === 4 ? SEALED_WRAP : {}),
+        },
       },
     });
 
@@ -616,6 +630,23 @@ describe('RemoteConfigAdapter', () => {
       tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: seen(5) });
       mockConfigServerFetch.mockResolvedValueOnce(pulledAt(6, 2));
       await expect(adapter.pull()).rejects.toBeInstanceOf(RemoteRollbackError);
+    });
+
+    it('refuses the v3 envelope once the device has seen v4 for this config', async () => {
+      tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: seen(5, 4) });
+      mockConfigServerFetch.mockResolvedValueOnce(pulledAt(6, 3));
+      await expect(adapter.pull()).rejects.toBeInstanceOf(RemoteRollbackError);
+      expect(tokenStorage.recordSync).not.toHaveBeenCalled();
+    });
+
+    it('control: a v4 pull over a recorded v4 opens and records the wrap', async () => {
+      tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: seen(5, 4) });
+      mockConfigServerFetch.mockResolvedValueOnce(pulledAt(6, 4));
+      await expect(adapter.pull()).resolves.toMatchObject({ version: 6 });
+      expect(tokenStorage.recordSync).toHaveBeenCalledWith(
+        CONFIG_NAME,
+        expect.objectContaining({ envelopeVersion: 4, configKey: SEALED_WRAP })
+      );
     });
 
     it('ignores a record that names another config', async () => {
@@ -646,7 +677,7 @@ describe('RemoteConfigAdapter', () => {
     it('a push from the version the device saw carries that envelope as its prior, and moves the mark', async () => {
       tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: seen(5, 2) });
       mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 10 },
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 10, cekGeneration: 1 },
       });
       mockSelectiveEncrypt.mockResolvedValue({ encryptedBlob: 'e', envelope: SEALED_ENVELOPE });
       mockConfigServerFetch.mockResolvedValueOnce({ data: { version: 6 } });
@@ -656,21 +687,26 @@ describe('RemoteConfigAdapter', () => {
       const options = mockSelectiveEncrypt.mock.calls.at(-1)?.[3] as {
         prior?: { envelopeVersion: number; fckSalt: string };
         storeId: string;
+        configKey: { version: number; cekGeneration: number };
       };
       expect(options.storeId).toBe('store-001');
       expect(options.prior).toMatchObject({ envelopeVersion: 2, fckSalt: 'stored-salt' });
+      // A v2 store gets a fresh content key at version 1, wrapped under the session's generation.
+      expect(options.configKey).toMatchObject({ version: 1, cekGeneration: 1 });
       expect(tokenStorage.recordSync).toHaveBeenCalledWith(CONFIG_NAME, {
         binding: BINDING,
         highWater: 6,
-        envelopeVersion: 3,
+        envelopeVersion: 4,
         fckSalt: 'fresh-salt',
+        configKey: SEALED_WRAP,
+        cekGeneration: 1,
       });
     });
 
     it('a 409 precondition_failed is RemotePreconditionError naming the pointers, not a version conflict', async () => {
       const { ConfigServerError } = await import('../../services/config/config-server-client.js');
       mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1 },
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1, cekGeneration: 1 },
       });
       mockSelectiveEncrypt.mockResolvedValue({ encryptedBlob: 'e', envelope: SEALED_ENVELOPE });
       const refusal = new ConfigServerError('Precondition failed', 409, 'precondition_failed');

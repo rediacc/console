@@ -28,7 +28,9 @@ import {
   fromFullConfig,
 } from '../config-schema/index.js';
 import { exportAesKey, fromBase64 } from './aes.js';
+import { ENVELOPE_VERSION } from './constants.js';
 import { cekHandoffEncrypt, cekWrap, generateCek } from './index.js';
+import { unwrapEnvelopeConfigKey } from './selective.js';
 import type { EncryptedConfigPayload, FullConfig } from './types.js';
 
 /** A config as named by the rotation snapshot the server issued at `begin`. */
@@ -78,13 +80,13 @@ export function fullConfigToRdcConfig(decrypted: FullConfig): RdcConfig {
 }
 
 /**
- * Re-encrypt one pulled config under a new CEK.
+ * Re-encrypt one pulled config under a new CEK, as envelope v4.
  *
- * The field-commitment key and the pointer-blinding key are derived from the CEK, so every
- * commitment and every commitment key in the envelope changes with the key. A fresh FCK salt is
- * generated (by omitting `fckSalt`) rather than reused: the commitments have to be recomputed anyway,
- * and a new salt makes it obvious that the old envelope's HMACs are dead. The server applies no
- * anti-downgrade check to a rotation (the keys cannot match across CEKs), so no prior is sent.
+ * A v4 config keeps its content key: it is unwrapped with the old CEK and rewrapped under the new
+ * one at the same `configKeyVersion` and the new `cekGeneration`, so its commitment keys (derived
+ * from the content key) stay put. A v3 or v2 config, whose commitment keys derive from the CEK, gets
+ * a fresh content key at version 1. A fresh FCK salt is generated either way (by omitting
+ * `fckSalt`). The server applies no anti-downgrade check to a rotation, so no prior is sent.
  */
 export async function reencryptConfig(params: {
   /** The pulled payload, as assembled from the pull response. */
@@ -98,24 +100,42 @@ export async function reencryptConfig(params: {
   sdkEpoch: number;
   /** Version to write: the snapshot version plus one. */
   version: number;
+  /** The CEK generation `newCek` belongs to (the one the rotation commits). */
+  newCekGeneration: number;
   /** The store and config being rotated: the AAD binding of both the pulled and the new blob. */
   storeId: string;
   configId: string;
   teamId?: string;
 }): Promise<EncryptedConfigPayload> {
+  const binding = {
+    storeId: params.storeId,
+    configId: params.configId,
+    teamId: params.teamId ?? null,
+  };
   const decrypted = await decryptConfigPullPayload(params.pulled, {
     cek: params.oldCek,
     sdkDerived: params.sdkDerivedForPull,
-    binding: { storeId: params.storeId, configId: params.configId, teamId: params.teamId ?? null },
+    binding,
   });
+  const { envelope } = params.pulled;
+  const kept =
+    envelope.envelopeVersion === ENVELOPE_VERSION
+      ? {
+          key: await unwrapEnvelopeConfigKey(envelope, params.oldCek, binding),
+          version: envelope.configKeyVersion as number,
+          cekGeneration: params.newCekGeneration,
+        }
+      : undefined;
 
   return buildConfigPushPayload(fullConfigToRdcConfig(decrypted), {
     version: params.version,
     sdkEpoch: params.sdkEpoch,
     sdkDerived: params.sdkDerivedForPush,
     cek: params.newCek,
+    cekGeneration: params.newCekGeneration,
     storeId: params.storeId,
     teamId: params.teamId,
+    ...(kept ? { configKey: kept } : {}),
   });
 }
 

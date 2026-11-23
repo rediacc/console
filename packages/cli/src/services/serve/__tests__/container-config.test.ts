@@ -27,6 +27,7 @@ import {
   exportAesKey,
   fromBase64,
   generateCek,
+  generateConfigKey,
   generateSdkMaster,
   sdkDerive,
   selectiveEncrypt,
@@ -43,7 +44,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { configFileStorage } from '../../../adapters/config-file-storage.js';
 import { createCli } from '../../../cli.js';
 import { configService } from '../../config/config-resources.js';
-import { boundEffectivePolicy } from '../../config/policy-record.js';
+import { boundEffectivePolicy, memoryPolicyHighWater } from '../../config/policy-record.js';
 import {
   createOutputState,
   DispatchExit,
@@ -52,12 +53,22 @@ import {
 import { resetProxySessions } from '../../executor/proxy-client.js';
 import type { ExecuteOptions, ExecuteResult } from '../../executor/types.js';
 import { AuthVerifier } from '../auth.js';
+import { ConfigChain, SessionConfigStore } from '../config-writeback.js';
 import { createContainerConfigLoader, createExecutorGrantRecorder } from '../container-config.js';
 import { serveCrypto } from '../crypto.js';
 import type { ServeDeps } from '../deps.js';
 import { authorize } from '../policy.js';
 import { createServeApp } from '../server.js';
 import { SessionStore } from '../sessions.js';
+import {
+  createFakeConfigStore,
+  type FakeConfigStore,
+  CONFIG_ID as HARNESS_CONFIG_ID,
+  EXECUTOR_TOKEN as HARNESS_EXECUTOR_TOKEN,
+  OWNER_TOKEN as HARNESS_OWNER_TOKEN,
+  STORE_ID as HARNESS_STORE_ID,
+  OPEN_POLICY,
+} from './writeback-harness.js';
 
 /**
  * Extract an ArrayBuffer for the Web Crypto API, exactly as config-crypto's own
@@ -229,6 +240,8 @@ describe('container-tier config loading', () => {
   let mintBodies: { userId: string; sessionId: string }[];
   /** When set, the fake account server refuses to record grants. */
   let refuseGrants: boolean;
+  /** The envelope version of the payload the fake pull serves. */
+  let servedEnvelopeVersion: number;
 
   /**
    * Boot the executor against `config`, with `policy` (when given) sealed as the
@@ -261,12 +274,15 @@ describe('container-tier config loading', () => {
             sdkEpoch,
             sdkDerived,
             cek,
+            cekGeneration: 1,
           })
         : await selectiveEncrypt(toFullConfig(config, { version: 4, sdkEpoch }), sdkDerived, cek, {
             sdkEpoch,
             storeId: 'store-1',
             commitEntries: buildCommitEntries(config),
+            configKey: { key: await generateConfigKey(), version: 1, cekGeneration: 1 },
           });
+    servedEnvelopeVersion = payload.envelope.envelopeVersion;
     const sdkDerivedB64 = toBase64(await exportAesKey(sdkDerived));
     const policyRecord =
       policy === undefined
@@ -340,7 +356,7 @@ describe('container-tier config loading', () => {
         expect((init?.headers as Record<string, string>)['X-Config-Token']).toBe(
           'rct_executor_scoped'
         );
-        // A pull without the envelope header gets 426 against a v3 store (the R1 clean break).
+        // A pull that declares less than v4 (or no header) gets 426 (the R1 and Design 8 clean breaks).
         expect((init?.headers as Record<string, string>)['x-config-envelope']).toBe(
           String(ENVELOPE_VERSION)
         );
@@ -490,6 +506,8 @@ describe('container-tier config loading', () => {
     await response.text();
 
     expect(executed).toHaveLength(1);
+    // The blob it opened is an envelope v4, sealed under the config's content key.
+    expect(servedEnvelopeVersion).toBe(4);
 
     // The config policy ran against is the DECRYPTED one. If the executor had failed to open the blob, these fields could not exist.
     expect(authorizedAgainst).toHaveLength(1);
@@ -842,5 +860,85 @@ describe('createExecutorGrantRecorder status mapping', () => {
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).name).not.toBe('AuthError');
     }
+  });
+});
+
+describe('the executor loader on envelope v4 (PLAN-rmcp-policy-record.md SK3)', () => {
+  /** A session store opened straight through the chain, as the container loader opens one. */
+  async function openDirect(store: FakeConfigStore): Promise<SessionConfigStore> {
+    const sessionId = 'session-v4';
+    await store.fetch('https://account.test/account/api/v1/configs/executor-grant', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${HARNESS_EXECUTOR_TOKEN}` },
+      body: JSON.stringify({ sessionId, token: HARNESS_OWNER_TOKEN }),
+    });
+    const chain = new ConfigChain({
+      accountUrl: 'https://account.test',
+      executorToken: HARNESS_EXECUTOR_TOKEN,
+      userId: 'user-owner',
+      fetchImpl: store.fetch,
+    });
+    await chain.mint(sessionId);
+    return SessionConfigStore.open({
+      chain,
+      sessionId,
+      cek: store.cek,
+      target: { storeId: HARNESS_STORE_ID, configId: HARNESS_CONFIG_ID, teamId: null },
+      orgConfigId: HARNESS_CONFIG_ID,
+      policyHighWater: memoryPolicyHighWater(),
+    });
+  }
+
+  const seeded = (): RdcConfig =>
+    ({
+      schemaVersion: 3,
+      id: HARNESS_CONFIG_ID,
+      version: 3,
+      resources: {
+        machines: { m1: { ip: '10.1.1.1', user: 'root', port: 22 } },
+        repositories: {},
+      },
+      encryption: { mode: 'plaintext' },
+    }) as unknown as RdcConfig;
+
+  const addMachine = (config: RdcConfig): RdcConfig => ({
+    ...config,
+    resources: {
+      ...config.resources,
+      machines: { ...config.resources.machines, m2: { ip: '10.1.1.2', user: 'root', port: 22 } },
+    },
+  });
+
+  it('pulls a v4 config and pushes v4 under the same content key', async () => {
+    const store = await createFakeConfigStore(seeded(), OPEN_POLICY);
+    expect(store.storedEnvelope().envelopeVersion).toBe(4);
+    const pulledWrap = store.storedEnvelope().wrappedConfigKey;
+    const session = await openDirect(store);
+    expect(session.config.resources.machines).toHaveProperty('m1');
+
+    await session.write(addMachine);
+    expect(store.puts).toHaveLength(1);
+    expect(store.puts[0]).toMatchObject({ status: 200, envelopeVersion: 4, configKeyVersion: 1 });
+    // A fresh wrap (new IV) of the same key at the same version: the store's copy still opens under the session key.
+    expect(store.puts[0]?.wrappedConfigKey).toBeTruthy();
+    expect(store.puts[0]?.wrappedConfigKey).not.toBe(pulledWrap);
+    expect((await store.current()).resources.machines).toHaveProperty('m2');
+
+    // The second write reuses the wrap the first one recorded, and proves the deletion against it.
+    await session.write((config) => {
+      const machines = { ...config.resources.machines };
+      delete machines.m2;
+      return { ...config, resources: { ...config.resources, machines } };
+    });
+    expect(store.puts[1]).toMatchObject({ status: 200, envelopeVersion: 4, configKeyVersion: 1 });
+    expect(store.puts[1]?.removedKeys.length).toBeGreaterThan(0);
+  });
+
+  it('fails the write before the PUT when /session names no CEK generation', async () => {
+    const store = await createFakeConfigStore(seeded(), OPEN_POLICY);
+    const session = await openDirect(store);
+    store.sessionCekGeneration = undefined;
+    await expect(session.write(addMachine)).rejects.toThrow(/CEK generation/);
+    expect(store.puts).toHaveLength(0);
   });
 });

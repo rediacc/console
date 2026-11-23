@@ -1,15 +1,20 @@
 /**
- * Envelope v3 (PLAN-config-sync-hardening T8/T9, operator rulings D1, D2, D6).
+ * Envelope v4 through the push builder (PLAN-config-sync-hardening T8/T9, operator rulings D1, D2,
+ * D6; PLAN-rmcp-policy-record.md Design 8).
  *
- * - The blob is bound to (store, config, team, version, epoch, commitment state) by the AES-GCM AAD:
- *   a reader that asks for one config opens nothing else (F1).
- * - Commitment keys are blinded pointers: the envelope carries no document name (F14).
+ * - The blob is sealed under the config's content key and bound to (store, config, team, version,
+ *   epoch, content-key version, commitment state) by the AES-GCM AAD: a reader that asks for one
+ *   config opens nothing else (F1).
+ * - Commitment keys are pointers blinded under the content key: the envelope carries no document
+ *   name (F14), and a push built from the stored wrap keeps every key.
  * - A push that drops a committed path carries a tombstone equal to the STORED commitment (F2).
- * - A v2 envelope still opens for one release, under its blob HMAC (D2), and the push that upgrades
- *   it maps every v2 pointer to its v3 key.
+ * - A stored v3 envelope opens under the CEK, and the push that upgrades it maps every CEK-blinded
+ *   key to its content-key one. A v2 envelope still opens for one release, under its blob HMAC (D2),
+ *   and the push that upgrades it maps every v2 pointer to its v4 key.
  */
 
 import { describe, expect, it } from 'vitest';
+import { sealEnvelopeV3 } from '../../config-crypto/__tests__/fixtures/envelope-v3.js';
 import {
   blindPointer,
   ConfigIntegrityError,
@@ -23,11 +28,14 @@ import {
   generateSdkMaster,
   hmacCompute,
   sdkDerive,
+  unwrapEnvelopeConfigKey,
 } from '../../config-crypto/index.js';
 import {
   buildCommitEntries,
   buildConfigPushPayload,
   decryptConfigPullPayload,
+  envelopeConfigKeyWrap,
+  type PushPrior,
   removedCommitEntries,
   toFullConfig,
 } from '../payload.js';
@@ -65,9 +73,31 @@ function push(
     sdkEpoch: 11,
     sdkDerived: k.sdkDerived,
     cek: k.cek,
+    cekGeneration: 1,
     storeId: STORE,
     ...extra,
   });
+}
+
+/** The prior a device holds after pulling `stored`: its version, salt and content-key wrap. */
+function priorOf(stored: EncryptedConfigPayload, base?: RdcConfig): PushPrior {
+  const wrap = envelopeConfigKeyWrap(stored.envelope);
+  return {
+    envelopeVersion: stored.envelope.envelopeVersion,
+    fckSalt: stored.envelope.commitments.fckSalt,
+    ...(base ? { base } : {}),
+    ...(wrap ? { configKey: wrap } : {}),
+  };
+}
+
+/** The pointer-blinding key of a v4 payload: derived from its content key, unwrapped with the CEK. */
+async function blindingOf(payload: EncryptedConfigPayload, cek: CryptoKey) {
+  const key = await unwrapEnvelopeConfigKey(payload.envelope, cek, {
+    storeId: STORE,
+    configId: CONFIG,
+    teamId: null,
+  });
+  return derivePointerBlindingKey(key, CONFIG);
 }
 
 function open(
@@ -101,11 +131,13 @@ async function legacyV2(config: RdcConfig, k: { cek: CryptoKey; sdkDerived: Cryp
   return payload;
 }
 
-describe('envelope v3: the AAD binding (F1)', () => {
+describe('envelope v4: the AAD binding (F1)', () => {
   it('opens for the binding it was sealed for', async () => {
     const k = await keys();
     const payload = await push(doc(BOTH), k);
-    expect(payload.envelope.envelopeVersion).toBe(3);
+    expect(payload.envelope.envelopeVersion).toBe(4);
+    expect(payload.envelope.configKeyVersion).toBe(1);
+    expect(payload.envelope.cekGeneration).toBe(1);
     expect(payload.hmac).toBeUndefined();
     const opened = await open(payload, k);
     expect(opened.machines).toEqual(BOTH);
@@ -153,6 +185,20 @@ describe('envelope v3: the AAD binding (F1)', () => {
         commitments: { ...p.envelope.commitments, fckSalt: generateFckSalt() },
       }),
     ],
+    [
+      'content-key version',
+      (p: EncryptedConfigPayload) => ({
+        ...p.envelope,
+        configKeyVersion: (p.envelope.configKeyVersion ?? 1) + 1,
+      }),
+    ],
+    [
+      'CEK generation',
+      (p: EncryptedConfigPayload) => ({
+        ...p.envelope,
+        cekGeneration: (p.envelope.cekGeneration ?? 1) + 1,
+      }),
+    ],
   ])('refuses an envelope whose %s the server edited', async (_label, edit) => {
     const k = await keys();
     const payload = await push(doc(BOTH), k);
@@ -168,7 +214,7 @@ describe('envelope v3: the AAD binding (F1)', () => {
   });
 });
 
-describe('envelope v3: blinded pointers (F14, D6)', () => {
+describe('envelope v4: blinded pointers (F14, D6)', () => {
   it('carries no machine, repo or credential name', async () => {
     const k = await keys();
     const payload = await push(doc(BOTH), k);
@@ -179,33 +225,61 @@ describe('envelope v3: blinded pointers (F14, D6)', () => {
   it('one pointer keeps one key across pushes, and another config gets unrelated keys', async () => {
     const k = await keys();
     const first = await push(doc(BOTH), k);
-    const second = await push(doc(BOTH), k, { version: 3 });
+    const second = await push(doc(BOTH), k, { version: 3, prior: priorOf(first) });
+    expect(second.envelope.configKeyVersion).toBe(first.envelope.configKeyVersion);
     expect(
       Object.keys(second.envelope.commitments.fields).sort((a, b) => Number(a > b) - Number(a < b))
     ).toEqual(
       Object.keys(first.envelope.commitments.fields).sort((a, b) => Number(a > b) - Number(a < b))
     );
     const ownKey = await blindPointer(
-      await derivePointerBlindingKey(k.cek, CONFIG),
+      await blindingOf(first, k.cek),
       '/resources/machines/alpha/ip'
     );
     const otherKey = await blindPointer(
-      await derivePointerBlindingKey(k.cek, 'another-config'),
+      await derivePointerBlindingKey(k.cek, CONFIG),
       '/resources/machines/alpha/ip'
     );
     expect(first.envelope.commitments.fields).toHaveProperty([ownKey]);
+    // A key blinded under the CEK (a v3 store's) is unrelated to the content-key one.
     expect(otherKey).not.toBe(ownKey);
+  });
+
+  it('control: a push without the stored wrap seals under a fresh content key, so every key moves', async () => {
+    const k = await keys();
+    const first = await push(doc(BOTH), k);
+    const fresh = await push(doc(BOTH), k, { version: 3 });
+    expect(Object.keys(fresh.envelope.commitments.fields)).not.toEqual(
+      Object.keys(first.envelope.commitments.fields)
+    );
+  });
+
+  it('a v4 prior without its wrap is refused, never sealed under a fresh key', async () => {
+    const k = await keys();
+    const first = await push(doc(BOTH), k);
+    const { configKey: _dropped, ...noWrap } = priorOf(first);
+    await expect(push(doc(BOTH), k, { version: 3, prior: noWrap })).rejects.toThrow(
+      /carries no content-key wrap/
+    );
+  });
+
+  it('a wrap that does not open under this CEK is refused', async () => {
+    const k = await keys();
+    const first = await push(doc(BOTH), k);
+    const other = { ...k, cek: await generateCek() };
+    await expect(
+      push(doc(BOTH), other, { version: 3, prior: priorOf(first) })
+    ).rejects.toBeInstanceOf(ConfigIntegrityError);
   });
 });
 
-describe('envelope v3: tombstones (F2, D1)', () => {
+describe('envelope v4: tombstones (F2, D1)', () => {
   it('a push that drops a machine carries the STORED commitment of each dropped path', async () => {
     const k = await keys();
     const stored = await push(doc(BOTH), k, { version: 1 });
     const trimmed = doc({ alpha: BOTH.alpha });
-    const next = await push(trimmed, k, {
-      prior: { envelopeVersion: 3, fckSalt: stored.envelope.commitments.fckSalt, base: doc(BOTH) },
-    });
+    const next = await push(trimmed, k, { prior: priorOf(stored, doc(BOTH)) });
+    expect(next.envelope.commitments.migrated).toBeUndefined();
 
     const removed = next.envelope.commitments.removed ?? {};
     const dropped = removedCommitEntries(doc(BOTH), trimmed).map((e) => e.pointer);
@@ -232,20 +306,58 @@ describe('envelope v3: tombstones (F2, D1)', () => {
     const stored = await push(doc(BOTH), k, { version: 1 });
     const guessedBase = doc({ ...BOTH, 'secret-host': { ip: '10.0.0.99', user: 'ops' } });
     const next = await push(doc({ alpha: BOTH.alpha }), k, {
-      prior: {
-        envelopeVersion: 3,
-        fckSalt: stored.envelope.commitments.fckSalt,
-        base: guessedBase,
-      },
+      prior: priorOf(stored, guessedBase),
     });
     const ipKey = await blindPointer(
-      await derivePointerBlindingKey(k.cek, CONFIG),
+      await blindingOf(stored, k.cek),
       '/resources/machines/secret-host/ip'
     );
     expect(next.envelope.commitments.removed?.[ipKey]).toBeDefined();
     expect(next.envelope.commitments.removed?.[ipKey]).not.toEqual(
       stored.envelope.commitments.fields[ipKey]
     );
+  });
+});
+
+describe('envelope v3: read, upgraded by the next push', () => {
+  function storedV3(config: RdcConfig, k: { cek: CryptoKey; sdkDerived: CryptoKey }) {
+    const full = toFullConfig(JSON.parse(JSON.stringify(config)) as RdcConfig, {
+      version: 1,
+      sdkEpoch: 11,
+    });
+    return sealEnvelopeV3({ ...full, envelopeVersion: 3 }, k.sdkDerived, k.cek, {
+      storeId: STORE,
+      sdkEpoch: 11,
+      commitEntries: buildCommitEntries(config),
+    });
+  }
+
+  it('a stored v3 payload opens under the CEK and reports version 3', async () => {
+    const k = await keys();
+    const v3 = await storedV3(doc(BOTH), k);
+    const opened = await open(v3, k);
+    expect(opened.envelopeVersion).toBe(3);
+    expect(opened.machines).toEqual(BOTH);
+  });
+
+  it('the upgrading push maps every CEK-blinded key to its content-key one, and tombstones under the stored keys', async () => {
+    const k = await keys();
+    const v3 = await storedV3(doc(BOTH), k);
+    const next = await push(doc({ alpha: BOTH.alpha }), k, { prior: priorOf(v3, doc(BOTH)) });
+    expect(next.envelope.envelopeVersion).toBe(4);
+    expect(next.envelope.configKeyVersion).toBe(1);
+    const migrated = next.envelope.commitments.migrated ?? {};
+    const fields = next.envelope.commitments.fields;
+    expect(Object.keys(migrated).length).toBeGreaterThan(0);
+    for (const [storedKey, nextKey] of Object.entries(migrated)) {
+      expect(v3.envelope.commitments.fields).toHaveProperty([storedKey]);
+      expect(fields).toHaveProperty([nextKey]);
+    }
+    for (const [key, stored] of Object.entries(v3.envelope.commitments.fields)) {
+      if (key in migrated) continue;
+      expect(next.envelope.commitments.removed?.[key]).toEqual(stored);
+    }
+    expect(Object.keys(next.envelope.commitments.removed ?? {}).length).toBeGreaterThan(0);
   });
 });
 
@@ -265,7 +377,7 @@ describe('envelope v2: read for one release, upgraded by the next push (D2)', ()
     await expect(open({ ...legacy, hmac: null }, k)).rejects.toBeInstanceOf(ConfigIntegrityError);
   });
 
-  it('the upgrading push maps every committed v2 pointer to its v3 key, and tombstones in v2 form', async () => {
+  it('the upgrading push maps every committed v2 pointer to its v4 key, and tombstones in v2 form', async () => {
     const k = await keys();
     const legacy = await legacyV2(doc(BOTH), k);
     const next = await push(doc({ alpha: BOTH.alpha }), k, {
@@ -279,7 +391,7 @@ describe('envelope v2: read for one release, upgraded by the next push (D2)', ()
         .sort((a, b) => Number(a > b) - Number(a < b))
     );
     for (const key of Object.values(migrated)) expect(fields).toHaveProperty([key]);
-    // Every stored v2 pointer is accounted for: migrated to a v3 key, or tombstoned with its stored commitment.
+    // Every stored v2 pointer is accounted for: migrated to a v4 key, or tombstoned with its stored commitment.
     for (const [pointer, stored] of Object.entries(legacy.envelope.commitments.fields)) {
       if (pointer in migrated) continue;
       expect(next.envelope.commitments.removed?.[pointer]).toEqual(stored);

@@ -58,7 +58,7 @@ export interface PushOptions {
 export interface PulledEnvelope {
   configData: string;
   envelope: {
-    envelopeVersion: 2 | 3;
+    envelopeVersion: 2 | 3 | 4;
     configId: string;
     version: number;
     teamId: string | null;
@@ -66,6 +66,12 @@ export interface PulledEnvelope {
     commitments: FieldCommitments;
     /** The epoch the blob was pushed in; the server's envelope always carries it. */
     sdkEpoch: number;
+    /** Envelope v4 only: the content key wrapped under the CEK. */
+    wrappedConfigKey?: string;
+    /** Envelope v4 only: the content key's version. */
+    configKeyVersion?: number;
+    /** Envelope v4 only: the CEK generation the content key is wrapped under. */
+    cekGeneration?: number;
   };
   hmac: string | null;
   server_secret: string;

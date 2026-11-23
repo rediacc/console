@@ -10,6 +10,7 @@
 
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
+import type { StoredConfigKeyWrap } from '@rediacc/shared/config-schema';
 import { getConfigDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
 
@@ -24,10 +25,15 @@ export interface SyncRecord {
   binding: string;
   /** The newest version this device pulled or pushed; a pull older than it is a rollback. */
   highWater: number;
-  /** The envelope version the server held at `highWater` (a v3 seen means v2 is never accepted again). */
-  envelopeVersion: 2 | 3;
+  /** The envelope version the server held at `highWater` (a pull below it is refused as a downgrade). */
+  envelopeVersion: 2 | 3 | 4;
   /** That envelope's `commitments.fckSalt`: the key of this device's tombstone proofs. */
   fckSalt: string;
+  /**
+   * That envelope's content-key wrap when it is v4: the next push unwraps the config's content key
+   * from it, so the key (and every commitment key) stays the same across pushes.
+   */
+  configKey?: StoredConfigKeyWrap;
   /**
    * The store's CEK generation this device's wrapped CEK belongs to (T10): recorded when a blob
    * opened under it, sent with every push, and held against the store's to tell a rotated-away key

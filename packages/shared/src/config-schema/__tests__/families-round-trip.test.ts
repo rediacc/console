@@ -211,6 +211,7 @@ async function pushPullRoundTrip(config: RdcConfig): Promise<RdcConfig> {
     sdkEpoch: 42,
     sdkDerived,
     cek,
+    cekGeneration: 1,
   });
   // Real crypto both ways — the wire shape is exactly what a pull hands back.
   const decrypted = await decryptConfigPullPayload(payload, {

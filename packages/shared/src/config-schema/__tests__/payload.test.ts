@@ -15,6 +15,7 @@ import {
   generateCek,
   generateSdkMaster,
   sdkDerive,
+  unwrapEnvelopeConfigKey,
 } from '../../config-crypto/index.js';
 import {
   buildCommitEntries,
@@ -76,7 +77,7 @@ describe('config push payload', () => {
 
   it('toFullConfig writes the incremented version, not the pulled one', () => {
     const full = toFullConfig(sampleConfig(), { version: 5, sdkEpoch: 7 });
-    expect(full.envelopeVersion).toBe(3);
+    expect(full.envelopeVersion).toBe(4);
     expect(full.version).toBe(5);
     expect(full.sdkEpoch).toBe(7);
     expect(full.machines).toEqual({ 'web-1': { ip: '10.0.0.1', user: 'deploy', port: 22 } });
@@ -93,14 +94,16 @@ describe('config push payload', () => {
       sdkEpoch: 3,
       sdkDerived,
       cek,
+      cekGeneration: 1,
     });
 
-    expect(payload.envelope.envelopeVersion).toBe(3);
+    expect(payload.envelope.envelopeVersion).toBe(4);
     expect(payload.envelope.version).toBe(5);
     expect(payload.envelope.commitments.alg).toBe('HMAC-SHA256');
     expect(payload.envelope.commitments.fckSalt).not.toBe('');
-    // Keyed by the blinded pointer (envelope v3): the server never reads the name.
-    const blinding = await derivePointerBlindingKey(cek, config.id);
+    // Keyed by the pointer blinded under the content key (envelope v4): the server never reads the name.
+    const contentKey = await unwrapEnvelopeConfigKey(payload.envelope, cek, readerBinding(payload));
+    const blinding = await derivePointerBlindingKey(contentKey, config.id);
     expect(Object.keys(payload.envelope.commitments.fields)).toContain(
       await blindPointer(blinding, '/credentials/ssh/privateKey')
     );
@@ -127,6 +130,7 @@ describe('config push payload', () => {
       sdkEpoch: 3,
       sdkDerived,
       cek,
+      cekGeneration: 1,
     });
 
     const tampered = { ...payload, encryptedBlob: `${payload.encryptedBlob.slice(0, -4)}AAAA` };
@@ -158,6 +162,7 @@ describe('config push payload', () => {
       sdkEpoch: 1,
       sdkDerived,
       cek,
+      cekGeneration: 1,
     });
     const decrypted = await decryptConfigPullPayload(payload, {
       cek,

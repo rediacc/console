@@ -2,9 +2,9 @@
  * Config push/pull payload composition.
  *
  * The bridge between the config DOCUMENT (this package) and the config CRYPTO
- * (packages/shared/src/config-crypto): it turns an `RdcConfig` into the v3
- * envelope the account server accepts, and turns a decrypted envelope (v3, or v2
- * for one release) back into an `RdcConfig`.
+ * (packages/shared/src/config-crypto): it turns an `RdcConfig` into the v4
+ * envelope the account server accepts, and turns a decrypted envelope (v4, v3, or
+ * v2 for one release) back into an `RdcConfig`.
  *
  * It lives here, not in config-crypto, to keep the layering one-directional:
  * config-crypto stays a generic crypto library that knows nothing about the
@@ -18,11 +18,18 @@
 
 import type {
   ConfigBinding,
+  ConfigContentKey,
   EncryptedConfigPayload,
   FullConfig,
   PriorEnvelope,
 } from '../config-crypto/index.js';
-import { ENVELOPE_VERSION, selectiveDecrypt, selectiveEncrypt } from '../config-crypto/index.js';
+import {
+  ENVELOPE_VERSION,
+  generateConfigKey,
+  selectiveDecrypt,
+  selectiveEncrypt,
+  unwrapConfigKey,
+} from '../config-crypto/index.js';
 import { type RdcConfig, RdcConfigSchema } from './schemas.js';
 import { DEVICE_LOCAL_POINTERS } from './sensitivity.js';
 import { getByPointer, pathsToCommit } from './walker.js';
@@ -57,6 +64,9 @@ const ENVELOPE_KEYS: ReadonlySet<string> = new Set([
   'orgId',
   'lastModified',
   'commitments',
+  'wrappedConfigKey',
+  'configKeyVersion',
+  'cekGeneration',
 ]);
 
 /**
@@ -207,11 +217,45 @@ export function removedCommitEntries(base: RdcConfig, next: RdcConfig): CommitEn
     .map((pointer) => ({ pointer, value: getByPointer(baseDoc, pointer) }));
 }
 
+/** A stored envelope v4's content-key wrap: the three fields the envelope carries. */
+export interface StoredConfigKeyWrap {
+  wrappedConfigKey: string;
+  configKeyVersion: number;
+  cekGeneration: number;
+}
+
+/**
+ * The content-key wrap of an envelope, when it is a v4 one carrying all three fields; undefined for
+ * any other envelope. Clients record it from a pull or a push answer and hand it back as
+ * `PushPrior.configKey`.
+ */
+export function envelopeConfigKeyWrap(envelope: {
+  envelopeVersion: number;
+  wrappedConfigKey?: unknown;
+  configKeyVersion?: unknown;
+  cekGeneration?: unknown;
+}): StoredConfigKeyWrap | undefined {
+  const { envelopeVersion, wrappedConfigKey, configKeyVersion, cekGeneration } = envelope;
+  if (
+    envelopeVersion !== ENVELOPE_VERSION ||
+    typeof wrappedConfigKey !== 'string' ||
+    wrappedConfigKey.length === 0 ||
+    typeof configKeyVersion !== 'number' ||
+    !Number.isInteger(configKeyVersion) ||
+    typeof cekGeneration !== 'number' ||
+    !Number.isInteger(cekGeneration)
+  ) {
+    return undefined;
+  }
+  return { wrappedConfigKey, configKeyVersion, cekGeneration };
+}
+
 /**
  * The envelope the server stores for the config being pushed, as the pushing device last pulled it,
  * plus the document it pulled. A push built from it proves every deletion (a tombstone per committed
- * path `base` held and the pushed document drops), and upgrades a v2 store's keys. Without it a
- * push can only add and change values: the server refuses a push that drops a committed path.
+ * path `base` held and the pushed document drops), upgrades a v2 or v3 store's keys, and reuses a v4
+ * store's content key. Without it a push can only add and change values: the server refuses a push
+ * that drops a committed path.
  */
 export interface PushPrior {
   envelopeVersion: PriorEnvelope['envelopeVersion'];
@@ -219,6 +263,8 @@ export interface PushPrior {
   fckSalt: string;
   /** The document as pulled at the version this push replaces; omit when nothing is deleted. */
   base?: RdcConfig;
+  /** The stored envelope v4's content-key wrap; required when `envelopeVersion` is 4. */
+  configKey?: StoredConfigKeyWrap;
 }
 
 /**
@@ -237,11 +283,51 @@ export class ConfigPolicyFieldError extends Error {
 }
 
 /**
- * Compose the encrypted payload for a config push: commitments from the schema
- * walker, envelope from the document, ciphertext from the crypto layer. Refuses a
- * document carrying `policy` (ConfigPolicyFieldError).
+ * The content key a push is sealed under: the explicit one, else the prior v4 envelope's, unwrapped
+ * with `cek` under this config's binding, else a fresh key at version 1 (a config's first v4 push).
+ * The key is always rewrapped under `cekGeneration`, the generation `cek` belongs to.
  */
-export function buildConfigPushPayload(
+async function resolveConfigKey(
+  configId: string,
+  params: {
+    cek: CryptoKey;
+    storeId: string;
+    teamId?: string;
+    cekGeneration: number;
+    prior?: PushPrior;
+    configKey?: ConfigContentKey;
+  }
+): Promise<ConfigContentKey> {
+  const { cekGeneration } = params;
+  if (params.configKey) {
+    return { key: params.configKey.key, version: params.configKey.version, cekGeneration };
+  }
+  const prior = params.prior;
+  if (prior?.envelopeVersion === ENVELOPE_VERSION) {
+    if (!prior.configKey) {
+      throw new Error(
+        `The stored envelope of config "${configId}" is v${ENVELOPE_VERSION}, but the push prior carries no content-key wrap: pull the config again before pushing.`
+      );
+    }
+    const key = await unwrapConfigKey(prior.configKey.wrappedConfigKey, params.cek, {
+      storeId: params.storeId,
+      configId,
+      teamId: params.teamId ?? null,
+      configKeyVersion: prior.configKey.configKeyVersion,
+      cekGeneration: prior.configKey.cekGeneration,
+    });
+    return { key, version: prior.configKey.configKeyVersion, cekGeneration };
+  }
+  return { key: await generateConfigKey(), version: 1, cekGeneration };
+}
+
+/**
+ * Compose the encrypted payload for a config push: commitments from the schema
+ * walker, envelope v4 from the document, ciphertext from the crypto layer under the
+ * config's content key (see `resolveConfigKey`). Refuses a document carrying
+ * `policy` (ConfigPolicyFieldError).
+ */
+export async function buildConfigPushPayload(
   config: RdcConfig,
   params: {
     /** Version being written (the pulled version plus one). */
@@ -249,6 +335,8 @@ export function buildConfigPushPayload(
     sdkEpoch: number;
     sdkDerived: CryptoKey;
     cek: CryptoKey;
+    /** The store's CEK generation `cek` belongs to: the content key is wrapped under it. */
+    cekGeneration: number;
     /** The store the config lives in (bound into the AAD). */
     storeId: string;
     /** The config's team; absent for the org-level config. Bound into the AAD. */
@@ -257,10 +345,12 @@ export function buildConfigPushPayload(
     fckSalt?: string;
     /** What the server holds now (see PushPrior); omit for a first push. */
     prior?: PushPrior;
+    /** The content key to seal under, overriding the prior's (a CEK rotation keeps the pulled one). */
+    configKey?: ConfigContentKey;
   }
 ): Promise<EncryptedConfigPayload> {
   if ((config as { policy?: unknown }).policy !== undefined) {
-    return Promise.reject(new ConfigPolicyFieldError());
+    throw new ConfigPolicyFieldError();
   }
   // The blob is JSON, so the commitments are computed over the JSON form too: an explicit-undefined key anywhere (a `knownHosts: undefined` in a rebuilt ssh pair) would otherwise commit a pointer the blob cannot carry, and the next push built from a pulled copy would drop it (anti-downgrade).
   const doc = JSON.parse(JSON.stringify(config)) as RdcConfig;
@@ -269,6 +359,7 @@ export function buildConfigPushPayload(
     sdkEpoch: params.sdkEpoch,
     teamId: params.teamId,
   });
+  const configKey = await resolveConfigKey(doc.id, params);
 
   const prior = params.prior;
   return selectiveEncrypt(fullConfig, params.sdkDerived, params.cek, {
@@ -276,6 +367,7 @@ export function buildConfigPushPayload(
     storeId: params.storeId,
     fckSalt: params.fckSalt,
     commitEntries: buildCommitEntries(doc),
+    configKey,
     ...(prior
       ? {
           prior: {
@@ -292,8 +384,8 @@ export function buildConfigPushPayload(
  * Inverse of `buildConfigPushPayload`: decrypt a pulled envelope. `fromFullConfig` turns the result
  * back into a document; the device-local pointers (DEVICE_LOCAL_POINTERS) are absent, because they
  * never left the pushing device. `binding` is what the READER expects (its own pointer, never the
- * pull response): a v3 blob opens only under it. Refuses any envelope version but 3 and 2, the
- * latter read for one release.
+ * pull response): a v4 or v3 blob opens only under it. Refuses any envelope version but 4, 3 and 2,
+ * the last read for one release.
  */
 export function decryptConfigPullPayload(
   payload: EncryptedConfigPayload,

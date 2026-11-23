@@ -34,6 +34,7 @@ import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
 import {
   buildConfigPushPayload,
   decryptConfigPullPayload,
+  envelopeConfigKeyWrap,
   type RdcConfig,
 } from '@rediacc/shared/config-schema';
 import type { PolicyDocument } from '@rediacc/shared/policy';
@@ -79,6 +80,10 @@ export interface PutRecord {
   version: number;
   status: number;
   removedKeys: string[];
+  /** The pushed envelope's version, content-key version and wrap, as the executor sealed them. */
+  envelopeVersion: number;
+  configKeyVersion: number | undefined;
+  wrappedConfigKey: string | undefined;
 }
 
 interface StoredCommitments {
@@ -89,14 +94,20 @@ interface StoredCommitments {
 }
 
 interface StoredEnvelope {
-  envelopeVersion: 2 | 3;
+  envelopeVersion: 2 | 3 | 4;
   configId: string;
   version: number;
   teamId: string | null;
   lastModified: string;
   sdkEpoch: number;
   commitments: StoredCommitments;
+  wrappedConfigKey?: string;
+  configKeyVersion?: number;
+  cekGeneration?: number;
 }
+
+/** The store's CEK generation: the one the fake's key belongs to, named by /session and every pull. */
+export const FAKE_CEK_GENERATION = 1;
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -127,6 +138,14 @@ export interface FakeConfigStore {
   mintSpent: boolean;
   /** Config requests refused with 401 because their token was spent. */
   exhausted: number;
+  /** The generation the /session answer names; undefined models an answer that names none. */
+  sessionCekGeneration: number | undefined;
+  /** The stored envelope as the fake holds it (its version and content-key wrap included). */
+  storedEnvelope(): {
+    envelopeVersion: number;
+    configKeyVersion?: number;
+    wrappedConfigKey?: string;
+  };
 }
 
 /** A policy that lets every command through, grand repos included: the writeback tests exercise the push, not the policy. */
@@ -155,6 +174,7 @@ export async function createFakeConfigStore(
     sdkEpoch,
     sdkDerived,
     cek,
+    cekGeneration: FAKE_CEK_GENERATION,
   });
   const policyRecord = policy
     ? await encryptPolicyRecord(policy, cek, {
@@ -162,7 +182,7 @@ export async function createFakeConfigStore(
         configId: CONFIG_ID,
         teamId: null,
         version: 1,
-        cekGeneration: 1,
+        cekGeneration: FAKE_CEK_GENERATION,
       })
     : null;
   let stored = {
@@ -233,11 +253,33 @@ export async function createFakeConfigStore(
     };
   };
 
-  /** The 409 a push meets: a lost compare-and-swap, or a dropped key without its tombstone. */
+  /** The server's envelope rule: v4 only, carrying its wrap under the store's generation, never lowering the content-key version. */
+  const envelopeRefusal = (
+    envelope: StoredEnvelope,
+    rotated: Record<string, string>
+  ): Response | undefined => {
+    if (envelope.envelopeVersion !== 4) {
+      return json({ ...rotated, error: 'requires v4', code: 'unsupported_envelope_version' }, 400);
+    }
+    const keyVersionLowered =
+      (stored.envelope.configKeyVersion ?? 0) > (envelope.configKeyVersion ?? 0);
+    if (
+      !envelope.wrappedConfigKey ||
+      envelope.cekGeneration !== FAKE_CEK_GENERATION ||
+      keyVersionLowered
+    ) {
+      return json({ ...rotated, error: 'envelope v4 key fields', code: 'envelope_mismatch' }, 400);
+    }
+    return undefined;
+  };
+
+  /** The refusal a push meets: the envelope rule, a lost compare-and-swap, or a dropped key without its tombstone. */
   const casRefusal = (
     body: { version: number; envelope: StoredEnvelope },
     rotated: Record<string, string>
   ): Response | undefined => {
+    const envelope = envelopeRefusal(body.envelope, rotated);
+    if (envelope) return envelope;
     if (body.version !== stored.version + 1) {
       return json({ ...rotated, error: 'Version conflict' }, 409);
     }
@@ -257,6 +299,9 @@ export async function createFakeConfigStore(
       server_secret: toBase64(new Uint8Array(32)),
       sdk_derived: sdkDerivedB64,
       sdkEpoch,
+      ...(fake.sessionCekGeneration === undefined
+        ? {}
+        : { cekGeneration: fake.sessionCekGeneration }),
     });
   const pullAnswer = (rotated: Record<string, string>): Response => {
     fake.pulls += 1;
@@ -266,6 +311,7 @@ export async function createFakeConfigStore(
       configData: stored.encryptedBlob,
       envelope: stored.envelope,
       hmac: stored.hmac,
+      cekGeneration: FAKE_CEK_GENERATION,
       // The account server serves the policy record beside the config.
       policy: policyRecord,
     });
@@ -291,7 +337,14 @@ export async function createFakeConfigStore(
     };
     const removedKeys = Object.keys(body.envelope.commitments.removed ?? {});
     const refusal = casRefusal(body, rotated);
-    fake.puts.push({ version: body.version, status: refusal ? 409 : 200, removedKeys });
+    fake.puts.push({
+      version: body.version,
+      status: refusal?.status ?? 200,
+      removedKeys,
+      envelopeVersion: body.envelope.envelopeVersion,
+      configKeyVersion: body.envelope.configKeyVersion,
+      wrappedConfigKey: body.envelope.wrappedConfigKey,
+    });
     if (refusal) return refusal;
     store(body);
     return json({ ...rotated, version: body.version, sdkEpoch });
@@ -374,6 +427,8 @@ export async function createFakeConfigStore(
     rotate: true,
     mintSpent: false,
     exhausted: 0,
+    sessionCekGeneration: FAKE_CEK_GENERATION,
+    storedEnvelope: () => stored.envelope,
     async externalPush(edit) {
       const base = await decryptStored();
       const next = edit(structuredClone(base));
@@ -383,10 +438,12 @@ export async function createFakeConfigStore(
         sdkEpoch,
         sdkDerived,
         cek,
+        cekGeneration: FAKE_CEK_GENERATION,
         prior: {
           envelopeVersion: stored.envelope.envelopeVersion,
           fckSalt: stored.envelope.commitments.fckSalt,
           base,
+          configKey: envelopeConfigKeyWrap(stored.envelope),
         },
       });
       const envelope = payload.envelope as unknown as StoredEnvelope;

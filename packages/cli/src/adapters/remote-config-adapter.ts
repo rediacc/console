@@ -21,11 +21,13 @@ import {
   importAesKey,
   LEGACY_ENVELOPE_VERSION,
   selectiveDecrypt,
+  unwrapEnvelopeConfigKey,
 } from '@rediacc/shared/config-crypto';
 import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
 import {
   buildConfigPushPayload,
   ConfigPolicyFieldError,
+  envelopeConfigKeyWrap,
   type PushPrior,
   pathsToCommit,
 } from '@rediacc/shared/config-schema';
@@ -146,9 +148,32 @@ export class RemoteConfigAdapter {
     if ('policy' in pulled.data) result.policy = parsePolicyRecordField(pulled.data.policy);
     const { envelope } = pulled.data;
 
-    // The version is authentic (the AAD binds it), so it can be held against what this device saw.
     const seen = this.syncRecord(lease);
-    if (seen && envelope.version < seen.highWater) {
+    this.refuseRollback(seen, envelope);
+    // The blob opened under this device's CEK, so the store's generation is the one that CEK belongs to.
+    await lease.recordSync(
+      this.syncRecordOf(
+        envelope,
+        Math.max(seen?.highWater ?? 0, envelope.version),
+        pulled.data.cekGeneration ?? seen?.cekGeneration,
+        seen
+      )
+    );
+    if (envelope.envelopeVersion !== ENVELOPE_VERSION) {
+      outputService.warn(
+        t('commands.config.remote.legacyEnvelope', { configId: this.remote.configId })
+      );
+    }
+    return result;
+  }
+
+  /**
+   * Refuse a pull older than what this device saw: the version and the envelope version are both
+   * authentic (each version's AAD names them), so a lower one than recorded is an old copy served back.
+   */
+  private refuseRollback(seen: SyncRecord | undefined, envelope: PulledEnvelope['envelope']): void {
+    if (!seen) return;
+    if (envelope.version < seen.highWater) {
       throw new RemoteRollbackError(
         t('commands.config.remote.rollback', {
           configId: this.remote.configId,
@@ -157,30 +182,50 @@ export class RemoteConfigAdapter {
         })
       );
     }
-    if (
-      seen?.envelopeVersion === ENVELOPE_VERSION &&
-      envelope.envelopeVersion !== ENVELOPE_VERSION
-    ) {
+    if (envelope.envelopeVersion < seen.envelopeVersion) {
       throw new RemoteRollbackError(
         t('commands.config.remote.envelopeDowngrade', { configId: this.remote.configId })
       );
     }
-    // The blob opened under this device's CEK, so the store's generation is the one that CEK belongs to.
-    const cekGeneration = pulled.data.cekGeneration ?? seen?.cekGeneration;
-    await lease.recordSync({
+  }
+
+  /** The sync record of a pulled or pushed envelope: its version, salt, (v4) content-key wrap, and the generation. */
+  private syncRecordOf(
+    envelope: Pick<PulledEnvelope['envelope'], 'envelopeVersion' | 'commitments'> & {
+      wrappedConfigKey?: string;
+      configKeyVersion?: number;
+      cekGeneration?: number;
+    },
+    highWater: number,
+    cekGeneration: number | undefined,
+    previous: SyncRecord | undefined
+  ): SyncRecord {
+    const configKey = envelopeConfigKeyWrap(envelope);
+    return {
       binding: this.bindingKey(),
-      highWater: Math.max(seen?.highWater ?? 0, envelope.version),
+      highWater,
       envelopeVersion: envelope.envelopeVersion,
       fckSalt: envelope.commitments.fckSalt,
+      ...(configKey ? { configKey } : {}),
       ...(cekGeneration === undefined ? {} : { cekGeneration }),
-      ...(seen?.policyHighWater ? { policyHighWater: seen.policyHighWater } : {}),
-    });
-    if (envelope.envelopeVersion !== ENVELOPE_VERSION) {
-      outputService.warn(
-        t('commands.config.remote.legacyEnvelope', { configId: this.remote.configId })
+      ...(previous?.policyHighWater ? { policyHighWater: previous.policyHighWater } : {}),
+    };
+  }
+
+  /**
+   * The generation this device's CEK belongs to: recorded when a blob opened under it, else the
+   * store's from `/session`. The content key is wrapped under it, and the server refuses the push
+   * when the store has rotated past it (409 `stale_cek_generation`, raised as RemoteStaleSlotError).
+   * Neither known is refused here, never guessed.
+   */
+  private sealedGeneration(lease: TokenLease, session: SessionMaterial): number {
+    const generation = this.syncRecord(lease)?.cekGeneration ?? session.cekGeneration;
+    if (generation === undefined) {
+      throw new Error(
+        `Config "${this.configName}" cannot be pushed: neither this device nor the server named the CEK generation its key belongs to. Pull the config, then push again.`
       );
     }
-    return result;
+    return generation;
   }
 
   /**
@@ -353,6 +398,7 @@ export class RemoteConfigAdapter {
         teamId: envelope.teamId ?? undefined,
         lastModified: envelope.lastModified,
         commitments: envelope.commitments,
+        ...(envelopeConfigKeyWrap(envelope) ?? {}),
       },
       encryptedBlob: data.configData,
       hmac: data.hmac,
@@ -376,9 +422,10 @@ export class RemoteConfigAdapter {
 
   /**
    * Push an updated config to the remote server: `/session` then PUT, under one token lease, the
-   * PUT sending the token `/session` rotated to. The envelope is v3 (AAD-bound to this device's
-   * pointer). What this device last saw of the server copy (the token file's sync record) supplies
-   * the stored salt for tombstones and, on a v2 store, the upgrade; see PushOptions.
+   * PUT sending the token `/session` rotated to. The envelope is v4 (sealed under the config's
+   * content key, AAD-bound to this device's pointer). What this device last saw of the server copy
+   * (the token file's sync record) supplies the stored salt for tombstones, the stored content-key
+   * wrap and, on a v3 or v2 store, the upgrade; see PushOptions.
    */
   push(config: RdcConfig, currentVersion: number, options: PushOptions = {}): Promise<PushResult> {
     // Before the lease and the first request: a remote config's policy is its own record, and a push that carries one is refused without spending a token.
@@ -388,9 +435,7 @@ export class RemoteConfigAdapter {
       const session = await this.fetchSession(lease);
       const cek = await this.deriveCek(session.serverSecret, lease);
       const prior = this.pushPrior(lease, currentVersion, options.base);
-      // The generation this device's CEK belongs to: the server refuses the push when the store has
-      // rotated past it (409 `stale_cek_generation`, raised as RemoteStaleSlotError).
-      const sealedGeneration = this.syncRecord(lease)?.cekGeneration;
+      const sealedGeneration = this.sealedGeneration(lease, session);
 
       // Envelope + commitments + ciphertext are composed by the shared helper, so the CLI, the web console editor, and the CEK rotation flow all emit a byte-identical payload. Diverging here would fail the server precondition.
       const encrypted = await buildConfigPushPayload(config, {
@@ -398,6 +443,7 @@ export class RemoteConfigAdapter {
         sdkEpoch: session.sdkEpoch,
         sdkDerived: session.sdkDerived,
         cek,
+        cekGeneration: sealedGeneration,
         storeId: this.remote.storeId,
         ...(this.remote.teamId ? { teamId: this.remote.teamId } : {}),
         ...(prior ? { prior } : {}),
@@ -421,27 +467,25 @@ export class RemoteConfigAdapter {
         { method: 'PUT', body }
       ).catch(async (error: unknown) => {
         if (!(error instanceof RemotePreconditionError)) throw error;
-        throw await this.namePaths(error, cek, [config, options.base]);
+        throw await this.namePaths(error, cek, encrypted.envelope, [config, options.base]);
       });
 
-      // A push that named no generation (the first one to a fresh store) learns it from the answer.
-      await lease.recordSync({
-        binding: this.bindingKey(),
-        highWater: pushed.data.version,
-        envelopeVersion: ENVELOPE_VERSION,
-        fckSalt: encrypted.envelope.commitments.fckSalt,
-        ...optionalFields({ cekGeneration: sealedGeneration ?? pushed.data.cekGeneration }),
-        ...(this.syncRecord(lease)?.policyHighWater
-          ? { policyHighWater: this.syncRecord(lease)?.policyHighWater }
-          : {}),
-      });
+      await lease.recordSync(
+        this.syncRecordOf(
+          encrypted.envelope,
+          pushed.data.version,
+          sealedGeneration,
+          this.syncRecord(lease)
+        )
+      );
       return { version: pushed.data.version };
     });
   }
 
   /**
    * What the server holds, as this device last saw it, when that is the version being replaced:
-   * the stored envelope version and salt, plus the document the edit came from. Any other version
+   * the stored envelope version, salt and (v4) content-key wrap, plus the document the edit came
+   * from. Any other version
    * means this device has not seen the copy it overwrites; the push then goes without one (and a
    * version conflict or a precondition refusal follows).
    */
@@ -456,25 +500,35 @@ export class RemoteConfigAdapter {
       envelopeVersion: seen.envelopeVersion,
       fckSalt: seen.fckSalt,
       ...(base ? { base } : {}),
+      ...(seen.configKey ? { configKey: seen.configKey } : {}),
     };
   }
 
   /**
-   * The server names refused paths by their envelope key, which in v3 is a blinded pointer. Map
-   * each back to the pointer it blinds, among the paths this push and its base commit; a key that
-   * matches none (a value another device added) stays as the server sent it.
+   * The server names refused paths by their STORED envelope key, a blinded pointer: under the
+   * config's content key for a v4 store (the one the pushed envelope wraps), under the CEK for a v3
+   * store. Map each back to the pointer it blinds under either key, among the paths this push and
+   * its base commit; a key that matches none (a value another device added) stays as the server
+   * sent it.
    */
   private async namePaths(
     error: RemotePreconditionError,
     cek: CryptoKey,
+    pushed: EncryptedConfigPayload['envelope'],
     docs: (RdcConfig | undefined)[]
   ): Promise<RemotePreconditionError> {
-    const blinding = await derivePointerBlindingKey(cek, this.remote.configId);
+    const contentKey = await unwrapEnvelopeConfigKey(pushed, cek, this.binding());
+    const blindings = await Promise.all([
+      derivePointerBlindingKey(contentKey, this.remote.configId),
+      derivePointerBlindingKey(cek, this.remote.configId),
+    ]);
     const names = new Map<string, string>();
     for (const doc of docs) {
       if (!doc) continue;
       for (const pointer of pathsToCommit(JSON.parse(JSON.stringify(doc)))) {
-        names.set(await blindPointer(blinding, pointer), pointer);
+        for (const blinding of blindings) {
+          names.set(await blindPointer(blinding, pointer), pointer);
+        }
       }
     }
     return new RemotePreconditionError(
@@ -602,11 +656,12 @@ export class RemoteConfigAdapter {
    * Turn a selectiveDecrypt failure into something the user can act on.
    *
    * The two failure modes carry different meanings and different recoveries, and
-   * the protocol does distinguish them: the CEK layer's tag (under the envelope
-   * v3 AAD, or the v2 blob HMAC) fails when the blob is not the one sealed for
-   * this config, version and team, or was sealed under a different CEK than the
-   * slot handed this device, while a failure PAST it means the CEK layer opened
-   * and the server-derived session layer did not.
+   * the protocol does distinguish them: the CEK layer (the v4 content-key wrap
+   * and the blob tag under the v4 AAD, the v3 AAD, or the v2 blob HMAC) fails
+   * when the blob is not the one sealed for this config, version and team, or was
+   * sealed under a different CEK than the slot handed this device, while a
+   * failure PAST it means the CEK layer opened and the server-derived session
+   * layer did not.
    */
   private classifyDecryptFailure(error: unknown, configId: string): Error {
     const detail = error instanceof Error ? error.message : String(error);

@@ -187,6 +187,7 @@ describe('config cache', () => {
       sdkEpoch,
       sdkDerived,
       cek,
+      cekGeneration: 1,
     });
 
     const sdkDerivedB64 = toBase64(await exportAesKey(sdkDerived));
