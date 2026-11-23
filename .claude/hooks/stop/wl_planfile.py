@@ -403,6 +403,7 @@ def _owner(plan_owner, root, rel):
     try:
         return plan_owner(root, rel)
     except Exception:
+        # Safe to ignore: None counts as UNOWNED, which owned_by_me treats as in scope, so the check gets noisier and never quieter (see the docstring).
         return None
 
 

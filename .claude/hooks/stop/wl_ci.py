@@ -706,8 +706,18 @@ def ci_gate(info, require_complete=True):
     return gate
 
 
+# Why the last `_load_diagnose` returned None ("" when it has not failed), so the callers that read None as "no diagnosis" can name the exception in the text they already emit.
+_DIAGNOSE_ERROR = [""]
+
+
+def _diagnose_failure():
+    """The load failure to append to a "did not load" reason: " (RuntimeError: ...)", or "" when the module simply was not found."""
+    return " (%s)" % _DIAGNOSE_ERROR[0] if _DIAGNOSE_ERROR[0] else ""
+
+
 def _load_diagnose():
     """rediacc_ci.ci.ci_diagnose loaded by file path, or None. Lazy and defensive like _sanctioned_match: a missing module must not take the Stop hook down."""
+    _DIAGNOSE_ERROR[0] = ""
     try:
         path = (
             pathlib.Path(__file__).resolve().parents[3]
@@ -722,8 +732,9 @@ def _load_diagnose():
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         return mod
-    except Exception:
-        # A broken diagnoser is not a verdict: the caller reads None as "no diagnosis" and the Stop hook goes on.
+    except Exception as exc:
+        # A broken diagnoser is not a verdict: the caller reads None as "no diagnosis" and the Stop hook goes on, naming this failure in its own text (`_diagnose_failure`).
+        _DIAGNOSE_ERROR[0] = "%s: %s" % (type(exc).__name__, exc)
         return None
 
 
@@ -741,6 +752,10 @@ def ci_cancel_cause(root, info, gate):
         (c["run"] for c in gate.get("cancelled") or [] if c.get("run")), None
     ) or gate.get("run")
     diag = _load_diagnose()
+    if diag is None and _DIAGNOSE_ERROR[0]:
+        return dict(
+            unknown, kind="unreadable", detail="ci_diagnose did not load%s" % _diagnose_failure()
+        )
     if diag is None or not run_id or not info.get("owner"):
         return unknown
     # The Stop hook's budget: at most two reads and one 2 s pause on a transient 5xx (PLAN-gh-retry G8).
@@ -753,8 +768,12 @@ def ci_cancel_cause(root, info, gate):
     jobs, _err = diag.run_jobs(fetch, run_id, run.get("run_attempt"))
     try:
         return diag.cancel_cause(fetch, run, pr_head=info.get("sha") or None, jobs=jobs)
-    except Exception:
-        return unknown
+    except Exception as exc:
+        return dict(
+            unknown,
+            kind="unreadable",
+            detail="the cancel cause could not be read (%s: %s)" % (type(exc).__name__, exc),
+        )
 
 
 def ci_cancel_note(detail):
@@ -912,7 +931,11 @@ def ci_carry_split(root, info, tip, hard, cached, diag=None, fetch=None, clock=t
     diag = diag or _load_diagnose()
     if diag is None:
         for row in hard:
-            row["carry"] = {"verdict": "unreadable", "why": "ci_diagnose did not load", "keys": []}
+            row["carry"] = {
+                "verdict": "unreadable",
+                "why": "ci_diagnose did not load%s" % _diagnose_failure(),
+                "keys": [],
+            }
         return list(hard), []
     memo = cached.setdefault("_carry", {})
     cats = cached.setdefault("_cat", {})
@@ -1034,10 +1057,10 @@ def ci_watch_only(live_bg):
 # The sanctioned CI reader. A watch that is not this is a hand-rolled loop, and hand-rolled loops failed four ways on 2026-08-25 while landing console#574: a stale recipe in nine places, a verdict from a SUPERSEDED attempt, a verdict
 # from a run a later push had cancelled, and a network blip that only a
 # correctly-written retry arm survived. See .ci/scripts/ci/ci-trace.py.
-def _sanctioned_match(blob):
+def _sanctioned_match(blob, problems=None):
     """True when the blob carries a shape the sanctioned registry replaces.
 
-    Imported lazily and defensively: this module runs on every stop, and a missing or broken registry must not take the whole hook down with it.
+    Imported lazily and defensively: this module runs on every stop, and a missing or broken registry must not take the whole hook down with it. A registry that fails to load reads as no match (the block is never widened) and appends the failure to `problems` when the caller passes a list.
     """
     try:
         lib = pathlib.Path(__file__).resolve().parent.parent / "lib" / "sanctioned.py"
@@ -1047,7 +1070,9 @@ def _sanctioned_match(blob):
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         return mod.match(blob) is not None
-    except Exception:
+    except Exception as exc:
+        if problems is not None:
+            problems.append("sanctioned registry: %s: %s" % (type(exc).__name__, exc))
         return False
 
 
@@ -1057,7 +1082,7 @@ GH_EVIDENCE_RE = re.compile(r"\bgh\b|actions/runs/\d+|ci-trace", re.IGNORECASE)
 CI_TRACE_RE = re.compile(r"ci-trace(?:\.py)?\b", re.IGNORECASE)
 
 
-def adhoc_watch(live_bg):
+def adhoc_watch(live_bg, problems=None):
     """(task_id, blob) for a RUNNING background task watching CI by hand, or ("","").
 
     "By hand" means: it looks like a CI watch (CI_WATCH_RE, the same shape the idle checks already use) and it is NOT ci-trace.py. The caller blocks the turn on this, which is safe to make unconditional -- unlike ci_trouble, the remedy is entirely within the session's reach: stop the task and run the script. Nothing another session's push or an infrastructure flake can do makes
@@ -1072,7 +1097,7 @@ def adhoc_watch(live_bg):
         # blocking the turn. A guard that stops unrelated work is a guard that gets removed.
         if not GH_EVIDENCE_RE.search(blob):
             continue
-        if CI_WATCH_RE.search(blob) or _sanctioned_match(blob):
+        if CI_WATCH_RE.search(blob) or _sanctioned_match(blob, problems):
             return str(b.get("id") or "?"), blob.strip()[:160]
     return "", ""
 
@@ -1582,7 +1607,10 @@ def ci_longred(root, info, tip, red_rows, extra_reds=(), now=None):
         # The record rides `info` too, so every ci_trouble detail carries it and the handover contract (box B7) reads it there.
         info["longred_verdict"] = out
         return out
-    except Exception:
+    except Exception as exc:
+        # The red is still reported; the line says the long-red verdict is missing and why, instead of the status text simply lacking it.
+        if isinstance(info, dict):
+            info["longred"] = "long-red verdict unavailable (%s: %s)" % (type(exc).__name__, exc)
         return None
 
 

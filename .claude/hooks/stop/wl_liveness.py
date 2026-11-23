@@ -298,7 +298,7 @@ def live_teammate_transcripts(cwd, fresh_min=None, session_id=""):
     return fresh
 
 
-def live_worker_ids(event, live_bg, cwd, session_id):
+def live_worker_ids(event, live_bg, cwd, session_id, problems=None):
     """Every worker id that is live this stop: the running background tasks, PLUS each agent waiting on a shell it armed (`wl_roster.shell_waiters`).
 
     A waiter ended its turn, so the event lists only its shell and calls the agent completed; the harness resumes it when that shell exits. Before 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P1.8) an expired lease on a waiter therefore failed closed into an open item, and the stuck detector did not count the lease as supervision, while the roster called the same agent live."""
@@ -312,8 +312,10 @@ def live_worker_ids(event, live_bg, cwd, session_id):
             if isinstance(b, dict) and b.get("status") == "running"
         ]
         ids |= set(R.shell_waiters(running, R.load_metas(R.session_subagents_dir(cwd, session_id))))
-    except Exception:
-        pass
+    except Exception as exc:
+        # The shell waiters are missing from `ids`; a caller that passes `problems` can say so.
+        if problems is not None:
+            problems.append("shell waiters: %s: %s" % (type(exc).__name__, exc))
     ids.discard("")
     return ids
 

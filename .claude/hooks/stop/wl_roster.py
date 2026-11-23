@@ -471,7 +471,7 @@ def scan_transcript(jsonl, ent):
     return ent
 
 
-def subagent_stop_at(start, aid):
+def subagent_stop_at(start, aid, problems=None):
     """Epoch of the newest SubagentStop capture for this agent in the report store, or None."""
     import wl_report as RPT
 
@@ -479,7 +479,9 @@ def subagent_stop_at(start, aid):
     newest = None
     try:
         entries = RPT.read_index(RPT.store_root(start))
-    except Exception:
+    except Exception as exc:
+        if problems is not None:
+            problems.append("report index: %s: %s" % (type(exc).__name__, exc))
         return None
     for e in entries:
         ident = str(e.get("id") or "")
@@ -822,6 +824,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     # Status time, per leased worker, over its whole lineage.
     statuses = getattr(fold, "statuses", None) or {}
     stop_cache = {}
+    stop_problems: list[str] = []
 
     def status_at(w):
         family = [w, *ancestors(w, metas), *descendants(w, kids)]
@@ -842,7 +845,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
             if at is not None and (best is None or at > best):
                 best, src = at, "SendMessage from %s" % f
             if f not in stop_cache:
-                stop_cache[f] = subagent_stop_at(start, f)
+                stop_cache[f] = subagent_stop_at(start, f, stop_problems)
             at = stop_cache[f]
             if at is not None and (best is None or at > best):
                 best, src = at, "SubagentStop of %s" % f
@@ -862,6 +865,9 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
                     at = now - row_f["quiet_min"] * 60
                     if best is None or at > best:
                         best, src = at, "transcript growth of %s" % f
+        if stop_problems:
+            # The SubagentStop store could not be read, so its evidence may be newer than `best`: say so in the source label the status rows print.
+            src = "%s [SubagentStop evidence unreadable: %s]" % (src, stop_problems[0])
         return best, src
 
     status_due, status_rows = [], {}
@@ -1203,6 +1209,7 @@ def _script_args(run, shellscan):
     try:
         kind, value = shellscan.program_parse(posixpath.basename(str(run.name or "")), argv)
     except Exception:
+        # Safe to ignore: a command the lexer cannot parse names no script argument, the contract of `bash_write_paths` ("an unlexable command writes nothing it can prove"); the fix-set subtraction it feeds only shrinks.
         return []
     anchor = "-" if kind == "stdin" else value
     if kind not in ("file", "inline", "stdin") or anchor not in argv:
@@ -1573,6 +1580,7 @@ def _python_text(shellscan, run, cmd, cwd):
     try:
         text, _kind = shellscan.interpreter_program(run, cmd, cwd)
     except Exception:
+        # Safe to ignore, for the reason in `_script_args`: an unparseable program proves no write, and the writer-path subtraction it feeds only shrinks.
         return ""
     return text or ""
 
@@ -1826,7 +1834,7 @@ def _short(aid):
     return RPT.short_id(aid)
 
 
-def _completed_since(sub_dir, since):
+def _completed_since(sub_dir, since, problems=None):
     """{short agent id: epoch} of every COMPLETED task notification that reached the LEAD's transcript after `since` (the last Stop event's mtime), result or not. {} when there is no event or no transcript.
 
     The lead transcript sits beside the session's `subagents/` directory as `<session>.jsonl`. Reuses `wl_report.delivered_ids` without its non-empty `<result>` filter (agent/plans/PLAN-stop-hook-retro-20260924.md R.6).
@@ -1837,7 +1845,9 @@ def _completed_since(sub_dir, since):
 
     try:
         ids, _cur = RPT.delivered_ids(sub_dir.parent.with_suffix(".jsonl"), require_result=False)
-    except Exception:
+    except Exception as exc:
+        if problems is not None:
+            problems.append("lead transcript: %s: %s" % (type(exc).__name__, exc))
         return {}
     return {k: v for k, v in ids.items() if v > since}
 

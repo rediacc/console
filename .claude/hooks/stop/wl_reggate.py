@@ -305,6 +305,7 @@ def _diff_tree_files(root, sha):
     try:
         files = C._git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", sha).splitlines()
     except Exception:
+        # Safe to ignore: C._git already turns a git or spawn failure into "", so this only guards a programming error, and [] is the documented answer for an id that is not a tree-ish (a tick id) that every caller handles.
         return []
     if files:
         return [f.strip() for f in files if f.strip()]
@@ -314,6 +315,7 @@ def _diff_tree_files(root, sha):
             root, "diff-tree", "--root", "--no-commit-id", "--name-only", "-r", sha
         ).splitlines()
     except Exception:
+        # Safe to ignore, for the reason on the first arm: C._git never raises on a git failure, and [] is the documented answer.
         return []
     return [f.strip() for f in files if f.strip()]
 
