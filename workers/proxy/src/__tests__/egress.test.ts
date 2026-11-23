@@ -13,7 +13,12 @@ vi.mock('cloudflare:workers', () => ({
   },
 }));
 
-import { AccountEgress, EXECUTOR_TOKEN_PLACEHOLDER } from '../egress';
+import {
+  AccountEgress,
+  EXECUTOR_TOKEN_PLACEHOLDER,
+  forwardAccountEgress,
+  MAX_CONFIG_PUSH_BODY_BYTES,
+} from '../egress';
 import { type ExecutorIssuerRpc, resetIssuedTokenCache } from '../issued-token';
 import type { EgressReportAnswer } from '../org-executor';
 
@@ -435,5 +440,83 @@ describe('AccountEgress egress-unreachable report route', () => {
     );
     await t.egress.fetch(unreachable());
     expect(warn.mock.calls.flat().join(' ')).not.toMatch(/10\.1\.2\.3|203\.0\.113\.7/);
+  });
+});
+
+describe('config write-back routes (PLAN-rmcp-writeback.md WB5)', () => {
+  const send = (path: string, init: RequestInit) =>
+    new Request(`${API}${path}`, { headers: { 'x-config-token': 'ct-1' }, ...init });
+
+  it('admits POST /configs/session with the X-Config-Token kept and no Authorization', async () => {
+    const { env, seen, state } = setup();
+    const response = await forwardAccountEgress(
+      send('/configs/session', { method: 'POST', body: '{}' }),
+      env,
+      'org-a'
+    );
+    expect(response.status).toBe(200);
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.url).toBe('https://account.test/account/api/v1/configs/session');
+    expect(seen[0]?.headers.get('x-config-token')).toBe('ct-1');
+    expect(seen[0]?.headers.get('authorization')).toBeNull();
+    expect(state.issues).toEqual([]);
+  });
+
+  it('admits PUT /configs/<id> with the teamId query and the body intact', async () => {
+    const { env, seen } = setup();
+    const response = await forwardAccountEgress(
+      send('/configs/cfg-1?teamId=team-1', { method: 'PUT', body: '{"version":2}' }),
+      env,
+      'org-a'
+    );
+    expect(response.status).toBe(200);
+    expect(seen[0]?.method).toBe('PUT');
+    expect(seen[0]?.url).toBe('https://account.test/account/api/v1/configs/cfg-1?teamId=team-1');
+    expect(await seen[0]?.text()).toBe('{"version":2}');
+  });
+
+  it('refuses an oversize push body 413 body-too-large with nothing forwarded', async () => {
+    const { env, seen } = setup();
+    const response = await forwardAccountEgress(
+      send('/configs/cfg-1', {
+        method: 'PUT',
+        body: new Uint8Array(MAX_CONFIG_PUSH_BODY_BYTES + 1),
+      }),
+      env,
+      'org-a'
+    );
+    expect(response.status).toBe(413);
+    expect(await response.json()).toMatchObject({ reason: 'body-too-large' });
+    expect(seen).toHaveLength(0);
+  });
+
+  it('admits a push body of exactly the cap (control for the refusal)', async () => {
+    const { env, seen } = setup();
+    const response = await forwardAccountEgress(
+      send('/configs/cfg-1', { method: 'PUT', body: new Uint8Array(MAX_CONFIG_PUSH_BODY_BYTES) }),
+      env,
+      'org-a'
+    );
+    expect(response.status).toBe(200);
+    expect(seen).toHaveLength(1);
+  });
+
+  it.each([
+    ['POST /configs/<id>', '/configs/cfg-1', 'POST', 'route-not-allowed'],
+    ['PUT /configs/session', '/configs/session', 'PUT', 'route-not-allowed'],
+    ['DELETE /configs/<id>', '/configs/cfg-1', 'DELETE', 'route-not-allowed'],
+    ['PUT with an unknown query', '/configs/cfg-1?all=1', 'PUT', 'query-not-allowed'],
+    [
+      'POST /configs/session with a query',
+      '/configs/session?teamId=t',
+      'POST',
+      'query-not-allowed',
+    ],
+  ])('still refuses %s', async (_name, path, method, reason) => {
+    const { env, seen } = setup();
+    const response = await forwardAccountEgress(send(path, { method, body: '{}' }), env, 'org-a');
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ reason });
+    expect(seen).toHaveLength(0);
   });
 });

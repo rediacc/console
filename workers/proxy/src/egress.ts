@@ -5,6 +5,7 @@
  *
  *   - the four executor-bearer calls require `Authorization: Bearer <placeholder>` exactly, and leave with the issued token in its place;
  *   - the three unauthenticated calls leave with no Authorization at all;
+ *   - the config write-back pair, `POST configs/session` and `PUT configs/<id>`, travel like the config pull (an `X-Config-Token`, no Authorization); a push body past `MAX_CONFIG_PUSH_BODY_BYTES` is answered 413 `body-too-large` and nothing is forwarded;
  *   - anything else is answered 403 with a logged reason code, and nothing is forwarded;
  *   - an allowed bearer call is answered 503 with the reason code (`no-issuer`, `issuer-refused`, `issuer-refused:ISSUER_<CODE>` for a coded account refusal, or `issuer-malformed`) when no issued token can be had, and nothing is forwarded.
  *
@@ -41,13 +42,28 @@ const OPEN_ROUTES: ReadonlySet<string> = new Set([
   `GET ${API}/.well-known/server-info`,
 ]);
 
-/** The config pull, `GET configs/<id>` with an `X-Config-Token`, optionally `?teamId=`. */
+/** The config pull and push, `GET` and `PUT configs/<id>` with an `X-Config-Token`, optionally `?teamId=`. */
 const CONFIG_PULL_RE = /^\/account\/api\/v1\/configs\/[A-Za-z0-9_-]{1,128}$/;
+
+/** The config session handshake, `POST configs/session` with an `X-Config-Token` and no query (the executor's write-back, agent/plans/PLAN-rmcp-writeback.md Design 3). */
+const CONFIG_SESSION_PATH = `${API}/configs/session`;
+
+/** The most of a session handshake body forwarded; the call carries no meaningful body. */
+const MAX_SESSION_BODY_BYTES = 4096;
+
+/** The most of a config push body forwarded: the account route's own cap, `MAX_CONFIG_PUSH_BODY_BYTES` (private/account/src/dto/config.dto.ts, 4 MiB of base64 blob plus 1 MiB of envelope). A larger body is refused 413 here, before the account server sees it. */
+export const MAX_CONFIG_PUSH_BODY_BYTES = 4 * 1024 * 1024 + 1024 * 1024;
 
 type Route = 'bearer' | 'open';
 
+/** What the allowlist knows about an admitted request: its kind and the most of its body forwarded. */
+interface Admitted {
+  kind: Route;
+  maxBody?: number;
+}
+
 /** The kind of route a request is, or the reason code it is refused with. */
-function classifyEgress(method: string, url: URL): Route | { refused: string } {
+function classifyEgress(method: string, url: URL): Admitted | { refused: string } {
   const route = routeOf(method, url.pathname);
   if (route === undefined) return { refused: 'route-not-allowed' };
   const names = [...url.searchParams.keys()];
@@ -55,18 +71,27 @@ function classifyEgress(method: string, url: URL): Route | { refused: string } {
     route.query === 'teamId'
       ? names.length === 0 || (names.length === 1 && names[0] === 'teamId')
       : url.search === '';
-  return allowed ? route.kind : { refused: 'query-not-allowed' };
+  if (!allowed) return { refused: 'query-not-allowed' };
+  return route.maxBody === undefined
+    ? { kind: route.kind }
+    : { kind: route.kind, maxBody: route.maxBody };
 }
 
 /** The allowlisted route a method and path are, with the query it admits. */
 function routeOf(
   method: string,
   path: string
-): { kind: Route; query: 'none' | 'teamId' } | undefined {
+): { kind: Route; query: 'none' | 'teamId'; maxBody?: number } | undefined {
   const key = `${method} ${path}`;
   if (BEARER_ROUTES.has(key)) return { kind: 'bearer', query: 'none' };
   if (OPEN_ROUTES.has(key)) return { kind: 'open', query: 'none' };
   if (method === 'GET' && CONFIG_PULL_RE.test(path)) return { kind: 'open', query: 'teamId' };
+  if (key === `POST ${CONFIG_SESSION_PATH}`) {
+    return { kind: 'open', query: 'none', maxBody: MAX_SESSION_BODY_BYTES };
+  }
+  if (method === 'PUT' && CONFIG_PULL_RE.test(path) && path !== CONFIG_SESSION_PATH) {
+    return { kind: 'open', query: 'teamId', maxBody: MAX_CONFIG_PUSH_BODY_BYTES };
+  }
   return undefined;
 }
 
@@ -91,9 +116,9 @@ interface EgressReporter {
   ): Promise<EgressReportAnswer>;
 }
 
-/** The body as text, or undefined once it passes `max` bytes. */
-async function boundedText(request: Request, max: number): Promise<string | undefined> {
-  if (request.body === null) return '';
+/** The body as bytes, or undefined once it passes `max` bytes. */
+async function boundedBytes(request: Request, max: number): Promise<Uint8Array | undefined> {
+  if (request.body === null) return new Uint8Array(0);
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
@@ -113,7 +138,13 @@ async function boundedText(request: Request, max: number): Promise<string | unde
     joined.set(chunk, offset);
     offset += chunk.byteLength;
   }
-  return new TextDecoder().decode(joined);
+  return joined;
+}
+
+/** The body as text, or undefined once it passes `max` bytes. */
+async function boundedText(request: Request, max: number): Promise<string | undefined> {
+  const bytes = await boundedBytes(request, max);
+  return bytes === undefined ? undefined : new TextDecoder().decode(bytes);
 }
 
 /** The report's target: undefined for an empty body, else the admitted `{ host, port }` or why it is refused. */
@@ -278,14 +309,14 @@ export async function forwardAccountEgress(
 ): Promise<Response> {
   const url = new URL(request.url);
   const route = classifyEgress(request.method, url);
-  if (typeof route !== 'string') return refuseEgress(route.refused, request.method, url);
+  if ('refused' in route) return refuseEgress(route.refused, request.method, url);
 
   // Fresh headers without `host`: copied from the container's request it still names account.internal, and a public fetch carrying it fails at DNS with a 530 (bench, 2026-10-24, the first deploy of this forward).
   const headers = new Headers(request.headers);
   headers.delete('host');
   headers.delete('cookie');
   headers.delete('authorization');
-  if (route === 'bearer') {
+  if (route.kind === 'bearer') {
     const swapped = await issuedBearer(request.headers.get('authorization'), env, orgId);
     if (typeof swapped !== 'string') {
       return refuseEgress(swapped.refused, request.method, url, swapped.status);
@@ -294,7 +325,18 @@ export async function forwardAccountEgress(
   }
 
   const hasBody = request.method !== 'GET' && request.method !== 'HEAD';
-  const body = hasBody ? await request.arrayBuffer() : undefined;
+  let body: ArrayBuffer | undefined;
+  if (hasBody && route.maxBody !== undefined) {
+    const declared = Number(request.headers.get('content-length'));
+    const bytes =
+      Number.isFinite(declared) && declared > route.maxBody
+        ? undefined
+        : await boundedBytes(request, route.maxBody);
+    if (bytes === undefined) return refuseEgress('body-too-large', request.method, url, 413);
+    body = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  } else if (hasBody) {
+    body = await request.arrayBuffer();
+  }
   const send = (): Promise<Response> => {
     const forwarded = new Request(`${env.ACCOUNT_URL}${url.pathname}${url.search}`, {
       method: request.method,
@@ -306,7 +348,7 @@ export async function forwardAccountEgress(
   };
   const via = env.ACCOUNT ? 'binding' : 'fetch';
   let response = await send();
-  if (route === 'bearer' && response.status === 401) {
+  if (route.kind === 'bearer' && response.status === 401) {
     response = await resendWithFreshToken(request, url, env, orgId, headers, send);
   }
   // A failed call logs its path and transport only, never a header or a body: this is what `wrangler tail` shows when a container call fails.
