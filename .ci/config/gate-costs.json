@@ -450,14 +450,6 @@
       "peak_rss_mb": 55,
       "rank": 186
     },
-    "check:ci-doc-region-parity": {
-      "cpu_s": 8.345,
-      "wall_s": 7.846,
-      "eff_cores": 1.06,
-      "capped": false,
-      "peak_rss_mb": 366,
-      "rank": 22
-    },
     "check:ci-docker-npm-pins": {
       "cpu_s": 0.303,
       "wall_s": 0.288,
@@ -650,14 +642,6 @@
       "peak_rss_mb": 464,
       "rank": 7
     },
-    "check:ci-gate-bind": {
-      "cpu_s": 4.435,
-      "wall_s": 3.926,
-      "eff_cores": 1.13,
-      "capped": false,
-      "peak_rss_mb": 359,
-      "rank": 38
-    },
     "check:ci-gate-cwd-independence": {
       "cpu_s": 0.557,
       "wall_s": 0.496,
@@ -665,14 +649,6 @@
       "capped": false,
       "peak_rss_mb": 53,
       "rank": 155
-    },
-    "check:ci-gate-manifest": {
-      "cpu_s": 1.083,
-      "wall_s": 0.745,
-      "eff_cores": 1.45,
-      "capped": false,
-      "peak_rss_mb": 167,
-      "rank": 93
     },
     "check:ci-gate-prerequisites": {
       "cpu_s": 3.831,
@@ -705,22 +681,6 @@
       "capped": false,
       "peak_rss_mb": 673,
       "rank": 30
-    },
-    "check:ci-gates-lock": {
-      "cpu_s": 0.589,
-      "wall_s": 0.535,
-      "eff_cores": 1.1,
-      "capped": false,
-      "peak_rss_mb": 56,
-      "rank": 140
-    },
-    "check:ci-gen-manifest": {
-      "cpu_s": 0.758,
-      "wall_s": 0.678,
-      "eff_cores": 1.12,
-      "capped": false,
-      "peak_rss_mb": 238,
-      "rank": 113
     },
     "check:ci-generated-artifacts": {
       "cpu_s": 3.364,
@@ -1298,14 +1258,6 @@
       "peak_rss_mb": 55,
       "rank": 181
     },
-    "check:ci-parity": {
-      "cpu_s": 1.071,
-      "wall_s": 0.948,
-      "eff_cores": 1.13,
-      "capped": false,
-      "peak_rss_mb": 273,
-      "rank": 94
-    },
     "check:ci-paths-origin": {
       "cpu_s": 1.012,
       "wall_s": 1.06,
@@ -1882,14 +1834,6 @@
       "peak_rss_mb": 54,
       "rank": 188
     },
-    "check:ci-step-env-parity": {
-      "cpu_s": 0.595,
-      "wall_s": 0.531,
-      "eff_cores": 1.12,
-      "capped": false,
-      "peak_rss_mb": 54,
-      "rank": 139
-    },
     "check:ci-suppression-liveness": {
       "cpu_s": 2.027,
       "wall_s": 1.909,
@@ -2153,14 +2097,6 @@
       "capped": false,
       "peak_rss_mb": 109,
       "rank": 73
-    },
-    "check:ci-workflow-orphan-step-keys": {
-      "cpu_s": 0.535,
-      "wall_s": 0.482,
-      "eff_cores": 1.11,
-      "capped": false,
-      "peak_rss_mb": 54,
-      "rank": 164
     },
     "check:ci-workflow-submodule-deps": {
       "cpu_s": 9.662,
