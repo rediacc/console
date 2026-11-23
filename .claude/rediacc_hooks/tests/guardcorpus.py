@@ -236,6 +236,20 @@ def cross_sample(payloads, guard, limit=CROSS_SAMPLE):
     return [payload for _, payload in scored[:limit]]
 
 
+def stratified_sample(cases):
+    """One case per `(guard, suite rc)` stratum of `harvest_cases()`-shaped rows: every guard once per verdict its suite asserts.
+
+    The pick is the stratum's lowest payload, so it is the same on every run and every host, and a payload added to the suite moves the sample only when it sorts first in its stratum. Returned in stratum order.
+    """
+    strata = {}
+    for row in cases:
+        guard, payload, _label, rc = row[:4]
+        key = (guard, rc)
+        if key not in strata or payload < strata[key][1]:
+            strata[key] = row
+    return [strata[key] for key in sorted(strata)]
+
+
 # Event shapes no suite case produces, and every one of them is a shape a guard can be handed by the real harness. The suite's builders always emit a well-formed document; the harness does not promise one, and `jq -r` answers each of these differently (see `hookio._jq_raw`, whose four-way asymmetry is what these pin).
 DEGENERATE_PAYLOADS = [
     ("empty stdin", ""),
