@@ -1190,8 +1190,19 @@ def test_land_ticks_box_with_no_row_gets_the_post_landing_investigate_line(ticke
     assert len(invest) == 1
     assert "commit:%s" % ticked.landed[FX_BARE][:12] in invest[0]
     assert "fileline:bare.txt:1" in invest[0]
-    assert "-- post-landing: " in invest[0]
+    assert "-- 'post-landing: " in invest[0]
     assert not [x for x in block if "--plan-tick" in x]
+
+
+def test_land_ticks_printed_investigate_line_is_one_shell_word_per_argument(ticked):
+    """The note carries `;` and parentheses; printed unquoted, bash split the copied line at the `;` (2026-11-23, six PLAN-rmcp-writeback boxes failed with `line 1: th`)."""
+    block = box_block(run_land(ticked.repo.root, LAND_ID, "--ticks").stdout.splitlines(), FX_BARE)
+    invest = [x for x in block if "--plan-investigate" in x]
+    argv = shlex.split(invest[0])
+    note = argv[argv.index("--") + 1]
+    assert note.startswith("post-landing: ")
+    assert ";" in note
+    assert argv[-1] == "--write"
 
 
 def test_land_ticks_run_writes_progress_runs_the_printed_tick_and_no_investigation_row(ticked):

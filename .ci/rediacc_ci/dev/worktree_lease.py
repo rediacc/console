@@ -853,7 +853,7 @@ def tick_report(root, lease_id, me):
             note = TICKS_NOTE % (box.plan, box.sig, last[:12], lease_id, named)
             lines.append(
                 "  worklist.py --plan-investigate %s %s %s %s %s -- %s --write"
-                % (me, rel, box.sig, "present" if done else "partial", pointers, note)
+                % (me, rel, box.sig, "present" if done else "partial", pointers, shlex.quote(note))
             )
             if not done:
                 lines.append(_owed_line(ids, covered))
@@ -870,7 +870,8 @@ def tick_report(root, lease_id, me):
             continue
         ticks.append((rel, box.sig, evidence))
         lines.append(
-            "  worklist.py --plan-tick %s %s %s '%s' --write" % (me, rel, box.sig, evidence)
+            "  worklist.py --plan-tick %s %s %s %s --write"
+            % (me, rel, box.sig, shlex.quote(evidence))
         )
     return lines, progress, ticks
 
