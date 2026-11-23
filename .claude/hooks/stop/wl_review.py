@@ -1330,8 +1330,24 @@ def spawn_detached(root, repo, sha, branch, python=None):
     return proc.pid
 
 
+def operation_pending(root, repo):
+    """(tree, operation) for the first of `repo` and `root` with a halted rebase, merge, cherry-pick, revert or am (wl_git.operation_in_progress), else None."""
+    import wl_git
+
+    for tree in dict.fromkeys(str(t) for t in (repo, root)):
+        name = wl_git.operation_in_progress(tree)
+        if name:
+            return tree, name
+    return None
+
+
 def trigger(root, repo, cfg=None, spawn=spawn_detached):
-    """Start reviewers for up to `max_spawn_per_trigger` uncovered commits of the repo's branch. Returns [(sha, pid)]."""
+    """Start reviewers for up to `max_spawn_per_trigger` uncovered commits of the repo's branch. Returns [(sha, pid)].
+
+    NOTHING STARTS while a history operation is halted in `repo` or in `root`, the tree the records land in (`operation_pending`, worklist #b07162cf): a reviewer appends to agent/reviews/<branch>/clean.jsonl or writes `<sha>.md`, and one unstaged tracked record makes `git rebase --continue` refuse. The replayed commits are reviewed once the operation ends, by the next trigger and by the backlog, which ask `uncovered` afresh.
+    """
+    if operation_pending(root, repo):
+        return []
     cfg = cfg or load_config(root)
     branch = current_branch(repo)
     if not branch:
@@ -2617,6 +2633,14 @@ def run_review(
                     )
                     apply_existence_oracle(repo, full, review.findings, now=now, log=log)
         review.reviewed_at = now_iso(now)
+        # A REVIEWER STARTED BEFORE A REBASE BEGAN still finishes during it (worklist #b07162cf), so the write asks again: a record written now is an unstaged tracked change `git rebase --continue` refuses over. The verdict is dropped, the commit stays uncovered, and the next trigger or the backlog reviews it after the operation ends.
+        pending = operation_pending(root, repo)
+        if pending:
+            log(
+                "not recorded: a %s is in progress in %s; %s stays uncovered and is reviewed after it ends"
+                % (pending[1], pending[0], full[:12])
+            )
+            return None
         # D3: a `.md` beats a ledger line. A verdict with nothing to do becomes a ledger line, unless a finished `.md` already stands for the sha (a findings record is never unlinked by a later clean result: the new verdict overwrites it, as any re-review does). A failed `.md` is replaced: the line goes in first, then the file goes.
         if ledger_eligible(review) and (previous is None or not previous.finished()):
             lp = ledger_path(root, branch)

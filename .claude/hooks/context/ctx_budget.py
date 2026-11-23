@@ -499,6 +499,26 @@ def utc_stamp(epoch_seconds=None):
     )
 
 
+def operation_in_progress(project):
+    """`wl_git.operation_in_progress` for `project` (a halted rebase, merge, cherry-pick, revert or am, else ""), loaded BY FILE from the Stop hook's directory because band-notice.py runs with only this directory on its path. A module that cannot load answers "", the behaviour before the rule (worklist #b07162cf)."""
+    try:
+        mod = sys.modules.get("wl_git")
+        if mod is None:
+            import importlib.util
+
+            spec = importlib.util.spec_from_file_location(
+                "wl_git", Path(__file__).resolve().parents[1] / "stop" / "wl_git.py"
+            )
+            if spec is None or spec.loader is None:
+                return ""
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            sys.modules["wl_git"] = mod
+        return mod.operation_in_progress(project)
+    except Exception:
+        return ""
+
+
 def retro_ledger_path(project):
     return Path(project).joinpath(*RETRO_LEDGER_REL)
 

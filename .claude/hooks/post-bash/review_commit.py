@@ -80,6 +80,14 @@ def trigger_lines(cmd, cwd, root, trigger=R.trigger):
     lines = []
     for repo in commit_repos(cmd, cwd, root):
         tree = commit_policy.owning_tree(repo, _bound_paths(root)) or root
+        pending = R.operation_pending(tree, pathlib.Path(repo))
+        if pending:
+            # Said, never silent: the reviews are deferred, not skipped, and a reader of this line must not take it for "covered".
+            lines.append(
+                "per-commit review deferred in %s: a %s is in progress in %s, and a review record written now is an unstaged tracked change `git rebase --continue` refuses over. The replayed commits are reviewed after it ends."
+                % (R.repo_label(tree, repo), pending[1], pending[0])
+            )
+            continue
         try:
             started = trigger(tree, pathlib.Path(repo))
         except Exception as exc:

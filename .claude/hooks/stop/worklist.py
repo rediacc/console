@@ -298,6 +298,64 @@ def _emit(obj):
     sys.exit(0)
 
 
+def _operation_trees(event):
+    """The checkouts this stop would write into: the store root (C.project_root maps the landing tree to the main checkout) and the session's own checkout, deduplicated, in that order."""
+    trees = []
+    with contextlib.suppress(Exception):
+        trees.append(str(C.project_root(_local_project_start(event))))
+    with contextlib.suppress(Exception):
+        own = str(C.checkout_root(C.project_start(event)))
+        if own not in trees:
+            trees.append(own)
+    return trees
+
+
+def _operation_standdown(event):
+    """Emit and exit when a rebase, merge, cherry-pick, revert or am is halted in a checkout this stop would write into; return otherwise (worklist #b07162cf).
+
+    THE BATTERY WRITES TRACKED FILES: the in-flight block of agent/plans/QUEUE.md, agent/ledgers/*.jsonl, agent/worklist/<writer>.jsonl, a session's STATE.md, the retro rows. Any one of them left unstaged makes `git rebase --continue` refuse with a message about merge conflicts while `git ls-files -u` is empty, and on 2026-11-23 that held a 273-step rebase of 1121-1 at step 26. Gating each writer would miss the next one added, so the whole battery stands down, which is the one shape that cannot leak a write.
+
+    THE ONE BLOCK, then an allow. The first stop is blocked with the operation, the step and the commands that end it, because a turn that ends mid-rebase leaves the tree half-replayed. A stop that is already the answer to a Stop-hook block (`stop_hook_active`) is allowed, so a rebase waiting on an operator answer cannot wedge the session. Neither writes a byte, and both say that no check ran: an unchecked stop is reported as one, never as a clean one.
+    """
+    try:
+        import wl_git
+    except Exception:
+        return
+    for tree in _operation_trees(event):
+        name = wl_git.operation_in_progress(tree)
+        if not name:
+            continue
+        where = tree
+        st = wl_git.rebase_state(tree) if name == "rebase" else None
+        if st:
+            where = "%s (step %s of %s, replaying %s)" % (
+                tree,
+                st.get("step") or "?",
+                st.get("total") or "?",
+                (st.get("stopped") or "?")[:12],
+            )
+        said = (
+            "A %s is in progress in %s. The Stop hook stands down while it lasts: it wrote no tracked record "
+            "(agent/plans/QUEUE.md, agent/ledgers/*, the worklist store, STATE.md), because `git rebase --continue` refuses over any "
+            "unstaged tracked change, and NONE of this stop's checks ran. End it with %s; the next stop after that runs the full battery."
+            % (name, where, wl_git.operation_finish_hint(name))
+        )
+        if event.get("stop_hook_active"):
+            _emit(
+                {
+                    "systemMessage": "Stop hook: UNCHECKED, %s in progress; allowed. %s"
+                    % (name, said)
+                }
+            )
+        _emit(
+            {
+                "systemMessage": "Stop hook: %s in progress; standing down." % name,
+                "decision": "block",
+                "reason": said,
+            }
+        )
+
+
 def _die2(msg):
     """The `sys.exit(2)` misuse exit the top-level verbs use, as a callable, so _identity_or_die reports the same way whichever verb called it."""
     sys.stderr.write(msg.rstrip("\n") + "\n")
@@ -3856,6 +3914,7 @@ def main():
                 ),
             }
         )
+    _operation_standdown(event)
     # THE RETRO ROWS MOVE BEFORE THE BATTERY (agent/plans/PLAN-stop-hook-retro-20260924.md R20260924.13), so an item added for a new `ordered` row is enforced by this very stop's open-items check. A ledger that cannot be read or written never changes the stop.
     with contextlib.suppress(Exception):
         if event_ok and event.get("session_id") and not event.get("agent_id"):
