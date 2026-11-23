@@ -353,8 +353,14 @@ def test_the_plan_records_have_exactly_the_measured_readers(real_derivation):
     assert declared == PLAN_READERS, sorted(declared ^ PLAN_READERS)
     missing = PLAN_FAMILY - set(derived[PLAN_RECORD])
     assert not missing, "plan gates the derivation no longer sees: %s" % sorted(missing)
-    # check:ci-pytest re-runs the reader gates from its real-tree tests and costs about 1750 s. It is not derived, so it is not a reader and needs no exemption; if it ever is derived, that is a decision to take here, not a line to add quietly.
-    assert all("check:ci-pytest" not in derived[glob] for glob in PLAN_RECORDS)
+    # check:ci-pytest re-runs the reader gates from its real-tree tests and costs about 1750 s, so it is never a reader of a plan record. The decision taken here (2026-11-23): since 957bf23a89 the derivation sees ONE citation in it, the `*.json` glob green_receipt_heads runs over the ci:quick receipt directories, which opens nothing under .ci/config/; that one citation is exempt by name in notReaders. Any OTHER citation, or that one without its exemption, is red here and is a new decision.
+    for glob in PLAN_RECORDS:
+        evidence = derived[glob].get("check:ci-pytest")
+        if evidence is None:
+            continue
+        assert evidence.startswith(".ci/rediacc_ci/check_pytest.py:"), (glob, evidence)
+        assert evidence.endswith("(glob) *.json"), (glob, evidence)
+        assert "check:ci-pytest" in by_glob[glob]["notReaders"], glob
 
 
 def test_the_plan_text_records_stay_under_review():

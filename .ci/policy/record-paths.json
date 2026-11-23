@@ -1104,6 +1104,10 @@
         {
           "id": "check:ci-python-env-registry",
           "reason": "Its only citation of this record is the opaque env-read key '*n' in the .ci/config/python-env-registry.json it owns (the shellscan.py entry for a computed variable name, added in ba94848d61), which the derivation reads as a glob ending in n; python_env_registry.py:96 compares env reads against that registry, and no file under this record is read."
+        },
+        {
+          "id": "check:ci-pytest",
+          "reason": "Its only citation of this record is the `*.json` glob in green_receipt_heads (.ci/rediacc_ci/check_pytest.py:1371, added by 957bf23a89), which runs over the ci:quick receipt directories receipt_dirs returns (.ci/cache/receipts, and the live checkout's through the toolchain cache link) to find the last green check:ci-pytest base; it opens no file under .ci/config/."
         }
       ]
     },
@@ -1793,6 +1797,10 @@
         {
           "id": "check:ci-python-env-registry",
           "reason": "Its only citation of this record is the opaque env-read key '*n' in the .ci/config/python-env-registry.json it owns (the shellscan.py entry for a computed variable name), which the derivation reads as a file glob; it scans Python sources for env reads and never opens .ci/config/plan-boxes.json."
+        },
+        {
+          "id": "check:ci-pytest",
+          "reason": "Its only citation of this record is the `*.json` glob in green_receipt_heads (.ci/rediacc_ci/check_pytest.py:1371, added by 957bf23a89), which runs over the ci:quick receipt directories receipt_dirs returns (.ci/cache/receipts, and the live checkout's through the toolchain cache link) to find the last green check:ci-pytest base; it opens no file under .ci/config/."
         }
       ]
     },
