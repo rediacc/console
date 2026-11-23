@@ -214,6 +214,7 @@ bindStepHandler('printRepoHealth', ({ output, params, machine }) => {
 export function registerRepoHealthCommand(repo: Command): void {
   repo
     .command('health')
+    .summary(t('commands.repo.health.descriptionShort'))
     .description(t('commands.repo.health.description'))
     .argument('<ref>', t('options.repoRef'))
     .option('--debug', t('options.debug'))

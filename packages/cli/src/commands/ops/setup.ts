@@ -45,6 +45,7 @@ async function setupRenet(options: { debug?: boolean }, useSudo: boolean): Promi
 export function registerOpsSetupCommand(ops: Command, _program: Command): void {
   ops
     .command('setup')
+    .summary(t('commands.ops.setup.descriptionShort'))
     .description(t('commands.ops.setup.description'))
     .option('--debug', t('options.debug'))
     .action(async (options: { debug?: boolean }) => {

@@ -173,6 +173,7 @@ export function registerBackupRepair(backup: Command): void {
   backup
     .command('repair')
     .argument('<repo-ref>', t('options.repoRef'))
+    .summary(t('commands.backup.repair.descriptionShort'))
     .description(t('commands.backup.repair.description'))
     .option('--dry-run', t('commands.backup.repair.optionDryRun'))
     .option('--debug', t('options.debug'))

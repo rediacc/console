@@ -100,6 +100,7 @@ export interface BackupManifestsResponse {
 function registerBackupUsage(backup: Command): void {
   backup
     .command('usage')
+    .summary(t('commands.backup.usage.descriptionShort'))
     .description(t('commands.backup.usage.description'))
     .action(async () => {
       try {
@@ -208,6 +209,7 @@ function registerBackupManifests(backup: Command): void {
   backup
     .command('manifests')
     .argument('[repo-ref]', t('options.repoRef'))
+    .summary(t('commands.backup.manifests.descriptionShort'))
     .description(t('commands.backup.manifests.description'))
     .option('--limit <n>', t('commands.backup.manifests.optionLimit'))
     .option('--before <cursor>', t('commands.backup.manifests.optionBefore'))
@@ -400,6 +402,7 @@ function registerBackupVerify(backup: Command): void {
   backup
     .command('verify')
     .argument('<repo-ref>', t('options.repoRef'))
+    .summary(t('commands.backup.verify.descriptionShort'))
     .description(t('commands.backup.verify.description'))
     .option('--deep', t('commands.backup.verify.optionDeep'))
     .option('--store', t('commands.backup.verify.optionStore'))

@@ -9,6 +9,7 @@ import { handleError } from '../../utils/errors.js';
 export function registerOpsUpCommand(ops: Command, _program: Command): void {
   ops
     .command('up')
+    .summary(t('commands.ops.up.descriptionShort'))
     .description(t('commands.ops.up.description'))
     .option('--force', t('options.opsForce'))
     .option('--parallel', t('options.opsParallel'))

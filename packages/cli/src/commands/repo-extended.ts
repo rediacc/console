@@ -236,6 +236,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
   // the reason rather than silently doing nothing.
   autostart
     .command('enable')
+    .summary(t('commands.repo.admin.autostart.enable.descriptionShort'))
     .description(t('commands.repo.admin.autostart.enable.description'))
     .argument('[ref]', t('options.repoRef'))
     .option('--debug', t('options.debug'))
@@ -291,6 +292,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
 
   autostart
     .command('disable')
+    .summary(t('commands.repo.admin.autostart.disable.descriptionShort'))
     .description(t('commands.repo.admin.autostart.disable.description'))
     .argument('[ref]', t('options.repoRef'))
     .option('--debug', t('options.debug'))
@@ -346,6 +348,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
 
   autostart
     .command('list')
+    .summary(t('commands.repo.admin.autostart.list.descriptionShort'))
     .description(t('commands.repo.admin.autostart.list.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))

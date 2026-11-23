@@ -568,6 +568,7 @@ function checkEditGates(
 export function registerEditCommands(parent: Command, _program: Command): void {
   parent
     .command('edit')
+    .summary(t('commands.config.edit.descriptionShort'))
     .description(t('commands.config.edit.description'))
     .option('--reveal', t('commands.config.edit.optionReveal'))
     .option('--dump', t('commands.config.edit.optionDump'))

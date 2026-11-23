@@ -184,6 +184,7 @@ function registerRetentionPreview(retention: Command): void {
   retention
     .command('preview')
     .argument('<repo-ref>', t('options.repoRef'))
+    .summary(t('commands.backup.retention.preview.descriptionShort'))
     .description(t('commands.backup.retention.preview.description'))
     .action(async (repoRef: string) => {
       try {
@@ -237,6 +238,7 @@ export function registerBackupSnapshots(backup: Command): void {
     .command('delete')
     .argument('<repo-ref>', t('options.repoRef'))
     .argument('<snapshot-id>', t('commands.backup.snapshots.snapshotIdArgument'))
+    .summary(t('commands.backup.snapshots.delete.descriptionShort'))
     .description(t('commands.backup.snapshots.delete.description'))
     .action(async (repoRef: string, snapshotId: string) => {
       try {
@@ -383,6 +385,7 @@ export function registerBackupRetention(backup: Command): void {
   const retention = backup
     .command('retention')
     .argument('[repo-ref]', t('options.repoRef'))
+    .summary(t('commands.backup.retention.descriptionShort'))
     .description(t('commands.backup.retention.description'))
     .action(async (repoRef: string | undefined) => {
       try {
@@ -397,6 +400,7 @@ export function registerBackupRetention(backup: Command): void {
   retention
     .command('set')
     .argument('<repo-ref>', t('options.repoRef'))
+    .summary(t('commands.backup.retention.set.descriptionShort'))
     .description(t('commands.backup.retention.set.description'))
     .option('--keep-last <n>', t('commands.backup.retention.optionKeepLast'))
     .option('--keep-hourly <n>', t('commands.backup.retention.optionKeepHourly'))
@@ -432,6 +436,7 @@ export function registerBackupRetention(backup: Command): void {
   retention
     .command('clear')
     .argument('<repo-ref>', t('options.repoRef'))
+    .summary(t('commands.backup.retention.clear.descriptionShort'))
     .description(t('commands.backup.retention.clear.description'))
     .option('--stream <id>', t('commands.backup.retention.optionStream'))
     .action(async (repoRef: string, options: { stream?: string }) => {

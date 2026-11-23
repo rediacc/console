@@ -168,6 +168,7 @@ export function registerBackupReconcile(backup: Command): void {
   backup
     .command('reconcile')
     .argument('[repo-ref]', t('commands.backup.reconcile.argRepoRef'))
+    .summary(t('commands.backup.reconcile.descriptionShort'))
     .description(t('commands.backup.reconcile.description'))
     .option('--dry-run', t('commands.backup.reconcile.optionDryRun'))
     .option('--check', t('commands.backup.reconcile.optionCheck'))

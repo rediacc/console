@@ -24,6 +24,7 @@ interface OpsStatusResponse {
 export function registerOpsSSHCommand(ops: Command, _program: Command): void {
   ops
     .command('ssh')
+    .summary(t('commands.ops.ssh.descriptionShort'))
     .description(t('commands.ops.ssh.description'))
     .requiredOption('--vm-id <id>', t('options.vmId'))
     .option('-c, --command <cmd>', t('options.command'))

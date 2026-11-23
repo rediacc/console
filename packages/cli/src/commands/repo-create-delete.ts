@@ -479,6 +479,7 @@ export function registerRepoCreateDeleteCommands(repo: Command): void {
   // repo create <name> --machine <m> | --datastore <d> (placement union, spec §5.4)
   repo
     .command('create')
+    .summary(t('commands.repo.create.descriptionShort'))
     .description(t('commands.repo.create.description'))
     .argument('<name>', t('options.name'))
     .option('-m, --machine <name>', t('commands.repo.machineOption'))

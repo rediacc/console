@@ -9,6 +9,7 @@ import { handleError } from '../../utils/errors.js';
 export function registerOpsDownCommand(ops: Command, _program: Command): void {
   ops
     .command('down')
+    .summary(t('commands.ops.down.descriptionShort'))
     .description(t('commands.ops.down.description'))
     .addOption(new Option('--backend <backend>', t('options.opsBackend')).choices(['kvm', 'qemu']))
     .option('--debug', t('options.debug'))

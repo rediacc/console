@@ -35,6 +35,7 @@ function resolveWithSource(
 export function registerCurrentCommand(parent: Command, program: Command): void {
   parent
     .command('current')
+    .summary(t('commands.config.current.descriptionShort'))
     .description(t('commands.config.current.description'))
     .action(async () => {
       try {

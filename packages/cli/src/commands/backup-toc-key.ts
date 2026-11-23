@@ -89,6 +89,7 @@ export function registerBackupTocKey(backup: Command): void {
   tocKey
     .command('sync')
     .argument('<repo-ref>', t('options.repoRef'))
+    .summary(t('commands.backup.tocKey.sync.descriptionShort'))
     .description(t('commands.backup.tocKey.sync.description'))
     .option('--replace', t('commands.backup.tocKey.sync.optionReplace'))
     .option('--dry-run', t('commands.backup.tocKey.sync.optionDryRun'))

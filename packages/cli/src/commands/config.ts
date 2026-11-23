@@ -283,6 +283,7 @@ ${t('help.examples')}
   config
     .command('init')
     .argument('[name]', t('options.name'))
+    .summary(t('commands.config.init.descriptionShort'))
     .description(t('commands.config.init.description'))
     .option('--ssh-key <path>', t('options.sshKey'))
     .option('--renet-path <path>', t('options.renetPath'))
@@ -334,6 +335,7 @@ ${t('help.examples')}
   config
     .command('list')
     .alias('ls')
+    .summary(t('commands.config.list.descriptionShort'))
     .description(t('commands.config.list.description'))
     .action(async () => {
       try {
@@ -360,6 +362,7 @@ ${t('help.examples')}
   // config show
   config
     .command('show')
+    .summary(t('commands.config.show.descriptionShort'))
     .description(t('commands.config.show.description'))
     .option('--reveal', t('commands.config.show.optionReveal'))
     .action(async (options: { reveal?: boolean }) => {
@@ -400,6 +403,7 @@ ${t('help.examples')}
     .command('delete')
     .alias('rm')
     .argument('<name>', t('options.name'))
+    .summary(t('commands.config.delete.descriptionShort'))
     .description(t('commands.config.delete.description'))
     .action(async (name: string) => {
       try {
@@ -415,6 +419,7 @@ ${t('help.examples')}
     .command('set')
     .argument('<key>', t('options.configKey'))
     .argument('<value>', t('options.configValue'))
+    .summary(t('commands.config.set.descriptionShort'))
     .description(t('commands.config.set.description'))
     .action(async (key: string, value: string) => {
       try {
@@ -430,6 +435,7 @@ ${t('help.examples')}
   config
     .command('clear')
     .argument('[key]', t('options.configKey'))
+    .summary(t('commands.config.clear.descriptionShort'))
     .description(t('commands.config.clear.description'))
     .action(async (key: string | undefined) => {
       try {
@@ -449,6 +455,7 @@ ${t('help.examples')}
   // config recover
   config
     .command('recover')
+    .summary(t('commands.config.recover.descriptionShort'))
     .description(t('commands.config.recover.description'))
     .argument('[name]', t('options.name'))
     .option('-y, --yes', t('options.yes'))
@@ -508,6 +515,7 @@ ${t('help.examples')}
   // config reconcile, rebuild the state bucket from machine truth (R2-F2).
   config
     .command('reconcile')
+    .summary(t('commands.config.reconcile.descriptionShort'))
     .description(t('commands.config.reconcile.description'))
     .option('--machine <m...>', t('commands.config.reconcile.optionMachine'))
     .option('--dry-run', t('options.dryRun'))
@@ -517,6 +525,7 @@ ${t('help.examples')}
   // config rotate-cek, destructive, org-wide (Q3): registered here, not under `config remote`, because it rotates the ORGANIZATION's key, not this device's link. The impl still lives in config-remote.ts alongside the store internals.
   config
     .command('rotate-cek')
+    .summary(t('commands.config.rotateCek.descriptionShort'))
     .description(t('commands.config.rotateCek.description'))
     .option('--api-url <url>', t('commands.config.rotateCek.optionApiUrl'))
     .action(async (options: { apiUrl?: string }) => {

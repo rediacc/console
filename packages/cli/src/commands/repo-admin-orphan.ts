@@ -121,6 +121,7 @@ export function registerRepoAdminOrphan(admin: Command): void {
 
   orphan
     .command('list')
+    .summary(t('commands.repo.admin.orphan.list.descriptionShort'))
     .description(t('commands.repo.admin.orphan.list.description'))
     .argument('<machine>', t('options.machineName'))
     .option('--debug', t('options.debug'))

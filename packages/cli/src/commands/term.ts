@@ -617,6 +617,7 @@ ${t('help.examples')}
 
   term
     .command('connect')
+    .summary(t('commands.term.connect.descriptionShort'))
     .description(t('commands.term.connect.description'))
     .argument('<target>', t('options.connectTarget'))
     .option('-c, --command <cmd>', t('options.command'))

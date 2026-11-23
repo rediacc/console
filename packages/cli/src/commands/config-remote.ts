@@ -470,6 +470,7 @@ export function registerRemoteCommands(configCommand: Command): void {
   // remote enable
   remote
     .command('enable')
+    .summary(t('commands.config.remote.enable.descriptionShort'))
     .description(t('commands.config.remote.enable.description'))
     .option('--master-password', t('commands.config.remote.enable.optionMasterPassword'))
     .option('--master-password-stdin', t('commands.config.remote.enable.optionMasterPasswordStdin'))
@@ -516,6 +517,7 @@ export function registerRemoteCommands(configCommand: Command): void {
   // remote disable
   remote
     .command('disable')
+    .summary(t('commands.config.remote.disable.descriptionShort'))
     .description(t('commands.config.remote.disable.description'))
     .option('--local', t('commands.config.remote.disable.optionLocal'))
     .option('-y, --yes', t('options.yes'))
@@ -536,6 +538,7 @@ export function registerRemoteCommands(configCommand: Command): void {
   // remote status
   remote
     .command('status')
+    .summary(t('commands.config.remote.status.descriptionShort'))
     .description(t('commands.config.remote.status.description'))
     .action(async () => {
       try {
@@ -551,6 +554,7 @@ export function registerRemoteCommands(configCommand: Command): void {
   // remote versions
   remote
     .command('versions')
+    .summary(t('commands.config.remote.versions.descriptionShort'))
     .description(t('commands.config.remote.versions.description'))
     .option('--explain', t('commands.config.remote.versions.optionExplain'))
     .action(async (options: { explain?: boolean }) => {
@@ -567,6 +571,7 @@ export function registerRemoteCommands(configCommand: Command): void {
   // remote restore
   remote
     .command('restore')
+    .summary(t('commands.config.remote.restore.descriptionShort'))
     .description(t('commands.config.remote.restore.description'))
     .argument('<version>', t('commands.config.remote.restore.argVersion'))
     .option('-y, --yes', t('options.yes'))
@@ -608,6 +613,7 @@ export function registerRemoteCommands(configCommand: Command): void {
   // remote refresh
   remote
     .command('refresh')
+    .summary(t('commands.config.remote.refresh.descriptionShort'))
     .description(t('commands.config.remote.refresh.description'))
     .action(async () => {
       try {

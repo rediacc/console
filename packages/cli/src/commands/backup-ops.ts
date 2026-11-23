@@ -382,6 +382,7 @@ bindStepHandler('renderBackupStatus', async ({ machine, output, params }) => {
 export function registerBackupOpsCommands(backup: Command): void {
   backup
     .command('schedule')
+    .summary(t('commands.backup.schedule.descriptionShort'))
     .description(t('commands.backup.schedule.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--dry-run', t('commands.backup.schedule.optionDryRun'))
@@ -426,6 +427,7 @@ export function registerBackupOpsCommands(backup: Command): void {
   backup
     .command('run')
     .argument('[strategy]', t('options.strategyName'))
+    .summary(t('commands.backup.run.descriptionShort'))
     .description(t('commands.backup.run.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--debug', t('options.debug'))
@@ -440,6 +442,7 @@ export function registerBackupOpsCommands(backup: Command): void {
   backup
     .command('status')
     .argument('[strategy]', t('options.strategyName'))
+    .summary(t('commands.backup.status.descriptionShort'))
     .description(t('commands.backup.status.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--debug', t('options.debug'))
@@ -454,6 +457,7 @@ export function registerBackupOpsCommands(backup: Command): void {
   backup
     .command('cancel')
     .argument('[strategy]', t('options.strategyName'))
+    .summary(t('commands.backup.cancel.descriptionShort'))
     .description(t('commands.backup.cancel.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--debug', t('options.debug'))

@@ -20,6 +20,7 @@ interface OpsStatusResponse {
 export function registerOpsStatusCommand(ops: Command, program: Command): void {
   ops
     .command('status')
+    .summary(t('commands.ops.status.descriptionShort'))
     .description(t('commands.ops.status.description'))
     .addOption(new Option('--backend <backend>', t('options.opsBackend')).choices(['kvm', 'qemu']))
     .action(async (options: { backend?: string }) => {

@@ -187,6 +187,7 @@ export function registerBackupSnapshot(backup: Command): void {
   backup
     .command('snapshot')
     .argument('<repo-ref>', t('options.repoRef'))
+    .summary(t('commands.backup.snapshot.descriptionShort'))
     .description(t('commands.backup.snapshot.description'))
     .option('--reseed', t('commands.backup.snapshot.optionReseed'))
     .option('--dry-run', t('commands.backup.snapshot.optionDryRun'))

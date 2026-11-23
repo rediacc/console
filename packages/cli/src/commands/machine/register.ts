@@ -159,6 +159,7 @@ function registerRemove(machine: Command): void {
   machine
     .command('remove')
     .argument('<name>', t('options.name'))
+    .summary(t('commands.machine.remove.descriptionShort'))
     .description(t('commands.machine.remove.description'))
     .option('-y, --yes', t('options.yes'))
     .option('--force', t('commands.machine.remove.forceOption'))
@@ -197,6 +198,7 @@ function registerRemove(machine: Command): void {
 function registerList(machine: Command, program: Command): void {
   machine
     .command('list')
+    .summary(t('commands.machine.list.descriptionShort'))
     .description(t('commands.machine.list.description'))
     .option('--search <text>', t('options.searchInField', { field: 'name' }))
     // Closed set: --sort keys are exactly the columns of the output rows below.
@@ -253,6 +255,7 @@ function registerScanKeys(machine: Command): void {
   machine
     .command('scan-keys')
     .argument('[name]', t('options.name'))
+    .summary(t('commands.machine.scanKeys.descriptionShort'))
     .description(t('commands.machine.scanKeys.description'))
     .action(async (name: string | undefined) => {
       try {

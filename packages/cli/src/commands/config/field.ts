@@ -130,6 +130,7 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
 
   field
     .command('get')
+    .summary(t('commands.config.field.get.descriptionShort'))
     .description(t('commands.config.field.get.description'))
     .requiredOption('--pointer <pointer>', t('commands.config.field.get.optionPointer'))
     .option('--reveal', t('commands.config.field.get.optionReveal'))
@@ -157,6 +158,7 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
 
   field
     .command('set')
+    .summary(t('commands.config.field.set.descriptionShort'))
     .description(t('commands.config.field.set.description'))
     .requiredOption('--pointer <pointer>', t('commands.config.field.set.optionPointer'))
     .requiredOption('--new <value>', t('commands.config.field.set.optionNew'))
@@ -217,6 +219,7 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
 
   field
     .command('unset')
+    .summary(t('commands.config.field.unset.descriptionShort'))
     .description(t('commands.config.field.unset.description'))
     .requiredOption('--pointer <pointer>', t('commands.config.field.unset.optionPointer'))
     .option('--current <value>', t('commands.config.field.unset.optionCurrent'))
@@ -278,6 +281,7 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
 
   field
     .command('rotate')
+    .summary(t('commands.config.field.rotate.descriptionShort'))
     .description(t('commands.config.field.rotate.description'))
     .requiredOption('--pointer <pointer>', t('commands.config.field.rotate.optionPointer'))
     .requiredOption('--new <value>', t('commands.config.field.rotate.optionNew'))
@@ -327,6 +331,7 @@ export function registerFieldCommands(parent: Command, _program: Command): void 
 
   field
     .command('list')
+    .summary(t('commands.config.field.list.descriptionShort'))
     .description(t('commands.config.field.list.description'))
     .option('--sensitive', t('commands.config.field.list.optionSensitive'))
     .option('--output <format>', t('commands.config.field.list.optionOutput'), 'table')

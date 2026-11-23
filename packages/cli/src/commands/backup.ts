@@ -44,6 +44,7 @@ function registerBackupList(backup: Command): void {
   backup
     .command('list')
     .argument('[artifact-ref]', t('options.artifactRef'))
+    .summary(t('commands.backup.list.descriptionShort'))
     .description(t('commands.backup.list.description'))
     .option('-m, --machine <name>', t('options.machine'))
     .option('--path <subdir>', t('commands.backup.list.optionPath'))
@@ -149,6 +150,7 @@ function registerBackupRestore(backup: Command): void {
   backup
     .command('restore')
     .argument('<artifact-ref>', t('options.artifactRef'))
+    .summary(t('commands.backup.restore.descriptionShort'))
     .description(t('commands.backup.restore.description'))
     .option('--as <name>', t('commands.backup.restore.optionAs'))
     .option('-m, --machine <name>', t('options.machine'))

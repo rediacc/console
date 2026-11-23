@@ -15,6 +15,7 @@ export function registerSSHCommands(config: Command, program: Command): void {
 
   ssh
     .command('set')
+    .summary(t('commands.config.ssh.set.descriptionShort'))
     .description(t('commands.config.ssh.set.description'))
     .requiredOption('--key <path>', t('commands.config.ssh.set.optionKey'))
     .option('--embed', t('commands.config.ssh.set.optionEmbed'))
@@ -53,6 +54,7 @@ export function registerSSHCommands(config: Command, program: Command): void {
 
   ssh
     .command('show')
+    .summary(t('commands.config.ssh.show.descriptionShort'))
     .description(t('commands.config.ssh.show.description'))
     .action(async () => {
       try {
@@ -83,6 +85,7 @@ export function registerSSHCommands(config: Command, program: Command): void {
 
   ssh
     .command('remove')
+    .summary(t('commands.config.ssh.remove.descriptionShort'))
     .description(t('commands.config.ssh.remove.description'))
     .action(async () => {
       try {

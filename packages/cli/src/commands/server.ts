@@ -143,6 +143,7 @@ function registerStatus(server: Command): void {
   locatorOptions(
     server
       .command('status')
+      .summary(t('commands.server.status.descriptionShort'))
       .description(t('commands.server.status.description'))
       .argument('<domain>', t('commands.server.domainArgument'))
   ).action(async (domain: string, flags: LocatorFlags) => {
@@ -164,6 +165,7 @@ function registerBackup(server: Command): void {
   locatorOptions(
     server
       .command('backup')
+      .summary(t('commands.server.backup.descriptionShort'))
       .description(t('commands.server.backup.description'))
       .argument('<domain>', t('commands.server.domainArgument'))
       .option('--out <file>', t('commands.server.backup.optionOut'))
@@ -230,6 +232,7 @@ function registerLicence(server: Command): void {
   const licence = locatorOptions(
     server
       .command('licence')
+      .summary(t('commands.server.licence.descriptionShort'))
       .description(t('commands.server.licence.description'))
       .argument('<domain>', t('commands.server.domainArgument'))
       .option('--cert <file>', t('commands.server.install.optionCert'))
@@ -249,6 +252,7 @@ function registerLicence(server: Command): void {
   });
   licence
     .command('mint')
+    .summary(t('commands.server.licence.mint.descriptionShort'))
     .description(t('commands.server.licence.mint.description'))
     .requiredOption('--request <file>', t('commands.server.licence.mint.optionRequest'))
     .requiredOption('--out <file>', t('commands.server.licence.mint.optionOut'))

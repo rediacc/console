@@ -317,6 +317,7 @@ export function registerRepoCommands(program: Command): void {
   // repo status <ref>
   repo
     .command('status')
+    .summary(t('commands.repo.status.descriptionShort'))
     .description(t('commands.repo.status.description'))
     .argument('<ref>', t('options.repoRef'))
     .option('--debug', t('options.debug'))
@@ -388,6 +389,7 @@ export function registerRepoCommands(program: Command): void {
   // repo list, the whole config's repos, narrowed by where they LIVE. A datastore is the honest unit now (a repo lives in a datastore; the machine is wherever that datastore happens to be attached today), so --datastore joins --machine.
   repo
     .command('list')
+    .summary(t('commands.repo.list.descriptionShort'))
     .description(t('commands.repo.list.description'))
     .option('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--datastore <name>', t('commands.repo.list.datastoreOption'))

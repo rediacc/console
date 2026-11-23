@@ -332,6 +332,7 @@ export function registerBackupStrategyCommands(backup: Command): void {
   group
     .command('set')
     .argument('<strategy>', t('options.strategyName'))
+    .summary(t('commands.backup.strategy.set.descriptionShort'))
     .description(t('commands.backup.strategy.set.description'))
     .option('--destination <name>', t('commands.backup.strategy.set.optionDestination'))
     .option('--target <storeId>', t('commands.backup.strategy.set.optionTarget'))
@@ -381,6 +382,7 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .command('bind')
     .argument('<strategy>', t('options.strategyName'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .summary(t('commands.backup.strategy.bind.descriptionShort'))
     .description(t('commands.backup.strategy.bind.description'))
     .action(async (strategy: string, options: { machine: string }) => {
       try {
@@ -418,6 +420,7 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .command('unbind')
     .argument('<strategy>', t('options.strategyName'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
+    .summary(t('commands.backup.strategy.unbind.descriptionShort'))
     .description(t('commands.backup.strategy.unbind.description'))
     .action(async (strategy: string, options: { machine: string }) => {
       try {
@@ -443,6 +446,7 @@ export function registerBackupStrategyCommands(backup: Command): void {
   group
     .command('remove')
     .argument('<strategy>', t('options.strategyName'))
+    .summary(t('commands.backup.strategy.remove.descriptionShort'))
     .description(t('commands.backup.strategy.remove.description'))
     .option('--destination <name>', t('commands.backup.strategy.remove.optionDestination'))
     // --unbind applies to removing the whole strategy; with --destination it would be silently ignored.
@@ -486,6 +490,7 @@ export function registerBackupStrategyCommands(backup: Command): void {
 
   group
     .command('list')
+    .summary(t('commands.backup.strategy.list.descriptionShort'))
     .description(t('commands.backup.strategy.list.description'))
     .action(async () => {
       try {
@@ -516,6 +521,7 @@ export function registerBackupStrategyCommands(backup: Command): void {
   group
     .command('show')
     .argument('[strategy]', t('options.strategyName'))
+    .summary(t('commands.backup.strategy.show.descriptionShort'))
     .description(t('commands.backup.strategy.show.description'))
     .action(async (strategy: string | undefined) => {
       try {

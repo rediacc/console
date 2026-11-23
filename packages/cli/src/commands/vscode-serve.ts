@@ -56,6 +56,7 @@ export function registerVSCodeServeCommands(vscode: Command): void {
 
   serve
     .command('status')
+    .summary(t('commands.vscode.serve.status.descriptionShort'))
     .description(t('commands.vscode.serve.status.description'))
     .argument('<target>', t('options.repoRef'))
     .addOption(
@@ -86,6 +87,7 @@ export function registerVSCodeServeCommands(vscode: Command): void {
 
   serve
     .command('stop')
+    .summary(t('commands.vscode.serve.stop.descriptionShort'))
     .description(t('commands.vscode.serve.stop.description'))
     .argument('<target>', t('options.repoRef'))
     .addOption(

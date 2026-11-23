@@ -410,6 +410,7 @@ async function runHealthJob(name: string): Promise<void> {
 export function registerHealthCommand(machine: Command): void {
   machine
     .command('health')
+    .summary(t('commands.machine.health.descriptionShort'))
     .description(t('commands.machine.health.description'))
     .argument('<name>', t('options.name'))
     .action(async (name: string) => {

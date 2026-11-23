@@ -138,6 +138,7 @@
       "descriptionShort": "Model Context Protocol server for AI agents",
       "description": "Expose the CLI as a Model Context Protocol (MCP) server for integration with AI agents. The server wraps CLI commands as MCP tools with structured JSON input/output. Key subcommand: serve (start stdio-based MCP server).",
       "serve": {
+        "descriptionShort": "Start MCP server (stdio transport)",
         "description": "Start MCP server (stdio transport)",
         "configOption": "Config name to use for all commands",
         "timeoutOption": "Default command timeout in milliseconds"
@@ -219,6 +220,7 @@
         "droppedGoneMachineState": "{{count}} runtime record(s) naming a machine no longer in the config {{verb}} dropped:"
       },
       "init": {
+        "descriptionShort": "Create a new named config file",
         "description": "Create a new named config file",
         "optionMasterPassword": "Encrypt resources with a master password",
         "alreadyExists": "Config \"{{name}}\" already exists",
@@ -232,31 +234,38 @@
         }
       },
       "list": {
+        "descriptionShort": "List all config files",
         "description": "List all config files",
         "noConfigs": "No config files found. Create one with: rdc config init"
       },
       "show": {
+        "descriptionShort": "Show current config details",
         "description": "Show current config details",
         "noConfig": "No active config. Create one with: rdc config init",
         "optionReveal": "Show plaintext for sensitive values (interactive only)"
       },
       "current": {
+        "descriptionShort": "Show the active config: name, file, resolved server and channel, token state",
         "description": "Show the active config: name, file, resolved server and channel, token state"
       },
       "delete": {
+        "descriptionShort": "Delete a config file",
         "description": "Delete a config file",
         "success": "Config \"{{name}}\" deleted"
       },
       "set": {
+        "descriptionShort": "Set a default value (team, region, bridge)",
         "description": "Set a default value (team, region, bridge)",
         "success": "Set \"{{key}}\" to \"{{value}}\""
       },
       "clear": {
+        "descriptionShort": "Clear defaults (all or specific key)",
         "description": "Clear defaults (all or specific key)",
         "keyCleared": "Cleared \"{{key}}\"",
         "allCleared": "Cleared all defaults"
       },
       "recover": {
+        "descriptionShort": "Restore config from backup (.bak) file",
         "description": "Restore config from backup (.bak) file",
         "noBackup": "No backup found for config \"{{name}}\"",
         "confirm": "Restore config \"{{name}}\" from backup?",
@@ -266,6 +275,7 @@
       "ssh": {
         "description": "Manage SSH key configuration",
         "set": {
+          "descriptionShort": "Set SSH key for the current config",
           "description": "Set SSH key for the current config",
           "optionKey": "Path to SSH private key file",
           "optionEmbed": "Embed key content in config instead of storing path",
@@ -274,10 +284,12 @@
           "keyNotFound": "SSH key file not found: {{path}}"
         },
         "show": {
+          "descriptionShort": "Show current SSH key configuration",
           "description": "Show current SSH key configuration",
           "noKey": "No SSH key configured"
         },
         "remove": {
+          "descriptionShort": "Remove SSH key from the current config",
           "description": "Remove SSH key from the current config",
           "success": "SSH key removed",
           "noKey": "No SSH key configured"
@@ -312,6 +324,7 @@
         "handoffUndecryptable": "The server relay returned a handoff this device cannot open ({{error}}): it was sealed to a different key than this run generated. Run the command again and open only the link it prints.",
         "storeCopyGone": "Store {{storeId}} no longer holds remote config {{configId}}, which config \"{{name}}\" is linked to. Nothing was changed; the local file is the last copy this device saw. To drop the link and keep that copy as a local config, run: rdc config remote disable --local",
         "enable": {
+          "descriptionShort": "Link this config to remote encrypted storage",
           "description": "Link this config to remote encrypted storage",
           "optionApiUrl": "Account server URL",
           "received": "Handoff received",
@@ -370,6 +383,7 @@
           "overwriteAborted": "Enable aborted: local config \"{{config}}\" has content that differs from the server copy. Re-run with --force to replace it, or confirm in an interactive terminal."
         },
         "disable": {
+          "descriptionShort": "Disconnect from remote storage and save config locally",
           "description": "Disconnect from remote storage and save config locally",
           "optionLocal": "Unlink on this device only, from the cached copy, without contacting the server",
           "success": "Remote config disabled. Config \"{{name}}\" saved locally.",
@@ -393,6 +407,7 @@
           "fileNotice": "REDIACC_SECRET_STORE=file: this device's config storage key is kept in {{path}} (mode 0600), protected by file permissions only."
         },
         "status": {
+          "descriptionShort": "Show remote connection status",
           "description": "Show remote connection status",
           "deviceKeyMissing": "This device can no longer open this config's remote storage: its key is gone (a restart can empty the key store). Enroll this device again with: rdc config remote enable",
           "deviceCannotOpen": "This device cannot open this config's remote storage: its enrollment was rejected, for example after the key was rotated. Enroll this device again with: rdc config remote enable"
@@ -431,6 +446,7 @@
           }
         },
         "refresh": {
+          "descriptionShort": "Force re-fetch config from remote storage",
           "description": "Force re-fetch config from remote storage",
           "pulling": "Pulling config from remote...",
           "pulled": "Config pulled",
@@ -451,6 +467,7 @@
         },
         "pushVisibility": "config {{config}}: pushed v{{from}} → v{{to}} by \"{{command}}\": {{changes}}",
         "versions": {
+          "descriptionShort": "List the earlier versions of this config kept on the server",
           "description": "List the earlier versions of this config kept on the server",
           "optionExplain": "Show the JSON pointers each version changed, from the versions the server kept",
           "explainUnreadable": "(unreadable: {{reason}})",
@@ -458,6 +475,7 @@
           "empty": "The server keeps no earlier versions of config \"{{config}}\"."
         },
         "restore": {
+          "descriptionShort": "Publish an earlier version of this config as its newest version",
           "description": "Publish an earlier version of this config as its newest version",
           "argVersion": "Version to restore (see rdc config remote versions)",
           "confirm": "Publish the content of version {{version}} of config \"{{config}}\" as a new version on top of version {{current}}? Every device gets it on its next pull.",
@@ -473,12 +491,14 @@
         "description": "Pointer-addressed config field operations (get/set/unset/rotate/list). JSON Pointers (RFC 6901) like /credentials/cfDnsApiToken.",
         "descriptionShort": "Pointer-addressed config field operations",
         "get": {
+          "descriptionShort": "Read a single config value by JSON Pointer",
           "description": "Read a single config value by JSON Pointer. Sensitive fields redact unless --reveal (humans only).",
           "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "optionReveal": "Show plaintext for sensitive values (interactive TTY only; audited)",
           "optionDigest": "Print the SHA-256 digest instead of the value (safe to share with agents)"
         },
         "set": {
+          "descriptionShort": "Write a config value at a JSON Pointer",
           "description": "Write a config value at a JSON Pointer. Sensitive paths require --current (knowledge-gate).",
           "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "optionNew": "New value (parsed as JSON if it looks like JSON: {, [, \", true/false/null/number)",
@@ -486,24 +506,28 @@
           "success": "Set {{pointer}}"
         },
         "unset": {
+          "descriptionShort": "Delete a config value at a JSON Pointer",
           "description": "Delete a config value at a JSON Pointer. Sensitive paths require --current.",
           "optionPointer": "JSON Pointer to the field (e.g. /credentials/cfDnsApiToken)",
           "optionCurrent": "Current plaintext value, required for sensitive-path deletions",
           "success": "Unset {{pointer}}"
         },
         "rotate": {
+          "descriptionShort": "Rotate a sensitive value without --current",
           "description": "Rotate a sensitive value without --current. Interactive TTY only; loudly audited.",
           "optionPointer": "JSON Pointer to the sensitive field (e.g. /credentials/cfDnsApiToken)",
           "optionNew": "New value",
           "success": "Rotated {{pointer}}"
         },
         "list": {
+          "descriptionShort": "List every registered sensitivity pointer template with its kind and commit/encrypt policy",
           "description": "List every registered sensitivity pointer template with its kind and commit/encrypt policy.",
           "optionSensitive": "Show only sensitive (non-public) templates",
           "optionOutput": "Output format (json|table)"
         }
       },
       "edit": {
+        "descriptionShort": "Open the active config in $EDITOR as a redacted JSONC projection",
         "description": "Open the active config in $EDITOR as a redacted JSONC projection. Humans only; agents refused.",
         "optionReveal": "Show plaintext for sensitive values (interactive TTY only; audited)",
         "optionDump": "Print current config as JSONC to stdout (read-only; safe for agents when redacted)",
@@ -528,21 +552,25 @@
       "audit": {
         "description": "Inspect the config audit log (hash-chained JSONL at ~/.config/rediacc/audit.log.jsonl)",
         "log": {
+          "descriptionShort": "Print recent audit entries as JSON",
           "description": "Print recent audit entries as JSON",
           "optionSince": "Only show entries newer than (e.g., '24h', '7d', ISO timestamp)",
           "optionPath": "Filter by JSON Pointer glob (e.g., /credentials/*)",
           "optionActor": "Filter by actor kind (human|agent)"
         },
         "tail": {
+          "descriptionShort": "Stream new audit entries as they are written (Ctrl+C to stop)",
           "description": "Stream new audit entries as they are written (Ctrl+C to stop)"
         },
         "verify": {
+          "descriptionShort": "Verify the integrity of the SHA-256 hash chain across all audit entries",
           "description": "Verify the integrity of the SHA-256 hash chain across all audit entries",
           "chainOk": "Chain integrity verified across {{count}} entries.",
           "chainBroken": "Chain broken at line {{line}}: the file has been tampered with or corrupted."
         }
       },
       "reconcile": {
+        "descriptionShort": "Rebuild runtime state from machine truth",
         "description": "Rebuild runtime state from machine truth. Fixes stale attach and routing data.",
         "optionMachine": "Limit the reconcile to these machines",
         "optionAcceptObserved": "Rewrite a declared placement to match where the image actually is, but only when that is unambiguous (observed on exactly one machine). Duplicates stay conflicts.",
@@ -591,6 +619,7 @@
         }
       },
       "rotateCek": {
+        "descriptionShort": "Rotate the organization config-encryption key",
         "description": "Rotate the organization config-encryption key",
         "optionApiUrl": "Account server URL",
         "notEnabled": "Remote config is not enabled for \"{{name}}\".",
@@ -625,6 +654,7 @@
           "updated": "Access key \"{{key}}\" updated"
         },
         "remove": {
+          "descriptionShort": "Remove an access key from the config",
           "description": "Remove an access key from the config",
           "success": "Access key \"{{key}}\" removed",
           "pushHint": "Its lines stay on {{machines}} until 'machine access push' runs there"
@@ -640,6 +670,7 @@
           "cleared": "Config-wide source ranges removed"
         },
         "list": {
+          "descriptionShort": "List the config's access keys",
           "description": "List the config's access keys",
           "noKeys": "No access keys in this config. Add one with 'config access add'"
         }
@@ -664,6 +695,7 @@
       "descriptionShort": "Manage remote machines (status, health, list, add, remove, setup, prune)",
       "description": "Inspect remote machine state: system resources, running containers, systemd services, deployed repositories, and health diagnostics. Read-only queries; to modify repos use `repo`. Key subcommands: status (full state, narrowed with --system, --containers, --repositories, --services), health, list, add, remove, setup, prune, provision, deprovision.",
       "list": {
+        "descriptionShort": "List machines",
         "description": "List machines",
         "noMachines": "No machines configured. Add one with: rdc machine add <name> --ip <ip> --user <user>",
         "examples": {
@@ -672,6 +704,7 @@
         }
       },
       "health": {
+        "descriptionShort": "Check machine health for CI/CD pipelines",
         "description": "Check machine health for CI/CD pipelines",
         "fetching": "Fetching machine health...",
         "fetched": "Health data fetched",
@@ -735,6 +768,7 @@
         "resultOperator": "operator decision"
       },
       "provision": {
+        "descriptionShort": "Provision a new machine on a cloud provider using OpenTofu",
         "description": "Provision a new machine on a cloud provider using OpenTofu",
         "optionProvider": "Cloud provider name (from machine provider add)",
         "optionRegion": "Override default region",
@@ -758,6 +792,7 @@
         }
       },
       "deprovision": {
+        "descriptionShort": "Destroy a cloud-provisioned machine and remove from config",
         "description": "Destroy a cloud-provisioned machine and remove from config",
         "optionForce": "Skip confirmation prompt",
         "confirm": "This will permanently destroy machine \"{{name}}\" and all its data. Continue?",
@@ -837,19 +872,23 @@
         "cert": {
           "clear": {
             "cleared": "Certificate cache cleared",
+            "descriptionShort": "Remove the certificate cache",
             "description": "Remove the certificate cache",
             "noCache": "No certificate cache to clear"
           },
           "description": "Manage cached TLS certificates",
           "pull": {
+            "descriptionShort": "Download and cache TLS certificates from a machine",
             "description": "Download and cache TLS certificates from a machine",
             "optionNoPrune": "Skip pruning stale network-ID certificates"
           },
           "push": {
+            "descriptionShort": "Upload cached TLS certificates to a machine",
             "description": "Upload cached TLS certificates to a machine"
           },
           "status": {
             "certCount": "{{count}} certificate(s), {{size}} compressed",
+            "descriptionShort": "Show cached certificate inventory",
             "description": "Show cached certificate inventory",
             "header": "Certificate cache for {{baseDomain}}",
             "noCache": "No certificate cache stored",
@@ -876,12 +915,14 @@
           "success": "Infrastructure config updated for \"{{name}}\""
         },
         "show": {
+          "descriptionShort": "Show infrastructure configuration for a machine",
           "description": "Show infrastructure configuration for a machine",
           "noInfra": "No infrastructure config set for \"{{name}}\""
         }
       },
       "provider": {
         "add": {
+          "descriptionShort": "Add a cloud provider",
           "description": "Add a cloud provider",
           "optionImage": "Default OS image",
           "optionImageAttr": "Custom: attribute name for OS image",
@@ -905,16 +946,19 @@
         },
         "description": "Manage cloud providers for automated machine provisioning",
         "list": {
+          "descriptionShort": "List configured cloud providers",
           "description": "List configured cloud providers",
           "noProviders": "No cloud providers configured. Add with: rdc machine provider add <name>"
         },
         "remove": {
+          "descriptionShort": "Remove a cloud provider configuration",
           "description": "Remove a cloud provider configuration",
           "success": "Cloud provider \"{{name}}\" removed"
         }
       },
       "remove": {
         "confirm": "Remove machine \"{{name}}\" from the config?",
+        "descriptionShort": "Remove a machine from the config",
         "description": "Remove a machine from the config. Does not touch the machine itself.",
         "forceDangling": "Removed machine \"{{name}}\" with {{count}} repository placement(s) still on it: {{repos}}. Those placements now dangle. Re-point them with \"rdc repo migrate\" or delete them with \"rdc repo delete\".",
         "forceOption": "Remove the machine even if repositories are placed on it or backup strategies are bound to it, leaving those references dangling.",
@@ -948,6 +992,7 @@
       },
       "scanKeys": {
         "completed": "Scanned {{count}}/{{total}} machines",
+        "descriptionShort": "Scan SSH host keys for machines in the current config",
         "description": "Scan SSH host keys for machines in the current config",
         "keysScanned": "Host keys scanned for \"{{name}}\"",
         "replaced": "Host keys for \"{{name}}\": {{count}} existing key(s) REPLACED - verify the fingerprints below out of band",
@@ -1029,10 +1074,12 @@
           "success": "Access key \"{{key}}\" bound to \"{{name}}\". Apply it with 'machine access push {{name}}'"
         },
         "remove": {
+          "descriptionShort": "Unbind an access key from a machine",
           "description": "Unbind an access key from a machine. The next 'machine access push' removes its line",
           "success": "Access key \"{{key}}\" unbound from \"{{name}}\". Remove its line with 'machine access push {{name}}'"
         },
         "show": {
+          "descriptionShort": "Show the access keys bound to a machine and the ranges each resolves to there",
           "description": "Show the access keys bound to a machine and the ranges each resolves to there",
           "path": "authorized_keys of user {{user}} on \"{{name}}\" (~/.ssh/authorized_keys)",
           "noKeys": "No access keys bound to \"{{name}}\""
@@ -1053,27 +1100,32 @@
       "descriptionShort": "Local VM operations (provision, manage, destroy)",
       "description": "Local VM provisioning and management using KVM/QEMU/Hyper-V (platform auto-detected). Not for remote machines. Use `machine` for those. Key subcommands: up (start VMs), down (stop), status (list running VMs), ssh (connect to VM), setup (install prerequisites), check (verify host readiness).",
       "up": {
+        "descriptionShort": "Provision VM cluster locally",
         "description": "Provision VM cluster locally",
         "starting": "Starting VM cluster provisioning...",
         "completed": "VM cluster provisioned successfully",
         "failed": "VM cluster provisioning failed"
       },
       "down": {
+        "descriptionShort": "Destroy VM cluster",
         "description": "Destroy VM cluster",
         "starting": "Destroying VM cluster...",
         "completed": "VM cluster destroyed successfully",
         "failed": "VM cluster destruction failed"
       },
       "status": {
+        "descriptionShort": "Show VM cluster status",
         "description": "Show VM cluster status",
         "noVMs": "No VMs found"
       },
       "ssh": {
+        "descriptionShort": "SSH into a VM",
         "description": "SSH into a VM",
         "connecting": "Connecting to VM {{id}}...",
         "vmNotFound": "VM with ID {{id}} not found or not running"
       },
       "setup": {
+        "descriptionShort": "Install virtualization prerequisites",
         "description": "Install virtualization prerequisites",
         "linux": "Installing KVM prerequisites via renet...",
         "macos": "Installing QEMU via Homebrew...",
@@ -1084,6 +1136,7 @@
         "brewFailed": "Homebrew installation failed"
       },
       "check": {
+        "descriptionShort": "Verify virtualization prerequisites",
         "description": "Verify virtualization prerequisites",
         "title": "OPS Prerequisites Check",
         "allPassed": "All prerequisites satisfied",
@@ -1248,12 +1301,14 @@
         }
       },
       "status": {
+        "descriptionShort": "Get repository status (mount state, Docker daemon running, container count, disk usage)",
         "description": "Get repository status (mount state, Docker daemon running, container count, disk usage)",
         "starting": "Getting status of \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Status retrieved",
         "failed": "Status check failed"
       },
       "health": {
+        "descriptionShort": "Run the repository's Rediaccfile health() checks and exit 0 (ok), 1 (warning) or 2 (error)",
         "description": "Run the repository's Rediaccfile health() checks and exit 0 (ok), 1 (warning) or 2 (error)",
         "header": "\nHealth of {{repository}}:",
         "levelOk": "✓ Healthy",
@@ -1286,6 +1341,7 @@
         "renetFailed": "renet could not run the repair"
       },
       "cat": {
+        "descriptionShort": "Read a bounded window of a file in a repository to stdout (diagnostics go to stderr)",
         "description": "Read a bounded window of a file in a repository to stdout (diagnostics go to stderr).",
         "remoteFileOption": "File path to read, relative to the repository mount root",
         "maxBytesOption": "Maximum bytes to read and print (default 1 MiB, hard ceiling 50 MiB)",
@@ -1319,6 +1375,7 @@
         "contentNeedsPath": "--content requires a file path, for example: --content app/config.toml"
       },
       "list": {
+        "descriptionShort": "List repositories on a machine",
         "description": "List repositories on a machine",
         "starting": "Listing repositories on \"{{machine}}\"...",
         "completed": "List completed",
@@ -1331,6 +1388,7 @@
         }
       },
       "create": {
+        "descriptionShort": "Create a new repository",
         "description": "Create a new repository. State its home once: a machine or a datastore.",
         "sizeOption": "Repository size (e.g., 10G, 100G, 1T)",
         "noDockerOption": "Skip starting Docker daemon after creation",
@@ -1760,16 +1818,19 @@
         "archive": {
           "description": "Archived repository record bookkeeping.",
           "list": {
+            "descriptionShort": "List archived repository records",
             "description": "List archived repository records.",
             "noArchived": "No archived repositories"
           },
           "purge": {
             "confirm": "Purge all expired archived records?",
+            "descriptionShort": "Permanently delete archived records",
             "description": "Permanently delete archived records.",
             "noArchived": "No archived repositories to purge",
             "success": "Purged {{count}} archived credential(s)"
           },
           "restore": {
+            "descriptionShort": "Restore an archived record into the config",
             "description": "Restore an archived record into the config.",
             "success": "Restored \"{{name}}\" ({{guid}})"
           }
@@ -1777,6 +1838,7 @@
         "orphan": {
           "description": "Repository images on a machine that no config names.",
           "list": {
+            "descriptionShort": "List the repository images on a machine and whether each one is an orphan that no config names",
             "description": "List the repository images on a machine and whether each one is an orphan that no config names.",
             "none": "No repository images on {{machine}}"
           },
@@ -1828,6 +1890,7 @@
         "autostart": {
           "description": "Manage automatic repository startup on boot",
           "enable": {
+            "descriptionShort": "Enable autostart for a repository (omit name to enable all)",
             "description": "Enable autostart for a repository (omit name to enable all)",
             "starting": "Enabling autostart for \"{{repository}}\" on \"{{machine}}\"...",
             "completed": "Autostart enabled",
@@ -1837,6 +1900,7 @@
             "failedAll": "Failed to enable autostart for all repositories"
           },
           "disable": {
+            "descriptionShort": "Disable autostart for a repository (omit name to disable all)",
             "description": "Disable autostart for a repository (omit name to disable all)",
             "starting": "Disabling autostart for \"{{repository}}\" on \"{{machine}}\"...",
             "completed": "Autostart disabled",
@@ -1846,6 +1910,7 @@
             "failedAll": "Failed to disable autostart for all repositories"
           },
           "list": {
+            "descriptionShort": "List repositories with autostart enabled",
             "description": "List repositories with autostart enabled",
             "starting": "Listing autostart repositories on \"{{machine}}\"...",
             "failed": "Failed to list autostart repositories",
@@ -1996,6 +2061,7 @@
       },
       "cancel": {
         "cancelled": "Cancelled {{name}}",
+        "descriptionShort": "Cancel a running backup on a remote machine",
         "description": "Cancel a running backup on a remote machine",
         "notRunning": "No backup running for strategy \"{{name}}\""
       },
@@ -2003,6 +2069,7 @@
       "descriptionShort": "Manage backups",
       "drNudge": "Config storage is not enrolled: your repo credentials (LUKS passphrases) live only on this host, so a bare-metal restore cannot recover them. Enroll with \"rdc config remote enable\" to sync them inside the encrypted config blob.",
       "list": {
+        "descriptionShort": "List backup artifacts on a machine",
         "description": "List backup artifacts on a machine.",
         "examples": {
           "basic": "List the backups stored for a machine.",
@@ -2013,6 +2080,7 @@
         "placementRequired": "Specify -m <machine> to name the machine whose backups you want listed."
       },
       "manifests": {
+        "descriptionShort": "List backup snapshot manifests recorded on the server",
         "description": "List backup snapshot manifests recorded on the server",
         "fetching": "Fetching backup manifests...",
         "empty": "No backup manifests found.",
@@ -2030,6 +2098,7 @@
         "deployFailed": "Deploy of restored {{name}} failed",
         "deployed": "Deployed {{name}} on {{machine}}",
         "deploying": "Deploying {{name}} on {{machine}}...",
+        "descriptionShort": "Turn a backup artifact into a live repository",
         "description": "Turn a backup artifact into a live repository. Placement is stated here.",
         "examples": {
           "basic": "Restore a backup onto a machine.",
@@ -2094,9 +2163,11 @@
       },
       "retention": {
         "clear": {
+          "descriptionShort": "Remove the declared policy, so the plan or server default applies again",
           "description": "Remove the declared policy, so the plan or server default applies again."
         },
         "cleared": "Retention policy removed for {{name}}. The plan or server default applies from now on.",
+        "descriptionShort": "Show the snapshot retention policy the server is enforcing",
         "description": "Show the snapshot retention policy the server is enforcing.",
         "empty": "No retention policy is declared, so the plan or server default applies.",
         "knobNotAnInteger": "{{flag}} needs a whole number of snapshots to keep, not \"{{value}}\".",
@@ -2108,6 +2179,7 @@
         "optionKeepWeekly": "Keep the newest snapshot from each of this many weeks",
         "optionKeepYearly": "Keep the newest snapshot from each of this many years",
         "set": {
+          "descriptionShort": "Declare how many snapshots to keep",
           "description": "Declare how many snapshots to keep. Every knob is replaced, not merged.",
           "success": "Retention policy set for {{name}} ({{count}} rule(s)). Snapshots outside it are deleted by the next sweep.",
           "pending": "The change keeps less, so it waits out the delayed-deletion window and takes effect on {{when}} (UTC) for \"{{name}}\". The policy shown stays in force until then."
@@ -2115,6 +2187,7 @@
         "effective": "Effective retention for {{name}}: {{source}}",
         "optionStream": "Apply to this backup stream only (a stream id); without it, the repository-wide default",
         "preview": {
+          "descriptionShort": "Show which snapshots the next sweep would delete and the space it would free",
           "description": "Show which snapshots the next sweep would delete and the space it would free.",
           "nothing": "The next sweep deletes nothing for {{name}}.",
           "summary": "The next sweep deletes {{count}} snapshot(s) of {{name}}, keeps {{kept}} and frees {{bytes}}.",
@@ -2134,12 +2207,14 @@
         "pendingClear": "Removing the policy of \"{{name}}\" waits out the delayed-deletion window and takes effect on {{when}} (UTC). The policy in force keeps applying until then."
       },
       "run": {
+        "descriptionShort": "Run a backup now",
         "description": "Run a backup now.",
         "examples": {
           "basic": "Run a backup strategy now."
         }
       },
       "schedule": {
+        "descriptionShort": "Deploy backup schedule to a remote machine (systemd timers)",
         "description": "Deploy backup schedule to a remote machine (systemd timers)",
         "optionDryRun": "Preview generated units without deploying",
         "optionForce": "Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)",
@@ -2147,6 +2222,7 @@
         "success": "Backup schedule deployed to {{machine}}"
       },
       "snapshot": {
+        "descriptionShort": "Upload a chunk-store snapshot: full inventory first, changed cells after",
         "description": "Upload a chunk-store snapshot: full inventory first, changed cells after",
         "optionReseed": "Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)",
         "optionCold": "Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run",
@@ -2177,6 +2253,7 @@
         "optionAcceptIdentityChange": "Take this image as the new baseline when its LUKS identity changed or it shrank; uploads a full snapshot"
       },
       "status": {
+        "descriptionShort": "Show backup status and timer state on a remote machine",
         "description": "Show backup status and timer state on a remote machine"
       },
       "strategy": {
@@ -2184,6 +2261,7 @@
         "bandwidthUnconvertible": "Bandwidth limit \"{{value}}\" cannot be converted ({{reason}}). Use bytes/second (12500000), decimal bytes (12.5M), binary bytes (12Mi) or bits (100Mbps).",
         "readBandwidthUnconvertible": "Read bandwidth limit \"{{value}}\" cannot be converted ({{reason}}). Use bytes/second (50000000), decimal bytes (50M), binary bytes (48Mi), bits (400Mbps) or 0 for unlimited.",
         "set": {
+          "descriptionShort": "Create or update a backup strategy",
           "description": "Create or update a backup strategy",
           "optionBwlimit": "Upload bandwidth limit in bytes per second, with an optional K/M/G suffix (e.g., \"6M\", \"500K\")",
           "optionReadBwlimit": "Read cap for this strategy's snapshots: same units as --bwlimit; none clears it",
@@ -2242,17 +2320,20 @@
           "syncFailed": "Replication rules could not be synced: {{reason}}"
         },
         "bind": {
+          "descriptionShort": "Bind a backup strategy to a machine so its schedule is deployed there",
           "description": "Bind a backup strategy to a machine so its schedule is deployed there",
           "bound": "Backup strategy \"{{strategy}}\" bound to machine \"{{machine}}\"",
           "alreadyBound": "Backup strategy \"{{strategy}}\" is already bound to machine \"{{machine}}\"",
           "uncheckedTargets": "Store registration was not checked for: {{targets}}. The schedule refuses an unregistered store when the unit is written."
         },
         "unbind": {
+          "descriptionShort": "Unbind a backup strategy from a machine",
           "description": "Unbind a backup strategy from a machine",
           "unbound": "Backup strategy \"{{strategy}}\" unbound from machine \"{{machine}}\"",
           "notBound": "Backup strategy \"{{strategy}}\" is not bound to machine \"{{machine}}\""
         },
         "remove": {
+          "descriptionShort": "Remove a backup strategy or destination",
           "description": "Remove a backup strategy or destination",
           "optionDestination": "Remove only this destination (keeps other destinations)",
           "optionUnbind": "Also drop the strategy from every machine that binds it",
@@ -2264,9 +2345,11 @@
           "removed": "Backup strategy removed"
         },
         "list": {
+          "descriptionShort": "List all backup strategies",
           "description": "List all backup strategies"
         },
         "show": {
+          "descriptionShort": "Show backup strategy details",
           "description": "Show backup strategy details",
           "notConfigured": "No backup strategies configured",
           "notFound": "Backup strategy \"{{name}}\" not found"
@@ -2274,6 +2357,7 @@
       },
       "reconcile": {
         "checkSkipped": "Skipped lineages were not checked: {{lineages}}",
+        "descriptionShort": "Reset a repository's stored-bytes ledger to what the store actually holds (never deletes a chunk)",
         "description": "Reset a repository's stored-bytes ledger to what the store actually holds (never deletes a chunk)",
         "argRepoRef": "Repository to reconcile (default: every repository in the token's scope)",
         "optionDryRun": "Report the figures without changing the ledger",
@@ -2303,6 +2387,7 @@
         }
       },
       "usage": {
+        "descriptionShort": "Show backup storage quota, stored bytes, and per-repo usage",
         "description": "Show backup storage quota, stored bytes, and per-repo usage",
         "fetching": "Fetching backup storage usage...",
         "empty": "No per-repo backup storage usage recorded yet.",
@@ -2312,6 +2397,7 @@
         "throttled": "Waiting storage is above the churn cap of {{cap}}: a backup stream faster than hourly is refused until it drains."
       },
       "verify": {
+        "descriptionShort": "Verify a repository's backup anchor against the chunk store",
         "description": "Verify a repository's backup anchor against the chunk store",
         "optionDeep": "Re-hash every recorded cell (full verification) instead of a sampled check",
         "optionStore": "Have the server re-hash every stored chunk of this repository and name any missing or corrupt one",
@@ -2338,6 +2424,7 @@
         "description": "Manage stored snapshots",
         "snapshotIdArgument": "Snapshot id (see rdc backup manifests)",
         "delete": {
+          "descriptionShort": "Delete one stored snapshot; its exclusive data is freed by the next garbage collection",
           "description": "Delete one stored snapshot; its exclusive data is freed by the next garbage collection.",
           "notInRepo": "Snapshot {{snapshot}} is not in the stored history of {{name}}. List its ids with: rdc backup manifests {{name}}",
           "success": "Deleted {{count}} snapshot(s) of {{name}}, including {{snapshot}}.",
@@ -2411,6 +2498,7 @@
         "confirmLineage": "This deletes all {{count}} stored snapshot(s) of lineage {{name}} ({{bytes}}) and cannot be undone. Type the lineage id to confirm:"
       },
       "check": {
+        "descriptionShort": "Prove a stored snapshot opens with the passphrase by restoring one file",
         "description": "Prove a stored snapshot opens with the passphrase by restoring one file",
         "needsCredential": "{{name}} has no credential in this config, so its listing cannot be opened.",
         "noIndex": "Snapshot {{snapshot}} of {{name}} has no stored listing, so it cannot be checked this way. It is not proven.",
@@ -2420,6 +2508,7 @@
       },
       "repair": {
         "affected": "Snapshots that name these chunks: {{snapshots}}",
+        "descriptionShort": "Re-upload chunks the store lost or holds wrong, from this machine's anchor",
         "description": "Re-upload chunks the store lost or holds wrong, from this machine's anchor",
         "dryRunDamage": "{{count}} damaged chunk(s) found; a dry run changed nothing.",
         "optionDryRun": "Report what would be deleted and re-uploaded; change nothing"
@@ -2427,6 +2516,7 @@
       "tocKey": {
         "description": "Manage the browse-listing key of a repository",
         "sync": {
+          "descriptionShort": "Install the repository's listing key on its machine, or replace a different one",
           "description": "Install the repository's listing key on its machine, or replace a different one",
           "optionDryRun": "Report what would be done; touch nothing",
           "optionReplace": "Replace a different key already on the machine (sends the passphrase to prove it)"
@@ -2463,11 +2553,13 @@
       "immutability": {
         "description": "Show or set the delayed-deletion window of stored backups",
         "show": {
+          "descriptionShort": "Show the delayed-deletion window in force",
           "description": "Show the delayed-deletion window in force",
           "window": "Delayed deletion: a delete, purge or smaller retention waits {{days}} day(s) and can be undone until then.",
           "off": "Delayed deletion is off: deletes take effect at once."
         },
         "set": {
+          "descriptionShort": "Set the delayed-deletion window in days (0 to 30)",
           "description": "Set the delayed-deletion window in days (0 to 30)",
           "daysArgument": "Days a delete waits before it takes effect (0 to 30)",
           "applied": "The delayed-deletion window is now {{days}} day(s).",
@@ -2477,6 +2569,7 @@
         "pending": "The window shrinks to {{days}} day(s) on {{when}} (UTC). {{current}} day(s) stay in force until then."
       },
       "undelete": {
+        "descriptionShort": "Cancel a delayed snapshot delete before it takes effect",
         "description": "Cancel a delayed snapshot delete before it takes effect",
         "success": "Snapshot {{snapshot}} is kept: its delete was cancelled.",
         "notWaiting": "Snapshot {{snapshot}} was not waiting for deletion."
@@ -2519,6 +2612,7 @@
       "descriptionShort": "Manage machine licensing and subscription",
       "description": "Manage licensing and subscription tokens. Sign in with login, inspect with status, reissue licenses with refresh.",
       "login": {
+        "descriptionShort": "Authenticate via browser or API token",
         "description": "Authenticate via browser or API token",
         "validating": "Validating token...",
         "validated": "Token validated",
@@ -2553,20 +2647,24 @@
         "termsPendingAccept": "Read them at {{url}} and accept them at {{acceptUrl}}"
       },
       "register": {
+        "descriptionShort": "Create an account in the browser (email pre-filled) and log in",
         "description": "Create an account in the browser (email pre-filled) and log in",
         "optionEmail": "Email address to pre-fill on the sign-up page",
         "invalidEmail": "Enter a valid email address."
       },
       "logout": {
+        "descriptionShort": "Clear stored subscription token",
         "description": "Clear stored subscription token",
         "success": "Subscription token removed"
       },
       "proxyToken": {
+        "descriptionShort": "Mint a short-lived proxy:exec token from this device's login, for --proxy",
         "description": "Mint a short-lived proxy:exec token from this device's login, for --proxy",
         "jsonOption": "Print JSON with the token and its expiresAt",
         "noToken": "The account server returned no proxy token."
       },
       "status": {
+        "descriptionShort": "Show subscription, and license state for a machine",
         "description": "Show subscription, and license state for a machine.",
         "parseFailed": "  Could not read remote machine status",
         "remote": "\nSubscription:",
@@ -2627,6 +2725,7 @@
         }
       },
       "refresh": {
+        "descriptionShort": "Refresh licenses from the account server",
         "description": "Refresh licenses from the account server.",
         "success": "Repo licenses processed",
         "repos": {
@@ -2674,6 +2773,7 @@
         "needsYes": "Retiring a license needs confirmation, and stdin is not a terminal. Pass --yes to confirm.",
         "confirm": "Retire the license of {{name}} ({{guid}}, {{state}})? A renewal will not bring it back.",
         "success": "License retired: {{name}}",
+        "descriptionShort": "Retire the license of a repository that is gone, so it leaves the license counts and notices",
         "description": "Retire the license of a repository that is gone, so it leaves the license counts and notices.",
         "argGuid": "Repository GUID, or at least 8 characters of one license in the account report",
         "optionForce": "Retire a license whose repository is still in this config and not hard-expired",
@@ -2691,6 +2791,7 @@
         "optionExpired": "Retire every hard-expired license of a deleted repository or one not in this config"
       },
       "notices": {
+        "descriptionShort": "List the account's notices: license expiry, backup health, renewals, certificates and Terms",
         "description": "List the account's notices: license expiry, backup health, renewals, certificates and Terms.",
         "optionAll": "Include dismissed notices and every page, not only the last 30 days",
         "optionUnread": "Only notices not yet read",
@@ -2818,6 +2919,7 @@
       "descriptionShort": "SSH terminal access to machines and repositories",
       "description": "Open an SSH terminal to a machine or a repository. The target is a machine name or a repo ref, and the repository context (DOCKER_HOST, working directory, environment) is set up automatically. Use `-c` to run a single command non-interactively. For container logs or a one-shot command in a container, use `repo logs` and `repo exec`. For VS Code, use `vscode`.",
       "connect": {
+        "descriptionShort": "Open a shell on a machine, or inside a repository with its Docker set up",
         "description": "Open a shell on a machine, or inside a repository with its Docker set up.",
         "examples": {
           "machine": "Open an SSH terminal to a machine.",
@@ -2835,6 +2937,7 @@
       "descriptionShort": "Open VS Code Remote SSH to a machine or repository",
       "description": "Open VS Code with Remote SSH to a machine or repository with sandboxed per-repo environment. Same SSH connection as `term` but launches VS Code instead. Key subcommands: connect (or positional shorthand), list (show configured connections), cleanup (remove SSH config entries), check (verify VS Code installation).",
       "connect": {
+        "descriptionShort": "Open VS Code on a machine or inside a repository",
         "description": "Open VS Code on a machine or inside a repository.",
         "detecting": "Detecting VS Code...",
         "extensionWarning": "Warning: Remote SSH extension may not be installed.\nInstall from: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
@@ -2861,6 +2964,7 @@
         }
       },
       "list": {
+        "descriptionShort": "List configured VS Code SSH connections",
         "description": "List configured VS Code SSH connections",
         "noConnections": "No VS Code SSH connections configured.",
         "configFile": "\nConfig file: {{path}}",
@@ -2869,12 +2973,14 @@
         "total": "\nTotal: {{count}} connection(s)"
       },
       "cleanup": {
+        "descriptionShort": "Remove VS Code SSH configurations",
         "description": "Remove VS Code SSH configurations",
         "cleanedAll": "Cleaned up {{count}} VS Code SSH connection(s).",
         "removedKeys": "Removed all persisted SSH keys.",
         "cleaned": "Cleaned up: {{connection}}"
       },
       "check": {
+        "descriptionShort": "Check VS Code installation and configuration",
         "description": "Check VS Code installation and configuration",
         "title": "VS Code Setup Check\n",
         "installation": "Installation:",
@@ -2897,11 +3003,13 @@
       "serve": {
         "description": "Manage the in-sandbox browser VS Code server",
         "status": {
+          "descriptionShort": "Show whether the browser VS Code server is running",
           "description": "Show whether the browser VS Code server is running",
           "running": "{{provider}} running (pid {{pid}}, port {{port}})",
           "stopped": "{{provider}} is not running"
         },
         "stop": {
+          "descriptionShort": "Stop the browser VS Code server",
           "description": "Stop the browser VS Code server",
           "stopped": "{{provider}} stopped",
           "notRunning": "{{provider}} was not running"
@@ -2973,6 +3081,7 @@
         "helpOffline": "Air-gapped: build the bundle online with rdc server bundle --out <dir>. rdc server install --offline --bundle <dir> verifies it, loads the proxy image, sets up offline and calls nothing upstream. It stops at the licence step and writes a request: mint a certificate online with rdc server licence mint, then rerun with --cert."
       },
       "status": {
+        "descriptionShort": "Show the health, tier, certificate and image of an installed server",
         "description": "Show the health, tier, certificate and image of an installed server",
         "certRefused": "REFUSED ({{reason}}) at {{at}}",
         "certRefusedRun": "run: rdc server licence {{domain}}",
@@ -2980,6 +3089,7 @@
         "certExpiring": "The licence certificate expires in {{days}} days; renew it (rdc server licence)"
       },
       "backup": {
+        "descriptionShort": "Print the recovery bundle (the keys) of an installed server, or write it to a file",
         "description": "Print the recovery bundle (the keys) of an installed server, or write it to a file",
         "optionOut": "Write the bundle to this file (mode 0600) instead of stdout",
         "written": "Recovery bundle written to {{file}} (mode 0600)",
@@ -3003,6 +3113,7 @@
         "templateNoBaseline": "This box recorded no template checksums, so local edits cannot be detected; applying the newer template"
       },
       "licence": {
+        "descriptionShort": "Move a free-tier server to a delegation certificate from the logged-in account, or from --cert",
         "description": "Move a free-tier server to a delegation certificate from the logged-in account, or from --cert",
         "done": "{{domain}} is licensed under subscription {{subscription}}",
         "certUnreadable": "Cannot read the certificate file {{file}}",
@@ -3024,6 +3135,7 @@
         "noUpstreamKey": "The server has no UPSTREAM_PUBLIC_KEY, so it cannot check any cert and a new cert cannot help. Set UPSTREAM_PUBLIC_KEY in the secrets of {{domain}}, then run `rdc server upgrade {{domain}}`.",
         "bootRefusalStays": "The cert was applied, but the server still reports a boot refusal ({{reason}}); check the server logs",
         "mint": {
+          "descriptionShort": "Mint a licence certificate for an offline box's request (run online, logged in)",
           "description": "Mint a licence certificate for an offline box's request (run online, logged in)",
           "done": "Certificate written to {{file}} (valid until {{until}}); carry it to the box and install with --cert",
           "optionOut": "File to write the certificate to",
@@ -3177,6 +3289,7 @@
       "idOption": "Job ID",
       "stepsUnfinished": "{{verb}}: the job finished, but the step(s) {{steps}} did not; rdc job wait settles them.",
       "list": {
+        "descriptionShort": "List detached jobs on a machine, newest first",
         "description": "List detached jobs on a machine, newest first",
         "empty": "No jobs on {{machine}}.",
         "examples": {
@@ -3187,12 +3300,14 @@
         "allOption": "Include expired and dismissed tickets"
       },
       "status": {
+        "descriptionShort": "Show a detached job's status",
         "description": "Show a detached job's status",
         "examples": {
           "basic": "Show the status of one job."
         }
       },
       "logs": {
+        "descriptionShort": "Replay or follow a detached job's event log",
         "description": "Replay or follow a detached job's event log",
         "followOption": "Stream until the job finishes",
         "sinceLineOption": "Resume after this many lines (the count you already received)",
@@ -3204,6 +3319,7 @@
         }
       },
       "cancel": {
+        "descriptionShort": "Cancel a running detached job",
         "description": "Cancel a running detached job",
         "confirm": "Cancel job {{jobId}} ({{function}}) on {{machine}}? The operation will be stopped.",
         "requested": "Cancel requested for job {{jobId}}.",
@@ -3213,6 +3329,7 @@
         }
       },
       "gc": {
+        "descriptionShort": "Remove finished jobs and their logs",
         "description": "Remove finished jobs and their logs",
         "olderThanOption": "Collect jobs that finished longer ago than this, in hours (default: 168)",
         "invalidOlderThan": "--older-than must be a number of hours, e.g. 168 or 168h (got \"{{value}}\")",
@@ -3226,6 +3343,7 @@
       "machineRequired": "No ticket for job {{jobId}} in this config. Pass -m <machine> to say where it runs.",
       "ticketMachineOption": "Target machine name (optional when this config holds a ticket for the job)",
       "wait": {
+        "descriptionShort": "Resume following a job from its ticket, then acknowledge it and exit with the job's exit code",
         "description": "Resume following a job from its ticket, then acknowledge it and exit with the job's exit code",
         "timeoutOption": "Stop waiting after this long (30s, 5m, 2h; a bare number is seconds). The job keeps running.",
         "invalidTimeout": "--timeout must be a duration such as 30s, 5m or 2h (got \"{{value}}\")",
@@ -3344,6 +3462,35 @@
       "notAccepted": "Accepted: not accepted",
       "terms": "Terms of Service: version {{version}}, in force from {{effective}}",
       "upcoming": "Upcoming version {{version}} takes effect on {{effective}}"
+    },
+    "proxyBlocked": {
+      "backupCheck": "reads a listing and restores a file with the repository credential, which stays where the config lives",
+      "backupChurn": "a client-side loop of probes that can run for hours, and it must forget its base when it ends",
+      "backupDownload": "Copies the repository image to a local directory with a client-side rsync; a remote executor would write the image onto its own disk. Run it without --proxy.",
+      "localTooling": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "backupRepair": "Deletes bad chunks on the account with the caller's backup:manage token, then re-uploads from the machine; a remote executor holds neither the token nor the caller's config. Run it without --proxy.",
+      "localConfig": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "backupTocKeySync": "derives the public key from the repository credential, which stays where the config lives",
+      "backupUpload": "Sends a local image file with a client-side rsync and registers the repository in the local config; a remote executor cannot see the file. Run it without --proxy.",
+      "clusterKubeconfig": "Caches the kubeconfig to a local 0600 file and prints that path; a remote executor would write the file onto its own disk. Run it without --proxy.",
+      "interactive": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "configReconcile": "It queries every machine but writes the result into the CALLER's local state bucket; a remote executor would rebuild its own state and the caller would be none the wiser. Run it without --proxy.",
+      "machineAccessPush": "Rewrites who may log in to the machine from the CALLER's access keys; an executor never rewrites the access it connects with, and it would push its own config's keys. Run it without --proxy.",
+      "machineConverge": "Restarts each repo daemon with the env secrets from the CALLER's config; a remote executor would restart them with its own copy, or with none. Run it without --proxy.",
+      "machineInfraCertPull": "Its effect is writing the machine's acme.json into the caller's local config; a remote executor would write it into its own. Run it without --proxy.",
+      "machinePrune": "With --orphaned-repos or --prune-unknown it judges each image against every config the CALLER can read; a remote executor would judge against its own configs and delete the caller's repositories. Run it without --proxy.",
+      "machineScanKeys": "Runs ssh-keyscan from the caller's network position and stores knownHosts in the caller's local config; a remote executor would scan from its own and keep the result. Run it without --proxy.",
+      "repoAdminOrphanDelete": "Refuses a GUID any config the CALLER can read still names; a remote executor would check its own configs and could delete an image the caller's config names. Run it without --proxy.",
+      "repoAdminOrphanList": "Judges each image against every config the CALLER can read; a remote executor would judge against its own configs and report the caller's repositories as orphans. Run it without --proxy.",
+      "repoSyncDownload": "Downloads to the local filesystem with rsync/SFTP; a remote executor would write the files onto its own disk. Run it without --proxy.",
+      "repoSyncStatus": "Diffs the machine against the local filesystem with a client-side rsync; a remote executor has no copy of the local tree. Run it without --proxy.",
+      "repoSyncUpload": "Uploads from the local filesystem with rsync/SFTP; a remote executor cannot see the source paths. Run it without --proxy.",
+      "serverBackup": "Writes the recovery bundle (the server's keys) to the caller's terminal or file; through an executor the keys would cross another machine. Run it without --proxy.",
+      "serverBundle": "Runs the caller's local docker (pull and save) and writes the bundle to the caller's disk; a remote executor would write it to its own. Run it without --proxy.",
+      "serverLicence": "Mints the certificate with the caller's login and records it in the caller's local install record; a remote executor holds neither. Run it without --proxy.",
+      "serverLicenceMint": "Mints the certificate with the caller's login and writes it to the caller's file; a remote executor holds neither. Run it without --proxy.",
+      "serverStatus": "Finds the server through the caller's local install record; a remote executor holds none. Run it without --proxy.",
+      "serverUpgrade": "Drives child commands and the caller's local install record (and --local-image, the caller's Docker); a remote executor would act from its own. Run it without --proxy."
     }
   },
   "help": {

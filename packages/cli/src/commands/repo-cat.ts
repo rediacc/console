@@ -60,6 +60,7 @@ bindStepHandler('printRepoCat', ({ output }) => {
 export function registerRepoCatCommand(repo: Command): void {
   repo
     .command('cat')
+    .summary(t('commands.repo.cat.descriptionShort'))
     .description(t('commands.repo.cat.description'))
     .argument('<ref>', t('options.repoRef'))
     .requiredOption('--remote-file <path>', t('commands.repo.cat.remoteFileOption'))

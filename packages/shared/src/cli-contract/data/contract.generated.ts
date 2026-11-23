@@ -136,7 +136,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.cancel.description",
+      "descriptionKey": "commands.backup.cancel.descriptionShort",
       "label": "Cancel a running backup on a remote machine",
       "options": [
         {
@@ -198,7 +198,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.check.description",
+      "descriptionKey": "commands.backup.check.descriptionShort",
       "label": "Prove a stored snapshot opens with the passphrase by restoring one file",
       "options": [
         {
@@ -498,7 +498,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.backup.immutability.set.description",
+      "descriptionKey": "commands.backup.immutability.set.descriptionShort",
       "label": "Set the delayed-deletion window in days (0 to 30)",
       "options": [],
       "positionals": [
@@ -532,7 +532,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.backup.immutability.show.description",
+      "descriptionKey": "commands.backup.immutability.show.descriptionShort",
       "label": "Show the delayed-deletion window in force",
       "options": [],
       "positionals": [],
@@ -668,7 +668,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.backup.manifests.description",
+      "descriptionKey": "commands.backup.manifests.descriptionShort",
       "label": "List backup snapshot manifests recorded on the server",
       "options": [
         {
@@ -818,7 +818,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.backup.reconcile.description",
+      "descriptionKey": "commands.backup.reconcile.descriptionShort",
       "label": "Reset a repository's stored-bytes ledger to what the store actually holds (never deletes a chunk)",
       "options": [
         {
@@ -877,7 +877,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.repair.description",
+      "descriptionKey": "commands.backup.repair.descriptionShort",
       "label": "Re-upload chunks the store lost or holds wrong, from this machine's anchor",
       "options": [
         {
@@ -1508,7 +1508,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.schedule.description",
+      "descriptionKey": "commands.backup.schedule.descriptionShort",
       "label": "Deploy backup schedule to a remote machine (systemd timers)",
       "options": [
         {
@@ -1591,7 +1591,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.snapshot.description",
+      "descriptionKey": "commands.backup.snapshot.descriptionShort",
       "label": "Upload a chunk-store snapshot: full inventory first, changed cells after",
       "options": [
         {
@@ -1780,7 +1780,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.status.description",
+      "descriptionKey": "commands.backup.status.descriptionShort",
       "label": "Show backup status and timer state on a remote machine",
       "options": [
         {
@@ -1843,7 +1843,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.backup.strategy.bind.description",
+      "descriptionKey": "commands.backup.strategy.bind.descriptionShort",
       "label": "Bind a backup strategy to a machine so its schedule is deployed there",
       "options": [
         {
@@ -1893,7 +1893,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.backup.strategy.list.description",
+      "descriptionKey": "commands.backup.strategy.list.descriptionShort",
       "label": "List all backup strategies",
       "options": [],
       "positionals": [],
@@ -1921,7 +1921,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.backup.strategy.remove.description",
+      "descriptionKey": "commands.backup.strategy.remove.descriptionShort",
       "label": "Remove a backup strategy or destination",
       "options": [
         {
@@ -1978,7 +1978,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.backup.strategy.set.description",
+      "descriptionKey": "commands.backup.strategy.set.descriptionShort",
       "label": "Create or update a backup strategy",
       "options": [
         {
@@ -2244,7 +2244,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.backup.strategy.show.description",
+      "descriptionKey": "commands.backup.strategy.show.descriptionShort",
       "label": "Show backup strategy details",
       "options": [],
       "positionals": [
@@ -2281,7 +2281,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.backup.strategy.unbind.description",
+      "descriptionKey": "commands.backup.strategy.unbind.descriptionShort",
       "label": "Unbind a backup strategy from a machine",
       "options": [
         {
@@ -2331,7 +2331,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.tocKey.sync.description",
+      "descriptionKey": "commands.backup.tocKey.sync.descriptionShort",
       "label": "Install the repository's listing key on its machine, or replace a different one",
       "options": [
         {
@@ -2390,7 +2390,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.backup.undelete.description",
+      "descriptionKey": "commands.backup.undelete.descriptionShort",
       "label": "Cancel a delayed snapshot delete before it takes effect",
       "options": [],
       "positionals": [
@@ -2567,7 +2567,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.backup.usage.description",
+      "descriptionKey": "commands.backup.usage.descriptionShort",
       "label": "Show backup storage quota, stored bytes, and per-repo usage",
       "options": [],
       "positionals": [],
@@ -2594,7 +2594,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.verify.description",
+      "descriptionKey": "commands.backup.verify.descriptionShort",
       "label": "Verify a repository's backup anchor against the chunk store",
       "options": [
         {
@@ -3727,7 +3727,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.access.list.description",
+      "descriptionKey": "commands.config.access.list.descriptionShort",
       "label": "List the config's access keys",
       "options": [],
       "positionals": [],
@@ -3825,7 +3825,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.access.remove.description",
+      "descriptionKey": "commands.config.access.remove.descriptionShort",
       "label": "Remove an access key from the config",
       "options": [],
       "positionals": [
@@ -3859,7 +3859,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.audit.log.description",
+      "descriptionKey": "commands.config.audit.log.descriptionShort",
       "label": "Print recent audit entries as JSON",
       "options": [
         {
@@ -3925,7 +3925,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.audit.tail.description",
+      "descriptionKey": "commands.config.audit.tail.descriptionShort",
       "label": "Stream new audit entries as they are written (Ctrl+C to stop)",
       "options": [],
       "positionals": [],
@@ -3950,7 +3950,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.audit.verify.description",
+      "descriptionKey": "commands.config.audit.verify.descriptionShort",
       "label": "Verify the integrity of the SHA-256 hash chain across all audit entries",
       "options": [],
       "positionals": [],
@@ -3977,7 +3977,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.clear.description",
+      "descriptionKey": "commands.config.clear.descriptionShort",
       "label": "Clear defaults (all or specific key)",
       "options": [],
       "positionals": [
@@ -4010,7 +4010,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.current.description",
+      "descriptionKey": "commands.config.current.descriptionShort",
       "label": "Show the active config: name, file, resolved server and channel, token state",
       "options": [],
       "positionals": [],
@@ -4037,7 +4037,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.delete.description",
+      "descriptionKey": "commands.config.delete.descriptionShort",
       "label": "Delete a config file",
       "options": [],
       "positionals": [
@@ -4479,7 +4479,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.init.description",
+      "descriptionKey": "commands.config.init.descriptionShort",
       "label": "Create a new named config file",
       "options": [
         {
@@ -4586,7 +4586,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.list.description",
+      "descriptionKey": "commands.config.list.descriptionShort",
       "label": "List all config files",
       "options": [],
       "positionals": [],
@@ -4803,7 +4803,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.recover.description",
+      "descriptionKey": "commands.config.recover.descriptionShort",
       "label": "Restore config from backup (.bak) file",
       "options": [
         {
@@ -4850,7 +4850,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.config.remote.disable.description",
+      "descriptionKey": "commands.config.remote.disable.descriptionShort",
       "label": "Disconnect from remote storage and save config locally",
       "options": [
         {
@@ -4898,7 +4898,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.config.remote.enable.description",
+      "descriptionKey": "commands.config.remote.enable.descriptionShort",
       "label": "Link this config to remote encrypted storage",
       "options": [
         {
@@ -5017,7 +5017,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.config.remote.refresh.description",
+      "descriptionKey": "commands.config.remote.refresh.descriptionShort",
       "label": "Force re-fetch config from remote storage",
       "options": [],
       "positionals": [],
@@ -5041,7 +5041,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.config.remote.restore.description",
+      "descriptionKey": "commands.config.remote.restore.descriptionShort",
       "label": "Publish an earlier version of this config as its newest version",
       "options": [
         {
@@ -5087,7 +5087,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.config.remote.status.description",
+      "descriptionKey": "commands.config.remote.status.descriptionShort",
       "label": "Show remote connection status",
       "options": [],
       "positionals": [],
@@ -5111,7 +5111,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.config.remote.versions.description",
+      "descriptionKey": "commands.config.remote.versions.descriptionShort",
       "label": "List the earlier versions of this config kept on the server",
       "options": [
         {
@@ -5146,7 +5146,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.config.rotateCek.description",
+      "descriptionKey": "commands.config.rotateCek.descriptionShort",
       "label": "Rotate the organization config-encryption key",
       "options": [
         {
@@ -5183,7 +5183,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.set.description",
+      "descriptionKey": "commands.config.set.descriptionShort",
       "label": "Set a default value (team, region, bridge)",
       "options": [],
       "positionals": [
@@ -5224,7 +5224,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.show.description",
+      "descriptionKey": "commands.config.show.descriptionShort",
       "label": "Show current config details",
       "options": [
         {
@@ -5264,7 +5264,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.ssh.remove.description",
+      "descriptionKey": "commands.config.ssh.remove.descriptionShort",
       "label": "Remove SSH key from the current config",
       "options": [],
       "positionals": [],
@@ -5288,7 +5288,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.ssh.set.description",
+      "descriptionKey": "commands.config.ssh.set.descriptionShort",
       "label": "Set SSH key for the current config",
       "options": [
         {
@@ -5336,7 +5336,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.ssh.show.description",
+      "descriptionKey": "commands.config.ssh.show.descriptionShort",
       "label": "Show current SSH key configuration",
       "options": [],
       "positionals": [],
@@ -6409,7 +6409,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "job",
       "group": "EXECUTION",
       "plane": "machine",
-      "descriptionKey": "commands.job.cancel.description",
+      "descriptionKey": "commands.job.cancel.descriptionShort",
       "label": "Cancel a running detached job",
       "options": [
         {
@@ -6560,7 +6560,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "job",
       "group": "EXECUTION",
       "plane": "machine",
-      "descriptionKey": "commands.job.gc.description",
+      "descriptionKey": "commands.job.gc.descriptionShort",
       "label": "Remove finished jobs and their logs",
       "options": [
         {
@@ -6626,7 +6626,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "job",
       "group": "EXECUTION",
       "plane": "machine",
-      "descriptionKey": "commands.job.list.description",
+      "descriptionKey": "commands.job.list.descriptionShort",
       "label": "List detached jobs on a machine, newest first",
       "options": [
         {
@@ -6706,7 +6706,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "job",
       "group": "EXECUTION",
       "plane": "machine",
-      "descriptionKey": "commands.job.logs.description",
+      "descriptionKey": "commands.job.logs.descriptionShort",
       "label": "Replay or follow a detached job's event log",
       "options": [
         {
@@ -6818,7 +6818,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "job",
       "group": "EXECUTION",
       "plane": "machine",
-      "descriptionKey": "commands.job.status.description",
+      "descriptionKey": "commands.job.status.descriptionShort",
       "label": "Show a detached job's status",
       "options": [
         {
@@ -6886,7 +6886,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "job",
       "group": "EXECUTION",
       "plane": "machine",
-      "descriptionKey": "commands.job.wait.description",
+      "descriptionKey": "commands.job.wait.descriptionShort",
       "label": "Resume following a job from its ticket, then acknowledge it and exit with the job's exit code",
       "options": [
         {
@@ -7172,7 +7172,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.access.show.description",
+      "descriptionKey": "commands.machine.access.show.descriptionShort",
       "label": "Show the access keys bound to a machine and the ranges each resolves to there",
       "options": [],
       "positionals": [
@@ -7415,7 +7415,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.machine.deprovision.description",
+      "descriptionKey": "commands.machine.deprovision.descriptionShort",
       "label": "Destroy a cloud-provisioned machine and remove from config",
       "options": [
         {
@@ -7533,7 +7533,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.machine.health.description",
+      "descriptionKey": "commands.machine.health.descriptionShort",
       "label": "Check machine health for CI/CD pipelines",
       "options": [],
       "positionals": [
@@ -7570,7 +7570,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.infra.cert.clear.description",
+      "descriptionKey": "commands.machine.infra.cert.clear.descriptionShort",
       "label": "Remove the certificate cache",
       "options": [],
       "positionals": [],
@@ -7596,7 +7596,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.machine.infra.cert.pull.description",
+      "descriptionKey": "commands.machine.infra.cert.pull.descriptionShort",
       "label": "Download and cache TLS certificates from a machine",
       "options": [
         {
@@ -7654,7 +7654,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.machine.infra.cert.push.description",
+      "descriptionKey": "commands.machine.infra.cert.push.descriptionShort",
       "label": "Upload cached TLS certificates to a machine",
       "options": [
         {
@@ -7701,7 +7701,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.infra.cert.status.description",
+      "descriptionKey": "commands.machine.infra.cert.status.descriptionShort",
       "label": "Show cached certificate inventory",
       "options": [],
       "positionals": [],
@@ -7890,7 +7890,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.infra.show.description",
+      "descriptionKey": "commands.machine.infra.show.descriptionShort",
       "label": "Show infrastructure configuration for a machine",
       "options": [],
       "positionals": [
@@ -7926,7 +7926,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.list.description",
+      "descriptionKey": "commands.machine.list.descriptionShort",
       "label": "List machines",
       "options": [
         {
@@ -8028,7 +8028,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.provider.add.description",
+      "descriptionKey": "commands.machine.provider.add.descriptionShort",
       "label": "Add a cloud provider",
       "options": [
         {
@@ -8257,7 +8257,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.provider.list.description",
+      "descriptionKey": "commands.machine.provider.list.descriptionShort",
       "label": "List configured cloud providers",
       "options": [],
       "positionals": [],
@@ -8295,7 +8295,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.provider.remove.description",
+      "descriptionKey": "commands.machine.provider.remove.descriptionShort",
       "label": "Remove a cloud provider configuration",
       "options": [],
       "positionals": [
@@ -8331,7 +8331,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.machine.provision.description",
+      "descriptionKey": "commands.machine.provision.descriptionShort",
       "label": "Provision a new machine on a cloud provider using OpenTofu",
       "options": [
         {
@@ -8840,7 +8840,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.machine.scanKeys.description",
+      "descriptionKey": "commands.machine.scanKeys.descriptionShort",
       "label": "Scan SSH host keys for machines in the current config",
       "options": [],
       "positionals": [
@@ -9194,7 +9194,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "mcp",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.mcp.serve.description",
+      "descriptionKey": "commands.mcp.serve.descriptionShort",
       "label": "Start MCP server (stdio transport)",
       "options": [
         {
@@ -9241,7 +9241,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "ops",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.ops.check.description",
+      "descriptionKey": "commands.ops.check.descriptionShort",
       "label": "Verify virtualization prerequisites",
       "options": [],
       "positionals": [],
@@ -9264,7 +9264,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "ops",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.ops.down.description",
+      "descriptionKey": "commands.ops.down.descriptionShort",
       "label": "Destroy VM cluster",
       "options": [
         {
@@ -9314,7 +9314,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "ops",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.ops.setup.description",
+      "descriptionKey": "commands.ops.setup.descriptionShort",
       "label": "Install virtualization prerequisites",
       "options": [
         {
@@ -9349,7 +9349,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "ops",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.ops.ssh.description",
+      "descriptionKey": "commands.ops.ssh.descriptionShort",
       "label": "SSH into a VM",
       "options": [
         {
@@ -9423,7 +9423,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "ops",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.ops.status.description",
+      "descriptionKey": "commands.ops.status.descriptionShort",
       "label": "Show VM cluster status",
       "options": [
         {
@@ -9462,7 +9462,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "ops",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.ops.up.description",
+      "descriptionKey": "commands.ops.up.descriptionShort",
       "label": "Provision VM cluster locally",
       "options": [
         {
@@ -9813,7 +9813,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "repo",
       "group": "REPOSITORIES",
       "plane": "machine",
-      "descriptionKey": "commands.repo.admin.autostart.disable.description",
+      "descriptionKey": "commands.repo.admin.autostart.disable.descriptionShort",
       "label": "Disable autostart for a repository (omit name to disable all)",
       "options": [
         {
@@ -9871,7 +9871,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "repo",
       "group": "REPOSITORIES",
       "plane": "machine",
-      "descriptionKey": "commands.repo.admin.autostart.enable.description",
+      "descriptionKey": "commands.repo.admin.autostart.enable.descriptionShort",
       "label": "Enable autostart for a repository (omit name to enable all)",
       "options": [
         {
@@ -9929,7 +9929,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "repo",
       "group": "REPOSITORIES",
       "plane": "machine",
-      "descriptionKey": "commands.repo.admin.autostart.list.description",
+      "descriptionKey": "commands.repo.admin.autostart.list.descriptionShort",
       "label": "List repositories with autostart enabled",
       "options": [
         {
@@ -12175,7 +12175,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "repo",
       "group": "REPOSITORIES",
       "plane": "machine",
-      "descriptionKey": "commands.repo.health.description",
+      "descriptionKey": "commands.repo.health.descriptionShort",
       "label": "Run the repository's Rediaccfile health() checks and exit 0 (ok), 1 (warning) or 2 (error)",
       "options": [
         {
@@ -12234,7 +12234,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "repo",
       "group": "REPOSITORIES",
       "plane": "machine",
-      "descriptionKey": "commands.repo.list.description",
+      "descriptionKey": "commands.repo.list.descriptionShort",
       "label": "List repositories on a machine",
       "options": [
         {
@@ -14564,7 +14564,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "repo",
       "group": "REPOSITORIES",
       "plane": "machine",
-      "descriptionKey": "commands.repo.status.description",
+      "descriptionKey": "commands.repo.status.descriptionShort",
       "label": "Get repository status (mount state, Docker daemon running, container count, disk usage)",
       "options": [
         {
@@ -15489,7 +15489,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "server",
       "group": "TOOLS",
       "plane": "machine",
-      "descriptionKey": "commands.server.backup.description",
+      "descriptionKey": "commands.server.backup.descriptionShort",
       "label": "Print the recovery bundle (the keys) of an installed server, or write it to a file",
       "options": [
         {
@@ -16038,7 +16038,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "server",
       "group": "TOOLS",
       "plane": "machine",
-      "descriptionKey": "commands.server.licence.description",
+      "descriptionKey": "commands.server.licence.descriptionShort",
       "label": "Move a free-tier server to a delegation certificate from the logged-in account, or from --cert",
       "options": [
         {
@@ -16113,7 +16113,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "server",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.server.licence.mint.description",
+      "descriptionKey": "commands.server.licence.mint.descriptionShort",
       "label": "Mint a licence certificate for an offline box's request (run online, logged in)",
       "options": [
         {
@@ -16160,7 +16160,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "server",
       "group": "TOOLS",
       "plane": "machine",
-      "descriptionKey": "commands.server.status.description",
+      "descriptionKey": "commands.server.status.descriptionShort",
       "label": "Show the health, tier, certificate and image of an installed server",
       "options": [
         {
@@ -16356,7 +16356,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "subscription",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.subscription.login.description",
+      "descriptionKey": "commands.subscription.login.descriptionShort",
       "label": "Authenticate via browser or API token",
       "options": [
         {
@@ -16416,7 +16416,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "subscription",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.subscription.logout.description",
+      "descriptionKey": "commands.subscription.logout.descriptionShort",
       "label": "Clear stored subscription token",
       "options": [],
       "positionals": [],
@@ -16496,7 +16496,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "subscription",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.subscription.proxyToken.description",
+      "descriptionKey": "commands.subscription.proxyToken.descriptionShort",
       "label": "Mint a short-lived proxy:exec token from this device's login, for --proxy",
       "options": [
         {
@@ -16594,7 +16594,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "subscription",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.subscription.register.description",
+      "descriptionKey": "commands.subscription.register.descriptionShort",
       "label": "Create an account in the browser (email pre-filled) and log in",
       "options": [
         {
@@ -17049,7 +17049,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "vscode",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.vscode.check.description",
+      "descriptionKey": "commands.vscode.check.descriptionShort",
       "label": "Check VS Code installation and configuration",
       "options": [
         {
@@ -17084,7 +17084,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "vscode",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.vscode.cleanup.description",
+      "descriptionKey": "commands.vscode.cleanup.descriptionShort",
       "label": "Remove VS Code SSH configurations",
       "options": [
         {
@@ -17310,7 +17310,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "vscode",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.vscode.list.description",
+      "descriptionKey": "commands.vscode.list.descriptionShort",
       "label": "List configured VS Code SSH connections",
       "options": [],
       "positionals": [],
@@ -17334,7 +17334,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "vscode",
       "group": "TOOLS",
       "plane": "machine",
-      "descriptionKey": "commands.vscode.serve.status.description",
+      "descriptionKey": "commands.vscode.serve.status.descriptionShort",
       "label": "Show whether the browser VS Code server is running",
       "options": [
         {
@@ -17383,7 +17383,7 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "vscode",
       "group": "TOOLS",
       "plane": "machine",
-      "descriptionKey": "commands.vscode.serve.stop.description",
+      "descriptionKey": "commands.vscode.serve.stop.descriptionShort",
       "label": "Stop the browser VS Code server",
       "options": [
         {

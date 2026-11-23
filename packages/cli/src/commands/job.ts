@@ -166,6 +166,7 @@ export function registerJobCommands(program: Command): void {
 
   job
     .command('list')
+    .summary(t('commands.job.list.descriptionShort'))
     .description(t('commands.job.list.description'))
     .option('-m, --machine <name>', t('commands.job.list.machineOption'))
     .option('--all', t('commands.job.list.allOption'))
@@ -193,6 +194,7 @@ export function registerJobCommands(program: Command): void {
 
   job
     .command('status')
+    .summary(t('commands.job.status.descriptionShort'))
     .description(t('commands.job.status.description'))
     .argument('<job-id>', t('commands.job.idOption'))
     .option('-m, --machine <name>', t('commands.job.ticketMachineOption'))
@@ -211,6 +213,7 @@ export function registerJobCommands(program: Command): void {
 
   job
     .command('logs')
+    .summary(t('commands.job.logs.descriptionShort'))
     .description(t('commands.job.logs.description'))
     .argument('<job-id>', t('commands.job.idOption'))
     .option('-m, --machine <name>', t('commands.job.ticketMachineOption'))
@@ -228,6 +231,7 @@ export function registerJobCommands(program: Command): void {
 
   job
     .command('cancel')
+    .summary(t('commands.job.cancel.descriptionShort'))
     .description(t('commands.job.cancel.description'))
     .argument('<job-id>', t('commands.job.idOption'))
     .option('-m, --machine <name>', t('commands.job.ticketMachineOption'))
@@ -243,6 +247,7 @@ export function registerJobCommands(program: Command): void {
 
   job
     .command('wait')
+    .summary(t('commands.job.wait.descriptionShort'))
     .description(t('commands.job.wait.description'))
     .argument('<job-id>', t('commands.job.idOption'))
     .option('-m, --machine <name>', t('commands.job.ticketMachineOption'))
@@ -273,6 +278,7 @@ export function registerJobCommands(program: Command): void {
 
   job
     .command('gc')
+    .summary(t('commands.job.gc.descriptionShort'))
     .description(t('commands.job.gc.description'))
     .requiredOption('-m, --machine <name>', t('commands.job.machineOption'))
     .option('--older-than <duration>', t('commands.job.gc.olderThanOption'))

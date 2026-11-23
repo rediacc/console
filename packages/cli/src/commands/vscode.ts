@@ -560,6 +560,7 @@ ${t('help.examples')}
   // Connect subcommand
   vscode
     .command('connect')
+    .summary(t('commands.vscode.connect.descriptionShort'))
     .description(t('commands.vscode.connect.description'))
     .argument('<target>', t('options.connectTarget'))
     .option('-f, --folder <path>', t('options.folder'))
@@ -590,6 +591,7 @@ ${t('help.examples')}
   // List subcommand
   vscode
     .command('list')
+    .summary(t('commands.vscode.list.descriptionShort'))
     .description(t('commands.vscode.list.description'))
     .action(() => {
       try {
@@ -602,6 +604,7 @@ ${t('help.examples')}
   // Cleanup subcommand
   vscode
     .command('cleanup')
+    .summary(t('commands.vscode.cleanup.descriptionShort'))
     .description(t('commands.vscode.cleanup.description'))
     .option('--all', t('options.cleanupAll'))
     .option('-c, --connection <name>', t('options.connectionName'))
@@ -616,6 +619,7 @@ ${t('help.examples')}
   // Check subcommand
   vscode
     .command('check')
+    .summary(t('commands.vscode.check.descriptionShort'))
     .description(t('commands.vscode.check.description'))
     .option('--insiders', t('options.insiders'))
     .action(async (options: { insiders?: boolean }) => {

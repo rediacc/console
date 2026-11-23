@@ -240,6 +240,7 @@ function getLocalCheckData(): HostCheckResponse {
 export function registerOpsCheckCommand(ops: Command, program: Command): void {
   ops
     .command('check')
+    .summary(t('commands.ops.check.descriptionShort'))
     .description(t('commands.ops.check.description'))
     .action(async () => {
       try {

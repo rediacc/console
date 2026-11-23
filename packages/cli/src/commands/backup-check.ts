@@ -319,6 +319,7 @@ export function registerBackupCheck(backup: Command): void {
   backup
     .command('check')
     .argument('<repo-ref>', t('options.repoRef'))
+    .summary(t('commands.backup.check.descriptionShort'))
     .description(t('commands.backup.check.description'))
     .option('--path <file>', t('commands.backup.check.optionPath'))
     .option('--debug', t('options.debug'))
