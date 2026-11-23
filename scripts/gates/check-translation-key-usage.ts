@@ -30,7 +30,7 @@
  * step: i18n
  * needs: node
  * id: check:i18n:key-usage
- * run: tsx scripts/gates/check-translation-key-usage.ts && tsx scripts/__tests__/check-translation-key-usage.control.ts
+ * selftest: true
  * lane: quality-i18n
  * ---- end gate ----
  */
@@ -41,6 +41,7 @@ import { fileURLToPath } from 'node:url';
 import { globSync } from 'glob';
 import { errorLines } from '../lib/console.js';
 import { isEntryPoint } from '../lib/entry-point.js';
+import { finishWithControl } from './lib/run-control.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // THE SEAM, for the control only: KEY_USAGE_WWW_SRC points the scan at a mirror of the www source (an `i18n/translations/en.json` plus the probe), so the control never plants a file in the real tree. check-docs-render-parity.ts's DOCS_RENDER_PARITY_ROOT is the same shape.
@@ -456,4 +457,14 @@ function main(): void {
   process.exit(1);
 }
 
-if (isEntryPoint(import.meta.filename)) main();
+// `--selftest` runs the control harness that used to be registered beside this gate (PLAN-tooling-code-reduction.md D4).
+if (isEntryPoint(import.meta.filename)) {
+  if (process.argv.includes('--selftest')) {
+    finishWithControl(
+      import('../__tests__/check-translation-key-usage.control.ts'),
+      'check-translation-key-usage.control.ts'
+    );
+  } else {
+    main();
+  }
+}

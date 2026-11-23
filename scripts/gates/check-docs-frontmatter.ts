@@ -31,7 +31,7 @@
  * control at scripts/__tests__/check-docs-frontmatter.control.ts uses it); the schema is
  * always the real one.
  *
- * WIRING. The workflow step "Docs front matter matches the content schema" (quality-content) is hand-registered, because the npm script runs two programs, this gate and its control; a `---- gate ----` header would make `gate:bind` generate a one-program step beside it.
+ * WIRING. The workflow step "Docs front matter matches the content schema" (quality-content) is hand-registered, and runs `--selftest` (the in-file cases, then that control harness through scripts/gates/lib/run-control.ts) before the scan.
  */
 
 import fs from 'node:fs';
@@ -40,6 +40,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { isEntryPoint } from '../lib/entry-point.js';
+import { finishWithControl } from './lib/run-control.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');
@@ -398,6 +399,12 @@ const main = async (): Promise<number> => {
 };
 
 // Run the gate only as the entry point, so importing this file for validateSource, scan or loadSchemas does not execute it and exit the importer.
+// `--selftest` is the in-file cases, then the real-invocation harness that used to be registered beside this gate (PLAN-tooling-code-reduction.md D4); the harness starts un-awaited so this module finishes first.
 if (isEntryPoint(import.meta.filename)) {
-  process.exit(await main());
+  const rc = await main();
+  if (rc !== 0 || !process.argv.slice(2).includes('--selftest')) process.exit(rc);
+  finishWithControl(
+    import('../__tests__/check-docs-frontmatter.control.ts'),
+    'check-docs-frontmatter.control.ts'
+  );
 }

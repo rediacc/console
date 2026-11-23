@@ -74,7 +74,7 @@
  * ---- gate ----
  * step: Check embed-asset upstream freshness
  * needs: node, submodules
- * run: tsx scripts/gates/check-embed-asset-freshness.ts && tsx scripts/__tests__/github-token.control.ts
+ * selftest: true
  * lane: quality-go
  * ---- end gate ----
  */
@@ -95,6 +95,7 @@ import { bumpRemedy } from '../lib/pins/remedy.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import { githubAsker, NotCompared, PinTally, UnreadableListing } from '../lib/upstream.js';
+import { finishWithControl } from './lib/run-control.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CONSOLE_ROOT = path.resolve(__dirname, '..', '..');
@@ -308,8 +309,13 @@ async function main(): Promise<void> {
   process.exit(1);
 }
 
-main().catch((err) => {
-  // An unexpected error in the gate itself must not silently pass. A network failure is already a finding per source above, so reaching here is a real bug.
-  console.error(`${RED}✗ freshness gate crashed: ${(err as Error).message}${NC}`);
-  process.exit(1);
-});
+// `--selftest` runs the github-token control harness, registered beside this gate until PLAN-tooling-code-reduction.md D4: the token reader it controls is what every request below authenticates with.
+if (process.argv.includes('--selftest')) {
+  finishWithControl(import('../__tests__/github-token.control.ts'), 'github-token.control.ts');
+} else {
+  main().catch((err) => {
+    // An unexpected error in the gate itself must not silently pass. A network failure is already a finding per source above, so reaching here is a real bug.
+    console.error(`${RED}✗ freshness gate crashed: ${(err as Error).message}${NC}`);
+    process.exit(1);
+  });
+}

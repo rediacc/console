@@ -40,12 +40,14 @@
  * step: Page locale imports
  * needs: node
  * lane: quality-i18n
+ * selftest: true
  * ---- end gate ----
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { finishWithControl } from './lib/run-control.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const ROOT = process.env.PAGE_LOCALE_IMPORTS_ROOT ?? REPO;
@@ -256,6 +258,14 @@ function walk(dir: string, acc: string[] = []): string[] {
 
 function main(): void {
   control();
+  // `--selftest` stops after the in-file controls and the harness that used to be registered as its own gate (PLAN-tooling-code-reduction.md D4), so it needs no built tree.
+  if (process.argv.includes('--selftest')) {
+    finishWithControl(
+      import('../__tests__/check-page-locale-imports.control.ts'),
+      'check-page-locale-imports.control.ts'
+    );
+    return;
+  }
 
   const refuse = (why: string, how: string): never => {
     console.error(`${RED}✗${NC} Refusing to run: ${why}`);

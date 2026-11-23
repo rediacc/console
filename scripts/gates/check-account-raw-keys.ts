@@ -46,7 +46,7 @@
  * step: Account raw i18n keys
  * needs: node, submodules
  * lane: quality-i18n
- * run: tsx scripts/__tests__/check-account-raw-keys.control.ts && tsx scripts/gates/check-account-raw-keys.ts
+ * selftest: true
  * why: a label held in config (`t(item.labelKey)`) is invisible to the key-usage gate, so a
  *      missing nav or offer key would render raw with every gate green (P8, Design 7)
  * ---- end gate ----
@@ -65,6 +65,7 @@ import { REPO_ROOT } from '../lib/repo-root.js';
 import { requireSubmodule, submodulePath } from '../lib/submodule-presence.js';
 import { catalogsFrom } from './check-account-i18n-key-usage.js';
 import { stripComments } from './check-translation-key-usage.js';
+import { finishWithControl } from './lib/run-control.js';
 
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
 type Catalogs = Map<string, Set<string>>;
@@ -543,7 +544,14 @@ async function main(): Promise<void> {
     console.error('controls failed; the gate cannot be trusted');
     process.exit(1);
   }
-  if (process.argv.includes('--selftest')) process.exit(0);
+  // `--selftest` adds the three-layer harness that used to be registered ahead of this gate (PLAN-tooling-code-reduction.md D4).
+  if (process.argv.includes('--selftest')) {
+    finishWithControl(
+      import('../__tests__/check-account-raw-keys.control.ts'),
+      'check-account-raw-keys.control.ts'
+    );
+    return;
+  }
 
   const webSrc = submodulePath('private/account/web/src');
   const localesDir = path.join(webSrc, 'i18n/locales');

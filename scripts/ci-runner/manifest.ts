@@ -137,16 +137,15 @@ export const GATES: readonly GateSpec[] = [
     // gate:false since 2026-09-06. Its 18 constituents are scheduled individually below;
     // NINE of them were already separate gates and therefore ran TWICE per full local run. The body and `leaves` stay byte-identical so the workflow's 'i18n' step still resolves to every child's leaf (R3, check-ci-parity.ts), CI keeps one step, and
     // package.json's check:i18n key needs no edit at all.
-    // ACCEPTANCE IS A SET, not a timing: the union of the children's leaves equals this entry's 28 declared leaves exactly. Shrink the children and that equality breaks. `mutex: ['www-src-probe']` MOVED to check:i18n:key-usage. A mutex on an entry the scheduler never runs protects nothing, and it is that child, not this aggregate, that writes packages/www/src/__control_probe__.tsx
+    // ACCEPTANCE IS A SET, not a timing: the union of the children's leaves equals this entry's 27 declared leaves exactly (the control harnesses now run inside their gates' `--selftest`, so the gate files stand for them). Shrink the children and that equality breaks. `mutex: ['www-src-probe']` MOVED to check:i18n:key-usage. A mutex on an entry the scheduler never runs protects nothing, and it is that child, not this aggregate, that writes packages/www/src/__control_probe__.tsx
     // while knip scans.
     gate: false,
     leaves: [
       'scripts/gates/check-translation-hashes.ts',
       'scripts/gates/check-translation-completeness.ts',
       'scripts/gates/check-translation-key-usage.ts',
-      'scripts/__tests__/check-translation-key-usage.control.ts',
-      'scripts/__tests__/check-docs-render-parity.control.ts',
-      'scripts/__tests__/check-page-locale-imports.control.ts',
+      'scripts/gates/check-docs-render-parity.ts',
+      'scripts/gates/check-page-locale-imports.ts',
       'scripts/gates/check-cli-i18n-key-usage.ts',
       'scripts/gates/check-account-i18n-key-usage.ts',
       'packages/cli/scripts/check-cli-i18n-help-render.ts',
@@ -169,7 +168,6 @@ export const GATES: readonly GateSpec[] = [
       'scripts/gates/check-em-dash-surfaces.ts',
       'packages/www/scripts/check-client-i18n-freshness.ts',
       'scripts/gates/check-locale-currency-integrity.ts',
-      'scripts/__tests__/check-locale-currency-integrity.control.ts',
     ],
     ci: {
       kind: 'step',
@@ -191,15 +189,13 @@ export const GATES: readonly GateSpec[] = [
       'packages/www/src/**',
       'scripts/__tests__/check-translation-key-usage.control.ts',
       'scripts/gates/check-translation-key-usage.ts',
+      'scripts/gates/lib/run-control.ts',
       'scripts/lib/console.ts',
       'scripts/lib/entry-point.ts',
       'tsconfig.json',
     ],
     pathsOrigin: 'traced',
-    leaves: [
-      'scripts/__tests__/check-translation-key-usage.control.ts',
-      'scripts/gates/check-translation-key-usage.ts',
-    ],
+    leaves: ['scripts/gates/check-translation-key-usage.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -293,50 +289,6 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-i18n',
       step: 'i18n sync control',
-    },
-  },
-  {
-    id: 'check:ci-i18n-docs-render-parity',
-    run: 'npm run check:ci-i18n-docs-render-parity',
-    gate: true,
-    paths: [
-      '.npmrc',
-      'package.json',
-      'packages/locales/index.js',
-      'packages/locales/package.json',
-      'scripts/__tests__/check-docs-render-parity.control.ts',
-      'scripts/gates/check-docs-render-parity.ts',
-      'tsconfig.json',
-    ],
-    pathsOrigin: 'traced',
-    leaves: ['scripts/__tests__/check-docs-render-parity.control.ts'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-i18n',
-      step: 'i18n',
-    },
-  },
-  {
-    id: 'check:ci-i18n-page-locale-imports',
-    // 21.9s FLOOR over 5 runs (median 22.9s): it parses every page in every locale, so its cost is pages times locales. The oracle judges the floor rather than the average, so contention cannot manufacture this.
-    slow: true,
-    run: 'npm run check:ci-i18n-page-locale-imports',
-    gate: true,
-    paths: [
-      '.npmrc',
-      'package.json',
-      'scripts/__tests__/check-page-locale-imports.control.ts',
-      'scripts/gates/check-page-locale-imports.ts',
-      'tsconfig.json',
-    ],
-    pathsOrigin: 'traced',
-    leaves: ['scripts/__tests__/check-page-locale-imports.control.ts'],
-    ci: {
-      kind: 'step',
-      workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-i18n',
-      step: 'i18n',
     },
   },
   {
@@ -703,17 +655,14 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // Layer (b) of PLAN-account-sidebar-redesign Design 7 (config keys such as `labelKey`), led by the control that plants a raw key in all three layers. The control runs the portal's raw-key render test under vitest, hence build:packages and the account-vitest mutex.
+  // Layer (b) of PLAN-account-sidebar-redesign Design 7 (config keys such as `labelKey`), led by its `--selftest`, which runs the control that plants a raw key in all three layers. The control runs the portal's raw-key render test under vitest, hence build:packages and the account-vitest mutex.
   {
     id: 'check:ci-account-raw-keys',
     run: 'npm run check:ci-account-raw-keys',
     gate: true,
     needs: ['build:packages'],
     mutex: ['account-vitest'],
-    leaves: [
-      'scripts/__tests__/check-account-raw-keys.control.ts',
-      'scripts/gates/check-account-raw-keys.ts',
-    ],
+    leaves: ['scripts/gates/check-account-raw-keys.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -1183,14 +1132,12 @@ export const GATES: readonly GateSpec[] = [
       'packages/www/src/i18n/translations/**',
       'scripts/__tests__/check-locale-currency-integrity.control.ts',
       'scripts/gates/check-locale-currency-integrity.ts',
+      'scripts/gates/lib/run-control.ts',
       'scripts/lib/entry-point.ts',
       'tsconfig.json',
     ],
     pathsOrigin: 'traced',
-    leaves: [
-      'scripts/gates/check-locale-currency-integrity.ts',
-      'scripts/__tests__/check-locale-currency-integrity.control.ts',
-    ],
+    leaves: ['scripts/gates/check-locale-currency-integrity.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6233,7 +6180,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Agent model roster matches its documented reasons',
     },
   },
-  // A ru page wrote its tags list with en dashes, YAML read `tags` as one string, every local gate passed, and only the Astro content loader refused it (10eae6293b). This validates every docs and blog entry with the REAL zod schema from content.config.ts, parsed by the parser Astro itself calls. Hand-written (two leaves), so it sits outside the generated regions.
+  // A ru page wrote its tags list with en dashes, YAML read `tags` as one string, every local gate passed, and only the Astro content loader refused it (10eae6293b). This validates every docs and blog entry with the REAL zod schema from content.config.ts, parsed by the parser Astro itself calls. Hand-written (its `paths` are traced), so it sits outside the generated regions; its `--selftest` runs the real-invocation control.
   {
     id: 'check:ci-docs-frontmatter',
     run: 'npm run check:ci-docs-frontmatter',
@@ -6245,14 +6192,12 @@ export const GATES: readonly GateSpec[] = [
       'packages/www/src/**',
       'scripts/__tests__/check-docs-frontmatter.control.ts',
       'scripts/gates/check-docs-frontmatter.ts',
+      'scripts/gates/lib/run-control.ts',
       'scripts/lib/entry-point.ts',
       'tsconfig.json',
     ],
     pathsOrigin: 'traced',
-    leaves: [
-      'scripts/gates/check-docs-frontmatter.ts',
-      'scripts/__tests__/check-docs-frontmatter.control.ts',
-    ],
+    leaves: ['scripts/gates/check-docs-frontmatter.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -9060,10 +9005,7 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:ci-embed-asset-freshness',
     gate: true,
-    leaves: [
-      'scripts/gates/check-embed-asset-freshness.ts',
-      'scripts/__tests__/github-token.control.ts',
-    ],
+    leaves: ['scripts/gates/check-embed-asset-freshness.ts'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -9399,7 +9341,9 @@ export const GATES: readonly GateSpec[] = [
       'packages/locales/index.js',
       'packages/locales/package.json',
       'packages/www/src/content/**',
+      'scripts/__tests__/check-docs-render-parity.control.ts',
       'scripts/gates/check-docs-render-parity.ts',
+      'scripts/gates/lib/run-control.ts',
       'tsconfig.json',
     ],
     pathsOrigin: 'traced',
@@ -9421,7 +9365,9 @@ export const GATES: readonly GateSpec[] = [
       'package.json',
       'packages/www/src/layouts/**',
       'packages/www/src/pages/**',
+      'scripts/__tests__/check-page-locale-imports.control.ts',
       'scripts/gates/check-page-locale-imports.ts',
+      'scripts/gates/lib/run-control.ts',
       'tsconfig.json',
     ],
     pathsOrigin: 'traced',

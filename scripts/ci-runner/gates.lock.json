@@ -100,9 +100,8 @@
       "scripts/gates/check-translation-hashes.ts",
       "scripts/gates/check-translation-completeness.ts",
       "scripts/gates/check-translation-key-usage.ts",
-      "scripts/__tests__/check-translation-key-usage.control.ts",
-      "scripts/__tests__/check-docs-render-parity.control.ts",
-      "scripts/__tests__/check-page-locale-imports.control.ts",
+      "scripts/gates/check-docs-render-parity.ts",
+      "scripts/gates/check-page-locale-imports.ts",
       "scripts/gates/check-cli-i18n-key-usage.ts",
       "scripts/gates/check-account-i18n-key-usage.ts",
       "packages/cli/scripts/check-cli-i18n-help-render.ts",
@@ -124,8 +123,7 @@
       "scripts/gates/check-dead-translation-keys.ts",
       "scripts/gates/check-em-dash-surfaces.ts",
       "packages/www/scripts/check-client-i18n-freshness.ts",
-      "scripts/gates/check-locale-currency-integrity.ts",
-      "scripts/__tests__/check-locale-currency-integrity.control.ts"
+      "scripts/gates/check-locale-currency-integrity.ts"
     ],
     "ci": {
       "kind": "step",
@@ -145,13 +143,13 @@
       "packages/www/src/**",
       "scripts/__tests__/check-translation-key-usage.control.ts",
       "scripts/gates/check-translation-key-usage.ts",
+      "scripts/gates/lib/run-control.ts",
       "scripts/lib/console.ts",
       "scripts/lib/entry-point.ts",
       "tsconfig.json"
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      "scripts/__tests__/check-translation-key-usage.control.ts",
       "scripts/gates/check-translation-key-usage.ts"
     ],
     "ci": {
@@ -251,53 +249,6 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-i18n",
       "step": "i18n sync control"
-    }
-  },
-  {
-    "id": "check:ci-i18n-docs-render-parity",
-    "run": "npm run check:ci-i18n-docs-render-parity",
-    "gate": true,
-    "paths": [
-      ".npmrc",
-      "package.json",
-      "packages/locales/index.js",
-      "packages/locales/package.json",
-      "scripts/__tests__/check-docs-render-parity.control.ts",
-      "scripts/gates/check-docs-render-parity.ts",
-      "tsconfig.json"
-    ],
-    "pathsOrigin": "traced",
-    "leaves": [
-      "scripts/__tests__/check-docs-render-parity.control.ts"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-i18n",
-      "step": "i18n"
-    }
-  },
-  {
-    "id": "check:ci-i18n-page-locale-imports",
-    "slow": true,
-    "run": "npm run check:ci-i18n-page-locale-imports",
-    "gate": true,
-    "paths": [
-      ".npmrc",
-      "package.json",
-      "scripts/__tests__/check-page-locale-imports.control.ts",
-      "scripts/gates/check-page-locale-imports.ts",
-      "tsconfig.json"
-    ],
-    "pathsOrigin": "traced",
-    "leaves": [
-      "scripts/__tests__/check-page-locale-imports.control.ts"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-i18n",
-      "step": "i18n"
     }
   },
   {
@@ -703,7 +654,6 @@
       "account-vitest"
     ],
     "leaves": [
-      "scripts/__tests__/check-account-raw-keys.control.ts",
       "scripts/gates/check-account-raw-keys.ts"
     ],
     "ci": {
@@ -1183,13 +1133,13 @@
       "packages/www/src/i18n/translations/**",
       "scripts/__tests__/check-locale-currency-integrity.control.ts",
       "scripts/gates/check-locale-currency-integrity.ts",
+      "scripts/gates/lib/run-control.ts",
       "scripts/lib/entry-point.ts",
       "tsconfig.json"
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      "scripts/gates/check-locale-currency-integrity.ts",
-      "scripts/__tests__/check-locale-currency-integrity.control.ts"
+      "scripts/gates/check-locale-currency-integrity.ts"
     ],
     "ci": {
       "kind": "step",
@@ -6563,13 +6513,13 @@
       "packages/www/src/**",
       "scripts/__tests__/check-docs-frontmatter.control.ts",
       "scripts/gates/check-docs-frontmatter.ts",
+      "scripts/gates/lib/run-control.ts",
       "scripts/lib/entry-point.ts",
       "tsconfig.json"
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      "scripts/gates/check-docs-frontmatter.ts",
-      "scripts/__tests__/check-docs-frontmatter.control.ts"
+      "scripts/gates/check-docs-frontmatter.ts"
     ],
     "ci": {
       "kind": "step",
@@ -9605,8 +9555,7 @@
     "run": "npm run check:ci-embed-asset-freshness",
     "gate": true,
     "leaves": [
-      "scripts/gates/check-embed-asset-freshness.ts",
-      "scripts/__tests__/github-token.control.ts"
+      "scripts/gates/check-embed-asset-freshness.ts"
     ],
     "ci": {
       "kind": "step",
@@ -9981,7 +9930,9 @@
       "packages/locales/index.js",
       "packages/locales/package.json",
       "packages/www/src/content/**",
+      "scripts/__tests__/check-docs-render-parity.control.ts",
       "scripts/gates/check-docs-render-parity.ts",
+      "scripts/gates/lib/run-control.ts",
       "tsconfig.json"
     ],
     "pathsOrigin": "traced",
@@ -10004,7 +9955,9 @@
       "package.json",
       "packages/www/src/layouts/**",
       "packages/www/src/pages/**",
+      "scripts/__tests__/check-page-locale-imports.control.ts",
       "scripts/gates/check-page-locale-imports.ts",
+      "scripts/gates/lib/run-control.ts",
       "tsconfig.json"
     ],
     "pathsOrigin": "traced",
