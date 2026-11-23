@@ -19,7 +19,7 @@ import pathlib
 import subprocess
 import sys
 import tempfile
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import types
@@ -203,7 +203,7 @@ def merged_pr(_root, _branch) -> bool:
     return True
 
 
-def controls(ws: types.ModuleType, cp) -> list[str]:
+def controls(ws: Any, cp) -> list[str]:
     fails: list[str] = []
     ran = [0]
 

@@ -594,7 +594,7 @@ def test_the_verdict_chunks_partition_the_sample():
 def test_the_sample_covers_every_guard_and_verdict():
     """The sample is a cut of the pool and drops no stratum: every `(guard, rc)` pair a driven pattern's cases assert has a payload in SAMPLE that its own guard's cases carry with that rc, and no payload outside the pool."""
     sampled = {payload for chain in DRIVEN for payload in SAMPLE.get(chain, {})}
-    strata = {}
+    strata: dict[tuple[str, str, int], set[str]] = {}
     for chain, guard, payload, _label, rc in ROUTED:
         strata.setdefault((chain, guard, rc), set()).add(payload)
     missing = sorted(

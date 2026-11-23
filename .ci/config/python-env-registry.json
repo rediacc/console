@@ -2408,6 +2408,7 @@
       "WORKLIST_SWEEP_TTL_MIN"
     ],
     ".claude/hooks/stop/wl_core.py": [
+      "*k",
       "CLAUDE_CODE_SESSION_ID",
       "CLAUDE_PROJECT_DIR",
       "TMPDIR",

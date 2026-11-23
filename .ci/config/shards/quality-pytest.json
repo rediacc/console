@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-23T06:37:31.315Z",
+  "generatedAt": "2026-11-23T06:53:36.641Z",
   "legs": [
     {
       "index": 1,
@@ -330,7 +330,8 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_report_inbox.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_check.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_scratch.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_state_document.py"
+        "pytest:.claude/rediacc_hooks/tests/test_wl_state_document.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_stop_speed_reads.py"
       ]
     },
     {
@@ -378,6 +379,7 @@
         "pytest:.ci/rediacc_ci/tests/test_build_canonicalise_gpg_key.py",
         "pytest:.ci/rediacc_ci/tests/test_build_cli_musl.py",
         "pytest:.ci/rediacc_ci/tests/test_canonical_sys_path_hop.py",
+        "pytest:.ci/rediacc_ci/tests/test_check_pytest_last_green.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_assert_job_succeeded.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_budget_report.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_capture_gate_costs.py",
@@ -479,6 +481,8 @@
         "pytest:.claude/rediacc_hooks/tests/test_goldenio_idempotent_mark.py",
         "pytest:.claude/rediacc_hooks/tests/test_guard_chained_state.py",
         "pytest:.claude/rediacc_hooks/tests/test_guard_event_cwd.py",
+        "pytest:.claude/rediacc_hooks/tests/test_hooks_boundary.py",
+        "pytest:.claude/rediacc_hooks/tests/test_lifecycle_inprocess.py",
         "pytest:.claude/rediacc_hooks/tests/test_plan_gate_ceiling.py",
         "pytest:.claude/rediacc_hooks/tests/test_proc.py",
         "pytest:.claude/rediacc_hooks/tests/test_push_receipt_table.py",
@@ -502,6 +506,9 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_report_queue.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_two_trees.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_reviewclass.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_silent_a.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_silent_b.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_stop_speed_git.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_waiter_controls.py"
       ]
     },
