@@ -26,10 +26,9 @@ interface Props {
    * can resolve. The two branches below spell their paths out.
    */
   namespace?: 'pricing' | 'disasterRecovery';
-  useCheckout?: boolean;
 }
 
-const { plan, metrics, lang, namespace = 'pricing', useCheckout = false } = Astro.props;
+const { plan, metrics, lang, namespace = 'pricing' } = Astro.props;
 const { t } = createTranslator(lang);
 
 const isDr = namespace === 'disasterRecovery';
@@ -42,14 +41,14 @@ const contactUs = isDr
 const contactUsSub = isDr
   ? t('pages.disasterRecovery.ui.contactUsSub')
   : t('pages.pricing.ui.contactUsSub');
-// Resolved lazily. Hoisting this out of the branch asked for
-// pages.pricing.ui.cta.<plan>.primary on every card, including the two that
-// render the checkout button instead, and the build printed
-// "Translation key not found" 26 times per page for keys nothing displays.
+// The pricing catalog carries a CTA label for the contact-only plan alone; the
+// plans without self-serve checkout link to the account page under its nav label.
 const ctaLabel = () =>
   isDr
     ? t(`pages.disasterRecovery.ui.cta.${plan.id}.primary`)
-    : t(`pages.pricing.ui.cta.${plan.id}.primary`);
+    : plan.contactOnly
+      ? t(`pages.pricing.ui.cta.${plan.id}.primary`)
+      : t('navigation.account');
 
 const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
   style: 'currency',
@@ -57,8 +56,6 @@ const priceFormatter = new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang, {
   maximumFractionDigits: 0,
 });
 const formatPrice = (amount: number) => priceFormatter.format(amount);
-
-const usesCheckout = useCheckout && !plan.contactOnly;
 ---
 
 <div
@@ -112,17 +109,6 @@ const usesCheckout = useCheckout && !plan.contactOnly;
     >
       {ctaLabel()}
     </a>
-  ) : usesCheckout ? (
-    <button
-      type="button"
-      class="cf-cta-btn"
-      data-checkout={plan.id}
-      data-track="cta_click"
-      data-track-label="pricing-checkout"
-      data-track-dest={plan.id}
-    >
-      {t('pages.pricing.ui.startTrial')}
-    </button>
   ) : (
     <AccountLink
       label={ctaLabel()}
@@ -133,45 +119,3 @@ const usesCheckout = useCheckout && !plan.contactOnly;
     />
   )}
 </div>
-
-<script>
-  // Self-contained handlers for the card's CTAs. Astro deduplicates this
-  // script — it runs once regardless of how many cards are rendered.
-  document.addEventListener('DOMContentLoaded', () => {
-    // Stripe checkout buttons (Professional and Business plans).
-    // Marketing-host detection delegated to window.__rediaccIsMarketingHost
-    // (defined in BaseLayout.astro, mirrors src/utils/marketing-host.ts).
-    // On marketing hosts (www / localhost / *.rediacc.workers.dev) we open
-    // the region picker; on portal hosts (regional / edge / bench / on-prem)
-    // we navigate directly. Fallback to direct nav if the helper is missing.
-    const isMarketing =
-      typeof window.__rediaccIsMarketingHost === 'function' &&
-      window.__rediaccIsMarketingHost(window.location.hostname);
-
-    document.querySelectorAll<HTMLButtonElement>('[data-checkout]').forEach((btn) => {
-      if (btn.dataset.checkoutBound) return;
-      btn.dataset.checkoutBound = 'true';
-
-      btn.addEventListener('click', () => {
-        const planId = btn.dataset.checkout!;
-        const activeToggle = document.querySelector('.billing-toggle-btn.active') as HTMLElement | null;
-        const billingPeriod = activeToggle?.dataset.period === 'annual' ? 'annual' : 'monthly';
-
-        window.plausible?.('checkout_start', { props: { plan: planId, period: billingPeriod } });
-
-        const params = new URLSearchParams({
-          checkout: planId.toUpperCase(),
-          period: billingPeriod,
-          returnUrl: window.location.href,
-        });
-        const targetPath = `/account/?${params}`;
-
-        if (!isMarketing) {
-          window.location.href = targetPath;
-        } else {
-          window.openRegionPicker?.(targetPath);
-        }
-      });
-    });
-  });
-</script>
