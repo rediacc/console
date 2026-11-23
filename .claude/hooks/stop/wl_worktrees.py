@@ -6,7 +6,7 @@ THE RECORD, read here and written by the `lease` verb: `id`, `path`, `owner` (th
 
 LIVENESS COMES FROM THE ROSTER. A subagent's shell does not live between tool calls, so an empty cwd list proves nothing. A lease is held by a live roster row (by `agent`, or by the meta's recorded tree), by a worklist `[>]` item naming it, or by a process inside it. A blind roster says nothing, and a lease is never accused on a blind reading.
 
-LANDED IS NOT `wl_scratch.git_doubt`, whose `--not --remotes` reads every commit landed on the unpushed live branch as undelivered. A commit counts as landed by `git cherry` against the live tip, or by its `(cherry picked from commit <sha>)` line on a local branch or the live tip. The live tip is the HEAD of the tree the survey stands in (`_tip_row`).
+LANDED IS NOT `wl_scratch.git_doubt`, whose `--not --remotes` reads every commit landed on the unpushed live branch as undelivered. A commit counts as landed by `git cherry` against the live tip, or by its `(cherry picked from commit <sha>)` line on a local branch or the live tip. The live tip is the HEAD of the tree the survey stands in (`_tip_row`), except for a lease whose record's `cut_from` is the landing record's branch: its commits land on that branch, so they are judged against `refs/heads/<landing branch>` in each of its repos (`landing_tips`, R20261123.7). A landing branch a repo does not hold is a doubt, never a silent fall back to the development tip.
 
 THE LANDING TREE IS NO LEASE (agent/plans/PLAN-two-track-merge-dev.md LT5). A lease is a linked tree under `<root>/.claude/worktrees/`, so the sibling landing tree, a linked tree outside it, is never surveyed, listed or accused from the development checkout. A stop in the landing tree surveys the leases under its own `.claude/worktrees/` against its own HEAD.
 
@@ -59,6 +59,52 @@ def _git(cwd, *args):
     except (OSError, subprocess.SubprocessError):
         return None
     return done.stdout if done.returncode == 0 else None
+
+
+def ref_tip(tree, ref):
+    """(sha, "") for `ref` peeled to a commit in `tree`, or ("", why): a ref `rev-parse --verify --quiet` reports absent (exit 1), or a git that failed or could not run, each named with its exit code and stderr."""
+    try:
+        done = subprocess.run(
+            [
+                "git",
+                "--no-optional-locks",
+                "-C",
+                str(tree),
+                "rev-parse",
+                "--verify",
+                "--quiet",
+                ref + "^{commit}",
+            ],
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=GIT_TIMEOUT_S,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return "", "git rev-parse %s could not run in %s: %s" % (ref, tree, exc)
+    sha = done.stdout.strip()
+    if done.returncode == 0 and sha:
+        return sha, ""
+    if done.returncode == 1:
+        return "", "%s does not exist in %s" % (ref, tree)
+    return "", "git rev-parse %s in %s exited %d: %s" % (
+        ref,
+        tree,
+        done.returncode,
+        done.stderr.strip()[:200],
+    )
+
+
+def landing_tips(repos, branch):
+    """({repo: sha}, "") with each repo of one lease at `refs/heads/<branch>`, read through the lease's own tree (a linked tree shares its store's refs), or ({}, why) naming the first repo that could not say."""
+    tips = {}
+    for repo in sorted(repos):
+        sha, why = ref_tip(repos[repo]["path"], "refs/heads/%s" % branch)
+        if why:
+            return {}, "cut from the landing branch %s, but %s" % (branch, why)
+        tips[repo] = sha
+    return tips, ""
 
 
 def stores(common):
@@ -474,6 +520,8 @@ def survey(root, session_id, items, live_fn, cache):
     live = live_fn()
     leases = wl_scratch.lease_texts(items)
     cwds = wl_scratch.process_cwds()
+    landing = C.landing_record(pathlib.Path(root))
+    landing_branch = landing["branch"] if landing else ""
     for lease_id, record in mine:
         if live is None:
             out["unknown"].append(lease_id)
@@ -486,10 +534,16 @@ def survey(root, session_id, items, live_fn, cache):
             out["doubts"].append("%s: a directory git lists no tree for" % lease_id)
             continue
         pins = world["pins"].get(lease_id) or {}
-        sig = signature(repos, world["tips"], pins)
+        tips = world["tips"]
+        if landing_branch and str(record.get("cut_from") or "") == landing_branch:
+            tips, why = landing_tips(repos, landing_branch)
+            if why:
+                out["doubts"].append("%s: %s" % (lease_id, why))
+                continue
+        sig = signature(repos, tips, pins)
         entry = cache.get(lease_id) if isinstance(cache, dict) else None
         if not isinstance(entry, dict) or entry.get("sig") != sig:
-            entry = figures(repos, world["tips"], pins, record.get("base") or {})
+            entry = figures(repos, tips, pins, record.get("base") or {})
             if "doubt" in entry:
                 out["doubts"].append("%s: %s" % (lease_id, entry["doubt"]))
                 continue
