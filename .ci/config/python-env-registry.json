@@ -2641,6 +2641,9 @@
     ".claude/rediacc_hooks/guards/test-block_push_with_unrecorded_reviews.py": [
       "TMPDIR"
     ],
+    ".claude/rediacc_hooks/guards/test-block_rebase_over_foreign_dirt.py": [
+      "*key"
+    ],
     ".claude/rediacc_hooks/guards/test-block_second_branch.py": [
       "PATH"
     ],

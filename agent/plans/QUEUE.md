@@ -40,12 +40,12 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Development tree: branch 1121-1, no PR yet.
 - Plans on the PR: none yet. The push that opens this branch's PR writes the queue head, agent/plans/PLAN-ciquick-cpu.md, as its `Plan:` line unless the body names a plan first.
 - Work outside the PR's plans (4 epic(s)):
-  - epic 79b7e92e, no plan, 292 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 305 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
-- Writers: 9 live of writer_cap 25 (session ace763dd): worker:a17682ae974c23632, worker:a8fa88c948f224b88, worker:a0ba19762cc3951c5, worker:ae846d6cd4ff1cd86, worker:a2b4563484417910b, worker:a6cfc8584913fc048, worker:a6025d5f617693d9b, worker:a4064d2cd1ae8e3e1, worker:a6c1cfe8da4a1d31a.
-- Leased items: 13: #1f2eabab (worker:a6025d5f617693d9b, ace763dd), #3245577e (worker:a0ba19762cc3951c5, ace763dd), #3b82cf28 (worker:bv2z5yuha, ace763dd), #3c069662 (worker:a17682ae974c23632, ace763dd), #52b534a6 (worker:a4064d2cd1ae8e3e1, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), #8d726864 (worker:a2b4563484417910b, ace763dd), #b1c18842 (worker:a8fa88c948f224b88, ace763dd), #ed73ad26 (worker:bxv5894ql, ace763dd), #f2b0de02 (worker:a6c1cfe8da4a1d31a, ace763dd), #f37b174b (worker:bxv5894ql, ace763dd), #f7ff7ef3 (worker:a6cfc8584913fc048, ace763dd), and 1 more.
+- Writers: 10 live of writer_cap 25 (session ace763dd): worker:a17682ae974c23632, worker:a6cfc8584913fc048, worker:a6025d5f617693d9b, worker:a6c1cfe8da4a1d31a, worker:ab7675e90707ec9a6, worker:a6af69b011fc01fff, worker:a0376a6fb0e874e59, worker:aebddcd2382176dfe, worker:a6ccea88d9700de29, worker:ac20cbd38646ac45e.
+- Leased items: 17: #053181bd (worker:ab7675e90707ec9a6, ace763dd), #1f2eabab (worker:a6025d5f617693d9b, ace763dd), #23387d78 (worker:a6af69b011fc01fff, ace763dd), #3245577e (worker:bp17dweer, ace763dd), #3294a31b (worker:ac20cbd38646ac45e, ace763dd), #35afe1a8 (worker:a0376a6fb0e874e59, ace763dd), #3b82cf28 (worker:bp17dweer, ace763dd), #3c069662 (worker:a17682ae974c23632, ace763dd), #46e48311 (worker:aebddcd2382176dfe, ace763dd), #52b534a6 (worker:bp17dweer, ace763dd), #6cc6bc63 (worker:a6ccea88d9700de29, ace763dd), #73b32419 (worker:bad7z4t8h, ace763dd), and 5 more.
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 

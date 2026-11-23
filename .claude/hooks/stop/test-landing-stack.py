@@ -409,16 +409,17 @@ def controls(ws: types.ModuleType, cp) -> list[str]:
         )
 
         # Any other failure of the open-box read (review e943d92e.1) keeps the block and names the failure.
-        real_reader = ws.open_writer_boxes
+        reader_name = "open_writer_boxes"
+        real_reader = getattr(ws, reader_name)
 
         def broken_reader(*_a, **_k):
             raise OSError("fixture: open-box read failed")
 
-        ws.open_writer_boxes = broken_reader
+        setattr(ws, reader_name, broken_reader)
         try:
             block, advisory = verdict(own_paths=[])
         finally:
-            ws.open_writer_boxes = real_reader
+            setattr(ws, reader_name, real_reader)
         control(
             "CODE-COMPLETE: an unexpected open-box read failure keeps the block and names it",
             "fixture: open-box read failed" in block and advisory == "",
