@@ -26,6 +26,7 @@ import pytest
 
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_review_commit_hook import World
+from rediacc_hooks.tests.test_wl_retro import boundary, compact, ledger_rows
 
 HERE = pathlib.Path(__file__).resolve().parent
 REPO_ROOT = HERE.parents[2]
@@ -417,6 +418,29 @@ def test_stop_hook_control_without_an_operation_the_battery_runs(stopworld):
     assert got.battery_ran, "the battery did not run, so the stand-down cases prove nothing"
     # THE HAZARD ITSELF: a normal stop rewrites the tracked QUEUE.md (its in-flight block), which is what makes the no-write assertions above able to fail.
     assert " M agent/plans/QUEUE.md" in tracked_snapshot(wl.proj)[1], before[1]
+
+
+def test_post_compact_orders_no_retro_row_mid_merge_and_says_so(stopworld):
+    """PostCompact appends the retro order to the TRACKED retro ledger; mid-operation it writes nothing and the briefing names why."""
+    wl = stopworld
+    halt_merge_in(wl)
+    wl.plant_state("## Next action\n\nkeep going")
+    wl.append_transcript(boundary(False))
+    text = compact(wl)
+    assert "Post-compact retro NOT ordered" in text, text[-600:]
+    assert "merge is in progress" in text
+    assert "STOP-HOOK RETRO" not in text
+    assert ledger_rows(wl) == []
+
+
+def test_post_compact_control_orders_the_retro_row_without_an_operation(stopworld):
+    wl = stopworld
+    wl.plant_state("## Next action\n\nkeep going")
+    wl.append_transcript(boundary(False))
+    text = compact(wl)
+    assert "STOP-HOOK RETRO" in text, text[-600:]
+    assert "Post-compact retro NOT ordered" not in text
+    assert len(ledger_rows(wl)) == 1
 
 
 # --------------------------------------------------------------------------- the reviewer

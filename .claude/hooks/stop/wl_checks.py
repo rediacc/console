@@ -2057,7 +2057,14 @@ def handle_post_compact(event):
 
             _ctxb = _RT.ctx()
             _me8 = _ctxb.session_slug(sid)
-            if _ctxb.retro_ordered(_ctxb.retro_rows(root), _me8, "post-compact") is None:
+            # NOT WHILE A REBASE IS HALTED (worklist #b07162cf): the row is a line of the TRACKED retro ledger, and one unstaged tracked change makes `git rebase --continue` refuse. Said in the briefing, never silent.
+            _op = _ctxb.operation_in_progress(root)
+            if _op:
+                msg += (
+                    "\n\nPost-compact retro NOT ordered: a %s is in progress in %s, and its row would be an unstaged tracked change that `git rebase --continue` refuses over."
+                    % (_op, root)
+                )
+            elif _ctxb.retro_ordered(_ctxb.retro_rows(root), _me8, "post-compact") is None:
                 _sp = S.agent_state_path(root, sid)
                 _row = _ctxb.retro_order_row(
                     root,
