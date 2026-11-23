@@ -279,7 +279,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-proxy-linux-packages | local-only | yes | no |
 | check:ci-proxy-ops-host-check | local-only | yes | no |
 | check:ci-proxy-rdc-update | local-only | yes | no |
-| check:ci-proxy-wrangler-dev-e2e | local-only | yes | yes |
+| check:ci-proxy-wrangler-dev-e2e | quality-wrangler-dev / Proxy wrangler dev e2e | yes | yes |
 | check:ci-pytest | quality-pytest / Python package tests | yes | yes |
 | check:ci-python-control-plants | quality-static / Python control plants | yes | no |
 | check:ci-python-env-registry | quality-static / Python env registry | yes | yes |
@@ -1001,7 +1001,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | knip.jsonc | 29 | // comment |
 | package.json | 22 | JSON value |
 | pyproject.toml | 67 | # comment |
-| scripts/ci-runner/gates.lock.json | 35 | JSON value |
+| scripts/ci-runner/gates.lock.json | 34 | JSON value |
 | scripts/data/shape-duplication-seed-advisory.json | 47 | JSON value |
 | scripts/data/shape-duplication-seed.json | 10 | JSON value |
 

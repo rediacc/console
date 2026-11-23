@@ -13022,8 +13022,10 @@
       ".ci/scripts/quality/check_proxy_wrangler_dev_e2e.py"
     ],
     "ci": {
-      "kind": "local-only",
-      "blocker": "BLOCKER: needs docker and wrangler containers: the gate runs the proxy Worker under `wrangler dev`, whose Containers runtime builds workers/proxy/Dockerfile and starts the executor on a local docker daemon. No ci-quality.yml lane has a docker daemon for wrangler to drive, and the image half alone already runs in CI as check:ci-proxy-image-smoke (ci-build-renet.yml proxy-image-smoke). Exits 77 (blocked, never green) on a host without docker or wrangler."
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-wrangler-dev",
+      "step": "Proxy wrangler dev e2e"
     }
   },
   {

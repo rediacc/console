@@ -12236,7 +12236,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Proxy image smoke',
     },
   },
-  // The Worker and its container together (agent/plans/PLAN-cloudflare-proxy.md A6): `wrangler dev` builds the executor image on the local docker host, and a valid bearer must reach `rdc serve --mode container` inside it while a missing or inactive one gets 401 and starts no container. Builds the same image as the smoke above, hence slow and heavy. Hand-registered for the same reason.
+  // The Worker and its container together (agent/plans/PLAN-cloudflare-proxy.md A6): `wrangler dev` builds the executor image on the local docker host, and a valid bearer must reach `rdc serve --mode container` inside it while a missing or inactive one gets 401 and starts no container. Builds the same image as the smoke above, hence slow and heavy. CI runs it in ci-quality.yml's own native-Linux lane, quality-wrangler-dev (agent/plans/PLAN-tooling-speed.md D8): Docker Desktop's host-gateway cannot reach workerd's egress listener, so a WSL2 host gets exit 77 (blocked, never green) naming that job. Hand-registered: the lane builds its own renet under an App token and secrets a generated region would not carry.
   //
   // NO `paths`: it depends on the Worker, the Dockerfile, the whole CLI workspace the image bundles and the staged renet, and a partial table would make `--changed` drop it silently.
   {
@@ -12251,9 +12251,10 @@ export const GATES: readonly GateSpec[] = [
       'stages workers/proxy/renet/renet-linux-amd64 into the docker build context (Dockerfile:54 COPY) when none is staged',
     leaves: ['.ci/scripts/quality/check_proxy_wrangler_dev_e2e.py'],
     ci: {
-      kind: 'local-only',
-      blocker:
-        'BLOCKER: needs docker and wrangler containers: the gate runs the proxy Worker under `wrangler dev`, whose Containers runtime builds workers/proxy/Dockerfile and starts the executor on a local docker daemon. No ci-quality.yml lane has a docker daemon for wrangler to drive, and the image half alone already runs in CI as check:ci-proxy-image-smoke (ci-build-renet.yml proxy-image-smoke). Exits 77 (blocked, never green) on a host without docker or wrangler.',
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-wrangler-dev',
+      step: 'Proxy wrangler dev e2e',
     },
   },
   {
