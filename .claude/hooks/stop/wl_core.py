@@ -367,7 +367,7 @@ def lease_main(tree):
     return main if theirs is not None and theirs[1] == mine[1] else None
 
 
-# The landing record (agent/plans/PLAN-two-track-merge-dev.md, box LT1): one JSON object {"path": <realpath>, "branch": <MMDD-N>} in the COMMON git dir, so every tree of the repository reads the same file. commit_policy.py writes and validates it; this module reads it without a subprocess, because project_root is a hot path.
+# The landing record (agent/plans/PLAN-two-track-merge-dev.md, box LT1): one JSON object {"path": <realpath>, "branch": <MMDD-N>} in the COMMON git dir, so every tree of the repository reads the same file. commit_policy.py writes and validates it. This module looks for the file without a subprocess, because project_root is a hot path, and validates an existing one through commit_policy once per record version (read_landing_record).
 LANDING_RECORD_NAME = "rediacc-landing.json"
 # The git config key naming a common dir's main checkout, `core.<this>`. worklist.py's twin assembles the same string from two halves.
 CORE_TREE_KEY = "worktree"
@@ -397,25 +397,61 @@ def _common_main(common):
     return main if theirs is not None and theirs[0] == theirs[1] == common else None
 
 
-def landing_record(tree):
-    """The landing record of `tree`'s repository as {"path", "branch"}, or None when there is none or it is not a well-formed binding of an existing tree of this repository. commit_policy.read_landing_record is the full validator and names the defect; a defective record here simply binds nothing."""
+# One validation per record version per process: commit_policy's reader asks git (the common dir, the linked-tree check), and project_root is a hot path, so its answer is kept keyed on the record file's (path, mtime_ns, size). A rewrite of the record changes the key.
+_LANDING_READS: dict[tuple[str, int, int], tuple[dict | None, str]] = {}
+
+
+def _commit_policy():
+    """commit_policy from `.claude/rediacc_hooks`, through the canonical sys.path hop loaded by file (this module lives outside that package)."""
+    import importlib.util
+
+    helper = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
+    spec = importlib.util.spec_from_file_location("_rediacc_syspath", helper)
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load %s" % helper)
+    syspath = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(syspath)
+    syspath.on_sys_path(syspath.CLAUDE_DIR)
+    from rediacc_hooks import commit_policy
+
+    return commit_policy
+
+
+def read_landing_record(tree):
+    """`(record, problem)` for `tree`'s repository: the validated `{"path", "branch"}` and "", `(None, "")` when there is no record, or `(None, <defect>)` when one exists and binds nothing.
+
+    The validation is commit_policy.read_landing_record's, the one validator, so a record every guard refuses binds nothing here either. Only an existing record is validated (a missing one costs no subprocess), and its answer is kept per record version.
+    """
     dirs = _git_dirs(pathlib.Path(tree))
     if dirs is None:
-        return None
+        return None, ""
+    where = dirs[1] / LANDING_RECORD_NAME
     try:
-        data = json.loads((dirs[1] / LANDING_RECORD_NAME).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    if not isinstance(data, dict) or sorted(data) != ["branch", "path"]:
-        return None
-    path, branch = data["path"], data["branch"]
-    if not isinstance(path, str) or not isinstance(branch, str) or not os.path.isabs(path):
-        return None
-    land = pathlib.Path(path)
-    theirs = _git_dirs(land) if (land / ".git").is_file() else None
-    if theirs is None or theirs[1] != dirs[1]:
-        return None
-    return {"path": path, "branch": branch}
+        st = os.lstat(where)
+    except FileNotFoundError:
+        return None, ""
+    except OSError as exc:
+        return None, "%s cannot be read: %s: %s" % (where, type(exc).__name__, exc)
+    key = (str(where), st.st_mtime_ns, st.st_size)
+    if key not in _LANDING_READS:
+        try:
+            policy = _commit_policy()
+        except (ImportError, OSError, SyntaxError) as exc:
+            return (
+                None,
+                "commit_policy, the landing record's validator, could not be loaded (%s: %s)"
+                % (type(exc).__name__, exc),
+            )
+        _LANDING_READS[key] = policy.read_landing_record(str(tree))
+    return _LANDING_READS[key]
+
+
+def landing_record(tree):
+    """The landing record of `tree`'s repository as {"path", "branch"}, or None when there is none or it binds nothing.
+
+    The callers of this form only route (project_root's landing redirect, projects_dirs, wl_worktrees' lease sweep), so a defect reads as no record here and nothing is said: the stop names it once, in the `landing-stack` advisory, where wl_stack.stack_state reads the same validator's problem. A caller that speaks takes read_landing_record and names the problem itself.
+    """
+    return read_landing_record(tree)[0]
 
 
 def landing_main(tree):
@@ -1262,5 +1298,6 @@ try:
     import wl_resprofile as _resprofile
 
     _resprofile.install()
+# swallowed-failure-ok: an unimportable or failing profiler must never change the exit code or output of the hook it measures, and wl_core is imported by every hook process; a dead profiler shows as hook processes missing from its rollup, never as a failed hook.
 except BaseException:
     pass

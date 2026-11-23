@@ -984,14 +984,11 @@ _BRANCH_CACHE = {}
 
 
 def _branch_of(root):
-    """Cached: git_branch shells out, and this runs on every append."""
+    """Cached: git_branch shells out, and this runs on every append. git_branch already answers "" for a detached HEAD or a git that cannot run, so nothing is caught here: anything else it raises is a defect to see."""
     root = own_tree(root)
     key = str(root)
     if key not in _BRANCH_CACHE:
-        try:
-            _BRANCH_CACHE[key] = C.git_branch(root) or ""
-        except Exception:
-            _BRANCH_CACHE[key] = ""
+        _BRANCH_CACHE[key] = C.git_branch(root) or ""
     return _BRANCH_CACHE[key]
 
 
@@ -1794,6 +1791,11 @@ def session_liveness(worklist, prefix, projects_dir=None, events=None):
     p = str(prefix or "")[:8]
     if not p:
         return "unknown", "no prefix given"
+    # A source that cannot be read is not evidence of absence: each failure is named in the evidence of whatever verdict the remaining sources reach, so "idle" read off a broken brief file says so (agent/plans/PLAN-silent-failure-sweep.md SF4).
+    unread = []
+
+    def said(verdict, evidence):
+        return verdict, evidence + ("" if not unread else " (unread: %s)" % "; ".join(unread))
 
     # 1. .lastevent-<p>.json -- written on EVERY full stop, so a running session always has a fresh one.
     le = worklist.with_suffix(".lastevent-%s.json" % p)
@@ -1801,9 +1803,9 @@ def session_liveness(worklist, prefix, projects_dir=None, events=None):
         if le.exists():
             age_min = (time.time() - le.stat().st_mtime) / 60.0
             if age_min <= LIVE_MIN:
-                return "live", ".lastevent-%s.json written %d min ago" % (p, age_min)
-    except OSError:
-        pass
+                return said("live", ".lastevent-%s.json written %d min ago" % (p, age_min))
+    except OSError as exc:
+        unread.append(".lastevent-%s.json (%s: %s)" % (p, type(exc).__name__, exc))
 
     # 2. the .sessions brief, the oracle the brief check already forces every live session to refresh.
     try:
@@ -1811,17 +1813,18 @@ def session_liveness(worklist, prefix, projects_dir=None, events=None):
         if when is not None:
             age_min = (C.utcnow() - when).total_seconds() / 60.0
             if age_min <= SESSION_BRIEF_STALE_MIN:
-                return "live", "session brief refreshed %d min ago" % age_min
-    except Exception:
-        pass
+                return said("live", "session brief refreshed %d min ago" % age_min)
+    except (OSError, ValueError, TypeError) as exc:
+        unread.append("the session brief (%s: %s)" % (type(exc).__name__, exc))
 
-    # 3. its transcript on this machine.
+    # 3. its transcript on this machine. A transcript removed between the glob and the stat raises OSError.
     try:
         h = owner_age_hours(p, projects_dir)
-    except Exception:
+    except OSError as exc:
         h = None
+        unread.append("its transcript (%s: %s)" % (type(exc).__name__, exc))
     if h is not None and h * 60.0 <= LIVE_MIN:
-        return "live", "transcript written %d min ago" % (h * 60.0)
+        return said("live", "transcript written %d min ago" % (h * 60.0))
 
     # 4. its own newest event, but only when that event came from THIS host -- a foreign host's timestamp says nothing about a process here.
     if events is None:
@@ -1834,22 +1837,23 @@ def session_liveness(worklist, prefix, projects_dir=None, events=None):
         if at > newest:
             newest, newest_host = at, str(ev.get("h") or "")
     if not newest:
-        return "unknown", "no events by %s in the store" % p
+        return said("unknown", "no events by %s in the store" % p)
     if newest_host and newest_host == mine_host:
-        try:
-            age_min = (C.utcnow() - C.parse_stamp(newest)).total_seconds() / 60.0
-        except Exception:
-            age_min = None
+        when = C.parse_stamp(newest)
+        age_min = None if when is None else (C.utcnow() - when).total_seconds() / 60.0
+        if when is None:
+            unread.append("its newest event stamp `%s` does not parse" % newest[:40])
         if age_min is not None and age_min <= LIVE_MIN:
-            return "live", "wrote to the store %d min ago on this machine" % age_min
+            return said("live", "wrote to the store %d min ago on this machine" % age_min)
 
     # REMOTE requires POSITIVE evidence of another host. Without a host stamp the honest answer is `idle` (no artifact here), not a claim about a machine this one has never seen.
     if h is None and not le.exists() and newest_host and newest_host != mine_host:
-        return "remote", (
+        return said(
+            "remote",
             "last seen %s on another host; this machine cannot tell whether it "
-            "is still running" % newest
+            "is still running" % newest,
         )
-    return "idle", "no artifact here newer than %d min (newest event %s)" % (LIVE_MIN, newest)
+    return said("idle", "no artifact here newer than %d min (newest event %s)" % (LIVE_MIN, newest))
 
 
 def snapshot_events(fold, by="compact"):
@@ -2013,10 +2017,14 @@ def compact_store(worklist, root=None, me=None, projects_dir=None):
                 newest = str(ev.get("at") or "")
         old_enough = True
         if newest:
-            try:
-                old_enough = (C.utcnow() - C.parse_stamp(newest)).total_seconds() / 3600.0 >= dead_h
-            except Exception:
-                old_enough = False
+            when = C.parse_stamp(newest)
+            # An unparseable stamp cannot prove the writer old, so its sidecar is kept, and the kept row says why.
+            old_enough = when is not None and (C.utcnow() - when).total_seconds() / 3600.0 >= dead_h
+            if when is None:
+                why = "%s; its newest event stamp `%s` does not parse, so its age is unknown" % (
+                    why,
+                    newest[:40],
+                )
         if verdict in ("idle", "remote", "unknown") and old_enough:
             clear.append(f)
         else:
