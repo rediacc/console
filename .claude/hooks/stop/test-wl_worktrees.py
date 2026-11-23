@@ -1008,6 +1008,68 @@ def control_submodule(tmp):
     check("a dirty submodule tree blocks", read(tmp, main)["unlanded"][0]["dirty"] > 0, True)
 
 
+def _cut_from(main, lease_id, branch):
+    """Stamp a record with the `cut_from` the `lease` verb writes (`worktree_lease.tree_branch`)."""
+    path = main / ".git/rediacc-worktrees" / ("%s.json" % lease_id)
+    path.write_text(json.dumps({**json.loads(path.read_text()), "cut_from": branch}), "utf-8")
+
+
+def control_landing_cut(tmp):
+    """R20261123.6's twin, R20261123.7: lease ace763dd-1 was cut from the landing tree, its one commit was picked into landing, and the block still listed it, because the survey judged it against the development HEAD."""
+    main = lease_main_repo(tmp, "landing-cut")
+    land = tmp / "landing-cut" / "landing"
+    git(tmp, main, "worktree", "add", "-q", "-b", "1104-1", land, "HEAD")
+    (main / ".git/rediacc-landing.json").write_text(
+        json.dumps({"branch": "1104-1", "path": str(land)}), encoding="utf-8"
+    )
+    lease = new_lease(tmp, main, "l1")
+    _cut_from(main, "l1", "1104-1")
+    sha = commit_in(tmp, lease, "b.txt", "b\n")
+    check("an unpicked landing-cut commit is listed", ids(read(tmp, main)["unlanded"]), ["l1"])
+    git(tmp, land, "cherry-pick", "-x", sha)
+    check(
+        "a landing-cut commit picked into landing gives no worktree-unlanded",
+        read(tmp, main)["unlanded"],
+        [],
+    )
+    check("the development HEAD really lacks it", git(tmp, main, "cherry", "HEAD", sha), "+ " + sha)
+    sha2 = commit_in(tmp, lease, "c.txt", "c\n")
+    got = read(tmp, main)
+    check(
+        "an unpicked second commit of that lease is still listed",
+        got["unlanded"][0]["commits"] if got["unlanded"] else {},
+        {".": [sha2]},
+    )
+    # CONTROL: a lease cut from the development branch keeps today's tip, so landing's copy lands nothing for it.
+    dev = new_lease(tmp, main, "d1")
+    _cut_from(main, "d1", "main")
+    dsha = commit_in(tmp, dev, "e.txt", "e\n")
+    git(tmp, land, "cherry-pick", "-x", dsha)
+    got = read(tmp, main)
+    check(
+        "a development-cut lease is still judged against the development HEAD",
+        "d1" in ids(got["unlanded"]),
+        True,
+    )
+    # A landing branch git does not hold: named as a doubt, never judged against the development HEAD in its place.
+    gone = lease_main_repo(tmp, "landing-gone")
+    gland = tmp / "landing-gone" / "landing"
+    git(tmp, gone, "worktree", "add", "-q", "-b", "1104-1", gland, "HEAD")
+    (gone / ".git/rediacc-landing.json").write_text(
+        json.dumps({"branch": "1104-9", "path": str(gland)}), encoding="utf-8"
+    )
+    glease = new_lease(tmp, gone, "g1")
+    _cut_from(gone, "g1", "1104-9")
+    commit_in(tmp, glease, "b.txt", "b\n")
+    got = read(tmp, gone)
+    check("a landing branch with no ref judges nothing", got["unlanded"], [])
+    check(
+        "and the doubt names the lease and the missing ref",
+        any("g1" in d and "refs/heads/1104-9" in d for d in got["doubts"]) or got["doubts"],
+        True,
+    )
+
+
 def control_effort_table(tmp):
     script = _REAL.parents[3] / ".ci/scripts/quality/check_plan_record.py"
 
@@ -1250,6 +1312,7 @@ def section_stop():
     control_index(tmp)
     control_cache(tmp)
     control_submodule(tmp)
+    control_landing_cut(tmp)
     control_effort_table(tmp)
     control_real_hook(tmp)
     control_probes(tmp)
