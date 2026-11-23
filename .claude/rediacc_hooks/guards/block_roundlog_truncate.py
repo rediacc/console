@@ -56,12 +56,12 @@ ORDER = 31
 
 # THE APPEND EXEMPTION. `>>` cannot truncate, and appending to the history is the sanctioned way to add to it; planting `>>` among the truncating operators refuses every append, which is the over-block the module docstring says gets a guard routed around.
 DEFECT = (
-    'TRUNCATING_OPS = frozenset((">", ">|", "&>", ">&"))',
-    'TRUNCATING_OPS = frozenset((">", ">|", "&>", ">&", ">>"))',
+    'TRUNCATING = frozenset(("redirect", "tee", "in-place", "truncate"))',
+    'TRUNCATING = frozenset(("redirect", "append", "tee", "in-place", "truncate"))',
 )
 
-# The redirect operators that open their target from byte zero. `>>`, `&>>` and `<>` keep what is there.
-TRUNCATING_OPS = frozenset((">", ">|", "&>", ">&"))
+# The `shellscan.write_records` readings that open their target from byte zero: a redirect that does not append (`>`, `>|`, `&>`; an "append" record is `>>` or `&>>`, which keep what is there), a `tee` whose record does not append (`-a`, `--append`, a bundle holding `a`), an in-place editor (sed, gsed, `perl -i`, over the words as bash expands them, #6378e10e) and `truncate`. `dd of=` is the "option" record of a `dd` run (`_record_truncates`).
+TRUNCATING = frozenset(("redirect", "tee", "in-place", "truncate"))
 
 # A round-log path. A target is a round log when its BASENAME is one and not a briefing (`_is_log`), which is the 2026-08 anchoring finding this file records twice carried to the walk: the verb and the path are one run, never two words on a line.
 RL = r"pr-babysit-[A-Za-z0-9._-]+\.md"
@@ -198,7 +198,7 @@ def _names_log(word, directory=None):
     return False
 
 
-# The verbs whose operands `_verb_truncates` judges; the prefilter reads their words, and nothing else of the command.
+# The verbs whose operands a truncating arm judges (`_record_truncates`, `_verb_truncates`); the prefilter reads their words, and nothing else of the command.
 _TRUNCATING_VERBS = frozenset(("mv", "truncate", "cp", "dd", "tee"))
 
 
@@ -621,40 +621,33 @@ def _copy_writes_log(run_, cwd):
     return False
 
 
-def _appends(args):
-    """`tee -a`, `--append`, or a bundle holding `a` (`-ia`). `--output-error=warn` is not one: the arm was once fooled by the `a` in `warn`."""
-    return any(
-        a == "--append" or re.fullmatch(r"-[A-Za-z]*a[A-Za-z]*", a) is not None for a in args
-    )
+def _record_truncates(write, cwd):
+    """Does this `shellscan.write_records` record replace a round log wholesale? A `TRUNCATING` reading that does not append, or the `dd of=` of a `dd` run. Each word is read as bash expands it: a redirect target by its shape (its run's directory is not on the redirect, so a glob there is read as a glob), any other word in the run's own directory (`truncate -s0 agent/pr-babysit-*.md` names the log, #e5b0540a). xargs appends its input as operands, so the fed words are records too."""
+    name = write.run.name.rsplit("/", 1)[-1] if write.run is not None else ""
+    # A redirect's append is its reading ("append", outside TRUNCATING); a tee's is the record's flag.
+    keeps = write.how == "tee" and write.append
+    if not ((write.how in TRUNCATING and not keeps) or (write.how == "option" and name == "dd")):
+        return False
+    if write.how in ("redirect", "append"):
+        return not re.fullmatch(r"\d+|-", write.word) and _names_log(write.word)
+    return _names_log(write.word, shellscan._run_directory(write.run, cwd))
 
 
 def _verb_truncates(run_, cwd):
-    """Does this run's verb replace a round log wholesale? `mv` and `truncate` on any operand, `cp` onto where `_copy_writes_log` lands it, `dd of=`, `sed -i`, and `tee` without an append flag. xargs appends its input as operands, so the fed words count as operands in every arm."""
+    """Does this run's verb replace a round log in a way the shared walk does not read as this guard needs? `mv` on ANY operand (a log moved away is gone from where the loop reads it), and `cp` onto where `_copy_writes_log` lands it (a copy into a directory counts only where a log lives). Every other verb is `_record_truncates`'. xargs appends its input as operands, so the fed words count as operands."""
     base = run_.name.rsplit("/", 1)[-1]
+    if base == "cp":
+        return _copy_writes_log(run_, cwd)
+    if base != "mv":
+        return False
     # The words as bash hands them over (`_Run.xargv`): `F=<log>; mv $F /tmp/` names the log through a variable an earlier statement set.
     args = list(run_.argv if run_.xargv is None else run_.xargv)
     operands = [a for a in args if not (a.startswith("-") and len(a) > 1)]
     if "xargs" in run_.via and run_.feed:
         operands += run_.feed.split()
-    if base in ("mv", "truncate"):
-        hits = operands
-    elif base == "cp":
-        return _copy_writes_log(run_, cwd)
-    elif base == "dd":
-        hits = [a[3:] for a in args if a.startswith("of=")]
-    elif shellscan.in_place_edit(run_) is not None:
-        # EVERY IN-PLACE EDITOR, by its own option parse (#6378e10e): sed, gsed and `perl -i`/`-pi` rewrite the files they name, and `perl -pi -e ... <log>` was allowed while only sed was asked. The files are `in_place_edit`'s, read over the words as bash expands them (an attached `-e` script is not a file, review 3f53e99e.2), plus what xargs appends.
-        expanded = types.SimpleNamespace(name=run_.name, argv=args)
-        edit = shellscan.in_place_edit(expanded) or shellscan.in_place_edit(run_)
-        fed = run_.feed.split() if "xargs" in run_.via and run_.feed else []
-        hits = [*edit[1], *fed]
-    elif base == "tee":
-        hits = [] if _appends(args) else operands
-    else:
-        hits = []
-    # Each operand as bash expands it in the run's own directory: `mv agent/pr-babysit-{0831-1,x}.md /tmp/` and `truncate -s0 agent/pr-babysit-*.md` name the log (#e5b0540a).
+    # Each operand as bash expands it in the run's own directory: `mv agent/pr-babysit-{0831-1,x}.md /tmp/` names the log (#e5b0540a).
     directory = shellscan._run_directory(run_, cwd)
-    return any(_names_log(h, directory) for h in hits)
+    return any(_names_log(h, directory) for h in operands)
 
 
 def _handed_words(run_, code, kind):
@@ -1875,14 +1868,9 @@ def run(ev):
     if not _could_name_log(cmd, ev.field("cwd")):
         return hookio.ALLOW
 
-    # The redirects bash performs, with their operator: `>` truncates, `>>` appends (`2>&1`-style descriptor plumbing names no file).
-    # A redirect target is expanded by bash too (`> agent/pr-babysit-*.md` truncates the one log it matches), and its run's directory is not on the write record, so a glob there is read by its shape.
-    truncating = any(
-        op in TRUNCATING_OPS and _names_log(target) and not re.fullmatch(r"\d+|-", target)
-        for op, target in _redirects(shellscan._analyse(cmd))
-    )
-    # The verbs it runs, behind any prefix, xargs, sh -c or find -exec.
+    # The writes bash performs, from the chain's one walk (`shellscan.event_write_records`): a redirect that does not append (`2>&1`-style descriptor plumbing names no file), and the verbs it runs behind any prefix, xargs, sh -c or find -exec. A redirect target is expanded by bash too (`> agent/pr-babysit-*.md` truncates the one log it matches).
     cwd = ev.field("cwd") or str(hookio.repo_root())
+    truncating = any(_record_truncates(w, cwd) for w in shellscan.event_write_records(ev))
     truncating = truncating or any(_verb_truncates(r, cwd) for r in shellscan.every_run(cmd))
     # An in-process write from python, node, perl or ruby. NOT anchorable the way the shell verbs are: the 2026-08-19 incident was a heredoc where the path sat on a DIFFERENT LINE from the write call. A program that writes an UNNAMED target is refused when its OWN text could spell a round-log path (`_program_could_name_log`: the `pr-babysit` stem, or a string literal glob that meets the pattern in a program not provably inert), because that is the exact shape that destroyed the appendix; one whose text cannot spell a log writes some other file and passes, whatever else the command mentions (#e5b0540a).
     truncating = truncating or any(

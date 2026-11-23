@@ -223,9 +223,14 @@ MUTANTS = [
                 "    words = [target for _op, target in _redirects(shellscan._analyse(cmd))]\n",
                 "    words = [target for _op, target in shellscan._analyse(cmd).writes]\n",
             ),
+            # The run's redirects are `shellscan.write_records`' (CR5), a record per typed and per expanded target; this plant reads only the typed one.
             (
-                "        for op, target in _redirects(shellscan._analyse(cmd))\n",
-                "        for op, target in shellscan._analyse(cmd).writes\n",
+                '    if write.how in ("redirect", "append"):\n',
+                (
+                    '    if write.how in ("redirect", "append") and write.word not in write.run.writes:\n'
+                    "        return False\n"
+                    '    if write.how in ("redirect", "append"):\n'
+                ),
             ),
         ],
     ),

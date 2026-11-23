@@ -114,6 +114,16 @@ RECORDS = [
     ),
     ("a plain tee replaces it", "printf x | tee t.txt", ("<CWD>/t.txt", "tee", "t.txt", 0, False)),
     (
+        "a tee bundle holding a keeps the file",
+        "printf x | tee -ia t.txt",
+        ("<CWD>/t.txt", "tee", "t.txt", 1, True),
+    ),
+    (
+        "the a in --output-error=warn is no append",
+        "printf x | tee --output-error=warn t.txt",
+        ("<CWD>/t.txt", "tee", "t.txt", 1, False),
+    ),
+    (
         "the typed word of an expanded redirect",
         "F=y.md; echo hi > $F",
         ("<CWD>/$F", "redirect", "$F", None, False),

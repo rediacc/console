@@ -9153,7 +9153,7 @@ class Write(typing.NamedTuple):
     word    the word as the command hands it over: the typed form, or the form bash expands it to, whichever this record was read from; a guard naming the write in a message or judging the word lexically reads this, never `path`
     run     the walked run that writes it (None for "unknown")
     index   the position of the run's own word it was read from (`_word_index`: in `run.argv`, else `run.xargv`; a `{}` that stands for find's starts keeps the `{}`'s position), or None when it is no word of the run (a redirect target, a fed word)
-    append  True when the write keeps what the file holds (`>>`, `&>>`, `tee -a`/`--append`); every other write may replace it
+    append  True when the write keeps what the file holds (`>>`, `&>>`, `tee -a`/`--append`/a bundle holding `a`); every other write may replace it
     """
 
     path: str
@@ -9182,6 +9182,13 @@ def _truncate_operands(words):
             continue
         out.append(word)
     return out
+
+
+def _tee_appends(words):
+    """`tee -a`, `--append`, or a short bundle holding `a` (`-ia`). A long option is never a bundle: the `a` in `--output-error=warn` is no append."""
+    return any(
+        w == "--append" or re.fullmatch(r"-[A-Za-z]*a[A-Za-z]*", w) is not None for w in words
+    )
 
 
 def _word_index(run, word):
@@ -9246,7 +9253,7 @@ def write_records(cmd, cwd):
                 put(target, run, "append" if appending else "redirect", appending)
         # What an xargs feeds a tee or an in-place edit is a file it writes (`xargs_fed_operands`: each fed word alone and in each marker's place), so `echo F | xargs sed -i ...` lists F. It over-reads the feed's own words (the producer's argv), never under-reads.
         if base == "tee":
-            appending = "-a" in typed or "--append" in typed
+            appending = _tee_appends(typed)
             for word in xargs_fed_operands(run, plain_operands(typed)):
                 put(word, run, "tee", appending)
         edit = in_place_edit(run)
