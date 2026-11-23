@@ -19,6 +19,13 @@
     [[ $- == *x* ]] && __bashcov_x=1
     set +x
 } 2>/dev/null
+# THE .pth LOADER, before the supervisor: a `PYTHONPATH=...` command replaces the
+# path exported below, and the user-site .pth reaches python3 anyway. Its own
+# supervisor-free condition, since a shell with no bashcov-sup still runs python3.
+# The re-exec'd child (__BASHCOV_SUP is its parent) finds it done already.
+if [[ ${WORKLIST_PROFILE:-} != off && $- != *i* && ${__BASHCOV_SUP:-} != "$PPID" && -r ${BASH_SOURCE[0]%/bash_env.sh}/pth_setup.sh ]]; then
+    source "${BASH_SOURCE[0]%/bash_env.sh}/pth_setup.sh" "${BASH_SOURCE[0]%/.claude/hooks/profile/bash_env.sh}"
+fi
 if [[ ${WORKLIST_PROFILE:-} == off ]]; then
     :
 elif [[ ${__BASHCOV_SUP:-} == "$PPID" ]]; then

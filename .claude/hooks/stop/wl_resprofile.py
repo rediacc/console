@@ -42,6 +42,7 @@ import atexit
 import contextlib
 import json
 import os
+import re
 import resource
 import sys
 import tempfile
@@ -49,6 +50,12 @@ import time
 from pathlib import Path
 
 RECENT_KEEP = 5
+# Per-shape day counts kept in the rollup: enough to tell a shape that ran yesterday from one that last ran a month ago, which is the question a retirement decision asks.
+DAYS_KEEP = 30
+# A lease or landing tree records under its own slug, and its script paths are repo-relative to the main checkout when run from there: the `.claude/<trees>/<id>/` prefix is folded away so one script is one shape.
+_WORKTREE_PREFIX = re.compile(r"^(py|sh):\.claude/worktrees/[^/]+/")
+# A slug made from a temporary directory: pytest base temps and anything under /tmp or /var/tmp. Such a directory is gone the moment its run ends, so its records are fixtures and its folder is removed outright.
+_TMP_SLUG = re.compile(r"^(tmp|var-tmp)-|pytest-of-")
 # Raw day folders older than this are pruned by fold(). Two weeks is enough to bisect a regression; the ROLLUP and RANK.md are kept forever and are what anyone actually reads.
 RAW_RETENTION_DAYS = 14
 EWMA_ALPHA = 0.3
@@ -286,6 +293,7 @@ def _fold_locked(roll: dict, t0: Path, t1: Path) -> dict | None:
     """The fold itself, under the rollup lock. Reads from the stored BYTE cursor to the last complete line, so a fold costs the new records only, never the whole day's stream."""
     shapes = roll.setdefault("shapes", {})
     n_lines = 0
+    n_fixture = 0
     cursors = roll.setdefault("cursor_bytes", {})
     if str(t0) not in cursors and str(t0) in roll.get("cursor", {}):
         # A rollup folded by the LINE cursor: its position in today's stream becomes a byte offset once, so no record is folded twice.
@@ -312,9 +320,21 @@ def _fold_locked(roll: dict, t0: Path, t1: Path) -> dict | None:
             continue
         if rec.get("v") != 1 or not rec.get("shape"):
             continue
+        if rec.get("fixture"):
+            # A test fixture's process is not the tool's cost: folding it ranked the suite's own scaffolding beside real work.
+            n_fixture += 1
+            continue
         n_lines += 1
-        ent = shapes.setdefault(rec["shape"], {"n": 0})
+        ent = shapes.setdefault(canonical_shape(rec["shape"]), {"n": 0})
         ent["n"] = int(ent.get("n", 0)) + 1
+        if isinstance(rec.get("t"), int):
+            day = time.strftime("%Y-%m-%d", time.gmtime(rec["t"] / 1000))
+            days = ent.setdefault("days", {})
+            days[day] = int(days.get(day, 0)) + 1
+            for old in sorted(days)[:-DAYS_KEEP]:
+                del days[old]
+            if day > str(ent.get("last_seen", "")):
+                ent["last_seen"] = day
         for key in ("cpu_ms", "rss_kb"):
             val = rec.get(key)
             if not isinstance(val, int):
@@ -323,9 +343,10 @@ def _fold_locked(roll: dict, t0: Path, t1: Path) -> dict | None:
             slot["ewma"] = round(slot["ewma"] * (1 - EWMA_ALPHA) + val * EWMA_ALPHA)
             slot["recent"] = ([*slot.get("recent", []), val])[-RECENT_KEEP:]
     roll["format"] = 1
-    roll["pruned"] = prune()
+    roll["pruned"] = prune_all_daily()
     roll["refreshed_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     roll["folded_lines"] = n_lines
+    roll["skipped_fixture_lines"] = n_fixture
     try:
         # tree-write: safe t1 is the rollup under stats_root(), ~/.claude/resprofile/<slug> or $RESPROFILE_ROOT, outside every checkout
         fd, tmp = tempfile.mkstemp(dir=str(t1.parent), prefix=t1.name)
@@ -337,6 +358,11 @@ def _fold_locked(roll: dict, t0: Path, t1: Path) -> dict | None:
     except OSError:
         return None
     return roll
+
+
+def canonical_shape(shape: str) -> str:
+    """`shape` with a lease tree's `.claude/<trees>/<id>/` prefix folded away, so a script run from a lease tree and from the main checkout is one shape."""
+    return _WORKTREE_PREFIX.sub(r"\1:", shape)
 
 
 def prune(root: Path | None = None, keep_days: int = RAW_RETENTION_DAYS) -> list[str]:
@@ -361,6 +387,90 @@ def prune(root: Path | None = None, keep_days: int = RAW_RETENTION_DAYS) -> list
     return gone
 
 
+def prune_top() -> Path | None:
+    """~/.claude/resprofile, the folder every repo's slug sits in. None under RESPROFILE_ROOT: that override names ONE repo's folder (a fixture), and what sits beside it is not the profiler's to delete."""
+    if os.environ.get("RESPROFILE_ROOT"):
+        return None
+    base = stats_root()
+    return base.parent if base is not None else None
+
+
+def _cutoff(keep_days: int) -> str:
+    return time.strftime("%Y-%m-%d", time.gmtime(time.time() - keep_days * 86400))
+
+
+def _newest_day(slug: Path) -> str:
+    """The newest `YYYY-MM-DD` folder name under `slug`, "" when there is none."""
+    names = [
+        d.name for d in slug.iterdir() if d.is_dir() and re.fullmatch(r"\d{4}-\d{2}-\d{2}", d.name)
+    ]
+    return max(names, default="")
+
+
+def prune_all(
+    top: Path | None = None, keep_days: int = RAW_RETENTION_DAYS, keep: Path | None = None
+) -> dict:
+    """Prune every repo folder under the resprofile top directory, not only this repo's; return what went, counted.
+
+    * a temporary or pytest slug (`_TMP_SLUG`) is removed outright, whatever its age: its directory no longer exists and its records are fixtures;
+    * a stray day folder at the top (written while a recorder resolved its root to `/`) goes once it is past `keep_days`;
+    * every other slug loses its day folders past `keep_days` (prune), and the whole slug goes when no day folder is left and its newest one is past `keep_days` too: a lease or clone nobody has run in that long. `keep` (this repo's own folder) is never removed whole, so its rollup stays.
+
+    Measured 2026-11-23: 37,291 folders under ~/.claude/resprofile, most of them per-test pytest slugs and per-lease slugs that the per-repo prune never visited. A folder that cannot be removed is counted under `errors`, never skipped unsaid.
+    """
+    import shutil
+
+    top = top or prune_top()
+    keep = keep if keep is not None else stats_root()
+    out = {"tmp": 0, "stale": 0, "days": 0, "errors": 0}
+    if top is None or not top.is_dir():
+        return out
+    cutoff = _cutoff(keep_days)
+    for d in sorted(top.iterdir()):
+        if not d.is_dir() or d.is_symlink():
+            continue
+        try:
+            if re.fullmatch(r"\d{4}-\d{2}-\d{2}", d.name):
+                if d.name < cutoff:
+                    shutil.rmtree(d)
+                    out["days"] += 1
+                continue
+            if _TMP_SLUG.search(d.name):
+                shutil.rmtree(d)
+                out["tmp"] += 1
+                continue
+            # Judged before the day prune below, which itself moves the folder's mtime to now.
+            stale = (
+                _newest_day(d) < cutoff and (time.time() - d.stat().st_mtime) > keep_days * 86400
+            )
+            if stale and not (keep is not None and d.resolve() == keep.resolve()):
+                shutil.rmtree(d)
+                out["stale"] += 1
+                continue
+            out["days"] += len(prune(d, keep_days))
+        except OSError:
+            out["errors"] += 1
+    return out
+
+
+def prune_all_daily(top: Path | None = None) -> dict | None:
+    """prune_all at most once a UTC day per top directory (a stamp file beside the slugs), since a fold runs many times a day and the top holds tens of thousands of folders. None when today's prune already ran; this repo's folder alone under RESPROFILE_ROOT."""
+    top = top or prune_top()
+    if top is None:
+        # Under RESPROFILE_ROOT only that folder's own day folders are pruned, as before the walk existed.
+        return {"tmp": 0, "stale": 0, "days": len(prune()), "errors": 0}
+    stamp = top / ".pruned-day"
+    today = time.strftime("%Y-%m-%d", time.gmtime())
+    with contextlib.suppress(OSError):
+        if stamp.read_text(encoding="utf-8").strip() == today:
+            return None
+    got = prune_all(top)
+    with contextlib.suppress(OSError):
+        # tree-write: safe the stamp sits in ~/.claude/resprofile or $RESPROFILE_ROOT's parent, outside every checkout
+        stamp.write_text(today + "\n", encoding="utf-8")
+    return got
+
+
 def _on_exit() -> None:
     try:
         rec = record()
@@ -376,8 +486,11 @@ def install() -> None:
     try:
         if os.environ.get("WORKLIST_PROFILE") == "off":
             return
-        # CLAIM THE PROCESS. sitecustomize.py (.claude/hooks/profile/py/) arms a minimal recorder in EVERY python3 at interpreter startup; this module is the richer one and runs only where wl_core is imported. The marker tells the minimal handler to stand down at exit, so a hook process writes one record, not two.
-        os.environ["_WL_SITEPROFILE"] = "super"
+        # CLAIM THE PROCESS. sitecustomize.py (.claude/hooks/profile/py/) arms a minimal recorder in EVERY python3 at interpreter startup; this module is the richer one and runs only where wl_core is imported. The marker tells the minimal handler to stand down at exit, so a hook process writes one record, not two. It names THIS pid: a child inherits the environment, and a marker naming its parent must not stand the child down.
+        mine = "super:%d" % os.getpid()
+        if os.environ.get("_WL_SITEPROFILE") == mine:
+            return
+        os.environ["_WL_SITEPROFILE"] = mine
         for name in ("cpu", "io"):
             v = _psi_some_total(name)
             if v is not None:
@@ -397,6 +510,9 @@ def selftest() -> int:
 
     d = Path(tempfile.mkdtemp(prefix="resprofile-"))
     paths = (d / "wl.resprofile.jsonl", d / "wl.resprofile.json")
+    # HERMETIC: every fold below runs the daily prune, and without the override that walk is the real ~/.claude/resprofile, every repo's folder. The selftest prunes only its own scratch root.
+    saved_root = os.environ.get("RESPROFILE_ROOT")
+    os.environ["RESPROFILE_ROOT"] = str(d / "rp")
     try:
         # THE LEAK CONTROL, first because it is the one that matters on a public repo.
         planted = "ghp_THISLOOKSLIKEATOKEN0000000000000000"
@@ -481,12 +597,25 @@ def selftest() -> int:
         paths[1].write_text(json.dumps({"format": 99, "shapes": {}}), encoding="utf-8")
         append(rec, paths)
         check("CONTROL: an unknown rollup format is refused by name", fold(paths) is None)
+        check(
+            "the selftest's prune stayed in its scratch root",
+            prune_top() is None and stats_root() == d / "rp",
+        )
     finally:
+        if saved_root is None:
+            os.environ.pop("RESPROFILE_ROOT", None)
+        else:
+            os.environ["RESPROFILE_ROOT"] = saved_root
         shutil.rmtree(d, ignore_errors=True)
     return check.failures
 
 
 if __name__ == "__main__":
+    if "--prune" in sys.argv:
+        # The walk on demand, outside the daily stamp: its counts on stdout, nonzero when a folder could not be removed.
+        got = prune_all()
+        print(json.dumps(got, sort_keys=True))
+        sys.exit(1 if got["errors"] else 0)
     if "--selftest" in sys.argv:
         n = selftest()
         print("%s resprofile selftest: %d failure(s)" % ("✓" if n == 0 else "✗", n))
@@ -503,5 +632,5 @@ if __name__ == "__main__":
             )
         )
         sys.exit(0 if r is not None else 1)
-    print("usage: wl_resprofile.py --selftest | --fold", file=sys.stderr)
+    print("usage: wl_resprofile.py --selftest | --fold | --prune", file=sys.stderr)
     sys.exit(2)
