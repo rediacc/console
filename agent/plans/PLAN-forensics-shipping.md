@@ -59,14 +59,16 @@ D10. **Console.** `PUT /portal/forensics/repos/:guid/level` (owner or admin, the
 
 ## Tasks
 
-- [ ] FS1 [writer] Quota constants per D6: `forensicsQuotaBytes` in PLAN_LIMITS with `getForensicsQuotaBytesForPlan`, the key in PROGRESSIVE_LIMIT_KEYS, `forensicsQuotaBytes` on SubscriptionData, the regenerated schema.generated.json, and the renet mirror in pkg/subscription/types.go and schema_test.go's key set.
+- [x] FS1 [writer] Quota constants per D6: `forensicsQuotaBytes` in PLAN_LIMITS with `getForensicsQuotaBytesForPlan`, the key in PROGRESSIVE_LIMIT_KEYS, `forensicsQuotaBytes` on SubscriptionData, the regenerated schema.generated.json, and the renet mirror in pkg/subscription/types.go and schema_test.go's key set.
   Owns: packages/shared/src/subscription/constants.ts, packages/shared/src/subscription/types.ts, packages/shared/src/subscription/schema.generated.json, packages/shared/src/subscription/__tests__/forensics-quota.test.ts, private/renet/pkg/subscription/types.go, private/renet/pkg/subscription/schema_test.go
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/subscription/__tests__/forensics-quota.test.ts)` rc 0 asserting each plan's value equals a quarter of storageQuotaBytes for the paid plans and 0 for FREE and COMMUNITY; `(cd packages/shared && npm run generate:subscription-schema) && git diff --exit-code packages/shared/src/subscription/schema.generated.json` rc 0; `(cd private/renet && go test ./pkg/subscription/...)` rc 0.
-- [ ] FS2 [writer] Batch format and claim types per D1 and D9 in packages/shared/src/forensics (batch.ts, claim.ts, index.ts), the `./forensics` and `./forensics/*` exports in packages/shared/package.json, and the vectors file.
+    (ticked) 2026-11-23T18:18:02Z by ace763dd: commit:68e1565f6b landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] FS2 [writer] Batch format and claim types per D1 and D9 in packages/shared/src/forensics (batch.ts, claim.ts, index.ts), the `./forensics` and `./forensics/*` exports in packages/shared/package.json, and the vectors file.
   Owns: packages/shared/src/forensics/batch.ts, packages/shared/src/forensics/claim.ts, packages/shared/src/forensics/index.ts, packages/shared/src/forensics/__fixtures__/batch-vectors.json, packages/shared/src/forensics/__tests__/batch.test.ts, packages/shared/package.json
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/forensics/__tests__/batch.test.ts)` rc 0 with the vectors verifying, and each of a flipped header byte, a swapped section, a wrong `prevHash`, a removed `pii` section with its hash kept (verifies as redacted) and an RFC 8032 test-1 control for Ed25519.
+    (ticked) 2026-11-23T18:18:00Z by ace763dd: commit:913c41daf4 landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] FS3 [writer] Schema and migration: `forensics_sessions`, `forensics_machines` (pinned key, last seq and hash, last batch, gap count, chain floor), `forensics_repo_settings`, `forensics_days`, `forensics_usage`, `subscriptions.forensics_quota_bytes` and the `forensics_quota` literal in the `account_notices` kind enum, registered in scope-registry.ts and shard-router.ts.
   Owns: private/account/src/db/schema.ts, private/account/src/db/scope-registry.ts, private/account/src/db/shard-router.ts, private/account/drizzle/*_forensics.sql, private/account/drizzle/meta/_journal.json, private/account/drizzle/meta/*_snapshot.json, private/account/tests/integration/forensics-schema.test.ts
   Depends on: none.

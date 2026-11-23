@@ -63,38 +63,45 @@ D14. **Budget.** Basic and Standard cost at most 3% throughput on an iperf3 run 
 
 ## Tasks
 
-- [ ] FC1 [writer] Write `pkg/ebpf/netaudit.c` with the D2 programs and D3 maps (no file-open hook), add the `Netaudit` and `FileOpen` bpf2go lines to `gen.go`, and commit the generated amd64 and arm64 objects and Go bindings for `Netaudit`.
+- [x] FC1 [writer] Write `pkg/ebpf/netaudit.c` with the D2 programs and D3 maps (no file-open hook), add the `Netaudit` and `FileOpen` bpf2go lines to `gen.go`, and commit the generated amd64 and arm64 objects and Go bindings for `Netaudit`.
   Owns: private/renet/pkg/ebpf/gen.go, private/renet/pkg/ebpf/netaudit.c, private/renet/pkg/ebpf/netaudit_x86_bpfel.*, private/renet/pkg/ebpf/netaudit_arm64_bpfel.*
   Depends on: none.
   Accept: `cd private/renet && go generate ./pkg/ebpf/` leaves `git status --porcelain pkg/ebpf` empty on a second run; `go vet ./pkg/ebpf/` rc 0.
-- [ ] FC2 [writer] Write the Netaudit loader in `pkg/ebpf/netaudit.go`: load, multi-attach at rediacc.slice with links pinned under `/sys/fs/bpf/rediacc/netaudit/`, per-repo enable and disable, BatchLookup reads with deltas, ringbuf readers, drop counters, plus a root load test that attaches to a scratch cgroup, moves a TCP and a UDP client into it and reads both flows with byte counts and comm.
+    (ticked) 2026-11-23T18:18:11Z by ace763dd: commit:10da1002a4 landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] FC2 [writer] Write the Netaudit loader in `pkg/ebpf/netaudit.go`: load, multi-attach at rediacc.slice with links pinned under `/sys/fs/bpf/rediacc/netaudit/`, per-repo enable and disable, BatchLookup reads with deltas, ringbuf readers, drop counters, plus a root load test that attaches to a scratch cgroup, moves a TCP and a UDP client into it and reads both flows with byte counts and comm.
   Owns: private/renet/pkg/ebpf/netaudit.go, private/renet/pkg/ebpf/netaudit_other.go, private/renet/pkg/ebpf/netaudit_test.go, private/renet/pkg/ebpf/netaudit_root_test.go
   Depends on: FC1.
   Accept: `cd private/renet && sudo go test -tags=root -run TestNetaudit -v ./pkg/ebpf/` rc 0; `go test ./pkg/ebpf/` rc 0; the isolation tests `sudo go test -tags=root -run TestEBPF_ ./pkg/ebpf/` stay rc 0 with capture attached.
-- [ ] FC3 [writer] Write `pkg/ebpf/fileopen.c` (fentry on security_file_open, enable-map filter, `bpf_d_path`, the 60 s dedupe LRU and per-repo token bucket of D6), its generated objects, and `fileopen.go` with a loader whose attach failure returns a typed unavailable error, plus a root test opening a matching and a non-matching file from a scratch cgroup.
+    (ticked) 2026-11-23T18:18:15Z by ace763dd: commit:10da1002a4 landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] FC3 [writer] Write `pkg/ebpf/fileopen.c` (fentry on security_file_open, enable-map filter, `bpf_d_path`, the 60 s dedupe LRU and per-repo token bucket of D6), its generated objects, and `fileopen.go` with a loader whose attach failure returns a typed unavailable error, plus a root test opening a matching and a non-matching file from a scratch cgroup.
   Owns: private/renet/pkg/ebpf/fileopen*
   Depends on: FC1.
   Accept: `cd private/renet && sudo go test -tags=root -run TestFileOpen -v ./pkg/ebpf/` rc 0 and shows one event for repeated opens of one file within 60 s.
-- [ ] FC4 [writer] Write `pkg/netaudit` core: levels and the `/etc/rediacc/forensics/<guid>.json` file (D8), the `Entitlement` interface with the licence implementation, the D7 defaults and glob matcher, the cgroup to network id to GUID mapper, Basic and Standard aggregation (D4, D9), the DNS parser and cache (D5) and the record schema, with unit tests; make golang.org/x/net a direct dependency.
+    (ticked) 2026-11-23T18:18:16Z by ace763dd: commit:10da1002a4 landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] FC4 [writer] Write `pkg/netaudit` core: levels and the `/etc/rediacc/forensics/<guid>.json` file (D8), the `Entitlement` interface with the licence implementation, the D7 defaults and glob matcher, the cgroup to network id to GUID mapper, Basic and Standard aggregation (D4, D9), the DNS parser and cache (D5) and the record schema, with unit tests; make golang.org/x/net a direct dependency.
   Owns: private/renet/pkg/netaudit/*.go, private/renet/go.mod, private/renet/go.sum
   Depends on: none.
   Accept: `cd private/renet && go test ./pkg/netaudit/` rc 0, covering a FREE licence recording nothing, a missing file meaning Basic, and a compressed DNS answer resolving.
-- [ ] FC5 [writer] Write `pkg/netaudit/spool`: key creation and loading, the 30 s batch cutter with empty batches, the signed header with per-repo `records` and `pii` sections of D12, zstd per section, sha256 chain, Ed25519 signature, rename-written files, `Reader` (`Pending`, `Open`, `MarkShipped`), the 1 GiB cap with `gap` records, and a verifier used by tests.
+    (ticked) 2026-11-23T18:18:12Z by ace763dd: commit:10da1002a4 landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] FC5 [writer] Write `pkg/netaudit/spool`: key creation and loading, the 30 s batch cutter with empty batches, the signed header with per-repo `records` and `pii` sections of D12, zstd per section, sha256 chain, Ed25519 signature, rename-written files, `Reader` (`Pending`, `Open`, `MarkShipped`), the 1 GiB cap with `gap` records, and a verifier used by tests.
   Owns: private/renet/pkg/netaudit/spool/**
   Depends on: none.
   Accept: `cd private/renet && go test ./pkg/netaudit/spool/` rc 0, including a test that flips one byte in a middle batch and sees the verifier name that seq, and a test that drops one `pii` section while keeping its hash and still verifies the batch as redacted.
-- [ ] FC6 [writer] Write `pkg/netaudit/trigger`: the `Detector` interface, the D10 EWMA threshold implementation and the 24 h Full switch writing `trigger_until` and a `trigger` record.
+    (ticked) 2026-11-23T18:18:13Z by ace763dd: commit:10da1002a4 landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] FC6 [writer] Write `pkg/netaudit/trigger`: the `Detector` interface, the D10 EWMA threshold implementation and the 24 h Full switch writing `trigger_until` and a `trigger` record.
   Owns: private/renet/pkg/netaudit/trigger/**
   Depends on: FC4.
   Accept: `cd private/renet && go test ./pkg/netaudit/trigger/` rc 0: no fire during warm-up, a fire at 11x baseline, expiry after 24 h.
+    (ticked) 2026-11-23T18:18:17Z by ace763dd: commit:10da1002a4 landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] FC7 [writer] Write `renet netaudit serve|status` and `renet forensics level` in cmd/renet, the `rediacc-netaudit.service` template of D11 in pkg/netaudit, and its registration through a new `netaudit_units.go` calling `proxy.RegisterUnitInstaller`.
   Owns: private/renet/cmd/renet/netaudit*.go, private/renet/pkg/netaudit/unit.go, private/renet/pkg/netaudit/unit_test.go
   Depends on: FC2, FC3, FC5, FC6.
   Accept: `cd private/renet && go test ./cmd/renet/ ./pkg/netaudit/...` rc 0; a unit test asserts `Slice=system.slice` and the two writable paths; `./build.sh dev` rc 0.
-- [ ] FC8 [writer] Add `CPUFeatures` (`cpu_features`) to `SystemInfo` from golang.org/x/sys/cpu (D13) and regenerate list-types.generated.ts.
+- [x] FC8 [writer] Add `CPUFeatures` (`cpu_features`) to `SystemInfo` from golang.org/x/sys/cpu (D13) and regenerate list-types.generated.ts.
   Owns: private/renet/pkg/list/system.go, private/renet/pkg/list/types.go, private/renet/pkg/list/system_test.go, packages/shared/src/renet-contract/data/list-types.generated.ts
   Depends on: none.
   Accept: `cd private/renet && go test ./pkg/list/` rc 0; `npm run check:ci-renet-types` rc 0.
+    (ticked) 2026-11-23T18:18:14Z by ace763dd: commit:353bfd8ef7 landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] FC9 [writer] Add every new user-facing renet string (status output, errors, verb help) to the en catalog and the 12 other locales, naturalized; the translation writer runs on sonnet.
   Owns: private/renet/pkg/i18n/locales/*.go, private/renet/pkg/i18n/locales/hashes.json
   Depends on: FC7.

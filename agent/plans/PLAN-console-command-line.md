@@ -56,18 +56,21 @@ Shared files edited after their earlier owner lands: CommandForm.tsx (PLAN-conso
 
 ## Tasks
 
-- [ ] CL1 [writer] Tokenizer with spans (D1): `tokenize` in packages/shared/src/command-line/tokenize.ts with the `./command-line` export in packages/shared/package.json, and packages/cli/scripts/lib/example-parse.ts importing it in place of its own `tokenizeExampleCommand`.
+- [x] CL1 [writer] Tokenizer with spans (D1): `tokenize` in packages/shared/src/command-line/tokenize.ts with the `./command-line` export in packages/shared/package.json, and packages/cli/scripts/lib/example-parse.ts importing it in place of its own `tokenizeExampleCommand`.
   Owns: packages/shared/src/command-line/tokenize.ts, packages/shared/src/command-line/index.ts, packages/shared/src/command-line/__tests__/tokenize.test.ts, packages/shared/package.json, packages/cli/scripts/lib/example-parse.ts
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/command-line/__tests__/tokenize.test.ts)` rc 0 (quotes, escapes, an unclosed quote with its span, Arabic text inside quotes); `npm run check:ci-cli-contract` rc 0 with the generated contract byte-identical.
-- [ ] CL2 [writer] Parser, completion and diagnostics (D1 to D3): `parse`, `complete` and `diagnose` over a `CliContract` and a `ResourceSource`, with the order, the locked row and the nearest-match suggestion of D2 and D3.
+    (ticked) 2026-11-23T18:17:57Z by ace763dd: commit:e20b39e7ed landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] CL2 [writer] Parser, completion and diagnostics (D1 to D3): `parse`, `complete` and `diagnose` over a `CliContract` and a `ResourceSource`, with the order, the locked row and the nearest-match suggestion of D2 and D3.
   Owns: packages/shared/src/command-line/parse.ts, packages/shared/src/command-line/complete.ts, packages/shared/src/command-line/diagnose.ts, packages/shared/src/command-line/__tests__/complete.test.ts, packages/shared/src/command-line/__tests__/diagnose.test.ts
   Depends on: CL1.
   Accept: `(cd packages/shared && npx vitest run src/command-line/__tests__/complete.test.ts src/command-line/__tests__/diagnose.test.ts)` rc 0 against the real generated contract: `rdc re` suggests `repo` first, `rdc repo fork ` suggests the required positional before flags, a locked source yields the unlock row, `--dyr-run` suggests `--dry-run`, a missing required value is reported with its span.
-- [ ] CL3 [writer] Recipe parser and history model (D1, D7): `parseRecipe` returning variables, steps and span-anchored problems (including a non-proxy-capable step), and `HistoryCursor` with draft keeping and prefix filtering.
+    (ticked) 2026-11-23T18:17:58Z by ace763dd: commit:e20b39e7ed landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] CL3 [writer] Recipe parser and history model (D1, D7): `parseRecipe` returning variables, steps and span-anchored problems (including a non-proxy-capable step), and `HistoryCursor` with draft keeping and prefix filtering.
   Owns: packages/shared/src/command-line/recipe.ts, packages/shared/src/command-line/history.ts, packages/shared/src/command-line/__tests__/recipe.test.ts, packages/shared/src/command-line/__tests__/history.test.ts
   Depends on: CL2.
   Accept: `(cd packages/shared && npx vitest run src/command-line/__tests__/recipe.test.ts src/command-line/__tests__/history.test.ts)` rc 0: an undeclared `$var` and a `term` step are problems, a default fills, Up then Down restores the draft.
+    (ticked) 2026-11-23T18:17:59Z by ace763dd: commit:e20b39e7ed landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] CL4 [writer] The plain box (D4): `CommandLine` and `useCommandLine` under components/console/command-line/, a `ResourceSource` over `configOptions`, history from the run index plan's `useRunHistory`, the `dir="ltr"` rule, English strings in console.json; and `aria-activedescendant` on the existing Combobox input.
   Owns: private/account/web/src/components/console/command-line/**, private/account/web/src/components/console/Combobox.tsx, private/account/web/src/components/console/__tests__/combobox.test.tsx, private/account/web/src/i18n/locales/en/console.json
   Depends on: CL3, PLAN-console-run-index.md#RI7.

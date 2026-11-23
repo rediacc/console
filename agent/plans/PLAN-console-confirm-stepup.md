@@ -63,10 +63,11 @@ D10. **Strings.** Code boxes add English keys only; CF9 translates the delta int
 
 ## Tasks
 
-- [ ] CF1 [writer] Shared step-up vocabulary per D1: `packages/shared/src/auth/step-up.ts` with `StepUpMethod`, the C12 rank, `strongestHeld()` and `meetsMinimum()`, exported from the package root, with a test of every rank pair.
+- [x] CF1 [writer] Shared step-up vocabulary per D1: `packages/shared/src/auth/step-up.ts` with `StepUpMethod`, the C12 rank, `strongestHeld()` and `meetsMinimum()`, exported from the package root, with a test of every rank pair.
   Owns: packages/shared/src/auth/**, packages/shared/src/index.ts
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/auth)` rc 0.
+    (ticked) 2026-11-23T18:18:04Z by ace763dd: commit:d5a94540d1 landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] CF2 [writer] Elevation with a method per D2 and D3: the `elevated_sessions.method` migration, `elevate(userId, method)` at every caller, `methods` and `method` on `/auth/reauth/status`, `POST /auth/reauth/password`, the `elevate: true` flag on `/passkey/auth-verify`, a `method` field on `/test/elevate`, and a `console.stepup` event per elevation; reads commit:b7323f250a first.
   Owns: private/account/src/db/schema.ts, private/account/drizzle/**, private/account/src/services/auth.service.ts, private/account/src/routes/auth.ts, private/account/src/routes/configs.ts, private/account/src/routes/test.ts, private/account/src/dto/auth.dto.ts, private/account/src/dto/config.dto.ts, private/account/tests/integration/reauth-methods.test.ts
   (corrected 2026-11-23, session ace763dd) The magic-link `chooseStepUpMethod` in private/account/src/routes/auth.ts already ranks passkey > TOTP > password per C12 (console commit:04d2c0cb18); email is the channel that path already proved, so it is not re-offered there. CF2 reuses that ranking.

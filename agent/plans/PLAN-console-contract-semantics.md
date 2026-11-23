@@ -82,18 +82,21 @@ D8. **Coverage gate**, in the CR2 header grammar, reads the committed contract a
   Depends on: CS1, CS2, CS3, CS4.
   Accept: `npm run generate:cli-contract -w @rediacc/cli` rc 0 and a second run leaves no diff; `CLI_CONTRACT_VERSION` is 16 hex characters; deleting one entry from command-safety.ts in a scratch copy makes the generator exit 1 naming it; `npm run check:ci-cli-contract` rc 0; `(cd packages/shared && npx vitest run src/cli-contract)` rc 0.
     (ticked) 2026-11-23T15:59:24Z by ace763dd: commit:24aad35d46 landed; shared vitest src/cli-contract 81 passed rc 0, check:ci-cli-contract rc 0, packages/cli tsc --noEmit rc 0 on b671913c7f
-- [ ] CS6 [writer] Translate the new summaries and `commands.proxyBlocked.*` keys into ar, de, es, et, fr and it, naturalized per docs/i18n/CONVENTIONS.md, by a sonnet writer, then regenerate the contract bundles.
+- [x] CS6 [writer] Translate the new summaries and `commands.proxyBlocked.*` keys into ar, de, es, et, fr and it, naturalized per docs/i18n/CONVENTIONS.md, by a sonnet writer, then regenerate the contract bundles.
   Owns: packages/cli/src/i18n/locales/{ar,de,es,et,fr,it}/cli.json, packages/shared/src/cli-contract/data/i18n/{ar,de,es,et,fr,it}.json
   Depends on: CS5.
   Accept: `npm run check:i18n:completeness` and `npm run check:ci-i18n-naturalization` rc 0; `npm run generate:cli-contract -w @rediacc/cli` leaves no diff after the commit.
-- [ ] CS7 [writer] Translate the new summaries and `commands.proxyBlocked.*` keys into ja, ko, pt, ru, tr and zh, naturalized per docs/i18n/CONVENTIONS.md, by a sonnet writer, then regenerate the contract bundles.
+    (ticked) 2026-11-23T18:17:36Z by ace763dd: commit:23bdb87af6 landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] CS7 [writer] Translate the new summaries and `commands.proxyBlocked.*` keys into ja, ko, pt, ru, tr and zh, naturalized per docs/i18n/CONVENTIONS.md, by a sonnet writer, then regenerate the contract bundles.
   Owns: packages/cli/src/i18n/locales/{ja,ko,pt,ru,tr,zh}/cli.json, packages/shared/src/cli-contract/data/i18n/{ja,ko,pt,ru,tr,zh}.json
   Depends on: CS5.
   Accept: `npm run check:i18n:completeness` and `npm run check:ci-i18n-naturalization` rc 0; `npm run generate:cli-contract -w @rediacc/cli` leaves no diff after the commit.
-- [ ] CS8 [writer] Contract version mismatch test (D5): a test that drives `createServeApp` with a client version differing from `CLI_CONTRACT_VERSION` and expects 409 `contract_version_mismatch` carrying both versions, and with the equal version expects no 409.
+    (ticked) 2026-11-23T18:17:38Z by ace763dd: commit:4ffcfd9391 landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] CS8 [writer] Contract version mismatch test (D5): a test that drives `createServeApp` with a client version differing from `CLI_CONTRACT_VERSION` and expects 409 `contract_version_mismatch` carrying both versions, and with the equal version expects no 409.
   Owns: packages/cli/src/services/serve/__tests__/contract-version-mismatch.test.ts
   Depends on: CS5.
   Accept: `(cd packages/cli && npx vitest run src/services/serve/__tests__/contract-version-mismatch.test.ts)` rc 0, and the mismatch case fails when the comparison at packages/cli/src/services/serve/server.ts:187 is short-circuited in a scratch copy.
+    (ticked) 2026-11-23T18:17:39Z by ace763dd: commit:ad69d23bc8 landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] CS9 [writer] Coverage gate (D8): `.ci/rediacc_ci/quality/cli_contract_coverage.py` with its CR2 header and a selftest, its gate test, and the version exclusion removed from cli_contract.py now that the version is deterministic.
   Owns: .ci/rediacc_ci/quality/cli_contract_coverage.py, .ci/rediacc_ci/quality/cli_contract.py, .ci/rediacc_ci/tests/gates/test_gate_cli_contract_coverage.py
   Depends on: CS5, CS6, CS7, PLAN-tooling-code-reduction.md#CR2.

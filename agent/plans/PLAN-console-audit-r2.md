@@ -59,10 +59,11 @@ D10. **Strings.** Code boxes add English keys only; AU12 translates through the 
 
 ## Tasks
 
-- [ ] AU1 [writer] Shared schema per D2: `packages/shared/src/audit/console-events.ts` with the envelope, the eight types and `consoleTargetOf`, plus optional `requestId` on the executor event data in event-schema.ts, exported from the audit index.
+- [x] AU1 [writer] Shared schema per D2: `packages/shared/src/audit/console-events.ts` with the envelope, the eight types and `consoleTargetOf`, plus optional `requestId` on the executor event data in event-schema.ts, exported from the audit index.
   Owns: packages/shared/src/audit/**
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/audit)` rc 0 with cases: a `sensitive` option never in `target`, a kinds-bearing option kept, each type parses, an unknown type fails.
+    (ticked) 2026-11-23T18:18:03Z by ace763dd: commit:d5a94540d1 landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] AU2 [writer] Store and writer per D3 and the D1 correction: `audit-store.ts` (R2, S3 under `audit/`, memory), `console-audit.service.ts`, `CONSOLE_AUDIT_TYPES` routing in `EventLogService.log`, container and entry wiring, and the correction line on PLAN-d1-scaling.md.
   Owns: private/account/src/services/audit-store.ts, private/account/src/services/console-audit.service.ts, private/account/src/services/event-log.service.ts, private/account/src/app.ts, private/account/src/container.ts, private/account/src/entry/cloudflare.ts, private/account/src/entry/node.ts, private/account/src/entry/on-premise.ts, private/account/tests/integration/console-audit-writer.test.ts, agent/plans/PLAN-d1-scaling.md
   Depends on: AU1.

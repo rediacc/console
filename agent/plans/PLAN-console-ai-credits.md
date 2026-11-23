@@ -59,10 +59,11 @@ D12. **Customer view**: an AI credits page (balance, lots with expiry, usage by 
 
 ## Tasks
 
-- [ ] AC1 [writer] Shared credits module: `price-table.ts` per D2, `reserve-math.ts` (worst-case and actual credit computation per D5) and the `rediaccAiCredits` plan flag per D11, with a margin test over every price row and a control row priced below the fee that the test refuses.
+- [x] AC1 [writer] Shared credits module: `price-table.ts` per D2, `reserve-math.ts` (worst-case and actual credit computation per D5) and the `rediaccAiCredits` plan flag per D11, with a margin test over every price row and a control row priced below the fee that the test refuses.
   Owns: packages/shared/src/ai-credits/**, packages/shared/src/subscription/types.ts, packages/shared/src/subscription/constants.ts
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/ai-credits src/subscription)` rc 0.
+    (ticked) 2026-11-23T18:18:09Z by ace763dd: commit:68e1565f6b landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] AC2 [writer] Schema and migration: `ai_credit_lots`, `ai_credit_ledger`, `ai_funding`, `ai_credit_control` and `organizations.ai_credits_blocked_at` in private/account/src/db/schema.ts, the next free drizzle migration, journal and snapshot.
   Owns: private/account/src/db/schema.ts, private/account/drizzle/*_ai_credits.sql, private/account/drizzle/meta/_journal.json, private/account/drizzle/meta/*_snapshot.json, private/account/tests/integration/ai-credits-schema.test.ts
   Depends on: none.

@@ -49,10 +49,11 @@ D7. **Source.** `feedbackReportSchema` gains `source: 'cli' | 'console'` with de
 
 ## Tasks
 
-- [ ] AF1 [writer] Shared schemas: `source` on `feedbackReportSchema` with default `cli`, `offerBugReports` on `feedbackSettingsSchema`, and the console preview, send and decline request and preview response schemas, with a test that an old CLI body still parses as `cli`.
+- [x] AF1 [writer] Shared schemas: `source` on `feedbackReportSchema` with default `cli`, `offerBugReports` on `feedbackSettingsSchema`, and the console preview, send and decline request and preview response schemas, with a test that an old CLI body still parses as `cli`.
   Owns: packages/shared/src/feedback/schema.ts, packages/shared/src/feedback/__tests__/schema.test.ts
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/feedback/__tests__/schema.test.ts)` rc 0.
+    (ticked) 2026-11-23T18:18:06Z by ace763dd: commit:fa5009b50b landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] AF2 [writer] Account data: a migration adding `feedback_settings.offer_bug_reports` (default 1), `feedback_reports.source` (default `cli`) and `organizations.ai_feedback_offers_off_at`, the drizzle columns, and `feedbackService` reading and writing both settings and storing the source.
   Owns: private/account/drizzle/*_ai_feedback.sql, private/account/src/db/schema.ts, private/account/src/services/feedback.service.ts
   Depends on: AF1.

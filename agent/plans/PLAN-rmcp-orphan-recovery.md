@@ -37,8 +37,10 @@ D49 and D50 (detection works against an on-premise account server too), D3 (fixe
 
 ## Boxes
 
-- [ ] OR1 [writer] `executor_orphans` tool (Design 1) with its `secret-supply.json` consumer. Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_ops_executor_orphans.py` rc 0, the test running the tool's SQL against a seeded sqlite with executor and non-executor events and a control row that must not appear.
-- [ ] OR2 [writer] Tool output contract: one JSON line per event with `org`, `machine`, `repo`, `guid`, `at`, `function`; `--json` and the human table. Accept: the same pytest file rc 0 with the contract case.
+- [x] OR1 [writer] `executor_orphans` tool (Design 1) with its `secret-supply.json` consumer. Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_ops_executor_orphans.py` rc 0, the test running the tool's SQL against a seeded sqlite with executor and non-executor events and a control row that must not appear.
+    (ticked) 2026-11-23T18:17:54Z by ace763dd: commit:8ce7981337 landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] OR2 [writer] Tool output contract: one JSON line per event with `org`, `machine`, `repo`, `guid`, `at`, `function`; `--json` and the human table. Accept: the same pytest file rc 0 with the contract case.
+    (ticked) 2026-11-23T18:17:55Z by ace763dd: commit:8ce7981337 landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] OR3 [writer] `--executor-events` join in `repo admin orphan list` (Design 2), i18n reason in 13 locales. Accept: `(cd packages/cli && npx vitest run src/services/repo/__tests__/orphan-repos-executor.test.ts)` rc 0: a matched orphan carries the executor reason, an unmatched one keeps its old reason, a protected image stays protected.
 - [ ] OR-OP1 [writer] On-premise source for the tool and the `orphan` suite (Design 5). Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_ops_executor_orphans.py .ci/rediacc_ci/tests/test_onprem_suite_orphan.py` rc 0, with an on-premise SQLite fixture and a control where the planted orphan is absent and the suite must fail.
 - [ ] LP-bench [live] Build the CLI from this tree and read the subscription through the eu-bench config, so OR-L1 lists orphans with the listing this branch builds.

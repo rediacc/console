@@ -59,22 +59,26 @@ D12. **Air-gapped (F14).** `rdc server bundle` fetches the stable bundle into `m
 
 ## Tasks
 
-- [ ] FD1 [writer] Write `pkg/detect` core: the D1 features, the hour-of-week EWMA baselines with bundle priors, the first-seen sets with the 7-day learning period, the finding and reason types, and versioned state serialization.
+- [x] FD1 [writer] Write `pkg/detect` core: the D1 features, the hour-of-week EWMA baselines with bundle priors, the first-seen sets with the 7-day learning period, the finding and reason types, and versioned state serialization.
   Owns: private/renet/pkg/detect/feature*.go, private/renet/pkg/detect/baseline*.go, private/renet/pkg/detect/firstseen*.go, private/renet/pkg/detect/finding*.go, private/renet/pkg/detect/state*.go
   Depends on: none.
   Accept: `cd private/renet && go test ./pkg/detect/` rc 0, including a state round trip and a first-seen pair firing only after the learning period.
-- [ ] FD2 [writer] Write `pkg/detect/kernels`: plain-Go references, AVX2 and AVX-512 amd64 assembly, NEON arm64 assembly, the D5 dispatch and override, fuzz and fixed-vector equivalence tests over every level the host offers, and benchmarks.
+    (ticked) 2026-11-23T18:18:19Z by ace763dd: commit:10da1002a4 landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] FD2 [writer] Write `pkg/detect/kernels`: plain-Go references, AVX2 and AVX-512 amd64 assembly, NEON arm64 assembly, the D5 dispatch and override, fuzz and fixed-vector equivalence tests over every level the host offers, and benchmarks.
   Owns: private/renet/pkg/detect/kernels/**
   Depends on: none.
   Accept: `cd private/renet && go vet ./pkg/detect/kernels/` rc 0; `go test ./pkg/detect/kernels/` rc 0 and logs which levels ran; `GOARCH=arm64 go test -c -o /dev/null ./pkg/detect/kernels/` rc 0; `GOOS=js GOARCH=wasm go build ./pkg/detect/kernels/` rc 0.
-- [ ] FD3 [writer] Write the HST, ECOD and HBOS scorers on the kernels, the combined scorer producing findings with reasons, the D4 explanation templates in the en catalog, and `pkg/detect/testdata/vectors.json` (inputs, state, expected findings and en text).
+    (ticked) 2026-11-23T18:18:20Z by ace763dd: commit:10da1002a4 landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] FD3 [writer] Write the HST, ECOD and HBOS scorers on the kernels, the combined scorer producing findings with reasons, the D4 explanation templates in the en catalog, and `pkg/detect/testdata/vectors.json` (inputs, state, expected findings and en text).
   Owns: private/renet/pkg/detect/hst*.go, private/renet/pkg/detect/ecod*.go, private/renet/pkg/detect/hbos*.go, private/renet/pkg/detect/score*.go, private/renet/pkg/detect/explain*.go, private/renet/pkg/detect/testdata/**
   Depends on: FD1, FD2.
   Accept: `cd private/renet && go test ./pkg/detect/...` rc 0; a test regenerates vectors.json and fails on any difference.
-- [ ] FD4 [writer] Write `pkg/models` (manifest and pointer schemas, `keys.ModelPublicKey`, verification, the D10 rules, staging, canary run, symlink swap, crash rollback), `cmd/modelsign`, `_model_key_ldflags` in build.sh, and the bundle source under `private/renet/models/`.
+    (ticked) 2026-11-23T18:18:21Z by ace763dd: commit:10da1002a4 landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] FD4 [writer] Write `pkg/models` (manifest and pointer schemas, `keys.ModelPublicKey`, verification, the D10 rules, staging, canary run, symlink swap, crash rollback), `cmd/modelsign`, `_model_key_ldflags` in build.sh, and the bundle source under `private/renet/models/`.
   Owns: private/renet/pkg/models/**, private/renet/cmd/modelsign/**, private/renet/models/**, private/renet/build.sh
   Depends on: FD3.
   Accept: `cd private/renet && go test ./pkg/models/ ./cmd/modelsign/` rc 0, covering a replayed pointer, a downgrade without `rollback`, a bad object sha256, a failing canary and a crash rollback, each refused or rolled back.
+    (ticked) 2026-11-23T18:18:23Z by ace763dd: commit:10da1002a4 landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] FD5 [lead] Generate the model Ed25519 key pair with a short script, store the private half in bws under a new `model-signing` project entry and the public half beside it, and record the public value for FD10.
   Depends on: none.
   Accept: `bws secret list` on the console project shows `MODEL_ED25519_PRIVATE_KEY` and `MODEL_ED25519_PUBLIC_KEY`; the public value round-trips through `license.ParsePublicKey` in a scratch test under /tmp.
@@ -82,10 +86,11 @@ D12. **Air-gapped (F14).** `rdc server bundle` fetches the stable bundle into `m
   Owns: private/renet/cmd/renet/models*.go, private/renet/pkg/netaudit/detectors*.go
   Depends on: FD4, PLAN-forensics-capture.md#FC7.
   Accept: `cd private/renet && go test ./cmd/renet/ ./pkg/netaudit/...` rc 0; `./build.sh dev` rc 0; `go version -m bin/renet` shows `ModelPublicKey=` when the key is exported.
-- [ ] FD7 [writer] Write `cmd/detectwasm` (exports `score`, `explain`, `verifyBundle` through syscall/js) and a `detect_wasm` target in build.sh writing `detect.wasm`, `wasm_exec.js` and `detect-wasm.json` with `-trimpath`.
+- [x] FD7 [writer] Write `cmd/detectwasm` (exports `score`, `explain`, `verifyBundle` through syscall/js) and a `detect_wasm` target in build.sh writing `detect.wasm`, `wasm_exec.js` and `detect-wasm.json` with `-trimpath`.
   Owns: private/renet/cmd/detectwasm/**, private/renet/build.sh
   Depends on: FD4.
   Accept: `cd private/renet && ./build.sh detect_wasm /tmp/dw` rc 0 twice with identical sha256; the gzip of `detect.wasm` is under 2 MiB.
+    (ticked) 2026-11-23T18:18:24Z by ace763dd: commit:10da1002a4 landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] FD8 [writer] Write the account server detector: a WASM loader for Worker and Node, the D7 service, the `forensics_detector_state` and `forensics_findings` tables with migration and scope registration, the `*/5 * * * *` cron in every account wrangler config with its cloudflare.ts branch, the Node interval and the on-premise `/models/` route, and a vitest running vectors.json through the WASM.
   Owns: private/account/src/services/forensics-detect/**, private/account/src/db/forensics-detect-schema.ts, private/account/src/db/index.ts, private/account/drizzle.config.ts, private/account/drizzle/*_forensics_detect.sql, private/account/drizzle/meta/_journal.json, private/account/drizzle/meta/*_snapshot.json, private/account/src/db/scope-registry.ts, private/account/src/entry/cloudflare.ts, private/account/src/entry/node.ts, private/account/wrangler.toml, workers/account/wrangler.*.toml, private/account/tests/integration/forensics-detect*.test.ts, private/account/tests/integration/cron-wiring.test.ts
   Depends on: FD7, PLAN-forensics-shipping.md.

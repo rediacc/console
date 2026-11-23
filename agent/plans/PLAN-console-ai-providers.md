@@ -65,18 +65,20 @@ D13. **Account route**: `private/account/src/routes/console-ai.ts` forwards `/co
 
 ## Tasks
 
-- [ ] AP1 [writer] Shared profile module: `profile.ts` (zod schema per D1), `presets.ts` (the ten presets of D4), `resolve.ts` (team-over-shared resolution per D3) and `base-url.ts` (the D5 guard), exported as `@rediacc/shared/ai`, with tests covering every preset, `byokOnly` without a key, refused `account.internal`, loopback and RFC 1918 base URLs, and team-over-org resolution.
+- [x] AP1 [writer] Shared profile module: `profile.ts` (zod schema per D1), `presets.ts` (the ten presets of D4), `resolve.ts` (team-over-shared resolution per D3) and `base-url.ts` (the D5 guard), exported as `@rediacc/shared/ai`, with tests covering every preset, `byokOnly` without a key, refused `account.internal`, loopback and RFC 1918 base URLs, and team-over-org resolution.
   Owns: packages/shared/src/ai/**, packages/shared/package.json
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/ai)` rc 0.
+    (ticked) 2026-11-23T18:17:56Z by ace763dd: commit:1618ab3660 landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] AP2 [writer] Config field: `ai` in `RdcConfigSchema` per D2 and its sensitivity rows (`secret` for key and headers, `public` for the rest), with a round-trip test that a config carrying a profile survives push and pull with the key encrypted and its commitment knowledge-gated.
   Owns: packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/shared/src/config-schema/__tests__/ai-field.test.ts
   Depends on: AP1.
   Accept: `(cd packages/shared && npx vitest run src/config-schema/__tests__/ai-field.test.ts src/config-schema/__tests__/coverage.test.ts)` rc 0.
-- [ ] AP3 [writer] Wire additions per D8: `AiEventSchema`, the `kind: 'ai'` stream line, the tool call id on forwarded `event` lines, and `aiChat` and `aiTest` in `PROXY_ROUTES`, with a test that every existing stream line still parses unchanged.
+- [x] AP3 [writer] Wire additions per D8: `AiEventSchema`, the `kind: 'ai'` stream line, the tool call id on forwarded `event` lines, and `aiChat` and `aiTest` in `PROXY_ROUTES`, with a test that every existing stream line still parses unchanged.
   Owns: packages/shared/src/cli-contract/wire.ts, packages/shared/src/cli-contract/__tests__/wire-ai.test.ts
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/cli-contract/__tests__)` rc 0 and `npm run check:ci-cli-contract` rc 0.
+    (ticked) 2026-11-23T18:18:08Z by ace763dd: commit:7e3922b7e6 landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] AP4 [writer] Dependencies: `ai`, `@ai-sdk/anthropic` and `@ai-sdk/openai-compatible` at exact versions past the release-age window in packages/cli/package.json, the lockfile written by `npm run pins -- lockfiles`, each licence read as Apache-2.0 from the installed package.json and quoted in the commit body with the CLI bundle size before and after.
   Owns: packages/cli/package.json, package-lock.json
   Depends on: PLAN-rmcp-local-mcp.md#LM1.

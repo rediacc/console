@@ -45,22 +45,26 @@ D6. **Errors carry an origin.** `BILLING_DISABLED` is a `user` origin row in the
 
 ## Tasks
 
-- [ ] SD1 [writer] Server flag and enforcement (D1, D2, D6): `BILLING_STRIPE` via `boolFromEnv(false)` carried as `envConfig.stripeEnabled`, a `requireStripe()` middleware answering 410 `BILLING_DISABLED` on the three portal billing routes and every `/admin/stripe/*` route and 404 on the webhook, the startup tax-rate load and `getStripe` gated on the flag, and `billing.selfServe` on `GET /portal/me`.
+- [x] SD1 [writer] Server flag and enforcement (D1, D2, D6): `BILLING_STRIPE` via `boolFromEnv(false)` carried as `envConfig.stripeEnabled`, a `requireStripe()` middleware answering 410 `BILLING_DISABLED` on the three portal billing routes and every `/admin/stripe/*` route and 404 on the webhook, the startup tax-rate load and `getStripe` gated on the flag, and `billing.selfServe` on `GET /portal/me`.
   Owns: private/account/src/types/env.ts, private/account/src/app.ts, private/account/src/container.ts, private/account/src/utils/stripe.ts, private/account/src/middleware/stripe.ts, private/account/src/middleware/require-stripe.ts, private/account/src/routes/portal.ts, private/account/src/routes/webhook.ts, private/account/src/routes/root-stripe.ts, private/account/src/routes/index.ts, private/account/tests/integration/stripe-disabled*.test.ts
   Depends on: none.
   Accept: `(cd private/account && npx vitest run tests/integration/stripe-disabled.test.ts)` rc 0 with cases: each guarded route returns 410 `BILLING_DISABLED` with the flag off even when `STRIPE_SECRET_KEY` is set, a signed webhook returns 404, `PUT /admin/subscriptions/:id` still changes `planCode`, `GET /portal/me` reports `billing.selfServe: false`, and with `BILLING_STRIPE=1` plus a key the checkout route reaches the Stripe client again; `(cd private/account && npm test)` rc 0.
-- [ ] SD2 [writer] Portal without self-serve billing (D3): the subscription page, the `?checkout=` route, the console gate link and the admin Stripe nav item read `billing.selfServe`, with the owner and member copy in English and a component test.
+    (ticked) 2026-11-23T18:17:48Z by ace763dd: commit:33a8cd381a landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] SD2 [writer] Portal without self-serve billing (D3): the subscription page, the `?checkout=` route, the console gate link and the admin Stripe nav item read `billing.selfServe`, with the owner and member copy in English and a component test.
   Owns: private/account/web/src/pages/Subscription.tsx, private/account/web/src/router.tsx, private/account/web/src/pages/console/ConsoleGate.tsx, private/account/web/src/lib/nav-config.ts, private/account/web/src/api/types.ts, private/account/web/src/pages/__tests__/subscription-billing-disabled.test.tsx, private/account/web/src/i18n/locales/en/subscription.json
   Depends on: SD1.
   Accept: `(cd private/account/web && npx vitest run src/pages/__tests__/subscription-billing-disabled.test.tsx)` rc 0 asserting no `manage-billing`, `manage-trial`, start-trial or switch-plan control renders and the contact copy does when `selfServe` is false, and `?checkout=PROFESSIONAL` does not redirect; `(cd private/account/web && npm test)` and `(cd private/account/web && npm run build)` rc 0.
-- [ ] SD3 [writer] Translate the new subscription strings into the 12 other locales, naturalized per docs/i18n/CONVENTIONS.md, by a sonnet writer.
+    (ticked) 2026-11-23T18:19:41Z by ace763dd: commit:b41f60733b landed; private/account/web tsc rc=0, web vitest 418 passed
+- [x] SD3 [writer] Translate the new subscription strings into the 12 other locales, naturalized per docs/i18n/CONVENTIONS.md, by a sonnet writer.
   Owns: private/account/web/src/i18n/locales/*/subscription.json, private/account/web/src/i18n/locales/.translation-hashes.json
   Depends on: SD2.
   Accept: `npm run check:ci-i18n-account-key-usage` rc 0 and `npm run check:i18n` rc 0.
-- [ ] SD4 [writer] www without checkout (D4): pricing cards render the contact or account-link branch, `selfServe` is false for every plan, and a test proves no checkout element renders.
+    (ticked) 2026-11-23T18:19:43Z by ace763dd: commit:b41f60733b landed; private/account/web tsc rc=0, web vitest 418 passed
+- [x] SD4 [writer] www without checkout (D4): pricing cards render the contact or account-link branch, `selfServe` is false for every plan, and a test proves no checkout element renders.
   Owns: packages/www/src/pages/[lang]/pricing.astro, packages/www/src/components/CfPricingCard.astro, packages/www/src/components/__tests__/pricing-no-checkout.test.ts, packages/shared/src/subscription/constants.ts
   Depends on: none.
   Accept: `(cd packages/www && npx vitest run src/components/__tests__/pricing-no-checkout.test.ts)` rc 0 asserting no `[data-checkout]` element and no `?checkout=` link; `(cd packages/shared && npx vitest run)` rc 0; `(cd packages/www && npm run build)` rc 0.
+    (ticked) 2026-11-23T18:17:49Z by ace763dd: commit:3aa7a75670 landed; writer accept rc=0, lead re-verified on the landed tree
 - [ ] SD5 [writer] Tests follow the flag (D5): the Stripe e2e suites (10-stripe, 12-stripe-e2e, 15-02 checkout intent, the checkout steps of 03-01, 11-04 and 11-07) and run-stripe-e2e.sh run only with `BILLING_STRIPE=1`, the CI `stripe-sandbox` job runs only under the same condition, the sidebar specs expect no Stripe item, and a new spec proves an admin plan edit shows on the customer page.
   Owns: private/account/e2e/tests/**, private/account/e2e/run-stripe-e2e.sh, .github/workflows/ci.yml
   Depends on: SD1, SD2, PLAN-tooling-code-reduction.md#CR2.
