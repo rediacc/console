@@ -1436,9 +1436,13 @@ export function insertHeader(
  * A lock run that IS an npm hop as a whole: optional `NAME=value` prefixes, then `npm run <script>` and plain arguments, with no shell operator anywhere. An env-prefixed hop (`VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run <id>`) is a hop. A compound run (`tsx x.ts && npm run y`) is NOT: an unanchored "`npm run` in command position anywhere" test read it as a hop, which skipped the lock-against-header equality check and let a drifted compound lock run pass (review finding 48d52c93.1).
  */
 export function isNpmHop(run: string): boolean {
-  return /^(?:[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|[^\s;&|()<>`'"]*)\s+)*npm run\s+[^\s;&|()<>`]+(?:\s+[^\s;&|()<>`]+)*\s*$/.test(
-    run
-  );
+  // A value expands at most a plain `$NAME` or `${NAME}`: `$(...)`, a backtick or a backslash would run or smuggle code, and only spaces or tabs separate words, so a newline cannot start a second command (review 1e7d515b.1).
+  const v = '\\$\\{?[A-Za-z_][A-Za-z0-9_]*\\}?';
+  const value = `(?:"(?:[^"\`$\\\\\\n]|${v})*"|'[^'\\n]*'|(?:[^\\s;&|()<>\`'"$\\\\]|${v})*)`;
+  const word = '[^\\s;&|()<>`$\\\\]+';
+  return new RegExp(
+    `^(?:[A-Za-z_][A-Za-z0-9_]*=${value}[ \\t]+)*npm run[ \\t]+${word}(?:[ \\t]+${word})*[ \\t]*$`
+  ).test(run);
 }
 
 /**
