@@ -341,11 +341,12 @@ def run_controls() -> list[str]:
         # The positive halves alone would pass on a resolver that returned every name in the repository, so each subject also asserts that a module which is genuinely not on disk is still absent.
         resolver_subjects = (
             # file, spelling it must still write, module it must reach
-            ("check_hint_corpus.py", "paths.on_sys_path(HOOK_DIR)", "wl_hints"),
-            ("check_plan_boxes.py", "paths.hooks_stop_dir(", "wl_planfid"),
+            # (CR2 moved both gates into rediacc_ci.quality, so the spellings now live in those modules)
+            (".ci/rediacc_ci/quality/hint_corpus.py", "paths.on_sys_path(HOOK_DIR)", "wl_hints"),
+            (".ci/rediacc_ci/quality/plan_boxes.py", "paths.hooks_stop_dir(", "wl_planfid"),
         )
         for filename, spelling, reached in resolver_subjects:
-            subject = REPO / ".ci" / "scripts" / "quality" / filename
+            subject = REPO / filename
             if not subject.is_file():
                 failures.append(
                     "the resolver-hop subject %s is missing, so that arm of "

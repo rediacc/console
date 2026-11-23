@@ -12,7 +12,7 @@ THE CORRECT TICK flips only the bracket and puts the evidence on an indented lin
 
 WHAT IS COMPARED. For every plan file the commit names (`agent/plans/PLAN-*.md`, its `_done/` and `_removed/` folders, and the legacy `agent/PLAN-*.md`), the HEAD version against the version the commit will write: the working tree under a pathspec or `-a`, the index otherwise. A MOVE is resolved the way `check_plan_folders.py --move` leaves it: a `_done/` or `_removed/` path with no HEAD version is judged against `HEAD:agent/plans/<basename>`, and a `Moved-To:` stub is never itself a plan. A box open at HEAD survives when its signature is open or done anywhere in the result (the committed files, then the tracked plans the commit leaves at their HEAD version), or when `loose_sig` finds it, which is G-A1's own second chance for a re-spelled citation. Deleting a box is G-A1's business too and is refused the same way.
 
-THE SIGNATURE IS IMPORTED, NEVER RESTATED. `sig`, `loose_sig`, `ruled_at_base`, `ARCHIVE_DIR` and the parser (`wl_planfile.plan_boxes`, through the gate's own `PF`) come from `.ci/scripts/quality/check_plan_boxes.py` loaded as a module, so this guard and the gate cannot disagree about what a box is. The QUEUE arm imports `wl_planqueue.settings`, the exact validator RQ-SETTINGS runs, and adds the duplicate-heading and duplicate-marker test the generated section cannot answer without a full render.
+THE SIGNATURE IS IMPORTED, NEVER RESTATED. `sig`, `loose_sig`, `ruled_at_base`, `ARCHIVE_DIR` and the parser (`wl_planfile.plan_boxes`, through the gate's own `PF`) come from `rediacc_ci.quality.plan_boxes` (`.ci/rediacc_ci/quality/plan_boxes.py`) imported as a module, so this guard and the gate cannot disagree about what a box is. The QUEUE arm imports `wl_planqueue.settings`, the exact validator RQ-SETTINGS runs, and adds the duplicate-heading and duplicate-marker test the generated section cannot answer without a full render.
 
 DIFFERENTIAL, NOT ABSOLUTE. A QUEUE problem is refused only when HEAD's queue does not already carry it, and a plan box only when it was OPEN at HEAD, so pre-existing debt never blocks an unrelated commit.
 
@@ -20,7 +20,7 @@ IT FAILS OPEN on a git or import error, as the sibling guards do, and says on st
 """
 
 import difflib
-import importlib.util
+import importlib
 import pathlib
 import re
 import subprocess
@@ -99,18 +99,12 @@ def _load_gate():
     saved = list(sys.path)
     try:
         syspath.on_sys_path(str(quality))
-        spec = importlib.util.spec_from_file_location(
-            "check_plan_boxes_for_guard", quality / "check_plan_boxes.py"
-        )
-        if spec is None or spec.loader is None:
-            msg = "cannot load %s" % (quality / "check_plan_boxes.py")
-            raise ImportError(msg)
-        gate = importlib.util.module_from_spec(spec)
+        syspath.on_sys_path(str(root / ".ci"))
         try:
-            spec.loader.exec_module(gate)
+            gate = importlib.import_module("rediacc_ci.quality.plan_boxes")
         except SystemExit as exc:
             # The gate exits 1 with a VACUOUS INPUT message when it cannot import its parser.
-            msg = "check_plan_boxes.py exited %s while loading" % exc.code
+            msg = "rediacc_ci.quality.plan_boxes exited %s while loading" % exc.code
             raise ImportError(msg) from exc
         import wl_planqueue
         import wl_store
