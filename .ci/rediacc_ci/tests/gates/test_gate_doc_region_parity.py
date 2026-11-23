@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-doc-region-parity.sh`, retired in W7 P5.
 
-`check:ci-doc-region-parity`, proved in both directions against a REAL fixture tree.
+`scripts/gates/check-doc-region-parity.ts` (the doc-regions leg of `check:ci-gen-gates`), proved in both directions against a REAL fixture tree.
 
 WHY A FIXTURE AND NOT THE LIVE TREE. `test_gate_docs_gen.py` case A runs gen-docs against the checkout itself and requires a green. That couples a gate test to whether some other session has regenerated the docs after adding a gate, and it was RED on the branch where the twin was written: the manifest had grown and CLAUDE.md still quoted the old totals. A control that cannot run
 until the tree is tidy is a control that gets skipped. So every case here runs against a fixture built from the repository's own files, where this test owns every byte and can perturb them without touching anything a person is working in.

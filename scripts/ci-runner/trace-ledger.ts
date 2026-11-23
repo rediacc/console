@@ -654,17 +654,6 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     coveragePct: 0.1,
     seconds: 4.5,
   },
-  'check:ci-doc-region-parity': {
-    tracedAt: '2026-11-18T03:22Z',
-    tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
-    verdict: 'whole-tree',
-    reason:
-      'exited 1 under the trace, so the read set may be partial; fix the gate or its environment and re-trace',
-    reads: 11633,
-    listed: 800,
-    coveragePct: 100,
-    seconds: 17.5,
-  },
   'check:ci-docker-image-freshness': {
     tracedAt: '2026-11-17T15:19Z',
     tree: 'c113bf9a0ff43eed4a387a4c26bc1f00185d3bbe',
@@ -955,15 +944,6 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     coveragePct: 68,
     seconds: 16,
   },
-  'check:ci-gate-bind': {
-    tracedAt: '2026-11-18T03:50Z',
-    tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
-    verdict: 'paths',
-    reads: 1904,
-    listed: 19,
-    coveragePct: 28.4,
-    seconds: 8.8,
-  },
   'check:ci-gate-cwd-independence': {
     tracedAt: '2026-11-17T15:08Z',
     tree: 'c113bf9a0ff43eed4a387a4c26bc1f00185d3bbe',
@@ -999,15 +979,6 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     listed: 93,
     coveragePct: 8.8,
     seconds: 8.8,
-  },
-  'check:ci-gen-manifest': {
-    tracedAt: '2026-11-17T15:36Z',
-    tree: 'c113bf9a0ff43eed4a387a4c26bc1f00185d3bbe',
-    verdict: 'paths',
-    reads: 312,
-    listed: 0,
-    coveragePct: 3.2,
-    seconds: 5.4,
   },
   'check:ci-generated-artifacts': {
     tracedAt: '2026-11-18T03:24Z',
@@ -1741,15 +1712,6 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     listed: 8,
     coveragePct: 0.6,
     seconds: 3,
-  },
-  'check:ci-parity': {
-    tracedAt: '2026-11-18T03:50Z',
-    tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
-    verdict: 'paths',
-    reads: 428,
-    listed: 12,
-    coveragePct: 4.2,
-    seconds: 2.4,
   },
   'check:ci-pathspec-scope': {
     tracedAt: '2026-11-18T03:50Z',
@@ -2608,15 +2570,6 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     coveragePct: 100,
     seconds: 161.6,
   },
-  'check:ci-step-env-parity': {
-    tracedAt: '2026-11-17T15:05Z',
-    tree: 'c113bf9a0ff43eed4a387a4c26bc1f00185d3bbe',
-    verdict: 'paths',
-    reads: 13,
-    listed: 0,
-    coveragePct: 0.1,
-    seconds: 1.6,
-  },
   'check:ci-subscription-schema': {
     tracedAt: '2026-11-18T03:45Z',
     tree: 'd32c060fd0e8805a6efff4287e8c029acf9d38c7',
@@ -2945,15 +2898,6 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     listed: 24,
     coveragePct: 26.8,
     seconds: 6.4,
-  },
-  'check:ci-workflow-orphan-step-keys': {
-    tracedAt: '2026-11-17T15:32Z',
-    tree: 'c113bf9a0ff43eed4a387a4c26bc1f00185d3bbe',
-    verdict: 'paths',
-    reads: 43,
-    listed: 1,
-    coveragePct: 0.5,
-    seconds: 4.4,
   },
   'check:ci-workflow-submodule-deps': {
     tracedAt: '2026-11-18T03:22Z',

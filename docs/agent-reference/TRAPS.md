@@ -1163,10 +1163,10 @@ Two questions, both cheap, both usually decisive:
 
 ## A cost measured under load becomes a DEMAND, because the cache averages and the oracle believes the average
 Trap-Id: load-poisoned-cost-becomes-policy
-Enforced-By: gate:check:ci-gate-manifest
+Enforced-By: gate:check:ci-gen-gates
 Residue: The cache can only be judged against ITSELF. Nothing can tell a gate that genuinely slowed from one measured under contention, so the floor of several measurements is the instrument, and a single number never is.
 
-`check:ci-gate-manifest` judges whether a gate belongs in the pre-push lane from `.ci/cache/gate-durations.json`, which `npm run ci` writes after every run. On 2026-09-02 one full run overlapped two writer sub-agents and the load it carried was recorded like any other measurement: a gate that takes 4.5 s alone was averaged up to 21 s, and the next manifest check demanded it be
+The manifest-rules leg of `check:ci-gen-gates` (scripts/gates/check-gate-manifest.ts) judges whether a gate belongs in the pre-push lane from `.ci/cache/gate-durations.json`, which `npm run ci` writes after every run. On 2026-09-02 one full run overlapped two writer sub-agents and the load it carried was recorded like any other measurement: a gate that takes 4.5 s alone was averaged up to 21 s, and the next manifest check demanded it be
 marked `slow: true` with a reason. The reason would have been a lie, and the gate would have left the fast lane for good on the strength of one bad afternoon.
 
 Two things made this easy to fall for. The runner prints `SYSTEM UNDER LOAD` for exactly one gate (the tutorial player), so the other 350 measurements looked clean. And the finding text names a number, which reads as evidence rather than as the artifact of a moving average.
@@ -1498,8 +1498,8 @@ a secret and the log. If the value itself is the question, reduce it to a digest
 
 ## Local gates read the WORKING TREE, CI reads the TRACKED tree, so a half-staged pair passes here and fails there
 Trap-Id: working-tree-green-tracked-tree-red
-Enforced-By: gate:check:ci-parity
-Residue: Both directions of the split are now gated -- `check:ci-parity` catches a tracked file with no manifest entry, and `check:ci-gate-manifest`'s `leaf-tracked` arm catches a manifest entry naming an untracked file. Neither can fire before you commit, because until then the working tree is consistent by construction. The residue is the habit: `git diff --cached --stat` before every commit.
+Enforced-By: gate:check:ci-gen-gates
+Residue: Both directions of the split are now gated, by two legs of `check:ci-gen-gates` -- the parity leg catches a tracked file with no manifest entry, and the manifest-rules leg's `leaf-tracked` arm catches a manifest entry naming an untracked file. Neither can fire before you commit, because until then the working tree is consistent by construction. The residue is the habit: `git diff --cached --stat` before every commit.
 
 `npm run ci:quick` was 307/307 and CI came back red on the commit it had just blessed. The failing step was "Validate parity between the local gate set and the CI quality surface":
 

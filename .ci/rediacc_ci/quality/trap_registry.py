@@ -455,10 +455,28 @@ class Registry:
     # -- F4/F5 for `gate:` --------------------------------------------------
 
     def gate_resolves(self, gate_id: str) -> bool:
-        """The manifest declares this id AND package.json defines the script."""
-        return "id: '%s'," % gate_id in read_text(self.manifest) and (
-            '"%s":' % gate_id in read_text(self.package_json)
-        )
+        """The manifest declares this id AND its run can start: an `npm run <script>` hop needs package.json to define the script, a direct run (`tsx <file>`, `PYTHONPATH=.ci python3 -m <module>`, the D2 form a header-declared gate takes with no npm key) needs nothing more."""
+        run = self.entry_run(gate_id)
+        if run is None:
+            return False
+        if not run.startswith("npm run "):
+            return True
+        return '"%s":' % run.split()[2] in read_text(self.package_json)
+
+    def entry_run(self, gate_id: str) -> str | None:
+        """The `run:` of THIS id's manifest entry, None when no entry declares the id or its block has no run."""
+        want = "id: '%s'," % gate_id
+        in_block = False
+        for line in read_text(self.manifest).split("\n"):
+            if not in_block:
+                in_block = want in line
+                continue
+            if "id: '" in line:
+                return None
+            hit = re.match(r"""\s*run:\s*(['"])(.*)\1,\s*$""", line)
+            if hit:
+                return hit.group(2)
+        return None
 
     def gate_is_live(self, gate_id: str) -> bool:
         """`gate: true` inside THIS entry's block, not a neighbour's."""
@@ -1164,6 +1182,18 @@ CONTROL_MANIFEST = """export const GATES = [
     run: 'npm run check:ctl-dark',
     gate: false,
     leaves: ['nothing.sh'],
+  },
+  {
+    id: 'check:ctl-direct',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.ctl_direct',
+    gate: true,
+    leaves: ['sub/ctl-guard.sh'],
+  },
+  {
+    id: 'check:ctl-keyless',
+    run: 'npm run check:ctl-keyless',
+    gate: true,
+    leaves: ['sub/ctl-guard.sh'],
   },
 ];
 """
@@ -2074,6 +2104,14 @@ def selftest() -> int:
             registry.gate_resolves("check:ctl-live"),
         )
         ctl.falsy("PLANT: an id in neither does not resolve", registry.gate_resolves("check:nope"))
+        ctl.truthy(
+            "CONTROL: a direct-run gate (no npm hop, no package.json key) resolves",
+            registry.gate_resolves("check:ctl-direct"),
+        )
+        ctl.falsy(
+            "PLANT: an npm hop whose script package.json lacks does not resolve",
+            registry.gate_resolves("check:ctl-keyless"),
+        )
         ctl.truthy(
             "CONTROL: `gate: true` inside the entry's own block is live",
             registry.gate_is_live("check:ctl-live"),

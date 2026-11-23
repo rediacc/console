@@ -79,6 +79,8 @@ SEGMENT_RE = re.compile(r"""(['"])([\w.<>*-]+)\1""")
 PY_TS_IMPORT_RE = re.compile(
     r"""(?:\bfrom\s+|\bimport\s*\(?\s*|\brequire\s*\(\s*)['"](\.{1,2}/[^'"]+)['"]"""
 )
+#: A LEG a TypeScript leaf spawns, in the `{ label, args: ['<repo path>', ...] }` shape scripts/gen/gen-manifest.ts runs its `gen:gates --check` legs in. Those scripts are child processes, not imports, so without this edge check:ci-gen-gates (whose one leaf is gen-manifest.ts) would carry none of the reads of the eight checks it replaced, and a record change one of them judges would advance a receipt unjudged. The path is repo-relative, never `./`.
+TS_LEG_RE = re.compile(r"""\bargs:\s*\[\s*['"]((?:scripts|\.ci)/[^'"\s]+\.(?:ts|py))['"]""")
 
 
 # ---------------------------------------------------------------- globs
@@ -269,22 +271,24 @@ def _py_imports_uncached(path: pathlib.Path, root: pathlib.Path) -> list[pathlib
     return found
 
 
-def _ts_imports(path: pathlib.Path) -> list[pathlib.Path]:
-    """Local files a TS/JS file imports, memoised on its stat like `_py_imports`."""
-    return list(_ts_imports_cached(path, _stat_key(path)))
+def _ts_imports(path: pathlib.Path, root: pathlib.Path) -> list[pathlib.Path]:
+    """Local files a TS/JS file imports, and the scripts it spawns as legs (TS_LEG_RE, resolved against `root`), memoised on its stat like `_py_imports`."""
+    return list(_ts_imports_cached(path, root, _stat_key(path)))
 
 
 @functools.cache
-def _ts_imports_cached(path: pathlib.Path, _key: tuple[int, int]) -> tuple[pathlib.Path, ...]:
-    return tuple(_ts_imports_uncached(path))
+def _ts_imports_cached(
+    path: pathlib.Path, root: pathlib.Path, _key: tuple[int, int]
+) -> tuple[pathlib.Path, ...]:
+    return tuple(_ts_imports_uncached(path, root))
 
 
-def _ts_imports_uncached(path: pathlib.Path) -> list[pathlib.Path]:
+def _ts_imports_uncached(path: pathlib.Path, root: pathlib.Path) -> list[pathlib.Path]:
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return []
-    found = []
+    found = [root / rel for rel in TS_LEG_RE.findall(text) if (root / rel).is_file()]
     for spec in PY_TS_IMPORT_RE.findall(text):
         base = path.parent / spec
         stem = (
@@ -315,7 +319,7 @@ def closure(leaves: list[str], root: pathlib.Path) -> set[pathlib.Path]:
         if path.suffix == ".py":
             stack.extend(_py_imports(path, root))
         elif path.suffix in TS_SUFFIXES:
-            stack.extend(_ts_imports(path))
+            stack.extend(_ts_imports(path, root))
     return seen
 
 
@@ -1155,6 +1159,13 @@ def selftest() -> int:
         _write(root, "helper_mod.py", 'D = "agent/reviews"\n')
         _write(root, "gate_import.ts", "import { x } from './lib/helper';\n")
         _write(root, "lib/helper.ts", "export const x = 'agent/worklist/';\n")
+        _write(
+            root,
+            "gate_legs.ts",
+            "const LEGS = [{ label: 'a', args: ['scripts/leg_reader.ts', '--x'] }];\n",
+        )
+        _write(root, "scripts/leg_reader.ts", "const L = 'agent/worklist/';\n")
+        _write(root, "gate_legs_cite.ts", "const NOTE = 'scripts/leg_reader.ts';\n")
 
         # THE PLANT the plan names: a leaf citing agent/reviews/ must be reported as an undeclared reader.
         planted = {"version": 1, "records": [dict(SELFTEST_POLICY["records"][0], readers=[])]}
@@ -1255,6 +1266,19 @@ def selftest() -> int:
             "closure: a TypeScript relative import is followed",
             "lib/helper.ts"
             in _derive_one(root, ["gate_import.ts"], SELFTEST_POLICY)["agent/worklist/*.jsonl"].get(
+                "check:probe", ""
+            ),
+        )
+        tally.truthy(
+            "closure: a script a leaf spawns as a leg (`args: ['scripts/x.ts']`) is followed",
+            "scripts/leg_reader.ts"
+            in _derive_one(root, ["gate_legs.ts"], SELFTEST_POLICY)["agent/worklist/*.jsonl"].get(
+                "check:probe", ""
+            ),
+        )
+        tally.falsy(
+            "closure MIRROR: the same path as a bare string, not a leg, is not followed",
+            _derive_one(root, ["gate_legs_cite.ts"], SELFTEST_POLICY)["agent/worklist/*.jsonl"].get(
                 "check:probe", ""
             ),
         )

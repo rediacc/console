@@ -96,7 +96,7 @@ ck(
   derivedId('.ci/scripts/quality/check_docker_npm_pins.py')
 );
 ck(
-  'run is the BARE PATH for py -- a python3 prefix breaks check:ci-parity',
+  'run is the BARE PATH for py -- a python3 prefix breaks the parity leg of check:ci-gen-gates',
   derivedRun('.ci/scripts/quality/check_x.py') === '.ci/scripts/quality/check_x.py'
 );
 ck(

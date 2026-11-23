@@ -166,6 +166,7 @@ PLAN_RECORDS = (
 )
 #: THE MEASURED READER SET of those six records, derived on 2026-11-16 by the fixed derivation and classified by hand (the exemptions and their reasons are in the policy). This is what a plan-only commit re-runs instead of the lane. A gate joining or leaving it is a decision, so it is written down here as well as in the policy: the gate itself only proves the policy equals the derivation, and would stay green if both lost a reader together.
 #: 2026-11-18 (PLAN-push-decoupling F1): 36 -> 58. The declared tier reads each gate's own lock entry, so the `names: ['**']` gates (they list every file name, and a new plan file changes that list) and the gates that list `agent` or `.ci/config` joined; check:ci-parity was a notReader on a manifest.ts reason and now reads through its `names`.
+#: 2026-11-23 (PLAN-tooling-code-reduction CR2): 58 -> 56. check:ci-doc-region-parity, check:ci-gate-bind and check:ci-parity retired into check:ci-gen-gates, whose leaf spawns their scripts as legs; the derivation follows those legs (check_record_paths TS_LEG_RE), so it reads the plan files through the doc-region leg's `*.md` glob.
 PLAN_READERS = frozenset(
     {
         "check:ci-account-env-retired",
@@ -179,13 +180,12 @@ PLAN_READERS = frozenset(
         "check:ci-dead-python",
         "check:ci-dead-service-methods",
         "check:ci-decision-ids",
-        "check:ci-doc-region-parity",
         "check:ci-dockerfile-mirror-resilience",
         "check:ci-durable-paths-tracked",
         "check:ci-fetch-integrity",
         "check:ci-fetch-retry",
-        "check:ci-gate-bind",
         "check:ci-gate-reachability-coverage",
+        "check:ci-gen-gates",
         "check:ci-gate-test-real-file-plants",
         "check:ci-generated-artifacts",
         "check:ci-gh-retry-reads",
@@ -198,7 +198,6 @@ PLAN_READERS = frozenset(
         "check:ci-literal-sources",
         "check:ci-merge-method-prose",
         "check:ci-no-inline-python",
-        "check:ci-parity",
         "check:ci-plan-bindings",
         "check:ci-plan-boxes",
         "check:ci-plan-citations",
@@ -246,7 +245,7 @@ PLAN_FAMILY = frozenset(
         "check:ci-commit-citations",
         "check:cli-examples",
         "check:ci-prose-style",
-        "check:ci-doc-region-parity",
+        "check:ci-gen-gates",
         "check:ci-scope-mirrors",
         "check:ci-retired-terms",
         "check:ci-tree-shape",

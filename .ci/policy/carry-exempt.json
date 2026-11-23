@@ -22,8 +22,8 @@
       "kind": "history"
     },
     {
-      "id": "check:ci-gate-manifest",
-      "reason": "Judges slow/fast gate classification from the local untracked .ci/cache/gate-durations.json (measured timings), so the verdict changes when the cache changes even though every tracked file is identical.",
+      "id": "check:ci-gen-gates",
+      "reason": "Its manifest-rules leg (scripts/gates/check-gate-manifest.ts) judges slow/fast gate classification from the local untracked .ci/cache/gate-durations.json (measured timings), so the verdict changes when the cache changes even though every tracked file is identical.",
       "kind": "cache"
     },
     {
