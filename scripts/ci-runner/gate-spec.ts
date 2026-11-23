@@ -18,8 +18,6 @@
  * as text, so do not cite a text parser as the constraint that keeps it in this shape.
  */
 
-import { derivedRun } from '../lib/gate-header.js';
-
 export interface GateSpec {
   /**
    * Skip the per-gate process-tree sampler for this gate. Only for gates that
@@ -202,7 +200,7 @@ export type CiCoverage =
  *
  *   header field            spec field
  *   `id:` (else derived)     id
- *   `run:` (else directRun)  run, executed as written: no `npm run` hop
+ *   `run:` (else directRun)  run, executed as written: no `npm run` hop (directRun: scripts/gate-bind.ts)
  *   the file itself          leaves: [file]
  *   `slow: true`             slow
  *   `env-<KEY>:`             env
@@ -215,22 +213,12 @@ export type CiCoverage =
  * Hand-only fields (`paths`, `reads`, `heavy`, `mutex`, `writesTree`, `cores`, `ciOnly`, `noProfile`, `needs` ordering edges) have no header spelling on purpose: a gate needing one stays a hand entry in manifest.ts, which is the "overrides" half of D2.
  */
 
-/**
- * The command a header-declared gate runs, executed DIRECTLY by the runner and by its workflow step.
- *
- * A module under `.ci/rediacc_ci/` runs as `PYTHONPATH=.ci python3 -m <module>`: nothing puts `.ci` on `sys.path` for a path invocation, which is the only reason the `.ci/scripts/quality/check_*.py` entry shims exist, and check:ci-parity's resolver maps `-m <module>` to the module's tracked file, so the leaf stays the file. Every other path keeps `derivedRun`'s form (`tsx <file>` with an optional `--selftest &&` leg, or the bare path of an executable script).
- */
-export function directRun(file: string, selftest = false): string {
-  const mod = /^\.ci\/(rediacc_ci\/.+)\.py$/.exec(file);
-  if (mod !== null) return `PYTHONPATH=.ci python3 -m ${mod[1].replace(/\//g, '.')}`;
-  return derivedRun(file, selftest);
-}
-
 /** A header reduced to the fields the spec reads; `scripts/lib/gate-header.ts` GateHeader satisfies it. */
 export interface HeaderFields {
   kind: 'step' | 'shared-step' | 'test' | 'local-only';
   step?: string;
-  run?: string;
+  /** The resolved run: the header's `run:`, else `directRun` in scripts/gate-bind.ts. Resolved by the caller so this module imports nothing: the runner loads it at run time, and its test fixtures copy a tree without scripts/lib. */
+  run: string;
   selftest?: boolean;
   slow?: boolean;
   env?: Record<string, string>;
@@ -263,7 +251,7 @@ export function headerSpec(
   return {
     id,
     ...(h.env === undefined ? {} : { env: { ...h.env } }),
-    run: h.run ?? directRun(file, h.selftest === true),
+    run: h.run,
     ...(h.slow === true ? { slow: true as const } : {}),
     gate: true,
     leaves: [file],

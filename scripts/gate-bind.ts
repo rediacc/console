@@ -32,7 +32,6 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { WK_IMAGE_REGISTRY } from '../packages/shared/src/config/well-known.generated.js';
-import { directRun } from './ci-runner/gate-spec.js';
 import {
   type LaneCapabilities,
   laneCapabilities,
@@ -57,7 +56,13 @@ import {
   shardManifestPath,
 } from './ci-runner/shard-manifest.js';
 import type { GateKind } from './lib/gate-header.js';
-import { derivedId, headerError, inferredNeeds, parseGateHeader } from './lib/gate-header.js';
+import {
+  derivedId,
+  derivedRun,
+  headerError,
+  inferredNeeds,
+  parseGateHeader,
+} from './lib/gate-header.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const WORKFLOW = '.github/workflows/ci-quality.yml';
@@ -212,6 +217,17 @@ export function planExtract(
     };
   }
   return { file: reg.file, next, step: reg.step, job: reg.job };
+}
+
+/**
+ * The command a header-declared gate runs, executed DIRECTLY by the runner and by its workflow step.
+ *
+ * A module under `.ci/rediacc_ci/` runs as `PYTHONPATH=.ci python3 -m <module>`: nothing puts `.ci` on `sys.path` for a path invocation, which is the only reason the `.ci/scripts/quality/check_*.py` entry shims exist, and check:ci-parity's resolver maps `-m <module>` to the module's tracked file, so the leaf stays the file. Every other path keeps `derivedRun`'s form (`tsx <file>` with an optional `--selftest &&` leg, or the bare path of an executable script).
+ */
+export function directRun(file: string, selftest = false): string {
+  const mod = /^\.ci\/(rediacc_ci\/.+)\.py$/.exec(file);
+  if (mod !== null) return `PYTHONPATH=.ci python3 -m ${mod[1].replace(/\//g, '.')}`;
+  return derivedRun(file, selftest);
 }
 
 /** Every gate id the manifest declares, in file order. */

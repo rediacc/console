@@ -56,10 +56,16 @@ import path from 'node:path';
 import process from 'node:process';
 
 import type { GateSpec } from '../ci-runner/gate-spec.js';
-import { directRun, headerSpec } from '../ci-runner/gate-spec.js';
+import { headerSpec } from '../ci-runner/gate-spec.js';
 import { laneCapabilities, placeGate } from '../ci-runner/lanes.js';
 import { GATES } from '../ci-runner/manifest.js';
-import { type Bound, jobsWithStep, scanDeclarations, trackedSubjects } from '../gate-bind.js';
+import {
+  type Bound,
+  directRun,
+  jobsWithStep,
+  scanDeclarations,
+  trackedSubjects,
+} from '../gate-bind.js';
 import type { GateHeader } from '../lib/gate-header.js';
 import { derivedId, inferredNeeds, parseGateHeader } from '../lib/gate-header.js';
 
