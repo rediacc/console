@@ -222,7 +222,7 @@ class Finding(NamedTuple):
 
 
 class Findings(list):
-    """findings()'s answer: the [Finding] list, plus `unread`, which names a read the sweep could not make ("" when every read answered). A list, so a caller that only iterates reads it as before; the stop names `unread` in its read-failure advisory (agent/plans/PLAN-silent-failure-sweep.md SF7)."""
+    """findings()'s answer: the [Finding] list, plus `unread`, which names a read the sweep could not make ("" when every read answered). A list, so a caller that only iterates reads it as before; `unread` is for the stop to name in its check-read-failed advisory (agent/plans/PLAN-silent-failure-sweep.md SF7)."""
 
     def __init__(self, rows=(), unread: str = ""):
         super().__init__(rows)
