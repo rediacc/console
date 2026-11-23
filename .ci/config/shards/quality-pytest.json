@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-23T06:53:36.641Z",
+  "generatedAt": "2026-11-23T07:54:51.278Z",
   "legs": [
     {
       "index": 1,
@@ -188,6 +188,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_media_docs.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_media_r2.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_python_env_registry.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_quality_argv_helper.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_regions_sync.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_releaseversion_attestation.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_review_resolutions.py",
@@ -317,6 +318,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_push_elsewhere.py",
         "pytest:.claude/rediacc_hooks/tests/test_settings_collapse.py",
         "pytest:.claude/rediacc_hooks/tests/test_shellscan_clone_identity.py",
+        "pytest:.claude/rediacc_hooks/tests/test_shellscan_writes.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_agent_docs_and_focus.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_epic_plan.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_identity.py",
@@ -357,6 +359,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_player_css_scope.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_policy_liveness_floors.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_policy_path.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_quality_argv_adoption.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_redirect_shadow.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_region_consistency.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_releaseversion_cd_retry_assert.py",
@@ -479,6 +482,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_githook_generated_artifacts.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_release_run.py",
         "pytest:.claude/rediacc_hooks/tests/test_goldenio_idempotent_mark.py",
+        "pytest:.claude/rediacc_hooks/tests/test_guard_cases.py",
         "pytest:.claude/rediacc_hooks/tests/test_guard_chained_state.py",
         "pytest:.claude/rediacc_hooks/tests/test_guard_event_cwd.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_boundary.py",
@@ -492,6 +496,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_stop_hook_edit_check.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_add_many.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_cadence.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_checks_silent_failure.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_continuity_surface.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_event_store.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_first_touch.py",
