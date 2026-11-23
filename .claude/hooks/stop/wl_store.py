@@ -1103,7 +1103,7 @@ def _file_sig(path):
 
 def _events_sig(worklist, root=None):
     """The memo key of one store read: every file _read_events would open, with its mtime and size."""
-    sigs = []
+    sigs: list[tuple] = []
     sd = store_dir(root)
     with contextlib.suppress(OSError):
         sigs.extend(_file_sig(f) for f in sorted(sd.glob("*.jsonl")))

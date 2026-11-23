@@ -39,7 +39,7 @@ FIXTURES = {"roundlog-world": _round_log_world}
 
 
 # The variable is never read by this guard. It exists so the harness resolves the token, which is what builds the world above before any case runs.
-ENVS = [("roundlog", {"REDIACC_ROUNDLOG_WORLD": "{FIXTURE:roundlog-world}"}, {})]
+ENVS: list = [("roundlog", {"REDIACC_ROUNDLOG_WORLD": "{FIXTURE:roundlog-world}"}, {})]
 
 
 EDGE_CASES = [

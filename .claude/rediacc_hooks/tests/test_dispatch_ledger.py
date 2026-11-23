@@ -34,7 +34,7 @@ def fake(name, rc=0, say="", sleep_ms=0, raises=False):
             event.say(say)
         return rc
 
-    module.run = run
+    module.__dict__["run"] = run
     return module
 
 

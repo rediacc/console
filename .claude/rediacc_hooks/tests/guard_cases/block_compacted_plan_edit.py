@@ -67,7 +67,7 @@ FIXTURES = {"record-world": _record_world}
 
 
 # The variable is never read by this guard; resolving the token is what builds the world before any case runs.
-ENVS = [("records", {"REDIACC_RECORD_WORLD": "{FIXTURE:record-world}"}, {})]
+ENVS: list = [("records", {"REDIACC_RECORD_WORLD": "{FIXTURE:record-world}"}, {})]
 
 
 EDGE_CASES = [

@@ -47,7 +47,7 @@ def _fixture(path):
 FIXTURES = {"epic-snapshot": _fixture}
 
 
-ENVS = [
+ENVS: list = [
     ("snapshot", {"CLAUDE_PROJECT_DIR": "{FIXTURE:epic-snapshot}"}, {}),
     # This checkout's SHAPE, synthetic and pinned since 2026-09-24: a `MMDD-N` branch and an `agent/pr/<branch>.md` in the published format, with no other session able to rewrite either. See `_synthetic_this_worktree` in test_guards_differential.py.
     ("this-worktree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:this-worktree-snapshot}"}, {}),

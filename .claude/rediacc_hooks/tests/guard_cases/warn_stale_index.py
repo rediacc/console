@@ -46,7 +46,7 @@ FIXTURES = {"stale-index": _stale_tree, "disjoint-index": _disjoint_tree}
 
 
 # BOTH variables, not just GIT_WORK_TREE. This guard's `git diff` calls take no `-C` and run in whatever directory the harness invoked it in, so leaving GIT_DIR to discovery would diff THIS checkout's index against the fixture's work tree -- a comparison of two unrelated trees, and a very large one.
-ENVS = [
+ENVS: list = [
     (
         "stale",
         {

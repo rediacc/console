@@ -4,7 +4,7 @@
 _GIT_STUB = "#!/bin/sh\necho 1111111111111111111111111111111111111111\n"
 
 
-ENVS = [
+ENVS: list = [
     # No claim at all: the ordinary unconditional block.
     ("no-claim", {}, {}),
     # The 2026-08-26 case: a verified zero, so the commit is the only lever.

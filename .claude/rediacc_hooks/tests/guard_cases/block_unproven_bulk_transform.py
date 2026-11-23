@@ -1,6 +1,7 @@
 """The test tables of `block_unproven_bulk_transform`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 import subprocess
+from typing import Any
 
 from rediacc_hooks.guards.block_unproven_bulk_transform import BULK_FILE_THRESHOLD
 
@@ -16,7 +17,7 @@ EDGE_CASES = [
 def _bulk_staged_world(target):
     """A scratch repo with a bulk-sized change already staged, so the commit branch has something to refuse."""
     target.mkdir(parents=True, exist_ok=True)
-    quiet = {
+    quiet: dict[str, Any] = {
         "capture_output": True,
         "env": {
             "PATH": "/usr/bin:/bin:/usr/local/bin",
@@ -47,4 +48,4 @@ FIXTURES = {"bulk-staged": _bulk_staged_world}
 
 
 # CLAUDE_PROJECT_DIR is the guard's fallback working directory when the payload carries none, so pointing it at the fixture is what puts the staged files under the commit case.
-ENVS = [("bulk-staged", {"CLAUDE_PROJECT_DIR": "{FIXTURE:bulk-staged}"}, {})]
+ENVS: list = [("bulk-staged", {"CLAUDE_PROJECT_DIR": "{FIXTURE:bulk-staged}"}, {})]

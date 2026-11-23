@@ -33,7 +33,7 @@ IDLE_SCRIPT = "%s/bash-side-nobody-runs-this.sh" % WORLD
 _BODY = "#!/usr/bin/env bash\nsleep 600\nexit 0\n"
 
 
-_CHILDREN = []
+_CHILDREN: list = []
 
 
 def _reap():
@@ -57,7 +57,7 @@ def _spawn(argv):
 
 # One session at a time in this world. TWO pytest runs of this suite were live on this machine at once on 2026-09-06 (a peer agent's and this one's), and they fought: each `_kill_stale` killed the other's shells, and the case that names a running script reported different pids on the two sides of one differential. The world has to sit at a FIXED path -- a static payload names it --
 # so it cannot be made per-process; an advisory lock held for the life of the interpreter makes the second run wait instead.
-_LOCK_FDS = []
+_LOCK_FDS: list = []
 
 
 def _hold_world_lock(world):
@@ -147,7 +147,7 @@ def _bashwrite_world(_unused):
 FIXTURES = {"bashwrite-scripts": _bashwrite_world}
 
 
-ENVS = [("running", {"REDIACC_BASHWRITE_WORLD": "{FIXTURE:bashwrite-scripts}"}, {})]
+ENVS: list = [("running", {"REDIACC_BASHWRITE_WORLD": "{FIXTURE:bashwrite-scripts}"}, {})]
 
 
 _PY = "python3 - <<'PY'\n%s\nPY"

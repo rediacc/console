@@ -3440,6 +3440,27 @@
         "b86ddfc4"
       ]
     },
+    "agent/plans/PLAN-silent-failure-sweep.md": {
+      "status": "approved",
+      "owner": "ace763dd",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 10,
+      "done": 0,
+      "open_sigs": [
+        "055ee700",
+        "0f7ddaf4",
+        "15383c8b",
+        "3993af58",
+        "538bfc58",
+        "6e0c83e2",
+        "9611b663",
+        "9c4a5f30",
+        "cd67ca86",
+        "e498feca"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-simple-two-tree-loop.md": {
       "status": "approved",
       "owner": "d778be9d",

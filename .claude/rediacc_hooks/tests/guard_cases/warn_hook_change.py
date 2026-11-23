@@ -33,7 +33,7 @@ FIXTURES = {
 
 
 # WHY THE LIVE WORKTREE IS NOT ONE OF THESE. The guard's answer is a function of whatever happens to be in THIS checkout's index, and this tree is shared with other sessions and other agents. A `git add` landing between the bash sweep and the Python sweep would be reported here as a port defect, so both variants are controlled worlds built by the builders above.
-ENVS = [
+ENVS: list = [
     (
         "staged",
         {

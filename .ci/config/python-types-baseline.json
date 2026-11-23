@@ -2739,95 +2739,11 @@
       "message": "Need type annotation for \"_REGISTRY\" (hint: \"_REGISTRY: list[<type>] = ...\")"
     },
     {
-      "id": "a0384f7a943d4604",
-      "file": ".claude/rediacc_hooks/guards/block_bash_write_to_running_script.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
-      "id": "b0617d16c4959970",
-      "file": ".claude/rediacc_hooks/guards/block_bash_write_to_running_script.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"_CHILDREN\" (hint: \"_CHILDREN: list[<type>] = ...\")"
-    },
-    {
-      "id": "a14e2c72f4b18620",
-      "file": ".claude/rediacc_hooks/guards/block_bash_write_to_running_script.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"_LOCK_FDS\" (hint: \"_LOCK_FDS: list[<type>] = ...\")"
-    },
-    {
-      "id": "d00cef61beb2917d",
-      "file": ".claude/rediacc_hooks/guards/block_compacted_plan_edit.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
-      "id": "17ab6510f98331e8",
-      "file": ".claude/rediacc_hooks/guards/block_edit_of_running_script.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
-      "id": "208ed77be858589f",
-      "file": ".claude/rediacc_hooks/guards/block_edit_of_running_script.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"_CHILDREN\" (hint: \"_CHILDREN: list[<type>] = ...\")"
-    },
-    {
-      "id": "3e3f2a8431488138",
-      "file": ".claude/rediacc_hooks/guards/block_edit_of_running_script.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"_LOCK_FDS\" (hint: \"_LOCK_FDS: list[<type>] = ...\")"
-    },
-    {
-      "id": "157d2bc5d0437352",
-      "file": ".claude/rediacc_hooks/guards/block_host_toolchain_run.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
-      "id": "10cbc155d11de1b3",
-      "file": ".claude/rediacc_hooks/guards/block_inline_python.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
       "id": "86d7aad7d7b183e5",
       "file": ".claude/rediacc_hooks/guards/block_inline_workflow_run.py",
       "code": "union-attr",
       "count": 1,
       "message": "Item \"None\" of \"Match[str] | None\" has no attribute \"end\""
-    },
-    {
-      "id": "e1f746ddd3d883e9",
-      "file": ".claude/rediacc_hooks/guards/block_merge_with_unpushed.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
-      "id": "f75bc2529b0be136",
-      "file": ".claude/rediacc_hooks/guards/block_plan_without_tasks.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
-      "id": "6ee8f539f8307ce7",
-      "file": ".claude/rediacc_hooks/guards/block_premature_ready.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
     },
     {
       "id": "0fe0be787b71ce81",
@@ -2844,50 +2760,8 @@
       "message": "Need type annotation for \"warnings\" (hint: \"warnings: list[<type>] = ...\")"
     },
     {
-      "id": "cf3c4abad42fcb5f",
-      "file": ".claude/rediacc_hooks/guards/block_push_to_protected_branch.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
-      "id": "a5bdc32563c4e497",
-      "file": ".claude/rediacc_hooks/guards/block_roundlog_write.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
-      "id": "4d5a0a5279669ba2",
-      "file": ".claude/rediacc_hooks/guards/block_second_open_pr.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
       "id": "d39c816ce5c92aaf",
       "file": ".claude/rediacc_hooks/guards/block_stale_pr_branch_date.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
-      "id": "f630c37c9a8eecb1",
-      "file": ".claude/rediacc_hooks/guards/block_unproven_bulk_transform.py",
-      "code": "call-overload",
-      "count": 1,
-      "message": "No overload variant of \"run\" matches argument types \"list[Any]\", \"bool\", \"dict[str, object]\""
-    },
-    {
-      "id": "a12d89a25f7ce335",
-      "file": ".claude/rediacc_hooks/guards/block_unproven_bulk_transform.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
-      "id": "8477b4f70fad4106",
-      "file": ".claude/rediacc_hooks/guards/block_untagged_commit.py",
       "code": "var-annotated",
       "count": 1,
       "message": "Need type annotation for \"ENVS\""
@@ -2900,53 +2774,11 @@
       "message": "Need type annotation for \"heads\" (hint: \"heads: list[<type>] = ...\")"
     },
     {
-      "id": "c01275c8eb5c52a3",
-      "file": ".claude/rediacc_hooks/guards/block_unverified_push.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
       "id": "0dbaf7b5eccb3dbd",
       "file": ".claude/rediacc_hooks/guards/test-warn_staged_shape_duplication.py",
       "code": "arg-type",
       "count": 1,
       "message": "Argument 1 to \"symlink\" has incompatible type \"str | None\"; expected \"str | bytes | PathLike[str] | PathLike[bytes]\""
-    },
-    {
-      "id": "0c9066fb2c1bb210",
-      "file": ".claude/rediacc_hooks/guards/warn_hook_change.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
-      "id": "75eeaa528766801a",
-      "file": ".claude/rediacc_hooks/guards/warn_remote_drift.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
-      "id": "58ca07ceac2867d1",
-      "file": ".claude/rediacc_hooks/guards/warn_stale_index.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
-      "id": "1616f74189adbac3",
-      "file": ".claude/rediacc_hooks/guards/warn_submodule_deletions.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"ENVS\""
-    },
-    {
-      "id": "900b1a78aec9a55a",
-      "file": ".claude/rediacc_hooks/guards/warn_submodule_deletions.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"_SUBMODULES\""
     },
     {
       "id": "77cb9c83f614380e",
@@ -3010,13 +2842,6 @@
       "code": "var-annotated",
       "count": 1,
       "message": "Need type annotation for \"out\" (hint: \"out: dict[<type>, <type>] = ...\")"
-    },
-    {
-      "id": "9625c71b262d2100",
-      "file": ".claude/rediacc_hooks/tests/test_settings_collapse.py",
-      "code": "var-annotated",
-      "count": 1,
-      "message": "Need type annotation for \"routed\" (hint: \"routed: dict[<type>, <type>] = ...\")"
     },
     {
       "id": "5d9429b7a435cf86",

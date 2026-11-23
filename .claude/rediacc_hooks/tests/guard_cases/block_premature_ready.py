@@ -3,7 +3,7 @@
 from rediacc_hooks.wellknown import GH_REPO, RENET_REPO
 
 # `gh` answering is what reaches the enforcement path at all. The suite's own `ready_case` stubs it for exactly this reason, and its comment says why the old "cannot be tested here, it is the network" claim was not a good one: "the command that would have disproved it took one minute to write".
-ENVS = [
+ENVS: list = [
     ("gh-silent-failure", {}, {}),
     ("ci-green", {}, {"gh": "#!/bin/sh\necho SUCCESS\n"}),
     ("ci-red", {}, {"gh": "#!/bin/sh\necho FAILURE\n"}),

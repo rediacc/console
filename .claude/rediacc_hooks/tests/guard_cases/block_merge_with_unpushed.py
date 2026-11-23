@@ -3,7 +3,7 @@
 from rediacc_hooks.wellknown import GH_REPO, RENET_REPO
 
 # THE THREE GIT WORLDS THIS GUARD DISTINGUISHES, and it distinguishes none of them inside a feature worktree. Run against this checkout it fails open on every input, because no `origin/<branch>` ref exists here -- so the whole corpus would have compared two constants. `test_every_guard_discriminates` said so on the first run, which is what these are an answer to.
-ENVS = [
+ENVS: list = [
     ("ahead", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-ahead}"}, {}),
     ("synced", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-synced}"}, {}),
     ("main", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-main}"}, {}),

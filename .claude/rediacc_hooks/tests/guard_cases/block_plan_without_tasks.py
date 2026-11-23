@@ -68,7 +68,7 @@ def _plan_world(_unused):
 FIXTURES = {"plan-world": _plan_world}
 
 
-ENVS = [("plans", {"REDIACC_PLAN_WORLD": "{FIXTURE:plan-world}"}, {})]
+ENVS: list = [("plans", {"REDIACC_PLAN_WORLD": "{FIXTURE:plan-world}"}, {})]
 
 
 EDGE_CASES = [

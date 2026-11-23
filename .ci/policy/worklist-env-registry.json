@@ -683,6 +683,14 @@
         "NONE"
       ]
     },
+    "WORKLIST_READ_MEMO": {
+      "kind": "flag",
+      "class": "harness",
+      "defaults": [
+        "'on'"
+      ],
+      "why": "`off` turns the per-read store memo off (wl_core.py:1136); compared with != 'off', so a typo leaves the memo on, which is the fail-open direction"
+    },
     "WORKLIST_RECORD_BLOB_RATIO": {
       "kind": "tuning",
       "class": "harness",

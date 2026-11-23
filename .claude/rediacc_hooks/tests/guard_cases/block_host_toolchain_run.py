@@ -1,7 +1,7 @@
 """The test tables of `block_host_toolchain_run`, moved out of the guard so a hook call imports no test data (PLAN-tooling-code-reduction CR5); the guard forwards each name here through `guards.tables`."""
 
 # The three docker worlds this guard's tail distinguishes, driven rather than described. Without them the differential only ever sees whichever devbox this machine happens to be running, and the two NOTE branches plus the refusal are a coin toss decided by another session's `devbox up`.
-ENVS = [
+ENVS: list = [
     ("no-devbox", {}, {"docker": "#!/bin/sh\nexit 0\n"}),
     (
         "devbox-without-tool",

@@ -6,7 +6,7 @@ _fixture_git = _common.fixture_git
 
 
 # The four states one .gitmodules entry can be in, in one tree: sub every tracked file staged for deletion -- the loudest arm partial one of three, so the loud arm must NOT fire clean a real submodule with nothing staged, skipped by the `-n` test gone a path with no checkout at all, skipped by the `-e` test
-_SUBMODULES = (
+_SUBMODULES: tuple = (
     ("sub", ["sub/a.txt", "sub/b.txt"], ["sub/a.txt", "sub/b.txt"]),
     ("partial", ["partial/a.txt", "partial/b.txt", "partial/c.txt"], ["partial/a.txt"]),
     ("clean", ["clean/x.txt"], []),
@@ -51,7 +51,7 @@ FIXTURES = {"submodule-deletions": _submodule_tree}
 
 
 # GIT_WORK_TREE and NOT CLAUDE_PROJECT_DIR: this guard never reads that variable. It resolves its own root with `git rev-parse --show-toplevel` from whatever directory the harness invoked it in, so the environment is the only place a controlled world can be handed to it.
-ENVS = [("submodules", {"GIT_WORK_TREE": "{FIXTURE:submodule-deletions}"}, {})]
+ENVS: list = [("submodules", {"GIT_WORK_TREE": "{FIXTURE:submodule-deletions}"}, {})]
 
 
 EDGE_CASES = [

@@ -15,7 +15,7 @@ _GH_EMPTY = "#!/bin/sh\ncat <<'GHEOF'\n[]\nGHEOF\n"
 _GH_DOWN = "#!/bin/sh\necho 'gh: could not connect'\nexit 1\n"
 
 
-ENVS = [
+ENVS: list = [
     ("gh-silent-failure", {}, {}),
     ("gh-unreachable", {}, {"gh": _GH_DOWN}),
     ("gh-none-open", {}, {"gh": _GH_EMPTY}),

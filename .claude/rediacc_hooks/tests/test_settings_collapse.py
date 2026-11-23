@@ -252,7 +252,7 @@ def routed_cases():
 
 def by_chain(rows):
     """`{chain: {payload: label}}`, deduplicated by payload. Duplicates collapse: the chain runs every member regardless of which guard a case was written for, so the same bytes twice is the same comparison twice."""
-    out = {}
+    out: dict[str, dict[str, str]] = {}
     for chain, _guard, payload, label, _rc in rows:
         out.setdefault(chain, {}).setdefault(payload, label)
     return out
