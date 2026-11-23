@@ -53,7 +53,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 7 of 66 plans done, 1165 of 1433 boxes done (81%).
+Promoted: 8 of 66 plans done, 1166 of 1433 boxes done (81%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -121,7 +121,7 @@ Promoted: 7 of 66 plans done, 1165 of 1433 boxes done (81%).
 | 62 | PLAN-weekly-lessons.md | 2/8 | 6 open |
 | 63 | PLAN-tooling-speed.md | 6/8 | 2 open |
 | 64 | PLAN-tooling-code-reduction.md | 5/11 | 6 open |
-| 65 | PLAN-stop-hook-retro-20261123.md | 7/8 | 1 open |
+| 65 | PLAN-stop-hook-retro-20261123.md | 8/8 | done |
 | 66 | PLAN-silent-failure-sweep.md | 7/10 | 3 open |
 <!-- queue:progress:end -->
 

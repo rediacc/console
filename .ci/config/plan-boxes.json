@@ -3644,17 +3644,16 @@
       "owner": "ace763dd",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 7,
-      "open_sigs": [
-        "c69a9c1a"
-      ],
+      "open": 0,
+      "done": 8,
+      "open_sigs": [],
       "done_sigs": [
         "0c03386b",
         "14560416",
         "353a2f01",
         "865f9fd2",
         "ad9b77d5",
+        "c69a9c1a",
         "e5c316b5",
         "f774d370"
       ]

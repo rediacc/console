@@ -198,11 +198,12 @@ A fabricated sha still fails the `rev-parse --verify` step.
     (ticked) 2026-11-23T04:52:05Z by ace763dd: commit:26dc7587c1 fileline:.claude/rediacc_hooks/tests/test_wl_tick_commit_ref.py:1 -- commit: accepted when on origin/main, the landing branch, a patch-equivalent or a cherry-picked line; random sha refused; pytest 30 passed
 - [x] **R20261123.7** In `wl_worktrees`, judge a lease whose record `cut_from` equals the landing record's branch against `refs/heads/<landing branch>`, not the survey tree's HEAD (`.claude/hooks/stop/wl_worktrees.py:117-142`). Fixture: a lease cut from landing with one commit picked into landing gives no `worktree-unlanded`. Inverse: an unpicked commit is still listed. Test: .claude/hooks/stop/test-wl_worktrees.py.
     (ticked) 2026-11-23T04:52:08Z by ace763dd: commit:0fbab17947 fileline:.claude/hooks/stop/wl_worktrees.py:1 -- a landing-cut lease is judged against the landing branch; test-wl_worktrees 180 controls rc 0 (pre-fix 6 failures)
-- [ ] **R20261123.8** After .1 to .5 land, re-count on the next window's blocklog and transcript. Record before and after for four numbers:
+- [x] **R20261123.8** After .1 to .5 land, re-count on the next window's blocklog and transcript. Record before and after for four numbers:
   - landing-stack blocks while promote would refuse, against this plan's 70;
   - halted rebases in the main checkout on a base without the stand-down, against 1;
   - "judged a different tree" refusals caused by a STATE.md-only diff, against 1;
   - refusals that name no voiding path, against 2.
+    (ticked) 2026-11-23T10:42:10Z by ace763dd: commit:6b78fcc55e window 2026-11-23T04:52Z-10:35Z after R.1-R.7 landed, blocklog /tmp/claude-worklist/home_developer_console.blocklog-ace763dd.jsonl, 39 blocked stops: landing-stack while promote would refuse 70->0, halted main-checkout rebases 1->0, judged-different-tree on a STATE.md-only diff 1->0, refusals naming no voiding path 2->0
 
   Test: .claude/rediacc_hooks/tests/test_wl_retro.py.
 
