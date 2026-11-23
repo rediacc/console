@@ -1163,7 +1163,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/private | 10 | .py 10 |
 | .ci/rediacc_ci/proof | 5 | .py 5 |
 | .ci/rediacc_ci/proxies | 10 | .py 10 |
-| .ci/rediacc_ci/quality | 138 | .py 138 |
+| .ci/rediacc_ci/quality | 144 | .py 144 |
 | .ci/rediacc_ci/release | 41 | .py 41 |
 | .ci/rediacc_ci/review | 8 | .py 8 |
 | .ci/rediacc_ci/review/prompts | 2 | .md 2 |
@@ -1433,7 +1433,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/deps-major-allow.json` | .ci/config | code: `scripts/lib/deps/shared.ts` | no -- hardcoded in `scripts/lib/deps/shared.ts` |
 | `.ci/config/devcontainer-image.json` | .ci/config | code: `.ci/rediacc_ci/core/devbox.py` | no -- hardcoded in `.ci/rediacc_ci/core/devbox.py` |
 | `.ci/config/dmarc-known-sources.json` | .ci/config | code: `.ci/rediacc_ci/ops/dmarc_reports.py` | no -- hardcoded in `.ci/rediacc_ci/ops/dmarc_reports.py` |
-| `.ci/config/docker-npm-pin-exclusions.json` | .ci/config | code: `.ci/scripts/quality/check_allowlist_key_matching.py` | no -- hardcoded in `.ci/scripts/quality/check_allowlist_key_matching.py` |
+| `.ci/config/docker-npm-pin-exclusions.json` | .ci/config | code: `.ci/rediacc_ci/quality/allowlist_key_matching.py` | no -- hardcoded in `.ci/rediacc_ci/quality/allowlist_key_matching.py` |
 | `.ci/config/env-manifest.json` | .ci/config | code: `.ci/rediacc_ci/quality/env_manifest.py` | no -- hardcoded in `.ci/rediacc_ci/quality/env_manifest.py` |
 | `.ci/config/free-mail-domains.json` | .ci/config | code: `.ci/rediacc_ci/ops/enterprise_lookup.py` | no -- hardcoded in `.ci/rediacc_ci/ops/enterprise_lookup.py` |
 | `.ci/config/freshness.json` | .ci/config | wiring: `.github/workflows/ops-housekeeping.yml` | yes -- repoint in `.github/workflows/ops-housekeeping.yml` |

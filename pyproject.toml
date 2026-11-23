@@ -421,11 +421,11 @@ ignore = [
     # BLOCKER: this gate reads a Stop-hook or rediacc_hooks module through a sys.path hop to a directory it computes at run time (a fixture root in the tests) and turns a failed import into a named refusal, so the import cannot sit at the top where the hop has not run; `python3 -c 'import wl_hints'` from .ci fails with ModuleNotFoundError, and a top-level hop statement would make every later import E402
     "PLC0415",
 ]
-".ci/scripts/quality/check_gate_reachability_coverage.py" = [
+".ci/rediacc_ci/quality/gate_reachability_coverage.py" = [
     # BLOCKER: this gate reads a Stop-hook or rediacc_hooks module through a sys.path hop to a directory it computes at run time (a fixture root in the tests) and turns a failed import into a named refusal, so the import cannot sit at the top where the hop has not run; `python3 -c 'import wl_reggate'` from .ci fails with ModuleNotFoundError, and a top-level hop statement would make every later import E402
     "PLC0415",
 ]
-".ci/scripts/quality/check_agent_hint_liveness.py" = [
+".ci/rediacc_ci/quality/agent_hint_liveness.py" = [
     # BLOCKER: this gate reads a Stop-hook or rediacc_hooks module through a sys.path hop to a directory it computes at run time (a fixture root in the tests) and turns a failed import into a named refusal, so the import cannot sit at the top where the hop has not run; `python3 -c 'import wl_agents'` from .ci fails with ModuleNotFoundError, and a top-level hop statement would make every later import E402
     "PLC0415",
 ]
