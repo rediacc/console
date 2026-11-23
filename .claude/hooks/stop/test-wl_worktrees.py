@@ -690,10 +690,12 @@ def control_live(tmp):
     check("a blind roster says so", "w1" in got["report"], True)
 
 
-def write_hold(main, lease_id, item, reason="waits on its dependencies"):
+def write_hold(main, lease_id, item, reason="waits on its dependencies", session=ME):
     store = main / ".git/rediacc-worktrees"
     store.mkdir(exist_ok=True)
     body = {"item": item, "reason": reason, "held_at": "2026-11-23T08:00:00Z"}
+    if session is not None:
+        body["session"] = session
     (store / ("%s.hold" % lease_id)).write_text(json.dumps(body), encoding="utf-8")
 
 
@@ -701,7 +703,7 @@ def control_hold(tmp):
     main = lease_main_repo(tmp, "hold")
     lease = new_lease(tmp, main, "w1")
     sha = commit_in(tmp, lease, "b.txt", "b\n")
-    open_item = {"id": "ac6a4f6b", "state": " ", "text": "preview signer"}
+    open_item = {"id": "ac6a4f6b", "state": " ", "text": "preview signer", "owner": ME}
     got = read(tmp, main, items=[open_item])
     check("an unheld lease blocks", ids(got["unlanded"]), ["w1"])
     check("an unheld lease parks nothing", got["parked"], [])
@@ -723,14 +725,49 @@ def control_hold(tmp):
     check("a ticked item parks nothing", got["parked"], [])
     got = read(tmp, main, items=[])
     check("a gone item blocks again", got["unlanded"][0]["commits"], {".": [sha]})
+    # 0c0cdceb.1: a hold names the item's full id; a prefix, a peer's item and a peer's write are not honoured.
     got = read(tmp, main, items=[{**open_item, "id": "ac6a4f6b0001"}])
-    check("a hold names an item by its id prefix too", got["unlanded"], [])
+    check("a hold naming a prefix of an open id does not hold", ids(got["unlanded"]), ["w1"])
+    write_hold(main, "w1", "ac")
+    got = read(tmp, main, items=[open_item])
+    check("a one-letter prefix hold holds nothing", ids(got["unlanded"]), ["w1"])
+    write_hold(main, "w1", "ac6a4f6b")
+    got = read(tmp, main, items=[{**open_item, "owner": "babe0000"}])
+    check("another session's item does not hold it", ids(got["unlanded"]), ["w1"])
+    check("another session's item is said", any("babe0000" in d for d in got["doubts"]), True)
+    got = read(tmp, main, items=[{**open_item, "owner": None}])
+    check("an untagged item does not hold it", ids(got["unlanded"]), ["w1"])
+    write_hold(main, "w1", "ac6a4f6b", session="babe0000")
+    got = read(tmp, main, items=[open_item])
+    check("a hold another session wrote does not hold", ids(got["unlanded"]), ["w1"])
+    check("a foreign writer is said", any("babe0000" in d for d in got["doubts"]), True)
+    write_hold(main, "w1", "ac6a4f6b", session=None)
+    got = read(tmp, main, items=[open_item])
+    check("a hold with no writer session does not hold", ids(got["unlanded"]), ["w1"])
+    write_hold(main, "w1", "ac6a4f6b")
     got = read(tmp, main, items=[{**open_item, "id": "ffff0000"}])
     check("another open item does not hold it", ids(got["unlanded"]), ["w1"])
+    got = read(tmp, main, items=[open_item])
+    check("the owner's exact hold is honoured again", got["unlanded"], [])
+    # 0c0cdceb.2: a live writer and a blind roster are judged before the hold.
+    running = {"ids": ["wa"], "trees": [str(lease)], "prompts": []}
+    got = read(tmp, main, items=[open_item], live=running)
+    check("a held lease with a live writer reads held", got["held"], ["w1"])
+    check("a held lease with a live writer is not parked", got["parked"], [])
+    got = read(tmp, main, items=[open_item], live=None)
+    check("a held lease under a blind roster reads unknown", got["unknown"], ["w1"])
+    check("a held lease under a blind roster is not parked", got["parked"], [])
     (main / ".git/rediacc-worktrees/w1.hold").write_text("{", encoding="utf-8")
     got = read(tmp, main, items=[open_item])
     check("a damaged hold blocks", ids(got["unlanded"]), ["w1"])
     check("a damaged hold is said", "w1: its hold record could not be read" in got["doubts"], True)
+    (main / ".git/rediacc-worktrees/w1.hold").write_text('{"item": "x"}', encoding="utf-8")
+    got = read(tmp, main, items=[open_item])
+    check(
+        "a hold with no reason reads as damaged",
+        "w1: its hold record could not be read" in got["doubts"],
+        True,
+    )
 
 
 def control_landed(tmp):
