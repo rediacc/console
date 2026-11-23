@@ -27,6 +27,8 @@ interface JobPollStatus {
   startedAt?: string;
   finishedAt?: string;
   function: string;
+  /** The repository the job acts on, from renet's status file; server side only (the wire body drops it). */
+  repoGuid?: string;
 }
 
 interface JobPollEvent {
@@ -113,6 +115,8 @@ function parseStatus(trailer: string): JobPollStatus {
   if (startedAt) status.startedAt = startedAt;
   const finishedAt = nonEmptyString(raw.finished_at);
   if (finishedAt) status.finishedAt = finishedAt;
+  const repoGuid = nonEmptyString(raw.repo_guid);
+  if (repoGuid) status.repoGuid = repoGuid;
   return status;
 }
 

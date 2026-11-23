@@ -109,6 +109,8 @@ export function registerJobRoutes(app: Hono, deps: ServeDeps, helpers: JobRouteH
             state: polled.status.state as TicketState,
             exitCode: polled.status.exitCode,
             finishedAt: polled.status.finishedAt,
+            function: polled.status.function,
+            repoGuid: polled.repoGuid,
           });
           return polled;
         });
@@ -211,8 +213,10 @@ class BadJobRequest extends Error {}
 /** The poll body, checked against the wire schema, with how long the exec took. */
 async function pollAndParse(machine: string, jobId: string, sinceLine: number, maxLines: number) {
   const started = Date.now();
-  const body = JobPollResponseSchema.parse(await pollOnce(machine, jobId, sinceLine, maxLines));
-  return { body, status: body.status, durationMs: Date.now() - started };
+  const polled = await pollOnce(machine, jobId, sinceLine, maxLines);
+  const body = JobPollResponseSchema.parse(polled);
+  // The wire body does not carry the repo GUID; it stays server side, for rebuilding a ticket the executor lost.
+  return { body, status: body.status, repoGuid: polled.status.repoGuid, durationMs: Date.now() - started };
 }
 
 /** One `renet job logs --with-status` exec, parsed into a poll body. */
