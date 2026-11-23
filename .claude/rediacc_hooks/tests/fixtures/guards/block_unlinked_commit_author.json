@@ -15,7 +15,7 @@
     ["an --auth override (a unique prefix)", "git commit --auth=\"Nobody <nobody@example.invalid>\" -m \"x\""],
     ["an --author value as the next word", "git commit -q --author \"Nobody <nobody@example.invalid>\" -m x"],
     {"//": "Not a commit at all."},
-    ["prose about an address", "echo 'muhammed@rediacc.com is the wrong one'"],
+    ["prose about an address", "echo '@WK_OPERATOR_EMAIL@ is the wrong one'"],
     ["git tag is deliberately out of scope", "git tag -m \"x\" v1"],
     ["gh pr create is deliberately out of scope", "gh pr create --draft --fill"],
     {"//": "A submodule of this tree IS judged; an independent checkout is not."},

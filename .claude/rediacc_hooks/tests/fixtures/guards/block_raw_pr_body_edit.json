@@ -33,19 +33,19 @@
     {"//": "Prose about the rule is not the rule being broken."},
     ["prose naming the flag", "echo 'never use gh pr edit --body by hand'"],
     {"//": "2026-09-30: a submodule PR carries no generated block, so there is none to drop."},
-    ["a submodule PATCH with a blockless body", "gh api repos/rediacc/renet/pulls/113 -X PATCH -f body='prose only'"],
-    ["a console PATCH with the same blockless body is still refused", "gh api repos/rediacc/console/pulls/591 -X PATCH -f body='prose only'"],
-    ["a submodule PATCH beside a console one: the console one is judged", "gh api repos/rediacc/renet/pulls/113 -X PATCH -f body=x; gh api repos/rediacc/console/pulls/591 -X PATCH -f body=y"],
-    ["a submodule edit by --repo", "gh pr edit 113 --repo rediacc/renet --body \"prose only\""],
-    ["a submodule edit by -R", "gh pr edit 89 -R rediacc/account --body \"prose only\""],
+    ["a submodule PATCH with a blockless body", "gh api repos/@WK_RENET_REPO@/pulls/113 -X PATCH -f body='prose only'"],
+    ["a console PATCH with the same blockless body is still refused", "gh api repos/@WK_GH_REPO@/pulls/591 -X PATCH -f body='prose only'"],
+    ["a submodule PATCH beside a console one: the console one is judged", "gh api repos/@WK_RENET_REPO@/pulls/113 -X PATCH -f body=x; gh api repos/@WK_GH_REPO@/pulls/591 -X PATCH -f body=y"],
+    ["a submodule edit by --repo", "gh pr edit 113 --repo @WK_RENET_REPO@ --body \"prose only\""],
+    ["a submodule edit by -R", "gh pr edit 89 -R @WK_ACCOUNT_REPO@ --body \"prose only\""],
     {"//": "2026-10-07 (#8ed364fe): every spelling gh accepts means what gh makes of it."},
-    ["a submodule edit by -R=", "gh pr edit 89 -R=rediacc/account -b \"prose only\""],
+    ["a submodule edit by -R=", "gh pr edit 89 -R=@WK_ACCOUNT_REPO@ -b \"prose only\""],
     ["a PATCH spelled -XPATCH", "gh api repos/o/r/pulls/42 -XPATCH -f body='prose only'"],
     ["a PATCH spelled --method=PATCH", "gh api repos/o/r/pulls/42 --method=PATCH -fbody=x"],
     ["a PATCH by --raw-field=body=", "gh api repos/o/r/pulls/42 -X PATCH --raw-field=body=x"],
     ["a PATCH of a review's own body is not the PR body", "gh api repos/o/r/pulls/42/reviews/9 -X PATCH -f body=x"],
-    ["a console edit by --repo", "gh pr edit 591 --repo rediacc/console --body \"prose only\""],
-    ["a submodule create", "gh pr create --repo rediacc/elite --title t --body \"prose only\""],
-    ["a submodule create does not excuse a console edit beside it", "gh pr create --repo rediacc/renet --body \"x\" && gh pr edit 5 --body \"y\""]
+    ["a console edit by --repo", "gh pr edit 591 --repo @WK_GH_REPO@ --body \"prose only\""],
+    ["a submodule create", "gh pr create --repo @WK_ELITE_REPO@ --title t --body \"prose only\""],
+    ["a submodule create does not excuse a console edit beside it", "gh pr create --repo @WK_RENET_REPO@ --body \"x\" && gh pr edit 5 --body \"y\""]
   ]
 }

@@ -15,7 +15,7 @@
     ["gh release view", "gh release view v1.2.3"],
     ["a v tag push", "git push origin v1.2.3"],
     ["a branch push", "git push origin 1231-9"],
-    ["docker push", "docker push ghcr.io/rediacc/renet:1.2.3"],
+    ["docker push", "docker push @WK_IMAGE_REGISTRY@/renet:1.2.3"],
     ["docker build", "docker build -t x ."],
     ["the www deploy", "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www"],
     ["a stable CLI promote", "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.promote_r2_to_stable"],

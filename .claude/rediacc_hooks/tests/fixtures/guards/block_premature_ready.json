@@ -1,14 +1,14 @@
 {
   "EDGE_CASES": [
-    ["the flip this guard gates", "gh pr ready 42 --repo rediacc/console"],
+    ["the flip this guard gates", "gh pr ready 42 --repo @WK_GH_REPO@"],
     ["the flip with no selector at all", "gh pr ready"],
     {"//": "--undo can only push a PR back to draft, so it is always safe."},
-    ["an undo is always allowed", "gh pr ready --undo 42 --repo rediacc/console"],
+    ["an undo is always allowed", "gh pr ready --undo 42 --repo @WK_GH_REPO@"],
     {"//": "...and it must belong to THIS invocation, not to a sibling."},
     ["an undo followed by a real flip", "gh pr ready --undo 1; gh pr ready 531"],
     {"//": "Only console has draft PRs, so a --repo elsewhere is a no-op flip."},
-    ["a flip on a private submodule repo", "gh pr ready 42 --repo rediacc/renet"],
-    ["a sibling view must not donate its repo", "gh pr view 1 --repo rediacc/renet; gh pr ready 531"],
+    ["a flip on a private submodule repo", "gh pr ready 42 --repo @WK_RENET_REPO@"],
+    ["a sibling view must not donate its repo", "gh pr view 1 --repo @WK_RENET_REPO@; gh pr ready 531"],
     ["a different pr subcommand", "gh pr view 42"],
     ["prose naming the command", "echo '; gh pr ready is hook-gated'"],
     {"//": "GraphQL parity: the same mutation reached through `gh api graphql` instead of `gh pr ready`."},
