@@ -1,28 +1,23 @@
-## SESSION ace763dd 2026-11-23T20:29:37Z
+## SESSION ace763dd 2026-11-23T20:41:52Z
 
-# STATE ace763dd (2026-11-23 ~20:30Z, operator away)
+# STATE ace763dd (2026-11-23 ~20:55Z, operator away, /wisdom hand-over)
 
 ## Big pieces
-- 1121-1: operator pushed console at e40c6991a2 (COMMIT_POLICY_OK) and the backup ref; lead pushed account d141b7b and renet 99152549. Local commits since (cadence, renet FC7/FC9, disk floor, ticks) are unpushed; the next push again needs the operator's COMMIT_POLICY_OK because the SES key-ID commits are in the range.
-- Effort high. Writer limits removed (PLAN-unlimited-writers U1-U4 landed d1b39b5a07). Cadence plan landed WN1-WN4 (bd9a688eec, 490fbdbf06): hourly /writers-now enforced at high, self-review seeds, stuck shell-waiters caught. Lease tool now refuses below a disk floor (13bfe1f8a5) after 12 spawns hit ENOSPC.
-- vm:check VERIFIED on the current tree (271 assertions, 0 failed); hostinger still runs older renet (10a05862c52e vs 31f049b3a8bd), so LP-hostinger receipts wait on the runner provisioning the branch renet.
-- Disk: ~28 GB free; each lease ~4.4 GB; /tmp/tsx-1000 15 GB cache can be cleared when nothing runs tsx.
+- 1121-1: console pushed by the operator at e40c6991a2; ~25 local commits since (cadence, renet FC7/FC9, disk floor, rmcp-decide D1/D2, stuck-shell fixes 73a0be9444 + 7229d7fbe3, ticks). Next push needs the operator's COMMIT_POLICY_OK (SES key-ID commits in range); push account/renet branches too when their gitlinks move.
+- Effort high; no writer limit; lease tool refuses below ~18.8 GB free (13bfe1f8a5). Disk ~27 GB free, ~4.4 GB per lease.
+- vm:check VERIFIED for the tree (271/0); hostinger renet being upgraded to 31f049b3a8bd (was 10a05862c52e).
+- Parked [?] #c3383490 Stripe dormant code: DEFAULT keep inert behind the flag (fires ~22:45Z).
 
 ## Delegated
-- afb93bcd5c198652d rmcp-policy-record C1 C2 G1 SK2 SK3 K5 + W1 (#6ac78a2f, also #bdd23e50).
-- ac9bac7c8e2dcb29d rmcp-decide (#824356b7).
-- a5c9739899b8ccae2 rmcp-executor-hardening + on-prem test seams (#921c7c4e).
-- a928acfb15eb67972 console-confirm-stepup (#5a31206f).
-- a009fd200f7f1a872 forensics-shipping (#3172f6b3).
-- ae1f51c5c5b30755f hostinger runner: branch renet provision + LP-hostinger receipts (#da3e7457); production P1 (#7000becb) after it.
-
-## Overnight
-- Landed today (selection): K1-K4/K3 password removal, D43 requirePasskey keeps recovery (68b0974552), CS1-CS8/CS11, CL-S1..S4, stripe SD1-SD4 (b41f60733b), forensics FC1-FC7/FC9 + FD1-FD4/FD7 (07c84b60eb), writeback WB6/WB9/WB11, e2e passkey rewrite, unlimited writers, cadence, disk floor. Tick batches d2dbec4542 (43 boxes), e40c6991a2, 35cdd8074f.
-- Decided under rule 2: renet trees landed instead of held (gates fixed after); disk wave throttled to 6 leases; U5 (>25-writer wave) left open since the harness ceiling is 20.
-- Parked [?]: Stripe dormant code (DEFAULT keep inert behind the flag, no removal plan).
-- Queued on disk (#61fcbedd): console audit-r2, run-index, command-line, ia, forensics detection rest, alerts-notices FN1-FN7, CL-X6.
+- ae1f51c5c5b30755f hostinger runner (#da3e7457): restart-services --include-docker (7/11 repo daemons done at 20:40Z), then hash check, repo list/backup usage diff (/tmp/hs2/), 23 LP-hostinger --write recordings + restore L1 a6aa3bb3 + LP 186fb47a; evidence /tmp/writers-now/1121-1-20261123T2030Z-evidence-hostinger.md. No commits.
+- afb93bcd5c198652d rmcp-policy-record C1 C2 G1 SK2 SK3 K5 + W1 (#6ac78a2f, #bdd23e50); owns shared/cli/account src; accept per box + tsc.
+- a5c9739899b8ccae2 rmcp-executor-hardening EH* + on-prem /test seams (#921c7c4e).
+- a928acfb15eb67972 console-confirm-stepup CF2.. (#5a31206f).
+- a009fd200f7f1a872 forensics-shipping FS3.. (#3172f6b3).
+- a5c03c0406038b51a console-audit-r2 (#e205396a).
 
 ## Next action
-1. Land each report (submodules first, gitlink, console), verify on the landed tree, gc the tree, then start the next queued cluster from #61fcbedd as disk allows.
-2. Tick each landed box in one batch commit; record hostinger receipts from the runner's evidence file.
-3. After a round of landings: vm:check again if VM trigger paths changed, then leave the push command for the operator.
+1. As each writer reports: cherry-pick submodules first (git -C private/<sm> cherry-pick -x), then console; regenerate conflicting generated files (hash manifests: npm run i18n:generate-hashes; shards: npm run shard:place -- quality-pytest; docs: npx tsx scripts/gen/gen-docs.ts --write) instead of hand-merging; run the touched suites on the landed tree; commit the gitlink; worktree gc --write --id; tick boxes in one batch (plan-investigate commit:+fileline: then plan-tick).
+2. Refill freed disk with the queue #61fcbedd (run-index, command-line, ia, forensics detection rest, alerts-notices FN1-FN7, CL-X6) and #6f4cd61d (decide D2 wiring after C1).
+3. Hostinger report: tick the recorded LP boxes, then production P1 (#7000becb).
+4. After the round: vm:check again if VM trigger paths changed, ci:quick, leave the operator the push command.
