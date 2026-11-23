@@ -3,18 +3,25 @@
  * CLI Contract Generator
  *
  * Joins the live Commander tree with COMMAND_METADATA (planes, policy, MCP
- * annotations), the command registry (domain grouping),
+ * annotations), COMMAND_SEVERITY / COMMAND_PREVIEW (command-safety.ts), the
+ * error-code origins (error-origins.ts), the command registry (domain grouping),
  * and the i18n catalogues, and emits the contract that drives the web console,
  * the `rdc --proxy` thin client, and the executor.
  *
  * Emits into packages/shared/src/cli-contract/data:
- *   contract.generated.ts   typed literal (the import surface)
- *   contract.json           same data, for consumers that load it as an asset
- *   i18n/<lang>.json        per-language strings, lazily loadable
+ *   contract.generated.ts           typed literal (the import surface)
+ *   contract.json                   same data, for consumers that load it as an asset
+ *   contract-version.generated.ts   the version alone, so a web bundle can send it
+ *                                   without pulling the contract literal in
+ *   i18n/<lang>.json                per-language strings, lazily loadable
+ *
+ * The version is a content hash (see contractVersion), so regeneration is
+ * deterministic and there is no version flag.
  *
  * Usage:
- *   npx tsx packages/cli/scripts/generate-cli-contract.ts [--output <dir>] [--version <v>]
+ *   npx tsx packages/cli/scripts/generate-cli-contract.ts [--output <dir>]
  */
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,12 +30,19 @@ import type {
   CliContract,
   CommandExample,
   CommandGroup,
+  CommandPreview,
+  CommandSeverity,
   ContractCommand,
+  ContractErrorCode,
   ContractOption,
   ContractPositional,
   OutputHints,
   PositionalKind,
 } from '../../shared/src/cli-contract/types.js';
+import {
+  checkContractInvariants,
+  SUMMARY_MAX_LENGTH,
+} from '../../shared/src/cli-contract/validation.js';
 import { cli } from '../src/cli.js';
 import {
   COMMAND_EXAMPLES,
@@ -38,6 +52,8 @@ import {
 import { COMMAND_METADATA, READ_TIMEOUT, WRITE_TIMEOUT } from '../src/config/command-metadata.js';
 import { getCommandPlane, isInteractiveCommand } from '../src/config/command-planes.js';
 import { COMMAND_REGISTRY } from '../src/config/command-registry.js';
+import { COMMAND_PREVIEW, COMMAND_SEVERITY, NOT_PREVIEW } from '../src/config/command-safety.js';
+import { listErrorCodeOrigins } from '../src/types/error-origins.js';
 import {
   createDescriptionResolver,
   flattenHelpNamespaces,
@@ -227,22 +243,45 @@ function classifyPositional(pathKey: string, domain: string, name: string): Posi
   return POSITIONAL_KIND_BY_NAME[name] ?? DEFAULT_POSITIONAL_KIND;
 }
 
-/** Why a command that reaches a machine still cannot be proxied. */
+/**
+ * The refusal texts shared by every command of a class, keyed by their i18n key
+ * under `commands.proxyBlocked.*`. A PROXY_EXCLUSIONS entry carries its own text
+ * and is keyed by its camel-cased path (`proxyBlockedKeyFor`).
+ */
+const GENERIC_PROXY_BLOCKED = {
+  interactive:
+    'Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.',
+  localConfig:
+    'Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.',
+  localTooling:
+    'Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.',
+} as const;
+
+/** `repo sync upload` -> `commands.proxyBlocked.repoSyncUpload`; `-` splits words too. */
+function proxyBlockedKeyFor(pathKey: string): string {
+  const words = pathKey.split(/[\s-]+/).filter(Boolean);
+  const camel = words
+    .map((w, i) => (i === 0 ? w : w.charAt(0).toUpperCase() + w.slice(1)))
+    .join('');
+  return `commands.proxyBlocked.${camel}`;
+}
+
+/** Why a command that reaches a machine still cannot be proxied, with the i18n key of that text. */
 function proxyBlockedReason(
   pathKey: string,
   plane: string,
   interactive: boolean
-): string | undefined {
+): { text: string; key: string } | undefined {
   const excluded = PROXY_EXCLUSIONS[pathKey];
-  if (excluded) return excluded;
+  if (excluded) return { text: excluded, key: proxyBlockedKeyFor(pathKey) };
   if (interactive) {
-    return 'Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.';
+    return { text: GENERIC_PROXY_BLOCKED.interactive, key: 'commands.proxyBlocked.interactive' };
   }
   if (plane === 'config') {
-    return 'Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.';
+    return { text: GENERIC_PROXY_BLOCKED.localConfig, key: 'commands.proxyBlocked.localConfig' };
   }
   if (plane === 'other') {
-    return 'Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.';
+    return { text: GENERIC_PROXY_BLOCKED.localTooling, key: 'commands.proxyBlocked.localTooling' };
   }
   return undefined;
 }
@@ -256,12 +295,12 @@ function readArg(name: string, fallback: string): string {
 
 const DEFAULT_OUTPUT = path.resolve(__dirname, '../../shared/src/cli-contract/data');
 const outputDir = path.resolve(readArg('output', DEFAULT_OUTPUT));
-/**
- * Fixed 'dev' by default so regeneration is deterministic and the staleness
- * gate can diff. The real version is injected at build time, like the renet
- * contract's *_VERSION constants.
- */
-const version = readArg('version', 'dev');
+if (process.argv.includes('--version')) {
+  console.error(
+    '--version was dropped: the contract version is a content hash of the command surface (contractVersion).'
+  );
+  process.exit(1);
+}
 
 // ---------- Registry lookup ----------
 
@@ -512,6 +551,83 @@ function buildCommandOutput(pathKey: string): OutputHints | undefined {
   return { primaryKey: hints.primaryKey, columns: [...hints.columns] };
 }
 
+/**
+ * The i18n key of a command's summary. The `.summary()` text is resolved back
+ * to its key the way descriptions are, preferring the command's own
+ * `descriptionShort` / `summary` key when its English matches, so two commands
+ * sharing one English sentence still each point at their own key.
+ */
+function resolveSummaryKey(path: string[], summary: string): string | null {
+  const base = `commands.${path.join('.')}`;
+  for (const candidate of [`${base}.descriptionShort`, `${base}.summary`]) {
+    if (resolver.strings.get(candidate) === summary) return candidate;
+  }
+  return resolver.findDescriptionKey(summary);
+}
+
+/** The command's `.summary()`, refused when missing or over the contract's limit. */
+function resolveSummary(pathKey: string, liveSummary: string): string {
+  if (liveSummary.trim() === '') {
+    curationProblems.push(
+      `${pathKey}: no .summary(). Add .summary(t('commands.<path>.descriptionShort')) and its English key`
+    );
+  } else if (liveSummary.length > SUMMARY_MAX_LENGTH) {
+    curationProblems.push(
+      `${pathKey}: summary is ${liveSummary.length} characters, over ${SUMMARY_MAX_LENGTH}`
+    );
+  }
+  return liveSummary;
+}
+
+/** The severity from COMMAND_SEVERITY; a command with no entry is refused (D2). */
+function resolveSeverity(pathKey: string): CommandSeverity {
+  const severity = at(COMMAND_SEVERITY, pathKey);
+  if (severity === undefined) {
+    curationProblems.push(
+      `COMMAND_SEVERITY["${pathKey}"]: missing. Every contract command declares none, caution or destructive (command-safety.ts)`
+    );
+    return 'caution';
+  }
+  return severity;
+}
+
+/**
+ * The preview switch from COMMAND_PREVIEW. A command taking `--dry-run` or
+ * `--apply` must be in COMMAND_PREVIEW or in NOT_PREVIEW with a reason, never
+ * both and never neither (D2).
+ */
+function resolvePreview(pathKey: string, options: ContractOption[]): CommandPreview | undefined {
+  const preview = at(COMMAND_PREVIEW, pathKey);
+  const notPreview = at(NOT_PREVIEW, pathKey);
+  if (preview && notPreview !== undefined) {
+    curationProblems.push(`${pathKey}: listed in both COMMAND_PREVIEW and NOT_PREVIEW`);
+  }
+  if (notPreview !== undefined && notPreview.trim() === '') {
+    curationProblems.push(`NOT_PREVIEW["${pathKey}"]: the reason is empty`);
+  }
+  const previewFlags = options.filter((o) => o.long === 'dry-run' || o.long === 'apply');
+  if (previewFlags.length > 0 && !preview && notPreview === undefined) {
+    curationProblems.push(
+      `${pathKey}: takes ${previewFlags.map((o) => `--${o.long}`).join(' and ')} but is in neither COMMAND_PREVIEW nor NOT_PREVIEW (command-safety.ts)`
+    );
+  }
+  return preview ? { flag: preview.flag, polarity: preview.polarity } : undefined;
+}
+
+/** The i18n key of a proxy refusal, refused when en/cli.json does not hold the same text under it. */
+function checkProxyBlockedKey(pathKey: string, reason: { text: string; key: string }): void {
+  const english = resolver.strings.get(reason.key);
+  if (english === undefined) {
+    curationProblems.push(
+      `${pathKey}: proxy refusal key "${reason.key}" has no English string in en/cli.json`
+    );
+  } else if (english !== reason.text) {
+    curationProblems.push(
+      `${pathKey}: en/cli.json "${reason.key}" differs from the refusal text the generator emits`
+    );
+  }
+}
+
 const commands: ContractCommand[] = walked.map((w) => {
   const domain = w.path[0];
   const meta = at(COMMAND_METADATA, w.pathKey);
@@ -547,6 +663,12 @@ const commands: ContractCommand[] = walked.map((w) => {
   const blockedReason = proxyCapable
     ? undefined
     : proxyBlockedReason(w.pathKey, plane, interactive);
+  if (blockedReason) checkProxyBlockedKey(w.pathKey, blockedReason);
+
+  const summary = resolveSummary(w.pathKey, liveCommand.summary());
+  const summaryKey = summary ? resolveSummaryKey(w.path, summary) : null;
+  const severity = resolveSeverity(w.pathKey);
+  const preview = resolvePreview(w.pathKey, options);
 
   // Every proxyable machine-plane command runs as one machine job (PLAN-detached-jobs section 14), minus the `job *` verbs (they read the spool) and the
   // section 24 exceptions in DETACH_EXCLUSIONS. `--background` is accepted exactly where this is true.
@@ -561,6 +683,10 @@ const commands: ContractCommand[] = walked.map((w) => {
     plane,
     descriptionKey: w.descriptionKey,
     label: liveCommand.description(),
+    summaryKey,
+    summary,
+    severity,
+    ...(preview ? { preview } : {}),
     options,
     positionals,
     hasSubcommands: w.hasSubcommands,
@@ -580,7 +706,9 @@ const commands: ContractCommand[] = walked.map((w) => {
 
     interactive,
     proxyCapable,
-    ...(blockedReason ? { proxyBlockedReason: blockedReason } : {}),
+    ...(blockedReason
+      ? { proxyBlockedReason: blockedReason.text, proxyBlockedReasonKey: blockedReason.key }
+      : {}),
     detachable,
     ...(detachBlockedReason ? { detachBlockedReason } : {}),
 
@@ -592,6 +720,23 @@ const commands: ContractCommand[] = walked.map((w) => {
 });
 
 commands.sort((a, b) => a.pathKey.localeCompare(b.pathKey));
+
+/** Safety-table keys naming no contract command: the curation silently stops applying (D2). */
+const staleSafetyKeys = [
+  ...Object.keys(COMMAND_SEVERITY).map((k) => [k, 'COMMAND_SEVERITY'] as const),
+  ...Object.keys(COMMAND_PREVIEW).map((k) => [k, 'COMMAND_PREVIEW'] as const),
+  ...Object.keys(NOT_PREVIEW).map((k) => [k, 'NOT_PREVIEW'] as const),
+].filter(([pathKey]) => !livePathKeys.has(pathKey));
+for (const [pathKey, table] of staleSafetyKeys) {
+  curationProblems.push(`${table}["${pathKey}"]: names no contract command`);
+}
+for (const cmd of commands) {
+  if (cmd.destructive === true && cmd.severity === 'none') {
+    curationProblems.push(
+      `COMMAND_SEVERITY["${cmd.pathKey}"]: none, but its MCP annotation is destructive`
+    );
+  }
+}
 
 /**
  * Metadata gates: the classification tables (staleness, resource-noun
@@ -607,16 +752,54 @@ if (metadataProblems.length > 0) {
     console.error(`  ${problem}`);
   }
   console.error(
-    '\n  Fix the classification-table or command-docs entry each line names. A stale or\n' +
-      '  wrong entry does not fail on its own: the lookup misses and the metadata\n' +
-      '  silently stops applying, so generation refuses to proceed instead.\n'
+    '\n  Fix the classification-table, command-docs, command-safety or en/cli.json entry\n' +
+      '  each line names. A stale or wrong entry does not fail on its own: the lookup\n' +
+      '  misses and the metadata silently stops applying, so generation refuses to\n' +
+      '  proceed instead.\n'
   );
   process.exit(1);
 }
 
 const languages = listLocales();
 
-const contract: CliContract = { version, languages, commands };
+const errorCodes: ContractErrorCode[] = listErrorCodeOrigins()
+  .map(({ code, origin }) => ({ code, origin }))
+  .sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
+
+/** JSON with object keys sorted at every level, so the hash ignores key order. */
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (value !== null && typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>)
+      .filter(([, v]) => v !== undefined)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/**
+ * The contract version (D5): the first 16 hex characters of sha256 over the
+ * canonical JSON of the command surface, the languages and the error codes.
+ * Translations are left out: they do not change what the executor accepts. The
+ * web bundle and the executor ship separately, and what must match is the
+ * surface each was built against, not the release tag.
+ */
+function contractVersion(
+  surface: Pick<CliContract, 'commands' | 'languages' | 'errorCodes'>
+): string {
+  return createHash('sha256').update(canonicalJson(surface)).digest('hex').slice(0, 16);
+}
+
+const version = contractVersion({ commands, languages, errorCodes });
+const contract: CliContract = { version, languages, commands, errorCodes };
+
+const invariantProblems = checkContractInvariants(contract);
+if (invariantProblems.length > 0) {
+  console.error('\x1b[31m✗ Contract invariants failed\x1b[0m\n');
+  for (const problem of invariantProblems) console.error(`  ${problem}`);
+  process.exit(1);
+}
 
 // ---------- Emit ----------
 
@@ -636,6 +819,15 @@ export const CLI_CONTRACT: CliContract = ${JSON.stringify(contract, null, 2)};
 
 // tree-write: safe outputDir is --output when given; check_cli_contract.py always passes a TemporaryDirectory
 fs.writeFileSync(path.join(outputDir, 'contract.generated.ts'), generatedTs, 'utf-8');
+
+const versionTs = `// AUTO-GENERATED by packages/cli/scripts/generate-cli-contract.ts - DO NOT EDIT
+// Run: npm run generate:cli-contract -w @rediacc/cli
+// The contract version alone, so a web bundle can send it without loading the contract.
+
+export const CLI_CONTRACT_VERSION = '${version}';
+`;
+// tree-write: safe outputDir is --output when given; check_cli_contract.py always passes a TemporaryDirectory
+fs.writeFileSync(path.join(outputDir, 'contract-version.generated.ts'), versionTs, 'utf-8');
 // tree-write: safe outputDir is --output when given; check_cli_contract.py always passes a TemporaryDirectory
 fs.writeFileSync(
   path.join(outputDir, 'contract.json'),
@@ -673,3 +865,5 @@ console.log(
 console.log(`  proxyCapable:  ${commands.filter((c) => c.proxyCapable).length}`);
 console.log(`  Interactive:   ${commands.filter((c) => c.interactive).length}`);
 console.log(`  Languages:     ${languages.length}`);
+console.log(`  Error codes:   ${errorCodes.length}`);
+console.log(`  Version:       ${version}`);
