@@ -76,17 +76,26 @@ def test_a_planted_bypass_in_a_copy_of_the_real_tree_is_red(gate, tmp_path):
 
 def test_a_planted_bad_registered_call_in_a_copy_is_red(gate, tmp_path):
     root = _copy_tree(tmp_path)
-    pkg = root / "package.json"
-    text = pkg.read_text()
-    planted = text.replace(
-        "check_region_consistency.py --selftest", "check_region_consistency.py --selftset"
+    # The one registered call that still passes a flag by entry-point path lives in a workflow, which is a call source the gate scans.
+    workflow = ROOT / ".github" / "workflows" / "ops-housekeeping.yml"
+    dst = root / ".github" / "workflows" / workflow.name
+    dst.parent.mkdir(parents=True)
+    text = workflow.read_text()
+    assert "check_region_consistency.py --live" in text, (
+        "the real registered call is gone: re-point the plant"
     )
-    assert planted != text, "the plant must change package.json"
-    pkg.write_text(planted)
+    planted = text.replace(
+        "check_region_consistency.py --live", "check_region_consistency.py --lvie"
+    )
+    assert planted != text, "the plant must change the workflow"
+    dst.write_text(text)
+    clean = _run(root)
+    gate.assert_exit_code(0, clean.rc, "the copy with the real call is green")
+    dst.write_text(planted)
     red = _run(root)
     gate.assert_exit_code(1, red.rc, "an undeclared flag in a registered call is red")
     gate.assert_contains(
-        red.err, "calls check_region_consistency.py with '--selftset'", "the call is named"
+        red.err, "calls check_region_consistency.py with '--lvie'", "the call is named"
     )
     gate.log_pass("a planted bad call turns the real-tree copy red")
 

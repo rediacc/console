@@ -1048,7 +1048,7 @@ def selftest(root, drift=False):
         == 1,
     )
     # THE DETECTOR ITSELF, on a fixture, because its first version read `.gitmodules` from the real repo while testing paths under the root it was handed -- agreeing in production and answering nonsense anywhere else, which is exactly the shape that cannot be controlled and so never is.
-    with tempfile.TemporaryDirectory() as td:
+    with tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as td:
         fx = pathlib.Path(td)
         (fx / ".gitmodules").write_text(
             '[submodule "private/aaa"]\n\tpath = private/aaa\n\turl = x\n'
@@ -1203,7 +1203,7 @@ def selftest(root, drift=False):
     )
     # THE TICKED-BOX CORRECTION, both directions. See CORRECTION_RE. A fixture root, so the controls do not depend on what the live plans say.
 
-    with tempfile.TemporaryDirectory() as fxd:
+    with tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as fxd:
         fx = pathlib.Path(fxd)
         (fx / "package.json").write_text(
             json.dumps({"scripts": {"check:ci-real-zzz": "true"}}), encoding="utf-8"
@@ -1643,7 +1643,7 @@ def drift_selftest(ck):
 
     A FIXTURE, unlike the controls above, because drift is a property of history: the plan line has to be committed against one version of a file and the file changed afterwards, and the real tree offers no such pair it can be trusted to keep. The fixture cites `lib/a.txt` four ways: a line that moved down by one (RELOCATABLE), a line rewritten in place (DRIFTED, nowhere to go), a line untouched (SILENT), and the moved line again from an uncommitted plan line (SILENT, written against the tree it is read against).
     """
-    with tempfile.TemporaryDirectory() as td:
+    with tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as td:
         fx = pathlib.Path(td)
         if not _fixture_git(fx, "init", "-q", "."):
             ck("the drift control could build a fixture repository", False)

@@ -1728,7 +1728,7 @@ Do it in an order that cannot destroy the target:
 Write to a scratch path and `mv` into place, so a failure leaves the original untouched. Verify by digest afterwards, not by eye: a zero-byte file and a correctly restored one look identical in a directory listing.
 ## A gate that says "in the same commit" is almost never checking commits
 Trap-Id: same-commit-advice-is-not-enforcement
-Enforced-By: file:.ci/scripts/quality/check_language_policy.py:793
+Enforced-By: file:.ci/rediacc_ci/quality/language_policy.py:792
 Residue: the wording is fixed in ONE gate. Twelve files under `.ci/scripts/quality/`,
 `.ci/rediacc_ci/quality/` and `scripts/gates/` carry same-commit language, and the other eleven still promise more than they check. Nothing decides, in general, whether a given gate's atomicity claim is enforced -- that is a property of what the gate reads, and reading it is a human step.
 
@@ -2059,7 +2059,7 @@ Documented-In: text:.claude/rediacc_hooks/guards/block_raw_pr_body_edit.py (-F|-
 Trap-Id: retro-flag-after-bare-dashdash
 Enforced-By: file:.claude/hooks/stop/worklist.py
 Residue: only a trailing --retro is recovered; one in the middle of the note is silent note text.
-Documented-In: text:.claude/hooks/stop/worklist.py accepted anywhere BEFORE the bare
+Documented-In: text:agent/plans/_done/PLAN-lessons-registry.md accepted anywhere BEFORE the bare
 
 The worklist verbs accept `--retro` and `--evidence` anywhere before a bare `--`. After it, only a trailing `--retro` is recovered; one in the middle of a note becomes part of the note text, and the flag silently does nothing.
 

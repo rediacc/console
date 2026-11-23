@@ -1026,7 +1026,7 @@ def selftest() -> int:
     ctl.check("MIRROR: a line with no assignment yields no name", capture_var("echo $(probe)"), "")
 
     # -- the whole gate, over a fixture tree -------------------------------
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as tmp:
         root = pathlib.Path(tmp)
         scan = root / ".ci" / "scripts" / "quality"
         scan.mkdir(parents=True)
@@ -1053,7 +1053,7 @@ def selftest() -> int:
         (scan / "dirty.sh").write_text("v=$(probe || true)\necho done\n", encoding="utf-8")
         ctl.check("PLANT: one swallowed capture exits 1", run(), 1)
 
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as tmp:
         empty_root = pathlib.Path(tmp)
 
         def run_empty() -> int:
@@ -1145,7 +1145,7 @@ def selftest() -> int:
             "m.py",
         ),
     )
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as tmp:
         root = pathlib.Path(tmp)
         hooks = root / DEFAULT_PY_DIR
         hooks.mkdir(parents=True)

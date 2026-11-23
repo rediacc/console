@@ -82,6 +82,7 @@ import tokenize
 from rediacc_ci import paths
 from rediacc_ci.controls import Controls, plant
 from rediacc_ci.policy_paths import policy_path
+from rediacc_ci.quality import seams
 
 RED = "\033[0;31m"
 GREEN = "\033[0;32m"
@@ -1108,7 +1109,7 @@ def selftest(verbose: bool = False) -> int:
     )
 
     # -- the four directions and the five refusals, against real trees.
-    with tempfile.TemporaryDirectory() as td:
+    with tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as td:
         base = [".audit-allowlist", ".ci-parity-exempt"]
         drifted = [*base, ".deps-upgrade-blocklist"]
 

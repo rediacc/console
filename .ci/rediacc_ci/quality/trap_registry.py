@@ -1924,7 +1924,7 @@ def resolve_seams(root: pathlib.Path, env: dict[str, str] | None = None) -> dict
     out: dict[str, pathlib.Path] = {}
     for name, parts in SEAMS.items():
         override = environ.get(name, "")
-        # The process environment is a seam any caller can set, so a path outside the temp directory is ignored there; an `env` handed in by a test is the caller's own statement and is taken as given.
+        # The process environment is a seam any caller can set, so a path that is not a private scratch path in the temp directory is ignored there; an `env` handed in by a test is the caller's own statement and is taken as given.
         if env is None:
             honoured = scratch.scratch_root(name, override)
             override = str(honoured) if honoured else ""
