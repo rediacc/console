@@ -57,8 +57,8 @@ def test_lengthen_ignores_an_expansion_that_does_not_extend_the_token():
 
 
 def test_the_ref_shape_is_the_tick_verbs_own():
-    """`worklist.COMMIT_REF_RE` validates a tick; the writer here must agree with it about which tokens are refs, or a lengthened ref could be one the validator never saw."""
-    src = (paths.hooks_stop_dir() / "worklist.py").read_text(encoding="utf-8")
+    """`wl_cli.COMMIT_REF_RE` validates a tick; the writer here must agree with it about which tokens are refs, or a lengthened ref could be one the validator never saw."""
+    src = (paths.hooks_stop_dir() / "wl_cli.py").read_text(encoding="utf-8")
     m = re.search(r'^COMMIT_REF_RE = re\.compile\(r"(.+)"\)$', src, re.MULTILINE)
-    assert m, "worklist.COMMIT_REF_RE was not found; the comparison would assert nothing"
+    assert m, "wl_cli.COMMIT_REF_RE was not found; the comparison would assert nothing"
     assert m.group(1) == SC.COMMIT_REF_RE.pattern

@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 #: The citation form a tick and a plan use to name a commit: `commit:<sha>`.
 COMMIT_PREFIX = "commit:"
 
-#: Every `commit:<sha>` in a text. The same shape as `worklist.COMMIT_REF_RE`, which the tick verb validates with; `test_shacite.py` holds the two equal, so the writer here and the validator there cannot disagree about which tokens are refs.
+#: Every `commit:<sha>` in a text. The same shape as `wl_cli.COMMIT_REF_RE`, which the tick verb validates with; `test_shacite.py` holds the two equal, so the writer here and the validator there cannot disagree about which tokens are refs.
 COMMIT_REF_RE = re.compile(r"(?<![\w-])commit:([0-9a-fA-F]{7,40})(?![\w])")
 
 # The prefix ending exactly where a token starts, preceded by nothing word-like, so `nocommit:` or `xcommit:` never licenses a digit run.

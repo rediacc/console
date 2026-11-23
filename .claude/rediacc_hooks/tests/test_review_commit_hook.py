@@ -1557,7 +1557,7 @@ def test_the_worklist_arm_supplies_the_triage_verdict_and_the_transcript_check(
     tmp_path, monkeypatch
 ):
     """worklist._review_cli hands wl_review.verb the fold as (state, text, triage verdict) and an `asked_ok` reading the lead transcript, so wl_review never imports wl_checks (PLAN-deferred-findings-block-merge L2)."""
-    wl = wlfix.import_wl("worklist")
+    wl = wlfix.import_wl("worklist").CLI
     transcript = _transcript(tmp_path, "2026-10-08T10:00:30+00:00")
     fold = types.SimpleNamespace(
         items=[
