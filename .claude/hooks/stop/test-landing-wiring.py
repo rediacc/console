@@ -222,6 +222,12 @@ class World:
     def effort(self, level):
         self.fix.settings(effort=level)
 
+    def settle(self):
+        """After one priming stop, commit the tracked QUEUE.md edits `effort` and the stop's own in-flight render (`wl_planqueue.refresh_inflight`) leave behind: promote's dirty preflight refuses a tracked non-record change, and the stop then stands the block down to a peer-dirt advisory (agent/plans/PLAN-stop-hook-retro-20261123.md D2), so a clean tree is what lets the block stand."""
+        self.stop(self.fix.proj)
+        self.git(self.fix.proj, "add", "--", "agent/plans/QUEUE.md")
+        self.git(self.fix.proj, "commit", "-q", "--allow-empty", "-m", "settle effort")
+
     def commit(self, tree, name):
         (tree / name).write_text(name + "\n", encoding="utf-8")
         self.git(tree, "add", "--", name)
@@ -444,8 +450,10 @@ def stack_cases(tmp, tag, mutate=None):
     w.release("feedface0001", ci="success", edge="success")
     # Not on the FLOOR (operator ruling 2026-11-22: "effort: quiet" must let the stop through): quiet stands it down to an
     # advisory, every other level blocks.
+    # The tree is clean (every [writer] box ticked, no dirt), so promote would proceed and the block stands.
     for level in LEVELS:
         w.effort(level)
+        w.settle()
         got = w.stop(w.fix.proj)
         out.append(
             (
@@ -456,6 +464,7 @@ def stack_cases(tmp, tag, mutate=None):
             )
         )
     w.effort("low")
+    w.settle()
     got = w.stop(w.landing)
     out.append(
         (
@@ -570,7 +579,11 @@ MUTANTS = (
         "the stack is read from the mapped root",
         stack_cases,
         [
-            (CHECKS_REL, "wl_stack.stack_block(own, ", "wl_stack.stack_block(root, "),
+            (
+                CHECKS_REL,
+                "wl_stack.stack_verdict(\n        own, ",
+                "wl_stack.stack_verdict(\n        root, ",
+            ),
             (CHECKS_REL, "wl_stack.stack_report(own, ", "wl_stack.stack_report(root, "),
         ],
     ),
@@ -580,8 +593,8 @@ MUTANTS = (
         [
             (
                 CHECKS_REL,
-                "stack_block(own, released=_ls_released)",
-                "stack_block(own, released=True)",
+                "own, released=_ls_released, own_paths=_ls_own",
+                "own, released=True, own_paths=_ls_own",
             )
         ],
     ),
