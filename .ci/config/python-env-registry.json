@@ -2411,9 +2411,11 @@
       "*k",
       "CLAUDE_CODE_SESSION_ID",
       "CLAUDE_PROJECT_DIR",
+      "GIT_CONFIG_GLOBAL",
       "TMPDIR",
       "WORKLIST_AGENT_BRANCH",
       "WORKLIST_PROJECTS_DIR",
+      "WORKLIST_READ_MEMO",
       "WORKLIST_SESSION_ID",
       "WORKLIST_TAIL_BYTES",
       "WORKLIST_TASKS_DIR"
@@ -2667,6 +2669,7 @@
       "PATH"
     ],
     ".claude/rediacc_hooks/lifecycle.py": [
+      "REDIACC_HOOK_INPROCESS",
       "REDIACC_HOOK_SETTINGS"
     ],
     ".claude/rediacc_hooks/proc.py": [
@@ -2700,6 +2703,9 @@
       "REDIACC_GUARD_DIFF_FULL",
       "TZ"
     ],
+    ".claude/rediacc_hooks/tests/test_hooks_boundary.py": [
+      "W15_PROBE"
+    ],
     ".claude/rediacc_hooks/tests/test_hooks_fixtures.py": [
       "CLAUDE_PROJECT_DIR",
       "GITHUB_HEAD_REF",
@@ -2708,6 +2714,9 @@
     ],
     ".claude/rediacc_hooks/tests/test_hooks_procs.py": [
       "REDIACC_TIMEOUT_BIN"
+    ],
+    ".claude/rediacc_hooks/tests/test_lifecycle_inprocess.py": [
+      "LEAKED_BY_MEMBER"
     ],
     ".claude/rediacc_hooks/tests/test_plan_gate.py": [
       "PATH"
