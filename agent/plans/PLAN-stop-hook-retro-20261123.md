@@ -28,8 +28,8 @@ Other ledgers in the window:
 - 10 refused `--tick` calls: 6 `no-commit-ref`, 4 `no-evidence`
 
 Line numbers refer to the working tree at 1121-1, after the rebase. Rebasing moved two commits:
-- The landing-stack fix 8635a43727 is now b430509a52.
-- The rebase stand-down fix e96e54fcd3 / e078cf8853 is now d9c3ad783c and 6af8c18eb3.
+- The landing-stack fix b430509a52 is now b430509a52.
+- The rebase stand-down fix d9c3ad783c / 6af8c18eb3 is now d9c3ad783c and 6af8c18eb3.
 
 `git merge-base --is-ancestor d9c3ad783c origin/main` fails, so the stand-down is **not on origin/main**.
 
@@ -39,7 +39,7 @@ Line numbers refer to the working tree at 1121-1, after the rebase. Rebasing mov
 - **Promote refusing on hook ledgers.** `_record_globs` and the tracked-only `_dirty` at `.ci/rediacc_ci/dev/landing_promote.py:109-145` (operator ruling ASKED:2026-11-22T18:55Z) fixed this. Not re-ranked.
 
 **Legitimate or already covered, not ranked:**
-- **judge continue at 13:11:17Z and 15:19:12Z.** The message left out tracked ids (#95ffeb93, #8da3a559), so this is covered by R20261117.1, which is still open. The other 12 continue verdicts named real local work, for example 14:01:58Z (17 dev reds) and 16:16:06Z (one doc sentence, `ci-gates.md:567`). They were correct.
+- **judge continue at 13:11:17Z and 15:19:12Z.** The message left out tracked ids (#95ffeb93, #8da3a559), so this is covered by R20261117.1, which is still open. The other 12 continue verdicts named real local work, for example 14:01:58Z (17 dev reds) and 16:16:06Z (one doc sentence, `docs/agent-reference/ci-gates.md:567`). They were correct.
 - **roster-dead (17:51:36Z, 19:43:16Z, 20:24:59Z).** Covered by R20261122.1 (open).
 - **wake-timer (16:57:02Z, 21:53:27Z, 02:00:30Z, and one more row).** Covered by R20261117.5 (open).
 - **unread-reports at 02:31:56Z (45861516).** One real report, marked read 23 s later (45888144). Correct.
@@ -60,21 +60,21 @@ Line numbers refer to the working tree at 1121-1, after the rebase. Rebasing mov
 ## 1. landing-stack blocks while promotion is refused for reasons the session cannot act on
 
 **What happened.** After #605's edge release went green (35843749, 18:01:20Z), every stop got `LANDING MERGED (blocks at every effort level) ... ./run.sh worktree landing --promote` (first block 36065447, 18:03:46Z). There were three bursts. The lead's text names the cause of each:
-- **Burst A: 15 blocks, 18:01:35Z to 18:10:56Z.** Promote refused on a dirty main checkout. Peer console-1a was editing `PLAN-ciquick-cpu.md`, `INDEX.md`, `plan-boxes.json`, `QUEUE.md` and `epics.jsonl` (36061944, 36159976). The lead filed hint c6e3c13e (2026-11-22T18:03:55Z). At 36179620 it started to fix `wl_stack.py`, as the block text invites ("Fix THIS ... you are the session that fixes it"). It gave up at 36209256 because "deciding which dirty paths belong to which session ... is more than a small fix". The burst ended when the peer committed c385bd5be2 (36507958, 18:11:06Z).
+- **Burst A: 15 blocks, 18:01:35Z to 18:10:56Z.** Promote refused on a dirty main checkout. Peer console-1a was editing `PLAN-ciquick-cpu.md`, `INDEX.md`, `plan-boxes.json`, `QUEUE.md` and `epics.jsonl` (36061944, 36159976). The lead filed hint c6e3c13e (2026-11-22T18:03:55Z). At 36179620 it started to fix `wl_stack.py`, as the block text invites ("Fix THIS ... you are the session that fixes it"). It gave up at 36209256 because "deciding which dirty paths belong to which session ... is more than a small fix". The burst ended when the peer committed bad4ebe5cb (36507958, 18:11:06Z).
 - **Burst B: 21 blocks, 18:38:33Z to 18:47:16Z.** The bench/VM runner's vm:check was running in the main checkout. The lead held back because "rebasing the checkout under a running vm:check is what broke an earlier run" (37129557). 19 of the 21 replies are one line of "still waiting" (37151204 to 37541696). The burst ended with vm:check rc 0 (37571963).
 - **Burst C: 34 blocks, 19:04:57Z to 19:15:23Z.** Promote refused at step 5: `PLAN-two-track-merge-dev` had open `[writer]` boxes R3 and R4 (38384007 at 19:02:22Z, 38477880). That refusal is deterministic: no amount of stopping changes it before the writer reports. All 34 replies are "still waiting on the R3 and R4 writer" (38503352 to 39191929).
-- **The operator stepped in at 19:27:07Z:** "effort: quiet but the stop hook doesn't exit with code 0" (39234631). The lead fixed it in 8635a43727 (now b430509a52) at 19:41Z.
+- **The operator stepped in at 19:27:07Z:** "effort: quiet but the stop hook doesn't exit with code 0" (39234631). The lead fixed it in b430509a52 (now b430509a52) at 19:41Z.
 
 **Root cause.**
 - `wl_stack.stack_block` (`.claude/hooks/stop/wl_stack.py:225-233`) returns the block text whenever `st.state == MERGED` and `released`. It never asks whether promote would actually proceed.
 - `landing_promote.promote` refuses at step 1 on any tracked non-record dirt in either checkout (`_dirty`, `.ci/rediacc_ci/dev/landing_promote.py:135-145`). It also refuses at step 5 on any open `[writer]` box (`_code_complete`, `:286-317`, called at `:447`).
-- The repo's own notify text says promote waits for code-complete: "once every [writer] box of the plans on its branch is ticked, promote" (`wl_stack.py:286-294`, `cd-done`). The block ignores that rule, which contradicts it.
+- The repo's own notify text says promote waits for code-complete: "once every [writer] box of the plans on its branch is ticked, promote" (`.claude/hooks/stop/wl_stack.py:286-294`, `cd-done`). The block ignores that rule, which contradicts it.
 - The vadd is at `.claude/hooks/stop/wl_checks.py:5455-5457`.
 - b430509a52 changed only the level table, so at low, smart and high all three bursts would recur. Burst C would recur byte for byte.
 
 **Fix.**
 - **(a) Code-complete.** When the development commits name a plan with an open `[writer]` box, `stack_block` returns "" and the merged state rides the advisory queue. The advisory reads "LANDING MERGED, PROMOTION WAITS ON CODE-COMPLETE: `<plan>` has N open [writer] box(es), first: ...". One helper computes the answer for both sides: it moves out of `landing_promote._code_complete` into a hook module (`wl_stack.open_writer_boxes(root, shas)`), and `_code_complete` raises on its non-empty answer. That way the hook and the verb cannot disagree.
-- **(b) Dirty tree or live run.** When promote's dirty preflight would refuse and every dirty path is outside this session's edited-file union (the `uc_*` keys `commit_remind.py` keeps in the state doc), the block downgrades to an advisory naming those paths. The same happens while a live background task of this session runs with cwd in the main checkout. This mirrors the loop-next rule "a background task of this session downgrades it" at `wl_checks.py:5459-5461`. When a dirty path is this session's own, it still blocks, and the text now lists those paths.
+- **(b) Dirty tree or live run.** When promote's dirty preflight would refuse and every dirty path is outside this session's edited-file union (the `uc_*` keys `commit_remind.py` keeps in the state doc), the block downgrades to an advisory naming those paths. The same happens while a live background task of this session runs with cwd in the main checkout. This mirrors the loop-next rule "a background task of this session downgrades it" at `.claude/hooks/stop/wl_checks.py:5459-5461`. When a dirty path is this session's own, it still blocks, and the text now lists those paths.
 
 ## 2. A rebase that halts runs the hooks of its onto base, so the stand-down cannot protect the rebase that carries it
 
@@ -89,9 +89,9 @@ Line numbers refer to the working tree at 1121-1, after the rebase. Rebasing mov
 **Root cause.**
 - Every hook is read from `$CLAUDE_PROJECT_DIR/.claude/hooks/...` in `.claude/settings.json`, which is the main checkout's working tree.
 - Mid-rebase that tree is `<onto>` plus the steps replayed so far. A hook fix carried by the branch is therefore absent until its own step replays.
-- d9c3ad783c makes the Stop hook, reviewer, band notice and post-compact stand down (`worklist.py:313-358`), but the commit is not on origin/main. Until 1121-1 lands, any halted rebase of 1121-1 onto origin/main in the main checkout runs the old hooks again.
+- d9c3ad783c makes the Stop hook, reviewer, band notice and post-compact stand down (`.claude/hooks/stop/worklist.py:313-358`), but the commit is not on origin/main. Until 1121-1 lands, any halted rebase of 1121-1 onto origin/main in the main checkout runs the old hooks again.
 - `.claude/commands/branch-rebase.md:142-151` and `block_rebase_over_foreign_dirt.py` say nothing about this.
-- `landing --promote` step 6 is not exposed: it autostashes and aborts on conflict (`landing_promote.py:6`), so it never halts between tool calls.
+- `landing --promote` step 6 is not exposed: it autostashes and aborts on conflict (`.ci/rediacc_ci/dev/landing_promote.py:6`), so it never halts between tool calls.
 - The same trap applies to every future hook fix in general. Whenever `<onto>` lacks a stand-down the branch carries, the rebase is unprotected.
 
 **Fix.** Extend `block_rebase_over_foreign_dirt.py` with one self-expiring refusal for a `git rebase` that would start in the main checkout. The check reads `git show <onto>:.claude/hooks/stop/wl_git.py` and looks for `def operation_in_progress`. If the onto base lacks it, the guard refuses and names the route that worked:
@@ -105,7 +105,7 @@ The refusal goes away by itself once origin/main carries the stand-down. Add one
 
 **What happened.**
 - **Incident 1.** At 01:59:42Z (45667671) the lead started ci:quick on the tip for the backup push. At 02:00:31Z the stop was blocked on wake-timer with `wisdom-due: CONTEXT AT 96%` queued (45707808). `/wisdom` step 6 says "Commit STATE.md by path" (`.claude/commands/wisdom.md:43`), so the lead committed ea95248e0f at 02:00:54Z, 72 s into the run. The run finished at 02:54:32Z (45903417). The push was refused at 02:56:04Z with "the gate run judged a different tree (02cb102e…), not this one (069fb2c2…)" (45966754). The lead worked out that "the STATE.md commit voided the receipt: STATE.md isn't a record path" (45978110) and started the run again (45979988). Separately, peer console-1a held a commit to avoid voiding the same receipt (45802940, 02:14:13Z).
-- **Incident 2.** At 23:30:36Z (43185757) the same generic refusal followed carried-reds c51cecf780 and a review-record commit. The lead expected a short advance pass ("the record commits since that run need ci:quick's quick advance pass", 43201205). Instead it ran the whole lane for 27m02s (43270162: "ran the whole lane, because the receipt was red"). An added carried-reds entry voids by design (record-paths.json `$comment`), but nothing in the refusal said so.
+- **Incident 2.** At 23:30:36Z (43185757) the same generic refusal followed carried-reds 685ba31ced and a review-record commit. The lead expected a short advance pass ("the record commits since that run need ci:quick's quick advance pass", 43201205). Instead it ran the whole lane for 27m02s (43270162: "ran the whole lane, because the receipt was red"). An added carried-reds entry voids by design (record-paths.json `$comment`), but nothing in the refusal said so.
 
 **Root cause.**
 - `.ci/policy/record-paths.json` has no glob for `agent/<sid>/STATE.md`. Its `$comment` says "agent/STATE.md is not a record", with no reason given.
@@ -121,7 +121,7 @@ The refusal goes away by itself once origin/main carries the stand-down. Add one
 **What happened.** There are 6 `no-commit-ref` refusals:
 - **#876420de (11:41:07Z, 11:41:34Z):** landing-tree commits 7886ef9b8, f4093e83a and 1b5c7d83a, not yet on 1121-1.
 - **#9a4823c8 (16:59:10Z, 16:59:16Z):** the operator's hotfix aa829a19d on main.
-- **#b07162cf (00:46:01Z, 00:46:12Z):** e96e54fcd3, rewritten by the rebase. The lead had to look up the new sha (45046206).
+- **#b07162cf (00:46:01Z, 00:46:12Z):** d9c3ad783c, rewritten by the rebase. The lead had to look up the new sha (45046206).
 
 **Root cause.** `commit_ref_problem` requires `merge-base --is-ancestor <sha> HEAD` (`.claude/hooks/stop/worklist.py:1683-1686`). It ignores origin/main, the landing branch, and the patch-equivalent copy that `wl_worktrees` already treats as landed via `git cherry` (`.claude/hooks/stop/wl_worktrees.py:9`).
 
@@ -137,7 +137,7 @@ A fabricated sha still fails the `rev-parse --verify` step.
 **What happened.** Lease ace763dd-1 was cut with `--tree landing`. At 13:06:43Z (21490879) the block listed 36 commits as unlanded. Its one new commit was already in the landing tree as ba24ec5e7, and `gc` agreed the tree was safe to delete (21535068).
 
 **Root cause.**
-- The survey's live tip is the HEAD of the tree it stands in (`wl_worktrees.py:117`, `_tip_row`).
+- The survey's live tip is the HEAD of the tree it stands in (`.claude/hooks/stop/wl_worktrees.py:117`, `_tip_row`).
 - The lease record's `cut_from` (`.ci/rediacc_ci/dev/worktree_lease.py:123`) is read only by `wl_rebase.base_branch` (`.claude/hooks/stop/wl_rebase.py:53-56`), and only after a merge.
 
 **Fix.** When a lease record carries `cut_from` equal to the landing record's branch, `wl_worktrees` judges that lease's commits against `refs/heads/<landing branch>`. Every other lease keeps today's tip.
@@ -146,19 +146,19 @@ A fabricated sha still fails the `rev-parse --verify` step.
 
 - **D1 (friction 1a).**
   - DEFAULT: an open `[writer]` box on a plan the development commits name turns the landing-stack block into an advisory naming the plan and its first open box.
-  - WHY: promote refuses in that state by design (`landing_promote.py:286-317`), and the cd-done text already says to wait. 34 of the 70 blocks were this case.
+  - WHY: promote refuses in that state by design (`.ci/rediacc_ci/dev/landing_promote.py:286-317`), and the cd-done text already says to wait. 34 of the 70 blocks were this case.
   - HOW: a shared `wl_stack.open_writer_boxes`, called by both `stack_block` and `_code_complete`.
 - **D2 (friction 1b).**
   - DEFAULT: the block downgrades only when every dirty tracked non-record path is outside this session's edited-file union, or when a live background task of this session has its cwd in the main checkout. Otherwise it keeps blocking and lists the paths.
   - WHY: the lead's own reason for not fixing this at 36209256 was ownership. The `uc_*` union is the existing ownership signal, and a dirty path this session owns is a real action.
-  - HOW: `stack_block` takes `own_paths` and `live_main_bg` from `wl_checks.py:5455`, and runs `landing_promote._dirty` through a non-raising wrapper.
+  - HOW: `stack_block` takes `own_paths` and `live_main_bg` from `.claude/hooks/stop/wl_checks.py:5455`, and runs `landing_promote._dirty` through a non-raising wrapper.
 - **D3 (friction 2).**
   - DEFAULT: a pre-bash refusal that expires on its own, based on whether `<onto>` holds `def operation_in_progress`. There is no hook-pinning mechanism.
   - WHY: pinning hook code outside the working tree is a larger design. The trap closes for good once main carries the stand-down, and it reopens only when a future stand-down is added, which the probe can name.
   - HOW: a probe in `block_rebase_over_foreign_dirt.py`, plus one sentence in branch-rebase.md step 3.
 - **D4 (friction 3a).**
   - DEFAULT: `agent/*/STATE.md` becomes a record.
-  - WHY: `wl_checks.py:3115` already assumes commits during a ci:quick run are record-only, and the hook itself orders a STATE.md commit near the end of a context. The other option, telling /wisdom not to commit, leaves a hand-over that a crash would lose.
+  - WHY: `.claude/hooks/stop/wl_checks.py:3115` already assumes commits during a ci:quick run are record-only, and the hook itself orders a STATE.md commit near the end of a context. The other option, telling /wisdom not to commit, leaves a hand-over that a crash would lose.
   - HOW: a record-paths.json row, with readers derived by `check:ci-record-paths`. If the derivation finds a reader the record set cannot carry (a commit-range verdict, as with epics.jsonl), fall back to wisdom.md step 6: write through `--state`, and commit after the push while a ci:quick run of this session is live.
 - **D5 (friction 3b).**
   - DEFAULT: name the paths that voided the receipt and say which kind of run ci:quick will do.
@@ -175,7 +175,7 @@ A fabricated sha still fails the `rev-parse --verify` step.
 
 ## Sequencing
 
-1. R20261123.1 and .2 go first. They touch `wl_stack.py`, `landing_promote.py` and `wl_checks.py:5455`, and remove the most turns.
+1. R20261123.1 and .2 go first. They touch `wl_stack.py`, `landing_promote.py` and `.claude/hooks/stop/wl_checks.py:5455`, and remove the most turns.
 2. R20261123.3 is independent and should land before the next rebase of 1121-1 onto origin/main.
 3. R20261123.4 and .5 go together: the guard text in .5 names the record set that .4 changes.
 4. R20261123.6 and .7 are independent of everything else.
@@ -183,8 +183,8 @@ A fabricated sha still fails the `rev-parse --verify` step.
 
 ## Tasks
 
-- [ ] **R20261123.1** Move the open-`[writer]`-box reading out of `landing_promote._code_complete` (`.ci/rediacc_ci/dev/landing_promote.py:286-317`) into `wl_stack.open_writer_boxes(root, shas)`, and have `_code_complete` raise on its answer. `stack_block` (`.claude/hooks/stop/wl_stack.py:225-233`) returns "" when the answer is non-empty. `wl_checks.py:5455-5461` then queues a `landing-stack` advisory: "PROMOTION WAITS ON CODE-COMPLETE: `<plan>` has N open [writer] box(es), first: ...". Fixture: merged landing branch, green release, one development commit with `Plan-Box:` naming a plan with an open `[writer]` box, so there is no block and the advisory names the box. Inverse: all writer boxes ticked, so the effort-low block stands. Mutant: drop the call, and the fixture goes red. Test: .claude/hooks/stop/test-landing-stack.py.
-- [ ] **R20261123.2** `stack_block` takes `own_paths` (the session's `uc_*` edited-file union) and `live_main_bg` (a live background task of this session with cwd in the main checkout). It downgrades to an advisory naming the dirty paths when promote's tracked non-record dirt (`landing_promote._dirty` through a non-raising wrapper) is disjoint from `own_paths`, or when `live_main_bg` holds. Otherwise the block text lists the dirty paths that are this session's. Fixtures: a peer-dirty `agent/plans/PLAN-x.md` with an empty union gives an advisory; the same path in the union gives a block naming it; a live main-checkout background task with a clean tree gives an advisory. Test: .claude/hooks/stop/test-landing-stack.py.
+- [ ] **R20261123.1** Move the open-`[writer]`-box reading out of `landing_promote._code_complete` (`.ci/rediacc_ci/dev/landing_promote.py:286-317`) into `wl_stack.open_writer_boxes(root, shas)`, and have `_code_complete` raise on its answer. `stack_block` (`.claude/hooks/stop/wl_stack.py:225-233`) returns "" when the answer is non-empty. `.claude/hooks/stop/wl_checks.py:5455-5461` then queues a `landing-stack` advisory: "PROMOTION WAITS ON CODE-COMPLETE: `<plan>` has N open [writer] box(es), first: ...". Fixture: merged landing branch, green release, one development commit with `Plan-Box:` naming a plan with an open `[writer]` box, so there is no block and the advisory names the box. Inverse: all writer boxes ticked, so the effort-low block stands. Mutant: drop the call, and the fixture goes red. Test: .claude/hooks/stop/test-landing-stack.py.
+- [ ] **R20261123.2** `stack_block` takes `own_paths` (the session's `uc_*` edited-file union) and `live_main_bg` (a live background task of this session with cwd in the main checkout). It downgrades to an advisory naming the dirty paths when promote's tracked non-record dirt (`landing_promote._dirty` through a non-raising wrapper) is disjoint from `own_paths`, or when `live_main_bg` holds. Otherwise the block text lists the dirty paths that are this session's. Fixtures: a peer-dirty `agent/plans/PLAN-stop-hook-retro-20261123.md` with an empty union gives an advisory; the same path in the union gives a block naming it; a live main-checkout background task with a clean tree gives an advisory. Test: .claude/hooks/stop/test-landing-stack.py.
 - [ ] **R20261123.3** In `.claude/rediacc_hooks/guards/block_rebase_over_foreign_dirt.py`, refuse a `git rebase <onto>` that would start in the main checkout when `git show <onto>:.claude/hooks/stop/wl_git.py` lacks `def operation_in_progress`. The refusal names the landing-tree or lease-tree route, `git branch -f`, and the ban on `git submodule update --init` there (hint 2026-11-23T00:41:52Z). Add one sentence to `.claude/commands/branch-rebase.md` step 3. Fixtures: an onto commit without the function gives a refusal; an onto commit with it allows; `--continue` and `--abort` are never refused. Test: .claude/rediacc_hooks/tests/test_rebase_standdown.py.
 - [ ] **R20261123.4** Add the record glob `agent/*/STATE.md` to `.ci/policy/record-paths.json`, with its readers derived by `npm run check:ci-record-paths -- --update`. Keep `agent/STATE.md` excluded, and record why in the `$comment`. If the derivation flags a commit-range reader, take the D4 fallback instead: in wisdom.md step 6, commit after the push while a ci:quick run of this session is live. Fixture: a receipt at T0, then a commit touching only `agent/ace763dd/STATE.md`. ci:quick appends an advance step and `block_unverified_push` admits T1. Test: .ci/rediacc_ci/tests/gates/test_gate_record_paths.py.
 - [ ] **R20261123.5** On the no-advances branch of `_receipt_front` (`.claude/rediacc_hooks/guards/block_unverified_push.py:2207-2213`, with `advance_chain` returning `(None, None)` at `:1424-1425`), append the paths of `git diff --name-only <receipt tree> <tree>` outside the record set, or "carried-reds.json widened". End with "ci:quick will run the whole lane" or "ci:quick will advance (record-only)". Fixtures: a STATE.md-only diff before .4 lands names the path and says whole lane; a review-record-only diff says advance; an added carried entry names the widening. The golden for a receipt with advances stays byte for byte the same. Test: .claude/rediacc_hooks/guards/test-block_unverified_push.py.

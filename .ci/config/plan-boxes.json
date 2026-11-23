@@ -3618,6 +3618,25 @@
       ],
       "done_sigs": []
     },
+    "agent/plans/PLAN-stop-hook-retro-20261123.md": {
+      "status": "ready",
+      "owner": "ace763dd",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "0c03386b",
+        "14560416",
+        "353a2f01",
+        "865f9fd2",
+        "ad9b77d5",
+        "c69a9c1a",
+        "e5c316b5",
+        "f774d370"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-stop-hook-store-status.md": {
       "status": "approved",
       "owner": "d778be9d",
@@ -4386,7 +4405,7 @@
       ]
     },
     "agent/plans/_done/PLAN-ci-quick-cpu-scheduling.md": {
-      "status": "active",
+      "status": "superseded",
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "2026-11-23",
@@ -4400,7 +4419,8 @@
         "7abf229b",
         "8db61653",
         "b9881aa7"
-      ]
+      ],
+      "ruling": "#d969cb29"
     },
     "agent/plans/_done/PLAN-ci-watch-enforcement.md": {
       "status": "superseded",
@@ -5730,7 +5750,7 @@
       ]
     },
     "agent/plans/_done/PLAN-stop-hook-refactor-enforcement.md": {
-      "status": "executing",
+      "status": "superseded",
       "owner": "d778be9d",
       "folder": "agent/plans/_done",
       "moved_at": "2026-11-23",
@@ -5756,7 +5776,8 @@
         "ac6d7f0f",
         "bba54c8b",
         "d54e3a5b"
-      ]
+      ],
+      "ruling": "#d969cb29"
     },
     "agent/plans/_done/PLAN-stop-hook-retro-20260924.md": {
       "status": "done",
