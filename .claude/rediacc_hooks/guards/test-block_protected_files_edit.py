@@ -18,6 +18,7 @@ import tempfile
 import _hookpath
 
 from rediacc_hooks.guards import _edit_suite
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 HERE = pathlib.Path(__file__).resolve()
 # The canonical sys.path hop, through rediacc_hooks/syspath.py loaded by file (the pattern test-block_review_file_edit.py uses).
@@ -93,8 +94,10 @@ def _edit(path, old, new, replace_all=False):
     }
 
 
+# One case is data (CR5), the payload with no path, a row in tests/fixtures/guards/block_protected_files_edit.json read by that directory's one loader. Every other case names a file in the scratch checkouts above and stays code.
 CASES = [
     # (name, payload, refused?)
+    *load_table("block_protected_files_edit", "CASES"),
     ("Write of an empty settings file", _write(DIRTY / SETTINGS, ""), True),
     ("Write of a blank pre-commit script", _write(CLEAN / PRE_COMMIT, " \n\n"), True),
     (
@@ -165,7 +168,6 @@ CASES = [
         },
         False,
     ),
-    ("no path", {"tool_name": "Write", "tool_input": {"content": ""}}, False),
 ]
 
 

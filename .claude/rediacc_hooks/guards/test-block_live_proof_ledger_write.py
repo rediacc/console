@@ -21,6 +21,7 @@ import tempfile
 import _hookpath
 
 from rediacc_hooks.guards import _edit_suite
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
 
 HERE = pathlib.Path(__file__).resolve()
 _SYSPATH = importlib.util.spec_from_file_location(
@@ -62,6 +63,7 @@ def _edit(tool, path, **extra):
     return {"tool_name": tool, "tool_input": {"file_path": path, **extra}, "cwd": CWD}
 
 
+# The Edit cases stay code: each payload carries the scratch world's directory as its cwd, and one names the ledger by its absolute path there.
 EDIT_CASES = [
     # (name, payload, refused?)
     ("Write a planted row over the ledger", _edit("Write", L, content=ROW_LINE + "\n"), True),
@@ -87,118 +89,10 @@ EDIT_CASES = [
     ("no path", {"tool_name": "Write", "tool_input": {"content": "x"}, "cwd": CWD}, False),
 ]
 
-_APPEND = "echo '%s' >> %s" % (ROW_LINE, L)
-SHELL_CASES = [
-    # (name, command, refused?)
-    ("append a planted row", _APPEND, True),
-    ("append a planted row with printf", "printf '%%s\\n' '%s' >> %s" % (ROW_LINE, L), True),
-    ("clobber the ledger", ": >| " + L, True),
-    ("tee a planted row", "echo '%s' | tee -a %s" % (ROW_LINE, L), True),
-    ("sudo tee", "echo x | sudo tee -a " + L, True),
-    ("sed -i a status", "sed -i 's/FAILED/VERIFIED/' " + L, True),
-    ("perl -pi a status", "perl -pi -e 's/FAILED/VERIFIED/' " + L, True),
-    ("cp a forged ledger over it", "cp /tmp/forged.jsonl " + L, True),
-    ("mv a forged ledger over it", "mv /tmp/forged.jsonl " + L, True),
-    (
-        "cp a file of the same name into the directory",
-        "cp /tmp/live-proof.jsonl agent/ledgers/",
-        True,
-    ),
-    ("truncate it", "truncate -s 0 " + L, True),
-    ("dd onto it", "dd if=/tmp/x of=" + L, True),
-    ("rm it", "rm -f " + L, True),
-    ("touch it", "touch " + L, True),
-    ("sort -o onto it", "sort -o %s %s" % (L, L), True),
-    # CR5: the shell half reads `Event.writes()`, whose output words were the typed ones only; `$F` names the ledger only as bash expands it.
-    ("sort -o onto it through an expanded variable", "F=%s; sort -o $F /tmp/x" % L, True),
-    ("touch of it through an expanded variable", "F=%s; touch $F" % L, True),
-    ("tee of it fed by xargs", "echo %s | xargs tee" % L, True),
-    ("sed -i of it fed by xargs", "echo %s | xargs sed -i s/a/b/" % L, True),
-    ("sed -i of it fed by xargs into a marker", "echo %s | xargs -I{} sed -i s/a/b/ {}" % L, True),
-    ("append from inside the directory", "cd agent/ledgers && echo x >> live-proof.jsonl", True),
-    ("append through a variable", "F=%s; echo x >> $F" % L, True),
-    ("append through a glob", "echo x >> agent/ledgers/live-pr*.jsonl", True),
-    ("append through a symlink", "echo x >> lp", True),
-    ("append through a directory link", "echo x >> ld/live-proof.jsonl", True),
-    ("python -c appends a row", "python3 -c \"open('%s','a').write('x')\"" % L, True),
-    (
-        "python heredoc joins the path and appends",
-        (
-            "python3 - <<'EOF'\nfrom pathlib import Path\np = Path('agent/ledgers') / 'live-proof.jsonl'\n"
-            "with p.open('a') as fh:\n    fh.write('{}')\nEOF"
-        ),
-        True,
-    ),
-    (
-        "python appends through the recorder's own helpers",
-        (
-            "PYTHONPATH=.ci python3 - <<'EOF'\nimport pathlib\nfrom rediacc_ci.core import jsonl_append\n"
-            "from rediacc_ci.proof import live_tier as LT\n"
-            "jsonl_append.append_lines(LT.ledger_path(pathlib.Path('.')), pathlib.Path('/tmp/l'), [{}])\nEOF"
-        ),
-        True,
-    ),
-    (
-        "python drives the recorder in-process with a fake world",
-        (
-            "PYTHONPATH=.ci python3 -c 'from rediacc_ci.ops import live_proof as LP; "
-            "LP.record(None, None, write=True, world=LP.World(run=None))'"
-        ),
-        True,
-    ),
-    ("node appends a row", "node -e \"require('fs').appendFileSync('%s','x')\"" % L, True),
-    # A method writes into its RECEIVER: an object built on the ledger path, written through.
-    (
-        "python writes through an object holding the ledger",
-        (
-            "PYTHONPATH=.ci python3 - <<'EOF'\nimport pathlib\nfrom rediacc_ci.proof import live_tier as LT\n"
-            "w = Writer(LT.ledger_path(pathlib.Path('.')))\nw.write('{}')\nEOF"
-        ),
-        True,
-    ),
-    # The V6 writer's false positive (2026-10-28), the shape of check_plan_live_proof.py --selftest: the ledger's NAME carried into a finding a list grows. An append's argument is content.
-    (
-        "python appends the ledger's name to a findings list",
-        (
-            "PYTHONPATH=.ci python3 - <<'EOF'\nfrom rediacc_ci.proof import live_tier as LT\n"
-            "bad = []\nrel = '/'.join(LT.LEDGER)\nbad.append(Finding('LP5', rel, 'x'))\n"
-            "print(len(bad))\nEOF"
-        ),
-        False,
-    ),
-    # The recorder, and every way of reading or committing the ledger, pass.
-    (
-        "the recorder appends",
-        (
-            "PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --plan agent/plans/PLAN-x.md "
-            "--box LP-bench --target bench --check cli-bench --write"
-        ),
-        False,
-    ),
-    ("the recorder verifies", "PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify", False),
-    (
-        "the recorder by path",
-        "PYTHONPATH=.ci python3 .ci/rediacc_ci/ops/live_proof.py record --write",
-        False,
-    ),
-    ("jq reads it", "jq -c . " + L, False),
-    ("cat into a pipe", "cat %s | wc -l" % L, False),
-    ("grep it", "grep -c VERIFIED " + L, False),
-    ("copy it out", "cp %s /tmp/lp.jsonl" % L, False),
-    ("python reads it", "python3 -c \"print(open('%s').read())\"" % L, False),
-    ("git diff it", "git diff -- " + L, False),
-    ("git add it", "git add -- " + L, False),
-    ("git commit it by path", "git commit -F /tmp/msg -- %s agent/plans/PLAN-x.md" % L, False),
-    ("a commit message naming a redirect", "git commit -m 'never > %s by hand'" % L, False),
-    ("append to another ledger", "echo x >> agent/ledgers/effort-outcomes.jsonl", False),
-    ("append to a sibling", "echo x >> agent/ledgers/live-proof.jsonl.bak", False),
-    ("an unrelated redirect", "echo hello > /tmp/x", False),
-    (
-        "pytest of the recorder",
-        "PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_ops_live_proof.py",
-        False,
-    ),
-]
+# The shell cases are data (CR5): `(name, command, refused?)` rows in tests/fixtures/guards/block_live_proof_ledger_shell_write.json, read by that directory's one loader, and `suites()` hands each the world's cwd. They spell the ledger literally, so a guard whose LEDGER_REL moved would leave every refused row judging a path nothing protects: the suite stops there instead.
+SHELL_CASES = load_table("block_live_proof_ledger_shell_write", "SHELL_CASES")
+if not any(L in command for _name, command, refused in SHELL_CASES if refused):
+    raise SystemExit("no refused shell case names the ledger %s; the fixture rows have drifted" % L)
 
 
 # The runner is `_edit_suite`'s, shared by the four edit/shell twin suites (CR5); a refusal must name the recorder.

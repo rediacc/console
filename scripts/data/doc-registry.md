@@ -1439,7 +1439,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/lane-durations.json` | .ci/config | wiring: `.github/workflows/ci-quality.yml` | yes -- repoint in `.github/workflows/ci-quality.yml` |
 | `.ci/config/legal-documents.json` | .ci/config | code: `scripts/gen/gen-legal.ts` | no -- hardcoded in `scripts/gen/gen-legal.ts` |
 | `.ci/config/merged-prs.json` | .ci/config | code: `scripts/lib/suppression-liveness.ts` | no -- hardcoded in `scripts/lib/suppression-liveness.ts` |
-| `.ci/config/model-invocation-exceptions.json` | .ci/config | wiring: `.claude/rediacc_hooks/tests/fixtures/guards/block_user_only_command_shell_write.json` | yes -- repoint in `.claude/rediacc_hooks/tests/fixtures/guards/block_user_only_command_shell_write.json` |
+| `.ci/config/model-invocation-exceptions.json` | .ci/config | wiring: `.claude/rediacc_hooks/tests/fixtures/guards/block_user_only_command.json` | yes -- repoint in `.claude/rediacc_hooks/tests/fixtures/guards/block_user_only_command.json` |
 | `.ci/config/ops-health.json` | .ci/config | code: `.ci/rediacc_ci/ops/ops_health.py` | no -- hardcoded in `.ci/rediacc_ci/ops/ops_health.py` |
 | `.ci/config/pin-major-grace.json` | .ci/config | code: `scripts/lib/pins/status.ts` | no -- hardcoded in `scripts/lib/pins/status.ts` |
 | `.ci/config/pins.json` | .ci/config | wiring: `knip.jsonc` | yes -- repoint in `knip.jsonc` |
