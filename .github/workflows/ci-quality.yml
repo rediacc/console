@@ -365,7 +365,7 @@ jobs:
           .ci/scripts/quality/check_git_history_depth.py
       - name: GitHub reads retry transient faults
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_gh_retry_reads.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.gh_retry_gate
       - name: Hook cross-OS seams
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.hook_cross_os
@@ -437,7 +437,7 @@ jobs:
           .ci/scripts/quality/check_python_gate_deps.py
       - name: Python lint + format (ruff)
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_python_lint.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_config_liveness
       - name: Python types (mypy)
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |
@@ -451,7 +451,7 @@ jobs:
         run: .ci/scripts/quality/check_record_paths.py
       - name: Region consistency
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_region_consistency.py --selftest && .ci/scripts/quality/check_region_consistency.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.region_consistency --selftest && PYTHONPATH=.ci python3 -m rediacc_ci.quality.region_consistency
       - name: Runner sizing advice
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_runner_advice.py
@@ -1142,7 +1142,7 @@ jobs:
       - name: Inline suppression markers
         id: gate_check_ci_inline_suppressions
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
-        run: .ci/scripts/quality/check_inline_suppressions.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.inline_suppressions
       - name: Inner kill timers are reachable
         id: gate_check_ci_inner_timeout_reachable
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
@@ -1178,7 +1178,7 @@ jobs:
       - name: Model-invocable commands
         id: gate_check_ci_model_invocable_commands
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
-        run: .ci/scripts/quality/check_model_invocable_commands.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.model_invocable_commands
       - name: Native modules rebuilt after every root install
         id: gate_check_ci_native_rebuild
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
@@ -1550,7 +1550,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.e2e_coverage
       - name: Check prose style (the work, not the person)
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_prose_style.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.prose_style
       - name: CSS DOM references
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-css-dom-refs
@@ -1599,10 +1599,10 @@ jobs:
         run: npm run check:ci-lint-rule-units
       - name: PR loop docs carry no duplicated passage
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_prose_duplication.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.prose_duplication
       - name: PR scope rules agree with their CLAUDE.md source
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_scope_mirrors.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.scope_mirrors
       - name: Pricing consistency
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-pricing-consistency

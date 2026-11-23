@@ -3542,7 +3542,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-python-lint',
     run: 'npm run check:ci-python-lint',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_python_lint.py'],
+    leaves: ['.ci/rediacc_ci/quality/lint_config_liveness.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -4893,7 +4893,7 @@ export const GATES: readonly GateSpec[] = [
       'workers/proxy/wrangler.us.toml',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_region_consistency.py'],
+    leaves: ['.ci/rediacc_ci/quality/region_consistency.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5151,7 +5151,7 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:ci-review-resolutions',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_review_resolutions.py'],
+    leaves: ['.ci/rediacc_ci/quality/review_resolutions.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5650,7 +5650,7 @@ export const GATES: readonly GateSpec[] = [
   {
     // CLAUDE.md is the one written source of the PR-scope rules (push cadence, one branch and one PR, the merge condition, the plan set), and seven other files restate them by hand; agent/plans/PLAN-scope-mirrors.md measured eight live drifts before this existed. The canonical spans carry `<!-- scope: pr.* -->` anchors pinned by sha in .ci/config/scope-mirrors.json, and every registered mirror is located and judged. No `paths`, deliberately: an edit to CLAUDE.md, a mirror, a guard constant or the C9 corpus can each break agreement, and a half-populated path table would drop the gate from --changed exactly then.
     id: 'check:ci-scope-mirrors',
-    run: 'npm run check:ci-scope-mirrors',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.scope_mirrors',
     gate: true,
     paths: [
       '.ci/**',
@@ -5666,7 +5666,7 @@ export const GATES: readonly GateSpec[] = [
       'package.json',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_scope_mirrors.py'],
+    leaves: ['.ci/rediacc_ci/quality/scope_mirrors.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5677,7 +5677,7 @@ export const GATES: readonly GateSpec[] = [
   {
     // CLAUDE.md, /pr-babysit, the pr-babysitter agent and /pr-merge are what an agent reads to drive the PR loop; agent/plans/PLAN-pr-loop-single-source.md measured the launcher repeating 231 words of /pr-merge and 152 of the agent file word for word. A shared run of 25+ normalized words outside code, gen-docs regions and registered scope spans is red. `paths` covers every input the gate reads: the four family files, package.json, and `.ci/**`, which holds the entry script, the module, scope_mirrors.py it reuses, the scope-mirrors registry that decides which spans are registered, and the controls runner. A narrower `.ci` list would drop the gate from --changed when the registry moves, which is exactly when a span can change from excluded to compared.
     id: 'check:ci-prose-duplication',
-    run: 'npm run check:ci-prose-duplication',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.prose_duplication',
     gate: true,
     paths: [
       '.ci/**',
@@ -5688,7 +5688,7 @@ export const GATES: readonly GateSpec[] = [
       'package.json',
     ],
     pathsOrigin: 'declared',
-    leaves: ['.ci/scripts/quality/check_prose_duplication.py'],
+    leaves: ['.ci/rediacc_ci/quality/prose_duplication.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5991,9 +5991,9 @@ export const GATES: readonly GateSpec[] = [
   // >>> gen-manifest: region 14
   {
     id: 'check:ci-inline-suppressions',
-    run: 'npm run check:ci-inline-suppressions',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.inline_suppressions',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_inline_suppressions.py'],
+    leaves: ['.ci/rediacc_ci/quality/inline_suppressions.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -6003,9 +6003,9 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-model-invocable-commands',
-    run: 'npm run check:ci-model-invocable-commands',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.model_invocable_commands',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_model_invocable_commands.py'],
+    leaves: ['.ci/rediacc_ci/quality/model_invocable_commands.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -9981,7 +9981,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:ci-prose-style',
     slow: true, // 2503 files, 265k prose lines; 19.4s measured 2026-09-16
     gate: true,
-    leaves: ['.ci/scripts/quality/check_prose_style.py'],
+    leaves: ['.ci/rediacc_ci/quality/prose_style.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -11558,9 +11558,9 @@ export const GATES: readonly GateSpec[] = [
     // PLAN-gh-retry G9. One HTTP 502 failed CI Complete on PR #597 (run 37507913738), and a 2026-10-06 audit found one-shot `gh` reads that released the wrong build, bump or label set on a single 5xx. Every non-test GitHub read under .ci must go through core/gh_retry (or ghx with attempts>=2, or a spawn inside retry_transient); the ~90 one-shot reads found outside the plan's twenty modules are frozen shrink-only in .ci/config/gh-retry-reads-baseline.json.
     // `paths` is COMPLETE, not a cost cut: the gate reads only the Python under its four scan roots (G13 added .claude/hooks and .claude/rediacc_hooks; its own module and every helper it imports sit under .ci/rediacc_ci) and its baseline, so no change it judges can escape --changed.
     id: 'check:ci-gh-retry-reads',
-    run: 'npm run check:ci-gh-retry-reads',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.gh_retry_gate',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_gh_retry_reads.py'],
+    leaves: ['.ci/rediacc_ci/quality/gh_retry_gate.py'],
     paths: [
       '.ci/**',
       'scripts/**',

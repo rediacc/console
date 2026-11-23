@@ -3694,7 +3694,7 @@
     "run": "npm run check:ci-python-lint",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_python_lint.py"
+      ".ci/rediacc_ci/quality/lint_config_liveness.py"
     ],
     "ci": {
       "kind": "step",
@@ -5107,7 +5107,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_region_consistency.py"
+      ".ci/rediacc_ci/quality/region_consistency.py"
     ],
     "ci": {
       "kind": "step",
@@ -5376,7 +5376,7 @@
     "run": "npm run check:ci-review-resolutions",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_review_resolutions.py"
+      ".ci/rediacc_ci/quality/review_resolutions.py"
     ],
     "ci": {
       "kind": "step",
@@ -5902,7 +5902,7 @@
   },
   {
     "id": "check:ci-scope-mirrors",
-    "run": "npm run check:ci-scope-mirrors",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.scope_mirrors",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -5919,7 +5919,7 @@
     ],
     "pathsOrigin": "traced",
     "leaves": [
-      ".ci/scripts/quality/check_scope_mirrors.py"
+      ".ci/rediacc_ci/quality/scope_mirrors.py"
     ],
     "ci": {
       "kind": "step",
@@ -5930,7 +5930,7 @@
   },
   {
     "id": "check:ci-prose-duplication",
-    "run": "npm run check:ci-prose-duplication",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.prose_duplication",
     "gate": true,
     "paths": [
       ".ci/**",
@@ -5942,7 +5942,7 @@
     ],
     "pathsOrigin": "declared",
     "leaves": [
-      ".ci/scripts/quality/check_prose_duplication.py"
+      ".ci/rediacc_ci/quality/prose_duplication.py"
     ],
     "ci": {
       "kind": "step",
@@ -6288,10 +6288,10 @@
   },
   {
     "id": "check:ci-inline-suppressions",
-    "run": "npm run check:ci-inline-suppressions",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.inline_suppressions",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_inline_suppressions.py"
+      ".ci/rediacc_ci/quality/inline_suppressions.py"
     ],
     "ci": {
       "kind": "step",
@@ -6302,10 +6302,10 @@
   },
   {
     "id": "check:ci-model-invocable-commands",
-    "run": "npm run check:ci-model-invocable-commands",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.model_invocable_commands",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_model_invocable_commands.py"
+      ".ci/rediacc_ci/quality/model_invocable_commands.py"
     ],
     "ci": {
       "kind": "step",
@@ -10618,7 +10618,7 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_prose_style.py"
+      ".ci/rediacc_ci/quality/prose_style.py"
     ],
     "ci": {
       "kind": "step",
@@ -12266,10 +12266,10 @@
   },
   {
     "id": "check:ci-gh-retry-reads",
-    "run": "npm run check:ci-gh-retry-reads",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.gh_retry_gate",
     "gate": true,
     "leaves": [
-      ".ci/scripts/quality/check_gh_retry_reads.py"
+      ".ci/rediacc_ci/quality/gh_retry_gate.py"
     ],
     "paths": [
       ".ci/**",
