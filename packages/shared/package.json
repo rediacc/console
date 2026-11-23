@@ -225,6 +225,10 @@
       "types": "./dist/job-poll/*.d.ts",
       "default": "./dist/job-poll/*.js"
     },
+    "./ai-credits": {
+      "types": "./dist/ai-credits/index.d.ts",
+      "default": "./dist/ai-credits/index.js"
+    },
     "./ai": {
       "types": "./dist/ai/index.d.ts",
       "default": "./dist/ai/index.js"
