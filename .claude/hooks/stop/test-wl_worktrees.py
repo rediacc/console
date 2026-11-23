@@ -1016,23 +1016,38 @@ def _cut_from(main, lease_id, branch):
 
 def control_landing_cut(tmp):
     """R20261123.6's twin, R20261123.7: lease ace763dd-1 was cut from the landing tree, its one commit was picked into landing, and the block still listed it, because the survey judged it against the development HEAD."""
+    # The landing branch holds a commit the development HEAD lacks, as 1104-1 held 36 when ace763dd-1 was cut from it.
     main = lease_main_repo(tmp, "landing-cut")
     land = tmp / "landing-cut" / "landing"
     git(tmp, main, "worktree", "add", "-q", "-b", "1104-1", land, "HEAD")
     (main / ".git/rediacc-landing.json").write_text(
         json.dumps({"branch": "1104-1", "path": str(land)}), encoding="utf-8"
     )
-    lease = new_lease(tmp, main, "l1")
+    landed_only = commit_in(tmp, land, "l.txt", "l\n", "landing work")
+    lease = main / ".claude/worktrees/l1"
+    git(tmp, main, "worktree", "add", "-q", "--detach", lease, "1104-1")
+    write_record(main, "l1")
     _cut_from(main, "l1", "1104-1")
+    check(
+        "the development HEAD really lacks the landing commit",
+        git(tmp, main, "cherry", "HEAD", landed_only),
+        "+ " + landed_only,
+    )
+    check("a fresh landing-cut lease inherits nothing unlanded", read(tmp, main)["unlanded"], [])
     sha = commit_in(tmp, lease, "b.txt", "b\n")
-    check("an unpicked landing-cut commit is listed", ids(read(tmp, main)["unlanded"]), ["l1"])
-    git(tmp, land, "cherry-pick", "-x", sha)
+    got = read(tmp, main)
+    check(
+        "an unpicked landing-cut commit is listed, and only it",
+        got["unlanded"][0]["commits"] if got["unlanded"] else {},
+        {".": [sha]},
+    )
+    # A pick without -x: only the tip the lease is judged against can read it landed, never the `--branches` search for a -x line.
+    git(tmp, land, "cherry-pick", sha)
     check(
         "a landing-cut commit picked into landing gives no worktree-unlanded",
         read(tmp, main)["unlanded"],
         [],
     )
-    check("the development HEAD really lacks it", git(tmp, main, "cherry", "HEAD", sha), "+ " + sha)
     sha2 = commit_in(tmp, lease, "c.txt", "c\n")
     got = read(tmp, main)
     check(
@@ -1044,7 +1059,7 @@ def control_landing_cut(tmp):
     dev = new_lease(tmp, main, "d1")
     _cut_from(main, "d1", "main")
     dsha = commit_in(tmp, dev, "e.txt", "e\n")
-    git(tmp, land, "cherry-pick", "-x", dsha)
+    git(tmp, land, "cherry-pick", dsha)
     got = read(tmp, main)
     check(
         "a development-cut lease is still judged against the development HEAD",
