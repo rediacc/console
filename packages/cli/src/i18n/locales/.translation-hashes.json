@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3162,
-    "sourceCommit": "a5d16e9ee9cdd2159b6ed419becddc0fb716424c"
+    "keyCount": 3167,
+    "sourceCommit": "8dfddee9b9f0f724fbb0ba9f6e59de47bb0e84f9"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2123,14 +2123,19 @@
     "commands.repo.yesOption": "bffdbaaf",
     "commands.serve.description": "1d6ed15e",
     "commands.serve.draining": "614b7aff",
+    "commands.serve.errors.tlsPairIncomplete": "530bf44c",
+    "commands.serve.errors.tlsRequired": "89f915a5",
+    "commands.serve.errors.tlsUnreadable": "53ee708e",
     "commands.serve.examples.basic": "06291a88",
     "commands.serve.examples.container": "a870bdab",
     "commands.serve.examples.customPort": "6b06c0bb",
     "commands.serve.hint": "0b2c6869",
-    "commands.serve.listening": "9eb4f1ef",
-    "commands.serve.optionHost": "7cf0dfb8",
+    "commands.serve.listening": "a853922c",
+    "commands.serve.optionHost": "980ea9b5",
     "commands.serve.optionMode": "23648eb3",
     "commands.serve.optionPort": "b3c06921",
+    "commands.serve.optionTlsCert": "82704bde",
+    "commands.serve.optionTlsKey": "d410d2fc",
     "commands.serve.summary": "da3f8e8b",
     "commands.server.backup.description": "76abbca9",
     "commands.server.backup.descriptionShort": "76abbca9",
