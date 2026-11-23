@@ -69,7 +69,7 @@ const LEDGER: Record<string, string[]> = {
   'services/renet/machine-bootstrap.ts::bootstrapMachine::acquireRemoteRenet': ['provision'],
   // The serve job routes moved out of server.ts; the ledger had not followed (found by J17, pre-existing).
   'services/serve/job-routes.ts::pollOnce::connectForJobs': ['read-only'],
-  'services/serve/job-routes.ts::registerJobRoutes::connectForJobs': ['read-only'],
+  'services/serve/job-routes.ts::cancelOnMachine::connectForJobs': ['read-only'],
   'services/tofu/provision.ts::runProvisionSetupJob::acquireRemoteRenet': ['provision'],
 };
 
