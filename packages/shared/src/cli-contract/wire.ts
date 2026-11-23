@@ -111,6 +111,45 @@ type WireEvent = z.infer<typeof WireEventSchema>;
 
 export type { WireEvent };
 
+/**
+ * One event of an AI chat turn (agent/plans/PLAN-console-ai-providers.md D8), carried by the
+ * `kind: 'ai'` stream line. Kept apart from WireEventSchema, which stays renet-shaped so every
+ * renet reader is untouched. A tool's own renet events travel as `event` lines tagged with the
+ * tool call id.
+ */
+export const AiEventSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('text_delta'), text: z.string() }),
+  z.object({
+    type: z.literal('tool_call'),
+    toolCallId: z.string().min(1),
+    name: z.string().min(1),
+    input: z.unknown().optional(),
+  }),
+  z.object({
+    type: z.literal('tool_result'),
+    toolCallId: z.string().min(1),
+    ok: z.boolean(),
+    output: z.unknown().optional(),
+  }),
+  z.object({
+    type: z.literal('approval_required'),
+    toolCallId: z.string().min(1),
+    name: z.string().min(1),
+    input: z.unknown().optional(),
+  }),
+  z.object({
+    type: z.literal('usage'),
+    inputTokens: z.number().int().nonnegative(),
+    outputTokens: z.number().int().nonnegative(),
+  }),
+  z.object({ type: z.literal('finish'), reason: z.string() }),
+  z.object({ type: z.literal('error'), message: z.string(), code: z.string().optional() }),
+]);
+
+type AiEvent = z.infer<typeof AiEventSchema>;
+
+export type { AiEvent };
+
 /** A job's lifecycle state, as renet's status file records it. */
 export const JobStateSchema = z.enum(['running', 'succeeded', 'failed', 'cancelled']);
 
@@ -248,6 +287,15 @@ export const StreamLineSchema = z.discriminatedUnion('kind', [
      * stream, where there is no spool to resume from.
      */
     line: z.number().int().positive().optional(),
+    /**
+     * The AI tool call whose execution produced this event, present only inside an AI chat turn
+     * (PLAN-console-ai-providers.md D8). Absent on every command stream.
+     */
+    toolCallId: z.string().min(1).optional(),
+  }),
+  z.object({
+    kind: z.literal('ai'),
+    ai: AiEventSchema,
   }),
   z.object({
     kind: z.literal('result'),
@@ -360,4 +408,8 @@ export const PROXY_ROUTES = {
   /** Cancel a job: `POST ?machine=<m>`, authorized as `job cancel`. */
   jobCancel: (jobId: string) => `/v1/jobs/${jobId}/cancel`,
   jobCancelPattern: '/v1/jobs/:id/cancel',
+  /** One AI chat turn, answered as an NDJSON stream with `ai` lines. */
+  aiChat: '/v1/ai/chat',
+  /** Test a provider profile with one short call. */
+  aiTest: '/v1/ai/test',
 } as const;
