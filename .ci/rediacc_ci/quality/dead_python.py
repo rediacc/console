@@ -111,6 +111,18 @@ GLOB_ROOTS = {
             "_TAILED_ROOTS names this directory beside .claude/hooks/stop/ and context/"
         ),
     ),
+    ".claude/rediacc_hooks/tests/guard_cases/": (
+        ("block_", "warn_", "require_"),
+        (
+            "a guard's test tables, moved out of the guard by PLAN-tooling-code-reduction CR5: "
+            'each guard declares `__getattr__ = tables("<stem>", ...)` and '
+            ".claude/rediacc_hooks/guards/__init__.py:tables imports "
+            "rediacc_hooks.tests.guard_cases.<stem> by the computed name when a reader asks for a "
+            "forwarded name, so no table is named as an import. "
+            ".claude/rediacc_hooks/tests/test_guard_cases.py globs this directory and asserts "
+            "every table names a live guard that forwards from it, so an orphan table is red there"
+        ),
+    ),
     ".claude/hooks/stop/": (
         ("test-",),
         (
