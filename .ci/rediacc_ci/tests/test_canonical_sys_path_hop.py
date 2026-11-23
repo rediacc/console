@@ -24,10 +24,10 @@ That plan box said "68 files and rising". No reading of this tree produces 68. O
 WHY A BASELINE AND NOT THIRTY-THREE MORE EXEMPTIONS. 33 of those 36 files are outside the box that widened this control, and an exemption means "this is correct forever". Freezing them as DEBT says the opposite: the total may not grow, a baselined hop that gets fixed must be DRAINED rather than left as a permanent hole, and both halves are asserted below. EXEMPT is reserved for the
 three that are structurally required, each with a reason this file proves is still live.
 
-WHAT THE `_cipath` TRICK CANNOT DO, MEASURED RATHER THAN ASSUMED, because the next box to read this file will otherwise try it. `import _cipath` resolves only because a PATH invocation puts the script's own directory on `sys.path[0]`. Five of the baselined hops sit INSIDE a package and still run as scripts: `check_pytest.py`, the three under `rediacc_ci/setup/`, and
-`rediacc_hooks/dispatch.py` (`battery.py` made six until it was deleted with the bash gate-test battery, 2026-10-09). THREE of those five are also imported by their package name -- `setup/tools.py` and `setup/port_parity.py` by the suite, `dispatch.py` by two hook suites -- and a sibling shim is impossible for them: driven on a throwaway package, running
+WHAT THE `_cipath` TRICK CANNOT DO, MEASURED RATHER THAN ASSUMED, because the next box to read this file will otherwise try it. `import _cipath` resolves only because a PATH invocation puts the script's own directory on `sys.path[0]`. Four of the baselined hops sit INSIDE a package and still run as scripts: `check_pytest.py`, the two under `rediacc_ci/setup/`, and
+`rediacc_hooks/dispatch.py` (`battery.py` and `setup/shadow_driver.py` made six until they were deleted, the first with the bash gate-test battery on 2026-10-09 and the second by agent/plans/PLAN-tooling-code-reduction.md CR1). THREE of those four are also imported by their package name -- `setup/tools.py` and `setup/port_parity.py` by the suite, `dispatch.py` by two hook suites -- and a sibling shim is impossible for them: driven on a throwaway package, running
 `pkg/sub/dualuse.py` as a script prints `__package__=None` and loads, while
-`from pkg.sub import dualuse` dies at `import _pkgpath`. The remaining two, `check_pytest.py` and `setup/shadow_driver.py`, COULD take a shim and would gain nothing, because they sit in different directories and the shim is itself a file containing the hop: two hops would become two shims. So none of the five is sitting there because nobody swept it.
+`from pkg.sub import dualuse` dies at `import _pkgpath`. The remaining one, `check_pytest.py`, COULD take a shim and would gain nothing, because the shim is itself a file containing the hop: one hop would become one shim. So none of the four is sitting there because nobody swept it.
 
 WHY THE BASELINE IS KEYED ON A HASH OF THE HOP'S SOURCE AND NOT ON ITS LINE.
 A line number churns when a paragraph moves above it, and a baseline that churns gets regenerated wholesale, which silently re-absorbs findings nobody looked at. The hash survives a MOVE and deliberately does NOT survive a REWRITE: rewriting a hop is exactly the moment a human should look at it again. When that happens the run reports one gone and one new IN THE SAME FILE --
@@ -148,7 +148,6 @@ BASELINE: dict[str, tuple[str, ...]] = {
     ".ci/rediacc_ci/dev/shadow_driver.py": ("c1e552fa19e9",),  # FRESH
     ".ci/rediacc_ci/docker/shadow_driver.py": ("c1e552fa19e9",),  # FRESH
     ".ci/rediacc_ci/setup/port_parity.py": ("c1e552fa19e9",),
-    ".ci/rediacc_ci/setup/shadow_driver.py": ("c1e552fa19e9",),
     ".ci/rediacc_ci/setup/tools.py": ("c1e552fa19e9",),
     # -- The three `FRESH` lines below ARRIVED AFTER PRE-A1. Not a fix this control was allowed to make: all three were UNCOMMITTED work belonging to a writer running concurrently with it, and editing another writer's live files is how a tree with no safety net loses work. Sorted in place rather than grouped, so the table stays regenerable and a reader diffing it sees a stable
     # order.

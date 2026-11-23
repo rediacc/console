@@ -1,7 +1,6 @@
 """`rediacc_ci.setup` against the bash it replaces, at the seams the ledger cannot see.
 
-WHAT THIS IS NOT. It is not the proof that the port is faithful; that is `.ci/shadow/e1-setup.observations.jsonl`, which compares 116 to 120 observations over five distinct clean trees and was recorded by `scripts/lib/shadow-gate.ts --record`. A differential over whole runs cannot isolate a helper, and a unit test over a helper cannot notice a phase that stopped running. This file
-covers the first half.
+WHAT THIS IS NOT. It is not the proof that the port was faithful; that was the shadow ledger `.ci/shadow/e1-setup.observations.jsonl`, 116 to 120 observations over five distinct clean trees (deleted by agent/plans/PLAN-tooling-code-reduction.md CR1; last at commit:aa829a19dc). A differential over whole runs cannot isolate a helper, and a unit test over a helper cannot notice a phase that stopped running. This file covers the first half; `check:ci-setup-port-parity` covers the second.
 
 THE BASH IS GONE, AND SO ARE THE CASES THAT RAN IT. `.ci/lib/setup.sh` was deleted by `1ae84c3e3`; six differential cases (17 with their parameters) were left behind guarded by `skipif(not TWIN.is_file())`, which is permanently true. They were removed 2026-09-15 rather than left skipping, and the reasoning is worth keeping because the original choice was deliberate and still wrong:
 
@@ -13,13 +12,11 @@ test is not a passing one, and the difference is invisible in the exit code -- s
 skip is dead code
 with a heartbeat monitor attached.
 
-WHAT STILL COVERS THE DELETED CASES. `check:ci-setup-port-parity`, which reports `FLIPPED (bash gone)` and `5 EQUIVALENT tree(s) in the ledger` -- verified passing before the deletion, not assumed -- plus `.ci/shadow/e1-setup.observations.jsonl` itself. The ledger is the surviving evidence, which is exactly what the skip reason said it would be.
+WHAT STILL COVERS THE DELETED CASES. `check:ci-setup-port-parity`, which re-derives the phase order from `machine.run_setup` against `phases.PHASES` on every run.
 """
 
 from __future__ import annotations
 
-import json
-import subprocess
 from typing import TYPE_CHECKING
 
 import pytest
@@ -136,49 +133,6 @@ def test_function_body_python_ends_at_the_dedent() -> None:
     assert phases.function_body_python(source, "a") == "def a():\n    x = 1\n\n    y = 2\n\n"
     assert phases.function_body_python(source, "b") == "def b():\n    z = 3\n"
     assert phases.function_body_python(source, "c") == ""
-
-
-# --------------------------------------------------------------------------- the ledger this port stands on ---------------------------------------------------------------------------
-
-
-def test_ledger_carries_five_equivalent_trees() -> None:
-    """The evidence file is present, parses, and has not shrunk.
-
-    A test and not only a gate clause, because a `pytest -k setup_port` run is what a person does while editing this package, and the ledger is the thing an edit here silently invalidates.
-    """
-    trees, why = port_parity.ledger_trees(ROOT)
-    assert why == "", why
-    assert trees >= port_parity.LEDGER_K
-
-
-def test_ledger_rows_name_both_implementations() -> None:
-    """Every row's commands name the Python driver AND the bash twin.
-
-    `.ci/rediacc_ci/quality/dead_python.py:317` reads exactly these two fields to decide whether a pre-cutover port is alive. A ledger recorded with a command that names neither admits nothing, and the port would read as dead code the day it landed.
-    """
-    path = ROOT / port_parity.LEDGER
-    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
-    assert rows
-    for row in rows:
-        assert "shadow_driver.py" in row["new"]["cmd"]
-        assert ".ci/lib/setup.sh" in row["old"]["cmd"]
-
-
-def test_shadow_driver_refuses_without_its_twin(tmp_path: pathlib.Path) -> None:
-    """A missing bash twin is exit 77 and NOT an empty observation set.
-
-    The anti-vacuity clause of the differential itself: after the flip both sides must refuse, because two silent sides compare as equal.
-    """
-    driver = ROOT / ".ci" / "rediacc_ci" / "setup" / "shadow_driver.py"
-    proc = subprocess.run(
-        ["python3", str(driver), "--side", "old", "--root", str(tmp_path)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert proc.returncode == 77
-    assert proc.stdout == ""
-    assert "CANNOT RUN" in proc.stderr
 
 
 # --------------------------------------------------------------------------- setup --check: the deps row and the timing ---------------------------------------------------------------------------

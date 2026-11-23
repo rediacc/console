@@ -14,7 +14,6 @@
     ".ci/rediacc_ci/security/rdc_sh_env_check.py": 3,
     ".ci/rediacc_ci/setup/machine.py": 3,
     ".ci/rediacc_ci/setup/phases.py": 2,
-    ".ci/rediacc_ci/setup/shadow_driver.py": 1,
     ".ci/rediacc_ci/tests/gates/test_gate_bws_env.py": 1,
     ".ci/rediacc_ci/tests/gates/test_gate_secret_supply.py": 1,
     ".ci/rediacc_ci/tests/test_core_account.py": 2,
