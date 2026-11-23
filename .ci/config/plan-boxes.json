@@ -2313,12 +2313,11 @@
       "owner": "ace763dd",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 25,
-      "done": 12,
+      "open": 23,
+      "done": 14,
       "open_sigs": [
         "0e91f452",
         "1f5fa160",
-        "294db99e",
         "2df4a7f5",
         "457c03cd",
         "4f13c7e5",
@@ -2338,11 +2337,11 @@
         "b9074ceb",
         "c36a1adc",
         "d2efe573",
-        "d5786c0a",
         "d82e9f04",
         "e6458008"
       ],
       "done_sigs": [
+        "294db99e",
         "2ecf2128",
         "3e1e6f13",
         "3fdc8639",
@@ -2353,6 +2352,7 @@
         "9b3cd128",
         "a42915fc",
         "d19eccab",
+        "d5786c0a",
         "f1bc8774",
         "f9763990"
       ]
@@ -3445,21 +3445,22 @@
       "owner": "ace763dd",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 10,
-      "done": 0,
+      "open": 7,
+      "done": 3,
       "open_sigs": [
-        "055ee700",
         "0f7ddaf4",
-        "15383c8b",
         "18eba573",
         "538bfc58",
         "6e0c83e2",
         "9611b663",
-        "cd67ca86",
         "ce31990e",
         "e498feca"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "055ee700",
+        "15383c8b",
+        "cd67ca86"
+      ]
     },
     "agent/plans/PLAN-simple-two-tree-loop.md": {
       "status": "approved",
@@ -4072,19 +4073,19 @@
       "owner": "ace763dd",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 1,
+      "open": 6,
+      "done": 2,
       "open_sigs": [
         "3e71cde2",
         "553bb2f3",
         "7c0371e3",
         "9f5cf4cc",
-        "ad1c71d8",
         "c3833792",
         "ed246dd2"
       ],
       "done_sigs": [
-        "496a682f"
+        "496a682f",
+        "ad1c71d8"
       ]
     },
     "agent/plans/PLAN-wire-account-vitest-ci.md": {

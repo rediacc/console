@@ -120,7 +120,7 @@ D7. **The class B gate.** check:ci-swallowed-failures gains a Python mode:
 
 ## Tasks
 
-- [ ] SF1 [writer] Class A parser and adoption (D1-D3). The `gate_args` module is adopted by every entry point under `.ci/scripts/quality` that ignores an unknown argument, and by the module `main` each shim hands argv to. Callers' arguments are read first and declared or fixed. check_record_paths keeps the refusal and the three controls from f5f6574e60, now through `gate_args`.
+- [x] SF1 [writer] Class A parser and adoption (D1-D3). The `gate_args` module is adopted by every entry point under `.ci/scripts/quality` that ignores an unknown argument, and by the module `main` each shim hands argv to. Callers' arguments are read first and declared or fixed. check_record_paths keeps the refusal and the three controls from f5f6574e60, now through `gate_args`.
   In flight: writer started 2026-11-23 on the operator's "start in parallel immediately"; tick when its commits land on 1121-1 with the Accept evidence.
   Owns: .ci/rediacc_ci/gate_args.py, .ci/scripts/quality/**, .ci/rediacc_ci/quality/** (module mains only), .ci/rediacc_ci/tests/test_gate_args*.py
   Depends on: none.
@@ -130,24 +130,27 @@ D7. **The class B gate.** check:ci-swallowed-failures gains a Python mode:
   - `--help` exits 0
   - a declared positional argument is accepted and an undeclared one is refused
   - a script with nothing declared refuses any argument
+    (ticked) 2026-11-23T08:06:18Z by ace763dd: commit:8ad54bea68 fileline:.ci/scripts/quality/_gate_args.py:1 -- shared parser adopted by 147 quality entry points (unknown flag exits 2 naming it); test_gate_quality_argv_helper.py + test_gate_quality_argv_adoption.py rc 0 (185 passed); the box named test_gate_args.py, the tests landed under these names
 
   Also: `npm run -s check:ci-record-paths -- --update` and `npm run -s check:ci-npmrc -- --update` each exit 2 naming `--update`, and a bare run of each still exits 0.
-- [ ] SF2 [writer] Class B (D5) in wl_admit, wl_backlog, wl_benchblock, wl_checklist, wl_ci, wl_civerdict, wl_handover, wl_hints, wl_lessons, wl_liveness, wl_lkg, wl_planenforce, wl_planfile, wl_reggate, wl_renettests, wl_roster and wl_ruling. That is 33 sites by the Context 6 rule. Each one names its failure through an existing return value, error or check text, and none adds a block.
+- [x] SF2 [writer] Class B (D5) in wl_admit, wl_backlog, wl_benchblock, wl_checklist, wl_ci, wl_civerdict, wl_handover, wl_hints, wl_lessons, wl_liveness, wl_lkg, wl_planenforce, wl_planfile, wl_reggate, wl_renettests, wl_roster and wl_ruling. That is 33 sites by the Context 6 rule. Each one names its failure through an existing return value, error or check text, and none adds a block.
   In flight: writer started 2026-11-23 on the operator's "start in parallel immediately"; tick when its commits land on 1121-1 with the Accept evidence.
   Owns: the 17 `.claude/hooks/stop/wl_*.py` files named above, .claude/rediacc_hooks/tests/test_wl_named_reads*.py
   Depends on: none.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_named_reads.py` rc 0, with:
   - one control per changed site that forces the read to raise and asserts the reason appears in the stop text or the return value
   - one silent control per file, showing that a clean read adds no text
+    (ticked) 2026-11-23T08:06:19Z by ace763dd: commit:91ecf84b92 fileline:.claude/rediacc_hooks/tests/test_wl_silent_b.py:1 -- 17 stop-hook modules name their read failures; test_wl_silent_a.py + test_wl_silent_b.py rc 0 (43 passed); the box named test_wl_named_reads.py, the tests landed under these names
 
   Also: the whole `test_wl_*` family passes; `npm run check:ci-plan-record` rc 0; `git diff` adds no `block` entry to `.claude/config/effort.json`. Once SF9 has landed, its count over these 17 files is 0, or each survivor carries a waiver.
-- [ ] SF3 [writer] Class B (D5, D6) in wl_checks.py: all 38 sites by the Context 6 rule (36 by the sweep's rule), plus the cd-done latch at `.claude/hooks/stop/wl_checks.py:3393-3395`, which is written only when the notice is not empty. When the notice is empty, the landing step names that it could not be built, and the next stop tries again.
+- [x] SF3 [writer] Class B (D5, D6) in wl_checks.py: all 38 sites by the Context 6 rule (36 by the sweep's rule), plus the cd-done latch at `.claude/hooks/stop/wl_checks.py:3393-3395`, which is written only when the notice is not empty. When the notice is empty, the landing step names that it could not be built, and the next stop tries again.
   In flight: writer started 2026-11-23 on the operator's "start in parallel immediately"; tick when its commits land on 1121-1 with the Accept evidence.
   Owns: .claude/hooks/stop/wl_checks.py, .claude/rediacc_hooks/tests/test_wl_named_reads_checks.py
   Depends on: none.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_named_reads_checks.py` rc 0, with:
   - per-site controls as in SF2, including the `import wl_ruling` fallback at :84 and the liveness reads at :3946-3955
   - a cd-done test: with `notify_line` returning `""`, the latch is not written and the step text names the missing notice; the control shows a real notice is latched once and not repeated
+    (ticked) 2026-11-23T08:06:21Z by ace763dd: commit:cc68eafa0a fileline:.claude/rediacc_hooks/tests/test_wl_checks_silent_failure.py:1 -- wl_checks.py names 46 read failures via check-read-failed, cd-done latch only on a non-empty notice; test_wl_checks_silent_failure.py rc 0 (39 passed)
 
   Also: the whole `test_wl_*` family passes, and `npm run check:ci-plan-record` rc 0.
 - [ ] SF4 [writer] Class B (D5, D6) in wl_store.py (5 sites) and wl_core.py (1 site at :938). `landing_record` (`.claude/hooks/stop/wl_core.py:398-417`) reads through `commit_policy.read_landing_record`: a missing file stays `None`, and a defective record hands its problem to the caller, which names it once.

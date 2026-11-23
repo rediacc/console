@@ -52,7 +52,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 6 of 66 plans done, 1126 of 1433 boxes done (78%).
+Promoted: 6 of 66 plans done, 1132 of 1433 boxes done (78%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -116,12 +116,12 @@ Promoted: 6 of 66 plans done, 1126 of 1433 boxes done (78%).
 | 58 | PLAN-pr-loop-single-source.md | 7/9 | 2 open |
 | 59 | PLAN-two-track-merge-dev.md | 38/44 | 6 open |
 | 60 | PLAN-simple-two-tree-loop.md | 7/12 | 5 open |
-| 61 | PLAN-preview-signer.md | 12/37 | 25 open |
-| 62 | PLAN-weekly-lessons.md | 1/8 | 7 open |
+| 61 | PLAN-preview-signer.md | 14/37 | 23 open |
+| 62 | PLAN-weekly-lessons.md | 2/8 | 6 open |
 | 63 | PLAN-tooling-speed.md | 3/8 | 5 open |
 | 64 | PLAN-tooling-code-reduction.md | 3/11 | 8 open |
 | 65 | PLAN-stop-hook-retro-20261123.md | 7/8 | 1 open |
-| 66 | PLAN-silent-failure-sweep.md | 0/10 | 10 open |
+| 66 | PLAN-silent-failure-sweep.md | 3/10 | 7 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue

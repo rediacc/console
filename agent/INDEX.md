@@ -561,7 +561,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-portal-analytics.md` | proposed | 62 | 10 | 0 | 13797 |
 | `agent/plans/PLAN-pr-loop-single-source.md` | approved | 188 | 2 | 7 | 32280 |
 | `agent/plans/PLAN-pr-path-ephemeral-credentials.md` | proposed | 76 | 13 | 0 | 18781 |
-| `agent/plans/PLAN-preview-signer.md` | approved | 334 | 25 | 12 | 68794 |
+| `agent/plans/PLAN-preview-signer.md` | approved | 336 | 23 | 14 | 69237 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-product-domain-rename.md` | executing | 226 | 4 | 24 | 45792 |
 | `agent/plans/PLAN-production-key-only.md` | approved | 349 | 3 | 14 | 51686 |
@@ -610,7 +610,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
 | `agent/plans/PLAN-signer-bench-stop-binding-reattach.md` | done | 37 | 0 | 3 | 6362 |
-| `agent/plans/PLAN-silent-failure-sweep.md` | approved | 210 | 10 | 0 | 26051 |
+| `agent/plans/PLAN-silent-failure-sweep.md` | approved | 213 | 7 | 3 | 27003 |
 | `agent/plans/PLAN-simple-two-tree-loop.md` | approved | 185 | 5 | 7 | 39052 |
 | `agent/plans/PLAN-site-entry-points.md` | approved | 159 | 4 | 7 | 22682 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
@@ -643,7 +643,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4758 |
 | `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3914 |
 | `agent/plans/PLAN-website-routing-and-mail.md` | executing | 145 | 5 | 15 | 27643 |
-| `agent/plans/PLAN-weekly-lessons.md` | approved | 64 | 7 | 1 | 8521 |
+| `agent/plans/PLAN-weekly-lessons.md` | approved | 65 | 6 | 2 | 8726 |
 | `agent/plans/PLAN-wire-account-vitest-ci.md` | compacted | 39 | 0 | 0 | 3063 |
 | `agent/plans/PLAN-wl-report-liveness-oracle.md` | compacted | 52 | 0 | 7 | 3665 |
 | `agent/plans/PLAN-worktree-lease.md` | approved | 357 | 1 | 15 | 59600 |
