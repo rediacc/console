@@ -38,6 +38,8 @@ export interface IntrospectionResponse {
   active: boolean;
   scopes?: string[];
   teamId?: string | null;
+  /** Slug of the token's team; policy `teams` rules are keyed by it. */
+  teamSlug?: string;
   orgId?: string;
   createdByUserId?: string;
   userEmail?: string;
@@ -269,6 +271,7 @@ export class AuthVerifier {
     return {
       orgId: body.orgId,
       teamId: body.teamId ?? null,
+      ...(body.teamId && body.teamSlug ? { teamSlug: body.teamSlug } : {}),
       userId: body.createdByUserId,
       userEmail: body.userEmail,
       orgRole: normalizeRole(body.orgRole),

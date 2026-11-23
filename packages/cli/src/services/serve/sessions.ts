@@ -35,6 +35,11 @@ const DEFAULT_TTL_MS = 30 * 60 * 1000;
 export interface SessionPrincipal {
   orgId: string;
   teamId: string | null;
+  /**
+   * Slug of the principal's team, as the account server reported it; the key
+   * policy `teams` rules match on. Absent for a principal with no team.
+   */
+  teamSlug?: string;
   userId: string;
   userEmail: string;
   orgRole: 'owner' | 'admin' | 'member';

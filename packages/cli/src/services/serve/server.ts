@@ -239,6 +239,8 @@ export function createServeApp(deps: ServeDeps): Hono {
           request.positionals
         ),
         repoName,
+        // Resolved once per request, from the verified principal: team rules in the policy document match on it.
+        teamSlug: principal.teamSlug,
         // Computed here, from the config the command will run against, never taken from the client. The CLI's own grand-repo guard runs only in an agent's local process, which a proxied command never reaches.
         isGrandRepo: await resolveGrandRepoMutation(entry, repoName, requestConfig),
       });
