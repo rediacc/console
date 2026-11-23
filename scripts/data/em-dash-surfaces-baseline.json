@@ -69,7 +69,6 @@
   "packages/cli/src/utils/__tests__/repo-target-verifier.test.ts:af538070f394",
   "packages/cli/src/utils/process-ancestry.ts:7fd4fb2029ce",
   "packages/cli/src/utils/repo-context-guard.ts:93829faccb9f",
-  "packages/www/src/components/CfPricingCard.astro:494fb3ac862b",
   "packages/www/src/components/CheatSheetGrid.astro:57292f22c6e1",
   "packages/www/src/components/CheatSheetGrid.astro:88c6ba0fcbd5",
   "packages/www/src/components/CheatSheetGrid.astro:9d44162535b0",
