@@ -16,11 +16,13 @@
  *      re-derive the same answer independently.
  *
  *   3. IDEMPOTENT. Every event carries a key, so a retry after a network blip
- *      records the command once rather than twice. An audit log that
- *      double-counts is not evidence of anything.
+ *      records the command once rather than twice, and a job's terminal event
+ *      carries a key derived from the job id, so a restarted executor that
+ *      ships it again is recorded once too. An audit log that double-counts is
+ *      not evidence of anything.
  */
 
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { type AuditEvent, functionNameToEventType } from '@rediacc/shared';
 import { VERSION } from '../../version.js';
 import { deadlineFetch, describeFetchError } from './account-fetch.js';
@@ -34,6 +36,43 @@ export interface ExecutorAuditOptions {
   fetchImpl?: typeof fetch;
   /** Called when an event cannot be delivered, so the failure is visible. */
   onFailure?: (error: unknown, event: ExecutorAuditEvent) => void;
+}
+
+/** The job outcomes that end a job: the event that records one is the job's terminal event. */
+const TERMINAL_OUTCOMES: ReadonlySet<string> = new Set(['succeeded', 'failed', 'cancelled']);
+
+/** The UUIDv5 namespace of the executor's derived audit keys (a fixed random UUID; changing it re-keys every terminal event). */
+const AUDIT_KEY_NAMESPACE = '6f1d7c2e-3b4a-4e8f-9c05-1a2b3c4d5e6f';
+
+/** The RFC 9562 version-5 UUID of `name` in `namespace`: the same name always maps to the same UUID. */
+export function uuidV5(namespace: string, name: string): string {
+  const hash = createHash('sha1')
+    .update(Buffer.from(namespace.replaceAll('-', ''), 'hex'))
+    .update(name, 'utf8')
+    .digest();
+  hash[6] = (hash[6] & 0x0f) | 0x50;
+  hash[8] = (hash[8] & 0x3f) | 0x80;
+  const hex = hash.subarray(0, 16).toString('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+/**
+ * The idempotency key of an event (PLAN-rmcp-writeback.md Design 9).
+ *
+ * A job's terminal event is keyed by the name `job:<jobId>:terminal`, the same in
+ * every process: the in-memory ledger that ships it once per job is lost on every
+ * container sleep, and a restarted executor's poll ships it again under the same
+ * key, which the account server keeps once (routes/license.ts). Whether the
+ * terminal outcome arrived with the dispatch (the job finished inside the attach
+ * window) or with a poll, it is one record. The wire schema takes a UUID, so the
+ * key is that name's version-5 UUID. Every other event is one occurrence of its
+ * own and gets a fresh key, shared only by that event's retries.
+ */
+export function auditIdempotencyKey(event: ExecutorAuditEvent): string {
+  if (event.jobId && event.outcome && TERMINAL_OUTCOMES.has(event.outcome)) {
+    return uuidV5(AUDIT_KEY_NAMESPACE, `job:${event.jobId}:terminal`);
+  }
+  return randomUUID();
 }
 
 /**
@@ -52,7 +91,7 @@ export interface ExecutorAuditOptions {
  */
 function buildExecutorAuditEvent(
   event: ExecutorAuditEvent,
-  idempotencyKey: string = randomUUID()
+  idempotencyKey: string = auditIdempotencyKey(event)
 ): AuditEvent {
   const envelope = {
     idempotencyKey,

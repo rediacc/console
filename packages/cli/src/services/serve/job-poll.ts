@@ -211,7 +211,12 @@ export interface TerminalLedger {
   forget(jobId: string): void;
 }
 
-/** In-memory, bounded; the oldest ids are forgotten past `capacity`. */
+/**
+ * In-memory, bounded; the oldest ids are forgotten past `capacity`. Only a cache
+ * that saves repeat deliveries: it is lost on every restart, and a terminal event
+ * shipped again then carries the job's derived idempotency key (audit.ts
+ * auditIdempotencyKey), which the account server keeps once.
+ */
 export function createTerminalLedger(capacity = 10_000): TerminalLedger {
   const seen = new Set<string>();
   return {
