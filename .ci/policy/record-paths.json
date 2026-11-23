@@ -1052,6 +1052,10 @@
         {
           "id": "check:ci-pytest",
           "reason": "Its only citation of this record is the `*.json` glob in green_receipt_heads (.ci/rediacc_ci/check_pytest.py:1371, added by 957bf23a89), which runs over the ci:quick receipt directories receipt_dirs returns (.ci/cache/receipts, and the live checkout's through the toolchain cache link) to find the last green check:ci-pytest base; it opens no file under .ci/config/."
+        },
+        {
+          "id": "check:ci-hook-exec-baseline",
+          "reason": "The only citation the derivation finds is the bare glob '*.json' at .claude/hooks/stop/wl_hookreport.py:308, `Path(root).joinpath(*RECEIPTS_REL).glob('*.json')`, a listing of the ci:quick receipts under .ci/cache/receipts (RECEIPTS_REL); the receiver names that directory, so no file under .ci/config is read. It imports wl_hookreport for the hook-exec ledger report and its verdict is computed over those receipts and the hook ledger."
         }
       ]
     },
@@ -1713,6 +1717,10 @@
         {
           "id": "check:ci-pytest",
           "reason": "Its only citation of this record is the `*.json` glob in green_receipt_heads (.ci/rediacc_ci/check_pytest.py:1371, added by 957bf23a89), which runs over the ci:quick receipt directories receipt_dirs returns (.ci/cache/receipts, and the live checkout's through the toolchain cache link) to find the last green check:ci-pytest base; it opens no file under .ci/config/."
+        },
+        {
+          "id": "check:ci-hook-exec-baseline",
+          "reason": "The only citation the derivation finds is the bare glob '*.json' at .claude/hooks/stop/wl_hookreport.py:308, `Path(root).joinpath(*RECEIPTS_REL).glob('*.json')`, a listing of the ci:quick receipts under .ci/cache/receipts (RECEIPTS_REL); the receiver names that directory, so no file under .ci/config is read. It imports wl_hookreport for the hook-exec ledger report and its verdict is computed over those receipts and the hook ledger."
         }
       ]
     },
