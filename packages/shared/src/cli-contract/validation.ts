@@ -69,6 +69,26 @@ export const FormatHintSchema = z.enum([
 
 export const OptionTierSchema = z.enum(['common', 'advanced']);
 
+export const CommandSeveritySchema = z.enum(['none', 'caution', 'destructive']);
+
+export const PreviewPolaritySchema = z.enum(['opt-in', 'default']);
+
+/** Whether `flag` names a boolean option of the command is checked below. */
+export const CommandPreviewSchema = z.object({
+  flag: z.string().min(1),
+  polarity: PreviewPolaritySchema,
+});
+
+export const ErrorOriginSchema = z.enum(['user', 'environment', 'rediacc']);
+
+export const ContractErrorCodeSchema = z.object({
+  code: z.string().min(1),
+  origin: ErrorOriginSchema,
+});
+
+/** The longest summary a command may carry, in characters. */
+export const SUMMARY_MAX_LENGTH = 100;
+
 export const CommandExampleSchema = z.object({
   command: z.string().min(1),
   values: z.record(z.string(), z.string()),
@@ -116,6 +136,10 @@ export const ContractCommandSchema = z.object({
   plane: CommandPlaneSchema,
   descriptionKey: z.string().nullable(),
   label: z.string(),
+  summaryKey: z.string().min(1).nullable(),
+  summary: z.string().min(1),
+  severity: CommandSeveritySchema,
+  preview: CommandPreviewSchema.optional(),
   options: z.array(ContractOptionSchema),
   positionals: z.array(ContractPositionalSchema),
   hasSubcommands: z.boolean(),
@@ -137,6 +161,7 @@ export const ContractCommandSchema = z.object({
   interactive: z.boolean(),
   proxyCapable: z.boolean(),
   proxyBlockedReason: z.string().min(1).optional(),
+  proxyBlockedReasonKey: z.string().min(1).optional(),
   detachable: z.boolean(),
   detachBlockedReason: z.string().min(1).optional(),
 
@@ -150,6 +175,7 @@ export const CliContractSchema = z.object({
   version: z.string().min(1),
   languages: z.array(z.string().min(1)).min(1),
   commands: z.array(ContractCommandSchema).min(1),
+  errorCodes: z.array(ContractErrorCodeSchema),
 });
 
 /** A flattened i18n bundle: key -> translated string. */
@@ -199,6 +225,38 @@ function checkProxyCapability(cmd: ContractCommand): string[] {
     }
   } else if (cmd.proxyBlockedReason === undefined) {
     problems.push(`${cmd.pathKey}: not proxyCapable but gives no proxyBlockedReason`);
+  }
+  if (cmd.proxyBlockedReasonKey !== undefined && cmd.proxyBlockedReason === undefined) {
+    problems.push(`${cmd.pathKey}: proxyBlockedReasonKey set without a proxyBlockedReason`);
+  }
+
+  return problems;
+}
+
+/**
+ * The semantic fields a console renders from: a summary short enough for one
+ * line, a preview switch that is a real boolean option of the same command, and
+ * a severity that never undercuts the MCP destructive annotation.
+ */
+function checkSemantics(cmd: ContractCommand): string[] {
+  const problems: string[] = [];
+
+  if (cmd.summary.length > SUMMARY_MAX_LENGTH) {
+    problems.push(
+      `${cmd.pathKey}: summary is ${cmd.summary.length} characters, over ${SUMMARY_MAX_LENGTH}`
+    );
+  }
+  if (cmd.preview) {
+    const flag = cmd.preview.flag;
+    const opt = cmd.options.find((o) => o.long === flag);
+    if (!opt) {
+      problems.push(`${cmd.pathKey}: preview.flag "${flag}" names no option of this command`);
+    } else if (opt.valueTaking) {
+      problems.push(`${cmd.pathKey}: preview.flag "${flag}" takes a value, not a switch`);
+    }
+  }
+  if (cmd.destructive === true && cmd.severity === 'none') {
+    problems.push(`${cmd.pathKey}: MCP-annotated destructive but severity is "none"`);
   }
 
   return problems;
@@ -361,10 +419,17 @@ export function checkContractInvariants(contract: CliContract): string[] {
       ...checkExamples(cmd),
       ...checkOutput(cmd),
       ...checkPositionalBindings(cmd),
-      ...checkDetachable(cmd)
+      ...checkDetachable(cmd),
+      ...checkSemantics(cmd)
     );
     if (seen.has(cmd.pathKey)) problems.push(`${cmd.pathKey}: duplicate entry`);
     seen.add(cmd.pathKey);
+  }
+
+  const seenCodes = new Set<string>();
+  for (const row of contract.errorCodes) {
+    if (seenCodes.has(row.code)) problems.push(`error code ${row.code}: duplicate entry`);
+    seenCodes.add(row.code);
   }
 
   return problems;
