@@ -935,6 +935,81 @@ cases.append(
     )
 )
 
+# 5b. R20261123.5 (agent/plans/PLAN-stop-hook-retro-20261123.md, D5): with no advance the refusal also names what voided the receipt and the run ci:quick will do. A review-record-only diff advances.
+_err5 = drive(w, ADV_PUSH)[1]
+cases.append(
+    (
+        True,
+        "Every path changed since the receipt is a record" in _err5
+        and "ci:quick will advance (record-only)." in _err5
+        and "whole lane" not in _err5,
+        "R20261123.5: a review-record-only diff says ci:quick will advance (record-only)",
+    )
+)
+# A STATE.md-only diff under a record set that does not hold agent/*/STATE.md (before R20261123.4) names the path and says whole lane.
+STATE_MD = "agent/ace763dd/STATE.md"
+w, t0 = adv_world("state-md-no-advance")
+t1 = adv_commit(w, STATE_MD)
+adv_receipt(w, t0, None)
+_err = drive(w, ADV_PUSH)[1]
+cases.append(
+    (
+        True,
+        "outside the record set (.ci/policy/record-paths.json): %s." % STATE_MD in _err
+        and "ci:quick will run the whole lane." in _err
+        and "record-only" not in _err,
+        "R20261123.5: a STATE.md-only diff outside the record set names the path and says whole lane",
+    )
+)
+# Its control: the record set is READ from the pushed tree's record-paths.json, never restated, so the same diff under a policy holding agent/*/STATE.md advances.
+STATE_POLICY = dict(
+    ADV_POLICY,
+    records=ADV_POLICY["records"]
+    + [
+        {
+            "glob": "agent/*/STATE.md",
+            "except": [],
+            "readers": [{"id": R_TREE, "evidence": "fixture:5"}],
+        }
+    ],
+)
+w, t0 = adv_world("state-md-record", policy=STATE_POLICY)
+t1 = adv_commit(w, STATE_MD)
+adv_receipt(w, t0, None)
+_err = drive(w, ADV_PUSH)[1]
+cases.append(
+    (
+        True,
+        "ci:quick will advance (record-only)." in _err and STATE_MD not in _err,
+        "R20261123.5 CONTROL: the same STATE.md diff under a record set holding agent/*/STATE.md says advance",
+    )
+)
+# A red receipt whose failed gate reads a touched record runs the lane (the runner's red rule).
+w, t0 = adv_world("red-reader-no-advance")
+t1 = adv_commit(w, REVIEW)
+adv_receipt(w, t0, None, exitCode=1, failed=[R_PLAN], findings={R_PLAN: None})
+_err = drive(w, ADV_PUSH)[1]
+cases.append(
+    (
+        True,
+        "The receipt is red on %s, which read(s) the changed record path(s)." % R_PLAN in _err
+        and "ci:quick will run the whole lane." in _err,
+        "R20261123.5: a red receipt whose failed gate reads the changed record says whole lane",
+    )
+)
+# A refusal WITH advances keeps its own text: no hint is appended (the golden for a receipt with advances stays byte for byte).
+w, t0 = adv_world("hint-not-on-advances")
+t1 = adv_commit(w, "code.txt")
+adv_receipt(w, t0, [step(t0, t1, BOTH_REVIEW_READERS)])
+_err = drive(w, ADV_PUSH)[1]
+cases.append(
+    (
+        True,
+        "the receipt's advances do not reach it" in _err and "ci:quick will" not in _err,
+        "R20261123.5 CONTROL: a receipt with advances gets no run hint",
+    )
+)
+
 # 6. Two chained advances (reviews, then a worklist file) are admitted.
 w, t0 = adv_world("two-chained")
 t1 = adv_commit(w, REVIEW)
@@ -1171,6 +1246,44 @@ w, t0, t1 = carry_world(
     carry_doc(keyed(K1), keyed(K2, gate=OTHER_GATE)),
 )
 CARRY_WORLDS.append(("G3: an added carry entry is refused", 2, w))
+# R20261123.5: the same added entry with NO advance names the widening and says whole lane.
+w, t0 = adv_world(
+    "carry-add-entry-no-advance", carried_doc=carry_doc(keyed(K1)), policy=CARRY_POLICY
+)
+t1 = carry_commit(w, carry_doc(keyed(K1), keyed(K2, gate=OTHER_GATE)))
+adv_receipt(
+    w,
+    t0,
+    None,
+    exitCode=1,
+    failed=[OTHER_GATE, TRAILERS],
+    findings={TRAILERS: [K1], OTHER_GATE: [K2]},
+)
+_err = drive(w, ADV_PUSH)[1]
+cases.append(
+    (
+        True,
+        "carried-reds.json widened: adds a carry for %s." % OTHER_GATE in _err
+        and "ci:quick will run the whole lane." in _err,
+        "R20261123.5: an added carried entry with no advance names the widening",
+    )
+)
+# Its control: a removal-only carry edit with no advance is a shrink, so it advances.
+w, t0 = adv_world(
+    "carry-remove-no-advance",
+    carried_doc=carry_doc(keyed(K1), keyed(K2, gate=OTHER_GATE)),
+    policy=CARRY_POLICY,
+)
+t1 = carry_commit(w, carry_doc(keyed(K1)))
+adv_receipt(w, t0, None, exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
+_err = drive(w, ADV_PUSH)[1]
+cases.append(
+    (
+        True,
+        "ci:quick will advance (record-only)." in _err and "widened" not in _err,
+        "R20261123.5 CONTROL: a removal-only carry edit with no advance says advance",
+    )
+)
 added_out = drive(w, ADV_PUSH)[1]
 cases.append(
     (

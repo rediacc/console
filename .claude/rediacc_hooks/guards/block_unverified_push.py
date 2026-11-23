@@ -1486,6 +1486,70 @@ def advance_chain(root, receipt, start, end):
     return list(reversed(trees)), None
 
 
+WHOLE_LANE = "ci:quick will run the whole lane."
+RECORD_ONLY = "ci:quick will advance (record-only)."
+
+
+def no_advance_hint(root, receipt, r_tree, tree):
+    """Why a receipt with no `advances` does not reach `tree`, and which run `npm run ci:quick` will do about it: indented lines ending in WHOLE_LANE or RECORD_ONLY (PLAN-stop-hook-retro-20261123 R20261123.5, D5; a wrong guess cost 27 minutes on 43201205).
+
+    The run is the runner's own decision (scripts/ci-runner/run.ts planAdvance), restated here in its order: a receipt that is not whole, or red with no usable `failed` list, runs the lane; so does a pushed tree whose record policy does not read, a diff git cannot list, a path outside the record set, or a failed gate that reads a touched record. A carried-reds.json change that widens an excuse is named too: this guard's step rule refuses an advance over it (`carried_shrink_refusal`), so the push needs a whole-lane receipt. Everything else advances.
+
+    THE RECORD SET IS READ, NEVER RESTATED: .ci/policy/record-paths.json as the pushed tree commits it (`_record_policy_at`, the copy the advance check and the runner read), so a glob added there (agent/*/STATE.md, R20261123.4) changes this answer with no edit here.
+    """
+
+    def whole(*lines):
+        return "".join("  %s\n" % line for line in lines) + "  %s" % WHOLE_LANE
+
+    if not isinstance(receipt, dict) or receipt.get("whole") is not True:
+        return whole("The receipt is not a whole-lane run, so there is nothing to advance.")
+    failed = receipt.get("failed")
+    if failed is not None and not (
+        isinstance(failed, list) and all(isinstance(g, str) for g in failed)
+    ):
+        return whole("The receipt's `failed` is not a list of gate ids.")
+    failed = failed or []
+    if receipt.get("exitCode") != 0 and not failed:
+        return whole("The receipt is red and lists no failed gate to judge the records against.")
+    records, error = _record_policy_at(root, tree)
+    if error is not None:
+        return whole("The record set cannot be read: %s." % error)
+    paths = _diff_names(root, r_tree, tree) if TREE_RE.match(r_tree or "") else None
+    if not paths:
+        return whole("git cannot list what changed between %s and %s here." % (r_tree, tree))
+    matched = {p: record_of(p, records) for p in paths}
+    outside = sorted(p for p, rec in matched.items() if rec is None)
+    if outside:
+        return whole(
+            "Changed since the receipt, outside the record set (%s): %s%s."
+            % (
+                RECORD_POLICY_REL,
+                ", ".join(outside[:10]),
+                " and %d more" % (len(outside) - 10) if len(outside) > 10 else "",
+            )
+        )
+    readers = {r for rec in matched.values() if rec is not None for r in rec["readers"]}
+    red = sorted(readers & set(failed))
+    if red:
+        return whole(
+            "The receipt is red on %s, which read(s) the changed record path(s)." % ", ".join(red)
+        )
+    if CARRIED_REL in paths:
+        old, why = _carried_at_tree(root, r_tree)
+        if why is None:
+            new, why = _carried_at_tree(root, tree)
+        if why is not None:
+            return whole("carried-reds.json cannot be judged a shrink: %s." % why)
+        widened = carried_widening(old, new)
+        if widened:
+            return whole("carried-reds.json widened: %s." % "; ".join(widened))
+    return "  Every path changed since the receipt is a record (%s): %d path(s).\n  %s" % (
+        RECORD_POLICY_REL,
+        len(paths),
+        RECORD_ONLY,
+    )
+
+
 def dropped_verdict(receipt, tree, trees=None):
     """A refusal naming every touched-but-dropped gate with no passing run at `tree`, else None. PURE, like `carried_verdict`.
 
@@ -2210,9 +2274,12 @@ def _receipt_front(root, tree, receipt):
         # A RECORD-ONLY COMMIT ADVANCES, it does not void (module docstring). Only this branch pays for the extra git calls, and a receipt with no `advances` keeps today's refusal byte for byte, so the frozen golden's rows do not move.
         chain, why = advance_chain(root, receipt, r_tree, tree)
         if chain is None:
+            if why:
+                return why, None
+            # NO ADVANCE AT ALL: name what voided the receipt and the run ci:quick will do about it (PLAN-stop-hook-retro-20261123 R20261123.5), after the sentence the frozen golden's rows carry.
             return (
-                why
-                or "the gate run judged a different tree (%s), not this one (%s)." % (r_tree, tree)
+                "the gate run judged a different tree (%s), not this one (%s).\n%s"
+                % (r_tree, tree, no_advance_hint(root, receipt, r_tree, tree))
             ), None
 
     # A NARROWED RUN PROVES ALMOST NOTHING. `--quick --only <one-gate>` produces a receipt that is otherwise indistinguishable from all 254, so the runner records whether the lane ran WHOLE and this reads the flag rather than parsing the selection prose -- a guard that parses English fails open on a rewording.
