@@ -1196,26 +1196,27 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 15,
-      "done": 0,
+      "open": 8,
+      "done": 7,
       "open_sigs": [
         "32e5ed31",
         "55aa5fb8",
-        "60a6c3ca",
         "62eb863d",
-        "6b1532f2",
-        "8281eb42",
-        "96cb3030",
         "aa551beb",
         "b823b7bb",
         "dd29c56a",
         "de25c15f",
+        "f337529b"
+      ],
+      "done_sigs": [
+        "60a6c3ca",
+        "6b1532f2",
+        "8281eb42",
+        "96cb3030",
         "e2825f47",
         "e6e57758",
-        "f337529b",
         "fbe342ae"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-console-executor-multi-org.md": {
       "status": "done",
@@ -1926,10 +1927,9 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 15,
-      "done": 0,
+      "open": 14,
+      "done": 1,
       "open_sigs": [
-        "0f941c3b",
         "1fbea5b8",
         "2e0d5e53",
         "2f8c4eb7",
@@ -1945,7 +1945,9 @@
         "fb0bdd84",
         "fbe7ab0c"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "0f941c3b"
+      ]
     },
     "agent/plans/PLAN-forensics-capture.md": {
       "status": "approved",

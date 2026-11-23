@@ -91,10 +91,11 @@ D10. **CRA runbook.** docs/legal/cra-incident-intake.md: who opens the intake, h
   Owns: packages/www/public/.well-known/security.txt, packages/www/src/config/__tests__/security-txt.test.ts, packages/www/src/content/docs/*/security-disclosure-policy.md, packages/www/src/content/docs/*/security-incident-response.md
   Depends on: none.
   Accept: `(cd packages/www && npx vitest run src/config/__tests__/security-txt.test.ts)` rc 0 with a control case feeding an `Expires` 10 days ahead that fails; `npm run -s check:i18n` rc 0; `npm run check:ci-prose-style` rc 0.
-- [ ] FN9 [writer] CRA runbook per D10 at docs/legal/cra-incident-intake.md, quoting Regulation (EU) 2024/2847 Art. 14 and GDPR Art. 33(3) and 33(4) from their official texts with the URL of each.
+- [x] FN9 [writer] CRA runbook per D10 at docs/legal/cra-incident-intake.md, quoting Regulation (EU) 2024/2847 Art. 14 and GDPR Art. 33(3) and 33(4) from their official texts with the URL of each.
   Owns: docs/legal/cra-incident-intake.md
   Depends on: none.
   Accept: `npm run check:ci-prose-style` rc 0; the lead spot-checks each quoted deadline against the linked regulation text.
+    (ticked) 2026-11-23T15:59:41Z by ace763dd: commit:8b7361a3dc docs/legal/cra-incident-intake.md quotes Regulation (EU) 2024/2847 Art. 14(1)-(5) and GDPR Art. 33(3)-(4) from the Official Journal rendition with each URL
 - [ ] FNL1 [lead] Route security@rediacc.com to the security inbox through Cloudflare Email Routing on the rediacc.com zone and send a test mail; door:operator-only only when the zone token lacks Email Routing edit.
   Depends on: none.
   Accept: a test mail to security@rediacc.com arrives, recorded with its message id in the tick.

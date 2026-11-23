@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 297 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 298 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -513,7 +513,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-audit-r2.md` | approved | 118 | 13 | 0 | 20656 |
 | `agent/plans/PLAN-console-command-line.md` | approved | 125 | 16 | 0 | 24001 |
 | `agent/plans/PLAN-console-confirm-stepup.md` | approved | 115 | 11 | 0 | 21225 |
-| `agent/plans/PLAN-console-contract-semantics.md` | approved | 122 | 15 | 0 | 24140 |
+| `agent/plans/PLAN-console-contract-semantics.md` | approved | 129 | 8 | 7 | 25491 |
 | `agent/plans/PLAN-console-executor-multi-org.md` | done | 379 | 0 | 18 | 68133 |
 | `agent/plans/PLAN-console-ia.md` | approved | 92 | 10 | 0 | 16627 |
 | `agent/plans/PLAN-console-private.md` | proposed | 334 | 32 | 0 | 56949 |
@@ -542,7 +542,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
 | `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 37 | 0 | 0 | 3148 |
 | `agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md` | executing | 34 | 2 | 0 | 4647 |
-| `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 125 | 15 | 0 | 27548 |
+| `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 126 | 14 | 1 | 27769 |
 | `agent/plans/PLAN-forensics-capture.md` | approved | 120 | 13 | 0 | 19272 |
 | `agent/plans/PLAN-forensics-detection.md` | approved | 123 | 15 | 0 | 23015 |
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 105 | 13 | 0 | 19237 |
@@ -658,6 +658,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-tutorial-rerecord.md` | proposed | 62 | 7 | 0 | 11254 |
 | `agent/plans/PLAN-two-track-merge-dev.md` | approved | 359 | 6 | 38 | 74638 |
 | `agent/plans/PLAN-unify-trap-corpus.md` | compacted | 39 | 0 | 0 | 2772 |
+| `agent/plans/PLAN-unlimited-writers.md` | approved | 43 | 5 | 0 | 5841 |
 | `agent/plans/PLAN-vmcheck-incremental.md` | approved | 24 | 1 | 2 | 3682 |
 | `agent/plans/PLAN-vscode-browser-exposure.md` | proposed | 61 | 9 | 0 | 10932 |
 | `agent/plans/PLAN-w7p4w-docker-cutover.md` | compacted | 62 | 0 | 12 | 4758 |
@@ -762,7 +763,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 | `agent/plans/_removed/PLAN-deletion-budget.md` | removed | 418 | 28 | 0 | 55796 |
 
-297 plan(s), 235 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+298 plan(s), 236 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 

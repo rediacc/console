@@ -57,26 +57,31 @@ D8. **Coverage gate**, in the CR2 header grammar, reads the committed contract a
 
 ## Tasks
 
-- [ ] CS1 [writer] Contract types and schema (D1): `summaryKey`, `summary`, `severity`, `preview`, `proxyBlockedReasonKey` on `ContractCommand`, `errorCodes` on `CliContract`, the zod schema, and `checkContractInvariants` refusing a summary over 100 characters and a `preview.flag` that names no option of its command.
+- [x] CS1 [writer] Contract types and schema (D1): `summaryKey`, `summary`, `severity`, `preview`, `proxyBlockedReasonKey` on `ContractCommand`, `errorCodes` on `CliContract`, the zod schema, and `checkContractInvariants` refusing a summary over 100 characters and a `preview.flag` that names no option of its command.
   Owns: packages/shared/src/cli-contract/types.ts, packages/shared/src/cli-contract/validation.ts, packages/shared/src/cli-contract/__tests__/**
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/cli-contract)` rc 0 with a fixture per invariant that fails before the fix; `(cd packages/shared && npx tsc --noEmit)` rc 0.
-- [ ] CS2 [writer] The severity and preview table (D2): `packages/cli/src/config/command-safety.ts` with a drafted severity for every one of the 231 commands, `repo prune` destructive, the preview table for the 23 `--dry-run` commands plus `repo gc` and `repo prune`, and `NOT_PREVIEW` holding `config edit` with its reason.
+    (ticked) 2026-11-23T15:59:18Z by ace763dd: commit:1d848f8303 landed; shared vitest src/cli-contract 81 passed rc 0, check:ci-cli-contract rc 0, packages/cli tsc --noEmit rc 0 on b671913c7f
+- [x] CS2 [writer] The severity and preview table (D2): `packages/cli/src/config/command-safety.ts` with a drafted severity for every one of the 231 commands, `repo prune` destructive, the preview table for the 23 `--dry-run` commands plus `repo gc` and `repo prune`, and `NOT_PREVIEW` holding `config edit` with its reason.
   Owns: packages/cli/src/config/command-safety.ts, packages/cli/src/config/__tests__/command-safety.test.ts
   Depends on: none.
   Accept: `(cd packages/cli && npx vitest run src/config/__tests__/command-safety.test.ts)` rc 0, asserting coverage of every contract pathKey, no stale key, no MCP-destructive command at `none`, `repo prune` destructive with polarity `default`, and every `--dry-run`/`--apply` command classified, each with a control fixture that turns it red.
-- [ ] CS3 [writer] Error origins (D4): `packages/cli/src/types/error-origins.ts` with `ERROR_CODE_ORIGINS` over the 15 envelope codes and `NAMED_ERROR_ORIGINS` over every named code the source emits, `origin` in the JSON envelope, and an inventory test that scans packages/cli/src for `errorCode:` literals, `*_CODE = '...'` constants and `CliExitError` first arguments and fails on an unlisted code.
+    (ticked) 2026-11-23T15:59:20Z by ace763dd: commit:90db5f63ce landed; shared vitest src/cli-contract 81 passed rc 0, check:ci-cli-contract rc 0, packages/cli tsc --noEmit rc 0 on b671913c7f
+- [x] CS3 [writer] Error origins (D4): `packages/cli/src/types/error-origins.ts` with `ERROR_CODE_ORIGINS` over the 15 envelope codes and `NAMED_ERROR_ORIGINS` over every named code the source emits, `origin` in the JSON envelope, and an inventory test that scans packages/cli/src for `errorCode:` literals, `*_CODE = '...'` constants and `CliExitError` first arguments and fails on an unlisted code.
   Owns: packages/cli/src/types/error-origins.ts, packages/cli/src/types/errors.ts, packages/cli/src/utils/errors.ts, packages/cli/src/types/__tests__/error-origins.test.ts
   Depends on: none.
   Accept: `(cd packages/cli && npx vitest run src/types/__tests__/error-origins.test.ts)` rc 0 with a control source fixture holding an unlisted code that turns it red; `(cd packages/cli && npm run typecheck)` rc 0; `(cd packages/cli && npm test)` rc 0.
-- [ ] CS4 [writer] English summaries and blocked-reason keys (D3): a `.summary(t('commands.<path>.descriptionShort'))` call and its English key in packages/cli/src/i18n/locales/en/cli.json for each of the 118 commands without one, each at most 100 characters, plus one `commands.proxyBlocked.*` English key per distinct `proxyBlockedReason` text.
+    (ticked) 2026-11-23T15:59:21Z by ace763dd: commit:5b54f55b40 landed; shared vitest src/cli-contract 81 passed rc 0, check:ci-cli-contract rc 0, packages/cli tsc --noEmit rc 0 on b671913c7f
+- [x] CS4 [writer] English summaries and blocked-reason keys (D3): a `.summary(t('commands.<path>.descriptionShort'))` call and its English key in packages/cli/src/i18n/locales/en/cli.json for each of the 118 commands without one, each at most 100 characters, plus one `commands.proxyBlocked.*` English key per distinct `proxyBlockedReason` text.
   Owns: packages/cli/src/commands/**/*.ts (summary calls only), packages/cli/src/i18n/locales/en/cli.json
   Depends on: none.
   Accept: a tsx walk of the Commander tree prints 231 of 231 contract commands with a summary of at most 100 characters; `npm run check:ci-i18n-cli-key-usage` rc 0; `(cd packages/cli && npm test)` rc 0; `npm run export:command-tree -w @rediacc/cli` then `npm run check:ci-command-tree` rc 0.
-- [ ] CS5 [writer] Generator (D1 to D5): export `summaryKey`, `summary`, `severity`, `preview`, `proxyBlockedReasonKey` and `errorCodes`, refuse the D2 curation problems, compute the content-hash version into contract.generated.ts, contract.json and `data/contract-version.generated.ts`, drop `--version`, and regenerate the committed contract.
+    (ticked) 2026-11-23T15:59:22Z by ace763dd: commit:31e8fcef10 landed; shared vitest src/cli-contract 81 passed rc 0, check:ci-cli-contract rc 0, packages/cli tsc --noEmit rc 0 on b671913c7f
+- [x] CS5 [writer] Generator (D1 to D5): export `summaryKey`, `summary`, `severity`, `preview`, `proxyBlockedReasonKey` and `errorCodes`, refuse the D2 curation problems, compute the content-hash version into contract.generated.ts, contract.json and `data/contract-version.generated.ts`, drop `--version`, and regenerate the committed contract.
   Owns: packages/cli/scripts/generate-cli-contract.ts, packages/shared/src/cli-contract/data/**
   Depends on: CS1, CS2, CS3, CS4.
   Accept: `npm run generate:cli-contract -w @rediacc/cli` rc 0 and a second run leaves no diff; `CLI_CONTRACT_VERSION` is 16 hex characters; deleting one entry from command-safety.ts in a scratch copy makes the generator exit 1 naming it; `npm run check:ci-cli-contract` rc 0; `(cd packages/shared && npx vitest run src/cli-contract)` rc 0.
+    (ticked) 2026-11-23T15:59:24Z by ace763dd: commit:24aad35d46 landed; shared vitest src/cli-contract 81 passed rc 0, check:ci-cli-contract rc 0, packages/cli tsc --noEmit rc 0 on b671913c7f
 - [ ] CS6 [writer] Translate the new summaries and `commands.proxyBlocked.*` keys into ar, de, es, et, fr and it, naturalized per docs/i18n/CONVENTIONS.md, by a sonnet writer, then regenerate the contract bundles.
   Owns: packages/cli/src/i18n/locales/{ar,de,es,et,fr,it}/cli.json, packages/shared/src/cli-contract/data/i18n/{ar,de,es,et,fr,it}.json
   Depends on: CS5.
@@ -93,10 +98,11 @@ D8. **Coverage gate**, in the CR2 header grammar, reads the committed contract a
   Owns: .ci/rediacc_ci/quality/cli_contract_coverage.py, .ci/rediacc_ci/quality/cli_contract.py, .ci/rediacc_ci/tests/gates/test_gate_cli_contract_coverage.py
   Depends on: CS5, CS6, CS7, PLAN-tooling-code-reduction.md#CR2.
   Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.quality.cli_contract_coverage` rc 0 on the tree; `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/gates/test_gate_cli_contract_coverage.py` rc 0 with controls (a missing severity, a 101-character summary, a summary key absent from one bundle, an error code without origin) each turning the gate red; `npm run check:ci-cli-contract` rc 0 with the version now diffed; `npm run check:ci-gate-reachability-coverage` rc 0.
-- [ ] CS10 [writer] Shared lazy entry (D6): `core.ts` with `indexContract`, `load.ts` with `loadCliContract`, the version file exported on its own subpath, and the root index re-exporting both so the CLI and worker keep their synchronous imports.
+- [x] CS10 [writer] Shared lazy entry (D6): `core.ts` with `indexContract`, `load.ts` with `loadCliContract`, the version file exported on its own subpath, and the root index re-exporting both so the CLI and worker keep their synchronous imports.
   Owns: packages/shared/src/cli-contract/core.ts, packages/shared/src/cli-contract/load.ts, packages/shared/src/cli-contract/index.ts, packages/shared/src/cli-contract/__tests__/**
   Depends on: CS5.
   Accept: `(cd packages/shared && npx vitest run src/cli-contract)` rc 0 with a test that core.ts imports nothing from `data/contract.generated`; `(cd packages/shared && npm run build)` rc 0; `(cd packages/cli && npm run typecheck)` rc 0.
+    (ticked) 2026-11-23T15:59:25Z by ace763dd: commit:2b2746df2e landed; shared vitest src/cli-contract 81 passed rc 0, check:ci-cli-contract rc 0, packages/cli tsc --noEmit rc 0 on b671913c7f
 - [ ] CS11 [writer] Web console on the lazy contract (D5, D6): `ContractProvider` in Layout, every value import of the root contract entry under private/account/web/src replaced by the provider hook or the core and version subpaths, a translated `contractVersionMismatch` message on a 409 in all 13 locales by a sonnet writer, and an import-guard test.
   Owns: private/account/web/src/lib/contract-provider.tsx, private/account/web/src/lib/contract-context.ts, private/account/web/src/lib/contract-form.ts, private/account/web/src/lib/contract-i18n.tsx, private/account/web/src/lib/resource-options.ts, private/account/web/src/hooks/usePickerOptions.ts, private/account/web/src/hooks/useResourceList.ts, private/account/web/src/api/console.ts, private/account/web/src/components/Layout.tsx, private/account/web/src/components/console/CommandPalette.tsx, private/account/web/src/components/console/RunHistory.tsx, private/account/web/src/pages/console/*.tsx, private/account/web/src/lib/__tests__/contract-*.test.ts, private/account/web/src/components/console/__tests__/**, private/account/web/src/i18n/locales/*/console.json, private/account/web/src/i18n/locales/.translation-hashes.json
   Depends on: CS10.
@@ -104,10 +110,11 @@ D8. **Coverage gate**, in the CR2 header grammar, reads the committed contract a
 - [ ] CS12 [lead] Operator review of the full severity list (C5): render command-safety.ts as one table of 231 rows (pathKey, severity, preview), put it to the operator once, and commit the corrections with CS2's test green.
   Depends on: CS2.
   Accept: the tick carries the operator's answer minute (`ASKED:<YYYY-MM-DDTHH:MM>Z`) and the correction commit; `(cd packages/cli && npx vitest run src/config/__tests__/command-safety.test.ts)` rc 0 on it.
-- [ ] CS13 [writer] The `reveal` drop (D7, C24): `excludeOptions: ['reveal']` on `config show` and agent-refused-options.test.ts classifying every `isAgentEnvironment()` call site under packages/cli/src/commands and asserting no MCP tool schema exposes a refused option.
+- [x] CS13 [writer] The `reveal` drop (D7, C24): `excludeOptions: ['reveal']` on `config show` and agent-refused-options.test.ts classifying every `isAgentEnvironment()` call site under packages/cli/src/commands and asserting no MCP tool schema exposes a refused option.
   Owns: packages/cli/src/config/command-metadata.ts (the config show entry only), packages/cli/src/commands/mcp/__tests__/agent-refused-options.test.ts
   Depends on: none.
   Accept: `(cd packages/cli && npx vitest run src/commands/mcp/__tests__/agent-refused-options.test.ts src/commands/mcp/__tests__/mcp-coverage.test.ts)` rc 0; the test fails with `reveal` restored to the schema and fails on an unclassified call site fixture.
+    (ticked) 2026-11-23T15:59:27Z by ace763dd: commit:2b807c9710 landed; shared vitest src/cli-contract 81 passed rc 0, check:ci-cli-contract rc 0, packages/cli tsc --noEmit rc 0 on b671913c7f
 - [ ] CS14 [lead] Plan-record refresh after the plan file is committed: `npm run check:ci-plan-boxes -- --update` and `npm run check:ci-plan-record -- --update`.
   Depends on: none.
   Accept: both checks rc 0 after the regeneration and `npm run check:ci-prose-style` rc 0 on this file.
