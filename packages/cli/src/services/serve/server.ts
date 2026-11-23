@@ -265,6 +265,7 @@ export function createServeApp(deps: ServeDeps): Hono {
         await deps.audit?.({
           principal,
           commandPath: request.pathKey,
+          ...(request.requestId ? { requestId: request.requestId } : {}),
           machineName: requestedMachine,
           params: request.params,
           success: true,
@@ -337,6 +338,7 @@ export function createServeApp(deps: ServeDeps): Hono {
         const failedNotice = await auditOutcome(deps, entry, request.pathKey, {
           principal,
           commandPath: request.pathKey,
+          ...(request.requestId ? { requestId: request.requestId } : {}),
           machineName: requestedMachine,
           params: request.params,
           success: false,
@@ -369,6 +371,7 @@ export function createServeApp(deps: ServeDeps): Hono {
           : await auditOutcome(deps, entry, request.pathKey, {
               principal,
               commandPath: request.pathKey,
+              ...(request.requestId ? { requestId: request.requestId } : {}),
               ...(functionName ? { functionName } : {}),
               // Prefer the machine the command actually reached (the only source for a derived-machine verb, whose machine is resolved from placement inside the action body); fall back to the request for verbs that still name the machine explicitly (backup, job).
               machineName: machineName ?? requestedMachine,

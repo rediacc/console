@@ -32,6 +32,8 @@ export interface ExecutorAuditEvent {
   jobId?: string;
   /** `started` for a ticket handed back before the job ended, else the job's terminal state. */
   outcome?: 'started' | 'succeeded' | 'failed' | 'cancelled';
+  /** The command request's id, shipped so the account Worker joins this event to the console run that caused it. */
+  requestId?: string;
 }
 
 export interface ServeCrypto {

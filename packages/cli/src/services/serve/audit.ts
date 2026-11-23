@@ -106,6 +106,7 @@ function buildExecutorAuditEvent(
     destructive: event.destructive,
     ...(event.jobId ? { jobId: event.jobId } : {}),
     ...(event.outcome ? { outcome: event.outcome } : {}),
+    ...(event.requestId ? { requestId: event.requestId } : {}),
   };
 
   const { functionName, machineName } = event;
