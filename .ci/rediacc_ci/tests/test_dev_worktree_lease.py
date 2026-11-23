@@ -13,6 +13,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import types
 from typing import Any, NamedTuple
 
 import pytest
@@ -1365,11 +1366,14 @@ def gc_env(root):
     }
 
 
-def run_verb(root, verb, *args):
+def run_verb(root, verb, *args, session=""):
+    env = gc_env(root)
+    if session:
+        env["WORKLIST_SESSION_ID"] = session
     return subprocess.run(
         [sys.executable, "-m", "rediacc_ci.dev.worktree", verb, *args],
         cwd=str(paths.CI_DIR),
-        env=gc_env(root),
+        env=env,
         capture_output=True,
         text=True,
         check=False,
@@ -3195,9 +3199,18 @@ def hold_file(repo, name):
 
 @pytest.fixture
 def unlanded_tree(gc_repo):
-    tree = make_tree(gc_repo, "parked")
-    gc_commit(tree, "work.txt")
+    """A lease the session `GC_SESSION` owns, with one unlanded commit."""
+    made = run_lease(gc_repo.root, "--name", "parked", "--owner", GC_SESSION[:8])
+    assert made.returncode == 0, made.stderr
+    age_record(gc_repo.root, "parked")
+    gc_commit(pathlib.Path(made.stdout.strip()), "work.txt")
     return gc_repo
+
+
+def hold_as(repo, item, reason="r", session=GC_SESSION, lease_id="parked"):
+    return run_verb(
+        repo.root, "hold", lease_id, "--item", item, "--reason", reason, session=session
+    )
 
 
 def test_hold_writes_a_record_and_gc_keeps_the_tree_naming_item_and_reason(unlanded_tree):
@@ -3207,11 +3220,12 @@ def test_hold_writes_a_record_and_gc_keeps_the_tree_naming_item_and_reason(unlan
     assert "held for" not in row_of(before.stdout, "parked"), (
         "control: an unheld tree names no hold"
     )
-    done = run_verb(repo.root, "hold", "parked", "--item", item, "--reason", "waits on N2")
+    done = hold_as(repo, item, "waits on N2")
     assert done.returncode == 0, done.stderr
     record = json.loads(hold_file(repo, "parked").read_text(encoding="utf-8"))
-    assert record["item"].startswith(item)
+    assert record["item"] == item
     assert record["reason"] == "waits on N2"
+    assert record["session"] == GC_SESSION[:8]
     row = row_of(run_gc(repo.root).stdout, "parked")
     assert row.split()[0] == "KEEP", row
     assert "held for #%s: waits on N2" % record["item"] in row, row
@@ -3222,15 +3236,127 @@ def test_hold_writes_a_record_and_gc_keeps_the_tree_naming_item_and_reason(unlan
     assert "held for #%s: waits on N2" % record["item"] in shown, shown
 
 
+def test_hold_resolves_a_unique_prefix_to_the_full_id(unlanded_tree):
+    repo = unlanded_tree
+    item = open_item(repo.root)
+    done = hold_as(repo, item[:5])
+    assert done.returncode == 0, done.stderr
+    record = json.loads(hold_file(repo, "parked").read_text(encoding="utf-8"))
+    assert record["item"] == item, "the record carries the full id, never the prefix"
+
+
+def test_hold_refuses_an_ambiguous_prefix():
+    watch = lease._hook_module("wl_worktrees")
+    items = [
+        {"id": "ab01", "state": " ", "owner": "x"},
+        {"id": "ab02", "state": " ", "owner": "x"},
+        {"id": "ab03", "state": "x", "owner": "x"},
+    ]
+    found, why = watch.resolve_open_item(items, "ab")
+    assert found is None
+    assert "ambiguous" in why, why
+    assert "#ab01" in why, why
+    assert "#ab02" in why, why
+    assert "ab03" not in why, "a ticked item is no candidate"
+    found, why = watch.resolve_open_item(items, "ab01")
+    assert found is items[0], "control: a full id resolves"
+    assert why == ""
+    found, why = watch.resolve_open_item(items, "ab0")
+    assert found is None
+    assert "ambiguous" in why
+    found, why = watch.resolve_open_item([items[0]], "ab")
+    assert found is items[0], "control: a unique prefix resolves"
+    assert why == ""
+
+
+def test_hold_refuses_a_session_that_does_not_own_the_lease(unlanded_tree):
+    repo = unlanded_tree
+    item = open_item(repo.root)
+    done = hold_as(repo, item, session="babe0000cafe")
+    assert done.returncode == 1, done.stdout
+    assert "not the lease owner" in done.stderr, done.stderr
+    assert not hold_file(repo, "parked").exists()
+    assert hold_as(repo, item).returncode == 0, "control: the owner holds it"
+
+
+def test_hold_refuses_an_item_of_another_session(unlanded_tree):
+    repo = unlanded_tree
+    done = worklist_verb(repo.root, "--add", "babe0000", "peer work waits on its dependencies")
+    peer_item = done.split("#", 1)[1].split()[0].strip(":,.)")
+    refused = hold_as(repo, peer_item)
+    assert refused.returncode == 1, refused.stdout
+    assert "babe0000" in refused.stderr, refused.stderr
+    assert "not the lease owner" in refused.stderr, refused.stderr
+    assert not hold_file(repo, "parked").exists()
+
+
+def test_gc_and_leases_do_not_honour_a_hand_written_foreign_hold(unlanded_tree):
+    repo = unlanded_tree
+    item = open_item(repo.root)
+    store = repo.root / ".git" / lease.RECORD_DIR
+    foreign = {"item": item, "reason": "parked by a peer", "session": "babe0000"}
+    hold_file(repo, "parked").write_text(json.dumps(foreign), encoding="utf-8")
+    assert store.is_dir()
+    shown = run_verb(repo.root, "leases").stdout
+    assert "not honoured" in shown, shown
+    assert "(item closed" not in shown, shown
+    ours = {**foreign, "session": GC_SESSION[:8]}
+    hold_file(repo, "parked").write_text(json.dumps(ours), encoding="utf-8")
+    shown = run_verb(repo.root, "leases").stdout
+    assert "not honoured" not in shown, "control: the owner's own hold is honoured: " + shown
+    assert "held for #%s" % item in shown, shown
+
+
+def test_unreadable_hold_is_kept_by_gc_and_not_reported_as_closed(unlanded_tree):
+    repo = unlanded_tree
+    hold_file(repo, "parked").write_text("{", encoding="utf-8")
+    shown = run_verb(repo.root, "leases").stdout
+    assert "(item closed" not in shown, shown
+    assert "unreadable" in shown, shown
+    row = row_of(run_gc(repo.root).stdout, "parked")
+    assert row.split()[0] == "KEEP", row
+    assert "could not be read" in row, row
+
+
+def test_a_worklist_that_cannot_be_read_keeps_the_held_tree_and_says_so():
+    held = {"item": "ab01", "reason": "why", "session": "feedface"}
+    world = types.SimpleNamespace(
+        holds={"t": held}, items=None, records={"t": {"owner": "feedface"}}
+    )
+    problem = lease._hold_problem(world, "t")
+    assert "the worklist could not be read" in problem, problem
+    row = lease._hold_row(world, "t")
+    assert row["open"] is True, row
+    assert "unreadable" not in row["reason"], row
+    assert "(item closed" not in lease._lease_line(
+        {
+            "id": "t",
+            "owner": "feedface",
+            "base": {},
+            "dirty": 0,
+            "unlanded": {},
+            "exists": True,
+            "hold": row,
+        }
+    )
+    closed = types.SimpleNamespace(
+        holds={"t": held},
+        items=[{"id": "ab01", "state": "x", "owner": "feedface"}],
+        records={"t": {"owner": "feedface"}},
+    )
+    assert lease._hold_problem(closed, "t") == "", "control: a closed item holds nothing"
+    assert lease._hold_row(closed, "t")["open"] is False
+
+
 def test_hold_ends_with_its_item_and_unhold_removes_it(unlanded_tree):
     repo = unlanded_tree
     item = open_item(repo.root)
-    assert run_verb(repo.root, "hold", "parked", "--item", item, "--reason", "r").returncode == 0
+    assert hold_as(repo, item).returncode == 0
     worklist_verb(repo.root, "--tick", GC_SESSION[:8], item, "exit 0 nocommit:no-tracked-change")
     row = row_of(run_gc(repo.root).stdout, "parked")
     assert "held for" not in row, "a ticked item no longer holds the tree: %s" % row
     assert "(item closed" in run_verb(repo.root, "leases").stdout
-    again = run_verb(repo.root, "hold", "parked", "--item", item, "--reason", "r")
+    again = hold_as(repo, item)
     assert again.returncode == 1
     assert "not an open worklist item" in again.stderr
     released = run_verb(repo.root, "unhold", "parked")
@@ -3253,7 +3379,7 @@ def test_hold_refuses_unknown_lease_empty_reason_and_closed_item(
     repo = unlanded_tree
     real = open_item(repo.root)
     given = real if item == "open" else item
-    done = run_verb(repo.root, "hold", lease_id, "--item", given, "--reason", reason)
+    done = hold_as(repo, given, reason, lease_id=lease_id)
     assert done.returncode == 1, done.stdout
     assert message in done.stderr, done.stderr
     assert not hold_file(repo, lease_id).exists()
