@@ -3928,8 +3928,9 @@
       "licenseActivated": "Лицензия активирована ({{duration}})",
       "loading": "Загрузка конфигурации...",
       "machineVerified": "Машина проверена ({{duration}})",
+      "renetUpdated": "Renet обновлён ({{duration}})",
+      "renetUnchanged": "Renet без изменений, машина уже работает на этой сборке ({{duration}})",
       "provisioning": "Подготовка renet...",
-      "renetProvisioned": "Renet подготовлен ({{duration}})",
       "verifying": "Проверка машины..."
     }
   },

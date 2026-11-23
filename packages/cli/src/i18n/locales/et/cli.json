@@ -3928,8 +3928,9 @@
       "licenseActivated": "Litsents aktiveeritud ({{duration}})",
       "loading": "Konfiguratsiooni laadimine...",
       "machineVerified": "Masin kontrollitud ({{duration}})",
+      "renetUpdated": "Renet uuendatud ({{duration}})",
+      "renetUnchanged": "Renet muutmata, masin juba kasutab seda versiooni ({{duration}})",
       "provisioning": "Reneti ettevalmistamine...",
-      "renetProvisioned": "Renet ettevalmistatud ({{duration}})",
       "verifying": "Masina kontrollimine..."
     }
   },

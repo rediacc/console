@@ -3928,8 +3928,9 @@
       "licenseActivated": "Lisans etkinleştirildi ({{duration}})",
       "loading": "Yapılandırma yükleniyor...",
       "machineVerified": "Makine doğrulandı ({{duration}})",
+      "renetUpdated": "Renet güncellendi ({{duration}})",
+      "renetUnchanged": "Renet değişmedi, makine zaten bu sürümü çalıştırıyor ({{duration}})",
       "provisioning": "renet sağlanıyor...",
-      "renetProvisioned": "renet sağlandı ({{duration}})",
       "verifying": "Makine doğrulanıyor..."
     }
   },

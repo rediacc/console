@@ -3928,8 +3928,9 @@
       "licenseActivated": "라이선스 활성화 완료 ({{duration}})",
       "loading": "설정 불러오는 중...",
       "machineVerified": "머신 확인 완료 ({{duration}})",
+      "renetUpdated": "Renet 업데이트됨 ({{duration}})",
+      "renetUnchanged": "Renet 변경 없음, 머신이 이미 이 빌드를 실행 중입니다 ({{duration}})",
       "provisioning": "renet 프로비저닝 중...",
-      "renetProvisioned": "renet 프로비저닝 완료 ({{duration}})",
       "verifying": "머신 확인 중..."
     }
   },

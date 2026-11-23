@@ -3928,8 +3928,9 @@
       "licenseActivated": "许可证已激活 ({{duration}})",
       "loading": "正在加载配置...",
       "machineVerified": "机器已验证 ({{duration}})",
+      "renetUpdated": "Renet 已更新 ({{duration}})",
+      "renetUnchanged": "Renet 未更改，机器已在运行此版本 ({{duration}})",
       "provisioning": "正在配置 renet...",
-      "renetProvisioned": "renet 已配置 ({{duration}})",
       "verifying": "正在验证机器..."
     }
   },

@@ -3928,8 +3928,9 @@
       "licenseActivated": "تم تفعيل الترخيص ({{duration}})",
       "loading": "جاري تحميل الإعدادات...",
       "machineVerified": "تم التحقق من الجهاز ({{duration}})",
+      "renetUpdated": "تم تحديث Renet ({{duration}})",
+      "renetUnchanged": "لم يتغير Renet، الجهاز يشغّل هذا الإصدار بالفعل ({{duration}})",
       "provisioning": "جاري توفير renet...",
-      "renetProvisioned": "تم توفير renet ({{duration}})",
       "verifying": "جاري التحقق من الجهاز..."
     }
   },

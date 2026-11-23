@@ -3928,8 +3928,9 @@
       "licenseActivated": "ライセンス有効化完了 ({{duration}})",
       "loading": "設定を読み込み中...",
       "machineVerified": "マシン検証完了 ({{duration}})",
+      "renetUpdated": "Renet を更新しました ({{duration}})",
+      "renetUnchanged": "Renet は変更なし、マシンはすでにこのビルドを実行中です ({{duration}})",
       "provisioning": "renet をプロビジョニング中...",
-      "renetProvisioned": "renet のプロビジョニング完了 ({{duration}})",
       "verifying": "マシンを検証中..."
     }
   },

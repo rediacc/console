@@ -3928,8 +3928,9 @@
       "licenseActivated": "Licenza attivata ({{duration}})",
       "loading": "Caricamento configurazione in corso...",
       "machineVerified": "Macchina verificata ({{duration}})",
+      "renetUpdated": "Renet aggiornato ({{duration}})",
+      "renetUnchanged": "Renet invariato, la macchina esegue già questa build ({{duration}})",
       "provisioning": "Provisioning di renet in corso...",
-      "renetProvisioned": "Renet disponibile ({{duration}})",
       "verifying": "Verifica della macchina in corso..."
     }
   },

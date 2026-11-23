@@ -17,6 +17,11 @@ import { renetAccessFor } from './renet-function-access.js';
 import { timedStep } from './timed-step.js';
 import type { ExecuteOptions } from './types.js';
 
+/** The success line of the renet step: a replaced binary is "updated", a machine already on this build says nothing was replaced. */
+export function renetStepKey(result: { uploaded: boolean }): string {
+  return result.uploaded ? 'timing.step.renetUpdated' : 'timing.step.renetUnchanged';
+}
+
 /**
  * Provision renet, verify machine setup, and handle pre-flight licensing.
  * Returns the remote renet path and whether the binary was uploaded.
@@ -54,7 +59,7 @@ export async function provisionAndVerify(
     routerRefreshDue,
   } = quiet || !renetMayUpload(access)
     ? await provisionFn()
-    : await timedStep(t('timing.step.provisioning'), 'timing.step.renetProvisioned', provisionFn);
+    : await timedStep(t('timing.step.provisioning'), renetStepKey, provisionFn);
   cliSteps.push({
     name: 'renet_provision',
     duration_ms: Date.now() - provStart,
