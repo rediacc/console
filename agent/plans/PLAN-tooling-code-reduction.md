@@ -78,10 +78,11 @@ D7. **Agent data off the hot path.** Finished sessions' worklist logs are folded
   Depends on: none.
   Accept: every guard suite of the four rc 0, `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_guards_differential.py` rc 0 with byte-identical refusal goldens, and the new admit-line parity test rc 0 with a control where an edited admit line turns it red.
     (ticked) 2026-11-23T04:52:12Z by ace763dd: commit:edfc3e69dd fileline:.claude/rediacc_hooks/guards/_push_receipts.py:1 -- four push guards as rows of one table; guard suites 350/116/58/44 unchanged, differential 9200 passed, parity test 20 passed, guard-mutations rc 0; inventory 19e24353b6
-- [ ] CR7 [writer] The guard fire and cost ledger (D6, first half): dispatch.run_chain times each guard and appends one line per chain run to the hook ledger, with the refusing guard's stem; a selftest proves the append costs under 1 ms.
+- [x] CR7 [writer] The guard fire and cost ledger (D6, first half): dispatch.run_chain times each guard and appends one line per chain run to the hook ledger, with the refusing guard's stem; a selftest proves the append costs under 1 ms.
   Owns: .claude/rediacc_hooks/dispatch.py, .claude/rediacc_hooks/tests/test_dispatch_ledger.py
   Depends on: none.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_dispatch_ledger.py` rc 0 with a refusal fixture whose ledger line names the refusing stem, an allow fixture with `refused_by: null`, a slow-guard fixture listed under `slow`, and a control where a raising guard is recorded as crashed without blocking the chain.
+    (ticked) 2026-11-23T06:58:04Z by ace763dd: commit:158d0384fb fileline:.claude/rediacc_hooks/dispatch.py:1 -- guard chain fire and cost ledger; test_dispatch_ledger 12 passed, append median under 1 ms
 - [ ] CR8 [writer] The retirement and merge report and the two-way budgets (D6, second half): wl_hookreport.py over the hook ledger, the Stop-check timings and gate receipts, surfaced through wl_retro; budgets added to hook-exec-baseline.json; `.ci/config/hook-ledger.json` snapshot registered in freshness.json.
   Owns: .claude/hooks/stop/wl_hookreport.py, .claude/hooks/stop/wl_trapfires.py, .claude/hooks/stop/wl_retro.py, .ci/config/hook-ledger.json, .ci/config/freshness.json, .claude/rediacc_hooks/tests/test_wl_hookreport.py
   Depends on: CR7, and PLAN-tooling-speed.md SP3 for Stop-check timing and SP4 for the process-count budget.

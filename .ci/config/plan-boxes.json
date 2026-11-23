@@ -746,49 +746,49 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 22,
-      "done": 16,
+      "open": 13,
+      "done": 25,
       "open_sigs": [
         "092a3f70",
-        "45549b97",
-        "485c63fc",
         "5cdc0693",
-        "5e211ede",
         "64e50145",
-        "7495bae1",
         "782a0661",
         "786d5fb9",
         "81e84eee",
         "8b0b595e",
-        "985f8a56",
-        "a7ed2bb8",
         "b32de811",
         "b825470a",
         "bf120930",
         "c71522b8",
-        "cea31a23",
         "d4495ac9",
-        "d9ea085a",
-        "ebae62f8",
-        "f853e3da"
+        "d9ea085a"
       ],
       "done_sigs": [
         "3cc088a8",
         "3ddf03d4",
+        "45549b97",
+        "485c63fc",
         "51ceeb4f",
         "56e7d176",
+        "5e211ede",
         "675a2e8e",
         "6c7831aa",
+        "7495bae1",
         "7b08f012",
         "812f66ef",
         "824b964d",
         "8694aa86",
         "8735fd82",
         "96e623c9",
+        "985f8a56",
+        "a7ed2bb8",
         "bcfd79af",
         "cabc2dbe",
+        "cea31a23",
         "e67fef60",
-        "ee3be061"
+        "ebae62f8",
+        "ee3be061",
+        "f853e3da"
       ]
     },
     "agent/plans/PLAN-ciquick-green-then-batch.md": {
@@ -3794,21 +3794,21 @@
       "owner": "fee07197",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 9,
-      "done": 2,
+      "open": 8,
+      "done": 3,
       "open_sigs": [
         "36d35046",
         "4c29250e",
         "53e18fa0",
         "547ffb5a",
         "7e1402a9",
-        "9c185837",
         "bd8a600b",
         "c288a491",
         "de852acf"
       ],
       "done_sigs": [
         "622da616",
+        "9c185837",
         "efd17a89"
       ]
     },
@@ -3817,19 +3817,20 @@
       "owner": "fee07197",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 0,
+      "open": 5,
+      "done": 3,
       "open_sigs": [
         "5c05a947",
-        "6d93f7d7",
         "89a8fc86",
-        "9673a986",
         "a04e3a1c",
         "c46fc23d",
-        "dcd4409b",
-        "f72a79ed"
+        "dcd4409b"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "6d93f7d7",
+        "9673a986",
+        "f72a79ed"
+      ]
     },
     "agent/plans/PLAN-tutorial-recorder-licence.md": {
       "status": "proposed",
