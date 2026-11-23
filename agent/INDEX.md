@@ -504,7 +504,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-cncf-conformance.md` | approved | 58 | 5 | 0 | 10497 |
 | `agent/plans/PLAN-cold-path.md` | compacted | 52 | 0 | 0 | 4022 |
 | `agent/plans/PLAN-completion-strategy.md` | compacted | 39 | 0 | 0 | 3945 |
-| `agent/plans/PLAN-console-ai-assistant.md` | approved | 134 | 15 | 0 | 26651 |
+| `agent/plans/PLAN-console-ai-assistant.md` | approved | 134 | 15 | 0 | 26659 |
 | `agent/plans/PLAN-console-ai-credits.md` | approved | 124 | 15 | 0 | 22841 |
 | `agent/plans/PLAN-console-ai-feedback.md` | approved | 91 | 9 | 0 | 15045 |
 | `agent/plans/PLAN-console-ai-in-pages.md` | approved | 91 | 10 | 0 | 15251 |
