@@ -3212,6 +3212,130 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet quality
 
   # ============================================================================
+  # L10d PROXY WRANGLER DEV -- `check:ci-proxy-wrangler-dev-e2e`, the proxy
+  # Worker and its executor container run TOGETHER under `wrangler dev`
+  # (agent/plans/PLAN-tooling-speed.md D8, box SP7).
+  #
+  # WHY A LANE OF ITS OWN, ON A NATIVE-LINUX RUNNER. The gate needs a docker
+  # daemon whose host-gateway reaches workerd's egress listener. Docker Desktop
+  # (the WSL2 development hosts) cannot, so the gate refuses it with exit 77
+  # and names this job; a hosted ubuntu-latest runner binds it on the docker0
+  # bridge. Until this job the gate ran nowhere: 98 of 100 local receipts
+  # recorded it blocked.
+  #
+  # WHAT IT NEEDS. A renet to ship in the image (the Dockerfile COPYs
+  # private/bin/renet-linux-amd64), built here exactly as ci-vm-bake.yml builds
+  # one: the renet submodule on the readonly-preset App token, Go pinned to
+  # renet's go.mod, the staged embed-assets cache ci-build-renet.yml writes
+  # (restore only), and the production PUBLIC key build.sh fails closed
+  # without. No clang: the BPF objects are committed. A sibling reusable
+  # workflow's renet artifact cannot be awaited from here, so the job builds
+  # its own. Then the CLI bundle and the lockfile-pinned natives the image
+  # stage reads (`executor_artifacts stage-local --image-smoke-only`, which
+  # skips the key check for a stage that never leaves its job), and wrangler
+  # from workers/proxy.
+  #
+  # HAND-WRITTEN, like quality-renet: the checkout order and the secrets a
+  # generated region would not carry. The manifest binds the step by name.
+  # ============================================================================
+  quality-wrangler-dev:
+    name: Proxy Wrangler Dev
+    runs-on: ubuntu-latest
+    # The gate's own ready wait is 30 minutes; a cold embed-assets miss plus a
+    # cold image build is the slow path, a cache hit is minutes.
+    timeout-minutes: 45
+    # Checkout and local docker only; the renet submodule comes in on the
+    # readonly-preset App token. No GitHub API, no registry write.
+    permissions:
+      contents: read
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Init renet submodule
+        run: git submodule update --init --depth 1 private/renet
+
+      # The image build and the embed-assets staging both pull from Docker Hub.
+      - name: Login to Docker Hub
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          username: ${{ env.BWS_DOCKERHUB_USERNAME }}
+          password: ${{ env.BWS_DOCKERHUB_TOKEN }}
+
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: private/renet/go.mod
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+
+      - id: setup
+        uses: ./.github/actions/setup-workspace
+        with:
+          natives: 'true'
+          build-packages: 'true'
+
+      # Same staged embed-assets cache as Build (Renet) in ci.yml
+      # (ci-build-renet.yml writes it); restore only, this lane never saves it.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json', 'private/renet/Dockerfile') }}
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && steps.embed-cache.outputs.cache-hit != 'true' }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build renet for the image stage
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        env:
+          # The production PUBLIC key: build.sh fails closed without one.
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
+      # build_renet appends RENET_BINARY to $GITHUB_ENV, which only a LATER
+      # step reads, so the copy is its own step. The Dockerfile asserts `test -x`.
+      - name: Place renet where the image stage reads it
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: |
+          test -n "$RENET_BINARY"
+          mkdir -p private/bin
+          cp "$RENET_BINARY" private/bin/renet-linux-amd64
+          chmod +x private/bin/renet-linux-amd64
+
+      - name: Build the CLI bundle for the image stage
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
+
+      - name: Install the proxy Worker's wrangler
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm ci --prefix workers/proxy
+
+      - name: Proxy wrangler dev e2e
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-proxy-wrangler-dev-e2e
+
+  # ============================================================================
   # L11 WIRING -- node, nothing else, and NEVER a shard.
   #
   # WHY A TWELFTH JOB RATHER THAN A STEP IN AN EXISTING LANE. The gates here

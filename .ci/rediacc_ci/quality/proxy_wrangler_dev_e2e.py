@@ -44,7 +44,7 @@ TEARDOWN, ALWAYS. `wrangler dev` does NOT remove its containers when it exits (m
 
 THE RENET IT SHIPS. Staged exactly as check:ci-proxy-image-smoke stages it (`proxy_image_smoke._stage_local`, which runs `executor_artifacts stage-local`): an already staged `workers/proxy/stage/manifest.json` is used as is, otherwise the stage is written for the run and removed afterwards.
 
-LOCAL-ONLY AND SLOW. It needs a docker daemon and the Containers runtime of `wrangler dev`, and it builds the executor image (minutes cold, seconds on a warm layer cache). It is registered `local-only` with that BLOCKER in scripts/ci-runner/manifest.ts.
+NATIVE-LINUX AND SLOW. It needs a docker daemon and the Containers runtime of `wrangler dev`, and it builds the executor image (minutes cold, seconds on a warm layer cache). The daemon must be a native-Linux one: Docker Desktop's host-gateway cannot reach workerd's egress listener, so on a Docker Desktop host (the WSL2 development machines) the gate exits 77 and names the CI lane that does run it, ci-quality.yml job `quality-wrangler-dev` on ubuntu-latest (agent/plans/PLAN-tooling-speed.md D8). `CI_JOB` and `CI_STEP` below are the names that refusal prints; `ci_lane_findings` holds them to the workflow, and two live-tree controls hold them to the real ci-quality.yml and the gate's gates.lock.json pointer on every run, so the refusal cannot name a lane that is gone.
 
 Exit 0 clean, 1 on findings, 2 when the gate's own controls fail, 77 (the pool's CANNOT_RUN, reported `blocked`, never green) when docker or wrangler is absent or no renet can be staged.
 """
@@ -103,6 +103,15 @@ VERSION_METADATA_BINDING = "CF_VERSION_METADATA"
 STUB_ISSUER_TTL_S = 45 * 60
 
 CANNOT_RUN = 77
+# The one CI lane that runs this gate (agent/plans/PLAN-tooling-speed.md D8). The Docker Desktop refusal names it, so a rename that leaves these behind makes the refusal point at nothing; ci_lane_findings is the check.
+CI_WORKFLOW = ".github/workflows/ci-quality.yml"
+CI_JOB = "quality-wrangler-dev"
+CI_JOB_DISPLAY = "Quality / Proxy Wrangler Dev"
+CI_STEP = "Proxy wrangler dev e2e"
+GATE_ID = "check:ci-proxy-wrangler-dev-e2e"
+CI_RUN = "npm run " + GATE_ID
+CI_RUNNER = "ubuntu-latest"
+DOCKER_DESKTOP_OS = "Docker Desktop"
 READY_TIMEOUT_S = 1800
 REQUEST_TIMEOUT_S = 180
 SETTLE_S = 3
@@ -775,6 +784,78 @@ def selftest() -> bool:
     for label, patch in PLANTS:
         check(label, len(verdict({**HEALTHY, **patch})) == 1)
     _fake_account_controls(check)
+
+    desktop = docker_host_refusal("Docker Desktop\n") or ""
+    check(
+        "a Docker Desktop daemon is refused, naming the CI job and step that run the gate",
+        CI_JOB in desktop and CI_STEP in desktop and CI_WORKFLOW in desktop,
+    )
+    check(
+        "a native-Linux daemon is not refused",
+        docker_host_refusal("Ubuntu 24.04.3 LTS") is None and docker_host_refusal("") is None,
+    )
+    lane = (
+        "jobs:\n"
+        "  other:\n"
+        "    name: Other\n"
+        "    runs-on: ubuntu-slim\n"
+        "  %s:\n"
+        "    name: %s\n"
+        "    runs-on: %s\n"
+        "    steps:\n"
+        "      - id: setup\n"
+        "        uses: ./.github/actions/setup-workspace\n"
+        "      - name: %s\n"
+        "        if: ${{ !cancelled() }}\n"
+        "        run: %s\n"
+        "  after:\n"
+        "    name: After\n"
+        "    steps:\n"
+        "      - name: %s\n"
+        "        run: true\n"
+    ) % (CI_JOB, CI_JOB_DISPLAY.split(" / ", 1)[1], CI_RUNNER, CI_STEP, CI_RUN, CI_STEP)
+    check("the lane the refusal names, as written, has no findings", ci_lane_findings(lane) == [])
+    for label, broken in (
+        (
+            "a workflow without the named job is a finding",
+            lane.replace("  %s:\n" % CI_JOB, "  renamed:\n"),
+        ),
+        (
+            "the lane on a slim runner is a finding",
+            lane.replace("runs-on: %s" % CI_RUNNER, "runs-on: ubuntu-slim"),
+        ),
+        (
+            "a renamed job display is a finding",
+            lane.replace("name: Proxy Wrangler Dev", "name: Wrangler"),
+        ),
+        (
+            "a renamed gate step is a finding",
+            lane.replace(
+                "      - name: %s\n        if" % CI_STEP, "      - name: Wrangler e2e\n        if"
+            ),
+        ),
+        (
+            "a step running something else is a finding",
+            lane.replace("run: %s" % CI_RUN, "run: npm run check:ci-proxy-image-smoke"),
+        ),
+    ):
+        check(label, len(ci_lane_findings(broken)) == 1)
+    # LIVE-TREE CONTROLS: the refusal above is printed on every Docker Desktop run, so the lane it names is checked against the real workflow and the real manifest pointer (gates.lock.json, the generated copy of scripts/ci-runner/manifest.ts) each time the controls run.
+    root = paths.repo_root()
+    live = ci_lane_findings((root / CI_WORKFLOW).read_text())
+    check(
+        "CONTROL: the live workflow holds the lane the refusal names, %s job %s"
+        % (CI_WORKFLOW, CI_JOB)
+        + "".join("; " + f for f in live),
+        live == [],
+    )
+    lock = json.loads((root / "scripts" / "ci-runner" / "gates.lock.json").read_text())
+    pointer = [e.get("ci") for e in lock if e.get("id") == GATE_ID]
+    check(
+        "CONTROL: gates.lock.json points this gate's CI at that job's step %r (found %r)"
+        % (CI_STEP, pointer),
+        pointer == [{"kind": "step", "workflow": CI_WORKFLOW, "job": CI_JOB, "step": CI_STEP}],
+    )
     print("  %d control(s)" % check.count)
     return not check.ok
 
@@ -960,6 +1041,70 @@ def observe(root: pathlib.Path, renet_version: str, plant: str | None = None) ->
     return obs, shape
 
 
+def docker_host_refusal(operating_system: str) -> str | None:
+    """Why a docker daemon reporting `operating_system` (`docker info --format {{.OperatingSystem}}`) cannot run the gate, naming the CI lane that can; None for any other daemon."""
+    # Docker Desktop's host-gateway (192.168.65.254) cannot reach workerd's egress listener, which falls back to loopback, so every interceptOutboundHttp call fails with "fetch failed" (measured 2026-10-31: the egress sidecar logs `dialing gateway: dial tcp 192.168.65.254:<port>: connect: connection refused`). CI's Linux runners bind it on the docker0 bridge.
+    if operating_system.strip() != DOCKER_DESKTOP_OS:
+        return None
+    return (
+        "Docker Desktop's host-gateway cannot reach workerd's egress listener, so the container's "
+        "intercepted egress never arrives; CI runs this gate on a native-Linux docker host, %s job "
+        "`%s` (%s), step `%s`, so read that job's result for a verdict, or rerun here on a "
+        "native-Linux docker daemon" % (CI_WORKFLOW, CI_JOB, CI_JOB_DISPLAY, CI_STEP)
+    )
+
+
+def ci_lane_findings(workflow_text: str) -> list[str]:
+    """What is wrong with the CI lane the refusal names, read from the workflow's text: the job must exist, run on `CI_RUNNER`, be named so it displays as `CI_JOB_DISPLAY`, and hold a step `CI_STEP` whose `run:` is `CI_RUN`. A line-oriented read, as scripts/ci-runner/lanes.ts reads the same file, so no YAML dependency is needed."""
+    lines = workflow_text.splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if line.rstrip() == "  %s:" % CI_JOB:
+            start = i
+            break
+    if start is None:
+        return [
+            "%s has no job `%s`, which the Docker Desktop refusal names" % (CI_WORKFLOW, CI_JOB)
+        ]
+    end = len(lines)
+    for j in range(start + 1, len(lines)):
+        if re.match(r"^  [A-Za-z0-9_-]+:\s*$", lines[j]) or re.match(r"^\S", lines[j]):
+            end = j
+            break
+    body = lines[start + 1 : end]
+    found: list[str] = []
+    name = next((ln.split(":", 1)[1].strip() for ln in body if ln.startswith("    name:")), "")
+    if "Quality / " + name != CI_JOB_DISPLAY:
+        found.append(
+            "job `%s` is named %r, so it displays as %r, not %r"
+            % (CI_JOB, name, "Quality / " + name, CI_JOB_DISPLAY)
+        )
+    runs_on = next(
+        (ln.split(":", 1)[1].strip() for ln in body if ln.startswith("    runs-on:")), ""
+    )
+    if runs_on != CI_RUNNER:
+        found.append(
+            "job `%s` runs on %r, not %r: the gate needs a native-Linux docker daemon"
+            % (CI_JOB, runs_on, CI_RUNNER)
+        )
+    step_at = [k for k, ln in enumerate(body) if ln.strip() == "- name: %s" % CI_STEP]
+    if len(step_at) != 1:
+        found.append(
+            "job `%s` holds %d step(s) named `%s`, not 1" % (CI_JOB, len(step_at), CI_STEP)
+        )
+        return found
+    step_run = ""
+    for ln in body[step_at[0] + 1 :]:
+        if ln.lstrip().startswith("- "):
+            break
+        if ln.strip().startswith("run:"):
+            step_run = ln.split(":", 1)[1].strip()
+            break
+    if step_run != CI_RUN:
+        found.append("step `%s` runs %r, not %r" % (CI_STEP, step_run, CI_RUN))
+    return found
+
+
 def static_findings(root: pathlib.Path) -> list[str]:
     worker = root.joinpath(*WORKER_DIR)
     try:
@@ -974,9 +1119,9 @@ def cannot_run(root: pathlib.Path) -> str | None:
     """Why this host cannot run the gate, with the fix, or None."""
     if shutil.which("docker") is None or _docker("version").returncode != 0:
         return "docker is not available here (no `docker` on PATH, or its daemon does not answer `docker version`); start docker, then rerun"
-    # Docker Desktop's host-gateway (192.168.65.254) cannot reach workerd's egress listener, which falls back to loopback, so every interceptOutboundHttp call fails with "fetch failed" (measured 2026-10-31: the egress sidecar logs `dialing gateway: dial tcp 192.168.65.254:<port>: connect: connection refused`). CI's Linux runners bind it on the docker0 bridge.
-    if _docker("info", "--format", "{{.OperatingSystem}}").stdout.strip() == "Docker Desktop":
-        return "Docker Desktop's host-gateway cannot reach workerd's egress listener, so the container's intercepted egress never arrives; run the gate on a native-Linux docker host (CI does)"
+    refusal = docker_host_refusal(_docker("info", "--format", "{{.OperatingSystem}}").stdout)
+    if refusal:
+        return refusal
     wrangler = root.joinpath(*WORKER_DIR, *WRANGLER_BIN)
     if not wrangler.exists():
         return "%s is missing; run `cd workers/proxy && npm ci`" % wrangler.relative_to(root)
