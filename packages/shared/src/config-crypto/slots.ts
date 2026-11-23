@@ -64,6 +64,7 @@ export const SlotKdfParamsSchema = z.discriminatedUnion('method', [
   }),
 ]);
 type SlotKdfParams = z.infer<typeof SlotKdfParamsSchema>;
+
 export type { SlotKdfParams };
 
 /** Parse stored kdfParams; throws on an unknown method (`password` included) or a malformed object. */
@@ -94,6 +95,7 @@ export const MachineSecretKdfParamsSchema = z.strictObject({
   salt: z.string().min(1),
 });
 type MachineSecretKdfParams = z.infer<typeof MachineSecretKdfParamsSchema>;
+
 export type { MachineSecretKdfParams };
 
 /** Mint kdfParams for a NEW machine secret (fresh random 16-byte salt). */
