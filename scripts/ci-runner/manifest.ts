@@ -4600,11 +4600,11 @@ export const GATES: readonly GateSpec[] = [
   {
     // /tmp is a tmpfs with a FIXED inode count independent of df -h's block view -- a tree can show 19G free of 29G and still be totally exhausted. A real incident this campaign hit exactly that (pytest tmp_path retention, 1,048,574/1,048,576 inodes used) and every Bash call started failing with ENOSPC while disk space looked completely healthy.
     id: 'check:ci-tmpfs-health',
-    run: 'npm run check:ci-tmpfs-health',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.tmpfs_health',
     gate: true,
-    paths: ['.ci/scripts/quality/**', '.npmrc', 'package.json'],
+    paths: ['.ci/rediacc_ci/quality/tmpfs_health.py', '.ci/scripts/quality/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_tmpfs_health.py'],
+    leaves: ['.ci/rediacc_ci/quality/tmpfs_health.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5426,9 +5426,10 @@ export const GATES: readonly GateSpec[] = [
   // <<< gen-manifest: region 10
   {
     id: 'check:ci-scope-completeness',
-    run: 'npm run check:ci-scope-completeness',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.scope_completeness',
     gate: true,
     paths: [
+      '.ci/rediacc_ci/quality/scope_completeness.py',
       '.ci/scripts/quality/**',
       '.gitmodules',
       '.npmrc',
@@ -5439,7 +5440,7 @@ export const GATES: readonly GateSpec[] = [
       'private/renet',
     ],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_scope_completeness.py'],
+    leaves: ['.ci/rediacc_ci/quality/scope_completeness.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -5683,11 +5684,11 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-tutorial-no-skips',
-    run: 'npm run check:ci-tutorial-no-skips',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.tutorial_no_skips',
     gate: true,
-    paths: ['.ci/scripts/quality/**', '.ci/tutorials/**', '.npmrc', 'package.json'],
+    paths: ['.ci/rediacc_ci/quality/tutorial_no_skips.py', '.ci/scripts/quality/**', '.ci/tutorials/**', '.npmrc', 'package.json'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_tutorial_no_skips.py'],
+    leaves: ['.ci/rediacc_ci/quality/tutorial_no_skips.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -11467,9 +11468,9 @@ export const GATES: readonly GateSpec[] = [
   // >>> gen-manifest: region 26
   {
     id: 'check:ci-pathspec-scope',
-    run: 'npm run check:ci-pathspec-scope',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.pathspec_scope',
     gate: true,
-    leaves: ['.ci/scripts/quality/check_pathspec_scope.py'],
+    leaves: ['.ci/rediacc_ci/quality/pathspec_scope.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
@@ -11506,9 +11507,10 @@ export const GATES: readonly GateSpec[] = [
   {
     // A sweep added retry_schema_exhaustion to the judge call sites one at a time and MISSED THE FIFTH, in wl_shapedup.py -- the commit that found it says so in its own subject. Five examples checked individually is not the claim that the set is uniform, and the fifth is what an example-based sweep drops. Enumerated from source, so a sixth site is covered the day it is written.
     id: 'check:ci-schema-call-sites',
-    run: 'npm run check:ci-schema-call-sites',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.schema_call_sites',
     gate: true,
     paths: [
+      '.ci/rediacc_ci/quality/schema_call_sites.py',
       '.ci/scripts/quality/check_schema_call_sites.py',
       '.claude/hooks/**',
       '.npmrc',
@@ -11517,7 +11519,7 @@ export const GATES: readonly GateSpec[] = [
     lists: ['', '.ci/scripts/quality'],
     names: ['**'],
     pathsOrigin: 'traced',
-    leaves: ['.ci/scripts/quality/check_schema_call_sites.py'],
+    leaves: ['.ci/rediacc_ci/quality/schema_call_sites.py'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

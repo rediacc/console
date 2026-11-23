@@ -401,7 +401,7 @@ jobs:
         run: .ci/scripts/quality/check_operator_rulings.py
       - name: Pathspec scope
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_pathspec_scope.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.pathspec_scope
       - name: Plan bindings
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: .ci/scripts/quality/check_plan_bindings.py
@@ -454,7 +454,7 @@ jobs:
         run: .ci/scripts/quality/check_runner_advice.py
       - name: Schema call sites
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_schema_call_sites.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.schema_call_sites
       - name: Secret supply
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.secret_supply
@@ -1262,7 +1262,7 @@ jobs:
       - name: Tmpfs health
         id: gate_check_ci_tmpfs_health
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
-        run: .ci/scripts/quality/check_tmpfs_health.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.tmpfs_health
       - name: Typecheck scope coverage
         id: gate_check_ci_typecheck_scope_coverage
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
@@ -1623,7 +1623,7 @@ jobs:
         run: .ci/scripts/quality/check_tutorial_cli_validity.py
       - name: Tutorials cannot skip themselves
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_tutorial_no_skips.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.tutorial_no_skips
       - name: Validate account onboarding splash against canonical tutorials
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-account-onboarding
@@ -2482,7 +2482,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.retired_terms
       - name: Scope completeness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/scripts/quality/check_scope_completeness.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.scope_completeness
       - name: Scope map, reachable scripts/ paths force full CI
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.scope_scripts_reachability
