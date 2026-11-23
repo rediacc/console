@@ -1,12 +1,13 @@
 ---
 description: Rebase the current branch (console + every submodule that has a matching branch) onto its base branch, submodule-first, resolving the gitlink conflicts that plain `git rebase` gets wrong. Rebase and verify, then republish only through step 5's guarded lease push - merges nothing, lands nothing, opens no PR. Use to refresh a long-running branch onto a moved main before or during a PR.
 argument-hint: "[base]  (optional; defaults to main. A feature branch is legal: see below)"
-allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(git log:*), Bash(git rev-parse:*), Bash(git rev-list:*), Bash(git ls-tree:*), Bash(git remote:*), Bash(gh pr list:*)
+allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(git log:*), Bash(git rev-parse:*), Bash(git rev-list:*), Bash(git ls-tree:*), Bash(git remote:*), Bash(gh pr list:*), Bash(./run.sh worktree landing --status)
 ---
 
 ## Current state
 
 - Branch: !`git branch --show-current`
+- Landing tree (the record `rediacc-landing.json` in `git rev-parse --git-common-dir` names its path and branch): !`./run.sh worktree landing --status`
 - Working tree: !`git status --short | grep -v '.claude/settings.local.json' || echo '(clean aside from settings.local.json)'`
 - Submodule pointers: !`git submodule status private/renet private/account private/elite private/homebrew-tap 2>/dev/null || echo '(unavailable)'`
 - Base: !`echo "origin/${ARGUMENTS:-main}" | tr -d ' '`
