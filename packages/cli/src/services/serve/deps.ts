@@ -83,7 +83,13 @@ export interface ServeDeps {
   ) => Promise<EgressUnreachableAnswer | undefined>;
   /** Throws PolicyDenied when the principal may not run the command. */
   authorize: (args: AuthorizeArgs) => PolicyDecision;
-  /** Ships one audit event per command. Awaited, so a killed process cannot lose it. */
+  /**
+   * Ships one audit event. Awaited, so a killed process cannot lose it. Throws
+   * AuditUnavailableError (audit.ts) when the event could not be delivered: a
+   * mutating command whose `started` event fails is refused before dispatch
+   * (AUDIT_UNAVAILABLE), and an outcome event that fails is reported in the
+   * result instead.
+   */
   audit?: (event: ExecutorAuditEvent) => Promise<void>;
   /**
    * Whether a command's machine work runs detached. Defaults to the contract's

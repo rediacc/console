@@ -338,7 +338,9 @@ describe('executor pre-run refusals', () => {
 
       expect(status).toBe(200);
       expect(executed.length).toBeGreaterThan(0);
-      expect(audited).toHaveLength(1);
+      // A change is recorded `started` before it runs, then with its outcome (PLAN-rmcp-writeback.md Design 8).
+      expect(audited).toHaveLength(2);
+      expect(audited[0]).toMatchObject({ commandPath: 'repo up', outcome: 'started' });
       expect(stderr ?? '').not.toMatch(/audit record/);
     });
   });

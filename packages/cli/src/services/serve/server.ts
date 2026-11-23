@@ -16,8 +16,12 @@
  *                      a client-asserted identity)
  *   2. version check - refuse a client whose contract disagrees with ours
  *   3. authorize     - evaluate the policy document from the ENCRYPTED config
- *   4. execute       - run it, streaming renet's events back verbatim
- *   5. audit         - ship one event, awaited, before the result line lands
+ *   4. execute       - run it, streaming renet's events back verbatim; a
+ *                      mutating command first records its `started` event and
+ *                      is refused (AUDIT_UNAVAILABLE) when that cannot be
+ *                      delivered
+ *   5. audit         - ship the outcome event, awaited, before the result line
+ *                      lands
  */
 
 import { CLI_CONTRACT_VERSION, type ContractCommand } from '@rediacc/shared/cli-contract';
@@ -40,9 +44,10 @@ import {
 } from '../core/request-context.js';
 import { InvalidJobIdError } from '../executor/job-client.js';
 import { traceProxyRequest } from '../executor/proxy-trace.js';
+import { AUDIT_UNAVAILABLE, AuditUnavailableError } from './audit.js';
 import { AuthError, type AuthVerifier } from './auth.js';
 import { CommandRejected, dispatchCommand, prepareCommand } from './command-dispatch.js';
-import type { ServeDeps } from './deps.js';
+import type { ExecutorAuditEvent, ServeDeps } from './deps.js';
 import { createEgressReporter, EGRESS_UNREACHABLE_CODE, egressGuidance } from './egress-report.js';
 import { CekHandoffBlobSchema } from './handoff-schema.js';
 import { registerJobRoutes } from './job-routes.js';
@@ -247,6 +252,39 @@ export function createServeApp(deps: ServeDeps): Hono {
     const auditWarning = auditGate.warning;
     if (auditWarning) outputService.warn(`${auditWarning} (caller: ${principal.userEmail})`);
 
+    const requestedMachine = targetFrom(
+      entry.machineOption,
+      entry.machinePositional,
+      request.params,
+      request.positionals
+    );
+    // A mutating command is recorded BEFORE it runs, as `started`: a change the executor cannot record is not made. Refused here, before the stream opens and before any host call (PLAN-rmcp-writeback.md Design 8). Its terminal outcome is the post-dispatch event (or a poll's, for a job that outlives the attach window).
+    const recordsIntent = !!deps.audit && !isReadOnlyCommand(entry);
+    if (recordsIntent) {
+      try {
+        await deps.audit?.({
+          principal,
+          commandPath: request.pathKey,
+          machineName: requestedMachine,
+          params: request.params,
+          success: true,
+          exitCode: 0,
+          durationMs: 0,
+          destructive: entry.destructive ?? false,
+          outcome: 'started',
+        });
+      } catch (error) {
+        if (!(error instanceof AuditUnavailableError)) throw error;
+        return c.json(
+          {
+            error: `The executor refuses "rdc ${request.pathKey}": its audit record could not be delivered (${error.message}), and a change it cannot record is not made. Retry when the account server is reachable.`,
+            code: AUDIT_UNAVAILABLE,
+          },
+          503
+        );
+      }
+    }
+
     return streamText(c, async (stream) => {
       const write = async (streamLine: StreamLine) => {
         await stream.write(`${JSON.stringify(streamLine)}\n`);
@@ -295,16 +333,11 @@ export function createServeApp(deps: ServeDeps): Hono {
         clearInterval(heartbeat);
         const message =
           error instanceof Error ? error.message : 'The executor failed to run this command.';
-        // A dispatch that threw still ran, or tried to run, on the caller's behalf: one event per command holds on this path too. The function it may have reached is unknown here, so it records by path.
-        await deps.audit?.({
+        // A dispatch that threw still ran, or tried to run, on the caller's behalf: its outcome is recorded on this path too. The function it may have reached is unknown here, so it records by path.
+        const failedNotice = await auditOutcome(deps, entry, request.pathKey, {
           principal,
           commandPath: request.pathKey,
-          machineName: targetFrom(
-            entry.machineOption,
-            entry.machinePositional,
-            request.params,
-            request.positionals
-          ),
+          machineName: requestedMachine,
           params: request.params,
           success: false,
           exitCode: 1,
@@ -319,6 +352,7 @@ export function createServeApp(deps: ServeDeps): Hono {
             error: message,
             durationMs: Date.now() - started,
           },
+          ...(failedNotice ? { stderr: failedNotice } : {}),
         });
         return;
       }
@@ -327,30 +361,27 @@ export function createServeApp(deps: ServeDeps): Hono {
       let { result } = dispatched;
 
       // The audited function is the one the command actually called, observed as it went past, not one reconstructed from a table. A command that reached no machine has none, and is audited by its path alone.
-      await deps.audit?.({
-        principal,
-        commandPath: request.pathKey,
-        ...(functionName ? { functionName } : {}),
-        // Prefer the machine the command actually reached (the only source for a derived-machine verb, whose machine is resolved from placement inside
-        // the action body); fall back to the request for verbs that still name
-        // the machine explicitly (backup, job).
-        machineName:
-          machineName ??
-          targetFrom(
-            entry.machineOption,
-            entry.machinePositional,
-            request.params,
-            request.positionals
-          ),
-        params: request.params,
-        success: result.success,
-        exitCode: result.exitCode,
-        durationMs: result.durationMs,
-        destructive: entry.destructive ?? false,
-        // A command that ran as a job records its id, and `started` when the ticket went back to the client before the job ended: the polls then add the terminal event.
-        ...(result.jobId ? { jobId: result.jobId } : {}),
-        ...(result.state ? { outcome: result.state === 'running' ? 'started' : result.state } : {}),
-      });
+      // A job handed back running is `started`, and the polls add the terminal event; a mutating command already recorded its `started` before dispatch, so it is not recorded twice.
+      const handedBack = result.state === 'running';
+      const outcomeNotice =
+        handedBack && recordsIntent
+          ? undefined
+          : await auditOutcome(deps, entry, request.pathKey, {
+              principal,
+              commandPath: request.pathKey,
+              ...(functionName ? { functionName } : {}),
+              // Prefer the machine the command actually reached (the only source for a derived-machine verb, whose machine is resolved from placement inside the action body); fall back to the request for verbs that still name the machine explicitly (backup, job).
+              machineName: machineName ?? requestedMachine,
+              params: request.params,
+              success: result.success,
+              exitCode: result.exitCode,
+              durationMs: result.durationMs,
+              destructive: entry.destructive ?? false,
+              ...(result.jobId ? { jobId: result.jobId } : {}),
+              ...(result.state
+                ? { outcome: result.state === 'running' ? 'started' : result.state }
+                : {}),
+            });
 
       // An unanswered connect is reported through the account egress, the one path that works from a container whose route to the machine is dropped, and the answer decides the guidance. Only a result that names the address it never reached is reported, since the proxy probes that address before the report counts. Awaited, so the report finishes before the result line.
       const { connectTarget, ...served } = result;
@@ -376,7 +407,7 @@ export function createServeApp(deps: ServeDeps): Hono {
         ...(dispatched.stdoutBytes
           ? { stdoutBase64: Buffer.from(dispatched.stdoutBytes).toString('base64') }
           : {}),
-        stderr: withNotices(stderr, [auditWarning]),
+        stderr: withNotices(stderr, [auditWarning, outcomeNotice]),
       });
     });
   });
@@ -399,10 +430,10 @@ export function createServeApp(deps: ServeDeps): Hono {
  * Whether the executor may run this command given what it can audit.
  *
  * An executor that cannot record what it runs must not change anything. This is
- * checked before the stream opens, because the audit event is only sent after
- * the command ran, which is too late to refuse. A read still runs, flagged
- * loudly, since it changes nothing a missing record would hide. With no audit
- * sink configured at all there is nothing to check.
+ * checked before the stream opens, before a mutating command's `started` event
+ * is even attempted. A read still runs, flagged loudly, since it changes nothing
+ * a missing record would hide. With no audit sink configured at all there is
+ * nothing to check.
  */
 async function checkAuditCapability(
   deps: ServeDeps,
@@ -421,6 +452,31 @@ async function checkAuditCapability(
   return {
     warning: `WARNING: "rdc ${pathKey}" ran WITHOUT an audit record, because ${capability.reason}. ${fix}`,
   };
+}
+
+/**
+ * Ship a command's post-dispatch audit event (its outcome). The command already
+ * ran, so a record the sink could not deliver after its retry does not change
+ * the result; the notice returned for the result's stderr says the record is
+ * missing: `audit_failed:` for a mutating command, a WARNING for a read
+ * (PLAN-rmcp-writeback.md Design 8). Undefined when it was delivered.
+ */
+async function auditOutcome(
+  deps: ServeDeps,
+  entry: ContractCommand,
+  pathKey: string,
+  event: ExecutorAuditEvent
+): Promise<string | undefined> {
+  if (!deps.audit) return undefined;
+  try {
+    await deps.audit(event);
+    return undefined;
+  } catch (error) {
+    if (!(error instanceof AuditUnavailableError)) throw error;
+    return isReadOnlyCommand(entry)
+      ? `WARNING: "rdc ${pathKey}" ran WITHOUT an audit record: ${error.message}.`
+      : `audit_failed: "rdc ${pathKey}" ran, but its audit record could not be delivered: ${error.message}.`;
+  }
 }
 
 /**

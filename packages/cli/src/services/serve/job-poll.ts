@@ -207,6 +207,8 @@ function isTerminalState(state: string): boolean {
 export interface TerminalLedger {
   /** True exactly once per job id: the first time a terminal state is seen for it. */
   firstTerminal(jobId: string, state: string): boolean;
+  /** Undo `firstTerminal` for a job whose terminal event was not delivered, so the next poll ships it again. */
+  forget(jobId: string): void;
 }
 
 /** In-memory, bounded; the oldest ids are forgotten past `capacity`. */
@@ -221,6 +223,9 @@ export function createTerminalLedger(capacity = 10_000): TerminalLedger {
         if (oldest !== undefined) seen.delete(oldest);
       }
       return true;
+    },
+    forget(jobId) {
+      seen.delete(jobId);
     },
   };
 }

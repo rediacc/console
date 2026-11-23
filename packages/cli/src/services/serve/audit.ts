@@ -23,7 +23,7 @@
 import { randomUUID } from 'node:crypto';
 import { type AuditEvent, functionNameToEventType } from '@rediacc/shared';
 import { VERSION } from '../../version.js';
-import { deadlineFetch } from './account-fetch.js';
+import { deadlineFetch, describeFetchError } from './account-fetch.js';
 import type { ExecutorAuditEvent } from './deps.js';
 
 export interface ExecutorAuditOptions {
@@ -105,13 +105,32 @@ function mappedEvent(
   return { type, data, ...envelope };
 }
 
+/** The served result's error code for a mutating command refused because its audit record could not be delivered. */
+export const AUDIT_UNAVAILABLE = 'AUDIT_UNAVAILABLE';
+
+/** Deliveries per event: the first attempt and one retry, both under the event's one idempotency key. */
+export const AUDIT_DELIVERY_ATTEMPTS = 2;
+
+/** An audit event the account server did not accept after the retry. */
+export class AuditUnavailableError extends Error {
+  readonly code = AUDIT_UNAVAILABLE;
+  /** `reason` is why the last attempt failed; it is the whole message, so a caller can frame it. */
+  constructor(reason: string) {
+    super(reason);
+    this.name = 'AuditUnavailableError';
+  }
+}
+
 /**
- * Ship one audit event per command.
+ * Ship one audit event, retrying once.
  *
- * A delivery failure does NOT fail the command: the operation already ran on the
- * machine, and refusing to report its result would leave the operator with a
- * successful change and an error message. It is surfaced instead, and the
- * idempotency key means the retry the caller may make is safe.
+ * The event is built once, so the retry carries the same idempotency key and the
+ * account server records it once however many attempts reach it. A refusal the
+ * server answers with (a 4xx other than 429) is not retried: it would refuse the
+ * same body again. An event still undelivered after the retry is reported to
+ * `onFailure` and thrown as AuditUnavailableError, and the caller decides
+ * (agent/plans/PLAN-rmcp-writeback.md Design 8): before dispatch a mutating
+ * command is refused, after dispatch the result says the record is missing.
  */
 export function createExecutorAudit(
   options: ExecutorAuditOptions
@@ -120,23 +139,27 @@ export function createExecutorAudit(
   const accountUrl = options.accountUrl.replace(/\/+$/, '');
 
   return async (event: ExecutorAuditEvent): Promise<void> => {
-    try {
-      const payload = { events: [buildExecutorAuditEvent(event)] };
-
-      const response = await fetchImpl(`${accountUrl}/account/api/v1/licenses/audit-events`, {
-        method: 'POST',
-        headers: {
-          authorization: `Bearer ${options.executorToken}`,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`The account server rejected the audit event (${response.status}).`);
+    const body = JSON.stringify({ events: [buildExecutorAuditEvent(event)] });
+    let reason = '';
+    for (let attempt = 1; attempt <= AUDIT_DELIVERY_ATTEMPTS; attempt++) {
+      try {
+        const response = await fetchImpl(`${accountUrl}/account/api/v1/licenses/audit-events`, {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${options.executorToken}`,
+            'content-type': 'application/json',
+          },
+          body,
+        });
+        if (response.ok) return;
+        reason = `the account server rejected the audit event (${response.status})`;
+        if (response.status < 500 && response.status !== 429) break;
+      } catch (error) {
+        reason = describeFetchError(error);
       }
-    } catch (error) {
-      options.onFailure?.(error, event);
     }
+    const failure = new AuditUnavailableError(reason);
+    options.onFailure?.(failure, event);
+    throw failure;
   };
 }

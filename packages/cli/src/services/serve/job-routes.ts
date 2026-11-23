@@ -17,8 +17,9 @@ import { assertJobId } from '../executor/job-client.js';
 import { cancelJob, connectForJobs, runJobCommand } from '../executor/job-remote.js';
 import { observeTerminalPoll } from '../jobs/executor-observation.js';
 import type { TicketState } from '../jobs/ticket-store.js';
+import { AUDIT_UNAVAILABLE, AuditUnavailableError } from './audit.js';
 import type { AuthVerifier } from './auth.js';
-import type { ServeDeps } from './deps.js';
+import type { ExecutorAuditEvent, ServeDeps } from './deps.js';
 import {
   buildJobPollArgv,
   createTerminalLedger,
@@ -125,9 +126,34 @@ export function registerJobRoutes(app: Hono, deps: ServeDeps, helpers: JobRouteH
     const { principal, jobId, machine, config } = admitted;
     const started = Date.now();
     const destructive = getCommand('job cancel')?.destructive ?? true;
+    const cancelEvent = (outcome: { success: boolean; exitCode: number; started?: true }) => ({
+      principal,
+      commandPath: 'job cancel',
+      machineName: machine,
+      params: { id: jobId },
+      success: outcome.success,
+      exitCode: outcome.exitCode,
+      durationMs: outcome.started ? 0 : Date.now() - started,
+      destructive,
+      ...(outcome.started ? { outcome: 'started' as const } : {}),
+    });
+    // A cancel changes a machine: it is recorded before it runs, and refused when that record cannot be delivered (PLAN-rmcp-writeback.md Design 8).
+    try {
+      await deps.audit?.(cancelEvent({ success: true, exitCode: 0, started: true }));
+    } catch (error) {
+      if (!(error instanceof AuditUnavailableError)) throw error;
+      return c.json(
+        {
+          error: `The executor refuses "rdc job cancel": its audit record could not be delivered (${error.message}), and a change it cannot record is not made.`,
+          code: AUDIT_UNAVAILABLE,
+        },
+        503
+      );
+    }
     return withRouteSpan('job-cancel', principal, async () => {
+      let status: Awaited<ReturnType<typeof cancelJob>>;
       try {
-        const status = await helpers.withRequestConfig(config, async () => {
+        status = await helpers.withRequestConfig(config, async () => {
           const conn = await connectForJobs(machine, 'read-only');
           try {
             return await cancelJob(conn, jobId);
@@ -135,38 +161,39 @@ export function registerJobRoutes(app: Hono, deps: ServeDeps, helpers: JobRouteH
             conn.lease.release();
           }
         });
-        await deps.audit?.({
-          principal,
-          commandPath: 'job cancel',
-          machineName: machine,
-          params: { id: jobId },
-          success: true,
-          exitCode: 0,
-          durationMs: Date.now() - started,
-          destructive,
-        });
-        return c.json({
-          state: status.state,
-          ...(status.exit_code == null ? {} : { exitCode: status.exit_code }),
-        });
       } catch (error) {
-        await deps.audit?.({
-          principal,
-          commandPath: 'job cancel',
-          machineName: machine,
-          params: { id: jobId },
-          success: false,
-          exitCode: 1,
-          durationMs: Date.now() - started,
-          destructive,
-        });
+        const auditFailed = await auditAfter(deps, cancelEvent({ success: false, exitCode: 1 }));
         return c.json(
-          { error: error instanceof Error ? error.message : 'The cancel failed.' },
+          {
+            error: error instanceof Error ? error.message : 'The cancel failed.',
+            ...(auditFailed ? { audit_failed: auditFailed } : {}),
+          },
           500
         );
       }
+      const auditFailed = await auditAfter(deps, cancelEvent({ success: true, exitCode: 0 }));
+      return c.json({
+        state: status.state,
+        ...(status.exit_code == null ? {} : { exitCode: status.exit_code }),
+        ...(auditFailed ? { audit_failed: auditFailed } : {}),
+      });
     });
   });
+}
+
+/**
+ * Ship an event for something that already happened. Its result stands whether
+ * or not the record is delivered; the reason it was not is returned for the
+ * response's `audit_failed`, undefined when it was delivered.
+ */
+async function auditAfter(deps: ServeDeps, event: ExecutorAuditEvent): Promise<string | undefined> {
+  try {
+    await deps.audit?.(event);
+    return undefined;
+  } catch (error) {
+    if (!(error instanceof AuditUnavailableError)) throw error;
+    return error.message;
+  }
 }
 
 class BadJobRequest extends Error {}
@@ -200,7 +227,12 @@ function pollFailure(c: Context, error: unknown): Response {
   return c.json({ error: message }, error instanceof JobPollParseError ? 502 : 500);
 }
 
-/** Ship the terminal audit event the first time a poll sees the job finished, and never again. */
+/**
+ * Ship the terminal audit event the first time a poll sees the job finished. An
+ * event the sink could not deliver is forgotten by the ledger, so the next poll
+ * of the job tries again; the poll itself still answers, since the job's end is
+ * a fact whether or not its record arrived.
+ */
 async function auditFirstTerminal(
   ledger: ReturnType<typeof createTerminalLedger>,
   deps: ServeDeps,
@@ -210,7 +242,12 @@ async function auditFirstTerminal(
   checked: { status: JobStatusForAudit; durationMs: number }
 ): Promise<void> {
   if (!ledger.firstTerminal(jobId, checked.status.state)) return;
-  await auditTerminal(deps, principal, machine, jobId, checked.status, checked.durationMs);
+  try {
+    await auditTerminal(deps, principal, machine, jobId, checked.status, checked.durationMs);
+  } catch (error) {
+    if (!(error instanceof AuditUnavailableError)) throw error;
+    ledger.forget(jobId);
+  }
 }
 
 interface JobStatusForAudit {

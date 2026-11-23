@@ -194,12 +194,15 @@ describe('job poll and cancel routes', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ state: 'cancelled', exitCode: 130 });
     expect(cancelled).toEqual([ID]);
-    expect(audited).toHaveLength(1);
-    expect(audited[0]).toMatchObject({
+    // Recorded `started` before the cancel reaches the machine, then with its outcome (PLAN-rmcp-writeback.md Design 8).
+    expect(audited).toHaveLength(2);
+    expect(audited[0]).toMatchObject({ commandPath: 'job cancel', outcome: 'started' });
+    expect(audited[1]).toMatchObject({
       commandPath: 'job cancel',
       destructive: true,
       success: true,
     });
+    expect(audited[1]).not.toHaveProperty('outcome');
   });
 
   it('refuses a cancel the policy does not allow', async () => {
