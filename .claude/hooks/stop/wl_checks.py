@@ -1723,6 +1723,73 @@ def dep_first_rows(fold, session_id, me_arg, root, graph):
     return rows
 
 
+# Wording that marks an item as NOT a live task's work: excluded, in flight elsewhere, owned by another writer, off limits.
+_EXCLUSION_WORDING = re.compile(
+    r"\b(exclud\w*|in[- ]flight|elsewhere|not yours|do not|don't|never touch|off[- ]limits|"
+    r"other writers?|another writer|already (?:leased|running|taken|owned)|leased to|skip\w*|"
+    r"ignor\w*|out of scope|leave alone|belongs? to)\b",
+    re.IGNORECASE,
+)
+
+
+def claimed_text(text):
+    """`text` reduced to the lines that CLAIM items for the task: a line with exclusion wording is dropped, and so is everything under a heading or lead-in line (ending in `:`) that carries it, up to the next blank line or heading.
+
+    The auto-lease reads item ids out of a live task's prompt. A brief that says `Excluded (in flight elsewhere): #a, #b` names those ids to keep the task off them, so they are not leased to it (2026-11-23: #889cb685 was leased to a read-only survey agent that way). `Take #c` on its own line still claims #c.
+    """
+    keep = []
+    in_block = False
+    for line in str(text or "").splitlines():
+        stripped = line.strip()
+        if not stripped:
+            in_block = False
+            continue
+        heading = stripped.startswith("#") and not wl_leasehelp.ITEM_REF.match(stripped)
+        if heading:
+            in_block = False
+        if (heading or stripped.endswith(":")) and _EXCLUSION_WORDING.search(stripped):
+            in_block = True
+            continue
+        if in_block or _EXCLUSION_WORDING.search(stripped):
+            continue
+        keep.append(stripped)
+    return "\n".join(keep)
+
+
+def review_items(recs, live_worker_ids):
+    """{item_id: (state, text)} for wl_review.branch_state, with a `[>]` item counted as leased only while its worker is verified live.
+
+    branch_state stands an open per-commit finding down to an advisory when a leased `[>]` item names it, because its writer is working it. A lease whose worker nobody verifies (dead, expired, a queue placeholder) is not working anything, so that item reads as state `!` and the finding blocks again. The text carries the item's text, last note and lease note: the lead names the finding in whichever of them it typed.
+    """
+    out = {}
+    for rec in recs:
+        state = rec.get("state", " ")
+        if state == ">" and rec.get("worker") not in live_worker_ids:
+            state = "!"
+        text = " ".join(
+            str(rec.get(k) or "") for k in ("text", "lastnote", "lease_note") if rec.get(k)
+        )
+        out[rec["id"]] = (state, text)
+    return out
+
+
+def claiming_prompts(live_bg, metas, read_only, first_prompt):
+    """{task_id: the claiming lines of its prompt} for the live tasks the auto-lease may read.
+
+    A read-only agent (`read_only` holds its types) edits nothing, so an item named in its prompt is research, never work on it: it is left out. A shell reads its description, an agent the first prompt of its transcript; both pass through `claimed_text`.
+    """
+    out = {}
+    for task in live_bg:
+        tid = str(task.get("id") or "")
+        if task.get("type") == "subagent" and tid in metas:
+            if metas[tid]["type"] in read_only:
+                continue
+            out[tid] = claimed_text(first_prompt(metas[tid]["jsonl"]))
+        elif task.get("type") == "shell" and tid:
+            out[tid] = claimed_text(str(task.get("description") or ""))
+    return out
+
+
 def guided_slice(
     fold, session_id, verdicts=None, me=None, root=None, full=False, live_plans=None, in_scope=None
 ):
@@ -3643,13 +3710,9 @@ def _stop_setup(ns):
     # AUTO-LEASE FROM A LIVE TASK'S OWN WORDS (P2.2): an open item this session owns, named `#<id>` in a live agent's first prompt or a live shell's description, is leased to that task here, at stop time, against the live event. It replaces the hand `--lease` every spawn used to need, and it also closes the lease-time blindness to a just-spawned worker (PLAN-parallel-writer-roster F3).
     with contextlib.suppress(Exception):
         _metas = wl_roster.load_metas(wl_roster.session_subagents_dir(event.get("cwd"), session_id))
-        _prompt_texts = {}
-        for _b in live_bg:
-            _tid = str(_b.get("id") or "")
-            if _b.get("type") == "subagent" and _tid in _metas:
-                _prompt_texts[_tid] = wl_leasehelp.first_prompt(_metas[_tid]["jsonl"])
-            elif _b.get("type") == "shell" and _tid:
-                _prompt_texts[_tid] = str(_b.get("description") or "")
+        _prompt_texts = claiming_prompts(
+            live_bg, _metas, wl_roster.read_only_types(root), wl_leasehelp.first_prompt
+        )
         _auto = wl_leasehelp.auto_lease_candidates(
             fold.items,
             lambda r: C.owned_by_me(r.get("owner"), session_id),
@@ -5567,7 +5630,7 @@ def _stop_ci_queue(ns):
     try:
         import wl_review
 
-        _rv_items = {r["id"]: (r.get("state", " "), str(r.get("text") or "")) for r in fold.items}
+        _rv_items = review_items(fold.items, ns["_live_worker_ids"])
         _rv = wl_review.branch_state(root, wl_review.current_branch(root), items=_rv_items)
     except Exception as exc:
         _rv = None
