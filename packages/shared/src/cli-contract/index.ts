@@ -4,7 +4,12 @@
  * Generated from the live Commander tree — regenerate with
  * `npm run generate:cli-contract -w @rediacc/cli`. The check:ci-cli-contract
  * gate fails when the checked-in data drifts from the CLI.
+ *
+ * This root entry imports the contract literal statically, for the CLI and the
+ * worker. A web bundle imports `./core` and `./load` instead, so the data lands
+ * in a chunk of its own.
  */
+export { type ContractIndex, indexContract } from './core.js';
 export { CLI_CONTRACT, CLI_CONTRACT_VERSION } from './data/contract.generated.js';
 export {
   DISCOVERY_FAMILIES,
@@ -20,6 +25,7 @@ export {
   loadContractStrings,
   translate,
 } from './i18n.js';
+export { loadCliContract } from './load.js';
 export type {
   CliContract,
   CommandExample,
@@ -67,54 +73,35 @@ export {
   TimeoutClassSchema,
 } from './validation.js';
 
+import { indexContract } from './core.js';
 import { CLI_CONTRACT } from './data/contract.generated.js';
 import type { ContractCommand } from './types.js';
 
-const BY_PATH_KEY: ReadonlyMap<string, ContractCommand> = new Map(
-  CLI_CONTRACT.commands.map((c) => [c.pathKey, c])
-);
+/** The lookups of ./core, built once over the bundled contract. */
+const BUNDLED = indexContract(CLI_CONTRACT);
 
 /** Look up a command by its space-joined path, e.g. "repo secret list". */
 export function getCommand(pathKey: string): ContractCommand | undefined {
-  return BY_PATH_KEY.get(pathKey);
+  return BUNDLED.getCommand(pathKey);
 }
 
 /** All commands, grouped by top-level domain ("repo", "machine", ...). */
 export function commandsByDomain(): Map<string, ContractCommand[]> {
-  const grouped = new Map<string, ContractCommand[]>();
-  for (const cmd of CLI_CONTRACT.commands) {
-    const bucket = grouped.get(cmd.domain);
-    if (bucket) bucket.push(cmd);
-    else grouped.set(cmd.domain, [cmd]);
-  }
-  return grouped;
+  return BUNDLED.commandsByDomain();
 }
 
 /**
- * Commands that can act on the given resources — the set a UI should offer
- * once the operator has selected a machine, a repository, or both.
- *
- * The binding is read from the FLAG bindings (`machineOption` / `repoOption`)
- * OR the POSITIONAL bindings (`machinePositional` / `repoPositional`), so a
- * command that names its machine or repo positionally still lights up on the
- * matching resource page. Passing no context returns every command.
+ * Commands that can act on the given resources (see ContractIndex in ./core).
+ * Passing no context returns every command.
  */
 export function commandsForContext(context: {
   machine?: boolean;
   repo?: boolean;
 }): ContractCommand[] {
-  return CLI_CONTRACT.commands.filter((cmd) => {
-    if (context.machine === true && cmd.machineOption === null && cmd.machinePositional === null) {
-      return false;
-    }
-    if (context.repo === true && cmd.repoOption === null && cmd.repoPositional === null) {
-      return false;
-    }
-    return true;
-  });
+  return BUNDLED.commandsForContext(context);
 }
 
 /** Commands a remote executor may run on the operator's behalf. */
 export function proxyCapableCommands(): ContractCommand[] {
-  return CLI_CONTRACT.commands.filter((cmd) => cmd.proxyCapable);
+  return BUNDLED.proxyCapableCommands();
 }
