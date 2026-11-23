@@ -4664,16 +4664,17 @@
       "owner": "ace763dd",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 0,
+      "open": 1,
+      "done": 4,
       "open_sigs": [
+        "4ee421d9"
+      ],
+      "done_sigs": [
         "0b762e5b",
-        "4ee421d9",
         "6371c3a2",
         "bde91ce4",
         "c0044c0c"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-www-bundle-determinism.md": {
       "status": "compacted",
