@@ -766,8 +766,6 @@ _AWS_ARGV = re.compile(r"""[\[(]\s*(?:["']aws["']|awscli\.AWS)\s*[,\]]""")
 _AWS_EXEMPT = {
     # A multi-verb library CLI: aws is one verb (s3api list-objects-v2) of many, so a module row would refuse every other verb on a host without aws.
     "rediacc_ci.core.common",
-    # A shadow-run driver for tests; it replays the bash common.sh, it is not run against R2.
-    "rediacc_ci.core.common_stub_shadow_driver",
     # The check:ci-aws-resolver gate, which refuses a literal "aws" argv head; its selftest plants carry one, and it never runs aws.
     "rediacc_ci.quality.aws_resolver",
     # The toolchain doctor: `aws --version` is one probe among every pinned tool, and a row would refuse the doctor on exactly the host that lacks aws and needs it told so.
