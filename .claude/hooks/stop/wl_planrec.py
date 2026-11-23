@@ -416,16 +416,17 @@ _CITATION_GATE: list = []
 
 
 def _citation_gate():
-    """The `check_plan_citations.py` module, loaded once by file. Raises RecordError when it cannot be loaded.
+    """The `rediacc_ci.quality.plan_citations` module, imported once. Raises RecordError when it cannot be loaded.
 
     THE GATE'S OWN EXTRACTOR AND RESOLVER, imported rather than re-derived: `citations()` knows which tokens are pointers (fenced hex, digests, agent ids and fingerprints are not) and `unresolved()` knows what each kind has to land on. A second copy here would be a second opinion about what a dead citation is, which is how a bare `run.ts:352` reached a plan and only the gate caught it. Loaded lazily because the gate itself imports this module.
     """
     if _CITATION_GATE:
         return _CITATION_GATE[0]
+    import importlib
     import importlib.util
 
-    qdir = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "quality"
-    gate = qdir / "check_plan_citations.py"
+    cidir = pathlib.Path(__file__).resolve().parents[3] / ".ci"
+    gate = cidir / "rediacc_ci" / "quality" / "plan_citations.py"
     if not gate.is_file():
         raise RecordError(
             "cannot resolve citations: %s is missing, and a line written without that check "
@@ -437,19 +438,12 @@ def _citation_gate():
         raise RecordError("cannot load %s" % hop)
     syspath = importlib.util.module_from_spec(hop_spec)
     hop_spec.loader.exec_module(syspath)
-    inserted = syspath.on_sys_path(str(qdir))
+    # `.ci` stays on sys.path: the gate imports more of `rediacc_ci` lazily, after this returns.
+    syspath.on_sys_path(str(cidir))
     try:
-        spec = importlib.util.spec_from_file_location("_check_plan_citations_for_planrec", gate)
-        if spec is None or spec.loader is None:
-            raise RecordError("cannot load %s" % gate)
-        mod = importlib.util.module_from_spec(spec)
-        try:
-            spec.loader.exec_module(mod)
-        except (SystemExit, ImportError) as exc:
-            raise RecordError("cannot load %s: %s" % (gate, exc)) from exc
-    finally:
-        if inserted and str(qdir) in sys.path:
-            sys.path.remove(str(qdir))
+        mod = importlib.import_module("rediacc_ci.quality.plan_citations")
+    except (SystemExit, ImportError) as exc:
+        raise RecordError("cannot load %s: %s" % (gate, exc)) from exc
     _CITATION_GATE.append(mod)
     return mod
 

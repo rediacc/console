@@ -79,7 +79,7 @@ Exit codes: 0 green, 1 findings, 2 a control failed or bad usage, 77 cannot run.
     --selftest            the planted controls alone
     --root <dir>          judge another tree (the gate test's door)
     --base <ref>          judge transitions against merge-base(HEAD, <ref>) (default:
-                          check_plan_boxes.base_ref for this checkout, else the
+                          plan_boxes.base_ref for this checkout, else the
                           merge-base with origin/main or main)
     --proof-map <path>    read baseline_at and the registry for LP7 from another map
                           (what-if; the surfaces themselves are the committed map's)
@@ -125,12 +125,12 @@ from rediacc_ci import controls, paths
 paths.on_sys_path(paths.hooks_stop_dir())
 
 try:
-    import check_plan_implementation as PI
     import wl_plandeps as D
     import wl_planfile as PF
     from rediacc_ci.proof import live_tier as LT
     from rediacc_ci.proof import surfaces as S
     from rediacc_ci.proof import vm_tier as VT
+    from rediacc_ci.quality import plan_implementation as PI
     from rediacc_ci.review import successor as SUCC
 except ImportError as _exc:  # pragma: no cover -- a tree without the hook or proof modules
     print(
@@ -815,7 +815,7 @@ def base_of(root: pathlib.Path, explicit: str | None) -> str:
         return (_git(root, "merge-base", "HEAD", explicit) or "").strip()
     if root.resolve() == REPO_ROOT.resolve():
         try:
-            return importlib.import_module("check_plan_boxes").base_ref() or ""
+            return importlib.import_module("rediacc_ci.quality.plan_boxes").base_ref() or ""
         except ImportError:
             return ""
     for ref in ("origin/main", "main"):

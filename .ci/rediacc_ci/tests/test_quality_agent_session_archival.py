@@ -2,7 +2,7 @@
 
 WHAT THIS ADDS TO THE GATE'S OWN `--selftest`. Those controls plant into a TEXT roster and assert which directories a finding accuses; they exercise the judgment through one path. The cases here drive the individual functions directly, at their boundaries and with their arguments out of order, which is where a helper that happens to agree with the roster fixture stops agreeing.
 
-THE MIRROR. `check_agent_session_archival.py` restates `wl_store.AGENT_RESERVED_DIRS` as `RESERVED_MIRROR`, used by its controls alone; the running gate reads the hook's own set. The copy exists so the controls still run on a checkout with no `.claude/`, and the only thing that makes that copy payable is a test comparing the two in BOTH directions, which is the first case below.
+THE MIRROR. `rediacc_ci.quality.agent_session_archival_gate` restates `wl_store.AGENT_RESERVED_DIRS` as `RESERVED_MIRROR`, used by its controls alone; the running gate reads the hook's own set. The copy exists so the controls still run on a checkout with no `.claude/`, and the only thing that makes that copy payable is a test comparing the two in BOTH directions, which is the first case below.
 A mirror nobody compares is a second definition.
 
 THE REST IS THE PURE CORE. `idle_hours`, `due_after_hours`, `classify_due`, `vacuity_reason`, `label_for` and `move_refusal` take data and return data: no git, no filesystem, no clock, so every case is a literal in and a literal out.
@@ -10,6 +10,7 @@ THE REST IS THE PURE CORE. `idle_hours`, `due_after_hours`, `classify_due`, `vac
 
 import ast
 import dataclasses
+import importlib
 import pathlib
 import sys
 from typing import TypedDict, Unpack
@@ -27,13 +28,8 @@ HOUR = ASA.SECONDS_PER_HOUR
 
 
 def _gate_module():
-    """`check_agent_session_archival` imported as a MODULE, for its mirror and its fixtures.
-
-    The entry point is a flat script rather than a package member, so it is reached by the same sys.path hop every other gate test in this package uses. Imported for its constants only; nothing here calls `main`.
-    """
-    paths.on_sys_path(GATE_DIR)
-    paths.on_sys_path(paths.ci_dir())
-    return pytest.importorskip("check_agent_session_archival")
+    """`rediacc_ci.quality.agent_session_archival_gate` imported as a MODULE, for its mirror and its fixtures. Nothing here calls `main`."""
+    return importlib.import_module("rediacc_ci.quality.agent_session_archival_gate")
 
 
 def _sessions(*pairs: tuple[str, float, bool]) -> list[ASA.Session]:
@@ -302,7 +298,7 @@ def test_the_gate_entry_point_is_importable_and_its_floor_is_met():
     gate = _gate_module()
     assert gate.CONTROL_FLOOR >= 20
     assert gate.selftest() == 0
-    assert sys.modules["check_agent_session_archival"] is gate
+    assert sys.modules["rediacc_ci.quality.agent_session_archival_gate"] is gate
 
 
 def test_a_worklist_publication_does_not_hold_a_review_directory():

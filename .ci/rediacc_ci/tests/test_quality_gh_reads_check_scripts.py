@@ -73,7 +73,7 @@ def test_actions_allowlist_refresh_fails_at_once_on_a_404(monkeypatch, tmp_path:
 
 
 def test_session_archival_merged_at_cannot_run_after_retries(monkeypatch):
-    mod = _load("check_agent_session_archival")
+    mod = importlib.import_module("rediacc_ci.quality.agent_session_archival_gate")
     calls = _fake(monkeypatch, mod, [(1, "", "gh: Bad Gateway (HTTP 502)")])
     with pytest.raises(mod.CannotRunError):
         mod._gh_merged_at("0101-1")
@@ -81,7 +81,7 @@ def test_session_archival_merged_at_cannot_run_after_retries(monkeypatch):
 
 
 def test_session_archival_merged_at_reads_after_a_blip(monkeypatch):
-    mod = _load("check_agent_session_archival")
+    mod = importlib.import_module("rediacc_ci.quality.agent_session_archival_gate")
     body = json.dumps([{"mergedAt": "2026-10-01T00:00:00Z"}])
     calls = _fake(monkeypatch, mod, [(1, "", "connection reset by peer"), (0, body, "")])
     assert mod._gh_merged_at("0101-1") is not None

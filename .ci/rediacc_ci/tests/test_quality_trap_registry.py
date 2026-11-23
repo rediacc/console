@@ -215,18 +215,8 @@ def test_the_controls_include_the_probe_plant_and_pass(tmp_path: pathlib.Path) -
 
 
 def _check_plan_boxes():
-    """`.ci/scripts/quality/check_plan_boxes.py`, loaded by path: the formula `box_sig` restates."""
-    scripts = paths.from_root(".ci", "scripts", "quality")
-    # The script's own `import _cipath` shim lives beside it.
-    paths.on_sys_path(scripts)
-    spec = importlib.util.spec_from_file_location(
-        "check_plan_boxes_for_trap_registry", scripts / "check_plan_boxes.py"
-    )
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    """`rediacc_ci.quality.plan_boxes`, the formula `box_sig` restates."""
+    return importlib.import_module("rediacc_ci.quality.plan_boxes")
 
 
 def test_box_sig_is_the_plan_box_gates_sig_on_every_real_box() -> None:

@@ -10,17 +10,15 @@ EVERY CASE GOES THROUGH THE PATH `main()` TAKES: `open_offenders`, `clock_scope`
 import importlib.util
 import io
 import json
-import pathlib
 import types
 
 import pytest
 import wl_planrec
 
-from rediacc_ci import log, paths
+from rediacc_ci import log
 from rediacc_ci.ci import gate_ledger
 from rediacc_ci.core import ghx
 
-GATE_PATH = paths.repo_root() / ".ci" / "scripts" / "quality" / "check_plan_implementation.py"
 FINISHED = frozenset({"done"})
 HEAD = "agent/plans/PLAN-head.md"
 SIDE = "agent/plans/PLAN-side.md"
@@ -29,14 +27,7 @@ THIRD = "agent/plans/PLAN-third.md"
 
 @pytest.fixture(scope="module")
 def gate():
-    assert GATE_PATH.is_file(), "the gate moved: %s" % GATE_PATH
-    paths.on_sys_path(pathlib.Path(GATE_PATH).parent)
-    spec = importlib.util.spec_from_file_location("check_plan_implementation_under_test", GATE_PATH)
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return importlib.import_module("rediacc_ci.quality.plan_implementation")
 
 
 def _row(open_sigs, done_sigs=(), status="draft"):
@@ -120,7 +111,7 @@ def test_a_path_outside_the_key_alphabet_is_still_keyed_per_plan(gate):
 
 
 def test_the_orphan_controls_run_when_the_gate_is_loaded_by_file(gate) -> None:
-    """The gate is loaded here with no sys.modules entry, the way an importlib caller loads it; the root swap must not look the module up by name (435ef88e.1)."""
+    """The gate is imported here as `rediacc_ci.quality.plan_implementation`, not as `__main__`, the way a test or a hook loads it; the root swap must not look the module up by the name the gate runs under (435ef88e.1)."""
     orphan_ok, ancestor_ok = gate._orphan_commit_controls(wl_planrec)
     assert orphan_ok is False, "a commit that is not an ancestor of HEAD must not resolve"
     assert ancestor_ok is True, "an ancestor must resolve"
