@@ -10,6 +10,7 @@ Both are anti-vacuous by count: every stem `guards.stems()` names is compared or
 
 import importlib.util
 import os
+import shutil
 import subprocess
 import sys
 import types
@@ -77,6 +78,24 @@ def process_run(argv_tail, payload):
     )
 
 
+@pytest.fixture
+def fresh_tmp(tmp_path, monkeypatch):
+    """One TMPDIR for both legs of a comparison, emptied before each leg: call the returned function before a run.
+
+    WHY. A guard's state under TMPDIR is shared and mutable: block_plan_concurrency folds `$TMPDIR/claude-worklist/<slug>.md` and APPENDS a row to `<slug>.spawnclaims` on every spawn it admits. Under the inherited TMPDIR the in-process leg saw the real leg's claim (and claims other xdist workers had written in the last 180 s), so the two legs printed different lines whenever no lease was visible (ci:quick 2026-11-23), and every run planted fixture claims into the live claims file that real spawns are judged against. The SAME path for both legs keeps a guard that names its temp directory byte-identical; emptying it between legs keeps one leg's writes out of the other's answer.
+    """
+    root = tmp_path / "tmp"
+    monkeypatch.setenv("TMPDIR", str(root))
+
+    def reset():
+        shutil.rmtree(root, ignore_errors=True)
+        root.mkdir()
+        return root
+
+    reset()
+    return reset
+
+
 def chain_inprocess(chain, payload):
     """`dispatch.run_chain` in this process, inside the child's world and on fresh guard modules, as a `dispatch.py --chain` child would run it."""
     stems = [module.__name__.rsplit(".", 1)[-1] for module in guards.by_chain(chain)]
@@ -125,8 +144,9 @@ def test_every_guard_and_chain_is_in_the_boundary_set():
 
 
 @pytest.mark.parametrize("stem", STEMS)
-def test_one_real_dispatch_run_per_guard(stem):
+def test_one_real_dispatch_run_per_guard(stem, fresh_tmp):
     payload, expected = witness(stem)
+    fresh_tmp()
     real = process_run([stem], payload)
     if stem in _harness.PROCESS_STEMS:
         assert expected is not None, (
@@ -142,6 +162,7 @@ def test_one_real_dispatch_run_per_guard(stem):
             "%s: real dispatch exited %d, its static case expects %d\n%s"
             % (stem, real[0], expected, real[2])
         )
+    fresh_tmp()
     got = _harness.run_inprocess(stem, payload, timeout=TIMEOUT_S)
     if stem in TIMED_STEMS:
         real, got = real[:2], got[:2]
@@ -175,7 +196,7 @@ def chain_witnesses(chain):
 
 
 @pytest.mark.parametrize("chain", LIVE_CHAINS)
-def test_a_chain_denies_and_allows_the_same_in_and_out_of_process(chain):
+def test_a_chain_denies_and_allows_the_same_in_and_out_of_process(chain, fresh_tmp):
     deny, allow = chain_witnesses(chain)
     assert deny is not None, (
         "chain %s: no static case or neutral payload is refused by the chain; nothing to compare"
@@ -185,6 +206,7 @@ def test_a_chain_denies_and_allows_the_same_in_and_out_of_process(chain):
         "chain %s: no static case or neutral payload passes the chain; nothing to compare" % chain
     )
     for verdict, payload, want_rc in (("deny", deny, 2), ("allow", allow, 0)):
+        fresh_tmp()
         real = process_run(["--chain", chain], payload)
         assert real[0] == want_rc, "chain %s %s witness: real run exited %d\n%s" % (
             chain,
@@ -192,6 +214,7 @@ def test_a_chain_denies_and_allows_the_same_in_and_out_of_process(chain):
             real[0],
             real[2],
         )
+        fresh_tmp()
         problem = divergence(
             "chain %s %s" % (chain, verdict), real, chain_inprocess(chain, payload)
         )

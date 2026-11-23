@@ -20,7 +20,7 @@ import time
 
 import pytest
 
-from rediacc_hooks import guards
+from rediacc_hooks import guards, proc
 from rediacc_hooks.guards import block_bash_write_to_running_script as guard
 from rediacc_hooks.tests import test_guards_differential as gd
 
@@ -110,15 +110,15 @@ def test_kill_stale_takes_a_non_leader_script_s_child_and_spares_its_group(tmp_p
         children: list[int] = []
         deadline = time.monotonic() + 10
         while not children and time.monotonic() < deadline:
-            scripts = [p for p in guard.proc.pids() if str(script) in (guard.proc.cmdline(p) or "")]
-            children = [c for p in scripts for c in guard.proc.children_named(p, "sleep")]
+            scripts = [p for p in proc.pids() if str(script) in (proc.cmdline(p) or "")]
+            children = [c for p in scripts for c in proc.children_named(p, "sleep")]
             time.sleep(0.02)
         assert children, "CONTROL: the fixture script never started its sleep"
         guard._kill_stale((str(script),))
         deadline = time.monotonic() + 5
-        while any(guard.proc.running(c) for c in children) and time.monotonic() < deadline:
+        while any(proc.running(c) for c in children) and time.monotonic() < deadline:
             time.sleep(0.02)
-        assert not any(guard.proc.running(c) for c in children)
+        assert not any(proc.running(c) for c in children)
         assert bystander.poll() is None, "the group's other member was killed with the script"
     finally:
         bystander.kill()
@@ -127,17 +127,17 @@ def test_kill_stale_takes_a_non_leader_script_s_child_and_spares_its_group(tmp_p
 
 @pytest.mark.parametrize("backend", ["proc", "ps"])
 def test_ppid_reads_the_parent_on_both_backends(monkeypatch, backend):
-    monkeypatch.setenv(guard.proc.BACKEND_ENV, backend)
-    assert guard.proc.ppid(os.getpid()) == os.getppid()
+    monkeypatch.setenv(proc.BACKEND_ENV, backend)
+    assert proc.ppid(os.getpid()) == os.getppid()
     # CONTROL: a pid nothing runs under answers None, not a parent.
-    assert guard.proc.ppid(2**22 + 1) is None
-    assert guard.proc.running(os.getpid())
-    assert not guard.proc.running(2**22 + 1)
+    assert proc.ppid(2**22 + 1) is None
+    assert proc.running(os.getpid())
+    assert not proc.running(2**22 + 1)
     # A killed child nobody has collected yet is a zombie: in the table, and not running.
     child = subprocess.Popen(["true"])
     deadline = time.monotonic() + 5
-    while guard.proc.running(child.pid) and time.monotonic() < deadline:
+    while proc.running(child.pid) and time.monotonic() < deadline:
         time.sleep(0.02)
-    assert guard.proc.comm(child.pid) is not None
-    assert not guard.proc.running(child.pid)
+    assert proc.comm(child.pid) is not None
+    assert not proc.running(child.pid)
     child.wait()
