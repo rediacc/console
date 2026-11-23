@@ -330,17 +330,26 @@ class Stack:
     # ── teardown ────────────────────────────────────────────────────────────
 
     def teardown(self) -> list[str]:
-        """Stop everything recorded, newest first, and return the failures; one that fails does not stop the rest."""
+        """Stop everything recorded, newest first, and return the failures; one that fails does not stop the rest.
+
+        The state keeps only the pieces that failed to stop, so a later `down` retries exactly those instead of forgetting them."""
         failures: list[str] = []
+        left_groups: list[dict] = []
         for entry in reversed(self.state["groups"]):
             try:
                 self.rt.kill_group(int(entry["pgid"]))
+            except ProcessLookupError:
+                pass
             except OSError as exc:
                 failures.append("process group %s (%s): %s" % (entry["pgid"], entry["name"], exc))
+                left_groups.insert(0, entry)
+        left_containers: list[str] = []
         for name in reversed(self.state["containers"]):
             done = self.rt.run(["docker", "rm", "-f", name])
             if done.returncode != 0 and "No such container" not in done.stderr:
                 failures.append("container %s: %s" % (name, done.stderr.strip()))
+                left_containers.insert(0, name)
+        left_compose: list[list[str]] = []
         for services in reversed(self.state["compose"]):
             done = self.rt.run(
                 ["docker", "compose", "stop", *services],
@@ -348,13 +357,30 @@ class Stack:
             )
             if done.returncode != 0:
                 failures.append("compose %s: %s" % (" ".join(services), done.stderr.strip()))
+                left_compose.insert(0, services)
+        self.state["groups"], self.state["containers"], self.state["compose"] = (
+            left_groups,
+            left_containers,
+            left_compose,
+        )
         return failures
+
+    def forget_or_keep(self, failures: list[str]) -> None:
+        """Remove the state and env files after a clean teardown; keep the state (now only what failed to stop) after a failed one, so `down` can retry it."""
+        if failures:
+            self.save()
+            log.error(
+                "%s keeps %d piece(s) that did not stop; run `%s down` again"
+                % (self.layout.state_file, len(failures), SELF)
+            )
+            return
+        self.layout.state_file.unlink(missing_ok=True)
+        self.layout.env_file.unlink(missing_ok=True)
 
     def down(self) -> int:
         had = self.load()
         failures = self.teardown() if had else []
-        for path in (self.layout.state_file, self.layout.env_file):
-            path.unlink(missing_ok=True)
+        self.forget_or_keep(failures)
         if failures:
             for line in failures:
                 log.error("down: " + line)
@@ -385,10 +411,10 @@ class Stack:
         try:
             env = self.start_all(opts)
         except BaseException:
-            for line in self.teardown():
+            failures = self.teardown()
+            for line in failures:
                 log.error("teardown after a failed up: " + line)
-            self.layout.state_file.unlink(missing_ok=True)
-            self.layout.env_file.unlink(missing_ok=True)
+            self.forget_or_keep(failures)
             raise
         self.write_env(env)
         log.info("stack up; env file %s" % self.layout.env_file)

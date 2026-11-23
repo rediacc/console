@@ -195,8 +195,12 @@ def test_every_failure_tears_down_everything_started(layout: mod.Layout, fail: s
     # A container is recorded just before its `docker run`, so it is removed from the machine step on.
     recorded_containers = 0 if fail in {"rustfs", "health", "seed", "ssh-keygen"} else 1
     assert len(removed) == recorded_containers
-    assert not layout.state_file.exists()
     assert not layout.env_file.exists()
+    if fail == "rustfs":
+        # The fake also fails `docker compose stop rustfs`, so that service stays recorded for a later `down` (review b7004c9a.1).
+        assert json.loads(layout.state_file.read_text())["compose"]
+    else:
+        assert not layout.state_file.exists()
 
 
 def test_a_daemon_that_answers_as_a_container_fails_the_run(layout: mod.Layout) -> None:
@@ -242,6 +246,13 @@ def test_down_reports_a_container_that_will_not_go(layout: mod.Layout) -> None:
     rt = FakeRuntime(fail="docker rm")
     assert mod.main(["down"], runtime=rt, root=layout.root) == 1
     assert len(rt.killed) == 2
+    # The container that would not go stays recorded, so a second `down` retries it (review b7004c9a.1).
+    assert layout.state_file.exists()
+    kept = json.loads(layout.state_file.read_text())
+    assert kept["containers"]
+    assert kept["groups"] == []
+    assert mod.main(["down"], runtime=FakeRuntime(), root=layout.root) == 0
+    assert not layout.state_file.exists()
 
 
 def test_up_over_a_recorded_stack_is_refused(layout: mod.Layout) -> None:
