@@ -9,6 +9,14 @@ obeyed every turn; this file is lookup material, read when the thing it describe
 
 `npm run ci` is a parallel worker pool (`scripts/ci-runner/run.ts`), not a shell chain. It used to be a 93-step `&&` string measured at 1041.6 s serial, and that shape cost both time and signal: `&&` stops at the first red, so one failure hid every other one, and `check:ci-quality-gates` was 443 s of the total as a single opaque unit.
 
+### Adding a gate: one header, then `npm run gen:gates`
+
+A gate is declared once, in the `---- gate ----` header of its own module (`scripts/lib/gate-header.ts` parses it; `scripts/ci-runner/gate-spec.ts` maps each field onto the manifest entry). When no hand entry in `scripts/ci-runner/manifest.ts` carries the header's id, `npm run gen:gates -- --write` emits the entry into the manifest's `gen-gates` region and runs it directly, with no package.json key: `PYTHONPATH=.ci python3 -m <module>` for a module under `.ci/rediacc_ci/`, `tsx <file>` (with a `--selftest &&` leg under `selftest: true`) for a `.ts` gate. The same run regenerates the lock, the workflow region step, the shard manifests and the doc tables, so a new gate is its module plus its test, and every other file it reaches is an output.
+
+`npm run gen:gates -- --check` (the default mode) is the one check over every copy of a declaration. It reports each leg on its own line, so one red leg cannot hide another: the manifest regions, the lock (`check:ci-gates-lock`), the workflow regions and shards (`gate-bind --dry-run --fail-on-drift`), the bindings (`check:ci-gate-bind`), the CI surface (`check:ci-parity`), the manifest rules (`check:ci-gate-manifest`), the doc tables, the doc regions, step env and orphan step keys. A hand edit to any generated copy turns its leg red; the fix is `--write`, never an edit of the copy. Retiring a header-declared gate names its step: `npm run gen:gates -- --write --allow-drop '<step>'`, since the binder refuses a silent step removal.
+
+A gate needing a hand-only field (`paths`, `reads`, `heavy`, `mutex`, `writesTree`, `cores`, `ciOnly`, `noProfile`, ordering `needs`) stays a hand entry in manifest.ts; its header still binds it, and the hand entry wins.
+
 ## The pre-push lane (`npm run ci:quick`)
 
 `git push` is refused unless `.ci/cache/prepush-receipt.json` shows a green, whole run of this lane against the CURRENT `HEAD^{tree}` (`.claude/hooks/pre-bash/block-unverified-push.sh`). That is enforced, not advised, because advice was already here and did not work: three of the five CI reds on PR #579 were `check:format` (1.72s), `check:ci-python-lint` (0.59s) and

@@ -18,6 +18,8 @@
  * as text, so do not cite a text parser as the constraint that keeps it in this shape.
  */
 
+import { derivedRun } from '../lib/gate-header.js';
+
 export interface GateSpec {
   /**
    * Skip the per-gate process-tree sampler for this gate. Only for gates that
@@ -221,10 +223,7 @@ export type CiCoverage =
 export function directRun(file: string, selftest = false): string {
   const mod = /^\.ci\/(rediacc_ci\/.+)\.py$/.exec(file);
   if (mod !== null) return `PYTHONPATH=.ci python3 -m ${mod[1].replace(/\//g, '.')}`;
-  if (file.endsWith('.ts')) {
-    return selftest ? `tsx ${file} --selftest && tsx ${file}` : `tsx ${file}`;
-  }
-  return file;
+  return derivedRun(file, selftest);
 }
 
 /** A header reduced to the fields the spec reads; `scripts/lib/gate-header.ts` GateHeader satisfies it. */

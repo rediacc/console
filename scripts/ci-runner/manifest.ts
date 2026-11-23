@@ -5276,6 +5276,17 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'gen:gates',
+    run: 'npm run gen:gates',
+    gate: false,
+    leaves: ['scripts/gen/gen-manifest.ts'],
+    ci: {
+      kind: 'local-only',
+      blocker:
+        'BLOCKER: an emitter whose default mode only checks. Same shape as gen:gates-lock above: CI runs every leg of its --check as its own gate (check:ci-gen-manifest, check:ci-gates-lock, check:ci-gate-bind, check:ci-parity and the rest), so a step here would run them twice and claim CI regenerates what it holds still.',
+    },
+  },
+  {
     // THE TWO WRITING VERBS, registered for the reason gen:gates-lock is: a hand-written package.json key counts against check:ci-package-key-budget, which refuses growth, and these are registry members rather than sprawl. gate:false because they WRITE; the scheduler never runs them.
     id: 'shard:place',
     run: 'npm run shard:place',

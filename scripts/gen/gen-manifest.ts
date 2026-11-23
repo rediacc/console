@@ -442,6 +442,17 @@ function selftest(): number {
     'CONTROL: the region lands just before `];` and cutting it restores the hand text byte for byte'
   );
 
+  const bindLeg: Leg = { label: 'b', args: ['scripts/gate-bind.ts', '--write'] };
+  const lockLeg: Leg = { label: 'l', args: ['scripts/gen/gen-gates-lock.ts', '--write'] };
+  const argv = ['--gates', '--write', '--allow-drop', 'Old step'];
+  check(
+    withAllowDrops(bindLeg, argv).args.join(' ') ===
+      'scripts/gate-bind.ts --write --allow-drop Old step' &&
+      withAllowDrops(lockLeg, argv) === lockLeg &&
+      withAllowDrops(bindLeg, ['--gates', '--write']) === bindLeg,
+    'CONTROL: --allow-drop reaches the binder leg only, and nothing is added without it'
+  );
+
   return bad === 0 ? 0 : 1;
 }
 
@@ -659,6 +670,17 @@ function runLeg(leg: Leg): number {
   return r.status ?? 1;
 }
 
+/**
+ * `--allow-drop <step>` reaches the binder's write leg and no other. Retiring a header-declared gate removes its step from a region, and gate-bind refuses an unnamed removal (a dropped step takes its `env:` and secrets with it, invisibly); without this the generator could add a gate and never retire one.
+ */
+export function withAllowDrops(leg: Leg, argv: readonly string[]): Leg {
+  if (leg.args[0] !== 'scripts/gate-bind.ts') return leg;
+  const drops = argv.flatMap((a, i) =>
+    a === '--allow-drop' && argv[i + 1] !== undefined ? ['--allow-drop', argv[i + 1]] : []
+  );
+  return drops.length === 0 ? leg : { ...leg, args: [...leg.args, ...drops] };
+}
+
 function gates(argv: string[]): number {
   const write = argv.includes('--write');
   if (write && argv.includes('--check')) {
@@ -677,7 +699,7 @@ function gates(argv: string[]): number {
     if (first !== 0) return first;
     for (const leg of WRITE_LEGS) {
       console.log(`gen:gates --write: ${leg.label}`);
-      const rc = runLeg(leg);
+      const rc = runLeg(withAllowDrops(leg, argv));
       if (rc !== 0) {
         console.error(
           `gen:gates --write: STOPPED at "${leg.label}" (rc=${rc}); later legs not run`

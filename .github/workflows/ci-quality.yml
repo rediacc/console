@@ -374,7 +374,7 @@ jobs:
         run: .ci/scripts/quality/check_hooks_resolvable.py
       - name: Install table
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/rediacc_ci/setup/tools.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.tools
       - name: Install-script tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 .ci/rediacc_ci/release/install_script_check.py
@@ -460,7 +460,7 @@ jobs:
         run: .ci/scripts/quality/check_settings_registry.py
       - name: Setup port parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: .ci/rediacc_ci/setup/port_parity.py
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.port_parity
       - name: Shell commands exist on the runner image
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.security.check_commands

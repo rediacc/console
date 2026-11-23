@@ -274,11 +274,8 @@ export const emits = (b: Bound): b is Emitting =>
 export function bind(file: string, source: string): Bound | null {
   const h = parseGateHeader(source);
   if (h === null) return null;
-  // The union is the safe default: an author who forgets a need is corrected by the
-  // inference. `needs-not` is the ONE way back out, and it costs a `blocker:` reason
-  // (enforced in analyzeGateHeader), because the inference reads string literals and a
-  // control's own description routinely names a tool it does not run. Measured
-  // 2026-09-07: `ctl.check("TOOLING: an absent npx yields 127, ...")` in account_portal.py and a selftest description in check_checkout_cone.py both infer `node` for pure-Python gates. Tightening the pattern instead was REJECTED on measurement: 24 files would lose the inference and at least one of them, test_gate_policy_path.py, really does execute node_modules/.bin/tsx.
+  // The union is the safe default: an author who forgets a need is corrected by the inference. `needs-not` is the ONE way back out, and it costs a `blocker:` reason (enforced in analyzeGateHeader), because the inference reads string literals and a control's own description routinely names a tool it does not run.
+  // Measured 2026-09-07: `ctl.check("TOOLING: an absent npx yields 127, ...")` in account_portal.py and a selftest description in check_checkout_cone.py both infer `node` for pure-Python gates. Tightening the pattern instead was REJECTED on measurement: 24 files would lose the inference and at least one of them, test_gate_policy_path.py, really does execute node_modules/.bin/tsx.
   const denied = new Set(h.needsNot);
   const needs = [...new Set([...h.needs, ...inferredNeeds(source)])]
     .filter((n) => !denied.has(n))
