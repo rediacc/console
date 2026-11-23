@@ -365,6 +365,14 @@ function evaluateNoRetryCancel({ jobName, isFailure, noRetryPatterns }) {
  *
  * Pure so the policy is testable against the REAL allowlist and the REAL job
  * names, not a copy of either.
+ *
+ * A REPEAT IS NEVER RETRIED (agent/plans/PLAN-tooling-speed.md D7). `repeat` is
+ * evaluateRepeatFailure's verdict; when it says the job failed on the same step
+ * with the same first error line on the previous attempt, the answer is no
+ * retry whatever the classifier said, and whatever the allowlist says when the
+ * classifier is out: a third identical red costs a full round and proves
+ * nothing the second did not (nightly 44882769573: Renet BPF rebuild check red
+ * on attempts 1, 2 and 3).
  */
 function evaluateRetryEligibility({
   jobName,
@@ -375,7 +383,15 @@ function evaluateRetryEligibility({
   threshold,
   retryAllowlistPatterns,
   guardForced = false,
+  repeat = null,
 }) {
+  if (repeat && repeat.repeat) {
+    return {
+      retry: false,
+      repeat: true,
+      reason: `"${jobName}" ${repeat.reason} -- a retry would fail the same way, so it is not retried whatever the classifier or the allowlist says`,
+    };
+  }
   // OPERATOR DECISION 2026-07-30: for provisioning legs the ALLOWLIST BEATS a confident code-change verdict. This deliberately re-opens part of #537 and the trade was made with that stated, so it is recorded here rather than buried.
   //
   // What forced it: run 30540751569 job 90867219911. `Tests + Infra / E2E Ceph` failed on "failed to install Docker on node 21: ssh command failed: exit status 6" -- infrastructure -- and the classifier answered code-change at 0.9 with the reasoning "the error message indicates a setup error and E2E tests failed, which suggests a problem with the code under test". That is a
@@ -433,6 +449,71 @@ function evaluateRetryEligibility({
         retry: false,
         reason: `classifier unavailable and "${jobName}" is not on the known-flaky retry allowlist -- failing fast rather than retrying blind`,
       };
+}
+
+/**
+ * The signature of one failed job: the name of its first failed step and the
+ * first line of its first failure annotation (a job id is its check-run id, and
+ * GitHub turns each `##[error]` line into a failure annotation that outlives a
+ * rerun). Either half is null when the job does not say. Pure.
+ */
+function failureSignature(job, annotations) {
+  const step = ((job && job.steps) || []).find((s) => s && s.conclusion === 'failure');
+  const first = (annotations || []).find(
+    (a) => a && a.annotation_level === 'failure' && String(a.message || '').trim() !== ''
+  );
+  return {
+    step: step ? String(step.name) : null,
+    firstError: first ? String(first.message).trim().split('\n')[0].trim() : null,
+  };
+}
+
+/**
+ * Did this job fail exactly as it did on the previous attempt? `current` and
+ * `previous` are failureSignature results (`previous` null on attempt 1, or when
+ * the job did not fail then).
+ *
+ * EXACT MATCH ONLY, and an unknown half is NOT a repeat. The cost of a false
+ * repeat is an under-retried real flake (the plan's named risk), so the skip
+ * needs both the step and the first error line, read on both attempts, and
+ * equal; a different line on the same step is a different failure and keeps its
+ * retry.
+ */
+function evaluateRepeatFailure({ current, previous, attempt }) {
+  if (!previous) {
+    return { repeat: false, reason: 'no failed previous attempt of this job to compare against' };
+  }
+  if (!current || !current.step || !current.firstError || !previous.step || !previous.firstError) {
+    return {
+      repeat: false,
+      reason: 'the failed step or the first error line is unknown on one attempt, so a repeat is not shown',
+    };
+  }
+  if (current.step === previous.step && current.firstError === previous.firstError) {
+    return {
+      repeat: true,
+      reason: `failed on the same step ("${current.step}") with the same first error line as attempt ${attempt - 1} ("${current.firstError}")`,
+    };
+  }
+  return {
+    repeat: false,
+    reason: `failed differently from attempt ${attempt - 1} (step "${previous.step}" -> "${current.step}")`,
+  };
+}
+
+/**
+ * The run-level line for a classifier that did not answer. An HTTP 402 is a
+ * billing OUTAGE of that tier, not a verdict and not a flake, and it is named as
+ * one so the fallback cannot read as a healthy classifier meeting a flaky day.
+ */
+function classifierOutageNote(statuses) {
+  const seen = [...new Set((statuses || []).filter((s) => Number.isInteger(s)))];
+  if (seen.includes(402)) {
+    return `classifier OUTAGE: a provider answered HTTP 402 (billing), statuses seen ${seen.join(', ')}`;
+  }
+  return seen.length
+    ? `classifier unavailable: providers answered HTTP ${seen.join(', ')}`
+    : 'classifier unavailable: no provider answered';
 }
 
 /**
@@ -842,6 +923,8 @@ const monitor = async ({ github, context, core }) => {
   // How long a quality force-cancel may be held while its siblings drain. 90s catches a near-simultaneous second failure (the roster the drain exists for) without waiting out a lane that runs for minutes.
   const HELD_CANCEL_MAX_SECONDS = Number(process.env.WATCHDOG_HELD_CANCEL_MAX_SECONDS || 90);
   let pendingRerun = process.env.WATCHDOG_PENDING_RERUN === 'true';
+  // Every non-2xx a classifier provider answered this generation, for classifierOutageNote (an HTTP 402 is an outage, named as one).
+  const classifierStatuses = [];
   const skipRerun = process.env.WATCHDOG_SKIP_RERUN === 'true';
 
   const pollInterval = 30000; // 30 seconds (was 15s; halved API quota per generation)
@@ -1218,6 +1301,7 @@ const monitor = async ({ github, context, core }) => {
       });
       clearTimeout(timeout);
       if (!response.ok) {
+        classifierStatuses.push(response.status);
         console.log(
           `[AI] Cloudflare classifier returned HTTP ${response.status}: ${await errorBody(response)}`
         );
@@ -1283,6 +1367,7 @@ const monitor = async ({ github, context, core }) => {
       });
       clearTimeout(timeout);
       if (!response.ok) {
+        classifierStatuses.push(response.status);
         console.log(
           `[AI] Claude classifier returned HTTP ${response.status}: ${await errorBody(response)}`
         );
@@ -1616,6 +1701,50 @@ const monitor = async ({ github, context, core }) => {
 
   // The threshold alone misses most timeout kills: since ce8ac0ad5 many jobs declare a `timeout-minutes` well under 15 (build-www 5, gate-tests 5, extract-renet-cross 9), and one killed at 5 read as a retryable cancellation. So a cancelled job under the threshold has its check-run annotations read, and GitHub's own "has exceeded the maximum execution time" line
   // (TIMEOUT_KILL_ANNOTATION_RE) marks it a timeout kill whatever its minutes. Needs `checks: read` on the watchdog job. A failed read falls back to the threshold, logged, and is not cached, so the next poll asks again. Keyed by job id: a rerun attempt's job is a new check run.
+  // REPEAT FAILURES (agent/plans/PLAN-tooling-speed.md D7). The same job's signature on the previous attempt, read from that attempt's job list and its check-run annotations, which a rerun leaves readable. Any read failure answers "no previous signature", which keeps the retry: an unknown is never a repeat.
+  async function failureAnnotations(job) {
+    try {
+      const { data } = await github.rest.checks.listAnnotations({
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        check_run_id: job.id,
+        per_page: 50,
+      });
+      return data;
+    } catch (e) {
+      console.log(`[repeat] could not read "${job.name}"'s annotations (${e.message})`);
+      return null;
+    }
+  }
+  async function repeatOfPreviousAttempt(job, attempt) {
+    if (!(Number(attempt) >= 2)) {
+      return evaluateRepeatFailure({ current: null, previous: null, attempt });
+    }
+    let previous = null;
+    try {
+      const { data } = await github.request(
+        'GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/jobs',
+        {
+          owner: context.repo.owner,
+          repo: context.repo.repo,
+          run_id: targetRunId,
+          attempt_number: Number(attempt) - 1,
+          per_page: 100,
+        }
+      );
+      const prev = (data.jobs || []).find(
+        (j) => j.name === job.name && (j.conclusion === 'failure' || j.conclusion === 'timed_out')
+      );
+      if (prev) previous = failureSignature(prev, await failureAnnotations(prev));
+    } catch (e) {
+      console.log(`[repeat] could not read attempt ${Number(attempt) - 1}'s jobs (${e.message})`);
+    }
+    const current = failureSignature(job, await failureAnnotations(job));
+    const verdict = evaluateRepeatFailure({ current, previous, attempt: Number(attempt) });
+    console.log(`[repeat] "${job.name}": ${verdict.reason}`);
+    return verdict;
+  }
+
   const timeoutKills = new Map();
   async function readTimeoutKill(job) {
     if (timeoutKills.has(job.id)) return timeoutKills.get(job.id);
@@ -2011,7 +2140,9 @@ const monitor = async ({ github, context, core }) => {
       // itself, and keeps watching attempt 2. Further failures are not classified while a rerun is pending (they get rerun anyway). Code-change -> force-cancel now, retry would be pointless.
       else {
         const ai = await classifyFailure(job, jobGuard);
+        const repeat = await repeatOfPreviousAttempt(job, run.run_attempt);
         const eligibility = evaluateRetryEligibility({
+          repeat,
           jobName: job.name,
           // Failures and non-stuck cancellations both reach this branch; only the former is a verdict about the code. See evaluateRetryEligibility.
           isFailure: failed.includes(job),
@@ -2027,7 +2158,7 @@ const monitor = async ({ github, context, core }) => {
         // Make a classifier outage visible at run level rather than letting it hide behind a confident-looking "transient" line. Without this the only symptom of a dead classifier is that everything gets retried, which looks exactly like a healthy classifier meeting a flaky day.
         if (ai.classifierAvailable === false) {
           core.warning(
-            `Failure classifier unavailable for "${job.name}" (${ai.reason}). ` +
+            `Failure classifier unavailable for "${job.name}" (${ai.reason}; ${classifierOutageNote(classifierStatuses)}). ` +
               `EVERY provider in the chain declined to answer: ` +
               `${CLASSIFIER_PROVIDERS.map((p) => p.name).join(' then ')}. ` +
               `Retry policy fell back to the known-flaky allowlist (a safety net, not a classifier): ` +
@@ -2101,6 +2232,17 @@ const monitor = async ({ github, context, core }) => {
         );
         return;
       }
+      // A REPEAT IS NEVER RETRIED (D7): when every failed job repeats its previous attempt's step and first error line, the rerun would only re-prove it. A cancelled job, or one failure that differs, keeps the rerun (GitHub re-runs every non-successful job either way).
+      if (Number(run.run_attempt) >= 2 && toRerun.every((j) => j.conclusion === 'failure')) {
+        const repeats = [];
+        for (const j of toRerun) repeats.push(await repeatOfPreviousAttempt(j, run.run_attempt));
+        if (repeats.every((r) => r.repeat)) {
+          console.log(
+            `Run ${targetRunId} completed; no retry: every failed job repeats attempt ${run.run_attempt - 1} exactly - ending the chain`
+          );
+          return;
+        }
+      }
       for (const j of toRerun) await getLogTail(j);
       if (await executeRerun()) {
         core.setOutput('continue', 'true');
@@ -2150,7 +2292,121 @@ const monitor = async ({ github, context, core }) => {
   core.warning('Watchdog timeout reached');
 };
 
+/**
+ * `node .ci/scripts/ci/watchdog-monitor.cjs --selftest`: the retry policy against
+ * the REAL allowlist (read from the workflow that sets it, never copied here),
+ * with the D7 repeat rule in both directions. Returns the failure count.
+ */
+function selftest() {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const wf = fs.readFileSync(
+    path.join(__dirname, '..', '..', '..', '.github', 'workflows', 'ops-watchdog-monitor.yml'),
+    'utf8'
+  );
+  const m = /WATCHDOG_RETRY_ALLOWLIST_PATTERNS:\s*'([^']*)'/.exec(wf);
+  const allowlist = m ? m[1].split(',').map((s) => s.trim()).filter(Boolean) : [];
+  let failures = 0;
+  const check = (label, ok, detail = '') => {
+    console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${label}${ok || !detail ? '' : `: ${detail}`}`);
+    if (!ok) failures++;
+  };
+  check(
+    'VACUITY: the real retry allowlist was read from ops-watchdog-monitor.yml',
+    allowlist.length > 0,
+    'no WATCHDOG_RETRY_ALLOWLIST_PATTERNS in the workflow'
+  );
+  const e2e = 'Tests + Infra / E2E Ceph';
+  check('the fixture job is on the real allowlist', matchesPatterns(e2e, allowlist), allowlist.join(','));
+
+  const bpfJob = (attempt) => ({
+    id: 1000 + attempt,
+    name: e2e,
+    conclusion: 'failure',
+    steps: [
+      { name: 'Set up job', conclusion: 'success' },
+      { name: 'Renet BPF rebuild check', conclusion: 'failure' },
+      { name: 'Post cleanup', conclusion: 'skipped' },
+    ],
+  });
+  const bpfAnnotations = [
+    { annotation_level: 'warning', message: 'Node.js 20 actions are deprecated' },
+    { annotation_level: 'failure', message: 'bpf object out of date: run make bpf\nexit status 1' },
+  ];
+  const sig1 = failureSignature(bpfJob(1), bpfAnnotations);
+  check(
+    'failureSignature reads the failed step and the FIRST LINE of the first failure annotation',
+    sig1.step === 'Renet BPF rebuild check' && sig1.firstError === 'bpf object out of date: run make bpf',
+    JSON.stringify(sig1)
+  );
+  const sig2 = failureSignature(bpfJob(2), bpfAnnotations);
+  const repeat = evaluateRepeatFailure({ current: sig2, previous: sig1, attempt: 2 });
+  check('two attempts on the same step and line are a repeat', repeat.repeat === true, repeat.reason);
+
+  const base = {
+    jobName: e2e,
+    isFailure: true,
+    threshold: 0.8,
+    retryAllowlistPatterns: allowlist,
+  };
+  const outage = { ...base, classification: 'transient', confidence: 0, classifierAvailable: false };
+  const transient = { ...base, classification: 'transient', confidence: 0.9, classifierAvailable: true };
+  for (const [label, args] of [
+    ['a classifier HTTP 402 outage', outage],
+    ['a confident transient verdict', transient],
+  ]) {
+    const v = evaluateRetryEligibility({ ...args, repeat });
+    check(`a repeat is NOT retried under ${label}`, v.retry === false && v.repeat === true, v.reason);
+  }
+
+  // CONTROLS: the other direction, so the rule cannot pass by refusing everything.
+  const first = evaluateRepeatFailure({ current: sig1, previous: null, attempt: 1 });
+  const firstVerdict = evaluateRetryEligibility({ ...outage, repeat: first });
+  check(
+    'CONTROL: a first-attempt E2E failure with the classifier out is still retried (allowlisted)',
+    first.repeat === false && firstVerdict.retry === true,
+    firstVerdict.reason
+  );
+  const other = evaluateRepeatFailure({
+    current: failureSignature(bpfJob(2), [{ annotation_level: 'failure', message: 'ssh: connect timed out' }]),
+    previous: sig1,
+    attempt: 2,
+  });
+  check(
+    'CONTROL: the same step with a different first error line is not a repeat, and keeps its retry',
+    other.repeat === false && evaluateRetryEligibility({ ...transient, repeat: other }).retry === true,
+    other.reason
+  );
+  const unknown = evaluateRepeatFailure({
+    current: failureSignature(bpfJob(2), []),
+    previous: sig1,
+    attempt: 2,
+  });
+  check('CONTROL: an unknown first error line is never a repeat', unknown.repeat === false, unknown.reason);
+  check(
+    'CONTROL: a non-allowlisted job with the classifier out still fails fast (the outage widens nothing)',
+    evaluateRetryEligibility({ ...outage, jobName: 'Build (Docker) / CLI', repeat: first }).retry === false
+  );
+  check(
+    'an HTTP 402 is named as a classifier OUTAGE',
+    /OUTAGE.*402/.test(classifierOutageNote([402, 500])) && !/OUTAGE/.test(classifierOutageNote([500])),
+    classifierOutageNote([402, 500])
+  );
+  return failures;
+}
+
+if (require.main === module) {
+  if (process.argv.includes('--selftest')) {
+    const n = selftest();
+    console.log(`${n === 0 ? '✓' : '✗'} watchdog-monitor selftest: ${n} failure(s)`);
+    process.exit(n === 0 ? 0 : 1);
+  }
+  console.error('usage: node .ci/scripts/ci/watchdog-monitor.cjs --selftest (the monitor itself runs through actions/github-script)');
+  process.exit(2);
+}
+
 module.exports = monitor;
+module.exports.selftest = selftest;
 module.exports.evaluateBinaryExecGuard = evaluateBinaryExecGuard;
 module.exports.BINARY_EXEC_FAILURE_RE = BINARY_EXEC_FAILURE_RE;
 module.exports.formatFailureRoster = formatFailureRoster;
@@ -2166,6 +2422,9 @@ module.exports.jobBudgetFor = jobBudgetFor;
 module.exports.findTimeoutKillAnnotation = findTimeoutKillAnnotation;
 module.exports.TIMEOUT_KILL_ANNOTATION_RE = TIMEOUT_KILL_ANNOTATION_RE;
 module.exports.evaluateRetryEligibility = evaluateRetryEligibility;
+module.exports.failureSignature = failureSignature;
+module.exports.evaluateRepeatFailure = evaluateRepeatFailure;
+module.exports.classifierOutageNote = classifierOutageNote;
 module.exports.evaluateSupersession = evaluateSupersession;
 module.exports.evaluatePendingRerun = evaluatePendingRerun;
 module.exports.evaluateBudget = evaluateBudget;
